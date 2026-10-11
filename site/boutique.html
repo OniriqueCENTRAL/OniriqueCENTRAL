@@ -126,7 +126,7 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
         <p class="note" style="margin:0">TTC, paiement unique</p>
         <ul>
           <li id="kind">Plugin VST3</li>
-          <li>Windows 10 et 11, 64 bits</li>
+          <li id="os">Windows 10 et 11, 64 bits</li>
           <li id="version"></li>
           <li>Installation et mises à jour par Onirique Central</li>
         </ul>
@@ -310,6 +310,7 @@ async function buy(product, catalog) {
   $("price").textContent = euros(product.priceCents);
   $("version").textContent = product.latest ? "Version " + product.latest.version : "Bientôt disponible";
   if (/\.(exe|msi)$/i.test(product.latest?.filename || "")) $("kind").textContent = "Application Windows";
+  if (product.platforms?.includes("mac")) $("os").textContent = "Windows 10 et 11 (64 bits), et macOS 10.15 ou plus (Intel et Apple Silicon)";
   $("desc").replaceChildren(...(product.description || product.tagline).split(/\n{2,}/).map((text) => el("p", { textContent: text })));
   $("buy").textContent = product.priceCents ? "Acheter · " + euros(product.priceCents) : "Obtenir";
   $("buy").onclick = () => buy(product, catalog);

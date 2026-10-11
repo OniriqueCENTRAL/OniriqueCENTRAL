@@ -61,6 +61,7 @@ function productView(p, platform) {
     priceCents: p.price_cents, image: p.image ? `/api/media/${p.image}` : null, published: !!p.published,
     demo: p.demo ? `/api/media/${p.demo}` : null,
     latest: versionView(versions.find((v) => v.platform === wanted)) || null,
+    platforms: [...new Set(versions.map((v) => v.platform))], // les systèmes pour lesquels le plugin existe
     versions: versions.map(versionView),
   };
 }
