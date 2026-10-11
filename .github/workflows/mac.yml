@@ -43,3 +43,16 @@ jobs:
           name: ONIRIQUE-CENTRAL-mac
           path: app/dist/ONIRIQUE-CENTRAL.dmg
           if-no-files-found: error
+
+      # Dépose le fichier sur le serveur ONIRIQUE, dans /srv/livraison (voir deploy/install-livraison.sh du dépôt
+      # ONIRIQUE CENTRAL). Rien n'est mis en ligne ici. Sans le secret LIVRAISON_KEY, l'étape est passée.
+      - name: Livrer sur le serveur
+        env:
+          LIVRAISON_KEY: ${{ secrets.LIVRAISON_KEY }}
+        run: |
+          if [ -z "$LIVRAISON_KEY" ]; then echo "Secret LIVRAISON_KEY absent : fichier à télécharger depuis Artifacts."; exit 0; fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "$LIVRAISON_KEY" > ~/.ssh/livraison
+          chmod 600 ~/.ssh/livraison
+          echo "217.160.106.244 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICV3xBScmxJy34Jgjtvb0R4UCG3jmzkSU+/T1lDrvD/l" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/livraison -o IdentitiesOnly=yes livraison@217.160.106.244 central-dmg < "app/dist/ONIRIQUE-CENTRAL.dmg"

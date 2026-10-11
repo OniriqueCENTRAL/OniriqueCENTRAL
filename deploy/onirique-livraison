@@ -1,0 +1,20 @@
+#!/bin/sh
+# Reçoit un fichier construit par GitHub Actions et le range dans /srv/livraison, sous un nom fixe.
+# C'est la seule chose que la clé de livraison peut faire sur ce serveur : elle est attachée à ce script
+# dans ~livraison/.ssh/authorized_keys (restrict,command=…). Rien n'est mis en ligne ici : la publication
+# reste une étape à part.
+#   ssh livraison@serveur central-dmg < ONIRIQUE-CENTRAL.dmg
+#   ssh livraison@serveur tuner-mac  < "ONIRIQUE TUNER.vst3.zip"
+set -eu
+
+case "${SSH_ORIGINAL_COMMAND:-}" in
+  central-dmg) name="ONIRIQUE-CENTRAL.dmg" ;;
+  tuner-mac)   name="ONIRIQUE TUNER.vst3.zip" ;;
+  *) echo "livraison inconnue" >&2; exit 1 ;;
+esac
+
+umask 022
+# 500 Mo au plus : au-delà, ce n'est pas un de nos fichiers.
+head -c 524288000 > "/srv/livraison/.$name.part"
+mv -f "/srv/livraison/.$name.part" "/srv/livraison/$name"
+echo "reçu : $name ($(stat -c %s "/srv/livraison/$name") octets)"
