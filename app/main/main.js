@@ -325,7 +325,7 @@ app.whenReady().then(() => {
 let updateReady = null;
 function startAutoUpdate() {
   if (!app.isPackaged) return; // en développement, il n'y a rien à mettre à jour
-  // shortcut: pas de mise à jour automatique sur Mac, macOS la refuse pour une application non signée ; à activer avec un certificat Apple Developer.
+  // Pas de mise à jour automatique sur Mac : macOS la refuse pour une application non signée.
   if (process.platform === 'darwin') return;
   const logFile = path.join(app.getPath('userData'), 'update.log');
   const log = (text) => fs.appendFile(logFile, `${new Date().toISOString()} ${text}\n`, () => {});

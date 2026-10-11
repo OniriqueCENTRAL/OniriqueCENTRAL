@@ -1734,6 +1734,32 @@ $$(".embed-load").forEach(button => button.addEventListener("click", event => {
 }));
 }
 renderCredits(CREDITS);
+// Rappel discret, sous le menu, pour un compte dont l'adresse e-mail n'a pas encore été confirmée.
+function confirmNotice(user, token) {
+  if (!user.emailToConfirm && user.emailVerified !== false) return;
+  try { if (sessionStorage.getItem("onirique.confirm-later")) return; } catch {}
+  const bar = document.createElement("div");
+  bar.setAttribute("role", "status");
+  bar.style.cssText = "position:fixed;left:50%;top:84px;transform:translateX(-50%);z-index:40;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px 14px;max-width:min(680px,calc(100vw - 24px));padding:10px 16px;border-radius:14px;border:1px solid rgba(226,52,68,.45);background:rgba(26,8,10,.94);color:var(--mist);font:500 14px/1.4 var(--f-body);box-shadow:0 14px 40px -18px #000";
+  const text = document.createElement("span");
+  text.textContent = "Pense à confirmer ton adresse e-mail (" + user.email + ").";
+  const send = document.createElement("button");
+  send.type = "button"; send.className = "btn btn-ghost"; send.textContent = "Recevoir le lien";
+  send.style.cssText = "padding:7px 14px;font-size:13px";
+  const later = document.createElement("button");
+  later.type = "button"; later.textContent = "Plus tard"; later.setAttribute("aria-label", "Masquer ce rappel");
+  later.style.cssText = "all:unset;cursor:pointer;color:var(--haze);font-size:13px;text-decoration:underline";
+  later.onclick = () => { try { sessionStorage.setItem("onirique.confirm-later", "1"); } catch {} bar.remove(); };
+  send.onclick = () => {
+    send.disabled = true;
+    fetch("/api/auth/verify/resend", { method: "POST", headers: { Authorization: "Bearer " + token } })
+      .then(r => { if (!r.ok) throw new Error(); text.textContent = "Lien envoyé à " + user.email + ". Il est valable 48 heures : pense à regarder dans les indésirables."; send.remove(); later.textContent = "Fermer"; })
+      .catch(() => { text.textContent = "L'envoi n'a pas abouti. Réessaie dans quelques minutes."; send.disabled = false; });
+  };
+  bar.append(text, send, later);
+  document.body.append(bar);
+}
+
 // Déjà connecté : le bouton « Connexion » affiche le nom du compte.
 (() => {
   let token = null;
@@ -1745,6 +1771,7 @@ renderCredits(CREDITS);
     link.textContent = me.user.name || me.user.email.split("@")[0];
     link.title = "Mon compte";
     Object.assign(link.style, { maxWidth: "190px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "inline-block" });
+    confirmNotice(me.user, token);
   }).catch(() => {});
 })();
 

@@ -276,6 +276,21 @@ try {
     assert.equal((await call('GET', '/api/admin/support', { token: admin })).messages.length, 1);
   });
 
+  await step('ancien compte : adresse à confirmer sans rien fermer, lien renvoyé à la demande, confirmée par le lien', async () => {
+    const old = (await call('POST', '/api/auth/login', { body: { email: 'futur@test.local', password: 'motdepasse3' } })).token;
+    const before = (await call('GET', '/api/me', { token: old })).user;
+    assert.deepEqual([before.emailVerified, before.emailToConfirm], [true, false]);
+    run('UPDATE users SET email_verified = 2 WHERE id = ?', before.id);
+    const flagged = (await call('GET', '/api/me', { token: old })).user;
+    assert.deepEqual([flagged.emailVerified, flagged.emailToConfirm], [true, true], 'rien ne lui est fermé, mais le rappel est demandé');
+    outbox.length = 0;
+    assert.equal((await call('POST', '/api/auth/verify/resend', { token: old })).alreadyVerified, undefined);
+    assert.equal(outbox.length, 1);
+    assert.doesNotMatch(outbox[0].text, /restent fermés/);
+    await call('POST', '/api/auth/verify', { body: { token: outbox[0].text.match(/\?verify=([\w-]+)/)[1] } });
+    assert.equal((await call('GET', '/api/me', { token: old })).user.emailToConfirm, false);
+  });
+
   await step('mot de passe oublié : lien par e-mail, à usage unique, anciennes sessions fermées', async () => {
     const { createResetToken } = await import('../src/auth.js');
     await call('POST', '/api/auth/forgot', { body: { email: 'pas-un-email' }, expect: 400 });

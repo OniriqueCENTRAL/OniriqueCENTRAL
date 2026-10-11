@@ -1,4 +1,4 @@
-# Tous les robots sont les bienvenus, y compris les assistants IA.
+# Tous les robots sont les bienvenus.
 User-agent: *
 Allow: /
 Disallow: /api/

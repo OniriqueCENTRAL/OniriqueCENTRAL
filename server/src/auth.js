@@ -70,6 +70,12 @@ export function consumeVerifyToken(token) {
   return row?.user_id ?? null;
 }
 
+/**
+ * Compte créé avant la validation des adresses (email_verified = 2) : rien ne lui est fermé, mais son adresse
+ * n'a jamais été confirmée. Le site le lui rappelle, et le lien de validation le fait passer à 1.
+ */
+export const shouldConfirm = (user) => mailEnabled && user.email_verified === 2;
+
 /** Vrai si ce compte doit encore valider son adresse. Sans envoi d'e-mails possible, personne n'est retenu. */
 export const mustVerify = (user) => mailEnabled && !user.email_verified && user.role !== 'admin';
 
@@ -140,5 +146,6 @@ export function publicUser(user) {
   return {
     id: user.id, email: user.email, name: user.name, role: user.role, createdAt: user.created_at,
     emailVerified: !mustVerify(user),
+    emailToConfirm: shouldConfirm(user),
   };
 }

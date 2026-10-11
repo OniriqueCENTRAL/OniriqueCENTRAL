@@ -8,7 +8,7 @@ import { all, get, run, now, transaction } from './db.js';
 import {
   HttpError, hashPassword, verifyPassword, createSession, destroySession,
   requireUser, requireVerified, requireAdmin, optionalUser, rateLimit, validEmail, publicUser, createResetToken, consumeResetToken,
-  createVerifyToken, consumeVerifyToken, mustVerify,
+  createVerifyToken, consumeVerifyToken, mustVerify, shouldConfirm,
 } from './auth.js';
 import { mailEnabled, sendMail } from './mail.js';
 import {
@@ -85,9 +85,9 @@ const planView = (p) => ({ id: p.id, name: p.name, interval: p.interval, priceCe
 function sendVerification(user) {
   const link = `${config.siteUrl}/compte?verify=${createVerifyToken(user.id)}`;
   sendMail(user.email, 'Validez votre adresse e-mail — ONIRIQUE',
-    `Bonjour${user.name ? ' ' + user.name : ''},\n\nBienvenue chez ONIRIQUE. Pour valider votre compte, ouvrez ce lien `
+    `Bonjour${user.name ? ' ' + user.name : ''},\n\n${mustVerify(user) ? 'Bienvenue chez ONIRIQUE. Pour valider votre compte' : 'Pour confirmer votre adresse e-mail'}, ouvrez ce lien `
     + `(valable ${config.verifyHours} heures) :\n\n${link}\n\n`
-    + "Tant que l'adresse n'est pas validée, les essais gratuits, les achats et l'activation des plugins restent fermés.\n\n"
+    + (mustVerify(user) ? "Tant que l'adresse n'est pas validée, les essais gratuits, les achats et l'activation des plugins restent fermés.\n\n" : '')
     + "Si vous n'avez pas créé de compte, ignorez ce message.\n\nONIRIQUE")
     .catch((error) => console.error('Envoi du lien de validation :', error.message));
 }
@@ -227,7 +227,7 @@ export function createApp() {
   });
 
   app.post('/api/auth/verify/resend', requireUser, (req, res) => {
-    if (!mustVerify(req.user)) return res.json({ ok: true, alreadyVerified: true });
+    if (!mustVerify(req.user) && !shouldConfirm(req.user)) return res.json({ ok: true, alreadyVerified: true });
     rateLimit(`verify-resend:${req.user.id}`, 3);
     sendVerification(req.user);
     res.json({ ok: true });
