@@ -15,6 +15,9 @@ const LICENSE_DIR = MAC
 // Où vont les applications autonomes (un .exe qui est le logiciel lui-même, pas un installateur) : dossier de l'utilisateur, sans droits admin.
 const APPS_DIR = path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), 'Programs', 'Onirique');
 
+// Sur Mac, le dossier des Audio Units de l'utilisateur (Logic Pro, GarageBand).
+const AU_DIR = path.join(os.homedir(), 'Library', 'Audio', 'Plug-Ins', 'Components');
+
 const exec = (command, args) => new Promise((resolve, reject) => {
   execFile(command, args, { windowsHide: true }, (error, stdout) => (error ? reject(error) : resolve(stdout)));
 });
@@ -119,6 +122,26 @@ async function unzip(source, directory) {
   }
 }
 
+/**
+ * Le .zip d'un plugin Mac peut porter, à côté du .vst3, sa version Audio Unit (« NOM.component ») : elle est
+ * déplacée dans le dossier des Audio Units. Renvoie les chemins, pour pouvoir les retirer à la désinstallation.
+ */
+async function moveAudioUnits(directory) {
+  const moved = [];
+  for (const entry of fs.readdirSync(directory)) {
+    if (!/\.component$/i.test(entry)) continue;
+    const target = path.join(AU_DIR, entry);
+    fs.mkdirSync(AU_DIR, { recursive: true });
+    fs.rmSync(target, { recursive: true, force: true });
+    await exec('ditto', [path.join(directory, entry), target]);
+    fs.rmSync(path.join(directory, entry), { recursive: true, force: true });
+    moved.push(target);
+  }
+  // macOS relit alors la liste des Audio Units, sans attendre la prochaine ouverture de session.
+  if (moved.length) await exec('killall', ['-9', 'AudioComponentRegistrar']).catch(() => {});
+  return moved;
+}
+
 async function runSetup(source) {
   const start = /\.msi$/i.test(source)
     ? `Start-Process msiexec -ArgumentList @('/i', ${quote(`"${source}"`)}) -Wait -PassThru`
@@ -156,6 +179,7 @@ async function install(product, onProgress) {
       // « NOM.vst3.zip » contient « NOM.vst3 » (un dossier, sur Mac) : il pourra être retrouvé et désinstallé.
       const inside = path.join(store.vst3Dir, name.slice(0, -4));
       if (/\.vst3\.zip$/i.test(name) && fs.existsSync(inside)) Object.assign(record, { path: inside, kind: 'vst3' });
+      if (MAC) record.extra = await moveAudioUnits(store.vst3Dir);
     } else if (ext === '.pkg' && MAC) {
       record.kind = 'setup';
       await exec('open', ['-W', temp]).catch(() => { throw new Error("L'installateur a été annulé ou a échoué."); });
@@ -190,6 +214,7 @@ async function uninstall(product) {
     }
     if (fs.existsSync(record.path)) throw new Error("Le plugin n'a pas pu être supprimé.");
   }
+  for (const extra of record?.extra ?? []) fs.rmSync(extra, { recursive: true, force: true }); // la version Audio Unit
   store.setInstalled(product.id, null);
 }
 
