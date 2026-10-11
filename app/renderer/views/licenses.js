@@ -42,7 +42,8 @@ export function licensesView() {
 
     h('div', { class: 'panel' }, eyebrow('Sur votre compte'),
       me.subscription?.status === 'active' ? h('div', { class: 'row', style: { 'margin-bottom': '14px' } },
-        pill('All Access', 'hot', true), h('span', { class: 'muted' }, `Tous les plugins inclus jusqu'au ${date(me.subscription.currentPeriodEnd)}.`)) : null,
+        pill(me.subscription.productIds ? 'À la carte' : 'All Access', 'hot', true),
+        h('span', { class: 'muted' }, `${me.subscription.productIds ? `${me.subscription.productIds.length} plugin(s) inclus` : 'Tous les plugins inclus'} jusqu'au ${date(me.subscription.currentPeriodEnd)}.`)) : null,
       me.licenses.length
         ? h('table', null, h('thead', null, h('tr', null, ['Plugin', 'Clé', 'Type', 'Validité', ''].map((t) => h('th', null, t)))),
           h('tbody', null, me.licenses.map(licenseRow)))

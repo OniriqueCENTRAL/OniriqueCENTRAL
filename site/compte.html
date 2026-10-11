@@ -119,6 +119,15 @@ label.check input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; padd
       </div>
     </div>
 
+    <div class="panel" id="verify-panel" hidden>
+      <div class="eyebrow">Adresse e-mail à valider</div>
+      <div class="between">
+        <p class="muted" style="margin:0;max-width:52ch">Un lien de validation a été envoyé à <strong id="verify-email"></strong>. Ouvrez-le pour activer votre compte : tant que l'adresse n'est pas validée, les essais gratuits, les achats et l'activation des plugins restent fermés. Pensez à regarder dans les indésirables.</p>
+        <button class="btn btn-ghost" id="resend" type="button">Renvoyer le lien</button>
+      </div>
+      <div class="notice" id="verify-notice" role="status" style="margin-top:12px"></div>
+    </div>
+
     <div class="panel">
       <div class="eyebrow">L'application</div>
       <div class="between">
@@ -147,6 +156,7 @@ const saved = () => sessionStorage.getItem(TOKEN) || localStorage.getItem(TOKEN)
 const forget = () => { sessionStorage.removeItem(TOKEN); localStorage.removeItem(TOKEN); };
 let mode = "login"; // login | register | forgot | reset
 const resetToken = new URLSearchParams(location.search).get("reset");
+const verifyToken = new URLSearchParams(location.search).get("verify");
 
 async function api(method, path, body) {
   const token = saved();
@@ -184,12 +194,15 @@ function show(me) {
   $("who").textContent = me.user.name || me.user.email.split("@")[0];
   $("email-line").textContent = me.user.email;
   $("admin-link").hidden = me.user.role !== "admin";
+  $("verify-panel").hidden = me.user.emailVerified !== false;
+  $("verify-email").textContent = me.user.email;
 
   const rows = [];
   if (me.subscription?.status === "active") {
     const row = el("div", "row");
     const left = el("div");
-    left.append(el("h2", "", me.subscription.planName), el("div", "muted", "Tous les plugins inclus jusqu'au " + date(me.subscription.currentPeriodEnd)));
+    const included = me.subscription.productIds ? me.subscription.productIds.length + " plugin(s) inclus" : "Tous les plugins inclus";
+    left.append(el("h2", "", me.subscription.planName), el("div", "muted", included + " jusqu'au " + date(me.subscription.currentPeriodEnd)));
     row.append(left, el("span", "pill on", me.subscription.cancelAtPeriodEnd ? "Se termine" : "Abonnement actif"));
     rows.push(row);
   }
@@ -267,6 +280,18 @@ $("form").onsubmit = async (event) => {
   $("submit").disabled = false;
 };
 
+$("resend").onclick = async () => {
+  $("resend").disabled = true;
+  try {
+    const result = await api("POST", "/auth/verify/resend");
+    if (result.alreadyVerified) return show(await api("GET", "/me"));
+    $("verify-notice").textContent = "Lien renvoyé. Il est valable 48 heures.";
+  } catch (error) {
+    $("verify-notice").textContent = error.message;
+  }
+  $("resend").disabled = false;
+};
+
 $("logout").onclick = async () => {
   await api("POST", "/auth/logout").catch(() => {});
   forget();
@@ -274,13 +299,25 @@ $("logout").onclick = async () => {
 };
 
 (async () => {
+  // Lien de validation reçu par e-mail : il ne sert qu'une fois, on le retire de l'adresse aussitôt.
+  let verified = "";
+  if (verifyToken) {
+    history.replaceState(null, "", location.pathname);
+    try {
+      await api("POST", "/auth/verify", { token: verifyToken });
+      verified = "Adresse e-mail validée. Votre compte est actif.";
+    } catch (error) {
+      verified = error.message;
+    }
+  }
   if (resetToken) {
     show(null);
     return setMode("reset", "Choisissez votre nouveau mot de passe.");
   }
-  if (!saved()) return show(null);
+  if (!saved()) { show(null); $("notice").textContent = verified && verified + (verified.startsWith("Adresse") ? " Connectez-vous." : ""); return; }
   try {
     show(await api("GET", "/me"));
+    $("verify-notice").textContent = verified.startsWith("Adresse") ? "" : verified;
   } catch (error) {
     // Session expirée : on revient au formulaire. Toute autre panne est affichée, la session est gardée.
     if (error.status === 401) forget();

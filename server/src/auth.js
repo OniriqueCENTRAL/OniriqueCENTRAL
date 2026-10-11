@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import { config } from './config.js';
 import { get, run, now } from './db.js';
+import { mailEnabled } from './mail.js';
 
 export class HttpError extends Error {
   constructor(status, message) {
@@ -53,6 +54,25 @@ export function consumeResetToken(token) {
   return row?.user_id ?? null;
 }
 
+/** Jeton de validation de l'adresse e-mail, à usage unique. Seule son empreinte est gardée. */
+export function createVerifyToken(userId) {
+  const token = crypto.randomBytes(32).toString('base64url');
+  run('DELETE FROM email_verifications WHERE user_id = ? OR expires_at < ?', userId, now());
+  run('INSERT INTO email_verifications (token_hash, user_id, expires_at) VALUES (?, ?, ?)',
+    sha256(token), userId, now() + config.verifyHours * 3600_000);
+  return token;
+}
+
+/** Renvoie l'identifiant du compte si le jeton est valable, et le consomme. */
+export function consumeVerifyToken(token) {
+  const row = get('SELECT user_id FROM email_verifications WHERE token_hash = ? AND expires_at > ?', sha256(String(token)), now());
+  if (row) run('DELETE FROM email_verifications WHERE user_id = ?', row.user_id);
+  return row?.user_id ?? null;
+}
+
+/** Vrai si ce compte doit encore valider son adresse. Sans envoi d'e-mails possible, personne n'est retenu. */
+export const mustVerify = (user) => mailEnabled && !user.email_verified && user.role !== 'admin';
+
 function bearer(req) {
   const header = req.headers.authorization || '';
   return header.startsWith('Bearer ') ? header.slice(7).trim() : '';
@@ -75,6 +95,17 @@ export function optionalUser(req) {
   return (token && get(
     `SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id
      WHERE s.token_hash = ? AND s.expires_at > ?`, sha256(token), now())) || null;
+}
+
+/** Compte connecté dont l'adresse est validée : ce qui engage une licence ou un paiement passe par ici. */
+export function requireVerified(req, res, next) {
+  requireUser(req, res, (error) => {
+    if (error) return next(error);
+    if (mustVerify(req.user)) {
+      return next(new HttpError(403, "Validez d'abord votre adresse e-mail : ouvrez le lien reçu par e-mail, ou redemandez-le depuis la page Compte du site."));
+    }
+    next();
+  });
 }
 
 export function requireAdmin(req, res, next) {
@@ -106,5 +137,8 @@ export function validEmail(email) {
 }
 
 export function publicUser(user) {
-  return { id: user.id, email: user.email, name: user.name, role: user.role, createdAt: user.created_at };
+  return {
+    id: user.id, email: user.email, name: user.name, role: user.role, createdAt: user.created_at,
+    emailVerified: !mustVerify(user),
+  };
 }

@@ -7,11 +7,12 @@ import { config } from './config.js';
 import { all, get, run, now, transaction } from './db.js';
 import {
   HttpError, hashPassword, verifyPassword, createSession, destroySession,
-  requireUser, requireAdmin, optionalUser, rateLimit, validEmail, publicUser, createResetToken, consumeResetToken,
+  requireUser, requireVerified, requireAdmin, optionalUser, rateLimit, validEmail, publicUser, createResetToken, consumeResetToken,
+  createVerifyToken, consumeVerifyToken, mustVerify,
 } from './auth.js';
 import { mailEnabled, sendMail } from './mail.js';
 import {
-  activate, activeSubscription, createLicense, entitlement, normalizeKey,
+  activate, activeSubscription, createLicense, entitlement, normalizeKey, pickPlan, pickPriceCents,
   publicKeyPem, publicKeyRaw, userActivations,
 } from './licensing.js';
 import { cancelSubscription, checkout, handleStripeEvent, verifyStripeSignature } from './payments.js';
@@ -58,7 +59,23 @@ function productView(p) {
   };
 }
 
-const planView = (p) => ({ id: p.id, name: p.name, interval: p.interval, priceCents: p.price_cents, active: !!p.active });
+const planView = (p) => ({ id: p.id, name: p.name, interval: p.interval, priceCents: p.price_cents, active: !!p.active, kind: p.kind });
+
+/** Envoie le lien de validation de l'adresse. Sans attente : l'inscription ne dépend pas du serveur de messagerie. */
+function sendVerification(user) {
+  const link = `${config.siteUrl}/compte?verify=${createVerifyToken(user.id)}`;
+  sendMail(user.email, 'Validez votre adresse e-mail — ONIRIQUE',
+    `Bonjour${user.name ? ' ' + user.name : ''},\n\nBienvenue chez ONIRIQUE. Pour valider votre compte, ouvrez ce lien `
+    + `(valable ${config.verifyHours} heures) :\n\n${link}\n\n`
+    + "Tant que l'adresse n'est pas validée, les essais gratuits, les achats et l'activation des plugins restent fermés.\n\n"
+    + "Si vous n'avez pas créé de compte, ignorez ce message.\n\nONIRIQUE")
+    .catch((error) => console.error('Envoi du lien de validation :', error.message));
+}
+
+/** Les licences réservées à cette adresse par un admin lui reviennent une fois l'adresse prouvée. */
+function claimReserved(user) {
+  run(`UPDATE licenses SET user_id = ?, reserved_email = NULL WHERE user_id IS NULL AND reserved_email = ?`, user.id, user.email);
+}
 
 const licenseView = (l) => ({
   id: l.id, key: l.key, productId: l.product_id, productName: l.product_name, userId: l.user_id, email: l.email || l.reserved_email || null,
@@ -122,7 +139,9 @@ export function createApp() {
   app.get('/api/catalog', (_req, res) => {
     res.json({
       products: all('SELECT * FROM products WHERE published = 1 ORDER BY created_at').map(productView),
-      plans: all('SELECT * FROM plans WHERE active = 1 ORDER BY price_cents').map(planView),
+      plans: all(`SELECT * FROM plans WHERE active = 1 AND kind = 'all' ORDER BY price_cents`).map(planView),
+      // Abonnement à la carte : le prix du premier plugin et de chaque plugin ajouté, par mois.
+      pick: { baseCents: config.pickBaseCents, extraCents: config.pickExtraCents },
       paymentsMode: config.paymentsMode,
     });
   });
@@ -161,11 +180,36 @@ export function createApp() {
     if (password.length < 8 || password.length > 200) throw new HttpError(400, 'Mot de passe : 8 caractères minimum.');
     if (get('SELECT id FROM users WHERE email = ?', email)) throw new HttpError(409, 'Un compte existe déjà avec cette adresse.');
 
-    const { lastInsertRowid: id } = run('INSERT INTO users (email, name, password_hash, created_at) VALUES (?, ?, ?, ?)',
-      email, str(req.body.name, 80), hashPassword(password), now());
-    // Les licences réservées à cette adresse par un admin sont rattachées d'office.
-    run(`UPDATE licenses SET user_id = ?, reserved_email = NULL WHERE user_id IS NULL AND reserved_email = ?`, id, email);
-    res.status(201).json({ token: createSession(id), user: publicUser(get('SELECT * FROM users WHERE id = ?', id)) });
+    // Sans serveur de messagerie, aucun lien ne peut partir : le compte est validé d'office.
+    const { lastInsertRowid: id } = run('INSERT INTO users (email, name, password_hash, email_verified, created_at) VALUES (?, ?, ?, ?, ?)',
+      email, str(req.body.name, 80), hashPassword(password), mailEnabled ? 0 : 1, now());
+    const user = get('SELECT * FROM users WHERE id = ?', id);
+    // Les licences réservées à cette adresse ne sont rattachées qu'une fois l'adresse validée : sinon il
+    // suffirait de s'inscrire avec l'adresse de quelqu'un pour prendre ses licences.
+    if (mustVerify(user)) sendVerification(user);
+    else claimReserved(user);
+    res.status(201).json({ token: createSession(id), user: publicUser(user), verificationSent: mustVerify(user) });
+  });
+
+  app.post('/api/auth/verify', (req, res) => {
+    rateLimit(`verify:${req.ip}`, 20);
+    const user = transaction(() => {
+      const id = consumeVerifyToken(req.body.token);
+      if (!id) return null;
+      run('UPDATE users SET email_verified = 1 WHERE id = ?', id);
+      const verified = get('SELECT * FROM users WHERE id = ?', id);
+      claimReserved(verified);
+      return verified;
+    });
+    if (!user) throw new HttpError(400, 'Lien invalide ou expiré. Redemandez-en un depuis la page Compte.');
+    res.json({ ok: true, email: user.email });
+  });
+
+  app.post('/api/auth/verify/resend', requireUser, (req, res) => {
+    if (!mustVerify(req.user)) return res.json({ ok: true, alreadyVerified: true });
+    rateLimit(`verify-resend:${req.user.id}`, 3);
+    sendVerification(req.user);
+    res.json({ ok: true });
   });
 
   app.post('/api/auth/login', (req, res) => {
@@ -196,7 +240,10 @@ export function createApp() {
     res.json({
       user: publicUser(req.user),
       subscription: sub && {
-        planId: sub.plan_id, planName: sub.plan_name, interval: sub.interval, priceCents: sub.price_cents,
+        planId: sub.plan_id, planName: sub.plan_name, interval: sub.interval, kind: sub.plan_kind,
+        // À la carte : les plugins choisis et le prix qui en découle. Sinon tout le catalogue, au prix de la formule.
+        productIds: sub.productIds,
+        priceCents: sub.productIds ? pickPriceCents(sub.productIds.length) : sub.price_cents,
         status: sub.valid ? 'active' : 'ended', currentPeriodEnd: sub.current_period_end, cancelAtPeriodEnd: !!sub.cancel_at_period_end,
       },
       licenses: licenses.map(licenseView),
@@ -227,7 +274,7 @@ export function createApp() {
   //============================================================================
   //  Licences, achats, téléchargements
   //============================================================================
-  app.post('/api/licenses/redeem', requireUser, (req, res) => {
+  app.post('/api/licenses/redeem', requireVerified, (req, res) => {
     rateLimit(`redeem:${req.user.id}`, 15);
     const license = get('SELECT * FROM licenses WHERE key = ?', normalizeKey(req.body.key));
     if (!license || license.status !== 'active') throw new HttpError(404, 'Clé de licence inconnue ou révoquée.');
@@ -246,7 +293,7 @@ export function createApp() {
     return machineId;
   };
 
-  app.post('/api/licenses/activate', requireUser, (req, res) => {
+  app.post('/api/licenses/activate', requireVerified, (req, res) => {
     const product = findProduct(req.body.productId);
     res.json({ license: activate(req.user, product, machineOf(req.body), str(req.body.machineName, 60)) });
   });
@@ -259,7 +306,7 @@ export function createApp() {
 
   // Essai gratuit : une seule fois par compte et par plugin, 7 jours. La licence créée est de type "trial" :
   // le plugin la lit comme les autres, mais passe en mode démo (bruit blanc à l'export) tant qu'elle court.
-  app.post('/api/licenses/trial', requireUser, (req, res) => {
+  app.post('/api/licenses/trial', requireVerified, (req, res) => {
     rateLimit(`trial:${req.user.id}`, 10);
     const product = findProduct(req.body.productId);
     if (!product.published) throw new HttpError(404, 'Produit introuvable.');
@@ -271,7 +318,7 @@ export function createApp() {
     res.status(201).json({ ok: true, productId: product.id, expiresAt });
   });
 
-  app.post('/api/checkout', requireUser, wrap(async (req, res) => {
+  app.post('/api/checkout', requireVerified, wrap(async (req, res) => {
     const kind = req.body.kind;
     if (kind === 'product') {
       const product = findProduct(req.body.id);
@@ -280,8 +327,25 @@ export function createApp() {
       if (right?.via === 'license') throw new HttpError(409, 'Vous possédez déjà ce plugin.');
       return res.json(await checkout(req.user, 'product', product));
     }
+    // Abonnement à la carte : une liste de plugins, au prix du premier plus un supplément par plugin ajouté.
+    if (kind === 'pick') {
+      const ids = [...new Set((Array.isArray(req.body.productIds) ? req.body.productIds : []).map((id) => int(id, 0)))];
+      if (!ids.length || ids.length > 50) throw new HttpError(400, 'Choisissez au moins un plugin.');
+      const products = ids.map((id) => get('SELECT * FROM products WHERE id = ? AND published = 1', id));
+      if (products.some((p) => !p)) throw new HttpError(404, 'Produit introuvable.');
+      const free = products.find((p) => p.price_cents === 0);
+      if (free) throw new HttpError(400, `${free.name} est gratuit : inutile de l'ajouter à un abonnement.`);
+      const owned = products.find((p) => entitlement(req.user.id, p.id)?.via === 'license' && entitlement(req.user.id, p.id).type !== 'trial');
+      if (owned) throw new HttpError(409, `Vous possédez déjà ${owned.name}.`);
+      if (activeSubscription(req.user.id)?.valid) throw new HttpError(409, 'Vous avez déjà un abonnement en cours.');
+      const plan = pickPlan();
+      return res.json(await checkout(req.user, 'plan', {
+        id: plan.id, interval: plan.interval, productIds: ids, price_cents: pickPriceCents(ids.length),
+        name: `ONIRIQUE à la carte — ${products.map((p) => p.name.replace(/^ONIRIQUE\s+/i, '')).join(', ')}`.slice(0, 120),
+      }));
+    }
     if (kind === 'plan') {
-      const plan = get('SELECT * FROM plans WHERE id = ? AND active = 1', int(req.body.id, 0));
+      const plan = get(`SELECT * FROM plans WHERE id = ? AND active = 1 AND kind = 'all'`, int(req.body.id, 0));
       if (!plan) throw new HttpError(404, 'Formule introuvable.');
       if (activeSubscription(req.user.id)?.valid) throw new HttpError(409, 'Vous avez déjà un abonnement en cours.');
       return res.json(await checkout(req.user, 'plan', plan));
@@ -662,8 +726,9 @@ export function createApp() {
   admin.get('/users', (req, res) => {
     const q = `%${str(req.query.q, 80)}%`;
     res.json(all(
-      `SELECT u.id, u.email, u.name, u.role, u.created_at AS createdAt,
+      `SELECT u.id, u.email, u.name, u.role, u.created_at AS createdAt, u.email_verified AS emailVerified,
          (SELECT COUNT(*) FROM licenses l WHERE l.user_id = u.id AND l.status = 'active') AS licenses,
+         (SELECT COUNT(*) FROM licenses l WHERE l.user_id = u.id AND l.source = 'trial') AS trials,
          EXISTS (SELECT 1 FROM subscriptions s WHERE s.user_id = u.id AND s.status = 'active' AND s.current_period_end > ?) AS subscribed
        FROM users u WHERE u.email LIKE ? OR u.name LIKE ? ORDER BY u.created_at DESC LIMIT 500`, now(), q, q));
   });
@@ -676,6 +741,14 @@ export function createApp() {
       if (user.id === req.user.id && req.body.role !== 'admin') throw new HttpError(400, 'Vous ne pouvez pas retirer votre propre rôle admin.');
       run('UPDATE users SET role = ? WHERE id = ?', req.body.role, user.id);
     }
+    // Valider une adresse à la main, pour un compte dont le lien n'arrive pas.
+    if (req.body.emailVerified === true && !user.email_verified) {
+      transaction(() => {
+        run('UPDATE users SET email_verified = 1 WHERE id = ?', user.id);
+        run('DELETE FROM email_verifications WHERE user_id = ?', user.id);
+        claimReserved(user);
+      });
+    }
     if (req.body.password !== undefined) {
       const password = String(req.body.password);
       if (password.length < 8 || password.length > 200) throw new HttpError(400, 'Mot de passe : 8 caractères minimum.');
@@ -683,6 +756,22 @@ export function createApp() {
       run('DELETE FROM sessions WHERE user_id = ?', user.id);
     }
     res.json({ ok: true });
+  });
+
+  // Rend ses essais gratuits à un compte : les licences d'essai sont retirées, expirées ou non, et avec elles
+  // les activations que plus rien ne justifie. Le compte peut alors relancer un essai de chaque plugin.
+  admin.post('/users/:id/reset-trials', (req, res) => {
+    const user = get('SELECT * FROM users WHERE id = ?', int(req.params.id, 0));
+    if (!user) throw new HttpError(404, 'Compte introuvable.');
+    const removed = transaction(() => {
+      const trials = all(`SELECT id, product_id FROM licenses WHERE user_id = ? AND source = 'trial'`, user.id);
+      run(`DELETE FROM licenses WHERE user_id = ? AND source = 'trial'`, user.id);
+      for (const productId of new Set(trials.map((t) => t.product_id))) {
+        if (!entitlement(user.id, productId)) run('DELETE FROM activations WHERE user_id = ? AND product_id = ?', user.id, productId);
+      }
+      return trials.length;
+    });
+    res.json({ ok: true, removed });
   });
 
   admin.get('/plans', (_req, res) => res.json(all('SELECT * FROM plans ORDER BY price_cents').map(planView)));

@@ -43,6 +43,11 @@ export const config = {
   defaultMaxActivations: 2,
   subscriptionGraceDays: 3,
   trialDays: 7,
+  // Abonnement à la carte : le premier plugin, puis chaque plugin ajouté, par mois.
+  pickBaseCents: 999,
+  pickExtraCents: 500,
+  // Durée de validité du lien de validation de l'adresse e-mail.
+  verifyHours: 48,
   sessionDays: 60,
 };
 

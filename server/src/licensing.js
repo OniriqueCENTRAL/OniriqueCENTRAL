@@ -69,10 +69,37 @@ export function createLicense({ productId, userId = null, reservedEmail = null, 
 //==============================================================================
 export function activeSubscription(userId) {
   const sub = get(
-    `SELECT s.*, p.name AS plan_name, p.interval, p.price_cents FROM subscriptions s
+    `SELECT s.*, p.name AS plan_name, p.interval, p.price_cents, p.kind AS plan_kind FROM subscriptions s
      JOIN plans p ON p.id = s.plan_id WHERE s.user_id = ?`, userId);
   if (!sub) return null;
-  return { ...sub, valid: sub.status === 'active' && sub.current_period_end > now() };
+  return {
+    ...sub,
+    valid: sub.status === 'active' && sub.current_period_end > now(),
+    // Les plugins couverts : null pour un abonnement à tout le catalogue, sinon ceux qui ont été choisis.
+    productIds: parseProductIds(sub.product_ids),
+  };
+}
+
+export function parseProductIds(stored) {
+  if (!stored) return null;
+  try {
+    const ids = JSON.parse(stored);
+    return Array.isArray(ids) ? ids.map(Number).filter(Number.isInteger) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Le prix mensuel d'un abonnement à la carte pour ce nombre de plugins. */
+export const pickPriceCents = (count) => config.pickBaseCents + config.pickExtraCents * Math.max(0, count - 1);
+
+/** La formule à la carte : il n'y en a qu'une, créée à la première demande. Son prix est celui du premier plugin. */
+export function pickPlan() {
+  const existing = get(`SELECT * FROM plans WHERE kind = 'pick' ORDER BY id LIMIT 1`);
+  if (existing) return existing;
+  const { lastInsertRowid } = run(`INSERT INTO plans (name, interval, price_cents, active, kind) VALUES ('À LA CARTE', 'month', ?, 1, 'pick')`,
+    config.pickBaseCents);
+  return get('SELECT * FROM plans WHERE id = ?', lastInsertRowid);
 }
 
 /** Ce qui donne à l'utilisateur le droit d'utiliser ce produit, ou null. */
@@ -88,7 +115,7 @@ export function entitlement(userId, productId) {
     return { via: 'license', type: license.type, licenseId: license.id, expiresAt: license.expires_at, maxActivations: limit };
   }
   const sub = activeSubscription(userId);
-  if (sub?.valid) {
+  if (sub?.valid && (!sub.productIds || sub.productIds.includes(Number(productId)))) {
     return {
       via: 'subscription', type: 'subscription', licenseId: null,
       expiresAt: sub.current_period_end + config.subscriptionGraceDays * 86400_000,

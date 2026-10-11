@@ -20,8 +20,8 @@ input[type="search"] { width: min(100%, 320px); height: 42px; padding: 0 14px; b
 button.act { padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: none; color: var(--mist); font: 600 13px/1 var(--f-body); cursor: pointer; white-space: nowrap; }
 button.act:hover { border-color: var(--ember); }
 button.act:disabled { opacity: .5; cursor: default; }
-td.actions { white-space: nowrap; text-align: right; }
-td.actions button + button { margin-left: 6px; }
+td.actions { text-align: right; }
+td.actions button { margin: 2px 0 2px 6px; }
 .pill { display: inline-block; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line); font: 500 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--haze); white-space: nowrap; }
 .pill.on { color: var(--bone); border-color: rgba(226,52,68,.7); background: rgba(226,52,68,.18); }
 .sub { color: var(--haze); font-size: 13px; }
@@ -181,6 +181,28 @@ async function setRole(user, role) {
   }
 }
 
+// Rend ses essais gratuits à un compte : il pourra relancer un essai de chaque plugin.
+async function resetTrials(user) {
+  if (!window.confirm(`Réinitialiser les essais gratuits de ${user.email} ? Ses ${user.trials} essai(s), en cours ou terminés, sont effacés : il pourra relancer un essai de 7 jours pour chaque plugin. Un essai en cours s'arrête tout de suite.`)) return;
+  try {
+    await api("POST", `/admin/users/${user.id}/reset-trials`);
+    await loadUsers();
+  } catch (error) {
+    $("error").textContent = error.message;
+  }
+}
+
+// Valide une adresse à la main, pour un compte dont le lien de validation n'arrive pas.
+async function verifyEmail(user) {
+  if (!window.confirm(`Valider à la main l'adresse ${user.email} ? À faire seulement si vous êtes sûr que cette adresse est bien celle de la personne.`)) return;
+  try {
+    await api("PATCH", "/admin/users/" + user.id, { emailVerified: true });
+    await loadUsers();
+  } catch (error) {
+    $("error").textContent = error.message;
+  }
+}
+
 async function loadUsers() {
   $("error").textContent = "";
   const users = await api("GET", "/admin/users?q=" + encodeURIComponent($("search").value.trim()));
@@ -190,13 +212,18 @@ async function loadUsers() {
     view.onclick = () => showLicenses(u, row, view);
     const role = u.id === me.id ? null : el("button", { className: "act", type: "button", textContent: u.role === "admin" ? "Retirer admin" : "Rendre admin" });
     if (role) role.onclick = () => setRole(u, u.role === "admin" ? "user" : "admin");
+    const trials = u.trials ? el("button", { className: "act", type: "button", textContent: `Réinitialiser les essais (${u.trials})` }) : null;
+    if (trials) trials.onclick = () => resetTrials(u);
+    const verify = u.emailVerified ? null : el("button", { className: "act", type: "button", textContent: "Valider l'e-mail" });
+    if (verify) verify.onclick = () => verifyEmail(u);
     row.append(
-      el("td", {}, el("div", { textContent: u.email }), u.name ? el("div", { className: "sub", textContent: u.name }) : null),
+      el("td", {}, el("div", { textContent: u.email }), u.name ? el("div", { className: "sub", textContent: u.name }) : null,
+        u.emailVerified ? null : el("div", { className: "sub", textContent: "Adresse e-mail non validée" })),
       el("td", {}, el("span", { className: "pill" + (u.role === "admin" ? " on" : ""), textContent: u.role === "admin" ? "Admin" : "Utilisateur" })),
       el("td", { textContent: String(u.licenses) }),
-      el("td", { textContent: u.subscribed ? "All Access" : "—" }),
+      el("td", { textContent: u.subscribed ? "Abonné" : "—" }),
       el("td", { textContent: date(u.createdAt) }),
-      el("td", { className: "actions" }, view, role));
+      el("td", { className: "actions" }, view, trials, verify, role));
     return row;
   }));
   $("count").textContent = users.length === 500 ? "500 premiers comptes affichés : affinez la recherche." : `${users.length} compte(s).`;
