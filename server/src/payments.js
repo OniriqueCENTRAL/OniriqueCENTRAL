@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { config } from './config.js';
 import { get, run, now, transaction } from './db.js';
 import { HttpError } from './auth.js';
-import { createLicense } from './licensing.js';
+import { createLicense, parseProductIds } from './licensing.js';
 
 const PERIOD_MS = { month: 31 * 86400_000, year: 366 * 86400_000 };
 
@@ -23,13 +23,15 @@ export function grantProduct(userId, product, provider, providerRef = null) {
   });
 }
 
-export function setSubscription(userId, planId, { status, periodEnd, cancelAtPeriodEnd = 0, stripeId = null }) {
-  run(`INSERT INTO subscriptions (user_id, plan_id, status, current_period_end, cancel_at_period_end, stripe_subscription, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
+/** productIds : les plugins couverts par un abonnement à la carte ; null pour un abonnement à tout le catalogue. */
+export function setSubscription(userId, planId, { status, periodEnd, cancelAtPeriodEnd = 0, stripeId = null, productIds = null }) {
+  run(`INSERT INTO subscriptions (user_id, plan_id, status, current_period_end, cancel_at_period_end, stripe_subscription, product_ids, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT (user_id) DO UPDATE SET plan_id = excluded.plan_id, status = excluded.status,
          current_period_end = excluded.current_period_end, cancel_at_period_end = excluded.cancel_at_period_end,
-         stripe_subscription = excluded.stripe_subscription, updated_at = excluded.updated_at`,
-    userId, planId, status, periodEnd, cancelAtPeriodEnd ? 1 : 0, stripeId, now());
+         stripe_subscription = excluded.stripe_subscription, product_ids = excluded.product_ids, updated_at = excluded.updated_at`,
+    userId, planId, status, periodEnd, cancelAtPeriodEnd ? 1 : 0, stripeId,
+    productIds?.length ? JSON.stringify(productIds) : null, now());
 }
 
 //==============================================================================
@@ -68,7 +70,10 @@ async function stripeCheckout(user, kind, item) {
     success_url: `${config.publicUrl}/checkout/done`,
     cancel_url: `${config.publicUrl}/checkout/cancelled`,
     metadata: { user_id: user.id, kind, ref_id: item.id },
-    subscription_data: kind === 'plan' ? { metadata: { user_id: user.id, plan_id: item.id } } : undefined,
+    // Les plugins d'un abonnement à la carte voyagent avec l'abonnement : c'est Stripe qui les rend au webhook.
+    subscription_data: kind === 'plan'
+      ? { metadata: { user_id: user.id, plan_id: item.id, product_ids: item.productIds ? JSON.stringify(item.productIds) : undefined } }
+      : undefined,
     line_items: [{
       quantity: 1,
       price_data: { currency: 'eur', unit_amount: item.price_cents, recurring, product_data: { name: item.name } },
@@ -90,6 +95,7 @@ function applyStripeSubscription(sub) {
     periodEnd: stripePeriodEnd(sub),
     cancelAtPeriodEnd: sub.cancel_at_period_end,
     stripeId: sub.id,
+    productIds: parseProductIds(sub.metadata?.product_ids),
   });
 }
 
@@ -131,7 +137,7 @@ export async function checkout(user, kind, item) {
   }
   if (config.paymentsMode === 'demo') {
     if (kind === 'product') grantProduct(user.id, item, 'demo');
-    else setSubscription(user.id, item.id, { status: 'active', periodEnd: now() + PERIOD_MS[item.interval] });
+    else setSubscription(user.id, item.id, { status: 'active', periodEnd: now() + PERIOD_MS[item.interval], productIds: item.productIds ?? null });
     return { mode: 'demo', granted: true };
   }
   if (config.paymentsMode === 'stripe') return stripeCheckout(user, kind, item);

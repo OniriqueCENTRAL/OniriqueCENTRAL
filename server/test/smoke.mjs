@@ -44,6 +44,14 @@ async function step(name, fn) {
   console.log(`  ok  ${name}`);
 }
 
+/** Crée un compte et valide son adresse avec le lien reçu par e-mail, comme le ferait son titulaire. */
+async function register(body) {
+  const { token } = await call('POST', '/api/auth/register', { body, expect: 201 });
+  const link = outbox.filter((m) => m.to === body.email).at(-1).text.match(/\?verify=([\w-]+)/)[1];
+  await call('POST', '/api/auth/verify', { body: { token: link } });
+  return token;
+}
+
 const machineA = 'a'.repeat(40), machineB = 'b'.repeat(40), machineC = 'c'.repeat(40);
 const binary = crypto.randomBytes(300_000);
 let admin, user, other, product, version, keys;
@@ -55,8 +63,8 @@ try {
   });
 
   await step('inscription, doublon refusé, mot de passe court refusé', async () => {
-    user = (await call('POST', '/api/auth/register', { body: { email: 'voix@test.local', password: 'motdepasse1', name: 'Voix' }, expect: 201 })).token;
-    other = (await call('POST', '/api/auth/register', { body: { email: 'autre@test.local', password: 'motdepasse2' }, expect: 201 })).token;
+    user = await register({ email: 'voix@test.local', password: 'motdepasse1', name: 'Voix' });
+    other = await register({ email: 'autre@test.local', password: 'motdepasse2' });
     await call('POST', '/api/auth/register', { body: { email: 'VOIX@test.local', password: 'motdepasse1' }, expect: 409 });
     await call('POST', '/api/auth/register', { body: { email: 'court@test.local', password: 'abc' }, expect: 400 });
   });
@@ -176,7 +184,7 @@ try {
 
   await step("clé réservée à une adresse : rattachée à l'inscription", async () => {
     await call('POST', '/api/admin/licenses', { token: admin, body: { productId: product.id, email: 'futur@test.local' }, expect: 201 });
-    const futur = (await call('POST', '/api/auth/register', { body: { email: 'futur@test.local', password: 'motdepasse3' }, expect: 201 })).token;
+    const futur = await register({ email: 'futur@test.local', password: 'motdepasse3' });
     const me = await call('GET', '/api/me', { token: futur });
     assert.equal(me.licenses.length, 1);
     assert.ok(me.entitlements[product.id]);
@@ -190,7 +198,7 @@ try {
   });
 
   await step('essai gratuit : 7 jours, un seul par compte et par plugin, visible comme type "trial"', async () => {
-    const tester = (await call('POST', '/api/auth/register', { body: { email: 'essai@test.local', password: 'motdepasse7' }, expect: 201 })).token;
+    const tester = await register({ email: 'essai@test.local', password: 'motdepasse7' });
     const before = Date.now();
     const started = await call('POST', '/api/licenses/trial', { token: tester, body: { productId: product.id }, expect: 201 });
     assert.ok(started.expiresAt > before + 6 * 86400_000 && started.expiresAt < before + 8 * 86400_000, 'expire dans ~7 jours');

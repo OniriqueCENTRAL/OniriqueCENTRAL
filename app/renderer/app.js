@@ -1,11 +1,12 @@
-import { h, star, toast } from './ui.js';
+import { h, star, toast, eyebrow, button, attempt } from './ui.js';
 import { authView, offlineView } from './views/auth.js';
 import { libraryView, detailView, status } from './views/library.js';
 import { licensesView } from './views/licenses.js';
 import { subscriptionView } from './views/subscription.js';
 import { accountView } from './views/account.js';
-import { adminView, supportAdminView, fillMissingDemos } from './views/admin.js';
+import { adminView, fillMissingDemos } from './views/admin.js';
 import { supportView } from './views/support.js';
+import { supportAdminView } from './views/support-admin.js';
 
 const central = window.central;
 
@@ -74,13 +75,14 @@ function sidebar() {
     class: `nav-item${state.route.name === name ? ' active' : ''}`, onclick: () => go(name),
   }, star(), label, count ? h('span', { class: 'count' }, String(count)) : null);
 
-  const plan = me.subscription?.status === 'active' ? 'All Access' : me.user.role === 'admin' ? 'Administrateur' : 'Compte';
+  const subscribed = me.subscription?.status === 'active' && (me.subscription.kind === 'pick' ? 'À la carte' : 'All Access');
+  const plan = subscribed || (me.user.role === 'admin' ? 'Administrateur' : 'Compte');
   return h('nav', { class: 'sidebar' },
     item('plugins', 'Plugins', pendingUpdates(state.data)),
     item('licenses', 'Licences'),
     item('subscription', 'Abonnement'),
     item('support', 'Support'),
-    me.user.role === 'admin' ? [h('div', { class: 'eyebrow nav-label' }, 'Studio'), item('admin', 'Panel admin'), item('adminSupport', 'Panel support')] : null,
+    me.user.role === 'admin' ? [h('div', { class: 'eyebrow nav-label' }, 'Studio'), item('admin', 'Panel admin'), item('support-admin', 'Panel support')] : null,
     h('div', { class: 'spacer' }),
     h('button', { class: 'user-chip', onclick: () => go('account') },
       h('div', { class: 'avatar' }, (me.user.name || me.user.email)[0].toUpperCase()),
@@ -96,8 +98,25 @@ const VIEWS = {
   support: supportView,
   account: accountView,
   admin: adminView,
-  adminSupport: supportAdminView,
+  'support-admin': supportAdminView,
 };
+
+/** Les écrans réservés aux admins. */
+const ADMIN_ROUTES = ['admin', 'support-admin'];
+
+/** Tant que l'adresse e-mail du compte n'est pas validée : le rappel, et de quoi redemander le lien. */
+function verifyBanner() {
+  const { user } = state.data.me;
+  if (user.emailVerified !== false) return null;
+  return h('div', { class: 'panel', style: { 'margin-top': 0, 'margin-bottom': '22px', 'border-color': 'rgba(255, 170, 90, 0.4)' } },
+    eyebrow('Adresse e-mail à valider'),
+    h('div', { class: 'row between wrap' },
+      h('p', { class: 'muted', style: { margin: 0, 'max-width': '62ch' } },
+        `Un lien de validation a été envoyé à ${user.email}. Ouvrez-le pour activer votre compte : d'ici là, les essais gratuits, les achats et l'activation des plugins restent fermés. Pensez à regarder dans les indésirables.`),
+      h('div', { class: 'row' },
+        button('Renvoyer le lien', () => attempt(() => call('api', 'POST', '/api/auth/verify/resend'), 'Lien renvoyé. Il est valable 48 heures.'), 'small'),
+        button('C\'est fait', refresh, 'small quiet'))));
+}
 
 export function render() {
   const root = document.getElementById('app');
@@ -106,9 +125,9 @@ export function render() {
   else if (!state.data) content = h('div', { class: 'auth' }, h('div', { class: 'muted mono' }, 'Connexion au serveur…'));
   else if (!state.data.me) content = h('div', { class: 'auth' }, authView());
   else {
-    if (state.route.name.startsWith('admin') && state.data.me.user.role !== 'admin') state.route = { name: 'plugins', id: null };
+    if (ADMIN_ROUTES.includes(state.route.name) && state.data.me.user.role !== 'admin') state.route = { name: 'plugins', id: null };
     content = h('div', { class: 'shell' }, sidebar(),
-      h('main', { class: 'main' }, h('div', { class: 'inner' }, VIEWS[state.route.name]())));
+      h('main', { class: 'main' }, h('div', { class: 'inner' }, verifyBanner(), VIEWS[state.route.name]())));
   }
   const scroll = document.querySelector('.main')?.scrollTop ?? 0;
   root.replaceChildren(titlebar(), content);
@@ -132,7 +151,7 @@ central.onProgress(({ id, phase, ratio }) => {
 window.addEventListener('focus', () => {
   const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
   const idle = !Object.keys(state.busy).length && !document.getElementById('overlay').hasChildNodes();
-  if (state.data?.me && idle && !typing && !state.route.name.startsWith('admin') && Date.now() - lastLoad > 20_000) refresh();
+  if (state.data?.me && idle && !typing && !ADMIN_ROUTES.includes(state.route.name) && Date.now() - lastLoad > 20_000) refresh();
 });
 window.addEventListener('unhandledrejection', (event) => toast(event.reason?.message || 'Erreur inattendue.', true));
 

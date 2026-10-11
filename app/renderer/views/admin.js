@@ -2,17 +2,16 @@ import {
   h, eyebrow, pill, led, field, button, euros, date, megabytes, dateInputValue, dateInputToMs,
   toast, attempt, modal, confirm, closeModal, LICENSE_TYPES,
 } from '../ui.js';
-import { state, call, refresh, render } from '../app.js';
+import { state, call, refresh, render, go } from '../app.js';
 
 const api = (method, route, body) => call('api', method, `/api/admin${route}`, body);
 
 /** Données du panel, chargées onglet par onglet. */
-const data = { overview: null, plans: null, support: null, credits: null, products: null, licenses: null, users: null };
+const data = { overview: null, plans: null, credits: null, products: null, licenses: null, users: null };
 const ui = { licenseQuery: '', userQuery: '', generated: null, loading: false, error: null };
 
 const LOADERS = {
   overview: async () => { [data.overview, data.plans] = await Promise.all([api('GET', '/overview'), api('GET', '/plans')]); },
-  support: async () => { data.support = await api('GET', '/support'); },
   products: async () => { data.products = await api('GET', '/products'); },
   licenses: async () => {
     [data.licenses, data.products] = await Promise.all([
@@ -23,7 +22,6 @@ const LOADERS = {
 };
 const READY = {
   overview: () => data.overview && data.plans,
-  support: () => data.support,
   products: () => data.products,
   licenses: () => data.licenses && data.products,
   users: () => data.users,
@@ -83,34 +81,13 @@ function overviewTab() {
       tile('Comptes', o.users), tile('Licences actives', o.licenses), tile('Clés en attente', o.unclaimed),
       tile('Abonnés', o.subscribers), tile('Machines activées', o.activations), tile('Ventes Stripe', euros(o.revenueCents).replace('Gratuit', '0 €'))),
     h('div', { class: 'panel', style: { 'margin-top': '16px' } }, eyebrow('Formules d\'abonnement'),
-      table(['Nom', 'Prix (€)', '', '', ''], data.plans.map(planRow), 'Aucune formule.')),
+      table(['Nom', 'Prix (€)', '', '', ''], data.plans.filter((p) => p.kind !== 'pick').map(planRow), 'Aucune formule.'),
+      h('p', { class: 'muted', style: { margin: '14px 0 0', 'font-size': '12.5px' } },
+        'L\'abonnement à la carte (un prix pour le premier plugin, un supplément par plugin ajouté) se règle dans la configuration du serveur.')),
+    h('div', { class: 'panel' }, h('div', { class: 'row between wrap' },
+      h('div', { class: 'row' }, eyebrow('Support'), pill(`${o.supportMessages} demande(s)`, o.supportMessages ? 'hot' : '')),
+      button('Ouvrir le panel support', () => go('support-admin'), 'small'))),
   ];
-}
-
-/** Les demandes de support : elles arrivent par e-mail dans la boîte de support et restent lisibles ici. */
-function supportPanel() {
-  const { mailbox, messages } = data.support;
-  const when = (ms) => new Date(ms).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-  const row = (m) => h('tr', null,
-    h('td', { class: 'muted', style: { 'white-space': 'nowrap' } }, when(m.createdAt)),
-    h('td', null, h('div', { class: 'selectable' }, m.email),
-      h('div', { class: 'muted', style: { 'font-size': '12px' } }, [m.name, m.userId ? `compte n° ${m.userId}` : 'sans compte', m.context].filter(Boolean).join(' · '))),
-    h('td', { class: 'selectable', style: { 'white-space': 'pre-wrap', 'overflow-wrap': 'anywhere' } }, h('strong', { style: { display: 'block' } }, m.subject), m.message),
-    h('td', { class: 'actions' },
-      button('Répondre', () => attempt(() => call('open:mail', m.email, `Re: ${m.subject}`)), 'small'),
-      button('Copier l\'e-mail', () => attempt(() => call('clipboard', m.email), 'Adresse copiée.'), 'small quiet'),
-      button('Supprimer', () => confirm('Supprimer ce message ?', 'Il disparaît de cette liste. L\'e-mail reçu dans la boîte de support n\'est pas touché.',
-        'Supprimer', async () => { if (await attempt(() => api('DELETE', `/support/${m.id}`), 'Message supprimé.')) await reload('support'); }, 'danger'), 'small quiet danger')));
-
-  return h('div', { class: 'panel' },
-    h('div', { class: 'row between' }, eyebrow('Support'),
-      h('div', { class: 'row' },
-        mailbox ? pill(mailbox, '', true) : pill('Aucune boîte reliée : les demandes sont refusées', 'warn'),
-        button('Actualiser', () => reload('support'), 'small quiet'),
-        button('Ouvrir la boîte mail', () => attempt(() => call('open:webmail')), 'small'))),
-    h('p', { class: 'muted', style: { margin: '0 0 14px' } },
-      'Les demandes envoyées depuis le site et l\'application arrivent dans cette boîte et s\'affichent ici, trois ans au plus. « Répondre » ouvre votre messagerie ; la boîte complète s\'ouvre sur le webmail IONOS, avec son mot de passe.'),
-    table(['Reçu le', 'De', 'Message', ''], messages.map(row), 'Aucune demande pour le moment.'));
 }
 
 //==============================================================================
@@ -349,17 +326,21 @@ function usersTab() {
   };
 
   const row = (u) => h('tr', null,
-    h('td', null, h('div', { class: 'selectable' }, u.email), u.name ? h('div', { class: 'muted', style: { 'font-size': '12px' } }, u.name) : null),
+    h('td', null, h('div', { class: 'selectable' }, u.email), u.name ? h('div', { class: 'muted', style: { 'font-size': '12px' } }, u.name) : null,
+      u.emailVerified ? null : h('div', { style: { 'margin-top': '4px' } }, pill('Adresse non validée', 'warn'))),
     h('td', null, u.role === 'admin' ? pill('Admin', 'hot') : h('span', { class: 'muted' }, 'Utilisateur')),
     h('td', { class: 'mono' }, String(u.licenses)),
-    h('td', { class: 'mono' }, u.trials ? String(u.trials) : h('span', { class: 'muted' }, '—')),
-    h('td', null, u.subscribed ? pill('All Access', '', true) : h('span', { class: 'muted' }, '—')),
+    h('td', null, u.subscribed ? pill('Abonné', '', true) : h('span', { class: 'muted' }, '—')),
     h('td', { class: 'muted' }, date(u.createdAt)),
     h('td', { class: 'actions' },
-      button('Mot de passe', () => resetPassword(u), 'small quiet'),
-      u.trials ? button('Réinitialiser les essais', () => confirm('Réinitialiser les essais gratuits ?',
-        `${u.email} a utilisé ${u.trials} essai(s). Ils sont supprimés, essai en cours compris, et ce compte pourra relancer un essai de 7 jours sur chaque plugin.`,
+      // Rend ses essais gratuits à un compte : il pourra relancer un essai de chaque plugin.
+      u.trials ? button(`Réinitialiser les essais (${u.trials})`, () => confirm('Réinitialiser les essais gratuits ?',
+        `Les ${u.trials} essai(s) de ${u.email}, en cours ou terminés, sont effacés : il pourra relancer un essai de 7 jours pour chaque plugin. Un essai en cours s'arrête tout de suite.`,
         'Réinitialiser', () => changed(() => api('POST', `/users/${u.id}/reset-trials`), 'Essais réinitialisés.')), 'small quiet') : null,
+      u.emailVerified ? null : button('Valider l\'e-mail', () => confirm('Valider cette adresse à la main ?',
+        `À faire seulement si vous êtes sûr que ${u.email} est bien l'adresse de la personne : elle n'aura plus à ouvrir le lien reçu.`,
+        'Valider', () => changed(() => api('PATCH', `/users/${u.id}`, { emailVerified: true }), 'Adresse validée.')), 'small quiet'),
+      button('Mot de passe', () => resetPassword(u), 'small quiet'),
       u.id === self ? null : u.role === 'admin'
         ? button('Retirer admin', () => changed(() => api('PATCH', `/users/${u.id}`, { role: 'user' }), 'Rôle admin retiré.'), 'small quiet danger')
         : button('Rendre admin', () => confirm('Donner le rôle admin ?', `${u.email} pourra publier des versions, générer et révoquer des licences.`,
@@ -367,7 +348,7 @@ function usersTab() {
 
   return h('div', { class: 'panel' },
     h('div', { class: 'row between', style: { 'margin-bottom': '16px' } }, eyebrow('Comptes'), h('div', { style: { width: '340px' } }, search)),
-    table(['Compte', 'Rôle', 'Licences', 'Essais', 'Abonnement', 'Inscrit le', ''], data.users.map(row), 'Aucun compte ne correspond.'));
+    table(['Compte', 'Rôle', 'Licences', 'Abonnement', 'Inscrit le', ''], data.users.map(row), 'Aucun compte ne correspond.'));
 }
 
 //==============================================================================
@@ -458,18 +439,6 @@ export function adminView() {
       onclick: () => { state.adminTab = id; closeModal(); reload(id); },
     }, label))),
     body,
-  ];
-}
-
-export function supportAdminView() {
-  const ready = READY.support();
-  if (!ready && !ui.loading && !ui.error) reload('support');
-  return [
-    eyebrow('Studio'),
-    h('h1', null, 'Panel ', h('em', null, 'support')),
-    h('p', { class: 'lede' }, 'Les demandes envoyées depuis le site et l\'application : lisez-les, répondez par e-mail, supprimez celles qui sont traitées.'),
-    ui.error ? h('div', { class: 'panel empty' }, h('p', null, ui.error), button('Réessayer', () => reload('support')))
-      : ready ? supportPanel() : h('div', { class: 'panel empty mono' }, 'Chargement…'),
   ];
 }
 

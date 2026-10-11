@@ -136,6 +136,12 @@ CREATE TABLE IF NOT EXISTS support_messages (
   created_at INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS email_verifications (
+  token_hash TEXT PRIMARY KEY,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS settings (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
@@ -149,6 +155,20 @@ CREATE INDEX IF NOT EXISTS versions_product ON versions(product_id);
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('products') WHERE name = 'demo'`).get()) {
   db.exec('ALTER TABLE products ADD COLUMN demo TEXT');
 }
+
+const hasColumn = (table, column) => !!db.prepare(`SELECT 1 FROM pragma_table_info('${table}') WHERE name = ?`).get(column);
+
+// Validation de l'adresse e-mail. Les comptes créés avant cette colonne sont tenus pour validés : ils n'ont
+// jamais reçu de lien, et rien ne doit leur être retiré.
+if (!hasColumn('users', 'email_verified')) {
+  db.exec('ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0');
+  db.exec('UPDATE users SET email_verified = 1');
+}
+
+// Abonnement à la carte : une formule de genre "pick" donne droit aux seuls plugins choisis, dont la liste
+// (un tableau JSON d'identifiants) est gardée sur l'abonnement. NULL = tous les plugins, comme avant.
+if (!hasColumn('plans', 'kind')) db.exec(`ALTER TABLE plans ADD COLUMN kind TEXT NOT NULL DEFAULT 'all'`);
+if (!hasColumn('subscriptions', 'product_ids')) db.exec('ALTER TABLE subscriptions ADD COLUMN product_ids TEXT');
 
 export const now = () => Date.now();
 

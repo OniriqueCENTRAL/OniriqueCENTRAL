@@ -144,8 +144,9 @@ app.whenReady().then(() => {
     return api.request(method, route, body);
   });
 
-  handle('checkout', async (kind, id) => {
-    const result = await api.request('POST', '/api/checkout', { kind, id });
+  // productIds : les plugins choisis pour un abonnement à la carte (kind "pick").
+  handle('checkout', async (kind, id, productIds) => {
+    const result = await api.request('POST', '/api/checkout', { kind, id, productIds });
     if (result.url) {
       if (!/^https:\/\/checkout\.stripe\.com\//.test(result.url)) throw new Error('Adresse de paiement inattendue.');
       await shell.openExternal(result.url);
@@ -245,9 +246,10 @@ app.whenReady().then(() => {
   });
 
   handle('open:webmail', () => shell.openExternal('https://mail.ionos.fr'));
-  handle('open:mail', (to, subject) => {
-    if (!/^[^\s@?&]+@[^\s@?&]+$/.test(String(to))) throw new Error('Adresse e-mail invalide.');
-    return shell.openExternal('mailto:' + to + '?subject=' + encodeURIComponent(String(subject).slice(0, 200)));
+  // Répondre à une demande de support : la messagerie de ce PC s'ouvre sur un message adressé à la personne.
+  handle('open:mail', (email, subject) => {
+    if (typeof email !== 'string' || !/^[^\s@<>"'?&]+@[^\s@<>"'?&]+\.[^\s@<>"'?&]+$/.test(email)) throw new Error('Adresse e-mail invalide.');
+    return shell.openExternal(`mailto:${email}?subject=${encodeURIComponent(`Re: ${String(subject || '').slice(0, 120)}`)}`);
   });
 
   handle('admin:uploadImage', ({ productId, filePath }) => {

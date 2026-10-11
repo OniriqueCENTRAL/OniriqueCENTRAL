@@ -34,7 +34,7 @@ function badge(product) {
   if (right?.type === 'trial') return pill(`Essai · ${daysLeft(right)} j`, 'warn', true);
   if (update) return pill('Mise à jour', 'hot', true);
   if (right && install.version) return pill('Installé', '', true);
-  if (right) return pill(right.via === 'subscription' ? 'All Access' : 'Possédé', '', true);
+  if (right) return pill(right.via === 'subscription' ? 'Abonnement' : 'Possédé', '', true);
   return pill(euros(product.priceCents));
 }
 
@@ -98,19 +98,21 @@ export function buy(kind, item) {
       h('p', { class: 'muted' }, 'La boutique n\'est pas encore ouverte. Si vous avez reçu une clé de licence, entrez-la dans l\'onglet Licences.'),
       [{ label: 'Entrer une clé', run: () => go('licenses') }], 'Boutique');
   }
-  const price = kind === 'plan' ? `${euros(item.priceCents)} / ${item.interval === 'year' ? 'an' : 'mois'}` : euros(item.priceCents);
+  // Un abonnement : une formule à tout le catalogue ("plan") ou une sélection de plugins à la carte ("pick").
+  const recurring = kind !== 'product';
+  const price = recurring ? `${euros(item.priceCents)} / ${item.interval === 'year' ? 'an' : 'mois'}` : euros(item.priceCents);
   const text = free ? 'Ce plugin est gratuit : il sera ajouté à votre compte.'
     : mode === 'demo' ? 'Mode démo : aucun paiement n\'est effectué, l\'achat est accordé tout de suite.'
       : 'Le paiement sécurisé s\'ouvre dans votre navigateur. Revenez ici une fois terminé : votre compte se met à jour tout seul.';
   modal(item.name, h('div', { class: 'stack' }, h('div', { class: 'price' }, price), h('p', { class: 'muted' }, text)), [{
     label: free ? 'Obtenir' : mode === 'demo' ? 'Confirmer' : 'Payer',
     run: async () => {
-      const result = await attempt(() => call('checkout', kind, item.id));
+      const result = await attempt(() => call('checkout', kind, item.id, item.productIds));
       if (!result) return false;
       if (result.mode === 'stripe') toast('Paiement ouvert dans votre navigateur.');
-      else { toast(kind === 'plan' ? 'Abonnement activé.' : `${item.name} est à vous.`); await refresh(); }
+      else { toast(recurring ? 'Abonnement activé.' : `${item.name} est à vous.`); await refresh(); }
     },
-  }], kind === 'plan' ? 'Abonnement' : 'Achat');
+  }], recurring ? 'Abonnement' : 'Achat');
 }
 
 /** Retire le plugin de ce PC (la licence reste sur le compte). */
@@ -202,7 +204,7 @@ export function detailView(id) {
       button('Essai gratuit · 7 jours', () => startTrial(product), 'small'),
       h('span', { class: 'muted', style: { 'margin-left': '12px', 'font-size': '12.5px' } }, "7 jours en temps réel. Export en bruit blanc jusqu'à l'achat.")) : null,
     !right && state.data.catalog.plans.length ? h('p', { class: 'muted', style: { margin: '14px 0 0', 'font-size': '13px' } },
-      'Aussi inclus dans l\'abonnement All Access. ',
+      'Aussi disponible par abonnement, seul ou avec toute la collection. ',
       h('a', { href: '#', style: { color: 'var(--ember-hot)' }, onclick: (e) => { e.preventDefault(); go('subscription'); } }, 'Voir les formules')) : null,
     product.latest ? h('dl', { class: 'kv', style: { 'margin-top': '20px' } },
       h('dt', null, 'Dernière version'), h('dd', { class: 'mono' }, `${product.latest.version} · ${date(product.latest.createdAt)}`),
