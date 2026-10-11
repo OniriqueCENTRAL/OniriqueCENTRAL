@@ -52,7 +52,15 @@ jobs:
         run: |
           if [ -z "$LIVRAISON_KEY" ]; then echo "Secret LIVRAISON_KEY absent : fichier à télécharger depuis Artifacts."; exit 0; fi
           mkdir -p ~/.ssh
-          printf '%s\n' "$LIVRAISON_KEY" > ~/.ssh/livraison
+          # Un copier-coller depuis un terminal Windows abîme souvent la clé (retours chariot, espaces) : elle est remise en forme.
+          CORPS=$(printf '%s' "$LIVRAISON_KEY" | sed -e 's/-----BEGIN OPENSSH PRIVATE KEY-----//' -e 's/-----END OPENSSH PRIVATE KEY-----//' | tr -d ' \r\n\t')
+          { echo "-----BEGIN OPENSSH PRIVATE KEY-----"; printf '%s\n' "$CORPS" | fold -w 70; echo "-----END OPENSSH PRIVATE KEY-----"; } > ~/.ssh/livraison
           chmod 600 ~/.ssh/livraison
+          if ! ssh-keygen -y -f ~/.ssh/livraison > ~/.ssh/livraison.pub; then
+            echo "Le secret LIVRAISON_KEY n'est pas une clé complète : recollez-la en entier, de -----BEGIN à -----END compris."
+            exit 1
+          fi
+          # L'empreinte (publique) doit être celle qu'affiche le serveur : ssh-keygen -lf /home/livraison/.ssh/authorized_keys
+          echo "Empreinte de la clé utilisée : $(ssh-keygen -lf ~/.ssh/livraison.pub)"
           echo "217.160.106.244 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICV3xBScmxJy34Jgjtvb0R4UCG3jmzkSU+/T1lDrvD/l" > ~/.ssh/known_hosts
-          ssh -i ~/.ssh/livraison -o IdentitiesOnly=yes livraison@217.160.106.244 central-dmg < "app/dist/ONIRIQUE-CENTRAL.dmg"
+          ssh -i ~/.ssh/livraison -o IdentitiesOnly=yes -o BatchMode=yes livraison@217.160.106.244 central-dmg < "app/dist/ONIRIQUE-CENTRAL.dmg"
