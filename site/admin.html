@@ -318,17 +318,18 @@ async function loadProducts() {
 
     const version = el("input", { type: "text", value: nextVersion(p.latest), required: true, maxLength: 30 });
     const notes = el("textarea", { maxLength: 4000, placeholder: "Nouveautés et corrections, visibles par les utilisateurs" });
-    const file = el("input", { type: "file", accept: ".vst3,.zip,.exe,.msi", required: true });
+    const file = el("input", { type: "file", accept: ".vst3,.zip,.exe,.msi,.pkg", required: true });
+    const platform = el("select", {}, el("option", { value: "win", textContent: "Windows" }), el("option", { value: "mac", textContent: "Mac (.zip contenant le .vst3, ou .pkg)" }));
     const bar = el("progress", { max: 1, value: 0, hidden: true });
     const submit = el("button", { className: "act", type: "submit", textContent: "Publier la version" });
     const form = el("form", {},
-      el("label", {}, "Version", version), el("label", {}, "Notes de version", notes),
+      el("label", {}, "Version", version), el("label", {}, "Système", platform), el("label", {}, "Notes de version", notes),
       el("div", { className: "row" }, el("label", {}, "Fichier du plugin (.vst3, .zip, .exe, .msi)", file), submit, bar));
     form.onsubmit = async (event) => {
       event.preventDefault();
       $("product-error").textContent = "";
       submit.disabled = true; bar.hidden = false; bar.value = 0;
-      const query = new URLSearchParams({ version: version.value.trim(), notes: notes.value, filename: file.files[0].name });
+      const query = new URLSearchParams({ version: version.value.trim(), notes: notes.value, filename: file.files[0].name, platform: platform.value });
       try { await send("POST", `/admin/products/${p.id}/versions?${query}`, file.files[0], (ratio) => { bar.value = ratio; }); await loadProducts(); }
       catch (error) { fail(error); submit.disabled = false; bar.hidden = true; }
     };

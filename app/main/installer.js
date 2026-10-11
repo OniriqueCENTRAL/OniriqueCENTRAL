@@ -7,7 +7,11 @@ const path = require('node:path');
 const api = require('./api');
 const store = require('./store');
 
-const LICENSE_DIR = path.join(process.env.ProgramData || 'C:\\ProgramData', 'Onirique', 'Licenses');
+const MAC = process.platform === 'darwin';
+// Dossier commun à tous les comptes de la machine, lisible par les plugins dans n'importe quel DAW.
+const LICENSE_DIR = MAC
+  ? '/Users/Shared/Onirique/Licenses'
+  : path.join(process.env.ProgramData || 'C:\\ProgramData', 'Onirique', 'Licenses');
 // Où vont les applications autonomes (un .exe qui est le logiciel lui-même, pas un installateur) : dossier de l'utilisateur, sans droits admin.
 const APPS_DIR = path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), 'Programs', 'Onirique');
 
@@ -29,13 +33,17 @@ function safeName(filename) {
 //==============================================================================
 let machineIdCache = null;
 
-/** Empreinte stable de ce PC : SHA-256 de "onirique:" + MachineGuid de Windows, 40 premiers caractères. */
+/** Empreinte stable de cette machine : SHA-256 de "onirique:" + MachineGuid de Windows (IOPlatformUUID sur Mac), 40 premiers caractères. */
 async function machineId() {
   if (machineIdCache) return machineIdCache;
   let guid;
   try {
-    const out = await exec('reg', ['query', 'HKLM\\SOFTWARE\\Microsoft\\Cryptography', '/v', 'MachineGuid', '/reg:64']);
-    guid = out.match(/MachineGuid\s+REG_SZ\s+([0-9a-fA-F-]+)/)?.[1];
+    if (MAC) {
+      guid = (await exec('ioreg', ['-rd1', '-c', 'IOPlatformExpertDevice'])).match(/"IOPlatformUUID"\s*=\s*"([0-9a-fA-F-]+)"/)?.[1];
+    } else {
+      const out = await exec('reg', ['query', 'HKLM\\SOFTWARE\\Microsoft\\Cryptography', '/v', 'MachineGuid', '/reg:64']);
+      guid = out.match(/MachineGuid\s+REG_SZ\s+([0-9a-fA-F-]+)/)?.[1];
+    }
   } catch { /* repli ci-dessous */ }
   guid ||= `${os.hostname()}:${os.userInfo().username}`;
   machineIdCache = crypto.createHash('sha256').update(`onirique:${guid.toLowerCase()}`).digest('hex').slice(0, 40);
@@ -88,7 +96,7 @@ async function place(source, destination) {
     fs.copyFileSync(source, destination);
   } catch (error) {
     if (busy(error)) throw new Error(BUSY_MESSAGE);
-    if (!needsElevation(error)) throw error;
+    if (MAC || !needsElevation(error)) throw error;
     await powershell(
       `New-Item -ItemType Directory -Force -Path ${quote(path.dirname(destination))} | Out-Null; ` +
       `if (Test-Path -LiteralPath ${quote(destination)}) { Remove-Item -LiteralPath ${quote(destination)} -Recurse -Force }; ` +
@@ -98,6 +106,10 @@ async function place(source, destination) {
 }
 
 async function unzip(source, directory) {
+  if (MAC) {
+    fs.mkdirSync(directory, { recursive: true });
+    return exec('ditto', ['-x', '-k', source, directory]); // garde les droits et les liens d'un plugin Mac
+  }
   const script = `New-Item -ItemType Directory -Force -Path ${quote(directory)} | Out-Null; ` +
     `Expand-Archive -LiteralPath ${quote(source)} -DestinationPath ${quote(directory)} -Force`;
   try {
@@ -141,6 +153,12 @@ async function install(product, onProgress) {
       await place(temp, record.path);
     } else if (ext === '.zip') {
       await unzip(temp, store.vst3Dir);
+      // « NOM.vst3.zip » contient « NOM.vst3 » (un dossier, sur Mac) : il pourra être retrouvé et désinstallé.
+      const inside = path.join(store.vst3Dir, name.slice(0, -4));
+      if (/\.vst3\.zip$/i.test(name) && fs.existsSync(inside)) Object.assign(record, { path: inside, kind: 'vst3' });
+    } else if (ext === '.pkg' && MAC) {
+      record.kind = 'setup';
+      await exec('open', ['-W', temp]).catch(() => { throw new Error("L'installateur a été annulé ou a échoué."); });
     } else if (ext === '.exe' && !isSetup(temp)) {
       // Application autonome : elle est rangée dans le dossier des applications Onirique, d'où elle se lance.
       record.path = path.join(APPS_DIR, name);
@@ -167,7 +185,7 @@ async function uninstall(product) {
       fs.rmSync(record.path, { recursive: true, force: true });
     } catch (error) {
       if (busy(error)) throw new Error(BUSY_MESSAGE);
-      if (!needsElevation(error)) throw error;
+      if (MAC || !needsElevation(error)) throw error;
       await powershell(`Remove-Item -LiteralPath ${quote(record.path)} -Recurse -Force`, true);
     }
     if (fs.existsSync(record.path)) throw new Error("Le plugin n'a pas pu être supprimé.");
@@ -178,6 +196,8 @@ async function uninstall(product) {
 /** Version inscrite dans un fichier .exe (celle que Windows affiche dans ses propriétés), ou null. */
 async function fileVersion(file) {
   try {
+    // Sur Mac, la version d'un plugin (un dossier) est dans son Info.plist.
+    if (MAC) return (await exec('plutil', ['-extract', 'CFBundleShortVersionString', 'raw', path.join(file, 'Contents', 'Info.plist')])).trim() || null;
     const out = await exec('powershell', ['-NoProfile', '-Command', `(Get-Item -LiteralPath ${quote(file)}).VersionInfo.ProductVersion`]);
     return out.trim() || null;
   } catch {
@@ -224,7 +244,8 @@ async function status(products) {
       store.setInstalled(product.id, null);
       record = null;
     }
-    const file = product.latest ? path.basename(product.latest.filename) : '';
+    // Un plugin envoyé en « NOM.vst3.zip » est installé sous le nom « NOM.vst3 ».
+    const file = product.latest ? path.basename(product.latest.filename).replace(/\.vst3\.zip$/i, '.vst3') : '';
     const ext = path.extname(file).toLowerCase();
     let version = record?.version ?? null, location = record?.path ?? null, present = !!record;
 
@@ -233,7 +254,7 @@ async function status(products) {
       // avec la version inscrite dans son fichier, pour pouvoir être mis à jour ou désinstallé d'ici.
       location = path.join(store.vst3Dir, file);
       const inner = path.join(location, 'Contents', 'x86_64-win', file); // un .vst3 peut être un dossier
-      version = (await fileVersion(fs.existsSync(inner) ? inner : location)) || '0.0.0';
+      version = (await fileVersion(!MAC && fs.existsSync(inner) ? inner : location)) || '0.0.0';
       present = true;
       store.setInstalled(product.id, { version, versionId: null, installedAt: Date.now(), path: location, kind: 'vst3' });
     } else if (!record && ext === '.exe' && fs.existsSync(path.join(APPS_DIR, file))) {

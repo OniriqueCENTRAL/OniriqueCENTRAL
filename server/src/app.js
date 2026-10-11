@@ -41,20 +41,26 @@ export function compareVersions(a, b) {
 
 const versionView = (v) => v && ({
   id: v.id, version: v.version, notes: v.notes, filename: v.filename, size: v.size, sha256: v.sha256, createdAt: v.created_at,
+  platform: v.platform,
 });
+
+/** Le système demandé : "mac" pour l'application Mac, "win" pour tout le reste (application Windows, site). */
+const platformOf = (value) => (value === 'mac' ? 'mac' : 'win');
 
 function productVersions(productId) {
   return all('SELECT * FROM versions WHERE product_id = ?', productId)
     .sort((a, b) => compareVersions(b.version, a.version) || b.created_at - a.created_at);
 }
 
-function productView(p) {
+/** latest est la dernière version pour le système demandé : null si le plugin n'existe pas encore pour lui. */
+function productView(p, platform) {
   const versions = productVersions(p.id);
+  const wanted = platformOf(platform);
   return {
     id: p.id, slug: p.slug, name: p.name, tagline: p.tagline, description: p.description, accent: p.accent,
     priceCents: p.price_cents, image: p.image ? `/api/media/${p.image}` : null, published: !!p.published,
     demo: p.demo ? `/api/media/${p.demo}` : null,
-    latest: versionView(versions[0]) || null,
+    latest: versionView(versions.find((v) => v.platform === wanted)) || null,
     versions: versions.map(versionView),
   };
 }
@@ -136,9 +142,10 @@ export function createApp() {
   //============================================================================
   app.get('/api/health', (_req, res) => res.json({ ok: true, name: 'ONIRIQUE CENTRAL' }));
 
-  app.get('/api/catalog', (_req, res) => {
+  app.get('/api/catalog', (req, res) => {
+    const platform = platformOf(req.get('X-Onirique-Platform'));
     res.json({
-      products: all('SELECT * FROM products WHERE published = 1 ORDER BY created_at').map(productView),
+      products: all('SELECT * FROM products WHERE published = 1 ORDER BY created_at').map((p) => productView(p, platform)),
       plans: all(`SELECT * FROM plans WHERE active = 1 AND kind = 'all' ORDER BY price_cents`).map(planView),
       // Abonnement à la carte : le prix du premier plugin et de chaque plugin ajouté, par mois.
       pick: { baseCents: config.pickBaseCents, extraCents: config.pickExtraCents },
@@ -560,7 +567,7 @@ export function createApp() {
   });
 
   // Produits
-  admin.get('/products', (_req, res) => res.json(all('SELECT * FROM products ORDER BY created_at').map(productView)));
+  admin.get('/products', (_req, res) => res.json(all('SELECT * FROM products ORDER BY created_at').map((p) => productView(p))));
 
   function productFields(body, existing = {}) {
     const name = body.name !== undefined ? str(body.name, 60) : existing.name;
@@ -635,14 +642,17 @@ export function createApp() {
     const version = str(req.query.version, 30);
     if (!/^\d+(\.\d+){0,3}([\-+][0-9A-Za-z.]+)?$/.test(version)) throw new HttpError(400, 'Numéro de version invalide (ex. 1.2.0).');
     const filename = safeFilename(req.query.filename);
-    if (!/\.(vst3|zip|exe|msi)$/i.test(filename)) throw new HttpError(400, 'Fichier attendu : .vst3, .zip, .exe ou .msi.');
-    if (get('SELECT id FROM versions WHERE product_id = ? AND version = ?', product.id, version)) {
-      throw new HttpError(409, `La version ${version} existe déjà pour ${product.name}.`);
+    const platform = platformOf(req.query.platform);
+    // Sur Mac, un plugin est un dossier : il s'envoie en .zip (ou en installateur .pkg).
+    const accepted = platform === 'mac' ? /\.(zip|pkg)$/i : /\.(vst3|zip|exe|msi)$/i;
+    if (!accepted.test(filename)) throw new HttpError(400, platform === 'mac' ? 'Fichier attendu pour Mac : .zip ou .pkg.' : 'Fichier attendu : .vst3, .zip, .exe ou .msi.');
+    if (get('SELECT id FROM versions WHERE product_id = ? AND version = ? AND platform = ?', product.id, version, platform)) {
+      throw new HttpError(409, `La version ${version} existe déjà pour ${product.name} (${platform === 'mac' ? 'Mac' : 'Windows'}).`);
     }
     const file = await receiveFile(req, config.filesDir, 2 * 1024 ** 3);
     const { lastInsertRowid } = run(
-      'INSERT INTO versions (product_id, version, notes, filename, stored_as, size, sha256, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      product.id, version, str(req.query.notes, 4000), filename, file.storedAs, file.size, file.sha256, now());
+      'INSERT INTO versions (product_id, version, notes, filename, stored_as, size, sha256, created_at, platform) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      product.id, version, str(req.query.notes, 4000), filename, file.storedAs, file.size, file.sha256, now(), platform);
     res.status(201).json(versionView(get('SELECT * FROM versions WHERE id = ?', lastInsertRowid)));
   }));
 

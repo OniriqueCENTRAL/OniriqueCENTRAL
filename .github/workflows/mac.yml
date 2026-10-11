@@ -1,0 +1,45 @@
+# Construit ONIRIQUE CENTRAL pour Mac (Intel et Apple Silicon dans la même application).
+# Une application Mac ne se construit que sur macOS : GitHub prête la machine.
+# À lancer depuis l'onglet « Actions » du dépôt GitHub, bouton « Run workflow », ou en poussant une étiquette « mac-… ».
+# Le résultat (ONIRIQUE-CENTRAL.dmg) se télécharge en bas de la page de l'exécution, rubrique « Artifacts ».
+name: Application Mac
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['mac-*']
+
+jobs:
+  mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Construire l'application
+        working-directory: app
+        run: |
+          npm ci
+          npm run sync-player
+          npx electron-builder --mac dir --universal
+
+      # Sans compte Apple Developer, l'application porte une signature locale (« ad hoc ») : c'est le minimum
+      # pour qu'elle se lance sur un Mac Apple Silicon. macOS demandera quand même de l'autoriser à la première ouverture.
+      - name: Signer localement et fabriquer l'image disque
+        working-directory: app/dist
+        run: |
+          APP="mac-universal/ONIRIQUE CENTRAL.app"
+          codesign --force --deep --sign - "$APP"
+          codesign --verify --deep --strict "$APP"
+          mkdir image
+          cp -R "$APP" image/
+          ln -s /Applications image/Applications
+          hdiutil create -volname "ONIRIQUE CENTRAL" -srcfolder image -ov -format UDZO ONIRIQUE-CENTRAL.dmg
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ONIRIQUE-CENTRAL-mac
+          path: app/dist/ONIRIQUE-CENTRAL.dmg
+          if-no-files-found: error

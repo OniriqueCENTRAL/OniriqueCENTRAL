@@ -24,18 +24,18 @@
       "main/**",
       "renderer/**"
     ],
-    "extraResources": [
-      {
-        "from": "../tools/probe/build/OniriqueProbe_artefacts/Release/OniriqueProbe.exe",
-        "to": "onirique-probe.exe"
-      }
-    ],
     "directories": {
       "output": "dist"
     },
     "win": {
       "icon": "build/icon.png",
-      "target": "nsis"
+      "target": "nsis",
+      "extraResources": [
+        {
+          "from": "../tools/probe/build/OniriqueProbe_artefacts/Release/OniriqueProbe.exe",
+          "to": "onirique-probe.exe"
+        }
+      ]
     },
     "nsis": {
       "oneClick": false,
@@ -48,7 +48,13 @@
         "provider": "generic",
         "url": "https://onirique.store/telechargement/"
       }
-    ]
+    ],
+    "mac": {
+      "icon": "build/icon.png",
+      "category": "public.app-category.music",
+      "target": "dir",
+      "identity": null
+    }
   },
   "dependencies": {
     "electron-updater": "^6.8.9"

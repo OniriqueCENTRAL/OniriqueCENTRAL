@@ -131,7 +131,7 @@ function mainAction(product) {
   }
   const act = (label, run, kind = 'primary') => button(label, (event) => { event.stopPropagation(); run(); }, kind);
   if (!right) return act(product.priceCents ? `Acheter · ${euros(product.priceCents)}` : 'Obtenir', () => buy('product', product));
-  if (!product.latest) return button('Bientôt disponible', null, '', { disabled: true });
+  if (!product.latest) return button(window.central.platform === 'darwin' ? 'Bientôt sur Mac' : 'Bientôt disponible', null, '', { disabled: true });
   if (update) return act(`Mettre à jour · ${product.latest.version}`, () => install(product));
   if (inst.version && inst.launch) return act('Ouvrir', () => attempt(() => call('plugin:open', product.id)));
   if (inst.version) return act('Réinstaller', () => install(product), 'small');

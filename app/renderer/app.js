@@ -52,13 +52,14 @@ const icon = (path) => {
 };
 
 function titlebar() {
-  return h('header', { class: 'titlebar' },
+  const mac = central.platform === 'darwin'; // macOS dessine ses propres boutons, à gauche
+  return h('header', { class: `titlebar${mac ? ' mac' : ''}` },
     h('img', { class: 'sigil', src: 'assets/sigil.png', alt: '' }),
     h('div', { class: 'wordmark' }, h('b', null, 'ONIRIQUE'), h('i', null, 'Central')),
     h('div', { class: 'spacer' }),
     state.update ? h('button', { class: 'update-pill', title: 'Fermer et rouvrir l\'application pour installer la mise à jour', onclick: () => central.installUpdate() },
       h('span', { class: 'led on' }), `Version ${state.update} prête · Redémarrer`) : null,
-    h('div', { class: 'win-controls' },
+    mac ? null : h('div', { class: 'win-controls' },
       h('button', { 'aria-label': 'Réduire', onclick: () => central.window('minimize') }, icon('M0 5h10')),
       h('button', { 'aria-label': 'Agrandir', onclick: () => central.window('maximize') }, icon('M0.5 0.5h9v9h-9z')),
       h('button', { class: 'close', 'aria-label': 'Fermer', onclick: () => central.window('close') }, icon('M0 0l10 10M10 0L0 10'))));

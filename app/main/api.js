@@ -20,7 +20,8 @@ async function send(method, route, init = {}) {
     response = await fetch(store.serverUrl + route, {
       method,
       ...init,
-      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...init.headers },
+      // Le serveur répond avec les versions des plugins faites pour ce système.
+      headers: { 'X-Onirique-Platform': process.platform === 'darwin' ? 'mac' : 'win', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...init.headers },
     });
   } catch {
     throw new ApiError(0, `Serveur injoignable (${store.serverUrl}).`);

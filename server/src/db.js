@@ -170,6 +170,33 @@ if (!hasColumn('users', 'email_verified')) {
 if (!hasColumn('plans', 'kind')) db.exec(`ALTER TABLE plans ADD COLUMN kind TEXT NOT NULL DEFAULT 'all'`);
 if (!hasColumn('subscriptions', 'product_ids')) db.exec('ALTER TABLE subscriptions ADD COLUMN product_ids TEXT');
 
+// Versions par système : le même numéro peut exister pour Windows ("win") et pour Mac ("mac"). L'unicité
+// (plugin, numéro) d'origine ne peut pas être changée sur place : la table est recopiée, une seule fois.
+if (!hasColumn('versions', 'platform')) {
+  db.exec(`
+    BEGIN;
+    CREATE TABLE versions_new (
+      id         INTEGER PRIMARY KEY,
+      product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      version    TEXT NOT NULL,
+      notes      TEXT NOT NULL DEFAULT '',
+      filename   TEXT NOT NULL,
+      stored_as  TEXT NOT NULL,
+      size       INTEGER NOT NULL,
+      sha256     TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      platform   TEXT NOT NULL DEFAULT 'win',
+      UNIQUE (product_id, version, platform)
+    );
+    INSERT INTO versions_new (id, product_id, version, notes, filename, stored_as, size, sha256, created_at)
+      SELECT id, product_id, version, notes, filename, stored_as, size, sha256, created_at FROM versions;
+    DROP TABLE versions;
+    ALTER TABLE versions_new RENAME TO versions;
+    CREATE INDEX IF NOT EXISTS versions_product ON versions(product_id);
+    COMMIT;
+  `);
+}
+
 export const now = () => Date.now();
 
 export const get = (sql, ...params) => db.prepare(sql).get(...params);

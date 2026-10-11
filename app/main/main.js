@@ -16,7 +16,8 @@ function createWindow() {
     height: 840,
     minWidth: 980,
     minHeight: 640,
-    frame: false,
+    // Sur Mac, les trois boutons du système restent en place, posés sur la barre de titre de l'application.
+    ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset' } : { frame: false }),
     backgroundColor: '#0d0809',
     show: false,
     icon: path.join(__dirname, '..', 'renderer', 'assets', 'logo.png'),
@@ -105,7 +106,7 @@ const pickedFiles = new Set();
 async function pickFile(kind) {
   const filters = kind === 'image'
     ? [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp'] }]
-    : [{ name: 'Plugin ou installateur', extensions: ['vst3', 'zip', 'exe', 'msi'] }];
+    : [{ name: 'Plugin ou installateur', extensions: ['vst3', 'zip', 'exe', 'msi', 'pkg'] }];
   const result = await dialog.showOpenDialog(win, { properties: ['openFile'], filters });
   if (result.canceled) return null;
   const filePath = result.filePaths[0];
@@ -220,14 +221,14 @@ app.whenReady().then(() => {
       fs.rmSync(out, { recursive: true, force: true });
     }
   }
-  handle('admin:uploadVersion', async ({ productId, version, notes, filePath }) => {
+  handle('admin:uploadVersion', async ({ productId, version, notes, filePath, platform }) => {
     const file = picked(filePath);
     const report = progress(`upload:${productId}`);
-    const query = new URLSearchParams({ version, notes: notes || '', filename: path.basename(file) });
+    const query = new URLSearchParams({ version, notes: notes || '', filename: path.basename(file), platform: platform === 'mac' ? 'mac' : 'win' });
     const published = await api.upload('POST', `/api/admin/products/${Number(productId)}/versions?${query}`, file,
       'application/octet-stream', (ratio) => report('upload', ratio));
     let demo = null; // null : pas un .vst3, donc pas de démo
-    if (/\.vst3$/i.test(file)) {
+    if (/\.vst3$/i.test(file) && platform !== 'mac') {
       demo = await publishDemo(Number(productId), file, report).then(() => ({ ok: true }), (error) => ({ ok: false, message: error.message }));
     }
     return { ...published, demo };
@@ -324,6 +325,8 @@ app.whenReady().then(() => {
 let updateReady = null;
 function startAutoUpdate() {
   if (!app.isPackaged) return; // en développement, il n'y a rien à mettre à jour
+  // shortcut: pas de mise à jour automatique sur Mac, macOS la refuse pour une application non signée ; à activer avec un certificat Apple Developer.
+  if (process.platform === 'darwin') return;
   const logFile = path.join(app.getPath('userData'), 'update.log');
   const log = (text) => fs.appendFile(logFile, `${new Date().toISOString()} ${text}\n`, () => {});
   try { if (fs.statSync(logFile).size > 200_000) fs.rmSync(logFile); } catch { /* pas encore de journal */ }

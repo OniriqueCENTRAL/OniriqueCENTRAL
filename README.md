@@ -89,6 +89,24 @@ vérification** : tant qu'elle n'est pas ajoutée, ils s'ouvrent sans licence.
 Une licence perpétuelle n'expire pas hors ligne. Celle d'un abonnement expire trois jours après la
 fin de la période payée ; l'application la renouvelle à chaque lancement.
 
+## Version Mac
+
+L'application tourne aussi sur macOS (Intel et Apple Silicon). Elle ne se construit que sur un Mac : c'est
+GitHub Actions qui s'en charge (`.github/workflows/mac.yml`). Copier le dépôt sur GitHub, puis onglet
+« Actions », « Application Mac », « Run workflow » : le fichier `ONIRIQUE-CENTRAL.dmg` se télécharge en bas
+de la page de l'exécution. Il se met ensuite en ligne dans `/var/www/site/telechargement/`.
+
+Ce qui diffère de Windows :
+
+- Plugins dans `~/Library/Audio/Plug-Ins/VST3`, licences dans `/Users/Shared/Onirique/Licenses/<plugin>.lic`.
+- Identifiant de machine : même calcul, avec l'`IOPlatformUUID` du Mac à la place du `MachineGuid`.
+- Chaque version d'un plugin est envoyée pour un système (Windows ou Mac) depuis le panel admin. Pour Mac :
+  le dossier `NOM.vst3` zippé en `NOM.vst3.zip`, ou un installateur `.pkg`. Un plugin sans version Mac
+  s'affiche « Bientôt sur Mac ».
+- Sans compte Apple Developer, l'application n'est ni signée ni notariée : macOS demande de l'autoriser à la
+  première ouverture (clic droit, Ouvrir), et la mise à jour automatique est coupée sur Mac.
+- La démo interactive d'un plugin ne se fabrique que depuis l'application Windows.
+
 ## Mise en production
 
 1. Héberger `server/` (Node 22.13 ou plus) derrière HTTPS, avec `DATA_DIR` sur un disque sauvegardé :

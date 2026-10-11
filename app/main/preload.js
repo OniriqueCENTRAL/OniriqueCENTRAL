@@ -10,6 +10,7 @@ const CHANNELS = [
 ];
 
 contextBridge.exposeInMainWorld('central', {
+  platform: process.platform,
   /** Renvoie les données, ou lève une erreur portant le message du serveur. */
   async call(channel, ...args) {
     if (!CHANNELS.includes(channel)) throw new Error(`Canal inconnu : ${channel}`);

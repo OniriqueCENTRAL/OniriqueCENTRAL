@@ -82,6 +82,17 @@ try {
     version = await call('POST', `/api/admin/products/${product.id}/versions?${q}`, { token: admin, raw: binary, expect: 201 });
     assert.equal(version.sha256, crypto.createHash('sha256').update(binary).digest('hex'));
     await call('POST', `/api/admin/products/${product.id}/versions?${q}`, { token: admin, raw: binary, expect: 409 });
+
+    // Versions Mac : même numéro accepté à côté de celui de Windows, .vst3 nu refusé, et chaque système voit la sienne.
+    await call('POST', `/api/admin/products/${product.id}/versions?${q}&platform=mac`, { token: admin, raw: binary, expect: 400 });
+    const macQuery = new URLSearchParams({ version: new URLSearchParams(q).get('version'), filename: 'ONIRIQUE TEST.vst3.zip', platform: 'mac' });
+    const macVersion = await call('POST', `/api/admin/products/${product.id}/versions?${macQuery}`, { token: admin, raw: binary, expect: 201 });
+    assert.equal(macVersion.platform, 'mac');
+    const latestFor = async (headers) => (await (await fetch(`${base}/api/catalog`, { headers })).json()).products.find((p) => p.id === product.id).latest;
+    assert.equal((await latestFor({})).id, version.id);
+    assert.equal((await latestFor({ 'X-Onirique-Platform': 'mac' })).id, macVersion.id);
+    await call('DELETE', `/api/admin/versions/${macVersion.id}`, { token: admin });
+    assert.equal(await latestFor({ 'X-Onirique-Platform': 'mac' }), null);
     const evil = new URLSearchParams({ version: '1.0.1', filename: '..\\..\\evil.bat' });
     await call('POST', `/api/admin/products/${product.id}/versions?${evil}`, { token: admin, raw: binary, expect: 400 });
   });

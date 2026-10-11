@@ -1,10 +1,14 @@
 const { app, safeStorage } = require('electron');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 
 // Adresse du serveur ONIRIQUE CENTRAL. Pour développer en local : ONIRIQUE_SERVER=http://localhost:4850
 const DEFAULT_SERVER = process.env.ONIRIQUE_SERVER || 'https://central.onirique.store';
-const DEFAULT_VST3_DIR = path.join(process.env.CommonProgramFiles || 'C:\\Program Files\\Common Files', 'VST3');
+// Sur Mac, le dossier VST3 de l'utilisateur : les DAW le lisent, et y écrire ne demande aucun mot de passe.
+const DEFAULT_VST3_DIR = process.platform === 'darwin'
+  ? path.join(os.homedir(), 'Library', 'Audio', 'Plug-Ins', 'VST3')
+  : path.join(process.env.CommonProgramFiles || 'C:\\Program Files\\Common Files', 'VST3');
 
 const file = () => path.join(app.getPath('userData'), 'config.json');
 let cache = null;

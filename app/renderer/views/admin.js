@@ -126,7 +126,8 @@ function versionForm(product) {
   let file = null;
   const version = h('input', { class: 'mono', value: nextVersion(product.latest), required: true, maxLength: 30 });
   const notes = h('textarea', { placeholder: 'Nouveautés et corrections, visibles par les utilisateurs.', maxLength: 4000, rows: 5 });
-  const fileLabel = h('span', { class: 'muted grow' }, 'Aucun fichier choisi (.vst3, .zip, .exe ou .msi)');
+  const fileLabel = h('span', { class: 'muted grow' }, 'Aucun fichier choisi');
+  const platform = h('select', null, h('option', { value: 'win' }, 'Windows (.vst3, .zip, .exe ou .msi)'), h('option', { value: 'mac' }, 'Mac (.zip contenant le .vst3, ou .pkg)'));
   const bar = h('div', { class: 'progress', 'data-progress': `upload:${product.id}`, style: { display: 'none' } }, h('i'));
   const phase = h('div', { class: 'muted mono', 'data-phase': `upload:${product.id}`, style: { 'font-size': '11px' } });
   const pick = button('Choisir le fichier', async () => {
@@ -137,18 +138,18 @@ function versionForm(product) {
     }
   });
   const body = h('div', { class: 'stack' },
-    field('Numéro de version', version),
+    h('div', { class: 'grid2' }, field('Numéro de version', version), field('Système', platform)),
     field('Notes de version', notes),
     h('div', { class: 'row' }, pick, fileLabel), bar, phase,
     h('p', { class: 'muted', style: { margin: 0, 'font-size': '12.5px' } },
-      "Pour un .vst3, la démo interactive de la boutique et l'image du plugin sont fabriquées automatiquement après l'envoi : le plugin s'ouvre à l'écran une à trois minutes."));
+      "Pour un .vst3 Windows, la démo interactive de la boutique et l'image du plugin sont fabriquées automatiquement après l'envoi : le plugin s'ouvre à l'écran une à trois minutes. Pour Mac, zippez le dossier « NOM.vst3 » en « NOM.vst3.zip »."));
   modal(`Nouvelle version de ${product.name}`, body, [{
     label: 'Publier',
     run: async () => {
       if (!file) { toast('Choisissez d\'abord le fichier du plugin.', true); return false; }
       bar.style.display = '';
       let result;
-      const ok = await changed(async () => { result = await call('admin:uploadVersion', { productId: product.id, version: version.value.trim(), notes: notes.value, filePath: file.path }); },
+      const ok = await changed(async () => { result = await call('admin:uploadVersion', { productId: product.id, version: version.value.trim(), notes: notes.value, filePath: file.path, platform: platform.value }); },
         `${product.name} ${version.value.trim()} est en ligne.`, true);
       bar.style.display = 'none';
       phase.textContent = '';
@@ -173,7 +174,8 @@ function refreshDemo(p) {
 
 function productsTab() {
   const versionRow = (product) => (v) => h('tr', null,
-    h('td', { class: 'mono' }, `v${v.version}`, v.id === product.latest.id ? h('span', { style: { 'margin-left': '10px' } }, pill('Actuelle', 'hot')) : null),
+    h('td', { class: 'mono' }, `v${v.version}`, h('span', { style: { 'margin-left': '10px' } }, pill(v.platform === 'mac' ? 'Mac' : 'Windows')),
+      v.id === product.latest?.id ? h('span', { style: { 'margin-left': '6px' } }, pill('Actuelle', 'hot')) : null),
     h('td', { class: 'muted' }, date(v.createdAt)),
     h('td', { class: 'mono muted' }, `${v.filename} · ${megabytes(v.size)}`),
     h('td', { class: 'muted', style: { 'max-width': '260px', overflow: 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap' }, title: v.notes }, v.notes || '—'),
@@ -448,7 +450,8 @@ export function adminView() {
  */
 let filling = false;
 export async function fillMissingDemos() {
-  if (filling || state.data?.me?.user.role !== 'admin') return;
+  // L'outil qui charge les .vst3 n'existe que pour Windows.
+  if (filling || state.data?.me?.user.role !== 'admin' || window.central.platform !== 'win32') return;
   filling = true;
   let tried = [];
   try { tried = JSON.parse(localStorage.getItem('onirique.demosTried')) || []; } catch { /* rien de gardé */ }

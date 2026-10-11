@@ -71,6 +71,7 @@ body {
   border-bottom: 1px solid var(--line); -webkit-app-region: drag;
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.05));
 }
+.titlebar.mac { padding-left: 84px; padding-right: 16px; }
 .titlebar .sigil { height: 26px; filter: drop-shadow(0 0 6px var(--ember)); }
 .wordmark { display: flex; align-items: baseline; gap: 10px; }
 .wordmark b { font: 800 13px var(--display); letter-spacing: 0.22em; }
