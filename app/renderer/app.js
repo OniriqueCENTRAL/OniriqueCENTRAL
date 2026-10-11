@@ -4,7 +4,7 @@ import { libraryView, detailView, status } from './views/library.js';
 import { licensesView } from './views/licenses.js';
 import { subscriptionView } from './views/subscription.js';
 import { accountView } from './views/account.js';
-import { adminView } from './views/admin.js';
+import { adminView, supportAdminView, fillMissingDemos } from './views/admin.js';
 import { supportView } from './views/support.js';
 
 const central = window.central;
@@ -37,6 +37,7 @@ export async function refresh() {
   }
   lastLoad = Date.now();
   render();
+  fillMissingDemos();
 }
 
 //------------------------------------------------------------------------------
@@ -79,7 +80,7 @@ function sidebar() {
     item('licenses', 'Licences'),
     item('subscription', 'Abonnement'),
     item('support', 'Support'),
-    me.user.role === 'admin' ? [h('div', { class: 'eyebrow nav-label' }, 'Studio'), item('admin', 'Panel admin')] : null,
+    me.user.role === 'admin' ? [h('div', { class: 'eyebrow nav-label' }, 'Studio'), item('admin', 'Panel admin'), item('adminSupport', 'Panel support')] : null,
     h('div', { class: 'spacer' }),
     h('button', { class: 'user-chip', onclick: () => go('account') },
       h('div', { class: 'avatar' }, (me.user.name || me.user.email)[0].toUpperCase()),
@@ -95,6 +96,7 @@ const VIEWS = {
   support: supportView,
   account: accountView,
   admin: adminView,
+  adminSupport: supportAdminView,
 };
 
 export function render() {
@@ -104,7 +106,7 @@ export function render() {
   else if (!state.data) content = h('div', { class: 'auth' }, h('div', { class: 'muted mono' }, 'Connexion au serveur…'));
   else if (!state.data.me) content = h('div', { class: 'auth' }, authView());
   else {
-    if (state.route.name === 'admin' && state.data.me.user.role !== 'admin') state.route = { name: 'plugins', id: null };
+    if (state.route.name.startsWith('admin') && state.data.me.user.role !== 'admin') state.route = { name: 'plugins', id: null };
     content = h('div', { class: 'shell' }, sidebar(),
       h('main', { class: 'main' }, h('div', { class: 'inner' }, VIEWS[state.route.name]())));
   }
@@ -130,7 +132,7 @@ central.onProgress(({ id, phase, ratio }) => {
 window.addEventListener('focus', () => {
   const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
   const idle = !Object.keys(state.busy).length && !document.getElementById('overlay').hasChildNodes();
-  if (state.data?.me && idle && !typing && state.route.name !== 'admin' && Date.now() - lastLoad > 20_000) refresh();
+  if (state.data?.me && idle && !typing && !state.route.name.startsWith('admin') && Date.now() - lastLoad > 20_000) refresh();
 });
 window.addEventListener('unhandledrejection', (event) => toast(event.reason?.message || 'Erreur inattendue.', true));
 

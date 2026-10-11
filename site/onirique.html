@@ -527,7 +527,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
       <a href="support.html">Support</a>
     </nav>
     <div class="nav-actions">
-      <a class="btn btn-ghost" href="compte.html">Connexion</a>
+      <a class="btn btn-ghost" id="nav-account" href="compte.html">Connexion</a>
       <a class="btn btn-primary" href="boutique.html">Acheter</a>
     </div>
   </div>
@@ -1733,6 +1733,20 @@ $$(".embed-load").forEach(button => button.addEventListener("click", event => {
 }));
 }
 renderCredits(CREDITS);
+// Déjà connecté : le bouton « Connexion » affiche le nom du compte.
+(() => {
+  let token = null;
+  try { token = sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"); } catch {}
+  if (!token) return;
+  fetch("/api/me", { headers: { Authorization: "Bearer " + token } }).then(r => r.ok ? r.json() : null).then(me => {
+    if (!me || !me.user) return;
+    const link = document.getElementById("nav-account");
+    link.textContent = me.user.name || me.user.email.split("@")[0];
+    link.title = "Mon compte";
+    Object.assign(link.style, { maxWidth: "190px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "inline-block" });
+  }).catch(() => {});
+})();
+
 fetch("/api/credits").then(r => r.ok ? r.json() : null).then(list => { if (list && list.length) renderCredits(list); }).catch(() => {});
 
 // Collection : les plugins publiés dans le CENTRAL qui ont une image (elle se change depuis la page admin).

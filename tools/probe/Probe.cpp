@@ -439,6 +439,7 @@ int main (int argc, char** argv)
     basePng.setPosition (0);
     basePng.truncate();
     juce::PNGImageFormat().writeImageToStream (base, basePng);
+    basePng.flush(); // finish() arrête le processus sans passer par les destructeurs : sans ceci, la fin de l'image est perdue
 
     auto* demo = new juce::DynamicObject();
     demo->setProperty ("format", "onirique-demo-v1");

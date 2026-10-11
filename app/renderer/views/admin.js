@@ -11,7 +11,8 @@ const data = { overview: null, plans: null, support: null, credits: null, produc
 const ui = { licenseQuery: '', userQuery: '', generated: null, loading: false, error: null };
 
 const LOADERS = {
-  overview: async () => { [data.overview, data.plans, data.support] = await Promise.all([api('GET', '/overview'), api('GET', '/plans'), api('GET', '/support')]); },
+  overview: async () => { [data.overview, data.plans] = await Promise.all([api('GET', '/overview'), api('GET', '/plans')]); },
+  support: async () => { data.support = await api('GET', '/support'); },
   products: async () => { data.products = await api('GET', '/products'); },
   licenses: async () => {
     [data.licenses, data.products] = await Promise.all([
@@ -21,7 +22,8 @@ const LOADERS = {
   credits: async () => { [data.credits, data.products] = await Promise.all([api('GET', '/credits'), data.products ?? api('GET', '/products')]); },
 };
 const READY = {
-  overview: () => data.overview && data.plans && data.support,
+  overview: () => data.overview && data.plans,
+  support: () => data.support,
   products: () => data.products,
   licenses: () => data.licenses && data.products,
   users: () => data.users,
@@ -82,7 +84,6 @@ function overviewTab() {
       tile('Abonnés', o.subscribers), tile('Machines activées', o.activations), tile('Ventes Stripe', euros(o.revenueCents).replace('Gratuit', '0 €'))),
     h('div', { class: 'panel', style: { 'margin-top': '16px' } }, eyebrow('Formules d\'abonnement'),
       table(['Nom', 'Prix (€)', '', '', ''], data.plans.map(planRow), 'Aucune formule.')),
-    supportPanel(),
   ];
 }
 
@@ -96,17 +97,19 @@ function supportPanel() {
       h('div', { class: 'muted', style: { 'font-size': '12px' } }, [m.name, m.userId ? `compte n° ${m.userId}` : 'sans compte', m.context].filter(Boolean).join(' · '))),
     h('td', { class: 'selectable', style: { 'white-space': 'pre-wrap', 'overflow-wrap': 'anywhere' } }, h('strong', { style: { display: 'block' } }, m.subject), m.message),
     h('td', { class: 'actions' },
+      button('Répondre', () => attempt(() => call('open:mail', m.email, `Re: ${m.subject}`)), 'small'),
       button('Copier l\'e-mail', () => attempt(() => call('clipboard', m.email), 'Adresse copiée.'), 'small quiet'),
       button('Supprimer', () => confirm('Supprimer ce message ?', 'Il disparaît de cette liste. L\'e-mail reçu dans la boîte de support n\'est pas touché.',
-        'Supprimer', () => changed(() => api('DELETE', `/support/${m.id}`), 'Message supprimé.'), 'danger'), 'small quiet danger')));
+        'Supprimer', async () => { if (await attempt(() => api('DELETE', `/support/${m.id}`), 'Message supprimé.')) await reload('support'); }, 'danger'), 'small quiet danger')));
 
   return h('div', { class: 'panel' },
     h('div', { class: 'row between' }, eyebrow('Support'),
       h('div', { class: 'row' },
         mailbox ? pill(mailbox, '', true) : pill('Aucune boîte reliée : les demandes sont refusées', 'warn'),
+        button('Actualiser', () => reload('support'), 'small quiet'),
         button('Ouvrir la boîte mail', () => attempt(() => call('open:webmail')), 'small'))),
     h('p', { class: 'muted', style: { margin: '0 0 14px' } },
-      'Les demandes envoyées depuis le site et l\'application arrivent dans cette boîte et s\'affichent ici, trois ans au plus. La boîte complète s\'ouvre sur le webmail IONOS, avec son mot de passe.'),
+      'Les demandes envoyées depuis le site et l\'application arrivent dans cette boîte et s\'affichent ici, trois ans au plus. « Répondre » ouvre votre messagerie ; la boîte complète s\'ouvre sur le webmail IONOS, avec son mot de passe.'),
     table(['Reçu le', 'De', 'Message', ''], messages.map(row), 'Aucune demande pour le moment.'));
 }
 
@@ -349,10 +352,14 @@ function usersTab() {
     h('td', null, h('div', { class: 'selectable' }, u.email), u.name ? h('div', { class: 'muted', style: { 'font-size': '12px' } }, u.name) : null),
     h('td', null, u.role === 'admin' ? pill('Admin', 'hot') : h('span', { class: 'muted' }, 'Utilisateur')),
     h('td', { class: 'mono' }, String(u.licenses)),
+    h('td', { class: 'mono' }, u.trials ? String(u.trials) : h('span', { class: 'muted' }, '—')),
     h('td', null, u.subscribed ? pill('All Access', '', true) : h('span', { class: 'muted' }, '—')),
     h('td', { class: 'muted' }, date(u.createdAt)),
     h('td', { class: 'actions' },
       button('Mot de passe', () => resetPassword(u), 'small quiet'),
+      u.trials ? button('Réinitialiser les essais', () => confirm('Réinitialiser les essais gratuits ?',
+        `${u.email} a utilisé ${u.trials} essai(s). Ils sont supprimés, essai en cours compris, et ce compte pourra relancer un essai de 7 jours sur chaque plugin.`,
+        'Réinitialiser', () => changed(() => api('POST', `/users/${u.id}/reset-trials`), 'Essais réinitialisés.')), 'small quiet') : null,
       u.id === self ? null : u.role === 'admin'
         ? button('Retirer admin', () => changed(() => api('PATCH', `/users/${u.id}`, { role: 'user' }), 'Rôle admin retiré.'), 'small quiet danger')
         : button('Rendre admin', () => confirm('Donner le rôle admin ?', `${u.email} pourra publier des versions, générer et révoquer des licences.`,
@@ -360,46 +367,66 @@ function usersTab() {
 
   return h('div', { class: 'panel' },
     h('div', { class: 'row between', style: { 'margin-bottom': '16px' } }, eyebrow('Comptes'), h('div', { style: { width: '340px' } }, search)),
-    table(['Compte', 'Rôle', 'Licences', 'Abonnement', 'Inscrit le', ''], data.users.map(row), 'Aucun compte ne correspond.'));
+    table(['Compte', 'Rôle', 'Licences', 'Essais', 'Abonnement', 'Inscrit le', ''], data.users.map(row), 'Aucun compte ne correspond.'));
 }
 
 //==============================================================================
 //==============================================================================
 //  Crédits (les titres affichés sur la page d'accueil du site)
 //==============================================================================
-function creditsTab() {
+/** Les champs d'un crédit, vides pour un ajout ou remplis pour une modification. */
+function creditFields(c) {
   const f = {
-    link: h('input', { class: 'mono', placeholder: 'https://open.spotify.com/track/…', required: true }),
-    artist: h('input', { maxLength: 120, required: true }),
-    title: h('input', { maxLength: 120, placeholder: 'Vide : le titre donné par Spotify' }),
+    link: h('input', { class: 'mono', placeholder: 'https://open.spotify.com/track/…', required: true, value: c ? `https://open.spotify.com/track/${c.spotifyId}` : '' }),
+    artist: h('input', { maxLength: 120, required: true, value: c?.artist ?? '' }),
+    title: h('input', { maxLength: 120, placeholder: c ? '' : 'Vide : le titre donné par Spotify', value: c?.title ?? '' }),
     plugin: h('select', null, h('option', { value: '' }, '— Aucun en particulier —'), data.products.map((p) => h('option', { value: p.id }, p.name))),
-    usedOn: h('input', { maxLength: 60, placeholder: 'Voix, chœurs, mix…' }),
-    released: h('input', { maxLength: 40, placeholder: '9 octobre 2026' }),
-    duration: h('input', { maxLength: 10, placeholder: '2:39' }),
-    kind: h('select', null, ['Single', 'EP', 'Album', 'Mixtape'].map((k) => h('option', { value: k }, k))),
+    usedOn: h('input', { maxLength: 60, placeholder: 'Voix, chœurs, mix…', value: c?.usedOn ?? '' }),
+    released: h('input', { maxLength: 40, placeholder: '9 octobre 2026', value: c?.released ?? '' }),
+    duration: h('input', { maxLength: 10, placeholder: '2:39', value: c?.duration ?? '' }),
+    kind: h('select', null, [...new Set(['Single', 'EP', 'Album', 'Mixtape', c?.kind ?? 'Single'])].map((k) => h('option', { value: k }, k))),
   };
+  // Un <select> ne prend sa valeur qu'une fois ses options en place.
+  f.plugin.value = c?.plugin?.id ?? '';
+  f.kind.value = c?.kind ?? 'Single';
+  const values = () => ({
+    spotifyUrl: f.link.value.trim(), artist: f.artist.value.trim(), title: f.title.value.trim(),
+    productId: f.plugin.value ? Number(f.plugin.value) : null, usedOn: f.usedOn.value.trim(),
+    released: f.released.value.trim(), duration: f.duration.value.trim(), kind: f.kind.value,
+  });
+  const layout = [
+    h('div', { class: 'grid2' }, field('Lien Spotify du titre', f.link), field('Artiste', f.artist)),
+    h('div', { class: 'grid3' }, field('Titre', f.title), field('Plugin utilisé', f.plugin), field('Utilisé sur', f.usedOn)),
+    h('div', { class: 'grid3' }, field('Date de sortie', f.released), field('Durée', f.duration), field('Format', f.kind)),
+  ];
+  return { values, layout };
+}
+
+function creditsTab() {
+  const { values, layout } = creditFields(null);
   const form = h('form', {
     class: 'stack',
     onsubmit: async (event) => {
       event.preventDefault();
-      await changed(() => api('POST', '/credits', {
-        spotifyUrl: f.link.value.trim(), artist: f.artist.value.trim(), title: f.title.value.trim(),
-        productId: f.plugin.value ? Number(f.plugin.value) : null, usedOn: f.usedOn.value.trim(),
-        released: f.released.value.trim(), duration: f.duration.value.trim(), kind: f.kind.value,
-      }), 'Crédit ajouté : il est visible sur la page d\'accueil du site.');
+      await changed(() => api('POST', '/credits', values()), 'Crédit ajouté : il est visible sur la page d\'accueil du site.');
     },
-  },
-    h('div', { class: 'grid2' }, field('Lien Spotify du titre', f.link), field('Artiste', f.artist)),
-    h('div', { class: 'grid3' }, field('Titre', f.title), field('Plugin utilisé', f.plugin), field('Utilisé sur', f.usedOn)),
-    h('div', { class: 'grid3' }, field('Date de sortie', f.released), field('Durée', f.duration), field('Format', f.kind)),
-    h('div', null, h('button', { class: 'btn primary', type: 'submit' }, 'Ajouter le crédit')));
+  }, layout, h('div', null, h('button', { class: 'btn primary', type: 'submit' }, 'Ajouter le crédit')));
+
+  const edit = (c) => {
+    const fields = creditFields(c);
+    modal(`Modifier « ${c.title} »`, h('div', { class: 'stack' }, fields.layout,
+      h('p', { class: 'muted', style: { margin: 0, 'font-size': '12.5px' } }, 'Changer le lien Spotify fait reprendre la pochette du nouveau titre.')), [{
+      label: 'Enregistrer',
+      run: async () => ((await changed(() => api('PATCH', `/credits/${c.id}`, fields.values()), 'Crédit enregistré.')) ? undefined : false),
+    }], 'Crédit');
+  };
 
   const row = (c) => h('tr', null,
     h('td', null, h('strong', null, c.title), h('span', { class: 'muted' }, ` · ${c.artist}`)),
     h('td', null, c.plugin ? c.plugin.name : h('span', { class: 'muted' }, '—'), c.usedOn ? h('div', { class: 'muted', style: { 'font-size': '12px' } }, c.usedOn) : null),
     h('td', { class: 'muted' }, c.released || '—'),
     h('td', null, c.cover ? pill('Pochette', '', true) : pill('Sans pochette', 'warn')),
-    h('td', { class: 'actions' }, button('Retirer', () => confirm(`Retirer « ${c.title} » ?`, 'Le titre disparaît de la section Crédits du site.',
+    h('td', { class: 'actions' }, button('Modifier', () => edit(c), 'small quiet'), button('Retirer', () => confirm(`Retirer « ${c.title} » ?`, 'Le titre disparaît de la section Crédits du site.',
       'Retirer', () => changed(() => api('DELETE', `/credits/${c.id}`), 'Crédit retiré.'), 'danger'), 'small quiet danger')));
 
   return [
@@ -432,4 +459,44 @@ export function adminView() {
     }, label))),
     body,
   ];
+}
+
+export function supportAdminView() {
+  const ready = READY.support();
+  if (!ready && !ui.loading && !ui.error) reload('support');
+  return [
+    eyebrow('Studio'),
+    h('h1', null, 'Panel ', h('em', null, 'support')),
+    h('p', { class: 'lede' }, 'Les demandes envoyées depuis le site et l\'application : lisez-les, répondez par e-mail, supprimez celles qui sont traitées.'),
+    ui.error ? h('div', { class: 'panel empty' }, h('p', null, ui.error), button('Réessayer', () => reload('support')))
+      : ready ? supportPanel() : h('div', { class: 'panel empty mono' }, 'Chargement…'),
+  ];
+}
+
+/**
+ * Un plugin publié depuis le site n'a pas d'aperçu : un navigateur ne peut pas charger un .vst3. Dès qu'un admin
+ * ouvre l'application, les aperçus manquants sont fabriqués ici, un essai par version.
+ */
+let filling = false;
+export async function fillMissingDemos() {
+  if (filling || state.data?.me?.user.role !== 'admin') return;
+  filling = true;
+  let tried = [];
+  try { tried = JSON.parse(localStorage.getItem('onirique.demosTried')) || []; } catch { /* rien de gardé */ }
+  let made = false;
+  for (const p of state.data.catalog.products) {
+    if (p.demo || !p.latest || !/\.vst3$/i.test(p.latest.filename) || tried.includes(p.latest.id)) continue;
+    tried.push(p.latest.id);
+    try { localStorage.setItem('onirique.demosTried', JSON.stringify(tried)); } catch { /* réessayé au prochain lancement */ }
+    toast(`Création de l'aperçu de ${p.name} : son interface s'ouvre à l'écran une à trois minutes, ne la fermez pas.`);
+    try {
+      await call('admin:refreshDemo', p.id);
+      made = true;
+      toast(`Aperçu de ${p.name} en ligne.`);
+    } catch (error) {
+      toast(`Aperçu de ${p.name} impossible : ${error.message} Réessayez depuis Panel admin, Plugins.`, true);
+    }
+  }
+  filling = false;
+  if (made) { data.products = null; await refresh(); }
 }

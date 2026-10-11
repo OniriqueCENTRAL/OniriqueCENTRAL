@@ -190,13 +190,18 @@ async function loadUsers() {
     view.onclick = () => showLicenses(u, row, view);
     const role = u.id === me.id ? null : el("button", { className: "act", type: "button", textContent: u.role === "admin" ? "Retirer admin" : "Rendre admin" });
     if (role) role.onclick = () => setRole(u, u.role === "admin" ? "user" : "admin");
+    const trials = u.trials ? el("button", { className: "act", type: "button", textContent: `Réinitialiser les essais (${u.trials})` }) : null;
+    if (trials) trials.onclick = async () => {
+      if (!window.confirm(`Réinitialiser les essais gratuits de ${u.email} ? Ses ${u.trials} essai(s) sont supprimés, essai en cours compris, et ce compte pourra relancer un essai de 7 jours sur chaque plugin.`)) return;
+      try { await api("POST", `/admin/users/${u.id}/reset-trials`); await loadUsers(); } catch (error) { $("error").textContent = error.message; }
+    };
     row.append(
       el("td", {}, el("div", { textContent: u.email }), u.name ? el("div", { className: "sub", textContent: u.name }) : null),
       el("td", {}, el("span", { className: "pill" + (u.role === "admin" ? " on" : ""), textContent: u.role === "admin" ? "Admin" : "Utilisateur" })),
       el("td", { textContent: String(u.licenses) }),
       el("td", { textContent: u.subscribed ? "All Access" : "—" }),
       el("td", { textContent: date(u.createdAt) }),
-      el("td", { className: "actions" }, view, role));
+      el("td", { className: "actions" }, view, trials, role));
     return row;
   }));
   $("count").textContent = users.length === 500 ? "500 premiers comptes affichés : affinez la recherche." : `${users.length} compte(s).`;
@@ -307,7 +312,7 @@ async function loadProducts() {
     };
 
     return el("div", { className: "product" },
-      el("div", {}, shot, el("div", { className: "sub", style: "margin-top:8px", textContent: p.demo ? "Démo interactive en ligne" : "Pas encore de démo interactive" })),
+      el("div", {}, shot, el("div", { className: "sub", style: "margin-top:8px", textContent: p.demo ? "Démo interactive en ligne" : p.latest && /\.vst3$/i.test(p.latest.filename) ? "Aperçu et démo : créés tout seuls dès qu'un admin ouvre l'application CENTRAL" : "Pas encore de démo interactive" })),
       el("div", {},
         el("h3", { textContent: p.name }),
         el("div", { className: "sub", textContent: [p.published ? "Visible dans la boutique" : "Masqué", euros(p.priceCents), p.latest ? `version actuelle ${p.latest.version} du ${date(p.latest.createdAt)}` : "aucune version en ligne", `${p.versions.length} version(s)`].join(" · ") }),
@@ -324,35 +329,41 @@ async function loadCredits() {
   const [products, credits] = await Promise.all([api("GET", "/admin/products"), api("GET", "/admin/credits")]);
   const fail = (error) => { $("credit-error").textContent = error.message; };
 
-  const link = el("input", { type: "text", required: true, placeholder: "https://open.spotify.com/track/…" });
-  const artist = el("input", { type: "text", required: true, maxLength: 120 });
-  const title = el("input", { type: "text", maxLength: 120, placeholder: "Vide : le titre donné par Spotify" });
-  const plugin = el("select", {}, el("option", { value: "", textContent: "— Aucun en particulier —" }),
-    ...products.map((p) => el("option", { value: p.id, textContent: p.name })));
-  const usedOn = el("input", { type: "text", maxLength: 60, placeholder: "Voix, chœurs, mix…" });
-  const released = el("input", { type: "text", maxLength: 40, placeholder: "9 octobre 2026" });
-  const duration = el("input", { type: "text", maxLength: 10, placeholder: "2:39" });
-  const kind = el("select", {}, ...["Single", "EP", "Album", "Mixtape"].map((k) => el("option", { value: k, textContent: k })));
-  const submit = el("button", { className: "act", type: "submit", textContent: "Ajouter le crédit" });
-  const form = el("form", {},
-    el("label", {}, "Lien Spotify du titre", link), el("label", {}, "Artiste", artist),
-    el("label", {}, "Titre", title), el("label", {}, "Plugin utilisé", plugin),
-    el("label", {}, "Utilisé sur", usedOn), el("label", {}, "Date de sortie", released),
-    el("label", {}, "Durée", duration), el("label", {}, "Format", kind),
-    el("div", { className: "row" }, submit));
-  form.onsubmit = async (event) => {
-    event.preventDefault();
-    $("credit-error").textContent = "";
-    submit.disabled = true;
-    try {
-      await api("POST", "/admin/credits", { spotifyUrl: link.value.trim(), artist: artist.value.trim(), title: title.value.trim(),
-        productId: plugin.value ? Number(plugin.value) : null, usedOn: usedOn.value.trim(), released: released.value.trim(),
-        duration: duration.value.trim(), kind: kind.value });
-      $("new-credit").open = false;
-      await loadCredits();
-    } catch (error) { fail(error); submit.disabled = false; }
+  // c : le crédit à modifier, ou null pour un ajout.
+  const creditForm = (c) => {
+    const link = el("input", { type: "text", required: true, placeholder: "https://open.spotify.com/track/…", value: c ? "https://open.spotify.com/track/" + c.spotifyId : "" });
+    const artist = el("input", { type: "text", required: true, maxLength: 120, value: c?.artist ?? "" });
+    const title = el("input", { type: "text", maxLength: 120, placeholder: c ? "" : "Vide : le titre donné par Spotify", value: c?.title ?? "" });
+    const plugin = el("select", {}, el("option", { value: "", textContent: "— Aucun en particulier —" }),
+      ...products.map((p) => el("option", { value: p.id, textContent: p.name })));
+    const usedOn = el("input", { type: "text", maxLength: 60, placeholder: "Voix, chœurs, mix…", value: c?.usedOn ?? "" });
+    const released = el("input", { type: "text", maxLength: 40, placeholder: "9 octobre 2026", value: c?.released ?? "" });
+    const duration = el("input", { type: "text", maxLength: 10, placeholder: "2:39", value: c?.duration ?? "" });
+    const kind = el("select", {}, ...[...new Set(["Single", "EP", "Album", "Mixtape", c?.kind ?? "Single"])].map((k) => el("option", { value: k, textContent: k })));
+    plugin.value = c?.plugin?.id ?? "";
+    kind.value = c?.kind ?? "Single";
+    const submit = el("button", { className: "act", type: "submit", textContent: c ? "Enregistrer" : "Ajouter le crédit" });
+    const form = el("form", {},
+      el("label", {}, "Lien Spotify du titre", link), el("label", {}, "Artiste", artist),
+      el("label", {}, "Titre", title), el("label", {}, "Plugin utilisé", plugin),
+      el("label", {}, "Utilisé sur", usedOn), el("label", {}, "Date de sortie", released),
+      el("label", {}, "Durée", duration), el("label", {}, "Format", kind),
+      el("div", { className: "row" }, submit));
+    form.onsubmit = async (event) => {
+      event.preventDefault();
+      $("credit-error").textContent = "";
+      submit.disabled = true;
+      try {
+        await api(c ? "PATCH" : "POST", c ? "/admin/credits/" + c.id : "/admin/credits", { spotifyUrl: link.value.trim(), artist: artist.value.trim(), title: title.value.trim(),
+          productId: plugin.value ? Number(plugin.value) : null, usedOn: usedOn.value.trim(), released: released.value.trim(),
+          duration: duration.value.trim(), kind: kind.value });
+        if (!c) $("new-credit").open = false;
+        await loadCredits();
+      } catch (error) { fail(error); submit.disabled = false; }
+    };
+    return form;
   };
-  $("new-credit").replaceChildren(el("summary", { textContent: "＋ Nouveau crédit" }), form);
+  $("new-credit").replaceChildren(el("summary", { textContent: "＋ Nouveau crédit" }), creditForm(null));
 
   $("credits").replaceChildren(...(credits.length ? credits.map((c) => {
     const remove = el("button", { className: "act", type: "button", textContent: "Retirer" });
@@ -360,12 +371,19 @@ async function loadCredits() {
       if (!window.confirm(`Retirer « ${c.title} » des crédits du site ?`)) return;
       try { await api("DELETE", "/admin/credits/" + c.id); await loadCredits(); } catch (error) { fail(error); }
     };
-    return el("tr", {},
+    const row = el("tr", {});
+    const edit = el("button", { className: "act", type: "button", textContent: "Modifier" });
+    edit.onclick = () => {
+      if (row.nextSibling?.classList?.contains("detail")) return row.nextSibling.remove();
+      row.after(el("tr", { className: "detail" }, el("td", { colSpan: 4 }, el("div", { className: "product new", style: "margin-top:0" }, creditForm(c)))));
+    };
+    row.append(
       el("td", {}, c.cover ? el("img", { className: "thumb", src: c.cover, alt: "Pochette de " + c.title }) : null,
         el("strong", { textContent: c.title }), el("span", { className: "sub", textContent: " · " + c.artist })),
       el("td", {}, c.plugin ? c.plugin.name : "—", c.usedOn ? el("div", { className: "sub", textContent: c.usedOn }) : null),
       el("td", { className: "sub", textContent: c.released || "—" }),
-      el("td", { className: "actions" }, el("a", { className: "act", href: "https://open.spotify.com/track/" + c.spotifyId, target: "_blank", rel: "noopener", textContent: "Spotify ↗" }), remove));
+      el("td", { className: "actions" }, el("a", { className: "act", href: "https://open.spotify.com/track/" + c.spotifyId, target: "_blank", rel: "noopener", textContent: "Spotify ↗" }), edit, remove));
+    return row;
   }) : [el("tr", {}, el("td", { colSpan: 4, className: "sub", textContent: "Aucun crédit : la page d'accueil affiche le titre d'exemple." }))]));
 }
 

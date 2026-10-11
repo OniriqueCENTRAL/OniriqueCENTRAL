@@ -427,6 +427,38 @@ export function createApp() {
     res.status(201).json(creditRows()[0]);
   }));
 
+  // Modification d'un crédit : seuls les champs envoyés changent. Un nouveau lien Spotify fait reprendre la pochette.
+  admin.patch('/credits/:id', wrap(async (req, res) => {
+    const credit = get('SELECT * FROM credits WHERE id = ?', int(req.params.id, 0));
+    if (!credit) throw new HttpError(404, 'Crédit introuvable.');
+    const b = req.body;
+    const next = {
+      title: b.title === undefined ? credit.title : str(b.title, 120),
+      artist: b.artist === undefined ? credit.artist : str(b.artist, 120),
+      kind: b.kind === undefined ? credit.kind : str(b.kind, 30) || 'Single',
+      released: b.released === undefined ? credit.released : str(b.released, 40),
+      duration: b.duration === undefined ? credit.duration : str(b.duration, 10),
+      usedOn: b.usedOn === undefined ? credit.used_on : str(b.usedOn, 60),
+      productId: b.productId === undefined ? credit.product_id : b.productId ? findProduct(b.productId).id : null,
+      spotifyId: credit.spotify_id,
+      cover: credit.cover,
+    };
+    if (!next.title) throw new HttpError(400, 'Indiquez le titre du morceau.');
+    if (!next.artist) throw new HttpError(400, "Indiquez l'artiste.");
+    if (b.spotifyUrl !== undefined) {
+      const trackId = str(b.spotifyUrl, 300).match(/(?:track[/:])([A-Za-z0-9]{22})/)?.[1];
+      if (!trackId) throw new HttpError(400, 'Lien Spotify invalide : collez le lien d\'un titre (open.spotify.com/track/…).');
+      if (trackId !== credit.spotify_id) {
+        next.spotifyId = trackId;
+        next.cover = (await spotifyInfo(trackId)).cover ?? null;
+      }
+    }
+    run(`UPDATE credits SET title = ?, artist = ?, kind = ?, released = ?, duration = ?, used_on = ?, product_id = ?, spotify_id = ?, cover = ? WHERE id = ?`,
+      next.title, next.artist, next.kind, next.released, next.duration, next.usedOn, next.productId, next.spotifyId, next.cover, credit.id);
+    if (credit.cover && credit.cover !== next.cover) fs.rmSync(path.join(config.mediaDir, credit.cover), { force: true });
+    res.json(creditRows().find((c) => c.id === credit.id));
+  }));
+
   admin.delete('/credits/:id', (req, res) => {
     const credit = get('SELECT * FROM credits WHERE id = ?', int(req.params.id, 0));
     if (!credit) throw new HttpError(404, 'Crédit introuvable.');
@@ -664,6 +696,7 @@ export function createApp() {
     res.json(all(
       `SELECT u.id, u.email, u.name, u.role, u.created_at AS createdAt,
          (SELECT COUNT(*) FROM licenses l WHERE l.user_id = u.id AND l.status = 'active') AS licenses,
+         (SELECT COUNT(*) FROM licenses l WHERE l.user_id = u.id AND l.source = 'trial') AS trials,
          EXISTS (SELECT 1 FROM subscriptions s WHERE s.user_id = u.id AND s.status = 'active' AND s.current_period_end > ?) AS subscribed
        FROM users u WHERE u.email LIKE ? OR u.name LIKE ? ORDER BY u.created_at DESC LIMIT 500`, now(), q, q));
   });
@@ -683,6 +716,16 @@ export function createApp() {
       run('DELETE FROM sessions WHERE user_id = ?', user.id);
     }
     res.json({ ok: true });
+  });
+
+  // Remet à zéro les essais gratuits d'un compte : il peut en relancer un sur chaque plugin. Les essais sont
+  // supprimés (en cours compris) ; un essai qu'un admin a changé en vraie licence est gardé, sans compter comme essai.
+  admin.post('/users/:id/reset-trials', (req, res) => {
+    const user = get('SELECT id FROM users WHERE id = ?', int(req.params.id, 0));
+    if (!user) throw new HttpError(404, 'Compte introuvable.');
+    const { changes } = run(`DELETE FROM licenses WHERE user_id = ? AND source = 'trial' AND type = 'trial'`, user.id);
+    run(`UPDATE licenses SET source = 'admin' WHERE user_id = ? AND source = 'trial'`, user.id);
+    res.json({ ok: true, removed: Number(changes) });
   });
 
   admin.get('/plans', (_req, res) => res.json(all('SELECT * FROM plans ORDER BY price_cents').map(planView)));

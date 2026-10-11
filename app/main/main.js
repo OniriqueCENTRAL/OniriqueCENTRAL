@@ -245,6 +245,10 @@ app.whenReady().then(() => {
   });
 
   handle('open:webmail', () => shell.openExternal('https://mail.ionos.fr'));
+  handle('open:mail', (to, subject) => {
+    if (!/^[^\s@?&]+@[^\s@?&]+$/.test(String(to))) throw new Error('Adresse e-mail invalide.');
+    return shell.openExternal('mailto:' + to + '?subject=' + encodeURIComponent(String(subject).slice(0, 200)));
+  });
 
   handle('admin:uploadImage', ({ productId, filePath }) => {
     const file = picked(filePath);

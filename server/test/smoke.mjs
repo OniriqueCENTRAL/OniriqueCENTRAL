@@ -99,6 +99,9 @@ try {
     assert.deepEqual([created.title, created.spotifyId, created.plugin.slug, created.usedOn], ['CINÉMA', '6vJ83s2YUSDUlLQMSXS0lT', 'onirique-test', 'Voix']);
     const listed = await call('GET', '/api/credits');
     assert.equal(listed.length, 1);
+    await call('PATCH', `/api/admin/credits/${created.id}`, { token: admin, body: { artist: '' }, expect: 400 });
+    const edited = await call('PATCH', `/api/admin/credits/${created.id}`, { token: admin, body: { artist: 'Novi & co', productId: null, duration: '2:39' } });
+    assert.deepEqual([edited.title, edited.artist, edited.plugin, edited.duration, edited.usedOn, edited.cover], ['CINÉMA', 'Novi & co', null, '2:39', 'Voix', created.cover]);
     await call('DELETE', `/api/admin/credits/${created.id}`, { token: admin });
     assert.equal((await call('GET', '/api/credits')).length, 0);
     assert.equal(fs.readdirSync(path.join(dataDir, 'media')).filter((f) => f.endsWith('.jpg')).length, 0, 'la pochette est retirée avec le crédit');
@@ -200,6 +203,14 @@ try {
     assert.equal(JSON.parse(Buffer.from(license.payload, 'base64')).type, 'trial');
 
     await call('POST', '/api/licenses/trial', { token: tester, body: { productId: product.id }, expect: 409 }); // pas deux fois
+
+    // Remise à zéro par un admin : l'essai disparaît et peut être relancé.
+    const account = (await call('GET', '/api/admin/users?q=essai@test.local', { token: admin }))[0];
+    assert.equal(account.trials, 1);
+    await call('POST', `/api/admin/users/${account.id}/reset-trials`, { token: tester, expect: 403 });
+    assert.equal((await call('POST', `/api/admin/users/${account.id}/reset-trials`, { token: admin })).removed, 1);
+    assert.deepEqual((await call('GET', '/api/me', { token: tester })).trialsUsed, []);
+    await call('POST', '/api/licenses/trial', { token: tester, body: { productId: product.id }, expect: 201 });
   });
 
   await step('abonnement : donne accès à tout, expire avec une marge, se résilie', async () => {
