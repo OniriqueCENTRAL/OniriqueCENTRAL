@@ -197,6 +197,12 @@ if (!hasColumn('versions', 'platform')) {
   `);
 }
 
+// ALL LICENCE : une clé de pack donne une licence par plugin. Les licences d'un même pack portent sa clé ici.
+if (!hasColumn('licenses', 'bundle')) {
+  db.exec('ALTER TABLE licenses ADD COLUMN bundle TEXT');
+  db.exec('CREATE INDEX IF NOT EXISTS licenses_bundle ON licenses(bundle)');
+}
+
 export const now = () => Date.now();
 
 export const get = (sql, ...params) => db.prepare(sql).get(...params);

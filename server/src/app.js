@@ -12,7 +12,7 @@ import {
 } from './auth.js';
 import { mailEnabled, sendMail } from './mail.js';
 import {
-  activate, activeSubscription, createLicense, entitlement, normalizeKey, pickPlan, pickPriceCents,
+  activate, activeSubscription, createLicense, entitlement, generateKey, normalizeKey, pickPlan, pickPriceCents,
   publicKeyPem, publicKeyRaw, userActivations,
 } from './licensing.js';
 import { cancelSubscription, checkout, handleStripeEvent, verifyStripeSignature } from './payments.js';
@@ -101,6 +101,7 @@ const licenseView = (l) => ({
   id: l.id, key: l.key, productId: l.product_id, productName: l.product_name, userId: l.user_id, email: l.email || l.reserved_email || null,
   claimed: !!l.user_id, type: l.type, status: l.status, expiresAt: l.expires_at, maxActivations: l.max_activations,
   source: l.source, note: l.note, createdAt: l.created_at, activations: l.activations ?? undefined,
+  bundle: l.bundle ?? null, // la clé du pack ALL LICENCE dont cette licence fait partie
 });
 
 function findProduct(id) {
@@ -297,7 +298,19 @@ export function createApp() {
   //============================================================================
   app.post('/api/licenses/redeem', requireVerified, (req, res) => {
     rateLimit(`redeem:${req.user.id}`, 15);
-    const license = get('SELECT * FROM licenses WHERE key = ?', normalizeKey(req.body.key));
+    const key = normalizeKey(req.body.key);
+    const license = get('SELECT * FROM licenses WHERE key = ?', key);
+    // Clé ALL LICENCE : elle porte une licence par plugin, toutes rattachées au compte d'un coup.
+    const pack = license ? [] : all(`SELECT * FROM licenses WHERE bundle = ? AND status = 'active'`, key);
+    if (pack.length) {
+      if (pack.every((l) => l.user_id === req.user.id)) throw new HttpError(409, 'Cette clé est déjà sur votre compte.');
+      if (pack.some((l) => l.user_id && l.user_id !== req.user.id)) throw new HttpError(409, 'Cette clé est déjà utilisée par un autre compte.');
+      if (pack.some((l) => l.reserved_email && l.reserved_email.toLowerCase() !== req.user.email.toLowerCase())) {
+        throw new HttpError(403, 'Cette clé est réservée à une autre adresse e-mail.');
+      }
+      run(`UPDATE licenses SET user_id = ?, reserved_email = NULL WHERE bundle = ? AND status = 'active' AND user_id IS NULL`, req.user.id, key);
+      return res.json({ ok: true, productId: null, products: pack.length });
+    }
     if (!license || license.status !== 'active') throw new HttpError(404, 'Clé de licence inconnue ou révoquée.');
     if (license.user_id === req.user.id) throw new HttpError(409, 'Cette clé est déjà sur votre compte.');
     if (license.user_id) throw new HttpError(409, 'Cette clé est déjà utilisée par un autre compte.');
@@ -691,8 +704,8 @@ export function createApp() {
       `SELECT l.*, p.name AS product_name, u.email,
          (SELECT COUNT(*) FROM activations a WHERE a.user_id = l.user_id AND a.product_id = l.product_id) AS activations
        FROM licenses l JOIN products p ON p.id = l.product_id LEFT JOIN users u ON u.id = l.user_id
-       WHERE l.key LIKE ? OR u.email LIKE ? OR l.reserved_email LIKE ? OR l.note LIKE ? OR p.name LIKE ?
-       ORDER BY l.created_at DESC, l.id DESC LIMIT 500`, q, q, q, q, q);
+       WHERE l.key LIKE ? OR u.email LIKE ? OR l.reserved_email LIKE ? OR l.note LIKE ? OR p.name LIKE ? OR l.bundle LIKE ?
+       ORDER BY l.created_at DESC, l.id DESC LIMIT 500`, q, q, q, q, q, q);
     res.json(rows.map(licenseView));
   });
 
@@ -717,7 +730,10 @@ export function createApp() {
   }
 
   admin.post('/licenses', (req, res) => {
-    const product = findProduct(req.body.productId);
+    // "all" : ALL LICENCE, une seule clé qui donne une licence pour chaque plugin existant à cet instant.
+    const everything = req.body.productId === 'all';
+    const products = everything ? all('SELECT * FROM products ORDER BY created_at') : [findProduct(req.body.productId)];
+    if (!products.length) throw new HttpError(400, 'Aucun plugin à mettre dans la licence.');
     const type = LICENSE_TYPES.includes(req.body.type) ? req.body.type : 'perpetual';
     const count = int(req.body.count, 1);
     if (count < 1 || count > 200) throw new HttpError(400, 'Entre 1 et 200 licences à la fois.');
@@ -726,11 +742,18 @@ export function createApp() {
     const target = owner(str(req.body.email, 254).toLowerCase());
     if (target.userId && count > 1) throw new HttpError(400, 'Une seule licence par compte et par génération.');
 
-    const created = transaction(() => Array.from({ length: count }, () => createLicense({
-      productId: product.id, ...target, type, expiresAt, maxActivations: activationLimit(req.body.maxActivations),
-      source: 'admin', note: str(req.body.note, 200),
-    })));
-    res.status(201).json(created.map((l) => licenseView({ ...l, product_name: product.name })));
+    const maxActivations = activationLimit(req.body.maxActivations);
+    const note = str(req.body.note, 200);
+    const created = transaction(() => Array.from({ length: count }, () => {
+      const bundle = everything ? generateKey() : null;
+      const made = products.map((product) => ({
+        ...createLicense({ productId: product.id, ...target, type, expiresAt, maxActivations, source: 'admin', note, bundle }),
+        product_name: product.name,
+      }));
+      // Pour un pack, c'est sa clé qui est rendue : elle seule est à transmettre.
+      return everything ? { ...made[0], id: null, key: bundle, product_id: null, product_name: `ALL LICENCE · ${products.length} plugins` } : made[0];
+    }));
+    res.status(201).json(created.map(licenseView));
   });
 
   admin.patch('/licenses/:id', (req, res) => {

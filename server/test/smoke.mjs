@@ -152,6 +152,24 @@ try {
     await call('POST', '/api/licenses/redeem', { token: other, body: { key: 'ONIR-AAAA-AAAA-AAAA-AAAA' }, expect: 404 });
   });
 
+  await step('ALL LICENCE : une clé de pack donne une licence par plugin, rattachées d\'un coup', async () => {
+    const second = await call('POST', '/api/admin/products', { token: admin, body: { name: 'ONIRIQUE PACK', priceCents: 1000, accent: '#e23444' }, expect: 201 });
+    const [pack] = await call('POST', '/api/admin/licenses', { token: admin, body: { productId: 'all', count: 1, maxActivations: 2 }, expect: 201 });
+    assert.match(pack.key, /^ONIR(-[A-Z2-9]{4}){4}$/);
+    assert.match(pack.productName, /^ALL LICENCE · 2 plugins$/);
+    const inPack = (await call('GET', `/api/admin/licenses?q=${pack.key}`, { token: admin })).filter((l) => l.bundle === pack.key);
+    assert.deepEqual(inPack.map((l) => l.productId).sort(), [product.id, second.id].sort());
+
+    const holder = (await call('POST', '/api/auth/register', { body: { email: 'pack@test.local', password: 'motdepasse8' }, expect: 201 })).token;
+    run(`UPDATE users SET email_verified = 1 WHERE email = 'pack@test.local'`);
+    assert.equal((await call('POST', '/api/licenses/redeem', { token: holder, body: { key: pack.key } })).products, 2);
+    const mine = await call('GET', '/api/me', { token: holder });
+    assert.deepEqual(Object.keys(mine.entitlements).map(Number).sort(), [product.id, second.id].sort());
+    await call('POST', '/api/licenses/redeem', { token: holder, body: { key: pack.key }, expect: 409 });
+    await call('POST', '/api/licenses/redeem', { token: other, body: { key: pack.key }, expect: 409 });
+    run('DELETE FROM products WHERE id = ?', second.id);
+  });
+
   await step('téléchargement identique au fichier envoyé', async () => {
     const file = await call('GET', `/api/download/${version.id}`, { token: user });
     assert.ok(file.equals(binary));

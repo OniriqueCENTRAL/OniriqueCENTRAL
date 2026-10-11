@@ -239,7 +239,8 @@ function licenseForm(l) {
 
 function licensesTab() {
   const g = {
-    product: h('select', null, data.products.map((p) => h('option', { value: p.id }, p.name))),
+    product: h('select', null, data.products.map((p) => h('option', { value: p.id }, p.name)),
+      h('option', { value: 'all' }, `ALL LICENCE — les ${data.products.length} plugins, une seule clé`)),
     type: h('select', null, Object.entries(LICENSE_TYPES).filter(([id]) => id !== 'subscription').map(([id, label]) => h('option', { value: id }, label))),
     count: h('input', { type: 'number', min: 1, max: 200, value: 1 }),
     max: h('input', { type: 'number', min: 1, max: 50, value: 2 }),
@@ -252,7 +253,7 @@ function licensesTab() {
     onsubmit: async (event) => {
       event.preventDefault();
       const created = await attempt(() => api('POST', '/licenses', {
-        productId: Number(g.product.value), type: g.type.value, count: Number(g.count.value), maxActivations: Number(g.max.value),
+        productId: g.product.value === 'all' ? 'all' : Number(g.product.value), type: g.type.value, count: Number(g.count.value), maxActivations: Number(g.max.value),
         expiresAt: dateInputToMs(g.expires.value), email: g.email.value.trim(), note: g.note.value,
       }));
       if (!created) return;
@@ -281,6 +282,7 @@ function licensesTab() {
   const expired = (l) => l.expiresAt && l.expiresAt < Date.now();
   const row = (l) => h('tr', { class: l.status !== 'active' || expired(l) ? 'off' : '' },
     h('td', null, h('button', { class: 'key copy', type: 'button', title: 'Copier la clé', onclick: () => attempt(() => call('clipboard', l.key), 'Clé copiée.') }, l.key),
+      l.bundle ? h('div', { class: 'muted selectable mono', style: { 'font-size': '11px' }, title: 'Clé du pack ALL LICENCE dont cette licence fait partie' }, `ALL LICENCE · ${l.bundle}`) : null,
       l.note ? h('div', { class: 'muted', style: { 'font-size': '12px' } }, l.note) : null),
     h('td', null, l.productName),
     h('td', null, l.email ? h('span', { class: 'selectable' }, l.email) : h('span', { class: 'muted' }, 'Libre'), l.email && !l.claimed ? h('div', { class: 'muted', style: { 'font-size': '12px' } }, 'réservée') : null),

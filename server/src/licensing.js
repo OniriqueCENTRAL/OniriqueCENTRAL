@@ -55,12 +55,12 @@ export function normalizeKey(input) {
 }
 
 export function createLicense({ productId, userId = null, reservedEmail = null, type = 'perpetual',
-  expiresAt = null, maxActivations = config.defaultMaxActivations, source = 'admin', note = '' }) {
+  expiresAt = null, maxActivations = config.defaultMaxActivations, source = 'admin', note = '', bundle = null }) {
   const key = generateKey();
   const { lastInsertRowid } = run(
-    `INSERT INTO licenses (key, product_id, user_id, reserved_email, type, expires_at, max_activations, source, note, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    key, productId, userId, reservedEmail, type, expiresAt, maxActivations, source, note, now());
+    `INSERT INTO licenses (key, product_id, user_id, reserved_email, type, expires_at, max_activations, source, note, created_at, bundle)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    key, productId, userId, reservedEmail, type, expiresAt, maxActivations, source, note, now(), bundle);
   return get('SELECT * FROM licenses WHERE id = ?', lastInsertRowid);
 }
 
