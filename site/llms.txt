@@ -1,0 +1,23 @@
+# ONIRIQUE
+
+> Onirique édite des plugins audio pour la voix (VST3, Windows 10 et 11 en 64 bits) et l'application gratuite Onirique Central, qui les installe, les met à jour et active les licences.
+
+## Produits
+
+- [Onirique VocalBox](https://onirique.store/#vocalbox) : chaîne vocale complète dans un seul plugin (EQ, Resonance, compresseurs de type 1176 et LA-2A, multibande, de-esser, plosives, saturation). VST3 et version autonome. Mode MIX (latence d'environ 44 ms, compensée par le DAW) et mode LIVE (latence nulle).
+- [Onirique Central](https://onirique.store/#telechargement) : application Windows gratuite. Téléchargement direct : https://onirique.store/telechargement/ONIRIQUE-CENTRAL-Setup.exe
+
+## Compte et aide
+
+- [Compte](https://onirique.store/compte) : connexion, création de compte, licences. Le même compte sert sur le site et dans l'application.
+- [Support](https://onirique.store/support) : formulaire de contact, réponse par e-mail.
+- [Boutique](https://onirique.store/boutique) : tous les plugins, avec leur interface à essayer dans le navigateur.
+- [Questions fréquentes](https://onirique.store/#faq) : compatibilité, installation, latence.
+
+## Informations légales
+
+- [Mentions légales et contact](https://onirique.store/mentions-legales.html)
+- [Conditions générales de vente et d'utilisation](https://onirique.store/cgv.html)
+- [Rétractation et remboursement](https://onirique.store/remboursement.html)
+- [Politique de confidentialité](https://onirique.store/confidentialite.html)
+- [Cookies](https://onirique.store/cookies.html)

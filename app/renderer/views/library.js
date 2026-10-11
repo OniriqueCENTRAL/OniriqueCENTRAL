@@ -1,0 +1,233 @@
+import {
+  h, eyebrow, pill, led, productName, button, euros, date, megabytes, compareVersions, toast, attempt, modal, confirm, LICENSE_TYPES,
+} from '../ui.js';
+import { state, call, refresh, render, go } from '../app.js';
+
+/** Où en est ce plugin pour ce compte et ce PC. */
+export function status(product) {
+  const { me, installs } = state.data;
+  const right = me.entitlements[product.id] || null;
+  const install = installs[product.id];
+  const update = !!(install.version && product.latest && compareVersions(install.version, product.latest.version) < 0);
+  return { right, install, update, busy: state.busy[product.id] || null };
+}
+
+const images = new Map();
+function cover(product, badge) {
+  // Sans capture d'écran, la couverture est le sigil sur la couleur du plugin.
+  const mark = h('img', { class: 'mark', src: 'assets/sigil.png', alt: '' });
+  const el = h('div', { class: 'cover' }, mark, badge);
+  if (product.image) {
+    const show = (src) => mark.replaceWith(h('img', { class: 'shot', src, alt: `Interface de ${product.name}` }));
+    if (images.has(product.image)) show(images.get(product.image));
+    else call('media', product.image).then((src) => { images.set(product.image, src); show(src); }).catch(() => {});
+  }
+  return el;
+}
+
+/** Nombre de jours entiers restants avant l'expiration d'un droit (essai, licence à durée). */
+const daysLeft = (right) => Math.max(0, Math.ceil((right.expiresAt - Date.now()) / 86400_000));
+const trialAvailable = (product) => product.priceCents > 0 && !state.data.me.entitlements[product.id] && !state.data.me.trialsUsed.includes(product.id);
+
+function badge(product) {
+  const { right, install, update } = status(product);
+  if (right?.type === 'trial') return pill(`Essai · ${daysLeft(right)} j`, 'warn', true);
+  if (update) return pill('Mise à jour', 'hot', true);
+  if (right && install.version) return pill('Installé', '', true);
+  if (right) return pill(right.via === 'subscription' ? 'All Access' : 'Possédé', '', true);
+  return pill(euros(product.priceCents));
+}
+
+/** Démarre l'essai gratuit de 7 jours (un seul par compte et par plugin). */
+function startTrial(product) {
+  confirm(`Essayer ${product.name} gratuitement ?`,
+    "Pendant 7 jours, le plugin s'utilise librement en temps réel dans votre DAW. Tout export reste remplacé par un bruit blanc tant que le plugin n'est pas acheté. Un seul essai par plugin.",
+    'Démarrer l\'essai', async () => {
+      if (!(await attempt(() => call('api', 'POST', '/api/licenses/trial', { productId: product.id }), `Essai de ${product.name} démarré pour 7 jours. Installez-le : il s'active sur ce PC.`))) return;
+      await refresh();
+    });
+}
+
+// Formats de plugin. Seul le VST3 est distribué aujourd'hui : les autres sont affichés, pas encore sélectionnables.
+const FORMATS = [['VST3', /\.(vst3|zip)$/i], ['AAX', /\.aaxplugin$/i], ['AU', /\.component$/i]];
+const isApplication = (product) => /\.(exe|msi)$/i.test(product.latest?.filename || '');
+
+function formatPicker(product) {
+  const available = FORMATS.filter(([, pattern]) => pattern.test(product.latest.filename)).map(([name]) => name);
+  return h('div', { style: { 'margin-top': '18px' } },
+    h('div', { class: 'eyebrow', style: { 'margin-bottom': '8px' } }, 'Format à installer'),
+    h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': 'Format du plugin' },
+      FORMATS.map(([name]) => {
+        const ok = available.includes(name);
+        return h('button', {
+          type: 'button', role: 'radio', class: ok && name === available[0] ? 'active' : '', disabled: !ok,
+          'aria-checked': String(ok && name === available[0]), title: ok ? `${name} : disponible` : `${name} : bientôt disponible`,
+          style: ok ? {} : { opacity: '0.45', cursor: 'not-allowed' },
+        }, ok ? name : `${name} · bientôt`);
+      })));
+}
+
+/** L'interface réelle du plugin, manipulable : la même démo que dans la boutique du site. */
+function demoView(product) {
+  const box = h('div', { class: 'demo' }, h('div', { class: 'demo-wait' }, "Chargement de l'interface…"));
+  call('demo', product.demo)
+    .then((demo) => window.OniriqueDemo.render(box, demo, "Interface réelle du plugin : glissez sur un bouton, cliquez un interrupteur. Aucun son n'est traité ici."))
+    .catch(() => box.replaceChildren(cover(product, null)));
+  return box;
+}
+
+//------------------------------------------------------------------------------
+async function install(product) {
+  state.busy[product.id] = { phase: 'download', ratio: 0 };
+  render();
+  try {
+    await call('plugin:install', product.id);
+    toast(`${product.name} ${product.latest.version} est installé.`);
+  } catch (error) {
+    toast(error.message, true);
+  }
+  delete state.busy[product.id];
+  await refresh();
+}
+
+export function buy(kind, item) {
+  const mode = state.data.catalog.paymentsMode;
+  const free = kind === 'product' && item.priceCents === 0;
+  if (mode === 'off' && !free) {
+    return modal('Achats bientôt ouverts',
+      h('p', { class: 'muted' }, 'La boutique n\'est pas encore ouverte. Si vous avez reçu une clé de licence, entrez-la dans l\'onglet Licences.'),
+      [{ label: 'Entrer une clé', run: () => go('licenses') }], 'Boutique');
+  }
+  const price = kind === 'plan' ? `${euros(item.priceCents)} / ${item.interval === 'year' ? 'an' : 'mois'}` : euros(item.priceCents);
+  const text = free ? 'Ce plugin est gratuit : il sera ajouté à votre compte.'
+    : mode === 'demo' ? 'Mode démo : aucun paiement n\'est effectué, l\'achat est accordé tout de suite.'
+      : 'Le paiement sécurisé s\'ouvre dans votre navigateur. Revenez ici une fois terminé : votre compte se met à jour tout seul.';
+  modal(item.name, h('div', { class: 'stack' }, h('div', { class: 'price' }, price), h('p', { class: 'muted' }, text)), [{
+    label: free ? 'Obtenir' : mode === 'demo' ? 'Confirmer' : 'Payer',
+    run: async () => {
+      const result = await attempt(() => call('checkout', kind, item.id));
+      if (!result) return false;
+      if (result.mode === 'stripe') toast('Paiement ouvert dans votre navigateur.');
+      else { toast(kind === 'plan' ? 'Abonnement activé.' : `${item.name} est à vous.`); await refresh(); }
+    },
+  }], kind === 'plan' ? 'Abonnement' : 'Achat');
+}
+
+/** Retire le plugin de ce PC (la licence reste sur le compte). */
+function removePlugin(product) {
+  confirm(`Désinstaller ${product.name} ?`, 'Le fichier est retiré de ce PC. Votre licence reste sur votre compte : vous pourrez le réinstaller quand vous voulez.',
+    'Désinstaller', async () => { await attempt(() => call('plugin:uninstall', product.id), `${product.name} est désinstallé.`); await refresh(); }, 'danger');
+}
+
+/** Le bouton principal d'un plugin, selon son état. */
+function mainAction(product) {
+  const { right, install: inst, update, busy } = status(product);
+  if (busy) {
+    return h('div', { class: 'grow stack', style: { gap: '6px' } },
+      h('div', { class: 'version', 'data-phase': product.id }, busy.phase === 'install' ? 'Installation…' : `Téléchargement ${Math.round(busy.ratio * 100)} %`),
+      h('div', { class: 'progress', 'data-progress': product.id }, h('i', { style: { width: `${Math.round(busy.ratio * 100)}%` } })));
+  }
+  const act = (label, run, kind = 'primary') => button(label, (event) => { event.stopPropagation(); run(); }, kind);
+  if (!right) return act(product.priceCents ? `Acheter · ${euros(product.priceCents)}` : 'Obtenir', () => buy('product', product));
+  if (!product.latest) return button('Bientôt disponible', null, '', { disabled: true });
+  if (update) return act(`Mettre à jour · ${product.latest.version}`, () => install(product));
+  if (inst.version && inst.launch) return act('Ouvrir', () => attempt(() => call('plugin:open', product.id)));
+  if (inst.version) return act('Réinstaller', () => install(product), 'small');
+  return act('Installer', () => install(product));
+}
+
+//------------------------------------------------------------------------------
+export function libraryView() {
+  const { catalog, me } = state.data;
+  const owned = catalog.products.filter((p) => me.entitlements[p.id]).length;
+
+  const card = (product) => h('div', {
+    class: 'card', role: 'button', tabIndex: 0, style: { '--accent': product.accent },
+    onclick: () => go('plugins', product.id),
+    onkeydown: (event) => { if (event.key === 'Enter' && event.target === event.currentTarget) go('plugins', product.id); },
+  },
+    cover(product, badge(product)),
+    h('div', { class: 'card-body' },
+      productName(product.name),
+      h('div', { class: 'muted' }, product.tagline),
+      h('div', { class: 'card-foot' },
+        h('span', { class: 'version' }, product.latest ? `v${status(product).install.version || product.latest.version}` : '—'),
+        h('div', { class: 'row', style: { gap: '8px' } },
+          status(product).install.version && status(product).install.removable && !status(product).busy
+            ? button('Désinstaller', (event) => { event.stopPropagation(); removePlugin(product); }, 'small quiet danger') : null,
+          mainAction(product)))));
+
+  return [
+    eyebrow('Bibliothèque'),
+    h('h1', null, 'Vos ', h('em', null, 'plugins')),
+    h('p', { class: 'lede' }, catalog.products.length
+      ? `${owned} sur ${catalog.products.length} dans votre collection. Installation et mises à jour en un clic, licence activée sur ce PC au passage.`
+      : 'Aucun plugin publié pour le moment.'),
+    h('div', { class: 'cards' }, catalog.products.map(card)),
+  ];
+}
+
+//------------------------------------------------------------------------------
+export function detailView(id) {
+  const product = state.data.catalog.products.find((p) => p.id === id);
+  if (!product) return libraryView();
+  const { right, install: inst, update, busy } = status(product);
+  const { machineId, me } = state.data;
+  const activeHere = me.activations.some((a) => a.productId === product.id && a.machineId === machineId);
+  const used = me.activations.filter((a) => a.productId === product.id).length;
+
+  const licenseBlock = right ? h('div', { class: 'panel' },
+    eyebrow(right.type === 'trial' ? 'Essai' : 'Licence'),
+    right.type === 'trial' ? h('p', { class: 'row', style: { margin: '0 0 14px' } },
+      pill(`${daysLeft(right)} jour(s) restant(s)`, 'warn', true),
+      button(product.priceCents ? `Acheter · ${euros(product.priceCents)}` : 'Obtenir', () => buy('product', product), 'small primary')) : null,
+    h('dl', { class: 'kv' },
+      h('dt', null, 'Type'), h('dd', null, LICENSE_TYPES[right.type] || right.type),
+      h('dt', null, 'Valable'), h('dd', null, right.via === 'subscription' ? 'tant que l\'abonnement court' : right.expiresAt ? `jusqu'au ${date(right.expiresAt)}` : 'sans limite'),
+      h('dt', null, 'Machines'), h('dd', null, `${used} sur ${right.maxActivations}`)),
+    h('div', { class: 'row between', style: { 'margin-top': '16px' } },
+      h('div', { class: 'row' }, led(activeHere), activeHere ? 'Activée sur ce PC' : 'Pas activée sur ce PC'),
+      activeHere
+        ? button('Désactiver', () => confirm('Désactiver sur ce PC ?', `${product.name} ne s'ouvrira plus ici tant que vous ne l'aurez pas réactivé. La place est rendue à une autre machine.`,
+          'Désactiver', async () => { await attempt(() => call('license:deactivate', product.id), 'Licence désactivée sur ce PC.'); await refresh(); }), 'small danger')
+        : button('Activer ici', async () => { await attempt(() => call('license:activate', product.id), 'Licence activée sur ce PC.'); await refresh(); }, 'small')))
+    : null;
+
+  const installBlock = h('div', { class: 'panel', style: { '--accent': product.accent } },
+    productName(product.name, true),
+    h('p', { class: 'muted', style: { margin: '8px 0 18px' } }, product.tagline),
+    h('div', { class: 'row between' }, right ? badge(product) : h('div', { class: 'price' }, euros(product.priceCents)),
+      mainAction(product)),
+    trialAvailable(product) ? h('div', { style: { 'margin-top': '14px' } },
+      button('Essai gratuit · 7 jours', () => startTrial(product), 'small'),
+      h('span', { class: 'muted', style: { 'margin-left': '12px', 'font-size': '12.5px' } }, "7 jours en temps réel. Export en bruit blanc jusqu'à l'achat.")) : null,
+    !right && state.data.catalog.plans.length ? h('p', { class: 'muted', style: { margin: '14px 0 0', 'font-size': '13px' } },
+      'Aussi inclus dans l\'abonnement All Access. ',
+      h('a', { href: '#', style: { color: 'var(--ember-hot)' }, onclick: (e) => { e.preventDefault(); go('subscription'); } }, 'Voir les formules')) : null,
+    product.latest ? h('dl', { class: 'kv', style: { 'margin-top': '20px' } },
+      h('dt', null, 'Dernière version'), h('dd', { class: 'mono' }, `${product.latest.version} · ${date(product.latest.createdAt)}`),
+      h('dt', null, 'Sur ce PC'), h('dd', { class: 'mono' }, inst.version || (inst.present ? 'présent, version inconnue' : 'non installé')),
+      h('dt', null, 'Taille'), h('dd', { class: 'mono' }, megabytes(product.latest.size)),
+      h('dt', null, 'Fichier'), h('dd', { class: 'mono', title: inst.path || '' }, product.latest.filename),
+      isApplication(product) ? [h('dt', null, 'Type'), h('dd', null, 'Application Windows')] : null,
+      inst.launch ? [h('dt', null, 'Emplacement'), h('dd', { class: 'mono selectable', title: inst.launch }, inst.launch)] : null) : null,
+    product.latest && !isApplication(product) ? formatPicker(product) : null,
+    right && product.latest && !busy ? h('div', { class: 'row wrap', style: { 'margin-top': '18px' } },
+      inst.launch && update ? button('Ouvrir', () => attempt(() => call('plugin:open', product.id)), 'small') : null,
+      inst.present ? button('Ouvrir le dossier', () => call('plugin:reveal', product.id), 'small') : null,
+      inst.version && inst.removable ? button('Désinstaller', () => removePlugin(product), 'small quiet danger') : null) : null);
+
+  return [
+    button('← Tous les plugins', () => go('plugins'), 'small quiet'),
+    h('div', { class: 'detail', style: { 'margin-top': '14px', '--accent': product.accent } },
+      h('div', null,
+        product.demo ? demoView(product) : cover(product, null),
+        h('div', { class: 'panel', style: { 'margin-top': '16px' } }, eyebrow('Le plugin'),
+          h('div', { class: 'desc' }, (product.description || product.tagline).split(/\n{2,}/).map((text) => h('p', null, text)))),
+        product.versions.length ? h('div', { class: 'panel' }, eyebrow('Historique des versions'),
+          h('ul', { class: 'changelog' }, product.versions.map((v) => h('li', null,
+            h('div', { class: 'row' }, h('span', { class: 'mono' }, `v${v.version}`), h('span', { class: 'muted mono', style: { 'font-size': '11px' } }, date(v.createdAt))),
+            v.notes ? h('p', null, v.notes) : null)))) : null),
+      h('div', null, installBlock, licenseBlock)),
+  ];
+}

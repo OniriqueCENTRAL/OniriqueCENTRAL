@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ONIRIQUE — Compte</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<style>
+/* Mêmes tokens que onirique.html : la page compte doit se lire comme une page du site. */
+:root {
+  --night: #0D0809; --blood: #5C0008; --deep: #1A080A; --deep-2: #2A0A0E; --line: rgba(255,210,214,.13);
+  --mist: #F6EEEE; --haze: #A88F92; --ember: #E23444; --bone: #FFECEE;
+  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(226,52,68,.55);
+  --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --f-dream: "Grenze Gotisch", Georgia, serif;
+  --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100vh; color: var(--mist); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased;
+  background: radial-gradient(120% 60% at 50% -10%, rgba(140,6,20,.8), rgba(92,0,8,.45) 36%, transparent 72%), var(--night);
+  background-attachment: fixed;
+}
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
+.wrap { width: 100%; max-width: 860px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 40px); }
+header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.6); backdrop-filter: blur(14px); }
+header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 16px; }
+.brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 800 17px/1 var(--f-display); letter-spacing: .16em; }
+.brand img { width: 44px; height: auto; margin-block: -12px; filter: drop-shadow(0 0 6px rgba(226,52,68,.8)); }
+main { padding-block: clamp(32px, 7vw, 72px); }
+h1 { font: 800 clamp(26px, 5vw, 38px)/1.1 var(--f-display); margin: 12px 0 8px; }
+h1 em { font: 600 1.3em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
+h2 { font: 800 15px/1.3 var(--f-display); letter-spacing: .04em; margin: 0; }
+.eyebrow { font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); display: flex; align-items: center; gap: 10px; }
+.eyebrow::before { content: ""; flex: none; width: 13px; height: 13px; background: var(--mist); clip-path: polygon(50% 0, 56% 44%, 100% 50%, 56% 56%, 50% 100%, 44% 56%, 0 50%, 44% 44%); filter: drop-shadow(0 0 4px var(--ember)); }
+.muted { color: var(--haze); }
+.panel { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 18px; padding: clamp(18px, 3vw, 26px); margin-top: 18px; }
+.panel > .eyebrow { margin-bottom: 16px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 20px; border-radius: 999px; border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
+.btn-primary { background: var(--mist); color: var(--night); box-shadow: 0 10px 40px -10px rgba(226,52,68,.6); }
+.btn-ghost { background: rgba(255,255,255,.03); color: var(--mist); border-color: var(--line); }
+.btn-ghost:hover { border-color: var(--ember); }
+.btn:disabled { opacity: .5; cursor: default; }
+.tabs { display: inline-flex; padding: 4px; gap: 2px; border-radius: 999px; background: rgba(0,0,0,.35); border: 1px solid var(--line); }
+.tabs button { padding: 9px 18px; border: 0; border-radius: 999px; background: none; color: var(--haze); cursor: pointer; font: 500 12px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; }
+.tabs button[aria-selected="true"] { background: #D12A3A; color: #fff; } /* braise assombrie : blanc lisible en 12 px (5,1:1) */
+form { display: grid; gap: 14px; max-width: 420px; }
+label { display: grid; gap: 7px; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
+input { height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px var(--f-body); }
+label.check { display: flex; align-items: flex-start; gap: 10px; font: 400 14px/1.5 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--mist); }
+label.check input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; padding: 0; accent-color: var(--ember); }
+.error { color: #FF7A85; font-size: 14px; }
+.legal { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 14px; }
+.legal a { color: var(--haze); text-decoration: none; }
+.legal a:hover { color: var(--mist); }
+.notice { color: var(--bone); font-size: 14px; }
+.error:empty, .notice:empty { display: none; }
+.link { background: none; border: 0; padding: 0; color: var(--haze); font: 500 14px var(--f-body); text-decoration: underline; cursor: pointer; }
+.link:hover { color: var(--mist); }
+.rows { display: grid; }
+.row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 18px; padding: 14px 0; border-top: 1px solid var(--line); }
+.row:first-child { border-top: 0; padding-top: 0; }
+.key { font: 500 13px/1.4 var(--f-mono); letter-spacing: .05em; color: var(--bone); word-break: break-all; }
+.pill { font: 500 11px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--haze); white-space: nowrap; }
+.pill.on { color: var(--bone); border-color: rgba(226,52,68,.6); background: rgba(226,52,68,.16); }
+.between { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; }
+[hidden] { display: none !important; }
+</style>
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <a class="btn btn-ghost" href="/">Retour au site</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- Déconnecté -->
+  <section id="auth" hidden>
+    <div class="eyebrow">Compte</div>
+    <h1>Votre <em>compte</em></h1>
+    <p class="muted">Le même compte que dans l'application ONIRIQUE CENTRAL.</p>
+    <div class="panel">
+      <div class="tabs" role="tablist" style="margin-bottom:20px">
+        <button type="button" role="tab" id="tab-login" aria-selected="true">Connexion</button>
+        <button type="button" role="tab" id="tab-register" aria-selected="false">Créer un compte</button>
+      </div>
+      <form id="form">
+        <label id="name-field" hidden>Nom<input id="name" maxlength="80" autocomplete="name"></label>
+        <label>E-mail<input id="email" type="email" required autocomplete="username"></label>
+        <label id="password-field"><span id="password-label">Mot de passe</span><input id="password" type="password" required autocomplete="current-password"></label>
+        <label class="check" id="remember-field"><input type="checkbox" id="remember" checked><span>Se souvenir de moi sur cet appareil</span></label>
+        <label class="check" id="terms-field" hidden><input type="checkbox" id="terms"><span>J'accepte les <a href="cgv.html" target="_blank" rel="noopener">conditions générales</a> et j'ai lu la <a href="confidentialite.html" target="_blank" rel="noopener">politique de confidentialité</a>.</span></label>
+        <div class="error" id="error" role="alert"></div>
+        <div class="notice" id="notice" role="status"></div>
+        <div class="between">
+          <button class="btn btn-primary" id="submit" type="submit">Se connecter</button>
+          <button class="link" id="forgot" type="button">Mot de passe oublié ?</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Connecté -->
+  <section id="account" hidden>
+    <div class="between">
+      <div>
+        <div class="eyebrow">Compte</div>
+        <h1>Bonjour <em id="who"></em></h1>
+        <p class="muted" id="email-line"></p>
+      </div>
+      <div class="between">
+        <a class="btn btn-ghost" id="admin-link" href="admin.html" hidden>Administration</a>
+        <button class="btn btn-ghost" id="logout" type="button">Se déconnecter</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="eyebrow">L'application</div>
+      <div class="between">
+        <p class="muted" style="margin:0;max-width:46ch">ONIRIQUE CENTRAL installe vos plugins, les met à jour et active vos licences sur votre PC. Windows 10 ou 11, 64 bits.</p>
+        <a class="btn btn-primary" href="telechargement/ONIRIQUE-CENTRAL-Setup.exe" download>Télécharger ONIRIQUE CENTRAL</a>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="eyebrow">Vos licences</div>
+      <div class="rows" id="licenses"></div>
+    </div>
+  </section>
+
+  <p class="muted" id="loading">Chargement…</p>
+
+  <nav class="legal" aria-label="Pages légales"><a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="remboursement.html">Rétractation et remboursement</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a></nav>
+</main>
+
+<script>
+// Le site relaie /api vers le serveur ONIRIQUE CENTRAL (même origine : pas de CORS à gérer).
+const $ = (id) => document.getElementById(id);
+const TOKEN = "onirique.token";
+// Coché « Se souvenir de moi » : le jeton reste sur cet appareil. Sinon il disparaît à la fermeture du navigateur.
+const saved = () => sessionStorage.getItem(TOKEN) || localStorage.getItem(TOKEN);
+const forget = () => { sessionStorage.removeItem(TOKEN); localStorage.removeItem(TOKEN); };
+let mode = "login"; // login | register | forgot | reset
+const resetToken = new URLSearchParams(location.search).get("reset");
+
+async function api(method, path, body) {
+  const token = saved();
+  let response;
+  try {
+    response = await fetch("/api" + path, {
+      method,
+      headers: { ...(token ? { Authorization: "Bearer " + token } : {}), ...(body ? { "Content-Type": "application/json" } : {}) },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    throw new Error("Serveur injoignable. Réessayez dans un instant.");
+  }
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw Object.assign(new Error(data.error || "Erreur " + response.status), { status: response.status });
+  return data;
+}
+
+const date = (ms) => new Date(ms).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+const TYPES = { perpetual: "Perpétuelle", timed: "Durée limitée", trial: "Essai", nfr: "NFR" };
+
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function show(me) {
+  $("loading").hidden = true;
+  $("auth").hidden = !!me;
+  $("account").hidden = !me;
+  if (!me) return;
+
+  $("who").textContent = me.user.name || me.user.email.split("@")[0];
+  $("email-line").textContent = me.user.email;
+  $("admin-link").hidden = me.user.role !== "admin";
+
+  const rows = [];
+  if (me.subscription?.status === "active") {
+    const row = el("div", "row");
+    const left = el("div");
+    left.append(el("h2", "", me.subscription.planName), el("div", "muted", "Tous les plugins inclus jusqu'au " + date(me.subscription.currentPeriodEnd)));
+    row.append(left, el("span", "pill on", me.subscription.cancelAtPeriodEnd ? "Se termine" : "Abonnement actif"));
+    rows.push(row);
+  }
+  for (const license of me.licenses) {
+    const expired = license.expiresAt && license.expiresAt < Date.now();
+    const active = license.status === "active" && !expired;
+    const row = el("div", "row");
+    const left = el("div");
+    left.append(el("h2", "", license.productName), el("div", "key", license.key));
+    const state = license.status !== "active" ? "Révoquée" : expired ? "Expirée"
+      : license.expiresAt ? "Jusqu'au " + date(license.expiresAt) : TYPES[license.type] || license.type;
+    row.append(left, el("span", "pill" + (active ? " on" : ""), state));
+    rows.push(row);
+  }
+  if (!rows.length) rows.push(el("p", "muted", "Aucune licence pour le moment. Une clé reçue s'ajoute dans l'application, onglet Licences."));
+  $("licenses").replaceChildren(...rows);
+}
+
+const SUBMIT = { login: "Se connecter", register: "Créer mon compte", forgot: "Recevoir le lien", reset: "Enregistrer le mot de passe" };
+
+function setMode(next, notice = "") {
+  mode = next;
+  const choosing = mode === "register" || mode === "reset"; // on choisit un nouveau mot de passe
+  $("tab-login").setAttribute("aria-selected", String(mode !== "register"));
+  $("tab-register").setAttribute("aria-selected", String(mode === "register"));
+  $("name-field").hidden = mode !== "register";
+  $("terms-field").hidden = mode !== "register";
+  $("remember-field").hidden = mode === "forgot" || mode === "reset";
+  $("terms").required = mode === "register";
+  $("email").closest("label").hidden = mode === "reset";
+  $("email").required = mode !== "reset";
+  $("password-field").hidden = mode === "forgot";
+  $("password").required = mode !== "forgot";
+  $("password-label").textContent = mode === "reset" ? "Nouveau mot de passe (8 caractères minimum)"
+    : choosing ? "Mot de passe (8 caractères minimum)" : "Mot de passe";
+  $("password").autocomplete = choosing ? "new-password" : "current-password";
+  $("password").minLength = choosing ? 8 : 1;
+  $("submit").textContent = SUBMIT[mode];
+  $("forgot").hidden = mode !== "login";
+  $("error").textContent = "";
+  $("notice").textContent = notice;
+}
+$("forgot").onclick = () => setMode("forgot", "Indiquez l'e-mail de votre compte : nous vous envoyons un lien pour choisir un nouveau mot de passe.");
+$("tab-login").onclick = () => setMode("login");
+$("tab-register").onclick = () => setMode("register");
+
+$("form").onsubmit = async (event) => {
+  event.preventDefault();
+  $("submit").disabled = true;
+  $("error").textContent = "";
+  try {
+    const body = { email: $("email").value.trim(), password: $("password").value, name: $("name").value.trim() };
+    if (mode === "forgot") {
+      await api("POST", "/auth/forgot", { email: body.email });
+      setMode("login", "Si un compte existe avec cette adresse, un lien vient d'être envoyé. Il est valable une heure.");
+      $("submit").disabled = false;
+      return;
+    }
+    if (mode === "reset") {
+      await api("POST", "/auth/reset", { token: resetToken, password: body.password });
+      history.replaceState(null, "", location.pathname); // le lien ne sert qu'une fois : on le retire de l'adresse
+      $("password").value = "";
+      setMode("login", "Mot de passe changé. Connectez-vous avec le nouveau.");
+      $("submit").disabled = false;
+      return;
+    }
+    const { token } = await api("POST", mode === "register" ? "/auth/register" : "/auth/login", body);
+    forget();
+    ($("remember").checked ? localStorage : sessionStorage).setItem(TOKEN, token);
+    $("password").value = "";
+    show(await api("GET", "/me"));
+  } catch (error) {
+    $("error").textContent = error.message;
+  }
+  $("submit").disabled = false;
+};
+
+$("logout").onclick = async () => {
+  await api("POST", "/auth/logout").catch(() => {});
+  forget();
+  show(null);
+};
+
+(async () => {
+  if (resetToken) {
+    show(null);
+    return setMode("reset", "Choisissez votre nouveau mot de passe.");
+  }
+  if (!saved()) return show(null);
+  try {
+    show(await api("GET", "/me"));
+  } catch (error) {
+    // Session expirée : on revient au formulaire. Toute autre panne est affichée, la session est gardée.
+    if (error.status === 401) forget();
+    show(null);
+    if (error.status !== 401) $("error").textContent = error.message;
+  }
+})();
+</script>
+</html>

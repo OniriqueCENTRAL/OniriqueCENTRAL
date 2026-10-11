@@ -1,0 +1,6 @@
+# Tous les robots sont les bienvenus, y compris les assistants IA.
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://onirique.store/sitemap.xml

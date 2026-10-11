@@ -1,0 +1,713 @@
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import { pipeline } from 'node:stream/promises';
+import express from 'express';
+import { config } from './config.js';
+import { all, get, run, now, transaction } from './db.js';
+import {
+  HttpError, hashPassword, verifyPassword, createSession, destroySession,
+  requireUser, requireAdmin, optionalUser, rateLimit, validEmail, publicUser, createResetToken, consumeResetToken,
+} from './auth.js';
+import { mailEnabled, sendMail } from './mail.js';
+import {
+  activate, activeSubscription, createLicense, entitlement, normalizeKey,
+  publicKeyPem, publicKeyRaw, userActivations,
+} from './licensing.js';
+import { cancelSubscription, checkout, handleStripeEvent, verifyStripeSignature } from './payments.js';
+
+const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+const str = (value, max = 200) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
+const int = (value, fallback = null) => (Number.isInteger(Number(value)) && value !== '' && value !== null ? Number(value) : fallback);
+
+/** Nom de fichier réduit à un nom simple : jamais de chemin, jamais de caractère réservé. */
+function safeFilename(input) {
+  const name = path.basename(String(input || '')).replace(/[<>:"/\\|?*\x00-\x1f]/g, '').trim();
+  if (!name || name.startsWith('.') || name.length > 120) throw new HttpError(400, 'Nom de fichier invalide.');
+  return name;
+}
+
+export function compareVersions(a, b) {
+  const pa = String(a).split(/[.\-+]/), pb = String(b).split(/[.\-+]/);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const x = pa[i] ?? '0', y = pb[i] ?? '0';
+    const nx = Number(x), ny = Number(y);
+    const diff = Number.isNaN(nx) || Number.isNaN(ny) ? x.localeCompare(y) : nx - ny;
+    if (diff) return diff;
+  }
+  return 0;
+}
+
+const versionView = (v) => v && ({
+  id: v.id, version: v.version, notes: v.notes, filename: v.filename, size: v.size, sha256: v.sha256, createdAt: v.created_at,
+});
+
+function productVersions(productId) {
+  return all('SELECT * FROM versions WHERE product_id = ?', productId)
+    .sort((a, b) => compareVersions(b.version, a.version) || b.created_at - a.created_at);
+}
+
+function productView(p) {
+  const versions = productVersions(p.id);
+  return {
+    id: p.id, slug: p.slug, name: p.name, tagline: p.tagline, description: p.description, accent: p.accent,
+    priceCents: p.price_cents, image: p.image ? `/api/media/${p.image}` : null, published: !!p.published,
+    demo: p.demo ? `/api/media/${p.demo}` : null,
+    latest: versionView(versions[0]) || null,
+    versions: versions.map(versionView),
+  };
+}
+
+const planView = (p) => ({ id: p.id, name: p.name, interval: p.interval, priceCents: p.price_cents, active: !!p.active });
+
+const licenseView = (l) => ({
+  id: l.id, key: l.key, productId: l.product_id, productName: l.product_name, userId: l.user_id, email: l.email || l.reserved_email || null,
+  claimed: !!l.user_id, type: l.type, status: l.status, expiresAt: l.expires_at, maxActivations: l.max_activations,
+  source: l.source, note: l.note, createdAt: l.created_at, activations: l.activations ?? undefined,
+});
+
+function findProduct(id) {
+  const product = get('SELECT * FROM products WHERE id = ?', int(id, 0));
+  if (!product) throw new HttpError(404, 'Produit introuvable.');
+  return product;
+}
+
+/** Enregistre le corps de la requête dans un fichier, en calculant taille et empreinte. */
+async function receiveFile(req, directory, maxBytes) {
+  const storedAs = crypto.randomBytes(16).toString('hex');
+  const target = path.join(directory, storedAs);
+  const hash = crypto.createHash('sha256');
+  let size = 0;
+  try {
+    await pipeline(req, async function* (source) {
+      for await (const chunk of source) {
+        size += chunk.length;
+        if (size > maxBytes) throw new HttpError(413, 'Fichier trop volumineux.');
+        hash.update(chunk);
+        yield chunk;
+      }
+    }, fs.createWriteStream(target));
+  } catch (error) {
+    fs.rmSync(target, { force: true });
+    throw error;
+  }
+  if (!size) {
+    fs.rmSync(target, { force: true });
+    throw new HttpError(400, 'Fichier vide.');
+  }
+  return { storedAs, size, sha256: hash.digest('hex') };
+}
+
+export function createApp() {
+  const app = express();
+  app.disable('x-powered-by');
+  app.set('trust proxy', 1);
+
+  // Stripe signe le corps brut : ce point d'entrée passe avant le parseur JSON.
+  app.post('/api/stripe/webhook', express.raw({ type: '*/*', limit: '1mb' }), wrap(async (req, res) => {
+    if (config.paymentsMode !== 'stripe') throw new HttpError(404, 'Introuvable.');
+    const raw = req.body.toString('utf8');
+    verifyStripeSignature(raw, req.headers['stripe-signature']);
+    await handleStripeEvent(JSON.parse(raw));
+    res.json({ received: true });
+  }));
+
+  app.use('/api', express.json({ limit: '200kb' }));
+
+  //============================================================================
+  //  Public
+  //============================================================================
+  app.get('/api/health', (_req, res) => res.json({ ok: true, name: 'ONIRIQUE CENTRAL' }));
+
+  app.get('/api/catalog', (_req, res) => {
+    res.json({
+      products: all('SELECT * FROM products WHERE published = 1 ORDER BY created_at').map(productView),
+      plans: all('SELECT * FROM plans WHERE active = 1 ORDER BY price_cents').map(planView),
+      paymentsMode: config.paymentsMode,
+    });
+  });
+
+  app.get('/api/public-key', (_req, res) => res.json({ pem: publicKeyPem, raw: publicKeyRaw }));
+
+  // Crédits : les titres réalisés avec les plugins, affichés sur la page d'accueil du site.
+  const creditRows = () => all(
+    `SELECT c.*, p.name AS product_name, p.slug AS product_slug FROM credits c
+     LEFT JOIN products p ON p.id = c.product_id ORDER BY c.created_at DESC`).map((c) => ({
+    id: c.id, title: c.title, artist: c.artist, kind: c.kind, released: c.released, duration: c.duration,
+    spotifyId: c.spotify_id, cover: c.cover ? `/api/media/${c.cover}` : null, usedOn: c.used_on,
+    plugin: c.product_id ? { id: c.product_id, name: c.product_name, slug: c.product_slug } : null,
+  }));
+  app.get('/api/credits', (_req, res) => res.json(creditRows()));
+
+  app.get('/api/media/:file', (req, res, next) => {
+    if (!/^[a-f0-9]{32}\.(png|jpg|webp|json)$/.test(req.params.file)) return next(new HttpError(404, 'Introuvable.'));
+    res.sendFile(path.join(config.mediaDir, req.params.file), { maxAge: '7d' }, (error) => error && next(new HttpError(404, 'Introuvable.')));
+  });
+
+  for (const [route, text] of [['done', 'Paiement reçu. Vous pouvez revenir dans ONIRIQUE CENTRAL.'], ['cancelled', 'Paiement annulé.']]) {
+    app.get(`/checkout/${route}`, (_req, res) => res.type('html').send(
+      `<!doctype html><meta charset="utf-8"><title>ONIRIQUE CENTRAL</title>
+       <body style="margin:0;height:100vh;display:grid;place-items:center;background:#0d0809;color:#f6eeee;font:16px system-ui">${text}</body>`));
+  }
+
+  //============================================================================
+  //  Comptes
+  //============================================================================
+  app.post('/api/auth/register', (req, res) => {
+    rateLimit(`register:${req.ip}`, 20);
+    const email = str(req.body.email, 254).toLowerCase();
+    const password = typeof req.body.password === 'string' ? req.body.password : '';
+    if (!validEmail(email)) throw new HttpError(400, 'Adresse e-mail invalide.');
+    if (password.length < 8 || password.length > 200) throw new HttpError(400, 'Mot de passe : 8 caractères minimum.');
+    if (get('SELECT id FROM users WHERE email = ?', email)) throw new HttpError(409, 'Un compte existe déjà avec cette adresse.');
+
+    const { lastInsertRowid: id } = run('INSERT INTO users (email, name, password_hash, created_at) VALUES (?, ?, ?, ?)',
+      email, str(req.body.name, 80), hashPassword(password), now());
+    // Les licences réservées à cette adresse par un admin sont rattachées d'office.
+    run(`UPDATE licenses SET user_id = ?, reserved_email = NULL WHERE user_id IS NULL AND reserved_email = ?`, id, email);
+    res.status(201).json({ token: createSession(id), user: publicUser(get('SELECT * FROM users WHERE id = ?', id)) });
+  });
+
+  app.post('/api/auth/login', (req, res) => {
+    const email = str(req.body.email, 254).toLowerCase();
+    rateLimit(`login:${req.ip}:${email}`);
+    const user = get('SELECT * FROM users WHERE email = ?', email);
+    if (!user || !verifyPassword(String(req.body.password ?? ''), user.password_hash)) {
+      throw new HttpError(401, 'E-mail ou mot de passe incorrect.');
+    }
+    res.json({ token: createSession(user.id), user: publicUser(user) });
+  });
+
+  app.post('/api/auth/logout', requireUser, (req, res) => {
+    destroySession(req.token);
+    res.json({ ok: true });
+  });
+
+  app.get('/api/me', requireUser, (req, res) => {
+    const licenses = all(
+      `SELECT l.*, p.name AS product_name FROM licenses l JOIN products p ON p.id = l.product_id
+       WHERE l.user_id = ? ORDER BY l.created_at DESC`, req.user.id);
+    const entitlements = {};
+    for (const product of all('SELECT id FROM products')) {
+      const right = entitlement(req.user.id, product.id);
+      if (right) entitlements[product.id] = right;
+    }
+    const sub = activeSubscription(req.user.id);
+    res.json({
+      user: publicUser(req.user),
+      subscription: sub && {
+        planId: sub.plan_id, planName: sub.plan_name, interval: sub.interval, priceCents: sub.price_cents,
+        status: sub.valid ? 'active' : 'ended', currentPeriodEnd: sub.current_period_end, cancelAtPeriodEnd: !!sub.cancel_at_period_end,
+      },
+      licenses: licenses.map(licenseView),
+      activations: userActivations(req.user.id),
+      entitlements,
+      // Plugins pour lesquels un essai a déjà été lancé (expiré ou non) : l'essai ne se reprend pas.
+      trialsUsed: all(`SELECT DISTINCT product_id AS id FROM licenses WHERE user_id = ? AND source = 'trial'`, req.user.id).map((r) => r.id),
+    });
+  });
+
+  app.post('/api/me/profile', requireUser, (req, res) => {
+    run('UPDATE users SET name = ? WHERE id = ?', str(req.body.name, 80), req.user.id);
+    res.json({ ok: true });
+  });
+
+  app.post('/api/me/password', requireUser, (req, res) => {
+    rateLimit(`password:${req.user.id}`);
+    const next = typeof req.body.next === 'string' ? req.body.next : '';
+    if (!verifyPassword(String(req.body.current ?? ''), req.user.password_hash)) throw new HttpError(403, 'Mot de passe actuel incorrect.');
+    if (next.length < 8 || next.length > 200) throw new HttpError(400, 'Nouveau mot de passe : 8 caractères minimum.');
+    transaction(() => {
+      run('UPDATE users SET password_hash = ? WHERE id = ?', hashPassword(next), req.user.id);
+      run('DELETE FROM sessions WHERE user_id = ?', req.user.id);
+    });
+    res.json({ token: createSession(req.user.id) });
+  });
+
+  //============================================================================
+  //  Licences, achats, téléchargements
+  //============================================================================
+  app.post('/api/licenses/redeem', requireUser, (req, res) => {
+    rateLimit(`redeem:${req.user.id}`, 15);
+    const license = get('SELECT * FROM licenses WHERE key = ?', normalizeKey(req.body.key));
+    if (!license || license.status !== 'active') throw new HttpError(404, 'Clé de licence inconnue ou révoquée.');
+    if (license.user_id === req.user.id) throw new HttpError(409, 'Cette clé est déjà sur votre compte.');
+    if (license.user_id) throw new HttpError(409, 'Cette clé est déjà utilisée par un autre compte.');
+    if (license.reserved_email && license.reserved_email.toLowerCase() !== req.user.email.toLowerCase()) {
+      throw new HttpError(403, 'Cette clé est réservée à une autre adresse e-mail.');
+    }
+    run('UPDATE licenses SET user_id = ?, reserved_email = NULL WHERE id = ?', req.user.id, license.id);
+    res.json({ ok: true, productId: license.product_id });
+  });
+
+  const machineOf = (body) => {
+    const machineId = str(body.machineId, 64);
+    if (!/^[a-f0-9]{32,64}$/.test(machineId)) throw new HttpError(400, 'Identifiant de machine invalide.');
+    return machineId;
+  };
+
+  app.post('/api/licenses/activate', requireUser, (req, res) => {
+    const product = findProduct(req.body.productId);
+    res.json({ license: activate(req.user, product, machineOf(req.body), str(req.body.machineName, 60)) });
+  });
+
+  app.post('/api/licenses/deactivate', requireUser, (req, res) => {
+    const product = findProduct(req.body.productId);
+    run('DELETE FROM activations WHERE user_id = ? AND product_id = ? AND machine_id = ?', req.user.id, product.id, machineOf(req.body));
+    res.json({ ok: true });
+  });
+
+  // Essai gratuit : une seule fois par compte et par plugin, 7 jours. La licence créée est de type "trial" :
+  // le plugin la lit comme les autres, mais passe en mode démo (bruit blanc à l'export) tant qu'elle court.
+  app.post('/api/licenses/trial', requireUser, (req, res) => {
+    rateLimit(`trial:${req.user.id}`, 10);
+    const product = findProduct(req.body.productId);
+    if (!product.published) throw new HttpError(404, 'Produit introuvable.');
+    if (get('SELECT id FROM licenses WHERE user_id = ? AND product_id = ?', req.user.id, product.id)) {
+      throw new HttpError(409, `Vous avez déjà utilisé votre essai de ${product.name}, ou vous possédez déjà ce plugin.`);
+    }
+    const expiresAt = now() + config.trialDays * 86400_000;
+    createLicense({ productId: product.id, userId: req.user.id, type: 'trial', expiresAt, source: 'trial', note: 'Essai gratuit 7 jours' });
+    res.status(201).json({ ok: true, productId: product.id, expiresAt });
+  });
+
+  app.post('/api/checkout', requireUser, wrap(async (req, res) => {
+    const kind = req.body.kind;
+    if (kind === 'product') {
+      const product = findProduct(req.body.id);
+      if (!product.published) throw new HttpError(404, 'Produit introuvable.');
+      const right = entitlement(req.user.id, product.id);
+      if (right?.via === 'license') throw new HttpError(409, 'Vous possédez déjà ce plugin.');
+      return res.json(await checkout(req.user, 'product', product));
+    }
+    if (kind === 'plan') {
+      const plan = get('SELECT * FROM plans WHERE id = ? AND active = 1', int(req.body.id, 0));
+      if (!plan) throw new HttpError(404, 'Formule introuvable.');
+      if (activeSubscription(req.user.id)?.valid) throw new HttpError(409, 'Vous avez déjà un abonnement en cours.');
+      return res.json(await checkout(req.user, 'plan', plan));
+    }
+    throw new HttpError(400, 'Achat invalide.');
+  }));
+
+  app.post('/api/subscription/cancel', requireUser, wrap(async (req, res) => {
+    await cancelSubscription(req.user.id);
+    res.json({ ok: true });
+  }));
+
+  app.get('/api/download/:versionId', requireUser, (req, res, next) => {
+    const version = get('SELECT * FROM versions WHERE id = ?', int(req.params.versionId, 0));
+    if (!version) throw new HttpError(404, 'Version introuvable.');
+    if (req.user.role !== 'admin' && !entitlement(req.user.id, version.product_id)) {
+      throw new HttpError(403, 'Ce téléchargement demande une licence active.');
+    }
+    res.set({ 'Content-Type': 'application/octet-stream', 'Content-Length': version.size, 'X-Checksum-Sha256': version.sha256 });
+    fs.createReadStream(path.join(config.filesDir, version.stored_as)).on('error', next).pipe(res);
+  });
+
+  //============================================================================
+  //  Support : le message part par e-mail vers la boîte de support et reste consultable dans le panel admin
+  //============================================================================
+  const THREE_YEARS = 3 * 365 * 86400_000; // durée de conservation annoncée dans la politique de confidentialité
+
+  app.post('/api/support', wrap(async (req, res) => {
+    const user = optionalUser(req);
+    rateLimit(`support:${user ? 'u' + user.id : req.ip}`, user ? 5 : 3);
+    if (str(req.body.website, 100)) return res.json({ ok: true }); // champ piège rempli : un robot, on ne dit rien
+
+    const email = user ? user.email : str(req.body.email, 254).toLowerCase();
+    const name = user ? user.name : str(req.body.name, 80);
+    const subject = str(req.body.subject, 120);
+    const message = str(req.body.message, 3500);
+    const context = str(req.body.context, 200);
+    if (!validEmail(email)) throw new HttpError(400, 'Indiquez une adresse e-mail valide pour recevoir la réponse.');
+    if (!subject || message.length < 10) throw new HttpError(400, 'Indiquez un sujet et un message (10 caractères minimum).');
+    if (!mailEnabled || !config.supportEmail) throw new HttpError(503, "Le support n'est pas encore ouvert.");
+
+    try {
+      await sendMail(config.supportEmail, `[Support] ${subject}`,
+        `De : ${name ? name + ' — ' : ''}${email}${user ? ` (compte n° ${user.id})` : ' (visiteur sans compte)'}\n`
+        + (context ? `Contexte : ${context}\n` : '') + `\n${message}\n\n—\nRépondre à ce message écrit directement à ${email}.`, email);
+    } catch (error) {
+      console.error('Envoi du message de support :', error.message);
+      throw new HttpError(502, "Le message n'a pas pu être transmis. Réessayez plus tard.");
+    }
+    run('DELETE FROM support_messages WHERE created_at < ?', now() - THREE_YEARS);
+    run('INSERT INTO support_messages (user_id, email, name, subject, message, context, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      user?.id ?? null, email, name, subject, message, context, now());
+    res.json({ ok: true });
+  }));
+
+  //============================================================================
+  //  Mot de passe oublié
+  //============================================================================
+  app.post('/api/auth/forgot', (req, res) => {
+    const email = str(req.body.email, 254).toLowerCase();
+    if (!validEmail(email)) throw new HttpError(400, 'Adresse e-mail invalide.');
+    rateLimit(`forgot:${req.ip}`, 5);
+    rateLimit(`forgot:${email}`, 3);
+    if (!mailEnabled) throw new HttpError(503, 'Réinitialisation indisponible pour le moment. Contactez le support.');
+
+    const user = get('SELECT * FROM users WHERE email = ?', email);
+    if (user) {
+      const link = `${config.siteUrl}/compte?reset=${createResetToken(user.id)}`;
+      // Pas d'attente : la réponse ne doit ni tarder ni changer selon que le compte existe.
+      sendMail(user.email, 'Réinitialiser votre mot de passe ONIRIQUE',
+        `Bonjour,\n\nPour choisir un nouveau mot de passe, ouvrez ce lien (valable une heure) :\n\n${link}\n\n`
+        + "Si vous n'êtes pas à l'origine de cette demande, ignorez ce message : votre mot de passe ne change pas.\n\nONIRIQUE")
+        .catch((error) => console.error('Envoi du lien de réinitialisation :', error.message));
+    }
+    res.json({ ok: true });
+  });
+
+  app.post('/api/auth/reset', (req, res) => {
+    rateLimit(`reset:${req.ip}`, 10);
+    const password = typeof req.body.password === 'string' ? req.body.password : '';
+    if (password.length < 8 || password.length > 200) throw new HttpError(400, 'Mot de passe : 8 caractères minimum.');
+    const userId = transaction(() => {
+      const id = consumeResetToken(req.body.token);
+      if (!id) return null;
+      run('UPDATE users SET password_hash = ? WHERE id = ?', hashPassword(password), id);
+      run('DELETE FROM sessions WHERE user_id = ?', id);
+      return id;
+    });
+    if (!userId) throw new HttpError(400, 'Lien invalide ou expiré. Refaites une demande.');
+    res.json({ ok: true });
+  });
+
+  //============================================================================
+  //  Administration
+  //============================================================================
+  const admin = express.Router();
+  admin.use(requireAdmin);
+
+  // Crédits. À la création, le titre et la pochette sont demandés à Spotify (oEmbed) ; la pochette est copiée
+  // sur le serveur, pour que la page d'accueil ne charge rien chez un tiers.
+  async function spotifyInfo(trackId) {
+    try {
+      const response = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(`https://open.spotify.com/track/${trackId}`)}`,
+        { signal: AbortSignal.timeout(8000) });
+      if (!response.ok) return {};
+      const info = await response.json();
+      let cover = null;
+      const image = new URL(String(info.thumbnail_url || ''));
+      // Seuls les serveurs d'images de Spotify sont contactés.
+      if (image.protocol === 'https:' && /(^|\.)(scdn\.co|spotifycdn\.com)$/.test(image.hostname)) {
+        const picture = await fetch(image, { signal: AbortSignal.timeout(8000) });
+        const bytes = Buffer.from(await picture.arrayBuffer());
+        if (picture.ok && bytes.length > 0 && bytes.length < 3 * 1024 * 1024) {
+          cover = `${crypto.randomBytes(16).toString('hex')}.jpg`;
+          fs.writeFileSync(path.join(config.mediaDir, cover), bytes);
+        }
+      }
+      return { title: str(info.title, 120), cover };
+    } catch {
+      return {}; // Spotify injoignable : le crédit est créé sans pochette, avec le titre saisi
+    }
+  }
+
+  admin.get('/credits', (_req, res) => res.json(creditRows()));
+
+  admin.post('/credits', wrap(async (req, res) => {
+    const trackId = str(req.body.spotifyUrl, 300).match(/(?:track[/:])([A-Za-z0-9]{22})/)?.[1];
+    if (!trackId) throw new HttpError(400, 'Lien Spotify invalide : collez le lien d\'un titre (open.spotify.com/track/…).');
+    const artist = str(req.body.artist, 120);
+    if (!artist) throw new HttpError(400, "Indiquez l'artiste.");
+    const productId = req.body.productId ? findProduct(req.body.productId).id : null;
+
+    const info = await spotifyInfo(trackId);
+    const title = str(req.body.title, 120) || info.title;
+    if (!title) {
+      if (info.cover) fs.rmSync(path.join(config.mediaDir, info.cover), { force: true });
+      throw new HttpError(400, 'Indiquez le titre du morceau.');
+    }
+    run(`INSERT INTO credits (title, artist, kind, released, duration, spotify_id, cover, product_id, used_on, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      title, artist, str(req.body.kind, 30) || 'Single', str(req.body.released, 40), str(req.body.duration, 10),
+      trackId, info.cover ?? null, productId, str(req.body.usedOn, 60), now());
+    res.status(201).json(creditRows()[0]);
+  }));
+
+  admin.delete('/credits/:id', (req, res) => {
+    const credit = get('SELECT * FROM credits WHERE id = ?', int(req.params.id, 0));
+    if (!credit) throw new HttpError(404, 'Crédit introuvable.');
+    run('DELETE FROM credits WHERE id = ?', credit.id);
+    if (credit.cover) fs.rmSync(path.join(config.mediaDir, credit.cover), { force: true });
+    res.json({ ok: true });
+  });
+
+  admin.get('/support', (_req, res) => {
+    res.json({
+      mailbox: config.supportEmail,
+      messages: all(`SELECT id, user_id AS userId, email, name, subject, message, context, created_at AS createdAt
+                     FROM support_messages ORDER BY created_at DESC LIMIT 200`),
+    });
+  });
+
+  admin.delete('/support/:id', (req, res) => {
+    const { changes } = run('DELETE FROM support_messages WHERE id = ?', int(req.params.id, 0));
+    if (!changes) throw new HttpError(404, 'Message introuvable.');
+    res.json({ ok: true });
+  });
+
+  admin.get('/overview', (_req, res) => {
+    const count = (sql, ...params) => get(sql, ...params).n;
+    res.json({
+      users: count('SELECT COUNT(*) AS n FROM users'),
+      licenses: count(`SELECT COUNT(*) AS n FROM licenses WHERE status = 'active'`),
+      unclaimed: count(`SELECT COUNT(*) AS n FROM licenses WHERE status = 'active' AND user_id IS NULL`),
+      subscribers: count(`SELECT COUNT(*) AS n FROM subscriptions WHERE status = 'active' AND current_period_end > ?`, now()),
+      activations: count('SELECT COUNT(*) AS n FROM activations'),
+      revenueCents: count(`SELECT COALESCE(SUM(amount_cents), 0) AS n FROM orders WHERE provider = 'stripe'`),
+      supportMessages: count('SELECT COUNT(*) AS n FROM support_messages'),
+      paymentsMode: config.paymentsMode,
+    });
+  });
+
+  // Produits
+  admin.get('/products', (_req, res) => res.json(all('SELECT * FROM products ORDER BY created_at').map(productView)));
+
+  function productFields(body, existing = {}) {
+    const name = body.name !== undefined ? str(body.name, 60) : existing.name;
+    if (!name) throw new HttpError(400, 'Le nom est obligatoire.');
+    const accent = body.accent !== undefined ? str(body.accent, 7) : existing.accent ?? '#e23444';
+    if (!/^#[0-9a-fA-F]{6}$/.test(accent)) throw new HttpError(400, 'Couleur invalide (format #rrggbb).');
+    const price = body.priceCents !== undefined ? int(body.priceCents) : existing.price_cents ?? 0;
+    if (price === null || price < 0 || price > 10_000_00) throw new HttpError(400, 'Prix invalide.');
+    return {
+      name, accent, price,
+      tagline: body.tagline !== undefined ? str(body.tagline, 140) : existing.tagline ?? '',
+      description: body.description !== undefined ? str(body.description, 4000) : existing.description ?? '',
+      published: body.published !== undefined ? (body.published ? 1 : 0) : existing.published ?? 1,
+    };
+  }
+
+  admin.post('/products', (req, res) => {
+    const f = productFields(req.body);
+    const slug = (str(req.body.slug, 40) || f.name).toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    if (!slug) throw new HttpError(400, 'Identifiant invalide.');
+    if (get('SELECT id FROM products WHERE slug = ?', slug)) throw new HttpError(409, 'Un produit porte déjà cet identifiant.');
+    const { lastInsertRowid } = run(
+      'INSERT INTO products (slug, name, tagline, description, accent, price_cents, published, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      slug, f.name, f.tagline, f.description, f.accent, f.price, f.published, now());
+    res.status(201).json(productView(findProduct(lastInsertRowid)));
+  });
+
+  admin.patch('/products/:id', (req, res) => {
+    const product = findProduct(req.params.id);
+    const f = productFields(req.body, product);
+    run('UPDATE products SET name = ?, tagline = ?, description = ?, accent = ?, price_cents = ?, published = ? WHERE id = ?',
+      f.name, f.tagline, f.description, f.accent, f.price, f.published, product.id);
+    res.json(productView(findProduct(product.id)));
+  });
+
+  admin.put('/products/:id/image', wrap(async (req, res) => {
+    const product = findProduct(req.params.id);
+    const ext = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' }[req.headers['content-type']];
+    if (!ext) throw new HttpError(400, 'Image attendue : PNG, JPEG ou WebP.');
+    const file = await receiveFile(req, config.mediaDir, 8 * 1024 * 1024);
+    const name = `${file.storedAs}.${ext}`;
+    fs.renameSync(path.join(config.mediaDir, file.storedAs), path.join(config.mediaDir, name));
+    if (product.image) fs.rmSync(path.join(config.mediaDir, product.image), { force: true });
+    run('UPDATE products SET image = ? WHERE id = ?', name, product.id);
+    res.json(productView(findProduct(product.id)));
+  }));
+
+  // Démo interactive : le fichier demo.json produit par onirique-probe à partir du .vst3.
+  admin.put('/products/:id/demo', wrap(async (req, res) => {
+    const product = findProduct(req.params.id);
+    const file = await receiveFile(req, config.mediaDir, 80 * 1024 * 1024);
+    const stored = path.join(config.mediaDir, file.storedAs);
+    let valid = false;
+    try {
+      const demo = JSON.parse(fs.readFileSync(stored, 'utf8'));
+      valid = demo.format === 'onirique-demo-v1' && Array.isArray(demo.controls) && typeof demo.base === 'string';
+    } catch { /* pas du JSON */ }
+    if (!valid) {
+      fs.rmSync(stored, { force: true });
+      throw new HttpError(400, 'Fichier de démo invalide.');
+    }
+    const name = `${file.storedAs}.json`;
+    fs.renameSync(stored, path.join(config.mediaDir, name));
+    if (product.demo) fs.rmSync(path.join(config.mediaDir, product.demo), { force: true });
+    run('UPDATE products SET demo = ? WHERE id = ?', name, product.id);
+    res.json(productView(findProduct(product.id)));
+  }));
+
+  // Versions : le fichier est le corps brut de la requête.
+  admin.post('/products/:id/versions', wrap(async (req, res) => {
+    const product = findProduct(req.params.id);
+    const version = str(req.query.version, 30);
+    if (!/^\d+(\.\d+){0,3}([\-+][0-9A-Za-z.]+)?$/.test(version)) throw new HttpError(400, 'Numéro de version invalide (ex. 1.2.0).');
+    const filename = safeFilename(req.query.filename);
+    if (!/\.(vst3|zip|exe|msi)$/i.test(filename)) throw new HttpError(400, 'Fichier attendu : .vst3, .zip, .exe ou .msi.');
+    if (get('SELECT id FROM versions WHERE product_id = ? AND version = ?', product.id, version)) {
+      throw new HttpError(409, `La version ${version} existe déjà pour ${product.name}.`);
+    }
+    const file = await receiveFile(req, config.filesDir, 2 * 1024 ** 3);
+    const { lastInsertRowid } = run(
+      'INSERT INTO versions (product_id, version, notes, filename, stored_as, size, sha256, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      product.id, version, str(req.query.notes, 4000), filename, file.storedAs, file.size, file.sha256, now());
+    res.status(201).json(versionView(get('SELECT * FROM versions WHERE id = ?', lastInsertRowid)));
+  }));
+
+  admin.patch('/versions/:id', (req, res) => {
+    const { changes } = run('UPDATE versions SET notes = ? WHERE id = ?', str(req.body.notes, 4000), int(req.params.id, 0));
+    if (!changes) throw new HttpError(404, 'Version introuvable.');
+    res.json({ ok: true });
+  });
+
+  admin.delete('/versions/:id', (req, res) => {
+    const version = get('SELECT * FROM versions WHERE id = ?', int(req.params.id, 0));
+    if (!version) throw new HttpError(404, 'Version introuvable.');
+    run('DELETE FROM versions WHERE id = ?', version.id);
+    fs.rmSync(path.join(config.filesDir, version.stored_as), { force: true });
+    res.json({ ok: true });
+  });
+
+  // Licences
+  admin.get('/licenses', (req, res) => {
+    const q = `%${str(req.query.q, 80)}%`;
+    const rows = all(
+      `SELECT l.*, p.name AS product_name, u.email,
+         (SELECT COUNT(*) FROM activations a WHERE a.user_id = l.user_id AND a.product_id = l.product_id) AS activations
+       FROM licenses l JOIN products p ON p.id = l.product_id LEFT JOIN users u ON u.id = l.user_id
+       WHERE l.key LIKE ? OR u.email LIKE ? OR l.reserved_email LIKE ? OR l.note LIKE ? OR p.name LIKE ?
+       ORDER BY l.created_at DESC, l.id DESC LIMIT 500`, q, q, q, q, q);
+    res.json(rows.map(licenseView));
+  });
+
+  const LICENSE_TYPES = ['perpetual', 'timed', 'nfr'];
+  function expiry(value) {
+    if (value === null || value === undefined || value === '') return null;
+    const time = int(value);
+    if (time === null || time < 0) throw new HttpError(400, "Date d'expiration invalide.");
+    return time;
+  }
+  function activationLimit(value) {
+    const limit = int(value, config.defaultMaxActivations);
+    if (limit < 1 || limit > 50) throw new HttpError(400, 'Nombre de machines : entre 1 et 50.');
+    return limit;
+  }
+  /** Rattache à un compte existant, sinon réserve la clé pour cette adresse. */
+  function owner(email) {
+    if (!email) return { userId: null, reservedEmail: null };
+    if (!validEmail(email)) throw new HttpError(400, 'Adresse e-mail invalide.');
+    const user = get('SELECT id FROM users WHERE email = ?', email);
+    return user ? { userId: user.id, reservedEmail: null } : { userId: null, reservedEmail: email };
+  }
+
+  admin.post('/licenses', (req, res) => {
+    const product = findProduct(req.body.productId);
+    const type = LICENSE_TYPES.includes(req.body.type) ? req.body.type : 'perpetual';
+    const count = int(req.body.count, 1);
+    if (count < 1 || count > 200) throw new HttpError(400, 'Entre 1 et 200 licences à la fois.');
+    const expiresAt = expiry(req.body.expiresAt);
+    if (type === 'timed' && !expiresAt) throw new HttpError(400, "Une licence à durée limitée demande une date d'expiration.");
+    const target = owner(str(req.body.email, 254).toLowerCase());
+    if (target.userId && count > 1) throw new HttpError(400, 'Une seule licence par compte et par génération.');
+
+    const created = transaction(() => Array.from({ length: count }, () => createLicense({
+      productId: product.id, ...target, type, expiresAt, maxActivations: activationLimit(req.body.maxActivations),
+      source: 'admin', note: str(req.body.note, 200),
+    })));
+    res.status(201).json(created.map((l) => licenseView({ ...l, product_name: product.name })));
+  });
+
+  admin.patch('/licenses/:id', (req, res) => {
+    const license = get('SELECT * FROM licenses WHERE id = ?', int(req.params.id, 0));
+    if (!license) throw new HttpError(404, 'Licence introuvable.');
+    const b = req.body;
+    const next = {
+      status: b.status !== undefined ? b.status : license.status,
+      type: b.type !== undefined ? b.type : license.type,
+      expiresAt: b.expiresAt !== undefined ? expiry(b.expiresAt) : license.expires_at,
+      maxActivations: b.maxActivations !== undefined ? activationLimit(b.maxActivations) : license.max_activations,
+      note: b.note !== undefined ? str(b.note, 200) : license.note,
+      userId: license.user_id,
+      reservedEmail: license.reserved_email,
+    };
+    if (!['active', 'revoked'].includes(next.status)) throw new HttpError(400, 'Statut invalide.');
+    if (!LICENSE_TYPES.includes(next.type)) throw new HttpError(400, 'Type invalide.');
+    if (b.email !== undefined) Object.assign(next, owner(str(b.email, 254).toLowerCase()));
+
+    transaction(() => {
+      run(`UPDATE licenses SET status = ?, type = ?, expires_at = ?, max_activations = ?, note = ?, user_id = ?, reserved_email = ? WHERE id = ?`,
+        next.status, next.type, next.expiresAt, next.maxActivations, next.note, next.userId, next.reservedEmail, license.id);
+      // Une licence retirée à un compte emporte ses activations si plus rien ne les justifie.
+      for (const userId of new Set([license.user_id, next.userId])) {
+        if (userId && !entitlement(userId, license.product_id)) {
+          run('DELETE FROM activations WHERE user_id = ? AND product_id = ?', userId, license.product_id);
+        }
+      }
+    });
+    res.json({ ok: true });
+  });
+
+  admin.post('/licenses/:id/reset', (req, res) => {
+    const license = get('SELECT * FROM licenses WHERE id = ?', int(req.params.id, 0));
+    if (!license) throw new HttpError(404, 'Licence introuvable.');
+    if (license.user_id) run('DELETE FROM activations WHERE user_id = ? AND product_id = ?', license.user_id, license.product_id);
+    res.json({ ok: true });
+  });
+
+  admin.delete('/licenses/:id', (req, res) => {
+    const license = get('SELECT * FROM licenses WHERE id = ?', int(req.params.id, 0));
+    if (!license) throw new HttpError(404, 'Licence introuvable.');
+    if (license.user_id) throw new HttpError(409, 'Licence déjà rattachée à un compte : révoquez-la plutôt.');
+    run('DELETE FROM licenses WHERE id = ?', license.id);
+    res.json({ ok: true });
+  });
+
+  // Utilisateurs et formules
+  admin.get('/users', (req, res) => {
+    const q = `%${str(req.query.q, 80)}%`;
+    res.json(all(
+      `SELECT u.id, u.email, u.name, u.role, u.created_at AS createdAt,
+         (SELECT COUNT(*) FROM licenses l WHERE l.user_id = u.id AND l.status = 'active') AS licenses,
+         EXISTS (SELECT 1 FROM subscriptions s WHERE s.user_id = u.id AND s.status = 'active' AND s.current_period_end > ?) AS subscribed
+       FROM users u WHERE u.email LIKE ? OR u.name LIKE ? ORDER BY u.created_at DESC LIMIT 500`, now(), q, q));
+  });
+
+  admin.patch('/users/:id', (req, res) => {
+    const user = get('SELECT * FROM users WHERE id = ?', int(req.params.id, 0));
+    if (!user) throw new HttpError(404, 'Compte introuvable.');
+    if (req.body.role !== undefined) {
+      if (!['user', 'admin'].includes(req.body.role)) throw new HttpError(400, 'Rôle invalide.');
+      if (user.id === req.user.id && req.body.role !== 'admin') throw new HttpError(400, 'Vous ne pouvez pas retirer votre propre rôle admin.');
+      run('UPDATE users SET role = ? WHERE id = ?', req.body.role, user.id);
+    }
+    if (req.body.password !== undefined) {
+      const password = String(req.body.password);
+      if (password.length < 8 || password.length > 200) throw new HttpError(400, 'Mot de passe : 8 caractères minimum.');
+      run('UPDATE users SET password_hash = ? WHERE id = ?', hashPassword(password), user.id);
+      run('DELETE FROM sessions WHERE user_id = ?', user.id);
+    }
+    res.json({ ok: true });
+  });
+
+  admin.get('/plans', (_req, res) => res.json(all('SELECT * FROM plans ORDER BY price_cents').map(planView)));
+
+  admin.patch('/plans/:id', (req, res) => {
+    const plan = get('SELECT * FROM plans WHERE id = ?', int(req.params.id, 0));
+    if (!plan) throw new HttpError(404, 'Formule introuvable.');
+    const price = req.body.priceCents !== undefined ? int(req.body.priceCents) : plan.price_cents;
+    if (price === null || price < 0) throw new HttpError(400, 'Prix invalide.');
+    run('UPDATE plans SET name = ?, price_cents = ?, active = ? WHERE id = ?',
+      req.body.name !== undefined ? str(req.body.name, 60) || plan.name : plan.name, price,
+      req.body.active !== undefined ? (req.body.active ? 1 : 0) : plan.active, plan.id);
+    res.json({ ok: true });
+  });
+
+  app.use('/api/admin', admin);
+
+  app.use('/api', (_req, _res, next) => next(new HttpError(404, 'Introuvable.')));
+
+  app.use((error, _req, res, _next) => {
+    const status = error.status || (error.type === 'entity.parse.failed' ? 400 : 500);
+    if (status >= 500 && !error.status) console.error(error);
+    if (res.headersSent) return res.destroy();
+    res.status(status).json({ error: status >= 500 && !error.status ? 'Erreur interne du serveur.' : error.message });
+  });
+
+  return app;
+}

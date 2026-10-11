@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Support — ONIRIQUE</title>
+<meta name="description" content="Contacter le support Onirique : installation, licence, son, compte. Réponse par e-mail.">
+<link rel="canonical" href="https://onirique.store/support">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css">
+<style>
+/* Formulaire de contact, sur la base des pages de texte. */
+header nav { display: flex; align-items: center; gap: 10px; }
+form { display: grid; gap: 16px; margin-top: 26px; padding: clamp(18px, 3vw, 26px); border: 1px solid var(--line); border-radius: 18px; background: var(--deep); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+label { display: grid; gap: 7px; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
+input, select, textarea { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px/1.4 var(--f-body); }
+textarea { min-height: 170px; resize: vertical; }
+select option { background: var(--deep); }
+.trap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.send { justify-self: start; padding: 14px 24px; border-radius: 999px; border: 0; background: var(--mist); color: var(--night); font: 600 15px/1 var(--f-body); cursor: pointer; box-shadow: 0 10px 40px -10px rgba(226,52,68,.6); }
+.send:disabled { opacity: .5; cursor: default; }
+.info { margin: 0; font-size: 14px; color: var(--haze); }
+.error { margin: 0; color: #FF7A85; font-size: 15px; }
+.done { margin-top: 26px; padding: 22px 24px; border: 1px solid rgba(226,52,68,.5); border-radius: 18px; background: var(--deep); }
+.error:empty { display: none; }
+@media (max-width: 620px) { .two { grid-template-columns: 1fr; } .brand { font-size: 0; gap: 0; } header .btn { padding: 10px 12px; font-size: 13px; } }
+[hidden] { display: none !important; }
+</style>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="compte.html">Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <p class="eyebrow">Support</p>
+  <h1>Nous contacter</h1>
+  <p class="updated">Un souci d'installation, de licence, de son ou de compte ? Écrivez-nous : nous répondons par e-mail.</p>
+
+  <form id="form" novalidate>
+    <p class="info" id="as" hidden></p>
+    <div class="two" id="identity">
+      <label>Votre nom (facultatif)<input id="name" maxlength="80" autocomplete="name"></label>
+      <label>Votre e-mail<input id="email" type="email" required maxlength="254" autocomplete="email"></label>
+    </div>
+    <div class="two">
+      <label>Plugin concerné<select id="product"><option value="">Question générale</option></select></label>
+      <label>Sujet<input id="subject" required maxlength="120"></label>
+    </div>
+    <label>Message<textarea id="message" required minlength="10" maxlength="3500" placeholder="Décrivez ce qui se passe : ce que vous faisiez, ce que vous attendiez, votre logiciel de musique, votre version de Windows…"></textarea></label>
+    <div class="trap" aria-hidden="true"><label>Ne pas remplir<input id="website" tabindex="-1" autocomplete="off"></label></div>
+    <p class="info">Votre message et votre e-mail servent uniquement à vous répondre. Ils sont conservés trois ans au plus. Voir la <a href="confidentialite.html">politique de confidentialité</a>.</p>
+    <p class="error" id="error" role="alert"></p>
+    <button class="send" id="send" type="submit">Envoyer</button>
+  </form>
+
+  <div class="done" id="done" role="status" hidden>
+    <h2 style="margin-top:0">Message envoyé</h2>
+    <p style="margin:0">Merci. Nous vous répondons à <strong id="done-email"></strong> dès que possible. Pensez à regarder dans vos courriers indésirables.</p>
+  </div>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="remboursement.html">Rétractation et remboursement</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a>
+  </nav>
+</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const token = sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token");
+const auth = token ? { Authorization: "Bearer " + token } : {};
+let account = null;
+
+// Connecté : l'e-mail du compte est utilisé, inutile de le redemander.
+(async () => {
+  if (token) {
+    const response = await fetch("/api/me", { headers: auth }).catch(() => null);
+    if (response?.ok) {
+      account = (await response.json()).user;
+      $("identity").hidden = true;
+      $("email").required = false;
+      $("as").textContent = "Vous écrivez en tant que " + account.email + ". La réponse arrivera à cette adresse.";
+      $("as").hidden = false;
+    }
+  }
+  const catalog = await fetch("/api/catalog").then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  for (const p of catalog?.products || []) $("product").append(Object.assign(document.createElement("option"), { value: p.name, textContent: p.name }));
+})();
+
+$("form").onsubmit = async (event) => {
+  event.preventDefault();
+  $("error").textContent = "";
+  if (!$("form").checkValidity()) { $("form").reportValidity(); return; }
+  $("send").disabled = true;
+  const email = account ? account.email : $("email").value.trim();
+  try {
+    const response = await fetch("/api/support", {
+      method: "POST",
+      headers: { ...(account ? auth : {}), "Content-Type": "application/json" },
+      body: JSON.stringify({ email, name: $("name").value.trim(), subject: $("subject").value.trim(), message: $("message").value.trim(),
+        context: [$("product").value, "site"].filter(Boolean).join(" · "), website: $("website").value }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Envoi impossible. Réessayez dans un instant.");
+    $("done-email").textContent = email;
+    $("form").hidden = true;
+    $("done").hidden = false;
+  } catch (error) {
+    $("error").textContent = error.message === "Failed to fetch" ? "Serveur injoignable. Réessayez dans un instant." : error.message;
+    $("send").disabled = false;
+  }
+};
+</script>
+</html>

@@ -1,0 +1,56 @@
+{
+  "name": "onirique-central",
+  "productName": "ONIRIQUE CENTRAL",
+  "version": "1.0.6",
+  "private": true,
+  "description": "Installez, mettez à jour et activez les plugins ONIRIQUE.",
+  "author": "Onirique",
+  "main": "main/main.js",
+  "scripts": {
+    "sync-player": "node -e \"require('fs').copyFileSync('../site/assets/demo-player.js', 'renderer/demo-player.js')\"",
+    "prestart": "npm run sync-player",
+    "start": "electron .",
+    "predist": "npm run sync-player",
+    "dist": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.onirique.central",
+    "productName": "ONIRIQUE CENTRAL",
+    "files": [
+      "main/**",
+      "renderer/**"
+    ],
+    "extraResources": [
+      {
+        "from": "../tools/probe/build/OniriqueProbe_artefacts/Release/OniriqueProbe.exe",
+        "to": "onirique-probe.exe"
+      }
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "icon": "build/icon.png",
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "ONIRIQUE CENTRAL",
+      "artifactName": "ONIRIQUE-CENTRAL-Setup-${version}.${ext}"
+    },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://onirique.store/telechargement/"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  }
+}

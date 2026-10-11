@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Relie le serveur ONIRIQUE CENTRAL à une boîte e-mail IONOS (mot de passe oublié, e-mails du site).
+# À lancer sur le VPS, en root :   onirique-mail [adresse]      (par défaut support@onirique.store)
+# Le mot de passe est saisi ici, sans s'afficher, et ne quitte pas le serveur.
+set -euo pipefail
+
+ADDR=${1:-support@onirique.store}
+APP=/opt/onirique-central/server
+ENVFILE=$APP/.env
+
+read -rsp "Mot de passe de la boîte $ADDR (rien ne s'affiche) : " PASS
+echo
+[ -n "$PASS" ] || { echo "Mot de passe vide, rien n'est changé."; exit 1; }
+case "$PASS" in *"'"*) echo "Ce mot de passe contient une apostrophe : choisissez-en un autre dans IONOS."; exit 1 ;; esac
+
+cp "$ENVFILE" "$ENVFILE.avant-mail"
+sed -i '/^SMTP_HOST=/d; /^SMTP_PORT=/d; /^SMTP_USER=/d; /^SMTP_PASSWORD=/d; /^MAIL_FROM=/d' "$ENVFILE"
+printf "SMTP_HOST=smtp.ionos.fr\nSMTP_PORT=587\nSMTP_USER=%s\nSMTP_PASSWORD='%s'\nMAIL_FROM=%s\n" "$ADDR" "$PASS" "$ADDR" >> "$ENVFILE"
+chown central:central "$ENVFILE"; chmod 600 "$ENVFILE"
+
+# Essai réel : un message de la boîte vers elle-même. En cas d'échec, l'ancien réglage est remis.
+echo "Envoi d'un message d'essai à $ADDR…"
+if (cd "$APP" && runuser -u central -- node -e "
+  process.loadEnvFile('.env');
+  const e = process.env;
+  require('nodemailer').createTransport({ host: e.SMTP_HOST, port: +e.SMTP_PORT, secure: false, auth: { user: e.SMTP_USER, pass: e.SMTP_PASSWORD } })
+    .sendMail({ from: 'ONIRIQUE <' + e.MAIL_FROM + '>', to: e.MAIL_FROM, subject: 'Essai ONIRIQUE CENTRAL', text: 'Si vous lisez ce message, le serveur peut envoyer des e-mails.' })
+    .then(() => process.exit(0), (error) => { console.error('Refus du serveur de messagerie : ' + error.message); process.exit(1); });
+"); then
+  rm -f "$ENVFILE.avant-mail"
+  systemctl restart onirique-central
+  echo "C'est bon : message d'essai envoyé, et le « mot de passe oublié » est actif. Vérifiez la boîte $ADDR."
+else
+  mv "$ENVFILE.avant-mail" "$ENVFILE"
+  echo "Échec : rien n'a été changé. Vérifiez l'adresse et le mot de passe (testez-les sur le webmail IONOS), puis relancez."
+  exit 1
+fi

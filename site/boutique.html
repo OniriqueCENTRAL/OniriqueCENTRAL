@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Boutique — ONIRIQUE</title>
+<meta name="description" content="Les plugins audio Onirique : essaie l'interface de chaque plugin dans ton navigateur, puis installe-le avec Onirique Central.">
+<link rel="canonical" href="https://onirique.store/boutique">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css">
+<style>
+/* Boutique : la base des pages de texte, élargie, avec les cartes et la démo interactive. */
+:root { --blood: #5C0008; --deep-2: #2A0A0E; --f-dream: "Grenze Gotisch", Georgia, serif;
+  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(226,52,68,.55); }
+body { background: radial-gradient(120% 50% at 50% -10%, rgba(140,6,20,.75), rgba(92,0,8,.4) 38%, transparent 72%) fixed, var(--night); }
+.wrap { max-width: 1240px; }
+header nav { display: flex; align-items: center; gap: 10px; }
+h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
+.lede { color: var(--haze); max-width: 60ch; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 22px; margin-top: 34px; }
+.card { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 22px; overflow: hidden; background: linear-gradient(180deg, var(--deep-2), var(--deep)); color: inherit; text-decoration: none; transition: transform .2s, border-color .2s; }
+.card:hover { transform: translateY(-3px); border-color: rgba(226,52,68,.6); color: inherit; }
+.card .shot { aspect-ratio: 16 / 10; background: radial-gradient(80% 90% at 50% 0%, var(--blood), var(--night)) center / cover; border-bottom: 1px solid var(--line); display: grid; place-items: center; }
+.card .shot img.cover { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.card .shot img.mark { width: 42%; filter: drop-shadow(0 0 14px var(--ember)); }
+.card .body { display: grid; gap: 8px; padding: 20px 22px 22px; }
+.card h2 { margin: 0; font: 800 17px/1.2 var(--f-display); letter-spacing: .06em; }
+.card p { margin: 0; color: var(--haze); font-size: 15px; }
+.card .foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
+.price { font: 800 20px/1 var(--f-display); }
+.more { font: 500 12px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ember-text); }
+
+.product { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); gap: 28px; align-items: start; margin-top: 26px; }
+.side { position: sticky; top: 20px; padding: 24px; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(180deg, var(--deep-2), var(--deep)); }
+.side .price { font-size: 44px; margin: 14px 0 6px; }
+.side ul { margin: 18px 0 22px; padding: 0; list-style: none; display: grid; gap: 9px; font-size: 15px; }
+.side li::before { content: "✦ "; color: var(--ember-text); }
+.buy { display: flex; justify-content: center; width: 100%; padding: 15px 22px; border-radius: 999px; border: 0; background: var(--mist); color: var(--night); font: 600 15px/1 var(--f-body); cursor: pointer; box-shadow: 0 10px 40px -10px rgba(226,52,68,.6); }
+.buy:hover { box-shadow: 0 0 0 6px rgba(226,52,68,.18), 0 18px 50px -12px rgba(226,52,68,.8); }
+.buy.ghost { margin-top: 10px; background: transparent; color: var(--mist); border: 1px solid var(--line); box-shadow: none; }
+.buy.ghost:hover { border-color: var(--ember); box-shadow: none; }
+.note { margin: 14px 0 0; font-size: 13px; color: var(--haze); }
+.back { display: inline-block; margin-top: 4px; color: var(--haze); font: 500 12px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; text-decoration: none; }
+.desc p { color: #D9C6C8; }
+.block-title { margin: 34px 0 12px; font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); }
+
+/* Démo interactive */
+.demo { border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: #000; }
+.demo-stage { position: relative; width: 100%; background-size: 100% 100%; background-repeat: no-repeat; touch-action: pan-y; user-select: none; }
+.demo-part { position: absolute; background-repeat: no-repeat; cursor: ns-resize; touch-action: none; border-radius: 4px; }
+.demo-part.discrete { cursor: pointer; touch-action: manipulation; }
+.demo-part:focus-visible { outline: 2px solid var(--ember-text); outline-offset: 2px; z-index: 99999 !important; }
+.demo-status { margin: 0; padding: 12px 16px; border-top: 1px solid var(--line); background: var(--deep); font: 500 13px/1.4 var(--f-mono); color: var(--bone); }
+.demo-wait { padding: 60px 20px; text-align: center; color: var(--haze); background: var(--deep); }
+@media (max-width: 620px) { .brand { font-size: 0; gap: 0; } header .btn { padding: 10px 12px; font-size: 13px; } }
+@media (max-width: 900px) { .product { grid-template-columns: minmax(0, 1fr); } .side { position: static; } }
+[hidden] { display: none !important; }
+</style>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="/">Accueil</a><a class="btn" href="support.html">Support</a><a class="btn" href="compte.html">Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <!-- Liste -->
+  <section id="list" hidden>
+    <p class="eyebrow">Boutique</p>
+    <h1>Nos <em>plugins</em></h1>
+    <p class="lede">Clique sur un plugin pour essayer son interface, bouton par bouton, directement ici. Les plugins s'installent ensuite avec l'application Onirique Central.</p>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <!-- Fiche d'un plugin -->
+  <section id="detail" hidden>
+    <a class="back" href="boutique.html">← Tous les plugins</a>
+    <h1 id="name"></h1>
+    <p class="lede" id="tagline"></p>
+    <div class="product">
+      <div>
+        <div class="demo" id="demo"><div class="demo-wait">Chargement de l'interface…</div></div>
+        <p class="note">Démonstration de l'interface réelle du plugin. Aucun son n'est traité dans le navigateur.</p>
+        <p class="block-title">Le plugin</p>
+        <div class="desc" id="desc"></div>
+      </div>
+      <aside class="side">
+        <p class="eyebrow" id="side-name"></p>
+        <div class="price" id="price"></div>
+        <p class="note" style="margin:0">TTC, paiement unique</p>
+        <ul>
+          <li id="kind">Plugin VST3</li>
+          <li>Windows 10 et 11, 64 bits</li>
+          <li id="version"></li>
+          <li>Installation et mises à jour par Onirique Central</li>
+        </ul>
+        <button class="buy" id="buy" type="button">Acheter</button>
+        <button class="buy ghost" id="trial" type="button" hidden>Essai gratuit · 7 jours</button>
+        <p class="note" id="trial-note" hidden>7 jours d'utilisation en temps réel dans ton DAW. L'export reste remplacé par un bruit blanc tant que le plugin n'est pas acheté. Un seul essai par plugin.</p>
+        <p class="note" id="buy-note" role="status"></p>
+        <p class="note"><a href="cgv.html">Conditions de vente</a> · <a href="remboursement.html">Rétractation</a></p>
+      </aside>
+    </div>
+  </section>
+
+  <p class="lede" id="state">Chargement…</p>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="remboursement.html">Rétractation et remboursement</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a>
+  </nav>
+</footer>
+
+<script src="assets/demo-player.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const euros = (cents) => (cents === 0 ? "Gratuit" : new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: cents % 100 ? 2 : 0 }).format(cents / 100));
+function el(tag, props = {}, ...children) {
+  const node = Object.assign(document.createElement(tag), props);
+  node.append(...children.filter(Boolean));
+  return node;
+}
+
+function card(p) {
+  const shot = el("div", { className: "shot" }, p.image
+    ? el("img", { className: "cover", src: p.image, alt: "Interface du plugin " + p.name, loading: "lazy" })
+    : el("img", { className: "mark", src: "assets/logo.png", alt: "" }));
+  return el("a", { className: "card", href: p.href || "boutique.html?p=" + encodeURIComponent(p.slug) }, shot,
+    el("div", { className: "body" }, el("h2", { textContent: p.name }), el("p", { textContent: p.tagline }),
+      el("div", { className: "foot" }, el("span", { className: "price", textContent: euros(p.priceCents) }), el("span", { className: "more", textContent: p.more || "Essayer →" }))));
+}
+
+// Essai gratuit : le bouton n'apparaît que pour un plugin payant que l'on ne possède pas et qu'on n'a pas déjà essayé.
+async function setupTrial(product) {
+  if (!product.priceCents) return;
+  const token = sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token");
+  let me = null;
+  if (token) {
+    const r = await fetch("/api/me", { headers: { Authorization: "Bearer " + token } }).catch(() => null);
+    if (r?.ok) me = await r.json();
+  }
+  const owned = me && me.entitlements[product.id];
+  if (owned) {
+    if (owned.via === "license") { $("buy").disabled = true; $("buy-note").textContent = owned.type === "trial" ? "Essai en cours sur ce compte." : "Vous possédez déjà ce plugin."; }
+    return;
+  }
+  if (me && me.trialsUsed.includes(product.id)) { $("buy-note").textContent = "Essai déjà utilisé sur ce compte."; return; }
+  $("trial").hidden = false;
+  $("trial-note").hidden = false;
+  $("trial").onclick = async () => {
+    if (!token) { location.href = "compte.html"; return; }
+    $("trial").disabled = true;
+    try {
+      const r = await fetch("/api/licenses/trial", { method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify({ productId: product.id }) });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || "Impossible de démarrer l'essai.");
+      $("trial").hidden = true;
+      $("trial-note").hidden = true;
+      $("buy-note").textContent = "Essai démarré pour 7 jours. Installe le plugin avec Onirique Central : il s'active tout seul.";
+    } catch (error) {
+      $("buy-note").textContent = error.message;
+      $("trial").disabled = false;
+    }
+  };
+}
+
+async function buy(product, catalog) {
+  const note = $("buy-note");
+  if (catalog.paymentsMode === "off" && product.priceCents > 0) {
+    note.textContent = "La vente en ligne ouvre bientôt. Si tu as reçu une clé de licence, ajoute-la dans Onirique Central, onglet Licences.";
+    return;
+  }
+  const token = (sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"));
+  if (!token) { location.href = "compte.html"; return; }
+  $("buy").disabled = true;
+  try {
+    const response = await fetch("/api/checkout", { method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify({ kind: "product", id: product.id }) });
+    const data = await response.json();
+    if (response.status === 401) { location.href = "compte.html"; return; }
+    if (!response.ok) throw new Error(data.error || "Achat impossible.");
+    if (data.url) location.href = data.url;
+    else note.textContent = "C'est ajouté à ton compte. Installe le plugin depuis Onirique Central.";
+  } catch (error) {
+    note.textContent = error.message;
+  }
+  $("buy").disabled = false;
+}
+
+(async () => {
+  let catalog;
+  try {
+    const response = await fetch("/api/catalog");
+    if (!response.ok) throw new Error();
+    catalog = await response.json();
+  } catch {
+    $("state").textContent = "La boutique est momentanément indisponible. Réessaie dans un instant.";
+    return;
+  }
+  $("state").hidden = true;
+
+  const slug = new URLSearchParams(location.search).get("p");
+  const product = slug && catalog.products.find((p) => p.slug === slug);
+  if (!product) {
+    if (catalog.products.length) $("grid").replaceChildren(...catalog.products.map(card));
+    else $("grid").replaceChildren(el("p", { className: "lede", textContent: "Aucun plugin en vente pour le moment." }));
+    $("list").hidden = false;
+    return;
+  }
+
+  document.title = product.name + " — ONIRIQUE";
+  $("name").textContent = product.name;
+  $("tagline").textContent = product.tagline;
+  $("side-name").textContent = product.name;
+  $("price").textContent = euros(product.priceCents);
+  $("version").textContent = product.latest ? "Version " + product.latest.version : "Bientôt disponible";
+  if (/\.(exe|msi)$/i.test(product.latest?.filename || "")) $("kind").textContent = "Application Windows";
+  $("desc").replaceChildren(...(product.description || product.tagline).split(/\n{2,}/).map((text) => el("p", { textContent: text })));
+  $("buy").textContent = product.priceCents ? "Acheter · " + euros(product.priceCents) : "Obtenir";
+  $("buy").onclick = () => buy(product, catalog);
+  setupTrial(product);
+  $("detail").hidden = false;
+
+  if (product.demo) {
+    OniriqueDemo.mount($("demo"), product.demo).catch(() => { $("demo").firstChild.textContent = "L'interface n'a pas pu être chargée."; });
+  } else if (product.image) {
+    $("demo").replaceChildren(el("img", { src: product.image, alt: "Interface du plugin " + product.name, style: "display:block;width:100%" }));
+  } else {
+    // Tant que VocalBox n'a pas de démo fabriquée à partir de son .vst3, celle de la page d'accueil en tient lieu.
+    $("demo").firstChild.replaceChildren(...(product.slug.includes("vocalbox")
+      ? [el("a", { href: "/#vocalbox", textContent: "Essayer l'interface de VocalBox sur la page d'accueil →" })]
+      : ["L'aperçu de ce plugin arrive bientôt."]));
+  }
+})();
+</script>
+</html>

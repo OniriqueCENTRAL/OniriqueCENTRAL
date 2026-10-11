@@ -1,0 +1,86 @@
+import { h, field, toast } from '../ui.js';
+import { state, call, refresh, render } from '../app.js';
+
+let mode = 'login';
+
+const hero = () => [
+  h('img', { class: 'hero', src: 'assets/sigil.png', alt: '' }),
+  h('div', { class: 'wordmark' }, h('b', null, 'ONIRIQUE'), h('i', null, 'Central')),
+];
+
+export function authView() {
+  const email = h('input', { type: 'email', autocomplete: 'username', required: true, placeholder: 'vous@exemple.com' });
+  const password = h('input', { type: 'password', required: true, minLength: mode === 'register' ? 8 : 1,
+    autocomplete: mode === 'register' ? 'new-password' : 'current-password' });
+  const name = h('input', { type: 'text', maxLength: 80, placeholder: 'Nom ou pseudo' });
+  const error = h('div', { class: 'error-text' });
+  const submit = h('button', { class: 'btn primary', type: 'submit' }, mode === 'login' ? 'Se connecter' : 'Créer mon compte');
+
+  const form = h('form', {
+    class: 'panel stack',
+    onsubmit: async (event) => {
+      event.preventDefault();
+      submit.disabled = true;
+      error.textContent = '';
+      try {
+        if (mode === 'login') await call('auth:login', email.value, password.value);
+        else await call('auth:register', email.value, password.value, name.value);
+        await refresh();
+      } catch (e) {
+        error.textContent = e.message;
+        submit.disabled = false;
+      }
+    },
+  },
+    mode === 'register' ? field('Nom', name) : null,
+    field('E-mail', email),
+    field(mode === 'register' ? 'Mot de passe (8 caractères minimum)' : 'Mot de passe', password),
+    // Même consentement que sur la page compte du site ; les textes sont sur onirique.store.
+    mode === 'register' ? h('label', { class: 'check', style: { 'align-items': 'flex-start', 'font-size': '13px' } },
+      h('input', { type: 'checkbox', required: true }),
+      h('span', { class: 'selectable' }, 'J\'accepte les conditions générales (onirique.store/cgv) et j\'ai lu la politique de confidentialité (onirique.store/confidentialite).')) : null,
+    error, submit,
+    mode === 'login' ? h('button', {
+      class: 'btn small quiet', type: 'button',
+      onclick: async () => {
+        if (!email.reportValidity()) return;
+        try {
+          await call('api', 'POST', '/api/auth/forgot', { email: email.value });
+          error.textContent = '';
+          toast('Si un compte existe avec cette adresse, un lien vient d\'être envoyé. Il est valable une heure.');
+        } catch (e) {
+          error.textContent = e.message;
+        }
+      },
+    }, 'Mot de passe oublié ?') : null);
+
+  const tab = (id, label) => h('button', {
+    type: 'button', class: mode === id ? 'active' : '', onclick: () => { mode = id; render(); },
+  }, label);
+
+  queueMicrotask(() => (mode === 'register' ? name : email).focus());
+  return h('div', { class: 'auth-box' }, hero(),
+    h('div', { class: 'segmented' }, tab('login', 'Connexion'), tab('register', 'Créer un compte')),
+    form,
+    h('p', { class: 'muted mono', style: { 'font-size': '11px', 'margin-top': '16px' } }, state.data.settings.serverUrl));
+}
+
+/** Serveur injoignable : on laisse corriger l'adresse. */
+export function offlineView() {
+  const url = h('input', { type: 'url', class: 'mono', placeholder: 'https://central.exemple.com' });
+  const error = h('div', { class: 'error-text' }, state.offline);
+  const form = h('form', {
+    class: 'panel stack',
+    onsubmit: async (event) => {
+      event.preventDefault();
+      try {
+        if (url.value.trim()) await call('settings:server', url.value);
+        await refresh();
+      } catch (e) {
+        error.textContent = e.message;
+      }
+    },
+  }, field('Adresse du serveur (laisser vide pour réessayer)', url), error,
+    h('button', { class: 'btn primary', type: 'submit' }, 'Réessayer'));
+  return h('div', { class: 'auth-box' }, hero(), form);
+}

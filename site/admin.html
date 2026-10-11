@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ONIRIQUE — Administration</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css">
+<style>
+/* Page d'administration : la mise en page des pages de texte, en plus large, avec ses tuiles et ses actions. */
+.wrap { max-width: 1120px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 22px 0; }
+.tile { padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--deep); }
+.tile b { display: block; font: 800 24px/1.2 var(--f-display); }
+.tile span { font: 500 11px/1.3 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--haze); }
+.bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 30px 0 12px; }
+.bar h2 { margin: 0; }
+input[type="search"] { width: min(100%, 320px); height: 42px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.4); color: var(--mist); font: 500 15px var(--f-body); }
+button.act { padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: none; color: var(--mist); font: 600 13px/1 var(--f-body); cursor: pointer; white-space: nowrap; }
+button.act:hover { border-color: var(--ember); }
+button.act:disabled { opacity: .5; cursor: default; }
+td.actions { white-space: nowrap; text-align: right; }
+td.actions button + button { margin-left: 6px; }
+.pill { display: inline-block; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line); font: 500 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--haze); white-space: nowrap; }
+.pill.on { color: var(--bone); border-color: rgba(226,52,68,.7); background: rgba(226,52,68,.18); }
+.sub { color: var(--haze); font-size: 13px; }
+td.msg { white-space: pre-wrap; overflow-wrap: anywhere; min-width: 280px; }
+td.msg strong { display: block; margin-bottom: 4px; }
+.bar .btn { font-size: 13px; padding: 9px 14px; }
+a.act { display: inline-block; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--mist); font: 600 13px/1 var(--f-body); text-decoration: none; white-space: nowrap; margin-right: 6px; }
+a.act:hover { border-color: var(--ember); color: var(--mist); }
+tr.detail td { background: var(--deep); }
+.key { font: 500 13px var(--f-mono); color: var(--bone); word-break: break-all; }
+.notice { padding: 14px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--deep); }
+.error { color: #FF7A85; }
+.products { display: grid; gap: 14px; margin-top: 14px; }
+.product { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--deep); }
+.product .shot { aspect-ratio: 16 / 10; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.4) center / cover; display: grid; place-items: center; color: var(--haze); font-size: 13px; }
+.product h3 { margin: 0 0 4px; font: 800 16px/1.3 var(--f-display); letter-spacing: .04em; }
+.product form { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 10px; margin-top: 14px; align-items: start; }
+.product label { display: grid; gap: 5px; font: 500 11px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--haze); }
+.product select { width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.4); color: var(--mist); font: 500 14px var(--f-body); }
+.product select option { background: var(--deep); }
+td .thumb { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; vertical-align: middle; margin-right: 12px; border: 1px solid var(--line); }
+.product input[type="text"], .product textarea { width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.4); color: var(--mist); font: 500 14px var(--f-body); }
+.product textarea { min-height: 42px; resize: vertical; }
+.product input[type="file"] { font: 500 13px var(--f-body); color: var(--haze); max-width: 100%; }
+.product input[type="file"]::file-selector-button { margin-right: 12px; padding: 9px 16px; border-radius: 999px; border: 1px solid rgba(226,52,68,.6); background: rgba(226,52,68,.14); color: var(--mist); font: 600 13px/1 var(--f-body); cursor: pointer; }
+.product input[type="file"]::file-selector-button:hover { background: rgba(226,52,68,.3); border-color: var(--ember); }
+button.act[type="submit"] { background: var(--mist); color: var(--night); border-color: transparent; padding: 10px 18px; }
+.product .row { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+progress { width: 180px; height: 8px; accent-color: var(--ember); }
+.product.new { display: block; margin-top: 14px; }
+.product:not(.new) details { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+.product summary { cursor: pointer; font: 600 14px/1.4 var(--f-body); color: var(--mist); }
+.product summary:hover { color: var(--ember-text); }
+.product label.inline { display: flex; align-items: center; gap: 8px; font: 500 14px/1.3 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--mist); }
+.product input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--ember); }
+@media (max-width: 700px) { .product, .product form { grid-template-columns: minmax(0, 1fr); } }
+[hidden] { display: none !important; }
+</style>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <a class="btn" href="compte.html">Mon compte</a>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <p class="eyebrow">Administration</p>
+  <h1>Base de données</h1>
+  <p class="updated">Les mêmes comptes que dans Onirique Central. Un administrateur nommé ici l'est aussi dans l'application.</p>
+
+  <p class="notice" id="gate">Chargement…</p>
+
+  <div id="panel" hidden>
+    <div class="tiles" id="tiles"></div>
+
+    <div class="bar">
+      <h2>Comptes</h2>
+      <input type="search" id="search" placeholder="Chercher un e-mail ou un nom" aria-label="Chercher un compte">
+    </div>
+    <p class="error" id="error" role="alert"></p>
+    <div class="table"><table>
+      <thead><tr><th>Compte</th><th>Rôle</th><th>Licences</th><th>Abonnement</th><th>Inscrit le</th><th><span class="sub">Actions</span></th></tr></thead>
+      <tbody id="users"></tbody>
+    </table></div>
+    <p class="sub" id="count"></p>
+
+    <div class="bar">
+      <h2>Support</h2>
+      <a class="btn" id="webmail" href="https://mail.ionos.fr" target="_blank" rel="noopener">Ouvrir la boîte mail ↗</a>
+    </div>
+    <p class="sub" id="support-info"></p>
+    <div class="table"><table>
+      <thead><tr><th>Reçu le</th><th>De</th><th>Message</th><th><span class="sub">Actions</span></th></tr></thead>
+      <tbody id="support"></tbody>
+    </table></div>
+
+    <div class="bar"><h2>Plugins</h2></div>
+    <p class="sub">Un plugin créé ici apparaît aussitôt dans la boutique du site et dans l'application, tant qu'il est coché « visible ». Une nouvelle version est proposée aussitôt en mise à jour dans Onirique Central. L'image du plugin et sa démo interactive de la boutique sont fabriquées à partir du fichier .vst3 lui-même : cela demande de charger le plugin sous Windows, et se fait donc quand la version est publiée depuis l'application Onirique Central (panel admin), pas depuis cette page.</p>
+    <details class="product new" id="new-product"></details>
+    <p class="error" id="product-error" role="alert"></p>
+    <div class="products" id="products"></div>
+
+    <div class="bar"><h2>Crédits</h2></div>
+    <p class="sub">Les titres réalisés avec vos plugins, affichés dans la section Crédits de la page d'accueil. Collez le lien Spotify du titre : son nom et sa pochette sont récupérés tout seuls.</p>
+    <details class="product new" id="new-credit"></details>
+    <p class="error" id="credit-error" role="alert"></p>
+    <div class="table"><table>
+      <thead><tr><th>Titre</th><th>Plugin utilisé</th><th>Sortie</th><th><span class="sub">Actions</span></th></tr></thead>
+      <tbody id="credits"></tbody>
+    </table></div>
+  </div>
+</main>
+
+<script>
+// Tout passe par l'API du CENTRAL, qui revérifie le rôle admin à chaque appel : cette page n'ouvre aucun droit par elle-même.
+const $ = (id) => document.getElementById(id);
+const token = (sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"));
+let me = null;
+
+async function api(method, path, body) {
+  const response = await fetch("/api" + path, {
+    method,
+    headers: { Authorization: "Bearer " + token, ...(body ? { "Content-Type": "application/json" } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw Object.assign(new Error(data.error || "Erreur " + response.status), { status: response.status });
+  return data;
+}
+
+function el(tag, props = {}, ...children) {
+  const node = Object.assign(document.createElement(tag), props);
+  node.append(...children.filter((c) => c !== null && c !== undefined));
+  return node;
+}
+const date = (ms) => (ms ? new Date(ms).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "—");
+const TYPES = { perpetual: "Perpétuelle", timed: "Durée limitée", trial: "Essai", nfr: "NFR" };
+
+function gate(text, link) {
+  $("gate").replaceChildren(text, link ? " " : "", link ? el("a", { href: "compte.html", textContent: link }) : "");
+  $("gate").hidden = false;
+  $("panel").hidden = true;
+}
+
+async function showLicenses(user, row, button) {
+  if (row.nextSibling?.classList?.contains("detail")) return row.nextSibling.remove();
+  button.disabled = true;
+  try {
+    const licenses = (await api("GET", "/admin/licenses?q=" + encodeURIComponent(user.email))).filter((l) => l.userId === user.id);
+    const cell = el("td", { colSpan: 6 });
+    if (!licenses.length) cell.append(el("span", { className: "sub", textContent: "Aucune licence sur ce compte." }));
+    for (const l of licenses) {
+      const expired = l.expiresAt && l.expiresAt < Date.now();
+      const state = l.status !== "active" ? "révoquée" : expired ? "expirée" : l.expiresAt ? "jusqu'au " + date(l.expiresAt) : "sans limite";
+      cell.append(el("div", {}, el("strong", { textContent: l.productName + " " }), el("span", { className: "key", textContent: l.key }),
+        el("span", { className: "sub", textContent: ` · ${TYPES[l.type] || l.type} · ${state} · ${l.activations || 0}/${l.maxActivations} machine(s)` })));
+    }
+    row.after(el("tr", { className: "detail" }, cell));
+  } catch (error) {
+    $("error").textContent = error.message;
+  }
+  button.disabled = false;
+}
+
+async function setRole(user, role) {
+  const question = role === "admin"
+    ? `Donner le rôle administrateur à ${user.email} ? Cette personne pourra publier des versions, gérer les licences et les comptes, sur le site comme dans l'application.`
+    : `Retirer le rôle administrateur à ${user.email} ?`;
+  if (!window.confirm(question)) return;
+  try {
+    await api("PATCH", "/admin/users/" + user.id, { role });
+    await loadUsers();
+  } catch (error) {
+    $("error").textContent = error.message;
+  }
+}
+
+async function loadUsers() {
+  $("error").textContent = "";
+  const users = await api("GET", "/admin/users?q=" + encodeURIComponent($("search").value.trim()));
+  $("users").replaceChildren(...users.map((u) => {
+    const row = el("tr");
+    const view = el("button", { className: "act", type: "button", textContent: "Licences" });
+    view.onclick = () => showLicenses(u, row, view);
+    const role = u.id === me.id ? null : el("button", { className: "act", type: "button", textContent: u.role === "admin" ? "Retirer admin" : "Rendre admin" });
+    if (role) role.onclick = () => setRole(u, u.role === "admin" ? "user" : "admin");
+    row.append(
+      el("td", {}, el("div", { textContent: u.email }), u.name ? el("div", { className: "sub", textContent: u.name }) : null),
+      el("td", {}, el("span", { className: "pill" + (u.role === "admin" ? " on" : ""), textContent: u.role === "admin" ? "Admin" : "Utilisateur" })),
+      el("td", { textContent: String(u.licenses) }),
+      el("td", { textContent: u.subscribed ? "All Access" : "—" }),
+      el("td", { textContent: date(u.createdAt) }),
+      el("td", { className: "actions" }, view, role));
+    return row;
+  }));
+  $("count").textContent = users.length === 500 ? "500 premiers comptes affichés : affinez la recherche." : `${users.length} compte(s).`;
+}
+
+//------------------------------------------------------------------------------ Support
+// Les demandes envoyées depuis le site et l'application : elles arrivent par e-mail dans la boîte de support,
+// et restent lisibles ici (trois ans au plus) pour les admins qui n'ont pas le mot de passe de la boîte.
+async function loadSupport() {
+  const { mailbox, messages } = await api("GET", "/admin/support");
+  $("support-info").textContent = mailbox
+    ? `Chaque demande arrive dans la boîte ${mailbox} et s'affiche ci-dessous. « Répondre » ouvre votre messagerie ; la boîte complète se consulte sur le webmail IONOS, avec le mot de passe de la boîte.`
+    : "Aucune boîte de support n'est reliée au serveur : les demandes sont refusées.";
+  const when = (ms) => new Date(ms).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  $("support").replaceChildren(...(messages.length ? messages.map((m) => {
+    const reply = el("a", { className: "act", href: `mailto:${m.email}?subject=${encodeURIComponent("Re: " + m.subject)}`, textContent: "Répondre" });
+    const remove = el("button", { className: "act", type: "button", textContent: "Supprimer" });
+    remove.onclick = async () => {
+      if (!window.confirm("Supprimer ce message de la liste ? L'e-mail reçu dans la boîte n'est pas touché.")) return;
+      try { await api("DELETE", "/admin/support/" + m.id); await loadSupport(); } catch (error) { $("error").textContent = error.message; }
+    };
+    return el("tr", {},
+      el("td", { className: "sub", textContent: when(m.createdAt) }),
+      el("td", {}, el("div", { textContent: m.email }), el("div", { className: "sub", textContent: [m.name, m.userId ? "compte n° " + m.userId : "sans compte", m.context].filter(Boolean).join(" · ") })),
+      el("td", { className: "msg" }, el("strong", { textContent: m.subject }), m.message),
+      el("td", { className: "actions" }, reply, remove));
+  }) : [el("tr", {}, el("td", { colSpan: 4, className: "sub", textContent: "Aucune demande pour le moment." }))]));
+}
+
+//------------------------------------------------------------------------------ Plugins
+// Envoi d'un fichier tel quel dans le corps de la requête, avec progression.
+function send(method, path, file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(method, "/api" + path);
+    xhr.setRequestHeader("Authorization", "Bearer " + token);
+    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+    xhr.upload.onprogress = (event) => event.lengthComputable && onProgress?.(event.loaded / event.total);
+    xhr.onload = () => {
+      let data = {};
+      try { data = JSON.parse(xhr.responseText); } catch { /* réponse non JSON */ }
+      if (xhr.status >= 200 && xhr.status < 300) resolve(data);
+      else reject(new Error(data.error || (xhr.status === 413 ? "Fichier trop volumineux." : "Erreur " + xhr.status)));
+    };
+    xhr.onerror = () => reject(new Error("Envoi interrompu."));
+    xhr.send(file);
+  });
+}
+
+const nextVersion = (latest) => (latest ? latest.version.replace(/(\d+)(?!.*\d)/, (n) => String(Number(n) + 1)) : "1.0.0");
+
+// Formulaire de fiche (création ou modification) : ce qui s'affiche dans la boutique et dans l'application.
+function sheetForm(p) {
+  const name = el("input", { type: "text", value: p?.name ?? "", required: true, minLength: 3, maxLength: 60, placeholder: "ONIRIQUE …" });
+  const tagline = el("input", { type: "text", value: p?.tagline ?? "", maxLength: 140, placeholder: "Une phrase sous le nom" });
+  const description = el("textarea", { value: p?.description ?? "", maxLength: 4000, rows: 5, placeholder: "Une ligne vide entre deux paragraphes" });
+  const price = el("input", { type: "text", inputMode: "decimal", value: ((p?.priceCents ?? 0) / 100).toFixed(2).replace(".", ","), required: true });
+  const published = el("input", { type: "checkbox", checked: p?.published ?? true });
+  const submit = el("button", { className: "act", type: "submit", textContent: p ? "Enregistrer la fiche" : "Créer le plugin" });
+  const saved = el("span", { className: "sub" });
+  saved.setAttribute("role", "status");
+  const form = el("form", {},
+    el("label", {}, "Nom", name), el("label", {}, "Accroche", tagline),
+    el("label", {}, "Prix en € (0 = gratuit)", price), el("label", {}, "Description", description),
+    el("div", { className: "row" }, el("label", { className: "inline" }, published, "Visible dans la boutique et l'application"), submit, saved));
+  form.onsubmit = async (event) => {
+    event.preventDefault();
+    $("product-error").textContent = "";
+    const amount = price.value.trim().replace(/\s|€/g, "").replace(",", ".");
+    if (!/^\d+(\.\d{1,2})?$/.test(amount)) { $("product-error").textContent = "Prix invalide : écrivez par exemple 49 ou 29,90."; price.focus(); return; }
+    const cents = Math.round(Number(amount) * 100);
+    submit.disabled = true;
+    const body = { name: name.value.trim(), tagline: tagline.value.trim(), description: description.value.trim(), priceCents: cents, published: published.checked };
+    try {
+      await api(p ? "PATCH" : "POST", p ? "/admin/products/" + p.id : "/admin/products", body);
+      await loadProducts();
+      if (!p) $("new-product").open = false;
+    } catch (error) {
+      $("product-error").textContent = error.message;
+      submit.disabled = false;
+    }
+  };
+  return form;
+}
+
+async function loadProducts() {
+  const products = await api("GET", "/admin/products");
+  const fail = (error) => { $("product-error").textContent = error.message; };
+  $("products").replaceChildren(...products.map((p) => {
+    const shot = el("div", { className: "shot", textContent: p.image ? "" : "Pas d'image" });
+    if (p.image) { shot.style.backgroundImage = `url("${p.image}")`; shot.setAttribute("role", "img"); shot.setAttribute("aria-label", "Image actuelle de " + p.name); }
+
+    const version = el("input", { type: "text", value: nextVersion(p.latest), required: true, maxLength: 30 });
+    const notes = el("textarea", { maxLength: 4000, placeholder: "Nouveautés et corrections, visibles par les utilisateurs" });
+    const file = el("input", { type: "file", accept: ".vst3,.zip,.exe,.msi", required: true });
+    const bar = el("progress", { max: 1, value: 0, hidden: true });
+    const submit = el("button", { className: "act", type: "submit", textContent: "Publier la version" });
+    const form = el("form", {},
+      el("label", {}, "Version", version), el("label", {}, "Notes de version", notes),
+      el("div", { className: "row" }, el("label", {}, "Fichier du plugin (.vst3, .zip, .exe, .msi)", file), submit, bar));
+    form.onsubmit = async (event) => {
+      event.preventDefault();
+      $("product-error").textContent = "";
+      submit.disabled = true; bar.hidden = false; bar.value = 0;
+      const query = new URLSearchParams({ version: version.value.trim(), notes: notes.value, filename: file.files[0].name });
+      try { await send("POST", `/admin/products/${p.id}/versions?${query}`, file.files[0], (ratio) => { bar.value = ratio; }); await loadProducts(); }
+      catch (error) { fail(error); submit.disabled = false; bar.hidden = true; }
+    };
+
+    return el("div", { className: "product" },
+      el("div", {}, shot, el("div", { className: "sub", style: "margin-top:8px", textContent: p.demo ? "Démo interactive en ligne" : "Pas encore de démo interactive" })),
+      el("div", {},
+        el("h3", { textContent: p.name }),
+        el("div", { className: "sub", textContent: [p.published ? "Visible dans la boutique" : "Masqué", euros(p.priceCents), p.latest ? `version actuelle ${p.latest.version} du ${date(p.latest.createdAt)}` : "aucune version en ligne", `${p.versions.length} version(s)`].join(" · ") }),
+        el("details", {}, el("summary", { textContent: "Modifier la fiche (nom, texte, prix)" }), sheetForm(p)),
+        el("details", {}, el("summary", { textContent: "Publier une nouvelle version" }), form)));
+  }));
+  $("new-product").replaceChildren(el("summary", { textContent: "＋ Nouveau plugin" }), sheetForm(null));
+}
+
+const euros = (cents) => (cents === 0 ? "Gratuit" : new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: cents % 100 ? 2 : 0 }).format(cents / 100));
+
+//------------------------------------------------------------------------------ Crédits
+async function loadCredits() {
+  const [products, credits] = await Promise.all([api("GET", "/admin/products"), api("GET", "/admin/credits")]);
+  const fail = (error) => { $("credit-error").textContent = error.message; };
+
+  const link = el("input", { type: "text", required: true, placeholder: "https://open.spotify.com/track/…" });
+  const artist = el("input", { type: "text", required: true, maxLength: 120 });
+  const title = el("input", { type: "text", maxLength: 120, placeholder: "Vide : le titre donné par Spotify" });
+  const plugin = el("select", {}, el("option", { value: "", textContent: "— Aucun en particulier —" }),
+    ...products.map((p) => el("option", { value: p.id, textContent: p.name })));
+  const usedOn = el("input", { type: "text", maxLength: 60, placeholder: "Voix, chœurs, mix…" });
+  const released = el("input", { type: "text", maxLength: 40, placeholder: "9 octobre 2026" });
+  const duration = el("input", { type: "text", maxLength: 10, placeholder: "2:39" });
+  const kind = el("select", {}, ...["Single", "EP", "Album", "Mixtape"].map((k) => el("option", { value: k, textContent: k })));
+  const submit = el("button", { className: "act", type: "submit", textContent: "Ajouter le crédit" });
+  const form = el("form", {},
+    el("label", {}, "Lien Spotify du titre", link), el("label", {}, "Artiste", artist),
+    el("label", {}, "Titre", title), el("label", {}, "Plugin utilisé", plugin),
+    el("label", {}, "Utilisé sur", usedOn), el("label", {}, "Date de sortie", released),
+    el("label", {}, "Durée", duration), el("label", {}, "Format", kind),
+    el("div", { className: "row" }, submit));
+  form.onsubmit = async (event) => {
+    event.preventDefault();
+    $("credit-error").textContent = "";
+    submit.disabled = true;
+    try {
+      await api("POST", "/admin/credits", { spotifyUrl: link.value.trim(), artist: artist.value.trim(), title: title.value.trim(),
+        productId: plugin.value ? Number(plugin.value) : null, usedOn: usedOn.value.trim(), released: released.value.trim(),
+        duration: duration.value.trim(), kind: kind.value });
+      $("new-credit").open = false;
+      await loadCredits();
+    } catch (error) { fail(error); submit.disabled = false; }
+  };
+  $("new-credit").replaceChildren(el("summary", { textContent: "＋ Nouveau crédit" }), form);
+
+  $("credits").replaceChildren(...(credits.length ? credits.map((c) => {
+    const remove = el("button", { className: "act", type: "button", textContent: "Retirer" });
+    remove.onclick = async () => {
+      if (!window.confirm(`Retirer « ${c.title} » des crédits du site ?`)) return;
+      try { await api("DELETE", "/admin/credits/" + c.id); await loadCredits(); } catch (error) { fail(error); }
+    };
+    return el("tr", {},
+      el("td", {}, c.cover ? el("img", { className: "thumb", src: c.cover, alt: "Pochette de " + c.title }) : null,
+        el("strong", { textContent: c.title }), el("span", { className: "sub", textContent: " · " + c.artist })),
+      el("td", {}, c.plugin ? c.plugin.name : "—", c.usedOn ? el("div", { className: "sub", textContent: c.usedOn }) : null),
+      el("td", { className: "sub", textContent: c.released || "—" }),
+      el("td", { className: "actions" }, el("a", { className: "act", href: "https://open.spotify.com/track/" + c.spotifyId, target: "_blank", rel: "noopener", textContent: "Spotify ↗" }), remove));
+  }) : [el("tr", {}, el("td", { colSpan: 4, className: "sub", textContent: "Aucun crédit : la page d'accueil affiche le titre d'exemple." }))]));
+}
+
+let timer;
+$("search").oninput = () => { clearTimeout(timer); timer = setTimeout(() => loadUsers().catch((e) => { $("error").textContent = e.message; }), 250); };
+
+(async () => {
+  if (!token) return gate("Connectez-vous avec un compte administrateur.", "Se connecter");
+  try {
+    me = (await api("GET", "/me")).user;
+    if (me.role !== "admin") return gate("Cette page est réservée aux administrateurs.", "Retour au compte");
+    const o = await api("GET", "/admin/overview");
+    $("tiles").replaceChildren(...[["Comptes", o.users], ["Licences actives", o.licenses], ["Clés en attente", o.unclaimed], ["Abonnés", o.subscribers], ["Machines activées", o.activations], ["Demandes de support", o.supportMessages]]
+      .map(([label, value]) => el("div", { className: "tile" }, el("b", { textContent: String(value) }), el("span", { textContent: label }))));
+    await loadUsers();
+    await loadSupport();
+    await loadProducts();
+    await loadCredits();
+    $("gate").hidden = true;
+    $("panel").hidden = false;
+  } catch (error) {
+    gate(error.status === 401 ? "Session expirée." : error.message, error.status === 401 ? "Se reconnecter" : null);
+  }
+})();
+</script>
+</html>

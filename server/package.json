@@ -1,0 +1,19 @@
+{
+  "name": "onirique-central-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "API ONIRIQUE CENTRAL : comptes, licences, abonnements, versions des plugins.",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "seed": "node src/seed.js",
+    "test": "node test/smoke.mjs"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "nodemailer": "^10.1.0"
+  }
+}
