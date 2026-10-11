@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import { pathToFileURL } from 'node:url';
 
 const [dataDir, slug, version, source, filename, notes = '', system = 'win'] = process.argv.slice(2);
 const platform = system === 'mac' ? 'mac' : 'win';
@@ -17,6 +18,14 @@ if (db.prepare('SELECT 1 FROM versions WHERE product_id = ? AND version = ? AND 
 }
 
 const data = fs.readFileSync(source);
+// Même contrôle que le panel admin : un plugin payant sans vérification de licence ne se publie pas.
+// À lancer depuis le dossier du serveur (server/), où se trouve src/plugincheck.js.
+const { embedsLicenseKey, MISSING_LICENSE } = await import(pathToFileURL(path.resolve('src/plugincheck.js')));
+const publicKeyPem = fs.readFileSync(path.join(dataDir, 'keys', 'license-public.pem'), 'utf8');
+const checkLicense = (product, data, filename) => {
+  if (product.price_cents > 0 && embedsLicenseKey(data, filename, publicKeyPem) === false) throw new Error(`${filename} : ${MISSING_LICENSE}`);
+};
+checkLicense(product, data, filename);
 const storedAs = crypto.randomBytes(16).toString('hex');
 fs.writeFileSync(path.join(dataDir, 'files', storedAs), data);
 db.prepare('INSERT INTO versions (product_id, version, notes, filename, stored_as, size, sha256, created_at, platform) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')

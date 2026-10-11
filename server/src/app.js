@@ -11,6 +11,7 @@ import {
   createVerifyToken, consumeVerifyToken, mustVerify, shouldConfirm,
 } from './auth.js';
 import { mailEnabled, sendMail } from './mail.js';
+import { embedsLicenseKey, MISSING_LICENSE } from './plugincheck.js';
 import {
   activate, activeSubscription, createLicense, entitlement, generateKey, normalizeKey, pickPlan, pickPriceCents,
   publicKeyPem, publicKeyRaw, userActivations,
@@ -677,6 +678,11 @@ export function createApp() {
       throw new HttpError(409, `La version ${version} existe déjà pour ${product.name} (${platform === 'mac' ? 'Mac' : 'Windows'}).`);
     }
     const file = await receiveFile(req, config.filesDir, 2 * 1024 ** 3);
+    const stored = path.join(config.filesDir, file.storedAs);
+    if (product.price_cents > 0 && embedsLicenseKey(fs.readFileSync(stored), filename, publicKeyPem) === false) {
+      fs.rmSync(stored, { force: true });
+      throw new HttpError(400, MISSING_LICENSE);
+    }
     const { lastInsertRowid } = run(
       'INSERT INTO versions (product_id, version, notes, filename, stored_as, size, sha256, created_at, platform) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       product.id, version, str(req.query.notes, 4000), filename, file.storedAs, file.size, file.sha256, now(), platform);

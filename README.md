@@ -79,12 +79,17 @@ L'application l'écrit dans `C:\ProgramData\Onirique\Licenses\<plugin>.lic` :
 Le JSON du `payload` : `product`, `email`, `machine`, `type`, `licenseId`, `issuedAt`, `expiresAt`
 (millisecondes, `null` = sans limite). La signature porte sur les octets décodés du `payload`.
 
-Côté plugin, il reste à : lire ce fichier, vérifier la signature avec la clé publique
-(`GET /api/public-key`, champ `raw` = 32 octets en base64, à embarquer dans le binaire), puis
-contrôler `product`, `expiresAt` et `machine`. L'identifiant de machine est les 40 premiers
+Côté plugin, le dossier `plugin-license/` de ce dépôt (copié tel quel dans chaque plugin sous le nom
+`License/`, branchement décrit dans son `README.md`) lit ce fichier au lancement puis
+toutes les cinq secondes, vérifie la signature avec la clé publique embarquée
+(`GET /api/public-key`, champ `raw` = 32 octets en base64), puis contrôle `product`, `expiresAt` et
+`machine`. Plugin acheté : rien ne change. Essai (`type` = `trial`) : écoute intacte, export remplacé par
+un bruit blanc, pastille « ESSAI · ACTIVATION » qui ouvre ONIRIQUE CENTRAL. Sans licence valable : export
+en bruit blanc et deux secondes de bruit toutes les trente secondes à l'écoute. L'identifiant de machine est les 40 premiers
 caractères hexadécimaux de `SHA-256("onirique:" + MachineGuid en minuscules)`, `MachineGuid` étant la
-valeur de `HKLM\SOFTWARE\Microsoft\Cryptography`. **Les plugins actuels ne font pas encore cette
-vérification** : tant qu'elle n'est pas ajoutée, ils s'ouvrent sans licence.
+valeur de `HKLM\SOFTWARE\Microsoft\Cryptography`. **Un plugin qui n'embarque pas ce dossier s'ouvre
+sans licence** : le serveur refuse donc de publier un plugin payant dont le `.vst3` ou le `.zip` ne
+contient pas la clé publique (`server/src/plugincheck.js`, panel admin et scripts de `deploy/`).
 
 Une licence perpétuelle n'expire pas hors ligne. Celle d'un abonnement expire trois jours après la
 fin de la période payée ; l'application la renouvelle à chaque lancement.

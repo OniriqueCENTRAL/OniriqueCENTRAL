@@ -7,6 +7,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import { pathToFileURL } from 'node:url';
 
 const [dataDir, slug, incoming] = process.argv.slice(2);
 if (!incoming) throw new Error('usage : node publish-plugin.mjs <données> <plugin> <dossier reçu>');
@@ -14,6 +15,14 @@ if (!incoming) throw new Error('usage : node publish-plugin.mjs <données> <plug
 const db = new DatabaseSync(path.join(dataDir, 'central.db'));
 const product = db.prepare('SELECT * FROM products WHERE slug = ?').get(slug);
 if (!product) throw new Error(`plugin inconnu : ${slug}`);
+
+// Même contrôle que le panel admin : un plugin payant sans vérification de licence ne se publie pas.
+// À lancer depuis le dossier du serveur (server/), où se trouve src/plugincheck.js.
+const { embedsLicenseKey, MISSING_LICENSE } = await import(pathToFileURL(path.resolve('src/plugincheck.js')));
+const publicKeyPem = fs.readFileSync(path.join(dataDir, 'keys', 'license-public.pem'), 'utf8');
+const checkLicense = (product, data, filename) => {
+  if (product.price_cents > 0 && embedsLicenseKey(data, filename, publicKeyPem) === false) throw new Error(`${filename} : ${MISSING_LICENSE}`);
+};
 
 const accepted = { win: /\.(vst3|zip|exe|msi)$/i, mac: /\.(zip|pkg)$/i };
 const files = [];
@@ -26,6 +35,7 @@ for (const platform of ['win', 'mac']) {
   files.push({ platform, filename: names[0], source: path.join(dir, names[0]) });
 }
 if (!files.length) throw new Error('aucun fichier reçu');
+for (const f of files) checkLicense(product, fs.readFileSync(f.source), f.filename);
 
 const parse = (v) => String(v).split('.').map((n) => parseInt(n, 10) || 0);
 const newer = (a, b) => { for (let i = 0; i < 3; i++) if ((a[i] ?? 0) !== (b[i] ?? 0)) return (a[i] ?? 0) > (b[i] ?? 0); return false; };

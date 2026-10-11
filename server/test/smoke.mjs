@@ -1,6 +1,7 @@
 // Parcours complet de l'API sur une base jetable : node test/smoke.mjs
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import zlib from 'node:zlib';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -53,7 +54,20 @@ async function register(body) {
 }
 
 const machineA = 'a'.repeat(40), machineB = 'b'.repeat(40), machineC = 'c'.repeat(40);
-const binary = crypto.randomBytes(300_000);
+// Un plugin payant n'est accepté que s'il embarque la clé publique du serveur (module de licence).
+const licenseKey = crypto.createPublicKey(publicKeyPem).export({ type: 'spki', format: 'der' }).subarray(-32);
+const binary = Buffer.concat([crypto.randomBytes(300_000), licenseKey]);
+/** Un .zip d'un seul fichier compressé, comme ceux que produit la compilation Mac. */
+function zipOf(name, content) {
+  const packed = zlib.deflateRawSync(content);
+  const local = Buffer.alloc(30); local.writeUInt32LE(0x04034b50, 0); local.writeUInt16LE(8, 8);
+  local.writeUInt32LE(packed.length, 18); local.writeUInt32LE(content.length, 22); local.writeUInt16LE(name.length, 26);
+  const central = Buffer.alloc(46); central.writeUInt32LE(0x02014b50, 0); central.writeUInt16LE(8, 10);
+  central.writeUInt32LE(packed.length, 20); central.writeUInt32LE(content.length, 24); central.writeUInt16LE(name.length, 28);
+  const end = Buffer.alloc(22); end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(1, 8); end.writeUInt16LE(1, 10);
+  end.writeUInt32LE(46 + name.length, 12); end.writeUInt32LE(30 + name.length + packed.length, 16);
+  return Buffer.concat([local, Buffer.from(name), packed, central, Buffer.from(name), end]);
+}
 let admin, user, other, product, version, keys;
 
 try {
@@ -82,11 +96,16 @@ try {
     version = await call('POST', `/api/admin/products/${product.id}/versions?${q}`, { token: admin, raw: binary, expect: 201 });
     assert.equal(version.sha256, crypto.createHash('sha256').update(binary).digest('hex'));
     await call('POST', `/api/admin/products/${product.id}/versions?${q}`, { token: admin, raw: binary, expect: 409 });
+    // Plugin payant sans module de licence : refusé, en .vst3 comme en .zip.
+    const bare = new URLSearchParams({ version: '9.9.9', filename: 'ONIRIQUE TEST.vst3' });
+    await call('POST', `/api/admin/products/${product.id}/versions?${bare}`, { token: admin, raw: crypto.randomBytes(1000), expect: 400 });
+    const bareZip = new URLSearchParams({ version: '9.9.9', filename: 'ONIRIQUE TEST.vst3.zip', platform: 'mac' });
+    await call('POST', `/api/admin/products/${product.id}/versions?${bareZip}`, { token: admin, raw: zipOf('plugin', crypto.randomBytes(1000)), expect: 400 });
 
     // Versions Mac : même numéro accepté à côté de celui de Windows, .vst3 nu refusé, et chaque système voit la sienne.
     await call('POST', `/api/admin/products/${product.id}/versions?${q}&platform=mac`, { token: admin, raw: binary, expect: 400 });
     const macQuery = new URLSearchParams({ version: new URLSearchParams(q).get('version'), filename: 'ONIRIQUE TEST.vst3.zip', platform: 'mac' });
-    const macVersion = await call('POST', `/api/admin/products/${product.id}/versions?${macQuery}`, { token: admin, raw: binary, expect: 201 });
+    const macVersion = await call('POST', `/api/admin/products/${product.id}/versions?${macQuery}`, { token: admin, raw: zipOf('plugin', binary), expect: 201 });
     assert.equal(macVersion.platform, 'mac');
     assert.deepEqual(macVersion.formats, [], 'un .zip sans plugin dedans n\'annonce aucun format');
     assert.deepEqual((await call('GET', '/api/catalog')).products.find((p) => p.id === product.id).platforms.sort(), ['mac', 'win']);
