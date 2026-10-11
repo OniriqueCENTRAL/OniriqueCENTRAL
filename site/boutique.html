@@ -21,13 +21,14 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 22px; margin-top: 34px; }
 .card { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 22px; overflow: hidden; background: linear-gradient(180deg, var(--deep-2), var(--deep)); color: inherit; text-decoration: none; transition: transform .2s, border-color .2s; }
 .card:hover { transform: translateY(-3px); border-color: rgba(226,52,68,.6); color: inherit; }
-.card .shot { aspect-ratio: 16 / 10; background: radial-gradient(80% 90% at 50% 0%, var(--blood), var(--night)) center / cover; border-bottom: 1px solid var(--line); display: grid; place-items: center; }
-.card .shot img.cover { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.card .shot { position: relative; overflow: hidden; aspect-ratio: 16 / 10; background: radial-gradient(80% 90% at 50% 0%, var(--blood), var(--night)) center / cover; border-bottom: 1px solid var(--line); display: grid; place-items: center; }
+/* l'image est sortie du flux : une capture plus haute que 16/10 ne peut plus agrandir la carte (ni toute sa rangée) */
+.card .shot img.cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
 .card .shot img.mark { width: 42%; filter: drop-shadow(0 0 14px var(--ember)); }
-.card .body { display: grid; gap: 8px; padding: 20px 22px 22px; }
+.card .body { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 20px 22px 22px; }
 .card h2 { margin: 0; font: 800 17px/1.2 var(--f-display); letter-spacing: .06em; }
 .card p { margin: 0; color: var(--haze); font-size: 15px; }
-.card .foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
+.card .foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 10px; }
 .price { font: 800 20px/1 var(--f-display); }
 .more { font: 500 12px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ember-text); }
 
