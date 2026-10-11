@@ -39,9 +39,22 @@ export function compareVersions(a, b) {
   return 0;
 }
 
+// Les formats livrés dans le .zip d'une version Mac (VST3, Audio Unit…), lus une fois dans les noms de l'archive.
+const zipFormats = new Map();
+function versionFormats(v) {
+  if (v.platform !== 'mac' || !/\.zip$/i.test(v.filename)) return undefined;
+  const key = `${v.stored_as}:${v.size}`; // un fichier remplacé change de taille : il est relu
+  if (!zipFormats.has(key)) {
+    let data = Buffer.alloc(0);
+    try { data = fs.readFileSync(path.join(config.filesDir, v.stored_as)); } catch { /* fichier absent : aucun format annoncé */ }
+    zipFormats.set(key, [['VST3', '.vst3/'], ['AAX', '.aaxplugin/'], ['AU', '.component/']].filter(([, mark]) => data.includes(mark)).map(([name]) => name));
+  }
+  return zipFormats.get(key);
+}
+
 const versionView = (v) => v && ({
   id: v.id, version: v.version, notes: v.notes, filename: v.filename, size: v.size, sha256: v.sha256, createdAt: v.created_at,
-  platform: v.platform,
+  platform: v.platform, formats: versionFormats(v),
 });
 
 /** Le système demandé : "mac" pour l'application Mac, "win" pour tout le reste (application Windows, site). */

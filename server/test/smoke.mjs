@@ -88,6 +88,7 @@ try {
     const macQuery = new URLSearchParams({ version: new URLSearchParams(q).get('version'), filename: 'ONIRIQUE TEST.vst3.zip', platform: 'mac' });
     const macVersion = await call('POST', `/api/admin/products/${product.id}/versions?${macQuery}`, { token: admin, raw: binary, expect: 201 });
     assert.equal(macVersion.platform, 'mac');
+    assert.deepEqual(macVersion.formats, [], 'un .zip sans plugin dedans n\'annonce aucun format');
     assert.deepEqual((await call('GET', '/api/catalog')).products.find((p) => p.id === product.id).platforms.sort(), ['mac', 'win']);
     const latestFor = async (headers) => (await (await fetch(`${base}/api/catalog`, { headers })).json()).products.find((p) => p.id === product.id).latest;
     assert.equal((await latestFor({})).id, version.id);

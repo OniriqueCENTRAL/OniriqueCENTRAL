@@ -48,20 +48,24 @@ function startTrial(product) {
     });
 }
 
-// Formats de plugin. Seul le VST3 est distribué aujourd'hui : les autres sont affichés, pas encore sélectionnables.
-const FORMATS = [['VST3', /\.(vst3|zip)$/i], ['AAX', /\.aaxplugin$/i], ['AU', /\.component$/i]];
+// Formats de plugin. L'Audio Unit n'existe que sur Mac : il n'est pas proposé ailleurs. Ceux qui ne sont pas encore
+// distribués sont affichés, pas sélectionnables.
+const FORMATS = [['VST3', /\.(vst3|zip)$/i], ['AAX', /\.aaxplugin$/i], ['AU', /\.component$/i]]
+  .filter(([name]) => name !== 'AU' || window.central.platform === 'darwin');
 const isApplication = (product) => /\.(exe|msi)$/i.test(product.latest?.filename || '');
 
 function formatPicker(product) {
-  const available = FORMATS.filter(([, pattern]) => pattern.test(product.latest.filename)).map(([name]) => name);
+  // Pour un .zip Mac, le serveur dit ce qu'il contient (VST3 et Audio Unit s'installent alors ensemble).
+  const available = product.latest.formats ?? FORMATS.filter(([, pattern]) => pattern.test(product.latest.filename)).map(([name]) => name);
+  const together = available.length > 1;
   return h('div', { style: { 'margin-top': '18px' } },
-    h('div', { class: 'eyebrow', style: { 'margin-bottom': '8px' } }, 'Format à installer'),
+    h('div', { class: 'eyebrow', style: { 'margin-bottom': '8px' } }, together ? 'Formats installés ensemble' : 'Format à installer'),
     h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': 'Format du plugin' },
       FORMATS.map(([name]) => {
         const ok = available.includes(name);
         return h('button', {
-          type: 'button', role: 'radio', class: ok && name === available[0] ? 'active' : '', disabled: !ok,
-          'aria-checked': String(ok && name === available[0]), title: ok ? `${name} : disponible` : `${name} : bientôt disponible`,
+          type: 'button', role: 'radio', class: ok && (together || name === available[0]) ? 'active' : '', disabled: !ok,
+          'aria-checked': String(ok && (together || name === available[0])), title: ok ? `${name} : disponible` : `${name} : bientôt disponible`,
           style: ok ? {} : { opacity: '0.45', cursor: 'not-allowed' },
         }, ok ? name : `${name} · bientôt`);
       })));
