@@ -1,0 +1,22 @@
+#!/bin/sh
+# Publication automatique des plugins depuis GitHub Actions.
+# La clé « github-plugins » du compte livraison est attachée à ce script (restrict,command=…) : elle ne
+# peut rien faire d'autre que publier une version d'un plugin qui existe déjà dans ONIRIQUE CENTRAL.
+#   ssh livraison@serveur "publish vocalbox" < version.tar      (version.tar : win/…, mac/….zip, notes.txt)
+# Le fichier est déballé dans un dossier temporaire, puis publié sous le compte du service (central)
+# par publish-plugin.mjs, qui attribue le numéro de version.
+set -eu
+
+set -- ${SSH_ORIGINAL_COMMAND:-}
+[ "${1:-}" = publish ] && [ $# -eq 2 ] || { echo "commande inconnue" >&2; exit 1; }
+slug=$2
+case "$slug" in ''|*[!a-z0-9-]*) echo "plugin invalide" >&2; exit 1 ;; esac
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+# 500 Mo au plus ; tar refuse les chemins absolus et les « .. ».
+head -c 524288000 | tar -x -C "$tmp" --no-same-owner --no-same-permissions
+chmod -R a+rX "$tmp"
+
+cd /opt/onirique-central/server
+exec sudo -n -u central /usr/bin/node /usr/local/lib/onirique/publish-plugin.mjs /var/lib/onirique-central "$slug" "$tmp"
