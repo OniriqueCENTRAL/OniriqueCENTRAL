@@ -37,10 +37,35 @@ Le compte admin est celui de `server/.env` (`ADMIN_EMAIL` / `ADMIN_PASSWORD`).
   (téléchargement vérifié par empreinte SHA-256, copie dans le dossier VST3 avec demande de droits
   administrateur si Windows l'exige).
 - **Licences** : ajout d'une clé `ONIR-XXXX-XXXX-XXXX-XXXX`, liste des licences, machines activées.
-- **Abonnement** : All Access donne tous les plugins tant qu'il court.
+- **Abonnement** : All Access donne tous les plugins tant qu'il court ; à la carte, seulement ceux qui ont
+  été choisis (9,99 € par mois pour le premier, 5 € par plugin ajouté : `pickBaseCents` et
+  `pickExtraCents` dans `server/src/config.js`).
 - **Panel admin** (comptes au rôle admin) : créer un plugin, publier une version (`.vst3`, `.zip`,
   `.exe`, `.msi`) avec ses notes, générer des clés par lot, modifier / révoquer / rétablir une licence,
-  libérer ses machines, gérer les comptes et les prix.
+  libérer ses machines, gérer les comptes et les prix, remettre à zéro les essais gratuits d'un compte,
+  valider une adresse e-mail à la main.
+- **Panel support** (admins) : les demandes envoyées depuis le site et l'application, avec de quoi y
+  répondre et les retirer une fois réglées.
+
+Un compte créé reçoit un lien de validation de son adresse e-mail. Tant qu'il n'est pas ouvert, les
+essais, les achats et l'activation des plugins restent fermés ; sans serveur de messagerie configuré,
+les comptes sont validés d'office.
+
+## Travailler à plusieurs
+
+Le code vit dans un dépôt git sur le serveur. Pour le récupérer, avec un accès SSH au serveur :
+
+```bash
+git clone root@217.160.106.244:/srv/git/onirique-central.git
+```
+
+Puis, comme d'habitude : `git pull` avant de commencer, `git commit`, `git push` une fois fini.
+Une copie de travail à jour se trouve aussi sur le serveur, dans `/srv/onirique-central`.
+
+Le dépôt ne contient ni les secrets (`server/.env`), ni les données (`server/data/` : base, clés de
+signature, fichiers des plugins), ni les dépendances (`node_modules/`), ni ce qui se reconstruit
+(`app/dist/`, `tools/probe/build/`). Pousser dans le dépôt ne met rien en ligne : le site et le serveur
+en production se déploient à part (voir plus bas), l'application avec `deploy/release-app.sh`.
 
 ## Licences : comment un plugin vérifie
 
