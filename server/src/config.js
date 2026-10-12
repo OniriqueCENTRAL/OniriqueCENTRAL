@@ -36,6 +36,9 @@ export const config = {
   paymentsMode,
   stripeSecretKey: env.STRIPE_SECRET_KEY || '',
   stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET || '',
+  // Managed Payments : Stripe est le vendeur officiel (il facture, gère la TVA et les litiges). STRIPE_MANAGED=0
+  // revient à l'encaissement classique, où le vendeur est l'éditeur.
+  stripeManaged: env.STRIPE_MANAGED !== '0',
   // Lemon Squeezy : la boutique, et une « variante » par façon de payer. Le nom et le prix de chaque vente sont
   // fixés par ce serveur au moment de la commande : il n'y a pas un produit à créer là-bas par plugin.
   lemonApiKey: env.LEMON_API_KEY || '',

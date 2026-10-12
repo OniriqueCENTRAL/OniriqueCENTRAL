@@ -17,6 +17,20 @@ function recordOrder(userId, kind, refId, amount, provider, providerRef) {
   return true;
 }
 
+const RESELLERS = { lemon: 'Lemon Squeezy', 'stripe-managed': 'Stripe' };
+const stripeProvider = () => (config.stripeManaged ? 'stripe-managed' : 'stripe');
+
+/** Remboursement complet d'un achat : la licence qu'il avait créée est révoquée, et ses machines libérées. */
+function revokePurchase(userId, productId, source) {
+  transaction(() => {
+    run(`UPDATE licenses SET status = 'revoked' WHERE id = (SELECT id FROM licenses WHERE user_id = ? AND product_id = ?
+           AND source = ? AND status = 'active' ORDER BY created_at DESC LIMIT 1)`, userId, productId, source);
+    const still = get(`SELECT id FROM licenses WHERE user_id = ? AND product_id = ? AND status = 'active'
+                        AND (expires_at IS NULL OR expires_at > ?)`, userId, productId, now());
+    if (!still) run('DELETE FROM activations WHERE user_id = ? AND product_id = ?', userId, productId);
+  });
+}
+
 /** Confirmation de commande par e-mail, pour un paiement réel. Un envoi raté ne retire rien à l'acheteur. */
 function confirmOrder(userId, what, amountCents, renewal = '', provider = 'stripe') {
   const user = get('SELECT email, name FROM users WHERE id = ?', userId);
@@ -26,8 +40,8 @@ function confirmOrder(userId, what, amountCents, renewal = '', provider = 'strip
     `Bonjour${user.name ? ' ' + user.name : ''},\n\nMerci pour votre commande.\n\n  ${what}\n  ${amount} TTC${renewal}\n\n`
     + 'Votre licence est déjà sur votre compte : ouvrez ONIRIQUE CENTRAL, installez le plugin, il s\'active tout seul.\n'
     + `Application et compte : ${config.siteUrl}\n\n`
-    + (provider === 'lemon'
-      ? 'Le paiement est encaissé par notre revendeur Lemon Squeezy, qui vous envoie le reçu séparément.\n\n'
+    + (RESELLERS[provider]
+      ? `Le paiement est encaissé par notre revendeur ${RESELLERS[provider]}, qui vous envoie le reçu séparément.\n\n`
       : `Le contenu vous est fourni dès le paiement, comme vous l'avez demandé en commandant : le droit de rétractation ne s'applique plus (${config.siteUrl}/remboursement.html).\n\n`)
     + `Une question : ${config.supportEmail}\n\nONIRIQUE`)
     .catch((error) => console.error('Confirmation de commande :', error.message));
@@ -70,6 +84,7 @@ async function stripe(method, path, body) {
     headers: {
       Authorization: `Bearer ${config.stripeSecretKey}`,
       'Content-Type': 'application/x-www-form-urlencoded',
+      'Stripe-Version': '2025-03-31.basil', // la première version qui connaît Managed Payments
     },
     body: body ? flatten(body) : undefined,
   });
@@ -86,11 +101,13 @@ async function stripeCheckout(user, kind, item) {
     customer_email: user.stripe_customer ? undefined : user.email,
     client_reference_id: user.id,
     locale: 'fr',
-    // Case obligatoire sur la page de paiement : conditions de vente, et fourniture immédiate d'un contenu numérique
-    // (ce qui met fin au droit de rétractation). Demande une adresse de CGV réglée dans le tableau de bord Stripe.
-    consent_collection: { terms_of_service: 'required' },
-    custom_text: { terms_of_service_acceptance: { message:
-      `J'accepte les [conditions générales de vente](${config.siteUrl}/cgv.html) et je demande à recevoir mon achat tout de suite : je renonce à mon droit de rétractation.` } },
+    ...(config.stripeManaged ? { managed_payments: { enabled: true } } : {
+      // Vente en nom propre : case obligatoire sur la page de paiement (conditions de vente, et fourniture immédiate
+      // d'un contenu numérique, ce qui met fin au droit de rétractation). Demande une adresse de CGV réglée chez Stripe.
+      consent_collection: { terms_of_service: 'required' },
+      custom_text: { terms_of_service_acceptance: { message:
+        `J'accepte les [conditions générales de vente](${config.siteUrl}/cgv.html) et je demande à recevoir mon achat tout de suite : je renonce à mon droit de rétractation.` } },
+    }),
     success_url: `${config.publicUrl}/checkout/done`,
     cancel_url: `${config.publicUrl}/checkout/cancelled`,
     metadata: { user_id: user.id, kind, ref_id: item.id },
@@ -100,7 +117,12 @@ async function stripeCheckout(user, kind, item) {
       : undefined,
     line_items: [{
       quantity: 1,
-      price_data: { currency: 'eur', unit_amount: item.price_cents, recurring, product_data: { name: item.name } },
+      price_data: {
+        currency: 'eur', unit_amount: item.price_cents, recurring,
+        tax_behavior: 'inclusive', // les prix affichés sont TTC : la TVA est comprise dedans, pas ajoutée au paiement
+        // Catégorie fiscale exigée par Managed Payments : logiciel téléchargé, ou logiciel par abonnement.
+        product_data: { name: item.name, tax_code: kind === 'plan' ? 'txcd_10103100' : 'txcd_10202000' },
+      },
     }],
   });
   return { mode: 'stripe', url: session.url };
@@ -143,15 +165,23 @@ export async function handleStripeEvent(event) {
     if (object.customer) run('UPDATE users SET stripe_customer = ? WHERE id = ?', object.customer, userId);
     if (object.mode === 'payment' && object.payment_status === 'paid') {
       const product = get('SELECT * FROM products WHERE id = ?', Number(object.metadata.ref_id));
-      if (product && grantProduct(userId, product, 'stripe', object.id)) confirmOrder(userId, `${product.name} — licence définitive`, object.amount_total ?? product.price_cents);
+      if (product && grantProduct(userId, product, 'stripe', object.id)) {
+        confirmOrder(userId, `${product.name} — licence définitive`, object.amount_total ?? product.price_cents, '', stripeProvider());
+      }
     } else if (object.mode === 'subscription' && object.subscription) {
       applyStripeSubscription(await stripe('GET', `/subscriptions/${object.subscription}`));
       const plan = get('SELECT name, interval FROM plans WHERE id = ?', Number(object.metadata.ref_id));
       if (plan && event.type === 'checkout.session.completed') {
         confirmOrder(userId, `Abonnement ${plan.name}`, object.amount_total ?? 0,
-          `, puis le même montant chaque ${plan.interval === 'year' ? 'année' : 'mois'} jusqu'à résiliation (onglet Abonnement de l'application)`);
+          `, puis le même montant chaque ${plan.interval === 'year' ? 'année' : 'mois'} jusqu'à résiliation (onglet Abonnement de l'application)`, stripeProvider());
       }
     }
+  } else if (event.type === 'charge.refunded') {
+    // Remboursement complet (par l'éditeur, ou par Stripe quand il est le vendeur) : la commande est retrouvée par son paiement.
+    if (!object.refunded || !object.payment_intent) return;
+    const session = (await stripe('GET', `/checkout/sessions?payment_intent=${encodeURIComponent(object.payment_intent)}&limit=1`)).data?.[0];
+    const userId = Number(session?.metadata?.user_id), productId = Number(session?.metadata?.ref_id);
+    if (session?.mode === 'payment' && userId && productId && get('SELECT id FROM orders WHERE provider_ref = ?', session.id)) revokePurchase(userId, productId, 'stripe');
   } else if (event.type.startsWith('customer.subscription.')) {
     applyStripeSubscription(object);
   }
@@ -230,13 +260,7 @@ export function handleLemonEvent(event) {
   } else if (name === 'order_refunded') {
     // Remboursement complet d'un achat : la licence qu'il avait créée est révoquée, et ses machines libérées.
     if (custom.kind !== 'product' || attributes.status !== 'refunded' || !get('SELECT id FROM orders WHERE provider_ref = ?', orderRef)) return;
-    transaction(() => {
-      run(`UPDATE licenses SET status = 'revoked' WHERE id = (SELECT id FROM licenses WHERE user_id = ? AND product_id = ?
-             AND source = 'lemon' AND status = 'active' ORDER BY created_at DESC LIMIT 1)`, userId, refId);
-      const still = get(`SELECT id FROM licenses WHERE user_id = ? AND product_id = ? AND status = 'active'
-                          AND (expires_at IS NULL OR expires_at > ?)`, userId, refId, now());
-      if (!still) run('DELETE FROM activations WHERE user_id = ? AND product_id = ?', userId, refId);
-    });
+    revokePurchase(userId, refId, 'lemon');
   } else if (name.startsWith('subscription_') && !name.startsWith('subscription_payment')) {
     // Résilié : l'abonné garde l'accès jusqu'à la fin de la période payée (ends_at), puis reçoit « expired ».
     const cancelled = attributes.status === 'cancelled';

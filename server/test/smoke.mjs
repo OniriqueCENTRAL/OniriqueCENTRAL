@@ -291,6 +291,7 @@ try {
     const mails = outbox.filter((m) => m.to === 'acheteur@test.local' && /Confirmation de commande/.test(m.subject));
     assert.equal(mails.length, 1);
     assert.match(mails[0].text, /ONIRIQUE TEST — licence définitive/);
+    assert.match(mails[0].text, /revendeur Stripe/, 'en Managed Payments, c\'est Stripe qui vend et envoie le reçu');
     assert.match(mails[0].text, /25,00\s€ TTC/);
 
     // Un paiement pas encore reçu n'accorde rien.
