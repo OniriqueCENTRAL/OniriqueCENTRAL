@@ -39,11 +39,16 @@ h1 em, h2 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shad
 .tile { padding: clamp(22px, 4vw, 36px) clamp(20px, 4vw, 34px); min-width: 0; }
 .tile + .tile { border-left: 1px solid var(--line); }
 .tile .big { margin: 14px 0 10px; font: 800 clamp(54px, 11vw, 96px)/.95 var(--f-display); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
-.tile .big.key { font: 600 clamp(46px, 9vw, 80px)/.95 var(--f-dream); letter-spacing: 0; text-shadow: var(--glow); }
+.tile .big.key { font-size: clamp(30px, 5.6vw, 52px); line-height: 1.12; letter-spacing: -.01em; overflow-wrap: anywhere; }
 .tile .big.long { font-size: clamp(44px, 8vw, 72px); line-height: 1.26; }
 .tile .big small { font: 500 .22em/1 var(--f-mono); letter-spacing: .14em; color: var(--haze); text-shadow: none; }
 .tile p { margin: 0; color: #D9C6C8; font-size: 15px; }
 .tile p + p { margin-top: 4px; color: var(--haze); font-size: 14px; }
+.trim { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px 24px; align-items: center; padding: 22px clamp(20px, 4vw, 34px); border-top: 1px solid var(--line); background: rgba(0,0,0,.28); }
+.trim p { margin: 0; color: #D9C6C8; font-size: 15px; }
+.trim .eyebrow { margin-bottom: 10px; color: var(--haze); }
+.trim .go { margin: 0; border: 0; cursor: pointer; white-space: nowrap; }
+.trim .go:disabled { opacity: .5; cursor: progress; box-shadow: none; }
 .notes { padding: 6px clamp(20px, 4vw, 34px) 26px; border-top: 1px solid var(--line); }
 .notes .eyebrow { padding: 18px 0 14px; }
 .bars { display: grid; grid-template-columns: repeat(12, 1fr); gap: clamp(4px, 1.2vw, 12px); align-items: end; height: 120px; }
@@ -69,7 +74,7 @@ details p { color: #D9C6C8; }
 
 @media (max-width: 620px) {
   .brand { font-size: 0; gap: 0; } header .btn { padding: 10px 12px; font-size: 13px; }
-  .tiles { grid-template-columns: 1fr; } .tile + .tile { border-left: 0; border-top: 1px solid var(--line); }
+  .tiles { grid-template-columns: 1fr; } .trim { grid-template-columns: minmax(0, 1fr); } .tile + .tile { border-left: 0; border-top: 1px solid var(--line); }
 }
 @media (prefers-reduced-motion: reduce) { .drop.busy svg { animation: none; } }
 [hidden] { display: none !important; }
@@ -87,7 +92,7 @@ details p { color: #D9C6C8; }
   <section class="hero">
     <p class="eyebrow">Outil gratuit</p>
     <h1>Le <em>tempo</em> et la <em>tonalité</em> de ton morceau</h1>
-    <p class="lede">Dépose une instru, une prod ou un titre fini : son BPM et sa tonalité s'affichent en quelques secondes.</p>
+    <p class="lede">Dépose une instru, une prod ou un titre fini : son BPM et sa tonalité s'affichent en quelques secondes, et le blanc qui décale les MP3 dans un DAW se retire en un clic.</p>
 
     <button class="drop" id="drop" type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>
@@ -114,6 +119,13 @@ details p { color: #D9C6C8; }
           <p id="r-key-other"></p>
         </div>
       </div>
+      <div class="trim">
+        <div>
+          <p class="eyebrow">Début du fichier</p>
+          <p id="r-lead"></p>
+        </div>
+        <button class="go" id="r-trim" type="button">Télécharger le WAV calé</button>
+      </div>
       <div class="notes" id="r-notes">
         <p class="eyebrow">Les notes du morceau</p>
         <div class="bars" id="r-bars" role="img"></div>
@@ -133,6 +145,8 @@ details p { color: #D9C6C8; }
     <h2>Questions fréquentes</h2>
     <details><summary>Mon fichier est-il envoyé sur un serveur ?</summary>
       <p>Non. Le fichier est lu et analysé par ton navigateur, sur ton appareil. Rien n'est envoyé ni conservé : tu peux déposer un morceau qui n'est pas encore sorti.</p></details>
+    <details><summary>Pourquoi mon MP3 est-il décalé dans mon DAW ?</summary>
+      <p>Le format MP3 ajoute un court blanc au début du fichier, de quelques dizaines de millisecondes : la musique ne démarre donc pas à zéro, et tout le morceau glisse hors de la grille une fois importé. L'outil mesure ce blanc et te donne un fichier WAV qui commence exactement sur le premier son. Importe ce WAV à la place du MP3 : il tombe sur les temps.</p></details>
     <details><summary>Quels fichiers sont acceptés ?</summary>
       <p>Tout ce que ton navigateur sait lire : MP3, WAV, FLAC, M4A, AAC et OGG dans la plupart des cas. Pour un morceau très long, seules les quatre minutes du milieu sont analysées.</p></details>
     <details><summary>Le résultat est-il toujours juste ?</summary>
@@ -178,13 +192,40 @@ function busy(on, title) {
   $("drop-text").hidden = on;
 }
 
-/** Le son du fichier, en mono à 22 050 Hz : au plus les quatre minutes du milieu. */
+/** Fréquence d'échantillonnage écrite dans un fichier WAV, FLAC ou MP3 ; 0 si elle ne se lit pas. */
+function sourceRate(v) {
+  const tag = (o, text) => o + text.length <= v.byteLength && [...text].every((c, i) => v.getUint8(o + i) === c.charCodeAt(0));
+  const valid = (rate) => (rate >= 8000 && rate <= 192000 ? rate : 0);
+  if (tag(0, "RIFF") && tag(8, "WAVE")) {
+    for (let o = 12; o + 16 <= v.byteLength && o < 1e6;) {
+      if (tag(o, "fmt ")) return valid(v.getUint32(o + 12, true));
+      const size = v.getUint32(o + 4, true);
+      o += 8 + size + (size & 1);
+    }
+    return 0;
+  }
+  if (tag(0, "fLaC") && v.byteLength > 22) return valid((v.getUint8(18) << 12) | (v.getUint8(19) << 4) | (v.getUint8(20) >> 4));
+  let o = 0; // MP3 : la première trame, après l'étiquette ID3 s'il y en a une
+  if (tag(0, "ID3") && v.byteLength > 10) o = 10 + (((v.getUint8(6) & 127) << 21) | ((v.getUint8(7) & 127) << 14) | ((v.getUint8(8) & 127) << 7) | (v.getUint8(9) & 127));
+  for (const end = Math.min(v.byteLength - 4, o + 65536); o < end; o++) {
+    if (v.getUint8(o) !== 0xFF || (v.getUint8(o + 1) & 0xE0) !== 0xE0) continue;
+    const version = (v.getUint8(o + 1) >> 3) & 3, layer = (v.getUint8(o + 1) >> 1) & 3, index = (v.getUint8(o + 2) >> 2) & 3, bitrate = v.getUint8(o + 2) >> 4;
+    if (version === 1 || layer === 0 || index === 3 || bitrate === 0 || bitrate === 15) continue;
+    return [44100, 48000, 32000][index] >> (version === 3 ? 0 : version === 2 ? 1 : 2);
+  }
+  return 0;
+}
+
+/** Le son du fichier : entier et à sa fréquence d'origine (audio), et en mono à 22 050 Hz pour l'analyse (au plus les quatre minutes du milieu). */
 async function decode(file) {
   const Context = window.AudioContext || window.webkitAudioContext;
-  const context = new Context();
+  const bytes = await file.arrayBuffer();
+  // Décodé à la fréquence du fichier : le WAV rendu n'est pas rééchantillonné.
+  const rate = sourceRate(new DataView(bytes));
+  let context;
+  try { context = new Context(rate ? { sampleRate: rate } : undefined); } catch { context = new Context(); }
   let audio;
   try {
-    const bytes = await file.arrayBuffer();
     audio = await new Promise((resolve, reject) => { const p = context.decodeAudioData(bytes, resolve, reject); if (p && p.catch) p.catch(reject); });
   } finally { context.close(); }
   const length = Math.min(audio.duration, MAX_SECONDS), start = (audio.duration - length) / 2;
@@ -193,7 +234,36 @@ async function decode(file) {
   source.buffer = audio;
   source.connect(offline.destination);
   source.start(0, start, length);
-  return { samples: (await offline.startRendering()).getChannelData(0), duration: audio.duration, analysed: length };
+  return { samples: (await offline.startRendering()).getChannelData(0), duration: audio.duration, analysed: length, audio };
+}
+
+/** Nombre d'échantillons de blanc avant le premier son (au-dessus de -60 dB), toutes voies confondues. */
+function leadIn(audio) {
+  let first = audio.length;
+  for (let c = 0; c < audio.numberOfChannels; c++) {
+    const data = audio.getChannelData(c);
+    for (let i = 0; i < first; i++) if (Math.abs(data[i]) > 0.001) { first = i; break; }
+  }
+  return first === audio.length ? 0 : first;
+}
+
+/** Le son à partir de l'échantillon donné, en fichier WAV 24 bits. */
+function wav(audio, from) {
+  const channels = audio.numberOfChannels, frames = audio.length - from, size = frames * channels * 3;
+  const v = new DataView(new ArrayBuffer(44 + size));
+  const text = (o, t) => [...t].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+  text(0, "RIFF"); v.setUint32(4, 36 + size, true); text(8, "WAVEfmt "); v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true); v.setUint16(22, channels, true); v.setUint32(24, audio.sampleRate, true);
+  v.setUint32(28, audio.sampleRate * channels * 3, true); v.setUint16(32, channels * 3, true); v.setUint16(34, 24, true);
+  text(36, "data"); v.setUint32(40, size, true);
+  for (let c = 0; c < channels; c++) {
+    const data = audio.getChannelData(c);
+    for (let i = 0, o = 44 + c * 3; i < frames; i++, o += channels * 3) {
+      const x = Math.round(Math.max(-1, Math.min(1, data[from + i])) * 8388607);
+      v.setUint8(o, x & 255); v.setUint8(o + 1, (x >> 8) & 255); v.setUint8(o + 2, (x >> 16) & 255);
+    }
+  }
+  return new Blob([v.buffer], { type: "audio/wav" });
 }
 
 const analyse = (samples) => new Promise((resolve, reject) => {
@@ -206,6 +276,23 @@ const analyse = (samples) => new Promise((resolve, reject) => {
 function show(file, sound, r) {
   $("r-file").textContent = file.name;
   $("r-length").textContent = clock(sound.duration) + (sound.analysed < sound.duration ? " · " + clock(sound.analysed) + " analysées, au milieu" : "");
+
+  const audio = sound.audio, lead = leadIn(audio), ms = lead / audio.sampleRate * 1000;
+  $("r-lead").textContent = (ms >= 1
+    ? "Ce fichier commence par " + decimal(ms) + " ms de blanc avant le premier son : c'est ce qui le décale de la grille dans un DAW. "
+    : "Aucun blanc mesuré au début de ce fichier. ")
+    + "Le WAV démarre exactement sur le premier son" + (/\.wav$/i.test(file.name) ? "." : " : importe-le dans ton DAW à la place de ce fichier.");
+  $("r-trim").onclick = () => {
+    if (audio.length * audio.numberOfChannels * 3 > 1.5e9) { $("error").textContent = "Ce fichier est trop long pour être rendu en WAV ici."; return; }
+    $("r-trim").disabled = true;
+    // Laissé au prochain tour d'affichage : le bouton a le temps de se griser avant l'écriture du fichier.
+    setTimeout(() => {
+      const url = URL.createObjectURL(wav(audio, lead));
+      el("a", { href: url, download: file.name.replace(/\.[^.]+$/, "") + " (calé).wav" }).click();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      $("r-trim").disabled = false;
+    }, 30);
+  };
 
   if (r.tempo) {
     const bpm = r.tempo.bpm, others = [bpm / 2, bpm * 2].filter((b) => b >= 40 && b <= 240).map((b) => Math.round(b));
@@ -268,9 +355,20 @@ async function open(file) {
 $("drop").onclick = () => $("file").click();
 $("file").onchange = () => { open($("file").files[0]); $("file").value = ""; };
 // Le dépôt est accepté n'importe où sur la page : un fichier lâché à côté de la zone n'ouvre pas un nouvel onglet.
-addEventListener("dragover", (event) => { event.preventDefault(); $("drop").classList.add("over"); });
-addEventListener("dragleave", (event) => { if (!event.relatedTarget) $("drop").classList.remove("over"); });
-addEventListener("drop", (event) => { event.preventDefault(); $("drop").classList.remove("over"); open(event.dataTransfer?.files[0]); });
+// Seuls les glissers qui portent un fichier sont pris ; « depth » compte les entrées et sorties des éléments survolés.
+const carriesFile = (event) => [...(event.dataTransfer?.types || [])].includes("Files");
+let depth = 0;
+addEventListener("dragenter", (event) => { if (!carriesFile(event)) return; event.preventDefault(); depth++; $("drop").classList.add("over"); });
+addEventListener("dragover", (event) => { if (!carriesFile(event)) return; event.preventDefault(); event.dataTransfer.dropEffect = "copy"; });
+addEventListener("dragleave", (event) => { if (carriesFile(event) && --depth <= 0) { depth = 0; $("drop").classList.remove("over"); } });
+addEventListener("drop", (event) => {
+  if (!carriesFile(event)) return;
+  event.preventDefault();
+  depth = 0;
+  $("drop").classList.remove("over");
+  const dropped = event.dataTransfer.files[0] || [...event.dataTransfer.items].find((item) => item.kind === "file")?.getAsFile();
+  if (dropped) open(dropped); else $("error").textContent = "Dépose un fichier audio, pas un dossier ni un lien.";
+});
 </script>
 <script src="assets/tools-menu.js"></script>
 <script src="assets/account.js"></script>
