@@ -130,7 +130,26 @@ p { margin: 0; }
 .hero h1 span { white-space: nowrap; }
 .hero h1 em.dream { display: block; margin-top: .18em; font-size: 1.12em; line-height: 1; letter-spacing: 0; }
 /* Le plugin présenté à droite : une vraie capture, son prix, et la fiche au clic. La place est réservée avant le chargement. */
-.hero-shot { width: 100%; max-width: 600px; justify-self: center; box-shadow: 0 30px 80px -30px #000, 0 0 60px -20px rgba(226,52,68,.55); }
+.hero-grid { perspective: 1400px; }
+/* La carte est inclinée dans l'espace, flotte doucement, et s'oriente vers le pointeur (--rx, --ry réglés par le script). */
+.hero-shot {
+  position: relative; width: 100%; max-width: 600px; justify-self: center;
+  transform: rotateX(var(--rx, 5deg)) rotateY(var(--ry, -11deg)); transition: transform .45s cubic-bezier(.2,.7,.2,1), box-shadow .45s;
+  box-shadow: calc(var(--ry, -11deg) / -1deg * 2px) 34px 80px -30px #000, 0 0 70px -18px rgba(226,52,68,.6);
+  animation: shot-float 7s ease-in-out infinite; will-change: transform;
+}
+.hero-shot.live { transition: transform .12s linear, box-shadow .2s; }
+/* Le reflet suit le pointeur, comme une vitre sous une lampe. */
+.hero-shot::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen;
+  background: radial-gradient(520px circle at var(--gx, 22%) var(--gy, 0%), rgba(255,236,238,.18), transparent 62%);
+}
+/* Le plugin suivant arrive en glissant ; chaque partie avec un léger retard. */
+.hero-shot.swap > * { animation: shot-in .55s cubic-bezier(.2,.7,.2,1) both; }
+.hero-shot.swap > div { animation-delay: .07s; }
+@keyframes shot-float { 50% { translate: 0 -12px; } }
+@keyframes shot-in { from { opacity: 0; transform: translateX(28px) scale(.985); } }
+@media (max-width: 900px) { .hero-shot { --rx: 0deg; --ry: 0deg; } }
 .hero-shot img { height: auto; background: rgba(0,0,0,.35); }
 .hero-shot div { min-height: 132px; }
 .hero-shot small { color: var(--mist); }
@@ -1818,7 +1837,33 @@ function heroFacts(products, shown, euros, terms) {
     $("small", shot).textContent = terms(p) + " →";
   };
   paint();
-  if (!reduced && order.length > 1) setInterval(() => { if (!shot.matches(":hover, :focus-visible")) { at = (at + 1) % order.length; paint(); } }, 4500);
+  if (reduced) return;
+  if (order.length > 1) setInterval(() => {
+    if (shot.matches(":hover, :focus-visible")) return;
+    at = (at + 1) % order.length;
+    paint();
+    shot.classList.remove("swap");
+    void shot.offsetWidth; // relance l'animation d'arrivée
+    shot.classList.add("swap");
+  }, 4500);
+
+  // Avec une souris, la carte se tourne vers le pointeur tant qu'il est dans le haut de page, puis reprend sa pose.
+  if (!matchMedia("(hover: hover)").matches) return;
+  const hero = shot.closest(".hero"), clamp = (v, max) => Math.max(-max, Math.min(max, v));
+  hero.addEventListener("pointermove", event => {
+    if (innerWidth <= 900) return; // sur une colonne, la carte reste à plat
+    const box = shot.getBoundingClientRect();
+    const x = (event.clientX - box.left) / box.width - .5, y = (event.clientY - box.top) / box.height - .5;
+    shot.classList.add("live");
+    shot.style.setProperty("--ry", clamp(x * 16, 14) + "deg");
+    shot.style.setProperty("--rx", clamp(-y * 12, 10) + "deg");
+    shot.style.setProperty("--gx", clamp(x + .5, 1.2) * 100 + "%");
+    shot.style.setProperty("--gy", clamp(y + .5, 1.2) * 100 + "%");
+  });
+  hero.addEventListener("pointerleave", () => {
+    shot.classList.remove("live");
+    for (const name of ["--rx", "--ry", "--gx", "--gy"]) shot.style.removeProperty(name);
+  });
 }
 
 // Collection : les plugins publiés dans le CENTRAL qui ont une image (elle se change depuis la page admin).
