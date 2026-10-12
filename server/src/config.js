@@ -8,11 +8,15 @@ if (fs.existsSync(envFile)) process.loadEnvFile(envFile);
 
 const env = process.env;
 const paymentsMode = (env.PAYMENTS_MODE || 'off').toLowerCase();
-if (!['demo', 'stripe', 'off'].includes(paymentsMode)) {
+if (!['demo', 'stripe', 'lemon', 'off'].includes(paymentsMode)) {
   throw new Error(`PAYMENTS_MODE invalide : ${paymentsMode}`);
 }
 if (paymentsMode === 'stripe' && !(env.STRIPE_SECRET_KEY && env.STRIPE_WEBHOOK_SECRET)) {
   throw new Error('PAYMENTS_MODE=stripe demande STRIPE_SECRET_KEY et STRIPE_WEBHOOK_SECRET.');
+}
+
+if (paymentsMode === 'lemon' && !(env.LEMON_API_KEY && env.LEMON_STORE_ID && env.LEMON_WEBHOOK_SECRET && env.LEMON_VARIANT_ONCE && env.LEMON_VARIANT_MONTH)) {
+  throw new Error('PAYMENTS_MODE=lemon demande LEMON_API_KEY, LEMON_STORE_ID, LEMON_WEBHOOK_SECRET, LEMON_VARIANT_ONCE et LEMON_VARIANT_MONTH.');
 }
 
 const dataDir = path.resolve(root, env.DATA_DIR || './data');
@@ -32,6 +36,12 @@ export const config = {
   paymentsMode,
   stripeSecretKey: env.STRIPE_SECRET_KEY || '',
   stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET || '',
+  // Lemon Squeezy : la boutique, et une « variante » par façon de payer. Le nom et le prix de chaque vente sont
+  // fixés par ce serveur au moment de la commande : il n'y a pas un produit à créer là-bas par plugin.
+  lemonApiKey: env.LEMON_API_KEY || '',
+  lemonStoreId: env.LEMON_STORE_ID || '',
+  lemonWebhookSecret: env.LEMON_WEBHOOK_SECRET || '',
+  lemonVariants: { once: env.LEMON_VARIANT_ONCE || '', month: env.LEMON_VARIANT_MONTH || '', year: env.LEMON_VARIANT_YEAR || '' },
   // Adresse du site où se trouve la page compte (lien de réinitialisation du mot de passe).
   siteUrl: (env.SITE_URL || env.PUBLIC_URL || `http://localhost:${env.PORT || 4850}`).replace(/\/+$/, ''),
   smtpHost: env.SMTP_HOST || '',

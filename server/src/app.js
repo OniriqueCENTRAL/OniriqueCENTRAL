@@ -17,7 +17,7 @@ import {
   activate, activeSubscription, createLicense, entitlement, generateKey, normalizeKey, pickPlan, pickPriceCents, pickPrices,
   publicKeyPem, publicKeyRaw, userActivations,
 } from './licensing.js';
-import { cancelSubscription, checkout, handleStripeEvent, verifyStripeSignature } from './payments.js';
+import { cancelSubscription, checkout, handleLemonEvent, handleStripeEvent, verifyLemonSignature, verifyStripeSignature } from './payments.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 const str = (value, max = 200) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
@@ -163,6 +163,14 @@ export function createApp() {
     const raw = req.body.toString('utf8');
     verifyStripeSignature(raw, req.headers['stripe-signature']);
     await handleStripeEvent(JSON.parse(raw));
+    res.json({ received: true });
+  }));
+
+  app.post('/api/lemon/webhook', express.raw({ type: '*/*', limit: '1mb' }), wrap(async (req, res) => {
+    if (config.paymentsMode !== 'lemon') throw new HttpError(404, 'Introuvable.');
+    const raw = req.body.toString('utf8');
+    verifyLemonSignature(raw, req.headers['x-signature']);
+    handleLemonEvent(JSON.parse(raw));
     res.json({ received: true });
   }));
 
@@ -670,7 +678,7 @@ export function createApp() {
       unclaimed: count(`SELECT COUNT(*) AS n FROM licenses WHERE status = 'active' AND user_id IS NULL`),
       subscribers: count(`SELECT COUNT(*) AS n FROM subscriptions WHERE status = 'active' AND current_period_end > ?`, now()),
       activations: count('SELECT COUNT(*) AS n FROM activations'),
-      revenueCents: count(`SELECT COALESCE(SUM(amount_cents), 0) AS n FROM orders WHERE provider = 'stripe'`),
+      revenueCents: count(`SELECT COALESCE(SUM(amount_cents), 0) AS n FROM orders WHERE provider IN ('stripe', 'lemon')`),
       supportMessages: count('SELECT COUNT(*) AS n FROM support_messages'),
       paymentsMode: config.paymentsMode,
     });

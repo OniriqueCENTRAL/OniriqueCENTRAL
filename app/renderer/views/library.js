@@ -113,7 +113,7 @@ export function buy(kind, item) {
     run: async () => {
       const result = await attempt(() => call('checkout', kind, item.id, item.productIds));
       if (!result) return false;
-      if (result.mode === 'stripe') toast('Paiement ouvert dans votre navigateur.');
+      if (result.mode === 'stripe' || result.mode === 'lemon') toast('Paiement ouvert dans votre navigateur.');
       else { toast(recurring ? 'Abonnement activé.' : `${item.name} est à vous.`); await refresh(); }
     },
   }], recurring ? 'Abonnement' : 'Achat');

@@ -327,6 +327,64 @@ try {
     run(`DELETE FROM plans WHERE kind = 'pick'`);
   });
 
+  await step('paiement Lemon Squeezy (événements simulés) : licence, e-mail, abonnement, remboursement, signature', async () => {
+    const { handleLemonEvent, verifyLemonSignature } = await import('../src/payments.js');
+    const { config } = await import('../src/config.js');
+    const token = (await call('POST', '/api/auth/register', { body: { email: 'citron@test.local', password: 'motdepasse11' }, expect: 201 })).token;
+    const id = (await call('GET', '/api/me', { token })).user.id;
+    const custom = { user_id: String(id), kind: 'product', ref_id: String(product.id) };
+    const order = (event_name, status) => ({ meta: { event_name, custom_data: custom }, data: { type: 'orders', id: '501', attributes: { status, total: 2500 } } });
+    outbox.length = 0;
+    handleLemonEvent(order('order_created', 'pending')); // pas encore payé : rien
+    assert.equal((await call('GET', '/api/me', { token })).licenses.length, 0);
+    handleLemonEvent(order('order_created', 'paid'));
+    handleLemonEvent(order('order_created', 'paid')); // événement renvoyé
+    let me = await call('GET', '/api/me', { token });
+    assert.equal(me.entitlements[product.id].type, 'perpetual');
+    assert.equal(me.licenses.length, 1);
+    const mails = outbox.filter((m) => m.to === 'citron@test.local');
+    assert.equal(mails.length, 1);
+    assert.match(mails[0].text, /Lemon Squeezy/);
+    assert.doesNotMatch(mails[0].text, /rétractation/);
+
+    // Remboursement partiel : rien ne change. Remboursement complet : la licence est révoquée.
+    run('UPDATE users SET email_verified = 1 WHERE id = ?', id); // l'activation demande une adresse validée
+    await call('POST', '/api/licenses/activate', { token, body: { productId: product.id, machineId: machineA } });
+    handleLemonEvent(order('order_refunded', 'partial_refund'));
+    assert.ok((await call('GET', '/api/me', { token })).entitlements[product.id]);
+    handleLemonEvent(order('order_refunded', 'refunded'));
+    me = await call('GET', '/api/me', { token });
+    assert.equal(me.entitlements[product.id], undefined);
+    assert.equal(me.activations.filter((a) => a.productId === product.id).length, 0);
+
+    // Abonnement mensuel à la carte : actif, puis résilié (accès gardé jusqu'à la fin payée), puis expiré.
+    run(`INSERT INTO plans (name, interval, price_cents, kind) VALUES ('À LA CARTE', 'month', 999, 'pick')`);
+    const planId = db.prepare(`SELECT id FROM plans WHERE kind = 'pick'`).get().id;
+    const later = new Date(Date.now() + 20 * 86400_000).toISOString();
+    const sub = (event_name, status, dates) => ({ meta: { event_name, custom_data: { user_id: String(id), kind: 'plan', ref_id: String(planId), product_ids: JSON.stringify([product.id]) } },
+      data: { type: 'subscriptions', id: '77', attributes: { status, renews_at: null, ends_at: null, ...dates } } });
+    handleLemonEvent(sub('subscription_created', 'active', { renews_at: later }));
+    me = await call('GET', '/api/me', { token });
+    assert.equal(me.entitlements[product.id].type, 'subscription');
+    handleLemonEvent(sub('subscription_cancelled', 'cancelled', { ends_at: later }));
+    me = await call('GET', '/api/me', { token });
+    assert.ok(me.entitlements[product.id], 'résilié : l\'accès reste jusqu\'à la fin de la période payée');
+    assert.equal(me.subscription.cancelAtPeriodEnd, true);
+    handleLemonEvent(sub('subscription_expired', 'expired', { ends_at: new Date(Date.now() - 1000).toISOString() }));
+    assert.equal((await call('GET', '/api/me', { token })).entitlements[product.id], undefined);
+    run('DELETE FROM subscriptions WHERE user_id = ?', id);
+    run(`DELETE FROM plans WHERE kind = 'pick'`);
+
+    // Une vente faite ailleurs que sur ce site (sans nos données) ne touche à rien.
+    handleLemonEvent({ meta: { event_name: 'order_created' }, data: { id: '9', attributes: { status: 'paid' } } });
+
+    config.lemonWebhookSecret = 'secret-essai';
+    const body = JSON.stringify(order('order_created', 'paid'));
+    verifyLemonSignature(body, crypto.createHmac('sha256', 'secret-essai').update(body).digest('hex'));
+    assert.throws(() => verifyLemonSignature(body, crypto.createHmac('sha256', 'autre').update(body).digest('hex')), /invalide/);
+    assert.throws(() => verifyLemonSignature(body, undefined), /invalide/);
+  });
+
   await step('abonnement : donne accès à tout, expire avec une marge, se résilie', async () => {
     run(`INSERT INTO plans (name, interval, price_cents) VALUES ('ALL ACCESS', 'month', 990)`);
     const { plans } = await call('GET', '/api/catalog');

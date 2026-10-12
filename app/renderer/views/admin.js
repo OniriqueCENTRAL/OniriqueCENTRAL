@@ -78,11 +78,11 @@ function overviewTab() {
   const pickBase = priceInput(data.pick.baseCents), pickExtra = priceInput(data.pick.extraCents);
 
   return [
-    o.paymentsMode !== 'stripe' ? h('p', null, pill(o.paymentsMode === 'demo'
+    !['stripe', 'lemon'].includes(o.paymentsMode) ? h('p', null, pill(o.paymentsMode === 'demo'
       ? 'Paiements en mode démo : les achats sont accordés sans paiement' : 'Paiements fermés : seules les clés de licence donnent accès', 'warn')) : null,
     h('div', { class: 'grid3' },
       tile('Comptes', o.users), tile('Licences actives', o.licenses), tile('Clés en attente', o.unclaimed),
-      tile('Abonnés', o.subscribers), tile('Machines activées', o.activations), tile('Ventes Stripe', euros(o.revenueCents).replace('Gratuit', '0 €'))),
+      tile('Abonnés', o.subscribers), tile('Machines activées', o.activations), tile('Ventes', euros(o.revenueCents).replace('Gratuit', '0 €'))),
     h('div', { class: 'panel', style: { 'margin-top': '16px' } }, eyebrow('Formules d\'abonnement'),
       table(['Nom', 'Prix (€)', '', '', ''], data.plans.filter((p) => p.kind !== 'pick').map(planRow), 'Aucune formule.'),
       h('div', { class: 'row wrap', style: { 'margin-top': '16px', 'align-items': 'flex-end' } },

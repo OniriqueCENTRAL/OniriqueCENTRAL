@@ -165,7 +165,8 @@ app.whenReady().then(() => {
   handle('checkout', async (kind, id, productIds) => {
     const result = await api.request('POST', '/api/checkout', { kind, id, productIds });
     if (result.url) {
-      if (!/^https:\/\/checkout\.stripe\.com\//.test(result.url)) throw new Error('Adresse de paiement inattendue.');
+      // Seules les pages de paiement de Stripe et de Lemon Squeezy s'ouvrent d'ici.
+      if (!/^https:\/\/(checkout\.stripe\.com|[a-z0-9-]+\.lemonsqueezy\.com)\//.test(result.url)) throw new Error('Adresse de paiement inattendue.');
       await shell.openExternal(result.url);
     }
     return { mode: result.mode };

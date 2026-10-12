@@ -18,7 +18,7 @@ function recordOrder(userId, kind, refId, amount, provider, providerRef) {
 }
 
 /** Confirmation de commande par e-mail, pour un paiement réel. Un envoi raté ne retire rien à l'acheteur. */
-function confirmOrder(userId, what, amountCents, renewal = '') {
+function confirmOrder(userId, what, amountCents, renewal = '', provider = 'stripe') {
   const user = get('SELECT email, name FROM users WHERE id = ?', userId);
   if (!user) return;
   const amount = (amountCents / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
@@ -26,7 +26,9 @@ function confirmOrder(userId, what, amountCents, renewal = '') {
     `Bonjour${user.name ? ' ' + user.name : ''},\n\nMerci pour votre commande.\n\n  ${what}\n  ${amount} TTC${renewal}\n\n`
     + 'Votre licence est déjà sur votre compte : ouvrez ONIRIQUE CENTRAL, installez le plugin, il s\'active tout seul.\n'
     + `Application et compte : ${config.siteUrl}\n\n`
-    + `Le contenu vous est fourni dès le paiement, comme vous l'avez demandé en commandant : le droit de rétractation ne s'applique plus (${config.siteUrl}/remboursement.html).\n\n`
+    + (provider === 'lemon'
+      ? 'Le paiement est encaissé par notre revendeur Lemon Squeezy, qui vous envoie le reçu séparément.\n\n'
+      : `Le contenu vous est fourni dès le paiement, comme vous l'avez demandé en commandant : le droit de rétractation ne s'applique plus (${config.siteUrl}/remboursement.html).\n\n`)
     + `Une question : ${config.supportEmail}\n\nONIRIQUE`)
     .catch((error) => console.error('Confirmation de commande :', error.message));
 }
@@ -156,6 +158,100 @@ export async function handleStripeEvent(event) {
 }
 
 //==============================================================================
+//  Lemon Squeezy : revendeur officiel, il encaisse, facture, gère la TVA et reverse le reste
+//==============================================================================
+async function lemon(method, path, body) {
+  const response = await fetch(`https://api.lemonsqueezy.com/v1${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${config.lemonApiKey}`,
+      Accept: 'application/vnd.api+json',
+      'Content-Type': 'application/vnd.api+json',
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok) throw new HttpError(502, `Lemon Squeezy : ${json.errors?.[0]?.detail || response.status}`);
+  return json;
+}
+
+async function lemonCheckout(user, kind, item) {
+  const variant = kind === 'plan' ? config.lemonVariants[item.interval] : config.lemonVariants.once;
+  if (!variant) throw new HttpError(503, 'Cette formule n\'est pas encore ouverte à la vente.');
+  const { data } = await lemon('POST', '/checkouts', { data: {
+    type: 'checkouts',
+    attributes: {
+      custom_price: item.price_cents, // pour un abonnement, ce prix vaut aussi pour chaque renouvellement
+      product_options: { name: item.name, redirect_url: `${config.publicUrl}/checkout/done`, enabled_variants: [Number(variant)] },
+      checkout_options: { locale: 'fr' },
+      // Ces valeurs reviennent telles quelles dans chaque événement de la commande ou de l'abonnement.
+      checkout_data: { email: user.email, custom: {
+        user_id: String(user.id), kind, ref_id: String(item.id),
+        product_ids: item.productIds ? JSON.stringify(item.productIds) : undefined,
+      } },
+    },
+    relationships: {
+      store: { data: { type: 'stores', id: String(config.lemonStoreId) } },
+      variant: { data: { type: 'variants', id: String(variant) } },
+    },
+  } });
+  return { mode: 'lemon', url: data.attributes.url };
+}
+
+export function verifyLemonSignature(rawBody, header) {
+  const expected = crypto.createHmac('sha256', config.lemonWebhookSecret).update(rawBody).digest();
+  const given = Buffer.from(String(header || ''), 'hex');
+  if (given.length !== expected.length || !crypto.timingSafeEqual(given, expected)) throw new HttpError(400, 'Signature invalide.');
+}
+
+export function handleLemonEvent(event) {
+  const name = String(event.meta?.event_name || '');
+  const custom = event.meta?.custom_data || {};
+  const attributes = event.data?.attributes || {};
+  const userId = Number(custom.user_id), refId = Number(custom.ref_id);
+  if (!userId || !refId) return; // une vente faite hors de ce site : rien à accorder ici
+  const orderRef = `ls_order_${event.data.id}`;
+
+  if (name === 'order_created') {
+    if (attributes.status !== 'paid') return;
+    if (custom.kind === 'product') {
+      const product = get('SELECT * FROM products WHERE id = ?', refId);
+      if (product && grantProduct(userId, product, 'lemon', orderRef)) {
+        confirmOrder(userId, `${product.name} — licence définitive`, attributes.total ?? product.price_cents, '', 'lemon');
+      }
+    } else if (custom.kind === 'plan') {
+      // La première échéance d'un abonnement : l'accès lui-même arrive par l'événement subscription_created.
+      const plan = get('SELECT name, interval FROM plans WHERE id = ?', refId);
+      if (plan && recordOrder(userId, 'plan', refId, attributes.total ?? 0, 'lemon', orderRef)) {
+        confirmOrder(userId, `Abonnement ${plan.name}`, attributes.total ?? 0,
+          `, puis le même montant chaque ${plan.interval === 'year' ? 'année' : 'mois'} jusqu'à résiliation (onglet Abonnement de l'application)`, 'lemon');
+      }
+    }
+  } else if (name === 'order_refunded') {
+    // Remboursement complet d'un achat : la licence qu'il avait créée est révoquée, et ses machines libérées.
+    if (custom.kind !== 'product' || attributes.status !== 'refunded' || !get('SELECT id FROM orders WHERE provider_ref = ?', orderRef)) return;
+    transaction(() => {
+      run(`UPDATE licenses SET status = 'revoked' WHERE id = (SELECT id FROM licenses WHERE user_id = ? AND product_id = ?
+             AND source = 'lemon' AND status = 'active' ORDER BY created_at DESC LIMIT 1)`, userId, refId);
+      const still = get(`SELECT id FROM licenses WHERE user_id = ? AND product_id = ? AND status = 'active'
+                          AND (expires_at IS NULL OR expires_at > ?)`, userId, refId, now());
+      if (!still) run('DELETE FROM activations WHERE user_id = ? AND product_id = ?', userId, refId);
+    });
+  } else if (name.startsWith('subscription_') && !name.startsWith('subscription_payment')) {
+    // Résilié : l'abonné garde l'accès jusqu'à la fin de la période payée (ends_at), puis reçoit « expired ».
+    const cancelled = attributes.status === 'cancelled';
+    const live = ['on_trial', 'active', 'past_due', 'cancelled'].includes(attributes.status);
+    setSubscription(userId, refId, {
+      status: live ? 'active' : 'ended',
+      periodEnd: Date.parse(cancelled ? attributes.ends_at : attributes.renews_at) || 0,
+      cancelAtPeriodEnd: cancelled,
+      stripeId: String(event.data.id),
+      productIds: parseProductIds(custom.product_ids),
+    });
+  }
+}
+
+//==============================================================================
 //  Points d'entrée
 //==============================================================================
 export async function checkout(user, kind, item) {
@@ -169,6 +265,7 @@ export async function checkout(user, kind, item) {
     return { mode: 'demo', granted: true };
   }
   if (config.paymentsMode === 'stripe') return stripeCheckout(user, kind, item);
+  if (config.paymentsMode === 'lemon') return lemonCheckout(user, kind, item);
   throw new HttpError(503, 'Les achats ne sont pas encore ouverts.');
 }
 
@@ -178,5 +275,7 @@ export async function cancelSubscription(userId) {
   if (sub.stripe_subscription && config.paymentsMode === 'stripe') {
     await stripe('POST', `/subscriptions/${sub.stripe_subscription}`, { cancel_at_period_end: true });
   }
+  // Chez Lemon Squeezy, supprimer un abonnement le résilie à la fin de la période payée.
+  if (sub.stripe_subscription && config.paymentsMode === 'lemon') await lemon('DELETE', `/subscriptions/${sub.stripe_subscription}`);
   run('UPDATE subscriptions SET cancel_at_period_end = 1, updated_at = ? WHERE user_id = ?', now(), userId);
 }

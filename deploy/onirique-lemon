@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+# Ouvre ou ferme la vente en ligne par Lemon Squeezy, le revendeur qui encaisse, facture et gère la TVA.
+# À lancer sur le VPS, en root :
+#   onirique-lemon             ne demande que la clé d'API ; le reste est lu ou créé chez Lemon Squeezy
+#   onirique-lemon <boutique>  même chose, quand le compte a plusieurs boutiques (leur numéro est alors affiché)
+#   onirique-lemon off         ferme la vente (les réglages restent en place pour la rouvrir)
+# La clé est saisie ici, sans s'afficher, et ne quitte pas le serveur.
+#
+# À faire avant, sur lemonsqueezy.com :
+#   1. Créer la boutique, en euros (Settings > General > Currency).
+#   2. Y créer trois produits publiés, peu importe leur nom et leur prix (ce serveur fixe le nom et le prix
+#      de chaque vente) : un « Single payment », un « Subscription » mensuel, un « Subscription » annuel.
+#      L'annuel est facultatif : sans lui, seules les formules mensuelles sont vendues.
+#   3. Settings > API > créer une clé d'API. En « Test mode », rien n'est encaissé : c'est le bon réglage
+#      pour un premier essai, à refermer ensuite.
+set -euo pipefail
+
+APP=/opt/onirique-central/server
+ENVFILE=$APP/.env
+stop() { echo "$1" >&2; exit 1; }
+mode() { curl -fsS "http://127.0.0.1:$(grep -E '^PORT=' "$ENVFILE" | cut -d= -f2)/api/catalog" | grep -o '"paymentsMode":"[a-z]*"' || true; }
+
+if [ "${1:-}" = off ]; then
+  sed -i 's/^PAYMENTS_MODE=.*/PAYMENTS_MODE=off/' "$ENVFILE"
+  systemctl restart onirique-central
+  sleep 2
+  echo "Vente fermée. État annoncé par le serveur : $(mode)"
+  exit 0
+fi
+
+PUBLIC=$(grep -E '^PUBLIC_URL=' "$ENVFILE" | cut -d= -f2- | tr -d "'\"" | sed 's:/*$::')
+[ -n "$PUBLIC" ] || stop "PUBLIC_URL manque dans $ENVFILE."
+read -rsp "Clé d'API Lemon Squeezy (rien ne s'affiche) : " KEY; echo
+[ ${#KEY} -gt 40 ] || stop "Ce n'est pas une clé d'API Lemon Squeezy (elle est bien plus longue). Rien n'est changé."
+
+# Tout le dialogue avec Lemon Squeezy : boutique, variantes, pages de paiement d'essai, webhook.
+# Ce qu'il écrit sur sa sortie normale est la suite du fichier de réglages ; ses messages passent par la sortie d'erreur.
+SETTINGS=$(KEY="$KEY" STORE="${1:-}" HOOK_URL="$PUBLIC/api/lemon/webhook" node --input-type=module - <<'NODE'
+import crypto from 'node:crypto';
+const { KEY, STORE, HOOK_URL } = process.env;
+const say = (text) => console.error(text);
+const fail = (text) => { say(text); process.exit(1); };
+const api = async (method, path, body) => {
+  const response = await fetch('https://api.lemonsqueezy.com/v1' + path, {
+    method,
+    headers: { Authorization: 'Bearer ' + KEY, Accept: 'application/vnd.api+json', 'Content-Type': 'application/vnd.api+json' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (response.status === 204) return {};
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(json.errors?.[0]?.detail || 'réponse ' + response.status);
+  return json;
+};
+
+try {
+  const me = await api('GET', '/users/me');
+  const test = !!me.meta?.test_mode;
+  say(`Compte : ${me.data.attributes.name} (${me.data.attributes.email})${test ? ', clé en MODE TEST' : ''}`);
+
+  const stores = (await api('GET', '/stores?page[size]=100')).data;
+  if (!stores.length) fail("Ce compte n'a pas encore de boutique : créez-la sur lemonsqueezy.com, puis relancez.");
+  const store = STORE ? stores.find((s) => s.id === STORE) : stores.length === 1 ? stores[0] : null;
+  if (!store) fail('Plusieurs boutiques : relancez avec le numéro de la bonne.\n' + stores.map((s) => `  onirique-lemon ${s.id}    (${s.attributes.name})`).join('\n'));
+  if (store.attributes.currency !== 'EUR') fail(`La boutique « ${store.attributes.name} » est en ${store.attributes.currency} : passez-la en euros (Settings > General), puis relancez.`);
+  say(`Boutique : ${store.attributes.name} (n° ${store.id})`);
+
+  const variants = [];
+  for (const product of (await api('GET', `/products?filter[store_id]=${store.id}&page[size]=100`)).data) {
+    for (const v of (await api('GET', `/variants?filter[product_id]=${product.id}&page[size]=100`)).data) {
+      if (v.attributes.status !== 'draft') variants.push({ id: v.id, product: product.attributes.name, ...v.attributes });
+    }
+  }
+  const pick = (label, test) => {
+    const found = variants.find(test);
+    say(found ? `${label} : « ${found.product} » (variante n° ${found.id})` : `${label} : aucun produit de ce type`);
+    return found;
+  };
+  const once = pick('Achat définitif', (v) => !v.is_subscription);
+  const month = pick('Abonnement mensuel', (v) => v.is_subscription && v.interval === 'month');
+  const year = pick('Abonnement annuel', (v) => v.is_subscription && v.interval === 'year');
+  if (!once || !month) fail("Il manque un produit publié dans la boutique : un « Single payment » et un « Subscription » mensuel sont nécessaires. Rien n'est changé.");
+
+  // Essai réel : une page de paiement à 1 € pour chaque variante, faite comme celles du site, valable une heure.
+  for (const v of [once, month, year].filter(Boolean)) {
+    await api('POST', '/checkouts', { data: {
+      type: 'checkouts',
+      attributes: { custom_price: 100, test_mode: test, expires_at: new Date(Date.now() + 3600_000).toISOString(),
+        product_options: { name: 'Essai de réglage ONIRIQUE', enabled_variants: [Number(v.id)] } },
+      relationships: { store: { data: { type: 'stores', id: store.id } }, variant: { data: { type: 'variants', id: v.id } } },
+    } });
+  }
+  say('Pages de paiement : acceptées par Lemon Squeezy.');
+
+  // Le webhook prévient ce serveur de chaque paiement : c'est lui qui crée les licences. L'ancien est remplacé.
+  for (const hook of (await api('GET', `/webhooks?filter[store_id]=${store.id}&page[size]=100`)).data) {
+    if (hook.attributes.url === HOOK_URL) await api('DELETE', '/webhooks/' + hook.id);
+  }
+  const secret = crypto.randomBytes(20).toString('hex');
+  await api('POST', '/webhooks', { data: {
+    type: 'webhooks',
+    attributes: { url: HOOK_URL, secret, test_mode: test, events: ['order_created', 'order_refunded', 'subscription_created',
+      'subscription_updated', 'subscription_cancelled', 'subscription_resumed', 'subscription_expired', 'subscription_paused', 'subscription_unpaused'] },
+    relationships: { store: { data: { type: 'stores', id: store.id } } },
+  } });
+  say(`Webhook : créé vers ${HOOK_URL}`);
+
+  console.log(`TEST=${test ? 1 : 0}`);
+  console.log(`LEMON_STORE_ID=${store.id}\nLEMON_WEBHOOK_SECRET=${secret}\nLEMON_VARIANT_ONCE=${once.id}\nLEMON_VARIANT_MONTH=${month.id}\nLEMON_VARIANT_YEAR=${year?.id ?? ''}`);
+} catch (error) {
+  fail(`Lemon Squeezy refuse : ${error.message}. Rien n'est changé.`);
+}
+NODE
+) || exit 1
+
+if [ "$(printf '%s\n' "$SETTINGS" | head -n 1)" = "TEST=1" ]; then
+  echo "Clé en MODE TEST : rien ne sera encaissé, et n'importe qui pourra « acheter » avec la carte de test 4242… et recevoir une vraie licence."
+  read -rp "Pour ouvrir quand même le temps d'un essai, tapez essai : " SURE
+  [ "$SURE" = essai ] || stop "Rien n'est changé."
+fi
+
+cp "$ENVFILE" "$ENVFILE.avant-lemon"
+sed -i '/^PAYMENTS_MODE=/d; /^LEMON_/d' "$ENVFILE"
+{ echo "PAYMENTS_MODE=lemon"; printf "LEMON_API_KEY='%s'\n" "$KEY"; printf '%s\n' "$SETTINGS" | tail -n +2; } >> "$ENVFILE"
+chown central:central "$ENVFILE"; chmod 600 "$ENVFILE"
+systemctl restart onirique-central
+sleep 3
+if systemctl is-active -q onirique-central && [ "$(mode)" = '"paymentsMode":"lemon"' ]; then
+  rm -f "$ENVFILE.avant-lemon"
+  echo "C'est bon : la vente est ouverte. Faites un achat d'essai sur le site, puis vérifiez que la licence arrive sur le compte."
+  echo "Pour refermer : onirique-lemon off"
+else
+  mv "$ENVFILE.avant-lemon" "$ENVFILE"
+  systemctl restart onirique-central
+  stop "Le serveur n'a pas redémarré avec ces réglages : l'ancien réglage est remis, la vente reste fermée."
+fi
