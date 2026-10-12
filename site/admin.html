@@ -21,7 +21,13 @@ button.act { padding: 7px 12px; border-radius: 999px; border: 1px solid var(--li
 button.act:hover { border-color: var(--ember); }
 button.act:disabled { opacity: .5; cursor: default; }
 td.actions { text-align: right; }
-td.actions button { margin: 2px 0 2px 6px; }
+td.actions button, td.actions select { margin: 2px 0 2px 6px; }
+/* Le choix du rôle : une pastille comme les boutons voisins, avec sa propre flèche à la place de celle du navigateur */
+select.act { appearance: none; -webkit-appearance: none; padding: 7px 30px 7px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--mist); font: 600 13px/1 var(--f-body); cursor: pointer;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23ff6b78' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") right 12px center / 10px no-repeat; }
+select.act:hover, select.act:focus-visible { border-color: var(--ember); outline: none; }
+select.act:focus-visible { box-shadow: 0 0 0 3px rgba(226,52,68,.3); }
+select.act option { background: var(--deep); color: var(--mist); }
 .pill { display: inline-block; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line); font: 500 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--haze); white-space: nowrap; }
 .pill.on { color: var(--bone); border-color: rgba(226,52,68,.7); background: rgba(226,52,68,.18); }
 .sub { color: var(--haze); font-size: 13px; }
