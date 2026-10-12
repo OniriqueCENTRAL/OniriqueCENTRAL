@@ -25,7 +25,7 @@
 - [Convertisseur audio](https://onirique.store/convertisseur) : conversion en WAV ou en MP3 dans le navigateur.
 - [Découpe et fondu](https://onirique.store/decoupe) : garde un passage d'un morceau, avec fondus, export WAV ou MP3.
 - [Transposer](https://onirique.store/transposition) : change la hauteur ou le tempo d'un morceau, l'un sans l'autre.
-- [Revenus de streaming](https://onirique.store/revenus-streaming) : fourchette de revenus pour un nombre d'écoutes par plateforme.
+- [Calculateur revenus streaming](https://onirique.store/revenus-streaming) : fourchette de revenus pour un nombre d'écoutes par plateforme.
 - [Partage des droits](https://onirique.store/partage) : répartition des parts d'un titre, feuille à imprimer et à signer.
 - [Checklist de sortie](https://onirique.store/checklist-sortie) : étapes datées d'une sortie, de J-30 à J+7.
 - [Questions fréquentes](https://onirique.store/#faq) : compatibilité, installation, latence.

@@ -23,7 +23,7 @@ window.OniriqueTools = [
     ["Transposer", "transposition.html", "Changer la hauteur ou le tempo d'un morceau, l'un sans l'autre."],
   ]],
   ["Sortie", [
-    ["Revenus de streaming", "revenus-streaming.html", "Une fourchette de revenus pour un nombre d'écoutes."],
+    ["Calculateur revenus streaming", "revenus-streaming.html", "Une fourchette de revenus pour un nombre d'écoutes."],
     ["Partage des droits", "partage.html", "Qui touche quoi sur un titre, dans une feuille à signer."],
     ["Checklist de sortie", "checklist-sortie.html", "Les étapes d'une sortie, datées de J-30 à J+7."],
   ]],
