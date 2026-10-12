@@ -54,6 +54,9 @@ input { height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid va
 label.check { display: flex; align-items: flex-start; gap: 10px; font: 400 14px/1.5 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--mist); }
 label.check input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; padding: 0; accent-color: var(--ember); }
 .error { color: #FF7A85; font-size: 14px; }
+/* Vos informations : le profil et le mot de passe, côte à côte quand la place le permet */
+.settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 28px 40px; align-items: start; }
+.settings input:disabled { opacity: .6; }
 .legal { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 14px; }
 .legal a { color: var(--haze); text-decoration: none; }
 .legal a:hover { color: var(--mist); }
@@ -131,8 +134,29 @@ label.check input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; padd
     <div class="panel">
       <div class="eyebrow">L'application</div>
       <div class="between">
-        <p class="muted" style="margin:0;max-width:46ch">ONIRIQUE CENTRAL installe vos plugins, les met à jour et active vos licences sur votre PC. Windows 10 ou 11, 64 bits. Si « Windows a protégé votre ordinateur » s'affiche : Informations complémentaires, puis Exécuter quand même.</p>
-        <a class="btn btn-primary" href="telechargement/ONIRIQUE-CENTRAL-Setup.exe" download>Télécharger ONIRIQUE CENTRAL</a>
+        <p class="muted" style="margin:0;max-width:46ch">ONIRIQUE CENTRAL installe vos plugins, les met à jour et active vos licences sur votre ordinateur. Windows 10 ou 11 (64 bits), ou Mac (Intel et Apple Silicon). Sous Windows, si « Windows a protégé votre ordinateur » s'affiche : Informations complémentaires, puis Exécuter quand même. Sur Mac, à la première ouverture : clic droit sur l'application, puis Ouvrir.</p>
+        <div class="between">
+          <a class="btn btn-primary" href="telechargement/ONIRIQUE-CENTRAL-Setup.exe" download>Télécharger pour Windows</a>
+          <a class="btn btn-ghost" href="telechargement/ONIRIQUE-CENTRAL.dmg" download>Télécharger pour Mac</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="eyebrow">Vos informations</div>
+      <div class="settings">
+        <form id="profile-form">
+          <label>Nom affiché<input id="profile-name" maxlength="80" autocomplete="name"></label>
+          <label>E-mail<input id="profile-email" type="email" disabled></label>
+          <div class="notice" id="profile-notice" role="status"></div>
+          <div><button class="btn btn-ghost" type="submit">Enregistrer</button></div>
+        </form>
+        <form id="password-form">
+          <label>Mot de passe actuel<input id="password-current" type="password" required autocomplete="current-password"></label>
+          <label>Nouveau mot de passe (8 caractères minimum)<input id="password-next" type="password" required minlength="8" maxlength="200" autocomplete="new-password"></label>
+          <div class="notice" id="password-notice" role="status"></div>
+          <div><button class="btn btn-ghost" type="submit">Changer le mot de passe</button></div>
+        </form>
       </div>
     </div>
 
@@ -195,6 +219,8 @@ function show(me) {
   // Le rôle du compte, quand il en a un : il est le même ici et dans l'application.
   const role = { vip: "VIP", abrasion: "Abrasion", bloom: "Bloom", admin: "Admin", founder: "Fondateur" }[me.user.role];
   $("email-line").textContent = me.user.email + (role ? " · " + role : "");
+  $("profile-name").value = me.user.name || "";
+  $("profile-email").value = me.user.email;
   $("admin-link").hidden = !role || me.user.role === "vip";
   $("verify-panel").hidden = me.user.emailVerified !== false;
   $("verify-email").textContent = me.user.email;
@@ -292,6 +318,38 @@ $("resend").onclick = async () => {
     $("verify-notice").textContent = error.message;
   }
   $("resend").disabled = false;
+};
+
+// Vos informations : le résultat s'affiche sous le formulaire concerné.
+function say(id, text, failed = false) {
+  $(id).className = failed ? "error" : "notice";
+  $(id).textContent = text;
+}
+
+$("profile-form").onsubmit = async (event) => {
+  event.preventDefault();
+  say("profile-notice", "");
+  try {
+    await api("POST", "/me/profile", { name: $("profile-name").value.trim() });
+    show(await api("GET", "/me"));
+    say("profile-notice", "Profil enregistré.");
+  } catch (error) {
+    say("profile-notice", error.message, true);
+  }
+};
+
+$("password-form").onsubmit = async (event) => {
+  event.preventDefault();
+  say("password-notice", "");
+  try {
+    const { token } = await api("POST", "/me/password", { current: $("password-current").value, next: $("password-next").value });
+    // Changer de mot de passe ferme toutes les sessions : la nouvelle prend la place de l'ancienne, au même endroit.
+    (localStorage.getItem(TOKEN) ? localStorage : sessionStorage).setItem(TOKEN, token);
+    $("password-current").value = $("password-next").value = "";
+    say("password-notice", "Mot de passe changé. Vos autres appareils sont déconnectés.");
+  } catch (error) {
+    say("password-notice", error.message, true);
+  }
 };
 
 $("logout").onclick = async () => {

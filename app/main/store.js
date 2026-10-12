@@ -11,6 +11,10 @@ const DEFAULT_VST3_DIR = process.platform === 'darwin'
   : path.join(process.env.CommonProgramFiles || 'C:\\Program Files\\Common Files', 'VST3');
 
 const file = () => path.join(app.getPath('userData'), 'config.json');
+// Sur Mac, le trousseau lie ce qu'il garde à la signature de l'application. Sans compte Apple Developer, cette
+// signature change à chaque version : le trousseau refuserait alors de rendre le jeton, et de garder le suivant
+// (connexion impossible). Le jeton y est donc gardé dans le fichier de réglages, lisible par ce seul compte.
+const MAC = process.platform === 'darwin';
 let cache = null;
 
 function read() {
@@ -26,7 +30,8 @@ function read() {
 
 function write() {
   fs.mkdirSync(path.dirname(file()), { recursive: true });
-  fs.writeFileSync(file(), JSON.stringify(cache, null, 2));
+  fs.writeFileSync(file(), JSON.stringify(cache, null, 2), { mode: 0o600 });
+  if (MAC) fs.chmodSync(file(), 0o600); // un fichier d'avant ce changement garde sinon ses anciens droits
 }
 
 module.exports = {
@@ -39,6 +44,7 @@ module.exports = {
 
   // Le jeton de session est chiffré par Windows (DPAPI) : illisible depuis un autre compte.
   get token() {
+    if (MAC) return read().session || '';
     const stored = read().token;
     if (!stored || !safeStorage.isEncryptionAvailable()) return '';
     try {
@@ -48,6 +54,11 @@ module.exports = {
     }
   },
   set token(token) {
+    if (MAC) {
+      read().session = token || undefined;
+      delete read().token; // l'ancien jeton chiffré par le trousseau ne sert plus
+      return write();
+    }
     read().token = token && safeStorage.isEncryptionAvailable()
       ? safeStorage.encryptString(token).toString('base64') : undefined;
     write();
