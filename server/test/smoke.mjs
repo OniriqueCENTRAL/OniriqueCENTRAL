@@ -3,12 +3,27 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import zlib from 'node:zlib';
 import fs from 'node:fs';
+import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'onirique-central-test-'));
 Object.assign(process.env, { DATA_DIR: dataDir, PAYMENTS_MODE: 'demo', PORT: '0', ADMIN_EMAIL: '', ADMIN_PASSWORD: '',
   SMTP_HOST: 'test', MAIL_FROM: 'support@test.local', SITE_URL: 'https://site.test' }); // SMTP "test" : les e-mails restent dans outbox
+
+// La source du score de popularité est remplacée par un faux service : aucun appel ne sort pendant les tests.
+const popularityCalls = [];
+const popularitySource = http.createServer((req, res) => {
+  const q = new URL(req.url, 'http://x').searchParams.get('q');
+  popularityCalls.push(q);
+  res.setHeader('Content-Type', 'application/json');
+  if (q === 'panne') return res.end('<html>indisponible</html>');
+  if (q === 'inconnu') return res.end(JSON.stringify({ status: 'error' }));
+  res.end(JSON.stringify({ type: 'artist', id: '4tZwfgrHOc3mvqYlEYSvVi', name: 'Voix Test', followers: 1234, popularity: 41, secret: 'x',
+    image: 'https://ailleurs.test/photo.jpg',
+    topTracks: [{ id: 'a', name: 'Titre', popularity: 150, externalUrl: 'https://open.spotify.com/track/abc' }, { name: 'Piège', popularity: 3, externalUrl: 'javascript:alert(1)' }] }));
+}).listen(0);
+process.env.POPULARITY_SOURCE = `http://127.0.0.1:${popularitySource.address().port}/`;
 
 const { createApp } = await import('../src/app.js');
 const { run, now, db } = await import('../src/db.js');
@@ -413,6 +428,17 @@ try {
     await call('POST', '/api/licenses/activate', { token: user, body: { productId: product.id, machineId: machineA }, expect: 403 });
   });
 
+  await step('popularité : score lu à la source, réponse filtrée, gardée en mémoire', async () => {
+    const found = await call('GET', '/api/popularity?q=Voix%20Test');
+    assert.deepEqual(found, { type: 'artist', name: 'Voix Test', artist: null, image: null, url: 'https://open.spotify.com/artist/4tZwfgrHOc3mvqYlEYSvVi',
+      popularity: 41, followers: 1234, tracks: [{ name: 'Titre', popularity: 100, url: 'https://open.spotify.com/track/abc' }, { name: 'Piège', popularity: 3, url: null }] });
+    await call('GET', '/api/popularity?q=voix%20test');
+    assert.deepEqual(popularityCalls, ['Voix Test'], 'la même recherche ne repart pas à la source');
+    await call('GET', '/api/popularity?q=', { expect: 400 });
+    assert.match((await call('GET', '/api/popularity?q=inconnu', { expect: 404 })).error, /introuvable/);
+    await call('GET', '/api/popularity?q=panne', { expect: 502 });
+  });
+
   await step('support : e-mail à la boîte de support, visiteur sans compte accepté, messages listés pour les admins', async () => {
     outbox.length = 0;
     await call('POST', '/api/support', { token: user, body: { subject: 'Plugin muet', message: 'Le plugin ne sort aucun son.', context: 'TUNER 1.0.0' } });
@@ -494,6 +520,7 @@ try {
   console.log(`\n${passed} étapes réussies.`);
 } finally {
   server.close();
+  popularitySource.close();
   db.close();
   fs.rmSync(dataDir, { recursive: true, force: true });
 }

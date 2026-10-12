@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Score de popularité Spotify — ONIRIQUE</title>
+<meta name="description" content="Découvre gratuitement le score de popularité Spotify (0 à 100) d'un artiste ou d'un titre, et celui de ses titres les plus écoutés.">
+<link rel="canonical" href="https://onirique.store/popularite">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css">
+<style>
+/* Popularité : la base des pages de texte, avec le fond de la boutique, la recherche et la carte du score. */
+:root { --blood: #5C0008; --deep-2: #2A0A0E; --f-dream: "Grenze Gotisch", Georgia, serif;
+  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(226,52,68,.55); }
+body { background: radial-gradient(120% 50% at 50% -10%, rgba(140,6,20,.75), rgba(92,0,8,.4) 38%, transparent 72%) fixed, var(--night); }
+.wrap { max-width: 980px; }
+header nav { display: flex; align-items: center; gap: 10px; }
+header .btn[aria-current="page"] { border-color: var(--ember); }
+.hero { text-align: center; }
+h1 { font-size: clamp(28px, 6vw, 52px); }
+h1 em, h2 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
+.lede { margin-inline: auto; max-width: 58ch; color: var(--haze); }
+
+.search { display: flex; gap: 8px; margin: 30px auto 0; max-width: 680px; padding: 8px; border: 1px solid var(--line); border-radius: 999px; background: rgba(0,0,0,.42); }
+.search:focus-within { border-color: var(--ember); box-shadow: 0 0 0 6px rgba(226,52,68,.14); }
+.search input { flex: 1; min-width: 0; padding: 12px 6px 12px 18px; border: 0; background: transparent; color: var(--mist); font: 500 16px/1.4 var(--f-body); }
+.search input:focus { outline: none; }
+.search input::placeholder { color: var(--haze); }
+.go { flex: none; padding: 14px 24px; border-radius: 999px; border: 0; background: var(--mist); color: var(--night); font: 600 15px/1 var(--f-body); cursor: pointer; box-shadow: 0 10px 40px -10px rgba(226,52,68,.6); }
+.go:hover { box-shadow: 0 0 0 6px rgba(226,52,68,.18), 0 18px 50px -12px rgba(226,52,68,.8); }
+.go:disabled { opacity: .5; cursor: default; box-shadow: none; }
+.hint { margin: 12px 0 0; font-size: 14px; color: var(--haze); }
+.error { margin: 16px 0 0; color: #FF7A85; font-size: 15px; }
+.error:empty { display: none; }
+
+/* La carte du résultat : l'artiste et son score, puis ses titres. */
+.result { margin-top: 34px; border: 1px solid var(--line); border-radius: 22px; overflow: hidden; background: linear-gradient(180deg, var(--deep-2), var(--deep)); text-align: left; }
+.result .top { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: center; padding: clamp(20px, 4vw, 34px); }
+.who { display: flex; align-items: center; gap: 18px; min-width: 0; }
+.who img { flex: none; width: 92px; height: 92px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); background: var(--night); }
+.who img.cover { border-radius: 14px; }
+.who h2 { margin: 6px 0 4px; font: 800 clamp(19px, 3.4vw, 28px)/1.15 var(--f-display); overflow-wrap: anywhere; }
+.who p { margin: 0; color: var(--haze); font-size: 15px; }
+.who a { font-size: 14px; }
+.gauge { position: relative; width: 168px; height: 168px; }
+.gauge svg { width: 100%; height: 100%; transform: rotate(-90deg); filter: drop-shadow(0 0 14px rgba(226,52,68,.55)); }
+.gauge circle { fill: none; stroke-width: 9; }
+.gauge .track { stroke: rgba(255,210,214,.12); }
+.gauge .fill { stroke: var(--ember); stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 1.2s cubic-bezier(.2,.7,.2,1); }
+.gauge div { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+.gauge b { font: 800 50px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+.gauge span { margin-top: 6px; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; color: var(--haze); }
+.level { padding: 18px clamp(20px, 4vw, 34px); border-top: 1px solid var(--line); background: rgba(0,0,0,.28); }
+.level strong { display: block; font: 600 32px/1 var(--f-dream); text-shadow: var(--glow); }
+.level p { margin: 8px 0 0; color: #D9C6C8; font-size: 15px; }
+.tracks { margin: 0; padding: 6px clamp(20px, 4vw, 34px) 22px; list-style: none; border-top: 1px solid var(--line); }
+.tracks .eyebrow { padding: 18px 0 8px; }
+.tracks li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(70px, 180px) 34px; gap: 14px; align-items: center; margin: 0; padding: 11px 0; border-top: 1px solid rgba(255,210,214,.08); font-size: 15px; }
+.tracks li:first-of-type { border-top: 0; }
+.tracks a, .tracks .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: none; }
+.tracks .bar { height: 6px; border-radius: 999px; background: rgba(255,210,214,.12); overflow: hidden; }
+.tracks .bar i { display: block; height: 100%; border-radius: 999px; background: var(--ember); }
+.tracks .n { text-align: right; font: 500 14px/1 var(--f-mono); font-variant-numeric: tabular-nums; }
+
+.scale { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; margin: 18px 0 0; padding: 0; list-style: none; }
+.scale li { margin: 0; padding: 16px 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--deep); font-size: 15px; color: #D9C6C8; }
+.scale b { display: block; margin-bottom: 6px; font: 500 12px/1 var(--f-mono); letter-spacing: .14em; color: var(--ember-text); }
+.scale strong { display: block; margin-bottom: 4px; font: 600 24px/1 var(--f-dream); color: var(--mist); }
+.text { max-width: 70ch; }
+.text p { color: #D9C6C8; }
+details { border-top: 1px solid var(--line); }
+details:last-of-type { border-bottom: 1px solid var(--line); }
+summary { padding: 16px 0; cursor: pointer; font-weight: 600; }
+details p { color: #D9C6C8; }
+.cta { margin-top: 56px; padding: clamp(24px, 5vw, 44px); border: 1px solid rgba(226,52,68,.5); border-radius: 22px; background: linear-gradient(180deg, var(--deep-2), var(--deep)); text-align: center; }
+.cta h2 { margin-top: 0; }
+.cta p { margin-inline: auto; max-width: 52ch; color: var(--haze); }
+.cta .go { display: inline-block; margin-top: 10px; text-decoration: none; }
+.cta .go:hover { color: var(--night); }
+.source { margin-top: 26px; font-size: 13px; color: var(--haze); }
+
+@media (max-width: 620px) {
+  .brand { font-size: 0; gap: 0; } header .btn { padding: 10px 12px; font-size: 13px; }
+  .search { flex-direction: column; border-radius: 22px; } .search input { padding: 12px 14px; }
+  .result .top { grid-template-columns: minmax(0, 1fr); justify-items: center; } .who { flex-direction: column; text-align: center; }
+  .tracks li { grid-template-columns: minmax(0, 1fr) 60px 30px; }
+}
+@media (prefers-reduced-motion: reduce) { .gauge .fill { transition: none; } }
+[hidden] { display: none !important; }
+</style>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="popularite.html" aria-current="page">Popularité</a><a class="btn" href="compte.html" data-account>Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <section class="hero">
+    <p class="eyebrow">Outil gratuit</p>
+    <h1>Ton score de <em>popularité</em> Spotify</h1>
+    <p class="lede">Spotify note chaque artiste et chaque titre de 0 à 100. Cette note ne s'affiche nulle part dans l'application : tape un nom ou colle un lien pour la voir.</p>
+
+    <form class="search" id="form" role="search">
+      <input id="q" name="q" maxlength="300" autocomplete="off" spellcheck="false" aria-label="Nom d'artiste ou lien Spotify" placeholder="Nom d'artiste ou lien Spotify…">
+      <button class="go" id="go" type="submit">Voir le score</button>
+    </form>
+    <p class="hint">Sans compte. Un lien d'artiste ou de titre copié depuis Spotify donne le résultat exact.</p>
+    <p class="error" id="error" role="alert"></p>
+
+    <article class="result" id="result" aria-live="polite" hidden>
+      <div class="top">
+        <div class="who">
+          <img id="r-image" alt="" width="92" height="92">
+          <div>
+            <p class="eyebrow" id="r-kind"></p>
+            <h2 id="r-name"></h2>
+            <p id="r-meta"></p>
+            <a id="r-link" target="_blank" rel="noopener">Ouvrir sur Spotify</a>
+          </div>
+        </div>
+        <div class="gauge" role="img" id="r-gauge">
+          <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="track" cx="60" cy="60" r="52"/><circle class="fill" id="r-fill" cx="60" cy="60" r="52" pathLength="100"/></svg>
+          <div><b id="r-score">0</b><span>SUR 100</span></div>
+        </div>
+      </div>
+      <div class="level"><strong id="r-level"></strong><p id="r-text"></p></div>
+      <ul class="tracks" id="r-tracks"></ul>
+    </article>
+  </section>
+
+  <section class="text">
+    <h2>Ce que mesure le score</h2>
+    <p>Le score de popularité est calculé par Spotify pour chaque titre, à partir du nombre d'écoutes et surtout de leur fraîcheur : mille écoutes cette semaine pèsent plus que mille écoutes l'an dernier. Le score d'un artiste découle de celui de ses titres.</p>
+    <p>Ce n'est donc ni ton nombre d'abonnés, ni ton total d'écoutes : c'est ton élan du moment, comparé à celui de tous les autres artistes. Il monte quand une sortie est écoutée, et redescend quand plus rien ne se passe.</p>
+  </section>
+
+  <section>
+    <h2>Lire son score</h2>
+    <ul class="scale" id="scale"></ul>
+  </section>
+
+  <section class="text">
+    <h2>Questions fréquentes</h2>
+    <details><summary>Pourquoi mon score a baissé alors que mes écoutes augmentent ?</summary>
+      <p>Le score est relatif et récent. Ton total d'écoutes ne peut que grandir, mais si tu es moins écouté ces dernières semaines qu'avant, ou si les autres artistes progressent plus vite, la note recule.</p></details>
+    <details><summary>Quelle différence avec le nombre d'abonnés ?</summary>
+      <p>Les abonnés sont les personnes qui suivent ton profil : ce chiffre s'accumule. Le score, lui, regarde les écoutes récentes. Un artiste très suivi mais silencieux depuis deux ans peut avoir un score bas ; un titre qui circule beaucoup peut porter haut un artiste presque inconnu.</p></details>
+    <details><summary>Le score d'un titre et celui de l'artiste sont-ils liés ?</summary>
+      <p>Oui : chaque titre a sa note, et celle de l'artiste en découle. Colle le lien d'un titre pour voir sa note à lui ; cherche l'artiste pour voir la sienne et celles de ses titres les plus écoutés.</p></details>
+    <details><summary>Comment le faire monter ?</summary>
+      <p>Par de vraies écoutes, rapprochées dans le temps : une sortie annoncée, un titre que l'on a envie de réécouter et d'ajouter à ses playlists. Les écoutes achetées ou automatisées sont contraires aux règles de Spotify et peuvent faire retirer un titre.</p></details>
+    <details><summary>D'où viennent ces chiffres ?</summary>
+      <p>Du catalogue de Spotify, lu à travers un service tiers. Onirique n'est pas affilié à Spotify, et le résultat peut avoir quelques heures de retard sur la note réelle.</p></details>
+  </section>
+
+  <section class="cta">
+    <h2>Une voix qui donne envie de <em>réécouter</em></h2>
+    <p>Le score suit les écoutes, et les écoutes suivent le son. Les plugins Onirique traitent la voix de la prise au mix : essaie leur interface dans ton navigateur.</p>
+    <a class="go" href="boutique.html">Voir les plugins</a>
+  </section>
+  <p class="source">Spotify est une marque de Spotify AB. Cet outil est indépendant et n'est ni édité ni approuvé par Spotify.</p>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="remboursement.html">Rétractation et remboursement</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a>
+  </nav>
+</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+// Les paliers : la borne haute, le nom, puis ce que cela veut dire.
+const LEVELS = [
+  [10, "Dans l'ombre", "Très peu d'écoutes récentes. C'est le point de départ de tout le monde : une sortie suffit à faire bouger la note."],
+  [25, "Premières lueurs", "Un public existe et revient. Les écoutes sont encore trop espacées pour peser face au reste du catalogue."],
+  [45, "En ascension", "Des écoutes régulières, semaine après semaine. Pour un artiste indépendant, c'est déjà une vraie dynamique."],
+  [65, "En pleine lumière", "Un public large et actif. À ce niveau, chaque sortie est écoutée dès les premiers jours."],
+  [80, "Tête d'affiche", "Parmi les artistes les plus écoutés du moment dans leur genre."],
+  [100, "Phénomène", "Le sommet du catalogue : les artistes que tout le monde écoute en ce moment."],
+];
+const level = (score) => LEVELS.find(([max]) => score <= max);
+const count = (n) => new Intl.NumberFormat("fr-FR", { notation: n >= 10000 ? "compact" : "standard", maximumFractionDigits: 1 }).format(n);
+
+LEVELS.forEach(([max, name, text], i) => {
+  const li = document.createElement("li");
+  li.append(Object.assign(document.createElement("b"), { textContent: (i ? LEVELS[i - 1][0] + 1 : 0) + " – " + max }),
+    Object.assign(document.createElement("strong"), { textContent: name }), text);
+  $("scale").append(li);
+});
+
+function show(data) {
+  const track = data.type === "track";
+  $("r-kind").textContent = track ? "Titre" : "Artiste";
+  $("r-name").textContent = data.name;
+  $("r-meta").textContent = track ? data.artist || "" : data.followers === null ? "" : count(data.followers) + (data.followers > 1 ? " abonnés" : " abonné");
+  $("r-link").href = data.url;
+  $("r-image").hidden = !data.image;
+  $("r-image").className = track ? "cover" : "";
+  if (data.image) $("r-image").src = data.image;
+
+  const [, name, text] = level(data.popularity);
+  $("r-level").textContent = name;
+  $("r-text").textContent = track ? "C'est la note de ce titre seul. Celle de l'artiste découle de tous ses titres : cherche son nom pour la voir." : text;
+  $("r-gauge").setAttribute("aria-label", "Score de popularité : " + data.popularity + " sur 100");
+
+  const list = $("r-tracks");
+  list.replaceChildren();
+  list.hidden = !data.tracks.length;
+  if (data.tracks.length) list.append(Object.assign(document.createElement("p"), { className: "eyebrow", textContent: "Titres les plus écoutés" }));
+  for (const t of data.tracks) {
+    const title = t.url ? Object.assign(document.createElement("a"), { href: t.url, target: "_blank", rel: "noopener" }) : Object.assign(document.createElement("span"), { className: "name" });
+    title.textContent = t.name;
+    title.title = t.name;
+    const bar = Object.assign(document.createElement("span"), { className: "bar" });
+    bar.append(Object.assign(document.createElement("i"), { style: "width:" + t.popularity + "%" }));
+    const li = document.createElement("li");
+    li.append(title, bar, Object.assign(document.createElement("span"), { className: "n", textContent: t.popularity }));
+    list.append(li);
+  }
+
+  $("result").hidden = false;
+  // La jauge se remplit et le nombre monte ensemble.
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  $("r-fill").style.strokeDashoffset = 100;
+  $("r-fill").getBoundingClientRect();
+  $("r-fill").style.strokeDashoffset = 100 - data.popularity;
+  const start = performance.now();
+  const tick = (t) => {
+    const p = still ? 1 : Math.min((t - start) / 1200, 1);
+    $("r-score").textContent = Math.round((1 - Math.pow(1 - p, 3)) * data.popularity);
+    if (p < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+async function search(q) {
+  $("error").textContent = "";
+  if (q.length < 2) { $("error").textContent = "Écris un nom d'artiste ou colle un lien Spotify."; return; }
+  $("go").disabled = true;
+  $("go").textContent = "Recherche…";
+  try {
+    const response = await fetch("/api/popularity?q=" + encodeURIComponent(q));
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Le score est momentanément indisponible. Réessaie dans un instant.");
+    show(data);
+    history.replaceState(null, "", "?q=" + encodeURIComponent(q));
+  } catch (error) {
+    $("result").hidden = true;
+    $("error").textContent = error.message === "Failed to fetch" ? "Serveur injoignable. Réessaie dans un instant." : error.message;
+  } finally {
+    $("go").disabled = false;
+    $("go").textContent = "Voir le score";
+  }
+}
+
+$("form").onsubmit = (event) => { event.preventDefault(); search($("q").value.trim()); };
+
+// Un lien partagé (?q=…) rouvre directement le résultat.
+const shared = new URLSearchParams(location.search).get("q");
+if (shared) { $("q").value = shared; search(shared.trim()); }
+</script>
+<script src="assets/account.js"></script>
+</html>

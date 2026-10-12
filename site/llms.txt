@@ -12,6 +12,7 @@
 - [Compte](https://onirique.store/compte) : connexion, création de compte, licences. Le même compte sert sur le site et dans l'application.
 - [Support](https://onirique.store/support) : formulaire de contact, réponse par e-mail.
 - [Boutique](https://onirique.store/boutique) : tous les plugins, avec leur interface à essayer dans le navigateur.
+- [Popularité](https://onirique.store/popularite) : outil gratuit qui affiche le score de popularité Spotify (0 à 100) d'un artiste ou d'un titre.
 - [Questions fréquentes](https://onirique.store/#faq) : compatibilité, installation, latence.
 
 ## Informations légales

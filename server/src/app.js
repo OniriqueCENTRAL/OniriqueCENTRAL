@@ -13,6 +13,7 @@ import {
 } from './auth.js';
 import { mailEnabled, sendMail } from './mail.js';
 import { embedsLicenseKey, MISSING_LICENSE } from './plugincheck.js';
+import { popularity } from './popularity.js';
 import {
   activate, activeSubscription, createLicense, entitlement, generateKey, normalizeKey, pickPlan, pickPriceCents, pickPrices,
   publicKeyPem, publicKeyRaw, userActivations,
@@ -185,6 +186,12 @@ export function createApp() {
   //  Public
   //============================================================================
   app.get('/api/health', (_req, res) => res.json({ ok: true, name: 'ONIRIQUE CENTRAL' }));
+
+  // Page « Popularité » du site : le score Spotify d'un artiste ou d'un titre.
+  app.get('/api/popularity', wrap(async (req, res) => {
+    rateLimit(`popularity:${req.ip}`, 40);
+    res.json(await popularity(req.query.q));
+  }));
 
   app.get('/api/catalog', (req, res) => {
     const platform = platformOf(req.get('X-Onirique-Platform'));

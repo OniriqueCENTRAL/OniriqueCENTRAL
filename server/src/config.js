@@ -51,6 +51,8 @@ export const config = {
   mailFrom: env.MAIL_FROM || env.SMTP_USER || '',
   // Boîte qui reçoit les demandes de support (par défaut, celle qui envoie).
   supportEmail: env.SUPPORT_EMAIL || env.MAIL_FROM || env.SMTP_USER || '',
+  // D'où vient le score de popularité Spotify de la page « Popularité » du site (voir popularity.js).
+  popularitySource: env.POPULARITY_SOURCE || 'https://groover.co/core/distantapi/spotify/popularity/',
   // Activations simultanées par défaut, et marge laissée hors ligne aux abonnés.
   defaultMaxActivations: 2,
   subscriptionGraceDays: 3,
