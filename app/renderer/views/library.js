@@ -72,6 +72,15 @@ function formatPicker(product) {
       })));
 }
 
+/** L'image choisie par un admin, en entier. */
+function wholeImage(product) {
+  const box = h('div', { class: 'whole' });
+  const show = (src) => box.replaceChildren(h('img', { src, alt: `Interface de ${product.name}` }));
+  if (images.has(product.image)) show(images.get(product.image));
+  else call('media', product.image).then((src) => { images.set(product.image, src); show(src); }).catch(() => box.replaceWith(cover(product, null)));
+  return box;
+}
+
 /** L'interface réelle du plugin, manipulable : la même démo que dans la boutique du site. */
 function demoView(product) {
   const box = h('div', { class: 'demo' }, h('div', { class: 'demo-wait' }, "Chargement de l'interface…"));
@@ -258,7 +267,8 @@ export function detailView(id) {
     button('← Tous les plugins', () => go('plugins'), 'small quiet'),
     h('div', { class: 'detail', style: { 'margin-top': '14px', '--accent': product.accent } },
       h('div', null,
-        product.demo ? demoView(product) : cover(product, null),
+        // Une image choisie par un admin passe avant la démo fabriquée automatiquement.
+        product.image && product.imageManual ? wholeImage(product) : product.demo ? demoView(product) : cover(product, null),
         h('div', { class: 'panel', style: { 'margin-top': '16px' } }, eyebrow('Le plugin'),
           h('div', { class: 'desc' }, (product.description || product.tagline).split(/\n{2,}/).map((text) => h('p', null, text)))),
         product.versions.length ? h('div', { class: 'panel' },

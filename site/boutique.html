@@ -88,7 +88,9 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 @media (max-width: 900px) { .pick { grid-template-columns: minmax(0, 1fr); } }
 
 /* Démo interactive */
-.demo { border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: #000; }
+.demo { border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: #000; margin-inline: auto; }
+/* L'image d'un plugin se voit en entier : jamais plus haute que l'écran, jamais rognée. */
+.demo img.whole { display: block; width: auto; max-width: 100%; height: auto; max-height: min(82vh, 980px); margin-inline: auto; }
 .demo-stage { position: relative; width: 100%; background-size: 100% 100%; background-repeat: no-repeat; touch-action: pan-y; user-select: none; }
 .demo-part { position: absolute; background-repeat: no-repeat; cursor: ns-resize; touch-action: none; border-radius: 4px; }
 .demo-part.discrete { cursor: pointer; touch-action: manipulation; }
@@ -408,10 +410,15 @@ async function buy(product, catalog) {
   setupTrial(product);
   $("detail").hidden = false;
 
-  if (product.demo) {
-    OniriqueDemo.mount($("demo"), product.demo).catch(() => { $("demo").firstChild.textContent = "L'interface n'a pas pu être chargée."; });
+  // Une image choisie par un admin passe avant la démo fabriquée automatiquement.
+  if (product.demo && !product.imageManual) {
+    OniriqueDemo.mount($("demo"), product.demo).then(() => {
+      // Une interface en hauteur tient à l'écran : la démo est rétrécie jusqu'à s'y voir en entier.
+      const stage = $("demo").querySelector(".demo-stage");
+      if (stage && stage.offsetWidth) $("demo").style.maxWidth = Math.round(Math.max(320, innerHeight * 0.82 * stage.offsetWidth / stage.offsetHeight)) + "px";
+    }).catch(() => { $("demo").firstChild.textContent = "L'interface n'a pas pu être chargée."; });
   } else if (product.image) {
-    $("demo").replaceChildren(el("img", { src: product.image, alt: "Interface du plugin " + product.name, style: "display:block;width:100%" }));
+    $("demo").replaceChildren(el("img", { className: "whole", src: product.image, alt: "Interface du plugin " + product.name }));
   } else {
     // Tant que VocalBox n'a pas de démo fabriquée à partir de son .vst3, celle de la page d'accueil en tient lieu.
     $("demo").firstChild.replaceChildren(...(product.slug.includes("vocalbox")

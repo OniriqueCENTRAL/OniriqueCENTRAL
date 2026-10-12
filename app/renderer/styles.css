@@ -277,6 +277,9 @@ button.key.copy:hover { color: var(--ember-hot); }
 
 .detail { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(320px, 1fr); gap: 20px; align-items: start; }
 .detail .cover { border-radius: 18px; border: 1px solid var(--line); }
+/* L'image choisie par un admin se voit en entier sur la page du plugin : jamais rognée, jamais plus haute que la fenêtre. */
+.detail .whole { display: grid; place-items: center; border-radius: 18px; border: 1px solid var(--line); overflow: hidden; background: #000; }
+.detail .whole img { display: block; max-width: 100%; max-height: 78vh; }
 .desc p { margin: 0 0 12px; color: #d9c6c8; user-select: text; }
 .price { font: 800 22px var(--display); }
 .changelog li { margin-bottom: 12px; list-style: none; }

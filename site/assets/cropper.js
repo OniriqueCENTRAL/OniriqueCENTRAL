@@ -1,7 +1,10 @@
 // Rogner une image avant de l'envoyer : on la déplace et on la zoome dans un cadre aux proportions de la boutique.
 // Le même fichier sert au panel admin du site et à celui de l'application (copié dans app/renderer/).
 //
-//   OniriqueCropper.open(src, { aspect: 16 / 10, width: 1600 })  →  Promise<{ dataUrl, blob } | null>   (null : annulé)
+//   OniriqueCropper.open(src, { aspect: 16 / 10, width: 1600 })  →  Promise<{ dataUrl, blob, whole } | null>   (null : annulé)
+//
+// « Garder l'image entière » rend l'image sans la rogner (whole : true) : la page du plugin la montre alors en entier, et
+// les cartes de la boutique en montrent le milieu.
 //
 // Tout est posé en JavaScript, sans feuille de style ni attribut style : la politique de sécurité de l'application
 // n'autorise ni l'un ni l'autre.
@@ -18,17 +21,17 @@ window.OniriqueCropper = (() => {
         const veil = make("div", { position: "fixed", inset: "0", zIndex: "9999", display: "grid", placeItems: "center", padding: "16px", background: "rgba(5,3,4,.86)" });
         const panel = make("div", { width: "min(760px, 100%)", display: "grid", gap: "14px", padding: "18px", borderRadius: "18px", border: "1px solid rgba(255,236,238,.16)", background: "#170d10", color: "#ffecee", font: "500 14px/1.4 system-ui, sans-serif" });
         const title = make("strong", { font: "700 16px/1.2 system-ui, sans-serif" }, { textContent: "Cadrer l'image" });
-        const hint = make("span", { color: "rgba(255,236,238,.62)" }, { textContent: "Fais glisser l'image pour la placer, zoome avec la molette ou le curseur. Ce qui est dans le cadre est ce que montrera la boutique." });
+        const hint = make("span", { color: "rgba(255,236,238,.62)" }, { textContent: "Fais glisser l'image pour la placer, zoome avec la molette ou le curseur : ce qui est dans le cadre est ce que montreront la boutique et la page du plugin. Pour une interface en hauteur, « Garder l'image entière » l'envoie sans la rogner : la page du plugin la montre en entier, les cartes en montrent le milieu." });
         const canvas = make("canvas", { width: "100%", display: "block", borderRadius: "12px", border: "1px solid rgba(255,236,238,.22)", cursor: "grab", touchAction: "none", background: BACK });
         const zoom = make("input", { flex: "1", accentColor: "#e23444" }, { type: "range", min: "0", max: "1000", value: "0" });
         zoom.setAttribute("aria-label", "Zoom");
         const pill = (label, primary) => make("button", { padding: "9px 16px", borderRadius: "999px", cursor: "pointer", font: "600 13px/1 system-ui, sans-serif", whiteSpace: "nowrap",
           border: primary ? "0" : "1px solid rgba(255,236,238,.22)", background: primary ? "#ffecee" : "transparent", color: primary ? "#0d0809" : "#ffecee" }, { type: "button", textContent: label });
-        const fill = pill("Remplir le cadre"), whole = pill("Image entière"), cancel = pill("Annuler"), save = pill("Enregistrer", true);
+        const fill = pill("Remplir le cadre"), whole = pill("Tout voir dans le cadre"), cancel = pill("Annuler"), keep = pill("Garder l'image entière"), save = pill("Enregistrer ce cadrage", true);
         const tools = make("div", { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px" });
         const actions = make("div", { display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: "10px" });
         tools.append(make("span", {}, { textContent: "Zoom" }), zoom, fill, whole);
-        actions.append(cancel, save);
+        actions.append(cancel, keep, save);
         panel.append(title, hint, canvas, tools, actions);
         veil.append(panel);
         document.body.append(veil);
@@ -98,6 +101,18 @@ window.OniriqueCropper = (() => {
         addEventListener("keydown", onKey);
         addEventListener("resize", draw);
         cancel.onclick = () => close(null);
+        // L'image entière, sans rognage : ramenée à 2400 pixels au plus dans son grand côté.
+        keep.onclick = () => {
+            const scale = Math.min(1, 2400 / Math.max(image.naturalWidth, image.naturalHeight));
+            const out = make("canvas", {}, { width: Math.round(image.naturalWidth * scale), height: Math.round(image.naturalHeight * scale) });
+            const context = out.getContext("2d");
+            context.fillStyle = BACK;
+            context.fillRect(0, 0, out.width, out.height);
+            context.imageSmoothingQuality = "high";
+            context.drawImage(image, 0, 0, out.width, out.height);
+            const dataUrl = out.toDataURL("image/jpeg", 0.92);
+            out.toBlob((blob) => close({ dataUrl, blob, whole: true }), "image/jpeg", 0.92);
+        };
         save.onclick = () => {
           clamp();
           const out = make("canvas", {}, { width, height: Math.round(width / aspect) });

@@ -1930,7 +1930,7 @@ function showcase(list) {
   }, { rootMargin: "700px" }).observe($("#showcase"));
 }
 fetch("/api/catalog").then(r => r.ok ? r.json() : null).then(catalog => {
-  const demos = (catalog?.products || []).filter(p => p.demo);
+  const demos = (catalog?.products || []).filter(p => p.demo && !p.imageManual); // une image choisie par un admin passe avant la démo automatique
   if (demos.length) showcase(demos);
   else $("#vbMock").parentElement.hidden = false; // aucune démo en ligne : la maquette de VocalBox tient lieu d'aperçu
 }).catch(() => { $("#vbMock").parentElement.hidden = false; });
