@@ -71,12 +71,26 @@ git clone root@217.160.106.244:/srv/git/onirique-central.git
 ```
 
 Puis, comme d'habitude : `git pull` avant de commencer, `git commit`, `git push` une fois fini.
+
+Mettre en ligne se fait par le dépôt, jamais en copiant des fichiers à la main :
+
+```bash
+bash deploy/deploy.sh         # le serveur et le site
+bash deploy/release-app.sh    # l'application Windows
+```
+
+`deploy.sh` pousse votre travail, puis le serveur met en ligne la branche `main` (`deploy/onirique-deploy`). Les envois
+passent un par un : si un collaborateur est en train d'envoyer, le vôtre attend son tour, puis met en ligne le dépôt
+tel qu'il est alors, avec son travail et le vôtre. Deux modifications en conflit ne peuvent pas arriver jusque-là : le
+dépôt refuse un push qui écraserait celui d'un autre, il faut d'abord `git pull` et régler le conflit. Avant d'installer,
+le serveur déroule ses tests sur la version ; après, il doit répondre, sinon la version précédente est remise. Le
+journal des envois est dans `/var/lib/onirique-deploy/journal`.
 Une copie de travail à jour se trouve aussi sur le serveur, dans `/srv/onirique-central`.
 
 Le dépôt ne contient ni les secrets (`server/.env`), ni les données (`server/data/` : base, clés de
 signature, fichiers des plugins), ni les dépendances (`node_modules/`), ni ce qui se reconstruit
 (`app/dist/`, `tools/probe/build/`). Pousser dans le dépôt ne met rien en ligne : le site et le serveur
-en production se déploient à part (voir plus bas), l'application avec `deploy/release-app.sh`.
+en production se déploient avec `deploy/deploy.sh`, l'application avec `deploy/release-app.sh`.
 
 ## Licences : comment un plugin vérifie
 

@@ -1,0 +1,90 @@
+#!/bin/bash
+# Met en ligne le serveur et le site à partir du dépôt git, un envoi à la fois. Lancé par deploy/deploy.sh :
+#   ssh root@serveur onirique-deploy "<nom de la personne>"
+#
+# File d'attente : un seul envoi tourne à la fois. Les suivants attendent leur tour dans l'ordre d'arrivée, puis
+# mettent en ligne le dépôt tel qu'il est à ce moment-là, donc avec le travail de ceux qui sont passés avant.
+# Rien ne vient du PC de la personne : seul ce qui est dans le dépôt (branche main) part en ligne. Le dépôt refuse
+# déjà un push qui écraserait le travail d'un autre : deux modifications en conflit se règlent avant d'arriver ici.
+#
+# Avant d'installer quoi que ce soit, les tests du serveur sont déroulés sur cette version. Après l'installation,
+# le serveur doit répondre ; sinon la version précédente est remise.
+set -euo pipefail
+
+who=${1:-inconnu}
+repo=/srv/git/onirique-central.git
+live=/opt/onirique-central/server
+site=/var/www/site
+state=/var/lib/onirique-deploy
+mkdir -p "$state"
+
+exec 9> /var/lock/onirique-deploy.lock
+if ! flock -n 9; then
+  echo "Un autre envoi est en cours ($(cat "$state/en-cours" 2>/dev/null || echo "quelqu'un")) : le vôtre attend son tour…"
+  flock 9
+fi
+echo "$who, depuis $(date -u +%H:%M:%S) UTC" > "$state/en-cours"
+
+commit=$(git --git-dir="$repo" rev-parse main)
+label=$(git --git-dir="$repo" log -1 --format='%h %s' "$commit")
+if [ "$(cat "$state/commit" 2>/dev/null)" = "$commit" ]; then
+  echo "Déjà en ligne : $label"
+  exit 0
+fi
+
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+git --git-dir="$repo" archive "$commit" server site deploy | tar -x -C "$work"
+chmod -R a+rX "$work"
+
+# Les dépendances du serveur : celles déjà installées, sauf si cette version en change.
+same_deps=1
+cmp -s "$work/server/package-lock.json" "$live/package-lock.json" || same_deps=0
+if [ "$same_deps" = 1 ]; then
+  ln -s "$live/node_modules" "$work/server/node_modules"
+else
+  (cd "$work/server" && npm ci --omit=dev > /dev/null)
+  chmod -R a+rX "$work/server/node_modules"
+fi
+
+echo "Vérification de $label (tests du serveur)…"
+if ! (cd "$work/server" && sudo -u central env HOME=/tmp npm test > "$work/tests.log" 2>&1); then
+  tail -n 25 "$work/tests.log"
+  echo "Les tests échouent : rien n'a été mis en ligne."
+  exit 1
+fi
+
+backup=/root/sauvegardes/$(date -u +%Y%m%dT%H%M%S)
+mkdir -p "$backup"
+cp -a "$live/src" "$backup/src"
+cp -a "$live/package.json" "$live/package-lock.json" "$backup/"
+
+install_server() { # $1 : le dossier server/ à mettre en place
+  rsync -a --delete --chown=central:central "$1/src/" "$live/src/"
+  install -o central -g central -m 644 "$1/package.json" "$1/package-lock.json" "$live/"
+  if [ "$same_deps" = 0 ]; then (cd "$live" && sudo -u central env HOME=/tmp npm ci --omit=dev > /dev/null); fi
+  systemctl restart onirique-central
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    sleep 1
+    if curl -fsS -o /dev/null http://127.0.0.1:4850/api/catalog; then return 0; fi
+  done
+  return 1
+}
+
+if ! install_server "$work/server"; then
+  echo "Le serveur ne répond pas avec cette version : la précédente est remise."
+  install_server "$backup" || echo "ATTENTION : le serveur ne répond toujours pas, à regarder tout de suite (journalctl -u onirique-central)."
+  exit 1
+fi
+
+# Le site : la copie précédente est gardée à côté. Le dossier des téléchargements ne vit que sur le serveur.
+rsync -a --delete --exclude telechargement "$site/" /var/www/site.prev/
+rsync -a --exclude build.ps1 --exclude pages.mjs "$work/site/" "$site/"
+
+# Les outils du serveur qui viennent du dépôt (livraison, publication des plugins, ce script).
+for tool in "$work"/deploy/onirique-*; do install -m 755 "$tool" /usr/local/bin/; done
+install -m 644 "$work/deploy/publish-plugin.mjs" /usr/local/lib/onirique/publish-plugin.mjs
+
+echo "$commit" > "$state/commit"
+echo "$(date -u +%FT%TZ) $who : $label" >> "$state/journal"
+echo "En ligne : $label (version précédente gardée dans $backup)"

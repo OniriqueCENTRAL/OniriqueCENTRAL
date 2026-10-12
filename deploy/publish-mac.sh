@@ -8,7 +8,8 @@
 # applications Mac installées lisent ce fichier, puis téléchargent le .zip s'il annonce une version plus récente.
 set -euo pipefail
 
-ssh -o BatchMode=yes root@217.160.106.244 python3 - <<'PYTHON'
+# Même file d'attente que deploy/deploy.sh : une seule mise en ligne à la fois sur le serveur.
+ssh -o BatchMode=yes root@217.160.106.244 flock /var/lock/onirique-deploy.lock python3 - <<'PYTHON'
 import hashlib, json, os, plistlib, shutil, zipfile
 
 source, site = '/srv/livraison', '/var/www/site/telechargement'
