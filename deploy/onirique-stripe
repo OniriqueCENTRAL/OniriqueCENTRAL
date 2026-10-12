@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# Ouvre ou ferme la vente en ligne : relie le serveur ONIRIQUE CENTRAL à un compte Stripe.
+# À lancer sur le VPS, en root :
+#   onirique-stripe        saisie des deux clés, vérification auprès de Stripe, puis ouverture de la vente
+#   onirique-stripe off    ferme la vente (les clés restent en place pour la rouvrir)
+# Les clés sont saisies ici, sans s'afficher, et ne quittent pas le serveur.
+#
+# À faire avant, dans le tableau de bord Stripe :
+#   1. Paramètres > Informations publiques : renseigner l'adresse des conditions générales
+#      (https://onirique.store/cgv.html). Sans elle, Stripe refuse la case obligatoire de la page de paiement.
+#   2. Développeurs > Webhooks > Ajouter une destination : https://central.onirique.store/api/stripe/webhook
+#      avec les événements checkout.session.completed, checkout.session.async_payment_succeeded,
+#      customer.subscription.created, customer.subscription.updated, customer.subscription.deleted.
+#      Le « secret de signature » (whsec_…) affiché ensuite est le second code demandé ici.
+set -euo pipefail
+
+APP=/opt/onirique-central/server
+ENVFILE=$APP/.env
+stop() { echo "$1" >&2; exit 1; }
+mode() { curl -fsS http://127.0.0.1:"$(grep -E '^PORT=' "$ENVFILE" | cut -d= -f2 || echo 4850)"/api/catalog | grep -o '"paymentsMode":"[a-z]*"' || true; }
+
+if [ "${1:-}" = off ]; then
+  sed -i 's/^PAYMENTS_MODE=.*/PAYMENTS_MODE=off/' "$ENVFILE"
+  systemctl restart onirique-central
+  sleep 2
+  echo "Vente fermée. État annoncé par le serveur : $(mode)"
+  exit 0
+fi
+
+read -rsp "Clé secrète Stripe (sk_live_… ; rien ne s'affiche) : " KEY; echo
+read -rsp "Secret de signature du webhook (whsec_…) : " HOOK; echo
+case "$KEY" in sk_live_*|rk_live_*) ;; sk_test_*|rk_test_*)
+  echo "C'est une clé d'ESSAI : n'importe qui pourra « acheter » avec la carte de test 4242… et recevoir une vraie licence."
+  read -rp "Pour ouvrir quand même en mode essai, tapez essai : " SURE
+  [ "$SURE" = essai ] || stop "Rien n'est changé." ;;
+  *) stop "Ce n'est pas une clé secrète Stripe (elle commence par sk_live_ ou sk_test_). Rien n'est changé." ;;
+esac
+case "$HOOK" in whsec_*) ;; *) stop "Ce n'est pas un secret de webhook (il commence par whsec_). Rien n'est changé." ;; esac
+case "$KEY$HOOK" in *"'"*|*" "*) stop "Clé mal copiée (espace ou apostrophe). Rien n'est changé." ;; esac
+
+# Vérification réelle : Stripe accepte la clé et une page de paiement faite comme celles du site (case des CGV comprise).
+# La clé passe par l'entrée de curl, pas par sa ligne de commande. La page d'essai est annulée aussitôt.
+call() { printf 'user = "%s:"\n' "$KEY" | curl -sS -K - "$@"; }
+ANSWER=$(call https://api.stripe.com/v1/checkout/sessions \
+  -d mode=payment -d locale=fr -d success_url=https://onirique.store -d "consent_collection[terms_of_service]=required" \
+  -d "line_items[0][quantity]=1" -d "line_items[0][price_data][currency]=eur" -d "line_items[0][price_data][unit_amount]=100" \
+  -d "line_items[0][price_data][product_data][name]=Essai de réglage ONIRIQUE")
+SESSION=$(printf '%s' "$ANSWER" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);if(j.error){console.error("Stripe refuse : "+j.error.message);process.exit(1)}console.log(j.id)})') \
+  || stop "Rien n'est changé. Corrigez ce que Stripe indique ci-dessus, puis relancez."
+call -X POST "https://api.stripe.com/v1/checkout/sessions/$SESSION/expire" > /dev/null || true
+
+cp "$ENVFILE" "$ENVFILE.avant-stripe"
+sed -i '/^PAYMENTS_MODE=/d; /^STRIPE_SECRET_KEY=/d; /^STRIPE_WEBHOOK_SECRET=/d' "$ENVFILE"
+printf "PAYMENTS_MODE=stripe\nSTRIPE_SECRET_KEY='%s'\nSTRIPE_WEBHOOK_SECRET='%s'\n" "$KEY" "$HOOK" >> "$ENVFILE"
+chown central:central "$ENVFILE"; chmod 600 "$ENVFILE"
+systemctl restart onirique-central
+sleep 3
+if systemctl is-active -q onirique-central && [ "$(mode)" = '"paymentsMode":"stripe"' ]; then
+  rm -f "$ENVFILE.avant-stripe"
+  echo "C'est bon : la vente est ouverte. Faites un achat d'essai, puis vérifiez dans Stripe (Développeurs > Webhooks)"
+  echo "que l'événement est bien « réussi » : c'est lui qui crée la licence. Pour refermer : onirique-stripe off"
+else
+  mv "$ENVFILE.avant-stripe" "$ENVFILE"
+  systemctl restart onirique-central
+  stop "Le serveur n'a pas redémarré avec ces réglages : l'ancien réglage est remis, la vente reste fermée."
+fi

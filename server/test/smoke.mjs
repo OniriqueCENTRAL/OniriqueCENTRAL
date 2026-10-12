@@ -275,6 +275,58 @@ try {
     await call('POST', '/api/licenses/trial', { token: tester, body: { productId: product.id }, expect: 201 });
   });
 
+  await step('paiement Stripe (événements simulés) : licence définitive, e-mail de confirmation, rien en double', async () => {
+    const { handleStripeEvent, verifyStripeSignature } = await import('../src/payments.js');
+    const { config } = await import('../src/config.js');
+    const buyer = (await call('POST', '/api/auth/register', { body: { email: 'acheteur@test.local', password: 'motdepasse9' }, expect: 201 })).token;
+    const buyerId = (await call('GET', '/api/me', { token: buyer })).user.id;
+    const paid = { type: 'checkout.session.completed', data: { object: { id: 'cs_test_1', mode: 'payment', payment_status: 'paid',
+      amount_total: 2500, customer: 'cus_test_1', metadata: { user_id: String(buyerId), kind: 'product', ref_id: String(product.id) } } } };
+    outbox.length = 0;
+    await handleStripeEvent(paid);
+    await handleStripeEvent(paid); // Stripe renvoie parfois le même événement
+    const mine = await call('GET', '/api/me', { token: buyer });
+    assert.equal(mine.entitlements[product.id].type, 'perpetual');
+    assert.equal(mine.licenses.filter((l) => l.productId === product.id).length, 1, 'une seule licence malgré l\'événement en double');
+    const mails = outbox.filter((m) => m.to === 'acheteur@test.local' && /Confirmation de commande/.test(m.subject));
+    assert.equal(mails.length, 1);
+    assert.match(mails[0].text, /ONIRIQUE TEST — licence définitive/);
+    assert.match(mails[0].text, /25,00\s€ TTC/);
+
+    // Un paiement pas encore reçu n'accorde rien.
+    await handleStripeEvent({ type: 'checkout.session.completed', data: { object: { id: 'cs_test_2', mode: 'payment', payment_status: 'unpaid',
+      metadata: { user_id: String(buyerId), kind: 'product', ref_id: String(product.id) } } } });
+    assert.equal((await call('GET', '/api/me', { token: buyer })).licenses.length, 1);
+
+    // La signature du webhook : acceptée avec le bon secret, refusée sinon ou si elle est trop ancienne.
+    config.stripeWebhookSecret = 'whsec_essai';
+    const body = JSON.stringify(paid), t = Math.floor(Date.now() / 1000);
+    const sign = (time, secret) => `t=${time},v1=${crypto.createHmac('sha256', secret).update(`${time}.${body}`).digest('hex')}`;
+    verifyStripeSignature(body, sign(t, 'whsec_essai'));
+    assert.throws(() => verifyStripeSignature(body, sign(t, 'whsec_autre')), /invalide/);
+    assert.throws(() => verifyStripeSignature(body, sign(t - 3600, 'whsec_essai')), /périmée/);
+  });
+
+  await step('abonnement Stripe (événements simulés) : mensuel actif, plugins choisis, fin à la résiliation', async () => {
+    const { handleStripeEvent } = await import('../src/payments.js');
+    const sub = (await call('POST', '/api/auth/register', { body: { email: 'abonne@test.local', password: 'motdepasse10' }, expect: 201 })).token;
+    const subId = (await call('GET', '/api/me', { token: sub })).user.id;
+    run(`INSERT INTO plans (name, interval, price_cents, kind) VALUES ('À LA CARTE', 'month', 999, 'pick')`);
+    const planId = db.prepare(`SELECT id FROM plans WHERE kind = 'pick'`).get().id;
+    const end = Math.floor(Date.now() / 1000) + 30 * 86400;
+    const event = (status) => ({ type: 'customer.subscription.updated', data: { object: { id: 'sub_test_1', status, current_period_end: end,
+      cancel_at_period_end: false, metadata: { user_id: String(subId), plan_id: String(planId), product_ids: JSON.stringify([product.id]) } } } });
+    await handleStripeEvent(event('active'));
+    let me = await call('GET', '/api/me', { token: sub });
+    assert.equal(me.entitlements[product.id].type, 'subscription');
+    assert.ok(me.entitlements[product.id].expiresAt > end * 1000, 'la licence court jusqu\'à la fin de la période payée, avec une marge');
+    await handleStripeEvent(event('canceled'));
+    me = await call('GET', '/api/me', { token: sub });
+    assert.equal(me.entitlements[product.id], undefined);
+    run('DELETE FROM subscriptions WHERE user_id = ?', subId);
+    run(`DELETE FROM plans WHERE kind = 'pick'`);
+  });
+
   await step('abonnement : donne accès à tout, expire avec une marge, se résilie', async () => {
     run(`INSERT INTO plans (name, interval, price_cents) VALUES ('ALL ACCESS', 'month', 990)`);
     const { plans } = await call('GET', '/api/catalog');

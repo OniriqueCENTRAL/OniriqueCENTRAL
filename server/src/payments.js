@@ -3,6 +3,7 @@ import { config } from './config.js';
 import { get, run, now, transaction } from './db.js';
 import { HttpError } from './auth.js';
 import { createLicense, parseProductIds } from './licensing.js';
+import { sendMail } from './mail.js';
 
 const PERIOD_MS = { month: 31 * 86400_000, year: 366 * 86400_000 };
 
@@ -16,10 +17,25 @@ function recordOrder(userId, kind, refId, amount, provider, providerRef) {
   return true;
 }
 
+/** Confirmation de commande par e-mail, pour un paiement réel. Un envoi raté ne retire rien à l'acheteur. */
+function confirmOrder(userId, what, amountCents, renewal = '') {
+  const user = get('SELECT email, name FROM users WHERE id = ?', userId);
+  if (!user) return;
+  const amount = (amountCents / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+  sendMail(user.email, 'Confirmation de commande — ONIRIQUE',
+    `Bonjour${user.name ? ' ' + user.name : ''},\n\nMerci pour votre commande.\n\n  ${what}\n  ${amount} TTC${renewal}\n\n`
+    + 'Votre licence est déjà sur votre compte : ouvrez ONIRIQUE CENTRAL, installez le plugin, il s\'active tout seul.\n'
+    + `Application et compte : ${config.siteUrl}\n\n`
+    + `Le contenu vous est fourni dès le paiement, comme vous l'avez demandé en commandant : le droit de rétractation ne s'applique plus (${config.siteUrl}/remboursement.html).\n\n`
+    + `Une question : ${config.supportEmail}\n\nONIRIQUE`)
+    .catch((error) => console.error('Confirmation de commande :', error.message));
+}
+
 export function grantProduct(userId, product, provider, providerRef = null) {
   return transaction(() => {
-    if (!recordOrder(userId, 'product', product.id, product.price_cents, provider, providerRef)) return;
+    if (!recordOrder(userId, 'product', product.id, product.price_cents, provider, providerRef)) return false;
     createLicense({ productId: product.id, userId, source: provider, note: 'Achat' });
+    return true;
   });
 }
 
@@ -67,6 +83,12 @@ async function stripeCheckout(user, kind, item) {
     customer: user.stripe_customer || undefined,
     customer_email: user.stripe_customer ? undefined : user.email,
     client_reference_id: user.id,
+    locale: 'fr',
+    // Case obligatoire sur la page de paiement : conditions de vente, et fourniture immédiate d'un contenu numérique
+    // (ce qui met fin au droit de rétractation). Demande une adresse de CGV réglée dans le tableau de bord Stripe.
+    consent_collection: { terms_of_service: 'required' },
+    custom_text: { terms_of_service_acceptance: { message:
+      `J'accepte les [conditions générales de vente](${config.siteUrl}/cgv.html) et je demande à recevoir mon achat tout de suite : je renonce à mon droit de rétractation.` } },
     success_url: `${config.publicUrl}/checkout/done`,
     cancel_url: `${config.publicUrl}/checkout/cancelled`,
     metadata: { user_id: user.id, kind, ref_id: item.id },
@@ -112,15 +134,21 @@ export function verifyStripeSignature(rawBody, header) {
 
 export async function handleStripeEvent(event) {
   const object = event.data.object;
-  if (event.type === 'checkout.session.completed') {
+  // Paiement différé (virement, prélèvement) : la commande n'est honorée qu'une fois l'argent reçu.
+  if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
     const userId = Number(object.metadata?.user_id);
     if (!userId) return;
     if (object.customer) run('UPDATE users SET stripe_customer = ? WHERE id = ?', object.customer, userId);
     if (object.mode === 'payment' && object.payment_status === 'paid') {
       const product = get('SELECT * FROM products WHERE id = ?', Number(object.metadata.ref_id));
-      if (product) grantProduct(userId, product, 'stripe', object.id);
+      if (product && grantProduct(userId, product, 'stripe', object.id)) confirmOrder(userId, `${product.name} — licence définitive`, object.amount_total ?? product.price_cents);
     } else if (object.mode === 'subscription' && object.subscription) {
       applyStripeSubscription(await stripe('GET', `/subscriptions/${object.subscription}`));
+      const plan = get('SELECT name, interval FROM plans WHERE id = ?', Number(object.metadata.ref_id));
+      if (plan && event.type === 'checkout.session.completed') {
+        confirmOrder(userId, `Abonnement ${plan.name}`, object.amount_total ?? 0,
+          `, puis le même montant chaque ${plan.interval === 'year' ? 'année' : 'mois'} jusqu'à résiliation (onglet Abonnement de l'application)`);
+      }
     }
   } else if (event.type.startsWith('customer.subscription.')) {
     applyStripeSubscription(object);
