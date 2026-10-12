@@ -19,7 +19,7 @@ function recordOrder(userId, kind, refId, amount, provider, providerRef) {
   return true;
 }
 
-const RESELLERS = { lemon: 'Lemon Squeezy', 'stripe-managed': 'Stripe' };
+const RESELLERS = { lemon: 'Lemon Squeezy', 'stripe-managed': 'Link (Stripe)' };
 const stripeProvider = (account) => (account.managed ? 'stripe-managed' : 'stripe');
 
 /** Remboursement complet d'un achat : la licence qu'il avait créée est révoquée, et ses machines libérées. */
@@ -34,10 +34,17 @@ function revokePurchase(userId, productId, source) {
 }
 
 /** Confirmation de commande par e-mail, pour un paiement réel. Un envoi raté ne retire rien à l'acheteur. */
-function confirmOrder(userId, what, amountCents, renewal = '', provider = 'stripe') {
+function confirmOrder(userId, what, amountCents, renewal = '', provider = 'stripe', currency = 'eur') {
   const user = get('SELECT email, name FROM users WHERE id = ?', userId);
   if (!user) return;
-  const amount = (amountCents / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+  let amount;
+  try {
+    // Certaines monnaies n'ont pas de centimes (yen, won) : Intl sait combien de décimales chacune en a.
+    const format = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: String(currency).toUpperCase() });
+    amount = format.format(amountCents / 10 ** format.resolvedOptions().maximumFractionDigits);
+  } catch {
+    amount = `${amountCents / 100} ${currency}`;
+  }
   sendMail(user.email, 'Confirmation de commande — ONIRIQUE',
     `Bonjour${user.name ? ' ' + user.name : ''},\n\nMerci pour votre commande.\n\n  ${what}\n  ${amount} TTC${renewal}\n\n`
     + 'Votre licence est déjà sur votre compte : ouvrez ONIRIQUE CENTRAL, installez le plugin, il s\'active tout seul.\n'
@@ -72,7 +79,7 @@ export function setSubscription(userId, planId, { status, periodEnd, cancelAtPer
 //  Comptes Stripe : un par créateur de plugins (ONIRIQUE et chaque partenaire), branché depuis le panel admin
 //==============================================================================
 const STRIPE_VERSION = '2025-03-31.basil'; // la première version qui connaît Managed Payments
-const STRIPE_EVENTS = ['checkout.session.completed', 'checkout.session.async_payment_succeeded', 'charge.refunded',
+const STRIPE_EVENTS = ['checkout.session.completed', 'checkout.session.async_payment_succeeded', 'charge.refunded', 'charge.dispute.closed',
   'customer.subscription.created', 'customer.subscription.updated', 'customer.subscription.deleted'];
 
 // Les clés sont chiffrées dans la base avec une clé gardée à part (dossier keys/) : une copie de la base seule ne les livre pas.
@@ -275,19 +282,21 @@ export async function handleStripeEvent(event, account) {
     if (object.mode === 'payment' && object.payment_status === 'paid') {
       const product = get('SELECT * FROM products WHERE id = ? AND creator = ?', Number(object.metadata.ref_id), account.creator);
       if (product && grantProduct(userId, product, 'stripe', object.id)) {
-        confirmOrder(userId, `${product.name} — licence définitive`, object.amount_total ?? product.price_cents, '', stripeProvider(account));
+        confirmOrder(userId, `${product.name} — licence définitive`, object.amount_total ?? product.price_cents, '', stripeProvider(account), object.currency || 'eur');
       }
     } else if (object.mode === 'subscription' && object.subscription && platform) {
       applyStripeSubscription(await stripe('GET', `/subscriptions/${object.subscription}`, undefined, account.key));
       const plan = get('SELECT name, interval FROM plans WHERE id = ?', Number(object.metadata.ref_id));
       if (plan && event.type === 'checkout.session.completed') {
         confirmOrder(userId, `Abonnement ${plan.name}`, object.amount_total ?? 0,
-          `, puis le même montant chaque ${plan.interval === 'year' ? 'année' : 'mois'} jusqu'à résiliation (onglet Abonnement de l'application)`, stripeProvider(account));
+          `, puis le même montant chaque ${plan.interval === 'year' ? 'année' : 'mois'} jusqu'à résiliation (onglet Abonnement de l'application)`, stripeProvider(account), object.currency || 'eur');
       }
     }
-  } else if (event.type === 'charge.refunded') {
-    // Remboursement complet (par l'éditeur, ou par Stripe quand il est le vendeur) : la commande est retrouvée par son paiement.
-    if (!object.refunded || !object.payment_intent) return;
+  } else if (event.type === 'charge.refunded' || event.type === 'charge.dispute.closed') {
+    // Remboursement complet (par l'éditeur, ou par Stripe quand il est le vendeur) ou litige perdu : l'argent est
+    // repris, la licence aussi. La commande est retrouvée par son paiement.
+    const gone = event.type === 'charge.refunded' ? object.refunded : object.status === 'lost';
+    if (!gone || !object.payment_intent) return;
     const session = (await stripe('GET', `/checkout/sessions?payment_intent=${encodeURIComponent(object.payment_intent)}&limit=1`, undefined, account.key)).data?.[0];
     const userId = Number(session?.metadata?.user_id), productId = Number(session?.metadata?.ref_id);
     if (session?.mode === 'payment' && userId && productId && get('SELECT id FROM orders WHERE provider_ref = ?', session.id)

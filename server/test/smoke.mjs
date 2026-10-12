@@ -292,8 +292,15 @@ try {
     const mails = outbox.filter((m) => m.to === 'acheteur@test.local' && /Confirmation de commande/.test(m.subject));
     assert.equal(mails.length, 1);
     assert.match(mails[0].text, /ONIRIQUE TEST — licence définitive/);
-    assert.match(mails[0].text, /revendeur Stripe/, 'en Managed Payments, c\'est Stripe qui vend et envoie le reçu');
+    assert.match(mails[0].text, /revendeur Link \(Stripe\)/, 'en Managed Payments, le client voit Link comme vendeur');
     assert.match(mails[0].text, /25,00\s€ TTC/);
+
+    // Un client hors zone euro paie dans sa monnaie : la confirmation annonce ce qu'il a réellement payé.
+    outbox.length = 0;
+    run('DELETE FROM licenses WHERE user_id = ?', buyerId);
+    await handleStripeEvent({ type: 'checkout.session.completed', data: { object: { id: 'cs_test_yen', mode: 'payment', payment_status: 'paid',
+      amount_total: 4200, currency: 'jpy', metadata: { user_id: String(buyerId), kind: 'product', ref_id: String(product.id) } } } }, platform);
+    assert.match(outbox.at(-1).text, /4.200.(JPY|¥) TTC/);
 
     // Un paiement pas encore reçu n'accorde rien.
     await handleStripeEvent({ type: 'checkout.session.completed', data: { object: { id: 'cs_test_2', mode: 'payment', payment_status: 'unpaid',

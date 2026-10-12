@@ -82,7 +82,7 @@ try {
     if (hook.url === HOOK_URL) await api('DELETE', '/webhook_endpoints/' + hook.id);
   }
   const hook = await api('POST', '/webhook_endpoints', { url: HOOK_URL, api_version: '2025-03-31.basil',
-    enabled_events: ['checkout.session.completed', 'checkout.session.async_payment_succeeded', 'charge.refunded',
+    enabled_events: ['checkout.session.completed', 'checkout.session.async_payment_succeeded', 'charge.refunded', 'charge.dispute.closed',
       'customer.subscription.created', 'customer.subscription.updated', 'customer.subscription.deleted'] });
   say(`Webhook : créé vers ${HOOK_URL}`);
   console.log(hook.secret);
