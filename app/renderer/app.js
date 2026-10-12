@@ -174,6 +174,22 @@ window.addEventListener('focus', () => {
   const idle = !Object.keys(state.busy).length && !document.getElementById('overlay').hasChildNodes();
   if (state.data?.me && idle && !typing && !ADMIN_ROUTES.includes(state.route.name) && Date.now() - lastLoad > 20_000) refresh();
 });
+// La boutique ouverte suit le catalogue : une fiche, une image ou une version changée sur le serveur (depuis le site,
+// le panel d'un autre administrateur ou une publication) apparaît ici dans la minute, sans redémarrer. L'écran n'est
+// redessiné que si le catalogue a vraiment changé, pour ne rien interrompre.
+setInterval(async () => {
+  const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
+  const idle = !Object.keys(state.busy).length && !document.getElementById('overlay').hasChildNodes();
+  if (!state.data || !idle || typing || ADMIN_ROUTES.includes(state.route.name)) return;
+  try {
+    const data = await call('load');
+    if (JSON.stringify(data.catalog) === JSON.stringify(state.data.catalog)) return;
+    state.data = data;
+    state.offline = null;
+    lastLoad = Date.now();
+    render();
+  } catch { /* hors ligne : le prochain passage réessaiera */ }
+}, 60_000);
 window.addEventListener('unhandledrejection', (event) => toast(event.reason?.message || 'Erreur inattendue.', true));
 
 central.onUpdateReady((version) => {
