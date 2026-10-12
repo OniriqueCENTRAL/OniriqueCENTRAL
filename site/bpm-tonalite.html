@@ -148,11 +148,11 @@ details p { color: #D9C6C8; }
     <details><summary>Mon fichier est-il envoyé sur un serveur ?</summary>
       <p>Non. Le fichier est lu et analysé par ton navigateur, sur ton appareil. Rien n'est envoyé ni conservé : tu peux déposer un morceau qui n'est pas encore sorti.</p></details>
     <details><summary>Pourquoi mon MP3 est-il décalé dans mon DAW ?</summary>
-      <p>Le format MP3 ajoute un court blanc au début du fichier, de quelques dizaines de millisecondes : la musique ne démarre donc pas à zéro, et tout le morceau glisse hors de la grille une fois importé. L'outil mesure ce blanc et te donne un fichier WAV qui commence exactement sur le premier son, avec le BPM et la tonalité dans son nom. Importe ce WAV à la place du MP3 : il tombe sur les temps.</p></details>
+      <p>Le format MP3 ajoute un court blanc au début du fichier, de quelques dizaines de millisecondes : la musique ne démarre donc pas à zéro, et tout le morceau glisse hors de la grille une fois importé. L'outil mesure ce blanc et te donne un fichier WAV qui commence exactement sur le premier son, avec le BPM et la tonalité dans son nom. Ce WAV est en 24 bits et en 48 kHz au moins (ou à la fréquence du fichier d'origine si elle est plus haute) : c'est la meilleure qualité que le fichier déposé permet, mais un MP3 converti en WAV ne retrouve pas ce que la compression lui a retiré. Importe ce WAV à la place du MP3 : il tombe sur les temps.</p></details>
     <details><summary>Quels fichiers sont acceptés ?</summary>
       <p>Tout ce que ton navigateur sait lire : MP3, WAV, FLAC, M4A, AAC et OGG dans la plupart des cas. Pour un morceau très long, seules les quatre minutes du milieu sont analysées.</p></details>
     <details><summary>Le résultat est-il toujours juste ?</summary>
-      <p>Le tempo est fiable sur une rythmique régulière, au dixième de BPM près. Il l'est moins sur un morceau sans batterie, joué librement ou qui change de tempo. La tonalité est une estimation à partir des notes les plus présentes : un morceau qui module, très dissonant ou réduit à une ligne de basse peut tromper l'analyse.</p></details>
+      <p>Le tempo est fiable sur une rythmique régulière, au centième de BPM près sur un morceau entier. Il l'est moins sur un morceau sans batterie, joué librement ou qui change de tempo. La tonalité est une estimation à partir des notes les plus présentes : un morceau qui module, très dissonant ou réduit à une ligne de basse peut tromper l'analyse.</p></details>
     <details><summary>À quoi servent le BPM et la tonalité ?</summary>
       <p>À caler un projet sur une instru, régler un délai ou une correction de hauteur dans la bonne gamme, préparer un remix, ou enchaîner deux titres qui s'accordent.</p></details>
   </section>
@@ -222,14 +222,14 @@ function sourceRate(v) {
   return 0;
 }
 
-/** Le son du fichier : entier et à sa fréquence d'origine (audio), et en mono à 22 050 Hz pour l'analyse (au plus les quatre minutes du milieu). */
+/** Le son du fichier : entier, à sa fréquence d'origine ou à 48 kHz si elle est plus basse (audio), et en mono à 22 050 Hz pour l'analyse (au plus les quatre minutes du milieu). */
 async function decode(file) {
   const Context = window.AudioContext || window.webkitAudioContext;
   const bytes = await file.arrayBuffer();
-  // Décodé à la fréquence du fichier : le WAV rendu n'est pas rééchantillonné.
-  const rate = sourceRate(new DataView(bytes));
+  // Décodé à la fréquence du fichier, et jamais en dessous de 48 kHz : c'est la fréquence du WAV rendu.
+  const rate = Math.max(48000, sourceRate(new DataView(bytes)));
   let context;
-  try { context = new Context(rate ? { sampleRate: rate } : undefined); } catch { context = new Context(); }
+  try { context = new Context({ sampleRate: rate }); } catch { context = new Context(); }
   let audio;
   try {
     audio = await new Promise((resolve, reject) => { const p = context.decodeAudioData(bytes, resolve, reject); if (p && p.catch) p.catch(reject); });
@@ -287,7 +287,8 @@ function show(file, sound, r) {
   $("r-lead").textContent = (ms >= 1
     ? "Ce fichier commence par " + decimal(ms) + " ms de blanc avant le premier son : c'est ce qui le décale de la grille dans un DAW. "
     : "Aucun blanc mesuré au début de ce fichier. ")
-    + "Le WAV démarre exactement sur le premier son" + (/\.wav$/i.test(file.name) ? "." : " : importe-le dans ton DAW à la place de ce fichier.");
+    + "Le WAV démarre exactement sur le premier son" + (/\.wav$/i.test(file.name) ? "." : " : importe-le dans ton DAW à la place de ce fichier.")
+    + " Format : WAV 24 bits, " + String(audio.sampleRate / 1000).replace(".", ",") + " kHz" + (audio.numberOfChannels === 1 ? ", mono." : audio.numberOfChannels === 2 ? ", stéréo." : ".");
   $("r-trim").onclick = () => {
     if (audio.length * audio.numberOfChannels * 3 > 1.5e9) { $("error").textContent = "Ce fichier est trop long pour être rendu en WAV ici."; return; }
     $("r-trim").disabled = true;

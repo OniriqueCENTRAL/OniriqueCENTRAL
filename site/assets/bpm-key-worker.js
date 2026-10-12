@@ -3,8 +3,8 @@
 //
 //   postMessage({ samples: Float32Array, sampleRate })  →  { tempo, key, chroma, tuning }  ou  { error }
 //
-// Tempo : enveloppe des attaques (flux spectral), puis autocorrélation ; le battement retenu est celui qui se répète
-// aussi sur 2, 4 et 8 temps, ce qui donne sa valeur au dixième de BPM près.
+// Tempo : enveloppe des attaques (flux spectral sur quatre bandes), puis autocorrélation ; le battement retenu est
+// celui qui se répète aussi 2, 3 et 4 temps plus loin, puis il est affiné sur 8, 16, 32 et 64 temps.
 // Tonalité : énergie des douze notes sur tout le morceau (pics du spectre, accordage estimé), comparée aux profils de
 // Krumhansl et Kessler des 24 tonalités.
 
@@ -48,72 +48,92 @@ function parabola(a, b, c) {
 //  Tempo
 //==============================================================================
 const MIN_BPM = 60, MAX_BPM = 200;
+const BANDS = [0, 200, 800, 3200]; // Hz : grave (kick, basse), bas médium, médium, aigu (charleys)
 
 function tempo(x, sampleRate) {
-  const N = 1024, HOP = 256, fps = sampleRate / HOP;
+  const N = 1024, HOP = 128, fps = sampleRate / HOP;
   const frames = Math.floor((x.length - N) / HOP) + 1;
   if (frames < fps * 4) return null; // moins de quatre secondes : rien à mesurer
 
-  // Flux spectral : ce qui apparaît d'une trame à la suivante, sur des amplitudes compressées.
+  // Flux spectral par bande : ce qui apparaît d'une trame à la suivante, sur des amplitudes compressées. Chaque
+  // bande pèse autant que les autres, pour qu'un kick ne soit pas noyé sous les charleys (ni l'inverse).
   const fft = makeFFT(N), win = hann(N), re = new Float64Array(N), im = new Float64Array(N);
-  const previous = new Float64Array(N / 2), flux = new Float64Array(frames);
+  const edges = [...BANDS, sampleRate / 2].map((hz) => Math.min(N / 2, Math.round(hz * N / sampleRate)));
+  const previous = new Float64Array(N / 2), bands = BANDS.map(() => new Float64Array(frames));
   for (let f = 0; f < frames; f++) {
     for (let i = 0, o = f * HOP; i < N; i++) { re[i] = x[o + i] * win[i]; im[i] = 0; }
     fft(re, im);
-    let sum = 0;
-    for (let k = 1; k < N / 2; k++) {
-      const m = Math.log1p(Math.hypot(re[k], im[k]));
-      if (m > previous[k]) sum += m - previous[k];
-      previous[k] = m;
+    for (let b = 0; b < bands.length; b++) {
+      let sum = 0;
+      for (let k = Math.max(1, edges[b]); k < edges[b + 1]; k++) {
+        const m = Math.log1p(Math.hypot(re[k], im[k]));
+        if (m > previous[k]) sum += m - previous[k];
+        previous[k] = m;
+      }
+      bands[b][f] = sum;
     }
-    flux[f] = sum;
+  }
+  const env = new Float64Array(frames);
+  for (const band of bands) {
+    let mean = 0;
+    for (let i = 0; i < frames; i++) mean += band[i] / frames;
+    if (mean > 0) for (let i = 0; i < frames; i++) env[i] += band[i] / mean;
   }
 
   // Seules les attaques restent : la moyenne locale est retirée, puis la moyenne d'ensemble.
-  const around = Math.round(fps * 0.4), prefix = new Float64Array(frames + 1), env = new Float64Array(frames);
-  for (let i = 0; i < frames; i++) prefix[i + 1] = prefix[i] + flux[i];
+  const around = Math.round(fps * 0.2), prefix = new Float64Array(frames + 1);
+  for (let i = 0; i < frames; i++) prefix[i + 1] = prefix[i] + env[i];
   let mean = 0;
   for (let i = 0; i < frames; i++) {
     const a = Math.max(0, i - around), b = Math.min(frames, i + around + 1);
-    env[i] = Math.max(0, flux[i] - (prefix[b] - prefix[a]) / (b - a));
+    env[i] = Math.max(0, env[i] - (prefix[b] - prefix[a]) / (b - a));
     mean += env[i] / frames;
   }
   for (let i = 0; i < frames; i++) env[i] -= mean;
 
-  const maxLag = Math.min(frames - 2, Math.ceil(fps * 60 / MIN_BPM * 8) + 8);
-  const acf = new Float64Array(maxLag + 1);
-  for (let lag = 0; lag <= maxLag; lag++) {
-    let sum = 0;
-    for (let i = 0, end = frames - lag; i < end; i++) sum += env[i] * env[i + lag];
-    acf[lag] = sum / (frames - lag);
-  }
-  if (!(acf[0] > 0)) return null; // silence, ou son sans aucune attaque
-  for (let lag = maxLag; lag >= 0; lag--) acf[lag] /= acf[0];
+  // Autocorrélation par FFT, jusqu'à 64 temps : c'est la longueur qui donne la précision.
+  let size = 1;
+  while (size < 2 * frames) size *= 2;
+  const wide = makeFFT(size), ar = new Float64Array(size), ai = new Float64Array(size);
+  ar.set(env);
+  wide(ar, ai);
+  for (let i = 0; i < size; i++) { ar[i] = ar[i] * ar[i] + ai[i] * ai[i]; ai[i] = 0; }
+  wide(ar, ai);
+  if (!(ar[0] > 0)) return null; // silence, ou son sans aucune attaque
+  const maxLag = Math.min(Math.floor(frames / 2), Math.ceil(fps * 60 / MIN_BPM * 64) + 8);
+  const acf = new Float64Array(maxLag + 1), zero = ar[0] / frames;
+  for (let lag = 0; lag <= maxLag; lag++) acf[lag] = ar[lag] / (frames - lag) / zero;
   const at = (lag) => {
     const i = Math.floor(lag);
     return i + 1 > maxLag ? 0 : acf[i] + (acf[i + 1] - acf[i]) * (lag - i);
   };
 
-  // Le battement : la période qui se retrouve aussi deux et quatre temps plus loin, avec une préférence douce pour
-  // les tempos proches de 120 (c'est elle qui départage 70 et 140).
+  // Le battement : la période qui se retrouve aussi 2, 3 et 4 temps plus loin. Souvent c'est la mesure entière qui
+  // se répète le mieux, et plusieurs découpages l'expliquent (4 temps à 140, 2 à 70, 3 à 105) : la préférence pour
+  // les tempos autour de 125 choisit entre eux.
   let best = 0, bestScore = -Infinity;
   for (let lag = fps * 60 / MAX_BPM; lag <= fps * 60 / MIN_BPM; lag += 0.25) {
-    const octaves = Math.log2(60 * fps / lag / 120);
-    const score = (at(lag) + 0.5 * at(2 * lag) + 0.25 * at(4 * lag)) * Math.exp(-0.5 * (octaves / 0.9) ** 2);
+    // Le temps lui-même compte double : sans cela, un tempo rapide passe pour ses deux tiers (174 lu 116). Les
+    // tempos lents sont plus sévèrement écartés que les rapides : en dessous de 70, on compte presque toujours au double.
+    const octaves = Math.log2(60 * fps / lag / 125);
+    const score = (2 * at(lag) + at(2 * lag) + at(3 * lag) + at(4 * lag)) * Math.exp(-0.5 * (octaves / (octaves < 0 ? 0.55 : 0.7)) ** 2);
     if (score > bestScore) { bestScore = score; best = lag; }
   }
-  if (!(bestScore > 0.02)) return null;
+  if (!(bestScore > 0.05)) return null;
 
-  // Précision : le sommet est recherché sur 1, 2, 4 puis 8 temps ; chaque étape divise l'incertitude par deux.
-  let lag = best;
-  for (const beats of [1, 2, 4, 8]) {
-    const centre = lag * beats, reach = beats * 0.5 + 1;
-    let peak = 0;
-    for (let i = Math.max(1, Math.floor(centre - reach)); i <= Math.min(maxLag - 1, Math.ceil(centre + reach)); i++) {
-      if (!peak || acf[i] > acf[peak]) peak = i;
-    }
-    if (!peak || acf[peak] < 0.03) break;
+  // Précision : le sommet est recherché sur 1, 2, 4… jusqu'à 64 temps ; chaque étape divise l'incertitude par deux.
+  // La recherche s'arrête dès que la répétition s'efface (tempo qui bouge, morceau trop court).
+  let lag = best, level = 0;
+  for (const beats of [1, 2, 4, 8, 16, 32, 64]) {
+    const centre = lag * beats, reach = beats === 1 ? 1.5 : 2.5;
+    const from = Math.max(1, Math.floor(centre - reach)), to = Math.ceil(centre + reach);
+    if (to + 1 > maxLag) break;
+    let peak = from;
+    for (let i = from + 1; i <= to; i++) if (acf[i] > acf[peak]) peak = i;
+    const found = acf[peak] >= 0.1 && acf[peak] >= acf[peak - 1] && acf[peak] >= acf[peak + 1] && acf[peak] >= level * 0.5;
+    if (!found) { if (beats < 4) continue; break; }
     lag = (peak + parabola(acf[peak - 1], acf[peak], acf[peak + 1])) / beats;
+    if (beats <= 4) level = Math.max(level, acf[peak]);
   }
   const bpm = Math.max(MIN_BPM / 2, Math.min(MAX_BPM * 2, 60 * fps / lag));
   return { bpm, strength: Math.max(0, Math.min(1, at(lag))) };
