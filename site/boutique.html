@@ -344,8 +344,10 @@ function setupPick(catalog) {
 
 async function buy(product, catalog) {
   const note = $("buy-note");
-  if (catalog.paymentsMode === "off" && product.priceCents > 0) {
-    note.textContent = "La vente en ligne ouvre bientôt. Si tu as reçu une clé de licence, ajoute-la dans Onirique Central, onglet Licences.";
+  // Chaque créateur vend sur son propre compte : tant que le sien n'est pas branché, son plugin n'est pas encore en vente.
+  const unsold = catalog.paymentsMode === "off" || (catalog.sellers && !catalog.sellers.includes(product.creator));
+  if (unsold && product.priceCents > 0) {
+    note.textContent = "La vente de ce plugin ouvre bientôt. Si tu as reçu une clé de licence, ajoute-la dans Onirique Central, onglet Licences.";
     return;
   }
   const token = (sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"));

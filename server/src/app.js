@@ -18,7 +18,7 @@ import {
   publicKeyPem, publicKeyRaw, userActivations,
 } from './licensing.js';
 import {
-  cancelSubscription, checkout, connectStripe, disconnectStripe, handleLemonEvent, handleStripeEvent, paymentsMode,
+  cancelSubscription, checkout, connectStripe, disconnectStripe, handleLemonEvent, handleStripeEvent, paymentsMode, sellers,
   stripeAccount, stripeAccountView, verifyLemonSignature, verifyStripeSignature,
 } from './payments.js';
 
@@ -194,6 +194,8 @@ export function createApp() {
       // Abonnement à la carte : le prix du premier plugin et de chaque plugin ajouté, par mois.
       pick: pickPrices(),
       paymentsMode: paymentsMode(),
+      // Par Stripe, chaque créateur vend sur son propre compte : ceux qui n'en ont pas branché ne vendent pas encore.
+      sellers: paymentsMode() === 'stripe' ? sellers(CREATORS) : undefined,
     });
   });
 
@@ -573,7 +575,7 @@ export function createApp() {
   };
   admin.get('/payments', (req, res) => {
     res.json({
-      mode: paymentsMode(), open: !!setting('payments_open', false), fixed: config.paymentsMode !== 'off', founder: req.user.role === 'founder',
+      mode: paymentsMode(), open: !!setting('payments_open', true), fixed: config.paymentsMode !== 'off', founder: req.user.role === 'founder',
       accounts: CREATORS.filter((c) => !req.creator || c === req.creator).map((c) => ({ ...stripeAccountView(c), editable: mayConnect(req, c) })),
     });
   });

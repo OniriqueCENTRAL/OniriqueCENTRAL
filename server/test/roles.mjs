@@ -350,6 +350,22 @@ try {
     assert.deepEqual(await owned(), [], 'un compte partenaire ne peut pas accorder le plugin d\'un autre créateur');
     await send('abrasion', 'whsec_abrasion', 'cs_a3', raw.id);
     assert.deepEqual(await owned(), [raw.id]);
+
+    // La vente s'ouvre toute seule dès qu'un compte est branché, tant qu'un fondateur ne l'a pas refermée.
+    const { paymentsMode, sellers } = await import('../src/payments.js');
+    const { config } = await import('../src/config.js');
+    config.paymentsMode = 'off'; // comme en production, où rien n'est réglé dans le fichier .env
+    run(`DELETE FROM settings WHERE key = 'payments_open'`);
+    assert.equal(paymentsMode(), 'stripe');
+    assert.deepEqual(sellers(['onirique', 'abrasion', 'bloom']), [], 'un compte en clé d\'essai ne vend pas au public');
+    saveStripeAccount('abrasion', { secretKey: 'sk_live_abrasion1234567890', webhookSecret: 'whsec_abrasion', name: 'Abrasion' });
+    assert.deepEqual((await call('GET', '/api/catalog')).sellers, ['abrasion']);
+    await call('PUT', '/api/admin/payments/open', { token: founder.token, body: { open: false } });
+    assert.equal((await call('GET', '/api/catalog')).paymentsMode, 'off');
+    run('DELETE FROM stripe_accounts');
+    run(`DELETE FROM settings WHERE key = 'payments_open'`);
+    assert.equal(paymentsMode(), 'off', 'sans compte branché, la vente reste fermée');
+    config.paymentsMode = 'demo';
   });
 
   console.log(`\n${passed} étapes réussies.`);

@@ -1872,6 +1872,7 @@ fetch("/api/catalog").then(r => r.ok ? r.json() : null).then(catalog => {
   const euros = cents => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: cents % 100 ? 2 : 0 }).format(cents / 100);
   const terms = p => (p.priceCents ? euros(p.priceCents) : "Gratuit") + " · " + (p.platforms?.includes("mac") ? "Windows et Mac" : "Windows") + (p.priceCents ? " · Essai gratuit 7 jours" : "");
   heroFacts(catalog?.products || [], shown, euros, terms);
+  if (catalog && catalog.paymentsMode !== "off") $(".hero .btn-primary").textContent = "Acheter un plugin"; // la vente est ouverte
   if (!shown.length) return;
   $("#pluginGrid").innerHTML = shown.map(p => `
     <a class="plugin-card" href="boutique.html?p=${encodeURIComponent(p.slug)}">

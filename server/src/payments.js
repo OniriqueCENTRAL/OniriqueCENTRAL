@@ -120,11 +120,14 @@ export function stripeAccountView(creator) {
 }
 
 /**
- * Le mode de vente en vigueur. Sans réglage dans le fichier .env, la vente par Stripe s'ouvre depuis le panel admin
- * (réglage payments_open), dès qu'un compte au moins est branché.
+ * Le mode de vente en vigueur. Sans réglage dans le fichier .env, la vente par Stripe s'ouvre toute seule dès qu'un
+ * compte est branché depuis le panel admin ; un fondateur peut la refermer (réglage payments_open).
  */
 export const paymentsMode = () => (config.paymentsMode !== 'off' ? config.paymentsMode
-  : setting('payments_open', false) && get('SELECT 1 AS yes FROM stripe_accounts LIMIT 1') ? 'stripe' : 'off');
+  : setting('payments_open', true) && get('SELECT 1 AS yes FROM stripe_accounts LIMIT 1') ? 'stripe' : 'off');
+
+/** Les créateurs dont les plugins peuvent être achetés par le public : compte branché, avec une clé réelle. */
+export const sellers = (creators) => creators.filter((creator) => { const account = stripeAccount(creator); return account && !account.test; });
 
 /** La vente : Stripe vendeur officiel (Managed Payments), ou vente en nom propre avec la case obligatoire des conditions. */
 const sellerOptions = (managed) => (managed ? { managed_payments: { enabled: true } } : {
