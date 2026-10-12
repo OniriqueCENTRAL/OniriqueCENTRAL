@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const UPDATED = '11 octobre 2026';
+const UPDATED = '12 octobre 2026';
 
 const ID = {
   email: 'support@onirique.store', // contact, demandes RGPD, rétractations
@@ -67,8 +67,10 @@ const pages = [
     description: "Éditeur, hébergeur et contact du site onirique.store.",
     body: `
   <h2>Éditeur du site</h2>
-  <p>Le site <strong>onirique.store</strong> et l'application <strong>Onirique Central</strong> sont édités, à titre non professionnel, par <strong>ONIRIQUE</strong>, un collectif de créateurs indépendants de plugins audio. ONIRIQUE n'est pas une société immatriculée et aucune vente n'est réalisée sur ce site à ce jour.</p>
-  <p>Comme la loi pour la confiance dans l'économie numérique le permet aux personnes qui éditent un site à titre non professionnel, l'éditeur a choisi de préserver son anonymat : seules les coordonnées de l'hébergeur sont publiées ci-dessous, et l'identité de l'éditeur a été communiquée à cet hébergeur.</p>
+  <p>Le site <strong>onirique.store</strong> et l'application <strong>Onirique Central</strong> sont édités par <strong>ONIRIQUE</strong>, un collectif de créateurs indépendants de plugins audio. L'identité de l'éditeur a été communiquée à l'hébergeur, dont les coordonnées figurent ci-dessous.</p>
+
+  <h2>Vendeur</h2>
+  <p>ONIRIQUE conçoit les logiciels, délivre les licences et assure le support des produits. La vente elle-même est réalisée par <strong>Link</strong>, le service de la société <strong>Stripe</strong>, qui agit comme vendeur officiel : c'est Link qui encaisse le paiement, émet le reçu et la facture, et applique les taxes. Son nom apparaît sur la page de paiement, sur votre reçu et sur votre relevé bancaire. Voir les <a href="cgv.html">conditions générales</a>.</p>
 
   <h2 id="contact">Contact</h2>
   <ul>
@@ -93,13 +95,14 @@ const pages = [
     file: 'cgv.html',
     title: 'Conditions générales de vente et d’utilisation',
     description: "Conditions de vente des plugins Onirique et d'utilisation du site, du compte et de l'application Onirique Central.",
-    intro: "La vente en ligne n'est pas encore ouverte : aucun achat ne peut être fait sur ce site à ce jour. Les articles qui concernent l'utilisation du site, du compte et de l'application s'appliquent dès maintenant. Ceux qui concernent la vente (articles 4 à 6, 8 à 10 et 15) s'appliqueront à l'ouverture de la boutique, après publication de l'identité complète du vendeur sur cette page.",
+    intro: "Les plugins s'achètent en ligne, à l'unité ou par abonnement. La vente est réalisée par Link, le service de Stripe, qui agit comme vendeur officiel : il encaisse, facture et applique les taxes. ONIRIQUE édite les logiciels, délivre les licences et assure le support des produits.",
     body: `
-  <h2>1. Éditeur</h2>
-  <p>Le site, le compte et l'application sont proposés par ONIRIQUE. Contact : ${mail()}. Voir les <a href="mentions-legales.html">mentions légales</a>. L'identité complète du vendeur (nom ou dénomination, adresse, numéro d'immatriculation) sera publiée ici avant l'ouverture de la vente.</p>
+  <h2>1. Éditeur et vendeur</h2>
+  <p>Le site, le compte, l'application et les logiciels sont proposés par ONIRIQUE. Contact : ${mail()}. Voir les <a href="mentions-legales.html">mentions légales</a>.</p>
+  <p>Lorsque vous achetez, votre contrat de vente est conclu avec le vendeur indiqué sur la page de paiement et sur votre reçu : Link, le service de la société Stripe, vendeur officiel des plugins. Ses propres conditions, affichées sur la page de paiement, s'appliquent à l'encaissement, à la facturation et aux taxes. Les présentes conditions régissent le compte, la licence d'utilisation des logiciels et le support.</p>
 
   <h2>2. Produits</h2>
-  <p>Onirique propose des logiciels audio (plugins au format VST3, avec ou sans version autonome) pour Windows 10 et 11 en 64 bits, fournis uniquement sous forme numérique, sans support matériel. La fiche de chaque produit indique ses fonctions et la configuration requise. L'application Onirique Central, gratuite, sert à installer les plugins, à les mettre à jour et à activer les licences.</p>
+  <p>Onirique propose des logiciels audio (plugins au format VST3 et, sur Mac, Audio Unit, avec ou sans version autonome) pour Windows 10 et 11 en 64 bits et pour macOS 10.15 ou plus récent, fournis uniquement sous forme numérique, sans support matériel. Tous les plugins n'existent pas pour les deux systèmes : la fiche de chaque produit indique ses fonctions, les systèmes pour lesquels il est disponible et son créateur. L'application Onirique Central, gratuite, sert à installer les plugins, à les mettre à jour et à activer les licences.</p>
   <p>Avant d'acheter, il vous appartient de vérifier que votre matériel et votre logiciel de musique (DAW) sont compatibles avec le produit.</p>
 
   <h2>3. Compte</h2>
@@ -107,11 +110,11 @@ const pages = [
   <p>La création d'un compte est réservée aux personnes majeures, ou aux mineurs disposant de l'autorisation de leur représentant légal. Vous pouvez demander la suppression de votre compte à tout moment (voir la <a href="confidentialite.html">politique de confidentialité</a>).</p>
 
   <h2>4. Prix</h2>
-  <p>Les prix sont indiqués en euros, toutes taxes comprises. Le prix applicable est celui affiché au moment de la validation de la commande. Aucun frais de livraison ne s'ajoute, les produits étant numériques.</p>
+  <p>Les prix sont indiqués en euros, toutes taxes comprises. Hors de la zone euro, la page de paiement peut afficher le prix converti dans votre monnaie. Le prix applicable est celui affiché sur la page de paiement au moment de valider la commande. Aucun frais de livraison ne s'ajoute, les produits étant numériques.</p>
 
   <h2>5. Commande et paiement</h2>
-  <p>La commande se déroule ainsi : choix du produit ou de la formule, connexion au compte, récapitulatif affichant le prix total, acceptation des présentes conditions, puis paiement. La vente est conclue lorsque le paiement est confirmé.</p>
-  <p>Le paiement est effectué en ligne auprès du prestataire de paiement sécurisé indiqué au moment de payer. Onirique ne reçoit et ne conserve jamais le numéro de votre carte bancaire. Une confirmation de commande vous est envoyée par e-mail.</p>
+  <p>La commande se déroule ainsi : choix du produit ou de la formule, connexion au compte, puis page de paiement sécurisée de Stripe, qui affiche le récapitulatif, le prix total, les taxes et les conditions du vendeur. La vente est conclue lorsque le paiement est confirmé.</p>
+  <p>Onirique ne reçoit et ne conserve jamais le numéro de votre carte bancaire. Le reçu et la facture vous sont envoyés par e-mail par Link ; Onirique vous envoie en plus une confirmation avec les indications d'installation. Le paiement apparaît sur votre relevé bancaire sous un libellé commençant par « LINK.COM ».</p>
 
   <h2>6. Livraison</h2>
   <p>Dès la confirmation du paiement, la licence est ajoutée à votre compte. Le produit se télécharge et s'installe depuis l'application Onirique Central. Si la licence n'apparaît pas sur votre compte dans l'heure qui suit le paiement, contactez-nous : nous la délivrons ou nous vous remboursons.</p>
@@ -126,9 +129,10 @@ const pages = [
   </ul>
   <p>En cas de manquement grave à ces règles, la licence peut être révoquée, après une mise en demeure restée sans effet lorsque le manquement peut être corrigé.</p>
 
-  <h2>8. Abonnement All Access</h2>
-  <p>L'abonnement donne accès à l'ensemble des plugins Onirique tant qu'il est actif. Il est mensuel ou annuel selon la formule choisie, payable d'avance, et se renouvelle automatiquement pour la même durée, au tarif en vigueur qui vous a été annoncé.</p>
-  <p>Vous pouvez le résilier à tout moment, en ligne, depuis l'onglet <strong>Abonnement</strong> de l'application Onirique Central ou en nous écrivant. La résiliation prend effet à la fin de la période déjà payée, pendant laquelle vous gardez l'accès. À la fin de l'abonnement, les plugins obtenus uniquement par l'abonnement cessent de fonctionner ; ceux achetés à l'unité vous restent acquis.</p>
+  <h2>8. Abonnements</h2>
+  <p>Deux formules existent. L'abonnement <strong>All Access</strong> donne accès à l'ensemble des plugins édités par Onirique tant qu'il est actif. L'abonnement <strong>à la carte</strong> donne accès aux seuls plugins Onirique que vous avez choisis. Les plugins d'un créateur partenaire, signalé sur leur fiche, ne font partie d'aucun abonnement : ils s'achètent à l'unité.</p>
+  <p>Un abonnement est mensuel ou annuel selon la formule choisie, payable d'avance, et se renouvelle automatiquement pour la même durée, au tarif en vigueur qui vous a été annoncé.</p>
+  <p>Vous pouvez le résilier à tout moment, en ligne, depuis l'onglet <strong>Abonnement</strong> de l'application Onirique Central, depuis votre espace Link (link.com), ou en nous écrivant. La résiliation prend effet à la fin de la période déjà payée, pendant laquelle vous gardez l'accès. À la fin de l'abonnement, les plugins obtenus uniquement par l'abonnement cessent de fonctionner ; ceux achetés à l'unité vous restent acquis.</p>
   <p>Toute modification du prix d'un abonnement vous est annoncée par e-mail avant son application ; vous pouvez alors résilier sans frais avant la date d'effet.</p>
 
   <h2>9. Droit de rétractation</h2>
@@ -154,10 +158,11 @@ const pages = [
   <p>Le traitement de vos données est décrit dans la <a href="confidentialite.html">politique de confidentialité</a> et la <a href="cookies.html">politique relative aux cookies</a>.</p>
 
   <h2>14. Service client et réclamations</h2>
-  <p>Pour toute question ou réclamation : ${mail()}, ou l'onglet Support de l'application Onirique Central. Nous répondons dans les meilleurs délais.</p>
+  <p>Pour toute question ou réclamation sur un produit, une licence ou votre compte : ${mail()}, ou l'onglet Support de l'application Onirique Central. Nous répondons dans les meilleurs délais.</p>
+  <p>Pour une question sur un paiement, un reçu ou une facture, vous pouvez aussi vous adresser à l'assistance de Link, le vendeur : support.link.com.</p>
 
   <h2>15. Médiation de la consommation</h2>
-  <p>Si une réclamation écrite n'a pas abouti, vous pouvez saisir gratuitement un médiateur de la consommation. Ses coordonnées seront indiquées ici avant l'ouverture de la vente. La saisine doit intervenir dans l'année qui suit votre réclamation écrite.</p>
+  <p>Si une réclamation écrite n'a pas abouti, vous pouvez recourir gratuitement à un médiateur de la consommation, dans l'année qui suit votre réclamation. Le vendeur étant Link (Stripe), ce recours s'exerce selon ses conditions de vente, accessibles depuis la page de paiement et votre reçu. Pour un différend qui porte sur le produit lui-même, écrivez-nous d'abord : nous cherchons toujours une solution amiable.</p>
 
   <h2>16. Droit applicable et litiges</h2>
   <p>Ces conditions sont soumises au droit français. Si vous êtes un consommateur résidant dans un autre pays de l'Union européenne, vous conservez la protection des règles impératives de votre pays de résidence. À défaut d'accord amiable, le litige est porté devant le tribunal compétent selon les règles légales.</p>
@@ -180,15 +185,15 @@ const pages = [
   <ol>
     <li>vous avez demandé expressément, au moment de la commande, que la fourniture commence tout de suite ;</li>
     <li>vous avez reconnu que vous perdiez ainsi votre droit de rétractation ;</li>
-    <li>nous vous avons confirmé cet accord par e-mail.</li>
+    <li>cet accord vous a été confirmé par e-mail.</li>
   </ol>
-  <p>Ces deux déclarations vous sont demandées par une case à cocher lors de la commande. Si elles n'ont pas été recueillies, vous conservez votre droit de rétractation pendant quatorze jours, même après avoir téléchargé le produit.</p>
+  <p>Si la page de paiement ne vous a pas demandé ces deux déclarations, vous conservez votre droit de rétractation pendant quatorze jours, même après avoir téléchargé le produit.</p>
 
-  <h2>Abonnement All Access</h2>
+  <h2>Abonnements</h2>
   <p>Le délai de quatorze jours s'applique aussi à la souscription d'un abonnement. Si vous avez demandé à en profiter immédiatement puis que vous vous rétractez, vous restez redevable du montant correspondant à la période déjà utilisée, calculé au prorata (article L. 221-25 du Code de la consommation). Passé ce délai, l'abonnement se résilie à tout moment, avec effet à la fin de la période payée, sans remboursement de la période en cours.</p>
 
   <h2>Comment vous rétracter</h2>
-  <p>Envoyez-nous, avant la fin du délai, une déclaration claire à ${mail()}. Vous pouvez utiliser le formulaire ci-dessous, sans que ce soit obligatoire. Nous accusons réception de votre demande par e-mail.</p>
+  <p>Envoyez, avant la fin du délai, une déclaration claire à ${mail()} : nous la transmettons au vendeur et nous accusons réception par e-mail. Vous pouvez aussi vous adresser directement à l'assistance de Link, le vendeur (support.link.com). Le formulaire ci-dessous peut vous servir, sans que ce soit obligatoire.</p>
   <div class="form-model">
     <p><strong>Formulaire de rétractation</strong></p>
     <p>À l'attention de ONIRIQUE, ${mail()} :</p>
@@ -197,7 +202,7 @@ const pages = [
   </div>
 
   <h2>Remboursement</h2>
-  <p>Lorsque la rétractation est valable, nous vous remboursons la totalité des sommes versées, au plus tard quatorze jours après avoir reçu votre demande. Le remboursement est fait par le moyen de paiement utilisé pour l'achat, sans frais pour vous. La licence correspondante est alors retirée de votre compte.</p>
+  <p>Lorsque la rétractation est valable, la totalité des sommes versées vous est remboursée, au plus tard quatorze jours après la réception de votre demande. Le remboursement est effectué par Link (Stripe), le vendeur, sur le moyen de paiement utilisé pour l'achat, sans frais pour vous. La licence correspondante est alors retirée de votre compte.</p>
 
   <h2>En dehors de la rétractation</h2>
   <ul>
@@ -240,12 +245,12 @@ const pages = [
   <ul>
     <li><strong>IONOS</strong> : hébergement du site et du serveur, dans un centre de données situé en Allemagne (Union européenne).</li>
     <li><strong>IONOS</strong> également pour la messagerie : les demandes de support et les e-mails que nous vous adressons (lien de réinitialisation du mot de passe) passent par la boîte e-mail d'Onirique, hébergée par IONOS.</li>
-    <li><strong>Le prestataire de paiement</strong>, pour vos achats, lorsque la vente sera ouverte.</li>
+    <li><strong>Stripe</strong> et son service <strong>Link</strong>, vendeur officiel et prestataire de paiement, pour vos achats : Onirique lui transmet votre adresse e-mail et la désignation de ce que vous achetez ; vous lui communiquez vous-même, sur sa page de paiement, vos informations de paiement et de facturation. Stripe les traite sous sa propre responsabilité, selon sa politique de confidentialité.</li>
   </ul>
   <p>Vos données ne sont ni vendues, ni louées, ni utilisées à des fins publicitaires.</p>
 
   <h2>Transferts hors de l'Union européenne</h2>
-  <p>Onirique ne transfère pas vos données hors de l'Union européenne : le site, le serveur et la messagerie sont hébergés par IONOS dans l'Union européenne. N'indiquez dans un message de support aucune information sensible qui ne soit pas utile à votre demande.</p>
+  <p>Le site, le serveur et la messagerie sont hébergés par IONOS dans l'Union européenne. Seul le paiement fait exception : Stripe peut traiter les données d'une commande hors de l'Union européenne, avec les garanties décrites dans sa politique de confidentialité. N'indiquez dans un message de support aucune information sensible qui ne soit pas utile à votre demande.</p>
 
   <h2>Vos droits</h2>
   <p>Vous pouvez à tout moment demander l'accès à vos données, leur rectification, leur effacement, la limitation de leur traitement, leur portabilité, ou vous opposer à un traitement fondé sur l'intérêt légitime. Vous pouvez aussi définir des directives sur le sort de vos données après votre décès.</p>

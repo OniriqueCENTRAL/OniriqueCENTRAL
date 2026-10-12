@@ -232,9 +232,10 @@ try {
     assert.deepEqual(await call('PATCH', '/api/admin/pick', { token: admin.token, body: { baseCents: 1299, extraCents: 400 } }), { baseCents: 1299, extraCents: 400 });
     assert.deepEqual((await call('GET', '/api/catalog')).pick, { baseCents: 1299, extraCents: 400 });
     assert.deepEqual(await call('GET', '/api/admin/pick', { token: admin.token }), { baseCents: 1299, extraCents: 400 });
-    // Le prix payé suit : deux plugins à la carte, en mode démo, donnent un abonnement à 12,99 + 4,00.
-    await call('POST', '/api/checkout', { token: user.token, body: { kind: 'pick', productIds: [tuner.id, raw.id] } });
-    assert.equal((await call('GET', '/api/me', { token: user.token })).subscription.priceCents, 1699);
+    // Le prix payé suit. Un plugin d'un créateur partenaire n'entre pas dans un abonnement : il s'achète à l'unité.
+    await call('POST', '/api/checkout', { token: user.token, body: { kind: 'pick', productIds: [tuner.id, raw.id] }, expect: 400 });
+    await call('POST', '/api/checkout', { token: user.token, body: { kind: 'pick', productIds: [tuner.id] } });
+    assert.equal((await call('GET', '/api/me', { token: user.token })).subscription.priceCents, 1299);
     await call('PATCH', '/api/admin/pick', { token: admin.token, body: { baseCents: 999, extraCents: 500 } });
   });
 
@@ -350,6 +351,13 @@ try {
     assert.deepEqual(await owned(), [], 'un compte partenaire ne peut pas accorder le plugin d\'un autre créateur');
     await send('abrasion', 'whsec_abrasion', 'cs_a3', raw.id);
     assert.deepEqual(await owned(), [raw.id]);
+
+    // Un abonnement à tout le catalogue couvre les plugins ONIRIQUE, pas ceux d'un créateur partenaire.
+    const subscriber = await account('abonne-stripe');
+    const planId = Number(run(`INSERT INTO plans (name, interval, price_cents) VALUES ('ALL ACCESS', 'month', 990)`).lastInsertRowid);
+    await call('POST', '/api/checkout', { token: subscriber.token, body: { kind: 'plan', id: planId } });
+    assert.deepEqual(Object.keys((await call('GET', '/api/me', { token: subscriber.token })).entitlements).map(Number), [tuner.id]);
+    await call('POST', '/api/checkout', { token: client.token, body: { kind: 'pick', productIds: [raw.id] }, expect: 400 });
 
     // La vente s'ouvre toute seule dès qu'un compte est branché, tant qu'un fondateur ne l'a pas refermée.
     const { paymentsMode, sellers } = await import('../src/payments.js');

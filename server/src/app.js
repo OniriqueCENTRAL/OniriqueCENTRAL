@@ -446,6 +446,8 @@ export function createApp() {
       if (!ids.length || ids.length > 50) throw new HttpError(400, 'Choisissez au moins un plugin.');
       const products = ids.map((id) => get('SELECT * FROM products WHERE id = ? AND published = 1', id));
       if (products.some((p) => !p)) throw new HttpError(404, 'Produit introuvable.');
+      const partner = products.find((p) => p.creator !== 'onirique');
+      if (partner) throw new HttpError(400, `${partner.name} ne fait pas partie des abonnements : il s'achète à l'unité.`);
       const free = products.find((p) => p.price_cents === 0);
       if (free) throw new HttpError(400, `${free.name} est gratuit : inutile de l'ajouter à un abonnement.`);
       const owned = products.find((p) => entitlement(req.user.id, p.id)?.via === 'license' && entitlement(req.user.id, p.id).type !== 'trial');

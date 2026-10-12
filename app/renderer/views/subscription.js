@@ -5,7 +5,8 @@ import { buy } from './library.js';
 /** Abonnement à la carte : on coche les plugins voulus, le prix suit. Le serveur refait le calcul au paiement. */
 function pickPanel(sub) {
   const { catalog } = state.data;
-  const paid = catalog.products.filter((p) => p.priceCents > 0);
+  // Les abonnements ne couvrent que les plugins ONIRIQUE : ceux des créateurs partenaires s'achètent à l'unité.
+  const paid = catalog.products.filter((p) => p.priceCents > 0 && p.creator === 'onirique');
   if (!catalog.pick || !paid.length) return null;
   const { baseCents, extraCents } = catalog.pick;
   const priceOf = (count) => baseCents + extraCents * Math.max(0, count - 1);
@@ -49,7 +50,7 @@ export function subscriptionView() {
   // Ce que couvre l'abonnement en cours : tout le catalogue, ou les plugins choisis à la carte.
   const covered = sub?.productIds
     ? catalog.products.filter((p) => sub.productIds.includes(p.id)).map((p) => p.name).join(', ') || `${sub.productIds.length} plugin(s)`
-    : 'tous les plugins';
+    : 'tous les plugins ONIRIQUE';
 
   const current = sub ? h('div', { class: 'panel plan current' },
     h('div', { class: 'row between' }, eyebrow('Votre abonnement'), pill(sub.cancelAtPeriodEnd ? 'Se termine' : 'Actif', 'hot', true)),
@@ -67,7 +68,7 @@ export function subscriptionView() {
     eyebrow(p.interval === 'year' ? 'Annuel' : 'Mensuel'),
     h('h2', null, p.name),
     h('div', { class: 'amount' }, euros(p.priceCents), h('small', null, p.interval === 'year' ? ' / AN' : ' / MOIS')),
-    h('p', { class: 'muted', style: { margin: 0 } }, `Les ${catalog.products.length} plugins ONIRIQUE, toutes les mises à jour, et chaque nouveau plugin dès sa sortie.`),
+    h('p', { class: 'muted', style: { margin: 0 } }, `Les ${catalog.products.filter((p) => p.creator === 'onirique').length} plugins ONIRIQUE, toutes les mises à jour, et chaque nouveau plugin ONIRIQUE dès sa sortie. Les plugins des créateurs partenaires s'achètent à l'unité.`),
     h('div', null, button(sub ? 'Déjà abonné' : 'S\'abonner', () => buy('plan', p), 'primary', { disabled: !!sub })));
 
   return [

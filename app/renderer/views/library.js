@@ -97,9 +97,13 @@ async function install(product) {
 export function buy(kind, item) {
   const mode = state.data.catalog.paymentsMode;
   const free = kind === 'product' && item.priceCents === 0;
-  if (mode === 'off' && !free) {
-    return modal('Achats bientôt ouverts',
-      h('p', { class: 'muted' }, 'La boutique n\'est pas encore ouverte. Si vous avez reçu une clé de licence, entrez-la dans l\'onglet Licences.'),
+  // Chaque créateur vend sur son propre compte : tant que le sien n'est pas branché, ses plugins ne sont pas encore en vente.
+  const sellers = state.data.catalog.sellers;
+  const unsold = kind === 'product' && sellers && !sellers.includes(item.creator);
+  if ((mode === 'off' || unsold) && !free) {
+    return modal(unsold ? 'Bientôt en vente' : 'Achats bientôt ouverts',
+      h('p', { class: 'muted' }, unsold ? 'Ce plugin n\'est pas encore en vente. Si vous avez reçu une clé de licence, entrez-la dans l\'onglet Licences.'
+        : 'La boutique n\'est pas encore ouverte. Si vous avez reçu une clé de licence, entrez-la dans l\'onglet Licences.'),
       [{ label: 'Entrer une clé', run: () => go('licenses') }], 'Boutique');
   }
   // Un abonnement : une formule à tout le catalogue ("plan") ou une sélection de plugins à la carte ("pick").

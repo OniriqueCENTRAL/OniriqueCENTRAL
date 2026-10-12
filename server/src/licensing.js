@@ -132,8 +132,11 @@ export function entitlement(userId, productId) {
          AND status = 'active' AND (expires_at IS NULL OR expires_at > ?)`, userId, productId, now());
     return { via: 'license', type: license.type, licenseId: license.id, expiresAt: license.expires_at, maxActivations: limit };
   }
+  // Un abonnement est encaissé par ONIRIQUE : il ne couvre que les plugins ONIRIQUE. Ceux d'un créateur partenaire
+  // s'achètent à l'unité, sur le compte de ce créateur.
   const sub = activeSubscription(userId);
-  if (sub?.valid && (!sub.productIds || sub.productIds.includes(Number(productId)))) {
+  if (sub?.valid && (!sub.productIds || sub.productIds.includes(Number(productId)))
+      && get('SELECT creator FROM products WHERE id = ?', productId)?.creator === 'onirique') {
     return {
       via: 'subscription', type: 'subscription', licenseId: null,
       expiresAt: sub.current_period_end + config.subscriptionGraceDays * 86400_000,

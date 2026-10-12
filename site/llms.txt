@@ -1,6 +1,6 @@
 # ONIRIQUE
 
-> Onirique édite des plugins audio pour la voix (VST3, Windows 10 et 11 en 64 bits) et l'application gratuite Onirique Central, qui les installe, les met à jour et active les licences.
+> Onirique édite des plugins audio pour la voix (VST3 et Audio Unit, pour Windows et Mac) et l'application gratuite Onirique Central, qui les installe, les met à jour et active les licences.
 
 ## Produits
 

@@ -122,7 +122,7 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
     <div class="plans" id="plans" hidden>
       <p class="eyebrow">Abonnement</p>
       <h2>Tout <em>inclus</em></h2>
-      <p class="lede">Tous les plugins du catalogue, avec les nouveautés et les mises à jour, tant que l'abonnement est actif. Sans engagement, résiliable à tout moment.</p>
+      <p class="lede">Tous les plugins ONIRIQUE, avec les nouveautés et les mises à jour, tant que l'abonnement est actif. Sans engagement, résiliable à tout moment. Les plugins des créateurs partenaires s'achètent à l'unité.</p>
       <div class="plan-list" id="plan-list"></div>
       <p class="note" id="plan-note" role="status"></p>
       <p class="note"><a href="cgv.html">Conditions de vente</a> · <a href="remboursement.html">Rétractation</a></p>
@@ -308,7 +308,8 @@ function setupPlans(catalog) {
 // Abonnement à la carte : on coche les plugins voulus, le prix suit. Le premier plugin a son prix, chaque
 // plugin ajouté un supplément. Le calcul affiché ici est refait par le serveur au moment de payer.
 function setupPick(catalog) {
-  const paid = catalog.products.filter((p) => p.priceCents > 0);
+  // Les abonnements ne couvrent que les plugins ONIRIQUE : ceux des créateurs partenaires s'achètent à l'unité.
+  const paid = catalog.products.filter((p) => p.priceCents > 0 && p.creator === "onirique");
   if (!catalog.pick || !paid.length) return;
   const { baseCents, extraCents } = catalog.pick;
   const priceOf = (count) => baseCents + extraCents * Math.max(0, count - 1);
