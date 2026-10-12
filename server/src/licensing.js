@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { config } from './config.js';
 import { all, get, run, now } from './db.js';
-import { HttpError } from './auth.js';
+import { HttpError, canSelfLicense } from './auth.js';
 
 //==============================================================================
 //  Clé de signature : la clé privée ne quitte jamais le serveur. Les plugins
@@ -108,10 +108,11 @@ export function entitlement(userId, productId) {
     `SELECT * FROM licenses WHERE user_id = ? AND product_id = ? AND status = 'active'
        AND (expires_at IS NULL OR expires_at > ?)
      ORDER BY expires_at IS NULL DESC, expires_at DESC LIMIT 1`, userId, productId, now());
-  // VIP et fondateurs : tous les plugins, sans licence à acheter (un essai en cours ne les ramène pas au mode démo).
-  // Comme pour un abonnement, la licence écrite sur la machine a une durée : retirer le rôle la laisse s'éteindre.
-  const { role } = get('SELECT role FROM users WHERE id = ?', userId) ?? {};
-  const vip = role === 'vip' || role === 'founder';
+  // VIP, et membres de l'équipe ou partenaires qui se sont accordé leurs licences : tous les plugins, sans licence à
+  // acheter (un essai en cours ne les ramène pas au mode démo). Comme pour un abonnement, la licence écrite sur la
+  // machine a une durée : retirer le rôle ou couper le réglage la laisse s'éteindre.
+  const owner = get('SELECT role, self_licenses FROM users WHERE id = ?', userId);
+  const vip = !!owner && (owner.role === 'vip' || (!!owner.self_licenses && canSelfLicense(owner)));
   if (vip && (!license || license.type === 'trial')) {
     return {
       via: 'vip', type: 'vip', licenseId: null,

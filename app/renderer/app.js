@@ -85,7 +85,17 @@ function sidebar() {
     item('subscription', 'Abonnement'),
     item('support', 'Support'),
     hasPanel(me.user) ? [h('div', { class: 'eyebrow nav-label' }, 'Studio'), item('admin', 'Panel admin'),
-      isStaff(me.user) ? item('support-admin', 'Panel support') : null] : null,
+      isStaff(me.user) ? item('support-admin', 'Panel support') : null,
+      // L'équipe et les partenaires s'accordent tous les plugins, ou y renoncent pour voir l'application comme un client.
+      h('button', {
+        class: 'nav-item', 'aria-pressed': String(!!me.user.selfLicenses),
+        title: me.user.selfLicenses ? 'Tous les plugins sont offerts à ce compte. Cliquer pour couper.' : 'Ce compte n\'a que les licences qu\'il possède. Cliquer pour s\'accorder tous les plugins.',
+        onclick: async () => {
+          const enabled = !me.user.selfLicenses;
+          if (await attempt(() => call('api', 'POST', '/api/me/self-licenses', { enabled }),
+            enabled ? 'Vos licences sont activées : tous les plugins sont offerts à ce compte.' : 'Vos licences sont désactivées : vous voyez l\'application comme un client.')) await refresh();
+        },
+      }, h('span', { class: `led${me.user.selfLicenses ? ' on' : ''}` }), me.user.selfLicenses ? 'Mes licences : activées' : 'Mes licences : désactivées')] : null,
     h('div', { class: 'spacer' }),
     h('button', { class: 'user-chip', onclick: () => go('account') },
       h('div', { class: 'avatar' }, (me.user.name || me.user.email)[0].toUpperCase()),

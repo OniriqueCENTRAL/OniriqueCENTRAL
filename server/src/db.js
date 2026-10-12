@@ -209,6 +209,10 @@ if (!hasColumn('products', 'creator')) {
   db.exec(`UPDATE products SET creator = 'abrasion' WHERE slug LIKE 'onirique-x-abrasion-%'`);
 }
 
+// L'équipe et les partenaires s'accordent eux-mêmes tous les plugins, ou y renoncent (pour voir l'application comme
+// un client) : c'est ce réglage, par compte. Il ne vaut que tant que le compte porte un de ces rôles.
+if (!hasColumn('users', 'self_licenses')) db.exec('ALTER TABLE users ADD COLUMN self_licenses INTEGER NOT NULL DEFAULT 0');
+
 /** Donne le rôle de fondateur aux adresses de la configuration, une fois leur adresse validée. */
 export function grantFounders() {
   for (const email of config.founderEmails) {

@@ -8,7 +8,7 @@ import { all, get, run, now, transaction, grantFounders } from './db.js';
 import {
   HttpError, hashPassword, verifyPassword, createSession, destroySession,
   requireUser, requireVerified, requireAdmin, optionalUser, rateLimit, validEmail, publicUser, createResetToken, consumeResetToken,
-  ROLES, PARTNERS, isStaff, partnerOf,
+  ROLES, PARTNERS, isStaff, partnerOf, canSelfLicense,
   createVerifyToken, consumeVerifyToken, mustVerify, shouldConfirm,
 } from './auth.js';
 import { mailEnabled, sendMail } from './mail.js';
@@ -291,6 +291,20 @@ export function createApp() {
       // Plugins pour lesquels un essai a déjà été lancé (expiré ou non) : l'essai ne se reprend pas.
       trialsUsed: all(`SELECT DISTINCT product_id AS id FROM licenses WHERE user_id = ? AND source = 'trial'`, req.user.id).map((r) => r.id),
     });
+  });
+
+  // L'équipe et les partenaires activent ou coupent, pour leur propre compte, l'accès offert à tous les plugins.
+  app.post('/api/me/self-licenses', requireUser, (req, res) => {
+    if (!canSelfLicense(req.user)) throw new HttpError(403, 'Réservé à l\'équipe et aux partenaires.');
+    const enabled = req.body.enabled ? 1 : 0;
+    transaction(() => {
+      run('UPDATE users SET self_licenses = ? WHERE id = ?', enabled, req.user.id);
+      // Coupé : les machines activées grâce à lui sont libérées, sauf pour les plugins que le compte possède vraiment.
+      for (const { product_id: productId } of all('SELECT DISTINCT product_id FROM activations WHERE user_id = ?', req.user.id)) {
+        if (!entitlement(req.user.id, productId)) run('DELETE FROM activations WHERE user_id = ? AND product_id = ?', req.user.id, productId);
+      }
+    });
+    res.json({ ok: true, enabled: !!enabled });
   });
 
   app.post('/api/me/profile', requireUser, (req, res) => {

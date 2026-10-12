@@ -158,8 +158,43 @@ try {
     const { entitlements } = await call('GET', '/api/me', { token: vip.token });
     assert.equal(entitlements[tuner.id].type, 'vip');
     assert.equal(entitlements[raw.id].via, 'license');
-    assert.equal((await call('GET', '/api/me', { token: founder.token })).entitlements[tuner.id].via, 'vip', 'un fondateur a tous les plugins aussi');
+    assert.deepEqual((await call('GET', '/api/me', { token: founder.token })).entitlements, {}, 'un fondateur n\'a pas les plugins tant qu\'il ne se les accorde pas');
     assert.deepEqual((await call('GET', '/api/me', { token: admin.token })).entitlements, {}, 'un admin n\'a pas les plugins offerts');
+  });
+
+  await step('équipe et partenaires : chacun active ou coupe ses propres licences ; les autres comptes n\'y ont pas droit', async () => {
+    for (const who of [founder, admin, partner]) {
+      const before = await call('GET', '/api/me', { token: who.token });
+      assert.equal(before.user.selfLicenses, false);
+      assert.ok(!before.entitlements[tuner.id]);
+      await call('POST', '/api/me/self-licenses', { token: who.token, body: { enabled: true } });
+      const on = await call('GET', '/api/me', { token: who.token });
+      assert.equal(on.user.selfLicenses, true);
+      assert.equal(on.entitlements[tuner.id].via, 'vip');
+      assert.equal(on.entitlements[raw.id].via, 'vip');
+      await call('POST', '/api/licenses/activate', { token: who.token, body: { productId: tuner.id, machineId: machine, machineName: 'PC' } });
+      assert.equal((await call('GET', '/api/me', { token: who.token })).activations.length, 1);
+
+      await call('POST', '/api/me/self-licenses', { token: who.token, body: { enabled: false } });
+      const off = await call('GET', '/api/me', { token: who.token });
+      assert.equal(off.user.selfLicenses, false);
+      assert.deepEqual(off.entitlements, {});
+      assert.equal(off.activations.length, 0, 'la machine activée grâce au réglage est libérée');
+      await call('POST', '/api/licenses/activate', { token: who.token, body: { productId: tuner.id, machineId: machine, machineName: 'PC' }, expect: 403 });
+    }
+    await call('POST', '/api/me/self-licenses', { token: user.token, body: { enabled: true }, expect: 403 });
+    assert.equal((await call('GET', '/api/me', { token: user.token })).user.selfLicenses, null);
+    assert.deepEqual((await call('GET', '/api/me', { token: user.token })).entitlements, {});
+
+    // Un compte qui perd son rôle perd l'accès, même si le réglage était resté allumé.
+    await call('POST', '/api/me/self-licenses', { token: admin2.token, body: { enabled: true }, expect: 401 }); // sa session a été fermée plus haut
+    const again = (await call('POST', '/api/auth/login', { body: { email: 'admin2@test.local', password: 'choisi-par-le-fondateur' } })).token;
+    await call('POST', '/api/me/self-licenses', { token: again, body: { enabled: true } });
+    assert.equal((await call('GET', '/api/me', { token: again })).entitlements[tuner.id].via, 'vip');
+    await call('PATCH', `/api/admin/users/${admin2.id}`, { token: founder.token, body: { role: 'user' } });
+    assert.deepEqual((await call('GET', '/api/me', { token: again })).entitlements, {});
+    await call('PATCH', `/api/admin/users/${admin2.id}`, { token: founder.token, body: { role: 'admin' } });
+    await call('POST', '/api/me/self-licenses', { token: again, body: { enabled: false } });
   });
 
   await step('partenaire : son panel ne montre que ses plugins', async () => {

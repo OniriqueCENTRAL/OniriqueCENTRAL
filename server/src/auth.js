@@ -89,6 +89,8 @@ export const ROLES = ['user', 'vip', ...PARTNERS, 'admin', 'founder'];
 export const isStaff = (user) => user.role === 'admin' || user.role === 'founder';
 /** Le créateur dont ce compte gère les plugins, pour un partenaire ; null pour tous les autres. */
 export const partnerOf = (user) => (PARTNERS.includes(user.role) ? user.role : null);
+/** L'équipe et les partenaires peuvent s'accorder eux-mêmes tous les plugins (réglage self_licenses du compte). */
+export const canSelfLicense = (user) => isStaff(user) || PARTNERS.includes(user.role);
 
 function bearer(req) {
   const header = req.headers.authorization || '';
@@ -160,5 +162,7 @@ export function publicUser(user) {
     id: user.id, email: user.email, name: user.name, role: user.role, createdAt: user.created_at,
     emailVerified: !mustVerify(user),
     emailToConfirm: shouldConfirm(user),
+    // Pour l'équipe et les partenaires : se sont-ils accordé tous les plugins ? (null : le compte n'y a pas droit)
+    selfLicenses: canSelfLicense(user) ? !!user.self_licenses : null,
   };
 }
