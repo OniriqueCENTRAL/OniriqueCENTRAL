@@ -40,7 +40,16 @@
     <div class="fields">
       <label>Ta part des revenus (%)<input id="share" type="number" min="0" max="100" step="1" value="100" inputmode="decimal"></label>
       <label>Commission du distributeur (%)<input id="fee" type="number" min="0" max="100" step="1" value="0" inputmode="decimal"></label>
+      <label>Devise<select id="currency">
+        <option value="EUR">Euro (€)</option>
+        <option value="USD">Dollar américain ($)</option>
+        <option value="GBP">Livre sterling (£)</option>
+        <option value="CHF">Franc suisse (CHF)</option>
+        <option value="CAD">Dollar canadien ($ CA)</option>
+      </select></label>
+      <label id="rate-field"><span id="rate-label">1 $ vaut, en euros</span><input id="rate" type="text" inputmode="decimal" aria-describedby="rate-note"></label>
     </div>
+    <p class="muted" id="rate-note">Taux du 12 octobre 2026, à corriger si tu veux le cours du jour.</p>
     <div class="dim total">
       <div><p class="eyebrow">Ce qui te revient</p><div class="big" id="total">—</div></div>
       <p class="muted" id="detail"></p>
@@ -50,7 +59,7 @@
   <section class="text">
     <h2>Pourquoi une fourchette</h2>
     <p>Aucune plateforme ne paie un tarif fixe par écoute. Chacune répartit chaque mois une part de ses recettes entre les ayants droit : le montant dépend du pays de l'auditeur, de son abonnement (gratuit ou payant) et du total des écoutes du mois. Les taux utilisés ici sont des moyennes publiées par des observateurs du secteur, pas des tarifs officiels : prends le résultat comme un ordre de grandeur.</p>
-    <p>Les montants sont en dollars, la monnaie dans laquelle ces moyennes sont publiées. Ils correspondent à ce que la plateforme verse pour l'enregistrement ; les droits d'auteur (collectés par la SACEM en France) s'y ajoutent et suivent un autre circuit.</p>
+    <p>Ces moyennes sont publiées en dollars. Les montants sont convertis dans la devise que tu choisis, au taux affiché sous le tableau : tu peux le remplacer par le cours du jour. Ils correspondent à ce que la plateforme verse pour l'enregistrement ; les droits d'auteur (collectés par la SACEM en France) s'y ajoutent et suivent un autre circuit.</p>
     <h2>Questions fréquentes</h2>
     <details><summary>Qu'est-ce que « ma part » ?</summary>
       <p>Ce qui te revient après partage avec un label, un coproducteur ou les autres artistes du titre. En autoproduction et seul sur le titre, laisse 100 %. Pour préparer ce partage, utilise la <a href="partage.html">feuille de partage des droits</a>.</p></details>
@@ -78,17 +87,34 @@ const PLATFORMS = [
   ["Amazon Music", 0.004, 0.0088],
   ["Tidal", 0.0068, 0.013],
 ];
-const money = (n) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "USD", maximumFractionDigits: n >= 100 ? 0 : 2 }).format(n);
+// Ce que vaut un dollar dans chaque devise proposée (cours de référence du 12 octobre 2026) : le visiteur peut le corriger.
+const RATES = { EUR: 0.894, USD: 1, GBP: 0.756, CHF: 0.833, CAD: 1.426 };
+const UNIT = { EUR: "en euros", GBP: "en livres", CHF: "en francs suisses", CAD: "en dollars canadiens" };
+const currency = () => (RATES[$("currency").value] ? $("currency").value : "EUR");
+const rate = () => (currency() === "USD" ? 1 : number($("rate").value) || RATES[currency()]);
+const money = (n) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: currency(), maximumFractionDigits: n >= 100 ? 0 : 2 }).format(n);
+const perThousand = (n) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: currency(), maximumFractionDigits: 2 }).format(n);
 const range = (low, high) => (high <= 0 ? "—" : money(low) + " – " + money(high));
 const number = (text) => Math.max(0, parseFloat(String(text).replace(/[\s  ]/g, "").replace(",", ".")) || 0);
 
 $("rows").innerHTML = PLATFORMS.map(([name, low, high], i) =>
   `<tr><td>${name}</td><td><input id="n${i}" type="text" inputmode="numeric" placeholder="0" aria-label="Écoutes sur ${name}"></td>`
-  + `<td class="rate">${String(low * 1000).replace(".", ",")} – ${String(high * 1000).replace(".", ",")} $ / 1 000</td><td id="e${i}">—</td></tr>`).join("");
+  + `<td class="rate" id="r${i}"></td><td id="e${i}">—</td></tr>`).join("");
+
+// Changer de devise remet son taux de référence ; le dollar n'en a pas besoin.
+function pickCurrency(resetRate) {
+  const code = currency();
+  $("rate-field").hidden = $("rate-note").hidden = code === "USD";
+  $("rate-label").textContent = "1 $ vaut, " + (UNIT[code] || "");
+  if (resetRate || !number($("rate").value)) $("rate").value = String(RATES[code]).replace(".", ",");
+}
 
 function draw() {
   let low = 0, high = 0, streams = 0;
-  PLATFORMS.forEach(([, l, h], i) => {
+  const x = rate();
+  PLATFORMS.forEach(([, usdLow, usdHigh], i) => {
+    const l = usdLow * x, h = usdHigh * x;
+    $("r" + i).textContent = perThousand(l * 1000) + " – " + perThousand(h * 1000) + " / 1 000";
     const n = number($("n" + i).value);
     streams += n; low += n * l; high += n * h;
     $("e" + i).textContent = range(n * l, n * h);
@@ -96,14 +122,21 @@ function draw() {
   const keep = Math.min(100, number($("share").value)) / 100 * (1 - Math.min(100, number($("fee").value)) / 100);
   $("total").textContent = range(low * keep, high * keep);
   $("detail").textContent = streams ? new Intl.NumberFormat("fr-FR").format(streams) + " écoutes · " + range(low, high) + " versés au total par les plateformes" : "Entre un nombre d'écoutes pour voir l'estimation.";
-  try { localStorage.setItem("onirique.revenus", JSON.stringify([...document.querySelectorAll(".card input")].map((input) => input.value))); } catch { /* stockage indisponible : rien n'est mémorisé */ }
+  try {
+    localStorage.setItem("onirique.revenus", JSON.stringify([...document.querySelectorAll(".card input")].map((input) => input.value)));
+    localStorage.setItem("onirique.revenus.devise", currency());
+  } catch { /* stockage indisponible : rien n'est mémorisé */ }
 }
 
 // Les nombres saisis sont gardés sur cet appareil pour la prochaine visite.
 try {
   const saved = JSON.parse(localStorage.getItem("onirique.revenus") || "null");
   if (Array.isArray(saved)) document.querySelectorAll(".card input").forEach((input, i) => { if (typeof saved[i] === "string") input.value = saved[i]; });
+  const code = localStorage.getItem("onirique.revenus.devise");
+  if (RATES[code]) $("currency").value = code;
 } catch { /* rien de mémorisé */ }
+pickCurrency(false);
+$("currency").addEventListener("change", () => { pickCurrency(true); draw(); });
 document.querySelector(".card").addEventListener("input", draw);
 draw();
 </script>
