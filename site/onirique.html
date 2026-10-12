@@ -349,6 +349,25 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
 /* ---------- interfaces des plugins (DA nuit / sang, reprise de UIStyle.h) */
 .mock-scroll { overflow-x: auto; margin-inline: calc(-1 * var(--gutter)); padding: 10px var(--gutter) 24px; scrollbar-width: thin; }
 .mock { container-type: inline-size; min-width: 760px; max-width: 1180px; margin-inline: auto; }
+/* Interface : la démo interactive de chaque plugin (assets/demo-player.js), une à la fois */
+.showcase-bar { display: flex; align-items: center; justify-content: center; gap: 18px; margin-bottom: 20px; }
+.showcase-name { display: grid; justify-items: center; gap: 7px; min-width: min(56vw, 380px); text-align: center; }
+.showcase-name strong { font: 800 clamp(16px, 2.1vw, 24px)/1.2 var(--f-display); letter-spacing: .06em; }
+.showcase-name small { font: 500 11px/1 var(--f-mono); letter-spacing: .16em; color: var(--haze); }
+.arrow { flex: none; width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--mist); font: 500 20px/1 var(--f-body); cursor: pointer; }
+.arrow:hover { border-color: var(--ember); box-shadow: 0 0 0 6px rgba(226,52,68,.16); }
+.showcase .demo { max-width: 1180px; margin-inline: auto; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: #000; }
+.demo-stage { position: relative; width: 100%; background-size: 100% 100%; background-repeat: no-repeat; touch-action: pan-y; user-select: none; }
+.demo-part { position: absolute; background-repeat: no-repeat; cursor: ns-resize; touch-action: none; border-radius: 4px; }
+.demo-part.discrete { cursor: pointer; touch-action: manipulation; }
+.demo-part:focus-visible { outline: 2px solid var(--ember-text); outline-offset: 2px; z-index: 99999 !important; }
+.demo-status { margin: 0; padding: 12px 16px; border-top: 1px solid var(--line); background: var(--deep); font: 500 13px/1.4 var(--f-mono); color: var(--bone); }
+.demo-wait { padding: 60px 20px; text-align: center; color: var(--haze); background: var(--deep); }
+.showcase-link { margin-top: 16px; text-align: center; font: 500 12px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; }
+/* Fonctions : la description du plugin affiché dans l'interface */
+.fn-desc { display: grid; gap: 16px; max-width: 72ch; color: var(--haze); font-size: 17px; line-height: 1.6; }
+/* un bloc masqué le reste, quelle que soit sa mise en page */
+[hidden] { display: none !important; }
 .mock-hint { display: none; font: 400 12px/1.4 var(--f-mono); color: var(--haze); text-align: center; margin-top: 2px; }
 @media (max-width: 800px) { .mock-hint { display: block; } }
 .ui { --u: calc(100cqw / var(--bw)); position: relative; height: calc(var(--u) * var(--bh)); overflow: hidden; color: var(--mist); font-family: var(--f-body);
@@ -528,7 +547,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
     </nav>
     <div class="nav-actions">
       <a class="btn btn-ghost" id="nav-account" href="compte.html">Connexion</a>
-      <a class="btn btn-primary" href="boutique.html">Acheter</a>
+      <a class="btn btn-primary" id="nav-buy" href="boutique.html">Acheter</a>
     </div>
   </div>
 </header>
@@ -578,10 +597,19 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
           <span class="eyebrow">L'interface</span>
           <h2>Toute ta chaîne vocale, <em class="dream">en un écran.</em></h2>
         </div>
-        <p class="lede">Voici l'interface du plugin. Tourne les potards, allume et coupe les modules, change de preset, glisse les modules de la barre d'ordre et déplace les points de l'EQ paramétrique dans l'analyseur.</p>
+        <p class="lede">Voici la vraie interface de chaque plugin. Tourne les potards, clique les interrupteurs, puis passe d'un plugin à l'autre avec les flèches.</p>
       </div>
-      <div class="mock-scroll"><div class="mock" id="vbMock"></div></div>
-      <p class="mock-hint">Fais glisser horizontalement pour voir toute l'interface.</p>
+      <div class="showcase" id="showcase" hidden>
+        <div class="showcase-bar">
+          <button class="arrow" id="showPrev" type="button" aria-label="Plugin précédent">←</button>
+          <div class="showcase-name" aria-live="polite"><small id="showCreator"></small><strong id="showName"></strong><small id="showCount"></small></div>
+          <button class="arrow" id="showNext" type="button" aria-label="Plugin suivant">→</button>
+        </div>
+        <div class="demo" id="showDemo"><div class="demo-wait">Chargement de l'interface…</div></div>
+        <p class="showcase-link"><a id="showLink" href="boutique.html">Voir la fiche du plugin →</a></p>
+      </div>
+      <!-- L'ancienne maquette de VocalBox n'est plus affichée : elle reste le moteur de la démo d'écoute, plus bas. -->
+      <div class="mock-scroll" hidden><div class="mock" id="vbMock"></div></div>
     </div>
   </section>
 
@@ -590,10 +618,14 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
       <div class="head reveal">
         <div>
           <span class="eyebrow">Fonctions</span>
-          <h2>Six modules, <em class="dream">dans ton ordre.</em></h2>
+          <h2 id="fnTitle">Six modules, <em class="dream">dans ton ordre.</em></h2>
         </div>
-        <p class="lede">EQ, Resonance, Compression, Multiband, De-Esser et Saturation Lab ont chacun leur bouton power. Leur ordre se change à la souris dans l'en-tête, avec un fondu de 15 ms : ni clic, ni saut de volume.</p>
+        <p class="lede" id="fnLede">EQ, Resonance, Compression, Multiband, De-Esser et Saturation Lab ont chacun leur bouton power. Leur ordre se change à la souris dans l'en-tête, avec un fondu de 15 ms : ni clic, ni saut de volume.</p>
       </div>
+      <!-- La description du plugin affiché dans la section Interface (remplie depuis le catalogue) -->
+      <div class="fn-desc" id="fnDesc" hidden></div>
+      <!-- Le détail de VocalBox, montré quand c'est lui qui est affiché -->
+      <div id="fnVocalbox">
       <div class="chain nine">
         <article class="stage-card reveal"><div class="stage-num">IN</div><h3>INPUT</h3><p>Cale le niveau de ta prise avant tout traitement, avec un mètre stéréo.</p><span class="range">−24 → +24 dB</span></article>
         <article class="stage-card reveal"><div class="stage-num">EQ</div><h3>EQ</h3><p>Un grave façon Pultec, un Mid qui retire le carton, un High/Air qui s'ouvre jusqu'à 20 kHz. Low Cut 85 Hz et Smart S en option. Plus un EQ paramétrique 6 bandes réglé directement dans l'analyseur.</p><span class="range">LOW 80/100/125 · HIGH 8K/10K/20K · 6 BANDES</span></article>
@@ -604,16 +636,6 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
         <article class="stage-card reveal"><div class="stage-num">SL</div><h3>SATURATION LAB</h3><p>Tube, Analog ou Tape pour de la densité et des harmoniques. Changer de type fait un fondu, le volume reste compensé.</p><span class="range">TUBE · ANALOG · TAPE · DRIVE 0 → 10</span></article>
         <article class="stage-card reveal"><div class="stage-num">AG</div><h3>AUTO GAIN</h3><p>Garde le même volume perçu avant et après traitement. Tu juges le son, pas le niveau.</p><span class="range">±12 dB · lissé 0,6 s</span></article>
         <article class="stage-card reveal"><div class="stage-num">OUT</div><h3>OUTPUT</h3><p>Le niveau final, avec mètre stéréo, témoin OVER au-dessus de 0 dBFS et bypass sans clic.</p><span class="range">−24 → +24 dB</span></article>
-      </div>
-
-      <div class="sub-head reveal"><h3>Pensé pour le mix <em class="dream">et pour la cabine.</em></h3></div>
-      <div class="features">
-        <article class="feature reveal"><h4>MIX / LIVE</h4><span class="kind">~44 ms ou zéro latence</span><p>MIX donne la qualité maximale, et ton DAW compense la latence. LIVE passe à une latence nulle pour t'enregistrer à travers le plugin. Resonance y utilise alors 28 cloches dynamiques.</p></article>
-        <article class="feature reveal"><h4>SURÉCHANTILLONNAGE</h4><span class="kind">OFF · 2X · 4X · 8X</span><p>Toute la chaîne de modules, de l'EQ à la saturation, tourne suréchantillonnée en mode MIX. 2X par défaut, 8X pour le rendu final.</p></article>
-        <article class="feature reveal"><h4>ANALYSEUR</h4><span class="kind">Spectres + courbe exacte de l'EQ</span><p>L'analyseur temps réel affiche les spectres et la vraie courbe de l'EQ. Tu y places les 6 bandes de l'EQ paramétrique à la souris.</p></article>
-        <article class="feature reveal"><h4>ORDRE LIBRE</h4><span class="kind">6 modules · fondu 15 ms</span><p>Glisse les modules dans l'en-tête pour changer l'ordre de traitement. Compresser avant ou après la saturation, c'est toi qui décides.</p></article>
-        <article class="feature reveal"><h4>PRESETS</h4><span class="kind">Usine + utilisateur</span><p>Des presets d'usine pour démarrer vite, et tes propres presets sauvegardés en fichiers .ovbpreset, faciles à partager.</p></article>
-        <article class="feature reveal"><h4>SANS CLIC</h4><span class="kind">Modules en fondu, latence fixe</span><p>Allumer un module, changer de saturation ou inverser les compresseurs se fait en fondu. La latence annoncée au DAW ne bouge pas.</p></article>
       </div>
 
       <div class="sat-modes">
@@ -633,6 +655,17 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
         <div class="spec"><b>15<small>ms</small></b><h3>Changement d'ordre</h3><p>Réordonner les modules fait un fondu entre l'ancien et le nouvel ordre.</p></div>
         <div class="spec"><b>0</b><h3>Allocation en temps réel</h3><p>Toute la mémoire est préparée à l'avance. Le traitement audio ne s'interrompt jamais pour en demander.</p></div>
       </div>
+      </div>
+
+      <div class="sub-head reveal"><h3>Pensé pour le mix <em class="dream">et pour la cabine.</em></h3></div>
+      <div class="features">
+        <article class="feature reveal"><h4>TOUTE LA CHAÎNE VOCALE</h4><span class="kind">De la prise au mix</span><p>Justesse, channel strip, résonances, doubles, espace, saturation : chaque plugin s'occupe d'une étape de la voix, et ils se combinent dans ton projet.</p></article>
+        <article class="feature reveal"><h4>ESSAI GRATUIT</h4><span class="kind">7 jours par plugin</span><p>Chaque plugin s'essaie en temps réel dans ton DAW, sur tes propres prises. L'export reste remplacé par un bruit blanc jusqu'à l'achat.</p></article>
+        <article class="feature reveal"><h4>EN UN CLIC</h4><span class="kind">Onirique Central</span><p>L'application installe tes plugins, les met à jour et active tes licences. Aucun fichier à copier à la main.</p></article>
+        <article class="feature reveal"><h4>WINDOWS ET MAC</h4><span class="kind">VST3 · Audio Unit sur Mac</span><p>Les plugins tournent dans tout DAW compatible. La boutique indique, pour chacun, les systèmes pour lesquels il existe.</p></article>
+        <article class="feature reveal"><h4>TA LICENCE</h4><span class="kind">Un compte · deux machines</span><p>Une licence s'active sur deux machines à la fois, depuis ton compte. Une fois activé, le plugin se vérifie sans connexion.</p></article>
+        <article class="feature reveal"><h4>ESSAYE ICI D'ABORD</h4><span class="kind">Interfaces réelles dans le navigateur</span><p>L'interface de chaque plugin se manipule sur ce site, bouton par bouton, avant même de l'installer.</p></article>
+      </div>
     </div>
   </section>
 
@@ -643,7 +676,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
           <span class="eyebrow">Écouter</span>
           <h2>Entends ce que fait <em class="dream">chaque bouton.</em></h2>
         </div>
-        <p class="lede">Lance le morceau, bouge les réglages et compare avec le signal brut. Tu peux aussi importer ton propre fichier. Les réglages sont reliés à l'interface du dessus, presets compris.</p>
+        <p class="lede">Lance le morceau, bouge les réglages de VocalBox et compare avec le signal brut. Tu peux aussi importer ton propre fichier.</p>
       </div>
 
       <div class="studio reveal">
@@ -753,7 +786,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
         <h2 style="margin-top:18px">Avant de <em class="dream">rêver.</em></h2>
       </div>
       <div class="reveal">
-        <details open><summary>Avec quels logiciels VocalBox fonctionne-t-il ?</summary><p>Avec tout DAW compatible VST3 sous Windows : FL Studio, Ableton Live, Reaper, Cubase, Studio One, Bitwig… La version Standalone s'utilise aussi sans DAW.</p></details>
+        <details open><summary>Avec quels logiciels les plugins ONIRIQUE fonctionnent-ils ?</summary><p>Avec tout DAW compatible VST3 sous Windows : FL Studio, Ableton Live, Reaper, Cubase, Studio One, Bitwig… Sur Mac, les plugins disponibles s'ouvrent aussi en Audio Unit dans Logic Pro et GarageBand.</p></details>
         <details><summary>Est-ce disponible sur Mac ?</summary><p>L'application ONIRIQUE CENTRAL existe pour Mac. La plupart des plugins le sont aussi, en VST3 et Audio Unit (Intel et Apple Silicon) : dans la boutique, chaque plugin indique les systèmes pour lesquels il est disponible.</p></details>
         <details><summary>Comment l'installer ?</summary><p>Copie le dossier <code>ONIRIQUE VOCALBOX.vst3</code> dans <code>C:\Program Files\Common Files\VST3</code>, puis relance le scan des plugins de ton DAW. Dans FL Studio : Options → Manage plugins → Find installed plugins.</p></details>
         <details><summary>Le plugin ajoute-t-il de la latence ?</summary><p>En mode MIX, environ 44 ms, à cause de l'analyse spectrale de Resonance. Ton DAW la compense automatiquement : tes pistes restent alignées. En mode LIVE, la latence est nulle.</p></details>
@@ -775,6 +808,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
   </div>
 </footer>
 
+<script src="assets/demo-player.js"></script>
 <script>
 (() => {
 "use strict";
@@ -1770,6 +1804,12 @@ function confirmNotice(user, token) {
     const link = document.getElementById("nav-account");
     link.textContent = me.user.name || me.user.email.split("@")[0];
     link.title = "Mon compte";
+    // Connecté : à côté du nom, le bouton ne propose plus d'acheter mais de télécharger ONIRIQUE CENTRAL.
+    const get = document.getElementById("nav-buy"), mac = /Mac/i.test(navigator.platform);
+    get.textContent = "Télécharger";
+    get.title = "Télécharger ONIRIQUE CENTRAL pour " + (mac ? "Mac" : "Windows");
+    get.href = mac ? "telechargement/ONIRIQUE-CENTRAL.dmg" : "telechargement/ONIRIQUE-CENTRAL-Setup.exe";
+    get.setAttribute("download", "");
     Object.assign(link.style, { maxWidth: "190px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "inline-block" });
     confirmNotice(me.user, token);
   }).catch(() => {});
@@ -1788,6 +1828,62 @@ fetch("/api/catalog").then(r => r.ok ? r.json() : null).then(catalog => {
     </a>`).join("");
   $("#plugins").hidden = false;
 }).catch(() => {});
+
+// Interface : la démo interactive de chaque plugin, la même que dans la boutique et l'application, une à la fois.
+// La section Fonctions suit : elle décrit le plugin affiché.
+function showcase(list) {
+  let at = Math.max(0, list.findIndex(p => p.slug.includes("vocalbox"))), near = false;
+  const original = { title: $("#fnTitle").innerHTML, lede: $("#fnLede").textContent };
+  const loaded = new Map(); // une démo pèse plusieurs Mo : chacune n'est téléchargée qu'une fois
+
+  async function show() {
+    const p = list[at], vocalbox = p.slug.includes("vocalbox");
+    $("#showName").textContent = p.name;
+    $("#showCreator").textContent = p.creator === "abrasion" ? "ONIRIQUE × ABRASION" : "ONIRIQUE";
+    $("#showCount").textContent = `${at + 1} / ${list.length}`;
+    $("#showLink").href = "boutique.html?p=" + encodeURIComponent(p.slug);
+
+    // VocalBox garde son détail module par module ; les autres plugins, la description de leur fiche.
+    $("#fnVocalbox").hidden = !vocalbox;
+    $("#fnDesc").hidden = vocalbox;
+    $("#fnTitle").innerHTML = vocalbox ? original.title : `${esc(p.name.replace(/^ONIRIQUE\s+/i, ""))}, <em class="dream">en détail.</em>`;
+    $("#fnLede").textContent = vocalbox ? original.lede : p.tagline;
+    $("#fnDesc").innerHTML = (p.description || p.tagline).split(/\n{2,}/).map(text => `<p>${esc(text)}</p>`).join("");
+    if (vocalbox) drawModes();
+
+    if (!near) return; // la démo n'est téléchargée qu'à l'approche de la section
+    const box = $("#showDemo");
+    box.innerHTML = '<div class="demo-wait">Chargement de l\'interface…</div>';
+    try {
+      if (!loaded.has(p.id)) {
+        const response = await fetch(p.demo);
+        if (!response.ok) throw new Error();
+        loaded.set(p.id, await response.json());
+      }
+      if (list[at] === p) OniriqueDemo.render(box, loaded.get(p.id)); // un autre plugin a pu être demandé entre-temps
+    } catch {
+      if (list[at] === p) box.firstChild.textContent = "L'interface n'a pas pu être chargée.";
+    }
+  }
+
+  const step = by => { at = (at + by + list.length) % list.length; show(); };
+  $("#showPrev").onclick = () => step(-1);
+  $("#showNext").onclick = () => step(1);
+  $("#showPrev").hidden = $("#showNext").hidden = list.length < 2;
+  $("#showcase").hidden = false;
+  show();
+  new IntersectionObserver((entries, observer) => {
+    if (!entries.some(e => e.isIntersecting)) return;
+    observer.disconnect();
+    near = true;
+    show();
+  }, { rootMargin: "700px" }).observe($("#showcase"));
+}
+fetch("/api/catalog").then(r => r.ok ? r.json() : null).then(catalog => {
+  const demos = (catalog?.products || []).filter(p => p.demo);
+  if (demos.length) showcase(demos);
+  else $("#vbMock").parentElement.hidden = false; // aucune démo en ligne : la maquette de VocalBox tient lieu d'aperçu
+}).catch(() => { $("#vbMock").parentElement.hidden = false; });
 
 /* ================= boutique : prix et lien de paiement (voir SHOP en haut du script) */
 $$("[data-price]").forEach(e => e.textContent = SHOP[e.dataset.price].price + " €");
