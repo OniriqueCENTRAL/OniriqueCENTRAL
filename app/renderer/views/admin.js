@@ -172,10 +172,19 @@ function refreshDemo(p) {
   }], 'Démo');
 }
 
+/** Le plugin vérifie-t-il sa licence ? D'après le fichier de la version : oui, non, ou illisible (installateur). */
+const licensePill = (licensed, label, required = true) => (licensed === true ? pill(`Licence ${label}`.trim(), '', true)
+  : licensed === false ? pill(`Sans licence ${label}`.trim(), required ? 'warn' : '')
+    : pill(`Licence ${label} : illisible`.trim(), required ? 'warn' : ''));
+const SYSTEMS = [['win', 'Windows'], ['mac', 'Mac']];
+/** Les systèmes pour lesquels la version actuelle d'un plugin payant ne vérifie pas sa licence. */
+const unlicensedSystems = (p) => (p.priceCents > 0 ? SYSTEMS.filter(([key]) => p.licensed?.[key] === false).map(([, label]) => label) : []);
+
 function productsTab() {
   const versionRow = (product) => (v) => h('tr', null,
     h('td', { class: 'mono' }, `v${v.version}`, h('span', { style: { 'margin-left': '10px' } }, pill(v.platform === 'mac' ? 'Mac' : 'Windows')),
-      v.id === product.latest?.id ? h('span', { style: { 'margin-left': '6px' } }, pill('Actuelle', 'hot')) : null),
+      v.id === product.latest?.id ? h('span', { style: { 'margin-left': '6px' } }, pill('Actuelle', 'hot')) : null,
+      h('span', { style: { 'margin-left': '6px' } }, licensePill(v.licensed, '', product.priceCents > 0))),
     h('td', { class: 'muted' }, date(v.createdAt)),
     h('td', { class: 'mono muted' }, `${v.filename} · ${megabytes(v.size)}`),
     h('td', { class: 'muted', style: { 'max-width': '260px', overflow: 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap' }, title: v.notes }, v.notes || '—'),
@@ -196,7 +205,8 @@ function productsTab() {
         h('span', { class: 'led on', style: { background: p.accent, 'box-shadow': `0 0 10px ${p.accent}` } }),
         h('h2', null, p.name),
         pill(p.published ? 'Publié' : 'Masqué', p.published ? '' : 'warn'),
-        pill(euros(p.priceCents)), p.demo ? pill('Démo en ligne', '', true) : pill('Pas de démo', 'warn')),
+        pill(euros(p.priceCents)), p.demo ? pill('Démo en ligne', '', true) : pill('Pas de démo', 'warn'),
+        ...SYSTEMS.filter(([key]) => p.licensed?.[key] !== undefined).map(([key, label]) => licensePill(p.licensed[key], label, p.priceCents > 0))),
       h('div', { class: 'row' },
         p.latest && /\.vst3$/i.test(p.latest.filename) ? button('Actualiser la démo', () => refreshDemo(p), 'small') : null,
         button('Modifier', () => productForm(p), 'small'),
@@ -206,7 +216,12 @@ function productsTab() {
 
   return [
     h('div', { class: 'row between', style: { 'margin-bottom': '16px' } },
-      h('span', { class: 'muted' }, `${data.products.length} plugin(s)`),
+      h('span', { class: 'muted' }, (() => {
+        const missing = data.products.map((p) => [p, unlicensedSystems(p)]).filter(([, systems]) => systems.length);
+        return `${data.products.length} plugin(s)` + (missing.length
+          ? ` · sans système de licence : ${missing.map(([p, systems]) => `${p.name} (${systems.join(', ')})`).join(' ; ')}`
+          : ' · tous les plugins payants vérifient leur licence');
+      })()),
       button('Nouveau plugin', () => productForm(null))),
     data.products.map(panel),
   ];

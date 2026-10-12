@@ -85,7 +85,8 @@ toutes les cinq secondes, vérifie la signature avec la clé publique embarquée
 (`GET /api/public-key`, champ `raw` = 32 octets en base64), puis contrôle `product`, `expiresAt` et
 `machine`. Plugin acheté : rien ne change. Essai (`type` = `trial`) : écoute intacte, export remplacé par
 un bruit blanc, pastille « ESSAI · ACTIVATION » qui ouvre ONIRIQUE CENTRAL. Sans licence valable : export
-en bruit blanc et deux secondes de bruit toutes les trente secondes à l'écoute. L'identifiant de machine est les 40 premiers
+en bruit blanc et deux secondes de bruit toutes les trente secondes à l'écoute. Le panel admin indique,
+plugin par plugin et version par version, ceux qui embarquent ce module. L'identifiant de machine est les 40 premiers
 caractères hexadécimaux de `SHA-256("onirique:" + MachineGuid en minuscules)`, `MachineGuid` étant la
 valeur de `HKLM\SOFTWARE\Microsoft\Cryptography`. **Un plugin qui n'embarque pas ce dossier s'ouvre
 sans licence** : le serveur refuse donc de publier un plugin payant dont le `.vst3` ou le `.zip` ne

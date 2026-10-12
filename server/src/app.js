@@ -53,6 +53,19 @@ function versionFormats(v) {
   return zipFormats.get(key);
 }
 
+// Une version vérifie-t-elle sa licence ? true / false d'après le contenu du fichier (voir plugincheck.js), null quand
+// il ne se lit pas (installateur). Calculé une fois par fichier : il faut le lire en entier.
+const licenseChecks = new Map();
+function versionLicensed(v) {
+  const key = `${v.stored_as}:${v.size}`;
+  if (!licenseChecks.has(key)) {
+    let result = null;
+    try { result = embedsLicenseKey(fs.readFileSync(path.join(config.filesDir, v.stored_as)), v.filename, publicKeyPem); } catch { /* fichier absent */ }
+    licenseChecks.set(key, result);
+  }
+  return licenseChecks.get(key);
+}
+
 const versionView = (v) => v && ({
   id: v.id, version: v.version, notes: v.notes, filename: v.filename, size: v.size, sha256: v.sha256, createdAt: v.created_at,
   platform: v.platform, formats: versionFormats(v),
@@ -595,7 +608,18 @@ export function createApp() {
   });
 
   // Produits
-  admin.get('/products', (_req, res) => res.json(all('SELECT * FROM products ORDER BY created_at').map((p) => productView(p))));
+  // Le panel admin voit en plus, pour chaque version et pour la version actuelle de chaque système, si le plugin
+  // embarque le module de licence (licensed : true, false, ou null pour un installateur qu'on ne peut pas lire).
+  admin.get('/products', (_req, res) => res.json(all('SELECT * FROM products ORDER BY created_at').map((p) => {
+    const view = productView(p);
+    const rows = productVersions(p.id);
+    const current = (platform) => { const v = rows.find((row) => row.platform === platform); return v ? versionLicensed(v) : undefined; };
+    return {
+      ...view,
+      versions: view.versions.map((v, i) => ({ ...v, licensed: versionLicensed(rows[i]) })),
+      licensed: { win: current('win'), mac: current('mac') },
+    };
+  })));
 
   function productFields(body, existing = {}) {
     const name = body.name !== undefined ? str(body.name, 60) : existing.name;

@@ -114,6 +114,10 @@ try {
     assert.equal((await latestFor({ 'X-Onirique-Platform': 'mac' })).id, macVersion.id);
     await call('DELETE', `/api/admin/versions/${macVersion.id}`, { token: admin });
     assert.equal(await latestFor({ 'X-Onirique-Platform': 'mac' }), null);
+    // Le panel admin dit, version par version, si le plugin embarque le module de licence.
+    const listed = (await call('GET', '/api/admin/products', { token: admin })).find((p) => p.id === product.id);
+    assert.deepEqual(listed.licensed, { win: true }, 'la version Mac a été retirée : seul Windows est annoncé');
+    assert.equal(listed.versions[0].licensed, true);
     const evil = new URLSearchParams({ version: '1.0.1', filename: '..\\..\\evil.bat' });
     await call('POST', `/api/admin/products/${product.id}/versions?${evil}`, { token: admin, raw: binary, expect: 400 });
   });

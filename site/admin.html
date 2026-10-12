@@ -338,7 +338,10 @@ async function loadProducts() {
       el("div", {}, shot, el("div", { className: "sub", style: "margin-top:8px", textContent: p.demo ? "Démo interactive en ligne" : p.latest && /\.vst3$/i.test(p.latest.filename) ? "Aperçu et démo : créés tout seuls dès qu'un admin ouvre l'application CENTRAL" : "Pas encore de démo interactive" })),
       el("div", {},
         el("h3", { textContent: p.name }),
-        el("div", { className: "sub", textContent: [p.published ? "Visible dans la boutique" : "Masqué", euros(p.priceCents), p.latest ? `version actuelle ${p.latest.version} du ${date(p.latest.createdAt)}` : "aucune version en ligne", `${p.versions.length} version(s)`].join(" · ") }),
+        el("div", { className: "sub", textContent: [p.published ? "Visible dans la boutique" : "Masqué", euros(p.priceCents), p.latest ? `version actuelle ${p.latest.version} du ${date(p.latest.createdAt)}` : "aucune version en ligne", `${p.versions.length} version(s)`,
+          // le plugin vérifie-t-il sa licence ? d'après le fichier de la version actuelle de chaque système
+          ...[["win", "Windows"], ["mac", "Mac"]].filter(([key]) => p.licensed && p.licensed[key] !== undefined)
+            .map(([key, label]) => p.licensed[key] === true ? `licence ${label} : oui` : p.licensed[key] === false ? `SANS LICENCE ${label}` : `licence ${label} : illisible`)].join(" · ") }),
         el("details", {}, el("summary", { textContent: "Modifier la fiche (nom, texte, prix)" }), sheetForm(p)),
         el("details", {}, el("summary", { textContent: "Publier une nouvelle version" }), form)));
   }));
