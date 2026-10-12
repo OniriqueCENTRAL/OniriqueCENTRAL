@@ -237,6 +237,11 @@ db.exec(`CREATE TABLE IF NOT EXISTS stripe_accounts (
 )`);
 
 
+// L'image d'un plugin choisie à la main n'est plus remplacée par l'aperçu automatique ; une démo retirée à la main
+// n'est pas refabriquée toute seule.
+if (!hasColumn('products', 'image_manual')) db.exec('ALTER TABLE products ADD COLUMN image_manual INTEGER NOT NULL DEFAULT 0');
+if (!hasColumn('products', 'demo_off')) db.exec('ALTER TABLE products ADD COLUMN demo_off INTEGER NOT NULL DEFAULT 0');
+
 // Le partenaire s'appelait « bloom », du nom de son plugin : c'est RELIC. Son rôle, ses plugins et son compte de
 // paiement changent de nom avec lui ; BLOOM reste le nom du plugin.
 db.exec(`UPDATE users SET role = 'relic' WHERE role = 'bloom'`);

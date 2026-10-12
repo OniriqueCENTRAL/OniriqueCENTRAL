@@ -92,6 +92,8 @@ export const isStaff = (user) => user.role === 'admin' || user.role === 'founder
 export const hasPanel = (user) => isStaff(user) || (user.role !== 'onirique' && user.role in CREATORS);
 /** Les créateurs des plugins : ONIRIQUE, ou un partenaire (dont le rôle porte le même nom). */
 export const CREATORS = { onirique: 'ONIRIQUE', abrasion: 'ABRASION', relic: 'RELIC' };
+/** Le nom d'un rôle ; un rôle que cette version ne connaît pas encore s'écrit au moins avec sa majuscule. */
+export const roleName = (role) => ROLES[role] ?? String(role).charAt(0).toUpperCase() + String(role).slice(1);
 
 //------------------------------------------------------------------------------
 export function toast(message, isError = false) {

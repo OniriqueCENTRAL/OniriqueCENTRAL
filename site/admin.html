@@ -354,6 +354,24 @@ async function loadProducts() {
     const shot = el("div", { className: "shot", textContent: p.image ? "" : "Pas d'image" });
     if (p.image) { shot.style.backgroundImage = `url("${p.image}")`; shot.setAttribute("role", "img"); shot.setAttribute("aria-label", "Image actuelle de " + p.name); }
 
+    // L'image du plugin, choisie ici : l'aperçu automatique de l'application ne la remplace plus.
+    const picture = el("input", { type: "file", accept: "image/png,image/jpeg,image/webp", hidden: true });
+    picture.onchange = async () => {
+      const chosen = picture.files[0];
+      if (!chosen) return;
+      $("product-error").textContent = "";
+      if (!["image/png", "image/jpeg", "image/webp"].includes(chosen.type)) { fail(new Error("Image attendue : PNG, JPEG ou WebP.")); return; }
+      try { await send("PUT", `/admin/products/${p.id}/image?manual=1`, chosen, () => {}); await loadProducts(); } catch (error) { fail(error); }
+    };
+    const small = (label, run) => Object.assign(el("button", { className: "act ghost", type: "button", textContent: label }), { onclick: run });
+    const pictureTools = el("div", { className: "row", style: "margin-top:8px;gap:8px;flex-wrap:wrap" }, picture,
+      small(p.imageManual ? "Changer l'image" : "Choisir une image", () => picture.click()),
+      p.imageManual ? small("Retirer l'image", async () => { try { await api("DELETE", `/admin/products/${p.id}/image`); await loadProducts(); } catch (error) { fail(error); } }) : null,
+      p.demo ? small("Retirer la démo", async () => {
+        if (!window.confirm(`Retirer la démo interactive de ${p.name} ? La boutique montrera l'image du plugin à la place.`)) return;
+        try { await api("DELETE", `/admin/products/${p.id}/demo`); await loadProducts(); } catch (error) { fail(error); }
+      }) : null);
+
     const version = el("input", { type: "text", value: nextVersion(p.latest), required: true, maxLength: 30 });
     const notes = el("textarea", { maxLength: 4000, placeholder: "Nouveautés et corrections, visibles par les utilisateurs" });
     const file = el("input", { type: "file", accept: ".vst3,.zip,.exe,.msi,.pkg", required: true });
@@ -373,7 +391,7 @@ async function loadProducts() {
     };
 
     return el("div", { className: "product" },
-      el("div", {}, shot, el("div", { className: "sub", style: "margin-top:8px", textContent: p.demo ? "Démo interactive en ligne" : p.latest && /\.vst3$/i.test(p.latest.filename) ? "Aperçu et démo : créés tout seuls dès qu'un admin ouvre l'application CENTRAL" : "Pas encore de démo interactive" })),
+      el("div", {}, shot, pictureTools, el("div", { className: "sub", style: "margin-top:8px", textContent: p.demo ? "Démo interactive en ligne" : p.latest && /\.vst3$/i.test(p.latest.filename) ? "Aperçu et démo : créés tout seuls dès qu'un admin ouvre l'application CENTRAL" : "Pas encore de démo interactive" })),
       el("div", {},
         el("h3", { textContent: p.name }),
         el("div", { className: "sub", textContent: [CREATORS[p.creator] || CREATORS.onirique, p.published ? "Visible dans la boutique" : "Masqué", euros(p.priceCents), p.latest ? `version actuelle ${p.latest.version} du ${date(p.latest.createdAt)}` : "aucune version en ligne", `${p.versions.length} version(s)`,

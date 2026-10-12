@@ -287,7 +287,7 @@ app.whenReady().then(() => {
   };
   handle('admin:uploadImage', ({ productId, filePath }) => {
     const file = picked(filePath);
-    return api.upload('PUT', `/api/admin/products/${Number(productId)}/image`, file, imageType(file), () => {});
+    return api.upload('PUT', `/api/admin/products/${Number(productId)}/image?manual=1`, file, imageType(file), () => {});
   });
 
   // Photo de profil : une image choisie sur cet ordinateur. Rien n'est envoyé si la fenêtre de choix est refermée.

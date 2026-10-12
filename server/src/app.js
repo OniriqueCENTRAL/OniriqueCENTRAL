@@ -93,6 +93,8 @@ function productView(p, platform) {
     creator: p.creator, // "onirique" ou un partenaire ("abrasion", "relic")
     priceCents: p.price_cents, image: p.image ? `/api/media/${p.image}` : null, published: !!p.published,
     demo: p.demo ? `/api/media/${p.demo}` : null,
+    // imageManual : l'image a été choisie par un admin. demoOff : la démo a été retirée à la main, l'application ne la refabrique pas.
+    imageManual: !!p.image_manual, demoOff: !!p.demo_off,
     latest: versionView(versions.find((v) => v.platform === wanted)) || null,
     platforms: [...new Set(versions.map((v) => v.platform))], // les systèmes pour lesquels le plugin existe
     versions: versions.map(versionView),
@@ -787,12 +789,36 @@ export function createApp() {
     const ext = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' }[req.headers['content-type']];
     if (!ext) throw new HttpError(400, 'Image attendue : PNG, JPEG ou WebP.');
     const file = await receiveFile(req, config.mediaDir, 8 * 1024 * 1024);
+    // ?manual=1 : l'image est choisie par un admin, et reste. Sans lui, c'est l'aperçu automatique de l'application :
+    // il ne remplace jamais une image choisie à la main.
+    const manual = req.query.manual === '1';
+    if (!manual && product.image_manual) {
+      fs.rmSync(path.join(config.mediaDir, file.storedAs), { force: true });
+      return res.json(productView(findProduct(product.id)));
+    }
     const name = `${file.storedAs}.${ext}`;
     fs.renameSync(path.join(config.mediaDir, file.storedAs), path.join(config.mediaDir, name));
     if (product.image) fs.rmSync(path.join(config.mediaDir, product.image), { force: true });
-    run('UPDATE products SET image = ? WHERE id = ?', name, product.id);
+    run('UPDATE products SET image = ?, image_manual = ? WHERE id = ?', name, manual ? 1 : 0, product.id);
     res.json(productView(findProduct(product.id)));
   }));
+
+  // Retire l'image choisie à la main : l'aperçu automatique pourra de nouveau en fournir une.
+  admin.delete('/products/:id/image', (req, res) => {
+    const product = ownProduct(req, req.params.id);
+    if (product.image) fs.rmSync(path.join(config.mediaDir, product.image), { force: true });
+    run('UPDATE products SET image = NULL, image_manual = 0 WHERE id = ?', product.id);
+    res.json(productView(findProduct(product.id)));
+  });
+
+  // Retire la démo interactive (un aperçu raté, par exemple) : la boutique montre alors l'image du plugin. Elle n'est
+  // pas refabriquée toute seule ; « Actualiser la démo » la remet.
+  admin.delete('/products/:id/demo', (req, res) => {
+    const product = ownProduct(req, req.params.id);
+    if (product.demo) fs.rmSync(path.join(config.mediaDir, product.demo), { force: true });
+    run('UPDATE products SET demo = NULL, demo_off = 1 WHERE id = ?', product.id);
+    res.json(productView(findProduct(product.id)));
+  });
 
   // Démo interactive : le fichier demo.json produit par onirique-probe à partir du .vst3.
   admin.put('/products/:id/demo', wrap(async (req, res) => {
@@ -811,7 +837,7 @@ export function createApp() {
     const name = `${file.storedAs}.json`;
     fs.renameSync(stored, path.join(config.mediaDir, name));
     if (product.demo) fs.rmSync(path.join(config.mediaDir, product.demo), { force: true });
-    run('UPDATE products SET demo = ? WHERE id = ?', name, product.id);
+    run('UPDATE products SET demo = ?, demo_off = 0 WHERE id = ?', name, product.id);
     res.json(productView(findProduct(product.id)));
   }));
 

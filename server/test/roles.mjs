@@ -295,6 +295,46 @@ try {
     assert.deepEqual(inPack, ['ONIRIQUE RAW', 'ONIRIQUE TAMA']);
   });
 
+  await step("image d'un plugin : choisie à la main, elle résiste à l'aperçu automatique ; une démo retirée ne revient pas seule", async () => {
+    const picture = (bytes) => Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), Buffer.from(bytes)]);
+    const put = async (route, body, type = 'image/png') => {
+      const response = await fetch(`${base}/api/admin/products/${tuner.id}/${route}`, { method: 'PUT', headers: { Authorization: `Bearer ${admin.token}`, 'Content-Type': type }, body });
+      assert.equal(response.status, 200, route);
+      return response.json();
+    };
+    const shown = async () => Buffer.from(await (await fetch(base + (await call('GET', '/api/catalog')).products.find((x) => x.id === tuner.id).image)).arrayBuffer());
+
+    // L'aperçu automatique pose une image, puis une autre : la dernière l'emporte.
+    assert.equal((await put('image', picture('auto-1'))).imageManual, false);
+    await put('image', picture('auto-2'));
+    assert.deepEqual(await shown(), picture('auto-2'));
+
+    // Une image choisie à la main reste, quoi que l'aperçu automatique envoie ensuite.
+    assert.equal((await put('image?manual=1', picture('la-mienne'))).imageManual, true);
+    assert.equal((await put('image', picture('auto-3'))).imageManual, true);
+    assert.deepEqual(await shown(), picture('la-mienne'));
+
+    // Retirée, l'aperçu automatique reprend la main.
+    const cleared = await call('DELETE', `/api/admin/products/${tuner.id}/image`, { token: admin.token });
+    assert.equal(cleared.image, null);
+    assert.equal(cleared.imageManual, false);
+    await put('image', picture('auto-4'));
+    assert.deepEqual(await shown(), picture('auto-4'));
+
+    // La démo : posée, retirée (elle ne doit pas être refabriquée toute seule), puis remise à la demande.
+    const demo = JSON.stringify({ format: 'onirique-demo-v1', controls: [], base: 'x' });
+    assert.ok((await put('demo', demo, 'application/octet-stream')).demo);
+    const removed = await call('DELETE', `/api/admin/products/${tuner.id}/demo`, { token: admin.token });
+    assert.equal(removed.demo, null);
+    assert.equal(removed.demoOff, true);
+    assert.equal((await call('GET', '/api/catalog')).products.find((x) => x.id === tuner.id).demoOff, true);
+    assert.equal((await put('demo', demo, 'application/octet-stream')).demoOff, false);
+
+    // Un partenaire ne touche ni à l'image ni à la démo d'un plugin qui n'est pas le sien.
+    await call('DELETE', `/api/admin/products/${tuner.id}/image`, { token: partner.token, expect: 404 });
+    await call('DELETE', `/api/admin/products/${tuner.id}/demo`, { token: partner.token, expect: 404 });
+  });
+
   await step('second partenaire (RELIC) : son propre périmètre, étanche avec celui d\'ABRASION', async () => {
     const relic = await account('relic');
     await call('PATCH', `/api/admin/users/${relic.id}`, { token: admin.token, body: { role: 'relic' } });

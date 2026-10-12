@@ -1,6 +1,6 @@
 import {
   h, eyebrow, pill, led, field, button, euros, date, megabytes, dateInputValue, dateInputToMs,
-  toast, attempt, modal, confirm, closeModal, LICENSE_TYPES, ROLES, CREATORS, isStaff,
+  toast, attempt, modal, confirm, closeModal, LICENSE_TYPES, ROLES, roleName, CREATORS, isStaff,
 } from '../ui.js';
 import { state, call, refresh, render, go } from '../app.js';
 
@@ -173,6 +173,13 @@ function versionForm(product) {
   }], 'Mise à jour');
 }
 
+/** Une image choisie sur ce PC devient l'image du plugin : l'aperçu automatique ne la remplace plus. */
+async function chooseImage(p) {
+  const file = await call('admin:pick', 'image');
+  if (!file) return;
+  await changed(() => call('admin:uploadImage', { productId: p.id, filePath: file.path }), 'Image enregistrée : elle ne sera plus remplacée par l\'aperçu automatique.', true);
+}
+
 /** Refabrique la démo interactive et l'image à partir du .vst3 de la version en ligne (publiée d'ici ou depuis le site). */
 function refreshDemo(p) {
   const phase = h('div', { class: 'muted mono', 'data-phase': `upload:${p.id}`, style: { 'font-size': '11px', 'min-height': '16px' } });
@@ -222,6 +229,13 @@ function productsTab() {
         pill(euros(p.priceCents)), p.demo ? pill('Démo en ligne', '', true) : pill('Pas de démo', 'warn'),
         ...SYSTEMS.filter(([key]) => p.licensed?.[key] !== undefined).map(([key, label]) => licensePill(p.licensed[key], label, p.priceCents > 0))),
       h('div', { class: 'row' },
+        button(p.imageManual ? 'Changer l\'image' : 'Choisir une image', () => chooseImage(p), 'small'),
+        p.imageManual ? button('Retirer l\'image', () => confirm(`Retirer l'image de ${p.name} ?`,
+          'L\'image choisie à la main est retirée. L\'aperçu automatique pourra de nouveau en fournir une.',
+          'Retirer', () => changed(() => api('DELETE', `/products/${p.id}/image`), 'Image retirée.', true), 'danger'), 'small quiet') : null,
+        p.demo ? button('Retirer la démo', () => confirm(`Retirer la démo de ${p.name} ?`,
+          'La boutique et l\'application montreront l\'image du plugin à la place. La démo n\'est pas refabriquée toute seule : « Actualiser la démo » la remet.',
+          'Retirer', () => changed(() => api('DELETE', `/products/${p.id}/demo`), 'Démo retirée.', true), 'danger'), 'small quiet') : null,
         p.latest && /\.vst3$/i.test(p.latest.filename) ? button('Actualiser la démo', () => refreshDemo(p), 'small') : null,
         button('Modifier', () => productForm(p), 'small'),
         button('Nouvelle version', () => versionForm(p), 'small primary'))),
@@ -376,7 +390,7 @@ function usersTab() {
   const row = (u) => h('tr', null,
     h('td', null, h('div', { class: 'selectable' }, u.email), u.name ? h('div', { class: 'muted', style: { 'font-size': '12px' } }, u.name) : null,
       u.emailVerified ? null : h('div', { style: { 'margin-top': '4px' } }, pill('Adresse non validée', 'warn'))),
-    h('td', null, u.role === 'user' ? h('span', { class: 'muted' }, ROLES.user) : pill(ROLES[u.role] ?? u.role, isStaff(u) ? 'hot' : '')),
+    h('td', null, u.role === 'user' ? h('span', { class: 'muted' }, ROLES.user) : pill(roleName(u.role), isStaff(u) ? 'hot' : '')),
     h('td', { class: 'mono' }, String(u.licenses)),
     h('td', null, u.subscribed ? pill('Abonné', '', true) : h('span', { class: 'muted' }, '—')),
     h('td', { class: 'muted' }, date(u.createdAt)),
@@ -560,7 +574,7 @@ export async function fillMissingDemos() {
   try { tried = JSON.parse(localStorage.getItem('onirique.demosTried')) || []; } catch { /* rien de gardé */ }
   let made = false;
   for (const p of state.data.catalog.products) {
-    if (p.demo || !p.latest || !/\.vst3$/i.test(p.latest.filename) || tried.includes(p.latest.id)) continue;
+    if (p.demo || p.demoOff || !p.latest || !/\.vst3$/i.test(p.latest.filename) || tried.includes(p.latest.id)) continue;
     tried.push(p.latest.id);
     try { localStorage.setItem('onirique.demosTried', JSON.stringify(tried)); } catch { /* réessayé au prochain lancement */ }
     toast(`Création de l'aperçu de ${p.name} : son interface s'ouvre à l'écran une à trois minutes, ne la fermez pas.`);
