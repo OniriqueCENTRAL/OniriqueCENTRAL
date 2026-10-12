@@ -285,6 +285,23 @@ app.whenReady().then(() => {
     if (!type) throw new Error('Image attendue : PNG, JPEG ou WebP.');
     return type;
   };
+  // L'image choisie est remise à l'interface pour y être cadrée, puis revient rognée (JPEG) pour être envoyée.
+  handle('admin:imageData', (filePath) => {
+    const file = picked(filePath);
+    if (fs.statSync(file).size > 30 * 1024 * 1024) throw new Error('Image trop lourde (30 Mo au plus).');
+    return `data:${imageType(file)};base64,${fs.readFileSync(file).toString('base64')}`;
+  });
+  handle('admin:uploadImageData', async ({ productId, dataUrl }) => {
+    const match = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(String(dataUrl));
+    if (!match) throw new Error('Image invalide.');
+    const file = path.join(app.getPath('temp'), `onirique-image-${crypto.randomBytes(6).toString('hex')}.jpg`);
+    fs.writeFileSync(file, Buffer.from(match[1], 'base64'));
+    try {
+      return await api.upload('PUT', `/api/admin/products/${Number(productId)}/image?manual=1`, file, 'image/jpeg', () => {});
+    } finally {
+      fs.rmSync(file, { force: true });
+    }
+  });
   handle('admin:uploadImage', ({ productId, filePath }) => {
     const file = picked(filePath);
     return api.upload('PUT', `/api/admin/products/${Number(productId)}/image?manual=1`, file, imageType(file), () => {});

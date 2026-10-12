@@ -14,11 +14,12 @@ export function status(product) {
 
 const images = new Map();
 function cover(product, badge) {
+  const framed = product.imageManual ? 'shot framed' : 'shot'; // une image cadrée par un admin se montre centrée
   // Sans capture d'écran, la couverture est le sigil sur la couleur du plugin.
   const mark = h('img', { class: 'mark', src: 'assets/sigil.png', alt: '' });
   const el = h('div', { class: 'cover' }, mark, badge);
   if (product.image) {
-    const show = (src) => mark.replaceWith(h('img', { class: 'shot', src, alt: `Interface de ${product.name}` }));
+    const show = (src) => mark.replaceWith(h('img', { class: framed, src, alt: `Interface de ${product.name}` }));
     if (images.has(product.image)) show(images.get(product.image));
     else call('media', product.image).then((src) => { images.set(product.image, src); show(src); }).catch(() => {});
   }

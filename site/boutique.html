@@ -24,6 +24,8 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 .card .shot { position: relative; overflow: hidden; aspect-ratio: 16 / 10; background: radial-gradient(80% 90% at 50% 0%, var(--blood), var(--night)) center / cover; border-bottom: 1px solid var(--line); display: grid; place-items: center; }
 /* l'image est sortie du flux : une capture plus haute que 16/10 ne peut plus agrandir la carte (ni toute sa rangée) */
 .card .shot img.cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+/* Une image choisie et cadrée par un admin se montre centrée ; une capture de l'interface, par le haut. */
+.card .shot img.cover.framed { object-position: center; }
 .card .shot img.mark { width: 42%; filter: drop-shadow(0 0 14px var(--ember)); }
 .card .body { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 20px 22px 22px; }
 .card h2 { margin: 0; font: 800 17px/1.2 var(--f-display); letter-spacing: .06em; }
@@ -229,7 +231,7 @@ function setupList(products) {
 
 function card(p) {
   const shot = el("div", { className: "shot" }, p.image
-    ? el("img", { className: "cover", src: p.image, alt: "Interface du plugin " + p.name, loading: "lazy" })
+    ? el("img", { className: p.imageManual ? "cover framed" : "cover", src: p.image, alt: "Interface du plugin " + p.name, loading: "lazy" })
     : el("img", { className: "mark", src: "assets/logo.png", alt: "" }));
   return el("a", { className: "card", href: p.href || "boutique.html?p=" + encodeURIComponent(p.slug) }, shot,
     el("div", { className: "body" }, el("span", { className: "creator", textContent: CREATORS[p.creator] || CREATORS.onirique }),

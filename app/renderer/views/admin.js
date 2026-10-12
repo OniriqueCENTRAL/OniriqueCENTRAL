@@ -177,7 +177,15 @@ function versionForm(product) {
 async function chooseImage(p) {
   const file = await call('admin:pick', 'image');
   if (!file) return;
-  await changed(() => call('admin:uploadImage', { productId: p.id, filePath: file.path }), 'Image enregistrée : elle ne sera plus remplacée par l\'aperçu automatique.', true);
+  await cropImage(p, await attempt(() => call('admin:imageData', file.path)));
+}
+
+/** Le cadrage : on place et on zoome l'image dans un cadre aux proportions de la boutique, puis elle est envoyée rognée. */
+async function cropImage(p, source) {
+  if (!source) return;
+  const cut = await window.OniriqueCropper.open(source).catch((error) => { toast(error.message, true); return null; });
+  if (!cut) return;
+  await changed(() => call('admin:uploadImageData', { productId: p.id, dataUrl: cut.dataUrl }), 'Image enregistrée : elle ne sera plus remplacée par l\'aperçu automatique.', true);
 }
 
 /** Refabrique la démo interactive et l'image à partir du .vst3 de la version en ligne (publiée d'ici ou depuis le site). */
@@ -230,6 +238,7 @@ function productsTab() {
         ...SYSTEMS.filter(([key]) => p.licensed?.[key] !== undefined).map(([key, label]) => licensePill(p.licensed[key], label, p.priceCents > 0))),
       h('div', { class: 'row' },
         button(p.imageManual ? 'Changer l\'image' : 'Choisir une image', () => chooseImage(p), 'small'),
+        p.image ? button('Rogner l\'image', async () => cropImage(p, await attempt(() => call('media', p.image))), 'small quiet') : null,
         p.imageManual ? button('Retirer l\'image', () => confirm(`Retirer l'image de ${p.name} ?`,
           'L\'image choisie à la main est retirée. L\'aperçu automatique pourra de nouveau en fournir une.',
           'Retirer', () => changed(() => api('DELETE', `/products/${p.id}/image`), 'Image retirée.', true), 'danger'), 'small quiet') : null,

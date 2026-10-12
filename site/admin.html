@@ -140,6 +140,7 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
   </div>
 </main>
 
+<script src="assets/cropper.js"></script>
 <script src="assets/account.js"></script>
 <script>
 // Tout passe par l'API du CENTRAL, qui revérifie le rôle admin à chaque appel : cette page n'ouvre aucun droit par elle-même.
@@ -356,16 +357,30 @@ async function loadProducts() {
 
     // L'image du plugin, choisie ici : l'aperçu automatique de l'application ne la remplace plus.
     const picture = el("input", { type: "file", accept: "image/png,image/jpeg,image/webp", hidden: true });
-    picture.onchange = async () => {
-      const chosen = picture.files[0];
-      if (!chosen) return;
+    // L'image passe par le cadrage avant d'être envoyée : on choisit ce que la boutique en montre.
+    const crop = async (source) => {
       $("product-error").textContent = "";
+      try {
+        const cut = await OniriqueCropper.open(source);
+        if (!cut) return;
+        await send("PUT", `/admin/products/${p.id}/image?manual=1`, cut.blob, () => {});
+        await loadProducts();
+      } catch (error) { fail(error); }
+    };
+    picture.onchange = () => {
+      const chosen = picture.files[0];
+      picture.value = "";
+      if (!chosen) return;
       if (!["image/png", "image/jpeg", "image/webp"].includes(chosen.type)) { fail(new Error("Image attendue : PNG, JPEG ou WebP.")); return; }
-      try { await send("PUT", `/admin/products/${p.id}/image?manual=1`, chosen, () => {}); await loadProducts(); } catch (error) { fail(error); }
+      const reader = new FileReader();
+      reader.onload = () => crop(reader.result);
+      reader.onerror = () => fail(new Error("Cette image n'a pas pu être lue."));
+      reader.readAsDataURL(chosen);
     };
     const small = (label, run) => Object.assign(el("button", { className: "act ghost", type: "button", textContent: label }), { onclick: run });
     const pictureTools = el("div", { className: "row", style: "margin-top:8px;gap:8px;flex-wrap:wrap" }, picture,
       small(p.imageManual ? "Changer l'image" : "Choisir une image", () => picture.click()),
+      p.image ? small("Rogner l'image", () => crop(p.image)) : null,
       p.imageManual ? small("Retirer l'image", async () => { try { await api("DELETE", `/admin/products/${p.id}/image`); await loadProducts(); } catch (error) { fail(error); } }) : null,
       p.demo ? small("Retirer la démo", async () => {
         if (!window.confirm(`Retirer la démo interactive de ${p.name} ? La boutique montrera l'image du plugin à la place.`)) return;
