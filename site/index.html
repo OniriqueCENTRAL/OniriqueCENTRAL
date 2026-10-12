@@ -303,8 +303,9 @@ input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border: 0; bord
 .card li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; font-size: 15px; }
 .card li svg { width: 18px; height: 18px; margin-top: 3px; color: var(--ember); }
 .card .btn { width: 100%; justify-content: center; }
-.secure { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 16px; font-size: 13px; color: var(--haze); }
-.secure svg { width: 14px; height: 14px; }
+/* un paragraphe ordinaire : en flex, une phrase contenant un lien se découpait en colonnes */
+.secure { margin-top: 16px; font-size: 13px; line-height: 1.5; text-align: center; color: var(--haze); }
+.secure svg { width: 14px; height: 14px; vertical-align: -2px; margin-right: 6px; }
 @media (max-width: 900px) { .offer { grid-template-columns: minmax(0, 1fr); } .offer .card { padding: 30px 24px; } .amount { font-size: 64px; } }
 
 /* faq */
