@@ -20,6 +20,9 @@
 .values td.old { color: var(--haze); }
 .pack { display: grid; gap: 16px; }
 .pack .tick { display: flex; align-items: center; gap: 10px; text-transform: none; letter-spacing: 0; font: 500 15px/1.4 var(--f-body); color: var(--soft); }
+.modes { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 18px; }
+.modes .go[aria-pressed="false"] { background: transparent; color: var(--mist); border: 1px solid var(--line); box-shadow: none; }
+.values td input.bpm { width: 84px; padding: 7px 10px; border-radius: 9px; font-size: 14px; }
 .pack .zip { margin: 0; font: 500 14px/1.4 var(--f-mono); color: var(--mist); overflow-wrap: anywhere; }
 </style>
 
@@ -35,11 +38,16 @@
   <section class="hero">
     <p class="eyebrow">Outil gratuit</p>
     <h1>Des stems <em>sans surprise</em></h1>
-    <p class="lede">Avant d'envoyer tes pistes à un ingé son ou à un autre beatmaker, dépose-les toutes ici : la page signale celles qui n'ont pas la même durée, le même format, qui saturent ou qui sont vides.</p>
+    <p class="lede" id="lede">Avant d'envoyer tes pistes à un ingé son ou à un autre beatmaker, dépose-les toutes ici : la page signale celles qui n'ont pas la même durée, le même format, qui saturent ou qui sont vides.</p>
+
+    <div class="modes" role="group" aria-label="Ce que tu déposes">
+      <button class="go" id="m-stems" type="button" aria-pressed="true">Les stems d'un titre</button>
+      <button class="go" id="m-beats" type="button" aria-pressed="false">Un pack de prods</button>
+    </div>
 
     <button class="drop" id="drop" type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18M3 12h18M3 17h18"/><circle cx="8" cy="7" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="10" cy="17" r="1.6"/></svg>
-      <strong>Dépose toutes tes pistes ici</strong>
+      <strong id="drop-title">Dépose toutes tes pistes ici</strong>
       <span>ou clique pour les choisir · plusieurs fichiers à la fois</span>
     </button>
     <input id="file" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" hidden>
@@ -69,7 +77,27 @@
     </table></div></div>
   </article>
 
+  <article class="card" id="beats" aria-live="polite" hidden>
+    <p class="head"><b id="b-count"></b><span id="b-state"></span></p>
+    <div class="dim pack">
+      <div><p class="eyebrow">Pack de prods</p>
+      <p class="muted">Chaque prod est mesurée à part : son tempo et sa tonalité sont écrits dans son nom. Corrige une valeur dans le tableau si elle est fausse, puis télécharge le pack : un .zip où toutes tes prods sont déjà renommées.</p></div>
+      <div class="fields">
+        <label>Nom du pack<input id="b-name" type="text" maxlength="60" placeholder="Pack de prods"></label>
+      </div>
+      <label class="tick"><input id="b-number" type="checkbox"> Numéroter les prods (01, 02, 03…)</label>
+      <p class="zip" id="b-zip"></p>
+      <div><button class="go" id="b-go" type="button">Télécharger le pack de prods (.zip)</button></div>
+    </div>
+    <div><div class="scroll"><table class="values" style="min-width:860px">
+      <thead><tr><th>Nouveau nom</th><th>BPM</th><th>Tonalité</th><th>Fichier d'origine</th><th>Durée</th></tr></thead>
+      <tbody id="b-rows"></tbody>
+    </table></div></div>
+  </article>
+
   <section class="text">
+    <h2>Un pack de prods</h2>
+    <p>Choisis « Un pack de prods » et dépose tes instrus, quinze d'un coup si tu veux. Chacune est analysée séparément, comme dans l'outil <a href="bpm-tonalite.html">BPM et tonalité</a>, puis renommée avec son propre tempo et sa propre tonalité : « Nuit blanche - 140 BPM - F minor.wav ». Le pack se télécharge en un .zip. Un tempo peut se lire deux fois plus vite ou deux fois plus lentement (70 ou 140) : les boutons ÷2 et ×2 du tableau le remettent comme tu le comptes. Les fichiers ne sont pas réencodés.</p>
     <h2>Comment les pistes sont reconnues</h2>
     <p>Le nom du fichier passe d'abord : « Kick », « 808 », « Hat », « Vox », « Gtr » et une centaine d'autres mots, en français et en anglais, disent ce qu'il y a dedans. Quand le nom ne dit rien (« Audio 07 »), c'est le son qui décide : où se trouve son énergie, du grave à l'aigu, et s'il est frappé ou tenu. Un son grave et bref est un kick, un son grave qui s'éteint lentement une 808, un son aigu et bref un hi-hat, un bruit bref une snare, du grave et de l'aigu frappés ensemble une batterie.</p>
     <p>Le son seul ne distingue pas une voix d'un piano ou d'une guitare : ces pistes-là sont rangées dans « Melodie » tant que leur nom n'en dit pas plus. Le type se corrige d'un clic dans le tableau, et le pack suit.</p>
@@ -242,7 +270,135 @@ $("p-go").onclick = async () => {
   }
 };
 
+//----------------------------------------------------------------------------------------------------------------------
+// Le pack de prods : chaque fichier est un morceau entier, avec son tempo et sa tonalité à lui.
+let mode = "stems", beats = null;
+
+const MODES = {
+  stems: { title: "Dépose toutes tes pistes ici", again: "Vérifier d'autres pistes",
+    lede: "Avant d'envoyer tes pistes à un ingé son ou à un autre beatmaker, dépose-les toutes ici : la page signale celles qui n'ont pas la même durée, le même format, qui saturent ou qui sont vides." },
+  beats: { title: "Dépose toutes tes prods ici", again: "Préparer un autre pack",
+    lede: "Dépose tes prods, quinze d'un coup si tu veux : chacune est renommée avec son tempo et sa tonalité, et le tout se télécharge en un pack prêt à envoyer." },
+};
+
+function setMode(next) {
+  mode = next;
+  $("m-stems").setAttribute("aria-pressed", String(mode === "stems"));
+  $("m-beats").setAttribute("aria-pressed", String(mode === "beats"));
+  $("drop-title").textContent = MODES[mode].title;
+  $("lede").textContent = MODES[mode].lede;
+  $("result").hidden = mode !== "stems" || !shown;
+  $("beats").hidden = mode !== "beats" || !beats;
+  $("error").textContent = "";
+}
+$("m-stems").onclick = () => setMode("stems");
+$("m-beats").onclick = () => setMode("beats");
+
+/** Le nom d'une prod sans le tempo qu'elle portait déjà (« Nuit 140bpm » → « Nuit »), pour ne pas l'écrire deux fois. */
+const beatTitle = (name) => S.safe(name.replace(/\.[^.]+$/, "").replace(/[\s_\-–([]*\b\d{2,3}([.,]\d)?\s*bpm\b[)\]]*/gi, " ").replace(/[\s_\-–]+$/, "")) || "Prod";
+
+/** Le nouveau nom de chaque prod, dans l'ordre du tableau. */
+function beatNames() {
+  const digits = Math.max(2, String(beats.length).length), numbered = $("b-number").checked, used = new Map();
+  return beats.map((beat, index) => {
+    const base = [(numbered ? String(index + 1).padStart(digits, "0") + " " : "") + beat.title, S.tag({ bpm: beat.bpm.trim(), key: beat.key })].filter(Boolean).join(" - ");
+    // Deux prods du même nom, du même tempo et de la même tonalité : la seconde reçoit un rang.
+    const count = (used.get(base.toLowerCase()) || 0) + 1;
+    used.set(base.toLowerCase(), count);
+    return (count > 1 ? base + " (" + count + ")" : base) + beat.extension;
+  });
+}
+
+const beatPack = () => S.safe($("b-name").value) || "Pack de prods";
+
+function nameBeats() {
+  const names = beatNames();
+  beats.forEach((beat, i) => { beat.cell.textContent = names[i]; });
+  $("b-zip").textContent = beatPack() + ".zip  ·  " + beats.length + " prod" + (beats.length > 1 ? "s" : "") + " dans le dossier « " + beatPack() + " »";
+}
+
+function showBeats(failed) {
+  const unsure = beats.filter((b) => !b.bpm || !b.key).length;
+  $("b-count").textContent = beats.length + " prod" + (beats.length > 1 ? "s" : "") + " analysée" + (beats.length > 1 ? "s" : "");
+  $("b-state").textContent = [unsure && unsure + " à compléter à la main", failed.length && failed.length + " illisible" + (failed.length > 1 ? "s" : "") + " (" + failed.join(", ") + ")"].filter(Boolean).join(" · ") || "Tout est mesuré";
+  $("b-rows").replaceChildren(...beats.map((beat) => {
+    const row = document.createElement("tr");
+    const cell = (text, className) => Object.assign(document.createElement("td"), { textContent: text, className: className || "" });
+    beat.cell = cell("", "new");
+    const bpm = Object.assign(document.createElement("input"), { type: "text", className: "bpm", value: beat.bpm, inputMode: "decimal", maxLength: 6 });
+    bpm.setAttribute("aria-label", "BPM de « " + beat.name + " »");
+    bpm.oninput = () => { beat.bpm = bpm.value; nameBeats(); };
+    const scale = (factor, label) => {
+      const button = Object.assign(document.createElement("button"), { type: "button", className: "go ghost", textContent: label });
+      button.style.cssText = "padding:7px 10px;margin-left:6px;font-size:13px";
+      button.onclick = () => {
+        const value = parseFloat(beat.bpm.replace(",", ".")) * factor;
+        if (value >= 30 && value <= 300) { beat.bpm = bpmText(value); bpm.value = beat.bpm; nameBeats(); }
+      };
+      return button;
+    };
+    const bpmCell = document.createElement("td");
+    bpmCell.style.whiteSpace = "nowrap";
+    bpmCell.append(bpm, scale(0.5, "÷2"), scale(2, "×2"));
+    const key = document.createElement("select");
+    key.setAttribute("aria-label", "Tonalité de « " + beat.name + " »");
+    key.append(...[...$("p-key").options].map((o) => Object.assign(document.createElement("option"), { value: o.value, textContent: o.textContent, selected: o.value === beat.key })));
+    key.onchange = () => { beat.key = key.value; nameBeats(); };
+    const keyCell = document.createElement("td");
+    keyCell.append(key);
+    row.append(beat.cell, bpmCell, keyCell, cell(beat.name, "old"), cell(A.clock(beat.seconds)));
+    return row;
+  }));
+  nameBeats();
+  $("beats").hidden = false;
+}
+
+async function openBeats(files) {
+  const list = [], failed = [];
+  for (const [i, file] of files.entries()) {
+    A.busy($("drop"), true, "Analyse " + (i + 1) + " sur " + files.length + "…");
+    try {
+      const audio = await A.decode(file);
+      // Le milieu du morceau, quatre minutes au plus : c'est là que le tempo et la tonalité sont installés.
+      const length = Math.min(audio.duration, MIX_SECONDS), from = (audio.duration - length) / 2;
+      const mono = (await A.render(audio, { rate: RATE, channels: 1, from, to: from + length })).getChannelData(0);
+      const found = await analyse(mono);
+      list.push({ file, name: file.name, title: beatTitle(file.name), extension: (file.name.match(/\.[A-Za-z0-9]{1,5}$/) || [""])[0].toLowerCase(),
+        seconds: audio.duration, bpm: found.tempo ? bpmText(found.tempo.bpm) : "", key: found.key ? keyName(found.key) : "" });
+    } catch { failed.push(file.name); }
+  }
+  A.busy($("drop"), false, list.length ? MODES.beats.again : undefined);
+  if (!list.length) { $("beats").hidden = true; $("error").textContent = "Aucune de ces prods n'a pu être lue. Essaie en WAV ou en MP3."; return; }
+  list.sort((a, b) => a.name.localeCompare(b.name, "fr", { numeric: true }));
+  beats = list;
+  showBeats(failed);
+}
+
+for (const id of ["b-name", "b-number"]) $(id).addEventListener("input", () => { if (beats) nameBeats(); });
+
+$("b-go").onclick = async () => {
+  if (!beats) return;
+  $("error").textContent = "";
+  const folder = beatPack(), button = $("b-go"), label = button.textContent;
+  button.disabled = true;
+  try {
+    const names = beatNames();
+    const blob = await S.zip(beats.map((beat, i) => ({ name: folder + "/" + names[i], file: beat.file })), (ratio) => { button.textContent = "Préparation du pack " + Math.round(ratio * 100) + " %"; });
+    A.download(blob, folder + ".zip");
+  } catch (error) {
+    $("error").textContent = error.message || "Le pack n'a pas pu être préparé.";
+  } finally {
+    button.disabled = false;
+    button.textContent = label;
+  }
+};
+
 async function open(files) {
+  if (mode === "beats") {
+    $("error").textContent = "";
+    if (files.length > MAX_FILES) { $("error").textContent = "Dépose " + MAX_FILES + " prods au plus à la fois."; return; }
+    return openBeats(files);
+  }
   $("error").textContent = "";
   if (files.length > MAX_FILES) { $("error").textContent = "Dépose " + MAX_FILES + " pistes au plus à la fois."; return; }
   const stems = [], failed = [], mix = new Float32Array(RATE * MIX_SECONDS);
