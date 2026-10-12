@@ -241,6 +241,9 @@ button.key.copy { padding: 0; border: 0; background: none; color: inherit; curso
 button.key.copy:hover { color: var(--ember-hot); }
 .table-scroll { overflow-x: auto; }
 .empty { padding: 34px 12px; text-align: center; color: var(--haze); }
+/* un créateur sans plugin encore : « Bientôt disponible » */
+.panel.soon { display: grid; justify-items: center; gap: 12px; padding: 64px 20px; text-align: center; }
+.panel.soon h2, .panel.soon p { margin: 0; }
 
 /* ---------- Bibliothèque ---------- */
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }

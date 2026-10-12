@@ -203,7 +203,7 @@ if (!hasColumn('licenses', 'bundle')) {
   db.exec('CREATE INDEX IF NOT EXISTS licenses_bundle ON licenses(bundle)');
 }
 
-// Créateur du plugin : "onirique", ou un partenaire ("abrasion") dont les comptes gèrent alors leurs propres plugins.
+// Créateur du plugin : "onirique", ou un partenaire ("abrasion", "bloom") dont les comptes gèrent alors leurs propres plugins.
 if (!hasColumn('products', 'creator')) {
   db.exec(`ALTER TABLE products ADD COLUMN creator TEXT NOT NULL DEFAULT 'onirique'`);
   db.exec(`UPDATE products SET creator = 'abrasion' WHERE slug LIKE 'onirique-x-abrasion-%'`);

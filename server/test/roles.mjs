@@ -218,6 +218,20 @@ try {
     assert.deepEqual(inPack, ['ONIRIQUE RAW', 'ONIRIQUE TAMA']);
   });
 
+  await step('second partenaire (BLOOM) : son propre périmètre, étanche avec celui d\'ABRASION', async () => {
+    const bloom = await account('bloom');
+    await call('PATCH', `/api/admin/users/${bloom.id}`, { token: admin.token, body: { role: 'bloom' } });
+    assert.deepEqual(await call('GET', '/api/admin/products', { token: bloom.token }), [], 'aucun plugin BLOOM pour le moment');
+    await call('PATCH', `/api/admin/products/${raw.id}`, { token: bloom.token, body: { priceCents: 1 }, expect: 404 });
+    const made = await call('POST', '/api/admin/products', { token: bloom.token, body: { name: 'ONIRIQUE FLEUR', priceCents: 900 }, expect: 201 });
+    assert.equal(made.creator, 'bloom');
+    assert.deepEqual((await call('GET', '/api/admin/products', { token: bloom.token })).map((p) => p.name), ['ONIRIQUE FLEUR']);
+    assert.ok(!(await call('GET', '/api/admin/products', { token: partner.token })).some((p) => p.name === 'ONIRIQUE FLEUR'));
+    await call('PATCH', `/api/admin/products/${made.id}`, { token: partner.token, body: { priceCents: 1 }, expect: 404 });
+    await call('PATCH', `/api/admin/products/${made.id}`, { token: admin.token, body: { creator: 'bloom' } });
+    await call('GET', '/api/admin/users', { token: bloom.token, expect: 403 });
+  });
+
   console.log(`\n${passed} étapes réussies.`);
 } finally {
   server.close();

@@ -189,7 +189,8 @@ export function libraryView() {
       : 'Aucun plugin publié pour le moment.'),
     catalog.products.length ? filters : null,
     products.length || !catalog.products.length ? h('div', { class: 'cards' }, products.map(card))
-      : h('div', { class: 'panel empty' }, 'Aucun plugin de ce créateur pour le moment.'),
+      : h('div', { class: 'panel soon' }, eyebrow(CREATORS[shown.creator]), h('h2', null, 'Bientôt ', h('em', null, 'disponible')),
+        h('p', { class: 'muted' }, `Les plugins ${CREATORS[shown.creator]} arrivent. Ils apparaîtront ici dès leur sortie.`)),
   ];
 }
 

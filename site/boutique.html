@@ -32,6 +32,11 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 .price { font: 800 20px/1 var(--f-display); }
 .more { font: 500 12px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ember-text); }
 .card .creator { font: 500 11px/1 var(--f-mono); letter-spacing: .16em; color: var(--haze); }
+/* un créateur sans plugin encore : « Bientôt disponible » */
+.soon { grid-column: 1 / -1; display: grid; justify-items: center; gap: 14px; padding: clamp(50px, 9vw, 110px) 20px; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(180deg, var(--deep-2), var(--deep)); text-align: center; }
+.soon h2 { margin: 0; font: 800 clamp(28px, 5vw, 54px)/1.1 var(--f-display); letter-spacing: .04em; text-transform: uppercase; }
+.soon h2 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-transform: none; text-shadow: var(--glow); }
+.soon p { margin: 0; color: var(--haze); }
 /* Filtres de la liste : un créateur ou tous, puis le tri par prix */
 .filters { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 30px; }
 .filters + .grid { margin-top: 20px; }
@@ -174,7 +179,7 @@ function el(tag, props = {}, ...children) {
 }
 
 // Les créateurs des plugins : ONIRIQUE, ou un partenaire.
-const CREATORS = { onirique: "ONIRIQUE", abrasion: "ABRASION" };
+const CREATORS = { onirique: "ONIRIQUE", abrasion: "ABRASION", bloom: "BLOOM" };
 const SORTS = { none: "Tri : par défaut", up: "Prix croissant", down: "Prix décroissant" };
 
 // La liste de la boutique : un créateur ou tous, dans l'ordre du catalogue ou par prix.
@@ -183,7 +188,8 @@ function setupList(products) {
   function draw() {
     const list = products.filter((p) => shown.creator === "all" || (p.creator || "onirique") === shown.creator);
     if (shown.sort !== "none") list.sort((a, b) => (shown.sort === "up" ? a.priceCents - b.priceCents : b.priceCents - a.priceCents));
-    $("grid").replaceChildren(...(list.length ? list.map(card) : [el("p", { className: "lede", textContent: "Aucun plugin de ce créateur pour le moment." })]));
+    $("grid").replaceChildren(...(list.length ? list.map(card) : [el("div", { className: "soon" }, el("p", { className: "eyebrow", textContent: CREATORS[shown.creator] }), el("h2", {}, "Bientôt ", el("em", { textContent: "disponible" })),
+      el("p", { textContent: `Les plugins ${CREATORS[shown.creator]} arrivent. Ils apparaîtront ici dès leur sortie.` }))]));
     $("creators").replaceChildren(...[["all", "Tous"], ...Object.entries(CREATORS)].map(([id, label]) => {
       const button = el("button", { type: "button", textContent: label });
       button.setAttribute("aria-pressed", String(shown.creator === id));

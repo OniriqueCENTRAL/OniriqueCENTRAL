@@ -8,7 +8,7 @@ import { all, get, run, now, transaction, grantFounders } from './db.js';
 import {
   HttpError, hashPassword, verifyPassword, createSession, destroySession,
   requireUser, requireVerified, requireAdmin, optionalUser, rateLimit, validEmail, publicUser, createResetToken, consumeResetToken,
-  ROLES, isStaff, partnerOf,
+  ROLES, PARTNERS, isStaff, partnerOf,
   createVerifyToken, consumeVerifyToken, mustVerify, shouldConfirm,
 } from './auth.js';
 import { mailEnabled, sendMail } from './mail.js';
@@ -86,7 +86,7 @@ function productView(p, platform) {
   const wanted = platformOf(platform);
   return {
     id: p.id, slug: p.slug, name: p.name, tagline: p.tagline, description: p.description, accent: p.accent,
-    creator: p.creator, // "onirique" ou un partenaire ("abrasion")
+    creator: p.creator, // "onirique" ou un partenaire ("abrasion", "bloom")
     priceCents: p.price_cents, image: p.image ? `/api/media/${p.image}` : null, published: !!p.published,
     demo: p.demo ? `/api/media/${p.demo}` : null,
     latest: versionView(versions.find((v) => v.platform === wanted)) || null,
@@ -500,7 +500,7 @@ export function createApp() {
   admin.use((req, _res, next) => next(req.creator && !/^\/(products|versions|licenses)(\/|$)/.test(req.path)
     ? new HttpError(403, 'Réservé aux administrateurs.') : undefined));
 
-  const CREATORS = ['onirique', 'abrasion'];
+  const CREATORS = ['onirique', ...PARTNERS];
   /** Le produit, s'il est du ressort de ce compte : un partenaire ne touche qu'aux plugins de son créateur. */
   function ownProduct(req, id) {
     const product = findProduct(id);

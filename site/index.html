@@ -1844,7 +1844,7 @@ function showcase(list) {
   async function show() {
     const p = list[at], vocalbox = p.slug.includes("vocalbox");
     $("#showName").textContent = p.name;
-    $("#showCreator").textContent = p.creator === "abrasion" ? "ONIRIQUE × ABRASION" : "ONIRIQUE";
+    $("#showCreator").textContent = p.creator && p.creator !== "onirique" ? "ONIRIQUE × " + p.creator.toUpperCase() : "ONIRIQUE";
     $("#showCount").textContent = `${at + 1} / ${list.length}`;
     $("#showLink").href = "boutique.html?p=" + encodeURIComponent(p.slug);
 

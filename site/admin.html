@@ -152,9 +152,10 @@ function el(tag, props = {}, ...children) {
 }
 const date = (ms) => (ms ? new Date(ms).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "—");
 const TYPES = { perpetual: "Perpétuelle", timed: "Durée limitée", trial: "Essai", nfr: "NFR" };
-// Rôles : VIP (tous les plugins offerts), Abrasion (partenaire : ce panel, limité à ses propres plugins), admin, fondateur.
-const ROLES = { user: "Utilisateur", vip: "VIP", abrasion: "Abrasion", admin: "Admin", founder: "Fondateur" };
-const CREATORS = { onirique: "ONIRIQUE", abrasion: "ABRASION" };
+// Rôles : VIP (tous les plugins offerts), Abrasion et Bloom (partenaires : ce panel, limité à leurs propres plugins), admin, fondateur.
+const ROLES = { user: "Utilisateur", vip: "VIP", abrasion: "Abrasion", bloom: "Bloom", admin: "Admin", founder: "Fondateur" };
+const CREATORS = { onirique: "ONIRIQUE", abrasion: "ABRASION", bloom: "BLOOM" };
+const isPartner = (user) => user.role === "abrasion" || user.role === "bloom";
 const isStaff = (user) => user.role === "admin" || user.role === "founder";
 
 function gate(text, link) {
@@ -186,7 +187,7 @@ async function showLicenses(user, row, button) {
 async function setRole(user, role) {
   // Seul un fondateur donne ou retire le rôle admin : le serveur le revérifie.
   const question = `Donner à ${user.email} le rôle « ${ROLES[role]} » ?`
-    + ({ vip: " Tous les plugins lui sont offerts.", abrasion: " Il gérera ses propres plugins et leurs licences, ici et dans l'application.",
+    + ({ vip: " Tous les plugins lui sont offerts.", abrasion: " Il gérera ses propres plugins et leurs licences, ici et dans l'application.", bloom: " Il gérera ses propres plugins et leurs licences, ici et dans l'application.",
       admin: " Cette personne pourra publier des versions, gérer les licences et les comptes.", founder: " Cette personne aura tous les droits, y compris sur les rôles admin." }[role] || "");
   if (!window.confirm(question)) return loadUsers();
   try {
@@ -444,7 +445,7 @@ $("search").oninput = () => { clearTimeout(timer); timer = setTimeout(() => load
   if (!token) return gate("Connectez-vous avec un compte administrateur.", "Se connecter");
   try {
     me = (await api("GET", "/me")).user;
-    if (!isStaff(me) && me.role !== "abrasion") return gate("Cette page est réservée aux administrateurs.", "Retour au compte");
+    if (!isStaff(me) && !isPartner(me)) return gate("Cette page est réservée aux administrateurs.", "Retour au compte");
     if (!isStaff(me)) {
       // Partenaire : ses plugins seulement. Les licences de ses plugins se gèrent dans l'application, Panel admin.
       $("staff-accounts").hidden = $("staff-credits").hidden = true;
