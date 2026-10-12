@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { config } from './config.js';
-import { all, get, run, now } from './db.js';
+import { all, get, run, now, setting } from './db.js';
 import { HttpError, canSelfLicense } from './auth.js';
 
 //==============================================================================
@@ -90,15 +90,21 @@ export function parseProductIds(stored) {
   }
 }
 
+/** Abonnement à la carte : le prix mensuel du premier plugin et de chaque plugin ajouté (réglables depuis le panel admin). */
+export const pickPrices = () => ({
+  baseCents: setting('pickBaseCents', config.pickBaseCents),
+  extraCents: setting('pickExtraCents', config.pickExtraCents),
+});
+
 /** Le prix mensuel d'un abonnement à la carte pour ce nombre de plugins. */
-export const pickPriceCents = (count) => config.pickBaseCents + config.pickExtraCents * Math.max(0, count - 1);
+export const pickPriceCents = (count) => pickPrices().baseCents + pickPrices().extraCents * Math.max(0, count - 1);
 
 /** La formule à la carte : il n'y en a qu'une, créée à la première demande. Son prix est celui du premier plugin. */
 export function pickPlan() {
   const existing = get(`SELECT * FROM plans WHERE kind = 'pick' ORDER BY id LIMIT 1`);
   if (existing) return existing;
   const { lastInsertRowid } = run(`INSERT INTO plans (name, interval, price_cents, active, kind) VALUES ('À LA CARTE', 'month', ?, 1, 'pick')`,
-    config.pickBaseCents);
+    pickPrices().baseCents);
   return get('SELECT * FROM plans WHERE id = ?', lastInsertRowid);
 }
 

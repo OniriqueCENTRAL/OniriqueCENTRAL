@@ -31,6 +31,10 @@ select.act option { background: var(--deep); color: var(--mist); }
 .pill { display: inline-block; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line); font: 500 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--haze); white-space: nowrap; }
 .pill.on { color: var(--bone); border-color: rgba(226,52,68,.7); background: rgba(226,52,68,.18); }
 .sub { color: var(--haze); font-size: 13px; }
+/* Abonnements : nom et prix se changent dans le tableau */
+#plans input:not([type="checkbox"]) { width: 100%; min-width: 90px; height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.4); color: var(--mist); font: 500 14px var(--f-body); }
+#plans input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--ember); }
+#plans label { display: inline-flex; align-items: center; gap: 8px; }
 td.msg { white-space: pre-wrap; overflow-wrap: anywhere; min-width: 280px; }
 td.msg strong { display: block; margin-bottom: 4px; }
 .bar .btn { font-size: 13px; padding: 9px 14px; }
@@ -71,7 +75,7 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
 <header>
   <div class="wrap">
     <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
-    <a class="btn" href="compte.html">Mon compte</a>
+    <a class="btn" href="compte.html" data-account>Mon compte</a>
   </div>
 </header>
 
@@ -107,6 +111,14 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
       <thead><tr><th>Reçu le</th><th>De</th><th>Message</th><th><span class="sub">Actions</span></th></tr></thead>
       <tbody id="support"></tbody>
     </table></div>
+
+    <div class="bar"><h2>Abonnements</h2></div>
+    <p class="sub">Les formules proposées dans la boutique du site et dans l'application. Un prix changé ici s'applique aux prochains abonnements souscrits ; une formule décochée n'est plus proposée, ceux qui l'ont déjà la gardent.</p>
+    <p class="error" id="plan-error" role="alert"></p>
+    <div class="table"><table>
+      <thead><tr><th>Formule</th><th>Prix (€)</th><th>Période</th><th>Dans la boutique</th><th><span class="sub">Actions</span></th></tr></thead>
+      <tbody id="plans"></tbody>
+    </table></div>
     </div>
 
     <div class="bar"><h2>Plugins</h2></div>
@@ -128,6 +140,7 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
   </div>
 </main>
 
+<script src="assets/account.js"></script>
 <script>
 // Tout passe par l'API du CENTRAL, qui revérifie le rôle admin à chaque appel : cette page n'ouvre aucun droit par elle-même.
 const $ = (id) => document.getElementById(id);
@@ -375,6 +388,42 @@ async function loadProducts() {
 
 const euros = (cents) => (cents === 0 ? "Gratuit" : new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: cents % 100 ? 2 : 0 }).format(cents / 100));
 
+//------------------------------------------------------------------------------ Abonnements
+async function loadPlans() {
+  const [plans, pick] = await Promise.all([api("GET", "/admin/plans"), api("GET", "/admin/pick")]);
+  const priceInput = (cents, label) => el("input", { type: "number", min: "0", step: "0.01", value: (cents / 100).toFixed(2), ariaLabel: label });
+  const cents = (input) => Math.round(Number(input.value.replace(",", ".")) * 100);
+  const save = (action) => {
+    const button = el("button", { className: "act", type: "button", textContent: "Enregistrer" });
+    button.onclick = async () => {
+      $("plan-error").textContent = "";
+      button.disabled = true;
+      try {
+        await action();
+        await loadPlans();
+      } catch (error) {
+        $("plan-error").textContent = error.message;
+        button.disabled = false;
+      }
+    };
+    return button;
+  };
+  const rows = plans.filter((plan) => plan.kind !== "pick").map((plan) => {
+    const name = el("input", { type: "text", value: plan.name, maxLength: 60, ariaLabel: "Nom de la formule" });
+    const price = priceInput(plan.priceCents, "Prix de " + plan.name);
+    const active = el("input", { type: "checkbox", checked: plan.active });
+    return el("tr", {}, el("td", {}, name), el("td", {}, price), el("td", { className: "sub", textContent: plan.interval === "year" ? "par an" : "par mois" }),
+      el("td", {}, el("label", {}, active, "Proposée")),
+      el("td", { className: "actions" }, save(() => api("PATCH", "/admin/plans/" + plan.id, { name: name.value, priceCents: cents(price), active: active.checked }))));
+  });
+  // À la carte : le prix du premier plugin, puis celui de chaque plugin ajouté.
+  const base = priceInput(pick.baseCents, "À la carte : prix du premier plugin"), extra = priceInput(pick.extraCents, "À la carte : prix de chaque plugin ajouté");
+  rows.push(el("tr", {}, el("td", {}, el("strong", { textContent: "À la carte" }), el("div", { className: "sub", textContent: "Premier plugin, puis chaque plugin ajouté" })),
+    el("td", {}, base, extra), el("td", { className: "sub", textContent: "par mois" }), el("td", { className: "sub", textContent: "Toujours" }),
+    el("td", { className: "actions" }, save(() => api("PATCH", "/admin/pick", { baseCents: cents(base), extraCents: cents(extra) })))));
+  $("plans").replaceChildren(...rows);
+}
+
 //------------------------------------------------------------------------------ Crédits
 async function loadCredits() {
   const [products, credits] = await Promise.all([api("GET", "/admin/products"), api("GET", "/admin/credits")]);
@@ -459,6 +508,7 @@ $("search").oninput = () => { clearTimeout(timer); timer = setTimeout(() => load
       .map(([label, value]) => el("div", { className: "tile" }, el("b", { textContent: String(value) }), el("span", { textContent: label }))));
     await loadUsers();
     await loadSupport();
+    await loadPlans();
     await loadProducts();
     await loadCredits();
     $("gate").hidden = true;

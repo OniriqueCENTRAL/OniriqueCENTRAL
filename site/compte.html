@@ -70,6 +70,11 @@ label.check input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; padd
 .key { font: 500 13px/1.4 var(--f-mono); letter-spacing: .05em; color: var(--bone); word-break: break-all; }
 .pill { font: 500 11px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--haze); white-space: nowrap; }
 .pill.on { color: var(--bone); border-color: rgba(226,52,68,.6); background: rgba(226,52,68,.16); }
+/* Photo de profil */
+.photo { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-bottom: 26px; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+.photo img { flex: none; width: 84px; height: 84px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); box-shadow: 0 0 0 4px rgba(226,52,68,.14), 0 12px 34px -12px rgba(226,52,68,.7); }
+.photo p { margin: 8px 0 0; font-size: 13px; }
+.panel { scroll-margin-top: 20px; }
 .between { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; }
 [hidden] { display: none !important; }
 </style>
@@ -77,7 +82,7 @@ label.check input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; padd
 <header>
   <div class="wrap">
     <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
-    <a class="btn btn-ghost" href="/">Retour au site</a>
+    <div class="between"><a class="btn btn-ghost" href="/">Retour au site</a><a href="compte.html" data-account data-account-manual hidden>Compte</a></div>
   </div>
 </header>
 
@@ -142,8 +147,20 @@ label.check input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; padd
       </div>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="parametres">
       <div class="eyebrow">Vos informations</div>
+      <div class="photo">
+        <img id="avatar" alt="Votre photo de profil" width="84" height="84">
+        <div>
+          <div class="between" style="justify-content:flex-start">
+            <button class="btn btn-ghost" id="avatar-pick" type="button">Changer la photo</button>
+            <input id="avatar-file" type="file" accept="image/png,image/jpeg,image/webp" aria-label="Photo de profil" hidden>
+            <button class="link" id="avatar-remove" type="button" hidden>Retirer la photo</button>
+          </div>
+          <p class="muted">Elle s'affiche à côté de votre nom, sur le site et dans l'application.</p>
+          <div class="notice" id="avatar-notice" role="status"></div>
+        </div>
+      </div>
       <div class="settings">
         <form id="profile-form">
           <label>Nom affiché<input id="profile-name" maxlength="80" autocomplete="name"></label>
@@ -160,7 +177,7 @@ label.check input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; padd
       </div>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="licences">
       <div class="eyebrow">Vos licences</div>
       <div class="rows" id="licenses"></div>
     </div>
@@ -171,6 +188,7 @@ label.check input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; padd
   <nav class="legal" aria-label="Pages légales"><a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="remboursement.html">Rétractation et remboursement</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a></nav>
 </main>
 
+<script src="assets/account.js"></script>
 <script>
 // Le site relaie /api vers le serveur ONIRIQUE CENTRAL (même origine : pas de CORS à gérer).
 const $ = (id) => document.getElementById(id);
@@ -213,7 +231,13 @@ function show(me) {
   $("loading").hidden = true;
   $("auth").hidden = !!me;
   $("account").hidden = !me;
+  OniriqueAccount.show(me); // le menu du compte, dans l'en-tête
   if (!me) return;
+  $("avatar").src = OniriqueAccount.avatar(me.user);
+  $("avatar-remove").hidden = !me.user.avatar;
+  // Arrivé par « Paramètres » ou « Mes licences » du menu : la page s'ouvre sur ce bloc.
+  if (location.hash && !show.opened) setTimeout(() => document.getElementById(location.hash.slice(1))?.scrollIntoView(), 0);
+  show.opened = true;
 
   $("who").textContent = me.user.name || me.user.email.split("@")[0];
   // Le rôle du compte, quand il en a un : il est le même ici et dans l'application.
@@ -325,6 +349,40 @@ function say(id, text, failed = false) {
   $(id).className = failed ? "error" : "notice";
   $(id).textContent = text;
 }
+
+// Photo de profil : recadrée en carré et réduite à 512 px ici, dans le navigateur, avant l'envoi.
+$("avatar-pick").onclick = () => $("avatar-file").click();
+$("avatar-file").onchange = async (event) => {
+  const file = event.target.files[0];
+  event.target.value = "";
+  if (!file) return;
+  say("avatar-notice", "");
+  try {
+    const image = await createImageBitmap(file).catch(() => { throw new Error("Ce fichier n'est pas une image lisible."); });
+    const side = Math.min(image.width, image.height);
+    const canvas = Object.assign(document.createElement("canvas"), { width: 512, height: 512 });
+    const pen = canvas.getContext("2d");
+    pen.fillStyle = "#0d0809"; // sous une image transparente : la nuit de la charte, pas du noir pur
+    pen.fillRect(0, 0, 512, 512);
+    pen.drawImage(image, (image.width - side) / 2, (image.height - side) / 2, side, side, 0, 0, 512, 512);
+    const blob = await new Promise((done) => canvas.toBlob(done, "image/jpeg", 0.9));
+    const response = await fetch("/api/me/avatar", { method: "PUT", headers: { Authorization: "Bearer " + saved(), "Content-Type": "image/jpeg" }, body: blob });
+    if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "La photo n'a pas pu être envoyée.");
+    show(await api("GET", "/me"));
+    say("avatar-notice", "Photo enregistrée.");
+  } catch (error) {
+    say("avatar-notice", error.message, true);
+  }
+};
+$("avatar-remove").onclick = async () => {
+  try {
+    await api("DELETE", "/me/avatar");
+    show(await api("GET", "/me"));
+    say("avatar-notice", "Photo retirée.");
+  } catch (error) {
+    say("avatar-notice", error.message, true);
+  }
+};
 
 $("profile-form").onsubmit = async (event) => {
   event.preventDefault();

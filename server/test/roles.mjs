@@ -197,6 +197,47 @@ try {
     await call('POST', '/api/me/self-licenses', { token: again, body: { enabled: false } });
   });
 
+  await step('photo de profil : une vraie image seulement, remplacée puis retirée', async () => {
+    const png = Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), crypto.randomBytes(500)]);
+    const jpg = Buffer.concat([Buffer.from('ffd8ffe0', 'hex'), crypto.randomBytes(500)]);
+    const send = (token, raw, type, expect = 200) => fetch(`${base}/api/me/avatar`, { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': type }, body: raw })
+      .then(async (r) => { assert.equal(r.status, expect, `avatar ${type} → ${r.status}`); return r.json(); });
+    assert.equal((await call('GET', '/api/me', { token: user.token })).user.avatar, null);
+    await send(user.token, png, 'image/gif', 400);                       // type refusé
+    await send(user.token, Buffer.from('<svg onload=alert(1)>'), 'image/png', 400); // annoncé PNG, mais ce n'en est pas un
+    await send(user.token, png, 'image/jpeg', 400);                      // le contenu ne correspond pas au type
+    await send(user.token, Buffer.concat([png, Buffer.alloc(2 * 1024 * 1024)]), 'image/png', 413);
+    await fetch(`${base}/api/me/avatar`, { method: 'PUT', headers: { 'Content-Type': 'image/png' }, body: png }).then((r) => assert.equal(r.status, 401));
+
+    const first = (await send(user.token, png, 'image/png')).avatar;
+    assert.match(first, /^\/api\/media\/[a-f0-9]{32}\.png$/);
+    assert.deepEqual(await call('GET', first), png);
+    assert.equal((await call('GET', '/api/me', { token: user.token })).user.avatar, first);
+    const second = (await send(user.token, jpg, 'image/jpeg')).avatar;
+    assert.match(second, /\.jpg$/);
+    await call('GET', first, { expect: 404 });                            // l'ancienne photo est retirée du disque
+    await call('DELETE', '/api/me/avatar', { token: user.token });
+    assert.equal((await call('GET', '/api/me', { token: user.token })).user.avatar, null);
+    await call('GET', second, { expect: 404 });
+    const leftovers = fs.readdirSync(path.join(dataDir, 'media')).filter((n) => !/\.(png|jpg|webp|json)$/.test(n));
+    assert.deepEqual(leftovers, [], 'aucun fichier refusé ne reste sur le disque');
+  });
+
+  await step('abonnement à la carte : ses prix se règlent depuis le panel admin, équipe seulement', async () => {
+    assert.deepEqual((await call('GET', '/api/catalog')).pick, { baseCents: 999, extraCents: 500 });
+    await call('PATCH', '/api/admin/pick', { token: partner.token, body: { baseCents: 1, extraCents: 1 }, expect: 403 });
+    await call('PATCH', '/api/admin/pick', { token: user.token, body: { baseCents: 1, extraCents: 1 }, expect: 403 });
+    await call('PATCH', '/api/admin/pick', { token: admin.token, body: { baseCents: -5, extraCents: 100 }, expect: 400 });
+    await call('PATCH', '/api/admin/pick', { token: admin.token, body: { baseCents: 'cher', extraCents: 100 }, expect: 400 });
+    assert.deepEqual(await call('PATCH', '/api/admin/pick', { token: admin.token, body: { baseCents: 1299, extraCents: 400 } }), { baseCents: 1299, extraCents: 400 });
+    assert.deepEqual((await call('GET', '/api/catalog')).pick, { baseCents: 1299, extraCents: 400 });
+    assert.deepEqual(await call('GET', '/api/admin/pick', { token: admin.token }), { baseCents: 1299, extraCents: 400 });
+    // Le prix payé suit : deux plugins à la carte, en mode démo, donnent un abonnement à 12,99 + 4,00.
+    await call('POST', '/api/checkout', { token: user.token, body: { kind: 'pick', productIds: [tuner.id, raw.id] } });
+    assert.equal((await call('GET', '/api/me', { token: user.token })).subscription.priceCents, 1699);
+    await call('PATCH', '/api/admin/pick', { token: admin.token, body: { baseCents: 999, extraCents: 500 } });
+  });
+
   await step('partenaire : son panel ne montre que ses plugins', async () => {
     const mine = await call('GET', '/api/admin/products', { token: partner.token });
     assert.deepEqual(mine.map((p) => p.name), ['ONIRIQUE RAW']);

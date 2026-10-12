@@ -4,7 +4,7 @@ import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import express from 'express';
 import { config } from './config.js';
-import { all, get, run, now, transaction, grantFounders } from './db.js';
+import { all, get, run, now, transaction, grantFounders, setSetting } from './db.js';
 import {
   HttpError, hashPassword, verifyPassword, createSession, destroySession,
   requireUser, requireVerified, requireAdmin, optionalUser, rateLimit, validEmail, publicUser, createResetToken, consumeResetToken,
@@ -14,7 +14,7 @@ import {
 import { mailEnabled, sendMail } from './mail.js';
 import { embedsLicenseKey, MISSING_LICENSE } from './plugincheck.js';
 import {
-  activate, activeSubscription, createLicense, entitlement, generateKey, normalizeKey, pickPlan, pickPriceCents,
+  activate, activeSubscription, createLicense, entitlement, generateKey, normalizeKey, pickPlan, pickPriceCents, pickPrices,
   publicKeyPem, publicKeyRaw, userActivations,
 } from './licensing.js';
 import { cancelSubscription, checkout, handleStripeEvent, verifyStripeSignature } from './payments.js';
@@ -179,7 +179,7 @@ export function createApp() {
       products: all('SELECT * FROM products WHERE published = 1 ORDER BY created_at').map((p) => productView(p, platform)),
       plans: all(`SELECT * FROM plans WHERE active = 1 AND kind = 'all' ORDER BY price_cents`).map(planView),
       // Abonnement à la carte : le prix du premier plugin et de chaque plugin ajouté, par mois.
-      pick: { baseCents: config.pickBaseCents, extraCents: config.pickExtraCents },
+      pick: pickPrices(),
       paymentsMode: config.paymentsMode,
     });
   });
@@ -198,6 +198,7 @@ export function createApp() {
 
   app.get('/api/media/:file', (req, res, next) => {
     if (!/^[a-f0-9]{32}\.(png|jpg|webp|json)$/.test(req.params.file)) return next(new HttpError(404, 'Introuvable.'));
+    res.set('X-Content-Type-Options', 'nosniff'); // des images viennent des utilisateurs : le type annoncé fait foi
     res.sendFile(path.join(config.mediaDir, req.params.file), { maxAge: '7d' }, (error) => error && next(new HttpError(404, 'Introuvable.')));
   });
 
@@ -305,6 +306,38 @@ export function createApp() {
       }
     });
     res.json({ ok: true, enabled: !!enabled });
+  });
+
+  // Photo de profil : une image PNG, JPEG ou WebP de 2 Mo au plus, en corps brut de la requête.
+  app.put('/api/me/avatar', requireUser, wrap(async (req, res) => {
+    rateLimit(`avatar:${req.user.id}`, 20);
+    const ext = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' }[req.headers['content-type']];
+    if (!ext) throw new HttpError(400, 'Image attendue : PNG, JPEG ou WebP.');
+    const file = await receiveFile(req, config.mediaDir, 2 * 1024 * 1024);
+    const stored = path.join(config.mediaDir, file.storedAs);
+    // Le type annoncé ne suffit pas : le début du fichier doit être celui d'une image de ce type.
+    const head = Buffer.alloc(12);
+    const fd = fs.openSync(stored, 'r');
+    fs.readSync(fd, head, 0, 12, 0);
+    fs.closeSync(fd);
+    const real = head.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex')) ? 'png'
+      : head.subarray(0, 3).equals(Buffer.from('ffd8ff', 'hex')) ? 'jpg'
+        : head.toString('latin1', 0, 4) === 'RIFF' && head.toString('latin1', 8, 12) === 'WEBP' ? 'webp' : null;
+    if (real !== ext) {
+      fs.rmSync(stored, { force: true });
+      throw new HttpError(400, "Ce fichier n'est pas une image PNG, JPEG ou WebP valide.");
+    }
+    const name = `${file.storedAs}.${ext}`;
+    fs.renameSync(stored, path.join(config.mediaDir, name));
+    if (req.user.avatar) fs.rmSync(path.join(config.mediaDir, req.user.avatar), { force: true });
+    run('UPDATE users SET avatar = ? WHERE id = ?', name, req.user.id);
+    res.json({ avatar: `/api/media/${name}` });
+  }));
+
+  app.delete('/api/me/avatar', requireUser, (req, res) => {
+    if (req.user.avatar) fs.rmSync(path.join(config.mediaDir, req.user.avatar), { force: true });
+    run('UPDATE users SET avatar = NULL WHERE id = ?', req.user.id);
+    res.json({ ok: true });
   });
 
   app.post('/api/me/profile', requireUser, (req, res) => {
@@ -937,6 +970,22 @@ export function createApp() {
   });
 
   admin.get('/plans', (_req, res) => res.json(all('SELECT * FROM plans ORDER BY price_cents').map(planView)));
+
+  // Abonnement à la carte : le prix du premier plugin et de chaque plugin ajouté, par mois.
+  admin.get('/pick', (_req, res) => res.json(pickPrices()));
+  admin.patch('/pick', (req, res) => {
+    const baseCents = int(req.body.baseCents), extraCents = int(req.body.extraCents);
+    if (baseCents === null || extraCents === null || baseCents < 0 || extraCents < 0 || baseCents > 1_000_00 || extraCents > 1_000_00) {
+      throw new HttpError(400, 'Prix invalide.');
+    }
+    transaction(() => {
+      setSetting('pickBaseCents', baseCents);
+      setSetting('pickExtraCents', extraCents);
+      // La formule à la carte porte le prix du premier plugin.
+      run(`UPDATE plans SET price_cents = ? WHERE kind = 'pick'`, baseCents);
+    });
+    res.json(pickPrices());
+  });
 
   admin.patch('/plans/:id', (req, res) => {
     const plan = get('SELECT * FROM plans WHERE id = ?', int(req.params.id, 0));

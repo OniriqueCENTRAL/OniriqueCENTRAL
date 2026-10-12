@@ -7,11 +7,11 @@ import { state, call, refresh, render, go } from '../app.js';
 const api = (method, route, body) => call('api', method, `/api/admin${route}`, body);
 
 /** Données du panel, chargées onglet par onglet. */
-const data = { overview: null, plans: null, credits: null, products: null, licenses: null, users: null };
+const data = { overview: null, plans: null, pick: null, credits: null, products: null, licenses: null, users: null };
 const ui = { licenseQuery: '', userQuery: '', generated: null, loading: false, error: null };
 
 const LOADERS = {
-  overview: async () => { [data.overview, data.plans] = await Promise.all([api('GET', '/overview'), api('GET', '/plans')]); },
+  overview: async () => { [data.overview, data.plans, data.pick] = await Promise.all([api('GET', '/overview'), api('GET', '/plans'), api('GET', '/pick')]); },
   products: async () => { data.products = await api('GET', '/products'); },
   licenses: async () => {
     [data.licenses, data.products] = await Promise.all([
@@ -21,7 +21,7 @@ const LOADERS = {
   credits: async () => { [data.credits, data.products] = await Promise.all([api('GET', '/credits'), data.products ?? api('GET', '/products')]); },
 };
 const READY = {
-  overview: () => data.overview && data.plans,
+  overview: () => data.overview && data.plans && data.pick,
   products: () => data.products,
   licenses: () => data.licenses && data.products,
   users: () => data.users,
@@ -74,6 +74,9 @@ function overviewTab() {
         () => api('PATCH', `/plans/${p.id}`, { name: name.value, priceCents: toCents(price), active: active.checked }), 'Formule enregistrée.', true), 'small')));
   };
 
+  // À la carte : le prix du premier plugin, puis celui de chaque plugin ajouté.
+  const pickBase = priceInput(data.pick.baseCents), pickExtra = priceInput(data.pick.extraCents);
+
   return [
     o.paymentsMode !== 'stripe' ? h('p', null, pill(o.paymentsMode === 'demo'
       ? 'Paiements en mode démo : les achats sont accordés sans paiement' : 'Paiements fermés : seules les clés de licence donnent accès', 'warn')) : null,
@@ -82,8 +85,10 @@ function overviewTab() {
       tile('Abonnés', o.subscribers), tile('Machines activées', o.activations), tile('Ventes Stripe', euros(o.revenueCents).replace('Gratuit', '0 €'))),
     h('div', { class: 'panel', style: { 'margin-top': '16px' } }, eyebrow('Formules d\'abonnement'),
       table(['Nom', 'Prix (€)', '', '', ''], data.plans.filter((p) => p.kind !== 'pick').map(planRow), 'Aucune formule.'),
-      h('p', { class: 'muted', style: { margin: '14px 0 0', 'font-size': '12.5px' } },
-        'L\'abonnement à la carte (un prix pour le premier plugin, un supplément par plugin ajouté) se règle dans la configuration du serveur.')),
+      h('div', { class: 'row wrap', style: { 'margin-top': '16px', 'align-items': 'flex-end' } },
+        field('À la carte : premier plugin (€ par mois)', pickBase), field('Chaque plugin ajouté (€ par mois)', pickExtra),
+        button('Enregistrer', () => changed(
+          () => api('PATCH', '/pick', { baseCents: toCents(pickBase), extraCents: toCents(pickExtra) }), 'Abonnement à la carte enregistré.', true), 'small'))),
     h('div', { class: 'panel' }, h('div', { class: 'row between wrap' },
       h('div', { class: 'row' }, eyebrow('Support'), pill(`${o.supportMessages} demande(s)`, o.supportMessages ? 'hot' : '')),
       button('Ouvrir le panel support', () => go('support-admin'), 'small'))),

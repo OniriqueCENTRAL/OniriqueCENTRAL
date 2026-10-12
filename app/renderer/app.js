@@ -1,4 +1,4 @@
-import { h, star, toast, eyebrow, button, attempt, ROLES, isStaff, hasPanel } from './ui.js';
+import { h, star, toast, eyebrow, button, attempt, ROLES, isStaff, hasPanel, defaultAvatar } from './ui.js';
 import { authView, offlineView } from './views/auth.js';
 import { libraryView, detailView, status } from './views/library.js';
 import { licensesView } from './views/licenses.js';
@@ -70,6 +70,13 @@ function pendingUpdates({ catalog }) {
   return catalog.products.filter((p) => status(p).right && status(p).update).length;
 }
 
+/** La photo de profil d'un compte ; en attendant qu'elle arrive, ou s'il n'en a pas, l'avatar par défaut. */
+export function avatar(user, big = false) {
+  const image = h('img', { class: `avatar${big ? ' big' : ''}`, alt: '', src: defaultAvatar(user) });
+  if (user.avatar) call('media', user.avatar).then((src) => { image.src = src; }).catch(() => {});
+  return image;
+}
+
 function sidebar() {
   const { me } = state.data;
   const item = (name, label, count) => h('button', {
@@ -98,7 +105,7 @@ function sidebar() {
       }, h('span', { class: `led${me.user.selfLicenses ? ' on' : ''}` }), me.user.selfLicenses ? 'Mes licences : activées' : 'Mes licences : désactivées')] : null,
     h('div', { class: 'spacer' }),
     h('button', { class: 'user-chip', onclick: () => go('account') },
-      h('div', { class: 'avatar' }, (me.user.name || me.user.email)[0].toUpperCase()),
+      avatar(me.user),
       h('div', { class: 'who' },
         h('div', { class: 'email' }, me.user.name || me.user.email),
         h('div', { class: 'plan' }, plan))));

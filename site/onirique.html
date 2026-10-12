@@ -547,7 +547,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
       <a href="support.html">Support</a>
     </nav>
     <div class="nav-actions">
-      <a class="btn btn-ghost" id="nav-account" href="compte.html">Connexion</a>
+      <a class="btn btn-ghost" id="nav-account" href="compte.html" data-account>Connexion</a>
       <a class="btn btn-primary" id="nav-buy" href="boutique.html">Acheter</a>
     </div>
   </div>
@@ -677,7 +677,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
           <span class="eyebrow">Écouter</span>
           <h2>Entends ce que fait <em class="dream">chaque bouton.</em></h2>
         </div>
-        <p class="lede">Lance le morceau, bouge les réglages de VocalBox et compare avec le signal brut. Tu peux aussi importer ton propre fichier.</p>
+        <p class="lede">Importe une voix ou un morceau, bouge les réglages de VocalBox et compare avec le signal brut. Ton fichier reste sur ton appareil.</p>
       </div>
 
       <div class="studio reveal">
@@ -699,11 +699,10 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
               </div>
             </div>
             <div class="src" role="group" aria-label="Source audio">
-              <button type="button" data-src="track" aria-pressed="true">Shy · type beat</button>
               <label class="src-file" for="file">Importer ton fichier</label>
               <input id="file" class="sr-only" type="file" accept="audio/*">
             </div>
-            <p class="src-status" id="srcStatus" aria-live="polite"></p>
+            <p class="src-status" id="srcStatus" aria-live="polite">Aucun fichier pour l'instant : importe le tien (MP3, WAV…) pour lancer l'écoute.</p>
           </div>
         </div>
         <div class="controls">
@@ -1239,20 +1238,32 @@ function renderAll() {
 }
 
 /* ================= correspondance boutons -> filtres de la démo */
-const mapEQ = () => ({
-  low: S.eqOn ? S.low * .85 : 0, mud: S.eqOn ? -S.mud : 0, air: S.eqOn ? S.high : 0,
-  deF: S.deessFreq, de: S.deessOn ? -(S.deessAmt / 100) * 14 : 0,
-});
+const mapEQ = () => ({ deF: S.deessFreq, de: S.deessOn ? -(S.deessAmt / 100) * 14 : 0 });
+// LOW / MID / HIGH : les douze filtres du plugin, mêmes fréquences, largeurs et gains (Source/DSP/VocalEQ.h).
+// Chaque ligne : type, fréquence, Q, gain en dB. Le Q d'un passe-haut Web Audio est en dB : -3 = Butterworth.
+function toneEQ(rate) {
+  const on = S.eqOn, l = on ? S.low / 10 : 0, m = on ? S.mud / 10 : 0, h = on ? S.high / 10 : 0;
+  const f = [80, 100, 125][S.lowFreq], hf = [8000, 10000, 20000][S.highFreq];
+  const a = Math.pow(l, 1.25), cd = Math.pow(l, 1.05), t = Math.pow(m, 1.15), u = Math.pow(h, 1.1);
+  return [
+    ["highpass", 12 + 10 * l, -3, 0],
+    ["lowshelf", f, .55, 6 * a], ["peaking", .76 * f, 1, 1.6 * a], ["peaking", 2.16 * f, .9, -2.4 * cd],
+    ["peaking", 300, .85, -6.5 * t], ["peaking", 450, 1.2, -t], ["peaking", 140, .9, 1.6 * m], ["peaking", 2300, .9, .6 * m],
+    ["peaking", 2600, .7, 1.4 * u], ["highshelf", 5500, .5, 2.8 * u],
+    ["highshelf", Math.min(hf, .42 * rate), hf > 15000 ? .35 : .5, 5.5 * u], ["highshelf", Math.min(1.41 * hf, .45 * rate), .55, 3.5 * u],
+  ];
+}
 const PEQ_WEB = ["peaking", "lowshelf", "highshelf", "highpass", "lowpass"];
 function shaperCurve(type, drive) {
-  const n = 2048, c = new Float32Array(n), k = 1 + drive * .55, comp = Math.pow(k, -.55);
-  const b = type === 0 ? .55 * drive / 10 : type === 2 ? .04 * drive / 10 : .12 * drive / 10;
+  // Comme dans le plugin (Source/DSP/Sat*.h) : jusqu'à +30 dB dans l'étage, un biais propre à chaque couleur, et un
+  // niveau de référence (ici les crêtes d'un morceau, -6 dBFS) qui ressort au même niveau : le DRIVE ajoute de la densité, pas du volume.
+  const n = 2048, c = new Float32Array(n), d = drive / 10, k = Math.pow(10, 1.5 * d), ref = .5, mix = Math.min(1, d * 5);
+  const b = type === 0 ? (.04 + .2 * d) * Math.min(1, d * 8) : type === 1 ? (.03 + .09 * d) * Math.min(1, d * 8) : .012 * d;
+  const sh = type === 1 ? u => u / Math.pow(1 + Math.pow(Math.abs(u), 1.4), 1 / 1.4) : Math.tanh;
+  const level = ref / (sh(ref * k + b) - sh(b));
   for (let i = 0; i < n; i++) {
     const x = i / (n - 1) * 2 - 1;
-    let y;
-    if (type === 1) { const sh = u => u / Math.pow(1 + Math.pow(Math.abs(u), 1.4), 1 / 1.4); y = sh(k * x + b) - sh(b); }
-    else y = Math.tanh(k * x + b) - Math.tanh(b);
-    c[i] = y * (drive > 0 ? comp * 1.15 : 1);
+    c[i] = x + mix * ((sh(k * x + b) - sh(b)) * level - x);
   }
   return c;
 }
@@ -1270,17 +1281,16 @@ function buildAudio() {
   N.bus = g();
   N.mediaG = g(); N.mediaG.gain.value = .5;   // -6 dB : un mix masterisé laisse peu de marge
   N.mediaG.connect(N.bus);
-  if (player.el) { N.media = ctx.createMediaElementSource(audio); N.media.connect(N.mediaG); }
   // INPUT -> EQ (+ paramétrique) -> COMPRESSION (1176 puis LA-2A) -> DE-ESSER -> SATURATION -> AUTO GAIN -> OUTPUT
   N.in = g(); N.bus.connect(N.in);
   N.hp = f("highpass", 10, .7);
-  N.low = f("lowshelf", 125, .7); N.mud = f("peaking", 340, 1.1); N.air = f("highshelf", 6500, .7); N.de = f("peaking", 6200, 2.2);
+  N.tone = toneEQ(ctx.sampleRate).map(([type, freq, q]) => f(type, freq, q)); N.de = f("peaking", 6200, 2.2);
   N.peq = [0, 1, 2, 3, 4, 5].map(() => f("peaking", 1000, 1, 0));
   N.fetIn = g(); N.c1 = comp(); N.fetOut = g(); N.c2 = comp(); N.laOut = g();
   N.tapeHi = f("highshelf", 12000, .7);
   N.shaper = ctx.createWaveShaper(); N.shaper.oversample = "4x";
   N.ag = g(); N.out = g(); N.wet = g(); N.dry = g(); N.master = g(); N.master.gain.value = .7;
-  [N.in, N.hp, N.low, N.mud, N.air, ...N.peq, N.fetIn, N.c1, N.fetOut, N.c2, N.laOut, N.de, N.shaper, N.tapeHi, N.ag, N.out, N.wet, N.master]
+  [N.in, N.hp, ...N.tone, ...N.peq, N.fetIn, N.c1, N.fetOut, N.c2, N.laOut, N.de, N.shaper, N.tapeHi, N.ag, N.out, N.wet, N.master]
     .reduce((a, b) => (a.connect(b), b));
   N.bus.connect(N.dry); N.dry.connect(N.master);
   N.preMeter = ctx.createAnalyser(); N.preMeter.fftSize = 2048; N.in.connect(N.preMeter);
@@ -1299,8 +1309,7 @@ function applyAudio(snap) {
   const set = (prm, v, k = tc) => prm.setTargetAtTime(v, t, k);
   set(N.in.gain, dbg(S.input));
   set(N.hp.frequency, S.eqOn && S.lowCut ? 85 : 10);
-  set(N.low.frequency, [80, 100, 125][S.lowFreq]); set(N.air.frequency, [5000, 6500, 9000][S.highFreq]);
-  set(N.low.gain, e.low); set(N.mud.gain, e.mud); set(N.air.gain, e.air);
+  toneEQ(ctx.sampleRate).forEach(([, freq, , gain], i) => { set(N.tone[i].frequency, freq); set(N.tone[i].gain, gain); });
   S.peq.forEach((b, i) => {
     const n = N.peq[i], on = S.eqOn && b.on, type = on ? PEQ_WEB[b.t] : "peaking";
     if (n.type !== type) n.type = type;
@@ -1308,9 +1317,9 @@ function applyAudio(snap) {
   });
   const fetOn = S.compOn && S.compMode !== 1, laOn = S.compOn && S.compMode !== 0;
   set(N.fetIn.gain, fetOn ? dbg(S.fetIn) : 1); set(N.fetOut.gain, fetOn ? dbg(S.fetOut) : 1);
-  set(N.c1.threshold, fetOn ? -18 : 0); set(N.c1.ratio, fetOn ? [4, 8, 12, 20, 20][S.fetRatio] : 1); set(N.c1.knee, fetOn && S.fetRatio < 4 ? 3 : 0);
+  set(N.c1.threshold, fetOn ? [-20, -18, -17, -16, -21][S.fetRatio] : 0); set(N.c1.ratio, fetOn ? [4, 8, 12, 20, 20][S.fetRatio] : 1); set(N.c1.knee, fetOn ? [8, 6, 5, 4, 3][S.fetRatio] : 0);
   set(N.c1.attack, .00002 + (7 - S.fetAttack) / 6 * .00078); set(N.c1.release, .05 + (7 - S.fetRelease) / 6 * 1.05);   // 7 = le plus rapide, comme un 1176
-  set(N.c2.threshold, laOn ? -S.laPeak * .45 : 0); set(N.c2.ratio, laOn ? (S.laLimit ? 12 : 3) : 1); set(N.c2.knee, 12);
+  set(N.c2.threshold, laOn ? -S.laPeak * .45 : 0); set(N.c2.ratio, laOn ? (S.laLimit ? 10 : 3) : 1); set(N.c2.knee, S.laLimit ? 6 : 14);
   set(N.c2.attack, .01); set(N.c2.release, .5); set(N.laOut.gain, laOn ? dbg(S.laGain) : 1);
   set(N.de.frequency, e.deF); set(N.de.gain, e.de);
   const satKey = S.satOn ? S.satType : -1;
@@ -1335,48 +1344,27 @@ $$("[data-ab]").forEach(b => b.addEventListener("click", () => { S.bypass = b.da
 applyPreset(0);   // l'interface s'ouvre sur « Init » : tous les réglages au neutre, rien n'est modifié d'avance
 $("#presetList").innerHTML = FACTORY.map(p => `<span>${p[0]}</span>`).join("");
 $("#mbPresetList").innerHTML = MB_PRESETS.map(p => `<span>${p[0]}</span>`).join("");
-/* ================= lecture : morceau de démo ou fichier de l'auditeur
-   Le morceau est téléchargé puis décodé en Web Audio (fonctionne en ligne, y compris dans un cadre sécurisé).
-   Si le téléchargement est impossible (page ouverte depuis le disque), on bascule sur une balise <audio>.
-   Rien ne joue tant que l'auditeur n'a pas appuyé sur lecture. */
-const DEMO = "assets/demo.mp3";
-const audio = new Audio(); audio.loop = true; audio.preload = "none";
-const player = { buf: null, demoBuf: null, node: null, startedAt: 0, offset: 0, el: false };
+/* ================= lecture : le fichier de l'auditeur, décodé dans son navigateur (rien n'est envoyé) */
+const player = { buf: null, node: null, startedAt: 0, offset: 0 };
 const playBtn = $("#play"), seek = $("#seek"), tCur = $("#tCur"), tDur = $("#tDur"), srcStatus = $("#srcStatus");
 const fmtT = s => isFinite(s) && s > 0 ? Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0") : "0:00";
 const decode = ab => new OfflineAudioContext(2, 1, 48000).decodeAudioData(ab);
 
-const demoReady = fetch(DEMO)
-  .then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
-  .then(decode)
-  .then(b => { player.demoBuf = b; if (!player.buf) player.buf = b; })
-  .catch(() => {
-    player.el = true; audio.src = DEMO;
-    audio.addEventListener("error", () => { if (player.el) srcStatus.textContent = "Le morceau de démo n'a pas pu être chargé."; }, { once: true });
-  });
-
-const trackDur = () => player.el ? (audio.duration || 0) : (player.buf ? player.buf.duration : 0);
+const trackDur = () => player.buf ? player.buf.duration : 0;
 function trackTime() {
-  if (player.el) return audio.currentTime;
   if (!player.buf) return 0;
   return player.node ? (player.offset + ctx.currentTime - player.startedAt) % player.buf.duration : player.offset;
 }
 function playTrack() {
-  if (player.el) {
-    if (!N.media) { N.media = ctx.createMediaElementSource(audio); N.media.connect(N.mediaG); }
-    return audio.play();
-  }
   if (player.node) return;
   const n = ctx.createBufferSource(); n.buffer = player.buf; n.loop = true; n.connect(N.mediaG);
   player.offset %= player.buf.duration; n.start(0, player.offset);
   player.node = n; player.startedAt = ctx.currentTime;
 }
 function pauseTrack() {
-  audio.pause();
   if (player.node) { player.offset = trackTime(); player.node.stop(); player.node.disconnect(); player.node = null; }
 }
 function seekTrack(t) {
-  if (player.el) { audio.currentTime = t; return; }
   const was = !!player.node; if (was) pauseTrack(); player.offset = t; if (was) playTrack();
 }
 function setPlaying(on) {
@@ -1391,7 +1379,6 @@ async function play() {
   setPlaying(true);
   try {
     await ctx.resume();
-    if (!player.el && !player.buf) { srcStatus.textContent = "Chargement du morceau…"; await demoReady; srcStatus.textContent = ""; }
     if (playing) await playTrack();
   } catch {
     srcStatus.textContent = "Ce fichier ne peut pas être lu par ton navigateur.";
@@ -1399,18 +1386,12 @@ async function play() {
   }
 }
 function stop() { setPlaying(false); if (ctx) pauseTrack(); }
-playBtn.addEventListener("click", () => playing ? stop() : play());
+// Sans fichier, le bouton de lecture ouvre le choix du fichier.
+playBtn.addEventListener("click", () => !player.buf ? $("#file").click() : playing ? stop() : play());
 // page cachée ou quittée : on coupe le son
 document.addEventListener("visibilitychange", () => { if (document.hidden && playing) stop(); });
 addEventListener("pagehide", () => { stop(); try { ctx && ctx.close(); } catch {} });
 
-$("[data-src='track']").addEventListener("click", e => {
-  if (!player.demoBuf || player.buf === player.demoBuf) return;
-  const was = playing; stop();
-  player.buf = player.demoBuf; player.offset = 0; srcStatus.textContent = "";
-  e.currentTarget.setAttribute("aria-pressed", "true");
-  if (was) play();
-});
 $("#file").addEventListener("change", async e => {
   const file = e.target.files[0]; e.target.value = ""; if (!file) return;
   srcStatus.textContent = "Décodage de « " + file.name + " »…";
@@ -1418,9 +1399,8 @@ $("#file").addEventListener("change", async e => {
   try { buf = await decode(await file.arrayBuffer()); }
   catch { srcStatus.textContent = "Ce fichier ne peut pas être lu par ton navigateur. Essaie un MP3 ou un WAV."; return; }
   stop();
-  player.el = false; player.buf = buf; player.offset = 0;
+  player.buf = buf; player.offset = 0;
   srcStatus.textContent = "Lecture de « " + file.name + " ». Le fichier reste sur ton appareil.";
-  $("[data-src='track']").setAttribute("aria-pressed", "false");
   play();
 });
 /* volume d'écoute, mémorisé dans ce navigateur */
@@ -1453,19 +1433,20 @@ function updateTransport() {
   seek.value = p; seek.style.setProperty("--p", p * 100 + "%");
 }
 seek.addEventListener("input", () => { seeking = true; seek.style.setProperty("--p", seek.value * 100 + "%"); tCur.textContent = fmtT(seek.value * trackDur()); });
-seek.addEventListener("change", () => { const t = seek.value * trackDur(); if (player.el) audio.currentTime = t; else if (ctx) seekTrack(t); else player.offset = t; seeking = false; });
+seek.addEventListener("change", () => { const t = seek.value * trackDur(); if (ctx) seekTrack(t); else player.offset = t; seeking = false; });
 
 /* ================= courbe d'EQ + spectre */
 const scope = $("#scope"), sctx = scope.getContext("2d");
 const off = new OfflineAudioContext(1, 128, 44100);
-const cf = ["lowshelf", "peaking", "highshelf", "peaking"].map(t => { const x = off.createBiquadFilter(); x.type = t; return x; });
-cf[0].frequency.value = 120; cf[1].frequency.value = 340; cf[1].Q.value = 1.1; cf[2].frequency.value = 6500; cf[3].Q.value = 2.2;
+const cf = Array.from({ length: 13 }, () => off.createBiquadFilter());   // les douze filtres de l'EQ, puis le de-esser
+cf[12].type = "peaking"; cf[12].Q.value = 2.2;
 const NPTS = 220, fr = new Float32Array(NPTS).map((_, i) => 20 * Math.pow(1000, i / (NPTS - 1)));
 const mag = new Float32Array(NPTS), ph = new Float32Array(NPTS), sum = new Float32Array(NPTS);
 let curveDirty = true; drawCurveSoon = () => curveDirty = true;
 function computeCurve() {
   const e = mapEQ();
-  cf[0].gain.value = e.low; cf[1].gain.value = e.mud; cf[2].gain.value = e.air; cf[3].frequency.value = e.deF; cf[3].gain.value = e.de;
+  toneEQ(44100).forEach(([type, freq, q, gain], i) => { const x = cf[i]; x.type = type; x.frequency.value = freq; x.Q.value = q; x.gain.value = gain; });
+  cf[12].frequency.value = e.deF; cf[12].gain.value = e.de;
   sum.fill(0);
   for (const x of cf) { x.getFrequencyResponse(fr, mag, ph); for (let i = 0; i < NPTS; i++) sum[i] += 20 * Math.log10(mag[i]); }
   curveDirty = false;
@@ -1589,16 +1570,14 @@ function drawReso(t) {
 // ANALYZER / PARAMETRIC EQ : spectre + courbe de l'EQ (bandes LOW / MID / HIGH + 6 bandes paramétriques)
 const NF = 256, FR = new Float32Array(NF).map((_, i) => 20 * Math.pow(1000, i / (NF - 1)));
 const offA = new OfflineAudioContext(1, 128, 48000);
-const AF = { low: offA.createBiquadFilter(), mud: offA.createBiquadFilter(), air: offA.createBiquadFilter(), hp: offA.createBiquadFilter(), peq: [0, 1, 2, 3, 4, 5].map(() => offA.createBiquadFilter()) };
+const AF = { tone: Array.from({ length: 12 }, () => offA.createBiquadFilter()), hp: offA.createBiquadFilter(), peq: [0, 1, 2, 3, 4, 5].map(() => offA.createBiquadFilter()) };
 const magA = new Float32Array(NF), phA = new Float32Array(NF), curveA = new Float32Array(NF);
 let anaDirty = true;
 function computeAna() {
-  const e = mapEQ(); curveA.fill(0);
+  curveA.fill(0);
   const add = (n) => { n.getFrequencyResponse(FR, magA, phA); for (let i = 0; i < NF; i++) curveA[i] += 20 * Math.log10(Math.max(magA[i], 1e-5)); };
   if (S.eqOn) {
-    AF.low.type = "lowshelf"; AF.low.frequency.value = [80, 100, 125][S.lowFreq]; AF.low.gain.value = e.low; add(AF.low);
-    AF.mud.type = "peaking"; AF.mud.frequency.value = 340; AF.mud.Q.value = 1.1; AF.mud.gain.value = e.mud; add(AF.mud);
-    AF.air.type = "highshelf"; AF.air.frequency.value = [5000, 6500, 9000][S.highFreq]; AF.air.gain.value = e.air; add(AF.air);
+    toneEQ(48000).forEach(([type, freq, q, gain], i) => { const n = AF.tone[i]; n.type = type; n.frequency.value = freq; n.Q.value = q; n.gain.value = gain; add(n); });
     if (S.lowCut) { AF.hp.type = "highpass"; AF.hp.frequency.value = 85; add(AF.hp); }
     S.peq.forEach((b, i) => { if (!b.on) return; const n = AF.peq[i]; n.type = PEQ_WEB[b.t]; n.frequency.value = b.f; n.Q.value = b.q; n.gain.value = b.g; add(n); });
   }
@@ -1796,26 +1775,16 @@ function confirmNotice(user, token) {
   document.body.append(bar);
 }
 
-// Déjà connecté : le bouton « Connexion » affiche le nom du compte.
-(() => {
-  let token = null;
-  try { token = sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"); } catch {}
-  if (!token) return;
-  fetch("/api/me", { headers: { Authorization: "Bearer " + token } }).then(r => r.ok ? r.json() : null).then(me => {
-    if (!me || !me.user) return;
-    const link = document.getElementById("nav-account");
-    link.textContent = me.user.name || me.user.email.split("@")[0];
-    link.title = "Mon compte";
-    // Connecté : à côté du nom, le bouton ne propose plus d'acheter mais de télécharger ONIRIQUE CENTRAL.
-    const get = document.getElementById("nav-buy"), mac = /Mac/i.test(navigator.platform);
-    get.textContent = "Télécharger";
-    get.title = "Télécharger ONIRIQUE CENTRAL pour " + (mac ? "Mac" : "Windows");
-    get.href = mac ? "telechargement/ONIRIQUE-CENTRAL.dmg" : "telechargement/ONIRIQUE-CENTRAL-Setup.exe";
-    get.setAttribute("download", "");
-    Object.assign(link.style, { maxWidth: "190px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "inline-block" });
-    confirmNotice(me.user, token);
-  }).catch(() => {});
-})();
+// Déjà connecté : assets/account.js remplace « Connexion » par le menu du compte, puis annonce le compte ici.
+document.addEventListener("onirique:account", ({ detail: me }) => {
+  // À côté du compte, le bouton ne propose plus d'acheter mais de télécharger ONIRIQUE CENTRAL.
+  const get = document.getElementById("nav-buy"), mac = /Mac/i.test(navigator.platform);
+  get.textContent = "Télécharger";
+  get.title = "Télécharger ONIRIQUE CENTRAL pour " + (mac ? "Mac" : "Windows");
+  get.href = mac ? "telechargement/ONIRIQUE-CENTRAL.dmg" : "telechargement/ONIRIQUE-CENTRAL-Setup.exe";
+  get.setAttribute("download", "");
+  confirmNotice(me.user, sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"));
+});
 
 fetch("/api/credits").then(r => r.ok ? r.json() : null).then(list => { if (list && list.length) renderCredits(list); }).catch(() => {});
 
@@ -1906,3 +1875,4 @@ $$("[data-buy]").forEach(a => {
 });
 })();
 </script>
+<script src="assets/account.js"></script>

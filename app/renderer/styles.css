@@ -119,11 +119,11 @@ body {
 }
 .user-chip:hover { border-color: var(--line-strong); }
 .avatar {
-  flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
-  font: 800 12px var(--display); color: var(--bone);
+  flex: none; width: 32px; height: 32px; border-radius: 50%; object-fit: cover;
   background: radial-gradient(circle at 35% 30%, var(--ember-hot), var(--blood) 70%);
   box-shadow: 0 0 14px rgba(226, 52, 68, 0.45);
 }
+.avatar.big { width: 72px; height: 72px; }
 .user-chip .who { min-width: 0; }
 .user-chip .who div { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .user-chip .who .email { font-size: 12.5px; }

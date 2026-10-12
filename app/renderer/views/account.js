@@ -1,5 +1,5 @@
 import { h, eyebrow, field, button, date, attempt, toast, pill, ROLES } from '../ui.js';
-import { state, call, refresh } from '../app.js';
+import { state, call, refresh, avatar } from '../app.js';
 
 export function accountView() {
   const { me, settings } = state.data;
@@ -15,6 +15,19 @@ export function accountView() {
     field('E-mail', h('input', { type: 'email', value: me.user.email, disabled: true })),
     field('Nom', name),
     h('div', null, h('button', { class: 'btn', type: 'submit' }, 'Enregistrer')));
+
+  // Photo de profil : la même que sur le site. Une image de 2 Mo au plus, choisie sur cet ordinateur.
+  const photo = h('div', { class: 'row', style: { 'margin-bottom': '18px' } }, avatar(me.user, true),
+    button('Changer la photo', async () => {
+      try {
+        if (await call('me:avatar')) { toast('Photo enregistrée.'); await refresh(); }
+      } catch (error) {
+        toast(error.message, true);
+      }
+    }),
+    me.user.avatar ? button('Retirer', async () => {
+      if (await attempt(() => call('api', 'DELETE', '/api/me/avatar'), 'Photo retirée.')) await refresh();
+    }, 'quiet') : null);
 
   const current = h('input', { type: 'password', autocomplete: 'current-password', required: true });
   const next = h('input', { type: 'password', autocomplete: 'new-password', required: true, minLength: 8 });
@@ -50,7 +63,7 @@ export function accountView() {
       me.user.role !== 'user' ? h('span', { style: { 'margin-left': '12px' } }, pill(ROLES[me.user.role] ?? me.user.role, 'hot')) : null),
 
     h('div', { class: 'grid2' },
-      h('div', { class: 'panel' }, eyebrow('Profil'), profile),
+      h('div', { class: 'panel' }, eyebrow('Profil'), photo, profile),
       h('div', { class: 'panel', style: { 'margin-top': 0 } }, eyebrow('Sécurité'), password)),
 
     h('div', { class: 'panel' }, eyebrow('Cette installation'),

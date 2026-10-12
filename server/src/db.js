@@ -213,6 +213,9 @@ if (!hasColumn('products', 'creator')) {
 // un client) : c'est ce réglage, par compte. Il ne vaut que tant que le compte porte un de ces rôles.
 if (!hasColumn('users', 'self_licenses')) db.exec('ALTER TABLE users ADD COLUMN self_licenses INTEGER NOT NULL DEFAULT 0');
 
+// Photo de profil : un fichier image dans media/, ou rien (le site et l'application dessinent alors l'avatar par défaut).
+if (!hasColumn('users', 'avatar')) db.exec('ALTER TABLE users ADD COLUMN avatar TEXT');
+
 /** Donne le rôle de fondateur aux adresses de la configuration, une fois leur adresse validée. */
 export function grantFounders() {
   for (const email of config.founderEmails) {
@@ -222,6 +225,15 @@ export function grantFounders() {
 grantFounders();
 
 export const now = () => Date.now();
+
+/** Un réglage modifiable depuis le panel admin (table settings), ou la valeur de la configuration s'il n'a jamais été changé. */
+export const setting = (key, fallback) => {
+  const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key);
+  return row ? JSON.parse(row.value) : fallback;
+};
+export const setSetting = (key, value) => {
+  db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').run(key, JSON.stringify(value));
+};
 
 export const get = (sql, ...params) => db.prepare(sql).get(...params);
 export const all = (sql, ...params) => db.prepare(sql).all(...params);

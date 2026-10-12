@@ -269,11 +269,21 @@ app.whenReady().then(() => {
     return shell.openExternal(`mailto:${email}?subject=${encodeURIComponent(`Re: ${String(subject || '').slice(0, 120)}`)}`);
   });
 
-  handle('admin:uploadImage', ({ productId, filePath }) => {
-    const file = picked(filePath);
+  const imageType = (file) => {
     const type = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' }[path.extname(file).toLowerCase()];
     if (!type) throw new Error('Image attendue : PNG, JPEG ou WebP.');
-    return api.upload('PUT', `/api/admin/products/${Number(productId)}/image`, file, type, () => {});
+    return type;
+  };
+  handle('admin:uploadImage', ({ productId, filePath }) => {
+    const file = picked(filePath);
+    return api.upload('PUT', `/api/admin/products/${Number(productId)}/image`, file, imageType(file), () => {});
+  });
+
+  // Photo de profil : une image choisie sur cet ordinateur. Rien n'est envoyé si la fenêtre de choix est refermée.
+  handle('me:avatar', async () => {
+    const file = await pickFile('image');
+    if (!file) return null;
+    return api.upload('PUT', '/api/me/avatar', file.path, imageType(file.path), () => {});
   });
 
   // Les images du serveur sont remises à l'interface en data: URL (la CSP n'autorise aucune origine distante).
