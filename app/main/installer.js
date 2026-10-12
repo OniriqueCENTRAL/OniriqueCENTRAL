@@ -82,7 +82,7 @@ async function powershell(script, elevated) {
       `$p = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList ` +
       `@('-NoProfile','-ExecutionPolicy','Bypass','-File',${quote(`"${file}"`)}); exit $p.ExitCode`]);
   } catch {
-    throw new Error("L'opération demande les droits administrateur et n'a pas abouti.");
+    throw new Error("L'opération n'a pas abouti : acceptez la demande de droits administrateur, ou fermez votre DAW si le plugin y est ouvert, puis réessayez.");
   } finally {
     fs.rmSync(file, { force: true });
   }
@@ -90,19 +90,49 @@ async function powershell(script, elevated) {
 
 const needsElevation = (error) => ['EPERM', 'EACCES'].includes(error.code);
 const busy = (error) => error.code === 'EBUSY';
-const BUSY_MESSAGE = 'Le fichier est en cours d\'utilisation : fermez votre DAW ou l\'application, puis réessayez.';
+
+/**
+ * Windows refuse de supprimer un plugin qu'un DAW a chargé, même à un administrateur, mais accepte de le renommer :
+ * l'ancien fichier est écarté sous un nom que les DAW ne lisent pas, et supprimé plus tard, une fois libéré.
+ */
+const ASIDE = '.ancien-';
+const asideName = (file) => `${path.basename(file)}${ASIDE}${crypto.randomBytes(4).toString('hex')}`;
+
+function sweepAside(directory) {
+  let entries = [];
+  try { entries = fs.readdirSync(directory); } catch { return; }
+  for (const entry of entries) {
+    if (!entry.includes(ASIDE)) continue;
+    try { fs.rmSync(path.join(directory, entry), { recursive: true, force: true }); } catch { /* encore chargé : au prochain passage */ }
+  }
+}
+
+/** Retire un fichier ; s'il est en cours d'utilisation, l'écarte. */
+function clear(file) {
+  try {
+    fs.rmSync(file, { recursive: true, force: true });
+  } catch (error) {
+    if (MAC || !fs.existsSync(file)) throw error;
+    fs.renameSync(file, path.join(path.dirname(file), asideName(file)));
+  }
+}
+
+/** La même chose avec les droits administrateur, pour un dossier où l'utilisateur ne peut pas écrire. */
+const clearElevated = (file) =>
+  `if (Test-Path -LiteralPath ${quote(file)}) { try { Remove-Item -LiteralPath ${quote(file)} -Recurse -Force } ` +
+  `catch { Rename-Item -LiteralPath ${quote(file)} -NewName ${quote(asideName(file))} -Force } }`;
 
 async function place(source, destination) {
   try {
     fs.mkdirSync(path.dirname(destination), { recursive: true });
-    fs.rmSync(destination, { recursive: true, force: true });
+    sweepAside(path.dirname(destination));
+    clear(destination);
     fs.copyFileSync(source, destination);
   } catch (error) {
-    if (busy(error)) throw new Error(BUSY_MESSAGE);
-    if (MAC || !needsElevation(error)) throw error;
+    if (MAC || !(needsElevation(error) || busy(error))) throw error;
     await powershell(
       `New-Item -ItemType Directory -Force -Path ${quote(path.dirname(destination))} | Out-Null; ` +
-      `if (Test-Path -LiteralPath ${quote(destination)}) { Remove-Item -LiteralPath ${quote(destination)} -Recurse -Force }; ` +
+      `${clearElevated(destination)}; ` +
       `Copy-Item -LiteralPath ${quote(source)} -Destination ${quote(destination)} -Force`, true);
   }
   if (!fs.existsSync(destination)) throw new Error("Le fichier n'a pas pu être copié.");
@@ -206,11 +236,10 @@ async function uninstall(product) {
   if (record && !record.path) throw new Error('Ce logiciel a son propre désinstallateur : retirez-le depuis « Applications installées » de Windows.');
   if (record?.path && fs.existsSync(record.path)) {
     try {
-      fs.rmSync(record.path, { recursive: true, force: true });
+      clear(record.path);
     } catch (error) {
-      if (busy(error)) throw new Error(BUSY_MESSAGE);
-      if (MAC || !needsElevation(error)) throw error;
-      await powershell(`Remove-Item -LiteralPath ${quote(record.path)} -Recurse -Force`, true);
+      if (MAC || !(needsElevation(error) || busy(error))) throw error;
+      await powershell(clearElevated(record.path), true);
     }
     if (fs.existsSync(record.path)) throw new Error("Le plugin n'a pas pu être supprimé.");
   }
