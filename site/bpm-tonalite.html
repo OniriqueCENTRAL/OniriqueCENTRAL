@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Détecteur de BPM et de tonalité — ONIRIQUE</title>
+<meta name="description" content="Dépose un morceau ou une instru : son tempo (BPM) et sa tonalité sont détectés dans ton navigateur, gratuitement. Le fichier ne quitte pas ton appareil.">
+<link rel="canonical" href="https://onirique.store/bpm-tonalite">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css">
+<style>
+/* BPM et tonalité : la base des pages de texte, avec le fond de la boutique, la zone de dépôt et la carte du résultat. */
+:root { --blood: #5C0008; --deep-2: #2A0A0E; --f-dream: "Grenze Gotisch", Georgia, serif;
+  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(226,52,68,.55); }
+body { background: radial-gradient(120% 50% at 50% -10%, rgba(140,6,20,.75), rgba(92,0,8,.4) 38%, transparent 72%) fixed, var(--night); }
+.wrap { max-width: 980px; }
+header nav { display: flex; align-items: center; gap: 10px; }
+.hero { text-align: center; }
+h1 { font-size: clamp(28px, 6vw, 52px); }
+h1 em, h2 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
+.lede { margin-inline: auto; max-width: 58ch; color: var(--haze); }
+
+.drop { display: grid; justify-items: center; gap: 10px; width: 100%; margin-top: 30px; padding: clamp(28px, 6vw, 54px) 20px; border: 1.5px dashed rgba(255,210,214,.3); border-radius: 22px; background: rgba(0,0,0,.42); color: var(--mist); font: inherit; cursor: pointer; transition: border-color .2s, background .2s; }
+.drop:hover, .drop.over { border-color: var(--ember); background: rgba(226,52,68,.1); }
+.drop svg { width: 44px; height: 44px; stroke: var(--ember-text); filter: drop-shadow(0 0 10px rgba(226,52,68,.7)); }
+.drop strong { font: 700 clamp(16px, 2.6vw, 20px)/1.3 var(--f-display); }
+.drop span { color: var(--haze); font-size: 15px; }
+.drop:disabled { cursor: progress; }
+.drop.busy svg { animation: pulse 1.1s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+.hint { margin: 12px 0 0; font-size: 14px; color: var(--haze); }
+.error { margin: 16px 0 0; color: #FF7A85; font-size: 15px; }
+.error:empty { display: none; }
+
+.result { margin-top: 34px; border: 1px solid var(--line); border-radius: 22px; overflow: hidden; background: linear-gradient(180deg, var(--deep-2), var(--deep)); text-align: left; }
+.file { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin: 0; padding: 16px clamp(20px, 4vw, 34px); border-bottom: 1px solid var(--line); background: rgba(0,0,0,.28); font: 500 13px/1.4 var(--f-mono); color: var(--haze); }
+.file b { color: var(--mist); font-weight: 500; overflow-wrap: anywhere; }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; }
+.tile { padding: clamp(22px, 4vw, 36px) clamp(20px, 4vw, 34px); min-width: 0; }
+.tile + .tile { border-left: 1px solid var(--line); }
+.tile .big { margin: 14px 0 10px; font: 800 clamp(54px, 11vw, 96px)/.95 var(--f-display); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.tile .big.key { font: 600 clamp(46px, 9vw, 80px)/.95 var(--f-dream); letter-spacing: 0; text-shadow: var(--glow); }
+.tile .big.long { font-size: clamp(44px, 8vw, 72px); line-height: 1.26; }
+.tile .big small { font: 500 .22em/1 var(--f-mono); letter-spacing: .14em; color: var(--haze); text-shadow: none; }
+.tile p { margin: 0; color: #D9C6C8; font-size: 15px; }
+.tile p + p { margin-top: 4px; color: var(--haze); font-size: 14px; }
+.notes { padding: 6px clamp(20px, 4vw, 34px) 26px; border-top: 1px solid var(--line); }
+.notes .eyebrow { padding: 18px 0 14px; }
+.bars { display: grid; grid-template-columns: repeat(12, 1fr); gap: clamp(4px, 1.2vw, 12px); align-items: end; height: 120px; }
+.bars div { position: relative; height: 100%; display: flex; align-items: flex-end; }
+.bars i { display: block; width: 100%; min-height: 3px; border-radius: 6px 6px 2px 2px; background: rgba(226,52,68,.4); }
+.bars .in i { background: var(--ember); }
+.bars .tonic i { box-shadow: 0 0 18px rgba(226,52,68,.8); background: var(--ember-text); }
+.labels { display: grid; grid-template-columns: repeat(12, 1fr); gap: clamp(4px, 1.2vw, 12px); margin-top: 8px; font: 500 clamp(9px, 1.7vw, 12px)/1 var(--f-mono); color: var(--haze); text-align: center; }
+.labels .tonic { color: var(--mist); }
+.legend { margin: 14px 0 0; font-size: 14px; color: var(--haze); }
+
+.text { max-width: 70ch; }
+.text p { color: #D9C6C8; }
+details { border-top: 1px solid var(--line); }
+details:last-of-type { border-bottom: 1px solid var(--line); }
+summary { padding: 16px 0; cursor: pointer; font-weight: 600; }
+details p { color: #D9C6C8; }
+.cta { margin-top: 56px; padding: clamp(24px, 5vw, 44px); border: 1px solid rgba(226,52,68,.5); border-radius: 22px; background: linear-gradient(180deg, var(--deep-2), var(--deep)); text-align: center; }
+.cta h2 { margin-top: 0; }
+.cta p { margin-inline: auto; max-width: 52ch; color: var(--haze); }
+.go { display: inline-block; margin-top: 10px; padding: 14px 24px; border-radius: 999px; background: var(--mist); color: var(--night); font: 600 15px/1 var(--f-body); text-decoration: none; box-shadow: 0 10px 40px -10px rgba(226,52,68,.6); }
+.go:hover { color: var(--night); box-shadow: 0 0 0 6px rgba(226,52,68,.18), 0 18px 50px -12px rgba(226,52,68,.8); }
+
+@media (max-width: 620px) {
+  .brand { font-size: 0; gap: 0; } header .btn { padding: 10px 12px; font-size: 13px; }
+  .tiles { grid-template-columns: 1fr; } .tile + .tile { border-left: 0; border-top: 1px solid var(--line); }
+}
+@media (prefers-reduced-motion: reduce) { .drop.busy svg { animation: none; } }
+[hidden] { display: none !important; }
+</style>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="bpm-tonalite.html" data-tools>Outils</a><a class="btn" href="compte.html" data-account>Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <section class="hero">
+    <p class="eyebrow">Outil gratuit</p>
+    <h1>Le <em>tempo</em> et la <em>tonalité</em> de ton morceau</h1>
+    <p class="lede">Dépose une instru, une prod ou un titre fini : son BPM et sa tonalité s'affichent en quelques secondes.</p>
+
+    <button class="drop" id="drop" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>
+      <strong id="drop-title">Dépose un fichier audio ici</strong>
+      <span id="drop-text">ou clique pour le choisir · MP3, WAV, FLAC, M4A, OGG</span>
+    </button>
+    <input id="file" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" hidden>
+    <p class="hint">Sans compte. L'analyse se fait dans ton navigateur : ton fichier n'est envoyé nulle part.</p>
+    <p class="error" id="error" role="alert"></p>
+
+    <article class="result" id="result" aria-live="polite" hidden>
+      <p class="file"><b id="r-file"></b><span id="r-length"></span></p>
+      <div class="tiles">
+        <div class="tile">
+          <p class="eyebrow">Tempo</p>
+          <div class="big"><span id="r-bpm"></span> <small>BPM</small></div>
+          <p id="r-bpm-exact"></p>
+          <p id="r-bpm-other"></p>
+        </div>
+        <div class="tile">
+          <p class="eyebrow">Tonalité</p>
+          <div class="big key" id="r-key"></div>
+          <p id="r-key-codes"></p>
+          <p id="r-key-other"></p>
+        </div>
+      </div>
+      <div class="notes" id="r-notes">
+        <p class="eyebrow">Les notes du morceau</p>
+        <div class="bars" id="r-bars" role="img"></div>
+        <div class="labels" id="r-labels" aria-hidden="true"></div>
+        <p class="legend" id="r-legend"></p>
+      </div>
+    </article>
+  </section>
+
+  <section class="text">
+    <h2>Comment lire le résultat</h2>
+    <p><strong>Le tempo</strong> est le nombre de temps par minute. Un même morceau peut se compter deux fois plus vite ou deux fois plus lentement : 70 et 140 BPM décrivent le même battement, senti à la noire ou à la croche. L'outil affiche la lecture la plus probable et rappelle l'autre en dessous.</p>
+    <p><strong>La tonalité</strong> est donnée en français (La mineur), en notation anglaise (A minor, celle des logiciels de musique) et en code Camelot (8A, celui des DJ pour enchaîner deux titres). Une tonalité majeure et sa relative mineure partagent les mêmes notes : Do majeur et La mineur, par exemple. Si l'oreille te dit l'autre, la seconde proposition est sans doute la bonne.</p>
+  </section>
+
+  <section class="text">
+    <h2>Questions fréquentes</h2>
+    <details><summary>Mon fichier est-il envoyé sur un serveur ?</summary>
+      <p>Non. Le fichier est lu et analysé par ton navigateur, sur ton appareil. Rien n'est envoyé ni conservé : tu peux déposer un morceau qui n'est pas encore sorti.</p></details>
+    <details><summary>Quels fichiers sont acceptés ?</summary>
+      <p>Tout ce que ton navigateur sait lire : MP3, WAV, FLAC, M4A, AAC et OGG dans la plupart des cas. Pour un morceau très long, seules les quatre minutes du milieu sont analysées.</p></details>
+    <details><summary>Le résultat est-il toujours juste ?</summary>
+      <p>Le tempo est fiable sur une rythmique régulière, au dixième de BPM près. Il l'est moins sur un morceau sans batterie, joué librement ou qui change de tempo. La tonalité est une estimation à partir des notes les plus présentes : un morceau qui module, très dissonant ou réduit à une ligne de basse peut tromper l'analyse.</p></details>
+    <details><summary>À quoi servent le BPM et la tonalité ?</summary>
+      <p>À caler un projet sur une instru, régler un délai ou une correction de hauteur dans la bonne gamme, préparer un remix, ou enchaîner deux titres qui s'accordent.</p></details>
+  </section>
+
+  <section class="cta">
+    <h2>La bonne gamme, <em>dès la prise</em></h2>
+    <p>Une fois la tonalité connue, il reste à y accorder la voix. Les plugins Onirique s'essaient dans ton navigateur.</p>
+    <a class="go" href="boutique.html">Voir les plugins</a>
+  </section>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="remboursement.html">Rétractation et remboursement</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a>
+  </nav>
+</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const RATE = 22050;        // l'analyse n'a pas besoin de plus
+const MAX_SECONDS = 240;   // au-delà, seul le milieu du morceau est analysé
+const MAX_BYTES = 400e6;
+const FR = ["Do", "Do♯", "Ré", "Mi♭", "Mi", "Fa", "Fa♯", "Sol", "La♭", "La", "Si♭", "Si"];
+const EN = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"];
+const SCALES = { major: [0, 2, 4, 5, 7, 9, 11], minor: [0, 2, 3, 5, 7, 8, 10] };
+const el = (tag, props = {}) => Object.assign(document.createElement(tag), props);
+
+const keyName = (k) => FR[k.tonic] + (k.mode === "major" ? " majeur" : " mineur");
+const keyEnglish = (k) => EN[k.tonic] + (k.mode === "major" ? " major" : " minor");
+/** Code Camelot : la roue des quintes numérotée de 1 à 12, B pour majeur, A pour mineur. */
+const camelot = (k) => ((((k.mode === "major" ? k.tonic : k.tonic + 3) * 7) % 12 + 7) % 12 + 1) + (k.mode === "major" ? "B" : "A");
+const decimal = (n) => n.toFixed(1).replace(".", ",");
+const clock = (s) => Math.floor(s / 60) + ":" + String(Math.round(s % 60)).padStart(2, "0");
+
+function busy(on, title) {
+  $("drop").disabled = on;
+  $("drop").classList.toggle("busy", on);
+  $("drop-title").textContent = title || "Dépose un fichier audio ici";
+  $("drop-text").hidden = on;
+}
+
+/** Le son du fichier, en mono à 22 050 Hz : au plus les quatre minutes du milieu. */
+async function decode(file) {
+  const Context = window.AudioContext || window.webkitAudioContext;
+  const context = new Context();
+  let audio;
+  try {
+    const bytes = await file.arrayBuffer();
+    audio = await new Promise((resolve, reject) => { const p = context.decodeAudioData(bytes, resolve, reject); if (p && p.catch) p.catch(reject); });
+  } finally { context.close(); }
+  const length = Math.min(audio.duration, MAX_SECONDS), start = (audio.duration - length) / 2;
+  const offline = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, Math.max(1, Math.floor(length * RATE)), RATE);
+  const source = offline.createBufferSource();
+  source.buffer = audio;
+  source.connect(offline.destination);
+  source.start(0, start, length);
+  return { samples: (await offline.startRendering()).getChannelData(0), duration: audio.duration, analysed: length };
+}
+
+const analyse = (samples) => new Promise((resolve, reject) => {
+  const worker = new Worker("assets/bpm-key-worker.js");
+  worker.onmessage = (event) => { worker.terminate(); resolve(event.data); };
+  worker.onerror = () => { worker.terminate(); reject(new Error("L'analyse a échoué sur ce fichier.")); };
+  worker.postMessage({ samples, sampleRate: RATE }, [samples.buffer]);
+});
+
+function show(file, sound, r) {
+  $("r-file").textContent = file.name;
+  $("r-length").textContent = clock(sound.duration) + (sound.analysed < sound.duration ? " · " + clock(sound.analysed) + " analysées, au milieu" : "");
+
+  if (r.tempo) {
+    const bpm = r.tempo.bpm, others = [bpm / 2, bpm * 2].filter((b) => b >= 40 && b <= 240).map((b) => Math.round(b));
+    // Un tempo entier s'affiche rond ; un tempo qui tombe entre deux (93,5) garde sa décimale.
+    const whole = Math.abs(bpm - Math.round(bpm)) < 0.2;
+    $("r-bpm").textContent = whole ? Math.round(bpm) : decimal(bpm);
+    $("r-bpm").parentNode.classList.toggle("long", !whole);
+    $("r-bpm-exact").textContent = whole ? "Mesuré : " + decimal(bpm) + " BPM" : "";
+    $("r-bpm-other").textContent = others.length ? "Peut aussi se compter à " + others.join(" ou ") + " BPM." : "";
+  } else {
+    $("r-bpm").textContent = "—";
+    $("r-bpm-exact").textContent = "Pas de battement régulier détecté.";
+    $("r-bpm-other").textContent = "";
+  }
+
+  $("r-notes").hidden = !r.key;
+  if (r.key) {
+    $("r-key").textContent = keyName(r.key);
+    $("r-key-codes").textContent = keyEnglish(r.key) + " · Camelot " + camelot(r.key);
+    $("r-key-other").textContent = "Seconde proposition : " + keyName(r.second) + " (" + camelot(r.second) + ")."
+      + (Math.abs(r.tuning - 440) >= 2 ? " Accordage : la = " + Math.round(r.tuning) + " Hz." : "");
+    const scale = SCALES[r.key.mode].map((step) => (r.key.tonic + step) % 12);
+    $("r-bars").replaceChildren(...r.chroma.map((value, note) => {
+      const bar = el("div", { className: note === r.key.tonic ? "tonic in" : scale.includes(note) ? "in" : "" });
+      bar.append(el("i", { style: "height:" + Math.round(value * 100) + "%" }));
+      return bar;
+    }));
+    $("r-labels").replaceChildren(...FR.map((name, note) => el("span", { textContent: name, className: note === r.key.tonic ? "tonic" : "" })));
+    $("r-bars").setAttribute("aria-label", "Présence des douze notes dans le morceau. Tonalité : " + keyName(r.key));
+    $("r-legend").textContent = "En rouge vif, les notes de la gamme de " + keyName(r.key) + " ; plus une barre est haute, plus la note est présente.";
+  } else {
+    $("r-key").textContent = "—";
+    $("r-key-codes").textContent = "Pas assez de notes pour estimer la tonalité.";
+    $("r-key-other").textContent = "";
+  }
+  $("result").hidden = false;
+}
+
+async function open(file) {
+  if (!file || $("drop").disabled) return;
+  $("error").textContent = "";
+  if (file.size > MAX_BYTES) { $("error").textContent = "Ce fichier est trop lourd (400 Mo au plus)."; return; }
+  busy(true, "Lecture du fichier…");
+  try {
+    let sound;
+    try { sound = await decode(file); } catch { throw new Error("Ton navigateur ne sait pas lire ce fichier. Essaie en MP3 ou en WAV."); }
+    busy(true, "Analyse en cours…");
+    const r = await analyse(sound.samples);
+    if (r.error) throw new Error(r.error);
+    show(file, sound, r);
+    busy(false, "Analyser un autre fichier");
+    $("drop-text").hidden = true;
+  } catch (error) {
+    $("result").hidden = true;
+    $("error").textContent = error.message;
+    busy(false);
+  }
+}
+
+$("drop").onclick = () => $("file").click();
+$("file").onchange = () => { open($("file").files[0]); $("file").value = ""; };
+// Le dépôt est accepté n'importe où sur la page : un fichier lâché à côté de la zone n'ouvre pas un nouvel onglet.
+addEventListener("dragover", (event) => { event.preventDefault(); $("drop").classList.add("over"); });
+addEventListener("dragleave", (event) => { if (!event.relatedTarget) $("drop").classList.remove("over"); });
+addEventListener("drop", (event) => { event.preventDefault(); $("drop").classList.remove("over"); open(event.dataTransfer?.files[0]); });
+</script>
+<script src="assets/tools-menu.js"></script>
+<script src="assets/account.js"></script>
+</html>

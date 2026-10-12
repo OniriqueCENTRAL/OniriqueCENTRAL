@@ -3,6 +3,7 @@
 (() => {
   const TOOLS = [
     ["Popularité", "popularite.html", "Score de popularité Spotify"],
+    ["BPM et tonalité", "bpm-tonalite.html", "Tempo et tonalité d'un morceau"],
   ];
   const link = document.querySelector("a[data-tools]");
   if (!link) return;
