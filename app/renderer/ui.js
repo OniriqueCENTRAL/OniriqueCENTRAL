@@ -26,20 +26,20 @@ export function defaultAvatar(user) {
     return `<path d="M${x} ${y - s}L${x + s * 0.2} ${y - s * 0.2}L${x + s} ${y}L${x + s * 0.2} ${y + s * 0.2}L${x} ${y + s}L${x - s * 0.2} ${y + s * 0.2}L${x - s} ${y}L${x - s * 0.2} ${y - s * 0.2}Z" fill="#ffd2d6" opacity=".8"/>`;
   };
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
-efs>
-adialGradient id="n" cx="50%" cy="12%" r="100%"><stop offset="0" stop-color="#9a0a1a"/><stop offset=".42" stop-color="#3a0509"/><stop offset="1" stop-color="#0d0809"/></radialGradient>
-adialGradient id="h" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ff5a68" stop-opacity=".9"/><stop offset=".55" stop-color="#e23444" stop-opacity=".35"/><stop offset="1" stop-color="#e23444" stop-opacity="0"/></radialGradient>
-defs>
-ect width="96" height="96" fill="url(#n)"/>
-ircle cx="48" cy="48" r="34" fill="url(#h)"/>
- fill="none" stroke="#ffd2d6" transform="rotate(${seed * 53 % 360} 48 48)">
-ircle cx="48" cy="48" r="35" stroke-opacity=".34" stroke-width="1" stroke-dasharray="46 10 14 10 30 13"/>
-ircle cx="48" cy="48" r="42" stroke-opacity=".2" stroke-width=".8" stroke-dasharray="1.5 6"/>
-g>
-ath d="M48 16L51.6 44.4L80 48L51.6 51.6L48 80L44.4 51.6L16 48L44.4 44.4Z" fill="#e23444" opacity=".55" transform="translate(48 48) scale(1.28) translate(-48 -48)"/>
-ath d="M48 16L51.6 44.4L80 48L51.6 51.6L48 80L44.4 51.6L16 48L44.4 44.4Z" fill="#f6eeee"/>
-spark(1)}${spark(2)}${spark(3)}
-svg>`;
+<defs>
+<radialGradient id="n" cx="50%" cy="12%" r="100%"><stop offset="0" stop-color="#9a0a1a"/><stop offset=".42" stop-color="#3a0509"/><stop offset="1" stop-color="#0d0809"/></radialGradient>
+<radialGradient id="h" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ff5a68" stop-opacity=".9"/><stop offset=".55" stop-color="#e23444" stop-opacity=".35"/><stop offset="1" stop-color="#e23444" stop-opacity="0"/></radialGradient>
+</defs>
+<rect width="96" height="96" fill="url(#n)"/>
+<circle cx="48" cy="48" r="34" fill="url(#h)"/>
+<g fill="none" stroke="#ffd2d6" transform="rotate(${seed * 53 % 360} 48 48)">
+<circle cx="48" cy="48" r="35" stroke-opacity=".34" stroke-width="1" stroke-dasharray="46 10 14 10 30 13"/>
+<circle cx="48" cy="48" r="42" stroke-opacity=".2" stroke-width=".8" stroke-dasharray="1.5 6"/>
+</g>
+<path d="M48 16L51.6 44.4L80 48L51.6 51.6L48 80L44.4 51.6L16 48L44.4 44.4Z" fill="#e23444" opacity=".55" transform="translate(48 48) scale(1.28) translate(-48 -48)"/>
+<path d="M48 16L51.6 44.4L80 48L51.6 51.6L48 80L44.4 51.6L16 48L44.4 44.4Z" fill="#f6eeee"/>
+${spark(1)}${spark(2)}${spark(3)}
+</svg>`;
   return "data:image/svg+xml," + encodeURIComponent(svg);
 }
 
