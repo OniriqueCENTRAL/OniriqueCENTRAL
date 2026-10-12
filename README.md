@@ -53,15 +53,15 @@ les comptes sont validés d'office.
 
 ## Rôles et créateurs
 
-Un compte porte un rôle : `user` ; `vip` (tous les plugins offerts, sans licence à acheter) ; `abrasion` ou `bloom` (partenaires : le
+Un compte porte un rôle : `user` ; `vip` (tous les plugins offerts, sans licence à acheter) ; `abrasion` ou `relic` (partenaires : le
 panel admin, limité à ses propres plugins, à leurs versions et à leurs licences) ; `admin` ; `founder` (au-dessus des
 admins : lui seul donne ou retire les rôles admin et fondateur, et change le mot de passe d'un admin). Les adresses de
 `FOUNDER_EMAILS` (`server/.env`, séparées par des virgules) reçoivent le rôle `founder` dès que leur adresse est validée.
 Le rôle s'affiche sur la page Compte du site et dans l'application.
-L'équipe et les partenaires (fondateur, admin, abrasion, bloom) ont dans l'application un bouton « Mes licences » :
+L'équipe et les partenaires (fondateur, admin, abrasion, relic) ont dans l'application un bouton « Mes licences » :
 activé, tous les plugins sont offerts à leur compte ; désactivé, ils voient l'application comme un client.
 
-Chaque plugin a un créateur, `onirique`, `abrasion` ou `bloom` (un créateur sans plugin affiche « Bientôt disponible ») : la boutique et la bibliothèque filtrent par créateur et trient
+Chaque plugin a un créateur, `onirique`, `abrasion` ou `relic` (un créateur sans plugin affiche « Bientôt disponible ») : la boutique et la bibliothèque filtrent par créateur et trient
 par prix. `npm test` déroule ces règles dans `server/test/roles.mjs`.
 
 ## Travailler à plusieurs

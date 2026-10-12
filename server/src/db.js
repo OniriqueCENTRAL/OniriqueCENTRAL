@@ -203,7 +203,7 @@ if (!hasColumn('licenses', 'bundle')) {
   db.exec('CREATE INDEX IF NOT EXISTS licenses_bundle ON licenses(bundle)');
 }
 
-// Créateur du plugin : "onirique", ou un partenaire ("abrasion", "bloom") dont les comptes gèrent alors leurs propres plugins.
+// Créateur du plugin : "onirique", ou un partenaire ("abrasion", "relic") dont les comptes gèrent alors leurs propres plugins.
 if (!hasColumn('products', 'creator')) {
   db.exec(`ALTER TABLE products ADD COLUMN creator TEXT NOT NULL DEFAULT 'onirique'`);
   db.exec(`UPDATE products SET creator = 'abrasion' WHERE slug LIKE 'onirique-x-abrasion-%'`);
@@ -235,6 +235,13 @@ db.exec(`CREATE TABLE IF NOT EXISTS stripe_accounts (
   managed        INTEGER NOT NULL DEFAULT 1,
   updated_at     INTEGER NOT NULL
 )`);
+
+
+// Le partenaire s'appelait « bloom », du nom de son plugin : c'est RELIC. Son rôle, ses plugins et son compte de
+// paiement changent de nom avec lui ; BLOOM reste le nom du plugin.
+db.exec(`UPDATE users SET role = 'relic' WHERE role = 'bloom'`);
+db.exec(`UPDATE products SET creator = 'relic' WHERE creator = 'bloom'`);
+db.exec(`UPDATE stripe_accounts SET creator = 'relic' WHERE creator = 'bloom'`);
 
 export const now = () => Date.now();
 

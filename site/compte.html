@@ -241,7 +241,7 @@ function show(me) {
 
   $("who").textContent = me.user.name || me.user.email.split("@")[0];
   // Le rôle du compte, quand il en a un : il est le même ici et dans l'application.
-  const role = { vip: "VIP", abrasion: "Abrasion", bloom: "Bloom", admin: "Admin", founder: "Fondateur" }[me.user.role];
+  const role = { vip: "VIP", abrasion: "Abrasion", relic: "Relic", admin: "Admin", founder: "Fondateur" }[me.user.role];
   $("email-line").textContent = me.user.email + (role ? " · " + role : "");
   $("profile-name").value = me.user.name || "";
   $("profile-email").value = me.user.email;

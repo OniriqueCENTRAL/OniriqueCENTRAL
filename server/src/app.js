@@ -90,7 +90,7 @@ function productView(p, platform) {
   const wanted = platformOf(platform);
   return {
     id: p.id, slug: p.slug, name: p.name, tagline: p.tagline, description: p.description, accent: p.accent,
-    creator: p.creator, // "onirique" ou un partenaire ("abrasion", "bloom")
+    creator: p.creator, // "onirique" ou un partenaire ("abrasion", "relic")
     priceCents: p.price_cents, image: p.image ? `/api/media/${p.image}` : null, published: !!p.published,
     demo: p.demo ? `/api/media/${p.demo}` : null,
     latest: versionView(versions.find((v) => v.platform === wanted)) || null,

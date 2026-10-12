@@ -86,12 +86,12 @@ export function compareVersions(a, b) {
 export const LICENSE_TYPES = { perpetual: 'Perpétuelle', timed: 'Durée limitée', trial: 'Essai', nfr: 'NFR', subscription: 'Abonnement', vip: 'Offert' };
 
 /** Les rôles d'un compte, tels qu'ils s'affichent. */
-export const ROLES = { user: 'Utilisateur', vip: 'VIP', abrasion: 'Abrasion', bloom: 'Bloom', admin: 'Admin', founder: 'Fondateur' };
+export const ROLES = { user: 'Utilisateur', vip: 'VIP', abrasion: 'Abrasion', relic: 'Relic', admin: 'Admin', founder: 'Fondateur' };
 export const isStaff = (user) => user.role === 'admin' || user.role === 'founder';
 /** Qui ouvre le panel admin : l'équipe, en entier ; un partenaire, pour ses propres plugins. */
 export const hasPanel = (user) => isStaff(user) || (user.role !== 'onirique' && user.role in CREATORS);
 /** Les créateurs des plugins : ONIRIQUE, ou un partenaire (dont le rôle porte le même nom). */
-export const CREATORS = { onirique: 'ONIRIQUE', abrasion: 'ABRASION', bloom: 'BLOOM' };
+export const CREATORS = { onirique: 'ONIRIQUE', abrasion: 'ABRASION', relic: 'RELIC' };
 
 //------------------------------------------------------------------------------
 export function toast(message, isError = false) {

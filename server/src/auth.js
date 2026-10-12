@@ -80,11 +80,11 @@ export const shouldConfirm = (user) => mailEnabled && user.email_verified === 2;
 export const mustVerify = (user) => mailEnabled && !user.email_verified && !isStaff(user);
 
 /**
- * Les rôles d'un compte : user ; vip (tous les plugins offerts) ; abrasion et bloom (partenaires : le panel admin, limité à ses
+ * Les rôles d'un compte : user ; vip (tous les plugins offerts) ; abrasion et relic (partenaires : le panel admin, limité à ses
  * propres plugins et à leurs licences) ; admin ; founder (au-dessus des admins : lui seul donne ou retire le rôle admin).
  */
 /** Les partenaires : chacun est à la fois un créateur de plugins et le rôle des comptes qui gèrent ces plugins. */
-export const PARTNERS = ['abrasion', 'bloom'];
+export const PARTNERS = ['abrasion', 'relic'];
 export const ROLES = ['user', 'vip', ...PARTNERS, 'admin', 'founder'];
 export const isStaff = (user) => user.role === 'admin' || user.role === 'founder';
 /** Le créateur dont ce compte gère les plugins, pour un partenaire ; null pour tous les autres. */

@@ -9,7 +9,7 @@
 (() => {
   const TOKEN = "onirique.token";
   const token = () => { try { return sessionStorage.getItem(TOKEN) || localStorage.getItem(TOKEN); } catch { return null; } };
-  const ROLES = { vip: "VIP", abrasion: "Abrasion", bloom: "Bloom", admin: "Admin", founder: "Fondateur" };
+  const ROLES = { vip: "VIP", abrasion: "Abrasion", relic: "Relic", admin: "Admin", founder: "Fondateur" };
   const el = (tag, props = {}, ...children) => {
     const node = Object.assign(document.createElement(tag), props);
     node.append(...children.filter((c) => c !== null && c !== undefined));

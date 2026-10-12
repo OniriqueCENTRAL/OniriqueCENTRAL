@@ -295,18 +295,18 @@ try {
     assert.deepEqual(inPack, ['ONIRIQUE RAW', 'ONIRIQUE TAMA']);
   });
 
-  await step('second partenaire (BLOOM) : son propre périmètre, étanche avec celui d\'ABRASION', async () => {
-    const bloom = await account('bloom');
-    await call('PATCH', `/api/admin/users/${bloom.id}`, { token: admin.token, body: { role: 'bloom' } });
-    assert.deepEqual(await call('GET', '/api/admin/products', { token: bloom.token }), [], 'aucun plugin BLOOM pour le moment');
-    await call('PATCH', `/api/admin/products/${raw.id}`, { token: bloom.token, body: { priceCents: 1 }, expect: 404 });
-    const made = await call('POST', '/api/admin/products', { token: bloom.token, body: { name: 'ONIRIQUE FLEUR', priceCents: 900 }, expect: 201 });
-    assert.equal(made.creator, 'bloom');
-    assert.deepEqual((await call('GET', '/api/admin/products', { token: bloom.token })).map((p) => p.name), ['ONIRIQUE FLEUR']);
+  await step('second partenaire (RELIC) : son propre périmètre, étanche avec celui d\'ABRASION', async () => {
+    const relic = await account('relic');
+    await call('PATCH', `/api/admin/users/${relic.id}`, { token: admin.token, body: { role: 'relic' } });
+    assert.deepEqual(await call('GET', '/api/admin/products', { token: relic.token }), [], 'aucun plugin RELIC pour le moment');
+    await call('PATCH', `/api/admin/products/${raw.id}`, { token: relic.token, body: { priceCents: 1 }, expect: 404 });
+    const made = await call('POST', '/api/admin/products', { token: relic.token, body: { name: 'ONIRIQUE FLEUR', priceCents: 900 }, expect: 201 });
+    assert.equal(made.creator, 'relic');
+    assert.deepEqual((await call('GET', '/api/admin/products', { token: relic.token })).map((p) => p.name), ['ONIRIQUE FLEUR']);
     assert.ok(!(await call('GET', '/api/admin/products', { token: partner.token })).some((p) => p.name === 'ONIRIQUE FLEUR'));
     await call('PATCH', `/api/admin/products/${made.id}`, { token: partner.token, body: { priceCents: 1 }, expect: 404 });
-    await call('PATCH', `/api/admin/products/${made.id}`, { token: admin.token, body: { creator: 'bloom' } });
-    await call('GET', '/api/admin/users', { token: bloom.token, expect: 403 });
+    await call('PATCH', `/api/admin/products/${made.id}`, { token: admin.token, body: { creator: 'relic' } });
+    await call('GET', '/api/admin/users', { token: relic.token, expect: 403 });
   });
 
   await step('paiements : un compte Stripe par créateur, clés chiffrées, chaque compte limité à ses plugins', async () => {
@@ -315,7 +315,7 @@ try {
     const key = { secretKey: 'pas-une-cle' };
     await call('PUT', '/api/admin/payments/onirique', { token: admin.token, body: key, expect: 403 });
     await call('PUT', '/api/admin/payments/onirique', { token: partner.token, body: key, expect: 404 });
-    await call('PUT', '/api/admin/payments/bloom', { token: partner.token, body: key, expect: 404 });
+    await call('PUT', '/api/admin/payments/relic', { token: partner.token, body: key, expect: 404 });
     await call('PUT', '/api/admin/payments/inconnu', { token: founder.token, body: key, expect: 404 });
     await call('PUT', '/api/admin/payments/abrasion', { token: partner.token, body: key, expect: 400 });
     await call('PUT', '/api/admin/payments/onirique', { token: founder.token, body: key, expect: 400 });
@@ -332,7 +332,7 @@ try {
     assert.deepEqual(mine.accounts.map((a) => [a.creator, a.connected, a.test, a.editable]), [['abrasion', true, true, true]]);
     assert.ok(!JSON.stringify(mine).includes('sk_test'));
     const everyone = await call('GET', '/api/admin/payments', { token: admin.token });
-    assert.deepEqual(everyone.accounts.map((a) => [a.creator, a.connected, a.editable]), [['onirique', false, false], ['abrasion', true, false], ['bloom', false, false]]);
+    assert.deepEqual(everyone.accounts.map((a) => [a.creator, a.connected, a.editable]), [['onirique', false, false], ['abrasion', true, false], ['relic', false, false]]);
 
     // Le webhook du partenaire, signé avec son secret, accorde son plugin, pas celui d'un autre créateur.
     const client = await account('acheteur-stripe');
@@ -346,7 +346,7 @@ try {
     };
     const owned = async () => Object.keys((await call('GET', '/api/me', { token: client.token })).entitlements).map(Number);
     await send('abrasion', 'whsec_autre', 'cs_a1', raw.id, 400);
-    await send('bloom', 'whsec_abrasion', 'cs_a1', raw.id, 404);
+    await send('relic', 'whsec_abrasion', 'cs_a1', raw.id, 404);
     await send('abrasion', 'whsec_abrasion', 'cs_a2', tuner.id);
     assert.deepEqual(await owned(), [], 'un compte partenaire ne peut pas accorder le plugin d\'un autre créateur');
     await send('abrasion', 'whsec_abrasion', 'cs_a3', raw.id);
@@ -365,7 +365,7 @@ try {
     config.paymentsMode = 'off'; // comme en production, où rien n'est réglé dans le fichier .env
     run(`DELETE FROM settings WHERE key = 'payments_open'`);
     assert.equal(paymentsMode(), 'stripe');
-    assert.deepEqual(sellers(['onirique', 'abrasion', 'bloom']), [], 'un compte en clé d\'essai ne vend pas au public');
+    assert.deepEqual(sellers(['onirique', 'abrasion', 'relic']), [], 'un compte en clé d\'essai ne vend pas au public');
     saveStripeAccount('abrasion', { secretKey: 'sk_live_abrasion1234567890', webhookSecret: 'whsec_abrasion', name: 'Abrasion' });
     assert.deepEqual((await call('GET', '/api/catalog')).sellers, ['abrasion']);
     await call('PUT', '/api/admin/payments/open', { token: founder.token, body: { open: false } });
