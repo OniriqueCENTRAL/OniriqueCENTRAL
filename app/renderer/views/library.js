@@ -145,7 +145,7 @@ function mainAction(product) {
 const creatorOf = (product) => CREATORS[product.creator] ?? CREATORS.onirique;
 
 /** Ce que la bibliothèque montre : un créateur ou tous, dans l'ordre du catalogue ou par prix. */
-const shown = { creator: 'all', sort: 'none' };
+const shown = { creator: 'all', sort: 'none', os: window.central.platform === 'darwin' ? 'mac' : 'win' };
 const SORTS = { none: 'Tri : par défaut', up: 'Prix croissant', down: 'Prix décroissant' };
 
 //------------------------------------------------------------------------------
@@ -200,6 +200,9 @@ export function detailView(id) {
   if (!product) return libraryView();
   const { right, install: inst, update, busy } = status(product);
   const { machineId, me } = state.data;
+  // L'historique des versions se lit pour un système : celui de cet ordinateur d'abord, s'il existe pour ce plugin.
+  const systems = [['win', 'Windows'], ['mac', 'Mac']].filter(([id]) => product.versions.some((v) => v.platform === id));
+  const os = systems.some(([id]) => id === shown.os) ? shown.os : systems[0]?.[0];
   const activeHere = me.activations.some((a) => a.productId === product.id && a.machineId === machineId);
   const used = me.activations.filter((a) => a.productId === product.id).length;
 
@@ -253,8 +256,14 @@ export function detailView(id) {
         product.demo ? demoView(product) : cover(product, null),
         h('div', { class: 'panel', style: { 'margin-top': '16px' } }, eyebrow('Le plugin'),
           h('div', { class: 'desc' }, (product.description || product.tagline).split(/\n{2,}/).map((text) => h('p', null, text)))),
-        product.versions.length ? h('div', { class: 'panel' }, eyebrow('Historique des versions'),
-          h('ul', { class: 'changelog' }, product.versions.map((v) => h('li', null,
+        product.versions.length ? h('div', { class: 'panel' },
+          h('div', { class: 'row between', style: { 'margin-bottom': '14px' } }, eyebrow('Historique des versions'),
+            // Un historique par système : les notes d'une même version ne sont pas répétées pour Windows et pour Mac.
+            systems.length > 1 ? h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': 'Système' }, systems.map(([id, label]) => h('button', {
+              type: 'button', role: 'radio', 'aria-checked': String(os === id), class: os === id ? 'active' : '',
+              onclick: () => { shown.os = id; render(); },
+            }, label))) : null),
+          h('ul', { class: 'changelog' }, product.versions.filter((v) => v.platform === os).map((v) => h('li', null,
             h('div', { class: 'row' }, h('span', { class: 'mono' }, `v${v.version}`), h('span', { class: 'muted mono', style: { 'font-size': '11px' } }, date(v.createdAt))),
             v.notes ? h('p', null, v.notes) : null)))) : null),
       h('div', null, installBlock, licenseBlock)),
