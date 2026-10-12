@@ -44,6 +44,7 @@ h1 em, h2 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shad
 .tile .big small { font: 500 .22em/1 var(--f-mono); letter-spacing: .14em; color: var(--haze); text-shadow: none; }
 .tile p { margin: 0; color: #D9C6C8; font-size: 15px; }
 .tile p + p { margin-top: 4px; color: var(--haze); font-size: 14px; }
+.tile p.detuned { margin-top: 10px; color: var(--ember-text); font-weight: 600; }
 .trim { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px 24px; align-items: center; padding: 22px clamp(20px, 4vw, 34px); border-top: 1px solid var(--line); background: rgba(0,0,0,.28); }
 .trim p { margin: 0; color: #D9C6C8; font-size: 15px; }
 .trim .eyebrow { margin-bottom: 10px; color: var(--haze); }
@@ -117,6 +118,7 @@ details p { color: #D9C6C8; }
           <div class="big key" id="r-key"></div>
           <p id="r-key-codes"></p>
           <p id="r-key-other"></p>
+          <p id="r-detune"></p>
         </div>
       </div>
       <div class="trim">
@@ -124,7 +126,7 @@ details p { color: #D9C6C8; }
           <p class="eyebrow">Début du fichier</p>
           <p id="r-lead"></p>
         </div>
-        <button class="go" id="r-trim" type="button">Télécharger le WAV calé</button>
+        <button class="go" id="r-trim" type="button">Télécharger</button>
       </div>
       <div class="notes" id="r-notes">
         <p class="eyebrow">Les notes du morceau</p>
@@ -138,7 +140,7 @@ details p { color: #D9C6C8; }
   <section class="text">
     <h2>Comment lire le résultat</h2>
     <p><strong>Le tempo</strong> est le nombre de temps par minute. Un même morceau peut se compter deux fois plus vite ou deux fois plus lentement : 70 et 140 BPM décrivent le même battement, senti à la noire ou à la croche. L'outil affiche la lecture la plus probable et rappelle l'autre en dessous.</p>
-    <p><strong>La tonalité</strong> est écrite comme elle se règle dans un correcteur de hauteur ou un DAW : la note (Key) puis la gamme (Scale). Pour « A minor », choisis Key : A et Scale : Minor. Une touche noire a deux noms selon le logiciel (F# ou Gb) : les deux sont indiqués. En dessous viennent le nom français (La mineur) et le code Camelot (8A, celui des DJ pour enchaîner deux titres). Une tonalité majeure et sa relative mineure partagent les mêmes notes : C major et A minor, par exemple. Si l'oreille te dit l'autre, la seconde proposition est sans doute la bonne.</p>
+    <p><strong>La tonalité</strong> est écrite comme elle se règle dans un correcteur de hauteur ou un DAW : la note (Key) puis la gamme (Scale). Pour « A minor », choisis Key : A et Scale : Minor. Une touche noire a deux noms selon le logiciel (F# ou Gb) : les deux sont indiqués. Si le morceau n'est pas accordé sur le la à 440 Hz, l'écart est indiqué en cents sous « Detune » : c'est la valeur à reporter dans le réglage du même nom, sans quoi la correction sonne faux. En dessous viennent le nom français (La mineur) et le code Camelot (8A, celui des DJ pour enchaîner deux titres). Une tonalité majeure et sa relative mineure partagent les mêmes notes : C major et A minor, par exemple. Si l'oreille te dit l'autre, la seconde proposition est sans doute la bonne.</p>
   </section>
 
   <section class="text">
@@ -146,7 +148,7 @@ details p { color: #D9C6C8; }
     <details><summary>Mon fichier est-il envoyé sur un serveur ?</summary>
       <p>Non. Le fichier est lu et analysé par ton navigateur, sur ton appareil. Rien n'est envoyé ni conservé : tu peux déposer un morceau qui n'est pas encore sorti.</p></details>
     <details><summary>Pourquoi mon MP3 est-il décalé dans mon DAW ?</summary>
-      <p>Le format MP3 ajoute un court blanc au début du fichier, de quelques dizaines de millisecondes : la musique ne démarre donc pas à zéro, et tout le morceau glisse hors de la grille une fois importé. L'outil mesure ce blanc et te donne un fichier WAV qui commence exactement sur le premier son. Importe ce WAV à la place du MP3 : il tombe sur les temps.</p></details>
+      <p>Le format MP3 ajoute un court blanc au début du fichier, de quelques dizaines de millisecondes : la musique ne démarre donc pas à zéro, et tout le morceau glisse hors de la grille une fois importé. L'outil mesure ce blanc et te donne un fichier WAV qui commence exactement sur le premier son, avec le BPM et la tonalité dans son nom. Importe ce WAV à la place du MP3 : il tombe sur les temps.</p></details>
     <details><summary>Quels fichiers sont acceptés ?</summary>
       <p>Tout ce que ton navigateur sait lire : MP3, WAV, FLAC, M4A, AAC et OGG dans la plupart des cas. Pour un morceau très long, seules les quatre minutes du milieu sont analysées.</p></details>
     <details><summary>Le résultat est-il toujours juste ?</summary>
@@ -184,6 +186,8 @@ const keyName = (k, names = EN) => names[k.tonic] + (k.mode === "major" ? " majo
 const keyFrench = (k) => FR[k.tonic] + (k.mode === "major" ? " majeur" : " mineur");
 /** Code Camelot : la roue des quintes numérotée de 1 à 12, B pour majeur, A pour mineur. */
 const camelot = (k) => ((((k.mode === "major" ? k.tonic : k.tonic + 3) * 7) % 12 + 7) % 12 + 1) + (k.mode === "major" ? "B" : "A");
+/** Un tempo entier s'écrit rond ; un tempo qui tombe entre deux (93,5) garde sa décimale. */
+const bpmText = (bpm) => (Math.abs(bpm - Math.round(bpm)) < 0.2 ? String(Math.round(bpm)) : bpm.toFixed(1).replace(".", ","));
 const decimal = (n) => n.toFixed(1).replace(".", ",");
 const clock = (s) => Math.floor(s / 60) + ":" + String(Math.round(s % 60)).padStart(2, "0");
 
@@ -290,7 +294,8 @@ function show(file, sound, r) {
     // Laissé au prochain tour d'affichage : le bouton a le temps de se griser avant l'écriture du fichier.
     setTimeout(() => {
       const url = URL.createObjectURL(wav(audio, lead));
-      el("a", { href: url, download: file.name.replace(/\.[^.]+$/, "") + " (calé).wav" }).click();
+      const name = [file.name.replace(/\.[^.]+$/, ""), r.tempo && bpmText(r.tempo.bpm) + " BPM", r.key && keyName(r.key)].filter(Boolean).join(" - ");
+      el("a", { href: url, download: name + ".wav" }).click();
       setTimeout(() => URL.revokeObjectURL(url), 60000);
       $("r-trim").disabled = false;
     }, 30);
@@ -298,9 +303,8 @@ function show(file, sound, r) {
 
   if (r.tempo) {
     const bpm = r.tempo.bpm, others = [bpm / 2, bpm * 2].filter((b) => b >= 40 && b <= 240).map((b) => Math.round(b));
-    // Un tempo entier s'affiche rond ; un tempo qui tombe entre deux (93,5) garde sa décimale.
     const whole = Math.abs(bpm - Math.round(bpm)) < 0.2;
-    $("r-bpm").textContent = whole ? Math.round(bpm) : decimal(bpm);
+    $("r-bpm").textContent = bpmText(bpm);
     $("r-bpm").parentNode.classList.toggle("long", !whole);
     $("r-bpm-exact").textContent = whole ? "Mesuré : " + decimal(bpm) + " BPM" : "";
     $("r-bpm-other").textContent = others.length ? "Peut aussi se compter à " + others.join(" ou ") + " BPM." : "";
@@ -314,8 +318,13 @@ function show(file, sound, r) {
   if (r.key) {
     $("r-key").textContent = keyName(r.key);
     $("r-key-codes").textContent = (EN_OTHER[r.key.tonic] ? "Aussi notée " + keyName(r.key, EN_OTHER) + " · " : "") + keyFrench(r.key) + " · Camelot " + camelot(r.key);
-    $("r-key-other").textContent = "Seconde proposition : " + keyName(r.second) + " (" + camelot(r.second) + ")."
-      + (Math.abs(r.tuning - 440) >= 2 ? " Accordage : la = " + Math.round(r.tuning) + " Hz." : "");
+    $("r-key-other").textContent = "Seconde proposition : " + keyName(r.second) + " (" + camelot(r.second) + ").";
+    // Detune : l'écart entre l'accordage du morceau et le la à 440 Hz, en centièmes de demi-ton.
+    const cents = Math.round(1200 * Math.log2(r.tuning / 440)), detuned = Math.abs(cents) >= 10;
+    $("r-detune").textContent = detuned
+      ? "Detune : " + (cents > 0 ? "+" : "−") + Math.abs(cents) + " cents (la = " + decimal(r.tuning) + " Hz). Le morceau est accordé " + (cents > 0 ? "plus haut" : "plus bas") + " que la normale : règle le même écart dans ton correcteur."
+      : "Pas de detune : le morceau est accordé sur la = 440 Hz.";
+    $("r-detune").classList.toggle("detuned", detuned);
     const scale = SCALES[r.key.mode].map((step) => (r.key.tonic + step) % 12);
     $("r-bars").replaceChildren(...r.chroma.map((value, note) => {
       const bar = el("div", { className: note === r.key.tonic ? "tonic in" : scale.includes(note) ? "in" : "" });
@@ -329,6 +338,7 @@ function show(file, sound, r) {
     $("r-key").textContent = "—";
     $("r-key-codes").textContent = "Pas assez de notes pour estimer la tonalité.";
     $("r-key-other").textContent = "";
+    $("r-detune").textContent = "";
   }
   $("result").hidden = false;
 }
