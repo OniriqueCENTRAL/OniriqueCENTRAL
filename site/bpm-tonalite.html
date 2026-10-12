@@ -138,7 +138,7 @@ details p { color: #D9C6C8; }
   <section class="text">
     <h2>Comment lire le résultat</h2>
     <p><strong>Le tempo</strong> est le nombre de temps par minute. Un même morceau peut se compter deux fois plus vite ou deux fois plus lentement : 70 et 140 BPM décrivent le même battement, senti à la noire ou à la croche. L'outil affiche la lecture la plus probable et rappelle l'autre en dessous.</p>
-    <p><strong>La tonalité</strong> est donnée en français (La mineur), en notation anglaise (A minor, celle des logiciels de musique) et en code Camelot (8A, celui des DJ pour enchaîner deux titres). Une tonalité majeure et sa relative mineure partagent les mêmes notes : Do majeur et La mineur, par exemple. Si l'oreille te dit l'autre, la seconde proposition est sans doute la bonne.</p>
+    <p><strong>La tonalité</strong> est écrite comme elle se règle dans un correcteur de hauteur ou un DAW : la note (Key) puis la gamme (Scale). Pour « A minor », choisis Key : A et Scale : Minor. Une touche noire a deux noms selon le logiciel (F# ou Gb) : les deux sont indiqués. En dessous viennent le nom français (La mineur) et le code Camelot (8A, celui des DJ pour enchaîner deux titres). Une tonalité majeure et sa relative mineure partagent les mêmes notes : C major et A minor, par exemple. Si l'oreille te dit l'autre, la seconde proposition est sans doute la bonne.</p>
   </section>
 
   <section class="text">
@@ -174,12 +174,14 @@ const RATE = 22050;        // l'analyse n'a pas besoin de plus
 const MAX_SECONDS = 240;   // au-delà, seul le milieu du morceau est analysé
 const MAX_BYTES = 400e6;
 const FR = ["Do", "Do♯", "Ré", "Mi♭", "Mi", "Fa", "Fa♯", "Sol", "La♭", "La", "Si♭", "Si"];
-const EN = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B"];
+// La notation des logiciels de musique, telle qu'elle se choisit dans un correcteur de hauteur (Key et Scale).
+const EN = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+const EN_OTHER = { 1: "Db", 3: "D#", 6: "Gb", 8: "G#", 10: "A#" }; // l'autre nom des touches noires, selon le logiciel
 const SCALES = { major: [0, 2, 4, 5, 7, 9, 11], minor: [0, 2, 3, 5, 7, 8, 10] };
 const el = (tag, props = {}) => Object.assign(document.createElement(tag), props);
 
-const keyName = (k) => FR[k.tonic] + (k.mode === "major" ? " majeur" : " mineur");
-const keyEnglish = (k) => EN[k.tonic] + (k.mode === "major" ? " major" : " minor");
+const keyName = (k, names = EN) => names[k.tonic] + (k.mode === "major" ? " major" : " minor");
+const keyFrench = (k) => FR[k.tonic] + (k.mode === "major" ? " majeur" : " mineur");
 /** Code Camelot : la roue des quintes numérotée de 1 à 12, B pour majeur, A pour mineur. */
 const camelot = (k) => ((((k.mode === "major" ? k.tonic : k.tonic + 3) * 7) % 12 + 7) % 12 + 1) + (k.mode === "major" ? "B" : "A");
 const decimal = (n) => n.toFixed(1).replace(".", ",");
@@ -311,7 +313,7 @@ function show(file, sound, r) {
   $("r-notes").hidden = !r.key;
   if (r.key) {
     $("r-key").textContent = keyName(r.key);
-    $("r-key-codes").textContent = keyEnglish(r.key) + " · Camelot " + camelot(r.key);
+    $("r-key-codes").textContent = (EN_OTHER[r.key.tonic] ? "Aussi notée " + keyName(r.key, EN_OTHER) + " · " : "") + keyFrench(r.key) + " · Camelot " + camelot(r.key);
     $("r-key-other").textContent = "Seconde proposition : " + keyName(r.second) + " (" + camelot(r.second) + ")."
       + (Math.abs(r.tuning - 440) >= 2 ? " Accordage : la = " + Math.round(r.tuning) + " Hz." : "");
     const scale = SCALES[r.key.mode].map((step) => (r.key.tonic + step) % 12);
@@ -320,7 +322,7 @@ function show(file, sound, r) {
       bar.append(el("i", { style: "height:" + Math.round(value * 100) + "%" }));
       return bar;
     }));
-    $("r-labels").replaceChildren(...FR.map((name, note) => el("span", { textContent: name, className: note === r.key.tonic ? "tonic" : "" })));
+    $("r-labels").replaceChildren(...EN.map((name, note) => el("span", { textContent: name, className: note === r.key.tonic ? "tonic" : "" })));
     $("r-bars").setAttribute("aria-label", "Présence des douze notes dans le morceau. Tonalité : " + keyName(r.key));
     $("r-legend").textContent = "En rouge vif, les notes de la gamme de " + keyName(r.key) + " ; plus une barre est haute, plus la note est présente.";
   } else {
