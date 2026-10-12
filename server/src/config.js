@@ -11,9 +11,6 @@ const paymentsMode = (env.PAYMENTS_MODE || 'off').toLowerCase();
 if (!['demo', 'stripe', 'lemon', 'off'].includes(paymentsMode)) {
   throw new Error(`PAYMENTS_MODE invalide : ${paymentsMode}`);
 }
-if (paymentsMode === 'stripe' && !(env.STRIPE_SECRET_KEY && env.STRIPE_WEBHOOK_SECRET)) {
-  throw new Error('PAYMENTS_MODE=stripe demande STRIPE_SECRET_KEY et STRIPE_WEBHOOK_SECRET.');
-}
 
 if (paymentsMode === 'lemon' && !(env.LEMON_API_KEY && env.LEMON_STORE_ID && env.LEMON_WEBHOOK_SECRET && env.LEMON_VARIANT_ONCE && env.LEMON_VARIANT_MONTH)) {
   throw new Error('PAYMENTS_MODE=lemon demande LEMON_API_KEY, LEMON_STORE_ID, LEMON_WEBHOOK_SECRET, LEMON_VARIANT_ONCE et LEMON_VARIANT_MONTH.');

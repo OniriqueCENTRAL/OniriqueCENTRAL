@@ -4,7 +4,7 @@ import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import express from 'express';
 import { config } from './config.js';
-import { all, get, run, now, transaction, grantFounders, setSetting } from './db.js';
+import { all, get, run, now, transaction, grantFounders, setting, setSetting } from './db.js';
 import {
   HttpError, hashPassword, verifyPassword, createSession, destroySession,
   requireUser, requireVerified, requireAdmin, optionalUser, rateLimit, validEmail, publicUser, createResetToken, consumeResetToken,
@@ -17,7 +17,10 @@ import {
   activate, activeSubscription, createLicense, entitlement, generateKey, normalizeKey, pickPlan, pickPriceCents, pickPrices,
   publicKeyPem, publicKeyRaw, userActivations,
 } from './licensing.js';
-import { cancelSubscription, checkout, handleLemonEvent, handleStripeEvent, verifyLemonSignature, verifyStripeSignature } from './payments.js';
+import {
+  cancelSubscription, checkout, connectStripe, disconnectStripe, handleLemonEvent, handleStripeEvent, paymentsMode,
+  stripeAccount, stripeAccountView, verifyLemonSignature, verifyStripeSignature,
+} from './payments.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 const str = (value, max = 200) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
@@ -158,16 +161,18 @@ export function createApp() {
   app.set('trust proxy', 1);
 
   // Stripe signe le corps brut : ce point d'entrée passe avant le parseur JSON.
-  app.post('/api/stripe/webhook', express.raw({ type: '*/*', limit: '1mb' }), wrap(async (req, res) => {
-    if (config.paymentsMode !== 'stripe') throw new HttpError(404, 'Introuvable.');
+  // Chaque créateur a son adresse : l'événement est vérifié avec le secret de son compte, et n'agit que sur ses plugins.
+  app.post(['/api/stripe/webhook', '/api/stripe/webhook/:creator'], express.raw({ type: '*/*', limit: '1mb' }), wrap(async (req, res) => {
+    const account = stripeAccount(req.params.creator || 'onirique');
+    if (!account) throw new HttpError(404, 'Introuvable.');
     const raw = req.body.toString('utf8');
-    verifyStripeSignature(raw, req.headers['stripe-signature']);
-    await handleStripeEvent(JSON.parse(raw));
+    verifyStripeSignature(raw, req.headers['stripe-signature'], account.hook);
+    await handleStripeEvent(JSON.parse(raw), account);
     res.json({ received: true });
   }));
 
   app.post('/api/lemon/webhook', express.raw({ type: '*/*', limit: '1mb' }), wrap(async (req, res) => {
-    if (config.paymentsMode !== 'lemon') throw new HttpError(404, 'Introuvable.');
+    if (paymentsMode() !== 'lemon') throw new HttpError(404, 'Introuvable.');
     const raw = req.body.toString('utf8');
     verifyLemonSignature(raw, req.headers['x-signature']);
     handleLemonEvent(JSON.parse(raw));
@@ -188,7 +193,7 @@ export function createApp() {
       plans: all(`SELECT * FROM plans WHERE active = 1 AND kind = 'all' ORDER BY price_cents`).map(planView),
       // Abonnement à la carte : le prix du premier plugin et de chaque plugin ajouté, par mois.
       pick: pickPrices(),
-      paymentsMode: config.paymentsMode,
+      paymentsMode: paymentsMode(),
     });
   });
 
@@ -552,10 +557,41 @@ export function createApp() {
   const admin = express.Router();
   admin.use(requireAdmin);
   // Un partenaire n'a que ses plugins, leurs versions et leurs licences : le reste du panel lui est fermé.
-  admin.use((req, _res, next) => next(req.creator && !/^\/(products|versions|licenses)(\/|$)/.test(req.path)
+  admin.use((req, _res, next) => next(req.creator && !/^\/(products|versions|licenses|payments)(\/|$)/.test(req.path)
     ? new HttpError(403, 'Réservé aux administrateurs.') : undefined));
 
   const CREATORS = ['onirique', ...PARTNERS];
+
+  // Paiements : un compte Stripe par créateur. Un partenaire branche le sien ; seul un fondateur branche celui
+  // d'ONIRIQUE ou d'un autre, et ouvre ou ferme la vente. Les clés ne ressortent jamais du serveur.
+  const mayConnect = (req, creator) => req.user.role === 'founder' || req.user.role === creator;
+  const paymentCreator = (req) => {
+    const creator = String(req.params.creator);
+    if (!CREATORS.includes(creator) || (req.creator && creator !== req.creator)) throw new HttpError(404, 'Créateur introuvable.');
+    if (!mayConnect(req, creator)) throw new HttpError(403, 'Seul un fondateur ou le partenaire concerné peut régler ce compte.');
+    return creator;
+  };
+  admin.get('/payments', (req, res) => {
+    res.json({
+      mode: paymentsMode(), open: !!setting('payments_open', false), fixed: config.paymentsMode !== 'off', founder: req.user.role === 'founder',
+      accounts: CREATORS.filter((c) => !req.creator || c === req.creator).map((c) => ({ ...stripeAccountView(c), editable: mayConnect(req, c) })),
+    });
+  });
+  admin.put('/payments/open', (req, res) => {
+    if (req.user.role !== 'founder') throw new HttpError(403, 'Seul un fondateur ouvre ou ferme la vente.');
+    setSetting('payments_open', req.body.open === true);
+    res.json({ ok: true, mode: paymentsMode() });
+  });
+  admin.put('/payments/:creator', wrap(async (req, res) => {
+    const creator = paymentCreator(req);
+    await connectStripe(creator, str(req.body.secretKey, 300), req.body.managed !== false);
+    res.json(stripeAccountView(creator));
+  }));
+  admin.delete('/payments/:creator', wrap(async (req, res) => {
+    const creator = paymentCreator(req);
+    await disconnectStripe(creator);
+    res.json(stripeAccountView(creator));
+  }));
   /** Le produit, s'il est du ressort de ce compte : un partenaire ne touche qu'aux plugins de son créateur. */
   function ownProduct(req, id) {
     const product = findProduct(id);
@@ -680,7 +716,7 @@ export function createApp() {
       activations: count('SELECT COUNT(*) AS n FROM activations'),
       revenueCents: count(`SELECT COALESCE(SUM(amount_cents), 0) AS n FROM orders WHERE provider IN ('stripe', 'lemon')`),
       supportMessages: count('SELECT COUNT(*) AS n FROM support_messages'),
-      paymentsMode: config.paymentsMode,
+      paymentsMode: paymentsMode(),
     });
   });
 

@@ -308,6 +308,50 @@ try {
     await call('GET', '/api/admin/users', { token: bloom.token, expect: 403 });
   });
 
+  await step('paiements : un compte Stripe par créateur, clés chiffrées, chaque compte limité à ses plugins', async () => {
+    const { saveStripeAccount, stripeAccount } = await import('../src/payments.js');
+    // Qui peut régler quoi : les refus tombent avant tout appel à Stripe, et une clé mal formée aussi.
+    const key = { secretKey: 'pas-une-cle' };
+    await call('PUT', '/api/admin/payments/onirique', { token: admin.token, body: key, expect: 403 });
+    await call('PUT', '/api/admin/payments/onirique', { token: partner.token, body: key, expect: 404 });
+    await call('PUT', '/api/admin/payments/bloom', { token: partner.token, body: key, expect: 404 });
+    await call('PUT', '/api/admin/payments/inconnu', { token: founder.token, body: key, expect: 404 });
+    await call('PUT', '/api/admin/payments/abrasion', { token: partner.token, body: key, expect: 400 });
+    await call('PUT', '/api/admin/payments/onirique', { token: founder.token, body: key, expect: 400 });
+    await call('PUT', '/api/admin/payments/open', { token: admin.token, body: { open: true }, expect: 403 });
+    await call('PUT', '/api/admin/payments/open', { token: partner.token, body: { open: true }, expect: 403 });
+    await call('PUT', '/api/admin/payments/open', { token: founder.token, body: { open: true } });
+
+    // Un compte branché (ici sans passer par Stripe) : chiffré en base, et jamais renvoyé par le panel.
+    saveStripeAccount('abrasion', { secretKey: 'sk_test_abrasion1234567890', webhookSecret: 'whsec_abrasion', name: 'Abrasion', test: true });
+    const stored = get(`SELECT secret_key, webhook_secret FROM stripe_accounts WHERE creator = 'abrasion'`);
+    assert.ok(!stored.secret_key.includes('sk_test') && !stored.webhook_secret.includes('whsec'), 'les secrets ne sont pas lisibles dans la base');
+    assert.equal(stripeAccount('abrasion').key, 'sk_test_abrasion1234567890');
+    const mine = await call('GET', '/api/admin/payments', { token: partner.token });
+    assert.deepEqual(mine.accounts.map((a) => [a.creator, a.connected, a.test, a.editable]), [['abrasion', true, true, true]]);
+    assert.ok(!JSON.stringify(mine).includes('sk_test'));
+    const everyone = await call('GET', '/api/admin/payments', { token: admin.token });
+    assert.deepEqual(everyone.accounts.map((a) => [a.creator, a.connected, a.editable]), [['onirique', false, false], ['abrasion', true, false], ['bloom', false, false]]);
+
+    // Le webhook du partenaire, signé avec son secret, accorde son plugin, pas celui d'un autre créateur.
+    const client = await account('acheteur-stripe');
+    const send = async (creator, secret, id, productId, expect = 200) => {
+      const body = JSON.stringify({ type: 'checkout.session.completed', data: { object: { id, mode: 'payment', payment_status: 'paid', amount_total: 2990,
+        metadata: { user_id: String(client.id), kind: 'product', ref_id: String(productId) } } } });
+      const t = Math.floor(Date.now() / 1000);
+      const response = await fetch(`${base}/api/stripe/webhook/${creator}`, { method: 'POST', body,
+        headers: { 'Stripe-Signature': `t=${t},v1=${crypto.createHmac('sha256', secret).update(`${t}.${body}`).digest('hex')}` } });
+      assert.equal(response.status, expect, `webhook ${creator} → ${response.status}`);
+    };
+    const owned = async () => Object.keys((await call('GET', '/api/me', { token: client.token })).entitlements).map(Number);
+    await send('abrasion', 'whsec_autre', 'cs_a1', raw.id, 400);
+    await send('bloom', 'whsec_abrasion', 'cs_a1', raw.id, 404);
+    await send('abrasion', 'whsec_abrasion', 'cs_a2', tuner.id);
+    assert.deepEqual(await owned(), [], 'un compte partenaire ne peut pas accorder le plugin d\'un autre créateur');
+    await send('abrasion', 'whsec_abrasion', 'cs_a3', raw.id);
+    assert.deepEqual(await owned(), [raw.id]);
+  });
+
   console.log(`\n${passed} étapes réussies.`);
 } finally {
   server.close();

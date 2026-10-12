@@ -7,7 +7,7 @@ import { state, call, refresh, render, go } from '../app.js';
 const api = (method, route, body) => call('api', method, `/api/admin${route}`, body);
 
 /** Données du panel, chargées onglet par onglet. */
-const data = { overview: null, plans: null, pick: null, credits: null, products: null, licenses: null, users: null };
+const data = { overview: null, plans: null, pick: null, credits: null, products: null, licenses: null, users: null, payments: null };
 const ui = { licenseQuery: '', userQuery: '', generated: null, loading: false, error: null };
 
 const LOADERS = {
@@ -19,6 +19,7 @@ const LOADERS = {
   },
   users: async () => { data.users = await api('GET', `/users?q=${encodeURIComponent(ui.userQuery)}`); },
   credits: async () => { [data.credits, data.products] = await Promise.all([api('GET', '/credits'), data.products ?? api('GET', '/products')]); },
+  payments: async () => { data.payments = await api('GET', '/payments'); },
 };
 const READY = {
   overview: () => data.overview && data.plans && data.pick,
@@ -26,6 +27,7 @@ const READY = {
   licenses: () => data.licenses && data.products,
   users: () => data.users,
   credits: () => data.credits && data.products,
+  payments: () => data.payments,
 };
 
 async function reload(tab = state.adminTab) {
@@ -462,12 +464,67 @@ function creditsTab() {
   ];
 }
 
-const TABS = { overview: ['Vue d\'ensemble', overviewTab], products: ['Plugins', productsTab], licenses: ['Licences', licensesTab], users: ['Comptes', usersTab], credits: ['Crédits', creditsTab] };
+//==============================================================================
+//  Paiements : un compte Stripe par créateur de plugins
+//==============================================================================
+function paymentsTab() {
+  const p = data.payments;
+
+  const account = (a) => {
+    const label = CREATORS[a.creator] ?? a.creator;
+    const key = h('input', { type: 'password', class: 'mono', placeholder: 'sk_live_…', autocomplete: 'off', spellcheck: false, required: true });
+    const managed = h('input', { type: 'checkbox', checked: a.managed });
+    const form = a.editable ? h('form', {
+      class: 'stack', style: { 'margin-top': '14px' },
+      onsubmit: (event) => {
+        event.preventDefault();
+        changed(() => api('PUT', `/payments/${a.creator}`, { secretKey: key.value.trim(), managed: managed.checked }),
+          `Compte Stripe de ${label} branché : clé vérifiée, lien de notification créé.`);
+      },
+    },
+      field(a.connected ? 'Remplacer par une autre clé secrète Stripe' : 'Clé secrète Stripe', key),
+      h('label', { class: 'check' }, managed, 'Stripe est le vendeur officiel (Managed Payments) : il facture les clients et gère la TVA'),
+      h('div', null, h('button', { class: 'btn primary', type: 'submit' }, a.connected ? 'Remplacer' : 'Brancher le compte')))
+      : h('p', { class: 'muted', style: { margin: '10px 0 0' } }, `Seul un fondateur ou un compte ${label} peut régler ce compte.`);
+
+    return h('div', { class: 'panel' },
+      h('div', { class: 'row between wrap' },
+        h('div', { class: 'row wrap' }, h('h2', null, label),
+          a.connected ? pill(a.test ? 'Branché · mode essai' : 'Branché', a.test ? 'warn' : '', !a.test) : pill('Non branché', 'warn'),
+          a.name ? h('span', { class: 'muted selectable' }, a.name) : null),
+        a.connected && a.editable && !a.fromEnv ? button('Débrancher', () => confirm(`Débrancher le compte Stripe de ${label} ?`,
+          `Ses plugins ne pourront plus être achetés tant qu'un compte n'est pas rebranché. Les licences déjà vendues ne changent pas.`,
+          'Débrancher', () => changed(() => api('DELETE', `/payments/${a.creator}`), 'Compte débranché.'), 'danger'), 'small quiet danger') : null),
+      a.test ? h('p', { class: 'muted', style: { margin: '10px 0 0' } }, 'Clé d\'essai : rien n\'est encaissé. Seuls l\'équipe et les comptes de ce créateur peuvent passer commande, avec la carte de test 4242 4242 4242 4242.') : null,
+      a.fromEnv ? h('p', { class: 'muted', style: { margin: '10px 0 0' } }, 'Ce compte est réglé sur le serveur (commande onirique-stripe). Brancher une clé ici le remplace.') : null,
+      form);
+  };
+
+  const sale = p.fixed
+    ? [pill(`Vente réglée sur le serveur : ${p.mode}`, p.mode === 'off' ? 'warn' : '')]
+    : [pill(p.mode === 'stripe' ? 'Vente ouverte' : p.open ? 'Vente ouverte, en attente d\'un compte branché' : 'Vente fermée', p.mode === 'stripe' ? '' : 'warn', p.mode === 'stripe'),
+      p.founder ? button(p.open ? 'Fermer la vente' : 'Ouvrir la vente', () => confirm(p.open ? 'Fermer la vente ?' : 'Ouvrir la vente ?',
+        p.open ? 'Plus aucun achat ni abonnement ne pourra être lancé, sur le site comme dans l\'application. Les licences et les abonnements en cours ne changent pas.'
+          : 'Les plugins des créateurs dont le compte est branché pourront être achetés tout de suite, sur le site comme dans l\'application.',
+        p.open ? 'Fermer' : 'Ouvrir', () => changed(() => api('PUT', '/payments/open', { open: !p.open }), p.open ? 'Vente fermée.' : 'Vente ouverte.', true)), 'small') : null];
+
+  return [
+    h('div', { class: 'panel' },
+      h('div', { class: 'row between wrap' }, eyebrow('Vente en ligne'), h('div', { class: 'row' }, sale)),
+      h('p', { class: 'muted', style: { margin: '12px 0 0' } },
+        'Chaque créateur encaisse les ventes de ses plugins sur son propre compte Stripe. Les abonnements (All Access et à la carte) sont encaissés par le compte ONIRIQUE, quels que soient les plugins qu\'ils couvrent.'),
+      h('p', { class: 'muted', style: { margin: '8px 0 0' } },
+        'La clé se trouve dans le tableau de bord Stripe, rubrique Développeurs, Clés API. Elle est essayée auprès de Stripe, puis gardée chiffrée sur le serveur : elle ne s\'affiche plus jamais, ici ou ailleurs.')),
+    p.accounts.map(account),
+  ];
+}
+
+const TABS = { overview: ['Vue d\'ensemble', overviewTab], products: ['Plugins', productsTab], licenses: ['Licences', licensesTab], users: ['Comptes', usersTab], credits: ['Crédits', creditsTab], payments: ['Paiements', paymentsTab] };
 
 export function adminView() {
   // Un partenaire n'a que ses plugins et leurs licences.
   const staff = isStaff(state.data.me.user);
-  const tabs = Object.entries(TABS).filter(([id]) => staff || id === 'products' || id === 'licenses');
+  const tabs = Object.entries(TABS).filter(([id]) => staff || id === 'products' || id === 'licenses' || id === 'payments');
   if (!tabs.some(([id]) => id === state.adminTab)) state.adminTab = tabs[0][0];
   const tab = state.adminTab;
   const ready = READY[tab]();

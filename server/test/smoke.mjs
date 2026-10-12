@@ -283,8 +283,9 @@ try {
     const paid = { type: 'checkout.session.completed', data: { object: { id: 'cs_test_1', mode: 'payment', payment_status: 'paid',
       amount_total: 2500, customer: 'cus_test_1', metadata: { user_id: String(buyerId), kind: 'product', ref_id: String(product.id) } } } };
     outbox.length = 0;
-    await handleStripeEvent(paid);
-    await handleStripeEvent(paid); // Stripe renvoie parfois le même événement
+    const platform = { creator: 'onirique', key: 'sk_test_essai', managed: true };
+    await handleStripeEvent(paid, platform);
+    await handleStripeEvent(paid, platform); // Stripe renvoie parfois le même événement
     const mine = await call('GET', '/api/me', { token: buyer });
     assert.equal(mine.entitlements[product.id].type, 'perpetual');
     assert.equal(mine.licenses.filter((l) => l.productId === product.id).length, 1, 'une seule licence malgré l\'événement en double');
@@ -296,16 +297,15 @@ try {
 
     // Un paiement pas encore reçu n'accorde rien.
     await handleStripeEvent({ type: 'checkout.session.completed', data: { object: { id: 'cs_test_2', mode: 'payment', payment_status: 'unpaid',
-      metadata: { user_id: String(buyerId), kind: 'product', ref_id: String(product.id) } } } });
+      metadata: { user_id: String(buyerId), kind: 'product', ref_id: String(product.id) } } } }, platform);
     assert.equal((await call('GET', '/api/me', { token: buyer })).licenses.length, 1);
 
     // La signature du webhook : acceptée avec le bon secret, refusée sinon ou si elle est trop ancienne.
-    config.stripeWebhookSecret = 'whsec_essai';
     const body = JSON.stringify(paid), t = Math.floor(Date.now() / 1000);
     const sign = (time, secret) => `t=${time},v1=${crypto.createHmac('sha256', secret).update(`${time}.${body}`).digest('hex')}`;
-    verifyStripeSignature(body, sign(t, 'whsec_essai'));
-    assert.throws(() => verifyStripeSignature(body, sign(t, 'whsec_autre')), /invalide/);
-    assert.throws(() => verifyStripeSignature(body, sign(t - 3600, 'whsec_essai')), /périmée/);
+    verifyStripeSignature(body, sign(t, 'whsec_essai'), 'whsec_essai');
+    assert.throws(() => verifyStripeSignature(body, sign(t, 'whsec_autre'), 'whsec_essai'), /invalide/);
+    assert.throws(() => verifyStripeSignature(body, sign(t - 3600, 'whsec_essai'), 'whsec_essai'), /périmée/);
   });
 
   await step('abonnement Stripe (événements simulés) : mensuel actif, plugins choisis, fin à la résiliation', async () => {
@@ -317,11 +317,11 @@ try {
     const end = Math.floor(Date.now() / 1000) + 30 * 86400;
     const event = (status) => ({ type: 'customer.subscription.updated', data: { object: { id: 'sub_test_1', status, current_period_end: end,
       cancel_at_period_end: false, metadata: { user_id: String(subId), plan_id: String(planId), product_ids: JSON.stringify([product.id]) } } } });
-    await handleStripeEvent(event('active'));
+    await handleStripeEvent(event('active'), { creator: 'onirique', key: 'sk_test_essai', managed: true });
     let me = await call('GET', '/api/me', { token: sub });
     assert.equal(me.entitlements[product.id].type, 'subscription');
     assert.ok(me.entitlements[product.id].expiresAt > end * 1000, 'la licence court jusqu\'à la fin de la période payée, avec une marge');
-    await handleStripeEvent(event('canceled'));
+    await handleStripeEvent(event('canceled'), { creator: 'onirique', key: 'sk_test_essai', managed: true });
     me = await call('GET', '/api/me', { token: sub });
     assert.equal(me.entitlements[product.id], undefined);
     run('DELETE FROM subscriptions WHERE user_id = ?', subId);

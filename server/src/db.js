@@ -224,6 +224,18 @@ export function grantFounders() {
 }
 grantFounders();
 
+// Un compte Stripe par créateur de plugins, branché depuis le panel admin. Les deux secrets sont chiffrés (payments.js).
+db.exec(`CREATE TABLE IF NOT EXISTS stripe_accounts (
+  creator        TEXT PRIMARY KEY,
+  secret_key     TEXT NOT NULL,
+  webhook_secret TEXT NOT NULL,
+  webhook_id     TEXT,
+  name           TEXT NOT NULL DEFAULT '',
+  test           INTEGER NOT NULL DEFAULT 0,
+  managed        INTEGER NOT NULL DEFAULT 1,
+  updated_at     INTEGER NOT NULL
+)`);
+
 export const now = () => Date.now();
 
 /** Un réglage modifiable depuis le panel admin (table settings), ou la valeur de la configuration s'il n'a jamais été changé. */
