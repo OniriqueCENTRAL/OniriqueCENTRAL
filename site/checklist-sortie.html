@@ -46,7 +46,7 @@
     </div>
     <div id="steps" style="padding:0"></div>
     <div class="dim actions no-print">
-      <button class="go ghost" id="print" type="button">Imprimer</button>
+      <button class="go ghost" id="pdf" type="button">Télécharger en PDF</button>
       <button class="go ghost" id="clear" type="button">Tout décocher</button>
     </div>
   </div>
@@ -65,6 +65,7 @@
   </nav>
 </footer>
 
+<script src="assets/pdf-kit.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const el = (tag, props = {}, ...children) => { const node = Object.assign(document.createElement(tag), props); node.append(...children); return node; };
@@ -144,7 +145,25 @@ function draw() {
 
 $("date").onchange = () => { save(); draw(); };
 $("clear").onclick = () => { done = {}; save(); draw(); };
-$("print").onclick = () => print();
+// La checklist en PDF, avec ses dates et ce qui est déjà coché : fabriquée ici, sur l'appareil.
+$("pdf").onclick = () => {
+  const release = $("date").value ? new Date($("date").value + "T12:00:00") : null;
+  const all = STEPS.reduce((n, [, , tasks]) => n + tasks.length, 0), checked = Object.values(done).filter(Boolean).length;
+  const doc = OniriquePdf.create({ footer: "Checklist établie avec onirique.store" }).heading("Checklist de sortie");
+  doc.text("Date de sortie : " + (release ? release.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : "……………………"), { size: 12 });
+  doc.text(checked + " étape" + (checked > 1 ? "s" : "") + " faite" + (checked > 1 ? "s" : "") + " sur " + all, { grey: true, gap: 14 });
+  STEPS.forEach(([offset, name, tasks], s) => {
+    let when = offset === 0 ? "Jour J" : "J" + (offset > 0 ? "+" : "−") + Math.abs(offset);
+    if (release) {
+      const day = new Date(release); day.setDate(day.getDate() + offset);
+      when += " · " + day.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+    }
+    doc.keep(70).text(name, { size: 14, bold: true, gap: 0 }).text(when, { size: 9.5, grey: true, gap: 8 });
+    tasks.forEach(([text, note], t) => doc.check(!!done[s + "." + t], text, note));
+    doc.space(10);
+  });
+  doc.download("Checklist de sortie" + (release ? " - " + $("date").value : "") + ".pdf");
+};
 draw();
 </script>
 <script src="assets/tools-menu.js"></script>

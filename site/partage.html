@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Partage des droits d'un titre — ONIRIQUE</title>
-<meta name="description" content="Répartis les parts d'un titre entre beatmaker, auteur, topliner et interprète, vérifie que le total fait 100 %, puis imprime une feuille à signer. Gratuit, sans compte.">
+<meta name="description" content="Répartis les parts d'un titre entre beatmaker, auteur, topliner et interprète, vérifie que le total fait 100 %, puis télécharge en PDF une feuille à signer. Gratuit, sans compte.">
 <link rel="canonical" href="https://onirique.store/partage">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="stylesheet" href="assets/fonts.css">
@@ -43,7 +43,7 @@
   <section class="hero">
     <p class="eyebrow">Outil gratuit</p>
     <h1>Qui touche <em>quoi</em></h1>
-    <p class="lede">Note les parts de chacun pendant que tout le monde est encore dans le studio. La page vérifie le total et sort une feuille à imprimer et à signer.</p>
+    <p class="lede">Note les parts de chacun pendant que tout le monde est encore dans le studio. La page vérifie le total et te donne la feuille en PDF, prête à signer.</p>
   </section>
 
   <div class="card">
@@ -66,7 +66,7 @@
     </div>
     <div class="dim sum">
       <div><p class="eyebrow">Total</p><div class="big" id="total">0 %</div><p id="state"></p></div>
-      <button class="go" id="print" type="button">Imprimer ou enregistrer en PDF</button>
+      <button class="go" id="pdf" type="button">Télécharger la feuille en PDF</button>
     </div>
   </div>
   <p class="hint">Ce que tu saisis reste sur cet appareil : rien n'est envoyé.</p>
@@ -77,7 +77,6 @@
     <p><strong>Droits d'auteur</strong> : ce qui revient à ceux qui ont écrit la musique et le texte. <strong>Master</strong> : ce qui revient à ceux qui ont produit et financé l'enregistrement. Les deux se partagent séparément : fais une feuille pour chacun si les parts diffèrent.</p>
   </section>
 
-  <section class="sheet" id="sheet" aria-hidden="true"></section>
 </main>
 
 <footer>
@@ -86,6 +85,7 @@
   </nav>
 </footer>
 
+<script src="assets/pdf-kit.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const el = (tag, props = {}, ...children) => { const node = Object.assign(document.createElement(tag), props); node.append(...children); return node; };
@@ -133,19 +133,19 @@ $("equal").onclick = () => {
 };
 $("title").oninput = $("date").oninput = $("kind").onchange = summary;
 
-$("print").onclick = () => {
+// La feuille à signer, en PDF : fabriquée ici, sur l'appareil.
+$("pdf").onclick = () => {
   const date = $("date").value ? new Date($("date").value + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "";
-  const cell = (tag, text, cls) => el(tag, { textContent: text, className: cls || "" });
-  $("sheet").replaceChildren(
-    el("h1", { textContent: "Partage des droits" }),
-    el("p", { textContent: "Titre : " + ($("title").value.trim() || "……………………………………") }),
-    el("p", { textContent: "Objet : " + $("kind").value }),
-    el("p", { textContent: "Date : " + (date || "……………………") }),
-    el("table", {}, el("thead", {}, el("tr", {}, cell("th", "Nom"), cell("th", "Rôle"), cell("th", "Part"), cell("th", "Signature"))),
-      el("tbody", {}, ...people.map((p) => el("tr", {}, cell("td", p.name), cell("td", p.role), cell("td", percent(Number(p.share) || 0)), cell("td", "", "sign"))),
-        el("tr", {}, cell("th", "Total"), cell("td", ""), cell("th", percent(total())), cell("td", "")))),
-    el("p", { textContent: "Les signataires déclarent être d'accord sur la répartition ci-dessus. Document de travail établi entre les participants ; il ne remplace ni un contrat ni la déclaration du titre auprès d'une société d'auteurs." }));
-  print();
+  const title = $("title").value.trim();
+  OniriquePdf.create({ footer: "Feuille établie avec onirique.store" })
+    .heading("Partage des droits")
+    .text("Titre : " + (title || "……………………………………"), { size: 12 })
+    .text("Objet : " + $("kind").value, { size: 12 })
+    .text("Date : " + (date || "……………………"), { size: 12, gap: 16 })
+    .table([{ label: "Nom", width: 0.3 }, { label: "Rôle", width: 0.28 }, { label: "Part", width: 0.14, align: "right" }, { label: "Signature", width: 0.28 }],
+      [...people.map((p) => [p.name, p.role, percent(Number(p.share) || 0), ""]), { bold: true, cells: ["Total", "", percent(total()), ""] }], { minHeight: 44 })
+    .text("Les signataires déclarent être d'accord sur la répartition ci-dessus. Document de travail établi entre les participants ; il ne remplace ni un contrat ni la déclaration du titre auprès d'une société d'auteurs.", { size: 9.5, grey: true })
+    .download("Partage des droits" + (title ? " - " + title : "") + ".pdf");
 };
 
 try {
