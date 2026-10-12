@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Accordeur au micro — ONIRIQUE</title>
+<meta name="description" content="Chante ou joue une note : son nom et son écart en cents s'affichent en direct. Accordeur en ligne gratuit pour la voix et les instruments, sans compte.">
+<link rel="canonical" href="https://onirique.store/accordeur">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css">
+<link rel="stylesheet" href="assets/tools.css">
+<style>
+.tuner { text-align: center; }
+.tuner .big { margin: 6px 0 2px; }
+.tuner .big sub { font: 500 .3em/1 var(--f-mono); color: var(--haze); vertical-align: baseline; }
+.meter { position: relative; height: 54px; max-width: 520px; margin: 18px auto 6px; }
+.meter::before { content: ""; position: absolute; left: 0; right: 0; top: 26px; height: 2px; background: var(--line); }
+.meter .zone { position: absolute; left: 45%; width: 10%; top: 14px; height: 26px; border-radius: 6px; background: rgba(155,227,176,.14); border: 1px solid rgba(155,227,176,.35); }
+.meter .needle { position: absolute; left: 50%; top: 4px; width: 4px; height: 46px; margin-left: -2px; border-radius: 4px; background: var(--ember-text); box-shadow: 0 0 14px rgba(226,52,68,.9); transition: left .08s linear, background .15s; }
+.meter .needle.good { background: #9BE3B0; box-shadow: 0 0 14px rgba(155,227,176,.8); }
+.meter .needle.idle { opacity: .25; }
+.scale { display: flex; justify-content: space-between; max-width: 520px; margin: 0 auto; font: 500 11px/1 var(--f-mono); color: var(--haze); }
+</style>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="outils.html" data-tools>Outils</a><a class="btn" href="compte.html" data-account>Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <section class="hero">
+    <p class="eyebrow">Outil gratuit</p>
+    <h1>Accordeur <em>au micro</em></h1>
+    <p class="lede">Chante ou joue une note tenue : son nom s'affiche, avec l'écart par rapport à la note juste. Pour trouver la note d'une mélodie, accorder un instrument ou travailler sa justesse.</p>
+  </section>
+
+  <div class="card">
+    <div class="tuner">
+      <p class="eyebrow" id="state">Micro coupé</p>
+      <div class="big xl"><span id="name">—</span><sub id="octave"></sub></div>
+      <p id="detail" class="muted">&nbsp;</p>
+      <div class="meter" aria-hidden="true"><div class="zone"></div><div class="needle idle" id="needle"></div></div>
+      <div class="scale" aria-hidden="true"><span>−50</span><span>trop bas</span><span>juste</span><span>trop haut</span><span>+50</span></div>
+    </div>
+    <div class="split dim">
+      <label>La de référence<select id="a4">
+        <option value="440">440 Hz (standard)</option><option value="432">432 Hz</option><option value="442">442 Hz</option><option value="444">444 Hz</option>
+      </select></label>
+      <button class="go" id="mic" type="button">Activer le micro</button>
+    </div>
+  </div>
+  <p class="hint">Le son du micro est analysé dans ton navigateur : rien n'est enregistré ni envoyé.</p>
+  <p class="error" id="error" role="alert"></p>
+
+  <section class="text">
+    <h2>Lire l'accordeur</h2>
+    <p>La note est écrite en notation anglaise, celle des logiciels de musique (C, D, E… pour do, ré, mi…), suivie de son octave : A4 est le la à 440 Hz. L'aiguille indique l'écart en cents, c'est-à-dire en centièmes de demi-ton : dans la zone verte, à moins de 5 cents, la note est juste à l'oreille.</p>
+    <p>Tiens la note au moins une seconde, près du micro, dans une pièce calme. Un son soufflé, un accord ou un bruit de fond n'ont pas de hauteur nette : l'accordeur attend alors la prochaine note.</p>
+  </section>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="outils.html">Tous les outils</a><a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a>
+  </nav>
+</footer>
+
+<script src="assets/pitch.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+let stop = null, smooth = 0, silent = 0;
+
+function show(pitch) {
+  if (!pitch) {
+    // Une note garde l'affichage un instant après s'être tue, puis l'aiguille se met en veille.
+    if (++silent > 20) { $("needle").classList.add("idle"); $("state").textContent = "En écoute…"; }
+    return;
+  }
+  silent = 0;
+  // Lissage : la fréquence affichée suit la mesure sans trembler ; un saut de note repart de zéro.
+  smooth = smooth && Math.abs(Math.log2(pitch.frequency / smooth)) < 0.04 ? smooth * 0.8 + pitch.frequency * 0.2 : pitch.frequency;
+  const n = OniriquePitch.note(smooth, +$("a4").value), good = Math.abs(n.cents) <= 5;
+  $("name").textContent = n.name;
+  $("octave").textContent = n.octave;
+  $("detail").textContent = smooth.toFixed(1).replace(".", ",") + " Hz · " + (n.cents > 0 ? "+" : n.cents < 0 ? "−" : "") + Math.abs(n.cents) + " cents";
+  $("state").textContent = good ? "Juste" : n.cents < 0 ? "Trop bas" : "Trop haut";
+  $("needle").style.left = (50 + n.cents) + "%";
+  $("needle").className = "needle" + (good ? " good" : "");
+}
+
+$("mic").onclick = async () => {
+  $("error").textContent = "";
+  if (stop) {
+    stop(); stop = null;
+    $("mic").textContent = "Activer le micro";
+    $("state").textContent = "Micro coupé";
+    $("needle").classList.add("idle");
+    return;
+  }
+  $("mic").disabled = true;
+  try {
+    stop = await OniriquePitch.listen(show);
+    $("mic").textContent = "Couper le micro";
+    $("state").textContent = "En écoute…";
+  } catch (error) { $("error").textContent = error.message; }
+  $("mic").disabled = false;
+};
+addEventListener("pagehide", () => { if (stop) stop(); });
+</script>
+<script src="assets/tools-menu.js"></script>
+<script src="assets/account.js"></script>
+</html>

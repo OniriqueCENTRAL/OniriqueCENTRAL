@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Transposer un morceau ou changer son tempo — ONIRIQUE</title>
+<meta name="description" content="Monte ou descends une instru de quelques demi-tons sans changer son tempo, ou change son BPM sans changer sa hauteur. Écoute puis télécharge en WAV. Gratuit, dans ton navigateur.">
+<link rel="canonical" href="https://onirique.store/transposition">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css">
+<link rel="stylesheet" href="assets/tools.css">
+<style>
+.fade output { float: right; color: var(--mist); letter-spacing: 0; }
+audio { width: 100%; margin-top: 14px; }
+</style>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="outils.html" data-tools>Outils</a><a class="btn" href="compte.html" data-account>Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <section class="hero">
+    <p class="eyebrow">Outil gratuit</p>
+    <h1>Changer la <em>hauteur</em> ou le <em>tempo</em></h1>
+    <p class="lede">Une instru trop haute pour ta voix, un beat à essayer dix BPM plus vite : dépose le fichier, règle, écoute, télécharge. La hauteur et le tempo se changent l'un sans l'autre.</p>
+
+    <button class="drop" id="drop" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 20V4M7 4 3.5 7.5M7 4l3.5 3.5M17 4v16M17 20l-3.5-3.5M17 20l3.5-3.5"/></svg>
+      <strong>Dépose un fichier audio ici</strong>
+      <span>ou clique pour le choisir · MP3, WAV, FLAC, M4A, OGG</span>
+    </button>
+    <input id="file" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" hidden>
+    <p class="hint">Sans compte. Le traitement se fait dans ton navigateur : ton fichier n'est envoyé nulle part.</p>
+    <p class="error" id="error" role="alert"></p>
+  </section>
+
+  <article class="card" id="panel" hidden>
+    <p class="head"><b id="r-file"></b><span id="r-info"></span></p>
+    <div class="fields">
+      <label class="fade">Hauteur <output id="pitch-text"></output><input id="pitch" type="range" min="-12" max="12" step="1" value="0"></label>
+      <label>Tempo d'origine (BPM)<input id="from" type="number" min="30" max="300" step="0.01" inputmode="decimal"></label>
+      <label>Nouveau tempo (BPM)<input id="to" type="number" min="30" max="300" step="0.01" inputmode="decimal"></label>
+    </div>
+    <div class="dim split">
+      <div><p id="r-out"></p><p class="muted" id="r-note"></p></div>
+      <button class="go" id="go" type="button">Appliquer</button>
+    </div>
+    <div id="done" hidden>
+      <p class="eyebrow">Résultat</p>
+      <p id="done-text"></p>
+      <audio id="player" controls></audio>
+      <div class="actions" style="margin-top:14px"><button class="go" id="save" type="button">Télécharger en WAV</button></div>
+    </div>
+  </article>
+
+  <section class="text">
+    <h2>Bien s'en servir</h2>
+    <p>Le résultat reste propre dans une plage raisonnable : jusqu'à trois ou quatre demi-tons, ou quinze pour cent de tempo. Au-delà, le son s'altère : c'est utile pour essayer une idée, moins pour un fichier final. Pour une version définitive, demande au beatmaker un export dans la bonne tonalité.</p>
+    <p>Le tempo et la tonalité d'origine sont détectés à l'ouverture du fichier, et la nouvelle tonalité est indiquée : c'est elle qu'il faudra régler dans ton correcteur de hauteur. Corrige le tempo d'origine s'il est mal détecté ; seul le rapport entre les deux tempos compte.</p>
+    <p>Tu ne sais pas de combien transposer ? Mesure ta <a href="tessiture.html">tessiture</a> : elle indique la note la plus haute que tu tiens confortablement.</p>
+  </section>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="outils.html">Tous les outils</a><a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a>
+  </nav>
+</footer>
+
+<script src="assets/audio-kit.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const A = OniriqueAudio;
+const MAX_BYTES = 400e6, MAX_SECONDS = 600;
+const EN = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+let file = null, audio = null, key = null, result = null, url = null;
+const keyName = (k, shift = 0) => EN[(((k.tonic + shift) % 12) + 12) % 12] + (k.mode === "major" ? " major" : " minor");
+const bpmText = (bpm) => (Math.abs(bpm - Math.round(bpm)) < 0.05 ? String(Math.round(bpm)) : A.decimal(bpm));
+
+/** Tempo et tonalité du fichier, avec le même calcul que la page BPM et tonalité (quatre minutes au plus, au milieu). */
+async function detect(source) {
+  const length = Math.min(source.duration, 240), from = (source.duration - length) / 2;
+  const mono = await A.render(source, { rate: 22050, channels: 1, from, to: from + length });
+  return new Promise((resolve) => {
+    const worker = new Worker("assets/bpm-key-worker.js"), samples = mono.getChannelData(0);
+    worker.onmessage = (event) => { worker.terminate(); resolve(event.data); };
+    worker.onerror = () => { worker.terminate(); resolve({}); };
+    worker.postMessage({ samples, sampleRate: 22050 }, [samples.buffer]);
+  });
+}
+
+function settings() {
+  const semitones = +$("pitch").value, from = parseFloat($("from").value) || 0, to = parseFloat($("to").value) || 0;
+  return { semitones, from, to, speed: from >= 30 && to >= 30 ? to / from : 1 };
+}
+
+function describe() {
+  if (!audio) return;
+  const s = settings();
+  $("pitch-text").textContent = s.semitones === 0 ? "inchangée" : (s.semitones > 0 ? "+" : "−") + Math.abs(s.semitones) + " demi-ton" + (Math.abs(s.semitones) > 1 ? "s" : "");
+  const parts = [];
+  if (s.semitones) parts.push((s.semitones > 0 ? "Monté" : "Descendu") + " de " + Math.abs(s.semitones) + " demi-ton" + (Math.abs(s.semitones) > 1 ? "s" : "") + (key ? " : " + keyName(key) + " devient " + keyName(key, s.semitones) : ""));
+  if (Math.abs(s.speed - 1) > 0.0005) parts.push("tempo de " + bpmText(s.from) + " à " + bpmText(s.to) + " BPM (" + (s.speed > 1 ? "+" : "−") + A.decimal(Math.abs(s.speed - 1) * 100) + " %), durée " + A.clock(audio.duration / s.speed));
+  $("r-out").textContent = parts.length ? parts.join(" ; ") + "." : "Aucun changement pour l'instant : déplace le curseur de hauteur ou change le nouveau tempo.";
+  const far = Math.abs(s.semitones) > 4 || Math.abs(s.speed - 1) > 0.15;
+  $("r-note").textContent = far ? "Réglage important : le son sera audiblement altéré." : "";
+  $("go").disabled = !parts.length;
+}
+$("panel").addEventListener("input", describe);
+
+const stretch = (channels, sampleRate, ratio, onProgress) => new Promise((resolve, reject) => {
+  const worker = new Worker("assets/stretch-worker.js");
+  worker.onmessage = ({ data }) => {
+    if (data.channels) { worker.terminate(); resolve(data.channels); }
+    else if (data.error) { worker.terminate(); reject(new Error(data.error)); }
+    else onProgress(data.progress);
+  };
+  worker.onerror = () => { worker.terminate(); reject(new Error("Le traitement a échoué sur ce fichier.")); };
+  worker.postMessage({ channels, sampleRate, stretch: ratio });
+});
+
+/** Lecture plus rapide ou plus lente, par le rééchantillonneur du navigateur : la hauteur suit la vitesse. */
+async function replay(channels, sampleRate, ratio) {
+  const buffer = new AudioBuffer({ length: channels[0].length, numberOfChannels: channels.length, sampleRate });
+  channels.forEach((c, i) => buffer.copyToChannel(c, i));
+  const offline = new OfflineAudioContext(channels.length, Math.max(1, Math.round(channels[0].length / ratio)), sampleRate);
+  const source = offline.createBufferSource();
+  source.buffer = buffer;
+  source.playbackRate.value = ratio;
+  source.connect(offline.destination);
+  source.start();
+  return A.channelsOf(await offline.startRendering());
+}
+
+$("go").onclick = async () => {
+  const s = settings(), pitch = 2 ** (s.semitones / 12), label = $("go").textContent;
+  $("error").textContent = "";
+  $("go").disabled = true;
+  $("done").hidden = true;
+  try {
+    // Changer la hauteur sans le tempo : on allonge le son d'autant, puis on le relit plus vite (ou l'inverse).
+    // Le changement de tempo se glisse dans le même allongement.
+    const ratio = pitch / s.speed;
+    let channels = A.channelsOf(audio);
+    if (Math.abs(ratio - 1) > 0.0005) channels = await stretch(channels, audio.sampleRate, ratio, (p) => { $("go").textContent = "Traitement " + Math.round(p * 100) + " %"; });
+    if (s.semitones) { $("go").textContent = "Finition…"; channels = await replay(channels, audio.sampleRate, pitch); }
+    result = { channels, name: [A.baseName(file), Math.abs(s.speed - 1) > 0.0005 || s.from ? bpmText(s.speed === 1 ? s.from : s.to) + " BPM" : "", key ? keyName(key, s.semitones) : (s.semitones ? (s.semitones > 0 ? "+" : "-") + Math.abs(s.semitones) + " st" : "")].filter(Boolean).join(" - ") };
+    if (url) URL.revokeObjectURL(url);
+    url = URL.createObjectURL(A.wav(channels, audio.sampleRate, 16)); // l'écoute se contente du 16 bits ; le téléchargement est en 24
+    $("player").src = url;
+    $("done-text").textContent = $("r-out").textContent;
+    $("done").hidden = false;
+  } catch (error) { $("error").textContent = error.message || "Le traitement a échoué."; }
+  $("go").textContent = label;
+  describe();
+};
+$("save").onclick = () => { if (result) A.download(A.wav(result.channels, audio.sampleRate, 24), result.name + ".wav"); };
+
+async function open(chosen) {
+  $("error").textContent = "";
+  if (chosen.size > MAX_BYTES) { $("error").textContent = "Ce fichier est trop lourd (400 Mo au plus)."; return; }
+  A.busy($("drop"), true, "Lecture du fichier…");
+  try {
+    const decoded = await A.decode(chosen);
+    if (decoded.duration > MAX_SECONDS) throw new Error("Ce fichier est trop long (10 minutes au plus).");
+    A.busy($("drop"), true, "Détection du tempo et de la tonalité…");
+    const found = await detect(decoded);
+    file = chosen; audio = decoded; key = found.key || null; result = null;
+    $("player").removeAttribute("src");
+    $("done").hidden = true;
+    $("pitch").value = 0;
+    $("from").value = $("to").value = found.tempo ? (Math.abs(found.tempo.bpm - Math.round(found.tempo.bpm)) < 0.2 ? Math.round(found.tempo.bpm) : found.tempo.bpm.toFixed(1)) : "";
+    $("r-file").textContent = file.name;
+    $("r-info").textContent = A.clock(audio.duration) + (found.tempo ? " · " + bpmText(+$("from").value) + " BPM" : "") + (key ? " · " + keyName(key) : "");
+    $("panel").hidden = false;
+    describe();
+    A.busy($("drop"), false, "Choisir un autre fichier");
+  } catch (error) {
+    $("panel").hidden = true;
+    $("error").textContent = error.message;
+    A.busy($("drop"), false);
+  }
+}
+A.dropZone($("drop"), $("file"), open);
+</script>
+<script src="assets/tools-menu.js"></script>
+<script src="assets/account.js"></script>
+</html>

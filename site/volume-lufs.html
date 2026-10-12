@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Volume d'un master (LUFS) avant sortie — ONIRIQUE</title>
+<meta name="description" content="Dépose ton master : son volume intégré en LUFS, son pic réel et ce que Spotify, Apple Music, YouTube, Deezer, Tidal et Amazon Music en feront. Gratuit, dans ton navigateur.">
+<link rel="canonical" href="https://onirique.store/volume-lufs">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css">
+<link rel="stylesheet" href="assets/tools.css">
+<style>
+.values td.gain b { color: var(--mist); }
+.values td small { display: block; color: var(--haze); font-size: 13px; }
+</style>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="outils.html" data-tools>Outils</a><a class="btn" href="compte.html" data-account>Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <section class="hero">
+    <p class="eyebrow">Outil gratuit</p>
+    <h1>Ton master est-il <em>au bon niveau</em> ?</h1>
+    <p class="lede">Les plateformes ramènent tous les titres au même volume. Dépose ton master : tu vois son niveau, ses pics, et de combien chaque plateforme va le baisser.</p>
+
+    <button class="drop" id="drop" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14v-4M8 18V6M12 21V3M16 17V7M20 14v-4"/></svg>
+      <strong>Dépose ton master ici</strong>
+      <span>ou clique pour le choisir · WAV de préférence, MP3, FLAC, M4A</span>
+    </button>
+    <input id="file" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" hidden>
+    <p class="hint">Sans compte. La mesure se fait dans ton navigateur : ton fichier n'est envoyé nulle part.</p>
+    <p class="error" id="error" role="alert"></p>
+  </section>
+
+  <article class="card" id="result" aria-live="polite" hidden>
+    <p class="head"><b id="r-file"></b><span id="r-length"></span></p>
+    <div class="tiles">
+      <div class="tile"><p class="eyebrow">Volume intégré</p><div class="big"><span id="r-lufs"></span> <small>LUFS</small></div><p class="muted">Le volume moyen du titre entier, tel que l'oreille le perçoit.</p></div>
+      <div class="tile"><p class="eyebrow">Pic réel</p><div class="big"><span id="r-peak"></span> <small>dBTP</small></div><p id="r-peak-text"></p></div>
+      <div class="tile"><p class="eyebrow">Dynamique</p><div class="big"><span id="r-range"></span> <small>LU</small></div><p class="muted" id="r-range-text"></p></div>
+    </div>
+    <div class="dim"><p id="r-verdict"></p></div>
+    <div>
+      <p class="eyebrow">Sur les plateformes</p>
+      <div class="scroll"><table class="values">
+        <thead><tr><th>Plateforme</th><th>Cible</th><th>Ce qui arrive à ton titre</th></tr></thead>
+        <tbody id="r-rows"></tbody>
+      </table></div>
+      <p class="muted" style="margin-top:12px">Cibles publiées par les plateformes ou couramment mesurées ; elles peuvent changer, et l'auditeur peut désactiver la normalisation.</p>
+    </div>
+  </article>
+
+  <section class="text">
+    <h2>Lire la mesure</h2>
+    <p><strong>LUFS</strong> : l'unité de volume perçu. Plus le nombre est proche de zéro, plus le titre est fort : −8 LUFS est très fort, −14 est la cible de la plupart des plateformes, −20 est calme. Un master plus fort que la cible n'est pas refusé : il est simplement baissé à la lecture. Pousser au-delà n'apporte donc aucun volume en plus, seulement moins de dynamique.</p>
+    <p><strong>Pic réel (dBTP)</strong> : le niveau maximal du signal une fois reconverti en son, qui peut dépasser celui des échantillons. Au-dessus de −1 dBTP, la conversion en MP3 ou en AAC faite par les plateformes peut créer de la saturation.</p>
+    <p><strong>Dynamique</strong> : l'écart entre les passages calmes et forts. Une valeur très basse signale un titre très compressé.</p>
+    <h2>Questions fréquentes</h2>
+    <details><summary>Faut-il viser exactement −14 LUFS ?</summary>
+      <p>Non. C'est le niveau auquel le titre sera lu, pas une note à atteindre. Beaucoup de titres actuels sortent entre −7 et −10 LUFS et sont baissés ; l'important est que le titre sonne bien une fois baissé, et que ses pics restent sous −1 dBTP.</p></details>
+    <details><summary>Quel fichier déposer ?</summary>
+      <p>Le master final, celui que tu envoies au distributeur, de préférence en WAV. Un MP3 donne un volume très proche, mais ses pics ne sont plus ceux du master.</p></details>
+    <details><summary>Comment la mesure est-elle faite ?</summary>
+      <p>Selon la recommandation UIT-R BS.1770, celle qu'appliquent les plateformes et les outils de mastering : pondération de l'oreille, blocs de 400 millisecondes, silences écartés. Le pic réel est recherché en reconstruisant le signal quatre fois plus finement.</p></details>
+  </section>
+
+  <section class="cta">
+    <h2>Un mix qui tient <em>une fois baissé</em></h2>
+    <p>Quand tous les titres sont au même volume, c'est la voix qui fait la différence. Les plugins Onirique s'essaient dans ton navigateur.</p>
+    <a class="go" href="boutique.html">Voir les plugins</a>
+  </section>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="outils.html">Tous les outils</a><a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a>
+  </nav>
+</footer>
+
+<script src="assets/audio-kit.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const A = OniriqueAudio;
+const MAX_BYTES = 400e6, MAX_SECONDS = 900;
+// Cible de lecture en LUFS ; « up » : la plateforme remonte-t-elle un titre plus calme que la cible ?
+const PLATFORMS = [["Spotify", -14, true], ["Apple Music", -16, true], ["YouTube", -14, false], ["Deezer", -15, false], ["Tidal", -14, false], ["Amazon Music", -14, false]];
+const signed = (n, digits = 1) => (n > 0 ? "+" : n < 0 ? "−" : "") + A.decimal(Math.abs(n), digits);
+
+const measure = (channels) => new Promise((resolve, reject) => {
+  const worker = new Worker("assets/loudness-worker.js");
+  worker.onmessage = (event) => { worker.terminate(); resolve(event.data); };
+  worker.onerror = () => { worker.terminate(); reject(new Error("La mesure a échoué sur ce fichier.")); };
+  worker.postMessage({ channels, sampleRate: 48000 }, channels.map((c) => c.buffer));
+});
+
+function show(file, duration, r) {
+  $("r-file").textContent = file.name;
+  $("r-length").textContent = A.clock(duration);
+  $("r-lufs").textContent = signed(r.integrated);
+  $("r-peak").textContent = signed(r.truePeak);
+  const hot = r.truePeak > -1;
+  $("r-peak-text").textContent = r.truePeak > 0 ? "Le signal sature : baisse le plafond du limiteur." : hot ? "Au-dessus de −1 dBTP : risque de saturation après conversion." : "Sous −1 dBTP : pas de risque à la conversion.";
+  $("r-peak-text").className = hot ? "warn" : "ok";
+  $("r-range").textContent = r.range === null ? "—" : A.decimal(r.range);
+  $("r-range-text").textContent = r.range === null ? "Titre trop court pour la mesurer." : r.range < 4 ? "Très compressé : peu d'écart entre couplets et refrains." : r.range < 9 ? "Courant pour un titre actuel." : "Large : de vrais passages calmes.";
+
+  const over = r.integrated + 14;
+  $("r-verdict").textContent = (over > 0.5
+    ? "Ton master est " + A.decimal(over) + " dB plus fort que la cible la plus courante (−14 LUFS) : il sera baissé d'autant à la lecture, sans perte de qualité."
+    : over < -0.5 ? "Ton master est " + A.decimal(-over) + " dB sous la cible la plus courante (−14 LUFS) : il sonnera plus calme que les autres titres sur les plateformes qui ne remontent pas le volume."
+    : "Ton master est pile à la cible la plus courante (−14 LUFS).")
+    + (hot ? " Ses pics dépassent −1 dBTP : baisse le plafond du limiteur à −1 dBTP avant d'exporter." : "");
+
+  $("r-rows").replaceChildren(...PLATFORMS.map(([name, target, up]) => {
+    const gain = target - r.integrated;
+    // Un titre trop calme n'est remonté que tant que ses pics restent sous −1 dBTP.
+    const applied = gain <= 0 ? gain : up ? Math.max(0, Math.min(gain, -1 - r.truePeak)) : 0;
+    const row = document.createElement("tr");
+    const what = Math.abs(applied) < 0.05 ? (gain > 0.05 ? "Laissé tel quel" : "Inchangé") : applied < 0 ? "Baissé de " + A.decimal(-applied) + " dB" : "Remonté de " + A.decimal(applied) + " dB";
+    const note = gain > 0.05 && applied < gain - 0.05 ? "Reste " + A.decimal(gain - applied) + " dB sous les autres titres." : "";
+    row.innerHTML = `<td>${name}</td><td>${target} LUFS</td><td class="gain"><b>${what}</b>${note ? "<small>" + note + "</small>" : ""}</td>`;
+    return row;
+  }));
+  $("result").hidden = false;
+}
+
+async function open(file) {
+  $("error").textContent = "";
+  if (file.size > MAX_BYTES) { $("error").textContent = "Ce fichier est trop lourd (400 Mo au plus)."; return; }
+  A.busy($("drop"), true, "Lecture du fichier…");
+  try {
+    const source = await A.decode(file);
+    if (source.duration > MAX_SECONDS) throw new Error("Ce fichier est trop long (15 minutes au plus).");
+    A.busy($("drop"), true, "Mesure en cours…");
+    // La mesure se fait à 48 kHz, la fréquence pour laquelle le filtre de pondération est défini.
+    const audio = source.sampleRate === 48000 ? source : await A.render(source, { rate: 48000 });
+    const r = await measure(A.channelsOf(audio).slice(0, 2).map((c) => c.slice()));
+    if (r.error) throw new Error(r.error);
+    show(file, source.duration, r);
+    A.busy($("drop"), false, "Mesurer un autre fichier");
+  } catch (error) {
+    $("result").hidden = true;
+    $("error").textContent = error.message;
+    A.busy($("drop"), false);
+  }
+}
+A.dropZone($("drop"), $("file"), open);
+</script>
+<script src="assets/tools-menu.js"></script>
+<script src="assets/account.js"></script>
+</html>

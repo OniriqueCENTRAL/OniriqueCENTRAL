@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Découper un audio et ajouter un fondu — ONIRIQUE</title>
+<meta name="description" content="Garde un passage d'un morceau, ajoute un fondu d'entrée et de sortie, écoute, puis exporte en WAV ou en MP3. Pour un extrait Instagram ou TikTok. Gratuit, dans ton navigateur.">
+<link rel="canonical" href="https://onirique.store/decoupe">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css">
+<link rel="stylesheet" href="assets/tools.css">
+<style>
+.wave { position: relative; padding: 0 !important; background: rgba(0,0,0,.42); touch-action: none; cursor: ew-resize; }
+.wave canvas { display: block; width: 100%; height: 170px; }
+.times { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 16px; align-items: end; }
+.fade output { float: right; color: var(--mist); letter-spacing: 0; }
+</style>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="outils.html" data-tools>Outils</a><a class="btn" href="compte.html" data-account>Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <section class="hero">
+    <p class="eyebrow">Outil gratuit</p>
+    <h1>Découper, <em>fondre</em>, exporter</h1>
+    <p class="lede">Dépose un morceau, fais glisser les deux bords pour garder le passage voulu, ajoute un fondu et télécharge l'extrait. Pour une story, un extrait de sortie ou une boucle à envoyer.</p>
+
+    <button class="drop" id="drop" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.5 7.5 20 18M8.5 16.5 20 6"/></svg>
+      <strong>Dépose un fichier audio ici</strong>
+      <span>ou clique pour le choisir · MP3, WAV, FLAC, M4A, OGG</span>
+    </button>
+    <input id="file" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" hidden>
+    <p class="hint">Sans compte. Tout se fait dans ton navigateur : ton fichier n'est envoyé nulle part.</p>
+    <p class="error" id="error" role="alert"></p>
+  </section>
+
+  <article class="card" id="panel" hidden>
+    <p class="head"><b id="r-file"></b><span id="r-info"></span></p>
+    <div class="wave" id="wave"><canvas id="canvas" aria-label="Forme d'onde : fais glisser les bords pour choisir le passage"></canvas></div>
+    <div class="times">
+      <label>Début (secondes)<input id="start" type="number" min="0" step="0.01" inputmode="decimal"></label>
+      <label>Fin (secondes)<input id="end" type="number" min="0" step="0.01" inputmode="decimal"></label>
+      <div><span class="label" style="margin-bottom:7px">Durée fixe depuis le début</span><div class="chips"><button type="button" data-len="15">15 s</button><button type="button" data-len="30">30 s</button><button type="button" data-len="60">60 s</button></div></div>
+    </div>
+    <div class="fields">
+      <label class="fade">Fondu d'entrée <output id="in-text"></output><input id="fade-in" type="range" min="0" max="10" step="0.1" value="0"></label>
+      <label class="fade">Fondu de sortie <output id="out-text"></output><input id="fade-out" type="range" min="0" max="10" step="0.1" value="1"></label>
+    </div>
+    <div class="dim split">
+      <div>
+        <p id="r-out"></p>
+        <div class="chips" id="format" style="margin-top:12px"><button type="button" data-v="wav" aria-pressed="true">WAV 24 bits</button><button type="button" data-v="mp3" aria-pressed="false">MP3 320</button></div>
+      </div>
+      <div class="actions">
+        <button class="go ghost" id="play" type="button">Écouter</button>
+        <button class="go" id="go" type="button">Télécharger l'extrait</button>
+      </div>
+    </div>
+  </article>
+
+  <section class="text">
+    <h2>Quelques repères</h2>
+    <p>Les réseaux sociaux lisent des extraits de 15 à 60 secondes : choisis le passage le plus fort du titre, souvent l'entrée du refrain, et fais démarrer l'extrait une mesure avant. Un fondu de sortie d'une à deux secondes évite la coupure sèche ; un fondu d'entrée très court (0,1 seconde) suffit à supprimer le clic d'une coupe faite au milieu d'un son.</p>
+    <p>L'export WAV garde la fréquence et les voies du fichier d'origine. Pour changer de format sans découper, utilise le <a href="convertisseur.html">convertisseur</a>.</p>
+  </section>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="outils.html">Tous les outils</a><a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a>
+  </nav>
+</footer>
+
+<script src="assets/audio-kit.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const A = OniriqueAudio;
+const MAX_BYTES = 400e6, MAX_SECONDS = 1200;
+let file = null, audio = null, peaks = null, start = 0, end = 0, format = "wav";
+let player = null; // { context, source, startedAt } pendant l'écoute
+
+const seconds = (s) => A.decimal(s, s < 10 ? 2 : 1) + " s";
+const fades = () => {
+  const length = end - start;
+  return { in: Math.min(+$("fade-in").value, length / 2), out: Math.min(+$("fade-out").value, length / 2) };
+};
+/** Courbe d'un fondu, de 0 à 1 : douce au départ et à l'arrivée. */
+const curve = (t) => 0.5 - 0.5 * Math.cos(Math.PI * Math.max(0, Math.min(1, t)));
+
+/** Le minimum et le maximum du son pour chaque colonne de l'image. */
+function measure(width) {
+  const data = A.channelsOf(audio), step = audio.length / width, out = new Float32Array(width * 2);
+  for (let x = 0; x < width; x++) {
+    let low = 0, high = 0;
+    const from = Math.floor(x * step), to = Math.min(audio.length, Math.floor((x + 1) * step) + 1), stride = Math.max(1, Math.floor((to - from) / 400));
+    for (const channel of data) for (let i = from; i < to; i += stride) { const v = channel[i]; if (v < low) low = v; else if (v > high) high = v; }
+    out[x * 2] = low; out[x * 2 + 1] = high;
+  }
+  return out;
+}
+
+function draw() {
+  if (!audio) return;
+  const canvas = $("canvas"), ratio = devicePixelRatio || 1, width = Math.round(canvas.clientWidth * ratio), height = Math.round(canvas.clientHeight * ratio);
+  if (!width) return;
+  if (canvas.width !== width || canvas.height !== height || !peaks) { canvas.width = width; canvas.height = height; peaks = measure(width); }
+  const g = canvas.getContext("2d"), mid = height / 2, x0 = start / audio.duration * width, x1 = end / audio.duration * width, f = fades();
+  g.clearRect(0, 0, width, height);
+  g.fillStyle = "rgba(226,52,68,.13)";
+  g.fillRect(x0, 0, x1 - x0, height);
+  for (let x = 0; x < width; x++) {
+    const inside = x >= x0 && x <= x1, t = x / width * audio.duration;
+    // À l'intérieur du passage, la forme d'onde suit les fondus : on voit ce qu'on va entendre.
+    const gain = !inside ? 1 : (f.in ? curve((t - start) / f.in) : 1) * (f.out ? curve((end - t) / f.out) : 1);
+    g.fillStyle = inside ? "#E23444" : "rgba(185,162,165,.35)";
+    const top = mid - peaks[x * 2 + 1] * gain * mid * 0.92, bottom = mid - peaks[x * 2] * gain * mid * 0.92;
+    g.fillRect(x, top, 1, Math.max(1, bottom - top));
+  }
+  g.fillStyle = "#FFECEE";
+  for (const x of [x0, x1]) g.fillRect(Math.round(x) - ratio, 0, 2 * ratio, height);
+  if (player) {
+    const at = start + (player.context.currentTime - player.startedAt);
+    g.fillStyle = "#fff";
+    g.fillRect(at / audio.duration * width, 0, ratio, height);
+  }
+}
+
+function refresh(from) {
+  const length = audio.duration;
+  start = Math.max(0, Math.min(start, length - 0.05));
+  end = Math.max(start + 0.05, Math.min(end, length));
+  if (from !== "start") $("start").value = start.toFixed(2);
+  if (from !== "end") $("end").value = end.toFixed(2);
+  const f = fades();
+  $("in-text").textContent = seconds(f.in);
+  $("out-text").textContent = seconds(f.out);
+  $("r-out").textContent = "Extrait de " + A.clock(end - start) + " (" + seconds(end - start) + "), de " + A.clock(start) + " à " + A.clock(end) + ".";
+  document.querySelectorAll("[data-len]").forEach((b) => b.setAttribute("aria-pressed", String(Math.abs(end - start - +b.dataset.len) < 0.011)));
+  draw();
+}
+
+// Glisser sur la forme d'onde déplace le bord le plus proche.
+let dragging = null;
+const timeAt = (event) => { const box = $("canvas").getBoundingClientRect(); return Math.max(0, Math.min(1, (event.clientX - box.left) / box.width)) * audio.duration; };
+$("wave").addEventListener("pointerdown", (event) => {
+  if (!audio) return;
+  const t = timeAt(event);
+  dragging = Math.abs(t - start) <= Math.abs(t - end) ? "start" : "end";
+  $("wave").setPointerCapture(event.pointerId);
+  move(event);
+});
+function move(event) {
+  if (!dragging) return;
+  stop();
+  const t = timeAt(event);
+  if (dragging === "start") start = Math.min(t, end - 0.05); else end = Math.max(t, start + 0.05);
+  refresh();
+}
+$("wave").addEventListener("pointermove", move);
+$("wave").addEventListener("pointerup", () => { dragging = null; });
+$("wave").addEventListener("pointercancel", () => { dragging = null; });
+
+$("start").oninput = () => { stop(); start = parseFloat($("start").value) || 0; refresh("start"); };
+$("end").oninput = () => { stop(); end = parseFloat($("end").value) || 0; refresh("end"); };
+$("start").onchange = $("end").onchange = () => refresh();
+$("fade-in").oninput = $("fade-out").oninput = () => { stop(); refresh(); };
+document.querySelectorAll("[data-len]").forEach((button) => { button.onclick = () => { stop(); end = start + +button.dataset.len; if (end > audio.duration) { end = audio.duration; start = Math.max(0, end - +button.dataset.len); } refresh(); }; });
+document.querySelectorAll("#format button").forEach((button) => {
+  button.onclick = () => { format = button.dataset.v; document.querySelectorAll("#format button").forEach((b) => b.setAttribute("aria-pressed", String(b === button))); };
+});
+addEventListener("resize", () => { peaks = null; draw(); });
+
+function stop() {
+  if (!player) return;
+  try { player.source.stop(); } catch { /* déjà terminé */ }
+  player.context.close();
+  player = null;
+  $("play").textContent = "Écouter";
+  draw();
+}
+
+$("play").onclick = () => {
+  if (player) { stop(); return; }
+  const context = new (window.AudioContext || window.webkitAudioContext)(), source = context.createBufferSource(), gain = context.createGain();
+  const f = fades(), length = end - start, now = context.currentTime + 0.05, steps = 32;
+  source.buffer = audio;
+  source.connect(gain).connect(context.destination);
+  gain.gain.setValueAtTime(f.in ? 0 : 1, now);
+  if (f.in) gain.gain.setValueCurveAtTime(Float32Array.from({ length: steps }, (_, i) => curve(i / (steps - 1))), now, f.in);
+  if (f.out) gain.gain.setValueCurveAtTime(Float32Array.from({ length: steps }, (_, i) => curve(1 - i / (steps - 1))), now + length - f.out, f.out);
+  source.start(now, start, length);
+  player = { context, source, startedAt: now };
+  source.onended = () => { if (player && player.source === source) stop(); };
+  $("play").textContent = "Arrêter";
+  const tick = () => { if (!player) return; draw(); requestAnimationFrame(tick); };
+  requestAnimationFrame(tick);
+};
+
+/** Le passage choisi, fondus appliqués, voie par voie. */
+function extract() {
+  const rate = audio.sampleRate, from = Math.round(start * rate), frames = Math.max(1, Math.round((end - start) * rate)), f = fades();
+  const fadeIn = Math.round(f.in * rate), fadeOut = Math.round(f.out * rate);
+  return A.channelsOf(audio).map((data) => {
+    const out = data.slice(from, from + frames);
+    for (let i = 0; i < fadeIn && i < out.length; i++) out[i] *= curve(i / fadeIn);
+    for (let i = 0; i < fadeOut && i < out.length; i++) out[out.length - 1 - i] *= curve(i / fadeOut);
+    return out;
+  });
+}
+
+$("go").onclick = async () => {
+  if (!audio) return;
+  stop();
+  $("error").textContent = "";
+  $("go").disabled = true;
+  const label = $("go").textContent;
+  try {
+    let channels = extract(), rate = audio.sampleRate, blob;
+    if (format === "mp3") {
+      // Le MP3 se limite à 44,1 ou 48 kHz et à deux voies : l'extrait y est ramené si besoin.
+      const wanted = rate === 48000 || rate === 96000 ? 48000 : 44100;
+      if (rate !== wanted || channels.length > 2) {
+        const buffer = new AudioBuffer({ length: channels[0].length, numberOfChannels: channels.length, sampleRate: rate });
+        channels.forEach((c, i) => buffer.copyToChannel(c, i));
+        channels = A.channelsOf(await A.render(buffer, { rate: wanted, channels: Math.min(2, channels.length) }));
+        rate = wanted;
+      }
+      blob = await A.mp3(channels, rate, 320, (p) => { $("go").textContent = "Encodage " + Math.round(p * 100) + " %"; });
+    } else blob = A.wav(channels, rate, 24);
+    A.download(blob, A.baseName(file) + " (extrait)." + format);
+  } catch (error) { $("error").textContent = error.message || "L'export a échoué."; }
+  $("go").textContent = label;
+  $("go").disabled = false;
+};
+
+async function open(chosen) {
+  $("error").textContent = "";
+  stop();
+  if (chosen.size > MAX_BYTES) { $("error").textContent = "Ce fichier est trop lourd (400 Mo au plus)."; return; }
+  A.busy($("drop"), true, "Lecture du fichier…");
+  try {
+    const decoded = await A.decode(chosen);
+    if (decoded.duration > MAX_SECONDS) throw new Error("Ce fichier est trop long (20 minutes au plus).");
+    if (decoded.duration < 0.2) throw new Error("Ce fichier est trop court pour être découpé.");
+    file = chosen; audio = decoded; peaks = null;
+    start = 0; end = Math.min(audio.duration, 30);
+    $("start").max = $("end").max = audio.duration.toFixed(2);
+    $("r-file").textContent = file.name;
+    $("r-info").textContent = A.clock(audio.duration) + " · " + String(audio.sampleRate / 1000).replace(".", ",") + " kHz";
+    $("panel").hidden = false;
+    refresh();
+    A.busy($("drop"), false, "Choisir un autre fichier");
+  } catch (error) {
+    $("panel").hidden = true;
+    $("error").textContent = error.message;
+    A.busy($("drop"), false);
+  }
+}
+A.dropZone($("drop"), $("file"), open);
+addEventListener("pagehide", stop);
+</script>
+<script src="assets/tools-menu.js"></script>
+<script src="assets/account.js"></script>
+</html>

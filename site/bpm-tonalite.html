@@ -85,7 +85,7 @@ details p { color: #D9C6C8; }
 <header>
   <div class="wrap">
     <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
-    <nav aria-label="Navigation"><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="bpm-tonalite.html" data-tools>Outils</a><a class="btn" href="compte.html" data-account>Compte</a></nav>
+    <nav aria-label="Navigation"><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="outils.html" data-tools>Outils</a><a class="btn" href="compte.html" data-account>Compte</a></nav>
   </div>
 </header>
 
@@ -119,6 +119,7 @@ details p { color: #D9C6C8; }
           <p id="r-key-codes"></p>
           <p id="r-key-other"></p>
           <p id="r-detune"></p>
+          <p><a id="r-scale" href="gammes.html">Voir les notes de cette gamme</a></p>
         </div>
       </div>
       <div class="trim">
@@ -318,6 +319,8 @@ function show(file, sound, r) {
   $("r-notes").hidden = !r.key;
   if (r.key) {
     $("r-key").textContent = keyName(r.key);
+    $("r-scale").href = "gammes.html?key=" + encodeURIComponent(keyName(r.key));
+    $("r-scale").hidden = false;
     $("r-key-codes").textContent = (EN_OTHER[r.key.tonic] ? "Aussi notée " + keyName(r.key, EN_OTHER) + " · " : "") + keyFrench(r.key) + " · Camelot " + camelot(r.key);
     $("r-key-other").textContent = "Seconde proposition : " + keyName(r.second) + " (" + camelot(r.second) + ").";
     // Detune : l'écart entre l'accordage du morceau et le la à 440 Hz, en centièmes de demi-ton.
@@ -340,6 +343,7 @@ function show(file, sound, r) {
     $("r-key-codes").textContent = "Pas assez de notes pour estimer la tonalité.";
     $("r-key-other").textContent = "";
     $("r-detune").textContent = "";
+    $("r-scale").hidden = true;
   }
   $("result").hidden = false;
 }

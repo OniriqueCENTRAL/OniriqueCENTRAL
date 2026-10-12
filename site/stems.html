@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vérificateur de stems — ONIRIQUE</title>
+<meta name="description" content="Dépose toutes les pistes d'un projet : durée, fréquence, résolution, saturation et pistes vides sont contrôlées d'un coup, avant l'envoi au mix ou au mastering. Gratuit.">
+<link rel="canonical" href="https://onirique.store/stems">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css">
+<link rel="stylesheet" href="assets/tools.css">
+<style>
+.values td:first-child { max-width: 320px; overflow-wrap: anywhere; }
+.values td.bad { color: var(--ember-text); font-weight: 600; }
+.issues { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.issues li { margin: 0; color: var(--soft); font-size: 15px; }
+.issues li::before { content: "✦ "; color: var(--ember-text); }
+</style>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="outils.html" data-tools>Outils</a><a class="btn" href="compte.html" data-account>Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <section class="hero">
+    <p class="eyebrow">Outil gratuit</p>
+    <h1>Des stems <em>sans surprise</em></h1>
+    <p class="lede">Avant d'envoyer tes pistes à un ingé son ou à un autre beatmaker, dépose-les toutes ici : la page signale celles qui n'ont pas la même durée, le même format, qui saturent ou qui sont vides.</p>
+
+    <button class="drop" id="drop" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18M3 12h18M3 17h18"/><circle cx="8" cy="7" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="10" cy="17" r="1.6"/></svg>
+      <strong>Dépose toutes tes pistes ici</strong>
+      <span>ou clique pour les choisir · plusieurs fichiers à la fois</span>
+    </button>
+    <input id="file" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" hidden>
+    <p class="hint">Sans compte. Les pistes sont lues dans ton navigateur : rien n'est envoyé.</p>
+    <p class="error" id="error" role="alert"></p>
+  </section>
+
+  <article class="card" id="result" aria-live="polite" hidden>
+    <p class="head"><b id="r-count"></b><span id="r-state"></span></p>
+    <div class="dim"><p class="eyebrow">Bilan</p><ul class="issues" id="r-issues"></ul><p class="ok" id="r-clean" hidden>Rien à signaler : toutes les pistes ont la même durée et le même format, aucune ne sature.</p></div>
+    <div><div class="scroll"><table class="values" style="min-width:640px">
+      <thead><tr><th>Piste</th><th>Durée</th><th>Format</th><th>Voies</th><th>Pic</th><th>Blanc au début</th></tr></thead>
+      <tbody id="r-rows"></tbody>
+    </table></div></div>
+  </article>
+
+  <section class="text">
+    <h2>Ce qui est contrôlé</h2>
+    <p><strong>Durée</strong> : des stems exportés depuis le même point de départ ont tous la même longueur, à l'échantillon près. Une piste plus courte ou plus longue ne se recalera pas toute seule dans le projet de l'autre.</p>
+    <p><strong>Format</strong> : la fréquence d'échantillonnage et la résolution doivent être les mêmes partout, en général 44,1 ou 48 kHz en 24 bits. <strong>Saturation</strong> : un pic à 0 dBFS tenu sur plusieurs échantillons est une piste écrêtée à l'export ; baisse son niveau et exporte à nouveau. <strong>Pistes vides</strong> : un export fait avec la piste en sourdine.</p>
+    <p>Un MP3 n'a pas de résolution en bits et commence par un court blanc : préfère le WAV pour des stems.</p>
+  </section>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="outils.html">Tous les outils</a><a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a>
+  </nav>
+</footer>
+
+<script src="assets/audio-kit.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const A = OniriqueAudio;
+const MAX_FILES = 60;
+const db = (v) => (v > 0 ? 20 * Math.log10(v) : -Infinity);
+
+/** Résolution écrite dans l'en-tête d'un WAV (16, 24, 32 bits) ; 0 pour les autres formats. */
+function wavBits(v) {
+  const tag = (o, t) => o + 4 <= v.byteLength && [...t].every((c, i) => v.getUint8(o + i) === c.charCodeAt(0));
+  if (!tag(0, "RIFF") || !tag(8, "WAVE")) return 0;
+  for (let o = 12; o + 24 <= v.byteLength && o < 1e6;) {
+    if (tag(o, "fmt ")) return v.getUint16(o + 22, true);
+    const size = v.getUint32(o + 4, true);
+    o += 8 + size + (size & 1);
+  }
+  return 0;
+}
+
+async function inspect(file) {
+  const head = new DataView(await file.slice(0, 200000).arrayBuffer());
+  const rate = A.sourceRate(head), bits = wavBits(head);
+  const audio = await A.decode(file);
+  let peak = 0, clipped = 0, first = audio.length, same = audio.numberOfChannels > 1;
+  const left = audio.getChannelData(0);
+  for (let c = 0; c < audio.numberOfChannels; c++) {
+    const data = audio.getChannelData(c);
+    let run = 0;
+    for (let i = 0; i < data.length; i++) {
+      const v = Math.abs(data[i]);
+      if (v > peak) peak = v;
+      if (v >= 0.999) { if (++run === 3) clipped++; } else run = 0; // trois échantillons de suite au plafond : écrêtage
+      if (i < first && v > 0.001) first = i;
+      if (c > 0 && same && Math.abs(data[i] - left[i]) > 0.0005) same = false;
+    }
+  }
+  return { name: file.name, seconds: audio.duration, rate: rate || audio.sampleRate, bits,
+    channels: audio.numberOfChannels, dualMono: same, peak: db(peak), clipped, lead: first === audio.length ? null : first / audio.sampleRate, silent: peak < 0.0005 };
+}
+
+/** La valeur la plus fréquente d'une liste. */
+function common(values) {
+  const count = new Map();
+  values.forEach((v) => count.set(v, (count.get(v) || 0) + 1));
+  return [...count].sort((a, b) => b[1] - a[1])[0][0];
+}
+
+function show(stems, failed) {
+  const issues = [], n = (list) => list.length + " piste" + (list.length > 1 ? "s" : "");
+  const names = (list) => list.map((s) => "« " + s.name + " »").join(", ");
+  // La durée se compare en temps, pas en nombre d'échantillons : deux pistes de fréquences différentes peuvent durer autant.
+  const rate = common(stems.map((s) => s.rate)), length = common(stems.map((s) => Math.round(s.seconds * 1000))) / 1000;
+  const withBits = stems.filter((s) => s.bits), bits = withBits.length ? common(withBits.map((s) => s.bits)) : 0;
+  const wrong = {
+    length: stems.filter((s) => Math.abs(s.seconds - length) > 0.001),
+    rate: stems.filter((s) => s.rate !== rate),
+    bits: withBits.filter((s) => s.bits !== bits),
+    clip: stems.filter((s) => s.clipped),
+    silent: stems.filter((s) => s.silent),
+  };
+  if (wrong.length.length) issues.push(n(wrong.length) + " d'une autre durée que les autres (" + A.clock(length) + ") : " + names(wrong.length) + ".");
+  if (wrong.rate.length) issues.push(n(wrong.rate) + " à une autre fréquence que les autres (" + rate / 1000 + " kHz) : " + names(wrong.rate) + ".");
+  if (wrong.bits.length) issues.push(n(wrong.bits) + " dans une autre résolution que les autres (" + bits + " bits) : " + names(wrong.bits) + ".");
+  if (wrong.clip.length) issues.push(n(wrong.clip) + " qui sature" + (wrong.clip.length > 1 ? "nt" : "") + " : " + names(wrong.clip) + ".");
+  if (wrong.silent.length) issues.push(n(wrong.silent) + " vide" + (wrong.silent.length > 1 ? "s" : "") + " : " + names(wrong.silent) + ".");
+  const dual = stems.filter((s) => s.dualMono && !s.silent);
+  if (dual.length) issues.push(n(dual) + " en stéréo dont les deux voies sont identiques (du mono exporté en stéréo, deux fois plus lourd pour rien) : " + names(dual) + ".");
+  failed.forEach((name) => issues.push("« " + name + " » n'a pas pu être lu."));
+
+  $("r-count").textContent = stems.length + " piste" + (stems.length > 1 ? "s" : "") + " lue" + (stems.length > 1 ? "s" : "");
+  $("r-state").textContent = issues.length ? issues.length + " point" + (issues.length > 1 ? "s" : "") + " à vérifier" : "Tout est cohérent";
+  $("r-issues").replaceChildren(...issues.map((text) => Object.assign(document.createElement("li"), { textContent: text })));
+  $("r-issues").hidden = !issues.length;
+  $("r-clean").hidden = !!issues.length;
+  $("r-rows").replaceChildren(...stems.map((s) => {
+    const row = document.createElement("tr");
+    const cell = (text, bad) => Object.assign(document.createElement("td"), { textContent: text, className: bad ? "bad" : "" });
+    row.append(cell(s.name),
+      cell(A.clock(s.seconds) + "," + String(Math.round(s.seconds % 1 * 1000)).padStart(3, "0"), wrong.length.includes(s)),
+      cell(String(s.rate / 1000).replace(".", ",") + " kHz" + (s.bits ? " · " + s.bits + " bits" : ""), wrong.rate.includes(s) || wrong.bits.includes(s)),
+      cell(s.channels === 1 ? "Mono" : s.channels === 2 ? (s.dualMono ? "Stéréo (2 × mono)" : "Stéréo") : s.channels + " voies", s.dualMono && !s.silent),
+      cell(s.silent ? "Vide" : A.decimal(s.peak) + " dBFS" + (s.clipped ? " · sature" : ""), s.silent || !!s.clipped),
+      cell(s.lead === null ? "—" : s.lead < 0.001 ? "Aucun" : s.lead < 1 ? Math.round(s.lead * 1000) + " ms" : A.decimal(s.lead) + " s"));
+    return row;
+  }));
+  $("result").hidden = false;
+}
+
+async function open(files) {
+  $("error").textContent = "";
+  if (files.length > MAX_FILES) { $("error").textContent = "Dépose " + MAX_FILES + " pistes au plus à la fois."; return; }
+  const stems = [], failed = [];
+  for (const [i, file] of files.entries()) {
+    A.busy($("drop"), true, "Lecture " + (i + 1) + " sur " + files.length + "…");
+    try { stems.push(await inspect(file)); } catch { failed.push(file.name); }
+  }
+  A.busy($("drop"), false, stems.length ? "Vérifier d'autres pistes" : undefined);
+  if (!stems.length) { $("result").hidden = true; $("error").textContent = "Aucune de ces pistes n'a pu être lue. Essaie en WAV ou en MP3."; return; }
+  stems.sort((a, b) => a.name.localeCompare(b.name, "fr", { numeric: true }));
+  show(stems, failed);
+}
+A.dropZone($("drop"), $("file"), open, { multiple: true });
+</script>
+<script src="assets/tools-menu.js"></script>
+<script src="assets/account.js"></script>
+</html>

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tap tempo — ONIRIQUE</title>
+<meta name="description" content="Tape le rythme au doigt, à la souris ou au clavier : le BPM s'affiche en direct. Gratuit, sans compte.">
+<link rel="canonical" href="https://onirique.store/tap-tempo">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css">
+<link rel="stylesheet" href="assets/tools.css">
+<style>
+.pad { display: grid; place-items: center; gap: 6px; width: 100%; margin-top: 30px; padding: clamp(30px, 7vw, 60px) 20px; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(180deg, var(--deep-2), var(--deep)); color: var(--mist); font: inherit; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-tap-highlight-color: transparent; transition: border-color .12s, box-shadow .12s; }
+.pad.hit { border-color: var(--ember); box-shadow: 0 0 0 6px rgba(226,52,68,.18), 0 0 60px -10px rgba(226,52,68,.9); }
+.pad .big { margin: 0; }
+.pad span { color: var(--haze); font-size: 15px; }
+.under { justify-content: center; margin-top: 18px; }
+</style>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="outils.html" data-tools>Outils</a><a class="btn" href="compte.html" data-account>Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <section class="hero">
+    <p class="eyebrow">Outil gratuit</p>
+    <h1>Tap <em>tempo</em></h1>
+    <p class="lede">Tape en rythme sur le bouton, ou sur n'importe quelle touche du clavier. Quatre frappes suffisent ; plus tu continues, plus la mesure est précise.</p>
+
+    <button class="pad" id="pad" type="button" aria-describedby="state">
+      <div class="big xl"><span id="bpm">—</span> <small>BPM</small></div>
+      <span id="state" aria-live="polite">Tape ici pour commencer</span>
+    </button>
+    <div class="actions under">
+      <button class="go ghost" id="reset" type="button">Recommencer</button>
+      <a class="go" id="delays" href="delais.html" hidden>Calculer les délais à ce tempo</a>
+    </div>
+  </section>
+
+  <section class="text">
+    <h2>Comment ça marche</h2>
+    <p>Le tempo est calculé sur l'ensemble de tes frappes, pas seulement sur les deux dernières : une frappe un peu en avance ou en retard ne fait pas sauter la valeur. Après deux secondes et demie sans frappe, le compteur repart de zéro.</p>
+    <p>Tu as un fichier plutôt qu'un rythme en tête ? Le <a href="bpm-tonalite.html">détecteur de BPM et de tonalité</a> le mesure au centième près.</p>
+  </section>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="outils.html">Tous les outils</a><a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a>
+  </nav>
+</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const PAUSE = 2500; // ms sans frappe : nouvelle mesure
+let taps = [];
+
+/** BPM : pente de la droite qui passe au mieux par les instants des frappes (moindres carrés). */
+function tempo(times) {
+  const n = times.length, mx = (n - 1) / 2, my = times.reduce((a, b) => a + b, 0) / n;
+  let num = 0, den = 0;
+  times.forEach((t, i) => { num += (i - mx) * (t - my); den += (i - mx) ** 2; });
+  return 60000 / (num / den);
+}
+
+function show() {
+  const bpm = taps.length >= 2 ? tempo(taps) : 0;
+  $("bpm").textContent = taps.length >= 4 ? bpm.toFixed(1).replace(".", ",") : bpm ? Math.round(bpm) : "—";
+  $("state").textContent = !taps.length ? "Tape ici pour commencer" : taps.length < 4 ? "Continue… " + taps.length + " frappe" + (taps.length > 1 ? "s" : "") : taps.length + " frappes";
+  $("delays").hidden = taps.length < 4;
+  if (bpm) $("delays").href = "delais.html?bpm=" + bpm.toFixed(1);
+}
+
+function tap() {
+  const now = performance.now();
+  if (taps.length && now - taps[taps.length - 1] > PAUSE) taps = [];
+  taps.push(now);
+  if (taps.length > 32) taps.shift();
+  $("pad").classList.add("hit");
+  setTimeout(() => $("pad").classList.remove("hit"), 90);
+  show();
+}
+
+$("pad").addEventListener("pointerdown", (event) => { event.preventDefault(); tap(); });
+addEventListener("keydown", (event) => {
+  if (event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.key === "Tab" || event.key === "Escape") return;
+  if (event.target.closest("a, .tools, .acct, #reset")) return; // les liens et les menus gardent leur clavier
+  event.preventDefault();
+  tap();
+});
+$("reset").onclick = () => { taps = []; show(); };
+</script>
+<script src="assets/tools-menu.js"></script>
+<script src="assets/account.js"></script>
+</html>

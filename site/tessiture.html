@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tessiture vocale — ONIRIQUE</title>
+<meta name="description" content="Chante ta note la plus grave puis la plus aiguë : l'outil mesure l'étendue de ta voix, ta zone de confort et le type de voix le plus proche. Gratuit, au micro, sans compte.">
+<link rel="canonical" href="https://onirique.store/tessiture">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css">
+<link rel="stylesheet" href="assets/tools.css">
+<style>
+.live { text-align: center; }
+.live .big { margin: 6px 0 2px; }
+.range { position: relative; height: 46px; margin-top: 6px; border-radius: 12px; background: rgba(0,0,0,.42); border: 1px solid var(--line); overflow: hidden; }
+.range i { position: absolute; top: 0; bottom: 0; }
+.range .all { background: rgba(226,52,68,.35); }
+.range .easy { background: var(--ember); box-shadow: 0 0 22px rgba(226,52,68,.7); }
+.range .now { width: 3px; margin-left: -1px; background: #fff; }
+.ticks { display: flex; justify-content: space-between; margin-top: 8px; font: 500 11px/1 var(--f-mono); color: var(--haze); }
+</style>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="outils.html" data-tools>Outils</a><a class="btn" href="compte.html" data-account>Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <section class="hero">
+    <p class="eyebrow">Outil gratuit</p>
+    <h1>L'étendue de <em>ta voix</em></h1>
+    <p class="lede">Active le micro, puis chante de ta note la plus grave à ta note la plus aiguë, sans forcer. L'outil retient les deux extrêmes et en déduit ta zone de confort.</p>
+  </section>
+
+  <div class="card">
+    <div class="live">
+      <p class="eyebrow" id="state">Micro coupé</p>
+      <div class="big"><span id="now">—</span></div>
+      <p class="muted">Tiens chaque note une demi-seconde pour qu'elle compte.</p>
+    </div>
+    <div class="tiles">
+      <div class="tile"><p class="eyebrow">Note la plus grave</p><div class="big" id="low">—</div><p class="muted" id="low-hz">&nbsp;</p></div>
+      <div class="tile"><p class="eyebrow">Note la plus aiguë</p><div class="big" id="high">—</div><p class="muted" id="high-hz">&nbsp;</p></div>
+      <div class="tile"><p class="eyebrow">Étendue</p><div class="big"><span id="span">—</span> <small>demi-tons</small></div><p class="muted" id="span-text">&nbsp;</p></div>
+    </div>
+    <div id="result" hidden>
+      <p class="eyebrow">Sur le clavier (C2 à C6)</p>
+      <div class="range" role="img" id="range"><i class="all" id="r-all"></i><i class="easy" id="r-easy"></i><i class="now" id="r-now" hidden></i></div>
+      <div class="ticks" aria-hidden="true"><span>C2</span><span>C3</span><span>C4</span><span>C5</span><span>C6</span></div>
+      <p style="margin-top:16px" id="comfort"></p>
+      <p id="voice"></p>
+    </div>
+    <div class="dim">
+      <div class="fields">
+        <label>Ou choisis ta note grave<select id="pick-low"></select></label>
+        <label>et ta note aiguë<select id="pick-high"></select></label>
+      </div>
+      <div class="actions" style="margin-top:16px">
+        <button class="go" id="mic" type="button">Activer le micro</button>
+        <button class="go ghost" id="reset" type="button">Recommencer</button>
+      </div>
+    </div>
+  </div>
+  <p class="hint">Le son du micro est analysé dans ton navigateur : rien n'est enregistré ni envoyé.</p>
+  <p class="error" id="error" role="alert"></p>
+
+  <section class="text">
+    <h2>À quoi sert la tessiture</h2>
+    <p>Elle dit dans quelle tonalité poser une mélodie. Les notes extrêmes s'atteignent, mais ne se tiennent pas longtemps : un refrain écrit dans ta zone de confort sonne plein et se rechante en concert. Si la note la plus haute d'une mélodie dépasse cette zone, descends l'instru d'un ou deux demi-tons avec l'outil <a href="transposition.html">Transposer</a>.</p>
+    <p>Le type de voix affiché (baryton, ténor, mezzo…) est celui dont l'étendue habituelle est la plus proche de la tienne. C'est un repère : une classification sérieuse tient aussi compte du timbre et se fait avec un professeur de chant.</p>
+  </section>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="outils.html">Tous les outils</a><a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a>
+  </nav>
+</footer>
+
+<script src="assets/pitch.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const P = OniriquePitch;
+const FLOOR = 36, CEIL = 84;   // C2 à C6 : l'échelle du schéma
+const HOLD = 12;               // images de suite sur la même note pour qu'elle compte (une demi-seconde environ)
+// Étendues habituelles des voix (notes MIDI), de la plus grave à la plus aiguë.
+const VOICES = [["basse", 40, 64], ["baryton", 45, 69], ["ténor", 48, 72], ["alto", 53, 77], ["mezzo-soprano", 57, 81], ["soprano", 60, 84]];
+let low = null, high = null, stop = null, last = null, held = 0;
+
+for (const select of [$("pick-low"), $("pick-high")]) {
+  select.append(new Option("—", ""));
+  for (let midi = 28; midi <= 96; midi++) select.append(new Option(P.label(midi), midi));
+}
+const hz = (midi) => (440 * 2 ** ((midi - 69) / 12)).toFixed(1).replace(".", ",") + " Hz";
+const at = (midi) => Math.max(0, Math.min(100, (midi - FLOOR) / (CEIL - FLOOR) * 100));
+
+function draw() {
+  $("low").textContent = low === null ? "—" : P.label(low);
+  $("high").textContent = high === null ? "—" : P.label(high);
+  $("low-hz").textContent = low === null ? " " : hz(low);
+  $("high-hz").textContent = high === null ? " " : hz(high);
+  $("pick-low").value = low ?? "";
+  $("pick-high").value = high ?? "";
+  const ready = low !== null && high !== null && high > low;
+  $("result").hidden = !ready;
+  $("span").textContent = ready ? high - low : "—";
+  $("span-text").textContent = ready ? (((high - low) / 12).toFixed(1).replace(".", ",") + " octave" + (high - low >= 24 ? "s" : "")) : " ";
+  if (!ready) return;
+  // Zone de confort : l'étendue moins un sixième à chaque bout.
+  const margin = Math.round((high - low) / 6), easyLow = low + margin, easyHigh = high - margin;
+  $("r-all").style.cssText = "left:" + at(low) + "%;width:" + (at(high) - at(low)) + "%";
+  $("r-easy").style.cssText = "left:" + at(easyLow) + "%;width:" + (at(easyHigh) - at(easyLow)) + "%";
+  $("range").setAttribute("aria-label", "Étendue de " + P.label(low) + " à " + P.label(high));
+  $("comfort").textContent = "Zone de confort : de " + P.label(easyLow) + " à " + P.label(easyHigh) + ". Garde la note la plus haute d'un refrain sous " + P.label(easyHigh) + ".";
+  // La voix dont les deux notes extrêmes habituelles sont les plus proches de celles mesurées.
+  const gap = (v) => Math.abs(v[1] - low) + Math.abs(v[2] - high);
+  const [voice] = VOICES.reduce((best, v) => (gap(v) < gap(best) ? v : best));
+  $("voice").textContent = high - low < 10 ? "Chante plus bas et plus haut pour une mesure complète : une voix couvre en général plus d'une octave et demie."
+    : "Type de voix le plus proche : " + voice + ".";
+}
+
+function hear(pitch) {
+  const midi = pitch && pitch.clarity > 0.9 ? P.note(pitch.frequency).midi : null;
+  $("now").textContent = midi === null ? "—" : P.label(midi);
+  $("r-now").hidden = midi === null;
+  if (midi !== null) $("r-now").style.left = at(midi) + "%";
+  held = midi !== null && midi === last ? held + 1 : 0;
+  last = midi;
+  if (midi === null || held !== HOLD || midi < 28 || midi > 96) return;
+  if (low === null || midi < low) low = midi;
+  if (high === null || midi > high) high = midi;
+  draw();
+}
+
+$("mic").onclick = async () => {
+  $("error").textContent = "";
+  if (stop) { stop(); stop = null; $("mic").textContent = "Activer le micro"; $("state").textContent = "Micro coupé"; $("now").textContent = "—"; $("r-now").hidden = true; return; }
+  $("mic").disabled = true;
+  try { stop = await P.listen(hear); $("mic").textContent = "Couper le micro"; $("state").textContent = "Tu chantes"; } catch (error) { $("error").textContent = error.message; }
+  $("mic").disabled = false;
+};
+$("reset").onclick = () => { low = high = null; draw(); };
+$("pick-low").onchange = () => { low = $("pick-low").value === "" ? null : +$("pick-low").value; draw(); };
+$("pick-high").onchange = () => { high = $("pick-high").value === "" ? null : +$("pick-high").value; draw(); };
+addEventListener("pagehide", () => { if (stop) stop(); });
+draw();
+</script>
+<script src="assets/tools-menu.js"></script>
+<script src="assets/account.js"></script>
+</html>

@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Checklist de sortie d'un titre — ONIRIQUE</title>
+<meta name="description" content="Les étapes d'une sortie, de J-30 à J+7, datées à partir de ta date de sortie : distribution, pitch aux playlists, visuels, pré-save, promotion. Gratuit, sans compte.">
+<link rel="canonical" href="https://onirique.store/checklist-sortie">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css">
+<link rel="stylesheet" href="assets/tools.css">
+<style>
+.when { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 16px 28px; align-items: end; }
+.bar { height: 8px; border-radius: 999px; background: rgba(255,210,214,.12); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; border-radius: 999px; background: var(--ember); transition: width .3s; }
+.step h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin: 0 0 12px; font: 800 17px/1.2 var(--f-display); }
+.step h2 small { font: 500 12px/1 var(--f-mono); letter-spacing: .08em; color: var(--haze); }
+.step h2 small.late { color: var(--ember-text); }
+.task { display: grid !important; grid-template-columns: 18px minmax(0, 1fr); gap: 12px; align-items: start; padding: 9px 0; font: 400 16px/1.45 var(--f-body) !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--mist) !important; cursor: pointer; }
+.task input { margin-top: 3px; }
+.task small { display: block; margin-top: 2px; color: var(--haze); font-size: 14px; }
+.task:has(input:checked) span { color: var(--haze); text-decoration: line-through; }
+@media (max-width: 620px) { .when { grid-template-columns: minmax(0, 1fr); } }
+@media print { .card { border: 0; background: none; } .task { color: #000 !important; } }
+</style>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="outils.html" data-tools>Outils</a><a class="btn" href="compte.html" data-account>Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <section class="hero">
+    <p class="eyebrow">Outil gratuit</p>
+    <h1>Une sortie, <em>étape par étape</em></h1>
+    <p class="lede">Entre la date de sortie : chaque étape reçoit sa date limite. Coche au fur et à mesure, la page retient où tu en es.</p>
+  </section>
+
+  <div class="card">
+    <div class="when">
+      <label>Date de sortie<input id="date" type="date"></label>
+      <div><p class="eyebrow" id="progress">0 étape sur 0</p><div class="bar"><i id="bar"></i></div></div>
+    </div>
+    <div id="steps" style="padding:0"></div>
+    <div class="dim actions no-print">
+      <button class="go ghost" id="print" type="button">Imprimer</button>
+      <button class="go ghost" id="clear" type="button">Tout décocher</button>
+    </div>
+  </div>
+  <p class="hint">Ta progression est gardée sur cet appareil : rien n'est envoyé.</p>
+
+  <section class="text">
+    <h2>Pourquoi un mois</h2>
+    <p>Le délai qui commande tout est celui des plateformes : un titre doit être livré par le distributeur plusieurs semaines avant sa sortie pour pouvoir être proposé aux équipes éditoriales, et le pitch Spotify se fait au plus tard sept jours avant. En dessous de trois semaines, la sortie reste possible, mais sans ces leviers.</p>
+    <p>Avant de livrer le master, vérifie son niveau avec la <a href="volume-lufs.html">mesure de volume</a>, et note les parts de chacun avec la <a href="partage.html">feuille de partage</a>.</p>
+  </section>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="outils.html">Tous les outils</a><a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a>
+  </nav>
+</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const el = (tag, props = {}, ...children) => { const node = Object.assign(document.createElement(tag), props); node.append(...children); return node; };
+const KEY = "onirique.checklist";
+// Chaque étape : le nombre de jours par rapport à la sortie, son nom, ses tâches (texte, précision).
+const STEPS = [
+  [-30, "Finaliser", [
+    ["Master validé, écouté sur plusieurs systèmes", "Casque, voiture, téléphone, enceintes."],
+    ["Niveau et pics du master vérifiés", "Volume intégré et pic réel, pour ne pas être baissé ni écrêté par les plateformes."],
+    ["Parts de chacun notées et signées", "Beatmaker, auteurs, interprètes : avant la sortie, pas après."],
+    ["Titre, crédits et paroles rassemblés", "Orthographe des noms, featurings, auteurs et compositeurs."],
+  ]],
+  [-28, "Livrer au distributeur", [
+    ["Pochette au bon format", "Carrée, 3000 × 3000 pixels, sans logo de plateforme ni adresse web."],
+    ["Titre envoyé au distributeur avec la date de sortie", "Audio en WAV, crédits, genre, langue, mention « explicite » si besoin."],
+    ["Titre déclaré auprès de ta société d'auteurs", "La SACEM en France."],
+  ]],
+  [-21, "Préparer l'annonce", [
+    ["Pitch envoyé aux équipes éditoriales", "Depuis Spotify for Artists, et l'équivalent des autres plateformes, dès que le titre y apparaît."],
+    ["Lien de pré-save créé", "Un seul lien à partager partout jusqu'à la sortie."],
+    ["Visuels et extraits vidéo prêts", "Formats verticaux pour les réseaux, avec le meilleur passage du titre."],
+  ]],
+  [-14, "Annoncer", [
+    ["Date et pochette annoncées", "Sur tes réseaux, avec le lien de pré-save."],
+    ["Médias, playlists indépendantes et proches contactés", "Un message court, le lien d'écoute privé, la date."],
+    ["Profils d'artiste à jour", "Photo, bio et liens sur chaque plateforme."],
+  ]],
+  [-7, "Dernière semaine", [
+    ["Date limite du pitch Spotify", "Passé ce jour, le titre n'est plus proposé aux playlists éditoriales."],
+    ["Extraits publiés régulièrement", "Un par jour ou tous les deux jours jusqu'à la sortie."],
+    ["Titre visible chez le distributeur sur toutes les plateformes", "Sinon, le relancer tout de suite."],
+  ]],
+  [0, "Jour de sortie", [
+    ["Liens vérifiés sur chaque plateforme", "Bon titre, bonne pochette, bons crédits."],
+    ["Sortie annoncée partout", "Réseaux, liste de diffusion, messages directs."],
+    ["Lien en bio remplacé par le lien d'écoute", ""],
+  ]],
+  [7, "Première semaine", [
+    ["Chiffres de la première semaine relevés", "Écoutes, sauvegardes, ajouts en playlist, score de popularité."],
+    ["Second contenu publié", "Clip, session live, coulisses : de quoi relancer l'écoute."],
+    ["Merci aux playlists et médias qui ont relayé", ""],
+  ]],
+];
+let done = {};
+try { const saved = JSON.parse(localStorage.getItem(KEY) || "null"); if (saved) { done = saved.done || {}; if (/^\d{4}-\d{2}-\d{2}$/.test(saved.date)) $("date").value = saved.date; } } catch { /* rien de mémorisé */ }
+
+function save() { try { localStorage.setItem(KEY, JSON.stringify({ date: $("date").value, done })); } catch { /* stockage indisponible */ } }
+
+function progress() {
+  const all = STEPS.reduce((n, [, , tasks]) => n + tasks.length, 0), checked = Object.values(done).filter(Boolean).length;
+  $("progress").textContent = checked + " étape" + (checked > 1 ? "s" : "") + " sur " + all;
+  $("bar").style.width = (checked / all * 100) + "%";
+}
+
+function draw() {
+  const release = $("date").value ? new Date($("date").value + "T12:00:00") : null, today = new Date();
+  today.setHours(12, 0, 0, 0);
+  $("steps").replaceChildren(...STEPS.map(([offset, name, tasks], s) => {
+    const label = offset === 0 ? "Jour J" : "J" + (offset > 0 ? "+" : "−") + Math.abs(offset);
+    let when = label, late = false;
+    if (release) {
+      const day = new Date(release); day.setDate(day.getDate() + offset);
+      when = label + " · " + day.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+      late = day < today && tasks.some((_, t) => !done[s + "." + t]);
+    }
+    return el("div", { className: "step" }, el("h2", {}, name, el("small", { textContent: when + (late ? " · en retard" : ""), className: late ? "late" : "" })),
+      ...tasks.map(([text, note], t) => {
+        const box = el("input", { type: "checkbox", checked: !!done[s + "." + t] });
+        box.onchange = () => { done[s + "." + t] = box.checked; save(); progress(); draw(); };
+        return el("label", { className: "task" }, box, el("span", {}, text, ...(note ? [el("small", { textContent: note })] : [])));
+      }));
+  }));
+  // Chaque étape est une section de la carte, séparée de la suivante.
+  [...$("steps").children].forEach((step, i) => { step.style.cssText = "padding:22px clamp(18px,4vw,34px);" + (i ? "border-top:1px solid var(--line)" : ""); });
+  progress();
+}
+
+$("date").onchange = () => { save(); draw(); };
+$("clear").onclick = () => { done = {}; save(); draw(); };
+$("print").onclick = () => print();
+draw();
+</script>
+<script src="assets/tools-menu.js"></script>
+<script src="assets/account.js"></script>
+</html>

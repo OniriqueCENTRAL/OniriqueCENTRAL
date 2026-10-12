@@ -14,6 +14,20 @@
 - [Boutique](https://onirique.store/boutique) : tous les plugins, avec leur interface à essayer dans le navigateur.
 - [Popularité](https://onirique.store/popularite) : outil gratuit qui affiche le score de popularité Spotify (0 à 100) d'un artiste ou d'un titre.
 - [BPM et tonalité](https://onirique.store/bpm-tonalite) : outil gratuit qui détecte le tempo et la tonalité d'un fichier audio, dans le navigateur.
+- [Outils gratuits](https://onirique.store/outils) : tous les outils gratuits pour artistes et beatmakers.
+- [Volume avant sortie](https://onirique.store/volume-lufs) : mesure le volume LUFS et le pic réel d'un master, plateforme par plateforme.
+- [Vérificateur de stems](https://onirique.store/stems) : contrôle la durée, le format et la saturation des pistes d'un projet.
+- [Tap tempo](https://onirique.store/tap-tempo) : donne le BPM d'un rythme tapé.
+- [Délais et reverb](https://onirique.store/delais) : temps de délai, pré-délai et reverb en millisecondes pour un BPM.
+- [Gammes](https://onirique.store/gammes) : notes, accords et tonalités voisines d'une gamme.
+- [Accordeur](https://onirique.store/accordeur) : note chantée ou jouée au micro et écart en cents.
+- [Tessiture](https://onirique.store/tessiture) : étendue de la voix et zone de confort, au micro.
+- [Convertisseur audio](https://onirique.store/convertisseur) : conversion en WAV ou en MP3 dans le navigateur.
+- [Découpe et fondu](https://onirique.store/decoupe) : garde un passage d'un morceau, avec fondus, export WAV ou MP3.
+- [Transposer](https://onirique.store/transposition) : change la hauteur ou le tempo d'un morceau, l'un sans l'autre.
+- [Revenus de streaming](https://onirique.store/revenus-streaming) : fourchette de revenus pour un nombre d'écoutes par plateforme.
+- [Partage des droits](https://onirique.store/partage) : répartition des parts d'un titre, feuille à imprimer et à signer.
+- [Checklist de sortie](https://onirique.store/checklist-sortie) : étapes datées d'une sortie, de J-30 à J+7.
 - [Questions fréquentes](https://onirique.store/#faq) : compatibilité, installation, latence.
 
 ## Informations légales

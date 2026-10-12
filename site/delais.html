@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calculateur de délais et de reverb — ONIRIQUE</title>
+<meta name="description" content="Entre un BPM : les temps en millisecondes de chaque valeur de note (noire, croche, pointée, triolet), le pré-délai et la durée de reverb calés sur le tempo. Gratuit.">
+<link rel="canonical" href="https://onirique.store/delais">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css">
+<link rel="stylesheet" href="assets/tools.css">
+<style>
+.bpm { display: grid; grid-template-columns: minmax(0, 220px) auto; gap: 14px; align-items: end; justify-content: center; }
+.bpm input { font: 800 28px/1.2 var(--f-display) !important; text-align: center; }
+.card h2 { margin: 0 0 14px; font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); }
+.copied { position: fixed; left: 50%; bottom: 24px; translate: -50% 0; padding: 12px 18px; border-radius: 999px; background: var(--mist); color: var(--night); font: 600 14px/1 var(--f-body); box-shadow: 0 10px 40px -10px rgba(226,52,68,.8); }
+</style>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="outils.html" data-tools>Outils</a><a class="btn" href="compte.html" data-account>Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <section class="hero">
+    <p class="eyebrow">Outil gratuit</p>
+    <h1>Délais et reverb <em>au tempo</em></h1>
+    <p class="lede">Un délai ou une reverb calés sur le tempo se fondent dans le morceau au lieu de le brouiller. Entre ton BPM : toutes les valeurs sont en millisecondes, prêtes à recopier.</p>
+  </section>
+
+  <div class="card">
+    <div class="bpm">
+      <label>Tempo (BPM)<input id="bpm" type="number" min="30" max="300" step="0.1" value="120" inputmode="decimal"></label>
+      <button class="go ghost" id="tap" type="button">Taper le tempo</button>
+    </div>
+    <div>
+      <h2>Délais</h2>
+      <div class="scroll"><table class="values">
+        <thead><tr><th>Valeur</th><th>Normale</th><th>Pointée</th><th>Triolet</th></tr></thead>
+        <tbody id="delays"></tbody>
+      </table></div>
+      <p class="muted" style="margin-top:12px">Clique sur une valeur pour la copier. Les valeurs du milieu de tableau (croche, croche pointée, double) sont les plus utilisées sur une voix.</p>
+    </div>
+    <div>
+      <h2>Reverb</h2>
+      <div class="scroll"><table class="values">
+        <thead><tr><th>Réglage</th><th>Court</th><th>Moyen</th><th>Long</th></tr></thead>
+        <tbody id="reverb"></tbody>
+      </table></div>
+      <p class="muted" style="margin-top:12px">Le pré-délai décolle la reverb de la voix pour qu'elle reste lisible. La durée proposée est celle de la queue, pré-délai déduit : la reverb s'éteint juste avant le temps suivant.</p>
+    </div>
+    <div>
+      <h2>Vitesse de modulation</h2>
+      <div class="scroll"><table class="values">
+        <thead><tr><th>Cycle</th><th>1 mesure</th><th>1 temps</th><th>1/2 temps</th><th>1/4 temps</th></tr></thead>
+        <tbody id="lfo"></tbody>
+      </table></div>
+      <p class="muted" style="margin-top:12px">En hertz, pour un chorus, un trémolo ou un filtre dont la vitesse ne se règle pas en valeur de note.</p>
+    </div>
+  </div>
+  <p class="copied" id="copied" role="status" hidden></p>
+
+  <section class="text">
+    <h2>Quelle valeur choisir</h2>
+    <p><strong>Croche (1/8)</strong> : le délai le plus naturel sur une voix, il répond entre les mots. <strong>Croche pointée</strong> : il tombe entre les temps et donne un rebond, très courant en trap et en pop. <strong>Double croche (1/16)</strong> : un doublage serré qui épaissit sans se faire remarquer. <strong>Noire (1/4)</strong> : un écho franc, à garder pour les fins de phrase.</p>
+    <p>Les valeurs supposent une mesure à quatre temps, où le temps est la noire.</p>
+  </section>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="outils.html">Tous les outils</a><a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a>
+  </nav>
+</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => (n >= 100 ? Math.round(n) : n.toFixed(1).replace(".", ","));
+const NOTES = [["Ronde (1/1)", 4], ["Blanche (1/2)", 2], ["Noire (1/4)", 1], ["Croche (1/8)", 1 / 2], ["Double croche (1/16)", 1 / 4], ["Triple croche (1/32)", 1 / 8], ["Quadruple croche (1/64)", 1 / 16]];
+const cell = (value, unit) => `<td class="copy" data-copy="${String(value).replace(",", ".")}"><b>${value}</b> ${unit}</td>`;
+
+function draw() {
+  const bpm = Math.max(30, Math.min(300, parseFloat($("bpm").value) || 0));
+  if (!parseFloat($("bpm").value)) return;
+  const beat = 60000 / bpm;
+  $("delays").innerHTML = NOTES.map(([name, beats]) =>
+    `<tr><td>${name}</td>${[1, 1.5, 2 / 3].map((k) => cell(fmt(beat * beats * k), "ms")).join("")}</tr>`).join("");
+  // Pré-délai : une 1/128, une 1/64, une 1/32 ; queue : un temps, deux temps, une mesure, pré-délai déduit.
+  const pre = [beat / 32, beat / 16, beat / 8], tails = [beat, beat * 2, beat * 4];
+  $("reverb").innerHTML =
+    `<tr><td>Pré-délai</td>${pre.map((v) => cell(fmt(v), "ms")).join("")}</tr>` +
+    `<tr><td>Durée de la queue</td>${tails.map((v, i) => cell(((v - pre[i]) / 1000).toFixed(2).replace(".", ","), "s")).join("")}</tr>`;
+  $("lfo").innerHTML = `<tr><td>Fréquence</td>${[4, 1, 1 / 2, 1 / 4].map((beats) => cell((1000 / (beat * beats)).toFixed(2).replace(".", ","), "Hz")).join("")}</tr>`;
+  history.replaceState(null, "", "?bpm=" + bpm);
+}
+
+// Copie au clic.
+let timer;
+document.addEventListener("click", async (event) => {
+  const target = event.target.closest(".copy");
+  if (!target) return;
+  try { await navigator.clipboard.writeText(target.dataset.copy.replace(".", ",")); } catch { return; }
+  $("copied").textContent = target.textContent.trim() + " copié";
+  $("copied").hidden = false;
+  clearTimeout(timer);
+  timer = setTimeout(() => { $("copied").hidden = true; }, 1400);
+});
+
+// Taper le tempo : même calcul que la page Tap tempo, sur les frappes de la série en cours.
+let taps = [];
+$("tap").onclick = () => {
+  const now = performance.now();
+  if (taps.length && now - taps[taps.length - 1] > 2500) taps = [];
+  taps.push(now);
+  if (taps.length < 2) { $("tap").textContent = "Encore…"; return; }
+  const n = taps.length, mx = (n - 1) / 2, my = taps.reduce((a, b) => a + b, 0) / n;
+  let num = 0, den = 0;
+  taps.forEach((t, i) => { num += (i - mx) * (t - my); den += (i - mx) ** 2; });
+  $("bpm").value = (60000 / (num / den)).toFixed(1);
+  $("tap").textContent = "Taper le tempo (" + n + ")";
+  draw();
+};
+
+const given = parseFloat(new URLSearchParams(location.search).get("bpm"));
+if (given >= 30 && given <= 300) $("bpm").value = given;
+$("bpm").oninput = draw;
+draw();
+</script>
+<script src="assets/tools-menu.js"></script>
+<script src="assets/account.js"></script>
+</html>

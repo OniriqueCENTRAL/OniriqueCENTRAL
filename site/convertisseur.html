@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Convertisseur audio WAV et MP3 — ONIRIQUE</title>
+<meta name="description" content="Convertis un fichier audio en WAV (16, 24 ou 32 bits, 44,1 à 96 kHz) ou en MP3 jusqu'à 320 kbit/s, dans ton navigateur. Gratuit, sans compte, sans envoi du fichier.">
+<link rel="canonical" href="https://onirique.store/convertisseur">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css">
+<link rel="stylesheet" href="assets/tools.css">
+<style>
+.opt { display: grid; gap: 8px; }
+</style>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="outils.html" data-tools>Outils</a><a class="btn" href="compte.html" data-account>Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <section class="hero">
+    <p class="eyebrow">Outil gratuit</p>
+    <h1>Convertir en <em>WAV</em> ou en <em>MP3</em></h1>
+    <p class="lede">Un MP3 320 pour envoyer une instru, un WAV 24 bits pour un distributeur, un 44,1 kHz pour un vieux projet : dépose le fichier, choisis le format, télécharge.</p>
+
+    <button class="drop" id="drop" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>
+      <strong>Dépose un fichier audio ici</strong>
+      <span>ou clique pour le choisir · MP3, WAV, FLAC, M4A, OGG</span>
+    </button>
+    <input id="file" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" hidden>
+    <p class="hint">Sans compte. La conversion se fait dans ton navigateur : ton fichier n'est envoyé nulle part.</p>
+    <p class="error" id="error" role="alert"></p>
+  </section>
+
+  <article class="card" id="panel" hidden>
+    <p class="head"><b id="r-file"></b><span id="r-info"></span></p>
+    <div class="opt">
+      <span class="label">Format</span>
+      <div><div class="chips" id="format"><button type="button" data-v="wav" aria-pressed="true">WAV</button><button type="button" data-v="mp3" aria-pressed="false">MP3</button></div></div>
+    </div>
+    <div class="fields" id="wav-options">
+      <label>Fréquence<select id="rate"><option value="0">Celle du fichier</option><option value="44100">44,1 kHz</option><option value="48000">48 kHz</option><option value="88200">88,2 kHz</option><option value="96000">96 kHz</option></select></label>
+      <label>Résolution<select id="bits"><option value="16">16 bits</option><option value="24" selected>24 bits</option><option value="32">32 bits flottants</option></select></label>
+      <label>Voies<select id="channels"><option value="0">Celles du fichier</option><option value="1">Mono</option><option value="2">Stéréo</option></select></label>
+    </div>
+    <div class="fields" id="mp3-options" hidden>
+      <label>Débit<select id="kbps"><option value="320">320 kbit/s (le meilleur)</option><option value="256">256 kbit/s</option><option value="192">192 kbit/s</option><option value="128">128 kbit/s (léger)</option></select></label>
+      <label>Voies<select id="mp3-channels"><option value="0">Celles du fichier</option><option value="1">Mono</option></select></label>
+    </div>
+    <div class="dim split">
+      <p id="r-out"></p>
+      <button class="go" id="go" type="button">Convertir et télécharger</button>
+    </div>
+  </article>
+
+  <section class="text">
+    <h2>Quel format choisir</h2>
+    <p><strong>WAV 24 bits</strong>, à la fréquence du projet : pour tout ce qui part au mix, au mastering ou chez un distributeur. <strong>WAV 16 bits, 44,1 kHz</strong> : le format du CD, encore demandé par certains services. <strong>MP3 320 kbit/s</strong> : pour envoyer une maquette ou une instru par message, dix fois plus léger et sans différence audible pour la plupart des écoutes.</p>
+    <h2>Questions fréquentes</h2>
+    <details><summary>Convertir un MP3 en WAV améliore-t-il le son ?</summary>
+      <p>Non. Le WAV obtenu contient exactement ce que contient le MP3 : ce que la compression a retiré ne revient pas. La conversion est utile quand un logiciel ou un service exige du WAV, pas pour gagner en qualité.</p></details>
+    <details><summary>Monter la fréquence ou la résolution sert-il à quelque chose ?</summary>
+      <p>Pas pour la qualité : un fichier 44,1 kHz passé en 96 kHz ne gagne aucun détail. Cela sert à mettre un fichier au format d'un projet ou d'un cahier des charges.</p></details>
+    <details><summary>Pourquoi pas de FLAC, d'AAC ou d'OGG en sortie ?</summary>
+      <p>La page lit ces formats, mais n'écrit que du WAV et du MP3, les deux que tous les logiciels et tous les services acceptent.</p></details>
+    <details><summary>Mon MP3 est décalé dans mon DAW, que faire ?</summary>
+      <p>Utilise le <a href="bpm-tonalite.html">détecteur de BPM et de tonalité</a> : il retire le blanc que le format MP3 ajoute au début et rend un WAV calé sur la grille.</p></details>
+  </section>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="outils.html">Tous les outils</a><a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a>
+  </nav>
+</footer>
+
+<script src="assets/audio-kit.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const A = OniriqueAudio;
+const MAX_BYTES = 400e6, MAX_SECONDS = 1200;
+let file = null, audio = null, format = "wav";
+const khz = (rate) => String(rate / 1000).replace(".", ",") + " kHz";
+const voices = (n) => (n === 1 ? "mono" : n === 2 ? "stéréo" : n + " voies");
+
+/** Ce qui sera produit avec les réglages en cours. */
+function target() {
+  if (format === "mp3") {
+    // Le MP3 n'existe qu'à 44,1 et 48 kHz à ces débits, et sur deux voies au plus.
+    return { rate: audio.sampleRate === 48000 || audio.sampleRate === 96000 ? 48000 : 44100, channels: +$("mp3-channels").value || Math.min(2, audio.numberOfChannels), kbps: +$("kbps").value };
+  }
+  return { rate: +$("rate").value || audio.sampleRate, channels: +$("channels").value || audio.numberOfChannels, bits: +$("bits").value };
+}
+
+function describe() {
+  if (!audio) return;
+  const t = target(), seconds = audio.duration;
+  const bytes = format === "mp3" ? seconds * t.kbps * 125 : seconds * t.rate * t.channels * t.bits / 8;
+  $("r-out").textContent = (format === "mp3" ? "MP3 " + t.kbps + " kbit/s" : "WAV " + t.bits + " bits") + ", " + khz(t.rate) + ", " + voices(t.channels) + " · environ " + A.decimal(bytes / 1e6) + " Mo";
+  $("wav-options").hidden = format !== "wav";
+  $("mp3-options").hidden = format !== "mp3";
+}
+
+document.querySelectorAll("#format button").forEach((button) => {
+  button.onclick = () => {
+    format = button.dataset.v;
+    document.querySelectorAll("#format button").forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
+    describe();
+  };
+});
+$("panel").addEventListener("change", describe);
+
+async function open(chosen) {
+  $("error").textContent = "";
+  if (chosen.size > MAX_BYTES) { $("error").textContent = "Ce fichier est trop lourd (400 Mo au plus)."; return; }
+  A.busy($("drop"), true, "Lecture du fichier…");
+  try {
+    const decoded = await A.decode(chosen);
+    if (decoded.duration > MAX_SECONDS) throw new Error("Ce fichier est trop long (20 minutes au plus).");
+    file = chosen; audio = decoded;
+    $("r-file").textContent = file.name;
+    $("r-info").textContent = A.clock(audio.duration) + " · " + khz(audio.sampleRate) + " · " + voices(audio.numberOfChannels);
+    $("panel").hidden = false;
+    describe();
+    A.busy($("drop"), false, "Choisir un autre fichier");
+  } catch (error) {
+    $("panel").hidden = true;
+    $("error").textContent = error.message;
+    A.busy($("drop"), false);
+  }
+}
+
+$("go").onclick = async () => {
+  if (!audio) return;
+  $("error").textContent = "";
+  $("go").disabled = true;
+  const label = $("go").textContent;
+  try {
+    const t = target();
+    $("go").textContent = "Conversion…";
+    const same = t.rate === audio.sampleRate && t.channels === audio.numberOfChannels;
+    const out = A.channelsOf(same ? audio : await A.render(audio, { rate: t.rate, channels: t.channels }));
+    const blob = format === "mp3"
+      ? await A.mp3(out, t.rate, t.kbps, (p) => { $("go").textContent = "Encodage " + Math.round(p * 100) + " %"; })
+      : A.wav(out, t.rate, t.bits);
+    A.download(blob, A.baseName(file) + "." + format);
+  } catch (error) { $("error").textContent = error.message || "La conversion a échoué."; }
+  $("go").textContent = label;
+  $("go").disabled = false;
+};
+A.dropZone($("drop"), $("file"), open);
+</script>
+<script src="assets/tools-menu.js"></script>
+<script src="assets/account.js"></script>
+</html>
