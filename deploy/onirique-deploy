@@ -34,7 +34,7 @@ fi
 
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
-git --git-dir="$repo" archive "$commit" server site deploy | tar -x -C "$work"
+git --git-dir="$repo" archive "$commit" server site deploy | tar -x -C "$work" --warning=no-timestamp   # l'horloge du PC qui a poussé peut être en avance
 chmod -R a+rX "$work"
 
 # Les dépendances du serveur : celles déjà installées, sauf si cette version en change.
