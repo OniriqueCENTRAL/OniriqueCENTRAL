@@ -31,6 +31,16 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 .card .foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 10px; }
 .price { font: 800 20px/1 var(--f-display); }
 .more { font: 500 12px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ember-text); }
+.card .creator { font: 500 11px/1 var(--f-mono); letter-spacing: .16em; color: var(--haze); }
+/* Filtres de la liste : un créateur ou tous, puis le tri par prix */
+.filters { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 30px; }
+.filters + .grid { margin-top: 20px; }
+.filters .group { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 999px; }
+.filters button { padding: 10px 16px; border: 1px solid transparent; border-radius: 999px; background: transparent; color: var(--haze); font: 500 12px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+.filters button:hover { color: var(--mist); }
+.filters button[aria-pressed="true"] { background: var(--ember); color: #fff; }
+.filters button.sort { border-color: var(--line); color: var(--mist); }
+.filters button.sort:hover { border-color: var(--ember); }
 
 .product { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); gap: 28px; align-items: start; margin-top: 26px; }
 .side { position: sticky; top: 20px; padding: 24px; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(180deg, var(--deep-2), var(--deep)); }
@@ -87,6 +97,10 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
     <p class="eyebrow">Boutique</p>
     <h1>Nos <em>plugins</em></h1>
     <p class="lede">Clique sur un plugin pour essayer son interface, bouton par bouton, directement ici. Les plugins s'installent ensuite avec l'application Onirique Central.</p>
+    <div class="filters" id="filters" hidden>
+      <div class="group" id="creators" role="group" aria-label="Créateur des plugins"></div>
+      <button class="sort" id="sort" type="button"></button>
+    </div>
     <div class="grid" id="grid"></div>
 
     <!-- Abonnement à la carte -->
@@ -159,12 +173,38 @@ function el(tag, props = {}, ...children) {
   return node;
 }
 
+// Les créateurs des plugins : ONIRIQUE, ou un partenaire.
+const CREATORS = { onirique: "ONIRIQUE", abrasion: "ABRASION" };
+const SORTS = { none: "Tri : par défaut", up: "Prix croissant", down: "Prix décroissant" };
+
+// La liste de la boutique : un créateur ou tous, dans l'ordre du catalogue ou par prix.
+function setupList(products) {
+  const shown = { creator: "all", sort: "none" };
+  function draw() {
+    const list = products.filter((p) => shown.creator === "all" || (p.creator || "onirique") === shown.creator);
+    if (shown.sort !== "none") list.sort((a, b) => (shown.sort === "up" ? a.priceCents - b.priceCents : b.priceCents - a.priceCents));
+    $("grid").replaceChildren(...(list.length ? list.map(card) : [el("p", { className: "lede", textContent: "Aucun plugin de ce créateur pour le moment." })]));
+    $("creators").replaceChildren(...[["all", "Tous"], ...Object.entries(CREATORS)].map(([id, label]) => {
+      const button = el("button", { type: "button", textContent: label });
+      button.setAttribute("aria-pressed", String(shown.creator === id));
+      button.onclick = () => { shown.creator = id; draw(); };
+      return button;
+    }));
+    $("sort").textContent = SORTS[shown.sort];
+  }
+  // Un seul bouton : chaque clic passe au tri suivant.
+  $("sort").onclick = () => { shown.sort = { none: "up", up: "down", down: "none" }[shown.sort]; draw(); };
+  $("filters").hidden = false;
+  draw();
+}
+
 function card(p) {
   const shot = el("div", { className: "shot" }, p.image
     ? el("img", { className: "cover", src: p.image, alt: "Interface du plugin " + p.name, loading: "lazy" })
     : el("img", { className: "mark", src: "assets/logo.png", alt: "" }));
   return el("a", { className: "card", href: p.href || "boutique.html?p=" + encodeURIComponent(p.slug) }, shot,
-    el("div", { className: "body" }, el("h2", { textContent: p.name }), el("p", { textContent: p.tagline }),
+    el("div", { className: "body" }, el("span", { className: "creator", textContent: CREATORS[p.creator] || CREATORS.onirique }),
+      el("h2", { textContent: p.name }), el("p", { textContent: p.tagline }),
       el("div", { className: "foot" }, el("span", { className: "price", textContent: euros(p.priceCents) }), el("span", { className: "more", textContent: p.more || "Essayer →" }))));
 }
 
@@ -180,6 +220,7 @@ async function setupTrial(product) {
   const owned = me && me.entitlements[product.id];
   if (owned) {
     if (owned.via === "license") { $("buy").disabled = true; $("buy-note").textContent = owned.type === "trial" ? "Essai en cours sur ce compte." : "Vous possédez déjà ce plugin."; }
+    if (owned.via === "vip") { $("buy").disabled = true; $("buy-note").textContent = "Offert avec votre rôle : installez-le depuis Onirique Central."; }
     return;
   }
   if (me && me.trialsUsed.includes(product.id)) { $("buy-note").textContent = "Essai déjà utilisé sur ce compte."; return; }
@@ -297,7 +338,7 @@ async function buy(product, catalog) {
   const slug = new URLSearchParams(location.search).get("p");
   const product = slug && catalog.products.find((p) => p.slug === slug);
   if (!product) {
-    if (catalog.products.length) $("grid").replaceChildren(...catalog.products.map(card));
+    if (catalog.products.length) setupList(catalog.products);
     else $("grid").replaceChildren(el("p", { className: "lede", textContent: "Aucun plugin en vente pour le moment." }));
     setupPick(catalog);
     $("list").hidden = false;

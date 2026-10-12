@@ -192,8 +192,10 @@ function show(me) {
   if (!me) return;
 
   $("who").textContent = me.user.name || me.user.email.split("@")[0];
-  $("email-line").textContent = me.user.email;
-  $("admin-link").hidden = me.user.role !== "admin";
+  // Le rôle du compte, quand il en a un : il est le même ici et dans l'application.
+  const role = { vip: "VIP", abrasion: "Abrasion", admin: "Admin", founder: "Fondateur" }[me.user.role];
+  $("email-line").textContent = me.user.email + (role ? " · " + role : "");
+  $("admin-link").hidden = !role || me.user.role === "vip";
   $("verify-panel").hidden = me.user.emailVerified !== false;
   $("verify-email").textContent = me.user.email;
 

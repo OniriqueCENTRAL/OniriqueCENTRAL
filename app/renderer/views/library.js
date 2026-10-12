@@ -1,5 +1,5 @@
 import {
-  h, eyebrow, pill, led, productName, button, euros, date, megabytes, compareVersions, toast, attempt, modal, confirm, LICENSE_TYPES,
+  h, eyebrow, pill, led, productName, button, euros, date, megabytes, compareVersions, toast, attempt, modal, confirm, LICENSE_TYPES, CREATORS,
 } from '../ui.js';
 import { state, call, refresh, render, go } from '../app.js';
 
@@ -34,7 +34,7 @@ function badge(product) {
   if (right?.type === 'trial') return pill(`Essai · ${daysLeft(right)} j`, 'warn', true);
   if (update) return pill('Mise à jour', 'hot', true);
   if (right && install.version) return pill('Installé', '', true);
-  if (right) return pill(right.via === 'subscription' ? 'Abonnement' : 'Possédé', '', true);
+  if (right) return pill(right.via === 'subscription' ? 'Abonnement' : right.via === 'vip' ? 'Offert' : 'Possédé', '', true);
   return pill(euros(product.priceCents));
 }
 
@@ -142,10 +142,27 @@ function mainAction(product) {
   return act('Installer', () => install(product));
 }
 
+const creatorOf = (product) => CREATORS[product.creator] ?? CREATORS.onirique;
+
+/** Ce que la bibliothèque montre : un créateur ou tous, dans l'ordre du catalogue ou par prix. */
+const shown = { creator: 'all', sort: 'none' };
+const SORTS = { none: 'Tri : par défaut', up: 'Prix croissant', down: 'Prix décroissant' };
+
 //------------------------------------------------------------------------------
 export function libraryView() {
   const { catalog, me } = state.data;
   const owned = catalog.products.filter((p) => me.entitlements[p.id]).length;
+  const products = catalog.products.filter((p) => shown.creator === 'all' || (p.creator ?? 'onirique') === shown.creator);
+  if (shown.sort !== 'none') products.sort((a, b) => (shown.sort === 'up' ? a.priceCents - b.priceCents : b.priceCents - a.priceCents));
+
+  const filters = h('div', { class: 'row between wrap', style: { 'margin-bottom': '20px' } },
+    h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': 'Créateur des plugins' },
+      [['all', 'Tous'], ...Object.entries(CREATORS)].map(([id, label]) => h('button', {
+        type: 'button', role: 'radio', 'aria-checked': String(shown.creator === id), class: shown.creator === id ? 'active' : '',
+        onclick: () => { shown.creator = id; render(); },
+      }, label))),
+    // Un seul bouton : chaque clic passe au tri suivant.
+    button(SORTS[shown.sort], () => { shown.sort = { none: 'up', up: 'down', down: 'none' }[shown.sort]; render(); }, 'small'));
 
   const card = (product) => h('div', {
     class: 'card', role: 'button', tabIndex: 0, style: { '--accent': product.accent },
@@ -154,6 +171,7 @@ export function libraryView() {
   },
     cover(product, badge(product)),
     h('div', { class: 'card-body' },
+      h('div', { class: 'creator' }, creatorOf(product)),
       productName(product.name),
       h('div', { class: 'muted' }, product.tagline),
       h('div', { class: 'card-foot' },
@@ -169,7 +187,9 @@ export function libraryView() {
     h('p', { class: 'lede' }, catalog.products.length
       ? `${owned} sur ${catalog.products.length} dans votre collection. Installation et mises à jour en un clic, licence activée sur ce PC au passage.`
       : 'Aucun plugin publié pour le moment.'),
-    h('div', { class: 'cards' }, catalog.products.map(card)),
+    catalog.products.length ? filters : null,
+    products.length || !catalog.products.length ? h('div', { class: 'cards' }, products.map(card))
+      : h('div', { class: 'panel empty' }, 'Aucun plugin de ce créateur pour le moment.'),
   ];
 }
 
@@ -189,7 +209,8 @@ export function detailView(id) {
       button(product.priceCents ? `Acheter · ${euros(product.priceCents)}` : 'Obtenir', () => buy('product', product), 'small primary')) : null,
     h('dl', { class: 'kv' },
       h('dt', null, 'Type'), h('dd', null, LICENSE_TYPES[right.type] || right.type),
-      h('dt', null, 'Valable'), h('dd', null, right.via === 'subscription' ? 'tant que l\'abonnement court' : right.expiresAt ? `jusqu'au ${date(right.expiresAt)}` : 'sans limite'),
+      h('dt', null, 'Valable'), h('dd', null, right.via === 'subscription' ? 'tant que l\'abonnement court'
+        : right.via === 'vip' ? 'offert avec votre rôle' : right.expiresAt ? `jusqu'au ${date(right.expiresAt)}` : 'sans limite'),
       h('dt', null, 'Machines'), h('dd', null, `${used} sur ${right.maxActivations}`)),
     h('div', { class: 'row between', style: { 'margin-top': '16px' } },
       h('div', { class: 'row' }, led(activeHere), activeHere ? 'Activée sur ce PC' : 'Pas activée sur ce PC'),
@@ -211,6 +232,7 @@ export function detailView(id) {
       'Aussi disponible par abonnement, seul ou avec toute la collection. ',
       h('a', { href: '#', style: { color: 'var(--ember-hot)' }, onclick: (e) => { e.preventDefault(); go('subscription'); } }, 'Voir les formules')) : null,
     product.latest ? h('dl', { class: 'kv', style: { 'margin-top': '20px' } },
+      h('dt', null, 'Créateur'), h('dd', null, creatorOf(product)),
       h('dt', null, 'Dernière version'), h('dd', { class: 'mono' }, `${product.latest.version} · ${date(product.latest.createdAt)}`),
       h('dt', null, 'Sur ce PC'), h('dd', { class: 'mono' }, inst.version || (inst.present ? 'présent, version inconnue' : 'non installé')),
       h('dt', null, 'Taille'), h('dd', { class: 'mono' }, megabytes(product.latest.size)),

@@ -77,6 +77,8 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
   <p class="notice" id="gate">Chargement…</p>
 
   <div id="panel" hidden>
+    <!-- Réservé à l'équipe : un partenaire ne voit que ses plugins, plus bas -->
+    <div id="staff-accounts">
     <div class="tiles" id="tiles"></div>
 
     <div class="bar">
@@ -99,6 +101,7 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
       <thead><tr><th>Reçu le</th><th>De</th><th>Message</th><th><span class="sub">Actions</span></th></tr></thead>
       <tbody id="support"></tbody>
     </table></div>
+    </div>
 
     <div class="bar"><h2>Plugins</h2></div>
     <p class="sub">Un plugin créé ici apparaît aussitôt dans la boutique du site et dans l'application, tant qu'il est coché « visible ». Une nouvelle version est proposée aussitôt en mise à jour dans Onirique Central. L'image du plugin et sa démo interactive de la boutique sont fabriquées à partir du fichier .vst3 lui-même : cela demande de charger le plugin sous Windows, et se fait donc quand la version est publiée depuis l'application Onirique Central (panel admin), pas depuis cette page.</p>
@@ -106,6 +109,7 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
     <p class="error" id="product-error" role="alert"></p>
     <div class="products" id="products"></div>
 
+    <div id="staff-credits">
     <div class="bar"><h2>Crédits</h2></div>
     <p class="sub">Les titres réalisés avec vos plugins, affichés dans la section Crédits de la page d'accueil. Collez le lien Spotify du titre : son nom et sa pochette sont récupérés tout seuls.</p>
     <details class="product new" id="new-credit"></details>
@@ -114,6 +118,7 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
       <thead><tr><th>Titre</th><th>Plugin utilisé</th><th>Sortie</th><th><span class="sub">Actions</span></th></tr></thead>
       <tbody id="credits"></tbody>
     </table></div>
+    </div>
   </div>
 </main>
 
@@ -141,6 +146,10 @@ function el(tag, props = {}, ...children) {
 }
 const date = (ms) => (ms ? new Date(ms).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "—");
 const TYPES = { perpetual: "Perpétuelle", timed: "Durée limitée", trial: "Essai", nfr: "NFR" };
+// Rôles : VIP (tous les plugins offerts), Abrasion (partenaire : ce panel, limité à ses propres plugins), admin, fondateur.
+const ROLES = { user: "Utilisateur", vip: "VIP", abrasion: "Abrasion", admin: "Admin", founder: "Fondateur" };
+const CREATORS = { onirique: "ONIRIQUE", abrasion: "ABRASION" };
+const isStaff = (user) => user.role === "admin" || user.role === "founder";
 
 function gate(text, link) {
   $("gate").replaceChildren(text, link ? " " : "", link ? el("a", { href: "compte.html", textContent: link }) : "");
@@ -169,14 +178,16 @@ async function showLicenses(user, row, button) {
 }
 
 async function setRole(user, role) {
-  const question = role === "admin"
-    ? `Donner le rôle administrateur à ${user.email} ? Cette personne pourra publier des versions, gérer les licences et les comptes, sur le site comme dans l'application.`
-    : `Retirer le rôle administrateur à ${user.email} ?`;
-  if (!window.confirm(question)) return;
+  // Seul un fondateur donne ou retire le rôle admin : le serveur le revérifie.
+  const question = `Donner à ${user.email} le rôle « ${ROLES[role]} » ?`
+    + ({ vip: " Tous les plugins lui sont offerts.", abrasion: " Il gérera ses propres plugins et leurs licences, ici et dans l'application.",
+      admin: " Cette personne pourra publier des versions, gérer les licences et les comptes.", founder: " Cette personne aura tous les droits, y compris sur les rôles admin." }[role] || "");
+  if (!window.confirm(question)) return loadUsers();
   try {
     await api("PATCH", "/admin/users/" + user.id, { role });
     await loadUsers();
   } catch (error) {
+    await loadUsers().catch(() => {}); // la liste revient au rôle réellement enregistré
     $("error").textContent = error.message;
   }
 }
@@ -210,8 +221,11 @@ async function loadUsers() {
     const row = el("tr");
     const view = el("button", { className: "act", type: "button", textContent: "Licences" });
     view.onclick = () => showLicenses(u, row, view);
-    const role = u.id === me.id ? null : el("button", { className: "act", type: "button", textContent: u.role === "admin" ? "Retirer admin" : "Rendre admin" });
-    if (role) role.onclick = () => setRole(u, u.role === "admin" ? "user" : "admin");
+    // Un admin donne les rôles ordinaires aux comptes ordinaires ; un fondateur gère aussi les rôles admin et fondateur.
+    const founder = me.role === "founder";
+    const role = u.id === me.id || (!founder && isStaff(u)) ? null : el("select", { className: "act", ariaLabel: "Rôle de " + u.email },
+      ...Object.keys(ROLES).filter((id) => founder || !isStaff({ role: id })).map((id) => el("option", { value: id, textContent: ROLES[id], selected: id === u.role })));
+    if (role) role.onchange = () => setRole(u, role.value);
     const trials = u.trials ? el("button", { className: "act", type: "button", textContent: `Réinitialiser les essais (${u.trials})` }) : null;
     if (trials) trials.onclick = () => resetTrials(u);
     const verify = u.emailVerified ? null : el("button", { className: "act", type: "button", textContent: "Valider l'e-mail" });
@@ -219,7 +233,7 @@ async function loadUsers() {
     row.append(
       el("td", {}, el("div", { textContent: u.email }), u.name ? el("div", { className: "sub", textContent: u.name }) : null,
         u.emailVerified ? null : el("div", { className: "sub", textContent: "Adresse e-mail non validée" })),
-      el("td", {}, el("span", { className: "pill" + (u.role === "admin" ? " on" : ""), textContent: u.role === "admin" ? "Admin" : "Utilisateur" })),
+      el("td", {}, el("span", { className: "pill" + (isStaff(u) ? " on" : ""), textContent: ROLES[u.role] || u.role })),
       el("td", { textContent: String(u.licenses) }),
       el("td", { textContent: u.subscribed ? "Abonné" : "—" }),
       el("td", { textContent: date(u.createdAt) }),
@@ -282,12 +296,15 @@ function sheetForm(p) {
   const description = el("textarea", { value: p?.description ?? "", maxLength: 4000, rows: 5, placeholder: "Une ligne vide entre deux paragraphes" });
   const price = el("input", { type: "text", inputMode: "decimal", value: ((p?.priceCents ?? 0) / 100).toFixed(2).replace(".", ","), required: true });
   const published = el("input", { type: "checkbox", checked: p?.published ?? true });
+  // Le créateur ne se choisit que par l'équipe : les plugins d'un partenaire portent toujours son nom.
+  const creator = el("select", {}, ...Object.entries(CREATORS).map(([id, label]) => el("option", { value: id, textContent: label, selected: id === (p?.creator ?? "onirique") })));
   const submit = el("button", { className: "act", type: "submit", textContent: p ? "Enregistrer la fiche" : "Créer le plugin" });
   const saved = el("span", { className: "sub" });
   saved.setAttribute("role", "status");
   const form = el("form", {},
     el("label", {}, "Nom", name), el("label", {}, "Accroche", tagline),
-    el("label", {}, "Prix en € (0 = gratuit)", price), el("label", {}, "Description", description),
+    el("label", {}, "Prix en € (0 = gratuit)", price), isStaff(me) ? el("label", {}, "Créateur", creator) : null,
+    el("label", {}, "Description", description),
     el("div", { className: "row" }, el("label", { className: "inline" }, published, "Visible dans la boutique et l'application"), submit, saved));
   form.onsubmit = async (event) => {
     event.preventDefault();
@@ -296,7 +313,8 @@ function sheetForm(p) {
     if (!/^\d+(\.\d{1,2})?$/.test(amount)) { $("product-error").textContent = "Prix invalide : écrivez par exemple 49 ou 29,90."; price.focus(); return; }
     const cents = Math.round(Number(amount) * 100);
     submit.disabled = true;
-    const body = { name: name.value.trim(), tagline: tagline.value.trim(), description: description.value.trim(), priceCents: cents, published: published.checked };
+    const body = { name: name.value.trim(), tagline: tagline.value.trim(), description: description.value.trim(), priceCents: cents, published: published.checked,
+      ...(isStaff(me) ? { creator: creator.value } : {}) };
     try {
       await api(p ? "PATCH" : "POST", p ? "/admin/products/" + p.id : "/admin/products", body);
       await loadProducts();
@@ -338,7 +356,7 @@ async function loadProducts() {
       el("div", {}, shot, el("div", { className: "sub", style: "margin-top:8px", textContent: p.demo ? "Démo interactive en ligne" : p.latest && /\.vst3$/i.test(p.latest.filename) ? "Aperçu et démo : créés tout seuls dès qu'un admin ouvre l'application CENTRAL" : "Pas encore de démo interactive" })),
       el("div", {},
         el("h3", { textContent: p.name }),
-        el("div", { className: "sub", textContent: [p.published ? "Visible dans la boutique" : "Masqué", euros(p.priceCents), p.latest ? `version actuelle ${p.latest.version} du ${date(p.latest.createdAt)}` : "aucune version en ligne", `${p.versions.length} version(s)`,
+        el("div", { className: "sub", textContent: [CREATORS[p.creator] || CREATORS.onirique, p.published ? "Visible dans la boutique" : "Masqué", euros(p.priceCents), p.latest ? `version actuelle ${p.latest.version} du ${date(p.latest.createdAt)}` : "aucune version en ligne", `${p.versions.length} version(s)`,
           // le plugin vérifie-t-il sa licence ? d'après le fichier de la version actuelle de chaque système
           ...[["win", "Windows"], ["mac", "Mac"]].filter(([key]) => p.licensed && p.licensed[key] !== undefined)
             .map(([key, label]) => p.licensed[key] === true ? `licence ${label} : oui` : p.licensed[key] === false ? `SANS LICENCE ${label}` : `licence ${label} : illisible`)].join(" · ") }),
@@ -420,7 +438,15 @@ $("search").oninput = () => { clearTimeout(timer); timer = setTimeout(() => load
   if (!token) return gate("Connectez-vous avec un compte administrateur.", "Se connecter");
   try {
     me = (await api("GET", "/me")).user;
-    if (me.role !== "admin") return gate("Cette page est réservée aux administrateurs.", "Retour au compte");
+    if (!isStaff(me) && me.role !== "abrasion") return gate("Cette page est réservée aux administrateurs.", "Retour au compte");
+    if (!isStaff(me)) {
+      // Partenaire : ses plugins seulement. Les licences de ses plugins se gèrent dans l'application, Panel admin.
+      $("staff-accounts").hidden = $("staff-credits").hidden = true;
+      await loadProducts();
+      $("gate").hidden = true;
+      $("panel").hidden = false;
+      return;
+    }
     const o = await api("GET", "/admin/overview");
     $("tiles").replaceChildren(...[["Comptes", o.users], ["Licences actives", o.licenses], ["Clés en attente", o.unclaimed], ["Abonnés", o.subscribers], ["Machines activées", o.activations], ["Demandes de support", o.supportMessages]]
       .map(([label, value]) => el("div", { className: "tile" }, el("b", { textContent: String(value) }), el("span", { textContent: label }))));

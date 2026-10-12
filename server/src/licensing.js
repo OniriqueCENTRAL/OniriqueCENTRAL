@@ -108,6 +108,17 @@ export function entitlement(userId, productId) {
     `SELECT * FROM licenses WHERE user_id = ? AND product_id = ? AND status = 'active'
        AND (expires_at IS NULL OR expires_at > ?)
      ORDER BY expires_at IS NULL DESC, expires_at DESC LIMIT 1`, userId, productId, now());
+  // VIP et fondateurs : tous les plugins, sans licence à acheter (un essai en cours ne les ramène pas au mode démo).
+  // Comme pour un abonnement, la licence écrite sur la machine a une durée : retirer le rôle la laisse s'éteindre.
+  const { role } = get('SELECT role FROM users WHERE id = ?', userId) ?? {};
+  const vip = role === 'vip' || role === 'founder';
+  if (vip && (!license || license.type === 'trial')) {
+    return {
+      via: 'vip', type: 'vip', licenseId: null,
+      expiresAt: now() + config.vipLicenseDays * 86400_000,
+      maxActivations: config.defaultMaxActivations,
+    };
+  }
   if (license) {
     const { limit } = get(
       `SELECT MAX(max_activations) AS "limit" FROM licenses WHERE user_id = ? AND product_id = ?

@@ -1,4 +1,4 @@
-import { h, star, toast, eyebrow, button, attempt } from './ui.js';
+import { h, star, toast, eyebrow, button, attempt, ROLES, isStaff, hasPanel } from './ui.js';
 import { authView, offlineView } from './views/auth.js';
 import { libraryView, detailView, status } from './views/library.js';
 import { licensesView } from './views/licenses.js';
@@ -77,13 +77,15 @@ function sidebar() {
   }, star(), label, count ? h('span', { class: 'count' }, String(count)) : null);
 
   const subscribed = me.subscription?.status === 'active' && (me.subscription.kind === 'pick' ? 'À la carte' : 'All Access');
-  const plan = subscribed || (me.user.role === 'admin' ? 'Administrateur' : 'Compte');
+  // Le rôle du compte reste visible, à côté de l'abonnement s'il y en a un.
+  const plan = [me.user.role !== 'user' ? ROLES[me.user.role] : null, subscribed].filter(Boolean).join(' · ') || 'Compte';
   return h('nav', { class: 'sidebar' },
     item('plugins', 'Plugins', pendingUpdates(state.data)),
     item('licenses', 'Licences'),
     item('subscription', 'Abonnement'),
     item('support', 'Support'),
-    me.user.role === 'admin' ? [h('div', { class: 'eyebrow nav-label' }, 'Studio'), item('admin', 'Panel admin'), item('support-admin', 'Panel support')] : null,
+    hasPanel(me.user) ? [h('div', { class: 'eyebrow nav-label' }, 'Studio'), item('admin', 'Panel admin'),
+      isStaff(me.user) ? item('support-admin', 'Panel support') : null] : null,
     h('div', { class: 'spacer' }),
     h('button', { class: 'user-chip', onclick: () => go('account') },
       h('div', { class: 'avatar' }, (me.user.name || me.user.email)[0].toUpperCase()),
@@ -102,8 +104,9 @@ const VIEWS = {
   'support-admin': supportAdminView,
 };
 
-/** Les écrans réservés aux admins. */
+/** Les écrans réservés : le panel admin (équipe et partenaires), le panel support (équipe seulement). */
 const ADMIN_ROUTES = ['admin', 'support-admin'];
+const allowed = (route, user) => (route === 'admin' ? hasPanel(user) : route === 'support-admin' ? isStaff(user) : true);
 
 /** Tant que l'adresse e-mail du compte n'est pas validée : le rappel, et de quoi redemander le lien. */
 function verifyBanner() {
@@ -126,7 +129,7 @@ export function render() {
   else if (!state.data) content = h('div', { class: 'auth' }, h('div', { class: 'muted mono' }, 'Connexion au serveur…'));
   else if (!state.data.me) content = h('div', { class: 'auth' }, authView());
   else {
-    if (ADMIN_ROUTES.includes(state.route.name) && state.data.me.user.role !== 'admin') state.route = { name: 'plugins', id: null };
+    if (!allowed(state.route.name, state.data.me.user)) state.route = { name: 'plugins', id: null };
     content = h('div', { class: 'shell' }, sidebar(),
       h('main', { class: 'main' }, h('div', { class: 'inner' }, verifyBanner(), VIEWS[state.route.name]())));
   }

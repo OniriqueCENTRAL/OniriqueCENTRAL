@@ -57,7 +57,15 @@ export function compareVersions(a, b) {
   return 0;
 }
 
-export const LICENSE_TYPES = { perpetual: 'Perpétuelle', timed: 'Durée limitée', trial: 'Essai', nfr: 'NFR', subscription: 'Abonnement' };
+export const LICENSE_TYPES = { perpetual: 'Perpétuelle', timed: 'Durée limitée', trial: 'Essai', nfr: 'NFR', subscription: 'Abonnement', vip: 'Offert' };
+
+/** Les rôles d'un compte, tels qu'ils s'affichent. */
+export const ROLES = { user: 'Utilisateur', vip: 'VIP', abrasion: 'Abrasion', admin: 'Admin', founder: 'Fondateur' };
+export const isStaff = (user) => user.role === 'admin' || user.role === 'founder';
+/** Qui ouvre le panel admin : l'équipe, en entier ; un partenaire, pour ses propres plugins. */
+export const hasPanel = (user) => isStaff(user) || user.role === 'abrasion';
+/** Les créateurs des plugins : ONIRIQUE, ou un partenaire. */
+export const CREATORS = { onirique: 'ONIRIQUE', abrasion: 'ABRASION' };
 
 //------------------------------------------------------------------------------
 export function toast(message, isError = false) {

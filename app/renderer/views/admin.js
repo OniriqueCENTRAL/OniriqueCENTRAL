@@ -1,6 +1,6 @@
 import {
   h, eyebrow, pill, led, field, button, euros, date, megabytes, dateInputValue, dateInputToMs,
-  toast, attempt, modal, confirm, closeModal, LICENSE_TYPES,
+  toast, attempt, modal, confirm, closeModal, LICENSE_TYPES, ROLES, CREATORS, isStaff,
 } from '../ui.js';
 import { state, call, refresh, render, go } from '../app.js';
 
@@ -101,9 +101,15 @@ function productForm(product) {
     price: priceInput(product?.priceCents ?? 0),
     accent: h('input', { type: 'color', value: product?.accent ?? '#e23444' }),
     published: h('input', { type: 'checkbox', checked: product?.published ?? true }),
+    creator: h('select', null, Object.entries(CREATORS).map(([id, label]) => h('option', { value: id }, label))),
   };
+  // Un <select> ne prend sa valeur qu'une fois ses options en place.
+  f.creator.value = product?.creator ?? 'onirique';
+  // Le créateur ne se choisit que par l'équipe : les plugins d'un partenaire portent toujours son nom.
+  const staff = isStaff(state.data.me.user);
   const body = h('div', { class: 'stack' },
     field('Nom', f.name), field('Accroche', f.tagline),
+    staff ? field('Créateur', f.creator) : null,
     field('Description (une ligne vide entre les paragraphes)', f.description),
     h('div', { class: 'row' }, h('div', { class: 'grow' }, field('Prix (€) — 0 pour gratuit', f.price)), field('Couleur', f.accent)),
     h('label', { class: 'check' }, f.published, 'Visible dans la bibliothèque'));
@@ -111,7 +117,7 @@ function productForm(product) {
     label: product ? 'Enregistrer' : 'Créer',
     run: async () => {
       const payload = { name: f.name.value, tagline: f.tagline.value, description: f.description.value,
-        priceCents: toCents(f.price), accent: f.accent.value, published: f.published.checked };
+        priceCents: toCents(f.price), accent: f.accent.value, published: f.published.checked, ...(staff ? { creator: f.creator.value } : {}) };
       const ok = await changed(() => (product ? api('PATCH', `/products/${product.id}`, payload) : api('POST', '/products', payload)),
         product ? 'Plugin enregistré.' : 'Plugin créé.', true);
       return ok ? undefined : false;
@@ -204,6 +210,7 @@ function productsTab() {
       h('div', { class: 'row' },
         h('span', { class: 'led on', style: { background: p.accent, 'box-shadow': `0 0 10px ${p.accent}` } }),
         h('h2', null, p.name),
+        pill(CREATORS[p.creator] ?? CREATORS.onirique),
         pill(p.published ? 'Publié' : 'Masqué', p.published ? '' : 'warn'),
         pill(euros(p.priceCents)), p.demo ? pill('Démo en ligne', '', true) : pill('Pas de démo', 'warn'),
         ...SYSTEMS.filter(([key]) => p.licensed?.[key] !== undefined).map(([key, label]) => licensePill(p.licensed[key], label, p.priceCents > 0))),
@@ -334,6 +341,21 @@ function usersTab() {
     if (event.key === 'Enter') { ui.userQuery = search.value; reload(); }
   });
   const self = state.data.me.user.id;
+  // Seul un fondateur touche à un compte admin ou fondateur ; un admin donne les autres rôles aux autres comptes.
+  const founder = state.data.me.user.role === 'founder';
+  const manageable = (u) => u.id !== self && (founder || !isStaff(u));
+  const grantable = Object.keys(ROLES).filter((role) => founder || !isStaff({ role }));
+
+  const changeRole = (u) => {
+    const role = h('select', null, grantable.map((id) => h('option', { value: id }, ROLES[id])));
+    role.value = u.role;
+    modal('Rôle du compte', h('div', { class: 'stack' },
+      h('p', { class: 'muted', style: { margin: 0 } }, `Pour ${u.email}. VIP : tous les plugins offerts. Abrasion : le panel admin, limité à ses propres plugins et à leurs licences.`
+        + (founder ? ' Admin : tout le panel, sauf les rôles admin et fondateur.' : '')),
+      field('Rôle', role)), [{
+      label: 'Enregistrer', run: async () => ((await changed(() => api('PATCH', `/users/${u.id}`, { role: role.value }), `Rôle de ${u.email} : ${ROLES[role.value]}.`)) ? undefined : false),
+    }], 'Compte');
+  };
 
   const resetPassword = (u) => {
     const password = h('input', { type: 'text', class: 'mono', minLength: 8, placeholder: '8 caractères minimum' });
@@ -347,7 +369,7 @@ function usersTab() {
   const row = (u) => h('tr', null,
     h('td', null, h('div', { class: 'selectable' }, u.email), u.name ? h('div', { class: 'muted', style: { 'font-size': '12px' } }, u.name) : null,
       u.emailVerified ? null : h('div', { style: { 'margin-top': '4px' } }, pill('Adresse non validée', 'warn'))),
-    h('td', null, u.role === 'admin' ? pill('Admin', 'hot') : h('span', { class: 'muted' }, 'Utilisateur')),
+    h('td', null, u.role === 'user' ? h('span', { class: 'muted' }, ROLES.user) : pill(ROLES[u.role] ?? u.role, isStaff(u) ? 'hot' : '')),
     h('td', { class: 'mono' }, String(u.licenses)),
     h('td', null, u.subscribed ? pill('Abonné', '', true) : h('span', { class: 'muted' }, '—')),
     h('td', { class: 'muted' }, date(u.createdAt)),
@@ -359,11 +381,8 @@ function usersTab() {
       u.emailVerified ? null : button('Valider l\'e-mail', () => confirm('Valider cette adresse à la main ?',
         `À faire seulement si vous êtes sûr que ${u.email} est bien l'adresse de la personne : elle n'aura plus à ouvrir le lien reçu.`,
         'Valider', () => changed(() => api('PATCH', `/users/${u.id}`, { emailVerified: true }), 'Adresse validée.')), 'small quiet'),
-      button('Mot de passe', () => resetPassword(u), 'small quiet'),
-      u.id === self ? null : u.role === 'admin'
-        ? button('Retirer admin', () => changed(() => api('PATCH', `/users/${u.id}`, { role: 'user' }), 'Rôle admin retiré.'), 'small quiet danger')
-        : button('Rendre admin', () => confirm('Donner le rôle admin ?', `${u.email} pourra publier des versions, générer et révoquer des licences.`,
-          'Rendre admin', () => changed(() => api('PATCH', `/users/${u.id}`, { role: 'admin' }), 'Rôle admin accordé.')), 'small quiet')));
+      u.id === self || manageable(u) ? button('Mot de passe', () => resetPassword(u), 'small quiet') : null,
+      manageable(u) ? button('Rôle', () => changeRole(u), 'small quiet') : null));
 
   return h('div', { class: 'panel' },
     h('div', { class: 'row between', style: { 'margin-bottom': '16px' } }, eyebrow('Comptes'), h('div', { style: { width: '340px' } }, search)),
@@ -441,6 +460,10 @@ function creditsTab() {
 const TABS = { overview: ['Vue d\'ensemble', overviewTab], products: ['Plugins', productsTab], licenses: ['Licences', licensesTab], users: ['Comptes', usersTab], credits: ['Crédits', creditsTab] };
 
 export function adminView() {
+  // Un partenaire n'a que ses plugins et leurs licences.
+  const staff = isStaff(state.data.me.user);
+  const tabs = Object.entries(TABS).filter(([id]) => staff || id === 'products' || id === 'licenses');
+  if (!tabs.some(([id]) => id === state.adminTab)) state.adminTab = tabs[0][0];
   const tab = state.adminTab;
   const ready = READY[tab]();
   // Un chargement en échec n'est pas relancé tout seul : l'erreur reste affichée avec un bouton.
@@ -452,8 +475,9 @@ export function adminView() {
   return [
     eyebrow('Studio'),
     h('h1', null, 'Panel ', h('em', null, 'admin')),
-    h('p', { class: 'lede' }, 'Publiez les nouvelles versions, générez et mettez à jour les licences, gérez les comptes.'),
-    h('div', { class: 'segmented', style: { 'margin-bottom': '20px' } }, Object.entries(TABS).map(([id, [label]]) => h('button', {
+    h('p', { class: 'lede' }, staff ? 'Publiez les nouvelles versions, générez et mettez à jour les licences, gérez les comptes.'
+      : 'Vos plugins : publiez leurs nouvelles versions, générez et mettez à jour leurs licences.'),
+    h('div', { class: 'segmented', style: { 'margin-bottom': '20px' } }, tabs.map(([id, [label]]) => h('button', {
       type: 'button', class: tab === id ? 'active' : '',
       onclick: () => { state.adminTab = id; closeModal(); reload(id); },
     }, label))),
@@ -468,7 +492,7 @@ export function adminView() {
 let filling = false;
 export async function fillMissingDemos() {
   // L'outil qui charge les .vst3 n'existe que pour Windows.
-  if (filling || state.data?.me?.user.role !== 'admin' || window.central.platform !== 'win32') return;
+  if (filling || !state.data?.me || !isStaff(state.data.me.user) || window.central.platform !== 'win32') return;
   filling = true;
   let tried = [];
   try { tried = JSON.parse(localStorage.getItem('onirique.demosTried')) || []; } catch { /* rien de gardé */ }

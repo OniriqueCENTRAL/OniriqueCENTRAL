@@ -259,6 +259,7 @@ button.key.copy:hover { color: var(--ember-hot); }
 .cover img.mark { width: 46%; filter: drop-shadow(0 0 16px var(--accent)) drop-shadow(0 0 40px var(--accent)); }
 .cover .pill { position: absolute; top: 12px; left: 12px; backdrop-filter: blur(6px); background: rgba(13, 8, 9, 0.7); }
 .card-body { display: flex; flex-direction: column; gap: 6px; padding: 16px 18px 18px; flex: 1; min-width: 0; }
+.card-body .creator { font: 500 10.5px/1 var(--mono); letter-spacing: 0.16em; color: var(--haze); }
 .product-name { display: flex; align-items: baseline; gap: 9px; }
 .product-name b { font: 800 13px var(--display); letter-spacing: 0.2em; }
 .product-name i { font: 600 26px/0.9 var(--dream); font-style: normal; color: var(--bone); text-shadow: 0 0 16px color-mix(in srgb, var(--accent) 80%, transparent); }

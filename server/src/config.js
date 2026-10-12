@@ -26,6 +26,8 @@ export const config = {
   mediaDir: path.join(dataDir, 'media'),
   keysDir: path.join(dataDir, 'keys'),
   adminEmail: env.ADMIN_EMAIL || '',
+  // Les fondateurs : ces adresses, une fois validées, portent toujours le rôle le plus élevé.
+  founderEmails: (env.FOUNDER_EMAILS ?? 'contacteuhz@gmail.com,nueveprocontact@gmail.com').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean),
   adminPassword: env.ADMIN_PASSWORD || '',
   paymentsMode,
   stripeSecretKey: env.STRIPE_SECRET_KEY || '',
@@ -43,6 +45,8 @@ export const config = {
   defaultMaxActivations: 2,
   subscriptionGraceDays: 3,
   trialDays: 7,
+  // Durée de la licence écrite sur la machine d'un VIP, renouvelée à chaque lancement d'ONIRIQUE CENTRAL.
+  vipLicenseDays: 30,
   // Abonnement à la carte : le premier plugin, puis chaque plugin ajouté, par mois.
   pickBaseCents: 999,
   pickExtraCents: 500,

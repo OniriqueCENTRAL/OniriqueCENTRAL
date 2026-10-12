@@ -77,7 +77,16 @@ export function consumeVerifyToken(token) {
 export const shouldConfirm = (user) => mailEnabled && user.email_verified === 2;
 
 /** Vrai si ce compte doit encore valider son adresse. Sans envoi d'e-mails possible, personne n'est retenu. */
-export const mustVerify = (user) => mailEnabled && !user.email_verified && user.role !== 'admin';
+export const mustVerify = (user) => mailEnabled && !user.email_verified && !isStaff(user);
+
+/**
+ * Les rôles d'un compte : user ; vip (tous les plugins offerts) ; abrasion (partenaire : le panel admin, limité à ses
+ * propres plugins et à leurs licences) ; admin ; founder (au-dessus des admins : lui seul donne ou retire le rôle admin).
+ */
+export const ROLES = ['user', 'vip', 'abrasion', 'admin', 'founder'];
+export const isStaff = (user) => user.role === 'admin' || user.role === 'founder';
+/** Le créateur dont ce compte gère les plugins, pour un partenaire ; null pour tous les autres. */
+export const partnerOf = (user) => (user.role === 'abrasion' ? 'abrasion' : null);
 
 function bearer(req) {
   const header = req.headers.authorization || '';
@@ -114,10 +123,12 @@ export function requireVerified(req, res, next) {
   });
 }
 
+/** Le panel admin : en entier pour un admin ou un fondateur ; pour un partenaire, req.creator le limite à ses plugins. */
 export function requireAdmin(req, res, next) {
   requireUser(req, res, (error) => {
     if (error) return next(error);
-    if (req.user.role !== 'admin') return next(new HttpError(403, 'Réservé aux administrateurs.'));
+    req.creator = isStaff(req.user) ? null : partnerOf(req.user);
+    if (!isStaff(req.user) && !req.creator) return next(new HttpError(403, 'Réservé aux administrateurs.'));
     next();
   });
 }

@@ -4,10 +4,11 @@ import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import express from 'express';
 import { config } from './config.js';
-import { all, get, run, now, transaction } from './db.js';
+import { all, get, run, now, transaction, grantFounders } from './db.js';
 import {
   HttpError, hashPassword, verifyPassword, createSession, destroySession,
   requireUser, requireVerified, requireAdmin, optionalUser, rateLimit, validEmail, publicUser, createResetToken, consumeResetToken,
+  ROLES, isStaff, partnerOf,
   createVerifyToken, consumeVerifyToken, mustVerify, shouldConfirm,
 } from './auth.js';
 import { mailEnabled, sendMail } from './mail.js';
@@ -85,6 +86,7 @@ function productView(p, platform) {
   const wanted = platformOf(platform);
   return {
     id: p.id, slug: p.slug, name: p.name, tagline: p.tagline, description: p.description, accent: p.accent,
+    creator: p.creator, // "onirique" ou un partenaire ("abrasion")
     priceCents: p.price_cents, image: p.image ? `/api/media/${p.image}` : null, published: !!p.published,
     demo: p.demo ? `/api/media/${p.demo}` : null,
     latest: versionView(versions.find((v) => v.platform === wanted)) || null,
@@ -233,6 +235,7 @@ export function createApp() {
       const id = consumeVerifyToken(req.body.token);
       if (!id) return null;
       run('UPDATE users SET email_verified = 1 WHERE id = ?', id);
+      grantFounders();
       const verified = get('SELECT * FROM users WHERE id = ?', id);
       claimReserved(verified);
       return verified;
@@ -409,7 +412,9 @@ export function createApp() {
   app.get('/api/download/:versionId', requireUser, (req, res, next) => {
     const version = get('SELECT * FROM versions WHERE id = ?', int(req.params.versionId, 0));
     if (!version) throw new HttpError(404, 'Version introuvable.');
-    if (req.user.role !== 'admin' && !entitlement(req.user.id, version.product_id)) {
+    // L'équipe télécharge tout, un partenaire ses propres plugins ; les autres, ce à quoi ils ont droit.
+    const mine = partnerOf(req.user) && get('SELECT creator FROM products WHERE id = ?', version.product_id)?.creator === partnerOf(req.user);
+    if (!isStaff(req.user) && !mine && !entitlement(req.user.id, version.product_id)) {
       throw new HttpError(403, 'Ce téléchargement demande une licence active.');
     }
     res.set({ 'Content-Type': 'application/octet-stream', 'Content-Length': version.size, 'X-Checksum-Sha256': version.sha256 });
@@ -491,6 +496,23 @@ export function createApp() {
   //============================================================================
   const admin = express.Router();
   admin.use(requireAdmin);
+  // Un partenaire n'a que ses plugins, leurs versions et leurs licences : le reste du panel lui est fermé.
+  admin.use((req, _res, next) => next(req.creator && !/^\/(products|versions|licenses)(\/|$)/.test(req.path)
+    ? new HttpError(403, 'Réservé aux administrateurs.') : undefined));
+
+  const CREATORS = ['onirique', 'abrasion'];
+  /** Le produit, s'il est du ressort de ce compte : un partenaire ne touche qu'aux plugins de son créateur. */
+  function ownProduct(req, id) {
+    const product = findProduct(id);
+    if (req.creator && product.creator !== req.creator) throw new HttpError(404, 'Produit introuvable.');
+    return product;
+  }
+  /** La licence, si son plugin est du ressort de ce compte. */
+  function ownLicense(req, id) {
+    const license = get('SELECT * FROM licenses WHERE id = ?', int(id, 0));
+    if (!license || (req.creator && findProduct(license.product_id).creator !== req.creator)) throw new HttpError(404, 'Licence introuvable.');
+    return license;
+  }
 
   // Crédits. À la création, le titre et la pochette sont demandés à Spotify (oEmbed) ; la pochette est copiée
   // sur le serveur, pour que la page d'accueil ne charge rien chez un tiers.
@@ -610,7 +632,7 @@ export function createApp() {
   // Produits
   // Le panel admin voit en plus, pour chaque version et pour la version actuelle de chaque système, si le plugin
   // embarque le module de licence (licensed : true, false, ou null pour un installateur qu'on ne peut pas lire).
-  admin.get('/products', (_req, res) => res.json(all('SELECT * FROM products ORDER BY created_at').map((p) => {
+  admin.get('/products', (req, res) => res.json(all('SELECT * FROM products WHERE ? IS NULL OR creator = ? ORDER BY created_at', req.creator, req.creator).map((p) => {
     const view = productView(p);
     const rows = productVersions(p.id);
     const current = (platform) => { const v = rows.find((row) => row.platform === platform); return v ? versionLicensed(v) : undefined; };
@@ -628,8 +650,10 @@ export function createApp() {
     if (!/^#[0-9a-fA-F]{6}$/.test(accent)) throw new HttpError(400, 'Couleur invalide (format #rrggbb).');
     const price = body.priceCents !== undefined ? int(body.priceCents) : existing.price_cents ?? 0;
     if (price === null || price < 0 || price > 10_000_00) throw new HttpError(400, 'Prix invalide.');
+    if (body.creator !== undefined && !CREATORS.includes(body.creator)) throw new HttpError(400, 'Créateur invalide.');
     return {
       name, accent, price,
+      creator: body.creator ?? existing.creator ?? 'onirique',
       tagline: body.tagline !== undefined ? str(body.tagline, 140) : existing.tagline ?? '',
       description: body.description !== undefined ? str(body.description, 4000) : existing.description ?? '',
       published: body.published !== undefined ? (body.published ? 1 : 0) : existing.published ?? 1,
@@ -641,22 +665,23 @@ export function createApp() {
     const slug = (str(req.body.slug, 40) || f.name).toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     if (!slug) throw new HttpError(400, 'Identifiant invalide.');
     if (get('SELECT id FROM products WHERE slug = ?', slug)) throw new HttpError(409, 'Un produit porte déjà cet identifiant.');
+    // Un partenaire ne crée que des plugins à son nom.
     const { lastInsertRowid } = run(
-      'INSERT INTO products (slug, name, tagline, description, accent, price_cents, published, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      slug, f.name, f.tagline, f.description, f.accent, f.price, f.published, now());
+      'INSERT INTO products (slug, name, tagline, description, accent, price_cents, published, created_at, creator) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      slug, f.name, f.tagline, f.description, f.accent, f.price, f.published, now(), req.creator ?? f.creator);
     res.status(201).json(productView(findProduct(lastInsertRowid)));
   });
 
   admin.patch('/products/:id', (req, res) => {
-    const product = findProduct(req.params.id);
+    const product = ownProduct(req, req.params.id);
     const f = productFields(req.body, product);
-    run('UPDATE products SET name = ?, tagline = ?, description = ?, accent = ?, price_cents = ?, published = ? WHERE id = ?',
-      f.name, f.tagline, f.description, f.accent, f.price, f.published, product.id);
+    run('UPDATE products SET name = ?, tagline = ?, description = ?, accent = ?, price_cents = ?, published = ?, creator = ? WHERE id = ?',
+      f.name, f.tagline, f.description, f.accent, f.price, f.published, req.creator ?? f.creator, product.id);
     res.json(productView(findProduct(product.id)));
   });
 
   admin.put('/products/:id/image', wrap(async (req, res) => {
-    const product = findProduct(req.params.id);
+    const product = ownProduct(req, req.params.id);
     const ext = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' }[req.headers['content-type']];
     if (!ext) throw new HttpError(400, 'Image attendue : PNG, JPEG ou WebP.');
     const file = await receiveFile(req, config.mediaDir, 8 * 1024 * 1024);
@@ -669,7 +694,7 @@ export function createApp() {
 
   // Démo interactive : le fichier demo.json produit par onirique-probe à partir du .vst3.
   admin.put('/products/:id/demo', wrap(async (req, res) => {
-    const product = findProduct(req.params.id);
+    const product = ownProduct(req, req.params.id);
     const file = await receiveFile(req, config.mediaDir, 80 * 1024 * 1024);
     const stored = path.join(config.mediaDir, file.storedAs);
     let valid = false;
@@ -690,7 +715,7 @@ export function createApp() {
 
   // Versions : le fichier est le corps brut de la requête.
   admin.post('/products/:id/versions', wrap(async (req, res) => {
-    const product = findProduct(req.params.id);
+    const product = ownProduct(req, req.params.id);
     const version = str(req.query.version, 30);
     if (!/^\d+(\.\d+){0,3}([\-+][0-9A-Za-z.]+)?$/.test(version)) throw new HttpError(400, 'Numéro de version invalide (ex. 1.2.0).');
     const filename = safeFilename(req.query.filename);
@@ -713,15 +738,20 @@ export function createApp() {
     res.status(201).json(versionView(get('SELECT * FROM versions WHERE id = ?', lastInsertRowid)));
   }));
 
+  /** La version, si son plugin est du ressort de ce compte. */
+  function ownVersion(req) {
+    const version = get('SELECT * FROM versions WHERE id = ?', int(req.params.id, 0));
+    if (!version || (req.creator && findProduct(version.product_id).creator !== req.creator)) throw new HttpError(404, 'Version introuvable.');
+    return version;
+  }
+
   admin.patch('/versions/:id', (req, res) => {
-    const { changes } = run('UPDATE versions SET notes = ? WHERE id = ?', str(req.body.notes, 4000), int(req.params.id, 0));
-    if (!changes) throw new HttpError(404, 'Version introuvable.');
+    run('UPDATE versions SET notes = ? WHERE id = ?', str(req.body.notes, 4000), ownVersion(req).id);
     res.json({ ok: true });
   });
 
   admin.delete('/versions/:id', (req, res) => {
-    const version = get('SELECT * FROM versions WHERE id = ?', int(req.params.id, 0));
-    if (!version) throw new HttpError(404, 'Version introuvable.');
+    const version = ownVersion(req);
     run('DELETE FROM versions WHERE id = ?', version.id);
     fs.rmSync(path.join(config.filesDir, version.stored_as), { force: true });
     res.json({ ok: true });
@@ -734,8 +764,9 @@ export function createApp() {
       `SELECT l.*, p.name AS product_name, u.email,
          (SELECT COUNT(*) FROM activations a WHERE a.user_id = l.user_id AND a.product_id = l.product_id) AS activations
        FROM licenses l JOIN products p ON p.id = l.product_id LEFT JOIN users u ON u.id = l.user_id
-       WHERE l.key LIKE ? OR u.email LIKE ? OR l.reserved_email LIKE ? OR l.note LIKE ? OR p.name LIKE ? OR l.bundle LIKE ?
-       ORDER BY l.created_at DESC, l.id DESC LIMIT 500`, q, q, q, q, q, q);
+       WHERE (? IS NULL OR p.creator = ?)
+         AND (l.key LIKE ? OR u.email LIKE ? OR l.reserved_email LIKE ? OR l.note LIKE ? OR p.name LIKE ? OR l.bundle LIKE ?)
+       ORDER BY l.created_at DESC, l.id DESC LIMIT 500`, req.creator, req.creator, q, q, q, q, q, q);
     res.json(rows.map(licenseView));
   });
 
@@ -760,9 +791,12 @@ export function createApp() {
   }
 
   admin.post('/licenses', (req, res) => {
-    // "all" : ALL LICENCE, une seule clé qui donne une licence pour chaque plugin existant à cet instant.
+    // "all" : ALL LICENCE, une seule clé qui donne une licence pour chaque plugin existant à cet instant
+    // (pour un partenaire : chacun de ses plugins).
     const everything = req.body.productId === 'all';
-    const products = everything ? all('SELECT * FROM products ORDER BY created_at') : [findProduct(req.body.productId)];
+    const products = everything
+      ? all('SELECT * FROM products WHERE ? IS NULL OR creator = ? ORDER BY created_at', req.creator, req.creator)
+      : [ownProduct(req, req.body.productId)];
     if (!products.length) throw new HttpError(400, 'Aucun plugin à mettre dans la licence.');
     const type = LICENSE_TYPES.includes(req.body.type) ? req.body.type : 'perpetual';
     const count = int(req.body.count, 1);
@@ -787,8 +821,7 @@ export function createApp() {
   });
 
   admin.patch('/licenses/:id', (req, res) => {
-    const license = get('SELECT * FROM licenses WHERE id = ?', int(req.params.id, 0));
-    if (!license) throw new HttpError(404, 'Licence introuvable.');
+    const license = ownLicense(req, req.params.id);
     const b = req.body;
     const next = {
       status: b.status !== undefined ? b.status : license.status,
@@ -817,15 +850,13 @@ export function createApp() {
   });
 
   admin.post('/licenses/:id/reset', (req, res) => {
-    const license = get('SELECT * FROM licenses WHERE id = ?', int(req.params.id, 0));
-    if (!license) throw new HttpError(404, 'Licence introuvable.');
+    const license = ownLicense(req, req.params.id);
     if (license.user_id) run('DELETE FROM activations WHERE user_id = ? AND product_id = ?', license.user_id, license.product_id);
     res.json({ ok: true });
   });
 
   admin.delete('/licenses/:id', (req, res) => {
-    const license = get('SELECT * FROM licenses WHERE id = ?', int(req.params.id, 0));
-    if (!license) throw new HttpError(404, 'Licence introuvable.');
+    const license = ownLicense(req, req.params.id);
     if (license.user_id) throw new HttpError(409, 'Licence déjà rattachée à un compte : révoquez-la plutôt.');
     run('DELETE FROM licenses WHERE id = ?', license.id);
     res.json({ ok: true });
@@ -845,9 +876,14 @@ export function createApp() {
   admin.patch('/users/:id', (req, res) => {
     const user = get('SELECT * FROM users WHERE id = ?', int(req.params.id, 0));
     if (!user) throw new HttpError(404, 'Compte introuvable.');
-    if (req.body.role !== undefined) {
-      if (!['user', 'admin'].includes(req.body.role)) throw new HttpError(400, 'Rôle invalide.');
-      if (user.id === req.user.id && req.body.role !== 'admin') throw new HttpError(400, 'Vous ne pouvez pas retirer votre propre rôle admin.');
+    // Seul un fondateur touche à un compte admin ou fondateur : son rôle comme son mot de passe.
+    const founder = req.user.role === 'founder';
+    if (req.body.role !== undefined && req.body.role !== user.role) {
+      if (!ROLES.includes(req.body.role)) throw new HttpError(400, 'Rôle invalide.');
+      if (user.id === req.user.id) throw new HttpError(400, 'Vous ne pouvez pas changer votre propre rôle.');
+      if (!founder && (isStaff(user) || isStaff({ role: req.body.role }))) {
+        throw new HttpError(403, 'Seul un fondateur peut donner ou retirer le rôle admin.');
+      }
       run('UPDATE users SET role = ? WHERE id = ?', req.body.role, user.id);
     }
     // Valider une adresse à la main, pour un compte dont le lien n'arrive pas.
@@ -859,6 +895,9 @@ export function createApp() {
       });
     }
     if (req.body.password !== undefined) {
+      if (!founder && isStaff(user) && user.id !== req.user.id) {
+        throw new HttpError(403, "Seul un fondateur peut changer le mot de passe d'un administrateur.");
+      }
       const password = String(req.body.password);
       if (password.length < 8 || password.length > 200) throw new HttpError(400, 'Mot de passe : 8 caractères minimum.');
       run('UPDATE users SET password_hash = ? WHERE id = ?', hashPassword(password), user.id);

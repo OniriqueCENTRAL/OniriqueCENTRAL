@@ -1,4 +1,4 @@
-import { h, eyebrow, field, button, date, attempt, toast } from '../ui.js';
+import { h, eyebrow, field, button, date, attempt, toast, pill, ROLES } from '../ui.js';
 import { state, call, refresh } from '../app.js';
 
 export function accountView() {
@@ -46,7 +46,8 @@ export function accountView() {
   return [
     eyebrow('Compte'),
     h('h1', null, 'Votre ', h('em', null, 'compte')),
-    h('p', { class: 'lede' }, `Membre depuis le ${date(me.user.createdAt)}.`),
+    h('p', { class: 'lede' }, `Membre depuis le ${date(me.user.createdAt)}.`,
+      me.user.role !== 'user' ? h('span', { style: { 'margin-left': '12px' } }, pill(ROLES[me.user.role] ?? me.user.role, 'hot')) : null),
 
     h('div', { class: 'grid2' },
       h('div', { class: 'panel' }, eyebrow('Profil'), profile),
