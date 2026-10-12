@@ -84,17 +84,32 @@ async function load() {
       store.token = '';
     }
   }
+  const installs = await installer.status(catalog.products);
   if (me) {
+    let activated = false;
     for (const product of catalog.products) {
+      const right = me.entitlements[product.id];
       const here = me.activations.some((a) => a.productId === product.id && a.machineId === machineId);
-      if (here && me.entitlements[product.id]) await activateHere(product).catch(() => {});
-      else installer.removeLicense(product.slug);
+      // Un plugin offert (VIP, équipe avec « Mes licences » activé) s'active tout seul là où il est installé :
+      // personne n'a de clé à saisir ni de bouton à trouver. Un plugin acheté garde son activation à la main.
+      const offered = right?.via === 'vip' && !here && installs[product.id].present;
+      if (right && (here || offered)) {
+        try {
+          await activateHere(product);
+          activated ||= offered;
+        } catch { /* limite de machines atteinte, serveur injoignable : le plugin reste en démo */ }
+      } else {
+        installer.removeLicense(product.slug);
+      }
+      installs[product.id].licensed = installer.hasLicense(product.slug);
     }
+    // Les activations qui viennent d'être faites doivent se voir tout de suite dans l'interface.
+    if (activated) me = await api.request('GET', '/api/me');
   }
   return {
     catalog, me, machineId,
     machineName: os.hostname(),
-    installs: await installer.status(catalog.products),
+    installs,
     settings: { serverUrl: store.serverUrl, vst3Dir: store.vst3Dir, licenseDir: installer.LICENSE_DIR, appVersion: app.getVersion() },
   };
 }
