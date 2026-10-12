@@ -213,6 +213,16 @@ app.whenReady().then(() => {
       : path.join(__dirname, '..', '..', 'tools', 'probe', 'build', 'OniriqueProbe_artefacts', 'Release', 'OniriqueProbe.exe');
     if (!fs.existsSync(probe)) throw new Error("l'outil de démo n'est pas installé avec cette application.");
 
+    // Le plugin est photographié activé : sans licence sur ce PC, sa page « Activation requise » couvre l'interface
+    // et se retrouve sur l'image du produit et dans toute la démo.
+    const product = await productById(productId);
+    if (product.priceCents > 0) {
+      await activateHere(product).catch(() => {});
+      if (!installer.hasLicense(product.slug)) {
+        throw new Error("le plugin n'est pas activé sur ce PC, son aperçu montrerait la page d'activation. Activez-le dans Mes plugins, puis relancez.");
+      }
+    }
+
     const out = fs.mkdtempSync(path.join(app.getPath('temp'), 'onirique-demo-'));
     try {
       await new Promise((resolve, reject) => {
