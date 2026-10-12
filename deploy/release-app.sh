@@ -28,3 +28,5 @@ scp -q -o BatchMode=yes dist/latest.yml "$HOST:$REMOTE/latest.yml"
 ssh -o BatchMode=yes "$HOST" "cd $REMOTE && ls -t ONIRIQUE-CENTRAL-Setup-*.exe | tail -n +4 | while read -r f; do rm -f \"\$f\" \"\$f.blockmap\"; done; chmod a+r latest.yml"
 
 echo "Version $VERSION publiée."
+# L'application n'est pas signée : SmartScreen repart de zéro à chaque version. La soumission se fait à la main.
+echo "À faire : soumettre app/dist/$EXE à Microsoft (https://www.microsoft.com/wdsi/filesubmission, profil Software developer, fichier bloqué à tort par SmartScreen)."
