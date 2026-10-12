@@ -15,6 +15,12 @@
 .issues { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
 .issues li { margin: 0; color: var(--soft); font-size: 15px; }
 .issues li::before { content: "✦ "; color: var(--ember-text); }
+.values td select { width: auto; min-width: 118px; padding: 7px 10px; border-radius: 9px; font-size: 14px; }
+.values td.new { font: 500 13px/1.35 var(--f-mono); color: var(--mist); }
+.values td.old { color: var(--haze); }
+.pack { display: grid; gap: 16px; }
+.pack .tick { display: flex; align-items: center; gap: 10px; text-transform: none; letter-spacing: 0; font: 500 15px/1.4 var(--f-body); color: var(--soft); }
+.pack .zip { margin: 0; font: 500 14px/1.4 var(--f-mono); color: var(--mist); overflow-wrap: anywhere; }
 </style>
 
 <a class="skip" href="#contenu">Aller au contenu</a>
@@ -44,13 +50,30 @@
   <article class="card" id="result" aria-live="polite" hidden>
     <p class="head"><b id="r-count"></b><span id="r-state"></span></p>
     <div class="dim"><p class="eyebrow">Bilan</p><ul class="issues" id="r-issues"></ul><p class="ok" id="r-clean" hidden>Rien à signaler : toutes les pistes ont la même durée et le même format, aucune ne sature.</p></div>
-    <div><div class="scroll"><table class="values" style="min-width:640px">
-      <thead><tr><th>Piste</th><th>Durée</th><th>Format</th><th>Voies</th><th>Pic</th><th>Blanc au début</th></tr></thead>
+    <div class="dim pack">
+      <div><p class="eyebrow">Loop pack</p>
+      <p class="muted">Chaque piste est reconnue, renommée et rangée par type. Corrige un type dans le tableau s'il est faux, puis télécharge le pack : un .zip où tout est déjà trié et renommé, à déposer tel quel dans ton dossier de samples.</p></div>
+      <div class="fields">
+        <label>Nom du pack<input id="p-name" type="text" maxlength="60" placeholder="Loop pack"></label>
+        <label>BPM<input id="p-bpm" type="text" inputmode="decimal" maxlength="6" placeholder="—"></label>
+        <label>Tonalité<select id="p-key"></select></label>
+      </div>
+      <label class="tick"><input id="p-tag" type="checkbox" checked> Écrire aussi le BPM et la tonalité dans le nom de chaque piste</label>
+      <p class="muted" id="p-found"></p>
+      <p class="zip" id="p-zip"></p>
+      <div><button class="go" id="p-go" type="button">Télécharger le loop pack (.zip)</button></div>
+    </div>
+    <div><div class="scroll"><table class="values" style="min-width:980px">
+      <thead><tr><th>Type</th><th>Nouveau nom</th><th>Piste d'origine</th><th>Durée</th><th>Format</th><th>Voies</th><th>Pic</th><th>Blanc au début</th></tr></thead>
       <tbody id="r-rows"></tbody>
     </table></div></div>
   </article>
 
   <section class="text">
+    <h2>Comment les pistes sont reconnues</h2>
+    <p>Le nom du fichier passe d'abord : « Kick », « 808 », « Hat », « Vox », « Gtr » et une centaine d'autres mots, en français et en anglais, disent ce qu'il y a dedans. Quand le nom ne dit rien (« Audio 07 »), c'est le son qui décide : où se trouve son énergie, du grave à l'aigu, et s'il est frappé ou tenu. Un son grave et bref est un kick, un son grave qui s'éteint lentement une 808, un son aigu et bref un hi-hat, un bruit bref une snare, du grave et de l'aigu frappés ensemble une batterie.</p>
+    <p>Le son seul ne distingue pas une voix d'un piano ou d'une guitare : ces pistes-là sont rangées dans « Melodie » tant que leur nom n'en dit pas plus. Le type se corrige d'un clic dans le tableau, et le pack suit.</p>
+    <p>Le BPM et la tonalité sont mesurés sur toutes les pistes jouées ensemble, comme dans l'outil <a href="bpm-tonalite.html">BPM et tonalité</a> ; tu peux les corriger avant de télécharger. Les fichiers du pack sont tes fichiers d'origine, renommés : rien n'est réencodé.</p>
     <h2>Ce qui est contrôlé</h2>
     <p><strong>Durée</strong> : des stems exportés depuis le même point de départ ont tous la même longueur, à l'échantillon près. Une piste plus courte ou plus longue ne se recalera pas toute seule dans le projet de l'autre.</p>
     <p><strong>Format</strong> : la fréquence d'échantillonnage et la résolution doivent être les mêmes partout, en général 44,1 ou 48 kHz en 24 bits. <strong>Saturation</strong> : un pic à 0 dBFS tenu sur plusieurs échantillons est une piste écrêtée à l'export ; baisse son niveau et exporte à nouveau. <strong>Pistes vides</strong> : un export fait avec la piste en sourdine.</p>
@@ -65,10 +88,17 @@
 </footer>
 
 <script src="assets/audio-kit.js"></script>
+<script src="assets/stem-kind.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const A = OniriqueAudio;
+const S = OniriqueStems;
 const MAX_FILES = 60;
+const RATE = 22050;          // ce qu'il faut pour reconnaître une piste et mesurer le tempo
+const MIX_SECONDS = 240;     // le tempo et la tonalité se mesurent sur les quatre premières minutes
+const EN = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+const keyName = (k) => EN[k.tonic] + (k.mode === "major" ? " major" : " minor");
+const bpmText = (bpm) => (Math.abs(bpm - Math.round(bpm)) < 0.2 ? String(Math.round(bpm)) : bpm.toFixed(1).replace(".", ","));
 const db = (v) => (v > 0 ? 20 * Math.log10(v) : -Infinity);
 
 /** Résolution écrite dans l'en-tête d'un WAV (16, 24, 32 bits) ; 0 pour les autres formats. */
@@ -83,7 +113,7 @@ function wavBits(v) {
   return 0;
 }
 
-async function inspect(file) {
+async function inspect(file, mix) {
   const head = new DataView(await file.slice(0, 200000).arrayBuffer());
   const rate = A.sourceRate(head), bits = wavBits(head);
   const audio = await A.decode(file);
@@ -100,7 +130,11 @@ async function inspect(file) {
       if (c > 0 && same && Math.abs(data[i] - left[i]) > 0.0005) same = false;
     }
   }
-  return { name: file.name, seconds: audio.duration, rate: rate || audio.sampleRate, bits,
+  // La même piste en mono, à 22 kHz : de quoi la reconnaître, et sa part dans le mélange dont on tire le tempo.
+  const mono = (await A.render(audio, { rate: RATE, channels: 1 })).getChannelData(0);
+  const features = S.features(mono, RATE);
+  for (let i = 0, n = Math.min(mono.length, mix.length); i < n; i++) mix[i] += mono[i];
+  return { file, ...S.classify(file.name, features), name: file.name, seconds: audio.duration, rate: rate || audio.sampleRate, bits,
     channels: audio.numberOfChannels, dualMono: same, peak: db(peak), clipped, lead: first === audio.length ? null : first / audio.sampleRate, silent: peak < 0.0005 };
 }
 
@@ -138,10 +172,21 @@ function show(stems, failed) {
   $("r-issues").replaceChildren(...issues.map((text) => Object.assign(document.createElement("li"), { textContent: text })));
   $("r-issues").hidden = !issues.length;
   $("r-clean").hidden = !!issues.length;
-  $("r-rows").replaceChildren(...stems.map((s) => {
+  // Dans l'ordre du pack, chaque piste sous son nouveau nom.
+  const plan = S.names(stems, packOptions()), renamed = new Map(plan.map(({ stem, name }) => [stem, name]));
+  const folder = packName();
+  $("p-zip").textContent = folder + ".zip  ·  " + plan.length + " piste" + (plan.length > 1 ? "s" : "") + " dans le dossier « " + folder + " »";
+  $("r-rows").replaceChildren(...plan.map(({ stem: s }) => {
     const row = document.createElement("tr");
     const cell = (text, bad) => Object.assign(document.createElement("td"), { textContent: text, className: bad ? "bad" : "" });
-    row.append(cell(s.name),
+    const type = document.createElement("select");
+    type.setAttribute("aria-label", "Type de « " + s.name + " »");
+    type.append(...S.KINDS.map((kind) => Object.assign(document.createElement("option"), { textContent: kind, selected: kind === s.kind })));
+    type.onchange = () => { s.kind = type.value; s.from = "toi"; show(stems, failed); };
+    const kindCell = document.createElement("td");
+    kindCell.append(type);
+    kindCell.title = s.from === "nom" ? "Reconnu à son nom" : s.from === "son" ? "Reconnu au son" : "Choisi par toi";
+    row.append(kindCell, Object.assign(cell(renamed.get(s)), { className: "new" }), Object.assign(cell(s.name), { className: "old" }),
       cell(A.clock(s.seconds) + "," + String(Math.round(s.seconds % 1 * 1000)).padStart(3, "0"), wrong.length.includes(s)),
       cell(String(s.rate / 1000).replace(".", ",") + " kHz" + (s.bits ? " · " + s.bits + " bits" : ""), wrong.rate.includes(s) || wrong.bits.includes(s)),
       cell(s.channels === 1 ? "Mono" : s.channels === 2 ? (s.dualMono ? "Stéréo (2 × mono)" : "Stéréo") : s.channels + " voies", s.dualMono && !s.silent),
@@ -152,17 +197,73 @@ function show(stems, failed) {
   $("result").hidden = false;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+// Le loop pack.
+let shown = null; // { stems, failed } : ce qui est à l'écran
+
+const packOptions = () => ({ bpm: $("p-bpm").value.trim(), key: $("p-key").value, tagFiles: $("p-tag").checked });
+const packName = () => [S.safe($("p-name").value) || "Loop pack", S.tag(packOptions())].filter(Boolean).join(" - ");
+
+/** Ce que les noms des pistes ont en commun au début (« MonTitre_Kick », « MonTitre_Bass » → « MonTitre »). */
+function commonName(files) {
+  const names = files.map((f) => A.baseName(f));
+  if (names.length < 2) return "";
+  let prefix = names[0];
+  for (const name of names) while (prefix && !name.toLowerCase().startsWith(prefix.toLowerCase())) prefix = prefix.slice(0, -1);
+  prefix = prefix.replace(/[\s_.\-–(\[]+$/, "").replace(/\s*\d+$/, "");
+  return prefix.length >= 3 ? S.safe(prefix) : "";
+}
+
+const analyse = (samples) => new Promise((resolve) => {
+  const worker = new Worker("assets/bpm-key-worker.js");
+  worker.onmessage = (event) => { worker.terminate(); resolve(event.data); };
+  worker.onerror = () => { worker.terminate(); resolve({}); };
+  worker.postMessage({ samples, sampleRate: RATE }, [samples.buffer]);
+});
+
+$("p-key").append(Object.assign(document.createElement("option"), { value: "", textContent: "—" }),
+  ...["major", "minor"].flatMap((mode) => EN.map((_, tonic) => Object.assign(document.createElement("option"), { textContent: keyName({ tonic, mode }) }))));
+for (const id of ["p-name", "p-bpm", "p-key", "p-tag"]) $(id).addEventListener("input", () => { if (shown) show(shown.stems, shown.failed); });
+
+$("p-go").onclick = async () => {
+  if (!shown) return;
+  $("error").textContent = "";
+  const folder = packName(), button = $("p-go"), label = button.textContent;
+  button.disabled = true;
+  try {
+    const entries = S.names(shown.stems, packOptions()).map(({ stem, name }) => ({ name: folder + "/" + name, file: stem.file }));
+    const blob = await S.zip(entries, (ratio) => { button.textContent = "Préparation du pack " + Math.round(ratio * 100) + " %"; });
+    A.download(blob, folder + ".zip");
+  } catch (error) {
+    $("error").textContent = error.message || "Le pack n'a pas pu être préparé.";
+  } finally {
+    button.disabled = false;
+    button.textContent = label;
+  }
+};
+
 async function open(files) {
   $("error").textContent = "";
   if (files.length > MAX_FILES) { $("error").textContent = "Dépose " + MAX_FILES + " pistes au plus à la fois."; return; }
-  const stems = [], failed = [];
+  const stems = [], failed = [], mix = new Float32Array(RATE * MIX_SECONDS);
   for (const [i, file] of files.entries()) {
     A.busy($("drop"), true, "Lecture " + (i + 1) + " sur " + files.length + "…");
-    try { stems.push(await inspect(file)); } catch { failed.push(file.name); }
+    try { stems.push(await inspect(file, mix)); } catch { failed.push(file.name); }
   }
   A.busy($("drop"), false, stems.length ? "Vérifier d'autres pistes" : undefined);
   if (!stems.length) { $("result").hidden = true; $("error").textContent = "Aucune de ces pistes n'a pu être lue. Essaie en WAV ou en MP3."; return; }
-  stems.sort((a, b) => a.name.localeCompare(b.name, "fr", { numeric: true }));
+  // Le tempo et la tonalité de l'ensemble : toutes les pistes jouées en même temps.
+  A.busy($("drop"), true, "Tempo et tonalité…");
+  const longest = Math.min(MIX_SECONDS, Math.max(...stems.map((s) => s.seconds)));
+  const found = stems.some((s) => !s.silent) ? await analyse(mix.slice(0, Math.max(1, Math.round(longest * RATE)))) : {};
+  A.busy($("drop"), false, "Vérifier d'autres pistes");
+  $("p-bpm").value = found.tempo ? bpmText(found.tempo.bpm) : "";
+  $("p-key").value = found.key ? keyName(found.key) : "";
+  $("p-name").value = commonName(files);
+  $("p-found").textContent = found.tempo || found.key
+    ? "Mesuré sur l'ensemble des pistes : " + [found.tempo && bpmText(found.tempo.bpm) + " BPM", found.key && keyName(found.key)].filter(Boolean).join(", ") + ". À corriger ici si tu connais les vraies valeurs."
+    : "Le tempo et la tonalité n'ont pas pu être mesurés sur ces pistes : écris-les si tu les connais.";
+  shown = { stems, failed };
   show(stems, failed);
 }
 A.dropZone($("drop"), $("file"), open, { multiple: true });
