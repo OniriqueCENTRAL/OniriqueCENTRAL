@@ -93,7 +93,7 @@ details p { color: #D9C6C8; }
 <header>
   <div class="wrap">
     <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
-    <nav aria-label="Navigation"><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="popularite.html" aria-current="page">Popularité</a><a class="btn" href="compte.html" data-account>Compte</a></nav>
+    <nav aria-label="Navigation"><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="popularite.html" data-tools>Outils</a><a class="btn" href="compte.html" data-account>Compte</a></nav>
   </div>
 </header>
 
@@ -263,5 +263,6 @@ $("form").onsubmit = (event) => { event.preventDefault(); search($("q").value.tr
 const shared = new URLSearchParams(location.search).get("q");
 if (shared) { $("q").value = shared; search(shared.trim()); }
 </script>
+<script src="assets/tools-menu.js"></script>
 <script src="assets/account.js"></script>
 </html>
