@@ -122,8 +122,14 @@ p { margin: 0; }
 #ribbons { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; }
 .hero::before { content: ""; position: absolute; z-index: -2; inset: -120px 0 auto; height: 1300px; background: radial-gradient(45% 40% at 72% 30%, rgba(226,52,68,.22), transparent 70%), linear-gradient(180deg, var(--blood) 0%, #2E0306 45%, var(--night) 100%); }
 .hero-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 40px clamp(24px, 4vw, 64px); align-items: center; }
-.hero h1 { font-size: clamp(42px, 6.2vw, 96px); font-weight: 800; }
-.hero h1 em.dream { display: block; font-size: 1.12em; line-height: 1; letter-spacing: 0; }
+.hero h1 { font-size: clamp(34px, 4.6vw, 72px); font-weight: 800; }
+.hero h1 span { white-space: nowrap; }
+.hero h1 em.dream { display: block; margin-top: .18em; font-size: 1.12em; line-height: 1; letter-spacing: 0; }
+/* Le plugin présenté à droite : une vraie capture, son prix, et la fiche au clic. La place est réservée avant le chargement. */
+.hero-shot { width: 100%; max-width: 600px; justify-self: center; box-shadow: 0 30px 80px -30px #000, 0 0 60px -20px rgba(226,52,68,.55); }
+.hero-shot img { height: auto; background: rgba(0,0,0,.35); }
+.hero-shot div { min-height: 132px; }
+.hero-shot small { color: var(--mist); }
 .hero-side { display: grid; gap: 28px; min-width: 0; justify-items: start; }
 .hero-side .lede { margin-top: -4px; }
 
@@ -560,25 +566,20 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
       <div class="hero-grid">
         <div class="hero-side rise">
           <span class="eyebrow">Plugins audio pour la voix</span>
-          <h1>Ta voix, <em class="dream">comme dans un rêve.</em></h1>
-          <p class="lede">Toute une chaîne vocale dans un seul plugin : EQ et EQ paramétrique, suppresseur de résonances, 1176 et LA-2A, multibande, de-esser, plosives et saturation. Pour mixer, ou pour t'enregistrer sans latence.</p>
+          <h1><span id="heroCount">9</span> plugins, de <span id="heroMin">5 €</span> à <span id="heroMax">49 €</span>. <em class="dream">7 jours d'essai sur chacun.</em></h1>
+          <p class="lede">Correction de hauteur, chaîne vocale complète, suppresseur de résonances, doubleur de voix : chaque plugin fait un travail précis. Tu l'installes en un clic, tu l'essaies dans ton DAW, et tu ne le paies qu'une fois. Aucun abonnement obligatoire.</p>
           <div class="cta-row">
-            <a class="btn btn-primary" href="boutique.html">Acheter nos plugins</a>
-            <a class="btn btn-ghost" href="#ecouter">Écouter la démo</a>
+            <a class="btn btn-primary" href="boutique.html">Essayer gratuitement</a>
+            <a class="btn btn-ghost" href="#vocalbox">Toucher la vraie interface</a>
           </div>
           <div class="facts">
-            <span class="chip">VST3 + Standalone</span><span class="chip">Windows 64 bits</span><span class="chip">Mode LIVE sans latence</span><span class="chip">Suréchantillonnage jusqu'à 8X</span>
+            <span class="chip">Essai sans carte bancaire</span><span class="chip">VST3 et Audio Unit</span><span class="chip">Windows et Mac</span><span class="chip" id="heroFree" hidden></span>
           </div>
         </div>
-        <div class="sigil" aria-hidden="true">
-          <svg class="reticle" viewBox="0 0 400 400">
-            <circle cx="200" cy="200" r="150" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="180 40 60 40 120 50"/>
-            <circle cx="200" cy="200" r="186" fill="none" stroke="currentColor" stroke-width=".8" stroke-dasharray="2 9"/>
-            <path d="M200 6v60M200 334v60M6 200h60M334 200h60" stroke="currentColor" stroke-width="1.4"/>
-          </svg>
-          <img class="sigil-img" src="assets/logo.png" alt="Sigil Onirique : le logo de la marque, blanc et lumineux" width="985" height="895">
-          <span class="spark s1"></span><span class="spark s2"></span><span class="spark s3"></span>
-        </div>
+        <a class="plugin-card hero-shot" id="heroShot" href="boutique.html" aria-live="polite">
+          <img alt="" width="1100" height="688">
+          <div><h3></h3><p></p><small></small></div>
+        </a>
       </div>
     </div>
   </section>
@@ -1788,17 +1789,48 @@ document.addEventListener("onirique:account", ({ detail: me }) => {
 
 fetch("/api/credits").then(r => r.ok ? r.json() : null).then(list => { if (list && list.length) renderCredits(list); }).catch(() => {});
 
+// Haut de page : les chiffres viennent du catalogue (ils restent justes quand un plugin ou un prix change), et les
+// plugins défilent à droite, du plus cher au moins cher. Sans catalogue, la carte vide est retirée.
+function heroFacts(products, shown, euros, terms) {
+  const shot = $("#heroShot");
+  const cents = products.filter(p => p.priceCents > 0).map(p => p.priceCents);
+  if (cents.length) {
+    $("#heroCount").textContent = cents.length;
+    $("#heroMin").textContent = euros(Math.min(...cents));
+    $("#heroMax").textContent = euros(Math.max(...cents));
+  }
+  const free = products.find(p => p.priceCents === 0);
+  if (free) { $("#heroFree").textContent = free.name + " : gratuit"; $("#heroFree").hidden = false; }
+  if (!shown.length) return shot.remove();
+  const order = [...shown].sort((a, b) => b.priceCents - a.priceCents);
+  let at = 0;
+  const paint = () => {
+    const p = order[at];
+    shot.href = "boutique.html?p=" + encodeURIComponent(p.slug);
+    $("img", shot).src = p.image;
+    $("img", shot).alt = "Interface du plugin " + p.name;
+    $("h3", shot).textContent = p.name;
+    $("p", shot).textContent = p.tagline;
+    $("small", shot).textContent = terms(p) + " →";
+  };
+  paint();
+  if (!reduced && order.length > 1) setInterval(() => { if (!shot.matches(":hover, :focus-visible")) { at = (at + 1) % order.length; paint(); } }, 4500);
+}
+
 // Collection : les plugins publiés dans le CENTRAL qui ont une image (elle se change depuis la page admin).
 fetch("/api/catalog").then(r => r.ok ? r.json() : null).then(catalog => {
   const shown = (catalog?.products || []).filter(p => p.image);
+  const euros = cents => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: cents % 100 ? 2 : 0 }).format(cents / 100);
+  const terms = p => (p.priceCents ? euros(p.priceCents) : "Gratuit") + " · " + (p.platforms?.includes("mac") ? "Windows et Mac" : "Windows") + (p.priceCents ? " · Essai gratuit 7 jours" : "");
+  heroFacts(catalog?.products || [], shown, euros, terms);
   if (!shown.length) return;
   $("#pluginGrid").innerHTML = shown.map(p => `
     <a class="plugin-card" href="boutique.html?p=${encodeURIComponent(p.slug)}">
       <img src="${esc(p.image)}" alt="Interface du plugin ${esc(p.name)}" loading="lazy">
-      <div><h3>${esc(p.name)}</h3><p>${esc(p.tagline)}</p><small>${p.latest ? "Version " + esc(p.latest.version) + " · " : ""}${/\.(exe|msi)$/i.test(p.latest?.filename || "") ? "Application" : "VST3"} · Windows 64 bits · Essayer →</small></div>
+      <div><h3>${esc(p.name)}</h3><p>${esc(p.tagline)}</p><small>${esc(terms(p))} →</small></div>
     </a>`).join("");
   $("#plugins").hidden = false;
-}).catch(() => {});
+}).catch(() => { $("#heroShot")?.remove(); });
 
 // Interface : la démo interactive de chaque plugin, la même que dans la boutique et l'application, une à la fois.
 // La section Fonctions suit : elle décrit le plugin affiché.
