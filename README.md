@@ -121,7 +121,10 @@ Ce qui diffère de Windows :
   le dossier `NOM.vst3` zippé en `NOM.vst3.zip`, ou un installateur `.pkg`. Un plugin sans version Mac
   s'affiche « Bientôt sur Mac ».
 - Sans compte Apple Developer, l'application n'est ni signée ni notariée : macOS demande de l'autoriser à la
-  première ouverture (clic droit, Ouvrir), et la mise à jour automatique est coupée sur Mac.
+  première ouverture (clic droit, Ouvrir). Le mécanisme de mise à jour habituel la refuse aussi : elle se met donc à
+  jour elle-même (`app/main/mac-update.js`), en téléchargeant le `.zip` annoncé par `telechargement/latest-mac.json`.
+- Publier une version Mac : pousser une étiquette `mac-<version>` sur GitHub (la compilation dépose le `.dmg` et le
+  `.zip` sur le serveur après avoir essayé le remplacement sur un vrai Mac), puis `bash deploy/publish-mac.sh`.
 - La démo interactive d'un plugin ne se fabrique que depuis l'application Windows.
 
 ## Mise en production

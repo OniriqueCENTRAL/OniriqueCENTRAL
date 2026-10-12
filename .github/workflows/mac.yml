@@ -2,6 +2,7 @@
 # Une application Mac ne se construit que sur macOS : GitHub prête la machine.
 # À lancer depuis l'onglet « Actions » du dépôt GitHub, bouton « Run workflow », ou en poussant une étiquette « mac-… ».
 # Le résultat (ONIRIQUE-CENTRAL.dmg) se télécharge en bas de la page de l'exécution, rubrique « Artifacts ».
+# Le .dmg et le .zip de mise à jour sont aussi déposés sur le serveur : deploy/publish-mac.sh les met en ligne.
 name: Application Mac
 
 on:
@@ -37,6 +38,35 @@ jobs:
           cp -R "$APP" image/
           ln -s /Applications image/Applications
           hdiutil create -volname "ONIRIQUE CENTRAL" -srcfolder image -ov -format UDZO ONIRIQUE-CENTRAL.dmg
+          # La même application en .zip : c'est ce que téléchargent les applications installées pour se mettre à jour.
+          ditto -c -k --keepParent "$APP" ONIRIQUE-CENTRAL-mac.zip
+
+      # La mise à jour automatique remplace l'application par le contenu du .zip (app/main/mac-swap.js) : le
+      # remplacement est essayé ici, sur un vrai Mac. S'il échoue, rien n'est livré.
+      - name: Essayer la mise à jour automatique
+        working-directory: app/dist
+        run: |
+          set -e
+          mkdir -p essai/Applications essai/nouveau
+          cp -R "mac-universal/ONIRIQUE CENTRAL.app" essai/Applications/
+          touch "essai/Applications/ONIRIQUE CENTRAL.app/Contents/ancienne-version"
+          ditto -x -k ONIRIQUE-CENTRAL-mac.zip essai/nouveau
+          codesign --verify --deep --strict "essai/nouveau/ONIRIQUE CENTRAL.app"
+          test "$(defaults read "$PWD/essai/nouveau/ONIRIQUE CENTRAL.app/Contents/Info" CFBundleShortVersionString)" = "$(node -p "require('../package.json').version")"
+          node -e "process.stdout.write(require('../main/mac-swap.js'))" > remplacer.sh
+          sh -c 'exit 0' & FINI=$!; wait $FINI
+          # le remplacement réussi : la nouvelle version est en place, signée, et il ne reste rien de l'ancienne
+          sh -c "$(cat remplacer.sh)" sh $FINI "$PWD/essai/Applications/ONIRIQUE CENTRAL.app" "$PWD/essai/nouveau/ONIRIQUE CENTRAL.app" "$PWD/essai/nouveau" 0
+          test ! -e "essai/Applications/ONIRIQUE CENTRAL.app/Contents/ancienne-version"
+          codesign --verify --deep --strict "essai/Applications/ONIRIQUE CENTRAL.app"
+          test ! -e "essai/Applications/ONIRIQUE CENTRAL.app.old"
+          test ! -e "essai/Applications/ONIRIQUE CENTRAL.app.new"
+          test ! -e essai/nouveau
+          # le remplacement impossible (nouvelle version absente) : l'application d'origine reste intacte
+          touch "essai/Applications/ONIRIQUE CENTRAL.app/Contents/temoin"
+          if sh -c "$(cat remplacer.sh)" sh $FINI "$PWD/essai/Applications/ONIRIQUE CENTRAL.app" "$PWD/essai/absente.app" "$PWD/essai/rien" 0; then echo "un remplacement impossible a été annoncé réussi"; exit 1; fi
+          test -e "essai/Applications/ONIRIQUE CENTRAL.app/Contents/temoin"
+          rm -rf essai remplacer.sh
 
       - uses: actions/upload-artifact@v4
         with:
@@ -64,3 +94,4 @@ jobs:
           echo "Empreinte de la clé utilisée : $(ssh-keygen -lf ~/.ssh/livraison.pub)"
           echo "217.160.106.244 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICV3xBScmxJy34Jgjtvb0R4UCG3jmzkSU+/T1lDrvD/l" > ~/.ssh/known_hosts
           ssh -i ~/.ssh/livraison -o IdentitiesOnly=yes -o BatchMode=yes livraison@217.160.106.244 central-dmg < "app/dist/ONIRIQUE-CENTRAL.dmg"
+          ssh -i ~/.ssh/livraison -o IdentitiesOnly=yes -o BatchMode=yes livraison@217.160.106.244 central-mac-zip < "app/dist/ONIRIQUE-CENTRAL-mac.zip"

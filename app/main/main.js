@@ -1,6 +1,7 @@
 const { app, BrowserWindow, clipboard, dialog, ipcMain, shell } = require('electron');
 const { spawn } = require('node:child_process');
 const { autoUpdater } = require('electron-updater');
+const macUpdate = require('./mac-update');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -325,11 +326,18 @@ app.whenReady().then(() => {
 let updateReady = null;
 function startAutoUpdate() {
   if (!app.isPackaged) return; // en développement, il n'y a rien à mettre à jour
-  // Pas de mise à jour automatique sur Mac : macOS la refuse pour une application non signée.
-  if (process.platform === 'darwin') return;
   const logFile = path.join(app.getPath('userData'), 'update.log');
   const log = (text) => fs.appendFile(logFile, `${new Date().toISOString()} ${text}\n`, () => {});
   try { if (fs.statSync(logFile).size > 200_000) fs.rmSync(logFile); } catch { /* pas encore de journal */ }
+  const ready = (version) => {
+    updateReady = version;
+    win?.webContents.send('update:ready', version);
+  };
+  // Sur Mac, macOS refuse le mécanisme habituel pour une application non signée : elle se met à jour elle-même.
+  if (process.platform === 'darwin') {
+    log(`vérification (version installée ${app.getVersion()})`);
+    return macUpdate.start(app, log, ready);
+  }
 
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
@@ -339,8 +347,7 @@ function startAutoUpdate() {
   autoUpdater.on('error', (error) => log(`erreur : ${error.message}`));
   autoUpdater.on('update-downloaded', (info) => {
     log(`version ${info.version} téléchargée, installation à la fermeture`);
-    updateReady = info.version;
-    win?.webContents.send('update:ready', info.version);
+    ready(info.version);
   });
 
   const check = () => autoUpdater.checkForUpdates().catch((error) => log(`vérification impossible : ${error.message}`));
@@ -349,6 +356,10 @@ function startAutoUpdate() {
 }
 
 ipcMain.handle('update:state', () => updateReady);
-ipcMain.on('update:install', () => { if (updateReady) autoUpdater.quitAndInstall(true, true); });
+ipcMain.on('update:install', () => {
+  if (!updateReady) return;
+  if (process.platform === 'darwin') macUpdate.installNow(app);
+  else autoUpdater.quitAndInstall(true, true);
+});
 
 app.on('window-all-closed', () => app.quit());

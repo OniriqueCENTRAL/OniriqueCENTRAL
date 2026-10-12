@@ -4,11 +4,13 @@
 # dans ~livraison/.ssh/authorized_keys (restrict,command=…). Rien n'est mis en ligne ici : la publication
 # reste une étape à part.
 #   ssh livraison@serveur central-dmg < ONIRIQUE-CENTRAL.dmg
+#   ssh livraison@serveur central-mac-zip < ONIRIQUE-CENTRAL-mac.zip
 #   ssh livraison@serveur tuner-mac  < "ONIRIQUE TUNER.vst3.zip"
 set -eu
 
 case "${SSH_ORIGINAL_COMMAND:-}" in
   central-dmg) name="ONIRIQUE-CENTRAL.dmg" ;;
+  central-mac-zip) name="ONIRIQUE-CENTRAL-mac.zip" ;;
   tuner-mac)   name="ONIRIQUE TUNER.vst3.zip" ;;
   *) echo "livraison inconnue" >&2; exit 1 ;;
 esac
