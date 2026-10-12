@@ -56,6 +56,8 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 .side li::before { content: "✦ "; color: var(--ember-text); }
 .buy { display: flex; justify-content: center; width: 100%; padding: 15px 22px; border-radius: 999px; border: 0; background: var(--mist); color: var(--night); font: 600 15px/1 var(--f-body); cursor: pointer; box-shadow: 0 10px 40px -10px rgba(226,52,68,.6); }
 .buy:hover { box-shadow: 0 0 0 6px rgba(226,52,68,.18), 0 18px 50px -12px rgba(226,52,68,.8); }
+/* Un bouton qui ne peut pas servir le montre : éteint, sans halo, et son texte dit pourquoi. */
+.buy:disabled { background: transparent; color: var(--haze); border: 1px solid var(--line); box-shadow: none; cursor: default; }
 .buy.ghost { margin-top: 10px; background: transparent; color: var(--mist); border: 1px solid var(--line); box-shadow: none; }
 .buy.ghost:hover { border-color: var(--ember); box-shadow: none; }
 .note { margin: 14px 0 0; font-size: 13px; color: var(--haze); }
@@ -252,8 +254,17 @@ async function setupTrial(product) {
   }
   const owned = me && me.entitlements[product.id];
   if (owned) {
-    if (owned.via === "license") { $("buy").disabled = true; $("buy-note").textContent = owned.type === "trial" ? "Essai en cours sur ce compte." : "Vous possédez déjà ce plugin."; }
-    if (owned.via === "vip") { $("buy").disabled = true; $("buy-note").textContent = "Offert avec votre rôle : installez-le depuis Onirique Central."; }
+    // Rien à acheter : le bouton s'éteint et dit pourquoi, au lieu de rester un « Acheter » qui ne répond pas.
+    if (owned.via === "license") {
+      $("buy").disabled = true;
+      $("buy").textContent = owned.type === "trial" ? "Essai en cours" : "Déjà à vous";
+      $("buy-note").textContent = owned.type === "trial" ? "Essai en cours sur ce compte." : "Vous possédez déjà ce plugin : installez-le depuis Onirique Central.";
+    }
+    if (owned.via === "vip") {
+      $("buy").disabled = true;
+      $("buy").textContent = "Offert avec votre rôle";
+      $("buy-note").textContent = "Ce compte a tous les plugins : rien à acheter. Installez-le depuis Onirique Central. Pour essayer un achat, utilisez un compte client ordinaire.";
+    }
     return;
   }
   if (me && me.trialsUsed.includes(product.id)) { $("buy-note").textContent = "Essai déjà utilisé sur ce compte."; return; }
