@@ -15,10 +15,13 @@ import { promisify } from 'node:util';
 
 const run = promisify(execFile);
 
+// Le blanc du début (sous -60 dB, le seuil de la page « BPM et tonalité ») est retiré : le son démarre à zéro et
+// tombe sur la grille d'un DAW. Une source déjà dans le format demandé n'est pas réencodée, donc pas retouchée.
+const TRIM = '-af silenceremove=start_periods=1:start_threshold=-60dB:detection=peak';
 // yt-dlp sort du WAV en 16 bits : le codec est redonné à ffmpeg, qui retient le dernier.
 const FORMATS = {
-  mp3: ['--audio-format', 'mp3', '--audio-quality', '320K'],
-  wav: ['--audio-format', 'wav', '--postprocessor-args', 'ExtractAudio:-acodec pcm_s24le'],
+  mp3: ['--audio-format', 'mp3', '--audio-quality', '320K', '--postprocessor-args', `ExtractAudio:${TRIM}`],
+  wav: ['--audio-format', 'wav', '--postprocessor-args', `ExtractAudio:-acodec pcm_s24le ${TRIM}`],
 };
 export const MAX_MINUTES = 15;
 
