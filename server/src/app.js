@@ -14,7 +14,6 @@ import {
 import { mailEnabled, sendMail } from './mail.js';
 import { embedsLicenseKey, MISSING_LICENSE } from './plugincheck.js';
 import { popularity } from './popularity.js';
-import { checkedUrl, ingestAudio, MAX_MINUTES } from './ingest.js';
 import {
   activate, activeSubscription, createLicense, entitlement, generateKey, normalizeKey, pickPlan, pickPriceCents, pickPrices,
   publicKeyPem, publicKeyRaw, userActivations,
@@ -493,48 +492,6 @@ export function createApp() {
     }
     res.set({ 'Content-Type': 'application/octet-stream', 'Content-Length': version.size, 'X-Checksum-Sha256': version.sha256 });
     fs.createReadStream(path.join(config.filesDir, version.stored_as)).on('error', next).pipe(res);
-  });
-
-  //============================================================================
-  //  Outils : l'audio d'un lien, converti en MP3 320 ou en WAV 24 bits. La conversion rend un identifiant
-  //  imprévisible ; le fichier se télécharge avec lui pendant un quart d'heure, puis disparaît.
-  //============================================================================
-  const CONVERSION_TTL = 15 * 60_000;
-  const MAX_KEPT = 8; // fichiers gardés en même temps : un WAV de quinze minutes pèse 260 Mo
-  const ingestDir = path.join(config.dataDir, 'ingest');
-  fs.rmSync(ingestDir, { recursive: true, force: true }); // restes d'avant un redémarrage
-  const conversions = new Map();
-  let converting = false;
-
-  app.post('/api/tools/convert', requireVerified, wrap(async (req, res) => {
-    if (!process.env.AUDIO_INGEST_BIN) throw new HttpError(503, "Le convertisseur n'est pas encore ouvert.");
-    const format = req.body.format === 'wav' ? 'wav' : 'mp3';
-    const url = await checkedUrl(req.body.url).catch((error) => { throw new HttpError(400, error.message); });
-    rateLimit(`convert:${req.user.id}`, 10, 60 * 60_000);
-    if (converting || conversions.size >= MAX_KEPT) throw new HttpError(503, 'Le convertisseur est occupé. Réessayez dans une minute.');
-    converting = true;
-    try {
-      const { file, meta } = await ingestAudio(url, { format, dir: ingestDir, ttlMs: CONVERSION_TTL });
-      const id = crypto.randomBytes(16).toString('hex');
-      const name = `${String(meta.title || '').replace(/[<>:"/\\|?*\x00-\x1f]/g, '').trim().slice(0, 100) || 'audio'}.${format}`;
-      conversions.set(id, { file, name });
-      setTimeout(() => conversions.delete(id), CONVERSION_TTL).unref();
-      res.json({ id, name, title: meta.title, author: meta.author, duration: meta.duration });
-    } catch (error) {
-      console.error('Conversion audio :', String(error.stderr || error.message).slice(-400));
-      // Certains sites, YouTube en tête, ne répondent pas à un serveur : autant le dire que laisser chercher.
-      throw new HttpError(502, /not a bot|Sign in to confirm/i.test(error.stderr || '')
-        ? "Ce site refuse les demandes qui viennent d'un serveur (c'est le cas de YouTube) : son audio ne peut pas être récupéré ici."
-        : `Conversion impossible : lien non pris en charge, ou audio de plus de ${MAX_MINUTES} minutes.`);
-    } finally {
-      converting = false;
-    }
-  }));
-
-  app.get('/api/tools/file/:id', (req, res, next) => {
-    const conversion = conversions.get(req.params.id);
-    if (!conversion) throw new HttpError(404, 'Fichier expiré : relancez la conversion.');
-    res.download(conversion.file, conversion.name, (error) => error && !res.headersSent && next(new HttpError(404, 'Fichier expiré : relancez la conversion.')));
   });
 
   //============================================================================

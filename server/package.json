@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node src/index.js",
     "seed": "node src/seed.js",
-    "test": "node test/ingest.mjs && node test/smoke.mjs && node test/roles.mjs && node test/new-features.mjs && node test/new-features.mjs migration && node test/new-features.mjs nomail"
+    "test": "node test/smoke.mjs && node test/roles.mjs && node test/new-features.mjs && node test/new-features.mjs migration && node test/new-features.mjs nomail"
   },
   "dependencies": {
     "express": "^4.21.2",
