@@ -280,8 +280,8 @@ function show(me) {
   $("admin-link").hidden = !role || me.user.role === "vip";
   $("verify-panel").hidden = me.user.emailVerified !== false;
   $("verify-email").textContent = me.user.email;
-  // Shorts YouTube : l'équipe et les partenaires. Chargé une fois par compte, pour ne pas effacer une saisie en cours.
-  $("youtube").hidden = me.user.selfLicenses === null;
+  // Shorts YouTube : les fondateurs seulement. Chargé une fois par compte, pour ne pas effacer une saisie en cours.
+  $("youtube").hidden = me.user.role !== "founder";
   if (!$("youtube").hidden && show.youtube !== me.user.id) {
     show.youtube = me.user.id;
     loadYoutube().then(() => {

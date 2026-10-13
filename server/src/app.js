@@ -366,10 +366,10 @@ export function createApp() {
   });
 
   //============================================================================
-  //  Shorts YouTube programmés (page compte) : l'équipe et les partenaires
+  //  Shorts YouTube programmés (page compte) : les fondateurs seulement
   //============================================================================
   const team = (req, res, next) => requireUser(req, res, (error) => next(error
-    || (canSelfLicense(req.user) ? undefined : new HttpError(403, "Réservé à l'équipe et aux partenaires."))));
+    || (req.user.role === 'founder' ? undefined : new HttpError(403, 'Réservé aux fondateurs.'))));
   const ownVideo = (req) => {
     const video = get('SELECT * FROM youtube_videos WHERE id = ? AND user_id = ?', int(req.params.id, 0), req.user.id);
     if (!video) throw new HttpError(404, 'Vidéo introuvable.');

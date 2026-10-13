@@ -51,7 +51,8 @@ async function account(name, role) {
 
 try {
   const client = await account('client', 'user');
-  const staff = await account('equipe', 'admin');
+  const staff = await account('equipe', 'founder');
+  await call('GET', '/api/youtube', { token: await account('admin', 'admin'), expect: 403 });
   await call('GET', '/api/youtube', { token: client, expect: 403 });
   assert.deepEqual(await call('GET', '/api/youtube', { token: staff }), { configured: true, channel: null, videos: [], descriptions: [] });
 
