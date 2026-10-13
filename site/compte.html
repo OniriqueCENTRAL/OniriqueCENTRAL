@@ -76,6 +76,19 @@ label.check input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; padd
 .photo p { margin: 8px 0 0; font-size: 13px; }
 .panel { scroll-margin-top: 20px; }
 .between { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; }
+/* Shorts YouTube programmés : une carte par vidéo */
+textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 15px/1.5 var(--f-body); resize: vertical; }
+.btn svg { flex: none; width: 20px; height: 14px; }
+.shorts { display: grid; gap: 14px; margin-top: 20px; }
+.shorts:empty { display: none; }
+.short { max-width: none; padding: 18px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.025); }
+.short.failed { border-color: rgba(255,122,133,.55); }
+.short h2 { word-break: break-word; }
+.short .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 14px; }
+.short .wide { grid-column: 1 / -1; }
+.chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
+.chip { max-width: min(100%, 34ch); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: none; color: var(--haze); font: 400 13px/1.2 var(--f-body); cursor: pointer; }
+.chip:hover { border-color: var(--ember); color: var(--mist); }
 [hidden] { display: none !important; }
 </style>
 
@@ -181,6 +194,22 @@ label.check input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; padd
       <div class="eyebrow">Vos licences</div>
       <div class="rows" id="licenses"></div>
     </div>
+
+    <div class="panel" id="youtube" hidden>
+      <div class="eyebrow">Shorts YouTube</div>
+      <div class="between">
+        <p class="muted" id="yt-text" style="margin:0;max-width:50ch"></p>
+        <div class="between">
+          <span class="pill on" id="yt-channel" hidden></span>
+          <button class="btn btn-primary" id="yt-connect" type="button" hidden><svg viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" rx="4" fill="#D12A3A"/><path d="M8 4l5 3-5 3z" fill="#fff"/></svg>Se connecter avec YouTube</button>
+          <button class="btn btn-primary" id="yt-add" type="button" hidden>Ajouter des vidéos</button>
+          <input id="yt-files" type="file" accept="video/mp4,video/quicktime,video/webm" multiple aria-label="Vidéos à programmer" hidden>
+          <button class="link" id="yt-disconnect" type="button" hidden>Déconnecter</button>
+        </div>
+      </div>
+      <div class="notice" id="yt-notice" role="status" style="margin-top:12px"></div>
+      <div class="shorts" id="yt-videos"></div>
+    </div>
   </section>
 
   <p class="muted" id="loading">Chargement…</p>
@@ -199,6 +228,9 @@ const forget = () => { sessionStorage.removeItem(TOKEN); localStorage.removeItem
 let mode = "login"; // login | register | forgot | reset
 const resetToken = new URLSearchParams(location.search).get("reset");
 const verifyToken = new URLSearchParams(location.search).get("verify");
+// Retour de Google après « Se connecter avec YouTube » : "ok", ou la raison du refus. La page s'ouvre sur ce bloc.
+const youtubeResult = new URLSearchParams(location.search).get("youtube");
+if (youtubeResult) history.replaceState(null, "", location.pathname + "#youtube");
 
 async function api(method, path, body) {
   const token = saved();
@@ -248,6 +280,14 @@ function show(me) {
   $("admin-link").hidden = !role || me.user.role === "vip";
   $("verify-panel").hidden = me.user.emailVerified !== false;
   $("verify-email").textContent = me.user.email;
+  // Shorts YouTube : l'équipe et les partenaires. Chargé une fois par compte, pour ne pas effacer une saisie en cours.
+  $("youtube").hidden = me.user.selfLicenses === null;
+  if (!$("youtube").hidden && show.youtube !== me.user.id) {
+    show.youtube = me.user.id;
+    loadYoutube().then(() => {
+      if (youtubeResult) say("yt-notice", youtubeResult === "ok" ? "Chaîne reliée." : youtubeResult, youtubeResult !== "ok");
+    });
+  }
 
   const rows = [];
   if (me.subscription?.status === "active") {
@@ -408,6 +448,171 @@ $("password-form").onsubmit = async (event) => {
   } catch (error) {
     say("password-notice", error.message, true);
   }
+};
+
+// Shorts YouTube programmés. Les vidéos attendent sur le serveur ; chacune sort au jour et à l'heure de sa carte.
+const STATES = { draft: "À programmer", scheduled: "Programmée", uploading: "Publication en cours", published: "Publiée", failed: "Échec" };
+const moment = (ms) => new Date(ms).toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+const localInput = (ms) => new Date(ms - new Date(ms).getTimezoneOffset() * 60000).toISOString().slice(0, 16); // la valeur d'un champ date et heure
+let suggestions = []; // les descriptions déjà utilisées, proposées sous chaque carte
+let slot = 0;
+// La date proposée à une vidéo sans date : le lendemain de la dernière programmée, à 18 h. Elle se change librement.
+function nextSlot() {
+  const day = new Date(Math.max(slot, Date.now()));
+  day.setDate(day.getDate() + 1);
+  day.setHours(18, 0, 0, 0);
+  return (slot = day.getTime());
+}
+
+function field(label, control, className) {
+  const wrap = el("label", className, label);
+  wrap.append(control);
+  return wrap;
+}
+
+function shortCard(video) {
+  const size = (video.size / 1048576).toFixed(1).replace(".", ",") + " Mo";
+  const remove = el("button", "link", video.status === "published" ? "Retirer de la liste" : "Retirer");
+  remove.type = "button";
+  const head = el("div", "between");
+  const name = el("div");
+  head.append(name, el("span", "pill" + (video.status === "scheduled" || video.status === "published" ? " on" : ""), STATES[video.status]));
+
+  // Publiée ou en cours : plus rien à régler, une simple ligne.
+  if (video.status === "published" || video.status === "uploading") {
+    const card = el("div", "short");
+    name.append(el("h2", "", video.title), el("div", "muted", moment(video.publishAt)));
+    card.append(head);
+    if (video.url) {
+      const actions = el("div", "between");
+      const link = el("a", "btn btn-ghost", "Voir sur YouTube");
+      Object.assign(link, { href: video.url, target: "_blank", rel: "noopener" });
+      actions.append(link, remove);
+      actions.style.marginTop = "14px";
+      card.append(actions);
+      remove.onclick = () => api("DELETE", "/youtube/videos/" + video.id).then(() => card.remove(), (error) => say("yt-notice", error.message, true));
+    }
+    return card;
+  }
+
+  const card = el("form", "short" + (video.status === "failed" ? " failed" : ""));
+  name.append(el("h2", "", video.filename), el("div", "muted", video.status === "scheduled" ? size + " · sort " + moment(video.publishAt) : size));
+  const title = Object.assign(el("input"), { value: video.title, maxLength: 100, required: true });
+  const text = Object.assign(el("textarea"), { value: video.description, maxLength: 5000 });
+  const when = Object.assign(el("input"), { type: "datetime-local", required: true, min: localInput(Date.now()), value: localInput(video.publishAt || nextSlot()) });
+  const fields = el("div", "fields");
+  fields.append(field("Titre", title), field("Jour et heure de sortie", when), field("Description", text, "wide"));
+  card.append(head, fields);
+  if (suggestions.length) {
+    const chips = el("div", "chips");
+    chips.append(el("span", "muted", "Reprendre une description :"));
+    for (const description of suggestions) {
+      const chip = el("button", "chip", description.replace(/\s+/g, " "));
+      Object.assign(chip, { type: "button", title: description });
+      chip.onclick = () => { text.value = description; };
+      chips.append(chip);
+    }
+    card.append(chips);
+  }
+  const notice = el("div", "error", video.error);
+  notice.setAttribute("role", "alert");
+  const save = el("button", "btn btn-primary", video.status === "scheduled" ? "Enregistrer" : "Programmer");
+  const actions = el("div", "between");
+  actions.append(save, remove);
+  card.append(notice, actions);
+
+  // Seule cette carte est redessinée : ce qui est en cours de saisie dans les autres reste en place.
+  card.onsubmit = async (event) => {
+    event.preventDefault();
+    save.disabled = true;
+    try {
+      const description = text.value.trim();
+      const updated = await api("PATCH", "/youtube/videos/" + video.id, { title: title.value.trim(), description, publishAt: new Date(when.value).getTime() });
+      if (description && !suggestions.includes(description)) suggestions.unshift(description);
+      card.replaceWith(shortCard(updated));
+    } catch (error) {
+      notice.textContent = error.message;
+      save.disabled = false;
+    }
+  };
+  remove.onclick = async () => {
+    if (!confirm("Retirer « " + video.filename + " » ? La vidéo ne sera pas publiée.")) return;
+    try {
+      await api("DELETE", "/youtube/videos/" + video.id);
+      card.remove();
+    } catch (error) {
+      notice.textContent = error.message;
+    }
+  };
+  return card;
+}
+
+async function loadYoutube() {
+  try {
+    const state = await api("GET", "/youtube");
+    const on = !!state.channel;
+    $("yt-text").textContent = !state.configured ? "La connexion à YouTube n'est pas encore réglée sur le serveur."
+      : on ? "Ajoutez vos vidéos : elles sont gardées ici, et chacune sort sur votre chaîne au jour et à l'heure que vous lui donnez."
+        : "Reliez votre chaîne pour programmer vos Shorts : vous déposez les vidéos ici, et chacune sort au jour et à l'heure choisis.";
+    $("yt-connect").hidden = on || !state.configured;
+    $("yt-add").hidden = $("yt-disconnect").hidden = $("yt-channel").hidden = !on;
+    $("yt-channel").textContent = state.channel || "";
+    suggestions = state.descriptions;
+    slot = Math.max(0, ...state.videos.filter((video) => video.status === "scheduled").map((video) => video.publishAt));
+    $("yt-videos").replaceChildren(...state.videos.map(shortCard));
+    say("yt-notice", "");
+  } catch (error) {
+    say("yt-notice", error.message, true);
+  }
+}
+
+$("yt-connect").onclick = async () => {
+  try {
+    location.href = (await api("POST", "/youtube/connect")).url;
+  } catch (error) {
+    say("yt-notice", error.message, true);
+  }
+};
+$("yt-disconnect").onclick = async () => {
+  if (!confirm("Déconnecter la chaîne ? Les vidéos programmées ne sortiront plus tant qu'elle n'est pas reliée de nouveau.")) return;
+  await api("DELETE", "/youtube/account").catch(() => {});
+  loadYoutube();
+};
+
+// Les vidéos partent une à une, avec leur avancement ; chacune arrive en tête de liste, prête à être programmée.
+$("yt-add").onclick = () => $("yt-files").click();
+$("yt-files").onchange = async (event) => {
+  const files = [...event.target.files];
+  event.target.value = "";
+  $("yt-add").disabled = true;
+  let done = 0;
+  for (const file of files) {
+    const label = file.name + " (" + (done + 1) + " sur " + files.length + ")";
+    try {
+      const video = await new Promise((resolve, reject) => {
+        const request = new XMLHttpRequest();
+        request.open("POST", "/api/youtube/videos?filename=" + encodeURIComponent(file.name));
+        request.setRequestHeader("Authorization", "Bearer " + saved());
+        request.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+        request.upload.onprogress = (progress) => say("yt-notice", "Envoi de " + label + " : " + Math.round(progress.loaded / progress.total * 100) + " %");
+        request.onerror = () => reject(new Error("envoi interrompu, réessayez."));
+        request.onload = () => {
+          let data = {};
+          try { data = JSON.parse(request.responseText); } catch { /* réponse qui n'est pas du serveur */ }
+          if (request.status === 201) resolve(data);
+          else reject(new Error(data.error || (request.status === 413 ? "fichier trop volumineux." : "erreur " + request.status)));
+        };
+        request.send(file);
+      });
+      $("yt-videos").prepend(shortCard(video));
+      done++;
+    } catch (error) {
+      say("yt-notice", file.name + " : " + error.message, true);
+      break;
+    }
+  }
+  if (done === files.length) say("yt-notice", done > 1 ? done + " vidéos ajoutées. Donnez à chacune son titre, sa description et son heure." : "Vidéo ajoutée. Donnez-lui son titre, sa description et son heure.");
+  $("yt-add").disabled = false;
 };
 
 $("logout").onclick = async () => {

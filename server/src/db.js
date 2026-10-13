@@ -236,6 +236,33 @@ db.exec(`CREATE TABLE IF NOT EXISTS stripe_accounts (
   updated_at     INTEGER NOT NULL
 )`);
 
+// Shorts YouTube programmés depuis la page compte (youtube.js) : la chaîne reliée à un compte, son accès chiffré,
+// et les vidéos qui attendent. Statuts : draft (sans date), scheduled, uploading, published, failed.
+db.exec(`
+CREATE TABLE IF NOT EXISTS youtube_accounts (
+  user_id       INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  refresh_token TEXT NOT NULL,
+  channel_id    TEXT NOT NULL,
+  channel_title TEXT NOT NULL,
+  uploads       TEXT NOT NULL,
+  created_at    INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS youtube_videos (
+  id          INTEGER PRIMARY KEY,
+  user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  stored_as   TEXT NOT NULL,
+  filename    TEXT NOT NULL,
+  mime        TEXT NOT NULL,
+  size        INTEGER NOT NULL,
+  title       TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  publish_at  INTEGER,
+  status      TEXT NOT NULL DEFAULT 'draft',
+  youtube_id  TEXT,
+  error       TEXT NOT NULL DEFAULT '',
+  created_at  INTEGER NOT NULL
+);
+`);
 
 // L'image d'un plugin choisie à la main n'est plus remplacée par l'aperçu automatique ; une démo retirée à la main
 // n'est pas refabriquée toute seule.

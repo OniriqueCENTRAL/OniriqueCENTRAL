@@ -22,6 +22,7 @@ import {
   cancelSubscription, checkout, connectStripe, disconnectStripe, handleLemonEvent, handleStripeEvent, paymentsMode, sellers,
   stripeAccount, stripeAccountView, verifyLemonSignature, verifyStripeSignature,
 } from './payments.js';
+import { connectUrl, disconnect, finishConnect, videoFile, videoView, youtubeConfigured, youtubeState } from './youtube.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 const str = (value, max = 200) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
@@ -361,6 +362,77 @@ export function createApp() {
   app.delete('/api/me/avatar', requireUser, (req, res) => {
     if (req.user.avatar) fs.rmSync(path.join(config.mediaDir, req.user.avatar), { force: true });
     run('UPDATE users SET avatar = NULL WHERE id = ?', req.user.id);
+    res.json({ ok: true });
+  });
+
+  //============================================================================
+  //  Shorts YouTube programmés (page compte) : l'équipe et les partenaires
+  //============================================================================
+  const team = (req, res, next) => requireUser(req, res, (error) => next(error
+    || (canSelfLicense(req.user) ? undefined : new HttpError(403, "Réservé à l'équipe et aux partenaires."))));
+  const ownVideo = (req) => {
+    const video = get('SELECT * FROM youtube_videos WHERE id = ? AND user_id = ?', int(req.params.id, 0), req.user.id);
+    if (!video) throw new HttpError(404, 'Vidéo introuvable.');
+    if (video.status === 'uploading') throw new HttpError(409, 'Cette vidéo est en cours de publication.');
+    return video;
+  };
+
+  app.get('/api/youtube', team, wrap(async (req, res) => res.json(await youtubeState(req.user.id))));
+
+  app.post('/api/youtube/connect', team, (req, res) => {
+    if (!youtubeConfigured()) throw new HttpError(503, "La connexion à YouTube n'est pas encore réglée sur le serveur.");
+    res.json({ url: connectUrl(req.user.id) });
+  });
+
+  // Retour de Google, sans session : la demande en cours (state) dit de quel compte il s'agit.
+  app.get('/api/youtube/callback', wrap(async (req, res) => {
+    let result = 'ok';
+    try { await finishConnect(str(req.query.state), str(req.query.code, 2000)); } catch (error) { result = error.message; }
+    res.redirect(`${config.siteUrl}/compte?youtube=${encodeURIComponent(result)}`);
+  }));
+
+  app.delete('/api/youtube/account', team, wrap(async (req, res) => {
+    await disconnect(req.user.id);
+    res.json({ ok: true });
+  }));
+
+  // Une vidéo en corps brut de la requête (MP4, MOV ou WebM, 512 Mo au plus) : elle attend ici, sans date.
+  app.post('/api/youtube/videos', team, wrap(async (req, res) => {
+    const mime = ['video/mp4', 'video/quicktime', 'video/webm'].find((type) => type === req.headers['content-type']);
+    if (!mime) throw new HttpError(400, 'Vidéo attendue : MP4, MOV ou WebM.');
+    const filename = safeFilename(req.query.filename);
+    if (get(`SELECT COUNT(*) AS n FROM youtube_videos WHERE user_id = ? AND status != 'published'`, req.user.id).n >= 30) {
+      throw new HttpError(400, "Trente vidéos attendent déjà : publiez-en ou retirez-en avant d'en ajouter.");
+    }
+    const file = await receiveFile(req, config.videosDir, 512 * 1024 * 1024);
+    const { lastInsertRowid } = run(
+      'INSERT INTO youtube_videos (user_id, stored_as, filename, mime, size, title, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      req.user.id, file.storedAs, filename, mime, file.size, filename.replace(/\.[^.]+$/, '').slice(0, 100), now());
+    res.status(201).json(videoView(get('SELECT * FROM youtube_videos WHERE id = ?', lastInsertRowid)));
+  }));
+
+  // Titre, description et heure de sortie. publishAt (millisecondes) programme la vidéo ; null la remet en attente.
+  app.patch('/api/youtube/videos/:id', team, (req, res) => {
+    const video = ownVideo(req);
+    if (video.status === 'published') throw new HttpError(409, 'Cette vidéo est déjà publiée.');
+    const title = str(req.body.title, 100);
+    if (!title || /[<>]/.test(title)) throw new HttpError(400, 'Titre attendu, sans < ni >.');
+    const description = typeof req.body.description === 'string' ? req.body.description.trim().slice(0, 5000) : '';
+    if (/[<>]/.test(description)) throw new HttpError(400, 'YouTube refuse < et > dans une description.');
+    const publishAt = req.body.publishAt === null ? null : int(req.body.publishAt);
+    if (publishAt !== null && !(publishAt > now() - 60_000 && publishAt < now() + 366 * 86_400_000)) {
+      throw new HttpError(400, "Choisissez une date à venir, dans l'année.");
+    }
+    run(`UPDATE youtube_videos SET title = ?, description = ?, publish_at = ?, status = ?, error = '' WHERE id = ?`,
+      title, description, publishAt, publishAt === null ? 'draft' : 'scheduled', video.id);
+    res.json(videoView(get('SELECT * FROM youtube_videos WHERE id = ?', video.id)));
+  });
+
+  // Retire la vidéo d'ici. Une vidéo déjà publiée reste sur YouTube : seule sa ligne disparaît.
+  app.delete('/api/youtube/videos/:id', team, (req, res) => {
+    const video = ownVideo(req);
+    fs.rmSync(videoFile(video), { force: true });
+    run('DELETE FROM youtube_videos WHERE id = ?', video.id);
     res.json({ ok: true });
   });
 

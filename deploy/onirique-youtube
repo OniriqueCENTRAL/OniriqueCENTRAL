@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Règle la connexion à YouTube de la page compte (Shorts programmés). À lancer sur le VPS, en root :
+#   onirique-youtube        demande l'identifiant et le secret du client OAuth
+#   onirique-youtube off    retire le réglage (les chaînes déjà reliées ne publient plus)
+# Le secret est saisi ici, sans s'afficher, et ne quitte pas le serveur.
+#
+# À faire avant, dans la console Google Cloud (console.cloud.google.com) :
+#   1. Créer un projet, puis activer « YouTube Data API v3 ».
+#   2. Écran de consentement OAuth : type Externe, puis le PUBLIER (en mode test, l'accès tombe au bout de 7 jours).
+#   3. Identifiants > Créer un ID client OAuth > Application Web, avec l'URI de redirection affichée ci-dessous.
+# Tant que le projet n'a pas passé l'audit de conformité de l'API YouTube, YouTube garde en PRIVÉ les vidéos
+# envoyées par lui : demander l'audit (formulaire « YouTube API Services - Audit and Quota Extension »).
+set -euo pipefail
+
+ENVFILE=/opt/onirique-central/server/.env
+stop() { echo "$1" >&2; exit 1; }
+
+if [ "${1:-}" != off ]; then
+  PUBLIC=$(grep -E '^PUBLIC_URL=' "$ENVFILE" | cut -d= -f2- | tr -d "'\"" | sed 's:/*$::')
+  [ -n "$PUBLIC" ] || stop "PUBLIC_URL manque dans $ENVFILE."
+  echo "URI de redirection à déclarer chez Google : $PUBLIC/api/youtube/callback"
+  read -rp "ID client OAuth (…apps.googleusercontent.com) : " ID
+  read -rsp "Secret du client (rien ne s'affiche) : " SECRET; echo
+  case "$ID" in *.apps.googleusercontent.com) ;; *) stop "Ce n'est pas un ID client Google. Rien n'est changé." ;; esac
+  case "$ID$SECRET" in *"'"*|*" "*) stop "Valeur mal copiée (espace ou apostrophe). Rien n'est changé." ;; esac
+  [ -n "$SECRET" ] || stop "Secret vide. Rien n'est changé."
+fi
+
+sed -i '/^GOOGLE_CLIENT_ID=/d; /^GOOGLE_CLIENT_SECRET=/d' "$ENVFILE"
+[ "${1:-}" = off ] || printf "GOOGLE_CLIENT_ID='%s'\nGOOGLE_CLIENT_SECRET='%s'\n" "$ID" "$SECRET" >> "$ENVFILE"
+chown central:central "$ENVFILE"; chmod 600 "$ENVFILE"
+systemctl restart onirique-central
+sleep 3
+systemctl is-active -q onirique-central || stop "Le serveur n'a pas redémarré : journalctl -u onirique-central"
+if [ "${1:-}" = off ]; then echo "Connexion à YouTube retirée."; else echo "C'est bon : le bouton « Se connecter avec YouTube » de la page compte est actif."; fi

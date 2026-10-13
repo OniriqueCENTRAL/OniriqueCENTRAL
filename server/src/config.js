@@ -26,6 +26,11 @@ export const config = {
   filesDir: path.join(dataDir, 'files'),
   mediaDir: path.join(dataDir, 'media'),
   keysDir: path.join(dataDir, 'keys'),
+  // Les vidéos qui attendent leur heure de publication sur YouTube.
+  videosDir: path.join(dataDir, 'videos'),
+  // Connexion des chaînes YouTube (page compte) : l'identifiant OAuth du projet Google, réglé par onirique-youtube.
+  googleClientId: env.GOOGLE_CLIENT_ID || '',
+  googleClientSecret: env.GOOGLE_CLIENT_SECRET || '',
   adminEmail: env.ADMIN_EMAIL || '',
   // Les fondateurs : ces adresses, une fois validées, portent toujours le rôle le plus élevé.
   founderEmails: (env.FOUNDER_EMAILS ?? 'contacteuhz@gmail.com,nueveprocontact@gmail.com').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean),
@@ -67,6 +72,6 @@ export const config = {
   sessionDays: 60,
 };
 
-for (const dir of [config.dataDir, config.filesDir, config.mediaDir, config.keysDir]) {
+for (const dir of [config.dataDir, config.filesDir, config.mediaDir, config.keysDir, config.videosDir]) {
   fs.mkdirSync(dir, { recursive: true });
 }
