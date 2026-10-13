@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Audio d'un lien en MP3 320 ou en WAV 24 bits — ONIRIQUE</title>
+<meta name="description" content="Colle le lien d'un audio : récupère le son en MP3 320 kbit/s ou en WAV 24 bits. Gratuit, avec un compte Onirique.">
+<link rel="canonical" href="https://onirique.store/lien-audio">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css">
+<link rel="stylesheet" href="assets/tools.css">
+<style>
+.opt { display: grid; gap: 8px; }
+.done h2 { margin: 0 0 6px; overflow-wrap: anywhere; }
+</style>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="outils.html" data-tools>Outils</a><a class="btn" href="compte.html" data-account>Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <section class="hero">
+    <p class="eyebrow">Outil gratuit · avec un compte</p>
+    <h1>L'audio d'un <em>lien</em></h1>
+    <p class="lede">Colle le lien d'un audio ou d'une vidéo, choisis le format, télécharge le son : un MP3 320 pour l'envoyer, un WAV 24 bits pour le poser dans ton projet.</p>
+    <p class="hint" id="login" hidden>Cet outil demande un compte Onirique, gratuit, dont l'adresse e-mail est validée. <a href="compte.html">Se connecter ou créer un compte</a>.</p>
+  </section>
+
+  <form class="card" id="form" novalidate>
+    <label>Lien<input id="url" required maxlength="2048" placeholder="https://" autocomplete="off" inputmode="url"></label>
+    <div class="opt">
+      <span class="label">Format</span>
+      <div><div class="chips" id="format"><button type="button" data-v="mp3" aria-pressed="true">MP3 320</button><button type="button" data-v="wav" aria-pressed="false">WAV 24 bits</button></div></div>
+    </div>
+    <div class="dim split">
+      <p class="muted">Quinze minutes d'audio au plus. Ne convertis que des sons qui t'appartiennent ou dont la licence le permet.</p>
+      <button class="go" id="go" type="submit">Convertir</button>
+    </div>
+  </form>
+  <p class="error" id="error" role="alert"></p>
+
+  <article class="card done" id="done" role="status" hidden>
+    <div>
+      <h2 id="done-title"></h2>
+      <p id="done-meta"></p>
+    </div>
+    <div class="dim split">
+      <p class="muted">Le fichier reste disponible quinze minutes, puis il est supprimé du serveur.</p>
+      <a class="go" id="done-link" href="#">Télécharger</a>
+    </div>
+  </article>
+
+  <section class="text">
+    <h2>Questions fréquentes</h2>
+    <details><summary>Le WAV 24 bits sonne-t-il mieux que le MP3 ?</summary>
+      <p>Seulement si la source n'est pas compressée. Tiré d'un lien dont le son l'est déjà, le WAV contient exactement ce que contient la source : il sert à travailler dans un projet sans compresser une seconde fois, pas à gagner en qualité.</p></details>
+    <details><summary>Pourquoi faut-il un compte ?</summary>
+      <p>Contrairement aux autres outils, la conversion ne se fait pas dans ton navigateur mais sur le serveur. Le compte, gratuit, évite les abus.</p></details>
+    <details><summary>J'ai déjà le fichier, que faire ?</summary>
+      <p>Utilise le <a href="convertisseur.html">convertisseur</a> : il travaille dans ton navigateur, sans compte et sans envoi du fichier.</p></details>
+  </section>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="outils.html">Tous les outils</a><a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a>
+  </nav>
+</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const token = sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token");
+let format = "mp3";
+$("login").hidden = Boolean(token);
+
+$("format").onclick = (event) => {
+  const chosen = event.target.closest("button");
+  if (!chosen) return;
+  format = chosen.dataset.v;
+  for (const button of $("format").children) button.setAttribute("aria-pressed", String(button === chosen));
+};
+
+$("form").onsubmit = async (event) => {
+  event.preventDefault();
+  $("error").textContent = "";
+  $("done").hidden = true;
+  if (!token) { $("error").textContent = "Connecte-toi pour convertir."; return; }
+  if (!$("form").checkValidity()) { $("form").reportValidity(); return; }
+  const asked = format;
+  $("go").disabled = true;
+  $("go").textContent = "Conversion en cours…";
+  try {
+    const response = await fetch("/api/tools/convert", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+      body: JSON.stringify({ url: $("url").value.trim(), format: asked }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Conversion impossible. Réessaie dans un instant.");
+    const minutes = data.duration ? Math.floor(data.duration / 60) + " min " + String(Math.round(data.duration % 60)).padStart(2, "0") : "";
+    $("done-title").textContent = data.title || data.name;
+    $("done-meta").textContent = [data.author, minutes, asked === "wav" ? "WAV 24 bits" : "MP3 320 kbit/s"].filter(Boolean).join(" · ");
+    $("done-link").href = "/api/tools/file/" + data.id;
+    $("done").hidden = false;
+  } catch (error) {
+    $("error").textContent = error.message === "Failed to fetch" ? "Serveur injoignable. Réessaie dans un instant." : error.message;
+  }
+  $("go").disabled = false;
+  $("go").textContent = "Convertir";
+};
+</script>
+<script src="assets/tools-menu.js"></script>
+<script src="assets/account.js"></script>
+</html>

@@ -19,6 +19,7 @@ window.OniriqueTools = [
   ]],
   ["Fichiers", [
     ["Convertisseur", "convertisseur.html", "WAV ou MP3, avec le choix de la fréquence et de la résolution."],
+    ["Audio d'un lien", "lien-audio.html", "Le son d'un lien, en MP3 320 ou en WAV 24 bits. Avec un compte."],
     ["Découpe et fondu", "decoupe.html", "Garder un passage, ajouter un fondu, exporter."],
     ["Transposer", "transposition.html", "Changer la hauteur ou le tempo d'un morceau, l'un sans l'autre."],
   ]],
