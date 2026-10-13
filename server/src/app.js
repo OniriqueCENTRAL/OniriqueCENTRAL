@@ -522,7 +522,10 @@ export function createApp() {
       res.json({ id, name, title: meta.title, author: meta.author, duration: meta.duration });
     } catch (error) {
       console.error('Conversion audio :', String(error.stderr || error.message).slice(-400));
-      throw new HttpError(502, `Conversion impossible : lien non pris en charge, ou audio de plus de ${MAX_MINUTES} minutes.`);
+      // Certains sites, YouTube en tête, ne répondent pas à un serveur : autant le dire que laisser chercher.
+      throw new HttpError(502, /not a bot|Sign in to confirm/i.test(error.stderr || '')
+        ? "Ce site refuse les demandes qui viennent d'un serveur (c'est le cas de YouTube) : son audio ne peut pas être récupéré ici."
+        : `Conversion impossible : lien non pris en charge, ou audio de plus de ${MAX_MINUTES} minutes.`);
     } finally {
       converting = false;
     }
