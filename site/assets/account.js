@@ -63,6 +63,7 @@ ${spark(1)}${spark(2)}${spark(3)}
 .acct-menu a, .acct-menu button { display: block; width: 100%; padding: 11px 12px; border: 0; border-radius: 10px; background: none; color: var(--mist, #f6eeee); font: 500 14px/1.2 var(--f-body, system-ui, sans-serif); text-align: left; text-decoration: none; cursor: pointer; }
 .acct-menu a:hover, .acct-menu button:hover, .acct-menu a:focus-visible, .acct-menu button:focus-visible { background: rgba(226,52,68,.16); color: var(--mist, #f6eeee); outline: none; }
 .acct-menu hr { margin: 6px 4px; border: 0; border-top: 1px solid var(--line, rgba(255,210,214,.16)); }
+.acct-menu h6 { margin: 0; padding: 8px 12px 4px; font: 500 10px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .14em; text-transform: uppercase; color: var(--haze, #a88f92); }
 .acct-menu .acct-out { color: #ff8f99; }
 ` });
 
@@ -104,6 +105,8 @@ ${spark(1)}${spark(2)}${spark(3)}
       download,
       item("Support", "support.html"),
       ROLES[user.role] && user.role !== "vip" ? item("Administration", "admin.html") : null,
+      // Réservé aux fondateurs : les Shorts YouTube programmés, sur la page compte.
+      ...(user.role === "founder" ? [el("hr"), el("h6", { textContent: "Fondateurs" }), item("Shorts YouTube", "compte.html#youtube")] : []),
       el("hr"),
       out);
     menu.setAttribute("role", "menu");
