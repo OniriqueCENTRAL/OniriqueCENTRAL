@@ -107,25 +107,23 @@ function productView(p, platform) {
   };
 }
 
-// Les catégories de la boutique et de l'application. Un plugin peut être dans plusieurs.
+// Les catégories de la boutique et de l'application : chacune a son usage, et un plugin est dans une seule.
+// Beatmaking : créer le son (synthés, effets de production). Mix : traiter les pistes, voix comprises. Mastering :
+// la finition du morceau. Mesure : les compteurs. Applications : les programmes hors DAW (.exe).
 export const CATEGORIES = [
-  ['beat', 'Beatmaking'], ['voice', 'Voix'], ['mix', 'Mix'], ['master', 'Mastering'], ['meter', 'Mesure'], ['app', 'Applications'],
+  ['beat', 'Beatmaking'], ['mix', 'Mix'], ['master', 'Mastering'], ['meter', 'Mesure'], ['app', 'Applications'],
 ];
 const CATEGORY_IDS = CATEGORIES.map(([id]) => id);
 
-/** Les catégories d'un plugin : celles choisies dans le panel admin, sinon devinées à partir de son fichier et de ses textes. */
+/** La catégorie d'un plugin (dans un tableau, pour les pages) : celle choisie dans le panel, sinon devinée. */
 export function categoryOf(p, latestFilename = '') {
-  const chosen = String(p.category || '').split(',').filter((id) => CATEGORY_IDS.includes(id));
-  if (chosen.length) return chosen;
+  if (CATEGORY_IDS.includes(p.category)) return [p.category];
   const text = `${p.name} ${p.tagline} ${p.description}`.toLowerCase();
-  const found = [];
-  if (/\.(exe|msi)$/i.test(latestFilename)) found.push('app');
-  if (/synth|wavetable|beat|drum|808|sampler|groove|lofi/.test(text)) found.push('beat');
-  if (/voix|vocal|chant|pitch/.test(text)) found.push('voice');
-  if (/master|limit/.test(text)) found.push('master');
-  if (/meter|compteur|loudness|lufs|analy/.test(text)) found.push('meter');
-  if (!found.length || /mix|eq|compress|r[ée]sonance|channel/.test(text)) found.push('mix');
-  return [...new Set(found)];
+  if (/\.(exe|msi)$/i.test(latestFilename)) return ['app'];
+  if (/meter|compteur|loudness|lufs|analy/.test(text)) return ['meter'];
+  if (/master|limit/.test(text)) return ['master'];
+  if (/synth|wavetable|beat|drum|808|sampler|groove|flanger|chorus/.test(text)) return ['beat'];
+  return ['mix'];
 }
 
 const planView = (p) => ({ id: p.id, name: p.name, interval: p.interval, priceCents: p.price_cents, active: !!p.active, kind: p.kind });
@@ -886,10 +884,11 @@ export function createApp() {
     const price = body.priceCents !== undefined ? int(body.priceCents) : existing.price_cents ?? 0;
     if (price === null || price < 0 || price > 10_000_00) throw new HttpError(400, 'Prix invalide.');
     if (body.creator !== undefined && !CREATORS.includes(body.creator)) throw new HttpError(400, 'Créateur invalide.');
+    // Une seule catégorie par plugin ; vide : devinée (categoryOf).
     let category = existing.category ?? '';
-    if (body.categories !== undefined) {
-      if (!Array.isArray(body.categories) || body.categories.some((id) => !CATEGORY_IDS.includes(id))) throw new HttpError(400, 'Catégorie invalide.');
-      category = [...new Set(body.categories)].join(',');
+    if (body.category !== undefined) {
+      if (body.category !== '' && !CATEGORY_IDS.includes(body.category)) throw new HttpError(400, 'Catégorie invalide.');
+      category = body.category;
     }
     return {
       category,

@@ -318,6 +318,20 @@ if (!hasColumn('users', 'referral_rewarded')) db.exec('ALTER TABLE users ADD COL
 
 // Catégorie d'un plugin dans la boutique et l'application (beatmaking, mix, master, mesure, application…).
 // Vide : devinée à partir de son nom et de son texte (categoryOf dans app.js).
+// Une seule catégorie par plugin, et plus de « Voix » (qui doublait « Mix ») : les plugins en ligne ce jour-là
+// sont rangés à nouveau, une fois. Les autres reprennent leur première catégorie encore valable, ou la devinée.
+function rangeCategories() {
+  const known = {
+    tuner: 'mix', based: 'mix', vocalbox: 'mix', 'onirique-broadcast': 'app', 'onirique-pitchbox': 'mix',
+    'onirique-resobox': 'mix', 'onirique-x-abrasion-raw': 'beat', 'onirique-x-abrasion-tama-vox': 'mix',
+    'onirique-doublebox': 'mix', 'onirique-vocal-spacer': 'mix', 'onirique-modbox': 'beat',
+    'onirique-x-abrasion-mimic': 'beat', bloom: 'master', 'onirique-meterbox': 'meter',
+  };
+  for (const p of db.prepare('SELECT id, slug, category FROM products').all()) {
+    const next = known[p.slug] ?? String(p.category).split(',').find((id) => ['beat', 'mix', 'master', 'meter', 'app'].includes(id)) ?? '';
+    db.prepare('UPDATE products SET category = ? WHERE id = ?').run(next, p.id);
+  }
+}
 if (!hasColumn('products', 'category')) {
   db.exec(`ALTER TABLE products ADD COLUMN category TEXT NOT NULL DEFAULT ''`);
   // Les plugins déjà en ligne ce jour-là, rangés à la main ; un plugin peut être dans plusieurs catégories.
@@ -328,6 +342,10 @@ if (!hasColumn('products', 'category')) {
     'onirique-x-abrasion-mimic': 'beat', bloom: 'mix,master', 'onirique-meterbox': 'meter,master',
   };
   for (const [slug, category] of Object.entries(known)) db.prepare('UPDATE products SET category = ? WHERE slug = ?').run(category, slug);
+}
+if (!db.prepare(`SELECT 1 FROM settings WHERE key = 'categories_single'`).get()) {
+  rangeCategories();
+  db.prepare(`INSERT INTO settings (key, value) VALUES ('categories_single', 'true')`).run();
 }
 
 export const now = () => Date.now();

@@ -52,18 +52,21 @@ try {
     alice = await account('alice');
     tuner = await call('POST', '/api/admin/products', { token: admin.token, body: { name: 'ONIRIQUE TUNER', tagline: 'Correction de la voix', priceCents: 4000 }, expect: 201 });
     raw = await call('POST', '/api/admin/products', { token: admin.token, body: { name: 'RAW', tagline: 'Synthé wavetable', priceCents: 3000, creator: 'abrasion' }, expect: 201 });
-    meter = await call('POST', '/api/admin/products', { token: admin.token, body: { name: 'METER', priceCents: 2000, categories: ['meter', 'master'] }, expect: 201 });
+    meter = await call('POST', '/api/admin/products', { token: admin.token, body: { name: 'METER', priceCents: 2000, category: 'meter' }, expect: 201 });
     for (const p of [tuner, raw, meter]) await call('POST', `/api/admin/products/${p.id}/versions?${new URLSearchParams({ version: '1.0.0', filename: 'P.vst3' })}`, { token: admin.token, raw: binary, expect: 201 });
   });
 
-  await step('catégories : choisies dans le panel, sinon devinées ; la liste est dans le catalogue', async () => {
+  await step('catégories : une seule par plugin, choisie dans le panel, sinon devinée', async () => {
     const catalog = await call('GET', '/api/catalog');
-    assert.ok(catalog.categories.some((c) => c.id === 'beat'));
+    assert.deepEqual(catalog.categories.map((c) => c.id), ['beat', 'mix', 'master', 'meter', 'app']);
     const of = (id) => catalog.products.find((p) => p.id === id).categories;
-    assert.deepEqual(of(meter.id), ['meter', 'master']);
-    assert.ok(of(tuner.id).includes('voice'));
-    assert.ok(of(raw.id).includes('beat'));
-    await call('PATCH', `/api/admin/products/${raw.id}`, { token: admin.token, body: { categories: ['inconnue'] }, expect: 400 });
+    assert.deepEqual(of(meter.id), ['meter']);
+    assert.deepEqual(of(tuner.id), ['mix']);
+    assert.deepEqual(of(raw.id), ['beat']);
+    await call('PATCH', `/api/admin/products/${raw.id}`, { token: admin.token, body: { category: 'voice' }, expect: 400 });
+    await call('PATCH', `/api/admin/products/${tuner.id}`, { token: admin.token, body: { category: 'master' } });
+    assert.deepEqual((await call('GET', '/api/catalog')).products.find((p) => p.id === tuner.id).categories, ['master']);
+    await call('PATCH', `/api/admin/products/${tuner.id}`, { token: admin.token, body: { category: '' } });
   });
 
   await step('code promo : créé par un admin, vérifié, appliqué au paiement, une fois par compte', async () => {

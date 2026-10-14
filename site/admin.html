@@ -217,7 +217,7 @@ const TYPES = { perpetual: "Perpétuelle", timed: "Durée limitée", trial: "Ess
 // Rôles : VIP (tous les plugins offerts), Abrasion et Relic (partenaires : ce panel, limité à leurs propres plugins), admin, fondateur.
 const ROLES = { user: "Utilisateur", vip: "VIP", abrasion: "Abrasion", relic: "Relic", admin: "Admin", founder: "Fondateur" };
 const CREATORS = { onirique: "ONIRIQUE", abrasion: "ABRASION", relic: "RELIC" };
-const CATEGORIES = [["beat", "Beatmaking"], ["voice", "Voix"], ["mix", "Mix"], ["master", "Mastering"], ["meter", "Mesure"], ["app", "Applications"]];
+const CATEGORIES = [["beat", "Beatmaking"], ["mix", "Mix"], ["master", "Mastering"], ["meter", "Mesure"], ["app", "Applications"]];
 const isPartner = (user) => user.role === "abrasion" || user.role === "relic";
 const isStaff = (user) => user.role === "admin" || user.role === "founder";
 
@@ -368,8 +368,9 @@ function sheetForm(p) {
   const published = el("input", { type: "checkbox", checked: p?.published ?? true });
   // Le créateur ne se choisit que par l'équipe : les plugins d'un partenaire portent toujours son nom.
   const creator = el("select", {}, ...Object.entries(CREATORS).map(([id, label]) => el("option", { value: id, textContent: label, selected: id === (p?.creator ?? "onirique") })));
-  // Catégories de la boutique : cochées ici ; rien de coché, elles sont devinées à partir du nom et du texte.
-  const cats = CATEGORIES.map(([id, label]) => ({ id, box: el("input", { type: "checkbox", checked: (p?.categories ?? []).includes(id) }), label }));
+  // Catégorie de la boutique : une seule par plugin ; « Automatique » la devine à partir du nom et du texte.
+  const category = el("select", {}, el("option", { value: "", textContent: "Automatique" }), ...CATEGORIES.map(([id, label]) => el("option", { value: id, textContent: label })));
+  category.value = p?.categories?.[0] ?? "";
   const submit = el("button", { className: "act", type: "submit", textContent: p ? "Enregistrer la fiche" : "Créer le plugin" });
   const saved = el("span", { className: "sub" });
   saved.setAttribute("role", "status");
@@ -377,7 +378,7 @@ function sheetForm(p) {
     el("label", {}, "Nom", name), el("label", {}, "Accroche", tagline),
     el("label", {}, "Prix en € (0 = gratuit)", price), isStaff(me) ? el("label", {}, "Créateur", creator) : null,
     el("label", {}, "Description", description),
-    el("label", {}, "Catégories", el("div", { className: "cats" }, ...cats.map((c) => el("label", { className: "inline" }, c.box, c.label)))),
+    el("label", {}, "Catégorie", category),
     el("div", { className: "row" }, el("label", { className: "inline" }, published, "Visible dans la boutique et l'application"), submit, saved));
   form.onsubmit = async (event) => {
     event.preventDefault();
@@ -387,7 +388,7 @@ function sheetForm(p) {
     const cents = Math.round(Number(amount) * 100);
     submit.disabled = true;
     const body = { name: name.value.trim(), tagline: tagline.value.trim(), description: description.value.trim(), priceCents: cents, published: published.checked,
-      categories: cats.filter((c) => c.box.checked).map((c) => c.id),
+      category: category.value,
       ...(isStaff(me) ? { creator: creator.value } : {}) };
     try {
       await api(p ? "PATCH" : "POST", p ? "/admin/products/" + p.id : "/admin/products", body);

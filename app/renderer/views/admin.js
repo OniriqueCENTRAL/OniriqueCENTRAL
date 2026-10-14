@@ -116,8 +116,9 @@ function productForm(product) {
     published: h('input', { type: 'checkbox', checked: product?.published ?? true }),
     creator: h('select', null, Object.entries(CREATORS).map(([id, label]) => h('option', { value: id }, label))),
   };
-  // Catégories de la boutique : rien de coché, elles sont devinées à partir du nom et du texte.
-  const cats = (state.data.catalog.categories ?? []).map((c) => ({ id: c.id, label: c.label, box: h('input', { type: 'checkbox', checked: (product?.categories ?? []).includes(c.id) }) }));
+  // Catégorie de la boutique : une seule par plugin ; « Automatique » la devine à partir du nom et du texte.
+  const cats = state.data.catalog.categories ?? [];
+  const category = h('select', { value: product?.categories?.[0] ?? '' }, h('option', { value: '' }, 'Automatique'), cats.map((c) => h('option', { value: c.id }, c.label)));
   // Un <select> ne prend sa valeur qu'une fois ses options en place.
   f.creator.value = product?.creator ?? 'onirique';
   // Le créateur ne se choisit que par l'équipe : les plugins d'un partenaire portent toujours son nom.
@@ -127,14 +128,14 @@ function productForm(product) {
     staff ? field('Créateur', f.creator) : null,
     field('Description (une ligne vide entre les paragraphes)', f.description),
     h('div', { class: 'row' }, h('div', { class: 'grow' }, field('Prix (€) — 0 pour gratuit', f.price)), field('Couleur', f.accent)),
-    cats.length ? field('Catégories', h('div', { class: 'row wrap', style: { gap: '6px 16px' } }, cats.map((c) => h('label', { class: 'check' }, c.box, c.label)))) : null,
+    cats.length ? field('Catégorie', category) : null,
     h('label', { class: 'check' }, f.published, 'Visible dans la bibliothèque'));
   modal(product ? `Modifier ${product.name}` : 'Nouveau plugin', body, [{
     label: product ? 'Enregistrer' : 'Créer',
     run: async () => {
       const payload = { name: f.name.value, tagline: f.tagline.value, description: f.description.value,
         priceCents: toCents(f.price), accent: f.accent.value, published: f.published.checked, ...(staff ? { creator: f.creator.value } : {}),
-        ...(cats.length ? { categories: cats.filter((c) => c.box.checked).map((c) => c.id) } : {}) };
+        ...(cats.length ? { category: category.value } : {}) };
       const ok = await changed(() => (product ? api('PATCH', `/products/${product.id}`, payload) : api('POST', '/products', payload)),
         product ? 'Plugin enregistré.' : 'Plugin créé.', true);
       return ok ? undefined : false;
