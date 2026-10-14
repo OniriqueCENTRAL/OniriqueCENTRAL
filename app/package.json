@@ -41,7 +41,15 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "shortcutName": "ONIRIQUE CENTRAL",
-      "artifactName": "ONIRIQUE-CENTRAL-Setup-${version}.${ext}"
+      "artifactName": "ONIRIQUE-CENTRAL-Setup-${version}.${ext}",
+      "installerSidebar": "build/installerSidebar.bmp",
+      "installerHeader": "build/installerHeader.bmp",
+      "include": "build/installer.nsh",
+      "installerLanguages": [
+        "fr_FR",
+        "en_US"
+      ],
+      "multiLanguageInstaller": true
     },
     "publish": [
       {

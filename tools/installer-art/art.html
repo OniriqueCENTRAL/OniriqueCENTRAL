@@ -1,0 +1,49 @@
+<!doctype html>
+<!-- Les images de l'installeur Windows (NSIS) : ?part=sidebar (164 × 314, pages d'accueil et de fin), ?part=header (150 × 57, en-tête des autres pages). -->
+<meta charset="utf-8">
+<style>
+@font-face { font-family: 'Unbounded'; src: url('../../app/renderer/assets/fonts/Unbounded800.ttf'); font-weight: 800; }
+@font-face { font-family: 'Grenze Gotisch'; src: url('../../app/renderer/assets/fonts/GrenzeGotisch600.ttf'); font-weight: 600; }
+@font-face { font-family: 'JetBrains Mono'; src: url('../../app/renderer/assets/fonts/JetBrainsMono500.ttf'); font-weight: 500; }
+html, body { margin: 0; overflow: hidden; background: #0d0809; }
+.art { position: relative; overflow: hidden; color: #f6eeee; }
+.star { position: absolute; background: #ffd2d6; clip-path: polygon(50% 0, 56% 44%, 100% 50%, 56% 56%, 50% 100%, 44% 56%, 0 50%, 44% 44%); }
+
+#sidebar { width: 164px; height: 314px;
+  background: radial-gradient(130% 62% at 50% 0%, rgba(140, 6, 20, .95), rgba(92, 0, 8, .55) 42%, transparent 78%),
+              radial-gradient(90% 40% at 50% 110%, rgba(92, 0, 8, .7), transparent 70%), #0d0809; }
+#sidebar .grain { position: absolute; inset: 0; opacity: .22; background-image: repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 1px, transparent 1px 3px); }
+#sidebar .sigil { position: absolute; left: 50%; top: 46px; width: 128px; transform: translateX(-50%);
+  filter: drop-shadow(0 0 6px #e23444) drop-shadow(0 0 22px rgba(226, 52, 68, .75)); }
+#sidebar .word { position: absolute; left: 0; right: 0; top: 178px; text-align: center; }
+#sidebar .word b { display: block; font: 800 12.5px 'Unbounded'; letter-spacing: .26em; padding-left: .26em; }
+#sidebar .word i { display: block; margin-top: 3px; font: 600 30px/1 'Grenze Gotisch'; font-style: normal; color: #ffecee; text-shadow: 0 0 12px rgba(226, 52, 68, .85); }
+#sidebar .rule { position: absolute; left: 30px; right: 30px; top: 246px; height: 1px; background: linear-gradient(90deg, transparent, #e23444, transparent); }
+#sidebar .foot { position: absolute; left: 0; right: 0; bottom: 22px; text-align: center; font: 500 7.5px 'JetBrains Mono'; letter-spacing: .3em; color: #a88f92; }
+
+#header { width: 150px; height: 57px; background: radial-gradient(120% 140% at 0% 50%, rgba(140, 6, 20, .9), rgba(92, 0, 8, .4) 55%, transparent 85%), #0d0809; }
+#header .sigil { position: absolute; left: 10px; top: 8px; height: 41px; filter: drop-shadow(0 0 4px #e23444); }
+#header .word { position: absolute; left: 62px; top: 15px; }
+#header .word b { display: block; font: 800 8.5px 'Unbounded'; letter-spacing: .2em; }
+#header .word i { display: block; margin-top: 1px; font: 600 18px/1 'Grenze Gotisch'; font-style: normal; color: #ffecee; text-shadow: 0 0 8px rgba(226, 52, 68, .85); }
+</style>
+<div class="art" id="sidebar" hidden>
+  <div class="grain"></div>
+  <i class="star" style="left:22px;top:28px;width:7px;height:7px;opacity:.7"></i>
+  <i class="star" style="left:136px;top:120px;width:5px;height:5px;opacity:.5"></i>
+  <i class="star" style="left:18px;top:272px;width:5px;height:5px;opacity:.45"></i>
+  <i class="star" style="left:140px;top:290px;width:8px;height:8px;opacity:.6"></i>
+  <img class="sigil" src="../../app/renderer/assets/sigil.png" alt="">
+  <div class="word"><b>ONIRIQUE</b><i>Central</i></div>
+  <div class="rule"></div>
+  <div class="foot">ONIRIQUE.STORE</div>
+</div>
+<div class="art" id="header" hidden>
+  <img class="sigil" src="../../app/renderer/assets/sigil.png" alt="">
+  <div class="word"><b>ONIRIQUE</b><i>Central</i></div>
+  <i class="star" style="left:136px;top:9px;width:6px;height:6px;opacity:.55"></i>
+</div>
+<script>
+  const part = new URLSearchParams(location.search).get('part') || 'sidebar';
+  document.getElementById(part).hidden = false;
+</script>
