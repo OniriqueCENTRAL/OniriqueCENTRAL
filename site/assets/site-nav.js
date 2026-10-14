@@ -90,7 +90,7 @@ header .sn-lang { margin-left: 8px; }
 .sn-langbar .sn-x { width: 34px; height: 34px; border: 1px solid var(--line, rgba(255,210,214,.16)); border-radius: 999px; background: none; color: var(--haze, #a88f92); font: 400 18px/1 var(--f-body, system-ui); cursor: pointer; }
 .sn-langrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; padding: 0 6px; }
 .sn-langrow span { font: 500 11px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .18em; text-transform: uppercase; color: var(--haze, #a88f92); }
-@media (max-width: 1100px) { .nav .sn-burger { display: inline-flex; } }
+@media (max-width: 1280px) { .nav .sn-burger { display: inline-flex; } }
 @media (max-width: 760px) {
   header .sn-burger { display: inline-flex; }
   header nav:not(.nav-links) > :not([data-account]):not(.acct) { display: none !important; }

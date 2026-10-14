@@ -48,6 +48,9 @@ window.OniriqueDemo = {
   },
 
   render(root, demo, hint) {
+    // Les captures plus anciennes écrivaient l'unité deux fois (« 82 % % », « 2.82 kHz Hz ») : une seule suffit.
+    const unit = (text) => String(text || "").replace(/(\S+)\s+\1$/, "$1").replace(/(kHz|ms|dB)\s+(Hz|s|dB)$/, "$1");
+    for (const control of demo.controls) control.texts = (control.texts || []).map(unit);
 
     const stage = document.createElement("div");
     stage.className = "demo-stage";

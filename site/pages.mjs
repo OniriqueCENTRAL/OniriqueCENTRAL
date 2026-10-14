@@ -25,7 +25,7 @@ const NAV = [
 const page = ({ file, title, description, intro, body }) => `<!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=d27bda48"></script>
+<script src="assets/i18n.js?v=e7481d7e"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${title} — ONIRIQUE</title>
 <meta name="description" content="${description}">
@@ -57,7 +57,7 @@ ${body}
     <a href="compte.html">Compte</a>
   </nav>
 </footer>
-<script src="assets/site-nav.js"></script>
+<script src="assets/site-nav.js?v=5"></script>
 </html>
 `;
 

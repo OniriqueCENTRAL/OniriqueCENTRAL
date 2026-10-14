@@ -2,7 +2,7 @@
 <html lang="fr">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<script src="assets/i18n.js?v=d27bda48"></script>
+<script src="assets/i18n.js?v=e7481d7e"></script>
 <title>ONIRIQUE</title>
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="apple-touch-icon" href="assets/favicon.png">
@@ -364,8 +364,10 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
 }
 
 /* ---------- refonte VocalBox */
-@media (max-width: 1100px) { .nav-links { display: none; } }
-.nav-links { gap: 24px; }
+@media (max-width: 1280px) { .nav-links { display: none; } }
+.nav-links { gap: 24px; align-items: center; white-space: nowrap; }
+.nav-links > * { flex: none; }
+@media (max-width: 1320px) { .nav-links { gap: 18px; font-size: 13.5px; } }
 .hero { padding-bottom: clamp(60px, 8vw, 110px); }
 .section-mark { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
 .product-tag { font: 500 12px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ember-text); border: 1px solid rgba(226,52,68,.4); border-radius: 99px; padding: 7px 12px; }
@@ -842,7 +844,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
   </div>
 </footer>
 
-<script src="assets/demo-player.js?v=3"></script>
+<script src="assets/demo-player.js?v=4"></script>
 <script>
 (() => {
 "use strict";
@@ -1973,7 +1975,7 @@ $$("[data-buy]").forEach(a => {
 </script>
 <script src="assets/tools-menu.js"></script>
 <script src="assets/account.js?v=4"></script>
-<script src="assets/site-nav.js"></script>
+<script src="assets/site-nav.js?v=5"></script>
 <script src="assets/catalog-watch.js"></script>
 
 </html>

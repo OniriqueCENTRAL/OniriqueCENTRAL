@@ -376,6 +376,7 @@ app.whenReady().then(() => {
     if (action === 'minimize') win.minimize();
     else if (action === 'maximize') win.isMaximized() ? win.unmaximize() : win.maximize();
     else if (action === 'close') win.close();
+    else if (action === 'reload') win.webContents.reload(); // changement de langue
   });
 
   createWindow();

@@ -381,7 +381,11 @@ int main (int argc, char** argv)
 
         juce::StringArray texts;
         for (int k = 0; k < count; ++k)
-            texts.add ((parameter->getText (valueAt (k), 64) + " " + parameter->getLabel()).trim());
+        {
+            // L'unité, sauf si la valeur l'écrit déjà (« 82 % », « 2.82 kHz »).
+            const juce::String value = parameter->getText (valueAt (k), 64).trim(), unit = parameter->getLabel().trim();
+            texts.add (unit.isEmpty() || value.endsWithIgnoreCase (unit) ? value : value + " " + unit);
+        }
 
         // Retour au repos. Ce qui diffère encore de l'image de départ bouge tout seul : on l'ajoute aux zones animées.
         restoreDefaults (*plugin);
@@ -451,6 +455,31 @@ int main (int argc, char** argv)
             const auto widerAreas = islands (wider, width, height);
             const int widerWorst = widerAreas.empty() ? worst : wrongPixels (widerAreas);
             if (widerWorst <= tolerance) { areas = widerAreas; worst = widerWorst; }
+        }
+        // Quelques pixels de plus autour de chaque zone : le bord d'une courbe qui se déplace (son trait, son
+        // anticrénelage, une ligne animée posée dessus) ne reste pas visible depuis l'image au repos.
+        // Et tant que ce qui change vraiment (même dans une zone animée) est à moins de 8 pixels d'un bord, ce bord
+        // recule, de 16 pixels au plus.
+        auto touches = [&] (int x0, int y0, int x1, int y1)
+        {
+            for (int y = std::max (0, y0); y < std::min (height, y1); ++y)
+                for (int x = std::max (0, x0); x < std::min (width, x1); ++x)
+                    if (rawChanged[(size_t) y * (size_t) width + (size_t) x])
+                        return true;
+            return false;
+        };
+        for (auto& area : areas)
+        {
+            for (int step = 0; step < 16; ++step)
+            {
+                bool grown = false;
+                if (area.getY() > 0 && touches (area.getX(), area.getY() - 8, area.getRight(), area.getY())) { area.setTop (area.getY() - 1); grown = true; }
+                if (area.getBottom() < height && touches (area.getX(), area.getBottom(), area.getRight(), area.getBottom() + 8)) { area.setBottom (area.getBottom() + 1); grown = true; }
+                if (area.getX() > 0 && touches (area.getX() - 8, area.getY(), area.getX(), area.getBottom())) { area.setLeft (area.getX() - 1); grown = true; }
+                if (area.getRight() < width && touches (area.getRight(), area.getY(), area.getRight() + 8, area.getBottom())) { area.setRight (area.getRight() + 1); grown = true; }
+                if (! grown) break;
+            }
+            area = area.expanded (6).getIntersection ({ 0, 0, width, height });
         }
         const bool faithful = worst <= tolerance;
         if (! faithful)

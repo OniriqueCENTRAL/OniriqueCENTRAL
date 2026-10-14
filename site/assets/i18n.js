@@ -24,9 +24,10 @@
     set(next) {
       try { localStorage.setItem(KEY, next === "en" ? "en" : "fr"); } catch {}
       document.dispatchEvent(new CustomEvent("onirique:lang", { detail: next }));
+      // L'application (qui refuse les navigations de sa page) se recharge elle-même.
+      if (window.central && window.central.window) { window.central.window("reload"); return; }
       const url = new URL(location.href);
       url.searchParams.delete("lang");
-      // Même adresse (l'application, qui refuse les navigations) : un simple rechargement.
       if (url.toString() === location.href) location.reload();
       else location.replace(url.toString());
     },
