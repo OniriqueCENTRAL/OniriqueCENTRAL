@@ -650,7 +650,7 @@ function referralTab() {
   // Nos réseaux : affichés sur le site (en-tête, menu des téléphones, pied de page).
   const socials = data.site.socials.map((s) => ({ ...s, input: h('input', { type: 'url', class: 'mono', value: s.url, placeholder: `https://… (${s.label})` }) }));
   const socialsPanel = h('div', { class: 'panel' }, eyebrow('Nos réseaux'),
-    h('p', { class: 'muted', style: { margin: '0 0 14px' } }, 'Les comptes d'ONIRIQUE montrés sur le site : rubrique « Nos réseaux » de l'en-tête, menu des téléphones, pied des pages. Laisser vide pour ne pas afficher un réseau.'),
+    h('p', { class: 'muted', style: { margin: '0 0 14px' } }, "Les comptes d'ONIRIQUE montrés sur le site : rubrique « Nos réseaux » de l'en-tête, menu des téléphones, pied des pages. Laisser vide pour ne pas afficher un réseau."),
     h('div', { class: 'grid3' }, socials.map((s) => field(s.label, s.input))),
     h('div', { style: { 'margin-top': '14px' } }, button('Enregistrer', () => changed(() => api('PUT', '/site/socials',
       Object.fromEntries(socials.map((s) => [s.id, s.input.value.trim()]))), 'Réseaux enregistrés : visibles tout de suite sur le site.'), 'primary')));
