@@ -21,7 +21,7 @@ const LOADERS = {
   credits: async () => { [data.credits, data.products] = await Promise.all([api('GET', '/credits'), data.products ?? api('GET', '/products')]); },
   payments: async () => { data.payments = await api('GET', '/payments'); },
   promos: async () => { [data.promos, data.products] = await Promise.all([api('GET', '/promos'), data.products ?? api('GET', '/products')]); },
-  referral: async () => { data.referral = await api('GET', '/referral'); },
+  referral: async () => { [data.referral, data.site] = await Promise.all([api('GET', '/referral'), api('GET', '/site')]); },
   mailings: async () => { [data.mailings, data.products] = await Promise.all([api('GET', '/mailings'), data.products ?? api('GET', '/products')]); },
 };
 const READY = {
@@ -32,7 +32,7 @@ const READY = {
   credits: () => data.credits && data.products,
   payments: () => data.payments,
   promos: () => data.promos && data.products,
-  referral: () => data.referral,
+  referral: () => data.referral && data.site,
   mailings: () => data.mailings && data.products,
 };
 
@@ -624,8 +624,16 @@ function referralTab() {
     milestone: h('input', { type: 'number', min: 0, max: 100, value: s.milestone }),
     days: h('input', { type: 'number', min: 7, max: 3650, value: s.rewardDays }),
   };
+  // Nos réseaux : affichés sur le site (en-tête, menu des téléphones, pied de page).
+  const socials = data.site.socials.map((s) => ({ ...s, input: h('input', { type: 'url', class: 'mono', value: s.url, placeholder: `https://… (${s.label})` }) }));
+  const socialsPanel = h('div', { class: 'panel' }, eyebrow('Nos réseaux'),
+    h('p', { class: 'muted', style: { margin: '0 0 14px' } }, 'Les comptes d'ONIRIQUE montrés sur le site : rubrique « Nos réseaux » de l'en-tête, menu des téléphones, pied des pages. Laisser vide pour ne pas afficher un réseau.'),
+    h('div', { class: 'grid3' }, socials.map((s) => field(s.label, s.input))),
+    h('div', { style: { 'margin-top': '14px' } }, button('Enregistrer', () => changed(() => api('PUT', '/site/socials',
+      Object.fromEntries(socials.map((s) => [s.id, s.input.value.trim()]))), 'Réseaux enregistrés : visibles tout de suite sur le site.'), 'primary')));
   return [
-    h('div', { class: 'grid3' }, tile('Amis invités', r.invited), tile('Amis acheteurs', r.converted), tile('Codes offerts', `${r.rewardsUsed} / ${r.rewards} utilisés`)),
+    socialsPanel,
+    h('div', { class: 'grid3', style: { 'margin-top': '16px' } }, tile('Amis invités', r.invited), tile('Amis acheteurs', r.converted), tile('Codes offerts', `${r.rewardsUsed} / ${r.rewards} utilisés`)),
     h('div', { class: 'panel', style: { 'margin-top': '16px' } }, eyebrow('Réglages'),
       h('p', { class: 'muted', style: { margin: '0 0 14px' } }, 'L\'ami invité a une remise sur son premier plugin ONIRIQUE. À son premier achat payé, son parrain reçoit un code personnel, et à chaque palier d\'amis acheteurs un plugin ONIRIQUE offert. Les récompenses ne portent que sur les plugins ONIRIQUE.'),
       h('div', { class: 'stack' },
@@ -716,7 +724,7 @@ function mailingsTab() {
 }
 
 const TABS = { overview: ['Vue d\'ensemble', overviewTab], products: ['Plugins', productsTab], licenses: ['Licences', licensesTab], users: ['Comptes', usersTab],
-  promos: ['Codes promo', promosTab], referral: ['Parrainage', referralTab], mailings: ['E-mails', mailingsTab], credits: ['Crédits', creditsTab], payments: ['Paiements', paymentsTab] };
+  promos: ['Codes promo', promosTab], referral: ['Réseaux et parrainage', referralTab], mailings: ['E-mails', mailingsTab], credits: ['Crédits', creditsTab], payments: ['Paiements', paymentsTab] };
 
 export function adminView() {
   // Un partenaire n'a que ses plugins et leurs licences.

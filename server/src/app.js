@@ -126,6 +126,10 @@ export function categoryOf(p, latestFilename = '') {
   return ['mix'];
 }
 
+// Les réseaux proposés dans le panel, dans l'ordre où le site les montre.
+const SOCIALS = [['youtube', 'YouTube'], ['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['x', 'X'], ['spotify', 'Spotify'],
+  ['soundcloud', 'SoundCloud'], ['discord', 'Discord'], ['twitch', 'Twitch'], ['facebook', 'Facebook']];
+
 const planView = (p) => ({ id: p.id, name: p.name, interval: p.interval, priceCents: p.price_cents, active: !!p.active, kind: p.kind });
 
 /** Envoie le lien de validation de l'adresse. Sans attente : l'inscription ne dépend pas du serveur de messagerie. */
@@ -235,6 +239,9 @@ export function createApp() {
       sellers: paymentsMode() === 'stripe' ? sellers(CREATORS) : undefined,
     });
   });
+
+  // Ce que toutes les pages du site affichent : les réseaux d'ONIRIQUE (rubrique « Nos réseaux »), réglés dans le panel.
+  app.get('/api/site', (_req, res) => res.json({ socials: SOCIALS.map(([id, label]) => ({ id, label, url: setting('socials', {})[id] || '' })).filter((s) => s.url) }));
 
   app.get('/api/public-key', (_req, res) => res.json({ pem: publicKeyPem, raw: publicKeyRaw }));
 
@@ -1218,6 +1225,19 @@ export function createApp() {
   admin.delete('/promos/:id', (req, res) => {
     run('DELETE FROM promo_codes WHERE id = ?', ownPromo(req).id);
     res.json({ ok: true });
+  });
+
+  // Nos réseaux : une adresse https par réseau, vide pour ne pas l'afficher (l'équipe seulement).
+  admin.get('/site', (_req, res) => res.json({ socials: SOCIALS.map(([id, label]) => ({ id, label, url: setting('socials', {})[id] || '' })) }));
+  admin.put('/site/socials', (req, res) => {
+    const next = {};
+    for (const [id, label] of SOCIALS) {
+      const url = str(req.body?.[id], 300);
+      if (url && !/^https:\/\/[^\s"'<>]+$/.test(url)) throw new HttpError(400, `Adresse ${label} invalide : elle doit commencer par https://.`);
+      if (url) next[id] = url;
+    }
+    setSetting('socials', next);
+    res.json({ socials: SOCIALS.map(([id, label]) => ({ id, label, url: next[id] || '' })) });
   });
 
   // Parrainage : ses réglages et ses chiffres (l'équipe seulement).

@@ -155,6 +155,11 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
     </table></div>
 
     <div id="staff-mail">
+    <div class="bar"><h2>Nos réseaux</h2></div>
+    <p class="sub">Les comptes d'ONIRIQUE, affichés dans l'en-tête (rubrique « Nos réseaux »), le menu des téléphones et le pied des pages. Une adresse complète (https://…) ; laisser vide pour ne pas afficher le réseau.</p>
+    <div class="box" id="socials"></div>
+    <p class="error" id="socials-error" role="alert"></p>
+
     <div class="bar"><h2>Parrainage</h2></div>
     <p class="sub">Chaque compte a son lien. L'ami invité a une remise sur son premier plugin ONIRIQUE ; quand il fait son premier achat payé, son parrain reçoit un code personnel, et, à chaque palier d'amis acheteurs, un plugin ONIRIQUE offert. Les récompenses ne portent que sur les plugins ONIRIQUE : les partenaires encaissent leurs ventes eux-mêmes.</p>
     <div class="tiles" id="ref-tiles"></div>
@@ -190,6 +195,7 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
 
 <script src="assets/cropper.js"></script>
 <script src="assets/account.js?v=4"></script>
+<script src="assets/site-nav.js"></script>
 <script>
 // Tout passe par l'API du CENTRAL, qui revérifie le rôle admin à chaque appel : cette page n'ouvre aucun droit par elle-même.
 const $ = (id) => document.getElementById(id);
@@ -637,6 +643,24 @@ async function loadPromos() {
   }) : [el("tr", {}, el("td", { colSpan: 6, className: "sub", textContent: "Aucun code pour le moment." }))]));
 }
 
+//------------------------------------------------------------------------------ Nos réseaux
+async function loadSocials() {
+  const { socials } = await api("GET", "/admin/site");
+  const inputs = socials.map((s) => ({ id: s.id, input: el("input", { type: "url", value: s.url, placeholder: `https://… (${s.label})` }), label: s.label }));
+  const saved = el("span", { className: "sub" });
+  const form = el("form", {}, ...inputs.map((i) => el("label", {}, i.label, i.input)),
+    el("div", { className: "row" }, el("button", { className: "act", type: "submit", textContent: "Enregistrer" }), saved));
+  form.onsubmit = async (event) => {
+    event.preventDefault();
+    $("socials-error").textContent = "";
+    try {
+      await api("PUT", "/admin/site/socials", Object.fromEntries(inputs.map((i) => [i.id, i.input.value.trim()])));
+      saved.textContent = "Enregistré : visible tout de suite sur le site.";
+    } catch (error) { $("socials-error").textContent = error.message; }
+  };
+  $("socials").replaceChildren(form);
+}
+
 //------------------------------------------------------------------------------ Parrainage
 async function loadReferral() {
   const r = await api("GET", "/admin/referral");
@@ -770,6 +794,7 @@ $("search").oninput = () => { clearTimeout(timer); timer = setTimeout(() => load
     await loadPlans();
     await loadProducts();
     await loadPromos();
+    await loadSocials();
     await loadReferral();
     await loadMailings(true);
     await loadCredits();
