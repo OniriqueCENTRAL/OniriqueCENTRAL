@@ -187,6 +187,18 @@ try {
     assert.equal((await call('GET', '/api/me', { token: bob.token })).user.newsletter, true);
   });
 
+  await step('boîte mail et charte graphique : réservées aux fondateurs ; une réponse part mise en page', async () => {
+    const founder = await account('fondatrice', 'founder');
+    await call('GET', '/api/admin/mailbox', { token: admin.token, expect: 403 });
+    await call('GET', '/api/admin/brand-kit/info', { token: admin.token, expect: 403 });
+    assert.equal((await call('GET', '/api/admin/mailbox', { token: founder.token })).enabled, false); // pas d'IMAP en test
+    await call('GET', '/api/admin/brand-kit', { token: founder.token, expect: 404 });
+    await call('POST', '/api/admin/mailbox/send', { token: founder.token, body: { to: 'pas une adresse', subject: 'x', text: 'y' }, expect: 400 });
+    await call('POST', '/api/admin/mailbox/send', { token: founder.token, body: { to: 'client@exemple.com', subject: 'Re: votre commande', text: 'Bonjour,\n\nC\'est réglé.' } });
+    const sent = outbox.find((m) => m.subject === 'Re: votre commande');
+    assert.ok(sent && sent.html.includes('réglé'));
+  });
+
   console.log(`\n${passed} étapes réussies.`);
 } finally {
   server.close();

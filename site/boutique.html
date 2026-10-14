@@ -226,7 +226,7 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
   </nav>
 </footer>
 
-<script src="assets/demo-player.js?v=2"></script>
+<script src="assets/demo-player.js?v=3"></script>
 <script src="assets/tools-menu.js"></script>
 <script src="assets/account.js?v=4"></script>
 <script src="assets/site-nav.js"></script>
@@ -512,8 +512,11 @@ async function buy(product, catalog) {
   setupTrial(product).then(() => { if (!$("buy").disabled) setupPromo(product); });
   $("detail").hidden = false;
 
-  // Une image choisie par un admin passe avant la démo fabriquée automatiquement.
-  if (product.demo && !product.imageManual) {
+  // Une interface web réelle (RAW) passe avant tout ; puis l'image choisie par un admin ; puis la démo en images.
+  const web = await OniriqueDemo.web(product.slug);
+  if (web) {
+    OniriqueDemo.mountWeb($("demo"), web, product.name);
+  } else if (product.demo && !product.imageManual) {
     OniriqueDemo.mount($("demo"), product.demo).then(() => {
       // Une interface en hauteur tient à l'écran : la démo est rétrécie jusqu'à s'y voir en entier.
       const stage = $("demo").querySelector(".demo-stage");

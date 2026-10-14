@@ -211,6 +211,27 @@ function refreshDemo(p) {
   }], 'Démo');
 }
 
+/**
+ * Refait l'aperçu de chaque plugin VST3, l'un après l'autre, avec l'outil de capture de cette version : chaque
+ * position montrée sur le site est vérifiée contre une vraie image du plugin. Les plugins dont la démo a été
+ * retirée à la main sont laissés de côté.
+ */
+function refreshAllDemos() {
+  const todo = data.products.filter((p) => p.latest && !p.demoOff && p.versions.some((v) => v.platform === 'win' && /\.vst3$/i.test(v.filename)));
+  confirm(`Refaire ${todo.length} aperçus ?`, `Chaque plugin est téléchargé puis chargé sur ce PC : son interface s'ouvre à l'écran une à trois minutes, l'un après l'autre (environ ${todo.length * 2} minutes en tout). Ne fermez pas ces fenêtres.`,
+    'Lancer', async () => {
+      let done = 0;
+      for (const p of todo) {
+        toast(`Aperçu de ${p.name} (${done + 1}/${todo.length})…`);
+        try { await call('admin:refreshDemo', p.id); done++; } catch (error) { toast(`${p.name} : ${error.message}`, true); }
+      }
+      toast(`${done} aperçu(s) refait(s) sur ${todo.length}.`);
+      data.products = null;
+      await refresh();
+      await reload();
+    });
+}
+
 /** Le plugin vérifie-t-il sa licence ? D'après le fichier de la version : oui, non, ou illisible (installateur). */
 const licensePill = (licensed, label, required = true) => (licensed === true ? pill(`Licence ${label}`.trim(), '', true)
   : licensed === false ? pill(`Sans licence ${label}`.trim(), required ? 'warn' : '')
@@ -270,7 +291,9 @@ function productsTab() {
           ? ` · sans système de licence : ${missing.map(([p, systems]) => `${p.name} (${systems.join(', ')})`).join(' ; ')}`
           : ' · tous les plugins payants vérifient leur licence');
       })()),
-      button('Nouveau plugin', () => productForm(null))),
+      h('div', { class: 'row' },
+        window.central.platform === 'win32' && isStaff(state.data.me.user) ? button('Refaire tous les aperçus', refreshAllDemos, 'small') : null,
+        button('Nouveau plugin', () => productForm(null)))),
     data.products.map(panel),
   ];
 }

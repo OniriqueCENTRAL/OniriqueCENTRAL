@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import MailComposer from 'nodemailer/lib/mail-composer/index.js';
 import { config } from './config.js';
 import { renderEmail, textToBlocks } from './mailtemplate.js';
 
@@ -31,4 +32,17 @@ export async function sendMail(to, subject, text, replyTo, options = {}) {
   const message = { from: `ONIRIQUE <${config.mailFrom}>`, to, subject, text, html, replyTo, headers: options.headers };
   if (testing) outbox.push(message);
   return transport.sendMail(message);
+}
+
+/**
+ * Envoie un message écrit dans la boîte mail du panel (réponse ou nouveau message), et rend sa version brute, pour en
+ * garder une copie dans le dossier des messages envoyés.
+ */
+export async function sendComposed({ to, cc, subject, text, inReplyTo, references, eyebrow }) {
+  const html = renderEmail({ title: '', eyebrow: eyebrow || 'ONIRIQUE', blocks: textToBlocks(text) });
+  const message = { from: `ONIRIQUE <${config.mailFrom}>`, to, cc: cc || undefined, subject, text, html, inReplyTo, references };
+  if (testing) outbox.push(message);
+  const info = await transport.sendMail(message);
+  const raw = await new MailComposer({ ...message, messageId: info.messageId, date: new Date() }).compile().build();
+  return { messageId: info.messageId, raw };
 }

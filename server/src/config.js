@@ -55,6 +55,12 @@ export const config = {
   smtpPassword: env.SMTP_PASSWORD || '',
   mailFrom: env.MAIL_FROM || env.SMTP_USER || '',
   // Boîte qui reçoit les demandes de support (par défaut, celle qui envoie).
+  // La boîte de l'adresse d'ONIRIQUE, lue par IMAP pour le panel des fondateurs. Par défaut, le même compte que l'envoi
+  // (SMTP_USER, SMTP_PASSWORD), sur le serveur IMAP du même hébergeur (smtp.ionos.fr → imap.ionos.fr).
+  imapHost: env.IMAP_HOST || (/(^|\.)smtp\./.test(env.SMTP_HOST || '') ? env.SMTP_HOST.replace(/(^|\.)smtp\./, '$1imap.') : ''),
+  imapPort: Number(env.IMAP_PORT || 993),
+  imapUser: env.IMAP_USER || env.SMTP_USER || '',
+  imapPassword: env.IMAP_PASSWORD || env.SMTP_PASSWORD || '',
   supportEmail: env.SUPPORT_EMAIL || env.MAIL_FROM || env.SMTP_USER || '',
   // D'où vient le score de popularité Spotify de la page « Popularité » du site (voir popularity.js).
   popularitySource: env.POPULARITY_SOURCE || 'https://groover.co/core/distantapi/spotify/popularity/',

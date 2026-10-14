@@ -300,6 +300,9 @@ int main (int argc, char** argv)
         pump (200);
         markChanges (base, capture (window), noisy);
     }
+    // Ce qui bouge vraiment tout seul, au pixel près : la vérification finale ne tient compte que de cela.
+    std::vector<char> jitter = noisy;
+    dilate (jitter, width, height, 1);
     dilate (noisy, width, height, 3);
 
     // Un écran animé (réticule qui tourne, étincelles) ne passe pas partout en six secondes : chaque îlot
@@ -388,21 +391,18 @@ int main (int argc, char** argv)
             markChanges (base, capture (window), drift);
             dilate (drift, width, height, 3);
             for (size_t i = 0; i < drift.size(); ++i)
+            {
                 noisy[i] = (char) (noisy[i] | drift[i]);
+                jitter[i] = (char) (jitter[i] | drift[i]);
+            }
         }
 
-        // Ce qui a changé dans les zones animées (l'écran d'un personnage, un vumètre) ne peut pas être découpé :
-        // un réglage qui y change beaucoup (une couleur qui repeint tout le plugin) est gardé en images entières.
-        double clean = 0.0, inAnimated = 0.0;
+        // Les zones du réglage : ce qui a changé, hors des zones animées (vumètres, personnage, réticule).
+        const std::vector<char> rawChanged = changed;
         for (size_t i = 0; i < changed.size(); ++i)
-        {
-            if (! changed[i])
-                continue;
-            if (noisy[i]) { inAnimated += 1.0; changed[i] = 0; }
-            else clean += 1.0;
-        }
-
-        const auto areas = visible ? islands (changed, width, height) : std::vector<juce::Rectangle<int>>();
+            if (noisy[i])
+                changed[i] = 0;
+        auto areas = visible ? islands (changed, width, height) : std::vector<juce::Rectangle<int>>();
         if (areas.empty())
         {
             hidden.add (name);
@@ -411,16 +411,61 @@ int main (int argc, char** argv)
 
         const int defaultIndex = juce::jlimit (0, count - 1, juce::roundToInt (parameter->getDefaultValue() * (float) (count - 1)));
 
-        // Un réglage qui redessine une grande partie de l'interface (couleur, mode, page) ne se rejoue pas par
-        // morceaux : ses positions sont gardées en images entières, et le site le propose sous l'interface, comme
-        // un sélecteur. Quatre au plus, et pas plus de douze positions chacun (six pour un bouton continu).
+        // Vérification : pour chaque position, l'interface que le site recomposera (l'image au repos, et les zones
+        // de ce réglage prises dans l'image de cette position) doit être la vraie image, à ce qui bouge tout seul
+        // près. Rend le nombre de pixels faux de la pire position.
+        auto wrongPixels = [&] (const std::vector<juce::Rectangle<int>>& zones)
+        {
+            std::vector<char> inside ((size_t) width * (size_t) height, 0);
+            for (const auto& area : zones)
+                for (int y = area.getY(); y < area.getBottom(); ++y)
+                    for (int x = area.getX(); x < area.getRight(); ++x)
+                        inside[(size_t) y * (size_t) width + (size_t) x] = 1;
+            const juce::Image::BitmapData db (base, juce::Image::BitmapData::readOnly);
+            int worst = 0;
+            for (int k = 0; k < count; ++k)
+            {
+                const juce::Image::BitmapData dk (frames[(size_t) k], juce::Image::BitmapData::readOnly);
+                int wrong = 0;
+                for (int y = 0; y < height; ++y)
+                    for (int x = 0; x < width; ++x)
+                    {
+                        const auto i = (size_t) y * (size_t) width + (size_t) x;
+                        if (! inside[i] && ! jitter[i] && differs (db.getPixelPointer (x, y), dk.getPixelPointer (x, y)))
+                            ++wrong;
+                    }
+                worst = std::max (worst, wrong);
+            }
+            return worst;
+        };
+        const int tolerance = std::max (120, (int) (0.0005 * screenArea));
+        int worst = wrongPixels (areas);
+        if (worst > tolerance)
+        {
+            // Le réglage change aussi dans une zone animée (un afficheur qui suit le bouton) : ses zones la prennent
+            // avec lui, et on revérifie.
+            std::vector<char> wider = rawChanged;
+            for (size_t i = 0; i < wider.size(); ++i)
+                if (jitter[i])
+                    wider[i] = 0;
+            const auto widerAreas = islands (wider, width, height);
+            const int widerWorst = widerAreas.empty() ? worst : wrongPixels (widerAreas);
+            if (widerWorst <= tolerance) { areas = widerAreas; worst = widerWorst; }
+        }
+        const bool faithful = worst <= tolerance;
+        if (! faithful)
+            std::cout << "VERIFICATION " << name << " : " << worst << " pixels faux hors de ses zones, garde en images entieres" << std::endl;
+
+        // Un réglage qui ne se rejoue pas fidèlement par morceaux, ou qui redessine une grande partie de l'interface
+        // (couleur, mode, page) : ses positions sont gardées en images entières, et le site le propose sous
+        // l'interface, comme un sélecteur. Six au plus, et pas plus de douze positions chacun (six pour un continu).
         double total = 0.0;
         for (const auto& area : areas)
             total += (double) area.getWidth() * (double) area.getHeight();
-        const bool global = total > 0.45 * screenArea || areas.size() > 12 || (inAnimated > 2000.0 && inAnimated > 0.5 * clean);
+        const bool global = ! faithful || total > 0.45 * screenArea || areas.size() > 12;
         if (global)
         {
-            if (whole.size() >= 4 || (discrete && count > 12))
+            if (whole.size() >= 6 || (discrete && count > 12))
             {
                 tooWide.add (name);
                 continue;

@@ -85,6 +85,22 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
 .meter { height: 6px; border-radius: 999px; background: rgba(255,255,255,.07); overflow: hidden; min-width: 120px; margin-top: 6px; }
 .meter i { display: block; height: 100%; background: var(--ember); }
 @media (max-width: 900px) { .composer { grid-template-columns: minmax(0, 1fr); } .composer iframe { position: static; height: 620px; } }
+/* Boîte mail des fondateurs */
+.mail { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 14px; margin-top: 14px; }
+.mail-list { border: 1px solid var(--line); border-radius: 14px; background: var(--deep); max-height: 720px; overflow-y: auto; }
+.mail-item { display: block; width: 100%; padding: 12px 14px; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--haze); text-align: left; cursor: pointer; font: 400 13px/1.35 var(--f-body); }
+.mail-item:hover, .mail-item[aria-current="true"] { background: rgba(226,52,68,.12); }
+.mail-item.unread { color: var(--mist); }
+.mail-item.unread strong::before { content: "\25CF  "; color: var(--ember); }
+.mail-item strong { display: block; color: var(--mist); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mail-item span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mail-item small { font: 500 11px var(--f-mono); color: var(--haze); }
+.mail-read { border: 1px solid var(--line); border-radius: 14px; background: var(--deep); padding: 16px; min-height: 420px; }
+.mail-read iframe { width: 100%; height: 560px; border: 1px solid var(--line); border-radius: 10px; background: #fff; margin-top: 12px; }
+.mail-read pre { white-space: pre-wrap; overflow-wrap: anywhere; font: 400 14px/1.6 var(--f-body); color: var(--mist); margin-top: 12px; }
+.mail-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.mail-tools select { padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--deep); color: var(--mist); font: 600 13px var(--f-body); }
+@media (max-width: 900px) { .mail { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 700px) { .product, .product form { grid-template-columns: minmax(0, 1fr); } }
 [hidden] { display: none !important; }
 </style>
@@ -155,6 +171,26 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
     </table></div>
 
     <div id="staff-mail">
+    <div id="mailbox" hidden>
+    <div class="bar"><h2>Boîte mail</h2><span class="sub" id="mail-address"></span></div>
+    <div class="mail-tools">
+      <select id="mail-folder" aria-label="Dossier"></select>
+      <button class="act" id="mail-refresh" type="button">Actualiser</button>
+      <button class="act" id="mail-new" type="button">Nouveau message</button>
+      <span class="sub" id="mail-page"></span>
+      <button class="act" id="mail-prev" type="button">← Plus récents</button>
+      <button class="act" id="mail-next" type="button">Plus anciens →</button>
+    </div>
+    <p class="error" id="mailbox-error" role="alert"></p>
+    <div class="mail"><div class="mail-list" id="mail-list"></div><div class="mail-read" id="mail-read"><p class="sub">Choisissez un message.</p></div></div>
+    </div>
+
+    <div id="brand-kit" hidden>
+    <div class="bar"><h2>Charte graphique</h2><button class="btn" id="brand-download" type="button">Télécharger le .zip</button></div>
+    <p class="sub" id="brand-info">Logos, couleurs, polices, modèles prêts à publier pour chaque réseau et le guide en PDF. Réservé aux fondateurs.</p>
+    <p class="error" id="brand-error" role="alert"></p>
+    </div>
+
     <div class="bar"><h2>Nos réseaux</h2></div>
     <p class="sub">Les comptes d'ONIRIQUE, affichés dans l'en-tête (rubrique « Nos réseaux »), le menu des téléphones et le pied des pages. Une adresse complète (https://…) ; laisser vide pour ne pas afficher le réseau.</p>
     <div class="box" id="socials"></div>
@@ -643,6 +679,141 @@ async function loadPromos() {
   }) : [el("tr", {}, el("td", { colSpan: 6, className: "sub", textContent: "Aucun code pour le moment." }))]));
 }
 
+//------------------------------------------------------------------------------ Boîte mail (fondateurs)
+// La boîte de l'adresse d'ONIRIQUE, lue par le serveur (IMAP IONOS). Les messages en HTML s'affichent dans un cadre
+// isolé, sans script ni requête vers l'extérieur sauf les images ; les réponses partent de l'adresse d'ONIRIQUE.
+const box = { folder: "INBOX", page: 1, pages: 1, open: null };
+const when = (ms) => new Date(ms).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+const who = (list) => list.map((a) => (a.name ? `${a.name} <${a.address}>` : a.address)).join(", ");
+async function loadMailbox() {
+  if (me.role !== "founder") return;
+  $("mailbox").hidden = false;
+  const fail = (error) => { $("mailbox-error").textContent = error.message; };
+  $("mail-folder").onchange = () => { box.folder = $("mail-folder").value; box.page = 1; mailList().catch(fail); };
+  $("mail-refresh").onclick = () => loadMailbox();
+  $("mail-new").onclick = () => compose({});
+  $("mail-prev").onclick = () => { if (box.page > 1) { box.page--; mailList().catch(fail); } };
+  $("mail-next").onclick = () => { if (box.page < box.pages) { box.page++; mailList().catch(fail); } };
+  try {
+    const info = await api("GET", "/admin/mailbox");
+    $("mail-address").textContent = info.address ? "Adresse : " + info.address : "";
+    if (!info.enabled) { $("mail-read").replaceChildren(el("p", { className: "sub", textContent: "Aucune boîte mail n'est reliée au serveur." })); return; }
+    $("mail-folder").replaceChildren(...info.folders.map((f) => el("option", { value: f.path, textContent: f.name + (f.unseen ? ` (${f.unseen})` : "") })));
+    $("mail-folder").value = box.folder;
+    await mailList();
+  } catch (error) { fail(error); }
+}
+async function mailList() {
+  $("mailbox-error").textContent = "";
+  $("mail-list").replaceChildren(el("p", { className: "sub", style: "padding:14px", textContent: "Chargement…" }));
+  const data = await api("GET", `/admin/mailbox/messages?folder=${encodeURIComponent(box.folder)}&page=${box.page}`);
+  box.pages = data.pages;
+  $("mail-page").textContent = `${data.total} message(s) · page ${data.page}/${data.pages}`;
+  $("mail-prev").disabled = box.page <= 1;
+  $("mail-next").disabled = box.page >= box.pages;
+  $("mail-list").replaceChildren(...(data.messages.length ? data.messages.map((m) => {
+    const item = el("button", { type: "button", className: "mail-item" + (m.seen ? "" : " unread") },
+      el("strong", { textContent: m.from || m.fromAddress || "(inconnu)" }), el("span", { textContent: (m.attachments ? "📎 " : "") + m.subject }), el("small", { textContent: when(m.date) }));
+    item.setAttribute("aria-current", String(box.open === m.uid));
+    item.onclick = () => readMail(m.uid, item);
+    return item;
+  }) : [el("p", { className: "sub", style: "padding:14px", textContent: "Aucun message dans ce dossier." })]));
+}
+async function readMail(uid, item) {
+  box.open = uid;
+  document.querySelectorAll(".mail-item").forEach((i) => i.setAttribute("aria-current", String(i === item)));
+  item.classList.remove("unread");
+  const read = $("mail-read");
+  read.replaceChildren(el("p", { className: "sub", textContent: "Ouverture…" }));
+  try {
+    const m = await api("GET", `/admin/mailbox/message?folder=${encodeURIComponent(box.folder)}&uid=${uid}`);
+    const head = el("div", {}, el("h3", { textContent: m.subject, style: "margin:0 0 8px;font:800 18px/1.3 var(--f-display)" }),
+      el("div", { className: "sub", textContent: "De : " + who(m.from) }), el("div", { className: "sub", textContent: "À : " + who(m.to) + (m.cc.length ? " · Cc : " + who(m.cc) : "") }),
+      el("div", { className: "sub", textContent: m.date ? when(m.date) : "" }));
+    const reply = el("button", { className: "act", type: "button", textContent: "Répondre" });
+    reply.onclick = () => compose({
+      to: (m.replyTo.length ? m.replyTo : m.from).map((a) => a.address).join(", "),
+      subject: /^re\s*:/i.test(m.subject) ? m.subject : "Re: " + m.subject, inReplyTo: m.messageId, references: [...m.references, m.messageId].filter(Boolean),
+      quote: `\n\n\nLe ${m.date ? when(m.date) : ""}, ${who(m.from)} a écrit :\n` + (m.text || "").split("\n").map((l) => "> " + l).join("\n"),
+    });
+    const unread = el("button", { className: "act", type: "button", textContent: "Marquer non lu" });
+    unread.onclick = async () => { try { await api("POST", "/admin/mailbox/seen", { folder: box.folder, uid, seen: false }); await mailList(); } catch (e) { $("mailbox-error").textContent = e.message; } };
+    const bin = el("button", { className: "act", type: "button", textContent: "Corbeille" });
+    bin.onclick = async () => {
+      if (!window.confirm("Mettre ce message à la corbeille ?")) return;
+      try { await api("POST", "/admin/mailbox/trash", { folder: box.folder, uid }); box.open = null; read.replaceChildren(el("p", { className: "sub", textContent: "Message mis à la corbeille." })); await mailList(); } catch (e) { $("mailbox-error").textContent = e.message; }
+    };
+    const files = m.attachments.map((a) => {
+      const b = el("button", { className: "act", type: "button", textContent: `📎 ${a.filename} (${Math.max(1, Math.round(a.size / 1024))} Ko)` });
+      b.onclick = async () => {
+        const r = await fetch(`/api/admin/mailbox/attachment?folder=${encodeURIComponent(box.folder)}&uid=${uid}&index=${a.index}`, { headers: { Authorization: "Bearer " + token } });
+        if (!r.ok) { $("mailbox-error").textContent = (await r.json().catch(() => ({}))).error || "Pièce jointe indisponible."; return; }
+        const url = URL.createObjectURL(await r.blob());
+        Object.assign(document.createElement("a"), { href: url, download: a.filename }).click();
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      };
+      return b;
+    });
+    let body;
+    if (m.html) {
+      body = el("iframe", { title: "Contenu du message" });
+      body.setAttribute("sandbox", "allow-popups allow-popups-to-escape-sandbox");
+      body.srcdoc = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data: cid:; style-src 'unsafe-inline'; font-src https: data:"><base target="_blank">` + m.html;
+    } else {
+      body = el("pre", { textContent: m.text });
+    }
+    read.replaceChildren(head, el("div", { className: "mail-tools", style: "margin-top:12px" }, reply, unread, bin, ...files), body);
+  } catch (error) {
+    read.replaceChildren(el("p", { className: "error", textContent: error.message }));
+  }
+}
+function compose({ to = "", subject = "", inReplyTo = null, references = [], quote = "" }) {
+  const f = { to: el("input", { type: "text", value: to, placeholder: "adresse@exemple.com, autre@exemple.com" }), cc: el("input", { type: "text", placeholder: "Facultatif" }),
+    subject: el("input", { type: "text", value: subject, maxLength: 200 }), text: el("textarea", { value: quote, style: "min-height:260px" }) };
+  const send = el("button", { className: "act", type: "submit", textContent: "Envoyer" });
+  const cancel = el("button", { className: "act", type: "button", textContent: "Annuler" });
+  const note = el("p", { className: "sub", textContent: "Envoyé depuis l'adresse d'ONIRIQUE, mis en page aux couleurs de la marque ; une copie va dans « Envoyés »." });
+  const form = el("form", { className: "box", style: "margin:0;display:grid;gap:10px" }, el("label", {}, "À", f.to), el("label", {}, "Cc", f.cc), el("label", {}, "Objet", f.subject), el("label", {}, "Message", f.text), note,
+    el("div", { className: "mail-tools" }, send, cancel));
+  cancel.onclick = () => $("mail-read").replaceChildren(el("p", { className: "sub", textContent: "Choisissez un message." }));
+  form.onsubmit = async (event) => {
+    event.preventDefault();
+    send.disabled = true;
+    try {
+      await api("POST", "/admin/mailbox/send", { to: f.to.value, cc: f.cc.value, subject: f.subject.value, text: f.text.value, inReplyTo, references });
+      $("mail-read").replaceChildren(el("p", { className: "sub", textContent: "Message envoyé." }));
+    } catch (error) { $("mailbox-error").textContent = error.message; send.disabled = false; }
+  };
+  $("mail-read").replaceChildren(form);
+  f.text.focus();
+  f.text.setSelectionRange(0, 0);
+}
+
+//------------------------------------------------------------------------------ Charte graphique (fondateurs)
+async function loadBrandKit() {
+  if (me.role !== "founder") return;
+  $("brand-kit").hidden = false;
+  try {
+    const info = await api("GET", "/admin/brand-kit/info");
+    if (info.available) $("brand-info").textContent += ` ${Math.round(info.size / 1048576)} Mo, mise à jour le ${date(info.updatedAt)}.`;
+    else { $("brand-download").disabled = true; $("brand-info").textContent += " Pas encore déposée sur le serveur."; }
+  } catch (error) { $("brand-error").textContent = error.message; }
+  $("brand-download").onclick = async () => {
+    $("brand-error").textContent = "";
+    $("brand-download").disabled = true;
+    $("brand-download").textContent = "Téléchargement…";
+    try {
+      const response = await fetch("/api/admin/brand-kit", { headers: { Authorization: "Bearer " + token } });
+      if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Téléchargement impossible.");
+      const url = URL.createObjectURL(await response.blob());
+      Object.assign(document.createElement("a"), { href: url, download: "ONIRIQUE-charte-graphique.zip" }).click();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (error) { $("brand-error").textContent = error.message; }
+    $("brand-download").disabled = false;
+    $("brand-download").textContent = "Télécharger le .zip";
+  };
+}
+
 //------------------------------------------------------------------------------ Nos réseaux
 async function loadSocials() {
   const { socials } = await api("GET", "/admin/site");
@@ -794,6 +965,8 @@ $("search").oninput = () => { clearTimeout(timer); timer = setTimeout(() => load
     await loadPlans();
     await loadProducts();
     await loadPromos();
+    await loadMailbox();
+    await loadBrandKit();
     await loadSocials();
     await loadReferral();
     await loadMailings(true);

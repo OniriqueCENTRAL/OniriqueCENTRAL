@@ -841,7 +841,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
   </div>
 </footer>
 
-<script src="assets/demo-player.js?v=2"></script>
+<script src="assets/demo-player.js?v=3"></script>
 <script>
 (() => {
 "use strict";
@@ -1916,6 +1916,8 @@ function showcase(list) {
     const box = $("#showDemo");
     box.innerHTML = '<div class="demo-wait">Chargement de l\'interface…</div>';
     try {
+      const web = await OniriqueDemo.web(p.slug); // une interface web réelle (RAW) passe avant la démo en images
+      if (web) { if (list[at] === p) OniriqueDemo.mountWeb(box, web, p.name); return; }
       if (!loaded.has(p.id)) {
         const response = await fetch(p.demo);
         if (!response.ok) throw new Error();
@@ -1940,8 +1942,11 @@ function showcase(list) {
     show();
   }, { rootMargin: "700px" }).observe($("#showcase"));
 }
-fetch("/api/catalog").then(r => r.ok ? r.json() : null).then(catalog => {
-  const demos = (catalog?.products || []).filter(p => p.demo && !p.imageManual); // une image choisie par un admin passe avant la démo automatique
+Promise.all([fetch("/api/catalog").then(r => r.ok ? r.json() : null), OniriqueDemo.web("")]).then(async ([catalog]) => {
+  const products = catalog?.products || [];
+  const webs = await Promise.all(products.map(p => OniriqueDemo.web(p.slug)));
+  // une interface web réelle compte comme démo ; une image choisie par un admin passe avant la démo automatique
+  const demos = products.filter((p, i) => webs[i] || (p.demo && !p.imageManual));
   if (demos.length) showcase(demos);
   else $("#vbMock").parentElement.hidden = false; // aucune démo en ligne : la maquette de VocalBox tient lieu d'aperçu
 }).catch(() => { $("#vbMock").parentElement.hidden = false; });

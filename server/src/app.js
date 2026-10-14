@@ -26,6 +26,7 @@ import {
   attachReferrer, normalizeCode, referralSettings, promoFields, promoView, quote, referralStats, referralView, saveReferralSettings,
 } from './promos.js';
 import { mountNewsletter, setMarketing } from './newsletter.js';
+import * as mailbox from './mailbox.js';
 import { connectUrl, disconnect, finishConnect, videoFile, videoView, youtubeConfigured, youtubeState } from './youtube.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -1226,6 +1227,56 @@ export function createApp() {
     run('DELETE FROM promo_codes WHERE id = ?', ownPromo(req).id);
     res.json({ ok: true });
   });
+
+  // Charte graphique (logos, couleurs, polices, modèles pour les réseaux) : un .zip déposé dans le dossier des données
+  // (tools/brand-kit, deploy/upload-brand-kit.sh), téléchargeable par les fondateurs seulement.
+  const brandKit = path.join(config.dataDir, 'brand', 'ONIRIQUE-charte-graphique.zip');
+  admin.get('/brand-kit', (req, res, next) => {
+    if (req.user.role !== 'founder') return next(new HttpError(403, 'Réservé aux fondateurs.'));
+    if (!fs.existsSync(brandKit)) return next(new HttpError(404, "La charte graphique n'a pas encore été déposée sur le serveur."));
+    res.download(brandKit, 'ONIRIQUE-charte-graphique.zip');
+  });
+  admin.get('/brand-kit/info', (req, res) => {
+    if (req.user.role !== 'founder') throw new HttpError(403, 'Réservé aux fondateurs.');
+    const stat = fs.existsSync(brandKit) ? fs.statSync(brandKit) : null;
+    res.json({ available: !!stat, size: stat?.size ?? 0, updatedAt: stat?.mtimeMs ?? null });
+  });
+
+  // La boîte mail d'ONIRIQUE (IONOS), pour les fondateurs : dossiers, messages, pièces jointes, réponses.
+  const founderOnly = (req) => { if (req.user.role !== 'founder') throw new HttpError(403, 'Réservé aux fondateurs.'); };
+  const uidOf = (value) => { const uid = int(value, 0); if (uid < 1) throw new HttpError(400, 'Message invalide.'); return uid; };
+  admin.get('/mailbox', wrap(async (req, res) => {
+    founderOnly(req);
+    if (!mailbox.mailboxEnabled) return res.json({ enabled: false, address: config.imapUser || config.mailFrom });
+    res.json({ enabled: true, address: config.imapUser, folders: await mailbox.folders() });
+  }));
+  admin.get('/mailbox/messages', wrap(async (req, res) => {
+    founderOnly(req);
+    res.json(await mailbox.messages(str(req.query.folder, 200) || 'INBOX', Math.max(1, int(req.query.page, 1))));
+  }));
+  admin.get('/mailbox/message', wrap(async (req, res) => {
+    founderOnly(req);
+    res.json(await mailbox.message(str(req.query.folder, 200) || 'INBOX', uidOf(req.query.uid)));
+  }));
+  admin.get('/mailbox/attachment', wrap(async (req, res) => {
+    founderOnly(req);
+    const file = await mailbox.attachment(str(req.query.folder, 200) || 'INBOX', uidOf(req.query.uid), int(req.query.index, 0));
+    res.set('X-Content-Type-Options', 'nosniff');
+    res.attachment(file.filename).type('application/octet-stream').send(file.content);
+  }));
+  admin.post('/mailbox/seen', wrap(async (req, res) => {
+    founderOnly(req);
+    res.json(await mailbox.setSeen(str(req.body.folder, 200) || 'INBOX', uidOf(req.body.uid), req.body.seen !== false));
+  }));
+  admin.post('/mailbox/trash', wrap(async (req, res) => {
+    founderOnly(req);
+    res.json(await mailbox.trash(str(req.body.folder, 200) || 'INBOX', uidOf(req.body.uid)));
+  }));
+  admin.post('/mailbox/send', wrap(async (req, res) => {
+    founderOnly(req);
+    if (!mailEnabled) throw new HttpError(503, "Aucun serveur de messagerie n'est relié au serveur.");
+    res.json(await mailbox.send(req.user, req.body));
+  }));
 
   // Nos réseaux : une adresse https par réseau, vide pour ne pas l'afficher (l'équipe seulement).
   admin.get('/site', (_req, res) => res.json({ socials: SOCIALS.map(([id, label]) => ({ id, label, url: setting('socials', {})[id] || '' })) }));

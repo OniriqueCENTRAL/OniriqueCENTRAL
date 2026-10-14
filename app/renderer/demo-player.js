@@ -12,6 +12,35 @@
 // zones se recouvrent ne peuvent pas être montrés ensemble sans mélanger deux images. Toucher l'un remet donc
 // l'autre au repos, et ce qui s'affiche est toujours une image réelle du plugin.
 window.OniriqueDemo = {
+  // Les plugins dont l'interface est elle-même une page web (RAW) : cette page, en « aperçu simulé », sert d'aperçu.
+  // La liste est dans /previews/previews.json (tools/sync-web-previews.mjs) ; null si le plugin n'en a pas.
+  web(slug) {
+    this.webList ??= fetch("/previews/previews.json").then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
+    return this.webList.then((list) => list[slug] || null);
+  },
+
+  // La page est affichée à la taille de la fenêtre du plugin (entry.width × entry.height), puis réduite pour tenir
+  // dans la largeur disponible : on la voit comme dans le DAW, jamais tassée.
+  mountWeb(root, entry, name) {
+    const width = entry.width || 1100, height = entry.height || 760;
+    const box = document.createElement("div");
+    box.className = "demo-web";
+    Object.assign(box.style, { position: "relative", width: "100%", aspectRatio: `${width} / ${height}`, overflow: "hidden", background: "#0d0809" });
+    const frame = document.createElement("iframe");
+    frame.src = entry.url;
+    frame.title = "Interface de " + name;
+    frame.loading = "lazy";
+    Object.assign(frame.style, { position: "absolute", left: "0", top: "0", width: width + "px", height: height + "px", border: "0", transformOrigin: "0 0" });
+    box.append(frame);
+    const fit = () => { frame.style.transform = `scale(${box.clientWidth / width})`; };
+    new ResizeObserver(fit).observe(box);
+    const status = document.createElement("p");
+    status.className = "demo-status";
+    status.textContent = "L'interface réelle du plugin, en direct : clique, tourne les boutons, joue sur le clavier. Aucun son ici.";
+    root.replaceChildren(box, status);
+    fit();
+  },
+
   async mount(root, url) {
     const response = await fetch(url);
     if (!response.ok) throw new Error("Démo indisponible.");
