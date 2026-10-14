@@ -61,13 +61,36 @@ const licensePath = (slug) => {
   return path.join(LICENSE_DIR, `${slug}.lic`);
 };
 
+// Un fichier écrit par Central lancé en administrateur (ou par un autre compte Windows) n'est ensuite modifiable que
+// par un administrateur : Central lancé normalement ne pourrait plus le renouveler ni l'effacer. Une fois par
+// lancement, le dossier et ses fichiers sont ouverts en modification aux utilisateurs du PC (groupe Utilisateurs,
+// S-1-5-32-545) ; cela ne réussit que si ce lancement en a le droit, et ne bloque rien sinon.
+let shared = false;
+function shareLicenseDir() {
+  if (shared || process.platform !== 'win32') return;
+  shared = true;
+  exec('icacls', [LICENSE_DIR, '/grant', '*S-1-5-32-545:(OI)(CI)M', '/T', '/C', '/Q']).catch(() => {});
+}
+
 function writeLicense(slug, license) {
   fs.mkdirSync(LICENSE_DIR, { recursive: true });
+  shareLicenseDir();
   fs.writeFileSync(licensePath(slug), JSON.stringify(license));
 }
 
-const removeLicense = (slug) => fs.rmSync(licensePath(slug), { force: true });
-const hasLicense = (slug) => fs.existsSync(licensePath(slug));
+/** Retire le fichier de licence. S'il ne peut pas être effacé (voir plus haut), il est vidé ; sinon il reste, sans bloquer. */
+function removeLicense(slug) {
+  const file = licensePath(slug);
+  try {
+    fs.rmSync(file, { force: true });
+  } catch (error) {
+    if (!needsElevation(error)) throw error;
+    shareLicenseDir();
+    try { fs.writeFileSync(file, ''); } catch { console.error(`Licence ${slug} : fichier protégé, laissé en place (${error.code}).`); }
+  }
+}
+// Un fichier vidé (impossible à effacer) ne compte pas comme une licence.
+const hasLicense = (slug) => { try { return fs.statSync(licensePath(slug)).size > 0; } catch { return false; } };
 
 //==============================================================================
 //  Installation

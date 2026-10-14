@@ -99,7 +99,8 @@ async function load() {
           activated ||= offered;
         } catch { /* limite de machines atteinte, serveur injoignable : le plugin reste en démo */ }
       } else {
-        installer.removeLicense(product.slug);
+        // Un fichier qui résiste ne doit jamais empêcher l'application de s'ouvrir.
+        try { installer.removeLicense(product.slug); } catch (error) { console.error(`Licence ${product.slug} :`, error.message); }
       }
       installs[product.id].licensed = installer.hasLicense(product.slug);
     }

@@ -144,5 +144,7 @@ export function textToBlocks(text, buttonLabel = 'Ouvrir le lien') {
     if (lines.every((line) => /^ {2}\S/.test(line))) { blocks.push({ code: lines.map((l) => l.trim()).join('\n') }); continue; }
     blocks.push({ text: chunk.trim() });
   }
+  // La signature « ONIRIQUE » du texte simple : la mise en page signe déjà « L'équipe ONIRIQUE ».
+  while (blocks.length && /^(l'équipe\s+)?onirique\.?$/i.test(blocks.at(-1).text ?? '')) blocks.pop();
   return blocks.filter((b) => b.text !== '' );
 }
