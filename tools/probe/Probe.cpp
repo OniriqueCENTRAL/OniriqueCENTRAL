@@ -192,6 +192,16 @@ std::vector<juce::Rectangle<int>> islands (const std::vector<char>& changed, int
     return result;
 }
 
+/** Une image en JPEG : pour les images entières de l'interface, qu'un PNG rendrait trop lourdes. */
+juce::String toJpegDataUrl (const juce::Image& image)
+{
+    juce::MemoryOutputStream jpeg;
+    juce::JPEGImageFormat format;
+    format.setQuality (0.84f);
+    format.writeImageToStream (image, jpeg);
+    return "data:image/jpeg;base64," + juce::Base64::toBase64 (jpeg.getData(), jpeg.getDataSize());
+}
+
 juce::String toDataUrl (const juce::Image& image)
 {
     juce::MemoryOutputStream png;
@@ -315,7 +325,7 @@ int main (int argc, char** argv)
     }
 
     juce::Array<juce::var> controls;
-    juce::StringArray hidden, tooWide;
+    juce::StringArray hidden, tooWide, whole;
     const auto& parameters = plugin->getParameters();
     const double screenArea = (double) width * (double) height;
 
@@ -381,9 +391,16 @@ int main (int argc, char** argv)
                 noisy[i] = (char) (noisy[i] | drift[i]);
         }
 
+        // Ce qui a changé dans les zones animées (l'écran d'un personnage, un vumètre) ne peut pas être découpé :
+        // un réglage qui y change beaucoup (une couleur qui repeint tout le plugin) est gardé en images entières.
+        double clean = 0.0, inAnimated = 0.0;
         for (size_t i = 0; i < changed.size(); ++i)
-            if (noisy[i])
-                changed[i] = 0;
+        {
+            if (! changed[i])
+                continue;
+            if (noisy[i]) { inAnimated += 1.0; changed[i] = 0; }
+            else clean += 1.0;
+        }
 
         const auto areas = visible ? islands (changed, width, height) : std::vector<juce::Rectangle<int>>();
         if (areas.empty())
@@ -392,13 +409,60 @@ int main (int argc, char** argv)
             continue;
         }
 
-        // Un réglage qui redessine presque tout l'écran (changement de page, de mode) ne se rejoue pas comme un bouton.
+        const int defaultIndex = juce::jlimit (0, count - 1, juce::roundToInt (parameter->getDefaultValue() * (float) (count - 1)));
+
+        // Un réglage qui redessine une grande partie de l'interface (couleur, mode, page) ne se rejoue pas par
+        // morceaux : ses positions sont gardées en images entières, et le site le propose sous l'interface, comme
+        // un sélecteur. Quatre au plus, et pas plus de douze positions chacun (six pour un bouton continu).
         double total = 0.0;
         for (const auto& area : areas)
             total += (double) area.getWidth() * (double) area.getHeight();
-        if (total > 0.45 * screenArea || areas.size() > 12)
+        const bool global = total > 0.45 * screenArea || areas.size() > 12 || (inAnimated > 2000.0 && inAnimated > 0.5 * clean);
+        if (global)
         {
-            tooWide.add (name);
+            if (whole.size() >= 4 || (discrete && count > 12))
+            {
+                tooWide.add (name);
+                continue;
+            }
+            std::vector<int> picks;
+            if (discrete)
+                for (int k = 0; k < count; ++k) picks.push_back (k);
+            else
+                for (int k = 0; k < 6; ++k) picks.push_back (juce::roundToInt ((double) k * (count - 1) / 5.0));
+
+            juce::Image strip (juce::Image::RGB, width, height * (int) picks.size(), false);
+            juce::StringArray pickedTexts;
+            int start = 0;
+            {
+                juce::Graphics g (strip);
+                for (size_t i = 0; i < picks.size(); ++i)
+                {
+                    g.drawImageAt (frames[(size_t) picks[i]], 0, (int) i * height);
+                    pickedTexts.add (texts[picks[i]]);
+                    if (std::abs (picks[i] - defaultIndex) < std::abs (picks[(size_t) start] - defaultIndex))
+                        start = (int) i;
+                }
+            }
+            auto* part = new juce::DynamicObject();
+            part->setProperty ("x", 0.0);
+            part->setProperty ("y", 0.0);
+            part->setProperty ("w", 1.0);
+            part->setProperty ("h", 1.0);
+            part->setProperty ("sprite", toJpegDataUrl (strip));
+            juce::Array<juce::var> parts;
+            parts.add (juce::var (part));
+
+            auto* control = new juce::DynamicObject();
+            control->setProperty ("name", name);
+            control->setProperty ("frames", (int) picks.size());
+            control->setProperty ("discrete", true);
+            control->setProperty ("global", true);
+            control->setProperty ("start", start);
+            control->setProperty ("texts", juce::var (pickedTexts));
+            control->setProperty ("parts", juce::var (parts));
+            controls.add (juce::var (control));
+            whole.add (name);
             continue;
         }
 
@@ -420,8 +484,6 @@ int main (int argc, char** argv)
             part->setProperty ("sprite", toDataUrl (strip));
             parts.add (juce::var (part));
         }
-
-        const int defaultIndex = juce::jlimit (0, count - 1, juce::roundToInt (parameter->getDefaultValue() * (float) (count - 1)));
 
         auto* control = new juce::DynamicObject();
         control->setProperty ("name", name);
@@ -452,8 +514,9 @@ int main (int argc, char** argv)
     outDir.getChildFile ("demo.json").replaceWithText (juce::JSON::toString (juce::var (demo), true));
 
     std::cout << "RESULTAT " << controls.size() << " boutons enregistres, " << hidden.size() << " reglages sans bouton visible, "
-              << tooWide.size() << " ecartes (redessinent tout l'ecran), image " << width << "x" << height << std::endl;
+              << whole.size() << " en images entieres, " << tooWide.size() << " ecartes, image " << width << "x" << height << std::endl;
     if (! hidden.isEmpty())  std::cout << "  sans bouton : " << hidden.joinIntoString (", ") << std::endl;
+    if (! whole.isEmpty())   std::cout << "  images entieres : " << whole.joinIntoString (", ") << std::endl;
     if (! tooWide.isEmpty()) std::cout << "  ecartes : " << tooWide.joinIntoString (", ") << std::endl;
 
     finish (0);

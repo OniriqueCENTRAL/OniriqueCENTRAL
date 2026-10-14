@@ -297,6 +297,13 @@ button.key.copy:hover { color: var(--ember-hot); }
 .demo-part.discrete { cursor: pointer; }
 .demo-part:focus-visible { outline: 2px solid var(--ember-hot); outline-offset: 2px; z-index: 99999 !important; }
 .demo-status { margin: 0; padding: 10px 14px; border-top: 1px solid var(--line); background: rgba(0, 0, 0, 0.45); font: 500 11.5px/1.4 var(--mono); color: var(--bone); }
+/* Réglages qui changent toute l'interface : une rangée de pastilles par réglage, sous la démo */
+.demo-globals { display: grid; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--line); background: rgba(0, 0, 0, 0.45); }
+.demo-global { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.demo-global span { min-width: 9em; font: 500 10.5px/1.2 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
+.demo-global button { padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--mist); font: 500 11.5px/1 var(--mono); cursor: pointer; }
+.demo-global button:hover { border-color: var(--ember); }
+.demo-global button[aria-pressed="true"] { background: var(--ember); border-color: var(--ember); color: #fff; }
 .demo-wait { padding: 70px 20px; text-align: center; color: var(--haze); font: 500 11px var(--mono); }
 
 /* ---------- Abonnement, tuiles ---------- */

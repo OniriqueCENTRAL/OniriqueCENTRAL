@@ -3,6 +3,14 @@
 //
 //   OniriqueDemo.mount(element, "/api/media/….json")  →  Promise   (le site : télécharge puis affiche)
 //   OniriqueDemo.render(element, demo)                 →  affiche une démo déjà chargée (l'application)
+//
+// Deux sortes de réglages :
+//   - un bouton (control.parts : les zones de l'interface qu'il change) se manipule sur l'image même ;
+//   - un réglage qui change toute l'interface (control.global : une couleur, un mode) a ses positions en images
+//     entières ; il se choisit sous l'interface, avec une pastille par position.
+// Chaque image a été enregistrée à partir de l'interface au repos, un réglage à la fois : deux réglages dont les
+// zones se recouvrent ne peuvent pas être montrés ensemble sans mélanger deux images. Toucher l'un remet donc
+// l'autre au repos, et ce qui s'affiche est toujours une image réelle du plugin.
 window.OniriqueDemo = {
   async mount(root, url) {
     const response = await fetch(url);
@@ -17,12 +25,19 @@ window.OniriqueDemo = {
     stage.style.aspectRatio = `${demo.width} / ${demo.height}`;
     stage.style.backgroundImage = `url("${demo.base}")`;
 
+    const globals = document.createElement("div");
+    globals.className = "demo-globals";
+
     const status = document.createElement("p");
     status.className = "demo-status";
     status.setAttribute("aria-live", "polite");
-    status.textContent = hint || "Tourne un bouton, clique un interrupteur : c'est l'interface réelle du plugin.";
+    const hasButtons = demo.controls.some((c) => !c.global);
+    status.textContent = hint || (hasButtons ? "Tourne un bouton, clique un interrupteur : c'est l'interface réelle du plugin."
+      : "Choisis un réglage sous l'interface : ce sont les vraies images du plugin.");
 
     let top = 1;
+    const touched = []; // les réglages montrés hors de leur position de repos
+    const overlap = (a, b) => a.some((r) => b.some((s) => r.x < s.x + s.w && s.x < r.x + r.w && r.y < s.y + s.h && s.y < r.y + r.h));
     const area = (control) => control.parts.reduce((sum, p) => sum + p.w * p.h, 0);
 
     // Les grandes zones d'abord : les petits boutons restent cliquables par-dessus.
@@ -33,7 +48,11 @@ window.OniriqueDemo = {
         const el = document.createElement("div");
         el.className = "demo-part" + (control.discrete ? " discrete" : "");
         Object.assign(el.style, { left: part.x * 100 + "%", top: part.y * 100 + "%", width: part.w * 100 + "%", height: part.h * 100 + "%" });
-        if (index === 0) {
+        if (control.global) {
+          // Une image entière posée sur l'interface : elle ne prend pas les clics, les boutons restent dessous.
+          el.style.pointerEvents = "none";
+          el.style.borderRadius = "0";
+        } else if (index === 0) {
           el.tabIndex = 0;
           el.setAttribute("role", control.discrete && control.frames === 2 ? "switch" : "slider");
           el.setAttribute("aria-label", control.name);
@@ -44,29 +63,71 @@ window.OniriqueDemo = {
         return el;
       });
 
-      const show = (next, touched = true) => {
+      // Réglage global : une rangée de pastilles sous l'interface.
+      const chips = [];
+      if (control.global) {
+        const group = document.createElement("div");
+        group.className = "demo-global";
+        group.setAttribute("role", "group");
+        group.setAttribute("aria-label", control.name);
+        const label = document.createElement("span");
+        label.textContent = control.name;
+        group.append(label);
+        control.texts.forEach((text, k) => {
+          const chip = document.createElement("button");
+          chip.type = "button";
+          chip.textContent = text || String(k + 1);
+          chip.addEventListener("click", () => show(k));
+          chips.push(chip);
+          group.append(chip);
+        });
+        globals.append(group);
+      }
+      const mark = () => chips.forEach((chip, k) => chip.setAttribute("aria-pressed", String(k === frame)));
+
+      const self = {
+        rects: control.parts,
+        reset: () => {
+          frame = control.start;
+          parts.forEach((el) => { el.style.backgroundImage = ""; el.style.zIndex = ""; });
+          mark();
+        },
+      };
+
+      const show = (next, manipulated = true) => {
         frame = Math.max(0, Math.min(last, next));
+        if (manipulated) {
+          for (const other of touched.filter((o) => o !== self && overlap(o.rects, self.rects))) {
+            other.reset();
+            touched.splice(touched.indexOf(other), 1);
+          }
+          if (!touched.includes(self)) touched.push(self);
+        }
         parts.forEach((el, index) => {
-          // L'image du bouton n'est posée qu'à la première manipulation : au repos, c'est l'interface d'origine qu'on voit.
-          if (touched) {
+          // L'image n'est posée qu'à la première manipulation : au repos, c'est l'interface d'origine qu'on voit.
+          if (manipulated) {
             el.style.backgroundImage = `url("${control.parts[index].sprite}")`;
             el.style.backgroundSize = `100% ${control.frames * 100}%`;
             el.style.backgroundPosition = `0 ${last ? (frame / last) * 100 : 0}%`;
-            el.style.zIndex = String(top); // le dernier bouton touché passe au-dessus des zones qu'il partage
+            el.style.zIndex = String(top); // le dernier réglage touché passe au-dessus des zones qu'il partage
           }
         });
-        if (touched) top++;
-        const main = parts[0];
-        if (main.getAttribute("role") === "switch") main.setAttribute("aria-checked", String(frame === last));
-        else {
-          main.setAttribute("aria-valuemin", "0");
-          main.setAttribute("aria-valuemax", String(last));
-          main.setAttribute("aria-valuenow", String(frame));
-          main.setAttribute("aria-valuetext", control.texts[frame] || "");
+        if (manipulated) top++;
+        mark();
+        if (!control.global) {
+          const main = parts[0];
+          if (main.getAttribute("role") === "switch") main.setAttribute("aria-checked", String(frame === last));
+          else {
+            main.setAttribute("aria-valuemin", "0");
+            main.setAttribute("aria-valuemax", String(last));
+            main.setAttribute("aria-valuenow", String(frame));
+            main.setAttribute("aria-valuetext", control.texts[frame] || "");
+          }
         }
-        if (touched) status.textContent = `${control.name} : ${control.texts[frame] || ""}`;
+        if (manipulated) status.textContent = `${control.name} : ${control.texts[frame] || ""}`;
       };
       show(frame, false);
+      if (control.global) continue;
 
       for (const el of parts) {
         if (control.discrete) {
@@ -94,7 +155,7 @@ window.OniriqueDemo = {
       }
     }
 
-    root.replaceChildren(stage, status);
+    root.replaceChildren(...[stage, globals.children.length ? globals : null, status].filter(Boolean));
     return demo;
   },
 };

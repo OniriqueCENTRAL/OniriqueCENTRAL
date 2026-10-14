@@ -113,6 +113,13 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 .demo-part.discrete { cursor: pointer; touch-action: manipulation; }
 .demo-part:focus-visible { outline: 2px solid var(--ember-text); outline-offset: 2px; z-index: 99999 !important; }
 .demo-status { margin: 0; padding: 12px 16px; border-top: 1px solid var(--line); background: var(--deep); font: 500 13px/1.4 var(--f-mono); color: var(--bone); }
+/* Réglages qui changent toute l'interface : une rangée de pastilles par réglage, sous la démo */
+.demo-globals { display: grid; gap: 10px; padding: 14px 16px; border-top: 1px solid var(--line); background: var(--deep); }
+.demo-global { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.demo-global span { min-width: 9em; font: 500 11px/1.2 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
+.demo-global button { padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--mist); font: 500 12px/1 var(--f-mono); cursor: pointer; }
+.demo-global button:hover { border-color: var(--ember); }
+.demo-global button[aria-pressed="true"] { background: var(--ember); border-color: var(--ember); color: #fff; }
 .demo-wait { padding: 60px 20px; text-align: center; color: var(--haze); background: var(--deep); }
 @media (max-width: 620px) { .brand { font-size: 0; gap: 0; } header .btn { padding: 10px 12px; font-size: 13px; } }
 @media (max-width: 900px) { .product { grid-template-columns: minmax(0, 1fr); } .side { position: static; } }
@@ -219,7 +226,7 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
   </nav>
 </footer>
 
-<script src="assets/demo-player.js"></script>
+<script src="assets/demo-player.js?v=2"></script>
 <script src="assets/tools-menu.js"></script>
 <script src="assets/account.js?v=4"></script>
 <script src="assets/catalog-watch.js"></script>
