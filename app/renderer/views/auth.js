@@ -13,6 +13,8 @@ export function authView() {
   const password = h('input', { type: 'password', required: true, minLength: mode === 'register' ? 8 : 1,
     autocomplete: mode === 'register' ? 'new-password' : 'current-password' });
   const name = h('input', { type: 'text', maxLength: 80, placeholder: 'Nom ou pseudo' });
+  const ref = h('input', { type: 'text', maxLength: 12, class: 'mono', placeholder: 'Facultatif', style: { 'text-transform': 'uppercase' } });
+  const newsletter = h('input', { type: 'checkbox' });
   const error = h('div', { class: 'error-text' });
   const submit = h('button', { class: 'btn primary', type: 'submit' }, mode === 'login' ? 'Se connecter' : 'Créer mon compte');
 
@@ -24,7 +26,7 @@ export function authView() {
       error.textContent = '';
       try {
         if (mode === 'login') await call('auth:login', email.value, password.value);
-        else await call('auth:register', email.value, password.value, name.value);
+        else await call('auth:register', email.value, password.value, name.value, ref.value.trim(), newsletter.checked);
         await refresh();
       } catch (e) {
         error.textContent = e.message;
@@ -35,6 +37,9 @@ export function authView() {
     mode === 'register' ? field('Nom', name) : null,
     field('E-mail', email),
     field(mode === 'register' ? 'Mot de passe (8 caractères minimum)' : 'Mot de passe', password),
+    mode === 'register' ? field('Code de parrainage d\'un ami', ref) : null,
+    mode === 'register' ? h('label', { class: 'check', style: { 'align-items': 'flex-start', 'font-size': '13px' } }, newsletter,
+      h('span', null, 'J\'accepte de recevoir par e-mail les nouveautés, offres et codes promo d\'ONIRIQUE. Désinscription en un clic dans chaque message.')) : null,
     // Même consentement que sur la page compte du site ; les textes sont sur onirique.store.
     mode === 'register' ? h('label', { class: 'check', style: { 'align-items': 'flex-start', 'font-size': '13px' } },
       h('input', { type: 'checkbox', required: true }),

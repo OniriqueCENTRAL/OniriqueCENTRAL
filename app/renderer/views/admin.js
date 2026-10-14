@@ -7,7 +7,7 @@ import { state, call, refresh, render, go } from '../app.js';
 const api = (method, route, body) => call('api', method, `/api/admin${route}`, body);
 
 /** Données du panel, chargées onglet par onglet. */
-const data = { overview: null, plans: null, pick: null, credits: null, products: null, licenses: null, users: null, payments: null };
+const data = { overview: null, plans: null, pick: null, credits: null, products: null, licenses: null, users: null, payments: null, promos: null, referral: null, mailings: null };
 const ui = { licenseQuery: '', userQuery: '', generated: null, loading: false, error: null };
 
 const LOADERS = {
@@ -20,6 +20,9 @@ const LOADERS = {
   users: async () => { data.users = await api('GET', `/users?q=${encodeURIComponent(ui.userQuery)}`); },
   credits: async () => { [data.credits, data.products] = await Promise.all([api('GET', '/credits'), data.products ?? api('GET', '/products')]); },
   payments: async () => { data.payments = await api('GET', '/payments'); },
+  promos: async () => { [data.promos, data.products] = await Promise.all([api('GET', '/promos'), data.products ?? api('GET', '/products')]); },
+  referral: async () => { data.referral = await api('GET', '/referral'); },
+  mailings: async () => { [data.mailings, data.products] = await Promise.all([api('GET', '/mailings'), data.products ?? api('GET', '/products')]); },
 };
 const READY = {
   overview: () => data.overview && data.plans && data.pick,
@@ -28,6 +31,9 @@ const READY = {
   users: () => data.users,
   credits: () => data.credits && data.products,
   payments: () => data.payments,
+  promos: () => data.promos && data.products,
+  referral: () => data.referral,
+  mailings: () => data.mailings && data.products,
 };
 
 async function reload(tab = state.adminTab) {
@@ -110,6 +116,8 @@ function productForm(product) {
     published: h('input', { type: 'checkbox', checked: product?.published ?? true }),
     creator: h('select', null, Object.entries(CREATORS).map(([id, label]) => h('option', { value: id }, label))),
   };
+  // Catégories de la boutique : rien de coché, elles sont devinées à partir du nom et du texte.
+  const cats = (state.data.catalog.categories ?? []).map((c) => ({ id: c.id, label: c.label, box: h('input', { type: 'checkbox', checked: (product?.categories ?? []).includes(c.id) }) }));
   // Un <select> ne prend sa valeur qu'une fois ses options en place.
   f.creator.value = product?.creator ?? 'onirique';
   // Le créateur ne se choisit que par l'équipe : les plugins d'un partenaire portent toujours son nom.
@@ -119,12 +127,14 @@ function productForm(product) {
     staff ? field('Créateur', f.creator) : null,
     field('Description (une ligne vide entre les paragraphes)', f.description),
     h('div', { class: 'row' }, h('div', { class: 'grow' }, field('Prix (€) — 0 pour gratuit', f.price)), field('Couleur', f.accent)),
+    cats.length ? field('Catégories', h('div', { class: 'row wrap', style: { gap: '6px 16px' } }, cats.map((c) => h('label', { class: 'check' }, c.box, c.label)))) : null,
     h('label', { class: 'check' }, f.published, 'Visible dans la bibliothèque'));
   modal(product ? `Modifier ${product.name}` : 'Nouveau plugin', body, [{
     label: product ? 'Enregistrer' : 'Créer',
     run: async () => {
       const payload = { name: f.name.value, tagline: f.tagline.value, description: f.description.value,
-        priceCents: toCents(f.price), accent: f.accent.value, published: f.published.checked, ...(staff ? { creator: f.creator.value } : {}) };
+        priceCents: toCents(f.price), accent: f.accent.value, published: f.published.checked, ...(staff ? { creator: f.creator.value } : {}),
+        ...(cats.length ? { categories: cats.filter((c) => c.box.checked).map((c) => c.id) } : {}) };
       const ok = await changed(() => (product ? api('PATCH', `/products/${product.id}`, payload) : api('POST', '/products', payload)),
         product ? 'Plugin enregistré.' : 'Plugin créé.', true);
       return ok ? undefined : false;
@@ -542,12 +552,175 @@ function paymentsTab() {
   ];
 }
 
-const TABS = { overview: ['Vue d\'ensemble', overviewTab], products: ['Plugins', productsTab], licenses: ['Licences', licensesTab], users: ['Comptes', usersTab], credits: ['Crédits', creditsTab], payments: ['Paiements', paymentsTab] };
+//==============================================================================
+//  Codes promo : valables sur le site et dans l'application, une fois par compte
+//==============================================================================
+function promosTab() {
+  const staff = isStaff(state.data.me.user);
+  const nameOf = (id) => data.products.find((p) => p.id === id)?.name ?? 'plugin retiré';
+  const f = {
+    code: h('input', { class: 'mono', maxLength: 24, required: true, placeholder: 'NOEL20', style: { 'text-transform': 'uppercase' } }),
+    kind: h('select', null, h('option', { value: 'percent' }, 'En pourcentage'), h('option', { value: 'amount' }, 'En euros')),
+    value: h('input', { type: 'number', min: 1, step: 1, value: 20, required: true }),
+    maxUses: h('input', { type: 'number', min: 1, placeholder: 'Sans limite' }),
+    expires: h('input', { type: 'date' }),
+    note: h('input', { maxLength: 200, placeholder: 'Ex. : influenceur, Black Friday…' }),
+  };
+  f.kind.addEventListener('change', () => { f.value.step = f.kind.value === 'amount' ? 0.01 : 1; });
+  const picks = data.products.map((p) => ({ id: p.id, name: p.name, box: h('input', { type: 'checkbox' }) }));
+  const generate = () => { f.code.value = Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b % 32]).join(''); };
+  const form = h('form', {
+    class: 'stack',
+    onsubmit: async (event) => {
+      event.preventDefault();
+      const amount = Number(String(f.value.value).replace(',', '.'));
+      await changed(() => api('POST', '/promos', {
+        code: f.code.value, note: f.note.value, maxUses: f.maxUses.value ? Number(f.maxUses.value) : null, expiresAt: dateInputToMs(f.expires.value),
+        productIds: picks.filter((p) => p.box.checked).map((p) => p.id),
+        ...(f.kind.value === 'percent' ? { percent: Math.round(amount) } : { amountCents: Math.round(amount * 100) }),
+      }), `Code ${f.code.value.toUpperCase()} créé : il marche tout de suite sur le site et dans l'application.`);
+    },
+  },
+    h('div', { class: 'grid3' }, field('Code', h('div', { class: 'row' }, f.code, button('Générer', generate, 'small quiet'))), field('Remise', f.kind), field('Valeur', f.value)),
+    h('div', { class: 'grid3' }, field('Utilisations au total', f.maxUses), field('Valable jusqu\'au', f.expires), field('Note interne', f.note)),
+    field(staff ? 'Plugins (aucun coché : tous)' : 'Plugins (aucun coché : tous les vôtres)', h('div', { class: 'row wrap', style: { gap: '6px 16px' } }, picks.map((p) => h('label', { class: 'check' }, p.box, p.name)))),
+    h('div', null, h('button', { class: 'btn primary', type: 'submit' }, 'Créer le code')));
+
+  const row = (p) => {
+    const expired = p.expiresAt && p.expiresAt < Date.now(), full = p.maxUses && p.uses >= p.maxUses;
+    return h('tr', { class: !p.active || expired || full ? 'off' : '' },
+      h('td', null, h('button', { class: 'key copy', type: 'button', title: 'Copier le code', onclick: () => attempt(() => call('clipboard', p.code), 'Code copié.') }, p.code),
+        p.note ? h('div', { class: 'muted', style: { 'font-size': '12px' } }, p.note) : null),
+      h('td', null, p.label),
+      h('td', { class: 'muted' }, p.productIds ? p.productIds.map(nameOf).join(', ') : p.creator ? `Plugins ${CREATORS[p.creator] ?? p.creator}` : 'Tous'),
+      h('td', { class: 'mono' }, p.maxUses ? `${p.uses} / ${p.maxUses}` : String(p.uses)),
+      h('td', { class: 'muted' }, p.expiresAt ? date(p.expiresAt) : '—'),
+      h('td', null, !p.active ? pill('Désactivé', 'warn') : expired ? pill('Expiré', 'warn') : full ? pill('Épuisé', 'warn') : pill('Actif', '', true)),
+      h('td', { class: 'actions' },
+        button('Lien', () => attempt(() => call('clipboard', `https://onirique.store/boutique.html?code=${p.code}`), 'Lien de la boutique avec ce code copié.'), 'small quiet'),
+        button(p.active ? 'Désactiver' : 'Réactiver', () => changed(() => api('PATCH', `/promos/${p.id}`, { active: !p.active }), p.active ? 'Code désactivé.' : 'Code réactivé.'), 'small quiet'),
+        button('Supprimer', () => confirm(`Supprimer ${p.code} ?`, 'Le code ne pourra plus servir.', 'Supprimer', () => changed(() => api('DELETE', `/promos/${p.id}`), 'Code supprimé.'), 'danger'), 'small quiet danger')));
+  };
+  return [
+    h('div', { class: 'panel' }, eyebrow('Nouveau code promo'),
+      h('p', { class: 'muted', style: { margin: '0 0 14px' } }, 'Le client l\'entre au moment d\'acheter, sur le site ou dans l\'application. Il sert une fois par compte, sur les plugins (pas les abonnements).'),
+      form),
+    h('div', { class: 'panel' }, eyebrow('Codes'),
+      table(['Code', 'Remise', 'Plugins', 'Utilisations', 'Fin', 'État', ''], data.promos.map(row), 'Aucun code pour le moment.')),
+  ];
+}
+
+//==============================================================================
+//  Parrainage
+//==============================================================================
+function referralTab() {
+  const r = data.referral, s = r.settings;
+  const tile = (label, value) => h('div', { class: 'panel tile', style: { 'margin-top': 0 } }, eyebrow(label), h('div', { class: 'value' }, String(value)));
+  const f = {
+    enabled: h('input', { type: 'checkbox', checked: s.enabled }),
+    friend: h('input', { type: 'number', min: 0, max: 100, value: s.friendPercent }),
+    reward: h('input', { type: 'number', min: 1, max: 100, value: s.rewardPercent }),
+    milestone: h('input', { type: 'number', min: 0, max: 100, value: s.milestone }),
+    days: h('input', { type: 'number', min: 7, max: 3650, value: s.rewardDays }),
+  };
+  return [
+    h('div', { class: 'grid3' }, tile('Amis invités', r.invited), tile('Amis acheteurs', r.converted), tile('Codes offerts', `${r.rewardsUsed} / ${r.rewards} utilisés`)),
+    h('div', { class: 'panel', style: { 'margin-top': '16px' } }, eyebrow('Réglages'),
+      h('p', { class: 'muted', style: { margin: '0 0 14px' } }, 'L\'ami invité a une remise sur son premier plugin ONIRIQUE. À son premier achat payé, son parrain reçoit un code personnel, et à chaque palier d\'amis acheteurs un plugin ONIRIQUE offert. Les récompenses ne portent que sur les plugins ONIRIQUE.'),
+      h('div', { class: 'stack' },
+        h('label', { class: 'check' }, f.enabled, 'Parrainage ouvert'),
+        h('div', { class: 'grid2' }, field('Remise de l\'ami invité (%)', f.friend), field('Code du parrain par ami acheteur (%)', f.reward)),
+        h('div', { class: 'grid2' }, field('Plugin offert tous les … amis (0 : jamais)', f.milestone), field('Validité des codes (jours)', f.days)),
+        h('div', null, button('Enregistrer', () => changed(() => api('PUT', '/referral', { enabled: f.enabled.checked, friendPercent: Number(f.friend.value),
+          rewardPercent: Number(f.reward.value), milestone: Number(f.milestone.value), rewardDays: Number(f.days.value) }), 'Parrainage enregistré.'), 'primary')))),
+    h('div', { class: 'panel' }, eyebrow('Meilleurs parrains'),
+      table(['Compte', 'Amis inscrits', 'Amis acheteurs'], r.top.map((t) => h('tr', null, h('td', null, h('span', { class: 'selectable' }, t.email), t.name ? h('div', { class: 'muted', style: { 'font-size': '12px' } }, t.name) : null),
+        h('td', { class: 'mono' }, String(t.invited)), h('td', { class: 'mono' }, String(t.converted || 0)))), 'Personne n\'a encore invité d\'ami.')),
+  ];
+}
+
+//==============================================================================
+//  E-mails : un message mis en page aux couleurs d'ONIRIQUE, envoyé aux inscrits depuis l'adresse d'ONIRIQUE
+//==============================================================================
+const draft = {}; // le message en cours, gardé quand on change d'onglet
+function mailingsTab() {
+  const m = data.mailings;
+  const input = (key, props = {}) => {
+    const node = h(props.tag ?? 'input', { ...props, tag: undefined, value: draft[key] ?? props.value ?? '' });
+    node.addEventListener('input', () => { draft[key] = node.value; });
+    return node;
+  };
+  const audience = h('select', null, m.audiences.map((a) => h('option', { value: a.id }, `${a.label} · ${a.count}`)));
+  audience.value = draft.audience ?? 'newsletter';
+  const service = h('input', { type: 'checkbox', checked: !!draft.service });
+  const serviceLine = h('label', { class: 'check', style: { display: audience.value === 'all' ? '' : 'none', 'align-items': 'flex-start' } }, service,
+    h('span', null, 'C\'est une information de service (conditions, sécurité, panne), sans publicité : la loi interdit d\'envoyer de la publicité aux comptes qui ne l\'ont pas acceptée.'));
+  audience.addEventListener('change', () => { draft.audience = audience.value; serviceLine.style.display = audience.value === 'all' ? '' : 'none'; });
+  service.addEventListener('change', () => { draft.service = service.checked; });
+  const f = {
+    subject: input('subject', { maxLength: 140, placeholder: 'Nouveau : MeterBox est sorti' }),
+    preheader: input('preheader', { maxLength: 160, placeholder: 'La phrase grise après l\'objet' }),
+    eyebrow: input('eyebrow', { maxLength: 40, value: 'Nouveautés' }),
+    title: input('title', { maxLength: 120, placeholder: 'Salut {prenom} !' }),
+    text: input('text', { tag: 'textarea', rows: 9, maxLength: 12000, placeholder: 'Une ligne vide entre deux paragraphes. {prenom} : le prénom. **gras**, [texte](https://…), # intertitre' }),
+    image: input('image', { type: 'url', placeholder: 'https://… (facultatif)' }),
+    promoCode: input('promoCode', { class: 'mono', maxLength: 40, placeholder: 'Facultatif' }),
+    promoText: input('promoText', { maxLength: 140, placeholder: '-20 % jusqu\'à dimanche' }),
+    buttonLabel: input('buttonLabel', { maxLength: 40, placeholder: 'Voir la boutique' }),
+    buttonUrl: input('buttonUrl', { type: 'url', placeholder: 'https://onirique.store/boutique.html' }),
+  };
+  draft.productIds ??= [];
+  const picks = data.products.filter((p) => p.published).map((p) => {
+    const box = h('input', { type: 'checkbox', checked: draft.productIds.includes(p.id) });
+    box.addEventListener('change', () => { draft.productIds = box.checked ? [...draft.productIds, p.id] : draft.productIds.filter((id) => id !== p.id); });
+    return h('label', { class: 'check' }, box, p.name);
+  });
+  const content = () => ({ ...Object.fromEntries(Object.entries(f).map(([key, node]) => [key, node.value])), productIds: draft.productIds, audience: audience.value, service: service.checked });
+  const preview = async () => {
+    const result = await attempt(() => api('POST', '/mailings/preview', content()));
+    if (result) await call('admin:previewMail', result.html);
+  };
+  const send = () => {
+    const a = m.audiences.find((x) => x.id === audience.value);
+    confirm(`Envoyer à ${a.count} personne(s) ?`, `« ${f.subject.value} » part vers : ${a.label}. Environ ${Math.max(1, Math.ceil(a.count * 3 / 60))} minute(s), un message toutes les trois secondes.`, 'Envoyer',
+      async () => { if (await changed(() => api('POST', '/mailings', content()), 'Envoi lancé : il continue même si vous fermez l\'application.')) Object.keys(draft).forEach((k) => delete draft[k]); });
+  };
+  const state = { sending: 'En cours', sent: 'Terminé', cancelled: 'Arrêté' };
+  // Un envoi en cours : l'onglet se relit toutes les cinq secondes.
+  if (m.mailings.some((x) => x.status === 'sending')) setTimeout(() => { if (data.mailings === m) reload('mailings'); }, 5000);
+  return [
+    m.mailEnabled ? null : h('p', null, pill('Aucun serveur de messagerie relié : envoi impossible', 'warn')),
+    h('div', { class: 'panel' }, eyebrow('Nouveau message'),
+      h('p', { class: 'muted', style: { margin: '0 0 14px' } }, `Envoyé depuis ${m.from}, mis en page aux couleurs d'ONIRIQUE, avec un lien de désinscription dans chaque message.`),
+      h('div', { class: 'stack' },
+        field('Destinataires', audience), serviceLine,
+        h('div', { class: 'grid2' }, field('Objet', f.subject), field('Phrase d\'aperçu', f.preheader)),
+        h('div', { class: 'grid2' }, field('Petit titre', f.eyebrow), field('Titre', f.title)),
+        field('Message', f.text), field('Image en tête (adresse)', f.image),
+        field('Plugins mis en avant', h('div', { class: 'row wrap', style: { gap: '6px 16px' } }, picks)),
+        h('div', { class: 'grid2' }, field('Code promo', f.promoCode), field('Texte du code', f.promoText)),
+        h('div', { class: 'grid2' }, field('Texte du bouton', f.buttonLabel), field('Lien du bouton', f.buttonUrl)),
+        h('div', { class: 'row' }, button('Aperçu', preview), button('M\'envoyer un essai', () => attempt(async () => { const r = await api('POST', '/mailings/test', content()); return r; }, 'Essai envoyé sur votre adresse.')),
+          button('Envoyer', send, 'primary')))),
+    h('div', { class: 'panel' }, eyebrow('Envois'),
+      table(['Date', 'Objet', 'Destinataires', 'Avancement', ''], m.mailings.map((x) => h('tr', null,
+        h('td', { class: 'muted' }, date(x.createdAt)),
+        h('td', null, x.subject, x.author ? h('div', { class: 'muted', style: { 'font-size': '12px' } }, `par ${x.author}`) : null),
+        h('td', { class: 'muted' }, x.audienceLabel),
+        h('td', null, `${x.sent} / ${x.total}${x.failed ? ` · ${x.failed} non remis` : ''} · ${state[x.status] ?? x.status}`,
+          h('div', { class: 'progress', style: { 'margin-top': '6px' } }, h('i', { style: { width: `${x.total ? Math.round((x.sent + x.failed) / x.total * 100) : 0}%` } }))),
+        h('td', { class: 'actions' }, x.status === 'sending' ? button('Arrêter', () => changed(() => api('POST', `/mailings/${x.id}/cancel`), 'Envoi arrêté.'), 'small quiet danger') : null))),
+      'Aucun envoi pour le moment.')),
+  ];
+}
+
+const TABS = { overview: ['Vue d\'ensemble', overviewTab], products: ['Plugins', productsTab], licenses: ['Licences', licensesTab], users: ['Comptes', usersTab],
+  promos: ['Codes promo', promosTab], referral: ['Parrainage', referralTab], mailings: ['E-mails', mailingsTab], credits: ['Crédits', creditsTab], payments: ['Paiements', paymentsTab] };
 
 export function adminView() {
   // Un partenaire n'a que ses plugins et leurs licences.
   const staff = isStaff(state.data.me.user);
-  const tabs = Object.entries(TABS).filter(([id]) => staff || id === 'products' || id === 'licenses' || id === 'payments');
+  const tabs = Object.entries(TABS).filter(([id]) => staff || id === 'products' || id === 'licenses' || id === 'payments' || id === 'promos');
   if (!tabs.some(([id]) => id === state.adminTab)) state.adminTab = tabs[0][0];
   const tab = state.adminTab;
   const ready = READY[tab]();

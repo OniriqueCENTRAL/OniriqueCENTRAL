@@ -22,6 +22,10 @@ import {
   cancelSubscription, checkout, connectStripe, disconnectStripe, handleLemonEvent, handleStripeEvent, paymentsMode, sellers,
   stripeAccount, stripeAccountView, verifyLemonSignature, verifyStripeSignature,
 } from './payments.js';
+import {
+  attachReferrer, normalizeCode, referralSettings, promoFields, promoView, quote, referralStats, referralView, saveReferralSettings,
+} from './promos.js';
+import { mountNewsletter, setMarketing } from './newsletter.js';
 import { connectUrl, disconnect, finishConnect, videoFile, videoView, youtubeConfigured, youtubeState } from './youtube.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -96,10 +100,32 @@ function productView(p, platform) {
     demo: p.demo ? `/api/media/${p.demo}` : null,
     // imageManual : l'image a été choisie par un admin. demoOff : la démo a été retirée à la main, l'application ne la refabrique pas.
     imageManual: !!p.image_manual, demoOff: !!p.demo_off,
+    categories: categoryOf(p, (versions.find((v) => v.platform === wanted) || versions[0])?.filename),
     latest: versionView(versions.find((v) => v.platform === wanted)) || null,
     platforms: [...new Set(versions.map((v) => v.platform))], // les systèmes pour lesquels le plugin existe
     versions: versions.map(versionView),
   };
+}
+
+// Les catégories de la boutique et de l'application. Un plugin peut être dans plusieurs.
+export const CATEGORIES = [
+  ['beat', 'Beatmaking'], ['voice', 'Voix'], ['mix', 'Mix'], ['master', 'Mastering'], ['meter', 'Mesure'], ['app', 'Applications'],
+];
+const CATEGORY_IDS = CATEGORIES.map(([id]) => id);
+
+/** Les catégories d'un plugin : celles choisies dans le panel admin, sinon devinées à partir de son fichier et de ses textes. */
+export function categoryOf(p, latestFilename = '') {
+  const chosen = String(p.category || '').split(',').filter((id) => CATEGORY_IDS.includes(id));
+  if (chosen.length) return chosen;
+  const text = `${p.name} ${p.tagline} ${p.description}`.toLowerCase();
+  const found = [];
+  if (/\.(exe|msi)$/i.test(latestFilename)) found.push('app');
+  if (/synth|wavetable|beat|drum|808|sampler|groove|lofi/.test(text)) found.push('beat');
+  if (/voix|vocal|chant|pitch/.test(text)) found.push('voice');
+  if (/master|limit/.test(text)) found.push('master');
+  if (/meter|compteur|loudness|lufs|analy/.test(text)) found.push('meter');
+  if (!found.length || /mix|eq|compress|r[ée]sonance|channel/.test(text)) found.push('mix');
+  return [...new Set(found)];
 }
 
 const planView = (p) => ({ id: p.id, name: p.name, interval: p.interval, priceCents: p.price_cents, active: !!p.active, kind: p.kind });
@@ -111,7 +137,7 @@ function sendVerification(user) {
     `Bonjour${user.name ? ' ' + user.name : ''},\n\n${mustVerify(user) ? 'Bienvenue chez ONIRIQUE. Pour valider votre compte' : 'Pour confirmer votre adresse e-mail'}, ouvrez ce lien `
     + `(valable ${config.verifyHours} heures) :\n\n${link}\n\n`
     + (mustVerify(user) ? "Tant que l'adresse n'est pas validée, les essais gratuits, les achats et l'activation des plugins restent fermés.\n\n" : '')
-    + "Si vous n'avez pas créé de compte, ignorez ce message.\n\nONIRIQUE")
+    + "Si vous n'avez pas créé de compte, ignorez ce message.\n\nONIRIQUE", undefined, { buttonLabel: 'Valider mon adresse', eyebrow: 'Bienvenue' })
     .catch((error) => console.error('Envoi du lien de validation :', error.message));
 }
 
@@ -203,6 +229,9 @@ export function createApp() {
       plans: all(`SELECT * FROM plans WHERE active = 1 AND kind = 'all' ORDER BY price_cents`).map(planView),
       // Abonnement à la carte : le prix du premier plugin et de chaque plugin ajouté, par mois.
       pick: pickPrices(),
+      categories: CATEGORIES.map(([id, label]) => ({ id, label })),
+      // Ce qu'un ami invité gagne : affiché sur la page d'inscription quand il arrive par un lien de parrainage.
+      referral: referralSettings().enabled ? { friendPercent: referralSettings().friendPercent } : null,
       paymentsMode: paymentsMode(),
       // Par Stripe, chaque créateur vend sur son propre compte : ceux qui n'en ont pas branché ne vendent pas encore.
       sellers: paymentsMode() === 'stripe' ? sellers(CREATORS) : undefined,
@@ -248,11 +277,16 @@ export function createApp() {
     const { lastInsertRowid: id } = run('INSERT INTO users (email, name, password_hash, email_verified, created_at) VALUES (?, ?, ?, ?, ?)',
       email, str(req.body.name, 80), hashPassword(password), mailEnabled ? 0 : 1, now());
     const user = get('SELECT * FROM users WHERE id = ?', id);
+    // Arrivé par le lien d'un ami : un code de parrainage inconnu n'empêche pas l'inscription, il est juste ignoré.
+    // Case « recevoir les nouveautés d'ONIRIQUE » : jamais cochée d'office.
+    if (req.body.newsletter === true) setMarketing(user.id, true);
+    let referred = false;
+    if (str(req.body.ref, 40)) { try { attachReferrer(user, req.body.ref); referred = true; } catch { /* code inconnu */ } }
     // Les licences réservées à cette adresse ne sont rattachées qu'une fois l'adresse validée : sinon il
     // suffirait de s'inscrire avec l'adresse de quelqu'un pour prendre ses licences.
     if (mustVerify(user)) sendVerification(user);
     else claimReserved(user);
-    res.status(201).json({ token: createSession(id), user: publicUser(user), verificationSent: mustVerify(user) });
+    res.status(201).json({ token: createSession(id), user: publicUser(user), verificationSent: mustVerify(user), referred });
   });
 
   app.post('/api/auth/verify', (req, res) => {
@@ -316,7 +350,15 @@ export function createApp() {
       entitlements,
       // Plugins pour lesquels un essai a déjà été lancé (expiré ou non) : l'essai ne se reprend pas.
       trialsUsed: all(`SELECT DISTINCT product_id AS id FROM licenses WHERE user_id = ? AND source = 'trial'`, req.user.id).map((r) => r.id),
+      referral: referralView(req.user),
     });
+  });
+
+  // Parrainage choisi après l'inscription : avant le premier achat, dans les 30 jours.
+  app.post('/api/me/referrer', requireUser, (req, res) => {
+    rateLimit(`referrer:${req.user.id}`, 10);
+    const sponsor = attachReferrer(req.user, req.body.code);
+    res.json({ ok: true, sponsor: sponsor.name || sponsor.email.split('@')[0], referral: referralView(req.user) });
   });
 
   // L'équipe et les partenaires activent ou coupent, pour leur propre compte, l'accès offert à tous les plugins.
@@ -512,6 +554,16 @@ export function createApp() {
     res.status(201).json({ ok: true, productId: product.id, expiresAt });
   });
 
+  // Le prix d'un plugin pour ce compte, avec un code promo (facultatif) et la remise de parrainage s'il y a droit.
+  app.post('/api/promo/quote', requireUser, (req, res) => {
+    if (normalizeCode(req.body.code)) rateLimit(`promo:${req.user.id}`, 30);
+    const product = findProduct(req.body.productId);
+    if (!product.published) throw new HttpError(404, 'Produit introuvable.');
+    const q = quote(req.user, product, req.body.code);
+    res.json({ priceCents: q.priceCents, finalCents: q.finalCents, discountCents: q.discountCents, label: q.label, code: q.code,
+      source: q.source, note: q.ignored });
+  });
+
   app.post('/api/checkout', requireVerified, wrap(async (req, res) => {
     const kind = req.body.kind;
     if (kind === 'product') {
@@ -519,7 +571,13 @@ export function createApp() {
       if (!product.published) throw new HttpError(404, 'Produit introuvable.');
       const right = entitlement(req.user.id, product.id);
       if (right?.via === 'license') throw new HttpError(409, 'Vous possédez déjà ce plugin.');
-      return res.json(await checkout(req.user, 'product', product));
+      if (normalizeCode(req.body.promo)) rateLimit(`promo:${req.user.id}`, 30);
+      // Le prix est recalculé ici, quoi qu'ait affiché la page : la remise n'est jamais celle qu'envoie le navigateur.
+      const q = product.price_cents > 0 ? quote(req.user, product, req.body.promo) : null;
+      const item = q?.discountCents
+        ? { ...product, price_cents: q.finalCents, discount: { promoId: q.promoId, welcome: q.welcome, discountCents: q.discountCents } }
+        : product;
+      return res.json(await checkout(req.user, 'product', item));
     }
     // Abonnement à la carte : une liste de plugins, au prix du premier plus un supplément par plugin ajouté.
     if (kind === 'pick') {
@@ -615,7 +673,8 @@ export function createApp() {
       // Pas d'attente : la réponse ne doit ni tarder ni changer selon que le compte existe.
       sendMail(user.email, 'Réinitialiser votre mot de passe ONIRIQUE',
         `Bonjour,\n\nPour choisir un nouveau mot de passe, ouvrez ce lien (valable une heure) :\n\n${link}\n\n`
-        + "Si vous n'êtes pas à l'origine de cette demande, ignorez ce message : votre mot de passe ne change pas.\n\nONIRIQUE")
+        + "Si vous n'êtes pas à l'origine de cette demande, ignorez ce message : votre mot de passe ne change pas.\n\nONIRIQUE",
+        undefined, { buttonLabel: 'Choisir un nouveau mot de passe', eyebrow: 'Sécurité du compte' })
         .catch((error) => console.error('Envoi du lien de réinitialisation :', error.message));
     }
     res.json({ ok: true });
@@ -642,7 +701,7 @@ export function createApp() {
   const admin = express.Router();
   admin.use(requireAdmin);
   // Un partenaire n'a que ses plugins, leurs versions et leurs licences : le reste du panel lui est fermé.
-  admin.use((req, _res, next) => next(req.creator && !/^\/(products|versions|licenses|payments)(\/|$)/.test(req.path)
+  admin.use((req, _res, next) => next(req.creator && !/^\/(products|versions|licenses|payments|promos)(\/|$)/.test(req.path)
     ? new HttpError(403, 'Réservé aux administrateurs.') : undefined));
 
   const CREATORS = ['onirique', ...PARTNERS];
@@ -827,7 +886,13 @@ export function createApp() {
     const price = body.priceCents !== undefined ? int(body.priceCents) : existing.price_cents ?? 0;
     if (price === null || price < 0 || price > 10_000_00) throw new HttpError(400, 'Prix invalide.');
     if (body.creator !== undefined && !CREATORS.includes(body.creator)) throw new HttpError(400, 'Créateur invalide.');
+    let category = existing.category ?? '';
+    if (body.categories !== undefined) {
+      if (!Array.isArray(body.categories) || body.categories.some((id) => !CATEGORY_IDS.includes(id))) throw new HttpError(400, 'Catégorie invalide.');
+      category = [...new Set(body.categories)].join(',');
+    }
     return {
+      category,
       name, accent, price,
       creator: body.creator ?? existing.creator ?? 'onirique',
       tagline: body.tagline !== undefined ? str(body.tagline, 140) : existing.tagline ?? '',
@@ -843,16 +908,16 @@ export function createApp() {
     if (get('SELECT id FROM products WHERE slug = ?', slug)) throw new HttpError(409, 'Un produit porte déjà cet identifiant.');
     // Un partenaire ne crée que des plugins à son nom.
     const { lastInsertRowid } = run(
-      'INSERT INTO products (slug, name, tagline, description, accent, price_cents, published, created_at, creator) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      slug, f.name, f.tagline, f.description, f.accent, f.price, f.published, now(), req.creator ?? f.creator);
+      'INSERT INTO products (slug, name, tagline, description, accent, price_cents, published, created_at, creator, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      slug, f.name, f.tagline, f.description, f.accent, f.price, f.published, now(), req.creator ?? f.creator, f.category);
     res.status(201).json(productView(findProduct(lastInsertRowid)));
   });
 
   admin.patch('/products/:id', (req, res) => {
     const product = ownProduct(req, req.params.id);
     const f = productFields(req.body, product);
-    run('UPDATE products SET name = ?, tagline = ?, description = ?, accent = ?, price_cents = ?, published = ?, creator = ? WHERE id = ?',
-      f.name, f.tagline, f.description, f.accent, f.price, f.published, req.creator ?? f.creator, product.id);
+    run('UPDATE products SET name = ?, tagline = ?, description = ?, accent = ?, price_cents = ?, published = ?, creator = ?, category = ? WHERE id = ?',
+      f.name, f.tagline, f.description, f.accent, f.price, f.published, req.creator ?? f.creator, f.category, product.id);
     res.json(productView(findProduct(product.id)));
   });
 
@@ -1122,6 +1187,44 @@ export function createApp() {
     res.json({ ok: true, removed });
   });
 
+  // Codes promo. Un partenaire ne voit et ne crée que des codes limités à ses propres plugins.
+  // Les codes offerts aux parrains (kind "reward") se listent à part : ?kind=reward.
+  function ownPromo(req) {
+    const promo = get('SELECT * FROM promo_codes WHERE id = ?', int(req.params.id, 0));
+    if (!promo || (req.creator && promo.creator !== req.creator)) throw new HttpError(404, 'Code introuvable.');
+    return promo;
+  }
+  admin.get('/promos', (req, res) => {
+    const kind = req.query.kind === 'reward' ? 'reward' : 'admin';
+    res.json(all(`SELECT * FROM promo_codes WHERE kind = ? AND (? IS NULL OR creator = ?) ORDER BY created_at DESC LIMIT 500`,
+      kind, req.creator, req.creator).map(promoView));
+  });
+  admin.post('/promos', (req, res) => {
+    const f = promoFields(req.body, {}, req.creator);
+    if (f.creator && !CREATORS.includes(f.creator)) throw new HttpError(400, 'Créateur invalide.');
+    if (get('SELECT id FROM promo_codes WHERE code = ?', f.code)) throw new HttpError(409, `Le code ${f.code} existe déjà.`);
+    const { lastInsertRowid } = run(`INSERT INTO promo_codes (code, percent, amount_cents, product_ids, creator, max_uses, expires_at, active, kind, note, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'admin', ?, ?)`, f.code, f.percent, f.amount, f.productIds, f.creator, f.maxUses, f.expiresAt, f.active, f.note, now());
+    res.status(201).json(promoView(get('SELECT * FROM promo_codes WHERE id = ?', lastInsertRowid)));
+  });
+  admin.patch('/promos/:id', (req, res) => {
+    const promo = ownPromo(req);
+    const f = promoFields(req.body, promo, req.creator);
+    if (f.creator && !CREATORS.includes(f.creator)) throw new HttpError(400, 'Créateur invalide.');
+    if (f.code !== promo.code && get('SELECT id FROM promo_codes WHERE code = ?', f.code)) throw new HttpError(409, `Le code ${f.code} existe déjà.`);
+    run(`UPDATE promo_codes SET code = ?, percent = ?, amount_cents = ?, product_ids = ?, creator = ?, max_uses = ?, expires_at = ?, active = ?, note = ? WHERE id = ?`,
+      f.code, f.percent, f.amount, f.productIds, f.creator, f.maxUses, f.expiresAt, f.active, f.note, promo.id);
+    res.json(promoView(get('SELECT * FROM promo_codes WHERE id = ?', promo.id)));
+  });
+  admin.delete('/promos/:id', (req, res) => {
+    run('DELETE FROM promo_codes WHERE id = ?', ownPromo(req).id);
+    res.json({ ok: true });
+  });
+
+  // Parrainage : ses réglages et ses chiffres (l'équipe seulement).
+  admin.get('/referral', (_req, res) => res.json(referralStats()));
+  admin.put('/referral', (req, res) => res.json({ ...referralStats(), settings: saveReferralSettings(req.body) }));
+
   admin.get('/plans', (_req, res) => res.json(all('SELECT * FROM plans ORDER BY price_cents').map(planView)));
 
   // Abonnement à la carte : le prix du premier plugin et de chaque plugin ajouté, par mois.
@@ -1151,6 +1254,7 @@ export function createApp() {
     res.json({ ok: true });
   });
 
+  mountNewsletter(app, admin);
   app.use('/api/admin', admin);
 
   app.use('/api', (_req, _res, next) => next(new HttpError(404, 'Introuvable.')));

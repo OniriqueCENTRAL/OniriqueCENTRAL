@@ -122,10 +122,27 @@ export function buy(kind, item) {
   const text = free ? 'Ce plugin est gratuit : il sera ajouté à votre compte.'
     : mode === 'demo' ? 'Mode démo : aucun paiement n\'est effectué, l\'achat est accordé tout de suite.'
       : 'Le paiement sécurisé s\'ouvre dans votre navigateur. Revenez ici une fois terminé : votre compte se met à jour tout seul.';
-  modal(item.name, h('div', { class: 'stack' }, h('div', { class: 'price' }, price), h('p', { class: 'muted' }, text)), [{
+  // Code promo et remise de parrainage (plugins seulement) : le serveur donne le prix pour ce compte, et le recalcule au paiement.
+  const priceBox = h('div', { class: 'price' }, price);
+  const promoNote = h('div', { class: 'muted', style: { 'font-size': '13px' } });
+  let promo = null;
+  const showQuote = (q) => {
+    priceBox.replaceChildren(...(q.discountCents > 0
+      ? [h('s', { class: 'muted', style: { 'font-size': '.55em', 'margin-right': '10px' } }, euros(q.priceCents)), euros(q.finalCents)] : [euros(q.priceCents)]));
+    promoNote.textContent = q.note || (q.discountCents > 0 ? (q.source === 'welcome' ? `${q.label} : votre cadeau de parrainage.` : `Code ${q.code} appliqué : ${q.label}.`) : '');
+  };
+  const quote = (code) => call('api', 'POST', '/api/promo/quote', { productId: item.id, code });
+  const code = h('input', { class: 'mono grow', maxLength: 24, placeholder: 'CODE PROMO', style: { 'text-transform': 'uppercase' } });
+  const promoRow = kind === 'product' && !free ? h('div', { class: 'stack', style: { gap: '6px' } },
+    h('div', { class: 'row' }, code, button('Appliquer', async () => {
+      if (!code.value.trim()) return;
+      try { const q = await quote(code.value.trim()); promo = q.code ? code.value.trim() : null; showQuote(q); } catch (error) { promo = null; promoNote.textContent = error.message; }
+    }, 'small')), promoNote) : null;
+  if (promoRow) quote().then((q) => q.discountCents && showQuote(q)).catch(() => {});
+  modal(item.name, h('div', { class: 'stack' }, priceBox, h('p', { class: 'muted' }, text), promoRow), [{
     label: free ? 'Obtenir' : mode === 'demo' ? 'Confirmer' : 'Payer',
     run: async () => {
-      const result = await attempt(() => call('checkout', kind, item.id, item.productIds));
+      const result = await attempt(() => call('checkout', kind, item.id, item.productIds, promo));
       if (!result) return false;
       if (result.mode === 'stripe' || result.mode === 'lemon') toast('Paiement ouvert dans votre navigateur.');
       else { toast(recurring ? 'Abonnement activé.' : `${item.name} est à vous.`); await refresh(); }
@@ -159,14 +176,16 @@ function mainAction(product) {
 const creatorOf = (product) => CREATORS[product.creator] ?? CREATORS.onirique;
 
 /** Ce que la bibliothèque montre : un créateur ou tous, dans l'ordre du catalogue ou par prix. */
-const shown = { creator: 'all', sort: 'none', os: window.central.platform === 'darwin' ? 'mac' : 'win' };
+const shown = { creator: 'all', sort: 'none', category: 'all', os: window.central.platform === 'darwin' ? 'mac' : 'win' };
 const SORTS = { none: 'Tri : par défaut', up: 'Prix croissant', down: 'Prix décroissant' };
 
 //------------------------------------------------------------------------------
 export function libraryView() {
   const { catalog, me } = state.data;
   const owned = catalog.products.filter((p) => me.entitlements[p.id]).length;
-  const products = catalog.products.filter((p) => shown.creator === 'all' || (p.creator ?? 'onirique') === shown.creator);
+  const categories = catalog.categories ?? [];
+  const products = catalog.products.filter((p) => (shown.creator === 'all' || (p.creator ?? 'onirique') === shown.creator)
+    && (shown.category === 'all' || (p.categories ?? []).includes(shown.category)));
   if (shown.sort !== 'none') products.sort((a, b) => (shown.sort === 'up' ? a.priceCents - b.priceCents : b.priceCents - a.priceCents));
 
   const filters = h('div', { class: 'row between wrap', style: { 'margin-bottom': '20px' } },
@@ -177,6 +196,14 @@ export function libraryView() {
       }, label))),
     // Un seul bouton : chaque clic passe au tri suivant.
     button(SORTS[shown.sort], () => { shown.sort = { none: 'up', up: 'down', down: 'none' }[shown.sort]; render(); }, 'small'));
+  // Trier par usage : beatmaking, voix, mix, mastering, mesure, applications.
+  const categoryRow = categories.length ? h('div', { class: 'row wrap', style: { 'margin': '-8px 0 20px', gap: '10px' } },
+    h('span', { class: 'muted mono', style: { 'font-size': '11px', 'letter-spacing': '.14em', 'text-transform': 'uppercase' } }, 'Trier par'),
+    h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': 'Catégorie des plugins' },
+      [['all', 'Tout'], ...categories.map((c) => [c.id, c.label])].map(([id, label]) => h('button', {
+        type: 'button', role: 'radio', 'aria-checked': String(shown.category === id), class: shown.category === id ? 'active' : '',
+        onclick: () => { shown.category = id; render(); },
+      }, label)))) : null;
 
   const card = (product) => h('div', {
     class: 'card', role: 'button', tabIndex: 0, style: { '--accent': product.accent },
@@ -202,9 +229,12 @@ export function libraryView() {
       ? `${owned} sur ${catalog.products.length} dans votre collection. Installation et mises à jour en un clic, licence activée sur ce PC au passage.`
       : 'Aucun plugin publié pour le moment.'),
     catalog.products.length ? filters : null,
+    catalog.products.length ? categoryRow : null,
     products.length || !catalog.products.length ? h('div', { class: 'cards' }, products.map(card))
-      : h('div', { class: 'panel soon' }, eyebrow(CREATORS[shown.creator]), h('h2', null, 'Bientôt ', h('em', null, 'disponible')),
-        h('p', { class: 'muted' }, `Les plugins ${CREATORS[shown.creator]} arrivent. Ils apparaîtront ici dès leur sortie.`)),
+      : h('div', { class: 'panel soon' }, eyebrow(shown.creator !== 'all' ? CREATORS[shown.creator] : categories.find((c) => c.id === shown.category)?.label ?? ''),
+        h('h2', null, 'Bientôt ', h('em', null, 'disponible')),
+        h('p', { class: 'muted' }, shown.creator !== 'all' && shown.category === 'all' ? `Les plugins ${CREATORS[shown.creator]} arrivent. Ils apparaîtront ici dès leur sortie.`
+          : 'Aucun plugin ne correspond encore à ce choix. Il apparaîtra ici dès sa sortie.')),
   ];
 }
 

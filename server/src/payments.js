@@ -6,6 +6,7 @@ import { get, run, now, transaction, setting } from './db.js';
 import { HttpError, isStaff } from './auth.js';
 import { createLicense, parseProductIds } from './licensing.js';
 import { sendMail } from './mail.js';
+import { afterPurchase, rewardSponsor } from './promos.js';
 
 const PERIOD_MS = { month: 31 * 86400_000, year: 366 * 86400_000 };
 
@@ -52,13 +53,14 @@ function confirmOrder(userId, what, amountCents, renewal = '', provider = 'strip
     + (RESELLERS[provider]
       ? `Le paiement est encaissé par notre revendeur ${RESELLERS[provider]}, qui vous envoie le reçu séparément.\n\n`
       : `Le contenu vous est fourni dès le paiement, comme vous l'avez demandé en commandant : le droit de rétractation ne s'applique plus (${config.siteUrl}/remboursement.html).\n\n`)
-    + `Une question : ${config.supportEmail}\n\nONIRIQUE`)
+    + `Une question : ${config.supportEmail}\n\nONIRIQUE`, undefined, { eyebrow: 'Commande' })
     .catch((error) => console.error('Confirmation de commande :', error.message));
 }
 
-export function grantProduct(userId, product, provider, providerRef = null) {
+/** amount : ce qui a été réellement payé (après un code promo), le prix du plugin sinon. */
+export function grantProduct(userId, product, provider, providerRef = null, amount = product.price_cents) {
   return transaction(() => {
-    if (!recordOrder(userId, 'product', product.id, product.price_cents, provider, providerRef)) return false;
+    if (!recordOrder(userId, 'product', product.id, amount, provider, providerRef)) return false;
     createLicense({ productId: product.id, userId, source: provider, note: 'Achat' });
     return true;
   });
@@ -217,6 +219,14 @@ async function stripe(method, path, body, key) {
   return json;
 }
 
+/** La remise d'un achat (code promo, remise de parrainage), telle qu'elle voyage chez Stripe ou Lemon Squeezy. */
+const discountMeta = (item) => (item.discount ? {
+  promo_id: item.discount.promoId ? String(item.discount.promoId) : undefined,
+  welcome: item.discount.welcome ? '1' : undefined,
+  discount_cents: String(item.discount.discountCents),
+} : {});
+const discountFrom = (meta = {}) => ({ promoId: Number(meta.promo_id) || null, welcome: meta.welcome === '1', discountCents: Number(meta.discount_cents) || 0 });
+
 async function stripeCheckout(user, kind, item) {
   const creator = kind === 'plan' ? 'onirique' : item.creator;
   const account = stripeAccount(creator);
@@ -235,7 +245,7 @@ async function stripeCheckout(user, kind, item) {
     ...sellerOptions(account.managed),
     success_url: `${config.publicUrl}/checkout/done`,
     cancel_url: `${config.publicUrl}/checkout/cancelled`,
-    metadata: { user_id: user.id, kind, ref_id: item.id },
+    metadata: { user_id: user.id, kind, ref_id: item.id, ...discountMeta(item) },
     // Les plugins d'un abonnement à la carte voyagent avec l'abonnement : c'est Stripe qui les rend au webhook.
     subscription_data: kind === 'plan'
       ? { metadata: { user_id: user.id, plan_id: item.id, product_ids: item.productIds ? JSON.stringify(item.productIds) : undefined } }
@@ -284,13 +294,16 @@ export async function handleStripeEvent(event, account) {
     if (object.customer && platform) run('UPDATE users SET stripe_customer = ? WHERE id = ?', object.customer, userId);
     if (object.mode === 'payment' && object.payment_status === 'paid') {
       const product = get('SELECT * FROM products WHERE id = ? AND creator = ?', Number(object.metadata.ref_id), account.creator);
-      if (product && grantProduct(userId, product, 'stripe', object.id)) {
-        confirmOrder(userId, `${product.name} — licence définitive`, object.amount_total ?? product.price_cents, '', stripeProvider(account), object.currency || 'eur');
+      const paid = object.amount_total ?? product?.price_cents ?? 0;
+      if (product && grantProduct(userId, product, 'stripe', object.id, paid)) {
+        afterPurchase(userId, product.id, { ...discountFrom(object.metadata), orderRef: object.id, paidCents: paid });
+        confirmOrder(userId, `${product.name} — licence définitive`, paid, '', stripeProvider(account), object.currency || 'eur');
       }
     } else if (object.mode === 'subscription' && object.subscription && platform) {
       applyStripeSubscription(await stripe('GET', `/subscriptions/${object.subscription}`, undefined, account.key));
       const plan = get('SELECT name, interval FROM plans WHERE id = ?', Number(object.metadata.ref_id));
       if (plan && event.type === 'checkout.session.completed') {
+        if (object.amount_total > 0) rewardSponsor(userId); // un abonnement payé compte comme premier achat d'un filleul
         confirmOrder(userId, `Abonnement ${plan.name}`, object.amount_total ?? 0,
           `, puis le même montant chaque ${plan.interval === 'year' ? 'année' : 'mois'} jusqu'à résiliation (onglet Abonnement de l'application)`, stripeProvider(account), object.currency || 'eur');
       }
@@ -338,7 +351,7 @@ async function lemonCheckout(user, kind, item) {
       checkout_options: { locale: 'fr' },
       // Ces valeurs reviennent telles quelles dans chaque événement de la commande ou de l'abonnement.
       checkout_data: { email: user.email, custom: {
-        user_id: String(user.id), kind, ref_id: String(item.id),
+        user_id: String(user.id), kind, ref_id: String(item.id), ...discountMeta(item),
         product_ids: item.productIds ? JSON.stringify(item.productIds) : undefined,
       } },
     },
@@ -368,13 +381,16 @@ export function handleLemonEvent(event) {
     if (attributes.status !== 'paid') return;
     if (custom.kind === 'product') {
       const product = get('SELECT * FROM products WHERE id = ?', refId);
-      if (product && grantProduct(userId, product, 'lemon', orderRef)) {
-        confirmOrder(userId, `${product.name} — licence définitive`, attributes.total ?? product.price_cents, '', 'lemon');
+      const paid = attributes.total ?? product?.price_cents ?? 0;
+      if (product && grantProduct(userId, product, 'lemon', orderRef, paid)) {
+        afterPurchase(userId, product.id, { ...discountFrom(custom), orderRef, paidCents: paid });
+        confirmOrder(userId, `${product.name} — licence définitive`, paid, '', 'lemon');
       }
     } else if (custom.kind === 'plan') {
       // La première échéance d'un abonnement : l'accès lui-même arrive par l'événement subscription_created.
       const plan = get('SELECT name, interval FROM plans WHERE id = ?', refId);
       if (plan && recordOrder(userId, 'plan', refId, attributes.total ?? 0, 'lemon', orderRef)) {
+        if (attributes.total > 0) rewardSponsor(userId);
         confirmOrder(userId, `Abonnement ${plan.name}`, attributes.total ?? 0,
           `, puis le même montant chaque ${plan.interval === 'year' ? 'année' : 'mois'} jusqu'à résiliation (onglet Abonnement de l'application)`, 'lemon');
       }
@@ -402,12 +418,13 @@ export function handleLemonEvent(event) {
 //==============================================================================
 export async function checkout(user, kind, item) {
   if (item.price_cents === 0 && kind === 'product') {
-    grantProduct(user.id, item, 'free');
+    // Gratuit par lui-même, ou rendu gratuit par un code (un plugin offert à un parrain, par exemple).
+    if (grantProduct(user.id, item, item.discount ? 'promo' : 'free')) afterPurchase(user.id, item.id, item.discount ?? {});
     return { mode: 'free', granted: true };
   }
   const mode = paymentsMode();
   if (mode === 'demo') {
-    if (kind === 'product') grantProduct(user.id, item, 'demo');
+    if (kind === 'product' && grantProduct(user.id, item, 'demo', null, item.price_cents)) afterPurchase(user.id, item.id, item.discount ?? {});
     else setSubscription(user.id, item.id, { status: 'active', periodEnd: now() + PERIOD_MS[item.interval], productIds: item.productIds ?? null });
     return { mode: 'demo', granted: true };
   }

@@ -142,8 +142,9 @@ app.whenReady().then(() => {
     const { token } = await api.request('POST', '/api/auth/login', { email, password });
     store.token = token;
   });
-  handle('auth:register', async (email, password, name) => {
-    const { token } = await api.request('POST', '/api/auth/register', { email, password, name });
+  // ref : le code de parrainage d'un ami ; newsletter : la case « recevoir les nouveautés d'ONIRIQUE ».
+  handle('auth:register', async (email, password, name, ref, newsletter) => {
+    const { token } = await api.request('POST', '/api/auth/register', { email, password, name, ref, newsletter: newsletter === true });
     store.token = token;
   });
   handle('auth:logout', async () => {
@@ -162,8 +163,9 @@ app.whenReady().then(() => {
   });
 
   // productIds : les plugins choisis pour un abonnement à la carte (kind "pick").
-  handle('checkout', async (kind, id, productIds) => {
-    const result = await api.request('POST', '/api/checkout', { kind, id, productIds });
+  // promo : le code promo entré au moment de payer (le serveur recalcule le prix).
+  handle('checkout', async (kind, id, productIds, promo) => {
+    const result = await api.request('POST', '/api/checkout', { kind, id, productIds, promo });
     if (result.url) {
       // Seules les pages de paiement de Stripe et de Lemon Squeezy s'ouvrent d'ici.
       if (!/^https:\/\/(checkout\.stripe\.com|[a-z0-9-]+\.lemonsqueezy\.com)\//.test(result.url)) throw new Error('Adresse de paiement inattendue.');
@@ -359,6 +361,14 @@ app.whenReady().then(() => {
     if (!result.canceled) store.vst3Dir = result.filePaths[0];
   });
 
+  // Aperçu d'un e-mail du panel admin : sa propre fenêtre, sans script, sans navigation (les liens ne s'ouvrent pas).
+  handle('admin:previewMail', (html) => {
+    const preview = new BrowserWindow({ width: 720, height: 900, title: 'Aperçu de l\'e-mail', parent: win, autoHideMenuBar: true, backgroundColor: '#0d0809',
+      webPreferences: { javascript: false, sandbox: true, contextIsolation: true, nodeIntegration: false } });
+    preview.webContents.on('will-navigate', (event) => event.preventDefault());
+    preview.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    preview.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(String(html).slice(0, 2_000_000)));
+  });
   handle('clipboard', (text) => clipboard.writeText(String(text).slice(0, 5000)));
 
   ipcMain.on('window', (_event, action) => {

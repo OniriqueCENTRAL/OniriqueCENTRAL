@@ -8,6 +8,11 @@
 // Une page qui le lit déjà marque son lien data-account-manual et appelle show() elle-même.
 (() => {
   const TOKEN = "onirique.token";
+  // Arrivé par le lien d'un ami : son code de parrainage est gardé 30 jours, et proposé à l'inscription.
+  try {
+    const ref = new URLSearchParams(location.search).get("ref");
+    if (ref && /^[A-Za-z0-9]{4,12}$/.test(ref)) localStorage.setItem("onirique.ref", JSON.stringify({ code: ref.toUpperCase(), at: Date.now() }));
+  } catch { /* stockage fermé : le code reste dans l'adresse de la page compte */ }
   const token = () => { try { return sessionStorage.getItem(TOKEN) || localStorage.getItem(TOKEN); } catch { return null; } };
   const ROLES = { vip: "VIP", abrasion: "Abrasion", relic: "Relic", admin: "Admin", founder: "Fondateur" };
   const el = (tag, props = {}, ...children) => {
@@ -100,6 +105,7 @@ ${spark(1)}${spark(2)}${spark(3)}
       item("Mon compte", "compte.html"),
       item("Paramètres", "compte.html#parametres"),
       item("Mes licences", "compte.html#licences"),
+      item("Parrainage", "compte.html#parrainage"),
       el("hr"),
       item("Boutique", "boutique.html"),
       download,

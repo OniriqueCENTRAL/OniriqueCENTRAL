@@ -67,6 +67,24 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
 .product summary:hover { color: var(--ember-text); }
 .product label.inline { display: flex; align-items: center; gap: 8px; font: 500 14px/1.3 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--mist); }
 .product input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--ember); }
+.product .cats { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+/* Codes promo, parrainage, e-mails : un panneau par outil */
+.box { margin-top: 14px; padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--deep); }
+.box form { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 12px; align-items: end; }
+.box label { display: grid; gap: 6px; font: 500 11px/1.2 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--haze); }
+.box input[type="text"], .box input[type="number"], .box input[type="date"], .box input[type="url"], .box select, .box textarea { width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.4); color: var(--mist); font: 500 14px var(--f-body); }
+.box textarea { min-height: 180px; resize: vertical; line-height: 1.55; }
+.box select option { background: var(--deep); }
+.box .wide { grid-column: 1 / -1; }
+.box label.inline { display: flex; align-items: center; gap: 8px; font: 500 14px/1.3 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--mist); }
+.box input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--ember); }
+.box .checks { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+.code { font: 700 14px var(--f-mono); letter-spacing: .06em; color: var(--bone); }
+.composer { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.composer iframe { width: 100%; height: 760px; border: 1px solid var(--line); border-radius: 14px; background: #0d0809; position: sticky; top: 14px; }
+.meter { height: 6px; border-radius: 999px; background: rgba(255,255,255,.07); overflow: hidden; min-width: 120px; margin-top: 6px; }
+.meter i { display: block; height: 100%; background: var(--ember); }
+@media (max-width: 900px) { .composer { grid-template-columns: minmax(0, 1fr); } .composer iframe { position: static; height: 620px; } }
 @media (max-width: 700px) { .product, .product form { grid-template-columns: minmax(0, 1fr); } }
 [hidden] { display: none !important; }
 </style>
@@ -127,6 +145,36 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
     <p class="error" id="product-error" role="alert"></p>
     <div class="products" id="products"></div>
 
+    <div class="bar"><h2>Codes promo</h2></div>
+    <p class="sub">Un code s'entre au moment d'acheter, sur le site comme dans l'application. Il sert une fois par compte. Laisser « Plugins » vide : il vaut pour tous les plugins<span id="promo-scope"></span>. Les abonnements ne prennent pas de code.</p>
+    <details class="product new" id="new-promo"></details>
+    <p class="error" id="promo-error" role="alert"></p>
+    <div class="table"><table>
+      <thead><tr><th>Code</th><th>Remise</th><th>Plugins</th><th>Utilisations</th><th>Fin</th><th><span class="sub">Actions</span></th></tr></thead>
+      <tbody id="promos"></tbody>
+    </table></div>
+
+    <div id="staff-mail">
+    <div class="bar"><h2>Parrainage</h2></div>
+    <p class="sub">Chaque compte a son lien. L'ami invité a une remise sur son premier plugin ONIRIQUE ; quand il fait son premier achat payé, son parrain reçoit un code personnel, et, à chaque palier d'amis acheteurs, un plugin ONIRIQUE offert. Les récompenses ne portent que sur les plugins ONIRIQUE : les partenaires encaissent leurs ventes eux-mêmes.</p>
+    <div class="tiles" id="ref-tiles"></div>
+    <div class="box" id="ref-settings"></div>
+    <p class="error" id="ref-error" role="alert"></p>
+    <div class="table"><table>
+      <thead><tr><th>Meilleurs parrains</th><th>Amis inscrits</th><th>Amis acheteurs</th></tr></thead>
+      <tbody id="ref-top"></tbody>
+    </table></div>
+
+    <div class="bar"><h2>E-mails</h2><span class="sub" id="mail-from"></span></div>
+    <p class="sub">Un message mis en page aux couleurs d'ONIRIQUE, envoyé depuis l'adresse d'ONIRIQUE à un message toutes les trois secondes. Chaque message porte un lien de désinscription. L'aperçu à droite se met à jour pendant que vous écrivez.</p>
+    <div class="box composer"><div id="mail-form"></div><iframe id="mail-preview" title="Aperçu du message"></iframe></div>
+    <p class="error" id="mail-error" role="alert"></p>
+    <div class="table"><table>
+      <thead><tr><th>Envoyé le</th><th>Objet</th><th>Destinataires</th><th>Avancement</th><th><span class="sub">Actions</span></th></tr></thead>
+      <tbody id="mailings"></tbody>
+    </table></div>
+    </div>
+
     <div id="staff-credits">
     <div class="bar"><h2>Crédits</h2></div>
     <p class="sub">Les titres réalisés avec vos plugins, affichés dans la section Crédits de la page d'accueil. Collez le lien Spotify du titre : son nom et sa pochette sont récupérés tout seuls.</p>
@@ -141,7 +189,7 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
 </main>
 
 <script src="assets/cropper.js"></script>
-<script src="assets/account.js?v=2"></script>
+<script src="assets/account.js?v=4"></script>
 <script>
 // Tout passe par l'API du CENTRAL, qui revérifie le rôle admin à chaque appel : cette page n'ouvre aucun droit par elle-même.
 const $ = (id) => document.getElementById(id);
@@ -169,6 +217,7 @@ const TYPES = { perpetual: "Perpétuelle", timed: "Durée limitée", trial: "Ess
 // Rôles : VIP (tous les plugins offerts), Abrasion et Relic (partenaires : ce panel, limité à leurs propres plugins), admin, fondateur.
 const ROLES = { user: "Utilisateur", vip: "VIP", abrasion: "Abrasion", relic: "Relic", admin: "Admin", founder: "Fondateur" };
 const CREATORS = { onirique: "ONIRIQUE", abrasion: "ABRASION", relic: "RELIC" };
+const CATEGORIES = [["beat", "Beatmaking"], ["voice", "Voix"], ["mix", "Mix"], ["master", "Mastering"], ["meter", "Mesure"], ["app", "Applications"]];
 const isPartner = (user) => user.role === "abrasion" || user.role === "relic";
 const isStaff = (user) => user.role === "admin" || user.role === "founder";
 
@@ -319,6 +368,8 @@ function sheetForm(p) {
   const published = el("input", { type: "checkbox", checked: p?.published ?? true });
   // Le créateur ne se choisit que par l'équipe : les plugins d'un partenaire portent toujours son nom.
   const creator = el("select", {}, ...Object.entries(CREATORS).map(([id, label]) => el("option", { value: id, textContent: label, selected: id === (p?.creator ?? "onirique") })));
+  // Catégories de la boutique : cochées ici ; rien de coché, elles sont devinées à partir du nom et du texte.
+  const cats = CATEGORIES.map(([id, label]) => ({ id, box: el("input", { type: "checkbox", checked: (p?.categories ?? []).includes(id) }), label }));
   const submit = el("button", { className: "act", type: "submit", textContent: p ? "Enregistrer la fiche" : "Créer le plugin" });
   const saved = el("span", { className: "sub" });
   saved.setAttribute("role", "status");
@@ -326,6 +377,7 @@ function sheetForm(p) {
     el("label", {}, "Nom", name), el("label", {}, "Accroche", tagline),
     el("label", {}, "Prix en € (0 = gratuit)", price), isStaff(me) ? el("label", {}, "Créateur", creator) : null,
     el("label", {}, "Description", description),
+    el("label", {}, "Catégories", el("div", { className: "cats" }, ...cats.map((c) => el("label", { className: "inline" }, c.box, c.label)))),
     el("div", { className: "row" }, el("label", { className: "inline" }, published, "Visible dans la boutique et l'application"), submit, saved));
   form.onsubmit = async (event) => {
     event.preventDefault();
@@ -335,6 +387,7 @@ function sheetForm(p) {
     const cents = Math.round(Number(amount) * 100);
     submit.disabled = true;
     const body = { name: name.value.trim(), tagline: tagline.value.trim(), description: description.value.trim(), priceCents: cents, published: published.checked,
+      categories: cats.filter((c) => c.box.checked).map((c) => c.id),
       ...(isStaff(me) ? { creator: creator.value } : {}) };
     try {
       await api(p ? "PATCH" : "POST", p ? "/admin/products/" + p.id : "/admin/products", body);
@@ -520,6 +573,177 @@ async function loadCredits() {
   }) : [el("tr", {}, el("td", { colSpan: 4, className: "sub", textContent: "Aucun crédit : la page d'accueil affiche le titre d'exemple." }))]));
 }
 
+//------------------------------------------------------------------------------ Codes promo
+const dayInput = (ms) => (ms ? new Date(ms - new Date(ms).getTimezoneOffset() * 60000).toISOString().slice(0, 10) : "");
+const dayEnd = (value) => (value ? new Date(value + "T23:59:59").getTime() : null);
+async function loadPromos() {
+  const [promos, products] = await Promise.all([api("GET", "/admin/promos"), api("GET", "/admin/products")]);
+  const fail = (error) => { $("promo-error").textContent = error.message; };
+  $("promo-scope").textContent = isStaff(me) ? "" : " de " + (CREATORS[me.role] || me.role);
+  const nameOf = (id) => products.find((p) => p.id === id)?.name ?? "plugin retiré";
+
+  const code = el("input", { type: "text", required: true, maxLength: 24, placeholder: "NOEL20", style: "text-transform:uppercase;font-family:var(--f-mono);flex:1;min-width:0" });
+  const random = el("button", { className: "act", type: "button", textContent: "Générer" });
+  random.onclick = () => { code.value = Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[b % 32]).join(""); };
+  const kind = el("select", {}, el("option", { value: "percent", textContent: "En pourcentage" }), el("option", { value: "amount", textContent: "En euros" }));
+  const value = el("input", { type: "number", min: "1", step: "1", required: true, value: "20" });
+  kind.onchange = () => { value.step = kind.value === "amount" ? "0.01" : "1"; };
+  const maxUses = el("input", { type: "number", min: "1", placeholder: "Sans limite" });
+  const expires = el("input", { type: "date" });
+  const note = el("input", { type: "text", maxLength: 200, placeholder: "Ex. : influenceur, Black Friday…" });
+  const boxes = products.map((p) => ({ id: p.id, box: el("input", { type: "checkbox" }), name: p.name }));
+  const submit = el("button", { className: "act", type: "submit", textContent: "Créer le code" });
+  const form = el("form", {},
+    el("label", {}, "Code", el("div", { style: "display:flex;gap:8px;align-items:center" }, code, random)),
+    el("label", {}, "Remise", kind), el("label", {}, "Valeur", value),
+    el("label", {}, "Utilisations au total", maxUses), el("label", {}, "Valable jusqu'au", expires), el("label", {}, "Note interne", note),
+    el("label", { className: "wide" }, "Plugins (aucun coché : tous)", el("div", { className: "cats" }, ...boxes.map((b) => el("label", { className: "inline" }, b.box, b.name)))),
+    el("div", { className: "row" }, submit));
+  form.onsubmit = async (event) => {
+    event.preventDefault();
+    $("promo-error").textContent = "";
+    const amount = Number(value.value.replace(",", "."));
+    try {
+      await api("POST", "/admin/promos", { code: code.value, note: note.value, maxUses: maxUses.value ? Number(maxUses.value) : null, expiresAt: dayEnd(expires.value),
+        productIds: boxes.filter((b) => b.box.checked).map((b) => b.id), ...(kind.value === "percent" ? { percent: Math.round(amount) } : { amountCents: Math.round(amount * 100) }) });
+      $("new-promo").open = false;
+      await loadPromos();
+    } catch (error) { fail(error); }
+  };
+  form.className = "box";
+  form.style.cssText = "display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px;align-items:end;margin-top:12px";
+  $("new-promo").replaceChildren(el("summary", { textContent: "＋ Nouveau code promo" }), el("div", { className: "box", style: "border:0;padding:0;background:none" }, form));
+
+  $("promos").replaceChildren(...(promos.length ? promos.map((p) => {
+    const toggle = el("button", { className: "act", type: "button", textContent: p.active ? "Désactiver" : "Réactiver" });
+    toggle.onclick = async () => { try { await api("PATCH", "/admin/promos/" + p.id, { active: !p.active }); await loadPromos(); } catch (error) { fail(error); } };
+    const copy = el("button", { className: "act", type: "button", textContent: "Copier le lien" });
+    copy.onclick = async () => { await navigator.clipboard.writeText(`${location.origin}/boutique.html?code=${p.code}`).catch(() => {}); copy.textContent = "Lien copié"; };
+    const remove = el("button", { className: "act", type: "button", textContent: "Supprimer" });
+    remove.onclick = async () => {
+      if (!window.confirm(`Supprimer le code ${p.code} ? Il ne pourra plus servir${p.uses ? ` ; ses ${p.uses} utilisation(s) sortent des chiffres` : ""}.`)) return;
+      try { await api("DELETE", "/admin/promos/" + p.id); await loadPromos(); } catch (error) { fail(error); }
+    };
+    const expired = p.expiresAt && p.expiresAt < Date.now(), full = p.maxUses && p.uses >= p.maxUses;
+    return el("tr", {},
+      el("td", {}, el("span", { className: "code", textContent: p.code }), p.note ? el("div", { className: "sub", textContent: p.note }) : null,
+        !p.active || expired || full ? el("div", {}, el("span", { className: "pill", textContent: !p.active ? "désactivé" : expired ? "expiré" : "épuisé" })) : null),
+      el("td", { textContent: p.label }),
+      el("td", { className: "sub", textContent: p.productIds ? p.productIds.map(nameOf).join(", ") : p.creator ? "Plugins " + (CREATORS[p.creator] || p.creator) : "Tous" }),
+      el("td", { textContent: p.maxUses ? `${p.uses} / ${p.maxUses}` : String(p.uses) }),
+      el("td", { className: "sub", textContent: p.expiresAt ? date(p.expiresAt) : "—" }),
+      el("td", { className: "actions" }, copy, toggle, remove));
+  }) : [el("tr", {}, el("td", { colSpan: 6, className: "sub", textContent: "Aucun code pour le moment." }))]));
+}
+
+//------------------------------------------------------------------------------ Parrainage
+async function loadReferral() {
+  const r = await api("GET", "/admin/referral");
+  const s = r.settings;
+  $("ref-tiles").replaceChildren(...[["Amis invités", r.invited], ["Amis acheteurs", r.converted], ["Codes offerts", r.rewards], ["Codes utilisés", r.rewardsUsed]]
+    .map(([label, value]) => el("div", { className: "tile" }, el("b", { textContent: String(value) }), el("span", { textContent: label }))));
+  const enabled = el("input", { type: "checkbox", checked: s.enabled });
+  const friend = el("input", { type: "number", min: "0", max: "100", value: s.friendPercent });
+  const reward = el("input", { type: "number", min: "1", max: "100", value: s.rewardPercent });
+  const milestone = el("input", { type: "number", min: "0", max: "100", value: s.milestone });
+  const days = el("input", { type: "number", min: "7", max: "3650", value: s.rewardDays });
+  const saved = el("span", { className: "sub" });
+  const form = el("form", {},
+    el("label", { className: "inline wide" }, enabled, "Parrainage ouvert"),
+    el("label", {}, "Remise de l'ami invité (%)", friend), el("label", {}, "Code du parrain par ami acheteur (%)", reward),
+    el("label", {}, "Plugin offert tous les … amis (0 : jamais)", milestone), el("label", {}, "Validité des codes (jours)", days),
+    el("div", { className: "row" }, el("button", { className: "act", type: "submit", textContent: "Enregistrer" }), saved));
+  form.onsubmit = async (event) => {
+    event.preventDefault();
+    $("ref-error").textContent = "";
+    try {
+      await api("PUT", "/admin/referral", { enabled: enabled.checked, friendPercent: Number(friend.value), rewardPercent: Number(reward.value), milestone: Number(milestone.value), rewardDays: Number(days.value) });
+      saved.textContent = "Enregistré.";
+    } catch (error) { $("ref-error").textContent = error.message; }
+  };
+  $("ref-settings").replaceChildren(form);
+  $("ref-top").replaceChildren(...(r.top.length ? r.top.map((t) => el("tr", {}, el("td", {}, t.email, t.name ? el("div", { className: "sub", textContent: t.name }) : null),
+    el("td", { textContent: String(t.invited) }), el("td", { textContent: String(t.converted || 0) })))
+    : [el("tr", {}, el("td", { colSpan: 3, className: "sub", textContent: "Personne n'a encore invité d'ami." }))]));
+}
+
+//------------------------------------------------------------------------------ E-mails
+let mailTimer = null, mailPoll = null;
+async function loadMailings(first = false) {
+  const [info, products] = await Promise.all([api("GET", "/admin/mailings"), first ? api("GET", "/admin/products") : null]);
+  $("mail-from").textContent = info.mailEnabled ? "Envoyé depuis " + info.from : "Aucun serveur de messagerie relié : envoi impossible";
+  const fail = (error) => { $("mail-error").textContent = error.message; };
+  if (first) {
+    const f = {
+      audience: el("select", {}, ...info.audiences.map((a) => el("option", { value: a.id, textContent: `${a.label} · ${a.count}` }))),
+      subject: el("input", { type: "text", maxLength: 140, required: true, placeholder: "Nouveau : MeterBox est sorti" }),
+      preheader: el("input", { type: "text", maxLength: 160, placeholder: "La phrase grise après l'objet, dans la boîte de réception" }),
+      eyebrow: el("input", { type: "text", maxLength: 40, value: "Nouveautés" }),
+      title: el("input", { type: "text", maxLength: 120, placeholder: "Salut {prenom} !" }),
+      text: el("textarea", { maxLength: 12000, placeholder: "Le message. Une ligne vide entre deux paragraphes.\n{prenom} : le prénom du destinataire.\n**gras**, [texte du lien](https://…)\n# Un intertitre" }),
+      image: el("input", { type: "url", placeholder: "https://… (facultatif)" }),
+      promoCode: el("input", { type: "text", maxLength: 40, placeholder: "Facultatif", style: "text-transform:uppercase;font-family:var(--f-mono)" }),
+      promoText: el("input", { type: "text", maxLength: 140, placeholder: "-20 % jusqu'à dimanche" }),
+      buttonLabel: el("input", { type: "text", maxLength: 40, placeholder: "Voir la boutique" }),
+      buttonUrl: el("input", { type: "url", placeholder: "https://onirique.store/boutique.html" }),
+      service: el("input", { type: "checkbox" }),
+    };
+    const picks = products.filter((p) => p.published).map((p) => ({ id: p.id, box: el("input", { type: "checkbox" }), name: p.name }));
+    const serviceLine = el("label", { className: "inline wide", hidden: true }, f.service, "C'est une information de service (conditions, sécurité, panne), sans publicité : la loi interdit d'envoyer de la publicité aux comptes qui ne l'ont pas acceptée.");
+    const content = () => ({ subject: f.subject.value, preheader: f.preheader.value, eyebrow: f.eyebrow.value, title: f.title.value, text: f.text.value, image: f.image.value,
+      promoCode: f.promoCode.value, promoText: f.promoText.value, buttonLabel: f.buttonLabel.value, buttonUrl: f.buttonUrl.value,
+      productIds: picks.filter((p) => p.box.checked).map((p) => p.id), audience: f.audience.value, service: f.service.checked });
+    const preview = async () => {
+      if (!f.subject.value.trim() || (!f.text.value.trim() && !picks.some((p) => p.box.checked))) {
+        $("mail-preview").srcdoc = `<body style="margin:0;display:grid;place-items:center;height:100vh;background:#0d0809;color:#a88f92;font:15px system-ui">L'aperçu s'affiche dès qu'il y a un objet et un message.</body>`;
+        return;
+      }
+      try { $("mail-preview").srcdoc = (await api("POST", "/admin/mailings/preview", content())).html; $("mail-error").textContent = ""; } catch (error) { fail(error); }
+    };
+    const later = () => { clearTimeout(mailTimer); mailTimer = setTimeout(preview, 450); };
+    const test = el("button", { className: "act", type: "button", textContent: "M'envoyer un essai" });
+    test.onclick = async () => { try { const r = await api("POST", "/admin/mailings/test", content()); test.textContent = "Essai envoyé à " + r.to; } catch (error) { fail(error); } };
+    const send = el("button", { className: "act", type: "submit", textContent: "Envoyer" });
+    const form = el("form", { style: "grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr))" },
+      el("label", { className: "wide" }, "Destinataires", f.audience), serviceLine,
+      el("label", { className: "wide" }, "Objet", f.subject), el("label", { className: "wide" }, "Phrase d'aperçu", f.preheader),
+      el("label", {}, "Petit titre", f.eyebrow), el("label", {}, "Titre", f.title),
+      el("label", { className: "wide" }, "Message", f.text), el("label", { className: "wide" }, "Image en tête (adresse)", f.image),
+      el("label", { className: "wide" }, "Plugins mis en avant", el("div", { className: "cats" }, ...picks.map((p) => el("label", { className: "inline" }, p.box, p.name)))),
+      el("label", {}, "Code promo", f.promoCode), el("label", {}, "Texte du code", f.promoText),
+      el("label", {}, "Texte du bouton", f.buttonLabel), el("label", {}, "Lien du bouton", f.buttonUrl),
+      el("div", { className: "row wide", style: "display:flex;gap:10px;flex-wrap:wrap" }, send, test));
+    form.addEventListener("input", later);
+    form.addEventListener("change", later);
+    f.audience.onchange = () => { serviceLine.hidden = f.audience.value !== "all"; later(); };
+    form.onsubmit = async (event) => {
+      event.preventDefault();
+      $("mail-error").textContent = "";
+      const audience = info.audiences.find((a) => a.id === f.audience.value);
+      if (!window.confirm(`Envoyer « ${f.subject.value} » à ${audience.count} personne(s) (${audience.label}) ? L'envoi prend environ ${Math.max(1, Math.ceil(audience.count * 3 / 60))} minute(s) et ne s'annule que pour les messages pas encore partis.`)) return;
+      send.disabled = true;
+      try { await api("POST", "/admin/mailings", content()); await loadMailings(); } catch (error) { fail(error); }
+      send.disabled = false;
+    };
+    $("mail-form").replaceChildren(form);
+    preview();
+  }
+  $("mailings").replaceChildren(...(info.mailings.length ? info.mailings.map((m) => {
+    const bar = el("div", { className: "meter" }, el("i", { style: `width:${m.total ? Math.round((m.sent + m.failed) / m.total * 100) : 0}%` }));
+    const cancel = m.status === "sending" ? el("button", { className: "act", type: "button", textContent: "Arrêter" }) : null;
+    if (cancel) cancel.onclick = async () => { try { await api("POST", `/admin/mailings/${m.id}/cancel`); await loadMailings(); } catch (error) { fail(error); } };
+    const state = { sending: "en cours", sent: "terminé", cancelled: "arrêté" }[m.status] || m.status;
+    return el("tr", {}, el("td", { className: "sub", textContent: new Date(m.createdAt).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) }),
+      el("td", {}, m.subject, m.author ? el("div", { className: "sub", textContent: "par " + m.author }) : null),
+      el("td", { className: "sub", textContent: m.audienceLabel }),
+      el("td", {}, `${m.sent} / ${m.total} envoyés${m.failed ? ` · ${m.failed} non remis` : ""} · ${state}`, bar),
+      el("td", { className: "actions" }, cancel));
+  }) : [el("tr", {}, el("td", { colSpan: 5, className: "sub", textContent: "Aucun envoi pour le moment." }))]));
+  // Un envoi en cours : la liste se rafraîchit toute seule.
+  clearTimeout(mailPoll);
+  if (info.mailings.some((m) => m.status === "sending")) mailPoll = setTimeout(() => loadMailings().catch(() => {}), 5000);
+}
+
 let timer;
 $("search").oninput = () => { clearTimeout(timer); timer = setTimeout(() => loadUsers().catch((e) => { $("error").textContent = e.message; }), 250); };
 
@@ -530,8 +754,9 @@ $("search").oninput = () => { clearTimeout(timer); timer = setTimeout(() => load
     if (!isStaff(me) && !isPartner(me)) return gate("Cette page est réservée aux administrateurs.", "Retour au compte");
     if (!isStaff(me)) {
       // Partenaire : ses plugins seulement. Les licences de ses plugins se gèrent dans l'application, Panel admin.
-      $("staff-accounts").hidden = $("staff-credits").hidden = true;
+      $("staff-accounts").hidden = $("staff-credits").hidden = $("staff-mail").hidden = true;
       await loadProducts();
+      await loadPromos();
       $("gate").hidden = true;
       $("panel").hidden = false;
       return;
@@ -543,6 +768,9 @@ $("search").oninput = () => { clearTimeout(timer); timer = setTimeout(() => load
     await loadSupport();
     await loadPlans();
     await loadProducts();
+    await loadPromos();
+    await loadReferral();
+    await loadMailings(true);
     await loadCredits();
     $("gate").hidden = true;
     $("panel").hidden = false;

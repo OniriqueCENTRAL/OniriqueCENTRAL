@@ -89,6 +89,21 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
 .chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
 .chip { max-width: min(100%, 34ch); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: none; color: var(--haze); font: 400 13px/1.2 var(--f-body); cursor: pointer; }
 .chip:hover { border-color: var(--ember); color: var(--mist); }
+/* Parrainage */
+.refer { display: grid; gap: 18px; }
+.refer-link { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.refer-link input { flex: 1 1 260px; min-width: 0; font: 500 14px var(--f-mono); color: var(--bone); }
+.perks { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 12px; }
+.perk { padding: 16px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.025); }
+.perk b { display: block; font: 800 22px/1.15 var(--f-display); color: var(--mist); }
+.perk span { display: block; margin-top: 6px; font-size: 14px; color: var(--haze); }
+.stats { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 14px; color: var(--haze); }
+.stats strong { color: var(--mist); font: 700 17px var(--f-mono); margin-right: 6px; }
+.meter { height: 8px; border-radius: 999px; background: rgba(255,255,255,.06); overflow: hidden; }
+.meter i { display: block; height: 100%; background: linear-gradient(90deg, #5c0008, var(--ember)); border-radius: 999px; }
+.gift { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 12px 0; border-top: 1px solid var(--line); }
+.gift .key { font-size: 15px; }
+.welcome { padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(226,52,68,.6); background: rgba(226,52,68,.12); color: var(--bone); font-size: 14px; }
 [hidden] { display: none !important; }
 </style>
 
@@ -111,10 +126,13 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
         <button type="button" role="tab" id="tab-register" aria-selected="false">Créer un compte</button>
       </div>
       <form id="form">
+        <p class="welcome" id="ref-banner" hidden></p>
         <label id="name-field" hidden>Nom<input id="name" maxlength="80" autocomplete="name"></label>
         <label>E-mail<input id="email" type="email" required autocomplete="username"></label>
         <label id="password-field"><span id="password-label">Mot de passe</span><input id="password" type="password" required autocomplete="current-password"></label>
         <label class="check" id="remember-field"><input type="checkbox" id="remember" checked><span>Se souvenir de moi sur cet appareil</span></label>
+        <label id="ref-field" hidden>Code de parrainage (facultatif)<input id="ref" maxlength="12" autocomplete="off" spellcheck="false" style="text-transform:uppercase;font-family:var(--f-mono)"></label>
+        <label class="check" id="news-field" hidden><input type="checkbox" id="news"><span>J'accepte de recevoir par e-mail les nouveautés, offres et codes promo d'ONIRIQUE. Désinscription en un clic dans chaque message.</span></label>
         <label class="check" id="terms-field" hidden><input type="checkbox" id="terms"><span>J'accepte les <a href="cgv.html" target="_blank" rel="noopener">conditions générales</a> et j'ai lu la <a href="confidentialite.html" target="_blank" rel="noopener">politique de confidentialité</a>.</span></label>
         <div class="error" id="error" role="alert"></div>
         <div class="notice" id="notice" role="status"></div>
@@ -178,6 +196,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
         <form id="profile-form">
           <label>Nom affiché<input id="profile-name" maxlength="80" autocomplete="name"></label>
           <label>E-mail<input id="profile-email" type="email" disabled></label>
+          <label class="check"><input type="checkbox" id="profile-news"><span>Recevoir par e-mail les nouveautés, offres et codes promo d'ONIRIQUE</span></label>
           <div class="notice" id="profile-notice" role="status"></div>
           <div><button class="btn btn-ghost" type="submit">Enregistrer</button></div>
         </form>
@@ -193,6 +212,31 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
     <div class="panel" id="licences">
       <div class="eyebrow">Vos licences</div>
       <div class="rows" id="licenses"></div>
+    </div>
+
+    <div class="panel" id="parrainage" hidden>
+      <div class="eyebrow">Parrainage</div>
+      <div class="refer">
+        <div>
+          <h2 style="font-size:20px">Invite tes amis, <em style="font:600 1.3em/.8 var(--f-dream);font-style:normal;text-shadow:var(--glow)">gagne des plugins</em></h2>
+          <p class="muted" style="margin:8px 0 0;max-width:60ch" id="ref-intro"></p>
+        </div>
+        <div class="perks" id="ref-perks"></div>
+        <div class="refer-link">
+          <input id="ref-link" readonly aria-label="Votre lien de parrainage">
+          <button class="btn btn-primary" id="ref-copy" type="button">Copier le lien</button>
+          <button class="btn btn-ghost" id="ref-share" type="button" hidden>Partager</button>
+        </div>
+        <div class="stats" id="ref-stats"></div>
+        <div id="ref-progress"></div>
+        <div id="ref-gifts"></div>
+        <div class="welcome" id="ref-welcome" hidden></div>
+        <form id="ref-attach" hidden style="max-width:none">
+          <p class="muted" style="margin:0">Un ami vous a invité ? Entrez son code avant votre premier achat : vous aurez votre remise, lui sa récompense.</p>
+          <div class="refer-link"><input id="ref-attach-code" maxlength="12" placeholder="CODE DE L'AMI" aria-label="Code de parrainage de votre ami" style="text-transform:uppercase;font-family:var(--f-mono)"><button class="btn btn-ghost" type="submit">Valider</button></div>
+        </form>
+        <div class="notice" id="ref-notice" role="status"></div>
+      </div>
     </div>
 
     <div class="panel" id="youtube" hidden>
@@ -217,7 +261,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
   <nav class="legal" aria-label="Pages légales"><a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="remboursement.html">Rétractation et remboursement</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a></nav>
 </main>
 
-<script src="assets/account.js?v=2"></script>
+<script src="assets/account.js?v=4"></script>
 <script>
 // Le site relaie /api vers le serveur ONIRIQUE CENTRAL (même origine : pas de CORS à gérer).
 const $ = (id) => document.getElementById(id);
@@ -276,6 +320,8 @@ function show(me) {
   const role = { vip: "VIP", abrasion: "Abrasion", relic: "Relic", admin: "Admin", founder: "Fondateur" }[me.user.role];
   $("email-line").textContent = me.user.email + (role ? " · " + role : "");
   $("profile-name").value = me.user.name || "";
+  $("profile-news").checked = !!me.user.newsletter;
+  showReferral(me.referral);
   $("profile-email").value = me.user.email;
   $("admin-link").hidden = !role || me.user.role === "vip";
   $("verify-panel").hidden = me.user.emailVerified !== false;
@@ -313,6 +359,54 @@ function show(me) {
   $("licenses").replaceChildren(...rows);
 }
 
+// Parrainage : le lien à partager, ce que chacun y gagne, les amis venus et les codes gagnés.
+function showReferral(r) {
+  $("parrainage").hidden = !r || !r.enabled;
+  if (!r || !r.enabled) return;
+  $("ref-intro").textContent = `Partage ton lien. Ton ami a ${r.friendPercent} % de remise sur son premier plugin ONIRIQUE ; toi, tu reçois un code de -${r.rewardPercent} % dès qu'il fait son premier achat`
+    + (r.milestone ? `, et un plugin ONIRIQUE offert tous les ${r.milestone} amis acheteurs.` : ".");
+  $("ref-perks").replaceChildren(
+    ...[[`-${r.friendPercent} %`, "pour ton ami, sur son premier plugin ONIRIQUE"], [`-${r.rewardPercent} %`, "pour toi, à chaque ami qui achète"],
+      ...(r.milestone ? [["Offert", `un plugin ONIRIQUE tous les ${r.milestone} amis acheteurs`]] : [])]
+      .map(([big, small]) => { const box = el("div", "perk"); box.append(el("b", "", big), el("span", "", small)); return box; }));
+  $("ref-link").value = r.link;
+  $("ref-share").hidden = !navigator.share;
+  const stats = [[r.invited, r.invited > 1 ? "amis inscrits" : "ami inscrit"], [r.converted, r.converted > 1 ? "amis acheteurs" : "ami acheteur"], [r.rewards.length, r.rewards.length > 1 ? "codes gagnés" : "code gagné"]];
+  $("ref-stats").replaceChildren(...stats.map(([n, label]) => { const s = el("span"); s.append(el("strong", "", String(n)), label); return s; }));
+  if (r.milestone) {
+    const done = r.milestone - r.toMilestone;
+    const meter = el("div", "meter"), fill = el("i");
+    fill.style.width = Math.round(done / r.milestone * 100) + "%";
+    meter.append(fill);
+    $("ref-progress").replaceChildren(el("p", "muted", `Plus que ${r.toMilestone} ami${r.toMilestone > 1 ? "s" : ""} acheteur${r.toMilestone > 1 ? "s" : ""} avant ton plugin offert.`), meter);
+    $("ref-progress").firstChild.style.margin = "0 0 8px";
+  }
+  $("ref-gifts").replaceChildren(...r.rewards.map((g) => {
+    const row = el("div", "gift"), left = el("div");
+    left.append(el("div", "key", g.code), el("div", "muted", g.label + (g.expiresAt ? " · jusqu'au " + date(g.expiresAt) : "")));
+    row.append(left, el("span", "pill" + (!g.used && !g.expired ? " on" : ""), g.used ? "Utilisé" : g.expired ? "Expiré" : "À utiliser"));
+    return row;
+  }));
+  $("ref-welcome").hidden = !r.welcomePercent;
+  if (r.welcomePercent) $("ref-welcome").textContent = `Invité par ${r.sponsor} : ${r.welcomePercent} % de remise sur ton premier plugin ONIRIQUE, appliqués tout seuls au moment d'acheter.`;
+  $("ref-attach").hidden = !r.canAttach;
+}
+$("ref-copy").onclick = async () => {
+  try { await navigator.clipboard.writeText($("ref-link").value); } catch { $("ref-link").select(); document.execCommand("copy"); }
+  say("ref-notice", "Lien copié. Envoie-le à tes amis.");
+};
+$("ref-share").onclick = () => navigator.share({ title: "ONIRIQUE", text: "Des plugins audio que j'utilise : une remise sur ton premier plugin avec mon lien.", url: $("ref-link").value }).catch(() => {});
+$("ref-attach").onsubmit = async (event) => {
+  event.preventDefault();
+  try {
+    const result = await api("POST", "/me/referrer", { code: $("ref-attach-code").value.trim() });
+    show(await api("GET", "/me"));
+    say("ref-notice", `C'est noté : parrainé par ${result.sponsor}.`);
+  } catch (error) {
+    say("ref-notice", error.message, true);
+  }
+};
+
 const SUBMIT = { login: "Se connecter", register: "Créer mon compte", forgot: "Recevoir le lien", reset: "Enregistrer le mot de passe" };
 
 function setMode(next, notice = "") {
@@ -322,6 +416,12 @@ function setMode(next, notice = "") {
   $("tab-register").setAttribute("aria-selected", String(mode === "register"));
   $("name-field").hidden = mode !== "register";
   $("terms-field").hidden = mode !== "register";
+  $("ref-field").hidden = mode !== "register";
+  $("news-field").hidden = mode !== "register";
+  $("ref-banner").hidden = mode !== "register" || !$("ref").value;
+  if ($("ref").value) $("ref-banner").textContent = setMode.percent
+    ? `Invité par un ami : ${setMode.percent} % de remise sur ton premier plugin ONIRIQUE, une fois ton compte créé.`
+    : "Invité par un ami : ta remise de bienvenue s'appliquera à ton premier plugin ONIRIQUE.";
   $("remember-field").hidden = mode === "forgot" || mode === "reset";
   $("terms").required = mode === "register";
   $("email").closest("label").hidden = mode === "reset";
@@ -346,7 +446,8 @@ $("form").onsubmit = async (event) => {
   $("submit").disabled = true;
   $("error").textContent = "";
   try {
-    const body = { email: $("email").value.trim(), password: $("password").value, name: $("name").value.trim() };
+    const body = { email: $("email").value.trim(), password: $("password").value, name: $("name").value.trim(),
+      ...(mode === "register" ? { ref: $("ref").value.trim(), newsletter: $("news").checked } : {}) };
     if (mode === "forgot") {
       await api("POST", "/auth/forgot", { email: body.email });
       setMode("login", "Si un compte existe avec cette adresse, un lien vient d'être envoyé. Il est valable une heure.");
@@ -362,6 +463,7 @@ $("form").onsubmit = async (event) => {
       return;
     }
     const { token } = await api("POST", mode === "register" ? "/auth/register" : "/auth/login", body);
+    if (mode === "register") try { localStorage.removeItem("onirique.ref"); } catch {}
     forget();
     ($("remember").checked ? localStorage : sessionStorage).setItem(TOKEN, token);
     $("password").value = "";
@@ -429,6 +531,7 @@ $("profile-form").onsubmit = async (event) => {
   say("profile-notice", "");
   try {
     await api("POST", "/me/profile", { name: $("profile-name").value.trim() });
+    await api("POST", "/me/newsletter", { enabled: $("profile-news").checked });
     show(await api("GET", "/me"));
     say("profile-notice", "Profil enregistré.");
   } catch (error) {
@@ -636,6 +739,15 @@ $("logout").onclick = async () => {
   if (resetToken) {
     show(null);
     return setMode("reset", "Choisissez votre nouveau mot de passe.");
+  }
+  // Arrivé par le lien d'un ami (ici ou sur une autre page du site, retenu 30 jours) : la page s'ouvre sur l'inscription.
+  let ref = new URLSearchParams(location.search).get("ref") || "";
+  try { const kept = JSON.parse(localStorage.getItem("onirique.ref")); if (!ref && kept && Date.now() - kept.at < 30 * 86400000) ref = kept.code; } catch {}
+  if (ref && !saved()) {
+    $("ref").value = ref.toUpperCase();
+    setMode.percent = (await fetch("/api/catalog").then((r) => r.json()).catch(() => ({}))).referral?.friendPercent;
+    show(null);
+    return setMode("register");
   }
   if (!saved()) { show(null); $("notice").textContent = verified && verified + (verified.startsWith("Adresse") ? " Connectez-vous." : ""); return; }
   try {

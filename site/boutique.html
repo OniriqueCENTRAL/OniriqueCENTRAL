@@ -48,6 +48,21 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 .filters button[aria-pressed="true"] { background: var(--ember); color: #fff; }
 .filters button.sort { border-color: var(--line); color: var(--mist); }
 .filters button.sort:hover { border-color: var(--ember); }
+/* Catégories : une seconde rangée, « Trier par » et une pastille par usage */
+.filters.cats { margin-top: 12px; justify-content: flex-start; }
+.filters .label { font: 500 12px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); margin-right: 4px; }
+.card .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.card .tags span { padding: 4px 8px; border-radius: 999px; border: 1px solid var(--line); font: 500 10px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--haze); }
+/* Code promo et remise de parrainage, sous le prix */
+.side .price s { font-size: .5em; color: var(--haze); font-weight: 600; margin-right: 10px; vertical-align: middle; }
+.deal { display: inline-flex; align-items: center; gap: 8px; margin: 4px 0 0; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(226,52,68,.6); background: rgba(226,52,68,.16); color: var(--bone); font: 500 12px/1.2 var(--f-mono); letter-spacing: .06em; }
+.promo { margin: 0 0 14px; }
+.promo summary { cursor: pointer; font-size: 14px; color: var(--haze); }
+.promo summary:hover { color: var(--mist); }
+.promo form { display: flex; gap: 8px; margin-top: 10px; }
+.promo input { flex: 1; min-width: 0; height: 42px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 600 15px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
+.promo button { padding: 0 16px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); font: 600 14px var(--f-body); cursor: pointer; }
+.promo button:hover { border-color: var(--ember); }
 
 .product { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); gap: 28px; align-items: start; margin-top: 26px; }
 .side { position: sticky; top: 20px; padding: 24px; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(180deg, var(--deep-2), var(--deep)); }
@@ -122,6 +137,10 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
       <div class="group" id="creators" role="group" aria-label="Créateur des plugins"></div>
       <button class="sort" id="sort" type="button"></button>
     </div>
+    <div class="filters cats" id="cat-filters" hidden>
+      <span class="label">Trier par</span>
+      <div class="group" id="categories" role="group" aria-label="Catégorie des plugins"></div>
+    </div>
     <div class="grid" id="grid"></div>
 
     <!-- Abonnement tout inclus : les formules proposées (elles se règlent depuis la page admin) -->
@@ -176,6 +195,12 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
           <li id="version"></li>
           <li>Installation et mises à jour par Onirique Central</li>
         </ul>
+        <div class="promo" id="promo" hidden>
+          <details id="promo-open"><summary>J'ai un code promo</summary>
+            <form id="promo-form"><input id="promo-code" maxlength="24" autocomplete="off" spellcheck="false" aria-label="Code promo" placeholder="CODE"><button type="submit">Appliquer</button></form>
+          </details>
+          <p class="note" id="promo-note" role="status"></p>
+        </div>
         <button class="buy" id="buy" type="button">Acheter</button>
         <button class="buy ghost" id="trial" type="button" hidden>Essai gratuit · 7 jours</button>
         <p class="note" id="trial-note" hidden>7 jours d'utilisation en temps réel dans ton DAW. L'export reste remplacé par un bruit blanc tant que le plugin n'est pas acheté. Un seul essai par plugin.</p>
@@ -196,7 +221,7 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 
 <script src="assets/demo-player.js"></script>
 <script src="assets/tools-menu.js"></script>
-<script src="assets/account.js?v=2"></script>
+<script src="assets/account.js?v=4"></script>
 <script src="assets/catalog-watch.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
@@ -212,13 +237,21 @@ const CREATORS = { onirique: "ONIRIQUE", abrasion: "ABRASION", relic: "RELIC" };
 const SORTS = { none: "Tri : par défaut", up: "Prix croissant", down: "Prix décroissant" };
 
 // La liste de la boutique : un créateur ou tous, dans l'ordre du catalogue ou par prix.
-function setupList(products) {
-  const shown = { creator: "all", sort: "none" };
+function setupList(products, categories = []) {
+  const shown = { creator: "all", sort: "none", category: "all" };
   function draw() {
-    const list = products.filter((p) => shown.creator === "all" || (p.creator || "onirique") === shown.creator);
+    const list = products.filter((p) => (shown.creator === "all" || (p.creator || "onirique") === shown.creator)
+      && (shown.category === "all" || (p.categories || []).includes(shown.category)));
     if (shown.sort !== "none") list.sort((a, b) => (shown.sort === "up" ? a.priceCents - b.priceCents : b.priceCents - a.priceCents));
-    $("grid").replaceChildren(...(list.length ? list.map(card) : [el("div", { className: "soon" }, el("p", { className: "eyebrow", textContent: CREATORS[shown.creator] }), el("h2", {}, "Bientôt ", el("em", { textContent: "disponible" })),
-      el("p", { textContent: `Les plugins ${CREATORS[shown.creator]} arrivent. Ils apparaîtront ici dès leur sortie.` }))]));
+    const label = shown.creator !== "all" ? CREATORS[shown.creator] : (categories.find((c) => c.id === shown.category) || {}).label;
+    $("grid").replaceChildren(...(list.length ? list.map((p) => card(p, categories)) : [el("div", { className: "soon" }, el("p", { className: "eyebrow", textContent: label }), el("h2", {}, "Bientôt ", el("em", { textContent: "disponible" })),
+      el("p", { textContent: shown.creator !== "all" && shown.category === "all" ? `Les plugins ${CREATORS[shown.creator]} arrivent. Ils apparaîtront ici dès leur sortie.` : "Aucun plugin ne correspond encore à ce choix. Il apparaîtra ici dès sa sortie." }))]));
+    $("categories").replaceChildren(...[["all", "Tout"], ...categories.map((c) => [c.id, c.label])].map(([id, text]) => {
+      const button = el("button", { type: "button", textContent: text });
+      button.setAttribute("aria-pressed", String(shown.category === id));
+      button.onclick = () => { shown.category = id; draw(); };
+      return button;
+    }));
     $("creators").replaceChildren(...[["all", "Tous"], ...Object.entries(CREATORS)].map(([id, label]) => {
       const button = el("button", { type: "button", textContent: label });
       button.setAttribute("aria-pressed", String(shown.creator === id));
@@ -230,16 +263,19 @@ function setupList(products) {
   // Un seul bouton : chaque clic passe au tri suivant.
   $("sort").onclick = () => { shown.sort = { none: "up", up: "down", down: "none" }[shown.sort]; draw(); };
   $("filters").hidden = false;
+  $("cat-filters").hidden = !categories.length;
   draw();
 }
 
-function card(p) {
+function card(p, categories = []) {
+  const tags = (p.categories || []).map((id) => categories.find((c) => c.id === id)).filter(Boolean);
   const shot = el("div", { className: "shot" }, p.image
     ? el("img", { className: p.imageManual ? "cover framed" : "cover", src: p.image, alt: "Interface du plugin " + p.name, loading: "lazy" })
     : el("img", { className: "mark", src: "assets/logo.png", alt: "" }));
   return el("a", { className: "card", href: p.href || "boutique.html?p=" + encodeURIComponent(p.slug) }, shot,
     el("div", { className: "body" }, el("span", { className: "creator", textContent: CREATORS[p.creator] || CREATORS.onirique }),
       el("h2", { textContent: p.name }), el("p", { textContent: p.tagline }),
+      tags.length ? el("div", { className: "tags" }, ...tags.map((c) => el("span", { textContent: c.label }))) : null,
       el("div", { className: "foot" }, el("span", { className: "price", textContent: euros(p.priceCents) }), el("span", { className: "more", textContent: p.more || "Essayer →" }))));
 }
 
@@ -360,6 +396,53 @@ function setupPick(catalog) {
   $("pick").hidden = false;
 }
 
+// Code promo et remise de parrainage : le serveur calcule le prix pour ce compte. Le prix affiché n'engage pas : il
+// est recalculé au moment de payer. Un code peut arriver par l'adresse (…&code=NOEL20, depuis un e-mail).
+let promo = null; // le code appliqué
+function showPrice(product, q) {
+  const deal = q && q.discountCents > 0;
+  $("price").replaceChildren(...(deal ? [el("s", { textContent: euros(q.priceCents) }), euros(q.finalCents)] : [euros(product.priceCents)]));
+  const old = $("deal");
+  if (old) old.remove();
+  if (deal) $("price").after(el("p", { className: "deal", id: "deal", textContent: q.source === "welcome" ? `${q.label} · cadeau de parrainage` : `${q.label} · code ${q.code}` }));
+  if (!$("buy").disabled) $("buy").textContent = "Acheter · " + euros(deal ? q.finalCents : product.priceCents);
+}
+async function quoteFor(product, code) {
+  const token = sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token");
+  const response = await fetch("/api/promo/quote", { method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify({ productId: product.id, code }) });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw Object.assign(new Error(data.error || "Code refusé."), { status: response.status });
+  return data;
+}
+function setupPromo(product) {
+  if (!product.priceCents) return;
+  const token = sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token");
+  $("promo").hidden = false;
+  const given = new URLSearchParams(location.search).get("code");
+  if (given) { $("promo-code").value = given; $("promo-open").open = true; }
+  $("promo-form").onsubmit = async (event) => {
+    event.preventDefault();
+    const code = $("promo-code").value.trim();
+    if (!code) return;
+    if (!token) { $("promo-note").textContent = "Connecte-toi pour utiliser un code promo : il est lié à ton compte."; return; }
+    try {
+      const q = await quoteFor(product, code);
+      promo = q.code ? code : null;
+      showPrice(product, q);
+      $("promo-note").textContent = q.note || (q.code ? `Code appliqué : ${q.label}.` : "Ce code ne change pas le prix de ce plugin.");
+    } catch (error) {
+      if (error.status === 401) { location.href = "compte.html"; return; }
+      promo = null;
+      $("promo-note").textContent = error.message;
+    }
+  };
+  // Connecté : la remise de parrainage s'affiche d'elle-même, et un code venu de l'adresse est essayé tout de suite.
+  if (token) {
+    if (given) $("promo-form").requestSubmit();
+    else quoteFor(product).then((q) => q.discountCents && showPrice(product, q)).catch(() => {});
+  }
+}
+
 async function buy(product, catalog) {
   const note = $("buy-note");
   // Chaque créateur vend sur son propre compte : tant que le sien n'est pas branché, son plugin n'est pas encore en vente.
@@ -372,7 +455,7 @@ async function buy(product, catalog) {
   if (!token) { location.href = "compte.html"; return; }
   $("buy").disabled = true;
   try {
-    const response = await fetch("/api/checkout", { method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify({ kind: "product", id: product.id }) });
+    const response = await fetch("/api/checkout", { method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify({ kind: "product", id: product.id, promo }) });
     const data = await response.json();
     if (response.status === 401) { location.href = "compte.html"; return; }
     if (!response.ok) throw new Error(data.error || "Achat impossible.");
@@ -399,7 +482,7 @@ async function buy(product, catalog) {
   const slug = new URLSearchParams(location.search).get("p");
   const product = slug && catalog.products.find((p) => p.slug === slug);
   if (!product) {
-    if (catalog.products.length) setupList(catalog.products);
+    if (catalog.products.length) setupList(catalog.products, catalog.categories);
     else $("grid").replaceChildren(el("p", { className: "lede", textContent: "Aucun plugin en vente pour le moment." }));
     setupPlans(catalog);
     setupPick(catalog);
@@ -418,7 +501,7 @@ async function buy(product, catalog) {
   $("desc").replaceChildren(...(product.description || product.tagline).split(/\n{2,}/).map((text) => el("p", { textContent: text })));
   $("buy").textContent = product.priceCents ? "Acheter · " + euros(product.priceCents) : "Obtenir";
   $("buy").onclick = () => buy(product, catalog);
-  setupTrial(product);
+  setupTrial(product).then(() => { if (!$("buy").disabled) setupPromo(product); });
   $("detail").hidden = false;
 
   // Une image choisie par un admin passe avant la démo fabriquée automatiquement.

@@ -275,6 +275,61 @@ db.exec(`UPDATE users SET role = 'relic' WHERE role = 'bloom'`);
 db.exec(`UPDATE products SET creator = 'relic' WHERE creator = 'bloom'`);
 db.exec(`UPDATE stripe_accounts SET creator = 'relic' WHERE creator = 'bloom'`);
 
+// Codes promo (promos.js) : créés depuis le panel admin, ou offerts à un parrain (kind "reward", owner_id : lui seul
+// peut s'en servir). Chaque utilisation est gardée : un code ne sert qu'une fois par compte.
+db.exec(`
+CREATE TABLE IF NOT EXISTS promo_codes (
+  id           INTEGER PRIMARY KEY,
+  code         TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  percent      INTEGER,
+  amount_cents INTEGER,
+  product_ids  TEXT,
+  creator      TEXT,
+  max_uses     INTEGER,
+  expires_at   INTEGER,
+  active       INTEGER NOT NULL DEFAULT 1,
+  owner_id     INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  kind         TEXT NOT NULL DEFAULT 'admin',
+  note         TEXT NOT NULL DEFAULT '',
+  created_at   INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS promo_redemptions (
+  id             INTEGER PRIMARY KEY,
+  promo_id       INTEGER REFERENCES promo_codes(id) ON DELETE CASCADE,
+  user_id        INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  product_id     INTEGER,
+  order_ref      TEXT,
+  discount_cents INTEGER NOT NULL DEFAULT 0,
+  created_at     INTEGER NOT NULL,
+  UNIQUE (promo_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS promo_owner ON promo_codes(owner_id);
+`);
+
+// Parrainage : le code d'invitation de chaque compte, son parrain, la remise de bienvenue déjà prise, et si son
+// premier achat payé a déjà récompensé le parrain.
+if (!hasColumn('users', 'referral_code')) {
+  db.exec('ALTER TABLE users ADD COLUMN referral_code TEXT');
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS users_referral_code ON users(referral_code)');
+}
+if (!hasColumn('users', 'referred_by')) db.exec('ALTER TABLE users ADD COLUMN referred_by INTEGER REFERENCES users(id) ON DELETE SET NULL');
+if (!hasColumn('users', 'referral_welcome_used')) db.exec('ALTER TABLE users ADD COLUMN referral_welcome_used INTEGER NOT NULL DEFAULT 0');
+if (!hasColumn('users', 'referral_rewarded')) db.exec('ALTER TABLE users ADD COLUMN referral_rewarded INTEGER NOT NULL DEFAULT 0');
+
+// Catégorie d'un plugin dans la boutique et l'application (beatmaking, mix, master, mesure, application…).
+// Vide : devinée à partir de son nom et de son texte (categoryOf dans app.js).
+if (!hasColumn('products', 'category')) {
+  db.exec(`ALTER TABLE products ADD COLUMN category TEXT NOT NULL DEFAULT ''`);
+  // Les plugins déjà en ligne ce jour-là, rangés à la main ; un plugin peut être dans plusieurs catégories.
+  const known = {
+    tuner: 'voice,mix', based: 'voice,mix', vocalbox: 'voice,mix', 'onirique-broadcast': 'app,voice', 'onirique-pitchbox': 'voice',
+    'onirique-resobox': 'mix,master', 'onirique-x-abrasion-raw': 'beat', 'onirique-x-abrasion-tama-vox': 'beat,voice',
+    'onirique-doublebox': 'voice,mix', 'onirique-vocal-spacer': 'mix,voice', 'onirique-modbox': 'beat,mix',
+    'onirique-x-abrasion-mimic': 'beat', bloom: 'mix,master', 'onirique-meterbox': 'meter,master',
+  };
+  for (const [slug, category] of Object.entries(known)) db.prepare('UPDATE products SET category = ? WHERE slug = ?').run(category, slug);
+}
+
 export const now = () => Date.now();
 
 /** Un réglage modifiable depuis le panel admin (table settings), ou la valeur de la configuration s'il n'a jamais été changé. */
