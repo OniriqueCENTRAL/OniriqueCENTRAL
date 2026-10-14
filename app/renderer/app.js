@@ -51,12 +51,25 @@ const icon = (path) => {
   return svg;
 };
 
+/** FR | EN : français par défaut, anglais au choix (i18n.js, le même moteur que le site). La pastille ne se traduit pas. */
+function langSwitch() {
+  const i18n = window.OniriqueI18n;
+  const current = i18n?.lang || 'fr';
+  return h('div', { class: 'lang-switch', role: 'group', 'aria-label': 'Langue / Language', 'data-no-translate': '' },
+    h('span', { class: 'lang-globe', 'aria-hidden': 'true' }, '🌐'),
+    ...[['fr', 'FR', 'Français'], ['en', 'EN', 'English']].map(([code, label, title]) => h('button', {
+      lang: code, title, 'aria-pressed': String(current === code),
+      onclick: () => { if (i18n && current !== code) i18n.set(code); },
+    }, label)));
+}
+
 function titlebar() {
   const mac = central.platform === 'darwin'; // macOS dessine ses propres boutons, à gauche
   return h('header', { class: `titlebar${mac ? ' mac' : ''}` },
     h('img', { class: 'sigil', src: 'assets/sigil.png', alt: '' }),
     h('div', { class: 'wordmark' }, h('b', null, 'ONIRIQUE'), h('i', null, 'Central')),
     h('div', { class: 'spacer' }),
+    langSwitch(),
     state.update ? h('button', { class: 'update-pill', title: 'Fermer et rouvrir l\'application pour installer la mise à jour', onclick: () => central.installUpdate() },
       h('span', { class: 'led on' }), `Version ${state.update} prête · Redémarrer`) : null,
     mac ? null : h('div', { class: 'win-controls' },

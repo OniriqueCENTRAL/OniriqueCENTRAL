@@ -83,6 +83,13 @@ body {
   font: 600 10px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; -webkit-app-region: no-drag;
 }
 .update-pill:hover { background: rgba(226, 52, 68, 0.32); }
+/* Langue : FR | EN, toujours dans la barre du haut */
+.lang-switch { display: inline-flex; align-items: center; gap: 2px; margin-right: 12px; padding: 2px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.04); -webkit-app-region: no-drag; }
+.lang-switch .lang-globe { margin: 0 4px 0 7px; font-size: 12px; filter: grayscale(1); opacity: 0.7; }
+.lang-switch button { min-width: 32px; height: 24px; padding: 0 8px; border: 0; border-radius: 999px; background: none; color: var(--haze); font: 600 10px var(--mono); letter-spacing: 0.1em; cursor: pointer; }
+.lang-switch button:hover { color: var(--mist); }
+.lang-switch button[aria-pressed="true"] { background: var(--ember); color: #fff; }
+.lang-offer { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 12px; margin: 0 0 18px; padding: 10px 12px; border-radius: 14px; border: 1px solid rgba(226, 52, 68, 0.55); background: rgba(226, 52, 68, 0.1); font-size: 13px; }
 .win-controls { display: flex; height: 100%; -webkit-app-region: no-drag; }
 .win-controls button {
   width: 46px; height: 100%; border: 0; background: none; color: var(--haze); cursor: pointer;

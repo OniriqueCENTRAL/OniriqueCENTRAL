@@ -1,0 +1,9 @@
+{
+  "name": "onirique-i18n-tools",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "acorn": "^8.19.0",
+    "acorn-walk": "^8.3.5"
+  }
+}

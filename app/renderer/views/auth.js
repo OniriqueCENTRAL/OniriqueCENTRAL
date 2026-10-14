@@ -8,6 +8,21 @@ const hero = () => [
   h('div', { class: 'wordmark' }, h('b', null, 'ONIRIQUE'), h('i', null, 'Central')),
 ];
 
+/** Un système qui n'est pas en français : une fois, la proposition de passer l'application en anglais (écrite en anglais). */
+function englishOffer() {
+  const i18n = window.OniriqueI18n;
+  let decided = true;
+  try { decided = !!(localStorage.getItem('onirique.lang') || localStorage.getItem('onirique.lang.prompted')); } catch { /* stockage fermé */ }
+  const languages = navigator.languages?.length ? navigator.languages : [navigator.language || ''];
+  if (!i18n || i18n.lang !== 'fr' || decided || languages.some((l) => /^fr/i.test(l))) return null;
+  const box = h('div', { class: 'lang-offer', lang: 'en', 'data-no-translate': '' },
+    h('span', null, '🌐 ', h('strong', null, 'ONIRIQUE Central is available in English.')),
+    h('button', { class: 'btn small primary', type: 'button', onclick: () => i18n.set('en') }, 'Switch to English'),
+    h('button', { class: 'btn small quiet', type: 'button', title: 'Keep French',
+      onclick: () => { try { localStorage.setItem('onirique.lang.prompted', '1'); } catch {} box.remove(); } }, '×'));
+  return box;
+}
+
 export function authView() {
   const email = h('input', { type: 'email', autocomplete: 'username', required: true, placeholder: 'vous@exemple.com' });
   const password = h('input', { type: 'password', required: true, minLength: mode === 'register' ? 8 : 1,
@@ -64,7 +79,7 @@ export function authView() {
   }, label);
 
   queueMicrotask(() => (mode === 'register' ? name : email).focus());
-  return h('div', { class: 'auth-box' }, hero(),
+  return h('div', { class: 'auth-box' }, hero(), englishOffer(),
     h('div', { class: 'segmented' }, tab('login', 'Connexion'), tab('register', 'Créer un compte')),
     form,
     h('p', { class: 'muted mono', style: { 'font-size': '11px', 'margin-top': '16px' } }, state.data.settings.serverUrl));

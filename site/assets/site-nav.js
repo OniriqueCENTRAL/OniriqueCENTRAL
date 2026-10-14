@@ -77,6 +77,19 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .sn-foot a { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.16)); color: var(--haze, #a88f92); }
 .sn-foot a:hover, .sn-foot a:focus-visible { color: var(--mist, #f6eeee); border-color: var(--ember, #e23444); outline: none; }
 .sn-foot .sn-icon { width: 19px; height: 19px; }
+/* Langue : une pastille FR | EN dans l'en-tête, toujours visible, et un bandeau en anglais pour qui ne lit pas le français */
+.sn-lang { display: inline-flex; flex: none; align-items: center; padding: 3px; gap: 2px; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: rgba(255,255,255,.04); }
+.sn-lang svg { width: 15px; height: 15px; margin: 0 4px 0 6px; color: var(--haze, #a88f92); flex: none; }
+.sn-lang button { min-width: 34px; height: 30px; padding: 0 9px; border: 0; border-radius: 999px; background: none; color: var(--haze, #a88f92); font: 600 12px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .08em; cursor: pointer; }
+.sn-lang button:hover { color: var(--mist, #f6eeee); }
+.sn-lang button[aria-pressed="true"] { background: var(--ember, #e23444); color: #fff; }
+header .sn-lang { margin-left: 8px; }
+.sn-langbar { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 150; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 14px; width: max-content; max-width: calc(100vw - 24px); padding: 12px 14px 12px 18px; border-radius: 18px; border: 1px solid rgba(226,52,68,.55); background: linear-gradient(180deg, var(--deep-2, #2a0a0e), var(--deep, #1a080a)); box-shadow: 0 20px 60px -12px rgba(0,0,0,.85), 0 0 0 4px rgba(226,52,68,.12); color: var(--mist, #f6eeee); font: 500 15px/1.35 var(--f-body, system-ui); }
+.sn-langbar strong { font-weight: 700; }
+.sn-langbar .sn-go { padding: 10px 16px; border: 0; border-radius: 999px; background: var(--mist, #f6eeee); color: var(--night, #0d0809); font: 700 14px/1 var(--f-body, system-ui); cursor: pointer; }
+.sn-langbar .sn-x { width: 34px; height: 34px; border: 1px solid var(--line, rgba(255,210,214,.16)); border-radius: 999px; background: none; color: var(--haze, #a88f92); font: 400 18px/1 var(--f-body, system-ui); cursor: pointer; }
+.sn-langrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; padding: 0 6px; }
+.sn-langrow span { font: 500 11px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .18em; text-transform: uppercase; color: var(--haze, #a88f92); }
 @media (max-width: 1100px) { .nav .sn-burger { display: inline-flex; } }
 @media (max-width: 760px) {
   header .sn-burger { display: inline-flex; }
@@ -133,12 +146,55 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   close.onclick = () => open(false);
   panel.addEventListener("click", (event) => { if (event.target.closest("a")) open(false); });
   document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !panel.hidden) open(false); });
+  // La langue : français par défaut, anglais au choix (assets/i18n.js). La pastille ne se traduit pas.
+  const i18n = window.OniriqueI18n;
+  const langSwitch = () => {
+    const box = el("div", { className: "sn-lang" });
+    box.setAttribute("data-no-translate", "");
+    box.setAttribute("role", "group");
+    box.setAttribute("aria-label", "Langue / Language");
+    box.insertAdjacentHTML("afterbegin", '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>');
+    for (const [code, label, title] of [["fr", "FR", "Français"], ["en", "EN", "English"]]) {
+      const b = el("button", { type: "button", textContent: label, title });
+      b.setAttribute("lang", code);
+      b.setAttribute("aria-pressed", String((i18n?.lang || "fr") === code));
+      b.onclick = () => { if (i18n && i18n.lang !== code) i18n.set(code); };
+      box.append(b);
+    }
+    return box;
+  };
+
   if (header) {
-    // Le bouton se place en fin d'en-tête, à droite, sans déranger les boutons déjà là.
+    // Le bouton se place en fin d'en-tête, à droite, sans déranger les boutons déjà là ; la langue juste avant.
     const row = header.querySelector(".nav-inner, .wrap") || header;
+    if (i18n) row.append(langSwitch());
     row.append(burger);
+    if (i18n) {
+      const langRow = el("div", { className: "sn-langrow" }, el("span", { textContent: "Langue · Language" }), langSwitch());
+      langRow.setAttribute("data-no-translate", "");
+      panel.insertBefore(langRow, account);
+    }
     document.body.append(panel);
   }
+
+  // Un visiteur dont le navigateur n'est pas en français voit, une fois, un bandeau en anglais pour passer en anglais.
+  try {
+    const languages = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ""];
+    const french = languages.some((l) => /^fr/i.test(l));
+    const decided = localStorage.getItem("onirique.lang") || localStorage.getItem("onirique.lang.prompted");
+    if (i18n && i18n.lang === "fr" && !french && !decided) {
+      const bar = el("div", { className: "sn-langbar", role: "dialog" },
+        el("span", {}, "🌐 ", el("strong", { textContent: "This site is available in English." }), " Prefer it?"),
+        el("button", { type: "button", className: "sn-go", textContent: "Switch to English" }),
+        el("button", { type: "button", className: "sn-x", textContent: "×", title: "Keep French" }));
+      bar.setAttribute("data-no-translate", "");
+      bar.setAttribute("aria-label", "Language");
+      bar.lang = "en";
+      bar.querySelector(".sn-go").onclick = () => i18n.set("en");
+      bar.querySelector(".sn-x").onclick = () => { try { localStorage.setItem("onirique.lang.prompted", "1"); } catch {} bar.remove(); };
+      document.body.append(bar);
+    }
+  } catch { /* stockage fermé : pas de bandeau */ }
 
   // Nos réseaux : chargés une fois, montrés seulement s'il y en a.
   fetch("/api/site").then((r) => (r.ok ? r.json() : null)).then((site) => {
