@@ -184,6 +184,44 @@ export function mountControl(admin) {
     res.json({ ok: true });
   });
 
+  // L'historique des achats : qui a acheté quoi, à quel créateur, combien, par quel moyen. Un partenaire ne voit que
+  // les ventes de ses propres plugins ; l'équipe voit tout, avec les totaux par créateur.
+  admin.get('/orders', (req, res) => {
+    const creator = req.creator || (['onirique', 'abrasion', 'relic'].includes(req.query.creator) ? req.query.creator : null);
+    const q = `%${str(req.query.q, 80)}%`;
+    const rows = all(
+      `SELECT o.id, o.kind, o.ref_id, o.amount_cents, o.provider, o.created_at, o.user_id, o.email, o.name, o.avatar,
+              p.name AS product_name, p.creator AS product_creator, pl.name AS plan_name, pk.name AS pack_name
+       FROM (SELECT o.id, o.kind, o.ref_id, o.amount_cents, o.provider, o.created_at, u.id AS user_id, u.email, u.name, u.avatar
+               FROM orders o JOIN users u ON u.id = o.user_id
+             UNION ALL
+             SELECT -a.id, a.kind, a.ref_id, a.amount_cents, a.provider, a.created_at, NULL, a.email, a.name, NULL
+               FROM orders_archive a) o
+       LEFT JOIN products p ON o.kind = 'product' AND p.id = o.ref_id
+       LEFT JOIN plans pl ON o.kind = 'plan' AND pl.id = o.ref_id
+       LEFT JOIN packs pk ON o.kind = 'pack' AND pk.id = o.ref_id
+       WHERE (o.email LIKE ? OR o.name LIKE ? OR p.name LIKE ? OR pl.name LIKE ? OR pk.name LIKE ?)
+       ORDER BY o.created_at DESC LIMIT 2000`, q, q, q, q, q)
+      .map((o) => ({
+        id: o.id, at: o.created_at, kind: o.kind, amountCents: o.amount_cents, provider: o.provider,
+        // Les abonnements et les packs sont encaissés par ONIRIQUE ; un plugin, par son créateur.
+        creator: o.kind === 'product' ? o.product_creator || 'onirique' : 'onirique',
+        item: o.kind === 'product' ? o.product_name || 'Plugin supprimé' : o.kind === 'pack' ? `Pack ${o.pack_name || '(supprimé)'}`
+          : `Abonnement ${o.plan_name || ''}`.trim(),
+        user: { id: o.user_id, email: o.email, name: o.name, avatar: o.avatar ? `/api/media/${o.avatar}` : null, deleted: o.user_id === null },
+      }))
+      .filter((o) => !creator || o.creator === creator);
+    // Ce qui a été réellement encaissé : ni les plugins gratuits, ni ceux offerts par un code, ni le mode démo.
+    const paid = (o) => !['free', 'promo', 'demo'].includes(o.provider) && o.amountCents > 0;
+    const totals = {};
+    for (const o of rows) {
+      const t = (totals[o.creator] ||= { orders: 0, paidCents: 0 });
+      t.orders++;
+      if (paid(o)) t.paidCents += o.amountCents;
+    }
+    res.json({ orders: rows.slice(0, 500), totals, count: rows.length, scope: req.creator || null });
+  });
+
   // Les fondateurs, pour choisir l'ingé d'un crédit.
   admin.get('/founders', (req, res) => {
     staff(req);
@@ -206,6 +244,9 @@ export function mountControl(admin) {
       throw new HttpError(409, 'Ce compte a un abonnement payant en cours : résiliez-le dans Stripe avant de supprimer le compte.');
     }
     transaction(() => {
+      // Les commandes restent (obligation comptable, 10 ans) : archivées avec l'adresse de l'acheteur.
+      run(`INSERT INTO orders_archive (email, name, kind, ref_id, amount_cents, provider, provider_ref, created_at)
+           SELECT ?, ?, kind, ref_id, amount_cents, provider, provider_ref, created_at FROM orders WHERE user_id = ?`, user.email, user.name || '', user.id);
       run(`UPDATE licenses SET status = 'revoked', note = CASE WHEN note = '' THEN 'Compte supprimé' ELSE note || ' · compte supprimé' END WHERE user_id = ?`, user.id);
       run('DELETE FROM users WHERE id = ?', user.id);
     });

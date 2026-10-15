@@ -338,6 +338,8 @@ export async function handleStripeEvent(event, account) {
       applyStripeSubscription(await stripe('GET', `/subscriptions/${object.subscription}`, undefined, account.key));
       const plan = get('SELECT name, interval FROM plans WHERE id = ?', Number(object.metadata.ref_id));
       if (plan && event.type === 'checkout.session.completed') {
+        // Le premier paiement entre dans l'historique des achats (les renouvellements, eux, restent chez Stripe).
+        recordOrder(userId, 'plan', Number(object.metadata.ref_id), object.amount_total ?? 0, 'stripe', object.id);
         if (object.amount_total > 0) rewardSponsor(userId); // un abonnement payé compte comme premier achat d'un filleul
         confirmOrder(userId, `Abonnement ${plan.name}`, object.amount_total ?? 0,
           `, puis le même montant chaque ${plan.interval === 'year' ? 'année' : 'mois'} jusqu'à résiliation (onglet Abonnement de l'application)`, stripeProvider(account), object.currency || 'eur');

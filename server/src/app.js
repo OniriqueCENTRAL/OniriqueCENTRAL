@@ -811,7 +811,7 @@ export function createApp() {
   const admin = express.Router();
   admin.use(requireAdmin);
   // Un partenaire n'a que ses plugins, leurs versions et leurs licences : le reste du panel lui est fermé.
-  admin.use((req, _res, next) => next(req.creator && !/^\/(products|versions|licenses|payments|promos)(\/|$)/.test(req.path)
+  admin.use((req, _res, next) => next(req.creator && !/^\/(products|versions|licenses|payments|promos|orders)(\/|$)/.test(req.path)
     ? new HttpError(403, 'Réservé aux administrateurs.') : undefined));
 
   const CREATORS = ['onirique', ...PARTNERS];

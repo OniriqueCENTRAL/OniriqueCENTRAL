@@ -104,6 +104,15 @@ try {
     await call('POST', '/api/checkout', { token: bob.token, body: { kind: 'pack', id: pack.id }, expect: 409 });
   });
 
+  await step('historique des achats : qui, quoi, à quel créateur, totaux', async () => {
+    const h = await call('GET', '/api/admin/orders', { token: admin.token });
+    const pack = h.orders.find((o) => o.kind === 'pack');
+    assert.deepEqual([pack.item, pack.creator, pack.user.email], ['Pack VOIX', 'onirique', bob.email]);
+    assert.equal(h.totals.onirique.orders >= 1, true);
+    assert.equal((await call('GET', '/api/admin/orders?creator=abrasion', { token: admin.token })).orders.length, 0);
+    await call('GET', '/api/admin/orders', { token: alice.token, expect: 403 });
+  });
+
   await step('essai gratuit : un par ordinateur et deux par connexion, quel que soit le compte', async () => {
     await call('POST', '/api/licenses/trial', { token: bob.token, body: { productId: a.id }, expect: 426 });
     await call('POST', '/api/licenses/trial', { token: bob.token, body: { productId: a.id, machineId: machine('pc1') }, expect: 201 });
@@ -168,6 +177,9 @@ try {
     assert.equal(get(`SELECT COUNT(*) AS n FROM licenses WHERE status = 'active' AND note LIKE '%compte supprimé%'`).n, 0);
     assert.ok(get(`SELECT COUNT(*) AS n FROM licenses WHERE status = 'revoked' AND note LIKE '%compte supprimé%'`).n >= 2);
     await call('GET', '/api/me', { token: bob.token, expect: 401 });
+    // Ses achats restent dans l'historique (obligation comptable), avec son adresse.
+    const history = await call('GET', '/api/admin/orders', { token: admin.token });
+    assert.ok(history.orders.some((o) => o.user.email === bob.email && o.user.deleted && o.item === 'Pack VOIX'));
     const users = await call('GET', '/api/admin/users', { token: admin.token });
     assert.ok('avatar' in users[0], 'la photo de profil est dans la liste des comptes');
   });

@@ -184,6 +184,21 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
     </section>
 
     <section class="tab" id="tab-shop" data-label="Boutique">
+    <div class="bar"><h2>Historique des achats</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <select class="act" id="orders-creator" aria-label="Vendeur"><option value="">Tous les vendeurs</option><option value="onirique">ONIRIQUE</option><option value="relic">RELIC</option><option value="abrasion">ABRASION</option></select>
+        <input type="search" id="orders-search" placeholder="Acheteur ou produit" aria-label="Chercher un achat">
+      </div>
+    </div>
+    <p class="sub">Chaque achat, du plus récent au plus ancien : qui, quoi, à quel créateur, combien et par quel moyen. Les abonnements comptent leur premier paiement ; les renouvellements se suivent chez Stripe.</p>
+    <div class="tiles" id="orders-tiles"></div>
+    <p class="error" id="orders-error" role="alert"></p>
+    <div class="table"><table>
+      <thead><tr><th>Date</th><th>Acheteur</th><th>Achat</th><th>Vendeur</th><th>Montant</th><th>Moyen</th></tr></thead>
+      <tbody id="orders"></tbody>
+    </table></div>
+    <p class="sub" id="orders-count"></p>
+
     <div class="bar"><h2>Plugins</h2></div>
     <p class="sub">Un plugin créé ici apparaît aussitôt dans la boutique du site et dans l'application, tant qu'il est coché « visible ». Une nouvelle version est proposée aussitôt en mise à jour dans Onirique Central. L'image du plugin et sa démo interactive de la boutique sont fabriquées à partir du fichier .vst3 lui-même : cela demande de charger le plugin sous Windows, et se fait donc quand la version est publiée depuis l'application Onirique Central (panel admin), pas depuis cette page.</p>
     <details class="product new" id="new-product"></details>
@@ -770,6 +785,36 @@ async function loadLive() {
   markTab("tab-site", m.on ? "!" : "");
 }
 
+//------------------------------------------------------------------------------ Historique des achats
+const PROVIDERS = { stripe: "Stripe", "stripe-managed": "Stripe (Link)", lemon: "Lemon Squeezy", promo: "Offert (code)", free: "Gratuit", demo: "Mode démo", admin: "Ajouté à la main" };
+const money = (cents) => (cents / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
+async function loadOrders() {
+  $("orders-error").textContent = "";
+  const creator = $("orders-creator").value;
+  const data = await api("GET", "/admin/orders?" + new URLSearchParams({ q: $("orders-search").value.trim(), creator }));
+  // Un partenaire ne voit que ses ventes : le choix du vendeur ne lui sert à rien.
+  $("orders-creator").hidden = !!data.scope;
+  $("orders-tiles").replaceChildren(...Object.entries(data.totals).sort((a, b) => b[1].paidCents - a[1].paidCents).map(([who, t]) =>
+    el("div", { className: "tile" }, el("b", { textContent: money(t.paidCents) }), el("span", { textContent: `${CREATORS[who] || who} · ${t.orders} achat(s)` }))));
+  const when = (ms) => new Date(ms).toLocaleString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  $("orders").replaceChildren(...(data.orders.length ? data.orders.map((o) => {
+    const face = o.user.avatar ? el("img", { className: "face", src: o.user.avatar, alt: "", loading: "lazy" })
+      : el("span", { className: "face", textContent: (o.user.name || o.user.email).trim().charAt(0).toUpperCase() });
+    return el("tr", {},
+      el("td", { className: "sub", textContent: when(o.at) }),
+      el("td", {}, el("div", { className: "who" }, face, el("div", {}, el("div", { textContent: o.user.email }),
+        el("div", { className: "sub", textContent: o.user.deleted ? "Compte supprimé" : o.user.name || "" })))),
+      el("td", {}, el("strong", { textContent: o.item })),
+      el("td", {}, el("span", { className: "pill" + (o.creator === "onirique" ? " on" : ""), textContent: CREATORS[o.creator] || o.creator })),
+      el("td", { textContent: o.amountCents ? money(o.amountCents) : "—" }),
+      el("td", { className: "sub", textContent: PROVIDERS[o.provider] || o.provider }));
+  }) : [el("tr", {}, el("td", { colSpan: 6, className: "sub", textContent: "Aucun achat pour le moment." }))]));
+  $("orders-count").textContent = data.count > data.orders.length ? `Les ${data.orders.length} plus récents sur ${data.count} : affinez la recherche.` : `${data.count} achat(s).`;
+}
+let ordersTimer;
+$("orders-search").oninput = () => { clearTimeout(ordersTimer); ordersTimer = setTimeout(() => loadOrders().catch((e) => { $("orders-error").textContent = e.message; }), 250); };
+$("orders-creator").onchange = () => loadOrders().catch((e) => { $("orders-error").textContent = e.message; });
+
 //------------------------------------------------------------------------------ Crédits
 async function loadCredits() {
   const [products, credits, founders] = await Promise.all([api("GET", "/admin/products"), api("GET", "/admin/credits"), api("GET", "/admin/founders")]);
@@ -1211,6 +1256,7 @@ $("search").oninput = () => { clearTimeout(timer); timer = setTimeout(() => load
       // Partenaire : ses plugins seulement. Les licences de ses plugins se gèrent dans l'application, Panel admin.
       document.querySelectorAll("[data-staff]").forEach((node) => { node.hidden = true; });
       setupTabs();
+      await loadOrders();
       await loadProducts();
       await loadPromos();
       $("gate").hidden = true;
@@ -1223,6 +1269,7 @@ $("search").oninput = () => { clearTimeout(timer); timer = setTimeout(() => load
     setupTabs();
     await loadUsers();
     await loadSupport();
+    await loadOrders();
     await loadPlans();
     await loadPacks();
     await loadLive();

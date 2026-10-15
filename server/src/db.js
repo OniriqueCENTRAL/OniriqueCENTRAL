@@ -372,6 +372,17 @@ CREATE TABLE IF NOT EXISTS trial_claims (
 );
 CREATE INDEX IF NOT EXISTS trial_machine ON trial_claims(product_id, machine_id);
 CREATE INDEX IF NOT EXISTS trial_ip ON trial_claims(product_id, ip_hash);
+CREATE TABLE IF NOT EXISTS orders_archive (
+  id           INTEGER PRIMARY KEY,
+  email        TEXT NOT NULL,
+  name         TEXT NOT NULL DEFAULT '',
+  kind         TEXT NOT NULL,
+  ref_id       INTEGER NOT NULL,
+  amount_cents INTEGER NOT NULL,
+  provider     TEXT NOT NULL,
+  provider_ref TEXT,
+  created_at   INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS activation_log (
   id         INTEGER PRIMARY KEY,
   user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
