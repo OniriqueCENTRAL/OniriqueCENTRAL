@@ -70,6 +70,8 @@ ${spark(1)}${spark(2)}${spark(3)}
 .acct-menu hr { margin: 6px 4px; border: 0; border-top: 1px solid var(--line, rgba(255,210,214,.16)); }
 .acct-menu h6 { margin: 0; padding: 8px 12px 4px; font: 500 10px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .14em; text-transform: uppercase; color: var(--haze, #a88f92); }
 .acct-menu .acct-out { color: #ff8f99; }
+/* Téléphone : le menu prend la largeur de l'écran sous l'en-tête, au lieu de déborder à gauche du bouton. */
+@media (max-width: 560px) { .acct-menu { position: fixed; left: 12px; right: 12px; width: auto; max-height: calc(100vh - var(--acct-top, 80px) - 12px); overflow-y: auto; overscroll-behavior: contain; top: var(--acct-top, 80px); } }
 ` });
 
   let slot = document.querySelector("[data-account]"); // l'élément d'origine, puis le bouton qui le remplace
@@ -120,6 +122,7 @@ ${spark(1)}${spark(2)}${spark(3)}
     const open = (on) => {
       menu.hidden = !on;
       button.setAttribute("aria-expanded", String(on));
+      if (on) menu.style.setProperty("--acct-top", Math.round(button.getBoundingClientRect().bottom + 10) + "px");
     };
     button.onclick = () => open(menu.hidden);
     const root = el("div", { className: "acct" }, button, menu);

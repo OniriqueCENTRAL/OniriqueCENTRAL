@@ -233,6 +233,7 @@ section { position: relative; }
 .ab { display: inline-flex; border: 1px solid var(--line); border-radius: 99px; padding: 4px; background: rgba(11,6,7,.6); }
 .ab button { all: unset; cursor: pointer; padding: 8px 14px; border-radius: 99px; font: 500 12px/1 var(--f-mono); color: var(--haze); letter-spacing: .06em; }
 .ab button[aria-pressed="true"] { background: var(--ember); color: var(--night); }
+@media (max-width: 360px) { .ab button { padding: 8px 10px; } }
 .legend { position: absolute; left: 24px; top: 92px; display: flex; gap: 18px; font: 400 12px/1 var(--f-mono); color: var(--haze); flex-wrap: wrap; }
 .legend span::before { content: ""; display: inline-block; width: 14px; height: 3px; border-radius: 3px; margin-right: 8px; vertical-align: middle; background: var(--c); }
 .controls { padding: 28px; display: grid; gap: 20px; align-content: start; min-width: 0; }
@@ -298,7 +299,7 @@ input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border: 0; bord
 /* un paragraphe ordinaire : en flex, une phrase contenant un lien se découpait en colonnes */
 .secure { margin-top: 16px; font-size: 13px; line-height: 1.5; text-align: center; color: var(--haze); }
 .secure svg { width: 14px; height: 14px; vertical-align: -2px; margin-right: 6px; }
-@media (max-width: 900px) { .offer { grid-template-columns: minmax(0, 1fr); } .offer .card { padding: 30px 24px; } .amount { font-size: 64px; } }
+@media (max-width: 900px) { .offer { grid-template-columns: minmax(0, 1fr); } .offer .card { padding: 30px 24px; } .amount { font-size: clamp(46px, 17vw, 64px); } }
 
 /* faq */
 .faq { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 40px 80px; }
@@ -1916,6 +1917,6 @@ $$("[data-buy]").forEach(a => {
 })();
 </script>
 <script src="assets/tools-menu.js"></script>
-<script src="assets/account.js?v=4"></script>
-<script src="assets/site-nav.js?v=7"></script>
+<script src="assets/account.js?v=5"></script>
+<script src="assets/site-nav.js?v=8"></script>
 <script src="assets/catalog-watch.js"></script>

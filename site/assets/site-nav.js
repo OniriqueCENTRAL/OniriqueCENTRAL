@@ -10,7 +10,7 @@
   // L'ordre des rubriques, partout : celui de l'en-tête de la page d'accueil.
   const SECTIONS = [
     ["Boutique", "boutique.html"], ["Téléchargement", at("#telechargement")], ["Outils", "outils.html"],
-    ["Écouter", at("#ecouter")], ["Crédits", at("#credits")], ["FAQ", at("#faq")], ["Support", "support.html"],
+    ["Crédits", at("#credits")], ["FAQ", at("#faq")], ["Support", "support.html"],
   ];
   const el = (tag, props = {}, ...children) => {
     const node = Object.assign(document.createElement(tag), props);
@@ -134,6 +134,21 @@ header .sn-lang { margin-left: 8px; }
 @media (max-width: 760px) {
   header .sn-burger { display: inline-flex; }
   header nav:not(.nav-links) > :not([data-account]):not(.acct) { display: none !important; }
+}
+/* Téléphone : l'en-tête tient sur la largeur de l'écran (sinon Safari laisse glisser la page de côté et le bouton menu
+   sort de l'écran). La langue passe dans le menu, qui l'a déjà ; le compte ne montre plus que sa photo. */
+@media (max-width: 560px) {
+  header .sn-lang { display: none; }
+  header .nav-inner, header > .wrap { gap: 10px; }
+  header .nav-actions { gap: 8px; min-width: 0; }
+  header .acct-button { gap: 6px; padding: 4px 10px 4px 4px; }
+  header .acct-button span { display: none; }
+  header.nav .btn { padding: 10px 14px; }
+}
+@media (max-width: 360px) {
+  header .acct-button svg { display: none; }
+  header .acct-button { padding: 4px; }
+  header.nav .btn { padding: 9px 12px; font-size: 13px; }
 }
 ` }));
 
