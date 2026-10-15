@@ -63,7 +63,7 @@ async function productById(id) {
 
 async function activateHere(product) {
   const { license } = await api.request('POST', '/api/licenses/activate', {
-    productId: product.id, machineId: await installer.machineId(), machineName: os.hostname(),
+    productId: product.id, machineId: await installer.machineId(), legacyMachineId: await installer.legacyMachineId(), machineName: os.hostname(),
   });
   installer.writeLicense(product.slug, license);
 }
@@ -75,6 +75,7 @@ async function activateHere(product) {
 async function load() {
   const catalog = await api.request('GET', '/api/catalog');
   const machineId = await installer.machineId();
+  const legacyId = await installer.legacyMachineId(); // les activations faites avant le 15 octobre 2026
   let me = null;
   if (store.token) {
     try {
@@ -89,14 +90,16 @@ async function load() {
     let activated = false;
     for (const product of catalog.products) {
       const right = me.entitlements[product.id];
-      const here = me.activations.some((a) => a.productId === product.id && a.machineId === machineId);
+      const here = me.activations.some((a) => a.productId === product.id && (a.machineId === machineId || a.machineId === legacyId));
       // Un plugin offert (VIP, équipe avec « Mes licences » activé) s'active tout seul là où il est installé :
       // personne n'a de clé à saisir ni de bouton à trouver. Un plugin acheté garde son activation à la main.
       const offered = right?.via === 'vip' && !here && installs[product.id].present;
+      // Une activation encore sous l'ancienne empreinte : reprise par le serveur sous la nouvelle, à rafraîchir ici.
+      const legacyHere = me.activations.some((a) => a.productId === product.id && a.machineId === legacyId && legacyId !== machineId);
       if (right && (here || offered)) {
         try {
           await activateHere(product);
-          activated ||= offered;
+          activated ||= offered || legacyHere;
         } catch { /* limite de machines atteinte, serveur injoignable : le plugin reste en démo */ }
       } else {
         // Un fichier qui résiste ne doit jamais empêcher l'application de s'ouvrir.

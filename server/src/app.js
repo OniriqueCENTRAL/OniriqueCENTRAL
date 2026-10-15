@@ -571,7 +571,8 @@ export function createApp() {
 
   app.post('/api/licenses/activate', requireVerified, (req, res) => {
     const product = findProduct(req.body.productId);
-    res.json({ license: activate(req.user, product, machineOf(req.body), str(req.body.machineName, 60)) });
+    const legacy = req.body.legacyMachineId ? machineOf({ machineId: req.body.legacyMachineId }) : null;
+    res.json({ license: activate(req.user, product, machineOf(req.body), str(req.body.machineName, 60), legacy) });
   });
 
   app.post('/api/licenses/deactivate', requireUser, (req, res) => {

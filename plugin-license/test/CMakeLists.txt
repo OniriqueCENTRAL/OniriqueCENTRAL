@@ -1,0 +1,10 @@
+# Outil de test du module de licence, sans JUCE : node tools/license-test.mjs <license-check>
+cmake_minimum_required(VERSION 3.22)
+project(OniriqueLicenseCheck C CXX)
+set(CMAKE_CXX_STANDARD 17)
+add_executable(license-check main.cpp ../LicenseCore.cpp ../tweetnacl.c)
+if(WIN32)
+  target_link_libraries(license-check PRIVATE advapi32 shell32)
+elseif(APPLE)
+  target_link_libraries(license-check PRIVATE "-framework CoreFoundation" "-framework IOKit")
+endif()

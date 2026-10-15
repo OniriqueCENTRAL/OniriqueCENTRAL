@@ -372,6 +372,14 @@ CREATE TABLE IF NOT EXISTS trial_claims (
 );
 CREATE INDEX IF NOT EXISTS trial_machine ON trial_claims(product_id, machine_id);
 CREATE INDEX IF NOT EXISTS trial_ip ON trial_claims(product_id, ip_hash);
+CREATE TABLE IF NOT EXISTS activation_log (
+  id         INTEGER PRIMARY KEY,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  product_id INTEGER NOT NULL,
+  machine_id TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS activation_log_user ON activation_log(user_id, product_id, created_at);
 `);
 
 // Le lien Instagram d'un compte (les ingés d'ONIRIQUE l'affichent sous les crédits).

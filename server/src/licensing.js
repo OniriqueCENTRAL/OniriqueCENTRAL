@@ -146,12 +146,28 @@ export function entitlement(userId, productId) {
   return null;
 }
 
-export function activate(user, product, machineId, machineName) {
+/**
+ * Active un plugin sur une machine et rend le fichier de licence signé pour elle.
+ *
+ * legacyMachineId : l'ancienne empreinte de la même machine (ONIRIQUE CENTRAL avant le 15 octobre 2026). Une
+ * activation faite sous l'ancienne empreinte est reprise telle quelle : elle ne compte pas une machine de plus.
+ *
+ * Le fichier porte un bail (leaseUntil) : ONIRIQUE CENTRAL le renouvelle à chaque ouverture ; hors ligne, la licence
+ * vaut jusqu'à la fin du bail. Une licence remboursée, révoquée ou d'un compte supprimé s'éteint donc partout.
+ */
+export function activate(user, product, machineId, machineName, legacyMachineId = null) {
   const right = entitlement(user.id, product.id);
   if (!right) throw new HttpError(403, `Aucune licence active pour ${product.name}.`);
 
-  const existing = get('SELECT id FROM activations WHERE user_id = ? AND product_id = ? AND machine_id = ?',
+  let existing = get('SELECT id FROM activations WHERE user_id = ? AND product_id = ? AND machine_id = ?',
     user.id, product.id, machineId);
+  if (!existing && legacyMachineId && legacyMachineId !== machineId) {
+    const old = get('SELECT id FROM activations WHERE user_id = ? AND product_id = ? AND machine_id = ?', user.id, product.id, legacyMachineId);
+    if (old) {
+      run('UPDATE activations SET machine_id = ? WHERE id = ?', machineId, old.id);
+      existing = old;
+    }
+  }
   if (existing) {
     run('UPDATE activations SET last_seen_at = ?, machine_name = ? WHERE id = ?', now(), machineName, existing.id);
   } else {
@@ -159,18 +175,33 @@ export function activate(user, product, machineId, machineName) {
     if (count >= right.maxActivations) {
       throw new HttpError(409, `Limite de ${right.maxActivations} machine(s) atteinte : désactivez-en une d'abord.`);
     }
+    // Une licence qu'on ferait tourner d'ordinateur en ordinateur (désactiver ici, activer là) : quelques nouvelles
+    // machines par mois au plus, au-delà de la limite elle-même.
+    const { recent } = get('SELECT COUNT(DISTINCT machine_id) AS recent FROM activation_log WHERE user_id = ? AND product_id = ? AND created_at > ?',
+      user.id, product.id, now() - 30 * 86400_000);
+    if (recent >= right.maxActivations + config.extraActivationsPerMonth) {
+      throw new HttpError(429, `Trop de nouveaux ordinateurs activés ce mois-ci pour ${product.name}. Réessayez dans quelques jours, ou écrivez au support.`);
+    }
     run('INSERT INTO activations (user_id, product_id, machine_id, machine_name, created_at, last_seen_at) VALUES (?, ?, ?, ?, ?, ?)',
       user.id, product.id, machineId, machineName, now(), now());
+    run('INSERT INTO activation_log (user_id, product_id, machine_id, created_at) VALUES (?, ?, ?, ?)', user.id, product.id, machineId, now());
   }
 
+  const issuedAt = now();
+  const lease = issuedAt + config.leaseDays * 86400_000;
+  // Deux empreintes : « machine », l'ancienne, pour les plugins d'avant le 15 octobre 2026 (qui ne lisent qu'elle),
+  // et « machine2 », la nouvelle, que les plugins d'aujourd'hui exigent.
+  const legacy = legacyMachineId && legacyMachineId !== machineId ? legacyMachineId : null;
   return signLicense({
     product: product.slug,
     email: user.email,
-    machine: machineId,
+    machine: legacy || machineId,
+    ...(legacy ? { machine2: machineId } : {}),
     type: right.type,
     licenseId: right.licenseId,
-    issuedAt: now(),
+    issuedAt,
     expiresAt: right.expiresAt,
+    leaseUntil: right.expiresAt ? Math.min(right.expiresAt, lease) : lease,
   });
 }
 

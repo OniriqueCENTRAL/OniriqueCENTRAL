@@ -1,6 +1,6 @@
 // Vérifie le module de licence des plugins (plugin-license/) contre des fichiers signés comme le fait le serveur.
 //   node tools/license-test.mjs <chemin de OniriqueLicenseTest(.exe)>
-// OniriqueLicenseTest se construit dans le dépôt d'ONIRIQUE TUNER (cible CMake du même nom).
+// L'outil se construit depuis plugin-license/test (cmake -S plugin-license/test -B <dossier> ; cible license-check).
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import crypto from 'node:crypto';
@@ -24,13 +24,16 @@ const sign = (payload, key = pair.privateKey) => {
 
 const NOW = 1_800_000_000_000;
 const MACHINE = 'a'.repeat(40);
+const LEGACY = 'c'.repeat(40);
+const DEADLINE = 1_801_440_000_000; // 31 janvier 2027 : fin des anciennes licences sans bail
 const base = { product: 'tuner', email: 'client@exemple.fr', machine: MACHINE, type: 'perpetual', licenseId: 7, issuedAt: NOW - 1000, expiresAt: null };
 
 let count = 0;
-function check(name, contents, expected, email) {
+function check(name, contents, expected, email, { now = NOW, renewal } = {}) {
   const file = path.join(dir, `cas-${++count}.lic`);
   fs.writeFileSync(file, typeof contents === 'string' || Buffer.isBuffer(contents) ? contents : JSON.stringify(contents));
-  const out = execFileSync(tool, ['verify', file, 'tuner', MACHINE, rawKey(pair.publicKey), String(NOW)], { encoding: 'utf8' }).trim();
+  const out = execFileSync(tool, ['verify', file, 'tuner', MACHINE, LEGACY, rawKey(pair.publicKey), String(now)], { encoding: 'utf8' }).trim();
+  if (renewal !== undefined) assert.ok(out.includes(`renewal=${renewal ? 1 : 0}`), `${name} : renouvellement attendu ${renewal}, obtenu « ${out} »`);
   assert.ok(out.startsWith(`${expected} `), `${name} : attendu ${expected}, obtenu « ${out} »`);
   if (email !== undefined) assert.ok(out.includes(`email=${email} `), `${name} : e-mail attendu ${email}, obtenu « ${out} »`);
   console.log(`  ok    ${name}`);
@@ -70,18 +73,37 @@ try {
   check('fichier trop gros', JSON.stringify({ ...sign(base), bourrage: 'x'.repeat(20000) }), 'unlicensed');
   check('autre format', { ...sign(base), format: 'onirique-license-v0' }, 'unlicensed');
 
-  // L'empreinte de la machine doit être celle que calcule l'application ONIRIQUE CENTRAL (app/main/installer.js).
-  if (process.platform === 'win32') {
-    const reg = execFileSync('reg', ['query', 'HKLM\\SOFTWARE\\Microsoft\\Cryptography', '/v', 'MachineGuid', '/reg:64'], { encoding: 'utf8' });
-    const guid = reg.match(/MachineGuid\s+REG_SZ\s+(\S+)/)[1].trim().toLowerCase();
-    const expected = crypto.createHash('sha256').update(`onirique:${guid}`).digest('hex').slice(0, 40);
-    assert.equal(execFileSync(tool, ['machine'], { encoding: 'utf8' }).trim(), expected);
-    console.log('  ok    empreinte de la machine identique à celle d\'ONIRIQUE CENTRAL');
-  }
+  // Le bail : renouvelé par ONIRIQUE CENTRAL ; passé, la licence (authentique) demande à être renouvelée.
+  const NEW = DEADLINE - 1000; // avant la date limite des anciennes licences, pour isoler chaque règle
+  const leased = { ...base, issuedAt: NEW - 1000, leaseUntil: NEW + 86400_000 };
+  check('bail en cours', sign(leased), 'licensed', undefined, { now: NEW, renewal: false });
+  check('bail passé : à renouveler', sign({ ...leased, leaseUntil: NEW - 1 }), 'unlicensed', undefined, { now: NEW, renewal: true });
+  check('bail passé, essai : à renouveler', sign({ ...leased, type: 'trial', expiresAt: NEW + 5 * 86400_000, leaseUntil: NEW - 1 }), 'unlicensed', undefined, { now: NEW, renewal: true });
+  // L'heure ne recule pas avant la signature : une horloge remise en arrière ne rend pas un bail passé.
+  check('horloge remise avant la signature', sign({ ...leased, issuedAt: NEW, leaseUntil: NEW - 1 }), 'unlicensed', undefined, { now: NEW - 30 * 86400_000, renewal: true });
+  // L'ancienne empreinte : acceptée pour un ancien fichier (sans bail), jusqu'au 31 janvier 2027 seulement.
+  check('ancienne empreinte, ancien fichier', sign({ ...base, machine: LEGACY, issuedAt: NEW - 1000 }), 'licensed', undefined, { now: NEW });
+  check('ancienne empreinte, après la date limite', sign({ ...base, machine: LEGACY, issuedAt: NEW - 1000 }), 'unlicensed', undefined, { now: DEADLINE + 1000 });
+  check('ancienne empreinte avec un bail (Central d’avant)', sign({ ...leased, machine: LEGACY }), 'licensed', undefined, { now: NEW });
+  // Un fichier d'aujourd'hui : l'ancienne empreinte pour les anciens plugins, la nouvelle (machine2) pour ceux-ci.
+  check('deux empreintes, la bonne nouvelle', sign({ ...leased, machine: LEGACY, machine2: MACHINE }), 'licensed', undefined, { now: NEW });
+  check("deux empreintes, nouvelle d'une autre machine", sign({ ...leased, machine: LEGACY, machine2: 'd'.repeat(40) }), 'unlicensed', undefined, { now: NEW });
+  check('deux empreintes, ancienne usurpée seulement', sign({ ...base, issuedAt: NEW - 1000, machine: LEGACY, machine2: 'd'.repeat(40) }), 'unlicensed', undefined, { now: NEW });
+  check('nouvelle empreinte avec bail, après la date limite', sign({ ...leased, issuedAt: DEADLINE, leaseUntil: DEADLINE + 86400_000 }), 'licensed', undefined, { now: DEADLINE + 1000 });
 
-  assert.match(execFileSync(tool, ['noise'], { encoding: 'utf8' }), /conforme/);
-  console.log('  ok    calendrier du bruit du mode démo');
-  console.log(`\n${count + (process.platform === 'win32' ? 2 : 1)} contrôles réussis.`);
+  // Les deux empreintes de la machine doivent être celles que calcule l'application ONIRIQUE CENTRAL (app/main/installer.js).
+  if (process.platform === 'win32') {
+    const reg = (key, name) => execFileSync('reg', ['query', key, '/v', name, '/reg:64'], { encoding: 'utf8' }).match(new RegExp(`${name}\\s+REG_SZ\\s+(\\S+)`))[1];
+    const tidy = (t) => String(t || '').trim().replace(/^\{+|\}+$/g, '').trim().toLowerCase();
+    const guid = tidy(reg('HKLM\\SOFTWARE\\Microsoft\\Cryptography', 'MachineGuid'));
+    const board = tidy(reg('HKLM\\SYSTEM\\HardwareConfig', 'LastConfig'));
+    const serial = execFileSync('cmd', ['/d', '/c', 'vol', (process.env.SystemRoot || 'C:').slice(0, 2)], { encoding: 'utf8' }).match(/([0-9A-F]{4})-([0-9A-F]{4})/i);
+    const v2 = crypto.createHash('sha256').update(`onirique2:${guid}|${board}|${(serial[1] + serial[2]).toLowerCase()}`).digest('hex').slice(0, 40);
+    const v1 = crypto.createHash('sha256').update(`onirique:${guid}`).digest('hex').slice(0, 40);
+    assert.equal(execFileSync(tool, ['machine'], { encoding: 'utf8' }).trim(), `${v2} ${v1}`);
+    console.log("  ok    empreintes de la machine identiques à celles d'ONIRIQUE CENTRAL");
+  }
+  console.log(`\n${count + (process.platform === 'win32' ? 1 : 0)} contrôles réussis.`);
 } finally {
   fs.rmSync(dir, { recursive: true, force: true });
 }

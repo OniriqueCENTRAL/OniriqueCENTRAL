@@ -136,6 +136,28 @@ try {
     assert.deepEqual(track.engineer && { name: track.engineer.name, instagram: track.engineer.instagram }, { name: 'fondateur', instagram: 'https://www.instagram.com/onirique.inge/' });
   });
 
+  await step("activation : deux empreintes, bail de 90 jours, reprise de l'ancienne, nouvelles machines limitées", async () => {
+    const decode = (license) => JSON.parse(Buffer.from(license.payload, 'base64').toString('utf8'));
+    const [v1, v2] = [machine('ancien'), machine('nouveau')];
+    // Ancien ONIRIQUE CENTRAL : une seule empreinte, celle d'avant.
+    const old = decode((await call('POST', '/api/licenses/activate', { token: alice.token, body: { productId: a.id, machineId: v1 } })).license);
+    assert.equal(old.machine, v1);
+    assert.equal(old.machine2, undefined);
+    // Le bail : 90 jours, ou moins si la licence elle-même finit avant (un abonnement, ici).
+    assert.equal(old.leaseUntil, Math.min(old.expiresAt ?? Infinity, old.issuedAt + 90 * 86400_000));
+    // Nouveau : la même machine sous sa nouvelle empreinte reprend l'activation, sans en compter une de plus.
+    const fresh = decode((await call('POST', '/api/licenses/activate', { token: alice.token, body: { productId: a.id, machineId: v2, legacyMachineId: v1 } })).license);
+    assert.deepEqual([fresh.machine, fresh.machine2], [v1, v2]);
+    const me = await call('GET', '/api/me', { token: alice.token });
+    assert.deepEqual(me.activations.filter((x) => x.productId === a.id).map((x) => x.machineId), [v2]);
+    // Faire tourner la licence : désactiver, activer ailleurs… au-delà de la limite + 3 nouveaux ordinateurs par mois, refusé.
+    for (let i = 0; i < 4; i++) {
+      await call('POST', '/api/licenses/activate', { token: alice.token, body: { productId: a.id, machineId: machine('pc-tour-' + i) } });
+      await call('POST', '/api/licenses/deactivate', { token: alice.token, body: { productId: a.id, machineId: machine('pc-tour-' + i) } });
+    }
+    await call('POST', '/api/licenses/activate', { token: alice.token, body: { productId: a.id, machineId: machine('pc-tour-9') }, expect: 429 });
+  });
+
   await step('suppression de compte : après avoir tapé SUPPRIME, licences révoquées', async () => {
     await call('DELETE', `/api/admin/users/${bob.id}`, { token: admin.token, body: { confirm: 'oui' }, expect: 400 });
     await call('DELETE', `/api/admin/users/${founder.id}`, { token: admin.token, body: { confirm: 'SUPPRIME' }, expect: 403 });

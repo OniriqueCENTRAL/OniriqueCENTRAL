@@ -34,11 +34,45 @@ function safeName(filename) {
 //==============================================================================
 //  Machine
 //==============================================================================
-let machineIdCache = null;
+let machineIdCache = null, legacyIdCache = null;
 
-/** Empreinte stable de cette machine : SHA-256 de "onirique:" + MachineGuid de Windows (IOPlatformUUID sur Mac), 40 premiers caractères. */
+/** Sans espaces autour, en minuscules, sans accolades : comme tidy() dans le module de licence des plugins. */
+const tidy = (text) => String(text || '').trim().replace(/^\{+|\}+$/g, '').trim().toLowerCase();
+
+/**
+ * Empreinte de cette machine, celle des licences : SHA-256 de "onirique2:" + plusieurs identifiants séparés par |,
+ * 40 premiers caractères. Windows : MachineGuid | identifiant de la carte mère (HardwareConfig\LastConfig) | numéro
+ * de série du disque système ; Mac : IOPlatformUUID | numéro de série. Calculée exactement comme dans les plugins
+ * (plugin-license/LicenseCore.cpp, machineId) : une différence d'un caractère et aucune licence ne vaudrait plus.
+ */
 async function machineId() {
   if (machineIdCache) return machineIdCache;
+  const parts = ['', '', ''];
+  try {
+    if (MAC) {
+      const out = await exec('ioreg', ['-rd1', '-c', 'IOPlatformExpertDevice']);
+      parts[0] = tidy(out.match(/"IOPlatformUUID"\s*=\s*"([^"]+)"/)?.[1]);
+      parts[1] = tidy(out.match(/"IOPlatformSerialNumber"\s*=\s*"([^"]+)"/)?.[1]);
+    } else {
+      const guid = await exec('reg', ['query', 'HKLM\\SOFTWARE\\Microsoft\\Cryptography', '/v', 'MachineGuid', '/reg:64']).catch(() => '');
+      parts[0] = tidy(guid.match(/MachineGuid\s+REG_SZ\s+(\S+)/)?.[1]);
+      const board = await exec('reg', ['query', 'HKLM\\SYSTEM\\HardwareConfig', '/v', 'LastConfig', '/reg:64']).catch(() => '');
+      parts[1] = tidy(board.match(/LastConfig\s+REG_SZ\s+(\S+)/)?.[1]);
+      // Le disque où est Windows : son numéro de série, en 8 chiffres hexadécimaux.
+      const drive = (process.env.SystemRoot || process.env.windir || 'C:\\Windows').slice(0, 2);
+      const vol = await exec('cmd', ['/d', '/c', 'vol', drive]).catch(() => '');
+      const serial = vol.match(/([0-9A-F]{4})-([0-9A-F]{4})/i);
+      parts[2] = serial ? (serial[1] + serial[2]).toLowerCase() : '';
+    }
+  } catch { /* plus bas */ }
+  if (!parts.some(Boolean)) return legacyMachineId(); // une machine qui ne donne rien : l'ancienne empreinte
+  machineIdCache = crypto.createHash('sha256').update(`onirique2:${parts.join('|')}`).digest('hex').slice(0, 40);
+  return machineIdCache;
+}
+
+/** L'ancienne empreinte (MachineGuid ou IOPlatformUUID seul) : celle des activations faites avant le 15 octobre 2026. */
+async function legacyMachineId() {
+  if (legacyIdCache) return legacyIdCache;
   let guid;
   try {
     if (MAC) {
@@ -49,8 +83,8 @@ async function machineId() {
     }
   } catch { /* repli ci-dessous */ }
   guid ||= `${os.hostname()}:${os.userInfo().username}`;
-  machineIdCache = crypto.createHash('sha256').update(`onirique:${guid.toLowerCase()}`).digest('hex').slice(0, 40);
-  return machineIdCache;
+  legacyIdCache = crypto.createHash('sha256').update(`onirique:${guid.toLowerCase()}`).digest('hex').slice(0, 40);
+  return legacyIdCache;
 }
 
 //==============================================================================
@@ -367,4 +401,4 @@ async function status(products) {
   return out;
 }
 
-module.exports = { machineId, writeLicense, removeLicense, hasLicense, install, uninstall, status, LICENSE_DIR };
+module.exports = { machineId, legacyMachineId, writeLicense, removeLicense, hasLicense, install, uninstall, status, LICENSE_DIR };

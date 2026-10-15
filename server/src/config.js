@@ -68,7 +68,9 @@ export const config = {
   defaultMaxActivations: 2,
   subscriptionGraceDays: 3,
   trialDays: 7,
-  trialsPerIp: Number(process.env.TRIALS_PER_IP || 2), // essais d'un même plugin depuis une même connexion, sur six mois
+  trialsPerIp: Number(process.env.TRIALS_PER_IP || 2),
+  leaseDays: Number(process.env.LEASE_DAYS || 90), // validité hors ligne d'un fichier de licence, renouvelé par ONIRIQUE CENTRAL
+  extraActivationsPerMonth: Number(process.env.EXTRA_ACTIVATIONS || 3), // nouveaux ordinateurs par mois, au-delà de la limite // essais d'un même plugin depuis une même connexion, sur six mois
   // Durée de la licence écrite sur la machine d'un VIP, renouvelée à chaque lancement d'ONIRIQUE CENTRAL.
   vipLicenseDays: 30,
   // Abonnement à la carte : le premier plugin, puis chaque plugin ajouté, par mois.
