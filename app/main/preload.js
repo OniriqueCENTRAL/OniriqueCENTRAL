@@ -5,7 +5,7 @@ const CHANNELS = [
   'auth:login', 'auth:register', 'auth:logout', 'auth:password', 'me:avatar',
   'plugin:install', 'plugin:uninstall', 'plugin:reveal', 'plugin:open',
   'license:activate', 'license:deactivate',
-  'admin:previewMail', 'admin:pick', 'admin:uploadVersion', 'admin:uploadImage', 'admin:refreshDemo', 'open:webmail', 'open:mail',
+  'admin:previewMail', 'admin:pick', 'admin:uploadVersion', 'admin:uploadImage', 'admin:refreshDemo', 'open:webmail', 'open:mail', 'open:site',
   'settings:server', 'settings:vst3Dir',
 ];
 

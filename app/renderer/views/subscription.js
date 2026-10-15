@@ -68,8 +68,26 @@ export function subscriptionView() {
     eyebrow(p.interval === 'year' ? 'Annuel' : 'Mensuel'),
     h('h2', null, p.name),
     h('div', { class: 'amount' }, euros(p.priceCents), h('small', null, p.interval === 'year' ? ' / AN' : ' / MOIS')),
-    h('p', { class: 'muted', style: { margin: 0 } }, `Les ${catalog.products.filter((p) => p.creator === 'onirique').length} plugins ONIRIQUE, toutes les mises à jour, et chaque nouveau plugin ONIRIQUE dès sa sortie. Les plugins des créateurs partenaires s'achètent à l'unité.`),
+    h('p', { class: 'muted', style: { margin: 0 } }, p.description || (p.productIds?.length
+      ? 'Les plugins ci-dessous, avec toutes leurs mises à jour, tant que l\'abonnement est actif.'
+      : `Les ${catalog.products.filter((x) => x.creator === 'onirique').length} plugins ONIRIQUE, toutes les mises à jour, et chaque nouveau plugin ONIRIQUE dès sa sortie. Les plugins des créateurs partenaires s'achètent à l'unité.`)),
+    p.productIds?.length ? h('div', { class: 'row wrap', style: { gap: '6px' } },
+      p.productIds.map((id) => catalog.products.find((x) => x.id === id)).filter(Boolean).map((x) => pill(x.name.replace(/^ONIRIQUE\s+/i, '')))) : null,
     h('div', null, button(sub ? 'Déjà abonné' : 'S\'abonner', () => buy('plan', p), 'primary', { disabled: !!sub })));
+
+  // Packs : un achat unique, une licence définitive pour chaque plugin du pack.
+  const pack = (p) => {
+    const items = p.productIds.map((id) => catalog.products.find((x) => x.id === id)).filter(Boolean);
+    const full = items.reduce((sum, x) => sum + x.priceCents, 0);
+    const owned = items.every((x) => me.entitlements?.[x.id]?.via === 'license' && me.entitlements[x.id].type !== 'trial');
+    return h('div', { class: 'panel plan' },
+      eyebrow('Pack · paiement unique'),
+      h('h2', null, p.name),
+      h('div', { class: 'amount' }, euros(p.priceCents), full > p.priceCents ? h('small', { style: { 'text-decoration': 'line-through', 'margin-left': '10px' } }, euros(full)) : null),
+      p.description ? h('p', { class: 'muted', style: { margin: 0 } }, p.description) : null,
+      h('div', { class: 'row wrap', style: { gap: '6px' } }, items.map((x) => pill(x.name.replace(/^ONIRIQUE\s+/i, '')))),
+      h('div', null, button(owned ? 'Déjà possédé' : 'Acheter le pack', () => buy('pack', { ...p, name: `Pack ${p.name}` }), 'primary', { disabled: owned })));
+  };
 
   return [
     eyebrow('Abonnement'),
@@ -80,6 +98,7 @@ export function subscriptionView() {
     catalog.plans.length
       ? h('div', { class: 'grid2', style: { 'margin-top': '16px' } }, catalog.plans.map(plan))
       : null,
+    catalog.packs?.length ? h('div', { class: 'grid2', style: { 'margin-top': '16px' } }, catalog.packs.filter((p) => p.productIds.every((id) => catalog.products.some((x) => x.id === id))).map(pack)) : null,
     pickPanel(sub),
     !catalog.plans.length && !catalog.pick ? h('div', { class: 'panel empty' }, 'Aucune formule proposée pour le moment.') : null,
   ];

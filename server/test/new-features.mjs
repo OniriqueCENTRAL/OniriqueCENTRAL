@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 // Essais remis à zéro, validation de l'adresse e-mail, abonnement à la carte : le serveur entier, sur une base
 // jetable, sans rien envoyer (SMTP_HOST=test) et sans paiement réel (PAYMENTS_MODE=demo).
 //
@@ -14,6 +15,9 @@ const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'onirique-test-'));
 
 process.env.DATA_DIR = dataDir;
 process.env.PAYMENTS_MODE = 'demo';
+process.env.TRIALS_PER_IP = '1000';
+const machine = (seed) => crypto.createHash('sha256').update('test:' + String(seed)).digest('hex').slice(0, 40); // un ordinateur par compte
+
 process.env.PUBLIC_URL = 'http://localhost';
 process.env.SITE_URL = 'https://site.test';
 process.env.SMTP_USER = 'support@site.test';
@@ -83,7 +87,7 @@ try {
     const created = await api('POST', '/auth/register', { email: 'libre@site.test', password: 'motdepasse' });
     check(created.status === 201 && created.data.user.emailVerified === true && created.data.verificationSent === false,
       'un compte créé est validé d\'office : aucun lien ne pourrait lui parvenir');
-    check((await api('POST', '/licenses/trial', { productId: 1 }, created.data.token)).status === 201, 'et peut lancer un essai');
+    check((await api('POST', '/licenses/trial', { productId: 1, machineId: machine(created.data.token) }, created.data.token)).status === 201, 'et peut lancer un essai');
   } else {
     // Un admin, et deux plugins payants plus un gratuit.
     run(`INSERT INTO users (email, name, password_hash, role, email_verified, created_at) VALUES ('admin@site.test', 'Admin', ?, 'admin', 1, ?)`,
@@ -104,7 +108,7 @@ try {
     check(!!mail && mail.subject.includes('Validez') && mail.text.includes('https://site.test/compte?verify='),
       'un e-mail part vers son adresse, avec un lien vers la page compte du site');
     check((await api('GET', '/me', null, user)).status === 200, 'il peut se connecter et voir son compte');
-    check((await api('POST', '/licenses/trial', { productId: tuner }, user)).status === 403, 'mais pas lancer un essai');
+    check((await api('POST', '/licenses/trial', { productId: tuner, machineId: machine(user) }, user)).status === 403, 'mais pas lancer un essai');
     check((await api('POST', '/checkout', { kind: 'product', id: tuner }, user)).status === 403, 'ni acheter');
     check((await api('POST', '/licenses/activate', { productId: tuner, machineId: 'a'.repeat(32) }, user)).status === 403, 'ni activer un plugin');
     check((await api('POST', '/auth/verify', { token: 'faux' })).status === 400, 'un lien inventé est refusé');
@@ -116,7 +120,7 @@ try {
     check((await api('POST', '/auth/verify', { token: linkTo('nouveau@site.test') })).status === 200, 'le lien valide le compte');
     check((await api('POST', '/auth/verify', { token: linkTo('nouveau@site.test') })).status === 400, 'et ne sert qu\'une fois');
     check((await api('GET', '/me', null, user)).data.user.emailVerified === true, 'le compte est alors validé');
-    check((await api('POST', '/licenses/trial', { productId: tuner }, user)).status === 201, 'et l\'essai se lance');
+    check((await api('POST', '/licenses/trial', { productId: tuner, machineId: machine(user) }, user)).status === 201, 'et l\'essai se lance');
     for (let i = 0; i < 3; i++) await api('POST', '/auth/verify/resend', null, user);
     check((await api('POST', '/auth/verify/resend', null, user)).data.alreadyVerified === true, 'redemander un lien ne fait alors plus rien');
 
@@ -138,14 +142,14 @@ try {
     const userRow = (await api('GET', '/admin/users?q=nouveau', null, admin)).data[0];
     check(userRow.trials === 1, 'le panel admin compte les essais d\'un compte');
     await api('POST', '/licenses/activate', { productId: tuner, machineId: 'b'.repeat(32) }, user);
-    check((await api('POST', '/licenses/trial', { productId: tuner }, user)).status === 409, 'un essai ne se reprend pas');
+    check((await api('POST', '/licenses/trial', { productId: tuner, machineId: machine(user) }, user)).status === 409, 'un essai ne se reprend pas');
     check((await api('POST', `/admin/users/${userRow.id}/reset-trials`, null, user)).status === 403, 'un simple utilisateur ne peut pas remettre ses essais à zéro');
     const reset = await api('POST', `/admin/users/${userRow.id}/reset-trials`, null, admin);
     check(reset.status === 200 && reset.data.removed === 1, 'un admin le peut');
     let me = (await api('GET', '/me', null, user)).data;
     check(me.trialsUsed.length === 0 && me.licenses.length === 0 && me.activations.length === 0 && !me.entitlements[tuner],
       'l\'essai, sa licence et sa machine activée ont disparu');
-    check((await api('POST', '/licenses/trial', { productId: tuner }, user)).status === 201, 'et l\'essai peut être relancé');
+    check((await api('POST', '/licenses/trial', { productId: tuner, machineId: machine(user) }, user)).status === 201, 'et l\'essai peut être relancé');
 
     // Ce qui n'est pas un essai ne doit pas être touché.
     const clientRow = (await api('GET', '/admin/users?q=client', null, admin)).data[0];

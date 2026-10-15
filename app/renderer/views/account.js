@@ -5,15 +5,19 @@ export function accountView() {
   const { me, settings } = state.data;
 
   const name = h('input', { type: 'text', maxLength: 80, value: me.user.name });
+  // Instagram : affiché avec le nom de l'ingé sous les crédits du site.
+  const instagram = h('input', { type: 'text', maxLength: 200, placeholder: '@votrecompte ou lien du profil', spellcheck: false,
+    value: me.user.instagram ? '@' + me.user.instagram.replace(/^https:\/\/www\.instagram\.com\//, '').replace(/\/$/, '') : '' });
   const profile = h('form', {
     class: 'stack',
     onsubmit: async (event) => {
       event.preventDefault();
-      if (await attempt(() => call('api', 'POST', '/api/me/profile', { name: name.value }), 'Profil enregistré.')) await refresh();
+      if (await attempt(() => call('api', 'POST', '/api/me/profile', { name: name.value, instagram: instagram.value.trim() }), 'Profil enregistré.')) await refresh();
     },
   },
     field('E-mail', h('input', { type: 'email', value: me.user.email, disabled: true })),
     field('Nom', name),
+    field('Instagram (facultatif)', instagram),
     h('div', null, h('button', { class: 'btn', type: 'submit' }, 'Enregistrer')));
 
   // Photo de profil : la même que sur le site. Une image de 2 Mo au plus, choisie sur cet ordinateur.

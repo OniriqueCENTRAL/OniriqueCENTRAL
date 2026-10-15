@@ -15,7 +15,7 @@ import { mailEnabled, sendMail } from './mail.js';
 import { embedsLicenseKey, MISSING_LICENSE } from './plugincheck.js';
 import { popularity } from './popularity.js';
 import {
-  activate, activeSubscription, createLicense, entitlement, generateKey, normalizeKey, pickPlan, pickPriceCents, pickPrices,
+  activate, activeSubscription, createLicense, entitlement, generateKey, normalizeKey, parseProductIds, pickPlan, pickPriceCents, pickPrices,
   publicKeyPem, publicKeyRaw, userActivations,
 } from './licensing.js';
 import {
@@ -28,6 +28,7 @@ import {
 import { mountNewsletter, setMarketing } from './newsletter.js';
 import * as mailbox from './mailbox.js';
 import { connectUrl, disconnect, finishConnect, videoFile, videoView, youtubeConfigured, youtubeState } from './youtube.js';
+import { announcementView, maintenanceView, mountControl, packView, planView } from './control.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 const str = (value, max = 200) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
@@ -131,7 +132,6 @@ export function categoryOf(p, latestFilename = '') {
 const SOCIALS = [['youtube', 'YouTube'], ['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['x', 'X'], ['spotify', 'Spotify'],
   ['soundcloud', 'SoundCloud'], ['discord', 'Discord'], ['twitch', 'Twitch'], ['facebook', 'Facebook']];
 
-const planView = (p) => ({ id: p.id, name: p.name, interval: p.interval, priceCents: p.price_cents, active: !!p.active, kind: p.kind });
 
 /** Envoie le lien de validation de l'adresse. Sans attente : l'inscription ne dépend pas du serveur de messagerie. */
 function sendVerification(user) {
@@ -230,6 +230,7 @@ export function createApp() {
     res.json({
       products: all('SELECT * FROM products WHERE published = 1 ORDER BY created_at').map((p) => productView(p, platform)),
       plans: all(`SELECT * FROM plans WHERE active = 1 AND kind = 'all' ORDER BY price_cents`).map(planView),
+      packs: all('SELECT * FROM packs WHERE active = 1 ORDER BY price_cents').map(packView),
       // Abonnement à la carte : le prix du premier plugin et de chaque plugin ajouté, par mois.
       pick: pickPrices(),
       categories: CATEGORIES.map(([id, label]) => ({ id, label })),
@@ -242,18 +243,39 @@ export function createApp() {
   });
 
   // Ce que toutes les pages du site affichent : les réseaux d'ONIRIQUE (rubrique « Nos réseaux »), réglés dans le panel.
-  app.get('/api/site', (_req, res) => res.json({ socials: SOCIALS.map(([id, label]) => ({ id, label, url: setting('socials', {})[id] || '' })).filter((s) => s.url) }));
+  // Avec l'annonce en cours et le mode maintenance, réglés en direct depuis le panel.
+  app.get('/api/site', (_req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.json({
+      socials: SOCIALS.map(([id, label]) => ({ id, label, url: setting('socials', {})[id] || '' })).filter((s) => s.url),
+      announcement: announcementView(),
+      maintenance: maintenanceView(),
+    });
+  });
 
   app.get('/api/public-key', (_req, res) => res.json({ pem: publicKeyPem, raw: publicKeyRaw }));
 
   // Crédits : les titres réalisés avec les plugins, affichés sur la page d'accueil du site.
-  const creditRows = () => all(
-    `SELECT c.*, p.name AS product_name, p.slug AS product_slug FROM credits c
-     LEFT JOIN products p ON p.id = c.product_id ORDER BY c.created_at DESC`).map((c) => ({
-    id: c.id, title: c.title, artist: c.artist, kind: c.kind, released: c.released, duration: c.duration,
-    spotifyId: c.spotify_id, cover: c.cover ? `/api/media/${c.cover}` : null, usedOn: c.used_on,
-    plugin: c.product_id ? { id: c.product_id, name: c.product_name, slug: c.product_slug } : null,
-  }));
+  // Les crédits, du titre le plus connu au moins connu (popularité Spotify), puis du plus récent au plus ancien.
+  const creditRows = () => {
+    const products = new Map(all('SELECT id, name, slug FROM products').map((p) => [p.id, p]));
+    return all(
+      `SELECT c.*, u.name AS engineer_name, u.email AS engineer_email, u.instagram AS engineer_instagram, u.avatar AS engineer_avatar
+       FROM credits c LEFT JOIN users u ON u.id = c.engineer_id
+       ORDER BY c.popularity IS NULL, c.popularity DESC, c.created_at DESC`).map((c) => {
+      const plugins = (parseProductIds(c.product_ids) || (c.product_id ? [c.product_id] : []))
+        .map((id) => products.get(id)).filter(Boolean).map((p) => ({ id: p.id, name: p.name, slug: p.slug }));
+      return {
+        id: c.id, title: c.title, artist: c.artist, kind: c.kind, released: c.released, duration: c.duration,
+        spotifyId: c.spotify_id, spotifyType: c.spotify_type || 'track', cover: c.cover ? `/api/media/${c.cover}` : null, usedOn: c.used_on,
+        popularity: c.popularity ?? null, plugins, plugin: plugins[0] || null,
+        engineer: c.engineer_id ? {
+          id: c.engineer_id, name: c.engineer_name || String(c.engineer_email || '').split('@')[0],
+          instagram: c.engineer_instagram || null, avatar: c.engineer_avatar ? `/api/media/${c.engineer_avatar}` : null,
+        } : null,
+      };
+    });
+  };
   app.get('/api/credits', (_req, res) => res.json(creditRows()));
 
   app.get('/api/media/:file', (req, res, next) => {
@@ -485,7 +507,14 @@ export function createApp() {
   });
 
   app.post('/api/me/profile', requireUser, (req, res) => {
-    run('UPDATE users SET name = ? WHERE id = ?', str(req.body.name, 80), req.user.id);
+    run('UPDATE users SET name = ? WHERE id = ?', req.body.name !== undefined ? str(req.body.name, 80) : req.user.name, req.user.id);
+    // Instagram : un nom de compte (@nom) ou l'adresse de son profil, gardé sous forme d'adresse.
+    if (req.body.instagram !== undefined) {
+      const raw = str(req.body.instagram, 200);
+      const handle = raw.match(/^(?:https?:\/\/)?(?:www\.)?instagram\.com\/([A-Za-z0-9._]{1,30})\/?(?:\?.*)?$/)?.[1] ?? raw.match(/^@?([A-Za-z0-9._]{1,30})$/)?.[1];
+      if (raw && !handle) throw new HttpError(400, 'Instagram : écrivez votre nom de compte (@nom) ou collez le lien de votre profil.');
+      run('UPDATE users SET instagram = ? WHERE id = ?', handle ? `https://www.instagram.com/${handle}/` : '', req.user.id);
+    }
     res.json({ ok: true });
   });
 
@@ -529,6 +558,11 @@ export function createApp() {
     res.json({ ok: true, productId: license.product_id });
   });
 
+  // Clé des empreintes d'adresses IP des essais : gardée à part, elle empêche de retrouver une adresse depuis la base.
+  const trialSaltPath = path.join(config.keysDir, 'trial.key');
+  if (!fs.existsSync(trialSaltPath)) fs.writeFileSync(trialSaltPath, crypto.randomBytes(32), { mode: 0o600 });
+  const trialSalt = fs.readFileSync(trialSaltPath);
+
   const machineOf = (body) => {
     const machineId = str(body.machineId, 64);
     if (!/^[a-f0-9]{32,64}$/.test(machineId)) throw new HttpError(400, 'Identifiant de machine invalide.');
@@ -555,8 +589,24 @@ export function createApp() {
     if (get('SELECT id FROM licenses WHERE user_id = ? AND product_id = ?', req.user.id, product.id)) {
       throw new HttpError(409, `Vous avez déjà utilisé votre essai de ${product.name}, ou vous possédez déjà ce plugin.`);
     }
+    // Un essai par machine, quel que soit le compte, et deux au plus par connexion Internet (une box partagée) :
+    // créer d'autres comptes ne rend pas l'essai. L'adresse IP n'est gardée que sous forme d'empreinte.
+    if (!req.body.machineId) throw new HttpError(426, "Mettez à jour ONIRIQUE CENTRAL pour lancer un essai gratuit.");
+    const machineId = machineOf(req.body);
+    const ipHash = crypto.createHmac('sha256', trialSalt).update(String(req.ip || '')).digest('hex');
+    const staffing = isStaff(req.user);
+    if (!staffing && get('SELECT 1 AS yes FROM trial_claims WHERE product_id = ? AND machine_id = ?', product.id, machineId)) {
+      throw new HttpError(409, `L'essai de ${product.name} a déjà été utilisé sur cet ordinateur.`);
+    }
+    const sameIp = get('SELECT COUNT(*) AS n FROM trial_claims WHERE product_id = ? AND ip_hash = ? AND created_at > ?', product.id, ipHash, now() - 180 * 86400_000).n;
+    if (!staffing && sameIp >= config.trialsPerIp) {
+      throw new HttpError(409, `L'essai de ${product.name} a déjà été utilisé depuis cette connexion Internet.`);
+    }
     const expiresAt = now() + config.trialDays * 86400_000;
-    createLicense({ productId: product.id, userId: req.user.id, type: 'trial', expiresAt, source: 'trial', note: 'Essai gratuit 7 jours' });
+    transaction(() => {
+      createLicense({ productId: product.id, userId: req.user.id, type: 'trial', expiresAt, source: 'trial', note: 'Essai gratuit 7 jours' });
+      run('INSERT INTO trial_claims (product_id, user_id, machine_id, ip_hash, created_at) VALUES (?, ?, ?, ?, ?)', product.id, req.user.id, machineId, ipHash, now());
+    });
     res.status(201).json({ ok: true, productId: product.id, expiresAt });
   });
 
@@ -603,6 +653,15 @@ export function createApp() {
         id: plan.id, interval: plan.interval, productIds: ids, price_cents: pickPriceCents(ids.length),
         name: `ONIRIQUE à la carte — ${products.map((p) => p.name.replace(/^ONIRIQUE\s+/i, '')).join(', ')}`.slice(0, 120),
       }));
+    }
+    // Pack : plusieurs plugins ONIRIQUE en un seul achat, chacun avec sa licence définitive.
+    if (kind === 'pack') {
+      const pack = get('SELECT * FROM packs WHERE id = ? AND active = 1', int(req.body.id, 0));
+      if (!pack) throw new HttpError(404, 'Pack introuvable.');
+      const ids = packView(pack).productIds;
+      const owned = ids.filter((id) => { const right = entitlement(req.user.id, id); return right?.via === 'license' && right.type !== 'trial'; });
+      if (owned.length === ids.length) throw new HttpError(409, 'Vous possédez déjà tous les plugins de ce pack.');
+      return res.json(await checkout(req.user, 'pack', { id: pack.id, name: `Pack ${pack.name}`, price_cents: pack.price_cents, creator: 'onirique', productIds: ids }));
     }
     if (kind === 'plan') {
       const plan = get(`SELECT * FROM plans WHERE id = ? AND active = 1 AND kind = 'all'`, int(req.body.id, 0));
@@ -757,9 +816,46 @@ export function createApp() {
 
   // Crédits. À la création, le titre et la pochette sont demandés à Spotify (oEmbed) ; la pochette est copiée
   // sur le serveur, pour que la page d'accueil ne charge rien chez un tiers.
-  async function spotifyInfo(trackId) {
+  /** Un lien Spotify de titre ou d'album : son type et son identifiant. */
+  function spotifyRef(url) {
+    const m = str(url, 300).match(/(track|album)[/:]([A-Za-z0-9]{22})/);
+    if (!m) throw new HttpError(400, "Lien Spotify invalide : collez le lien d'un titre (open.spotify.com/track/…) ou d'un album (open.spotify.com/album/…).");
+    return { type: m[1], id: m[2] };
+  }
+
+  /** La popularité Spotify (0 à 100) d'un titre ou d'un album, quand la source la donne. */
+  async function creditPopularity(type, id) {
     try {
-      const response = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(`https://open.spotify.com/track/${trackId}`)}`,
+      const info = await popularity(`https://open.spotify.com/${type}/${id}`);
+      return info.popularity ?? null;
+    } catch {
+      return null; // source muette : le crédit se range parmi les derniers, et sera réessayé
+    }
+  }
+  const refreshPopularity = async (credit) => {
+    const value = await creditPopularity(credit.spotify_type || 'track', credit.spotify_id);
+    run('UPDATE credits SET popularity = COALESCE(?, popularity), popularity_at = ? WHERE id = ?', value, now(), credit.id);
+  };
+  // Une fois par jour, les scores sont relus, un crédit toutes les vingt secondes.
+  setInterval(async () => {
+    const stale = get('SELECT * FROM credits WHERE popularity_at IS NULL OR popularity_at < ? ORDER BY popularity_at LIMIT 1', now() - 86400_000);
+    if (stale) await refreshPopularity(stale).catch(() => {});
+  }, 20_000).unref();
+
+  const founderOf = (value) => {
+    if (value === undefined || value === null || value === '') return null;
+    const user = get(`SELECT id FROM users WHERE id = ? AND role = 'founder'`, int(value, 0));
+    if (!user) throw new HttpError(400, "L'ingé doit être un compte fondateur d'ONIRIQUE.");
+    return user.id;
+  };
+  const productIdsOf = (body) => {
+    const list = Array.isArray(body.productIds) ? body.productIds : body.productId ? [body.productId] : [];
+    return [...new Set(list.filter(Boolean).map((id) => findProduct(id).id))];
+  };
+
+  async function spotifyInfo(trackId, type = 'track') {
+    try {
+      const response = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(`https://open.spotify.com/${type}/${trackId}`)}`,
         { signal: AbortSignal.timeout(8000) });
       if (!response.ok) return {};
       const info = await response.json();
@@ -783,23 +879,24 @@ export function createApp() {
   admin.get('/credits', (_req, res) => res.json(creditRows()));
 
   admin.post('/credits', wrap(async (req, res) => {
-    const trackId = str(req.body.spotifyUrl, 300).match(/(?:track[/:])([A-Za-z0-9]{22})/)?.[1];
-    if (!trackId) throw new HttpError(400, 'Lien Spotify invalide : collez le lien d\'un titre (open.spotify.com/track/…).');
+    const ref = spotifyRef(req.body.spotifyUrl);
     const artist = str(req.body.artist, 120);
     if (!artist) throw new HttpError(400, "Indiquez l'artiste.");
-    const productId = req.body.productId ? findProduct(req.body.productId).id : null;
+    const productIds = productIdsOf(req.body);
+    const engineerId = founderOf(req.body.engineerId);
 
-    const info = await spotifyInfo(trackId);
+    const info = await spotifyInfo(ref.id, ref.type);
     const title = str(req.body.title, 120) || info.title;
     if (!title) {
       if (info.cover) fs.rmSync(path.join(config.mediaDir, info.cover), { force: true });
-      throw new HttpError(400, 'Indiquez le titre du morceau.');
+      throw new HttpError(400, ref.type === 'album' ? "Indiquez le nom de l'album." : 'Indiquez le titre du morceau.');
     }
-    run(`INSERT INTO credits (title, artist, kind, released, duration, spotify_id, cover, product_id, used_on, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      title, artist, str(req.body.kind, 30) || 'Single', str(req.body.released, 40), str(req.body.duration, 10),
-      trackId, info.cover ?? null, productId, str(req.body.usedOn, 60), now());
-    res.status(201).json(creditRows()[0]);
+    const { lastInsertRowid } = run(`INSERT INTO credits (title, artist, kind, released, duration, spotify_id, spotify_type, cover, product_id, product_ids, engineer_id, used_on, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      title, artist, str(req.body.kind, 30) || (ref.type === 'album' ? 'Album' : 'Single'), str(req.body.released, 40), str(req.body.duration, 10),
+      ref.id, ref.type, info.cover ?? null, productIds[0] ?? null, productIds.length ? JSON.stringify(productIds) : null, engineerId, str(req.body.usedOn, 60), now());
+    await refreshPopularity(get('SELECT * FROM credits WHERE id = ?', lastInsertRowid));
+    res.status(201).json(creditRows().find((c) => c.id === Number(lastInsertRowid)));
   }));
 
   // Modification d'un crédit : seuls les champs envoyés changent. Un nouveau lien Spotify fait reprendre la pochette.
@@ -814,22 +911,30 @@ export function createApp() {
       released: b.released === undefined ? credit.released : str(b.released, 40),
       duration: b.duration === undefined ? credit.duration : str(b.duration, 10),
       usedOn: b.usedOn === undefined ? credit.used_on : str(b.usedOn, 60),
-      productId: b.productId === undefined ? credit.product_id : b.productId ? findProduct(b.productId).id : null,
+      productIds: b.productIds === undefined && b.productId === undefined
+        ? parseProductIds(credit.product_ids) || (credit.product_id ? [credit.product_id] : []) : productIdsOf(b),
+      engineerId: b.engineerId === undefined ? credit.engineer_id : founderOf(b.engineerId),
       spotifyId: credit.spotify_id,
+      spotifyType: credit.spotify_type || 'track',
       cover: credit.cover,
     };
     if (!next.title) throw new HttpError(400, 'Indiquez le titre du morceau.');
     if (!next.artist) throw new HttpError(400, "Indiquez l'artiste.");
+    let moved = false;
     if (b.spotifyUrl !== undefined) {
-      const trackId = str(b.spotifyUrl, 300).match(/(?:track[/:])([A-Za-z0-9]{22})/)?.[1];
-      if (!trackId) throw new HttpError(400, 'Lien Spotify invalide : collez le lien d\'un titre (open.spotify.com/track/…).');
-      if (trackId !== credit.spotify_id) {
-        next.spotifyId = trackId;
-        next.cover = (await spotifyInfo(trackId)).cover ?? null;
+      const ref = spotifyRef(b.spotifyUrl);
+      if (ref.id !== credit.spotify_id) {
+        moved = true;
+        next.spotifyId = ref.id;
+        next.spotifyType = ref.type;
+        next.cover = (await spotifyInfo(ref.id, ref.type)).cover ?? null;
       }
     }
-    run(`UPDATE credits SET title = ?, artist = ?, kind = ?, released = ?, duration = ?, used_on = ?, product_id = ?, spotify_id = ?, cover = ? WHERE id = ?`,
-      next.title, next.artist, next.kind, next.released, next.duration, next.usedOn, next.productId, next.spotifyId, next.cover, credit.id);
+    run(`UPDATE credits SET title = ?, artist = ?, kind = ?, released = ?, duration = ?, used_on = ?, product_id = ?, product_ids = ?, engineer_id = ?,
+           spotify_id = ?, spotify_type = ?, cover = ? WHERE id = ?`,
+      next.title, next.artist, next.kind, next.released, next.duration, next.usedOn, next.productIds[0] ?? null,
+      next.productIds.length ? JSON.stringify(next.productIds) : null, next.engineerId, next.spotifyId, next.spotifyType, next.cover, credit.id);
+    if (moved) await refreshPopularity(get('SELECT * FROM credits WHERE id = ?', credit.id));
     if (credit.cover && credit.cover !== next.cover) fs.rmSync(path.join(config.mediaDir, credit.cover), { force: true });
     res.json(creditRows().find((c) => c.id === credit.id));
   }));
@@ -1139,6 +1244,7 @@ export function createApp() {
     const q = `%${str(req.query.q, 80)}%`;
     res.json(all(
       `SELECT u.id, u.email, u.name, u.role, u.created_at AS createdAt, u.email_verified AS emailVerified,
+         CASE WHEN u.avatar IS NULL THEN NULL ELSE '/api/media/' || u.avatar END AS avatar,
          (SELECT COUNT(*) FROM licenses l WHERE l.user_id = u.id AND l.status = 'active') AS licenses,
          (SELECT COUNT(*) FROM licenses l WHERE l.user_id = u.id AND l.source = 'trial') AS trials,
          EXISTS (SELECT 1 FROM subscriptions s WHERE s.user_id = u.id AND s.status = 'active' AND s.current_period_end > ?) AS subscribed
@@ -1186,6 +1292,7 @@ export function createApp() {
     const removed = transaction(() => {
       const trials = all(`SELECT id, product_id FROM licenses WHERE user_id = ? AND source = 'trial'`, user.id);
       run(`DELETE FROM licenses WHERE user_id = ? AND source = 'trial'`, user.id);
+      run('DELETE FROM trial_claims WHERE user_id = ?', user.id); // et ses traces : machine et connexion
       for (const productId of new Set(trials.map((t) => t.product_id))) {
         if (!entitlement(user.id, productId)) run('DELETE FROM activations WHERE user_id = ? AND product_id = ?', user.id, productId);
       }
@@ -1313,17 +1420,7 @@ export function createApp() {
     res.json(pickPrices());
   });
 
-  admin.patch('/plans/:id', (req, res) => {
-    const plan = get('SELECT * FROM plans WHERE id = ?', int(req.params.id, 0));
-    if (!plan) throw new HttpError(404, 'Formule introuvable.');
-    const price = req.body.priceCents !== undefined ? int(req.body.priceCents) : plan.price_cents;
-    if (price === null || price < 0) throw new HttpError(400, 'Prix invalide.');
-    run('UPDATE plans SET name = ?, price_cents = ?, active = ? WHERE id = ?',
-      req.body.name !== undefined ? str(req.body.name, 60) || plan.name : plan.name, price,
-      req.body.active !== undefined ? (req.body.active ? 1 : 0) : plan.active, plan.id);
-    res.json({ ok: true });
-  });
-
+  mountControl(admin);
   mountNewsletter(app, admin);
   app.use('/api/admin', admin);
 

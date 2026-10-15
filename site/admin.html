@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=e7481d7e"></script>
+<script src="assets/i18n.js?v=11b20aaa"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Administration</title>
 <meta name="robots" content="noindex, nofollow">
@@ -103,6 +103,49 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
 .mail-tools select { padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--deep); color: var(--mist); font: 600 13px var(--f-body); }
 @media (max-width: 900px) { .mail { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 700px) { .product, .product form { grid-template-columns: minmax(0, 1fr); } }
+/* Rubriques : une barre d'onglets collée en haut, une rubrique visible à la fois */
+.tabs { position: sticky; top: 0; z-index: 30; display: flex; gap: 4px; overflow-x: auto; margin: 26px -4px 8px; padding: 10px 4px; background: linear-gradient(180deg, var(--night) 75%, transparent); scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs button { flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 11px 16px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.02); color: var(--haze); font: 600 12px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; transition: color .2s, border-color .2s, background .2s; }
+.tabs button:hover { color: var(--mist); border-color: rgba(226,52,68,.5); }
+.tabs button[aria-selected="true"] { color: var(--bone); border-color: var(--ember); background: rgba(226,52,68,.16); }
+.tabs button b { min-width: 18px; padding: 3px 6px; border-radius: 999px; background: var(--ember); color: #fff; font: 700 10px/1 var(--f-mono); letter-spacing: 0; }
+.tab > .bar:first-child, .tab > .tiles:first-child { margin-top: 10px; }
+/* Comptes : la photo à côté de l'adresse ; la suppression demande de taper SUPPRIME */
+.who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.who .face { flex: none; width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); background: var(--deep-2, #2a0a0e); display: grid; place-items: center; font: 800 14px/1 var(--f-display); color: var(--bone); }
+.who > div { min-width: 0; overflow-wrap: anywhere; }
+button.act.danger { color: #ff8f99; border-color: rgba(255,122,133,.35); }
+button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1); }
+.erase { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.erase input { width: 180px; height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(255,122,133,.5); background: rgba(0,0,0,.4); color: var(--mist); font: 700 14px var(--f-mono); letter-spacing: .12em; }
+.erase button.act.danger:not(:disabled) { background: #c42736; border-color: #c42736; color: #fff; }
+/* Abonnements et packs : une fiche par formule, avec ses plugins à cocher */
+.offer { display: grid; gap: 12px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--deep); }
+.offer + .offer { margin-top: 12px; }
+.offer form { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: 12px; align-items: end; }
+.offer label { display: grid; gap: 6px; font: 500 11px/1.2 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--haze); }
+.offer input[type="text"], .offer input[type="number"], .offer select, .offer textarea { width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.4); color: var(--mist); font: 500 14px var(--f-body); }
+.offer textarea { min-height: 64px; resize: vertical; line-height: 1.5; }
+.offer select option { background: var(--deep); }
+.offer .wide { grid-column: 1 / -1; }
+.offer .row { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips label { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 999px; font: 500 13px/1 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--mist); cursor: pointer; }
+.chips label:has(input:checked) { border-color: var(--ember); background: rgba(226,52,68,.14); }
+.chips input { width: 15px; height: 15px; accent-color: var(--ember); }
+.offer .tag { justify-self: start; }
+/* Annonce et maintenance */
+.box label.switch { display: inline-flex; align-items: center; gap: 12px; font: 600 15px/1.2 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--mist); cursor: pointer; }
+.box .switch input[type="checkbox"] { appearance: none; -webkit-appearance: none; flex: none; position: relative; width: 52px; height: 30px; margin: 0; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.08); cursor: pointer; transition: background .2s, border-color .2s; }
+.box .switch input[type="checkbox"]::after { content: ""; position: absolute; left: 3px; top: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--haze); transition: transform .2s, background .2s; }
+.box .switch input[type="checkbox"]:checked { background: var(--ember); border-color: var(--ember); }
+.box .switch input[type="checkbox"]:checked::after { transform: translateX(22px); background: #fff; }
+.box .switch input[type="checkbox"]:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(226,52,68,.35); }
+.live-preview { margin-top: 4px; padding: 11px 16px; border-radius: 12px; font: 600 14px/1.4 var(--f-body); text-align: center; }
+.maint-state { display: inline-flex; align-items: center; gap: 8px; font: 600 12px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; }
+.maint-state i { width: 9px; height: 9px; border-radius: 50%; background: #5bd38c; box-shadow: 0 0 10px #5bd38c; }
+.maint-state.on i { background: #ffb347; box-shadow: 0 0 10px #ffb347; }
 [hidden] { display: none !important; }
 </style>
 
@@ -122,8 +165,10 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
   <p class="notice" id="gate">Chargement…</p>
 
   <div id="panel" hidden>
-    <!-- Réservé à l'équipe : un partenaire ne voit que ses plugins, plus bas -->
-    <div id="staff-accounts">
+    <!-- Les rubriques : un partenaire ne voit que la boutique (ses plugins) et les codes promo -->
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Rubriques de l'administration"></nav>
+
+    <section class="tab" id="tab-db" data-label="Base de données" data-staff>
     <div class="tiles" id="tiles"></div>
 
     <div class="bar">
@@ -136,32 +181,42 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
       <tbody id="users"></tbody>
     </table></div>
     <p class="sub" id="count"></p>
+    </section>
 
-    <div class="bar">
-      <h2>Support</h2>
-      <a class="btn" id="webmail" href="https://mail.ionos.fr" target="_blank" rel="noopener">Ouvrir la boîte mail ↗</a>
-    </div>
-    <p class="sub" id="support-info"></p>
-    <div class="table"><table>
-      <thead><tr><th>Reçu le</th><th>De</th><th>Message</th><th><span class="sub">Actions</span></th></tr></thead>
-      <tbody id="support"></tbody>
-    </table></div>
-
-    <div class="bar"><h2>Abonnements</h2></div>
-    <p class="sub">Les formules proposées dans la boutique du site et dans l'application. Un prix changé ici s'applique aux prochains abonnements souscrits ; une formule décochée n'est plus proposée, ceux qui l'ont déjà la gardent.</p>
-    <p class="error" id="plan-error" role="alert"></p>
-    <div class="table"><table>
-      <thead><tr><th>Formule</th><th>Prix (€)</th><th>Période</th><th>Dans la boutique</th><th><span class="sub">Actions</span></th></tr></thead>
-      <tbody id="plans"></tbody>
-    </table></div>
-    </div>
-
+    <section class="tab" id="tab-shop" data-label="Boutique">
     <div class="bar"><h2>Plugins</h2></div>
     <p class="sub">Un plugin créé ici apparaît aussitôt dans la boutique du site et dans l'application, tant qu'il est coché « visible ». Une nouvelle version est proposée aussitôt en mise à jour dans Onirique Central. L'image du plugin et sa démo interactive de la boutique sont fabriquées à partir du fichier .vst3 lui-même : cela demande de charger le plugin sous Windows, et se fait donc quand la version est publiée depuis l'application Onirique Central (panel admin), pas depuis cette page.</p>
     <details class="product new" id="new-product"></details>
     <p class="error" id="product-error" role="alert"></p>
     <div class="products" id="products"></div>
 
+    <div data-staff>
+    <div class="bar"><h2>Abonnements</h2></div>
+    <p class="sub">Les formules proposées dans la boutique du site et dans l'application : leur nom, leur prix, leur texte et les plugins qu'elles comprennent. Un prix changé s'applique aux prochains abonnements ; un plugin ajouté profite tout de suite aux abonnés ; une formule retirée de la boutique reste à ceux qui l'ont déjà.</p>
+    <details class="product new" id="new-plan"></details>
+    <p class="error" id="plan-error" role="alert"></p>
+    <div class="table"><table>
+      <tbody id="plans"></tbody>
+    </table></div>
+
+    <div class="bar"><h2>Packs</h2></div>
+    <p class="sub">Plusieurs plugins ONIRIQUE vendus ensemble, en un seul paiement : l'acheteur reçoit une licence définitive pour chacun. Un pack retiré de la boutique ne retire rien à ceux qui l'ont acheté.</p>
+    <details class="product new" id="new-pack"></details>
+    <p class="error" id="pack-error" role="alert"></p>
+    <div class="products" id="packs"></div>
+
+    <div class="bar"><h2>Crédits</h2></div>
+    <p class="sub">Les titres réalisés avec vos plugins, affichés dans la section Crédits de la page d'accueil. Collez le lien Spotify d'un titre ou d'un album entier : son nom et sa pochette sont récupérés tout seuls. La liste se range du plus connu au moins connu (popularité Spotify, relue chaque jour).</p>
+    <details class="product new" id="new-credit"></details>
+    <p class="error" id="credit-error" role="alert"></p>
+    <div class="table"><table>
+      <thead><tr><th>Titre</th><th>Plugins · ingé</th><th>Sortie</th><th><span class="sub">Actions</span></th></tr></thead>
+      <tbody id="credits"></tbody>
+    </table></div>
+    </div>
+    </section>
+
+    <section class="tab" id="tab-promo" data-label="Parrainages &amp; codes promo">
     <div class="bar"><h2>Codes promo</h2></div>
     <p class="sub">Un code s'entre au moment d'acheter, sur le site comme dans l'application. Il sert une fois par compte. Laisser « Plugins » vide : il vaut pour tous les plugins<span id="promo-scope"></span>. Les abonnements ne prennent pas de code.</p>
     <details class="product new" id="new-promo"></details>
@@ -171,7 +226,20 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
       <tbody id="promos"></tbody>
     </table></div>
 
-    <div id="staff-mail">
+    <div data-staff>
+    <div class="bar"><h2>Parrainage</h2></div>
+    <p class="sub">Chaque compte a son lien. L'ami invité a une remise sur son premier plugin ONIRIQUE ; quand il fait son premier achat payé, son parrain reçoit un code personnel, et, à chaque palier d'amis acheteurs, un plugin ONIRIQUE offert. Les récompenses ne portent que sur les plugins ONIRIQUE : les partenaires encaissent leurs ventes eux-mêmes.</p>
+    <div class="tiles" id="ref-tiles"></div>
+    <div class="box" id="ref-settings"></div>
+    <p class="error" id="ref-error" role="alert"></p>
+    <div class="table"><table>
+      <thead><tr><th>Meilleurs parrains</th><th>Amis inscrits</th><th>Amis acheteurs</th></tr></thead>
+      <tbody id="ref-top"></tbody>
+    </table></div>
+    </div>
+    </section>
+
+    <section class="tab" id="tab-mail" data-label="Mail" data-staff>
     <div id="mailbox" hidden>
     <div class="bar"><h2>Boîte mail</h2><span class="sub" id="mail-address"></span></div>
     <div class="mail-tools">
@@ -186,27 +254,6 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
     <div class="mail"><div class="mail-list" id="mail-list"></div><div class="mail-read" id="mail-read"><p class="sub">Choisissez un message.</p></div></div>
     </div>
 
-    <div id="brand-kit" hidden>
-    <div class="bar"><h2>Charte graphique</h2><button class="btn" id="brand-download" type="button">Télécharger le .zip</button></div>
-    <p class="sub" id="brand-info">Logos, couleurs, polices, modèles prêts à publier pour chaque réseau et le guide en PDF. Réservé aux fondateurs.</p>
-    <p class="error" id="brand-error" role="alert"></p>
-    </div>
-
-    <div class="bar"><h2>Nos réseaux</h2></div>
-    <p class="sub">Les comptes d'ONIRIQUE, affichés dans l'en-tête (rubrique « Nos réseaux »), le menu des téléphones et le pied des pages. Une adresse complète (https://…) ; laisser vide pour ne pas afficher le réseau.</p>
-    <div class="box" id="socials"></div>
-    <p class="error" id="socials-error" role="alert"></p>
-
-    <div class="bar"><h2>Parrainage</h2></div>
-    <p class="sub">Chaque compte a son lien. L'ami invité a une remise sur son premier plugin ONIRIQUE ; quand il fait son premier achat payé, son parrain reçoit un code personnel, et, à chaque palier d'amis acheteurs, un plugin ONIRIQUE offert. Les récompenses ne portent que sur les plugins ONIRIQUE : les partenaires encaissent leurs ventes eux-mêmes.</p>
-    <div class="tiles" id="ref-tiles"></div>
-    <div class="box" id="ref-settings"></div>
-    <p class="error" id="ref-error" role="alert"></p>
-    <div class="table"><table>
-      <thead><tr><th>Meilleurs parrains</th><th>Amis inscrits</th><th>Amis acheteurs</th></tr></thead>
-      <tbody id="ref-top"></tbody>
-    </table></div>
-
     <div class="bar"><h2>E-mails</h2><span class="sub" id="mail-from"></span></div>
     <p class="sub">Un message mis en page aux couleurs d'ONIRIQUE, envoyé depuis l'adresse d'ONIRIQUE à un message toutes les trois secondes. Chaque message porte un lien de désinscription. L'aperçu à droite se met à jour pendant que vous écrivez.</p>
     <div class="box composer"><div id="mail-form"></div><iframe id="mail-preview" title="Aperçu du message"></iframe></div>
@@ -215,24 +262,46 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
       <thead><tr><th>Envoyé le</th><th>Objet</th><th>Destinataires</th><th>Avancement</th><th><span class="sub">Actions</span></th></tr></thead>
       <tbody id="mailings"></tbody>
     </table></div>
-    </div>
 
-    <div id="staff-credits">
-    <div class="bar"><h2>Crédits</h2></div>
-    <p class="sub">Les titres réalisés avec vos plugins, affichés dans la section Crédits de la page d'accueil. Collez le lien Spotify du titre : son nom et sa pochette sont récupérés tout seuls.</p>
-    <details class="product new" id="new-credit"></details>
-    <p class="error" id="credit-error" role="alert"></p>
-    <div class="table"><table>
-      <thead><tr><th>Titre</th><th>Plugin utilisé</th><th>Sortie</th><th><span class="sub">Actions</span></th></tr></thead>
-      <tbody id="credits"></tbody>
-    </table></div>
+    <div class="bar">
+      <h2>Support</h2>
+      <a class="btn" id="webmail" href="https://mail.ionos.fr" target="_blank" rel="noopener">Ouvrir la boîte mail ↗</a>
     </div>
+    <p class="sub" id="support-info"></p>
+    <div class="table"><table>
+      <thead><tr><th>Reçu le</th><th>De</th><th>Message</th><th><span class="sub">Actions</span></th></tr></thead>
+      <tbody id="support"></tbody>
+    </table></div>
+    </section>
+
+    <section class="tab" id="tab-site" data-label="Site" data-staff>
+    <div class="bar"><h2>Annonce sur le site</h2></div>
+    <p class="sub">Un bandeau en haut de toutes les pages du site, tout de suite, par exemple « PROMO -20 % SUR TOUTE LA BOUTIQUE ». Un visiteur peut le fermer ; un nouveau texte réapparaît chez tout le monde.</p>
+    <div class="box" id="live-announcement"></div>
+    <p class="error" id="announcement-error" role="alert"></p>
+
+    <div class="bar"><h2>Maintenance</h2></div>
+    <p class="sub">Le site public affiche une page d'attente à la place des pages, le temps d'une intervention. L'équipe, connectée, continue de voir le site normalement. L'application ONIRIQUE CENTRAL n'est pas touchée.</p>
+    <div class="box" id="live-maintenance"></div>
+    <p class="error" id="maintenance-error" role="alert"></p>
+
+    <div class="bar"><h2>Nos réseaux</h2></div>
+    <p class="sub">Les comptes d'ONIRIQUE, affichés dans l'en-tête (rubrique « Nos réseaux »), le menu des téléphones et le pied des pages. Une adresse complète (https://…) ; laisser vide pour ne pas afficher le réseau.</p>
+    <div class="box" id="socials"></div>
+    <p class="error" id="socials-error" role="alert"></p>
+
+    <div id="brand-kit" hidden>
+    <div class="bar"><h2>Charte graphique</h2><button class="btn" id="brand-download" type="button">Télécharger le .zip</button></div>
+    <p class="sub" id="brand-info">Logos, couleurs, polices, modèles prêts à publier pour chaque réseau et le guide en PDF. Réservé aux fondateurs.</p>
+    <p class="error" id="brand-error" role="alert"></p>
+    </div>
+    </section>
   </div>
 </main>
 
 <script src="assets/cropper.js"></script>
 <script src="assets/account.js?v=4"></script>
-<script src="assets/site-nav.js?v=6"></script>
+<script src="assets/site-nav.js?v=7"></script>
 <script>
 // Tout passe par l'API du CENTRAL, qui revérifie le rôle admin à chaque appel : cette page n'ouvre aucun droit par elle-même.
 const $ = (id) => document.getElementById(id);
@@ -327,6 +396,30 @@ async function verifyEmail(user) {
   }
 }
 
+// Supprimer un compte : une ligne s'ouvre sous le compte, et le bouton ne s'allume qu'une fois SUPPRIME tapé.
+function askErase(user, row) {
+  if (row.nextSibling?.classList?.contains("detail")) return row.nextSibling.remove();
+  const word = el("input", { type: "text", autocomplete: "off", spellcheck: false, placeholder: "SUPPRIME", ariaLabel: "Tapez SUPPRIME pour confirmer" });
+  const go = el("button", { className: "act danger", type: "button", textContent: "Supprimer définitivement", disabled: true });
+  const cancel = el("button", { className: "act", type: "button", textContent: "Annuler" });
+  const note = el("span", { className: "sub", textContent: `Le compte ${user.email} disparaît, avec ses ${user.licenses} licence(s) (révoquées), ses machines, sa photo et son abonnement. Impossible de revenir en arrière.` });
+  word.oninput = () => { go.disabled = word.value.trim() !== "SUPPRIME"; };
+  cancel.onclick = () => detail.remove();
+  go.onclick = async () => {
+    go.disabled = true;
+    try {
+      await api("DELETE", "/admin/users/" + user.id, { confirm: word.value.trim() });
+      await loadUsers();
+    } catch (error) {
+      $("error").textContent = error.message;
+      go.disabled = false;
+    }
+  };
+  const detail = el("tr", { className: "detail" }, el("td", { colSpan: 6 }, el("div", { className: "erase" }, note, word, go, cancel)));
+  row.after(detail);
+  word.focus();
+}
+
 async function loadUsers() {
   $("error").textContent = "";
   const users = await api("GET", "/admin/users?q=" + encodeURIComponent($("search").value.trim()));
@@ -343,14 +436,20 @@ async function loadUsers() {
     if (trials) trials.onclick = () => resetTrials(u);
     const verify = u.emailVerified ? null : el("button", { className: "act", type: "button", textContent: "Valider l'e-mail" });
     if (verify) verify.onclick = () => verifyEmail(u);
+    // Supprimer : pas son propre compte, ni un fondateur ; un compte admin, seulement par un fondateur.
+    const erasable = u.id !== me.id && u.role !== "founder" && (founder || !isStaff(u));
+    const erase = erasable ? el("button", { className: "act danger", type: "button", textContent: "Supprimer" }) : null;
+    if (erase) erase.onclick = () => askErase(u, row);
+    const face = u.avatar ? el("img", { className: "face", src: u.avatar, alt: "", loading: "lazy" })
+      : el("span", { className: "face", textContent: (u.name || u.email).trim().charAt(0).toUpperCase() });
     row.append(
-      el("td", {}, el("div", { textContent: u.email }), u.name ? el("div", { className: "sub", textContent: u.name }) : null,
-        u.emailVerified ? null : el("div", { className: "sub", textContent: "Adresse e-mail non validée" })),
+      el("td", {}, el("div", { className: "who" }, face, el("div", {}, el("div", { textContent: u.email }), u.name ? el("div", { className: "sub", textContent: u.name }) : null,
+        u.emailVerified ? null : el("div", { className: "sub", textContent: "Adresse e-mail non validée" })))),
       el("td", {}, el("span", { className: "pill" + (isStaff(u) ? " on" : ""), textContent: ROLES[u.role] || u.role })),
       el("td", { textContent: String(u.licenses) }),
       el("td", { textContent: u.subscribed ? "Abonné" : "—" }),
       el("td", { textContent: date(u.createdAt) }),
-      el("td", { className: "actions" }, view, trials, verify, role));
+      el("td", { className: "actions" }, view, trials, verify, role, erase));
     return row;
   }));
   $("count").textContent = users.length === 500 ? "500 premiers comptes affichés : affinez la recherche." : `${users.length} compte(s).`;
@@ -519,63 +618,188 @@ async function loadProducts() {
 const euros = (cents) => (cents === 0 ? "Gratuit" : new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: cents % 100 ? 2 : 0 }).format(cents / 100));
 
 //------------------------------------------------------------------------------ Abonnements
-async function loadPlans() {
-  const [plans, pick] = await Promise.all([api("GET", "/admin/plans"), api("GET", "/admin/pick")]);
-  const priceInput = (cents, label) => el("input", { type: "number", min: "0", step: "0.01", value: (cents / 100).toFixed(2), ariaLabel: label });
-  const cents = (input) => Math.round(Number(input.value.replace(",", ".")) * 100);
-  const save = (action) => {
-    const button = el("button", { className: "act", type: "button", textContent: "Enregistrer" });
-    button.onclick = async () => {
-      $("plan-error").textContent = "";
-      button.disabled = true;
-      try {
-        await action();
-        await loadPlans();
-      } catch (error) {
-        $("plan-error").textContent = error.message;
-        button.disabled = false;
-      }
-    };
-    return button;
+// Les plugins ONIRIQUE, ceux qu'une formule ou un pack peut contenir (les partenaires vendent à l'unité).
+let ownPlugins = [];
+const pluginChips = (chosen = []) => {
+  const boxes = ownPlugins.map((p) => ({ id: p.id, box: el("input", { type: "checkbox", value: p.id, checked: chosen.includes(p.id) }), name: p.name }));
+  return { node: el("div", { className: "chips" }, ...boxes.map((b) => el("label", {}, b.box, b.name.replace(/^ONIRIQUE\s+/i, "")))), value: () => boxes.filter((b) => b.box.checked).map((b) => b.id) };
+};
+const toCents = (input) => Math.round(Number(String(input.value).replace(",", ".")) * 100);
+const euroInput = (cents, label) => el("input", { type: "number", min: "0", step: "0.01", value: ((cents ?? 0) / 100).toFixed(2), ariaLabel: label, required: true });
+
+// Une fiche de formule (abonnement) ou de pack. kind : "plan" ou "pack" ; item : null pour une création.
+function offerForm(kind, item, reload, errorId) {
+  const name = el("input", { type: "text", value: item?.name ?? "", maxLength: 60, required: true, placeholder: kind === "plan" ? "ALL ACCESS" : "PACK VOIX" });
+  const price = euroInput(item?.priceCents, "Prix");
+  const interval = kind === "plan" ? el("select", { disabled: !!item }, el("option", { value: "month", textContent: "Par mois" }), el("option", { value: "year", textContent: "Par an" })) : null;
+  if (interval) interval.value = item?.interval ?? "month";
+  const description = el("textarea", { value: item?.description ?? "", maxLength: 600, placeholder: kind === "plan" ? "Ce que comprend l'abonnement, affiché dans la boutique." : "Ce que réunit le pack, affiché dans la boutique." });
+  const chips = pluginChips(item?.productIds ?? []);
+  const active = el("input", { type: "checkbox", checked: item ? item.active : true });
+  const submit = el("button", { className: "act", type: "submit", textContent: item ? "Enregistrer" : kind === "plan" ? "Créer l'abonnement" : "Créer le pack" });
+  const remove = item ? el("button", { className: "act danger", type: "button", textContent: "Supprimer" }) : null;
+  const saved = el("span", { className: "sub", role: "status" });
+  const form = el("form", {},
+    el("label", {}, "Nom", name), el("label", {}, kind === "plan" ? "Prix (€)" : "Prix du pack (€)", price),
+    interval ? el("label", {}, "Période", interval) : null,
+    el("label", { className: "inline", style: "align-self:center" }, active, "Dans la boutique"),
+    el("label", { className: "wide" }, "Description", description),
+    el("label", { className: "wide" }, kind === "plan" ? "Plugins compris (aucun coché : tous les plugins ONIRIQUE, nouveautés comprises)" : "Plugins du pack (au moins deux)", chips.node),
+    el("div", { className: "row" }, submit, remove, saved));
+  form.onsubmit = async (event) => {
+    event.preventDefault();
+    $(errorId).textContent = "";
+    submit.disabled = true;
+    const body = { name: name.value.trim(), priceCents: toCents(price), description: description.value.trim(), productIds: chips.value(), active: active.checked };
+    if (interval && !item) body.interval = interval.value;
+    try {
+      await api(item ? "PATCH" : "POST", `/admin/${kind}s${item ? "/" + item.id : ""}`, body);
+      await reload();
+    } catch (error) { $(errorId).textContent = error.message; submit.disabled = false; }
   };
+  if (remove) remove.onclick = async () => {
+    if (!window.confirm(`Supprimer « ${item.name} » ?` + (kind === "pack" ? " Les licences déjà achetées restent." : ""))) return;
+    try { await api("DELETE", `/admin/${kind}s/${item.id}`); await reload(); } catch (error) { $(errorId).textContent = error.message; }
+  };
+  return form;
+}
+
+async function loadPlans() {
+  const [plans, pick, products] = await Promise.all([api("GET", "/admin/plans"), api("GET", "/admin/pick"), api("GET", "/admin/products")]);
+  ownPlugins = products.filter((p) => p.creator === "onirique" && p.priceCents > 0);
+  $("new-plan").replaceChildren(el("summary", { textContent: "＋ Nouvel abonnement" }), el("div", { className: "offer", style: "margin-top:12px" }, offerForm("plan", null, loadPlans, "plan-error")));
   const rows = plans.filter((plan) => plan.kind !== "pick").map((plan) => {
-    const name = el("input", { type: "text", value: plan.name, maxLength: 60, ariaLabel: "Nom de la formule" });
-    const price = priceInput(plan.priceCents, "Prix de " + plan.name);
-    const active = el("input", { type: "checkbox", checked: plan.active });
-    return el("tr", {}, el("td", {}, name), el("td", {}, price), el("td", { className: "sub", textContent: plan.interval === "year" ? "par an" : "par mois" }),
-      el("td", {}, el("label", {}, active, "Proposée")),
-      el("td", { className: "actions" }, save(() => api("PATCH", "/admin/plans/" + plan.id, { name: name.value, priceCents: cents(price), active: active.checked }))));
+    const scope = plan.productIds?.length ? `${plan.productIds.length} plugin(s)` : "Tous les plugins ONIRIQUE";
+    return el("tr", {}, el("td", { colSpan: 5 }, el("div", { className: "offer" },
+      el("div", { className: "who" }, el("strong", { textContent: plan.name }),
+        el("span", { className: "pill" + (plan.active ? " on" : ""), textContent: plan.active ? "En boutique" : "Retirée" }),
+        el("span", { className: "sub", textContent: `${(plan.priceCents / 100).toFixed(2).replace(".", ",")} € ${plan.interval === "year" ? "par an" : "par mois"} · ${scope}` })),
+      offerForm("plan", plan, loadPlans, "plan-error"))));
   });
   // À la carte : le prix du premier plugin, puis celui de chaque plugin ajouté.
-  const base = priceInput(pick.baseCents, "À la carte : prix du premier plugin"), extra = priceInput(pick.extraCents, "À la carte : prix de chaque plugin ajouté");
-  rows.push(el("tr", {}, el("td", {}, el("strong", { textContent: "À la carte" }), el("div", { className: "sub", textContent: "Premier plugin, puis chaque plugin ajouté" })),
-    el("td", {}, base, extra), el("td", { className: "sub", textContent: "par mois" }), el("td", { className: "sub", textContent: "Toujours" }),
-    el("td", { className: "actions" }, save(() => api("PATCH", "/admin/pick", { baseCents: cents(base), extraCents: cents(extra) })))));
+  const base = euroInput(pick.baseCents, "À la carte : prix du premier plugin"), extra = euroInput(pick.extraCents, "À la carte : prix de chaque plugin ajouté");
+  const savePick = el("button", { className: "act", type: "button", textContent: "Enregistrer" });
+  savePick.onclick = async () => {
+    $("plan-error").textContent = "";
+    savePick.disabled = true;
+    try { await api("PATCH", "/admin/pick", { baseCents: toCents(base), extraCents: toCents(extra) }); await loadPlans(); }
+    catch (error) { $("plan-error").textContent = error.message; savePick.disabled = false; }
+  };
+  rows.push(el("tr", {}, el("td", { colSpan: 5 }, el("div", { className: "offer" },
+    el("div", { className: "who" }, el("strong", { textContent: "À la carte" }), el("span", { className: "sub", textContent: "L'abonné choisit ses plugins : le premier à un prix, chaque plugin ajouté un supplément, par mois." })),
+    el("div", { className: "row" }, el("label", {}, "Premier plugin (€)", base), el("label", {}, "Chaque plugin ajouté (€)", extra), savePick)))));
   $("plans").replaceChildren(...rows);
+}
+
+async function loadPacks() {
+  if (!ownPlugins.length) ownPlugins = (await api("GET", "/admin/products")).filter((p) => p.creator === "onirique" && p.priceCents > 0);
+  const packs = await api("GET", "/admin/packs");
+  $("new-pack").replaceChildren(el("summary", { textContent: "＋ Nouveau pack" }), el("div", { className: "offer", style: "margin-top:12px" }, offerForm("pack", null, loadPacks, "pack-error")));
+  $("packs").replaceChildren(...(packs.length ? packs.map((pack) => {
+    const full = pack.productIds.reduce((sum, id) => sum + (ownPlugins.find((p) => p.id === id)?.priceCents || 0), 0);
+    return el("div", { className: "offer" },
+      el("div", { className: "who" }, el("strong", { textContent: pack.name }),
+        el("span", { className: "pill" + (pack.active ? " on" : ""), textContent: pack.active ? "En boutique" : "Retiré" }),
+        el("span", { className: "sub", textContent: `${(pack.priceCents / 100).toFixed(2).replace(".", ",")} € au lieu de ${(full / 100).toFixed(2).replace(".", ",")} € · ${pack.productIds.length} plugins` })),
+      offerForm("pack", pack, loadPacks, "pack-error"));
+  }) : [el("p", { className: "sub", textContent: "Aucun pack pour le moment." })]));
+}
+
+//------------------------------------------------------------------------------ Annonce et maintenance
+async function loadLive() {
+  const { announcement, maintenance } = await api("GET", "/admin/live");
+  const a = announcement || {};
+  const TONES = { ember: ["Rouge ONIRIQUE", "linear-gradient(90deg,#8c0614,#e23444)", "#fff"], gold: ["Or (promo)", "linear-gradient(90deg,#b8862b,#f2c46d)", "#1a0d02"], calm: ["Sobre", "#1f0c0f", "#f6eeee"] };
+  const on = el("input", { type: "checkbox", checked: !!a.active });
+  const text = el("input", { type: "text", maxLength: 220, value: a.text || "", placeholder: "PROMO -20 % SUR TOUTE LA BOUTIQUE" });
+  const link = el("input", { type: "text", maxLength: 300, value: a.link || "", placeholder: "boutique.html (facultatif)" });
+  const label = el("input", { type: "text", maxLength: 40, value: a.linkLabel || "", placeholder: "J'en profite" });
+  const tone = el("select", {}, ...Object.entries(TONES).map(([id, [name]]) => el("option", { value: id, textContent: name })));
+  tone.value = a.tone || "ember";
+  const ends = el("input", { type: "datetime-local", value: a.endsAt ? new Date(a.endsAt - new Date(a.endsAt).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : "" });
+  ends.style.cssText = "width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.4);color:var(--mist);font:500 14px var(--f-body);color-scheme:dark";
+  const preview = el("div", { className: "live-preview" });
+  const paint = () => {
+    const [, bg, fg] = TONES[tone.value];
+    preview.style.background = bg;
+    preview.style.color = fg;
+    preview.textContent = (text.value.trim() || "Le texte de l'annonce") + (link.value.trim() ? `  ·  ${label.value.trim() || "Voir"} →` : "");
+    preview.style.opacity = on.checked ? "1" : ".45";
+  };
+  [on, text, link, label, tone].forEach((input) => input.addEventListener("input", paint));
+  const submit = el("button", { className: "act", type: "submit", textContent: "Publier" });
+  const saved = el("span", { className: "sub", role: "status" });
+  const form = el("form", {},
+    el("label", { className: "wide switch" }, on, "Afficher l'annonce sur le site"),
+    el("label", { className: "wide" }, "Texte", text), el("label", {}, "Lien (facultatif)", link), el("label", {}, "Texte du lien", label),
+    el("label", {}, "Couleur", tone), el("label", {}, "Fin (facultatif)", ends),
+    el("div", { className: "wide" }, preview), el("div", { className: "wide row", style: "display:flex;gap:12px;align-items:center" }, submit, saved));
+  form.onsubmit = async (event) => {
+    event.preventDefault();
+    $("announcement-error").textContent = saved.textContent = "";
+    submit.disabled = true;
+    try {
+      await api("PUT", "/admin/live/announcement", { active: on.checked, text: text.value.trim(), link: link.value.trim(), linkLabel: label.value.trim(), tone: tone.value, endsAt: ends.value || null });
+      saved.textContent = on.checked ? "En ligne : le bandeau s'affiche sur toutes les pages." : "Annonce retirée du site.";
+    } catch (error) { $("announcement-error").textContent = error.message; }
+    submit.disabled = false;
+  };
+  paint();
+  $("live-announcement").replaceChildren(form);
+
+  const m = maintenance || {};
+  const mOn = el("input", { type: "checkbox", checked: !!m.on });
+  const message = el("textarea", { maxLength: 400, value: m.message || "", placeholder: "Le site revient dans quelques minutes. Merci de ta patience !" });
+  message.style.minHeight = "80px";
+  const state = el("span", { className: "maint-state" + (m.on ? " on" : "") }, el("i"), m.on ? "Site en maintenance" : "Site en ligne");
+  const mSubmit = el("button", { className: "act", type: "submit", textContent: "Enregistrer" });
+  const mForm = el("form", {},
+    el("div", { className: "wide" }, state),
+    el("label", { className: "wide switch" }, mOn, "Mettre le site en maintenance"),
+    el("label", { className: "wide" }, "Message de la page d'attente (facultatif)", message),
+    el("div", { className: "wide" }, mSubmit));
+  mForm.onsubmit = async (event) => {
+    event.preventDefault();
+    $("maintenance-error").textContent = "";
+    if (mOn.checked && !m.on && !window.confirm("Mettre le site en maintenance ? Les visiteurs verront la page d'attente jusqu'à ce que vous le remettiez en ligne.")) return;
+    mSubmit.disabled = true;
+    try { await api("PUT", "/admin/live/maintenance", { on: mOn.checked, message: message.value.trim() }); await loadLive(); }
+    catch (error) { $("maintenance-error").textContent = error.message; mSubmit.disabled = false; }
+  };
+  $("live-maintenance").replaceChildren(mForm);
+  markTab("tab-site", m.on ? "!" : "");
 }
 
 //------------------------------------------------------------------------------ Crédits
 async function loadCredits() {
-  const [products, credits] = await Promise.all([api("GET", "/admin/products"), api("GET", "/admin/credits")]);
+  const [products, credits, founders] = await Promise.all([api("GET", "/admin/products"), api("GET", "/admin/credits"), api("GET", "/admin/founders")]);
   const fail = (error) => { $("credit-error").textContent = error.message; };
+  const spotifyLink = (c) => `https://open.spotify.com/${c.spotifyType || "track"}/${c.spotifyId}`;
 
   // c : le crédit à modifier, ou null pour un ajout.
   const creditForm = (c) => {
-    const link = el("input", { type: "text", required: true, placeholder: "https://open.spotify.com/track/…", value: c ? "https://open.spotify.com/track/" + c.spotifyId : "" });
+    const link = el("input", { type: "text", required: true, placeholder: "https://open.spotify.com/track/… ou /album/…", value: c ? spotifyLink(c) : "" });
     const artist = el("input", { type: "text", required: true, maxLength: 120, value: c?.artist ?? "" });
     const title = el("input", { type: "text", maxLength: 120, placeholder: c ? "" : "Vide : le titre donné par Spotify", value: c?.title ?? "" });
-    const plugin = el("select", {}, el("option", { value: "", textContent: "— Aucun en particulier —" }),
-      ...products.map((p) => el("option", { value: p.id, textContent: p.name })));
+    // Plusieurs plugins par titre : un par case cochée.
+    const chosen = (c?.plugins || []).map((p) => p.id);
+    const boxes = products.map((p) => ({ id: p.id, box: el("input", { type: "checkbox", checked: chosen.includes(p.id) }), name: p.name }));
+    const plugins = el("div", { className: "chips" }, ...boxes.map((b) => el("label", {}, b.box, b.name.replace(/^ONIRIQUE\s+/i, ""))));
+    plugins.style.cssText = "display:flex;flex-wrap:wrap;gap:8px";
+    // L'ingé : un compte fondateur ; son nom et son Instagram (réglé dans son compte) s'affichent sous le titre.
+    const engineer = el("select", {}, el("option", { value: "", textContent: "— Personne en particulier —" }),
+      ...founders.map((f) => el("option", { value: f.id, textContent: f.name + (f.instagram ? "  · Instagram ✓" : "") })));
+    engineer.value = c?.engineer?.id ?? "";
     const usedOn = el("input", { type: "text", maxLength: 60, placeholder: "Voix, chœurs, mix…", value: c?.usedOn ?? "" });
     const released = el("input", { type: "text", maxLength: 40, placeholder: "9 octobre 2026", value: c?.released ?? "" });
     const duration = el("input", { type: "text", maxLength: 10, placeholder: "2:39", value: c?.duration ?? "" });
     const kind = el("select", {}, ...[...new Set(["Single", "EP", "Album", "Mixtape", c?.kind ?? "Single"])].map((k) => el("option", { value: k, textContent: k })));
-    plugin.value = c?.plugin?.id ?? "";
     kind.value = c?.kind ?? "Single";
     const submit = el("button", { className: "act", type: "submit", textContent: c ? "Enregistrer" : "Ajouter le crédit" });
     const form = el("form", {},
-      el("label", {}, "Lien Spotify du titre", link), el("label", {}, "Artiste", artist),
-      el("label", {}, "Titre", title), el("label", {}, "Plugin utilisé", plugin),
+      el("label", {}, "Lien Spotify (titre ou album)", link), el("label", {}, "Artiste", artist),
+      el("label", {}, "Titre ou nom de l'album", title), el("label", {}, "Ingé (fondateur ONIRIQUE)", engineer),
+      el("label", { style: "grid-column:1/-1" }, "Plugins utilisés", plugins),
       el("label", {}, "Utilisé sur", usedOn), el("label", {}, "Date de sortie", released),
       el("label", {}, "Durée", duration), el("label", {}, "Format", kind),
       el("div", { className: "row" }, submit));
@@ -585,7 +809,8 @@ async function loadCredits() {
       submit.disabled = true;
       try {
         await api(c ? "PATCH" : "POST", c ? "/admin/credits/" + c.id : "/admin/credits", { spotifyUrl: link.value.trim(), artist: artist.value.trim(), title: title.value.trim(),
-          productId: plugin.value ? Number(plugin.value) : null, usedOn: usedOn.value.trim(), released: released.value.trim(),
+          productIds: boxes.filter((b) => b.box.checked).map((b) => b.id), engineerId: engineer.value ? Number(engineer.value) : null,
+          usedOn: usedOn.value.trim(), released: released.value.trim(),
           duration: duration.value.trim(), kind: kind.value });
         if (!c) $("new-credit").open = false;
         await loadCredits();
@@ -610,9 +835,10 @@ async function loadCredits() {
     row.append(
       el("td", {}, c.cover ? el("img", { className: "thumb", src: c.cover, alt: "Pochette de " + c.title }) : null,
         el("strong", { textContent: c.title }), el("span", { className: "sub", textContent: " · " + c.artist })),
-      el("td", {}, c.plugin ? c.plugin.name : "—", c.usedOn ? el("div", { className: "sub", textContent: c.usedOn }) : null),
+      el("td", {}, c.plugins?.length ? c.plugins.map((p) => p.name).join(", ") : "—",
+        el("div", { className: "sub", textContent: [c.usedOn, c.engineer ? "Ingé : " + c.engineer.name : "", c.popularity !== null ? "Popularité " + c.popularity + "/100" : ""].filter(Boolean).join(" · ") })),
       el("td", { className: "sub", textContent: c.released || "—" }),
-      el("td", { className: "actions" }, el("a", { className: "act", href: "https://open.spotify.com/track/" + c.spotifyId, target: "_blank", rel: "noopener", textContent: "Spotify ↗" }), edit, remove));
+      el("td", { className: "actions" }, el("a", { className: "act", href: spotifyLink(c), target: "_blank", rel: "noopener", textContent: "Spotify ↗" }), edit, remove));
     return row;
   }) : [el("tr", {}, el("td", { colSpan: 4, className: "sub", textContent: "Aucun crédit : la page d'accueil affiche le titre d'exemple." }))]));
 }
@@ -941,6 +1167,38 @@ async function loadMailings(first = false) {
   if (info.mailings.some((m) => m.status === "sending")) mailPoll = setTimeout(() => loadMailings().catch(() => {}), 5000);
 }
 
+//------------------------------------------------------------------------------ Rubriques
+// Une barre d'onglets : la rubrique choisie est gardée dans l'adresse (#boutique…) et sur l'appareil.
+const TAB_SLUGS = { "tab-db": "base", "tab-shop": "boutique", "tab-promo": "promos", "tab-mail": "mail", "tab-site": "site" };
+function markTab(id, badge) {
+  const button = document.querySelector(`#tabs [aria-controls="${id}"]`);
+  if (!button) return;
+  button.querySelector("b")?.remove();
+  if (badge) button.append(el("b", { textContent: badge }));
+}
+function setupTabs() {
+  const tabs = [...document.querySelectorAll("section.tab")].filter((t) => !t.hidden);
+  const show = (id, remember = true) => {
+    tabs.forEach((t) => { t.hidden = t.id !== id; });
+    document.querySelectorAll("#tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.getAttribute("aria-controls") === id)));
+    if (remember) {
+      history.replaceState(null, "", "#" + TAB_SLUGS[id]);
+      try { localStorage.setItem("onirique.admin.tab", id); } catch {}
+    }
+  };
+  $("tabs").replaceChildren(...tabs.map((t) => {
+    const b = el("button", { type: "button", role: "tab", textContent: t.dataset.label });
+    b.setAttribute("aria-controls", t.id);
+    b.onclick = () => { show(t.id); scrollTo({ top: $("tabs").offsetTop - 4, behavior: "smooth" }); };
+    return b;
+  }));
+  let saved = null;
+  try { saved = localStorage.getItem("onirique.admin.tab"); } catch {}
+  const fromHash = Object.keys(TAB_SLUGS).find((id) => "#" + TAB_SLUGS[id] === location.hash);
+  const first = [fromHash, saved].find((id) => id && tabs.some((t) => t.id === id)) || tabs[0].id;
+  show(first, false);
+}
+
 let timer;
 $("search").oninput = () => { clearTimeout(timer); timer = setTimeout(() => loadUsers().catch((e) => { $("error").textContent = e.message; }), 250); };
 
@@ -951,7 +1209,8 @@ $("search").oninput = () => { clearTimeout(timer); timer = setTimeout(() => load
     if (!isStaff(me) && !isPartner(me)) return gate("Cette page est réservée aux administrateurs.", "Retour au compte");
     if (!isStaff(me)) {
       // Partenaire : ses plugins seulement. Les licences de ses plugins se gèrent dans l'application, Panel admin.
-      $("staff-accounts").hidden = $("staff-credits").hidden = $("staff-mail").hidden = true;
+      document.querySelectorAll("[data-staff]").forEach((node) => { node.hidden = true; });
+      setupTabs();
       await loadProducts();
       await loadPromos();
       $("gate").hidden = true;
@@ -961,9 +1220,12 @@ $("search").oninput = () => { clearTimeout(timer); timer = setTimeout(() => load
     const o = await api("GET", "/admin/overview");
     $("tiles").replaceChildren(...[["Comptes", o.users], ["Licences actives", o.licenses], ["Clés en attente", o.unclaimed], ["Abonnés", o.subscribers], ["Machines activées", o.activations], ["Demandes de support", o.supportMessages]]
       .map(([label, value]) => el("div", { className: "tile" }, el("b", { textContent: String(value) }), el("span", { textContent: label }))));
+    setupTabs();
     await loadUsers();
     await loadSupport();
     await loadPlans();
+    await loadPacks();
+    await loadLive();
     await loadProducts();
     await loadPromos();
     await loadMailbox();

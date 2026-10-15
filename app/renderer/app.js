@@ -117,6 +117,11 @@ function sidebar() {
         },
       }, h('span', { class: `led${me.user.selfLicenses ? ' on' : ''}` }), me.user.selfLicenses ? 'Mes licences : activées' : 'Mes licences : désactivées')] : null,
     h('div', { class: 'spacer' }),
+    // Le site ONIRIQUE, juste au-dessus du compte.
+    h('button', { class: 'site-link', title: 'Ouvrir onirique.store dans le navigateur', onclick: () => call('open:site', '') },
+      h('img', { src: 'assets/sigil.png', alt: '' }),
+      h('span', null, h('b', null, 'Le site ONIRIQUE'), h('small', null, 'onirique.store')),
+      h('i', { 'aria-hidden': 'true' }, '↗')),
     h('button', { class: 'user-chip', onclick: () => go('account') },
       avatar(me.user),
       h('div', { class: 'who' },
@@ -152,12 +157,30 @@ function verifyBanner() {
         button('C\'est fait', refresh, 'small quiet'))));
 }
 
+/** Tant que l'adresse e-mail n'est pas validée, l'application est fermée : installations, essais et licences attendent le lien. */
+function verifyGate() {
+  const { user } = state.data.me;
+  return h('div', { class: 'auth-box verify-gate' },
+    h('img', { class: 'hero', src: 'assets/sigil.png', alt: '' }),
+    h('div', { class: 'wordmark' }, h('b', null, 'ONIRIQUE'), h('i', null, 'Central')),
+    h('div', { class: 'panel stack', style: { 'text-align': 'left' } },
+      eyebrow('Une dernière étape'),
+      h('h2', { style: { margin: 0 } }, 'Validez votre adresse e-mail'),
+      h('p', { class: 'muted', style: { margin: 0 } },
+        `Un lien a été envoyé à ${user.email}. Ouvrez-le pour activer votre compte : ONIRIQUE CENTRAL s'ouvre ensuite, avec l'installation des plugins, les essais gratuits et vos licences. Pensez à regarder dans les indésirables.`),
+      h('div', { class: 'row wrap' },
+        button('J\'ai validé mon adresse', refresh, 'primary'),
+        button('Renvoyer le lien', () => attempt(() => call('api', 'POST', '/api/auth/verify/resend'), 'Lien renvoyé. Il est valable 48 heures.'), 'quiet')),
+      h('button', { class: 'btn small quiet', type: 'button', onclick: async () => { await call('auth:logout'); await refresh(); } }, 'Utiliser un autre compte')));
+}
+
 export function render() {
   const root = document.getElementById('app');
   let content;
   if (state.offline) content = h('div', { class: 'auth' }, offlineView());
   else if (!state.data) content = h('div', { class: 'auth' }, h('div', { class: 'muted mono' }, 'Connexion au serveur…'));
   else if (!state.data.me) content = h('div', { class: 'auth' }, authView());
+  else if (state.data.me.user.emailVerified === false) content = h('div', { class: 'auth' }, verifyGate());
   else {
     if (!allowed(state.route.name, state.data.me.user)) state.route = { name: 'plugins', id: null };
     content = h('div', { class: 'shell' }, sidebar(),

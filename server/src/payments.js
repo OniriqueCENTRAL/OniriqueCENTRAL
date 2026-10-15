@@ -66,6 +66,34 @@ export function grantProduct(userId, product, provider, providerRef = null, amou
   });
 }
 
+/**
+ * Un pack payé : une licence définitive par plugin du pack, réunies sous la référence de la commande (bundle), ce qui
+ * permet de toutes les révoquer si la commande est remboursée.
+ */
+export function grantPack(userId, pack, provider, providerRef = null, amount = pack.price_cents) {
+  const ref = providerRef || `${provider}_${crypto.randomBytes(8).toString('hex')}`;
+  return transaction(() => {
+    if (!recordOrder(userId, 'pack', pack.id, amount, provider, ref)) return false;
+    for (const productId of parseProductIds(pack.product_ids) || []) {
+      if (get('SELECT id FROM products WHERE id = ?', productId)) {
+        createLicense({ productId, userId, source: provider, note: `Pack ${pack.name}`, bundle: `pack:${ref}` });
+      }
+    }
+    return true;
+  });
+}
+
+function revokePack(userId, providerRef) {
+  transaction(() => {
+    const licences = get(`SELECT GROUP_CONCAT(product_id) AS ids FROM licenses WHERE user_id = ? AND bundle = ? AND status = 'active'`, userId, `pack:${providerRef}`);
+    run(`UPDATE licenses SET status = 'revoked' WHERE user_id = ? AND bundle = ?`, userId, `pack:${providerRef}`);
+    for (const productId of String(licences?.ids || '').split(',').filter(Boolean).map(Number)) {
+      const still = get(`SELECT id FROM licenses WHERE user_id = ? AND product_id = ? AND status = 'active' AND (expires_at IS NULL OR expires_at > ?)`, userId, productId, now());
+      if (!still) run('DELETE FROM activations WHERE user_id = ? AND product_id = ?', userId, productId);
+    }
+  });
+}
+
 /** productIds : les plugins couverts par un abonnement à la carte ; null pour un abonnement à tout le catalogue. */
 export function setSubscription(userId, planId, { status, periodEnd, cancelAtPeriodEnd = 0, stripeId = null, productIds = null }) {
   run(`INSERT INTO subscriptions (user_id, plan_id, status, current_period_end, cancel_at_period_end, stripe_subscription, product_ids, updated_at)
@@ -228,7 +256,7 @@ const discountMeta = (item) => (item.discount ? {
 const discountFrom = (meta = {}) => ({ promoId: Number(meta.promo_id) || null, welcome: meta.welcome === '1', discountCents: Number(meta.discount_cents) || 0 });
 
 async function stripeCheckout(user, kind, item) {
-  const creator = kind === 'plan' ? 'onirique' : item.creator;
+  const creator = kind === 'plan' || kind === 'pack' ? 'onirique' : item.creator;
   const account = stripeAccount(creator);
   // Compte en mode essai : rien n'est encaissé, donc seuls l'équipe et le partenaire concerné peuvent commander, pour essayer.
   if (!account || (account.test && !isStaff(user) && user.role !== creator)) {
@@ -292,7 +320,14 @@ export async function handleStripeEvent(event, account) {
     const userId = Number(object.metadata?.user_id);
     if (!userId) return;
     if (object.customer && platform) run('UPDATE users SET stripe_customer = ? WHERE id = ?', object.customer, userId);
-    if (object.mode === 'payment' && object.payment_status === 'paid') {
+    if (object.mode === 'payment' && object.payment_status === 'paid' && object.metadata?.kind === 'pack' && platform) {
+      const pack = get('SELECT * FROM packs WHERE id = ?', Number(object.metadata.ref_id));
+      const paid = object.amount_total ?? pack?.price_cents ?? 0;
+      if (pack && grantPack(userId, pack, 'stripe', object.id, paid)) {
+        rewardSponsor(userId);
+        confirmOrder(userId, `Pack ${pack.name} — licences définitives`, paid, '', stripeProvider(account), object.currency || 'eur');
+      }
+    } else if (object.mode === 'payment' && object.payment_status === 'paid') {
       const product = get('SELECT * FROM products WHERE id = ? AND creator = ?', Number(object.metadata.ref_id), account.creator);
       const paid = object.amount_total ?? product?.price_cents ?? 0;
       if (product && grantProduct(userId, product, 'stripe', object.id, paid)) {
@@ -315,6 +350,7 @@ export async function handleStripeEvent(event, account) {
     if (!gone || !object.payment_intent) return;
     const session = (await stripe('GET', `/checkout/sessions?payment_intent=${encodeURIComponent(object.payment_intent)}&limit=1`, undefined, account.key)).data?.[0];
     const userId = Number(session?.metadata?.user_id), productId = Number(session?.metadata?.ref_id);
+    if (session?.metadata?.kind === 'pack' && userId && platform && get('SELECT id FROM orders WHERE provider_ref = ?', session.id)) return revokePack(userId, session.id);
     if (session?.mode === 'payment' && userId && productId && get('SELECT id FROM orders WHERE provider_ref = ?', session.id)
         && get('SELECT id FROM products WHERE id = ? AND creator = ?', productId, account.creator)) revokePurchase(userId, productId, 'stripe');
   } else if (event.type.startsWith('customer.subscription.') && platform) {
@@ -379,7 +415,14 @@ export function handleLemonEvent(event) {
 
   if (name === 'order_created') {
     if (attributes.status !== 'paid') return;
-    if (custom.kind === 'product') {
+    if (custom.kind === 'pack') {
+      const pack = get('SELECT * FROM packs WHERE id = ?', refId);
+      const paid = attributes.total ?? pack?.price_cents ?? 0;
+      if (pack && grantPack(userId, pack, 'lemon', orderRef, paid)) {
+        rewardSponsor(userId);
+        confirmOrder(userId, `Pack ${pack.name} — licences définitives`, paid, '', 'lemon');
+      }
+    } else if (custom.kind === 'product') {
       const product = get('SELECT * FROM products WHERE id = ?', refId);
       const paid = attributes.total ?? product?.price_cents ?? 0;
       if (product && grantProduct(userId, product, 'lemon', orderRef, paid)) {
@@ -397,6 +440,7 @@ export function handleLemonEvent(event) {
     }
   } else if (name === 'order_refunded') {
     // Remboursement complet d'un achat : la licence qu'il avait créée est révoquée, et ses machines libérées.
+    if (custom.kind === 'pack' && attributes.status === 'refunded' && get('SELECT id FROM orders WHERE provider_ref = ?', orderRef)) return revokePack(userId, orderRef);
     if (custom.kind !== 'product' || attributes.status !== 'refunded' || !get('SELECT id FROM orders WHERE provider_ref = ?', orderRef)) return;
     revokePurchase(userId, refId, 'lemon');
   } else if (name.startsWith('subscription_') && !name.startsWith('subscription_payment')) {
@@ -424,6 +468,10 @@ export async function checkout(user, kind, item) {
   }
   const mode = paymentsMode();
   if (mode === 'demo') {
+    if (kind === 'pack') {
+      if (grantPack(user.id, get('SELECT * FROM packs WHERE id = ?', item.id), 'demo', null, item.price_cents)) rewardSponsor(user.id);
+      return { mode: 'demo', granted: true };
+    }
     if (kind === 'product' && grantProduct(user.id, item, 'demo', null, item.price_cents)) afterPurchase(user.id, item.id, item.discount ?? {});
     else setSubscription(user.id, item.id, { status: 'active', periodEnd: now() + PERIOD_MS[item.interval], productIds: item.productIds ?? null });
     return { mode: 'demo', granted: true };

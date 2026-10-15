@@ -1,4 +1,4 @@
-<script src="assets/i18n.js?v=e7481d7e"></script>
+<script src="assets/i18n.js?v=11b20aaa"></script>
 <title>ONIRIQUE</title>
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="apple-touch-icon" href="assets/favicon.png">
@@ -297,6 +297,13 @@ input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border: 0; bord
 .plugin-used b { display: block; font: 700 13px/1.2 var(--f-body); letter-spacing: .06em; }
 .plugin-used small { display: block; font: 400 12px/1.2 var(--f-mono); color: var(--haze); }
 .credit-player { display: grid; gap: 10px; min-width: 0; }
+.plugins-used { display: flex; flex-wrap: wrap; gap: 8px; }
+.credit-engineer { display: flex; align-items: center; gap: 8px; margin: 0; font: 500 12px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
+.credit-engineer a, .credit-engineer span { display: inline-flex; align-items: center; gap: 8px; color: var(--mist); text-decoration: none; text-transform: none; letter-spacing: 0; font: 600 15px/1 var(--f-body); }
+.credit-engineer a:hover b { text-decoration: underline; text-underline-offset: 3px; }
+.credit-engineer img { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); }
+.credit-engineer svg { width: 15px; height: 15px; color: var(--haze); }
+.embed.album iframe { height: 352px; }
 .embed { position: relative; border-radius: 12px; overflow: hidden; background: rgba(11,6,7,.6); }
 .embed-load { all: unset; box-sizing: border-box; cursor: pointer; width: 100%; min-height: 152px; display: grid; place-content: center; gap: 8px; text-align: center; padding: 16px; font: 600 15px/1.3 var(--f-body); color: var(--mist); }
 .embed-load:hover { background: rgba(226,52,68,.1); }
@@ -1760,11 +1767,12 @@ $("#creditList").innerHTML = list.map(c => `
         ${c.duration ? `<div><dt>Durée</dt><dd>${esc(c.duration)}</dd></div>` : ""}
         <div><dt>Format</dt><dd>${esc(c.kind)}</dd></div>
       </dl>
-      <a class="plugin-used" href="${c.plugin ? "boutique.html?p=" + encodeURIComponent(c.plugin.slug) : "#vocalbox"}"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145"><span><b>${esc(c.plugin ? c.plugin.name : "Onirique VocalBox")}</b>${c.usedOn ? `<small>Utilisé sur : ${esc(c.usedOn)}</small>` : ""}</span></a>
+      <div class="plugins-used">${(c.plugins && c.plugins.length ? c.plugins : c.plugin ? [c.plugin] : [{ name: "Onirique VocalBox" }]).map((p, i) => `<a class="plugin-used" href="${p.slug ? "boutique.html?p=" + encodeURIComponent(p.slug) : "#vocalbox"}"><img src="assets/logo-small.png" alt="" width="160" height="145"><span><b>${esc(p.name)}</b>${i === 0 && c.usedOn ? `<small>Utilisé sur : ${esc(c.usedOn)}</small>` : ""}</span></a>`).join("")}</div>
+      ${c.engineer ? `<p class="credit-engineer">Mix par ${c.engineer.instagram ? `<a href="${esc(c.engineer.instagram)}" target="_blank" rel="noopener">${c.engineer.avatar ? `<img src="${esc(c.engineer.avatar)}" alt="" width="26" height="26" loading="lazy">` : ""}<b>${esc(c.engineer.name)}</b><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17.4" cy="6.6" r="1.2" fill="currentColor"/></svg></a>` : `<span>${c.engineer.avatar ? `<img src="${esc(c.engineer.avatar)}" alt="" width="26" height="26" loading="lazy">` : ""}<b>${esc(c.engineer.name)}</b></span>`}</p>` : ""}
     </div>
     <div class="credit-player">
-      <div class="embed"><button type="button" class="embed-load" data-spotify="${esc(c.spotifyId)}" data-title="${esc(c.title)}">Charger le lecteur Spotify<small>Spotify déposera alors ses propres cookies. <a href="cookies.html">En savoir plus</a></small></button></div>
-      <a class="open-link" href="https://open.spotify.com/track/${esc(c.spotifyId)}" target="_blank" rel="noopener">Écouter en entier sur Spotify ↗</a>
+      <div class="embed${c.spotifyType === "album" ? " album" : ""}"><button type="button" class="embed-load" data-spotify="${esc(c.spotifyId)}" data-type="${c.spotifyType === "album" ? "album" : "track"}" data-title="${esc(c.title)}">Charger le lecteur Spotify<small>Spotify déposera alors ses propres cookies. <a href="cookies.html">En savoir plus</a></small></button></div>
+      <a class="open-link" href="https://open.spotify.com/${c.spotifyType === "album" ? "album" : "track"}/${esc(c.spotifyId)}" target="_blank" rel="noopener">${c.spotifyType === "album" ? "Écouter l'album sur Spotify ↗" : "Écouter en entier sur Spotify ↗"}</a>
     </div>
   </article>`).join("");
 
@@ -1773,7 +1781,7 @@ $$(".embed-load").forEach(button => button.addEventListener("click", event => {
   if (event.target.closest("a")) return;
   const frame = document.createElement("iframe");
   frame.title = "Extrait de " + button.dataset.title + " sur Spotify";
-  frame.src = "https://open.spotify.com/embed/track/" + encodeURIComponent(button.dataset.spotify) + "?theme=0";
+  frame.src = "https://open.spotify.com/embed/" + (button.dataset.type === "album" ? "album" : "track") + "/" + encodeURIComponent(button.dataset.spotify) + "?theme=0";
   frame.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
   button.replaceWith(frame);
 }));
@@ -1970,5 +1978,5 @@ $$("[data-buy]").forEach(a => {
 </script>
 <script src="assets/tools-menu.js"></script>
 <script src="assets/account.js?v=4"></script>
-<script src="assets/site-nav.js?v=6"></script>
+<script src="assets/site-nav.js?v=7"></script>
 <script src="assets/catalog-watch.js"></script>

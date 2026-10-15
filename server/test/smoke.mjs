@@ -7,6 +7,8 @@ import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 
+process.env.TRIALS_PER_IP = '1000';
+const machine = (seed) => crypto.createHash('sha256').update('test:' + String(seed)).digest('hex').slice(0, 40); // un ordinateur par compte
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'onirique-central-test-'));
 Object.assign(process.env, { DATA_DIR: dataDir, PAYMENTS_MODE: 'demo', PORT: '0', ADMIN_EMAIL: '', ADMIN_PASSWORD: '',
   SMTP_HOST: 'test', MAIL_FROM: 'support@test.local', SITE_URL: 'https://site.test' }); // SMTP "test" : les e-mails restent dans outbox
@@ -269,7 +271,7 @@ try {
   await step('essai gratuit : 7 jours, un seul par compte et par plugin, visible comme type "trial"', async () => {
     const tester = await register({ email: 'essai@test.local', password: 'motdepasse7' });
     const before = Date.now();
-    const started = await call('POST', '/api/licenses/trial', { token: tester, body: { productId: product.id }, expect: 201 });
+    const started = await call('POST', '/api/licenses/trial', { token: tester, body: { productId: product.id, machineId: machine(tester) }, expect: 201 });
     assert.ok(started.expiresAt > before + 6 * 86400_000 && started.expiresAt < before + 8 * 86400_000, 'expire dans ~7 jours');
 
     const me = await call('GET', '/api/me', { token: tester });
@@ -279,7 +281,7 @@ try {
     const { license } = await call('POST', '/api/licenses/activate', { token: tester, body: { productId: product.id, machineId: machineA } });
     assert.equal(JSON.parse(Buffer.from(license.payload, 'base64')).type, 'trial');
 
-    await call('POST', '/api/licenses/trial', { token: tester, body: { productId: product.id }, expect: 409 }); // pas deux fois
+    await call('POST', '/api/licenses/trial', { token: tester, body: { productId: product.id, machineId: machine(tester) }, expect: 409 }); // pas deux fois
 
     // Remise à zéro par un admin : l'essai disparaît et peut être relancé.
     const account = (await call('GET', '/api/admin/users?q=essai@test.local', { token: admin }))[0];
@@ -287,7 +289,7 @@ try {
     await call('POST', `/api/admin/users/${account.id}/reset-trials`, { token: tester, expect: 403 });
     assert.equal((await call('POST', `/api/admin/users/${account.id}/reset-trials`, { token: admin })).removed, 1);
     assert.deepEqual((await call('GET', '/api/me', { token: tester })).trialsUsed, []);
-    await call('POST', '/api/licenses/trial', { token: tester, body: { productId: product.id }, expect: 201 });
+    await call('POST', '/api/licenses/trial', { token: tester, body: { productId: product.id, machineId: machine(tester) }, expect: 201 });
   });
 
   await step('paiement Stripe (événements simulés) : licence définitive, e-mail de confirmation, rien en double', async () => {
@@ -433,7 +435,8 @@ try {
     assert.deepEqual(found, { type: 'artist', name: 'Voix Test', artist: null, image: null, url: 'https://open.spotify.com/artist/4tZwfgrHOc3mvqYlEYSvVi',
       popularity: 41, followers: 1234, tracks: [{ name: 'Titre', popularity: 100, url: 'https://open.spotify.com/track/abc' }, { name: 'Piège', popularity: 3, url: null }] });
     await call('GET', '/api/popularity?q=voix%20test');
-    assert.deepEqual(popularityCalls, ['Voix Test'], 'la même recherche ne repart pas à la source');
+    // Les crédits relisent aussi leur score (liens Spotify) : seules les recherches de la page comptent ici.
+    assert.deepEqual(popularityCalls.filter((q) => !q.startsWith('https://open.spotify.com/')), ['Voix Test'], 'la même recherche ne repart pas à la source');
     await call('GET', '/api/popularity?q=', { expect: 400 });
     assert.match((await call('GET', '/api/popularity?q=inconnu', { expect: 404 })).error, /introuvable/);
     await call('GET', '/api/popularity?q=panne', { expect: 502 });

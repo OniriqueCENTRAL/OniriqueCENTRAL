@@ -120,6 +120,19 @@ body {
   background: var(--ember); color: #fff; font-size: 10px; letter-spacing: 0;
 }
 .sidebar .spacer { flex: 1; }
+/* Le lien vers le site, au-dessus du compte */
+.site-link {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 9px 12px; border-radius: 14px;
+  border: 1px solid var(--line); background: linear-gradient(120deg, rgba(140, 6, 20, 0.28), rgba(0, 0, 0, 0.1));
+  color: inherit; font: inherit; text-align: left; cursor: pointer; transition: border-color .2s, background .2s;
+}
+.site-link:hover { border-color: rgba(226, 52, 68, 0.6); background: linear-gradient(120deg, rgba(140, 6, 20, 0.45), rgba(0, 0, 0, 0.1)); }
+.site-link img { flex: none; width: 30px; filter: drop-shadow(0 0 5px var(--ember)); }
+.site-link span { display: grid; gap: 3px; min-width: 0; }
+.site-link b { font: 800 10.5px var(--display); letter-spacing: 0.12em; }
+.site-link small { font: 500 10px var(--mono); letter-spacing: 0.08em; color: var(--haze); }
+.site-link i { margin-left: auto; font-style: normal; color: var(--haze); }
+.verify-gate .panel { margin-top: 6px; }
 .user-chip {
   display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px;
   background: var(--well); border: 1px solid var(--line); cursor: pointer; text-align: left; color: inherit; font: inherit;

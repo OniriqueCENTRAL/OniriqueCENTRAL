@@ -5,6 +5,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
+process.env.TRIALS_PER_IP = '1000';
+const machineFor = (seed) => crypto.createHash('sha256').update('test:' + String(seed)).digest('hex').slice(0, 40); // un ordinateur par compte
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'onirique-central-roles-'));
 Object.assign(process.env, { DATA_DIR: dataDir, PAYMENTS_MODE: 'demo', PORT: '0', ADMIN_EMAIL: '', ADMIN_PASSWORD: '',
   SMTP_HOST: 'test', MAIL_FROM: 'support@test.local', SITE_URL: 'https://site.test', FOUNDER_EMAILS: 'Boss@Test.local' });
@@ -150,7 +152,7 @@ try {
   });
 
   await step('VIP avec un essai en cours : le plugin est offert, pas en mode démo ; un plugin acheté reste une licence', async () => {
-    await call('POST', '/api/licenses/trial', { token: vip.token, body: { productId: tuner.id }, expect: 201 });
+    await call('POST', '/api/licenses/trial', { token: vip.token, body: { productId: tuner.id, machineId: machineFor(vip.token) }, expect: 201 });
     assert.equal((await call('GET', '/api/me', { token: vip.token })).entitlements[tuner.id].type, 'trial');
     await call('PATCH', `/api/admin/users/${vip.id}`, { token: admin.token, body: { role: 'vip' } });
     const [key] = await call('POST', '/api/admin/licenses', { token: admin.token, body: { productId: raw.id }, expect: 201 });
@@ -272,7 +274,7 @@ try {
   });
 
   await step('partenaire : il ne gère que les licences de ses plugins', async () => {
-    const [tunerKey] = await call('POST', '/api/admin/licenses', { token: admin.token, body: { productId: tuner.id }, expect: 201 });
+    const [tunerKey] = await call('POST', '/api/admin/licenses', { token: admin.token, body: { productId: tuner.id, machineId: machineFor(vip.token) }, expect: 201 });
     await call('POST', '/api/admin/licenses', { token: partner.token, body: { productId: tuner.id }, expect: 404 });
     const [rawKey] = await call('POST', '/api/admin/licenses', { token: partner.token, body: { productId: raw.id, note: 'partenaire' }, expect: 201 });
 

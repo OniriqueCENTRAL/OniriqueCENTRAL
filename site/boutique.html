@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=e7481d7e"></script>
+<script src="assets/i18n.js?v=11b20aaa"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Boutique — ONIRIQUE</title>
 <meta name="description" content="Les plugins audio Onirique : essaie l'interface de chaque plugin dans ton navigateur, puis installe-le avec Onirique Central.">
@@ -95,6 +95,14 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 .plan strong { font: 800 14px/1.3 var(--f-display); letter-spacing: .08em; text-transform: uppercase; }
 .plan .price { font-size: 38px; margin-top: 10px; }
 .plan .buy { margin-top: 16px; }
+.plan p { margin: 8px 0 0; color: var(--haze); font-size: 14px; line-height: 1.55; }
+.plan ul { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.plan li { padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); font: 500 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--mist); }
+.plan .was { font: 500 14px/1 var(--f-mono); color: var(--haze); text-decoration: line-through; }
+.plan .save { justify-self: start; padding: 5px 10px; border-radius: 999px; background: rgba(226,52,68,.18); border: 1px solid rgba(226,52,68,.6); font: 600 11px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--bone); }
+.packs { margin-top: 64px; padding-top: 44px; border-top: 1px solid var(--line); }
+.packs h2 { margin: 12px 0 8px; font: 800 clamp(22px, 4vw, 30px)/1.15 var(--f-display); }
+.packs h2 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
 .pick-list { display: grid; gap: 10px; margin-top: 22px; }
 .pick-item { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 16px; background: linear-gradient(180deg, var(--deep-2), var(--deep)); cursor: pointer; transition: border-color .2s; }
 .pick-item:hover { border-color: rgba(226,52,68,.6); }
@@ -159,6 +167,15 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
       <div class="plan-list" id="plan-list"></div>
       <p class="note" id="plan-note" role="status"></p>
       <p class="note"><a href="cgv.html">Conditions de vente</a> · <a href="remboursement.html">Rétractation</a></p>
+    </div>
+
+    <!-- Packs : plusieurs plugins en un seul achat (ils se règlent depuis la page admin) -->
+    <div class="packs" id="packs" hidden>
+      <p class="eyebrow">Packs</p>
+      <h2>Plusieurs plugins, <em>un seul prix</em></h2>
+      <p class="lede">Un paiement unique, une licence définitive pour chaque plugin du pack, avec ses mises à jour.</p>
+      <div class="plan-list" id="pack-list"></div>
+      <p class="note" id="pack-note" role="status"></p>
     </div>
 
     <!-- Abonnement à la carte -->
@@ -230,7 +247,7 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 <script src="assets/demo-player.js?v=4"></script>
 <script src="assets/tools-menu.js"></script>
 <script src="assets/account.js?v=4"></script>
-<script src="assets/site-nav.js?v=6"></script>
+<script src="assets/site-nav.js?v=7"></script>
 <script src="assets/catalog-watch.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
@@ -347,7 +364,7 @@ async function subscribe(catalog, body, note, button) {
     if (response.status === 401) { location.href = "compte.html"; return; }
     if (!response.ok) throw new Error(data.error || "Abonnement impossible.");
     if (data.url) location.href = data.url;
-    else note.textContent = "C'est ajouté à ton compte. Installe tes plugins depuis Onirique Central.";
+    else note.textContent = body.kind === "pack" ? "Les licences du pack sont sur ton compte. Installe tes plugins depuis Onirique Central." : "C'est ajouté à ton compte. Installe tes plugins depuis Onirique Central.";
   } catch (error) {
     note.textContent = error.message;
   }
@@ -360,11 +377,35 @@ function setupPlans(catalog) {
   $("plan-list").replaceChildren(...catalog.plans.map((plan) => {
     const button = el("button", { className: "buy", type: "button", textContent: "S'abonner" });
     button.onclick = () => subscribe(catalog, { kind: "plan", id: plan.id }, $("plan-note"), button);
+    const names = (plan.productIds || []).map((id) => catalog.products.find((p) => p.id === id)?.name).filter(Boolean);
     return el("div", { className: "plan" }, el("strong", { textContent: plan.name }),
       el("div", { className: "price", textContent: euros(plan.priceCents) }),
-      el("span", { className: "note", style: "margin:0", textContent: plan.interval === "year" ? "TTC, par an" : "TTC, par mois" }), button);
+      el("span", { className: "note", style: "margin:0", textContent: plan.interval === "year" ? "TTC, par an" : "TTC, par mois" }),
+      plan.description ? el("p", { textContent: plan.description }) : null,
+      names.length ? el("ul", {}, ...names.map((n) => el("li", { textContent: n.replace(/^ONIRIQUE\s+/i, "") }))) : null,
+      button);
   }));
   $("plans").hidden = false;
+}
+
+// Packs : un achat unique, une licence définitive par plugin du pack.
+function setupPacks(catalog) {
+  const packs = (catalog.packs || []).filter((pack) => pack.productIds.every((id) => catalog.products.some((p) => p.id === id)));
+  if (!packs.length) return;
+  $("pack-list").replaceChildren(...packs.map((pack) => {
+    const items = pack.productIds.map((id) => catalog.products.find((p) => p.id === id));
+    const full = items.reduce((sum, p) => sum + p.priceCents, 0);
+    const button = el("button", { className: "buy", type: "button", textContent: "Acheter le pack" });
+    button.onclick = () => subscribe(catalog, { kind: "pack", id: pack.id }, $("pack-note"), button);
+    return el("div", { className: "plan" }, el("strong", { textContent: pack.name }),
+      el("div", { className: "price", textContent: euros(pack.priceCents) }),
+      full > pack.priceCents ? el("span", { className: "was", textContent: euros(full) }) : null,
+      full > pack.priceCents ? el("span", { className: "save", textContent: "-" + Math.round((1 - pack.priceCents / full) * 100) + " %" }) : null,
+      pack.description ? el("p", { textContent: pack.description }) : null,
+      el("ul", {}, ...items.map((p) => el("li", { textContent: p.name.replace(/^ONIRIQUE\s+/i, "") }))),
+      el("span", { className: "note", style: "margin:8px 0 0", textContent: "TTC, paiement unique" }), button);
+  }));
+  $("packs").hidden = false;
 }
 
 // Abonnement à la carte : on coche les plugins voulus, le prix suit. Le premier plugin a son prix, chaque
@@ -494,6 +535,7 @@ async function buy(product, catalog) {
     if (catalog.products.length) setupList(catalog.products, catalog.categories);
     else $("grid").replaceChildren(el("p", { className: "lede", textContent: "Aucun plugin en vente pour le moment." }));
     setupPlans(catalog);
+    setupPacks(catalog);
     setupPick(catalog);
     $("list").hidden = false;
     return;

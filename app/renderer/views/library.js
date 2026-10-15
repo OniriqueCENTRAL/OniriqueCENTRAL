@@ -44,7 +44,7 @@ function startTrial(product) {
   confirm(`Essayer ${product.name} gratuitement ?`,
     "Pendant 7 jours, le plugin s'utilise librement en temps réel dans votre DAW. Tout export reste remplacé par un bruit blanc tant que le plugin n'est pas acheté. Un seul essai par plugin.",
     'Démarrer l\'essai', async () => {
-      if (!(await attempt(() => call('api', 'POST', '/api/licenses/trial', { productId: product.id }), `Essai de ${product.name} démarré pour 7 jours. Installez-le : il s'active sur ce PC.`))) return;
+      if (!(await attempt(() => call('api', 'POST', '/api/licenses/trial', { productId: product.id, machineId: state.data.machineId }), `Essai de ${product.name} démarré pour 7 jours. Installez-le : il s'active sur ce PC.`))) return;
       await refresh();
     });
 }
@@ -117,7 +117,7 @@ export function buy(kind, item) {
       [{ label: 'Entrer une clé', run: () => go('licenses') }], 'Boutique');
   }
   // Un abonnement : une formule à tout le catalogue ("plan") ou une sélection de plugins à la carte ("pick").
-  const recurring = kind !== 'product';
+  const recurring = kind === 'plan' || kind === 'pick';
   const price = recurring ? `${euros(item.priceCents)} / ${item.interval === 'year' ? 'an' : 'mois'}` : euros(item.priceCents);
   const text = free ? 'Ce plugin est gratuit : il sera ajouté à votre compte.'
     : mode === 'demo' ? 'Mode démo : aucun paiement n\'est effectué, l\'achat est accordé tout de suite.'

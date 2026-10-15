@@ -88,6 +88,44 @@ header .sn-lang { margin-left: 8px; }
 .sn-langbar strong { font-weight: 700; }
 .sn-langbar .sn-go { padding: 10px 16px; border: 0; border-radius: 999px; background: var(--mist, #f6eeee); color: var(--night, #0d0809); font: 700 14px/1 var(--f-body, system-ui); cursor: pointer; }
 .sn-langbar .sn-x { width: 34px; height: 34px; border: 1px solid var(--line, rgba(255,210,214,.16)); border-radius: 999px; background: none; color: var(--haze, #a88f92); font: 400 18px/1 var(--f-body, system-ui); cursor: pointer; }
+/* Téléchargement d'ONIRIQUE CENTRAL : choix du système */
+.sn-dl { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: 16px; background: rgba(5,2,3,.72); backdrop-filter: blur(6px); }
+.sn-dl-box { position: relative; width: min(560px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; padding: 30px 28px 26px; border-radius: 22px; border: 1px solid rgba(226,52,68,.4); background: radial-gradient(120% 70% at 50% -20%, rgba(140,6,20,.55), transparent 70%), var(--deep, #1a080a); box-shadow: 0 30px 90px -20px #000; color: var(--mist, #f6eeee); }
+.sn-dl-box h2 { margin: 6px 0 14px; font: 800 clamp(22px, 4vw, 28px)/1.15 var(--f-display, "Arial Black", sans-serif); }
+.sn-dl-eyebrow { margin: 0; font: 500 11px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .24em; color: var(--haze, #a88f92); }
+.sn-dl-text, .sn-dl-wait { margin: 0 0 18px; font: 400 15px/1.6 var(--f-body, system-ui); color: var(--haze, #c9b5b8); }
+.sn-dl-note { margin: 18px 0 0; font: 400 13px/1.55 var(--f-body, system-ui); color: var(--haze, #a88f92); }
+.sn-dl-x { position: absolute; right: 14px; top: 14px; width: 36px; height: 36px; border: 1px solid var(--line, rgba(255,210,214,.16)); border-radius: 999px; background: none; color: var(--haze, #a88f92); font: 400 20px/1 var(--f-body, system-ui); cursor: pointer; }
+.sn-dl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.sn-dl-os { display: flex; align-items: center; gap: 14px; padding: 18px; border-radius: 16px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: rgba(255,255,255,.03); color: var(--mist, #f6eeee); text-decoration: none; transition: border-color .2s, background .2s, transform .2s; }
+.sn-dl-os:hover, .sn-dl-os:focus-visible { border-color: var(--ember, #e23444); background: rgba(226,52,68,.12); transform: translateY(-2px); outline: none; }
+.sn-dl-os.best { border-color: rgba(226,52,68,.65); }
+.sn-dl-os svg { flex: none; width: 30px; height: 30px; color: var(--bone, #ffecee); }
+.sn-dl-os span { display: grid; gap: 5px; }
+.sn-dl-os b { font: 800 17px/1 var(--f-display, "Arial Black", sans-serif); letter-spacing: .04em; }
+.sn-dl-os small { font: 400 12px/1.4 var(--f-body, system-ui); color: var(--haze, #a88f92); }
+.sn-dl-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.sn-dl-main, .sn-dl-ghost { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 20px; border-radius: 999px; font: 700 14px/1 var(--f-body, system-ui); text-decoration: none; cursor: pointer; }
+.sn-dl-main { border: 0; background: var(--mist, #f6eeee); color: var(--night, #0d0809); }
+.sn-dl-main:disabled { opacity: .6; cursor: default; }
+.sn-dl-ghost { border: 1px solid var(--line, rgba(255,210,214,.16)); color: var(--mist, #f6eeee); }
+/* Annonce en direct, au-dessus de l'en-tête */
+.sn-announce { position: relative; z-index: 60; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 48px; font: 600 14px/1.4 var(--f-body, system-ui); text-align: center; }
+.sn-announce p { margin: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 16px; }
+.sn-announce span { letter-spacing: .02em; }
+.sn-announce a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+.sn-announce-x { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border: 0; border-radius: 999px; background: rgba(0,0,0,.18); color: inherit; font: 400 20px/1 var(--f-body, system-ui); cursor: pointer; }
+.sn-announce.tone-ember { background: linear-gradient(90deg, #8c0614, #e23444 60%, #8c0614); color: #fff; }
+.sn-announce.tone-gold { background: linear-gradient(90deg, #b8862b, #f2c46d 55%, #b8862b); color: #1a0d02; }
+.sn-announce.tone-calm { background: var(--deep-2, #2a0a0e); color: var(--mist, #f6eeee); border-bottom: 1px solid var(--line, rgba(255,210,214,.16)); }
+/* Maintenance */
+.sn-maint { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 32px 20px; text-align: center; background: radial-gradient(90% 60% at 50% 0%, rgba(140,6,20,.75), rgba(92,0,8,.35) 45%, transparent 80%), var(--night, #0d0809); color: var(--mist, #f6eeee); }
+.sn-maint img { width: 108px; height: auto; filter: drop-shadow(0 0 18px rgba(226,52,68,.8)); }
+.sn-maint-eyebrow { margin: 6px 0 0; font: 500 12px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .3em; color: var(--haze, #a88f92); }
+.sn-maint h1 { margin: 0; font: 800 clamp(34px, 7vw, 64px)/1.05 var(--f-display, "Arial Black", sans-serif); letter-spacing: -.01em; }
+.sn-maint-text { max-width: 46ch; margin: 0; font: 400 17px/1.6 var(--f-body, system-ui); color: var(--haze, #c9b5b8); }
+.sn-maint-link { margin-top: 18px; font: 500 12px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .16em; text-transform: uppercase; color: var(--haze, #a88f92); }
+.sn-maint-flag { position: relative; z-index: 60; padding: 8px 16px; background: #ffb347; color: #1a0d02; font: 700 13px/1.4 var(--f-body, system-ui); text-align: center; }
 .sn-langrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; padding: 0 6px; }
 .sn-langrow span { font: 500 11px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .18em; text-transform: uppercase; color: var(--haze, #a88f92); }
 @media (max-width: 1280px) { .nav .sn-burger { display: inline-flex; } }
@@ -196,8 +234,129 @@ header .sn-lang { margin-left: 8px; }
     }
   } catch { /* stockage fermé : pas de bandeau */ }
 
-  // Nos réseaux : chargés une fois, montrés seulement s'il y en a.
-  fetch("/api/site").then((r) => (r.ok ? r.json() : null)).then((site) => {
+  // L'annonce du moment (réglée en direct dans le panel admin) : un bandeau au-dessus de l'en-tête, qu'on peut fermer.
+  // Un nouveau texte a un nouveau numéro : il réapparaît chez ceux qui avaient fermé le précédent.
+  const showAnnouncement = (a) => {
+    if (!a || document.querySelector(".sn-announce")) return;
+    try { if (localStorage.getItem("onirique.announce.closed") === a.id) return; } catch { /* stockage fermé : on l'affiche */ }
+    const bar = el("div", { className: "sn-announce tone-" + (a.tone || "ember"), role: "region" });
+    bar.setAttribute("aria-label", "Annonce");
+    const body = el("p", {}, el("span", { textContent: a.text }));
+    if (a.link) body.append(el("a", { href: a.link, textContent: (a.linkLabel || "Voir") + " →" }));
+    const close = el("button", { type: "button", className: "sn-announce-x", textContent: "×", title: "Fermer l'annonce" });
+    close.setAttribute("aria-label", "Fermer l'annonce");
+    close.onclick = () => { try { localStorage.setItem("onirique.announce.closed", a.id); } catch {} bar.remove(); };
+    bar.append(body, close);
+    document.body.prepend(bar);
+  };
+
+  // Maintenance : le site public laisse place à une page d'attente. L'équipe connectée continue de voir le site.
+  const showMaintenance = async (m) => {
+    if (!m || /\/(admin|compte)(\.html)?$/.test(location.pathname)) return;
+    const token = (() => { try { return sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"); } catch { return null; } })();
+    if (token) {
+      try {
+        const me = await fetch("/api/me", { headers: { Authorization: "Bearer " + token } }).then((r) => (r.ok ? r.json() : null));
+        if (me && ["admin", "founder"].includes(me.user?.role)) {
+          const flag = el("div", { className: "sn-maint-flag", textContent: "Maintenance active : seuls les comptes de l'équipe voient le site." });
+          document.body.prepend(flag);
+          return;
+        }
+      } catch { /* hors ligne : la page d'attente */ }
+    }
+    const page = el("div", { className: "sn-maint", role: "alert" },
+      el("img", { src: "/assets/logo-small.png", alt: "", width: 120, height: 109 }),
+      el("p", { className: "sn-maint-eyebrow", textContent: "ONIRIQUE" }),
+      el("h1", { textContent: "On revient vite." }),
+      el("p", { className: "sn-maint-text", textContent: m.message || "Le site est en maintenance, le temps d'une petite intervention. Les plugins et ONIRIQUE CENTRAL continuent de fonctionner." }),
+      el("a", { href: "/compte.html", className: "sn-maint-link", textContent: "Espace équipe" }));
+    document.documentElement.classList.add("sn-lock");
+    document.body.append(page);
+  };
+
+  // Télécharger ONIRIQUE CENTRAL : tout lien vers l'installeur ouvre un choix Windows / Mac. Le téléchargement est
+  // réservé aux comptes dont l'adresse e-mail est validée (comme les essais gratuits) : sinon, on explique quoi faire.
+  const FILES = { win: "/telechargement/ONIRIQUE-CENTRAL-Setup.exe", mac: "/telechargement/ONIRIQUE-CENTRAL.dmg" };
+  const tokenNow = () => { try { return sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"); } catch { return null; } };
+  const OS_ICONS = {
+    win: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.6 10.4 4.6v7H3zM11.4 4.4 21 3v8.6h-9.6zM3 12.5h7.4v7L3 18.4zM11.4 12.5H21V21l-9.6-1.4z" fill="currentColor"/></svg>',
+    mac: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.6 12.6c0-2.4 2-3.6 2.1-3.7-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9-.8 0-1.9-.9-3.2-.8-1.6 0-3.1 1-4 2.4-1.7 3-.4 7.4 1.2 9.8.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8 1.5 0 1.9.8 3.2.8 1.3 0 2.1-1.2 2.9-2.4.9-1.4 1.3-2.7 1.3-2.8 0 0-2.4-.9-2.4-3.9zM14.2 5.4c.7-.8 1.1-1.9 1-3-1 0-2.1.7-2.8 1.5-.6.7-1.2 1.8-1 2.9 1.1.1 2.1-.6 2.8-1.4z" fill="currentColor"/></svg>',
+  };
+  async function openDownload(preferred) {
+    document.querySelector(".sn-dl")?.remove();
+    const box = el("div", { className: "sn-dl-box", role: "dialog" });
+    box.setAttribute("aria-modal", "true");
+    box.setAttribute("aria-label", "Télécharger ONIRIQUE CENTRAL");
+    const shade = el("div", { className: "sn-dl" }, box);
+    const close = () => { shade.remove(); document.removeEventListener("keydown", onKey); };
+    const onKey = (event) => { if (event.key === "Escape") close(); };
+    document.addEventListener("keydown", onKey);
+    shade.addEventListener("click", (event) => { if (event.target === shade) close(); });
+    const x = el("button", { type: "button", className: "sn-dl-x", textContent: "×" });
+    x.setAttribute("aria-label", "Fermer");
+    x.onclick = close;
+    box.append(x, el("p", { className: "sn-dl-eyebrow", textContent: "ONIRIQUE CENTRAL" }), el("p", { className: "sn-dl-wait", textContent: "Un instant…" }));
+    document.body.append(shade);
+
+    const token = tokenNow();
+    let me = null;
+    if (token) { try { me = await fetch("/api/me", { headers: { Authorization: "Bearer " + token } }).then((r) => (r.ok ? r.json() : null)); } catch { /* hors ligne */ } }
+    box.querySelector(".sn-dl-wait").remove();
+    const user = me && me.user;
+    if (!user) {
+      box.append(el("h2", { textContent: "Crée ton compte d'abord" }),
+        el("p", { className: "sn-dl-text", textContent: "ONIRIQUE CENTRAL se télécharge avec un compte ONIRIQUE gratuit, dont l'adresse e-mail est validée. C'est ce compte qui active tes plugins et tes essais." }),
+        el("div", { className: "sn-dl-row" },
+          el("a", { className: "sn-dl-main", href: "/compte.html?inscription=1&next=telecharger", textContent: "Créer mon compte" }),
+          el("a", { className: "sn-dl-ghost", href: "/compte.html?next=telecharger", textContent: "J'ai déjà un compte" })));
+      return;
+    }
+    if (user.emailVerified === false) {
+      const send = el("button", { type: "button", className: "sn-dl-main", textContent: "Recevoir le lien de validation" });
+      const said = el("p", { className: "sn-dl-text", role: "status" });
+      send.onclick = async () => {
+        send.disabled = true;
+        try {
+          const r = await fetch("/api/auth/verify/resend", { method: "POST", headers: { Authorization: "Bearer " + token } });
+          if (!r.ok) throw new Error();
+          said.textContent = "Lien envoyé à " + user.email + ". Ouvre-le, puis reviens télécharger. Pense aux indésirables.";
+        } catch { said.textContent = "L'envoi n'a pas abouti : réessaie dans quelques minutes."; send.disabled = false; }
+      };
+      box.append(el("h2", { textContent: "Valide ton adresse e-mail" }),
+        el("p", { className: "sn-dl-text", textContent: "Le téléchargement d'ONIRIQUE CENTRAL et les essais gratuits s'ouvrent une fois l'adresse " + user.email + " validée, avec le lien reçu par e-mail." }),
+        el("div", { className: "sn-dl-row" }, send), said);
+      return;
+    }
+    const mac = /Mac/i.test(navigator.platform || navigator.userAgent);
+    const choice = (os, label, detail) => {
+      const a = el("a", { className: "sn-dl-os" + ((preferred || (mac ? "mac" : "win")) === os ? " best" : ""), href: FILES[os] });
+      a.setAttribute("download", "");
+      a.insertAdjacentHTML("afterbegin", OS_ICONS[os]);
+      a.append(el("span", {}, el("b", { textContent: label }), el("small", { textContent: detail })));
+      a.addEventListener("click", () => setTimeout(close, 400));
+      return a;
+    };
+    box.append(el("h2", { textContent: "Pour quel ordinateur ?" }),
+      el("div", { className: "sn-dl-grid" },
+        choice("win", "Windows", "Windows 10 ou 11, 64 bits · .exe"),
+        choice("mac", "Mac", "macOS 11 ou plus récent · Intel et Apple Silicon · .dmg")),
+      el("p", { className: "sn-dl-note", textContent: "Windows : si « Windows a protégé votre ordinateur » s'affiche, Informations complémentaires puis Exécuter quand même. Mac : à la première ouverture, clic droit sur l'application puis Ouvrir." }));
+    box.querySelector(".sn-dl-os.best")?.focus();
+  }
+  window.OniriqueDownload = { open: openDownload };
+  document.addEventListener("click", (event) => {
+    const a = event.target.closest && event.target.closest('a[href*="telechargement/ONIRIQUE-CENTRAL"]');
+    if (!a || a.closest(".sn-dl") || event.button !== 0 || event.metaKey || event.ctrlKey) return;
+    event.preventDefault();
+    openDownload(/\.dmg$/i.test(a.getAttribute("href")) ? "mac" : /\.exe$/i.test(a.getAttribute("href")) && a.dataset.os ? "win" : null);
+  }, true);
+  // Arrivée depuis l'inscription ou la connexion (?telecharger) : le choix s'ouvre tout seul.
+  if (new URLSearchParams(location.search).has("telecharger")) setTimeout(() => openDownload(), 300);
+
+  // Nos réseaux, l'annonce et la maintenance : chargés une fois.
+  fetch("/api/site", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((site) => {
+    showAnnouncement(site && site.announcement);
+    showMaintenance(site && site.maintenance);
     const socials = (site && site.socials) || [];
     if (!socials.length) return;
     const link = (s, withText) => {

@@ -69,14 +69,14 @@ export function createLicense({ productId, userId = null, reservedEmail = null, 
 //==============================================================================
 export function activeSubscription(userId) {
   const sub = get(
-    `SELECT s.*, p.name AS plan_name, p.interval, p.price_cents, p.kind AS plan_kind FROM subscriptions s
+    `SELECT s.*, p.name AS plan_name, p.interval, p.price_cents, p.kind AS plan_kind, p.product_ids AS plan_product_ids FROM subscriptions s
      JOIN plans p ON p.id = s.plan_id WHERE s.user_id = ?`, userId);
   if (!sub) return null;
   return {
     ...sub,
     valid: sub.status === 'active' && sub.current_period_end > now(),
-    // Les plugins couverts : null pour un abonnement à tout le catalogue, sinon ceux qui ont été choisis.
-    productIds: parseProductIds(sub.product_ids),
+    // Les plugins couverts : ceux choisis à la carte, sinon ceux de la formule ; null pour tout le catalogue.
+    productIds: parseProductIds(sub.product_ids) ?? parseProductIds(sub.plan_product_ids),
   };
 }
 

@@ -277,6 +277,11 @@ app.whenReady().then(() => {
   });
 
   handle('open:webmail', () => shell.openExternal('https://mail.ionos.fr'));
+  // Le site ONIRIQUE, dans le navigateur : l'accueil ou une de ses pages (jamais une adresse venue d'ailleurs).
+  handle('open:site', (page) => {
+    const allowed = ['', 'boutique.html', 'compte.html', 'support.html', 'outils.html', 'compte.html#parrainage'];
+    return shell.openExternal('https://onirique.store/' + (allowed.includes(page) ? page : ''));
+  });
   // Répondre à une demande de support : la messagerie de ce PC s'ouvre sur un message adressé à la personne.
   handle('open:mail', (email, subject) => {
     if (typeof email !== 'string' || !/^[^\s@<>"'?&]+@[^\s@<>"'?&]+\.[^\s@<>"'?&]+$/.test(email)) throw new Error('Adresse e-mail invalide.');

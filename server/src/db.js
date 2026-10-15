@@ -348,6 +348,46 @@ if (!db.prepare(`SELECT 1 FROM settings WHERE key = 'categories_single'`).get())
   db.prepare(`INSERT INTO settings (key, value) VALUES ('categories_single', 'true')`).run();
 }
 
+// Abonnements réglables depuis le panel : un texte de présentation et les plugins compris (vide : tous les plugins
+// ONIRIQUE). Packs : plusieurs plugins achetés une fois, au prix du pack, chacun avec sa licence définitive.
+if (!hasColumn('plans', 'description')) db.exec(`ALTER TABLE plans ADD COLUMN description TEXT NOT NULL DEFAULT ''`);
+if (!hasColumn('plans', 'product_ids')) db.exec('ALTER TABLE plans ADD COLUMN product_ids TEXT');
+db.exec(`
+CREATE TABLE IF NOT EXISTS packs (
+  id          INTEGER PRIMARY KEY,
+  name        TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  price_cents INTEGER NOT NULL,
+  product_ids TEXT NOT NULL,
+  active      INTEGER NOT NULL DEFAULT 1,
+  created_at  INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS trial_claims (
+  id         INTEGER PRIMARY KEY,
+  product_id INTEGER NOT NULL,
+  user_id    INTEGER,
+  machine_id TEXT NOT NULL,
+  ip_hash    TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS trial_machine ON trial_claims(product_id, machine_id);
+CREATE INDEX IF NOT EXISTS trial_ip ON trial_claims(product_id, ip_hash);
+`);
+
+// Le lien Instagram d'un compte (les ingés d'ONIRIQUE l'affichent sous les crédits).
+if (!hasColumn('users', 'instagram')) db.exec(`ALTER TABLE users ADD COLUMN instagram TEXT NOT NULL DEFAULT ''`);
+
+// Crédits : plusieurs plugins par titre, un album entier possible, l'ingé (un compte fondateur) et la popularité
+// Spotify, qui range la liste du plus connu au moins connu.
+if (!hasColumn('credits', 'product_ids')) {
+  db.exec('ALTER TABLE credits ADD COLUMN product_ids TEXT');
+  db.exec(`UPDATE credits SET product_ids = '[' || product_id || ']' WHERE product_id IS NOT NULL`);
+}
+if (!hasColumn('credits', 'spotify_type')) db.exec(`ALTER TABLE credits ADD COLUMN spotify_type TEXT NOT NULL DEFAULT 'track'`);
+if (!hasColumn('credits', 'engineer_id')) db.exec('ALTER TABLE credits ADD COLUMN engineer_id INTEGER REFERENCES users(id) ON DELETE SET NULL');
+if (!hasColumn('credits', 'popularity')) db.exec('ALTER TABLE credits ADD COLUMN popularity INTEGER');
+if (!hasColumn('credits', 'popularity_at')) db.exec('ALTER TABLE credits ADD COLUMN popularity_at INTEGER');
+
 export const now = () => Date.now();
 
 /** Un réglage modifiable depuis le panel admin (table settings), ou la valeur de la configuration s'il n'a jamais été changé. */
