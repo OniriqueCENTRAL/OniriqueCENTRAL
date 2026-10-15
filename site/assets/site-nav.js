@@ -226,4 +226,39 @@ header .sn-lang { margin-left: 8px; }
     const footer = document.querySelector("footer");
     if (footer) footer.prepend(el("div", { className: "sn-foot" }, ...socials.map((s) => link(s, false))));
   }).catch(() => {});
+
+  // Un lien vers une section de la page (« Téléchargement ») : on s'arrête sous la barre du haut, et si la page
+  // grandit encore pendant le trajet (aperçus, listes chargées), on se recale sur la section, tant que le
+  // visiteur ne fait pas défiler lui-même.
+  const headerGap = () => (header && getComputedStyle(header).position !== "static" ? header.getBoundingClientRect().height : 0) + 12;
+  const goTo = (target, smooth) => {
+    const top = () => target.getBoundingClientRect().top + window.scrollY - headerGap();
+    window.scrollTo({ top: top(), behavior: smooth ? "smooth" : "auto" });
+    let stopped = false, last = -1, ticks = 0;
+    const stop = () => { stopped = true; };
+    for (const name of ["wheel", "touchstart", "keydown", "mousedown"]) window.addEventListener(name, stop, { once: true, passive: true });
+    const timer = setInterval(() => {
+      ticks++;
+      if (stopped || ticks > 30) { clearInterval(timer); return; }
+      const settled = Math.abs(window.scrollY - last) < 2; // le défilement doux est fini
+      last = window.scrollY;
+      if (settled && Math.abs(top() - window.scrollY) > 4) window.scrollTo({ top: top(), behavior: "auto" });
+    }, 120);
+  };
+  document.addEventListener("click", (event) => {
+    const a = event.target.closest && event.target.closest('a[href*="#"]');
+    if (!a || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey) return;
+    const url = new URL(a.href, location.href);
+    if (url.pathname !== location.pathname || !url.hash || url.hash.length < 2) return;
+    const target = document.getElementById(decodeURIComponent(url.hash.slice(1)));
+    if (!target) return;
+    event.preventDefault();
+    history.pushState(null, "", url.hash);
+    goTo(target, !matchMedia("(prefers-reduced-motion: reduce)").matches);
+  });
+  // Arrivée depuis une autre page avec #section : même recalage une fois la page chargée.
+  if (location.hash.length > 1) {
+    const target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    if (target) window.addEventListener("load", () => goTo(target, false), { once: true });
+  }
 })();

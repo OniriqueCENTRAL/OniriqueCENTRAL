@@ -57,7 +57,7 @@ ${body}
     <a href="compte.html">Compte</a>
   </nav>
 </footer>
-<script src="assets/site-nav.js?v=5"></script>
+<script src="assets/site-nav.js?v=6"></script>
 </html>
 `;
 
