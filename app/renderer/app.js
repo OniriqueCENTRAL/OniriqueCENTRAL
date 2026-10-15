@@ -51,12 +51,29 @@ const icon = (path) => {
   return svg;
 };
 
+/** Le globe de la langue, dessiné (une icône d'emoji ferait générique). */
+export function globe(size = 13) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', size);
+  svg.setAttribute('height', size);
+  svg.setAttribute('class', 'lang-globe');
+  svg.setAttribute('aria-hidden', 'true');
+  for (const [tag, attrs] of [['circle', { cx: 12, cy: 12, r: 9 }], ['path', { d: 'M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z' }]]) {
+    const el = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries({ ...attrs, fill: 'none', stroke: 'currentColor', 'stroke-width': 1.7 })) el.setAttribute(k, v);
+    svg.append(el);
+  }
+  return svg;
+}
+
 /** FR | EN : français par défaut, anglais au choix (i18n.js, le même moteur que le site). La pastille ne se traduit pas. */
 function langSwitch() {
   const i18n = window.OniriqueI18n;
   const current = i18n?.lang || 'fr';
   return h('div', { class: 'lang-switch', role: 'group', 'aria-label': 'Langue / Language', 'data-no-translate': '' },
-    h('span', { class: 'lang-globe', 'aria-hidden': 'true' }, '🌐'),
+    globe(),
     ...[['fr', 'FR', 'Français'], ['en', 'EN', 'English']].map(([code, label, title]) => h('button', {
       lang: code, title, 'aria-pressed': String(current === code),
       onclick: () => { if (i18n && current !== code) i18n.set(code); },

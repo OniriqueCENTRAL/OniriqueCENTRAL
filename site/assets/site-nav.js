@@ -86,6 +86,8 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 header .sn-lang { margin-left: 8px; }
 .sn-langbar { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 150; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 14px; width: max-content; max-width: calc(100vw - 24px); padding: 12px 14px 12px 18px; border-radius: 18px; border: 1px solid rgba(226,52,68,.55); background: linear-gradient(180deg, var(--deep-2, #2a0a0e), var(--deep, #1a080a)); box-shadow: 0 20px 60px -12px rgba(0,0,0,.85), 0 0 0 4px rgba(226,52,68,.12); color: var(--mist, #f6eeee); font: 500 15px/1.35 var(--f-body, system-ui); }
 .sn-langbar strong { font-weight: 700; }
+.sn-langbar-text { display: inline-flex; align-items: center; gap: 8px; }
+.sn-langbar-text svg { width: 17px; height: 17px; flex: none; color: var(--ember, #e23444); }
 .sn-langbar .sn-go { padding: 10px 16px; border: 0; border-radius: 999px; background: var(--mist, #f6eeee); color: var(--night, #0d0809); font: 700 14px/1 var(--f-body, system-ui); cursor: pointer; }
 .sn-langbar .sn-x { width: 34px; height: 34px; border: 1px solid var(--line, rgba(255,210,214,.16)); border-radius: 999px; background: none; color: var(--haze, #a88f92); font: 400 18px/1 var(--f-body, system-ui); cursor: pointer; }
 /* Téléchargement d'ONIRIQUE CENTRAL : choix du système */
@@ -222,11 +224,12 @@ header .sn-lang { margin-left: 8px; }
     const decided = localStorage.getItem("onirique.lang") || localStorage.getItem("onirique.lang.prompted");
     if (i18n && i18n.lang === "fr" && !french && !decided) {
       const bar = el("div", { className: "sn-langbar", role: "dialog" },
-        el("span", {}, "🌐 ", el("strong", { textContent: "This site is available in English." }), " Prefer it?"),
+        el("span", { className: "sn-langbar-text" }, el("strong", { textContent: "This site is available in English." }), " Prefer it?"),
         el("button", { type: "button", className: "sn-go", textContent: "Switch to English" }),
         el("button", { type: "button", className: "sn-x", textContent: "×", title: "Keep French" }));
       bar.setAttribute("data-no-translate", "");
       bar.setAttribute("aria-label", "Language");
+      bar.querySelector(".sn-langbar-text").insertAdjacentHTML("afterbegin", '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>');
       bar.lang = "en";
       bar.querySelector(".sn-go").onclick = () => i18n.set("en");
       bar.querySelector(".sn-x").onclick = () => { try { localStorage.setItem("onirique.lang.prompted", "1"); } catch {} bar.remove(); };

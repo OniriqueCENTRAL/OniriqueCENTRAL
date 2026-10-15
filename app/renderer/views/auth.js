@@ -1,5 +1,5 @@
 import { h, field, toast } from '../ui.js';
-import { state, call, refresh, render } from '../app.js';
+import { state, call, refresh, render, globe } from '../app.js';
 
 let mode = 'login';
 
@@ -16,7 +16,7 @@ function englishOffer() {
   const languages = navigator.languages?.length ? navigator.languages : [navigator.language || ''];
   if (!i18n || i18n.lang !== 'fr' || decided || languages.some((l) => /^fr/i.test(l))) return null;
   const box = h('div', { class: 'lang-offer', lang: 'en', 'data-no-translate': '' },
-    h('span', null, '🌐 ', h('strong', null, 'ONIRIQUE Central is available in English.')),
+    h('span', { style: { display: 'inline-flex', 'align-items': 'center', gap: '8px' } }, globe(15), h('strong', null, 'ONIRIQUE Central is available in English.')),
     h('button', { class: 'btn small primary', type: 'button', onclick: () => i18n.set('en') }, 'Switch to English'),
     h('button', { class: 'btn small quiet', type: 'button', title: 'Keep French',
       onclick: () => { try { localStorage.setItem('onirique.lang.prompted', '1'); } catch {} box.remove(); } }, '×'));
