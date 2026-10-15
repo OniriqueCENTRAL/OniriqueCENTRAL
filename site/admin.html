@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=734f8baa"></script>
+<script src="assets/i18n.js?v=e37f2dee"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Administration</title>
 <meta name="robots" content="noindex, nofollow">
@@ -836,13 +836,14 @@ async function loadCredits() {
       ...founders.map((f) => el("option", { value: f.id, textContent: f.name + (f.instagram ? "  · Instagram ✓" : "") })));
     engineer.value = c?.engineer?.id ?? "";
     const usedOn = el("input", { type: "text", maxLength: 60, placeholder: "Voix, chœurs, mix…", value: c?.usedOn ?? "" });
+    const apple = el("input", { type: "text", maxLength: 400, placeholder: "https://music.apple.com/… (facultatif)", value: c?.appleMusic ?? "" });
     const released = el("input", { type: "text", maxLength: 40, placeholder: "9 octobre 2026", value: c?.released ?? "" });
     const duration = el("input", { type: "text", maxLength: 10, placeholder: "2:39", value: c?.duration ?? "" });
     const kind = el("select", {}, ...[...new Set(["Single", "EP", "Album", "Mixtape", c?.kind ?? "Single"])].map((k) => el("option", { value: k, textContent: k })));
     kind.value = c?.kind ?? "Single";
     const submit = el("button", { className: "act", type: "submit", textContent: c ? "Enregistrer" : "Ajouter le crédit" });
     const form = el("form", {},
-      el("label", {}, "Lien Spotify (titre ou album)", link), el("label", {}, "Artiste", artist),
+      el("label", {}, "Lien Spotify (titre ou album)", link), el("label", {}, "Lien Apple Music (facultatif)", apple), el("label", {}, "Artiste", artist),
       el("label", {}, "Titre ou nom de l'album", title), el("label", {}, "Ingé (fondateur ONIRIQUE)", engineer),
       el("label", { style: "grid-column:1/-1" }, "Plugins utilisés", plugins),
       el("label", {}, "Utilisé sur", usedOn), el("label", {}, "Date de sortie", released),
@@ -855,7 +856,7 @@ async function loadCredits() {
       try {
         await api(c ? "PATCH" : "POST", c ? "/admin/credits/" + c.id : "/admin/credits", { spotifyUrl: link.value.trim(), artist: artist.value.trim(), title: title.value.trim(),
           productIds: boxes.filter((b) => b.box.checked).map((b) => b.id), engineerId: engineer.value ? Number(engineer.value) : null,
-          usedOn: usedOn.value.trim(), released: released.value.trim(),
+          usedOn: usedOn.value.trim(), released: released.value.trim(), appleMusic: apple.value.trim(),
           duration: duration.value.trim(), kind: kind.value });
         if (!c) $("new-credit").open = false;
         await loadCredits();

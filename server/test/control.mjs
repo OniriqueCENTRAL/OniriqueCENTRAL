@@ -151,6 +151,10 @@ try {
       await call('PATCH', `/api/admin/credits/${x.id}`, { token: admin.token, body: { pinned: true } });
     }
     await call('PATCH', `/api/admin/credits/${album.id}`, { token: admin.token, body: { pinned: true }, expect: 409 });
+    // Apple Music en plus de Spotify : un lien music.apple.com, rien d'autre.
+    await call('PATCH', `/api/admin/credits/${album.id}`, { token: admin.token, body: { appleMusic: 'https://exemple.com/x' }, expect: 400 });
+    await call('PATCH', `/api/admin/credits/${album.id}`, { token: admin.token, body: { appleMusic: 'https://music.apple.com/fr/album/nuit/123' } });
+    assert.equal((await call('GET', '/api/credits')).find((x) => x.id === album.id).appleMusic, 'https://music.apple.com/fr/album/nuit/123');
   });
 
   await step("activation : deux empreintes, bail de 90 jours, reprise de l'ancienne, nouvelles machines limitées", async () => {

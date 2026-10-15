@@ -34,6 +34,7 @@
 .embed-load:focus-visible { outline: 2px solid var(--ember); outline-offset: -4px; }
 .embed-load small { font: 400 12px/1.5 var(--f-body); color: var(--haze); }
 .embed iframe { position: relative; width: 100%; height: 152px; border: 0; display: block; color-scheme: normal; }
+.open-links { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px 18px; }
 .open-link { justify-self: end; font: 500 12px/1 var(--f-mono); color: var(--haze); text-decoration: none; letter-spacing: .04em; }
 .open-link:hover { color: var(--mist); }
 @media (max-width: 1060px) { .credit { grid-template-columns: 160px minmax(0, 1fr); } .credit-player { grid-column: 1 / -1; } }

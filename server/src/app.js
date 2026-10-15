@@ -269,7 +269,7 @@ export function createApp() {
       return {
         id: c.id, title: c.title, artist: c.artist, kind: c.kind, released: c.released, duration: c.duration,
         spotifyId: c.spotify_id, spotifyType: c.spotify_type || 'track', cover: c.cover ? `/api/media/${c.cover}` : null, usedOn: c.used_on,
-        popularity: c.popularity ?? null, pinned: !!c.pinned, plugins, plugin: plugins[0] || null,
+        popularity: c.popularity ?? null, pinned: !!c.pinned, appleMusic: c.apple_music || null, plugins, plugin: plugins[0] || null,
         engineer: c.engineer_id ? {
           // Le pseudo d'ingé ; à défaut, le nom affiché (jamais l'adresse e-mail).
           id: c.engineer_id, name: c.engineer_alias || c.engineer_name || 'ONIRIQUE',
@@ -888,6 +888,17 @@ export function createApp() {
     if (stale) await refreshPopularity(stale).catch(() => {});
   }, 20_000).unref();
 
+  /** Un lien Apple Music (music.apple.com), ou rien. */
+  const appleMusicOf = (value) => {
+    const text = str(value, 400);
+    if (!text) return '';
+    try {
+      const url = new URL(text);
+      if (url.protocol === 'https:' && (url.hostname === 'music.apple.com' || url.hostname === 'geo.music.apple.com')) return url.href;
+    } catch { /* plus bas */ }
+    throw new HttpError(400, "Lien Apple Music invalide : collez le lien du titre ou de l'album (https://music.apple.com/…).");
+  };
+
   const founderOf = (value) => {
     if (value === undefined || value === null || value === '') return null;
     const user = get(`SELECT id FROM users WHERE id = ? AND role = 'founder'`, int(value, 0));
@@ -930,6 +941,7 @@ export function createApp() {
     if (!artist) throw new HttpError(400, "Indiquez l'artiste.");
     const productIds = productIdsOf(req.body);
     const engineerId = founderOf(req.body.engineerId);
+    const appleMusic = appleMusicOf(req.body.appleMusic);
 
     const info = await spotifyInfo(ref.id, ref.type);
     const title = str(req.body.title, 120) || info.title;
@@ -941,6 +953,7 @@ export function createApp() {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       title, artist, str(req.body.kind, 30) || (ref.type === 'album' ? 'Album' : 'Single'), str(req.body.released, 40), str(req.body.duration, 10),
       ref.id, ref.type, info.cover ?? null, productIds[0] ?? null, productIds.length ? JSON.stringify(productIds) : null, engineerId, str(req.body.usedOn, 60), now());
+    if (appleMusic) run('UPDATE credits SET apple_music = ? WHERE id = ?', appleMusic, lastInsertRowid);
     await refreshPopularity(get('SELECT * FROM credits WHERE id = ?', lastInsertRowid));
     res.status(201).json(creditRows().find((c) => c.id === Number(lastInsertRowid)));
   }));
@@ -966,6 +979,7 @@ export function createApp() {
     };
     if (!next.title) throw new HttpError(400, 'Indiquez le titre du morceau.');
     if (!next.artist) throw new HttpError(400, "Indiquez l'artiste.");
+    if (b.appleMusic !== undefined) run('UPDATE credits SET apple_music = ? WHERE id = ?', appleMusicOf(b.appleMusic), credit.id);
     // Épingler : trois crédits au plus, ceux de la page d'accueil.
     if (b.pinned !== undefined) {
       if (b.pinned && !credit.pinned && get('SELECT COUNT(*) AS n FROM credits WHERE pinned = 1').n >= 3) {

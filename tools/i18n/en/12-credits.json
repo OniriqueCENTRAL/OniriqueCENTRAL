@@ -27,5 +27,15 @@
  "{} titre": "{} track",
  "facultatif · ton pseudo devient un lien vers ce profil": "optional · your name becomes a link to this profile",
  "Retirer": "Remove",
- "Choisis la même image, ou une autre.": "Choose the same image, or another one."
+ "Choisis la même image, ou une autre.": "Choose the same image, or another one.",
+ "Par": "By",
+ "Écouter sur Apple Music ↗": "Listen on Apple Music ↗",
+ "Lien Apple Music (facultatif)": "Apple Music link (optional)",
+ "Lien Apple Music invalide : collez le lien du titre ou de l'album (https://music.apple.com/…).": "Invalid Apple Music link: paste the track or album link (https://music.apple.com/…).",
+ "Les titres et albums réalisés avec les plugins Onirique, du plus connu au moins connu : écoute un extrait, découvre l'ingé et les plugins utilisés.": "Tracks and albums made with Onirique plugins, from most to least known: listen to a preview, discover the engineer and the plugins used.",
+ "Épingler": "Pin",
+ "Désépingler": "Unpin",
+ "Accueil": "Home",
+ "Trois crédits sont déjà épinglés : désépinglez-en un d'abord.": "Three credits are already pinned: unpin one first.",
+ "Retirer la photo": "Remove the photo"
 }

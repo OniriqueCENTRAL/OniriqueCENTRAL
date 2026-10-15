@@ -411,6 +411,8 @@ if (!hasColumn('credits', 'popularity')) db.exec('ALTER TABLE credits ADD COLUMN
 if (!hasColumn('credits', 'popularity_at')) db.exec('ALTER TABLE credits ADD COLUMN popularity_at INTEGER');
 // Épinglé : un des trois crédits montrés sur la page d'accueil, avant les plus connus.
 if (!hasColumn('credits', 'pinned')) db.exec('ALTER TABLE credits ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0');
+// Le lien Apple Music du titre ou de l'album, en plus de Spotify (facultatif).
+if (!hasColumn('credits', 'apple_music')) db.exec(`ALTER TABLE credits ADD COLUMN apple_music TEXT NOT NULL DEFAULT ''`);
 
 export const now = () => Date.now();
 
