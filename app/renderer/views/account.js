@@ -5,6 +5,9 @@ export function accountView() {
   const { me, settings } = state.data;
 
   const name = h('input', { type: 'text', maxLength: 80, value: me.user.name });
+  // Profil d'ingé (fondateurs) : le pseudo affiché sous les crédits, à la place du nom du compte. Sa photo se choisit sur le site.
+  const founder = me.user.role === 'founder';
+  const alias = h('input', { type: 'text', maxLength: 40, placeholder: "Votre nom d'artiste", value: me.user.engineerName || '' });
   // Instagram : affiché avec le nom de l'ingé sous les crédits du site.
   const instagram = h('input', { type: 'text', maxLength: 200, placeholder: '@votrecompte ou lien du profil', spellcheck: false,
     value: me.user.instagram ? '@' + me.user.instagram.replace(/^https:\/\/www\.instagram\.com\//, '').replace(/\/$/, '') : '' });
@@ -12,12 +15,13 @@ export function accountView() {
     class: 'stack',
     onsubmit: async (event) => {
       event.preventDefault();
-      if (await attempt(() => call('api', 'POST', '/api/me/profile', { name: name.value, instagram: instagram.value.trim() }), 'Profil enregistré.')) await refresh();
+      if (await attempt(() => call('api', 'POST', '/api/me/profile', founder ? { name: name.value, instagram: instagram.value.trim(), engineerName: alias.value.trim() } : { name: name.value }), 'Profil enregistré.')) await refresh();
     },
   },
     field('E-mail', h('input', { type: 'email', value: me.user.email, disabled: true })),
     field('Nom', name),
-    field('Instagram (facultatif)', instagram),
+    founder ? field("Pseudo d'ingé (affiché sous les crédits)", alias) : null,
+    founder ? field('Instagram (facultatif)', instagram) : null,
     h('div', null, h('button', { class: 'btn', type: 'submit' }, 'Enregistrer')));
 
   // Photo de profil : la même que sur le site. Une image de 2 Mo au plus, choisie sur cet ordinateur.

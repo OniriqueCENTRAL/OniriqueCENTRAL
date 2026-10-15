@@ -162,6 +162,8 @@ export function publicUser(user) {
     id: user.id, email: user.email, name: user.name, role: user.role, createdAt: user.created_at,
     avatar: user.avatar ? `/api/media/${user.avatar}` : null, // la photo de profil ; null : l'avatar par défaut
     instagram: user.instagram || '',
+    engineerName: user.engineer_name || '',
+    engineerAvatar: user.engineer_avatar ? `/api/media/${user.engineer_avatar}` : null,
     emailVerified: !mustVerify(user),
     emailToConfirm: shouldConfirm(user),
     // Pour l'équipe et les partenaires : se sont-ils accordé tous les plugins ? (null : le compte n'y a pas droit)

@@ -384,6 +384,9 @@ CREATE INDEX IF NOT EXISTS activation_log_user ON activation_log(user_id, produc
 
 // Le lien Instagram d'un compte (les ingés d'ONIRIQUE l'affichent sous les crédits).
 if (!hasColumn('users', 'instagram')) db.exec(`ALTER TABLE users ADD COLUMN instagram TEXT NOT NULL DEFAULT ''`);
+// Le profil d'ingé d'un fondateur : le pseudo et la photo montrés sous les crédits, à la place du nom et de la photo du compte.
+if (!hasColumn('users', 'engineer_name')) db.exec(`ALTER TABLE users ADD COLUMN engineer_name TEXT NOT NULL DEFAULT ''`);
+if (!hasColumn('users', 'engineer_avatar')) db.exec('ALTER TABLE users ADD COLUMN engineer_avatar TEXT');
 
 // Crédits : plusieurs plugins par titre, un album entier possible, l'ingé (un compte fondateur) et la popularité
 // Spotify, qui range la liste du plus connu au moins connu.

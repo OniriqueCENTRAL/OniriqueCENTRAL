@@ -187,8 +187,8 @@ export function mountControl(admin) {
   // Les fondateurs, pour choisir l'ingé d'un crédit.
   admin.get('/founders', (req, res) => {
     staff(req);
-    res.json(all(`SELECT id, name, email, instagram FROM users WHERE role = 'founder' ORDER BY name, email`)
-      .map((u) => ({ id: u.id, name: u.name || u.email.split('@')[0], instagram: u.instagram || '' })));
+    res.json(all(`SELECT id, name, email, instagram, engineer_name FROM users WHERE role = 'founder' ORDER BY name, email`)
+      .map((u) => ({ id: u.id, name: u.engineer_name || u.name || u.email.split('@')[0], alias: !!u.engineer_name, instagram: u.instagram || '' })));
   });
 
   // Suppression d'un compte, après avoir tapé SUPPRIME. Ses licences sont révoquées (une clé ne revit pas sur un autre

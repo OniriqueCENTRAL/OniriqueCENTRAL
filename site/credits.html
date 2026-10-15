@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<script src="assets/i18n.js?v=734f8baa"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Crédits — ONIRIQUE</title>
+<meta name="description" content="Les titres et albums mixés avec les plugins Onirique, du plus connu au moins connu : écoute un extrait, découvre l'ingé et les plugins utilisés.">
+<link rel="canonical" href="https://onirique.store/credits">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css">
+<link rel="stylesheet" href="assets/credits.css?v=1">
+<style>
+/* Les crédits : la base des pages de texte, élargie, avec les cartes de l'accueil. */
+:root { --blood: #5C0008; --deep-2: #2A0A0E; --ease: cubic-bezier(.2, .7, .2, 1); --f-dream: "Grenze Gotisch", Georgia, serif;
+  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(226,52,68,.55); }
+body { background: radial-gradient(120% 50% at 50% -10%, rgba(140,6,20,.75), rgba(92,0,8,.4) 38%, transparent 72%) fixed, var(--night); }
+.wrap { max-width: 1180px; }
+h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
+.tools-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; margin: 26px 0 22px; }
+.tools-row input { width: min(100%, 340px); height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: rgba(0,0,0,.4); color: var(--mist); font: 500 15px var(--f-body); }
+.tools-row input:focus { outline: none; border-color: var(--ember); }
+.count { font: 500 12px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
+.empty { padding: 40px 0; color: var(--haze); text-align: center; }
+</style>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="/">Accueil</a><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="support.html">Support</a><a class="btn" href="compte.html" data-account>Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <p class="eyebrow">Crédits</p>
+  <h1>Déjà mixé avec <em>Onirique.</em></h1>
+  <p class="lede">Tous les titres et albums sortis avec les plugins Onirique sur la chaîne de mix, du plus connu au moins connu. Écoute un extrait, découvre l'ingé et les plugins utilisés.</p>
+  <div class="tools-row">
+    <input type="search" id="find" placeholder="Chercher un titre, un artiste, un plugin" aria-label="Chercher dans les crédits">
+    <span class="count" id="count"></span>
+  </div>
+  <div class="credit-list" id="list"><p class="empty">Chargement…</p></div>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="remboursement.html">Rétractation et remboursement</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a>
+  </nav>
+</footer>
+
+<script src="assets/credits.js?v=1"></script>
+<script src="assets/tools-menu.js"></script>
+<script src="assets/account.js?v=4"></script>
+<script src="assets/site-nav.js?v=7"></script>
+<script>
+// Tous les crédits, rangés par le serveur du plus connu au moins connu ; la recherche filtre sans recharger.
+let all = [];
+const norm = (t) => String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+function show() {
+  const q = norm(document.getElementById("find").value.trim());
+  const list = q ? all.filter((c) => norm([c.title, c.artist, c.kind, c.engineer && c.engineer.name, ...(c.plugins || []).map((p) => p.name)].join(" ")).includes(q)) : all;
+  const root = document.getElementById("list");
+  if (!list.length) root.innerHTML = `<p class="empty">${all.length ? "Aucun crédit ne correspond." : "Les premiers crédits arrivent bientôt."}</p>`;
+  else OniriqueCredits.render(root, list);
+  document.getElementById("count").textContent = list.length + (list.length > 1 ? " titres" : " titre");
+}
+document.getElementById("find").addEventListener("input", show);
+fetch("/api/credits").then((r) => (r.ok ? r.json() : [])).catch(() => []).then((list) => { all = list; show(); });
+</script>
+</html>

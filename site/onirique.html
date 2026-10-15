@@ -1,4 +1,4 @@
-<script src="assets/i18n.js?v=11b20aaa"></script>
+<script src="assets/i18n.js?v=734f8baa"></script>
 <title>ONIRIQUE</title>
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="apple-touch-icon" href="assets/favicon.png">
@@ -19,6 +19,7 @@
 ]}
 </script>
 <link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/credits.css?v=1">
 <style>
 /* Layout : DA du logo. Dégradé sang -> noir, sigil blanc incandescent, étoiles à 4 branches et réticules ; la tranche "papier" flotte au centre, colonnes asymétriques. */
 :root {
@@ -276,44 +277,6 @@ input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border: 0; bord
 
 /* crédits */
 .credits { padding-top: 0; }
-.credit-list { display: grid; gap: 20px; }
-.credit { position: relative; display: grid; grid-template-columns: 200px minmax(0, 1fr) minmax(0, 420px); gap: 32px; align-items: center; padding: 24px; border-radius: 26px; background: linear-gradient(120deg, var(--deep-2), var(--deep) 55%); border: 1px solid var(--line); overflow: hidden; isolation: isolate; transition: border-color .4s, transform .5s var(--ease); }
-.credit:hover { border-color: rgba(226,52,68,.45); transform: translateY(-4px); }
-.credit::before { content: ""; position: absolute; z-index: -1; left: -60px; top: -60px; width: 340px; height: 340px; background: var(--cover-img, none) center / cover; filter: blur(70px) saturate(1.4); opacity: .45; }
-.cover { position: relative; aspect-ratio: 1; width: 100%; border-radius: 14px; overflow: hidden; background: radial-gradient(circle at 35% 30%, var(--ember), var(--blood) 60%, var(--night)); box-shadow: 0 24px 50px -18px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.08); }
-.cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.cover span { position: absolute; inset: 0; display: grid; place-items: center; font: 800 28px/1 var(--f-display); letter-spacing: .08em; color: var(--mist); text-shadow: var(--glow); }
-.credit-info { display: grid; gap: 14px; min-width: 0; }
-.credit-kind { font: 500 12px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
-.credit-title { font: 800 clamp(30px, 3.4vw, 46px)/1 var(--f-display); letter-spacing: -.01em; overflow-wrap: anywhere; }
-.credit-artist { font-size: 18px; font-weight: 600; color: var(--mist); margin-top: -6px; }
-.credit-meta { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 4px 0 0; }
-.credit-meta div { display: grid; gap: 4px; }
-.credit-meta dt { font: 500 11px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
-.credit-meta dd { margin: 0; font: 500 14px/1.2 var(--f-mono); color: var(--mist); font-variant-numeric: tabular-nums; }
-.plugin-used { display: inline-flex; align-items: center; gap: 12px; justify-self: start; padding: 8px 16px 8px 8px; border-radius: 99px; border: 1px solid rgba(226,52,68,.45); background: rgba(226,52,68,.08); text-decoration: none; transition: background .25s, border-color .25s; }
-.plugin-used:hover { background: rgba(226,52,68,.18); border-color: var(--ember); }
-.plugin-used img { width: 34px; height: auto; filter: drop-shadow(0 0 5px rgba(226,52,68,.9)); }
-.plugin-used b { display: block; font: 700 13px/1.2 var(--f-body); letter-spacing: .06em; }
-.plugin-used small { display: block; font: 400 12px/1.2 var(--f-mono); color: var(--haze); }
-.credit-player { display: grid; gap: 10px; min-width: 0; }
-.plugins-used { display: flex; flex-wrap: wrap; gap: 8px; }
-.credit-engineer { display: flex; align-items: center; gap: 8px; margin: 0; font: 500 12px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
-.credit-engineer a, .credit-engineer span { display: inline-flex; align-items: center; gap: 8px; color: var(--mist); text-decoration: none; text-transform: none; letter-spacing: 0; font: 600 15px/1 var(--f-body); }
-.credit-engineer a:hover b { text-decoration: underline; text-underline-offset: 3px; }
-.credit-engineer img { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); }
-.credit-engineer svg { width: 15px; height: 15px; color: var(--haze); }
-.embed.album iframe { height: 352px; }
-.embed { position: relative; border-radius: 12px; overflow: hidden; background: rgba(11,6,7,.6); }
-.embed-load { all: unset; box-sizing: border-box; cursor: pointer; width: 100%; min-height: 152px; display: grid; place-content: center; gap: 8px; text-align: center; padding: 16px; font: 600 15px/1.3 var(--f-body); color: var(--mist); }
-.embed-load:hover { background: rgba(226,52,68,.1); }
-.embed-load:focus-visible { outline: 2px solid var(--ember); outline-offset: -4px; }
-.embed-load small { font: 400 12px/1.5 var(--f-body); color: var(--haze); }
-.embed iframe { position: relative; width: 100%; height: 152px; border: 0; display: block; color-scheme: normal; }
-.open-link { justify-self: end; font: 500 12px/1 var(--f-mono); color: var(--haze); text-decoration: none; letter-spacing: .04em; }
-.open-link:hover { color: var(--mist); }
-@media (max-width: 1060px) { .credit { grid-template-columns: 160px minmax(0, 1fr); } .credit-player { grid-column: 1 / -1; } }
-@media (max-width: 560px) { .credit { grid-template-columns: minmax(0, 1fr); padding: 18px; } .cover { max-width: 220px; } }
 
 /* tarif */
 .offer { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 460px); gap: 50px clamp(30px, 6vw, 100px); align-items: center; }
@@ -786,6 +749,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
         <p class="lede">Les titres sortis avec les plugins Onirique sur la chaîne de mix. Écoute un extrait, puis retrouve le morceau en entier sur Spotify.</p>
       </div>
       <div class="credit-list" id="creditList"></div>
+      <div class="credits-more" id="creditMore" hidden><a href="credits.html"><span>Tous les crédits</span><b aria-hidden="true">+</b></a></div>
     </div>
   </section>
 
@@ -847,6 +811,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
 </footer>
 
 <script src="assets/demo-player.js?v=4"></script>
+<script src="assets/credits.js?v=1"></script>
 <script>
 (() => {
 "use strict";
@@ -1754,37 +1719,11 @@ const CREDITS = [
   },
 ];
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+// Les trois titres les plus connus ; les autres sont sur la page des crédits.
 function renderCredits(list) {
-$("#creditList").innerHTML = list.map(c => `
-  <article class="credit reveal" style="--cover-img: ${c.cover ? `url('${esc(c.cover)}')` : "none"}">
-    <div class="cover"><span>${esc(c.title.slice(0, 2))}</span>${c.cover ? `<img src="${esc(c.cover)}" alt="Pochette de ${esc(c.title)} par ${esc(c.artist)}" loading="lazy" onerror="this.remove()">` : ""}</div>
-    <div class="credit-info">
-      <span class="credit-kind">${esc(c.kind)}${c.released ? " · " + esc(String(c.released).slice(-4)) : ""}</span>
-      <h3 class="credit-title">${esc(c.title)}</h3>
-      <p class="credit-artist">${esc(c.artist)}</p>
-      <dl class="credit-meta">
-        ${c.released ? `<div><dt>Sortie</dt><dd>${esc(c.released)}</dd></div>` : ""}
-        ${c.duration ? `<div><dt>Durée</dt><dd>${esc(c.duration)}</dd></div>` : ""}
-        <div><dt>Format</dt><dd>${esc(c.kind)}</dd></div>
-      </dl>
-      <div class="plugins-used">${(c.plugins && c.plugins.length ? c.plugins : c.plugin ? [c.plugin] : [{ name: "Onirique VocalBox" }]).map((p, i) => `<a class="plugin-used" href="${p.slug ? "boutique.html?p=" + encodeURIComponent(p.slug) : "#vocalbox"}"><img src="assets/logo-small.png" alt="" width="160" height="145"><span><b>${esc(p.name)}</b>${i === 0 && c.usedOn ? `<small>Utilisé sur : ${esc(c.usedOn)}</small>` : ""}</span></a>`).join("")}</div>
-      ${c.engineer ? `<p class="credit-engineer">Mix par ${c.engineer.instagram ? `<a href="${esc(c.engineer.instagram)}" target="_blank" rel="noopener">${c.engineer.avatar ? `<img src="${esc(c.engineer.avatar)}" alt="" width="26" height="26" loading="lazy">` : ""}<b>${esc(c.engineer.name)}</b><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17.4" cy="6.6" r="1.2" fill="currentColor"/></svg></a>` : `<span>${c.engineer.avatar ? `<img src="${esc(c.engineer.avatar)}" alt="" width="26" height="26" loading="lazy">` : ""}<b>${esc(c.engineer.name)}</b></span>`}</p>` : ""}
-    </div>
-    <div class="credit-player">
-      <div class="embed${c.spotifyType === "album" ? " album" : ""}"><button type="button" class="embed-load" data-spotify="${esc(c.spotifyId)}" data-type="${c.spotifyType === "album" ? "album" : "track"}" data-title="${esc(c.title)}">Charger le lecteur Spotify<small>Spotify déposera alors ses propres cookies. <a href="cookies.html">En savoir plus</a></small></button></div>
-      <a class="open-link" href="https://open.spotify.com/${c.spotifyType === "album" ? "album" : "track"}/${esc(c.spotifyId)}" target="_blank" rel="noopener">${c.spotifyType === "album" ? "Écouter l'album sur Spotify ↗" : "Écouter en entier sur Spotify ↗"}</a>
-    </div>
-  </article>`).join("");
-
-// Le lecteur Spotify n'est inséré qu'à la demande : aucun traceur tiers avant ce clic.
-$$(".embed-load").forEach(button => button.addEventListener("click", event => {
-  if (event.target.closest("a")) return;
-  const frame = document.createElement("iframe");
-  frame.title = "Extrait de " + button.dataset.title + " sur Spotify";
-  frame.src = "https://open.spotify.com/embed/" + (button.dataset.type === "album" ? "album" : "track") + "/" + encodeURIComponent(button.dataset.spotify) + "?theme=0";
-  frame.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
-  button.replaceWith(frame);
-}));
+  OniriqueCredits.render($("#creditList"), list.slice(0, 3));
+  $("#creditMore").hidden = list.length <= 3;
+  $("#creditMore a span").textContent = "Tous les crédits (" + list.length + ")";
 }
 renderCredits(CREDITS);
 // Rappel discret, sous le menu, pour un compte dont l'adresse e-mail n'a pas encore été confirmée.

@@ -216,7 +216,7 @@
   "site/popularite.html"
  ],
  "?theme=0": [
-  "site/onirique.html"
+  "site/assets/credits.js"
  ],
  ". À corriger ici si tu connais les vraies valeurs.": [
   "site/stems.html"
@@ -257,7 +257,7 @@
  ".hero .btn-primary": [
   "site/onirique.html"
  ],
- ".sn-burger { display: none; flex: none; width: 44px; height: 44px; align-items: center; justify-content: center; padding: 0; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: rgba(255,255,255,.04); color: var(--mist, #f6eeee); cursor: pointer; } .sn-burger svg { width: 20px; height: 20px; } .sn-burger:hover, .sn-burger:focus-visible { border-color: var(--ember, #e23444); } .sn-panel { position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column; padding: calc(env(safe-area-inset-top, 0px) + 14px) max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 20px) max(16px, env(safe-area-inset-left, 0px)); background: radial-gradient(120% 60% at 50% -10%, rgba(140,6,20,.85), rgba(92,0,8,.45) 40%, transparent 75%), var(--night, #0d0809); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; } .sn-panel[hidden] { display: none; } .sn-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; } .sn-top b { font: 800 16px/1 var(--f-display, \"Arial Black\", sans-serif); letter-spacing: .2em; color: var(--mist, #f6eeee); } .sn-links { display: grid; gap: 2px; } .sn-links > a, .sn-links > button { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 54px; padding: 0 6px; border: 0; border-bottom: 1px solid var(--line, rgba(255,210,214,.13)); background: none; color: var(--mist, #f6eeee); font: 700 21px/1.2 var(--f-display, \"Arial Black\", sans-serif); letter-spacing: .02em; text-align: left; text-decoration: none; cursor: pointer; } .sn-links > a::after { content: \"→\"; font: 400 18px var(--f-body, system-ui); color: var(--haze, #a88f92); } .sn-links > button::after { content: \"+\"; font: 400 24px var(--f-body, system-ui); color: var(--haze, #a88f92); } .sn-links > button[aria-expanded=\"true\"]::after { content: \"−\"; } .sn-tools { display: grid; gap: 14px; padding: 12px 6px 16px; border-bottom: 1px solid var(--line, rgba(255,210,214,.13)); } .sn-tools[hidden] { display: none; } .sn-tools h3 { margin: 0 0 4px; font: 500 11px/1.4 var(--f-mono, ui-monospace, monospace); letter-spacing: .16em; text-transform: uppercase; color: var(--haze, #a88f92); } .sn-tools a { display: block; padding: 8px 0; color: var(--mist, #f6eeee); font: 500 16px/1.3 var(--f-body, system-ui); text-decoration: none; } .sn-title { margin: 26px 6px 10px; font: 500 11px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .18em; text-transform: uppercase; color: var(--haze, #a88f92); } .sn-socials { display: flex; flex-wrap: wrap; gap: 10px; } .sn-socials a { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; padding: 0 16px 0 12px; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: rgba(255,255,255,.03); color: var(--mist, #f6eeee); font: 600 14px/1 var(--f-body, system-ui); text-decoration: none; } .sn-socials a:hover, .sn-socials a:focus-visible { border-color: var(--ember, #e23444); outline: none; } .sn-icon { display: inline-flex; width: 20px; height: 20px; flex: none; } .sn-icon svg { width: 100%; height: 100%; } .sn-account { display: flex; gap: 10px; margin-top: 26px; } .sn-account a { flex: 1; display: inline-flex; justify-content: center; align-items: center; min-height: 50px; border-radius: 999px; font: 600 15px/1 var(--f-body, system-ui); text-decoration: none; } .sn-account .sn-primary { background: var(--mist, #f6eeee); color: var(--night, #0d0809); } .sn-account .sn-ghost { border: 1px solid var(--line, rgba(255,210,214,.16)); color: var(--mist, #f6eeee); } html.sn-lock, html.sn-lock body { overflow: hidden; } /* iPhone : pas d'agrandissement du texte en paysage, et pas de zoom automatique quand on touche un champ (Safari zoome sur tout champ écrit en moins de 16 px, et la page reste ensuite décalée). */ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; } @media (max-width: 760px) { input:not([type=\"checkbox\"]):not([type=\"radio\"]):not([type=\"range\"]), select, textarea { font-size: max(16px, 1em) !important; } } /* « Nos réseaux » dans l'en-tête et en pied de page */ .sn-social-menu { position: relative; display: inline-flex; } .sn-social-btn { display: inline-flex; align-items: center; gap: 7px; border: 0; padding: 0; background: none; color: inherit; font: inherit; cursor: pointer; } .sn-social-btn:hover { color: var(--mist, #f6eeee); } .sn-social-btn::after { content: \"\"; width: 6px; height: 6px; margin-top: -3px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); } .sn-social-drop { position: absolute; right: 0; top: calc(100% + 12px); z-index: 80; min-width: 210px; padding: 8px; border-radius: 16px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: linear-gradient(180deg, var(--deep-2, #2a0a0e), var(--deep, #1a080a)); box-shadow: 0 24px 60px -12px rgba(0,0,0,.8); } .sn-social-drop a { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; color: var(--mist, #f6eeee); font: 500 14px/1.2 var(--f-body, system-ui); text-decoration: none; } .sn-social-drop a:hover, .sn-social-drop a:focus-visible { background: rgba(226,52,68,.16); outline: none; } .sn-foot { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 0 auto 18px; } .sn-foot a { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.16)); color: var(--haze, #a88f92); } .sn-foot a:hover, .sn-foot a:focus-visible { color: var(--mist, #f6eeee); border-color: var(--ember, #e23444); outline: none; } .sn-foot .sn-icon { width: 19px; height: 19px; } /* Langue : une pastille FR | EN dans l'en-tête, toujours visible, et un bandeau en anglais pour qui ne lit pas le français */ .sn-lang { display: inline-flex; flex: none; align-items: center; padding: 3px; gap: 2px; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: rgba(255,255,255,.04); } .sn-lang svg { width: 15px; height: 15px; margin: 0 4px 0 6px; color: var(--haze, #a88f92); flex: none; } .sn-lang button { min-width: 34px; height: 30px; padding: 0 9px; border: 0; border-radius: 999px; background: none; color: var(--haze, #a88f92); font: 600 12px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .08em; cursor: pointer; } .sn-lang button:hover { color: var(--mist, #f6eeee); } .sn-lang button[aria-pressed=\"true\"] { background: var(--ember, #e23444); color: #fff; } header .sn-lang { margin-left: 8px; } .sn-langbar { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 150; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 14px; width: max-content; max-width: calc(100vw - 24px); padding: 12px 14px 12px 18px; border-radius: 18px; border: 1px solid rgba(226,52,68,.55); background: linear-gradient(180deg, var(--deep-2, #2a0a0e), var(--deep, #1a080a)); box-shadow: 0 20px 60px -12px rgba(0,0,0,.85), 0 0 0 4px rgba(226,52,68,.12); color: var(--mist, #f6eeee); font: 500 15px/1.35 var(--f-body, system-ui); } .sn-langbar strong { font-weight: 700; } .sn-langbar .sn-go { padding: 10px 16px; border: 0; border-radius: 999px; background: var(--mist, #f6eeee); color: var(--night, #0d0809); font: 700 14px/1 var(--f-body, system-ui); cursor: pointer; } .sn-langbar .sn-x { width: 34px; height: 34px; border: 1px solid var(--line, rgba(255,210,214,.16)); border-radius: 999px; background: none; color: var(--haze, #a88f92); font: 400 18px/1 var(--f-body, system-ui); cursor: pointer; } /* Téléchargement d'ONIRIQUE CENTRAL : choix du système */ .sn-dl { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: 16px; background: rgba(5,2,3,.72); backdrop-filter: blur(6px); } .sn-dl-box { position: relative; width: min(560px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; padding: 30px 28px 26px; border-radius: 22px; border: 1px solid rgba(226,52,68,.4); background: radial-gradient(120% 70% at 50% -20%, rgba(140,6,20,.55), transparent 70%), var(--deep, #1a080a); box-shadow: 0 30px 90px -20px #000; color: var(--mist, #f6eeee); } .sn-dl-box h2 { margin: 6px 0 14px; font: 800 clamp(22px, 4vw, 28px)/1.15 var(--f-display, \"Arial Black\", sans-serif); } .sn-dl-eyebrow { margin: 0; font: 500 11px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .24em; color: var(--haze, #a88f92); } .sn-dl-text, .sn-dl-wait { margin: 0 0 18px; font: 400 15px/1.6 var(--f-body, system-ui); color: var(--haze, #c9b5b8); } .sn-dl-note { margin: 18px 0 0; font: 400 13px/1.55 var(--f-body, system-ui); color: var(--haze, #a88f92); } .sn-dl-x { position: absolute; right: 14px; top: 14px; width: 36px; height: 36px; border: 1px solid var(--line, rgba(255,210,214,.16)); border-radius: 999px; background: none; color: var(--haze, #a88f92); font: 400 20px/1 var(--f-body, system-ui); cursor: pointer; } .sn-dl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; } .sn-dl-os { display: flex; align-items: center; gap: 14px; padding: 18px; border-radius: 16px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: rgba(255,255,255,.03); color: var(--mist, #f6eeee); text-decoration: none; transition: border-color .2s, background .2s, transform .2s; } .sn-dl-os:hover, .sn-dl-os:focus-visible { border-color: var(--ember, #e23444); background: rgba(226,52,68,.12); transform: translateY(-2px); outline: none; } .sn-dl-os.best { border-color: rgba(226,52,68,.65); } .sn-dl-os svg { flex: none; width: 30px; height: 30px; color: var(--bone, #ffecee); } .sn-dl-os span { display: grid; gap: 5px; } .sn-dl-os b { font: 800 17px/1 var(--f-display, \"Arial Black\", sans-serif); letter-spacing: .04em; } .sn-dl-os small { font: 400 12px/1.4 var(--f-body, system-ui); color: var(--haze, #a88f92); } .sn-dl-row { display: flex; flex-wrap: wrap; gap: 10px; } .sn-dl-main, .sn-dl-ghost { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 20px; border-radius: 999px; font: 700 14px/1 var(--f-body, system-ui); text-decoration: none; cursor: pointer; } .sn-dl-main { border: 0; background: var(--mist, #f6eeee); color: var(--night, #0d0809); } .sn-dl-main:disabled { opacity: .6; cursor: default; } .sn-dl-ghost { border: 1px solid var(--line, rgba(255,210,214,.16)); color: var(--mist, #f6eeee); } /* Annonce en direct, au-dessus de l'en-tête */ .sn-announce { position: relative; z-index: 60; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 48px; font: 600 14px/1.4 var(--f-body, system-ui); text-align: center; } .sn-announce p { margin: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 16px; } .sn-announce span { letter-spacing: .02em; } .sn-announce a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; } .sn-announce-x { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border: 0; border-radius: 999px; background: rgba(0,0,0,.18); color: inherit; font: 400 20px/1 var(--f-body, system-ui); cursor: pointer; } .sn-announce.tone-ember { background: linear-gradient(90deg, #8c0614, #e23444 60%, #8c0614); color: #fff; } .sn-announce.tone-gold { background: linear-gradient(90deg, #b8862b, #f2c46d 55%, #b8862b); color: #1a0d02; } .sn-announce.tone-calm { background: var(--deep-2, #2a0a0e); color: var(--mist, #f6eeee); border-bottom: 1px solid var(--line, rgba(255,210,214,.16)); } /* Maintenance */ .sn-maint { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 32px 20px; text-align: center; background: radial-gradient(90% 60% at 50% 0%, rgba(140,6,20,.75), rgba(92,0,8,.35) 45%, transparent 80%), var(--night, #0d0809); color: var(--mist, #f6eeee); } .sn-maint img { width: 108px; height: auto; filter: drop-shadow(0 0 18px rgba(226,52,68,.8)); } .sn-maint-eyebrow { margin: 6px 0 0; font: 500 12px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .3em; color: var(--haze, #a88f92); } .sn-maint h1 { margin: 0; font: 800 clamp(34px, 7vw, 64px)/1.05 var(--f-display, \"Arial Black\", sans-serif); letter-spacing: -.01em; } .sn-maint-text { max-width: 46ch; margin: 0; font: 400 17px/1.6 var(--f-body, system-ui); color: var(--haze, #c9b5b8); } .sn-maint-link { margin-top: 18px; font: 500 12px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .16em; text-transform: uppercase; color: var(--haze, #a88f92); } .sn-maint-flag { position: relative; z-index: 60; padding: 8px 16px; background: #ffb347; color: #1a0d02; font: 700 13px/1.4 var(--f-body, system-ui); text-align: center; } .sn-langrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; padding: 0 6px; } .sn-langrow span { font: 500 11px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .18em; text-transform: uppercase; color: var(--haze, #a88f92); } @media (max-width: 1280px) { .nav .sn-burger { display: inline-flex; } } @media (max-width: 760px) { header .sn-burger { display: inline-flex; } header nav:not(.nav-links) > :not([data-account]):not(.acct) { display: none !important; } }": [
+ ".sn-burger { display: none; flex: none; width: 44px; height: 44px; align-items: center; justify-content: center; padding: 0; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: rgba(255,255,255,.04); color: var(--mist, #f6eeee); cursor: pointer; } .sn-burger svg { width: 20px; height: 20px; } .sn-burger:hover, .sn-burger:focus-visible { border-color: var(--ember, #e23444); } .sn-panel { position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column; padding: calc(env(safe-area-inset-top, 0px) + 14px) max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 20px) max(16px, env(safe-area-inset-left, 0px)); background: radial-gradient(120% 60% at 50% -10%, rgba(140,6,20,.85), rgba(92,0,8,.45) 40%, transparent 75%), var(--night, #0d0809); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; } .sn-panel[hidden] { display: none; } .sn-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; } .sn-top b { font: 800 16px/1 var(--f-display, \"Arial Black\", sans-serif); letter-spacing: .2em; color: var(--mist, #f6eeee); } .sn-links { display: grid; gap: 2px; } .sn-links > a, .sn-links > button { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 54px; padding: 0 6px; border: 0; border-bottom: 1px solid var(--line, rgba(255,210,214,.13)); background: none; color: var(--mist, #f6eeee); font: 700 21px/1.2 var(--f-display, \"Arial Black\", sans-serif); letter-spacing: .02em; text-align: left; text-decoration: none; cursor: pointer; } .sn-links > a::after { content: \"→\"; font: 400 18px var(--f-body, system-ui); color: var(--haze, #a88f92); } .sn-links > button::after { content: \"+\"; font: 400 24px var(--f-body, system-ui); color: var(--haze, #a88f92); } .sn-links > button[aria-expanded=\"true\"]::after { content: \"−\"; } .sn-tools { display: grid; gap: 14px; padding: 12px 6px 16px; border-bottom: 1px solid var(--line, rgba(255,210,214,.13)); } .sn-tools[hidden] { display: none; } .sn-tools h3 { margin: 0 0 4px; font: 500 11px/1.4 var(--f-mono, ui-monospace, monospace); letter-spacing: .16em; text-transform: uppercase; color: var(--haze, #a88f92); } .sn-tools a { display: block; padding: 8px 0; color: var(--mist, #f6eeee); font: 500 16px/1.3 var(--f-body, system-ui); text-decoration: none; } .sn-title { margin: 26px 6px 10px; font: 500 11px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .18em; text-transform: uppercase; color: var(--haze, #a88f92); } .sn-socials { display: flex; flex-wrap: wrap; gap: 10px; } .sn-socials a { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; padding: 0 16px 0 12px; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: rgba(255,255,255,.03); color: var(--mist, #f6eeee); font: 600 14px/1 var(--f-body, system-ui); text-decoration: none; } .sn-socials a:hover, .sn-socials a:focus-visible { border-color: var(--ember, #e23444); outline: none; } .sn-icon { display: inline-flex; width: 20px; height: 20px; flex: none; } .sn-icon svg { width: 100%; height: 100%; } .sn-account { display: flex; gap: 10px; margin-top: 26px; } .sn-account a { flex: 1; display: inline-flex; justify-content: center; align-items: center; min-height: 50px; border-radius: 999px; font: 600 15px/1 var(--f-body, system-ui); text-decoration: none; } .sn-account .sn-primary { background: var(--mist, #f6eeee); color: var(--night, #0d0809); } .sn-account .sn-ghost { border: 1px solid var(--line, rgba(255,210,214,.16)); color: var(--mist, #f6eeee); } html.sn-lock, html.sn-lock body { overflow: hidden; } /* iPhone : pas d'agrandissement du texte en paysage, et pas de zoom automatique quand on touche un champ (Safari zoome sur tout champ écrit en moins de 16 px, et la page reste ensuite décalée). */ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; } @media (max-width: 760px) { input:not([type=\"checkbox\"]):not([type=\"radio\"]):not([type=\"range\"]), select, textarea { font-size: max(16px, 1em) !important; } } /* « Nos réseaux » dans l'en-tête et en pied de page */ .sn-social-menu { position: relative; display: inline-flex; } .sn-social-btn { display: inline-flex; align-items: center; gap: 7px; border: 0; padding: 0; background: none; color: inherit; font: inherit; cursor: pointer; } .sn-social-btn:hover { color: var(--mist, #f6eeee); } .sn-social-btn::after { content: \"\"; width: 6px; height: 6px; margin-top: -3px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); } .sn-social-drop { position: absolute; right: 0; top: calc(100% + 12px); z-index: 80; min-width: 210px; padding: 8px; border-radius: 16px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: linear-gradient(180deg, var(--deep-2, #2a0a0e), var(--deep, #1a080a)); box-shadow: 0 24px 60px -12px rgba(0,0,0,.8); } .sn-social-drop a { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; color: var(--mist, #f6eeee); font: 500 14px/1.2 var(--f-body, system-ui); text-decoration: none; } .sn-social-drop a:hover, .sn-social-drop a:focus-visible { background: rgba(226,52,68,.16); outline: none; } .sn-foot { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 0 auto 18px; } .sn-foot a { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.16)); color: var(--haze, #a88f92); } .sn-foot a:hover, .sn-foot a:focus-visible { color: var(--mist, #f6eeee); border-color: var(--ember, #e23444); outline: none; } .sn-foot .sn-icon { width: 19px; height: 19px; } /* Langue : une pastille FR | EN dans l'en-tête, toujours visible, et un bandeau en anglais pour qui ne lit pas le français */ .sn-lang { display: inline-flex; flex: none; align-items: center; padding: 3px; gap: 2px; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: rgba(255,255,255,.04); } .sn-lang svg { width: 15px; height: 15px; margin: 0 4px 0 6px; color: var(--haze, #a88f92); flex: none; } .sn-lang button { min-width: 34px; height: 30px; padding: 0 9px; border: 0; border-radius: 999px; background: none; color: var(--haze, #a88f92); font: 600 12px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .08em; cursor: pointer; } .sn-lang button:hover { color: var(--mist, #f6eeee); } .sn-lang button[aria-pressed=\"true\"] { background: var(--ember, #e23444); color: #fff; } header .sn-lang { margin-left: 8px; } .sn-langbar { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 150; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 14px; width: max-content; max-width: calc(100vw - 24px); padding: 12px 14px 12px 18px; border-radius: 18px; border: 1px solid rgba(226,52,68,.55); background: linear-gradient(180deg, var(--deep-2, #2a0a0e), var(--deep, #1a080a)); box-shadow: 0 20px 60px -12px rgba(0,0,0,.85), 0 0 0 4px rgba(226,52,68,.12); color: var(--mist, #f6eeee); font: 500 15px/1.35 var(--f-body, system-ui); } .sn-langbar strong { font-weight: 700; } .sn-langbar-text { display: inline-flex; align-items: center; gap: 8px; } .sn-langbar-text svg { width: 17px; height: 17px; flex: none; color: var(--ember, #e23444); } .sn-langbar .sn-go { padding: 10px 16px; border: 0; border-radius: 999px; background: var(--mist, #f6eeee); color: var(--night, #0d0809); font: 700 14px/1 var(--f-body, system-ui); cursor: pointer; } .sn-langbar .sn-x { width: 34px; height: 34px; border: 1px solid var(--line, rgba(255,210,214,.16)); border-radius: 999px; background: none; color: var(--haze, #a88f92); font: 400 18px/1 var(--f-body, system-ui); cursor: pointer; } /* Téléchargement d'ONIRIQUE CENTRAL : choix du système */ .sn-dl { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: 16px; background: rgba(5,2,3,.72); backdrop-filter: blur(6px); } .sn-dl-box { position: relative; width: min(560px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; padding: 30px 28px 26px; border-radius: 22px; border: 1px solid rgba(226,52,68,.4); background: radial-gradient(120% 70% at 50% -20%, rgba(140,6,20,.55), transparent 70%), var(--deep, #1a080a); box-shadow: 0 30px 90px -20px #000; color: var(--mist, #f6eeee); } .sn-dl-box h2 { margin: 6px 0 14px; font: 800 clamp(22px, 4vw, 28px)/1.15 var(--f-display, \"Arial Black\", sans-serif); } .sn-dl-eyebrow { margin: 0; font: 500 11px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .24em; color: var(--haze, #a88f92); } .sn-dl-text, .sn-dl-wait { margin: 0 0 18px; font: 400 15px/1.6 var(--f-body, system-ui); color: var(--haze, #c9b5b8); } .sn-dl-note { margin: 18px 0 0; font: 400 13px/1.55 var(--f-body, system-ui); color: var(--haze, #a88f92); } .sn-dl-x { position: absolute; right: 14px; top: 14px; width: 36px; height: 36px; border: 1px solid var(--line, rgba(255,210,214,.16)); border-radius: 999px; background: none; color: var(--haze, #a88f92); font: 400 20px/1 var(--f-body, system-ui); cursor: pointer; } .sn-dl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; } .sn-dl-os { display: flex; align-items: center; gap: 14px; padding: 18px; border-radius: 16px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: rgba(255,255,255,.03); color: var(--mist, #f6eeee); text-decoration: none; transition: border-color .2s, background .2s, transform .2s; } .sn-dl-os:hover, .sn-dl-os:focus-visible { border-color: var(--ember, #e23444); background: rgba(226,52,68,.12); transform: translateY(-2px); outline: none; } .sn-dl-os.best { border-color: rgba(226,52,68,.65); } .sn-dl-os svg { flex: none; width: 30px; height: 30px; color: var(--bone, #ffecee); } .sn-dl-os span { display: grid; gap: 5px; } .sn-dl-os b { font: 800 17px/1 var(--f-display, \"Arial Black\", sans-serif); letter-spacing: .04em; } .sn-dl-os small { font: 400 12px/1.4 var(--f-body, system-ui); color: var(--haze, #a88f92); } .sn-dl-row { display: flex; flex-wrap: wrap; gap: 10px; } .sn-dl-main, .sn-dl-ghost { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 20px; border-radius: 999px; font: 700 14px/1 var(--f-body, system-ui); text-decoration: none; cursor: pointer; } .sn-dl-main { border: 0; background: var(--mist, #f6eeee); color: var(--night, #0d0809); } .sn-dl-main:disabled { opacity: .6; cursor: default; } .sn-dl-ghost { border: 1px solid var(--line, rgba(255,210,214,.16)); color: var(--mist, #f6eeee); } /* Annonce en direct, au-dessus de l'en-tête */ .sn-announce { position: relative; z-index: 60; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 48px; font: 600 14px/1.4 var(--f-body, system-ui); text-align: center; } .sn-announce p { margin: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 16px; } .sn-announce span { letter-spacing: .02em; } .sn-announce a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; } .sn-announce-x { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border: 0; border-radius: 999px; background: rgba(0,0,0,.18); color: inherit; font: 400 20px/1 var(--f-body, system-ui); cursor: pointer; } .sn-announce.tone-ember { background: linear-gradient(90deg, #8c0614, #e23444 60%, #8c0614); color: #fff; } .sn-announce.tone-gold { background: linear-gradient(90deg, #b8862b, #f2c46d 55%, #b8862b); color: #1a0d02; } .sn-announce.tone-calm { background: var(--deep-2, #2a0a0e); color: var(--mist, #f6eeee); border-bottom: 1px solid var(--line, rgba(255,210,214,.16)); } /* Maintenance */ .sn-maint { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 32px 20px; text-align: center; background: radial-gradient(90% 60% at 50% 0%, rgba(140,6,20,.75), rgba(92,0,8,.35) 45%, transparent 80%), var(--night, #0d0809); color: var(--mist, #f6eeee); } .sn-maint img { width: 108px; height: auto; filter: drop-shadow(0 0 18px rgba(226,52,68,.8)); } .sn-maint-eyebrow { margin: 6px 0 0; font: 500 12px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .3em; color: var(--haze, #a88f92); } .sn-maint h1 { margin: 0; font: 800 clamp(34px, 7vw, 64px)/1.05 var(--f-display, \"Arial Black\", sans-serif); letter-spacing: -.01em; } .sn-maint-text { max-width: 46ch; margin: 0; font: 400 17px/1.6 var(--f-body, system-ui); color: var(--haze, #c9b5b8); } .sn-maint-link { margin-top: 18px; font: 500 12px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .16em; text-transform: uppercase; color: var(--haze, #a88f92); } .sn-maint-flag { position: relative; z-index: 60; padding: 8px 16px; background: #ffb347; color: #1a0d02; font: 700 13px/1.4 var(--f-body, system-ui); text-align: center; } .sn-langrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; padding: 0 6px; } .sn-langrow span { font: 500 11px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .18em; text-transform: uppercase; color: var(--haze, #a88f92); } @media (max-width: 1280px) { .nav .sn-burger { display: inline-flex; } } @media (max-width: 760px) { header .sn-burger { display: inline-flex; } header nav:not(.nav-links) > :not([data-account]):not(.acct) { display: none !important; } }": [
   "site/assets/site-nav.js"
  ],
  ".tools { position: relative; display: inline-flex; } :where(.tools-btn) { border: 0; padding: 0; background: none; color: inherit; font: inherit; cursor: pointer; } .tools-btn { display: inline-flex; align-items: center; gap: 7px; background: none; cursor: pointer; } .tools-btn:hover { color: var(--mist, #f6eeee); } .tools-btn.btn:hover, .tools-btn.btn[aria-expanded=\"true\"], .tools-btn.btn.here { border-color: var(--ember, #e23444); } .tools-btn::after { content: \"\"; width: 6px; height: 6px; margin-top: -3px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); transition: transform .2s; } .tools-btn[aria-expanded=\"true\"]::after { margin-top: 3px; transform: rotate(225deg); } .tools-menu { position: absolute; left: 50%; top: calc(100% + 12px); z-index: 80; width: min(660px, calc(100vw - 24px)); max-height: min(78vh, 640px); overflow-y: auto; translate: -50% 0; padding: 16px 12px 8px; border-radius: 18px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: linear-gradient(180deg, var(--deep-2, #2a0a0e), var(--deep, #1a080a)); box-shadow: 0 24px 60px -12px rgba(0,0,0,.8); text-align: left; } .tools-groups { columns: 3 170px; column-gap: 8px; } .tools-group { break-inside: avoid; margin: 0 0 12px; } .tools-group h3 { margin: 0 0 4px; padding: 0 12px; font: 500 10px/1.6 var(--f-mono, ui-monospace, monospace); letter-spacing: .16em; text-transform: uppercase; color: var(--haze, #b9a2a5); } .tools-menu a { display: block; padding: 9px 12px; border-radius: 10px; color: var(--mist, #f6eeee); font: 500 14px/1.25 var(--f-body, system-ui, sans-serif); text-decoration: none; } .tools-menu a:hover, .tools-menu a:focus-visible, .tools-menu a[aria-current=\"page\"] { background: rgba(226,52,68,.16); color: var(--mist, #f6eeee); outline: none; } .tools-menu .tools-all { margin-top: 2px; padding-block: 12px; border-top: 1px solid var(--line, rgba(255,210,214,.16)); border-radius: 0 0 10px 10px; color: var(--ember-text, #ff6b78); font: 500 12px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .1em; text-transform: uppercase; }": [
@@ -657,22 +657,29 @@
  ],
  "&amp;": [
   "site/onirique.html",
+  "site/assets/credits.js",
   "server/src/mailtemplate.js"
  ],
  "&gt;": [
   "site/onirique.html",
+  "site/assets/credits.js",
   "server/src/mailtemplate.js"
  ],
  "&lt;": [
   "site/onirique.html",
+  "site/assets/credits.js",
   "server/src/mailtemplate.js"
  ],
  "&quot;": [
   "site/onirique.html",
+  "site/assets/credits.js",
   "server/src/mailtemplate.js"
  ],
  "&scale=": [
   "site/gammes.html"
+ ],
+ "#creditMore a span": [
+  "site/onirique.html"
  ],
  "%;width:": [
   "site/tessiture.html"
@@ -1213,7 +1220,8 @@
   "app/renderer/views/admin.js"
  ],
  "Accueil": [
-  "site/boutique.html"
+  "site/boutique.html",
+  "site/credits.html"
  ],
  "Achat": [
   "app/renderer/views/library.js",
@@ -1439,6 +1447,7 @@
   "site/confidentialite.html",
   "site/convertisseur.html",
   "site/cookies.html",
+  "site/credits.html",
   "site/decoupe.html",
   "site/delais.html",
   "site/gammes.html",
@@ -1630,6 +1639,9 @@
  "assets/cover-cinema.jpg": [
   "site/onirique.html"
  ],
+ "assets/logo-small.png": [
+  "site/compte.html"
+ ],
  "assets/logo.png": [
   "site/boutique.html"
  ],
@@ -1691,6 +1703,9 @@
  "Aucun crédit : la page d'accueil affiche le titre d'exemple.": [
   "site/admin.html",
   "app/renderer/views/admin.js"
+ ],
+ "Aucun crédit ne correspond.": [
+  "site/credits.html"
  ],
  "Aucun destinataire pour le moment.": [
   "server/src/newsletter.js"
@@ -1841,7 +1856,7 @@
   "app/renderer/views/admin.js"
  ],
  "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture": [
-  "site/onirique.html"
+  "site/assets/credits.js"
  ],
  "Autotune dans l'esprit des références du genre, avec un vocodeur piloté par la voix elle-même.": [
   "server/src/seed.js"
@@ -2024,6 +2039,7 @@
   "site/bpm-tonalite.html",
   "site/checklist-sortie.html",
   "site/convertisseur.html",
+  "site/credits.html",
   "site/decoupe.html",
   "site/delais.html",
   "site/gammes.html",
@@ -2121,6 +2137,9 @@
   "site/onirique.html"
  ],
  "C:\\ProgramData": [
+  "app/main/installer.js"
+ ],
+ "C:\\Windows": [
   "app/main/installer.js"
  ],
  "C'est ajouté à ton compte. Installe le plugin depuis Onirique Central.": [
@@ -2447,6 +2466,7 @@
   "site/confidentialite.html",
   "site/convertisseur.html",
   "site/cookies.html",
+  "site/credits.html",
   "site/decoupe.html",
   "site/delais.html",
   "site/gammes.html",
@@ -2564,11 +2584,12 @@
   "site/admin.html",
   "site/boutique.html",
   "site/compte.html",
+  "site/credits.html",
   "app/renderer/views/admin.js",
   "app/renderer/views/support-admin.js"
  ],
  "Charger le lecteur Spotify": [
-  "site/onirique.html"
+  "site/assets/credits.js"
  ],
  "Charte graphique": [
   "site/admin.html"
@@ -2583,6 +2604,9 @@
  "Checklist établie avec onirique.store": [
   "site/checklist-sortie.html"
  ],
+ "Chercher dans les crédits": [
+  "site/credits.html"
+ ],
  "Chercher un compte": [
   "site/admin.html"
  ],
@@ -2592,6 +2616,9 @@
  "Chercher un e-mail ou un nom…": [
   "app/renderer/views/admin.js"
  ],
+ "Chercher un titre, un artiste, un plugin": [
+  "site/credits.html"
+ ],
  "Chercher une clé, un e-mail, une note…": [
   "app/renderer/views/admin.js"
  ],
@@ -2600,6 +2627,9 @@
  ],
  "Choisi par toi": [
   "site/stems.html"
+ ],
+ "Choisir la photo d'ingé": [
+  "site/compte.html"
  ],
  "Choisir le fichier": [
   "app/renderer/views/admin.js"
@@ -2887,6 +2917,7 @@
   "site/confidentialite.html",
   "site/convertisseur.html",
   "site/cookies.html",
+  "site/credits.html",
   "site/decoupe.html",
   "site/delais.html",
   "site/gammes.html",
@@ -2973,6 +3004,7 @@
   "site/confidentialite.html",
   "site/convertisseur.html",
   "site/cookies.html",
+  "site/credits.html",
   "site/decoupe.html",
   "site/delais.html",
   "site/gammes.html",
@@ -3085,6 +3117,7 @@
   "site/confidentialite.html",
   "site/convertisseur.html",
   "site/cookies.html",
+  "site/credits.html",
   "site/decoupe.html",
   "site/delais.html",
   "site/gammes.html",
@@ -3222,9 +3255,13 @@
  ],
  "Crédits": [
   "site/admin.html",
+  "site/credits.html",
   "site/onirique.html",
   "site/assets/site-nav.js",
   "app/renderer/views/admin.js"
+ ],
+ "Crédits — ONIRIQUE": [
+  "site/credits.html"
  ],
  "Crée ton compte d'abord": [
   "site/assets/site-nav.js"
@@ -3454,6 +3491,7 @@
   "app/renderer/views/subscription.js"
  ],
  "Déjà mixé avec": [
+  "site/credits.html",
   "site/onirique.html"
  ],
  "Déjà possédé": [
@@ -3782,8 +3820,8 @@
  "Durée": [
   "site/admin.html",
   "site/cookies.html",
-  "site/onirique.html",
   "site/stems.html",
+  "site/assets/credits.js",
   "site/pages.mjs",
   "app/renderer/views/admin.js"
  ],
@@ -3842,10 +3880,10 @@
   "site/assets/site-nav.js"
  ],
  "Écouter en entier sur Spotify ↗": [
-  "site/onirique.html"
+  "site/assets/credits.js"
  ],
  "Écouter l'album sur Spotify ↗": [
-  "site/onirique.html"
+  "site/assets/credits.js"
  ],
  "Écoutes": [
   "site/revenus-streaming.html"
@@ -3988,7 +4026,7 @@
   "site/bpm-tonalite.html"
  ],
  "En savoir plus": [
-  "site/onirique.html"
+  "site/assets/credits.js"
  ],
  "en stéréo dont les deux voies sont identiques (du mono exporté en stéréo, deux fois plus lourd pour rien) :": [
   "site/stems.html"
@@ -4030,6 +4068,9 @@
   "site/admin.html"
  ],
  "Enregistrer le mot de passe": [
+  "site/compte.html"
+ ],
+ "Enregistrer le profil d'ingé": [
   "site/compte.html"
  ],
  "Entends ce que fait": [
@@ -4345,7 +4386,7 @@
  ],
  "Extrait de": [
   "site/decoupe.html",
-  "site/onirique.html"
+  "site/assets/credits.js"
  ],
  "Extraits publiés régulièrement": [
   "site/checklist-sortie.html"
@@ -4379,7 +4420,7 @@
   "app/renderer/views/admin.js",
   "app/renderer/views/auth.js"
  ],
- "facultatif · affiché avec ton nom sous les crédits que tu as mixés": [
+ "facultatif · ton pseudo devient un lien vers ce profil": [
   "site/compte.html"
  ],
  "Fais glisser l'image pour la placer, zoome avec la molette ou le curseur : ce qui est dans le cadre est ce que montreront la boutique et la page du plugin. Pour une interface en hauteur, « Garder l'image entière » l'envoie sans la rogner : la page du plugin la montre en entier, les cartes en montrent le milieu.": [
@@ -4507,8 +4548,8 @@
  "Format": [
   "site/admin.html",
   "site/convertisseur.html",
-  "site/onirique.html",
   "site/stems.html",
+  "site/assets/credits.js",
   "app/renderer/views/admin.js"
  ],
  "Format : WAV 24 bits,": [
@@ -4693,6 +4734,9 @@
   "app/main/installer.js"
  ],
  "HKLM\\SOFTWARE\\Microsoft\\Cryptography": [
+  "app/main/installer.js"
+ ],
+ "HKLM\\SYSTEM\\HardwareConfig": [
   "app/main/installer.js"
  ],
  "Homonyme": [
@@ -4881,6 +4925,9 @@
  ],
  "Instagram (facultatif)": [
   "app/renderer/views/account.js"
+ ],
+ "Instagram ne laisse plus récupérer une photo de profil automatiquement : choisis la même image, ou une autre.": [
+  "site/compte.html"
  ],
  "Installation des plugins en un clic": [
   "site/onirique.html"
@@ -5467,6 +5514,9 @@
   "site/remboursement.html",
   "site/pages.mjs"
  ],
+ "Le profil d'ingé est réservé aux fondateurs.": [
+  "server/src/app.js"
+ ],
  "Le résultat est-il toujours juste ?": [
   "site/bpm-tonalite.html"
  ],
@@ -5747,6 +5797,9 @@
   "site/mentions-legales.html",
   "site/pages.mjs"
  ],
+ "Les premiers crédits arrivent bientôt.": [
+  "site/credits.html"
+ ],
  "Les prix sont indiqués en euros, toutes taxes comprises. Hors de la zone euro, la page de paiement peut afficher le prix converti dans votre monnaie. Le prix applicable est celui affiché sur la page de paiement au moment de valider la commande. Aucun frais de livraison ne s'ajoute, les produits étant numériques.": [
   "site/cgv.html",
   "site/pages.mjs"
@@ -5762,6 +5815,9 @@
  ],
  "Les temps en millisecondes pour caler délais, pré-délais et reverbs sur le tempo.": [
   "site/assets/tools-menu.js"
+ ],
+ "Les titres et albums mixés avec les plugins Onirique, du plus connu au moins connu : écoute un extrait, découvre l'ingé et les plugins utilisés.": [
+  "site/credits.html"
  ],
  "Les titres réalisés avec vos plugins, affichés dans la section Crédits de la page d'accueil. Collez le lien Spotify d'un titre ou d'un album entier : son nom et sa pochette sont récupérés tout seuls. La liste se range du plus connu au moins connu (popularité Spotify, relue chaque jour).": [
   "site/admin.html"
@@ -5990,6 +6046,7 @@
   "site/confidentialite.html",
   "site/convertisseur.html",
   "site/cookies.html",
+  "site/credits.html",
   "site/decoupe.html",
   "site/delais.html",
   "site/gammes.html",
@@ -6069,6 +6126,9 @@
   "app/renderer/app.js"
  ],
  "M0.5 0.5h9v9h-9z": [
+  "app/renderer/app.js"
+ ],
+ "M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z": [
   "app/renderer/app.js"
  ],
  "Mac": [
@@ -6194,6 +6254,7 @@
   "site/confidentialite.html",
   "site/convertisseur.html",
   "site/cookies.html",
+  "site/credits.html",
   "site/decoupe.html",
   "site/delais.html",
   "site/gammes.html",
@@ -6364,7 +6425,7 @@
   "site/onirique.html"
  ],
  "Mix par {}": [
-  "site/onirique.html"
+  "site/assets/credits.js"
  ],
  "Mixolydian (mixolydien)": [
   "site/gammes.html"
@@ -6532,6 +6593,7 @@
   "site/bpm-tonalite.html",
   "site/checklist-sortie.html",
   "site/convertisseur.html",
+  "site/credits.html",
   "site/decoupe.html",
   "site/delais.html",
   "site/gammes.html",
@@ -6559,6 +6621,7 @@
   "site/assets/stem-kind.js"
  ],
  "NFD": [
+  "site/credits.html",
   "server/src/app.js"
  ],
  "NFR": [
@@ -6803,6 +6866,7 @@
   "site/confidentialite.html",
   "site/convertisseur.html",
   "site/cookies.html",
+  "site/credits.html",
   "site/decoupe.html",
   "site/delais.html",
   "site/gammes.html",
@@ -6915,7 +6979,7 @@
   "server/src/seed.js"
  ],
  "Onirique VocalBox": [
-  "site/onirique.html"
+  "site/assets/credits.js"
  ],
  "Onirique VocalBox : toute une chaîne vocale dans un seul plugin VST3 pour Windows.": [
   "site/onirique.html"
@@ -6937,6 +7001,9 @@
   "site/pages.mjs"
  ],
  "onirique:{}": [
+  "app/main/installer.js"
+ ],
+ "onirique2:{}": [
   "app/main/installer.js"
  ],
  "OPTO": [
@@ -7133,6 +7200,7 @@
   "site/confidentialite.html",
   "site/convertisseur.html",
   "site/cookies.html",
+  "site/credits.html",
   "site/decoupe.html",
   "site/delais.html",
   "site/gammes.html",
@@ -7399,6 +7467,15 @@
  "Phénomène": [
   "site/popularite.html"
  ],
+ "Photo d'ingé": [
+  "site/compte.html"
+ ],
+ "Photo d'ingé enregistrée.": [
+  "site/compte.html"
+ ],
+ "Photo d'ingé retirée.": [
+  "site/compte.html"
+ ],
  "Photo de profil": [
   "site/compte.html"
  ],
@@ -7595,7 +7672,7 @@
   "site/admin.html"
  ],
  "Pochette de {} par {}": [
-  "site/onirique.html"
+  "site/assets/credits.js"
  ],
  "Pointée": [
   "site/delais.html"
@@ -7858,6 +7935,12 @@
  "Profil": [
   "app/renderer/views/account.js"
  ],
+ "Profil d'ingé": [
+  "site/compte.html"
+ ],
+ "Profil d'ingé enregistré.": [
+  "site/compte.html"
+ ],
  "Profil enregistré.": [
   "site/compte.html",
   "app/renderer/views/account.js"
@@ -7886,6 +7969,12 @@
  "Propriété intellectuelle": [
   "site/mentions-legales.html",
   "site/pages.mjs"
+ ],
+ "Pseudo d'ingé": [
+  "site/compte.html"
+ ],
+ "Pseudo d'ingé (affiché sous les crédits)": [
+  "app/renderer/views/account.js"
  ],
  "Publication en cours": [
   "site/compte.html"
@@ -8328,6 +8417,7 @@
   "site/compte.html",
   "site/confidentialite.html",
   "site/cookies.html",
+  "site/credits.html",
   "site/mentions-legales.html",
   "site/onirique.html",
   "site/popularite.html",
@@ -8844,7 +8934,7 @@
  ],
  "Sortie": [
   "site/admin.html",
-  "site/onirique.html",
+  "site/assets/credits.js",
   "site/assets/tools-menu.js",
   "app/renderer/views/admin.js"
  ],
@@ -8859,6 +8949,9 @@
  ],
  "Sous le capot.": [
   "site/onirique.html"
+ ],
+ "Sous les crédits du site, c'est ce profil qui s'affiche, jamais ton nom de compte ni ta photo de profil. Un clic sur ton pseudo ouvre ton Instagram.": [
+  "site/compte.html"
  ],
  "Sous Windows, si « Windows a protégé votre ordinateur » s'affiche : Informations complémentaires, puis Exécuter quand même. L'application n'est pas encore signée, d'où cet avertissement.": [
   "site/onirique.html"
@@ -8879,7 +8972,7 @@
   "site/admin.html"
  ],
  "Spotify déposera alors ses propres cookies.": [
-  "site/onirique.html"
+  "site/assets/credits.js"
  ],
  "Spotify est une marque de Spotify AB. Cet outil est indépendant et n'est ni édité ni approuvé par Spotify.": [
   "site/popularite.html"
@@ -8954,6 +9047,7 @@
   "site/confidentialite.html",
   "site/convertisseur.html",
   "site/cookies.html",
+  "site/credits.html",
   "site/decoupe.html",
   "site/delais.html",
   "site/gammes.html",
@@ -9045,7 +9139,7 @@
   "site/onirique.html"
  ],
  "sur Spotify": [
-  "site/onirique.html"
+  "site/assets/credits.js"
  ],
  "Sur tes réseaux, avec le lien de pré-save.": [
   "site/checklist-sortie.html"
@@ -9079,6 +9173,9 @@
  ],
  "Ta part des revenus (%)": [
   "site/revenus-streaming.html"
+ ],
+ "Ta photo d'ingé": [
+  "site/compte.html"
  ],
  "Ta progression est gardée sur cet appareil : rien n'est envoyé.": [
   "site/checklist-sortie.html"
@@ -9355,6 +9452,9 @@
  "Ton navigateur ne sait pas lire ce fichier. Essaie en MP3 ou en WAV.": [
   "site/bpm-tonalite.html"
  ],
+ "Ton nom d'artiste": [
+  "site/compte.html"
+ ],
  "Ton score de": [
   "site/popularite.html"
  ],
@@ -9396,6 +9496,12 @@
  "Tous les comptes (information de service)": [
   "server/src/newsletter.js"
  ],
+ "Tous les crédits": [
+  "site/onirique.html"
+ ],
+ "Tous les crédits (": [
+  "site/onirique.html"
+ ],
  "Tous les outils": [
   "site/accordeur.html",
   "site/checklist-sortie.html",
@@ -9434,6 +9540,9 @@
  ],
  "Tous les plugins sont offerts à ce compte. Cliquer pour couper.": [
   "app/renderer/app.js"
+ ],
+ "Tous les titres et albums sortis avec les plugins Onirique sur la chaîne de mix, du plus connu au moins connu. Écoute un extrait, découvre l'ingé et les plugins utilisés.": [
+  "site/credits.html"
  ],
  "Tout": [
   "site/boutique.html",
@@ -9522,6 +9631,9 @@
  ],
  "Trop bas": [
   "site/accordeur.html"
+ ],
+ "Trop de nouveaux ordinateurs activés ce mois-ci pour {}. Réessayez dans quelques jours, ou écrivez au support.": [
+  "server/src/licensing.js"
  ],
  "Trop de tentatives, réessayez dans quelques minutes.": [
   "server/src/auth.js"
@@ -9777,7 +9889,7 @@
   "app/main/main.js"
  ],
  "url('{}')": [
-  "site/onirique.html"
+  "site/assets/credits.js"
  ],
  "url(\"{}\")": [
   "site/admin.html",
@@ -9811,7 +9923,7 @@
   "app/renderer/views/admin.js"
  ],
  "Utilisé sur : {}": [
-  "site/onirique.html"
+  "site/assets/credits.js"
  ],
  "Utiliser un autre compte": [
   "app/renderer/app.js"
@@ -10141,6 +10253,9 @@
  ],
  "Votre nom (facultatif)": [
   "site/support.html"
+ ],
+ "Votre nom d'artiste": [
+  "app/renderer/views/account.js"
  ],
  "Votre parrainage vous rapporte — ONIRIQUE": [
   "server/src/promos.js"

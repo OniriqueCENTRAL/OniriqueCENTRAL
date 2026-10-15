@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=11b20aaa"></script>
+<script src="assets/i18n.js?v=734f8baa"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Compte</title>
 <meta name="robots" content="noindex">
@@ -198,7 +198,6 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
         <form id="profile-form">
           <label>Nom affiché<input id="profile-name" maxlength="80" autocomplete="name"></label>
           <label>E-mail<input id="profile-email" type="email" disabled></label>
-          <label>Instagram <span class="hint">facultatif · affiché avec ton nom sous les crédits que tu as mixés</span><input id="profile-instagram" maxlength="200" placeholder="@toncompte ou lien de ton profil" autocomplete="off" spellcheck="false"></label>
           <label class="check"><input type="checkbox" id="profile-news"><span>Recevoir par e-mail les nouveautés, offres et codes promo d'ONIRIQUE</span></label>
           <div class="notice" id="profile-notice" role="status"></div>
           <div><button class="btn btn-ghost" type="submit">Enregistrer</button></div>
@@ -210,6 +209,30 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
           <div><button class="btn btn-ghost" type="submit">Changer le mot de passe</button></div>
         </form>
       </div>
+    </div>
+
+    <!-- Réservé aux fondateurs : ce qui s'affiche sous les crédits qu'ils ont mixés, à la place du compte -->
+    <div class="panel" id="inge" hidden>
+      <div class="eyebrow">Profil d'ingé</div>
+      <p class="muted" style="margin-top:0">Sous les crédits du site, c'est ce profil qui s'affiche, jamais ton nom de compte ni ta photo de profil. Un clic sur ton pseudo ouvre ton Instagram.</p>
+      <div class="photo">
+        <img id="eng-avatar" alt="Ta photo d'ingé" width="84" height="84">
+        <div>
+          <div class="between" style="justify-content:flex-start">
+            <button class="btn btn-ghost" id="eng-pick" type="button">Choisir la photo d'ingé</button>
+            <input id="eng-file" type="file" accept="image/png,image/jpeg,image/webp" aria-label="Photo d'ingé" hidden>
+            <button class="link" id="eng-remove" type="button" hidden>Retirer</button>
+          </div>
+          <p class="muted">Instagram ne laisse plus récupérer une photo de profil automatiquement : choisis la même image, ou une autre.</p>
+          <div class="notice" id="eng-photo-notice" role="status"></div>
+        </div>
+      </div>
+      <form id="eng-form" class="settings" style="grid-template-columns:minmax(0,1fr)">
+        <label>Pseudo d'ingé<input id="eng-name" maxlength="40" placeholder="Ton nom d'artiste" autocomplete="off"></label>
+        <label>Instagram <span class="hint">facultatif · ton pseudo devient un lien vers ce profil</span><input id="profile-instagram" maxlength="200" placeholder="@toncompte ou lien de ton profil" autocomplete="off" spellcheck="false"></label>
+        <div class="notice" id="eng-notice" role="status"></div>
+        <div><button class="btn btn-ghost" type="submit">Enregistrer le profil d'ingé</button></div>
+      </form>
     </div>
 
     <div class="panel" id="licences">
@@ -324,6 +347,11 @@ function show(me) {
   const role = { vip: "VIP", abrasion: "Abrasion", relic: "Relic", admin: "Admin", founder: "Fondateur" }[me.user.role];
   $("email-line").textContent = me.user.email + (role ? " · " + role : "");
   $("profile-name").value = me.user.name || "";
+  // Profil d'ingé : les fondateurs seulement. Sans photo d'ingé, une silhouette (jamais la photo du compte).
+  $("inge").hidden = me.user.role !== "founder";
+  $("eng-name").value = me.user.engineerName || "";
+  $("eng-avatar").src = me.user.engineerAvatar || "assets/logo-small.png";
+  $("eng-remove").hidden = !me.user.engineerAvatar;
   $("profile-instagram").value = me.user.instagram ? "@" + me.user.instagram.replace(/^https:\/\/www\.instagram\.com\//, "").replace(/\/$/, "") : "";
   $("profile-news").checked = !!me.user.newsletter;
   showReferral(me.referral);
@@ -499,6 +527,54 @@ function say(id, text, failed = false) {
   $(id).textContent = text;
 }
 
+// Une image recadrée en carré et réduite à 512 px, dans le navigateur, avant l'envoi.
+async function squareJpeg(file) {
+  const image = await createImageBitmap(file).catch(() => { throw new Error("Ce fichier n'est pas une image lisible."); });
+  const side = Math.min(image.width, image.height);
+  const canvas = Object.assign(document.createElement("canvas"), { width: 512, height: 512 });
+  const pen = canvas.getContext("2d");
+  pen.fillStyle = "#0d0809";
+  pen.fillRect(0, 0, 512, 512);
+  pen.drawImage(image, (image.width - side) / 2, (image.height - side) / 2, side, side, 0, 0, 512, 512);
+  return new Promise((done) => canvas.toBlob(done, "image/jpeg", 0.9));
+}
+
+// Profil d'ingé : sa photo, son pseudo, son Instagram.
+$("eng-pick").onclick = () => $("eng-file").click();
+$("eng-file").onchange = async (event) => {
+  const file = event.target.files[0];
+  event.target.value = "";
+  if (!file) return;
+  say("eng-photo-notice", "");
+  try {
+    const response = await fetch("/api/me/engineer-avatar", { method: "PUT", headers: { Authorization: "Bearer " + saved(), "Content-Type": "image/jpeg" }, body: await squareJpeg(file) });
+    if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "La photo n'a pas pu être envoyée.");
+    show(await api("GET", "/me"));
+    say("eng-photo-notice", "Photo d'ingé enregistrée.");
+  } catch (error) {
+    say("eng-photo-notice", error.message, true);
+  }
+};
+$("eng-remove").onclick = async () => {
+  try {
+    await api("DELETE", "/me/engineer-avatar");
+    show(await api("GET", "/me"));
+    say("eng-photo-notice", "Photo d'ingé retirée.");
+  } catch (error) {
+    say("eng-photo-notice", error.message, true);
+  }
+};
+$("eng-form").onsubmit = async (event) => {
+  event.preventDefault();
+  try {
+    await api("POST", "/me/profile", { engineerName: $("eng-name").value.trim(), instagram: $("profile-instagram").value.trim() });
+    show(await api("GET", "/me"));
+    say("eng-notice", "Profil d'ingé enregistré.");
+  } catch (error) {
+    say("eng-notice", error.message, true);
+  }
+};
+
 // Photo de profil : recadrée en carré et réduite à 512 px ici, dans le navigateur, avant l'envoi.
 $("avatar-pick").onclick = () => $("avatar-file").click();
 $("avatar-file").onchange = async (event) => {
@@ -537,7 +613,7 @@ $("profile-form").onsubmit = async (event) => {
   event.preventDefault();
   say("profile-notice", "");
   try {
-    await api("POST", "/me/profile", { name: $("profile-name").value.trim(), instagram: $("profile-instagram").value.trim() });
+    await api("POST", "/me/profile", { name: $("profile-name").value.trim() });
     await api("POST", "/me/newsletter", { enabled: $("profile-news").checked });
     show(await api("GET", "/me"));
     say("profile-notice", "Profil enregistré.");

@@ -260,7 +260,7 @@ export function createApp() {
   const creditRows = () => {
     const products = new Map(all('SELECT id, name, slug FROM products').map((p) => [p.id, p]));
     return all(
-      `SELECT c.*, u.name AS engineer_name, u.email AS engineer_email, u.instagram AS engineer_instagram, u.avatar AS engineer_avatar
+      `SELECT c.*, u.engineer_name AS engineer_alias, u.name AS engineer_name, u.email AS engineer_email, u.instagram AS engineer_instagram, u.engineer_avatar AS engineer_avatar
        FROM credits c LEFT JOIN users u ON u.id = c.engineer_id
        ORDER BY c.popularity IS NULL, c.popularity DESC, c.created_at DESC`).map((c) => {
       const plugins = (parseProductIds(c.product_ids) || (c.product_id ? [c.product_id] : []))
@@ -270,7 +270,8 @@ export function createApp() {
         spotifyId: c.spotify_id, spotifyType: c.spotify_type || 'track', cover: c.cover ? `/api/media/${c.cover}` : null, usedOn: c.used_on,
         popularity: c.popularity ?? null, plugins, plugin: plugins[0] || null,
         engineer: c.engineer_id ? {
-          id: c.engineer_id, name: c.engineer_name || String(c.engineer_email || '').split('@')[0],
+          // Le pseudo d'ingé ; à défaut, le nom affiché (jamais l'adresse e-mail).
+          id: c.engineer_id, name: c.engineer_alias || c.engineer_name || 'ONIRIQUE',
           instagram: c.engineer_instagram || null, avatar: c.engineer_avatar ? `/api/media/${c.engineer_avatar}` : null,
         } : null,
       };
@@ -404,6 +405,45 @@ export function createApp() {
   });
 
   // Photo de profil : une image PNG, JPEG ou WebP de 2 Mo au plus, en corps brut de la requête.
+  /** Reçoit une image PNG, JPEG ou WebP (2 Mo au plus), vérifiée sur son contenu ; rend le nom du fichier gardé. */
+  async function receiveImage(req) {
+    const ext = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' }[req.headers['content-type']];
+    if (!ext) throw new HttpError(400, 'Image attendue : PNG, JPEG ou WebP.');
+    const file = await receiveFile(req, config.mediaDir, 2 * 1024 * 1024);
+    const stored = path.join(config.mediaDir, file.storedAs);
+    const head = Buffer.alloc(12);
+    const fd = fs.openSync(stored, 'r');
+    fs.readSync(fd, head, 0, 12, 0);
+    fs.closeSync(fd);
+    const real = head.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex')) ? 'png'
+      : head.subarray(0, 3).equals(Buffer.from('ffd8ff', 'hex')) ? 'jpg'
+        : head.toString('latin1', 0, 4) === 'RIFF' && head.toString('latin1', 8, 12) === 'WEBP' ? 'webp' : null;
+    if (real !== ext) {
+      fs.rmSync(stored, { force: true });
+      throw new HttpError(400, "Ce fichier n'est pas une image PNG, JPEG ou WebP valide.");
+    }
+    const name = `${file.storedAs}.${ext}`;
+    fs.renameSync(stored, path.join(config.mediaDir, name));
+    return name;
+  }
+
+  // La photo d'ingé d'un fondateur : celle des crédits, distincte de la photo du compte.
+  const engineerOnly = (req) => { if (req.user.role !== 'founder') throw new HttpError(403, "Le profil d'ingé est réservé aux fondateurs."); };
+  app.put('/api/me/engineer-avatar', requireUser, wrap(async (req, res) => {
+    engineerOnly(req);
+    rateLimit(`avatar:${req.user.id}`, 20);
+    const name = await receiveImage(req);
+    if (req.user.engineer_avatar) fs.rmSync(path.join(config.mediaDir, req.user.engineer_avatar), { force: true });
+    run('UPDATE users SET engineer_avatar = ? WHERE id = ?', name, req.user.id);
+    res.json({ engineerAvatar: `/api/media/${name}` });
+  }));
+  app.delete('/api/me/engineer-avatar', requireUser, (req, res) => {
+    engineerOnly(req);
+    if (req.user.engineer_avatar) fs.rmSync(path.join(config.mediaDir, req.user.engineer_avatar), { force: true });
+    run('UPDATE users SET engineer_avatar = NULL WHERE id = ?', req.user.id);
+    res.json({ ok: true });
+  });
+
   app.put('/api/me/avatar', requireUser, wrap(async (req, res) => {
     rateLimit(`avatar:${req.user.id}`, 20);
     const ext = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' }[req.headers['content-type']];
@@ -508,6 +548,10 @@ export function createApp() {
 
   app.post('/api/me/profile', requireUser, (req, res) => {
     run('UPDATE users SET name = ? WHERE id = ?', req.body.name !== undefined ? str(req.body.name, 80) : req.user.name, req.user.id);
+    if (req.body.engineerName !== undefined) {
+      if (req.user.role !== 'founder') throw new HttpError(403, "Le profil d'ingé est réservé aux fondateurs.");
+      run('UPDATE users SET engineer_name = ? WHERE id = ?', str(req.body.engineerName, 40), req.user.id);
+    }
     // Instagram : un nom de compte (@nom) ou l'adresse de son profil, gardé sous forme d'adresse.
     if (req.body.instagram !== undefined) {
       const raw = str(req.body.instagram, 200);
