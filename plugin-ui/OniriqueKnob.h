@@ -20,7 +20,7 @@ namespace onirique::ui
 {
 
 /** L'étoile à quatre branches d'ONIRIQUE, centrée en `c`, de rayon `r`. */
-inline juce::Path starPath (juce::Point<float> c, float r)
+inline juce::Path knobStar (juce::Point<float> c, float r)
 {
     juce::Path p;
     const float w = r * 0.085f;
@@ -139,7 +139,7 @@ inline void drawKnob (juce::Graphics& g, juce::Rectangle<float> area, float posi
 
     // L'étoile à la pointe, puis le cœur gravé.
     const float starRadius = jmax (2.6f, face * 0.11f);
-    const auto spark = starPath (tip, starRadius);
+    const auto spark = knobStar (tip, starRadius);
     DropShadow (hot, jmax (3, roundToInt (starRadius * 2.2f)), {}).drawForPath (g, spark);
     g.setColour (Colour (0xfffff4f5));
     g.fillPath (spark);
@@ -150,7 +150,7 @@ inline void drawKnob (juce::Graphics& g, juce::Rectangle<float> area, float posi
     g.setColour (Colour (0xffffd2d6).withAlpha (0.12f));
     g.drawEllipse (Rectangle<float> (2.0f * core, 2.0f * core).withCentre (centre), 1.0f);
     g.setColour (accent.withAlpha (0.55f));
-    g.fillPath (starPath (centre, core * 0.66f));
+    g.fillPath (knobStar (centre, core * 0.66f));
 }
 
 } // namespace onirique::ui
