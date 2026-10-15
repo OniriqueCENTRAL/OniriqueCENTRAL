@@ -256,19 +256,20 @@ export function createApp() {
   app.get('/api/public-key', (_req, res) => res.json({ pem: publicKeyPem, raw: publicKeyRaw }));
 
   // Crédits : les titres réalisés avec les plugins, affichés sur la page d'accueil du site.
-  // Les crédits, du titre le plus connu au moins connu (popularité Spotify), puis du plus récent au plus ancien.
+  // Les crédits : les épinglés d'abord (ceux de la page d'accueil), puis du plus connu au moins connu (popularité
+  // Spotify), puis du plus récent au plus ancien.
   const creditRows = () => {
     const products = new Map(all('SELECT id, name, slug FROM products').map((p) => [p.id, p]));
     return all(
       `SELECT c.*, u.engineer_name AS engineer_alias, u.name AS engineer_name, u.email AS engineer_email, u.instagram AS engineer_instagram, u.engineer_avatar AS engineer_avatar
        FROM credits c LEFT JOIN users u ON u.id = c.engineer_id
-       ORDER BY c.popularity IS NULL, c.popularity DESC, c.created_at DESC`).map((c) => {
+       ORDER BY c.pinned DESC, c.popularity IS NULL, c.popularity DESC, c.created_at DESC`).map((c) => {
       const plugins = (parseProductIds(c.product_ids) || (c.product_id ? [c.product_id] : []))
         .map((id) => products.get(id)).filter(Boolean).map((p) => ({ id: p.id, name: p.name, slug: p.slug }));
       return {
         id: c.id, title: c.title, artist: c.artist, kind: c.kind, released: c.released, duration: c.duration,
         spotifyId: c.spotify_id, spotifyType: c.spotify_type || 'track', cover: c.cover ? `/api/media/${c.cover}` : null, usedOn: c.used_on,
-        popularity: c.popularity ?? null, plugins, plugin: plugins[0] || null,
+        popularity: c.popularity ?? null, pinned: !!c.pinned, plugins, plugin: plugins[0] || null,
         engineer: c.engineer_id ? {
           // Le pseudo d'ingé ; à défaut, le nom affiché (jamais l'adresse e-mail).
           id: c.engineer_id, name: c.engineer_alias || c.engineer_name || 'ONIRIQUE',
@@ -965,6 +966,13 @@ export function createApp() {
     };
     if (!next.title) throw new HttpError(400, 'Indiquez le titre du morceau.');
     if (!next.artist) throw new HttpError(400, "Indiquez l'artiste.");
+    // Épingler : trois crédits au plus, ceux de la page d'accueil.
+    if (b.pinned !== undefined) {
+      if (b.pinned && !credit.pinned && get('SELECT COUNT(*) AS n FROM credits WHERE pinned = 1').n >= 3) {
+        throw new HttpError(409, "Trois crédits sont déjà épinglés : désépinglez-en un d'abord.");
+      }
+      run('UPDATE credits SET pinned = ? WHERE id = ?', b.pinned ? 1 : 0, credit.id);
+    }
     let moved = false;
     if (b.spotifyUrl !== undefined) {
       const ref = spotifyRef(b.spotifyUrl);

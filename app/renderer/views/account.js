@@ -15,7 +15,11 @@ export function accountView() {
     class: 'stack',
     onsubmit: async (event) => {
       event.preventDefault();
-      if (await attempt(() => call('api', 'POST', '/api/me/profile', founder ? { name: name.value, instagram: instagram.value.trim(), engineerName: alias.value.trim() } : { name: name.value }), 'Profil enregistré.')) await refresh();
+      if (!(await attempt(() => call('api', 'POST', '/api/me/profile', founder ? { name: name.value, instagram: instagram.value.trim(), engineerName: alias.value.trim() } : { name: name.value }), 'Profil enregistré.'))) return;
+      // Instagram renseigné : sa photo de profil devient la photo d'ingé (reprise par ONIRIQUE CENTRAL, depuis ce PC).
+      const handle = founder && instagram.value.trim().replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//, '').replace(/\/.*$/, '');
+      if (handle) await attempt(() => call('me:instagramAvatar', handle), "Photo d'ingé reprise de votre Instagram.");
+      await refresh();
     },
   },
     field('E-mail', h('input', { type: 'email', value: me.user.email, disabled: true })),

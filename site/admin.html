@@ -221,7 +221,7 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
     <div class="products" id="packs"></div>
 
     <div class="bar"><h2>Crédits</h2></div>
-    <p class="sub">Les titres réalisés avec vos plugins, affichés dans la section Crédits de la page d'accueil. Collez le lien Spotify d'un titre ou d'un album entier : son nom et sa pochette sont récupérés tout seuls. La liste se range du plus connu au moins connu (popularité Spotify, relue chaque jour).</p>
+    <p class="sub">Les titres réalisés avec vos plugins, affichés dans la section Crédits de la page d'accueil. Collez le lien Spotify d'un titre ou d'un album entier : son nom et sa pochette sont récupérés tout seuls. Les trois crédits épinglés s'affichent sur la page d'accueil ; sans épingle, ce sont les plus connus. La page des crédits les montre tous, du plus connu au moins connu (popularité Spotify, relue chaque jour).</p>
     <details class="product new" id="new-credit"></details>
     <p class="error" id="credit-error" role="alert"></p>
     <div class="table"><table>
@@ -872,6 +872,11 @@ async function loadCredits() {
       try { await api("DELETE", "/admin/credits/" + c.id); await loadCredits(); } catch (error) { fail(error); }
     };
     const row = el("tr", {});
+    // Épingler : un des trois crédits de la page d'accueil.
+    const pin = el("button", { className: "act", type: "button", textContent: c.pinned ? "Désépingler" : "Épingler" });
+    pin.onclick = async () => {
+      try { await api("PATCH", "/admin/credits/" + c.id, { pinned: !c.pinned }); await loadCredits(); } catch (error) { fail(error); }
+    };
     const edit = el("button", { className: "act", type: "button", textContent: "Modifier" });
     edit.onclick = () => {
       if (row.nextSibling?.classList?.contains("detail")) return row.nextSibling.remove();
@@ -879,11 +884,12 @@ async function loadCredits() {
     };
     row.append(
       el("td", {}, c.cover ? el("img", { className: "thumb", src: c.cover, alt: "Pochette de " + c.title }) : null,
-        el("strong", { textContent: c.title }), el("span", { className: "sub", textContent: " · " + c.artist })),
+        el("strong", { textContent: c.title }), el("span", { className: "sub", textContent: " · " + c.artist }),
+        c.pinned ? el("span", { className: "pill on", textContent: "Accueil", style: "margin-left:8px" }) : null),
       el("td", {}, c.plugins?.length ? c.plugins.map((p) => p.name).join(", ") : "—",
         el("div", { className: "sub", textContent: [c.usedOn, c.engineer ? "Ingé : " + c.engineer.name : "", c.popularity !== null ? "Popularité " + c.popularity + "/100" : ""].filter(Boolean).join(" · ") })),
       el("td", { className: "sub", textContent: c.released || "—" }),
-      el("td", { className: "actions" }, el("a", { className: "act", href: spotifyLink(c), target: "_blank", rel: "noopener", textContent: "Spotify ↗" }), edit, remove));
+      el("td", { className: "actions" }, el("a", { className: "act", href: spotifyLink(c), target: "_blank", rel: "noopener", textContent: "Spotify ↗" }), pin, edit, remove));
     return row;
   }) : [el("tr", {}, el("td", { colSpan: 4, className: "sub", textContent: "Aucun crédit : la page d'accueil affiche le titre d'exemple." }))]));
 }

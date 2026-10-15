@@ -143,6 +143,14 @@ try {
     const track = list.find((x) => x.title === 'Cinéma');
     assert.deepEqual(track.plugins.map((p) => p.id), [a.id, b.id]);
     assert.deepEqual(track.engineer && { name: track.engineer.name, instagram: track.engineer.instagram }, { name: 'fondateur', instagram: 'https://www.instagram.com/onirique.inge/' });
+    // Épingler : le crédit passe devant les plus connus (page d'accueil), trois au plus.
+    await call('PATCH', `/api/admin/credits/${track.id}`, { token: admin.token, body: { pinned: true } });
+    assert.equal((await call('GET', '/api/credits'))[0].title, 'Cinéma', "l'épinglé en premier");
+    for (const n of ['A', 'B']) {
+      const x = await call('POST', '/api/admin/credits', { token: admin.token, body: { spotifyUrl: `https://open.spotify.com/track/${n.repeat(22)}`, artist: 'X', title: n }, expect: 201 });
+      await call('PATCH', `/api/admin/credits/${x.id}`, { token: admin.token, body: { pinned: true } });
+    }
+    await call('PATCH', `/api/admin/credits/${album.id}`, { token: admin.token, body: { pinned: true }, expect: 409 });
   });
 
   await step("activation : deux empreintes, bail de 90 jours, reprise de l'ancienne, nouvelles machines limitées", async () => {

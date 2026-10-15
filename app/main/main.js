@@ -319,6 +319,47 @@ app.whenReady().then(() => {
   });
 
   // Photo de profil : une image choisie sur cet ordinateur. Rien n'est envoyé si la fenêtre de choix est refermée.
+  // La photo d'ingé d'un fondateur, reprise de son profil Instagram. Instagram ne la donne plus aux serveurs : une
+  // fenêtre invisible ouvre le profil public, comme un visiteur, depuis la connexion de ce PC ; la photo trouvée est
+  // envoyée au serveur. Rien n'est gardé de la visite (session à part, effacée ensuite).
+  handle('me:instagramAvatar', async (handle) => {
+    if (typeof handle !== 'string' || !/^[A-Za-z0-9._]{1,30}$/.test(handle)) throw new Error('Compte Instagram invalide.');
+    const { session } = require('electron');
+    const visit = session.fromPartition(`instagram-${Date.now()}`);
+    const page = new BrowserWindow({ show: false, width: 1100, height: 900, webPreferences: { session: visit, javascript: true, sandbox: true, contextIsolation: true, nodeIntegration: false } });
+    page.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    try {
+      page.webContents.setUserAgent(page.webContents.getUserAgent().replace(/ (Electron|onirique-central)\/[\d.]+/gi, ''));
+      await page.loadURL(`https://www.instagram.com/${handle}/`);
+      let src = null;
+      for (let i = 0; i < 30 && !src; i++) {
+        await new Promise((r) => setTimeout(r, 500));
+        src = await page.webContents.executeJavaScript(`(() => {
+          const img = [...document.images].find((i) => /profile picture|photo de profil/i.test(i.alt) && i.naturalWidth > 0);
+          return img ? img.src : (document.querySelector('meta[property="og:image"]') || {}).content || null;
+        })()`).catch(() => null);
+        // L'image par défaut d'Instagram (sans photo ou profil introuvable) ne compte pas.
+        if (src && !/cdninstagram\.com\/v\/|fbcdn\.net\/v\//.test(src)) src = null;
+      }
+      if (!src) throw new Error("Photo introuvable : vérifiez que le compte Instagram existe et qu'il est public.");
+      const url = new URL(src);
+      if (url.protocol !== 'https:' || !/(^|\.)(cdninstagram\.com|fbcdn\.net)$/.test(url.hostname)) throw new Error('Adresse de photo inattendue.');
+      const response = await visit.fetch(url.href);
+      const bytes = Buffer.from(await response.arrayBuffer());
+      if (!response.ok || bytes.length < 500 || bytes.length > 2 * 1024 * 1024) throw new Error("La photo d'Instagram n'a pas pu être lue.");
+      const file = path.join(os.tmpdir(), `onirique-instagram-${process.pid}.jpg`);
+      fs.writeFileSync(file, bytes);
+      try {
+        return await api.upload('PUT', '/api/me/engineer-avatar', file, 'image/jpeg', () => {});
+      } finally {
+        fs.rmSync(file, { force: true });
+      }
+    } finally {
+      page.destroy();
+      visit.clearStorageData().catch(() => {});
+    }
+  });
+
   handle('me:avatar', async () => {
     const file = await pickFile('image');
     if (!file) return null;

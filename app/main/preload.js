@@ -2,7 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 const CHANNELS = [
   'load', 'api', 'checkout', 'media', 'demo', 'clipboard',
-  'auth:login', 'auth:register', 'auth:logout', 'auth:password', 'me:avatar',
+  'auth:login', 'auth:register', 'auth:logout', 'auth:password', 'me:avatar', 'me:instagramAvatar',
   'plugin:install', 'plugin:uninstall', 'plugin:reveal', 'plugin:open',
   'license:activate', 'license:deactivate',
   'admin:previewMail', 'admin:pick', 'admin:uploadVersion', 'admin:uploadImage', 'admin:refreshDemo', 'open:webmail', 'open:mail', 'open:site',

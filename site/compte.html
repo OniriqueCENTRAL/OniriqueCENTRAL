@@ -219,11 +219,9 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
         <img id="eng-avatar" alt="Ta photo d'ingé" width="84" height="84">
         <div>
           <div class="between" style="justify-content:flex-start">
-            <button class="btn btn-ghost" id="eng-pick" type="button">Choisir la photo d'ingé</button>
-            <input id="eng-file" type="file" accept="image/png,image/jpeg,image/webp" aria-label="Photo d'ingé" hidden>
-            <button class="link" id="eng-remove" type="button" hidden>Retirer</button>
+            <button class="link" id="eng-remove" type="button" hidden>Retirer la photo</button>
           </div>
-          <p class="muted">Instagram ne laisse plus récupérer une photo de profil automatiquement : choisis la même image, ou une autre.</p>
+          <p class="muted">Ta photo d'ingé est celle de ton Instagram. Instagram ne la donne qu'à un vrai navigateur : renseigne ton Instagram dans ONIRIQUE CENTRAL (onglet Compte), il reprend la photo tout seul, et la met à jour chaque fois que tu enregistres.</p>
           <div class="notice" id="eng-photo-notice" role="status"></div>
         </div>
       </div>
@@ -527,34 +525,7 @@ function say(id, text, failed = false) {
   $(id).textContent = text;
 }
 
-// Une image recadrée en carré et réduite à 512 px, dans le navigateur, avant l'envoi.
-async function squareJpeg(file) {
-  const image = await createImageBitmap(file).catch(() => { throw new Error("Ce fichier n'est pas une image lisible."); });
-  const side = Math.min(image.width, image.height);
-  const canvas = Object.assign(document.createElement("canvas"), { width: 512, height: 512 });
-  const pen = canvas.getContext("2d");
-  pen.fillStyle = "#0d0809";
-  pen.fillRect(0, 0, 512, 512);
-  pen.drawImage(image, (image.width - side) / 2, (image.height - side) / 2, side, side, 0, 0, 512, 512);
-  return new Promise((done) => canvas.toBlob(done, "image/jpeg", 0.9));
-}
-
 // Profil d'ingé : sa photo, son pseudo, son Instagram.
-$("eng-pick").onclick = () => $("eng-file").click();
-$("eng-file").onchange = async (event) => {
-  const file = event.target.files[0];
-  event.target.value = "";
-  if (!file) return;
-  say("eng-photo-notice", "");
-  try {
-    const response = await fetch("/api/me/engineer-avatar", { method: "PUT", headers: { Authorization: "Bearer " + saved(), "Content-Type": "image/jpeg" }, body: await squareJpeg(file) });
-    if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "La photo n'a pas pu être envoyée.");
-    show(await api("GET", "/me"));
-    say("eng-photo-notice", "Photo d'ingé enregistrée.");
-  } catch (error) {
-    say("eng-photo-notice", error.message, true);
-  }
-};
 $("eng-remove").onclick = async () => {
   try {
     await api("DELETE", "/me/engineer-avatar");

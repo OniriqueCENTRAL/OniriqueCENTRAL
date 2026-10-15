@@ -409,6 +409,8 @@ if (!hasColumn('credits', 'spotify_type')) db.exec(`ALTER TABLE credits ADD COLU
 if (!hasColumn('credits', 'engineer_id')) db.exec('ALTER TABLE credits ADD COLUMN engineer_id INTEGER REFERENCES users(id) ON DELETE SET NULL');
 if (!hasColumn('credits', 'popularity')) db.exec('ALTER TABLE credits ADD COLUMN popularity INTEGER');
 if (!hasColumn('credits', 'popularity_at')) db.exec('ALTER TABLE credits ADD COLUMN popularity_at INTEGER');
+// Épinglé : un des trois crédits montrés sur la page d'accueil, avant les plus connus.
+if (!hasColumn('credits', 'pinned')) db.exec('ALTER TABLE credits ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0');
 
 export const now = () => Date.now();
 

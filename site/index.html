@@ -1723,7 +1723,7 @@ const CREDITS = [
   },
 ];
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-// Les trois titres les plus connus ; les autres sont sur la page des crédits.
+// Les trois crédits épinglés depuis le panel (à défaut, les plus connus) ; tous sont sur la page des crédits.
 function renderCredits(list) {
   OniriqueCredits.render($("#creditList"), list.slice(0, 3));
   $("#creditMore").hidden = list.length <= 3;
