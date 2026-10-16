@@ -83,7 +83,7 @@ ${spark(1)}${spark(2)}${spark(3)}
       if (slot !== original) { slot.replaceWith(original); slot = original; }
       return;
     }
-    const user = me.user, name = user.name || user.email.split("@")[0], mac = /Mac/i.test(navigator.platform);
+    const user = me.user, name = user.name || user.email.split("@")[0];
     const button = el("button", { className: "acct-button", type: "button", title: "Mon compte" },
       el("img", { src: avatar(user), alt: "" }), el("span", { textContent: name }));
     button.insertAdjacentHTML("beforeend", '<svg viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>');
@@ -99,8 +99,7 @@ ${spark(1)}${spark(2)}${spark(3)}
       // Une page réservée renvoie au compte ; les autres se rechargent simplement, déconnectées.
       if (/admin/.test(location.pathname)) location.href = "compte.html"; else location.reload();
     };
-    const download = item("Télécharger l'application", mac ? "telechargement/ONIRIQUE-CENTRAL.dmg" : "telechargement/ONIRIQUE-CENTRAL-Setup.exe");
-    download.setAttribute("download", "");
+    const download = item("Télécharger l'application", "/#telechargement"); // le choix entre Windows et Mac
     const menu = el("div", { className: "acct-menu", hidden: true },
       el("div", { className: "acct-head" }, el("img", { src: avatar(user), alt: "" }),
         el("div", {}, el("strong", { textContent: name }), el("small", { textContent: user.email }), ROLES[user.role] ? el("em", { textContent: ROLES[user.role] }) : null)),

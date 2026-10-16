@@ -723,7 +723,8 @@ export function createApp() {
     res.json({ ok: true });
   }));
 
-  app.get('/api/download/:versionId', requireUser, (req, res, next) => {
+  // Installer un plugin, même gratuit, demande une adresse validée (comme l'essai et l'achat).
+  app.get('/api/download/:versionId', requireVerified, (req, res, next) => {
     const version = get('SELECT * FROM versions WHERE id = ?', int(req.params.versionId, 0));
     if (!version) throw new HttpError(404, 'Version introuvable.');
     // L'équipe télécharge tout, un partenaire ses propres plugins ; les autres, ce à quoi ils ont droit.
