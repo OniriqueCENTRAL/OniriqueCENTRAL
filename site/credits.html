@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=b9789951"></script>
+<script src="assets/i18n.js?v=a6f285cc"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Crédits — ONIRIQUE</title>
 <meta name="description" content="Les titres et albums réalisés avec les plugins Onirique, du plus connu au moins connu : écoute un extrait, découvre l'ingé et les plugins utilisés.">
@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="stylesheet" href="assets/fonts.css">
 <link rel="stylesheet" href="assets/pages.css">
-<link rel="stylesheet" href="assets/credits.css?v=2">
+<link rel="stylesheet" href="assets/credits.css?v=3">
 <style>
 /* Les crédits : la base des pages de texte, élargie, avec les cartes de l'accueil. */
 :root { --blood: #5C0008; --deep-2: #2A0A0E; --ease: cubic-bezier(.2, .7, .2, 1); --f-dream: "Grenze Gotisch", Georgia, serif;
@@ -49,7 +49,7 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
   </nav>
 </footer>
 
-<script src="assets/credits.js?v=2"></script>
+<script src="assets/credits.js?v=3"></script>
 <script src="assets/tools-menu.js"></script>
 <script src="assets/account.js?v=6"></script>
 <script src="assets/site-nav.js?v=8"></script>
@@ -59,7 +59,7 @@ let all = [];
 const norm = (t) => String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 function show() {
   const q = norm(document.getElementById("find").value.trim());
-  const list = q ? all.filter((c) => norm([c.title, c.artist, c.kind, c.engineer && c.engineer.name, ...(c.plugins || []).map((p) => p.name)].join(" ")).includes(q)) : all;
+  const list = q ? all.filter((c) => norm([c.title, c.artist, c.kind, ...(c.engineers || []).map((e) => e.name), ...(c.plugins || []).map((p) => p.name)].join(" ")).includes(q)) : all;
   const root = document.getElementById("list");
   if (!list.length) root.innerHTML = `<p class="empty">${all.length ? "Aucun crédit ne correspond." : "Les premiers crédits arrivent bientôt."}</p>`;
   else OniriqueCredits.render(root, list);

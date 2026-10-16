@@ -155,6 +155,17 @@ try {
     await call('PATCH', `/api/admin/credits/${album.id}`, { token: admin.token, body: { appleMusic: 'https://exemple.com/x' }, expect: 400 });
     await call('PATCH', `/api/admin/credits/${album.id}`, { token: admin.token, body: { appleMusic: 'https://music.apple.com/fr/album/nuit/123' } });
     assert.equal((await call('GET', '/api/credits')).find((x) => x.id === album.id).appleMusic, 'https://music.apple.com/fr/album/nuit/123');
+    // Plusieurs ingés sur un même titre : dans l'ordre donné, sans doublon, des fondateurs seulement.
+    const duo = await account('duo', 'founder');
+    const shared = await call('POST', '/api/admin/credits', { token: admin.token, body: { spotifyUrl: `https://open.spotify.com/track/${'D'.repeat(22)}`, artist: 'Novi', title: 'Duo', engineerIds: [founder.id, duo.id, founder.id] }, expect: 201 });
+    assert.deepEqual(shared.engineers.map((e) => e.id), [founder.id, duo.id]);
+    assert.equal(shared.engineer.id, founder.id, 'le premier, pour les anciennes pages');
+    await call('PATCH', `/api/admin/credits/${shared.id}`, { token: admin.token, body: { engineerIds: [duo.id, alice.id] }, expect: 400 });
+    assert.deepEqual((await call('PATCH', `/api/admin/credits/${shared.id}`, { token: admin.token, body: { engineerIds: [duo.id] } })).engineers.map((e) => e.id), [duo.id]);
+    assert.deepEqual((await call('PATCH', `/api/admin/credits/${shared.id}`, { token: admin.token, body: { title: 'Duo 2' } })).engineers.map((e) => e.id), [duo.id], 'un autre champ ne touche pas aux ingés');
+    assert.deepEqual((await call('PATCH', `/api/admin/credits/${shared.id}`, { token: admin.token, body: { engineerIds: [] } })).engineers, []);
+    assert.deepEqual((await call('GET', '/api/credits')).find((x) => x.title === 'Cinéma').engineers.map((e) => e.id), [founder.id], 'engineerId seul marche encore');
+    await call('DELETE', `/api/admin/credits/${shared.id}`, { token: admin.token });
   });
 
   await step("activation : deux empreintes, bail de 90 jours, reprise de l'ancienne, nouvelles machines limitées", async () => {

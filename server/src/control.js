@@ -248,6 +248,11 @@ export function mountControl(admin) {
       run(`INSERT INTO orders_archive (email, name, kind, ref_id, amount_cents, provider, provider_ref, created_at)
            SELECT ?, ?, kind, ref_id, amount_cents, provider, provider_ref, created_at FROM orders WHERE user_id = ?`, user.email, user.name || '', user.id);
       run(`UPDATE licenses SET status = 'revoked', note = CASE WHEN note = '' THEN 'Compte supprimé' ELSE note || ' · compte supprimé' END WHERE user_id = ?`, user.id);
+      // Retiré des crédits où il est ingé, pour qu'un futur compte au même numéro n'y apparaisse pas.
+      for (const credit of all('SELECT id, engineer_ids FROM credits WHERE engineer_ids IS NOT NULL')) {
+        const ids = (parseProductIds(credit.engineer_ids) || []).filter((id) => id !== user.id);
+        run('UPDATE credits SET engineer_ids = ?, engineer_id = ? WHERE id = ?', ids.length ? JSON.stringify(ids) : null, ids[0] ?? null, credit.id);
+      }
       run('DELETE FROM users WHERE id = ?', user.id);
     });
     if (user.avatar) fs.rmSync(path.join(config.mediaDir, user.avatar), { force: true });

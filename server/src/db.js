@@ -407,6 +407,11 @@ if (!hasColumn('credits', 'product_ids')) {
 }
 if (!hasColumn('credits', 'spotify_type')) db.exec(`ALTER TABLE credits ADD COLUMN spotify_type TEXT NOT NULL DEFAULT 'track'`);
 if (!hasColumn('credits', 'engineer_id')) db.exec('ALTER TABLE credits ADD COLUMN engineer_id INTEGER REFERENCES users(id) ON DELETE SET NULL');
+// Plusieurs ingés sur un même titre : la liste, dans l'ordre d'affichage (engineer_id garde le premier).
+if (!hasColumn('credits', 'engineer_ids')) {
+  db.exec('ALTER TABLE credits ADD COLUMN engineer_ids TEXT');
+  db.exec(`UPDATE credits SET engineer_ids = '[' || engineer_id || ']' WHERE engineer_id IS NOT NULL`);
+}
 if (!hasColumn('credits', 'popularity')) db.exec('ALTER TABLE credits ADD COLUMN popularity INTEGER');
 if (!hasColumn('credits', 'popularity_at')) db.exec('ALTER TABLE credits ADD COLUMN popularity_at INTEGER');
 // Épinglé : un des trois crédits montrés sur la page d'accueil, avant les plus connus.

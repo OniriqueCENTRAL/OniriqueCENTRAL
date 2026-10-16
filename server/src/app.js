@@ -260,21 +260,24 @@ export function createApp() {
   // Spotify), puis du plus récent au plus ancien.
   const creditRows = () => {
     const products = new Map(all('SELECT id, name, slug FROM products').map((p) => [p.id, p]));
-    return all(
-      `SELECT c.*, u.engineer_name AS engineer_alias, u.name AS engineer_name, u.email AS engineer_email, u.instagram AS engineer_instagram, u.engineer_avatar AS engineer_avatar
-       FROM credits c LEFT JOIN users u ON u.id = c.engineer_id
-       ORDER BY c.pinned DESC, c.popularity IS NULL, c.popularity DESC, c.created_at DESC`).map((c) => {
+    const rows = all('SELECT * FROM credits ORDER BY pinned DESC, popularity IS NULL, popularity DESC, created_at DESC');
+    const engineerIds = (c) => parseProductIds(c.engineer_ids) || (c.engineer_id ? [c.engineer_id] : []);
+    const wanted = [...new Set(rows.flatMap(engineerIds))];
+    const people = new Map(wanted.length ? all(`SELECT id, engineer_name, name, instagram, engineer_avatar FROM users WHERE id IN (${wanted.map(() => '?').join(',')})`, ...wanted)
+      .map((u) => [u.id, {
+        // Le pseudo d'ingé ; à défaut, le nom affiché (jamais l'adresse e-mail).
+        id: u.id, name: u.engineer_name || u.name || 'ONIRIQUE',
+        instagram: u.instagram || null, avatar: u.engineer_avatar ? `/api/media/${u.engineer_avatar}` : null,
+      }]) : []);
+    return rows.map((c) => {
+      const engineers = engineerIds(c).map((id) => people.get(id)).filter(Boolean); // un compte supprimé disparaît de la liste
       const plugins = (parseProductIds(c.product_ids) || (c.product_id ? [c.product_id] : []))
         .map((id) => products.get(id)).filter(Boolean).map((p) => ({ id: p.id, name: p.name, slug: p.slug }));
       return {
         id: c.id, title: c.title, artist: c.artist, kind: c.kind, released: c.released, duration: c.duration,
         spotifyId: c.spotify_id, spotifyType: c.spotify_type || 'track', cover: c.cover ? `/api/media/${c.cover}` : null, usedOn: c.used_on,
         popularity: c.popularity ?? null, pinned: !!c.pinned, appleMusic: c.apple_music || null, plugins, plugin: plugins[0] || null,
-        engineer: c.engineer_id ? {
-          // Le pseudo d'ingé ; à défaut, le nom affiché (jamais l'adresse e-mail).
-          id: c.engineer_id, name: c.engineer_alias || c.engineer_name || 'ONIRIQUE',
-          instagram: c.engineer_instagram || null, avatar: c.engineer_avatar ? `/api/media/${c.engineer_avatar}` : null,
-        } : null,
+        engineers, engineer: engineers[0] || null, // `engineer` : le premier, pour les pages qui n'en lisent qu'un
       };
     });
   };
@@ -906,6 +909,13 @@ export function createApp() {
     if (!user) throw new HttpError(400, "L'ingé doit être un compte fondateur d'ONIRIQUE.");
     return user.id;
   };
+  // Les ingés d'un crédit : engineerIds (une liste), ou engineerId (un seul) ; six au plus, sans doublon.
+  const engineerIdsOf = (body) => {
+    const list = Array.isArray(body.engineerIds) ? body.engineerIds : [body.engineerId];
+    const ids = [...new Set(list.map(founderOf).filter(Boolean))];
+    if (ids.length > 6) throw new HttpError(400, 'Six ingés au plus par crédit.');
+    return ids;
+  };
   const productIdsOf = (body) => {
     const list = Array.isArray(body.productIds) ? body.productIds : body.productId ? [body.productId] : [];
     return [...new Set(list.filter(Boolean).map((id) => findProduct(id).id))];
@@ -941,7 +951,7 @@ export function createApp() {
     const artist = str(req.body.artist, 120);
     if (!artist) throw new HttpError(400, "Indiquez l'artiste.");
     const productIds = productIdsOf(req.body);
-    const engineerId = founderOf(req.body.engineerId);
+    const engineerIds = engineerIdsOf(req.body);
     const appleMusic = appleMusicOf(req.body.appleMusic);
 
     const info = await spotifyInfo(ref.id, ref.type);
@@ -950,10 +960,11 @@ export function createApp() {
       if (info.cover) fs.rmSync(path.join(config.mediaDir, info.cover), { force: true });
       throw new HttpError(400, ref.type === 'album' ? "Indiquez le nom de l'album." : 'Indiquez le titre du morceau.');
     }
-    const { lastInsertRowid } = run(`INSERT INTO credits (title, artist, kind, released, duration, spotify_id, spotify_type, cover, product_id, product_ids, engineer_id, used_on, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    const { lastInsertRowid } = run(`INSERT INTO credits (title, artist, kind, released, duration, spotify_id, spotify_type, cover, product_id, product_ids, engineer_id, engineer_ids, used_on, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       title, artist, str(req.body.kind, 30) || (ref.type === 'album' ? 'Album' : 'Single'), str(req.body.released, 40), str(req.body.duration, 10),
-      ref.id, ref.type, info.cover ?? null, productIds[0] ?? null, productIds.length ? JSON.stringify(productIds) : null, engineerId, str(req.body.usedOn, 60), now());
+      ref.id, ref.type, info.cover ?? null, productIds[0] ?? null, productIds.length ? JSON.stringify(productIds) : null,
+      engineerIds[0] ?? null, engineerIds.length ? JSON.stringify(engineerIds) : null, str(req.body.usedOn, 60), now());
     if (appleMusic) run('UPDATE credits SET apple_music = ? WHERE id = ?', appleMusic, lastInsertRowid);
     await refreshPopularity(get('SELECT * FROM credits WHERE id = ?', lastInsertRowid));
     res.status(201).json(creditRows().find((c) => c.id === Number(lastInsertRowid)));
@@ -973,7 +984,8 @@ export function createApp() {
       usedOn: b.usedOn === undefined ? credit.used_on : str(b.usedOn, 60),
       productIds: b.productIds === undefined && b.productId === undefined
         ? parseProductIds(credit.product_ids) || (credit.product_id ? [credit.product_id] : []) : productIdsOf(b),
-      engineerId: b.engineerId === undefined ? credit.engineer_id : founderOf(b.engineerId),
+      engineerIds: b.engineerIds === undefined && b.engineerId === undefined
+        ? parseProductIds(credit.engineer_ids) || (credit.engineer_id ? [credit.engineer_id] : []) : engineerIdsOf(b),
       spotifyId: credit.spotify_id,
       spotifyType: credit.spotify_type || 'track',
       cover: credit.cover,
@@ -999,9 +1011,10 @@ export function createApp() {
       }
     }
     run(`UPDATE credits SET title = ?, artist = ?, kind = ?, released = ?, duration = ?, used_on = ?, product_id = ?, product_ids = ?, engineer_id = ?,
-           spotify_id = ?, spotify_type = ?, cover = ? WHERE id = ?`,
+           engineer_ids = ?, spotify_id = ?, spotify_type = ?, cover = ? WHERE id = ?`,
       next.title, next.artist, next.kind, next.released, next.duration, next.usedOn, next.productIds[0] ?? null,
-      next.productIds.length ? JSON.stringify(next.productIds) : null, next.engineerId, next.spotifyId, next.spotifyType, next.cover, credit.id);
+      next.productIds.length ? JSON.stringify(next.productIds) : null, next.engineerIds[0] ?? null,
+      next.engineerIds.length ? JSON.stringify(next.engineerIds) : null, next.spotifyId, next.spotifyType, next.cover, credit.id);
     if (moved) await refreshPopularity(get('SELECT * FROM credits WHERE id = ?', credit.id));
     if (credit.cover && credit.cover !== next.cover) fs.rmSync(path.join(config.mediaDir, credit.cover), { force: true });
     res.json(creditRows().find((c) => c.id === credit.id));

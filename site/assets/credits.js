@@ -4,6 +4,14 @@
 window.OniriqueCredits = {
   render(root, list) {
     const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    // Les ingés du titre (plusieurs possibles) ; une ancienne réponse n'en donne qu'un.
+    const engineers = (c) => c.engineers || (c.engineer ? [c.engineer] : []);
+    const person = (e) => {
+      const face = e.avatar ? `<img src="${esc(e.avatar)}" alt="" width="26" height="26" loading="lazy">` : "";
+      return e.instagram
+        ? `<a href="${esc(e.instagram)}" target="_blank" rel="noopener">${face}<b>${esc(e.name)}</b><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17.4" cy="6.6" r="1.2" fill="currentColor"/></svg></a>`
+        : `<span>${face}<b>${esc(e.name)}</b></span>`;
+    };
 
   root.innerHTML = list.map(c => `
     <article class="credit reveal" style="--cover-img: ${c.cover ? `url('${esc(c.cover)}')` : "none"}">
@@ -18,7 +26,7 @@ window.OniriqueCredits = {
           <div><dt>Format</dt><dd>${esc(c.kind)}</dd></div>
         </dl>
         <div class="plugins-used">${(c.plugins && c.plugins.length ? c.plugins : c.plugin ? [c.plugin] : [{ name: "Onirique VocalBox" }]).map((p, i) => `<a class="plugin-used" href="${p.slug ? "boutique.html?p=" + encodeURIComponent(p.slug) : "#vocalbox"}"><img src="assets/logo-small.png" alt="" width="160" height="145"><span><b>${esc(p.name)}</b>${i === 0 && c.usedOn ? `<small>Utilisé sur : ${esc(c.usedOn)}</small>` : ""}</span></a>`).join("")}</div>
-        ${c.engineer ? `<p class="credit-engineer">Par ${c.engineer.instagram ? `<a href="${esc(c.engineer.instagram)}" target="_blank" rel="noopener">${c.engineer.avatar ? `<img src="${esc(c.engineer.avatar)}" alt="" width="26" height="26" loading="lazy">` : ""}<b>${esc(c.engineer.name)}</b><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17.4" cy="6.6" r="1.2" fill="currentColor"/></svg></a>` : `<span>${c.engineer.avatar ? `<img src="${esc(c.engineer.avatar)}" alt="" width="26" height="26" loading="lazy">` : ""}<b>${esc(c.engineer.name)}</b></span>`}</p>` : ""}
+        ${engineers(c).length ? `<p class="credit-engineer">Par ${engineers(c).map(person).join('<span class="credit-and">&amp;</span>')}</p>` : ""}
       </div>
       <div class="credit-player">
         <div class="embed${c.spotifyType === "album" ? " album" : ""}"><button type="button" class="embed-load" data-spotify="${esc(c.spotifyId)}" data-type="${c.spotifyType === "album" ? "album" : "track"}" data-title="${esc(c.title)}">Charger le lecteur Spotify<small>Spotify déposera alors ses propres cookies. <a href="cookies.html">En savoir plus</a></small></button></div>

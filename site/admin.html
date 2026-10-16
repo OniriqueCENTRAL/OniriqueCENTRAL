@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=b9789951"></script>
+<script src="assets/i18n.js?v=a6f285cc"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Administration</title>
 <meta name="robots" content="noindex, nofollow">
@@ -831,10 +831,12 @@ async function loadCredits() {
     const boxes = products.map((p) => ({ id: p.id, box: el("input", { type: "checkbox", checked: chosen.includes(p.id) }), name: p.name }));
     const plugins = el("div", { className: "chips" }, ...boxes.map((b) => el("label", {}, b.box, b.name.replace(/^ONIRIQUE\s+/i, ""))));
     plugins.style.cssText = "display:flex;flex-wrap:wrap;gap:8px";
-    // L'ingé : un compte fondateur ; son nom et son Instagram (réglé dans son compte) s'affichent sous le titre.
-    const engineer = el("select", {}, el("option", { value: "", textContent: "— Personne en particulier —" }),
-      ...founders.map((f) => el("option", { value: f.id, textContent: f.name + (f.instagram ? "  · Instagram ✓" : "") })));
-    engineer.value = c?.engineer?.id ?? "";
+    // Les ingés : des comptes fondateurs, un par case cochée ; leur nom et leur Instagram (réglé dans leur compte)
+    // s'affichent sous le titre, dans l'ordre de la liste.
+    const engineerIds = (c?.engineers || (c?.engineer ? [c.engineer] : [])).map((e) => e.id);
+    const engineerBoxes = founders.map((f) => ({ id: f.id, box: el("input", { type: "checkbox", checked: engineerIds.includes(f.id) }), name: f.name + (f.instagram ? " · Instagram ✓" : "") }));
+    const engineer = el("div", { className: "chips" }, ...engineerBoxes.map((b) => el("label", {}, b.box, b.name)));
+    engineer.style.cssText = "display:flex;flex-wrap:wrap;gap:8px";
     const usedOn = el("input", { type: "text", maxLength: 60, placeholder: "Voix, chœurs, mix…", value: c?.usedOn ?? "" });
     const apple = el("input", { type: "text", maxLength: 400, placeholder: "https://music.apple.com/… (facultatif)", value: c?.appleMusic ?? "" });
     const released = el("input", { type: "text", maxLength: 40, placeholder: "9 octobre 2026", value: c?.released ?? "" });
@@ -844,7 +846,7 @@ async function loadCredits() {
     const submit = el("button", { className: "act", type: "submit", textContent: c ? "Enregistrer" : "Ajouter le crédit" });
     const form = el("form", {},
       el("label", {}, "Lien Spotify (titre ou album)", link), el("label", {}, "Lien Apple Music (facultatif)", apple), el("label", {}, "Artiste", artist),
-      el("label", {}, "Titre ou nom de l'album", title), el("label", {}, "Ingé (fondateur ONIRIQUE)", engineer),
+      el("label", {}, "Titre ou nom de l'album", title), el("label", {}, "Ingés (fondateurs ONIRIQUE, un ou plusieurs)", engineer),
       el("label", { style: "grid-column:1/-1" }, "Plugins utilisés", plugins),
       el("label", {}, "Utilisé sur", usedOn), el("label", {}, "Date de sortie", released),
       el("label", {}, "Durée", duration), el("label", {}, "Format", kind),
@@ -855,7 +857,7 @@ async function loadCredits() {
       submit.disabled = true;
       try {
         await api(c ? "PATCH" : "POST", c ? "/admin/credits/" + c.id : "/admin/credits", { spotifyUrl: link.value.trim(), artist: artist.value.trim(), title: title.value.trim(),
-          productIds: boxes.filter((b) => b.box.checked).map((b) => b.id), engineerId: engineer.value ? Number(engineer.value) : null,
+          productIds: boxes.filter((b) => b.box.checked).map((b) => b.id), engineerIds: engineerBoxes.filter((b) => b.box.checked).map((b) => b.id),
           usedOn: usedOn.value.trim(), released: released.value.trim(), appleMusic: apple.value.trim(),
           duration: duration.value.trim(), kind: kind.value });
         if (!c) $("new-credit").open = false;
@@ -888,7 +890,7 @@ async function loadCredits() {
         el("strong", { textContent: c.title }), el("span", { className: "sub", textContent: " · " + c.artist }),
         c.pinned ? el("span", { className: "pill on", textContent: "Accueil", style: "margin-left:8px" }) : null),
       el("td", {}, c.plugins?.length ? c.plugins.map((p) => p.name).join(", ") : "—",
-        el("div", { className: "sub", textContent: [c.usedOn, c.engineer ? "Ingé : " + c.engineer.name : "", c.popularity !== null ? "Popularité " + c.popularity + "/100" : ""].filter(Boolean).join(" · ") })),
+        el("div", { className: "sub", textContent: [c.usedOn, (c.engineers || []).length ? "Ingé : " + c.engineers.map((e) => e.name).join(", ") : "", c.popularity !== null ? "Popularité " + c.popularity + "/100" : ""].filter(Boolean).join(" · ") })),
       el("td", { className: "sub", textContent: c.released || "—" }),
       el("td", { className: "actions" }, el("a", { className: "act", href: spotifyLink(c), target: "_blank", rel: "noopener", textContent: "Spotify ↗" }), pin, edit, remove));
     return row;
