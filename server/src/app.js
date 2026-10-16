@@ -32,6 +32,15 @@ import { connectUrl, disconnect, finishConnect, videoFile, videoView, youtubeCon
 import { announcementView, maintenanceView, mountControl, packView, planView } from './control.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+
+/** Retire un fichier de media/ et ses versions réduites (media/reduites/, voir /api/media). */
+function removeMedia(name) {
+  if (!name) return;
+  fs.rmSync(path.join(config.mediaDir, name), { force: true });
+  const base = /^([a-f0-9]{32})\./.exec(name);
+  const dir = path.join(config.mediaDir, 'reduites');
+  if (base && fs.existsSync(dir)) for (const n of fs.readdirSync(dir)) if (n.startsWith(base[1] + '-')) fs.rmSync(path.join(dir, n), { force: true });
+}
 const str = (value, max = 200) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
 const int = (value, fallback = null) => (Number.isInteger(Number(value)) && value !== '' && value !== null ? Number(value) : fallback);
 
@@ -284,11 +293,33 @@ export function createApp() {
   };
   app.get('/api/credits', (_req, res) => res.json(creditRows()));
 
-  app.get('/api/media/:file', (req, res, next) => {
-    if (!/^[a-f0-9]{32}\.(png|jpg|webp|json)$/.test(req.params.file)) return next(new HttpError(404, 'Introuvable.'));
+  // Un fichier de media/ ne change jamais de contenu (chaque envoi a un nouveau nom) : les navigateurs le gardent un an.
+  // ?w= (une largeur de MEDIA_WIDTHS) : l'image en WebP à cette largeur au plus, calculée une fois puis gardée dans
+  // media/reduites/. Les captures d'interface pèsent jusqu'à 700 Ko en PNG pour être affichées en petit.
+  const MEDIA_WIDTHS = new Set([320, 640, 960, 1280, 1920]);
+  app.get('/api/media/:file', wrap(async (req, res, next) => {
+    const match = /^([a-f0-9]{32})\.(png|jpg|webp|json)$/.exec(req.params.file);
+    if (!match) return next(new HttpError(404, 'Introuvable.'));
     res.set('X-Content-Type-Options', 'nosniff'); // des images viennent des utilisateurs : le type annoncé fait foi
-    res.sendFile(path.join(config.mediaDir, req.params.file), { maxAge: '7d' }, (error) => error && next(new HttpError(404, 'Introuvable.')));
-  });
+    const original = path.join(config.mediaDir, req.params.file);
+    const send = (file) => res.sendFile(file, { maxAge: '365d', immutable: true }, (error) => error && next(new HttpError(404, 'Introuvable.')));
+    const width = Number(req.query.w);
+    if (!MEDIA_WIDTHS.has(width) || match[2] === 'json' || !fs.existsSync(original)) return send(original);
+
+    const reduced = path.join(config.mediaDir, 'reduites', `${match[1]}-${width}.webp`);
+    if (!fs.existsSync(reduced)) {
+      try {
+        const sharp = (await import('sharp')).default;
+        fs.mkdirSync(path.dirname(reduced), { recursive: true });
+        const temporary = `${reduced}.${crypto.randomBytes(6).toString('hex')}.tmp`;   // deux visites à la fois : jamais de fichier à moitié écrit
+        await sharp(original).resize({ width, withoutEnlargement: true }).webp({ quality: 82 }).toFile(temporary);
+        fs.renameSync(temporary, reduced);
+      } catch {
+        return send(original);   // image illisible pour sharp : on sert l'originale
+      }
+    }
+    send(reduced);
+  }));
 
   for (const [route, text] of [['done', 'Paiement reçu. Vous pouvez revenir dans ONIRIQUE CENTRAL.'], ['cancelled', 'Paiement annulé.']]) {
     app.get(`/checkout/${route}`, (_req, res) => res.type('html').send(
@@ -438,13 +469,13 @@ export function createApp() {
     engineerOnly(req);
     rateLimit(`avatar:${req.user.id}`, 20);
     const name = await receiveImage(req);
-    if (req.user.engineer_avatar) fs.rmSync(path.join(config.mediaDir, req.user.engineer_avatar), { force: true });
+    if (req.user.engineer_avatar) removeMedia(req.user.engineer_avatar);
     run('UPDATE users SET engineer_avatar = ? WHERE id = ?', name, req.user.id);
     res.json({ engineerAvatar: `/api/media/${name}` });
   }));
   app.delete('/api/me/engineer-avatar', requireUser, (req, res) => {
     engineerOnly(req);
-    if (req.user.engineer_avatar) fs.rmSync(path.join(config.mediaDir, req.user.engineer_avatar), { force: true });
+    if (req.user.engineer_avatar) removeMedia(req.user.engineer_avatar);
     run('UPDATE users SET engineer_avatar = NULL WHERE id = ?', req.user.id);
     res.json({ ok: true });
   });
@@ -469,13 +500,13 @@ export function createApp() {
     }
     const name = `${file.storedAs}.${ext}`;
     fs.renameSync(stored, path.join(config.mediaDir, name));
-    if (req.user.avatar) fs.rmSync(path.join(config.mediaDir, req.user.avatar), { force: true });
+    if (req.user.avatar) removeMedia(req.user.avatar);
     run('UPDATE users SET avatar = ? WHERE id = ?', name, req.user.id);
     res.json({ avatar: `/api/media/${name}` });
   }));
 
   app.delete('/api/me/avatar', requireUser, (req, res) => {
-    if (req.user.avatar) fs.rmSync(path.join(config.mediaDir, req.user.avatar), { force: true });
+    if (req.user.avatar) removeMedia(req.user.avatar);
     run('UPDATE users SET avatar = NULL WHERE id = ?', req.user.id);
     res.json({ ok: true });
   });
@@ -958,7 +989,7 @@ export function createApp() {
     const info = await spotifyInfo(ref.id, ref.type);
     const title = str(req.body.title, 120) || info.title;
     if (!title) {
-      if (info.cover) fs.rmSync(path.join(config.mediaDir, info.cover), { force: true });
+      if (info.cover) removeMedia(info.cover);
       throw new HttpError(400, ref.type === 'album' ? "Indiquez le nom de l'album." : 'Indiquez le titre du morceau.');
     }
     const { lastInsertRowid } = run(`INSERT INTO credits (title, artist, kind, released, duration, spotify_id, spotify_type, cover, product_id, product_ids, engineer_id, engineer_ids, used_on, created_at)
@@ -1017,7 +1048,7 @@ export function createApp() {
       next.productIds.length ? JSON.stringify(next.productIds) : null, next.engineerIds[0] ?? null,
       next.engineerIds.length ? JSON.stringify(next.engineerIds) : null, next.spotifyId, next.spotifyType, next.cover, credit.id);
     if (moved) await refreshPopularity(get('SELECT * FROM credits WHERE id = ?', credit.id));
-    if (credit.cover && credit.cover !== next.cover) fs.rmSync(path.join(config.mediaDir, credit.cover), { force: true });
+    if (credit.cover && credit.cover !== next.cover) removeMedia(credit.cover);
     res.json(creditRows().find((c) => c.id === credit.id));
   }));
 
@@ -1025,7 +1056,7 @@ export function createApp() {
     const credit = get('SELECT * FROM credits WHERE id = ?', int(req.params.id, 0));
     if (!credit) throw new HttpError(404, 'Crédit introuvable.');
     run('DELETE FROM credits WHERE id = ?', credit.id);
-    if (credit.cover) fs.rmSync(path.join(config.mediaDir, credit.cover), { force: true });
+    if (credit.cover) removeMedia(credit.cover);
     res.json({ ok: true });
   });
 
@@ -1125,12 +1156,12 @@ export function createApp() {
     // il ne remplace jamais une image choisie à la main.
     const manual = req.query.manual === '1';
     if (!manual && product.image_manual) {
-      fs.rmSync(path.join(config.mediaDir, file.storedAs), { force: true });
+      removeMedia(file.storedAs);
       return res.json(productView(findProduct(product.id)));
     }
     const name = `${file.storedAs}.${ext}`;
     fs.renameSync(path.join(config.mediaDir, file.storedAs), path.join(config.mediaDir, name));
-    if (product.image) fs.rmSync(path.join(config.mediaDir, product.image), { force: true });
+    if (product.image) removeMedia(product.image);
     run('UPDATE products SET image = ?, image_manual = ? WHERE id = ?', name, manual ? 1 : 0, product.id);
     res.json(productView(findProduct(product.id)));
   }));
@@ -1138,7 +1169,7 @@ export function createApp() {
   // Retire l'image choisie à la main : l'aperçu automatique pourra de nouveau en fournir une.
   admin.delete('/products/:id/image', (req, res) => {
     const product = ownProduct(req, req.params.id);
-    if (product.image) fs.rmSync(path.join(config.mediaDir, product.image), { force: true });
+    if (product.image) removeMedia(product.image);
     run('UPDATE products SET image = NULL, image_manual = 0 WHERE id = ?', product.id);
     res.json(productView(findProduct(product.id)));
   });
@@ -1147,7 +1178,7 @@ export function createApp() {
   // pas refabriquée toute seule ; « Actualiser la démo » la remet.
   admin.delete('/products/:id/demo', (req, res) => {
     const product = ownProduct(req, req.params.id);
-    if (product.demo) fs.rmSync(path.join(config.mediaDir, product.demo), { force: true });
+    if (product.demo) removeMedia(product.demo);
     run('UPDATE products SET demo = NULL, demo_off = 1 WHERE id = ?', product.id);
     res.json(productView(findProduct(product.id)));
   });
@@ -1168,7 +1199,7 @@ export function createApp() {
     }
     const name = `${file.storedAs}.json`;
     fs.renameSync(stored, path.join(config.mediaDir, name));
-    if (product.demo) fs.rmSync(path.join(config.mediaDir, product.demo), { force: true });
+    if (product.demo) removeMedia(product.demo);
     run('UPDATE products SET demo = ?, demo_off = 0 WHERE id = ?', name, product.id);
     res.json(productView(findProduct(product.id)));
   }));

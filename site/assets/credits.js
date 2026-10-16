@@ -4,6 +4,8 @@
 window.OniriqueCredits = {
   render(root, list) {
     const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    // pochettes gardées par le serveur : la version WebP à la largeur voulue (voir /api/media?w=)
+    const sized = (url, w) => /^\/api\/media\/[a-f0-9]{32}\.(png|jpg|webp)$/.test(url || "") ? url + "?w=" + w : url;
     // Les ingés du titre (plusieurs possibles) ; une ancienne réponse n'en donne qu'un.
     const engineers = (c) => c.engineers || (c.engineer ? [c.engineer] : []);
     const person = (e) => {
@@ -14,8 +16,8 @@ window.OniriqueCredits = {
     };
 
   root.innerHTML = list.map(c => `
-    <article class="credit reveal" style="--cover-img: ${c.cover ? `url('${esc(c.cover)}')` : "none"}">
-      <div class="cover"><span>${esc(c.title.slice(0, 2))}</span>${c.cover ? `<img src="${esc(c.cover)}" alt="Pochette de ${esc(c.title)} par ${esc(c.artist)}" loading="lazy" onerror="this.remove()">` : ""}</div>
+    <article class="credit reveal" style="--cover-img: ${c.cover ? `url('${esc(sized(c.cover, 320))}')` : "none"}">
+      <div class="cover"><span>${esc(c.title.slice(0, 2))}</span>${c.cover ? `<img src="${esc(sized(c.cover, 640))}" alt="Pochette de ${esc(c.title)} par ${esc(c.artist)}" loading="lazy" onerror="this.remove()">` : ""}</div>
       <div class="credit-info">
         <span class="credit-kind">${esc(c.kind)}${c.released ? " · " + esc(String(c.released).slice(-4)) : ""}</span>
         <h3 class="credit-title">${esc(c.title)}</h3>

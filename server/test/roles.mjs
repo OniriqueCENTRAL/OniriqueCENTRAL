@@ -199,6 +199,27 @@ try {
     await call('POST', '/api/me/self-licenses', { token: again, body: { enabled: false } });
   });
 
+  await step('images : une version WebP à la largeur demandée, gardée un an par les navigateurs', async () => {
+    const sharp = (await import('sharp')).default;
+    const png = await sharp({ create: { width: 1600, height: 800, channels: 3, background: '#e23444' } }).png().toBuffer();
+    const avatar = await fetch(`${base}/api/me/avatar`, { method: 'PUT', headers: { Authorization: `Bearer ${user.token}`, 'Content-Type': 'image/png' }, body: png })
+      .then((r) => r.json());
+    const small = await fetch(`${base}${avatar.avatar}?w=640`);
+    assert.equal(small.headers.get('content-type'), 'image/webp');
+    assert.match(small.headers.get('cache-control'), /max-age=31536000.*immutable/);
+    const bytes = Buffer.from(await small.arrayBuffer());
+    assert.equal((await sharp(bytes).metadata()).width, 640);
+    assert.ok(bytes.length < png.length, 'la version reduite est plus legere');
+    const again = await fetch(`${base}${avatar.avatar}?w=640`);
+    assert.deepEqual(Buffer.from(await again.arrayBuffer()), bytes, 'deuxieme visite : la meme image, deja calculee');
+    const odd = await fetch(`${base}${avatar.avatar}?w=777`);   // largeur non prevue : l'originale
+    assert.equal(odd.headers.get('content-type'), 'image/png');
+    assert.deepEqual(Buffer.from(await odd.arrayBuffer()), png);
+    await call('GET', `/api/media/${'0'.repeat(32)}.png?w=640`, { expect: 404 });
+    await call('DELETE', '/api/me/avatar', { token: user.token });
+    assert.equal(fs.readdirSync(path.join(dataDir, 'media', 'reduites')).length, 0, 'les versions reduites partent avec l image');
+  });
+
   await step('photo de profil : une vraie image seulement, remplacée puis retirée', async () => {
     const png = Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), crypto.randomBytes(500)]);
     const jpg = Buffer.concat([Buffer.from('ffd8ffe0', 'hex'), crypto.randomBytes(500)]);
@@ -221,7 +242,7 @@ try {
     await call('DELETE', '/api/me/avatar', { token: user.token });
     assert.equal((await call('GET', '/api/me', { token: user.token })).user.avatar, null);
     await call('GET', second, { expect: 404 });
-    const leftovers = fs.readdirSync(path.join(dataDir, 'media')).filter((n) => !/\.(png|jpg|webp|json)$/.test(n));
+    const leftovers = fs.readdirSync(path.join(dataDir, 'media')).filter((n) => n !== 'reduites' && !/\.(png|jpg|webp|json)$/.test(n));
     assert.deepEqual(leftovers, [], 'aucun fichier refusé ne reste sur le disque');
   });
 

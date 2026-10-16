@@ -20,7 +20,7 @@ const TONES = ['ember', 'gold', 'calm'];
 export function announcementView() {
   const a = setting('announcement', null);
   if (!a?.active || !a.text || (a.endsAt && a.endsAt < now())) return null;
-  return { id: a.id, text: a.text, link: a.link || null, linkLabel: a.linkLabel || null, tone: a.tone };
+  return { id: a.id, text: a.text, link: a.link || null, linkLabel: a.linkLabel || null, tone: a.tone, endsAt: a.endsAt || null };
 }
 
 /** Le mode maintenance : le site public est remplacé par une page d'attente, l'équipe garde l'accès. */

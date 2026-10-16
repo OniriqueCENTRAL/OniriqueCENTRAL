@@ -816,7 +816,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
 </footer>
 
 <script src="assets/demo-player.js?v=4"></script>
-<script src="assets/credits.js?v=3"></script>
+<script src="assets/credits.js?v=4"></script>
 <script>
 (() => {
 "use strict";
@@ -1723,6 +1723,10 @@ const CREDITS = [
     usedOn: "Voix",
   },
 ];
+// Images du serveur : la version WebP à la largeur voulue (voir /api/media?w=), en plusieurs tailles pour les écrans
+// haute définition. Une image venue d'ailleurs reste telle quelle.
+const sized = (url, w) => /^\/api\/media\/[a-f0-9]{32}\.(png|jpg|webp)$/.test(url || "") ? url + "?w=" + w : url;
+const srcsetOf = (url, widths) => sized(url, 1) === url ? "" : widths.map(w => sized(url, w) + " " + w + "w").join(", ");
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // Les trois crédits épinglés depuis le panel (à défaut, les plus connus) ; tous sont sur la page des crédits.
 function renderCredits(list) {
@@ -1788,7 +1792,10 @@ function heroFacts(products, shown, euros, terms) {
   const paint = () => {
     const p = order[at];
     shot.href = "boutique.html?p=" + encodeURIComponent(p.slug);
-    $("img", shot).src = p.image;
+    const picture = $("img", shot);
+    picture.sizes = "(max-width: 700px) 92vw, 520px";
+    picture.srcset = srcsetOf(p.image, [640, 1280]);
+    picture.src = sized(p.image, 1280);
     $("img", shot).alt = "Interface du plugin " + p.name;
     $("h3", shot).textContent = p.name;
     $("p", shot).textContent = p.tagline;
@@ -1825,7 +1832,9 @@ function heroFacts(products, shown, euros, terms) {
 }
 
 // Collection : les plugins publiés dans le CENTRAL qui ont une image (elle se change depuis la page admin).
-fetch("/api/catalog").then(r => r.ok ? r.json() : null).then(catalog => {
+// Le catalogue, téléchargé une fois pour toute la page (collection, haut de page, vitrine des plugins).
+const catalogReady = fetch("/api/catalog").then(r => r.ok ? r.json() : null).catch(() => null);
+catalogReady.then(catalog => {
   const shown = (catalog?.products || []).filter(p => p.image);
   const euros = cents => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: cents % 100 ? 2 : 0 }).format(cents / 100);
   const t = OniriqueI18n.t; // la ligne porte un prix : ses morceaux se traduisent un par un
@@ -1835,7 +1844,7 @@ fetch("/api/catalog").then(r => r.ok ? r.json() : null).then(catalog => {
   if (!shown.length) return;
   $("#pluginGrid").innerHTML = shown.map(p => `
     <a class="plugin-card" href="boutique.html?p=${encodeURIComponent(p.slug)}">
-      <img src="${esc(p.image)}" alt="Interface du plugin ${esc(p.name)}" loading="lazy">
+      <img src="${esc(sized(p.image, 960))}" srcset="${esc(srcsetOf(p.image, [640, 960, 1280]))}" sizes="(max-width: 700px) 92vw, 380px" alt="Interface du plugin ${esc(p.name)}" loading="lazy">
       <div><h3>${esc(p.name)}</h3><p>${esc(p.tagline)}</p><small>${esc(terms(p))} →</small></div>
     </a>`).join("");
   $("#plugins").hidden = false;
@@ -1898,7 +1907,7 @@ function showcase(list) {
     show();
   }, { rootMargin: "700px" }).observe($("#showcase"));
 }
-Promise.all([fetch("/api/catalog").then(r => r.ok ? r.json() : null), OniriqueDemo.web("")]).then(async ([catalog]) => {
+Promise.all([catalogReady, OniriqueDemo.web("")]).then(async ([catalog]) => {
   const products = catalog?.products || [];
   const webs = await Promise.all(products.map(p => OniriqueDemo.web(p.slug)));
   // une interface web réelle compte comme démo ; une image choisie par un admin passe avant la démo automatique
@@ -1928,7 +1937,7 @@ $$("[data-buy]").forEach(a => {
 </script>
 <script src="assets/tools-menu.js"></script>
 <script src="assets/account.js?v=6"></script>
-<script src="assets/site-nav.js?v=9"></script>
+<script src="assets/site-nav.js?v=10"></script>
 <script src="assets/catalog-watch.js"></script>
 
 </html>

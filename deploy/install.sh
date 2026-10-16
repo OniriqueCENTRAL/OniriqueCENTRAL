@@ -76,16 +76,34 @@ systemctl daemon-reload
 systemctl enable onirique-central
 systemctl restart onirique-central
 
+# Fichiers du site (/assets/) : appelé avec son numéro de version (?v=…), un fichier ne change jamais et se garde un
+# an ; les autres un jour, puis revérifiés.
+cat > /etc/nginx/conf.d/onirique-cache.conf <<'EOF'
+map $args $onirique_asset_cache {
+    ~(^|&)v=  "public, max-age=31536000, immutable";
+    default   "public, max-age=86400, stale-while-revalidate=604800";
+}
+EOF
+
 # Écrit une seule fois : certbot y ajoute ensuite le HTTPS, qu'une relance ne doit pas effacer.
 [ -f /etc/nginx/sites-available/onirique ] || cat > /etc/nginx/sites-available/onirique <<EOF
 server {
     listen 80;
+    http2 on;
     server_name $SITE www.$SITE;
     root $WWW;
+    gzip on;
+    gzip_proxied any;
+    gzip_min_length 1k;
+    gzip_comp_level 6;
+    gzip_vary on;
+    gzip_types application/json text/css application/javascript text/javascript image/svg+xml text/plain application/xml;
     charset utf-8;
     charset_types text/plain text/css application/xml text/xml;
     index index.html;
-    location / { try_files \$uri \$uri.html \$uri/ =404; }
+    # Les pages sont toujours revérifiées : une mise en ligne se voit tout de suite.
+    location / { add_header Cache-Control "no-cache"; try_files \$uri \$uri.html \$uri/ =404; }
+    location /assets/ { add_header Cache-Control \$onirique_asset_cache; }
     # La page compte du site parle au CENTRAL par la même origine.
     location /api/ {
         # Envoi d'images et de versions depuis la page admin du site.
@@ -102,7 +120,14 @@ server {
 
 server {
     listen 80;
+    http2 on;
     server_name $CENTRAL;
+    gzip on;
+    gzip_proxied any;
+    gzip_min_length 1k;
+    gzip_comp_level 6;
+    gzip_vary on;
+    gzip_types application/json text/css application/javascript text/javascript image/svg+xml text/plain application/xml;
     # Envoi des versions de plugins depuis le panel admin : jusqu'à 2 Go, transmis au fil de l'eau.
     client_max_body_size 2g;
     proxy_request_buffering off;

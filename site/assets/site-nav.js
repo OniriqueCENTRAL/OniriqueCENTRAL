@@ -267,6 +267,11 @@ header .sn-lang { margin-left: 8px; }
     bar.append(body, close);
     document.body.prepend(bar);
   };
+  // Le dernier bandeau connu s'affiche tout de suite, sans attendre le serveur : ajouté après coup, il faisait
+  // descendre toute la page sous les yeux du visiteur. La réponse du serveur le confirme, le change ou le retire.
+  let knownAnnouncement = null;
+  try { knownAnnouncement = JSON.parse(localStorage.getItem("onirique.announce") || "null"); } catch { /* stockage fermé */ }
+  if (knownAnnouncement && (!knownAnnouncement.endsAt || knownAnnouncement.endsAt > Date.now())) showAnnouncement(knownAnnouncement);
 
   // Maintenance : le site public laisse place à une page d'attente. L'équipe connectée continue de voir le site.
   const showMaintenance = async (m) => {
@@ -373,7 +378,12 @@ header .sn-lang { margin-left: 8px; }
 
   // Nos réseaux, l'annonce et la maintenance : chargés une fois.
   fetch("/api/site", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((site) => {
-    showAnnouncement(site && site.announcement);
+    const announcement = (site && site.announcement) || null;
+    try { localStorage.setItem("onirique.announce", JSON.stringify(announcement)); } catch { /* stockage fermé */ }
+    if (JSON.stringify(announcement) !== JSON.stringify(knownAnnouncement)) {
+      document.querySelector(".sn-announce")?.remove();
+      showAnnouncement(announcement);
+    }
     showMaintenance(site && site.maintenance);
     const socials = (site && site.socials) || [];
     if (!socials.length) return;

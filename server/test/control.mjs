@@ -77,7 +77,7 @@ try {
     await call('PUT', '/api/admin/live/announcement', { token: alice.token, body: { active: true, text: 'x' }, expect: 403 });
     const set = await call('PUT', '/api/admin/live/announcement', { token: admin.token, body: { active: true, text: 'PROMO 20 % SUR TOUTE LA BOUTIQUE', link: 'boutique.html', linkLabel: 'Voir', tone: 'gold' } });
     const shown = (await call('GET', '/api/site')).announcement;
-    assert.deepEqual(shown, { id: set.id, text: 'PROMO 20 % SUR TOUTE LA BOUTIQUE', link: 'boutique.html', linkLabel: 'Voir', tone: 'gold' });
+    assert.deepEqual(shown, { id: set.id, text: 'PROMO 20 % SUR TOUTE LA BOUTIQUE', link: 'boutique.html', linkLabel: 'Voir', tone: 'gold', endsAt: null });
     await call('PUT', '/api/admin/live/announcement', { token: admin.token, body: { active: true, text: 'PROMO 20 % SUR TOUTE LA BOUTIQUE', endsAt: '2001-01-01T00:00' } });
     assert.equal((await call('GET', '/api/site')).announcement, null, 'passée la date de fin, plus rien');
   });

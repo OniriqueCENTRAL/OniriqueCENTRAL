@@ -247,11 +247,15 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 <script src="assets/demo-player.js?v=4"></script>
 <script src="assets/tools-menu.js"></script>
 <script src="assets/account.js?v=6"></script>
-<script src="assets/site-nav.js?v=9"></script>
+<script src="assets/site-nav.js?v=10"></script>
 <script src="assets/catalog-watch.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const euros = (cents) => (cents === 0 ? "Gratuit" : new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: cents % 100 ? 2 : 0 }).format(cents / 100));
+// Images du serveur : la version WebP à la largeur voulue (voir /api/media?w=), en plusieurs tailles pour les écrans
+// haute définition. Une image venue d'ailleurs reste telle quelle.
+const sized = (url, w) => /^\/api\/media\/[a-f0-9]{32}\.(png|jpg|webp)$/.test(url || "") ? url + "?w=" + w : url;
+const srcsetOf = (url, widths) => sized(url, 1) === url ? "" : widths.map(w => sized(url, w) + " " + w + "w").join(", ");
 function el(tag, props = {}, ...children) {
   const node = Object.assign(document.createElement(tag), props);
   node.append(...children.filter(Boolean));
@@ -296,7 +300,8 @@ function setupList(products, categories = []) {
 function card(p, categories = []) {
   const tags = (p.categories || []).map((id) => categories.find((c) => c.id === id)).filter(Boolean);
   const shot = el("div", { className: "shot" }, p.image
-    ? el("img", { className: p.imageManual ? "cover framed" : "cover", src: p.image, alt: "Interface du plugin " + p.name, loading: "lazy" })
+    ? el("img", { className: p.imageManual ? "cover framed" : "cover", src: sized(p.image, 960), srcset: srcsetOf(p.image, [640, 960, 1280]),
+                  sizes: "(max-width: 700px) 92vw, 380px", alt: "Interface du plugin " + p.name, loading: "lazy" })
     : el("img", { className: "mark", src: "assets/logo.png", alt: "" }));
   return el("a", { className: "card", href: p.href || "boutique.html?p=" + encodeURIComponent(p.slug) }, shot,
     el("div", { className: "body" }, el("span", { className: "creator", textContent: CREATORS[p.creator] || CREATORS.onirique }),
@@ -424,7 +429,7 @@ function setupPick(catalog) {
     const box = el("input", { type: "checkbox", value: p.id });
     box.onchange = update;
     const item = el("label", { className: "pick-item" }, box,
-      p.image ? el("img", { src: p.image, alt: "", loading: "lazy" }) : null,
+      p.image ? el("img", { src: sized(p.image, 320), alt: "", loading: "lazy" }) : null,
       el("div", {}, el("strong", { textContent: p.name }), el("span", { textContent: p.tagline })));
     return { box, item, product: p };
   });
@@ -566,7 +571,8 @@ async function buy(product, catalog) {
       if (stage && stage.offsetWidth) $("demo").style.maxWidth = Math.round(Math.max(320, innerHeight * 0.82 * stage.offsetWidth / stage.offsetHeight)) + "px";
     }).catch(() => { $("demo").firstChild.textContent = "L'interface n'a pas pu être chargée."; });
   } else if (product.image) {
-    $("demo").replaceChildren(el("img", { className: "whole", src: product.image, alt: "Interface du plugin " + product.name }));
+    $("demo").replaceChildren(el("img", { className: "whole", src: sized(product.image, 1920), srcset: srcsetOf(product.image, [960, 1280, 1920]),
+      sizes: "(max-width: 1120px) 100vw, 1100px", alt: "Interface du plugin " + product.name }));
   } else {
     // Tant que VocalBox n'a pas de démo fabriquée à partir de son .vst3, celle de la page d'accueil en tient lieu.
     $("demo").firstChild.replaceChildren(...(product.slug.includes("vocalbox")
