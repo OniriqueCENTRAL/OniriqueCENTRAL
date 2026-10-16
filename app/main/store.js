@@ -5,9 +5,11 @@ const path = require('node:path');
 
 // Adresse du serveur ONIRIQUE CENTRAL. Pour développer en local : ONIRIQUE_SERVER=http://localhost:4850
 const DEFAULT_SERVER = process.env.ONIRIQUE_SERVER || 'https://central.onirique.store';
-// Sur Mac, le dossier VST3 de l'utilisateur : les DAW le lisent, et y écrire ne demande aucun mot de passe.
+// Sur Mac, un dossier ONIRIQUE dans le dossier VST3 de l'utilisateur : les DAW lisent les sous-dossiers, et y écrire
+// ne demande aucun mot de passe. LEGACY_VST3_DIR : là où les versions d'avant posaient les plugins.
+const LEGACY_VST3_DIR = process.platform === 'darwin' ? path.join(os.homedir(), 'Library', 'Audio', 'Plug-Ins', 'VST3') : null;
 const DEFAULT_VST3_DIR = process.platform === 'darwin'
-  ? path.join(os.homedir(), 'Library', 'Audio', 'Plug-Ins', 'VST3')
+  ? path.join(LEGACY_VST3_DIR, 'ONIRIQUE')
   : path.join(process.env.CommonProgramFiles || 'C:\\Program Files\\Common Files', 'VST3');
 
 const file = () => path.join(app.getPath('userData'), 'config.json');
@@ -36,6 +38,7 @@ function write() {
 
 module.exports = {
   DEFAULT_VST3_DIR,
+  LEGACY_VST3_DIR,
   get serverUrl() { return read().serverUrl || DEFAULT_SERVER; },
   set serverUrl(url) { read().serverUrl = url; write(); },
 

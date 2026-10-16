@@ -91,6 +91,22 @@ function demoView(product) {
 }
 
 //------------------------------------------------------------------------------
+/** Les plugins possédés dont une version plus récente attend, et qui ne sont pas déjà en cours d'installation. */
+const updatable = () => state.data.catalog.products.filter((p) => { const s = status(p); return s.right && s.update && !s.busy; });
+let updatingAll = false;
+
+/** « Tout mettre à jour » : les plugins un par un, chacun avec sa barre de progression sur sa carte. */
+async function updateAll() {
+  updatingAll = true;
+  render();
+  try {
+    for (const product of updatable()) await install(product);
+  } finally {
+    updatingAll = false;
+    render();
+  }
+}
+
 async function install(product) {
   state.busy[product.id] = { phase: 'download', ratio: 0 };
   render();
@@ -228,6 +244,8 @@ export function libraryView() {
     h('p', { class: 'lede' }, catalog.products.length
       ? `${owned} sur ${catalog.products.length} dans votre collection. Installation et mises à jour en un clic, licence activée sur ce PC au passage.`
       : 'Aucun plugin publié pour le moment.'),
+    updatingAll ? h('div', { style: { 'margin-bottom': '22px' } }, button('Mises à jour en cours…', null, 'primary', { disabled: true }))
+      : updatable().length ? h('div', { style: { 'margin-bottom': '22px' } }, button(`Tout mettre à jour (${updatable().length})`, updateAll, 'primary')) : null,
     catalog.products.length ? filters : null,
     catalog.products.length ? categoryRow : null,
     products.length || !catalog.products.length ? h('div', { class: 'cards' }, products.map(card))

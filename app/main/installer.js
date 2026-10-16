@@ -284,6 +284,11 @@ async function install(product, onProgress) {
   } finally {
     fs.rmSync(temp, { force: true });
   }
+  // L'ancienne copie, si elle était ailleurs (avant le dossier ONIRIQUE sur Mac) : sinon le DAW verrait le plugin deux fois.
+  const before = store.installed[product.id]?.path;
+  if (before && record.path && before !== record.path && fs.existsSync(before)) {
+    try { clear(before); } catch { /* elle reste ; la nouvelle est bien installée */ }
+  }
   store.setInstalled(product.id, record);
   return record;
 }
@@ -360,10 +365,12 @@ async function status(products) {
     const ext = path.extname(file).toLowerCase();
     let version = record?.version ?? null, location = record?.path ?? null, present = !!record;
 
-    if (!record && ext === '.vst3' && fs.existsSync(path.join(store.vst3Dir, file))) {
+    // Sur Mac, un plugin peut aussi être resté à la racine du dossier VST3 (versions d'avant le dossier ONIRIQUE).
+    const found = ext === '.vst3' && [store.vst3Dir, store.LEGACY_VST3_DIR].filter(Boolean).map((dir) => path.join(dir, file)).find((f) => fs.existsSync(f));
+    if (!record && found) {
       // Plugin déjà dans le dossier VST3 (posé à la main, ou installé avant ONIRIQUE CENTRAL) : il est repris tel quel,
       // avec la version inscrite dans son fichier, pour pouvoir être mis à jour ou désinstallé d'ici.
-      location = path.join(store.vst3Dir, file);
+      location = found;
       const inner = path.join(location, 'Contents', 'x86_64-win', file); // un .vst3 peut être un dossier
       version = (await fileVersion(!MAC && fs.existsSync(inner) ? inner : location)) || '0.0.0';
       present = true;

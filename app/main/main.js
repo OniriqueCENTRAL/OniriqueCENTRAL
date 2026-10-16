@@ -140,6 +140,8 @@ function picked(filePath) {
 }
 
 app.whenReady().then(() => {
+  // Sur Mac, le dossier ONIRIQUE des plugins existe dès l'ouverture, avant la première installation.
+  if (process.platform === 'darwin') fs.mkdir(store.vst3Dir, { recursive: true }, () => {});
   handle('load', load);
 
   handle('auth:login', async (email, password) => {
