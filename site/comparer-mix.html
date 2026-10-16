@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<script src="assets/i18n.js?v=0ad0882a"></script>
+<script src="assets/annonce.js?v=1"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Comparer son mix à une référence — ONIRIQUE</title>
+<meta name="description" content="Dépose ton mix et un morceau de référence : volume, équilibre des fréquences, stéréo et écoute A/B à volume égal, avec des conseils zone par zone. Gratuit, dans ton navigateur.">
+<link rel="canonical" href="https://onirique.store/comparer-mix">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css">
+<link rel="stylesheet" href="assets/tools.css">
+<style>
+.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 16px; margin-top: 30px; }
+.pair .drop { margin-top: 0; }
+.pair .drop em { font-style: normal; color: var(--ember-text); font: 500 11px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; }
+.pair .drop.loaded { border-style: solid; border-color: rgba(226,52,68,.55); }
+.chart { width: 100%; height: 340px; display: block; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 12px; font-size: 14px; color: var(--haze); }
+.legend span::before { content: ""; display: inline-block; width: 18px; height: 3px; margin: 0 8px 4px 0; border-radius: 3px; vertical-align: middle; background: var(--c); }
+.values td.left { text-align: left; }
+#r-bands td:nth-child(2), #r-bands td:nth-child(3), #r-levels td:not(:first-child) { white-space: nowrap; }
+.values td small { display: block; color: var(--haze); font-size: 13px; }
+.diff-up { color: #ffb0b8 !important; }
+.diff-down { color: #9fc7ff !important; }
+.player { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
+.player .seek { flex: 1 1 260px; display: flex; align-items: center; gap: 12px; font: 500 13px/1 var(--f-mono); color: var(--haze); }
+.player input[type="range"] { flex: 1; }
+.player label.check { display: inline-flex; align-items: center; gap: 8px; font: 400 14px/1.3 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--mist); }
+</style>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="outils.html" data-tools>Outils</a><a class="btn" href="compte.html" data-account>Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <section class="hero">
+    <p class="eyebrow">Outil gratuit</p>
+    <h1>Ton mix face à <em>une référence</em></h1>
+    <p class="lede">Dépose ton mix et un titre qui sonne comme tu veux. Volumes égalisés, tu vois où ton mix a trop ou pas assez de basses, de médiums, d'aigus et de largeur, et tu passes de l'un à l'autre à l'écoute.</p>
+
+    <div class="pair">
+      <button class="drop" id="drop-mix" type="button">
+        <em>1</em>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14v-4M8 18V6M12 21V3M16 17V7M20 14v-4"/></svg>
+        <strong>Ton mix</strong>
+        <span>Dépose-le ici ou clique · WAV, MP3, FLAC, M4A</span>
+      </button>
+      <button class="drop" id="drop-ref" type="button">
+        <em>2</em>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6z"/></svg>
+        <strong>La référence</strong>
+        <span>Un titre du même style · WAV de préférence</span>
+      </button>
+    </div>
+    <input id="file-mix" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" hidden>
+    <input id="file-ref" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" hidden>
+    <p class="hint">Sans compte. L'analyse se fait dans ton navigateur : tes fichiers ne sont envoyés nulle part.</p>
+    <p class="error" id="error" role="alert"></p>
+  </section>
+
+  <article class="card" id="result" aria-live="polite" hidden>
+    <p class="head"><b id="r-files"></b><span id="r-length"></span></p>
+
+    <div>
+      <p class="eyebrow">Volume et stéréo</p>
+      <div class="scroll"><table class="values">
+        <thead><tr><th>Mesure</th><th>Ton mix</th><th>Référence</th><th>Écart</th></tr></thead>
+        <tbody id="r-levels"></tbody>
+      </table></div>
+    </div>
+    <div class="dim"><p id="r-verdict"></p></div>
+
+    <div>
+      <p class="eyebrow">Équilibre des fréquences, volumes égalisés</p>
+      <canvas class="chart" id="chart" role="img" aria-label="Courbes de fréquences de ton mix et de la référence, et leur écart"></canvas>
+      <div class="legend"><span style="--c: #e23444">Ton mix</span><span style="--c: rgba(255,236,238,.75)">Référence</span><span style="--c: linear-gradient(90deg, #ffb0b8, #9fc7ff)">Écart (en bas)</span></div>
+    </div>
+
+    <div>
+      <p class="eyebrow">Zone par zone</p>
+      <div class="scroll"><table class="values">
+        <thead><tr><th>Zone</th><th>Fréquences</th><th>Écart</th><th style="text-align:left">Ce que ça veut dire</th></tr></thead>
+        <tbody id="r-bands"></tbody>
+      </table></div>
+      <p class="muted" style="margin-top:12px">Un écart de moins de 1,5 dB ne s'entend presque pas. Une référence est un repère, pas une cible : deux bons mixes du même style diffèrent toujours un peu.</p>
+    </div>
+
+    <div>
+      <p class="eyebrow">Écouter l'un puis l'autre</p>
+      <div class="player">
+        <div class="chips" role="group" aria-label="Morceau écouté"><button type="button" id="ab-mix" aria-pressed="true">Ton mix</button><button type="button" id="ab-ref" aria-pressed="false">Référence</button></div>
+        <button class="go" id="play" type="button">Écouter</button>
+        <div class="seek"><span id="t-now">0:00</span><input id="seek" type="range" min="0" max="1000" value="0" aria-label="Position dans le morceau"><span id="t-end">0:00</span></div>
+        <label class="check"><input type="checkbox" id="match" checked> Volumes égalisés</label>
+      </div>
+      <p class="muted" style="margin-top:12px">Le changement se fait au même endroit du morceau. À volume égal, l'oreille juge l'équilibre au lieu de préférer le plus fort.</p>
+    </div>
+  </article>
+
+  <section class="text">
+    <h2>Bien choisir sa référence</h2>
+    <p>Prends un titre du même style, que tu aimes et qui sonne bien partout, idéalement en WAV ou en qualité maximale : un MP3 ou un extrait de streaming perd une partie des aigus. Compare ton mix à plusieurs références plutôt qu'à une seule, et regarde surtout les grandes tendances : une zone qui ressort ou qui manque de plus de 3 dB mérite d'être corrigée.</p>
+    <h2>Lire la comparaison</h2>
+    <p><strong>Volume</strong> : un mix non masterisé est normalement moins fort qu'un titre sorti, c'est pourquoi les courbes sont comparées à volume égal. <strong>Courbes</strong> : au-dessus de la référence, ton mix a plus d'énergie dans cette zone ; en dessous, moins. <strong>Stéréo</strong> : une corrélation proche de 1 signifie un son presque mono, proche de 0 très large ; sous 0, une partie du son s'annule en mono.</p>
+    <h2>Questions fréquentes</h2>
+    <details><summary>Faut-il copier exactement la courbe de la référence ?</summary>
+      <p>Non. Chaque morceau a sa voix, ses instruments et son arrangement. La comparaison montre où ton mix s'éloigne nettement d'un son qui marche ; c'est à ton oreille de décider si c'est voulu.</p></details>
+    <details><summary>Pourquoi les basses comptent autant ?</summary>
+      <p>Elles portent l'essentiel de l'énergie d'un morceau : trop de basses écrasent le reste et font baisser le volume perçu, pas assez rendent le mix maigre sur les grosses enceintes. Et elles doivent rester au centre pour tenir en mono et en club.</p></details>
+    <details><summary>Comment est faite l'analyse ?</summary>
+      <p>Le volume suit la recommandation UIT-R BS.1770, comme l'outil de volume. Les fréquences sont mesurées sur tout le morceau, par tiers d'octave, après avoir égalisé le volume des deux titres ; la stéréo compare le milieu et les côtés du son.</p></details>
+  </section>
+
+  <section class="cta">
+    <h2>Corriger ce qui <em>dépasse</em></h2>
+    <p>Bas-médiums chargés, sifflantes, voix qui manque de présence : VocalBox règle tout ça en quelques boutons, et les plugins Onirique s'essaient dans ton navigateur.</p>
+    <a class="go" href="boutique.html">Voir les plugins</a>
+  </section>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="outils.html">Tous les outils</a><a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a>
+  </nav>
+</footer>
+
+<script src="assets/audio-kit.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const A = OniriqueAudio;
+const MAX_BYTES = 400e6, MAX_SECONDS = 900;
+const signed = (n, digits = 1) => (n > 0.05 ? "+" : n < -0.05 ? "−" : "") + A.decimal(Math.abs(n), digits);
+const power = (dbs) => dbs.reduce((s, v) => s + Math.pow(10, v / 10), 0);
+const toDb = (p) => 10 * Math.log10(p + 1e-20);
+
+// Les zones du spectre, et ce que veut dire un écart : [nom, fréquences, conseil si plus fort, conseil si plus faible].
+const ZONES = {
+  sub: ["Sub-basses", "20–60 Hz", "Plus de sub que la référence : vérifie le kick et la basse sous 60 Hz, et coupe ce qui n'en a pas besoin sur les autres pistes.", "Moins de sub : la référence descend plus bas. Un peu de 40–60 Hz sur le kick ou la basse donne du poids."],
+  bass: ["Basses", "60–250 Hz", "Basses plus présentes : risque de mix lourd ou boueux, et de volume perçu plus faible.", "Moins de corps : la référence a plus de chaleur entre 80 et 200 Hz."],
+  lowmid: ["Bas-médiums", "250–500 Hz", "Zone « carton » chargée : un léger creux vers 300 Hz sur la voix ou les instruments aère tout le mix.", "Mix plus creux que la référence dans le bas-médium : il peut manquer de chaleur."],
+  mid: ["Médiums", "500 Hz–2 kHz", "Médiums en avant : son nasal ou « téléphone » s'ils dépassent trop.", "Médiums en retrait : voix et instruments moins présents, le mix sonne lointain."],
+  presence: ["Présence", "2–5 kHz", "Présence forte : le mix peut devenir agressif et fatiguer à fort volume.", "Moins de présence : la voix risque de manquer de clarté et d'intelligibilité."],
+  high: ["Aigus", "5–10 kHz", "Aigus plus brillants : surveille les sifflantes (un de-esser aide) et les cymbales.", "Aigus plus sombres que la référence : le mix peut sembler terne."],
+  air: ["Air", "10–20 kHz", "Plus d'air que la référence : beau s'il reste doux, sinon il siffle.", "Moins d'air : un shelf doux au-dessus de 10 kHz ouvre le haut du mix."],
+};
+
+const tracks = { mix: null, ref: null };   // { file, buffer, loud, spec }
+
+function analyse(url, channels) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(url);
+    worker.onmessage = (event) => { worker.terminate(); event.data.error ? reject(new Error(event.data.error)) : resolve(event.data); };
+    worker.onerror = () => { worker.terminate(); reject(new Error("L'analyse a échoué sur ce fichier.")); };
+    worker.postMessage({ channels, sampleRate: 48000 }, channels.map((c) => c.buffer));
+  });
+}
+
+async function load(kind, file) {
+  const drop = $("drop-" + kind);
+  $("error").textContent = "";
+  if (file.size > MAX_BYTES) { $("error").textContent = "Ce fichier est trop lourd (400 Mo au plus)."; return; }
+  A.busy(drop, true, "Lecture du fichier…");
+  try {
+    const source = await A.decode(file);
+    if (source.duration > MAX_SECONDS) throw new Error("Ce fichier est trop long (15 minutes au plus).");
+    A.busy(drop, true, "Analyse en cours…");
+    // Mesures à 48 kHz, la fréquence pour laquelle la pondération du volume est définie.
+    const audio = source.sampleRate === 48000 ? source : await A.render(source, { rate: 48000 });
+    const channels = A.channelsOf(audio).slice(0, 2);
+    const [loud, spec] = await Promise.all([
+      analyse("assets/loudness-worker.js", channels.map((c) => c.slice())),
+      analyse("assets/spectrum-worker.js", channels.map((c) => c.slice())),
+    ]);
+    stop();
+    tracks[kind] = { file, buffer: source, loud, spec };
+    A.busy(drop, false);
+    drop.classList.add("loaded");
+    drop.querySelector("span").hidden = false;
+    drop.querySelector("span").textContent = file.name + " · " + A.clock(source.duration) + " · cliquer pour changer";
+    if (tracks.mix && tracks.ref) show();
+  } catch (error) {
+    $("error").textContent = error.message;
+    A.busy(drop, false);
+  }
+}
+
+// Une zone de dépôt par fichier (la page entière ne sert pas de zone : il y en a deux).
+for (const kind of ["mix", "ref"]) {
+  const drop = $("drop-" + kind), input = $("file-" + kind);
+  drop.onclick = () => input.click();
+  input.onchange = () => { if (input.files[0]) load(kind, input.files[0]); input.value = ""; };
+  drop.addEventListener("dragover", (event) => { event.preventDefault(); drop.classList.add("over"); });
+  drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+  drop.addEventListener("drop", (event) => {
+    event.preventDefault();
+    drop.classList.remove("over");
+    const file = event.dataTransfer.files[0];
+    if (file && !drop.disabled) load(kind, file);
+  });
+}
+// Un fichier lâché à côté des zones ne doit pas ouvrir le fichier dans l'onglet à la place de la page.
+addEventListener("dragover", (event) => event.preventDefault());
+addEventListener("drop", (event) => event.preventDefault());
+
+//------------------------------------------------------------------------------ résultats
+function show() {
+  const mix = tracks.mix, ref = tracks.ref;
+  $("r-files").textContent = mix.file.name + "  ·  " + ref.file.name;
+  $("r-length").textContent = A.clock(mix.buffer.duration) + " / " + A.clock(ref.buffer.duration);
+
+  // Ton mix ramené au volume de la référence : on compare l'équilibre, pas le volume.
+  const offset = ref.loud.integrated - mix.loud.integrated;
+  const total = (side, mid) => toDb(Math.pow(10, mid / 10) + Math.pow(10, side / 10));
+  const width = (spec) => {
+    const side = power(spec.bands.map((b) => b.side)), mid = power(spec.bands.map((b) => b.mid));
+    return Math.round(100 * side / (side + mid));
+  };
+  const row = (label, a, b, digits, unit, gapUnit, note) => {
+    const tr = document.createElement("tr");
+    const gap = a !== null && b !== null ? a - b : null;
+    tr.innerHTML = `<td>${label}${note ? "<small>" + note + "</small>" : ""}</td><td><b>${a === null ? "—" : signed(a, digits) + unit}</b></td><td><b>${b === null ? "—" : signed(b, digits) + unit}</b></td><td>${gap === null ? "—" : signed(gap, digits) + gapUnit}</td>`;
+    return tr;
+  };
+  const wMix = width(mix.spec), wRef = width(ref.spec);
+  const widthRow = document.createElement("tr");
+  widthRow.innerHTML = `<td>Largeur stéréo<small>part de l'énergie sur les côtés</small></td><td><b>${wMix} %</b></td><td><b>${wRef} %</b></td><td>${signed(wMix - wRef, 0)} pts</td>`;
+  $("r-levels").replaceChildren(
+    row("Volume intégré", mix.loud.integrated, ref.loud.integrated, 1, " LUFS", " dB"),
+    row("Pic réel", mix.loud.truePeak, ref.loud.truePeak, 1, " dBTP", " dB"),
+    row("Dynamique", mix.loud.range, ref.loud.range, 1, " LU", " LU", "écart entre passages calmes et forts"),
+    row("Corrélation stéréo", mix.spec.correlation, ref.spec.correlation, 2, "", "", "1 = mono, 0 = très large, sous 0 = s'annule en mono"),
+    widthRow);
+
+  const gap = mix.loud.integrated - ref.loud.integrated;
+  const parts = [Math.abs(gap) < 1 ? "Ton mix et la référence sont au même volume."
+    : gap < 0 ? "Ton mix est " + A.decimal(-gap) + " dB moins fort que la référence" + (gap < -3 ? " : normal avant le mastering, la comparaison des fréquences se fait à volume égal." : ".")
+    : "Ton mix est " + A.decimal(gap) + " dB plus fort que la référence."];
+  if (mix.spec.lowCorrelation < 0.6 && mix.spec.lowCorrelation < ref.spec.lowCorrelation - 0.1)
+    parts.push("Tes basses ne sont pas assez au centre : en mono ou en club, elles perdent de la force. Garde le sub et la basse au milieu.");
+  if (mix.spec.correlation < 0) parts.push("Ta stéréo s'annule en partie en mono (corrélation négative) : vérifie les effets de largeur et la phase des prises doublées.");
+  if (mix.loud.truePeak > -1 && gap > -2) parts.push("Tes pics dépassent −1 dBTP : risque de saturation à la conversion par les plateformes.");
+  $("r-verdict").textContent = parts.join(" ");
+
+  // Zone par zone, volumes égalisés.
+  $("r-bands").replaceChildren(...mix.spec.bands.map((band, i) => {
+    const other = ref.spec.bands[i];
+    const diff = total(band.side, band.mid) + offset - total(other.side, other.mid);
+    const [name, range, more, less] = ZONES[band.id];
+    const tr = document.createElement("tr");
+    const near = Math.abs(diff) < 1.5;
+    tr.innerHTML = `<td>${name}</td><td>${range}</td><td class="${near ? "" : diff > 0 ? "diff-up" : "diff-down"}"><b>${signed(diff)} dB</b></td><td class="left">${near ? "Proche de la référence." : diff > 0 ? more : less}</td>`;
+    return tr;
+  }));
+
+  $("result").hidden = false;
+  drawChart();
+  $("t-end").textContent = A.clock(tracks[current].buffer.duration);
+}
+
+//------------------------------------------------------------------------------ courbes
+function drawChart() {
+  const mix = tracks.mix, ref = tracks.ref;
+  if (!mix || !ref) return;
+  const canvas = $("chart"), dpr = Math.min(2, devicePixelRatio || 1);
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+  const g = canvas.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+
+  const offset = ref.loud.integrated - mix.loud.integrated;
+  const curve = (spec, shift) => spec.points.map((p) => ({ hz: p.hz, db: toDb(Math.pow(10, p.mid / 10) + Math.pow(10, p.side / 10)) + shift }));
+  const a = curve(mix.spec, offset), b = curve(ref.spec, 0);
+  const n = Math.min(a.length, b.length);
+  const left = 44, right = w - 10, top = 10, split = h - 112, bottom = h - 22;
+  const x = (hz) => left + Math.log(hz / 20) / Math.log(1000) * (right - left);
+  const top_db = Math.max(...a.slice(0, n).map((p) => p.db), ...b.slice(0, n).map((p) => p.db)) + 3;
+  const yS = (db) => top + Math.min(1, Math.max(0, (top_db - db) / 60)) * (split - 14 - top);   // bornée à sa zone
+  const yD = (d) => split + 8 + (12 - Math.max(-12, Math.min(12, d))) / 24 * (bottom - split - 8);
+
+  const css = getComputedStyle(document.body);
+  g.font = "11px " + (css.getPropertyValue("--f-mono") || "monospace");
+  g.fillStyle = "rgba(185,162,165,.9)";
+  g.strokeStyle = "rgba(255,210,214,.08)";
+  g.lineWidth = 1;
+  for (const hz of [50, 100, 200, 500, 1000, 2000, 5000, 10000]) {
+    g.beginPath(); g.moveTo(x(hz), top); g.lineTo(x(hz), bottom); g.stroke();
+    g.fillText(hz >= 1000 ? hz / 1000 + "k" : String(hz), x(hz) - 8, h - 6);
+  }
+  for (const d of [-12, -6, 0, 6, 12]) {
+    g.strokeStyle = d === 0 ? "rgba(255,210,214,.3)" : "rgba(255,210,214,.08)";
+    g.beginPath(); g.moveTo(left, yD(d)); g.lineTo(right, yD(d)); g.stroke();
+    g.fillText((d > 0 ? "+" : "") + d, 6, yD(d) + 4);
+  }
+  g.fillText("dB", 6, top + 10);
+
+  const line = (pts, y, colour, width) => {
+    g.beginPath();
+    pts.forEach((p, i) => (i ? g.lineTo(x(p.hz), y(p.db)) : g.moveTo(x(p.hz), y(p.db))));
+    g.strokeStyle = colour; g.lineWidth = width; g.stroke();
+  };
+  line(b.slice(0, n), yS, "rgba(255,236,238,.75)", 2);
+  line(a.slice(0, n), yS, "#e23444", 2.4);
+
+  // Écart : rose au-dessus de la référence, bleu en dessous.
+  const diffs = a.slice(0, n).map((p, i) => ({ hz: p.hz, db: p.db - b[i].db }));
+  for (const [sign, colour] of [[1, "rgba(255,176,184,.45)"], [-1, "rgba(159,199,255,.45)"]]) {
+    g.beginPath();
+    g.moveTo(x(diffs[0].hz), yD(0));
+    for (const p of diffs) g.lineTo(x(p.hz), yD(sign > 0 ? Math.max(0, p.db) : Math.min(0, p.db)));
+    g.lineTo(x(diffs[n - 1].hz), yD(0));
+    g.closePath(); g.fillStyle = colour; g.fill();
+  }
+  line(diffs, yD, "rgba(255,236,238,.8)", 1.4);
+}
+addEventListener("resize", () => drawChart());
+
+//------------------------------------------------------------------------------ écoute A/B
+let ctx = null, node = null, gain = null, current = "mix", playing = false, startedAt = 0, offsetSec = 0;
+const levelOf = (kind) => {
+  if (!$("match").checked || !tracks.mix || !tracks.ref) return 1;
+  const quieter = Math.min(tracks.mix.loud.integrated, tracks.ref.loud.integrated);   // on baisse le plus fort, jamais l'inverse
+  return Math.pow(10, (quieter - tracks[kind].loud.integrated) / 20);
+};
+const position = () => (playing ? ctx.currentTime - startedAt : offsetSec);
+
+function start() {
+  const buffer = tracks[current].buffer;
+  offsetSec = Math.min(offsetSec, Math.max(0, buffer.duration - 0.05));
+  ctx = ctx || new AudioContext();
+  node = ctx.createBufferSource();
+  node.buffer = buffer;
+  gain = ctx.createGain();
+  gain.gain.value = levelOf(current);
+  node.connect(gain).connect(ctx.destination);
+  const mine = node;
+  node.onended = () => { if (node === mine && playing) { playing = false; offsetSec = 0; refresh(); } };
+  node.start(0, offsetSec);
+  startedAt = ctx.currentTime - offsetSec;
+  playing = true;
+  ctx.resume();
+}
+function stop() {
+  if (!playing) return;
+  offsetSec = position();
+  playing = false;
+  const old = node;
+  node = null;
+  try { old.stop(); } catch { /* déjà fini */ }
+  refresh();
+}
+function refresh() {
+  $("play").textContent = playing ? "Pause" : "Écouter";
+  $("ab-mix").setAttribute("aria-pressed", String(current === "mix"));
+  $("ab-ref").setAttribute("aria-pressed", String(current === "ref"));
+  const t = tracks[current];
+  if (!t) return;
+  $("t-now").textContent = A.clock(position());
+  $("t-end").textContent = A.clock(t.buffer.duration);
+  if (document.activeElement !== $("seek")) $("seek").value = Math.round(1000 * position() / t.buffer.duration);
+}
+$("play").onclick = () => { if (!tracks[current]) return; playing ? stop() : start(); refresh(); };
+for (const kind of ["mix", "ref"]) $("ab-" + kind).onclick = () => {
+  if (current === kind || !tracks[kind]) return;
+  const was = playing;
+  stop();
+  current = kind;
+  if (was) start();   // même endroit du morceau, l'autre titre
+  refresh();
+};
+$("seek").oninput = () => {
+  const t = tracks[current];
+  if (!t) return;
+  const was = playing;
+  stop();
+  offsetSec = $("seek").value / 1000 * t.buffer.duration;
+  if (was) start();
+  refresh();
+};
+$("match").onchange = () => { if (gain) gain.gain.setTargetAtTime(levelOf(current), ctx.currentTime, 0.02); };
+setInterval(() => { if (playing) refresh(); }, 250);
+</script>
+<script src="assets/tools-menu.js?v=2"></script>
+<script src="assets/account.js?v=6"></script>
+<script src="assets/site-nav.js?v=11"></script>
+</html>

@@ -5,6 +5,7 @@ window.OniriqueTools = [
   ["Analyser", [
     ["BPM et tonalité", "bpm-tonalite.html", "Le tempo, la gamme et le detune d'un morceau, et un WAV calé sur la grille."],
     ["Volume avant sortie", "volume-lufs.html", "Le niveau LUFS et le pic réel d'un master, plateforme par plateforme."],
+    ["Comparer à une référence", "comparer-mix.html", "Ton mix face à un titre de référence : volume, fréquences, stéréo, et l'écoute A/B à volume égal."],
     ["Stems et packs de prods", "stems.html", "Stems contrôlés, reconnus et renommés ; prods renommées avec leur BPM et leur tonalité, en un pack."],
     ["Popularité", "popularite.html", "Le score de popularité Spotify d'un artiste ou d'un titre."],
   ]],
