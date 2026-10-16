@@ -111,15 +111,6 @@ header .sn-lang { margin-left: 8px; }
 .sn-dl-main { border: 0; background: var(--mist, #f6eeee); color: var(--night, #0d0809); }
 .sn-dl-main:disabled { opacity: .6; cursor: default; }
 .sn-dl-ghost { border: 1px solid var(--line, rgba(255,210,214,.16)); color: var(--mist, #f6eeee); }
-/* Annonce en direct, au-dessus de l'en-tête */
-.sn-announce { position: relative; z-index: 60; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 48px; font: 600 14px/1.4 var(--f-body, system-ui); text-align: center; }
-.sn-announce p { margin: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 16px; }
-.sn-announce span { letter-spacing: .02em; }
-.sn-announce a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
-.sn-announce-x { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border: 0; border-radius: 999px; background: rgba(0,0,0,.18); color: inherit; font: 400 20px/1 var(--f-body, system-ui); cursor: pointer; }
-.sn-announce.tone-ember { background: linear-gradient(90deg, #8c0614, #e23444 60%, #8c0614); color: #fff; }
-.sn-announce.tone-gold { background: linear-gradient(90deg, #b8862b, #f2c46d 55%, #b8862b); color: #1a0d02; }
-.sn-announce.tone-calm { background: var(--deep-2, #2a0a0e); color: var(--mist, #f6eeee); border-bottom: 1px solid var(--line, rgba(255,210,214,.16)); }
 /* Maintenance */
 .sn-maint { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 32px 20px; text-align: center; background: radial-gradient(90% 60% at 50% 0%, rgba(140,6,20,.75), rgba(92,0,8,.35) 45%, transparent 80%), var(--night, #0d0809); color: var(--mist, #f6eeee); }
 .sn-maint img { width: 108px; height: auto; filter: drop-shadow(0 0 18px rgba(226,52,68,.8)); }
@@ -252,26 +243,6 @@ header .sn-lang { margin-left: 8px; }
     }
   } catch { /* stockage fermé : pas de bandeau */ }
 
-  // L'annonce du moment (réglée en direct dans le panel admin) : un bandeau au-dessus de l'en-tête, qu'on peut fermer.
-  // Un nouveau texte a un nouveau numéro : il réapparaît chez ceux qui avaient fermé le précédent.
-  const showAnnouncement = (a) => {
-    if (!a || document.querySelector(".sn-announce")) return;
-    try { if (localStorage.getItem("onirique.announce.closed") === a.id) return; } catch { /* stockage fermé : on l'affiche */ }
-    const bar = el("div", { className: "sn-announce tone-" + (a.tone || "ember"), role: "region" });
-    bar.setAttribute("aria-label", "Annonce");
-    const body = el("p", {}, el("span", { textContent: a.text }));
-    if (a.link) body.append(el("a", { href: a.link, textContent: (a.linkLabel || "Voir") + " →" }));
-    const close = el("button", { type: "button", className: "sn-announce-x", textContent: "×", title: "Fermer l'annonce" });
-    close.setAttribute("aria-label", "Fermer l'annonce");
-    close.onclick = () => { try { localStorage.setItem("onirique.announce.closed", a.id); } catch {} bar.remove(); };
-    bar.append(body, close);
-    document.body.prepend(bar);
-  };
-  // Le dernier bandeau connu s'affiche tout de suite, sans attendre le serveur : ajouté après coup, il faisait
-  // descendre toute la page sous les yeux du visiteur. La réponse du serveur le confirme, le change ou le retire.
-  let knownAnnouncement = null;
-  try { knownAnnouncement = JSON.parse(localStorage.getItem("onirique.announce") || "null"); } catch { /* stockage fermé */ }
-  if (knownAnnouncement && (!knownAnnouncement.endsAt || knownAnnouncement.endsAt > Date.now())) showAnnouncement(knownAnnouncement);
 
   // Maintenance : le site public laisse place à une page d'attente. L'équipe connectée continue de voir le site.
   const showMaintenance = async (m) => {
@@ -378,12 +349,7 @@ header .sn-lang { margin-left: 8px; }
 
   // Nos réseaux, l'annonce et la maintenance : chargés une fois.
   fetch("/api/site", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((site) => {
-    const announcement = (site && site.announcement) || null;
-    try { localStorage.setItem("onirique.announce", JSON.stringify(announcement)); } catch { /* stockage fermé */ }
-    if (JSON.stringify(announcement) !== JSON.stringify(knownAnnouncement)) {
-      document.querySelector(".sn-announce")?.remove();
-      showAnnouncement(announcement);
-    }
+    if (window.OniriqueAnnounce) window.OniriqueAnnounce(site && site.announcement);   // voir annonce.js
     showMaintenance(site && site.maintenance);
     const socials = (site && site.socials) || [];
     if (!socials.length) return;
