@@ -64,6 +64,8 @@ export const config = {
   supportEmail: env.SUPPORT_EMAIL || env.MAIL_FROM || env.SMTP_USER || '',
   // D'où vient le score de popularité Spotify de la page « Popularité » du site (voir popularity.js).
   popularitySource: env.POPULARITY_SOURCE || 'https://groover.co/core/distantapi/spotify/popularity/',
+  // Recherche de titres et extraits de 30 s (outil « Comparer à une référence ») : l'API publique de Deezer.
+  deezerApi: (env.DEEZER_API || 'https://api.deezer.com').replace(/\/+$/, ''),
   // Activations simultanées par défaut, et marge laissée hors ligne aux abonnés.
   defaultMaxActivations: 2,
   subscriptionGraceDays: 3,

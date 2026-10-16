@@ -14,6 +14,7 @@ import {
 import { mailEnabled, sendMail } from './mail.js';
 import { embedsLicenseKey, MISSING_LICENSE } from './plugincheck.js';
 import { popularity } from './popularity.js';
+import { searchReferences, referencePreview } from './reference.js';
 import { diskSpace } from './disk.js';
 import {
   activate, activeSubscription, createLicense, entitlement, generateKey, normalizeKey, parseProductIds, pickPlan, pickPriceCents, pickPrices,
@@ -233,6 +234,18 @@ export function createApp() {
   app.get('/api/popularity', wrap(async (req, res) => {
     rateLimit(`popularity:${req.ip}`, 40);
     res.json(await popularity(req.query.q));
+  }));
+
+  // Outil « Comparer à une référence » : chercher un titre, puis son extrait officiel de 30 s (voir reference.js).
+  app.get('/api/reference/search', wrap(async (req, res) => {
+    rateLimit(`reference:${req.ip}`, 150);
+    res.json(await searchReferences(req.query.q));
+  }));
+  app.get('/api/reference/preview/:id', wrap(async (req, res) => {
+    rateLimit(`reference-audio:${req.ip}`, 60);
+    const { audio } = await referencePreview(req.params.id);
+    res.set({ 'Content-Type': 'audio/mpeg', 'Cache-Control': 'private, max-age=600', 'X-Content-Type-Options': 'nosniff' });
+    res.send(audio);
   }));
 
   app.get('/api/catalog', (req, res) => {

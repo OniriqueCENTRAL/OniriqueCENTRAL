@@ -27,6 +27,21 @@
 .player { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
 .player .seek { flex: 1 1 260px; display: flex; align-items: center; gap: 12px; font: 500 13px/1 var(--f-mono); color: var(--haze); }
 .player input[type="range"] { flex: 1; }
+.find { margin: 18px auto 0; max-width: 640px; text-align: left; }
+.find > label { display: block; margin-bottom: 8px; font: 500 11px/1.3 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); text-align: center; }
+.find-row { display: flex; gap: 10px; }
+.find-row input { flex: 1; min-width: 0; height: 48px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px var(--f-body); }
+.find-row input:focus { outline: none; border-color: var(--ember); box-shadow: 0 0 0 4px rgba(226,52,68,.14); }
+.find-row .go { padding-block: 0; height: 48px; }
+.results { list-style: none; margin: 12px 0 0; padding: 6px; border: 1px solid var(--line); border-radius: 18px; background: linear-gradient(180deg, var(--deep-2), var(--deep)); max-height: 360px; overflow-y: auto; }
+.results li { color: var(--haze); font-size: 14px; padding: 10px 12px; }
+.results button { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: 14px; width: 100%; padding: 8px; border: 0; border-radius: 12px; background: none; color: var(--mist); font: inherit; text-align: left; cursor: pointer; }
+.results button:hover, .results button:focus-visible { background: rgba(226,52,68,.16); outline: none; }
+.results button:disabled { opacity: .6; cursor: progress; }
+.results img, .results .nocover { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; background: rgba(0,0,0,.4); }
+.results b { display: block; font: 600 15px/1.3 var(--f-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.results small { display: block; color: var(--haze); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.results time { font: 500 12px/1 var(--f-mono); color: var(--haze); }
 .player label.check { display: inline-flex; align-items: center; gap: 8px; font: 400 14px/1.3 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--mist); }
 </style>
 
@@ -58,9 +73,17 @@
         <span>Un titre du même style · WAV de préférence</span>
       </button>
     </div>
+    <div class="find">
+      <label for="ref-q">Pas le fichier de ta référence ? Cherche-la</label>
+      <div class="find-row">
+        <input id="ref-q" type="search" placeholder="Titre, artiste, ou lien Spotify" autocomplete="off" enterkeyhint="search">
+        <button class="go" id="ref-go" type="button">Chercher</button>
+      </div>
+      <ul class="results" id="ref-results" aria-live="polite" hidden></ul>
+    </div>
     <input id="file-mix" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" hidden>
     <input id="file-ref" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" hidden>
-    <p class="hint">Sans compte. L'analyse se fait dans ton navigateur : tes fichiers ne sont envoyés nulle part.</p>
+    <p class="hint">Sans compte. L'analyse se fait dans ton navigateur : tes fichiers ne sont envoyés nulle part. Les références cherchées sont les extraits officiels de 30 secondes fournis par Deezer.</p>
     <p class="error" id="error" role="alert"></p>
   </section>
 
@@ -161,7 +184,7 @@ function analyse(url, channels) {
   });
 }
 
-async function load(kind, file) {
+async function load(kind, file, preview = null) {
   const drop = $("drop-" + kind);
   $("error").textContent = "";
   if (file.size > MAX_BYTES) { $("error").textContent = "Ce fichier est trop lourd (400 Mo au plus)."; return; }
@@ -178,7 +201,7 @@ async function load(kind, file) {
       analyse("assets/spectrum-worker.js", channels.map((c) => c.slice())),
     ]);
     stop();
-    tracks[kind] = { file, buffer: source, loud, spec };
+    tracks[kind] = { file, buffer: source, loud, spec, preview };
     A.busy(drop, false);
     drop.classList.add("loaded");
     drop.querySelector("span").hidden = false;
@@ -189,6 +212,56 @@ async function load(kind, file) {
     A.busy(drop, false);
   }
 }
+
+// Référence cherchée par son nom (ou un lien Spotify) : l'extrait officiel de 30 s, relayé par le serveur (Deezer).
+const resultItem = (text) => Object.assign(document.createElement("li"), { textContent: text });
+async function searchReference() {
+  const q = $("ref-q").value.trim();
+  if (q.length < 2) return;
+  const list = $("ref-results");
+  list.hidden = false;
+  list.replaceChildren(resultItem("Recherche…"));
+  try {
+    const response = await fetch("/api/reference/search?q=" + encodeURIComponent(q));
+    const found = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(found.error || "La recherche n'a pas abouti.");
+    if (!found.length) { list.replaceChildren(resultItem("Aucun titre trouvé : essaie avec le titre et l'artiste.")); return; }
+    list.replaceChildren(...found.map((t) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.innerHTML = (t.cover ? '<img alt="" loading="lazy">' : '<span class="nocover"></span>') + "<span><b></b><small></small></span><time></time>";
+      if (t.cover) button.querySelector("img").src = t.cover;
+      button.querySelector("b").textContent = t.title;
+      button.querySelector("small").textContent = [t.artist, t.album].filter(Boolean).join(" · ");
+      button.querySelector("time").textContent = t.duration ? A.clock(t.duration) : "";
+      button.title = "Prendre « " + t.title + " » comme référence";
+      button.onclick = () => pickReference(t, button);
+      const li = document.createElement("li");
+      li.style.padding = "0";
+      li.append(button);
+      return li;
+    }));
+  } catch (error) {
+    list.replaceChildren(resultItem(error.message));
+  }
+}
+async function pickReference(t, button) {
+  $("error").textContent = "";
+  button.disabled = true;
+  try {
+    const response = await fetch("/api/reference/preview/" + encodeURIComponent(t.id));
+    if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "L'extrait n'a pas pu être chargé.");
+    const file = new File([await response.blob()], `${t.artist} – ${t.title} (extrait 30 s).mp3`, { type: "audio/mpeg" });
+    $("ref-results").hidden = true;
+    await load("ref", file, t);
+    $("drop-ref").scrollIntoView({ block: "nearest", behavior: "smooth" });
+  } catch (error) {
+    $("error").textContent = error.message;
+  }
+  button.disabled = false;
+}
+$("ref-go").onclick = searchReference;
+$("ref-q").addEventListener("keydown", (event) => { if (event.key === "Enter") { event.preventDefault(); searchReference(); } });
 
 // Une zone de dépôt par fichier (la page entière ne sert pas de zone : il y en a deux).
 for (const kind of ["mix", "ref"]) {
@@ -245,6 +318,7 @@ function show() {
     parts.push("Tes basses ne sont pas assez au centre : en mono ou en club, elles perdent de la force. Garde le sub et la basse au milieu.");
   if (mix.spec.correlation < 0) parts.push("Ta stéréo s'annule en partie en mono (corrélation négative) : vérifie les effets de largeur et la phase des prises doublées.");
   if (mix.loud.truePeak > -1 && gap > -2) parts.push("Tes pics dépassent −1 dBTP : risque de saturation à la conversion par les plateformes.");
+  if (ref.preview) parts.push("La référence est l'extrait de 30 s de « " + ref.preview.title + " » (Deezer, en MP3) : son volume peut différer un peu du titre entier, et l'air au-dessus de 16 kHz y est coupé.");
   $("r-verdict").textContent = parts.join(" ");
 
   // Zone par zone, volumes égalisés.
@@ -254,7 +328,9 @@ function show() {
     const [name, range, more, less] = ZONES[band.id];
     const tr = document.createElement("tr");
     const near = Math.abs(diff) < 1.5;
-    tr.innerHTML = `<td>${name}</td><td>${range}</td><td class="${near ? "" : diff > 0 ? "diff-up" : "diff-down"}"><b>${signed(diff)} dB</b></td><td class="left">${near ? "Proche de la référence." : diff > 0 ? more : less}</td>`;
+    // Le MP3 d'un extrait coupe le haut du spectre : l'air y est toujours plus faible que dans le vrai titre.
+    const cut = ref.preview && band.id === "air" ? " (Extrait en MP3 : l'air de la référence y est coupé, écart peu fiable.)" : "";
+    tr.innerHTML = `<td>${name}</td><td>${range}</td><td class="${near ? "" : diff > 0 ? "diff-up" : "diff-down"}"><b>${signed(diff)} dB</b></td><td class="left">${near ? "Proche de la référence." : diff > 0 ? more : less}${cut}</td>`;
     return tr;
   }));
 
