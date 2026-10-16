@@ -2,7 +2,7 @@
 <html lang="fr">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<script src="assets/i18n.js?v=6a5dbdce"></script>
+<script src="assets/i18n.js?v=b9789951"></script>
 <title>ONIRIQUE</title>
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="apple-touch-icon" href="assets/favicon.png">
@@ -1219,7 +1219,7 @@ function bindPeqStrip() {
   vb.peqChip.addEventListener("click", () => { const b = S.peq[UI.band]; if (!b.on) b.on = true; else b.t = (b.t + 1) % 5; touched(); peqChanged(); });
   vb.peqChip.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); vb.peqChip.click(); } });
   const dragPeq = (e, key, toV) => {
-    e.classList.add("drag-y"); e.tabIndex = 0; e.setAttribute("role", "slider"); e.setAttribute("aria-label", { f: "Fréquence", g: "Gain", q: "Q" }[key] + " de la bande sélectionnée");
+    e.classList.add("drag-y"); e.tabIndex = 0; e.setAttribute("role", "slider"); e.setAttribute("aria-label", { f: "Fréquence de la bande sélectionnée", g: "Gain de la bande sélectionnée", q: "Q de la bande sélectionnée" }[key]);
     let sy, s0;
     e.addEventListener("pointerdown", ev => { e.setPointerCapture(ev.pointerId); sy = ev.clientY; s0 = S.peq[UI.band][key]; ev.preventDefault(); });
     e.addEventListener("pointermove", ev => { if (!e.hasPointerCapture(ev.pointerId)) return; S.peq[UI.band][key] = toV(s0, (sy - ev.clientY) / 150); S.peq[UI.band].on = true; touched(); peqChanged(); });
@@ -1828,7 +1828,8 @@ function heroFacts(products, shown, euros, terms) {
 fetch("/api/catalog").then(r => r.ok ? r.json() : null).then(catalog => {
   const shown = (catalog?.products || []).filter(p => p.image);
   const euros = cents => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: cents % 100 ? 2 : 0 }).format(cents / 100);
-  const terms = p => (p.priceCents ? euros(p.priceCents) : "Gratuit") + " · " + (p.platforms?.includes("mac") ? "Windows et Mac" : "Windows") + (p.priceCents ? " · Essai gratuit 7 jours" : "");
+  const t = OniriqueI18n.t; // la ligne porte un prix : ses morceaux se traduisent un par un
+  const terms = p => (p.priceCents ? euros(p.priceCents) : t("Gratuit")) + " · " + (p.platforms?.includes("mac") ? t("Windows et Mac") : "Windows") + (p.priceCents ? " · " + t("Essai gratuit 7 jours") : "");
   heroFacts(catalog?.products || [], shown, euros, terms);
   if (catalog && catalog.paymentsMode !== "off") $(".hero .btn-primary").textContent = "Acheter un plugin"; // la vente est ouverte
   if (!shown.length) return;
