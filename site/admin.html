@@ -1291,7 +1291,7 @@ function showDisk(disk) {
     el("p", { className: "sub", style: "margin:0", textContent: `${Math.round(used)} % utilisés` + pace }),
     level ? el("p", { className: "alert", role: "alert", textContent: level === "full"
       ? "Disque presque plein : au-delà, plus aucun plugin, image ou vidéo ne pourra être envoyé. Supprimez d'anciennes versions de plugins ou des vidéos, ou agrandissez le disque chez IONOS."
-      : "Le disque se remplit : pensez à faire de la place (anciennes versions de plugins, vidéos) avant qu'il soit plein." }) : null);
+      : "Le disque se remplit : pensez à faire de la place (anciennes versions de plugins, vidéos) avant qu'il soit plein." }) : "");
   $("disk").hidden = false;
 }
 
