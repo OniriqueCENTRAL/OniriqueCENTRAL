@@ -15,6 +15,18 @@
 .tile { padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--deep); }
 .tile b { display: block; font: 800 24px/1.2 var(--f-display); }
 .tile span { font: 500 11px/1.3 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--haze); }
+/* Espace disque du serveur : une jauge, orange à 80 %, rouge à 90 % */
+.disk { padding: 16px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--deep); margin: -8px 0 22px; }
+.disk-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+.disk-head span { font: 500 11px/1.3 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--haze); }
+.disk-head b { font: 800 18px/1.2 var(--f-display); }
+.disk-head small { color: var(--haze); font-size: 13px; }
+.disk-bar { height: 12px; margin: 12px 0 10px; border-radius: 999px; background: rgba(0,0,0,.45); border: 1px solid var(--line); overflow: hidden; }
+.disk-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #8c0614, #e23444); transition: width .4s; }
+.disk.warn .disk-bar i { background: linear-gradient(90deg, #b5651d, #f0a050); }
+.disk.full .disk-bar i { background: linear-gradient(90deg, #e23444, #ff5a68); box-shadow: 0 0 12px rgba(255,90,104,.7); }
+.disk .alert { margin: 8px 0 0; font-size: 13px; color: #f0a050; }
+.disk.full .alert { color: #ff7a85; }
 .bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 30px 0 12px; }
 .bar h2 { margin: 0; }
 input[type="search"] { width: min(100%, 320px); height: 42px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.4); color: var(--mist); font: 500 15px var(--f-body); }
@@ -170,6 +182,7 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
 
     <section class="tab" id="tab-db" data-label="Base de données" data-staff>
     <div class="tiles" id="tiles"></div>
+    <div class="disk" id="disk" hidden></div>
 
     <div class="bar">
       <h2>Comptes</h2>
@@ -316,7 +329,7 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
 
 <script src="assets/cropper.js"></script>
 <script src="assets/account.js?v=6"></script>
-<script src="assets/site-nav.js?v=8"></script>
+<script src="assets/site-nav.js?v=9"></script>
 <script>
 // Tout passe par l'API du CENTRAL, qui revérifie le rôle admin à chaque appel : cette page n'ouvre aucun droit par elle-même.
 const $ = (id) => document.getElementById(id);
@@ -1256,6 +1269,32 @@ function setupTabs() {
 let timer;
 $("search").oninput = () => { clearTimeout(timer); timer = setTimeout(() => loadUsers().catch((e) => { $("error").textContent = e.message; }), 250); };
 
+// Espace disque du serveur (base, plugins, médias, vidéos) : jauge, et la date où il sera plein au rythme actuel.
+function showDisk(disk) {
+  if (!disk) return;
+  const size = (bytes) => bytes >= 1e9 ? (bytes / 1e9).toLocaleString("fr-FR", { maximumFractionDigits: 1 }) + " Go"
+    : Math.round(bytes / 1e6).toLocaleString("fr-FR") + " Mo";
+  const used = Math.min(100, Math.max(0, (disk.totalBytes - disk.freeBytes) / disk.totalBytes * 100));
+  const level = used >= 90 ? "full" : used >= 80 ? "warn" : "";
+  const bar = el("div", { className: "disk-bar", role: "meter", ariaLabel: "Espace disque utilisé" }, el("i", { style: `width:${used.toFixed(1)}%` }));
+  bar.setAttribute("aria-valuemin", "0");
+  bar.setAttribute("aria-valuemax", "100");
+  bar.setAttribute("aria-valuenow", used.toFixed(0));
+  const f = disk.forecast;
+  const pace = f ? ` · plein vers le ${new Date(f.fullAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })} au rythme actuel (+${size(f.perDayBytes)} par jour)`
+    : " · la date de saturation s'affiche après une semaine de relevés";
+  $("disk").className = "disk " + level;
+  $("disk").replaceChildren(
+    el("div", { className: "disk-head" }, el("span", { textContent: "Espace disque du serveur" }),
+      el("div", {}, el("b", { textContent: size(disk.freeBytes) + " libres" }), el("small", { textContent: " sur " + size(disk.totalBytes) }))),
+    bar,
+    el("p", { className: "sub", style: "margin:0", textContent: `${Math.round(used)} % utilisés` + pace }),
+    level ? el("p", { className: "alert", role: "alert", textContent: level === "full"
+      ? "Disque presque plein : au-delà, plus aucun plugin, image ou vidéo ne pourra être envoyé. Supprimez d'anciennes versions de plugins ou des vidéos, ou agrandissez le disque chez IONOS."
+      : "Le disque se remplit : pensez à faire de la place (anciennes versions de plugins, vidéos) avant qu'il soit plein." }) : null);
+  $("disk").hidden = false;
+}
+
 (async () => {
   if (!token) return gate("Connectez-vous avec un compte administrateur.", "Se connecter");
   try {
@@ -1275,6 +1314,7 @@ $("search").oninput = () => { clearTimeout(timer); timer = setTimeout(() => load
     const o = await api("GET", "/admin/overview");
     $("tiles").replaceChildren(...[["Comptes", o.users], ["Licences actives", o.licenses], ["Clés en attente", o.unclaimed], ["Abonnés", o.subscribers], ["Machines activées", o.activations], ["Demandes de support", o.supportMessages]]
       .map(([label, value]) => el("div", { className: "tile" }, el("b", { textContent: String(value) }), el("span", { textContent: label }))));
+    showDisk(o.disk);
     setupTabs();
     await loadUsers();
     await loadSupport();

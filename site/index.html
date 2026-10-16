@@ -1865,6 +1865,9 @@ function showcase(list) {
 
     if (!near) return; // la démo n'est téléchargée qu'à l'approche de la section
     const box = $("#showDemo");
+    // Pendant le chargement, la boîte garde sa hauteur : la page en dessous (crédits, FAQ) ne remonte pas
+    // pour redescendre ensuite, sous les yeux du visiteur ou pendant un saut vers une section.
+    box.style.minHeight = box.offsetHeight + "px";
     box.innerHTML = '<div class="demo-wait">Chargement de l\'interface…</div>';
     try {
       const web = await OniriqueDemo.web(p.slug); // une interface web réelle (RAW) passe avant la démo en images
@@ -1877,6 +1880,8 @@ function showcase(list) {
       if (list[at] === p) OniriqueDemo.render(box, loaded.get(p.id)); // un autre plugin a pu être demandé entre-temps
     } catch {
       if (list[at] === p) box.firstChild.textContent = "L'interface n'a pas pu être chargée.";
+    } finally {
+      if (list[at] === p) box.style.minHeight = "";
     }
   }
 
@@ -1923,7 +1928,7 @@ $$("[data-buy]").forEach(a => {
 </script>
 <script src="assets/tools-menu.js"></script>
 <script src="assets/account.js?v=6"></script>
-<script src="assets/site-nav.js?v=8"></script>
+<script src="assets/site-nav.js?v=9"></script>
 <script src="assets/catalog-watch.js"></script>
 
 </html>

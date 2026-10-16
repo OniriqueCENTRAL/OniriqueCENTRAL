@@ -14,6 +14,7 @@ import {
 import { mailEnabled, sendMail } from './mail.js';
 import { embedsLicenseKey, MISSING_LICENSE } from './plugincheck.js';
 import { popularity } from './popularity.js';
+import { diskSpace } from './disk.js';
 import {
   activate, activeSubscription, createLicense, entitlement, generateKey, normalizeKey, parseProductIds, pickPlan, pickPriceCents, pickPrices,
   publicKeyPem, publicKeyRaw, userActivations,
@@ -1053,6 +1054,7 @@ export function createApp() {
       revenueCents: count(`SELECT COALESCE(SUM(amount_cents), 0) AS n FROM orders WHERE provider IN ('stripe', 'lemon')`),
       supportMessages: count('SELECT COUNT(*) AS n FROM support_messages'),
       paymentsMode: paymentsMode(),
+      disk: diskSpace(),
     });
   });
 

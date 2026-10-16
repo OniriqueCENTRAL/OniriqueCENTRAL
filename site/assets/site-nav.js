@@ -404,23 +404,46 @@ header .sn-lang { margin-left: 8px; }
     if (footer) footer.prepend(el("div", { className: "sn-foot" }, ...socials.map((s) => link(s, false))));
   }).catch(() => {});
 
-  // Un lien vers une section de la page (« Téléchargement ») : on s'arrête sous la barre du haut, et si la page
-  // grandit encore pendant le trajet (aperçus, listes chargées), on se recale sur la section, tant que le
-  // visiteur ne fait pas défiler lui-même.
+  // Un lien vers une section de la page (« Crédits ») : on s'arrête sous la barre du haut. La page bouge encore
+  // pendant et après le trajet (images, crédits, aperçus chargés en route) : un traqueur suit la section, corrige
+  // le but en route, puis la recale d'un coup une fois le défilement fini, jusqu'à 2,5 s sans aucun changement
+  // (12 s au plus). Il s'arrête dès que le visiteur fait défiler lui-même. Valable pour toute section ajoutée.
+  // Vérification après une modification de l'accueil : tools/cadrage.js.
   const headerGap = () => (header && getComputedStyle(header).position !== "static" ? header.getBoundingClientRect().height : 0) + 12;
+  let stopTracking = null;
   const goTo = (target, smooth) => {
-    const top = () => target.getBoundingClientRect().top + window.scrollY - headerGap();
-    window.scrollTo({ top: top(), behavior: smooth ? "smooth" : "auto" });
-    let stopped = false, last = -1, ticks = 0;
-    const stop = () => { stopped = true; };
-    for (const name of ["wheel", "touchstart", "keydown", "mousedown"]) window.addEventListener(name, stop, { once: true, passive: true });
+    if (stopTracking) stopTracking();   // un nouveau trajet remplace le précédent
+    const root = document.documentElement;
+    const top = () => Math.max (0, Math.min (target.getBoundingClientRect().top + window.scrollY - headerGap(), root.scrollHeight - window.innerHeight));
+    const start = performance.now();
+    let aim = top(), lastY = window.scrollY, calmSince = start;
+    // « instant » : la page impose un défilement doux (scroll-behavior) qui ferait de chaque recalage une animation.
+    window.scrollTo({ top: aim, behavior: smooth ? "smooth" : "instant" });
+
+    const userEvents = ["wheel", "touchstart", "keydown", "pointerdown"];
+    const stop = () => {
+      clearInterval(timer);
+      userEvents.forEach((name) => window.removeEventListener (name, stop));
+      stopTracking = null;
+    };
+    userEvents.forEach((name) => window.addEventListener (name, stop, { passive: true }));
+    stopTracking = stop;
+
     const timer = setInterval(() => {
-      ticks++;
-      if (stopped || ticks > 30) { clearInterval(timer); return; }
-      const settled = Math.abs(window.scrollY - last) < 2; // le défilement doux est fini
-      last = window.scrollY;
-      if (settled && Math.abs(top() - window.scrollY) > 4) window.scrollTo({ top: top(), behavior: "auto" });
-    }, 120);
+      const now = performance.now(), wanted = top();
+      const moving = Math.abs(window.scrollY - lastY) > 1;
+      lastY = window.scrollY;
+      if (Math.abs(wanted - aim) > 2) {
+        aim = wanted;           // la section a bougé : nouveau but, même en plein trajet
+        calmSince = now;
+        if (moving) window.scrollTo({ top: aim, behavior: "smooth" });
+      }
+      if (! moving && now - start > 300 && Math.abs(wanted - window.scrollY) > 2) {
+        window.scrollTo({ top: wanted, behavior: "instant" });
+        calmSince = now;
+      }
+      if (now - calmSince > 2500 || now - start > 12000) stop();
+    }, 50);
   };
   document.addEventListener("click", (event) => {
     const a = event.target.closest && event.target.closest('a[href*="#"]');

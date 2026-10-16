@@ -59,6 +59,18 @@ try {
     for (const p of [a, b, c, partnerPlugin]) await call('POST', `/api/admin/products/${p.id}/versions?${new URLSearchParams({ version: '1.0.0', filename: 'P.vst3' })}`, { token: admin.token, raw: binary, expect: 201 });
   });
 
+  await step('espace disque : jauge du panel admin et date estimée où le disque sera plein', async () => {
+    const { disk } = await call('GET', '/api/admin/overview', { token: admin.token });
+    assert.ok(disk.totalBytes > 0 && disk.freeBytes > 0 && disk.freeBytes <= disk.totalBytes && disk.usedBytes > 0);
+    const { diskForecast } = await import('../src/disk.js');
+    const DAY = 86_400_000;
+    assert.equal(diskForecast([{ at: 0, used: 100 }], 50, 0), null, 'un seul relevé : pas d estimation');
+    assert.equal(diskForecast([{ at: 0, used: 100 }, { at: 3 * DAY, used: 400 }], 50, 3 * DAY), null, 'moins d une semaine de recul');
+    assert.equal(diskForecast([{ at: 0, used: 500 }, { at: 10 * DAY, used: 400 }], 50, 10 * DAY), null, 'un disque qui se vide ne sera pas plein');
+    // 10 octets par jour, 50 de libres : plein dans 5 jours
+    assert.deepEqual(diskForecast([{ at: 0, used: 100 }, { at: 10 * DAY, used: 200 }], 50, 10 * DAY), { perDayBytes: 10, fullAt: 15 * DAY });
+  });
+
   await step('annonce en direct : affichée sur le site, retirée à la date de fin', async () => {
     assert.equal((await call('GET', '/api/site')).announcement, null);
     await call('PUT', '/api/admin/live/announcement', { token: admin.token, body: { active: true, text: 'PROMO 20 % SUR TOUTE LA BOUTIQUE', link: 'javascript:alert(1)' }, expect: 400 });
