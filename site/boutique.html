@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=e76ef43b"></script>
+<script src="assets/i18n.js?v=e83ff849"></script>
 <script src="assets/annonce.js?v=1"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Boutique — ONIRIQUE</title>
@@ -269,11 +269,11 @@ function el(tag, props = {}, ...children) {
 
 // Les créateurs des plugins : ONIRIQUE, ou un partenaire.
 const CREATORS = { onirique: "ONIRIQUE", abrasion: "ABRASION", relic: "RELIC" };
-// L'ordre de la boutique, au choix du visiteur. Le catalogue arrive du plus ancien au plus récent.
+// L'ordre de la boutique, au choix du visiteur. « Par défaut » : l'ordre choisi par l'équipe dans le panel admin.
 const updated = (p) => Math.max(0, ...(p.versions || []).map((v) => v.createdAt || 0));
 const SORTS = {
   none: ["Par défaut", null],
-  new: ["Nouveautés", (a, b) => b.index - a.index],
+  new: ["Nouveautés", (a, b) => (b.createdAt || 0) - (a.createdAt || 0)],
   updated: ["Dernières mises à jour", (a, b) => updated(b) - updated(a)],
   up: ["Prix croissant", (a, b) => a.priceCents - b.priceCents],
   down: ["Prix décroissant", (a, b) => b.priceCents - a.priceCents],
@@ -285,7 +285,6 @@ function setupList(products, categories = []) {
   let sort = "none";
   try { sort = SORTS[localStorage.getItem("onirique.shop-sort")] ? localStorage.getItem("onirique.shop-sort") : "none"; } catch { /* stockage fermé */ }
   const shown = { creator: "all", sort, category: "all" };
-  products.forEach((p, index) => { p.index = index; });
   function draw() {
     const list = products.filter((p) => (shown.creator === "all" || (p.creator || "onirique") === shown.creator)
       && (shown.category === "all" || (p.categories || []).includes(shown.category)));

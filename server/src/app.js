@@ -108,7 +108,7 @@ function productView(p, platform) {
   const versions = productVersions(p.id);
   const wanted = platformOf(platform);
   return {
-    id: p.id, slug: p.slug, name: p.name, tagline: p.tagline, description: p.description, accent: p.accent,
+    id: p.id, slug: p.slug, name: p.name, tagline: p.tagline, description: p.description, accent: p.accent, createdAt: p.created_at,
     creator: p.creator, // "onirique" ou un partenaire ("abrasion", "relic")
     priceCents: p.price_cents, image: p.image ? `/api/media/${p.image}` : null, published: !!p.published,
     demo: p.demo ? `/api/media/${p.demo}` : null,
@@ -274,7 +274,7 @@ export function createApp() {
   app.get('/api/catalog', (req, res) => {
     const platform = platformOf(req.get('X-Onirique-Platform'));
     res.json({
-      products: all('SELECT * FROM products WHERE published = 1 ORDER BY created_at').map((p) => productView(p, platform)),
+      products: all('SELECT * FROM products WHERE published = 1 ORDER BY position, created_at').map((p) => productView(p, platform)),
       plans: all(`SELECT * FROM plans WHERE active = 1 AND kind = 'all' ORDER BY price_cents`).map(planView),
       packs: all('SELECT * FROM packs WHERE active = 1 ORDER BY price_cents').map(packView),
       // Abonnement à la carte : le prix du premier plugin et de chaque plugin ajouté, par mois.
@@ -1180,7 +1180,7 @@ export function createApp() {
   // Produits
   // Le panel admin voit en plus, pour chaque version et pour la version actuelle de chaque système, si le plugin
   // embarque le module de licence (licensed : true, false, ou null pour un installateur qu'on ne peut pas lire).
-  admin.get('/products', (req, res) => res.json(all('SELECT * FROM products WHERE ? IS NULL OR creator = ? ORDER BY created_at', req.creator, req.creator).map((p) => {
+  admin.get('/products', (req, res) => res.json(all('SELECT * FROM products WHERE ? IS NULL OR creator = ? ORDER BY position, created_at', req.creator, req.creator).map((p) => {
     const view = productView(p);
     const rows = productVersions(p.id);
     const current = (platform) => { const v = rows.find((row) => row.platform === platform); return v ? versionLicensed(v) : undefined; };
@@ -1222,9 +1222,20 @@ export function createApp() {
     if (get('SELECT id FROM products WHERE slug = ?', slug)) throw new HttpError(409, 'Un produit porte déjà cet identifiant.');
     // Un partenaire ne crée que des plugins à son nom.
     const { lastInsertRowid } = run(
-      'INSERT INTO products (slug, name, tagline, description, accent, price_cents, published, created_at, creator, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      `INSERT INTO products (slug, name, tagline, description, accent, price_cents, published, created_at, creator, category, position)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(position), 0) + 1 FROM products))`, // un nouveau plugin se range à la fin
       slug, f.name, f.tagline, f.description, f.accent, f.price, f.published, now(), req.creator ?? f.creator, f.category);
     res.status(201).json(productView(findProduct(lastInsertRowid)));
+  });
+
+  // L'ordre de la boutique et de l'application : la liste des plugins, du premier au dernier. Réservé à l'équipe.
+  admin.put('/products/order', (req, res) => {
+    if (!isStaff(req.user)) throw new HttpError(403, "Réservé à l'équipe.");
+    const ids = Array.isArray(req.body.ids) ? req.body.ids.map((id) => int(id, 0)) : [];
+    const known = new Set(all('SELECT id FROM products').map((p) => p.id));
+    if (!ids.length || new Set(ids).size !== ids.length || ids.some((id) => !known.has(id))) throw new HttpError(400, 'Liste de plugins invalide.');
+    transaction(() => ids.forEach((id, index) => run('UPDATE products SET position = ? WHERE id = ?', index + 1, id)));
+    res.json({ ok: true });
   });
 
   admin.patch('/products/:id', (req, res) => {

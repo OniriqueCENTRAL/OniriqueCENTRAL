@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=e76ef43b"></script>
+<script src="assets/i18n.js?v=e83ff849"></script>
 <script src="assets/annonce.js?v=1"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Administration</title>
@@ -59,6 +59,11 @@ tr.detail td { background: var(--deep); }
 .notice { padding: 14px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--deep); }
 .error { color: #FF7A85; }
 .products { display: grid; gap: 14px; margin-top: 14px; }
+.order { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; max-width: 620px; counter-reset: rang; }
+.order li { display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--deep); counter-increment: rang; }
+.order li::before { content: counter(rang); min-width: 22px; font: 500 12px/1 var(--f-mono); color: var(--haze); }
+.order li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.order li small { color: var(--haze); }
 .product { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--deep); }
 .product .shot { aspect-ratio: 16 / 10; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.4) center / cover; display: grid; place-items: center; color: var(--haze); font-size: 13px; }
 .product h3 { margin: 0 0 4px; font: 800 16px/1.3 var(--f-display); letter-spacing: .04em; }
@@ -216,6 +221,11 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
     <div class="bar"><h2>Plugins</h2></div>
     <p class="sub">Un plugin créé ici apparaît aussitôt dans la boutique du site et dans l'application, tant qu'il est coché « visible ». Une nouvelle version est proposée aussitôt en mise à jour dans Onirique Central. L'image du plugin et sa démo interactive de la boutique sont fabriquées à partir du fichier .vst3 lui-même : cela demande de charger le plugin sous Windows, et se fait donc quand la version est publiée depuis l'application Onirique Central (panel admin), pas depuis cette page.</p>
     <details class="product new" id="new-product"></details>
+    <details data-staff id="order-box">
+      <summary class="sub" style="cursor:pointer">Ordre de la boutique : le premier plugin de la liste s'affiche en premier, sur le site comme dans l'application</summary>
+      <ol class="order" id="shop-order"></ol>
+      <p class="error" id="order-error" role="alert"></p>
+    </details>
     <p class="error" id="product-error" role="alert"></p>
     <div class="products" id="products"></div>
 
@@ -586,8 +596,30 @@ function sheetForm(p) {
   return form;
 }
 
+// L'ordre de la boutique : chaque flèche déplace le plugin d'un rang, enregistré aussitôt.
+function showOrder(products) {
+  $("shop-order").replaceChildren(...products.map((p, i) => {
+    const move = (to) => async () => {
+      const ids = products.map((q) => q.id);
+      [ids[i], ids[to]] = [ids[to], ids[i]];
+      $("order-error").textContent = "";
+      try {
+        await api("PUT", "/admin/products/order", { ids });
+        [products[i], products[to]] = [products[to], products[i]];
+        showOrder(products);
+        $("shop-order").children[to].querySelector(to < i ? "button" : "button:last-child").focus();
+      } catch (error) { $("order-error").textContent = error.message; }
+    };
+    const arrow = (text, label, to) => Object.assign(el("button", { className: "act", type: "button", textContent: text, disabled: to < 0 || to >= products.length }),
+      { onclick: move(to), ariaLabel: label + " " + p.name });
+    return el("li", {}, el("span", { textContent: p.name }), p.published ? null : el("small", { textContent: "masqué" }),
+      arrow("↑", "Monter", i - 1), arrow("↓", "Descendre", i + 1));
+  }));
+}
+
 async function loadProducts() {
   const products = await api("GET", "/admin/products");
+  showOrder(products.slice());
   const fail = (error) => { $("product-error").textContent = error.message; };
   $("products").replaceChildren(...products.map((p) => {
     const shot = el("div", { className: "shot", textContent: p.image ? "" : "Pas d'image" });

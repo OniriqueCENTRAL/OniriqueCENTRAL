@@ -3943,6 +3943,9 @@
  "Désactiver sur ce PC ?": [
   "app/renderer/views/library.js"
  ],
+ "Descendre": [
+  "site/admin.html"
+ ],
  "Descendu": [
   "site/transposition.html"
  ],
@@ -6406,6 +6409,9 @@
  "List-Unsubscribe=One-Click": [
   "server/src/newsletter.js"
  ],
+ "Liste de plugins invalide.": [
+  "server/src/app.js"
+ ],
  "liste des versions introuvable ({})": [
   "app/main/mac-update.js"
  ],
@@ -6602,6 +6608,9 @@
   "site/boutique.html"
  ],
  "Marquer non lu": [
+  "site/admin.html"
+ ],
+ "masqué": [
   "site/admin.html"
  ],
  "Masqué": [
@@ -6941,6 +6950,9 @@
  ],
  "Monte ou descends une instru de quelques demi-tons sans changer son tempo, ou change son BPM sans changer sa hauteur. Écoute puis télécharge en WAV. Gratuit, dans ton navigateur.": [
   "site/transposition.html"
+ ],
+ "Monter": [
+  "site/admin.html"
  ],
  "Monter l'air ou le drive rend le son plus fort, et une oreille juge toujours « mieux » ce qui est plus fort. L'Auto Gain garde le volume perçu constant pour que tu compares le son, pas le niveau.": [
   "site/onirique.html"
@@ -7475,6 +7487,9 @@
   "site/onirique.html"
  ],
  "Or (promo)": [
+  "site/admin.html"
+ ],
+ "Ordre de la boutique : le premier plugin de la liste s'affiche en premier, sur le site comme dans l'application": [
   "site/admin.html"
  ],
  "Ordre de traitement des modules": [
@@ -8835,6 +8850,7 @@
   "server/src/app.js"
  ],
  "Réservé à l'équipe.": [
+  "server/src/app.js",
   "server/src/control.js"
  ],
  "Réservé aux administrateurs.": [
