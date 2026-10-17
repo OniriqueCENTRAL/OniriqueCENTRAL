@@ -21,5 +21,7 @@
  "Recommencez l'activation.": "Start the setup again.",
  "Retirer l'A2F": "Remove 2FA",
  "Retirer la double authentification de {} ? Son mot de passe suffira de nouveau pour se connecter. À faire seulement si vous êtes sûr que la demande vient bien de cette personne.": "Remove two-factor authentication from {}? Their password will be enough to sign in again. Only do this if you are sure the request really comes from this person.",
- "Seul un fondateur peut retirer l'A2F d'un administrateur.": "Only a founder can remove 2FA from an administrator."
+ "Seul un fondateur peut retirer l'A2F d'un administrateur.": "Only a founder can remove 2FA from an administrator.",
+ "Dernières mises à jour": "Latest updates",
+ "Nom, de A à Z": "Name, A to Z"
 }

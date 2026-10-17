@@ -2382,6 +2382,7 @@
  ],
  "Catégorie": [
   "site/admin.html",
+  "site/boutique.html",
   "app/renderer/views/admin.js"
  ],
  "Catégorie des plugins": [
@@ -3889,6 +3890,9 @@
  ],
  "Dernière version": [
   "app/renderer/views/library.js"
+ ],
+ "Dernières mises à jour": [
+  "site/boutique.html"
  ],
  "dès": [
   "site/boutique.html"
@@ -7118,6 +7122,9 @@
  "Nom ou pseudo": [
   "app/renderer/views/auth.js"
  ],
+ "Nom, de A à Z": [
+  "site/boutique.html"
+ ],
  "Nombre d'utilisations invalide.": [
   "server/src/promos.js"
  ],
@@ -7233,6 +7240,7 @@
  ],
  "Nouveautés": [
   "site/admin.html",
+  "site/boutique.html",
   "app/renderer/views/admin.js",
   "server/src/newsletter.js"
  ],
@@ -7766,6 +7774,7 @@
   "site/popularite.html"
  ],
  "Par défaut": [
+  "site/boutique.html",
   "app/renderer/views/account.js"
  ],
  "Par écoute": [
@@ -10246,7 +10255,6 @@
   "site/popularite.html"
  ],
  "Tri : par défaut": [
-  "site/boutique.html",
   "app/renderer/views/library.js"
  ],
  "trial:{}": [
