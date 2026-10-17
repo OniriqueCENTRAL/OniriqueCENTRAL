@@ -169,5 +169,6 @@ export function publicUser(user) {
     // Pour l'équipe et les partenaires : se sont-ils accordé tous les plugins ? (null : le compte n'y a pas droit)
     selfLicenses: canSelfLicense(user) ? !!user.self_licenses : null,
     newsletter: user.marketing === 1, // a accepté de recevoir les nouveautés d'ONIRIQUE par e-mail
+    twoFactor: !!user.totp_secret,    // double authentification activée
   };
 }

@@ -398,6 +398,11 @@ if (!hasColumn('users', 'instagram')) db.exec(`ALTER TABLE users ADD COLUMN inst
 // Le profil d'ingé d'un fondateur : le pseudo et la photo montrés sous les crédits, à la place du nom et de la photo du compte.
 if (!hasColumn('users', 'engineer_name')) db.exec(`ALTER TABLE users ADD COLUMN engineer_name TEXT NOT NULL DEFAULT ''`);
 if (!hasColumn('users', 'engineer_avatar')) db.exec('ALTER TABLE users ADD COLUMN engineer_avatar TEXT');
+// Double authentification (A2F, facultative) : la clé de l'application, celle en cours d'activation, le dernier pas
+// de temps servi (un code ne se rejoue pas) et les empreintes des codes de secours restants.
+for (const column of ['totp_secret TEXT', 'totp_pending TEXT', 'totp_step INTEGER', 'totp_recovery TEXT']) {
+  if (!hasColumn('users', column.split(' ')[0])) db.exec(`ALTER TABLE users ADD COLUMN ${column}`);
+}
 
 // Crédits : plusieurs plugins par titre, un album entier possible, l'ingé (un compte fondateur) et la popularité
 // Spotify, qui range la liste du plus connu au moins connu.

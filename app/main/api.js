@@ -28,7 +28,8 @@ async function send(method, route, init = {}) {
   }
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new ApiError(response.status, data.error || `Erreur ${response.status}.`);
+    // twoFactor : le compte a l'A2F, le code de l'application d'authentification est demandé.
+    throw Object.assign(new ApiError(response.status, data.error || `Erreur ${response.status}.`), { twoFactor: data.twoFactor === true });
   }
   return response;
 }

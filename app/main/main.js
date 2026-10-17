@@ -148,9 +148,15 @@ app.whenReady().then(() => {
   }
   handle('load', load);
 
-  handle('auth:login', async (email, password) => {
-    const { token } = await api.request('POST', '/api/auth/login', { email, password });
-    store.token = token;
+  // Compte avec l'A2F : sans code, la réponse { twoFactor: true } fait apparaître le champ du code.
+  handle('auth:login', async (email, password, code) => {
+    try {
+      const { token } = await api.request('POST', '/api/auth/login', { email, password, ...(code ? { code } : {}) });
+      store.token = token;
+    } catch (error) {
+      if (error.twoFactor && !code) return { twoFactor: true };
+      throw error;
+    }
   });
   // ref : le code de parrainage d'un ami ; newsletter : la case « recevoir les nouveautés d'ONIRIQUE ».
   handle('auth:register', async (email, password, name, ref, newsletter) => {

@@ -31,6 +31,7 @@ import { mountNewsletter, setMarketing } from './newsletter.js';
 import * as mailbox from './mailbox.js';
 import { connectUrl, disconnect, finishConnect, videoFile, videoView, youtubeConfigured, youtubeState } from './youtube.js';
 import { announcementView, deleteAccount, maintenanceView, mountControl, packView, paidSubscription, planView } from './control.js';
+import { enrollment, matchStep, newRecoveryCodes, newSecret, recoveryHash } from './totp.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
@@ -148,6 +149,22 @@ const SOCIALS = [['youtube', 'YouTube'], ['instagram', 'Instagram'], ['tiktok', 
 // shortcut: gardé en mémoire, un redémarrage du serveur le remet à zéro ; sans gravité pour un délai d'une minute.
 const verifySentAt = new Map();
 const VERIFY_WAIT = 60_000;
+
+/** Le code de l'application d'authentification, ou un code de secours (qui ne sert qu'une fois). */
+function passSecondFactor(user, raw) {
+  const code = str(raw, 20).replace(/\s/g, '');
+  const step = matchStep(user.totp_secret, code, user.totp_step || 0);
+  if (step) {
+    run('UPDATE users SET totp_step = ? WHERE id = ?', step, user.id);
+    return true;
+  }
+  const left = JSON.parse(user.totp_recovery || '[]');
+  const at = /^[0-9a-f]{5}-?[0-9a-f]{5}$/i.test(code) ? left.indexOf(recoveryHash(code)) : -1;
+  if (at < 0) return false;
+  left.splice(at, 1);
+  run('UPDATE users SET totp_recovery = ? WHERE id = ?', JSON.stringify(left), user.id);
+  return true;
+}
 
 /** Envoie le lien de validation de l'adresse. Sans attente : l'inscription ne dépend pas du serveur de messagerie. */
 function sendVerification(user) {
@@ -404,6 +421,15 @@ export function createApp() {
     if (!user || !verifyPassword(String(req.body.password ?? ''), user.password_hash)) {
       throw new HttpError(401, 'E-mail ou mot de passe incorrect.');
     }
+    // A2F : le code n'est demandé qu'une fois le mot de passe juste. Les essais de code sont comptés par compte,
+    // pour qu'en changeant d'adresse IP on ne puisse pas les enchaîner.
+    if (user.totp_secret) {
+      if (req.body.code) rateLimit(`2fa-login:${user.id}`);
+      if (!passSecondFactor(user, req.body.code)) {
+        throw Object.assign(new HttpError(401, req.body.code ? "Code incorrect ou expiré : entrez le code affiché en ce moment dans l'application."
+          : "Entrez le code à 6 chiffres de votre application d'authentification."), { data: { twoFactor: true } });
+      }
+    }
     res.json({ token: createSession(user.id), user: publicUser(user) });
   });
 
@@ -629,6 +655,35 @@ export function createApp() {
       run('DELETE FROM sessions WHERE user_id = ?', req.user.id);
     });
     res.json({ token: createSession(req.user.id) });
+  });
+
+  // A2F facultative, avec Google Authenticator ou une application semblable. 1. La clé et son QR code, après le mot de passe.
+  app.post('/api/me/2fa/setup', requireUser, (req, res) => {
+    rateLimit(`2fa:${req.user.id}`);
+    if (!verifyPassword(String(req.body.password ?? ''), req.user.password_hash)) throw new HttpError(403, 'Mot de passe incorrect.');
+    if (req.user.totp_secret) throw new HttpError(409, 'La double authentification est déjà activée.');
+    const secret = newSecret();
+    run('UPDATE users SET totp_pending = ? WHERE id = ?', secret, req.user.id);
+    res.json(enrollment(secret, req.user.email));
+  });
+  // 2. Un premier code juste prouve que l'application est prête : l'A2F est activée, et les codes de secours montrés une fois.
+  app.post('/api/me/2fa/enable', requireUser, (req, res) => {
+    rateLimit(`2fa:${req.user.id}`);
+    if (!req.user.totp_pending) throw new HttpError(400, "Recommencez l'activation.");
+    const step = matchStep(req.user.totp_pending, str(req.body.code, 20).replace(/\s/g, ''));
+    if (!step) throw new HttpError(400, "Code incorrect : vérifiez que l'heure de votre téléphone est juste, puis entrez le code affiché en ce moment.");
+    const recoveryCodes = newRecoveryCodes();
+    run('UPDATE users SET totp_secret = totp_pending, totp_pending = NULL, totp_step = ?, totp_recovery = ? WHERE id = ?',
+      step, JSON.stringify(recoveryCodes.map(recoveryHash)), req.user.id);
+    res.json({ recoveryCodes });
+  });
+  // Désactiver : le mot de passe et un code (de l'application ou de secours).
+  app.post('/api/me/2fa/disable', requireUser, (req, res) => {
+    rateLimit(`2fa:${req.user.id}`);
+    if (!verifyPassword(String(req.body.password ?? ''), req.user.password_hash)) throw new HttpError(403, 'Mot de passe incorrect.');
+    if (req.user.totp_secret && !passSecondFactor(req.user, req.body.code)) throw new HttpError(403, 'Code incorrect ou expiré.');
+    run('UPDATE users SET totp_secret = NULL, totp_pending = NULL, totp_step = NULL, totp_recovery = NULL WHERE id = ?', req.user.id);
+    res.json({ ok: true });
   });
 
   // Suppression de son propre compte, depuis la page Compte : le mot de passe le confirme.
@@ -1390,7 +1445,7 @@ export function createApp() {
   admin.get('/users', (req, res) => {
     const q = `%${str(req.query.q, 80)}%`;
     res.json(all(
-      `SELECT u.id, u.email, u.name, u.role, u.created_at AS createdAt, u.email_verified AS emailVerified,
+      `SELECT u.id, u.email, u.name, u.role, u.created_at AS createdAt, u.email_verified AS emailVerified, u.totp_secret IS NOT NULL AS twoFactor,
          CASE WHEN u.avatar IS NULL THEN NULL ELSE '/api/media/' || u.avatar END AS avatar,
          (SELECT COUNT(*) FROM licenses l WHERE l.user_id = u.id AND l.status = 'active') AS licenses,
          (SELECT COUNT(*) FROM licenses l WHERE l.user_id = u.id AND l.source = 'trial') AS trials,
@@ -1418,6 +1473,11 @@ export function createApp() {
         run('DELETE FROM email_verifications WHERE user_id = ?', user.id);
         claimReserved(user);
       });
+    }
+    // A2F retirée par le support, pour qui a perdu son téléphone et ses codes de secours.
+    if (req.body.twoFactor === false) {
+      if (!founder && isStaff(user) && user.id !== req.user.id) throw new HttpError(403, "Seul un fondateur peut retirer l'A2F d'un administrateur.");
+      run('UPDATE users SET totp_secret = NULL, totp_pending = NULL, totp_step = NULL, totp_recovery = NULL WHERE id = ?', user.id);
     }
     if (req.body.password !== undefined) {
       if (!founder && isStaff(user) && user.id !== req.user.id) {
@@ -1577,7 +1637,7 @@ export function createApp() {
     const status = error.status || (error.type === 'entity.parse.failed' ? 400 : 500);
     if (status >= 500 && !error.status) console.error(error);
     if (res.headersSent) return res.destroy();
-    res.status(status).json({ error: status >= 500 && !error.status ? 'Erreur interne du serveur.' : error.message });
+    res.status(status).json({ error: status >= 500 && !error.status ? 'Erreur interne du serveur.' : error.message, ...(error.status && error.data) });
   });
 
   return app;

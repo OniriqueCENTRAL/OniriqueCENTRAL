@@ -999,6 +999,12 @@
  "256 kbit/s": [
   "site/convertisseur.html"
  ],
+ "2fa-login:{}": [
+  "server/src/app.js"
+ ],
+ "2fa:{}": [
+  "server/src/app.js"
+ ],
  "3 000 → 10 000 Hz · PLOSIVES 0 → 100 %": [
   "site/onirique.html"
  ],
@@ -1240,6 +1246,12 @@
  "A# / Bb": [
   "site/gammes.html"
  ],
+ "A2F activée. Notez ces 8 codes de secours et gardez-les en lieu sûr : chacun remplace une fois le code de l'application, si vous perdez votre téléphone. Ils ne seront plus affichés.": [
+  "site/compte.html"
+ ],
+ "A2F désactivée : le mot de passe suffit de nouveau pour se connecter.": [
+  "site/compte.html"
+ ],
  "AAX": [
   "app/renderer/views/library.js",
   "server/src/app.js"
@@ -1388,11 +1400,17 @@
  "Active le micro, puis chante de ta note la plus grave à ta note la plus aiguë, sans forcer. L'outil retient les deux extrêmes et en déduit ta zone de confort.": [
   "site/tessiture.html"
  ],
+ "Activée : à chaque connexion, le code de votre application d'authentification est demandé. Téléphone perdu ? Un de vos codes de secours le remplace. Pour désactiver l'A2F : votre mot de passe et un code.": [
+  "site/compte.html"
+ ],
  "Activée sur ce PC": [
   "app/renderer/views/library.js"
  ],
  "Activer ici": [
   "app/renderer/views/library.js"
+ ],
+ "Activer l'A2F": [
+  "site/compte.html"
  ],
  "Activer le micro": [
   "site/accordeur.html",
@@ -2950,6 +2968,9 @@
  "Code {} créé : il marche tout de suite sur le site et dans l'application.": [
   "app/renderer/views/admin.js"
  ],
+ "Code à 6 chiffres": [
+  "site/compte.html"
+ ],
  "Code appliqué : {}.": [
   "site/boutique.html"
  ],
@@ -2960,6 +2981,15 @@
  "CODE DE L'AMI": [
   "site/compte.html",
   "app/renderer/views/account.js"
+ ],
+ "Code de l'application d'authentification": [
+  "site/compte.html"
+ ],
+ "Code de l'application d'authentification (ou code de secours)": [
+  "app/renderer/views/auth.js"
+ ],
+ "Code de l'application, ou code de secours": [
+  "site/compte.html"
  ],
  "Code de parrainage (facultatif)": [
   "site/compte.html"
@@ -2979,6 +3009,15 @@
  ],
  "code gagné": [
   "site/compte.html"
+ ],
+ "Code incorrect : vérifiez que l'heure de votre téléphone est juste, puis entrez le code affiché en ce moment.": [
+  "server/src/app.js"
+ ],
+ "Code incorrect ou expiré : entrez le code affiché en ce moment dans l'application.": [
+  "server/src/app.js"
+ ],
+ "Code incorrect ou expiré.": [
+  "server/src/app.js"
  ],
  "Code introuvable.": [
   "server/src/app.js"
@@ -3232,6 +3271,9 @@
  ],
  "Confirmer": [
   "app/renderer/views/library.js"
+ ],
+ "Confirmer et activer": [
+  "site/compte.html"
  ],
  "Connecte-toi pour utiliser un code promo : il est lié à ton compte.": [
   "site/boutique.html"
@@ -3533,6 +3575,9 @@
  ],
  "D# / Eb": [
   "site/gammes.html"
+ ],
+ "Dans Google Authenticator, touchez +, puis « Scanner un code QR » et visez ce code. Entrez ensuite le code à 6 chiffres qui s'affiche, pour confirmer.": [
+  "site/compte.html"
  ],
  "Dans l'ombre": [
   "site/popularite.html"
@@ -3888,6 +3933,9 @@
  "Désactiver cette machine ?": [
   "app/renderer/views/licenses.js"
  ],
+ "Désactiver l'A2F": [
+  "site/compte.html"
+ ],
  "Désactiver sur ce PC ?": [
   "app/renderer/views/library.js"
  ],
@@ -4012,6 +4060,9 @@
  ],
  "Dossier des plugins VST3": [
   "app/renderer/views/account.js"
+ ],
+ "Double authentification (A2F)": [
+  "site/compte.html"
  ],
  "Double croche (1/16)": [
   "site/delais.html"
@@ -4348,6 +4399,9 @@
  ],
  "Entrer une clé": [
   "app/renderer/views/library.js"
+ ],
+ "Entrez le code à 6 chiffres de votre application d'authentification.": [
+  "server/src/app.js"
  ],
  "Envoi arrêté.": [
   "app/renderer/views/admin.js"
@@ -4689,6 +4743,9 @@
   "app/renderer/views/auth.js"
  ],
  "facultatif · ton pseudo devient un lien vers ce profil": [
+  "site/compte.html"
+ ],
+ "Facultative. À chaque connexion, en plus du mot de passe, un code à 6 chiffres vous est demandé : celui que donne Google Authenticator sur votre téléphone (ou une application semblable : Microsoft Authenticator, 2FAS, 1Password…). Quelqu'un qui connaîtrait votre mot de passe ne pourrait pas entrer sans votre téléphone.": [
   "site/compte.html"
  ],
  "Fais glisser l'image pour la placer, zoome avec la molette ou le curseur : ce qui est dans le cadre est ce que montreront la boutique et la page du plugin. Pour une interface en hauteur, « Garder l'image entière » l'envoie sans la rogner : la page du plugin la montre en entier, les cartes en montrent le milieu.": [
@@ -5571,6 +5628,9 @@
  ],
  "La de référence": [
   "site/accordeur.html"
+ ],
+ "La double authentification est déjà activée.": [
+  "server/src/app.js"
  ],
  "La formule à la carte laisse l'abonné choisir ses plugins.": [
   "server/src/control.js"
@@ -7397,6 +7457,9 @@
  "onirique:{}": [
   "app/main/installer.js"
  ],
+ "ONIRIQUE:{}": [
+  "server/src/totp.js"
+ ],
  "onirique2:{}": [
   "app/main/installer.js"
  ],
@@ -7414,6 +7477,9 @@
  ],
  "OS": [
   "site/onirique.html"
+ ],
+ "otpauth://totp/{}?secret={}&issuer=ONIRIQUE&algorithm=SHA1&digits=6&period=30": [
+  "server/src/totp.js"
  ],
  "Ou choisis ta note grave": [
   "site/tessiture.html"
@@ -7799,6 +7865,9 @@
  ],
  "Pas de detune : le morceau est accordé sur la = 440 Hz.": [
   "site/bpm-tonalite.html"
+ ],
+ "Pas de scan possible ? Dans l'application, choisissez « Saisir une clé de configuration », puis entrez cette clé :": [
+  "site/compte.html"
  ],
  "Pas encore de compte ?": [
   "site/onirique.html"
@@ -8559,6 +8628,9 @@
   "site/tap-tempo.html",
   "site/tessiture.html"
  ],
+ "Recommencez l'activation.": [
+  "server/src/app.js"
+ ],
  "Récompense de parrainage :": [
   "server/src/promos.js"
  ],
@@ -8839,6 +8911,9 @@
  "Retirer de la liste": [
   "site/compte.html"
  ],
+ "Retirer l'A2F": [
+  "site/admin.html"
+ ],
  "Retirer l'image": [
   "site/admin.html",
   "app/renderer/views/admin.js"
@@ -8854,6 +8929,9 @@
   "app/renderer/views/admin.js"
  ],
  "Retirer la démo interactive de {} ? La boutique montrera l'image du plugin à la place.": [
+  "site/admin.html"
+ ],
+ "Retirer la double authentification de {} ? Son mot de passe suffira de nouveau pour se connecter. À faire seulement si vous êtes sûr que la demande vient bien de cette personne.": [
   "site/admin.html"
  ],
  "Retirer la photo": [
@@ -9294,6 +9372,9 @@
   "server/src/app.js"
  ],
  "Seul un fondateur peut donner ou retirer le rôle admin.": [
+  "server/src/app.js"
+ ],
+ "Seul un fondateur peut retirer l'A2F d'un administrateur.": [
   "server/src/app.js"
  ],
  "Seul un fondateur peut supprimer un compte admin.": [
@@ -10015,6 +10096,18 @@
  ],
  "Total": [
   "site/partage.html"
+ ],
+ "totp_pending TEXT": [
+  "server/src/db.js"
+ ],
+ "totp_recovery TEXT": [
+  "server/src/db.js"
+ ],
+ "totp_secret TEXT": [
+  "server/src/db.js"
+ ],
+ "totp_step INTEGER": [
+  "server/src/db.js"
  ],
  "Toucher la vraie interface": [
   "site/onirique.html"

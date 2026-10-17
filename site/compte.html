@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=0ed86527"></script>
+<script src="assets/i18n.js?v=3c7e7b20"></script>
 <script src="assets/annonce.js?v=1"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Compte</title>
@@ -60,6 +60,8 @@ label.check input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; padd
 /* Vos informations : le profil et le mot de passe, côte à côte quand la place le permet */
 .settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 28px 40px; align-items: start; }
 .settings input:disabled { opacity: .6; }
+.a2f-qr svg { display: block; width: 184px; height: 184px; border-radius: 12px; }
+.a2f-codes { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px 16px; margin: 0; padding: 14px 18px; list-style: none; border: 1px dashed var(--line); border-radius: 14px; font: 500 15px/1.4 var(--f-mono); user-select: all; }
 .legal { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 14px; }
 .legal a { color: var(--haze); text-decoration: none; }
 .legal a:hover { color: var(--mist); }
@@ -133,6 +135,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
         <label id="name-field" hidden>Nom<input id="name" maxlength="80" autocomplete="name"></label>
         <label>E-mail<input id="email" type="email" required autocomplete="username"></label>
         <label id="password-field"><span id="password-label">Mot de passe</span><input id="password" type="password" required autocomplete="current-password"></label>
+        <label id="code-field" hidden>Code de l'application d'authentification<input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="11" spellcheck="false" style="font-family:var(--f-mono);letter-spacing:.12em"></label>
         <label class="check" id="remember-field"><input type="checkbox" id="remember" checked><span>Se souvenir de moi sur cet appareil</span></label>
         <label id="ref-field" hidden>Code de parrainage (facultatif)<input id="ref" maxlength="12" autocomplete="off" spellcheck="false" style="text-transform:uppercase;font-family:var(--f-mono)"></label>
         <label class="check" id="news-field" hidden><input type="checkbox" id="news"><span>J'accepte de recevoir par e-mail les nouveautés, offres et codes promo d'ONIRIQUE. Désinscription en un clic dans chaque message.</span></label>
@@ -210,6 +213,22 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
           <div><button class="btn btn-ghost" type="submit">Changer le mot de passe</button></div>
         </form>
       </div>
+    </div>
+
+    <div class="panel" id="a2f">
+      <div class="eyebrow">Double authentification (A2F)</div>
+      <p class="muted" id="a2f-text" style="margin-top:0;max-width:62ch"></p>
+      <form id="a2f-form" class="settings" style="grid-template-columns:minmax(0,1fr)">
+        <div id="a2f-setup" class="photo" hidden>
+          <div class="a2f-qr" id="a2f-qr"></div>
+          <p class="muted" style="margin:0">Pas de scan possible ? Dans l'application, choisissez « Saisir une clé de configuration », puis entrez cette clé :<br><code id="a2f-secret" style="font:500 15px/1.6 var(--f-mono);word-break:break-all;user-select:all"></code></p>
+        </div>
+        <label id="a2f-password-field">Mot de passe<input id="a2f-password" type="password" autocomplete="current-password"></label>
+        <label id="a2f-code-field" hidden><span id="a2f-code-label"></span><input id="a2f-code" inputmode="numeric" autocomplete="one-time-code" maxlength="11" spellcheck="false" style="font-family:var(--f-mono);letter-spacing:.12em"></label>
+        <ul class="a2f-codes" id="a2f-recovery" hidden></ul>
+        <div class="notice" id="a2f-notice" role="status"></div>
+        <div><button class="btn btn-ghost" type="submit" id="a2f-submit"></button></div>
+      </form>
     </div>
 
     <!-- Réservé aux fondateurs : ce qui s'affiche sous les crédits qu'ils ont réalisés (mix, master…), à la place du compte -->
@@ -325,7 +344,7 @@ async function api(method, path, body) {
     throw new Error("Serveur injoignable. Réessayez dans un instant.");
   }
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw Object.assign(new Error(data.error || "Erreur " + response.status), { status: response.status });
+  if (!response.ok) throw Object.assign(new Error(data.error || "Erreur " + response.status), { status: response.status, data });
   return data;
 }
 
@@ -344,7 +363,7 @@ function show(me) {
   $("auth").hidden = !!me;
   $("account").hidden = !me;
   OniriqueAccount.show(me); // le menu du compte, dans l'en-tête
-  if (!me) return;
+  if (!me) { a2fStage = ""; return; } // un autre compte peut se connecter ensuite
   $("avatar").src = OniriqueAccount.avatar(me.user);
   $("avatar-remove").hidden = !me.user.avatar;
   // Arrivé par « Paramètres » ou « Mes licences » du menu : la page s'ouvre sur ce bloc.
@@ -367,6 +386,7 @@ function show(me) {
   $("profile-email").value = me.user.email;
   $("admin-link").hidden = !role || me.user.role === "vip";
   $("verify-panel").hidden = me.user.emailVerified !== false;
+  if (a2fStage !== "setup") showA2f(me.user.twoFactor ? "on" : "off");
   $("verify-email").textContent = me.user.email;
   // Shorts YouTube : les fondateurs seulement. Chargé une fois par compte, pour ne pas effacer une saisie en cours.
   $("youtube").hidden = me.user.role !== "founder";
@@ -476,6 +496,8 @@ function setMode(next, notice = "") {
   $("password").minLength = choosing ? 8 : 1;
   $("submit").textContent = SUBMIT[mode];
   $("forgot").hidden = mode !== "login";
+  $("code-field").hidden = true;
+  $("code").value = "";
   $("error").textContent = "";
   $("notice").textContent = notice;
 }
@@ -489,7 +511,8 @@ $("form").onsubmit = async (event) => {
   $("error").textContent = "";
   try {
     const body = { email: $("email").value.trim(), password: $("password").value, name: $("name").value.trim(),
-      ...(mode === "register" ? { ref: $("ref").value.trim(), newsletter: $("news").checked } : {}) };
+      ...(mode === "register" ? { ref: $("ref").value.trim(), newsletter: $("news").checked } : {}),
+      ...(!$("code-field").hidden ? { code: $("code").value.trim() } : {}) };
     if (mode === "forgot") {
       await api("POST", "/auth/forgot", { email: body.email });
       setMode("login", "Si un compte existe avec cette adresse, un lien vient d'être envoyé. Il est valable une heure.");
@@ -514,6 +537,12 @@ $("form").onsubmit = async (event) => {
     if (new URLSearchParams(location.search).get("next") === "telecharger" && me.user.emailVerified !== false) window.OniriqueDownload?.open();
   } catch (error) {
     $("error").textContent = error.message;
+    // A2F active sur ce compte : le mot de passe est juste, le code est demandé.
+    if (error.data?.twoFactor) {
+      $("code-field").hidden = false;
+      $("code").select();
+      $("code").focus();
+    }
   }
   $("submit").disabled = false;
 };
@@ -793,6 +822,54 @@ $("yt-files").onchange = async (event) => {
   }
   if (done === files.length) say("yt-notice", done > 1 ? done + " vidéos ajoutées. Donnez à chacune son titre, sa description et son heure." : "Vidéo ajoutée. Donnez-lui son titre, sa description et son heure.");
   $("yt-add").disabled = false;
+};
+
+// A2F : off (proposer de l'activer), setup (QR code à scanner, puis un premier code), on (activée : la désactiver).
+let a2fStage = "";
+const A2F = {
+  off: ["Facultative. À chaque connexion, en plus du mot de passe, un code à 6 chiffres vous est demandé : celui que donne Google Authenticator sur votre téléphone (ou une application semblable : Microsoft Authenticator, 2FAS, 1Password…). Quelqu'un qui connaîtrait votre mot de passe ne pourrait pas entrer sans votre téléphone.", "", "Activer l'A2F"],
+  setup: ["Dans Google Authenticator, touchez +, puis « Scanner un code QR » et visez ce code. Entrez ensuite le code à 6 chiffres qui s'affiche, pour confirmer.", "Code à 6 chiffres", "Confirmer et activer"],
+  on: ["Activée : à chaque connexion, le code de votre application d'authentification est demandé. Téléphone perdu ? Un de vos codes de secours le remplace. Pour désactiver l'A2F : votre mot de passe et un code.", "Code de l'application, ou code de secours", "Désactiver l'A2F"],
+};
+function showA2f(stage) {
+  a2fStage = stage;
+  const [text, codeLabel, button] = A2F[stage];
+  $("a2f-text").textContent = text;
+  $("a2f-setup").hidden = stage !== "setup";
+  $("a2f-password-field").hidden = stage === "setup";
+  $("a2f-code-field").hidden = stage === "off";
+  $("a2f-code-label").textContent = codeLabel;
+  $("a2f-password").value = $("a2f-code").value = "";
+  $("a2f-submit").textContent = button;
+}
+$("a2f-form").onsubmit = async (event) => {
+  event.preventDefault();
+  say("a2f-notice", "");
+  $("a2f-submit").disabled = true;
+  try {
+    if (a2fStage === "off") {
+      const setup = await api("POST", "/me/2fa/setup", { password: $("a2f-password").value });
+      $("a2f-qr").innerHTML = setup.qr; // SVG fabriqué par le serveur
+      $("a2f-secret").textContent = setup.secret.replace(/(.{4})/g, "$1 ").trim();
+      $("a2f-recovery").hidden = true;
+      showA2f("setup");
+      $("a2f-code").focus();
+    } else if (a2fStage === "setup") {
+      const { recoveryCodes } = await api("POST", "/me/2fa/enable", { code: $("a2f-code").value.trim() });
+      $("a2f-recovery").replaceChildren(...recoveryCodes.map((code) => el("li", "", code)));
+      $("a2f-recovery").hidden = false;
+      showA2f("on");
+      say("a2f-notice", "A2F activée. Notez ces 8 codes de secours et gardez-les en lieu sûr : chacun remplace une fois le code de l'application, si vous perdez votre téléphone. Ils ne seront plus affichés.");
+    } else {
+      await api("POST", "/me/2fa/disable", { password: $("a2f-password").value, code: $("a2f-code").value.trim() });
+      $("a2f-recovery").hidden = true;
+      showA2f("off");
+      say("a2f-notice", "A2F désactivée : le mot de passe suffit de nouveau pour se connecter.");
+    }
+  } catch (error) {
+    say("a2f-notice", error.message, true);
+  }
+  $("a2f-submit").disabled = false;
 };
 
 $("delete-form").onsubmit = async (event) => {

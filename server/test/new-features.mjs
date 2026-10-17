@@ -52,6 +52,7 @@ const { createApp } = await import('../src/app.js');
 const { get, run, now } = await import('../src/db.js');
 const { hashPassword, createSession } = await import('../src/auth.js');
 const { outbox } = await import('../src/mail.js');
+const { codeAt } = await import('../src/totp.js');
 
 const server = createApp().listen(0);
 const base = `http://127.0.0.1:${server.address().port}/api`;
@@ -130,6 +131,44 @@ try {
     check((await api('POST', '/licenses/trial', { productId: tuner, machineId: machine(user) }, user)).status === 201, 'et l\'essai se lance');
     for (let i = 0; i < 3; i++) await api('POST', '/auth/verify/resend', null, user);
     check((await api('POST', '/auth/verify/resend', null, user)).data.alreadyVerified === true, 'redemander un lien ne fait alors plus rien');
+
+    console.log('double authentification (A2F)');
+    const a2f = (await api('POST', '/auth/register', { email: 'a2f@site.test', password: 'motdepasse' })).data.token;
+    run(`UPDATE users SET email_verified = 1 WHERE email = 'a2f@site.test'`);
+    const login = (code) => api('POST', '/auth/login', { email: 'a2f@site.test', password: 'motdepasse', ...(code ? { code } : {}) });
+    check((await api('POST', '/me/2fa/setup', { password: 'mauvais' }, a2f)).status === 403, 'activation refusée sans le bon mot de passe');
+    const setup = (await api('POST', '/me/2fa/setup', { password: 'motdepasse' }, a2f)).data;
+    check(/^[A-Z2-7]{32}$/.test(setup.secret) && setup.qr.startsWith('<svg') && setup.uri.startsWith('otpauth://totp/'), 'une clé et son QR code');
+    check((await login()).status === 200, "pas encore active tant qu'aucun code n'est confirmé");
+    const step = Math.floor(Date.now() / 30_000);
+    const wrong = codeAt(setup.secret, step) === '123456' ? '654321' : '123456';
+    check((await api('POST', '/me/2fa/enable', { code: wrong }, a2f)).status === 400, 'un faux code ne l\'active pas');
+    const enabled = await api('POST', '/me/2fa/enable', { code: codeAt(setup.secret, step) }, a2f);
+    const recovery = enabled.data.recoveryCodes || [];
+    check(enabled.status === 200 && recovery.length === 8, 'un vrai code l\'active, avec 8 codes de secours');
+    check((await api('GET', '/me', null, a2f)).data.user.twoFactor === true, 'le compte l\'affiche');
+    const asked = await login();
+    check(asked.status === 401 && asked.data.twoFactor === true && !asked.data.token, 'la connexion demande alors le code');
+    check((await api('POST', '/auth/login', { email: 'a2f@site.test', password: 'mauvais' })).data.twoFactor === undefined,
+      'sans le bon mot de passe, rien ne dit que l\'A2F est active');
+    check((await login(wrong)).status === 401, 'un faux code est refusé');
+    check((await login(codeAt(setup.secret, step))).status === 401, 'le code déjà servi à l\'activation ne se rejoue pas');
+    Date.now = () => realNow() + 30_000;   // le code suivant
+    const next = await login(codeAt(setup.secret, step + 1));
+    check(next.status === 200 && !!next.data.token, 'le code suivant ouvre la session');
+    Date.now = realNow;
+    check((await login(recovery[0].toLowerCase())).status === 200, 'un code de secours aussi');
+    check((await login(recovery[0])).status === 401, 'une seule fois');
+    check((await api('POST', '/me/2fa/disable', { password: 'motdepasse', code: wrong }, a2f)).status === 403, 'désactivation refusée sans un bon code');
+    check((await api('POST', '/me/2fa/disable', { password: 'motdepasse', code: recovery[1] }, a2f)).status === 200
+      && (await login()).status === 200, 'désactivée avec le mot de passe et un code de secours');
+    await api('POST', '/me/2fa/setup', { password: 'motdepasse' }, a2f);
+    const again = get(`SELECT id, totp_pending FROM users WHERE email = 'a2f@site.test'`);
+    await api('POST', '/me/2fa/enable', { code: codeAt(again.totp_pending, Math.floor(Date.now() / 30_000)) }, a2f);
+    check((await login()).status === 401, 'réactivée');
+    check((await api('PATCH', `/admin/users/${again.id}`, { twoFactor: false }, admin)).status === 200
+      && !get('SELECT totp_secret FROM users WHERE id = ?', again.id).totp_secret,
+      'le support peut la retirer (téléphone et codes de secours perdus)');
 
     console.log('suppression de son compte');
     const leaving = (await api('POST', '/auth/register', { email: 'partant@site.test', password: 'motdepasse' })).data.token;

@@ -2,6 +2,7 @@ import { h, field, toast } from '../ui.js';
 import { state, call, refresh, render, globe } from '../app.js';
 
 let mode = 'login';
+let askCode = false; // le compte a l'A2F : le code de l'application d'authentification est demandé
 
 const hero = () => [
   h('img', { class: 'hero', src: 'assets/sigil.png', alt: '' }),
@@ -30,6 +31,9 @@ export function authView() {
   const name = h('input', { type: 'text', maxLength: 80, placeholder: 'Nom ou pseudo' });
   const ref = h('input', { type: 'text', maxLength: 12, class: 'mono', placeholder: 'Facultatif', style: { 'text-transform': 'uppercase' } });
   const newsletter = h('input', { type: 'checkbox' });
+  const code = h('input', { type: 'text', inputMode: 'numeric', autocomplete: 'one-time-code', maxLength: 11, class: 'mono', placeholder: '123456' });
+  const codeField = field('Code de l\'application d\'authentification (ou code de secours)', code);
+  codeField.style.display = askCode ? '' : 'none';
   const error = h('div', { class: 'error-text' });
   const submit = h('button', { class: 'btn primary', type: 'submit' }, mode === 'login' ? 'Se connecter' : 'Créer mon compte');
 
@@ -40,8 +44,15 @@ export function authView() {
       submit.disabled = true;
       error.textContent = '';
       try {
-        if (mode === 'login') await call('auth:login', email.value, password.value);
-        else await call('auth:register', email.value, password.value, name.value, ref.value.trim(), newsletter.checked);
+        if (mode === 'login') {
+          if ((await call('auth:login', email.value, password.value, askCode ? code.value.trim() : ''))?.twoFactor) {
+            codeField.style.display = '';
+            askCode = true;
+            submit.disabled = false;
+            return code.focus();
+          }
+          askCode = false;
+        } else await call('auth:register', email.value, password.value, name.value, ref.value.trim(), newsletter.checked);
         await refresh();
       } catch (e) {
         error.textContent = e.message;
@@ -52,6 +63,7 @@ export function authView() {
     mode === 'register' ? field('Nom', name) : null,
     field('E-mail', email),
     field(mode === 'register' ? 'Mot de passe (8 caractères minimum)' : 'Mot de passe', password),
+    mode === 'login' ? codeField : null,
     mode === 'register' ? field('Code de parrainage d\'un ami', ref) : null,
     mode === 'register' ? h('label', { class: 'check', style: { 'align-items': 'flex-start', 'font-size': '13px' } }, newsletter,
       h('span', null, 'J\'accepte de recevoir par e-mail les nouveautés, offres et codes promo d\'ONIRIQUE. Désinscription en un clic dans chaque message.')) : null,
@@ -75,7 +87,7 @@ export function authView() {
     }, 'Mot de passe oublié ?') : null);
 
   const tab = (id, label) => h('button', {
-    type: 'button', class: mode === id ? 'active' : '', onclick: () => { mode = id; render(); },
+    type: 'button', class: mode === id ? 'active' : '', onclick: () => { mode = id; askCode = false; render(); },
   }, label);
 
   queueMicrotask(() => (mode === 'register' ? name : email).focus());
