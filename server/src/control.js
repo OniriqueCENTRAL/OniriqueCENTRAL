@@ -239,10 +239,24 @@ export function mountControl(admin) {
     if (user.id === req.user.id) throw new HttpError(400, 'Vous ne pouvez pas supprimer votre propre compte ici.');
     if (user.role === 'founder') throw new HttpError(403, "Un compte fondateur ne se supprime pas : retirez-lui d'abord ce rôle.");
     if (isStaff(user) && req.user.role !== 'founder') throw new HttpError(403, 'Seul un fondateur peut supprimer un compte admin.');
-    const sub = get(`SELECT * FROM subscriptions WHERE user_id = ? AND status = 'active' AND current_period_end > ?`, user.id, now());
-    if (sub?.stripe_subscription && !sub.cancel_at_period_end) {
-      throw new HttpError(409, 'Ce compte a un abonnement payant en cours : résiliez-le dans Stripe avant de supprimer le compte.');
-    }
+    if (paidSubscription(user)) throw new HttpError(409, 'Ce compte a un abonnement payant en cours : résiliez-le dans Stripe avant de supprimer le compte.');
+    deleteAccount(user);
+    console.log(`Compte supprimé : #${user.id} par #${req.user.id}`);
+    res.json({ ok: true });
+  });
+}
+
+/** Un abonnement payant encore reconduit : il doit être résilié avant la suppression du compte. */
+export function paidSubscription(user) {
+  const sub = get(`SELECT * FROM subscriptions WHERE user_id = ? AND status = 'active' AND current_period_end > ?`, user.id, now());
+  return !!(sub?.stripe_subscription && !sub.cancel_at_period_end);
+}
+
+/**
+ * Supprime un compte (par un admin, ou par son titulaire depuis la page Compte). Ses licences sont révoquées (une clé ne
+ * revit pas sur un autre compte), ses machines, sessions et abonnement disparaissent avec lui.
+ */
+export function deleteAccount(user) {
     transaction(() => {
       // Les commandes restent (obligation comptable, 10 ans) : archivées avec l'adresse de l'acheteur.
       run(`INSERT INTO orders_archive (email, name, kind, ref_id, amount_cents, provider, provider_ref, created_at)
@@ -256,7 +270,4 @@ export function mountControl(admin) {
       run('DELETE FROM users WHERE id = ?', user.id);
     });
     if (user.avatar) fs.rmSync(path.join(config.mediaDir, user.avatar), { force: true });
-    console.log(`Compte supprimé : #${user.id} par #${req.user.id}`);
-    res.json({ ok: true });
-  });
 }

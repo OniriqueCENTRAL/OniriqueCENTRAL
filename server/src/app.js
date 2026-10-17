@@ -30,7 +30,7 @@ import {
 import { mountNewsletter, setMarketing } from './newsletter.js';
 import * as mailbox from './mailbox.js';
 import { connectUrl, disconnect, finishConnect, videoFile, videoView, youtubeConfigured, youtubeState } from './youtube.js';
-import { announcementView, maintenanceView, mountControl, packView, planView } from './control.js';
+import { announcementView, deleteAccount, maintenanceView, mountControl, packView, paidSubscription, planView } from './control.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
@@ -144,8 +144,14 @@ const SOCIALS = [['youtube', 'YouTube'], ['instagram', 'Instagram'], ['tiktok', 
   ['soundcloud', 'SoundCloud'], ['discord', 'Discord'], ['twitch', 'Twitch'], ['facebook', 'Facebook']];
 
 
+// Le dernier lien de validation envoyé à chaque compte : un nouveau ne part qu'une minute après.
+// shortcut: gardé en mémoire, un redémarrage du serveur le remet à zéro ; sans gravité pour un délai d'une minute.
+const verifySentAt = new Map();
+const VERIFY_WAIT = 60_000;
+
 /** Envoie le lien de validation de l'adresse. Sans attente : l'inscription ne dépend pas du serveur de messagerie. */
 function sendVerification(user) {
+  verifySentAt.set(user.id, now());
   const link = `${config.siteUrl}/compte?verify=${createVerifyToken(user.id)}`;
   sendMail(user.email, 'Validez votre adresse e-mail — ONIRIQUE',
     `Bonjour${user.name ? ' ' + user.name : ''},\n\n${mustVerify(user) ? 'Bienvenue chez ONIRIQUE. Pour valider votre compte' : 'Pour confirmer votre adresse e-mail'}, ouvrez ce lien `
@@ -384,6 +390,8 @@ export function createApp() {
 
   app.post('/api/auth/verify/resend', requireUser, (req, res) => {
     if (!mustVerify(req.user) && !shouldConfirm(req.user)) return res.json({ ok: true, alreadyVerified: true });
+    const wait = Math.ceil((VERIFY_WAIT - (now() - (verifySentAt.get(req.user.id) ?? 0))) / 1000);
+    if (wait > 0) throw new HttpError(429, `Un lien vient de partir : attendez encore ${wait} s avant d'en demander un nouveau.`);
     rateLimit(`verify-resend:${req.user.id}`, 3);
     sendVerification(req.user);
     res.json({ ok: true });
@@ -621,6 +629,18 @@ export function createApp() {
       run('DELETE FROM sessions WHERE user_id = ?', req.user.id);
     });
     res.json({ token: createSession(req.user.id) });
+  });
+
+  // Suppression de son propre compte, depuis la page Compte : le mot de passe le confirme.
+  app.post('/api/me/delete', requireUser, (req, res) => {
+    rateLimit(`delete-account:${req.user.id}`);
+    if (!verifyPassword(String(req.body.password ?? ''), req.user.password_hash)) throw new HttpError(403, 'Mot de passe incorrect.');
+    if (req.user.role === 'founder') throw new HttpError(403, "Un compte fondateur ne se supprime pas depuis le site.");
+    if (paidSubscription(req.user)) throw new HttpError(409, "Votre abonnement est encore reconduit : résiliez-le d'abord dans ONIRIQUE CENTRAL (onglet Abonnement), puis supprimez le compte.");
+    deleteAccount(req.user);
+    verifySentAt.delete(req.user.id);
+    console.log(`Compte supprimé : #${req.user.id} par son titulaire`);
+    res.json({ ok: true });
   });
 
   //============================================================================

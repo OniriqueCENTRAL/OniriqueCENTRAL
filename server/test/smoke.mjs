@@ -472,7 +472,10 @@ try {
     const flagged = (await call('GET', '/api/me', { token: old })).user;
     assert.deepEqual([flagged.emailVerified, flagged.emailToConfirm], [true, true], 'rien ne lui est fermé, mais le rappel est demandé');
     outbox.length = 0;
+    const realNow = Date.now;
+    Date.now = () => realNow() + 61_000; // une minute après le lien de l'inscription
     assert.equal((await call('POST', '/api/auth/verify/resend', { token: old })).alreadyVerified, undefined);
+    Date.now = realNow;
     assert.equal(outbox.length, 1);
     assert.doesNotMatch(outbox[0].text, /restent fermés/);
     await call('POST', '/api/auth/verify', { body: { token: outbox[0].text.match(/\?verify=([\w-]+)/)[1] } });

@@ -1,0 +1,13 @@
+{
+ "Supprimer le compte": "Delete the account",
+ "Le compte, ses licences, ses essais et ses ordinateurs activés sont effacés définitivement : les plugins cessent de s'activer et une clé de licence ne pourra pas servir sur un autre compte. Seules vos commandes restent archivées, comme la loi l'impose pour la comptabilité.": "The account, its licences, its trials and its activated computers are erased for good: the plugins stop activating and a licence key cannot be used on another account. Only your orders stay archived, as the law requires for accounting.",
+ "Mot de passe, pour confirmer": "Password, to confirm",
+ "Supprimer définitivement mon compte": "Permanently delete my account",
+ "Supprimer définitivement votre compte ONIRIQUE ? Vos licences seront perdues. Cette action ne peut pas être annulée.": "Permanently delete your ONIRIQUE account? Your licences will be lost. This cannot be undone.",
+ "Votre compte a été supprimé.": "Your account has been deleted.",
+ "Mot de passe incorrect.": "Wrong password.",
+ "Un compte fondateur ne se supprime pas depuis le site.": "A founder account cannot be deleted from the website.",
+ "Votre abonnement est encore reconduit : résiliez-le d'abord dans ONIRIQUE CENTRAL (onglet Abonnement), puis supprimez le compte.": "Your subscription still renews: cancel it first in ONIRIQUE CENTRAL (Subscription tab), then delete the account.",
+ "Un lien vient de partir : attendez encore {} s avant d'en demander un nouveau.": "A link was just sent: wait {} more seconds before asking for a new one.",
+ "Renvoyer le lien ({} s)": "Resend the link ({} s)"
+}

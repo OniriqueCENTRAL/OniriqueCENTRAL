@@ -15,9 +15,6 @@
  "— ONIRIQUE": [
   "site/boutique.html"
  ],
- "— Personne en particulier —": [
-  "site/admin.html"
- ],
  "— Répondre à ce message écrit directement à {}.": [
   "server/src/app.js"
  ],
@@ -99,6 +96,9 @@
   "site/confidentialite.html",
   "site/pages.mjs"
  ],
+ ": au-dessus de la référence, ton mix a plus d'énergie dans cette zone ; en dessous, moins.": [
+  "site/comparer-mix.html"
+ ],
  ": ce qui revient à ceux qui ont écrit la musique et le texte.": [
   "site/partage.html"
  ],
@@ -173,6 +173,9 @@
  ": le niveau maximal du signal une fois reconverti en son, qui peut dépasser celui des échantillons. Au-dessus de −1 dBTP, la conversion en MP3 ou en AAC faite par les plateformes peut créer de la saturation.": [
   "site/volume-lufs.html"
  ],
+ ": normal avant le mastering, la comparaison des fréquences se fait à volume égal.": [
+  "site/comparer-mix.html"
+ ],
  ": nous la transmettons au vendeur et nous accusons réception par e-mail. Vous pouvez aussi vous adresser directement à l'assistance de Link, le vendeur (support.link.com). Le formulaire ci-dessous peut vous servir, sans que ce soit obligatoire.": [
   "site/remboursement.html"
  ],
@@ -203,8 +206,14 @@
  ": un export fait avec la piste en sourdine.": [
   "site/stems.html"
  ],
+ ": un mix non masterisé est normalement moins fort qu'un titre sorti, c'est pourquoi les courbes sont comparées à volume égal.": [
+  "site/comparer-mix.html"
+ ],
  ": un pic à 0 dBFS tenu sur plusieurs échantillons est une piste écrêtée à l'export ; baisse son niveau et exporte à nouveau.": [
   "site/stems.html"
+ ],
+ ": une corrélation proche de 1 signifie un son presque mono, proche de 0 très large ; sous 0, une partie du son s'annule en mono.": [
+  "site/comparer-mix.html"
  ],
  "?bpm=": [
   "site/delais.html"
@@ -216,6 +225,11 @@
   "site/popularite.html"
  ],
  "?theme=0": [
+  "site/assets/credits.js"
+ ],
+ "?w=": [
+  "site/boutique.html",
+  "site/onirique.html",
   "site/assets/credits.js"
  ],
  ". À corriger ici si tu connais les vraies valeurs.": [
@@ -245,7 +259,7 @@
  ".aaxplugin/": [
   "server/src/app.js"
  ],
- ".acct { position: relative; display: inline-block; } .acct-button { display: inline-flex; align-items: center; gap: 10px; max-width: 240px; padding: 5px 14px 5px 5px; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: rgba(255,255,255,.03); color: var(--mist, #f6eeee); font: 600 14px/1 var(--f-body, system-ui, sans-serif); cursor: pointer; } .acct-button:hover, .acct-button[aria-expanded=\"true\"] { border-color: var(--ember, #e23444); } .acct-button img, .acct-head img { flex: none; border-radius: 50%; object-fit: cover; background: #1a080a; } .acct-button img { width: 30px; height: 30px; } .acct-button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .acct-button svg { flex: none; width: 10px; height: 10px; transition: transform .15s; } .acct-button[aria-expanded=\"true\"] svg { transform: rotate(180deg); } .acct-menu { position: absolute; right: 0; top: calc(100% + 10px); z-index: 80; width: min(290px, calc(100vw - 24px)); padding: 8px; border-radius: 18px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: linear-gradient(180deg, var(--deep-2, #2a0a0e), var(--deep, #1a080a)); box-shadow: 0 24px 60px -12px rgba(0,0,0,.85), 0 0 0 1px rgba(226,52,68,.12); text-align: left; } .acct-head { display: flex; align-items: center; gap: 12px; padding: 10px 10px 14px; margin-bottom: 6px; border-bottom: 1px solid var(--line, rgba(255,210,214,.16)); } .acct-head img { width: 46px; height: 46px; } .acct-head div { min-width: 0; display: grid; gap: 5px; } .acct-head strong { font: 700 15px/1.2 var(--f-body, system-ui, sans-serif); color: var(--mist, #f6eeee); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .acct-head small { font: 500 11px/1.2 var(--f-mono, ui-monospace, monospace); color: var(--haze, #a88f92); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .acct-head em { justify-self: start; font: 500 10px/1 var(--f-mono, ui-monospace, monospace); font-style: normal; letter-spacing: .12em; text-transform: uppercase; padding: 5px 8px; border-radius: 999px; color: var(--bone, #ffecee); border: 1px solid rgba(226,52,68,.6); background: rgba(226,52,68,.16); } .acct-menu a, .acct-menu button { display: block; width: 100%; padding: 11px 12px; border: 0; border-radius: 10px; background: none; color: var(--mist, #f6eeee); font: 500 14px/1.2 var(--f-body, system-ui, sans-serif); text-align: left; text-decoration: none; cursor: pointer; } .acct-menu a:hover, .acct-menu button:hover, .acct-menu a:focus-visible, .acct-menu button:focus-visible { background: rgba(226,52,68,.16); color: var(--mist, #f6eeee); outline: none; } .acct-menu hr { margin: 6px 4px; border: 0; border-top: 1px solid var(--line, rgba(255,210,214,.16)); } .acct-menu h6 { margin: 0; padding: 8px 12px 4px; font: 500 10px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .14em; text-transform: uppercase; color: var(--haze, #a88f92); } .acct-menu .acct-out { color: #ff8f99; }": [
+ ".acct { position: relative; display: inline-block; } .acct-button { display: inline-flex; align-items: center; gap: 10px; max-width: 240px; padding: 5px 14px 5px 5px; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: rgba(255,255,255,.03); color: var(--mist, #f6eeee); font: 600 14px/1 var(--f-body, system-ui, sans-serif); cursor: pointer; } .acct-button:hover, .acct-button[aria-expanded=\"true\"] { border-color: var(--ember, #e23444); } .acct-button img, .acct-head img { flex: none; border-radius: 50%; object-fit: cover; background: #1a080a; } .acct-button img { width: 30px; height: 30px; } .acct-button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .acct-button svg { flex: none; width: 10px; height: 10px; transition: transform .15s; } .acct-button[aria-expanded=\"true\"] svg { transform: rotate(180deg); } .acct-menu { position: absolute; right: 0; top: calc(100% + 10px); z-index: 80; width: min(290px, calc(100vw - 24px)); padding: 8px; border-radius: 18px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: linear-gradient(180deg, var(--deep-2, #2a0a0e), var(--deep, #1a080a)); box-shadow: 0 24px 60px -12px rgba(0,0,0,.85), 0 0 0 1px rgba(226,52,68,.12); text-align: left; } .acct-head { display: flex; align-items: center; gap: 12px; padding: 10px 10px 14px; margin-bottom: 6px; border-bottom: 1px solid var(--line, rgba(255,210,214,.16)); } .acct-head img { width: 46px; height: 46px; } .acct-head div { min-width: 0; display: grid; gap: 5px; } .acct-head strong { font: 700 15px/1.2 var(--f-body, system-ui, sans-serif); color: var(--mist, #f6eeee); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .acct-head small { font: 500 11px/1.2 var(--f-mono, ui-monospace, monospace); color: var(--haze, #a88f92); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .acct-head em { justify-self: start; font: 500 10px/1 var(--f-mono, ui-monospace, monospace); font-style: normal; letter-spacing: .12em; text-transform: uppercase; padding: 5px 8px; border-radius: 999px; color: var(--bone, #ffecee); border: 1px solid rgba(226,52,68,.6); background: rgba(226,52,68,.16); } .acct-menu a, .acct-menu button { display: block; width: 100%; padding: 11px 12px; border: 0; border-radius: 10px; background: none; color: var(--mist, #f6eeee); font: 500 14px/1.2 var(--f-body, system-ui, sans-serif); text-align: left; text-decoration: none; cursor: pointer; } .acct-menu a:hover, .acct-menu button:hover, .acct-menu a:focus-visible, .acct-menu button:focus-visible { background: rgba(226,52,68,.16); color: var(--mist, #f6eeee); outline: none; } .acct-menu hr { margin: 6px 4px; border: 0; border-top: 1px solid var(--line, rgba(255,210,214,.16)); } .acct-menu h6 { margin: 0; padding: 8px 12px 4px; font: 500 10px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .14em; text-transform: uppercase; color: var(--haze, #a88f92); } .acct-menu .acct-out { color: #ff8f99; } /* Téléphone : le menu prend la largeur de l'écran sous l'en-tête, au lieu de déborder à gauche du bouton. */ @media (max-width: 560px) { .acct-menu { position: fixed; left: 12px; right: 12px; width: auto; max-height: calc(100vh - var(--acct-top, 80px) - 12px); overflow-y: auto; overscroll-behavior: contain; top: var(--acct-top, 80px); } }": [
   "site/assets/account.js"
  ],
  ".big-tg b": [
@@ -257,7 +271,10 @@
  ".hero .btn-primary": [
   "site/onirique.html"
  ],
- ".sn-burger { display: none; flex: none; width: 44px; height: 44px; align-items: center; justify-content: center; padding: 0; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: rgba(255,255,255,.04); color: var(--mist, #f6eeee); cursor: pointer; } .sn-burger svg { width: 20px; height: 20px; } .sn-burger:hover, .sn-burger:focus-visible { border-color: var(--ember, #e23444); } .sn-panel { position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column; padding: calc(env(safe-area-inset-top, 0px) + 14px) max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 20px) max(16px, env(safe-area-inset-left, 0px)); background: radial-gradient(120% 60% at 50% -10%, rgba(140,6,20,.85), rgba(92,0,8,.45) 40%, transparent 75%), var(--night, #0d0809); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; } .sn-panel[hidden] { display: none; } .sn-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; } .sn-top b { font: 800 16px/1 var(--f-display, \"Arial Black\", sans-serif); letter-spacing: .2em; color: var(--mist, #f6eeee); } .sn-links { display: grid; gap: 2px; } .sn-links > a, .sn-links > button { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 54px; padding: 0 6px; border: 0; border-bottom: 1px solid var(--line, rgba(255,210,214,.13)); background: none; color: var(--mist, #f6eeee); font: 700 21px/1.2 var(--f-display, \"Arial Black\", sans-serif); letter-spacing: .02em; text-align: left; text-decoration: none; cursor: pointer; } .sn-links > a::after { content: \"→\"; font: 400 18px var(--f-body, system-ui); color: var(--haze, #a88f92); } .sn-links > button::after { content: \"+\"; font: 400 24px var(--f-body, system-ui); color: var(--haze, #a88f92); } .sn-links > button[aria-expanded=\"true\"]::after { content: \"−\"; } .sn-tools { display: grid; gap: 14px; padding: 12px 6px 16px; border-bottom: 1px solid var(--line, rgba(255,210,214,.13)); } .sn-tools[hidden] { display: none; } .sn-tools h3 { margin: 0 0 4px; font: 500 11px/1.4 var(--f-mono, ui-monospace, monospace); letter-spacing: .16em; text-transform: uppercase; color: var(--haze, #a88f92); } .sn-tools a { display: block; padding: 8px 0; color: var(--mist, #f6eeee); font: 500 16px/1.3 var(--f-body, system-ui); text-decoration: none; } .sn-title { margin: 26px 6px 10px; font: 500 11px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .18em; text-transform: uppercase; color: var(--haze, #a88f92); } .sn-socials { display: flex; flex-wrap: wrap; gap: 10px; } .sn-socials a { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; padding: 0 16px 0 12px; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: rgba(255,255,255,.03); color: var(--mist, #f6eeee); font: 600 14px/1 var(--f-body, system-ui); text-decoration: none; } .sn-socials a:hover, .sn-socials a:focus-visible { border-color: var(--ember, #e23444); outline: none; } .sn-icon { display: inline-flex; width: 20px; height: 20px; flex: none; } .sn-icon svg { width: 100%; height: 100%; } .sn-account { display: flex; gap: 10px; margin-top: 26px; } .sn-account a { flex: 1; display: inline-flex; justify-content: center; align-items: center; min-height: 50px; border-radius: 999px; font: 600 15px/1 var(--f-body, system-ui); text-decoration: none; } .sn-account .sn-primary { background: var(--mist, #f6eeee); color: var(--night, #0d0809); } .sn-account .sn-ghost { border: 1px solid var(--line, rgba(255,210,214,.16)); color: var(--mist, #f6eeee); } html.sn-lock, html.sn-lock body { overflow: hidden; } /* iPhone : pas d'agrandissement du texte en paysage, et pas de zoom automatique quand on touche un champ (Safari zoome sur tout champ écrit en moins de 16 px, et la page reste ensuite décalée). */ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; } @media (max-width: 760px) { input:not([type=\"checkbox\"]):not([type=\"radio\"]):not([type=\"range\"]), select, textarea { font-size: max(16px, 1em) !important; } } /* « Nos réseaux » dans l'en-tête et en pied de page */ .sn-social-menu { position: relative; display: inline-flex; } .sn-social-btn { display: inline-flex; align-items: center; gap: 7px; border: 0; padding: 0; background: none; color: inherit; font: inherit; cursor: pointer; } .sn-social-btn:hover { color: var(--mist, #f6eeee); } .sn-social-btn::after { content: \"\"; width: 6px; height: 6px; margin-top: -3px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); } .sn-social-drop { position: absolute; right: 0; top: calc(100% + 12px); z-index: 80; min-width: 210px; padding: 8px; border-radius: 16px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: linear-gradient(180deg, var(--deep-2, #2a0a0e), var(--deep, #1a080a)); box-shadow: 0 24px 60px -12px rgba(0,0,0,.8); } .sn-social-drop a { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; color: var(--mist, #f6eeee); font: 500 14px/1.2 var(--f-body, system-ui); text-decoration: none; } .sn-social-drop a:hover, .sn-social-drop a:focus-visible { background: rgba(226,52,68,.16); outline: none; } .sn-foot { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 0 auto 18px; } .sn-foot a { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.16)); color: var(--haze, #a88f92); } .sn-foot a:hover, .sn-foot a:focus-visible { color: var(--mist, #f6eeee); border-color: var(--ember, #e23444); outline: none; } .sn-foot .sn-icon { width: 19px; height: 19px; } /* Langue : une pastille FR | EN dans l'en-tête, toujours visible, et un bandeau en anglais pour qui ne lit pas le français */ .sn-lang { display: inline-flex; flex: none; align-items: center; padding: 3px; gap: 2px; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: rgba(255,255,255,.04); } .sn-lang svg { width: 15px; height: 15px; margin: 0 4px 0 6px; color: var(--haze, #a88f92); flex: none; } .sn-lang button { min-width: 34px; height: 30px; padding: 0 9px; border: 0; border-radius: 999px; background: none; color: var(--haze, #a88f92); font: 600 12px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .08em; cursor: pointer; } .sn-lang button:hover { color: var(--mist, #f6eeee); } .sn-lang button[aria-pressed=\"true\"] { background: var(--ember, #e23444); color: #fff; } header .sn-lang { margin-left: 8px; } .sn-langbar { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 150; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 14px; width: max-content; max-width: calc(100vw - 24px); padding: 12px 14px 12px 18px; border-radius: 18px; border: 1px solid rgba(226,52,68,.55); background: linear-gradient(180deg, var(--deep-2, #2a0a0e), var(--deep, #1a080a)); box-shadow: 0 20px 60px -12px rgba(0,0,0,.85), 0 0 0 4px rgba(226,52,68,.12); color: var(--mist, #f6eeee); font: 500 15px/1.35 var(--f-body, system-ui); } .sn-langbar strong { font-weight: 700; } .sn-langbar-text { display: inline-flex; align-items: center; gap: 8px; } .sn-langbar-text svg { width: 17px; height: 17px; flex: none; color: var(--ember, #e23444); } .sn-langbar .sn-go { padding: 10px 16px; border: 0; border-radius: 999px; background: var(--mist, #f6eeee); color: var(--night, #0d0809); font: 700 14px/1 var(--f-body, system-ui); cursor: pointer; } .sn-langbar .sn-x { width: 34px; height: 34px; border: 1px solid var(--line, rgba(255,210,214,.16)); border-radius: 999px; background: none; color: var(--haze, #a88f92); font: 400 18px/1 var(--f-body, system-ui); cursor: pointer; } /* Téléchargement d'ONIRIQUE CENTRAL : choix du système */ .sn-dl { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: 16px; background: rgba(5,2,3,.72); backdrop-filter: blur(6px); } .sn-dl-box { position: relative; width: min(560px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; padding: 30px 28px 26px; border-radius: 22px; border: 1px solid rgba(226,52,68,.4); background: radial-gradient(120% 70% at 50% -20%, rgba(140,6,20,.55), transparent 70%), var(--deep, #1a080a); box-shadow: 0 30px 90px -20px #000; color: var(--mist, #f6eeee); } .sn-dl-box h2 { margin: 6px 0 14px; font: 800 clamp(22px, 4vw, 28px)/1.15 var(--f-display, \"Arial Black\", sans-serif); } .sn-dl-eyebrow { margin: 0; font: 500 11px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .24em; color: var(--haze, #a88f92); } .sn-dl-text, .sn-dl-wait { margin: 0 0 18px; font: 400 15px/1.6 var(--f-body, system-ui); color: var(--haze, #c9b5b8); } .sn-dl-note { margin: 18px 0 0; font: 400 13px/1.55 var(--f-body, system-ui); color: var(--haze, #a88f92); } .sn-dl-x { position: absolute; right: 14px; top: 14px; width: 36px; height: 36px; border: 1px solid var(--line, rgba(255,210,214,.16)); border-radius: 999px; background: none; color: var(--haze, #a88f92); font: 400 20px/1 var(--f-body, system-ui); cursor: pointer; } .sn-dl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; } .sn-dl-os { display: flex; align-items: center; gap: 14px; padding: 18px; border-radius: 16px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: rgba(255,255,255,.03); color: var(--mist, #f6eeee); text-decoration: none; transition: border-color .2s, background .2s, transform .2s; } .sn-dl-os:hover, .sn-dl-os:focus-visible { border-color: var(--ember, #e23444); background: rgba(226,52,68,.12); transform: translateY(-2px); outline: none; } .sn-dl-os.best { border-color: rgba(226,52,68,.65); } .sn-dl-os svg { flex: none; width: 30px; height: 30px; color: var(--bone, #ffecee); } .sn-dl-os span { display: grid; gap: 5px; } .sn-dl-os b { font: 800 17px/1 var(--f-display, \"Arial Black\", sans-serif); letter-spacing: .04em; } .sn-dl-os small { font: 400 12px/1.4 var(--f-body, system-ui); color: var(--haze, #a88f92); } .sn-dl-row { display: flex; flex-wrap: wrap; gap: 10px; } .sn-dl-main, .sn-dl-ghost { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 20px; border-radius: 999px; font: 700 14px/1 var(--f-body, system-ui); text-decoration: none; cursor: pointer; } .sn-dl-main { border: 0; background: var(--mist, #f6eeee); color: var(--night, #0d0809); } .sn-dl-main:disabled { opacity: .6; cursor: default; } .sn-dl-ghost { border: 1px solid var(--line, rgba(255,210,214,.16)); color: var(--mist, #f6eeee); } /* Annonce en direct, au-dessus de l'en-tête */ .sn-announce { position: relative; z-index: 60; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 48px; font: 600 14px/1.4 var(--f-body, system-ui); text-align: center; } .sn-announce p { margin: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 16px; } .sn-announce span { letter-spacing: .02em; } .sn-announce a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; } .sn-announce-x { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border: 0; border-radius: 999px; background: rgba(0,0,0,.18); color: inherit; font: 400 20px/1 var(--f-body, system-ui); cursor: pointer; } .sn-announce.tone-ember { background: linear-gradient(90deg, #8c0614, #e23444 60%, #8c0614); color: #fff; } .sn-announce.tone-gold { background: linear-gradient(90deg, #b8862b, #f2c46d 55%, #b8862b); color: #1a0d02; } .sn-announce.tone-calm { background: var(--deep-2, #2a0a0e); color: var(--mist, #f6eeee); border-bottom: 1px solid var(--line, rgba(255,210,214,.16)); } /* Maintenance */ .sn-maint { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 32px 20px; text-align: center; background: radial-gradient(90% 60% at 50% 0%, rgba(140,6,20,.75), rgba(92,0,8,.35) 45%, transparent 80%), var(--night, #0d0809); color: var(--mist, #f6eeee); } .sn-maint img { width: 108px; height: auto; filter: drop-shadow(0 0 18px rgba(226,52,68,.8)); } .sn-maint-eyebrow { margin: 6px 0 0; font: 500 12px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .3em; color: var(--haze, #a88f92); } .sn-maint h1 { margin: 0; font: 800 clamp(34px, 7vw, 64px)/1.05 var(--f-display, \"Arial Black\", sans-serif); letter-spacing: -.01em; } .sn-maint-text { max-width: 46ch; margin: 0; font: 400 17px/1.6 var(--f-body, system-ui); color: var(--haze, #c9b5b8); } .sn-maint-link { margin-top: 18px; font: 500 12px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .16em; text-transform: uppercase; color: var(--haze, #a88f92); } .sn-maint-flag { position: relative; z-index: 60; padding: 8px 16px; background: #ffb347; color: #1a0d02; font: 700 13px/1.4 var(--f-body, system-ui); text-align: center; } .sn-langrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; padding: 0 6px; } .sn-langrow span { font: 500 11px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .18em; text-transform: uppercase; color: var(--haze, #a88f92); } @media (max-width: 1280px) { .nav .sn-burger { display: inline-flex; } } @media (max-width: 760px) { header .sn-burger { display: inline-flex; } header nav:not(.nav-links) > :not([data-account]):not(.acct) { display: none !important; } }": [
+ ".sn-announce { position: relative; z-index: 60; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 48px; font: 600 14px/1.4 var(--f-body, system-ui); text-align: center; } .sn-announce p { margin: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 16px; } .sn-announce span { letter-spacing: .02em; } .sn-announce a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; } .sn-announce-x { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border: 0; border-radius: 999px; background: rgba(0,0,0,.18); color: inherit; font: 400 20px/1 var(--f-body, system-ui); cursor: pointer; } .sn-announce.tone-ember { background: linear-gradient(90deg, #8c0614, #e23444 60%, #8c0614); color: #fff; } .sn-announce.tone-gold { background: linear-gradient(90deg, #b8862b, #f2c46d 55%, #b8862b); color: #1a0d02; } .sn-announce.tone-calm { background: var(--deep-2, #2a0a0e); color: var(--mist, #f6eeee); border-bottom: 1px solid var(--line, rgba(255,210,214,.16)); }": [
+  "site/assets/annonce.js"
+ ],
+ ".sn-burger { display: none; flex: none; width: 44px; height: 44px; align-items: center; justify-content: center; padding: 0; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: rgba(255,255,255,.04); color: var(--mist, #f6eeee); cursor: pointer; } .sn-burger svg { width: 20px; height: 20px; } .sn-burger:hover, .sn-burger:focus-visible { border-color: var(--ember, #e23444); } .sn-panel { position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column; padding: calc(env(safe-area-inset-top, 0px) + 14px) max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 20px) max(16px, env(safe-area-inset-left, 0px)); background: radial-gradient(120% 60% at 50% -10%, rgba(140,6,20,.85), rgba(92,0,8,.45) 40%, transparent 75%), var(--night, #0d0809); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; } .sn-panel[hidden] { display: none; } .sn-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; } .sn-top b { font: 800 16px/1 var(--f-display, \"Arial Black\", sans-serif); letter-spacing: .2em; color: var(--mist, #f6eeee); } .sn-links { display: grid; gap: 2px; } .sn-links > a, .sn-links > button { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 54px; padding: 0 6px; border: 0; border-bottom: 1px solid var(--line, rgba(255,210,214,.13)); background: none; color: var(--mist, #f6eeee); font: 700 21px/1.2 var(--f-display, \"Arial Black\", sans-serif); letter-spacing: .02em; text-align: left; text-decoration: none; cursor: pointer; } .sn-links > a::after { content: \"→\"; font: 400 18px var(--f-body, system-ui); color: var(--haze, #a88f92); } .sn-links > button::after { content: \"+\"; font: 400 24px var(--f-body, system-ui); color: var(--haze, #a88f92); } .sn-links > button[aria-expanded=\"true\"]::after { content: \"−\"; } .sn-tools { display: grid; gap: 14px; padding: 12px 6px 16px; border-bottom: 1px solid var(--line, rgba(255,210,214,.13)); } .sn-tools[hidden] { display: none; } .sn-tools h3 { margin: 0 0 4px; font: 500 11px/1.4 var(--f-mono, ui-monospace, monospace); letter-spacing: .16em; text-transform: uppercase; color: var(--haze, #a88f92); } .sn-tools a { display: block; padding: 8px 0; color: var(--mist, #f6eeee); font: 500 16px/1.3 var(--f-body, system-ui); text-decoration: none; } .sn-title { margin: 26px 6px 10px; font: 500 11px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .18em; text-transform: uppercase; color: var(--haze, #a88f92); } .sn-socials { display: flex; flex-wrap: wrap; gap: 10px; } .sn-socials a { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; padding: 0 16px 0 12px; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: rgba(255,255,255,.03); color: var(--mist, #f6eeee); font: 600 14px/1 var(--f-body, system-ui); text-decoration: none; } .sn-socials a:hover, .sn-socials a:focus-visible { border-color: var(--ember, #e23444); outline: none; } .sn-icon { display: inline-flex; width: 20px; height: 20px; flex: none; } .sn-icon svg { width: 100%; height: 100%; } .sn-account { display: flex; gap: 10px; margin-top: 26px; } .sn-account a { flex: 1; display: inline-flex; justify-content: center; align-items: center; min-height: 50px; border-radius: 999px; font: 600 15px/1 var(--f-body, system-ui); text-decoration: none; } .sn-account .sn-primary { background: var(--mist, #f6eeee); color: var(--night, #0d0809); } .sn-account .sn-ghost { border: 1px solid var(--line, rgba(255,210,214,.16)); color: var(--mist, #f6eeee); } html.sn-lock, html.sn-lock body { overflow: hidden; } /* iPhone : pas d'agrandissement du texte en paysage, et pas de zoom automatique quand on touche un champ (Safari zoome sur tout champ écrit en moins de 16 px, et la page reste ensuite décalée). */ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; } @media (max-width: 760px) { input:not([type=\"checkbox\"]):not([type=\"radio\"]):not([type=\"range\"]), select, textarea { font-size: max(16px, 1em) !important; } } /* « Nos réseaux » dans l'en-tête et en pied de page */ .sn-social-menu { position: relative; display: inline-flex; } .sn-social-btn { display: inline-flex; align-items: center; gap: 7px; border: 0; padding: 0; background: none; color: inherit; font: inherit; cursor: pointer; } .sn-social-btn:hover { color: var(--mist, #f6eeee); } .sn-social-btn::after { content: \"\"; width: 6px; height: 6px; margin-top: -3px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); } .sn-social-drop { position: absolute; right: 0; top: calc(100% + 12px); z-index: 80; min-width: 210px; padding: 8px; border-radius: 16px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: linear-gradient(180deg, var(--deep-2, #2a0a0e), var(--deep, #1a080a)); box-shadow: 0 24px 60px -12px rgba(0,0,0,.8); } .sn-social-drop a { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; color: var(--mist, #f6eeee); font: 500 14px/1.2 var(--f-body, system-ui); text-decoration: none; } .sn-social-drop a:hover, .sn-social-drop a:focus-visible { background: rgba(226,52,68,.16); outline: none; } .sn-foot { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 0 auto 18px; } .sn-foot a { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.16)); color: var(--haze, #a88f92); } .sn-foot a:hover, .sn-foot a:focus-visible { color: var(--mist, #f6eeee); border-color: var(--ember, #e23444); outline: none; } .sn-foot .sn-icon { width: 19px; height: 19px; } /* Langue : une pastille FR | EN dans l'en-tête, toujours visible, et un bandeau en anglais pour qui ne lit pas le français */ .sn-lang { display: inline-flex; flex: none; align-items: center; padding: 3px; gap: 2px; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: rgba(255,255,255,.04); } .sn-lang svg { width: 15px; height: 15px; margin: 0 4px 0 6px; color: var(--haze, #a88f92); flex: none; } .sn-lang button { min-width: 34px; height: 30px; padding: 0 9px; border: 0; border-radius: 999px; background: none; color: var(--haze, #a88f92); font: 600 12px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .08em; cursor: pointer; } .sn-lang button:hover { color: var(--mist, #f6eeee); } .sn-lang button[aria-pressed=\"true\"] { background: var(--ember, #e23444); color: #fff; } header .sn-lang { margin-left: 8px; } .sn-langbar { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 150; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 14px; width: max-content; max-width: calc(100vw - 24px); padding: 12px 14px 12px 18px; border-radius: 18px; border: 1px solid rgba(226,52,68,.55); background: linear-gradient(180deg, var(--deep-2, #2a0a0e), var(--deep, #1a080a)); box-shadow: 0 20px 60px -12px rgba(0,0,0,.85), 0 0 0 4px rgba(226,52,68,.12); color: var(--mist, #f6eeee); font: 500 15px/1.35 var(--f-body, system-ui); } .sn-langbar strong { font-weight: 700; } .sn-langbar-text { display: inline-flex; align-items: center; gap: 8px; } .sn-langbar-text svg { width: 17px; height: 17px; flex: none; color: var(--ember, #e23444); } .sn-langbar .sn-go { padding: 10px 16px; border: 0; border-radius: 999px; background: var(--mist, #f6eeee); color: var(--night, #0d0809); font: 700 14px/1 var(--f-body, system-ui); cursor: pointer; } .sn-langbar .sn-x { width: 34px; height: 34px; border: 1px solid var(--line, rgba(255,210,214,.16)); border-radius: 999px; background: none; color: var(--haze, #a88f92); font: 400 18px/1 var(--f-body, system-ui); cursor: pointer; } /* Téléchargement d'ONIRIQUE CENTRAL : choix du système */ .sn-dl { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: 16px; background: rgba(5,2,3,.72); backdrop-filter: blur(6px); } .sn-dl-box { position: relative; width: min(560px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; padding: 30px 28px 26px; border-radius: 22px; border: 1px solid rgba(226,52,68,.4); background: radial-gradient(120% 70% at 50% -20%, rgba(140,6,20,.55), transparent 70%), var(--deep, #1a080a); box-shadow: 0 30px 90px -20px #000; color: var(--mist, #f6eeee); } .sn-dl-box h2 { margin: 6px 0 14px; font: 800 clamp(22px, 4vw, 28px)/1.15 var(--f-display, \"Arial Black\", sans-serif); } .sn-dl-eyebrow { margin: 0; font: 500 11px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .24em; color: var(--haze, #a88f92); } .sn-dl-text, .sn-dl-wait { margin: 0 0 18px; font: 400 15px/1.6 var(--f-body, system-ui); color: var(--haze, #c9b5b8); } .sn-dl-note { margin: 18px 0 0; font: 400 13px/1.55 var(--f-body, system-ui); color: var(--haze, #a88f92); } .sn-dl-x { position: absolute; right: 14px; top: 14px; width: 36px; height: 36px; border: 1px solid var(--line, rgba(255,210,214,.16)); border-radius: 999px; background: none; color: var(--haze, #a88f92); font: 400 20px/1 var(--f-body, system-ui); cursor: pointer; } .sn-dl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; } .sn-dl-os { display: flex; align-items: center; gap: 14px; padding: 18px; border-radius: 16px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: rgba(255,255,255,.03); color: var(--mist, #f6eeee); text-decoration: none; transition: border-color .2s, background .2s, transform .2s; } .sn-dl-os:hover, .sn-dl-os:focus-visible { border-color: var(--ember, #e23444); background: rgba(226,52,68,.12); transform: translateY(-2px); outline: none; } .sn-dl-os.best { border-color: rgba(226,52,68,.65); } .sn-dl-os svg { flex: none; width: 30px; height: 30px; color: var(--bone, #ffecee); } .sn-dl-os span { display: grid; gap: 5px; } .sn-dl-os b { font: 800 17px/1 var(--f-display, \"Arial Black\", sans-serif); letter-spacing: .04em; } .sn-dl-os small { font: 400 12px/1.4 var(--f-body, system-ui); color: var(--haze, #a88f92); } .sn-dl-row { display: flex; flex-wrap: wrap; gap: 10px; } .sn-dl-main, .sn-dl-ghost { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 20px; border-radius: 999px; font: 700 14px/1 var(--f-body, system-ui); text-decoration: none; cursor: pointer; } .sn-dl-main { border: 0; background: var(--mist, #f6eeee); color: var(--night, #0d0809); } .sn-dl-main:disabled { opacity: .6; cursor: default; } .sn-dl-ghost { border: 1px solid var(--line, rgba(255,210,214,.16)); color: var(--mist, #f6eeee); } /* Maintenance */ .sn-maint { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 32px 20px; text-align: center; background: radial-gradient(90% 60% at 50% 0%, rgba(140,6,20,.75), rgba(92,0,8,.35) 45%, transparent 80%), var(--night, #0d0809); color: var(--mist, #f6eeee); } .sn-maint img { width: 108px; height: auto; filter: drop-shadow(0 0 18px rgba(226,52,68,.8)); } .sn-maint-eyebrow { margin: 6px 0 0; font: 500 12px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .3em; color: var(--haze, #a88f92); } .sn-maint h1 { margin: 0; font: 800 clamp(34px, 7vw, 64px)/1.05 var(--f-display, \"Arial Black\", sans-serif); letter-spacing: -.01em; } .sn-maint-text { max-width: 46ch; margin: 0; font: 400 17px/1.6 var(--f-body, system-ui); color: var(--haze, #c9b5b8); } .sn-maint-link { margin-top: 18px; font: 500 12px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .16em; text-transform: uppercase; color: var(--haze, #a88f92); } .sn-maint-flag { position: relative; z-index: 60; padding: 8px 16px; background: #ffb347; color: #1a0d02; font: 700 13px/1.4 var(--f-body, system-ui); text-align: center; } .sn-langrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; padding: 0 6px; } .sn-langrow span { font: 500 11px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .18em; text-transform: uppercase; color: var(--haze, #a88f92); } @media (max-width: 1280px) { .nav .sn-burger { display: inline-flex; } } @media (max-width: 760px) { header .sn-burger { display: inline-flex; } header nav:not(.nav-links) > :not([data-account]):not(.acct) { display: none !important; } } /* Téléphone : l'en-tête tient sur la largeur de l'écran (sinon Safari laisse glisser la page de côté et le bouton menu sort de l'écran). La langue passe dans le menu, qui l'a déjà ; le compte ne montre plus que sa photo. */ @media (max-width: 560px) { header .sn-lang { display: none; } header .nav-inner, header > .wrap { gap: 10px; } header .nav-actions { gap: 8px; min-width: 0; } header .acct-button { gap: 6px; padding: 4px 10px 4px 4px; } header .acct-button span { display: none; } header.nav .btn { padding: 10px 14px; } } @media (max-width: 360px) { header .acct-button svg { display: none; } header .acct-button { padding: 4px; } header.nav .btn { padding: 9px 12px; font-size: 13px; } }": [
   "site/assets/site-nav.js"
  ],
  ".tools { position: relative; display: inline-flex; } :where(.tools-btn) { border: 0; padding: 0; background: none; color: inherit; font: inherit; cursor: pointer; } .tools-btn { display: inline-flex; align-items: center; gap: 7px; background: none; cursor: pointer; } .tools-btn:hover { color: var(--mist, #f6eeee); } .tools-btn.btn:hover, .tools-btn.btn[aria-expanded=\"true\"], .tools-btn.btn.here { border-color: var(--ember, #e23444); } .tools-btn::after { content: \"\"; width: 6px; height: 6px; margin-top: -3px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); transition: transform .2s; } .tools-btn[aria-expanded=\"true\"]::after { margin-top: 3px; transform: rotate(225deg); } .tools-menu { position: absolute; left: 50%; top: calc(100% + 12px); z-index: 80; width: min(660px, calc(100vw - 24px)); max-height: min(78vh, 640px); overflow-y: auto; translate: -50% 0; padding: 16px 12px 8px; border-radius: 18px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: linear-gradient(180deg, var(--deep-2, #2a0a0e), var(--deep, #1a080a)); box-shadow: 0 24px 60px -12px rgba(0,0,0,.8); text-align: left; } .tools-groups { columns: 3 170px; column-gap: 8px; } .tools-group { break-inside: avoid; margin: 0 0 12px; } .tools-group h3 { margin: 0 0 4px; padding: 0 12px; font: 500 10px/1.6 var(--f-mono, ui-monospace, monospace); letter-spacing: .16em; text-transform: uppercase; color: var(--haze, #b9a2a5); } .tools-menu a { display: block; padding: 9px 12px; border-radius: 10px; color: var(--mist, #f6eeee); font: 500 14px/1.25 var(--f-body, system-ui, sans-serif); text-decoration: none; } .tools-menu a:hover, .tools-menu a:focus-visible, .tools-menu a[aria-current=\"page\"] { background: rgba(226,52,68,.16); color: var(--mist, #f6eeee); outline: none; } .tools-menu .tools-all { margin-top: 2px; padding-block: 12px; border-top: 1px solid var(--line, rgba(255,210,214,.16)); border-radius: 0 0 10px 10px; color: var(--ember-text, #ff6b78); font: 500 12px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .1em; text-transform: uppercase; }": [
@@ -285,14 +302,14 @@
  "· Cc :": [
   "site/admin.html"
  ],
+ "· cliquer pour changer": [
+  "site/comparer-mix.html"
+ ],
  "· en retard": [
   "site/checklist-sortie.html"
  ],
  "· environ": [
   "site/convertisseur.html"
- ],
- "· Essai gratuit 7 jours": [
-  "site/onirique.html"
  ],
  "· Instagram ✓": [
   "site/admin.html"
@@ -302,6 +319,12 @@
  ],
  "· jusqu'au {}": [
   "app/renderer/views/account.js"
+ ],
+ "· la date de saturation s'affiche après une semaine de relevés": [
+  "site/admin.html"
+ ],
+ "· plein vers le {} au rythme actuel (+{} par jour)": [
+  "site/admin.html"
  ],
  "· plus que {} ami(s) acheteur(s) avant votre plugin offert": [
   "app/renderer/views/account.js"
@@ -333,6 +356,12 @@
  "» ? La vidéo ne sera pas publiée.": [
   "site/compte.html"
  ],
+ "» (Deezer, en MP3) : son volume peut différer un peu du titre entier, et l'air au-dessus de 16 kHz y est coupé.": [
+  "site/comparer-mix.html"
+ ],
+ "» comme référence": [
+  "site/comparer-mix.html"
+ ],
  "» n'a pas pu être lu.": [
   "site/stems.html"
  ],
@@ -342,8 +371,14 @@
  "». Le fichier reste sur ton appareil.": [
   "site/onirique.html"
  ],
+ "(() => { const img = [...document.images].find((i) => /profile picture|photo de profil/i.test(i.alt) && i.naturalWidth > 0); return img ? img.src : (document.querySelector('meta[property=\"og:image\"]') || {}).content || null; })()": [
+  "app/main/main.js"
+ ],
  "(compte n° {})": [
   "server/src/app.js"
+ ],
+ "(Extrait en MP3 : l'air de la référence y est coupé, écart peu fiable.)": [
+  "site/comparer-mix.html"
  ],
  "(extrait).": [
   "site/decoupe.html"
@@ -357,8 +392,20 @@
  "(inconnu)": [
   "site/admin.html"
  ],
+ "(max-width: 1120px) 100vw, 1100px": [
+  "site/boutique.html"
+ ],
+ "(max-width: 700px) 92vw, 380px": [
+  "site/boutique.html"
+ ],
+ "(max-width: 700px) 92vw, 520px": [
+  "site/onirique.html"
+ ],
  "(sans objet)": [
   "server/src/mailbox.js"
+ ],
+ "(supprimé)": [
+  "server/src/control.js"
  ],
  "(valable {} heures) :": [
   "server/src/app.js"
@@ -402,6 +449,9 @@
  "[Support] {}": [
   "server/src/app.js"
  ],
+ "{} – {} (extrait 30 s).mp3": [
+  "site/comparer-mix.html"
+ ],
  "{} — licence définitive": [
   "server/src/payments.js"
  ],
@@ -420,6 +470,9 @@
  ],
  "{} : votre récompense de parrainage.": [
   "server/src/promos.js"
+ ],
+ "{} · {} achat(s)": [
+  "site/admin.html"
  ],
  "{} · bientôt": [
   "app/renderer/views/library.js"
@@ -445,11 +498,17 @@
  "{} / {} utilisés": [
   "app/renderer/views/admin.js"
  ],
+ "{} % utilisés": [
+  "site/admin.html"
+ ],
  "{} € au lieu de {} € · {} plugins": [
   "site/admin.html"
  ],
  "{} 0 obj {} endobj": [
   "site/assets/pdf-kit.js"
+ ],
+ "{} achat(s).": [
+  "site/admin.html"
  ],
  "{} ami(s) inscrit(s) · {} ami(s) acheteur(s) · {} code(s) gagné(s)": [
   "app/renderer/views/account.js"
@@ -462,6 +521,9 @@
  ],
  "{} compte(s).": [
   "site/admin.html"
+ ],
+ "{} dB": [
+  "site/comparer-mix.html"
  ],
  "{} demande(s)": [
   "app/renderer/views/admin.js",
@@ -529,6 +591,9 @@
  "{} plugin(s) inclus": [
   "app/renderer/views/licenses.js"
  ],
+ "{} pts": [
+  "site/comparer-mix.html"
+ ],
  "{} sur {}": [
   "app/renderer/views/library.js"
  ],
@@ -544,11 +609,17 @@
  "{} w {} G {} {} m {} {} l S": [
   "site/assets/pdf-kit.js"
  ],
+ "{}-{}.webp": [
+  "server/src/app.js"
+ ],
  "{}, ouvrez ce lien": [
   "server/src/app.js"
  ],
  "{}, position {} sur 6": [
   "site/onirique.html"
+ ],
+ "{}.{}.tmp": [
+  "server/src/app.js"
  ],
  "{}.exe": [
   "app/main/installer.js"
@@ -609,6 +680,12 @@
  ],
  "{}/playlistItems?part=snippet&maxResults=50&playlistId={}": [
   "server/src/youtube.js"
+ ],
+ "{}/search?q={}&limit=12": [
+  "server/src/reference.js"
+ ],
+ "{}/track/{}": [
+  "server/src/reference.js"
  ],
  "{}px \"JetBrains Mono\", monospace": [
   "site/onirique.html"
@@ -722,6 +799,7 @@
   "site/stems.html"
  ],
  "</small>": [
+  "site/comparer-mix.html",
   "site/volume-lufs.html"
  ],
  "<< /Length {} >> stream {} endstream": [
@@ -783,6 +861,9 @@
  "00000 n": [
   "site/assets/pdf-kit.js"
  ],
+ "1 = mono, 0 = très large, sous 0 = s'annule en mono": [
+  "site/comparer-mix.html"
+ ],
  "1 $ vaut,": [
   "site/revenus-streaming.html"
  ],
@@ -814,6 +895,9 @@
  "10 ans (obligation comptable)": [
   "site/confidentialite.html",
   "site/pages.mjs"
+ ],
+ "10–20 kHz": [
+  "site/comparer-mix.html"
  ],
  "10. Garanties légales": [
   "site/cgv.html",
@@ -896,12 +980,21 @@
   "site/assets/cropper.js",
   "app/renderer/cropper.js"
  ],
+ "2–5 kHz": [
+  "site/comparer-mix.html"
+ ],
  "2. Produits": [
   "site/cgv.html",
   "site/pages.mjs"
  ],
+ "20–60 Hz": [
+  "site/comparer-mix.html"
+ ],
  "24 bits": [
   "site/convertisseur.html"
+ ],
+ "250–500 Hz": [
+  "site/comparer-mix.html"
  ],
  "256 kbit/s": [
   "site/convertisseur.html"
@@ -951,6 +1044,9 @@
  "48 kHz": [
   "site/convertisseur.html"
  ],
+ "5–10 kHz": [
+  "site/comparer-mix.html"
+ ],
  "5. Commande et paiement": [
   "site/cgv.html",
   "site/pages.mjs"
@@ -958,6 +1054,9 @@
  "500 14px/1.4 system-ui, sans-serif": [
   "site/assets/cropper.js",
   "app/renderer/cropper.js"
+ ],
+ "500 Hz–2 kHz": [
+  "site/comparer-mix.html"
  ],
  "500 premiers comptes affichés : affinez la recherche.": [
   "site/admin.html"
@@ -975,6 +1074,9 @@
  ],
  "60 s": [
   "site/decoupe.html"
+ ],
+ "60–250 Hz": [
+  "site/comparer-mix.html"
  ],
  "600 13px/1 system-ui, sans-serif": [
   "site/assets/cropper.js",
@@ -1168,6 +1270,7 @@
   "app/renderer/views/subscription.js"
  ],
  "Abonnement {}": [
+  "server/src/control.js",
   "server/src/payments.js"
  ],
  "Abonnement à la carte enregistré.": [
@@ -1220,10 +1323,12 @@
   "app/renderer/views/admin.js"
  ],
  "Accueil": [
+  "site/admin.html",
   "site/boutique.html",
   "site/credits.html"
  ],
  "Achat": [
+  "site/admin.html",
   "app/renderer/views/library.js",
   "server/src/payments.js"
  ],
@@ -1253,6 +1358,12 @@
  ],
  "Acheter un plugin": [
   "site/onirique.html"
+ ],
+ "Acheteur": [
+  "site/admin.html"
+ ],
+ "Acheteur ou produit": [
+  "site/admin.html"
  ],
  "act danger": [
   "site/admin.html"
@@ -1335,6 +1446,9 @@
  "Adresse de paiement inattendue.": [
   "app/main/main.js"
  ],
+ "Adresse de photo inattendue.": [
+  "app/main/main.js"
+ ],
  "Adresse du serveur (laisser vide pour réessayer)": [
   "app/renderer/views/auth.js"
  ],
@@ -1380,11 +1494,26 @@
  "Agrandir": [
   "app/renderer/app.js"
  ],
+ "Aigus": [
+  "site/comparer-mix.html"
+ ],
+ "Aigus plus brillants : surveille les sifflantes (un de-esser aide) et les cymbales.": [
+  "site/comparer-mix.html"
+ ],
+ "Aigus plus sombres que la référence : le mix peut sembler terne.": [
+  "site/comparer-mix.html"
+ ],
+ "Air": [
+  "site/comparer-mix.html"
+ ],
  "Air Control": [
   "site/onirique.html"
  ],
  "Airy Ballad": [
   "site/onirique.html"
+ ],
+ "Ajouté à la main": [
+  "site/admin.html"
  ],
  "Ajouter": [
   "app/renderer/views/licenses.js"
@@ -1444,6 +1573,7 @@
   "site/bpm-tonalite.html",
   "site/cgv.html",
   "site/checklist-sortie.html",
+  "site/comparer-mix.html",
   "site/confidentialite.html",
   "site/convertisseur.html",
   "site/cookies.html",
@@ -1513,7 +1643,8 @@
   "site/stems.html"
  ],
  "Analyse en cours…": [
-  "site/bpm-tonalite.html"
+  "site/bpm-tonalite.html",
+  "site/comparer-mix.html"
  ],
  "analysée": [
   "site/stems.html"
@@ -1537,7 +1668,7 @@
   "server/src/payments.js"
  ],
  "Annonce": [
-  "site/assets/site-nav.js"
+  "site/assets/annonce.js"
  ],
  "Annonce retirée du site.": [
   "site/admin.html"
@@ -1646,6 +1777,7 @@
   "site/boutique.html"
  ],
  "assets/loudness-worker.js": [
+  "site/comparer-mix.html",
   "site/volume-lufs.html"
  ],
  "assets/mp3-worker.js": [
@@ -1655,6 +1787,9 @@
   "app/renderer/app.js",
   "app/renderer/views/auth.js",
   "app/renderer/views/library.js"
+ ],
+ "assets/spectrum-worker.js": [
+  "site/comparer-mix.html"
  ],
  "assets/stretch-worker.js": [
   "site/transposition.html"
@@ -1683,6 +1818,9 @@
  ],
  "Aucun abonnement en cours.": [
   "server/src/payments.js"
+ ],
+ "Aucun achat pour le moment.": [
+  "site/admin.html"
  ],
  "Aucun blanc mesuré au début de ce fichier.": [
   "site/bpm-tonalite.html"
@@ -1755,6 +1893,9 @@
  ],
  "Aucun serveur ONIRIQUE CENTRAL à l'adresse {}.": [
   "app/main/main.js"
+ ],
+ "Aucun titre trouvé : essaie avec le titre et l'artiste.": [
+  "site/comparer-mix.html"
  ],
  "Aucune boîte de support n'est reliée au serveur : les demandes sont refusées.": [
   "site/admin.html"
@@ -1916,6 +2057,12 @@
  "Bandes paramétriques": [
   "site/onirique.html"
  ],
+ "Bas-médiums": [
+  "site/comparer-mix.html"
+ ],
+ "Bas-médiums chargés, sifflantes, voix qui manque de présence : VocalBox règle tout ça en quelques boutons, et les plugins Onirique s'essaient dans ton navigateur.": [
+  "site/comparer-mix.html"
+ ],
  "Base de données": [
   "site/admin.html"
  ],
@@ -1928,6 +2075,12 @@
  ],
  "Bass": [
   "site/assets/stem-kind.js"
+ ],
+ "Basses": [
+  "site/comparer-mix.html"
+ ],
+ "Basses plus présentes : risque de mix lourd ou boueux, et de volume perçu plus faible.": [
+  "site/comparer-mix.html"
  ],
  "Bb": [
   "site/bpm-tonalite.html",
@@ -1968,6 +2121,9 @@
  ],
  "Bibliothèque": [
   "app/renderer/views/library.js"
+ ],
+ "Bien choisir sa référence": [
+  "site/comparer-mix.html"
  ],
  "Bien s'en servir": [
   "site/transposition.html"
@@ -2038,6 +2194,7 @@
   "site/boutique.html",
   "site/bpm-tonalite.html",
   "site/checklist-sortie.html",
+  "site/comparer-mix.html",
   "site/convertisseur.html",
   "site/credits.html",
   "site/decoupe.html",
@@ -2275,6 +2432,7 @@
   "site/transposition.html"
  ],
  "Ce fichier est trop long (15 minutes au plus).": [
+  "site/comparer-mix.html",
   "site/volume-lufs.html"
  ],
  "Ce fichier est trop long (20 minutes au plus).": [
@@ -2286,6 +2444,7 @@
  ],
  "Ce fichier est trop lourd (400 Mo au plus).": [
   "site/bpm-tonalite.html",
+  "site/comparer-mix.html",
   "site/convertisseur.html",
   "site/decoupe.html",
   "site/transposition.html",
@@ -2305,6 +2464,9 @@
  ],
  "Ce lien de désinscription n'est pas valable. Vous pouvez aussi vous désinscrire depuis votre page compte.": [
   "server/src/newsletter.js"
+ ],
+ "Ce lien Spotify ne donne pas de titre : cherche-le par son nom.": [
+  "server/src/reference.js"
  ],
  "Ce logiciel a son propre désinstallateur : retirez-le depuis « Applications installées » de Windows.": [
   "app/main/installer.js"
@@ -2338,6 +2500,9 @@
  ],
  "Ce plugin n'est pas encore en vente. Si vous avez reçu une clé de licence, entrez-la dans l'onglet Licences.": [
   "app/renderer/views/library.js"
+ ],
+ "Ce que ça veut dire": [
+  "site/comparer-mix.html"
  ],
  "Ce que comprend l'abonnement, affiché dans la boutique.": [
   "site/admin.html"
@@ -2379,6 +2544,9 @@
  "Ce téléchargement demande une licence active.": [
   "server/src/app.js"
  ],
+ "Ce titre n'a pas d'extrait à écouter.": [
+  "server/src/reference.js"
+ ],
  "Celle du fichier": [
   "site/convertisseur.html"
  ],
@@ -2416,6 +2584,9 @@
  "cet accord vous a été confirmé par e-mail.": [
   "site/remboursement.html",
   "site/pages.mjs"
+ ],
+ "Cette archive ne contient pas de plugin Mac (.vst3 ou .component).": [
+  "app/main/installer.js"
  ],
  "Cette clé est déjà sur votre compte.": [
   "server/src/app.js"
@@ -2462,6 +2633,7 @@
   "site/bpm-tonalite.html",
   "site/cgv.html",
   "site/checklist-sortie.html",
+  "site/comparer-mix.html",
   "site/compte.html",
   "site/confidentialite.html",
   "site/convertisseur.html",
@@ -2539,6 +2711,9 @@
  "Chante ta note la plus grave puis la plus aiguë : l'outil mesure l'étendue de ta voix, ta zone de confort et le type de voix le plus proche. Gratuit, au micro, sans compte.": [
   "site/tessiture.html"
  ],
+ "Chaque achat, du plus récent au plus ancien : qui, quoi, à quel créateur, combien et par quel moyen. Les abonnements comptent leur premier paiement ; les renouvellements se suivent chez Stripe.": [
+  "site/admin.html"
+ ],
  "chaque bouton.": [
   "site/onirique.html"
  ],
@@ -2604,8 +2779,14 @@
  "Checklist établie avec onirique.store": [
   "site/checklist-sortie.html"
  ],
+ "Chercher": [
+  "site/comparer-mix.html"
+ ],
  "Chercher dans les crédits": [
   "site/credits.html"
+ ],
+ "Chercher un achat": [
+  "site/admin.html"
  ],
  "Chercher un compte": [
   "site/admin.html"
@@ -2627,9 +2808,6 @@
  ],
  "Choisi par toi": [
   "site/stems.html"
- ],
- "Choisir la photo d'ingé": [
-  "site/compte.html"
  ],
  "Choisir le fichier": [
   "app/renderer/views/admin.js"
@@ -2866,6 +3044,9 @@
  "Comment ça marche": [
   "site/tap-tempo.html"
  ],
+ "Comment est faite l'analyse ?": [
+  "site/comparer-mix.html"
+ ],
  "Comment l'installer ?": [
   "site/onirique.html"
  ],
@@ -2891,6 +3072,12 @@
  "Comparer": [
   "site/onirique.html"
  ],
+ "Comparer à une référence": [
+  "site/assets/tools-menu.js"
+ ],
+ "Comparer son mix à une référence — ONIRIQUE": [
+  "site/comparer-mix.html"
+ ],
  "Components": [
   "app/main/installer.js"
  ],
@@ -2913,6 +3100,7 @@
   "site/bpm-tonalite.html",
   "site/cgv.html",
   "site/checklist-sortie.html",
+  "site/comparer-mix.html",
   "site/compte.html",
   "site/confidentialite.html",
   "site/convertisseur.html",
@@ -2941,6 +3129,9 @@
  "Compte débranché.": [
   "app/renderer/views/admin.js"
  ],
+ "Compte Instagram invalide.": [
+  "app/main/main.js"
+ ],
  "Compte introuvable.": [
   "server/src/app.js",
   "server/src/control.js"
@@ -2954,8 +3145,14 @@
  "Compte Stripe de {} branché : clé vérifiée, lien de notification créé.": [
   "app/renderer/views/admin.js"
  ],
+ "Compte supprimé": [
+  "site/admin.html"
+ ],
  "Compte supprimé : #{} par #{}": [
   "server/src/control.js"
+ ],
+ "Compte supprimé : #{} par son titulaire": [
+  "server/src/app.js"
  ],
  "compte.html#licences": [
   "site/assets/account.js"
@@ -3000,6 +3197,7 @@
   "site/bpm-tonalite.html",
   "site/cgv.html",
   "site/checklist-sortie.html",
+  "site/comparer-mix.html",
   "site/compte.html",
   "site/confidentialite.html",
   "site/convertisseur.html",
@@ -3113,6 +3311,7 @@
   "site/bpm-tonalite.html",
   "site/cgv.html",
   "site/checklist-sortie.html",
+  "site/comparer-mix.html",
   "site/compte.html",
   "site/confidentialite.html",
   "site/convertisseur.html",
@@ -3185,6 +3384,12 @@
  "Correction de hauteur, chaîne vocale complète, suppresseur de résonances, doubleur de voix : chaque plugin fait un travail précis. Tu l'installes en un clic, tu l'essaies dans ton DAW, et tu ne le paies qu'une fois. Aucun abonnement obligatoire.": [
   "site/onirique.html"
  ],
+ "Corrélation stéréo": [
+  "site/comparer-mix.html"
+ ],
+ "Corriger ce qui": [
+  "site/comparer-mix.html"
+ ],
  "Couleur": [
   "site/admin.html",
   "app/renderer/views/admin.js"
@@ -3207,6 +3412,12 @@
  ],
  "Courbe d'EQ": [
   "site/onirique.html"
+ ],
+ "Courbes": [
+  "site/comparer-mix.html"
+ ],
+ "Courbes de fréquences de ton mix et de la référence, et leur écart": [
+  "site/comparer-mix.html"
  ],
  "Court": [
   "site/delais.html"
@@ -3342,6 +3553,7 @@
   "site/stems.html"
  ],
  "Date": [
+  "site/admin.html",
   "site/partage.html",
   "app/renderer/views/admin.js"
  ],
@@ -3377,8 +3589,14 @@
   "site/bpm-tonalite.html",
   "site/gammes.html"
  ],
+ "dB moins fort que la référence": [
+  "site/comparer-mix.html"
+ ],
  "dB plus fort que la cible la plus courante (−14 LUFS) : il sera baissé d'autant à la lecture, sans perte de qualité.": [
   "site/volume-lufs.html"
+ ],
+ "dB plus fort que la référence.": [
+  "site/comparer-mix.html"
  ],
  "dB sous la cible la plus courante (−14 LUFS) : il sonnera plus calme que les autres titres sur les plateformes qui ne remontent pas le volume.": [
   "site/volume-lufs.html"
@@ -3403,9 +3621,6 @@
  "de l'application Onirique Central.": [
   "site/mentions-legales.html",
   "site/pages.mjs"
- ],
- "de la bande sélectionnée": [
-  "site/onirique.html"
  ],
  "De la prise au mix": [
   "site/onirique.html"
@@ -3504,6 +3719,9 @@
   "site/delais.html",
   "site/assets/tools-menu.js"
  ],
+ "delete-account:{}": [
+  "server/src/app.js"
+ ],
  "Délivrer la licence, tenir la comptabilité": [
   "site/confidentialite.html",
   "site/pages.mjs"
@@ -3554,6 +3772,9 @@
  "Densité et harmoniques, sans saut de volume.": [
   "site/onirique.html"
  ],
+ "dépasse": [
+  "site/comparer-mix.html"
+ ],
  "Dépose": [
   "site/stems.html"
  ],
@@ -3565,6 +3786,12 @@
  ],
  "Dépose ton master ici": [
   "site/volume-lufs.html"
+ ],
+ "Dépose ton mix et un morceau de référence : volume, équilibre des fréquences, stéréo et écoute A/B à volume égal, avec des conseils zone par zone. Gratuit, dans ton navigateur.": [
+  "site/comparer-mix.html"
+ ],
+ "Dépose ton mix et un titre qui sonne comme tu veux. Volumes égalisés, tu vois où ton mix a trop ou pas assez de basses, de médiums, d'aigus et de largeur, et tu passes de l'un à l'autre à l'écoute.": [
+  "site/comparer-mix.html"
  ],
  "Dépose toutes les pistes d'un projet : durée, fréquence, résolution, saturation et pistes vides sont contrôlées d'un coup, avant l'envoi au mix ou au mastering. Gratuit.": [
   "site/stems.html"
@@ -3592,6 +3819,9 @@
  ],
  "Dépose une instru, une prod ou un titre fini : son BPM et sa tonalité s'affichent en quelques secondes, et le blanc qui décale les MP3 dans un DAW se retire en un clic.": [
   "site/bpm-tonalite.html"
+ ],
+ "Dépose-le ici ou clique · WAV, MP3, FLAC, M4A": [
+  "site/comparer-mix.html"
  ],
  "depuis l'adresse e-mail de votre compte. Nous répondons dans un délai d'un mois. La suppression du compte efface vos données, à l'exception de celles que la loi impose de conserver (commandes).": [
   "site/confidentialite.html"
@@ -3671,6 +3901,9 @@
  "Description (une ligne vide entre les paragraphes)": [
   "app/renderer/views/admin.js"
  ],
+ "Désépingler": [
+  "site/admin.html"
+ ],
  "désinscrit": [
   "server/src/newsletter.js"
  ],
@@ -3724,6 +3957,9 @@
   "site/admin.html"
  ],
  "display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px;align-items:end;margin-top:12px": [
+  "site/admin.html"
+ ],
+ "Disque presque plein : au-delà, plus aucun plugin, image ou vidéo ne pourra être envoyé. Supprimez d'anciennes versions de plugins ou des vidéos, ou agrandissez le disque chez IONOS.": [
   "site/admin.html"
  ],
  "Do": [
@@ -3847,6 +4083,7 @@
   "site/onirique.html"
  ],
  "Dynamique": [
+  "site/comparer-mix.html",
   "site/volume-lufs.html"
  ],
  "E-mail :": [
@@ -3871,18 +4108,33 @@
   "site/transposition.html",
   "site/assets/pitch.js"
  ],
+ "Écart": [
+  "site/comparer-mix.html"
+ ],
+ "Écart (en bas)": [
+  "site/comparer-mix.html"
+ ],
+ "écart entre passages calmes et forts": [
+  "site/comparer-mix.html"
+ ],
  "Échec": [
   "site/compte.html"
  ],
  "Écouter": [
+  "site/comparer-mix.html",
   "site/decoupe.html",
-  "site/onirique.html",
-  "site/assets/site-nav.js"
+  "site/onirique.html"
  ],
  "Écouter en entier sur Spotify ↗": [
   "site/assets/credits.js"
  ],
  "Écouter l'album sur Spotify ↗": [
+  "site/assets/credits.js"
+ ],
+ "Écouter l'un puis l'autre": [
+  "site/comparer-mix.html"
+ ],
+ "Écouter sur Apple Music ↗": [
   "site/assets/credits.js"
  ],
  "Écoutes": [
@@ -3943,6 +4195,9 @@
  ],
  "Elle s'affiche à côté de votre nom, sur le site et dans l'application.": [
   "site/compte.html"
+ ],
+ "Elles portent l'essentiel de l'énergie d'un morceau : trop de basses écrasent le reste et font baisser le volume perçu, pas assez rendent le mix maigre sur les grosses enceintes. Et elles doivent rester au centre pour tenir en mono et en club.": [
+  "site/comparer-mix.html"
  ],
  "Emplacement": [
   "app/renderer/views/library.js"
@@ -4173,6 +4428,9 @@
  "EPERM": [
   "app/main/installer.js"
  ],
+ "Épingler": [
+  "site/admin.html"
+ ],
  "épuisé": [
   "site/admin.html"
  ],
@@ -4184,6 +4442,9 @@
  ],
  "EQ, Resonance, Compression, Multiband, De-Esser et Saturation Lab ont chacun leur bouton power. Leur ordre se change à la souris dans l'en-tête, avec un fondu de 15 ms : ni clic, ni saut de volume.": [
   "site/onirique.html"
+ ],
+ "Équilibre des fréquences, volumes égalisés": [
+  "site/comparer-mix.html"
  ],
  "Erreur": [
   "site/admin.html",
@@ -4202,6 +4463,12 @@
  ],
  "Erreur interne du serveur.": [
   "server/src/app.js"
+ ],
+ "Espace disque du serveur": [
+  "site/admin.html"
+ ],
+ "Espace disque utilisé": [
+  "site/admin.html"
  ],
  "Espace équipe": [
   "site/assets/site-nav.js"
@@ -4247,6 +4514,7 @@
   "app/renderer/views/library.js"
  ],
  "Essai gratuit 7 jours": [
+  "site/onirique.html",
   "server/src/app.js"
  ],
  "Essai sans carte bancaire": [
@@ -4431,6 +4699,9 @@
   "site/onirique.html",
   "site/assets/site-nav.js"
  ],
+ "Faut-il copier exactement la courbe de la référence ?": [
+  "site/comparer-mix.html"
+ ],
  "Faut-il viser exactement −14 LUFS ?": [
   "site/volume-lufs.html"
  ],
@@ -4444,7 +4715,7 @@
   "app/renderer/app.js"
  ],
  "Fermer l'annonce": [
-  "site/assets/site-nav.js"
+  "site/assets/annonce.js"
  ],
  "Fermer la vente": [
   "app/renderer/views/admin.js"
@@ -4607,7 +4878,9 @@
  ],
  "Fréquence": [
   "site/convertisseur.html",
-  "site/delais.html",
+  "site/delais.html"
+ ],
+ "Fréquence de la bande sélectionnée": [
   "site/onirique.html"
  ],
  "Fréquence du HIGH": [
@@ -4615,6 +4888,9 @@
  ],
  "Fréquence du LOW": [
   "site/onirique.html"
+ ],
+ "Fréquences": [
+  "site/comparer-mix.html"
  ],
  "FREQUENCY": [
   "site/onirique.html"
@@ -4632,10 +4908,10 @@
  "gagne des plugins": [
   "site/compte.html"
  ],
- "Gain": [
+ "GAIN": [
   "site/onirique.html"
  ],
- "GAIN": [
+ "Gain de la bande sélectionnée": [
   "site/onirique.html"
  ],
  "Gamme (Scale)": [
@@ -4670,6 +4946,9 @@
  ],
  "Générer des licences": [
   "app/renderer/views/admin.js"
+ ],
+ "Go": [
+  "site/admin.html"
  ],
  "go ghost": [
   "site/stems.html"
@@ -4720,6 +4999,9 @@
  ],
  "HIGH SHELF": [
   "site/onirique.html"
+ ],
+ "Historique des achats": [
+  "site/admin.html"
  ],
  "Historique des versions": [
   "app/renderer/views/library.js"
@@ -4885,7 +5167,7 @@
  "Ingé :": [
   "site/admin.html"
  ],
- "Ingé (fondateur ONIRIQUE)": [
+ "Ingés (fondateurs ONIRIQUE, un ou plusieurs)": [
   "site/admin.html"
  ],
  "Init": [
@@ -4926,8 +5208,8 @@
  "Instagram (facultatif)": [
   "app/renderer/views/account.js"
  ],
- "Instagram ne laisse plus récupérer une photo de profil automatiquement : choisis la même image, ou une autre.": [
-  "site/compte.html"
+ "instagram-{}": [
+  "app/main/main.js"
  ],
  "Installation des plugins en un clic": [
   "site/onirique.html"
@@ -5140,7 +5422,8 @@
   "app/renderer/views/admin.js"
  ],
  "L'analyse a échoué sur ce fichier.": [
-  "site/bpm-tonalite.html"
+  "site/bpm-tonalite.html",
+  "site/comparer-mix.html"
  ],
  "L'aperçu de ce plugin arrive bientôt.": [
   "site/boutique.html"
@@ -5197,6 +5480,16 @@
  ],
  "L'export WAV garde la fréquence et les voies du fichier d'origine. Pour changer de format sans découper, utilise le": [
   "site/decoupe.html"
+ ],
+ "L'extrait est trop lourd.": [
+  "server/src/reference.js"
+ ],
+ "L'extrait n'a pas pu être chargé.": [
+  "site/comparer-mix.html",
+  "server/src/reference.js"
+ ],
+ "L'extrait ne répond pas, réessaie dans un instant.": [
+  "server/src/reference.js"
  ],
  "L'image choisie à la main est retirée. L'aperçu automatique pourra de nouveau en fournir une.": [
   "app/renderer/views/admin.js"
@@ -5297,6 +5590,9 @@
  "La page lit ces formats, mais n'écrit que du WAV et du MP3, les deux que tous les logiciels et tous les services acceptent.": [
   "site/convertisseur.html"
  ],
+ "La photo d'Instagram n'a pas pu être lue.": [
+  "app/main/main.js"
+ ],
  "La photo n'a pas pu être envoyée.": [
   "site/compte.html"
  ],
@@ -5305,6 +5601,18 @@
  ],
  "La phrase grise après l'objet, dans la boîte de réception": [
   "site/admin.html"
+ ],
+ "La recherche n'a pas abouti.": [
+  "site/comparer-mix.html"
+ ],
+ "La recherche ne répond pas, réessaie dans un instant.": [
+  "server/src/reference.js"
+ ],
+ "La référence": [
+  "site/comparer-mix.html"
+ ],
+ "La référence est l'extrait de 30 s de «": [
+  "site/comparer-mix.html"
  ],
  "La relative partage exactement les mêmes notes. La dominante et la sous-dominante n'en changent qu'une : ce sont les enchaînements les plus doux, pour un mix DJ comme pour une modulation.": [
   "site/gammes.html"
@@ -5366,6 +5674,9 @@
  "Large : de vrais passages calmes.": [
   "site/volume-lufs.html"
  ],
+ "Largeur stéréo": [
+  "site/comparer-mix.html"
+ ],
  "Latence nulle pour t'enregistrer à travers le plugin, sans décalage dans le casque.": [
   "site/onirique.html"
  ],
@@ -5380,6 +5691,9 @@
  ],
  "Le BPM et la tonalité sont mesurés sur toutes les pistes jouées ensemble, comme dans l'outil": [
   "site/stems.html"
+ ],
+ "Le changement se fait au même endroit du morceau. À volume égal, l'oreille juge l'équilibre au lieu de préférer le plus fort.": [
+  "site/comparer-mix.html"
  ],
  "Le client l'entre au moment d'acheter, sur le site ou dans l'application. Il sert une fois par compte, sur les plugins (pas les abonnements).": [
   "app/renderer/views/admin.js"
@@ -5396,6 +5710,9 @@
  "Le compte est bon.": [
   "site/partage.html"
  ],
+ "Le compte, ses licences, ses essais et ses ordinateurs activés sont effacés définitivement : les plugins cessent de s'activer et une clé de licence ne pourra pas servir sur un autre compte. Seules vos commandes restent archivées, comme la loi l'impose pour la comptabilité.": [
+  "site/compte.html"
+ ],
  "Le contenu vous est fourni dès le paiement, comme vous l'avez demandé en commandant : le droit de rétractation ne s'applique plus ({}/remboursement.html).": [
   "server/src/payments.js"
  ],
@@ -5405,6 +5722,9 @@
  ],
  "Le délai qui commande tout est celui des plateformes : un titre doit être livré par le distributeur plusieurs semaines avant sa sortie pour pouvoir être proposé aux équipes éditoriales, et le pitch Spotify se fait au plus tard sept jours avant. En dessous de trois semaines, la sortie reste possible, mais sans ces leviers.": [
   "site/checklist-sortie.html"
+ ],
+ "Le disque se remplit : pensez à faire de la place (anciennes versions de plugins, vidéos) avant qu'il soit plein.": [
+  "site/admin.html"
  ],
  "le fichier contient la version {}, pas la {}": [
   "app/main/mac-update.js"
@@ -5645,6 +5965,9 @@
  "Le volume moyen du titre entier, tel que l'oreille le perçoit.": [
   "site/volume-lufs.html"
  ],
+ "Le volume suit la recommandation UIT-R BS.1770, comme l'outil de volume. Les fréquences sont mesurées sur tout le morceau, par tiers d'octave, après avoir égalisé le volume des deux titres ; la stéréo compare le milieu et les côtés du son.": [
+  "site/comparer-mix.html"
+ ],
  "Le WAV démarre exactement sur le premier son": [
   "site/bpm-tonalite.html"
  ],
@@ -5656,6 +5979,7 @@
  ],
  "Lecture du fichier…": [
   "site/bpm-tonalite.html",
+  "site/comparer-mix.html",
   "site/convertisseur.html",
   "site/decoupe.html",
   "site/transposition.html",
@@ -5670,6 +5994,7 @@
   "app/renderer/ui.js"
  ],
  "Lemon Squeezy": [
+  "site/admin.html",
   "server/src/payments.js"
  ],
  "Lemon Squeezy : {}": [
@@ -5686,6 +6011,9 @@
  ],
  "Les {} plugins ONIRIQUE, toutes les mises à jour, et chaque nouveau plugin ONIRIQUE dès sa sortie. Les plugins des créateurs partenaires s'achètent à l'unité.": [
   "app/renderer/views/subscription.js"
+ ],
+ "Les {} plus récents sur {} : affinez la recherche.": [
+  "site/admin.html"
  ],
  "Les abonnements ne sont pas encore ouverts.": [
   "server/src/payments.js"
@@ -5816,10 +6144,10 @@
  "Les temps en millisecondes pour caler délais, pré-délais et reverbs sur le tempo.": [
   "site/assets/tools-menu.js"
  ],
- "Les titres et albums mixés avec les plugins Onirique, du plus connu au moins connu : écoute un extrait, découvre l'ingé et les plugins utilisés.": [
+ "Les titres et albums réalisés avec les plugins Onirique, du plus connu au moins connu : écoute un extrait, découvre l'ingé et les plugins utilisés.": [
   "site/credits.html"
  ],
- "Les titres réalisés avec vos plugins, affichés dans la section Crédits de la page d'accueil. Collez le lien Spotify d'un titre ou d'un album entier : son nom et sa pochette sont récupérés tout seuls. La liste se range du plus connu au moins connu (popularité Spotify, relue chaque jour).": [
+ "Les titres réalisés avec vos plugins, affichés dans la section Crédits de la page d'accueil. Collez le lien Spotify d'un titre ou d'un album entier : son nom et sa pochette sont récupérés tout seuls. Les trois crédits épinglés s'affichent sur la page d'accueil ; sans épingle, ce sont les plus connus. La page des crédits les montre tous, du plus connu au moins connu (popularité Spotify, relue chaque jour).": [
   "site/admin.html"
  ],
  "Les titres sortis avec les plugins Onirique sur la chaîne de mix. Écoute un extrait, puis retrouve le morceau en entier sur Spotify.": [
@@ -5913,6 +6241,12 @@
  "Lien (facultatif)": [
   "site/admin.html"
  ],
+ "Lien Apple Music (facultatif)": [
+  "site/admin.html"
+ ],
+ "Lien Apple Music invalide : collez le lien du titre ou de l'album (https://music.apple.com/…).": [
+  "server/src/app.js"
+ ],
  "Lien copié": [
   "site/admin.html"
  ],
@@ -5996,6 +6330,9 @@
  "Lire l'accordeur": [
   "site/accordeur.html"
  ],
+ "Lire la comparaison": [
+  "site/comparer-mix.html"
+ ],
  "Lire la mesure": [
   "site/volume-lufs.html"
  ],
@@ -6042,6 +6379,7 @@
   "site/bpm-tonalite.html",
   "site/cgv.html",
   "site/checklist-sortie.html",
+  "site/comparer-mix.html",
   "site/compte.html",
   "site/confidentialite.html",
   "site/convertisseur.html",
@@ -6104,9 +6442,11 @@
   "server/src/payments.js"
  ],
  "LU": [
+  "site/comparer-mix.html",
   "site/volume-lufs.html"
  ],
  "LUFS": [
+  "site/comparer-mix.html",
   "site/volume-lufs.html"
  ],
  "Lydian (lydien)": [
@@ -6223,6 +6563,15 @@
  "Médias, playlists indépendantes et proches contactés": [
   "site/checklist-sortie.html"
  ],
+ "Médiums": [
+  "site/comparer-mix.html"
+ ],
+ "Médiums en avant : son nasal ou « téléphone » s'ils dépassent trop.": [
+  "site/comparer-mix.html"
+ ],
+ "Médiums en retrait : voix et instruments moins présents, le mix sonne lointain.": [
+  "site/comparer-mix.html"
+ ],
  "Meilleurs parrains": [
   "site/admin.html",
   "app/renderer/views/admin.js"
@@ -6250,6 +6599,7 @@
   "site/bpm-tonalite.html",
   "site/cgv.html",
   "site/checklist-sortie.html",
+  "site/comparer-mix.html",
   "site/compte.html",
   "site/confidentialite.html",
   "site/convertisseur.html",
@@ -6334,6 +6684,7 @@
  ],
  "Mesure": [
   "site/admin.html",
+  "site/comparer-mix.html",
   "server/src/app.js"
  ],
  "Mesuré :": [
@@ -6414,6 +6765,9 @@
  "mise à jour impossible d'ici : glissez l'application dans le dossier Applications": [
   "app/main/mac-update.js"
  ],
+ "Mises à jour en cours…": [
+  "app/renderer/views/library.js"
+ ],
  "Mises à jour signalées et installées depuis l'application": [
   "site/onirique.html"
  ],
@@ -6424,8 +6778,8 @@
  "MIX": [
   "site/onirique.html"
  ],
- "Mix par {}": [
-  "site/assets/credits.js"
+ "Mix plus creux que la référence dans le bas-médium : il peut manquer de chaleur.": [
+  "site/comparer-mix.html"
  ],
  "Mixolydian (mixolydien)": [
   "site/gammes.html"
@@ -6435,11 +6789,15 @@
   "app/renderer/views/admin.js"
  ],
  "Mo": [
+  "site/admin.html",
   "site/compte.html",
   "site/convertisseur.html"
  ],
  "Mode de compression": [
   "site/onirique.html"
+ ],
+ "Mode démo": [
+  "site/admin.html"
  ],
  "Mode démo — aucun paiement réel": [
   "app/renderer/views/subscription.js"
@@ -6472,6 +6830,18 @@
  "Modules réordonnables": [
   "site/onirique.html"
  ],
+ "Moins d'air : un shelf doux au-dessus de 10 kHz ouvre le haut du mix.": [
+  "site/comparer-mix.html"
+ ],
+ "Moins de corps : la référence a plus de chaleur entre 80 et 200 Hz.": [
+  "site/comparer-mix.html"
+ ],
+ "Moins de présence : la voix risque de manquer de clarté et d'intelligibilité.": [
+  "site/comparer-mix.html"
+ ],
+ "Moins de sub : la référence descend plus bas. Un peu de 40–60 Hz sur le kick ou la basse donne du poids.": [
+  "site/comparer-mix.html"
+ ],
  "Mon compte": [
   "site/admin.html",
   "site/assets/account.js",
@@ -6499,6 +6869,9 @@
  "mono selectable": [
   "app/renderer/views/library.js"
  ],
+ "Montant": [
+  "site/admin.html"
+ ],
  "Monté": [
   "site/transposition.html"
  ],
@@ -6510,6 +6883,9 @@
  ],
  "Monter la fréquence ou la résolution sert-il à quelque chose ?": [
   "site/convertisseur.html"
+ ],
+ "Morceau écouté": [
+  "site/comparer-mix.html"
  ],
  "Mot de passe": [
   "site/compte.html",
@@ -6542,6 +6918,9 @@
  "Mot de passe changé. Vos autres appareils sont déconnectés.": [
   "site/compte.html"
  ],
+ "Mot de passe incorrect.": [
+  "server/src/app.js"
+ ],
  "Mot de passe oublié": [
   "site/confidentialite.html",
   "site/pages.mjs"
@@ -6550,7 +6929,11 @@
   "site/compte.html",
   "app/renderer/views/auth.js"
  ],
+ "Mot de passe, pour confirmer": [
+  "site/compte.html"
+ ],
  "Moyen": [
+  "site/admin.html",
   "site/delais.html"
  ],
  "MP3 320": [
@@ -6592,6 +6975,7 @@
   "site/boutique.html",
   "site/bpm-tonalite.html",
   "site/checklist-sortie.html",
+  "site/comparer-mix.html",
   "site/convertisseur.html",
   "site/credits.html",
   "site/decoupe.html",
@@ -6692,6 +7076,9 @@
  ],
  "Non. C'est le niveau auquel le titre sera lu, pas une note à atteindre. Beaucoup de titres actuels sortent entre −7 et −10 LUFS et sont baissés ; l'important est que le titre sonne bien une fois baissé, et que ses pics restent sous −1 dBTP.": [
   "site/volume-lufs.html"
+ ],
+ "Non. Chaque morceau a sa voix, ses instruments et son arrangement. La comparaison montre où ton mix s'éloigne nettement d'un son qui marche ; c'est à ton oreille de décider si c'est voulu.": [
+  "site/comparer-mix.html"
  ],
  "Non. Le fichier est lu et analysé par ton navigateur, sur ton appareil. Rien n'est envoyé ni conservé : tu peux déposer un morceau qui n'est pas encore sorti.": [
   "site/bpm-tonalite.html"
@@ -6836,6 +7223,9 @@
   "app/renderer/views/account.js",
   "app/renderer/views/library.js"
  ],
+ "Offert (code)": [
+  "site/admin.html"
+ ],
  "offert avec votre rôle": [
   "app/renderer/views/library.js"
  ],
@@ -6862,6 +7252,7 @@
   "site/bpm-tonalite.html",
   "site/cgv.html",
   "site/checklist-sortie.html",
+  "site/comparer-mix.html",
   "site/compte.html",
   "site/confidentialite.html",
   "site/convertisseur.html",
@@ -6996,6 +7387,9 @@
  "onirique-image-{}.jpg": [
   "app/main/main.js"
  ],
+ "onirique-instagram-{}.jpg": [
+  "app/main/main.js"
+ ],
  "ONIRIQUE, éditeur du site (voir les": [
   "site/confidentialite.html",
   "site/pages.mjs"
@@ -7055,6 +7449,7 @@
   "site/accordeur.html",
   "site/bpm-tonalite.html",
   "site/checklist-sortie.html",
+  "site/comparer-mix.html",
   "site/convertisseur.html",
   "site/decoupe.html",
   "site/delais.html",
@@ -7073,6 +7468,7 @@
   "site/boutique.html",
   "site/bpm-tonalite.html",
   "site/checklist-sortie.html",
+  "site/comparer-mix.html",
   "site/convertisseur.html",
   "site/decoupe.html",
   "site/delais.html",
@@ -7102,6 +7498,9 @@
  ],
  "output[data-out]": [
   "site/onirique.html"
+ ],
+ "ouverture-{}": [
+  "app/main/installer.js"
  ],
  "Ouverture…": [
   "site/admin.html"
@@ -7155,6 +7554,7 @@
  "Pack {}": [
   "app/renderer/views/subscription.js",
   "server/src/app.js",
+  "server/src/control.js",
   "server/src/payments.js"
  ],
  "Pack {} — licences définitives": [
@@ -7196,6 +7596,7 @@
   "site/bpm-tonalite.html",
   "site/cgv.html",
   "site/checklist-sortie.html",
+  "site/comparer-mix.html",
   "site/compte.html",
   "site/confidentialite.html",
   "site/convertisseur.html",
@@ -7285,6 +7686,9 @@
  "par {}": [
   "app/renderer/views/admin.js"
  ],
+ "Par {}": [
+  "site/assets/credits.js"
+ ],
  "par an": [
   "site/admin.html",
   "app/renderer/views/admin.js"
@@ -7339,6 +7743,9 @@
  ],
  "Part": [
   "site/partage.html"
+ ],
+ "part de l'énergie sur les côtés": [
+  "site/comparer-mix.html"
  ],
  "Part en pour cent": [
   "site/partage.html"
@@ -7402,6 +7809,9 @@
  "Pas encore déposée sur le serveur.": [
   "site/admin.html"
  ],
+ "Pas le fichier de ta référence ? Cherche-la": [
+  "site/comparer-mix.html"
+ ],
  "Pas pour la qualité : un fichier 44,1 kHz passé en 96 kHz ne gagne aucun détail. Cela sert à mettre un fichier au format d'un projet ou d'un cahier des charges.": [
   "site/convertisseur.html"
  ],
@@ -7412,6 +7822,7 @@
   "server/src/app.js"
  ],
  "Pause": [
+  "site/comparer-mix.html",
   "site/onirique.html"
  ],
  "Payer": [
@@ -7467,11 +7878,8 @@
  "Phénomène": [
   "site/popularite.html"
  ],
- "Photo d'ingé": [
-  "site/compte.html"
- ],
- "Photo d'ingé enregistrée.": [
-  "site/compte.html"
+ "Photo d'ingé reprise de votre Instagram.": [
+  "app/renderer/views/account.js"
  ],
  "Photo d'ingé retirée.": [
   "site/compte.html"
@@ -7482,6 +7890,9 @@
  "Photo enregistrée.": [
   "site/compte.html",
   "app/renderer/views/account.js"
+ ],
+ "Photo introuvable : vérifiez que le compte Instagram existe et qu'il est public.": [
+  "app/main/main.js"
  ],
  "Photo retirée.": [
   "site/compte.html",
@@ -7504,6 +7915,7 @@
   "site/stems.html"
  ],
  "Pic réel": [
+  "site/comparer-mix.html",
   "site/volume-lufs.html"
  ],
  "Pic réel (dBTP)": [
@@ -7522,6 +7934,7 @@
   "app/renderer/ui.js"
  ],
  "pill on": [
+  "site/admin.html",
   "site/compte.html"
  ],
  "Piste d'origine": [
@@ -7589,6 +8002,9 @@
  "Plugin suivant": [
   "site/onirique.html"
  ],
+ "Plugin supprimé": [
+  "server/src/control.js"
+ ],
  "Plugin utilisé": [
   "app/renderer/views/admin.js"
  ],
@@ -7643,6 +8059,12 @@
  ],
  "plus bas": [
   "site/bpm-tonalite.html"
+ ],
+ "Plus d'air que la référence : beau s'il reste doux, sinon il siffle.": [
+  "site/comparer-mix.html"
+ ],
+ "Plus de sub que la référence : vérifie le kick et la basse sous 60 Hz, et coupe ce qui n'en a pas besoin sur les autres pistes.": [
+  "site/comparer-mix.html"
  ],
  "plus haut": [
   "site/bpm-tonalite.html"
@@ -7715,6 +8137,7 @@
   "server/src/app.js"
  ],
  "Position dans le morceau": [
+  "site/comparer-mix.html",
   "site/onirique.html"
  ],
  "position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;padding:14px 20px;border-radius:14px;background:var(--deep-2);border:1px solid rgba(226,52,68,.6);color:var(--mist);font:500 14px/1.4 var(--f-body);box-shadow:0 20px 60px -10px rgba(0,0,0,.8);transition:opacity .3s;opacity:0;pointer-events:none;max-width:calc(100vw - 32px)": [
@@ -7800,6 +8223,9 @@
   "site/confidentialite.html",
   "site/pages.mjs"
  ],
+ "Pourquoi les basses comptent autant ?": [
+  "site/comparer-mix.html"
+ ],
  "Pourquoi mon MP3 est-il décalé dans mon DAW ?": [
   "site/bpm-tonalite.html"
  ],
@@ -7836,6 +8262,12 @@
  "Premières lueurs": [
   "site/popularite.html"
  ],
+ "Prendre «": [
+  "site/comparer-mix.html"
+ ],
+ "Prends un titre du même style, que tu aimes et qui sonne bien partout, idéalement en WAV ou en qualité maximale : un MP3 ou un extrait de streaming perd une partie des aigus. Compare ton mix à plusieurs références plutôt qu'à une seule, et regarde surtout les grandes tendances : une zone qui ressort ou qui manque de plus de 3 dB mérite d'être corrigée.": [
+  "site/comparer-mix.html"
+ ],
  "Préparation du pack": [
   "site/stems.html"
  ],
@@ -7845,8 +8277,14 @@
  "Préparer un autre pack": [
   "site/stems.html"
  ],
+ "Présence": [
+  "site/comparer-mix.html"
+ ],
  "Présence des douze notes dans le morceau. Tonalité :": [
   "site/bpm-tonalite.html"
+ ],
+ "Présence forte : le mix peut devenir agressif et fatiguer à fort volume.": [
+  "site/comparer-mix.html"
  ],
  "présent, version inconnue": [
   "app/renderer/views/library.js"
@@ -7874,6 +8312,9 @@
  ],
  "Presets du plugin": [
   "site/onirique.html"
+ ],
+ "private, max-age=600": [
+  "server/src/app.js"
  ],
  "Prix": [
   "site/admin.html"
@@ -7908,6 +8349,9 @@
  ],
  "Prochaine échéance le {} — {} par {}.": [
   "app/renderer/views/subscription.js"
+ ],
+ "Proche de la référence.": [
+  "site/comparer-mix.html"
  ],
  "Prod": [
   "site/stems.html"
@@ -8007,6 +8451,9 @@
  "Puis-je m'enregistrer à travers VocalBox ?": [
   "site/onirique.html"
  ],
+ "Q de la bande sélectionnée": [
+  "site/onirique.html"
+ ],
  "Qu'est-ce que « ma part » ?": [
   "site/revenus-streaming.html"
  ],
@@ -8054,6 +8501,7 @@
  ],
  "Questions fréquentes": [
   "site/bpm-tonalite.html",
+  "site/comparer-mix.html",
   "site/convertisseur.html",
   "site/popularite.html",
   "site/revenus-streaming.html",
@@ -8104,6 +8552,7 @@
   "app/renderer/views/account.js"
  ],
  "Recherche…": [
+  "site/comparer-mix.html",
   "site/popularite.html"
  ],
  "Recommencer": [
@@ -8142,6 +8591,15 @@
  ],
  "Refaire tous les aperçus": [
   "app/renderer/views/admin.js"
+ ],
+ "Référence": [
+  "site/comparer-mix.html"
+ ],
+ "reference-audio:{}": [
+  "server/src/app.js"
+ ],
+ "reference:{}": [
+  "server/src/app.js"
  ],
  "referrer:{}": [
   "server/src/app.js"
@@ -8222,6 +8680,9 @@
   "site/admin.html",
   "app/renderer/views/admin.js"
  ],
+ "Remise en état des plugins :": [
+  "app/main/main.js"
+ ],
  "Remise en euros invalide.": [
   "server/src/promos.js"
  ],
@@ -8245,6 +8706,9 @@
   "site/compte.html",
   "app/renderer/app.js"
  ],
+ "Renvoyer le lien ({} s)": [
+  "site/compte.html"
+ ],
  "Réordonner les modules fait un fondu entre l'ancien et le nouvel ordre.": [
   "site/onirique.html"
  ],
@@ -8267,6 +8731,9 @@
  ],
  "Réponse envoyée à {}": [
   "app/renderer/views/support.js"
+ ],
+ "Réponse illisible de la recherche.": [
+  "server/src/reference.js"
  ],
  "Reprendre une description :": [
   "site/compte.html"
@@ -8463,6 +8930,9 @@
  "rgba(13,8,9,.85)": [
   "site/onirique.html"
  ],
+ "rgba(159,199,255,.45)": [
+  "site/comparer-mix.html"
+ ],
  "rgba(168,143,146,.6)": [
   "site/onirique.html"
  ],
@@ -8477,6 +8947,9 @@
  ],
  "rgba(185,162,165,.35)": [
   "site/decoupe.html"
+ ],
+ "rgba(185,162,165,.9)": [
+  "site/comparer-mix.html"
  ],
  "rgba(226,52,68,.08)": [
   "site/onirique.html"
@@ -8496,6 +8969,9 @@
  "rgba(255, 170, 90, 0.4)": [
   "app/renderer/app.js"
  ],
+ "rgba(255,176,184,.45)": [
+  "site/comparer-mix.html"
+ ],
  "rgba(255,210,214,.06)": [
   "site/onirique.html"
  ],
@@ -8503,6 +8979,7 @@
   "site/onirique.html"
  ],
  "rgba(255,210,214,.08)": [
+  "site/comparer-mix.html",
   "site/onirique.html"
  ],
  "rgba(255,210,214,.1)": [
@@ -8516,6 +8993,9 @@
  ],
  "rgba(255,210,214,.22)": [
   "site/onirique.html"
+ ],
+ "rgba(255,210,214,.3)": [
+  "site/comparer-mix.html"
  ],
  "rgba(255,236,238,.03)": [
   "site/onirique.html"
@@ -8542,7 +9022,11 @@
  "rgba(255,236,238,.7)": [
   "site/onirique.html"
  ],
+ "rgba(255,236,238,.75)": [
+  "site/comparer-mix.html"
+ ],
  "rgba(255,236,238,.8)": [
+  "site/comparer-mix.html",
   "site/onirique.html"
  ],
  "rgba(255,236,238,{})": [
@@ -8640,6 +9124,9 @@
  "sans compte": [
   "site/admin.html",
   "app/renderer/views/support-admin.js"
+ ],
+ "Sans compte. L'analyse se fait dans ton navigateur : tes fichiers ne sont envoyés nulle part. Les références cherchées sont les extraits officiels de 30 secondes fournis par Deezer.": [
+  "site/comparer-mix.html"
  ],
  "Sans compte. L'analyse se fait dans ton navigateur : ton fichier n'est envoyé nulle part.": [
   "site/bpm-tonalite.html"
@@ -8861,6 +9348,9 @@
  "Signature absente.": [
   "server/src/payments.js"
  ],
+ "Signature de {} :": [
+  "app/main/installer.js"
+ ],
  "Signature invalide.": [
   "server/src/payments.js"
  ],
@@ -8881,6 +9371,9 @@
  ],
  "Site en maintenance": [
   "site/admin.html"
+ ],
+ "Six ingés au plus par crédit.": [
+  "server/src/app.js"
  ],
  "Six modules,": [
   "site/onirique.html"
@@ -8916,7 +9409,7 @@
   "site/onirique.html"
  ],
  "sn-announce tone-": [
-  "site/assets/site-nav.js"
+  "site/assets/annonce.js"
  ],
  "Snare": [
   "site/assets/stem-kind.js"
@@ -9002,6 +9495,7 @@
   "site/convertisseur.html"
  ],
  "Stéréo": [
+  "site/comparer-mix.html",
   "site/convertisseur.html",
   "site/stems.html"
  ],
@@ -9017,12 +9511,16 @@
   "site/pages.mjs"
  ],
  "Stripe": [
+  "site/admin.html",
   "site/confidentialite.html",
   "site/mentions-legales.html",
   "site/pages.mjs"
  ],
  "Stripe : {}": [
   "server/src/payments.js"
+ ],
+ "Stripe (Link)": [
+  "site/admin.html"
  ],
  "Stripe est le vendeur officiel (Managed Payments) : il facture les clients et gère la TVA": [
   "app/renderer/views/admin.js"
@@ -9043,6 +9541,7 @@
   "site/bpm-tonalite.html",
   "site/cgv.html",
   "site/checklist-sortie.html",
+  "site/comparer-mix.html",
   "site/compte.html",
   "site/confidentialite.html",
   "site/convertisseur.html",
@@ -9111,8 +9610,17 @@
  "Supprimer définitivement": [
   "site/admin.html"
  ],
+ "Supprimer définitivement mon compte": [
+  "site/compte.html"
+ ],
+ "Supprimer définitivement votre compte ONIRIQUE ? Vos licences seront perdues. Cette action ne peut pas être annulée.": [
+  "site/compte.html"
+ ],
  "Supprimer le code {} ? Il ne pourra plus servir{}.": [
   "site/admin.html"
+ ],
+ "Supprimer le compte": [
+  "site/compte.html"
  ],
  "sur 100": [
   "site/popularite.html"
@@ -9177,8 +9685,14 @@
  "Ta photo d'ingé": [
   "site/compte.html"
  ],
+ "Ta photo d'ingé est celle de ton Instagram. Instagram ne la donne qu'à un vrai navigateur : renseigne ton Instagram dans ONIRIQUE CENTRAL (onglet Compte), il reprend la photo tout seul, et la met à jour chaque fois que tu enregistres.": [
+  "site/compte.html"
+ ],
  "Ta progression est gardée sur cet appareil : rien n'est envoyé.": [
   "site/checklist-sortie.html"
+ ],
+ "Ta stéréo s'annule en partie en mono (corrélation négative) : vérifie les effets de largeur et la phase des prises doublées.": [
+  "site/comparer-mix.html"
  ],
  "ta voix": [
   "site/tessiture.html"
@@ -9203,6 +9717,9 @@
  ],
  "TAPE": [
   "site/onirique.html"
+ ],
+ "Tape au moins deux lettres.": [
+  "server/src/reference.js"
  ],
  "Tape en rythme sur le bouton, ou sur n'importe quelle touche du clavier. Quatre frappes suffisent ; plus tu continues, plus la mesure est précise.": [
   "site/tap-tempo.html"
@@ -9256,14 +9773,6 @@
  "Téléchargement…": [
   "site/admin.html"
  ],
- "telechargement/ONIRIQUE-CENTRAL-Setup.exe": [
-  "site/onirique.html",
-  "site/assets/account.js"
- ],
- "telechargement/ONIRIQUE-CENTRAL.dmg": [
-  "site/onirique.html",
-  "site/assets/account.js"
- ],
  "Télécharger": [
   "site/bpm-tonalite.html",
   "site/onirique.html"
@@ -9295,7 +9804,7 @@
  "Télécharger ONIRIQUE CENTRAL": [
   "site/assets/site-nav.js"
  ],
- "Télécharger ONIRIQUE CENTRAL pour": [
+ "Télécharger ONIRIQUE CENTRAL pour Windows ou Mac": [
   "site/onirique.html"
  ],
  "Télécharger pour Mac": [
@@ -9331,8 +9840,14 @@
  "Terminé": [
   "app/renderer/views/admin.js"
  ],
+ "Tes basses ne sont pas assez au centre : en mono ou en club, elles perdent de la force. Garde le sub et la basse au milieu.": [
+  "site/comparer-mix.html"
+ ],
  "tes écoutes": [
   "site/revenus-streaming.html"
+ ],
+ "Tes pics dépassent −1 dBTP : risque de saturation à la conversion par les plateformes.": [
+  "site/comparer-mix.html"
  ],
  "Tessiture": [
   "site/assets/tools-menu.js"
@@ -9407,6 +9922,9 @@
  "Titre envoyé au distributeur avec la date de sortie": [
   "site/checklist-sortie.html"
  ],
+ "Titre introuvable.": [
+  "server/src/reference.js"
+ ],
  "Titre ou nom de l'album": [
   "site/admin.html"
  ],
@@ -9415,6 +9933,9 @@
  ],
  "Titre visible chez le distributeur sur toutes les plateformes": [
   "site/checklist-sortie.html"
+ ],
+ "Titre, artiste, ou lien Spotify": [
+  "site/comparer-mix.html"
  ],
  "Titre, crédits et paroles rassemblés": [
   "site/checklist-sortie.html"
@@ -9445,6 +9966,21 @@
  ],
  "Ton master est-il": [
   "site/volume-lufs.html"
+ ],
+ "Ton mix": [
+  "site/comparer-mix.html"
+ ],
+ "Ton mix est": [
+  "site/comparer-mix.html"
+ ],
+ "Ton mix et la référence sont au même volume.": [
+  "site/comparer-mix.html"
+ ],
+ "Ton mix face à": [
+  "site/comparer-mix.html"
+ ],
+ "Ton mix face à un titre de référence : volume, fréquences, stéréo, et l'écoute A/B à volume égal.": [
+  "site/assets/tools-menu.js"
  ],
  "Ton navigateur ne sait pas lire «": [
   "site/assets/audio-kit.js"
@@ -9505,6 +10041,7 @@
  "Tous les outils": [
   "site/accordeur.html",
   "site/checklist-sortie.html",
+  "site/comparer-mix.html",
   "site/convertisseur.html",
   "site/decoupe.html",
   "site/delais.html",
@@ -9544,6 +10081,9 @@
  "Tous les titres et albums sortis avec les plugins Onirique sur la chaîne de mix, du plus connu au moins connu. Écoute un extrait, découvre l'ingé et les plugins utilisés.": [
   "site/credits.html"
  ],
+ "Tous les vendeurs": [
+  "site/admin.html"
+ ],
  "Tout": [
   "site/boutique.html",
   "app/renderer/views/library.js"
@@ -9559,6 +10099,9 @@
  ],
  "Tout est mesuré": [
   "site/stems.html"
+ ],
+ "Tout mettre à jour ({})": [
+  "app/renderer/views/library.js"
  ],
  "Tout voir dans le cadre": [
   "site/assets/cropper.js",
@@ -9625,6 +10168,9 @@
  ],
  "Triple croche (1/32)": [
   "site/delais.html"
+ ],
+ "Trois crédits sont déjà épinglés : désépinglez-en un d'abord.": [
+  "server/src/app.js"
  ],
  "trop bas": [
   "site/accordeur.html"
@@ -9746,8 +10292,14 @@
  "Un compte fondateur ne se supprime pas : retirez-lui d'abord ce rôle.": [
   "server/src/control.js"
  ],
+ "Un compte fondateur ne se supprime pas depuis le site.": [
+  "server/src/app.js"
+ ],
  "Un délai ou une reverb calés sur le tempo se fondent dans le morceau au lieu de le brouiller. Entre ton BPM : toutes les valeurs sont en millisecondes, prêtes à recopier.": [
   "site/delais.html"
+ ],
+ "Un écart de moins de 1,5 dB ne s'entend presque pas. Une référence est un repère, pas une cible : deux bons mixes du même style diffèrent toujours un peu.": [
+  "site/comparer-mix.html"
  ],
  "Un grave façon Pultec, un Mid qui retire le carton, un High/Air qui s'ouvre jusqu'à 20 kHz. Low Cut 85 Hz et Smart S en option. Plus un EQ paramétrique 6 bandes réglé directement dans l'analyseur.": [
   "site/onirique.html"
@@ -9763,6 +10315,9 @@
  ],
  "Un lien de validation a été envoyé à {}. Ouvrez-le pour activer votre compte : d'ici là, les essais gratuits, les achats et l'activation des plugins restent fermés. Pensez à regarder dans les indésirables.": [
   "app/renderer/app.js"
+ ],
+ "Un lien vient de partir : attendez encore {} s avant d'en demander un nouveau.": [
+  "server/src/app.js"
  ],
  "Un message à tous les comptes doit être une information de service, sans publicité : cochez la case qui le confirme.": [
   "server/src/newsletter.js"
@@ -9828,6 +10383,9 @@
  "Un souci d'installation, de licence, de son ou de compte ? Écrivez-nous : nous répondons par e-mail.": [
   "site/support.html"
  ],
+ "Un titre du même style · WAV de préférence": [
+  "site/comparer-mix.html"
+ ],
  "Une dernière étape": [
   "app/renderer/app.js"
  ],
@@ -9871,6 +10429,9 @@
  ],
  "Une question : {}": [
   "server/src/payments.js"
+ ],
+ "une référence": [
+  "site/comparer-mix.html"
  ],
  "Une seule licence par compte et par génération.": [
   "server/src/app.js"
@@ -9993,6 +10554,7 @@
   "app/renderer/views/library.js"
  ],
  "Vendeur": [
+  "site/admin.html",
   "site/mentions-legales.html",
   "site/pages.mjs"
  ],
@@ -10139,7 +10701,7 @@
  ],
  "Voir": [
   "site/admin.html",
-  "site/assets/site-nav.js"
+  "site/assets/annonce.js"
  ],
  "Voir la": [
   "site/mentions-legales.html",
@@ -10163,6 +10725,7 @@
  ],
  "Voir les plugins": [
   "site/bpm-tonalite.html",
+  "site/comparer-mix.html",
   "site/outils.html",
   "site/popularite.html",
   "site/volume-lufs.html"
@@ -10180,6 +10743,7 @@
   "app/renderer/views/admin.js"
  ],
  "Volume": [
+  "site/comparer-mix.html",
   "site/onirique.html"
  ],
  "Volume avant sortie": [
@@ -10188,11 +10752,18 @@
  "Volume d'un master (LUFS) avant sortie — ONIRIQUE": [
   "site/volume-lufs.html"
  ],
+ "Volume et stéréo": [
+  "site/comparer-mix.html"
+ ],
  "Volume intégré": [
+  "site/comparer-mix.html",
   "site/volume-lufs.html"
  ],
  "Volume intégré et pic réel, pour ne pas être baissé ni écrêté par les plateformes.": [
   "site/checklist-sortie.html"
+ ],
+ "Volumes égalisés": [
+  "site/comparer-mix.html"
  ],
  "Vos": [
   "app/renderer/views/library.js",
@@ -10233,11 +10804,17 @@
  "Votre abonnement": [
   "app/renderer/views/subscription.js"
  ],
+ "Votre abonnement est encore reconduit : résiliez-le d'abord dans ONIRIQUE CENTRAL (onglet Abonnement), puis supprimez le compte.": [
+  "server/src/app.js"
+ ],
  "Votre ami a craqué. Merci !": [
   "server/src/promos.js"
  ],
  "Votre code": [
   "server/src/promos.js"
+ ],
+ "Votre compte a été supprimé.": [
+  "site/compte.html"
  ],
  "Votre e-mail": [
   "site/support.html"
@@ -10460,8 +11037,17 @@
  "YouTube refuse < et > dans une description.": [
   "server/src/app.js"
  ],
+ "Zone": [
+  "site/comparer-mix.html"
+ ],
+ "Zone « carton » chargée : un léger creux vers 300 Hz sur la voix ou les instruments aère tout le mix.": [
+  "site/comparer-mix.html"
+ ],
  "Zone de confort : de": [
   "site/tessiture.html"
+ ],
+ "Zone par zone": [
+  "site/comparer-mix.html"
  ],
  "Zoom": [
   "site/assets/cropper.js",

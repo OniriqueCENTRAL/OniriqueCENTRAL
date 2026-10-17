@@ -114,8 +114,15 @@ try {
     check((await api('POST', '/auth/verify', { token: 'faux' })).status === 400, 'un lien inventé est refusé');
 
     const first = linkTo('nouveau@site.test');
+    const tooSoon = await api('POST', '/auth/verify/resend', null, user);
+    check(tooSoon.status === 429 && /attendez encore \d+ s/.test(tooSoon.data.error) && linkTo('nouveau@site.test') === first,
+      'pas de nouveau lien moins d\'une minute après le précédent');
+    const realNow = Date.now;
+    Date.now = () => realNow() + 61_000;   // une minute plus tard
     check((await api('POST', '/auth/verify/resend', null, user)).status === 200 && linkTo('nouveau@site.test') !== first,
-      'il peut redemander un lien');
+      'il peut redemander un lien une minute après');
+    check((await api('POST', '/auth/verify/resend', null, user)).status === 429, 'puis attendre de nouveau une minute');
+    Date.now = realNow;
     check((await api('POST', '/auth/verify', { token: first })).status === 400, 'qui périme le précédent');
     check((await api('POST', '/auth/verify', { token: linkTo('nouveau@site.test') })).status === 200, 'le lien valide le compte');
     check((await api('POST', '/auth/verify', { token: linkTo('nouveau@site.test') })).status === 400, 'et ne sert qu\'une fois');
@@ -123,6 +130,19 @@ try {
     check((await api('POST', '/licenses/trial', { productId: tuner, machineId: machine(user) }, user)).status === 201, 'et l\'essai se lance');
     for (let i = 0; i < 3; i++) await api('POST', '/auth/verify/resend', null, user);
     check((await api('POST', '/auth/verify/resend', null, user)).data.alreadyVerified === true, 'redemander un lien ne fait alors plus rien');
+
+    console.log('suppression de son compte');
+    const leaving = (await api('POST', '/auth/register', { email: 'partant@site.test', password: 'motdepasse' })).data.token;
+    check((await api('POST', '/me/delete', { password: 'mauvais' }, leaving)).status === 403, 'refusée sans le bon mot de passe');
+    check((await api('GET', '/me', null, leaving)).status === 200, 'le compte est alors intact');
+    check((await api('POST', '/me/delete', { password: 'motdepasse' }, leaving)).status === 200, 'acceptée avec le mot de passe');
+    check(!get(`SELECT id FROM users WHERE email = 'partant@site.test'`), 'le compte est effacé');
+    check((await api('GET', '/me', null, leaving)).status === 401, 'sa session ne marche plus');
+    check((await api('POST', '/auth/login', { email: 'partant@site.test', password: 'motdepasse' })).status === 401, 'et il ne peut plus se connecter');
+    run(`INSERT INTO users (email, password_hash, role, email_verified, created_at) VALUES ('fondateur@site.test', ?, 'founder', 1, ?)`, hashPassword('motdepasse'), now());
+    const founder = (await api('POST', '/auth/login', { email: 'fondateur@site.test', password: 'motdepasse' })).data.token;
+    check((await api('POST', '/me/delete', { password: 'motdepasse' }, founder)).status === 403 && !!get(`SELECT id FROM users WHERE email = 'fondateur@site.test'`),
+      'un fondateur ne se supprime pas depuis le site');
 
     // Une licence réservée à une adresse ne doit revenir qu'à qui prouve que l'adresse est la sienne.
     await api('POST', '/admin/licenses', { productId: based, email: 'client@site.test' }, admin);

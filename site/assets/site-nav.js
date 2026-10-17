@@ -312,9 +312,9 @@ header .sn-lang { margin-left: 8px; }
         send.disabled = true;
         try {
           const r = await fetch("/api/auth/verify/resend", { method: "POST", headers: { Authorization: "Bearer " + token } });
-          if (!r.ok) throw new Error();
+          if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error);
           said.textContent = "Lien envoyé à " + user.email + ". Ouvre-le, puis reviens télécharger. Pense aux indésirables.";
-        } catch { said.textContent = "L'envoi n'a pas abouti : réessaie dans quelques minutes."; send.disabled = false; }
+        } catch (error) { said.textContent = error.message || "L'envoi n'a pas abouti : réessaie dans quelques minutes."; send.disabled = false; }
       };
       box.append(el("h2", { textContent: "Valide ton adresse e-mail" }),
         el("p", { className: "sn-dl-text", textContent: "Le téléchargement d'ONIRIQUE CENTRAL et les essais gratuits s'ouvrent une fois l'adresse " + user.email + " validée, avec le lien reçu par e-mail." }),
