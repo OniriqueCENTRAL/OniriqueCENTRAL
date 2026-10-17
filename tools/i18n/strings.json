@@ -5011,6 +5011,9 @@
  "Générer des licences": [
   "app/renderer/views/admin.js"
  ],
+ "Glisser pour changer sa place": [
+  "site/admin.html"
+ ],
  "Go": [
   "site/admin.html"
  ],
