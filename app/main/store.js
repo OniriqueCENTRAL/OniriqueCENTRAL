@@ -68,6 +68,10 @@ module.exports = {
   },
 
   get installed() { return read().installed; },
+
+  // Sur Mac : la version de Central qui a déjà remis en état les plugins installés (voir installer.repairMac).
+  get macRepaired() { return read().macRepaired || ''; },
+  set macRepaired(version) { read().macRepaired = version; write(); },
   setInstalled(productId, record) {
     if (record) read().installed[productId] = record;
     else delete read().installed[productId];

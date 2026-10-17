@@ -210,23 +210,51 @@ async function unzip(source, directory) {
 }
 
 /**
- * Le .zip d'un plugin Mac peut porter, à côté du .vst3, sa version Audio Unit (« NOM.component ») : elle est
- * déplacée dans le dossier des Audio Units. Renvoie les chemins, pour pouvoir les retirer à la désinstallation.
+ * Sur Mac, un plugin n'est chargé par le DAW que si sa signature correspond exactement à son contenu et qu'il ne
+ * porte pas la marque de quarantaine (posée sur ce qui vient d'Internet). La marque est retirée et la signature
+ * locale refaite sur ce Mac : un plugin dont la signature ne colle plus est refusé sans un mot, ni VST3 ni AU.
  */
-async function moveAudioUnits(directory) {
-  const moved = [];
-  for (const entry of fs.readdirSync(directory)) {
-    if (!/\.component$/i.test(entry)) continue;
-    const target = path.join(AU_DIR, entry);
-    fs.mkdirSync(AU_DIR, { recursive: true });
-    fs.rmSync(target, { recursive: true, force: true });
-    await exec('ditto', [path.join(directory, entry), target]);
-    fs.rmSync(path.join(directory, entry), { recursive: true, force: true });
-    moved.push(target);
+async function sealMac(bundle) {
+  await exec('xattr', ['-dr', 'com.apple.quarantine', bundle]).catch(() => {});
+  await exec('codesign', ['--force', '--deep', '--sign', '-', bundle]).catch((error) => console.error(`Signature de ${bundle} :`, error.message));
+}
+
+/**
+ * Le .zip d'un plugin Mac : « NOM.vst3 » et souvent « NOM.component » (Audio Unit, pour Logic Pro et GarageBand).
+ * Il est ouvert dans un dossier vide, puis chaque plugin remplace entièrement l'ancien : ouvert par-dessus, il gardait
+ * des fichiers de la version précédente, ce qui cassait sa signature (et le DAW ne le voyait plus).
+ */
+async function installMacZip(zip) {
+  const staging = path.join(app.getPath('temp'), 'onirique-central', `ouverture-${crypto.randomBytes(6).toString('hex')}`);
+  const placed = { vst3: null, units: [] };
+  try {
+    await unzip(zip, staging);
+    for (const entry of fs.readdirSync(staging)) {
+      const unit = /\.component$/i.test(entry);
+      if (!unit && !/\.vst3$/i.test(entry)) continue;
+      const target = path.join(unit ? AU_DIR : store.vst3Dir, entry);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.rmSync(target, { recursive: true, force: true });
+      await exec('ditto', [path.join(staging, entry), target]);
+      await sealMac(target);
+      if (unit) placed.units.push(target);
+      else placed.vst3 = target;
+    }
+  } finally {
+    fs.rmSync(staging, { recursive: true, force: true });
   }
-  // macOS relit alors la liste des Audio Units, sans attendre la prochaine ouverture de session.
-  if (moved.length) await exec('killall', ['-9', 'AudioComponentRegistrar']).catch(() => {});
-  return moved;
+  // macOS relit la liste des Audio Units, sans attendre la prochaine ouverture de session.
+  if (placed.units.length) await exec('killall', ['-9', 'AudioComponentRegistrar']).catch(() => {});
+  return placed;
+}
+
+/** Sur Mac, une fois par version de Central : les plugins déjà installés perdent leur quarantaine et retrouvent une signature valide. */
+async function repairMac() {
+  if (!MAC) return;
+  const bundles = Object.values(store.installed).flatMap((r) => [r?.path, ...(r?.extra ?? [])])
+    .filter((b) => b && /\.(vst3|component)$/i.test(b) && fs.existsSync(b));
+  for (const bundle of bundles) await sealMac(bundle);
+  if (bundles.some((b) => /\.component$/i.test(b))) await exec('killall', ['-9', 'AudioComponentRegistrar']).catch(() => {});
 }
 
 async function runSetup(source) {
@@ -261,12 +289,15 @@ async function install(product, onProgress) {
     if (ext === '.vst3') {
       record.path = path.join(store.vst3Dir, name);
       await place(temp, record.path);
+    } else if (ext === '.zip' && MAC) {
+      const placed = await installMacZip(temp);
+      if (!placed.vst3 && !placed.units.length) throw new Error("Cette archive ne contient pas de plugin Mac (.vst3 ou .component).");
+      Object.assign(record, { path: placed.vst3 || placed.units[0], kind: 'vst3', extra: placed.units });
     } else if (ext === '.zip') {
       await unzip(temp, store.vst3Dir);
-      // « NOM.vst3.zip » contient « NOM.vst3 » (un dossier, sur Mac) : il pourra être retrouvé et désinstallé.
+      // « NOM.vst3.zip » contient « NOM.vst3 » : il pourra être retrouvé et désinstallé.
       const inside = path.join(store.vst3Dir, name.slice(0, -4));
       if (/\.vst3\.zip$/i.test(name) && fs.existsSync(inside)) Object.assign(record, { path: inside, kind: 'vst3' });
-      if (MAC) record.extra = await moveAudioUnits(store.vst3Dir);
     } else if (ext === '.pkg' && MAC) {
       record.kind = 'setup';
       await exec('open', ['-W', temp]).catch(() => { throw new Error("L'installateur a été annulé ou a échoué."); });
@@ -408,4 +439,4 @@ async function status(products) {
   return out;
 }
 
-module.exports = { machineId, legacyMachineId, writeLicense, removeLicense, hasLicense, install, uninstall, status, LICENSE_DIR };
+module.exports = { machineId, legacyMachineId, writeLicense, removeLicense, hasLicense, install, uninstall, status, repairMac, LICENSE_DIR };

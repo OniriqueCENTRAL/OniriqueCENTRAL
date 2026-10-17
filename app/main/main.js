@@ -142,6 +142,10 @@ function picked(filePath) {
 app.whenReady().then(() => {
   // Sur Mac, le dossier ONIRIQUE des plugins existe dès l'ouverture, avant la première installation.
   if (process.platform === 'darwin') fs.mkdir(store.vst3Dir, { recursive: true }, () => {});
+  // Sur Mac, une fois par version : les plugins déjà installés retrouvent une signature valide (voir installer.repairMac).
+  if (process.platform === 'darwin' && store.macRepaired !== app.getVersion()) {
+    installer.repairMac().then(() => { store.macRepaired = app.getVersion(); }).catch((error) => console.error('Remise en état des plugins :', error.message));
+  }
   handle('load', load);
 
   handle('auth:login', async (email, password) => {
