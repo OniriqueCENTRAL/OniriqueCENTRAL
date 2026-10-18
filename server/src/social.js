@@ -203,6 +203,8 @@ export async function pollComments() {
   if (busy || !platformConfigured()) return;
   busy = true;
   try {
+    // Les commentaires traités ne sont gardés que 90 jours (page Confidentialité).
+    run('DELETE FROM social_replies WHERE created_at < ?', now() - 90 * 86_400_000);
     for (const automation of all(`SELECT * FROM social_automations WHERE active = 1 AND platform = 'instagram'`)) {
       const account = accountOf(automation.user_id);
       if (!account) continue;
