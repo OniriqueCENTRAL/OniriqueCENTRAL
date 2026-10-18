@@ -729,22 +729,6 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
     </div>
   </section>
 
-  <section class="block" id="presets">
-    <div class="wrap">
-      <div class="head reveal">
-        <div>
-          <span class="eyebrow">Presets</span>
-          <h2>Un point de départ <em class="dream">pour chaque voix.</em></h2>
-        </div>
-        <p class="lede">Choisis un preset d'usine dans la barre de l'interface, ajuste, puis sauvegarde le tien. Tes presets sont rangés dans un dossier Onirique, en fichiers .ovbpreset faciles à partager.</p>
-      </div>
-      <div class="preset-cols reveal">
-        <div><h4>Presets du plugin</h4><div class="presets" id="presetList"></div></div>
-        <div><h4>Presets du multibande</h4><div class="presets" id="mbPresetList"></div></div>
-      </div>
-    </div>
-  </section>
-
   <section class="block credits" id="credits">
     <div class="wrap">
       <div class="head reveal">
@@ -1350,8 +1334,6 @@ $$("output[data-out]").forEach(o => bind(o.dataset.out, (v, n, txt) => o.textCon
 $$("[data-tg]").forEach(b => b.addEventListener("click", () => { S[b.dataset.tg] = !S[b.dataset.tg]; touched(); renderAll(); }));
 $$("[data-ab]").forEach(b => b.addEventListener("click", () => { S.bypass = b.dataset.ab === "raw"; renderAll(); }));
 applyPreset(0);   // l'interface s'ouvre sur « Init » : tous les réglages au neutre, rien n'est modifié d'avance
-$("#presetList").innerHTML = FACTORY.map(p => `<span>${p[0]}</span>`).join("");
-$("#mbPresetList").innerHTML = MB_PRESETS.map(p => `<span>${p[0]}</span>`).join("");
 /* ================= lecture : le fichier de l'auditeur, décodé dans son navigateur (rien n'est envoyé) */
 const player = { buf: null, node: null, startedAt: 0, offset: 0 };
 const playBtn = $("#play"), seek = $("#seek"), tCur = $("#tCur"), tDur = $("#tDur"), srcStatus = $("#srcStatus");
@@ -1867,6 +1849,9 @@ function showcase(list) {
 
     // VocalBox garde son détail module par module ; les autres plugins, la description de leur fiche.
     $("#fnVocalbox").hidden = !vocalbox;
+    // la section « Écouter » est la démo sonore de VocalBox : visible seulement quand VocalBox est choisi
+    if (!vocalbox && typeof stop === "function") stop();
+    $("#ecouter").hidden = !vocalbox;
     $("#fnDesc").hidden = vocalbox;
     $("#fnTitle").innerHTML = vocalbox ? original.title : `${esc(p.name.replace(/^ONIRIQUE\s+/i, ""))}, <em class="dream">en détail.</em>`;
     $("#fnLede").textContent = vocalbox ? original.lede : p.tagline;
