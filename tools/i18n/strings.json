@@ -280,7 +280,7 @@
  ".hero .btn-primary": [
   "site/onirique.html"
  ],
- ".lp, .lp * { box-sizing: border-box; } .lp { position: relative; min-height: 100%; color: var(--lp-text); font-family: var(--lp-font); overflow: hidden; isolation: isolate; } .lp-bg { position: absolute; inset: 0; z-index: -1; background: var(--lp-bg); background-size: cover; background-position: center; } .lp-bg::after { content: \"\"; position: absolute; inset: 0; background: rgba(0,0,0,var(--lp-dim)); } .lp-inner { max-width: 580px; margin: 0 auto; padding: 56px 18px 40px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; } .lp-avatar { width: 104px; height: 104px; object-fit: cover; border-radius: 50%; box-shadow: 0 10px 34px -12px rgba(0,0,0,.7); } .lp-avatar.square { border-radius: 22px; } .lp-name { margin: 6px 0 0; font: 700 clamp(22px, 6vw, 30px)/1.15 var(--lp-title); letter-spacing: .01em; overflow-wrap: anywhere; } .lp-bio { margin: 0; max-width: 46ch; font-size: 15px; line-height: 1.5; opacity: .86; white-space: pre-line; overflow-wrap: anywhere; } .lp-icons { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin: 4px 0 6px; } .lp-icons a { display: grid; place-items: center; width: 40px; height: 40px; color: var(--lp-text); border-radius: 50%; transition: transform .15s; } .lp-icons a:hover, .lp-icons a:focus-visible { transform: scale(1.12); outline: none; } .lp-icon { width: 24px; height: 24px; flex: none; background: currentColor; -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; } .lp-links { width: 100%; display: grid; gap: 14px; margin-top: 6px; } .lp-btn { position: relative; display: flex; align-items: center; justify-content: center; min-height: 58px; padding: 14px 54px; text-decoration: none; font: 600 15.5px/1.3 var(--lp-font); color: var(--lp-btn-text); border: 2px solid var(--lp-btn); border-radius: var(--lp-radius); transition: transform .15s, filter .15s; overflow-wrap: anywhere; } .lp-btn .lp-icon { position: absolute; left: 18px; top: 50%; margin-top: -12px; } .lp-btn:hover, .lp-btn:focus-visible { transform: translateY(-2px) scale(1.01); filter: brightness(1.08); outline: none; } .lp-btn.fill { background: var(--lp-btn); } .lp-btn.outline { background: transparent; } .lp-btn.glass { background: color-mix(in srgb, var(--lp-btn) 22%, transparent); border-color: color-mix(in srgb, var(--lp-btn) 70%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); } .lp.shadow .lp-btn { box-shadow: 0 10px 26px -14px rgba(0,0,0,.85); } .lp-foot { margin-top: 26px; font: 600 11px/1 'JetBrains Mono', monospace; letter-spacing: .2em; text-transform: uppercase; color: var(--lp-text); opacity: .55; text-decoration: none; } .lp-foot:hover { opacity: .9; } .lp-empty { opacity: .6; font-size: 14px; }": [
+ ".lp, .lp * { box-sizing: border-box; } .lp { position: relative; min-height: 100%; color: var(--lp-text); font-family: var(--lp-font); overflow: hidden; isolation: isolate; } .lp-bg { position: absolute; inset: 0; z-index: -1; background: var(--lp-bg); background-size: cover; background-position: center; } .lp-bg::after { content: \"\"; position: absolute; inset: 0; background: rgba(0,0,0,var(--lp-dim)); } .lp-inner { max-width: 580px; margin: 0 auto; padding: 56px 18px 40px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; } .lp-avatar { width: 104px; height: 104px; object-fit: cover; border-radius: 50%; box-shadow: 0 10px 34px -12px rgba(0,0,0,.7); } .lp-avatar.square { border-radius: 22px; } .lp-name { margin: 6px 0 0; font: 700 clamp(22px, 6vw, 30px)/1.15 var(--lp-title); letter-spacing: .01em; overflow-wrap: anywhere; } .lp-bio { margin: 0; max-width: 46ch; font-size: 15px; line-height: 1.5; opacity: .86; white-space: pre-line; overflow-wrap: anywhere; } .lp-icons { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin: 4px 0 6px; } .lp-icons a { display: grid; place-items: center; width: 40px; height: 40px; color: var(--lp-text); border-radius: 50%; transition: transform .15s; } .lp-icons a:hover, .lp-icons a:focus-visible { transform: scale(1.12); outline: none; } .lp-icon { width: 24px; height: 24px; flex: none; background: currentColor; -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; } .lp-links { width: 100%; display: grid; gap: 14px; margin-top: 6px; } .lp-btn { position: relative; display: flex; align-items: center; justify-content: center; min-height: 58px; padding: 14px 54px; text-decoration: none; font: 600 15.5px/1.3 var(--lp-font); color: var(--lp-btn-text); border: 2px solid var(--lp-btn); border-radius: var(--lp-radius); transition: transform .15s, filter .15s; overflow-wrap: anywhere; } .lp-btn .lp-icon { position: absolute; left: 18px; top: 50%; margin-top: -12px; } .lp-btn:hover, .lp-btn:focus-visible { transform: translateY(-2px) scale(1.01); filter: brightness(1.08); outline: none; } .lp-btn.fill { background: var(--lp-btn); } .lp-btn.outline { background: transparent; } .lp-btn.glass { background: color-mix(in srgb, var(--lp-btn) 22%, transparent); border-color: color-mix(in srgb, var(--lp-btn) 70%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); } .lp.shadow .lp-btn { box-shadow: 0 10px 26px -14px rgba(0,0,0,.85); } .lp-foot { margin-top: 26px; font: 600 11px/1 'JetBrains Mono', monospace; letter-spacing: .2em; text-transform: uppercase; color: var(--lp-text); opacity: .55; text-decoration: none; } .lp-foot:hover { opacity: .9; } .lp-empty { opacity: .6; font-size: 14px; } .lp-btn .lp-more { position: absolute; right: 20px; top: 50%; width: 9px; height: 9px; margin-top: -7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); opacity: .8; } .lp-sheet { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; } .lp.preview .lp-sheet { position: absolute; } .lp-sheet-back { position: absolute; inset: 0; background: rgba(0,0,0,.6); animation: lp-fade .2s ease-out; } .lp-sheet-card { position: relative; width: 100%; max-width: 480px; max-height: 86%; overflow: auto; padding: 22px 18px calc(22px + env(safe-area-inset-bottom)); border-radius: 26px 26px 0 0; background: color-mix(in srgb, var(--lp-sheet) 92%, #000); color: var(--lp-text); text-align: center; animation: lp-rise .25s ease-out; box-shadow: 0 -20px 60px -20px rgba(0,0,0,.8); } @keyframes lp-fade { from { opacity: 0; } } @keyframes lp-rise { from { transform: translateY(40px); opacity: 0; } } .lp-sheet-close { position: absolute; right: 12px; top: 12px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: rgba(255,255,255,.08); color: inherit; font-size: 15px; cursor: pointer; } .lp-sheet-cover { width: 120px; height: 120px; border-radius: 14px; object-fit: cover; box-shadow: 0 14px 34px -14px rgba(0,0,0,.9); } .lp-sheet-cover.artist { border-radius: 50%; } .lp-sheet-title { margin: 12px 0 0; font: 700 18px/1.25 var(--lp-title); overflow-wrap: anywhere; } .lp-sheet-artist { margin: 4px 0 0; font-size: 14px; opacity: .75; } .lp-sheet-list { display: grid; gap: 8px; margin-top: 18px; text-align: left; } .lp-plat { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--lp-text) 16%, transparent); color: inherit; text-decoration: none; font: 600 15px/1.2 var(--lp-font); } .lp-plat:hover, .lp-plat:focus-visible { background: color-mix(in srgb, var(--lp-text) 8%, transparent); outline: none; } .lp-plat b { flex: 1; font-weight: 600; } .lp-plat em { font: 600 11px/1 'JetBrains Mono', monospace; font-style: normal; letter-spacing: .12em; text-transform: uppercase; padding: 8px 12px; border-radius: 999px; background: var(--lp-btn); color: var(--lp-btn-text); }": [
   "site/assets/linkpage.js"
  ],
  ".sn-announce { position: relative; z-index: 60; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 48px; font: 600 14px/1.4 var(--f-body, system-ui); text-align: center; } .sn-announce p { margin: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 16px; } .sn-announce span { letter-spacing: .02em; } .sn-announce a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; } .sn-announce-x { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border: 0; border-radius: 999px; background: rgba(0,0,0,.18); color: inherit; font: 400 20px/1 var(--f-body, system-ui); cursor: pointer; } .sn-announce.tone-ember { background: linear-gradient(90deg, #8c0614, #e23444 60%, #8c0614); color: #fff; } .sn-announce.tone-gold { background: linear-gradient(90deg, #b8862b, #f2c46d 55%, #b8862b); color: #1a0d02; } .sn-announce.tone-calm { background: var(--deep-2, #2a0a0e); color: var(--mist, #f6eeee); border-bottom: 1px solid var(--line, rgba(255,210,214,.16)); }": [
@@ -334,9 +334,6 @@
  ],
  "· la date de saturation s'affiche après une semaine de relevés": [
   "site/admin.html"
- ],
- "· ONIRIQUE": [
-  "site/lien.html"
  ],
  "· plein vers le {} au rythme actuel (+{} par jour)": [
   "site/admin.html"
@@ -431,6 +428,9 @@
  "(max-width: 700px) 92vw, 520px": [
   "site/onirique.html"
  ],
+ "(recherche)": [
+  "site/mes-liens.html"
+ ],
  "(sans objet)": [
   "server/src/mailbox.js"
  ],
@@ -512,6 +512,9 @@
  ],
  "{} · code {}": [
   "site/boutique.html"
+ ],
+ "{} · ONIRIQUE": [
+  "server/src/linkpage.js"
  ],
  "{} {} est en ligne.": [
   "app/renderer/views/admin.js"
@@ -639,6 +642,9 @@
  "{} w {} G {} {} m {} {} l S": [
   "site/assets/pdf-kit.js"
  ],
+ "{}-{}.png": [
+  "server/src/linkpage.js"
+ ],
  "{}-{}.webp": [
   "server/src/app.js"
  ],
@@ -669,6 +675,9 @@
  "{}.vst3": [
   "server/src/seed.js"
  ],
+ "{}/{}?q={}&limit=8": [
+  "server/src/music.js"
+ ],
  "{}/{}/comments?{}": [
   "server/src/social.js"
  ],
@@ -677,6 +686,9 @@
  ],
  "{}/{}/replies": [
   "server/src/social.js"
+ ],
+ "{}/api/links/{}/apercu.png?v={}": [
+  "server/src/linkpage.js"
  ],
  "{}/api/newsletter/unsubscribe?u={}&t={}": [
   "server/src/newsletter.js"
@@ -726,6 +738,12 @@
  "{}/compte.html?ref={}": [
   "server/src/promos.js"
  ],
+ "{}/l/{}": [
+  "server/src/linkpage.js"
+ ],
+ "{}/lookup?id={}&country=FR": [
+  "server/src/music.js"
+ ],
  "{}/me?{}": [
   "server/src/social.js"
  ],
@@ -735,11 +753,17 @@
  "{}/me/subscribed_apps?{}": [
   "server/src/social.js"
  ],
+ "{}/oembed?url={}": [
+  "server/src/music.js"
+ ],
  "{}/playlistItems?part=snippet&maxResults=50&playlistId={}": [
   "server/src/youtube.js"
  ],
  "{}/search?q={}&limit=12": [
   "server/src/reference.js"
+ ],
+ "{}/search?term={}&entity={}&limit=8&country=FR": [
+  "server/src/music.js"
  ],
  "{}/track/{}": [
   "server/src/reference.js"
@@ -789,24 +813,34 @@
  "\\Trash": [
   "server/src/mailbox.js"
  ],
+ "\\u003c": [
+  "server/src/linkpage.js"
+ ],
  "&amp;": [
   "site/onirique.html",
   "site/assets/credits.js",
+  "server/src/linkpage.js",
   "server/src/mailtemplate.js"
+ ],
+ "&apos;": [
+  "server/src/linkpage.js"
  ],
  "&gt;": [
   "site/onirique.html",
   "site/assets/credits.js",
+  "server/src/linkpage.js",
   "server/src/mailtemplate.js"
  ],
  "&lt;": [
   "site/onirique.html",
   "site/assets/credits.js",
+  "server/src/linkpage.js",
   "server/src/mailtemplate.js"
  ],
  "&quot;": [
   "site/onirique.html",
   "site/assets/credits.js",
+  "server/src/linkpage.js",
   "server/src/mailtemplate.js"
  ],
  "&scale=": [
@@ -880,11 +914,15 @@
  "<< /Type /Pages /Count {} /Kids [{}] >>": [
   "site/assets/pdf-kit.js"
  ],
+ "<meta property=\"{}\" content=\"([^\"]*)\"": [
+  "server/src/music.js"
+ ],
  "−24 → +24 dB": [
   "site/onirique.html"
  ],
  "✦ ONIRIQUE": [
-  "site/assets/linkpage.js"
+  "site/assets/linkpage.js",
+  "server/src/linkpage.js"
  ],
  "📎 {} ({} Ko)": [
   "site/admin.html"
@@ -1079,6 +1117,9 @@
   "site/cgv.html",
   "site/pages.mjs"
  ],
+ "30 derniers jours": [
+  "site/mes-liens.html"
+ ],
  "30 s": [
   "site/decoupe.html"
  ],
@@ -1151,6 +1192,9 @@
   "site/assets/cropper.js",
   "app/renderer/cropper.js"
  ],
+ "7 derniers jours": [
+  "site/mes-liens.html"
+ ],
  "7 jours d'essai sur chacun.": [
   "site/onirique.html"
  ],
@@ -1192,6 +1236,9 @@
  "9. Droit de rétractation": [
   "site/cgv.html",
   "site/pages.mjs"
+ ],
+ "90 derniers jours": [
+  "site/mes-liens.html"
  ],
  "90 jours, puis suppression automatique": [
   "site/confidentialite.html"
@@ -2445,6 +2492,9 @@
  "BYPASS": [
   "site/onirique.html"
  ],
+ "c:{}:{}:{}": [
+  "server/src/linkpage.js"
+ ],
  "C:\\ProgramData": [
   "app/main/installer.js"
  ],
@@ -2621,6 +2671,9 @@
  "Ce lien de désinscription n'est pas valable. Vous pouvez aussi vous désinscrire depuis votre page compte.": [
   "server/src/newsletter.js"
  ],
+ "Ce lien n'a pas été reconnu : il s'ouvrira tel quel. Les liens reconnus : titres, albums et artistes de Spotify, Deezer et Apple Music, vidéos YouTube, sons SoundCloud.": [
+  "site/mes-liens.html"
+ ],
  "Ce lien Spotify ne donne pas de titre : cherche-le par son nom.": [
   "server/src/reference.js"
  ],
@@ -2771,7 +2824,7 @@
   "app/renderer/views/account.js"
  ],
  "Cette page de liens n'existe pas, ou plus.": [
-  "site/lien.html"
+  "server/src/linkpage.js"
  ],
  "Cette page de liens n'existe pas.": [
   "server/src/linkpage.js"
@@ -3109,6 +3162,12 @@
   "site/admin.html",
   "app/renderer/views/admin.js"
  ],
+ "clic(s)": [
+  "site/mes-liens.html"
+ ],
+ "Clics": [
+  "site/mes-liens.html"
+ ],
  "Clients et inscrits": [
   "server/src/newsletter.js"
  ],
@@ -3235,7 +3294,7 @@
  "Codes utilisés": [
   "site/admin.html"
  ],
- "Colle le lien de ta page Spotify, de ta chaîne YouTube, de ton profil Instagram… La plateforme est reconnue toute seule. « Bouton » : un grand bouton ; « Icône » : une petite icône en haut de la page. Glisse une ligne pour la déplacer.": [
+ "Colle le lien de ta page Spotify, de ta chaîne YouTube, de ton profil Instagram… La plateforme est reconnue toute seule. « Bouton » : un grand bouton ; « Icône » : une petite icône en haut de la page ; « Musique » : pour un titre, un album ou un artiste, le visiteur choisit sa plateforme d'écoute (Spotify, Apple Music, Deezer, YouTube Music…). Glisse une ligne pour la déplacer.": [
   "site/mes-liens.html"
  ],
  "Collez le lien Spotify du titre : son nom et sa pochette sont récupérés tout seuls. Le titre apparaît dans la section Crédits de la page d'accueil.": [
@@ -4408,10 +4467,14 @@
  "Échec": [
   "site/compte.html"
  ],
+ "Écoute proposée pour": [
+  "site/mes-liens.html"
+ ],
  "Écouter": [
   "site/comparer-mix.html",
   "site/decoupe.html",
-  "site/onirique.html"
+  "site/onirique.html",
+  "site/assets/linkpage.js"
  ],
  "Écouter en entier sur Spotify ↗": [
   "site/assets/credits.js"
@@ -5026,6 +5089,7 @@
  ],
  "Fermer": [
   "site/onirique.html",
+  "site/assets/linkpage.js",
   "site/assets/site-nav.js",
   "app/renderer/app.js",
   "app/renderer/views/admin.js"
@@ -5320,7 +5384,8 @@
   "site/assets/stem-kind.js"
  ],
  "Hanken Grotesk": [
-  "site/assets/linkpage.js"
+  "site/assets/linkpage.js",
+  "server/src/linkpage.js"
  ],
  "Harmonic minor (mineure harmonique)": [
   "site/gammes.html"
@@ -5715,7 +5780,8 @@
   "site/pages.mjs"
  ],
  "JetBrains Mono": [
-  "site/assets/linkpage.js"
+  "site/assets/linkpage.js",
+  "server/src/linkpage.js"
  ],
  "Jour de sortie": [
   "site/checklist-sortie.html"
@@ -6444,6 +6510,9 @@
  "Les aigus se tassent, les sibilances s'arrondissent, une compression lente colle la voix au mix.": [
   "site/onirique.html"
  ],
+ "Les autres plateformes sont cherchées à l'enregistrement de la page.": [
+  "site/mes-liens.html"
+ ],
  "Les comptes d'ONIRIQUE montrés sur le site : rubrique « Nos réseaux » de l'en-tête, menu des téléphones, pied des pages. Laisser vide pour ne pas afficher un réseau.": [
   "app/renderer/views/admin.js"
  ],
@@ -6760,6 +6829,9 @@
  "Link (Stripe)": [
   "server/src/payments.js"
  ],
+ "link-click:{}": [
+  "server/src/linkpage.js"
+ ],
  "links-image:{}": [
   "server/src/linkpage.js"
  ],
@@ -6982,6 +7054,9 @@
  ],
  "margin:0;display:grid;gap:10px": [
   "site/admin.html"
+ ],
+ "margin:0;width:20px;height:20px": [
+  "site/mes-liens.html"
  ],
  "margin:8px 0 0": [
   "site/boutique.html"
@@ -7409,6 +7484,9 @@
   "site/admin.html",
   "site/delais.html"
  ],
+ "Mozilla/5.0 (compatible; ONIRIQUE)": [
+  "server/src/music.js"
+ ],
  "MP3 320": [
   "site/decoupe.html"
  ],
@@ -7426,6 +7504,9 @@
  ],
  "music://{}{}{}": [
   "site/assets/deeplink.js"
+ ],
+ "Musique": [
+  "site/mes-liens.html"
  ],
  "muted grow": [
   "app/renderer/views/admin.js"
@@ -7487,6 +7568,7 @@
   "site/credits.html",
   "site/mes-liens.html",
   "server/src/app.js",
+  "server/src/music.js",
   "server/src/social.js"
  ],
  "NFR": [
@@ -7756,7 +7838,6 @@
   "site/decoupe.html",
   "site/delais.html",
   "site/gammes.html",
-  "site/lien.html",
   "site/mentions-legales.html",
   "site/mes-liens.html",
   "site/onirique.html",
@@ -7771,6 +7852,7 @@
   "site/tessiture.html",
   "site/transposition.html",
   "site/volume-lufs.html",
+  "site/assets/account.js",
   "site/assets/site-nav.js",
   "site/pages.mjs",
   "app/renderer/app.js",
@@ -7778,6 +7860,7 @@
   "app/renderer/views/admin.js",
   "app/renderer/views/auth.js",
   "server/src/app.js",
+  "server/src/linkpage.js",
   "server/src/mail.js",
   "server/src/mailbox.js",
   "server/src/mailtemplate.js",
@@ -7899,6 +7982,9 @@
  ],
  "onirique.store/l/": [
   "site/mes-liens.html"
+ ],
+ "onirique.store/l/{}": [
+  "server/src/linkpage.js"
  ],
  "onirique2:{}": [
   "app/main/installer.js"
@@ -8381,6 +8467,9 @@
  "Période": [
   "site/admin.html"
  ],
+ "Période des statistiques": [
+  "site/mes-liens.html"
+ ],
  "Période invalide.": [
   "server/src/control.js"
  ],
@@ -8692,10 +8781,10 @@
  "Possédé": [
   "app/renderer/views/library.js"
  ],
- "Pour {}. Toutes ses sessions seront fermées ; transmettez-lui le mot de passe par un canal sûr.": [
+ "Pour {}. ONIRIQUE : tous les plugins offerts. Abrasion, Relic : le panel admin, limité à ses propres plugins et à leurs licences.": [
   "app/renderer/views/admin.js"
  ],
- "Pour {}. VIP : tous les plugins offerts. Abrasion, Relic : le panel admin, limité à ses propres plugins et à leurs licences.": [
+ "Pour {}. Toutes ses sessions seront fermées ; transmettez-lui le mot de passe par un canal sûr.": [
   "app/renderer/views/admin.js"
  ],
  "Pour choisir un nouveau mot de passe, ouvrez ce lien (valable une heure) :": [
@@ -8953,6 +9042,9 @@
   "app/renderer/views/account.js"
  ],
  "public, max-age=30": [
+  "server/src/linkpage.js"
+ ],
+ "public, max-age=86400": [
   "server/src/linkpage.js"
  ],
  "Publication en cours": [
@@ -9826,6 +9918,12 @@
   "site/compte.html",
   "app/renderer/views/subscription.js"
  ],
+ "search/album": [
+  "server/src/music.js"
+ ],
+ "search/artist": [
+  "server/src/music.js"
+ ],
  "Second contenu publié": [
   "site/checklist-sortie.html"
  ],
@@ -10122,6 +10220,9 @@
  "state dirty": [
   "site/mes-liens.html"
  ],
+ "Statistiques": [
+  "site/mes-liens.html"
+ ],
  "Statut invalide.": [
   "server/src/app.js"
  ],
@@ -10410,6 +10511,9 @@
  ],
  "Tapez SUPPRIME pour confirmer.": [
   "server/src/control.js"
+ ],
+ "Taux de clic": [
+  "site/mes-liens.html"
  ],
  "Taux du 12 octobre 2026, à corriger si tu veux le cours du jour.": [
   "site/revenus-streaming.html"
@@ -10736,6 +10840,9 @@
  ],
  "Tous les crédits (": [
   "site/onirique.html"
+ ],
+ "Tous les liens de {} : musique, réseaux, contact.": [
+  "server/src/linkpage.js"
  ],
  "Tous les outils": [
   "site/accordeur.html",
@@ -11093,7 +11200,8 @@
   "site/comparer-mix.html"
  ],
  "Unbounded": [
-  "site/assets/linkpage.js"
+  "site/assets/linkpage.js",
+  "server/src/linkpage.js"
  ],
  "Une dernière étape": [
   "app/renderer/app.js"
@@ -11153,6 +11261,9 @@
  ],
  "Une sortie,": [
   "site/checklist-sortie.html"
+ ],
+ "Une visite par personne et par demi-heure, un clic par personne et par minute ; les robots et les aperçus des messageries ne sont pas comptés.": [
+  "site/mes-liens.html"
  ],
  "Une voix qui donne envie de": [
   "site/popularite.html"
@@ -11216,6 +11327,9 @@
  ],
  "UUSH": [
   "server/src/youtube.js"
+ ],
+ "v:{}:{}": [
+  "server/src/linkpage.js"
  ],
  "v{}": [
   "app/renderer/views/admin.js",
@@ -11390,12 +11504,6 @@
  "VII": [
   "site/gammes.html"
  ],
- "VIP": [
-  "site/admin.html",
-  "site/compte.html",
-  "site/assets/account.js",
-  "app/renderer/ui.js"
- ],
  "Visible dans la bibliothèque": [
   "app/renderer/views/admin.js"
  ],
@@ -11404,6 +11512,12 @@
  ],
  "Visible dans la boutique et l'application": [
   "site/admin.html"
+ ],
+ "visite(s),": [
+  "site/mes-liens.html"
+ ],
+ "Visites": [
+  "site/mes-liens.html"
  ],
  "Visuels et extraits vidéo prêts": [
   "site/checklist-sortie.html"
@@ -11429,7 +11543,8 @@
  ],
  "Voir": [
   "site/admin.html",
-  "site/assets/annonce.js"
+  "site/assets/annonce.js",
+  "site/assets/linkpage.js"
  ],
  "Voir la": [
   "site/mentions-legales.html",

@@ -10,7 +10,7 @@
   // id : le nom de l'icône (assets/icons/<id>.svg). ios(url) : le lien propre à l'application, ou rien.
   const APPS = [
     { id: "spotify", name: "Spotify", hosts: ["open.spotify.com", "spotify.link"], android: "com.spotify.music",
-      ios: (u) => { const s = segments(u).filter((p) => !/^intl-/.test(p)); return /^(artist|track|album|playlist|show|episode|user)$/.test(s[0]) && s[1] ? `spotify:${s[0]}:${s[1]}` : null; } },
+      ios: (u) => { const s = segments(u).filter((p) => !/^intl-/.test(p)); return /^(artist|track|album|playlist|show|episode|user|search)$/.test(s[0]) && s[1] ? `spotify:${s[0]}:${s[1]}` : null; } },
     { id: "applemusic", name: "Apple Music", hosts: ["music.apple.com"], android: "com.apple.android.music", ios: (u) => `music://${u.host}${u.pathname}${u.search}` },
     { id: "youtubemusic", name: "YouTube Music", hosts: ["music.youtube.com"], android: "com.google.android.apps.youtube.music", ios: () => null },
     { id: "youtube", name: "YouTube", hosts: ["youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be"], android: "com.google.android.youtube",

@@ -208,9 +208,11 @@ try {
     const savedPage = await api('PUT', '/me/links', { handle: 'euhz', page: {
       name: 'EUHZ', bio: 'Ingé son', theme: { bg1: 'rouge', text: '#FFFFFF', font: 'comic', button: { style: 'fill', shape: 'square' } },
       links: [{ label: 'Spotify', url: 'https://open.spotify.com/artist/abc' }, { label: 'Piège', url: 'javascript:alert(1)' },
-        { label: 'Insta', url: 'instagram.com/euhz', kind: 'icon' }, { label: 'Mail', url: 'mailto:euhz@site.test', on: false }] } }, founder);
+        { label: 'Insta', url: 'instagram.com/euhz', kind: 'icon' }, { label: 'Mail', url: 'mailto:euhz@site.test', on: false },
+        { label: 'Son', url: 'https://exemple.fr/son', kind: 'music', music: { title: 'Faux', platforms: [{ id: 'spotify', url: 'javascript:alert(1)' }] } }] } }, founder);
     const pg = savedPage.data.page;
-    check(savedPage.status === 200 && pg.links.length === 3 && !pg.links.some((l) => /javascript/.test(l.url)), 'un lien javascript: est écarté');
+    check(savedPage.status === 200 && pg.links.length === 4 && !pg.links.some((l) => /javascript/.test(l.url)), 'un lien javascript: est écarté');
+    check(pg.links[3].kind === 'music' && pg.links[3].music === undefined, 'un lien Musique garde sa catégorie, mais pas de plateformes envoyées par le navigateur');
     check(pg.links[1].url === 'https://instagram.com/euhz' && pg.links[1].kind === 'icon' && pg.links[2].on === false, 'les autres liens sont gardés, complétés');
     check(pg.theme.bg1 === '#0d0809' && pg.theme.text === '#ffffff' && pg.theme.font === 'hanken' && pg.theme.button.style === 'fill', 'une valeur inconnue reprend celle par défaut');
     const pub = await api('GET', '/links/EUHZ');
@@ -227,6 +229,30 @@ try {
     run(`UPDATE users SET role = 'user' WHERE email = 'fondateur@site.test'`);
     check((await api('GET', '/links/euhz')).status === 404, "la page disparaît si son auteur n'est plus fondateur");
     run(`UPDATE users SET role = 'founder' WHERE email = 'fondateur@site.test'`);
+
+    console.log('page publique, aperçu de partage et statistiques');
+    const root = base.replace(/\/api$/, '');
+    const visit = (ua = 'Mozilla/5.0 (iPhone) Instagram') => fetch(`${root}/l/euhz`, { headers: { 'User-Agent': ua } });
+    const html = await (await visit()).text();
+    check(html.includes('<meta property="og:title" content="EUHZ · ONIRIQUE">') && html.includes('content="Ingé son"')
+      && /og:image" content="https:\/\/site\.test\/api\/links\/euhz\/apercu\.png\?v=\w+"/.test(html), 'la page porte son titre, sa bio et son image de partage');
+    check(!html.includes('<script>alert') && html.includes('const data = {'), 'les données de la page sont dans la page, sans second appel');
+    check((await fetch(`${root}/l/personne`)).status === 404, 'une page inconnue répond 404');
+    await visit();
+    await visit('WhatsApp/2.23 A');
+    await visit('facebookexternalhit/1.1');
+    const linkId = pg.links[0].id;
+    const click = (id) => fetch(`${base}/links/euhz/click`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0' }, body: JSON.stringify({ id }) });
+    check((await click(linkId)).status === 204 && (await click(linkId)).status === 204 && (await click('inconnu')).status === 204, 'les clics sont reçus');
+    const stats = (await api('GET', '/me/links/stats?days=7', null, founder)).data;
+    check(stats.views === 1 && stats.clicks === 1 && stats.links[linkId] === 1 && stats.daily.length === 7 && stats.daily[6].views === 1,
+      'une visite et un clic par personne, sans les robots ni les aperçus');
+    check((await api('GET', '/me/links/stats', null, admin)).status === 403, 'les statistiques sont réservées au fondateur');
+    const og = await fetch(`${base}/links/euhz/apercu.png`);
+    const ogData = Buffer.from(await og.arrayBuffer());
+    const { default: sharpLib } = await import('sharp');
+    const ogMeta = await sharpLib(ogData).metadata();
+    check(og.status === 200 && og.headers.get('content-type') === 'image/png' && ogMeta.width === 1200 && ogMeta.height === 630, "l'image d'aperçu fait 1200 × 630");
 
     // Une licence réservée à une adresse ne doit revenir qu'à qui prouve que l'adresse est la sienne.
     await api('POST', '/admin/licenses', { productId: based, email: 'client@site.test' }, admin);

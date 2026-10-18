@@ -414,6 +414,14 @@ db.exec(`CREATE TABLE IF NOT EXISTS link_pages (
   background TEXT,
   updated_at INTEGER NOT NULL
 )`);
+// Ses statistiques : visites (link_id vide) et clics sur chaque lien, par jour (AAAA-MM-JJ).
+db.exec(`CREATE TABLE IF NOT EXISTS link_stats (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  link_id TEXT NOT NULL,
+  day     TEXT NOT NULL,
+  n       INTEGER NOT NULL,
+  PRIMARY KEY (user_id, link_id, day)
+)`);
 for (const column of ['totp_secret TEXT', 'totp_pending TEXT', 'totp_step INTEGER', 'totp_recovery TEXT']) {
   if (!hasColumn('users', column.split(' ')[0])) db.exec(`ALTER TABLE users ADD COLUMN ${column}`);
 }

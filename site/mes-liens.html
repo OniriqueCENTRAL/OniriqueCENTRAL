@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=ce7f8558"></script>
+<script src="assets/i18n.js?v=b0807a33"></script>
 <script src="assets/annonce.js?v=1"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Ma page de liens</title>
@@ -94,11 +94,30 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-
 .icon-btn { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line); background: none; color: var(--mist); cursor: pointer; font-size: 14px; }
 .icon-btn:hover:not(:disabled) { border-color: var(--ember); }
 .icon-btn:disabled { opacity: .3; cursor: default; }
+.music-note { margin: 0; font-size: 13px; line-height: 1.45; color: var(--haze); }
+.music-note b { color: var(--bone); font-weight: 600; }
 .bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; padding: 12px 0; background: rgba(13,8,9,.88); backdrop-filter: blur(14px); border-top: 1px solid var(--line); }
 .bar .wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
 .state { font: 500 12px/1.3 var(--f-mono); letter-spacing: .08em; color: var(--haze); }
 .state.dirty { color: #ffb36b; }
 .gate { text-align: center; }
+/* Statistiques */
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+.tiles div { padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: rgba(0,0,0,.3); }
+.tiles b { display: block; font: 800 clamp(20px, 4vw, 28px)/1.1 var(--f-display); }
+.tiles span { font: 500 11px/1.3 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
+.chart { display: flex; align-items: flex-end; gap: 2px; height: 96px; margin-top: 16px; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+.chart div { position: relative; flex: 1; min-width: 2px; border-radius: 3px 3px 0 0; background: rgba(255,210,214,.22); }
+.chart i { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 3px 3px 0 0; background: var(--ember); }
+.legend { display: flex; gap: 16px; margin-top: 8px; font: 500 11px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--haze); }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 2px; vertical-align: -1px; background: rgba(255,210,214,.22); }
+.legend span.c::before { background: var(--ember); }
+.st-links { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; }
+.st-links li { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: 14px; }
+.st-links .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-links .bar { grid-column: 2 / 4; height: 4px; border-radius: 2px; background: rgba(255,255,255,.06); overflow: hidden; }
+.st-links .bar i { display: block; height: 100%; background: var(--ember); }
+.st-links b { font: 600 14px var(--f-mono); }
 </style>
 
 <header>
@@ -127,6 +146,22 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-
         </div>
       </section>
 
+      <section class="panel" id="stats-panel" hidden>
+        <div class="between" style="justify-content:space-between">
+          <div class="eyebrow">Statistiques</div>
+          <select id="stats-days" aria-label="Période des statistiques"><option value="7">7 derniers jours</option><option value="30" selected>30 derniers jours</option><option value="90">90 derniers jours</option></select>
+        </div>
+        <div class="tiles">
+          <div><b id="st-views">0</b><span>Visites</span></div>
+          <div><b id="st-clicks">0</b><span>Clics</span></div>
+          <div><b id="st-rate">—</b><span>Taux de clic</span></div>
+        </div>
+        <div class="chart" id="st-chart"></div>
+        <div class="legend"><span>Visites</span><span class="c">Clics</span></div>
+        <ul class="st-links" id="st-links"></ul>
+        <p class="muted" style="font-size:13px;margin:12px 0 0">Une visite par personne et par demi-heure, un clic par personne et par minute ; les robots et les aperçus des messageries ne sont pas comptés.</p>
+      </section>
+
       <section class="panel">
         <div class="eyebrow">Profil</div>
         <div class="photo">
@@ -146,7 +181,7 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-
 
       <section class="panel">
         <div class="eyebrow">Liens</div>
-        <p class="muted" style="margin:0 0 14px;font-size:14px">Colle le lien de ta page Spotify, de ta chaîne YouTube, de ton profil Instagram… La plateforme est reconnue toute seule. « Bouton » : un grand bouton ; « Icône » : une petite icône en haut de la page. Glisse une ligne pour la déplacer.</p>
+        <p class="muted" style="margin:0 0 14px;font-size:14px">Colle le lien de ta page Spotify, de ta chaîne YouTube, de ton profil Instagram… La plateforme est reconnue toute seule. « Bouton » : un grand bouton ; « Icône » : une petite icône en haut de la page ; « Musique » : pour un titre, un album ou un artiste, le visiteur choisit sa plateforme d'écoute (Spotify, Apple Music, Deezer, YouTube Music…). Glisse une ligne pour la déplacer.</p>
         <ul class="links" id="links"></ul>
         <button class="btn btn-ghost" id="add" type="button">+ Ajouter un lien</button>
       </section>
@@ -202,8 +237,8 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-
   </div>
 </div>
 
-<script src="assets/deeplink.js?v=1"></script>
-<script src="assets/linkpage.js?v=1"></script>
+<script src="assets/deeplink.js?v=2"></script>
+<script src="assets/linkpage.js?v=3"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const TOKEN = "onirique.token";
@@ -308,20 +343,39 @@ function drawLinks() {
     const url = Object.assign(document.createElement("input"), { value: link.url, maxLength: 2000, placeholder: "https://open.spotify.com/artist/…", inputMode: "url", spellcheck: false });
     url.setAttribute("aria-label", "Adresse du lien");
     const kind = document.createElement("select");
-    kind.append(new Option("Bouton", "button"), new Option("Icône", "icon"));
+    kind.append(new Option("Bouton", "button"), new Option("Icône", "icon"), new Option("Musique", "music"));
     kind.value = link.kind;
     kind.setAttribute("aria-label", "Affichage du lien");
     const on = Object.assign(document.createElement("input"), { type: "checkbox", checked: link.on, title: "Afficher ce lien" });
     on.setAttribute("aria-label", "Afficher ce lien");
+    // Lien « Musique » : les plateformes trouvées à l'enregistrement, ou ce qui se passera à l'enregistrement.
+    const note = document.createElement("p");
+    note.className = "music-note";
+    const showNote = () => {
+      note.hidden = link.kind !== "music";
+      if (note.hidden) return;
+      const names = Object.fromEntries(DL.APPS.map((a) => [a.id, a.name]));
+      if (link.music) {
+        note.innerHTML = "";
+        note.append("Écoute proposée pour ", Object.assign(document.createElement("b"), { textContent: link.music.title + (link.music.artist && link.music.type !== "artist" ? " · " + link.music.artist : "") }),
+          " : " + link.music.platforms.map((p) => names[p.id] + (p.exact ? "" : " (recherche)")).join(", ") + ".");
+      } else {
+        note.textContent = saved && !dirty ? "Ce lien n'a pas été reconnu : il s'ouvrira tel quel. Les liens reconnus : titres, albums et artistes de Spotify, Deezer et Apple Music, vidéos YouTube, sons SoundCloud."
+          : "Les autres plateformes sont cherchées à l'enregistrement de la page.";
+      }
+    };
+    showNote();
     label.oninput = () => { link.label = label.value; markDirty(); };
     url.oninput = () => {
       link.url = url.value.trim();
+      delete link.music; // un autre lien : ses plateformes seront cherchées à nouveau
+      showNote();
       const p = DL.platformOf(/^[a-z]+:/i.test(link.url) ? link.url : "https://" + link.url);
       icon.style.setProperty("--icon", `url("/assets/icons/${p ? p.id : "link"}.svg")`);
       label.placeholder = p ? p.name : "Texte du bouton";
       markDirty();
     };
-    kind.onchange = () => { link.kind = kind.value; markDirty(); };
+    kind.onchange = () => { link.kind = kind.value; showNote(); markDirty(); };
     on.onchange = () => { link.on = on.checked; li.classList.toggle("off", !on.checked); markDirty(); };
     const tool = (text, title, run, disabled) => {
       const b = Object.assign(document.createElement("button"), { type: "button", className: "icon-btn", textContent: text, title, disabled: !!disabled });
@@ -334,7 +388,7 @@ function drawLinks() {
     const two = document.createElement("div");
     two.className = "two";
     two.append(label, kind, on);
-    fields.append(two, url);
+    fields.append(two, url, note);
     const tools = document.createElement("div");
     tools.className = "link-tools";
     tools.append(tool("↑", "Monter", () => move(i, i - 1), i === 0), tool("↓", "Descendre", () => move(i, i + 1), i === page.links.length - 1),
@@ -379,6 +433,7 @@ async function save() {
     dirty = false;
     $("state").textContent = "Enregistré · onirique.store/l/" + saved;
     $("state").className = "state";
+    loadStats();
     return true;
   } catch (error) {
     $("error").textContent = error.message;
@@ -428,6 +483,47 @@ $("bg-pick").onclick = () => $("bg-file").click();
 $("bg-file").onchange = () => upload("background", $("bg-file"));
 $("bg-remove").onclick = () => removeImage("background");
 
+// Les statistiques de la page enregistrée : visites, clics, taux de clic, jour par jour et lien par lien.
+async function loadStats() {
+  if (!saved) return;
+  try {
+    const s = await api("GET", "/me/links/stats?days=" + $("stats-days").value);
+    $("stats-panel").hidden = false;
+    $("st-views").textContent = s.views.toLocaleString("fr-FR");
+    $("st-clicks").textContent = s.clicks.toLocaleString("fr-FR");
+    $("st-rate").textContent = s.views ? Math.round((s.clicks / s.views) * 100) + " %" : "—";
+    const top = Math.max(1, ...s.daily.map((d) => Math.max(d.views, d.clicks)));
+    $("st-chart").replaceChildren(...s.daily.map((d) => {
+      const bar = document.createElement("div");
+      bar.style.height = Math.max(2, (d.views / top) * 100) + "%";
+      const clicks = document.createElement("i");
+      clicks.style.height = d.views ? Math.min(100, (d.clicks / d.views) * 100) + "%" : d.clicks ? "100%" : "0";
+      bar.append(clicks);
+      bar.title = new Date(d.day + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) + " : " + d.views + " visite(s), " + d.clicks + " clic(s)";
+      return bar;
+    }));
+    const most = Math.max(1, ...Object.values(s.links));
+    const rows = page.links.map((l) => ({ l, n: s.links[l.id] || 0 })).sort((a, b) => b.n - a.n);
+    $("st-links").replaceChildren(...rows.map(({ l, n }) => {
+      const li = document.createElement("li");
+      const p = DL.platformOf(l.url);
+      const icon = document.createElement("span");
+      icon.className = "link-icon";
+      icon.style.cssText = "margin:0;width:20px;height:20px";
+      icon.style.setProperty("--icon", `url("/assets/icons/${p ? p.id : "link"}.svg")`);
+      const label = Object.assign(document.createElement("span"), { className: "lbl", textContent: l.label || (p && p.name) || l.url });
+      const count = Object.assign(document.createElement("b"), { textContent: n });
+      const bar = Object.assign(document.createElement("span"), { className: "bar" });
+      const fill = document.createElement("i");
+      fill.style.width = (n / most) * 100 + "%";
+      bar.append(fill);
+      li.append(icon, label, count, document.createElement("span"), bar);
+      return li;
+    }));
+  } catch { /* les statistiques sont un plus : la page s'édite sans elles */ }
+}
+$("stats-days").onchange = loadStats;
+
 $("copy").onclick = async () => {
   const url = "https://onirique.store/l/" + ($("handle").value || "");
   try { await navigator.clipboard.writeText(url); $("copy").textContent = "Lien copié"; } catch { prompt("Copie ce lien :", url); }
@@ -443,6 +539,7 @@ $("copy").onclick = async () => {
     if (!data.handle) $("handle").value = (data.page.name || "").toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "").slice(0, 30);
     apply(data);
     if (!saved) { dirty = true; $("state").textContent = "Pas encore en ligne : enregistre ta page"; $("state").className = "state dirty"; }
+    loadStats();
   } catch (error) {
     gate(error.status === 403 ? "<p>La page de liens est réservée aux fondateurs d'ONIRIQUE.</p>"
       : error.status === 401 ? '<p>Ta session a expiré.</p><a class="btn btn-primary" href="compte.html">Se reconnecter</a>' : "<p></p>");

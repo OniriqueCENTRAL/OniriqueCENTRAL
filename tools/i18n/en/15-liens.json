@@ -79,5 +79,22 @@
  "Image inconnue.": "Unknown image.",
  "Cette page de liens n'existe pas.": "This link page does not exist.",
  "Ta page à mettre en bio Instagram ou TikTok : tes plateformes, chacune ouverte directement dans son application. Apparence entièrement personnalisable.": "Your page for your Instagram or TikTok bio: your platforms, each opened directly in its app. Fully customisable look.",
- "Créer ou modifier ma page": "Create or edit my page"
+ "Créer ou modifier ma page": "Create or edit my page",
+ "Colle le lien de ta page Spotify, de ta chaîne YouTube, de ton profil Instagram… La plateforme est reconnue toute seule. « Bouton » : un grand bouton ; « Icône » : une petite icône en haut de la page ; « Musique » : pour un titre, un album ou un artiste, le visiteur choisit sa plateforme d'écoute (Spotify, Apple Music, Deezer, YouTube Music…). Glisse une ligne pour la déplacer.": "Paste the link to your Spotify page, YouTube channel, Instagram profile… The platform is recognised on its own. “Button”: a large button; “Icon”: a small icon at the top of the page; “Music”: for a track, an album or an artist, visitors choose their own listening platform (Spotify, Apple Music, Deezer, YouTube Music…). Drag a row to move it.",
+ "Musique": "Music",
+ "Écoute proposée pour": "Listening offered for",
+ "Les autres plateformes sont cherchées à l'enregistrement de la page.": "The other platforms are looked up when the page is saved.",
+ "Ce lien n'a pas été reconnu : il s'ouvrira tel quel. Les liens reconnus : titres, albums et artistes de Spotify, Deezer et Apple Music, vidéos YouTube, sons SoundCloud.": "This link was not recognised: it will open as is. Recognised links: tracks, albums and artists from Spotify, Deezer and Apple Music, YouTube videos, SoundCloud tracks.",
+ "Statistiques": "Statistics",
+ "Période des statistiques": "Statistics period",
+ "7 derniers jours": "Last 7 days",
+ "30 derniers jours": "Last 30 days",
+ "90 derniers jours": "Last 90 days",
+ "Visites": "Visits",
+ "Clics": "Clicks",
+ "Taux de clic": "Click rate",
+ "Une visite par personne et par demi-heure, un clic par personne et par minute ; les robots et les aperçus des messageries ne sont pas comptés.": "One visit per person per half hour, one click per person per minute; bots and messaging app previews are not counted.",
+ "Voir": "View",
+ "Écouter": "Listen",
+ "Fermer": "Close"
 }

@@ -43,7 +43,25 @@
 .lp.shadow .lp-btn { box-shadow: 0 10px 26px -14px rgba(0,0,0,.85); }
 .lp-foot { margin-top: 26px; font: 600 11px/1 'JetBrains Mono', monospace; letter-spacing: .2em; text-transform: uppercase; color: var(--lp-text); opacity: .55; text-decoration: none; }
 .lp-foot:hover { opacity: .9; }
-.lp-empty { opacity: .6; font-size: 14px; }`;
+.lp-empty { opacity: .6; font-size: 14px; }
+.lp-btn .lp-more { position: absolute; right: 20px; top: 50%; width: 9px; height: 9px; margin-top: -7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); opacity: .8; }
+.lp-sheet { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
+.lp.preview .lp-sheet { position: absolute; }
+.lp-sheet-back { position: absolute; inset: 0; background: rgba(0,0,0,.6); animation: lp-fade .2s ease-out; }
+.lp-sheet-card { position: relative; width: 100%; max-width: 480px; max-height: 86%; overflow: auto; padding: 22px 18px calc(22px + env(safe-area-inset-bottom)); border-radius: 26px 26px 0 0;
+  background: color-mix(in srgb, var(--lp-sheet) 92%, #000); color: var(--lp-text); text-align: center; animation: lp-rise .25s ease-out; box-shadow: 0 -20px 60px -20px rgba(0,0,0,.8); }
+@keyframes lp-fade { from { opacity: 0; } }
+@keyframes lp-rise { from { transform: translateY(40px); opacity: 0; } }
+.lp-sheet-close { position: absolute; right: 12px; top: 12px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: rgba(255,255,255,.08); color: inherit; font-size: 15px; cursor: pointer; }
+.lp-sheet-cover { width: 120px; height: 120px; border-radius: 14px; object-fit: cover; box-shadow: 0 14px 34px -14px rgba(0,0,0,.9); }
+.lp-sheet-cover.artist { border-radius: 50%; }
+.lp-sheet-title { margin: 12px 0 0; font: 700 18px/1.25 var(--lp-title); overflow-wrap: anywhere; }
+.lp-sheet-artist { margin: 4px 0 0; font-size: 14px; opacity: .75; }
+.lp-sheet-list { display: grid; gap: 8px; margin-top: 18px; text-align: left; }
+.lp-plat { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--lp-text) 16%, transparent); color: inherit; text-decoration: none; font: 600 15px/1.2 var(--lp-font); }
+.lp-plat:hover, .lp-plat:focus-visible { background: color-mix(in srgb, var(--lp-text) 8%, transparent); outline: none; }
+.lp-plat b { flex: 1; font-weight: 600; }
+.lp-plat em { font: 600 11px/1 'JetBrains Mono', monospace; font-style: normal; letter-spacing: .12em; text-transform: uppercase; padding: 8px 12px; border-radius: 999px; background: var(--lp-btn); color: var(--lp-btn-text); }`;
 
   function injectCss() {
     if (document.getElementById("lp-css")) return;
@@ -62,23 +80,58 @@
     return span;
   };
 
-  /** Dessine la page dans root. media : { avatar, background } (adresses des images) ; preview : clics coupés. */
-  function render(root, page, media = {}, preview = false) {
+  /** Dessine la page dans root. media : { avatar, background } (adresses des images) ; preview : clics coupés ;
+      handle : la page publique, dont les clics sont comptés (statistiques du fondateur). */
+  function render(root, page, media = {}, preview = false, handle = null) {
     injectCss();
     const t = page.theme;
     const DL = window.OniriqueDeepLink;
     const background = t.bg === "image" && media.background ? `url("${media.background}?w=1280") center / cover`
       : t.bg === "gradient" ? `linear-gradient(${t.angle}deg, ${t.bg1}, ${t.bg2})` : t.bg1;
-    const lp = el("div", { className: "lp" + (t.button.shadow ? " shadow" : "") });
+    const lp = el("div", { className: "lp" + (t.button.shadow ? " shadow" : "") + (preview ? " preview" : "") });
     const vars = { "--lp-bg": background, "--lp-dim": t.bg === "image" && media.background ? t.dim / 100 : 0, "--lp-text": t.text,
       "--lp-font": FONTS[t.font][1], "--lp-title": FONTS[t.titleFont][1], "--lp-btn": t.button.color, "--lp-btn-text": t.button.text,
-      "--lp-radius": { square: "6px", round: "16px", pill: "999px" }[t.button.shape] };
+      "--lp-radius": { square: "6px", round: "16px", pill: "999px" }[t.button.shape], "--lp-sheet": t.bg1 };
     for (const [k, v] of Object.entries(vars)) lp.style.setProperty(k, v);
 
+    // Envoyé même si la page est quittée aussitôt (ouverture de l'application).
+    const beacon = (link) => { if (handle && navigator.sendBeacon) navigator.sendBeacon(`/api/links/${encodeURIComponent(handle)}/click`, new Blob([JSON.stringify({ id: link.id })], { type: "application/json" })); };
+    const openUrl = (url, event) => { if (DL && DL.open(url)) event.preventDefault(); };
     const go = (link) => (event) => {
       if (preview) return event.preventDefault();
-      if (DL && DL.open(link.url)) event.preventDefault();
+      beacon(link);
+      openUrl(link.url, event);
     };
+
+    // Lien « Musique » : un panneau où le visiteur choisit sa plateforme d'écoute (ouvert aussi dans l'aperçu).
+    function chooser(link) {
+      const m = link.music;
+      const close = () => { sheet.remove(); document.removeEventListener("keydown", onKey); };
+      const onKey = (event) => { if (event.key === "Escape") close(); };
+      const names = Object.fromEntries((DL ? DL.APPS : []).map((a) => [a.id, a.name]));
+      const shut = el("button", { className: "lp-sheet-close", type: "button", textContent: "✕" });
+      shut.setAttribute("aria-label", "Fermer");
+      shut.onclick = close;
+      const list = m.platforms.map((p) => {
+        const a = el("a", { className: "lp-plat", href: p.url, target: "_blank", rel: "noopener" }, icon(p.id),
+          el("b", { textContent: names[p.id] || p.id }), el("em", { textContent: m.type === "artist" ? "Voir" : "Écouter" }));
+        a.onclick = (event) => { if (preview) return event.preventDefault(); beacon(link); openUrl(p.url, event); };
+        return a;
+      });
+      const back = el("div", { className: "lp-sheet-back" });
+      back.onclick = close;
+      const sheet = el("div", { className: "lp-sheet" }, back, el("div", { className: "lp-sheet-card" }, shut,
+        m.cover ? el("img", { className: "lp-sheet-cover" + (m.type === "artist" ? " artist" : ""), src: m.cover, alt: "" }) : null,
+        el("p", { className: "lp-sheet-title", textContent: m.title }),
+        m.artist && m.type !== "artist" ? el("p", { className: "lp-sheet-artist", textContent: m.artist }) : null,
+        el("div", { className: "lp-sheet-list" }, ...list)));
+      sheet.setAttribute("role", "dialog");
+      sheet.setAttribute("aria-modal", "true");
+      sheet.setAttribute("aria-label", (m.type === "artist" ? "Voir " : "Écouter ") + m.title);
+      document.addEventListener("keydown", onKey);
+      lp.append(sheet);
+      shut.focus();
+    }
     const visible = page.links.filter((l) => l.on);
     const platform = (l) => (DL && DL.platformOf(l.url)) || { id: "link", name: "" };
     const icons = visible.filter((l) => l.kind === "icon").map((l) => {
@@ -88,10 +141,13 @@
       a.onclick = go(l);
       return a;
     });
-    const buttons = visible.filter((l) => l.kind === "button").map((l) => {
+    const buttons = visible.filter((l) => l.kind !== "icon").map((l) => {
       const p = platform(l);
-      const a = el("a", { className: "lp-btn " + t.button.style, href: l.url, target: "_blank", rel: "noopener" }, icon(p.id), el("span", { textContent: l.label || p.name || l.url.replace(/^https?:\/\//, "") }));
-      a.onclick = go(l);
+      const music = l.kind === "music" && l.music && l.music.platforms.length;
+      const a = el("a", { className: "lp-btn " + t.button.style, href: l.url, target: "_blank", rel: "noopener" }, icon(music ? "music" : p.id),
+        el("span", { textContent: l.label || (music ? l.music.title : "") || p.name || l.url.replace(/^https?:\/\//, "") }), music ? el("i", { className: "lp-more" }) : null);
+      // Sans plateformes trouvées, un lien « Musique » s'ouvre comme un lien ordinaire.
+      a.onclick = music ? (event) => { event.preventDefault(); chooser(l); } : go(l);
       return a;
     });
     const avatar = media.avatar ? el("img", { className: "lp-avatar" + (t.avatarShape === "square" ? " square" : ""), src: `${media.avatar}?w=320`, alt: page.name }) : null;

@@ -17,6 +17,7 @@ assert.deepEqual(appLink(spotify, iosInsta), { href: 'spotify:artist:4tZwfgrHOc3
 assert.deepEqual(appLink(spotify, safari), { href: spotify, fallback: null }, 'Safari : le lien https ouvre déjà l\'application');
 assert.deepEqual(appLink(spotify, desktop), { href: spotify, fallback: null });
 
+assert.equal(appLink('https://open.spotify.com/search/Ninho%20Jefe', iosInsta).href, 'spotify:search:Ninho%20Jefe', 'recherche des liens « Musique »');
 assert.equal(appLink('https://www.instagram.com/euhz/', iosInsta).href, 'instagram://user?username=euhz');
 assert.equal(appLink('https://www.instagram.com/p/abc/', iosInsta).href, 'https://www.instagram.com/p/abc/', 'publication : pas de lien d\'application connu');
 assert.equal(appLink('https://youtu.be/dQw4w9WgXcQ', iosInsta).href, 'youtube://www.youtube.com/watch?v=dQw4w9WgXcQ');
