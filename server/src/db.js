@@ -429,9 +429,9 @@ if (!hasColumn('credits', 'pinned')) db.exec('ALTER TABLE credits ADD COLUMN pin
 // Le lien Apple Music du titre ou de l'album, en plus de Spotify (facultatif).
 if (!hasColumn('credits', 'apple_music')) db.exec(`ALTER TABLE credits ADD COLUMN apple_music TEXT NOT NULL DEFAULT ''`);
 
-// Réponses automatiques aux commentaires Instagram et TikTok (social.js) : le compte relié et ses accès chiffrés, les
-// automations (une publication, des mots, le like, la réponse publique, le message privé), et chaque commentaire
-// traité (une fois par commentaire, une fois par personne).
+// Réponses automatiques aux commentaires Instagram (social.js) : le compte relié et son accès chiffré, les automations
+// (une publication, des mots, la réponse publique, le message privé), et chaque commentaire traité (une fois par
+// commentaire, une fois par personne).
 db.exec(`
 CREATE TABLE IF NOT EXISTS social_accounts (
   user_id            INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -455,7 +455,6 @@ CREATE TABLE IF NOT EXISTS social_automations (
   post_thumb   TEXT,
   post_url     TEXT,
   keywords     TEXT NOT NULL DEFAULT '',
-  like_comment INTEGER NOT NULL DEFAULT 1,
   dm_text      TEXT NOT NULL DEFAULT '',
   reply_text   TEXT NOT NULL DEFAULT '',
   active       INTEGER NOT NULL DEFAULT 1,
@@ -477,6 +476,9 @@ CREATE TABLE IF NOT EXISTS social_replies (
 );
 CREATE INDEX IF NOT EXISTS social_replies_by_person ON social_replies (automation_id, commenter_id);
 `);
+// TikTok retiré : son like ne sert plus, ni ses comptes et automations.
+if (hasColumn('social_automations', 'like_comment')) db.exec('ALTER TABLE social_automations DROP COLUMN like_comment');
+db.exec(`DELETE FROM social_automations WHERE platform = 'tiktok'; DELETE FROM social_accounts WHERE platform = 'tiktok';`);
 
 export const now = () => Date.now();
 

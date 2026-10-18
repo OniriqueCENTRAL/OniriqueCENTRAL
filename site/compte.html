@@ -321,24 +321,20 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
 
     <div class="panel" id="social" hidden>
       <div class="eyebrow">Réponses automatiques</div>
-      <p class="muted" style="margin-top:0;max-width:64ch">Choisissez une publication et un mot : chaque personne qui commente ce mot reçoit une réponse de votre compte, une seule fois. Sur Instagram : une réponse sous son commentaire, puis votre message en privé. Sur TikTok : un like sur son commentaire, puis une réponse dessous.</p>
+      <p class="muted" style="margin-top:0;max-width:64ch">Choisissez une publication et un mot : chaque personne qui commente ce mot reçoit de votre compte Instagram, une seule fois, une réponse sous son commentaire puis votre message en privé.</p>
       <div class="accounts" id="so-accounts"></div>
       <div class="notice" id="so-notice" role="status" style="margin-top:12px"></div>
       <div style="margin-top:18px"><button class="btn btn-primary" id="so-new" type="button" hidden>Nouvelle automation</button></div>
       <form class="short" id="so-form" hidden style="margin-top:18px">
-        <div class="between">
-          <h2 id="so-form-title" style="margin:0">Nouvelle automation</h2>
-          <div class="tabs" id="so-platforms" role="tablist"></div>
-        </div>
+        <h2 id="so-form-title" style="margin:0">Nouvelle automation</h2>
         <div id="so-post-field">
           <label style="margin-bottom:10px">Publication visée</label>
           <div class="posts" id="so-posts"></div>
         </div>
         <div class="fields">
           <label class="wide">Mots déclencheurs<input id="so-keywords" maxlength="300" placeholder="LIEN, PRESET"><span class="hint">Séparés par des virgules, sans souci des majuscules ni des accents. Vide : tous les commentaires.</span></label>
-          <label class="check wide" id="so-like-field"><input type="checkbox" id="so-like" checked>Liker le commentaire</label>
           <label class="wide">Réponse sous le commentaire<textarea id="so-reply" maxlength="2000" placeholder="Je t'envoie ça en DM {pseudo} 🔥"></textarea><span class="hint">Plusieurs réponses, une par ligne : chacune est tirée au hasard, pour ne pas répéter la même. {pseudo} devient le @ de la personne.</span></label>
-          <label class="wide" id="so-dm-field">Message privé (DM)<textarea id="so-dm" maxlength="1000" placeholder="Salut {pseudo} ! Voici le lien promis : https://onirique.store"></textarea><span class="hint">Envoyé une fois à chaque personne, juste après la réponse. Instagram l'accepte dans les 7 jours qui suivent le commentaire.</span></label>
+          <label class="wide">Message privé (DM)<textarea id="so-dm" maxlength="1000" placeholder="Salut {pseudo} ! Voici le lien promis : https://onirique.store"></textarea><span class="hint">Envoyé une fois à chaque personne, juste après la réponse. Instagram l'accepte dans les 7 jours qui suivent le commentaire.</span></label>
           <label class="check wide" id="so-earlier-field"><input type="checkbox" id="so-earlier">Répondre aussi aux commentaires déjà postés (7 derniers jours)</label>
         </div>
         <div class="error" id="so-form-notice" role="status"></div>
@@ -381,7 +377,7 @@ const verifyToken = new URLSearchParams(location.search).get("verify");
 // Retour de Google après « Se connecter avec YouTube » : "ok", ou la raison du refus. La page s'ouvre sur ce bloc.
 const youtubeResult = new URLSearchParams(location.search).get("youtube");
 if (youtubeResult) history.replaceState(null, "", location.pathname + "#youtube");
-// Retour d'Instagram ou de TikTok : "instagram:ok", ou la plateforme et la raison du refus.
+// Retour d'Instagram : "ok", ou la raison du refus. La page s'ouvre sur ce bloc.
 const socialResult = new URLSearchParams(location.search).get("social");
 if (socialResult) history.replaceState(null, "", location.pathname + "#social");
 
@@ -450,14 +446,12 @@ function show(me) {
       if (youtubeResult) say("yt-notice", youtubeResult === "ok" ? "Chaîne reliée." : youtubeResult, youtubeResult !== "ok");
     });
   }
-  // Réponses automatiques Instagram et TikTok : les fondateurs seulement, chargé une fois par compte.
+  // Réponses automatiques Instagram : les fondateurs seulement, chargé une fois par compte.
   $("social").hidden = me.user.role !== "founder";
   if (!$("social").hidden && show.social !== me.user.id) {
     show.social = me.user.id;
     loadSocial().then(() => {
-      if (!socialResult) return;
-      const [platform, ...rest] = socialResult.split(":"), result = rest.join(":");
-      say("so-notice", result === "ok" ? SOCIAL_NAMES[platform] + " relié." : result, result !== "ok");
+      if (socialResult) say("so-notice", socialResult === "ok" ? "Instagram relié." : socialResult, socialResult !== "ok");
     });
   }
 
@@ -888,27 +882,26 @@ $("yt-files").onchange = async (event) => {
   $("yt-add").disabled = false;
 };
 
-// Réponses automatiques. Une automation : une publication, des mots, puis like (TikTok), réponse et message privé (Instagram).
-const SOCIAL_NAMES = { instagram: "Instagram", tiktok: "TikTok" };
+// Réponses automatiques Instagram. Une automation : une publication, des mots, puis une réponse et un message privé.
 let socialState = { accounts: {}, automations: [] };
-let draft = null; // le formulaire ouvert : { platform, post, editing }
+let draft = null; // le formulaire ouvert : { post, editing }
 
-function accountCard(platform, account) {
+function accountCard(account) {
   const card = el("div", "account");
   const text = el("div");
-  text.append(el("b", "", SOCIAL_NAMES[platform]));
+  text.append(el("b", "", "Instagram"));
   if (!account.configured) text.append(el("small", "", "Pas encore réglé sur le serveur."));
   else if (account.connected) text.append(el("small", account.error ? "error" : "", account.error || (account.username ? "@" + account.username : "Compte relié")));
-  else text.append(el("small", "", platform === "instagram" ? "Compte professionnel ou créateur" : "Compte TikTok Business"));
+  else text.append(el("small", "", "Compte professionnel ou créateur"));
   card.append(text);
   if (!account.configured) return card;
-  const button = el("button", account.connected ? "link" : "btn btn-ghost", account.connected ? "Déconnecter" : "Relier " + SOCIAL_NAMES[platform]);
+  const button = el("button", account.connected ? "link" : "btn btn-ghost", account.connected ? "Déconnecter" : "Relier Instagram");
   button.type = "button";
   button.onclick = async () => {
     try {
-      if (!account.connected) { location.href = (await api("POST", "/social/" + platform + "/connect")).url; return; }
-      if (!confirm("Déconnecter " + SOCIAL_NAMES[platform] + " ? Ses automations s'arrêtent jusqu'à ce qu'il soit relié de nouveau.")) return;
-      await api("DELETE", "/social/" + platform + "/account");
+      if (!account.connected) { location.href = (await api("POST", "/social/instagram/connect")).url; return; }
+      if (!confirm("Déconnecter Instagram ? Les automations s'arrêtent jusqu'à ce qu'il soit relié de nouveau.")) return;
+      await api("DELETE", "/social/instagram/account");
       loadSocial();
     } catch (error) {
       say("so-notice", error.message, true);
@@ -926,12 +919,11 @@ function automationCard(auto) {
   if (auto.postUrl) Object.assign(thumb, { href: auto.postUrl, target: "_blank", rel: "noopener", title: "Voir la publication" });
   const body = el("div");
   const head = el("div", "between");
-  head.append(el("h2", "", SOCIAL_NAMES[auto.platform] + " · " + (auto.keywords || "tous les commentaires")),
+  head.append(el("h2", "", auto.keywords || "Tous les commentaires"),
     el("span", "pill" + (auto.active ? " on" : ""), auto.active ? auto.sent + " réponse" + (auto.sent > 1 ? "s" : "") : "En pause"));
   body.append(head);
   if (auto.postCaption) body.append(el("p", "", auto.postCaption.length > 120 ? auto.postCaption.slice(0, 120) + "…" : auto.postCaption));
   const steps = [];
-  if (auto.like) steps.push("like");
   if (auto.replyText) steps.push("réponse « " + auto.replyText.split("\n")[0] + (auto.replyText.includes("\n") ? " »…" : " »"));
   if (auto.dmText) steps.push("DM « " + (auto.dmText.length > 90 ? auto.dmText.slice(0, 90) + "…" : auto.dmText) + " »");
   const what = el("p");
@@ -956,7 +948,7 @@ function automationCard(auto) {
   toggle.onclick = async () => {
     try { await api("PATCH", "/social/automations/" + auto.id, { ...fieldsOf(auto), active: !auto.active }); loadSocial(); } catch (error) { say("so-notice", error.message, true); }
   };
-  edit.onclick = () => openDraft(auto.platform, auto);
+  edit.onclick = () => openDraft(auto);
   remove.onclick = async () => {
     if (!confirm("Supprimer cette automation ? Les personnes qui commenteront ensuite ne recevront plus de réponse.")) return;
     try { await api("DELETE", "/social/automations/" + auto.id); loadSocial(); } catch (error) { say("so-notice", error.message, true); }
@@ -966,41 +958,27 @@ function automationCard(auto) {
   card.append(thumb, body);
   return card;
 }
-const fieldsOf = (auto) => ({ keywords: auto.keywords, like: auto.like, replyText: auto.replyText, dmText: auto.dmText });
+const fieldsOf = (auto) => ({ keywords: auto.keywords, replyText: auto.replyText, dmText: auto.dmText });
 
 async function loadSocial() {
   try {
     socialState = await api("GET", "/social");
-    $("so-accounts").replaceChildren(...Object.entries(socialState.accounts).map(([platform, account]) => accountCard(platform, account)));
-    $("so-new").hidden = !Object.values(socialState.accounts).some((a) => a.connected) || !$("so-form").hidden;
+    $("so-accounts").replaceChildren(accountCard(socialState.accounts.instagram));
+    $("so-new").hidden = !socialState.accounts.instagram.connected || !$("so-form").hidden;
     $("so-list").replaceChildren(...socialState.automations.map(automationCard));
   } catch (error) {
     say("so-notice", error.message, true);
   }
 }
 
-// Le formulaire : nouvelle automation (choix de la plateforme et de la publication) ou modification (publication fixée).
-async function openDraft(platform, editing = null) {
-  const connected = Object.keys(socialState.accounts).filter((p) => socialState.accounts[p].connected);
-  platform = platform || connected[0];
-  draft = { platform, post: null, editing };
+// Le formulaire : nouvelle automation (choix de la publication) ou modification (publication fixée).
+async function openDraft(editing = null) {
+  const current = draft = { post: null, editing };
   $("so-form").hidden = false;
   $("so-new").hidden = true;
   $("so-form-title").textContent = editing ? "Modifier l'automation" : "Nouvelle automation";
   $("so-save").textContent = editing ? "Enregistrer" : "Lancer l'automation";
-  $("so-platforms").hidden = !!editing || connected.length < 2;
-  $("so-platforms").replaceChildren(...connected.map((p) => {
-    const tab = el("button", "", SOCIAL_NAMES[p]);
-    Object.assign(tab, { type: "button", role: "tab" });
-    tab.setAttribute("aria-selected", p === platform);
-    tab.onclick = () => openDraft(p);
-    return tab;
-  }));
-  const insta = platform === "instagram";
-  $("so-like-field").hidden = insta; // Instagram ne permet pas de liker un commentaire par son API
-  $("so-dm-field").hidden = !insta;  // TikTok n'envoie pas de messages privés par son API
   $("so-keywords").value = editing ? editing.keywords : "";
-  $("so-like").checked = editing ? editing.like : true;
   $("so-reply").value = editing ? editing.replyText : "";
   $("so-dm").value = editing ? editing.dmText : "";
   $("so-earlier").checked = false;
@@ -1010,8 +988,8 @@ async function openDraft(platform, editing = null) {
   if (editing) return;
   $("so-posts").replaceChildren(el("p", "muted", "Chargement de vos publications…"));
   try {
-    const posts = await api("GET", "/social/" + platform + "/posts");
-    if (draft?.platform !== platform) return;
+    const posts = await api("GET", "/social/instagram/posts");
+    if (draft !== current) return; // formulaire fermé entre-temps
     $("so-posts").replaceChildren(...(posts.length ? posts.map((post) => {
       const tile = el("button", "post");
       tile.type = "button";
@@ -1039,14 +1017,13 @@ $("so-cancel").onclick = closeDraft;
 $("so-form").onsubmit = async (event) => {
   event.preventDefault();
   say("so-form-notice", "");
-  const fields = { keywords: $("so-keywords").value.trim(), like: $("so-like").checked, replyText: $("so-reply").value.trim(), dmText: $("so-dm").value.trim() };
-  if (draft.platform !== "instagram") fields.dmText = "";
+  const fields = { keywords: $("so-keywords").value.trim(), replyText: $("so-reply").value.trim(), dmText: $("so-dm").value.trim() };
   try {
     if (draft.editing) {
       await api("PATCH", "/social/automations/" + draft.editing.id, fields);
     } else {
       if (!draft.post) throw new Error("Choisissez la publication visée.");
-      await api("POST", "/social/automations", { ...fields, platform: draft.platform, earlier: $("so-earlier").checked,
+      await api("POST", "/social/automations", { ...fields, earlier: $("so-earlier").checked,
         postId: draft.post.id, postCaption: draft.post.caption, postThumb: draft.post.thumb, postUrl: draft.post.url });
     }
     const edited = !!draft.editing;

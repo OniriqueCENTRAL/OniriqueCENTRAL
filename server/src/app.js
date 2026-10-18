@@ -248,14 +248,14 @@ export function createApp() {
   }));
 
   // Webhook d'Instagram (réponses automatiques) : Meta vérifie l'adresse une fois (GET), puis signe chaque envoi.
-  // Répondu tout de suite (Meta renvoie un événement qui tarde) ; le like, la réponse et le message partent ensuite.
+  // Répondu tout de suite (Meta renvoie un événement qui tarde) ; la réponse et le message privé partent ensuite.
   app.get('/api/social/instagram/webhook', (req, res) => {
     const token = social.verifyToken();
     if (req.query['hub.mode'] !== 'subscribe' || !token || req.query['hub.verify_token'] !== token) throw new HttpError(403, 'Refusé.');
     res.type('text/plain').send(String(req.query['hub.challenge'] || ''));
   });
   app.post('/api/social/instagram/webhook', express.raw({ type: '*/*', limit: '1mb' }), (req, res) => {
-    if (!social.platformConfigured('instagram')) throw new HttpError(404, 'Introuvable.');
+    if (!social.platformConfigured()) throw new HttpError(404, 'Introuvable.');
     const raw = req.body.toString('utf8');
     social.verifyInstagramSignature(raw, req.headers['x-hub-signature-256']);
     res.json({ received: true });
@@ -646,12 +646,8 @@ export function createApp() {
   });
 
   //============================================================================
-  //  Réponses automatiques aux commentaires Instagram et TikTok (page compte) : les fondateurs seulement
+  //  Réponses automatiques aux commentaires Instagram (page compte) : les fondateurs seulement
   //============================================================================
-  const socialPlatform = (req) => {
-    if (!social.PLATFORMS.includes(req.params.platform)) throw new HttpError(404, 'Introuvable.');
-    return req.params.platform;
-  };
   const ownAutomation = (req) => {
     const automation = get('SELECT * FROM social_automations WHERE id = ? AND user_id = ?', int(req.params.id, 0), req.user.id);
     if (!automation) throw new HttpError(404, 'Automation introuvable.');
@@ -660,29 +656,27 @@ export function createApp() {
 
   app.get('/api/social', team, (req, res) => res.json(social.socialState(req.user.id)));
 
-  app.post('/api/social/:platform/connect', team, (req, res) => {
-    const platform = socialPlatform(req);
-    if (!social.platformConfigured(platform)) throw new HttpError(503, "Cette connexion n'est pas encore réglée sur le serveur.");
-    res.json({ url: social.connectUrl(platform, req.user.id) });
+  app.post('/api/social/instagram/connect', team, (req, res) => {
+    if (!social.platformConfigured()) throw new HttpError(503, "La connexion à Instagram n'est pas encore réglée sur le serveur.");
+    res.json({ url: social.connectUrl(req.user.id) });
   });
 
-  // Retour d'Instagram ou de TikTok, sans session : la demande en cours (state) dit de quel compte il s'agit.
-  app.get('/api/social/:platform/callback', wrap(async (req, res) => {
-    const platform = socialPlatform(req);
+  // Retour d'Instagram, sans session : la demande en cours (state) dit de quel compte il s'agit.
+  app.get('/api/social/instagram/callback', wrap(async (req, res) => {
     let result = 'ok';
     try {
       if (req.query.error) throw new HttpError(400, 'Connexion refusée : recommencez si besoin.');
-      await social.finishConnect(platform, str(req.query.state), str(req.query.code, 2000));
+      await social.finishConnect(str(req.query.state), str(req.query.code, 2000));
     } catch (error) { result = error.message; }
-    res.redirect(`${config.siteUrl}/compte?social=${encodeURIComponent(platform + ':' + result)}`);
+    res.redirect(`${config.siteUrl}/compte?social=${encodeURIComponent(result)}`);
   }));
 
-  app.delete('/api/social/:platform/account', team, (req, res) => {
-    social.disconnect(req.user.id, socialPlatform(req));
+  app.delete('/api/social/instagram/account', team, (req, res) => {
+    social.disconnect(req.user.id);
     res.json({ ok: true });
   });
 
-  app.get('/api/social/:platform/posts', team, wrap(async (req, res) => res.json(await social.recentPosts(req.user.id, socialPlatform(req)))));
+  app.get('/api/social/instagram/posts', team, wrap(async (req, res) => res.json(await social.recentPosts(req.user.id))));
 
   app.post('/api/social/automations', team, (req, res) => {
     const id = social.saveAutomation(req.user.id, req.body);
