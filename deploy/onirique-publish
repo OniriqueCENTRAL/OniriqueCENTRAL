@@ -12,11 +12,13 @@ set -- ${SSH_ORIGINAL_COMMAND:-}
 slug=$2
 case "$slug" in ''|*[!a-z0-9-]*) echo "plugin invalide" >&2; exit 1 ;; esac
 
-tmp=$(mktemp -d)
+# Sur le disque : /tmp est un petit espace en mémoire, qu'une archive de 500 Mo remplirait.
+tmp=$(mktemp -d -p /var/tmp)
 trap 'rm -rf "$tmp"' EXIT
 # 500 Mo au plus ; tar refuse les chemins absolus et les « .. ».
 head -c 524288000 | tar -x -C "$tmp" --no-same-owner --no-same-permissions
 chmod -R a+rX "$tmp"
 
 cd /opt/onirique-central/server
-exec sudo -n -u central /usr/bin/node /usr/local/lib/onirique/publish-plugin.mjs /var/lib/onirique-central "$slug" "$tmp"
+# Sans exec : le dossier temporaire doit être effacé à la fin (trap EXIT).
+sudo -n -u central /usr/bin/node /usr/local/lib/onirique/publish-plugin.mjs /var/lib/onirique-central "$slug" "$tmp"
