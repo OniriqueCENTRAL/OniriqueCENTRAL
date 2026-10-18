@@ -100,6 +100,22 @@ try {
     }
     const [tuner, based, resobox, free] = ids;
 
+    console.log('ordre de la boutique');
+    const adminOrder = async () => (await api('GET', '/admin/products', null, admin)).data.map((p) => p.id);
+    const shopOrder = async () => (await api('GET', '/catalog')).data.products.map((p) => p.id).filter((id) => ids.includes(id));
+    check(JSON.stringify(await adminOrder()) === JSON.stringify(ids), "au départ, l'ordre d'ajout");
+    const chosen = [free, resobox, tuner, based];
+    check((await api('PUT', '/admin/products/order', { ids: chosen }, admin)).status === 200, "l'équipe choisit un autre ordre");
+    check(JSON.stringify(await adminOrder()) === JSON.stringify(chosen), 'le panel le suit');
+    const shown = await shopOrder();
+    check(shown.length > 0 && JSON.stringify(shown) === JSON.stringify(chosen.filter((id) => shown.includes(id))), "la boutique et l'application aussi");
+    check((await api('PUT', '/admin/products/order', { ids: [tuner, tuner] }, admin)).status === 400
+      && (await api('PUT', '/admin/products/order', { ids: [tuner, 99999] }, admin)).status === 400, 'une liste invalide est refusée');
+    const extra = (await api('POST', '/admin/products', { name: 'ONIRIQUE EXTRA', priceCents: 0 }, admin)).data.id;
+    check((await adminOrder()).at(-1) === extra, 'un nouveau plugin se range à la fin');
+    run('DELETE FROM products WHERE id = ?', extra);
+    await api('PUT', '/admin/products/order', { ids }, admin); // la suite des essais garde l'ordre d'ajout
+
     console.log('validation de l\'adresse e-mail');
     const created = await api('POST', '/auth/register', { email: 'nouveau@site.test', password: 'motdepasse', name: 'Nouveau' });
     const user = created.data.token;

@@ -2382,6 +2382,7 @@
  ],
  "Catégorie": [
   "site/admin.html",
+  "site/boutique.html",
   "app/renderer/views/admin.js"
  ],
  "Catégorie des plugins": [
@@ -3890,6 +3891,9 @@
  "Dernière version": [
   "app/renderer/views/library.js"
  ],
+ "Dernières mises à jour": [
+  "site/boutique.html"
+ ],
  "dès": [
   "site/boutique.html"
  ],
@@ -3938,6 +3942,9 @@
  ],
  "Désactiver sur ce PC ?": [
   "app/renderer/views/library.js"
+ ],
+ "Descendre": [
+  "site/admin.html"
  ],
  "Descendu": [
   "site/transposition.html"
@@ -5003,6 +5010,9 @@
  ],
  "Générer des licences": [
   "app/renderer/views/admin.js"
+ ],
+ "Glisser pour changer sa place": [
+  "site/admin.html"
  ],
  "Go": [
   "site/admin.html"
@@ -6402,6 +6412,9 @@
  "List-Unsubscribe=One-Click": [
   "server/src/newsletter.js"
  ],
+ "Liste de plugins invalide.": [
+  "server/src/app.js"
+ ],
  "liste des versions introuvable ({})": [
   "app/main/mac-update.js"
  ],
@@ -6598,6 +6611,9 @@
   "site/boutique.html"
  ],
  "Marquer non lu": [
+  "site/admin.html"
+ ],
+ "masqué": [
   "site/admin.html"
  ],
  "Masqué": [
@@ -6938,6 +6954,9 @@
  "Monte ou descends une instru de quelques demi-tons sans changer son tempo, ou change son BPM sans changer sa hauteur. Écoute puis télécharge en WAV. Gratuit, dans ton navigateur.": [
   "site/transposition.html"
  ],
+ "Monter": [
+  "site/admin.html"
+ ],
  "Monter l'air ou le drive rend le son plus fort, et une oreille juge toujours « mieux » ce qui est plus fort. L'Auto Gain garde le volume perçu constant pour que tu compares le son, pas le niveau.": [
   "site/onirique.html"
  ],
@@ -7118,6 +7137,9 @@
  "Nom ou pseudo": [
   "app/renderer/views/auth.js"
  ],
+ "Nom, de A à Z": [
+  "site/boutique.html"
+ ],
  "Nombre d'utilisations invalide.": [
   "server/src/promos.js"
  ],
@@ -7233,6 +7255,7 @@
  ],
  "Nouveautés": [
   "site/admin.html",
+  "site/boutique.html",
   "app/renderer/views/admin.js",
   "server/src/newsletter.js"
  ],
@@ -7467,6 +7490,9 @@
   "site/onirique.html"
  ],
  "Or (promo)": [
+  "site/admin.html"
+ ],
+ "Ordre de la boutique : le premier plugin de la liste s'affiche en premier, sur le site comme dans l'application": [
   "site/admin.html"
  ],
  "Ordre de traitement des modules": [
@@ -7766,6 +7792,7 @@
   "site/popularite.html"
  ],
  "Par défaut": [
+  "site/boutique.html",
   "app/renderer/views/account.js"
  ],
  "Par écoute": [
@@ -8826,6 +8853,7 @@
   "server/src/app.js"
  ],
  "Réservé à l'équipe.": [
+  "server/src/app.js",
   "server/src/control.js"
  ],
  "Réservé aux administrateurs.": [
@@ -10246,7 +10274,6 @@
   "site/popularite.html"
  ],
  "Tri : par défaut": [
-  "site/boutique.html",
   "app/renderer/views/library.js"
  ],
  "trial:{}": [

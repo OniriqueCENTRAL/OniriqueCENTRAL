@@ -268,6 +268,11 @@ CREATE TABLE IF NOT EXISTS youtube_videos (
 // n'est pas refabriquée toute seule.
 if (!hasColumn('products', 'image_manual')) db.exec('ALTER TABLE products ADD COLUMN image_manual INTEGER NOT NULL DEFAULT 0');
 if (!hasColumn('products', 'demo_off')) db.exec('ALTER TABLE products ADD COLUMN demo_off INTEGER NOT NULL DEFAULT 0');
+// L'ordre de la boutique et de l'application, choisi par l'équipe dans le panel. Au départ : l'ordre d'ajout.
+if (!hasColumn('products', 'position')) {
+  db.exec('ALTER TABLE products ADD COLUMN position INTEGER NOT NULL DEFAULT 0');
+  db.exec('UPDATE products SET position = (SELECT COUNT(*) FROM products q WHERE q.created_at < products.created_at OR (q.created_at = products.created_at AND q.id <= products.id))');
+}
 
 // Le partenaire s'appelait « bloom », du nom de son plugin : c'est RELIC. Son rôle, ses plugins et son compte de
 // paiement changent de nom avec lui ; BLOOM reste le nom du plugin.

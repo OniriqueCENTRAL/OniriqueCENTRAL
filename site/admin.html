@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=3c7e7b20"></script>
+<script src="assets/i18n.js?v=0c1b4a2b"></script>
 <script src="assets/annonce.js?v=1"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Administration</title>
@@ -59,6 +59,16 @@ tr.detail td { background: var(--deep); }
 .notice { padding: 14px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--deep); }
 .error { color: #FF7A85; }
 .products { display: grid; gap: 14px; margin-top: 14px; }
+.order { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; max-width: 620px; counter-reset: rang; }
+.order li { display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--deep); counter-increment: rang; }
+.order li::before { content: counter(rang); min-width: 22px; font: 500 12px/1 var(--f-mono); color: var(--haze); }
+.order li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.order li small { color: var(--haze); }
+.order li[draggable] { cursor: grab; }
+.order li .grip { flex: none; color: var(--haze); letter-spacing: -2px; user-select: none; }
+.order li.dragging { opacity: .4; }
+.order li.drop-before { box-shadow: 0 -3px 0 var(--ember); }
+.order li.drop-after { box-shadow: 0 3px 0 var(--ember); }
 .product { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--deep); }
 .product .shot { aspect-ratio: 16 / 10; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.4) center / cover; display: grid; place-items: center; color: var(--haze); font-size: 13px; }
 .product h3 { margin: 0 0 4px; font: 800 16px/1.3 var(--f-display); letter-spacing: .04em; }
@@ -216,6 +226,11 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
     <div class="bar"><h2>Plugins</h2></div>
     <p class="sub">Un plugin créé ici apparaît aussitôt dans la boutique du site et dans l'application, tant qu'il est coché « visible ». Une nouvelle version est proposée aussitôt en mise à jour dans Onirique Central. L'image du plugin et sa démo interactive de la boutique sont fabriquées à partir du fichier .vst3 lui-même : cela demande de charger le plugin sous Windows, et se fait donc quand la version est publiée depuis l'application Onirique Central (panel admin), pas depuis cette page.</p>
     <details class="product new" id="new-product"></details>
+    <details data-staff id="order-box">
+      <summary class="sub" style="cursor:pointer">Ordre de la boutique : le premier plugin de la liste s'affiche en premier, sur le site comme dans l'application</summary>
+      <ol class="order" id="shop-order"></ol>
+      <p class="error" id="order-error" role="alert"></p>
+    </details>
     <p class="error" id="product-error" role="alert"></p>
     <div class="products" id="products"></div>
 
@@ -586,8 +601,54 @@ function sheetForm(p) {
   return form;
 }
 
+// L'ordre de la boutique : un plugin se glisse à sa place, ou se déplace d'un rang avec les flèches. Enregistré aussitôt.
+function showOrder(products) {
+  const list = $("shop-order");
+  // Le plugin du rang from passe au rang to ; focus : le bouton à garder sous le clavier après l'affichage.
+  const place = async (from, to, focus) => {
+    if (from === to) return;
+    const next = products.slice();
+    next.splice(to, 0, ...next.splice(from, 1));
+    $("order-error").textContent = "";
+    try {
+      await api("PUT", "/admin/products/order", { ids: next.map((q) => q.id) });
+      products.splice(0, products.length, ...next);
+      showOrder(products);
+      if (focus) list.children[to].querySelector(focus).focus();
+    } catch (error) { $("order-error").textContent = error.message; }
+  };
+  const clear = () => list.querySelectorAll(".drop-before, .drop-after").forEach((n) => n.classList.remove("drop-before", "drop-after"));
+  let dragged = -1;
+  list.replaceChildren(...products.map((p, i) => {
+    const arrow = (text, label, to, focus) => Object.assign(el("button", { className: "act", type: "button", textContent: text, disabled: to < 0 || to >= products.length }),
+      { onclick: () => place(i, to, focus), ariaLabel: label + " " + p.name });
+    const li = el("li", { draggable: true, title: "Glisser pour changer sa place" }, el("span", { className: "grip", textContent: "⋮⋮", ariaHidden: "true" }),
+      el("span", { textContent: p.name }), p.published ? null : el("small", { textContent: "masqué" }),
+      arrow("↑", "Monter", i - 1, "button"), arrow("↓", "Descendre", i + 1, "button:last-child"));
+    const after = (event) => event.clientY > li.getBoundingClientRect().top + li.offsetHeight / 2; // déposé sous le milieu : après ce plugin
+    li.ondragstart = (event) => { dragged = i; event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", p.name); li.classList.add("dragging"); };
+    li.ondragend = () => { li.classList.remove("dragging"); clear(); };
+    li.ondragover = (event) => {
+      if (dragged < 0) return;
+      event.preventDefault();
+      clear();
+      li.classList.add(after(event) ? "drop-after" : "drop-before");
+    };
+    li.ondrop = (event) => {
+      event.preventDefault();
+      clear();
+      if (dragged < 0) return;
+      const target = i + (after(event) ? 1 : 0);
+      place(dragged, target > dragged ? target - 1 : target);
+      dragged = -1;
+    };
+    return li;
+  }));
+}
+
 async function loadProducts() {
   const products = await api("GET", "/admin/products");
+  showOrder(products.slice());
   const fail = (error) => { $("product-error").textContent = error.message; };
   $("products").replaceChildren(...products.map((p) => {
     const shot = el("div", { className: "shot", textContent: p.image ? "" : "Pas d'image" });
