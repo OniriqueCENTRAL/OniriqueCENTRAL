@@ -30,6 +30,7 @@ import {
 import { mountNewsletter, setMarketing } from './newsletter.js';
 import * as mailbox from './mailbox.js';
 import { connectUrl, disconnect, finishConnect, videoFile, videoView, youtubeConfigured, youtubeState } from './youtube.js';
+import * as social from './social.js';
 import { announcementView, deleteAccount, maintenanceView, mountControl, packView, paidSubscription, planView } from './control.js';
 import { enrollment, matchStep, newRecoveryCodes, newSecret, recoveryHash } from './totp.js';
 
@@ -245,6 +246,21 @@ export function createApp() {
     handleLemonEvent(JSON.parse(raw));
     res.json({ received: true });
   }));
+
+  // Webhook d'Instagram (réponses automatiques) : Meta vérifie l'adresse une fois (GET), puis signe chaque envoi.
+  // Répondu tout de suite (Meta renvoie un événement qui tarde) ; le like, la réponse et le message partent ensuite.
+  app.get('/api/social/instagram/webhook', (req, res) => {
+    const token = social.verifyToken();
+    if (req.query['hub.mode'] !== 'subscribe' || !token || req.query['hub.verify_token'] !== token) throw new HttpError(403, 'Refusé.');
+    res.type('text/plain').send(String(req.query['hub.challenge'] || ''));
+  });
+  app.post('/api/social/instagram/webhook', express.raw({ type: '*/*', limit: '1mb' }), (req, res) => {
+    if (!social.platformConfigured('instagram')) throw new HttpError(404, 'Introuvable.');
+    const raw = req.body.toString('utf8');
+    social.verifyInstagramSignature(raw, req.headers['x-hub-signature-256']);
+    res.json({ received: true });
+    social.handleInstagramWebhook(JSON.parse(raw)).catch(console.error);
+  });
 
   app.use('/api', express.json({ limit: '200kb' }));
 
@@ -626,6 +642,60 @@ export function createApp() {
     const video = ownVideo(req);
     fs.rmSync(videoFile(video), { force: true });
     run('DELETE FROM youtube_videos WHERE id = ?', video.id);
+    res.json({ ok: true });
+  });
+
+  //============================================================================
+  //  Réponses automatiques aux commentaires Instagram et TikTok (page compte) : les fondateurs seulement
+  //============================================================================
+  const socialPlatform = (req) => {
+    if (!social.PLATFORMS.includes(req.params.platform)) throw new HttpError(404, 'Introuvable.');
+    return req.params.platform;
+  };
+  const ownAutomation = (req) => {
+    const automation = get('SELECT * FROM social_automations WHERE id = ? AND user_id = ?', int(req.params.id, 0), req.user.id);
+    if (!automation) throw new HttpError(404, 'Automation introuvable.');
+    return automation;
+  };
+
+  app.get('/api/social', team, (req, res) => res.json(social.socialState(req.user.id)));
+
+  app.post('/api/social/:platform/connect', team, (req, res) => {
+    const platform = socialPlatform(req);
+    if (!social.platformConfigured(platform)) throw new HttpError(503, "Cette connexion n'est pas encore réglée sur le serveur.");
+    res.json({ url: social.connectUrl(platform, req.user.id) });
+  });
+
+  // Retour d'Instagram ou de TikTok, sans session : la demande en cours (state) dit de quel compte il s'agit.
+  app.get('/api/social/:platform/callback', wrap(async (req, res) => {
+    const platform = socialPlatform(req);
+    let result = 'ok';
+    try {
+      if (req.query.error) throw new HttpError(400, 'Connexion refusée : recommencez si besoin.');
+      await social.finishConnect(platform, str(req.query.state), str(req.query.code, 2000));
+    } catch (error) { result = error.message; }
+    res.redirect(`${config.siteUrl}/compte?social=${encodeURIComponent(platform + ':' + result)}`);
+  }));
+
+  app.delete('/api/social/:platform/account', team, (req, res) => {
+    social.disconnect(req.user.id, socialPlatform(req));
+    res.json({ ok: true });
+  });
+
+  app.get('/api/social/:platform/posts', team, wrap(async (req, res) => res.json(await social.recentPosts(req.user.id, socialPlatform(req)))));
+
+  app.post('/api/social/automations', team, (req, res) => {
+    const id = social.saveAutomation(req.user.id, req.body);
+    res.status(201).json(social.automationView(get('SELECT * FROM social_automations WHERE id = ?', id)));
+  });
+
+  app.patch('/api/social/automations/:id', team, (req, res) => {
+    const id = social.saveAutomation(req.user.id, req.body, ownAutomation(req));
+    res.json(social.automationView(get('SELECT * FROM social_automations WHERE id = ?', id)));
+  });
+
+  app.delete('/api/social/automations/:id', team, (req, res) => {
+    run('DELETE FROM social_automations WHERE id = ?', ownAutomation(req).id);
     res.json({ ok: true });
   });
 

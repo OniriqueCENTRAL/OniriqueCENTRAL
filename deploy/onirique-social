@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# Règle les réponses automatiques de la page compte (Instagram, TikTok). À lancer sur le VPS, en root :
+#   onirique-social instagram       demande l'ID et la clé secrète de l'application Meta
+#   onirique-social tiktok          demande la clé client et le secret de l'application TikTok for Business
+#   onirique-social instagram off   retire le réglage (de même pour tiktok)
+# Les secrets sont saisis ici, sans s'afficher, et ne quittent pas le serveur.
+#
+# Instagram, à faire avant sur developers.facebook.com :
+#   1. Créer une application (type « Entreprise »), puis ajouter le produit « Instagram » > « API setup with Instagram login ».
+#   2. Y relever l'« Instagram app ID » et l'« Instagram app secret » (pas ceux de l'application Facebook).
+#   3. « Business login settings » : URL de redirection OAuth = celle affichée ci-dessous.
+#   4. Webhooks : URL de rappel et jeton de vérification affichés ci-dessous, puis s'abonner au champ « comments ».
+#   5. Rôles de l'application : ajouter votre compte Instagram comme testeur et accepter l'invitation dans l'appli
+#      Instagram (Paramètres > Applications et sites web). En mode développement, cela suffit pour votre propre compte.
+#   6. Dans l'appli Instagram : Paramètres > Messages > Outils connectés > « Autoriser l'accès aux messages » (pour les DM).
+# TikTok, à faire avant sur business-api.tiktok.com (TikTok for Business Developers) :
+#   1. Créer une application, demander l'accès « TikTok Accounts » avec les permissions des commentaires et des vidéos.
+#   2. URL de redirection = celle affichée ci-dessous. Le compte TikTok relié doit être un compte Business.
+set -euo pipefail
+
+ENVFILE=/opt/onirique-central/server/.env
+stop() { echo "$1" >&2; exit 1; }
+platform=${1:-}
+case "$platform" in instagram|tiktok) ;; *) stop "Usage : onirique-social instagram|tiktok [off]" ;; esac
+
+PUBLIC=$(grep -E '^PUBLIC_URL=' "$ENVFILE" | cut -d= -f2- | tr -d "'\"" | sed 's:/*$::')
+[ -n "$PUBLIC" ] || stop "PUBLIC_URL manque dans $ENVFILE."
+
+if [ "$platform" = instagram ]; then KEYS="INSTAGRAM_APP_ID INSTAGRAM_APP_SECRET INSTAGRAM_VERIFY_TOKEN"; else KEYS="TIKTOK_CLIENT_KEY TIKTOK_CLIENT_SECRET"; fi
+
+if [ "${2:-}" != off ]; then
+  echo "URL de redirection à déclarer : $PUBLIC/api/social/$platform/callback"
+  if [ "$platform" = instagram ]; then
+    VERIFY=$(grep -E '^INSTAGRAM_VERIFY_TOKEN=' "$ENVFILE" | cut -d= -f2- | tr -d "'\"" || true)
+    [ -n "$VERIFY" ] || VERIFY=$(openssl rand -hex 20)
+    echo "Webhook : URL de rappel $PUBLIC/api/social/instagram/webhook"
+    echo "          jeton de vérification $VERIFY"
+    read -rp "Instagram app ID : " ID
+    read -rsp "Instagram app secret (rien ne s'affiche) : " SECRET; echo
+    case "$ID" in *[!0-9]*|'') stop "Un ID d'application Instagram n'a que des chiffres. Rien n'est changé." ;; esac
+  else
+    read -rp "Client key (App ID) TikTok : " ID
+    read -rsp "Secret TikTok (rien ne s'affiche) : " SECRET; echo
+    [ -n "$ID" ] || stop "Clé vide. Rien n'est changé."
+  fi
+  case "$ID$SECRET" in *"'"*|*" "*) stop "Valeur mal copiée (espace ou apostrophe). Rien n'est changé." ;; esac
+  [ -n "$SECRET" ] || stop "Secret vide. Rien n'est changé."
+fi
+
+for key in $KEYS; do sed -i "/^$key=/d" "$ENVFILE"; done
+if [ "${2:-}" != off ]; then
+  if [ "$platform" = instagram ]; then
+    printf "INSTAGRAM_APP_ID='%s'\nINSTAGRAM_APP_SECRET='%s'\nINSTAGRAM_VERIFY_TOKEN='%s'\n" "$ID" "$SECRET" "$VERIFY" >> "$ENVFILE"
+  else
+    printf "TIKTOK_CLIENT_KEY='%s'\nTIKTOK_CLIENT_SECRET='%s'\n" "$ID" "$SECRET" >> "$ENVFILE"
+  fi
+fi
+chown central:central "$ENVFILE"; chmod 600 "$ENVFILE"
+systemctl restart onirique-central
+sleep 3
+systemctl is-active -q onirique-central || stop "Le serveur n'a pas redémarré : journalctl -u onirique-central"
+if [ "${2:-}" = off ]; then echo "Connexion $platform retirée."; else echo "C'est bon : le bouton « Relier $platform » de la page compte est actif."; fi

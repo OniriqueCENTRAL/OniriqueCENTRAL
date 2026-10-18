@@ -31,6 +31,13 @@ export const config = {
   // Connexion des chaînes YouTube (page compte) : l'identifiant OAuth du projet Google, réglé par onirique-youtube.
   googleClientId: env.GOOGLE_CLIENT_ID || '',
   googleClientSecret: env.GOOGLE_CLIENT_SECRET || '',
+  // Réponses automatiques aux commentaires (page compte, social.js) : l'application Meta (connexion Instagram) et
+  // l'application TikTok for Business, réglées par onirique-social.
+  instagramAppId: env.INSTAGRAM_APP_ID || '',
+  instagramAppSecret: env.INSTAGRAM_APP_SECRET || '',
+  instagramVerifyToken: env.INSTAGRAM_VERIFY_TOKEN || '',
+  tiktokClientKey: env.TIKTOK_CLIENT_KEY || '',
+  tiktokClientSecret: env.TIKTOK_CLIENT_SECRET || '',
   adminEmail: env.ADMIN_EMAIL || '',
   // Les fondateurs : ces adresses, une fois validées, portent toujours le rôle le plus élevé.
   founderEmails: (env.FOUNDER_EMAILS ?? 'contacteuhz@gmail.com,nueveprocontact@gmail.com').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean),
