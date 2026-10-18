@@ -27,7 +27,7 @@ globalThis.fetch = async (url, options = {}) => {
   calls.push({ url, options });
   if (url === 'https://api.instagram.com/oauth/access_token') return Response.json({ access_token: 'court', user_id: 1 });
   if (url.includes('ig_exchange_token')) return Response.json({ access_token: 'long', expires_in: 5184000 });
-  if (url.includes('/me?')) return Response.json({ user_id: '17841400000', username: 'onirique' });
+  if (url.includes('/me?')) return Response.json({ id: '29000000000', user_id: '17841400000', username: 'onirique' });
   if (url.includes('subscribed_apps')) return Response.json({ success: true });
   if (url.includes('/me/media')) return Response.json({ data: [{ id: 'M1', caption: 'Commente LIEN', media_type: 'VIDEO', thumbnail_url: 'https://cdn.test/m1.jpg', permalink: 'https://instagram.test/p/1', timestamp: '2026-10-18T10:00:00+0000' }] });
   if (url.includes('/M1/comments')) return Response.json({ data: comments });
@@ -94,7 +94,7 @@ try {
   assert.equal(await call('GET', '/api/social/instagram/webhook?hub.mode=subscribe&hub.verify_token=verifie&hub.challenge=42'), 42);
   await call('GET', '/api/social/instagram/webhook?hub.mode=subscribe&hub.verify_token=faux&hub.challenge=42', { expect: 403 });
   const later = Math.floor(Date.now() / 1000) + 5;
-  const event = (id, text, from = { id: 'U1', username: 'fan' }) => JSON.stringify({ object: 'instagram', entry: [{ id: '17841400000', time: later,
+  const event = (id, text, from = { id: 'U1', username: 'fan' }, account = '17841400000') => JSON.stringify({ object: 'instagram', entry: [{ id: account, time: later,
     changes: [{ field: 'comments', value: { id, text, from, media: { id: 'M1' } } }] }] });
   const sign = (raw) => 'sha256=' + crypto.createHmac('sha256', 'igsecret').update(raw).digest('hex');
   await call('POST', '/api/social/instagram/webhook', { raw: event('C1', 'LIEN stp'), headers: { 'X-Hub-Signature-256': 'sha256=faux' }, expect: 401 });
@@ -119,6 +119,12 @@ try {
   assert.equal(sent('/replies').length, 1);
   assert.equal(sent('/messages').length, 1);
 
+  // Un webhook qui désigne le compte par son identifiant propre à l'application est reconnu aussi.
+  const scoped = event('C5', 'RISER lien', { id: 'U5', username: 'cinq' }, '29000000000');
+  await call('POST', '/api/social/instagram/webhook', { raw: scoped, headers: { 'X-Hub-Signature-256': sign(scoped) } });
+  await settle();
+  assert.equal(sent('/C5/replies').length, 1);
+
   // Relecture : un commentaire arrivé sans webhook reçoit sa réponse ; un commentaire d'avant l'automation, non.
   comments = [
     { id: 'C9', text: 'LIEN', timestamp: new Date(Date.now() + 5000).toISOString(), username: 'autre', from: { id: 'U9', username: 'autre' } },
@@ -127,10 +133,10 @@ try {
   await pollComments();
   assert.equal(sent('/C9/replies').length, 1);
   assert.equal(sent('/C0/replies').length, 0);
-  assert.equal(sent('/messages').length, 2);
+  assert.equal(sent('/messages').length, 3);
 
   state = await call('GET', '/api/social', { token: founder });
-  assert.equal(state.automations[0].sent, 2);
+  assert.equal(state.automations[0].sent, 3);
   assert.equal(state.automations[0].recent[0].name, 'autre');
 
   // Pause : plus rien ne part. Puis suppression, et déconnexion.

@@ -54,13 +54,14 @@ export async function finishConnect(state, code) {
   }) });
   const long = await ig(`https://graph.instagram.com/access_token?${new URLSearchParams({
     grant_type: 'ig_exchange_token', client_secret: config.instagramAppSecret, access_token: short.access_token })}`);
-  const me = await ig(`${IG_GRAPH}/me?${new URLSearchParams({ fields: 'user_id,username,account_type', access_token: long.access_token })}`);
-  // Le webhook désigne le compte par son identifiant professionnel (user_id), pas par celui propre à l'application.
-  run(`INSERT INTO social_accounts (user_id, platform, account_id, username, access_token, expires_at, error, created_at)
-       VALUES (?, 'instagram', ?, ?, ?, ?, '', ?)
-       ON CONFLICT(user_id, platform) DO UPDATE SET account_id = excluded.account_id, username = excluded.username,
+  const me = await ig(`${IG_GRAPH}/me?${new URLSearchParams({ fields: 'id,user_id,username,account_type', access_token: long.access_token })}`);
+  // Le compte a deux identifiants : le professionnel (user_id) et celui propre à l'application (id). Les deux sont
+  // gardés : le webhook et les commentaires peuvent désigner le compte par l'un ou l'autre.
+  run(`INSERT INTO social_accounts (user_id, platform, account_id, alt_id, username, access_token, expires_at, error, created_at)
+       VALUES (?, 'instagram', ?, ?, ?, ?, ?, '', ?)
+       ON CONFLICT(user_id, platform) DO UPDATE SET account_id = excluded.account_id, alt_id = excluded.alt_id, username = excluded.username,
          access_token = excluded.access_token, expires_at = excluded.expires_at, error = ''`,
-    entry.userId, String(me.user_id || me.id), me.username || '', seal(long.access_token), now() + (long.expires_in || 60 * 86_400) * 1000, now());
+    entry.userId, String(me.user_id || me.id), String(me.id || ''), me.username || '', seal(long.access_token), now() + (long.expires_in || 60 * 86_400) * 1000, now());
   // Les commentaires arrivent alors tout de suite par le webhook ; sinon la relecture régulière prend le relais.
   await ig(`${IG_GRAPH}/me/subscribed_apps?${new URLSearchParams({ subscribed_fields: 'comments', access_token: long.access_token })}`,
     { method: 'POST' }).catch(() => {});
@@ -130,7 +131,8 @@ async function send(account, automation, comment) {
  */
 export async function handleComment(account, comment) {
   if (!comment.id || !comment.text) return;
-  if (comment.fromId === account.account_id || (comment.username && comment.username === account.username)) return;
+  if (comment.fromId === account.account_id || (account.alt_id && comment.fromId === account.alt_id)
+    || (comment.username && comment.username === account.username)) return;
   const automations = all(`SELECT * FROM social_automations WHERE user_id = ? AND platform = 'instagram' AND post_id = ? AND active = 1`,
     account.user_id, String(comment.mediaId));
   for (const automation of automations) {
@@ -171,7 +173,7 @@ export function verifyInstagramSignature(raw, header) {
 export async function handleInstagramWebhook(body) {
   if (body?.object !== 'instagram') return;
   for (const entry of body.entry || []) {
-    const accounts = all(`SELECT * FROM social_accounts WHERE platform = 'instagram' AND account_id = ?`, String(entry.id));
+    const accounts = all(`SELECT * FROM social_accounts WHERE platform = 'instagram' AND (account_id = ? OR alt_id = ?)`, String(entry.id), String(entry.id));
     for (const change of entry.changes || []) {
       if (change.field !== 'comments' || !change.value) continue;
       const v = change.value;
@@ -207,6 +209,13 @@ export async function pollComments() {
   try {
     // Les commentaires traités ne sont gardés que 90 jours (page Confidentialité).
     run('DELETE FROM social_replies WHERE created_at < ?', now() - 90 * 86_400_000);
+    // Un compte relié avant que l'identifiant propre à l'application soit gardé : il est demandé une fois à Instagram.
+    for (const account of all(`SELECT * FROM social_accounts WHERE platform = 'instagram' AND (alt_id IS NULL OR alt_id = '')`)) {
+      try {
+        const me = await ig(`${IG_GRAPH}/me?${new URLSearchParams({ fields: 'id', access_token: await freshToken(account) })}`);
+        if (me.id) run(`UPDATE social_accounts SET alt_id = ? WHERE user_id = ? AND platform = 'instagram'`, String(me.id), account.user_id);
+      } catch { /* réessayé à la prochaine relecture */ }
+    }
     for (const automation of all(`SELECT * FROM social_automations WHERE active = 1 AND platform = 'instagram'`)) {
       const account = accountOf(automation.user_id);
       if (!account) continue;

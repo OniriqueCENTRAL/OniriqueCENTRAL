@@ -476,6 +476,8 @@ CREATE TABLE IF NOT EXISTS social_replies (
 );
 CREATE INDEX IF NOT EXISTS social_replies_by_person ON social_replies (automation_id, commenter_id);
 `);
+// L'identifiant du compte Instagram propre à l'application, à côté de l'identifiant professionnel (social.js).
+if (!hasColumn('social_accounts', 'alt_id')) db.exec(`ALTER TABLE social_accounts ADD COLUMN alt_id TEXT NOT NULL DEFAULT ''`);
 // TikTok retiré : son like ne sert plus, ni ses comptes et automations.
 if (hasColumn('social_automations', 'like_comment')) db.exec('ALTER TABLE social_automations DROP COLUMN like_comment');
 db.exec(`DELETE FROM social_automations WHERE platform = 'tiktok'; DELETE FROM social_accounts WHERE platform = 'tiktok';`);
