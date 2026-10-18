@@ -11,7 +11,7 @@ signature avec la clé publique du serveur, et en déduit trois états.
 |---|---|---|---|
 | Acheté, ou abonnement actif | intacte | intact | témoin « ACTIVÉ » |
 | Essai gratuit en cours | intacte | bruit blanc | pastille « ESSAI · 5 J · ACTIVATION » |
-| Pas de licence, ou essai terminé | 2 s de bruit toutes les 30 s | bruit blanc | pastille « MODE DÉMO · ACTIVATION », page d'activation à l'ouverture |
+| Pas de licence, ou essai terminé | intacte | bruit blanc | pastille « MODE DÉMO · ACTIVATION », page d'activation à l'ouverture |
 
 **Un plugin payant sans ce dossier est refusé à la publication** (panel admin et publication automatique).
 
