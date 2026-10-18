@@ -405,6 +405,15 @@ if (!hasColumn('users', 'engineer_name')) db.exec(`ALTER TABLE users ADD COLUMN 
 if (!hasColumn('users', 'engineer_avatar')) db.exec('ALTER TABLE users ADD COLUMN engineer_avatar TEXT');
 // Double authentification (A2F, facultative) : la clé de l'application, celle en cours d'activation, le dernier pas
 // de temps servi (un code ne se rejoue pas) et les empreintes des codes de secours restants.
+// Page de liens d'un fondateur (onirique.store/l/<handle>) : la page en JSON, sa photo et son image de fond.
+db.exec(`CREATE TABLE IF NOT EXISTS link_pages (
+  user_id    INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  handle     TEXT NOT NULL UNIQUE,
+  data       TEXT NOT NULL,
+  avatar     TEXT,
+  background TEXT,
+  updated_at INTEGER NOT NULL
+)`);
 for (const column of ['totp_secret TEXT', 'totp_pending TEXT', 'totp_step INTEGER', 'totp_recovery TEXT']) {
   if (!hasColumn('users', column.split(' ')[0])) db.exec(`ALTER TABLE users ADD COLUMN ${column}`);
 }

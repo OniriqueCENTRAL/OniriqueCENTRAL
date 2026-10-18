@@ -199,6 +199,35 @@ try {
     check((await api('POST', '/me/delete', { password: 'motdepasse' }, founder)).status === 403 && !!get(`SELECT id FROM users WHERE email = 'fondateur@site.test'`),
       'un fondateur ne se supprime pas depuis le site');
 
+    console.log('page de liens des fondateurs');
+    check((await api('GET', '/me/links', null, admin)).status === 403, 'réservée aux fondateurs (pas aux admins)');
+    const blank = (await api('GET', '/me/links', null, founder)).data;
+    check(blank.handle === null && blank.page.theme.button.style === 'glass', 'au départ : pas de page, un thème par défaut');
+    check((await api('PUT', '/me/links', { handle: 'A B', page: {} }, founder)).status === 400, 'une adresse invalide est refusée');
+    check((await api('PUT', '/me/links', { handle: 'admin', page: {} }, founder)).status === 409, 'une adresse réservée est refusée');
+    const savedPage = await api('PUT', '/me/links', { handle: 'euhz', page: {
+      name: 'EUHZ', bio: 'Ingé son', theme: { bg1: 'rouge', text: '#FFFFFF', font: 'comic', button: { style: 'fill', shape: 'square' } },
+      links: [{ label: 'Spotify', url: 'https://open.spotify.com/artist/abc' }, { label: 'Piège', url: 'javascript:alert(1)' },
+        { label: 'Insta', url: 'instagram.com/euhz', kind: 'icon' }, { label: 'Mail', url: 'mailto:euhz@site.test', on: false }] } }, founder);
+    const pg = savedPage.data.page;
+    check(savedPage.status === 200 && pg.links.length === 3 && !pg.links.some((l) => /javascript/.test(l.url)), 'un lien javascript: est écarté');
+    check(pg.links[1].url === 'https://instagram.com/euhz' && pg.links[1].kind === 'icon' && pg.links[2].on === false, 'les autres liens sont gardés, complétés');
+    check(pg.theme.bg1 === '#0d0809' && pg.theme.text === '#ffffff' && pg.theme.font === 'hanken' && pg.theme.button.style === 'fill', 'une valeur inconnue reprend celle par défaut');
+    const pub = await api('GET', '/links/EUHZ');
+    check(pub.status === 200 && pub.data.page.name === 'EUHZ' && pub.data.handle === 'euhz', 'la page publique se lit sans compte');
+    run(`INSERT INTO users (email, password_hash, role, email_verified, created_at) VALUES ('fondateur2@site.test', ?, 'founder', 1, ?)`, hashPassword('motdepasse'), now());
+    const founder2 = (await api('POST', '/auth/login', { email: 'fondateur2@site.test', password: 'motdepasse' })).data.token;
+    check((await api('PUT', '/me/links', { handle: 'euhz', page: {} }, founder2)).status === 409, 'une adresse prise ne se reprend pas');
+    const png = Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), Buffer.alloc(200)]);
+    const sent = await fetch(`${base}/me/links/image?kind=avatar`, { method: 'PUT', headers: { Authorization: `Bearer ${founder}`, 'Content-Type': 'image/png' }, body: png });
+    const withPhoto = await sent.json();
+    check(sent.status === 200 && /^\/api\/media\//.test(withPhoto.avatar) && (await api('GET', '/links/euhz')).data.avatar === withPhoto.avatar, 'la photo de la page');
+    check((await fetch(`${base}/me/links/image?kind=avatar`, { method: 'PUT', headers: { Authorization: `Bearer ${founder2}`, 'Content-Type': 'image/png' }, body: png })).status === 400,
+      "une image avant d'avoir enregistré la page est refusée");
+    run(`UPDATE users SET role = 'user' WHERE email = 'fondateur@site.test'`);
+    check((await api('GET', '/links/euhz')).status === 404, "la page disparaît si son auteur n'est plus fondateur");
+    run(`UPDATE users SET role = 'founder' WHERE email = 'fondateur@site.test'`);
+
     // Une licence réservée à une adresse ne doit revenir qu'à qui prouve que l'adresse est la sienne.
     await api('POST', '/admin/licenses', { productId: based, email: 'client@site.test' }, admin);
     const client = (await api('POST', '/auth/register', { email: 'client@site.test', password: 'motdepasse' })).data.token;

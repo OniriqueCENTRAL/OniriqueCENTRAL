@@ -54,9 +54,6 @@
  ", puis le même montant chaque {} jusqu'à résiliation (onglet Abonnement de l'application)": [
   "server/src/payments.js"
  ],
- ", puis relance le scan des plugins de ton DAW. Dans FL Studio : Options → Manage plugins → Find installed plugins.": [
-  "site/onirique.html"
- ],
  ", puis renommée avec son propre tempo et sa propre tonalité : « Nuit blanche - 140 BPM - F minor.wav ». Le pack se télécharge en un .zip. Un tempo peut se lire deux fois plus vite ou deux fois plus lentement (70 ou 140) : les boutons ÷2 et ×2 du tableau le remettent comme tu le comptes. Les fichiers ne sont pas réencodés.": [
   "site/stems.html"
  ],
@@ -112,6 +109,9 @@
  ": des stems exportés depuis le même point de départ ont tous la même longueur, à l'échantillon près. Une piste plus courte ou plus longue ne se recalera pas toute seule dans le projet de l'autre.": [
   "site/stems.html"
  ],
+ ": écrivez à": [
+  "site/confidentialite.html"
+ ],
  ": écrivez-nous, la somme prélevée à tort est remboursée.": [
   "site/remboursement.html",
   "site/pages.mjs"
@@ -130,6 +130,9 @@
   "site/confidentialite.html",
   "site/pages.mjs"
  ],
+ ": identifiant et nom d'utilisateur Instagram de son auteur, texte du commentaire, date, publication concernée": [
+  "site/confidentialite.html"
+ ],
  ": identifiant technique de l'ordinateur (une empreinte calculée, qui ne permet pas de retrouver l'identifiant d'origine), nom de l'ordinateur, date de dernière activation": [
   "site/confidentialite.html",
   "site/pages.mjs"
@@ -146,6 +149,9 @@
  ],
  ": importe-le dans ton DAW à la place de ce fichier.": [
   "site/bpm-tonalite.html"
+ ],
+ ": jeton d'accès délivré par Meta, chiffré": [
+  "site/confidentialite.html"
  ],
  ": jeton de connexion": [
   "site/confidentialite.html",
@@ -232,6 +238,9 @@
   "site/onirique.html",
   "site/assets/credits.js"
  ],
+ "?w=320": [
+  "site/mes-liens.html"
+ ],
  ". À corriger ici si tu connais les vraies valeurs.": [
   "site/stems.html"
  ],
@@ -270,6 +279,9 @@
  ],
  ".hero .btn-primary": [
   "site/onirique.html"
+ ],
+ ".lp, .lp * { box-sizing: border-box; } .lp { position: relative; min-height: 100%; color: var(--lp-text); font-family: var(--lp-font); overflow: hidden; isolation: isolate; } .lp-bg { position: absolute; inset: 0; z-index: -1; background: var(--lp-bg); background-size: cover; background-position: center; } .lp-bg::after { content: \"\"; position: absolute; inset: 0; background: rgba(0,0,0,var(--lp-dim)); } .lp-inner { max-width: 580px; margin: 0 auto; padding: 56px 18px 40px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; } .lp-avatar { width: 104px; height: 104px; object-fit: cover; border-radius: 50%; box-shadow: 0 10px 34px -12px rgba(0,0,0,.7); } .lp-avatar.square { border-radius: 22px; } .lp-name { margin: 6px 0 0; font: 700 clamp(22px, 6vw, 30px)/1.15 var(--lp-title); letter-spacing: .01em; overflow-wrap: anywhere; } .lp-bio { margin: 0; max-width: 46ch; font-size: 15px; line-height: 1.5; opacity: .86; white-space: pre-line; overflow-wrap: anywhere; } .lp-icons { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin: 4px 0 6px; } .lp-icons a { display: grid; place-items: center; width: 40px; height: 40px; color: var(--lp-text); border-radius: 50%; transition: transform .15s; } .lp-icons a:hover, .lp-icons a:focus-visible { transform: scale(1.12); outline: none; } .lp-icon { width: 24px; height: 24px; flex: none; background: currentColor; -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; } .lp-links { width: 100%; display: grid; gap: 14px; margin-top: 6px; } .lp-btn { position: relative; display: flex; align-items: center; justify-content: center; min-height: 58px; padding: 14px 54px; text-decoration: none; font: 600 15.5px/1.3 var(--lp-font); color: var(--lp-btn-text); border: 2px solid var(--lp-btn); border-radius: var(--lp-radius); transition: transform .15s, filter .15s; overflow-wrap: anywhere; } .lp-btn .lp-icon { position: absolute; left: 18px; top: 50%; margin-top: -12px; } .lp-btn:hover, .lp-btn:focus-visible { transform: translateY(-2px) scale(1.01); filter: brightness(1.08); outline: none; } .lp-btn.fill { background: var(--lp-btn); } .lp-btn.outline { background: transparent; } .lp-btn.glass { background: color-mix(in srgb, var(--lp-btn) 22%, transparent); border-color: color-mix(in srgb, var(--lp-btn) 70%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); } .lp.shadow .lp-btn { box-shadow: 0 10px 26px -14px rgba(0,0,0,.85); } .lp-foot { margin-top: 26px; font: 600 11px/1 'JetBrains Mono', monospace; letter-spacing: .2em; text-transform: uppercase; color: var(--lp-text); opacity: .55; text-decoration: none; } .lp-foot:hover { opacity: .9; } .lp-empty { opacity: .6; font-size: 14px; }": [
+  "site/assets/linkpage.js"
  ],
  ".sn-announce { position: relative; z-index: 60; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 48px; font: 600 14px/1.4 var(--f-body, system-ui); text-align: center; } .sn-announce p { margin: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 16px; } .sn-announce span { letter-spacing: .02em; } .sn-announce a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; } .sn-announce-x { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border: 0; border-radius: 999px; background: rgba(0,0,0,.18); color: inherit; font: 400 20px/1 var(--f-body, system-ui); cursor: pointer; } .sn-announce.tone-ember { background: linear-gradient(90deg, #8c0614, #e23444 60%, #8c0614); color: #fff; } .sn-announce.tone-gold { background: linear-gradient(90deg, #b8862b, #f2c46d 55%, #b8862b); color: #1a0d02; } .sn-announce.tone-calm { background: var(--deep-2, #2a0a0e); color: var(--mist, #f6eeee); border-bottom: 1px solid var(--line, rgba(255,210,214,.16)); }": [
   "site/assets/annonce.js"
@@ -323,6 +335,9 @@
  "· la date de saturation s'affiche après une semaine de relevés": [
   "site/admin.html"
  ],
+ "· ONIRIQUE": [
+  "site/lien.html"
+ ],
  "· plein vers le {} au rythme actuel (+{} par jour)": [
   "site/admin.html"
  ],
@@ -341,14 +356,26 @@
  "· tous les plugins payants vérifient leur licence": [
   "app/renderer/views/admin.js"
  ],
+ "'Grenze Gotisch', serif": [
+  "site/assets/linkpage.js"
+ ],
  "'Hanken Grotesk', 'Segoe UI', Helvetica, Arial, sans-serif": [
   "server/src/mailtemplate.js"
+ ],
+ "'Hanken Grotesk', sans-serif": [
+  "site/assets/linkpage.js"
  ],
  "'JetBrains Mono', Consolas, 'Courier New', monospace": [
   "server/src/mailtemplate.js"
  ],
+ "'JetBrains Mono', monospace": [
+  "site/assets/linkpage.js"
+ ],
  "'Unbounded', 'Arial Black', 'Segoe UI', Helvetica, Arial, sans-serif": [
   "server/src/mailtemplate.js"
+ ],
+ "'Unbounded', sans-serif": [
+  "site/assets/linkpage.js"
  ],
  "« {} » part vers : {}. Environ {} minute(s), un message toutes les trois secondes.": [
   "app/renderer/views/admin.js"
@@ -391,6 +418,9 @@
  ],
  "(inconnu)": [
   "site/admin.html"
+ ],
+ "(Instagram), pour les réponses automatiques aux commentaires décrites ci-dessus : les réponses et les messages privés passent par l'API officielle d'Instagram, qui traite vos données sous sa propre responsabilité, selon sa politique de confidentialité.": [
+  "site/confidentialite.html"
  ],
  "(max-width: 1120px) 100vw, 1100px": [
   "site/boutique.html"
@@ -618,6 +648,9 @@
  "{}, position {} sur 6": [
   "site/onirique.html"
  ],
+ "{}?w=320": [
+  "site/assets/linkpage.js"
+ ],
  "{}.{}.tmp": [
   "server/src/app.js"
  ],
@@ -636,8 +669,20 @@
  "{}.vst3": [
   "server/src/seed.js"
  ],
+ "{}/{}/comments?{}": [
+  "server/src/social.js"
+ ],
+ "{}/{}/messages": [
+  "server/src/social.js"
+ ],
+ "{}/{}/replies": [
+  "server/src/social.js"
+ ],
  "{}/api/newsletter/unsubscribe?u={}&t={}": [
   "server/src/newsletter.js"
+ ],
+ "{}/api/social/instagram/callback": [
+  "server/src/social.js"
  ],
  "{}/api/stripe/webhook/{}": [
   "server/src/payments.js"
@@ -669,6 +714,9 @@
  "{}/compte?reset={}": [
   "server/src/app.js"
  ],
+ "{}/compte?social={}": [
+  "server/src/app.js"
+ ],
  "{}/compte?verify={}": [
   "server/src/app.js"
  ],
@@ -677,6 +725,15 @@
  ],
  "{}/compte.html?ref={}": [
   "server/src/promos.js"
+ ],
+ "{}/me?{}": [
+  "server/src/social.js"
+ ],
+ "{}/me/media?{}": [
+  "server/src/social.js"
+ ],
+ "{}/me/subscribed_apps?{}": [
+  "server/src/social.js"
  ],
  "{}/playlistItems?part=snippet&maxResults=50&playlistId={}": [
   "server/src/youtube.js"
@@ -777,6 +834,9 @@
   "site/boutique.html",
   "app/renderer/views/library.js"
  ],
+ "+ Ajouter un lien": [
+  "site/mes-liens.html"
+ ],
  "＋ Nouveau code promo": [
   "site/admin.html"
  ],
@@ -822,6 +882,9 @@
  ],
  "−24 → +24 dB": [
   "site/onirique.html"
+ ],
+ "✦ ONIRIQUE": [
+  "site/assets/linkpage.js"
  ],
  "📎 {} ({} Ko)": [
   "site/admin.html"
@@ -1130,6 +1193,9 @@
   "site/cgv.html",
   "site/pages.mjs"
  ],
+ "90 jours, puis suppression automatique": [
+  "site/confidentialite.html"
+ ],
  "96 kHz": [
   "site/convertisseur.html"
  ],
@@ -1210,9 +1276,6 @@
  ],
  "À quoi sert cette feuille": [
   "site/partage.html"
- ],
- "À quoi sert l'Auto Gain ?": [
-  "site/onirique.html"
  ],
  "À quoi sert la tessiture": [
   "site/tessiture.html"
@@ -1323,6 +1386,9 @@
   "site/boutique.html",
   "app/renderer/ui.js"
  ],
+ "Accès au compte Instagram d'Onirique": [
+  "site/confidentialite.html"
+ ],
  "Accordeur": [
   "site/accordeur.html",
   "site/assets/tools-menu.js"
@@ -1386,6 +1452,9 @@
  "Actif": [
   "app/renderer/views/admin.js",
   "app/renderer/views/subscription.js"
+ ],
+ "Action :": [
+  "site/compte.html"
  ],
  "Actions": [
   "site/admin.html"
@@ -1461,11 +1530,20 @@
  "Adresse copiée.": [
   "app/renderer/views/support-admin.js"
  ],
+ "Adresse de la page": [
+  "site/mes-liens.html"
+ ],
+ "Adresse de la page : 2 à 30 caractères, lettres minuscules, chiffres, point, tiret ou tiret bas.": [
+  "server/src/linkpage.js"
+ ],
  "Adresse de paiement inattendue.": [
   "app/main/main.js"
  ],
  "Adresse de photo inattendue.": [
   "app/main/main.js"
+ ],
+ "Adresse du lien": [
+  "site/mes-liens.html"
  ],
  "Adresse du serveur (laisser vide pour réessayer)": [
   "app/renderer/views/auth.js"
@@ -1500,6 +1578,12 @@
  "adresse@exemple.com, autre@exemple.com": [
   "site/admin.html"
  ],
+ "Affichage du lien": [
+  "site/mes-liens.html"
+ ],
+ "Afficher ce lien": [
+  "site/mes-liens.html"
+ ],
  "Afficher l'annonce sur le site": [
   "site/admin.html"
  ],
@@ -1532,6 +1616,9 @@
  ],
  "Ajouté à la main": [
   "site/admin.html"
+ ],
+ "Ajoute un premier lien pour le voir ici.": [
+  "site/assets/linkpage.js"
  ],
  "Ajouter": [
   "app/renderer/views/licenses.js"
@@ -1625,7 +1712,8 @@
  ],
  "Amazon Music": [
   "site/revenus-streaming.html",
-  "site/volume-lufs.html"
+  "site/volume-lufs.html",
+  "site/assets/deeplink.js"
  ],
  "ami acheteur": [
   "site/compte.html"
@@ -1702,6 +1790,7 @@
  ],
  "Annuler": [
   "site/admin.html",
+  "site/compte.html",
   "site/assets/cropper.js",
   "app/renderer/cropper.js",
   "app/renderer/ui.js"
@@ -1724,15 +1813,22 @@
  "Aperçu de l'e-mail": [
   "app/main/main.js"
  ],
+ "Aperçu de la page": [
+  "site/mes-liens.html"
+ ],
  "Aperçu du message": [
   "site/admin.html"
  ],
  "Aperçu et démo : créés tout seuls dès qu'un admin ouvre l'application CENTRAL": [
   "site/admin.html"
  ],
+ "Apparence": [
+  "site/mes-liens.html"
+ ],
  "Apple Music": [
   "site/revenus-streaming.html",
-  "site/volume-lufs.html"
+  "site/volume-lufs.html",
+  "site/assets/deeplink.js"
  ],
  "Application et compte : {}": [
   "server/src/payments.js"
@@ -1771,6 +1867,9 @@
   "site/admin.html",
   "site/decoupe.html",
   "app/renderer/views/admin.js"
+ ],
+ "Arrondie": [
+  "site/mes-liens.html"
  ],
  "Artiste": [
   "site/admin.html",
@@ -1811,6 +1910,9 @@
  ],
  "assets/stretch-worker.js": [
   "site/transposition.html"
+ ],
+ "Assombrir l'image": [
+  "site/mes-liens.html"
  ],
  "ATTACK": [
   "site/onirique.html"
@@ -1969,6 +2071,9 @@
  "Aucune plateforme ne paie un tarif fixe par écoute. Chacune répartit chaque mois une part de ses recettes entre les ayants droit : le montant dépend du pays de l'auditeur, de son abonnement (gratuit ou payant) et du total des écoutes du mois. Les taux utilisés ici sont des moyennes publiées par des observateurs du secteur, pas des tarifs officiels : prends le résultat comme un ordre de grandeur.": [
   "site/revenus-streaming.html"
  ],
+ "Aucune publication trouvée sur ce compte.": [
+  "site/compte.html"
+ ],
  "Aucune ressource chargée chez un tiers": [
   "site/cookies.html",
   "site/pages.mjs"
@@ -2009,6 +2114,15 @@
  ],
  "AUTO GAIN": [
   "site/onirique.html"
+ ],
+ "Automation enregistrée.": [
+  "site/compte.html"
+ ],
+ "Automation introuvable.": [
+  "server/src/app.js"
+ ],
+ "Automation lancée : les nouveaux commentaires reçoivent leur réponse en quelques instants.": [
+  "site/compte.html"
  ],
  "Automatique": [
   "site/admin.html",
@@ -2051,6 +2165,9 @@
   "site/cookies.html",
   "site/pages.mjs"
  ],
+ "Avec l'application ONIRIQUE CENTRAL, gratuite : connecte-toi avec ton compte, puis installe le plugin en un clic. Elle le place au bon endroit et active sa licence toute seule. Relance ensuite le scan des plugins de ton DAW (dans FL Studio : Options → Manage plugins → Find installed plugins).": [
+  "site/onirique.html"
+ ],
  "Avec quels logiciels les plugins ONIRIQUE fonctionnent-ils ?": [
   "site/onirique.html"
  ],
@@ -2062,6 +2179,9 @@
  ],
  "Baissé de": [
   "site/volume-lufs.html"
+ ],
+ "Bandcamp": [
+  "site/assets/deeplink.js"
  ],
  "BANDE {}": [
   "site/onirique.html"
@@ -2111,6 +2231,7 @@
   "site/admin.html",
   "site/boutique.html",
   "site/compte.html",
+  "site/mes-liens.html",
   "site/onirique.html",
   "site/support.html",
   "site/assets/account.js",
@@ -2119,6 +2240,7 @@
  "Bearer {}": [
   "app/main/api.js",
   "server/src/payments.js",
+  "server/src/social.js",
   "server/src/youtube.js"
  ],
  "Beatmaker / compositeur": [
@@ -2130,6 +2252,9 @@
  "Beatmaking": [
   "site/admin.html",
   "server/src/app.js"
+ ],
+ "Beatport": [
+  "site/assets/deeplink.js"
  ],
  "BELL": [
   "site/onirique.html"
@@ -2168,6 +2293,9 @@
  ],
  "Bilan": [
   "site/stems.html"
+ ],
+ "Bio": [
+  "site/mes-liens.html"
  ],
  "bits) :": [
   "site/stems.html"
@@ -2240,6 +2368,12 @@
  "boutique.html (facultatif)": [
   "site/admin.html"
  ],
+ "Bouton": [
+  "site/mes-liens.html"
+ ],
+ "Boutons": [
+  "site/mes-liens.html"
+ ],
  "BPM": [
   "site/bpm-tonalite.html",
   "site/stems.html",
@@ -2256,6 +2390,9 @@
  "BPM et tonalité": [
   "site/stems.html",
   "site/assets/tools-menu.js"
+ ],
+ "Braise": [
+  "site/assets/linkpage.js"
  ],
  "Branché": [
   "app/renderer/views/admin.js"
@@ -2306,9 +2443,6 @@
   "app/main/installer.js"
  ],
  "BYPASS": [
-  "site/onirique.html"
- ],
- "C:\\Program Files\\Common Files\\VST3": [
   "site/onirique.html"
  ],
  "C:\\ProgramData": [
@@ -2370,6 +2504,9 @@
  ],
  "canvas[data-curve]": [
   "site/onirique.html"
+ ],
+ "Carrée": [
+  "site/mes-liens.html"
  ],
  "Carrée, 3000 × 3000 pixels, sans logo de plateforme ni adresse web.": [
   "site/checklist-sortie.html"
@@ -2604,6 +2741,12 @@
   "site/remboursement.html",
   "site/pages.mjs"
  ],
+ "Cette adresse est déjà prise : choisissez-en une autre.": [
+  "server/src/linkpage.js"
+ ],
+ "Cette adresse est réservée : choisissez-en une autre.": [
+  "server/src/linkpage.js"
+ ],
  "Cette archive ne contient pas de plugin Mac (.vst3 ou .component).": [
   "app/main/installer.js"
  ],
@@ -2626,6 +2769,12 @@
  ],
  "Cette installation": [
   "app/renderer/views/account.js"
+ ],
+ "Cette page de liens n'existe pas, ou plus.": [
+  "site/lien.html"
+ ],
+ "Cette page de liens n'existe pas.": [
+  "server/src/linkpage.js"
  ],
  "Cette page est mise à jour lorsque les traitements changent. La date de dernière mise à jour figure en haut de page.": [
   "site/confidentialite.html",
@@ -2774,6 +2923,9 @@
   "site/onirique.html",
   "app/renderer/views/library.js"
  ],
+ "Chargement de vos publications…": [
+  "site/compte.html"
+ ],
  "Chargement…": [
   "site/admin.html",
   "site/boutique.html",
@@ -2846,14 +2998,17 @@
   "site/admin.html",
   "app/renderer/views/admin.js"
  ],
+ "Choisir une image de fond": [
+  "site/mes-liens.html"
+ ],
+ "Choisir une photo": [
+  "site/mes-liens.html"
+ ],
  "Choisis « Un pack de prods » et dépose tes instrus, quinze d'un coup si tu veux. Chacune est analysée séparément, comme dans l'outil": [
   "site/stems.html"
  ],
  "Choisis seulement les plugins dont tu as besoin : {} par mois pour le premier,": [
   "site/boutique.html"
- ],
- "Choisis un preset d'usine dans la barre de l'interface, ajuste, puis sauvegarde le tien. Tes presets sont rangés dans un dossier Onirique, en fichiers .ovbpreset faciles à partager.": [
-  "site/onirique.html"
  ],
  "Choisis un réglage sous l'interface : ce sont les vraies images du plugin.": [
   "site/assets/demo-player.js",
@@ -2871,6 +3026,10 @@
  "Choisissez d'abord le fichier du plugin.": [
   "app/renderer/views/admin.js"
  ],
+ "Choisissez la publication visée.": [
+  "site/compte.html",
+  "server/src/social.js"
+ ],
  "Choisissez les destinataires.": [
   "server/src/newsletter.js"
  ],
@@ -2879,6 +3038,9 @@
  ],
  "Choisissez une date à venir, dans l'année.": [
   "server/src/app.js"
+ ],
+ "Choisissez une publication et un mot : chaque personne qui commente ce mot reçoit de votre compte Instagram, une seule fois, une réponse sous son commentaire puis votre message en privé.": [
+  "site/compte.html"
  ],
  "Choisissez une remise : en pourcentage ou en euros.": [
   "server/src/promos.js"
@@ -2895,11 +3057,20 @@
  "CINÉMA": [
   "site/onirique.html"
  ],
+ "Cinquante automations au plus : retirez-en avant d'en ajouter.": [
+  "server/src/social.js"
+ ],
+ "Clair": [
+  "site/assets/linkpage.js"
+ ],
  "Clap": [
   "site/assets/stem-kind.js"
  ],
  "Classe A · transformateurs": [
   "site/onirique.html"
+ ],
+ "Classique": [
+  "site/assets/linkpage.js"
  ],
  "Clé": [
   "app/renderer/views/admin.js",
@@ -3064,6 +3235,9 @@
  "Codes utilisés": [
   "site/admin.html"
  ],
+ "Colle le lien de ta page Spotify, de ta chaîne YouTube, de ton profil Instagram… La plateforme est reconnue toute seule. « Bouton » : un grand bouton ; « Icône » : une petite icône en haut de la page. Glisse une ligne pour la déplacer.": [
+  "site/mes-liens.html"
+ ],
  "Collez le lien Spotify du titre : son nom et sa pochette sont récupérés tout seuls. Le titre apparaît dans la section Crédits de la page d'accueil.": [
   "app/renderer/views/admin.js"
  ],
@@ -3087,7 +3261,7 @@
  "Comment est faite l'analyse ?": [
   "site/comparer-mix.html"
  ],
- "Comment l'installer ?": [
+ "Comment installer un plugin ?": [
   "site/onirique.html"
  ],
  "Comment la mesure est-elle faite ?": [
@@ -3105,6 +3279,9 @@
  "Comment vous rétracter": [
   "site/remboursement.html",
   "site/pages.mjs"
+ ],
+ "Commentaire": [
+  "site/confidentialite.html"
  ],
  "Commission du distributeur (%)": [
   "site/revenus-streaming.html"
@@ -3150,6 +3327,7 @@
   "site/delais.html",
   "site/gammes.html",
   "site/mentions-legales.html",
+  "site/mes-liens.html",
   "site/outils.html",
   "site/partage.html",
   "site/popularite.html",
@@ -3181,6 +3359,12 @@
  ],
  "compte n° {}": [
   "app/renderer/views/support-admin.js"
+ ],
+ "Compte professionnel ou créateur": [
+  "site/compte.html"
+ ],
+ "Compte relié": [
+  "site/compte.html"
  ],
  "Compte Stripe de {} branché : clé vérifiée, lien de notification créé.": [
   "app/renderer/views/admin.js"
@@ -3276,6 +3460,9 @@
  "Confirmer et activer": [
   "site/compte.html"
  ],
+ "Connecte-toi d'abord à ton compte.": [
+  "site/mes-liens.html"
+ ],
  "Connecte-toi pour utiliser un code promo : il est lié à ton compte.": [
   "site/boutique.html"
  ],
@@ -3293,6 +3480,12 @@
  ],
  "Connexion au serveur…": [
   "app/renderer/app.js"
+ ],
+ "Connexion Instagram expirée ou refusée : recommencez.": [
+  "server/src/social.js"
+ ],
+ "Connexion refusée : recommencez si besoin.": [
+  "server/src/app.js"
  ],
  "Connexion YouTube expirée ou refusée : recommencez.": [
   "server/src/youtube.js"
@@ -3326,6 +3519,9 @@
  ],
  "Continuez d'inviter : chaque ami qui achète vous rapporte un nouveau code{}. Votre lien : {}/compte.html?ref={}": [
   "server/src/promos.js"
+ ],
+ "Contour": [
+  "site/mes-liens.html"
  ],
  "Conversion…": [
   "site/convertisseur.html"
@@ -3381,11 +3577,11 @@
  "copié": [
   "site/delais.html"
  ],
+ "Copie ce lien :": [
+  "site/mes-liens.html"
+ ],
  "Copie dans les envoyés :": [
   "server/src/mailbox.js"
- ],
- "Copie le dossier": [
-  "site/onirique.html"
  ],
  "Copier": [
   "app/renderer/views/licenses.js"
@@ -3403,6 +3599,7 @@
  "Copier le lien": [
   "site/admin.html",
   "site/compte.html",
+  "site/mes-liens.html",
   "app/renderer/views/account.js"
  ],
  "Copier tout": [
@@ -3435,10 +3632,17 @@
  ],
  "Couleur": [
   "site/admin.html",
+  "site/mes-liens.html",
   "app/renderer/views/admin.js"
+ ],
+ "Couleur du texte": [
+  "site/mes-liens.html"
  ],
  "Couleur invalide (format #rrggbb).": [
   "server/src/app.js"
+ ],
+ "Couleur unie": [
+  "site/mes-liens.html"
  ],
  "Couper le micro": [
   "site/accordeur.html",
@@ -3543,6 +3747,9 @@
   "site/compte.html",
   "site/assets/site-nav.js",
   "app/renderer/views/auth.js"
+ ],
+ "Créer ou modifier ma page": [
+  "site/compte.html"
  ],
  "Créer un compte": [
   "site/compte.html",
@@ -3705,6 +3912,9 @@
  "Déconnecter": [
   "site/compte.html"
  ],
+ "Déconnecter Instagram ? Les automations s'arrêtent jusqu'à ce qu'il soit relié de nouveau.": [
+  "site/compte.html"
+ ],
  "Déconnecter la chaîne ? Les vidéos programmées ne sortiront plus tant qu'elle n'est pas reliée de nouveau.": [
   "site/compte.html"
  ],
@@ -3734,7 +3944,11 @@
  ],
  "Deezer": [
   "site/revenus-streaming.html",
-  "site/volume-lufs.html"
+  "site/volume-lufs.html",
+  "site/assets/deeplink.js"
+ ],
+ "deezer://www.deezer.com{}": [
+  "site/assets/deeplink.js"
  ],
  "default-src 'none'; img-src https: data: cid:; style-src 'unsafe-inline'; font-src https: data:": [
   "site/admin.html"
@@ -3744,6 +3958,9 @@
  ],
  "Définir": [
   "app/renderer/views/admin.js"
+ ],
+ "Dégradé": [
+  "site/mes-liens.html"
  ],
  "Déjà à vous": [
   "site/boutique.html"
@@ -3875,15 +4092,20 @@
  "Depuis Spotify for Artists, et l'équivalent des autres plateformes, dès que le titre y apparaît.": [
   "site/checklist-sortie.html"
  ],
+ "Dernier échec :": [
+  "site/compte.html"
+ ],
  "Dernière mise à jour : {}": [
   "site/pages.mjs"
  ],
  "Dernière mise à jour : 12 octobre 2026": [
   "site/cgv.html",
-  "site/confidentialite.html",
   "site/cookies.html",
   "site/mentions-legales.html",
   "site/remboursement.html"
+ ],
+ "Dernière mise à jour : 18 octobre 2026": [
+  "site/confidentialite.html"
  ],
  "Dernière semaine": [
   "site/checklist-sortie.html"
@@ -3944,7 +4166,8 @@
   "app/renderer/views/library.js"
  ],
  "Descendre": [
-  "site/admin.html"
+  "site/admin.html",
+  "site/mes-liens.html"
  ],
  "Descendu": [
   "site/transposition.html"
@@ -3996,7 +4219,11 @@
  "Devise": [
   "site/revenus-streaming.html"
  ],
+ "Direction du dégradé": [
+  "site/mes-liens.html"
+ ],
  "Discord": [
+  "site/assets/deeplink.js",
   "server/src/app.js"
  ],
  "display:flex;flex-wrap:wrap;gap:8px": [
@@ -4016,6 +4243,9 @@
  ],
  "Disque presque plein : au-delà, plus aucun plugin, image ou vidéo ne pourra être envoyé. Supprimez d'anciennes versions de plugins ou des vidéos, ou agrandissez le disque chez IONOS.": [
   "site/admin.html"
+ ],
+ "DM «": [
+  "site/compte.html"
  ],
  "Do": [
   "site/bpm-tonalite.html",
@@ -4214,6 +4444,9 @@
   "site/popularite.html",
   "server/src/popularity.js"
  ],
+ "Écrivez la réponse, le message privé, ou les deux.": [
+  "server/src/social.js"
+ ],
  "Écrivez le message, ou ajoutez au moins un plugin.": [
   "server/src/newsletter.js"
  ],
@@ -4282,6 +4515,7 @@
   "site/admin.html"
  ],
  "En cours": [
+  "site/compte.html",
   "app/renderer/views/admin.js"
  ],
  "en décrivant le problème, votre configuration et la version du produit.": [
@@ -4313,6 +4547,9 @@
  "En hertz, pour un chorus, un trémolo ou un filtre dont la vitesse ne se règle pas en valeur de note.": [
   "site/delais.html"
  ],
+ "en indiquant votre nom d'utilisateur Instagram ; vos commentaires enregistrés sont effacés sous un mois, et au plus tard au bout de 90 jours sans demande. Vous pouvez aussi simplement supprimer votre commentaire sur Instagram, et retirer à tout moment l'accès des applications dans Instagram (Paramètres, Apps et sites web).": [
+  "site/confidentialite.html"
+ ],
  "En ligne : le bandeau s'affiche sur toutes les pages.": [
   "site/admin.html"
  ],
@@ -4322,8 +4559,8 @@
  "En mode LIVE": [
   "site/onirique.html"
  ],
- "En mode MIX, environ 44 ms, à cause de l'analyse spectrale de Resonance. Ton DAW la compense automatiquement : tes pistes restent alignées. En mode LIVE, la latence est nulle.": [
-  "site/onirique.html"
+ "En pause": [
+  "site/compte.html"
  ],
  "En pleine lumière": [
   "site/popularite.html"
@@ -4361,8 +4598,14 @@
   "site/assets/site-nav.js",
   "app/renderer/app.js"
  ],
+ "Enregistré": [
+  "site/mes-liens.html"
+ ],
  "Enregistré : visible tout de suite sur le site.": [
   "site/admin.html"
+ ],
+ "Enregistré · onirique.store/l/": [
+  "site/mes-liens.html"
  ],
  "Enregistré.": [
   "site/admin.html"
@@ -4370,6 +4613,7 @@
  "Enregistrer": [
   "site/admin.html",
   "site/compte.html",
+  "site/mes-liens.html",
   "app/renderer/views/account.js",
   "app/renderer/views/admin.js"
  ],
@@ -4385,6 +4629,9 @@
  ],
  "Enregistrer le profil d'ingé": [
   "site/compte.html"
+ ],
+ "Enregistrez d'abord la page, puis ajoutez l'image.": [
+  "server/src/linkpage.js"
  ],
  "Entends ce que fait": [
   "site/onirique.html"
@@ -4461,6 +4708,9 @@
  "Envoyé le": [
   "site/admin.html"
  ],
+ "Envoyé une fois à chaque personne, juste après la réponse. Instagram l'accepte dans les 7 jours qui suivent le commentaire.": [
+  "site/compte.html"
+ ],
  "Envoyer": [
   "site/admin.html",
   "site/support.html",
@@ -4509,7 +4759,8 @@
  ],
  "Erreur": [
   "site/admin.html",
-  "site/compte.html"
+  "site/compte.html",
+  "site/mes-liens.html"
  ],
  "erreur : {}": [
   "app/main/main.js",
@@ -4742,6 +4993,7 @@
   "site/gammes.html"
  ],
  "Facebook": [
+  "site/assets/deeplink.js",
   "server/src/app.js"
  ],
  "Facultatif": [
@@ -4768,6 +5020,9 @@
  ],
  "Faut-il viser exactement −14 LUFS ?": [
   "site/volume-lufs.html"
+ ],
+ "fb://facewebmodal/f?href={}": [
+  "site/assets/deeplink.js"
  ],
  "Fermer": [
   "site/onirique.html",
@@ -4862,6 +5117,9 @@
  "Fonctions": [
   "site/onirique.html"
  ],
+ "Fond": [
+  "site/mes-liens.html"
+ ],
  "Fondateur": [
   "site/admin.html",
   "site/compte.html",
@@ -4869,6 +5127,7 @@
   "app/renderer/ui.js"
  ],
  "Fondateurs": [
+  "site/mes-liens.html",
   "site/assets/account.js"
  ],
  "Fondu d'entrée": [
@@ -4902,8 +5161,14 @@
  "Formats verticaux pour les réseaux, avec le meilleur passage du titre.": [
   "site/checklist-sortie.html"
  ],
+ "Forme": [
+  "site/mes-liens.html"
+ ],
  "Forme d'onde : fais glisser les bords pour choisir le passage": [
   "site/decoupe.html"
+ ],
+ "Forme de la photo": [
+  "site/mes-liens.html"
  ],
  "Formulaire :": [
   "site/mentions-legales.html",
@@ -5011,8 +5276,14 @@
  "Générer des licences": [
   "app/renderer/views/admin.js"
  ],
+ "Georgia, 'Times New Roman', serif": [
+  "site/assets/linkpage.js"
+ ],
  "Glisser pour changer sa place": [
   "site/admin.html"
+ ],
+ "Glisser pour déplacer": [
+  "site/mes-liens.html"
  ],
  "Go": [
   "site/admin.html"
@@ -5022,6 +5293,9 @@
  ],
  "Google n'a pas donné d'accès durable : recommencez.": [
   "server/src/youtube.js"
+ ],
+ "Gothique": [
+  "site/assets/linkpage.js"
  ],
  "Gratuit": [
   "site/admin.html",
@@ -5033,6 +5307,9 @@
  "Gratuit · sans compte": [
   "site/outils.html"
  ],
+ "Grenze Gotisch": [
+  "site/assets/linkpage.js"
+ ],
  "grid-column:1/-1": [
   "site/admin.html"
  ],
@@ -5041,6 +5318,9 @@
  ],
  "Guitare": [
   "site/assets/stem-kind.js"
+ ],
+ "Hanken Grotesk": [
+  "site/assets/linkpage.js"
  ],
  "Harmonic minor (mineure harmonique)": [
   "site/gammes.html"
@@ -5102,6 +5382,9 @@
  "Hz). Le morceau est accordé": [
   "site/bpm-tonalite.html"
  ],
+ "Icône": [
+  "site/mes-liens.html"
+ ],
  "Identifiant de machine invalide.": [
   "server/src/app.js"
  ],
@@ -5137,6 +5420,9 @@
   "site/cgv.html",
   "site/pages.mjs"
  ],
+ "Image": [
+  "site/mes-liens.html"
+ ],
  "image : {}": [
   "server/src/seed.js"
  ],
@@ -5145,8 +5431,12 @@
  ],
  "Image attendue : PNG, JPEG ou WebP.": [
   "site/admin.html",
+  "site/mes-liens.html",
   "app/main/main.js",
   "server/src/app.js"
+ ],
+ "Image de fond": [
+  "site/mes-liens.html"
  ],
  "Image en tête (adresse)": [
   "site/admin.html",
@@ -5154,6 +5444,9 @@
  ],
  "Image enregistrée : elle ne sera plus remplacée par l'aperçu automatique.": [
   "app/renderer/views/admin.js"
+ ],
+ "Image inconnue.": [
+  "server/src/linkpage.js"
  ],
  "Image introuvable.": [
   "app/main/main.js"
@@ -5267,7 +5560,11 @@
  "Instagram": [
   "site/compte.html",
   "site/confidentialite.html",
+  "site/assets/deeplink.js",
   "server/src/app.js"
+ ],
+ "Instagram : commentaire {} de @{} sur {} (compte {}, {})": [
+  "server/src/social.js"
  ],
  "Instagram : écrivez votre nom de compte (@nom) ou collez le lien de votre profil.": [
   "server/src/app.js"
@@ -5275,8 +5572,20 @@
  "Instagram (facultatif)": [
   "app/renderer/views/account.js"
  ],
+ "Instagram accepte {} caractères au plus par réponse.": [
+  "server/src/social.js"
+ ],
+ "Instagram refuse : {}": [
+  "server/src/social.js"
+ ],
+ "Instagram relié.": [
+  "site/compte.html"
+ ],
  "instagram-{}": [
   "app/main/main.js"
+ ],
+ "instagram://user?username={}": [
+  "site/assets/deeplink.js"
  ],
  "Installation des plugins en un clic": [
   "site/onirique.html"
@@ -5297,7 +5606,16 @@
  "INTENSITY": [
   "site/onirique.html"
  ],
+ "intent://{}{}{}#Intent;scheme=https;package={};S.browser_fallback_url={};end": [
+  "site/assets/deeplink.js"
+ ],
+ "Intérêt légitime": [
+  "site/confidentialite.html"
+ ],
  "Intérêt légitime (prévention des abus)": [
+  "site/confidentialite.html"
+ ],
+ "Intérêt légitime (répondre à votre demande, exprimée en commentant le mot)": [
   "site/confidentialite.html"
  ],
  "Intérêt légitime (répondre aux demandes)": [
@@ -5389,9 +5707,15 @@
  "J'en profite": [
   "site/admin.html"
  ],
+ "Je t'envoie ça en DM {pseudo} 🔥": [
+  "site/compte.html"
+ ],
  "Je vous notifie par la présente ma rétractation du contrat portant sur la fourniture du produit ou de l'abonnement ci-dessous :": [
   "site/remboursement.html",
   "site/pages.mjs"
+ ],
+ "JetBrains Mono": [
+  "site/assets/linkpage.js"
  ],
  "Jour de sortie": [
   "site/checklist-sortie.html"
@@ -5411,6 +5735,9 @@
   "site/pages.mjs"
  ],
  "Jusqu'à ce que vous l'effaciez ou supprimiez le compte": [
+  "site/confidentialite.html"
+ ],
+ "Jusqu'à la déconnexion du compte Instagram, 60 jours au plus sans renouvellement": [
   "site/confidentialite.html"
  ],
  "Jusqu'à la désactivation de l'ordinateur ou la suppression du compte": [
@@ -5440,6 +5767,9 @@
  ],
  "Justesse, channel strip, résonances, doubles, espace, saturation : chaque plugin s'occupe d'une étape de la voix, et ils se combinent dans ton projet.": [
   "site/onirique.html"
+ ],
+ "justify-content:flex-start;margin-top:14px": [
+  "site/compte.html"
  ],
  "kbit/s": [
   "site/convertisseur.html"
@@ -5593,6 +5923,9 @@
  "l'outil de démo n'est pas installé avec cette application.": [
   "app/main/main.js"
  ],
+ "l{}": [
+  "server/src/linkpage.js"
+ ],
  "La": [
   "site/bpm-tonalite.html",
   "site/gammes.html"
@@ -5625,6 +5958,9 @@
   "site/cgv.html",
   "site/pages.mjs"
  ],
+ "La connexion à Instagram n'est pas encore réglée sur le serveur.": [
+  "server/src/app.js"
+ ],
  "La connexion à YouTube n'est pas encore réglée sur le serveur.": [
   "site/compte.html",
   "server/src/app.js"
@@ -5656,6 +5992,12 @@
  ],
  "La note est écrite en notation anglaise, celle des logiciels de musique (C, D, E… pour do, ré, mi…), suivie de son octave : A4 est le la à 440 Hz. L'aiguille indique l'écart en cents, c'est-à-dire en centièmes de demi-ton : dans la zone verte, à moins de 5 cents, la note est juste à l'oreille.": [
   "site/accordeur.html"
+ ],
+ "La page de liens est réservée aux fondateurs d'ONIRIQUE.": [
+  "site/mes-liens.html"
+ ],
+ "La page de liens est réservée aux fondateurs.": [
+  "server/src/linkpage.js"
  ],
  "La page lit ces formats, mais n'écrit que du WAV et du MP3, les deux que tous les logiciels et tous les services acceptent.": [
   "site/convertisseur.html"
@@ -5727,6 +6069,9 @@
  ],
  "Lancer": [
   "app/renderer/views/admin.js"
+ ],
+ "Lancer l'automation": [
+  "site/compte.html"
  ],
  "Lancer l'écoute": [
   "site/onirique.html"
@@ -5881,9 +6226,6 @@
   "site/boutique.html",
   "app/renderer/views/library.js"
  ],
- "Le plugin ajoute-t-il de la latence ?": [
-  "site/onirique.html"
- ],
  "le plugin n'a pas pu être chargé.": [
   "app/main/main.js"
  ],
@@ -5970,8 +6312,10 @@
   "site/pages.mjs"
  ],
  "Le site, le serveur et la messagerie sont hébergés par IONOS dans l'Union européenne. Seul le paiement fait exception : Stripe peut traiter les données d'une commande hors de l'Union européenne, avec les garanties décrites dans sa politique de confidentialité. N'indiquez dans un message de support aucune information sensible qui ne soit pas utile à votre demande.": [
-  "site/confidentialite.html",
   "site/pages.mjs"
+ ],
+ "Le site, le serveur et la messagerie sont hébergés par IONOS dans l'Union européenne. Seuls le paiement et Instagram font exception : Meta peut traiter les données des réponses automatiques hors de l'Union européenne, et Stripe peut traiter les données d'une commande hors de l'Union européenne, avec les garanties décrites dans sa politique de confidentialité. N'indiquez dans un message de support aucune information sensible qui ne soit pas utile à votre demande.": [
+  "site/confidentialite.html"
  ],
  "Le sommet du catalogue : les artistes que tout le monde écoute en ce moment.": [
   "site/popularite.html"
@@ -6139,6 +6483,9 @@
  "Les mêmes comptes que dans Onirique Central. Un administrateur nommé ici l'est aussi dans l'application.": [
   "site/admin.html"
  ],
+ "Les mises à jour sont-elles comprises ?": [
+  "site/onirique.html"
+ ],
  "Les notes": [
   "site/gammes.html"
  ],
@@ -6225,6 +6572,9 @@
  ],
  "Les valeurs supposent une mesure à quatre temps, où le temps est la noire.": [
   "site/delais.html"
+ ],
+ "Lettres minuscules, chiffres, point ou tiret. C'est ce lien que tu colles dans ta bio.": [
+  "site/mes-liens.html"
  ],
  "Libérer": [
   "app/renderer/views/admin.js"
@@ -6318,7 +6668,8 @@
   "server/src/app.js"
  ],
  "Lien copié": [
-  "site/admin.html"
+  "site/admin.html",
+  "site/mes-liens.html"
  ],
  "Lien copié : envoyez-le à vos amis.": [
   "app/renderer/views/account.js"
@@ -6368,6 +6719,9 @@
  "Lien Spotify invalide : collez le lien d'un titre (open.spotify.com/track/…) ou d'un album (open.spotify.com/album/…).": [
   "server/src/app.js"
  ],
+ "Liens": [
+  "site/mes-liens.html"
+ ],
  "Liens légaux": [
   "site/onirique.html"
  ],
@@ -6383,6 +6737,15 @@
  "Limiter l'essai gratuit à un par ordinateur et éviter les essais à répétition depuis une même connexion": [
   "site/confidentialite.html"
  ],
+ "linear-gradient({}deg, {}, {})": [
+  "site/assets/linkpage.js"
+ ],
+ "linear-gradient(135deg, {} 50%, {} 50%)": [
+  "site/mes-liens.html"
+ ],
+ "linear-gradient(135deg, {}, {})": [
+  "site/mes-liens.html"
+ ],
  "linear-gradient(90deg,#8c0614,#e23444)": [
   "site/admin.html"
  ],
@@ -6397,6 +6760,12 @@
  "Link (Stripe)": [
   "server/src/payments.js"
  ],
+ "links-image:{}": [
+  "server/src/linkpage.js"
+ ],
+ "links:{}": [
+  "server/src/linkpage.js"
+ ],
  "Lire l'accordeur": [
   "site/accordeur.html"
  ],
@@ -6405,6 +6774,9 @@
  ],
  "Lire la mesure": [
   "site/volume-lufs.html"
+ ],
+ "Lire les commentaires de nos publications, y répondre, envoyer les messages privés": [
+  "site/confidentialite.html"
  ],
  "Lire son score": [
   "site/popularite.html"
@@ -6462,6 +6834,7 @@
   "site/delais.html",
   "site/gammes.html",
   "site/mentions-legales.html",
+  "site/mes-liens.html",
   "site/onirique.html",
   "site/outils.html",
   "site/partage.html",
@@ -6543,6 +6916,9 @@
  ],
  "M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z": [
   "app/renderer/app.js"
+ ],
+ "Ma page de": [
+  "site/mes-liens.html"
  ],
  "Mac": [
   "site/admin.html",
@@ -6755,6 +7131,9 @@
  "Message mis à la corbeille.": [
   "site/admin.html"
  ],
+ "Message privé (DM)": [
+  "site/compte.html"
+ ],
  "Message supprimé.": [
   "app/renderer/views/support-admin.js"
  ],
@@ -6781,6 +7160,9 @@
  "Mesurer un autre fichier": [
   "site/volume-lufs.html"
  ],
+ "Meta": [
+  "site/confidentialite.html"
+ ],
  "Méthode invalide.": [
   "app/main/main.js"
  ],
@@ -6795,6 +7177,9 @@
  ],
  "Mettre ce message à la corbeille ?": [
   "site/admin.html"
+ ],
+ "Mettre en pause": [
+  "site/compte.html"
  ],
  "Mettre le site en maintenance": [
   "site/admin.html"
@@ -6890,8 +7275,12 @@
  "Mode MIX ou LIVE": [
   "site/onirique.html"
  ],
+ "Modifications non enregistrées": [
+  "site/mes-liens.html"
+ ],
  "Modifier": [
   "site/admin.html",
+  "site/compte.html",
   "app/renderer/views/admin.js"
  ],
  "Modifier « {} »": [
@@ -6899,6 +7288,9 @@
  ],
  "Modifier {}": [
   "app/renderer/views/admin.js"
+ ],
+ "Modifier l'automation": [
+  "site/compte.html"
  ],
  "Modifier la fiche (nom, texte, prix)": [
   "site/admin.html"
@@ -6920,6 +7312,7 @@
  ],
  "Mon compte": [
   "site/admin.html",
+  "site/mes-liens.html",
   "site/assets/account.js",
   "site/assets/site-nav.js",
   "server/src/mailtemplate.js",
@@ -6955,10 +7348,8 @@
   "site/transposition.html"
  ],
  "Monter": [
-  "site/admin.html"
- ],
- "Monter l'air ou le drive rend le son plus fort, et une oreille juge toujours « mieux » ce qui est plus fort. L'Auto Gain garde le volume perçu constant pour que tu compares le son, pas le niveau.": [
-  "site/onirique.html"
+  "site/admin.html",
+  "site/mes-liens.html"
  ],
  "Monter la fréquence ou la résolution sert-il à quelque chose ?": [
   "site/convertisseur.html"
@@ -7011,6 +7402,9 @@
  "Mot de passe, pour confirmer": [
   "site/compte.html"
  ],
+ "Mots déclencheurs": [
+  "site/compte.html"
+ ],
  "Moyen": [
   "site/admin.html",
   "site/delais.html"
@@ -7029,6 +7423,9 @@
  ],
  "MULTIBAND": [
   "site/onirique.html"
+ ],
+ "music://{}{}{}": [
+  "site/assets/deeplink.js"
  ],
  "muted grow": [
   "app/renderer/views/admin.js"
@@ -7077,6 +7474,9 @@
  "Ne réduit que les crêtes qui dépassent du spectre, au moment où elles sonnent. Trois zones réglables en fréquence, en largeur et en sensibilité. LISTEN fait entendre ce qui est retiré.": [
   "site/onirique.html"
  ],
+ "Néon": [
+  "site/assets/linkpage.js"
+ ],
  "New-Item -ItemType Directory -Force -Path {} | Out-Null;": [
   "app/main/installer.js"
  ],
@@ -7085,7 +7485,9 @@
  ],
  "NFD": [
   "site/credits.html",
-  "server/src/app.js"
+  "site/mes-liens.html",
+  "server/src/app.js",
+  "server/src/social.js"
  ],
  "NFR": [
   "site/admin.html",
@@ -7112,7 +7514,8 @@
   "app/renderer/views/auth.js"
  ],
  "Nom affiché": [
-  "site/compte.html"
+  "site/compte.html",
+  "site/mes-liens.html"
  ],
  "Nom d'artiste ou lien Spotify": [
   "site/popularite.html"
@@ -7265,6 +7668,9 @@
  "Nouveautés et corrections, visibles par les utilisateurs.": [
   "app/renderer/views/admin.js"
  ],
+ "Nouvelle automation": [
+  "site/compte.html"
+ ],
  "Nouvelle version": [
   "app/renderer/views/admin.js"
  ],
@@ -7273,6 +7679,9 @@
  ],
  "Novi": [
   "site/onirique.html"
+ ],
+ "Nuit & sang": [
+  "site/assets/linkpage.js"
  ],
  "Nullsoft": [
   "app/main/installer.js"
@@ -7315,6 +7724,9 @@
  "Offert avec votre rôle": [
   "site/boutique.html"
  ],
+ "Ombre sous les boutons": [
+  "site/mes-liens.html"
+ ],
  "ON": [
   "site/onirique.html"
  ],
@@ -7344,7 +7756,9 @@
   "site/decoupe.html",
   "site/delais.html",
   "site/gammes.html",
+  "site/lien.html",
   "site/mentions-legales.html",
+  "site/mes-liens.html",
   "site/onirique.html",
   "site/outils.html",
   "site/partage.html",
@@ -7376,6 +7790,9 @@
  ],
  "ONIRIQUE — Compte": [
   "site/compte.html"
+ ],
+ "ONIRIQUE — Ma page de liens": [
+  "site/mes-liens.html"
  ],
  "ONIRIQUE — plugins audio pour la voix": [
   "site/onirique.html"
@@ -7461,9 +7878,6 @@
  "Onirique VocalBox : toute une chaîne vocale dans un seul plugin VST3. EQ, Resonance, 1176, LA-2A, multibande, de-esser, plosives et saturation.": [
   "site/onirique.html"
  ],
- "ONIRIQUE VOCALBOX.vst3": [
-  "site/onirique.html"
- ],
  "onirique-central-{}.ps1": [
   "app/main/installer.js"
  ],
@@ -7482,6 +7896,9 @@
  ],
  "ONIRIQUE:{}": [
   "server/src/totp.js"
+ ],
+ "onirique.store/l/": [
+  "site/mes-liens.html"
  ],
  "onirique2:{}": [
   "app/main/installer.js"
@@ -7528,10 +7945,13 @@
  "ou le": [
   "site/transposition.html"
  ],
+ "Oui : chaque plugin payant s'essaie gratuitement pendant 7 jours, une fois par compte. Sur sa fiche de la boutique, tu peux aussi essayer son interface directement dans ton navigateur.": [
+  "site/onirique.html"
+ ],
  "Oui : chaque titre a sa note, et celle de l'artiste en découle. Colle le lien d'un titre pour voir sa note à lui ; cherche l'artiste pour voir la sienne et celles de ses titres les plus écoutés.": [
   "site/popularite.html"
  ],
- "Oui, passe en mode LIVE dans l'en-tête. La latence tombe à zéro et tu entends ta voix traitée dans le casque pendant la prise.": [
+ "Oui. Quand une nouvelle version sort, ONIRIQUE CENTRAL te la propose et l'installe : ce qui change est indiqué dans l'historique des versions de chaque plugin.": [
   "site/onirique.html"
  ],
  "OUT": [
@@ -7677,6 +8097,9 @@
  ],
  "padding:7px 14px;font-size:13px": [
   "site/onirique.html"
+ ],
+ "Page de liens": [
+  "site/compte.html"
  ],
  "page Support": [
   "site/mentions-legales.html",
@@ -7905,6 +8328,12 @@
  "Pas encore déposée sur le serveur.": [
   "site/admin.html"
  ],
+ "Pas encore en ligne : enregistre ta page": [
+  "site/mes-liens.html"
+ ],
+ "Pas encore réglé sur le serveur.": [
+  "site/compte.html"
+ ],
  "Pas le fichier de ta référence ? Cherche-la": [
   "site/comparer-mix.html"
  ],
@@ -7980,6 +8409,9 @@
  "Photo d'ingé retirée.": [
   "site/compte.html"
  ],
+ "Photo de la page": [
+  "site/mes-liens.html"
+ ],
  "Photo de profil": [
   "site/compte.html"
  ],
@@ -8033,6 +8465,9 @@
   "site/admin.html",
   "site/compte.html"
  ],
+ "Pilule": [
+  "site/mes-liens.html"
+ ],
  "Piste d'origine": [
   "site/stems.html"
  ],
@@ -8051,6 +8486,9 @@
  "Plateforme": [
   "site/revenus-streaming.html",
   "site/volume-lufs.html"
+ ],
+ "Plein": [
+  "site/mes-liens.html"
  ],
  "PLOSIVES": [
   "site/onirique.html"
@@ -8180,6 +8618,9 @@
  "Plusieurs plugins,": [
   "site/boutique.html"
  ],
+ "Plusieurs réponses, une par ligne : chacune est tirée au hasard, pour ne pas répéter la même. {pseudo} devient le @ de la personne.": [
+  "site/compte.html"
+ ],
  "Pochette": [
   "app/renderer/views/admin.js"
  ],
@@ -8194,6 +8635,12 @@
  ],
  "Pointée": [
   "site/delais.html"
+ ],
+ "Police du nom": [
+  "site/mes-liens.html"
+ ],
+ "Police du texte": [
+  "site/mes-liens.html"
  ],
  "politique de confidentialité": [
   "site/cgv.html",
@@ -8250,9 +8697,6 @@
  ],
  "Pour {}. VIP : tous les plugins offerts. Abrasion, Relic : le panel admin, limité à ses propres plugins et à leurs licences.": [
   "app/renderer/views/admin.js"
- ],
- "pour chaque voix.": [
-  "site/onirique.html"
  ],
  "Pour choisir un nouveau mot de passe, ouvrez ce lien (valable une heure) :": [
   "server/src/app.js"
@@ -8400,15 +8844,6 @@
  "Preset suivant": [
   "site/onirique.html"
  ],
- "Presets": [
-  "site/onirique.html"
- ],
- "Presets du multibande": [
-  "site/onirique.html"
- ],
- "Presets du plugin": [
-  "site/onirique.html"
- ],
  "private, max-age=600": [
   "server/src/app.js"
  ],
@@ -8473,6 +8908,7 @@
   "site/pages.mjs"
  ],
  "Profil": [
+  "site/mes-liens.html",
   "app/renderer/views/account.js"
  ],
  "Profil d'ingé": [
@@ -8516,7 +8952,13 @@
  "Pseudo d'ingé (affiché sous les crédits)": [
   "app/renderer/views/account.js"
  ],
+ "public, max-age=30": [
+  "server/src/linkpage.js"
+ ],
  "Publication en cours": [
+  "site/compte.html"
+ ],
+ "Publication visée": [
   "site/compte.html"
  ],
  "Publié": [
@@ -8544,7 +8986,7 @@
  "puis {} par mois pour chaque plugin ajouté. Mises à jour comprises, résiliable à tout moment.": [
   "site/boutique.html"
  ],
- "Puis-je m'enregistrer à travers VocalBox ?": [
+ "Puis-je essayer un plugin avant de l'acheter ?": [
   "site/onirique.html"
  ],
  "Q de la bande sélectionnée": [
@@ -8581,6 +9023,12 @@
  "Quelles données personnelles Onirique collecte, pourquoi, pendant combien de temps, et comment exercer vos droits.": [
   "site/confidentialite.html",
   "site/pages.mjs"
+ ],
+ "Quelqu'un": [
+  "site/compte.html"
+ ],
+ "Quelques mots sous ton nom": [
+  "site/mes-liens.html"
  ],
  "Quelques repères": [
   "site/decoupe.html"
@@ -8703,6 +9151,9 @@
  "referrer:{}": [
   "server/src/app.js"
  ],
+ "Refusé.": [
+  "server/src/app.js"
+ ],
  "register:{}": [
   "server/src/app.js"
  ],
@@ -8740,6 +9191,9 @@
  "Réinstaller": [
   "app/renderer/views/library.js"
  ],
+ "Relancer": [
+  "site/compte.html"
+ ],
  "Relative": [
   "site/gammes.html"
  ],
@@ -8760,6 +9214,15 @@
   "site/boutique.html",
   "app/renderer/ui.js",
   "server/src/newsletter.js"
+ ],
+ "relié": [
+  "server/src/social.js"
+ ],
+ "Relier Instagram": [
+  "site/compte.html"
+ ],
+ "Reliez d'abord votre compte Instagram.": [
+  "server/src/social.js"
  ],
  "Reliez votre chaîne pour programmer vos Shorts : vous déposez les vidéos ici, et chacune sort au jour et à l'heure choisis.": [
   "site/compte.html"
@@ -8822,17 +9285,39 @@
   "site/confidentialite.html",
   "site/pages.mjs"
  ],
+ "Répondre aussi aux commentaires déjà postés (7 derniers jours)": [
+  "site/compte.html"
+ ],
+ "Répondu": [
+  "site/compte.html"
+ ],
  "réponse": [
+  "site/compte.html",
   "server/src/youtube.js"
  ],
  "Réponse": [
   "server/src/mailbox.js"
+ ],
+ "réponse «": [
+  "site/compte.html"
+ ],
+ "réponse {}": [
+  "server/src/social.js"
  ],
  "Réponse envoyée à {}": [
   "app/renderer/views/support.js"
  ],
  "Réponse illisible de la recherche.": [
   "server/src/reference.js"
+ ],
+ "Réponse sous le commentaire": [
+  "site/compte.html"
+ ],
+ "Réponses automatiques": [
+  "site/compte.html"
+ ],
+ "Réponses automatiques sur Instagram": [
+  "site/confidentialite.html"
  ],
  "Reprendre une description :": [
   "site/compte.html"
@@ -8920,6 +9405,7 @@
  "Retirer": [
   "site/admin.html",
   "site/compte.html",
+  "site/mes-liens.html",
   "site/partage.html",
   "app/renderer/views/account.js",
   "app/renderer/views/admin.js"
@@ -8944,6 +9430,7 @@
  ],
  "Retirer l'image": [
   "site/admin.html",
+  "site/mes-liens.html",
   "app/renderer/views/admin.js"
  ],
  "Retirer l'image de {} ?": [
@@ -9174,6 +9661,9 @@
  "Rôle invalide.": [
   "server/src/app.js"
  ],
+ "Ronde": [
+  "site/mes-liens.html"
+ ],
  "Ronde (1/1)": [
   "site/delais.html"
  ],
@@ -9227,6 +9717,9 @@
   "site/admin.html",
   "app/renderer/views/admin.js"
  ],
+ "Salut {pseudo} ! Voici le lien promis : https://onirique.store": [
+  "site/compte.html"
+ ],
  "sans compte": [
   "site/admin.html",
   "app/renderer/views/support-admin.js"
@@ -9254,6 +9747,9 @@
  ],
  "Sans compte. Un lien d'artiste ou de titre copié depuis Spotify donne le résultat exact.": [
   "site/popularite.html"
+ ],
+ "Sans légende": [
+  "site/compte.html"
  ],
  "Sans licence {}": [
   "app/renderer/views/admin.js"
@@ -9302,6 +9798,7 @@
  "Se connecter": [
   "site/admin.html",
   "site/compte.html",
+  "site/mes-liens.html",
   "app/renderer/views/auth.js"
  ],
  "Se connecter avec YouTube": [
@@ -9319,7 +9816,8 @@
   "server/src/newsletter.js"
  ],
  "Se reconnecter": [
-  "site/admin.html"
+  "site/admin.html",
+  "site/mes-liens.html"
  ],
  "Se souvenir de moi sur cet appareil": [
   "site/compte.html"
@@ -9330,6 +9828,9 @@
  ],
  "Second contenu publié": [
   "site/checklist-sortie.html"
+ ],
+ "Seconde couleur": [
+  "site/mes-liens.html"
  ],
  "Seconde proposition :": [
   "site/bpm-tonalite.html"
@@ -9355,6 +9856,9 @@
  "Selon la recommandation UIT-R BS.1770, celle qu'appliquent les plateformes et les outils de mastering : pondération de l'oreille, blocs de 400 millisecondes, silences écartés. Le pic réel est recherché en reconstruisant le signal quatre fois plus finement.": [
   "site/volume-lufs.html"
  ],
+ "Séparés par des virgules, sans souci des majuscules ni des accents. Vide : tous les commentaires.": [
+  "site/compte.html"
+ ],
  "Serveur changé : reconnectez-vous.": [
   "app/renderer/views/account.js"
  ],
@@ -9362,6 +9866,7 @@
   "app/main/api.js"
  ],
  "Serveur injoignable. Réessaie dans un instant.": [
+  "site/mes-liens.html",
   "site/popularite.html"
  ],
  "Serveur injoignable. Réessayez dans un instant.": [
@@ -9411,8 +9916,17 @@
  "Seulement les plugins qu'il vous faut": [
   "app/renderer/views/subscription.js"
  ],
+ "Seuls les commentaires écrits sous les publications d'Onirique sont concernés : aucune autre donnée de votre compte Instagram n'est consultée, et rien n'est utilisé à d'autres fins. Le message privé n'est envoyé qu'en réponse à votre commentaire.": [
+  "site/confidentialite.html"
+ ],
  "sg a": [
   "site/onirique.html"
+ ],
+ "sha256=": [
+  "server/src/social.js"
+ ],
+ "short auto": [
+  "site/compte.html"
  ],
  "Shorts YouTube": [
   "site/compte.html",
@@ -9461,7 +9975,8 @@
   "app/main/installer.js"
  ],
  "Signature invalide.": [
-  "server/src/payments.js"
+  "server/src/payments.js",
+  "server/src/social.js"
  ],
  "Signature périmée.": [
   "server/src/payments.js"
@@ -9520,6 +10035,12 @@
  "sn-announce tone-": [
   "site/assets/annonce.js"
  ],
+ "Snapchat": [
+  "site/assets/deeplink.js"
+ ],
+ "snapchat://add/{}": [
+  "site/assets/deeplink.js"
+ ],
  "Snare": [
   "site/assets/stem-kind.js"
  ],
@@ -9549,6 +10070,9 @@
  "Sous −1 dBTP : pas de risque à la conversion.": [
   "site/volume-lufs.html"
  ],
+ "Sous certaines publications du compte Instagram d'Onirique, il est proposé de commenter un mot (par exemple « RISER ») pour recevoir un lien. Quand vous commentez ce mot, le compte d'Onirique vous répond automatiquement sous votre commentaire, puis vous envoie le lien en message privé, une seule fois. Ce service passe par l'API officielle d'Instagram (Meta) : Onirique ne reçoit que ce que Meta transmet pour ces publications.": [
+  "site/confidentialite.html"
+ ],
  "Sous le capot.": [
   "site/onirique.html"
  ],
@@ -9568,6 +10092,7 @@
   "site/popularite.html",
   "site/revenus-streaming.html",
   "site/volume-lufs.html",
+  "site/assets/deeplink.js",
   "server/src/app.js"
  ],
  "Spotify ↗": [
@@ -9582,6 +10107,9 @@
  "Spotify note chaque artiste et chaque titre de 0 à 100. Cette note ne s'affiche nulle part dans l'application : tape un nom ou colle un lien pour la voir.": [
   "site/popularite.html"
  ],
+ "spotify:{}:{}": [
+  "site/assets/deeplink.js"
+ ],
  "Squirrel": [
   "app/main/installer.js"
  ],
@@ -9590,6 +10118,9 @@
  ],
  "Start-Process msiexec -ArgumentList @('/i', {}) -Wait -PassThru": [
   "app/main/installer.js"
+ ],
+ "state dirty": [
+  "site/mes-liens.html"
  ],
  "Statut invalide.": [
   "server/src/app.js"
@@ -9638,6 +10169,9 @@
   "app/renderer/app.js",
   "app/renderer/views/admin.js",
   "app/renderer/views/support-admin.js"
+ ],
+ "Style": [
+  "site/mes-liens.html"
  ],
  "Sujet": [
   "site/support.html",
@@ -9698,6 +10232,7 @@
  ],
  "Supprimer": [
   "site/admin.html",
+  "site/compte.html",
   "app/renderer/views/admin.js",
   "app/renderer/views/support-admin.js"
  ],
@@ -9707,11 +10242,20 @@
  "Supprimer {} ?": [
   "app/renderer/views/admin.js"
  ],
+ "Supprimer ce lien": [
+  "site/mes-liens.html"
+ ],
  "Supprimer ce message ?": [
   "app/renderer/views/support-admin.js"
  ],
  "Supprimer ce message de la liste ? L'e-mail reçu dans la boîte n'est pas touché.": [
   "site/admin.html"
+ ],
+ "Supprimer ces données": [
+  "site/confidentialite.html"
+ ],
+ "Supprimer cette automation ? Les personnes qui commenteront ensuite ne recevront plus de réponse.": [
+  "site/compte.html"
  ],
  "Supprimer cette clé ?": [
   "app/renderer/views/admin.js"
@@ -9739,6 +10283,9 @@
  ],
  "Sur ce PC": [
   "app/renderer/views/library.js"
+ ],
+ "Sur combien d'ordinateurs puis-je l'utiliser ?": [
+  "site/onirique.html"
  ],
  "Sur la plupart des plateformes, une écoute est comptée après 30 secondes. Sur Spotify, un titre doit en outre dépasser 1 000 écoutes sur douze mois pour générer des revenus.": [
   "site/revenus-streaming.html"
@@ -9777,8 +10324,12 @@
  "Synth": [
   "site/assets/stem-kind.js"
  ],
+ "system-ui, -apple-system, 'Segoe UI', sans-serif": [
+  "site/assets/linkpage.js"
+ ],
  "Système": [
   "site/admin.html",
+  "site/assets/linkpage.js",
   "app/renderer/views/admin.js",
   "app/renderer/views/library.js"
  ],
@@ -9787,6 +10338,9 @@
  ],
  "Ta note la plus basse, la plus haute, et les tonalités qui te vont.": [
   "site/assets/tools-menu.js"
+ ],
+ "Ta page à mettre en bio Instagram ou TikTok : tes plateformes, chacune ouverte directement dans son application. Apparence entièrement personnalisable.": [
+  "site/compte.html"
  ],
  "Ta part des revenus (%)": [
   "site/revenus-streaming.html"
@@ -9799,6 +10353,9 @@
  ],
  "Ta progression est gardée sur cet appareil : rien n'est envoyé.": [
   "site/checklist-sortie.html"
+ ],
+ "Ta session a expiré.": [
+  "site/mes-liens.html"
  ],
  "Ta stéréo s'annule en partie en mono (corrélation négative) : vérifie les effets de largeur et la phase des prises doublées.": [
   "site/comparer-mix.html"
@@ -9922,6 +10479,12 @@
  "Télécharger pour Windows": [
   "site/compte.html"
  ],
+ "Telegram": [
+  "site/assets/deeplink.js"
+ ],
+ "Téléphone": [
+  "site/assets/deeplink.js"
+ ],
  "Tempo": [
   "site/bpm-tonalite.html"
  ],
@@ -9978,10 +10541,12 @@
   "app/renderer/app.js"
  ],
  "Texte": [
-  "site/admin.html"
+  "site/admin.html",
+  "site/mes-liens.html"
  ],
  "Texte du bouton": [
   "site/admin.html",
+  "site/mes-liens.html",
   "app/renderer/views/admin.js"
  ],
  "Texte du code": [
@@ -9989,10 +10554,17 @@
   "app/renderer/views/admin.js"
  ],
  "Texte du lien": [
-  "site/admin.html"
+  "site/admin.html",
+  "site/mes-liens.html"
+ ],
+ "tg://resolve?domain={}": [
+  "site/assets/deeplink.js"
  ],
  "This site is available in English.": [
   "site/assets/site-nav.js"
+ ],
+ "Threads": [
+  "site/assets/deeplink.js"
  ],
  "THRESHOLD": [
   "site/onirique.html"
@@ -10000,6 +10572,9 @@
  "Tidal": [
   "site/revenus-streaming.html",
   "site/volume-lufs.html"
+ ],
+ "TIDAL": [
+  "site/assets/deeplink.js"
  ],
  "Tiens chaque note une demi-seconde pour qu'elle compte.": [
   "site/tessiture.html"
@@ -10149,6 +10724,9 @@
   "site/boutique.html",
   "app/renderer/views/admin.js",
   "app/renderer/views/library.js"
+ ],
+ "Tous les commentaires": [
+  "site/compte.html"
  ],
  "Tous les comptes (information de service)": [
   "server/src/newsletter.js"
@@ -10347,10 +10925,18 @@
   "site/onirique.html"
  ],
  "Twitch": [
+  "site/assets/deeplink.js",
   "server/src/app.js"
+ ],
+ "twitch://stream/{}": [
+  "site/assets/deeplink.js"
+ ],
+ "twitter://user?screen_name={}": [
+  "site/assets/deeplink.js"
  ],
  "Type": [
   "site/cookies.html",
+  "site/mes-liens.html",
   "site/stems.html",
   "site/pages.mjs",
   "app/renderer/views/admin.js",
@@ -10479,9 +11065,6 @@
   "site/compte.html",
   "app/renderer/views/account.js"
  ],
- "Un point de départ": [
-  "site/onirique.html"
- ],
  "Un produit porte déjà cet identifiant.": [
   "server/src/app.js"
  ],
@@ -10503,8 +11086,14 @@
  "Un souci d'installation, de licence, de son ou de compte ? Écrivez-nous : nous répondons par e-mail.": [
   "site/support.html"
  ],
+ "Un thème pour partir, puis chaque réglage se change un par un.": [
+  "site/mes-liens.html"
+ ],
  "Un titre du même style · WAV de préférence": [
   "site/comparer-mix.html"
+ ],
+ "Unbounded": [
+  "site/assets/linkpage.js"
  ],
  "Une dernière étape": [
   "app/renderer/app.js"
@@ -10534,6 +11123,9 @@
  "Une licence s'active sur deux machines à la fois, depuis ton compte. Une fois activé, le plugin se vérifie sans connexion.": [
   "site/onirique.html"
  ],
+ "Une licence s'active sur deux ordinateurs à la fois par défaut, par exemple ton PC fixe et ton portable.": [
+  "site/onirique.html"
+ ],
  "Une licence s'active sur le nombre d'ordinateurs indiqué sur votre compte (deux par défaut). Vous pouvez désactiver un ordinateur pour en activer un autre.": [
   "site/cgv.html",
   "site/pages.mjs"
@@ -10543,6 +11135,9 @@
  ],
  "Une ligne vide entre deux paragraphes. {prenom} : le prénom. **gras**, [texte](https://…), # intertitre": [
   "app/renderer/views/admin.js"
+ ],
+ "Une page à mettre dans ta bio Instagram ou TikTok : chaque lien ouvre directement l'application de la plateforme (Spotify, YouTube, Instagram…) chez la personne qui clique, et non son site. Tout se règle ici, l'aperçu suit en direct.": [
+  "site/mes-liens.html"
  ],
  "Une phrase sous le nom": [
   "site/admin.html"
@@ -10569,13 +11164,23 @@
   "app/renderer/views/admin.js",
   "app/main/main.js"
  ],
+ "url(": [
+  "site/compte.html"
+ ],
  "url('{}')": [
   "site/assets/credits.js"
+ ],
+ "url(\"{}?w=1280\") center / cover": [
+  "site/assets/linkpage.js"
  ],
  "url(\"{}\")": [
   "site/admin.html",
   "site/assets/demo-player.js",
   "app/renderer/demo-player.js"
+ ],
+ "url(\"/assets/icons/{}.svg\")": [
+  "site/mes-liens.html",
+  "site/assets/linkpage.js"
  ],
  "use strict": [
   "site/onirique.html"
@@ -10720,6 +11325,9 @@
  "verify:{}": [
   "server/src/app.js"
  ],
+ "Verre": [
+  "site/mes-liens.html"
+ ],
  "versés au total par les plateformes": [
   "site/revenus-streaming.html"
  ],
@@ -10834,6 +11442,9 @@
  "Voir la fiche du plugin →": [
   "site/onirique.html"
  ],
+ "Voir la publication": [
+  "site/compte.html"
+ ],
  "Voir le score": [
   "site/popularite.html"
  ],
@@ -10849,6 +11460,9 @@
   "site/outils.html",
   "site/popularite.html",
   "site/volume-lufs.html"
+ ],
+ "Voir ma page": [
+  "site/mes-liens.html"
  ],
  "Voir sur YouTube": [
   "site/compte.html"
@@ -10998,6 +11612,9 @@
  "Vous écrivez en tant que": [
   "site/support.html"
  ],
+ "Vous envoyer la réponse et le lien demandés, une seule fois par personne, et suivre les envois": [
+  "site/confidentialite.html"
+ ],
  "Vous êtes désinscrit": [
   "server/src/newsletter.js"
  ],
@@ -11098,6 +11715,9 @@
   "site/stems.html",
   "site/assets/audio-kit.js"
  ],
+ "whatsapp://send?phone={}": [
+  "site/assets/deeplink.js"
+ ],
  "wide row": [
   "site/admin.html"
  ],
@@ -11146,7 +11766,8 @@
   "site/assets/pdf-kit.js"
  ],
  "YouTube Music": [
-  "site/revenus-streaming.html"
+  "site/revenus-streaming.html",
+  "site/assets/deeplink.js"
  ],
  "YouTube n'a pas confirmé la vidéo.": [
   "server/src/youtube.js"
@@ -11156,6 +11777,12 @@
  ],
  "YouTube refuse < et > dans une description.": [
   "server/src/app.js"
+ ],
+ "youtube://www.youtube.com{}{}": [
+  "site/assets/deeplink.js"
+ ],
+ "youtube://www.youtube.com/watch?v={}": [
+  "site/assets/deeplink.js"
  ],
  "Zone": [
   "site/comparer-mix.html"

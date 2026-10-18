@@ -104,6 +104,8 @@ server {
     # Les pages sont toujours revérifiées : une mise en ligne se voit tout de suite.
     location / { add_header Cache-Control "no-cache"; try_files \$uri \$uri.html \$uri/ =404; }
     location /assets/ { add_header Cache-Control \$onirique_asset_cache; }
+    # Pages de liens des fondateurs : onirique.store/l/<pseudo>, une seule page qui lit le pseudo dans l'adresse.
+    location /l/ { add_header Cache-Control "no-cache"; try_files /lien.html =404; }
     # La page compte du site parle au CENTRAL par la même origine.
     location /api/ {
         # Envoi d'images et de versions depuis la page admin du site.

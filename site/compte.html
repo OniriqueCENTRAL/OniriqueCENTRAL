@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=c9f7993d"></script>
+<script src="assets/i18n.js?v=ce7f8558"></script>
 <script src="assets/annonce.js?v=1"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Compte</title>
@@ -251,6 +251,15 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
       </form>
     </div>
 
+    <!-- Réservé aux fondateurs : leur page « link in bio », éditée dans mes-liens.html -->
+    <div class="panel" id="liens-panel" hidden>
+      <div class="eyebrow">Page de liens</div>
+      <div class="between">
+        <p class="muted" style="margin:0;max-width:52ch">Ta page à mettre en bio Instagram ou TikTok : tes plateformes, chacune ouverte directement dans son application. Apparence entièrement personnalisable.</p>
+        <a class="btn btn-primary" href="mes-liens.html">Créer ou modifier ma page</a>
+      </div>
+    </div>
+
     <!-- Réservé aux fondateurs : ce qui s'affiche sous les crédits qu'ils ont réalisés (mix, master…), à la place du compte -->
     <div class="panel" id="inge" hidden>
       <div class="eyebrow">Profil d'ingé</div>
@@ -427,6 +436,7 @@ function show(me) {
   $("profile-name").value = me.user.name || "";
   // Profil d'ingé : les fondateurs seulement. Sans photo d'ingé, une silhouette (jamais la photo du compte).
   $("inge").hidden = me.user.role !== "founder";
+  $("liens-panel").hidden = me.user.role !== "founder";
   $("eng-name").value = me.user.engineerName || "";
   $("eng-avatar").src = me.user.engineerAvatar || "assets/logo-small.png";
   $("eng-remove").hidden = !me.user.engineerAvatar;

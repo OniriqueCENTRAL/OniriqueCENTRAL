@@ -33,6 +33,7 @@ import { connectUrl, disconnect, finishConnect, videoFile, videoView, youtubeCon
 import * as social from './social.js';
 import { announcementView, deleteAccount, maintenanceView, mountControl, packView, paidSubscription, planView } from './control.js';
 import { enrollment, matchStep, newRecoveryCodes, newSecret, recoveryHash } from './totp.js';
+import { mountLinkPages } from './linkpage.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
@@ -504,11 +505,11 @@ export function createApp() {
   });
 
   // Photo de profil : une image PNG, JPEG ou WebP de 2 Mo au plus, en corps brut de la requête.
-  /** Reçoit une image PNG, JPEG ou WebP (2 Mo au plus), vérifiée sur son contenu ; rend le nom du fichier gardé. */
-  async function receiveImage(req) {
+  /** Reçoit une image PNG, JPEG ou WebP (2 Mo par défaut), vérifiée sur son contenu ; rend le nom du fichier gardé. */
+  async function receiveImage(req, maxBytes = 2 * 1024 * 1024) {
     const ext = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' }[req.headers['content-type']];
     if (!ext) throw new HttpError(400, 'Image attendue : PNG, JPEG ou WebP.');
-    const file = await receiveFile(req, config.mediaDir, 2 * 1024 * 1024);
+    const file = await receiveFile(req, config.mediaDir, maxBytes);
     const stored = path.join(config.mediaDir, file.storedAs);
     const head = Buffer.alloc(12);
     const fd = fs.openSync(stored, 'r');
@@ -525,6 +526,8 @@ export function createApp() {
     fs.renameSync(stored, path.join(config.mediaDir, name));
     return name;
   }
+
+  mountLinkPages(app, { requireUser, receiveImage, removeMedia, wrap });
 
   // La photo d'ingé d'un fondateur : celle des crédits, distincte de la photo du compte.
   const engineerOnly = (req) => { if (req.user.role !== 'founder') throw new HttpError(403, "Le profil d'ingé est réservé aux fondateurs."); };
