@@ -177,6 +177,8 @@ export async function handleInstagramWebhook(body) {
       const v = change.value;
       const comment = { id: String(v.id || ''), text: v.text || '', fromId: String(v.from?.id || ''), username: v.from?.username || '',
         mediaId: String(v.media?.id || ''), at: entry.time ? (entry.time > 1e12 ? entry.time : entry.time * 1000) : now() };
+      // Une ligne par commentaire reçu (sans son texte), pour comprendre une réponse qui ne part pas.
+      console.log(`Instagram : commentaire ${comment.id} de @${comment.username || '?'} sur ${comment.mediaId || '?'} (compte ${entry.id}, ${accounts.length ? 'relié' : 'inconnu'})`);
       for (const account of accounts) await handleComment(account, comment);
     }
   }
