@@ -1,0 +1,10 @@
+{
+ "Comment installer un plugin ?": "How do I install a plugin?",
+ "Avec l'application ONIRIQUE CENTRAL, gratuite : connecte-toi avec ton compte, puis installe le plugin en un clic. Elle le place au bon endroit et active sa licence toute seule. Relance ensuite le scan des plugins de ton DAW (dans FL Studio : Options → Manage plugins → Find installed plugins).": "With the free ONIRIQUE CENTRAL app: sign in with your account, then install the plugin in one click. It puts it in the right place and activates its licence on its own. Then rescan your DAW's plugins (in FL Studio: Options → Manage plugins → Find installed plugins).",
+ "Puis-je essayer un plugin avant de l'acheter ?": "Can I try a plugin before buying it?",
+ "Oui : chaque plugin payant s'essaie gratuitement pendant 7 jours, une fois par compte. Sur sa fiche de la boutique, tu peux aussi essayer son interface directement dans ton navigateur.": "Yes: every paid plugin can be tried free for 7 days, once per account. On its shop page, you can also try its interface right in your browser.",
+ "Sur combien d'ordinateurs puis-je l'utiliser ?": "On how many computers can I use it?",
+ "Une licence s'active sur deux ordinateurs à la fois par défaut, par exemple ton PC fixe et ton portable.": "By default, a licence works on two computers at once, for example your desktop and your laptop.",
+ "Les mises à jour sont-elles comprises ?": "Are updates included?",
+ "Oui. Quand une nouvelle version sort, ONIRIQUE CENTRAL te la propose et l'installe : ce qui change est indiqué dans l'historique des versions de chaque plugin.": "Yes. When a new version comes out, ONIRIQUE CENTRAL offers it and installs it: what changed is listed in each plugin's version history."
+}
