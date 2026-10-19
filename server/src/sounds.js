@@ -120,6 +120,10 @@ CREATE TABLE IF NOT EXISTS sound_saves (
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'folder_id'`).get()) {
   db.exec('ALTER TABLE sound_projects ADD COLUMN folder_id INTEGER REFERENCES sound_folders(id) ON DELETE SET NULL');
 }
+// Un dossier peut être rangé dans un autre (null : à la racine de Mes sons).
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_folders') WHERE name = 'parent_id'`).get()) {
+  db.exec('ALTER TABLE sound_folders ADD COLUMN parent_id INTEGER REFERENCES sound_folders(id) ON DELETE SET NULL');
+}
 // Les collaborateurs d'un projet (invités par un lien que l'auteur crée, coupe ou renouvelle) : ils écoutent, ajoutent
 // des titres et des versions, modifient noms, étapes, crédits et notes, et le partagent par leurs propres liens d'écoute
 // (qui ne s'ouvrent plus s'ils quittent le projet). Supprimer le projet et gérer ses collaborateurs restent à l'auteur ;
@@ -451,8 +455,8 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
         const mine = plays.filter((r) => r.link_id === l.id);
         return { ...linkView(l), plays: l.plays, lastPlay: l.last_play, listeners: listeners(mine) };
       }),
-      folders: all('SELECT id, title, created_at FROM sound_folders WHERE user_id = ? ORDER BY created_at DESC', req.user.id)
-        .map((f) => ({ id: f.id, title: f.title, createdAt: f.created_at })),
+      folders: all('SELECT id, title, parent_id, created_at FROM sound_folders WHERE user_id = ? ORDER BY created_at DESC', req.user.id)
+        .map((f) => ({ id: f.id, title: f.title, parentId: f.parent_id, createdAt: f.created_at })),
       // Les projets des autres, enregistrés : encore ouverts si le lien vit et que son auteur est toujours membre.
       saved: all(`SELECT s.id, s.folder_id, s.pass, s.created_at, l.id AS link_id, l.token, l.track_id, l.expires_at, l.password_hash,
           a.name AS owner_name, a.avatar AS owner_avatar, u.role AS owner_role, p.title AS project_title, p.cover, p.artist, t.title AS track_title,
@@ -475,22 +479,51 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (!f) throw new HttpError(404, 'Dossier introuvable.');
     return f.id;
   };
+  // Les dossiers au-dessus d'un dossier, du parent à la racine.
+  const ancestors = (fid) => {
+    const up = [];
+    for (let at = get('SELECT parent_id FROM sound_folders WHERE id = ?', fid)?.parent_id; at && up.length < 50; at = get('SELECT parent_id FROM sound_folders WHERE id = ?', at)?.parent_id) up.push(at);
+    return up;
+  };
+  const MAX_DEPTH = 8;
+  // Le dossier où en ranger un autre : jamais lui-même ni l'un de ses sous-dossiers, et pas plus de MAX_DEPTH niveaux.
+  const parentFor = (req, fid, value) => {
+    const parent = folderOf(req, value);
+    if (parent === null) return null;
+    if (fid && (parent === fid || ancestors(parent).includes(fid))) throw new HttpError(400, 'Un dossier ne peut pas aller dans lui-même ni dans un de ses sous-dossiers.');
+    const below = (id) => Math.max(0, ...all('SELECT id FROM sound_folders WHERE parent_id = ?', id).map((c) => 1 + below(c.id)));
+    if (ancestors(parent).length + 2 + (fid ? below(fid) : 0) > MAX_DEPTH) throw new HttpError(400, `Pas plus de ${MAX_DEPTH} niveaux de dossiers.`);
+    return parent;
+  };
   app.post('/api/me/sounds/folders', ...me, (req, res) => {
     rateLimit(`sounds:${req.user.id}`, 300);
     const title = str(req.body.title, 80);
     if (!title) throw new HttpError(400, 'Donne un nom au dossier.');
-    res.status(201).json({ id: run('INSERT INTO sound_folders (user_id, title, created_at) VALUES (?, ?, ?)', req.user.id, title, now()).lastInsertRowid });
+    const parent = parentFor(req, null, req.body.parentId);
+    res.status(201).json({ id: run('INSERT INTO sound_folders (user_id, title, parent_id, created_at) VALUES (?, ?, ?, ?)', req.user.id, title, parent, now()).lastInsertRowid });
   });
+  // Renommer un dossier, ou le ranger dans un autre (parentId null : à la racine).
   app.patch('/api/me/sounds/folders/:id', ...me, (req, res) => {
     const fid = folderOf(req, req.params.id);
-    const title = str(req.body.title, 80);
-    if (!title) throw new HttpError(400, 'Donne un nom au dossier.');
-    run('UPDATE sound_folders SET title = ? WHERE id = ?', title, fid);
+    if (req.body.title !== undefined) {
+      const title = str(req.body.title, 80);
+      if (!title) throw new HttpError(400, 'Donne un nom au dossier.');
+      run('UPDATE sound_folders SET title = ? WHERE id = ?', title, fid);
+    }
+    if (req.body.parentId !== undefined) run('UPDATE sound_folders SET parent_id = ? WHERE id = ?', parentFor(req, fid, req.body.parentId), fid);
     res.json({ ok: true });
   });
+  // Supprimer un dossier : ce qu'il contient (projets, projets enregistrés, sous-dossiers) remonte d'un niveau, rien n'est effacé.
   app.delete('/api/me/sounds/folders/:id', ...me, (req, res) => {
-    run('DELETE FROM sound_folders WHERE id = ?', folderOf(req, req.params.id));
-    res.json({ ok: true });
+    const fid = folderOf(req, req.params.id);
+    const parent = get('SELECT parent_id FROM sound_folders WHERE id = ?', fid).parent_id;
+    transaction(() => {
+      run('UPDATE sound_folders SET parent_id = ? WHERE parent_id = ?', parent, fid);
+      run('UPDATE sound_projects SET folder_id = ? WHERE folder_id = ?', parent, fid);
+      run('UPDATE sound_saves SET folder_id = ? WHERE folder_id = ?', parent, fid);
+      run('DELETE FROM sound_folders WHERE id = ?', fid);
+    });
+    res.json({ ok: true, parentId: parent });
   });
 
   // Les projets enregistrés : rangés dans un dossier, ou retirés de la page.

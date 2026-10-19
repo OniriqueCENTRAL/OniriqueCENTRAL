@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=e37f07cb"></script>
+<script src="assets/i18n.js?v=40b6e2ca"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -483,6 +483,11 @@ const fail = (error) => { $("error").textContent = error.message; if ($("grid-vi
 const openId = () => { const m = /^#\/p\/(\d+)/.exec(location.hash); return m ? Number(m[1]) : null; };
 const folderId = () => { const m = /^#\/f\/(\d+)/.exec(location.hash); return m ? Number(m[1]) : null; };
 const folder = (id = folderId()) => data.folders.find((f) => f.id === id);
+// Les dossiers se rangent les uns dans les autres : ceux d'un niveau (null : la racine), et tous ceux en dessous d'un dossier.
+const subfolders = (id) => data.folders.filter((f) => (f.parentId || null) === id);
+const below = (id) => subfolders(id).flatMap((f) => [f.id, ...below(f.id)]);
+const folderPath = (f) => (f && f.parentId ? [...folderPath(folder(f.parentId)), f] : f ? [f] : []);
+const count = (n, one, many) => n + " " + (n > 1 ? many : one);
 const project = (id = openId()) => data.projects.find((p) => p.id === id);
 const findTrack = (tid) => { for (const p of data.projects) { const t = p.tracks.find((x) => x.id === tid); if (t) return { p, t }; } return {}; };
 const live = (t) => t.versions.find((v) => v.id === t.currentId) || t.versions.at(-1);
@@ -648,7 +653,8 @@ function renderGrid() {
   const here = (x) => (x.folderId || null) === (f ? f.id : null);
   const items = [...data.projects.filter(here).map((x) => ({ kind: "project", x })), ...data.saved.filter(here).map((x) => ({ kind: "saved", x }))]
     .sort((a, b) => b.x.createdAt - a.x.createdAt);
-  const tiles = [...(f ? [] : data.folders.map(folderTile)), ...items.map(({ kind, x }) => (kind === "project" ? projectTile(x) : savedTile(x)))];
+  const folders = subfolders(f ? f.id : null);
+  const tiles = [...folders.map(folderTile), ...items.map(({ kind, x }) => (kind === "project" ? projectTile(x) : savedTile(x)))];
   tiles.forEach((tile, i) => {
     tile.style.setProperty("--i", i);
     tile.oncontextmenu = (event) => { const dots = tile.querySelector(".dots"); if (dots) { event.preventDefault(); event.stopPropagation(); dots.openAt(atPointer(event)); } };
@@ -658,11 +664,14 @@ function renderGrid() {
   $("folder-crumb").hidden = !f;
   if (f) {
     $("folder-title").textContent = f.title;
-    $("folder-count").textContent = items.length + (items.length > 1 ? " projets" : " projet");
+    const up = folderPath(f).slice(0, -1).map((x) => x.title);
+    $("folder-count").textContent = [up.length ? "dans " + up.join(" / ") : "", folders.length ? count(folders.length, "dossier", "dossiers") : "",
+      count(items.length, "projet", "projets")].filter(Boolean).join(" · ");
+    $("folder-back").ariaLabel = $("folder-back").title = up.length ? "Retour à " + up.at(-1) : "Retour à Mes sons";
   }
   $("empty").hidden = !!f || tiles.length > 0;
-  if (f && !items.length) $("tiles").replaceChildren(el("p", { className: "muted", style: "grid-column:1/-1;margin:0",
-    textContent: "Ce dossier est vide. Range-y des projets avec leur menu ⋯, « Déplacer vers »." }));
+  if (f && !tiles.length) $("tiles").replaceChildren(el("p", { className: "muted", style: "grid-column:1/-1;margin:0",
+    textContent: "Ce dossier est vide. Range-y des projets ou d'autres dossiers avec leur menu ⋯, « Déplacer vers », ou en les faisant glisser dessus." }));
 }
 const caption = (title, sub, more, feat) => el("div", { className: "caption" }, el("div", {},
   el("b", {}, title, feat ? el("span", { className: "feat", textContent: "feat. " + feat, title: "feat. " + feat }) : ""), sub), more);
@@ -689,7 +698,9 @@ function dropTarget(node, onMove, onFiles) {
     else if (onFiles) onFiles([...event.dataTransfer.files]);
   });
 }
-const moveTo = (kind, id, folderId) => api("PATCH", (kind === "saved" ? "/me/sounds/saves/" : "/me/sounds/projects/") + id, { folderId }).then(refresh, fail);
+const moveTo = (kind, id, folderId) => (kind === "folder"
+  ? (id === folderId ? Promise.resolve() : api("PATCH", "/me/sounds/folders/" + id, { parentId: folderId }))
+  : api("PATCH", (kind === "saved" ? "/me/sounds/saves/" : "/me/sounds/projects/") + id, { folderId })).then(refresh, fail);
 function projectTile(p) {
   const playBtn = el("button", { className: "fab-play", type: "button", ariaLabel: "Écouter " + p.title, hidden: !p.tracks.length }, icon("play"));
   playBtn.onclick = (event) => { event.stopPropagation(); playProject(p); };
@@ -705,17 +716,21 @@ function projectTile(p) {
   return tile;
 }
 function folderTile(f) {
-  const inside = [...data.projects, ...data.saved].filter((x) => x.folderId === f.id);
-  const covers = inside.slice(0, 4).map((x) => coverOf(x));
+  const inside = [...data.projects, ...data.saved].filter((x) => x.folderId === f.id), inner = subfolders(f.id);
+  // La mosaïque : les pochettes de ce qu'il contient, sous-dossiers compris.
+  const deep = below(f.id);
+  const covers = [...inside, ...[...data.projects, ...data.saved].filter((x) => deep.includes(x.folderId))].slice(0, 4).map((x) => coverOf(x));
   const mosaic = el("div", { className: "folder-art" + (covers.length ? "" : " empty") }, ...covers);
   if (!covers.length) mosaic.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4.6l2 2h8.4A1.5 1.5 0 0 1 21 9.5v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5Z"/></svg>';
   const art = el("div", { className: "art", role: "link", tabIndex: 0, ariaLabel: "Ouvrir le dossier " + f.title }, mosaic);
   art.onclick = () => { location.hash = "#/f/" + f.id; };
   art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
   const tile = el("div", { className: "tile" }, art, caption(f.title,
-    el("span", { textContent: "Dossier · " + inside.length + (inside.length > 1 ? " projets" : " projet") }), dotsFor(f.title, (b) => folderMenu(b, f))));
+    el("span", { textContent: ["Dossier", inner.length ? count(inner.length, "dossier", "dossiers") : "", count(inside.length, "projet", "projets")].filter(Boolean).join(" · ") }),
+    dotsFor(f.title, (b) => folderMenu(b, f))));
   tile.dataset.folder = f.id;
-  // Un projet lâché ici y est rangé ; des sons lâchés ici deviennent un nouveau projet dans ce dossier.
+  dragSource(tile, "folder:" + f.id);
+  // Un projet ou un dossier lâché ici y est rangé ; des sons lâchés ici deviennent un nouveau projet dans ce dossier.
   dropTarget(tile, (kind, id) => moveTo(kind, id, f.id), (files) => {
     const sounds = files.filter(isAudio);
     if (sounds.length && !data.quota.full) newProjectWith(sounds, f.id).catch(fail);
@@ -755,13 +770,18 @@ async function playSaved(x) {
     subtitle: [share.owner, OP.stageLabel(t.stage)].filter(Boolean).join(" · "), cover: share.cover, url: t.version.url,
     downloadUrl: t.version.downloadUrl, duration: t.version.duration, peaks: t.version.peaks, comments: t.comments })), 0);
 }
-// Ranger dans un dossier : la liste des dossiers, « Hors dossier », ou un nouveau dossier créé sur le moment.
-function moveMenu(anchor, current, apply) {
+// Ranger dans un dossier : l'arbre des dossiers (décalés d'un cran par niveau), « Hors dossier », ou un nouveau dossier
+// créé sur le moment. Pour ranger un dossier (moving), ni lui-même ni ses sous-dossiers ne sont proposés.
+function moveMenu(anchor, current, apply, moving = null) {
   const done = (folderId) => apply(folderId).then(refresh, fail);
+  const skip = moving ? [moving, ...below(moving)] : [];
+  const tree = (id, depth) => subfolders(id).filter((f) => !skip.includes(f.id)).flatMap((f) => [
+    { label: "\u2003".repeat(depth) + (current === f.id ? "✓ " : "") + f.title, onclick: () => current !== f.id && done(f.id) }, ...tree(f.id, depth + 1)]);
+  const choices = tree(null, 0);
   menu(anchor, [
-    ...data.folders.map((f) => ({ label: (current === f.id ? "✓ " : "") + f.title, onclick: () => current !== f.id && done(f.id) })),
+    ...choices,
     current && { label: "Hors dossier", onclick: () => done(null) },
-    data.folders.length || current ? "-" : null,
+    choices.length || current ? "-" : null,
     { label: "Nouveau dossier…", icon: "plus", onclick: async () => {
       const title = await ask("Nom du dossier");
       if (title) api("POST", "/me/sounds/folders", { title }).then(({ id }) => done(id), fail);
@@ -771,14 +791,19 @@ function moveMenu(anchor, current, apply) {
 function folderMenu(anchor, f) {
   menu(anchor, [
     { label: "Ouvrir", icon: "chevron", onclick: () => { location.hash = "#/f/" + f.id; } },
+    { label: "Nouveau dossier dedans…", icon: "plus", onclick: async () => {
+      const title = await ask("Nom du dossier");
+      if (title) api("POST", "/me/sounds/folders", { title, parentId: f.id }).then(refresh, fail);
+    } },
+    { label: "Déplacer vers…", icon: "chevron", onclick: () => moveMenu(anchor, f.parentId || null, (parentId) => api("PATCH", "/me/sounds/folders/" + f.id, { parentId }), f.id) },
     { label: "Renommer", icon: "more", onclick: async () => {
       const title = await ask("Nom du dossier", f.title);
       if (title) api("PATCH", "/me/sounds/folders/" + f.id, { title }).then(refresh, fail);
     } },
     "-",
     { label: "Supprimer le dossier", icon: "close", danger: true, onclick: () =>
-      confirm("Supprimer le dossier « " + f.title + " » ? Les projets qu'il contient reviennent dans Mes sons, rien n'est effacé.")
-      && api("DELETE", "/me/sounds/folders/" + f.id).then(() => { location.hash = ""; return refresh(); }).catch(fail) },
+      confirm("Supprimer le dossier « " + f.title + " » ? Ce qu'il contient (projets et dossiers) remonte " + (f.parentId ? "dans « " + folder(f.parentId).title + " »" : "dans Mes sons") + ", rien n'est effacé.")
+      && api("DELETE", "/me/sounds/folders/" + f.id).then(() => { if (folderId() === f.id) location.hash = f.parentId ? "#/f/" + f.parentId : ""; return refresh(); }).catch(fail) },
   ]);
 }
 function projectMenu(anchor, p) {
@@ -1150,9 +1175,9 @@ function addMenu(anchor) {
         await refresh(); location.hash = "#/p/" + id;
       } catch (error) { fail(error); }
     } },
-    !p && !folderId() && { label: "Nouveau dossier", icon: "plus", onclick: async () => {
+    !p && { label: "Nouveau dossier", icon: "plus", onclick: async () => {
       const title = await ask("Nom du dossier");
-      if (title) api("POST", "/me/sounds/folders", { title }).then(refresh, fail);
+      if (title) api("POST", "/me/sounds/folders", { title, parentId: folderId() }).then(refresh, fail);
     } },
   ]);
 }
@@ -1162,10 +1187,10 @@ document.querySelector("main").addEventListener("contextmenu", (event) => {
   event.preventDefault();
   addMenu(atPointer(event));
 });
-// Dans un dossier, un projet lâché sur ← en sort.
-dropTarget($("folder-back"), (kind, id) => moveTo(kind, id, null));
+// Dans un dossier, un projet ou un dossier lâché sur ← remonte d'un niveau ; ← ramène au dossier du dessus.
+dropTarget($("folder-back"), (kind, id) => moveTo(kind, id, (folder() && folder().parentId) || null));
 $("folder-back").append(icon("back"));
-$("folder-back").onclick = () => { location.hash = ""; };
+$("folder-back").onclick = () => { const f = folder(); location.hash = f && f.parentId ? "#/f/" + f.parentId : ""; };
 $("folder-more").append(icon("more"));
 $("folder-more").onclick = () => folderMenu($("folder-more"), folder());
 $("back").append(icon("back"));

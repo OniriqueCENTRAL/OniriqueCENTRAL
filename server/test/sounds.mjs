@@ -304,6 +304,34 @@ try {
     await call('GET', `/api/sounds/invite/${invite}`, { token: friend.token, expect: 404 });
   });
 
+  await step('dossiers dans des dossiers : créer, déplacer, pas de boucle, la suppression fait remonter le contenu', async () => {
+    const me = await account('rangement', 'vip');
+    const folder = (title, parentId) => call('POST', '/api/me/sounds/folders', { token: me.token, body: { title, parentId }, expect: 201 }).then((r) => r.id);
+    const albums = await folder('Albums'), a1 = await folder('Album 1', albums), demos = await folder('Démos', a1);
+    const pid = (await call('POST', '/api/me/sounds/projects', { token: me.token, body: { title: 'Intro' }, expect: 201 })).id;
+    await call('PATCH', `/api/me/sounds/projects/${pid}`, { token: me.token, body: { folderId: demos } });
+    const tree = async () => Object.fromEntries((await call('GET', '/api/me/sounds', { token: me.token })).folders.map((f) => [f.title, f.parentId]));
+    assert.deepEqual(await tree(), { Albums: null, 'Album 1': albums, 'Démos': a1 });
+    // Ni dans lui-même, ni dans l'un de ses sous-dossiers ; le dossier d'un autre membre est introuvable.
+    await call('PATCH', `/api/me/sounds/folders/${albums}`, { token: me.token, body: { parentId: albums }, expect: 400 });
+    await call('PATCH', `/api/me/sounds/folders/${albums}`, { token: me.token, body: { parentId: demos }, expect: 400 });
+    await call('PATCH', `/api/me/sounds/folders/${demos}`, { token: member.token, body: { parentId: null }, expect: 404 });
+    // Déplacé à la racine, puis renommé sans bouger.
+    await call('PATCH', `/api/me/sounds/folders/${demos}`, { token: me.token, body: { parentId: null } });
+    await call('PATCH', `/api/me/sounds/folders/${demos}`, { token: me.token, body: { title: 'Maquettes' } });
+    assert.equal((await tree()).Maquettes, null);
+    // Supprimer « Album 1 » remet « Maquettes » rangé dedans, et le projet, dans « Albums ».
+    await call('PATCH', `/api/me/sounds/folders/${demos}`, { token: me.token, body: { parentId: a1 } });
+    await call('PATCH', `/api/me/sounds/projects/${pid}`, { token: me.token, body: { folderId: a1 } });
+    await call('DELETE', `/api/me/sounds/folders/${a1}`, { token: me.token });
+    assert.deepEqual(await tree(), { Albums: null, Maquettes: albums });
+    assert.equal((await call('GET', '/api/me/sounds', { token: me.token })).projects.find((x) => x.id === pid).folderId, albums);
+    // Pas plus de 8 niveaux.
+    let at = albums;
+    for (let i = 2; i <= 8; i++) at = await folder('Niveau ' + i, at);
+    await call('POST', '/api/me/sounds/folders', { token: me.token, body: { title: 'Trop bas', parentId: at }, expect: 400 });
+  });
+
   console.log(`\n${passed} étapes réussies.`);
 } finally {
   server.close();
