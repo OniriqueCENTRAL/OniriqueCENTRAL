@@ -290,7 +290,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   app.put('/api/me/sounds/projects/:id/cover', ...me, wrap(async (req, res) => {
     const p = project(req, req.params.id);
     rateLimit(`sounds-cover:${req.user.id}`, 30);
-    const name = await receiveImage(req, 3 * 1024 * 1024);
+    const name = await receiveImage(req, 5 * 1024 * 1024);
     run('UPDATE sound_projects SET cover = ? WHERE id = ?', name, p.id);
     if (p.cover) removeMedia(p.cover);
     res.json({ cover: media(name) });

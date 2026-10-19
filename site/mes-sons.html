@@ -731,6 +731,7 @@ $("files").onchange = () => {
 let coverTarget = null;
 function pickCover(p) { coverTarget = p; $("cover-file").click(); }
 async function uploadCover(p, f) {
+  if (f.size > 5 * 1024 * 1024) return fail(new Error("La pochette doit faire 5 Mo au plus."));
   try {
     const response = await fetch("/api/me/sounds/projects/" + p.id + "/cover", { method: "PUT", headers: { Authorization: "Bearer " + token, "Content-Type": f.type }, body: f });
     if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Image refusée.");
