@@ -143,7 +143,7 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-
     <div>
       <section class="panel">
         <div class="eyebrow">Adresse de la page</div>
-        <div class="address"><span>onirique.store/l/</span><input id="handle" maxlength="30" autocomplete="off" spellcheck="false" aria-label="Adresse de la page"></div>
+        <div class="address"><span id="address-base">onirique.online/</span><input id="handle" maxlength="30" autocomplete="off" spellcheck="false" aria-label="Adresse de la page"></div>
         <p class="muted" style="margin:10px 0 0;font-size:14px">Lettres minuscules, chiffres, point ou tiret. C'est ce lien que tu colles dans ta bio.</p>
         <div class="between" style="margin-top:12px">
           <button class="btn btn-ghost small" id="copy" type="button">Copier le lien</button>
@@ -264,6 +264,9 @@ async function api(method, path, body, raw) {
 
 // handle : l'adresse enregistrée (null tant que la page n'a jamais été enregistrée) ; page : la page en cours d'édition.
 let saved = null, page = null, media = { avatar: null, background: null }, dirty = false;
+// L'adresse publique des pages de liens, devant le pseudo (donnée par le serveur : https://onirique.online).
+let base = "https://onirique.online";
+const host = () => base.replace(/^https?:\/\//, "");
 
 function markDirty() {
   dirty = true;
@@ -285,7 +288,7 @@ function draw() {
   $("avatar-remove").hidden = !media.avatar;
   $("bg-remove").hidden = !media.background;
   $("open").hidden = !saved;
-  if (saved) $("open").href = "/l/" + saved;
+  if (saved) $("open").href = base + "/" + saved;
 }
 
 // Les réglages simples : un champ, une valeur de la page.
@@ -468,7 +471,7 @@ async function save() {
     const data = await api("PUT", "/me/links", { handle: $("handle").value, page });
     apply(data);
     dirty = false;
-    $("state").textContent = "Enregistré · onirique.store/l/" + saved;
+    $("state").textContent = "Enregistré · " + host() + "/" + saved;
     $("state").className = "state";
     loadStats();
     return true;
@@ -570,7 +573,7 @@ async function loadStats() {
 $("stats-days").onchange = loadStats;
 
 $("copy").onclick = async () => {
-  const url = "https://onirique.store/l/" + ($("handle").value || "");
+  const url = base + "/" + ($("handle").value || "");
   try { await navigator.clipboard.writeText(url); $("copy").textContent = "Lien copié"; } catch { prompt("Copie ce lien :", url); }
   setTimeout(() => { $("copy").textContent = "Copier le lien"; }, 1800);
 };
@@ -580,6 +583,7 @@ $("copy").onclick = async () => {
   if (!token) return gate('<p>Connecte-toi d\'abord à ton compte.</p><a class="btn btn-primary" href="compte.html">Se connecter</a>');
   try {
     const data = await api("GET", "/me/links");
+    if (data.address) { base = data.address; $("address-base").textContent = host() + "/"; }
     $("studio").hidden = $("bar").hidden = false;
     if (!data.handle) $("handle").value = (data.page.name || "").toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "").slice(0, 30);
     apply(data);
