@@ -317,6 +317,13 @@ export function createApp() {
     });
   });
 
+  // L'annonce en cours sous forme de script, chargé dans <head> juste après annonce.js : le bandeau est posé avant le
+  // premier affichage même chez un nouveau visiteur, au lieu de faire descendre la page quand /api/site répond.
+  app.get('/api/announce.js', (_req, res) => {
+    res.set({ 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=60' });
+    res.send(`window.OniriqueAnnounce&&OniriqueAnnounce(${JSON.stringify(announcementView()).replace(/</g, '\\u003c')});`);
+  });
+
   app.get('/api/public-key', (_req, res) => res.json({ pem: publicKeyPem, raw: publicKeyRaw }));
 
   // Crédits : les titres réalisés avec les plugins, affichés sur la page d'accueil du site.
