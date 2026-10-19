@@ -112,8 +112,8 @@ ${spark(1)}${spark(2)}${spark(3)}
       download,
       item("Support", "support.html"),
       ROLES[user.role] && user.role !== "vip" ? item("Administration", "admin.html") : null,
-      // Réservé aux fondateurs : les Shorts YouTube programmés, sur la page compte.
-      ...(user.role === "founder" ? [el("hr"), el("h6", { textContent: "Fondateurs" }), item("Shorts YouTube", "compte.html#youtube")] : []),
+      // Les Shorts YouTube programmés, sur la page compte : pour les rôles qui y ont droit.
+      ...((me.rights || []).includes("youtube") ? [el("hr"), el("h6", { textContent: "Outils" }), item("Shorts YouTube", "compte.html#youtube")] : []),
       el("hr"),
       out);
     menu.setAttribute("role", "menu");

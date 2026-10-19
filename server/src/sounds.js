@@ -8,7 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 import { db, get, all, run, now, setting, setSetting, transaction } from './db.js';
-import { HttpError, rateLimit, optionalUser, hashPassword, verifyPassword, MEMBERS } from './auth.js';
+import { HttpError, rateLimit, optionalUser, hashPassword, verifyPassword, rolesWith } from './auth.js';
 import { sendMail } from './mail.js';
 import { escapeHtml } from './mailtemplate.js';
 import { textImage } from './linkpage.js';
@@ -203,7 +203,7 @@ const listeningPage = () => {
 /** Le lien et ce que son aperçu peut montrer ; null si le lien n'existe pas, n'est plus valable ou que l'auteur n'est plus membre. */
 function previewOf(token) {
   const l = get(`SELECT l.*, u.name AS owner_name, u.role AS owner_role FROM sound_links l JOIN users u ON u.id = l.user_id WHERE l.token = ?`, String(token || '').slice(0, 40));
-  if (!l || !MEMBERS.includes(l.owner_role) || (l.expires_at && l.expires_at < now())) return null;
+  if (!l || !rolesWith('sounds').includes(l.owner_role) || (l.expires_at && l.expires_at < now())) return null;
   if (l.password_hash || l.require_account) return { link: l, locked: true };
   const t = l.track_id ? get('SELECT * FROM sound_tracks WHERE id = ?', l.track_id) : null;
   const p = get('SELECT * FROM sound_projects WHERE id = ?', l.project_id || t.project_id);
@@ -313,7 +313,7 @@ function listeningHtml(v, token) {
 
 export function mountSounds(app, { requireUser, receiveFile, receiveImage, removeMedia, wrap }) {
   sweepSounds();
-  const member = (req, _res, next) => (MEMBERS.includes(req.user.role) ? next()
+  const member = (req, _res, next) => (rolesWith('sounds').includes(req.user.role) ? next()
     : next(new HttpError(403, 'Mes sons est réservé aux membres ONIRIQUE.')));
   const me = [requireUser, member];
 
@@ -409,7 +409,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
         WHERE s.user_id = ? ORDER BY s.created_at DESC`, req.user.id).map((r) => ({
         id: r.id, token: r.token, folderId: r.folder_id, title: r.track_id ? r.track_title : r.project_title, owner: r.owner_name || 'ONIRIQUE',
         ownerAvatar: media(r.owner_avatar), cover: media(r.cover), tracks: r.track_id ? 1 : r.tracks, createdAt: r.created_at,
-        available: MEMBERS.includes(r.owner_role) && !(r.expires_at && r.expires_at < now()),
+        available: rolesWith('sounds').includes(r.owner_role) && !(r.expires_at && r.expires_at < now()),
         pass: r.password_hash && r.pass && same(r.pass, passFor({ id: r.link_id, password_hash: r.password_hash })) ? r.pass : null,
       })),
     });
@@ -670,13 +670,13 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   /** Un membre connecté qui n'est pas l'auteur peut enregistrer le projet dans « Mes sons ». */
   function saveState(req, link) {
     const viewer = optionalUser(req);
-    const canSave = !!viewer && MEMBERS.includes(viewer.role) && viewer.id !== link.user_id;
+    const canSave = !!viewer && rolesWith('sounds').includes(viewer.role) && viewer.id !== link.user_id;
     return { canSave, saved: canSave && !!get('SELECT 1 FROM sound_saves WHERE user_id = ? AND link_id = ?', viewer.id, link.id) };
   }
 
   function openLink(req) {
     const link = get(`SELECT l.*, u.name AS owner_name, u.email AS owner_email, u.avatar AS owner_avatar FROM sound_links l JOIN users u ON u.id = l.user_id
-      WHERE l.token = ? AND u.role IN (${MEMBERS.map(() => '?').join(', ')})`, str(req.params.token, 40), ...MEMBERS);
+      WHERE l.token = ? AND u.role IN (${rolesWith('sounds').map(() => '?').join(', ')})`, str(req.params.token, 40), ...rolesWith('sounds'));
     if (!link || (link.expires_at && link.expires_at < now())) throw new HttpError(404, "Ce lien d'écoute n'existe pas ou n'est plus valable.");
     if (link.require_account && !optionalUser(req)) {
       throw Object.assign(new HttpError(401, 'Connecte-toi à ton compte ONIRIQUE pour écouter ce lien.'), { data: { account: true } });

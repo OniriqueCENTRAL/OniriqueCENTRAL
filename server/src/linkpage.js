@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { config } from './config.js';
 import { all, get, run, now } from './db.js';
-import { HttpError, rateLimit, MEMBERS } from './auth.js';
+import { HttpError, rateLimit, rolesWith } from './auth.js';
 import { alternatives, ORDER } from './music.js';
 
 export const HANDLE = /^[a-z0-9][a-z0-9._-]{1,29}$/;
@@ -78,7 +78,7 @@ export function cleanPage(input = {}) {
 
 const media = (name) => (name ? `/api/media/${name}` : null);
 const view = (row) => ({ handle: row.handle, page: JSON.parse(row.data), avatar: media(row.avatar), background: media(row.background) });
-const publicRow = (handle) => get(`SELECT p.* FROM link_pages p JOIN users u ON u.id = p.user_id WHERE p.handle = ? AND u.role IN ('${MEMBERS.join("', '")}')`,
+const publicRow = (handle) => get(`SELECT p.* FROM link_pages p JOIN users u ON u.id = p.user_id WHERE p.handle = ? AND u.role IN (${rolesWith('links').map((r) => `'${r}'`).join(', ')})`,
   String(handle).toLowerCase());
 
 //==============================================================================
@@ -238,7 +238,7 @@ if (data) OniriqueLinkPage.render(document.getElementById("page"), data.page, da
 
 /** Les routes : la page publique (et son image), l'éditeur et les statistiques réservés aux fondateurs. */
 export function mountLinkPages(app, { requireUser, receiveImage, removeMedia, wrap }) {
-  const founderOnly = (req) => { if (!MEMBERS.includes(req.user.role)) throw new HttpError(403, 'La page de liens est réservée aux membres ONIRIQUE.'); };
+  const founderOnly = (req) => { if (!rolesWith('links').includes(req.user.role)) throw new HttpError(403, 'La page de liens est réservée aux membres ONIRIQUE.'); };
   const own = (userId) => get('SELECT * FROM link_pages WHERE user_id = ?', userId);
 
   // La page publique elle-même. Une visite par personne et par demi-heure, sans les robots (aperçus des messageries).

@@ -439,6 +439,30 @@ try {
     config.paymentsMode = 'demo';
   });
 
+  await step('droits des rôles : réglés par les fondateurs seulement, appliqués tout de suite', async () => {
+    const member = await account('membre-droits', 'vip');
+    const relic = await account('relic-droits', 'relic');
+    const lambda = await account('client-droits');
+    // Au départ : Mes sons et la page de liens pour les membres et les admins, rien pour un client ni un partenaire.
+    const start = await call('GET', '/api/admin/rights', { token: founder.token });
+    assert.deepEqual(start.rights.find((r) => r.id === 'sounds').roles, ['vip', 'admin']);
+    assert.deepEqual((await call('GET', '/api/me', { token: member.token })).rights.sort(), ['links', 'plugins', 'sounds']);
+    await call('GET', '/api/me/sounds', { token: relic.token, expect: 403 });
+    // Un admin ne règle pas les droits.
+    await call('GET', '/api/admin/rights', { token: admin.token, expect: 403 });
+    await call('PUT', '/api/admin/rights', { token: admin.token, body: { sounds: ['user'] }, expect: 403 });
+    // Le fondateur ouvre Mes sons à Relic et ferme la page de liens aux membres ; un rôle inconnu est ignoré.
+    await call('PUT', '/api/admin/rights', { token: founder.token, body: { sounds: ['vip', 'admin', 'relic', 'founder', 'pirate'], links: ['admin'] } });
+    await call('GET', '/api/me/sounds', { token: relic.token });
+    await call('GET', '/api/me/links', { token: member.token, expect: 403 });
+    await call('GET', '/api/me/sounds', { token: lambda.token, expect: 403 });
+    assert.deepEqual((await call('GET', '/api/admin/rights', { token: founder.token })).rights.find((r) => r.id === 'sounds').roles, ['vip', 'admin', 'relic']);
+    // Les fondateurs gardent tout, quoi qu'on coche.
+    assert.ok((await call('GET', '/api/me', { token: founder.token })).rights.includes('links'));
+    run(`DELETE FROM settings WHERE key = 'role_rights'`);
+    await call('GET', '/api/me/links', { token: member.token });
+  });
+
   console.log(`\n${passed} étapes réussies.`);
 } finally {
   server.close();

@@ -280,5 +280,22 @@
  "Ajouter les artistes invités": "Add featured artists",
  "Artistes invités de": "Featured artists on",
  "feat. (artistes invités, séparés par des virgules ; vide pour retirer)": "feat. (featured artists, comma separated; empty to remove)",
- "La page de liens est réservée aux membres ONIRIQUE.": "The links page is reserved for ONIRIQUE members."
+ "La page de liens est réservée aux membres ONIRIQUE.": "The links page is reserved for ONIRIQUE members.",
+ "Droits des rôles": "Role rights",
+ "Coche ce que chaque rôle peut utiliser. Les fondateurs ont toujours tout ; un changement vaut tout de suite pour tous les comptes du rôle.": "Tick what each role can use. Founders always have everything; a change applies right away to every account with that role.",
+ "Enregistrer les droits": "Save rights",
+ "Enregistré : valable tout de suite.": "Saved: applies right away.",
+ "Droit": "Right",
+ "Clients": "Customers",
+ "Fondateurs": "Founders",
+ "par « Mes licences »": "via “My licences”",
+ "Offrir tous les plugins à tous les clients ? Plus personne n'aurait à les acheter.": "Give every plugin to every customer? Nobody would have to buy them any more.",
+ "Tous les plugins offerts": "All plugins included",
+ "Profil d'ingé (crédits)": "Engineer profile (credits)",
+ "Shorts YouTube programmés": "Scheduled YouTube Shorts",
+ "Réponses automatiques Instagram": "Instagram auto-replies",
+ "Page de liens": "Links page",
+ "Outils": "Tools",
+ "Cette fonction n'est pas ouverte à ce compte.": "This feature is not available to this account.",
+ "Le profil d'ingé n'est pas ouvert à ce compte.": "The engineer profile is not available to this account."
 }

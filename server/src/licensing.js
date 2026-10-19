@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { config } from './config.js';
 import { all, get, run, now, setting } from './db.js';
-import { HttpError, canSelfLicense } from './auth.js';
+import { HttpError, canSelfLicense, rolesWith } from './auth.js';
 
 //==============================================================================
 //  Clé de signature : la clé privée ne quitte jamais le serveur. Les plugins
@@ -118,7 +118,7 @@ export function entitlement(userId, productId) {
   // acheter (un essai en cours ne les ramène pas au mode démo). Comme pour un abonnement, la licence écrite sur la
   // machine a une durée : retirer le rôle ou couper le réglage la laisse s'éteindre.
   const owner = get('SELECT role, self_licenses FROM users WHERE id = ?', userId);
-  const vip = !!owner && (owner.role === 'vip' || (!!owner.self_licenses && canSelfLicense(owner)));
+  const vip = !!owner && (rolesWith('plugins').includes(owner.role) || (!!owner.self_licenses && canSelfLicense(owner)));
   if (vip && (!license || license.type === 'trial')) {
     return {
       via: 'vip', type: 'vip', licenseId: null,

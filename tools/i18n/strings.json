@@ -3042,6 +3042,9 @@
  "Cette clé est réservée à une autre adresse e-mail.": [
   "server/src/app.js"
  ],
+ "Cette fonction n'est pas ouverte à ce compte.": [
+  "server/src/app.js"
+ ],
  "Cette formule n'est pas encore ouverte à la vente.": [
   "server/src/payments.js"
  ],
@@ -3410,6 +3413,9 @@
  "Clics": [
   "site/mes-liens.html"
  ],
+ "Clients": [
+  "site/admin.html"
+ ],
  "Clients et inscrits": [
   "server/src/newsletter.js"
  ],
@@ -3427,6 +3433,9 @@
  ],
  "Cloche, shelf grave, shelf aigu, coupe-bas, coupe-haut. Filtres appariés à l'analogique jusqu'en haut du spectre.": [
   "site/onirique.html"
+ ],
+ "Coche ce que chaque rôle peut utiliser. Les fondateurs ont toujours tout ; un changement vaut tout de suite pour tous les comptes du rôle.": [
+  "site/admin.html"
  ],
  "Coche un ou plusieurs plugins": [
   "site/boutique.html"
@@ -4732,6 +4741,9 @@
  "DRIVE": [
   "site/onirique.html"
  ],
+ "Droit": [
+  "site/admin.html"
+ ],
  "Droit de rétractation de 14 jours, cas où il ne s'applique plus, formulaire et délais de remboursement pour les achats Onirique.": [
   "site/remboursement.html",
   "site/pages.mjs"
@@ -4744,6 +4756,9 @@
  ],
  "Droits d'auteur et master": [
   "site/partage.html"
+ ],
+ "Droits des rôles": [
+  "site/admin.html"
  ],
  "Drums": [
   "site/assets/stem-kind.js"
@@ -5081,6 +5096,9 @@
  "Enregistré": [
   "site/mes-liens.html"
  ],
+ "Enregistré : valable tout de suite.": [
+  "site/admin.html"
+ ],
  "Enregistré : visible tout de suite sur le site.": [
   "site/admin.html"
  ],
@@ -5111,6 +5129,9 @@
  ],
  "Enregistrer le profil d'ingé": [
   "site/compte.html"
+ ],
+ "Enregistrer les droits": [
+  "site/admin.html"
  ],
  "Enregistrez d'abord la page, puis ajoutez l'image.": [
   "server/src/linkpage.js"
@@ -5669,7 +5690,7 @@
   "app/renderer/ui.js"
  ],
  "Fondateurs": [
-  "site/assets/account.js"
+  "site/admin.html"
  ],
  "Fondu d'entrée": [
   "site/decoupe.html"
@@ -6904,7 +6925,7 @@
   "site/remboursement.html",
   "site/pages.mjs"
  ],
- "Le profil d'ingé est réservé aux fondateurs.": [
+ "Le profil d'ingé n'est pas ouvert à ce compte.": [
   "server/src/app.js"
  ],
  "Le résultat est-il toujours juste ?": [
@@ -7851,6 +7872,7 @@
   "site/confidentialite.html",
   "site/mes-sons.html",
   "site/onirique.html",
+  "server/src/auth.js",
   "server/src/sounds.js"
  ],
  "Mes sons est réservé aux membres ONIRIQUE.": [
@@ -8558,6 +8580,9 @@
  "Offert avec votre rôle": [
   "site/boutique.html"
  ],
+ "Offrir tous les plugins à tous les clients ? Plus personne n'aurait à les acheter.": [
+  "site/admin.html"
+ ],
  "Ombre sous les boutons": [
   "site/mes-liens.html"
  ],
@@ -8855,6 +8880,7 @@
   "site/tessiture.html",
   "site/transposition.html",
   "site/volume-lufs.html",
+  "site/assets/account.js",
   "site/assets/site-nav.js",
   "site/assets/tools-menu.js"
  ],
@@ -8967,7 +8993,8 @@
   "site/onirique.html"
  ],
  "Page de liens": [
-  "site/compte.html"
+  "site/compte.html",
+  "server/src/auth.js"
  ],
  "Page introuvable.": [
   "server/src/sounds.js"
@@ -9068,6 +9095,9 @@
  "panel tile": [
   "app/renderer/views/account.js",
   "app/renderer/views/admin.js"
+ ],
+ "par « Mes licences »": [
+  "site/admin.html"
  ],
  "par {}": [
   "app/renderer/views/admin.js",
@@ -9834,6 +9864,9 @@
  "Profil d'ingé": [
   "site/compte.html"
  ],
+ "Profil d'ingé (crédits)": [
+  "server/src/auth.js"
+ ],
  "Profil d'ingé enregistré.": [
   "site/compte.html"
  ],
@@ -10311,6 +10344,9 @@
  ],
  "Réponses automatiques": [
   "site/compte.html"
+ ],
+ "Réponses automatiques Instagram": [
+  "server/src/auth.js"
  ],
  "Réponses automatiques sur Instagram": [
   "site/confidentialite.html"
@@ -10976,6 +11012,9 @@
  "Shorts YouTube": [
   "site/compte.html",
   "site/assets/account.js"
+ ],
+ "Shorts YouTube programmés": [
+  "server/src/auth.js"
  ],
  "shot framed": [
   "app/renderer/views/library.js"
@@ -11926,6 +11965,9 @@
  ],
  "Tous les plugins lui sont offerts.": [
   "site/admin.html"
+ ],
+ "Tous les plugins offerts": [
+  "server/src/auth.js"
  ],
  "tous les plugins ONIRIQUE": [
   "app/renderer/views/subscription.js"

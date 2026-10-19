@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=f5f29219"></script>
+<script src="assets/i18n.js?v=7c525ff5"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -196,6 +196,15 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
     <div class="tiles" id="tiles"></div>
     <div class="disk" id="disk" hidden></div>
 
+    <!-- Réservé aux fondateurs : ce que chaque rôle peut ouvrir -->
+    <div id="rights-admin" hidden>
+    <div class="bar"><h2>Droits des rôles</h2></div>
+    <p class="sub">Coche ce que chaque rôle peut utiliser. Les fondateurs ont toujours tout ; un changement vaut tout de suite pour tous les comptes du rôle.</p>
+    <div class="table"><table id="rights-table"></table></div>
+    <div class="row" style="margin-top:12px"><button class="btn" id="rights-save" type="button">Enregistrer les droits</button><span class="sub" id="rights-saved"></span></div>
+    <p class="error" id="rights-error" role="alert"></p>
+    </div>
+
     <div class="bar">
       <h2>Comptes</h2>
       <input type="search" id="search" placeholder="Chercher un e-mail ou un nom" aria-label="Chercher un compte">
@@ -355,7 +364,7 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
 </main>
 
 <script src="assets/cropper.js"></script>
-<script src="assets/account.js?v=6"></script>
+<script src="assets/account.js?v=7"></script>
 <script src="assets/site-nav.js?v=12"></script>
 <script>
 // Tout passe par l'API du CENTRAL, qui revérifie le rôle admin à chaque appel : cette page n'ouvre aucun droit par elle-même.
@@ -1169,6 +1178,33 @@ function compose({ to = "", subject = "", inReplyTo = null, references = [], quo
   f.text.setSelectionRange(0, 0);
 }
 
+//------------------------------------------------------------------------------ Droits des rôles (fondateurs)
+async function loadRights() {
+  if (me.role !== "founder") return;
+  $("rights-admin").hidden = false;
+  const label = { user: "Clients", vip: "ONIRIQUE", abrasion: "Abrasion", relic: "Relic", admin: "Admin" };
+  let state;
+  try { state = await api("GET", "/admin/rights"); } catch (error) { $("rights-error").textContent = error.message; return; }
+  const boxes = [];
+  $("rights-table").replaceChildren(
+    el("thead", {}, el("tr", {}, el("th", { textContent: "Droit" }), ...state.roles.map((r) => el("th", { textContent: label[r] || r, style: "text-align:center" })),
+      el("th", { textContent: "Fondateurs", style: "text-align:center" }))),
+    el("tbody", {}, ...state.rights.map((right) => el("tr", {}, el("td", { textContent: right.label }),
+      ...state.roles.map((role) => {
+        const box = el("input", { type: "checkbox", checked: right.roles.includes(role), ariaLabel: right.label + " : " + (label[role] || role) });
+        boxes.push({ right: right.id, role, box });
+        return el("td", { style: "text-align:center" }, box);
+      }),
+      el("td", { style: "text-align:center", className: "sub", textContent: right.id === "plugins" ? "par « Mes licences »" : "✓" })))));
+  $("rights-save").onclick = async () => {
+    $("rights-error").textContent = $("rights-saved").textContent = "";
+    const body = Object.fromEntries(state.rights.map((r) => [r.id, boxes.filter((b) => b.right === r.id && b.box.checked).map((b) => b.role)]));
+    if (body.plugins.includes("user") && !confirm("Offrir tous les plugins à tous les clients ? Plus personne n'aurait à les acheter.")) return;
+    try { await api("PUT", "/admin/rights", body); $("rights-saved").textContent = "Enregistré : valable tout de suite."; }
+    catch (error) { $("rights-error").textContent = error.message; }
+  };
+}
+
 //------------------------------------------------------------------------------ Mes sons (fondateurs)
 async function loadSounds() {
   if (me.role !== "founder") return;
@@ -1431,6 +1467,7 @@ function showDisk(disk) {
     await loadMailbox();
     await loadBrandKit();
     await loadSounds();
+    await loadRights();
     await loadSocials();
     await loadReferral();
     await loadMailings(true);
