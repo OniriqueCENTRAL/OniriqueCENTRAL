@@ -162,6 +162,7 @@ body.has-player .uploads { bottom: calc(92px + env(safe-area-inset-bottom)); }
 .tline b { min-width: 0; }
 /* Le « feat. » à côté du titre, comme le badge d'étape */
 .feat { flex: none; max-width: 55%; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.05); color: var(--mist); font: 600 11px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.details-left h2 .feat { margin-left: 8px; vertical-align: middle; font-size: 12px; }
 .feat.empty { border-style: dashed; background: none; color: var(--haze); }
 .feat:hover, .stage:hover { border-color: var(--ember); }
 /* Hors du mode édition : seulement ce qui est rempli, rien à cliquer pour modifier */
@@ -398,7 +399,7 @@ button.item:hover { background: rgba(255,255,255,.04); }
 <dialog id="share"></dialog>
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" value="cancel" formnovalidate>Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
-<script src="assets/sounds-player.js?v=4"></script>
+<script src="assets/sounds-player.js?v=5"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const TOKEN = "onirique.token";
@@ -458,7 +459,7 @@ const projectLength = (p) => p.tracks.reduce((s, t) => s + (live(t).duration || 
 // ——— Le lecteur ———
 const itemOf = (p, t) => {
   const v = live(t);
-  return { key: "v" + v.id, id: v.id, trackId: t.id, title: t.title, subtitle: [p.title, OP.stageLabel(t.stage) || "v" + v.n].join(" · "), cover: p.cover, url: v.url,
+  return { key: "v" + v.id, id: v.id, trackId: t.id, title: t.title, feat: t.credits.feat, subtitle: [p.title, OP.stageLabel(t.stage) || "v" + v.n].join(" · "), cover: p.cover, url: v.url,
     downloadUrl: v.downloadUrl, duration: v.duration, peaks: v.peaks, comments: t.comments };
 };
 const player = OP.create({
@@ -492,7 +493,7 @@ function playProject(p, i = 0) {
   player.play(p.tracks.map((t) => itemOf(p, t)), i);
 }
 function playVersion(p, t, v) {
-  player.play([{ key: "v" + v.id, id: v.id, trackId: t.id, title: t.title, subtitle: p.title + " · v" + v.n, cover: p.cover, url: v.url,
+  player.play([{ key: "v" + v.id, id: v.id, trackId: t.id, title: t.title, feat: t.credits.feat, subtitle: p.title + " · v" + v.n, cover: p.cover, url: v.url,
     downloadUrl: v.downloadUrl, duration: v.duration, peaks: v.peaks, comments: t.comments }], 0);
   // Une durée qui n'a pas pu être lue à l'envoi est enregistrée à la première écoute.
   if (!v.duration) player.audio.addEventListener("loadedmetadata", () => {
@@ -665,7 +666,7 @@ async function playSaved(x) {
   }).catch(() => null);
   if (!response || !response.ok) return openSaved(x);
   const share = await response.json();
-  player.play(share.tracks.map((t) => ({ key: "v" + t.version.id, id: t.version.id, trackId: t.id, title: t.title,
+  player.play(share.tracks.map((t) => ({ key: "v" + t.version.id, id: t.version.id, trackId: t.id, title: t.title, feat: (t.credits || {}).feat,
     subtitle: [share.owner, OP.stageLabel(t.stage)].filter(Boolean).join(" · "), cover: share.cover, url: t.version.url,
     downloadUrl: t.version.downloadUrl, duration: t.version.duration, peaks: t.version.peaks, comments: t.comments })), 0);
 }
@@ -758,9 +759,9 @@ function stageButton(t, editable = true) {
   b.onclick = (event) => { event.stopPropagation(); stageMenu(b, t); };
   return b;
 }
-function featButton(t) {
+function featButton(t, editable = editing) {
   const feat = t.credits.feat || "";
-  if (!editing && !feat) return "";
+  if (!editable && !feat) return "";
   const b = el("button", { className: "feat" + (feat ? "" : " empty"), type: "button", textContent: feat ? "feat. " + feat : "+ feat.",
     title: feat ? "feat. " + feat : "Ajouter les artistes invités", ariaLabel: "Artistes invités de " + t.title + (feat ? " : " + feat : "") });
   b.onclick = async (event) => {
@@ -1048,7 +1049,7 @@ function renderDetails() {
   const canvas = el("canvas");
   drawPeaks(canvas, v.peaks);
   const left = el("div", { className: "details-left" }, close,
-    el("h2", {}, el("span", { className: "n", textContent: (i + 1) + ". " }), titleEditor(t)), stageButton(t),
+    el("h2", {}, el("span", { className: "n", textContent: (i + 1) + ". " }), titleEditor(t), featButton(t, true)), stageButton(t),
     el("div", { className: "facts", textContent: [v.duration ? length(v.duration) : null, "v" + v.n + " sur " + t.versions.length, size(v.size)].filter(Boolean).join(" · ") }),
     canvas, el("div", { className: "file", textContent: v.filename }), creditsList(t.credits),
     el("button", { className: "btn btn-ghost", type: "button", style: "margin-top:10px", onclick: () => { playVersion(p, t, v); } }, icon("play"), "Écouter"));

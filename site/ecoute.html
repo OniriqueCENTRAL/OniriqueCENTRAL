@@ -134,7 +134,7 @@ footer { padding: 30px 0 140px; text-align: center; font-size: 13px; }
 </main>
 <footer class="muted wrap">Partagé avec <a href="/">ONIRIQUE</a> · Mes sons</footer>
 
-<script src="assets/sounds-player.js?v=4"></script>
+<script src="assets/sounds-player.js?v=5"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const OP = window.OniriquePlayer, icon = OP.icon;
@@ -185,7 +185,8 @@ function show(data) {
   $("locked").hidden = $("account").hidden = true;
   $("room").hidden = false;
   document.title = data.title + " — " + data.owner + " · ONIRIQUE";
-  $("title").textContent = data.title;
+  const soloFeat = data.title !== data.project && data.tracks[0] && (data.tracks[0].credits || {}).feat;
+  $("title").replaceChildren(data.title, soloFeat ? el("span", { className: "feat", style: "margin-left:12px;vertical-align:middle;font-size:14px", textContent: "feat. " + soloFeat }) : "");
   const total = data.tracks.reduce((s, t) => s + (t.version.duration || 0), 0);
   $("release").textContent = OP.releaseLabel(data.releaseDate);
   $("release").classList.toggle("planned", $("release").textContent.startsWith("Date de sortie prévue"));
@@ -197,7 +198,7 @@ function show(data) {
   OP.tint(data.cover).then((t) => { theme(t); player.setAccent(t && t.accent); });
   $("cover-by").hidden = !data.coverBy;
   $("cover-by").replaceChildren("Pochette : ", el("b", { textContent: data.coverBy || "" }));
-  items = data.tracks.map((t) => ({ key: "v" + t.version.id, id: t.version.id, trackId: t.id, title: t.title, stage: t.stage,
+  items = data.tracks.map((t) => ({ key: "v" + t.version.id, id: t.version.id, trackId: t.id, title: t.title, feat: (t.credits || {}).feat, stage: t.stage,
     subtitle: [data.owner, OP.stageLabel(t.stage)].filter(Boolean).join(" · "), cover: data.cover,
     url: t.version.url, downloadUrl: t.version.downloadUrl, duration: t.version.duration, peaks: t.version.peaks, comments: t.comments, credits: t.credits || {} }));
   $("tracks").replaceChildren(...items.map((it, i) => {
