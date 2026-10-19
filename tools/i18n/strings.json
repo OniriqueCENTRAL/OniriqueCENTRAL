@@ -1002,6 +1002,9 @@
  "+ Ajouter un lien": [
   "site/mes-liens.html"
  ],
+ "+ Date": [
+  "site/mes-sons.html"
+ ],
  "+ Enregistrer dans Mes sons": [
   "site/ecoute.html"
  ],
@@ -1857,6 +1860,9 @@
  ],
  "Ajouter une clé de licence": [
   "app/renderer/views/licenses.js"
+ ],
+ "Ajouter une date (création, enregistrement…)": [
+  "site/mes-sons.html"
  ],
  "Ajouter une date de sortie": [
   "site/mes-sons.html"
@@ -3163,6 +3169,9 @@
  "Changer la": [
   "site/transposition.html"
  ],
+ "Changer la date": [
+  "site/mes-sons.html"
+ ],
  "Changer la hauteur ou le tempo d'un morceau, l'un sans l'autre.": [
   "site/assets/tools-menu.js"
  ],
@@ -4231,6 +4240,9 @@
  "Date d'expiration invalide.": [
   "server/src/app.js"
  ],
+ "Date de": [
+  "site/mes-sons.html"
+ ],
  "Date de fin": [
   "site/mes-sons.html"
  ],
@@ -4255,8 +4267,14 @@
  "Date de sortie prévue : {}": [
   "site/assets/sounds-player.js"
  ],
+ "Date du titre": [
+  "site/mes-sons.html"
+ ],
  "Date et pochette annoncées": [
   "site/checklist-sortie.html"
+ ],
+ "Date invalide.": [
+  "server/src/sounds.js"
  ],
  "Date limite du pitch Spotify": [
   "site/checklist-sortie.html"
@@ -4695,6 +4713,9 @@
  ],
  "display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px;align-items:end;margin-top:12px": [
   "site/admin.html"
+ ],
+ "display:inline-flex;gap:6px": [
+  "site/ecoute.html"
  ],
  "Disque : {} sur {} ({} %), dont {} de sons.": [
   "site/admin.html"
@@ -10041,6 +10062,9 @@
  "Puis-je essayer un plugin avant de l'acheter ?": [
   "site/onirique.html"
  ],
+ "px;top:": [
+  "site/mes-sons.html"
+ ],
  "Q de la bande sélectionnée": [
   "site/onirique.html"
  ],
@@ -10561,6 +10585,9 @@
  ],
  "Retirer l'image de {} ?": [
   "app/renderer/views/admin.js"
+ ],
+ "Retirer la date": [
+  "site/mes-sons.html"
  ],
  "Retirer la date de sortie": [
   "site/mes-sons.html"
@@ -11326,6 +11353,9 @@
  ],
  "Squirrel": [
   "app/main/installer.js"
+ ],
+ "stage date": [
+  "site/mes-sons.html"
  ],
  "Start-Process -FilePath {} -Wait -PassThru": [
   "app/main/installer.js"

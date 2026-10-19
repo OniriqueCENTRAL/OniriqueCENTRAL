@@ -175,6 +175,10 @@ try {
     await call('PATCH', `/api/me/sounds/tracks/${t}`, { token: member.token, body: { stage: 'brouillon' }, expect: 400 });
     const staged = await call('POST', `/api/sounds/share/${shareToken(fresh.url)}`, { token: listener.token, body: {} });
     assert.equal(staged.tracks[0].stage, 'v2');
+    // La date du titre : une vraie date seulement, '' l'efface.
+    await call('PATCH', `/api/me/sounds/tracks/${t}`, { token: member.token, body: { day: '2026-13-01' }, expect: 400 });
+    await call('PATCH', `/api/me/sounds/tracks/${t}`, { token: member.token, body: { day: '2026-05-06' } });
+    assert.equal((await call('POST', `/api/sounds/share/${shareToken(fresh.url)}`, { token: listener.token, body: {} })).tracks[0].day, '2026-05-06');
     // Les crédits du titre (un rôle inconnu est ignoré) et l'auteur de la pochette, vus par l'auditeur.
     await call('PATCH', `/api/me/sounds/tracks/${t}`, { token: member.token, body: { credits: { beat: ' Kanni ', mix: 'Gry', master: '', pirate: 'x' } } });
     await call('PATCH', `/api/me/sounds/projects/${a}`, { token: member.token, body: { coverBy: 'Shurby' } });

@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=8179d04b"></script>
+<script src="assets/i18n.js?v=2c394b9a"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Écoute privée</title>
 <meta name="robots" content="noindex, nofollow">
@@ -202,7 +202,7 @@ function show(data) {
   OP.tint(data.cover).then((t) => { theme(t); player.setAccent(t && t.accent); });
   $("cover-by").hidden = !data.coverBy;
   $("cover-by").replaceChildren("Pochette : ", el("b", { textContent: data.coverBy || "" }));
-  items = data.tracks.map((t) => ({ key: "v" + t.version.id, id: t.version.id, trackId: t.id, title: t.title, feat: (t.credits || {}).feat, stage: t.stage,
+  items = data.tracks.map((t) => ({ key: "v" + t.version.id, id: t.version.id, trackId: t.id, title: t.title, feat: (t.credits || {}).feat, stage: t.stage, day: t.day,
     subtitle: [data.owner, OP.stageLabel(t.stage)].filter(Boolean).join(" · "), cover: data.cover,
     url: t.version.url, downloadUrl: t.version.downloadUrl, duration: t.version.duration, peaks: t.version.peaks, comments: t.comments, credits: t.credits || {} }));
   $("tracks").replaceChildren(...items.map((it, i) => {
@@ -210,7 +210,8 @@ function show(data) {
       el("span", { className: "num", textContent: String(i + 1) }),
       el("div", {}, el("div", { className: "tline" }, el("b", { textContent: it.title }), it.credits.feat ? el("span", { className: "feat", textContent: "feat. " + it.credits.feat }) : ""), creditsLine(it.credits),
         it.comments.length ? el("small", { textContent: it.comments.length + " commentaire" + (it.comments.length > 1 ? "s" : "") }) : null),
-      el("span", { className: "stage " + (it.stage === "maquette" || it.stage === "final" ? it.stage : it.stage ? "version" : ""), textContent: OP.stageLabel(it.stage) }),
+      el("span", { style: "display:inline-flex;gap:6px" }, it.day ? el("span", { className: "stage", textContent: it.day.split("-").reverse().join("/") }) : "",
+        el("span", { className: "stage " + (it.stage === "maquette" || it.stage === "final" ? it.stage : it.stage ? "version" : ""), textContent: OP.stageLabel(it.stage) })),
       el("span", { className: "len", textContent: it.duration ? OP.time(it.duration) : "" }),
       it.downloadUrl ? el("a", { className: "dl", href: it.downloadUrl, title: "Télécharger", ariaLabel: "Télécharger " + it.title, onclick: (event) => event.stopPropagation() }, icon("download")) : el("span"));
     row.dataset.id = it.trackId;

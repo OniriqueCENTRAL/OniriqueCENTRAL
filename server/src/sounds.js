@@ -136,6 +136,10 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 
 }
 // Un projet que le membre peut ouvrir : le sien, ou un projet où il est collaborateur (p = sound_projects).
 const ACCESS = '(p.user_id = ? OR p.id IN (SELECT project_id FROM sound_collabs WHERE user_id = ?))';
+// La date d'un titre (création, enregistrement…), affichée en badge à côté de son étape ; '' : pas de date.
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'day'`).get()) {
+  db.exec(`ALTER TABLE sound_tracks ADD COLUMN day TEXT NOT NULL DEFAULT ''`);
+}
 const isDay = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value + 'T00:00:00Z'))
   && new Date(value + 'T00:00:00Z').toISOString().startsWith(value);
 
@@ -422,7 +426,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
         tracks: tracks.filter((t) => t.project_id === p.id).map((t) => {
           const mine = plays.filter((r) => r.track_id === t.id);
           return {
-            id: t.id, title: t.title, stage: t.stage, credits: creditsOf(t), currentId: t.current_id, createdAt: t.created_at,
+            id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), currentId: t.current_id, createdAt: t.created_at,
             versions: versions.filter((v) => v.track_id === t.id).map((v, i) => versionView(v, i, true)),
             comments: comments.filter((c) => c.track_id === t.id).map(commentView),
             plays: mine.length, lastPlay: mine[0]?.created_at ?? null, listeners: listeners(mine),
@@ -562,6 +566,11 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (req.body.credits && typeof req.body.credits === 'object') {
       const credits = Object.fromEntries(CREDIT_ROLES.map((role) => [role, str(req.body.credits[role], 120)]).filter(([, name]) => name));
       run('UPDATE sound_tracks SET credits = ? WHERE id = ?', JSON.stringify(credits), t.id);
+    }
+    if (req.body.day !== undefined) {
+      const day = String(req.body.day || '');
+      if (day && !isDay(day)) throw new HttpError(400, 'Date invalide.');
+      run('UPDATE sound_tracks SET day = ? WHERE id = ?', day, t.id);
     }
     if (req.body.stage !== undefined) {
       const stage = String(req.body.stage).toLowerCase();
@@ -796,7 +805,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       owner: p.artist || link.owner_name || 'ONIRIQUE', ownerAvatar: media(link.owner_avatar), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover), coverBy: p.cover_by, releaseDate: p.release_date,
       download: !!link.download,
       tracks: tracks.map((t) => ({
-        id: t.id, title: t.title, stage: t.stage, credits: creditsOf(t),
+        id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t),
         version: { id: t.vid, filename: t.filename, duration: t.duration, peaks: JSON.parse(t.peaks), url: audioUrl(t.vid), downloadUrl: link.download ? audioUrl(t.vid, true) : null },
         comments: comments.filter((c) => c.track_id === t.id).map(commentView),
       })),

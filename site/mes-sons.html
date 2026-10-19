@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=8179d04b"></script>
+<script src="assets/i18n.js?v=2c394b9a"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -292,6 +292,11 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
 .stage.maquette { border-style: solid; color: var(--mist); background: rgba(255,255,255,.06); }
 .stage.version { border-style: solid; border-color: var(--ember); color: var(--ember); }
 .stage.final { border-style: solid; border-color: var(--ember); background: var(--ember); color: var(--night); }
+/* Le badge de date d'un titre, à côté de son étape */
+.badges { display: inline-flex; align-items: center; gap: 6px; flex: none; }
+.stage.date { letter-spacing: .03em; }
+.stage.date:not(.empty) { border-style: solid; color: var(--mist); background: rgba(255,255,255,.04); }
+.day-picker { position: fixed; width: 1px; height: 1px; opacity: 0; border: 0; padding: 0; min-height: 0; pointer-events: none; }
 @media (max-width: 520px) { .trk .len { display: none; } }
 .mini-btn { padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: none; color: var(--mist); font: 600 12px var(--f-body); cursor: pointer; }
 .mini-btn:hover { border-color: var(--ember); }
@@ -885,6 +890,32 @@ function renderProject(p) {
   $("tracklist").replaceChildren(...p.tracks.map((t, i) => trackRow(p, t, i)));
 }
 
+// La date d'un titre (création ou autre) : badge « 06/05/2026 », choisie au calendrier du navigateur.
+const dayLabel = (day) => (day ? day.split("-").reverse().join("/") : "");
+function pickDay(anchor, value, save) {
+  const r = anchor.getBoundingClientRect();
+  const input = el("input", { type: "date", className: "day-picker", value: value || "", style: "left:" + r.left + "px;top:" + r.bottom + "px" });
+  ((anchor.closest && anchor.closest("dialog[open]")) || document.body).append(input);
+  const done = () => setTimeout(() => input.remove(), 300);
+  input.onchange = () => { if (input.value) save(input.value); done(); };
+  input.onblur = done;
+  try { input.showPicker(); } catch { input.focus(); input.click(); }
+}
+function dateButton(t, editable = editing) {
+  if (!editable && !t.day) return "";
+  const b = el("button", { className: "stage date" + (t.day ? "" : " empty"), type: "button", textContent: t.day ? dayLabel(t.day) : "+ Date",
+    title: t.day ? "Date du titre" : "Ajouter une date (création, enregistrement…)", ariaLabel: "Date de " + t.title + (t.day ? " : " + dayLabel(t.day) : "") });
+  b.onclick = (event) => {
+    event.stopPropagation();
+    const save = (day) => api("PATCH", "/me/sounds/tracks/" + t.id, { day }).then(refresh, fail);
+    if (!t.day) return pickDay(b, "", save);
+    menu(b, [
+      { label: "Changer la date", icon: "repeat", onclick: () => pickDay(b, t.day, save) },
+      { label: "Retirer la date", icon: "close", danger: true, onclick: () => save("") },
+    ]);
+  };
+  return b;
+}
 // Un badge (étape ou feat.) : modifiable dans la fenêtre d'un titre et en mode édition ; vide, il n'apparaît qu'en édition.
 function stageButton(t, editable = true) {
   if (!editable && !t.stage) return "";
@@ -914,7 +945,7 @@ function trackRow(p, t, i) {
     el("div", {}, el("div", { className: "tline" }, el("b", { textContent: t.title }), featButton(t)), el("small", { textContent: [day(v.createdAt), "v" + v.n + (t.versions.length > 1 ? " sur " + t.versions.length : ""),
       t.comments.length ? t.comments.length + " commentaire" + (t.comments.length > 1 ? "s" : "") : null,
       t.plays ? t.plays + " écoute" + (t.plays > 1 ? "s" : "") : null].filter(Boolean).join(" · ") })),
-    stageButton(t, editing), el("span", { className: "len", textContent: v.duration ? OP.time(v.duration) : "" }), more);
+    el("span", { className: "badges" }, dateButton(t), stageButton(t, editing)), el("span", { className: "len", textContent: v.duration ? OP.time(v.duration) : "" }), more);
   row.dataset.id = t.id;
   row.draggable = editing;
   row.title = editing ? "Écouter (glisser pour réordonner)" : "Écouter";
@@ -1194,7 +1225,7 @@ function renderDetails() {
   const canvas = el("canvas");
   drawPeaks(canvas, v.peaks);
   const left = el("div", { className: "details-left" }, close,
-    el("h2", {}, el("span", { className: "n", textContent: (i + 1) + ". " }), titleEditor(t), featButton(t, true)), stageButton(t),
+    el("h2", {}, el("span", { className: "n", textContent: (i + 1) + ". " }), titleEditor(t), featButton(t, true)), el("span", { className: "badges" }, stageButton(t), dateButton(t, true)),
     el("div", { className: "facts", textContent: [v.duration ? length(v.duration) : null, "v" + v.n + " sur " + t.versions.length, size(v.size)].filter(Boolean).join(" · ") }),
     canvas, el("div", { className: "file", textContent: v.filename }), creditsList(t.credits),
     el("button", { className: "btn btn-ghost", type: "button", style: "margin-top:10px", onclick: () => { playVersion(p, t, v); } }, icon("play"), "Écouter"));

@@ -318,5 +318,12 @@
  "Seul l'auteur du projet peut retirer un collaborateur.": "Only the project owner can remove a collaborator.",
  "Cette invitation n'existe pas ou n'est plus valable.": "This invitation does not exist or is no longer valid.",
  "C'est ton propre projet.": "It's your own project.",
- "L'espace de l'auteur du projet est plein : il doit faire de la place pour que tu envoies d'autres sons.": "The project owner's space is full: they need to free up room before you can upload more."
+ "L'espace de l'auteur du projet est plein : il doit faire de la place pour que tu envoies d'autres sons.": "The project owner's space is full: they need to free up room before you can upload more.",
+ "+ Date": "+ Date",
+ "Changer la date": "Change the date",
+ "Retirer la date": "Remove the date",
+ "Date du titre": "Track date",
+ "Ajouter une date (création, enregistrement…)": "Add a date (creation, recording…)",
+ "Date de": "Date of",
+ "Date invalide.": "Invalid date."
 }
