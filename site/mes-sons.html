@@ -520,6 +520,7 @@ function navigate(hash) {
     if (to) to.style.viewTransitionName = "cover";
     enter(true);
   });
+  vt.ready.catch(() => {}); // une animation sautée n'est pas une erreur
   vt.finished.finally(() => { for (const node of [$("cover"), tileArt()]) if (node) node.style.viewTransitionName = ""; });
   // Une page qui ne se dessine pas (onglet en arrière-plan) retiendrait l'ouverture : passé 300 ms, sans animation.
   setTimeout(() => { if (!ran) vt.skipTransition(); }, 300);

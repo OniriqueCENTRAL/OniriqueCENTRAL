@@ -350,7 +350,7 @@ export function createApp() {
   // Un fichier de media/ ne change jamais de contenu (chaque envoi a un nouveau nom) : les navigateurs le gardent un an.
   // ?w= (une largeur de MEDIA_WIDTHS) : l'image en WebP à cette largeur au plus, calculée une fois puis gardée dans
   // media/reduites/. Les captures d'interface pèsent jusqu'à 700 Ko en PNG pour être affichées en petit.
-  const MEDIA_WIDTHS = new Set([320, 640, 960, 1280, 1920]);
+  const MEDIA_WIDTHS = new Set([160, 320, 480, 640, 960, 1280, 1920]);
   app.get('/api/media/:file', wrap(async (req, res, next) => {
     const match = /^([a-f0-9]{32})\.(png|jpg|webp|json)$/.exec(req.params.file);
     if (!match) return next(new HttpError(404, 'Introuvable.'));
