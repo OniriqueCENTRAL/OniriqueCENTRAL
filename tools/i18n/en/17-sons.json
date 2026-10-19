@@ -212,5 +212,13 @@
  "Sans étape": "No stage",
  "Maquette": "Demo",
  "Final": "Final",
- "Tes projets, tes versions et tes liens d'écoute privés": "Your projects, your versions and your private listening links"
+ "Tes projets, tes versions et tes liens d'écoute privés": "Your projects, your versions and your private listening links",
+ "Envoi des sons": "Uploading sounds",
+ "Envois en cours": "Uploads in progress",
+ "En attente": "Waiting",
+ "Lecture…": "Reading…",
+ "Envoyé": "Sent",
+ "Échec": "Failed",
+ "Annulé": "Cancelled",
+ "Cliquer pour renommer": "Click to rename"
 }

@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=bf39335d"></script>
+<script src="assets/i18n.js?v=08dbfd0a"></script>
 <script src="assets/annonce.js?v=1"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Mes sons</title>
@@ -98,8 +98,24 @@ textarea { padding: 12px 14px; min-height: 110px; resize: vertical; line-height:
 .album-meta img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
 .add-bar { width: 100%; margin-top: 22px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 13px; border-radius: 14px; border: 1px dashed var(--line); background: rgba(255,255,255,.03); color: var(--mist); font: 600 14px var(--f-body); cursor: pointer; }
 .add-bar:hover { border-color: var(--ember); background: rgba(226,52,68,.08); }
-.progress { font: 500 12px var(--f-mono); color: var(--haze); margin-top: 10px; }
-.progress:empty { display: none; }
+/* La file des envois : un fichier à la fois, chacun avec sa barre */
+.uploads { position: fixed; right: 16px; bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 45; width: min(360px, calc(100vw - 32px)); border-radius: 18px; border: 1px solid rgba(255,210,214,.16); background: rgba(20,9,11,.96); backdrop-filter: blur(16px); box-shadow: 0 20px 60px -20px rgba(0,0,0,.95); overflow: hidden; }
+body.has-player .uploads { bottom: calc(92px + env(safe-area-inset-bottom)); }
+.uploads-head { display: flex; align-items: center; gap: 10px; padding: 12px 12px 10px 16px; border-bottom: 1px solid rgba(255,210,214,.08); }
+.uploads-head b { flex: 1; font: 700 14px var(--f-display); }
+.uploads-head span { font: 500 12px var(--f-mono); color: var(--haze); }
+.uploads-total { height: 3px; background: rgba(255,255,255,.06); }
+.uploads-total i, .up-bar i { display: block; height: 100%; width: 0; background: var(--ember); transition: width .25s; }
+.uploads ol { list-style: none; margin: 0; padding: 6px 0; max-height: 260px; overflow: auto; }
+.uploads li { padding: 8px 16px; display: grid; gap: 6px; }
+.up-line { display: flex; gap: 10px; align-items: baseline; font-size: 13px; min-width: 0; }
+.up-line b { flex: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.up-line span { flex: none; font: 500 11px var(--f-mono); color: var(--haze); }
+.up-bar { height: 4px; border-radius: 2px; background: rgba(255,255,255,.08); overflow: hidden; }
+.uploads li.done .up-bar i { background: #6fdc9a; }
+.uploads li.error .up-line span { color: #FF7A85; }
+.uploads li.error .up-bar i { background: #FF7A85; }
+@media (max-width: 640px) { .uploads { left: 16px; right: 16px; width: auto; } }
 .tracklist { list-style: none; margin: 14px 0 0; padding: 0; }
 .trk { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto auto auto; align-items: center; gap: 10px; padding: 10px 8px 10px 4px; border-radius: 12px; cursor: pointer; }
 .trk:hover { background: rgba(255,255,255,.04); }
@@ -160,6 +176,11 @@ button.item:hover { background: rgba(255,255,255,.04); }
 .details-left { padding: 18px; border-right: 1px solid rgba(255,210,214,.08); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; }
 .details-left .x { align-self: flex-start; }
 .details-left h2 { font: 800 20px/1.2 var(--f-display); margin: 18px 0 0; overflow-wrap: anywhere; }
+.details-left h2 .n { color: var(--haze); }
+/* Le nom du titre se modifie sur place */
+.title-edit { padding: 2px 6px; margin: 0 -6px; border-radius: 8px; cursor: text; outline: none; }
+.title-edit:hover { background: rgba(255,255,255,.05); }
+.title-edit:focus { background: rgba(0,0,0,.45); box-shadow: 0 0 0 1px var(--ember); }
 .details-left .facts { font: 500 12px var(--f-mono); color: var(--haze); }
 .details-left canvas { width: 100%; height: 64px; margin: 14px 0 4px; }
 .details-left .file { font: 500 12px var(--f-mono); color: var(--haze); overflow-wrap: anywhere; }
@@ -258,7 +279,6 @@ button.item:hover { background: rgba(255,255,255,.04); }
           <button class="round" id="project-more" type="button" aria-label="Plus d'options" title="Plus d'options"></button>
         </div>
         <button class="add-bar" id="add-tracks" type="button"></button>
-        <div class="progress" id="progress" role="status"></div>
         <p class="error" id="error" role="alert"></p>
         <ol class="tracklist" id="tracklist"></ol>
       </div>
@@ -270,6 +290,11 @@ button.item:hover { background: rgba(255,255,255,.04); }
 <input type="file" id="files" accept="audio/*,.wav,.aif,.aiff,.flac,.mp3,.ogg,.m4a" multiple hidden>
 <input type="file" id="cover-file" accept="image/png,image/jpeg,image/webp" hidden>
 <div class="drop-zone" id="drop-zone" hidden>Dépose tes sons ici</div>
+<section class="uploads" id="uploads" hidden aria-label="Envois en cours">
+  <div class="uploads-head"><b>Envoi des sons</b><span id="uploads-count" role="status"></span><button class="x" id="uploads-close" type="button" aria-label="Fermer" hidden></button></div>
+  <div class="uploads-total"><i id="uploads-total"></i></div>
+  <ol id="uploads-list"></ol>
+</section>
 
 <dialog id="details"></dialog>
 <dialog id="share"></dialog>
@@ -314,7 +339,7 @@ function upload(path, file, onProgress) {
     xhr.onload = () => {
       let data = {};
       try { data = JSON.parse(xhr.responseText); } catch {}
-      xhr.status < 300 ? resolve(data) : reject(new Error(data.error || "Erreur " + xhr.status));
+      xhr.status < 300 ? resolve(data) : reject(Object.assign(new Error(data.error || "Erreur " + xhr.status), { status: xhr.status }));
     };
     xhr.onerror = () => reject(new Error("L'envoi a été interrompu. Réessaie."));
     xhr.send(file);
@@ -470,7 +495,10 @@ function projectMenu(anchor, p) {
 function renderProject(p) {
   tintOf(p.cover).then((t) => { if (openId() === p.id) theme(t); });
   $("crumb-owner").textContent = data.owner.name;
-  $("cover").replaceChildren(coverOf(p), el("span", { className: "change", textContent: "Changer la pochette" }));
+  if ($("cover").dataset.src !== (p.cover || "-")) {
+    $("cover").dataset.src = p.cover || "-";
+    $("cover").replaceChildren(coverOf(p), el("span", { className: "change", textContent: "Changer la pochette" }));
+  }
   $("project-title").textContent = p.title;
   $("project-meta").replaceChildren(el("img", { src: avatar(data.owner), alt: "" }),
     data.owner.name + " · " + p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre") + (p.tracks.length ? " · " + length(projectLength(p)) : ""),
@@ -522,32 +550,80 @@ function trackRow(p, t, i) {
 }
 
 // ——— Envois ———
-// Chaque fichier devient un titre du projet donné, ou la nouvelle version du titre donné.
-async function sendFiles(files, p, toTrack) {
-  files = [...files].filter((f) => /^audio\//.test(f.type) || /\.(wav|aiff?|flac|mp3|ogg|m4a)$/i.test(f.name));
+// Chaque fichier devient un titre du projet donné, ou la nouvelle version du titre donné. Les fichiers attendent leur
+// tour dans une file : un seul envoi à la fois, quel que soit le nombre d'ajouts, chacun avec sa barre d'avancement.
+const uploads = [];
+let uploading = false;
+const isAudio = (f) => /^audio\//.test(f.type) || /\.(wav|aiff?|flac|mp3|ogg|m4a)$/i.test(f.name);
+function sendFiles(files, p, toTrack) {
+  files = [...files].filter(isAudio);
   if (!files.length) return;
   $("error").textContent = "";
-  for (const [n, f] of files.entries()) {
-    const label = (files.length > 1 ? (n + 1) + "/" + files.length + " · " : "") + f.name;
-    try {
-      $("progress").textContent = label + " : lecture…";
-      const wave = await OP.peaksOf(f);
-      const query = "?filename=" + encodeURIComponent(f.name);
-      const done = await upload(toTrack ? "/me/sounds/tracks/" + toTrack.id + "/versions" + query : "/me/sounds/projects/" + p.id + "/tracks" + query, f,
-        (x) => { $("progress").textContent = label + " : " + Math.round(x * 100) + " %"; });
-      if (wave) await api("PATCH", "/me/sounds/versions/" + (toTrack ? done.id : done.versionId), wave);
-    } catch (error) { $("error").textContent = error.message; break; }
+  for (const file of files) {
+    const bar = el("i"), state = el("span", { textContent: "En attente" });
+    const row = el("li", {}, el("div", { className: "up-line" }, el("b", { textContent: file.name, title: file.name }), state), el("div", { className: "up-bar" }, bar));
+    uploads.push({ file, projectId: p && p.id, trackId: toTrack && toTrack.id, state: "wait", progress: 0, row, bar, label: state });
+    $("uploads-list").append(row);
   }
-  $("progress").textContent = "";
-  await refresh().catch(fail);
+  drawUploads();
+  runUploads();
 }
+function setJob(job, state, label, progress) {
+  job.state = state;
+  if (progress !== undefined) { job.progress = progress; job.bar.style.width = Math.round(progress * 100) + "%"; }
+  job.label.textContent = label;
+  job.row.className = state;
+  drawUploads();
+}
+function drawUploads() {
+  const done = uploads.filter((j) => j.state === "done" || j.state === "error").length;
+  const busy = uploads.some((j) => j.state !== "done" && j.state !== "error");
+  $("uploads").hidden = !uploads.length;
+  $("uploads-count").textContent = Math.min(done + (busy ? 1 : 0), uploads.length) + " sur " + uploads.length;
+  $("uploads-total").style.width = (uploads.length ? uploads.reduce((sum, j) => sum + (j.state === "error" ? 1 : j.progress), 0) / uploads.length * 100 : 0) + "%";
+  $("uploads-close").hidden = busy;
+}
+async function runUploads() {
+  if (uploading) return;
+  uploading = true;
+  let job;
+  while ((job = uploads.find((j) => j.state === "wait"))) {
+    try {
+      setJob(job, "read", "Lecture…", 0);
+      const wave = await OP.peaksOf(job.file);
+      const query = "?filename=" + encodeURIComponent(job.file.name);
+      const path = job.trackId ? "/me/sounds/tracks/" + job.trackId + "/versions" + query : "/me/sounds/projects/" + job.projectId + "/tracks" + query;
+      const done = await upload(path, job.file, (x) => setJob(job, "send", Math.round(x * 100) + " %", x * 0.97));
+      if (wave) await api("PATCH", "/me/sounds/versions/" + (job.trackId ? done.id : done.versionId), wave);
+      setJob(job, "done", "Envoyé", 1);
+      await refresh().catch(() => {});
+    } catch (error) {
+      setJob(job, "error", "Échec", 1);
+      job.row.title = error.message;
+      $("error").textContent = job.file.name + " : " + error.message;
+      // Plus de place (quota ou disque) : les fichiers suivants ne passeraient pas non plus.
+      if (error.status === 507 || error.status === 413) for (const rest of uploads) if (rest.state === "wait") setJob(rest, "error", "Annulé", 1);
+    }
+  }
+  uploading = false;
+  drawUploads();
+  // La liste se ferme toute seule quelques secondes après le dernier envoi réussi.
+  if (!uploads.some((j) => j.state === "error")) setTimeout(() => { if (!uploading && uploads.every((j) => j.state === "done")) clearUploads(); }, 4000);
+}
+function clearUploads() {
+  for (let i = uploads.length - 1; i >= 0; i--) if (uploads[i].state === "done" || uploads[i].state === "error") { uploads[i].row.remove(); uploads.splice(i, 1); }
+  drawUploads();
+}
+$("uploads-close").append(icon("close"));
+$("uploads-close").onclick = clearUploads;
+addEventListener("beforeunload", (event) => { if (uploading) event.preventDefault(); });
 // Des sons déposés hors d'un projet : un nouveau projet, nommé d'après le premier fichier.
 async function newProjectWith(files) {
   const name = files[0].name.replace(/\.[a-z0-9]{2,5}$/i, "");
   const { id } = await api("POST", "/me/sounds/projects", { title: files.length > 1 ? "Nouveau projet" : name });
   await refresh();
   location.hash = "#/p/" + id;
-  await sendFiles(files, project(id));
+  sendFiles(files, project(id));
 }
 let pickTarget = null;
 function pickFiles(target) { pickTarget = target; $("files").click(); }
@@ -642,7 +718,26 @@ const item = (iconName, label, opts = {}) => {
   return el("li", {}, b);
 };
 const group = (...rows) => el("ul", { className: "group" }, ...rows.filter(Boolean));
+// Le nom du titre, modifiable sur place : Entrée ou un clic ailleurs l'enregistre, Échap l'annule.
+function titleEditor(t) {
+  const span = el("span", { className: "title-edit", contentEditable: "plaintext-only", spellcheck: false, textContent: t.title,
+    title: "Cliquer pour renommer", role: "textbox", ariaLabel: "Nom du titre" });
+  if (span.contentEditable !== "plaintext-only") span.contentEditable = "true";
+  span.onkeydown = (event) => {
+    if (event.key === "Enter") { event.preventDefault(); span.blur(); }
+    if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); span.textContent = t.title; span.blur(); }
+  };
+  span.onpaste = (event) => { event.preventDefault(); document.execCommand("insertText", false, event.clipboardData.getData("text/plain").replace(/\s+/g, " ")); };
+  span.onblur = () => {
+    const title = span.textContent.replace(/\s+/g, " ").trim().slice(0, 120);
+    if (!title) { span.textContent = t.title; return; }
+    if (title !== t.title) api("PATCH", "/me/sounds/tracks/" + t.id, { title }).then(refresh, (error) => { span.textContent = t.title; alert(error.message); });
+  };
+  return span;
+}
 function renderDetails() {
+  // Ne pas effacer un nom en cours de saisie quand la page se met à jour (un envoi qui se termine, par exemple).
+  if (document.activeElement && document.activeElement.classList.contains("title-edit")) return;
   const { p, t } = findTrack(detailsId);
   if (!t) { $("details").close(); return; }
   const v = live(t), i = p.tracks.indexOf(t);
@@ -650,7 +745,7 @@ function renderDetails() {
   const canvas = el("canvas");
   drawPeaks(canvas, v.peaks);
   const left = el("div", { className: "details-left" }, close,
-    el("h2", { textContent: (i + 1) + ". " + t.title }), stageButton(t),
+    el("h2", {}, el("span", { className: "n", textContent: (i + 1) + ". " }), titleEditor(t)), stageButton(t),
     el("div", { className: "facts", textContent: [v.duration ? length(v.duration) : null, "v" + v.n + " sur " + t.versions.length, size(v.size)].filter(Boolean).join(" · ") }),
     canvas, el("div", { className: "file", textContent: v.filename }),
     el("button", { className: "btn btn-ghost", type: "button", style: "margin-top:10px", onclick: () => { playVersion(p, t, v); } }, icon("play"), "Écouter"));

@@ -188,9 +188,6 @@
  ": le niveau maximal du signal une fois reconverti en son, qui peut dépasser celui des échantillons. Au-dessus de −1 dBTP, la conversion en MP3 ou en AAC faite par les plateformes peut créer de la saturation.": [
   "site/volume-lufs.html"
  ],
- ": lecture…": [
-  "site/mes-sons.html"
- ],
  ": nom indiqué (ou celui de son compte), texte, moment du titre": [
   "site/confidentialite.html"
  ],
@@ -1923,6 +1920,9 @@
  "Annuel": [
   "app/renderer/views/subscription.js"
  ],
+ "Annulé": [
+  "site/mes-sons.html"
+ ],
  "Annuler": [
   "site/admin.html",
   "site/compte.html",
@@ -3326,6 +3326,9 @@
  "Clique sur une valeur pour la copier. Les valeurs du milieu de tableau (croche, croche pointée, double) sont les plus utilisées sur une voix.": [
   "site/delais.html"
  ],
+ "Cliquer pour renommer": [
+  "site/mes-sons.html"
+ ],
  "Cloche, shelf grave, shelf aigu, coupe-bas, coupe-haut. Filtres appariés à l'analogique jusqu'en haut du spectre.": [
   "site/onirique.html"
  ],
@@ -4691,7 +4694,8 @@
   "site/comparer-mix.html"
  ],
  "Échec": [
-  "site/compte.html"
+  "site/compte.html",
+  "site/mes-sons.html"
  ],
  "écoute": [
   "site/mes-sons.html"
@@ -4817,6 +4821,9 @@
  ],
  "En ascension": [
   "site/popularite.html"
+ ],
+ "En attente": [
+  "site/mes-sons.html"
  ],
  "En boutique": [
   "site/admin.html"
@@ -4989,6 +4996,9 @@
  "Envoi de la démo {}": [
   "app/renderer/app.js"
  ],
+ "Envoi des sons": [
+  "site/mes-sons.html"
+ ],
  "Envoi du fichier {}": [
   "app/renderer/app.js"
  ],
@@ -5018,6 +5028,12 @@
  ],
  "Envois": [
   "app/renderer/views/admin.js"
+ ],
+ "Envois en cours": [
+  "site/mes-sons.html"
+ ],
+ "Envoyé": [
+  "site/mes-sons.html"
  ],
  "Envoyé depuis": [
   "site/admin.html"
@@ -6857,6 +6873,9 @@
  ],
  "Lecture impossible : recharge la page.": [
   "site/assets/sounds-player.js"
+ ],
+ "Lecture…": [
+  "site/mes-sons.html"
  ],
  "led on": [
   "app/renderer/app.js",
