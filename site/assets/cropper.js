@@ -3,6 +3,9 @@
 //
 //   OniriqueCropper.open(src, { aspect: 16 / 10, width: 1600 })  →  Promise<{ dataUrl, blob, whole } | null>   (null : annulé)
 //
+// Pour une photo de profil : OniriqueCropper.open(src, { avatar: true }) — cadre carré, rond dessiné par-dessus (ce qui en
+// déborde est assombri), 512 pixels, sans « Garder l'image entière ».
+//
 // « Garder l'image entière » rend l'image sans la rogner (whole : true) : la page du plugin la montre alors en entier, et
 // les cartes de la boutique en montrent le milieu.
 //
@@ -13,25 +16,27 @@ window.OniriqueCropper = (() => {
   const make = (tag, styles = {}, props = {}) => css(Object.assign(document.createElement(tag), props), styles);
   const BACK = "#0d0809";
 
-  function open(src, { aspect = 16 / 10, width = 1600 } = {}) {
+  function open(src, options = {}) {
+    const avatar = !!options.avatar;
+    const { aspect = avatar ? 1 : 16 / 10, width = avatar ? 512 : 1600 } = options;
     return new Promise((resolve, reject) => {
       const image = new Image();
       image.onerror = () => reject(new Error("Cette image n'a pas pu être lue."));
       image.onload = () => {
         const veil = make("div", { position: "fixed", inset: "0", zIndex: "9999", display: "grid", placeItems: "center", padding: "16px", background: "rgba(5,3,4,.86)" });
-        const panel = make("div", { width: "min(760px, 100%)", display: "grid", gap: "14px", padding: "18px", borderRadius: "18px", border: "1px solid rgba(255,236,238,.16)", background: "#170d10", color: "#ffecee", font: "500 14px/1.4 system-ui, sans-serif" });
-        const title = make("strong", { font: "700 16px/1.2 system-ui, sans-serif" }, { textContent: "Cadrer l'image" });
-        const hint = make("span", { color: "rgba(255,236,238,.62)" }, { textContent: "Fais glisser l'image pour la placer, zoome avec la molette ou le curseur : ce qui est dans le cadre est ce que montreront la boutique et la page du plugin. Pour une interface en hauteur, « Garder l'image entière » l'envoie sans la rogner : la page du plugin la montre en entier, les cartes en montrent le milieu." });
+        const panel = make("div", { width: avatar ? "min(460px, 100%)" : "min(760px, 100%)", maxHeight: "100%", overflowY: "auto", boxSizing: "border-box", display: "grid", gap: "14px", padding: "18px", borderRadius: "18px", border: "1px solid rgba(255,236,238,.16)", background: "#170d10", color: "#ffecee", font: "500 14px/1.4 system-ui, sans-serif" });
+        const title = make("strong", { font: "700 16px/1.2 system-ui, sans-serif" }, { textContent: avatar ? "Cadrer ta photo" : "Cadrer l'image" });
+        const hint = make("span", { color: "rgba(255,236,238,.62)" }, { textContent: avatar ? "Fais glisser la photo pour la placer, zoome avec la molette, deux doigts ou le curseur : ce qui est dans le rond est ce que tout le monde verra." : "Fais glisser l'image pour la placer, zoome avec la molette ou le curseur : ce qui est dans le cadre est ce que montreront la boutique et la page du plugin. Pour une interface en hauteur, « Garder l'image entière » l'envoie sans la rogner : la page du plugin la montre en entier, les cartes en montrent le milieu." });
         const canvas = make("canvas", { width: "100%", display: "block", borderRadius: "12px", border: "1px solid rgba(255,236,238,.22)", cursor: "grab", touchAction: "none", background: BACK });
         const zoom = make("input", { flex: "1", accentColor: "#e23444" }, { type: "range", min: "0", max: "1000", value: "0" });
         zoom.setAttribute("aria-label", "Zoom");
         const pill = (label, primary) => make("button", { padding: "9px 16px", borderRadius: "999px", cursor: "pointer", font: "600 13px/1 system-ui, sans-serif", whiteSpace: "nowrap",
           border: primary ? "0" : "1px solid rgba(255,236,238,.22)", background: primary ? "#ffecee" : "transparent", color: primary ? "#0d0809" : "#ffecee" }, { type: "button", textContent: label });
-        const fill = pill("Remplir le cadre"), whole = pill("Tout voir dans le cadre"), cancel = pill("Annuler"), keep = pill("Garder l'image entière"), save = pill("Enregistrer ce cadrage", true);
+        const fill = pill("Remplir le cadre"), whole = pill("Tout voir dans le cadre"), cancel = pill("Annuler"), keep = pill("Garder l'image entière"), save = pill(avatar ? "Enregistrer la photo" : "Enregistrer ce cadrage", true);
         const tools = make("div", { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px" });
         const actions = make("div", { display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: "10px" });
         tools.append(make("span", {}, { textContent: "Zoom" }), zoom, fill, whole);
-        actions.append(cancel, keep, save);
+        actions.append(...(avatar ? [cancel, save] : [cancel, keep, save]));
         panel.append(title, hint, canvas, tools, actions);
         veil.append(panel);
         document.body.append(veil);
@@ -65,7 +70,23 @@ window.OniriqueCropper = (() => {
           const size = Math.round(canvas.clientWidth * (window.devicePixelRatio || 1)) || 720;
           canvas.width = size;
           canvas.height = Math.round(size / aspect);
-          paint(canvas.getContext("2d"), size);
+          const context = canvas.getContext("2d");
+          paint(context, size);
+          // Le rond de la photo de profil : ce qui en sort est assombri (seulement à l'écran, l'image envoyée reste carrée).
+          if (avatar) {
+            context.save();
+            context.fillStyle = "rgba(5,3,4,.62)";
+            context.beginPath();
+            context.rect(0, 0, size, size);
+            context.arc(size / 2, size / 2, size / 2 - 1, 0, Math.PI * 2, true);
+            context.fill();
+            context.strokeStyle = "rgba(255,236,238,.7)";
+            context.lineWidth = Math.max(1, size / 360);
+            context.beginPath();
+            context.arc(size / 2, size / 2, size / 2 - 1, 0, Math.PI * 2);
+            context.stroke();
+            context.restore();
+          }
           zoom.value = String(Math.round(1000 * Math.log(state.w / contain) / Math.log(widest / contain)));
         };
         const setWidth = (w, anchorX = 0.5, anchorY = frame.h / 2) => {
@@ -85,16 +106,37 @@ window.OniriqueCropper = (() => {
           const box = canvas.getBoundingClientRect();
           setWidth(state.w * (event.deltaY < 0 ? 1.08 : 1 / 1.08), (event.clientX - box.left) / box.width, (event.clientY - box.top) / box.width);
         }, { passive: false });
-        let grab = null;
-        canvas.onpointerdown = (event) => { canvas.setPointerCapture(event.pointerId); grab = { x: event.clientX, y: event.clientY, sx: state.x, sy: state.y }; canvas.style.cursor = "grabbing"; };
+        // Un doigt (ou la souris) déplace l'image ; deux doigts la zooment autour de leur milieu.
+        let grab = null, pinch = null;
+        const fingers = new Map();
+        const spread = () => { const [a, b] = [...fingers.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
+        canvas.onpointerdown = (event) => {
+          canvas.setPointerCapture(event.pointerId);
+          fingers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+          if (fingers.size === 2) { grab = null; pinch = { d: spread(), w: state.w }; return; }
+          grab = { x: event.clientX, y: event.clientY, sx: state.x, sy: state.y }; canvas.style.cursor = "grabbing";
+        };
         canvas.onpointermove = (event) => {
-          if (!grab) return;
+          if (fingers.has(event.pointerId)) fingers.set(event.pointerId, { x: event.clientX, y: event.clientY });
           const box = canvas.getBoundingClientRect();
+          if (pinch && fingers.size === 2) {
+            const [a, b] = [...fingers.values()];
+            setWidth(pinch.w * spread() / pinch.d, ((a.x + b.x) / 2 - box.left) / box.width, ((a.y + b.y) / 2 - box.top) / box.width);
+            pinch.w = state.w; pinch.d = spread();
+            return;
+          }
+          if (!grab) return;
           state.x = grab.sx + (event.clientX - grab.x) / box.width;
           state.y = grab.sy + (event.clientY - grab.y) / box.width;
           draw();
         };
-        canvas.onpointerup = canvas.onpointercancel = () => { grab = null; canvas.style.cursor = "grab"; };
+        canvas.onpointerup = canvas.onpointercancel = (event) => {
+          fingers.delete(event.pointerId);
+          pinch = null;
+          const left = [...fingers.values()][0];
+          grab = left ? { x: left.x, y: left.y, sx: state.x, sy: state.y } : null;
+          canvas.style.cursor = "grab";
+        };
 
         const close = (result) => { removeEventListener("keydown", onKey); removeEventListener("resize", draw); veil.remove(); resolve(result); };
         const onKey = (event) => { if (event.key === "Escape") close(null); };

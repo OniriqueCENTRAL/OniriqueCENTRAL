@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=993a2aea"></script>
+<script src="assets/i18n.js?v=e37f07cb"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -244,6 +244,7 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-
 
 <script src="assets/deeplink.js?v=3"></script>
 <script src="assets/linkpage.js?v=4"></script>
+<script src="assets/cropper.js?v=2"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const TOKEN = "onirique.token";
@@ -498,9 +499,17 @@ async function upload(kind, input) {
   if (!file) return;
   $("error").textContent = "";
   if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) { $("error").textContent = "Image attendue : PNG, JPEG ou WebP."; return; }
+  // La photo de la page passe par le cadrage (dans un rond, comme elle s'affiche).
+  let image = file;
+  if (kind === "avatar") {
+    const url = URL.createObjectURL(file);
+    const cut = await OniriqueCropper.open(url, { avatar: true }).catch(() => null).finally(() => URL.revokeObjectURL(url));
+    if (!cut) return;
+    image = cut.blob;
+  }
   if (!saved && !(await save())) return;
   try {
-    const data = await api("PUT", "/me/links/image?kind=" + kind, null, file);
+    const data = await api("PUT", "/me/links/image?kind=" + kind, null, image);
     media = { avatar: data.avatar, background: data.background };
     if (kind === "background") { page.theme.bg = "image"; fillFields(); markDirty(); } else draw();
   } catch (error) { $("error").textContent = error.message; }
