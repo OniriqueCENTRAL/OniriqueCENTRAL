@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=487e8ed4"></script>
+<script src="assets/i18n.js?v=73ac4962"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Écoute privée</title>
 <meta name="robots" content="noindex, nofollow">
@@ -82,6 +82,9 @@ h1.title { font: 800 clamp(24px, 5vw, 36px)/1.12 var(--f-display); margin: 10px 
 .trk .len { font: 500 12px var(--f-mono); color: var(--haze); }
 .cover-by { margin-top: 12px; font-size: 14px; color: var(--haze); }
 .cover-by b { color: var(--mist); font-weight: 600; }
+.tline { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.tline b { min-width: 0; }
+.feat { flex: none; max-width: 55%; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.05); font: 600 11px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .trk .credits { display: block; color: var(--haze); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dl { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 8px; color: var(--haze); }
 .dl:hover { color: var(--mist); background: rgba(255,255,255,.06); }
@@ -200,7 +203,7 @@ function show(data) {
   $("tracks").replaceChildren(...items.map((it, i) => {
     const row = el("li", { className: "trk", tabIndex: 0 },
       el("span", { className: "num", textContent: String(i + 1) }),
-      el("div", {}, el("b", { textContent: it.title }), creditsLine(it.credits),
+      el("div", {}, el("div", { className: "tline" }, el("b", { textContent: it.title }), it.credits.feat ? el("span", { className: "feat", textContent: "feat. " + it.credits.feat }) : ""), creditsLine(it.credits),
         it.comments.length ? el("small", { textContent: it.comments.length + " commentaire" + (it.comments.length > 1 ? "s" : "") }) : null),
       el("span", { className: "stage " + (it.stage === "maquette" || it.stage === "final" ? it.stage : it.stage ? "version" : ""), textContent: OP.stageLabel(it.stage) }),
       el("span", { className: "len", textContent: it.duration ? OP.time(it.duration) : "" }),

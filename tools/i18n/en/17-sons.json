@@ -268,5 +268,16 @@
  "C'est ton propre projet : il est déjà dans Mes sons.": "It's your own project: it's already in My sounds.",
  "✓ Dans Mes sons": "✓ In My sounds",
  "+ Enregistrer dans Mes sons": "+ Save to My sounds",
- "Le garder dans ta page Mes sons": "Keep it on your My sounds page"
+ "Le garder dans ta page Mes sons": "Keep it on your My sounds page",
+ "Ajouter à l'écran d'accueil": "Add to home screen",
+ "Sur l'écran d'accueil": "On your home screen",
+ "Une icône Mes sons, qui s'ouvre en plein écran comme une application.": "A My sounds icon that opens full screen, like an app.",
+ "Compris": "Got it",
+ "Modifier": "Edit",
+ "Terminé": "Done",
+ "Feat.": "Feat.",
+ "Les artistes invités": "Featured artists",
+ "Ajouter les artistes invités": "Add featured artists",
+ "Artistes invités de": "Featured artists on",
+ "feat. (artistes invités, séparés par des virgules ; vide pour retirer)": "feat. (featured artists, comma separated; empty to remove)"
 }

@@ -86,7 +86,7 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'c
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'cover_by'`).get()) {
   db.exec(`ALTER TABLE sound_projects ADD COLUMN cover_by TEXT NOT NULL DEFAULT ''`);
 }
-export const CREDIT_ROLES = ['beat', 'mix', 'master', 'rec'];
+export const CREDIT_ROLES = ['feat', 'beat', 'mix', 'master', 'rec'];
 // La date de sortie d'un projet (AAAA-MM-JJ, '' : pas de date) : prévue si elle est à venir, passée sinon.
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'release_date'`).get()) {
   db.exec(`ALTER TABLE sound_projects ADD COLUMN release_date TEXT NOT NULL DEFAULT ''`);

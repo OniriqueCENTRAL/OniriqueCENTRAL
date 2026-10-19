@@ -1,12 +1,19 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=487e8ed4"></script>
+<script src="assets/i18n.js?v=73ac4962"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Mes sons</title>
 <meta name="robots" content="noindex">
+<link rel="manifest" href="assets/mes-sons.json">
+<meta name="theme-color" content="#0D0809">
+<link rel="apple-touch-icon" href="assets/app-icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mes sons">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="stylesheet" href="assets/fonts.css">
 <style>
@@ -33,7 +40,16 @@ a { color: inherit; }
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
 .wrap { width: 100%; max-width: 1180px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 40px); }
-header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.6); backdrop-filter: blur(14px); }
+header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.6); backdrop-filter: blur(14px); padding-top: env(safe-area-inset-top); }
+/* Ajouter Mes sons à l'écran d'accueil (téléphones seulement) */
+.install { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; padding: 9px 14px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); font: 600 13px var(--f-body); cursor: pointer; }
+.install:hover { border-color: var(--ember); }
+.install img { width: 22px; height: 22px; border-radius: 6px; }
+#install-help { width: 400px; }
+#install-help .steps { margin: 0; padding: 0 20px 6px 20px; display: grid; gap: 14px; counter-reset: step; list-style: none; }
+#install-help .steps li { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; }
+#install-help .steps li::before { counter-increment: step; content: counter(step); flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--ember); color: var(--night); font: 700 13px var(--f-body); }
+#install-help .share { display: inline-block; vertical-align: -4px; width: 18px; height: 18px; }
 header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 16px; }
 .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 800 17px/1 var(--f-display); letter-spacing: .16em; }
 .brand img { width: 44px; height: auto; margin-block: -12px; filter: drop-shadow(0 0 6px rgba(226,52,68,.8)); }
@@ -142,6 +158,22 @@ body.has-player .uploads { bottom: calc(92px + env(safe-area-inset-bottom)); }
 .trk .num { text-align: center; font: 500 13px var(--f-mono); color: var(--haze); }
 .trk.now .num { color: var(--ember); }
 .trk b { display: block; font: 700 15px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tline { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.tline b { min-width: 0; }
+/* Le « feat. » à côté du titre, comme le badge d'étape */
+.feat { flex: none; max-width: 55%; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.05); color: var(--mist); font: 600 11px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.feat.empty { border-style: dashed; background: none; color: var(--haze); }
+.feat:hover, .stage:hover { border-color: var(--ember); }
+/* Hors du mode édition : seulement ce qui est rempli, rien à cliquer pour modifier */
+body:not(.editing) .album .art { cursor: default; }
+body:not(.editing) .album .art .change, body:not(.editing) .add-bar { display: none; }
+body:not(.editing) .album-head h1 { cursor: default; }
+body:not(.editing) .trk .stage, body:not(.editing) .trk .feat { cursor: inherit; pointer-events: none; }
+.edit-toggle { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 16px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); font: 600 14px var(--f-body); cursor: pointer; }
+.edit-toggle:hover { border-color: var(--ember); }
+body.editing .edit-toggle { background: var(--mist); color: var(--night); border-color: var(--mist); }
+.release .chip { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); font: 600 13px var(--f-body); }
+.release .chip.planned::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 8px var(--ember); }
 .trk.now b { color: var(--bone); }
 .trk small { color: var(--haze); font-size: 12px; }
 .trk .len { font: 500 12px var(--f-mono); color: var(--haze); }
@@ -300,7 +332,10 @@ button.item:hover { background: rgba(255,255,255,.04); }
         <h1>Mes <em>sons</em></h1>
         <div class="muted" id="owner-name"></div>
       </div>
-      <div class="quota" id="quota"></div>
+      <div>
+        <div class="quota" id="quota"></div>
+        <button class="install" id="install" type="button" hidden><img src="assets/app-icon-180.png" alt="">Ajouter à l'écran d'accueil</button>
+      </div>
     </div>
     <p class="error" id="disk-full"></p>
     <div class="tiles" id="tiles"></div>
@@ -332,6 +367,7 @@ button.item:hover { background: rgba(255,255,255,.04); }
         </div>
         <div class="row" style="margin-top:16px">
           <button class="round" id="share-project" type="button" aria-label="Partager le projet" title="Partager le projet"></button>
+          <button class="edit-toggle" id="edit-toggle" type="button" aria-pressed="false">Modifier</button>
           <button class="round" id="project-more" type="button" aria-label="Plus d'options" title="Plus d'options"></button>
         </div>
         <button class="add-bar" id="add-tracks" type="button"></button>
@@ -353,6 +389,12 @@ button.item:hover { background: rgba(255,255,255,.04); }
 </section>
 
 <dialog id="details"></dialog>
+<dialog id="install-help">
+  <div class="dlg-head"><b>Sur l'écran d'accueil</b><button class="x" type="button" aria-label="Fermer" onclick="this.closest('dialog').close()">✕</button></div>
+  <p class="muted" style="margin:10px 20px 14px;font-size:14px" id="install-intro"></p>
+  <ol class="steps" id="install-steps"></ol>
+  <div class="row" style="justify-content:flex-end;padding:16px 20px 20px"><button class="btn btn-primary" type="button" onclick="this.closest('dialog').close()">Compris</button></div>
+</dialog>
 <dialog id="share"></dialog>
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" value="cancel" formnovalidate>Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
@@ -480,14 +522,15 @@ function menu(anchor, items) {
 function closeMenu() { if (openMenu) { openMenu.remove(); openMenu = null; } }
 document.addEventListener("pointerdown", (event) => { if (openMenu && !openMenu.contains(event.target)) closeMenu(); }, true);
 document.addEventListener("keydown", (event) => { if (event.key === "Escape") closeMenu(); });
-function ask(title, value = "") {
+function ask(title, value = "", allowEmpty = false) {
   return new Promise((resolve) => {
     $("ask-title").textContent = title;
     $("ask-input").value = value;
+    $("ask-input").required = !allowEmpty;
     $("ask").returnValue = "";
     $("ask").showModal();
     $("ask-input").select();
-    $("ask").onclose = () => resolve($("ask").returnValue === "ok" && $("ask-input").value.trim() ? $("ask-input").value.trim() : null);
+    $("ask").onclose = () => resolve($("ask").returnValue === "ok" && ($("ask-input").value.trim() || allowEmpty) ? $("ask-input").value.trim() : null);
   });
 }
 const lightClose = (dialog) => dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); });
@@ -675,6 +718,7 @@ function projectMenu(anchor, p) {
 function drawRelease(p) {
   const label = OP.releaseLabel(p.releaseDate);
   const planned = label.startsWith("Date de sortie prévue");
+  if (!editing) return $("release").replaceChildren(label ? el("span", { className: "chip" + (planned ? " planned" : ""), textContent: label }) : "");
   const input = el("input", { type: "date", value: p.releaseDate || "", tabIndex: -1, ariaHidden: "true" });
   const save = (releaseDate) => api("PATCH", "/me/sounds/projects/" + p.id, { releaseDate }).then(refresh, fail);
   input.onchange = () => input.value && save(input.value);
@@ -687,8 +731,11 @@ function drawRelease(p) {
 function renderProject(p) {
   tintOf(p.cover).then((t) => { if (openId() === p.id) theme(t); });
   $("crumb-owner").textContent = data.owner.name;
-  if (!$("cover-by").contains(document.activeElement)) $("cover-by").replaceChildren(el("span", { className: "eyebrow", textContent: "Pochette" }),
-    inlineEdit(p.coverBy, "Ajouter l'auteur de la pochette", 80, (coverBy) => api("PATCH", "/me/sounds/projects/" + p.id, { coverBy }).then(refresh), true));
+  if (!$("cover-by").contains(document.activeElement)) $("cover-by").replaceChildren(...(editing || p.coverBy ? [el("span", { className: "eyebrow", textContent: "Pochette" }),
+    editing ? inlineEdit(p.coverBy, "Ajouter l'auteur de la pochette", 80, (coverBy) => api("PATCH", "/me/sounds/projects/" + p.id, { coverBy }).then(refresh), true)
+      : el("span", { textContent: p.coverBy, style: "color:var(--mist);font-weight:600" })] : []));
+  $("edit-toggle").textContent = editing ? "Terminé" : "Modifier";
+  $("edit-toggle").ariaPressed = String(editing);
   if ($("cover").dataset.src !== (p.cover || "-")) {
     $("cover").dataset.src = p.cover || "-";
     $("cover").replaceChildren(coverOf(p), el("span", { className: "change", textContent: "Changer la pochette" }));
@@ -703,10 +750,24 @@ function renderProject(p) {
   $("tracklist").replaceChildren(...p.tracks.map((t, i) => trackRow(p, t, i)));
 }
 
-function stageButton(t) {
+// Un badge (étape ou feat.) : modifiable dans la fenêtre d'un titre et en mode édition ; vide, il n'apparaît qu'en édition.
+function stageButton(t, editable = true) {
+  if (!editable && !t.stage) return "";
   const b = el("button", { className: "stage " + stageClass(t.stage), type: "button", textContent: OP.stageLabel(t.stage) || "Étape",
     title: "Où en est ce titre : maquette, version, final", ariaLabel: "Étape de " + t.title + " : " + (OP.stageLabel(t.stage) || "non précisée") });
   b.onclick = (event) => { event.stopPropagation(); stageMenu(b, t); };
+  return b;
+}
+function featButton(t) {
+  const feat = t.credits.feat || "";
+  if (!editing && !feat) return "";
+  const b = el("button", { className: "feat" + (feat ? "" : " empty"), type: "button", textContent: feat ? "feat. " + feat : "+ feat.",
+    title: feat ? "feat. " + feat : "Ajouter les artistes invités", ariaLabel: "Artistes invités de " + t.title + (feat ? " : " + feat : "") });
+  b.onclick = async (event) => {
+    event.stopPropagation();
+    const next = await ask("feat. (artistes invités, séparés par des virgules ; vide pour retirer)", feat, true);
+    if (next !== null) api("PATCH", "/me/sounds/tracks/" + t.id, { credits: { ...t.credits, feat: next } }).then(refresh, fail);
+  };
   return b;
 }
 function trackRow(p, t, i) {
@@ -715,11 +776,13 @@ function trackRow(p, t, i) {
   more.onclick = (event) => { event.stopPropagation(); openDetails(t.id); };
   const row = el("li", { className: "trk", draggable: true, tabIndex: 0, title: "Écouter (glisser pour réordonner)", style: "--i:" + (i + 3) },
     el("span", { className: "num", textContent: String(i + 1) }),
-    el("div", {}, el("b", { textContent: t.title }), el("small", { textContent: [day(v.createdAt), "v" + v.n + (t.versions.length > 1 ? " sur " + t.versions.length : ""),
+    el("div", {}, el("div", { className: "tline" }, el("b", { textContent: t.title }), featButton(t)), el("small", { textContent: [day(v.createdAt), "v" + v.n + (t.versions.length > 1 ? " sur " + t.versions.length : ""),
       t.comments.length ? t.comments.length + " commentaire" + (t.comments.length > 1 ? "s" : "") : null,
       t.plays ? t.plays + " écoute" + (t.plays > 1 ? "s" : "") : null].filter(Boolean).join(" · ") })),
-    stageButton(t), el("span", { className: "len", textContent: v.duration ? OP.time(v.duration) : "" }), more);
+    stageButton(t, editing), el("span", { className: "len", textContent: v.duration ? OP.time(v.duration) : "" }), more);
   row.dataset.id = t.id;
+  row.draggable = editing;
+  row.title = editing ? "Écouter (glisser pour réordonner)" : "Écouter";
   row.onclick = () => playProject(p, i);
   row.onkeydown = (event) => { if (event.key === "Enter") row.onclick(); };
   // Réordonner en glissant les titres.
@@ -909,8 +972,13 @@ $("project-more").append(icon("more"));
 $("project-more").onclick = () => projectMenu($("project-more"), project());
 $("add-tracks").append(icon("plus"), "Ajouter des titres");
 $("add-tracks").onclick = () => pickFiles({ project: project() });
-$("cover").onclick = () => pickCover(project());
+$("cover").onclick = () => editing && pickCover(project());
+// Le mode édition : les options de modification n'apparaissent que là, la page reste lisible le reste du temps.
+let editing = false;
+$("edit-toggle").onclick = () => { editing = !editing; document.body.classList.toggle("editing", editing); render(); };
+addEventListener("hashchange", () => { if (!openId() && editing) { editing = false; document.body.classList.remove("editing"); } });
 $("project-title").onclick = async () => {
+  if (!editing) return;
   const p = project(), title = await ask("Nom du projet", p.title);
   if (title) api("PATCH", "/me/sounds/projects/" + p.id, { title }).then(refresh, fail);
 };
@@ -962,7 +1030,7 @@ function inlineEdit(value, placeholder, max, save, allowEmpty) {
 }
 const titleEditor = (t) => inlineEdit(t.title, "Nom du titre", 120, (title) => api("PATCH", "/me/sounds/tracks/" + t.id, { title }).then(refresh));
 // Les crédits d'un titre : la clé gardée par le serveur, le libellé, l'exemple du champ.
-const CREDITS = [["beat", "Beatmaker", "Qui a fait la prod"], ["mix", "Ingé mix", "Qui a mixé"], ["master", "Ingé master", "Qui a masterisé"], ["rec", "Ingé rec", "Qui a enregistré"]];
+const CREDITS = [["feat", "Feat.", "Les artistes invités"], ["beat", "Beatmaker", "Qui a fait la prod"], ["mix", "Ingé mix", "Qui a mixé"], ["master", "Ingé master", "Qui a masterisé"], ["rec", "Ingé rec", "Qui a enregistré"]];
 const creditsList = (credits) => {
   const rows = CREDITS.filter(([k]) => credits && credits[k]);
   return rows.length ? el("div", { className: "credits-list" }, ...rows.map(([k, label]) => el("div", {}, el("span", { textContent: label }), el("b", { textContent: credits[k] })))) : null;
@@ -1145,15 +1213,41 @@ function renderShare() {
 }
 let dateRow = null;
 
+// Ajouter Mes sons à l'écran d'accueil : proposé sur téléphone, tant que la page n'est pas déjà ouverte depuis l'icône.
+// Android : la fenêtre d'installation du navigateur quand il la propose ; sinon (et sur iPhone) les gestes à faire.
+let installEvent = null;
+const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const phone = matchMedia("(pointer: coarse)").matches;
+const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+$("install").hidden = standalone || !phone;
+addEventListener("beforeinstallprompt", (event) => { event.preventDefault(); installEvent = event; });
+addEventListener("appinstalled", () => { $("install").hidden = true; });
+$("install").onclick = async () => {
+  if (installEvent) {
+    installEvent.prompt();
+    const { outcome } = await installEvent.userChoice.catch(() => ({}));
+    if (outcome === "accepted") $("install").hidden = true;
+    installEvent = null;
+    return;
+  }
+  const share = '<svg class="share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Partager"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"/></svg>';
+  $("install-intro").textContent = "Une icône Mes sons, qui s'ouvre en plein écran comme une application.";
+  $("install-steps").innerHTML = ios
+    ? "<li><span>Dans Safari, touche le bouton Partager " + share + " en bas de l'écran.</span></li><li><span>Fais défiler et touche « Sur l'écran d'accueil ».</span></li><li><span>Touche « Ajouter ». À la première ouverture, connecte-toi une fois.</span></li>"
+    : "<li><span>Ouvre le menu du navigateur (⋮ en haut à droite).</span></li><li><span>Touche « Ajouter à l'écran d'accueil » ou « Installer l'application ».</span></li><li><span>Confirme : l'icône Mes sons apparaît sur ton écran d'accueil.</span></li>";
+  $("install-help").showModal();
+};
+lightClose($("install-help"));
+
 (async () => {
   const gate = (html) => { $("gate").hidden = false; $("gate").innerHTML = html; };
   $("empty-star").append(icon("star"));
-  if (!token) return gate('<p>Connecte-toi d\'abord à ton compte.</p><a class="btn btn-primary" href="compte.html">Se connecter</a>');
+  if (!token) return gate('<p>Connecte-toi d\'abord à ton compte.</p><a class="btn btn-primary" href="compte.html?next=mes-sons">Se connecter</a>');
   try {
     await refresh();
   } catch (error) {
     gate(error.status === 403 ? "<p>Mes sons est réservé aux membres ONIRIQUE.</p>"
-      : error.status === 401 ? '<p>Ta session a expiré.</p><a class="btn btn-primary" href="compte.html">Se reconnecter</a>' : "<p></p>");
+      : error.status === 401 ? '<p>Ta session a expiré.</p><a class="btn btn-primary" href="compte.html?next=mes-sons">Se reconnecter</a>' : "<p></p>");
     if (error.status !== 403 && error.status !== 401) $("gate").firstChild.textContent = error.message;
   }
 })();

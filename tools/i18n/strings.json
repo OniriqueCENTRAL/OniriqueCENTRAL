@@ -962,6 +962,9 @@
  "+ Enregistrer dans Mes sons": [
   "site/ecoute.html"
  ],
+ "+ feat.": [
+  "site/mes-sons.html"
+ ],
  "＋ Nouveau code promo": [
   "site/admin.html"
  ],
@@ -1777,6 +1780,9 @@
   "site/mes-sons.html",
   "app/renderer/views/licenses.js"
  ],
+ "Ajouter à l'écran d'accueil": [
+  "site/mes-sons.html"
+ ],
  "Ajouter à la file": [
   "site/mes-sons.html"
  ],
@@ -1795,6 +1801,9 @@
  "Ajouter le crédit": [
   "site/admin.html",
   "app/renderer/views/admin.js"
+ ],
+ "Ajouter les artistes invités": [
+  "site/mes-sons.html"
  ],
  "Ajouter un titre": [
   "app/renderer/views/admin.js"
@@ -2054,6 +2063,9 @@
  ],
  "Artiste introuvable. Vérifie le nom ou le lien, puis réessaie.": [
   "server/src/popularity.js"
+ ],
+ "Artistes invités de": [
+  "site/mes-sons.html"
  ],
  "assets/bpm-key-worker.js": [
   "site/bpm-tonalite.html",
@@ -3501,6 +3513,9 @@
  "Collez le lien Spotify du titre : son nom et sa pochette sont récupérés tout seuls. Le titre apparaît dans la section Crédits de la page d'accueil.": [
   "app/renderer/views/admin.js"
  ],
+ "color:var(--mist);font-weight:600": [
+  "site/mes-sons.html"
+ ],
  "Combien rapportent des écoutes sur Spotify, Apple Music, Deezer, YouTube Music, Amazon Music et Tidal ? Une fourchette indicative, plateforme par plateforme. Gratuit.": [
   "site/revenus-streaming.html"
  ],
@@ -3583,6 +3598,9 @@
  ],
  "Compression opto sur 4 bandes, crémeuse pour la voix. Seuil et gain par bande, écoute en solo et presets dédiés.": [
   "site/onirique.html"
+ ],
+ "Compris": [
+  "site/mes-sons.html"
  ],
  "Compte": [
   "site/accordeur.html",
@@ -3734,6 +3752,9 @@
  ],
  "Confirmation de commande :": [
   "server/src/payments.js"
+ ],
+ "Confirme : l'icône Mes sons apparaît sur ton écran d'accueil.": [
+  "site/mes-sons.html"
  ],
  "Confirmer": [
   "app/renderer/views/library.js"
@@ -4096,6 +4117,9 @@
  ],
  "dans le dossier «": [
   "site/stems.html"
+ ],
+ "Dans Safari, touche le bouton Partager": [
+  "site/mes-sons.html"
  ],
  "dans ton ordre.": [
   "site/onirique.html"
@@ -4900,6 +4924,9 @@
  "En attente": [
   "site/mes-sons.html"
  ],
+ "en bas de l'écran.": [
+  "site/mes-sons.html"
+ ],
  "En boutique": [
   "site/admin.html"
  ],
@@ -5441,6 +5468,9 @@
  "Facultative. À chaque connexion, en plus du mot de passe, un code à 6 chiffres vous est demandé : celui que donne Google Authenticator sur votre téléphone (ou une application semblable : Microsoft Authenticator, 2FAS, 1Password…). Quelqu'un qui connaîtrait votre mot de passe ne pourrait pas entrer sans votre téléphone.": [
   "site/compte.html"
  ],
+ "Fais défiler et touche « Sur l'écran d'accueil ».": [
+  "site/mes-sons.html"
+ ],
  "Fais glisser l'image pour la placer, zoome avec la molette ou le curseur : ce qui est dans le cadre est ce que montreront la boutique et la page du plugin. Pour une interface en hauteur, « Garder l'image entière » l'envoie sans la rogner : la page du plugin la montre en entier, les cartes en montrent le milieu.": [
   "site/assets/cropper.js",
   "app/renderer/cropper.js"
@@ -5457,6 +5487,9 @@
  ],
  "fb://facewebmodal/f?href={}": [
   "site/assets/deeplink.js"
+ ],
+ "feat. (artistes invités, séparés par des virgules ; vide pour retirer)": [
+  "site/mes-sons.html"
  ],
  "Fermer": [
   "site/mes-sons.html",
@@ -7024,6 +7057,9 @@
  "Les aigus se tassent, les sibilances s'arrondissent, une compression lente colle la voix au mix.": [
   "site/onirique.html"
  ],
+ "Les artistes invités": [
+  "site/mes-sons.html"
+ ],
  "Les auditeurs qui ne sont pas connectés à un compte ONIRIQUE sont comptés sans être nommés.": [
   "site/mes-sons.html"
  ],
@@ -7742,6 +7778,7 @@
   "site/admin.html",
   "site/compte.html",
   "site/confidentialite.html",
+  "site/mes-sons.html",
   "site/onirique.html",
   "server/src/sounds.js"
  ],
@@ -7939,6 +7976,7 @@
  "Modifier": [
   "site/admin.html",
   "site/compte.html",
+  "site/mes-sons.html",
   "app/renderer/views/admin.js"
  ],
  "Modifier « {} »": [
@@ -8763,6 +8801,9 @@
  ],
  "Ouvre la voix, de la présence jusqu'à l'air.": [
   "site/onirique.html"
+ ],
+ "Ouvre le menu du navigateur (⋮ en haut à droite).": [
+  "site/mes-sons.html"
  ],
  "Ouvrir": [
   "site/mes-sons.html",
@@ -11253,6 +11294,9 @@
  "Sur combien d'ordinateurs puis-je l'utiliser ?": [
   "site/onirique.html"
  ],
+ "Sur l'écran d'accueil": [
+  "site/mes-sons.html"
+ ],
  "Sur la plupart des plateformes, une écoute est comptée après 30 secondes. Sur Spotify, un titre doit en outre dépasser 1 000 écoutes sur douze mois pour générer des revenus.": [
   "site/revenus-streaming.html"
  ],
@@ -11500,6 +11544,7 @@
   "site/admin.html"
  ],
  "Terminé": [
+  "site/mes-sons.html",
   "app/renderer/views/admin.js"
  ],
  "Tes basses ne sont pas assez au centre : en mono ou en club, elles perdent de la force. Garde le sub et la basse au milieu.": [
@@ -11717,6 +11762,12 @@
  ],
  "totp_step INTEGER": [
   "server/src/db.js"
+ ],
+ "Touche « Ajouter ». À la première ouverture, connecte-toi une fois.": [
+  "site/mes-sons.html"
+ ],
+ "Touche « Ajouter à l'écran d'accueil » ou « Installer l'application ».": [
+  "site/mes-sons.html"
  ],
  "Toucher la vraie interface": [
   "site/onirique.html"
@@ -12134,6 +12185,9 @@
  ],
  "Une fourchette de revenus pour un nombre d'écoutes.": [
   "site/assets/tools-menu.js"
+ ],
+ "Une icône Mes sons, qui s'ouvre en plein écran comme une application.": [
+  "site/mes-sons.html"
  ],
  "Une instru trop haute pour ta voix, un beat à essayer dix BPM plus vite : dépose le fichier, règle, écoute, télécharge. La hauteur et le tempo se changent l'un sans l'autre.": [
   "site/transposition.html"
