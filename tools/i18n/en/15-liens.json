@@ -96,5 +96,9 @@
  "Une visite par personne et par demi-heure, un clic par personne et par minute ; les robots et les aperçus des messageries ne sont pas comptés.": "One visit per person per half hour, one click per person per minute; bots and messaging app previews are not counted.",
  "Voir": "View",
  "Écouter": "Listen",
- "Fermer": "Close"
+ "Fermer": "Close",
+ "Tes liens sur les autres plateformes (facultatif)": "Your links on the other platforms (optional)",
+ "Trouvé tout seul": "Found automatically",
+ "Recherche automatique": "Automatic search",
+ "Écoute proposée sur tes liens :": "Listening offered on your links:"
 }

@@ -89,7 +89,7 @@ export async function identify(link) {
 }
 
 // L'ordre dans lequel le visiteur voit les plateformes.
-const ORDER = ['spotify', 'applemusic', 'deezer', 'youtubemusic', 'youtube', 'soundcloud', 'tidal', 'amazonmusic'];
+export const ORDER = ['spotify', 'applemusic', 'deezer', 'youtubemusic', 'youtube', 'soundcloud', 'tidal', 'amazonmusic'];
 
 async function deezerExact(item) {
   // La recherche avancée de Deezer (artist:"…" track:"…") ne rend rien quand on combine les deux : recherche simple.

@@ -1,8 +1,10 @@
 // Liens qui ouvrent l'application de la plateforme (Spotify, Instagram, YouTube…) plutôt que son site, même depuis le
 // navigateur intégré d'Instagram ou de TikTok, qui n'ouvre pas les applications tout seul :
 //  - Android : un lien intent:// vers le paquet de l'application, avec le site en repli si elle n'est pas installée ;
-//  - iPhone, dans un navigateur intégré : le lien propre à l'application (spotify:, instagram://…), puis le site
-//    si rien ne s'est ouvert ; dans Safari, le lien https ordinaire, que l'iPhone ouvre déjà dans l'application.
+//  - iPhone : le lien propre à l'application (spotify:, instagram://…), puis le site si rien ne s'est ouvert ; un lien
+//    https ouvert dans un nouvel onglet de Safari reste dans Safari, même quand l'application est installée ;
+//  - TikTok : son navigateur refuse tout lien d'application (« l'action ne peut pas être réalisée ») : le lien https
+//    ordinaire, et la page explique comment l'ouvrir dans le navigateur du téléphone.
 (function (root) {
   const segments = (u) => u.pathname.split("/").filter(Boolean);
   const first = (u) => segments(u)[0] || "";
@@ -56,6 +58,7 @@
     return {
       os: /Android/i.test(ua) ? "android" : /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && touchMac) ? "ios" : "other",
       inApp: /Instagram|FBAN|FBAV|FB_IAB|musical_ly|Bytedance|TikTok|Snapchat|Twitter|Line\//i.test(ua),
+      tiktok: /musical_ly|Bytedance|TikTok|trill_/i.test(ua),
     };
   }
 
@@ -63,11 +66,11 @@
   function appLink(url, device) {
     const u = parse(url);
     const app = u && /^https?:$/.test(u.protocol) ? platformOf(url) : null;
-    if (!app || !app.hosts) return { href: url, fallback: null };
+    if (!app || !app.hosts || device.tiktok) return { href: url, fallback: null };
     if (device.os === "android" && app.android) {
       return { href: `intent://${u.host}${u.pathname}${u.search}#Intent;scheme=https;package=${app.android};S.browser_fallback_url=${encodeURIComponent(u.href)};end`, fallback: null };
     }
-    const scheme = device.os === "ios" && device.inApp ? app.ios(u) : null;
+    const scheme = device.os === "ios" ? app.ios(u) : null;
     return scheme ? { href: scheme, fallback: u.href } : { href: url, fallback: null };
   }
 

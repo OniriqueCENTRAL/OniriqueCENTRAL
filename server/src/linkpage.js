@@ -11,7 +11,7 @@ import sharp from 'sharp';
 import { config } from './config.js';
 import { all, get, run, now } from './db.js';
 import { HttpError, rateLimit } from './auth.js';
-import { alternatives } from './music.js';
+import { alternatives, ORDER } from './music.js';
 
 export const HANDLE = /^[a-z0-9][a-z0-9._-]{1,29}$/;
 const RESERVED = new Set(['admin', 'api', 'assets', 'onirique', 'compte', 'boutique', 'support', 'www', 'l', 'liens', 'central']);
@@ -39,13 +39,18 @@ export function safeUrl(value) {
 export function cleanPage(input = {}) {
   const t = input.theme || {};
   const b = t.button || {};
-  const links = (Array.isArray(input.links) ? input.links : []).slice(0, MAX_LINKS).map((l, i) => ({
-    id: str(l?.id, 20).replace(/[^\w-]/g, '') || `l${i}`,
-    label: str(l?.label, 80),
-    url: safeUrl(l?.url),
-    kind: pick(l?.kind, ['button', 'icon', 'music'], 'button'), // music : le visiteur choisit sa plateforme d'écoute
-    on: l?.on !== false,
-  })).filter((l) => l.url);
+  const links = (Array.isArray(input.links) ? input.links : []).slice(0, MAX_LINKS).map((l, i) => {
+    const link = {
+      id: str(l?.id, 20).replace(/[^\w-]/g, '') || `l${i}`,
+      label: str(l?.label, 80),
+      url: safeUrl(l?.url),
+      kind: pick(l?.kind, ['button', 'icon', 'music'], 'button'), // music : le visiteur choisit sa plateforme d'écoute
+      on: l?.on !== false,
+    };
+    // Lien « Musique » : les liens du fondateur sur les autres plateformes, qui passent avant la recherche automatique.
+    const custom = link.kind === 'music' ? Object.fromEntries(ORDER.map((id) => [id, safeUrl(l?.custom?.[id])]).filter(([, url]) => url)) : {};
+    return Object.keys(custom).length ? { ...link, custom } : link;
+  }).filter((l) => l.url);
   return {
     name: str(input.name, 60),
     bio: str(input.bio, 300),
@@ -221,8 +226,8 @@ body { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: col
 </head>
 <body>
 <main id="page">${data ? '' : '<p class="missing">Cette page de liens n\'existe pas, ou plus.<br><a href="https://onirique.store">onirique.store</a></p>'}</main>
-<script src="/assets/deeplink.js?v=2"></script>
-<script src="/assets/linkpage.js?v=3"></script>
+<script src="/assets/deeplink.js?v=3"></script>
+<script src="/assets/linkpage.js?v=4"></script>
 <script>
 const data = ${json};
 if (data) OniriqueLinkPage.render(document.getElementById("page"), data.page, data, false, data.handle);

@@ -44,6 +44,7 @@
 .lp-foot { margin-top: 26px; font: 600 11px/1 'JetBrains Mono', monospace; letter-spacing: .2em; text-transform: uppercase; color: var(--lp-text); opacity: .55; text-decoration: none; }
 .lp-foot:hover { opacity: .9; }
 .lp-empty { opacity: .6; font-size: 14px; }
+.lp-tiktok { width: 100%; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--lp-btn) 18%, rgba(0,0,0,.35)); border: 1px solid color-mix(in srgb, var(--lp-btn) 50%, transparent); font-size: 13.5px; line-height: 1.45; }
 .lp-btn .lp-more { position: absolute; right: 20px; top: 50%; width: 9px; height: 9px; margin-top: -7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); opacity: .8; }
 .lp-sheet { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
 .lp.preview .lp-sheet { position: absolute; }
@@ -103,16 +104,26 @@
       openUrl(link.url, event);
     };
 
+    // Les plateformes d'un lien « Musique » : les liens du fondateur d'abord, sinon ceux trouvés (exacts ou recherche).
+    const ORDER = ["spotify", "applemusic", "deezer", "youtubemusic", "youtube", "soundcloud", "tidal", "amazonmusic"];
+    function platformsOf(link) {
+      const custom = link.custom || {};
+      const found = link.music ? link.music.platforms : [];
+      const own = DL && DL.platformOf(link.url);
+      return ORDER.map((id) => (custom[id] ? { id, url: custom[id] } : found.find((p) => p.id === id) || (own && own.id === id ? { id, url: link.url } : null)))
+        .filter(Boolean);
+    }
+
     // Lien « Musique » : un panneau où le visiteur choisit sa plateforme d'écoute (ouvert aussi dans l'aperçu).
     function chooser(link) {
-      const m = link.music;
+      const m = { type: "track", title: link.label, artist: "", cover: null, ...link.music };
       const close = () => { sheet.remove(); document.removeEventListener("keydown", onKey); };
       const onKey = (event) => { if (event.key === "Escape") close(); };
       const names = Object.fromEntries((DL ? DL.APPS : []).map((a) => [a.id, a.name]));
       const shut = el("button", { className: "lp-sheet-close", type: "button", textContent: "✕" });
       shut.setAttribute("aria-label", "Fermer");
       shut.onclick = close;
-      const list = m.platforms.map((p) => {
+      const list = platformsOf(link).map((p) => {
         const a = el("a", { className: "lp-plat", href: p.url, target: "_blank", rel: "noopener" }, icon(p.id),
           el("b", { textContent: names[p.id] || p.id }), el("em", { textContent: m.type === "artist" ? "Voir" : "Écouter" }));
         a.onclick = (event) => { if (preview) return event.preventDefault(); beacon(link); openUrl(p.url, event); };
@@ -143,9 +154,9 @@
     });
     const buttons = visible.filter((l) => l.kind !== "icon").map((l) => {
       const p = platform(l);
-      const music = l.kind === "music" && l.music && l.music.platforms.length;
+      const music = l.kind === "music" && platformsOf(l).length > 1;
       const a = el("a", { className: "lp-btn " + t.button.style, href: l.url, target: "_blank", rel: "noopener" }, icon(music ? "music" : p.id),
-        el("span", { textContent: l.label || (music ? l.music.title : "") || p.name || l.url.replace(/^https?:\/\//, "") }), music ? el("i", { className: "lp-more" }) : null);
+        el("span", { textContent: l.label || (music && l.music ? l.music.title : "") || p.name || l.url.replace(/^https?:\/\//, "") }), music ? el("i", { className: "lp-more" }) : null);
       // Sans plateformes trouvées, un lien « Musique » s'ouvre comme un lien ordinaire.
       a.onclick = music ? (event) => { event.preventDefault(); chooser(l); } : go(l);
       return a;
@@ -157,6 +168,9 @@
       avatar,
       page.name ? el("h1", { className: "lp-name", textContent: page.name }) : null,
       page.bio ? el("p", { className: "lp-bio", textContent: page.bio }) : null,
+      // Le navigateur de TikTok n'ouvre aucune application : le visiteur passe par celui du téléphone.
+      !preview && DL && DL.deviceOf(navigator.userAgent, false).tiktok
+        ? el("p", { className: "lp-tiktok", textContent: "Pour ouvrir les liens dans leurs applications (Spotify, Instagram…), touche ⋯ en haut à droite, puis « Ouvrir dans le navigateur »." }) : null,
       icons.length ? el("div", { className: "lp-icons" }, ...icons) : null,
       buttons.length ? el("div", { className: "lp-links" }, ...buttons) : null,
       !icons.length && !buttons.length && preview ? el("p", { className: "lp-empty", textContent: "Ajoute un premier lien pour le voir ici." }) : null,

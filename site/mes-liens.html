@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=51cc0eb8"></script>
+<script src="assets/i18n.js?v=02705501"></script>
 <script src="assets/annonce.js?v=1"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Ma page de liens</title>
@@ -96,6 +96,10 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-
 .icon-btn:disabled { opacity: .3; cursor: default; }
 .music-note { margin: 0; font-size: 13px; line-height: 1.45; color: var(--haze); }
 .music-note b { color: var(--bone); font-weight: 600; }
+.own-links summary { cursor: pointer; font-size: 13px; color: var(--bone); }
+.own-links .grid { margin-top: 10px; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); }
+.own-links label { gap: 5px; }
+.own-links input { min-height: 38px; font-size: 14px; }
 .bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; padding: 12px 0; background: rgba(13,8,9,.88); backdrop-filter: blur(14px); border-top: 1px solid var(--line); }
 .bar .wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
 .state { font: 500 12px/1.3 var(--f-mono); letter-spacing: .08em; color: var(--haze); }
@@ -237,8 +241,8 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-
   </div>
 </div>
 
-<script src="assets/deeplink.js?v=2"></script>
-<script src="assets/linkpage.js?v=3"></script>
+<script src="assets/deeplink.js?v=3"></script>
+<script src="assets/linkpage.js?v=4"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const TOKEN = "onirique.token";
@@ -355,10 +359,13 @@ function drawLinks() {
       note.hidden = link.kind !== "music";
       if (note.hidden) return;
       const names = Object.fromEntries(DL.APPS.map((a) => [a.id, a.name]));
+      const custom = link.custom || {};
       if (link.music) {
         note.innerHTML = "";
         note.append("Écoute proposée pour ", Object.assign(document.createElement("b"), { textContent: link.music.title + (link.music.artist && link.music.type !== "artist" ? " · " + link.music.artist : "") }),
-          " : " + link.music.platforms.map((p) => names[p.id] + (p.exact ? "" : " (recherche)")).join(", ") + ".");
+          " : " + link.music.platforms.map((p) => names[p.id] + (custom[p.id] ? " (ton lien)" : p.exact ? "" : " (recherche)")).join(", ") + ".");
+      } else if (Object.keys(custom).length) {
+        note.textContent = "Écoute proposée sur tes liens : " + Object.keys(custom).map((id) => names[id]).join(", ") + ".";
       } else {
         note.textContent = saved && !dirty ? "Ce lien n'a pas été reconnu : il s'ouvrira tel quel. Les liens reconnus : titres, albums et artistes de Spotify, Deezer et Apple Music, vidéos YouTube, sons SoundCloud."
           : "Les autres plateformes sont cherchées à l'enregistrement de la page.";
@@ -375,7 +382,7 @@ function drawLinks() {
       label.placeholder = p ? p.name : "Texte du bouton";
       markDirty();
     };
-    kind.onchange = () => { link.kind = kind.value; showNote(); markDirty(); };
+    kind.onchange = () => { link.kind = kind.value; own.hidden = link.kind !== "music"; showNote(); markDirty(); };
     on.onchange = () => { link.on = on.checked; li.classList.toggle("off", !on.checked); markDirty(); };
     const tool = (text, title, run, disabled) => {
       const b = Object.assign(document.createElement("button"), { type: "button", className: "icon-btn", textContent: text, title, disabled: !!disabled });
@@ -388,7 +395,35 @@ function drawLinks() {
     const two = document.createElement("div");
     two.className = "two";
     two.append(label, kind, on);
-    fields.append(two, url, note);
+    // Ses propres liens sur les autres plateformes : ils remplacent la recherche automatique, plateforme par plateforme.
+    const own = document.createElement("details");
+    own.className = "own-links";
+    own.hidden = link.kind !== "music";
+    own.open = !!(link.custom && Object.keys(link.custom).length);
+    const ownTitle = document.createElement("summary");
+    ownTitle.textContent = "Tes liens sur les autres plateformes (facultatif)";
+    const ownGrid = document.createElement("div");
+    ownGrid.className = "grid";
+    for (const id of ["spotify", "applemusic", "deezer", "youtubemusic", "youtube", "soundcloud", "tidal", "amazonmusic"]) {
+      const found = link.music && link.music.platforms.find((p) => p.id === id);
+      const field = Object.assign(document.createElement("input"), { value: (link.custom || {})[id] || "", inputMode: "url", spellcheck: false, maxLength: 2000,
+        placeholder: found ? (found.exact ? "Trouvé tout seul" : "Recherche automatique") : "Recherche automatique" });
+      field.oninput = () => {
+        link.custom = { ...link.custom };
+        const value = field.value.trim();
+        if (value) link.custom[id] = /^[a-z][a-z0-9+.-]*:/i.test(value) ? value : "https://" + value;
+        else delete link.custom[id];
+        showNote();
+        markDirty();
+      };
+      field.onmousedown = () => { li.draggable = false; }; // un champ reste sélectionnable : pas de glisser depuis lui
+      field.onblur = () => { li.draggable = true; };
+      const box = document.createElement("label");
+      box.append(DL.APPS.find((a) => a.id === id).name, field);
+      ownGrid.append(box);
+    }
+    own.append(ownTitle, ownGrid);
+    fields.append(two, url, note, own);
     const tools = document.createElement("div");
     tools.className = "link-tools";
     tools.append(tool("↑", "Monter", () => move(i, i - 1), i === 0), tool("↓", "Descendre", () => move(i, i + 1), i === page.links.length - 1),

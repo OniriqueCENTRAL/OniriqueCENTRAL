@@ -209,10 +209,12 @@ try {
       name: 'EUHZ', bio: 'Ingé son', theme: { bg1: 'rouge', text: '#FFFFFF', font: 'comic', button: { style: 'fill', shape: 'square' } },
       links: [{ label: 'Spotify', url: 'https://open.spotify.com/artist/abc' }, { label: 'Piège', url: 'javascript:alert(1)' },
         { label: 'Insta', url: 'instagram.com/euhz', kind: 'icon' }, { label: 'Mail', url: 'mailto:euhz@site.test', on: false },
-        { label: 'Son', url: 'https://exemple.fr/son', kind: 'music', music: { title: 'Faux', platforms: [{ id: 'spotify', url: 'javascript:alert(1)' }] } }] } }, founder);
+        { label: 'Son', url: 'https://exemple.fr/son', kind: 'music', music: { title: 'Faux', platforms: [{ id: 'spotify', url: 'javascript:alert(1)' }] },
+          custom: { deezer: 'deezer.page.link/abc', tidal: 'javascript:alert(1)', inconnue: 'https://x.fr' } }] } }, founder);
     const pg = savedPage.data.page;
     check(savedPage.status === 200 && pg.links.length === 4 && !pg.links.some((l) => /javascript/.test(l.url)), 'un lien javascript: est écarté');
     check(pg.links[3].kind === 'music' && pg.links[3].music === undefined, 'un lien Musique garde sa catégorie, mais pas de plateformes envoyées par le navigateur');
+    check(JSON.stringify(pg.links[3].custom) === '{"deezer":"https://deezer.page.link/abc"}', 'ses propres liens sur les autres plateformes sont gardés, vérifiés');
     check(pg.links[1].url === 'https://instagram.com/euhz' && pg.links[1].kind === 'icon' && pg.links[2].on === false, 'les autres liens sont gardés, complétés');
     check(pg.theme.bg1 === '#0d0809' && pg.theme.text === '#ffffff' && pg.theme.font === 'hanken' && pg.theme.button.style === 'fill', 'une valeur inconnue reprend celle par défaut');
     const pub = await api('GET', '/links/EUHZ');

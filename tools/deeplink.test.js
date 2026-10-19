@@ -14,7 +14,12 @@ assert.equal(appLink(spotify, android).href,
   'intent://open.spotify.com/intl-fr/artist/4tZwfgrHOc3mvqYlEYSvVi?si=abc#Intent;scheme=https;package=com.spotify.music;S.browser_fallback_url='
   + encodeURIComponent(spotify) + ';end');
 assert.deepEqual(appLink(spotify, iosInsta), { href: 'spotify:artist:4tZwfgrHOc3mvqYlEYSvVi', fallback: spotify });
-assert.deepEqual(appLink(spotify, safari), { href: spotify, fallback: null }, 'Safari : le lien https ouvre déjà l\'application');
+assert.deepEqual(appLink(spotify, safari), { href: 'spotify:artist:4tZwfgrHOc3mvqYlEYSvVi', fallback: spotify }, 'Safari aussi : un nouvel onglet https resterait dans Safari');
+const tiktokIos = deviceOf('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) musical_ly_34.1.0 BytedanceWebview/d8a21c6', false);
+const tiktokAndroid = deviceOf('Mozilla/5.0 (Linux; Android 14) trill_340100 BytedanceWebview/d8a21c6', false);
+assert.equal(tiktokIos.tiktok && tiktokAndroid.tiktok && !iosInsta.tiktok, true);
+assert.deepEqual(appLink(spotify, tiktokIos), { href: spotify, fallback: null }, "TikTok refuse les liens d'application : lien ordinaire");
+assert.deepEqual(appLink(spotify, tiktokAndroid), { href: spotify, fallback: null });
 assert.deepEqual(appLink(spotify, desktop), { href: spotify, fallback: null });
 
 assert.equal(appLink('https://open.spotify.com/search/Ninho%20Jefe', iosInsta).href, 'spotify:search:Ninho%20Jefe', 'recherche des liens « Musique »');
