@@ -342,5 +342,15 @@
  "Lien copié.": "Link copied.",
  "Cadrer ta photo": "Frame your photo",
  "Enregistrer la photo": "Save photo",
- "Fais glisser la photo pour la placer, zoome avec la molette, deux doigts ou le curseur : ce qui est dans le rond est ce que tout le monde verra.": "Drag the photo to place it, zoom with the wheel, two fingers or the slider: what is inside the circle is what everyone will see."
+ "Fais glisser la photo pour la placer, zoome avec la molette, deux doigts ou le curseur : ce qui est dans le rond est ce que tout le monde verra.": "Drag the photo to place it, zoom with the wheel, two fingers or the slider: what is inside the circle is what everyone will see.",
+ ", rien n'est effacé.": ", nothing is deleted.",
+ "» ? Ce qu'il contient (projets et dossiers) remonte": "»? What it holds (projects and folders) moves up",
+ "Ce dossier est vide. Range-y des projets ou d'autres dossiers avec leur menu ⋯, « Déplacer vers », ou en les faisant glisser dessus.": "This folder is empty. Put projects or other folders in it with their ⋯ menu, “Move to”, or by dragging them onto it.",
+ "dans «": "into «",
+ "dans Mes sons": "into My sounds",
+ "Enregistré ·": "Saved ·",
+ "Nouveau dossier dedans…": "New folder inside…",
+ "Pas plus de {} niveaux de dossiers.": "No more than {} levels of folders.",
+ "Retour à": "Back to",
+ "Un dossier ne peut pas aller dans lui-même ni dans un de ses sous-dossiers.": "A folder can't go inside itself or one of its subfolders."
 }
