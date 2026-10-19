@@ -101,6 +101,31 @@
 .op-queue img, .op-queue .op-q-cover { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; flex: none; background: linear-gradient(135deg, #5C0008, #2A0A0E); }
 .op-queue small { display: block; color: var(--haze); font-size: 12px; }
 @media (max-width: 1000px) { .op-vol { display: none; } .op-mini { min-width: 120px; } }
+/* Les boutons : couleurs et bordures en fondu, petit enfoncement au clic, léger soulèvement des boutons principaux.
+   scale / translate (et non transform) : les éléments déjà placés avec transform (barre, bouton +, panneaux) restent en place. */
+button, .btn, .op-chip, a.op-chip, .tile .art, .trk, .item, .dots, .stage, .feat, .play, .round, .fab, .install, .edit-toggle, .add-bar {
+  transition: background-color .22s ease, border-color .22s ease, color .22s ease, box-shadow .25s ease, opacity .2s ease, scale .16s ease, translate .22s ease; }
+button:active:not(:disabled), .btn:active, .op-chip:active, .stage:active, .feat:active, .dots:active, .install:active, .edit-toggle:active { scale: .94; }
+.op-btn.main:active, .round.white:active, .play-all:active, .tile .fab-play:active { scale: .9; }
+.trk:active, .item:active, .add-bar:active { scale: .985; }
+.tile .art:active { scale: .97; }
+.btn-primary:hover, .round.white:hover, .play-all:hover, .op-btn.main:hover, .fab:hover { translate: 0 -2px; }
+.tile .art:hover { translate: 0 -3px; box-shadow: 0 18px 40px -18px rgba(0,0,0,.9); }
+.tile .fab-play { transition: background-color .2s ease, scale .2s ease, opacity .2s ease; }
+.tile .art:hover .fab-play { scale: 1.08; }
+/* Menus, fenêtres et panneaux : ouverture en fondu, avec un léger zoom ou une montée. */
+@keyframes op-pop { from { opacity: 0; scale: .96; } }
+@keyframes op-rise { from { opacity: 0; translate: 0 14px; } }
+@keyframes op-fade { from { opacity: 0; } }
+.menu { animation: op-pop .16s ease-out; transform-origin: top center; }
+dialog[open] { animation: op-pop .22s cubic-bezier(.2, .8, .2, 1); }
+dialog[open]::backdrop { animation: op-fade .22s ease-out; }
+.op-sheet, .op-queue, .uploads { animation: op-rise .26s cubic-bezier(.2, .8, .2, 1); }
+.op-pill { animation: op-rise .35s cubic-bezier(.2, .8, .2, 1); }
+.details-right > *, .share-body > * { animation: op-fade .25s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after, dialog::backdrop { animation: none !important; transition: none !important; }
+}
 @media (max-width: 720px) {
   .op-pill { gap: 4px; padding-right: 8px; }
   .op-meta { width: auto; flex: 1; }
