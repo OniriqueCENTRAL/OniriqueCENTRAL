@@ -248,6 +248,42 @@ try {
     assert.ok((await image.arrayBuffer()).byteLength > 5000);
   });
 
+  await step('collaboration : lien d\'invitation, accepter, ce que fait un collaborateur, quitter, lien coupé', async () => {
+    const owner = await account('auteur-collab', 'vip');
+    const friend = await account('ami-collab', 'vip');
+    const pid = (await call('POST', '/api/me/sounds/projects', { token: owner.token, body: { title: 'SEMINAIRE' }, expect: 201 })).id;
+    await call('POST', `/api/me/sounds/projects/${pid}/tracks?filename=a.wav`, { token: owner.token, raw: wav(), expect: 201 });
+    // Seul l'auteur crée l'invitation.
+    await call('POST', `/api/me/sounds/projects/${pid}/invite`, { token: friend.token, expect: 404 });
+    const { url } = await call('POST', `/api/me/sounds/projects/${pid}/invite`, { token: owner.token });
+    const invite = url.split('#/invite/')[1];
+    const seen = await call('GET', `/api/sounds/invite/${invite}`, { token: friend.token });
+    assert.equal(seen.project, 'SEMINAIRE');
+    assert.equal(seen.already, false);
+    await call('POST', `/api/sounds/invite/${invite}/accept`, { token: owner.token, expect: 400 });
+    await call('POST', `/api/sounds/invite/${invite}/accept`, { token: friend.token });
+    // Le projet est dans sa page, avec l'auteur ; il ajoute un titre (compté chez l'auteur) et le renomme.
+    let theirs = (await call('GET', '/api/me/sounds', { token: friend.token })).projects.find((x) => x.id === pid);
+    assert.equal(theirs.mine, false);
+    assert.equal(theirs.owner.name, 'auteur-collab');
+    const added = await call('POST', `/api/me/sounds/projects/${pid}/tracks?filename=b.wav`, { token: friend.token, raw: wav(3000), expect: 201 });
+    await call('PATCH', `/api/me/sounds/tracks/${added.id}`, { token: friend.token, body: { title: 'Couplet', stage: 'v2' } });
+    assert.equal((await call('GET', '/api/me/sounds', { token: owner.token })).quota.used, wav().length + wav(3000).length);
+    assert.equal((await call('GET', '/api/me/sounds', { token: friend.token })).quota.used, 0);
+    // Mais ni supprimer le projet, ni le partager, ni le ranger, ni gérer l'invitation.
+    await call('DELETE', `/api/me/sounds/projects/${pid}`, { token: friend.token, expect: 403 });
+    await call('POST', '/api/me/sounds/links', { token: friend.token, body: { projectId: pid }, expect: 403 });
+    await call('DELETE', `/api/me/sounds/projects/${pid}/invite`, { token: friend.token, expect: 403 });
+    // L'auteur voit son collaborateur ; le collaborateur quitte le projet, qui disparaît de sa page.
+    assert.equal((await call('GET', '/api/me/sounds', { token: owner.token })).projects.find((x) => x.id === pid).collaborators[0].name, 'ami-collab');
+    await call('DELETE', `/api/me/sounds/projects/${pid}/collabs/${friend.id}`, { token: friend.token });
+    assert.ok(!(await call('GET', '/api/me/sounds', { token: friend.token })).projects.some((x) => x.id === pid));
+    await call('POST', `/api/me/sounds/projects/${pid}/tracks?filename=c.wav`, { token: friend.token, raw: wav(), expect: 404 });
+    // L'invitation coupée ne s'ouvre plus.
+    await call('DELETE', `/api/me/sounds/projects/${pid}/invite`, { token: owner.token });
+    await call('GET', `/api/sounds/invite/${invite}`, { token: friend.token, expect: 404 });
+  });
+
   console.log(`\n${passed} étapes réussies.`);
 } finally {
   server.close();

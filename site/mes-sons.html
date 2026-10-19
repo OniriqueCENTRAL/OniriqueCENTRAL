@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=7c525ff5"></script>
+<script src="assets/i18n.js?v=8179d04b"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -317,6 +317,10 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
 .visibility .op-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; }
 .visibility::after { content: ""; position: absolute; right: 18px; top: 50%; width: 8px; height: 8px; border: solid var(--haze); border-width: 0 2px 2px 0; transform: translateY(-70%) rotate(45deg); pointer-events: none; }
 #ask { width: 420px; }
+#collab { width: 460px; }
+.faces-row { display: inline-flex; align-items: center; gap: 6px; }
+.faces-row img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; border: 2px solid var(--night); margin-left: -8px; }
+.faces-row img:first-child { margin-left: 0; }
 #ask form { padding: 20px; display: grid; gap: 14px; }
 #ask b { font: 700 17px var(--f-display); }
 </style>
@@ -407,6 +411,7 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
   <div class="row" style="justify-content:flex-end;padding:16px 20px 20px"><button class="btn btn-primary" type="button" onclick="this.closest('dialog').close()">Compris</button></div>
 </dialog>
 <dialog id="share"></dialog>
+<dialog id="collab"></dialog>
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" value="cancel" formnovalidate>Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
 <script src="assets/sounds-player.js?v=7"></script>
@@ -551,7 +556,7 @@ const lightClose = (dialog) => {
   dialog.addEventListener("pointerdown", (event) => { fromBackdrop = event.target === dialog; });
   dialog.addEventListener("click", (event) => { if (event.target === dialog && fromBackdrop) dialog.close(); fromBackdrop = false; });
 };
-lightClose($("details")); lightClose($("share")); lightClose($("ask"));
+lightClose($("details")); lightClose($("share")); lightClose($("ask")); lightClose($("collab"));
 
 // ——— Données et vues ———
 async function refresh() {
@@ -569,7 +574,7 @@ function render() {
   if ($("share").open) renderShare();
   markPlaying();
 }
-addEventListener("hashchange", () => { closeMenu(); render(); scrollTo(0, 0); });
+addEventListener("hashchange", () => { closeMenu(); render(); scrollTo(0, 0); if (/^#\/invite\//.test(location.hash)) checkInvite(); });
 // Aller à un projet (#/p/<id>) ou revenir à la grille (""), avec l'animation : la pochette passe de la vignette à la
 // grande pochette (View Transitions quand le navigateur les connaît), puis le reste de la page arrive en cascade.
 function navigate(hash) {
@@ -665,10 +670,11 @@ function projectTile(p) {
   art.onclick = () => navigate("#/p/" + p.id);
   art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
   const tile = el("div", { className: "tile" }, art, caption(p.title,
-    el("span", { textContent: p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre") + (linkFor("project", p.id) ? " · partagé" : "") }),
+    el("span", { textContent: p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre")
+      + (p.mine ? (linkFor("project", p.id) ? " · partagé" : "") + (p.collaborators.length ? " · en collab" : "") : " · de " + p.owner.name) }),
     dotsFor(p.title, (b) => projectMenu(b, p)), projectFeat(p)));
   tile.dataset.id = p.id;
-  dragSource(tile, "project:" + p.id);
+  if (p.mine) dragSource(tile, "project:" + p.id);
   return tile;
 }
 function folderTile(f) {
@@ -753,8 +759,9 @@ function projectMenu(anchor, p) {
     { label: "Ouvrir", icon: "chevron", onclick: () => navigate("#/p/" + p.id) },
     p.tracks.length && { label: "Écouter", icon: "play", onclick: () => playProject(p) },
     p.tracks.length && { label: "Ajouter à la file", icon: "queue", onclick: () => p.tracks.forEach((t) => player.enqueue(itemOf(p, t))) },
-    { label: "Partager", icon: "link", onclick: () => openShare("project", p.id) },
-    { label: "Déplacer vers…", icon: "chevron", onclick: () => moveMenu(anchor, p.folderId, (folderId) => api("PATCH", "/me/sounds/projects/" + p.id, { folderId })) },
+    p.mine && { label: "Partager", icon: "link", onclick: () => openShare("project", p.id) },
+    p.mine && { label: "Collaborateurs…", icon: "plus", onclick: () => openCollab(p.id) },
+    p.mine && { label: "Déplacer vers…", icon: "chevron", onclick: () => moveMenu(anchor, p.folderId, (folderId) => api("PATCH", "/me/sounds/projects/" + p.id, { folderId })) },
     "-",
     { label: "Renommer", icon: "more", onclick: async () => {
       const title = await ask("Nom du projet", p.title);
@@ -762,9 +769,73 @@ function projectMenu(anchor, p) {
     } },
     { label: "Changer la pochette", icon: "star", onclick: () => pickCover(p) },
     "-",
-    { label: "Supprimer le projet", icon: "close", danger: true, onclick: () =>
-      confirm("Supprimer « " + p.title + " », tous ses titres et leurs liens d'écoute ?") && api("DELETE", "/me/sounds/projects/" + p.id).then(() => { location.hash = ""; return refresh(); }).catch(fail) },
+    p.mine ? { label: "Supprimer le projet", icon: "close", danger: true, onclick: () =>
+      confirm("Supprimer « " + p.title + " », tous ses titres et leurs liens d'écoute ?") && api("DELETE", "/me/sounds/projects/" + p.id).then(() => { location.hash = ""; return refresh(); }).catch(fail) }
+      : { label: "Quitter le projet", icon: "close", danger: true, onclick: () =>
+        confirm("Quitter « " + p.title + " » ? Il disparaîtra de ta page ; " + p.owner.name + " pourra t'inviter à nouveau.")
+        && api("DELETE", "/me/sounds/projects/" + p.id + "/collabs/" + data.owner.id).then(() => { location.hash = ""; return refresh(); }).catch(fail) },
   ]);
+}
+
+// ——— Collaboration ———
+// L'auteur invite par un lien (créé, renouvelé ou coupé ici) ; la personne qui l'ouvre accepte ou refuse.
+let collabId = null;
+function openCollab(pid) { collabId = pid; renderCollab(); if (!$("collab").open) $("collab").showModal(); }
+function renderCollab() {
+  const p = project(collabId);
+  if (!p) { $("collab").close(); return; }
+  const invite = async (method) => {
+    try { await api(method, "/me/sounds/projects/" + p.id + "/invite"); await refresh(); renderCollab(); } catch (error) { alert(error.message); }
+  };
+  const people = p.collaborators.length
+    ? el("ul", { className: "group people" }, ...p.collaborators.map((u) => el("li", {}, el("img", { src: avatar(u), alt: "" }), el("span", { className: "grow", textContent: u.name }),
+      el("button", { className: "mini-btn", type: "button", textContent: "Retirer", onclick: () => confirm("Retirer " + u.name + " du projet ?")
+        && api("DELETE", "/me/sounds/projects/" + p.id + "/collabs/" + u.id).then(async () => { await refresh(); renderCollab(); }, (e) => alert(e.message)) }))))
+    : el("p", { className: "muted", style: "margin:0 4px;font-size:14px", textContent: "Personne pour l'instant. Envoie le lien d'invitation : la personne l'ouvre, accepte, et le projet apparaît dans son Mes sons." });
+  const copy = el("button", { className: "btn btn-primary", type: "button" }, icon("link"), p.inviteUrl ? "Copier le lien d'invitation" : "Créer le lien d'invitation");
+  copy.onclick = async () => {
+    if (!p.inviteUrl) await invite("POST");
+    const url = project(collabId).inviteUrl;
+    try { await navigator.clipboard.writeText(url); copy.replaceChildren(icon("link"), "Lien copié"); } catch { prompt("Copie ce lien :", url); }
+  };
+  $("collab").replaceChildren(
+    el("div", { className: "dlg-head" }, coverOf(p), el("b", { textContent: p.title }),
+      el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => $("collab").close() }, icon("close"))),
+    el("div", { className: "share-body" },
+      el("div", { className: "sub-title", textContent: "Collaborateurs" }), people,
+      el("p", { className: "muted", style: "margin:0 4px;font-size:13px", textContent: "Ils écoutent tout, ajoutent des titres et des versions, modifient noms, étapes, crédits et notes. Supprimer, partager et inviter restent à toi ; ce qu'ils envoient compte dans ton espace." }),
+      p.inviteUrl ? group(
+        item("repeat", "Nouveau lien d'invitation", { hint: "L'ancien lien ne marchera plus", onclick: () => invite("POST") }),
+        item("close", "Couper le lien d'invitation", { danger: true, hint: "Plus personne ne pourra rejoindre le projet par lui", onclick: () => invite("DELETE") })) : null),
+    el("div", { className: "share-foot" }, copy));
+}
+// Arrivé par un lien d'invitation (#/invite/<jeton>) : gardé le temps de se connecter, puis Accepter ou Refuser.
+try { const m = /^#\/invite\/([\w-]+)/.exec(location.hash); if (m) sessionStorage.setItem("onirique.invite", m[1]); } catch {}
+async function checkInvite() {
+  let tokenOf = null;
+  try { tokenOf = sessionStorage.getItem("onirique.invite"); } catch {}
+  const m = /^#\/invite\/([\w-]+)/.exec(location.hash);
+  if (m) tokenOf = m[1];
+  if (!tokenOf) return;
+  try { sessionStorage.removeItem("onirique.invite"); } catch {}
+  let info;
+  try { info = await api("GET", "/sounds/invite/" + tokenOf); } catch (error) { location.hash = ""; alert(error.message); return; }
+  if (info.mine || info.already) { location.hash = "#/p/" + info.projectId; return; }
+  const accept = el("button", { className: "btn btn-primary", type: "button", textContent: "Accepter" });
+  const refuse = el("button", { className: "btn btn-ghost", type: "button", textContent: "Refuser" });
+  $("collab").replaceChildren(
+    el("div", { className: "dlg-head" }, coverOf(info), el("b", { textContent: info.project })),
+    el("div", { className: "share-body" }, el("p", { style: "margin:4px", innerHTML: "" },
+      el("img", { src: avatar(info.owner), alt: "", style: "width:28px;height:28px;border-radius:50%;vertical-align:middle;margin-right:8px" }),
+      el("b", { textContent: info.owner.name }), " t'invite à collaborer sur « " + info.project + " »."),
+      el("p", { className: "muted", style: "margin:0 4px;font-size:14px", textContent: "En acceptant, le projet apparaît dans ton Mes sons : tu pourras l'écouter, y ajouter des titres et des versions." })),
+    el("div", { className: "share-foot", style: "grid-template-columns:1fr 1fr" }, refuse, accept));
+  refuse.onclick = () => { $("collab").close(); location.hash = ""; };
+  accept.onclick = async () => {
+    try { const { projectId } = await api("POST", "/sounds/invite/" + tokenOf + "/accept"); $("collab").close(); await refresh(); location.hash = "#/p/" + projectId; }
+    catch (error) { alert(error.message); }
+  };
+  $("collab").showModal();
 }
 
 // La date de sortie : un clic ouvre le calendrier du navigateur ; ✕ la retire.
@@ -796,9 +867,12 @@ function renderProject(p) {
   const feat = projectFeat(p);
   $("project-title").replaceChildren(p.title, feat ? el("span", { className: "feat", textContent: "feat. " + feat }) : "");
   drawRelease(p);
-  $("project-meta").replaceChildren(el("img", { src: avatar(data.owner), alt: "" }),
-    data.owner.name + " · " + p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre") + (p.tracks.length ? " · " + length(projectLength(p)) : ""),
-    linkFor("project", p.id) ? el("span", { className: "tag on", textContent: "Partagé" }) : "");
+  $("share-project").hidden = !p.mine;
+  $("project-meta").replaceChildren(el("img", { src: avatar(p.owner), alt: "" }),
+    p.owner.name + " · " + p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre") + (p.tracks.length ? " · " + length(projectLength(p)) : ""),
+    linkFor("project", p.id) ? el("span", { className: "tag on", textContent: "Partagé" }) : "",
+    p.collaborators.length ? el("span", { className: "faces-row", title: "En collab avec " + p.collaborators.map((u) => u.name).join(", ") },
+      " · avec ", ...p.collaborators.slice(0, 4).map((u) => el("img", { src: avatar(u), alt: u.name }))) : "");
   $("play-all").disabled = !p.tracks.length;
   $("add-tracks").disabled = data.quota.full;
   $("tracklist").replaceChildren(...p.tracks.map((t, i) => trackRow(p, t, i)));
@@ -1122,7 +1196,7 @@ function renderDetails() {
   let right;
   if (detailsView === "main") {
     right = [el("h3", { textContent: "Détails" }),
-      group(item("link", "Partager", { state: link ? "Activé" : "Désactivé", chevron: true, onclick: () => openShare("track", t.id) }),
+      group(p.mine ? item("link", "Partager", { state: link ? "Activé" : "Désactivé", chevron: true, onclick: () => openShare("track", t.id) }) : null,
         item("star", "Étape", { state: OP.stageLabel(t.stage) || "Non précisée", chevron: true, onclick: (event) => stageMenu(event.currentTarget, t) })),
       group(
         item("volume", "Volume avant sortie", { hint: "LUFS, pics, et ce que chaque plateforme fera du titre", chevron: true, onclick: () => { detailsView = "tool-lufs"; renderDetails(); } }),
@@ -1310,6 +1384,7 @@ lightClose($("install-help"));
   if (!token) return gate('<p>Connecte-toi d\'abord à ton compte.</p><a class="btn btn-primary" href="compte.html?next=mes-sons">Se connecter</a>');
   try {
     await refresh();
+    checkInvite();
   } catch (error) {
     gate(error.status === 403 ? "<p>Mes sons est réservé aux membres ONIRIQUE.</p>"
       : error.status === 401 ? '<p>Ta session a expiré.</p><a class="btn btn-primary" href="compte.html?next=mes-sons">Se reconnecter</a>' : "<p></p>");

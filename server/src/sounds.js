@@ -116,6 +116,22 @@ CREATE TABLE IF NOT EXISTS sound_saves (
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'folder_id'`).get()) {
   db.exec('ALTER TABLE sound_projects ADD COLUMN folder_id INTEGER REFERENCES sound_folders(id) ON DELETE SET NULL');
 }
+// Les collaborateurs d'un projet (invités par un lien que l'auteur crée, coupe ou renouvelle) : ils écoutent, ajoutent
+// des titres et des versions, modifient noms, étapes, crédits et notes. Supprimer le projet, le partager et gérer ses
+// collaborateurs restent à l'auteur ; ce qu'ils envoient compte dans son espace.
+db.exec(`
+CREATE TABLE IF NOT EXISTS sound_collabs (
+  project_id INTEGER NOT NULL REFERENCES sound_projects(id) ON DELETE CASCADE,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (project_id, user_id)
+);
+`);
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'invite_token'`).get()) {
+  db.exec('ALTER TABLE sound_projects ADD COLUMN invite_token TEXT');
+}
+// Un projet que le membre peut ouvrir : le sien, ou un projet où il est collaborateur (p = sound_projects).
+const ACCESS = '(p.user_id = ? OR p.id IN (SELECT project_id FROM sound_collabs WHERE user_id = ?))';
 const isDay = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value + 'T00:00:00Z'))
   && new Date(value + 'T00:00:00Z').toISOString().startsWith(value);
 
@@ -318,36 +334,42 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   const me = [requireUser, member];
 
   const project = (req, pid) => {
-    const row = get('SELECT * FROM sound_projects WHERE id = ? AND user_id = ?', id(pid), req.user.id);
+    const row = get(`SELECT p.* FROM sound_projects p WHERE p.id = ? AND ${ACCESS}`, id(pid), req.user.id, req.user.id);
     if (!row) throw new HttpError(404, 'Projet introuvable.');
     return row;
   };
+  // Ce que seul l'auteur fait : supprimer, partager, ranger dans ses dossiers, gérer les collaborateurs.
+  const ownProject = (req, pid) => {
+    const row = project(req, pid);
+    if (row.user_id !== req.user.id) throw new HttpError(403, "Seul l'auteur du projet peut faire ça.");
+    return row;
+  };
   const track = (req, tid) => {
-    const row = get(`SELECT t.* FROM sound_tracks t JOIN sound_projects p ON p.id = t.project_id WHERE t.id = ? AND p.user_id = ?`, id(tid), req.user.id);
+    const row = get(`SELECT t.*, p.user_id AS owner_id FROM sound_tracks t JOIN sound_projects p ON p.id = t.project_id WHERE t.id = ? AND ${ACCESS}`, id(tid), req.user.id, req.user.id);
     if (!row) throw new HttpError(404, 'Titre introuvable.');
     return row;
   };
   const versionOf = (req, vid) => {
     const row = get(`SELECT v.*, t.current_id FROM sound_versions v JOIN sound_tracks t ON t.id = v.track_id JOIN sound_projects p ON p.id = t.project_id
-      WHERE v.id = ? AND p.user_id = ?`, id(vid), req.user.id);
+      WHERE v.id = ? AND ${ACCESS}`, id(vid), req.user.id, req.user.id);
     if (!row) throw new HttpError(404, 'Version introuvable.');
     return row;
   };
 
   /** La place qui reste au membre, si ce fichier peut entrer sans dépasser son quota ni le seuil du disque. */
-  function room(req, length) {
+  function room(req, length, ownerId = req.user.id) {
     const d = disk();
     if ((d.used + length) / d.total > diskMax()) throw new HttpError(507, "L'espace de stockage d'ONIRIQUE est plein pour le moment : aucun envoi n'est possible. Réessaie plus tard.");
-    const left = quotaBytes() - usedBy(req.user.id);
-    if (length > left) throw new HttpError(413, `Ton espace est plein (${Math.round(quotaBytes() / GB)} Go) : supprime des versions ou des titres pour en envoyer d'autres.`);
+    const left = quotaBytes() - usedBy(ownerId);
+    if (length > left) throw new HttpError(413, ownerId !== req.user.id ? "L'espace de l'auteur du projet est plein : il doit faire de la place pour que tu envoies d'autres sons." : `Ton espace est plein (${Math.round(quotaBytes() / GB)} Go) : supprime des versions ou des titres pour en envoyer d'autres.`);
     return left;
   }
   /** Reçoit un fichier audio : refusé si le quota du membre ou le seuil du disque serait dépassé. */
-  async function receiveAudio(req) {
+  async function receiveAudio(req, ownerId = req.user.id) {
     const length = Number(req.headers['content-length']);
     if (!Number.isFinite(length) || length <= 0) throw new HttpError(411, 'Taille du fichier inconnue.');
     if (length > MAX_FILE) throw new HttpError(413, 'Fichier trop volumineux : 500 Mo au plus par fichier.');
-    const file = await receiveFile(req, soundsDir, Math.min(MAX_FILE, room(req, length)));
+    const file = await receiveFile(req, soundsDir, Math.min(MAX_FILE, room(req, length, ownerId)));
     const stored = path.join(soundsDir, file.storedAs);
     const head = Buffer.alloc(12);
     const fd = fs.openSync(stored, 'r');
@@ -366,12 +388,16 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
 
   // Tout l'espace du membre en une fois : projets, titres, versions, commentaires, liens et place occupée.
   app.get('/api/me/sounds', ...me, (req, res) => {
-    const projects = all('SELECT * FROM sound_projects WHERE user_id = ? ORDER BY created_at DESC', req.user.id);
-    const tracks = all(`SELECT t.* FROM sound_tracks t JOIN sound_projects p ON p.id = t.project_id WHERE p.user_id = ? ORDER BY t.position, t.id`, req.user.id);
+    const u = req.user.id;
+    const projects = all(`SELECT p.*, o.name AS owner_name, o.avatar AS owner_avatar FROM sound_projects p JOIN users o ON o.id = p.user_id
+      WHERE ${ACCESS} ORDER BY p.created_at DESC`, u, u);
+    const collabs = all(`SELECT c.project_id, u.id, u.name, u.avatar FROM sound_collabs c JOIN users u ON u.id = c.user_id
+      JOIN sound_projects p ON p.id = c.project_id WHERE ${ACCESS} ORDER BY c.created_at`, u, u);
+    const tracks = all(`SELECT t.* FROM sound_tracks t JOIN sound_projects p ON p.id = t.project_id WHERE ${ACCESS} ORDER BY t.position, t.id`, u, u);
     const versions = all(`SELECT v.* FROM sound_versions v JOIN sound_tracks t ON t.id = v.track_id JOIN sound_projects p ON p.id = t.project_id
-      WHERE p.user_id = ? ORDER BY v.id`, req.user.id);
+      WHERE ${ACCESS} ORDER BY v.id`, u, u);
     const comments = all(`SELECT c.* FROM sound_comments c JOIN sound_tracks t ON t.id = c.track_id JOIN sound_projects p ON p.id = t.project_id
-      WHERE p.user_id = ? ORDER BY c.at`, req.user.id);
+      WHERE ${ACCESS} ORDER BY c.at`, u, u);
     const links = all(`SELECT l.*, (SELECT COUNT(*) FROM sound_plays WHERE link_id = l.id) AS plays,
       (SELECT MAX(created_at) FROM sound_plays WHERE link_id = l.id) AS last_play FROM sound_links l WHERE l.user_id = ? ORDER BY l.created_at DESC`, req.user.id);
     // Les écoutes de chaque titre, tous liens confondus, et les auditeurs connectés (le dernier venu d'abord).
@@ -383,7 +409,12 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       owner: person(req.user),
       quota: { used: usedBy(req.user.id), limit: quotaBytes(), full: d.used / d.total >= diskMax() },
       projects: projects.map((p) => ({
-        id: p.id, title: p.title, cover: media(p.cover), coverBy: p.cover_by, releaseDate: p.release_date, folderId: p.folder_id, createdAt: p.created_at,
+        id: p.id, title: p.title, cover: media(p.cover), coverBy: p.cover_by, releaseDate: p.release_date, createdAt: p.created_at,
+        // Les dossiers sont ceux de l'auteur : un projet où l'on collabore est à la racine de sa page.
+        mine: p.user_id === u, folderId: p.user_id === u ? p.folder_id : null,
+        owner: person({ id: p.user_id, name: p.owner_name, avatar: p.owner_avatar }),
+        collaborators: collabs.filter((c) => c.project_id === p.id).map(person),
+        inviteUrl: p.user_id === u && p.invite_token ? `${config.siteUrl}/mes-sons#/invite/${p.invite_token}` : null,
         tracks: tracks.filter((t) => t.project_id === p.id).map((t) => {
           const mine = plays.filter((r) => r.track_id === t.id);
           return {
@@ -469,7 +500,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       run('UPDATE sound_projects SET title = ? WHERE id = ?', title, p.id);
     }
     if (req.body.coverBy !== undefined) run('UPDATE sound_projects SET cover_by = ? WHERE id = ?', str(req.body.coverBy, 80), p.id);
-    if (req.body.folderId !== undefined) run('UPDATE sound_projects SET folder_id = ? WHERE id = ?', folderOf(req, req.body.folderId), p.id);
+    if (req.body.folderId !== undefined) run('UPDATE sound_projects SET folder_id = ? WHERE id = ?', folderOf(req, req.body.folderId), ownProject(req, p.id).id);
     if (req.body.releaseDate !== undefined) {
       const day = String(req.body.releaseDate || '');
       if (day && !isDay(day)) throw new HttpError(400, 'Date de sortie invalide.');
@@ -481,7 +512,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     res.json({ ok: true });
   });
   app.delete('/api/me/sounds/projects/:id', ...me, (req, res) => {
-    const p = project(req, req.params.id);
+    const p = ownProject(req, req.params.id);
     const files = all('SELECT v.stored_as FROM sound_versions v JOIN sound_tracks t ON t.id = v.track_id WHERE t.project_id = ?', p.id);
     run('DELETE FROM sound_projects WHERE id = ?', p.id);
     removeVersionFiles(files);
@@ -501,7 +532,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   app.post('/api/me/sounds/projects/:id/tracks', ...me, wrap(async (req, res) => {
     const p = project(req, req.params.id);
     rateLimit(`sounds-upload:${req.user.id}`, 200, 3600_000);
-    const file = await receiveAudio(req);
+    const file = await receiveAudio(req, p.user_id);
     const title = str(req.query.title, 120) || file.filename.replace(/\.[a-z0-9]{2,5}$/i, '');
     const trackId = transaction(() => {
       const position = get('SELECT COALESCE(MAX(position), -1) + 1 AS n FROM sound_tracks WHERE project_id = ?', p.id).n;
@@ -515,7 +546,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   app.post('/api/me/sounds/tracks/:id/versions', ...me, wrap(async (req, res) => {
     const t = track(req, req.params.id);
     rateLimit(`sounds-upload:${req.user.id}`, 200, 3600_000);
-    const file = await receiveAudio(req);
+    const file = await receiveAudio(req, t.owner_id);
     const vid = addVersion(t.id, file, str(req.query.note, 300));
     run('UPDATE sound_tracks SET current_id = ? WHERE id = ?', vid, t.id);
     res.status(201).json({ id: vid });
@@ -553,7 +584,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     const t = track(req, req.params.id);
     rateLimit(`sounds-upload:${req.user.id}`, 200, 3600_000);
     const v = get('SELECT * FROM sound_versions WHERE id = ?', t.current_id);
-    room(req, v.size);
+    room(req, v.size, t.owner_id);
     const storedAs = crypto.randomBytes(16).toString('hex');
     fs.copyFileSync(path.join(soundsDir, v.stored_as), path.join(soundsDir, storedAs));
     const tid = transaction(() => {
@@ -601,8 +632,8 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   // Les liens d'écoute : un projet entier ou un seul titre.
   app.post('/api/me/sounds/links', ...me, (req, res) => {
     rateLimit(`sounds:${req.user.id}`, 300);
-    const projectId = req.body.projectId ? project(req, req.body.projectId).id : null;
-    const trackId = !projectId && req.body.trackId ? track(req, req.body.trackId).id : null;
+    const projectId = req.body.projectId ? ownProject(req, req.body.projectId).id : null;
+    const trackId = !projectId && req.body.trackId ? ownProject(req, track(req, req.body.trackId).project_id) && id(req.body.trackId) : null;
     if (!projectId && !trackId) throw new HttpError(400, 'Choisis un projet ou un titre à partager.');
     const password = typeof req.body.password === 'string' ? req.body.password : '';
     if (password && password.length < 4) throw new HttpError(400, 'Mot de passe : 4 caractères au moins.');
@@ -647,6 +678,44 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (!c) throw new HttpError(404, 'Commentaire introuvable.');
     run('DELETE FROM sound_comments WHERE id = ?', c.id);
     res.json({ ok: true });
+  });
+
+  // L'invitation à collaborer : un lien que l'auteur crée (ou renouvelle, l'ancien ne marche plus) et peut couper.
+  app.post('/api/me/sounds/projects/:id/invite', ...me, (req, res) => {
+    const p = ownProject(req, req.params.id);
+    const token = crypto.randomBytes(12).toString('base64url');
+    run('UPDATE sound_projects SET invite_token = ? WHERE id = ?', token, p.id);
+    res.json({ url: `${config.siteUrl}/mes-sons#/invite/${token}` });
+  });
+  app.delete('/api/me/sounds/projects/:id/invite', ...me, (req, res) => {
+    run('UPDATE sound_projects SET invite_token = NULL WHERE id = ?', ownProject(req, req.params.id).id);
+    res.json({ ok: true });
+  });
+  // Retirer un collaborateur (l'auteur), ou quitter le projet (le collaborateur lui-même).
+  app.delete('/api/me/sounds/projects/:id/collabs/:user', ...me, (req, res) => {
+    const p = project(req, req.params.id), who = id(req.params.user);
+    if (p.user_id !== req.user.id && who !== req.user.id) throw new HttpError(403, "Seul l'auteur du projet peut retirer un collaborateur.");
+    run('DELETE FROM sound_collabs WHERE project_id = ? AND user_id = ?', p.id, who);
+    res.json({ ok: true });
+  });
+  const invitation = (token) => {
+    const p = get(`SELECT p.*, u.name AS owner_name, u.avatar AS owner_avatar FROM sound_projects p JOIN users u ON u.id = p.user_id
+      WHERE p.invite_token = ?`, str(token, 40));
+    if (!p || !p.invite_token) throw new HttpError(404, "Cette invitation n'existe pas ou n'est plus valable.");
+    return p;
+  };
+  app.get('/api/sounds/invite/:token', ...me, (req, res) => {
+    const p = invitation(req.params.token);
+    res.json({ project: p.title, cover: media(p.cover), owner: person({ id: p.user_id, name: p.owner_name, avatar: p.owner_avatar }),
+      projectId: p.id, mine: p.user_id === req.user.id,
+      already: !!get('SELECT 1 FROM sound_collabs WHERE project_id = ? AND user_id = ?', p.id, req.user.id) });
+  });
+  app.post('/api/sounds/invite/:token/accept', ...me, (req, res) => {
+    rateLimit(`sounds-invite:${req.user.id}`, 60);
+    const p = invitation(req.params.token);
+    if (p.user_id === req.user.id) throw new HttpError(400, "C'est ton propre projet.");
+    run('INSERT OR IGNORE INTO sound_collabs (project_id, user_id, created_at) VALUES (?, ?, ?)', p.id, req.user.id, now());
+    res.json({ projectId: p.id });
   });
 
   // Le quota par membre et le seuil du disque, pour les fondateurs.
