@@ -37,9 +37,15 @@
  ", il sert aussi dans l'application.": [
   "site/onirique.html"
  ],
+ ", la dernière le": [
+  "site/mes-sons.html"
+ ],
  ", le service de la société": [
   "site/mentions-legales.html",
   "site/pages.mjs"
+ ],
+ ", leurs noms, notes de version, pochettes": [
+  "site/confidentialite.html"
  ],
  ", mono.": [
   "site/bpm-tonalite.html"
@@ -105,6 +111,9 @@
  ": clés, type, dates, plugin concerné": [
   "site/confidentialite.html",
   "site/pages.mjs"
+ ],
+ ": date, titre écouté et, si l'auditeur est connecté à son compte Onirique, ce compte": [
+  "site/confidentialite.html"
  ],
  ": des stems exportés depuis le même point de départ ont tous la même longueur, à l'échantillon près. Une piste plus courte ou plus longue ne se recalera pas toute seule dans le projet de l'autre.": [
   "site/stems.html"
@@ -179,6 +188,12 @@
  ": le niveau maximal du signal une fois reconverti en son, qui peut dépasser celui des échantillons. Au-dessus de −1 dBTP, la conversion en MP3 ou en AAC faite par les plateformes peut créer de la saturation.": [
   "site/volume-lufs.html"
  ],
+ ": lecture…": [
+  "site/mes-sons.html"
+ ],
+ ": nom indiqué (ou celui de son compte), texte, moment du titre": [
+  "site/confidentialite.html"
+ ],
  ": normal avant le mastering, la comparaison des fréquences se fait à volume égal.": [
   "site/comparer-mix.html"
  ],
@@ -223,6 +238,9 @@
  ],
  "?bpm=": [
   "site/delais.html"
+ ],
+ "?filename=": [
+  "site/mes-sons.html"
  ],
  "?key=": [
   "site/gammes.html"
@@ -283,6 +301,9 @@
  ".lp, .lp * { box-sizing: border-box; } .lp { position: relative; min-height: 100%; color: var(--lp-text); font-family: var(--lp-font); overflow: hidden; isolation: isolate; } .lp-bg { position: absolute; inset: 0; z-index: -1; background: var(--lp-bg); background-size: cover; background-position: center; } .lp-bg::after { content: \"\"; position: absolute; inset: 0; background: rgba(0,0,0,var(--lp-dim)); } .lp-inner { max-width: 580px; margin: 0 auto; padding: 56px 18px 40px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; } .lp-avatar { width: 104px; height: 104px; object-fit: cover; border-radius: 50%; box-shadow: 0 10px 34px -12px rgba(0,0,0,.7); } .lp-avatar.square { border-radius: 22px; } .lp-name { margin: 6px 0 0; font: 700 clamp(22px, 6vw, 30px)/1.15 var(--lp-title); letter-spacing: .01em; overflow-wrap: anywhere; } .lp-bio { margin: 0; max-width: 46ch; font-size: 15px; line-height: 1.5; opacity: .86; white-space: pre-line; overflow-wrap: anywhere; } .lp-icons { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin: 4px 0 6px; } .lp-icons a { display: grid; place-items: center; width: 40px; height: 40px; color: var(--lp-text); border-radius: 50%; transition: transform .15s; } .lp-icons a:hover, .lp-icons a:focus-visible { transform: scale(1.12); outline: none; } .lp-icon { width: 24px; height: 24px; flex: none; background: currentColor; -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; } .lp-links { width: 100%; display: grid; gap: 14px; margin-top: 6px; } .lp-btn { position: relative; display: flex; align-items: center; justify-content: center; min-height: 58px; padding: 14px 54px; text-decoration: none; font: 600 15.5px/1.3 var(--lp-font); color: var(--lp-btn-text); border: 2px solid var(--lp-btn); border-radius: var(--lp-radius); transition: transform .15s, filter .15s; overflow-wrap: anywhere; } .lp-btn .lp-icon { position: absolute; left: 18px; top: 50%; margin-top: -12px; } .lp-btn:hover, .lp-btn:focus-visible { transform: translateY(-2px) scale(1.01); filter: brightness(1.08); outline: none; } .lp-btn.fill { background: var(--lp-btn); } .lp-btn.outline { background: transparent; } .lp-btn.glass { background: color-mix(in srgb, var(--lp-btn) 22%, transparent); border-color: color-mix(in srgb, var(--lp-btn) 70%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); } .lp.shadow .lp-btn { box-shadow: 0 10px 26px -14px rgba(0,0,0,.85); } .lp-foot { margin-top: 26px; font: 600 11px/1 'JetBrains Mono', monospace; letter-spacing: .2em; text-transform: uppercase; color: var(--lp-text); opacity: .55; text-decoration: none; } .lp-foot:hover { opacity: .9; } .lp-empty { opacity: .6; font-size: 14px; }": [
   "site/assets/linkpage.js"
  ],
+ ".op-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: rgba(13,8,9,.94); backdrop-filter: blur(14px); border-top: 1px solid var(--line); padding: 12px 0 calc(12px + env(safe-area-inset-bottom)); } .op-bar[hidden], .op-comments[hidden] { display: none; } .op-in { width: 100%; max-width: 1180px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 40px); display: grid; gap: 10px; } .op-top { display: flex; align-items: center; gap: 12px; min-width: 0; } .op-play { flex: none; width: 46px; height: 46px; border-radius: 50%; border: 0; background: var(--mist); color: var(--night); font-size: 18px; cursor: pointer; } .op-title { min-width: 0; flex: 1; } .op-title b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .op-title span { color: var(--haze); font-size: 13px; } .op-time { font: 500 12px var(--f-mono); color: var(--haze); white-space: nowrap; } .op-wave { width: 100%; height: 64px; display: block; cursor: pointer; touch-action: none; } .op-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 13px; color: var(--haze); } .op-tools label { display: inline-flex; flex-direction: row; align-items: center; gap: 8px; font: 400 13px var(--f-body); letter-spacing: 0; text-transform: none; color: var(--haze); } .op-tools input[type=range] { width: 120px; min-height: 0; } .op-tools input[type=checkbox] { width: 16px; height: 16px; min-height: 0; margin: 0; accent-color: var(--ember); } .op-chip { padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: none; color: var(--mist); font: 600 12px var(--f-body); cursor: pointer; } .op-chip:hover { border-color: var(--ember); } .op-chip.on { background: var(--ember); border-color: var(--ember); } .op-comments { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 120px; overflow: auto; font-size: 14px; } .op-comments li { display: flex; gap: 8px; align-items: baseline; } .op-comments button.at { flex: none; font: 600 12px var(--f-mono); color: var(--ember); background: none; border: 0; padding: 0; cursor: pointer; } .op-comments .who { color: var(--haze); } .op-say { display: flex; flex-wrap: wrap; gap: 8px; } .op-say input { flex: 1 1 200px; min-height: 38px; } .op-say input.op-name { flex: 0 1 150px; } @media (max-width: 640px) { .op-wave { height: 48px; } .op-comments { max-height: 80px; } }": [
+  "site/assets/sounds-player.js"
+ ],
  ".sn-announce { position: relative; z-index: 60; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 48px; font: 600 14px/1.4 var(--f-body, system-ui); text-align: center; } .sn-announce p { margin: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 16px; } .sn-announce span { letter-spacing: .02em; } .sn-announce a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; } .sn-announce-x { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border: 0; border-radius: 999px; background: rgba(0,0,0,.18); color: inherit; font: 400 20px/1 var(--f-body, system-ui); cursor: pointer; } .sn-announce.tone-ember { background: linear-gradient(90deg, #8c0614, #e23444 60%, #8c0614); color: #fff; } .sn-announce.tone-gold { background: linear-gradient(90deg, #b8862b, #f2c46d 55%, #b8862b); color: #1a0d02; } .sn-announce.tone-calm { background: var(--deep-2, #2a0a0e); color: var(--mist, #f6eeee); border-bottom: 1px solid var(--line, rgba(255,210,214,.16)); }": [
   "site/assets/annonce.js"
  ],
@@ -335,7 +356,11 @@
  "· la date de saturation s'affiche après une semaine de relevés": [
   "site/admin.html"
  ],
+ "· Mes sons": [
+  "site/ecoute.html"
+ ],
  "· ONIRIQUE": [
+  "site/ecoute.html",
   "site/lien.html"
  ],
  "· plein vers le {} au rythme actuel (+{} par jour)": [
@@ -355,6 +380,9 @@
  ],
  "· tous les plugins payants vérifient leur licence": [
   "app/renderer/views/admin.js"
+ ],
+ "· version": [
+  "site/mes-sons.html"
  ],
  "'Grenze Gotisch', serif": [
   "site/assets/linkpage.js"
@@ -389,8 +417,14 @@
  "» comme référence": [
   "site/comparer-mix.html"
  ],
+ "» et toutes ses versions ?": [
+  "site/mes-sons.html"
+ ],
  "» n'a pas pu être lu.": [
   "site/stems.html"
+ ],
+ "», tous ses titres et leurs liens d'écoute ?": [
+  "site/mes-sons.html"
  ],
  "». Essaie en MP3 ou en WAV.": [
   "site/assets/audio-kit.js"
@@ -421,6 +455,9 @@
  ],
  "(Instagram), pour les réponses automatiques aux commentaires décrites ci-dessus : les réponses et les messages privés passent par l'API officielle d'Instagram, qui traite vos données sous sa propre responsabilité, selon sa politique de confidentialité.": [
   "site/confidentialite.html"
+ ],
+ "(lien « {} »)": [
+  "server/src/sounds.js"
  ],
  "(max-width: 1120px) 100vw, 1100px": [
   "site/boutique.html"
@@ -559,6 +596,9 @@
   "app/renderer/views/admin.js",
   "app/renderer/views/support-admin.js"
  ],
+ "{} écoute « {} » — ONIRIQUE": [
+  "server/src/sounds.js"
+ ],
  "{} est à vous.": [
   "app/renderer/views/library.js"
  ],
@@ -635,6 +675,9 @@
  ],
  "{} version(s)": [
   "site/admin.html"
+ ],
+ "{} vient d'écouter « {} »{}.": [
+  "server/src/sounds.js"
  ],
  "{} w {} G {} {} m {} {} l S": [
   "site/assets/pdf-kit.js"
@@ -726,6 +769,9 @@
  "{}/compte.html?ref={}": [
   "server/src/promos.js"
  ],
+ "{}/ecoute?t={}": [
+  "server/src/sounds.js"
+ ],
  "{}/me?{}": [
   "server/src/social.js"
  ],
@@ -734,6 +780,9 @@
  ],
  "{}/me/subscribed_apps?{}": [
   "server/src/social.js"
+ ],
+ "{}/mes-sons": [
+  "server/src/sounds.js"
  ],
  "{}/playlistItems?part=snippet&maxResults=50&playlistId={}": [
   "server/src/youtube.js"
@@ -914,6 +963,9 @@
  ],
  "0 étape sur 0": [
   "site/checklist-sortie.html"
+ ],
+ "0 Mo": [
+  "site/mes-sons.html"
  ],
  "0 R": [
   "site/assets/pdf-kit.js"
@@ -1596,6 +1648,12 @@
  "Agrandir": [
   "app/renderer/app.js"
  ],
+ "AIFC": [
+  "server/src/sounds.js"
+ ],
+ "AIFF": [
+  "server/src/sounds.js"
+ ],
  "Aigus": [
   "site/comparer-mix.html"
  ],
@@ -1622,6 +1680,9 @@
  ],
  "Ajouter": [
   "app/renderer/views/licenses.js"
+ ],
+ "Ajouter des sons": [
+  "site/mes-sons.html"
  ],
  "Ajouter des vidéos": [
   "site/compte.html"
@@ -2017,6 +2078,9 @@
  "Aucun titre trouvé : essaie avec le titre et l'artiste.": [
   "site/comparer-mix.html"
  ],
+ "Aucune adresse IP n'est conservée pour les écoutes. Un auditeur qui veut faire effacer un commentaire peut écrire à": [
+  "site/confidentialite.html"
+ ],
  "Aucune boîte de support n'est reliée au serveur : les demandes sont refusées.": [
   "site/admin.html"
  ],
@@ -2107,7 +2171,8 @@
  ],
  "Authorization": [
   "site/admin.html",
-  "site/compte.html"
+  "site/compte.html",
+  "site/mes-sons.html"
  ],
  "Auto Gain": [
   "site/onirique.html"
@@ -2130,6 +2195,9 @@
  ],
  "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture": [
   "site/assets/credits.js"
+ ],
+ "Autoriser le téléchargement du fichier original": [
+  "site/mes-sons.html"
  ],
  "Autotune dans l'esprit des références du genre, avec un vocodeur piloté par la voix elle-même.": [
   "server/src/seed.js"
@@ -2173,6 +2241,9 @@
  ],
  "Avec tout DAW compatible VST3 sous Windows : FL Studio, Ableton Live, Reaper, Cubase, Studio One, Bitwig… Sur Mac, les plugins disponibles s'ouvrent aussi en Audio Unit dans Logic Pro et GarageBand.": [
   "site/onirique.html"
+ ],
+ "Avis d'écoute :": [
+  "server/src/sounds.js"
  ],
  "Backs": [
   "site/assets/stem-kind.js"
@@ -2231,7 +2302,9 @@
   "site/admin.html",
   "site/boutique.html",
   "site/compte.html",
+  "site/ecoute.html",
   "site/mes-liens.html",
+  "site/mes-sons.html",
   "site/onirique.html",
   "site/support.html",
   "site/assets/account.js",
@@ -2422,6 +2495,9 @@
   "site/compte.html",
   "site/onirique.html"
  ],
+ "btn btn-ghost small": [
+  "site/mes-sons.html"
+ ],
  "btn btn-primary": [
   "site/compte.html"
  ],
@@ -2457,11 +2533,17 @@
  "C'est ajouté à ton compte. Installe tes plugins depuis Onirique Central.": [
   "site/boutique.html"
  ],
+ "C'est cette version que les liens d'écoute feront entendre": [
+  "site/mes-sons.html"
+ ],
  "C'est fait": [
   "app/renderer/app.js"
  ],
  "C'est la note de ce titre seul. Celle de l'artiste découle de tous ses titres : cherche son nom pour la voir.": [
   "site/popularite.html"
+ ],
+ "C'est la seule version de ce titre : supprime le titre à la place.": [
+  "server/src/sounds.js"
  ],
  "C'est noté : parrainé par {}.": [
   "site/compte.html"
@@ -2606,6 +2688,9 @@
   "site/transposition.html",
   "site/volume-lufs.html"
  ],
+ "Ce fichier n'est pas un son reconnu : WAV, AIFF, FLAC, MP3, OGG ou M4A.": [
+  "server/src/sounds.js"
+ ],
  "Ce fichier n'est pas une image lisible.": [
   "site/compte.html"
  ],
@@ -2618,8 +2703,18 @@
  "Ce fichier ne peut pas être lu par ton navigateur. Essaie un MP3 ou un WAV.": [
   "site/onirique.html"
  ],
+ "Ce lien d'écoute a expiré : recharge la page.": [
+  "server/src/sounds.js"
+ ],
+ "Ce lien d'écoute n'existe pas ou n'est plus valable.": [
+  "server/src/sounds.js"
+ ],
  "Ce lien de désinscription n'est pas valable. Vous pouvez aussi vous désinscrire depuis votre page compte.": [
   "server/src/newsletter.js"
+ ],
+ "Ce lien est protégé par un mot de passe.": [
+  "site/ecoute.html",
+  "server/src/sounds.js"
  ],
  "Ce lien Spotify ne donne pas de titre : cherche-le par son nom.": [
   "server/src/reference.js"
@@ -3010,6 +3105,9 @@
  "Choisis seulement les plugins dont tu as besoin : {} par mois pour le premier,": [
   "site/boutique.html"
  ],
+ "Choisis un projet ou un titre à partager.": [
+  "server/src/sounds.js"
+ ],
  "Choisis un réglage sous l'interface : ce sont les vraies images du plugin.": [
   "site/assets/demo-player.js",
   "app/renderer/demo-player.js"
@@ -3281,7 +3379,20 @@
   "site/pages.mjs"
  ],
  "Commentaire": [
+  "site/confidentialite.html",
+  "site/assets/sounds-player.js"
+ ],
+ "Commentaire introuvable.": [
+  "server/src/sounds.js"
+ ],
+ "Commentaires": [
+  "site/mes-sons.html"
+ ],
+ "Commentaires d'un auditeur": [
   "site/confidentialite.html"
+ ],
+ "Commenter": [
+  "site/assets/sounds-player.js"
  ],
  "Commission du distributeur (%)": [
   "site/revenus-streaming.html"
@@ -3328,6 +3439,7 @@
   "site/gammes.html",
   "site/mentions-legales.html",
   "site/mes-liens.html",
+  "site/mes-sons.html",
   "site/outils.html",
   "site/partage.html",
   "site/popularite.html",
@@ -3461,7 +3573,8 @@
   "site/compte.html"
  ],
  "Connecte-toi d'abord à ton compte.": [
-  "site/mes-liens.html"
+  "site/mes-liens.html",
+  "site/mes-sons.html"
  ],
  "Connecte-toi pour utiliser un code promo : il est lié à ton compte.": [
   "site/boutique.html"
@@ -3489,6 +3602,9 @@
  ],
  "Connexion YouTube expirée ou refusée : recommencez.": [
   "server/src/youtube.js"
+ ],
+ "Consentement (l'auditeur les écrit lui-même)": [
+  "site/confidentialite.html"
  ],
  "Consentement (vous la renseignez et pouvez l'effacer)": [
   "site/confidentialite.html"
@@ -3577,13 +3693,18 @@
  "copié": [
   "site/delais.html"
  ],
+ "Copié": [
+  "site/mes-sons.html"
+ ],
  "Copie ce lien :": [
-  "site/mes-liens.html"
+  "site/mes-liens.html",
+  "site/mes-sons.html"
  ],
  "Copie dans les envoyés :": [
   "server/src/mailbox.js"
  ],
  "Copier": [
+  "site/mes-sons.html",
   "app/renderer/views/licenses.js"
  ],
  "Copier l'e-mail": [
@@ -3643,6 +3764,12 @@
  ],
  "Couleur unie": [
   "site/mes-liens.html"
+ ],
+ "Couper ce lien ? Plus personne ne pourra écouter par lui.": [
+  "site/mes-sons.html"
+ ],
+ "Couper le lien": [
+  "site/mes-sons.html"
  ],
  "Couper le micro": [
   "site/accordeur.html",
@@ -3724,10 +3851,14 @@
  "Crée ton compte d'abord": [
   "site/assets/site-nav.js"
  ],
+ "Crée ton premier projet (un album, un EP, une session…) pour y déposer tes sons.": [
+  "site/mes-sons.html"
+ ],
  "Crée-le ici": [
   "site/onirique.html"
  ],
  "Créer": [
+  "site/mes-sons.html",
   "app/renderer/views/admin.js"
  ],
  "Créer l'abonnement": [
@@ -3736,6 +3867,9 @@
  "Créer le code": [
   "site/admin.html",
   "app/renderer/views/admin.js"
+ ],
+ "Créer le lien": [
+  "site/mes-sons.html"
  ],
  "Créer le pack": [
   "site/admin.html"
@@ -3867,6 +4001,9 @@
  "De : {}{}{}": [
   "server/src/app.js"
  ],
+ "de «": [
+  "site/mes-sons.html"
+ ],
  "de l'application Onirique Central, depuis votre espace Link (link.com), ou en nous écrivant. La résiliation prend effet à la fin de la période déjà payée, pendant laquelle vous gardez l'accès. À la fin de l'abonnement, les plugins obtenus uniquement par l'abonnement cessent de fonctionner ; ceux achetés à l'unité vous restent acquis.": [
   "site/cgv.html",
   "site/pages.mjs"
@@ -3898,6 +4035,9 @@
  ],
  "Début (secondes)": [
   "site/decoupe.html"
+ ],
+ "Début boucle": [
+  "site/assets/sounds-player.js"
  ],
  "Début du fichier": [
   "site/bpm-tonalite.html"
@@ -4104,7 +4244,7 @@
   "site/mentions-legales.html",
   "site/remboursement.html"
  ],
- "Dernière mise à jour : 18 octobre 2026": [
+ "Dernière mise à jour : 19 octobre 2026": [
   "site/confidentialite.html"
  ],
  "Dernière semaine": [
@@ -4167,7 +4307,8 @@
  ],
  "Descendre": [
   "site/admin.html",
-  "site/mes-liens.html"
+  "site/mes-liens.html",
+  "site/mes-sons.html"
  ],
  "Descendu": [
   "site/transposition.html"
@@ -4241,6 +4382,9 @@
  "display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px;align-items:end;margin-top:12px": [
   "site/admin.html"
  ],
+ "Disque : {} sur {} ({} %), dont {} de sons.": [
+  "site/admin.html"
+ ],
  "Disque presque plein : au-delà, plus aucun plugin, image ou vidéo ne pourra être envoyé. Supprimez d'anciennes versions de plugins ou des vidéos, ou agrandissez le disque chez IONOS.": [
   "site/admin.html"
  ],
@@ -4271,6 +4415,12 @@
  "donne accès aux seuls plugins Onirique que vous avez choisis. Les plugins d'un créateur partenaire, signalé sur leur fiche, ne font partie d'aucun abonnement : ils s'achètent à l'unité.": [
   "site/cgv.html",
   "site/pages.mjs"
+ ],
+ "Donne un nom au projet.": [
+  "server/src/sounds.js"
+ ],
+ "Donne un nom au titre.": [
+  "server/src/sounds.js"
  ],
  "Données": [
   "site/confidentialite.html",
@@ -4408,9 +4558,17 @@
  "Échec": [
   "site/compte.html"
  ],
+ "écoute": [
+  "site/mes-sons.html"
+ ],
+ "Écoute privée": [
+  "site/ecoute.html"
+ ],
  "Écouter": [
   "site/comparer-mix.html",
   "site/decoupe.html",
+  "site/ecoute.html",
+  "site/mes-sons.html",
   "site/onirique.html"
  ],
  "Écouter en entier sur Spotify ↗": [
@@ -4422,6 +4580,9 @@
  "Écouter l'un puis l'autre": [
   "site/comparer-mix.html"
  ],
+ "Écouter la version": [
+  "site/mes-sons.html"
+ ],
  "Écouter sur Apple Music ↗": [
   "site/assets/credits.js"
  ],
@@ -4431,6 +4592,9 @@
  "écoutes ·": [
   "site/revenus-streaming.html"
  ],
+ "Écoutes par un lien": [
+  "site/confidentialite.html"
+ ],
  "Écoutes sur {}": [
   "site/revenus-streaming.html"
  ],
@@ -4439,6 +4603,9 @@
  ],
  "Écrire aussi le BPM et la tonalité dans le nom de chaque piste": [
   "site/stems.html"
+ ],
+ "Écris ton commentaire.": [
+  "server/src/sounds.js"
  ],
  "Écris un nom d'artiste ou colle un lien Spotify.": [
   "site/popularite.html",
@@ -4760,7 +4927,9 @@
  "Erreur": [
   "site/admin.html",
   "site/compte.html",
-  "site/mes-liens.html"
+  "site/ecoute.html",
+  "site/mes-liens.html",
+  "site/mes-sons.html"
  ],
  "erreur : {}": [
   "app/main/main.js",
@@ -4939,11 +5108,15 @@
   "site/confidentialite.html",
   "site/pages.mjs"
  ],
+ "Exécution du service demandé": [
+  "site/confidentialite.html"
+ ],
  "Expand-Archive -LiteralPath {} -DestinationPath {} -Force": [
   "app/main/installer.js"
  ],
  "expiré": [
-  "site/admin.html"
+  "site/admin.html",
+  "site/mes-sons.html"
  ],
  "Expiré": [
   "site/compte.html",
@@ -5079,6 +5252,9 @@
  "Fichier non autorisé.": [
   "app/main/main.js"
  ],
+ "Fichier trop volumineux : 500 Mo au plus par fichier.": [
+  "server/src/sounds.js"
+ ],
  "fichier trop volumineux.": [
   "site/compte.html"
  ],
@@ -5091,6 +5267,9 @@
  ],
  "Fichiers": [
   "site/assets/tools-menu.js"
+ ],
+ "Fichiers audio du membre": [
+  "site/confidentialite.html"
  ],
  "Fichiers de licence (lus par les plugins)": [
   "app/renderer/views/account.js"
@@ -5107,6 +5286,9 @@
  ],
  "Fin (secondes)": [
   "site/decoupe.html"
+ ],
+ "Fin boucle": [
+  "site/assets/sounds-player.js"
  ],
  "Finaliser": [
   "site/checklist-sortie.html"
@@ -5163,6 +5345,9 @@
  ],
  "Forme": [
   "site/mes-liens.html"
+ ],
+ "Forme d'onde : cliquer pour aller à ce moment": [
+  "site/assets/sounds-player.js"
  ],
  "Forme d'onde : fais glisser les bords pour choisir le passage": [
   "site/decoupe.html"
@@ -5262,6 +5447,9 @@
   "site/assets/cropper.js",
   "app/renderer/cropper.js"
  ],
+ "Garder la hauteur": [
+  "site/assets/sounds-player.js"
+ ],
  "Garder un passage, ajouter un fondu, exporter.": [
   "site/assets/tools-menu.js"
  ],
@@ -5279,6 +5467,9 @@
  "Georgia, 'Times New Roman', serif": [
   "site/assets/linkpage.js"
  ],
+ "Glisse tes fichiers ici (WAV, AIFF, FLAC, MP3, OGG, M4A ; 500 Mo au plus chacun)": [
+  "site/mes-sons.html"
+ ],
  "Glisser pour changer sa place": [
   "site/admin.html"
  ],
@@ -5286,7 +5477,8 @@
   "site/mes-liens.html"
  ],
  "Go": [
-  "site/admin.html"
+  "site/admin.html",
+  "site/mes-sons.html"
  ],
  "go ghost": [
   "site/stems.html"
@@ -5454,6 +5646,9 @@
  "Image invalide.": [
   "app/main/main.js"
  ],
+ "Image refusée.": [
+  "site/mes-sons.html"
+ ],
  "Image retirée.": [
   "app/renderer/views/admin.js"
  ],
@@ -5491,6 +5686,9 @@
  ],
  "Indésirables": [
   "server/src/mailbox.js"
+ ],
+ "Indique ton nom.": [
+  "server/src/sounds.js"
  ],
  "Indiquez au moins un destinataire.": [
   "server/src/mailbox.js"
@@ -5730,6 +5928,12 @@
   "site/confidentialite.html",
   "site/pages.mjs"
  ],
+ "Jusqu'à ce que le membre les supprime ou supprime son compte": [
+  "site/confidentialite.html"
+ ],
+ "Jusqu'à ce que le membre les supprime, ou supprime le lien ou le titre": [
+  "site/confidentialite.html"
+ ],
  "Jusqu'à ce que vous effaciez les données du site": [
   "site/cookies.html",
   "site/pages.mjs"
@@ -5751,9 +5955,13 @@
  "Jusqu'à la suppression du compte, l'empreinte d'adresse IP n'étant plus prise en compte après six mois": [
   "site/confidentialite.html"
  ],
+ "Jusqu'à la suppression du lien ou du titre": [
+  "site/confidentialite.html"
+ ],
  "jusqu'au": [
   "site/admin.html",
   "site/compte.html",
+  "site/mes-sons.html",
   "app/renderer/views/admin.js"
  ],
  "Jusqu'au": [
@@ -5851,6 +6059,9 @@
  "L'encodage en MP3 a échoué.": [
   "site/assets/audio-kit.js"
  ],
+ "L'envoi a été interrompu. Réessaie.": [
+  "site/mes-sons.html"
+ ],
  "L'envoi n'a pas abouti : réessaie dans quelques minutes.": [
   "site/assets/site-nav.js"
  ],
@@ -5859,6 +6070,15 @@
  ],
  "L'équipe ONIRIQUE": [
   "server/src/mailtemplate.js"
+ ],
+ "L'espace de musique des membres ONIRIQUE. Quand le disque du serveur est plein à 80 %, plus aucun envoi n'est accepté. Réservé aux fondateurs.": [
+  "site/admin.html"
+ ],
+ "L'espace de stockage d'ONIRIQUE est plein pour le moment : aucun envoi n'est possible. Réessaie plus tard.": [
+  "server/src/sounds.js"
+ ],
+ "L'espace de stockage d'ONIRIQUE est plein pour le moment : les envois sont fermés. Tes sons restent écoutables.": [
+  "site/mes-sons.html"
  ],
  "L'essai de {} a déjà été utilisé depuis cette connexion Internet.": [
   "server/src/app.js"
@@ -5972,6 +6192,9 @@
   "site/cgv.html",
   "site/pages.mjs"
  ],
+ "La date de fin doit être dans le futur.": [
+  "server/src/sounds.js"
+ ],
  "La de référence": [
   "site/accordeur.html"
  ],
@@ -6057,6 +6280,9 @@
  ],
  "Label": [
   "site/partage.html"
+ ],
+ "Label, ami, ingé…": [
+  "site/mes-sons.html"
  ],
  "Laissé tel quel": [
   "site/volume-lufs.html"
@@ -6354,6 +6580,9 @@
  "Le texte de l'annonce": [
   "site/admin.html"
  ],
+ "le titre «": [
+  "site/mes-sons.html"
+ ],
  "Le titre disparaît de la section Crédits du site.": [
   "app/renderer/views/admin.js"
  ],
@@ -6386,7 +6615,8 @@
   "site/bpm-tonalite.html"
  ],
  "Lecture": [
-  "site/stems.html"
+  "site/stems.html",
+  "site/assets/sounds-player.js"
  ],
  "Lecture de «": [
   "site/onirique.html"
@@ -6398,6 +6628,9 @@
   "site/decoupe.html",
   "site/transposition.html",
   "site/volume-lufs.html"
+ ],
+ "Lecture impossible : recharge la page.": [
+  "site/assets/sounds-player.js"
  ],
  "led on": [
   "app/renderer/app.js",
@@ -6470,6 +6703,9 @@
  "Les formules proposées dans la boutique du site et dans l'application : leur nom, leur prix, leur texte et les plugins qu'elles comprennent. Un prix changé s'applique aux prochains abonnements ; un plugin ajouté profite tout de suite aux abonnés ; une formule retirée de la boutique reste à ceux qui l'ont déjà.": [
   "site/admin.html"
  ],
+ "Les garder, les faire écouter au membre et aux personnes à qui il donne un lien": [
+  "site/confidentialite.html"
+ ],
  "Les licences déjà achetées restent.": [
   "site/admin.html"
  ],
@@ -6479,6 +6715,9 @@
  "Les logiciels, leur interface, leur documentation, le site et la marque Onirique restent la propriété exclusive de l'éditeur. Aucun droit autre que la licence décrite à l'article 7 ne vous est accordé.": [
   "site/cgv.html",
   "site/pages.mjs"
+ ],
+ "Les membres ONIRIQUE peuvent déposer leur musique en cours sur le serveur d'Onirique et la faire écouter par des liens privés. Le membre choisit ce qu'il dépose et à qui il donne un lien ; Onirique ne diffuse jamais ces sons et ne s'en sert à aucune autre fin.": [
+  "site/confidentialite.html"
  ],
  "Les mêmes comptes que dans Onirique Central. Un administrateur nommé ici l'est aussi dans l'application.": [
   "site/admin.html"
@@ -6569,6 +6808,9 @@
  ],
  "Les titres sortis avec les plugins Onirique sur la chaîne de mix. Écoute un extrait, puis retrouve le morceau en entier sur Spotify.": [
   "site/onirique.html"
+ ],
+ "Les transmettre au membre qui a partagé le titre": [
+  "site/confidentialite.html"
  ],
  "Les valeurs supposent une mesure à quatre temps, où le temps est la noire.": [
   "site/delais.html"
@@ -6677,6 +6919,12 @@
  "Lien copié. Envoie-le à tes amis.": [
   "site/compte.html"
  ],
+ "Lien créé :": [
+  "site/mes-sons.html"
+ ],
+ "Lien créé et copié :": [
+  "site/mes-sons.html"
+ ],
  "Lien de la boutique avec ce code copié.": [
   "app/renderer/views/admin.js"
  ],
@@ -6693,6 +6941,9 @@
  "Lien envoyé à": [
   "site/onirique.html",
   "site/assets/site-nav.js"
+ ],
+ "Lien introuvable.": [
+  "server/src/sounds.js"
  ],
  "Lien invalide": [
   "server/src/newsletter.js"
@@ -6721,6 +6972,9 @@
  ],
  "Liens": [
   "site/mes-liens.html"
+ ],
+ "Liens d'écoute": [
+  "site/mes-sons.html"
  ],
  "Liens légaux": [
   "site/onirique.html"
@@ -6759,6 +7013,9 @@
  ],
  "Link (Stripe)": [
   "server/src/payments.js"
+ ],
+ "link.{}.{}": [
+  "server/src/sounds.js"
  ],
  "links-image:{}": [
   "server/src/linkpage.js"
@@ -6832,9 +7089,11 @@
   "site/credits.html",
   "site/decoupe.html",
   "site/delais.html",
+  "site/ecoute.html",
   "site/gammes.html",
   "site/mentions-legales.html",
   "site/mes-liens.html",
+  "site/mes-sons.html",
   "site/onirique.html",
   "site/outils.html",
   "site/partage.html",
@@ -7037,6 +7296,9 @@
  "Membre depuis le {}.": [
   "app/renderer/views/account.js"
  ],
+ "Membres ONIRIQUE": [
+  "site/mes-sons.html"
+ ],
  "Mensuel": [
   "app/renderer/views/subscription.js"
  ],
@@ -7090,6 +7352,9 @@
  "Merci. Nous vous répondons à": [
   "site/support.html"
  ],
+ "Mes": [
+  "site/mes-sons.html"
+ ],
  "Mes licences": [
   "site/assets/account.js"
  ],
@@ -7098,6 +7363,16 @@
  ],
  "Mes licences : désactivées": [
   "app/renderer/app.js"
+ ],
+ "Mes sons": [
+  "site/admin.html",
+  "site/compte.html",
+  "site/confidentialite.html",
+  "server/src/sounds.js"
+ ],
+ "Mes sons est réservé aux membres ONIRIQUE.": [
+  "site/mes-sons.html",
+  "server/src/sounds.js"
  ],
  "Message": [
   "site/admin.html",
@@ -7178,6 +7453,9 @@
  "Mettre ce message à la corbeille ?": [
   "site/admin.html"
  ],
+ "Mettre en avant": [
+  "site/mes-sons.html"
+ ],
  "Mettre en pause": [
   "site/compte.html"
  ],
@@ -7252,7 +7530,8 @@
  "Mo": [
   "site/admin.html",
   "site/compte.html",
-  "site/convertisseur.html"
+  "site/convertisseur.html",
+  "site/mes-sons.html"
  ],
  "Mode de compression": [
   "site/onirique.html"
@@ -7313,10 +7592,14 @@
  "Mon compte": [
   "site/admin.html",
   "site/mes-liens.html",
+  "site/mes-sons.html",
   "site/assets/account.js",
   "site/assets/site-nav.js",
   "server/src/mailtemplate.js",
   "server/src/newsletter.js"
+ ],
+ "Mon espace": [
+  "site/mes-sons.html"
  ],
  "Mon fichier est-il envoyé sur un serveur ?": [
   "site/bpm-tonalite.html"
@@ -7349,18 +7632,29 @@
  ],
  "Monter": [
   "site/admin.html",
-  "site/mes-liens.html"
+  "site/mes-liens.html",
+  "site/mes-sons.html"
  ],
  "Monter la fréquence ou la résolution sert-il à quelque chose ?": [
   "site/convertisseur.html"
  ],
+ "Montrer au membre combien de fois son lien a servi ; le prévenir par e-mail qu'un auditeur connecté a écouté (une fois par jour et par titre)": [
+  "site/confidentialite.html"
+ ],
  "Morceau écouté": [
   "site/comparer-mix.html"
  ],
+ "mot de passe": [
+  "site/mes-sons.html"
+ ],
  "Mot de passe": [
   "site/compte.html",
+  "site/ecoute.html",
   "app/renderer/views/admin.js",
   "app/renderer/views/auth.js"
+ ],
+ "Mot de passe : 4 caractères au moins.": [
+  "server/src/sounds.js"
  ],
  "Mot de passe : 8 caractères minimum.": [
   "server/src/app.js"
@@ -7368,6 +7662,9 @@
  "Mot de passe (8 caractères minimum)": [
   "site/compte.html",
   "app/renderer/views/auth.js"
+ ],
+ "Mot de passe (facultatif)": [
+  "site/mes-sons.html"
  ],
  "Mot de passe actuel": [
   "site/compte.html",
@@ -7389,7 +7686,8 @@
   "site/compte.html"
  ],
  "Mot de passe incorrect.": [
-  "server/src/app.js"
+  "server/src/app.js",
+  "server/src/sounds.js"
  ],
  "Mot de passe oublié": [
   "site/confidentialite.html",
@@ -7426,6 +7724,9 @@
  ],
  "music://{}{}{}": [
   "site/assets/deeplink.js"
+ ],
+ "Musique en cours, partagée avec toi seulement : merci de ne pas la diffuser. Laisse un commentaire à un moment précis du titre depuis le lecteur.": [
+  "site/ecoute.html"
  ],
  "muted grow": [
   "app/renderer/views/admin.js"
@@ -7531,11 +7832,20 @@
   "site/remboursement.html",
   "site/pages.mjs"
  ],
+ "Nom du nouveau projet": [
+  "site/mes-sons.html"
+ ],
  "Nom du pack": [
   "site/stems.html"
  ],
  "Nom du participant": [
   "site/partage.html"
+ ],
+ "Nom du projet": [
+  "site/mes-sons.html"
+ ],
+ "Nom du titre :": [
+  "site/mes-sons.html"
  ],
  "Nom ou pseudo": [
   "app/renderer/views/auth.js"
@@ -7589,6 +7899,12 @@
  "Note (Key)": [
   "site/gammes.html"
  ],
+ "Note de la version": [
+  "site/mes-sons.html"
+ ],
+ "Note de version (mix 2, master…)": [
+  "site/mes-sons.html"
+ ],
  "Note interne": [
   "site/admin.html",
   "app/renderer/views/admin.js"
@@ -7632,6 +7948,9 @@
  "Nouveau code promo": [
   "app/renderer/views/admin.js"
  ],
+ "Nouveau lien pour": [
+  "site/mes-sons.html"
+ ],
  "Nouveau message": [
   "site/admin.html",
   "app/renderer/views/admin.js",
@@ -7653,6 +7972,9 @@
  "Nouveau plugin": [
   "app/renderer/views/admin.js"
  ],
+ "Nouveau projet": [
+  "site/mes-sons.html"
+ ],
  "Nouveau tempo (BPM)": [
   "site/transposition.html"
  ],
@@ -7672,6 +7994,7 @@
   "site/compte.html"
  ],
  "Nouvelle version": [
+  "site/mes-sons.html",
   "app/renderer/views/admin.js"
  ],
  "Nouvelle version de {}": [
@@ -7755,10 +8078,12 @@
   "site/credits.html",
   "site/decoupe.html",
   "site/delais.html",
+  "site/ecoute.html",
   "site/gammes.html",
   "site/lien.html",
   "site/mentions-legales.html",
   "site/mes-liens.html",
+  "site/mes-sons.html",
   "site/onirique.html",
   "site/outils.html",
   "site/partage.html",
@@ -7771,6 +8096,7 @@
   "site/tessiture.html",
   "site/transposition.html",
   "site/volume-lufs.html",
+  "site/assets/account.js",
   "site/assets/site-nav.js",
   "site/pages.mjs",
   "app/renderer/app.js",
@@ -7783,7 +8109,8 @@
   "server/src/mailtemplate.js",
   "server/src/newsletter.js",
   "server/src/payments.js",
-  "server/src/promos.js"
+  "server/src/promos.js",
+  "server/src/sounds.js"
  ],
  "ONIRIQUE — Administration": [
   "site/admin.html"
@@ -7791,8 +8118,14 @@
  "ONIRIQUE — Compte": [
   "site/compte.html"
  ],
+ "ONIRIQUE — Écoute privée": [
+  "site/ecoute.html"
+ ],
  "ONIRIQUE — Ma page de liens": [
   "site/mes-liens.html"
+ ],
+ "ONIRIQUE — Mes sons": [
+  "site/mes-sons.html"
  ],
  "ONIRIQUE — plugins audio pour la voix": [
   "site/onirique.html"
@@ -8051,6 +8384,10 @@
  "Ouvrir le panel support": [
   "app/renderer/views/admin.js"
  ],
+ "Ouvrir Mes sons": [
+  "site/compte.html",
+  "server/src/sounds.js"
+ ],
  "Ouvrir onirique.store dans le navigateur": [
   "app/renderer/app.js"
  ],
@@ -8266,6 +8603,9 @@
  "Part en pour cent": [
   "site/partage.html"
  ],
+ "Partagé avec": [
+  "site/ecoute.html"
+ ],
  "Partage des droits": [
   "site/partage.html",
   "site/assets/tools-menu.js"
@@ -8277,7 +8617,11 @@
   "site/compte.html"
  ],
  "Partager": [
-  "site/compte.html"
+  "site/compte.html",
+  "site/mes-sons.html"
+ ],
+ "Partager le projet": [
+  "site/mes-sons.html"
  ],
  "Partagez votre lien. Votre ami a {} % de remise sur son premier plugin ONIRIQUE ; vous, un code de -{} % dès qu'il fait son premier achat": [
   "app/renderer/views/account.js"
@@ -8348,7 +8692,8 @@
  ],
  "Pause": [
   "site/comparer-mix.html",
-  "site/onirique.html"
+  "site/onirique.html",
+  "site/assets/sounds-player.js"
  ],
  "Payer": [
   "app/renderer/views/library.js"
@@ -8633,6 +8978,9 @@
  "Pochette de {} par {}": [
   "site/assets/credits.js"
  ],
+ "Pochette du projet : cliquer pour la changer": [
+  "site/mes-sons.html"
+ ],
  "Pointée": [
   "site/delais.html"
  ],
@@ -8692,10 +9040,10 @@
  "Possédé": [
   "app/renderer/views/library.js"
  ],
- "Pour {}. Toutes ses sessions seront fermées ; transmettez-lui le mot de passe par un canal sûr.": [
+ "Pour {}. ONIRIQUE : tous les plugins offerts. Abrasion, Relic : le panel admin, limité à ses propres plugins et à leurs licences.": [
   "app/renderer/views/admin.js"
  ],
- "Pour {}. VIP : tous les plugins offerts. Abrasion, Relic : le panel admin, limité à ses propres plugins et à leurs licences.": [
+ "Pour {}. Toutes ses sessions seront fermées ; transmettez-lui le mot de passe par un canal sûr.": [
   "app/renderer/views/admin.js"
  ],
  "Pour choisir un nouveau mot de passe, ouvrez ce lien (valable une heure) :": [
@@ -8722,6 +9070,9 @@
  ],
  "Pour quel ordinateur ?": [
   "site/assets/site-nav.js"
+ ],
+ "Pour qui (facultatif)": [
+  "site/mes-sons.html"
  ],
  "pour toi, à chaque ami qui achète": [
   "site/compte.html"
@@ -8844,6 +9195,9 @@
  "Preset suivant": [
   "site/onirique.html"
  ],
+ "private, max-age=3600": [
+  "server/src/sounds.js"
+ ],
  "private, max-age=600": [
   "server/src/app.js"
  ],
@@ -8932,6 +9286,15 @@
  ],
  "Programs": [
   "app/main/installer.js"
+ ],
+ "Projet entier": [
+  "site/mes-sons.html"
+ ],
+ "Projet introuvable.": [
+  "server/src/sounds.js"
+ ],
+ "Projets": [
+  "site/mes-sons.html"
  ],
  "PROMO -20 % SUR TOUTE LA BOUTIQUE": [
   "site/admin.html"
@@ -9063,6 +9426,12 @@
  ],
  "Qui touche quoi sur un titre, dans une feuille à signer.": [
   "site/assets/tools-menu.js"
+ ],
+ "Quota : entre 0,1 et 1000 Go.": [
+  "server/src/sounds.js"
+ ],
+ "Quota par membre (Go)": [
+  "site/admin.html"
  ],
  "Rap Lead": [
   "site/onirique.html"
@@ -9264,6 +9633,9 @@
   "site/assets/cropper.js",
   "app/renderer/cropper.js"
  ],
+ "Renommer": [
+  "site/mes-sons.html"
+ ],
  "Renvoyer le lien": [
   "site/compte.html",
   "app/renderer/app.js"
@@ -9347,7 +9719,8 @@
   "server/src/newsletter.js"
  ],
  "Réservé aux fondateurs.": [
-  "server/src/app.js"
+  "server/src/app.js",
+  "server/src/sounds.js"
  ],
  "réservée": [
   "app/renderer/views/admin.js"
@@ -9550,6 +9923,9 @@
  "rgba(226,52,68,.13)": [
   "site/decoupe.html"
  ],
+ "rgba(226,52,68,.18)": [
+  "site/assets/sounds-player.js"
+ ],
  "rgba(226,52,68,.55)": [
   "site/onirique.html"
  ],
@@ -9558,6 +9934,9 @@
  ],
  "rgba(226,52,68,.8)": [
   "site/onirique.html"
+ ],
+ "rgba(246,238,238,.35)": [
+  "site/assets/sounds-player.js"
  ],
  "rgba(255, 170, 90, 0.4)": [
   "app/renderer/app.js"
@@ -9720,6 +10099,9 @@
  "Salut {pseudo} ! Voici le lien promis : https://onirique.store": [
   "site/compte.html"
  ],
+ "Sans boucle": [
+  "site/assets/sounds-player.js"
+ ],
  "sans compte": [
   "site/admin.html",
   "app/renderer/views/support-admin.js"
@@ -9799,6 +10181,7 @@
   "site/admin.html",
   "site/compte.html",
   "site/mes-liens.html",
+  "site/mes-sons.html",
   "app/renderer/views/auth.js"
  ],
  "Se connecter avec YouTube": [
@@ -9817,7 +10200,8 @@
  ],
  "Se reconnecter": [
   "site/admin.html",
-  "site/mes-liens.html"
+  "site/mes-liens.html",
+  "site/mes-sons.html"
  ],
  "Se souvenir de moi sur cet appareil": [
   "site/compte.html"
@@ -9866,7 +10250,9 @@
   "app/main/api.js"
  ],
  "Serveur injoignable. Réessaie dans un instant.": [
+  "site/ecoute.html",
   "site/mes-liens.html",
+  "site/mes-sons.html",
   "site/popularite.html"
  ],
  "Serveur injoignable. Réessayez dans un instant.": [
@@ -10051,6 +10437,9 @@
   "site/bpm-tonalite.html",
   "site/gammes.html"
  ],
+ "Son introuvable.": [
+  "server/src/sounds.js"
+ ],
  "sont édités par": [
   "site/mentions-legales.html",
   "site/pages.mjs"
@@ -10063,6 +10452,27 @@
  ],
  "Sortie annoncée partout": [
   "site/checklist-sortie.html"
+ ],
+ "sounds-comment:{}": [
+  "server/src/sounds.js"
+ ],
+ "sounds-cover:{}": [
+  "server/src/sounds.js"
+ ],
+ "sounds-password:{}": [
+  "server/src/sounds.js"
+ ],
+ "sounds-play:{}": [
+  "server/src/sounds.js"
+ ],
+ "sounds-share:{}": [
+  "server/src/sounds.js"
+ ],
+ "sounds-upload:{}": [
+  "server/src/sounds.js"
+ ],
+ "sounds:{}": [
+  "server/src/sounds.js"
  ],
  "Source audio": [
   "site/onirique.html"
@@ -10233,14 +10643,24 @@
  "Supprimer": [
   "site/admin.html",
   "site/compte.html",
+  "site/mes-sons.html",
   "app/renderer/views/admin.js",
   "app/renderer/views/support-admin.js"
+ ],
+ "Supprimer «": [
+  "site/mes-sons.html"
  ],
  "Supprimer « {} » ?": [
   "site/admin.html"
  ],
  "Supprimer {} ?": [
   "app/renderer/views/admin.js"
+ ],
+ "Supprimer ce commentaire": [
+  "site/assets/sounds-player.js"
+ ],
+ "Supprimer ce commentaire ?": [
+  "site/assets/sounds-player.js"
  ],
  "Supprimer ce lien": [
   "site/mes-liens.html"
@@ -10269,11 +10689,17 @@
  "Supprimer définitivement votre compte ONIRIQUE ? Vos licences seront perdues. Cette action ne peut pas être annulée.": [
   "site/compte.html"
  ],
+ "Supprimer la version": [
+  "site/mes-sons.html"
+ ],
  "Supprimer le code {} ? Il ne pourra plus servir{}.": [
   "site/admin.html"
  ],
  "Supprimer le compte": [
   "site/compte.html"
+ ],
+ "Supprimer le projet": [
+  "site/mes-sons.html"
  ],
  "sur 100": [
   "site/popularite.html"
@@ -10333,8 +10759,20 @@
   "app/renderer/views/admin.js",
   "app/renderer/views/library.js"
  ],
+ "t.id = ?": [
+  "server/src/sounds.js"
+ ],
+ "t.project_id = ?": [
+  "server/src/sounds.js"
+ ],
  "TA LICENCE": [
   "site/onirique.html"
+ ],
+ "Ta musique en cours, rangée par projet, avec ses versions. Partage-la par un lien privé, vois qui écoute et lis les commentaires.": [
+  "site/compte.html"
+ ],
+ "Ta musique en cours, rangée par projet. Chaque titre garde ses versions successives. Partage-les par un lien privé (avec mot de passe si tu veux), vois qui écoute et lis les commentaires laissés à un moment précis du titre.": [
+  "site/mes-sons.html"
  ],
  "Ta note la plus basse, la plus haute, et les tonalités qui te vont.": [
   "site/assets/tools-menu.js"
@@ -10355,7 +10793,8 @@
   "site/checklist-sortie.html"
  ],
  "Ta session a expiré.": [
-  "site/mes-liens.html"
+  "site/mes-liens.html",
+  "site/mes-sons.html"
  ],
  "Ta stéréo s'annule en partie en mono (corrélation négative) : vérifie les effets de largeur et la phase des prises doublées.": [
   "site/comparer-mix.html"
@@ -10365,6 +10804,9 @@
  ],
  "Taille": [
   "app/renderer/views/library.js"
+ ],
+ "Taille du fichier inconnue.": [
+  "server/src/sounds.js"
  ],
  "tant que l'abonnement court": [
   "app/renderer/views/library.js"
@@ -10433,6 +10875,9 @@
  "Téléchargement interrompu.": [
   "app/main/api.js"
  ],
+ "téléchargement permis": [
+  "site/mes-sons.html"
+ ],
  "téléchargement refusé ({})": [
   "app/main/mac-update.js"
  ],
@@ -10441,7 +10886,8 @@
  ],
  "Télécharger": [
   "site/bpm-tonalite.html",
-  "site/onirique.html"
+  "site/onirique.html",
+  "site/assets/sounds-player.js"
  ],
  "Télécharger en PDF": [
   "site/checklist-sortie.html"
@@ -10607,7 +11053,8 @@
   "site/checklist-sortie.html"
  ],
  "Titre introuvable.": [
-  "server/src/reference.js"
+  "server/src/reference.js",
+  "server/src/sounds.js"
  ],
  "Titre ou nom de l'album": [
   "site/admin.html"
@@ -10642,6 +11089,9 @@
  "Ton abonnement": [
   "site/boutique.html"
  ],
+ "Ton espace est plein ({} Go) : supprime des versions ou des titres pour en envoyer d'autres.": [
+  "server/src/sounds.js"
+ ],
  "Ton master est": [
   "site/volume-lufs.html"
  ],
@@ -10671,6 +11121,9 @@
  ],
  "Ton navigateur ne sait pas lire ce fichier. Essaie en MP3 ou en WAV.": [
   "site/bpm-tonalite.html"
+ ],
+ "Ton nom": [
+  "site/assets/sounds-player.js"
  ],
  "Ton nom d'artiste": [
   "site/compte.html"
@@ -10798,6 +11251,9 @@
  ],
  "Tout est mesuré": [
   "site/stems.html"
+ ],
+ "tout le projet «": [
+  "site/mes-sons.html"
  ],
  "Tout mettre à jour ({})": [
   "app/renderer/views/library.js"
@@ -10988,6 +11444,9 @@
  ],
  "Un code s'entre au moment d'acheter, sur le site comme dans l'application. Il sert une fois par compte. Laisser « Plugins » vide : il vaut pour tous les plugins": [
   "site/admin.html"
+ ],
+ "Un commentaire à ce moment du titre…": [
+  "site/assets/sounds-player.js"
  ],
  "Un compte · deux machines": [
   "site/onirique.html"
@@ -11214,6 +11673,9 @@
  "Utiliser un autre compte": [
   "app/renderer/app.js"
  ],
+ "utilisés sur": [
+  "site/mes-sons.html"
+ ],
  "UUSH": [
   "server/src/youtube.js"
  ],
@@ -11227,6 +11689,9 @@
  "Valable jusqu'au": [
   "site/admin.html",
   "app/renderer/views/admin.js"
+ ],
+ "Valable jusqu'au (facultatif)": [
+  "site/mes-sons.html"
  ],
  "Valeur": [
   "site/admin.html",
@@ -11353,14 +11818,21 @@
  "version actuelle {} du {}": [
   "site/admin.html"
  ],
+ "Version inconnue.": [
+  "server/src/sounds.js"
+ ],
  "Version introuvable.": [
-  "server/src/app.js"
+  "server/src/app.js",
+  "server/src/sounds.js"
  ],
  "Version publiée, mais la démo interactive n'a pas pu être créée : {}": [
   "app/renderer/views/admin.js"
  ],
  "Version retirée.": [
   "app/renderer/views/admin.js"
+ ],
+ "Versions": [
+  "site/mes-sons.html"
  ],
  "VI": [
   "site/gammes.html"
@@ -11390,12 +11862,6 @@
  "VII": [
   "site/gammes.html"
  ],
- "VIP": [
-  "site/admin.html",
-  "site/compte.html",
-  "site/assets/account.js",
-  "app/renderer/ui.js"
- ],
  "Visible dans la bibliothèque": [
   "app/renderer/views/admin.js"
  ],
@@ -11407,6 +11873,9 @@
  ],
  "Visuels et extraits vidéo prêts": [
   "site/checklist-sortie.html"
+ ],
+ "Vitesse": [
+  "site/assets/sounds-player.js"
  ],
  "Vitesse de modulation": [
   "site/delais.html"

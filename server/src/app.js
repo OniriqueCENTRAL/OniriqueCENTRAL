@@ -34,6 +34,7 @@ import * as social from './social.js';
 import { announcementView, deleteAccount, maintenanceView, mountControl, packView, paidSubscription, planView } from './control.js';
 import { enrollment, matchStep, newRecoveryCodes, newSecret, recoveryHash } from './totp.js';
 import { mountLinkPages } from './linkpage.js';
+import { mountSounds } from './sounds.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
@@ -528,6 +529,7 @@ export function createApp() {
   }
 
   mountLinkPages(app, { requireUser, receiveImage, removeMedia, wrap });
+  mountSounds(app, { requireUser, receiveFile, receiveImage, removeMedia, wrap });
 
   // La photo d'ingé d'un fondateur : celle des crédits, distincte de la photo du compte.
   const engineerOnly = (req) => { if (req.user.role !== 'founder') throw new HttpError(403, "Le profil d'ingé est réservé aux fondateurs."); };

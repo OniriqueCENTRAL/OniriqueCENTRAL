@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=e6b91bd1"></script>
+<script src="assets/i18n.js?v=4d45100b"></script>
 <script src="assets/annonce.js?v=1"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Compte</title>
@@ -260,6 +260,15 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
       </div>
     </div>
 
+    <!-- Réservé aux membres ONIRIQUE et aux fondateurs : leur musique en cours, rangée et partagée dans mes-sons.html -->
+    <div class="panel" id="sons-panel" hidden>
+      <div class="eyebrow">Mes sons</div>
+      <div class="between">
+        <p class="muted" style="margin:0;max-width:52ch">Ta musique en cours, rangée par projet, avec ses versions. Partage-la par un lien privé, vois qui écoute et lis les commentaires.</p>
+        <a class="btn btn-primary" href="mes-sons.html">Ouvrir Mes sons</a>
+      </div>
+    </div>
+
     <!-- Réservé aux fondateurs : ce qui s'affiche sous les crédits qu'ils ont réalisés (mix, master…), à la place du compte -->
     <div class="panel" id="inge" hidden>
       <div class="eyebrow">Profil d'ingé</div>
@@ -437,6 +446,7 @@ function show(me) {
   // Profil d'ingé : les fondateurs seulement. Sans photo d'ingé, une silhouette (jamais la photo du compte).
   $("inge").hidden = me.user.role !== "founder";
   $("liens-panel").hidden = me.user.role !== "founder";
+  $("sons-panel").hidden = !["vip", "founder"].includes(me.user.role);
   $("eng-name").value = me.user.engineerName || "";
   $("eng-avatar").src = me.user.engineerAvatar || "assets/logo-small.png";
   $("eng-remove").hidden = !me.user.engineerAvatar;
