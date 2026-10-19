@@ -21,6 +21,8 @@ const base = `http://127.0.0.1:${server.address().port}`;
 const realFetch = globalThis.fetch;
 const calls = [];
 let comments = [];
+const messaged = new Set();
+const answered = new Set();
 globalThis.fetch = async (url, options = {}) => {
   url = String(url);
   if (url.startsWith(base)) return realFetch(url, options);
@@ -31,6 +33,17 @@ globalThis.fetch = async (url, options = {}) => {
   if (url.includes('subscribed_apps')) return Response.json({ success: true });
   if (url.includes('/me/media')) return Response.json({ data: [{ id: 'M1', caption: 'Commente LIEN', media_type: 'VIDEO', thumbnail_url: 'https://cdn.test/m1.jpg', permalink: 'https://instagram.test/p/1', timestamp: '2026-10-18T10:00:00+0000' }] });
   if (url.includes('/M1/comments')) return Response.json({ data: comments });
+  // Les conversations privées : seules les personnes de « messaged » ont déjà reçu un message du compte.
+  if (url.includes('/conversations?')) {
+    const who = new URL(url).searchParams.get('user_id');
+    return Response.json({ data: messaged.has(who) ? [{ id: 'CONV' + who }] : [] });
+  }
+  if (url.includes('/CONV')) return Response.json({ messages: { data: [{ from: { id: '17841400000' }, created_time: new Date().toISOString() }] } });
+  // Les réponses déjà écrites sous un commentaire : celles de « answered » ont une réponse du compte.
+  if (url.includes('fields=replies')) {
+    const id = new URL(url).pathname.split('/').pop();
+    return Response.json({ id, replies: { data: answered.has(id) ? [{ from: { id: '17841400000' } }] : [] } });
+  }
   if (url.includes('/replies') || url.includes('/messages')) return Response.json({ id: 'R' + calls.length });
   return Response.json({}, { status: 404 });
 };
@@ -125,6 +138,20 @@ try {
   await settle();
   assert.equal(sent('/C5/replies').length, 1);
 
+  // Déjà contacté en privé (à la main) : rien ne part, ni réponse ni DM. Déjà répondu sous le commentaire : le DM seul.
+  messaged.add('U7');
+  answered.add('C8');
+  for (const [id, from] of [['C7', { id: 'U7', username: 'sept' }], ['C8', { id: 'U8', username: 'huit' }]]) {
+    const body = event(id, 'lien', from);
+    await call('POST', '/api/social/instagram/webhook', { raw: body, headers: { 'X-Hub-Signature-256': sign(body) } });
+  }
+  await settle();
+  assert.equal(sent('/C7/replies').length, 0);
+  assert.equal(sent('/C8/replies').length, 0);
+  const dms = sent('/messages').filter((c) => c.options.method === 'POST').map((c) => JSON.parse(c.options.body).recipient.comment_id);
+  assert.ok(!dms.includes('C7') && dms.includes('C8'));
+  assert.equal(get(`SELECT status, error FROM social_replies WHERE comment_id = 'C7'`).error, 'Déjà contacté en privé');
+
   // Relecture : un commentaire arrivé sans webhook reçoit sa réponse ; un commentaire d'avant l'automation, non.
   comments = [
     { id: 'C9', text: 'LIEN', timestamp: new Date(Date.now() + 5000).toISOString(), username: 'autre', from: { id: 'U9', username: 'autre' } },
@@ -133,10 +160,10 @@ try {
   await pollComments();
   assert.equal(sent('/C9/replies').length, 1);
   assert.equal(sent('/C0/replies').length, 0);
-  assert.equal(sent('/messages').length, 3);
+  assert.equal(sent('/messages').length, 4);
 
   state = await call('GET', '/api/social', { token: founder });
-  assert.equal(state.automations[0].sent, 3);
+  assert.equal(state.automations[0].sent, 4);
   assert.equal(state.automations[0].recent[0].name, 'autre');
 
   // Pause : plus rien ne part. Puis suppression, et déconnexion.

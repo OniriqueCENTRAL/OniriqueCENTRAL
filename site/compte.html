@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=7142c8ef"></script>
+<script src="assets/i18n.js?v=af9f317e"></script>
 <script src="assets/annonce.js?v=1"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Compte</title>
@@ -334,7 +334,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
         <div class="fields">
           <label class="wide">Mots déclencheurs<input id="so-keywords" maxlength="300" placeholder="LIEN, PRESET"><span class="hint">Séparés par des virgules, sans souci des majuscules ni des accents. Vide : tous les commentaires.</span></label>
           <label class="wide">Réponse sous le commentaire<textarea id="so-reply" maxlength="2000" placeholder="Je t'envoie ça en DM {pseudo} 🔥"></textarea><span class="hint">Plusieurs réponses, une par ligne : chacune est tirée au hasard, pour ne pas répéter la même. {pseudo} devient le @ de la personne.</span></label>
-          <label class="wide">Message privé (DM)<textarea id="so-dm" maxlength="1000" placeholder="Salut {pseudo} ! Voici le lien promis : https://onirique.store"></textarea><span class="hint">Envoyé une fois à chaque personne, juste après la réponse. Instagram l'accepte dans les 7 jours qui suivent le commentaire.</span></label>
+          <label class="wide">Message privé (DM)<textarea id="so-dm" maxlength="1000" placeholder="Salut {pseudo} ! Voici le lien promis : https://onirique.store"></textarea><span class="hint">Envoyé une fois à chaque personne, juste après la réponse. Instagram l'accepte dans les 7 jours qui suivent le commentaire. Une personne à qui vous avez déjà écrit en privé depuis la sortie de la publication (à la main ou non) ne reçoit rien.</span></label>
           <label class="check wide" id="so-earlier-field"><input type="checkbox" id="so-earlier">Répondre aussi aux commentaires déjà postés (7 derniers jours)</label>
         </div>
         <div class="error" id="so-form-notice" role="status"></div>
@@ -911,7 +911,7 @@ function accountCard(account) {
   return card;
 }
 
-const STATUS = { sent: "Répondu", failed: "Échec", sending: "En cours" };
+const STATUS = { sent: "Répondu", failed: "Échec", sending: "En cours", skipped: "Ignoré" };
 function automationCard(auto) {
   const card = el("div", "short auto" + (auto.active ? "" : " paused"));
   const thumb = el(auto.postUrl ? "a" : "div", "thumb");
@@ -1024,7 +1024,7 @@ $("so-form").onsubmit = async (event) => {
     } else {
       if (!draft.post) throw new Error("Choisissez la publication visée.");
       await api("POST", "/social/automations", { ...fields, earlier: $("so-earlier").checked,
-        postId: draft.post.id, postCaption: draft.post.caption, postThumb: draft.post.thumb, postUrl: draft.post.url });
+        postId: draft.post.id, postCaption: draft.post.caption, postThumb: draft.post.thumb, postUrl: draft.post.url, postAt: draft.post.at });
     }
     const edited = !!draft.editing;
     closeDraft();
