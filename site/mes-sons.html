@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=119726c5"></script>
+<script src="assets/i18n.js?v=51cc0eb8"></script>
 <script src="assets/annonce.js?v=1"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Mes sons</title>
@@ -18,6 +18,7 @@
   --f-dream: "Grenze Gotisch", Georgia, serif;
   --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
   --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --card: rgba(26,8,10,.72);
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -28,74 +29,178 @@ body {
   background-attachment: fixed;
 }
 a { color: inherit; }
+button { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
 .wrap { width: 100%; max-width: 1180px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 40px); }
 header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.6); backdrop-filter: blur(14px); }
 header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 16px; }
 .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 800 17px/1 var(--f-display); letter-spacing: .16em; }
 .brand img { width: 44px; height: auto; margin-block: -12px; filter: drop-shadow(0 0 6px rgba(226,52,68,.8)); }
-.between { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-main { padding-block: clamp(28px, 6vw, 56px) 80px; }
-h1 { font: 800 clamp(26px, 5vw, 38px)/1.1 var(--f-display); margin: 12px 0 8px; }
+main { padding-block: clamp(24px, 5vw, 48px) 160px; }
+h1 { font: 800 clamp(26px, 5vw, 38px)/1.1 var(--f-display); margin: 12px 0 6px; overflow-wrap: anywhere; }
 h1 em { font: 600 1.3em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
-h2 { font: 700 20px/1.2 var(--f-display); margin: 0; overflow-wrap: anywhere; }
 .eyebrow { font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); display: flex; align-items: center; gap: 10px; }
 .eyebrow::before { content: ""; flex: none; width: 13px; height: 13px; background: var(--mist); clip-path: polygon(50% 0, 56% 44%, 100% 50%, 56% 56%, 50% 100%, 44% 56%, 0 50%, 44% 44%); filter: drop-shadow(0 0 4px var(--ember)); }
 .muted { color: var(--haze); }
-.panel { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 18px; padding: clamp(18px, 3vw, 24px); margin-top: 16px; }
-.panel > .eyebrow { margin-bottom: 16px; }
+.error { color: #FF7A85; font-size: 14px; }
+.error:empty { display: none; }
+.panel { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 18px; padding: 24px; margin-top: 16px; }
+.gate { text-align: center; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 18px; border-radius: 999px; border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
 .btn-primary { background: var(--mist); color: var(--night); box-shadow: 0 10px 40px -10px rgba(226,52,68,.6); }
 .btn-ghost { background: rgba(255,255,255,.03); color: var(--mist); border-color: var(--line); }
 .btn-ghost:hover { border-color: var(--ember); }
 .btn:disabled { opacity: .5; cursor: default; }
-.small { padding: 8px 12px; font-size: 13px; }
-label { display: grid; gap: 7px; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
-input, textarea, select { min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px var(--f-body); letter-spacing: 0; text-transform: none; min-width: 0; }
-label.check { display: flex; align-items: center; gap: 10px; font: 400 14px/1.4 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--mist); }
-label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-color: var(--ember); }
-.error { color: #FF7A85; font-size: 14px; }
-.notice { color: var(--bone); font-size: 14px; }
-.error:empty, .notice:empty { display: none; }
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 12px; align-items: end; }
-.gate { text-align: center; }
-.icon-btn { width: 34px; height: 34px; flex: none; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line); background: none; color: var(--mist); cursor: pointer; font-size: 13px; }
-.icon-btn:hover:not(:disabled) { border-color: var(--ember); }
-.icon-btn:disabled { opacity: .3; cursor: default; }
+.round { width: 44px; height: 44px; flex: none; display: grid; place-items: center; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); cursor: pointer; }
+.round:hover { border-color: var(--ember); }
+.round.white { background: var(--mist); color: var(--night); border-color: var(--mist); border-radius: 50%; width: 52px; height: 52px; box-shadow: 0 10px 40px -10px rgba(226,52,68,.7); }
+input, select, textarea { min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px var(--f-body); min-width: 0; }
+textarea { padding: 12px 14px; min-height: 110px; resize: vertical; line-height: 1.5; }
+.cover-ph { background: radial-gradient(80% 80% at 30% 20%, rgba(226,52,68,.5), transparent 60%), linear-gradient(135deg, var(--blood), var(--deep-2)); display: grid; place-items: center; color: rgba(255,236,238,.55); }
 
-/* Les projets à gauche, le projet ouvert à droite ; l'un sous l'autre sur un petit écran. */
-.space { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 24px; align-items: start; margin-top: 8px; }
-@media (max-width: 900px) { .space { grid-template-columns: minmax(0, 1fr); } }
-.quota { height: 6px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; margin-top: 10px; }
-.quota i { display: block; height: 100%; background: var(--ember); }
-.projects { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.projects button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 14px; border: 1px solid var(--line); background: rgba(0,0,0,.3); color: var(--mist); font: 600 15px var(--f-body); text-align: left; cursor: pointer; }
-.projects button[aria-current="true"] { border-color: var(--ember); background: rgba(226,52,68,.12); }
-.projects small { display: block; color: var(--haze); font-weight: 400; font-size: 12px; }
-.cover { flex: none; width: 48px; height: 48px; border-radius: 10px; object-fit: cover; background: linear-gradient(135deg, var(--blood), var(--deep-2)); border: 1px solid var(--line); }
-.cover.big { width: 120px; height: 120px; border-radius: 16px; cursor: pointer; }
-.head { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; }
-.head > div { flex: 1 1 240px; min-width: 0; display: grid; gap: 10px; }
-.drop { margin-top: 16px; padding: 22px; border: 1.5px dashed var(--line); border-radius: 16px; text-align: center; color: var(--haze); }
-.drop.over { border-color: var(--ember); background: rgba(226,52,68,.08); }
-.tracks { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 10px; }
-.track { border: 1px solid var(--line); border-radius: 14px; background: rgba(0,0,0,.3); padding: 10px 12px; }
-.track.playing { border-color: var(--ember); }
-.track-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.track-top .name { flex: 1; min-width: 0; }
-.track-top .name b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.track-top .name small { color: var(--haze); font-size: 12px; }
-.play { width: 38px; height: 38px; flex: none; border-radius: 50%; border: 0; background: var(--mist); color: var(--night); cursor: pointer; }
-.versions { list-style: none; margin: 10px 0 0; padding: 10px 0 0; border-top: 1px solid var(--line); display: grid; gap: 6px; font-size: 14px; }
-.versions li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.versions .tag { font: 600 11px var(--f-mono); padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); }
-.versions .tag.on { background: var(--ember); border-color: var(--ember); }
-.versions .note { flex: 1 1 160px; min-height: 34px; font-size: 14px; padding: 0 10px; }
-.progress { font: 500 12px var(--f-mono); color: var(--haze); }
-.links { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 8px; }
-.links li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; font-size: 14px; }
-.links li > span { flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; }
+/* La grille des projets */
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px; }
+.quota { min-width: 200px; font: 500 12px var(--f-mono); color: var(--haze); }
+.quota i { display: block; height: 4px; margin-top: 8px; border-radius: 2px; background: rgba(255,255,255,.08); overflow: hidden; }
+.quota i b { display: block; height: 100%; background: var(--ember); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)); gap: 28px 22px; margin-top: 32px; }
+.tile { min-width: 0; }
+.tile .art { position: relative; aspect-ratio: 1; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); cursor: pointer; display: block; width: 100%; padding: 0; background: none; }
+.tile .art img, .tile .art .cover-ph { width: 100%; height: 100%; object-fit: cover; transition: transform .4s; }
+.tile .art:hover img { transform: scale(1.04); }
+.tile .art .cover-ph svg { width: 38%; height: 38%; }
+.tile .fab-play { position: absolute; right: 10px; bottom: 10px; width: 42px; height: 42px; border-radius: 50%; border: 0; display: grid; place-items: center; background: rgba(13,8,9,.82); color: var(--mist); backdrop-filter: blur(6px); cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,.5); }
+.tile .fab-play:hover { background: var(--ember); }
+.tile .caption { display: flex; gap: 6px; align-items: flex-start; margin-top: 10px; }
+.tile .caption div { flex: 1; min-width: 0; line-height: 1.3; }
+.tile .caption b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font: 700 14px var(--f-body); }
+.tile .caption span { color: var(--haze); font-size: 13px; }
+.dots { flex: none; width: 30px; height: 26px; display: grid; place-items: center; border: 0; border-radius: 8px; background: none; color: var(--haze); cursor: pointer; }
+.dots:hover { color: var(--mist); background: rgba(255,255,255,.06); }
+.empty { text-align: center; padding: 60px 20px; }
+.empty .star { width: 40px; height: 40px; margin: 0 auto 14px; color: var(--mist); filter: drop-shadow(0 0 10px var(--ember)); }
+
+/* Un projet ouvert */
+.crumb { display: flex; align-items: center; gap: 12px; }
+.crumb small { display: block; color: var(--haze); font: 500 12px var(--f-mono); letter-spacing: .1em; }
+.album { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: clamp(24px, 4vw, 48px); margin-top: 28px; align-items: start; }
+@media (max-width: 820px) { .album { grid-template-columns: minmax(0, 1fr); } .album .art { max-width: 340px; } }
+.album .art { position: relative; aspect-ratio: 1; border-radius: 20px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 30px 80px -30px rgba(226,52,68,.45); cursor: pointer; padding: 0; background: none; width: 100%; }
+.album .art img, .album .art .cover-ph { width: 100%; height: 100%; object-fit: cover; }
+.album .art .cover-ph svg { width: 30%; height: 30%; }
+.album .art .change { position: absolute; inset: auto 12px 12px auto; padding: 7px 12px; border-radius: 999px; background: rgba(13,8,9,.8); font: 600 12px var(--f-body); opacity: 0; transition: opacity .2s; }
+.album .art:hover .change, .album .art:focus-visible .change { opacity: 1; }
+.album-head { display: flex; gap: 14px; align-items: flex-start; }
+.album-head > div { flex: 1; min-width: 0; }
+.album-head h1 { margin: 0 0 4px; cursor: text; }
+.album-meta { color: var(--haze); font-size: 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.album-meta img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
+.add-bar { width: 100%; margin-top: 22px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 13px; border-radius: 14px; border: 1px dashed var(--line); background: rgba(255,255,255,.03); color: var(--mist); font: 600 14px var(--f-body); cursor: pointer; }
+.add-bar:hover { border-color: var(--ember); background: rgba(226,52,68,.08); }
+.progress { font: 500 12px var(--f-mono); color: var(--haze); margin-top: 10px; }
+.progress:empty { display: none; }
+.tracklist { list-style: none; margin: 14px 0 0; padding: 0; }
+.trk { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 10px 8px 10px 4px; border-radius: 12px; cursor: pointer; }
+.trk:hover { background: rgba(255,255,255,.04); }
+.trk.now { background: rgba(226,52,68,.1); }
+.trk .num { text-align: center; font: 500 13px var(--f-mono); color: var(--haze); }
+.trk.now .num { color: var(--ember); }
+.trk b { display: block; font: 700 15px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trk.now b { color: var(--bone); }
+.trk small { color: var(--haze); font-size: 12px; }
+.trk .len { font: 500 12px var(--f-mono); color: var(--haze); }
+.trk.dragging { opacity: .35; }
+.trk.drop-before { box-shadow: 0 -2px 0 var(--ember); }
+.trk.drop-after { box-shadow: 0 2px 0 var(--ember); }
+.drop-zone { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(13,8,9,.82); border: 2px dashed var(--ember); font: 700 20px var(--f-display); pointer-events: none; }
+
+/* Le bouton + et son menu */
+.fab { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 35; display: inline-flex; align-items: center; gap: 8px; padding: 14px 26px; border-radius: 999px; border: 1px solid rgba(255,210,214,.18); background: rgba(26,8,10,.92); backdrop-filter: blur(14px); color: var(--mist); font: 700 15px var(--f-body); cursor: pointer; box-shadow: 0 16px 50px -14px rgba(0,0,0,.9), 0 0 36px -16px rgba(226,52,68,.7); }
+.fab:hover { border-color: var(--ember); }
+body.has-player .fab { bottom: calc(88px + env(safe-area-inset-bottom)); }
+.menu { position: fixed; z-index: 70; min-width: 220px; padding: 6px; border-radius: 16px; border: 1px solid rgba(255,210,214,.16); background: rgba(26,8,10,.97); backdrop-filter: blur(16px); box-shadow: 0 20px 60px -20px rgba(0,0,0,.95); }
+.menu button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 11px 12px; border: 0; border-radius: 10px; background: none; color: var(--mist); font: 600 14px var(--f-body); text-align: left; cursor: pointer; }
+.menu button:hover, .menu button:focus-visible { background: rgba(255,255,255,.06); }
+.menu button.danger { color: #FF5A68; }
+.menu hr { border: 0; border-top: 1px solid var(--line); margin: 4px 6px; }
+
+/* Les fenêtres */
+dialog { padding: 0; border: 1px solid rgba(255,210,214,.16); border-radius: 24px; background: #150a0c; color: var(--mist); box-shadow: 0 40px 120px -30px rgba(0,0,0,1), 0 0 60px -30px rgba(226,52,68,.6); max-width: calc(100vw - 24px); max-height: calc(100dvh - 24px); }
+dialog::backdrop { background: rgba(5,2,3,.72); backdrop-filter: blur(4px); }
+.dlg-head { display: flex; align-items: center; gap: 12px; padding: 18px 18px 0; }
+.dlg-head img, .dlg-head .cover-ph { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; flex: none; }
+.dlg-head b { flex: 1; min-width: 0; font: 700 17px var(--f-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.x { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 10px; border: 0; background: rgba(255,255,255,.06); color: var(--mist); cursor: pointer; }
+.x:hover { background: rgba(255,255,255,.12); }
+.group { margin: 0; padding: 0; list-style: none; border-radius: 16px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,210,214,.07); overflow: hidden; }
+.group > li + li { border-top: 1px solid rgba(255,210,214,.07); }
+.item { width: 100%; display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 0; background: none; color: var(--mist); font: 600 15px var(--f-body); text-align: left; cursor: pointer; }
+button.item:hover { background: rgba(255,255,255,.04); }
+.item .op-icon { color: var(--haze); }
+.item .grow { flex: 1; min-width: 0; }
+.item .grow small { display: block; color: var(--haze); font: 400 12.5px var(--f-body); }
+.item .state { color: var(--haze); font: 500 13px var(--f-body); }
+.item.danger, .item.danger .op-icon { color: #FF5A68; }
+.item.off { opacity: .45; cursor: default; }
+.stack { display: grid; gap: 12px; }
+.sub-title { font: 700 15px var(--f-display); margin: 6px 2px 0; }
+/* Interrupteur */
+.switch { position: relative; flex: none; width: 46px; height: 28px; }
+.switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; min-height: 0; }
+.switch span { position: absolute; inset: 0; border-radius: 999px; background: rgba(255,255,255,.12); transition: background .2s; pointer-events: none; }
+.switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--mist); transition: transform .2s; }
+.switch input:checked + span { background: var(--ember); }
+.switch input:checked + span::after { transform: translateX(18px); }
+.switch input:focus-visible + span { outline: 2px solid var(--ember); outline-offset: 2px; }
+
+/* Détails d'un titre */
+#details { width: 900px; }
+.details { display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: 520px; }
+.details-left { padding: 18px; border-right: 1px solid rgba(255,210,214,.08); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; }
+.details-left .x { align-self: flex-start; }
+.details-left h2 { font: 800 20px/1.2 var(--f-display); margin: 18px 0 0; overflow-wrap: anywhere; }
+.details-left .facts { font: 500 12px var(--f-mono); color: var(--haze); }
+.details-left canvas { width: 100%; height: 64px; margin: 14px 0 4px; }
+.details-left .file { font: 500 12px var(--f-mono); color: var(--haze); overflow-wrap: anywhere; }
+.details-right { padding: 18px; display: flex; flex-direction: column; gap: 12px; overflow: auto; max-height: calc(100dvh - 40px); }
+.details-right > * { flex: none; }
+.details-right h3 { display: flex; align-items: center; gap: 10px; font: 800 22px var(--f-display); margin: 4px 2px 8px; }
+@media (max-width: 760px) {
+  .details { grid-template-columns: minmax(0, 1fr); }
+  .details-left { border-right: 0; border-bottom: 1px solid rgba(255,210,214,.08); }
+}
+.versions li { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 14px; }
+.tag { font: 600 11px var(--f-mono); padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); }
+.tag.on { background: var(--ember); border-color: var(--ember); }
+.mini-btn { padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: none; color: var(--mist); font: 600 12px var(--f-body); cursor: pointer; }
+.mini-btn:hover { border-color: var(--ember); }
+.stat { display: flex; gap: 12px; }
+.stat div { flex: 1; padding: 14px 16px; border-radius: 16px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,210,214,.07); }
+.stat b { display: block; font: 800 26px var(--f-display); }
+.stat span { color: var(--haze); font-size: 13px; }
+.people li { display: flex; align-items: center; gap: 12px; padding: 10px 14px; }
+.people img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+.comment-row { display: flex; align-items: baseline; gap: 10px; padding: 12px 14px; }
+.comment-row .at { font: 600 12px var(--f-mono); color: var(--ember); background: none; border: 0; padding: 0; cursor: pointer; }
+.comment-row p { margin: 0; flex: 1; }
+
+/* Partage */
+#share { width: 480px; }
+.share-body { padding: 18px; display: grid; gap: 14px; }
+.faces { display: flex; }
+.faces img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid #150a0c; margin-left: -8px; }
+.share-foot { display: grid; grid-template-columns: 1fr; gap: 10px; padding: 14px 18px 18px; border-top: 1px solid rgba(255,210,214,.08); }
+.share-foot .btn { padding: 15px; font-size: 15px; }
+.inline { display: flex; gap: 8px; padding: 0 16px 14px; }
+.inline input { flex: 1; min-height: 40px; }
+.visibility { position: relative; }
+.visibility select { width: 100%; min-height: 56px; padding-left: 50px; appearance: none; font-weight: 700; cursor: pointer; border-radius: 16px; }
+.visibility .op-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.visibility::after { content: ""; position: absolute; right: 18px; top: 50%; width: 8px; height: 8px; border: solid var(--haze); border-width: 0 2px 2px 0; transform: translateY(-70%) rotate(45deg); pointer-events: none; }
+#ask { width: 420px; }
+#ask form { padding: 20px; display: grid; gap: 14px; }
+#ask b { font: 700 17px var(--f-display); }
 </style>
 
 <header>
@@ -106,88 +211,80 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-
 </header>
 
 <main class="wrap">
-  <div class="eyebrow">Membres ONIRIQUE</div>
-  <h1>Mes <em>sons</em></h1>
-  <p class="muted" style="max-width:68ch;margin:0">Ta musique en cours, rangée par projet. Chaque titre garde ses versions successives. Partage-les par un lien privé (avec mot de passe si tu veux), vois qui écoute et lis les commentaires laissés à un moment précis du titre.</p>
-
   <div class="panel gate" id="gate" hidden></div>
 
-  <div class="space" id="space" hidden>
-    <aside>
-      <section class="panel">
-        <div class="eyebrow">Mon espace</div>
-        <div id="quota-text" class="muted" style="font-size:14px"></div>
-        <div class="quota"><i id="quota-bar"></i></div>
-        <p class="error" id="disk-full" style="margin:10px 0 0"></p>
-      </section>
-      <section class="panel">
-        <div class="eyebrow">Projets</div>
-        <ul class="projects" id="projects"></ul>
-        <form id="new-project" class="row" style="margin-top:12px">
-          <input id="new-title" placeholder="Nouveau projet" maxlength="120" aria-label="Nom du nouveau projet" style="flex:1">
-          <button class="btn btn-ghost small" type="submit">Créer</button>
-        </form>
-      </section>
-    </aside>
-
-    <div>
-      <section class="panel" id="empty" hidden><p class="muted" style="margin:0">Crée ton premier projet (un album, un EP, une session…) pour y déposer tes sons.</p></section>
-      <section class="panel" id="project" hidden>
-        <div class="head">
-          <img class="cover big" id="cover" alt="Pochette du projet : cliquer pour la changer" tabindex="0">
-          <div>
-            <label>Nom du projet<input id="project-title" maxlength="120"></label>
-            <div class="row">
-              <button class="btn btn-ghost small" id="share-project" type="button">Partager le projet</button>
-              <button class="btn btn-ghost small" id="delete-project" type="button">Supprimer le projet</button>
-            </div>
-          </div>
-        </div>
-        <input type="file" id="cover-file" accept="image/png,image/jpeg,image/webp" hidden>
-        <div class="drop" id="drop">
-          <p style="margin:0 0 10px">Glisse tes fichiers ici (WAV, AIFF, FLAC, MP3, OGG, M4A ; 500 Mo au plus chacun)</p>
-          <button class="btn btn-primary small" id="add" type="button">Ajouter des sons</button>
-          <input type="file" id="files" accept="audio/*,.wav,.aif,.aiff,.flac,.mp3,.ogg,.m4a" multiple hidden>
-          <div class="progress" id="progress" role="status" style="margin-top:8px"></div>
-        </div>
-        <p class="error" id="error" role="alert"></p>
-        <ul class="tracks" id="tracks"></ul>
-      </section>
-
-      <section class="panel" id="share" hidden>
-        <div class="eyebrow">Liens d'écoute</div>
-        <form id="link-form">
-          <p style="margin:0 0 12px">Nouveau lien pour <b id="share-what"></b></p>
-          <div class="grid">
-            <label>Pour qui (facultatif)<input id="link-label" maxlength="80" placeholder="Label, ami, ingé…"></label>
-            <label>Mot de passe (facultatif)<input id="link-password" type="text" autocomplete="off" minlength="4"></label>
-            <label>Valable jusqu'au (facultatif)<input id="link-expires" type="date"></label>
-          </div>
-          <div class="between" style="margin-top:12px">
-            <label class="check"><input id="link-download" type="checkbox"><span>Autoriser le téléchargement du fichier original</span></label>
-            <button class="btn btn-primary small" type="submit">Créer le lien</button>
-          </div>
-          <p class="notice" id="link-notice" role="status"></p>
-        </form>
-        <ul class="links" id="links"></ul>
-      </section>
+  <section id="grid-view" hidden>
+    <div class="top">
+      <div>
+        <div class="eyebrow">Membres ONIRIQUE</div>
+        <h1>Mes <em>sons</em></h1>
+        <div class="muted" id="owner-name"></div>
+      </div>
+      <div class="quota" id="quota"></div>
     </div>
-  </div>
+    <p class="error" id="disk-full"></p>
+    <div class="tiles" id="tiles"></div>
+    <div class="empty" id="empty" hidden>
+      <div class="star" id="empty-star"></div>
+      <p style="margin:0 0 6px;font:700 18px var(--f-display)">Ta musique en cours, à l'abri</p>
+      <p class="muted" style="margin:0 auto;max-width:46ch">Crée un projet (un album, un EP, une session…), dépose tes sons, garde chaque version et fais-les écouter par un lien privé.</p>
+    </div>
+  </section>
+
+  <section id="project-view" hidden>
+    <div class="crumb">
+      <button class="round" id="back" type="button" aria-label="Retour aux projets"></button>
+      <div><b style="font:700 15px var(--f-display)">Projets</b><small id="crumb-owner"></small></div>
+    </div>
+    <div class="album">
+      <button class="art" id="cover" type="button" aria-label="Changer la pochette"><span class="change">Changer la pochette</span></button>
+      <div>
+        <div class="album-head">
+          <div>
+            <h1 id="project-title" title="Renommer"></h1>
+            <div class="album-meta" id="project-meta"></div>
+          </div>
+          <button class="round white" id="play-all" type="button" aria-label="Écouter le projet"></button>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <button class="round" id="share-project" type="button" aria-label="Partager le projet" title="Partager le projet"></button>
+          <button class="round" id="project-more" type="button" aria-label="Plus d'options" title="Plus d'options"></button>
+        </div>
+        <button class="add-bar" id="add-tracks" type="button"></button>
+        <div class="progress" id="progress" role="status"></div>
+        <p class="error" id="error" role="alert"></p>
+        <ol class="tracklist" id="tracklist"></ol>
+      </div>
+    </div>
+  </section>
 </main>
 
-<script src="assets/sounds-player.js?v=1"></script>
+<button class="fab" id="fab" type="button" hidden></button>
+<input type="file" id="files" accept="audio/*,.wav,.aif,.aiff,.flac,.mp3,.ogg,.m4a" multiple hidden>
+<input type="file" id="cover-file" accept="image/png,image/jpeg,image/webp" hidden>
+<div class="drop-zone" id="drop-zone" hidden>Dépose tes sons ici</div>
+
+<dialog id="details"></dialog>
+<dialog id="share"></dialog>
+<dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" value="cancel" formnovalidate>Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
+
+<script src="assets/sounds-player.js?v=2"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const TOKEN = "onirique.token";
 const token = sessionStorage.getItem(TOKEN) || localStorage.getItem(TOKEN);
-const OP = window.OniriquePlayer;
+const OP = window.OniriquePlayer, icon = OP.icon;
 const el = (tag, props = {}, ...children) => {
   const node = Object.assign(document.createElement(tag), props);
-  node.append(...children.filter((c) => c !== null && c !== undefined));
+  node.append(...children.filter((c) => c !== null && c !== undefined && c !== false));
   return node;
 };
 const size = (n) => (!n ? "0 Mo" : n >= 1024 ** 3 ? (n / 1024 ** 3).toFixed(2).replace(".", ",") + " Go" : Math.max(0.1, n / 1024 ** 2).toFixed(1).replace(".", ",") + " Mo");
-const day = (ms) => new Date(ms).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+const day = (ms) => new Date(ms).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+const longDay = (ms) => new Date(ms).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+const length = (s) => { s = Math.round(s || 0); return s >= 60 ? Math.floor(s / 60) + " min " + String(s % 60).padStart(2, "0") + " s" : s + " s"; };
+const avatar = (p) => (window.OniriqueAccount ? window.OniriqueAccount.avatar(p) : p.avatar || "assets/favicon.png");
+const coverOf = (p, cls) => (p.cover ? el("img", { src: p.cover, alt: "", className: cls || "" }) : Object.assign(el("div", { className: "cover-ph " + (cls || "") }), { innerHTML: '<svg viewBox="0 0 24 24"><path d="M12 1.5 13.3 10.7 22.5 12 13.3 13.3 12 22.5 10.7 13.3 1.5 12 10.7 10.7Z" fill="currentColor"/></svg>' }));
 
 async function api(method, path, body) {
   const response = await fetch("/api" + path, {
@@ -217,100 +314,183 @@ function upload(path, file, onProgress) {
   });
 }
 
-let data = null, openId = null, shareTarget = null;
-const player = OP.create({ onDelete: (t, c) => api("DELETE", "/me/sounds/comments/" + c.id).then(() => refresh()) });
-const fail = (error) => { $("error").textContent = error.message; };
-const current = () => data.projects.find((p) => p.id === openId);
+let data = null;
+const fail = (error) => { $("error").textContent = error.message; if ($("grid-view").hidden === false) alert(error.message); };
+const openId = () => { const m = /^#\/p\/(\d+)/.exec(location.hash); return m ? Number(m[1]) : null; };
+const project = (id = openId()) => data.projects.find((p) => p.id === id);
+const findTrack = (tid) => { for (const p of data.projects) { const t = p.tracks.find((x) => x.id === tid); if (t) return { p, t }; } return {}; };
+const live = (t) => t.versions.find((v) => v.id === t.currentId) || t.versions.at(-1);
+const linkFor = (kind, id) => data.links.find((l) => (kind === "project" ? l.projectId === id : l.trackId === id));
+const projectLength = (p) => p.tracks.reduce((s, t) => s + (live(t).duration || 0), 0);
 
-async function refresh() {
-  data = await api("GET", "/me/sounds");
-  if (!data.projects.some((p) => p.id === openId)) openId = data.projects[0]?.id ?? null;
-  draw();
+// ——— Le lecteur ———
+const itemOf = (p, t) => {
+  const v = live(t);
+  return { key: "v" + v.id, id: v.id, trackId: t.id, title: t.title, subtitle: p.title + " · v" + v.n, cover: p.cover, url: v.url,
+    downloadUrl: v.downloadUrl, duration: v.duration, peaks: v.peaks, comments: t.comments };
+};
+const player = OP.create({
+  onDelete: (item, c) => api("DELETE", "/me/sounds/comments/" + c.id).then(refresh),
+  onChange: () => { document.body.classList.add("has-player"); markPlaying(); },
+});
+function playProject(p, i = 0) {
+  if (!p.tracks.length) return;
+  player.play(p.tracks.map((t) => itemOf(p, t)), i);
 }
-
-function playTrack(t, v, project) {
-  player.load({ id: v.id, title: t.title, subtitle: project.title + " · version " + v.n, url: v.url, downloadUrl: v.downloadUrl,
-    duration: v.duration, peaks: v.peaks, comments: t.comments }, true);
-  // Un fichier dont la durée n'a pas pu être lue à l'envoi la reçoit à sa première écoute.
+function playVersion(p, t, v) {
+  player.play([{ key: "v" + v.id, id: v.id, trackId: t.id, title: t.title, subtitle: p.title + " · v" + v.n, cover: p.cover, url: v.url,
+    downloadUrl: v.downloadUrl, duration: v.duration, peaks: v.peaks, comments: t.comments }], 0);
+  // Une durée qui n'a pas pu être lue à l'envoi est enregistrée à la première écoute.
   if (!v.duration) player.audio.addEventListener("loadedmetadata", () => {
     if (Number.isFinite(player.audio.duration)) api("PATCH", "/me/sounds/versions/" + v.id, { duration: player.audio.duration }).catch(() => {});
   }, { once: true });
-  draw();
+}
+function markPlaying() {
+  const now = player.item && player.item.trackId;
+  document.querySelectorAll(".trk").forEach((row) => row.classList.toggle("now", Number(row.dataset.id) === now));
 }
 
-function draw() {
-  const q = data.quota;
-  $("quota-text").textContent = size(q.used) + " utilisés sur " + size(q.limit);
-  $("quota-bar").style.width = Math.min(100, q.used / q.limit * 100) + "%";
-  $("disk-full").textContent = q.full ? "L'espace de stockage d'ONIRIQUE est plein pour le moment : les envois sont fermés. Tes sons restent écoutables." : "";
-  $("projects").replaceChildren(...data.projects.map((p) => el("li", {}, el("button", {
-    type: "button", ariaCurrent: String(p.id === openId), onclick: () => { openId = p.id; shareTarget = null; draw(); },
-  }, p.cover ? el("img", { className: "cover", src: p.cover, alt: "" }) : el("span", { className: "cover" }),
-  el("span", {}, p.title, el("small", { textContent: p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre") }))))));
+// ——— Menus et petites fenêtres ———
+let openMenu = null;
+function menu(anchor, items) {
+  closeMenu();
+  const m = el("div", { className: "menu", role: "menu" }, ...items.filter(Boolean).map((it) => it === "-" ? el("hr") : el("button", {
+    type: "button", role: "menuitem", className: it.danger ? "danger" : "", onclick: () => { closeMenu(); it.onclick(); },
+  }, it.icon ? icon(it.icon) : null, it.label)));
+  document.body.append(m);
+  const r = anchor.getBoundingClientRect(), w = m.offsetWidth, h = m.offsetHeight;
+  const up = r.bottom + h + 8 > innerHeight;
+  m.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + "px";
+  m.style.top = (up ? r.top - h - 8 : r.bottom + 8) + "px";
+  openMenu = m;
+  m.querySelector("button")?.focus();
+}
+function closeMenu() { if (openMenu) { openMenu.remove(); openMenu = null; } }
+document.addEventListener("pointerdown", (event) => { if (openMenu && !openMenu.contains(event.target)) closeMenu(); }, true);
+document.addEventListener("keydown", (event) => { if (event.key === "Escape") closeMenu(); });
+function ask(title, value = "") {
+  return new Promise((resolve) => {
+    $("ask-title").textContent = title;
+    $("ask-input").value = value;
+    $("ask").returnValue = "";
+    $("ask").showModal();
+    $("ask-input").select();
+    $("ask").onclose = () => resolve($("ask").returnValue === "ok" && $("ask-input").value.trim() ? $("ask-input").value.trim() : null);
+  });
+}
+const lightClose = (dialog) => dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); });
+lightClose($("details")); lightClose($("share")); lightClose($("ask"));
 
-  const p = current();
-  $("empty").hidden = !!p;
-  $("project").hidden = !p;
-  if (!p) { $("share").hidden = true; return; }
-  if (document.activeElement !== $("project-title")) $("project-title").value = p.title;
-  $("cover").src = p.cover || "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><rect width="1" height="1" fill="#2A0A0E"/></svg>');
-  $("add").disabled = q.full;
-  $("tracks").replaceChildren(...p.tracks.map((t, i) => trackRow(p, t, i)));
-  drawShare(p);
+// ——— Données et vues ———
+async function refresh() {
+  data = await api("GET", "/me/sounds");
+  render();
+}
+function render() {
+  const p = openId() && project();
+  if (openId() && !p) { location.hash = ""; return; }
+  $("grid-view").hidden = !!p;
+  $("project-view").hidden = !p;
+  $("fab").hidden = false;
+  p ? renderProject(p) : renderGrid();
+  if ($("details").open) renderDetails();
+  if ($("share").open) renderShare();
+  markPlaying();
+}
+addEventListener("hashchange", () => { closeMenu(); render(); scrollTo(0, 0); });
+
+function renderGrid() {
+  const q = data.quota;
+  $("owner-name").textContent = data.owner.name;
+  $("quota").replaceChildren(size(q.used) + " sur " + size(q.limit), el("i", {}, el("b", { style: "width:" + Math.min(100, q.used / q.limit * 100) + "%" })));
+  $("disk-full").textContent = q.full ? "L'espace de stockage d'ONIRIQUE est plein pour le moment : les envois sont fermés. Tes sons restent écoutables." : "";
+  $("empty").hidden = data.projects.length > 0;
+  $("tiles").replaceChildren(...data.projects.map((p) => {
+    const more = el("button", { className: "dots", type: "button", ariaLabel: "Options de " + p.title }, icon("more"));
+    more.onclick = () => projectMenu(more, p);
+    const playBtn = el("button", { className: "fab-play", type: "button", ariaLabel: "Écouter " + p.title, hidden: !p.tracks.length }, icon("play"));
+    playBtn.onclick = (event) => { event.stopPropagation(); playProject(p); };
+    const art = el("div", { className: "art", role: "link", tabIndex: 0, ariaLabel: "Ouvrir " + p.title }, coverOf(p), playBtn);
+    art.onclick = () => { location.hash = "#/p/" + p.id; };
+    art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
+    return el("div", { className: "tile" }, art,
+      el("div", { className: "caption" }, el("div", {}, el("b", { textContent: p.title }),
+        el("span", { textContent: p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre") + (linkFor("project", p.id) ? " · partagé" : "") })), more));
+  }));
+}
+
+function projectMenu(anchor, p) {
+  menu(anchor, [
+    { label: "Ouvrir", icon: "chevron", onclick: () => { location.hash = "#/p/" + p.id; } },
+    p.tracks.length && { label: "Écouter", icon: "play", onclick: () => playProject(p) },
+    p.tracks.length && { label: "Ajouter à la file", icon: "queue", onclick: () => p.tracks.forEach((t) => player.enqueue(itemOf(p, t))) },
+    { label: "Partager", icon: "link", onclick: () => openShare("project", p.id) },
+    "-",
+    { label: "Renommer", icon: "more", onclick: async () => {
+      const title = await ask("Nom du projet", p.title);
+      if (title) api("PATCH", "/me/sounds/projects/" + p.id, { title }).then(refresh, fail);
+    } },
+    { label: "Changer la pochette", icon: "star", onclick: () => pickCover(p) },
+    "-",
+    { label: "Supprimer le projet", icon: "close", danger: true, onclick: () =>
+      confirm("Supprimer « " + p.title + " », tous ses titres et leurs liens d'écoute ?") && api("DELETE", "/me/sounds/projects/" + p.id).then(() => { location.hash = ""; return refresh(); }).catch(fail) },
+  ]);
+}
+
+function renderProject(p) {
+  $("crumb-owner").textContent = data.owner.name;
+  $("cover").replaceChildren(coverOf(p), el("span", { className: "change", textContent: "Changer la pochette" }));
+  $("project-title").textContent = p.title;
+  $("project-meta").replaceChildren(el("img", { src: avatar(data.owner), alt: "" }),
+    data.owner.name + " · " + p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre") + (p.tracks.length ? " · " + length(projectLength(p)) : ""),
+    linkFor("project", p.id) ? el("span", { className: "tag on", textContent: "Partagé" }) : "");
+  $("play-all").disabled = !p.tracks.length;
+  $("add-tracks").disabled = data.quota.full;
+  $("tracklist").replaceChildren(...p.tracks.map((t, i) => trackRow(p, t, i)));
 }
 
 function trackRow(p, t, i) {
-  const live = t.versions.find((v) => v.id === t.currentId) || t.versions.at(-1);
-  const playing = player.track && t.versions.some((v) => v.id === player.track.id);
-  const versions = el("ul", { className: "versions", hidden: true }, ...t.versions.slice().reverse().map((v) => {
-    const note = el("input", { className: "note", value: v.note, placeholder: "Note de version (mix 2, master…)", maxLength: 300, ariaLabel: "Note de la version " + v.n });
-    note.onchange = () => api("PATCH", "/me/sounds/versions/" + v.id, { note: note.value }).catch(fail);
-    return el("li", {},
-      el("button", { className: "icon-btn", type: "button", textContent: "▶", ariaLabel: "Écouter la version " + v.n, onclick: () => playTrack(t, v, p) }),
-      el("span", { className: "tag" + (v.id === t.currentId ? " on" : ""), textContent: "v" + v.n }),
-      el("span", { className: "muted", textContent: day(v.createdAt) + " · " + size(v.size) }),
-      note,
-      v.id === t.currentId ? null : el("button", { className: "btn btn-ghost small", type: "button", textContent: "Mettre en avant",
-        title: "C'est cette version que les liens d'écoute feront entendre",
-        onclick: () => api("PATCH", "/me/sounds/tracks/" + t.id, { currentId: v.id }).then(refresh, fail) }),
-      t.versions.length > 1 ? el("button", { className: "icon-btn", type: "button", textContent: "✕", ariaLabel: "Supprimer la version " + v.n,
-        onclick: () => confirm("Supprimer la version " + v.n + " de « " + t.title + " » ?") && api("DELETE", "/me/sounds/versions/" + v.id).then(refresh, fail) }) : null);
-  }));
-  const file = el("input", { type: "file", accept: "audio/*,.wav,.aif,.aiff,.flac,.mp3,.ogg,.m4a", hidden: true });
-  file.onchange = () => file.files[0] && sendFiles([file.files[0]], t);
-  const name = el("b", { textContent: t.title });
-  const move = (delta) => {
-    const order = p.tracks.map((x) => x.id);
-    order.splice(i + delta, 0, order.splice(i, 1)[0]);
+  const v = live(t);
+  const more = el("button", { className: "dots", type: "button", ariaLabel: "Options de " + t.title }, icon("more"));
+  more.onclick = (event) => { event.stopPropagation(); openDetails(t.id); };
+  const row = el("li", { className: "trk", draggable: true, tabIndex: 0, title: "Écouter (glisser pour réordonner)" },
+    el("span", { className: "num", textContent: String(i + 1) }),
+    el("div", {}, el("b", { textContent: t.title }), el("small", { textContent: [day(v.createdAt), "v" + v.n + (t.versions.length > 1 ? " sur " + t.versions.length : ""),
+      t.comments.length ? t.comments.length + " commentaire" + (t.comments.length > 1 ? "s" : "") : null,
+      t.plays ? t.plays + " écoute" + (t.plays > 1 ? "s" : "") : null].filter(Boolean).join(" · ") })),
+    el("span", { className: "len", textContent: v.duration ? OP.time(v.duration) : "" }), more);
+  row.dataset.id = t.id;
+  row.onclick = () => playProject(p, i);
+  row.onkeydown = (event) => { if (event.key === "Enter") row.onclick(); };
+  // Réordonner en glissant les titres.
+  row.ondragstart = (event) => { if (event.dataTransfer.types.includes("Files")) return; event.dataTransfer.setData("text/x-track", String(t.id)); row.classList.add("dragging"); };
+  row.ondragend = () => row.classList.remove("dragging");
+  row.ondragover = (event) => {
+    if (!event.dataTransfer.types.includes("text/x-track")) return;
+    event.preventDefault();
+    const after = event.offsetY > row.offsetHeight / 2;
+    row.classList.toggle("drop-after", after); row.classList.toggle("drop-before", !after);
+  };
+  row.ondragleave = () => row.classList.remove("drop-after", "drop-before");
+  row.ondrop = (event) => {
+    const moved = Number(event.dataTransfer.getData("text/x-track"));
+    row.classList.remove("drop-after", "drop-before");
+    if (!moved || moved === t.id) return;
+    event.preventDefault(); event.stopPropagation();
+    const order = p.tracks.map((x) => x.id).filter((x) => x !== moved);
+    order.splice(order.indexOf(t.id) + (event.offsetY > row.offsetHeight / 2 ? 1 : 0), 0, moved);
     api("PATCH", "/me/sounds/projects/" + p.id, { order }).then(refresh, fail);
   };
-  return el("li", { className: "track" + (playing ? " playing" : "") },
-    el("div", { className: "track-top" },
-      el("button", { className: "play", type: "button", textContent: "▶", ariaLabel: "Écouter " + t.title, onclick: () => playTrack(t, live, p) }),
-      el("div", { className: "name" }, name, el("small", { textContent: "v" + live.n + " sur " + t.versions.length
-        + (t.comments.length ? " · " + t.comments.length + " commentaire" + (t.comments.length > 1 ? "s" : "") : "") })),
-      el("button", { className: "icon-btn", type: "button", textContent: "↑", ariaLabel: "Monter", disabled: i === 0, onclick: () => move(-1) }),
-      el("button", { className: "icon-btn", type: "button", textContent: "↓", ariaLabel: "Descendre", disabled: i === p.tracks.length - 1, onclick: () => move(1) })),
-    el("div", { className: "row", style: "margin-top:8px" },
-      el("button", { className: "btn btn-ghost small", type: "button", textContent: "Versions", onclick: () => { versions.hidden = !versions.hidden; } }),
-      el("button", { className: "btn btn-ghost small", type: "button", textContent: "Nouvelle version", disabled: data.quota.full, onclick: () => file.click() }),
-      el("button", { className: "btn btn-ghost small", type: "button", textContent: "Renommer", onclick: () => {
-        const title = prompt("Nom du titre :", t.title);
-        if (title && title.trim()) api("PATCH", "/me/sounds/tracks/" + t.id, { title }).then(refresh, fail);
-      } }),
-      el("button", { className: "btn btn-ghost small", type: "button", textContent: "Partager", onclick: () => { shareTarget = t.id; drawShare(p); $("share").scrollIntoView({ behavior: "smooth" }); } }),
-      t.comments.length ? el("button", { className: "btn btn-ghost small", type: "button", textContent: "Commentaires", onclick: () => playTrack(t, live, p) }) : null,
-      el("button", { className: "btn btn-ghost small", type: "button", textContent: "Supprimer", onclick: () =>
-        confirm("Supprimer « " + t.title + " » et toutes ses versions ?") && api("DELETE", "/me/sounds/tracks/" + t.id).then(refresh, fail) }),
-      file),
-    versions);
+  return row;
 }
 
-// Envoie des fichiers : chacun devient un titre du projet ouvert, ou la nouvelle version du titre donné.
-async function sendFiles(files, toTrack) {
-  const p = current();
+// ——— Envois ———
+// Chaque fichier devient un titre du projet donné, ou la nouvelle version du titre donné.
+async function sendFiles(files, p, toTrack) {
+  files = [...files].filter((f) => /^audio\//.test(f.type) || /\.(wav|aiff?|flac|mp3|ogg|m4a)$/i.test(f.name));
+  if (!files.length) return;
   $("error").textContent = "";
-  for (const [n, f] of [...files].entries()) {
+  for (const [n, f] of files.entries()) {
     const label = (files.length > 1 ? (n + 1) + "/" + files.length + " · " : "") + f.name;
     try {
       $("progress").textContent = label + " : lecture…";
@@ -319,85 +499,267 @@ async function sendFiles(files, toTrack) {
       const done = await upload(toTrack ? "/me/sounds/tracks/" + toTrack.id + "/versions" + query : "/me/sounds/projects/" + p.id + "/tracks" + query, f,
         (x) => { $("progress").textContent = label + " : " + Math.round(x * 100) + " %"; });
       if (wave) await api("PATCH", "/me/sounds/versions/" + (toTrack ? done.id : done.versionId), wave);
-    } catch (error) { fail(error); break; }
+    } catch (error) { $("error").textContent = error.message; break; }
   }
   $("progress").textContent = "";
   await refresh().catch(fail);
 }
-
-function drawShare(p) {
-  $("share").hidden = false;
-  const t = shareTarget && p.tracks.find((x) => x.id === shareTarget);
-  if (!t) shareTarget = null;
-  $("share-what").textContent = t ? "le titre « " + t.title + " »" : "tout le projet « " + p.title + " »";
-  const mine = data.links.filter((l) => l.projectId === p.id || p.tracks.some((x) => x.id === l.trackId));
-  $("links").replaceChildren(...mine.map((l) => {
-    const what = l.projectId ? "Projet entier" : "« " + (p.tracks.find((x) => x.id === l.trackId)?.title || "") + " »";
-    const copy = el("button", { className: "btn btn-ghost small", type: "button", textContent: "Copier" });
-    copy.onclick = async () => {
-      try { await navigator.clipboard.writeText(l.url); copy.textContent = "Copié"; } catch { prompt("Copie ce lien :", l.url); }
-      setTimeout(() => { copy.textContent = "Copier"; }, 1600);
-    };
-    return el("li", {},
-      el("span", {}, el("b", { textContent: (l.label || what) }), " ",
-        el("span", { className: "muted", textContent: [l.label ? what : null, l.password ? "mot de passe" : null, l.download ? "téléchargement permis" : null,
-          l.expiresAt ? (l.expiresAt < Date.now() ? "expiré" : "jusqu'au " + day(l.expiresAt)) : null,
-          l.plays + " écoute" + (l.plays > 1 ? "s" : "") + (l.lastPlay ? ", la dernière le " + day(l.lastPlay) : "")].filter(Boolean).join(" · ") })),
-      copy,
-      el("button", { className: "btn btn-ghost small", type: "button", textContent: "Couper le lien", onclick: () =>
-        confirm("Couper ce lien ? Plus personne ne pourra écouter par lui.") && api("DELETE", "/me/sounds/links/" + l.id).then(refresh, fail) }));
-  }));
+// Des sons déposés hors d'un projet : un nouveau projet, nommé d'après le premier fichier.
+async function newProjectWith(files) {
+  const name = files[0].name.replace(/\.[a-z0-9]{2,5}$/i, "");
+  const { id } = await api("POST", "/me/sounds/projects", { title: files.length > 1 ? "Nouveau projet" : name });
+  await refresh();
+  location.hash = "#/p/" + id;
+  await sendFiles(files, project(id));
 }
-
-$("new-project").onsubmit = async (event) => {
-  event.preventDefault();
-  const title = $("new-title").value.trim();
-  if (!title) return;
-  try { openId = (await api("POST", "/me/sounds/projects", { title })).id; $("new-title").value = ""; await refresh(); } catch (error) { alert(error.message); }
+let pickTarget = null;
+function pickFiles(target) { pickTarget = target; $("files").click(); }
+$("files").onchange = () => {
+  const files = [...$("files").files];
+  $("files").value = "";
+  if (!files.length) return;
+  if (pickTarget && pickTarget.track) sendFiles(files.slice(0, 1), null, pickTarget.track);
+  else if (pickTarget && pickTarget.project) sendFiles(files, pickTarget.project);
+  else newProjectWith(files).catch(fail);
 };
-$("project-title").onchange = () => api("PATCH", "/me/sounds/projects/" + openId, { title: $("project-title").value }).then(refresh, fail);
-$("delete-project").onclick = () => confirm("Supprimer « " + current().title + " », tous ses titres et leurs liens d'écoute ?")
-  && api("DELETE", "/me/sounds/projects/" + openId).then(refresh, fail);
-$("share-project").onclick = () => { shareTarget = null; drawShare(current()); $("share").scrollIntoView({ behavior: "smooth" }); };
-$("cover").onclick = $("cover").onkeydown = (event) => { if (!event.key || event.key === "Enter") $("cover-file").click(); };
+let coverTarget = null;
+function pickCover(p) { coverTarget = p; $("cover-file").click(); }
 $("cover-file").onchange = async () => {
   const f = $("cover-file").files[0];
-  if (!f) return;
+  $("cover-file").value = "";
+  if (!f || !coverTarget) return;
   try {
-    const response = await fetch("/api/me/sounds/projects/" + openId + "/cover", { method: "PUT", headers: { Authorization: "Bearer " + token, "Content-Type": f.type }, body: f });
+    const response = await fetch("/api/me/sounds/projects/" + coverTarget.id + "/cover", { method: "PUT", headers: { Authorization: "Bearer " + token, "Content-Type": f.type }, body: f });
     if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Image refusée.");
     await refresh();
   } catch (error) { fail(error); }
-  $("cover-file").value = "";
 };
-$("add").onclick = () => $("files").click();
-$("files").onchange = () => { sendFiles($("files").files); $("files").value = ""; };
-const drop = $("drop");
-drop.ondragover = (event) => { event.preventDefault(); drop.classList.add("over"); };
-drop.ondragleave = () => drop.classList.remove("over");
-drop.ondrop = (event) => { event.preventDefault(); drop.classList.remove("over"); if (!data.quota.full) sendFiles(event.dataTransfer.files); };
-
-$("link-form").onsubmit = async (event) => {
+// Glisser des fichiers sur la page : dans le projet ouvert, ou un nouveau projet depuis la grille.
+let dragDepth = 0;
+const hasFiles = (event) => event.dataTransfer && [...event.dataTransfer.types].includes("Files");
+addEventListener("dragenter", (event) => { if (hasFiles(event) && data && !data.quota.full) { dragDepth++; $("drop-zone").hidden = false; } });
+addEventListener("dragleave", (event) => { if (hasFiles(event) && --dragDepth <= 0) { dragDepth = 0; $("drop-zone").hidden = true; } });
+addEventListener("dragover", (event) => { if (hasFiles(event)) event.preventDefault(); });
+addEventListener("drop", (event) => {
+  if (!hasFiles(event)) return;
   event.preventDefault();
-  const date = $("link-expires").value;
-  try {
-    const { url } = await api("POST", "/me/sounds/links", {
-      projectId: shareTarget ? null : openId, trackId: shareTarget, label: $("link-label").value,
-      password: $("link-password").value, download: $("link-download").checked,
-      expiresAt: date ? new Date(date + "T23:59:59").getTime() : null,
-    });
-    $("link-form").reset();
-    try { await navigator.clipboard.writeText(url); $("link-notice").textContent = "Lien créé et copié : " + url; } catch { $("link-notice").textContent = "Lien créé : " + url; }
-    await refresh();
-  } catch (error) { $("link-notice").textContent = error.message; }
+  dragDepth = 0; $("drop-zone").hidden = true;
+  if (data.quota.full) return;
+  const p = openId() && project();
+  p ? sendFiles(event.dataTransfer.files, p) : newProjectWith([...event.dataTransfer.files]).catch(fail);
+});
+
+// ——— Le bouton + ———
+$("fab").append(icon("plus"), "Ajouter");
+$("fab").onclick = () => {
+  const p = openId() && project();
+  menu($("fab"), [
+    p && { label: "Ajouter des sons à ce projet", icon: "plus", onclick: () => pickFiles({ project: p }) },
+    { label: "Importer des sons", icon: "download", onclick: () => pickFiles(null) },
+    { label: "Nouveau projet", icon: "star", onclick: async () => {
+      const title = await ask("Nom du nouveau projet");
+      if (!title) return;
+      try { const { id } = await api("POST", "/me/sounds/projects", { title }); await refresh(); location.hash = "#/p/" + id; } catch (error) { fail(error); }
+    } },
+  ]);
 };
+$("back").append(icon("back"));
+$("back").onclick = () => { location.hash = ""; };
+$("play-all").append(icon("play"));
+$("play-all").onclick = () => { const p = project(); player.item && p.tracks.some((t) => t.id === player.item.trackId) ? player.toggle() : playProject(p); };
+$("share-project").append(icon("link"));
+$("share-project").onclick = () => openShare("project", openId());
+$("project-more").append(icon("more"));
+$("project-more").onclick = () => projectMenu($("project-more"), project());
+$("add-tracks").append(icon("plus"), "Ajouter des titres");
+$("add-tracks").onclick = () => pickFiles({ project: project() });
+$("cover").onclick = () => pickCover(project());
+$("project-title").onclick = async () => {
+  const p = project(), title = await ask("Nom du projet", p.title);
+  if (title) api("PATCH", "/me/sounds/projects/" + p.id, { title }).then(refresh, fail);
+};
+
+// ——— Détails d'un titre ———
+let detailsId = null, detailsView = "main";
+function openDetails(tid, view = "main") { detailsId = tid; detailsView = view; renderDetails(); if (!$("details").open) $("details").showModal(); }
+function drawPeaks(canvas, peaks) {
+  requestAnimationFrame(() => {
+    const dpr = devicePixelRatio || 1, w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w) return;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    const g = canvas.getContext("2d");
+    g.scale(dpr, dpr);
+    const bars = Math.floor(w / 3);
+    g.fillStyle = "rgba(246,238,238,.5)";
+    for (let i = 0; i < bars; i++) {
+      const v = peaks && peaks.length ? peaks[Math.floor(i / bars * peaks.length)] : 0.1, bh = Math.max(2, v * (h - 4));
+      g.fillRect(i * 3, (h - bh) / 2, 2, bh);
+    }
+  });
+}
+const item = (iconName, label, opts = {}) => {
+  const b = el(opts.onclick ? "button" : "div", { className: "item" + (opts.danger ? " danger" : "") + (opts.off ? " off" : ""), type: opts.onclick ? "button" : undefined },
+    icon(iconName), el("span", { className: "grow" }, label, opts.hint ? el("small", { textContent: opts.hint }) : null),
+    opts.state ? el("span", { className: "state", textContent: opts.state }) : null, opts.chevron ? icon("chevron") : null, opts.right || null);
+  if (opts.onclick) b.onclick = opts.onclick;
+  return el("li", {}, b);
+};
+const group = (...rows) => el("ul", { className: "group" }, ...rows.filter(Boolean));
+function renderDetails() {
+  const { p, t } = findTrack(detailsId);
+  if (!t) { $("details").close(); return; }
+  const v = live(t), i = p.tracks.indexOf(t);
+  const close = el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => $("details").close() }, icon("close"));
+  const canvas = el("canvas");
+  drawPeaks(canvas, v.peaks);
+  const left = el("div", { className: "details-left" }, close,
+    el("h2", { textContent: (i + 1) + ". " + t.title }),
+    el("div", { className: "facts", textContent: [v.duration ? length(v.duration) : null, "v" + v.n + " sur " + t.versions.length, size(v.size)].filter(Boolean).join(" · ") }),
+    canvas, el("div", { className: "file", textContent: v.filename }),
+    el("button", { className: "btn btn-ghost", type: "button", style: "margin-top:10px", onclick: () => { playVersion(p, t, v); } }, icon("play"), "Écouter"));
+  const back = (title) => el("h3", {}, el("button", { className: "x", type: "button", ariaLabel: "Retour", onclick: () => { detailsView = "main"; renderDetails(); } }, icon("back")), title);
+  const link = linkFor("track", t.id);
+  let right;
+  if (detailsView === "main") {
+    right = [el("h3", { textContent: "Détails" }),
+      group(item("link", "Partager", { state: link ? "Activé" : "Désactivé", chevron: true, onclick: () => openShare("track", t.id) })),
+      group(
+        item("queue", "Statistiques", { state: t.plays ? t.plays + " écoute" + (t.plays > 1 ? "s" : "") : "", chevron: true, onclick: () => { detailsView = "stats"; renderDetails(); } }),
+        item("more", "Notes", { state: v.note ? "1" : "", chevron: true, onclick: () => { detailsView = "notes"; renderDetails(); } }),
+        item("expand", "Commentaires", { state: t.comments.length ? String(t.comments.length) : "", chevron: true, onclick: () => { detailsView = "comments"; renderDetails(); } }),
+        item("repeat", "Versions", { state: String(t.versions.length), chevron: true, onclick: () => { detailsView = "versions"; renderDetails(); } }),
+        item("plus", "Remplacer l'audio", { hint: "Une nouvelle version : les précédentes restent dans l'historique", off: data.quota.full, onclick: data.quota.full ? null : () => pickFiles({ track: t }) }),
+        item("queue", "Ajouter à la file", { onclick: () => { player.enqueue(itemOf(p, t)); $("details").close(); } })),
+      group(
+        item("download", "Exporter", { hint: "Le fichier original de la version en avant", onclick: () => { location.href = v.downloadUrl; } }),
+        item("chevron", "Déplacer", { chevron: true, onclick: () => { detailsView = "move"; renderDetails(); } }),
+        item("star", "Dupliquer", { onclick: () => api("POST", "/me/sounds/tracks/" + t.id + "/duplicate").then(refresh, (e) => alert(e.message)) }),
+        item("more", "Renommer", { onclick: async () => {
+          $("details").close();
+          const title = await ask("Nom du titre", t.title);
+          if (title) await api("PATCH", "/me/sounds/tracks/" + t.id, { title }).then(refresh, fail);
+          openDetails(t.id);
+        } })),
+      group(item("close", "Supprimer", { danger: true, onclick: () => confirm("Supprimer « " + t.title + " » et toutes ses versions ?")
+        && api("DELETE", "/me/sounds/tracks/" + t.id).then(() => { $("details").close(); return refresh(); }).catch(fail) }))];
+  } else if (detailsView === "stats") {
+    right = [back("Statistiques"),
+      el("div", { className: "stat" }, el("div", {}, el("b", { textContent: String(t.plays) }), el("span", { textContent: "écoutes par tes liens" })),
+        el("div", {}, el("b", { textContent: String(t.listeners.length) }), el("span", { textContent: "auditeurs connectés" }))),
+      t.lastPlay ? el("p", { className: "muted", style: "margin:0", textContent: "Dernière écoute le " + longDay(t.lastPlay) + "." }) : el("p", { className: "muted", style: "margin:0", textContent: "Pas encore d'écoute. Partage ce titre ou son projet pour le faire entendre." }),
+      t.listeners.length ? el("ul", { className: "group people" }, ...t.listeners.map((u) => el("li", {}, el("img", { src: avatar(u), alt: "" }),
+        el("span", { className: "grow", textContent: u.name }), el("span", { className: "muted", style: "font-size:13px", textContent: longDay(u.at) })))) : null,
+      el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Les auditeurs qui ne sont pas connectés à un compte ONIRIQUE sont comptés sans être nommés." })];
+  } else if (detailsView === "notes") {
+    const note = el("textarea", { value: v.note, maxLength: 300, placeholder: "Mix 2, master, ce qu'il reste à faire…", ariaLabel: "Note de la version " + v.n });
+    const saved = el("span", { className: "muted", style: "font-size:13px" });
+    right = [back("Notes"), el("p", { className: "muted", style: "margin:0", textContent: "La note de la version " + v.n + ", visible dans l'historique des versions." }), note,
+      el("div", { className: "row" }, el("button", { className: "btn btn-primary", type: "button", textContent: "Enregistrer", onclick: () =>
+        api("PATCH", "/me/sounds/versions/" + v.id, { note: note.value }).then(() => { saved.textContent = "Enregistré."; return refresh(); }, fail) }), saved)];
+  } else if (detailsView === "comments") {
+    right = [back("Commentaires"),
+      t.comments.length ? el("ul", { className: "group" }, ...t.comments.map((c) => el("li", { className: "comment-row" },
+        el("button", { className: "at", type: "button", textContent: OP.time(c.at), onclick: () => { playVersion(p, t, v); player.audio.addEventListener("loadedmetadata", () => { player.audio.currentTime = c.at; }, { once: true }); } }),
+        el("p", {}, el("b", { textContent: c.author + " " }), el("span", { className: "muted", textContent: c.body })),
+        el("button", { className: "x", type: "button", ariaLabel: "Supprimer ce commentaire", onclick: () => confirm("Supprimer ce commentaire ?") && api("DELETE", "/me/sounds/comments/" + c.id).then(refresh, fail) }, icon("close")))))
+        : el("p", { className: "muted", style: "margin:0", textContent: "Aucun commentaire pour l'instant. Les personnes à qui tu partages ce titre peuvent en laisser à un moment précis, depuis le lecteur." })];
+  } else if (detailsView === "versions") {
+    right = [back("Versions"), el("ul", { className: "group versions" }, ...t.versions.slice().reverse().map((x) => el("li", {},
+      el("button", { className: "x", type: "button", ariaLabel: "Écouter la version " + x.n, onclick: () => playVersion(p, t, x) }, icon("play")),
+      el("span", { className: "tag" + (x.id === t.currentId ? " on" : ""), textContent: "v" + x.n }),
+      el("span", { className: "grow", style: "flex:1;min-width:120px" }, el("span", { textContent: longDay(x.createdAt) }), el("br"),
+        el("small", { className: "muted", textContent: [size(x.size), x.note].filter(Boolean).join(" · ") })),
+      x.id === t.currentId ? null : el("button", { className: "mini-btn", type: "button", textContent: "Mettre en avant", title: "C'est cette version que les liens d'écoute feront entendre",
+        onclick: () => api("PATCH", "/me/sounds/tracks/" + t.id, { currentId: x.id }).then(refresh, fail) }),
+      t.versions.length > 1 ? el("button", { className: "x", type: "button", ariaLabel: "Supprimer la version " + x.n,
+        onclick: () => confirm("Supprimer la version " + x.n + " ?") && api("DELETE", "/me/sounds/versions/" + x.id).then(refresh, fail) }, icon("close")) : null))),
+    el("button", { className: "btn btn-ghost", type: "button", disabled: data.quota.full, onclick: () => pickFiles({ track: t }) }, icon("plus"), "Envoyer une nouvelle version")];
+  } else if (detailsView === "move") {
+    right = [back("Déplacer vers"), group(...data.projects.map((x) => item("star", x.title, {
+      state: x.id === p.id ? "Ici" : "", onclick: x.id === p.id ? null : () => api("PATCH", "/me/sounds/tracks/" + t.id, { projectId: x.id }).then(() => { detailsView = "main"; return refresh(); }).catch(fail),
+    })))];
+  }
+  $("details").replaceChildren(el("div", { className: "details" }, left, el("div", { className: "details-right" }, ...right.filter(Boolean))));
+}
+
+// ——— Partage ———
+let shareTarget = null;
+function openShare(kind, id) { shareTarget = { kind, id }; renderShare(); if (!$("share").open) $("share").showModal(); }
+function renderShare() {
+  const { kind, id } = shareTarget;
+  const found = kind === "project" ? { p: project(id) } : findTrack(id);
+  const p = found.p, t = found.t;
+  if (!p || (kind === "track" && !t)) { $("share").close(); return; }
+  const link = linkFor(kind, id);
+  const patch = (body) => api("PATCH", "/me/sounds/links/" + link.id, body).then(refresh, (e) => alert(e.message));
+  const create = (then) => api("POST", "/me/sounds/links", kind === "project" ? { projectId: id } : { trackId: id }).then(async (made) => { await refresh(); if (then) then(made); }, (e) => alert(e.message));
+  const copy = async (url, button) => {
+    try { await navigator.clipboard.writeText(url); button.replaceChildren(icon("link"), "Lien copié"); } catch { prompt("Copie ce lien :", url); }
+    setTimeout(() => button.isConnected && button.replaceChildren(icon("link"), "Copier le lien"), 1800);
+  };
+  const toggle = (checked, onchange, label) => {
+    const input = el("input", { type: "checkbox", checked, ariaLabel: label });
+    input.onchange = () => onchange(input.checked);
+    return el("label", { className: "switch" }, input, el("span"));
+  };
+  const select = el("select", { ariaLabel: "Qui peut écouter" },
+    el("option", { value: "private", textContent: "Privé : toi seulement", selected: !link }),
+    el("option", { value: "public", textContent: "Toute personne qui a le lien", selected: !!link }));
+  select.onchange = () => (select.value === "public" ? create() : unshare());
+  const unshare = () => {
+    const all = data.links.filter((l) => (kind === "project" ? l.projectId === id : l.trackId === id));
+    Promise.all(all.map((l) => api("DELETE", "/me/sounds/links/" + l.id))).then(refresh, (e) => alert(e.message));
+  };
+  const head = el("div", { className: "dlg-head" }, coverOf(p), el("b", { textContent: kind === "project" ? p.title : t.title }),
+    el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => $("share").close() }, icon("close")));
+  const body = el("div", { className: "share-body" }, el("div", { className: "visibility" }, icon(link ? "link" : "close"), select));
+  const foot = el("div", { className: "share-foot" });
+  if (link) {
+    const listeners = link.listeners;
+    body.append(group(item("queue", "Qui a écouté", {
+      state: link.plays ? link.plays + " écoute" + (link.plays > 1 ? "s" : "") : "Personne pour l'instant",
+      right: listeners.length ? el("span", { className: "faces" }, ...listeners.slice(0, 5).map((u) => el("img", { src: avatar(u), alt: u.name, title: u.name }))) : null,
+    })));
+    const password = el("input", { type: "text", placeholder: "Nouveau mot de passe", minLength: 4, autocomplete: "off", ariaLabel: "Mot de passe du lien" });
+    const date = el("input", { type: "date", ariaLabel: "Date de fin", value: link.expiresAt ? new Date(link.expiresAt).toISOString().slice(0, 10) : "" });
+    date.onchange = () => date.value && patch({ expiresAt: new Date(date.value + "T23:59:59").getTime() });
+    const pwRow = el("div", { className: "inline", hidden: !link.password && !password.value }, password,
+      el("button", { className: "mini-btn", type: "button", textContent: "Enregistrer", onclick: () => password.value && patch({ password: password.value }) }));
+    body.append(el("div", { className: "sub-title", textContent: "Réglages" }), el("ul", { className: "group" },
+      item("download", "Autoriser le téléchargement", { hint: "Toute personne qui a le lien peut télécharger le fichier original", right: toggle(link.download, (on) => patch({ download: on }), "Autoriser le téléchargement") }),
+      item("star", "Compte ONIRIQUE exigé", { hint: "Seules les personnes connectées à leur compte peuvent écouter", right: toggle(link.requireAccount, (on) => patch({ requireAccount: on }), "Compte ONIRIQUE exigé") }),
+      el("li", {}, el("div", { className: "item" }, icon("more"), el("span", { className: "grow" }, "Mot de passe",
+        el("small", { textContent: link.password ? "Le lien demande un mot de passe" : "Demander un mot de passe pour écouter" })),
+      toggle(link.password, (on) => { if (on) { pwRow.hidden = false; password.focus(); } else patch({ password: "" }); }, "Mot de passe")), pwRow),
+      el("li", {}, el("div", { className: "item" }, icon("repeat"), el("span", { className: "grow" }, "Date de fin",
+        el("small", { textContent: link.expiresAt ? "Le lien se ferme après le " + longDay(link.expiresAt) : "Le lien reste ouvert tant que tu ne le coupes pas" })),
+      toggle(!!link.expiresAt, (on) => { if (on) { dateRow.hidden = false; date.showPicker?.(); } else patch({ expiresAt: null }); }, "Date de fin")),
+      dateRow = el("div", { className: "inline", hidden: !link.expiresAt }, date))));
+    body.append(group(
+      item("repeat", "Nouvelle adresse du lien", { hint: "L'ancienne adresse ne s'ouvrira plus", onclick: () => confirm("Changer l'adresse du lien ? L'ancienne ne s'ouvrira plus.")
+        && api("POST", "/me/sounds/links/" + link.id + "/reset").then(refresh, (e) => alert(e.message)) }),
+      item("close", kind === "project" ? "Rendre le projet privé" : "Rendre le titre privé", { danger: true, onclick: () => confirm("Couper le lien ? Plus personne ne pourra écouter par lui.") && unshare() })));
+    const copyBtn = el("button", { className: "btn btn-primary", type: "button" }, icon("link"), "Copier le lien");
+    copyBtn.onclick = () => copy(link.url, copyBtn);
+    foot.append(copyBtn);
+  } else {
+    body.append(el("p", { className: "muted", style: "margin:0 4px;font-size:14px", textContent: kind === "project"
+      ? "Personne d'autre que toi ne peut écouter ce projet. Crée un lien pour le faire entendre : tu pourras le protéger, le limiter dans le temps et le couper à tout moment."
+      : "Personne d'autre que toi ne peut écouter ce titre. Crée un lien pour le faire entendre." }));
+    const make = el("button", { className: "btn btn-primary", type: "button" }, icon("link"), "Créer le lien et le copier");
+    make.onclick = () => create((made) => copy(made.url, make));
+    foot.append(make);
+  }
+  $("share").replaceChildren(head, body, foot);
+}
+let dateRow = null;
 
 (async () => {
   const gate = (html) => { $("gate").hidden = false; $("gate").innerHTML = html; };
+  $("empty-star").append(icon("star"));
   if (!token) return gate('<p>Connecte-toi d\'abord à ton compte.</p><a class="btn btn-primary" href="compte.html">Se connecter</a>');
   try {
     await refresh();
-    $("space").hidden = false;
   } catch (error) {
     gate(error.status === 403 ? "<p>Mes sons est réservé aux membres ONIRIQUE.</p>"
       : error.status === 401 ? '<p>Ta session a expiré.</p><a class="btn btn-primary" href="compte.html">Se reconnecter</a>' : "<p></p>");

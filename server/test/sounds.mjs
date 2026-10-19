@@ -147,6 +147,31 @@ try {
     assert.equal(files(), 0);
   });
 
+  await step('dupliquer, déplacer, réglages d\'un lien, nouvelle adresse, compte exigé, auditeurs', async () => {
+    const a = (await call('POST', '/api/me/sounds/projects', { token: member.token, body: { title: 'A' }, expect: 201 })).id;
+    const b = (await call('POST', '/api/me/sounds/projects', { token: member.token, body: { title: 'B' }, expect: 201 })).id;
+    const t = (await call('POST', `/api/me/sounds/projects/${a}/tracks?filename=Son.wav`, { token: member.token, raw: wav(), expect: 201 })).id;
+    const copy = (await call('POST', `/api/me/sounds/tracks/${t}/duplicate`, { token: member.token, expect: 201 })).id;
+    await call('PATCH', `/api/me/sounds/tracks/${copy}`, { token: member.token, body: { projectId: b } });
+    let data = await call('GET', '/api/me/sounds', { token: member.token });
+    assert.equal(data.projects.find((p) => p.id === b).tracks[0].title, 'Son (copie)');
+    assert.equal(fs.readdirSync(soundsDir).length, 2, 'le fichier est copié');
+
+    const link = await call('POST', '/api/me/sounds/links', { token: member.token, body: { trackId: t }, expect: 201 });
+    await call('PATCH', `/api/me/sounds/links/${link.id}`, { token: member.token, body: { requireAccount: true, download: true } });
+    await call('POST', `/api/sounds/share/${shareToken(link.url)}`, { body: {}, expect: 401 });
+    await call('POST', `/api/sounds/share/${shareToken(link.url)}/play`, { token: listener.token, body: { trackId: t } });
+    const fresh = await call('POST', `/api/me/sounds/links/${link.id}/reset`, { token: member.token });
+    assert.notEqual(fresh.url, link.url);
+    await call('POST', `/api/sounds/share/${shareToken(link.url)}`, { token: listener.token, body: {}, expect: 404 });
+    await call('POST', `/api/sounds/share/${shareToken(fresh.url)}`, { token: listener.token, body: {} });
+    data = await call('GET', '/api/me/sounds', { token: member.token });
+    const played = data.projects.find((p) => p.id === a).tracks[0];
+    assert.equal(played.plays, 1);
+    assert.equal(played.listeners[0].name, 'auditeur');
+    assert.equal(data.links[0].requireAccount, true);
+  });
+
   console.log(`\n${passed} étapes réussies.`);
 } finally {
   server.close();

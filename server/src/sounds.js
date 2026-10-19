@@ -70,6 +70,11 @@ CREATE TABLE IF NOT EXISTS sound_comments (
 );
 `);
 
+// Un lien peut n'ouvrir qu'aux personnes connectées à un compte ONIRIQUE.
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_links') WHERE name = 'require_account'`).get()) {
+  db.exec('ALTER TABLE sound_links ADD COLUMN require_account INTEGER NOT NULL DEFAULT 0');
+}
+
 export const soundsDir = path.join(config.dataDir, 'sounds');
 fs.mkdirSync(soundsDir, { recursive: true });
 
@@ -125,6 +130,11 @@ const versionView = (v, i, download) => ({
 });
 const commentView = (c) => ({ id: c.id, trackId: c.track_id, versionId: c.version_id, author: c.author, at: c.at, body: c.body, createdAt: c.created_at });
 const media = (name) => (name ? `/api/media/${name}` : null);
+const person = (u) => ({ id: u.id, name: u.name || 'ONIRIQUE', avatar: media(u.avatar) });
+const linkView = (l) => ({
+  id: l.id, url: `${config.siteUrl}/ecoute?t=${l.token}`, projectId: l.project_id, trackId: l.track_id, label: l.label,
+  password: !!l.password_hash, expiresAt: l.expires_at, download: !!l.download, requireAccount: !!l.require_account, createdAt: l.created_at,
+});
 
 function removeVersionFiles(rows) {
   for (const r of rows) fs.rmSync(path.join(soundsDir, r.stored_as), { force: true });
@@ -158,16 +168,20 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     return row;
   };
 
+  /** La place qui reste au membre, si ce fichier peut entrer sans dépasser son quota ni le seuil du disque. */
+  function room(req, length) {
+    const d = disk();
+    if ((d.used + length) / d.total > diskMax()) throw new HttpError(507, "L'espace de stockage d'ONIRIQUE est plein pour le moment : aucun envoi n'est possible. Réessaie plus tard.");
+    const left = quotaBytes() - usedBy(req.user.id);
+    if (length > left) throw new HttpError(413, `Ton espace est plein (${Math.round(quotaBytes() / GB)} Go) : supprime des versions ou des titres pour en envoyer d'autres.`);
+    return left;
+  }
   /** Reçoit un fichier audio : refusé si le quota du membre ou le seuil du disque serait dépassé. */
   async function receiveAudio(req) {
     const length = Number(req.headers['content-length']);
     if (!Number.isFinite(length) || length <= 0) throw new HttpError(411, 'Taille du fichier inconnue.');
     if (length > MAX_FILE) throw new HttpError(413, 'Fichier trop volumineux : 500 Mo au plus par fichier.');
-    const d = disk();
-    if ((d.used + length) / d.total > diskMax()) throw new HttpError(507, "L'espace de stockage d'ONIRIQUE est plein pour le moment : aucun envoi n'est possible. Réessaie plus tard.");
-    const left = quotaBytes() - usedBy(req.user.id);
-    if (length > left) throw new HttpError(413, `Ton espace est plein (${Math.round(quotaBytes() / GB)} Go) : supprime des versions ou des titres pour en envoyer d'autres.`);
-    const file = await receiveFile(req, soundsDir, Math.min(MAX_FILE, left));
+    const file = await receiveFile(req, soundsDir, Math.min(MAX_FILE, room(req, length)));
     const stored = path.join(soundsDir, file.storedAs);
     const head = Buffer.alloc(12);
     const fd = fs.openSync(stored, 'r');
@@ -194,21 +208,30 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       WHERE p.user_id = ? ORDER BY c.at`, req.user.id);
     const links = all(`SELECT l.*, (SELECT COUNT(*) FROM sound_plays WHERE link_id = l.id) AS plays,
       (SELECT MAX(created_at) FROM sound_plays WHERE link_id = l.id) AS last_play FROM sound_links l WHERE l.user_id = ? ORDER BY l.created_at DESC`, req.user.id);
+    // Les écoutes de chaque titre, tous liens confondus, et les auditeurs connectés (le dernier venu d'abord).
+    const plays = all(`SELECT s.track_id, s.link_id, s.created_at, u.id, u.name, u.avatar FROM sound_plays s JOIN sound_links l ON l.id = s.link_id
+      LEFT JOIN users u ON u.id = s.user_id WHERE l.user_id = ? ORDER BY s.created_at DESC`, req.user.id);
+    const listeners = (rows) => [...new Map(rows.filter((r) => r.id).map((r) => [r.id, { ...person(r), at: r.created_at }])).values()];
     const d = disk();
     res.json({
+      owner: person(req.user),
       quota: { used: usedBy(req.user.id), limit: quotaBytes(), full: d.used / d.total >= diskMax() },
       projects: projects.map((p) => ({
         id: p.id, title: p.title, cover: media(p.cover), createdAt: p.created_at,
-        tracks: tracks.filter((t) => t.project_id === p.id).map((t) => ({
-          id: t.id, title: t.title, currentId: t.current_id,
-          versions: versions.filter((v) => v.track_id === t.id).map((v, i) => versionView(v, i, true)),
-          comments: comments.filter((c) => c.track_id === t.id).map(commentView),
-        })),
+        tracks: tracks.filter((t) => t.project_id === p.id).map((t) => {
+          const mine = plays.filter((r) => r.track_id === t.id);
+          return {
+            id: t.id, title: t.title, currentId: t.current_id, createdAt: t.created_at,
+            versions: versions.filter((v) => v.track_id === t.id).map((v, i) => versionView(v, i, true)),
+            comments: comments.filter((c) => c.track_id === t.id).map(commentView),
+            plays: mine.length, lastPlay: mine[0]?.created_at ?? null, listeners: listeners(mine),
+          };
+        }),
       })),
-      links: links.map((l) => ({
-        id: l.id, url: `${config.siteUrl}/ecoute?t=${l.token}`, projectId: l.project_id, trackId: l.track_id, label: l.label,
-        password: !!l.password_hash, expiresAt: l.expires_at, download: !!l.download, plays: l.plays, lastPlay: l.last_play, createdAt: l.created_at,
-      })),
+      links: links.map((l) => {
+        const mine = plays.filter((r) => r.link_id === l.id);
+        return { ...linkView(l), plays: l.plays, lastPlay: l.last_play, listeners: listeners(mine) };
+      }),
     });
   });
 
@@ -281,7 +304,31 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       if (!get('SELECT 1 FROM sound_versions WHERE id = ? AND track_id = ?', id(req.body.currentId), t.id)) throw new HttpError(400, 'Version inconnue.');
       run('UPDATE sound_tracks SET current_id = ? WHERE id = ?', id(req.body.currentId), t.id);
     }
+    // Déplacer le titre dans un autre projet du membre : il arrive à la fin.
+    if (req.body.projectId !== undefined && id(req.body.projectId) !== t.project_id) {
+      const to = project(req, req.body.projectId);
+      run('UPDATE sound_tracks SET project_id = ?, position = (SELECT COALESCE(MAX(position), -1) + 1 FROM sound_tracks WHERE project_id = ?) WHERE id = ?', to.id, to.id, t.id);
+    }
     res.json({ ok: true });
+  });
+  // Dupliquer un titre : un nouveau titre juste après, avec une copie du fichier de la version en avant.
+  app.post('/api/me/sounds/tracks/:id/duplicate', ...me, (req, res) => {
+    const t = track(req, req.params.id);
+    rateLimit(`sounds-upload:${req.user.id}`, 200, 3600_000);
+    const v = get('SELECT * FROM sound_versions WHERE id = ?', t.current_id);
+    room(req, v.size);
+    const storedAs = crypto.randomBytes(16).toString('hex');
+    fs.copyFileSync(path.join(soundsDir, v.stored_as), path.join(soundsDir, storedAs));
+    const tid = transaction(() => {
+      run('UPDATE sound_tracks SET position = position + 1 WHERE project_id = ? AND position > ?', t.project_id, t.position);
+      const created = run('INSERT INTO sound_tracks (project_id, title, position, created_at) VALUES (?, ?, ?, ?)',
+        t.project_id, str(`${t.title} (copie)`, 120), t.position + 1, now()).lastInsertRowid;
+      const vid = run(`INSERT INTO sound_versions (track_id, filename, stored_as, mime, size, duration, peaks, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        created, v.filename, storedAs, v.mime, v.size, v.duration, v.peaks, v.note, now()).lastInsertRowid;
+      run('UPDATE sound_tracks SET current_id = ? WHERE id = ?', vid, created);
+      return created;
+    });
+    res.status(201).json({ id: tid });
   });
   app.delete('/api/me/sounds/tracks/:id', ...me, (req, res) => {
     const t = track(req, req.params.id);
@@ -325,9 +372,33 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     const expiresAt = req.body.expiresAt ? Number(req.body.expiresAt) : null;
     if (expiresAt !== null && !(expiresAt > now())) throw new HttpError(400, 'La date de fin doit être dans le futur.');
     const token = crypto.randomBytes(12).toString('base64url');
-    run(`INSERT INTO sound_links (token, user_id, project_id, track_id, label, password_hash, expires_at, download, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      token, req.user.id, projectId, trackId, str(req.body.label, 80), password ? hashPassword(password) : null, expiresAt, req.body.download ? 1 : 0, now());
-    res.status(201).json({ url: `${config.siteUrl}/ecoute?t=${token}` });
+    const lid = run(`INSERT INTO sound_links (token, user_id, project_id, track_id, label, password_hash, expires_at, download, require_account, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, token, req.user.id, projectId, trackId, str(req.body.label, 80), password ? hashPassword(password) : null,
+    expiresAt, req.body.download ? 1 : 0, req.body.requireAccount ? 1 : 0, now()).lastInsertRowid;
+    res.status(201).json(linkView(get('SELECT * FROM sound_links WHERE id = ?', lid)));
+  });
+  const ownLink = (req) => {
+    const l = get('SELECT * FROM sound_links WHERE id = ? AND user_id = ?', id(req.params.id), req.user.id);
+    if (!l) throw new HttpError(404, 'Lien introuvable.');
+    return l;
+  };
+  // Les réglages d'un lien : téléchargement, compte exigé, mot de passe ('' le retire), date de fin (null la retire).
+  app.patch('/api/me/sounds/links/:id', ...me, (req, res) => {
+    const l = ownLink(req);
+    if (typeof req.body.password === 'string' && req.body.password && req.body.password.length < 4) throw new HttpError(400, 'Mot de passe : 4 caractères au moins.');
+    const at = req.body.expiresAt ? Number(req.body.expiresAt) : null;
+    if (req.body.expiresAt !== undefined && at !== null && !(at > now())) throw new HttpError(400, 'La date de fin doit être dans le futur.');
+    if (req.body.download !== undefined) run('UPDATE sound_links SET download = ? WHERE id = ?', req.body.download ? 1 : 0, l.id);
+    if (req.body.requireAccount !== undefined) run('UPDATE sound_links SET require_account = ? WHERE id = ?', req.body.requireAccount ? 1 : 0, l.id);
+    if (typeof req.body.password === 'string') run('UPDATE sound_links SET password_hash = ? WHERE id = ?', req.body.password ? hashPassword(req.body.password) : null, l.id);
+    if (req.body.expiresAt !== undefined) run('UPDATE sound_links SET expires_at = ? WHERE id = ?', at, l.id);
+    res.json(linkView(get('SELECT * FROM sound_links WHERE id = ?', l.id)));
+  });
+  // Une nouvelle adresse pour le lien : l'ancienne ne s'ouvre plus, les réglages et les écoutes restent.
+  app.post('/api/me/sounds/links/:id/reset', ...me, (req, res) => {
+    const l = ownLink(req);
+    run('UPDATE sound_links SET token = ? WHERE id = ?', crypto.randomBytes(12).toString('base64url'), l.id);
+    res.json(linkView(get('SELECT * FROM sound_links WHERE id = ?', l.id)));
   });
   app.delete('/api/me/sounds/links/:id', ...me, (req, res) => {
     if (!run('DELETE FROM sound_links WHERE id = ? AND user_id = ?', id(req.params.id), req.user.id).changes) throw new HttpError(404, 'Lien introuvable.');
@@ -360,9 +431,12 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
 
   /** Le lien demandé, s'il est encore valable et que son auteur est toujours membre ; le mot de passe ou le laissez-passer vérifié. */
   function openLink(req) {
-    const link = get(`SELECT l.*, u.name AS owner_name, u.email AS owner_email FROM sound_links l JOIN users u ON u.id = l.user_id
+    const link = get(`SELECT l.*, u.name AS owner_name, u.email AS owner_email, u.avatar AS owner_avatar FROM sound_links l JOIN users u ON u.id = l.user_id
       WHERE l.token = ? AND u.role IN (${MEMBERS.map(() => '?').join(', ')})`, str(req.params.token, 40), ...MEMBERS);
     if (!link || (link.expires_at && link.expires_at < now())) throw new HttpError(404, "Ce lien d'écoute n'existe pas ou n'est plus valable.");
+    if (link.require_account && !optionalUser(req)) {
+      throw Object.assign(new HttpError(401, 'Connecte-toi à ton compte ONIRIQUE pour écouter ce lien.'), { data: { account: true } });
+    }
     if (link.password_hash) {
       const pass = typeof req.body?.pass === 'string' ? req.body.pass : '';
       if (!(pass && same(pass, passFor(link)))) {
@@ -388,7 +462,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     res.set('Cache-Control', 'no-store');
     res.json({
       pass: link.password_hash ? passFor(link) : null,
-      owner: link.owner_name || 'ONIRIQUE', title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover),
+      owner: link.owner_name || 'ONIRIQUE', ownerAvatar: media(link.owner_avatar), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover),
       download: !!link.download,
       tracks: tracks.map((t) => ({
         id: t.id, title: t.title,
