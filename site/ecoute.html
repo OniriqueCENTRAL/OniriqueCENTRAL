@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=bc04f748"></script>
+<script src="assets/i18n.js?v=5dfe885c"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Écoute privée</title>
 <meta name="robots" content="noindex, nofollow">
@@ -57,6 +57,9 @@ form.pw input { flex: 1 1 200px; }
 h1.title { font: 800 clamp(24px, 5vw, 36px)/1.12 var(--f-display); margin: 10px 0 6px; overflow-wrap: anywhere; }
 .meta { color: var(--haze); font-size: 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .meta img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
+.release { margin-top: 8px; display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); font: 600 13px var(--f-body); }
+.release.planned::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 8px var(--ember); }
+.release:empty { display: none; }
 .play-all { width: 54px; height: 54px; flex: none; display: grid; place-items: center; border-radius: 50%; border: 0; background: var(--mist); color: var(--night); cursor: pointer; box-shadow: 0 10px 40px -10px var(--ember); }
 .note { margin: 18px 0 0; padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,210,214,.07); font-size: 13.5px; color: var(--haze); }
 .tracklist { list-style: none; margin: 14px 0 0; padding: 0; }
@@ -114,6 +117,7 @@ footer { padding: 30px 0 140px; text-align: center; font-size: 13px; }
           <div class="eyebrow">Écoute privée</div>
           <h1 class="title" id="title"></h1>
           <div class="meta" id="meta"></div>
+          <div class="release" id="release"></div>
         </div>
         <button class="play-all" id="play-all" type="button" aria-label="Tout écouter"></button>
       </div>
@@ -124,7 +128,7 @@ footer { padding: 30px 0 140px; text-align: center; font-size: 13px; }
 </main>
 <footer class="muted wrap">Partagé avec <a href="/">ONIRIQUE</a> · Mes sons</footer>
 
-<script src="assets/sounds-player.js?v=3"></script>
+<script src="assets/sounds-player.js?v=4"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const OP = window.OniriquePlayer, icon = OP.icon;
@@ -177,6 +181,8 @@ function show(data) {
   document.title = data.title + " — " + data.owner + " · ONIRIQUE";
   $("title").textContent = data.title;
   const total = data.tracks.reduce((s, t) => s + (t.version.duration || 0), 0);
+  $("release").textContent = OP.releaseLabel(data.releaseDate);
+  $("release").classList.toggle("planned", $("release").textContent.startsWith("Date de sortie prévue"));
   $("meta").replaceChildren(data.ownerAvatar ? el("img", { src: data.ownerAvatar, alt: "" }) : "",
     data.owner + (data.title !== data.project ? " · " + data.project : "") + " · " + data.tracks.length + (data.tracks.length > 1 ? " titres" : " titre")
     + (total ? " · " + OP.time(total) : ""));

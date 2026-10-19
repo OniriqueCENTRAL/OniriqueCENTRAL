@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=bc04f748"></script>
+<script src="assets/i18n.js?v=5dfe885c"></script>
 <script src="assets/annonce.js?v=1"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Mes sons</title>
@@ -96,6 +96,14 @@ textarea { padding: 12px 14px; min-height: 110px; resize: vertical; line-height:
 .album-head h1 { margin: 0 0 4px; cursor: text; }
 .album-meta { color: var(--haze); font-size: 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .album-meta img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
+/* La date de sortie, sous le nom du projet */
+.release { position: relative; display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+.release button { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.03); color: var(--mist); font: 600 13px var(--f-body); cursor: pointer; }
+.release button:hover { border-color: var(--ember); }
+.release button.empty { border-style: dashed; color: var(--haze); font-weight: 500; }
+.release button.planned::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 8px var(--ember); }
+.release .clear { width: 26px; height: 26px; padding: 0; justify-content: center; border-radius: 50%; color: var(--haze); }
+.release input { position: absolute; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; min-height: 0; padding: 0; border: 0; }
 .add-bar { width: 100%; margin-top: 22px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 13px; border-radius: 14px; border: 1px dashed var(--line); background: rgba(255,255,255,.03); color: var(--mist); font: 600 14px var(--f-body); cursor: pointer; }
 .add-bar:hover { border-color: var(--ember); background: rgba(226,52,68,.08); }
 /* La file des envois : un fichier à la fois, chacun avec sa barre */
@@ -300,6 +308,7 @@ button.item:hover { background: rgba(255,255,255,.04); }
           <div>
             <h1 id="project-title" title="Renommer"></h1>
             <div class="album-meta" id="project-meta"></div>
+            <div class="release" id="release"></div>
           </div>
           <button class="round white" id="play-all" type="button" aria-label="Écouter le projet"></button>
         </div>
@@ -329,7 +338,7 @@ button.item:hover { background: rgba(255,255,255,.04); }
 <dialog id="share"></dialog>
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" value="cancel" formnovalidate>Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
-<script src="assets/sounds-player.js?v=3"></script>
+<script src="assets/sounds-player.js?v=4"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const TOKEN = "onirique.token";
@@ -558,6 +567,19 @@ function projectMenu(anchor, p) {
   ]);
 }
 
+// La date de sortie : un clic ouvre le calendrier du navigateur ; ✕ la retire.
+function drawRelease(p) {
+  const label = OP.releaseLabel(p.releaseDate);
+  const planned = label.startsWith("Date de sortie prévue");
+  const input = el("input", { type: "date", value: p.releaseDate || "", tabIndex: -1, ariaHidden: "true" });
+  const save = (releaseDate) => api("PATCH", "/me/sounds/projects/" + p.id, { releaseDate }).then(refresh, fail);
+  input.onchange = () => input.value && save(input.value);
+  const open = el("button", { type: "button", className: label ? (planned ? "planned" : "") : "empty", textContent: label || "Ajouter une date de sortie",
+    title: "Choisir la date de sortie" });
+  open.onclick = () => { try { input.showPicker(); } catch { input.style.pointerEvents = "auto"; input.focus(); input.click(); } };
+  $("release").replaceChildren(open, input, label ? el("button", { type: "button", className: "clear", ariaLabel: "Retirer la date de sortie",
+    title: "Retirer la date de sortie", onclick: () => save("") }, icon("close")) : "");
+}
 function renderProject(p) {
   tintOf(p.cover).then((t) => { if (openId() === p.id) theme(t); });
   $("crumb-owner").textContent = data.owner.name;
@@ -568,6 +590,7 @@ function renderProject(p) {
     $("cover").replaceChildren(coverOf(p), el("span", { className: "change", textContent: "Changer la pochette" }));
   }
   $("project-title").textContent = p.title;
+  drawRelease(p);
   $("project-meta").replaceChildren(el("img", { src: avatar(data.owner), alt: "" }),
     data.owner.name + " · " + p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre") + (p.tracks.length ? " · " + length(projectLength(p)) : ""),
     linkFor("project", p.id) ? el("span", { className: "tag on", textContent: "Partagé" }) : "");

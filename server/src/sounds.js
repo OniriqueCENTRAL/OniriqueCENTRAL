@@ -87,6 +87,12 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 
   db.exec(`ALTER TABLE sound_projects ADD COLUMN cover_by TEXT NOT NULL DEFAULT ''`);
 }
 export const CREDIT_ROLES = ['beat', 'mix', 'master', 'rec'];
+// La date de sortie d'un projet (AAAA-MM-JJ, '' : pas de date) : prévue si elle est à venir, passée sinon.
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'release_date'`).get()) {
+  db.exec(`ALTER TABLE sound_projects ADD COLUMN release_date TEXT NOT NULL DEFAULT ''`);
+}
+const isDay = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value + 'T00:00:00Z'))
+  && new Date(value + 'T00:00:00Z').toISOString().startsWith(value);
 
 export const soundsDir = path.join(config.dataDir, 'sounds');
 fs.mkdirSync(soundsDir, { recursive: true });
@@ -231,7 +237,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       owner: person(req.user),
       quota: { used: usedBy(req.user.id), limit: quotaBytes(), full: d.used / d.total >= diskMax() },
       projects: projects.map((p) => ({
-        id: p.id, title: p.title, cover: media(p.cover), coverBy: p.cover_by, createdAt: p.created_at,
+        id: p.id, title: p.title, cover: media(p.cover), coverBy: p.cover_by, releaseDate: p.release_date, createdAt: p.created_at,
         tracks: tracks.filter((t) => t.project_id === p.id).map((t) => {
           const mine = plays.filter((r) => r.track_id === t.id);
           return {
@@ -263,6 +269,11 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       run('UPDATE sound_projects SET title = ? WHERE id = ?', title, p.id);
     }
     if (req.body.coverBy !== undefined) run('UPDATE sound_projects SET cover_by = ? WHERE id = ?', str(req.body.coverBy, 80), p.id);
+    if (req.body.releaseDate !== undefined) {
+      const day = String(req.body.releaseDate || '');
+      if (day && !isDay(day)) throw new HttpError(400, 'Date de sortie invalide.');
+      run('UPDATE sound_projects SET release_date = ? WHERE id = ?', day, p.id);
+    }
     // L'ordre des titres : la liste de leurs identifiants, seulement ceux de ce projet.
     if (Array.isArray(req.body.order)) transaction(() => req.body.order.forEach((tid, i) =>
       run('UPDATE sound_tracks SET position = ? WHERE id = ? AND project_id = ?', i, id(tid), p.id)));
@@ -487,7 +498,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     res.set('Cache-Control', 'no-store');
     res.json({
       pass: link.password_hash ? passFor(link) : null,
-      owner: link.owner_name || 'ONIRIQUE', ownerAvatar: media(link.owner_avatar), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover), coverBy: p.cover_by,
+      owner: link.owner_name || 'ONIRIQUE', ownerAvatar: media(link.owner_avatar), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover), coverBy: p.cover_by, releaseDate: p.release_date,
       download: !!link.download,
       tracks: tracks.map((t) => ({
         id: t.id, title: t.title, stage: t.stage, credits: creditsOf(t),

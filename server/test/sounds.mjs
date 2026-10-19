@@ -181,6 +181,11 @@ try {
     const credited = await call('POST', `/api/sounds/share/${shareToken(fresh.url)}`, { token: listener.token, body: {} });
     assert.deepEqual(credited.tracks[0].credits, { beat: 'Kanni', mix: 'Gry' });
     assert.equal(credited.coverBy, 'Shurby');
+    // La date de sortie du projet : une date réelle seulement, '' l'efface.
+    await call('PATCH', `/api/me/sounds/projects/${a}`, { token: member.token, body: { releaseDate: '2026-02-30' }, expect: 400 });
+    await call('PATCH', `/api/me/sounds/projects/${a}`, { token: member.token, body: { releaseDate: '2026-12-04' } });
+    assert.equal((await call('POST', `/api/sounds/share/${shareToken(fresh.url)}`, { token: listener.token, body: {} })).releaseDate, '2026-12-04');
+    await call('PATCH', `/api/me/sounds/projects/${a}`, { token: member.token, body: { releaseDate: '' } });
   });
 
   console.log(`\n${passed} étapes réussies.`);

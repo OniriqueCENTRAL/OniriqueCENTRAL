@@ -9,7 +9,8 @@
 //   player.setAccent(color)      la couleur de la lecture (celle de la pochette du projet), null : la braise d'ONIRIQUE
 //   OniriquePlayer.peaksOf(file) → Promise<{ peaks, duration }>, calculés dans le navigateur à l'envoi
 //   OniriquePlayer.tint(url)     → Promise<{ accent, glow, deep } | null>, les couleurs tirées d'une pochette
-//   OniriquePlayer.stageLabel(s) → « Maquette », « V2 », « Final » ou 
+//   OniriquePlayer.stageLabel(s) → « Maquette », « V2 », « Final », ou rien
+//   OniriquePlayer.releaseLabel(d) → « Date de sortie prévue : 4 décembre 2026 » (à venir) ou « Date de sortie : … » (passée)
 //   OniriquePlayer.icon(name)    → une icône SVG (play, pause, prev, next, shuffle, repeat, repeat1, queue, volume, mute,
 //                                  link, more, plus, close, back, download, chevron, star)
 (() => {
@@ -409,5 +410,14 @@
   }
   const stageLabel = (s) => (s === "maquette" ? "Maquette" : s === "final" ? "Final" : /^v\d+$/.test(s || "") ? s.toUpperCase() : "");
 
-  window.OniriquePlayer = { create, peaksOf, time, icon, tint, stageLabel };
+  const releaseLabel = (day) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day || "");
+    if (!m) return "";
+    const date = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])), today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const text = date.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+    return date > today ? `Date de sortie prévue : ${text}` : `Date de sortie : ${text}`;
+  };
+
+  window.OniriquePlayer = { create, peaksOf, time, icon, tint, stageLabel, releaseLabel };
 })();

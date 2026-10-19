@@ -1774,6 +1774,9 @@
  "Ajouter une clé de licence": [
   "app/renderer/views/licenses.js"
  ],
+ "Ajouter une date de sortie": [
+  "site/mes-sons.html"
+ ],
  "Ajouter une personne": [
   "site/partage.html"
  ],
@@ -3188,6 +3191,9 @@
  "Choisi par toi": [
   "site/stems.html"
  ],
+ "Choisir la date de sortie": [
+  "site/mes-sons.html"
+ ],
  "Choisir le fichier": [
   "app/renderer/views/admin.js"
  ],
@@ -4094,6 +4100,15 @@
  ],
  "Date de sortie :": [
   "site/checklist-sortie.html"
+ ],
+ "Date de sortie : {}": [
+  "site/assets/sounds-player.js"
+ ],
+ "Date de sortie invalide.": [
+  "server/src/sounds.js"
+ ],
+ "Date de sortie prévue : {}": [
+  "site/assets/sounds-player.js"
  ],
  "Date et pochette annoncées": [
   "site/checklist-sortie.html"
@@ -10193,6 +10208,9 @@
  ],
  "Retirer l'image de {} ?": [
   "app/renderer/views/admin.js"
+ ],
+ "Retirer la date de sortie": [
+  "site/mes-sons.html"
  ],
  "Retirer la démo": [
   "site/admin.html",

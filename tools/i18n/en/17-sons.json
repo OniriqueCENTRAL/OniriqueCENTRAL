@@ -235,5 +235,11 @@
  "Qui a masterisé": "Who mastered",
  "Qui a enregistré": "Who recorded",
  "Les personnes qui ont travaillé sur ce titre. Les auditeurs de tes liens les voient sous le titre.": "The people who worked on this track. Listeners of your links see them under the track.",
- "Dépose tes sons ou une pochette ici": "Drop your sounds or a cover here"
+ "Dépose tes sons ou une pochette ici": "Drop your sounds or a cover here",
+ "Date de sortie prévue : {}": "Planned release: {}",
+ "Date de sortie : {}": "Released: {}",
+ "Ajouter une date de sortie": "Add a release date",
+ "Choisir la date de sortie": "Choose the release date",
+ "Retirer la date de sortie": "Remove the release date",
+ "Date de sortie invalide.": "Invalid release date."
 }
