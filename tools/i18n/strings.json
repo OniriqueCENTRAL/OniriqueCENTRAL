@@ -7611,6 +7611,7 @@
   "site/admin.html",
   "site/compte.html",
   "site/confidentialite.html",
+  "site/onirique.html",
   "server/src/sounds.js"
  ],
  "Mes sons est réservé aux membres ONIRIQUE.": [
@@ -11322,6 +11323,9 @@
  ],
  "Tes pics dépassent −1 dBTP : risque de saturation à la conversion par les plateformes.": [
   "site/comparer-mix.html"
+ ],
+ "Tes projets, tes versions et tes liens d'écoute privés": [
+  "site/onirique.html"
  ],
  "Tessiture": [
   "site/assets/tools-menu.js"
