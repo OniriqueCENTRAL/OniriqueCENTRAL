@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=08dbfd0a"></script>
+<script src="assets/i18n.js?v=bc04f748"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Écoute privée</title>
 <meta name="robots" content="noindex, nofollow">
@@ -74,6 +74,9 @@ h1.title { font: 800 clamp(24px, 5vw, 36px)/1.12 var(--f-display); margin: 10px 
 .trk b { display: block; font: 700 15px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .trk small { color: var(--haze); font-size: 12px; }
 .trk .len { font: 500 12px var(--f-mono); color: var(--haze); }
+.cover-by { margin-top: 12px; font-size: 14px; color: var(--haze); }
+.cover-by b { color: var(--mist); font-weight: 600; }
+.trk .credits { display: block; color: var(--haze); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dl { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 8px; color: var(--haze); }
 .dl:hover { color: var(--mist); background: rgba(255,255,255,.06); }
 footer { padding: 30px 0 140px; text-align: center; font-size: 13px; }
@@ -101,7 +104,10 @@ footer { padding: 30px 0 140px; text-align: center; font-size: 13px; }
   <section class="panel" id="gone" hidden><p class="error" id="gone-text" style="margin:0"></p></section>
 
   <section class="album" id="room" hidden>
-    <div class="art" id="cover"></div>
+    <div>
+      <div class="art" id="cover"></div>
+      <div class="cover-by" id="cover-by" hidden></div>
+    </div>
     <div>
       <div class="head">
         <div>
@@ -157,6 +163,13 @@ const player = OP.create({
 const theme = (t) => t && Object.entries({ "--ember": t.accent, "--glow-1": t.glow, "--glow-2": t.deep })
   .forEach(([k, v]) => document.documentElement.style.setProperty(k, v));
 
+// Les crédits d'un titre, sur une ligne : « Prod. X · Mix Y · Master Z · Rec W ».
+const CREDITS = [["beat", "Prod."], ["mix", "Mix"], ["master", "Master"], ["rec", "Rec"]];
+const creditsLine = (credits) => {
+  const parts = CREDITS.filter(([k]) => credits[k]).map(([k, label]) => label + " " + credits[k]);
+  return parts.length ? el("span", { className: "credits", textContent: parts.join(" · "), title: parts.join(" · ") }) : null;
+};
+
 function show(data) {
   if (data.pass) { pass = data.pass; try { sessionStorage.setItem(PASS, pass); } catch {} }
   $("locked").hidden = $("account").hidden = true;
@@ -170,13 +183,16 @@ function show(data) {
   const ph = el("div", { className: "cover-ph", innerHTML: '<svg viewBox="0 0 24 24"><path d="M12 1.5 13.3 10.7 22.5 12 13.3 13.3 12 22.5 10.7 13.3 1.5 12 10.7 10.7Z" fill="currentColor"/></svg>' });
   $("cover").replaceChildren(data.cover ? el("img", { src: data.cover, alt: "" }) : ph);
   OP.tint(data.cover).then((t) => { theme(t); player.setAccent(t && t.accent); });
+  $("cover-by").hidden = !data.coverBy;
+  $("cover-by").replaceChildren("Pochette : ", el("b", { textContent: data.coverBy || "" }));
   items = data.tracks.map((t) => ({ key: "v" + t.version.id, id: t.version.id, trackId: t.id, title: t.title, stage: t.stage,
     subtitle: [data.owner, OP.stageLabel(t.stage)].filter(Boolean).join(" · "), cover: data.cover,
-    url: t.version.url, downloadUrl: t.version.downloadUrl, duration: t.version.duration, peaks: t.version.peaks, comments: t.comments }));
+    url: t.version.url, downloadUrl: t.version.downloadUrl, duration: t.version.duration, peaks: t.version.peaks, comments: t.comments, credits: t.credits || {} }));
   $("tracks").replaceChildren(...items.map((it, i) => {
     const row = el("li", { className: "trk", tabIndex: 0 },
       el("span", { className: "num", textContent: String(i + 1) }),
-      el("div", {}, el("b", { textContent: it.title }), it.comments.length ? el("small", { textContent: it.comments.length + " commentaire" + (it.comments.length > 1 ? "s" : "") }) : null),
+      el("div", {}, el("b", { textContent: it.title }), creditsLine(it.credits),
+        it.comments.length ? el("small", { textContent: it.comments.length + " commentaire" + (it.comments.length > 1 ? "s" : "") }) : null),
       el("span", { className: "stage " + (it.stage === "maquette" || it.stage === "final" ? it.stage : it.stage ? "version" : ""), textContent: OP.stageLabel(it.stage) }),
       el("span", { className: "len", textContent: it.duration ? OP.time(it.duration) : "" }),
       it.downloadUrl ? el("a", { className: "dl", href: it.downloadUrl, title: "Télécharger", ariaLabel: "Télécharger " + it.title, onclick: (event) => event.stopPropagation() }, icon("download")) : el("span"));

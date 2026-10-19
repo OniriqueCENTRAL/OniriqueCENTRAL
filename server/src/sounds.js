@@ -79,6 +79,14 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 's
   db.exec(`ALTER TABLE sound_tracks ADD COLUMN stage TEXT NOT NULL DEFAULT ''`);
 }
 export const STAGE = /^(|maquette|final|v[1-9][0-9]?)$/;
+// Les crédits d'un titre (beatmaker, ingés mix, master, rec) et l'auteur de la pochette d'un projet.
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'credits'`).get()) {
+  db.exec(`ALTER TABLE sound_tracks ADD COLUMN credits TEXT NOT NULL DEFAULT '{}'`);
+}
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'cover_by'`).get()) {
+  db.exec(`ALTER TABLE sound_projects ADD COLUMN cover_by TEXT NOT NULL DEFAULT ''`);
+}
+export const CREDIT_ROLES = ['beat', 'mix', 'master', 'rec'];
 
 export const soundsDir = path.join(config.dataDir, 'sounds');
 fs.mkdirSync(soundsDir, { recursive: true });
@@ -135,6 +143,7 @@ const versionView = (v, i, download) => ({
 });
 const commentView = (c) => ({ id: c.id, trackId: c.track_id, versionId: c.version_id, author: c.author, at: c.at, body: c.body, createdAt: c.created_at });
 const media = (name) => (name ? `/api/media/${name}` : null);
+const creditsOf = (row) => { try { return JSON.parse(row.credits || '{}'); } catch { return {}; } };
 const person = (u) => ({ id: u.id, name: u.name || 'ONIRIQUE', avatar: media(u.avatar) });
 const linkView = (l) => ({
   id: l.id, url: `${config.siteUrl}/ecoute?t=${l.token}`, projectId: l.project_id, trackId: l.track_id, label: l.label,
@@ -222,11 +231,11 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       owner: person(req.user),
       quota: { used: usedBy(req.user.id), limit: quotaBytes(), full: d.used / d.total >= diskMax() },
       projects: projects.map((p) => ({
-        id: p.id, title: p.title, cover: media(p.cover), createdAt: p.created_at,
+        id: p.id, title: p.title, cover: media(p.cover), coverBy: p.cover_by, createdAt: p.created_at,
         tracks: tracks.filter((t) => t.project_id === p.id).map((t) => {
           const mine = plays.filter((r) => r.track_id === t.id);
           return {
-            id: t.id, title: t.title, stage: t.stage, currentId: t.current_id, createdAt: t.created_at,
+            id: t.id, title: t.title, stage: t.stage, credits: creditsOf(t), currentId: t.current_id, createdAt: t.created_at,
             versions: versions.filter((v) => v.track_id === t.id).map((v, i) => versionView(v, i, true)),
             comments: comments.filter((c) => c.track_id === t.id).map(commentView),
             plays: mine.length, lastPlay: mine[0]?.created_at ?? null, listeners: listeners(mine),
@@ -253,6 +262,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       if (!title) throw new HttpError(400, 'Donne un nom au projet.');
       run('UPDATE sound_projects SET title = ? WHERE id = ?', title, p.id);
     }
+    if (req.body.coverBy !== undefined) run('UPDATE sound_projects SET cover_by = ? WHERE id = ?', str(req.body.coverBy, 80), p.id);
     // L'ordre des titres : la liste de leurs identifiants, seulement ceux de ce projet.
     if (Array.isArray(req.body.order)) transaction(() => req.body.order.forEach((tid, i) =>
       run('UPDATE sound_tracks SET position = ? WHERE id = ? AND project_id = ?', i, id(tid), p.id)));
@@ -300,6 +310,11 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   }));
   app.patch('/api/me/sounds/tracks/:id', ...me, (req, res) => {
     const t = track(req, req.params.id);
+    // Les crédits : un nom par rôle, un rôle vide est retiré.
+    if (req.body.credits && typeof req.body.credits === 'object') {
+      const credits = Object.fromEntries(CREDIT_ROLES.map((role) => [role, str(req.body.credits[role], 120)]).filter(([, name]) => name));
+      run('UPDATE sound_tracks SET credits = ? WHERE id = ?', JSON.stringify(credits), t.id);
+    }
     if (req.body.stage !== undefined) {
       const stage = String(req.body.stage).toLowerCase();
       if (!STAGE.test(stage)) throw new HttpError(400, 'Étape inconnue : maquette, V1 à V99 ou final.');
@@ -472,10 +487,10 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     res.set('Cache-Control', 'no-store');
     res.json({
       pass: link.password_hash ? passFor(link) : null,
-      owner: link.owner_name || 'ONIRIQUE', ownerAvatar: media(link.owner_avatar), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover),
+      owner: link.owner_name || 'ONIRIQUE', ownerAvatar: media(link.owner_avatar), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover), coverBy: p.cover_by,
       download: !!link.download,
       tracks: tracks.map((t) => ({
-        id: t.id, title: t.title, stage: t.stage,
+        id: t.id, title: t.title, stage: t.stage, credits: creditsOf(t),
         version: { id: t.vid, filename: t.filename, duration: t.duration, peaks: JSON.parse(t.peaks), url: audioUrl(t.vid), downloadUrl: link.download ? audioUrl(t.vid, true) : null },
         comments: comments.filter((c) => c.track_id === t.id).map(commentView),
       })),

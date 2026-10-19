@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=08dbfd0a"></script>
+<script src="assets/i18n.js?v=bc04f748"></script>
 <script src="assets/annonce.js?v=1"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Mes sons</title>
@@ -129,6 +129,20 @@ body.has-player .uploads { bottom: calc(92px + env(safe-area-inset-bottom)); }
 .trk.dragging { opacity: .35; }
 .trk.drop-before { box-shadow: 0 -2px 0 var(--ember); }
 .trk.drop-after { box-shadow: 0 2px 0 var(--ember); }
+/* Ouvrir ou quitter un projet : la pochette glisse de la grille à sa place, le reste apparaît en cascade */
+::view-transition-group(cover) { animation-duration: .55s; animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
+::view-transition-image-pair(cover) { isolation: auto; }
+::view-transition-old(cover), ::view-transition-new(cover) { animation: none; mix-blend-mode: normal; height: 100%; object-fit: cover; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .28s; }
+@keyframes rise-in { from { opacity: 0; transform: translateY(14px); } }
+@keyframes cover-in { from { opacity: 0; transform: scale(.94); } }
+.entering .trk, .entering .tile, .entering .album-head, .entering .album .row, .entering .add-bar, .entering .cover-by, .entering .crumb {
+  animation: rise-in .5s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i, 0) * 40ms + 140ms); }
+.entering.no-vt .album .art { animation: cover-in .5s cubic-bezier(.2, .8, .2, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .entering *, .entering.no-vt .album .art { animation: none !important; }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
 .drop-zone { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(13,8,9,.82); border: 2px dashed var(--ember); font: 700 20px var(--f-display); pointer-events: none; }
 
 /* Le bouton + et son menu */
@@ -181,6 +195,18 @@ button.item:hover { background: rgba(255,255,255,.04); }
 .title-edit { padding: 2px 6px; margin: 0 -6px; border-radius: 8px; cursor: text; outline: none; }
 .title-edit:hover { background: rgba(255,255,255,.05); }
 .title-edit:focus { background: rgba(0,0,0,.45); box-shadow: 0 0 0 1px var(--ember); }
+.title-edit:empty::before { content: attr(data-placeholder); color: var(--haze); font-style: italic; }
+/* L'auteur de la pochette, sous la pochette du projet */
+.cover-by { display: flex; align-items: baseline; gap: 8px; margin-top: 12px; font-size: 14px; color: var(--haze); max-width: 400px; }
+.cover-by .eyebrow { flex: none; font-size: 11px; }
+.cover-by .title-edit { color: var(--mist); font-weight: 600; min-width: 40px; }
+.tile.drop-cover .art { outline: 2px solid var(--ember); outline-offset: 3px; }
+/* Les crédits d'un titre */
+.credits-list { display: grid; gap: 4px; margin-top: 10px; width: 100%; font-size: 13px; text-align: left; }
+.credits-list div { display: flex; gap: 10px; justify-content: space-between; padding: 6px 10px; border-radius: 10px; background: rgba(255,255,255,.035); }
+.credits-list span { color: var(--haze); }
+.credits-form { display: grid; gap: 12px; }
+.credits-form label { display: grid; gap: 6px; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
 .details-left .facts { font: 500 12px var(--f-mono); color: var(--haze); }
 .details-left canvas { width: 100%; height: 64px; margin: 14px 0 4px; }
 .details-left .file { font: 500 12px var(--f-mono); color: var(--haze); overflow-wrap: anywhere; }
@@ -265,7 +291,10 @@ button.item:hover { background: rgba(255,255,255,.04); }
       <div><b style="font:700 15px var(--f-display)">Projets</b><small id="crumb-owner"></small></div>
     </div>
     <div class="album">
-      <button class="art" id="cover" type="button" aria-label="Changer la pochette"><span class="change">Changer la pochette</span></button>
+      <div>
+        <button class="art" id="cover" type="button" aria-label="Changer la pochette"><span class="change">Changer la pochette</span></button>
+        <div class="cover-by" id="cover-by"></div>
+      </div>
       <div>
         <div class="album-head">
           <div>
@@ -289,7 +318,7 @@ button.item:hover { background: rgba(255,255,255,.04); }
 <button class="fab" id="fab" type="button" hidden></button>
 <input type="file" id="files" accept="audio/*,.wav,.aif,.aiff,.flac,.mp3,.ogg,.m4a" multiple hidden>
 <input type="file" id="cover-file" accept="image/png,image/jpeg,image/webp" hidden>
-<div class="drop-zone" id="drop-zone" hidden>Dépose tes sons ici</div>
+<div class="drop-zone" id="drop-zone" hidden>Dépose tes sons ou une pochette ici</div>
 <section class="uploads" id="uploads" hidden aria-label="Envois en cours">
   <div class="uploads-head"><b>Envoi des sons</b><span id="uploads-count" role="status"></span><button class="x" id="uploads-close" type="button" aria-label="Fermer" hidden></button></div>
   <div class="uploads-total"><i id="uploads-total"></i></div>
@@ -452,6 +481,40 @@ function render() {
   markPlaying();
 }
 addEventListener("hashchange", () => { closeMenu(); render(); scrollTo(0, 0); });
+// Aller à un projet (#/p/<id>) ou revenir à la grille (""), avec l'animation : la pochette passe de la vignette à la
+// grande pochette (View Transitions quand le navigateur les connaît), puis le reste de la page arrive en cascade.
+function navigate(hash) {
+  const opening = hash.startsWith("#/p/");
+  const pid = opening ? Number(hash.slice(4)) : openId();
+  const tileArt = () => document.querySelector('.tile[data-id="' + pid + '"] .art');
+  const go = () => {
+    history.pushState(null, "", hash || location.pathname + location.search);
+    closeMenu(); render(); scrollTo(0, 0);
+  };
+  const section = () => $(opening ? "project-view" : "grid-view");
+  const enter = (vt) => {
+    const sec = section();
+    sec.classList.add("entering");
+    sec.classList.toggle("no-vt", !vt);
+    setTimeout(() => sec.classList.remove("entering", "no-vt"), 1400);
+  };
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!document.startViewTransition || reduced) { go(); enter(false); return; }
+  const from = opening ? tileArt() : $("cover");
+  if (from) from.style.viewTransitionName = "cover";
+  let ran = false;
+  const vt = document.startViewTransition(() => {
+    ran = true;
+    if (from) from.style.viewTransitionName = "";
+    go();
+    const to = opening ? $("cover") : tileArt();
+    if (to) to.style.viewTransitionName = "cover";
+    enter(true);
+  });
+  vt.finished.finally(() => { for (const node of [$("cover"), tileArt()]) if (node) node.style.viewTransitionName = ""; });
+  // Une page qui ne se dessine pas (onglet en arrière-plan) retiendrait l'ouverture : passé 300 ms, sans animation.
+  setTimeout(() => { if (!ran) vt.skipTransition(); }, 300);
+}
 
 function renderGrid() {
   theme(null);
@@ -466,17 +529,20 @@ function renderGrid() {
     const playBtn = el("button", { className: "fab-play", type: "button", ariaLabel: "Écouter " + p.title, hidden: !p.tracks.length }, icon("play"));
     playBtn.onclick = (event) => { event.stopPropagation(); playProject(p); };
     const art = el("div", { className: "art", role: "link", tabIndex: 0, ariaLabel: "Ouvrir " + p.title }, coverOf(p), playBtn);
-    art.onclick = () => { location.hash = "#/p/" + p.id; };
+    art.onclick = () => navigate("#/p/" + p.id);
     art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
-    return el("div", { className: "tile" }, art,
+    const tile = el("div", { className: "tile" }, art,
       el("div", { className: "caption" }, el("div", {}, el("b", { textContent: p.title }),
         el("span", { textContent: p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre") + (linkFor("project", p.id) ? " · partagé" : "") })), more));
+    tile.dataset.id = p.id;
+    tile.style.setProperty("--i", data.projects.indexOf(p));
+    return tile;
   }));
 }
 
 function projectMenu(anchor, p) {
   menu(anchor, [
-    { label: "Ouvrir", icon: "chevron", onclick: () => { location.hash = "#/p/" + p.id; } },
+    { label: "Ouvrir", icon: "chevron", onclick: () => navigate("#/p/" + p.id) },
     p.tracks.length && { label: "Écouter", icon: "play", onclick: () => playProject(p) },
     p.tracks.length && { label: "Ajouter à la file", icon: "queue", onclick: () => p.tracks.forEach((t) => player.enqueue(itemOf(p, t))) },
     { label: "Partager", icon: "link", onclick: () => openShare("project", p.id) },
@@ -495,6 +561,8 @@ function projectMenu(anchor, p) {
 function renderProject(p) {
   tintOf(p.cover).then((t) => { if (openId() === p.id) theme(t); });
   $("crumb-owner").textContent = data.owner.name;
+  if (!$("cover-by").contains(document.activeElement)) $("cover-by").replaceChildren(el("span", { className: "eyebrow", textContent: "Pochette" }),
+    inlineEdit(p.coverBy, "Ajouter l'auteur de la pochette", 80, (coverBy) => api("PATCH", "/me/sounds/projects/" + p.id, { coverBy }).then(refresh), true));
   if ($("cover").dataset.src !== (p.cover || "-")) {
     $("cover").dataset.src = p.cover || "-";
     $("cover").replaceChildren(coverOf(p), el("span", { className: "change", textContent: "Changer la pochette" }));
@@ -518,7 +586,7 @@ function trackRow(p, t, i) {
   const v = live(t);
   const more = el("button", { className: "dots", type: "button", ariaLabel: "Options de " + t.title }, icon("more"));
   more.onclick = (event) => { event.stopPropagation(); openDetails(t.id); };
-  const row = el("li", { className: "trk", draggable: true, tabIndex: 0, title: "Écouter (glisser pour réordonner)" },
+  const row = el("li", { className: "trk", draggable: true, tabIndex: 0, title: "Écouter (glisser pour réordonner)", style: "--i:" + (i + 3) },
     el("span", { className: "num", textContent: String(i + 1) }),
     el("div", {}, el("b", { textContent: t.title }), el("small", { textContent: [day(v.createdAt), "v" + v.n + (t.versions.length > 1 ? " sur " + t.versions.length : ""),
       t.comments.length ? t.comments.length + " commentaire" + (t.comments.length > 1 ? "s" : "") : null,
@@ -637,29 +705,43 @@ $("files").onchange = () => {
 };
 let coverTarget = null;
 function pickCover(p) { coverTarget = p; $("cover-file").click(); }
-$("cover-file").onchange = async () => {
-  const f = $("cover-file").files[0];
-  $("cover-file").value = "";
-  if (!f || !coverTarget) return;
+async function uploadCover(p, f) {
   try {
-    const response = await fetch("/api/me/sounds/projects/" + coverTarget.id + "/cover", { method: "PUT", headers: { Authorization: "Bearer " + token, "Content-Type": f.type }, body: f });
+    const response = await fetch("/api/me/sounds/projects/" + p.id + "/cover", { method: "PUT", headers: { Authorization: "Bearer " + token, "Content-Type": f.type }, body: f });
     if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Image refusée.");
     await refresh();
   } catch (error) { fail(error); }
+}
+$("cover-file").onchange = () => {
+  const f = $("cover-file").files[0];
+  $("cover-file").value = "";
+  if (f && coverTarget) uploadCover(coverTarget, f);
 };
-// Glisser des fichiers sur la page : dans le projet ouvert, ou un nouveau projet depuis la grille.
+// Glisser des fichiers sur la page : des sons vont dans le projet ouvert (ou un nouveau projet depuis la grille) ; une
+// image devient la pochette du projet ouvert, ou celle du projet de la grille sur lequel on la lâche.
 let dragDepth = 0;
 const hasFiles = (event) => event.dataTransfer && [...event.dataTransfer.types].includes("Files");
 addEventListener("dragenter", (event) => { if (hasFiles(event) && data && !data.quota.full) { dragDepth++; $("drop-zone").hidden = false; } });
 addEventListener("dragleave", (event) => { if (hasFiles(event) && --dragDepth <= 0) { dragDepth = 0; $("drop-zone").hidden = true; } });
-addEventListener("dragover", (event) => { if (hasFiles(event)) event.preventDefault(); });
+const isImage = (f) => /^image\/(png|jpeg|webp)$/.test(f.type);
+addEventListener("dragover", (event) => {
+  if (!hasFiles(event)) return;
+  event.preventDefault();
+  const tile = event.target.closest && event.target.closest(".tile");
+  document.querySelectorAll(".tile.drop-cover").forEach((x) => x !== tile && x.classList.remove("drop-cover"));
+  if (tile) tile.classList.add("drop-cover");
+});
 addEventListener("drop", (event) => {
   if (!hasFiles(event)) return;
   event.preventDefault();
   dragDepth = 0; $("drop-zone").hidden = true;
-  if (data.quota.full) return;
-  const p = openId() && project();
-  p ? sendFiles(event.dataTransfer.files, p) : newProjectWith([...event.dataTransfer.files]).catch(fail);
+  document.querySelectorAll(".tile.drop-cover").forEach((x) => x.classList.remove("drop-cover"));
+  const files = [...event.dataTransfer.files], image = files.find(isImage), sounds = files.filter(isAudio);
+  const tile = event.target.closest && event.target.closest(".tile");
+  const p = openId() ? project() : tile && project(Number(tile.dataset.id));
+  if (image && p) uploadCover(p, image);
+  if (!sounds.length || data.quota.full) return;
+  openId() ? sendFiles(sounds, p) : newProjectWith(sounds).catch(fail);
 });
 
 // ——— Le bouton + ———
@@ -677,7 +759,7 @@ $("fab").onclick = () => {
   ]);
 };
 $("back").append(icon("back"));
-$("back").onclick = () => { location.hash = ""; };
+$("back").onclick = () => navigate("");
 $("play-all").append(icon("play"));
 $("play-all").onclick = () => { const p = project(); player.item && p.tracks.some((t) => t.id === player.item.trackId) ? player.toggle() : playProject(p); };
 $("share-project").append(icon("link"));
@@ -718,23 +800,32 @@ const item = (iconName, label, opts = {}) => {
   return el("li", {}, b);
 };
 const group = (...rows) => el("ul", { className: "group" }, ...rows.filter(Boolean));
-// Le nom du titre, modifiable sur place : Entrée ou un clic ailleurs l'enregistre, Échap l'annule.
-function titleEditor(t) {
-  const span = el("span", { className: "title-edit", contentEditable: "plaintext-only", spellcheck: false, textContent: t.title,
-    title: "Cliquer pour renommer", role: "textbox", ariaLabel: "Nom du titre" });
+// Un texte modifiable sur place : Entrée ou un clic ailleurs l'enregistre, Échap l'annule ; vide permis si allowEmpty.
+function inlineEdit(value, placeholder, max, save, allowEmpty) {
+  const span = el("span", { className: "title-edit", contentEditable: "plaintext-only", spellcheck: false, textContent: value || "",
+    title: "Cliquer pour modifier", role: "textbox", ariaLabel: placeholder });
+  span.dataset.placeholder = placeholder;
   if (span.contentEditable !== "plaintext-only") span.contentEditable = "true";
   span.onkeydown = (event) => {
     if (event.key === "Enter") { event.preventDefault(); span.blur(); }
-    if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); span.textContent = t.title; span.blur(); }
+    if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); span.textContent = value || ""; span.blur(); }
   };
   span.onpaste = (event) => { event.preventDefault(); document.execCommand("insertText", false, event.clipboardData.getData("text/plain").replace(/\s+/g, " ")); };
   span.onblur = () => {
-    const title = span.textContent.replace(/\s+/g, " ").trim().slice(0, 120);
-    if (!title) { span.textContent = t.title; return; }
-    if (title !== t.title) api("PATCH", "/me/sounds/tracks/" + t.id, { title }).then(refresh, (error) => { span.textContent = t.title; alert(error.message); });
+    const next = span.textContent.replace(/\s+/g, " ").trim().slice(0, max);
+    span.textContent = next;
+    if (!next && !allowEmpty) { span.textContent = value || ""; return; }
+    if (next !== (value || "")) save(next).catch((error) => { span.textContent = value || ""; alert(error.message); });
   };
   return span;
 }
+const titleEditor = (t) => inlineEdit(t.title, "Nom du titre", 120, (title) => api("PATCH", "/me/sounds/tracks/" + t.id, { title }).then(refresh));
+// Les crédits d'un titre : la clé gardée par le serveur, le libellé, l'exemple du champ.
+const CREDITS = [["beat", "Beatmaker", "Qui a fait la prod"], ["mix", "Ingé mix", "Qui a mixé"], ["master", "Ingé master", "Qui a masterisé"], ["rec", "Ingé rec", "Qui a enregistré"]];
+const creditsList = (credits) => {
+  const rows = CREDITS.filter(([k]) => credits && credits[k]);
+  return rows.length ? el("div", { className: "credits-list" }, ...rows.map(([k, label]) => el("div", {}, el("span", { textContent: label }), el("b", { textContent: credits[k] })))) : null;
+};
 function renderDetails() {
   // Ne pas effacer un nom en cours de saisie quand la page se met à jour (un envoi qui se termine, par exemple).
   if (document.activeElement && document.activeElement.classList.contains("title-edit")) return;
@@ -747,7 +838,7 @@ function renderDetails() {
   const left = el("div", { className: "details-left" }, close,
     el("h2", {}, el("span", { className: "n", textContent: (i + 1) + ". " }), titleEditor(t)), stageButton(t),
     el("div", { className: "facts", textContent: [v.duration ? length(v.duration) : null, "v" + v.n + " sur " + t.versions.length, size(v.size)].filter(Boolean).join(" · ") }),
-    canvas, el("div", { className: "file", textContent: v.filename }),
+    canvas, el("div", { className: "file", textContent: v.filename }), creditsList(t.credits),
     el("button", { className: "btn btn-ghost", type: "button", style: "margin-top:10px", onclick: () => { playVersion(p, t, v); } }, icon("play"), "Écouter"));
   const back = (title) => el("h3", {}, el("button", { className: "x", type: "button", ariaLabel: "Retour", onclick: () => { detailsView = "main"; renderDetails(); } }, icon("back")), title);
   const link = linkFor("track", t.id);
@@ -758,6 +849,8 @@ function renderDetails() {
         item("star", "Étape", { state: OP.stageLabel(t.stage) || "Non précisée", chevron: true, onclick: (event) => stageMenu(event.currentTarget, t) })),
       group(
         item("queue", "Statistiques", { state: t.plays ? t.plays + " écoute" + (t.plays > 1 ? "s" : "") : "", chevron: true, onclick: () => { detailsView = "stats"; renderDetails(); } }),
+        item("star", "Crédits", { state: CREDITS.filter(([k]) => t.credits[k]).length ? CREDITS.filter(([k]) => t.credits[k]).map(([k]) => t.credits[k]).join(", ") : "", chevron: true,
+          onclick: () => { detailsView = "credits"; renderDetails(); } }),
         item("more", "Notes", { state: v.note ? "1" : "", chevron: true, onclick: () => { detailsView = "notes"; renderDetails(); } }),
         item("expand", "Commentaires", { state: t.comments.length ? String(t.comments.length) : "", chevron: true, onclick: () => { detailsView = "comments"; renderDetails(); } }),
         item("repeat", "Versions", { state: String(t.versions.length), chevron: true, onclick: () => { detailsView = "versions"; renderDetails(); } }),
@@ -783,6 +876,17 @@ function renderDetails() {
       t.listeners.length ? el("ul", { className: "group people" }, ...t.listeners.map((u) => el("li", {}, el("img", { src: avatar(u), alt: "" }),
         el("span", { className: "grow", textContent: u.name }), el("span", { className: "muted", style: "font-size:13px", textContent: longDay(u.at) })))) : null,
       el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Les auditeurs qui ne sont pas connectés à un compte ONIRIQUE sont comptés sans être nommés." })];
+  } else if (detailsView === "credits") {
+    const inputs = CREDITS.map(([k, label, hint]) => [k, el("input", { value: t.credits[k] || "", maxLength: 120, placeholder: hint, ariaLabel: label })]);
+    const saved = el("span", { className: "muted", style: "font-size:13px" });
+    const form = el("form", { className: "credits-form" }, ...inputs.map(([k, input]) => el("label", {}, CREDITS.find(([x]) => x === k)[1], input)),
+      el("div", { className: "row" }, el("button", { className: "btn btn-primary", type: "submit", textContent: "Enregistrer" }), saved));
+    form.onsubmit = (event) => {
+      event.preventDefault();
+      api("PATCH", "/me/sounds/tracks/" + t.id, { credits: Object.fromEntries(inputs.map(([k, input]) => [k, input.value])) })
+        .then(() => { saved.textContent = "Enregistré."; return refresh(); }, fail);
+    };
+    right = [back("Crédits"), el("p", { className: "muted", style: "margin:0", textContent: "Les personnes qui ont travaillé sur ce titre. Les auditeurs de tes liens les voient sous le titre." }), form];
   } else if (detailsView === "notes") {
     const note = el("textarea", { value: v.note, maxLength: 300, placeholder: "Mix 2, master, ce qu'il reste à faire…", ariaLabel: "Note de la version " + v.n });
     const saved = el("span", { className: "muted", style: "font-size:13px" });
