@@ -265,6 +265,10 @@
   "site/onirique.html",
   "site/assets/credits.js"
  ],
+ "?w=1920\")": [
+  "site/ecoute.html",
+  "site/mes-sons.html"
+ ],
  "?w=320": [
   "site/mes-liens.html"
  ],
@@ -3180,6 +3184,9 @@
   "app/renderer/views/account.js"
  ],
  "Changer la pochette": [
+  "site/mes-sons.html"
+ ],
+ "Changer le fond": [
   "site/mes-sons.html"
  ],
  "Changer le lien Spotify fait reprendre la pochette du nouveau titre.": [
@@ -6910,6 +6917,9 @@
  "le fichier téléchargé n'a pas la bonne empreinte": [
   "app/main/mac-update.js"
  ],
+ "Le fond doit faire 8 Mo au plus.": [
+  "site/mes-sons.html"
+ ],
  "Le format MP3 ajoute un court blanc au début du fichier, de quelques dizaines de millisecondes : la musique ne démarre donc pas à zéro, et tout le morceau glisse hors de la grille une fois importé. L'outil mesure ce blanc et te donne un fichier WAV qui commence exactement sur le premier son, avec le BPM et la tonalité dans son nom. Ce WAV est en 24 bits et en 48 kHz au moins (ou à la fréquence du fichier d'origine si elle est plus haute) : c'est la meilleure qualité que le fichier déposé permet, mais un MP3 converti en WAV ne retrouve pas ce que la compression lui a retiré. Importe ce WAV à la place du MP3 : il tombe sur les temps.": [
   "site/bpm-tonalite.html"
  ],
@@ -10611,6 +10621,9 @@
  "Retirer la version {} ?": [
   "app/renderer/views/admin.js"
  ],
+ "Retirer le fond": [
+  "site/mes-sons.html"
+ ],
  "Retour": [
   "site/mes-sons.html"
  ],
@@ -12535,6 +12548,10 @@
  ],
  "url('{}')": [
   "site/assets/credits.js"
+ ],
+ "url(\"": [
+  "site/ecoute.html",
+  "site/mes-sons.html"
  ],
  "url(\"{}?w=1280\") center / cover": [
   "site/assets/linkpage.js"

@@ -140,6 +140,10 @@ const ACCESS = '(p.user_id = ? OR p.id IN (SELECT project_id FROM sound_collabs 
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'day'`).get()) {
   db.exec(`ALTER TABLE sound_tracks ADD COLUMN day TEXT NOT NULL DEFAULT ''`);
 }
+// L'image de fond d'un projet (sa page et sa page d'écoute), choisie en mode édition.
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'background'`).get()) {
+  db.exec('ALTER TABLE sound_projects ADD COLUMN background TEXT');
+}
 const isDay = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value + 'T00:00:00Z'))
   && new Date(value + 'T00:00:00Z').toISOString().startsWith(value);
 
@@ -417,7 +421,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       owner: person(req.user),
       quota: { used: usedBy(req.user.id), limit: quotaBytes(), full: d.used / d.total >= diskMax() },
       projects: projects.map((p) => ({
-        id: p.id, title: p.title, artist: p.artist, cover: media(p.cover), coverBy: p.cover_by, releaseDate: p.release_date, createdAt: p.created_at,
+        id: p.id, title: p.title, artist: p.artist, cover: media(p.cover), background: media(p.background), coverBy: p.cover_by, releaseDate: p.release_date, createdAt: p.created_at,
         // Les dossiers sont ceux de l'auteur : un projet où l'on collabore est à la racine de sa page.
         mine: p.user_id === u, folderId: p.user_id === u ? p.folder_id : null,
         owner: person({ id: p.user_id, name: p.owner_name, avatar: p.owner_avatar }),
@@ -526,6 +530,22 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     run('DELETE FROM sound_projects WHERE id = ?', p.id);
     removeVersionFiles(files);
     if (p.cover) removeMedia(p.cover);
+    if (p.background) removeMedia(p.background);
+    res.json({ ok: true });
+  });
+  // Le fond de la page du projet : une image (8 Mo au plus) ; DELETE le retire.
+  app.put('/api/me/sounds/projects/:id/background', ...me, wrap(async (req, res) => {
+    const p = project(req, req.params.id);
+    rateLimit(`sounds-cover:${req.user.id}`, 30);
+    const name = await receiveImage(req, 8 * 1024 * 1024);
+    run('UPDATE sound_projects SET background = ? WHERE id = ?', name, p.id);
+    if (p.background) removeMedia(p.background);
+    res.json({ background: media(name) });
+  }));
+  app.delete('/api/me/sounds/projects/:id/background', ...me, (req, res) => {
+    const p = project(req, req.params.id);
+    run('UPDATE sound_projects SET background = NULL WHERE id = ?', p.id);
+    if (p.background) removeMedia(p.background);
     res.json({ ok: true });
   });
   app.put('/api/me/sounds/projects/:id/cover', ...me, wrap(async (req, res) => {
@@ -802,7 +822,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     res.json({
       pass: link.password_hash ? passFor(link) : null,
       ...saveState(req, link),
-      owner: p.artist || link.owner_name || 'ONIRIQUE', ownerAvatar: media(link.owner_avatar), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover), coverBy: p.cover_by, releaseDate: p.release_date,
+      owner: p.artist || link.owner_name || 'ONIRIQUE', ownerAvatar: media(link.owner_avatar), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover), background: media(p.background), coverBy: p.cover_by, releaseDate: p.release_date,
       download: !!link.download,
       tracks: tracks.map((t) => ({
         id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t),

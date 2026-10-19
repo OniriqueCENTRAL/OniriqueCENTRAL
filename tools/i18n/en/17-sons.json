@@ -325,5 +325,8 @@
  "Date du titre": "Track date",
  "Ajouter une date (création, enregistrement…)": "Add a date (creation, recording…)",
  "Date de": "Date of",
- "Date invalide.": "Invalid date."
+ "Date invalide.": "Invalid date.",
+ "Changer le fond": "Change background",
+ "Retirer le fond": "Remove background",
+ "Le fond doit faire 8 Mo au plus.": "The background must be 8 MB at most."
 }
