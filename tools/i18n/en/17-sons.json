@@ -241,5 +241,11 @@
  "Ajouter une date de sortie": "Add a release date",
  "Choisir la date de sortie": "Choose the release date",
  "Retirer la date de sortie": "Remove the release date",
- "Date de sortie invalide.": "Invalid release date."
+ "Date de sortie invalide.": "Invalid release date.",
+ "Volume avant sortie": "Loudness before release",
+ "Comparer à une référence": "Compare to a reference",
+ "LUFS, pics, et ce que chaque plateforme fera du titre": "LUFS, peaks, and what each platform will do to the track",
+ "Ton titre face à un son de référence, volumes égalisés": "Your track against a reference, at matched loudness",
+ "Le son n'a pas pu être lu : rouvre l'outil depuis Mes sons.": "The sound could not be read: reopen the tool from My sounds.",
+ "La pochette doit faire 5 Mo au plus.": "The cover must be 5 MB at most."
 }

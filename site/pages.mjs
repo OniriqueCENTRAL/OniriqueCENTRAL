@@ -25,7 +25,7 @@ const NAV = [
 const page = ({ file, title, description, intro, body }) => `<!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=5dfe885c"></script>
+<script src="assets/i18n.js?v=22695b33"></script>
 <script src="assets/annonce.js?v=1"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${title} — ONIRIQUE</title>

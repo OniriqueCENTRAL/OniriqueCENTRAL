@@ -236,6 +236,9 @@
  "?bpm=": [
   "site/delais.html"
  ],
+ "?embed=1&src=": [
+  "site/mes-sons.html"
+ ],
  "?filename=": [
   "site/mes-sons.html"
  ],
@@ -877,6 +880,7 @@
   "server/src/mailbox.js"
  ],
  "\\u003c": [
+  "server/src/app.js",
   "server/src/linkpage.js"
  ],
  "&amp;": [
@@ -899,6 +903,9 @@
   "site/assets/credits.js",
   "server/src/linkpage.js",
   "server/src/mailtemplate.js"
+ ],
+ "&name=": [
+  "site/mes-sons.html"
  ],
  "&quot;": [
   "site/onirique.html",
@@ -3529,6 +3536,7 @@
   "site/onirique.html"
  ],
  "Comparer à une référence": [
+  "site/mes-sons.html",
   "site/assets/tools-menu.js"
  ],
  "Comparer son mix à une référence — ONIRIQUE": [
@@ -6507,6 +6515,9 @@
  "La phrase grise après l'objet, dans la boîte de réception": [
   "site/admin.html"
  ],
+ "La pochette doit faire 5 Mo au plus.": [
+  "site/mes-sons.html"
+ ],
  "La recherche n'a pas abouti.": [
   "site/comparer-mix.html"
  ],
@@ -6828,6 +6839,9 @@
  "Le son du micro est analysé dans ton navigateur : rien n'est enregistré ni envoyé.": [
   "site/accordeur.html",
   "site/tessiture.html"
+ ],
+ "Le son n'a pas pu être lu : rouvre l'outil depuis Mes sons.": [
+  "site/assets/audio-kit.js"
  ],
  "Le son seul ne distingue pas une voix d'un piano ou d'une guitare : ces pistes-là sont rangées dans « Melodie » tant que leur nom n'en dit pas plus. Le type se corrige d'un clic dans le tableau, et le pack suit.": [
   "site/stems.html"
@@ -7442,6 +7456,9 @@
  "LUFS": [
   "site/comparer-mix.html",
   "site/volume-lufs.html"
+ ],
+ "LUFS, pics, et ce que chaque plateforme fera du titre": [
+  "site/mes-sons.html"
  ],
  "Lydian (lydien)": [
   "site/gammes.html"
@@ -9672,6 +9689,9 @@
  "public, max-age=30": [
   "server/src/linkpage.js"
  ],
+ "public, max-age=60": [
+  "server/src/app.js"
+ ],
  "public, max-age=86400": [
   "server/src/linkpage.js"
  ],
@@ -11574,6 +11594,9 @@
  "Ton score de": [
   "site/popularite.html"
  ],
+ "Ton titre face à un son de référence, volumes égalisés": [
+  "site/mes-sons.html"
+ ],
  "tonalité": [
   "site/bpm-tonalite.html"
  ],
@@ -12418,6 +12441,7 @@
   "site/assets/sounds-player.js"
  ],
  "Volume avant sortie": [
+  "site/mes-sons.html",
   "site/assets/tools-menu.js"
  ],
  "Volume d'un master (LUFS) avant sortie — ONIRIQUE": [
@@ -12666,6 +12690,9 @@
  ],
  "width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.4);color:var(--mist);font:500 14px var(--f-body);color-scheme:dark": [
   "site/admin.html"
+ ],
+ "window.OniriqueAnnounce&&OniriqueAnnounce({});": [
+  "server/src/app.js"
  ],
  "Windows": [
   "site/admin.html",
