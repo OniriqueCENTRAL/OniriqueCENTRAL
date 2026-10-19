@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=f3371cce"></script>
+<script src="assets/i18n.js?v=f5f29219"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -133,7 +133,7 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-
 </header>
 
 <main class="wrap">
-  <div class="eyebrow">Fondateurs</div>
+  <div class="eyebrow">Membres ONIRIQUE</div>
   <h1>Ma page de <em>liens</em></h1>
   <p class="muted" style="max-width:68ch;margin:0">Une page à mettre dans ta bio Instagram ou TikTok : chaque lien ouvre directement l'application de la plateforme (Spotify, YouTube, Instagram…) chez la personne qui clique, et non son site. Tout se règle ici, l'aperçu suit en direct.</p>
 
@@ -577,7 +577,7 @@ $("copy").onclick = async () => {
     if (!saved) { dirty = true; $("state").textContent = "Pas encore en ligne : enregistre ta page"; $("state").className = "state dirty"; }
     loadStats();
   } catch (error) {
-    gate(error.status === 403 ? "<p>La page de liens est réservée aux fondateurs d'ONIRIQUE.</p>"
+    gate(error.status === 403 ? "<p>La page de liens est réservée aux membres ONIRIQUE.</p>"
       : error.status === 401 ? '<p>Ta session a expiré.</p><a class="btn btn-primary" href="compte.html">Se reconnecter</a>' : "<p></p>");
     if (error.status !== 403 && error.status !== 401) $("gate").firstChild.textContent = error.message;
   }

@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=f3371cce"></script>
+<script src="assets/i18n.js?v=f5f29219"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -252,7 +252,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
       </form>
     </div>
 
-    <!-- Réservé aux fondateurs : leur page « link in bio », éditée dans mes-liens.html -->
+    <!-- Réservé aux membres ONIRIQUE et aux fondateurs : leur page « link in bio », éditée dans mes-liens.html -->
     <div class="panel" id="liens-panel" hidden>
       <div class="eyebrow">Page de liens</div>
       <div class="between">
@@ -446,7 +446,7 @@ function show(me) {
   $("profile-name").value = me.user.name || "";
   // Profil d'ingé : les fondateurs seulement. Sans photo d'ingé, une silhouette (jamais la photo du compte).
   $("inge").hidden = me.user.role !== "founder";
-  $("liens-panel").hidden = me.user.role !== "founder";
+  $("liens-panel").hidden = !["vip", "founder"].includes(me.user.role);
   $("sons-panel").hidden = !["vip", "founder"].includes(me.user.role);
   $("eng-name").value = me.user.engineerName || "";
   $("eng-avatar").src = me.user.engineerAvatar || "assets/logo-small.png";

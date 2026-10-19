@@ -8,7 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 import { db, get, all, run, now, setting, setSetting, transaction } from './db.js';
-import { HttpError, rateLimit, optionalUser, hashPassword, verifyPassword } from './auth.js';
+import { HttpError, rateLimit, optionalUser, hashPassword, verifyPassword, MEMBERS } from './auth.js';
 import { sendMail } from './mail.js';
 import { escapeHtml } from './mailtemplate.js';
 import { textImage } from './linkpage.js';
@@ -124,7 +124,6 @@ fs.mkdirSync(soundsDir, { recursive: true });
 
 const MAX_FILE = 500 * 1024 * 1024;
 const GB = 1024 ** 3;
-export const MEMBERS = ['vip', 'founder'];
 const str = (value, max = 200) => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, max) : '');
 const id = (value) => (Number.isInteger(Number(value)) && Number(value) > 0 ? Number(value) : 0);
 

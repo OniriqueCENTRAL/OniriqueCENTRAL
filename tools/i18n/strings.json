@@ -112,6 +112,9 @@
   "site/confidentialite.html",
   "site/pages.mjs"
  ],
+ ": compte ONIRIQUE demandé": [
+  "server/src/sounds.js"
+ ],
  ": date, titre écouté et, si l'auditeur est connecté à son compte Onirique, ce compte": [
   "site/confidentialite.html"
  ],
@@ -190,6 +193,9 @@
  ],
  ": les projets d'autres membres qu'un membre garde dans sa page, et ses dossiers": [
   "site/confidentialite.html"
+ ],
+ ": mot de passe demandé": [
+  "server/src/sounds.js"
  ],
  ": nom indiqué (ou celui de son compte), texte, moment du titre": [
   "site/confidentialite.html"
@@ -286,6 +292,9 @@
  ". Voir les": [
   "site/cgv.html"
  ],
+ "../../site": [
+  "server/src/sounds.js"
+ ],
  ".aaxplugin/": [
   "server/src/app.js"
  ],
@@ -304,7 +313,7 @@
  ".lp, .lp * { box-sizing: border-box; } .lp { position: relative; min-height: 100%; color: var(--lp-text); font-family: var(--lp-font); overflow: hidden; isolation: isolate; } .lp-bg { position: absolute; inset: 0; z-index: -1; background: var(--lp-bg); background-size: cover; background-position: center; } .lp-bg::after { content: \"\"; position: absolute; inset: 0; background: rgba(0,0,0,var(--lp-dim)); } .lp-inner { max-width: 580px; margin: 0 auto; padding: 56px 18px 40px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; } .lp-avatar { width: 104px; height: 104px; object-fit: cover; border-radius: 50%; box-shadow: 0 10px 34px -12px rgba(0,0,0,.7); } .lp-avatar.square { border-radius: 22px; } .lp-name { margin: 6px 0 0; font: 700 clamp(22px, 6vw, 30px)/1.15 var(--lp-title); letter-spacing: .01em; overflow-wrap: anywhere; } .lp-bio { margin: 0; max-width: 46ch; font-size: 15px; line-height: 1.5; opacity: .86; white-space: pre-line; overflow-wrap: anywhere; } .lp-icons { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin: 4px 0 6px; } .lp-icons a { display: grid; place-items: center; width: 40px; height: 40px; color: var(--lp-text); border-radius: 50%; transition: transform .15s; } .lp-icons a:hover, .lp-icons a:focus-visible { transform: scale(1.12); outline: none; } .lp-icon { width: 24px; height: 24px; flex: none; background: currentColor; -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; } .lp-links { width: 100%; display: grid; gap: 14px; margin-top: 6px; } .lp-btn { position: relative; display: flex; align-items: center; justify-content: center; min-height: 58px; padding: 14px 54px; text-decoration: none; font: 600 15.5px/1.3 var(--lp-font); color: var(--lp-btn-text); border: 2px solid var(--lp-btn); border-radius: var(--lp-radius); transition: transform .15s, filter .15s; overflow-wrap: anywhere; } .lp-btn .lp-icon { position: absolute; left: 18px; top: 50%; margin-top: -12px; } .lp-btn:hover, .lp-btn:focus-visible { transform: translateY(-2px) scale(1.01); filter: brightness(1.08); outline: none; } .lp-btn.fill { background: var(--lp-btn); } .lp-btn.outline { background: transparent; } .lp-btn.glass { background: color-mix(in srgb, var(--lp-btn) 22%, transparent); border-color: color-mix(in srgb, var(--lp-btn) 70%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); } .lp.shadow .lp-btn { box-shadow: 0 10px 26px -14px rgba(0,0,0,.85); } .lp-foot { margin-top: 26px; font: 600 11px/1 'JetBrains Mono', monospace; letter-spacing: .2em; text-transform: uppercase; color: var(--lp-text); opacity: .55; text-decoration: none; } .lp-foot:hover { opacity: .9; } .lp-empty { opacity: .6; font-size: 14px; } .lp-tiktok { width: 100%; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--lp-btn) 18%, rgba(0,0,0,.35)); border: 1px solid color-mix(in srgb, var(--lp-btn) 50%, transparent); font-size: 13.5px; line-height: 1.45; } .lp-btn .lp-more { position: absolute; right: 20px; top: 50%; width: 9px; height: 9px; margin-top: -7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); opacity: .8; } .lp-sheet { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; } .lp.preview .lp-sheet { position: absolute; } .lp-sheet-back { position: absolute; inset: 0; background: rgba(0,0,0,.6); animation: lp-fade .2s ease-out; } .lp-sheet-card { position: relative; width: 100%; max-width: 480px; max-height: 86%; overflow: auto; padding: 22px 18px calc(22px + env(safe-area-inset-bottom)); border-radius: 26px 26px 0 0; background: color-mix(in srgb, var(--lp-sheet) 92%, #000); color: var(--lp-text); text-align: center; animation: lp-rise .25s ease-out; box-shadow: 0 -20px 60px -20px rgba(0,0,0,.8); } @keyframes lp-fade { from { opacity: 0; } } @keyframes lp-rise { from { transform: translateY(40px); opacity: 0; } } .lp-sheet-close { position: absolute; right: 12px; top: 12px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: rgba(255,255,255,.08); color: inherit; font-size: 15px; cursor: pointer; } .lp-sheet-cover { width: 120px; height: 120px; border-radius: 14px; object-fit: cover; box-shadow: 0 14px 34px -14px rgba(0,0,0,.9); } .lp-sheet-cover.artist { border-radius: 50%; } .lp-sheet-title { margin: 12px 0 0; font: 700 18px/1.25 var(--lp-title); overflow-wrap: anywhere; } .lp-sheet-artist { margin: 4px 0 0; font-size: 14px; opacity: .75; } .lp-sheet-list { display: grid; gap: 8px; margin-top: 18px; text-align: left; } .lp-plat { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--lp-text) 16%, transparent); color: inherit; text-decoration: none; font: 600 15px/1.2 var(--lp-font); } .lp-plat:hover, .lp-plat:focus-visible { background: color-mix(in srgb, var(--lp-text) 8%, transparent); outline: none; } .lp-plat b { flex: 1; font-weight: 600; } .lp-plat em { font: 600 11px/1 'JetBrains Mono', monospace; font-style: normal; letter-spacing: .12em; text-transform: uppercase; padding: 8px 12px; border-radius: 999px; background: var(--lp-btn); color: var(--lp-btn-text); }": [
   "site/assets/linkpage.js"
  ],
- ".op-icon { display: inline-grid; place-items: center; line-height: 0; } .op-pill { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 40; width: min(1120px, calc(100vw - 24px)); display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 8px; border-radius: 999px; border: 1px solid rgba(255,210,214,.16); background: rgba(20,9,11,.92); backdrop-filter: blur(18px); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9), 0 0 40px -18px var(--op-accent, rgba(226,52,68,.55)); } .op-pill[hidden], .op-sheet[hidden], .op-queue[hidden], .op-comments[hidden] { display: none; } .op-cover { flex: none; width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: linear-gradient(135deg, #5C0008, #2A0A0E); border: 1px solid rgba(255,210,214,.16); cursor: pointer; } .op-pill.playing .op-cover { animation: op-spin 9s linear infinite; } @keyframes op-spin { to { transform: rotate(360deg); } } @media (prefers-reduced-motion: reduce) { .op-pill.playing .op-cover { animation: none; } } .op-meta { min-width: 0; width: 170px; flex: none; cursor: pointer; line-height: 1.25; } .op-meta b { display: block; font: 700 13px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .op-meta span { display: block; font-size: 12px; color: var(--haze); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .op-mini { flex: 1; min-width: 200px; height: 44px; cursor: pointer; touch-action: none; display: block; } .op-time { flex: none; font: 500 11px var(--f-mono); color: var(--haze); white-space: nowrap; } .op-btn { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 50%; background: none; color: var(--mist); cursor: pointer; } .op-btn:hover { background: rgba(255,255,255,.06); } .op-btn.on { color: var(--op-accent, var(--ember)); } .op-btn.main { width: 42px; height: 42px; background: var(--mist); color: var(--night); } .op-btn.main:hover { background: #fff; } .op-vol { width: 80px; accent-color: var(--op-accent, var(--ember)); min-height: 0; padding: 0; } .op-sheet, .op-queue { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(80px + env(safe-area-inset-bottom)); z-index: 39; width: min(1120px, calc(100vw - 24px)); max-height: min(62vh, 560px); overflow: auto; padding: 18px; border-radius: 22px; border: 1px solid rgba(255,210,214,.16); background: rgba(20,9,11,.96); backdrop-filter: blur(18px); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9); display: grid; gap: 14px; } .op-head { display: flex; align-items: center; gap: 12px; } .op-head b { flex: 1; min-width: 0; font: 700 16px var(--f-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .op-wave { width: 100%; height: 110px; display: block; cursor: pointer; touch-action: none; } .op-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 13px; color: var(--haze); } .op-tools label { display: inline-flex; flex-direction: row; align-items: center; gap: 8px; font: 400 13px var(--f-body); letter-spacing: 0; text-transform: none; color: var(--haze); } .op-tools input[type=range] { width: 120px; min-height: 0; padding: 0; accent-color: var(--ember); } .op-tools input[type=checkbox] { width: 16px; height: 16px; min-height: 0; margin: 0; accent-color: var(--ember); } .op-chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; border: 1px solid rgba(255,210,214,.16); background: none; color: var(--mist); font: 600 12px var(--f-body); cursor: pointer; text-decoration: none; } .op-chip:hover { border-color: var(--ember); } .op-chip.on { background: var(--op-accent, var(--ember)); border-color: var(--op-accent, var(--ember)); color: var(--night); } .op-comments { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; } .op-comments li { display: flex; gap: 10px; align-items: baseline; } .op-comments button.at { flex: none; font: 600 12px var(--f-mono); color: var(--ember); background: none; border: 0; padding: 0; cursor: pointer; } .op-comments .who { color: var(--haze); } .op-say { display: flex; flex-wrap: wrap; gap: 8px; } .op-say input { flex: 1 1 220px; min-height: 40px; } .op-say input.op-name { flex: 0 1 150px; } .op-queue ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; } .op-queue li button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 8px; border: 0; border-radius: 12px; background: none; color: var(--mist); font: 500 14px var(--f-body); text-align: left; cursor: pointer; } .op-queue li button:hover { background: rgba(255,255,255,.05); } .op-queue li.now button { color: var(--ember); } .op-queue img, .op-queue .op-q-cover { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; flex: none; background: linear-gradient(135deg, #5C0008, #2A0A0E); } .op-queue small { display: block; color: var(--haze); font-size: 12px; } @media (max-width: 1000px) { .op-vol { display: none; } .op-mini { min-width: 120px; } } @media (max-width: 720px) { .op-pill { gap: 4px; padding-right: 8px; } .op-meta { width: auto; flex: 1; } .op-mini, .op-time, .op-hide-sm { display: none; } }": [
+ ".op-icon { display: inline-grid; place-items: center; line-height: 0; } .op-pill { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 40; width: min(1120px, calc(100vw - 24px)); display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 8px; border-radius: 999px; border: 1px solid rgba(255,210,214,.16); background: rgba(20,9,11,.92); backdrop-filter: blur(18px); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9), 0 0 40px -18px var(--op-accent, rgba(226,52,68,.55)); } .op-pill[hidden], .op-sheet[hidden], .op-queue[hidden], .op-comments[hidden] { display: none; } .op-cover { flex: none; width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: linear-gradient(135deg, #5C0008, #2A0A0E); border: 1px solid rgba(255,210,214,.16); cursor: pointer; } .op-pill.playing .op-cover { animation: op-spin 9s linear infinite; } @keyframes op-spin { to { transform: rotate(360deg); } } @media (prefers-reduced-motion: reduce) { .op-pill.playing .op-cover { animation: none; } } .op-meta { min-width: 0; width: 170px; flex: none; cursor: pointer; line-height: 1.25; } .op-meta b { display: block; font: 700 13px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .op-meta b .op-feat, .op-head b .op-feat { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.13)); background: rgba(255,255,255,.05); font: 600 10.5px/1.5 var(--f-body); color: var(--mist); vertical-align: 1px; } .op-meta > span { display: block; font-size: 12px; color: var(--haze); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .op-mini { flex: 1; min-width: 200px; height: 44px; cursor: pointer; touch-action: none; display: block; } .op-time { flex: none; font: 500 11px var(--f-mono); color: var(--haze); white-space: nowrap; } .op-btn { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 50%; background: none; color: var(--mist); cursor: pointer; } .op-btn:hover { background: rgba(255,255,255,.06); } .op-btn.on { color: var(--op-accent, var(--ember)); } .op-btn.main { width: 42px; height: 42px; background: var(--mist); color: var(--night); } .op-btn.main:hover { background: #fff; } .op-vol { width: 80px; accent-color: var(--op-accent, var(--ember)); min-height: 0; padding: 0; } .op-sheet, .op-queue { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(80px + env(safe-area-inset-bottom)); z-index: 39; width: min(1120px, calc(100vw - 24px)); max-height: min(62vh, 560px); overflow: auto; padding: 18px; border-radius: 22px; border: 1px solid rgba(255,210,214,.16); background: rgba(20,9,11,.96); backdrop-filter: blur(18px); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9); display: grid; gap: 14px; } .op-head { display: flex; align-items: center; gap: 12px; } .op-head b { flex: 1; min-width: 0; font: 700 16px var(--f-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .op-wave { width: 100%; height: 110px; display: block; cursor: pointer; touch-action: none; } .op-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 13px; color: var(--haze); } .op-tools label { display: inline-flex; flex-direction: row; align-items: center; gap: 8px; font: 400 13px var(--f-body); letter-spacing: 0; text-transform: none; color: var(--haze); } .op-tools input[type=range] { width: 120px; min-height: 0; padding: 0; accent-color: var(--ember); } .op-tools input[type=checkbox] { width: 16px; height: 16px; min-height: 0; margin: 0; accent-color: var(--ember); } .op-chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; border: 1px solid rgba(255,210,214,.16); background: none; color: var(--mist); font: 600 12px var(--f-body); cursor: pointer; text-decoration: none; } .op-chip:hover { border-color: var(--ember); } .op-chip.on { background: var(--op-accent, var(--ember)); border-color: var(--op-accent, var(--ember)); color: var(--night); } .op-comments { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; } .op-comments li { display: flex; gap: 10px; align-items: baseline; } .op-comments button.at { flex: none; font: 600 12px var(--f-mono); color: var(--ember); background: none; border: 0; padding: 0; cursor: pointer; } .op-comments .who { color: var(--haze); } .op-say { display: flex; flex-wrap: wrap; gap: 8px; } .op-say input { flex: 1 1 220px; min-height: 40px; } .op-say input.op-name { flex: 0 1 150px; } .op-queue ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; } .op-queue li button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 8px; border: 0; border-radius: 12px; background: none; color: var(--mist); font: 500 14px var(--f-body); text-align: left; cursor: pointer; } .op-queue li button:hover { background: rgba(255,255,255,.05); } .op-queue li.now button { color: var(--ember); } .op-queue img, .op-queue .op-q-cover { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; flex: none; background: linear-gradient(135deg, #5C0008, #2A0A0E); } .op-queue small { display: block; color: var(--haze); font-size: 12px; } @media (max-width: 1000px) { .op-vol { display: none; } .op-mini { min-width: 120px; } } /* Les boutons : couleurs et bordures en fondu, petit enfoncement au clic, léger soulèvement des boutons principaux. scale / translate (et non transform) : les éléments déjà placés avec transform (barre, bouton +, panneaux) restent en place. */ button, .btn, .op-chip, a.op-chip, .tile .art, .trk, .item, .dots, .stage, .feat, .play, .round, .fab, .install, .edit-toggle, .add-bar { transition: background-color .22s ease, border-color .22s ease, color .22s ease, box-shadow .25s ease, opacity .2s ease, scale .16s ease, translate .22s ease; } button:active:not(:disabled), .btn:active, .op-chip:active, .stage:active, .feat:active, .dots:active, .install:active, .edit-toggle:active { scale: .94; } .op-btn.main:active, .round.white:active, .play-all:active, .tile .fab-play:active { scale: .9; } .trk:active, .item:active, .add-bar:active { scale: .985; } .tile .art:active { scale: .97; } .btn-primary:hover, .round.white:hover, .play-all:hover, .op-btn.main:hover, .fab:hover { translate: 0 -2px; } .tile .art:hover { translate: 0 -3px; box-shadow: 0 18px 40px -18px rgba(0,0,0,.9); } .tile .fab-play { transition: background-color .2s ease, scale .2s ease, opacity .2s ease; } .tile .art:hover .fab-play { scale: 1.08; } /* Menus, fenêtres et panneaux : ouverture en fondu, avec un léger zoom ou une montée. */ @keyframes op-pop { from { opacity: 0; scale: .96; } } @keyframes op-rise { from { opacity: 0; translate: 0 14px; } } @keyframes op-fade { from { opacity: 0; } } .menu { animation: op-pop .16s ease-out; transform-origin: top center; } dialog[open] { animation: op-pop .22s cubic-bezier(.2, .8, .2, 1); } dialog[open]::backdrop { animation: op-fade .22s ease-out; } .op-sheet, .op-queue, .uploads { animation: op-rise .26s cubic-bezier(.2, .8, .2, 1); } .op-pill { animation: op-rise .35s cubic-bezier(.2, .8, .2, 1); } .details-right > *, .share-body > * { animation: op-fade .25s ease-out both; } @media (prefers-reduced-motion: reduce) { *, *::before, *::after, dialog::backdrop { animation: none !important; transition: none !important; } } @media (max-width: 720px) { .op-pill { gap: 4px; padding-right: 8px; } .op-meta { width: auto; flex: 1; } .op-mini, .op-time, .op-hide-sm { display: none; } }": [
   "site/assets/sounds-player.js"
  ],
  ".sn-announce { position: relative; z-index: 60; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 48px; font: 600 14px/1.4 var(--f-body, system-ui); text-align: center; } .sn-announce p { margin: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 16px; } .sn-announce span { letter-spacing: .02em; } .sn-announce a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; } .sn-announce-x { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border: 0; border-radius: 999px; background: rgba(0,0,0,.18); color: inherit; font: 400 20px/1 var(--f-body, system-ui); cursor: pointer; } .sn-announce.tone-ember { background: linear-gradient(90deg, #8c0614, #e23444 60%, #8c0614); color: #fff; } .sn-announce.tone-gold { background: linear-gradient(90deg, #b8862b, #f2c46d 55%, #b8862b); color: #1a0d02; } .sn-announce.tone-calm { background: var(--deep-2, #2a0a0e); color: var(--mist, #f6eeee); border-bottom: 1px solid var(--line, rgba(255,210,214,.16)); }": [
@@ -545,6 +554,9 @@
  "{} – {} (extrait 30 s).mp3": [
   "site/comparer-mix.html"
  ],
+ "{} — Écoute privée": [
+  "server/src/sounds.js"
+ ],
  "{} — licence définitive": [
   "server/src/payments.js"
  ],
@@ -705,6 +717,12 @@
  "{} sur un plugin ONIRIQUE": [
   "server/src/promos.js"
  ],
+ "{} titre{}": [
+  "server/src/sounds.js"
+ ],
+ "{} titre{}{}": [
+  "server/src/sounds.js"
+ ],
  "{} version(s)": [
   "site/admin.html"
  ],
@@ -715,7 +733,8 @@
   "site/assets/pdf-kit.js"
  ],
  "{}-{}.png": [
-  "server/src/linkpage.js"
+  "server/src/linkpage.js",
+  "server/src/sounds.js"
  ],
  "{}-{}.webp": [
   "server/src/app.js"
@@ -770,6 +789,9 @@
  ],
  "{}/api/social/instagram/callback": [
   "server/src/social.js"
+ ],
+ "{}/api/sounds/share/{}/apercu.png?v={}": [
+  "server/src/sounds.js"
  ],
  "{}/api/stripe/webhook/{}": [
   "server/src/payments.js"
@@ -1022,7 +1044,8 @@
  ],
  "✦ ONIRIQUE": [
   "site/assets/linkpage.js",
-  "server/src/linkpage.js"
+  "server/src/linkpage.js",
+  "server/src/sounds.js"
  ],
  "📎 {} ({} Ko)": [
   "site/admin.html"
@@ -2862,6 +2885,9 @@
  "Ce lien d'écoute n'existe pas ou n'est plus valable.": [
   "server/src/sounds.js"
  ],
+ "Ce lien d'écoute n'existe pas, ou n'est plus valable.": [
+  "server/src/sounds.js"
+ ],
  "Ce lien de désinscription n'est pas valable. Vous pouvez aussi vous désinscrire depuis votre page compte.": [
   "server/src/newsletter.js"
  ],
@@ -2874,6 +2900,9 @@
  ],
  "Ce lien n'est ouvert qu'aux personnes connectées à leur compte ONIRIQUE.": [
   "site/ecoute.html"
+ ],
+ "Ce lien n'existe pas, ou n'est plus valable.": [
+  "server/src/sounds.js"
  ],
  "Ce lien Spotify ne donne pas de titre : cherche-le par son nom.": [
   "server/src/reference.js"
@@ -3658,6 +3687,9 @@
  ],
  "compte n° {}": [
   "app/renderer/views/support-admin.js"
+ ],
+ "compte ONIRIQUE demandé": [
+  "server/src/sounds.js"
  ],
  "Compte ONIRIQUE exigé": [
   "site/mes-sons.html"
@@ -4808,6 +4840,18 @@
  "Écoute privée": [
   "site/ecoute.html"
  ],
+ "ÉCOUTE PRIVÉE": [
+  "server/src/sounds.js"
+ ],
+ "Écoute privée · ONIRIQUE": [
+  "server/src/sounds.js"
+ ],
+ "ÉCOUTE PRIVÉE · PROTÉGÉE": [
+  "server/src/sounds.js"
+ ],
+ "Écoute privée sur ONIRIQUE": [
+  "server/src/sounds.js"
+ ],
  "Écoute proposée pour": [
   "site/mes-liens.html"
  ],
@@ -5435,6 +5479,9 @@
   "site/decoupe.html",
   "site/assets/credits.js"
  ],
+ "extrait de {}": [
+  "server/src/sounds.js"
+ ],
  "Extraits publiés régulièrement": [
   "site/checklist-sortie.html"
  ],
@@ -5622,7 +5669,6 @@
   "app/renderer/ui.js"
  ],
  "Fondateurs": [
-  "site/mes-liens.html",
   "site/assets/account.js"
  ],
  "Fondu d'entrée": [
@@ -5832,7 +5878,8 @@
  ],
  "Hanken Grotesk": [
   "site/assets/linkpage.js",
-  "server/src/linkpage.js"
+  "server/src/linkpage.js",
+  "server/src/sounds.js"
  ],
  "Harmonic minor (mineure harmonique)": [
   "site/gammes.html"
@@ -6276,7 +6323,8 @@
  ],
  "JetBrains Mono": [
   "site/assets/linkpage.js",
-  "server/src/linkpage.js"
+  "server/src/linkpage.js",
+  "server/src/sounds.js"
  ],
  "Jour de sortie": [
   "site/checklist-sortie.html"
@@ -6587,10 +6635,8 @@
  "La note est écrite en notation anglaise, celle des logiciels de musique (C, D, E… pour do, ré, mi…), suivie de son octave : A4 est le la à 440 Hz. L'aiguille indique l'écart en cents, c'est-à-dire en centièmes de demi-ton : dans la zone verte, à moins de 5 cents, la note est juste à l'oreille.": [
   "site/accordeur.html"
  ],
- "La page de liens est réservée aux fondateurs d'ONIRIQUE.": [
-  "site/mes-liens.html"
- ],
- "La page de liens est réservée aux fondateurs.": [
+ "La page de liens est réservée aux membres ONIRIQUE.": [
+  "site/mes-liens.html",
   "server/src/linkpage.js"
  ],
  "La page lit ces formats, mais n'écrit que du WAV et du MP3, les deux que tous les logiciels et tous les services acceptent.": [
@@ -7327,6 +7373,12 @@
  "Lien copié. Envoie-le à tes amis.": [
   "site/compte.html"
  ],
+ "Lien d'écoute protégé": [
+  "server/src/sounds.js"
+ ],
+ "Lien d'écoute protégé, partagé sur ONIRIQUE{}.": [
+  "server/src/sounds.js"
+ ],
  "Lien de la boutique avec ce code copié.": [
   "app/renderer/views/admin.js"
  ],
@@ -7343,6 +7395,9 @@
  "Lien envoyé à": [
   "site/onirique.html",
   "site/assets/site-nav.js"
+ ],
+ "Lien introuvable": [
+  "server/src/sounds.js"
  ],
  "Lien introuvable.": [
   "server/src/sounds.js"
@@ -7645,6 +7700,9 @@
   "site/mes-sons.html",
   "site/assets/sounds-player.js"
  ],
+ "margin-left:12px;vertical-align:middle;font-size:14px": [
+  "site/ecoute.html"
+ ],
  "margin-top:8px;gap:8px;flex-wrap:wrap": [
   "site/admin.html"
  ],
@@ -7719,6 +7777,7 @@
   "app/renderer/views/account.js"
  ],
  "Membres ONIRIQUE": [
+  "site/mes-liens.html",
   "site/mes-sons.html"
  ],
  "Mensuel": [
@@ -8107,6 +8166,9 @@
  ],
  "Mot de passe changé. Vos autres appareils sont déconnectés.": [
   "site/compte.html"
+ ],
+ "mot de passe demandé": [
+  "server/src/sounds.js"
  ],
  "Mot de passe du lien": [
   "site/mes-sons.html"
@@ -8907,6 +8969,9 @@
  "Page de liens": [
   "site/compte.html"
  ],
+ "Page introuvable.": [
+  "server/src/sounds.js"
+ ],
  "page Support": [
   "site/mentions-legales.html",
   "site/pages.mjs"
@@ -9005,7 +9070,8 @@
   "app/renderer/views/admin.js"
  ],
  "par {}": [
-  "app/renderer/views/admin.js"
+  "app/renderer/views/admin.js",
+  "server/src/sounds.js"
  ],
  "Par {}": [
   "site/assets/credits.js"
@@ -9084,6 +9150,9 @@
  ],
  "Partage des droits d'un titre — ONIRIQUE": [
   "site/partage.html"
+ ],
+ "Partagé par {} · {}": [
+  "server/src/sounds.js"
  ],
  "Partage ton lien. Ton ami a {} % de remise sur son premier plugin ONIRIQUE ; toi, tu reçois un code de -{} % dès qu'il fait son premier achat": [
   "site/compte.html"
@@ -9818,6 +9887,9 @@
  "public, max-age=30": [
   "server/src/linkpage.js"
  ],
+ "public, max-age=3600": [
+  "server/src/sounds.js"
+ ],
  "public, max-age=60": [
   "server/src/app.js"
  ],
@@ -10433,6 +10505,9 @@
  "Retune Speed, Flex-Tune, Humanize, Natural Vibrato, Formant et Throat. Sortie MIDI des notes chantées.": [
   "server/src/seed.js"
  ],
+ "Revenir": [
+  "site/ecoute.html"
+ ],
  "Revenus de l'enregistrement (master)": [
   "site/partage.html"
  ],
@@ -11028,6 +11103,9 @@
   "site/mentions-legales.html",
   "site/pages.mjs"
  ],
+ "Sorti le": [
+  "server/src/sounds.js"
+ ],
  "Sortie": [
   "site/admin.html",
   "site/assets/credits.js",
@@ -11036,6 +11114,12 @@
  ],
  "Sortie annoncée partout": [
   "site/checklist-sortie.html"
+ ],
+ "Sortie prévue le": [
+  "server/src/sounds.js"
+ ],
+ "sounds-apercu:{}": [
+  "server/src/sounds.js"
  ],
  "sounds-comment:{}": [
   "server/src/sounds.js"
@@ -12118,6 +12202,9 @@
  "Un lien vient de partir : attendez encore {} s avant d'en demander un nouveau.": [
   "server/src/app.js"
  ],
+ "un membre": [
+  "server/src/sounds.js"
+ ],
  "Un message à tous les comptes doit être une information de service, sans publicité : cochez la case qui le confirme.": [
   "server/src/newsletter.js"
  ],
@@ -12185,9 +12272,13 @@
  "Un titre du même style · WAV de préférence": [
   "site/comparer-mix.html"
  ],
+ "Un titre extrait de {}": [
+  "server/src/sounds.js"
+ ],
  "Unbounded": [
   "site/assets/linkpage.js",
-  "server/src/linkpage.js"
+  "server/src/linkpage.js",
+  "server/src/sounds.js"
  ],
  "Une dernière étape": [
   "app/renderer/app.js"
@@ -12287,6 +12378,9 @@
  ],
  "use strict": [
   "site/onirique.html"
+ ],
+ "UTC": [
+  "server/src/sounds.js"
  ],
  "Utilisateur": [
   "site/admin.html",

@@ -199,8 +199,12 @@ try {
     check((await api('POST', '/me/delete', { password: 'motdepasse' }, founder)).status === 403 && !!get(`SELECT id FROM users WHERE email = 'fondateur@site.test'`),
       'un fondateur ne se supprime pas depuis le site');
 
-    console.log('page de liens des fondateurs');
-    check((await api('GET', '/me/links', null, admin)).status === 403, 'réservée aux fondateurs (pas aux admins)');
+    console.log('page de liens des membres ONIRIQUE et des fondateurs');
+    check((await api('GET', '/me/links', null, admin)).status === 403, 'réservée aux membres (pas aux admins)');
+    run(`INSERT INTO users (email, password_hash, role, email_verified, created_at) VALUES ('membre-liens@site.test', ?, 'vip', 1, ?)`, hashPassword('motdepasse'), now());
+    const linkMember = (await api('POST', '/auth/login', { email: 'membre-liens@site.test', password: 'motdepasse' })).data.token;
+    check((await api('PUT', '/me/links', { handle: 'membre-onirique', page: { name: 'Membre' } }, linkMember)).status === 200, 'un membre ONIRIQUE crée sa page');
+    check((await fetch(`${base.replace(/\/api$/, '')}/l/membre-onirique`)).status === 200, 'et elle est en ligne');
     const blank = (await api('GET', '/me/links', null, founder)).data;
     check(blank.handle === null && blank.page.theme.button.style === 'glass', 'au départ : pas de page, un thème par défaut');
     check((await api('PUT', '/me/links', { handle: 'A B', page: {} }, founder)).status === 400, 'une adresse invalide est refusée');
