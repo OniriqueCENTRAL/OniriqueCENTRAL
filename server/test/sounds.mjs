@@ -246,6 +246,12 @@ try {
     const image = await fetch(`${base}/api/sounds/share/${shareToken(open.url)}/apercu.png`);
     assert.equal(image.headers.get('content-type'), 'image/png');
     assert.ok((await image.arrayBuffer()).byteLength > 5000);
+    // Le nom d'artiste du projet remplace celui du compte, sur la page d'écoute comme dans l'aperçu.
+    await call('PATCH', `/api/me/sounds/projects/${pid}`, { token: member.token, body: { artist: 'dias7am & Nay' } });
+    assert.equal((await call('POST', `/api/sounds/share/${shareToken(open.url)}`, { body: {} })).owner, 'dias7am & Nay');
+    assert.match(await page(open.url), /<meta property="og:title" content="dias7am &amp; Nay — ONI SEMINAIRE/);
+    await call('PATCH', `/api/me/sounds/projects/${pid}`, { token: member.token, body: { artist: '' } });
+    assert.equal((await call('POST', `/api/sounds/share/${shareToken(open.url)}`, { body: {} })).owner, 'membre');
   });
 
   await step('collaboration : lien d\'invitation, accepter, ce que fait un collaborateur, quitter, lien coupé', async () => {

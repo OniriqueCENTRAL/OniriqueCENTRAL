@@ -256,6 +256,8 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
 /* L'auteur de la pochette, sous la pochette du projet */
 .cover-by { display: flex; align-items: baseline; gap: 8px; margin-top: 12px; font-size: 14px; color: var(--haze); max-width: 400px; }
 .cover-by .eyebrow { flex: none; font-size: 11px; }
+/* Le nom d'artiste du projet, modifiable sur place en mode édition */
+.album-meta textarea.title-edit { display: inline-block; width: auto; min-width: 8ch; max-width: 100%; field-sizing: content; color: var(--mist); font-weight: 600; text-align: left; vertical-align: middle; }
 .cover-by .title-edit { flex: 1; color: var(--mist); font-weight: 600; min-width: 40px; text-align: left; }
 .tile.drop-cover .art { outline: 2px solid var(--ember); outline-offset: 3px; }
 /* Glisser un projet sur un dossier (ou sur ← pour le sortir du dossier) */
@@ -673,7 +675,7 @@ function projectTile(p) {
   art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
   const tile = el("div", { className: "tile" }, art, caption(p.title,
     el("span", { textContent: p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre")
-      + (p.mine ? (linkFor("project", p.id) ? " · partagé" : "") + (p.collaborators.length ? " · en collab" : "") : " · de " + p.owner.name) }),
+      + (p.mine ? (linkFor("project", p.id) ? " · partagé" : "") + (p.collaborators.length ? " · en collab" : "") : " · de " + (p.artist || p.owner.name)) }),
     dotsFor(p.title, (b) => projectMenu(b, p)), projectFeat(p)));
   tile.dataset.id = p.id;
   if (p.mine) dragSource(tile, "project:" + p.id);
@@ -870,8 +872,11 @@ function renderProject(p) {
   $("project-title").replaceChildren(p.title, feat ? el("span", { className: "feat", textContent: "feat. " + feat }) : "");
   drawRelease(p);
   $("share-project").hidden = !p.mine;
-  $("project-meta").replaceChildren(el("img", { src: avatar(p.owner), alt: "" }),
-    p.owner.name + " · " + p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre") + (p.tracks.length ? " · " + length(projectLength(p)) : ""),
+  // Le nom d'artiste : celui du projet s'il est rempli, sinon le nom du compte ; modifiable en mode édition.
+  if (!$("project-meta").contains(document.activeElement)) $("project-meta").replaceChildren(el("img", { src: avatar(p.owner), alt: "" }),
+    editing ? inlineEdit(p.artist || p.owner.name, p.owner.name, 120, (artist) => api("PATCH", "/me/sounds/projects/" + p.id, { artist: artist === p.owner.name ? "" : artist }).then(refresh), true)
+      : el("span", { textContent: p.artist || p.owner.name }),
+    " · " + p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre") + (p.tracks.length ? " · " + length(projectLength(p)) : ""),
     linkFor("project", p.id) ? el("span", { className: "tag on", textContent: "Partagé" }) : "",
     p.collaborators.length ? el("span", { className: "faces-row", title: "En collab avec " + p.collaborators.map((u) => u.name).join(", ") },
       " · avec ", ...p.collaborators.slice(0, 4).map((u) => el("img", { src: avatar(u), alt: u.name }))) : "");

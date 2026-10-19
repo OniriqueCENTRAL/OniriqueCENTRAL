@@ -86,6 +86,10 @@ export const STAGE = /^(|maquette|final|v[1-9][0-9]?)$/;
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'credits'`).get()) {
   db.exec(`ALTER TABLE sound_tracks ADD COLUMN credits TEXT NOT NULL DEFAULT '{}'`);
 }
+// Le nom d'artiste affiché pour le projet (« dias7am & Nay »…) ; vide : le nom du compte de l'auteur.
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'artist'`).get()) {
+  db.exec(`ALTER TABLE sound_projects ADD COLUMN artist TEXT NOT NULL DEFAULT ''`);
+}
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'cover_by'`).get()) {
   db.exec(`ALTER TABLE sound_projects ADD COLUMN cover_by TEXT NOT NULL DEFAULT ''`);
 }
@@ -225,7 +229,7 @@ function previewOf(token) {
   const p = get('SELECT * FROM sound_projects WHERE id = ?', l.project_id || t.project_id);
   const tracks = l.track_id ? [t] : all('SELECT * FROM sound_tracks WHERE project_id = ? ORDER BY position, id', p.id);
   const seconds = tracks.reduce((sum, x) => sum + (get('SELECT duration FROM sound_versions WHERE id = ?', x.current_id)?.duration || 0), 0);
-  return { link: l, locked: false, owner: l.owner_name || 'ONIRIQUE', title: t ? t.title : p.title, project: p.title, cover: p.cover,
+  return { link: l, locked: false, owner: p.artist || l.owner_name || 'ONIRIQUE', title: t ? t.title : p.title, project: p.title, cover: p.cover,
     count: tracks.length, seconds, release: p.release_date, stage: t ? t.stage : '' };
 }
 const releaseText = (day) => {
@@ -409,7 +413,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       owner: person(req.user),
       quota: { used: usedBy(req.user.id), limit: quotaBytes(), full: d.used / d.total >= diskMax() },
       projects: projects.map((p) => ({
-        id: p.id, title: p.title, cover: media(p.cover), coverBy: p.cover_by, releaseDate: p.release_date, createdAt: p.created_at,
+        id: p.id, title: p.title, artist: p.artist, cover: media(p.cover), coverBy: p.cover_by, releaseDate: p.release_date, createdAt: p.created_at,
         // Les dossiers sont ceux de l'auteur : un projet où l'on collabore est à la racine de sa page.
         mine: p.user_id === u, folderId: p.user_id === u ? p.folder_id : null,
         owner: person({ id: p.user_id, name: p.owner_name, avatar: p.owner_avatar }),
@@ -433,12 +437,12 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
         .map((f) => ({ id: f.id, title: f.title, createdAt: f.created_at })),
       // Les projets des autres, enregistrés : encore ouverts si le lien vit et que son auteur est toujours membre.
       saved: all(`SELECT s.id, s.folder_id, s.pass, s.created_at, l.id AS link_id, l.token, l.track_id, l.expires_at, l.password_hash,
-          u.name AS owner_name, u.avatar AS owner_avatar, u.role AS owner_role, p.title AS project_title, p.cover, t.title AS track_title,
+          u.name AS owner_name, u.avatar AS owner_avatar, u.role AS owner_role, p.title AS project_title, p.cover, p.artist, t.title AS track_title,
           (SELECT COUNT(*) FROM sound_tracks WHERE project_id = p.id) AS tracks
         FROM sound_saves s JOIN sound_links l ON l.id = s.link_id JOIN users u ON u.id = l.user_id
         LEFT JOIN sound_tracks t ON t.id = l.track_id JOIN sound_projects p ON p.id = COALESCE(l.project_id, t.project_id)
         WHERE s.user_id = ? ORDER BY s.created_at DESC`, req.user.id).map((r) => ({
-        id: r.id, token: r.token, folderId: r.folder_id, title: r.track_id ? r.track_title : r.project_title, owner: r.owner_name || 'ONIRIQUE',
+        id: r.id, token: r.token, folderId: r.folder_id, title: r.track_id ? r.track_title : r.project_title, owner: r.artist || r.owner_name || 'ONIRIQUE',
         ownerAvatar: media(r.owner_avatar), cover: media(r.cover), tracks: r.track_id ? 1 : r.tracks, createdAt: r.created_at,
         available: rolesWith('sounds').includes(r.owner_role) && !(r.expires_at && r.expires_at < now()),
         pass: r.password_hash && r.pass && same(r.pass, passFor({ id: r.link_id, password_hash: r.password_hash })) ? r.pass : null,
@@ -500,6 +504,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       run('UPDATE sound_projects SET title = ? WHERE id = ?', title, p.id);
     }
     if (req.body.coverBy !== undefined) run('UPDATE sound_projects SET cover_by = ? WHERE id = ?', str(req.body.coverBy, 80), p.id);
+    if (req.body.artist !== undefined) run('UPDATE sound_projects SET artist = ? WHERE id = ?', str(req.body.artist, 120), p.id);
     if (req.body.folderId !== undefined) run('UPDATE sound_projects SET folder_id = ? WHERE id = ?', folderOf(req, req.body.folderId), ownProject(req, p.id).id);
     if (req.body.releaseDate !== undefined) {
       const day = String(req.body.releaseDate || '');
@@ -788,7 +793,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     res.json({
       pass: link.password_hash ? passFor(link) : null,
       ...saveState(req, link),
-      owner: link.owner_name || 'ONIRIQUE', ownerAvatar: media(link.owner_avatar), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover), coverBy: p.cover_by, releaseDate: p.release_date,
+      owner: p.artist || link.owner_name || 'ONIRIQUE', ownerAvatar: media(link.owner_avatar), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover), coverBy: p.cover_by, releaseDate: p.release_date,
       download: !!link.download,
       tracks: tracks.map((t) => ({
         id: t.id, title: t.title, stage: t.stage, credits: creditsOf(t),
