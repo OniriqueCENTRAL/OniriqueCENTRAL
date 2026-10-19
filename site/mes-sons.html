@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=993a2aea"></script>
+<script src="assets/i18n.js?v=e37f07cb"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -432,7 +432,7 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
 <dialog id="collab"></dialog>
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" value="cancel" formnovalidate>Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
-<script src="assets/sounds-player.js?v=7"></script>
+<script src="assets/sounds-player.js?v=8"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const TOKEN = "onirique.token";
@@ -497,6 +497,8 @@ const itemOf = (p, t) => {
 };
 const player = OP.create({
   onDelete: (item, c) => api("DELETE", "/me/sounds/comments/" + c.id).then(refresh),
+  // Partager depuis le lecteur plein écran : la fenêtre de partage du titre (le sien, ou celui d'un projet où l'on collabore).
+  onShare: (item) => findTrack(item.trackId).t ? openShare("track", item.trackId) : alert("Ce titre vient du lien d'un autre membre : demande-lui de te le partager."),
   onChange: (it) => { document.body.classList.add("has-player"); markPlaying(); tintOf(it.cover).then((t) => player.setAccent(t && t.accent)); },
 });
 // Les couleurs de chaque pochette, lues une fois.
@@ -696,7 +698,7 @@ function projectTile(p) {
   art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
   const tile = el("div", { className: "tile" }, art, caption(p.title,
     el("span", { textContent: p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre")
-      + (p.mine ? (linkFor("project", p.id) ? " · partagé" : "") + (p.collaborators.length ? " · en collab" : "") : " · de " + (p.artist || p.owner.name)) }),
+      + (p.mine ? "" : " · de " + (p.artist || p.owner.name)) + (linkFor("project", p.id) ? " · partagé" : "") + (p.mine && p.collaborators.length ? " · en collab" : "") }),
     dotsFor(p.title, (b) => projectMenu(b, p)), projectFeat(p)));
   tile.dataset.id = p.id;
   if (p.mine) dragSource(tile, "project:" + p.id);
@@ -784,7 +786,7 @@ function projectMenu(anchor, p) {
     { label: "Ouvrir", icon: "chevron", onclick: () => navigate("#/p/" + p.id) },
     p.tracks.length && { label: "Écouter", icon: "play", onclick: () => playProject(p) },
     p.tracks.length && { label: "Ajouter à la file", icon: "queue", onclick: () => p.tracks.forEach((t) => player.enqueue(itemOf(p, t))) },
-    p.mine && { label: "Partager", icon: "link", onclick: () => openShare("project", p.id) },
+    { label: "Partager", icon: "link", onclick: () => openShare("project", p.id) },
     p.mine && { label: "Collaborateurs…", icon: "plus", onclick: () => openCollab(p.id) },
     p.mine && { label: "Déplacer vers…", icon: "chevron", onclick: () => moveMenu(anchor, p.folderId, (folderId) => api("PATCH", "/me/sounds/projects/" + p.id, { folderId })) },
     "-",
@@ -828,7 +830,7 @@ function renderCollab() {
       el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => $("collab").close() }, icon("close"))),
     el("div", { className: "share-body" },
       el("div", { className: "sub-title", textContent: "Collaborateurs" }), people,
-      el("p", { className: "muted", style: "margin:0 4px;font-size:13px", textContent: "Ils écoutent tout, ajoutent des titres et des versions, modifient noms, étapes, crédits et notes. Supprimer, partager et inviter restent à toi ; ce qu'ils envoient compte dans ton espace." }),
+      el("p", { className: "muted", style: "margin:0 4px;font-size:13px", textContent: "Ils écoutent tout, ajoutent des titres et des versions, modifient noms, étapes, crédits et notes. Ils peuvent aussi le partager par leurs propres liens d'écoute. Supprimer et inviter restent à toi ; ce qu'ils envoient compte dans ton espace." }),
       p.inviteUrl ? group(
         item("repeat", "Nouveau lien d'invitation", { hint: "L'ancien lien ne marchera plus", onclick: () => invite("POST") }),
         item("close", "Couper le lien d'invitation", { danger: true, hint: "Plus personne ne pourra rejoindre le projet par lui", onclick: () => invite("DELETE") })) : null),
@@ -894,7 +896,6 @@ function renderProject(p) {
   const feat = projectFeat(p);
   $("project-title").replaceChildren(p.title, feat ? el("span", { className: "feat", textContent: "feat. " + feat }) : "");
   drawRelease(p);
-  $("share-project").hidden = !p.mine;
   // Le nom d'artiste : celui du projet s'il est rempli, sinon le nom du compte ; modifiable en mode édition.
   if (!$("project-meta").contains(document.activeElement)) $("project-meta").replaceChildren(el("img", { src: avatar(p.owner), alt: "" }),
     editing ? inlineEdit(p.artist || p.owner.name, p.owner.name, 120, (artist) => api("PATCH", "/me/sounds/projects/" + p.id, { artist: artist === p.owner.name ? "" : artist }).then(refresh), true)
@@ -1265,7 +1266,7 @@ function renderDetails() {
   let right;
   if (detailsView === "main") {
     right = [el("h3", { textContent: "Détails" }),
-      group(p.mine ? item("link", "Partager", { state: link ? "Activé" : "Désactivé", chevron: true, onclick: () => openShare("track", t.id) }) : null,
+      group(item("link", "Partager", { state: link ? "Activé" : "Désactivé", chevron: true, onclick: () => openShare("track", t.id) }),
         item("star", "Étape", { state: OP.stageLabel(t.stage) || "Non précisée", chevron: true, onclick: (event) => stageMenu(event.currentTarget, t) })),
       group(
         item("volume", "Volume avant sortie", { hint: "LUFS, pics, et ce que chaque plateforme fera du titre", chevron: true, onclick: () => { detailsView = "tool-lufs"; renderDetails(); } }),
@@ -1369,11 +1370,13 @@ function renderShare() {
     input.onchange = () => onchange(input.checked);
     return el("label", { className: "switch" }, input, el("span"));
   };
+  // Un collaborateur partage par ses propres liens : « privé » veut dire sans lien à lui (l'auteur et l'équipe gardent les leurs).
+  const privateLabel = p.mine ? "Privé : toi seulement" : "Privé : pas de lien à toi";
   // Qui peut écouter : un menu du site (et non la liste du navigateur), comme les autres menus de la page.
   const select = el("button", { type: "button", ariaLabel: "Qui peut écouter", ariaHasPopup: "menu",
-    textContent: link ? "Toute personne qui a le lien" : "Privé : toi seulement" });
+    textContent: link ? "Toute personne qui a le lien" : privateLabel });
   select.onclick = () => menu(select, [
-    { label: (link ? "" : "✓ ") + "Privé : toi seulement", icon: "close", onclick: () => link && unshare() },
+    { label: (link ? "" : "✓ ") + privateLabel, icon: "close", onclick: () => link && unshare() },
     { label: (link ? "✓ " : "") + "Toute personne qui a le lien", icon: "link", onclick: () => !link && create() },
   ]);
   const unshare = () => {
@@ -1413,7 +1416,9 @@ function renderShare() {
     copyBtn.onclick = () => copy(link.url, copyBtn);
     foot.append(copyBtn);
   } else {
-    body.append(el("p", { className: "muted", style: "margin:0 4px;font-size:14px", textContent: kind === "project"
+    body.append(el("p", { className: "muted", style: "margin:0 4px;font-size:14px", textContent: !p.mine
+      ? "Tu collabores sur ce projet de " + p.owner.name + " : crée ton propre lien pour le faire entendre. Tu pourras le protéger, le limiter dans le temps et le couper à tout moment ; il ne s'ouvrira plus si tu quittes le projet."
+      : kind === "project"
       ? "Personne d'autre que toi ne peut écouter ce projet. Crée un lien pour le faire entendre : tu pourras le protéger, le limiter dans le temps et le couper à tout moment."
       : "Personne d'autre que toi ne peut écouter ce titre. Crée un lien pour le faire entendre." }));
     const make = el("button", { className: "btn btn-primary", type: "button" }, icon("link"), "Créer le lien et le copier");

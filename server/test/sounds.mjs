@@ -280,15 +280,25 @@ try {
     await call('PATCH', `/api/me/sounds/tracks/${added.id}`, { token: friend.token, body: { title: 'Couplet', stage: 'v2' } });
     assert.equal((await call('GET', '/api/me/sounds', { token: owner.token })).quota.used, wav().length + wav(3000).length);
     assert.equal((await call('GET', '/api/me/sounds', { token: friend.token })).quota.used, 0);
-    // Mais ni supprimer le projet, ni le partager, ni le ranger, ni gérer l'invitation.
+    // Il partage le projet et un titre par ses propres liens, montrés au nom de l'auteur ; les écoutes comptent chez les deux.
+    const shared = await call('POST', '/api/me/sounds/links', { token: friend.token, body: { projectId: pid }, expect: 201 });
+    await call('POST', '/api/me/sounds/links', { token: friend.token, body: { trackId: added.id }, expect: 201 });
+    const heard = await call('POST', `/api/sounds/share/${shareToken(shared.url)}`);
+    assert.equal(heard.owner, 'auteur-collab');
+    assert.equal(heard.canSave, false);
+    await call('POST', `/api/sounds/share/${shareToken(shared.url)}/play`, { body: { trackId: added.id } });
+    assert.equal((await call('GET', '/api/me/sounds', { token: owner.token })).projects.find((x) => x.id === pid).tracks.find((t) => t.id === added.id).plays, 1);
+    assert.equal((await call('GET', '/api/me/sounds', { token: friend.token })).links.length, 2);
+    // Mais ni supprimer le projet, ni le ranger, ni gérer l'invitation.
     await call('DELETE', `/api/me/sounds/projects/${pid}`, { token: friend.token, expect: 403 });
-    await call('POST', '/api/me/sounds/links', { token: friend.token, body: { projectId: pid }, expect: 403 });
     await call('DELETE', `/api/me/sounds/projects/${pid}/invite`, { token: friend.token, expect: 403 });
     // L'auteur voit son collaborateur ; le collaborateur quitte le projet, qui disparaît de sa page.
     assert.equal((await call('GET', '/api/me/sounds', { token: owner.token })).projects.find((x) => x.id === pid).collaborators[0].name, 'ami-collab');
     await call('DELETE', `/api/me/sounds/projects/${pid}/collabs/${friend.id}`, { token: friend.token });
     assert.ok(!(await call('GET', '/api/me/sounds', { token: friend.token })).projects.some((x) => x.id === pid));
     await call('POST', `/api/me/sounds/projects/${pid}/tracks?filename=c.wav`, { token: friend.token, raw: wav(), expect: 404 });
+    // Ses liens ne s'ouvrent plus une fois parti.
+    await call('POST', `/api/sounds/share/${shareToken(shared.url)}`, { expect: 404 });
     // L'invitation coupée ne s'ouvre plus.
     await call('DELETE', `/api/me/sounds/projects/${pid}/invite`, { token: owner.token });
     await call('GET', `/api/sounds/invite/${invite}`, { token: friend.token, expect: 404 });
