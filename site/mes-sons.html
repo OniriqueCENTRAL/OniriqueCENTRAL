@@ -313,7 +313,8 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
 .inline { display: flex; gap: 8px; padding: 0 16px 14px; }
 .inline input { flex: 1; min-height: 40px; }
 .visibility { position: relative; }
-.visibility select { width: 100%; min-height: 56px; padding-left: 50px; appearance: none; font-weight: 700; cursor: pointer; border-radius: 16px; }
+.visibility button { width: 100%; min-height: 56px; padding: 0 44px 0 50px; border-radius: 16px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 700 16px var(--f-body); text-align: left; cursor: pointer; }
+.visibility button:hover, .visibility button[aria-expanded="true"] { border-color: var(--ember); }
 .visibility .op-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; }
 .visibility::after { content: ""; position: absolute; right: 18px; top: 50%; width: 8px; height: 8px; border: solid var(--haze); border-width: 0 2px 2px 0; transform: translateY(-70%) rotate(45deg); pointer-events: none; }
 #ask { width: 420px; }
@@ -528,7 +529,8 @@ function menu(anchor, items) {
   const m = el("div", { className: "menu", role: "menu" }, ...items.filter(Boolean).map((it) => it === "-" ? el("hr") : el("button", {
     type: "button", role: "menuitem", className: it.danger ? "danger" : "", onclick: () => { closeMenu(); it.onclick(); },
   }, it.icon ? icon(it.icon) : null, it.label)));
-  document.body.append(m);
+  // Dans une fenêtre ouverte (partage, détails d'un titre), le menu s'y affiche : sinon il passerait derrière elle.
+  ((anchor.closest && anchor.closest("dialog[open]")) || document.body).append(m);
   const r = anchor.getBoundingClientRect(), w = m.offsetWidth, h = m.offsetHeight;
   const up = r.bottom + h + 8 > innerHeight;
   m.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + "px";
@@ -1300,10 +1302,13 @@ function renderShare() {
     input.onchange = () => onchange(input.checked);
     return el("label", { className: "switch" }, input, el("span"));
   };
-  const select = el("select", { ariaLabel: "Qui peut écouter" },
-    el("option", { value: "private", textContent: "Privé : toi seulement", selected: !link }),
-    el("option", { value: "public", textContent: "Toute personne qui a le lien", selected: !!link }));
-  select.onchange = () => (select.value === "public" ? create() : unshare());
+  // Qui peut écouter : un menu du site (et non la liste du navigateur), comme les autres menus de la page.
+  const select = el("button", { type: "button", ariaLabel: "Qui peut écouter", ariaHasPopup: "menu",
+    textContent: link ? "Toute personne qui a le lien" : "Privé : toi seulement" });
+  select.onclick = () => menu(select, [
+    { label: (link ? "" : "✓ ") + "Privé : toi seulement", icon: "close", onclick: () => link && unshare() },
+    { label: (link ? "✓ " : "") + "Toute personne qui a le lien", icon: "link", onclick: () => !link && create() },
+  ]);
   const unshare = () => {
     const all = data.links.filter((l) => (kind === "project" ? l.projectId === id : l.trackId === id));
     Promise.all(all.map((l) => api("DELETE", "/me/sounds/links/" + l.id))).then(refresh, (e) => alert(e.message));
