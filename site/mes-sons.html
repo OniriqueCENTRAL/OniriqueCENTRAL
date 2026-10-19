@@ -249,12 +249,14 @@ button.item:hover { background: rgba(255,255,255,.04); }
 .title-edit { display: inline-block; min-width: 2ch; max-width: 100%; vertical-align: top; padding: 2px 6px; margin: 0 -6px; border-radius: 8px; cursor: text; outline: none; }
 .title-edit:hover { background: rgba(255,255,255,.05); }
 .title-edit:focus { background: rgba(0,0,0,.45); box-shadow: 0 0 0 1px var(--ember); }
-input.title-edit { min-height: 0; border: 0; background: transparent; color: inherit; font: inherit; letter-spacing: inherit; text-align: inherit; field-sizing: content; max-width: 100%; }
-input.title-edit::placeholder { color: var(--haze); font-style: italic; opacity: 1; }
+/* Le champ passe à la ligne dans sa colonne au lieu de déborder ; sa hauteur suit le texte. */
+textarea.title-edit { display: block; width: 100%; max-width: 100%; min-height: 0; margin: 0; border: 0; background: transparent; color: inherit; font: inherit; line-height: inherit; letter-spacing: inherit; text-align: inherit; resize: none; overflow: hidden; }
+.details-left h2 { align-self: stretch; }
+textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opacity: 1; }
 /* L'auteur de la pochette, sous la pochette du projet */
 .cover-by { display: flex; align-items: baseline; gap: 8px; margin-top: 12px; font-size: 14px; color: var(--haze); max-width: 400px; }
 .cover-by .eyebrow { flex: none; font-size: 11px; }
-.cover-by .title-edit { color: var(--mist); font-weight: 600; min-width: 40px; }
+.cover-by .title-edit { flex: 1; color: var(--mist); font-weight: 600; min-width: 40px; text-align: left; }
 .tile.drop-cover .art { outline: 2px solid var(--ember); outline-offset: 3px; }
 /* Les crédits d'un titre */
 .credits-list { display: grid; gap: 4px; margin-top: 10px; width: 100%; font-size: 13px; text-align: left; }
@@ -1026,10 +1028,10 @@ const group = (...rows) => el("ul", { className: "group" }, ...rows.filter(Boole
 function inlineEdit(value, placeholder, max, save, allowEmpty) {
   // Un vrai champ de saisie (et non un texte modifiable) : les accents tapés en deux temps (^ puis e, ¨ puis e, accents
   // du Mac) et les claviers à composition y passent sans accroc.
-  const input = el("input", { className: "title-edit", value: value || "", placeholder, maxLength: max, spellcheck: false, autocomplete: "off",
-    title: "Cliquer pour modifier", ariaLabel: placeholder });
-  const fit = () => { input.size = Math.max(4, (input.value || placeholder).length + 1); };
-  fit();
+  const input = el("textarea", { className: "title-edit", value: value || "", placeholder, maxLength: max, spellcheck: false, autocomplete: "off",
+    rows: 1, title: "Cliquer pour modifier", ariaLabel: placeholder });
+  const fit = () => { input.style.height = "auto"; input.style.height = input.scrollHeight + "px"; };
+  requestAnimationFrame(fit); // une fois dans la page, sa hauteur réelle se mesure
   input.oninput = fit;
   input.onkeydown = (event) => {
     if (event.isComposing) return; // Entrée qui valide un accent en cours, pas le nom
