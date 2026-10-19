@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<script src="assets/i18n.js?v=119726c5"></script>
+<script src="assets/annonce.js?v=1"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ONIRIQUE — Mes sons</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<style>
+/* Mêmes tokens que compte.html. */
+:root {
+  --night: #0D0809; --blood: #5C0008; --deep: #1A080A; --deep-2: #2A0A0E; --line: rgba(255,210,214,.13);
+  --mist: #F6EEEE; --haze: #A88F92; --ember: #E23444; --bone: #FFECEE;
+  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(226,52,68,.55);
+  --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --f-dream: "Grenze Gotisch", Georgia, serif;
+  --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0; min-height: 100vh; color: var(--mist); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased;
+  background: radial-gradient(120% 60% at 50% -10%, rgba(140,6,20,.8), rgba(92,0,8,.45) 36%, transparent 72%), var(--night);
+  background-attachment: fixed;
+}
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
+.wrap { width: 100%; max-width: 1180px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 40px); }
+header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.6); backdrop-filter: blur(14px); }
+header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 16px; }
+.brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 800 17px/1 var(--f-display); letter-spacing: .16em; }
+.brand img { width: 44px; height: auto; margin-block: -12px; filter: drop-shadow(0 0 6px rgba(226,52,68,.8)); }
+.between { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+main { padding-block: clamp(28px, 6vw, 56px) 80px; }
+h1 { font: 800 clamp(26px, 5vw, 38px)/1.1 var(--f-display); margin: 12px 0 8px; }
+h1 em { font: 600 1.3em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
+h2 { font: 700 20px/1.2 var(--f-display); margin: 0; overflow-wrap: anywhere; }
+.eyebrow { font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); display: flex; align-items: center; gap: 10px; }
+.eyebrow::before { content: ""; flex: none; width: 13px; height: 13px; background: var(--mist); clip-path: polygon(50% 0, 56% 44%, 100% 50%, 56% 56%, 50% 100%, 44% 56%, 0 50%, 44% 44%); filter: drop-shadow(0 0 4px var(--ember)); }
+.muted { color: var(--haze); }
+.panel { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 18px; padding: clamp(18px, 3vw, 24px); margin-top: 16px; }
+.panel > .eyebrow { margin-bottom: 16px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 18px; border-radius: 999px; border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
+.btn-primary { background: var(--mist); color: var(--night); box-shadow: 0 10px 40px -10px rgba(226,52,68,.6); }
+.btn-ghost { background: rgba(255,255,255,.03); color: var(--mist); border-color: var(--line); }
+.btn-ghost:hover { border-color: var(--ember); }
+.btn:disabled { opacity: .5; cursor: default; }
+.small { padding: 8px 12px; font-size: 13px; }
+label { display: grid; gap: 7px; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
+input, textarea, select { min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px var(--f-body); letter-spacing: 0; text-transform: none; min-width: 0; }
+label.check { display: flex; align-items: center; gap: 10px; font: 400 14px/1.4 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--mist); }
+label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-color: var(--ember); }
+.error { color: #FF7A85; font-size: 14px; }
+.notice { color: var(--bone); font-size: 14px; }
+.error:empty, .notice:empty { display: none; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 12px; align-items: end; }
+.gate { text-align: center; }
+.icon-btn { width: 34px; height: 34px; flex: none; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line); background: none; color: var(--mist); cursor: pointer; font-size: 13px; }
+.icon-btn:hover:not(:disabled) { border-color: var(--ember); }
+.icon-btn:disabled { opacity: .3; cursor: default; }
+
+/* Les projets à gauche, le projet ouvert à droite ; l'un sous l'autre sur un petit écran. */
+.space { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 24px; align-items: start; margin-top: 8px; }
+@media (max-width: 900px) { .space { grid-template-columns: minmax(0, 1fr); } }
+.quota { height: 6px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; margin-top: 10px; }
+.quota i { display: block; height: 100%; background: var(--ember); }
+.projects { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.projects button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 14px; border: 1px solid var(--line); background: rgba(0,0,0,.3); color: var(--mist); font: 600 15px var(--f-body); text-align: left; cursor: pointer; }
+.projects button[aria-current="true"] { border-color: var(--ember); background: rgba(226,52,68,.12); }
+.projects small { display: block; color: var(--haze); font-weight: 400; font-size: 12px; }
+.cover { flex: none; width: 48px; height: 48px; border-radius: 10px; object-fit: cover; background: linear-gradient(135deg, var(--blood), var(--deep-2)); border: 1px solid var(--line); }
+.cover.big { width: 120px; height: 120px; border-radius: 16px; cursor: pointer; }
+.head { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; }
+.head > div { flex: 1 1 240px; min-width: 0; display: grid; gap: 10px; }
+.drop { margin-top: 16px; padding: 22px; border: 1.5px dashed var(--line); border-radius: 16px; text-align: center; color: var(--haze); }
+.drop.over { border-color: var(--ember); background: rgba(226,52,68,.08); }
+.tracks { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 10px; }
+.track { border: 1px solid var(--line); border-radius: 14px; background: rgba(0,0,0,.3); padding: 10px 12px; }
+.track.playing { border-color: var(--ember); }
+.track-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.track-top .name { flex: 1; min-width: 0; }
+.track-top .name b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track-top .name small { color: var(--haze); font-size: 12px; }
+.play { width: 38px; height: 38px; flex: none; border-radius: 50%; border: 0; background: var(--mist); color: var(--night); cursor: pointer; }
+.versions { list-style: none; margin: 10px 0 0; padding: 10px 0 0; border-top: 1px solid var(--line); display: grid; gap: 6px; font-size: 14px; }
+.versions li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.versions .tag { font: 600 11px var(--f-mono); padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); }
+.versions .tag.on { background: var(--ember); border-color: var(--ember); }
+.versions .note { flex: 1 1 160px; min-height: 34px; font-size: 14px; padding: 0 10px; }
+.progress { font: 500 12px var(--f-mono); color: var(--haze); }
+.links { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 8px; }
+.links li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; font-size: 14px; }
+.links li > span { flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; }
+</style>
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <div class="row"><a class="btn btn-ghost" href="compte.html">Mon compte</a><a href="compte.html" data-account data-account-manual hidden>Compte</a></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="eyebrow">Membres ONIRIQUE</div>
+  <h1>Mes <em>sons</em></h1>
+  <p class="muted" style="max-width:68ch;margin:0">Ta musique en cours, rangée par projet. Chaque titre garde ses versions successives. Partage-les par un lien privé (avec mot de passe si tu veux), vois qui écoute et lis les commentaires laissés à un moment précis du titre.</p>
+
+  <div class="panel gate" id="gate" hidden></div>
+
+  <div class="space" id="space" hidden>
+    <aside>
+      <section class="panel">
+        <div class="eyebrow">Mon espace</div>
+        <div id="quota-text" class="muted" style="font-size:14px"></div>
+        <div class="quota"><i id="quota-bar"></i></div>
+        <p class="error" id="disk-full" style="margin:10px 0 0"></p>
+      </section>
+      <section class="panel">
+        <div class="eyebrow">Projets</div>
+        <ul class="projects" id="projects"></ul>
+        <form id="new-project" class="row" style="margin-top:12px">
+          <input id="new-title" placeholder="Nouveau projet" maxlength="120" aria-label="Nom du nouveau projet" style="flex:1">
+          <button class="btn btn-ghost small" type="submit">Créer</button>
+        </form>
+      </section>
+    </aside>
+
+    <div>
+      <section class="panel" id="empty" hidden><p class="muted" style="margin:0">Crée ton premier projet (un album, un EP, une session…) pour y déposer tes sons.</p></section>
+      <section class="panel" id="project" hidden>
+        <div class="head">
+          <img class="cover big" id="cover" alt="Pochette du projet : cliquer pour la changer" tabindex="0">
+          <div>
+            <label>Nom du projet<input id="project-title" maxlength="120"></label>
+            <div class="row">
+              <button class="btn btn-ghost small" id="share-project" type="button">Partager le projet</button>
+              <button class="btn btn-ghost small" id="delete-project" type="button">Supprimer le projet</button>
+            </div>
+          </div>
+        </div>
+        <input type="file" id="cover-file" accept="image/png,image/jpeg,image/webp" hidden>
+        <div class="drop" id="drop">
+          <p style="margin:0 0 10px">Glisse tes fichiers ici (WAV, AIFF, FLAC, MP3, OGG, M4A ; 500 Mo au plus chacun)</p>
+          <button class="btn btn-primary small" id="add" type="button">Ajouter des sons</button>
+          <input type="file" id="files" accept="audio/*,.wav,.aif,.aiff,.flac,.mp3,.ogg,.m4a" multiple hidden>
+          <div class="progress" id="progress" role="status" style="margin-top:8px"></div>
+        </div>
+        <p class="error" id="error" role="alert"></p>
+        <ul class="tracks" id="tracks"></ul>
+      </section>
+
+      <section class="panel" id="share" hidden>
+        <div class="eyebrow">Liens d'écoute</div>
+        <form id="link-form">
+          <p style="margin:0 0 12px">Nouveau lien pour <b id="share-what"></b></p>
+          <div class="grid">
+            <label>Pour qui (facultatif)<input id="link-label" maxlength="80" placeholder="Label, ami, ingé…"></label>
+            <label>Mot de passe (facultatif)<input id="link-password" type="text" autocomplete="off" minlength="4"></label>
+            <label>Valable jusqu'au (facultatif)<input id="link-expires" type="date"></label>
+          </div>
+          <div class="between" style="margin-top:12px">
+            <label class="check"><input id="link-download" type="checkbox"><span>Autoriser le téléchargement du fichier original</span></label>
+            <button class="btn btn-primary small" type="submit">Créer le lien</button>
+          </div>
+          <p class="notice" id="link-notice" role="status"></p>
+        </form>
+        <ul class="links" id="links"></ul>
+      </section>
+    </div>
+  </div>
+</main>
+
+<script src="assets/sounds-player.js?v=1"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const TOKEN = "onirique.token";
+const token = sessionStorage.getItem(TOKEN) || localStorage.getItem(TOKEN);
+const OP = window.OniriquePlayer;
+const el = (tag, props = {}, ...children) => {
+  const node = Object.assign(document.createElement(tag), props);
+  node.append(...children.filter((c) => c !== null && c !== undefined));
+  return node;
+};
+const size = (n) => (!n ? "0 Mo" : n >= 1024 ** 3 ? (n / 1024 ** 3).toFixed(2).replace(".", ",") + " Go" : Math.max(0.1, n / 1024 ** 2).toFixed(1).replace(".", ",") + " Mo");
+const day = (ms) => new Date(ms).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+
+async function api(method, path, body) {
+  const response = await fetch("/api" + path, {
+    method,
+    headers: { Authorization: "Bearer " + token, ...(body ? { "Content-Type": "application/json" } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  }).catch(() => { throw new Error("Serveur injoignable. Réessaie dans un instant."); });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw Object.assign(new Error(data.error || "Erreur " + response.status), { status: response.status });
+  return data;
+}
+// Les fichiers passent par XMLHttpRequest, qui seul donne l'avancement de l'envoi.
+function upload(path, file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api" + path);
+    xhr.setRequestHeader("Authorization", "Bearer " + token);
+    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+    xhr.upload.onprogress = (event) => event.lengthComputable && onProgress(event.loaded / event.total);
+    xhr.onload = () => {
+      let data = {};
+      try { data = JSON.parse(xhr.responseText); } catch {}
+      xhr.status < 300 ? resolve(data) : reject(new Error(data.error || "Erreur " + xhr.status));
+    };
+    xhr.onerror = () => reject(new Error("L'envoi a été interrompu. Réessaie."));
+    xhr.send(file);
+  });
+}
+
+let data = null, openId = null, shareTarget = null;
+const player = OP.create({ onDelete: (t, c) => api("DELETE", "/me/sounds/comments/" + c.id).then(() => refresh()) });
+const fail = (error) => { $("error").textContent = error.message; };
+const current = () => data.projects.find((p) => p.id === openId);
+
+async function refresh() {
+  data = await api("GET", "/me/sounds");
+  if (!data.projects.some((p) => p.id === openId)) openId = data.projects[0]?.id ?? null;
+  draw();
+}
+
+function playTrack(t, v, project) {
+  player.load({ id: v.id, title: t.title, subtitle: project.title + " · version " + v.n, url: v.url, downloadUrl: v.downloadUrl,
+    duration: v.duration, peaks: v.peaks, comments: t.comments }, true);
+  // Un fichier dont la durée n'a pas pu être lue à l'envoi la reçoit à sa première écoute.
+  if (!v.duration) player.audio.addEventListener("loadedmetadata", () => {
+    if (Number.isFinite(player.audio.duration)) api("PATCH", "/me/sounds/versions/" + v.id, { duration: player.audio.duration }).catch(() => {});
+  }, { once: true });
+  draw();
+}
+
+function draw() {
+  const q = data.quota;
+  $("quota-text").textContent = size(q.used) + " utilisés sur " + size(q.limit);
+  $("quota-bar").style.width = Math.min(100, q.used / q.limit * 100) + "%";
+  $("disk-full").textContent = q.full ? "L'espace de stockage d'ONIRIQUE est plein pour le moment : les envois sont fermés. Tes sons restent écoutables." : "";
+  $("projects").replaceChildren(...data.projects.map((p) => el("li", {}, el("button", {
+    type: "button", ariaCurrent: String(p.id === openId), onclick: () => { openId = p.id; shareTarget = null; draw(); },
+  }, p.cover ? el("img", { className: "cover", src: p.cover, alt: "" }) : el("span", { className: "cover" }),
+  el("span", {}, p.title, el("small", { textContent: p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre") }))))));
+
+  const p = current();
+  $("empty").hidden = !!p;
+  $("project").hidden = !p;
+  if (!p) { $("share").hidden = true; return; }
+  if (document.activeElement !== $("project-title")) $("project-title").value = p.title;
+  $("cover").src = p.cover || "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><rect width="1" height="1" fill="#2A0A0E"/></svg>');
+  $("add").disabled = q.full;
+  $("tracks").replaceChildren(...p.tracks.map((t, i) => trackRow(p, t, i)));
+  drawShare(p);
+}
+
+function trackRow(p, t, i) {
+  const live = t.versions.find((v) => v.id === t.currentId) || t.versions.at(-1);
+  const playing = player.track && t.versions.some((v) => v.id === player.track.id);
+  const versions = el("ul", { className: "versions", hidden: true }, ...t.versions.slice().reverse().map((v) => {
+    const note = el("input", { className: "note", value: v.note, placeholder: "Note de version (mix 2, master…)", maxLength: 300, ariaLabel: "Note de la version " + v.n });
+    note.onchange = () => api("PATCH", "/me/sounds/versions/" + v.id, { note: note.value }).catch(fail);
+    return el("li", {},
+      el("button", { className: "icon-btn", type: "button", textContent: "▶", ariaLabel: "Écouter la version " + v.n, onclick: () => playTrack(t, v, p) }),
+      el("span", { className: "tag" + (v.id === t.currentId ? " on" : ""), textContent: "v" + v.n }),
+      el("span", { className: "muted", textContent: day(v.createdAt) + " · " + size(v.size) }),
+      note,
+      v.id === t.currentId ? null : el("button", { className: "btn btn-ghost small", type: "button", textContent: "Mettre en avant",
+        title: "C'est cette version que les liens d'écoute feront entendre",
+        onclick: () => api("PATCH", "/me/sounds/tracks/" + t.id, { currentId: v.id }).then(refresh, fail) }),
+      t.versions.length > 1 ? el("button", { className: "icon-btn", type: "button", textContent: "✕", ariaLabel: "Supprimer la version " + v.n,
+        onclick: () => confirm("Supprimer la version " + v.n + " de « " + t.title + " » ?") && api("DELETE", "/me/sounds/versions/" + v.id).then(refresh, fail) }) : null);
+  }));
+  const file = el("input", { type: "file", accept: "audio/*,.wav,.aif,.aiff,.flac,.mp3,.ogg,.m4a", hidden: true });
+  file.onchange = () => file.files[0] && sendFiles([file.files[0]], t);
+  const name = el("b", { textContent: t.title });
+  const move = (delta) => {
+    const order = p.tracks.map((x) => x.id);
+    order.splice(i + delta, 0, order.splice(i, 1)[0]);
+    api("PATCH", "/me/sounds/projects/" + p.id, { order }).then(refresh, fail);
+  };
+  return el("li", { className: "track" + (playing ? " playing" : "") },
+    el("div", { className: "track-top" },
+      el("button", { className: "play", type: "button", textContent: "▶", ariaLabel: "Écouter " + t.title, onclick: () => playTrack(t, live, p) }),
+      el("div", { className: "name" }, name, el("small", { textContent: "v" + live.n + " sur " + t.versions.length
+        + (t.comments.length ? " · " + t.comments.length + " commentaire" + (t.comments.length > 1 ? "s" : "") : "") })),
+      el("button", { className: "icon-btn", type: "button", textContent: "↑", ariaLabel: "Monter", disabled: i === 0, onclick: () => move(-1) }),
+      el("button", { className: "icon-btn", type: "button", textContent: "↓", ariaLabel: "Descendre", disabled: i === p.tracks.length - 1, onclick: () => move(1) })),
+    el("div", { className: "row", style: "margin-top:8px" },
+      el("button", { className: "btn btn-ghost small", type: "button", textContent: "Versions", onclick: () => { versions.hidden = !versions.hidden; } }),
+      el("button", { className: "btn btn-ghost small", type: "button", textContent: "Nouvelle version", disabled: data.quota.full, onclick: () => file.click() }),
+      el("button", { className: "btn btn-ghost small", type: "button", textContent: "Renommer", onclick: () => {
+        const title = prompt("Nom du titre :", t.title);
+        if (title && title.trim()) api("PATCH", "/me/sounds/tracks/" + t.id, { title }).then(refresh, fail);
+      } }),
+      el("button", { className: "btn btn-ghost small", type: "button", textContent: "Partager", onclick: () => { shareTarget = t.id; drawShare(p); $("share").scrollIntoView({ behavior: "smooth" }); } }),
+      t.comments.length ? el("button", { className: "btn btn-ghost small", type: "button", textContent: "Commentaires", onclick: () => playTrack(t, live, p) }) : null,
+      el("button", { className: "btn btn-ghost small", type: "button", textContent: "Supprimer", onclick: () =>
+        confirm("Supprimer « " + t.title + " » et toutes ses versions ?") && api("DELETE", "/me/sounds/tracks/" + t.id).then(refresh, fail) }),
+      file),
+    versions);
+}
+
+// Envoie des fichiers : chacun devient un titre du projet ouvert, ou la nouvelle version du titre donné.
+async function sendFiles(files, toTrack) {
+  const p = current();
+  $("error").textContent = "";
+  for (const [n, f] of [...files].entries()) {
+    const label = (files.length > 1 ? (n + 1) + "/" + files.length + " · " : "") + f.name;
+    try {
+      $("progress").textContent = label + " : lecture…";
+      const wave = await OP.peaksOf(f);
+      const query = "?filename=" + encodeURIComponent(f.name);
+      const done = await upload(toTrack ? "/me/sounds/tracks/" + toTrack.id + "/versions" + query : "/me/sounds/projects/" + p.id + "/tracks" + query, f,
+        (x) => { $("progress").textContent = label + " : " + Math.round(x * 100) + " %"; });
+      if (wave) await api("PATCH", "/me/sounds/versions/" + (toTrack ? done.id : done.versionId), wave);
+    } catch (error) { fail(error); break; }
+  }
+  $("progress").textContent = "";
+  await refresh().catch(fail);
+}
+
+function drawShare(p) {
+  $("share").hidden = false;
+  const t = shareTarget && p.tracks.find((x) => x.id === shareTarget);
+  if (!t) shareTarget = null;
+  $("share-what").textContent = t ? "le titre « " + t.title + " »" : "tout le projet « " + p.title + " »";
+  const mine = data.links.filter((l) => l.projectId === p.id || p.tracks.some((x) => x.id === l.trackId));
+  $("links").replaceChildren(...mine.map((l) => {
+    const what = l.projectId ? "Projet entier" : "« " + (p.tracks.find((x) => x.id === l.trackId)?.title || "") + " »";
+    const copy = el("button", { className: "btn btn-ghost small", type: "button", textContent: "Copier" });
+    copy.onclick = async () => {
+      try { await navigator.clipboard.writeText(l.url); copy.textContent = "Copié"; } catch { prompt("Copie ce lien :", l.url); }
+      setTimeout(() => { copy.textContent = "Copier"; }, 1600);
+    };
+    return el("li", {},
+      el("span", {}, el("b", { textContent: (l.label || what) }), " ",
+        el("span", { className: "muted", textContent: [l.label ? what : null, l.password ? "mot de passe" : null, l.download ? "téléchargement permis" : null,
+          l.expiresAt ? (l.expiresAt < Date.now() ? "expiré" : "jusqu'au " + day(l.expiresAt)) : null,
+          l.plays + " écoute" + (l.plays > 1 ? "s" : "") + (l.lastPlay ? ", la dernière le " + day(l.lastPlay) : "")].filter(Boolean).join(" · ") })),
+      copy,
+      el("button", { className: "btn btn-ghost small", type: "button", textContent: "Couper le lien", onclick: () =>
+        confirm("Couper ce lien ? Plus personne ne pourra écouter par lui.") && api("DELETE", "/me/sounds/links/" + l.id).then(refresh, fail) }));
+  }));
+}
+
+$("new-project").onsubmit = async (event) => {
+  event.preventDefault();
+  const title = $("new-title").value.trim();
+  if (!title) return;
+  try { openId = (await api("POST", "/me/sounds/projects", { title })).id; $("new-title").value = ""; await refresh(); } catch (error) { alert(error.message); }
+};
+$("project-title").onchange = () => api("PATCH", "/me/sounds/projects/" + openId, { title: $("project-title").value }).then(refresh, fail);
+$("delete-project").onclick = () => confirm("Supprimer « " + current().title + " », tous ses titres et leurs liens d'écoute ?")
+  && api("DELETE", "/me/sounds/projects/" + openId).then(refresh, fail);
+$("share-project").onclick = () => { shareTarget = null; drawShare(current()); $("share").scrollIntoView({ behavior: "smooth" }); };
+$("cover").onclick = $("cover").onkeydown = (event) => { if (!event.key || event.key === "Enter") $("cover-file").click(); };
+$("cover-file").onchange = async () => {
+  const f = $("cover-file").files[0];
+  if (!f) return;
+  try {
+    const response = await fetch("/api/me/sounds/projects/" + openId + "/cover", { method: "PUT", headers: { Authorization: "Bearer " + token, "Content-Type": f.type }, body: f });
+    if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Image refusée.");
+    await refresh();
+  } catch (error) { fail(error); }
+  $("cover-file").value = "";
+};
+$("add").onclick = () => $("files").click();
+$("files").onchange = () => { sendFiles($("files").files); $("files").value = ""; };
+const drop = $("drop");
+drop.ondragover = (event) => { event.preventDefault(); drop.classList.add("over"); };
+drop.ondragleave = () => drop.classList.remove("over");
+drop.ondrop = (event) => { event.preventDefault(); drop.classList.remove("over"); if (!data.quota.full) sendFiles(event.dataTransfer.files); };
+
+$("link-form").onsubmit = async (event) => {
+  event.preventDefault();
+  const date = $("link-expires").value;
+  try {
+    const { url } = await api("POST", "/me/sounds/links", {
+      projectId: shareTarget ? null : openId, trackId: shareTarget, label: $("link-label").value,
+      password: $("link-password").value, download: $("link-download").checked,
+      expiresAt: date ? new Date(date + "T23:59:59").getTime() : null,
+    });
+    $("link-form").reset();
+    try { await navigator.clipboard.writeText(url); $("link-notice").textContent = "Lien créé et copié : " + url; } catch { $("link-notice").textContent = "Lien créé : " + url; }
+    await refresh();
+  } catch (error) { $("link-notice").textContent = error.message; }
+};
+
+(async () => {
+  const gate = (html) => { $("gate").hidden = false; $("gate").innerHTML = html; };
+  if (!token) return gate('<p>Connecte-toi d\'abord à ton compte.</p><a class="btn btn-primary" href="compte.html">Se connecter</a>');
+  try {
+    await refresh();
+    $("space").hidden = false;
+  } catch (error) {
+    gate(error.status === 403 ? "<p>Mes sons est réservé aux membres ONIRIQUE.</p>"
+      : error.status === 401 ? '<p>Ta session a expiré.</p><a class="btn btn-primary" href="compte.html">Se reconnecter</a>' : "<p></p>");
+    if (error.status !== 403 && error.status !== 401) $("gate").firstChild.textContent = error.message;
+  }
+})();
+</script>
+<script src="assets/account.js?v=6"></script>
+<script src="assets/site-nav.js?v=12"></script>
+</html>

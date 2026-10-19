@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=b0807a33"></script>
+<script src="assets/i18n.js?v=119726c5"></script>
 <script src="assets/annonce.js?v=1"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Administration</title>
@@ -333,6 +333,16 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
     <p class="sub">Les comptes d'ONIRIQUE, affichés dans l'en-tête (rubrique « Nos réseaux »), le menu des téléphones et le pied des pages. Une adresse complète (https://…) ; laisser vide pour ne pas afficher le réseau.</p>
     <div class="box" id="socials"></div>
     <p class="error" id="socials-error" role="alert"></p>
+
+    <div id="sounds-admin" hidden>
+    <div class="bar"><h2>Mes sons</h2></div>
+    <p class="sub" id="sounds-info">L'espace de musique des membres ONIRIQUE. Quand le disque du serveur est plein à 80 %, plus aucun envoi n'est accepté. Réservé aux fondateurs.</p>
+    <div class="box"><form id="sounds-form">
+      <label>Quota par membre (Go)<input id="sounds-quota" type="number" min="0.1" max="1000" step="0.1" required></label>
+      <div class="row"><button class="act" type="submit">Enregistrer</button><span class="sub" id="sounds-saved"></span></div>
+    </form></div>
+    <p class="error" id="sounds-error" role="alert"></p>
+    </div>
 
     <div id="brand-kit" hidden>
     <div class="bar"><h2>Charte graphique</h2><button class="btn" id="brand-download" type="button">Télécharger le .zip</button></div>
@@ -1158,6 +1168,24 @@ function compose({ to = "", subject = "", inReplyTo = null, references = [], quo
   f.text.setSelectionRange(0, 0);
 }
 
+//------------------------------------------------------------------------------ Mes sons (fondateurs)
+async function loadSounds() {
+  if (me.role !== "founder") return;
+  $("sounds-admin").hidden = false;
+  const gb = (n) => (n / 1024 ** 3).toFixed(1).replace(".", ",") + " Go";
+  try {
+    const info = await api("GET", "/admin/sounds");
+    $("sounds-quota").value = info.quotaGb;
+    $("sounds-info").textContent += ` Disque : ${gb(info.diskUsed)} sur ${gb(info.diskTotal)} (${Math.round(info.diskUsed / info.diskTotal * 100)} %), dont ${gb(info.stored)} de sons.`;
+  } catch (error) { $("sounds-error").textContent = error.message; }
+  $("sounds-form").onsubmit = async (event) => {
+    event.preventDefault();
+    $("sounds-error").textContent = $("sounds-saved").textContent = "";
+    try { await api("PUT", "/admin/sounds", { quotaGb: Number($("sounds-quota").value) }); $("sounds-saved").textContent = "Enregistré."; }
+    catch (error) { $("sounds-error").textContent = error.message; }
+  };
+}
+
 //------------------------------------------------------------------------------ Charte graphique (fondateurs)
 async function loadBrandKit() {
   if (me.role !== "founder") return;
@@ -1401,6 +1429,7 @@ function showDisk(disk) {
     await loadPromos();
     await loadMailbox();
     await loadBrandKit();
+    await loadSounds();
     await loadSocials();
     await loadReferral();
     await loadMailings(true);
