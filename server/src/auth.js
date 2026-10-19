@@ -86,8 +86,9 @@ export const mustVerify = (user) => mailEnabled && !user.email_verified && !isSt
 /** Les partenaires : chacun est à la fois un créateur de plugins et le rôle des comptes qui gèrent ces plugins. */
 export const PARTNERS = ['abrasion', 'relic'];
 export const ROLES = ['user', 'vip', ...PARTNERS, 'admin', 'founder'];
-// Les membres ONIRIQUE (rôle « vip », affiché ONIRIQUE) et les fondateurs : Mes sons et la page de liens.
-export const MEMBERS = ['vip', 'founder'];
+// Les membres ONIRIQUE (rôle « vip », affiché ONIRIQUE), les admins et les fondateurs : Mes sons et la page de liens.
+// Les clients et les partenaires n'y ont pas accès.
+export const MEMBERS = ['vip', 'admin', 'founder'];
 export const isStaff = (user) => user.role === 'admin' || user.role === 'founder';
 /** Le créateur dont ce compte gère les plugins, pour un partenaire ; null pour tous les autres. */
 export const partnerOf = (user) => (PARTNERS.includes(user.role) ? user.role : null);

@@ -200,7 +200,10 @@ try {
       'un fondateur ne se supprime pas depuis le site');
 
     console.log('page de liens des membres ONIRIQUE et des fondateurs');
-    check((await api('GET', '/me/links', null, admin)).status === 403, 'réservée aux membres (pas aux admins)');
+    check((await api('GET', '/me/links', null, admin)).status === 200, 'ouverte aux admins');
+    run(`INSERT INTO users (email, password_hash, role, email_verified, created_at) VALUES ('client-liens@site.test', ?, 'user', 1, ?)`, hashPassword('motdepasse'), now());
+    const linkClient = (await api('POST', '/auth/login', { email: 'client-liens@site.test', password: 'motdepasse' })).data.token;
+    check((await api('GET', '/me/links', null, linkClient)).status === 403, 'mais pas aux clients');
     run(`INSERT INTO users (email, password_hash, role, email_verified, created_at) VALUES ('membre-liens@site.test', ?, 'vip', 1, ?)`, hashPassword('motdepasse'), now());
     const linkMember = (await api('POST', '/auth/login', { email: 'membre-liens@site.test', password: 'motdepasse' })).data.token;
     check((await api('PUT', '/me/links', { handle: 'membre-onirique', page: { name: 'Membre' } }, linkMember)).status === 200, 'un membre ONIRIQUE crée sa page');
@@ -253,7 +256,7 @@ try {
     const stats = (await api('GET', '/me/links/stats?days=7', null, founder)).data;
     check(stats.views === 1 && stats.clicks === 1 && stats.links[linkId] === 1 && stats.daily.length === 7 && stats.daily[6].views === 1,
       'une visite et un clic par personne, sans les robots ni les aperçus');
-    check((await api('GET', '/me/links/stats', null, admin)).status === 403, 'les statistiques sont réservées au fondateur');
+    check((await api('GET', '/me/links/stats', null, linkClient)).status === 403, 'pas de statistiques pour un client');
     const og = await fetch(`${base}/links/euhz/apercu.png`);
     const ogData = Buffer.from(await og.arrayBuffer());
     const { default: sharpLib } = await import('sharp');

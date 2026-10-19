@@ -446,8 +446,8 @@ function show(me) {
   $("profile-name").value = me.user.name || "";
   // Profil d'ingé : les fondateurs seulement. Sans photo d'ingé, une silhouette (jamais la photo du compte).
   $("inge").hidden = me.user.role !== "founder";
-  $("liens-panel").hidden = !["vip", "founder"].includes(me.user.role);
-  $("sons-panel").hidden = !["vip", "founder"].includes(me.user.role);
+  $("liens-panel").hidden = !["vip", "admin", "founder"].includes(me.user.role);
+  $("sons-panel").hidden = !["vip", "admin", "founder"].includes(me.user.role);
   $("eng-name").value = me.user.engineerName || "";
   $("eng-avatar").src = me.user.engineerAvatar || "assets/logo-small.png";
   $("eng-remove").hidden = !me.user.engineerAvatar;
