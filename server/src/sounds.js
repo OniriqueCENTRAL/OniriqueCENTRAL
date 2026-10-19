@@ -74,6 +74,11 @@ CREATE TABLE IF NOT EXISTS sound_comments (
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_links') WHERE name = 'require_account'`).get()) {
   db.exec('ALTER TABLE sound_links ADD COLUMN require_account INTEGER NOT NULL DEFAULT 0');
 }
+// Où en est un titre : maquette, V1 à V99 ou final ('' : non précisé).
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'stage'`).get()) {
+  db.exec(`ALTER TABLE sound_tracks ADD COLUMN stage TEXT NOT NULL DEFAULT ''`);
+}
+export const STAGE = /^(|maquette|final|v[1-9][0-9]?)$/;
 
 export const soundsDir = path.join(config.dataDir, 'sounds');
 fs.mkdirSync(soundsDir, { recursive: true });
@@ -221,7 +226,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
         tracks: tracks.filter((t) => t.project_id === p.id).map((t) => {
           const mine = plays.filter((r) => r.track_id === t.id);
           return {
-            id: t.id, title: t.title, currentId: t.current_id, createdAt: t.created_at,
+            id: t.id, title: t.title, stage: t.stage, currentId: t.current_id, createdAt: t.created_at,
             versions: versions.filter((v) => v.track_id === t.id).map((v, i) => versionView(v, i, true)),
             comments: comments.filter((c) => c.track_id === t.id).map(commentView),
             plays: mine.length, lastPlay: mine[0]?.created_at ?? null, listeners: listeners(mine),
@@ -295,6 +300,11 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   }));
   app.patch('/api/me/sounds/tracks/:id', ...me, (req, res) => {
     const t = track(req, req.params.id);
+    if (req.body.stage !== undefined) {
+      const stage = String(req.body.stage).toLowerCase();
+      if (!STAGE.test(stage)) throw new HttpError(400, 'Étape inconnue : maquette, V1 à V99 ou final.');
+      run('UPDATE sound_tracks SET stage = ? WHERE id = ?', stage, t.id);
+    }
     if (req.body.title !== undefined) {
       const title = str(req.body.title, 120);
       if (!title) throw new HttpError(400, 'Donne un nom au titre.');
@@ -465,7 +475,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       owner: link.owner_name || 'ONIRIQUE', ownerAvatar: media(link.owner_avatar), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover),
       download: !!link.download,
       tracks: tracks.map((t) => ({
-        id: t.id, title: t.title,
+        id: t.id, title: t.title, stage: t.stage,
         version: { id: t.vid, filename: t.filename, duration: t.duration, peaks: JSON.parse(t.peaks), url: audioUrl(t.vid), downloadUrl: link.download ? audioUrl(t.vid, true) : null },
         comments: comments.filter((c) => c.track_id === t.id).map(commentView),
       })),

@@ -170,6 +170,11 @@ try {
     assert.equal(played.plays, 1);
     assert.equal(played.listeners[0].name, 'auditeur');
     assert.equal(data.links[0].requireAccount, true);
+    // L'étape du titre : maquette, V2, final ; une autre valeur est refusée.
+    await call('PATCH', `/api/me/sounds/tracks/${t}`, { token: member.token, body: { stage: 'V2' } });
+    await call('PATCH', `/api/me/sounds/tracks/${t}`, { token: member.token, body: { stage: 'brouillon' }, expect: 400 });
+    const staged = await call('POST', `/api/sounds/share/${shareToken(fresh.url)}`, { token: listener.token, body: {} });
+    assert.equal(staged.tracks[0].stage, 'v2');
   });
 
   console.log(`\n${passed} étapes réussies.`);

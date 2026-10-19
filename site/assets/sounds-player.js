@@ -6,7 +6,10 @@
 //                                          onDelete(item, comment) → Promise, onChange(item) })
 //   player.play(items, index)   joue une liste (un projet) à partir de ce titre ; player.enqueue(item) l'ajoute à la file
 //   item : { key, id, trackId, title, subtitle, cover, url, downloadUrl, duration, peaks, comments }
+//   player.setAccent(color)      la couleur de la lecture (celle de la pochette du projet), null : la braise d'ONIRIQUE
 //   OniriquePlayer.peaksOf(file) → Promise<{ peaks, duration }>, calculés dans le navigateur à l'envoi
+//   OniriquePlayer.tint(url)     → Promise<{ accent, glow, deep } | null>, les couleurs tirées d'une pochette
+//   OniriquePlayer.stageLabel(s) → « Maquette », « V2 », « Final » ou 
 //   OniriquePlayer.icon(name)    → une icône SVG (play, pause, prev, next, shuffle, repeat, repeat1, queue, volume, mute,
 //                                  link, more, plus, close, back, download, chevron, star)
 (() => {
@@ -50,38 +53,38 @@
 
   const css = `
 .op-icon { display: inline-grid; place-items: center; line-height: 0; }
-.op-pill { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 40; width: min(820px, calc(100vw - 24px));
+.op-pill { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 40; width: min(1120px, calc(100vw - 24px));
   display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 8px; border-radius: 999px; border: 1px solid rgba(255,210,214,.16);
-  background: rgba(20,9,11,.92); backdrop-filter: blur(18px); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9), 0 0 40px -18px rgba(226,52,68,.55); }
+  background: rgba(20,9,11,.92); backdrop-filter: blur(18px); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9), 0 0 40px -18px var(--op-accent, rgba(226,52,68,.55)); }
 .op-pill[hidden], .op-sheet[hidden], .op-queue[hidden], .op-comments[hidden] { display: none; }
 .op-cover { flex: none; width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: linear-gradient(135deg, #5C0008, #2A0A0E); border: 1px solid rgba(255,210,214,.16); cursor: pointer; }
 .op-pill.playing .op-cover { animation: op-spin 9s linear infinite; }
 @keyframes op-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .op-pill.playing .op-cover { animation: none; } }
-.op-meta { min-width: 0; width: 150px; flex: none; cursor: pointer; line-height: 1.25; }
+.op-meta { min-width: 0; width: 170px; flex: none; cursor: pointer; line-height: 1.25; }
 .op-meta b { display: block; font: 700 13px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .op-meta span { display: block; font-size: 12px; color: var(--haze); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.op-mini { flex: 1; min-width: 60px; height: 34px; cursor: pointer; touch-action: none; display: block; }
+.op-mini { flex: 1; min-width: 200px; height: 44px; cursor: pointer; touch-action: none; display: block; }
 .op-time { flex: none; font: 500 11px var(--f-mono); color: var(--haze); white-space: nowrap; }
 .op-btn { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 50%; background: none; color: var(--mist); cursor: pointer; }
 .op-btn:hover { background: rgba(255,255,255,.06); }
-.op-btn.on { color: var(--ember); }
+.op-btn.on { color: var(--op-accent, var(--ember)); }
 .op-btn.main { width: 42px; height: 42px; background: var(--mist); color: var(--night); }
 .op-btn.main:hover { background: #fff; }
-.op-vol { width: 80px; accent-color: var(--ember); min-height: 0; padding: 0; }
-.op-sheet, .op-queue { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(80px + env(safe-area-inset-bottom)); z-index: 39; width: min(820px, calc(100vw - 24px));
+.op-vol { width: 80px; accent-color: var(--op-accent, var(--ember)); min-height: 0; padding: 0; }
+.op-sheet, .op-queue { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(80px + env(safe-area-inset-bottom)); z-index: 39; width: min(1120px, calc(100vw - 24px));
   max-height: min(62vh, 560px); overflow: auto; padding: 18px; border-radius: 22px; border: 1px solid rgba(255,210,214,.16);
   background: rgba(20,9,11,.96); backdrop-filter: blur(18px); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9); display: grid; gap: 14px; }
 .op-head { display: flex; align-items: center; gap: 12px; }
 .op-head b { flex: 1; min-width: 0; font: 700 16px var(--f-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.op-wave { width: 100%; height: 84px; display: block; cursor: pointer; touch-action: none; }
+.op-wave { width: 100%; height: 110px; display: block; cursor: pointer; touch-action: none; }
 .op-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 13px; color: var(--haze); }
 .op-tools label { display: inline-flex; flex-direction: row; align-items: center; gap: 8px; font: 400 13px var(--f-body); letter-spacing: 0; text-transform: none; color: var(--haze); }
 .op-tools input[type=range] { width: 120px; min-height: 0; padding: 0; accent-color: var(--ember); }
 .op-tools input[type=checkbox] { width: 16px; height: 16px; min-height: 0; margin: 0; accent-color: var(--ember); }
 .op-chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; border: 1px solid rgba(255,210,214,.16); background: none; color: var(--mist); font: 600 12px var(--f-body); cursor: pointer; text-decoration: none; }
 .op-chip:hover { border-color: var(--ember); }
-.op-chip.on { background: var(--ember); border-color: var(--ember); }
+.op-chip.on { background: var(--op-accent, var(--ember)); border-color: var(--op-accent, var(--ember)); color: var(--night); }
 .op-comments { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; }
 .op-comments li { display: flex; gap: 10px; align-items: baseline; }
 .op-comments button.at { flex: none; font: 600 12px var(--f-mono); color: var(--ember); background: none; border: 0; padding: 0; cursor: pointer; }
@@ -95,6 +98,7 @@
 .op-queue li.now button { color: var(--ember); }
 .op-queue img, .op-queue .op-q-cover { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; flex: none; background: linear-gradient(135deg, #5C0008, #2A0A0E); }
 .op-queue small { display: block; color: var(--haze); font-size: 12px; }
+@media (max-width: 1000px) { .op-vol { display: none; } .op-mini { min-width: 120px; } }
 @media (max-width: 720px) {
   .op-pill { gap: 4px; padding-right: 8px; }
   .op-meta { width: auto; flex: 1; }
@@ -107,7 +111,7 @@
     const audio = new Audio();
     audio.preload = "metadata";
     let list = [], index = -1, upNext = [], shuffle = false, repeat = "off", loop = null;
-    let volume = 1;
+    let volume = 1, accent = "#E23444";
     try { volume = Math.min(1, Math.max(0, Number(localStorage.getItem("onirique.volume") ?? 1))); } catch {}
     audio.volume = volume;
 
@@ -175,13 +179,13 @@
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
       g.clearRect(0, 0, w, h);
       const t = item(), d = duration(), progress = d ? audio.currentTime / d : 0;
-      if (loop && d) { g.fillStyle = "rgba(226,52,68,.18)"; g.fillRect(loop.a / d * w, 0, ((loop.b ?? d) - loop.a) / d * w, h); }
+      if (loop && d) { g.globalAlpha = .2; g.fillStyle = accent; g.fillRect(loop.a / d * w, 0, ((loop.b ?? d) - loop.a) / d * w, h); g.globalAlpha = 1; }
       const peaks = t && t.peaks && t.peaks.length ? t.peaks : null;
       const top = markers ? 8 : 0, bars = Math.max(1, Math.floor(w / gap));
       for (let i = 0; i < bars; i++) {
         const p = peaks ? peaks[Math.floor(i / bars * peaks.length)] : 0.1;
         const bh = Math.max(2, p * (h - top - 4));
-        g.fillStyle = i / bars < progress ? "#E23444" : "rgba(246,238,238,.32)";
+        g.fillStyle = i / bars < progress ? accent : "rgba(246,238,238,.32)";
         g.fillRect(i * gap, top + (h - top - bh) / 2, Math.max(1, gap - 1), bh);
       }
       g.fillStyle = "#FFECEE";
@@ -336,6 +340,11 @@
       toggle() { play.onclick(); },
       enqueue(t) { upNext.push(t); if (index < 0) { list = []; insertNext(upNext.shift()); } listQueue(); },
       openDetails() { if (sheet.hidden) toggleSheet(); },
+      setAccent(color) {
+        accent = color || "#E23444";
+        for (const node of [pill, sheet, queue]) node.style.setProperty("--op-accent", accent);
+        draw();
+      },
       redraw() { if (item()) { listComments(); draw(); } },
     };
   }
@@ -359,5 +368,46 @@
     }
   }
 
-  window.OniriquePlayer = { create, peaksOf, time, icon };
+  /** Les couleurs d'une pochette : la teinte dominante (pondérée par sa saturation), éclaircie pour l'accent, assombrie
+   *  pour le fond. Une pochette en noir et blanc donne un thème gris. null si l'image ne se lit pas. */
+  function tint(url) {
+    return new Promise((resolve) => {
+      if (!url) return resolve(null);
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const c = document.createElement("canvas");
+          c.width = c.height = 40;
+          const g = c.getContext("2d", { willReadFrequently: true });
+          g.drawImage(img, 0, 0, 40, 40);
+          const px = g.getImageData(0, 0, 40, 40).data;
+          let x = 0, y = 0, weight = 0, sat = 0, n = 0;
+          for (let i = 0; i < px.length; i += 4) {
+            const [h, s, l] = hsl(px[i], px[i + 1], px[i + 2]);
+            const w = s * (1 - Math.abs(l - 0.5) * 1.6);
+            if (w > 0) { x += Math.cos(h * 2 * Math.PI) * w; y += Math.sin(h * 2 * Math.PI) * w; weight += w; }
+            sat += s; n++;
+          }
+          const hue = Math.round(((Math.atan2(y, x) / (2 * Math.PI)) + 1) % 1 * 360);
+          const grey = weight / n < 0.06 || sat / n < 0.1;
+          resolve(grey
+            ? { accent: "hsl(0 0% 82%)", glow: "hsla(0, 0%, 55%, .55)", deep: "hsla(0, 0%, 20%, .5)" }
+            : { accent: `hsl(${hue} 78% 62%)`, glow: `hsla(${hue}, 80%, 40%, .8)`, deep: `hsla(${hue}, 90%, 18%, .5)` });
+        } catch { resolve(null); }
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  }
+  function hsl(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, d = max - min;
+    if (!d) return [0, 0, l];
+    const s = d / (1 - Math.abs(2 * l - 1));
+    const h = max === r ? ((g - b) / d + 6) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return [h / 6, s, l];
+  }
+  const stageLabel = (s) => (s === "maquette" ? "Maquette" : s === "final" ? "Final" : /^v\d+$/.test(s || "") ? s.toUpperCase() : "");
+
+  window.OniriquePlayer = { create, peaksOf, time, icon, tint, stageLabel };
 })();

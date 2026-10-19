@@ -199,5 +199,17 @@
  "Toute personne qui a le lien": "Anyone with the link",
  "Toute personne qui a le lien peut télécharger le fichier original": "Anyone with the link can download the original file",
  "Une nouvelle version : les précédentes restent dans l'historique": "A new version: earlier ones stay in the history",
- "Volume": "Volume"
+ "Volume": "Volume",
+ "Autre version…": "Other version…",
+ "Couper le lien ? Plus personne ne pourra écouter par lui.": "Cut the link? Nobody will be able to listen through it any more.",
+ "Étape": "Stage",
+ "Étape de": "Stage of",
+ "non précisée": "not set",
+ "Non précisée": "Not set",
+ "Étape inconnue : maquette, V1 à V99 ou final.": "Unknown stage: demo, V1 to V99 or final.",
+ "Numéro de la version (6 à 99)": "Version number (6 to 99)",
+ "Où en est ce titre : maquette, version, final": "Where this track stands: demo, version, final",
+ "Sans étape": "No stage",
+ "Maquette": "Demo",
+ "Final": "Final"
 }
