@@ -249,7 +249,8 @@ button.item:hover { background: rgba(255,255,255,.04); }
 .title-edit { display: inline-block; min-width: 2ch; max-width: 100%; vertical-align: top; padding: 2px 6px; margin: 0 -6px; border-radius: 8px; cursor: text; outline: none; }
 .title-edit:hover { background: rgba(255,255,255,.05); }
 .title-edit:focus { background: rgba(0,0,0,.45); box-shadow: 0 0 0 1px var(--ember); }
-.title-edit:empty::before { content: attr(data-placeholder); color: var(--haze); font-style: italic; }
+input.title-edit { min-height: 0; border: 0; background: transparent; color: inherit; font: inherit; letter-spacing: inherit; text-align: inherit; field-sizing: content; max-width: 100%; }
+input.title-edit::placeholder { color: var(--haze); font-style: italic; opacity: 1; }
 /* L'auteur de la pochette, sous la pochette du projet */
 .cover-by { display: flex; align-items: baseline; gap: 8px; margin-top: 12px; font-size: 14px; color: var(--haze); max-width: 400px; }
 .cover-by .eyebrow { flex: none; font-size: 11px; }
@@ -1023,22 +1024,25 @@ const item = (iconName, label, opts = {}) => {
 const group = (...rows) => el("ul", { className: "group" }, ...rows.filter(Boolean));
 // Un texte modifiable sur place : Entrée ou un clic ailleurs l'enregistre, Échap l'annule ; vide permis si allowEmpty.
 function inlineEdit(value, placeholder, max, save, allowEmpty) {
-  const span = el("span", { className: "title-edit", contentEditable: "plaintext-only", spellcheck: false, textContent: value || "",
-    title: "Cliquer pour modifier", role: "textbox", ariaLabel: placeholder });
-  span.dataset.placeholder = placeholder;
-  if (span.contentEditable !== "plaintext-only") span.contentEditable = "true";
-  span.onkeydown = (event) => {
-    if (event.key === "Enter") { event.preventDefault(); span.blur(); }
-    if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); span.textContent = value || ""; span.blur(); }
+  // Un vrai champ de saisie (et non un texte modifiable) : les accents tapés en deux temps (^ puis e, ¨ puis e, accents
+  // du Mac) et les claviers à composition y passent sans accroc.
+  const input = el("input", { className: "title-edit", value: value || "", placeholder, maxLength: max, spellcheck: false, autocomplete: "off",
+    title: "Cliquer pour modifier", ariaLabel: placeholder });
+  const fit = () => { input.size = Math.max(4, (input.value || placeholder).length + 1); };
+  fit();
+  input.oninput = fit;
+  input.onkeydown = (event) => {
+    if (event.isComposing) return; // Entrée qui valide un accent en cours, pas le nom
+    if (event.key === "Enter") { event.preventDefault(); input.blur(); }
+    if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); input.value = value || ""; fit(); input.blur(); }
   };
-  span.onpaste = (event) => { event.preventDefault(); document.execCommand("insertText", false, event.clipboardData.getData("text/plain").replace(/\s+/g, " ")); };
-  span.onblur = () => {
-    const next = span.textContent.replace(/\s+/g, " ").trim().slice(0, max);
-    span.textContent = next;
-    if (!next && !allowEmpty) { span.textContent = value || ""; return; }
-    if (next !== (value || "")) save(next).catch((error) => { span.textContent = value || ""; alert(error.message); });
+  input.onblur = () => {
+    const next = input.value.replace(/\s+/g, " ").trim().slice(0, max);
+    input.value = next;
+    if (!next && !allowEmpty) { input.value = value || ""; fit(); return; }
+    if (next !== (value || "")) save(next).catch((error) => { input.value = value || ""; fit(); alert(error.message); });
   };
-  return span;
+  return input;
 }
 const titleEditor = (t) => inlineEdit(t.title, "Nom du titre", 120, (title) => api("PATCH", "/me/sounds/tracks/" + t.id, { title }).then(refresh));
 // Les crédits d'un titre : la clé gardée par le serveur, le libellé, l'exemple du champ.
