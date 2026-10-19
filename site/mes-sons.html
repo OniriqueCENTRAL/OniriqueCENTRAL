@@ -258,6 +258,11 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
 .cover-by .eyebrow { flex: none; font-size: 11px; }
 .cover-by .title-edit { flex: 1; color: var(--mist); font-weight: 600; min-width: 40px; text-align: left; }
 .tile.drop-cover .art { outline: 2px solid var(--ember); outline-offset: 3px; }
+/* Glisser un projet sur un dossier (ou sur ← pour le sortir du dossier) */
+.tile[draggable="true"] .art { cursor: grab; }
+.tile.dragging { opacity: .4; }
+.tile.drop-into .art { outline: 2px solid var(--ember); outline-offset: 4px; scale: 1.04; }
+#folder-back.drop-into { border-color: var(--ember); background: color-mix(in srgb, var(--ember) 18%, transparent); scale: 1.1; }
 /* Les crédits d'un titre */
 .credits-list { display: grid; gap: 4px; margin-top: 10px; width: 100%; font-size: 13px; text-align: left; }
 .credits-list div { display: flex; gap: 10px; justify-content: space-between; padding: 6px 10px; border-radius: 10px; background: rgba(255,255,255,.035); }
@@ -512,6 +517,7 @@ function markPlaying() {
 
 // ——— Menus et petites fenêtres ———
 let openMenu = null;
+const atPointer = (event) => ({ getBoundingClientRect: () => ({ left: event.clientX, right: event.clientX, top: event.clientY, bottom: event.clientY, width: 0, height: 0 }) });
 function menu(anchor, items) {
   closeMenu();
   const m = el("div", { className: "menu", role: "menu" }, ...items.filter(Boolean).map((it) => it === "-" ? el("hr") : el("button", {
@@ -611,7 +617,10 @@ function renderGrid() {
   const items = [...data.projects.filter(here).map((x) => ({ kind: "project", x })), ...data.saved.filter(here).map((x) => ({ kind: "saved", x }))]
     .sort((a, b) => b.x.createdAt - a.x.createdAt);
   const tiles = [...(f ? [] : data.folders.map(folderTile)), ...items.map(({ kind, x }) => (kind === "project" ? projectTile(x) : savedTile(x)))];
-  tiles.forEach((tile, i) => tile.style.setProperty("--i", i));
+  tiles.forEach((tile, i) => {
+    tile.style.setProperty("--i", i);
+    tile.oncontextmenu = (event) => { const dots = tile.querySelector(".dots"); if (dots) { event.preventDefault(); event.stopPropagation(); dots.openAt(atPointer(event)); } };
+  });
   $("tiles").replaceChildren(...tiles);
   $("grid-top").hidden = !!f;
   $("folder-crumb").hidden = !f;
@@ -627,7 +636,28 @@ const caption = (title, sub, more, feat) => el("div", { className: "caption" }, 
   el("b", {}, title, feat ? el("span", { className: "feat", textContent: "feat. " + feat, title: "feat. " + feat }) : ""), sub), more);
 // Les artistes invités d'un projet : ceux de tous ses titres, chacun une fois.
 const projectFeat = (p) => [...new Set(p.tracks.flatMap((t) => (t.credits.feat || "").split(",").map((n) => n.trim()).filter(Boolean)))].join(", ");
-const dotsFor = (label, onclick) => { const b = el("button", { className: "dots", type: "button", ariaLabel: "Options de " + label }, icon("more")); b.onclick = () => onclick(b); return b; };
+const dotsFor = (label, onclick) => { const b = el("button", { className: "dots", type: "button", ariaLabel: "Options de " + label }, icon("more")); b.onclick = () => onclick(b); b.openAt = onclick; return b; };
+// Glisser-déposer dans la grille : un projet (le mien ou un enregistré) se prend et se lâche sur un dossier.
+function dragSource(tile, value) {
+  tile.draggable = true;
+  tile.ondragstart = (event) => { event.dataTransfer.setData("text/x-move", value); event.dataTransfer.effectAllowed = "move"; tile.classList.add("dragging"); };
+  tile.ondragend = () => tile.classList.remove("dragging");
+}
+function dropTarget(node, onMove, onFiles) {
+  const accepts = (event) => event.dataTransfer.types.includes("text/x-move") || (onFiles && event.dataTransfer.types.includes("Files"));
+  node.addEventListener("dragover", (event) => { if (!accepts(event)) return; event.preventDefault(); node.classList.add("drop-into"); });
+  node.addEventListener("dragleave", (event) => { if (!node.contains(event.relatedTarget)) node.classList.remove("drop-into"); });
+  node.addEventListener("drop", (event) => {
+    if (!accepts(event)) return;
+    event.preventDefault(); event.stopPropagation();
+    node.classList.remove("drop-into");
+    dragDepth = 0; $("drop-zone").hidden = true;
+    const moved = event.dataTransfer.getData("text/x-move");
+    if (moved) { const [kind, id] = moved.split(":"); onMove(kind, Number(id)); }
+    else if (onFiles) onFiles([...event.dataTransfer.files]);
+  });
+}
+const moveTo = (kind, id, folderId) => api("PATCH", (kind === "saved" ? "/me/sounds/saves/" : "/me/sounds/projects/") + id, { folderId }).then(refresh, fail);
 function projectTile(p) {
   const playBtn = el("button", { className: "fab-play", type: "button", ariaLabel: "Écouter " + p.title, hidden: !p.tracks.length }, icon("play"));
   playBtn.onclick = (event) => { event.stopPropagation(); playProject(p); };
@@ -638,6 +668,7 @@ function projectTile(p) {
     el("span", { textContent: p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre") + (linkFor("project", p.id) ? " · partagé" : "") }),
     dotsFor(p.title, (b) => projectMenu(b, p)), projectFeat(p)));
   tile.dataset.id = p.id;
+  dragSource(tile, "project:" + p.id);
   return tile;
 }
 function folderTile(f) {
@@ -648,16 +679,24 @@ function folderTile(f) {
   const art = el("div", { className: "art", role: "link", tabIndex: 0, ariaLabel: "Ouvrir le dossier " + f.title }, mosaic);
   art.onclick = () => { location.hash = "#/f/" + f.id; };
   art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
-  return el("div", { className: "tile" }, art, caption(f.title,
+  const tile = el("div", { className: "tile" }, art, caption(f.title,
     el("span", { textContent: "Dossier · " + inside.length + (inside.length > 1 ? " projets" : " projet") }), dotsFor(f.title, (b) => folderMenu(b, f))));
+  tile.dataset.folder = f.id;
+  // Un projet lâché ici y est rangé ; des sons lâchés ici deviennent un nouveau projet dans ce dossier.
+  dropTarget(tile, (kind, id) => moveTo(kind, id, f.id), (files) => {
+    const sounds = files.filter(isAudio);
+    if (sounds.length && !data.quota.full) newProjectWith(sounds, f.id).catch(fail);
+  });
+  return tile;
 }
+const savedSource = (tile, x) => { dragSource(tile, "saved:" + x.id); return tile; };
 function savedTile(x) {
   const playBtn = el("button", { className: "fab-play", type: "button", ariaLabel: "Écouter " + x.title, hidden: !x.available }, icon("play"));
   playBtn.onclick = (event) => { event.stopPropagation(); playSaved(x); };
   const art = el("div", { className: "art", role: "link", tabIndex: 0, ariaLabel: "Ouvrir " + x.title + " de " + x.owner }, coverOf(x), playBtn);
   art.onclick = () => openSaved(x);
   art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
-  return el("div", { className: "tile" + (x.available ? "" : " gone") }, art, caption(x.title,
+  return savedSource(el("div", { className: "tile" + (x.available ? "" : " gone") }, art, caption(x.title,
     el("span", { className: "owner" }, x.ownerAvatar ? el("img", { src: x.ownerAvatar, alt: "" }) : "", x.available ? x.owner : x.owner + " · lien fermé"),
     dotsFor(x.title, (b) => menu(b, [
       x.available && { label: "Ouvrir", icon: "chevron", onclick: () => openSaved(x) },
@@ -666,7 +705,7 @@ function savedTile(x) {
       "-",
       { label: "Retirer de Mes sons", icon: "close", danger: true, onclick: () =>
         confirm("Retirer « " + x.title + " » de Mes sons ? Le projet reste chez " + x.owner + ".") && api("DELETE", "/me/sounds/saves/" + x.id).then(refresh, fail) },
-    ]))));
+    ])))), x);
 }
 // Un projet enregistré s'ouvre sur sa page d'écoute ; le mot de passe déjà donné y est repris.
 function openSaved(x) {
@@ -891,10 +930,10 @@ $("uploads-close").append(icon("close"));
 $("uploads-close").onclick = clearUploads;
 addEventListener("beforeunload", (event) => { if (uploading) event.preventDefault(); });
 // Des sons déposés hors d'un projet : un nouveau projet, nommé d'après le premier fichier.
-async function newProjectWith(files) {
+async function newProjectWith(files, inFolder = folderId()) {
   const name = files[0].name.replace(/\.[a-z0-9]{2,5}$/i, "");
   const { id } = await api("POST", "/me/sounds/projects", { title: files.length > 1 ? "Nouveau projet" : name });
-  if (folderId()) await api("PATCH", "/me/sounds/projects/" + id, { folderId: folderId() });
+  if (inFolder) await api("PATCH", "/me/sounds/projects/" + id, { folderId: inFolder });
   await refresh();
   location.hash = "#/p/" + id;
   sendFiles(files, project(id));
@@ -953,9 +992,9 @@ addEventListener("drop", (event) => {
 
 // ——— Le bouton + ———
 $("fab").append(icon("plus"), "Ajouter");
-$("fab").onclick = () => {
+function addMenu(anchor) {
   const p = openId() && project();
-  menu($("fab"), [
+  menu(anchor, [
     p && { label: "Ajouter des sons à ce projet", icon: "plus", onclick: () => pickFiles({ project: p }) },
     { label: "Importer des sons", icon: "download", onclick: () => pickFiles(null) },
     { label: "Nouveau projet", icon: "star", onclick: async () => {
@@ -972,7 +1011,15 @@ $("fab").onclick = () => {
       if (title) api("POST", "/me/sounds/folders", { title }).then(refresh, fail);
     } },
   ]);
-};
+}
+$("fab").onclick = () => addMenu($("fab"));
+document.querySelector("main").addEventListener("contextmenu", (event) => {
+  if (!data || !$("gate").hidden || event.target.closest(".tile, .trk, input, textarea, a, button, .album .art")) return;
+  event.preventDefault();
+  addMenu(atPointer(event));
+});
+// Dans un dossier, un projet lâché sur ← en sort.
+dropTarget($("folder-back"), (kind, id) => moveTo(kind, id, null));
 $("folder-back").append(icon("back"));
 $("folder-back").onclick = () => { location.hash = ""; };
 $("folder-more").append(icon("more"));
