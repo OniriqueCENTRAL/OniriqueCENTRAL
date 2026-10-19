@@ -64,8 +64,8 @@
 @media (prefers-reduced-motion: reduce) { .op-pill.playing .op-cover { animation: none; } }
 .op-meta { min-width: 0; width: 170px; flex: none; cursor: pointer; line-height: 1.25; }
 .op-meta b { display: block; font: 700 13px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.op-meta b .op-feat, .op-head b .op-feat { margin-left: 6px; padding: 1px 7px; border-radius: 999px; border: 1px solid rgba(255,210,214,.2); font: 600 10.5px var(--f-body); color: var(--haze); vertical-align: 1px; }
-.op-meta span { display: block; font-size: 12px; color: var(--haze); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op-meta b .op-feat, .op-head b .op-feat { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.13)); background: rgba(255,255,255,.05); font: 600 10.5px/1.5 var(--f-body); color: var(--mist); vertical-align: 1px; }
+.op-meta > span { display: block; font-size: 12px; color: var(--haze); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .op-mini { flex: 1; min-width: 200px; height: 44px; cursor: pointer; touch-action: none; display: block; }
 .op-time { flex: none; font: 500 11px var(--f-mono); color: var(--haze); white-space: nowrap; }
 .op-btn { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 50%; background: none; color: var(--mist); cursor: pointer; }
