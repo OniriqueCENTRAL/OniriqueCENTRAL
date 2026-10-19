@@ -188,6 +188,49 @@ try {
     await call('PATCH', `/api/me/sounds/projects/${a}`, { token: member.token, body: { releaseDate: '' } });
   });
 
+  await step('dossiers, et projet d\'un autre membre enregistré dans Mes sons (le lien coupé, il disparaît)', async () => {
+    const other = await account('second', 'vip');
+    const theirs = (await call('POST', '/api/me/sounds/projects', { token: other.token, body: { title: 'UNRELEASED' }, expect: 201 })).id;
+    await call('POST', `/api/me/sounds/projects/${theirs}/tracks?filename=x.wav`, { token: other.token, raw: wav(), expect: 201 });
+    const link = await call('POST', '/api/me/sounds/links', { token: other.token, body: { projectId: theirs, password: 'secret1' }, expect: 201 });
+    const t = shareToken(link.url);
+    // Un simple client ne peut pas enregistrer ; un membre, une fois le mot de passe donné.
+    const pass = (await call('POST', `/api/sounds/share/${t}`, { token: listener.token, body: { password: 'secret1' } })).pass;
+    await call('POST', `/api/sounds/share/${t}/save`, { token: listener.token, body: { pass }, expect: 403 });
+    await call('POST', `/api/sounds/share/${t}/save`, { token: member.token, body: {}, expect: 401 });
+    const seen = await call('POST', `/api/sounds/share/${t}`, { token: member.token, body: { pass } });
+    assert.equal(seen.canSave, true);
+    assert.equal(seen.saved, false);
+    await call('POST', `/api/sounds/share/${t}/save`, { token: member.token, body: { pass }, expect: 201 });
+    await call('POST', `/api/sounds/share/${t}/save`, { token: other.token, body: { pass }, expect: 400 });
+
+    const folder = (await call('POST', '/api/me/sounds/folders', { token: member.token, body: { title: 'Collabs' }, expect: 201 })).id;
+    let data = await call('GET', '/api/me/sounds', { token: member.token });
+    const saved = data.saved[0];
+    assert.equal(saved.title, 'UNRELEASED');
+    assert.equal(saved.owner, 'second');
+    assert.equal(saved.available, true);
+    assert.equal(saved.pass, pass, 'le mot de passe déjà donné reste valable');
+    await call('PATCH', `/api/me/sounds/saves/${saved.id}`, { token: member.token, body: { folderId: folder } });
+    const mine = data.projects[0].id;
+    await call('PATCH', `/api/me/sounds/projects/${mine}`, { token: member.token, body: { folderId: folder } });
+    // Le dossier d'un autre est refusé.
+    const foreign = (await call('POST', '/api/me/sounds/folders', { token: other.token, body: { title: 'X' }, expect: 201 })).id;
+    await call('PATCH', `/api/me/sounds/projects/${mine}`, { token: member.token, body: { folderId: foreign }, expect: 404 });
+    data = await call('GET', '/api/me/sounds', { token: member.token });
+    assert.equal(data.saved[0].folderId, folder);
+    assert.equal(data.projects.find((x) => x.id === mine).folderId, folder);
+    // Le dossier supprimé : ses projets reviennent à la racine.
+    await call('DELETE', `/api/me/sounds/folders/${folder}`, { token: member.token });
+    data = await call('GET', '/api/me/sounds', { token: member.token });
+    assert.equal(data.folders.length, 0);
+    assert.equal(data.projects.find((x) => x.id === mine).folderId, null);
+    assert.equal(data.saved[0].folderId, null);
+    // L'auteur coupe son lien : le projet disparaît de la page du membre.
+    await call('DELETE', `/api/me/sounds/links/${link.id}`, { token: other.token });
+    assert.equal((await call('GET', '/api/me/sounds', { token: member.token })).saved.length, 0);
+  });
+
   console.log(`\n${passed} étapes réussies.`);
 } finally {
   server.close();

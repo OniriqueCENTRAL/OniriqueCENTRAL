@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=22695b33"></script>
+<script src="assets/i18n.js?v=487e8ed4"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -77,6 +77,16 @@ textarea { padding: 12px 14px; min-height: 110px; resize: vertical; line-height:
 .tile .caption div { flex: 1; min-width: 0; line-height: 1.3; }
 .tile .caption b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font: 700 14px var(--f-body); }
 .tile .caption span { color: var(--haze); font-size: 13px; }
+/* Un dossier : les pochettes de ce qu'il contient, en mosaïque */
+.folder-art { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: 6px; padding: 10px; background: linear-gradient(160deg, rgba(255,255,255,.07), rgba(255,255,255,.02)); }
+.folder-art img, .folder-art .cover-ph { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+.folder-art .cover-ph svg { width: 34%; height: 34%; }
+.folder-art > :only-child, .folder-art > :nth-child(3):last-child { grid-column: 1 / -1; }
+.folder-art.empty { display: grid; place-items: center; grid-template-columns: 1fr; color: var(--haze); }
+.folder-art.empty svg { width: 34%; height: 34%; }
+.tile.gone .art { opacity: .45; filter: grayscale(1); }
+.tile .owner { display: inline-flex; align-items: center; gap: 6px; }
+.tile .owner img { width: 16px; height: 16px; border-radius: 50%; object-fit: cover; }
 .dots { flex: none; width: 30px; height: 26px; display: grid; place-items: center; border: 0; border-radius: 8px; background: none; color: var(--haze); cursor: pointer; }
 .dots:hover { color: var(--mist); background: rgba(255,255,255,.06); }
 .empty { text-align: center; padding: 60px 20px; }
@@ -279,7 +289,12 @@ button.item:hover { background: rgba(255,255,255,.04); }
   <div class="panel gate" id="gate" hidden></div>
 
   <section id="grid-view" hidden>
-    <div class="top">
+    <div class="crumb" id="folder-crumb" hidden>
+      <button class="round" id="folder-back" type="button" aria-label="Retour à Mes sons"></button>
+      <div style="flex:1;min-width:0"><b id="folder-title" style="font:800 clamp(22px,4vw,30px)/1.1 var(--f-display)"></b><small id="folder-count"></small></div>
+      <button class="round" id="folder-more" type="button" aria-label="Options du dossier"></button>
+    </div>
+    <div class="top" id="grid-top">
       <div>
         <div class="eyebrow">Membres ONIRIQUE</div>
         <h1>Mes <em>sons</em></h1>
@@ -390,6 +405,8 @@ function upload(path, file, onProgress) {
 let data = null;
 const fail = (error) => { $("error").textContent = error.message; if ($("grid-view").hidden === false) alert(error.message); };
 const openId = () => { const m = /^#\/p\/(\d+)/.exec(location.hash); return m ? Number(m[1]) : null; };
+const folderId = () => { const m = /^#\/f\/(\d+)/.exec(location.hash); return m ? Number(m[1]) : null; };
+const folder = (id = folderId()) => data.folders.find((f) => f.id === id);
 const project = (id = openId()) => data.projects.find((p) => p.id === id);
 const findTrack = (tid) => { for (const p of data.projects) { const t = p.tracks.find((x) => x.id === tid); if (t) return { p, t }; } return {}; };
 const live = (t) => t.versions.find((v) => v.id === t.currentId) || t.versions.at(-1);
@@ -483,7 +500,7 @@ async function refresh() {
 }
 function render() {
   const p = openId() && project();
-  if (openId() && !p) { location.hash = ""; return; }
+  if ((openId() && !p) || (folderId() && !folder())) { location.hash = ""; return; }
   $("grid-view").hidden = !!p;
   $("project-view").hidden = !p;
   $("fab").hidden = false;
@@ -531,34 +548,117 @@ function navigate(hash) {
 
 function renderGrid() {
   theme(null);
-  const q = data.quota;
+  const q = data.quota, f = folderId() && folder();
   $("owner-name").textContent = data.owner.name;
   $("quota").replaceChildren(size(q.used) + " sur " + size(q.limit), el("i", {}, el("b", { style: "width:" + Math.min(100, q.used / q.limit * 100) + "%" })));
   $("disk-full").textContent = q.full ? "L'espace de stockage d'ONIRIQUE est plein pour le moment : les envois sont fermés. Tes sons restent écoutables." : "";
-  $("empty").hidden = data.projects.length > 0;
-  $("tiles").replaceChildren(...data.projects.map((p) => {
-    const more = el("button", { className: "dots", type: "button", ariaLabel: "Options de " + p.title }, icon("more"));
-    more.onclick = () => projectMenu(more, p);
-    const playBtn = el("button", { className: "fab-play", type: "button", ariaLabel: "Écouter " + p.title, hidden: !p.tracks.length }, icon("play"));
-    playBtn.onclick = (event) => { event.stopPropagation(); playProject(p); };
-    const art = el("div", { className: "art", role: "link", tabIndex: 0, ariaLabel: "Ouvrir " + p.title }, coverOf(p), playBtn);
-    art.onclick = () => navigate("#/p/" + p.id);
-    art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
-    const tile = el("div", { className: "tile" }, art,
-      el("div", { className: "caption" }, el("div", {}, el("b", { textContent: p.title }),
-        el("span", { textContent: p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre") + (linkFor("project", p.id) ? " · partagé" : "") })), more));
-    tile.dataset.id = p.id;
-    tile.style.setProperty("--i", data.projects.indexOf(p));
-    return tile;
-  }));
+  // À la racine : les dossiers, puis les projets hors dossier (les miens et ceux enregistrés), du plus récent au plus ancien.
+  const here = (x) => (x.folderId || null) === (f ? f.id : null);
+  const items = [...data.projects.filter(here).map((x) => ({ kind: "project", x })), ...data.saved.filter(here).map((x) => ({ kind: "saved", x }))]
+    .sort((a, b) => b.x.createdAt - a.x.createdAt);
+  const tiles = [...(f ? [] : data.folders.map(folderTile)), ...items.map(({ kind, x }) => (kind === "project" ? projectTile(x) : savedTile(x)))];
+  tiles.forEach((tile, i) => tile.style.setProperty("--i", i));
+  $("tiles").replaceChildren(...tiles);
+  $("grid-top").hidden = !!f;
+  $("folder-crumb").hidden = !f;
+  if (f) {
+    $("folder-title").textContent = f.title;
+    $("folder-count").textContent = items.length + (items.length > 1 ? " projets" : " projet");
+  }
+  $("empty").hidden = !!f || tiles.length > 0;
+  if (f && !items.length) $("tiles").replaceChildren(el("p", { className: "muted", style: "grid-column:1/-1;margin:0",
+    textContent: "Ce dossier est vide. Range-y des projets avec leur menu ⋯, « Déplacer vers »." }));
 }
-
+const caption = (title, sub, more) => el("div", { className: "caption" }, el("div", {}, el("b", { textContent: title }), sub), more);
+const dotsFor = (label, onclick) => { const b = el("button", { className: "dots", type: "button", ariaLabel: "Options de " + label }, icon("more")); b.onclick = () => onclick(b); return b; };
+function projectTile(p) {
+  const playBtn = el("button", { className: "fab-play", type: "button", ariaLabel: "Écouter " + p.title, hidden: !p.tracks.length }, icon("play"));
+  playBtn.onclick = (event) => { event.stopPropagation(); playProject(p); };
+  const art = el("div", { className: "art", role: "link", tabIndex: 0, ariaLabel: "Ouvrir " + p.title }, coverOf(p), playBtn);
+  art.onclick = () => navigate("#/p/" + p.id);
+  art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
+  const tile = el("div", { className: "tile" }, art, caption(p.title,
+    el("span", { textContent: p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre") + (linkFor("project", p.id) ? " · partagé" : "") }),
+    dotsFor(p.title, (b) => projectMenu(b, p))));
+  tile.dataset.id = p.id;
+  return tile;
+}
+function folderTile(f) {
+  const inside = [...data.projects, ...data.saved].filter((x) => x.folderId === f.id);
+  const covers = inside.slice(0, 4).map((x) => coverOf(x));
+  const mosaic = el("div", { className: "folder-art" + (covers.length ? "" : " empty") }, ...covers);
+  if (!covers.length) mosaic.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4.6l2 2h8.4A1.5 1.5 0 0 1 21 9.5v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5Z"/></svg>';
+  const art = el("div", { className: "art", role: "link", tabIndex: 0, ariaLabel: "Ouvrir le dossier " + f.title }, mosaic);
+  art.onclick = () => { location.hash = "#/f/" + f.id; };
+  art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
+  return el("div", { className: "tile" }, art, caption(f.title,
+    el("span", { textContent: "Dossier · " + inside.length + (inside.length > 1 ? " projets" : " projet") }), dotsFor(f.title, (b) => folderMenu(b, f))));
+}
+function savedTile(x) {
+  const playBtn = el("button", { className: "fab-play", type: "button", ariaLabel: "Écouter " + x.title, hidden: !x.available }, icon("play"));
+  playBtn.onclick = (event) => { event.stopPropagation(); playSaved(x); };
+  const art = el("div", { className: "art", role: "link", tabIndex: 0, ariaLabel: "Ouvrir " + x.title + " de " + x.owner }, coverOf(x), playBtn);
+  art.onclick = () => openSaved(x);
+  art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
+  return el("div", { className: "tile" + (x.available ? "" : " gone") }, art, caption(x.title,
+    el("span", { className: "owner" }, x.ownerAvatar ? el("img", { src: x.ownerAvatar, alt: "" }) : "", x.available ? x.owner : x.owner + " · lien fermé"),
+    dotsFor(x.title, (b) => menu(b, [
+      x.available && { label: "Ouvrir", icon: "chevron", onclick: () => openSaved(x) },
+      x.available && { label: "Écouter", icon: "play", onclick: () => playSaved(x) },
+      { label: "Déplacer vers…", icon: "chevron", onclick: () => moveMenu(b, x.folderId, (folderId) => api("PATCH", "/me/sounds/saves/" + x.id, { folderId })) },
+      "-",
+      { label: "Retirer de Mes sons", icon: "close", danger: true, onclick: () =>
+        confirm("Retirer « " + x.title + " » de Mes sons ? Le projet reste chez " + x.owner + ".") && api("DELETE", "/me/sounds/saves/" + x.id).then(refresh, fail) },
+    ]))));
+}
+// Un projet enregistré s'ouvre sur sa page d'écoute ; le mot de passe déjà donné y est repris.
+function openSaved(x) {
+  try { if (x.pass) sessionStorage.setItem("onirique.ecoute." + x.token, x.pass); } catch {}
+  location.href = "ecoute.html?t=" + encodeURIComponent(x.token);
+}
+async function playSaved(x) {
+  const response = await fetch("/api/sounds/share/" + encodeURIComponent(x.token), {
+    method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify({ pass: x.pass }),
+  }).catch(() => null);
+  if (!response || !response.ok) return openSaved(x);
+  const share = await response.json();
+  player.play(share.tracks.map((t) => ({ key: "v" + t.version.id, id: t.version.id, trackId: t.id, title: t.title,
+    subtitle: [share.owner, OP.stageLabel(t.stage)].filter(Boolean).join(" · "), cover: share.cover, url: t.version.url,
+    downloadUrl: t.version.downloadUrl, duration: t.version.duration, peaks: t.version.peaks, comments: t.comments })), 0);
+}
+// Ranger dans un dossier : la liste des dossiers, « Hors dossier », ou un nouveau dossier créé sur le moment.
+function moveMenu(anchor, current, apply) {
+  const done = (folderId) => apply(folderId).then(refresh, fail);
+  menu(anchor, [
+    ...data.folders.map((f) => ({ label: (current === f.id ? "✓ " : "") + f.title, onclick: () => current !== f.id && done(f.id) })),
+    current && { label: "Hors dossier", onclick: () => done(null) },
+    data.folders.length || current ? "-" : null,
+    { label: "Nouveau dossier…", icon: "plus", onclick: async () => {
+      const title = await ask("Nom du dossier");
+      if (title) api("POST", "/me/sounds/folders", { title }).then(({ id }) => done(id), fail);
+    } },
+  ]);
+}
+function folderMenu(anchor, f) {
+  menu(anchor, [
+    { label: "Ouvrir", icon: "chevron", onclick: () => { location.hash = "#/f/" + f.id; } },
+    { label: "Renommer", icon: "more", onclick: async () => {
+      const title = await ask("Nom du dossier", f.title);
+      if (title) api("PATCH", "/me/sounds/folders/" + f.id, { title }).then(refresh, fail);
+    } },
+    "-",
+    { label: "Supprimer le dossier", icon: "close", danger: true, onclick: () =>
+      confirm("Supprimer le dossier « " + f.title + " » ? Les projets qu'il contient reviennent dans Mes sons, rien n'est effacé.")
+      && api("DELETE", "/me/sounds/folders/" + f.id).then(() => { location.hash = ""; return refresh(); }).catch(fail) },
+  ]);
+}
 function projectMenu(anchor, p) {
   menu(anchor, [
     { label: "Ouvrir", icon: "chevron", onclick: () => navigate("#/p/" + p.id) },
     p.tracks.length && { label: "Écouter", icon: "play", onclick: () => playProject(p) },
     p.tracks.length && { label: "Ajouter à la file", icon: "queue", onclick: () => p.tracks.forEach((t) => player.enqueue(itemOf(p, t))) },
     { label: "Partager", icon: "link", onclick: () => openShare("project", p.id) },
+    { label: "Déplacer vers…", icon: "chevron", onclick: () => moveMenu(anchor, p.folderId, (folderId) => api("PATCH", "/me/sounds/projects/" + p.id, { folderId })) },
     "-",
     { label: "Renommer", icon: "more", onclick: async () => {
       const title = await ask("Nom du projet", p.title);
@@ -716,6 +816,7 @@ addEventListener("beforeunload", (event) => { if (uploading) event.preventDefaul
 async function newProjectWith(files) {
   const name = files[0].name.replace(/\.[a-z0-9]{2,5}$/i, "");
   const { id } = await api("POST", "/me/sounds/projects", { title: files.length > 1 ? "Nouveau projet" : name });
+  if (folderId()) await api("PATCH", "/me/sounds/projects/" + id, { folderId: folderId() });
   await refresh();
   location.hash = "#/p/" + id;
   sendFiles(files, project(id));
@@ -782,12 +883,24 @@ $("fab").onclick = () => {
     { label: "Nouveau projet", icon: "star", onclick: async () => {
       const title = await ask("Nom du nouveau projet");
       if (!title) return;
-      try { const { id } = await api("POST", "/me/sounds/projects", { title }); await refresh(); location.hash = "#/p/" + id; } catch (error) { fail(error); }
+      try {
+        const { id } = await api("POST", "/me/sounds/projects", { title });
+        if (folderId()) await api("PATCH", "/me/sounds/projects/" + id, { folderId: folderId() });
+        await refresh(); location.hash = "#/p/" + id;
+      } catch (error) { fail(error); }
+    } },
+    !p && !folderId() && { label: "Nouveau dossier", icon: "plus", onclick: async () => {
+      const title = await ask("Nom du dossier");
+      if (title) api("POST", "/me/sounds/folders", { title }).then(refresh, fail);
     } },
   ]);
 };
+$("folder-back").append(icon("back"));
+$("folder-back").onclick = () => { location.hash = ""; };
+$("folder-more").append(icon("more"));
+$("folder-more").onclick = () => folderMenu($("folder-more"), folder());
 $("back").append(icon("back"));
-$("back").onclick = () => navigate("");
+$("back").onclick = () => { const p = project(); navigate(p && p.folderId ? "#/f/" + p.folderId : ""); };
 $("play-all").append(icon("play"));
 $("play-all").onclick = () => { const p = project(); player.item && p.tracks.some((t) => t.id === player.item.trackId) ? player.toggle() : playProject(p); };
 $("share-project").append(icon("link"));

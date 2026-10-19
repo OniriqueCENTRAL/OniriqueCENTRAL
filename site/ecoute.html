@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=22695b33"></script>
+<script src="assets/i18n.js?v=487e8ed4"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Écoute privée</title>
 <meta name="robots" content="noindex, nofollow">
@@ -60,6 +60,9 @@ h1.title { font: 800 clamp(24px, 5vw, 36px)/1.12 var(--f-display); margin: 10px 
 .release { margin-top: 8px; display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); font: 600 13px var(--f-body); }
 .release.planned::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 8px var(--ember); }
 .release:empty { display: none; }
+.save { margin: 10px 0 0 8px; display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); font: 600 13px var(--f-body); cursor: pointer; vertical-align: top; }
+.save:hover { border-color: var(--ember); }
+.save.on { background: var(--ember); border-color: var(--ember); color: var(--night); }
 .play-all { width: 54px; height: 54px; flex: none; display: grid; place-items: center; border-radius: 50%; border: 0; background: var(--mist); color: var(--night); cursor: pointer; box-shadow: 0 10px 40px -10px var(--ember); }
 .note { margin: 18px 0 0; padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,210,214,.07); font-size: 13.5px; color: var(--haze); }
 .tracklist { list-style: none; margin: 14px 0 0; padding: 0; }
@@ -117,7 +120,7 @@ footer { padding: 30px 0 140px; text-align: center; font-size: 13px; }
           <div class="eyebrow">Écoute privée</div>
           <h1 class="title" id="title"></h1>
           <div class="meta" id="meta"></div>
-          <div class="release" id="release"></div>
+          <div class="release" id="release"></div><button class="save" id="save" type="button" hidden></button>
         </div>
         <button class="play-all" id="play-all" type="button" aria-label="Tout écouter"></button>
       </div>
@@ -144,9 +147,9 @@ const PASS = "onirique.ecoute." + shareToken;
 let pass = null;
 try { pass = sessionStorage.getItem(PASS); } catch {}
 
-async function api(path, body) {
+async function api(path, body, method = "POST") {
   const response = await fetch("/api/sounds/share/" + encodeURIComponent(shareToken) + path, {
-    method: "POST",
+    method,
     headers: { "Content-Type": "application/json", ...(session ? { Authorization: "Bearer " + session } : {}) },
     body: JSON.stringify({ pass, ...body }),
   }).catch(() => { throw new Error("Serveur injoignable. Réessaie dans un instant."); });
@@ -209,6 +212,20 @@ function show(data) {
   }));
   $("play-all").replaceChildren(icon("play"));
   $("play-all").onclick = () => (player.item ? player.toggle() : player.play(items, 0));
+  // Un membre ONIRIQUE connecté (qui n'est pas l'auteur) peut garder le projet dans sa page Mes sons.
+  let saved = data.saved;
+  const drawSave = () => {
+    $("save").hidden = !data.canSave;
+    $("save").classList.toggle("on", saved);
+    $("save").textContent = saved ? "✓ Dans Mes sons" : "+ Enregistrer dans Mes sons";
+    $("save").title = saved ? "Retirer de Mes sons" : "Le garder dans ta page Mes sons";
+  };
+  drawSave();
+  $("save").onclick = async () => {
+    $("save").disabled = true;
+    try { saved = (await api("/save", {}, saved ? "DELETE" : "POST")).saved; drawSave(); } catch (error) { alert(error.message); }
+    $("save").disabled = false;
+  };
 }
 
 async function open(password) {

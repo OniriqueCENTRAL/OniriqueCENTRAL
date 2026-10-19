@@ -188,6 +188,9 @@
  ": le niveau maximal du signal une fois reconverti en son, qui peut dépasser celui des échantillons. Au-dessus de −1 dBTP, la conversion en MP3 ou en AAC faite par les plateformes peut créer de la saturation.": [
   "site/volume-lufs.html"
  ],
+ ": les projets d'autres membres qu'un membre garde dans sa page, et ses dossiers": [
+  "site/confidentialite.html"
+ ],
  ": nom indiqué (ou celui de son compte), texte, moment du titre": [
   "site/confidentialite.html"
  ],
@@ -359,6 +362,9 @@
  "· la date de saturation s'affiche après une semaine de relevés": [
   "site/admin.html"
  ],
+ "· lien fermé": [
+  "site/mes-sons.html"
+ ],
  "· Mes sons": [
   "site/ecoute.html"
  ],
@@ -419,11 +425,17 @@
  "» ? La vidéo ne sera pas publiée.": [
   "site/compte.html"
  ],
+ "» ? Les projets qu'il contient reviennent dans Mes sons, rien n'est effacé.": [
+  "site/mes-sons.html"
+ ],
  "» (Deezer, en MP3) : son volume peut différer un peu du titre entier, et l'air au-dessus de 16 kHz y est coupé.": [
   "site/comparer-mix.html"
  ],
  "» comme référence": [
   "site/comparer-mix.html"
+ ],
+ "» de Mes sons ? Le projet reste chez": [
+  "site/mes-sons.html"
  ],
  "» et toutes ses versions ?": [
   "site/mes-sons.html"
@@ -916,6 +928,9 @@
  "&scale=": [
   "site/gammes.html"
  ],
+ "#/f/": [
+  "site/mes-sons.html"
+ ],
  "#/p/": [
   "site/mes-sons.html"
  ],
@@ -943,6 +958,9 @@
  ],
  "+ Ajouter un lien": [
   "site/mes-liens.html"
+ ],
+ "+ Enregistrer dans Mes sons": [
+  "site/ecoute.html"
  ],
  "＋ Nouveau code promo": [
   "site/admin.html"
@@ -992,6 +1010,9 @@
  ],
  "−24 → +24 dB": [
   "site/onirique.html"
+ ],
+ "✓ Dans Mes sons": [
+  "site/ecoute.html"
  ],
  "✦ ONIRIQUE": [
   "site/assets/linkpage.js",
@@ -2659,6 +2680,9 @@
  "C'est noté : parrainé par {}.": [
   "site/compte.html"
  ],
+ "C'est ton propre projet : il est déjà dans Mes sons.": [
+  "server/src/sounds.js"
+ ],
  "C'est une information de service (conditions, sécurité, panne), sans publicité : la loi interdit d'envoyer de la publicité aux comptes qui ne l'ont pas acceptée.": [
   "site/admin.html",
   "app/renderer/views/admin.js"
@@ -2770,6 +2794,9 @@
  ],
  "Ce dont on a besoin entre deux prises : trouver un tempo, une gamme, vérifier un master, préparer un fichier, estimer une sortie. Tout tourne dans ton navigateur, et tes fichiers ne quittent pas ton appareil.": [
   "site/outils.html"
+ ],
+ "Ce dossier est vide. Range-y des projets avec leur menu ⋯, « Déplacer vers ».": [
+  "site/mes-sons.html"
  ],
  "Ce fichier commence par": [
   "site/bpm-tonalite.html"
@@ -4336,6 +4363,9 @@
  "Déplacer vers": [
   "site/mes-sons.html"
  ],
+ "Déplacer vers…": [
+  "site/mes-sons.html"
+ ],
  "Dépose": [
   "site/stems.html"
  ],
@@ -4587,6 +4617,9 @@
   "site/cgv.html",
   "site/pages.mjs"
  ],
+ "Donne un nom au dossier.": [
+  "server/src/sounds.js"
+ ],
  "Donne un nom au projet.": [
   "server/src/sounds.js"
  ],
@@ -4616,8 +4649,14 @@
  "Dossier": [
   "site/admin.html"
  ],
+ "Dossier ·": [
+  "site/mes-sons.html"
+ ],
  "Dossier des plugins VST3": [
   "app/renderer/views/account.js"
+ ],
+ "Dossier introuvable.": [
+  "server/src/sounds.js"
  ],
  "Double authentification (A2F)": [
   "site/compte.html"
@@ -5737,6 +5776,9 @@
  "grid-column:1/-1": [
   "site/admin.html"
  ],
+ "grid-column:1/-1;margin:0": [
+  "site/mes-sons.html"
+ ],
  "group people": [
   "site/mes-sons.html"
  ],
@@ -5801,6 +5843,9 @@
  ],
  "Homonyme": [
   "site/gammes.html"
+ ],
+ "Hors dossier": [
+  "site/mes-sons.html"
  ],
  "hsl({} 78% 62%)": [
   "site/assets/sounds-player.js"
@@ -6200,6 +6245,9 @@
  "Journaux techniques": [
   "site/confidentialite.html",
   "site/pages.mjs"
+ ],
+ "Jusqu'à ce qu'il les retire, ou que l'auteur coupe son lien": [
+  "site/confidentialite.html"
  ],
  "Jusqu'à ce que le membre les supprime ou supprime son compte": [
   "site/confidentialite.html"
@@ -6669,6 +6717,9 @@
  "Le format MP3 ajoute un court blanc au début du fichier, de quelques dizaines de millisecondes : la musique ne démarre donc pas à zéro, et tout le morceau glisse hors de la grille une fois importé. L'outil mesure ce blanc et te donne un fichier WAV qui commence exactement sur le premier son, avec le BPM et la tonalité dans son nom. Ce WAV est en 24 bits et en 48 kHz au moins (ou à la fréquence du fichier d'origine si elle est plus haute) : c'est la meilleure qualité que le fichier déposé permet, mais un MP3 converti en WAV ne retrouve pas ce que la compression lui a retiré. Importe ce WAV à la place du MP3 : il tombe sur les temps.": [
   "site/bpm-tonalite.html"
  ],
+ "Le garder dans ta page Mes sons": [
+  "site/ecoute.html"
+ ],
  "Le lecteur Spotify": [
   "site/cookies.html",
   "site/pages.mjs"
@@ -7017,6 +7068,9 @@
  "Les logiciels, leur interface, leur documentation, le site et la marque Onirique restent la propriété exclusive de l'éditeur. Aucun droit autre que la licence décrite à l'article 7 ne vous est accordé.": [
   "site/cgv.html",
   "site/pages.mjs"
+ ],
+ "Les lui montrer dans Mes sons": [
+  "site/confidentialite.html"
  ],
  "Les membres ONIRIQUE peuvent déposer leur musique en cours sur le serveur d'Onirique et la faire écouter par des liens privés. Le membre choisit ce qu'il dépose et à qui il donne un lien ; Onirique ne diffuse jamais ces sons et ne s'en sert à aucune autre fin.": [
   "site/confidentialite.html"
@@ -8158,6 +8212,9 @@
   "site/remboursement.html",
   "site/pages.mjs"
  ],
+ "Nom du dossier": [
+  "site/mes-sons.html"
+ ],
  "Nom du nouveau projet": [
   "site/mes-sons.html"
  ],
@@ -8277,6 +8334,12 @@
  ],
  "Nouveau code promo": [
   "app/renderer/views/admin.js"
+ ],
+ "Nouveau dossier": [
+  "site/mes-sons.html"
+ ],
+ "Nouveau dossier…": [
+  "site/mes-sons.html"
  ],
  "Nouveau message": [
   "site/admin.html",
@@ -8578,6 +8641,9 @@
  "Options de": [
   "site/mes-sons.html"
  ],
+ "Options du dossier": [
+  "site/mes-sons.html"
+ ],
  "OPTO": [
   "site/onirique.html"
  ],
@@ -8719,6 +8785,7 @@
   "app/renderer/views/admin.js"
  ],
  "Ouvrir le dossier": [
+  "site/mes-sons.html",
   "app/renderer/views/library.js"
  ],
  "Ouvrir le lien": [
@@ -9661,11 +9728,17 @@
  "Programs": [
   "app/main/installer.js"
  ],
+ "Projet enregistré introuvable.": [
+  "server/src/sounds.js"
+ ],
  "Projet introuvable.": [
   "server/src/sounds.js"
  ],
  "Projets": [
   "site/mes-sons.html"
+ ],
+ "Projets enregistrés et dossiers": [
+  "site/confidentialite.html"
  ],
  "PROMO -20 % SUR TOUTE LA BOUTIQUE": [
   "site/admin.html"
@@ -10204,7 +10277,8 @@
   "app/renderer/views/admin.js"
  ],
  "Retirer «": [
-  "site/compte.html"
+  "site/compte.html",
+  "site/mes-sons.html"
  ],
  "Retirer « {} » ?": [
   "app/renderer/views/admin.js"
@@ -10217,6 +10291,10 @@
  ],
  "Retirer de la liste": [
   "site/compte.html"
+ ],
+ "Retirer de Mes sons": [
+  "site/ecoute.html",
+  "site/mes-sons.html"
  ],
  "Retirer l'A2F": [
   "site/admin.html"
@@ -10252,6 +10330,9 @@
   "app/renderer/views/admin.js"
  ],
  "Retour": [
+  "site/mes-sons.html"
+ ],
+ "Retour à Mes sons": [
   "site/mes-sons.html"
  ],
  "Retour au compte": [
@@ -11150,6 +11231,12 @@
  ],
  "Supprimer le compte": [
   "site/compte.html"
+ ],
+ "Supprimer le dossier": [
+  "site/mes-sons.html"
+ ],
+ "Supprimer le dossier «": [
+  "site/mes-sons.html"
  ],
  "Supprimer le projet": [
   "site/mes-sons.html"
