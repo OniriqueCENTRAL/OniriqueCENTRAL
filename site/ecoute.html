@@ -185,7 +185,8 @@ function show(data) {
   $("locked").hidden = $("account").hidden = true;
   $("room").hidden = false;
   document.title = data.title + " — " + data.owner + " · ONIRIQUE";
-  const soloFeat = data.title !== data.project && data.tracks[0] && (data.tracks[0].credits || {}).feat;
+  // Les artistes invités : ceux du titre partagé, ou de tous les titres du projet, chacun une fois.
+  const soloFeat = [...new Set(data.tracks.flatMap((t) => ((t.credits || {}).feat || "").split(",").map((n) => n.trim()).filter(Boolean)))].join(", ");
   $("title").replaceChildren(data.title, soloFeat ? el("span", { className: "feat", style: "margin-left:12px;vertical-align:middle;font-size:14px", textContent: "feat. " + soloFeat }) : "");
   const total = data.tracks.reduce((s, t) => s + (t.version.duration || 0), 0);
   $("release").textContent = OP.releaseLabel(data.releaseDate);

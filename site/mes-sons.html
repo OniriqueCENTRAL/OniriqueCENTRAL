@@ -162,6 +162,8 @@ body.has-player .uploads { bottom: calc(92px + env(safe-area-inset-bottom)); }
 .tline b { min-width: 0; }
 /* Le « feat. » à côté du titre, comme le badge d'étape */
 .feat { flex: none; max-width: 55%; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.05); color: var(--mist); font: 600 11px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.tile .caption .feat { display: inline-block; max-width: 100%; margin: 4px 0 2px; cursor: default; }
+.album-head h1 .feat { margin-left: 14px; vertical-align: middle; font-size: 14px; cursor: inherit; }
 .details-left h2 .feat { margin-left: 8px; vertical-align: middle; font-size: 12px; }
 .feat.empty { border-style: dashed; background: none; color: var(--haze); }
 .feat:hover, .stage:hover { border-color: var(--ember); }
@@ -613,7 +615,10 @@ function renderGrid() {
   if (f && !items.length) $("tiles").replaceChildren(el("p", { className: "muted", style: "grid-column:1/-1;margin:0",
     textContent: "Ce dossier est vide. Range-y des projets avec leur menu ⋯, « Déplacer vers »." }));
 }
-const caption = (title, sub, more) => el("div", { className: "caption" }, el("div", {}, el("b", { textContent: title }), sub), more);
+const caption = (title, sub, more, feat) => el("div", { className: "caption" }, el("div", {}, el("b", { textContent: title }),
+  feat ? el("span", { className: "feat", textContent: "feat. " + feat, title: "feat. " + feat }) : "", feat ? el("br") : "", sub), more);
+// Les artistes invités d'un projet : ceux de tous ses titres, chacun une fois.
+const projectFeat = (p) => [...new Set(p.tracks.flatMap((t) => (t.credits.feat || "").split(",").map((n) => n.trim()).filter(Boolean)))].join(", ");
 const dotsFor = (label, onclick) => { const b = el("button", { className: "dots", type: "button", ariaLabel: "Options de " + label }, icon("more")); b.onclick = () => onclick(b); return b; };
 function projectTile(p) {
   const playBtn = el("button", { className: "fab-play", type: "button", ariaLabel: "Écouter " + p.title, hidden: !p.tracks.length }, icon("play"));
@@ -623,7 +628,7 @@ function projectTile(p) {
   art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
   const tile = el("div", { className: "tile" }, art, caption(p.title,
     el("span", { textContent: p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre") + (linkFor("project", p.id) ? " · partagé" : "") }),
-    dotsFor(p.title, (b) => projectMenu(b, p))));
+    dotsFor(p.title, (b) => projectMenu(b, p)), projectFeat(p)));
   tile.dataset.id = p.id;
   return tile;
 }
@@ -741,7 +746,8 @@ function renderProject(p) {
     $("cover").dataset.src = p.cover || "-";
     $("cover").replaceChildren(coverOf(p), el("span", { className: "change", textContent: "Changer la pochette" }));
   }
-  $("project-title").textContent = p.title;
+  const feat = projectFeat(p);
+  $("project-title").replaceChildren(p.title, feat ? el("span", { className: "feat", textContent: "feat. " + feat }) : "");
   drawRelease(p);
   $("project-meta").replaceChildren(el("img", { src: avatar(data.owner), alt: "" }),
     data.owner.name + " · " + p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre") + (p.tracks.length ? " · " + length(projectLength(p)) : ""),
