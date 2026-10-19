@@ -399,7 +399,7 @@ button.item:hover { background: rgba(255,255,255,.04); }
   <div class="row" style="justify-content:flex-end;padding:16px 20px 20px"><button class="btn btn-primary" type="button" onclick="this.closest('dialog').close()">Compris</button></div>
 </dialog>
 <dialog id="share"></dialog>
-<dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" value="cancel" formnovalidate>Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
+<dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" value="cancel" formnovalidate>Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
 <script src="assets/sounds-player.js?v=5"></script>
 <script>
@@ -536,7 +536,12 @@ function ask(title, value = "", allowEmpty = false) {
     $("ask").onclose = () => resolve($("ask").returnValue === "ok" && ($("ask-input").value.trim() || allowEmpty) ? $("ask-input").value.trim() : null);
   });
 }
-const lightClose = (dialog) => dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); });
+// Un clic sur le fond ferme la fenêtre ; pas une sélection de texte commencée dedans et relâchée dehors.
+const lightClose = (dialog) => {
+  let fromBackdrop = false;
+  dialog.addEventListener("pointerdown", (event) => { fromBackdrop = event.target === dialog; });
+  dialog.addEventListener("click", (event) => { if (event.target === dialog && fromBackdrop) dialog.close(); fromBackdrop = false; });
+};
 lightClose($("details")); lightClose($("share")); lightClose($("ask"));
 
 // ——— Données et vues ———
