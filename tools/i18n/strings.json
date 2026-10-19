@@ -753,6 +753,9 @@
  "{}/{}/comments?{}": [
   "server/src/social.js"
  ],
+ "{}/{}/conversations?{}": [
+  "server/src/social.js"
+ ],
  "{}/{}/messages": [
   "server/src/social.js"
  ],
@@ -4308,6 +4311,9 @@
  "Déjà abonné": [
   "app/renderer/views/subscription.js"
  ],
+ "Déjà contacté en privé": [
+  "server/src/social.js"
+ ],
  "Déjà mixé avec": [
   "site/credits.html",
   "site/onirique.html"
@@ -5149,7 +5155,7 @@
  "Envoyé le": [
   "site/admin.html"
  ],
- "Envoyé une fois à chaque personne, juste après la réponse. Instagram l'accepte dans les 7 jours qui suivent le commentaire.": [
+ "Envoyé une fois à chaque personne, juste après la réponse. Instagram l'accepte dans les 7 jours qui suivent le commentaire. Une personne à qui vous avez déjà écrit en privé depuis la sortie de la publication (à la main ou non) ne reçoit rien.": [
   "site/compte.html"
  ],
  "Envoyer": [
@@ -5915,6 +5921,9 @@
  "Icône": [
   "site/mes-liens.html"
  ],
+ "id,text,timestamp,username,from{id,username}": [
+  "server/src/social.js"
+ ],
  "Identifiant de machine invalide.": [
   "server/src/app.js"
  ],
@@ -5926,6 +5935,9 @@
  ],
  "if (Test-Path -LiteralPath {}) { try { Remove-Item -LiteralPath {} -Recurse -Force }": [
   "app/main/installer.js"
+ ],
+ "Ignoré": [
+  "site/compte.html"
  ],
  "II": [
   "site/gammes.html"
@@ -7823,6 +7835,9 @@
  ],
  "Message supprimé.": [
   "app/renderer/views/support-admin.js"
+ ],
+ "messages.limit(50){from,created_time}": [
+  "server/src/social.js"
  ],
  "Mesure": [
   "site/admin.html",
@@ -10182,6 +10197,9 @@
  ],
  "Répéter le titre": [
   "site/assets/sounds-player.js"
+ ],
+ "replies{from}": [
+  "server/src/social.js"
  ],
  "Répondre": [
   "site/admin.html",

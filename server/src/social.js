@@ -111,11 +111,39 @@ export function matches(keywords, text) {
 const pick = (text) => { const lines = String(text || '').split('\n').map((l) => l.trim()).filter(Boolean); return lines[crypto.randomInt(lines.length || 1)] || ''; };
 const fill = (text, comment) => text.replace(/\{pseudo\}/gi, comment.username ? '@' + comment.username : '').replace(/\s{2,}/g, ' ').trim();
 
-/** Dans l'ordre : la réponse publique sous le commentaire, puis le message privé à son auteur. */
+const ours = (account, id) => !!id && (String(id) === account.account_id || (!!account.alt_id && String(id) === account.alt_id));
+
+/**
+ * Déjà contacté : le compte a écrit en privé à cette personne depuis la sortie de la publication (à la main ou par
+ * une automation, même supprimée depuis). Elle a déjà son lien : rien ne repart, ni réponse ni message.
+ */
+async function alreadyMessaged(account, automation, comment, token) {
+  if (!comment.fromId) return false;
+  const found = await ig(`${IG_GRAPH}/${account.account_id}/conversations?${new URLSearchParams({ platform: 'instagram', user_id: comment.fromId, access_token: token })}`);
+  const conversation = found.data?.[0];
+  if (!conversation) return false;
+  const since = automation.post_at || automation.created_at - 30 * 86_400_000;
+  const { messages } = await ig(`${IG_GRAPH}/${conversation.id}?${new URLSearchParams({ fields: 'messages.limit(50){from,created_time}', access_token: token })}`);
+  return (messages?.data || []).some((m) => ours(account, m.from?.id) && Date.parse(m.created_time) >= since);
+}
+
+/** Le compte a déjà répondu sous ce commentaire (à la main) : la réponse publique n'est pas refaite. */
+async function alreadyReplied(account, comment, token) {
+  const found = await ig(`${IG_GRAPH}/${comment.id}?${new URLSearchParams({ fields: 'replies{from}', access_token: token })}`);
+  return (found.replies?.data || []).some((r) => ours(account, r.from?.id));
+}
+
+/**
+ * Dans l'ordre : la réponse publique sous le commentaire, puis le message privé à son auteur. Rend la raison pour
+ * laquelle rien n'est parti (personne déjà contactée), ou une chaîne vide.
+ */
 async function send(account, automation, comment) {
   const token = await freshToken(account);
+  if (await alreadyMessaged(account, automation, comment, token)) return 'Déjà contacté en privé';
   const reply = fill(pick(automation.reply_text), comment);
-  if (reply) await ig(`${IG_GRAPH}/${comment.id}/replies`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: new URLSearchParams({ message: reply }) });
+  if (reply && !(await alreadyReplied(account, comment, token))) {
+    await ig(`${IG_GRAPH}/${comment.id}/replies`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: new URLSearchParams({ message: reply }) });
+  }
   if (automation.dm_text) {
     // « Réponse privée » : un message à l'auteur du commentaire, un seul par commentaire, dans les 7 jours.
     await ig(`${IG_GRAPH}/${account.account_id}/messages`, {
@@ -123,6 +151,7 @@ async function send(account, automation, comment) {
       body: JSON.stringify({ recipient: { comment_id: comment.id }, message: { text: fill(automation.dm_text, comment) } }),
     });
   }
+  return '';
 }
 
 /**
@@ -138,7 +167,7 @@ export async function handleComment(account, comment) {
   for (const automation of automations) {
     if (comment.at && comment.at < automation.since) continue;
     if (!matches(automation.keywords, comment.text)) continue;
-    const already = get(`SELECT 1 FROM social_replies WHERE automation_id = ? AND (comment_id = ? OR (commenter_id != '' AND commenter_id = ? AND status = 'sent'))`,
+    const already = get(`SELECT 1 FROM social_replies WHERE automation_id = ? AND (comment_id = ? OR (commenter_id != '' AND commenter_id = ? AND status IN ('sent', 'skipped')))`,
       automation.id, comment.id, comment.fromId || '');
     if (already) continue;
     // Noté avant l'envoi : un webhook et une relecture qui arrivent ensemble ne répondent pas deux fois.
@@ -146,7 +175,11 @@ export async function handleComment(account, comment) {
                              VALUES (?, ?, ?, ?, ?, 'sending', '', ?)`, automation.id, comment.id, comment.fromId || '', comment.username || '', comment.text.slice(0, 500), now());
     if (!changes) continue;
     try {
-      await send(account, automation, comment);
+      const skipped = await send(account, automation, comment);
+      if (skipped) {
+        run(`UPDATE social_replies SET status = 'skipped', error = ? WHERE automation_id = ? AND comment_id = ?`, skipped, automation.id, comment.id);
+        continue;
+      }
       run(`UPDATE social_replies SET status = 'sent' WHERE automation_id = ? AND comment_id = ?`, automation.id, comment.id);
       run(`UPDATE social_automations SET sent_count = sent_count + 1, last_error = '' WHERE id = ?`, automation.id);
     } catch (error) {
@@ -191,7 +224,7 @@ export async function handleInstagramWebhook(body) {
 //============================================================================
 async function commentsOf(account, automation) {
   const found = [];
-  let url = `${IG_GRAPH}/${automation.post_id}/comments?${new URLSearchParams({ fields: 'id,text,timestamp,username,from', limit: '50', access_token: await freshToken(account) })}`;
+  let url = `${IG_GRAPH}/${automation.post_id}/comments?${new URLSearchParams({ fields: 'id,text,timestamp,username,from{id,username}', limit: '50', access_token: await freshToken(account) })}`;
   for (let page = 0; url && page < 6; page++) {
     const { data = [], paging } = await ig(url);
     found.push(...data.map((c) => ({ id: String(c.id), text: c.text || '', fromId: String(c.from?.id || ''), username: c.username || c.from?.username || '',
@@ -277,9 +310,11 @@ export function saveAutomation(userId, body, existing) {
   // Par défaut, seuls les commentaires écrits après la création reçoivent une réponse ; « earlier » reprend aussi les
   // commentaires des 7 derniers jours (au-delà, Instagram refuse le message privé).
   const since = body.earlier ? now() - 7 * 86_400_000 : now();
-  const { lastInsertRowid } = run(`INSERT INTO social_automations (user_id, platform, post_id, post_caption, post_thumb, post_url, keywords,
-      dm_text, reply_text, active, since, sent_count, last_error, created_at) VALUES (?, 'instagram', ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, '', ?)`,
+  // La date de la publication : un message privé envoyé depuis (à la main ou non) compte comme « déjà contacté ».
+  const postAt = Number.isInteger(body.postAt) && body.postAt > 0 && body.postAt <= now() ? body.postAt : null;
+  const { lastInsertRowid } = run(`INSERT INTO social_automations (user_id, platform, post_id, post_caption, post_thumb, post_url, post_at, keywords,
+      dm_text, reply_text, active, since, sent_count, last_error, created_at) VALUES (?, 'instagram', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, '', ?)`,
     userId, postId, text(body.postCaption, 300), /^https:\/\//.test(body.postThumb || '') ? text(body.postThumb, 2000) : null,
-    /^https:\/\//.test(body.postUrl || '') ? text(body.postUrl, 500) : null, keywords, dmText, replyText, active, since, now());
+    /^https:\/\//.test(body.postUrl || '') ? text(body.postUrl, 500) : null, postAt, keywords, dmText, replyText, active, since, now());
   return lastInsertRowid;
 }
