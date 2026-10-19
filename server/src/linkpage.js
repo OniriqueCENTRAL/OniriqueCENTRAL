@@ -117,7 +117,7 @@ export function linkStats(userId, days) {
 const FONT_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fonts');
 const escapeXml = (s) => String(s).replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' })[c]);
 
-async function textImage(text, font, fontfile, size, fill, width, alpha = '100%') {
+export async function textImage(text, font, fontfile, size, fill, width, alpha = '100%') {
   const { data, info } = await sharp({ text: { text: `<span foreground="${fill}" fgalpha="${alpha}">${escapeXml(text)}</span>`, font: `${font} ${size}`,
     fontfile: path.join(FONT_DIR, fontfile), width, rgba: true, wrap: 'word' } }).png().toBuffer({ resolveWithObject: true });
   return { data, width: info.width, height: info.height };

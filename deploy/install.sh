@@ -111,6 +111,13 @@ server {
         proxy_set_header X-Forwarded-For \$remote_addr;
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
+    # Page d'écoute d'un lien de Mes sons : servie par le CENTRAL avec le titre et l'image d'aperçu de ce lien.
+    location ~ ^/ecoute(\.html)?\$ {
+        proxy_pass http://127.0.0.1:4850;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Forwarded-For \$remote_addr;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
     # La page compte du site parle au CENTRAL par la même origine.
     location /api/ {
         # Envoi d'images et de versions depuis la page admin du site.

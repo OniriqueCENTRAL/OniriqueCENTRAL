@@ -231,6 +231,23 @@ try {
     assert.equal((await call('GET', '/api/me/sounds', { token: member.token })).saved.length, 0);
   });
 
+  await step('aperçu d\'un lien (Discord…) : titre et image du projet ; un lien protégé ne dévoile rien', async () => {
+    const pid = (await call('POST', '/api/me/sounds/projects', { token: member.token, body: { title: 'ONI SEMINAIRE <4>' }, expect: 201 })).id;
+    await call('POST', `/api/me/sounds/projects/${pid}/tracks?filename=a.wav`, { token: member.token, raw: wav(), expect: 201 });
+    const open = await call('POST', '/api/me/sounds/links', { token: member.token, body: { projectId: pid }, expect: 201 });
+    const locked = await call('POST', '/api/me/sounds/links', { token: member.token, body: { projectId: pid, password: 'secret1' }, expect: 201 });
+    const page = (url) => fetch(`${base}/ecoute?t=${shareToken(url)}`).then((r) => r.text());
+    const html = await page(open.url);
+    assert.match(html, /<meta property="og:title" content="membre — ONI SEMINAIRE &lt;4&gt;">/);
+    assert.match(html, /<meta property="og:image" content="https:\/\/site\.test\/api\/sounds\/share\/[\w-]+\/apercu\.png\?v=\w+">/);
+    assert.match(html, /id="room"/, 'le reste de la page est celui du site');
+    const hidden = await page(locked.url);
+    assert.ok(!hidden.includes('SEMINAIRE'), 'un lien protégé ne montre pas le nom du projet');
+    const image = await fetch(`${base}/api/sounds/share/${shareToken(open.url)}/apercu.png`);
+    assert.equal(image.headers.get('content-type'), 'image/png');
+    assert.ok((await image.arrayBuffer()).byteLength > 5000);
+  });
+
   console.log(`\n${passed} étapes réussies.`);
 } finally {
   server.close();

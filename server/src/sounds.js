@@ -5,10 +5,13 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 import { db, get, all, run, now, setting, setSetting, transaction } from './db.js';
 import { HttpError, rateLimit, optionalUser, hashPassword, verifyPassword } from './auth.js';
 import { sendMail } from './mail.js';
+import { escapeHtml } from './mailtemplate.js';
+import { textImage } from './linkpage.js';
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS sound_projects (
@@ -185,6 +188,128 @@ function removeVersionFiles(rows) {
 export function sweepSounds() {
   const kept = new Set(all('SELECT stored_as FROM sound_versions').map((r) => r.stored_as));
   for (const name of fs.readdirSync(soundsDir)) if (!kept.has(name)) fs.rmSync(path.join(soundsDir, name), { force: true });
+}
+
+//==============================================================================
+//  L'aperçu d'un lien d'écoute (Discord, WhatsApp, iMessage…) : la page porte son titre, sa description et une image
+//  1200 × 630 aux couleurs de la pochette. Un lien protégé (mot de passe ou compte exigé) ne dévoile rien du projet.
+//==============================================================================
+// Les pages du site : à côté du serveur en développement, dans /var/www/site en production.
+const SITE_DIRS = [process.env.SITE_DIR, path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../site'), '/var/www/site'];
+const listeningPage = () => {
+  const dir = SITE_DIRS.find((d) => d && fs.existsSync(path.join(d, 'ecoute.html')));
+  return dir ? fs.readFileSync(path.join(dir, 'ecoute.html'), 'utf8') : null;
+};
+
+/** Le lien et ce que son aperçu peut montrer ; null si le lien n'existe pas, n'est plus valable ou que l'auteur n'est plus membre. */
+function previewOf(token) {
+  const l = get(`SELECT l.*, u.name AS owner_name, u.role AS owner_role FROM sound_links l JOIN users u ON u.id = l.user_id WHERE l.token = ?`, String(token || '').slice(0, 40));
+  if (!l || !MEMBERS.includes(l.owner_role) || (l.expires_at && l.expires_at < now())) return null;
+  if (l.password_hash || l.require_account) return { link: l, locked: true };
+  const t = l.track_id ? get('SELECT * FROM sound_tracks WHERE id = ?', l.track_id) : null;
+  const p = get('SELECT * FROM sound_projects WHERE id = ?', l.project_id || t.project_id);
+  const tracks = l.track_id ? [t] : all('SELECT * FROM sound_tracks WHERE project_id = ? ORDER BY position, id', p.id);
+  const seconds = tracks.reduce((sum, x) => sum + (get('SELECT duration FROM sound_versions WHERE id = ?', x.current_id)?.duration || 0), 0);
+  return { link: l, locked: false, owner: l.owner_name || 'ONIRIQUE', title: t ? t.title : p.title, project: p.title, cover: p.cover,
+    count: tracks.length, seconds, release: p.release_date, stage: t ? t.stage : '' };
+}
+const releaseText = (day) => {
+  if (!day) return '';
+  const [y, m, d] = day.split('-').map(Number), date = new Date(Date.UTC(y, m - 1, d));
+  const text = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+  return (date.getTime() > Date.now() ? 'Sortie prévue le ' : 'Sorti le ') + text;
+};
+const clock = (s) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
+const previewKey = (v) => crypto.createHash('sha1').update(JSON.stringify(v ? { ...v, link: v.link.id } : null)).digest('hex').slice(0, 12);
+
+/** La couleur dominante d'une pochette, éclaircie pour être lisible sur un fond sombre ; gris pour une pochette en noir et blanc. */
+async function accentOf(file, sharp) {
+  try {
+    const { dominant: { r, g, b } } = await sharp(file).stats();
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    if (max - min < 24) return '#d9d4d5';
+    const k = 200 / max; // même teinte, poussée vers le clair
+    return '#' + [r, g, b].map((c) => Math.min(255, Math.round(c * k + 30)).toString(16).padStart(2, '0')).join('');
+  } catch { return '#e23444'; }
+}
+
+async function previewImage(v) {
+  const sharp = (await import('sharp')).default;
+  const W = 1200, H = 630, layers = [];
+  const cover = v && !v.locked && v.cover ? path.join(config.mediaDir, path.basename(v.cover)) : null;
+  const hasCover = cover && fs.existsSync(cover);
+  const accent = hasCover ? await accentOf(cover, sharp) : '#e23444';
+  // Le fond : la pochette floutée et assombrie, sinon le dégradé sang et nuit d'ONIRIQUE.
+  const gradient = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}"><defs><radialGradient id="g" cx="25%" cy="0%" r="110%">
+    <stop offset="0" stop-color="#8c0614"/><stop offset=".45" stop-color="#2a0a0e"/><stop offset="1" stop-color="#0d0809"/></radialGradient></defs><rect width="100%" height="100%" fill="url(#g)"/></svg>`);
+  const base = hasCover
+    ? await sharp(cover).resize(W, H, { fit: 'cover' }).blur(48).modulate({ brightness: 0.42, saturation: 1.3 }).png().toBuffer().catch(() => gradient)
+    : gradient;
+  layers.push({ input: Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}"><defs><linearGradient id="s" x1="0" x2="1">
+    <stop offset="0" stop-color="#0d0809" stop-opacity=".15"/><stop offset="1" stop-color="#0d0809" stop-opacity=".75"/></linearGradient></defs><rect width="100%" height="100%" fill="url(#s)"/></svg>`), left: 0, top: 0 });
+
+  let left = 80;
+  if (!v || v.locked || hasCover) {
+    const size = 440, top = Math.round((H - size) / 2);
+    const mask = Buffer.from(`<svg width="${size}" height="${size}"><rect width="${size}" height="${size}" rx="34" fill="#fff"/></svg>`);
+    const art = hasCover
+      ? await sharp(cover).resize(size, size, { fit: 'cover' }).composite([{ input: mask, blend: 'dest-in' }]).png().toBuffer()
+      : Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><defs><radialGradient id="c" cx="30%" cy="20%" r="90%"><stop offset="0" stop-color="#e23444"/><stop offset=".6" stop-color="#5c0008"/><stop offset="1" stop-color="#0d0809"/></radialGradient></defs>
+        <rect width="${size}" height="${size}" rx="34" fill="url(#c)"/>
+        ${v && v.locked
+          ? `<g transform="translate(${size / 2 - 60} ${size / 2 - 76})" fill="none" stroke="#f6eeee" stroke-width="12" stroke-linecap="round"><rect x="0" y="62" width="120" height="96" rx="18" fill="#f6eeee" stroke="none"/><path d="M24 64V42a36 36 0 0 1 72 0v22"/></g>`
+          : `<path transform="translate(${size / 2 - 80} ${size / 2 - 80}) scale(6.67)" d="M12 1.5 13.3 10.7 22.5 12 13.3 13.3 12 22.5 10.7 13.3 1.5 12 10.7 10.7Z" fill="#f6eeee" fill-opacity=".85"/>`}</svg>`);
+    layers.push({ input: art, left, top });
+    left += size + 64;
+  }
+  const width = W - left - 70;
+  const title = !v ? 'Lien introuvable' : v.locked ? "Lien d'écoute protégé" : v.title;
+  const lines = [];
+  lines.push({ img: await textImage(v && v.locked ? 'ÉCOUTE PRIVÉE · PROTÉGÉE' : 'ÉCOUTE PRIVÉE', 'JetBrains Mono', 'JetBrainsMono500.ttf', 20, accent, width), gap: 22 });
+  const big = await textImage(title, 'Unbounded', 'Unbounded800.ttf', title.length > 34 ? 40 : title.length > 18 ? 50 : 62, '#f6eeee', width);
+  lines.push({ img: big.height > 260 ? { ...big, data: await sharp(big.data).extract({ left: 0, top: 0, width: big.width, height: 260 }).png().toBuffer(), height: 260 } : big, gap: 24 });
+  const meta = !v ? "Ce lien n'existe pas, ou n'est plus valable."
+    : v.locked ? `Partagé par ${v.link.owner_name || 'un membre'} · ${v.link.password_hash ? 'mot de passe demandé' : 'compte ONIRIQUE demandé'}`
+      : [`par ${v.owner}`, v.title !== v.project ? `extrait de ${v.project}` : `${v.count} titre${v.count > 1 ? 's' : ''}`, v.seconds ? clock(v.seconds) : ''].filter(Boolean).join(' · ');
+  lines.push({ img: await textImage(meta, 'Hanken Grotesk', 'HankenGrotesk600.ttf', 26, '#dccfd1', width), gap: 18 });
+  const release = v && !v.locked ? releaseText(v.release) : '';
+  if (release) lines.push({ img: await textImage(release, 'Hanken Grotesk', 'HankenGrotesk600.ttf', 24, accent, width), gap: 0 });
+  const block = lines.reduce((sum, l) => sum + l.img.height + l.gap, 0);
+  let top = Math.max(50, Math.round((H - block) / 2));
+  for (const l of lines) { layers.push({ input: l.img.data, left, top }); top += l.img.height + l.gap; }
+  const mark = await textImage('✦ ONIRIQUE', 'JetBrains Mono', 'JetBrainsMono500.ttf', 18, '#f6eeee', 300, '65%');
+  layers.push({ input: mark.data, left: W - mark.width - 50, top: H - mark.height - 40 });
+  return { png: await sharp(base).composite(layers).png({ compressionLevel: 9 }).toBuffer(), accent };
+}
+
+/** La page d'écoute avec les balises de partage de ce lien (le reste de la page ne change pas). */
+function listeningHtml(v, token) {
+  const page = listeningPage();
+  if (!page) return null;
+  const site = config.siteUrl;
+  const title = !v ? 'Écoute privée · ONIRIQUE' : v.locked ? `${v.link.owner_name || 'ONIRIQUE'} — Écoute privée` : `${v.owner} — ${v.title}`;
+  const description = !v ? "Ce lien d'écoute n'existe pas, ou n'est plus valable."
+    : v.locked ? `Lien d'écoute protégé, partagé sur ONIRIQUE${v.link.password_hash ? ' : mot de passe demandé' : ' : compte ONIRIQUE demandé'}.`
+      : [v.title !== v.project ? `Un titre extrait de ${v.project}` : `${v.count} titre${v.count > 1 ? 's' : ''}${v.seconds ? ` · ${clock(v.seconds)}` : ''}`,
+        releaseText(v.release), 'Écoute privée sur ONIRIQUE'].filter(Boolean).join(' · ');
+  const image = `${site}/api/sounds/share/${encodeURIComponent(token)}/apercu.png?v=${previewKey(v)}`;
+  const tags = `<title>${escapeHtml(title)}</title>
+<meta name="description" content="${escapeHtml(description)}">
+<meta property="og:type" content="music.album">
+<meta property="og:site_name" content="ONIRIQUE">
+<meta property="og:title" content="${escapeHtml(title)}">
+<meta property="og:description" content="${escapeHtml(description)}">
+<meta property="og:url" content="${escapeHtml(`${site}/ecoute?t=${encodeURIComponent(token)}`)}">
+<meta property="og:image" content="${escapeHtml(image)}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="${escapeHtml(title)}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${escapeHtml(title)}">
+<meta name="twitter:description" content="${escapeHtml(description)}">
+<meta name="twitter:image" content="${escapeHtml(image)}">
+<meta name="theme-color" content="${escapeHtml(v && v.accent ? v.accent : '#e23444')}">`;
+  return page.replace(/<title>[^<]*<\/title>/, tags);
 }
 
 export function mountSounds(app, { requireUser, receiveFile, receiveImage, removeMedia, wrap }) {
@@ -639,6 +764,34 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       t.id, t.vid, link.id, listener?.id ?? null, author, at, body, now()).lastInsertRowid;
     res.status(201).json(commentView(get('SELECT * FROM sound_comments WHERE id = ?', cid)));
   });
+
+  // La page d'écoute, servie avec l'aperçu de son lien (nginx envoie /ecoute ici).
+  app.get(['/ecoute', '/ecoute.html'], wrap(async (req, res) => {
+    const token = String(req.query.t || '');
+    const v = previewOf(token);
+    // La couleur de l'aperçu Discord (theme-color) vient de la pochette ; calculée avec l'image, puis gardée.
+    if (v && !v.locked && v.cover) {
+      const file = path.join(config.mediaDir, path.basename(v.cover));
+      if (fs.existsSync(file)) v.accent = await accentOf(file, (await import('sharp')).default);
+    }
+    const html = listeningHtml(v, token);
+    if (!html) throw new HttpError(404, 'Page introuvable.');
+    res.set('Cache-Control', 'no-cache').type('html').send(html);
+  }));
+  // L'image d'aperçu : fabriquée une fois par version (titre, pochette, date…), puis gardée.
+  app.get('/api/sounds/share/:token/apercu.png', wrap(async (req, res) => {
+    rateLimit(`sounds-apercu:${req.ip}`, 120);
+    const v = previewOf(req.params.token);
+    const dir = path.join(config.mediaDir, 'apercus-sons');
+    const name = `${v ? v.link.id : 'x'}-${previewKey(v)}.png`;
+    const target = path.join(dir, name);
+    if (!fs.existsSync(target)) {
+      fs.mkdirSync(dir, { recursive: true });
+      if (v) for (const old of fs.readdirSync(dir)) if (old.startsWith(`${v.link.id}-`)) fs.rmSync(path.join(dir, old), { force: true });
+      fs.writeFileSync(target, (await previewImage(v)).png);
+    }
+    res.set({ 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=3600' }).sendFile(target);
+  }));
 
   // Le fichier audio, par une adresse signée ; la lecture peut sauter n'importe où (Range, géré par sendFile).
   app.get('/api/sounds/audio/:id', (req, res) => {
