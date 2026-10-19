@@ -78,6 +78,12 @@ try {
     const set = await call('PUT', '/api/admin/live/announcement', { token: admin.token, body: { active: true, text: 'PROMO 20 % SUR TOUTE LA BOUTIQUE', link: 'boutique.html', linkLabel: 'Voir', tone: 'gold' } });
     const shown = (await call('GET', '/api/site')).announcement;
     assert.deepEqual(shown, { id: set.id, text: 'PROMO 20 % SUR TOUTE LA BOUTIQUE', link: 'boutique.html', linkLabel: 'Voir', tone: 'gold', endsAt: null });
+    // La même annonce en script pour <head> : le texte ne peut pas fermer la balise <script> de la page.
+    await call('PUT', '/api/admin/live/announcement', { token: admin.token, body: { active: true, text: 'PROMO </script><b>' } });
+    const script = await call('GET', '/api/announce.js');
+    assert.match(script, /^window\.OniriqueAnnounce&&OniriqueAnnounce\(\{.*PROMO \\u003c\/script>\\u003cb>/);
+    assert.ok(!script.includes('</script>'));
+    await call('PUT', '/api/admin/live/announcement', { token: admin.token, body: { active: true, text: 'PROMO 20 % SUR TOUTE LA BOUTIQUE', link: 'boutique.html', linkLabel: 'Voir', tone: 'gold' } });
     await call('PUT', '/api/admin/live/announcement', { token: admin.token, body: { active: true, text: 'PROMO 20 % SUR TOUTE LA BOUTIQUE', endsAt: '2001-01-01T00:00' } });
     assert.equal((await call('GET', '/api/site')).announcement, null, 'passée la date de fin, plus rien');
   });

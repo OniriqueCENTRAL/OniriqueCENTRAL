@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<script src="assets/i18n.js?v=33fbad51"></script>
+<script src="assets/annonce.js?v=1"></script>
+<script src="/api/announce.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ONIRIQUE — Ma page de liens</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<style>
+/* Mêmes tokens que compte.html. */
+:root {
+  --night: #0D0809; --blood: #5C0008; --deep: #1A080A; --deep-2: #2A0A0E; --line: rgba(255,210,214,.13);
+  --mist: #F6EEEE; --haze: #A88F92; --ember: #E23444; --bone: #FFECEE;
+  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(226,52,68,.55);
+  --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --f-dream: "Grenze Gotisch", Georgia, serif;
+  --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100vh; color: var(--mist); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased;
+  background: radial-gradient(120% 60% at 50% -10%, rgba(140,6,20,.8), rgba(92,0,8,.45) 36%, transparent 72%), var(--night);
+  background-attachment: fixed;
+}
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
+.wrap { width: 100%; max-width: 1180px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 40px); }
+header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.6); backdrop-filter: blur(14px); }
+header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 16px; }
+.brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 800 17px/1 var(--f-display); letter-spacing: .16em; }
+.brand img { width: 44px; height: auto; margin-block: -12px; filter: drop-shadow(0 0 6px rgba(226,52,68,.8)); }
+.between { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+main { padding-block: clamp(28px, 6vw, 56px) 120px; }
+h1 { font: 800 clamp(26px, 5vw, 38px)/1.1 var(--f-display); margin: 12px 0 8px; }
+h1 em { font: 600 1.3em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
+.eyebrow { font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); display: flex; align-items: center; gap: 10px; }
+.eyebrow::before { content: ""; flex: none; width: 13px; height: 13px; background: var(--mist); clip-path: polygon(50% 0, 56% 44%, 100% 50%, 56% 56%, 50% 100%, 44% 56%, 0 50%, 44% 44%); filter: drop-shadow(0 0 4px var(--ember)); }
+.muted { color: var(--haze); }
+.panel { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 18px; padding: clamp(18px, 3vw, 24px); margin-top: 16px; }
+.panel > .eyebrow { margin-bottom: 16px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 18px; border-radius: 999px; border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
+.btn-primary { background: var(--mist); color: var(--night); box-shadow: 0 10px 40px -10px rgba(226,52,68,.6); }
+.btn-ghost { background: rgba(255,255,255,.03); color: var(--mist); border-color: var(--line); }
+.btn-ghost:hover { border-color: var(--ember); }
+.btn:disabled { opacity: .5; cursor: default; }
+.small { padding: 8px 12px; font-size: 13px; }
+label { display: grid; gap: 7px; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
+input, textarea, select { min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px var(--f-body); letter-spacing: 0; text-transform: none; min-width: 0; }
+textarea { padding: 12px 14px; resize: vertical; min-height: 84px; line-height: 1.5; }
+select { cursor: pointer; }
+input[type="color"] { padding: 4px; width: 100%; cursor: pointer; }
+input[type="range"] { padding: 0; accent-color: var(--ember); }
+label.check { display: flex; align-items: center; gap: 10px; font: 400 14px/1.4 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--mist); }
+label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-color: var(--ember); }
+.error { color: #FF7A85; font-size: 14px; }
+.notice { color: var(--bone); font-size: 14px; }
+.error:empty, .notice:empty { display: none; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 16px; }
+
+/* L'éditeur à gauche, l'aperçu (un téléphone) à droite ; l'un sous l'autre sur un petit écran. */
+.studio { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 28px; align-items: start; margin-top: 20px; }
+.phone { position: sticky; top: 20px; height: min(780px, calc(100vh - 40px)); border-radius: 40px; border: 10px solid #000; box-shadow: 0 0 0 1px var(--line), 0 30px 80px -30px rgba(226,52,68,.5); overflow: auto; background: #000; }
+.phone > .lp { min-height: 100%; }
+@media (max-width: 960px) {
+  .studio { grid-template-columns: minmax(0, 1fr); }
+  .preview-col { order: -1; }
+  .phone { position: relative; top: 0; height: 560px; max-width: 380px; margin: 0 auto; }
+}
+.address { display: flex; align-items: stretch; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: rgba(0,0,0,.42); }
+.address span { display: flex; align-items: center; padding: 0 4px 0 14px; color: var(--haze); font: 500 15px var(--f-mono); white-space: nowrap; }
+.address input { flex: 1; border: 0; border-radius: 0; background: none; padding-left: 0; font-family: var(--f-mono); }
+.photo { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+.photo img, .photo .empty { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); background: rgba(255,255,255,.04); }
+.presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.presets button { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px 8px 8px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.03); color: var(--mist); font: 600 13px var(--f-body); cursor: pointer; }
+.presets button:hover { border-color: var(--ember); }
+.presets i { width: 22px; height: 22px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); }
+/* Les liens */
+.links { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 10px; }
+.link-row { display: grid; grid-template-columns: auto 30px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: rgba(0,0,0,.3); }
+.link-row.off { opacity: .55; }
+.link-row.dragging { opacity: .35; }
+.link-row.drop-before { box-shadow: 0 -3px 0 var(--ember); }
+.link-row.drop-after { box-shadow: 0 3px 0 var(--ember); }
+.grip { cursor: grab; color: var(--haze); padding-top: 12px; user-select: none; letter-spacing: -2px; }
+.link-icon { width: 24px; height: 24px; margin-top: 10px; background: var(--mist); -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; }
+.link-fields { display: grid; gap: 8px; }
+.link-fields .two { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; }
+.link-tools { display: flex; flex-direction: column; gap: 6px; }
+.icon-btn { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line); background: none; color: var(--mist); cursor: pointer; font-size: 14px; }
+.icon-btn:hover:not(:disabled) { border-color: var(--ember); }
+.icon-btn:disabled { opacity: .3; cursor: default; }
+.music-note { margin: 0; font-size: 13px; line-height: 1.45; color: var(--haze); }
+.music-note b { color: var(--bone); font-weight: 600; }
+.own-links summary { cursor: pointer; font-size: 13px; color: var(--bone); }
+.own-links .grid { margin-top: 10px; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); }
+.own-links label { gap: 5px; }
+.own-links input { min-height: 38px; font-size: 14px; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; padding: 12px 0; background: rgba(13,8,9,.88); backdrop-filter: blur(14px); border-top: 1px solid var(--line); }
+.bar .wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.state { font: 500 12px/1.3 var(--f-mono); letter-spacing: .08em; color: var(--haze); }
+.state.dirty { color: #ffb36b; }
+.gate { text-align: center; }
+/* Statistiques */
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+.tiles div { padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: rgba(0,0,0,.3); }
+.tiles b { display: block; font: 800 clamp(20px, 4vw, 28px)/1.1 var(--f-display); }
+.tiles span { font: 500 11px/1.3 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
+.chart { display: flex; align-items: flex-end; gap: 2px; height: 96px; margin-top: 16px; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+.chart div { position: relative; flex: 1; min-width: 2px; border-radius: 3px 3px 0 0; background: rgba(255,210,214,.22); }
+.chart i { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 3px 3px 0 0; background: var(--ember); }
+.legend { display: flex; gap: 16px; margin-top: 8px; font: 500 11px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--haze); }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 2px; vertical-align: -1px; background: rgba(255,210,214,.22); }
+.legend span.c::before { background: var(--ember); }
+.st-links { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; }
+.st-links li { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: 14px; }
+.st-links .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-links .bar { grid-column: 2 / 4; height: 4px; border-radius: 2px; background: rgba(255,255,255,.06); overflow: hidden; }
+.st-links .bar i { display: block; height: 100%; background: var(--ember); }
+.st-links b { font: 600 14px var(--f-mono); }
+</style>
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <div class="between"><a class="btn btn-ghost" href="compte.html">Mon compte</a><a href="compte.html" data-account data-account-manual hidden>Compte</a></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="eyebrow">Fondateurs</div>
+  <h1>Ma page de <em>liens</em></h1>
+  <p class="muted" style="max-width:68ch;margin:0">Une page à mettre dans ta bio Instagram ou TikTok : chaque lien ouvre directement l'application de la plateforme (Spotify, YouTube, Instagram…) chez la personne qui clique, et non son site. Tout se règle ici, l'aperçu suit en direct.</p>
+
+  <div class="panel gate" id="gate" hidden></div>
+
+  <div class="studio" id="studio" hidden>
+    <div>
+      <section class="panel">
+        <div class="eyebrow">Adresse de la page</div>
+        <div class="address"><span>onirique.store/l/</span><input id="handle" maxlength="30" autocomplete="off" spellcheck="false" aria-label="Adresse de la page"></div>
+        <p class="muted" style="margin:10px 0 0;font-size:14px">Lettres minuscules, chiffres, point ou tiret. C'est ce lien que tu colles dans ta bio.</p>
+        <div class="between" style="margin-top:12px">
+          <button class="btn btn-ghost small" id="copy" type="button">Copier le lien</button>
+          <a class="btn btn-ghost small" id="open" target="_blank" rel="noopener" hidden>Voir ma page</a>
+        </div>
+      </section>
+
+      <section class="panel" id="stats-panel" hidden>
+        <div class="between" style="justify-content:space-between">
+          <div class="eyebrow">Statistiques</div>
+          <select id="stats-days" aria-label="Période des statistiques"><option value="7">7 derniers jours</option><option value="30" selected>30 derniers jours</option><option value="90">90 derniers jours</option></select>
+        </div>
+        <div class="tiles">
+          <div><b id="st-views">0</b><span>Visites</span></div>
+          <div><b id="st-clicks">0</b><span>Clics</span></div>
+          <div><b id="st-rate">—</b><span>Taux de clic</span></div>
+        </div>
+        <div class="chart" id="st-chart"></div>
+        <div class="legend"><span>Visites</span><span class="c">Clics</span></div>
+        <ul class="st-links" id="st-links"></ul>
+        <p class="muted" style="font-size:13px;margin:12px 0 0">Une visite par personne et par demi-heure, un clic par personne et par minute ; les robots et les aperçus des messageries ne sont pas comptés.</p>
+      </section>
+
+      <section class="panel">
+        <div class="eyebrow">Profil</div>
+        <div class="photo">
+          <img id="avatar" alt="Photo de la page" hidden><span class="empty" id="avatar-empty"></span>
+          <div class="between">
+            <button class="btn btn-ghost small" id="avatar-pick" type="button">Choisir une photo</button>
+            <button class="btn btn-ghost small" id="avatar-remove" type="button" hidden>Retirer</button>
+            <input id="avatar-file" type="file" accept="image/png,image/jpeg,image/webp" hidden aria-label="Photo de la page">
+            <select id="avatar-shape" aria-label="Forme de la photo"><option value="circle">Ronde</option><option value="square">Carrée</option></select>
+          </div>
+        </div>
+        <div class="grid" style="margin-top:16px;grid-template-columns:minmax(0,1fr)">
+          <label>Nom affiché<input id="name" maxlength="60"></label>
+          <label>Bio<textarea id="bio" maxlength="300" placeholder="Quelques mots sous ton nom"></textarea></label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="eyebrow">Liens</div>
+        <p class="muted" style="margin:0 0 14px;font-size:14px">Colle le lien de ta page Spotify, de ta chaîne YouTube, de ton profil Instagram… La plateforme est reconnue toute seule. « Bouton » : un grand bouton ; « Icône » : une petite icône en haut de la page ; « Musique » : pour un titre, un album ou un artiste, le visiteur choisit sa plateforme d'écoute (Spotify, Apple Music, Deezer, YouTube Music…). Glisse une ligne pour la déplacer.</p>
+        <ul class="links" id="links"></ul>
+        <button class="btn btn-ghost" id="add" type="button">+ Ajouter un lien</button>
+      </section>
+
+      <section class="panel">
+        <div class="eyebrow">Apparence</div>
+        <p class="muted" style="margin:0 0 10px;font-size:14px">Un thème pour partir, puis chaque réglage se change un par un.</p>
+        <div class="presets" id="presets"></div>
+
+        <h3 class="eyebrow" style="margin:24px 0 12px">Fond</h3>
+        <div class="grid">
+          <label>Type<select id="bg"><option value="color">Couleur unie</option><option value="gradient">Dégradé</option><option value="image">Image</option></select></label>
+          <label>Couleur<input id="bg1" type="color"></label>
+          <label id="bg2-field">Seconde couleur<input id="bg2" type="color"></label>
+          <label id="angle-field">Direction du dégradé<input id="angle" type="range" min="0" max="360" step="5"></label>
+        </div>
+        <div id="image-fields" class="between" style="margin-top:14px">
+          <button class="btn btn-ghost small" id="bg-pick" type="button">Choisir une image de fond</button>
+          <button class="btn btn-ghost small" id="bg-remove" type="button" hidden>Retirer l'image</button>
+          <input id="bg-file" type="file" accept="image/png,image/jpeg,image/webp" hidden aria-label="Image de fond">
+          <label style="flex:1;min-width:200px">Assombrir l'image<input id="dim" type="range" min="0" max="90" step="5"></label>
+        </div>
+
+        <h3 class="eyebrow" style="margin:24px 0 12px">Texte</h3>
+        <div class="grid">
+          <label>Couleur du texte<input id="text" type="color"></label>
+          <label>Police du nom<select id="title-font"></select></label>
+          <label>Police du texte<select id="font"></select></label>
+        </div>
+
+        <h3 class="eyebrow" style="margin:24px 0 12px">Boutons</h3>
+        <div class="grid">
+          <label>Style<select id="btn-style"><option value="fill">Plein</option><option value="outline">Contour</option><option value="glass">Verre</option></select></label>
+          <label>Forme<select id="btn-shape"><option value="pill">Pilule</option><option value="round">Arrondie</option><option value="square">Carrée</option></select></label>
+          <label>Couleur<input id="btn-color" type="color"></label>
+          <label>Couleur du texte<input id="btn-text" type="color"></label>
+        </div>
+        <label class="check" style="margin-top:14px"><input id="btn-shadow" type="checkbox"><span>Ombre sous les boutons</span></label>
+      </section>
+    </div>
+
+    <div class="preview-col">
+      <div class="phone" id="preview" aria-label="Aperçu de la page"></div>
+    </div>
+  </div>
+</main>
+
+<div class="bar" id="bar" hidden>
+  <div class="wrap">
+    <span class="state" id="state" role="status">Enregistré</span>
+    <span class="error" id="error" role="alert"></span>
+    <button class="btn btn-primary" id="save" type="button">Enregistrer</button>
+  </div>
+</div>
+
+<script src="assets/deeplink.js?v=3"></script>
+<script src="assets/linkpage.js?v=4"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const TOKEN = "onirique.token";
+const token = sessionStorage.getItem(TOKEN) || localStorage.getItem(TOKEN);
+const LP = window.OniriqueLinkPage, DL = window.OniriqueDeepLink;
+
+async function api(method, path, body, raw) {
+  const response = await fetch("/api" + path, {
+    method,
+    headers: { Authorization: "Bearer " + token, ...(raw ? { "Content-Type": raw.type } : body ? { "Content-Type": "application/json" } : {}) },
+    body: raw || (body ? JSON.stringify(body) : undefined),
+  }).catch(() => { throw new Error("Serveur injoignable. Réessaie dans un instant."); });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw Object.assign(new Error(data.error || "Erreur " + response.status), { status: response.status });
+  return data;
+}
+
+// handle : l'adresse enregistrée (null tant que la page n'a jamais été enregistrée) ; page : la page en cours d'édition.
+let saved = null, page = null, media = { avatar: null, background: null }, dirty = false;
+
+function markDirty() {
+  dirty = true;
+  $("state").textContent = "Modifications non enregistrées";
+  $("state").className = "state dirty";
+  draw();
+}
+window.addEventListener("beforeunload", (event) => { if (dirty) event.preventDefault(); });
+
+function draw() {
+  LP.render($("preview"), page, media, true);
+  const t = page.theme;
+  $("bg2-field").hidden = $("angle-field").hidden = t.bg !== "gradient";
+  $("image-fields").hidden = t.bg !== "image";
+  $("avatar").hidden = !media.avatar;
+  $("avatar-empty").hidden = !!media.avatar;
+  if (media.avatar) $("avatar").src = media.avatar + "?w=320";
+  $("avatar").style.borderRadius = t.avatarShape === "square" ? "16px" : "50%";
+  $("avatar-remove").hidden = !media.avatar;
+  $("bg-remove").hidden = !media.background;
+  $("open").hidden = !saved;
+  if (saved) $("open").href = "/l/" + saved;
+}
+
+// Les réglages simples : un champ, une valeur de la page.
+const FIELDS = [
+  ["name", () => page, "name"], ["bio", () => page, "bio"],
+  ["avatar-shape", () => page.theme, "avatarShape"],
+  ["bg", () => page.theme, "bg"], ["bg1", () => page.theme, "bg1"], ["bg2", () => page.theme, "bg2"],
+  ["angle", () => page.theme, "angle", Number], ["dim", () => page.theme, "dim", Number],
+  ["text", () => page.theme, "text"], ["title-font", () => page.theme, "titleFont"], ["font", () => page.theme, "font"],
+  ["btn-style", () => page.theme.button, "style"], ["btn-shape", () => page.theme.button, "shape"],
+  ["btn-color", () => page.theme.button, "color"], ["btn-text", () => page.theme.button, "text"],
+];
+function fillFields() {
+  for (const [id, target, key] of FIELDS) $(id).value = target()[key];
+  $("btn-shadow").checked = page.theme.button.shadow;
+}
+for (const [id, target, key, cast] of FIELDS) {
+  $(id).addEventListener("input", () => { target()[key] = cast ? cast($(id).value) : $(id).value; markDirty(); });
+}
+$("btn-shadow").onchange = () => { page.theme.button.shadow = $("btn-shadow").checked; markDirty(); };
+$("handle").addEventListener("input", () => {
+  $("handle").value = $("handle").value.toLowerCase().replace(/[^a-z0-9._-]/g, "");
+  markDirty();
+});
+for (const [id, [label]] of Object.entries(LP.FONTS)) {
+  for (const select of [$("title-font"), $("font")]) select.append(new Option(label, id));
+}
+
+// Les thèmes de départ : ils remplacent l'apparence, pas le profil ni les liens.
+$("presets").replaceChildren(...Object.values(LP.PRESETS).map((preset) => {
+  const button = document.createElement("button");
+  button.type = "button";
+  const dot = document.createElement("i");
+  dot.style.background = preset.theme.bg === "gradient" ? `linear-gradient(135deg, ${preset.theme.bg1}, ${preset.theme.button.color})` : `linear-gradient(135deg, ${preset.theme.bg1} 50%, ${preset.theme.button.color} 50%)`;
+  button.append(dot, preset.label);
+  button.onclick = () => {
+    const keep = { avatarShape: page.theme.avatarShape, dim: page.theme.dim };
+    page.theme = { ...structuredClone(preset.theme), ...keep, bg: page.theme.bg === "image" && media.background ? "image" : preset.theme.bg };
+    fillFields();
+    markDirty();
+  };
+  return button;
+}));
+
+// Les liens : une ligne par lien, déplaçable au glisser ou avec les flèches.
+function drawLinks() {
+  const list = $("links");
+  const move = (from, to) => { page.links.splice(to, 0, ...page.links.splice(from, 1)); drawLinks(); markDirty(); };
+  let dragged = -1;
+  const clear = () => list.querySelectorAll(".drop-before, .drop-after").forEach((n) => n.classList.remove("drop-before", "drop-after"));
+  list.replaceChildren(...page.links.map((link, i) => {
+    const li = document.createElement("li");
+    li.className = "link-row" + (link.on ? "" : " off");
+    li.draggable = true;
+    const platform = DL.platformOf(link.url);
+    const icon = document.createElement("span");
+    icon.className = "link-icon";
+    icon.style.setProperty("--icon", `url("/assets/icons/${platform ? platform.id : "link"}.svg")`);
+    const label = Object.assign(document.createElement("input"), { value: link.label, maxLength: 80, placeholder: platform ? platform.name : "Texte du bouton" });
+    label.setAttribute("aria-label", "Texte du lien");
+    const url = Object.assign(document.createElement("input"), { value: link.url, maxLength: 2000, placeholder: "https://open.spotify.com/artist/…", inputMode: "url", spellcheck: false });
+    url.setAttribute("aria-label", "Adresse du lien");
+    const kind = document.createElement("select");
+    kind.append(new Option("Bouton", "button"), new Option("Icône", "icon"), new Option("Musique", "music"));
+    kind.value = link.kind;
+    kind.setAttribute("aria-label", "Affichage du lien");
+    const on = Object.assign(document.createElement("input"), { type: "checkbox", checked: link.on, title: "Afficher ce lien" });
+    on.setAttribute("aria-label", "Afficher ce lien");
+    // Lien « Musique » : les plateformes trouvées à l'enregistrement, ou ce qui se passera à l'enregistrement.
+    const note = document.createElement("p");
+    note.className = "music-note";
+    const showNote = () => {
+      note.hidden = link.kind !== "music";
+      if (note.hidden) return;
+      const names = Object.fromEntries(DL.APPS.map((a) => [a.id, a.name]));
+      const custom = link.custom || {};
+      if (link.music) {
+        note.innerHTML = "";
+        note.append("Écoute proposée pour ", Object.assign(document.createElement("b"), { textContent: link.music.title + (link.music.artist && link.music.type !== "artist" ? " · " + link.music.artist : "") }),
+          " : " + link.music.platforms.map((p) => names[p.id] + (custom[p.id] ? " (ton lien)" : p.exact ? "" : " (recherche)")).join(", ") + ".");
+      } else if (Object.keys(custom).length) {
+        note.textContent = "Écoute proposée sur tes liens : " + Object.keys(custom).map((id) => names[id]).join(", ") + ".";
+      } else {
+        note.textContent = saved && !dirty ? "Ce lien n'a pas été reconnu : il s'ouvrira tel quel. Les liens reconnus : titres, albums et artistes de Spotify, Deezer et Apple Music, vidéos YouTube, sons SoundCloud."
+          : "Les autres plateformes sont cherchées à l'enregistrement de la page.";
+      }
+    };
+    showNote();
+    label.oninput = () => { link.label = label.value; markDirty(); };
+    url.oninput = () => {
+      link.url = url.value.trim();
+      delete link.music; // un autre lien : ses plateformes seront cherchées à nouveau
+      showNote();
+      const p = DL.platformOf(/^[a-z]+:/i.test(link.url) ? link.url : "https://" + link.url);
+      icon.style.setProperty("--icon", `url("/assets/icons/${p ? p.id : "link"}.svg")`);
+      label.placeholder = p ? p.name : "Texte du bouton";
+      markDirty();
+    };
+    kind.onchange = () => { link.kind = kind.value; own.hidden = link.kind !== "music"; showNote(); markDirty(); };
+    on.onchange = () => { link.on = on.checked; li.classList.toggle("off", !on.checked); markDirty(); };
+    const tool = (text, title, run, disabled) => {
+      const b = Object.assign(document.createElement("button"), { type: "button", className: "icon-btn", textContent: text, title, disabled: !!disabled });
+      b.setAttribute("aria-label", title);
+      b.onclick = run;
+      return b;
+    };
+    const fields = document.createElement("div");
+    fields.className = "link-fields";
+    const two = document.createElement("div");
+    two.className = "two";
+    two.append(label, kind, on);
+    // Ses propres liens sur les autres plateformes : ils remplacent la recherche automatique, plateforme par plateforme.
+    const own = document.createElement("details");
+    own.className = "own-links";
+    own.hidden = link.kind !== "music";
+    own.open = !!(link.custom && Object.keys(link.custom).length);
+    const ownTitle = document.createElement("summary");
+    ownTitle.textContent = "Tes liens sur les autres plateformes (facultatif)";
+    const ownGrid = document.createElement("div");
+    ownGrid.className = "grid";
+    for (const id of ["spotify", "applemusic", "deezer", "youtubemusic", "youtube", "soundcloud", "tidal", "amazonmusic"]) {
+      const found = link.music && link.music.platforms.find((p) => p.id === id);
+      const field = Object.assign(document.createElement("input"), { value: (link.custom || {})[id] || "", inputMode: "url", spellcheck: false, maxLength: 2000,
+        placeholder: found ? (found.exact ? "Trouvé tout seul" : "Recherche automatique") : "Recherche automatique" });
+      field.oninput = () => {
+        link.custom = { ...link.custom };
+        const value = field.value.trim();
+        if (value) link.custom[id] = /^[a-z][a-z0-9+.-]*:/i.test(value) ? value : "https://" + value;
+        else delete link.custom[id];
+        showNote();
+        markDirty();
+      };
+      field.onmousedown = () => { li.draggable = false; }; // un champ reste sélectionnable : pas de glisser depuis lui
+      field.onblur = () => { li.draggable = true; };
+      const box = document.createElement("label");
+      box.append(DL.APPS.find((a) => a.id === id).name, field);
+      ownGrid.append(box);
+    }
+    own.append(ownTitle, ownGrid);
+    fields.append(two, url, note, own);
+    const tools = document.createElement("div");
+    tools.className = "link-tools";
+    tools.append(tool("↑", "Monter", () => move(i, i - 1), i === 0), tool("↓", "Descendre", () => move(i, i + 1), i === page.links.length - 1),
+      tool("✕", "Supprimer ce lien", () => { page.links.splice(i, 1); drawLinks(); markDirty(); }));
+    const grip = Object.assign(document.createElement("span"), { className: "grip", textContent: "⋮⋮", title: "Glisser pour déplacer" });
+    li.append(grip, icon, fields, tools);
+    const after = (event) => event.clientY > li.getBoundingClientRect().top + li.offsetHeight / 2;
+    li.ondragstart = (event) => {
+      if (event.target !== li) return; // un glisser commencé dans un champ sélectionne son texte
+      dragged = i; event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", String(i)); li.classList.add("dragging");
+    };
+    li.ondragend = () => { li.classList.remove("dragging"); clear(); };
+    li.ondragover = (event) => { if (dragged < 0) return; event.preventDefault(); clear(); li.classList.add(after(event) ? "drop-after" : "drop-before"); };
+    li.ondrop = (event) => {
+      event.preventDefault(); clear();
+      if (dragged < 0) return;
+      const target = i + (after(event) ? 1 : 0);
+      const to = target > dragged ? target - 1 : target;
+      if (to !== dragged) move(dragged, to);
+      dragged = -1;
+    };
+    // Les champs restent sélectionnables : seule la poignée (ou le bord) lance le glisser.
+    for (const input of [label, url]) { input.onmousedown = () => { li.draggable = false; }; input.onblur = () => { li.draggable = true; }; }
+    return li;
+  }));
+}
+$("add").onclick = () => {
+  page.links.push({ id: Date.now().toString(36), label: "", url: "", kind: "button", on: true });
+  drawLinks();
+  markDirty();
+  $("links").lastElementChild.querySelector("input[inputmode=url]").focus();
+};
+
+async function save() {
+  $("error").textContent = "";
+  $("save").disabled = true;
+  try {
+    // Un lien sans « https:// » le reçoit ; un lien vide est retiré.
+    page.links = page.links.filter((l) => l.url).map((l) => ({ ...l, url: /^[a-z][a-z0-9+.-]*:/i.test(l.url) ? l.url : "https://" + l.url }));
+    const data = await api("PUT", "/me/links", { handle: $("handle").value, page });
+    apply(data);
+    dirty = false;
+    $("state").textContent = "Enregistré · onirique.store/l/" + saved;
+    $("state").className = "state";
+    loadStats();
+    return true;
+  } catch (error) {
+    $("error").textContent = error.message;
+    return false;
+  } finally {
+    $("save").disabled = false;
+  }
+}
+$("save").onclick = save;
+document.addEventListener("keydown", (event) => { if ((event.ctrlKey || event.metaKey) && event.key === "s") { event.preventDefault(); save(); } });
+
+function apply(data) {
+  saved = data.handle;
+  page = data.page;
+  media = { avatar: data.avatar, background: data.background };
+  $("handle").value = data.handle || $("handle").value;
+  fillFields();
+  drawLinks();
+  draw();
+}
+
+// Images : la page doit exister pour les recevoir ; la première fois, elle est enregistrée avant l'envoi.
+async function upload(kind, input) {
+  const file = input.files[0];
+  input.value = "";
+  if (!file) return;
+  $("error").textContent = "";
+  if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) { $("error").textContent = "Image attendue : PNG, JPEG ou WebP."; return; }
+  if (!saved && !(await save())) return;
+  try {
+    const data = await api("PUT", "/me/links/image?kind=" + kind, null, file);
+    media = { avatar: data.avatar, background: data.background };
+    if (kind === "background") { page.theme.bg = "image"; fillFields(); markDirty(); } else draw();
+  } catch (error) { $("error").textContent = error.message; }
+}
+async function removeImage(kind) {
+  try {
+    const data = await api("DELETE", "/me/links/image?kind=" + kind);
+    media = { avatar: data.avatar, background: data.background };
+    draw();
+  } catch (error) { $("error").textContent = error.message; }
+}
+$("avatar-pick").onclick = () => $("avatar-file").click();
+$("avatar-file").onchange = () => upload("avatar", $("avatar-file"));
+$("avatar-remove").onclick = () => removeImage("avatar");
+$("bg-pick").onclick = () => $("bg-file").click();
+$("bg-file").onchange = () => upload("background", $("bg-file"));
+$("bg-remove").onclick = () => removeImage("background");
+
+// Les statistiques de la page enregistrée : visites, clics, taux de clic, jour par jour et lien par lien.
+async function loadStats() {
+  if (!saved) return;
+  try {
+    const s = await api("GET", "/me/links/stats?days=" + $("stats-days").value);
+    $("stats-panel").hidden = false;
+    $("st-views").textContent = s.views.toLocaleString("fr-FR");
+    $("st-clicks").textContent = s.clicks.toLocaleString("fr-FR");
+    $("st-rate").textContent = s.views ? Math.round((s.clicks / s.views) * 100) + " %" : "—";
+    const top = Math.max(1, ...s.daily.map((d) => Math.max(d.views, d.clicks)));
+    $("st-chart").replaceChildren(...s.daily.map((d) => {
+      const bar = document.createElement("div");
+      bar.style.height = Math.max(2, (d.views / top) * 100) + "%";
+      const clicks = document.createElement("i");
+      clicks.style.height = d.views ? Math.min(100, (d.clicks / d.views) * 100) + "%" : d.clicks ? "100%" : "0";
+      bar.append(clicks);
+      bar.title = new Date(d.day + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) + " : " + d.views + " visite(s), " + d.clicks + " clic(s)";
+      return bar;
+    }));
+    const most = Math.max(1, ...Object.values(s.links));
+    const rows = page.links.map((l) => ({ l, n: s.links[l.id] || 0 })).sort((a, b) => b.n - a.n);
+    $("st-links").replaceChildren(...rows.map(({ l, n }) => {
+      const li = document.createElement("li");
+      const p = DL.platformOf(l.url);
+      const icon = document.createElement("span");
+      icon.className = "link-icon";
+      icon.style.cssText = "margin:0;width:20px;height:20px";
+      icon.style.setProperty("--icon", `url("/assets/icons/${p ? p.id : "link"}.svg")`);
+      const label = Object.assign(document.createElement("span"), { className: "lbl", textContent: l.label || (p && p.name) || l.url });
+      const count = Object.assign(document.createElement("b"), { textContent: n });
+      const bar = Object.assign(document.createElement("span"), { className: "bar" });
+      const fill = document.createElement("i");
+      fill.style.width = (n / most) * 100 + "%";
+      bar.append(fill);
+      li.append(icon, label, count, document.createElement("span"), bar);
+      return li;
+    }));
+  } catch { /* les statistiques sont un plus : la page s'édite sans elles */ }
+}
+$("stats-days").onchange = loadStats;
+
+$("copy").onclick = async () => {
+  const url = "https://onirique.store/l/" + ($("handle").value || "");
+  try { await navigator.clipboard.writeText(url); $("copy").textContent = "Lien copié"; } catch { prompt("Copie ce lien :", url); }
+  setTimeout(() => { $("copy").textContent = "Copier le lien"; }, 1800);
+};
+
+(async () => {
+  const gate = (html) => { $("gate").hidden = false; $("gate").innerHTML = html; };
+  if (!token) return gate('<p>Connecte-toi d\'abord à ton compte.</p><a class="btn btn-primary" href="compte.html">Se connecter</a>');
+  try {
+    const data = await api("GET", "/me/links");
+    $("studio").hidden = $("bar").hidden = false;
+    if (!data.handle) $("handle").value = (data.page.name || "").toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "").slice(0, 30);
+    apply(data);
+    if (!saved) { dirty = true; $("state").textContent = "Pas encore en ligne : enregistre ta page"; $("state").className = "state dirty"; }
+    loadStats();
+  } catch (error) {
+    gate(error.status === 403 ? "<p>La page de liens est réservée aux fondateurs d'ONIRIQUE.</p>"
+      : error.status === 401 ? '<p>Ta session a expiré.</p><a class="btn btn-primary" href="compte.html">Se reconnecter</a>' : "<p></p>");
+    if (error.status !== 403 && error.status !== 401) $("gate").firstChild.textContent = error.message;
+  }
+})();
+</script>
+<script src="assets/account.js?v=6"></script>
+<script src="assets/site-nav.js?v=12"></script>
+</html>

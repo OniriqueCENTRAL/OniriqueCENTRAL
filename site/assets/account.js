@@ -14,7 +14,7 @@
     if (ref && /^[A-Za-z0-9]{4,12}$/.test(ref)) localStorage.setItem("onirique.ref", JSON.stringify({ code: ref.toUpperCase(), at: Date.now() }));
   } catch { /* stockage fermé : le code reste dans l'adresse de la page compte */ }
   const token = () => { try { return sessionStorage.getItem(TOKEN) || localStorage.getItem(TOKEN); } catch { return null; } };
-  const ROLES = { vip: "VIP", abrasion: "Abrasion", relic: "Relic", admin: "Admin", founder: "Fondateur" };
+  const ROLES = { vip: "ONIRIQUE", abrasion: "Abrasion", relic: "Relic", admin: "Admin", founder: "Fondateur" };
   const el = (tag, props = {}, ...children) => {
     const node = Object.assign(document.createElement(tag), props);
     node.append(...children.filter((c) => c !== null && c !== undefined));

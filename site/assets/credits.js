@@ -16,7 +16,7 @@ window.OniriqueCredits = {
     };
 
   root.innerHTML = list.map(c => `
-    <article class="credit reveal" style="--cover-img: ${c.cover ? `url('${esc(sized(c.cover, 320))}')` : "none"}">
+    <article class="credit reveal" style="--cover-img: ${c.cover ? `url('${esc(sized(c.cover, 160))}')` : "none"}">
       <div class="cover"><span>${esc(c.title.slice(0, 2))}</span>${c.cover ? `<img src="${esc(sized(c.cover, 640))}" alt="Pochette de ${esc(c.title)} par ${esc(c.artist)}" loading="lazy" onerror="this.remove()">` : ""}</div>
       <div class="credit-info">
         <span class="credit-kind">${esc(c.kind)}${c.released ? " · " + esc(String(c.released).slice(-4)) : ""}</span>
@@ -27,7 +27,7 @@ window.OniriqueCredits = {
           ${c.duration ? `<div><dt>Durée</dt><dd>${esc(c.duration)}</dd></div>` : ""}
           <div><dt>Format</dt><dd>${esc(c.kind)}</dd></div>
         </dl>
-        <div class="plugins-used">${(c.plugins && c.plugins.length ? c.plugins : c.plugin ? [c.plugin] : [{ name: "Onirique VocalBox" }]).map((p, i) => `<a class="plugin-used" href="${p.slug ? "boutique.html?p=" + encodeURIComponent(p.slug) : "#vocalbox"}"><img src="assets/logo-small.png" alt="" width="160" height="145"><span><b>${esc(p.name)}</b>${i === 0 && c.usedOn ? `<small>Utilisé sur : ${esc(c.usedOn)}</small>` : ""}</span></a>`).join("")}</div>
+        <div class="plugins-used">${(c.plugins && c.plugins.length ? c.plugins : c.plugin ? [c.plugin] : [{ name: "Onirique VocalBox" }]).map((p, i) => `<a class="plugin-used" href="${p.slug ? "boutique.html?p=" + encodeURIComponent(p.slug) : "#vocalbox"}"><img src="assets/logo-small.webp?v=1" alt="" width="160" height="145"><span><b>${esc(p.name)}</b>${i === 0 && c.usedOn ? `<small>Utilisé sur : ${esc(c.usedOn)}</small>` : ""}</span></a>`).join("")}</div>
         ${engineers(c).length ? `<p class="credit-engineer">Par ${engineers(c).map(person).join('<span class="credit-and">&amp;</span>')}</p>` : ""}
       </div>
       <div class="credit-player">

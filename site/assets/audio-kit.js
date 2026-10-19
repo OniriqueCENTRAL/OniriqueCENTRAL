@@ -7,6 +7,7 @@
 //   OniriqueAudio.wav(channels, sampleRate, bits)   →  Blob (16 et 24 bits entiers, 32 bits flottants)
 //   OniriqueAudio.mp3(channels, sampleRate, kbps, onProgress)   →  Promise d'un Blob (encodé dans assets/mp3-worker.js)
 //   OniriqueAudio.download(blob, name), .clock(seconds), .decimal(n, digits), .baseName(file)
+//   OniriqueAudio.fromLink(onFile, onError)   le son de « Mes sons » passé dans l'adresse (?src=/api/sounds/audio/…&name=…)
 window.OniriqueAudio = (() => {
   const decimal = (n, digits = 1) => n.toFixed(digits).replace(".", ",");
   const clock = (s) => Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0");
@@ -132,5 +133,15 @@ window.OniriqueAudio = (() => {
     if (span) span.hidden = on || !!title;
   }
 
-  return { decimal, clock, baseName, sourceRate, decode, render, channelsOf, wav, mp3, download, dropZone, busy };
+  /** Un outil ouvert depuis « Mes sons » reçoit le son dans son adresse : seulement un son du site, jamais une autre adresse. */
+  function fromLink(onFile, onError) {
+    const query = new URLSearchParams(location.search), src = query.get("src");
+    if (!src || !src.startsWith("/api/sounds/audio/")) return;
+    fetch(src)
+      .then((response) => { if (!response.ok) throw new Error("Le son n'a pas pu être lu : rouvre l'outil depuis Mes sons."); return response.blob(); })
+      .then((blob) => onFile(new File([blob], query.get("name") || "son", { type: blob.type })))
+      .catch((error) => onError(error));
+  }
+
+  return { decimal, clock, baseName, sourceRate, decode, render, channelsOf, wav, mp3, download, dropZone, busy, fromLink };
 })();

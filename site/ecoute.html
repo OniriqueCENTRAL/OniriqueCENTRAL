@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<script src="assets/i18n.js?v=33fbad51"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ONIRIQUE — Écoute privée</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<style>
+/* Mêmes tokens que compte.html. */
+:root {
+  --night: #0D0809; --blood: #5C0008; --deep: #1A080A; --deep-2: #2A0A0E; --line: rgba(255,210,214,.13);
+  --mist: #F6EEEE; --haze: #A88F92; --ember: #E23444; --bone: #FFECEE;
+  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(226,52,68,.55);
+  --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --f-dream: "Grenze Gotisch", Georgia, serif;
+  --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0; min-height: 100vh; color: var(--mist); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased;
+  background: radial-gradient(120% 60% at 50% -10%, var(--glow-1, rgba(140,6,20,.8)), var(--glow-2, rgba(92,0,8,.45)) 36%, transparent 72%), var(--night);
+  background-attachment: fixed;
+}
+a { color: inherit; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
+.wrap { width: 100%; max-width: 1080px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 40px); }
+header .wrap { display: flex; align-items: center; justify-content: space-between; padding-block: 18px; }
+.brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 800 15px/1 var(--f-display); letter-spacing: .16em; }
+.brand img { width: 38px; height: auto; margin-block: -10px; filter: drop-shadow(0 0 6px rgba(226,52,68,.8)); }
+.eyebrow { font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); display: flex; align-items: center; gap: 10px; }
+.eyebrow::before { content: ""; flex: none; width: 13px; height: 13px; background: var(--mist); clip-path: polygon(50% 0, 56% 44%, 100% 50%, 56% 56%, 50% 100%, 44% 56%, 0 50%, 44% 44%); filter: drop-shadow(0 0 4px var(--ember)); }
+.muted { color: var(--haze); }
+main { padding-block: clamp(16px, 4vw, 40px) 140px; }
+.panel { max-width: 460px; margin: 40px auto 0; background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 22px; padding: 26px; text-align: center; }
+.panel h1 { font: 800 20px var(--f-display); margin: 12px 0 6px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; border-radius: 999px; border: 0; background: var(--mist); color: var(--night); font: 600 14px/1 var(--f-body); cursor: pointer; text-decoration: none; }
+input { min-height: 46px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px var(--f-body); min-width: 0; }
+.error { color: #FF7A85; font-size: 14px; }
+.error:empty { display: none; }
+form.pw { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+form.pw input { flex: 1 1 200px; }
+.cover-ph { background: radial-gradient(80% 80% at 30% 20%, rgba(226,52,68,.5), transparent 60%), linear-gradient(135deg, var(--blood), var(--deep-2)); display: grid; place-items: center; color: rgba(255,236,238,.55); }
+.album { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: clamp(24px, 4vw, 52px); align-items: start; margin-top: 20px; }
+@media (max-width: 820px) { .album { grid-template-columns: minmax(0, 1fr); } .art { max-width: 360px; } }
+.art { aspect-ratio: 1; border-radius: 20px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 30px 90px -24px var(--glow-1, rgba(226,52,68,.5)); }
+.art img, .art .cover-ph { width: 100%; height: 100%; object-fit: cover; }
+.art .cover-ph svg { width: 30%; height: 30%; }
+.head { display: flex; gap: 14px; align-items: flex-start; }
+.head > div { flex: 1; min-width: 0; }
+h1.title { font: 800 clamp(24px, 5vw, 36px)/1.12 var(--f-display); margin: 10px 0 6px; overflow-wrap: anywhere; }
+.meta { color: var(--haze); font-size: 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.meta img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
+.release { margin-top: 8px; display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); font: 600 13px var(--f-body); }
+.release.planned::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 8px var(--ember); }
+.release:empty { display: none; }
+.save { margin: 10px 0 0 8px; display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); font: 600 13px var(--f-body); cursor: pointer; vertical-align: top; }
+.save:hover { border-color: var(--ember); }
+.save.on { background: var(--ember); border-color: var(--ember); color: var(--night); }
+.play-all { width: 54px; height: 54px; flex: none; display: grid; place-items: center; border-radius: 50%; border: 0; background: var(--mist); color: var(--night); cursor: pointer; box-shadow: 0 10px 40px -10px var(--ember); }
+.note { margin: 18px 0 0; padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,210,214,.07); font-size: 13.5px; color: var(--haze); }
+.tracklist { list-style: none; margin: 14px 0 0; padding: 0; }
+.trk { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto auto auto; align-items: center; gap: 10px; padding: 11px 8px 11px 4px; border-radius: 12px; cursor: pointer; }
+.trk:hover { background: rgba(255,255,255,.04); }
+.trk.now { background: color-mix(in srgb, var(--ember) 13%, transparent); }
+.stage { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--mist); font: 600 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+.stage:empty { display: none; }
+.stage.maquette { background: rgba(255,255,255,.06); }
+.stage.version { border-color: var(--ember); color: var(--ember); }
+.stage.final { border-color: var(--ember); background: var(--ember); color: var(--night); }
+@media (max-width: 520px) { .trk .len { display: none; } }
+.trk .num { text-align: center; font: 500 13px var(--f-mono); color: var(--haze); }
+.trk.now .num { color: var(--ember); }
+.trk b { display: block; font: 700 15px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trk small { color: var(--haze); font-size: 12px; }
+.trk .len { font: 500 12px var(--f-mono); color: var(--haze); }
+.cover-by { margin-top: 12px; font-size: 14px; color: var(--haze); }
+.cover-by b { color: var(--mist); font-weight: 600; }
+.trk .credits { display: block; color: var(--haze); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dl { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 8px; color: var(--haze); }
+.dl:hover { color: var(--mist); background: rgba(255,255,255,.06); }
+footer { padding: 30px 0 140px; text-align: center; font-size: 13px; }
+</style>
+
+<header><div class="wrap"><a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a><span class="eyebrow">Écoute privée</span></div></header>
+
+<main class="wrap">
+  <section class="panel" id="locked" hidden>
+    <div class="eyebrow" style="justify-content:center">Lien protégé</div>
+    <h1>Mot de passe</h1>
+    <p class="muted" style="margin:0">Ce lien est protégé par un mot de passe.</p>
+    <form class="pw" id="pw-form">
+      <input id="pw" type="password" autocomplete="off" aria-label="Mot de passe" placeholder="Mot de passe">
+      <button class="btn" type="submit">Écouter</button>
+    </form>
+    <p class="error" id="pw-error" role="alert"></p>
+  </section>
+  <section class="panel" id="account" hidden>
+    <div class="eyebrow" style="justify-content:center">Compte exigé</div>
+    <h1>Connecte-toi</h1>
+    <p class="muted" style="margin:0 0 16px">Ce lien n'est ouvert qu'aux personnes connectées à leur compte ONIRIQUE.</p>
+    <a class="btn" id="login" href="compte.html">Se connecter ou créer un compte</a>
+  </section>
+  <section class="panel" id="gone" hidden><p class="error" id="gone-text" style="margin:0"></p></section>
+
+  <section class="album" id="room" hidden>
+    <div>
+      <div class="art" id="cover"></div>
+      <div class="cover-by" id="cover-by" hidden></div>
+    </div>
+    <div>
+      <div class="head">
+        <div>
+          <div class="eyebrow">Écoute privée</div>
+          <h1 class="title" id="title"></h1>
+          <div class="meta" id="meta"></div>
+          <div class="release" id="release"></div><button class="save" id="save" type="button" hidden></button>
+        </div>
+        <button class="play-all" id="play-all" type="button" aria-label="Tout écouter"></button>
+      </div>
+      <p class="note">Musique en cours, partagée avec toi seulement : merci de ne pas la diffuser. Ouvre les détails du lecteur pour laisser un commentaire à un moment précis du titre.</p>
+      <ol class="tracklist" id="tracks"></ol>
+    </div>
+  </section>
+</main>
+<footer class="muted wrap">Partagé avec <a href="/">ONIRIQUE</a> · Mes sons</footer>
+
+<script src="assets/sounds-player.js?v=4"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const OP = window.OniriquePlayer, icon = OP.icon;
+const el = (tag, props = {}, ...children) => {
+  const node = Object.assign(document.createElement(tag), props);
+  node.append(...children.filter((c) => c !== null && c !== undefined && c !== false));
+  return node;
+};
+const shareToken = new URLSearchParams(location.search).get("t") || "";
+let session = null;
+try { session = sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"); } catch {}
+const PASS = "onirique.ecoute." + shareToken;
+let pass = null;
+try { pass = sessionStorage.getItem(PASS); } catch {}
+
+async function api(path, body, method = "POST") {
+  const response = await fetch("/api/sounds/share/" + encodeURIComponent(shareToken) + path, {
+    method,
+    headers: { "Content-Type": "application/json", ...(session ? { Authorization: "Bearer " + session } : {}) },
+    body: JSON.stringify({ pass, ...body }),
+  }).catch(() => { throw new Error("Serveur injoignable. Réessaie dans un instant."); });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw Object.assign(new Error(data.error || "Erreur " + response.status), { status: response.status, account: !!data.account });
+  return data;
+}
+
+let items = [];
+const player = OP.create({
+  askName: !session,
+  onPlay: (t) => api("/play", { trackId: t.trackId }).catch(() => {}),
+  onComment: (t, at, body, name) => api("/comments", { trackId: t.trackId, at, body, name }),
+  onChange: (t) => document.querySelectorAll(".trk").forEach((row) => row.classList.toggle("now", Number(row.dataset.id) === t.trackId)),
+});
+
+// La page prend les couleurs de la pochette.
+const theme = (t) => t && Object.entries({ "--ember": t.accent, "--glow-1": t.glow, "--glow-2": t.deep })
+  .forEach(([k, v]) => document.documentElement.style.setProperty(k, v));
+
+// Les crédits d'un titre, sur une ligne : « Prod. X · Mix Y · Master Z · Rec W ».
+const CREDITS = [["beat", "Prod."], ["mix", "Mix"], ["master", "Master"], ["rec", "Rec"]];
+const creditsLine = (credits) => {
+  const parts = CREDITS.filter(([k]) => credits[k]).map(([k, label]) => label + " " + credits[k]);
+  return parts.length ? el("span", { className: "credits", textContent: parts.join(" · "), title: parts.join(" · ") }) : null;
+};
+
+function show(data) {
+  if (data.pass) { pass = data.pass; try { sessionStorage.setItem(PASS, pass); } catch {} }
+  $("locked").hidden = $("account").hidden = true;
+  $("room").hidden = false;
+  document.title = data.title + " — " + data.owner + " · ONIRIQUE";
+  $("title").textContent = data.title;
+  const total = data.tracks.reduce((s, t) => s + (t.version.duration || 0), 0);
+  $("release").textContent = OP.releaseLabel(data.releaseDate);
+  $("release").classList.toggle("planned", $("release").textContent.startsWith("Date de sortie prévue"));
+  $("meta").replaceChildren(data.ownerAvatar ? el("img", { src: data.ownerAvatar, alt: "" }) : "",
+    data.owner + (data.title !== data.project ? " · " + data.project : "") + " · " + data.tracks.length + (data.tracks.length > 1 ? " titres" : " titre")
+    + (total ? " · " + OP.time(total) : ""));
+  const ph = el("div", { className: "cover-ph", innerHTML: '<svg viewBox="0 0 24 24"><path d="M12 1.5 13.3 10.7 22.5 12 13.3 13.3 12 22.5 10.7 13.3 1.5 12 10.7 10.7Z" fill="currentColor"/></svg>' });
+  $("cover").replaceChildren(data.cover ? el("img", { src: data.cover, alt: "" }) : ph);
+  OP.tint(data.cover).then((t) => { theme(t); player.setAccent(t && t.accent); });
+  $("cover-by").hidden = !data.coverBy;
+  $("cover-by").replaceChildren("Pochette : ", el("b", { textContent: data.coverBy || "" }));
+  items = data.tracks.map((t) => ({ key: "v" + t.version.id, id: t.version.id, trackId: t.id, title: t.title, stage: t.stage,
+    subtitle: [data.owner, OP.stageLabel(t.stage)].filter(Boolean).join(" · "), cover: data.cover,
+    url: t.version.url, downloadUrl: t.version.downloadUrl, duration: t.version.duration, peaks: t.version.peaks, comments: t.comments, credits: t.credits || {} }));
+  $("tracks").replaceChildren(...items.map((it, i) => {
+    const row = el("li", { className: "trk", tabIndex: 0 },
+      el("span", { className: "num", textContent: String(i + 1) }),
+      el("div", {}, el("b", { textContent: it.title }), creditsLine(it.credits),
+        it.comments.length ? el("small", { textContent: it.comments.length + " commentaire" + (it.comments.length > 1 ? "s" : "") }) : null),
+      el("span", { className: "stage " + (it.stage === "maquette" || it.stage === "final" ? it.stage : it.stage ? "version" : ""), textContent: OP.stageLabel(it.stage) }),
+      el("span", { className: "len", textContent: it.duration ? OP.time(it.duration) : "" }),
+      it.downloadUrl ? el("a", { className: "dl", href: it.downloadUrl, title: "Télécharger", ariaLabel: "Télécharger " + it.title, onclick: (event) => event.stopPropagation() }, icon("download")) : el("span"));
+    row.dataset.id = it.trackId;
+    row.onclick = () => player.play(items, i);
+    row.onkeydown = (event) => { if (event.key === "Enter") row.onclick(); };
+    return row;
+  }));
+  $("play-all").replaceChildren(icon("play"));
+  $("play-all").onclick = () => (player.item ? player.toggle() : player.play(items, 0));
+  // Un membre ONIRIQUE connecté (qui n'est pas l'auteur) peut garder le projet dans sa page Mes sons.
+  let saved = data.saved;
+  const drawSave = () => {
+    $("save").hidden = !data.canSave;
+    $("save").classList.toggle("on", saved);
+    $("save").textContent = saved ? "✓ Dans Mes sons" : "+ Enregistrer dans Mes sons";
+    $("save").title = saved ? "Retirer de Mes sons" : "Le garder dans ta page Mes sons";
+  };
+  drawSave();
+  $("save").onclick = async () => {
+    $("save").disabled = true;
+    try { saved = (await api("/save", {}, saved ? "DELETE" : "POST")).saved; drawSave(); } catch (error) { alert(error.message); }
+    $("save").disabled = false;
+  };
+}
+
+async function open(password) {
+  try {
+    show(await api("", password ? { password } : {}));
+  } catch (error) {
+    if (error.account) {
+      // La page compte ne ramène pas ici après la connexion : il faut rouvrir le lien.
+      $("account").hidden = false;
+    } else if (error.status === 401) {
+      pass = null;
+      $("locked").hidden = false;
+      $("pw-error").textContent = password ? error.message : "";
+    } else {
+      $("gone").hidden = false;
+      $("gone-text").textContent = error.message;
+    }
+  }
+}
+$("pw-form").onsubmit = (event) => { event.preventDefault(); if ($("pw").value) open($("pw").value); };
+open();
+</script>
+</html>

@@ -414,7 +414,7 @@ function usersTab() {
     const role = h('select', null, grantable.map((id) => h('option', { value: id }, ROLES[id])));
     role.value = u.role;
     modal('Rôle du compte', h('div', { class: 'stack' },
-      h('p', { class: 'muted', style: { margin: 0 } }, `Pour ${u.email}. VIP : tous les plugins offerts. Abrasion, Relic : le panel admin, limité à ses propres plugins et à leurs licences.`
+      h('p', { class: 'muted', style: { margin: 0 } }, `Pour ${u.email}. ONIRIQUE : tous les plugins offerts. Abrasion, Relic : le panel admin, limité à ses propres plugins et à leurs licences.`
         + (founder ? ' Admin : tout le panel, sauf les rôles admin et fondateur.' : '')),
       field('Rôle', role)), [{
       label: 'Enregistrer', run: async () => ((await changed(() => api('PATCH', `/users/${u.id}`, { role: role.value }), `Rôle de ${u.email} : ${ROLES[role.value]}.`)) ? undefined : false),
