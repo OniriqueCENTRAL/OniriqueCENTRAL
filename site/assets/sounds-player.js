@@ -56,10 +56,10 @@
 .op-icon { display: inline-grid; place-items: center; line-height: 0; }
 .op-pill { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 40; width: min(1120px, calc(100vw - 24px));
   display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 8px; border-radius: 999px; border: 1px solid rgba(255,210,214,.16);
-  background: rgba(20,9,11,.92); backdrop-filter: blur(18px); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9), 0 0 40px -18px var(--op-accent, rgba(226,52,68,.55)); }
+  background: rgba(20,9,11,.95); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9), 0 0 40px -18px var(--op-accent, rgba(226,52,68,.55)); }
 .op-pill[hidden], .op-sheet[hidden], .op-queue[hidden], .op-comments[hidden] { display: none; }
 .op-cover { flex: none; width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: linear-gradient(135deg, #5C0008, #2A0A0E); border: 1px solid rgba(255,210,214,.16); cursor: pointer; }
-.op-pill.playing .op-cover { animation: op-spin 9s linear infinite; }
+.op-pill.playing .op-cover { animation: op-spin 9s linear infinite; will-change: transform; }
 @keyframes op-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .op-pill.playing .op-cover { animation: none; } }
 .op-meta { min-width: 0; width: 170px; flex: none; cursor: pointer; line-height: 1.25; }
@@ -76,7 +76,7 @@
 .op-vol { width: 80px; accent-color: var(--op-accent, var(--ember)); min-height: 0; padding: 0; }
 .op-sheet, .op-queue { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(80px + env(safe-area-inset-bottom)); z-index: 39; width: min(1120px, calc(100vw - 24px));
   max-height: min(62vh, 560px); overflow: auto; padding: 18px; border-radius: 22px; border: 1px solid rgba(255,210,214,.16);
-  background: rgba(20,9,11,.96); backdrop-filter: blur(18px); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9); display: grid; gap: 14px; }
+  background: rgba(20,9,11,.97); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9); display: grid; gap: 14px; }
 .op-head { display: flex; align-items: center; gap: 12px; }
 .op-head b { flex: 1; min-width: 0; font: 700 16px var(--f-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .op-wave { width: 100%; height: 110px; display: block; cursor: pointer; touch-action: none; }
@@ -238,16 +238,20 @@ dialog[open]::backdrop { animation: op-fade .22s ease-out; }
       const rows = list.map((t, i) => ({ t, i, now: i === index })).filter((r) => r.i >= index).concat(upNext.map((t) => ({ t, i: -1 })));
       queueList.replaceChildren(...rows.map(({ t, i, now }) => el("li", { className: now ? "now" : "" }, el("button", {
         type: "button", onclick: () => (i >= 0 ? go(i) : (upNext.splice(upNext.indexOf(t), 1), insertNext(t))),
-      }, t.cover ? el("img", { src: t.cover, alt: "" }) : el("span", { className: "op-q-cover" }),
+      }, t.cover ? el("img", { src: t.cover + "?w=160", alt: "" }) : el("span", { className: "op-q-cover" }),
       el("span", {}, t.title, el("small", { textContent: (now ? "En cours · " : "") + (t.subtitle || "") }))))));
     }
     const insertNext = (t) => { list.splice(index + 1, 0, t); go(index + 1); };
 
     function tick() {
-      clock.textContent = time(audio.currentTime) + " / " + time(duration());
+      const now = time(audio.currentTime) + " / " + time(duration());
+      if (clock.textContent !== now) clock.textContent = now;
       if (loop && loop.b != null && audio.currentTime >= loop.b) audio.currentTime = loop.a;
       draw();
     }
+    // Pendant la lecture, la forme d'onde suit l'image (timeupdate ne tombe que ~4 fois par seconde).
+    let frame = 0;
+    const animate = () => { tick(); frame = audio.paused ? 0 : requestAnimationFrame(animate); };
     function show() {
       const t = item();
       pill.hidden = false;
@@ -255,11 +259,11 @@ dialog[open]::backdrop { animation: op-fade .22s ease-out; }
       // Le titre, avec son « feat. » en badge s'il y en a un.
       for (const node of [title, sheetTitle]) node.replaceChildren(t.title, t.feat ? el("span", { className: "op-feat", textContent: "feat. " + t.feat }) : "");
       sub.textContent = t.subtitle || "";
-      if (t.cover) cover.src = t.cover; else cover.removeAttribute("src");
+      if (t.cover) cover.src = t.cover + "?w=160"; else cover.removeAttribute("src");
       download.hidden = !t.downloadUrl;
       if (t.downloadUrl) download.href = t.downloadUrl;
       listComments(); listQueue(); tick();
-      if ("mediaSession" in navigator) navigator.mediaSession.metadata = new MediaMetadata({ title: t.title, artist: t.subtitle || "", artwork: t.cover ? [{ src: t.cover }] : [] });
+      if ("mediaSession" in navigator) navigator.mediaSession.metadata = new MediaMetadata({ title: t.title, artist: t.subtitle || "", artwork: t.cover ? [{ src: t.cover + "?w=480" }] : [] });
       if (onChange) onChange(t);
     }
     function go(i, autoplay = true) {
@@ -281,7 +285,7 @@ dialog[open]::backdrop { animation: op-fade .22s ease-out; }
 
     audio.addEventListener("timeupdate", tick);
     audio.addEventListener("loadedmetadata", tick);
-    audio.addEventListener("play", () => { setIcon(play, "pause"); play.ariaLabel = play.title = "Pause"; pill.classList.add("playing"); });
+    audio.addEventListener("play", () => { if (!frame) frame = requestAnimationFrame(animate); setIcon(play, "pause"); play.ariaLabel = play.title = "Pause"; pill.classList.add("playing"); });
     audio.addEventListener("pause", () => { setIcon(play, "play"); play.ariaLabel = play.title = "Lecture"; pill.classList.remove("playing"); });
     audio.addEventListener("ended", () => advance(false));
     let counted = null;
@@ -424,7 +428,7 @@ dialog[open]::backdrop { animation: op-fade .22s ease-out; }
         } catch { resolve(null); }
       };
       img.onerror = () => resolve(null);
-      img.src = url;
+      img.src = url + "?w=160"; // 40 px lus : inutile de décoder la pochette entière
     });
   }
   function hsl(r, g, b) {

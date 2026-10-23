@@ -33,9 +33,11 @@
 [hidden] { display: none !important; }
 body {
   margin: 0; min-height: 100vh; color: var(--mist); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased;
-  background: radial-gradient(120% 60% at 50% -10%, var(--glow-1, rgba(140,6,20,.8)), var(--glow-2, rgba(92,0,8,.45)) 36%, transparent 72%), var(--night);
-  background-attachment: fixed;
+  background: var(--night);
 }
+/* Le halo sur un calque fixe : background-attachment: fixed ferait repeindre toute la page à chaque défilement. */
+body::before { content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
+  background: radial-gradient(120% 60% at 50% -10%, var(--glow-1, rgba(140,6,20,.8)), var(--glow-2, rgba(92,0,8,.45)) 36%, transparent 72%); }
 a { color: inherit; }
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
@@ -87,7 +89,7 @@ textarea { padding: 12px 14px; min-height: 110px; resize: vertical; line-height:
 .tile .art img, .tile .art .cover-ph { width: 100%; height: 100%; object-fit: cover; transition: transform .4s; }
 .tile .art:hover img { transform: scale(1.04); }
 .tile .art .cover-ph svg { width: 38%; height: 38%; }
-.tile .fab-play { position: absolute; right: 10px; bottom: 10px; width: 42px; height: 42px; border-radius: 50%; border: 0; display: grid; place-items: center; background: rgba(13,8,9,.82); color: var(--mist); backdrop-filter: blur(6px); cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,.5); }
+.tile .fab-play { position: absolute; right: 10px; bottom: 10px; width: 42px; height: 42px; border-radius: 50%; border: 0; display: grid; place-items: center; background: rgba(13,8,9,.88); color: var(--mist); cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,.5); }
 .tile .fab-play:hover { background: var(--ember); }
 .tile .caption { display: flex; gap: 6px; align-items: flex-start; margin-top: 10px; }
 .tile .caption div { flex: 1; min-width: 0; line-height: 1.3; }
@@ -134,7 +136,7 @@ textarea { padding: 12px 14px; min-height: 110px; resize: vertical; line-height:
 .add-bar { width: 100%; margin-top: 22px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 13px; border-radius: 14px; border: 1px dashed var(--line); background: rgba(255,255,255,.03); color: var(--mist); font: 600 14px var(--f-body); cursor: pointer; }
 .add-bar:hover { border-color: var(--ember); background: rgba(226,52,68,.08); }
 /* La file des envois : un fichier à la fois, chacun avec sa barre */
-.uploads { position: fixed; right: 16px; bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 45; width: min(360px, calc(100vw - 32px)); border-radius: 18px; border: 1px solid rgba(255,210,214,.16); background: rgba(20,9,11,.96); backdrop-filter: blur(16px); box-shadow: 0 20px 60px -20px rgba(0,0,0,.95); overflow: hidden; }
+.uploads { position: fixed; right: 16px; bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 45; width: min(360px, calc(100vw - 32px)); border-radius: 18px; border: 1px solid rgba(255,210,214,.16); background: rgba(20,9,11,.97); box-shadow: 0 20px 60px -20px rgba(0,0,0,.95); overflow: hidden; }
 body.has-player .uploads { bottom: calc(92px + env(safe-area-inset-bottom)); }
 .uploads-head { display: flex; align-items: center; gap: 10px; padding: 12px 12px 10px 16px; border-bottom: 1px solid rgba(255,210,214,.08); }
 .uploads-head b { flex: 1; font: 700 14px var(--f-display); }
@@ -206,10 +208,10 @@ body.editing #edit-toggle { background: var(--mist); color: var(--night); border
 .drop-zone { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(13,8,9,.82); border: 2px dashed var(--ember); font: 700 20px var(--f-display); pointer-events: none; }
 
 /* Le bouton + et son menu */
-.fab { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 35; display: inline-flex; align-items: center; gap: 8px; padding: 14px 26px; border-radius: 999px; border: 1px solid rgba(255,210,214,.18); background: rgba(26,8,10,.92); backdrop-filter: blur(14px); color: var(--mist); font: 700 15px var(--f-body); cursor: pointer; box-shadow: 0 16px 50px -14px rgba(0,0,0,.9), 0 0 36px -16px var(--ember); }
+.fab { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 35; display: inline-flex; align-items: center; gap: 8px; padding: 14px 26px; border-radius: 999px; border: 1px solid rgba(255,210,214,.18); background: rgba(26,8,10,.95); color: var(--mist); font: 700 15px var(--f-body); cursor: pointer; box-shadow: 0 16px 50px -14px rgba(0,0,0,.9), 0 0 36px -16px var(--ember); }
 .fab:hover { border-color: var(--ember); }
 body.has-player .fab { bottom: calc(88px + env(safe-area-inset-bottom)); }
-.menu { position: fixed; z-index: 70; min-width: 220px; padding: 6px; border-radius: 16px; border: 1px solid rgba(255,210,214,.16); background: rgba(26,8,10,.97); backdrop-filter: blur(16px); box-shadow: 0 20px 60px -20px rgba(0,0,0,.95); }
+.menu { position: fixed; z-index: 70; min-width: 220px; padding: 6px; border-radius: 16px; border: 1px solid rgba(255,210,214,.16); background: rgba(26,8,10,.98); box-shadow: 0 20px 60px -20px rgba(0,0,0,.95); }
 .menu button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 11px 12px; border: 0; border-radius: 10px; background: none; color: var(--mist); font: 600 14px var(--f-body); text-align: left; cursor: pointer; }
 .menu button:hover, .menu button:focus-visible { background: rgba(255,255,255,.06); }
 .menu button.danger { color: #FF5A68; }
@@ -432,7 +434,7 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
 <dialog id="collab"></dialog>
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" value="cancel" formnovalidate>Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
-<script src="assets/sounds-player.js?v=7"></script>
+<script src="assets/sounds-player.js?v=8"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const TOKEN = "onirique.token";
@@ -448,7 +450,8 @@ const day = (ms) => new Date(ms).toLocaleDateString("fr-FR", { day: "numeric", m
 const longDay = (ms) => new Date(ms).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 const length = (s) => { s = Math.round(s || 0); return s >= 60 ? Math.floor(s / 60) + " min " + String(s % 60).padStart(2, "0") + " s" : s + " s"; };
 const avatar = (p) => (window.OniriqueAccount ? window.OniriqueAccount.avatar(p) : p.avatar || "assets/favicon.png");
-const coverOf = (p, cls) => (p.cover ? el("img", { src: p.cover, alt: "", className: cls || "" }) : Object.assign(el("div", { className: "cover-ph " + (cls || "") }), { innerHTML: '<svg viewBox="0 0 24 24"><path d="M12 1.5 13.3 10.7 22.5 12 13.3 13.3 12 22.5 10.7 13.3 1.5 12 10.7 10.7Z" fill="currentColor"/></svg>' }));
+// La pochette réduite par le serveur (WebP, 960 px suffit à la grande pochette sur écran Retina).
+const coverOf = (p, cls) => (p.cover ? el("img", { src: p.cover + "?w=960", alt: "", decoding: "async", className: cls || "" }) : Object.assign(el("div", { className: "cover-ph " + (cls || "") }), { innerHTML: '<svg viewBox="0 0 24 24"><path d="M12 1.5 13.3 10.7 22.5 12 13.3 13.3 12 22.5 10.7 13.3 1.5 12 10.7 10.7Z" fill="currentColor"/></svg>' }));
 
 async function api(method, path, body) {
   const response = await fetch("/api" + path, {
@@ -536,7 +539,12 @@ function playVersion(p, t, v) {
 function markPlaying() {
   const now = player.item && player.item.trackId;
   document.querySelectorAll(".trk").forEach((row) => row.classList.toggle("now", Number(row.dataset.id) === now));
+  const p = openId() && project(), on = !!(p && player.playing && p.tracks.some((t) => t.id === now));
+  $("play-all").replaceChildren(icon(on ? "pause" : "play"));
+  $("play-all").ariaLabel = on ? "Pause" : "Écouter le projet";
 }
+player.audio.addEventListener("play", markPlaying);
+player.audio.addEventListener("pause", markPlaying);
 
 // ——— Menus et petites fenêtres ———
 let openMenu = null;
@@ -1169,7 +1177,6 @@ $("folder-more").append(icon("more"));
 $("folder-more").onclick = () => folderMenu($("folder-more"), folder());
 $("back").append(icon("back"));
 $("back").onclick = () => { const p = project(); navigate(p && p.folderId ? "#/f/" + p.folderId : ""); };
-$("play-all").append(icon("play"));
 $("play-all").onclick = () => { const p = project(); player.item && p.tracks.some((t) => t.id === player.item.trackId) ? player.toggle() : playProject(p); };
 $("share-project").append(icon("link"));
 $("share-project").onclick = () => openShare("project", openId());
