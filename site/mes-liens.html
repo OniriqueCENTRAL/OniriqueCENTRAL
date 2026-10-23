@@ -69,6 +69,12 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-
 .studio { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 28px; align-items: start; margin-top: 20px; }
 .phone { position: sticky; top: 20px; height: min(780px, calc(100vh - 40px)); border-radius: 40px; border: 10px solid #000; box-shadow: 0 0 0 1px var(--line), 0 30px 80px -30px rgba(226,52,68,.5); overflow: auto; background: #000; }
 .phone > .lp { min-height: 100%; }
+/* Barre de défilement de l'aperçu : fine, braise, sans flèches, décollée des coins arrondis */
+.phone::-webkit-scrollbar { width: 6px; }
+.phone::-webkit-scrollbar-track { background: transparent; margin-block: 28px; }
+.phone::-webkit-scrollbar-thumb { background: rgba(226,52,68,.55); border-radius: 999px; }
+.phone::-webkit-scrollbar-thumb:hover { background: var(--ember); }
+@supports not selector(::-webkit-scrollbar) { .phone { scrollbar-width: thin; scrollbar-color: rgba(226,52,68,.55) transparent; } }
 /* La colonne fait toute la hauteur de l'éditeur : le téléphone a de la place pour suivre le défilement. */
 .preview-col { align-self: stretch; }
 @media (max-width: 960px) {
