@@ -364,5 +364,7 @@
  "Marquer la ligne (Espace)": "Mark the line (Space)",
  "Toutes les lignes sont marquées": "Every line is marked",
  "Lance le titre, puis appuie sur Marquer (ou Espace) au moment où chaque ligne commence. Clique une ligne pour la reprendre à partir de là.": "Start the track, then press Mark (or Space) as each line begins. Click a line to redo it from there.",
- "Tout effacer": "Clear all"
+ "Tout effacer": "Clear all",
+ "Marquer la ligne": "Mark the line",
+ "Lance le titre, puis touche Marquer au moment où chaque ligne commence. Touche une ligne pour la reprendre à partir de là.": "Start the track, then tap Mark as each line begins. Tap a line to redo it from there."
 }
