@@ -37,6 +37,7 @@ import { enrollment, matchStep, newRecoveryCodes, newSecret, recoveryHash } from
 import { mountLinkPages } from './linkpage.js';
 import { mountSounds } from './sounds.js';
 import { mountBeatStoreHooks } from './beatstore.js';
+import { ownsGoogleState, googleMailerCallback } from './packsend.js';
 import { mountPush } from './push.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -617,6 +618,8 @@ export function createApp() {
 
   // Retour de Google, sans session : la demande en cours (state) dit de quel compte il s'agit.
   app.get('/api/youtube/callback', wrap(async (req, res) => {
+    // La même adresse sert à « Se connecter avec Google » du panneau Mails des packs.
+    if (ownsGoogleState(req.query.state)) return googleMailerCallback(req, res);
     let result = 'ok';
     try { await finishConnect(str(req.query.state), str(req.query.code, 2000)); } catch (error) { result = error.message; }
     res.redirect(`${config.siteUrl}/compte?youtube=${encodeURIComponent(result)}`);

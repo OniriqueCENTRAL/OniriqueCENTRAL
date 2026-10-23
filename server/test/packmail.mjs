@@ -177,15 +177,15 @@ try {
   await step('« Se connecter avec Google » : accès Gmail demandé, retour sur le pack, envoi par l\'API Gmail', async () => {
     const { url } = await call('POST', '/api/me/sounds/mailer/google', { token: bm.token, body: { projectId: pack, fromName: 'Kay Beats' } });
     const q = new URL(url).searchParams;
-    assert.deepEqual([q.get('scope'), q.get('redirect_uri'), q.get('access_type')], ['openid email https://www.googleapis.com/auth/gmail.send', 'https://site.test/api/sounds/mailer/google/callback', 'offline']);
-    const refused = await call('GET', `/api/sounds/mailer/google/callback?state=${q.get('state')}&code=faux`, { redirect: 'manual', expect: 302 });
+    assert.deepEqual([q.get('scope'), q.get('redirect_uri'), q.get('access_type')], ['openid email https://www.googleapis.com/auth/gmail.send', 'https://site.test/api/youtube/callback', 'offline']);
+    const refused = await call('GET', `/api/youtube/callback?state=${q.get('state')}&code=faux`, { redirect: 'manual', expect: 302 });
     assert.match(decodeURIComponent(refused.headers.get('location')), /google=Google refuse/);
     const { url: again } = await call('POST', '/api/me/sounds/mailer/google', { token: bm.token, body: { projectId: pack, fromName: 'Kay Beats' } });
     const state = new URL(again).searchParams.get('state');
-    const back = await call('GET', `/api/sounds/mailer/google/callback?state=${state}&code=bon-code`, { redirect: 'manual', expect: 302 });
+    const back = await call('GET', `/api/youtube/callback?state=${state}&code=bon-code`, { redirect: 'manual', expect: 302 });
     assert.equal(back.headers.get('location'), `https://site.test/mes-sons.html?google=ok#/p/${pack}`);
     // Une demande ne sert qu'une fois.
-    assert.match(decodeURIComponent((await call('GET', `/api/sounds/mailer/google/callback?state=${state}&code=bon-code`, { redirect: 'manual', expect: 302 })).headers.get('location')), /expirée/);
+    assert.match(decodeURIComponent((await call('GET', `/api/youtube/callback?state=${state}&code=bon-code`, { redirect: 'manual', expect: 302 })).headers.get('location')), /expirée/);
     const m = await call('GET', '/api/me/sounds/mailer', { token: bm.token });
     assert.deepEqual([m.connected, m.google, m.fromEmail, m.fromName], [true, true, 'kay.beats@gmail.com', 'Kay Beats']);
     const { gmailTransport } = await import('../src/packsend.js');

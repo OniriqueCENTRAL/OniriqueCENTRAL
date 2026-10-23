@@ -203,6 +203,30 @@ const recipientView = (r, events) => ({
   plays: r.plays, downloads: r.downloads, lastAt: r.last_at, ...(events ? { events: events.map((e) => ({ type: e.type, title: e.title, at: e.at })) } : {}),
 });
 
+const googleBack = () => `${config.publicUrl}/api/youtube/callback`;
+/** Une demande de connexion Google en cours vient-elle du panneau Mails (et non de YouTube) ? */
+export const ownsGoogleState = (state) => pendingGoogle.has(String(state || ''));
+/** Retour de Google, sans session : la demande en cours dit de quel compte il s'agit ; on revient sur le panneau Mails. */
+export async function googleMailerCallback(req, res) {
+  const entry = pendingGoogle.get(String(req.query.state || ''));
+  pendingGoogle.delete(String(req.query.state || ''));
+  let result = 'ok';
+  try {
+    if (!entry || entry.expires < now() || !req.query.code) throw new HttpError(400, 'Connexion Google expirée ou refusée : recommence.');
+    const t = await googleToken({ code: String(req.query.code).slice(0, 2000), grant_type: 'authorization_code', redirect_uri: googleBack() });
+    if (!t.refresh_token) throw new HttpError(502, 'Google n\'a pas donné d\'accès durable : recommence.');
+    if (!String(t.scope || '').includes('gmail.send')) throw new HttpError(400, 'Coche l\'autorisation d\'envoyer des e-mails pour que tes mails puissent partir.');
+    // L'adresse du compte, lue dans le jeton d'identité que Google vient de rendre directement à ce serveur.
+    const email = String(JSON.parse(Buffer.from(String(t.id_token || '').split('.')[1] || '', 'base64url').toString() || '{}').email || '').toLowerCase();
+    if (!EMAIL.test(email)) throw new HttpError(502, 'Google n\'a pas donné l\'adresse du compte : recommence.');
+    run(`INSERT INTO sound_mailers (user_id, host, port, login, secret, from_name, from_email, updated_at) VALUES (?, 'google', 0, ?, ?, ?, ?, ?)
+      ON CONFLICT (user_id) DO UPDATE SET host = excluded.host, port = excluded.port, login = excluded.login, secret = excluded.secret,
+        from_name = excluded.from_name, from_email = excluded.from_email, updated_at = excluded.updated_at`,
+    entry.userId, email, seal(t.refresh_token), entry.fromName, email, now());
+  } catch (error) { result = error.message; }
+  res.redirect(`${config.siteUrl}/mes-sons.html?google=${encodeURIComponent(result)}${entry?.projectId ? `#/p/${entry.projectId}` : ''}`);
+}
+
 //------------------------------------------------------------------------------ Routes
 export function mountPackSend(app, { me, ownProject, sign, wrap }) {
   // La boîte mail du membre : essayée pour de bon avant d'être gardée, le mot de passe chiffré.
@@ -235,7 +259,7 @@ export function mountPackSend(app, { me, ownProject, sign, wrap }) {
   }));
 
   // « Se connecter avec Google » : seul le droit d'envoyer des mails est demandé (gmail.send), plus l'adresse du compte.
-  const googleBack = () => `${config.publicUrl}/api/sounds/mailer/google/callback`;
+  // Google revient par l'adresse déjà déclarée pour YouTube (même client OAuth) ; la demande en cours dit que c'est un mail.
   app.post('/api/me/sounds/mailer/google', ...me, (req, res) => {
     if (!googleReady()) throw new HttpError(503, 'La connexion avec Google n\'est pas encore réglée sur le serveur.');
     for (const [k, v] of pendingGoogle) if (v.expires < now()) pendingGoogle.delete(k);
@@ -246,26 +270,6 @@ export function mountPackSend(app, { me, ownProject, sign, wrap }) {
       scope: 'openid email https://www.googleapis.com/auth/gmail.send', access_type: 'offline', prompt: 'consent', // un accès qui dure
     }) });
   });
-  // Retour de Google, sans session : la demande en cours dit de quel compte il s'agit ; on revient sur le panneau Mails.
-  app.get('/api/sounds/mailer/google/callback', wrap(async (req, res) => {
-    const entry = pendingGoogle.get(String(req.query.state || ''));
-    pendingGoogle.delete(String(req.query.state || ''));
-    let result = 'ok';
-    try {
-      if (!entry || entry.expires < now() || !req.query.code) throw new HttpError(400, 'Connexion Google expirée ou refusée : recommence.');
-      const t = await googleToken({ code: String(req.query.code).slice(0, 2000), grant_type: 'authorization_code', redirect_uri: googleBack() });
-      if (!t.refresh_token) throw new HttpError(502, 'Google n\'a pas donné d\'accès durable : recommence.');
-      if (!String(t.scope || '').includes('gmail.send')) throw new HttpError(400, 'Coche l\'autorisation d\'envoyer des e-mails pour que tes mails puissent partir.');
-      // L'adresse du compte, lue dans le jeton d'identité que Google vient de rendre directement à ce serveur.
-      const email = String(JSON.parse(Buffer.from(String(t.id_token || '').split('.')[1] || '', 'base64url').toString() || '{}').email || '').toLowerCase();
-      if (!EMAIL.test(email)) throw new HttpError(502, 'Google n\'a pas donné l\'adresse du compte : recommence.');
-      run(`INSERT INTO sound_mailers (user_id, host, port, login, secret, from_name, from_email, updated_at) VALUES (?, 'google', 0, ?, ?, ?, ?, ?)
-        ON CONFLICT (user_id) DO UPDATE SET host = excluded.host, port = excluded.port, login = excluded.login, secret = excluded.secret,
-          from_name = excluded.from_name, from_email = excluded.from_email, updated_at = excluded.updated_at`,
-      entry.userId, email, seal(t.refresh_token), entry.fromName, email, now());
-    } catch (error) { result = error.message; }
-    res.redirect(`${config.siteUrl}/mes-sons.html?google=${encodeURIComponent(result)}${entry?.projectId ? `#/p/${entry.projectId}` : ''}`);
-  }));
 
   // L'envoi du mail d'un pack : un destinataire par adresse du brouillon, chacun avec ses liens suivis ; parti en
   // arrière-plan, un message à la fois.
