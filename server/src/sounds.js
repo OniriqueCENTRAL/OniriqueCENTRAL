@@ -16,6 +16,7 @@ import { push, wants, prefsOf } from './push.js';
 import { mailDraft, packMailHtml } from './packmail.js';
 import { mountBeatStore, offersOf, filesOf, sellerView, licensesOf, licensePricesOf, payMethods } from './beatstore.js';
 import { mountPackSend, recipientFor, trackRecipient, coverPalette } from './packsend.js';
+import { writeZip, zipName, zipSize } from './zipstream.js';
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS sound_projects (
@@ -426,6 +427,38 @@ const linkView = (l) => ({
   id: l.id, url: `${config.siteUrl}/ecoute?t=${l.token}`, projectId: l.project_id, trackId: l.track_id, label: l.label,
   password: !!l.password_hash, expiresAt: l.expires_at, download: !!l.download, requireAccount: !!l.require_account, createdAt: l.created_at,
 });
+
+// Tout un projet dans un .zip : chaque titre dans son dossier avec toutes ses versions et ses paroles, la pochette, et
+// une fiche texte qui reprend les crédits, la répartition, les notes de version et les retours (en UTF-8 marqué, pour
+// que les accents s'affichent dans tous les éditeurs).
+function projectZip(p) {
+  const folder = zipName(p.title), entries = [], pct = (n) => `${String(n).replace('.', ',')} %`;
+  const info = [p.title.toUpperCase(), p.artist ? `Artiste : ${p.artist}` : '', p.release_date ? `Date de sortie : ${p.release_date.split('-').reverse().join('/')}` : '',
+    p.cover_by ? `Pochette : ${p.cover_by}` : '', ''].filter((line, i) => line || i === 4);
+  if (p.cover) {
+    const file = path.join(config.mediaDir, path.basename(p.cover));
+    if (fs.existsSync(file)) entries.push({ name: `${folder}/Pochette${path.extname(file)}`, path: file });
+  }
+  const labels = { feat: 'Feat.', beat: 'Beatmaker', mix: 'Ingé mix', master: 'Ingé master', rec: 'Ingé rec' };
+  all('SELECT * FROM sound_tracks WHERE project_id = ? ORDER BY position, id', p.id).forEach((t, i) => {
+    const dir = `${folder}/${String(i + 1).padStart(2, '0')} - ${zipName(t.title)}`, credits = creditsOf(t);
+    const versions = all('SELECT * FROM sound_versions WHERE track_id = ? ORDER BY id', t.id);
+    versions.forEach((v, n) => {
+      const file = path.join(soundsDir, v.stored_as);
+      if (fs.existsSync(file)) entries.push({ name: `${dir}/v${n + 1} - ${zipName(v.filename)}`, path: file });
+    });
+    if (t.lyrics) entries.push({ name: `${dir}/Paroles.txt`, data: Buffer.from('﻿' + t.lyrics.replace(/\n/g, '\r\n')) });
+    const comments = all('SELECT * FROM sound_comments WHERE track_id = ? ORDER BY at', t.id);
+    const clock = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+    info.push(`${i + 1}. ${t.title}${credits.feat ? ` (feat. ${credits.feat})` : ''}${t.stage ? ` · ${t.stage.toUpperCase()}` : ''}`,
+      ...Object.entries(labels).filter(([k]) => k !== 'feat' && credits[k]).map(([k, label]) => `   ${label} : ${credits[k]}`),
+      ...splitsOf(t).map((r) => `   Part de ${r.name}${r.role ? ` (${r.role})` : ''} : master ${pct(r.master)}, éditions ${pct(r.publishing)}`),
+      ...versions.map((v, n) => `   v${n + 1}${v.id === t.current_id ? ' (en avant)' : ''} : ${v.filename}${v.note ? ` · ${v.note}` : ''}`),
+      ...comments.map((c) => `   ${c.resolved_at ? '[réglé] ' : ''}${clock(c.at)} ${c.author} : ${c.body}`), '');
+  });
+  entries.unshift({ name: `${folder}/Infos du projet.txt`, data: Buffer.from('﻿' + info.join('\r\n')) });
+  return entries;
+}
 
 function removeVersionFiles(rows) {
   for (const r of rows) fs.rmSync(path.join(soundsDir, r.stored_as), { force: true });
@@ -1319,6 +1352,26 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     }
     res.sendFile(path.join(soundsDir, v.stored_as));
   });
+
+  // Télécharger un projet entier : un lien signé de dix minutes (un téléchargement ne porte pas la connexion), qui vérifie
+  // encore l'accès au moment de l'envoi, puis le .zip, écrit au fil de l'envoi.
+  app.post('/api/me/sounds/projects/:id/zip', ...me, (req, res) => {
+    const p = project(req, req.params.id), e = now() + 10 * 60_000;
+    res.json({ url: `/api/sounds/zip/${p.id}?u=${req.user.id}&e=${e}&s=${sign(`zip.${p.id}.${req.user.id}.${e}`)}` });
+  });
+  app.get('/api/sounds/zip/:id', wrap(async (req, res) => {
+    rateLimit(`sounds-zip:${req.ip}`, 30);
+    const pid = id(req.params.id), uid = id(req.query.u), e = Number(req.query.e), s = String(req.query.s || '');
+    if (!(e > now()) || !same(s, sign(`zip.${pid}.${uid}.${e}`))) throw new HttpError(403, 'Ce lien de téléchargement a expiré : relance-le depuis ONIRIQUE CLOUD.');
+    const p = get(`SELECT p.* FROM sound_projects p WHERE p.id = ? AND ${ACCESS}`, pid, uid, uid);
+    if (!p) throw new HttpError(404, 'Projet introuvable.');
+    const entries = projectZip(p), bytes = zipSize(entries);
+    if (bytes > 0xFFFFFFFE) throw new HttpError(413, 'Ce projet dépasse 4 Go : télécharge ses titres un par un.');
+    res.set({ 'Content-Type': 'application/zip', 'Content-Length': String(bytes), 'Cache-Control': 'no-store' });
+    res.attachment(`${zipName(p.title)}.zip`);
+    // Une coupure en cours d'envoi (fichier disparu, connexion fermée) arrête l'archive : le navigateur la voit incomplète.
+    await writeZip(res, entries).catch((error) => { console.error(`[zip] projet ${p.id} : ${error.message}`); res.destroy(); });
+  }));
 
   mountBeatStore(app, { me, track, room, receiveFile, openLink, linkTracks, linkProject, soundsDir, audioType, wrap });
   mountPackSend(app, { me, ownProject, sign, wrap });

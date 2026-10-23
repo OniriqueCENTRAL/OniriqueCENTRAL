@@ -127,6 +127,23 @@ try {
     await call('PATCH', `/api/me/sounds/comments/${cid}`, { token: listener.token, body: { resolved: false }, expect: 403 });
     assert.equal((await call('GET', '/api/me/sounds', { token: member.token })).projects[0].tracks[0].comments[0].resolved, true);
     assert.equal((await call('PATCH', `/api/me/sounds/comments/${cid}`, { token: member.token, body: { resolved: false } })).resolved, false);
+    // Tout le projet en .zip, par un lien signé : un fichier valide, aux bons noms ; un lien trafiqué est refusé.
+    const { url: zipUrl } = await call('POST', `/api/me/sounds/projects/${data.projects[0].id}/zip`, { token: member.token });
+    assert.equal((await fetch(base + zipUrl.replace(/s=[^&]+/, 's=abc'))).status, 403);
+    await call('POST', `/api/me/sounds/projects/${data.projects[0].id}/zip`, { token: listener.token, expect: 403 });
+    const zipped = await fetch(base + zipUrl);
+    const zip = Buffer.from(await zipped.arrayBuffer());
+    assert.equal(zipped.headers.get('content-type'), 'application/zip');
+    assert.equal(Number(zipped.headers.get('content-length')), zip.length);
+    assert.equal(zip.readUInt32LE(0), 0x04034b50);
+    const names = [];
+    for (let at = zip.readUInt32LE(zip.length - 6), n = 0; n < zip.readUInt16LE(zip.length - 12); n++) {
+      const len = zip.readUInt16LE(at + 28);
+      names.push(zip.subarray(at + 46, at + 46 + len).toString());
+      at += 46 + len;
+    }
+    assert.ok(names.some((x) => x.endsWith('/Infos du projet.txt')) && names.some((x) => /\/01 - Intro\/v2 - /.test(x)), names.join(', '));
+    fs.writeFileSync(path.join(os.tmpdir(), 'onirique-test-projet.zip'), zip);
     // Le lien supprimé ne s'ouvre plus.
     await call('DELETE', `/api/me/sounds/links/${data.links[0].id}`, { token: member.token });
     await call('POST', `/api/sounds/share/${t}`, { body: { pass: share.pass }, expect: 404 });

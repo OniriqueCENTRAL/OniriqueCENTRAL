@@ -1156,6 +1156,7 @@ function projectMenu(anchor, p) {
     { label: "Partager", icon: "link", onclick: () => openShare("project", p.id) },
     p.tracks.length && { label: "Statistiques", icon: "queue", onclick: () => openProjectStats(p) },
     p.kind !== "pack" && { label: "Préparer la sortie", icon: "star", onclick: () => openPlan(p) },
+    p.tracks.length && { label: "Télécharger le projet (.zip)", icon: "download", onclick: () => downloadProject(p) },
     p.mine && { label: "Collaborateurs…", icon: "plus", onclick: () => openCollab(p.id) },
     p.mine && { label: "Déplacer vers…", icon: "chevron", onclick: () => moveMenu(anchor, p.folderId, (folderId) => api("PATCH", "/me/sounds/projects/" + p.id, { folderId })) },
     p.mine && (p.kind === "pack"
@@ -2490,6 +2491,10 @@ function listenCurve(st, duration) {
     el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: drops[worst] > 0.05
       ? "C'est entre " + worst * 10 + " % et " + (worst + 1) * 10 + " % du titre" + at + " que le plus d'auditeurs décrochent (" + Math.round(drops[worst] * 100) + " %). Sur " + st.followed + " écoute" + (st.followed > 1 ? "s" : "") + " suivie" + (st.followed > 1 ? "s" : "") + "."
       : "Les auditeurs restent jusqu'au bout. Sur " + st.followed + " écoute" + (st.followed > 1 ? "s" : "") + " suivie" + (st.followed > 1 ? "s" : "") + "." }));
+}
+// Tout le projet en .zip : toutes les versions de chaque titre, les paroles, la pochette et une fiche des crédits.
+function downloadProject(p) {
+  api("POST", "/me/sounds/projects/" + p.id + "/zip").then(({ url }) => { location.href = url; }, fail);
 }
 // Les statistiques d'un projet : ses titres côte à côte, ceux qui accrochent le plus en premier.
 function openProjectStats(p) {
