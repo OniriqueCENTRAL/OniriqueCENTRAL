@@ -1459,9 +1459,14 @@ function addMenu(anchor) {
   ]);
 }
 $("fab").onclick = () => addMenu($("fab"));
-document.querySelector("main").addEventListener("contextmenu", (event) => {
-  if (!data || !$("gate").hidden || event.target.closest(".tile, .trk, input, textarea, a, button, .album .art")) return;
+// Le clic droit ouvre toujours le menu du site, partout sur la page, même sur un menu déjà ouvert ou avant la fin du
+// chargement ; celui du navigateur reste seulement dans un champ (coller) et sur un texte sélectionné (copier).
+document.addEventListener("contextmenu", (event) => {
+  if (event.target.closest("input, textarea, [contenteditable]") || String(getSelection())) return;
   event.preventDefault();
+  if (!data || !$("gate").hidden || event.target.closest("dialog[open]")) return;
+  const row = event.target.closest(".trk");
+  if (row) return openDetails(Number(row.dataset.id));
   addMenu(atPointer(event));
 });
 // Dans un dossier, un projet ou un dossier lâché sur ← remonte d'un niveau ; ← ramène au dossier du dessus.
