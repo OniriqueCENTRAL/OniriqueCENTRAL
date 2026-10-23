@@ -183,6 +183,12 @@ try {
     await call('PATCH', `/api/me/sounds/tracks/${t}`, { token: member.token, body: { stage: 'x'.repeat(41) }, expect: 400 });
     const staged = await call('POST', `/api/sounds/share/${shareToken(fresh.url)}`, { token: listener.token, body: {} });
     assert.equal(staged.tracks[0].stage, 'v2');
+    // La répartition : des parts de 0 à 100 % qui ne dépassent pas 100 % en tout ; une ligne sans nom est ignorée.
+    await call('PATCH', `/api/me/sounds/tracks/${t}`, { token: member.token, body: { splits: [{ name: 'A', master: 60 }, { name: 'B', master: 50 }] }, expect: 400 });
+    await call('PATCH', `/api/me/sounds/tracks/${t}`, { token: member.token, body: { splits: [{ name: 'A', master: -1 }] }, expect: 400 });
+    await call('PATCH', `/api/me/sounds/tracks/${t}`, { token: member.token, body: { splits: [{ name: ' Kay ', role: 'Beatmaker', master: '33,335', publishing: 50 }, { name: '', master: 10 }] } });
+    assert.deepEqual((await call('GET', '/api/me/sounds', { token: member.token })).projects.flatMap((x) => x.tracks).find((x) => x.id === t).splits,
+      [{ name: 'Kay', role: 'Beatmaker', master: 33.34, publishing: 50 }]);
     // Un texte libre est gardé tel quel.
     await call('PATCH', `/api/me/sounds/tracks/${t}`, { token: member.token, body: { stage: '  Mix  chez Thomas ' } });
     assert.equal((await call('POST', `/api/sounds/share/${shareToken(fresh.url)}`, { token: listener.token, body: {} })).tracks[0].stage, 'Mix chez Thomas');

@@ -400,6 +400,15 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 .comment-row { display: flex; align-items: baseline; gap: 10px; padding: 12px 14px; }
 .comment-row .at { font: 600 12px var(--f-mono); color: var(--ember); background: none; border: 0; padding: 0; cursor: pointer; }
 .comment-row p { margin: 0; flex: 1; }
+/* La répartition d'un titre : une ligne par personne */
+.splits { display: grid; gap: 8px; }
+.splits .split { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.2fr) 74px 74px 30px; gap: 6px; align-items: center; }
+.splits .split.head { font: 600 11px var(--f-mono); letter-spacing: .06em; color: var(--haze); text-transform: uppercase; }
+.splits .split input { min-width: 0; }
+.splits .split input[inputmode] { text-align: right; }
+.splits-total { margin: 0; font: 600 13px var(--f-body); }
+.splits-total .off { color: #FF5A68; }
+@media (max-width: 560px) { .splits .split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 60px 60px 28px; } }
 /* « Réglé » : un retour de mix traité, coché et grisé */
 .comment-row .check { flex: none; align-self: center; width: 22px; height: 22px; padding: 0; border-radius: 50%; border: 1.5px solid var(--line); background: none; color: var(--night); display: grid; place-items: center; font: 700 12px var(--f-body); cursor: pointer; }
 .comment-row .check:hover { border-color: var(--ember); }
@@ -2383,6 +2392,24 @@ const creditsList = (credits) => {
   const rows = CREDITS.filter(([k]) => credits && credits[k]);
   return rows.length ? el("div", { className: "credits-list" }, ...rows.map(([k, label]) => el("div", {}, el("span", { textContent: label }), el("b", { textContent: credits[k] })))) : null;
 };
+// La fiche de répartition (split sheet) d'un titre en PDF : le titre, les parts de chacun, puis une ligne de signature par personne.
+function splitSheetPdf(p, t, rows) {
+  const pct = (n) => (Math.round(n * 100) / 100).toLocaleString("fr-FR") + " %";
+  const total = (k) => rows.reduce((s, r) => s + r[k], 0);
+  const v = live(t);
+  const doc = OniriquePdf.create({ footer: "Fiche de répartition · " + t.title });
+  doc.heading("Fiche de répartition", 20);
+  doc.table([{ label: "Le titre", width: 0.34 }, { label: "", width: 0.66 }], [
+    ["Titre", t.title + (t.credits.feat ? " (feat. " + t.credits.feat + ")" : "")], ["Projet", p.title], ["Artiste", p.artist || p.owner.name],
+    ...(v.duration ? [["Durée", OP.time(v.duration)]] : []), ["Fiche établie le", new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })]]);
+  doc.text("Les personnes ci-dessous ont participé à la création de ce titre et s'accordent sur la répartition suivante de ses revenus.", { gap: 10 });
+  doc.table([{ label: "Nom", width: 0.3 }, { label: "Rôle", width: 0.34 }, { label: "Master", width: 0.18, align: "right" }, { label: "Éditions", width: 0.18, align: "right" }],
+    [...rows.map((r) => [r.name, r.role, pct(r.master), pct(r.publishing)]), ["Total", "", pct(total("master")), pct(total("publishing"))]]);
+  doc.text("Master : part des revenus de l'enregistrement (streaming, ventes, synchronisation). Éditions : part des droits d'auteur et de composition (paroles et musique), à déclarer à la SACEM ou à la société de gestion de chacun.", { size: 9, grey: true, gap: 16 });
+  doc.keep(90).text("Signatures", { size: 13, bold: true, gap: 6 });
+  doc.table([{ label: "Nom", width: 0.36 }, { label: "Date", width: 0.22 }, { label: "Signature", width: 0.42 }], rows.map((r) => [r.name, "", ""]), { minHeight: 46 });
+  return doc;
+}
 function renderDetails() {
   // Ne pas effacer un nom en cours de saisie quand la page se met à jour (un envoi qui se termine, par exemple).
   if (document.activeElement && document.activeElement.classList.contains("title-edit")) return;
@@ -2414,6 +2441,8 @@ function renderDetails() {
         item("repeat", "Comparer à une référence", { hint: "Ton titre face à un son de référence, volumes égalisés", chevron: true, onclick: () => { detailsView = "tool-ref"; renderDetails(); } })),
       group(
         item("queue", "Statistiques", { state: t.plays ? t.plays + " écoute" + (t.plays > 1 ? "s" : "") : "", chevron: true, onclick: () => { detailsView = "stats"; renderDetails(); } }),
+        item("star", "Répartition", { hint: "Les parts de chacun, et la fiche à signer en PDF", state: t.splits.length ? t.splits.length + " personne" + (t.splits.length > 1 ? "s" : "") : "", chevron: true,
+          onclick: () => { detailsView = "splits"; renderDetails(); } }),
         item("star", "Crédits", { state: CREDITS.filter(([k]) => t.credits[k]).length ? CREDITS.filter(([k]) => t.credits[k]).map(([k]) => t.credits[k]).join(", ") : "", chevron: true,
           onclick: () => { detailsView = "credits"; renderDetails(); } }),
         item("queue", "Paroles", { state: !t.lyrics ? "" : parseLyrics(t.lyrics).some((l) => l.at !== null) ? "Synchronisées" : "Ajoutées", chevron: true,
@@ -2461,6 +2490,51 @@ function renderDetails() {
         .then(() => { saved.textContent = "Enregistré."; return refresh(); }, fail);
     };
     right = [back("Crédits"), el("p", { className: "muted", style: "margin:0", textContent: "Les personnes qui ont travaillé sur ce titre. Les auditeurs de tes liens les voient sous le titre." }), form];
+  } else if (detailsView === "splits") {
+    // La première fois, la liste part de l'artiste du projet et des crédits du titre ; les parts restent à remplir.
+    const ROLE = { feat: "Artiste invité", beat: "Beatmaker (composition)", mix: "Ingé mix", master: "Ingé master", rec: "Ingé rec" };
+    const start = t.splits.length ? t.splits : [{ name: p.artist || p.owner.name, role: "Artiste principal" },
+      ...CREDITS.filter(([k]) => t.credits[k]).flatMap(([k]) => t.credits[k].split(",").map((n) => n.trim()).filter(Boolean).map((name) => ({ name, role: ROLE[k] })))];
+    const list = el("div", { className: "splits" }, el("div", { className: "split head" }, el("span", { textContent: "Nom" }), el("span", { textContent: "Rôle" }),
+      el("span", { textContent: "Master %" }), el("span", { textContent: "Éditions %" }), el("span")));
+    const total = el("p", { className: "splits-total" }), saved = el("span", { className: "muted", style: "font-size:13px" });
+    const num = (input) => Number(String(input.value).replace(",", ".")) || 0;
+    const shareText = (n) => (Math.round(n * 100) / 100).toLocaleString("fr-FR") + " %";
+    const lines = () => [...list.querySelectorAll(".split:not(.head)")].map((row) => row.querySelectorAll("input"));
+    const read = () => lines().map(([name, role, master, publishing]) => ({ name: name.value.trim(), role: role.value.trim(), master: num(master), publishing: num(publishing) })).filter((r) => r.name);
+    const sum = () => {
+      const rows = read(), part = (k) => rows.reduce((s, r) => s + r[k], 0);
+      total.replaceChildren(...[["master", "Master"], ["publishing", "Éditions"]].flatMap(([k, label], i) => [i ? " · " : "",
+        el("span", { className: Math.abs(part(k) - 100) < 0.01 ? "" : "off", textContent: label + " : " + shareText(part(k)) })]));
+    };
+    const line = (r = {}) => {
+      const field = (value, placeholder, extra = {}) => el("input", { value: value ?? "", placeholder, maxLength: 80, oninput: sum, ...extra });
+      const row = el("div", { className: "split" }, field(r.name, "Nom ou pseudo"), field(r.role, "Rôle"),
+        field(r.master || "", "0", { inputMode: "decimal", ariaLabel: "Part du master" }), field(r.publishing || "", "0", { inputMode: "decimal", ariaLabel: "Part des éditions" }),
+        el("button", { className: "x", type: "button", ariaLabel: "Retirer", onclick: () => { row.remove(); sum(); } }, icon("close")));
+      list.append(row);
+    };
+    start.forEach(line);
+    sum();
+    // Parts égales : 100 % divisés entre les personnes de la liste, le reste de l'arrondi sur la première.
+    const equal = () => {
+      const rows = lines().filter(([name]) => name.value.trim());
+      if (!rows.length) return;
+      const each = Math.floor(10000 / rows.length) / 100, first = Math.round((100 - each * (rows.length - 1)) * 100) / 100;
+      rows.forEach(([, , master, publishing], i) => { master.value = publishing.value = String(i ? each : first).replace(".", ","); });
+      sum();
+    };
+    const save = () => api("PATCH", "/me/sounds/tracks/" + t.id, { splits: read() }).then(() => { saved.textContent = "Enregistré."; return refresh(); });
+    right = [back("Répartition"),
+      el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Qui touche quoi sur ce titre. Master : les revenus de l'enregistrement. Éditions : les droits d'auteur et de composition, déclarés à la SACEM. Chaque colonne doit faire 100 %." }),
+      list, total,
+      el("div", { className: "row", style: "flex-wrap:wrap" },
+        el("button", { className: "mini-btn", type: "button", onclick: () => { line(); sum(); } }, "+ Ajouter une personne"),
+        el("button", { className: "mini-btn", type: "button", onclick: equal }, "Parts égales")),
+      el("div", { className: "row", style: "flex-wrap:wrap" },
+        el("button", { className: "btn btn-primary", type: "button", onclick: () => save().catch(fail) }, "Enregistrer"),
+        el("button", { className: "btn btn-ghost", type: "button", onclick: () => save().then(() => splitSheetPdf(p, t, read()).download("Répartition " + t.title + ".pdf")).catch(fail) }, icon("download"), "Fiche à signer (PDF)"),
+        saved)];
   } else if (detailsView === "notes") {
     const note = el("textarea", { value: v.note, maxLength: 300, placeholder: "Mix 2, master, ce qu'il reste à faire…", ariaLabel: "Note de la version " + v.n });
     const saved = el("span", { className: "muted", style: "font-size:13px" });

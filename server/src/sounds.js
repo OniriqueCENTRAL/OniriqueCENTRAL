@@ -102,6 +102,10 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 
   db.exec(`ALTER TABLE sound_projects ADD COLUMN cover_by TEXT NOT NULL DEFAULT ''`);
 }
 export const CREDIT_ROLES = ['feat', 'beat', 'mix', 'master', 'rec'];
+// La répartition d'un titre (split sheet) : chaque personne, son rôle, sa part du master et des éditions, en %.
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'splits'`).get()) {
+  db.exec(`ALTER TABLE sound_tracks ADD COLUMN splits TEXT NOT NULL DEFAULT '[]'`);
+}
 // Les paroles d'un titre, une ligne par ligne ; « [mm:ss.cc] » en tête d'une ligne la synchronise (format LRC).
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'lyrics'`).get()) {
   db.exec(`ALTER TABLE sound_tracks ADD COLUMN lyrics TEXT NOT NULL DEFAULT ''`);
@@ -370,6 +374,21 @@ function aboutOf(userId, mine) {
 }
 // Les fiches affichées des collaborateurs d'un projet, sous celle de l'auteur.
 const aboutsOf = (people) => people.map((u) => { const a = aboutOf(u.id, false); return a && { ...a, name: u.name || 'ONIRIQUE' }; }).filter(Boolean);
+const splitsOf = (row) => { try { return JSON.parse(row.splits || '[]'); } catch { return []; } };
+/** La répartition envoyée par le membre : 20 personnes au plus, des parts de 0 à 100 % qui ne dépassent pas 100 % en tout. */
+function splitsIn(list) {
+  if (!Array.isArray(list) || list.length > 20) throw new HttpError(400, 'Répartition : 20 personnes au plus.');
+  const share = (value) => {
+    const n = Math.round(Number(String(value ?? '').replace(',', '.') || 0) * 100) / 100;
+    if (!(n >= 0 && n <= 100)) throw new HttpError(400, 'Répartition : une part va de 0 à 100 %.');
+    return n;
+  };
+  const rows = list.map((r) => ({ name: str(r?.name, 80), role: str(r?.role, 60), master: share(r?.master), publishing: share(r?.publishing) })).filter((r) => r.name);
+  for (const [k, label] of [['master', 'du master'], ['publishing', 'des éditions']]) {
+    if (rows.reduce((sum, r) => sum + r[k], 0) > 100.001) throw new HttpError(400, `Répartition : les parts ${label} dépassent 100 %.`);
+  }
+  return rows;
+}
 const creditsOf = (row) => { try { return JSON.parse(row.credits || '{}'); } catch { return {}; } };
 const person = (u) => ({ id: u.id, name: u.name || 'ONIRIQUE', avatar: media(u.avatar) });
 const linkView = (l) => ({
@@ -609,7 +628,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
         tracks: tracks.filter((t) => t.project_id === p.id).map((t) => {
           const mine = plays.filter((r) => r.track_id === t.id);
           return {
-            id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), lyrics: t.lyrics, currentId: t.current_id, createdAt: t.created_at,
+            id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), splits: splitsOf(t), lyrics: t.lyrics, currentId: t.current_id, createdAt: t.created_at,
             bpm: t.bpm, key: t.music_key, forSale: !!t.for_sale, sold: !!t.sold, ...(p.kind === 'pack' ? { files: filesOf(t.id), licensePrices: JSON.parse(t.license_prices || '{}') } : {}),
             versions: versions.filter((v) => v.track_id === t.id).map((v, i) => versionView(v, i, true)),
             comments: comments.filter((c) => c.track_id === t.id).map(commentView),
@@ -866,6 +885,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       const credits = Object.fromEntries(CREDIT_ROLES.map((role) => [role, str(req.body.credits[role], 120)]).filter(([, name]) => name));
       run('UPDATE sound_tracks SET credits = ? WHERE id = ?', JSON.stringify(credits), t.id);
     }
+    if (req.body.splits !== undefined) run('UPDATE sound_tracks SET splits = ? WHERE id = ?', JSON.stringify(splitsIn(req.body.splits)), t.id);
     if (typeof req.body.lyrics === 'string') {
       const lyrics = req.body.lyrics.replace(/\r\n?/g, '\n').split('\n').map((line) => line.replace(/\s+/g, ' ').trim().slice(0, 300)).join('\n').trim().slice(0, 20000);
       run('UPDATE sound_tracks SET lyrics = ? WHERE id = ?', lyrics, t.id);
