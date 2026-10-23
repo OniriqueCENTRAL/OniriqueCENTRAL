@@ -407,7 +407,9 @@ function drawChart() {
 addEventListener("resize", () => drawChart());
 
 //------------------------------------------------------------------------------ écoute A/B
-let ctx = null, node = null, gain = null, current = "mix", playing = false, startedAt = 0, offsetSec = 0;
+// Les deux titres jouent ensemble, calés sur le même instant ; un seul s'entend. Changer de titre est un fondu de
+// quelques millisecondes entre les deux : le son ne s'arrête pas et reste au même endroit du morceau.
+let ctx = null, nodes = {}, gains = {}, current = "mix", playing = false, startedAt = 0, offsetSec = 0;
 const levelOf = (kind) => {
   if (!$("match").checked || !tracks.mix || !tracks.ref) return 1;
   const quieter = Math.min(tracks.mix.loud.integrated, tracks.ref.loud.integrated);   // on baisse le plus fort, jamais l'inverse
@@ -416,28 +418,33 @@ const levelOf = (kind) => {
 const position = () => (playing ? ctx.currentTime - startedAt : offsetSec);
 
 function start() {
-  const buffer = tracks[current].buffer;
-  offsetSec = Math.min(offsetSec, Math.max(0, buffer.duration - 0.05));
+  offsetSec = Math.min(offsetSec, Math.max(0, tracks[current].buffer.duration - 0.05));
   ctx = ctx || new AudioContext();
-  node = ctx.createBufferSource();
-  node.buffer = buffer;
-  gain = ctx.createGain();
-  gain.gain.value = levelOf(current);
-  node.connect(gain).connect(ctx.destination);
-  const mine = node;
-  node.onended = () => { if (node === mine && playing) { playing = false; offsetSec = 0; refresh(); } };
-  node.start(0, offsetSec);
-  startedAt = ctx.currentTime - offsetSec;
+  const at = ctx.currentTime + 0.03;
+  nodes = {}; gains = {};
+  for (const kind of ["mix", "ref"]) {
+    const t = tracks[kind];
+    if (!t || offsetSec >= t.buffer.duration) continue;
+    const node = ctx.createBufferSource(), gain = ctx.createGain();
+    node.buffer = t.buffer;
+    gain.gain.value = kind === current ? levelOf(kind) : 0;
+    node.connect(gain).connect(ctx.destination);
+    // Le titre écouté arrivé au bout arrête l'écoute ; l'autre, s'il est plus court, se tait simplement.
+    node.onended = () => { if (nodes[kind] === node && kind === current && playing) { stop(); offsetSec = 0; refresh(); } };
+    node.start(at, offsetSec);
+    nodes[kind] = node; gains[kind] = gain;
+  }
+  startedAt = at - offsetSec;
   playing = true;
   ctx.resume();
 }
 function stop() {
   if (!playing) return;
-  offsetSec = position();
+  offsetSec = Math.max(0, position());
   playing = false;
-  const old = node;
-  node = null;
-  try { old.stop(); } catch { /* déjà fini */ }
+  const old = nodes;
+  nodes = {}; gains = {};
+  for (const node of Object.values(old)) { try { node.stop(); } catch { /* déjà fini */ } }
   refresh();
 }
 function refresh() {
@@ -453,10 +460,18 @@ function refresh() {
 $("play").onclick = () => { if (!tracks[current]) return; playing ? stop() : start(); refresh(); };
 for (const kind of ["mix", "ref"]) $("ab-" + kind).onclick = () => {
   if (current === kind || !tracks[kind]) return;
-  const was = playing;
-  stop();
+  const from = current;
   current = kind;
-  if (was) start();   // même endroit du morceau, l'autre titre
+  if (playing && gains[kind] && position() < tracks[kind].buffer.duration) {
+    // Fondu de 10 ms : l'un baisse pendant que l'autre monte, au même instant du morceau.
+    const t = ctx.currentTime;
+    gains[from]?.gain.setTargetAtTime(0, t, 0.01);
+    gains[kind].gain.setTargetAtTime(levelOf(kind), t, 0.01);
+  } else if (playing) {
+    // L'autre titre n'a pas encore été chargé, ou il est déjà fini (un extrait plus court) : il repart du début.
+    if (position() >= tracks[kind].buffer.duration) { stop(); offsetSec = 0; } else stop();
+    start();
+  }
   refresh();
 };
 $("seek").oninput = () => {
@@ -470,7 +485,7 @@ $("seek").oninput = () => {
 };
 // Ouvert depuis « ONIRIQUE CLOUD » : le son du membre est déjà posé comme mix, il ne reste qu'à choisir la référence.
 A.fromLink((file) => load("mix", file), (error) => { $("error").textContent = error.message; });
-$("match").onchange = () => { if (gain) gain.gain.setTargetAtTime(levelOf(current), ctx.currentTime, 0.02); };
+$("match").onchange = () => { if (gains[current]) gains[current].gain.setTargetAtTime(levelOf(current), ctx.currentTime, 0.02); };
 setInterval(() => { if (playing) refresh(); }, 250);
 </script>
 <script src="assets/tools-menu.js?v=2"></script>

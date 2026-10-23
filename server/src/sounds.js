@@ -174,6 +174,10 @@ CREATE TABLE IF NOT EXISTS sound_collabs (
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'invite_token'`).get()) {
   db.exec('ALTER TABLE sound_projects ADD COLUMN invite_token TEXT');
 }
+// Un collaborateur range lui aussi le projet dans ses propres dossiers (null : à la racine de sa page).
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_collabs') WHERE name = 'folder_id'`).get()) {
+  db.exec('ALTER TABLE sound_collabs ADD COLUMN folder_id INTEGER REFERENCES sound_folders(id) ON DELETE SET NULL');
+}
 // Un projet que le membre peut ouvrir : le sien, ou un projet où il est collaborateur (p = sound_projects).
 const ACCESS = '(p.user_id = ? OR p.id IN (SELECT project_id FROM sound_collabs WHERE user_id = ?))';
 // Un lien d'écoute (l = sound_links) dont l'auteur a encore accès au projet : l'auteur du projet ou l'un de ses
@@ -658,6 +662,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     const scope = vanish ? '1 = 1' : ACCESS, args = vanish ? [] : [u, u];
     const projects = all(`SELECT p.*, o.name AS owner_name, o.avatar AS owner_avatar FROM sound_projects p JOIN users o ON o.id = p.user_id
       WHERE ${scope} ORDER BY p.created_at DESC`, ...args);
+    const collabFolders = new Map(all('SELECT project_id, folder_id FROM sound_collabs WHERE user_id = ?', u).map((c) => [c.project_id, c.folder_id]));
     const collabs = all(`SELECT c.project_id, u.id, u.name, u.avatar FROM sound_collabs c JOIN users u ON u.id = c.user_id
       JOIN sound_projects p ON p.id = c.project_id WHERE ${scope} ORDER BY c.created_at`, ...args);
     const tracks = all(`SELECT t.* FROM sound_tracks t JOIN sound_projects p ON p.id = t.project_id WHERE ${scope} ORDER BY t.position, t.id`, ...args);
@@ -681,8 +686,8 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       quota: { used: usedBy(req.user.id), limit: quotaBytes(), full: d.used / d.total >= diskMax() },
       projects: projects.map((p) => ({
         id: p.id, kind: p.kind, title: p.title, artist: p.artist, cover: media(p.cover), background: media(p.background), coverBy: p.cover_by, releaseDate: p.release_date, plan: planOf(p), createdAt: p.created_at,
-        // Les dossiers sont ceux de l'auteur : un projet où l'on collabore est à la racine de sa page.
-        mine: p.user_id === u, folderId: p.user_id === u ? p.folder_id : null,
+        // Chacun range le projet dans ses dossiers : l'auteur dans le projet, un collaborateur dans sa place de collaborateur.
+        mine: p.user_id === u, folderId: vanish ? null : p.user_id === u ? p.folder_id : collabFolders.get(p.id) ?? null,
         owner: person({ id: p.user_id, name: p.owner_name, avatar: p.owner_avatar }),
         collaborators: collabs.filter((c) => c.project_id === p.id).map(person),
         inviteUrl: p.user_id === u && p.invite_token ? `${config.siteUrl}/mes-sons#/invite/${p.invite_token}` : null,
@@ -769,6 +774,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     transaction(() => {
       run('UPDATE sound_folders SET parent_id = ? WHERE parent_id = ?', parent, fid);
       run('UPDATE sound_projects SET folder_id = ? WHERE folder_id = ?', parent, fid);
+      run('UPDATE sound_collabs SET folder_id = ? WHERE folder_id = ?', parent, fid);
       run('UPDATE sound_saves SET folder_id = ? WHERE folder_id = ?', parent, fid);
       run('DELETE FROM sound_folders WHERE id = ?', fid);
     });
@@ -824,7 +830,11 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     }
     if (req.body.coverBy !== undefined) run('UPDATE sound_projects SET cover_by = ? WHERE id = ?', str(req.body.coverBy, 80), p.id);
     if (req.body.artist !== undefined) run('UPDATE sound_projects SET artist = ? WHERE id = ?', str(req.body.artist, 120), p.id);
-    if (req.body.folderId !== undefined) run('UPDATE sound_projects SET folder_id = ? WHERE id = ?', folderOf(req, req.body.folderId), ownProject(req, p.id).id);
+    if (req.body.folderId !== undefined) {
+      const fid = folderOf(req, req.body.folderId);
+      if (p.user_id === req.user.id) run('UPDATE sound_projects SET folder_id = ? WHERE id = ?', fid, p.id);
+      else run('UPDATE sound_collabs SET folder_id = ? WHERE project_id = ? AND user_id = ?', fid, p.id, req.user.id);
+    }
     if (req.body.plan !== undefined) run('UPDATE sound_projects SET plan = ? WHERE id = ?', planIn(req.body.plan), p.id);
     if (req.body.releaseDate !== undefined) {
       const day = String(req.body.releaseDate || '');

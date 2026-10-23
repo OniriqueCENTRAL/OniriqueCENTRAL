@@ -657,7 +657,7 @@ const longDay = (ms) => new Date(ms).toLocaleDateString("fr-FR", { day: "numeric
 const length = (s) => { s = Math.round(s || 0); return s >= 60 ? Math.floor(s / 60) + " min " + String(s % 60).padStart(2, "0") + " s" : s + " s"; };
 const avatar = (p) => (window.OniriqueAccount ? window.OniriqueAccount.avatar(p) : p.avatar || "assets/favicon.png");
 // La pochette réduite par le serveur (WebP, 960 px suffit à la grande pochette sur écran Retina).
-const coverOf = (p, cls) => (p.cover ? el("img", { src: p.cover + "?w=960", alt: "", decoding: "async", className: cls || "" }) : Object.assign(el("div", { className: "cover-ph " + (cls || "") }), { innerHTML: '<svg viewBox="0 0 24 24"><path d="M12 1.5 13.3 10.7 22.5 12 13.3 13.3 12 22.5 10.7 13.3 1.5 12 10.7 10.7Z" fill="currentColor"/></svg>' }));
+const coverOf = (p, cls) => (p.cover ? el("img", { src: p.cover + "?w=960", alt: "", decoding: "async", draggable: false, className: cls || "" }) : Object.assign(el("div", { className: "cover-ph " + (cls || "") }), { innerHTML: '<svg viewBox="0 0 24 24"><path d="M12 1.5 13.3 10.7 22.5 12 13.3 13.3 12 22.5 10.7 13.3 1.5 12 10.7 10.7Z" fill="currentColor"/></svg>' }));
 
 async function api(method, path, body) {
   const response = await fetch("/api" + path, {
@@ -1054,7 +1054,7 @@ function projectTile(p) {
       + (p.mine ? "" : " · de " + (p.artist || p.owner.name)) + (linkFor("project", p.id) ? " · partagé" : "") + (p.mine && p.collaborators.length ? " · en collab" : "") }),
     dotsFor(p.title, (b) => projectMenu(b, p)), projectFeat(p)));
   tile.dataset.id = p.id;
-  if (p.mine) dragSource(tile, "project:" + p.id);
+  if (!data.vanish) dragSource(tile, "project:" + p.id);
   return tile;
 }
 function folderTile(f) {
@@ -1158,7 +1158,7 @@ function projectMenu(anchor, p) {
     p.kind !== "pack" && { label: "Préparer la sortie", icon: "star", onclick: () => openPlan(p) },
     p.tracks.length && { label: "Télécharger le projet (.zip)", icon: "download", onclick: () => downloadProject(p) },
     p.mine && { label: "Collaborateurs…", icon: "plus", onclick: () => openCollab(p.id) },
-    p.mine && { label: "Déplacer vers…", icon: "chevron", onclick: () => moveMenu(anchor, p.folderId, (folderId) => api("PATCH", "/me/sounds/projects/" + p.id, { folderId })) },
+    !data.vanish && { label: "Déplacer vers…", icon: "chevron", onclick: () => moveMenu(anchor, p.folderId, (folderId) => api("PATCH", "/me/sounds/projects/" + p.id, { folderId })) },
     p.mine && (p.kind === "pack"
       ? { label: "Repasser en projet classique", icon: "repeat", onclick: () => api("PATCH", "/me/sounds/projects/" + p.id, { kind: "" }).then(refresh, fail) }
       : { label: "Passer en pack de prods", icon: "repeat", onclick: () => makePack(p).catch(fail) }),
@@ -1609,7 +1609,7 @@ $("cover-file").onchange = () => {
 // Glisser des fichiers sur la page : des sons vont dans le projet ouvert (ou un nouveau projet depuis la grille) ; une
 // image devient la pochette du projet ouvert, ou celle du projet de la grille sur lequel on la lâche.
 let dragDepth = 0;
-const hasFiles = (event) => event.dataTransfer && [...event.dataTransfer.types].includes("Files");
+const hasFiles = (event) => event.dataTransfer && [...event.dataTransfer.types].includes("Files") && ![...event.dataTransfer.types].includes("text/x-move");
 addEventListener("dragenter", (event) => { if (hasFiles(event) && data && !data.quota.full) { dragDepth++; $("drop-zone").hidden = false; } });
 addEventListener("dragleave", (event) => { if (hasFiles(event) && --dragDepth <= 0) { dragDepth = 0; $("drop-zone").hidden = true; } });
 const isImage = (f) => /^image\/(png|jpeg|webp)$/.test(f.type);

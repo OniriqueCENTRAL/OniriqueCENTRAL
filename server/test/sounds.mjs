@@ -353,6 +353,13 @@ try {
     // Le projet est dans sa page, avec l'auteur ; il ajoute un titre (compté chez l'auteur) et le renomme.
     let theirs = (await call('GET', '/api/me/sounds', { token: friend.token })).projects.find((x) => x.id === pid);
     assert.equal(theirs.mine, false);
+    // Le collaborateur range le projet dans son propre dossier, sans toucher au rangement de l'auteur.
+    const shelf = (await call('POST', '/api/me/sounds/folders', { token: friend.token, body: { title: 'Collabs' }, expect: 201 })).id;
+    await call('PATCH', `/api/me/sounds/projects/${pid}`, { token: friend.token, body: { folderId: shelf } });
+    assert.equal((await call('GET', '/api/me/sounds', { token: friend.token })).projects.find((x) => x.id === pid).folderId, shelf);
+    assert.equal((await call('GET', '/api/me/sounds', { token: owner.token })).projects.find((x) => x.id === pid).folderId, null);
+    await call('DELETE', `/api/me/sounds/folders/${shelf}`, { token: friend.token });
+    assert.equal((await call('GET', '/api/me/sounds', { token: friend.token })).projects.find((x) => x.id === pid).folderId, null);
     assert.equal(theirs.owner.name, 'auteur-collab');
     const added = await call('POST', `/api/me/sounds/projects/${pid}/tracks?filename=b.wav`, { token: friend.token, raw: wav(3000), expect: 201 });
     await call('PATCH', `/api/me/sounds/tracks/${added.id}`, { token: friend.token, body: { title: 'Couplet', stage: 'v2' } });
