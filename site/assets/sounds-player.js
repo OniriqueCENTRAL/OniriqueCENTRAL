@@ -193,6 +193,7 @@ html.op-full-open, html.op-full-open body { overflow: hidden; }
 .op-stage { position: fixed; inset: 0; z-index: 38; display: flex; flex-direction: column; overflow: hidden; isolation: isolate;
   color: var(--mist, #f6eeee); background: #0d0809; animation: op-stage-in .45s cubic-bezier(.2, .8, .2, 1) both; }
 .op-stage[hidden] { display: none; }
+.op-stage:focus { outline: none; }
 .op-stage-bg { position: absolute; inset: -90px; z-index: -1; background: center / cover no-repeat;
   filter: blur(80px) saturate(1.5) brightness(calc(.38 + var(--op-level, 0) * .14)); transform: scale(calc(1.05 + var(--op-level, 0) * .05)); transition: transform .14s linear, filter .14s linear; }
 .op-stage-bg::after { content: ""; position: absolute; inset: 0;
@@ -310,7 +311,7 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     const stageTitle = el("b"), stageSub = el("span"), stageMode = el("small");
     const stageClose = btn("close", "Fermer les paroles");
     const stageLyrics = el("div", { className: "op-stage-lyrics" });
-    const stage = el("div", { className: "op-stage", hidden: true, role: "dialog", ariaLabel: "Paroles" }, stageBg,
+    const stage = el("div", { className: "op-stage", hidden: true, role: "dialog", ariaLabel: "Paroles", tabIndex: -1 }, stageBg,
       el("div", { className: "op-stage-top" }, stageCover, el("div", {}, stageMode, stageTitle, stageSub), stageClose), stageLyrics);
     document.body.append(stage, full, sheet, queue, pill);
 
@@ -473,6 +474,8 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
       more.classList.remove("on"); queueBtn.classList.remove("on"); stageBtn.classList.add("on");
       document.documentElement.classList.add("op-stage-open");
       stageLyrics.dataset.line = -1;
+      // Le focus quitte le bouton micro : Entrée et Espace ne le « recliquent » pas (ce qui refermerait la scène).
+      stage.focus({ preventScroll: true });
       listen(); tick();
       if (audio.paused) pulse();
     }
@@ -664,8 +667,11 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     };
     addEventListener("resize", draw);
     document.addEventListener("keydown", (event) => {
-      if (event.code === "Space" && item() && !/^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(event.target.tagName) && !document.querySelector("dialog[open]")) { event.preventDefault(); play.onclick(); }
-      if (event.key === "Escape" && !stage.hidden && !document.querySelector("dialog[open]")) closeStage();
+      if (document.querySelector("dialog[open]")) return;
+      // Sur les paroles en grand, Entrée et Espace lancent ou mettent en pause, même si un bouton du lecteur a gardé le focus.
+      const onStage = !stage.hidden && (event.key === "Enter" || event.code === "Space") && !/^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName);
+      if (onStage || (event.code === "Space" && item() && !/^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(event.target.tagName))) { event.preventDefault(); play.onclick(); }
+      if (event.key === "Escape" && !stage.hidden) closeStage();
     });
     if ("mediaSession" in navigator) {
       navigator.mediaSession.setActionHandler("previoustrack", () => prev.onclick());
