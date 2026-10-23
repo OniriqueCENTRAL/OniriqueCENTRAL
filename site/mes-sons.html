@@ -299,6 +299,10 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
 .lyrics.synced p[data-at]:not([data-at=""]) { cursor: pointer; }
 .lyrics.synced p.past { color: rgba(246,238,238,.62); }
 .lyrics.synced p.on { color: #fff; }
+.lyrics:not([hidden]) { animation: lyrics-in .55s cubic-bezier(.2, .8, .2, 1) both; }
+.lyrics p { animation: lyrics-in .55s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i, 0) * 40ms + 100ms); }
+@keyframes lyrics-in { from { opacity: 0; translate: 0 18px; } }
+@media (prefers-reduced-motion: reduce) { .lyrics:not([hidden]), .lyrics p { animation: none; } }
 .lyrics-edit { min-height: 260px; font: 500 13px/1.5 var(--f-mono); }
 .sync-lines { max-height: 46vh; overflow-y: auto; }
 /* Sur téléphone : un grand bouton à taper en rythme, sans le zoom du double appui */
@@ -467,7 +471,7 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
 <dialog id="collab"></dialog>
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" value="cancel" formnovalidate>Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
-<script src="assets/sounds-player.js?v=9"></script>
+<script src="assets/sounds-player.js?v=10"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const TOKEN = "onirique.token";
@@ -534,7 +538,7 @@ const projectLength = (p) => p.tracks.reduce((s, t) => s + (live(t).duration || 
 const itemOf = (p, t) => {
   const v = live(t);
   return { key: "v" + v.id, id: v.id, trackId: t.id, title: t.title, feat: t.credits.feat, subtitle: [p.title, OP.stageLabel(t.stage) || "v" + v.n].join(" · "), cover: p.cover, url: v.url,
-    downloadUrl: v.downloadUrl, duration: v.duration, peaks: v.peaks, comments: t.comments };
+    downloadUrl: v.downloadUrl, duration: v.duration, peaks: v.peaks, comments: t.comments, lyrics: t.lyrics };
 };
 const player = OP.create({
   onDelete: (item, c) => api("DELETE", "/me/sounds/comments/" + c.id).then(refresh),
@@ -570,7 +574,7 @@ function playProject(p, i = 0) {
 }
 function playVersion(p, t, v) {
   player.play([{ key: "v" + v.id, id: v.id, trackId: t.id, title: t.title, feat: t.credits.feat, subtitle: p.title + " · v" + v.n, cover: p.cover, url: v.url,
-    downloadUrl: v.downloadUrl, duration: v.duration, peaks: v.peaks, comments: t.comments }], 0);
+    downloadUrl: v.downloadUrl, duration: v.duration, peaks: v.peaks, comments: t.comments, lyrics: t.lyrics }], 0);
   // Une durée qui n'a pas pu être lue à l'envoi est enregistrée à la première écoute.
   if (!v.duration) player.audio.addEventListener("loadedmetadata", () => {
     if (Number.isFinite(player.audio.duration)) api("PATCH", "/me/sounds/versions/" + v.id, { duration: player.audio.duration }).catch(() => {});
@@ -588,11 +592,7 @@ player.audio.addEventListener("play", markPlaying);
 player.audio.addEventListener("pause", markPlaying);
 
 // ——— Paroles ———
-// Format LRC : « [mm:ss.cc] texte » est une ligne synchronisée ; sans repère, elle s'affiche sans suivre la lecture.
-const parseLyrics = (text) => (text || "").split("\n").map((line) => {
-  const m = line.match(/^\[(\d+):(\d{1,2}(?:\.\d+)?)\]\s?/);
-  return { at: m ? Number(m[1]) * 60 + Number(m[2]) : null, text: m ? line.slice(m[0].length) : line };
-});
+const parseLyrics = OP.parseLyrics;
 const stamp = (s) => { const cs = Math.round(s * 100); return "[" + String(Math.floor(cs / 6000)).padStart(2, "0") + ":" + ((cs % 6000) / 100).toFixed(2).padStart(5, "0") + "]"; };
 const lyricsText = (lines) => lines.map((l) => (l.at === null ? "" : stamp(l.at) + " ") + l.text).join("\n");
 // À droite de la pochette : les paroles du titre en cours s'il est dans le projet ouvert.
@@ -600,6 +600,9 @@ let lyricsShown = "";
 function renderLyrics() {
   const box = $("lyrics"), p = openId() && project(), t = p && player.item && p.tracks.find((x) => x.id === player.item.trackId);
   const key = t && t.lyrics ? t.id + ":" + t.lyrics : "";
+  // Des paroles tout juste enregistrées passent aussi au lecteur plein écran.
+  const playing = player.item && findTrack(player.item.trackId).t;
+  if (playing && player.item.lyrics !== playing.lyrics) player.item.lyrics = playing.lyrics;
   if (key === lyricsShown) return syncLyrics();
   lyricsShown = key;
   box.hidden = !key;
@@ -609,7 +612,7 @@ function renderLyrics() {
   box.replaceChildren(el("h2", { textContent: "Paroles" }), ...lines.map((l) => l.text.trim()
     ? el("p", { textContent: l.text, onclick: l.at === null ? null : () => { player.audio.currentTime = l.at; if (!player.playing) player.toggle(); } })
     : el("p", { className: "gap", textContent: l.at === null ? "" : "♪" })));
-  box.querySelectorAll("p").forEach((row, i) => { row.dataset.at = lines[i].at ?? ""; });
+  box.querySelectorAll("p").forEach((row, i) => { row.dataset.at = lines[i].at ?? ""; row.style.setProperty("--i", Math.min(i, 12)); });
   box.scrollTop = 0;
   syncLyrics();
 }
