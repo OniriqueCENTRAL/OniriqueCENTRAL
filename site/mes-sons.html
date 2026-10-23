@@ -48,6 +48,9 @@ header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.6); back
 .install { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; padding: 9px 14px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); font: 600 13px var(--f-body); cursor: pointer; }
 .install:hover { border-color: var(--ember); }
 .install[aria-pressed="true"] { border-color: var(--ember); color: var(--ember); }
+.vanish-accounts { margin-top: 14px; }
+.vanish-accounts .install { margin-top: 0; }
+.vanish-accounts .install img { border-radius: 50%; }
 .install img { width: 22px; height: 22px; border-radius: 6px; }
 #install-help { width: 400px; }
 /* Réglages : l'en-tête et sa croix restent en haut, seul le contenu défile ; sur téléphone, un panneau qui monte du bas. */
@@ -432,6 +435,7 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
       </div>
     </div>
     <p class="error" id="disk-full"></p>
+    <div class="row vanish-accounts" id="vanish-accounts" role="group" aria-label="Comptes" hidden></div>
     <div class="tiles" id="tiles"></div>
     <div class="empty" id="empty" hidden>
       <div class="star" id="empty-star"></div>
@@ -485,7 +489,7 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
 <input type="file" id="bg-file" accept="image/png,image/jpeg,image/webp" hidden>
 <div class="drop-zone" id="drop-zone" hidden>Dépose tes sons ou une pochette ici</div>
 <section class="uploads" id="uploads" hidden aria-label="Envois en cours">
-  <div class="uploads-head"><b>Envoi des sons</b><span id="uploads-count" role="status"></span><button class="x" id="uploads-close" type="button" aria-label="Fermer" hidden></button></div>
+  <div class="uploads-head"><b>Envois en cours</b><span id="uploads-count" role="status"></span><button class="x" id="uploads-close" type="button" aria-label="Fermer" hidden></button></div>
   <div class="uploads-total"><i id="uploads-total"></i></div>
   <ol id="uploads-list"></ol>
 </section>
@@ -532,10 +536,10 @@ async function api(method, path, body) {
   return data;
 }
 // Les fichiers passent par XMLHttpRequest, qui seul donne l'avancement de l'envoi.
-function upload(path, file, onProgress) {
+function upload(path, file, onProgress, method = "POST") {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/api" + path);
+    xhr.open(method, "/api" + path);
     xhr.setRequestHeader("Authorization", "Bearer " + token);
     xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
     xhr.upload.onprogress = (event) => event.lengthComputable && onProgress(event.loaded / event.total);
@@ -552,6 +556,7 @@ function upload(path, file, onProgress) {
 let data = null;
 // VANISH (fondateurs) : les projets de tous les comptes, le temps de l'onglet.
 let vanish = sessionStorage.getItem("onirique.vanish") === "1";
+let vanishAccount = null; // le compte choisi dans VANISH ; null : tous
 const fail = (error) => { $("error").textContent = error.message; if ($("grid-view").hidden === false) alert(error.message); };
 const openId = () => { const m = /^#\/p\/(\d+)/.exec(location.hash); return m ? Number(m[1]) : null; };
 const folderId = () => { const m = /^#\/f\/(\d+)/.exec(location.hash); return m ? Number(m[1]) : null; };
@@ -684,16 +689,7 @@ function renderAbout(p) {
     const link = el("input", { value: a.link, maxLength: 300, placeholder: a.linkPage || "https://…", ariaLabel: "Lien" });
     const shown = el("input", { type: "checkbox", checked: a.visible, ariaLabel: "Afficher sur mes projets" });
     const file = el("input", { type: "file", accept: "image/*", hidden: true });
-    file.onchange = async () => {
-      const f = file.files[0];
-      if (!f) return;
-      if (f.size > 5 * 1024 * 1024) return fail(new Error("La photo doit faire 5 Mo au plus."));
-      try {
-        const response = await fetch("/api/me/sounds/about/photo", { method: "PUT", headers: { Authorization: "Bearer " + token, "Content-Type": f.type }, body: f });
-        if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Image refusée.");
-        await refresh();
-      } catch (error) { fail(error); }
-    };
+    file.onchange = () => file.files[0] && sendImage(file.files[0], "/me/sounds/about/photo", 5 * 1024 * 1024, "La photo doit faire 5 Mo au plus.");
     const saved = el("span", { className: "muted", style: "font-size:13px" });
     box.replaceChildren(a.photo ? el("div", { className: "about-photo", style: `background-image:url("${a.photo}")` }, el("h2", { textContent: "À propos de l'artiste" })) : el("h2", { textContent: "À propos de l'artiste" }),
       el("div", { className: "about-form" },
@@ -823,16 +819,26 @@ function renderGrid() {
   theme(null);
   setBackground(null);
   const q = data.quota, f = folderId() && folder();
-  $("owner-name").textContent = data.vanish ? "VANISH : tous les comptes" : data.owner.name;
+  // VANISH : les projets de tous les comptes à plat (sans dossiers), ceux d'un seul compte une fois choisi.
+  const accounts = data.vanish ? [...new Map(data.projects.map((x) => [x.owner.id, x.owner])).values()].sort((a, b) => a.name.localeCompare(b.name, "fr")) : [];
+  if (!accounts.some((a) => a.id === vanishAccount)) vanishAccount = null;
+  const chosen = accounts.find((a) => a.id === vanishAccount);
+  const chip = (label, id, pic) => el("button", { className: "install", type: "button", ariaPressed: String(vanishAccount === id),
+    onclick: () => { vanishAccount = id; renderGrid(); } }, pic ? el("img", { src: avatar(pic), alt: "" }) : null,
+    label + " (" + data.projects.filter((x) => id === null || x.owner.id === id).length + ")");
+  $("vanish-accounts").hidden = !data.vanish || !!f;
+  $("vanish-accounts").replaceChildren(...(data.vanish ? [chip("Tous", null), ...accounts.map((a) => chip(a.name, a.id, a))] : []));
+  $("owner-name").textContent = data.vanish ? "VANISH : " + (chosen ? chosen.name : "tous les comptes") : data.owner.name;
   $("vanish").hidden = !data.founder;
   $("vanish").ariaPressed = String(!!data.vanish);
   $("quota").replaceChildren(size(q.used) + " sur " + size(q.limit), el("i", {}, el("b", { style: "width:" + Math.min(100, q.used / q.limit * 100) + "%" })));
   $("disk-full").textContent = q.full ? "L'espace de stockage d'ONIRIQUE est plein pour le moment : les envois sont fermés. Tes sons restent écoutables." : "";
   // À la racine : les dossiers, puis les projets hors dossier (les miens et ceux enregistrés), du plus récent au plus ancien.
   const here = (x) => (x.folderId || null) === (f ? f.id : null);
-  const items = [...data.projects.filter(here).map((x) => ({ kind: "project", x })), ...data.saved.filter(here).map((x) => ({ kind: "saved", x }))]
+  const items = (data.vanish ? data.projects.filter((x) => !chosen || x.owner.id === chosen.id).map((x) => ({ kind: "project", x }))
+    : [...data.projects.filter(here).map((x) => ({ kind: "project", x })), ...data.saved.filter(here).map((x) => ({ kind: "saved", x }))])
     .sort((a, b) => b.x.createdAt - a.x.createdAt);
-  const folders = subfolders(f ? f.id : null);
+  const folders = data.vanish ? [] : subfolders(f ? f.id : null);
   const tiles = [...folders.map(folderTile), ...items.map(({ kind, x }) => (kind === "project" ? projectTile(x) : savedTile(x)))];
   tiles.forEach((tile, i) => {
     tile.style.setProperty("--i", i);
@@ -1198,8 +1204,9 @@ function trackRow(p, t, i) {
 }
 
 // ——— Envois ———
-// Chaque fichier devient un titre du projet donné, ou la nouvelle version du titre donné. Les fichiers attendent leur
-// tour dans une file : un seul envoi à la fois, quel que soit le nombre d'ajouts, chacun avec sa barre d'avancement.
+// Chaque fichier devient un titre du projet donné, ou la nouvelle version du titre donné ; une image (pochette, fond,
+// photo de l'artiste) va à l'adresse donnée. Les fichiers attendent leur tour dans une file : un seul envoi à la fois,
+// quel que soit le nombre d'ajouts, chacun avec sa barre d'avancement.
 const uploads = [];
 let uploading = false;
 const isAudio = (f) => /^audio\//.test(f.type) || /\.(wav|aiff?|flac|mp3|ogg|m4a)$/i.test(f.name);
@@ -1207,14 +1214,22 @@ function sendFiles(files, p, toTrack) {
   files = [...files].filter(isAudio);
   if (!files.length) return;
   $("error").textContent = "";
-  for (const file of files) {
-    const bar = el("i"), state = el("span", { textContent: "En attente" });
-    const row = el("li", {}, el("div", { className: "up-line" }, el("b", { textContent: file.name, title: file.name }), state), el("div", { className: "up-bar" }, bar));
-    uploads.push({ file, projectId: p && p.id, trackId: toTrack && toTrack.id, state: "wait", progress: 0, row, bar, label: state });
-    $("uploads-list").append(row);
-  }
+  for (const file of files) addJob(file, { projectId: p && p.id, trackId: toTrack && toTrack.id });
   drawUploads();
   runUploads();
+}
+function sendImage(file, path, max, tooBig) {
+  if (file.size > max) return fail(new Error(tooBig));
+  $("error").textContent = "";
+  addJob(file, { image: path });
+  drawUploads();
+  runUploads();
+}
+function addJob(file, target) {
+  const bar = el("i"), state = el("span", { textContent: "En attente" });
+  const row = el("li", {}, el("div", { className: "up-line" }, el("b", { textContent: file.name, title: file.name }), state), el("div", { className: "up-bar" }, bar));
+  uploads.push({ file, ...target, state: "wait", progress: 0, row, bar, label: state });
+  $("uploads-list").append(row);
 }
 function setJob(job, state, label, progress) {
   job.state = state;
@@ -1237,6 +1252,12 @@ async function runUploads() {
   let job;
   while ((job = uploads.find((j) => j.state === "wait"))) {
     try {
+      if (job.image) {
+        await upload(job.image, job.file, (x) => setJob(job, "send", Math.round(x * 100) + " %", x * 0.97), "PUT");
+        setJob(job, "done", "Envoyé", 1);
+        await refresh().catch(() => {});
+        continue;
+      }
       setJob(job, "read", "Lecture…", 0);
       const wave = await OP.peaksOf(job.file);
       const query = "?filename=" + encodeURIComponent(job.file.name);
@@ -1286,25 +1307,12 @@ $("files").onchange = () => {
 };
 let coverTarget = null;
 function pickCover(p) { coverTarget = p; $("cover-file").click(); }
-async function uploadCover(p, f) {
-  if (f.size > 5 * 1024 * 1024) return fail(new Error("La pochette doit faire 5 Mo au plus."));
-  try {
-    const response = await fetch("/api/me/sounds/projects/" + p.id + "/cover", { method: "PUT", headers: { Authorization: "Bearer " + token, "Content-Type": f.type }, body: f });
-    if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Image refusée.");
-    await refresh();
-  } catch (error) { fail(error); }
-}
+const uploadCover = (p, f) => sendImage(f, "/me/sounds/projects/" + p.id + "/cover", 5 * 1024 * 1024, "La pochette doit faire 5 Mo au plus.");
 $("bg-change").onclick = () => $("bg-file").click();
-$("bg-file").onchange = async () => {
+$("bg-file").onchange = () => {
   const f = $("bg-file").files[0], p = project();
   $("bg-file").value = "";
-  if (!f || !p) return;
-  if (f.size > 8 * 1024 * 1024) return fail(new Error("Le fond doit faire 8 Mo au plus."));
-  try {
-    const response = await fetch("/api/me/sounds/projects/" + p.id + "/background", { method: "PUT", headers: { Authorization: "Bearer " + token, "Content-Type": f.type }, body: f });
-    if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Image refusée.");
-    await refresh();
-  } catch (error) { fail(error); }
+  if (f && p) sendImage(f, "/me/sounds/projects/" + p.id + "/background", 8 * 1024 * 1024, "Le fond doit faire 8 Mo au plus.");
 };
 $("bg-remove").onclick = () => api("DELETE", "/me/sounds/projects/" + project().id + "/background").then(refresh, fail);
 $("cover-file").onchange = () => {
