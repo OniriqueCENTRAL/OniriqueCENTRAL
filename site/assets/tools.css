@@ -1,15 +1,15 @@
 /* Pages du menu Outils : la base des pages de texte (pages.css), le fond de la boutique, et les blocs communs
    aux outils (zone de dépôt, carte de résultat, champs, boutons, tableaux de valeurs). */
-:root { --blood: #5C0008; --deep-2: #2A0A0E; --soft: #D9C6C8; --f-dream: "Grenze Gotisch", Georgia, serif;
-  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(226,52,68,.55); }
-body { background: radial-gradient(120% 50% at 50% -10%, rgba(140,6,20,.75), rgba(92,0,8,.4) 38%, transparent 72%) fixed, var(--night); }
+:root { --blood: #3D0910; --deep-2: #1C1517; --soft: #D9C6C8; --f-dream: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(229,56,74,.55); }
+body { background: radial-gradient(120% 50% at 50% -10%, rgba(140,6,20,.75), rgba(61,9,16,.4) 38%, transparent 72%) fixed, var(--night); }
 .wrap { max-width: 980px; }
 header nav { display: flex; align-items: center; gap: 10px; }
 [hidden] { display: none !important; }
 
 .hero { text-align: center; }
 .hero h1 { font-size: clamp(28px, 6vw, 52px); }
-h1 em, h2 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
+h1 em, h2 em { font: 800 1em/1 var(--f-dream); font-style: normal; color: var(--ember); }
 .lede { margin-inline: auto; max-width: 58ch; color: var(--haze); }
 .hint { margin: 12px 0 0; font-size: 14px; color: var(--haze); }
 .error { margin: 16px 0 0; color: #FF7A85; font-size: 15px; }
@@ -17,8 +17,8 @@ h1 em, h2 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shad
 
 /* Zone de dépôt d'un fichier */
 .drop { display: grid; justify-items: center; gap: 10px; width: 100%; margin-top: 30px; padding: clamp(28px, 6vw, 54px) 20px; border: 1.5px dashed rgba(255,210,214,.3); border-radius: 22px; background: rgba(0,0,0,.42); color: var(--mist); font: inherit; cursor: pointer; transition: border-color .2s, background .2s; }
-.drop:hover, .drop.over { border-color: var(--ember); background: rgba(226,52,68,.1); }
-.drop svg { width: 44px; height: 44px; stroke: var(--ember-text); filter: drop-shadow(0 0 10px rgba(226,52,68,.7)); }
+.drop:hover, .drop.over { border-color: var(--ember); background: rgba(229,56,74,.1); }
+.drop svg { width: 44px; height: 44px; stroke: var(--ember-text); filter: drop-shadow(0 0 10px rgba(229,56,74,.7)); }
 .drop strong { font: 700 clamp(16px, 2.6vw, 20px)/1.3 var(--f-display); }
 .drop span { color: var(--haze); font-size: 15px; }
 .drop:disabled { cursor: progress; }
@@ -51,11 +51,11 @@ h1 em, h2 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shad
 .card label, .label { display: grid; gap: 7px; font: 500 11px/1.2 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
 .card input:not([type]), .card input[type="text"], .card input[type="number"], .card input[type="date"], .card select { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px/1.4 var(--f-body); letter-spacing: 0; text-transform: none; }
 .card select option { background: var(--deep); }
-.card input:focus, .card select:focus { outline: none; border-color: var(--ember); box-shadow: 0 0 0 4px rgba(226,52,68,.14); }
+.card input:focus, .card select:focus { outline: none; border-color: var(--ember); box-shadow: 0 0 0 4px rgba(229,56,74,.14); }
 .card input[type="range"] { width: 100%; accent-color: var(--ember); }
 .card input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--ember); }
-.go { display: inline-block; padding: 14px 24px; border: 0; border-radius: 999px; background: var(--mist); color: var(--night); font: 600 15px/1 var(--f-body); text-decoration: none; cursor: pointer; white-space: nowrap; box-shadow: 0 10px 40px -10px rgba(226,52,68,.6); }
-.go:hover { color: var(--night); box-shadow: 0 0 0 6px rgba(226,52,68,.18), 0 18px 50px -12px rgba(226,52,68,.8); }
+.go { display: inline-block; padding: 14px 24px; border: 0; border-radius: 999px; background: var(--mist); color: var(--night); font: 600 15px/1 var(--f-body); text-decoration: none; cursor: pointer; white-space: nowrap; box-shadow: 0 10px 40px -10px rgba(229,56,74,.6); }
+.go:hover { color: var(--night); box-shadow: 0 0 0 6px rgba(229,56,74,.18), 0 18px 50px -12px rgba(229,56,74,.8); }
 .go:disabled { opacity: .5; cursor: default; box-shadow: none; }
 .go.ghost { background: transparent; color: var(--mist); border: 1px solid var(--line); box-shadow: none; }
 .go.ghost:hover { border-color: var(--ember); color: var(--mist); box-shadow: none; }
@@ -87,7 +87,7 @@ details { border-top: 1px solid var(--line); }
 details:last-of-type { border-bottom: 1px solid var(--line); }
 summary { padding: 16px 0; cursor: pointer; font-weight: 600; }
 details p { color: var(--soft); }
-.cta { margin-top: 56px; padding: clamp(24px, 5vw, 44px); border: 1px solid rgba(226,52,68,.5); border-radius: 22px; background: linear-gradient(180deg, var(--deep-2), var(--deep)); text-align: center; }
+.cta { margin-top: 56px; padding: clamp(24px, 5vw, 44px); border: 1px solid rgba(229,56,74,.5); border-radius: 22px; background: linear-gradient(180deg, var(--deep-2), var(--deep)); text-align: center; }
 .cta h2 { margin-top: 0; }
 .cta p { margin-inline: auto; max-width: 52ch; color: var(--haze); }
 .cta .go { margin-top: 10px; }

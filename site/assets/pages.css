@@ -1,7 +1,7 @@
 /* Pages de texte (légales) : mêmes couleurs et polices que le site, mise en page de lecture. */
 :root {
-  --night: #0D0809; --deep: #1A080A; --line: rgba(255,210,214,.16);
-  --mist: #F6EEEE; --haze: #B9A2A5; --ember: #E23444; --ember-text: #FF6B78; --bone: #FFECEE;
+  --night: #09080A; --deep: #121012; --line: rgba(255,210,214,.16);
+  --mist: #F2ECEC; --haze: #B9A2A5; --ember: #E5384A; --ember-text: #FF6B78; --bone: #FFF4F5;
   --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
   --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
   --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;

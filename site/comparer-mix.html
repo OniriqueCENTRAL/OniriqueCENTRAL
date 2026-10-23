@@ -23,7 +23,7 @@ html.embed body { background: transparent; }
 .pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 16px; margin-top: 30px; }
 .pair .drop { margin-top: 0; }
 .pair .drop em { font-style: normal; color: var(--ember-text); font: 500 11px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; }
-.pair .drop.loaded { border-style: solid; border-color: rgba(226,52,68,.55); }
+.pair .drop.loaded { border-style: solid; border-color: rgba(229,56,74,.55); }
 .chart { width: 100%; height: 340px; display: block; }
 .legend { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 12px; font-size: 14px; color: var(--haze); }
 .legend span::before { content: ""; display: inline-block; width: 18px; height: 3px; margin: 0 8px 4px 0; border-radius: 3px; vertical-align: middle; background: var(--c); }
@@ -39,12 +39,12 @@ html.embed body { background: transparent; }
 .find > label { display: block; margin-bottom: 8px; font: 500 11px/1.3 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); text-align: center; }
 .find-row { display: flex; gap: 10px; }
 .find-row input { flex: 1; min-width: 0; height: 48px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px var(--f-body); }
-.find-row input:focus { outline: none; border-color: var(--ember); box-shadow: 0 0 0 4px rgba(226,52,68,.14); }
+.find-row input:focus { outline: none; border-color: var(--ember); box-shadow: 0 0 0 4px rgba(229,56,74,.14); }
 .find-row .go { padding-block: 0; height: 48px; }
 .results { list-style: none; margin: 12px 0 0; padding: 6px; border: 1px solid var(--line); border-radius: 18px; background: linear-gradient(180deg, var(--deep-2), var(--deep)); max-height: 360px; overflow-y: auto; }
 .results li { color: var(--haze); font-size: 14px; padding: 10px 12px; }
 .results button { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: 14px; width: 100%; padding: 8px; border: 0; border-radius: 12px; background: none; color: var(--mist); font: inherit; text-align: left; cursor: pointer; }
-.results button:hover, .results button:focus-visible { background: rgba(226,52,68,.16); outline: none; }
+.results button:hover, .results button:focus-visible { background: rgba(229,56,74,.16); outline: none; }
 .results button:disabled { opacity: .6; cursor: progress; }
 .results img, .results .nocover { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; background: rgba(0,0,0,.4); }
 .results b { display: block; font: 600 15px/1.3 var(--f-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -110,7 +110,7 @@ html.embed body { background: transparent; }
     <div>
       <p class="eyebrow">Équilibre des fréquences, volumes égalisés</p>
       <canvas class="chart" id="chart" role="img" aria-label="Courbes de fréquences de ton mix et de la référence, et leur écart"></canvas>
-      <div class="legend"><span style="--c: #e23444">Ton mix</span><span style="--c: rgba(255,236,238,.75)">Référence</span><span style="--c: linear-gradient(90deg, #ffb0b8, #9fc7ff)">Écart (en bas)</span></div>
+      <div class="legend"><span style="--c: #E5384A">Ton mix</span><span style="--c: rgba(255,236,238,.75)">Référence</span><span style="--c: linear-gradient(90deg, #ffb0b8, #9fc7ff)">Écart (en bas)</span></div>
     </div>
 
     <div>
@@ -390,7 +390,7 @@ function drawChart() {
     g.strokeStyle = colour; g.lineWidth = width; g.stroke();
   };
   line(b.slice(0, n), yS, "rgba(255,236,238,.75)", 2);
-  line(a.slice(0, n), yS, "#e23444", 2.4);
+  line(a.slice(0, n), yS, "#E5384A", 2.4);
 
   // Écart : rose au-dessus de la référence, bleu en dessous.
   const diffs = a.slice(0, n).map((p, i) => ({ hz: p.hz, db: p.db - b[i].db }));
