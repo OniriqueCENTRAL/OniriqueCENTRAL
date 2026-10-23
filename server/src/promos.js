@@ -118,6 +118,25 @@ function welcomePercent(user, product) {
 }
 
 //==============================================================================
+//  Remises d'acheteur : avoir acheté un plugin en fait payer un autre moins cher
+//==============================================================================
+// Les acheteurs de VOCAL MINI paient VOCALBOX moitié prix. « Acheteur » : une licence définitive active de ce plugin
+// (achat, pack, code, cadeau), pas un essai ni un abonnement.
+const OWNER_OFFERS = [
+  { owns: 'onirique-vocal-mini', ownsName: 'VOCAL MINI', on: 'vocalbox', percent: 50 },
+];
+function ownerOffer(user, product) {
+  for (const o of OWNER_OFFERS) {
+    if (product.slug !== o.on) continue;
+    const owns = get(`SELECT 1 AS yes FROM licenses l JOIN products p ON p.id = l.product_id
+                      WHERE l.user_id = ? AND p.slug = ? AND l.type = 'perpetual' AND l.status = 'active' AND l.source != 'trial' LIMIT 1`,
+      user.id, o.owns);
+    if (owns) return o;
+  }
+  return null;
+}
+
+//==============================================================================
 //  Le prix à payer
 //==============================================================================
 /**
@@ -134,6 +153,8 @@ export function quote(user, product, code) {
   }
   const welcome = price > 0 ? welcomePercent(user, product) : null;
   if (welcome) offers.push({ off: Math.round(price * welcome / 100), promo: null, label: `-${welcome} %`, source: 'welcome' });
+  const owner = price > 0 ? ownerOffer(user, product) : null;
+  if (owner) offers.push({ off: Math.round(price * owner.percent / 100), promo: null, label: `-${owner.percent} %`, source: 'owner', owner });
 
   const best = offers.sort((a, b) => b.off - a.off)[0];
   if (!best || !best.off) {
@@ -145,8 +166,12 @@ export function quote(user, product, code) {
   return {
     priceCents: price, finalCents: final, discountCents: price - final, label: best.label,
     code: best.promo?.code ?? null, source: best.source, promoId: best.promo?.id ?? null, welcome: best.source === 'welcome',
-    // Le code donné ne bat pas la remise de bienvenue : on le dit, pour que personne ne croie qu'il a été refusé.
-    ignored: code && best.source === 'welcome' ? 'Votre remise de parrainage est plus forte que ce code : c\'est elle qui s\'applique.' : null,
+    // Le code donné ne bat pas la remise de bienvenue (ou d'acheteur) : on le dit, pour que personne ne croie qu'il a été
+    // refusé. La remise d'acheteur se présente d'elle-même, avec ou sans code.
+    ignored: best.source === 'owner'
+      ? (code ? `Votre remise d'acheteur de ${best.owner.ownsName} est plus forte que ce code : c'est elle qui s'applique.`
+              : `${best.label} : vous avez ${best.owner.ownsName}, ${product.name} est à moitié prix pour vous.`)
+      : code && best.source === 'welcome' ? 'Votre remise de parrainage est plus forte que ce code : c\'est elle qui s\'applique.' : null,
   };
 }
 

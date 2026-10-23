@@ -73,8 +73,9 @@ html.lite *, html.lite *::before, html.lite *::after { animation: none !importan
   let current = null; // { pop, close }
   function openPop(anchor, pop, onClose) {
     closePop();
-    // Dans une fenêtre modale ouverte, le reste de la page ne se clique plus : la liste se range dans la fenêtre.
-    const host = anchor.closest?.("dialog[open]") || document.body;
+    // rangé DANS la boîte de dialogue ouverte qui contient le champ : hors d'elle, toute la page est inerte (la liste
+    // s'affichait mais ses choix ne répondaient plus aux clics, dans Ventes, Mails et YouTube)
+    const host = (anchor.closest && anchor.closest("dialog[open]")) || document.body;
     if (canPop) { pop.popover = "manual"; host.append(pop); pop.showPopover(); } else host.append(pop);
     place(anchor, pop);
     current = { pop, anchor, close: onClose };
