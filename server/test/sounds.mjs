@@ -106,6 +106,7 @@ try {
     assert.match(outbox.at(-1).subject, /auditeur écoute « Intro »/);
     await call('POST', `/api/sounds/share/${t}/comments`, { body: { pass: share.pass, trackId, at: 4.2, body: 'Le refrain !' }, expect: 400 });
     await call('POST', `/api/sounds/share/${t}/comments`, { body: { pass: share.pass, trackId, at: 4.2, body: 'Le refrain !', name: 'Sam' }, expect: 201 });
+    assert.match(outbox.at(-1).subject, /Sam a commenté « Intro »/);
     const data = await call('GET', '/api/me/sounds', { token: member.token });
     assert.equal(data.links[0].plays, 2);
     assert.equal(data.projects[0].tracks[0].comments[0].author, 'Sam');
@@ -330,6 +331,33 @@ try {
     let at = albums;
     for (let i = 2; i <= 8; i++) at = await folder('Niveau ' + i, at);
     await call('POST', '/api/me/sounds/folders', { token: me.token, body: { title: 'Trop bas', parentId: at }, expect: 400 });
+  });
+
+  await step('réglages : notifications par e-mail et sur l\'appareil, ouverture des nouveaux liens', async () => {
+    const prefs = await call('GET', '/api/me/notifications', { token: member.token });
+    assert.equal(prefs.mail.comment, true);
+    assert.equal(prefs.links.download, false);
+    const saved = await call('PUT', '/api/me/notifications', { token: member.token, body: { mail: { comment: false, inconnu: true }, links: { download: true } } });
+    assert.equal(saved.mail.comment, false);
+    assert.equal(saved.mail.inconnu, undefined);
+    assert.equal(saved.push.comment, true);
+    const pid = (await call('POST', '/api/me/sounds/projects', { token: member.token, body: { title: 'Réglages' }, expect: 201 })).id;
+    const tid = (await call('POST', `/api/me/sounds/projects/${pid}/tracks?filename=Essai.wav`, { token: member.token, raw: wav(), expect: 201 })).id;
+    const { url } = await call('POST', '/api/me/sounds/links', { token: member.token, body: { trackId: tid }, expect: 201 });
+    const share = await call('POST', `/api/sounds/share/${shareToken(url)}`, { body: {} });
+    assert.ok(share.tracks[0].version.downloadUrl, 'téléchargement autorisé par défaut');
+    const before = outbox.length;
+    await call('POST', `/api/sounds/share/${shareToken(url)}/comments`, { body: { trackId: tid, body: 'Encore', name: 'Lou' }, expect: 201 });
+    assert.equal(outbox.length, before, 'plus d\'e-mail pour les commentaires');
+    // Le téléchargement par le lien : l'adresse est signée avec le lien, qu'on ne peut pas retirer.
+    assert.ok((await call('GET', share.tracks[0].version.downloadUrl)).length > 0);
+    await call('GET', share.tracks[0].version.downloadUrl.replace(/&l=\d+/, ''), { expect: 403 });
+    assert.ok((await call('GET', '/api/push/key')).key.length > 40);
+    await call('POST', '/api/me/push', { token: member.token, body: { endpoint: 'http://x', keys: { p256dh: 'a', auth: 'b' } }, expect: 400 });
+    await call('POST', '/api/me/push', { token: member.token, body: { endpoint: 'https://push.test/abc', keys: { p256dh: 'a', auth: 'b' } }, expect: 201 });
+    assert.equal(get('SELECT user_id FROM push_subscriptions WHERE endpoint = ?', 'https://push.test/abc').user_id, member.id);
+    await call('DELETE', '/api/me/push', { token: member.token, body: { endpoint: 'https://push.test/abc' } });
+    assert.equal(get('SELECT 1 AS x FROM push_subscriptions'), undefined);
   });
 
   console.log(`\n${passed} étapes réussies.`);

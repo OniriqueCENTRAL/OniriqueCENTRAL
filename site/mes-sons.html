@@ -49,6 +49,8 @@ header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.6); back
 .install:hover { border-color: var(--ember); }
 .install img { width: 22px; height: 22px; border-radius: 6px; }
 #install-help { width: 400px; }
+#settings { width: 440px; }
+#settings .stack { padding: 16px 18px 20px; overflow: auto; }
 #install-help .steps { margin: 0; padding: 0 20px 6px 20px; display: grid; gap: 14px; counter-reset: step; list-style: none; }
 #install-help .steps li { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; }
 #install-help .steps li::before { counter-increment: step; content: counter(step); flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--ember); color: var(--night); font: 700 13px var(--f-body); }
@@ -368,6 +370,7 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
       <div>
         <div class="quota" id="quota"></div>
         <button class="install" id="install" type="button" hidden><img src="assets/app-icon-180.png" alt="">Ajouter à l'écran d'accueil</button>
+        <button class="install" id="settings-open" type="button">Réglages</button>
       </div>
     </div>
     <p class="error" id="disk-full"></p>
@@ -432,6 +435,7 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
   <div class="row" style="justify-content:flex-end;padding:16px 20px 20px"><button class="btn btn-primary" type="button" onclick="this.closest('dialog').close()">Compris</button></div>
 </dialog>
 <dialog id="share"></dialog>
+<dialog id="settings"></dialog>
 <dialog id="collab"></dialog>
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" value="cancel" formnovalidate>Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
@@ -1487,6 +1491,84 @@ $("install").onclick = async () => {
   $("install-help").showModal();
 };
 lightClose($("install-help"));
+
+// ——— Réglages : les notifications (sur cet appareil et par e-mail) et l'ouverture des nouveaux liens ———
+// Les notifications passent par sw.js ; sur iPhone, seulement depuis l'icône de l'écran d'accueil (iOS 16.4 et plus).
+const canPush = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+const worker = canPush ? navigator.serviceWorker.register("/sw.js").catch(() => null) : Promise.resolve(null);
+const subscription = async () => { const r = await worker; return r ? r.pushManager.getSubscription() : null; };
+const keyBytes = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+async function enablePush() {
+  if (await Notification.requestPermission() !== "granted") throw new Error("Notifications refusées : autorise-les pour ONIRIQUE CLOUD dans les réglages du téléphone ou du navigateur.");
+  const r = await worker;
+  if (!r) throw new Error("Ce navigateur ne peut pas recevoir les notifications.");
+  const { key } = await api("GET", "/push/key");
+  const sub = (await r.pushManager.getSubscription()) || await r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(key) });
+  await api("POST", "/me/push", sub.toJSON());
+}
+async function disablePush() {
+  const sub = await subscription();
+  if (!sub) return;
+  await api("DELETE", "/me/push", { endpoint: sub.endpoint }).catch(() => {});
+  await sub.unsubscribe();
+}
+// Un appareil déjà abonné le redit au serveur à chaque ouverture (il a pu l'oublier, ou le compte a changé).
+if (token) subscription().then((sub) => sub && api("POST", "/me/push", sub.toJSON())).catch(() => {});
+
+const EVENT_LABELS = [["play", "écoute un titre"], ["download", "télécharge un titre"], ["comment", "laisse un commentaire"], ["save", "ajoute ton lien à son ONIRIQUE CLOUD"]];
+async function openSettings() {
+  const dialog = $("settings");
+  let prefs;
+  try { prefs = await api("GET", "/me/notifications"); } catch (e) { return alert(e.message); }
+  const save = (channel, key, value) => api("PUT", "/me/notifications", { [channel]: { [key]: value } }).then((p) => { prefs = p; }, (e) => alert(e.message));
+  const row = (label, hint, channel, key) => {
+    const input = el("input", { type: "checkbox", checked: prefs[channel][key], ariaLabel: label });
+    input.onchange = () => save(channel, key, input.checked);
+    return el("li", {}, el("div", { className: "item" }, el("span", { className: "grow" }, label, hint ? el("small", { textContent: hint }) : null),
+      el("label", { className: "switch" }, input, el("span"))));
+  };
+  const group = (channel, rows) => el("ul", { className: "group" }, ...rows.map(([key, label, hint]) => row(label, hint, channel, key)));
+  const events = EVENT_LABELS.map(([key, label]) => [key, "Quelqu'un " + label]);
+
+  // L'état de cet appareil, redessiné après chaque geste.
+  const device = el("div", { style: "display:grid;gap:10px" });
+  async function drawDevice() {
+    const note = (text) => el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: text });
+    if (ios && !standalone) {
+      const add = el("button", { className: "btn btn-primary", type: "button", textContent: "Ajouter à l'écran d'accueil" });
+      add.onclick = () => { dialog.close(); $("install").onclick(); };
+      return device.replaceChildren(note("Sur iPhone, les notifications arrivent par l'icône ONIRIQUE CLOUD : ajoute-la à l'écran d'accueil, ouvre-la, puis reviens ici."), el("div", { className: "row" }, add));
+    }
+    if (!canPush) return device.replaceChildren(note("Ce navigateur ne reçoit pas les notifications. Essaie Chrome, Edge, Firefox ou Safari à jour."));
+    if (Notification.permission === "denied") return device.replaceChildren(note("Les notifications sont bloquées pour ONIRIQUE CLOUD : autorise-les dans les réglages du téléphone ou du navigateur, puis reviens ici."));
+    const on = !!(await subscription());
+    const toggleBtn = el("button", { className: on ? "btn btn-ghost" : "btn btn-primary", type: "button", textContent: on ? "Désactiver sur cet appareil" : "Activer sur cet appareil" });
+    toggleBtn.onclick = async () => {
+      toggleBtn.disabled = true;
+      try { await (on ? disablePush() : enablePush()); } catch (e) { alert(e.message); }
+      drawDevice();
+    };
+    const test = el("button", { className: "btn btn-ghost", type: "button", textContent: "Envoyer un essai" });
+    test.onclick = () => api("POST", "/me/push/test").catch((e) => alert(e.message));
+    device.replaceChildren(note(on ? "Cet appareil reçoit les notifications d'ONIRIQUE CLOUD." : "Reçois une notification sur cet appareil quand quelqu'un écoute ou réagit à tes sons."),
+      el("div", { className: "row" }, toggleBtn, on ? test : null));
+  }
+  await drawDevice();
+
+  dialog.replaceChildren(
+    el("div", { className: "dlg-head" }, el("b", { textContent: "Réglages" }), el("button", { className: "x", type: "button", ariaLabel: "Fermer", textContent: "✕", onclick: () => dialog.close() })),
+    el("div", { className: "stack" },
+      el("div", { className: "sub-title", textContent: "Notifications sur cet appareil" }), device,
+      el("div", { className: "sub-title", textContent: "Me prévenir dans l'application quand…" }), group("push", events),
+      el("div", { className: "sub-title", textContent: "Me prévenir par e-mail quand…" }),
+      group("mail", events.filter(([key]) => key !== "download").map(([key, label]) => [key, label, key === "play" ? "Si la personne est connectée à son compte" : ""])),
+      el("div", { className: "sub-title", textContent: "Mes nouveaux liens d'écoute" }),
+      group("links", [["download", "Téléchargement autorisé"], ["requireAccount", "Compte ONIRIQUE exigé pour écouter"]]),
+      el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Chaque lien garde ensuite ses propres réglages, à changer dans sa fenêtre de partage." })));
+  if (!dialog.open) dialog.showModal();
+}
+$("settings-open").onclick = openSettings;
+lightClose($("settings"));
 
 (async () => {
   const gate = (html) => { $("gate").hidden = false; $("gate").innerHTML = html; };

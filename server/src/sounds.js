@@ -12,6 +12,7 @@ import { HttpError, rateLimit, optionalUser, hashPassword, verifyPassword, roles
 import { sendMail } from './mail.js';
 import { escapeHtml } from './mailtemplate.js';
 import { textImage } from './linkpage.js';
+import { push, wants, prefsOf } from './push.js';
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS sound_projects (
@@ -200,9 +201,10 @@ function signKey() {
 }
 const sign = (text) => crypto.createHmac('sha256', signKey()).update(text).digest('base64url');
 const same = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
-function audioUrl(versionId, download = false) {
-  const e = now() + 6 * 3600_000, d = download ? 1 : 0;
-  return `/api/sounds/audio/${versionId}?e=${e}&d=${d}&s=${sign(`${versionId}.${e}.${d}`)}`;
+// Un téléchargement depuis un lien d'écoute porte ce lien (l), pour prévenir celui qui l'a partagé.
+function audioUrl(versionId, download = false, linkId = 0) {
+  const e = now() + 6 * 3600_000, d = download ? 1 : 0, l = download ? linkId : 0;
+  return `/api/sounds/audio/${versionId}?e=${e}&d=${d}${l ? `&l=${l}` : ''}&s=${sign(`${versionId}.${e}.${d}${l ? `.${l}` : ''}`)}`;
 }
 // Le laissez-passer d'un lien protégé, rendu une fois le mot de passe donné.
 const passFor = (link) => sign(`link.${link.id}.${link.password_hash}`);
@@ -717,9 +719,10 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     const expiresAt = req.body.expiresAt ? Number(req.body.expiresAt) : null;
     if (expiresAt !== null && !(expiresAt > now())) throw new HttpError(400, 'La date de fin doit être dans le futur.');
     const token = crypto.randomBytes(12).toString('base64url');
+    const defaults = prefsOf(req.user.id).links;
     const lid = run(`INSERT INTO sound_links (token, user_id, project_id, track_id, label, password_hash, expires_at, download, require_account, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, token, req.user.id, projectId, trackId, str(req.body.label, 80), password ? hashPassword(password) : null,
-    expiresAt, req.body.download ? 1 : 0, req.body.requireAccount ? 1 : 0, now()).lastInsertRowid;
+    expiresAt, (req.body.download ?? defaults.download) ? 1 : 0, (req.body.requireAccount ?? defaults.requireAccount) ? 1 : 0, now()).lastInsertRowid;
     res.status(201).json(linkView(get('SELECT * FROM sound_links WHERE id = ?', lid)));
   });
   const ownLink = (req) => {
@@ -844,11 +847,37 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     FROM sound_tracks t JOIN sound_versions v ON v.id = t.current_id
     WHERE ${link.track_id ? 't.id = ?' : 't.project_id = ?'} ORDER BY t.position, t.id`, link.track_id || link.project_id);
 
+  // Prévient celui qui a partagé le lien, sur ses appareils et par e-mail, selon ses réglages. Un même geste d'une même
+  // personne ne prévient qu'une fois par jour ; l'e-mail attend de savoir qui c'est (compte ou nom donné).
+  const told = new Map();
+  function tell(link, event, { who, title, key }) {
+    const k = `${event}:${link.id}:${key}`;
+    if (told.get(k) > now()) return;
+    if (told.size > 20000) told.clear();
+    told.set(k, now() + 86400_000);
+    const where = link.label ? ` (lien « ${link.label} »)` : '';
+    const text = {
+      play: `${who || "Quelqu'un"} écoute « ${title} »`,
+      download: `${who || "Quelqu'un"} a téléchargé « ${title} »`,
+      comment: `${who} a commenté « ${title} »`,
+      save: `${who} a ajouté « ${title} » à son ONIRIQUE CLOUD`,
+    }[event];
+    if (wants(link.user_id, event, 'push')) push(link.user_id, { title: 'ONIRIQUE CLOUD', body: text + where, url: '/mes-sons' });
+    if (who && wants(link.user_id, event, 'mail')) {
+      sendMail(link.owner_email, `${text} — ONIRIQUE`, `${text}${where}.\n\n${config.siteUrl}/mes-sons\n\nONIRIQUE`,
+        undefined, { buttonLabel: 'Ouvrir ONIRIQUE CLOUD', eyebrow: 'ONIRIQUE CLOUD' }).catch((error) => console.error('Avis ONIRIQUE CLOUD :', error.message));
+    }
+  }
+  const nameOf = (user) => (user ? user.name || user.email : null);
+  const linkTitle = (link) => (link.track_id ? get('SELECT title FROM sound_tracks WHERE id = ?', link.track_id)?.title
+    : get('SELECT title FROM sound_projects WHERE id = ?', link.project_id)?.title) || '';
+
   app.post('/api/sounds/share/:token/save', ...me, (req, res) => {
     const link = openLink(req);
     if (!saveState(req, link).canSave) throw new HttpError(400, "Ce projet est déjà dans ONIRIQUE CLOUD : c'est le tien, ou tu y collabores.");
     run('INSERT OR IGNORE INTO sound_saves (user_id, link_id, pass, created_at) VALUES (?, ?, ?, ?)',
       req.user.id, link.id, link.password_hash ? passFor(link) : null, now());
+    tell(link, 'save', { who: nameOf(req.user), title: linkTitle(link), key: req.user.id });
     res.status(201).json({ saved: true });
   });
   app.delete('/api/sounds/share/:token/save', ...me, (req, res) => {
@@ -870,13 +899,13 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       download: !!link.download,
       tracks: tracks.map((t) => ({
         id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t),
-        version: { id: t.vid, filename: t.filename, duration: t.duration, peaks: JSON.parse(t.peaks), url: audioUrl(t.vid), downloadUrl: link.download ? audioUrl(t.vid, true) : null },
+        version: { id: t.vid, filename: t.filename, duration: t.duration, peaks: JSON.parse(t.peaks), url: audioUrl(t.vid), downloadUrl: link.download ? audioUrl(t.vid, true, link.id) : null },
         comments: comments.filter((c) => c.track_id === t.id).map(commentView),
       })),
     });
   });
 
-  // Une écoute : comptée ; si l'auditeur est connecté, l'auteur est prévenu (une fois par jour, par titre et par auditeur).
+  // Une écoute : comptée, et l'auteur prévenu (une fois par jour, par titre et par auditeur).
   app.post('/api/sounds/share/:token/play', (req, res) => {
     rateLimit(`sounds-play:${req.ip}`, 200);
     const link = openLink(req);
@@ -884,14 +913,8 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (!t) throw new HttpError(404, 'Titre introuvable.');
     const listener = optionalUser(req);
     const listenerId = listener && listener.id !== link.user_id ? listener.id : null;
-    const recent = listenerId && get('SELECT 1 FROM sound_plays WHERE link_id = ? AND track_id = ? AND user_id = ? AND created_at > ?',
-      link.id, t.id, listenerId, now() - 86400_000);
     run('INSERT INTO sound_plays (link_id, track_id, user_id, created_at) VALUES (?, ?, ?, ?)', link.id, t.id, listenerId, now());
-    if (listenerId && !recent) {
-      sendMail(link.owner_email, `${listener.name || listener.email} écoute « ${t.title} » — ONIRIQUE`,
-        `${listener.name || listener.email} vient d'écouter « ${t.title} »${link.label ? ` (lien « ${link.label} »)` : ''}.\n\n${config.siteUrl}/mes-sons\n\nONIRIQUE`,
-        undefined, { buttonLabel: 'Ouvrir ONIRIQUE CLOUD', eyebrow: 'ONIRIQUE CLOUD' }).catch((error) => console.error('Avis d\'écoute :', error.message));
-    }
+    if (listener?.id !== link.user_id) tell(link, 'play', { who: nameOf(listener), title: t.title, key: `${t.id}:${listenerId || req.ip}` });
     res.json({ ok: true });
   });
 
@@ -908,6 +931,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     const at = Math.max(0, Math.min(Number(req.body.at) || 0, t.duration || 86400));
     const cid = run(`INSERT INTO sound_comments (track_id, version_id, link_id, user_id, author, at, body, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       t.id, t.vid, link.id, listener?.id ?? null, author, at, body, now()).lastInsertRowid;
+    if (listener?.id !== link.user_id) tell(link, 'comment', { who: author, title: t.title, key: `c${cid}` });
     res.status(201).json(commentView(get('SELECT * FROM sound_comments WHERE id = ?', cid)));
   });
 
@@ -941,12 +965,14 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
 
   // Le fichier audio, par une adresse signée ; la lecture peut sauter n'importe où (Range, géré par sendFile).
   app.get('/api/sounds/audio/:id', (req, res) => {
-    const e = Number(req.query.e), d = req.query.d === '1' ? 1 : 0, s = String(req.query.s || '');
-    if (!(e > now()) || !same(s, sign(`${id(req.params.id)}.${e}.${d}`))) throw new HttpError(403, "Ce lien d'écoute a expiré : recharge la page.");
+    const e = Number(req.query.e), d = req.query.d === '1' ? 1 : 0, l = d ? id(req.query.l) : 0, s = String(req.query.s || '');
+    if (!(e > now()) || !same(s, sign(`${id(req.params.id)}.${e}.${d}${l ? `.${l}` : ''}`))) throw new HttpError(403, "Ce lien d'écoute a expiré : recharge la page.");
     const v = get('SELECT * FROM sound_versions WHERE id = ?', id(req.params.id));
     if (!v) throw new HttpError(404, 'Son introuvable.');
     res.set({ 'Content-Type': v.mime, 'Cache-Control': 'private, max-age=3600', 'X-Content-Type-Options': 'nosniff' });
     if (d) res.attachment(v.filename);
+    const link = l && get('SELECT l.*, u.email AS owner_email FROM sound_links l JOIN users u ON u.id = l.user_id WHERE l.id = ?', l);
+    if (link) tell(link, 'download', { title: get('SELECT title FROM sound_tracks WHERE id = ?', v.track_id)?.title || v.filename, key: `${v.id}:${req.ip}` });
     res.sendFile(path.join(soundsDir, v.stored_as));
   });
 }

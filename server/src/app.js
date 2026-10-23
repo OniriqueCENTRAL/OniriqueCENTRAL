@@ -36,6 +36,7 @@ import { announcementView, deleteAccount, maintenanceView, mountControl, packVie
 import { enrollment, matchStep, newRecoveryCodes, newSecret, recoveryHash } from './totp.js';
 import { mountLinkPages } from './linkpage.js';
 import { mountSounds } from './sounds.js';
+import { mountPush } from './push.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
@@ -539,6 +540,7 @@ export function createApp() {
 
   mountLinkPages(app, { requireUser, receiveImage, removeMedia, wrap });
   mountSounds(app, { requireUser, receiveFile, receiveImage, removeMedia, wrap });
+  mountPush(app, { requireUser });
 
   // La photo d'ingé d'un fondateur : celle des crédits, distincte de la photo du compte.
   const engineerOnly = (req) => { if (!can(req.user, 'engineer')) throw new HttpError(403, "Le profil d'ingé n'est pas ouvert à ce compte."); };
