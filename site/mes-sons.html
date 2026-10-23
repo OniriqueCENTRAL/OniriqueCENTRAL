@@ -1710,6 +1710,7 @@ function openMailer(p) {
   const section = (title) => el("div", { className: "sub-title wide", textContent: title });
   const when = (t) => (t ? new Date(t).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "");
   const plural = (n, word) => n + " " + word + (n > 1 ? "s" : "");
+  const duration = (seconds) => (seconds < 90 ? "1 min" : seconds < 3600 ? Math.round(seconds / 60) + " min" : Math.floor(seconds / 3600) + " h " + String(Math.round(seconds % 3600 / 60)).padStart(2, "0"));
   // Ce qu'un destinataire a fait d'un mail, en une ligne.
   const activity = (r) => [r.status === "error" ? "Échec de l'envoi" : r.status === "wait" ? "En attente" : r.openedAt ? "Ouvert le " + when(r.openedAt) : "Envoyé, pas encore ouvert",
     r.clickedAt ? "venu écouter" : "", r.plays ? plural(r.plays, "écoute") : "", r.downloads ? plural(r.downloads, "téléchargement") : ""].filter(Boolean).join(" · ");
@@ -1766,7 +1767,9 @@ function openMailer(p) {
   }
   send.onclick = async () => {
     const n = mailList(f.to.value).valid.length;
-    if (!confirm("Envoyer ce mail à " + plural(n, "destinataire") + " depuis " + mailer.fromEmail + " ?")) return;
+    // Un mail toutes les 15 à 30 secondes (pour que Gmail ne bloque pas l'expéditeur) : l'envoi prend du temps.
+    if (!confirm("Envoyer ce mail à " + plural(n, "destinataire") + " depuis " + mailer.fromEmail + " ?\n\nLes mails partent un par un, toutes les 15 à 30 secondes : environ "
+      + duration(Math.max(0, n - 1) * 22.5) + ". Tu peux fermer la page, l'envoi continue.")) return;
     send.disabled = true;
     try {
       clearTimeout(mailerTimer);
@@ -1816,7 +1819,7 @@ function openMailer(p) {
         s.failed && s.done ? el("button", { className: "btn btn-ghost", type: "button", textContent: "Renvoyer aux échecs", onclick: (event) => {
           event.currentTarget.disabled = true;
           api("POST", "/me/sounds/mail/sends/" + s.id + "/retry").then(() => drawTracking(s.id), (error) => { oops(error); drawTracking(s.id); });
-        } }) : "", s.done ? "" : el("span", { className: "muted", style: "font-size:13px", textContent: "Envoi en cours…" })),
+        } }) : "", s.done ? "" : el("span", { className: "muted", style: "font-size:13px", textContent: "Envoi en cours : " + plural(s.waiting, "mail") + " à partir, environ " + duration(s.waiting * s.gap) + " (un mail toutes les 15 à 30 s, pour que Gmail ne bloque pas)" })),
       el("ul", { className: "group" }, ...detail.recipients.map((r) => el("li", {}, el("details", {},
         el("summary", { className: "item" }, el("div", { className: "grow" }, r.name || r.email, el("small", { textContent: (r.name ? r.email + " · " : "") + activity(r) + (r.error ? " · " + r.error : "") }))),
         el("ul", { className: "mail-events" }, ...(r.events.length ? r.events.map((e) => el("li", { textContent: when(e.at) + " · " + (r.name || r.email) + " " + EVENT[e.type] + (e.title && e.type !== "open" && e.type !== "visit" ? " « " + e.title + " »" : "") }))

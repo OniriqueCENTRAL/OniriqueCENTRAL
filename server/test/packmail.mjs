@@ -177,6 +177,22 @@ try {
     assert.equal((await call('GET', `/api/me/sounds/mail-lists/${list.id}`, { token: bm.token })).contacts.find((c) => c.name === 'Booba').unsubscribed, true);
   });
 
+  await step('envoi coupé par un redémarrage : il reprend là où il en était ; délai entre deux mails', async () => {
+    const { resumeSends, GAP } = await import('../src/packsend.js');
+    assert.ok(GAP[0] >= 10_000 && GAP[1] > GAP[0]);
+    const s = (await call('GET', `/api/me/sounds/projects/${pack}/mail/sends`, { token: bm.token }))[0];
+    const r = get('SELECT id FROM sound_mail_recipients WHERE send_id = ? LIMIT 1', s.id).id;
+    run(`UPDATE sound_mail_recipients SET status = 'wait', sent_at = NULL WHERE id = ?`, r);
+    run('UPDATE sound_mail_sends SET done_at = NULL WHERE id = ?', s.id);
+    const view = (await call('GET', `/api/me/sounds/projects/${pack}/mail/sends`, { token: bm.token }))[0];
+    assert.deepEqual([view.done, view.waiting], [false, 1]);
+    const before = outbox.length;
+    await resumeSends();
+    assert.equal(outbox.length, before + 1);
+    assert.equal(get('SELECT status FROM sound_mail_recipients WHERE id = ?', r).status, 'sent');
+    assert.equal((await call('GET', `/api/me/sounds/projects/${pack}/mail/sends`, { token: bm.token }))[0].done, true);
+  });
+
   await step('liste partagée par un fondateur : lue par les membres ONIRIQUE, intouchable par eux, invisible aux autres', async () => {
     const boss = await account('fondateur', 'founder'), member = await account('membre', 'vip'), client = await account('client');
     const l = await call('POST', '/api/me/sounds/mail-lists', { token: boss.token, body: { name: 'CSV ARTISTES BY ONIRIQUE', emails: 'Artist;Email\nORCA MUSIC;00orcamusic@gmail.com\nOnze;11onze.contactpro@gmail.com\n' }, expect: 201 });

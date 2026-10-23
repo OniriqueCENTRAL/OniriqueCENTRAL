@@ -66,6 +66,9 @@ CREATE TABLE IF NOT EXISTS sound_mail_unsubs (
 `);
 
 const PER_SEND = 300, PER_DAY = 500;
+// Entre deux mails d'un envoi, un délai pris au hasard entre 15 et 30 secondes : un envoi régulier et rapide ressemble à
+// du spam, et Gmail ou les autres boîtes bloquent l'expéditeur.
+export const GAP = [15_000, 30_000];
 const EMAIL = /^[^@\s<>"]+@[^@\s<>"]+\.[a-z]{2,}$/i;
 const str = (value, max = 200) => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, max) : '');
 const parse = (text, fallback) => { try { return JSON.parse(text); } catch { return fallback; } };
@@ -233,8 +236,21 @@ export async function googleMailerCallback(req, res) {
 }
 
 //------------------------------------------------------------------------------ Routes
+/** Les envois coupés par un redémarrage du serveur (une mise en ligne) reprennent là où ils en étaient. */
+export async function resumeSends() {
+  for (const s of all('SELECT * FROM sound_mail_sends WHERE done_at IS NULL')) {
+    const m = mailerRow(s.user_id), p = s.project_id && get('SELECT * FROM sound_projects WHERE id = ?', s.project_id);
+    if (!m || !p) {
+      run(`UPDATE sound_mail_recipients SET status = 'error', error = 'Envoi interrompu : boîte mail ou pack introuvable.' WHERE send_id = ? AND status = 'wait'`, s.id);
+      run('UPDATE sound_mail_sends SET done_at = ? WHERE id = ?', now(), s.id);
+      continue;
+    }
+    await launch(s.id, m, p, mailDraft(parse(p.mail || '{}', {})));
+  }
+}
 export function mountPackSend(app, { me, ownProject, sign, wrap }) {
   signLinks = sign;
+  if (!testing) setTimeout(() => resumeSends().catch((error) => console.error(`[mails] reprise : ${error.message}`)), 5000).unref();
   // La boîte mail du membre : essayée pour de bon avant d'être gardée, le mot de passe chiffré.
   app.get('/api/me/sounds/mailer', ...me, (req, res) => res.json(mailerView(req.user.id)));
   app.put('/api/me/sounds/mailer', ...me, wrap(async (req, res) => {
@@ -324,9 +340,9 @@ export function mountPackSend(app, { me, ownProject, sign, wrap }) {
   app.get('/api/me/sounds/projects/:id/mail/sends', ...me, (req, res) => {
     const p = ownProject(req, req.params.id);
     res.json(all(`SELECT s.*, COUNT(r.id) AS total, SUM(r.status = 'sent') AS sent, SUM(r.status = 'error') AS failed, SUM(r.opened_at IS NOT NULL) AS opened,
-      SUM(r.clicked_at IS NOT NULL) AS clicked, SUM(r.plays > 0) AS listened, SUM(r.downloads > 0) AS downloaded
+      SUM(r.clicked_at IS NOT NULL) AS clicked, SUM(r.plays > 0) AS listened, SUM(r.downloads > 0) AS downloaded, SUM(r.status = 'wait') AS waiting
       FROM sound_mail_sends s LEFT JOIN sound_mail_recipients r ON r.send_id = s.id WHERE s.project_id = ? AND s.user_id = ? GROUP BY s.id ORDER BY s.created_at DESC`, p.id, req.user.id)
-      .map((s) => ({ id: s.id, subject: s.subject, createdAt: s.created_at, done: !!s.done_at, total: s.total, sent: s.sent || 0, failed: s.failed || 0,
+      .map((s) => ({ id: s.id, subject: s.subject, createdAt: s.created_at, done: !!s.done_at, waiting: s.waiting || 0, gap: (GAP[0] + GAP[1]) / 2000, total: s.total, sent: s.sent || 0, failed: s.failed || 0,
         opened: s.opened || 0, clicked: s.clicked || 0, listened: s.listened || 0, downloaded: s.downloaded || 0 })));
   });
   app.get('/api/me/sounds/mail/sends/:id', ...me, (req, res) => {
@@ -393,7 +409,13 @@ async function deliver({ sid, m, d, p, link, tracks, sign }) {
   const transport = transportOf(m);
   const api = `${config.siteUrl}/api/sounds/m`;
   const from = m.from_name ? `"${m.from_name.replace(/"/g, '')}" <${m.from_email}>` : m.from_email;
-  for (const r of all(`SELECT * FROM sound_mail_recipients WHERE send_id = ? AND status = 'wait'`, sid)) {
+  const queue = all(`SELECT * FROM sound_mail_recipients WHERE send_id = ? AND status = 'wait' ORDER BY id`, sid);
+  for (const [i, r] of queue.entries()) {
+    // Boîte mail débranchée pendant l'envoi : le reste ne part pas (« Renvoyer aux échecs » une fois rebranchée).
+    if (!mailerRow(m.user_id)) {
+      run(`UPDATE sound_mail_recipients SET status = 'error', error = 'Boîte mail débranchée pendant l''envoi.' WHERE send_id = ? AND status = 'wait'`, sid);
+      break;
+    }
     const listen = `${config.siteUrl}/ecoute?t=${link.token}&r=${r.token}`;
     const follow = (url) => (url.startsWith(`${config.siteUrl}/ecoute?t=${link.token}`) ? url
       : `${api}/${r.token}/lien?u=${encodeURIComponent(url)}&s=${sign(`mail.${r.token}.${url}`)}`);
@@ -418,7 +440,7 @@ async function deliver({ sid, m, d, p, link, tracks, sign }) {
     } catch (error) {
       run(`UPDATE sound_mail_recipients SET status = 'error', error = ? WHERE id = ?`, String(error.message).slice(0, 300), r.id);
     }
-    if (!testing) await new Promise((resolve) => setTimeout(resolve, 400));
+    if (!testing && i < queue.length - 1) await new Promise((resolve) => setTimeout(resolve, GAP[0] + Math.random() * (GAP[1] - GAP[0])));
   }
   run('UPDATE sound_mail_sends SET done_at = ? WHERE id = ?', now(), sid);
 }
