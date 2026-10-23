@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { pipeline } from 'node:stream/promises';
 import express from 'express';
 import { config } from './config.js';
@@ -1644,6 +1645,13 @@ export function createApp() {
     if (req.user.role !== 'founder') throw new HttpError(403, 'Réservé aux fondateurs.');
     const stat = fs.existsSync(brandKit) ? fs.statSync(brandKit) : null;
     res.json({ available: !!stat, size: stat?.size ?? 0, updatedAt: stat?.mtimeMs ?? null });
+  });
+
+  // Les potards ONIRIQUE (onglet KNOB du panel) : la page n'est pas dans le site public, seul un fondateur la reçoit.
+  admin.get('/knobs', (req, res, next) => {
+    if (req.user.role !== 'founder') return next(new HttpError(403, 'Réservé aux fondateurs.'));
+    res.set('Cache-Control', 'no-store');
+    res.sendFile(fileURLToPath(new URL('potards.html', import.meta.url)));
   });
 
   // Les droits des rôles (« Droits des rôles » dans le panel) : quels rôles ont Mes sons, la page de liens, etc.

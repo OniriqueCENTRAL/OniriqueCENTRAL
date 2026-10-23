@@ -1470,11 +1470,13 @@ function showDisk(disk) {
       .map(([label, value]) => el("div", { className: "tile" }, el("b", { textContent: String(value) }), el("span", { textContent: label }))));
     showDisk(o.disk);
     if (me.role === "founder") {
-      // La page des potards, à la hauteur de son contenu (même origine : sa taille se lit directement).
+      // La page des potards vient de l'API (réservée aux fondateurs), à la hauteur de son contenu.
       const frame = $("knobs");
       const fit = () => { try { frame.style.height = frame.contentDocument.documentElement.scrollHeight + "px"; } catch {} };
       frame.onload = () => { fit(); new ResizeObserver(fit).observe(frame.contentDocument.body); };
-      frame.src = "potards.html?embed";
+      fetch("/api/admin/knobs", { headers: { Authorization: "Bearer " + token } })
+        .then((r) => (r.ok ? r.text() : Promise.reject())).then((html) => { frame.srcdoc = html; })
+        .catch(() => { $("tab-knob").replaceChildren(el("p", { className: "error", textContent: "Les potards n'ont pas pu être chargés : rechargez la page." })); });
       $("tab-knob").hidden = false;
     }
     setupTabs();

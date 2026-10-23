@@ -193,6 +193,9 @@ try {
     await call('GET', '/api/admin/brand-kit/info', { token: admin.token, expect: 403 });
     assert.equal((await call('GET', '/api/admin/mailbox', { token: founder.token })).enabled, false); // pas d'IMAP en test
     await call('GET', '/api/admin/brand-kit', { token: founder.token, expect: 404 });
+    await call('GET', '/api/admin/knobs', { token: admin.token, expect: 403 });
+    await call('GET', '/api/admin/knobs', { expect: 401 });
+    assert.ok((await call('GET', '/api/admin/knobs', { token: founder.token })).includes('Les potards ONIRIQUE'));
     await call('POST', '/api/admin/mailbox/send', { token: founder.token, body: { to: 'pas une adresse', subject: 'x', text: 'y' }, expect: 400 });
     await call('POST', '/api/admin/mailbox/send', { token: founder.token, body: { to: 'client@exemple.com', subject: 'Re: votre commande', text: 'Bonjour,\n\nC\'est réglé.' } });
     const sent = outbox.find((m) => m.subject === 'Re: votre commande');
