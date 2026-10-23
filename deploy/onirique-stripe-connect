@@ -31,7 +31,8 @@ if [ "${1:-}" != off ]; then
   KEY=$(printf '%s' "$KEY" | sed 's/\[20[01]~//g' | tr -cd 'A-Za-z0-9_')
   HOOK=$(printf '%s' "$HOOK" | sed 's/\[20[01]~//g' | tr -cd 'A-Za-z0-9_')
   case "$ID" in ca_*) ;; *) stop "Ce n'est pas un ID client Connect (il commence par ca_). Rien n'est changé." ;; esac
-  case "$KEY" in sk_live_*|sk_test_*|rk_live_*|rk_test_*) ;; *) stop "Ce n'est pas une clé secrète Stripe. Rien n'est changé." ;; esac
+  # La liaison des comptes (OAuth) exige la clé secrète standard : Stripe refuse une clé restreinte (rk_…).
+  case "$KEY" in sk_live_*|sk_test_*) ;; rk_*) stop "C'est une clé restreinte (rk_…) : il faut la clé secrète standard (sk_…), dans Développeurs > Clés API. Rien n'est changé." ;; *) stop "Ce n'est pas une clé secrète Stripe. Rien n'est changé." ;; esac
   case "$HOOK" in whsec_*) ;; *) stop "Ce n'est pas un secret de webhook (il commence par whsec_). Rien n'est changé." ;; esac
   case "$ID$KEY$HOOK" in *"'"*|*" "*) stop "Valeur mal copiée (espace ou apostrophe). Rien n'est changé." ;; esac
   # L'identifiant et la clé doivent être du même mode, sinon Stripe refuse chaque connexion.
