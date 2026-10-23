@@ -47,6 +47,7 @@ header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.6); back
 /* Ajouter ONIRIQUE CLOUD à l'écran d'accueil (téléphones seulement) */
 .install { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; padding: 9px 14px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); font: 600 13px var(--f-body); cursor: pointer; }
 .install:hover { border-color: var(--ember); }
+.install[aria-pressed="true"] { border-color: var(--ember); color: var(--ember); }
 .install img { width: 22px; height: 22px; border-radius: 6px; }
 #install-help { width: 400px; }
 /* Réglages : l'en-tête et sa croix restent en haut, seul le contenu défile ; sur téléphone, un panneau qui monte du bas. */
@@ -406,6 +407,7 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
       <div>
         <div class="quota" id="quota"></div>
         <button class="install" id="install" type="button" hidden><img src="assets/app-icon-180.png" alt="">Ajouter à l'écran d'accueil</button>
+        <button class="install" id="vanish" type="button" aria-pressed="false" title="Voir les sons de tous les comptes, sans prévenir personne" hidden>VANISH</button>
         <button class="install" id="settings-open" type="button">Réglages</button>
       </div>
     </div>
@@ -524,6 +526,8 @@ function upload(path, file, onProgress) {
 }
 
 let data = null;
+// VANISH (fondateurs) : les projets de tous les comptes, le temps de l'onglet.
+let vanish = sessionStorage.getItem("onirique.vanish") === "1";
 const fail = (error) => { $("error").textContent = error.message; if ($("grid-view").hidden === false) alert(error.message); };
 const openId = () => { const m = /^#\/p\/(\d+)/.exec(location.hash); return m ? Number(m[1]) : null; };
 const folderId = () => { const m = /^#\/f\/(\d+)/.exec(location.hash); return m ? Number(m[1]) : null; };
@@ -677,7 +681,7 @@ lightClose($("details")); lightClose($("share")); lightClose($("ask")); lightClo
 
 // ——— Données et vues ———
 async function refresh() {
-  data = await api("GET", "/me/sounds");
+  data = await api("GET", "/me/sounds" + (vanish ? "?vanish=1" : ""));
   render();
 }
 function render() {
@@ -737,7 +741,9 @@ function renderGrid() {
   theme(null);
   setBackground(null);
   const q = data.quota, f = folderId() && folder();
-  $("owner-name").textContent = data.owner.name;
+  $("owner-name").textContent = data.vanish ? "VANISH : tous les comptes" : data.owner.name;
+  $("vanish").hidden = !data.founder;
+  $("vanish").ariaPressed = String(!!data.vanish);
   $("quota").replaceChildren(size(q.used) + " sur " + size(q.limit), el("i", {}, el("b", { style: "width:" + Math.min(100, q.used / q.limit * 100) + "%" })));
   $("disk-full").textContent = q.full ? "L'espace de stockage d'ONIRIQUE est plein pour le moment : les envois sont fermés. Tes sons restent écoutables." : "";
   // À la racine : les dossiers, puis les projets hors dossier (les miens et ceux enregistrés), du plus récent au plus ancien.
@@ -1744,6 +1750,11 @@ async function openSettings() {
   if (!dialog.open) dialog.showModal();
 }
 $("settings-open").onclick = openSettings;
+$("vanish").onclick = () => {
+  vanish = !vanish;
+  try { vanish ? sessionStorage.setItem("onirique.vanish", "1") : sessionStorage.removeItem("onirique.vanish"); } catch {}
+  refresh().catch(fail);
+};
 lightClose($("settings"));
 
 (async () => {

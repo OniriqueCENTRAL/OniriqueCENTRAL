@@ -419,26 +419,29 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   // Tout l'espace du membre en une fois : projets, titres, versions, commentaires, liens et place occupée.
   app.get('/api/me/sounds', ...me, (req, res) => {
     const u = req.user.id;
+    // VANISH : un fondateur voit les projets de tous les comptes, en lecture seule ; rien n'est compté ni signalé.
+    const vanish = req.query.vanish === '1' && req.user.role === 'founder';
+    const scope = vanish ? '1 = 1' : ACCESS, args = vanish ? [] : [u, u];
     const projects = all(`SELECT p.*, o.name AS owner_name, o.avatar AS owner_avatar FROM sound_projects p JOIN users o ON o.id = p.user_id
-      WHERE ${ACCESS} ORDER BY p.created_at DESC`, u, u);
+      WHERE ${scope} ORDER BY p.created_at DESC`, ...args);
     const collabs = all(`SELECT c.project_id, u.id, u.name, u.avatar FROM sound_collabs c JOIN users u ON u.id = c.user_id
-      JOIN sound_projects p ON p.id = c.project_id WHERE ${ACCESS} ORDER BY c.created_at`, u, u);
-    const tracks = all(`SELECT t.* FROM sound_tracks t JOIN sound_projects p ON p.id = t.project_id WHERE ${ACCESS} ORDER BY t.position, t.id`, u, u);
+      JOIN sound_projects p ON p.id = c.project_id WHERE ${scope} ORDER BY c.created_at`, ...args);
+    const tracks = all(`SELECT t.* FROM sound_tracks t JOIN sound_projects p ON p.id = t.project_id WHERE ${scope} ORDER BY t.position, t.id`, ...args);
     const versions = all(`SELECT v.* FROM sound_versions v JOIN sound_tracks t ON t.id = v.track_id JOIN sound_projects p ON p.id = t.project_id
-      WHERE ${ACCESS} ORDER BY v.id`, u, u);
+      WHERE ${scope} ORDER BY v.id`, ...args);
     const comments = all(`SELECT c.* FROM sound_comments c JOIN sound_tracks t ON t.id = c.track_id JOIN sound_projects p ON p.id = t.project_id
-      WHERE ${ACCESS} ORDER BY c.at`, u, u);
+      WHERE ${scope} ORDER BY c.at`, ...args);
     const links = all(`SELECT l.*, (SELECT COUNT(*) FROM sound_plays WHERE link_id = l.id) AS plays,
       (SELECT MAX(created_at) FROM sound_plays WHERE link_id = l.id) AS last_play FROM sound_links l WHERE l.user_id = ? ORDER BY l.created_at DESC`, req.user.id);
     // Les écoutes de chaque titre, tous liens confondus (ceux de l'auteur et des collaborateurs), et les auditeurs
     // connectés (le dernier venu d'abord).
     const plays = all(`SELECT s.track_id, s.link_id, s.created_at, u.id, u.name, u.avatar FROM sound_plays s
       JOIN sound_tracks t ON t.id = s.track_id JOIN sound_projects p ON p.id = t.project_id
-      LEFT JOIN users u ON u.id = s.user_id WHERE ${ACCESS} ORDER BY s.created_at DESC`, u, u);
+      LEFT JOIN users u ON u.id = s.user_id WHERE ${scope} ORDER BY s.created_at DESC`, ...args);
     const listeners = (rows) => [...new Map(rows.filter((r) => r.id).map((r) => [r.id, { ...person(r), at: r.created_at }])).values()];
     const d = disk();
     res.json({
-      owner: person(req.user),
+      owner: person(req.user), founder: req.user.role === 'founder', vanish,
       quota: { used: usedBy(req.user.id), limit: quotaBytes(), full: d.used / d.total >= diskMax() },
       projects: projects.map((p) => ({
         id: p.id, title: p.title, artist: p.artist, cover: media(p.cover), background: media(p.background), coverBy: p.cover_by, releaseDate: p.release_date, createdAt: p.created_at,

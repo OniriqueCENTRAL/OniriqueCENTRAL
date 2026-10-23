@@ -364,6 +364,18 @@ try {
     assert.equal(get('SELECT 1 AS x FROM push_subscriptions'), undefined);
   });
 
+  await step('VANISH : un fondateur voit les projets de tous les comptes, en lecture seule', async () => {
+    const boss = await account('fondateur-vanish', 'founder');
+    const all = await call('GET', '/api/me/sounds?vanish=1', { token: boss.token });
+    assert.equal(all.vanish, true);
+    const theirs = all.projects.find((x) => x.owner.id === member.id);
+    assert.ok(theirs && !theirs.mine && theirs.tracks.length);
+    assert.equal((await call('GET', '/api/me/sounds', { token: boss.token })).projects.length, 0);
+    const mine = await call('GET', '/api/me/sounds?vanish=1', { token: member.token });
+    assert.ok(!mine.vanish && !mine.projects.some((x) => x.owner.id !== member.id && !x.collaborators.some((c) => c.id === member.id)));
+    await call('PATCH', `/api/me/sounds/projects/${theirs.id}`, { token: boss.token, body: { title: 'x' }, expect: 404 });
+  });
+
   console.log(`\n${passed} étapes réussies.`);
 } finally {
   server.close();
