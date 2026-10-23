@@ -13,6 +13,7 @@ import { sendMail } from './mail.js';
 import { escapeHtml } from './mailtemplate.js';
 import { textImage } from './linkpage.js';
 import { push, wants, prefsOf } from './push.js';
+import { mailDraft, packMailHtml } from './packmail.js';
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS sound_projects (
@@ -166,6 +167,37 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'd
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'background'`).get()) {
   db.exec('ALTER TABLE sound_projects ADD COLUMN background TEXT');
 }
+// Les packs de prods : un projet de beatmaker (kind = 'pack') et le brouillon de son mail ; chaque prod a son BPM, sa
+// clé (« C# min »), son prix en centimes et le lien de paiement du beatmaker (0 / '' : pas en vente).
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'kind'`).get()) {
+  db.exec(`ALTER TABLE sound_projects ADD COLUMN kind TEXT NOT NULL DEFAULT ''`);
+  db.exec(`ALTER TABLE sound_projects ADD COLUMN mail TEXT NOT NULL DEFAULT '{}'`);
+  db.exec('ALTER TABLE sound_tracks ADD COLUMN bpm INTEGER NOT NULL DEFAULT 0');
+  db.exec(`ALTER TABLE sound_tracks ADD COLUMN music_key TEXT NOT NULL DEFAULT ''`);
+  db.exec('ALTER TABLE sound_tracks ADD COLUMN price INTEGER NOT NULL DEFAULT 0');
+  db.exec(`ALTER TABLE sound_tracks ADD COLUMN buy_url TEXT NOT NULL DEFAULT ''`);
+}
+/** « c#m », « Bb minor », « F majeur »… → « C# min », « Bb min », « F maj » ; null si ce n'est pas une tonalité. */
+export function musicKey(value) {
+  const m = /^([a-g])\s*(#|♯|b|♭)?\s*(m|min|minor|mineur|maj|major|majeur)?$/i.exec(String(value || '').trim());
+  if (!m) return null;
+  return m[1].toUpperCase() + (m[2] ? (/[#♯]/.test(m[2]) ? '#' : 'b') : '') + (/^(m|min)/i.test(m[3] || '') && !/^maj/i.test(m[3]) ? ' min' : ' maj');
+}
+/** Le titre d'une prod d'après son fichier, son BPM (« 140bpm ») et sa clé (« C#min », « Am ») s'ils y sont. */
+export function prodFromFilename(name) {
+  let title = String(name).replace(/\.[a-z0-9]{2,5}$/i, '');
+  let bpm = 0, key = '';
+  title = title.replace(/(\d{2,3})\s*bpm|bpm\s*(\d{2,3})/i, (all, a, b) => { const n = Number(a || b); if (n < 40 || n > 300) return all; bpm = n; return ' '; });
+  const sep = '(^|[\\s_\\-.()\\[\\]])';
+  title = title.replace(new RegExp(sep + '([a-g](?:#|♯|b|♭)?)\\s?(minor|min|major|maj|mineur|majeur|m)(?=$|[\\s_\\-.()\\[\\]])', 'i'), (all, before, note, mode) => {
+    // « Am » seul n'est une clé qu'en majuscule et à côté d'un BPM (« I Am Legend » garde son titre).
+    if (key || (mode.toLowerCase() === 'm' && (note[0] !== note[0].toUpperCase() || (!bpm && note.length === 1)))) return all;
+    key = musicKey(note + mode); return before + ' ';
+  });
+  title = title.replace(/_+/g, ' ').replace(/\(\s*\)|\[\s*\]/g, ' ').replace(/(\s*[-–|·]\s*){2,}/g, ' - ')
+    .replace(/^[\s\-–|·]+|[\s\-–|·]+$/g, '').replace(/\s+/g, ' ').trim();
+  return { title: title || String(name).replace(/\.[a-z0-9]{2,5}$/i, ''), bpm, key };
+}
 const isDay = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value + 'T00:00:00Z'))
   && new Date(value + 'T00:00:00Z').toISOString().startsWith(value);
 
@@ -234,6 +266,8 @@ function aboutOf(userId, mine) {
     linkPage: handle ? `${config.linksUrl}/${handle}` : null };
 }
 const creditsOf = (row) => { try { return JSON.parse(row.credits || '{}'); } catch { return {}; } };
+// BPM, clé et vente d'une prod : le lien de paiement n'est donné qu'avec un prix.
+const saleOf = (t) => ({ bpm: t.bpm, key: t.music_key, price: t.buy_url ? t.price : 0, buyUrl: t.price ? t.buy_url : '' });
 const person = (u) => ({ id: u.id, name: u.name || 'ONIRIQUE', avatar: media(u.avatar) });
 const linkView = (l) => ({
   id: l.id, url: `${config.siteUrl}/ecoute?t=${l.token}`, projectId: l.project_id, trackId: l.track_id, label: l.label,
@@ -458,17 +492,20 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       owner: person(req.user), founder: req.user.role === 'founder', vanish,
       quota: { used: usedBy(req.user.id), limit: quotaBytes(), full: d.used / d.total >= diskMax() },
       projects: projects.map((p) => ({
-        id: p.id, title: p.title, artist: p.artist, cover: media(p.cover), background: media(p.background), coverBy: p.cover_by, releaseDate: p.release_date, createdAt: p.created_at,
+        id: p.id, kind: p.kind, title: p.title, artist: p.artist, cover: media(p.cover), background: media(p.background), coverBy: p.cover_by, releaseDate: p.release_date, createdAt: p.created_at,
         // Les dossiers sont ceux de l'auteur : un projet où l'on collabore est à la racine de sa page.
         mine: p.user_id === u, folderId: p.user_id === u ? p.folder_id : null,
         owner: person({ id: p.user_id, name: p.owner_name, avatar: p.owner_avatar }),
         collaborators: collabs.filter((c) => c.project_id === p.id).map(person),
         inviteUrl: p.user_id === u && p.invite_token ? `${config.siteUrl}/mes-sons#/invite/${p.invite_token}` : null,
         about: aboutOf(p.user_id, p.user_id === u),
+        // Le mail d'un pack (sa liste d'adresses comprise) ne se montre qu'à son auteur.
+        mail: p.kind === 'pack' && p.user_id === u ? mailDraft(JSON.parse(p.mail || '{}')) : null,
         tracks: tracks.filter((t) => t.project_id === p.id).map((t) => {
           const mine = plays.filter((r) => r.track_id === t.id);
           return {
             id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), lyrics: t.lyrics, currentId: t.current_id, createdAt: t.created_at,
+            bpm: t.bpm, key: t.music_key, price: t.price, buyUrl: t.buy_url,
             versions: versions.filter((v) => v.track_id === t.id).map((v, i) => versionView(v, i, true)),
             comments: comments.filter((c) => c.track_id === t.id).map(commentView),
             plays: mine.length, lastPlay: mine[0]?.created_at ?? null, listeners: listeners(mine),
@@ -569,7 +606,8 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     rateLimit(`sounds:${req.user.id}`, 300);
     const title = str(req.body.title, 120);
     if (!title) throw new HttpError(400, 'Donne un nom au projet.');
-    res.status(201).json({ id: run('INSERT INTO sound_projects (user_id, title, created_at) VALUES (?, ?, ?)', req.user.id, title, now()).lastInsertRowid });
+    const kind = req.body.kind === 'pack' ? 'pack' : '';
+    res.status(201).json({ id: run('INSERT INTO sound_projects (user_id, title, kind, created_at) VALUES (?, ?, ?, ?)', req.user.id, title, kind, now()).lastInsertRowid });
   });
   app.patch('/api/me/sounds/projects/:id', ...me, (req, res) => {
     const p = project(req, req.params.id);
@@ -577,6 +615,10 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       const title = str(req.body.title, 120);
       if (!title) throw new HttpError(400, 'Donne un nom au projet.');
       run('UPDATE sound_projects SET title = ? WHERE id = ?', title, p.id);
+    }
+    if (req.body.mail !== undefined) {
+      if (ownProject(req, p.id).kind !== 'pack') throw new HttpError(400, "Seul un pack de prods a un mail.");
+      run('UPDATE sound_projects SET mail = ? WHERE id = ?', JSON.stringify(mailDraft(req.body.mail)), p.id);
     }
     if (req.body.coverBy !== undefined) run('UPDATE sound_projects SET cover_by = ? WHERE id = ?', str(req.body.coverBy, 80), p.id);
     if (req.body.artist !== undefined) run('UPDATE sound_projects SET artist = ? WHERE id = ?', str(req.body.artist, 120), p.id);
@@ -590,6 +632,17 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (Array.isArray(req.body.order)) transaction(() => req.body.order.forEach((tid, i) =>
       run('UPDATE sound_tracks SET position = ? WHERE id = ? AND project_id = ?', i, id(tid), p.id)));
     res.json({ ok: true });
+  });
+  // L'aperçu du mail d'un pack, tel qu'il est en train d'être rempli (rien n'est enregistré ni envoyé).
+  app.post('/api/me/sounds/projects/:id/mail/preview', ...me, (req, res) => {
+    const p = ownProject(req, req.params.id);
+    rateLimit(`sounds-mail:${req.user.id}`, 600);
+    const tracks = all('SELECT * FROM sound_tracks WHERE project_id = ? ORDER BY position, id', p.id);
+    const link = get('SELECT token FROM sound_links WHERE project_id = ? AND user_id = ? ORDER BY created_at DESC', p.id, req.user.id);
+    res.json({ html: packMailHtml(mailDraft(req.body), {
+      title: p.title, artist: p.artist || req.user.name || 'ONIRIQUE', cover: media(p.cover), listenUrl: link ? `${config.siteUrl}/ecoute?t=${link.token}` : '',
+      tracks: tracks.map((t) => ({ id: t.id, title: t.title, ...saleOf(t) })),
+    }) });
   });
   app.delete('/api/me/sounds/projects/:id', ...me, (req, res) => {
     const p = ownProject(req, req.params.id);
@@ -663,10 +716,13 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     const p = project(req, req.params.id);
     rateLimit(`sounds-upload:${req.user.id}`, 200, 3600_000);
     const file = await receiveAudio(req, p.user_id);
-    const title = str(req.query.title, 120) || file.filename.replace(/\.[a-z0-9]{2,5}$/i, '');
+    // Dans un pack, le BPM et la clé écrits dans le nom du fichier deviennent ceux de la prod.
+    const prod = p.kind === 'pack' ? prodFromFilename(file.filename) : { title: file.filename.replace(/\.[a-z0-9]{2,5}$/i, ''), bpm: 0, key: '' };
+    const title = str(req.query.title, 120) || str(prod.title, 120);
     const trackId = transaction(() => {
       const position = get('SELECT COALESCE(MAX(position), -1) + 1 AS n FROM sound_tracks WHERE project_id = ?', p.id).n;
-      const tid = run('INSERT INTO sound_tracks (project_id, title, position, created_at) VALUES (?, ?, ?, ?)', p.id, title, position, now()).lastInsertRowid;
+      const tid = run('INSERT INTO sound_tracks (project_id, title, position, bpm, music_key, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+        p.id, title, position, prod.bpm, prod.key || '', now()).lastInsertRowid;
       run('UPDATE sound_tracks SET current_id = ? WHERE id = ?', addVersion(tid, file, ''), tid);
       return tid;
     });
@@ -696,6 +752,28 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       const day = String(req.body.day || '');
       if (day && !isDay(day)) throw new HttpError(400, 'Date invalide.');
       run('UPDATE sound_tracks SET day = ? WHERE id = ?', day, t.id);
+    }
+    // La prod d'un pack : BPM (0 : aucun), clé ('' : aucune), prix en centimes et lien de paiement (0 / '' : pas en vente).
+    if (req.body.bpm !== undefined) {
+      const bpm = Math.round(Number(req.body.bpm) || 0);
+      if (bpm && (bpm < 40 || bpm > 300)) throw new HttpError(400, 'Le BPM va de 40 à 300.');
+      run('UPDATE sound_tracks SET bpm = ? WHERE id = ?', bpm, t.id);
+    }
+    if (req.body.key !== undefined) {
+      const key = req.body.key ? musicKey(req.body.key) : '';
+      if (key === null) throw new HttpError(400, 'Clé inconnue : écris par exemple « C# min » ou « F maj ».');
+      run('UPDATE sound_tracks SET music_key = ? WHERE id = ?', key, t.id);
+    }
+    if (req.body.price !== undefined) {
+      const price = Math.round(Number(req.body.price));
+      if (!Number.isInteger(price) || price < 0 || price > 100000_00) throw new HttpError(400, 'Prix invalide.');
+      run('UPDATE sound_tracks SET price = ? WHERE id = ?', price, t.id);
+    }
+    if (req.body.buyUrl !== undefined) {
+      let url = str(req.body.buyUrl, 500);
+      if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
+      if (url) { try { if (!/^https?:$/.test(new URL(url).protocol)) throw 0; } catch { throw new HttpError(400, 'Lien de paiement invalide.'); } }
+      run('UPDATE sound_tracks SET buy_url = ? WHERE id = ?', url, t.id);
     }
     if (req.body.stage !== undefined) {
       const stage = String(req.body.stage).toLowerCase();
@@ -728,8 +806,8 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     fs.copyFileSync(path.join(soundsDir, v.stored_as), path.join(soundsDir, storedAs));
     const tid = transaction(() => {
       run('UPDATE sound_tracks SET position = position + 1 WHERE project_id = ? AND position > ?', t.project_id, t.position);
-      const created = run('INSERT INTO sound_tracks (project_id, title, position, created_at) VALUES (?, ?, ?, ?)',
-        t.project_id, str(`${t.title} (copie)`, 120), t.position + 1, now()).lastInsertRowid;
+      const created = run('INSERT INTO sound_tracks (project_id, title, position, bpm, music_key, price, buy_url, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        t.project_id, str(`${t.title} (copie)`, 120), t.position + 1, t.bpm, t.music_key, t.price, t.buy_url, now()).lastInsertRowid;
       const vid = run(`INSERT INTO sound_versions (track_id, filename, stored_as, mime, size, duration, peaks, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         created, v.filename, storedAs, v.mime, v.size, v.duration, v.peaks, v.note, now()).lastInsertRowid;
       run('UPDATE sound_tracks SET current_id = ? WHERE id = ?', vid, created);
@@ -958,7 +1036,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       owner: p.artist || p.author_name || 'ONIRIQUE', ownerAvatar: media(p.author_avatar), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover), background: media(p.background), coverBy: p.cover_by, releaseDate: p.release_date,
       download: !!link.download, about: aboutOf(p.user_id, false),
       tracks: tracks.map((t) => ({
-        id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), lyrics: t.lyrics,
+        id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), lyrics: t.lyrics, ...saleOf(t),
         version: { id: t.vid, filename: t.filename, duration: t.duration, peaks: JSON.parse(t.peaks), url: audioUrl(t.vid), downloadUrl: link.download ? audioUrl(t.vid, true, link.id) : null },
         comments: comments.filter((c) => c.track_id === t.id).map(commentView),
       })),

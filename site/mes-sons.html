@@ -383,6 +383,35 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
 
 /* Partage */
 #share { width: 480px; }
+/* Le mail d'un pack : les réglages à gauche, l'aperçu à droite ; l'un sous l'autre sur téléphone. */
+#mailer { width: 1180px; }
+#mailer[open] { display: flex; flex-direction: column; overflow: hidden; height: calc(100dvh - 24px); }
+#mailer .dlg-head { flex: none; padding-bottom: 14px; border-bottom: 1px solid rgba(255,210,214,.08); }
+#mailer .dlg-head > span { font-size: 13px; white-space: nowrap; }
+.mail-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); }
+.mail-left { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 14px 18px 20px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-content: start; }
+.mail-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+.mail-form .wide { grid-column: 1 / -1; }
+.mail-form .field { display: grid; gap: 6px; font-size: 13px; color: var(--haze); }
+.mail-check { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--mist); }
+.mail-check input[type=checkbox] { min-height: 0; width: 18px; height: 18px; accent-color: var(--ember); }
+.mail-check input[type=color] { min-height: 0; width: 38px; height: 30px; padding: 2px; border-radius: 8px; cursor: pointer; }
+.mail-prods { display: grid; gap: 8px; padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,210,214,.07); }
+.mail-prods .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mail-colors { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.mail-frame { width: 100%; height: 100%; border: 0; border-left: 1px solid rgba(255,210,214,.08); background: #0d0809; }
+@media (max-width: 860px) {
+  .mail-body { display: block; overflow-y: auto; }
+  .mail-left { overflow: visible; }
+  .mail-frame { height: 640px; border-left: 0; border-top: 1px solid rgba(255,210,214,.08); }
+  .mail-form { grid-template-columns: minmax(0, 1fr); }
+}
+/* Les badges d'une prod : BPM et clé à côté du titre, prix à droite. */
+.tline:has(.prod) { flex-wrap: wrap; row-gap: 4px; }
+.tline:has(.prod) b { min-width: auto; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stage.prod:not(.empty) { border-style: solid; color: var(--mist); background: rgba(255,255,255,.04); letter-spacing: .04em; }
+.stage.prod.price { border-color: var(--ember); background: var(--ember); color: var(--night); }
+.stage.prod.price-off { border-style: dashed; border-color: var(--ember); }
 .share-body { padding: 18px; display: grid; gap: 14px; }
 .faces { display: flex; }
 .faces img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid #150a0c; margin-left: -8px; }
@@ -447,6 +476,7 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
     <div class="crumb">
       <button class="round" id="back" type="button" aria-label="Retour aux projets"></button>
       <div><b style="font:700 15px var(--f-display)">Projets</b><small id="crumb-owner"></small></div>
+      <button class="edit-toggle" id="pack-mail" type="button" style="margin-left:auto" hidden>Mails</button>
     </div>
     <div class="album">
       <div>
@@ -503,7 +533,8 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
 <dialog id="share"></dialog>
 <dialog id="settings"></dialog>
 <dialog id="collab"></dialog>
-<dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" value="cancel" formnovalidate>Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
+<dialog id="mailer"></dialog>
+<dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close('cancel')">Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
 <script src="assets/sounds-player.js?v=10"></script>
 <script>
@@ -890,7 +921,7 @@ function projectTile(p) {
   art.onclick = () => navigate("#/p/" + p.id);
   art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
   const tile = el("div", { className: "tile" }, art, caption(p.title,
-    el("span", { textContent: p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre")
+    el("span", { textContent: (p.kind === "pack" ? "Pack · " + count(p.tracks.length, "prod", "prods") : p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre"))
       + (p.mine ? "" : " · de " + (p.artist || p.owner.name)) + (linkFor("project", p.id) ? " · partagé" : "") + (p.mine && p.collaborators.length ? " · en collab" : "") }),
     dotsFor(p.title, (b) => projectMenu(b, p)), projectFeat(p)));
   tile.dataset.id = p.id;
@@ -1092,6 +1123,8 @@ function renderProject(p) {
   $("bg-remove").hidden = !p.background;
   tintOf(p.cover).then((t) => { if (openId() === p.id) theme(t); });
   $("crumb-owner").textContent = data.owner.name;
+  $("pack-mail").hidden = !p.mail;
+  if ($("mailer").open && mailerId === p.id) drawMailerProds(p);
   if (!$("cover-by").contains(document.activeElement)) $("cover-by").replaceChildren(...(editing || p.coverBy ? [el("span", { className: "eyebrow", textContent: "Pochette" }),
     editing ? inlineEdit(p.coverBy, "Ajouter l'auteur de la pochette", 80, (coverBy) => api("PATCH", "/me/sounds/projects/" + p.id, { coverBy }).then(refresh), true)
       : el("span", { textContent: p.coverBy, style: "color:var(--mist);font-weight:600" })] : []));
@@ -1108,7 +1141,7 @@ function renderProject(p) {
   if (!$("project-meta").contains(document.activeElement)) $("project-meta").replaceChildren(el("img", { src: avatar(p.owner), alt: "" }),
     editing ? inlineEdit(p.artist || p.owner.name, p.owner.name, 120, (artist) => api("PATCH", "/me/sounds/projects/" + p.id, { artist: artist === p.owner.name ? "" : artist }).then(refresh), true)
       : el("span", { textContent: p.artist || p.owner.name }),
-    " · " + p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre") + (p.tracks.length ? " · " + length(projectLength(p)) : ""),
+    " · " + (p.kind === "pack" ? "Pack de " + count(p.tracks.length, "prod", "prods") : p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre")) + (p.tracks.length ? " · " + length(projectLength(p)) : ""),
     linkFor("project", p.id) ? el("span", { className: "tag on", textContent: "Partagé" }) : "",
     p.collaborators.length ? el("span", { className: "faces-row", title: "En collab avec " + p.collaborators.map((u) => u.name).join(", ") },
       " · avec ", ...p.collaborators.slice(0, 4).map((u) => el("img", { src: avatar(u), alt: u.name }))) : "");
@@ -1163,16 +1196,66 @@ function featButton(t, editable = editing) {
   };
   return b;
 }
+// Les badges d'une prod (pack de prods) : BPM et clé à côté du titre, prix à droite ; vides, ils n'apparaissent qu'en édition.
+const euros = (cents) => (cents / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: cents % 100 ? 2 : 0 });
+function prodBadge(label, empty, title, onclick, cls = "") {
+  if (!label && !editing) return "";
+  const b = el("button", { className: "stage prod " + cls + (label ? "" : " empty"), type: "button", textContent: label || empty, title });
+  b.onclick = (event) => { event.stopPropagation(); onclick(b); };
+  return b;
+}
+// Le prix, puis le lien de paiement du beatmaker (Stripe, PayPal…) : la prod est en vente quand elle a les deux.
+async function editSale(t, save, onlyLink = false) {
+  let price = t.price;
+  if (!onlyLink) {
+    const v = await ask("Prix en euros (vide pour ne pas la vendre)", t.price ? String(t.price / 100).replace(".", ",") : "", true);
+    if (v === null) return;
+    const n = Number(v.replace(",", ".").replace(/[€\s]/g, ""));
+    if (!(n >= 0)) return fail(new Error("Prix invalide : écris par exemple 29,99."));
+    price = Math.round(n * 100);
+    if (!price) return save({ price: 0 });
+    if (t.buyUrl) return save({ price });
+  }
+  const url = await ask("Lien de paiement de la prod (Stripe, PayPal, Gumroad…)", t.buyUrl, true);
+  if (url !== null) save({ price, buyUrl: url });
+}
+function prodBadges(p, t) {
+  if (p.kind !== "pack") return { tempo: [], sale: "" };
+  const save = (body) => api("PATCH", "/me/sounds/tracks/" + t.id, body).then(refresh, fail);
+  const onSale = t.price && t.buyUrl;
+  return {
+    tempo: [
+      prodBadge(t.bpm ? t.bpm + " BPM" : "", "+ BPM", "Tempo de la prod", async () => {
+        const n = await ask("BPM de la prod (vide pour retirer)", t.bpm ? String(t.bpm) : "", true);
+        if (n !== null) save({ bpm: Math.round(Number(n.replace(",", "."))) || 0 });
+      }),
+      prodBadge(t.key, "+ Clé", "Tonalité de la prod", async () => {
+        const k = await ask("Clé de la prod (ex. C# min, F maj ; vide pour retirer)", t.key, true);
+        if (k !== null) save({ key: k });
+      }),
+    ],
+    sale: prodBadge(t.price ? euros(t.price) : "", "+ Prix", onSale ? "En vente" : t.price ? "Ajoute un lien de paiement pour la mettre en vente" : "Mettre la prod en vente", (b) => {
+      if (!t.price) return editSale(t, save);
+      menu(b, [
+        { label: "Changer le prix", icon: "repeat", onclick: () => editSale(t, save) },
+        { label: t.buyUrl ? "Changer le lien de paiement" : "Ajouter le lien de paiement", icon: "link", onclick: () => editSale(t, save, true) },
+        t.buyUrl && { label: "Ouvrir le lien de paiement", icon: "share", onclick: () => window.open(t.buyUrl, "_blank", "noopener") },
+        "-",
+        { label: "Retirer de la vente", icon: "close", danger: true, onclick: () => save({ price: 0, buyUrl: "" }) },
+      ]);
+    }, onSale ? "price" : t.price ? "price-off" : ""),
+  };
+}
 function trackRow(p, t, i) {
-  const v = live(t);
+  const v = live(t), prod = prodBadges(p, t);
   const more = el("button", { className: "dots", type: "button", ariaLabel: "Options de " + t.title }, icon("more"));
   more.onclick = (event) => { event.stopPropagation(); openDetails(t.id); };
   const row = el("li", { className: "trk", draggable: true, tabIndex: 0, title: "Écouter (glisser pour réordonner)", style: "--i:" + (i + 3) },
     el("span", { className: "num", textContent: String(i + 1) }),
-    el("div", {}, el("div", { className: "tline" }, el("b", { textContent: t.title }), featButton(t)), el("small", { textContent: [day(v.createdAt), "v" + v.n + (t.versions.length > 1 ? " sur " + t.versions.length : ""),
+    el("div", {}, el("div", { className: "tline" }, el("b", { textContent: t.title }), ...prod.tempo, featButton(t)), el("small", { textContent: [day(v.createdAt), "v" + v.n + (t.versions.length > 1 ? " sur " + t.versions.length : ""),
       t.comments.length ? t.comments.length + " commentaire" + (t.comments.length > 1 ? "s" : "") : null,
       t.plays ? t.plays + " écoute" + (t.plays > 1 ? "s" : "") : null].filter(Boolean).join(" · ") })),
-    el("span", { className: "badges" }, dateButton(t), stageButton(t, editing)), el("span", { className: "len", textContent: v.duration ? OP.time(v.duration) : "" }), more);
+    el("span", { className: "badges" }, ...(p.kind === "pack" ? [prod.sale] : [dateButton(t), stageButton(t, editing)])), el("span", { className: "len", textContent: v.duration ? OP.time(v.duration) : "" }), more);
   row.dataset.id = t.id;
   row.draggable = editing;
   row.title = editing ? "Écouter (glisser pour réordonner)" : "Écouter";
@@ -1360,6 +1443,15 @@ function addMenu(anchor) {
         await refresh(); location.hash = "#/p/" + id;
       } catch (error) { fail(error); }
     } },
+    { label: "Créer un pack de prods", icon: "star", onclick: async () => {
+      const title = await ask("Nom du pack de prods");
+      if (!title) return;
+      try {
+        const { id } = await api("POST", "/me/sounds/projects", { title, kind: "pack" });
+        if (folderId()) await api("PATCH", "/me/sounds/projects/" + id, { folderId: folderId() });
+        await refresh(); location.hash = "#/p/" + id;
+      } catch (error) { fail(error); }
+    } },
     !p && { label: "Nouveau dossier", icon: "plus", onclick: async () => {
       const title = await ask("Nom du dossier");
       if (title) api("POST", "/me/sounds/folders", { title, parentId: folderId() }).then(refresh, fail);
@@ -1397,6 +1489,108 @@ $("project-title").onclick = async () => {
   const p = project(), title = await ask("Nom du projet", p.title);
   if (title) api("PATCH", "/me/sounds/projects/" + p.id, { title }).then(refresh, fail);
 };
+
+// ——— Le mail d'un pack de prods ———
+// Préparé par le beatmaker : destinataires, textes, prods mises en avant, couleurs et polices, avec l'aperçu du mail tel
+// qu'il arrivera. Le brouillon s'enregistre au fil de la saisie ; l'envoi n'est pas encore ouvert.
+const MAIL_COLORS = { bg: ["Fond", "#0D0809"], card: ["Carte", "#1A080A"], accent: ["Accent", "#E23444"], text: ["Texte", "#F6EEEE"],
+  muted: ["Texte secondaire", "#B39A9D"], button: ["Bouton", "#F6EEEE"], buttonText: ["Texte du bouton", "#0D0809"] };
+const MAIL_FONTS = [["grotesk", "Hanken Grotesk"], ["display", "Unbounded"], ["serif", "Georgia (serif)"], ["mono", "JetBrains Mono"]];
+const mailList = (text) => {
+  const parts = text.split(/[\s,;]+/).map((s) => s.trim().toLowerCase()).filter(Boolean);
+  const valid = [...new Set(parts.filter((s) => /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/.test(s)))];
+  return { valid, invalid: parts.filter((s) => !valid.includes(s)) };
+};
+let mailerId = null, mailerTimer = null, mailerForm = null;
+function drawMailerProds(p, ids = mailerForm.draft().trackIds) {
+  const box = $("mailer").querySelector(".mail-prods");
+  if (!box) return;
+  const chosen = new Set(ids);
+  box.replaceChildren(...(p.tracks.length ? p.tracks.map((t) => el("label", { className: "mail-check" },
+    el("input", { type: "checkbox", value: t.id, checked: chosen.has(t.id) }),
+    el("span", { className: "grow", textContent: t.title }),
+    ...[t.bpm ? t.bpm + " BPM" : "", t.key, t.price && t.buyUrl ? euros(t.price) : ""].filter(Boolean).map((b) => el("span", { className: "stage prod", textContent: b }))))
+    : [el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: "Ajoute des prods au pack pour les mettre dans le mail." })]));
+}
+function openMailer(p) {
+  mailerId = p.id;
+  const d = p.mail, dialog = $("mailer");
+  const field = (label, input, wide = true) => el("label", { className: "field" + (wide ? " wide" : "") }, el("span", { textContent: label }), input);
+  const f = {
+    to: el("textarea", { value: d.to, maxLength: 50000, placeholder: "Colle les adresses : une par ligne, ou séparées par des virgules", style: "min-height:90px" }),
+    from: el("input", { value: d.from, maxLength: 80, placeholder: p.artist || data.owner.name }),
+    subject: el("input", { value: d.subject, maxLength: 140, placeholder: "Nouveau pack : " + p.title }),
+    preheader: el("input", { value: d.preheader, maxLength: 160, placeholder: "La phrase grise après l'objet" }),
+    eyebrow: el("input", { value: d.eyebrow, maxLength: 40, placeholder: "Nouveau pack" }),
+    title: el("input", { value: d.title, maxLength: 120, placeholder: p.title }),
+    text: el("textarea", { value: d.text, maxLength: 8000, placeholder: "Le message. Une ligne vide entre deux paragraphes.\n**gras**, [texte du lien](https://…)" }),
+    image: el("input", { type: "url", value: d.image, placeholder: "https://… (image en tête, facultatif)" }),
+    buttonLabel: el("input", { value: d.buttonLabel, maxLength: 40, placeholder: "Écouter le pack" }),
+    buttonUrl: el("input", { type: "url", value: d.buttonUrl, placeholder: "https://…" }),
+    signature: el("input", { value: d.signature, maxLength: 200, placeholder: p.artist || data.owner.name }),
+    footer: el("input", { value: d.footer, maxLength: 300, placeholder: "Une ligne sous le mail (facultatif)" }),
+    showPrices: el("input", { type: "checkbox", checked: d.showPrices }),
+    font: el("select", {}, ...MAIL_FONTS.map(([v, l]) => el("option", { value: v, textContent: l, selected: d.font === v }))),
+    titleFont: el("select", {}, ...MAIL_FONTS.map(([v, l]) => el("option", { value: v, textContent: l, selected: d.titleFont === v }))),
+  };
+  const colors = Object.fromEntries(Object.entries(MAIL_COLORS).map(([k]) => [k, el("input", { type: "color", value: d.colors[k] })]));
+  const total = el("small", { className: "muted" }), status = el("span", { className: "muted", style: "font-size:13px" });
+  const frame = el("iframe", { className: "mail-frame", title: "Aperçu du mail" });
+  const form = el("form", { className: "mail-form" });
+  mailerForm = {
+    draft: () => ({ ...Object.fromEntries(["to", "from", "subject", "preheader", "eyebrow", "title", "text", "image", "buttonLabel", "buttonUrl", "signature", "footer", "font", "titleFont"]
+      .map((k) => [k, f[k].value])), showPrices: f.showPrices.checked,
+      trackIds: [...form.querySelectorAll(".mail-prods input:checked")].map((x) => Number(x.value)),
+      colors: Object.fromEntries(Object.entries(colors).map(([k, input]) => [k, input.value])) }),
+  };
+  const drawCount = () => {
+    const { valid, invalid } = mailList(f.to.value);
+    total.textContent = valid.length + " adresse" + (valid.length > 1 ? "s" : "") + (invalid.length ? " · à corriger : " + invalid.slice(0, 5).join(", ") + (invalid.length > 5 ? "…" : "") : "");
+    total.style.color = invalid.length ? "#FF5A68" : "";
+  };
+  const update = () => {
+    drawCount();
+    clearTimeout(mailerTimer);
+    mailerTimer = setTimeout(async () => {
+      const draft = mailerForm.draft();
+      try {
+        const [{ html }] = await Promise.all([api("POST", "/me/sounds/projects/" + p.id + "/mail/preview", draft),
+          api("PATCH", "/me/sounds/projects/" + p.id, { mail: draft })]);
+        frame.srcdoc = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data: http:; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https: data:"><base target="_blank">` + html;
+        p.mail = draft;
+        status.textContent = "Brouillon enregistré";
+      } catch (error) { status.textContent = error.message; }
+    }, 450);
+  };
+  const reset = el("button", { className: "btn btn-ghost", type: "button", textContent: "Couleurs d'origine",
+    onclick: () => { for (const [k, [, v]] of Object.entries(MAIL_COLORS)) colors[k].value = v; update(); } });
+  const send = el("button", { className: "btn btn-primary", type: "button", textContent: "Envoyer", disabled: true, title: "L'envoi arrive bientôt" });
+  const section = (title) => el("div", { className: "sub-title wide", textContent: title });
+  form.append(
+    section("Destinataires"), field("Liste d'adresses", f.to), el("div", { className: "wide" }, total),
+    section("Expéditeur et objet"), field("Nom de l'expéditeur", f.from, false), field("Objet", f.subject, false), field("Phrase d'aperçu", f.preheader),
+    section("Contenu"), field("Petit titre", f.eyebrow, false), field("Titre", f.title, false), field("Message", f.text), field("Image en tête (adresse)", f.image),
+    field("Texte du bouton", f.buttonLabel, false), field("Lien du bouton", f.buttonUrl, false), field("Signature", f.signature, false), field("Bas du mail", f.footer, false),
+    section("Prods du pack"), el("div", { className: "mail-prods wide" }),
+    el("label", { className: "mail-check wide" }, f.showPrices, "Afficher les prix et le bouton Acheter des prods en vente"),
+    section("Style"), field("Police du texte", f.font, false), field("Police des titres", f.titleFont, false),
+    el("div", { className: "mail-colors wide" }, ...Object.entries(MAIL_COLORS).map(([k, [label]]) => el("label", { className: "mail-check" }, colors[k], label))),
+    el("div", { className: "wide" }, reset));
+  form.addEventListener("input", update);
+  form.addEventListener("change", update);
+  form.onsubmit = (event) => event.preventDefault();
+  dialog.replaceChildren(
+    el("div", { className: "dlg-head" }, coverOf(p), el("b", { textContent: "Mails · " + p.title }), status,
+      el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close"))),
+    el("div", { className: "mail-body" }, el("div", { className: "mail-left" }, form,
+      el("div", { className: "row mail-send" }, send, el("span", { className: "muted", style: "font-size:13px", textContent: "L'envoi arrive bientôt : ton mail est gardé en brouillon." }))),
+      frame));
+  drawMailerProds(p, d.trackIds.length ? d.trackIds : p.tracks.map((t) => t.id));
+  update();
+  if (!dialog.open) dialog.showModal();
+}
+$("pack-mail").onclick = () => openMailer(project());
+lightClose($("mailer"));
 
 // ——— Détails d'un titre ———
 let detailsId = null, detailsView = "main";

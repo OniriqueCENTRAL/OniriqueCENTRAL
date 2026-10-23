@@ -374,6 +374,28 @@ try {
     assert.equal(get('SELECT 1 AS x FROM push_subscriptions'), undefined);
   });
 
+  await step('pack de prods : BPM et clé lus dans le nom du fichier, vente, brouillon du mail', async () => {
+    const { prodFromFilename, musicKey } = await import('../src/sounds.js');
+    assert.deepEqual(prodFromFilename('Nightfall_140bpm_C#min.wav'), { title: 'Nightfall', bpm: 140, key: 'C# min' });
+    assert.deepEqual(prodFromFilename('DARK - 92 BPM - Am.mp3'), { title: 'DARK', bpm: 92, key: 'A min' });
+    assert.deepEqual(prodFromFilename('I Am Legend.wav'), { title: 'I Am Legend', bpm: 0, key: '' });
+    assert.equal(musicKey('bb majeur'), 'Bb maj');
+    assert.equal(musicKey('H'), null);
+    const pack = (await call('POST', '/api/me/sounds/projects', { token: member.token, body: { title: 'Pack', kind: 'pack' }, expect: 201 })).id;
+    const tid = (await call('POST', `/api/me/sounds/projects/${pack}/tracks?filename=Ghost%20150bpm%20Fmin.wav`, { token: member.token, raw: wav(), expect: 201 })).id;
+    await call('PATCH', `/api/me/sounds/tracks/${tid}`, { token: member.token, body: { key: 'zz' }, expect: 400 });
+    await call('PATCH', `/api/me/sounds/tracks/${tid}`, { token: member.token, body: { buyUrl: 'javascript:alert(1)' }, expect: 400 });
+    await call('PATCH', `/api/me/sounds/tracks/${tid}`, { token: member.token, body: { price: 2999, buyUrl: 'buy.stripe.com/abc' } });
+    await call('PATCH', `/api/me/sounds/projects/${pack}`, { token: member.token, body: { mail: { to: 'a@b.fr, nope', subject: 'Nouveau pack', trackIds: [tid], colors: { bg: 'red' } } } });
+    await call('PATCH', `/api/me/sounds/projects/${projectId}`, { token: member.token, body: { mail: {} }, expect: 400 });
+    const p = (await call('GET', '/api/me/sounds', { token: member.token })).projects.find((x) => x.id === pack);
+    assert.equal(p.kind, 'pack');
+    assert.deepEqual([p.tracks[0].title, p.tracks[0].bpm, p.tracks[0].key, p.tracks[0].price, p.tracks[0].buyUrl], ['Ghost', 150, 'F min', 2999, 'https://buy.stripe.com/abc']);
+    assert.equal(p.mail.colors.bg, '#0D0809');
+    const { html } = await call('POST', `/api/me/sounds/projects/${pack}/mail/preview`, { token: member.token, body: { ...p.mail, title: '<script>' } });
+    assert.ok(html.includes('150 BPM') && html.includes('https://buy.stripe.com/abc') && !html.includes('<script>'));
+  });
+
   await step('VANISH : un fondateur voit les projets de tous les comptes, en lecture seule', async () => {
     const boss = await account('fondateur-vanish', 'founder');
     const all = await call('GET', '/api/me/sounds?vanish=1', { token: boss.token });
