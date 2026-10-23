@@ -621,7 +621,19 @@ async function api(method, path, body) {
   return data;
 }
 // Les fichiers passent par XMLHttpRequest, qui seul donne l'avancement de l'envoi.
-function upload(path, file, onProgress, method = "POST") {
+// Le serveur qui redémarre (une mise en ligne) coupe l'envoi quelques secondes : il repart tout seul, une minute au plus.
+async function upload(path, file, onProgress, method = "POST") {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await uploadOnce(path, file, onProgress, method);
+    } catch (error) {
+      if (attempt >= 20 || (error.status && (error.status < 502 || error.status > 504))) throw error;
+      onProgress(0);
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+    }
+  }
+}
+function uploadOnce(path, file, onProgress, method) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open(method, "/api" + path);
