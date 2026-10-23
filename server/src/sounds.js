@@ -305,6 +305,11 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_sellers') WHERE name = '
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_sellers') WHERE name = 'connect_account'`).get()) {
   db.exec(`ALTER TABLE sound_sellers ADD COLUMN connect_account TEXT NOT NULL DEFAULT ''`);
 }
+// La vidéo YouTube d'une prod (beattube.js) : un titre à elle (sinon le modèle) et une image à elle (sinon la pochette du pack).
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'video_title'`).get()) {
+  db.exec(`ALTER TABLE sound_tracks ADD COLUMN video_title TEXT NOT NULL DEFAULT '';
+    ALTER TABLE sound_tracks ADD COLUMN video_cover TEXT;`);
+}
 // Le compte relié par Connect au moment de l'achat : une commande se vérifie là où elle a été faite.
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_orders') WHERE name = 'connect_account'`).get()) {
   db.exec(`ALTER TABLE sound_orders ADD COLUMN connect_account TEXT NOT NULL DEFAULT ''`);
@@ -708,7 +713,8 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
           const mine = plays.filter((r) => r.track_id === t.id);
           return {
             id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), splits: splitsOf(t), lyrics: t.lyrics, currentId: t.current_id, createdAt: t.created_at,
-            bpm: t.bpm, key: t.music_key, forSale: !!t.for_sale, sold: !!t.sold, ...(p.kind === 'pack' ? { files: filesOf(t.id), licensePrices: JSON.parse(t.license_prices || '{}') } : {}),
+            bpm: t.bpm, key: t.music_key, forSale: !!t.for_sale, sold: !!t.sold,
+            ...(p.kind === 'pack' ? { files: filesOf(t.id), licensePrices: JSON.parse(t.license_prices || '{}'), videoTitle: t.video_title, videoCover: media(t.video_cover) } : {}),
             versions: versions.filter((v) => v.track_id === t.id).map((v, i) => versionView(v, i, true)),
             comments: comments.filter((c) => c.track_id === t.id).map(commentView),
             plays: mine.length, lastPlay: mine[0]?.created_at ?? null, listeners: listeners(mine), stats: listenStats(mine),
@@ -1395,7 +1401,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
 
   mountBeatStore(app, { me, track, room, receiveFile, openLink, linkTracks, linkProject, soundsDir, audioType, wrap });
   mountPackSend(app, { me, ownProject, sign, wrap });
-  mountBeatTube(app, { me, track, soundsDir, wrap });
+  mountBeatTube(app, { me, track, soundsDir, wrap, receiveImage, removeMedia });
 }
 
 // Les rappels de sortie : sept jours avant et la veille, à partir de 9 h (heure de Paris), un e-mail à l'auteur du projet et

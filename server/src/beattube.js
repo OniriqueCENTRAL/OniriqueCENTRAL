@@ -12,6 +12,9 @@ import { testing } from './mail.js';
 import { openListenLink } from './packsend.js';
 import { videoFile, videoView } from './youtube.js';
 
+// Le profil ou tableau Pinterest qu'un membre a relié, pour choisir l'image de ses vidéos parmi ses épingles.
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('users') WHERE name = 'pinterest'`).get()) db.exec(`ALTER TABLE users ADD COLUMN pinterest TEXT NOT NULL DEFAULT ''`);
+
 // Ce qu'une vidéo de prod ajoute aux Shorts : ses tags, sa visibilité, la prod d'où elle vient ; « beat » la distingue.
 for (const [column, type] of [['tags', `TEXT NOT NULL DEFAULT ''`], ['privacy', `TEXT NOT NULL DEFAULT 'public'`], ['kind', `TEXT NOT NULL DEFAULT 'short'`], ['track_id', 'INTEGER']]) {
   if (!db.prepare(`SELECT 1 FROM pragma_table_info('youtube_videos') WHERE name = ?`).get(column)) db.exec(`ALTER TABLE youtube_videos ADD COLUMN ${column} ${type}`);
@@ -46,7 +49,7 @@ async function renderQueue(soundsDir) {
   rendering = true;
   try {
     for (let v; (v = get(`SELECT * FROM youtube_videos WHERE status = 'rendering' ORDER BY id LIMIT 1`));) {
-      const row = get(`SELECT t.id, p.cover, ver.stored_as, ver.duration FROM sound_tracks t JOIN sound_projects p ON p.id = t.project_id
+      const row = get(`SELECT t.id, COALESCE(t.video_cover, p.cover) AS cover, ver.stored_as, ver.duration FROM sound_tracks t JOIN sound_projects p ON p.id = t.project_id
         JOIN sound_versions ver ON ver.id = t.current_id WHERE t.id = ?`, v.track_id);
       try {
         if (!row) throw new Error('La prod a été supprimée.');
@@ -62,7 +65,90 @@ async function renderQueue(soundsDir) {
   }
 }
 
-export function mountBeatTube(app, { me, track, soundsDir, wrap }) {
+//------------------------------------------------------------------------------ Pinterest
+// Sans compte développeur : les flux publics d'un profil (feed.rss) ou d'un tableau (<tableau>.rss), et la page d'une
+// épingle pour son image en grand. Les images viennent toujours de i.pinimg.com.
+const PIN_IMAGE = /^https:\/\/i\.pinimg\.com\/[\w/.-]+\.(jpg|jpeg|png|webp)$/i;
+const pinterestGet = (url) => fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ONIRIQUE)' }, redirect: 'follow', signal: AbortSignal.timeout(15000) });
+/** Un lien Pinterest (profil, tableau, épingle, pin.it) ou un nom de compte → son flux RSS, ou l'épingle seule. */
+export function pinterestSource(value) {
+  const text = String(value || '').trim();
+  if (/^@?[\w.-]{1,40}$/.test(text)) return { feed: `https://www.pinterest.com/${text.replace(/^@/, '')}/feed.rss` };
+  let u;
+  try { u = new URL(/^https?:\/\//.test(text) ? text : `https://${text}`); } catch { return null; }
+  if (u.hostname === 'pin.it') return { pin: u.href };
+  if (!/(^|\.)pinterest\.[a-z.]+$/.test(u.hostname)) return null;
+  const parts = u.pathname.split('/').filter(Boolean);
+  if (parts[0] === 'pin' && /^\d+$/.test(parts[1] || '')) return { pin: `https://www.pinterest.com/pin/${parts[1]}/` };
+  if (parts.length === 1) return { feed: `https://www.pinterest.com/${parts[0]}/feed.rss` };
+  if (parts.length >= 2) return { feed: `https://www.pinterest.com/${parts[0]}/${parts[1].replace(/\.rss$/, '')}.rss` };
+  return null;
+}
+async function pinterestImages(source) {
+  if (source.pin) {
+    const html = await (await pinterestGet(source.pin)).text();
+    const og = html.match(/<meta[^>]+content="(https:\/\/i\.pinimg\.com\/[^"]+)"[^>]*property="og:image"/)?.[1]
+      || html.match(/property="og:image"[^>]*content="(https:\/\/i\.pinimg\.com\/[^"]+)"/)?.[1];
+    return og ? [{ url: og, thumb: og.replace(/\/(originals|\d+x)\//, '/236x/'), link: source.pin }] : [];
+  }
+  const response = await pinterestGet(source.feed);
+  if (!response.ok) throw new HttpError(404, "Pinterest ne trouve pas ce profil ou ce tableau : vérifie qu'il est public.");
+  const xml = await response.text();
+  return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map(([, item]) => {
+    const thumb = item.match(/https:\/\/i\.pinimg\.com\/[\w/.-]+\.(?:jpg|jpeg|png|webp)/i)?.[0];
+    return thumb && { url: thumb.replace(/\/\d+x\//, '/736x/'), thumb, link: item.match(/<link>([^<]+)<\/link>/)?.[1] || '' };
+  }).filter(Boolean).slice(0, 60);
+}
+/** Une image téléchargée (Pinterest) gardée comme une image envoyée : PNG, JPEG ou WebP vérifié, 8 Mo au plus. */
+async function saveImage(url) {
+  const response = await pinterestGet(url);
+  const data = Buffer.from(await response.arrayBuffer());
+  if (!response.ok || data.length > 8 * 1024 * 1024) throw new HttpError(400, "Cette image n'a pas pu être récupérée.");
+  const ext = data.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex')) ? 'png' : data.subarray(0, 3).equals(Buffer.from('ffd8ff', 'hex')) ? 'jpg'
+    : data.toString('latin1', 0, 4) === 'RIFF' && data.toString('latin1', 8, 12) === 'WEBP' ? 'webp' : null;
+  if (!ext) throw new HttpError(400, "Ce n'est pas une image PNG, JPEG ou WebP.");
+  const name = `${crypto.randomBytes(16).toString('hex')}.${ext}`;
+  fs.writeFileSync(path.join(config.mediaDir, name), data);
+  return name;
+}
+
+export function mountBeatTube(app, { me, track, soundsDir, wrap, receiveImage, removeMedia }) {
+  // L'image de la vidéo d'une prod : envoyée, prise sur Pinterest, ou retirée (la pochette du pack reprend sa place).
+  const setCover = (t, name) => {
+    run('UPDATE sound_tracks SET video_cover = ? WHERE id = ?', name, t.id);
+    if (t.video_cover && t.video_cover !== name) removeMedia(t.video_cover);
+    return { videoCover: name ? `/api/media/${name}` : null };
+  };
+  const ownTrack = (req) => {
+    const t = track(req, req.params.id);
+    if (t.owner_id !== req.user.id) throw new HttpError(403, "Seul l'auteur du pack choisit l'image de ses vidéos.");
+    return t;
+  };
+  app.put('/api/me/sounds/tracks/:id/video-cover', ...me, wrap(async (req, res) => {
+    const t = ownTrack(req);
+    res.json(setCover(t, await receiveImage(req, 8 * 1024 * 1024)));
+  }));
+  app.post('/api/me/sounds/tracks/:id/video-cover', ...me, wrap(async (req, res) => {
+    const t = ownTrack(req), url = String(req.body?.url || '');
+    if (!PIN_IMAGE.test(url)) throw new HttpError(400, 'Image Pinterest attendue.');
+    res.json(setCover(t, await saveImage(url)));
+  }));
+  app.delete('/api/me/sounds/tracks/:id/video-cover', ...me, (req, res) => res.json(setCover(ownTrack(req), null)));
+  // Pinterest : le profil ou tableau relié (gardé sur le compte) et ses dernières épingles ; un lien d'épingle donne son image.
+  app.get('/api/me/sounds/pinterest', ...me, wrap(async (req, res) => {
+    const saved = get('SELECT pinterest FROM users WHERE id = ?', req.user.id).pinterest;
+    const source = saved && pinterestSource(saved);
+    res.json({ source: saved, images: source ? await pinterestImages(source).catch(() => []) : [] });
+  }));
+  app.post('/api/me/sounds/pinterest', ...me, wrap(async (req, res) => {
+    const text = str(req.body?.source, 300), source = pinterestSource(text);
+    if (!source) throw new HttpError(400, 'Colle le lien de ton profil, d\'un tableau ou d\'une épingle Pinterest.');
+    const images = await pinterestImages(source);
+    if (!images.length) throw new HttpError(404, 'Aucune image trouvée : le profil ou le tableau est-il public ?');
+    if (source.feed) run('UPDATE users SET pinterest = ? WHERE id = ?', text, req.user.id);
+    res.json({ source: source.feed ? text : get('SELECT pinterest FROM users WHERE id = ?', req.user.id).pinterest, images, pin: !!source.pin });
+  }));
+
   const kick = () => { const job = renderQueue(soundsDir).catch((error) => console.error('[youtube] vidéos :', error.message)); return testing ? job : null; };
   if (!testing) setTimeout(kick, 5000).unref();
   const mine = (userId) => all(`SELECT * FROM youtube_videos WHERE user_id = ? AND kind = 'beat' ORDER BY COALESCE(publish_at, created_at) DESC, id DESC LIMIT 100`, userId)
@@ -94,7 +180,10 @@ export function mountBeatTube(app, { me, track, soundsDir, wrap }) {
       const p = get('SELECT * FROM sound_projects WHERE id = ?', t.project_id);
       const link = openListenLink(p, 'YouTube');
       const values = { titre: t.title, bpm: t.bpm ? String(t.bpm) : '', cle: t.music_key || '', artiste: p.artist || req.user.name || '', lien: `${config.siteUrl}/ecoute?t=${link.token}` };
-      const title = clean(fillTemplate(titleTemplate, values)).slice(0, 100);
+      // Un titre propre à la prod (gardé pour la suite) passe avant le modèle ; il peut lui aussi contenir {titre}, {bpm}…
+      const own = typeof req.body.titles?.[t.id] === 'string' ? str(req.body.titles[t.id], 200) : t.video_title;
+      if (own !== t.video_title) run('UPDATE sound_tracks SET video_title = ? WHERE id = ?', own, t.id);
+      const title = clean(fillTemplate(own || titleTemplate, values)).slice(0, 100);
       if (!title) throw new HttpError(400, `Le titre de « ${t.title} » serait vide.`);
       const publishAt = start === null ? (every ? now() + i * every * 86_400_000 : now()) : start + i * every * 86_400_000;
       return run(`INSERT INTO youtube_videos (user_id, stored_as, filename, mime, size, title, description, publish_at, status, tags, privacy, kind, track_id, created_at)

@@ -36,7 +36,20 @@ async function paypalFake(url, init) {
   return reply({ id: o.id, status: o.status, payer: { email_address: 'acheteur-paypal@test.fr', name: { given_name: 'Ache', surname: 'Teur' } },
     purchase_units: [{ payments: o.status === 'COMPLETED' ? { captures: [{ status: 'COMPLETED', amount: { value: o.amount.value, currency_code: o.amount.currency_code } }] } : {} }] });
 }
+// Pinterest simulé : le flux d'un profil, la page d'une épingle et ses images.
+const PNG = Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), Buffer.alloc(200)]);
+function pinterestFake(url) {
+  const u = String(url);
+  if (u.startsWith('https://i.pinimg.com/')) return new Response(PNG, { status: 200 });
+  if (u === 'https://www.pinterest.com/kaybeats/feed.rss') {
+    return new Response(`<rss><channel><item><link>https://www.pinterest.com/pin/1/</link><description>&lt;img src="https://i.pinimg.com/236x/aa/bb/cc/cover1.jpg"&gt;</description></item>
+      <item><link>https://www.pinterest.com/pin/2/</link><description>&lt;img src="https://i.pinimg.com/236x/aa/bb/cc/cover2.png"&gt;</description></item></channel></rss>`, { status: 200 });
+  }
+  if (u === 'https://www.pinterest.com/pin/77/') return new Response('<meta content="https://i.pinimg.com/originals/aa/bb/cc/pin77.jpg" data-rh="true" property="og:image"/>', { status: 200 });
+  return new Response('introuvable', { status: 404 });
+}
 globalThis.fetch = async (url, init = {}) => {
+  if (/^https:\/\/(www\.pinterest\.com|i\.pinimg\.com)\//.test(String(url))) return pinterestFake(url);
   if (String(url).startsWith('https://api-m.sandbox.paypal.com')) return paypalFake(url, init);
   if (!String(url).startsWith('https://api.stripe.com/v1')) return realFetch(url, init);
   const route = String(url).slice('https://api.stripe.com/v1'.length), body = Object.fromEntries(new URLSearchParams(init.body || ''));
@@ -283,6 +296,32 @@ try {
     assert.equal(get('SELECT tags FROM youtube_videos WHERE id = ?', rows[0].id).tags, 'type beat,trap');
     const left = await call('DELETE', `/api/me/sounds/youtube/${rows[1].id}`, { token: beatmaker.token });
     assert.equal(left.videos.length, 1);
+  });
+
+  await step('YouTube : un titre et une image propres à une prod ; images prises sur Pinterest', async () => {
+    // Un titre écrit pour la prod remplace le modèle, et reste gardé pour la fois suivante.
+    const made = await call('POST', '/api/me/sounds/youtube', { token: beatmaker.token, expect: 202,
+      body: { trackIds: [tid], title: 'Modèle {titre}', titles: { [tid]: 'Mon titre ({bpm} BPM)' } } });
+    assert.ok(made.videos.some((v) => v.title === 'Mon titre (150 BPM)'));
+    const track = () => get('SELECT video_title, video_cover FROM sound_tracks WHERE id = ?', tid);
+    assert.equal(track().video_title, 'Mon titre ({bpm} BPM)');
+    // L'image de la vidéo : envoyée, refusée si ce n'est pas une image, puis prise sur Pinterest, enfin retirée.
+    await call('PUT', `/api/me/sounds/tracks/${tid}/video-cover`, { token: beatmaker.token, raw: wav('pas-une-image'), headers: { 'Content-Type': 'image/png' }, expect: 400 });
+    const sent = await call('PUT', `/api/me/sounds/tracks/${tid}/video-cover`, { token: beatmaker.token, raw: PNG, headers: { 'Content-Type': 'image/png' } });
+    assert.match(sent.videoCover, /^\/api\/media\/.+\.png$/);
+    await call('PUT', `/api/me/sounds/tracks/${tid}/video-cover`, { token: other.token, raw: PNG, headers: { 'Content-Type': 'image/png' }, expect: 404 });
+    await call('POST', '/api/me/sounds/pinterest', { token: beatmaker.token, body: { source: 'https://exemple.com/kaybeats' }, expect: 400 });
+    const board = await call('POST', '/api/me/sounds/pinterest', { token: beatmaker.token, body: { source: 'https://fr.pinterest.com/kaybeats/' } });
+    assert.deepEqual(board.images.map((i) => i.url), ['https://i.pinimg.com/736x/aa/bb/cc/cover1.jpg', 'https://i.pinimg.com/736x/aa/bb/cc/cover2.png']);
+    assert.equal((await call('GET', '/api/me/sounds/pinterest', { token: beatmaker.token })).source, 'https://fr.pinterest.com/kaybeats/');
+    const pin = await call('POST', '/api/me/sounds/pinterest', { token: beatmaker.token, body: { source: 'https://www.pinterest.com/pin/77/' } });
+    assert.equal(pin.images[0].url, 'https://i.pinimg.com/originals/aa/bb/cc/pin77.jpg');
+    await call('POST', `/api/me/sounds/tracks/${tid}/video-cover`, { token: beatmaker.token, body: { url: 'https://evil.test/x.jpg' }, expect: 400 });
+    const picked = await call('POST', `/api/me/sounds/tracks/${tid}/video-cover`, { token: beatmaker.token, body: { url: board.images[0].url } });
+    assert.notEqual(picked.videoCover, sent.videoCover);
+    const shown = (await call('GET', '/api/me/sounds', { token: beatmaker.token })).projects.find((x) => x.id === pack).tracks.find((x) => x.id === tid);
+    assert.deepEqual([shown.videoTitle, shown.videoCover], ['Mon titre ({bpm} BPM)', picked.videoCover]);
+    assert.equal((await call('DELETE', `/api/me/sounds/tracks/${tid}/video-cover`, { token: beatmaker.token })).videoCover, null);
   });
 
   console.log(`\n${passed} étapes réussies.`);

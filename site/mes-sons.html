@@ -486,10 +486,24 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 #mailer summary::-webkit-details-marker { display: none; }
 /* Les ventes d'un pack : le panneau Ventes et la vente d'une prod. */
 #store, #sale { width: 620px; }
-#youtube { width: 640px; }
-#store[open], #sale[open], #plan[open], #stats[open], #youtube[open] { display: flex; flex-direction: column; overflow: hidden; }
-#store .dlg-head, #sale .dlg-head, #plan .dlg-head, #stats .dlg-head, #youtube .dlg-head { flex: none; padding-bottom: 14px; border-bottom: 1px solid rgba(255,210,214,.08); }
-#store > .stack, #sale > .stack, #plan > .stack, #stats > .stack, #youtube > .stack { min-height: 0; align-content: start; grid-auto-rows: max-content; overflow-y: auto; overscroll-behavior: contain; padding: 16px 18px 20px; }
+#youtube { width: 680px; }
+#pinterest { width: 720px; }
+.yt-prods { gap: 10px; }
+.yt-prod { display: flex; align-items: center; gap: 10px; }
+.yt-prod > input[type=checkbox] { flex: none; width: 18px; height: 18px; accent-color: var(--ember); }
+.yt-prod .grow { display: grid; gap: 6px; min-width: 0; }
+.yt-prod .row { gap: 6px; flex-wrap: wrap; }
+.yt-title { width: 100%; min-height: 0; padding: 8px 10px; font-size: 13px; }
+.yt-thumb { flex: none; width: 64px; height: 64px; padding: 0; overflow: hidden; border-radius: 10px; border: 1px dashed var(--line); background: rgba(255,255,255,.04); color: var(--haze); font: 600 11px var(--f-body); cursor: pointer; }
+.yt-thumb.own { border: 2px solid var(--ember); }
+.yt-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.pin-grid .pin { padding: 0; border: 0; border-radius: 12px; overflow: hidden; background: rgba(255,255,255,.04); cursor: pointer; aspect-ratio: 1; }
+.pin-grid .pin img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pin-grid .pin:hover, .pin-grid .pin:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+#store[open], #sale[open], #plan[open], #stats[open], #youtube[open], #pinterest[open] { display: flex; flex-direction: column; overflow: hidden; }
+#store .dlg-head, #sale .dlg-head, #plan .dlg-head, #stats .dlg-head, #youtube .dlg-head, #pinterest .dlg-head { flex: none; padding-bottom: 14px; border-bottom: 1px solid rgba(255,210,214,.08); }
+#store > .stack, #sale > .stack, #plan > .stack, #stats > .stack, #youtube > .stack, #pinterest > .stack { min-height: 0; align-content: start; grid-auto-rows: max-content; overflow-y: auto; overscroll-behavior: contain; padding: 16px 18px 20px; }
 #store .field, #sale .field, #youtube .field { display: grid; gap: 6px; flex: 1; font-size: 13px; color: var(--haze); }
 #store summary { list-style: none; }
 #store summary::-webkit-details-marker { display: none; }
@@ -624,6 +638,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 <dialog id="details"></dialog>
 <dialog id="plan"></dialog>
 <dialog id="youtube"></dialog>
+<dialog id="pinterest"></dialog>
 <dialog id="stats"></dialog>
 <dialog id="cover-view"><img alt=""><div class="bar"><button class="btn btn-ghost" type="button" id="cover-save">Télécharger</button><button class="btn btn-ghost" type="button" id="cover-swap">Changer</button><button class="btn btn-primary" type="button" onclick="this.closest('dialog').close()">Fermer</button></div></dialog>
 <dialog id="install-help">
@@ -2369,6 +2384,25 @@ function renderYoutube() {
   }
   // Le formulaire : les prods, le modèle, et quand publier.
   const picks = p.tracks.map((t) => [t, el("input", { type: "checkbox", value: t.id, checked: !yt.videos.some((v) => v.trackId === t.id && v.status !== "failed") })]);
+  const titles = new Map(p.tracks.map((t) => [t.id, el("input", { className: "yt-title", value: t.videoTitle || "", maxLength: 200, ariaLabel: "Titre de la vidéo de " + t.title })]));
+  // L'image de la vidéo d'une prod : la sienne, sinon la pochette du pack. Changée sur place, sans effacer le formulaire.
+  const thumb = (t) => {
+    const img = () => (t.videoCover || p.cover ? el("img", { src: (t.videoCover || p.cover) + "?w=160", alt: "" }) : el("span", { textContent: "Image" }));
+    const b = el("button", { className: "yt-thumb" + (t.videoCover ? " own" : ""), type: "button", title: "Image de la vidéo", ariaLabel: "Image de la vidéo de " + t.title }, img());
+    const set = (cover) => { t.videoCover = cover; b.classList.toggle("own", !!cover); b.replaceChildren(img()); };
+    const file = el("input", { type: "file", accept: "image/png,image/jpeg,image/webp", hidden: true });
+    file.onchange = () => {
+      const f = file.files[0];
+      file.value = "";
+      if (f) upload("/me/sounds/tracks/" + t.id + "/video-cover", f, () => {}, "PUT").then((r) => set(r.videoCover), fail);
+    };
+    b.onclick = () => menu(b, [
+      { label: "Importer une image", icon: "download", onclick: () => file.click() },
+      { label: "Choisir sur Pinterest", icon: "star", onclick: () => openPinterest(t, set) },
+      t.videoCover && { label: "Reprendre la pochette du pack", icon: "close", onclick: () => api("DELETE", "/me/sounds/tracks/" + t.id + "/video-cover").then((r) => set(r.videoCover), fail) },
+    ]);
+    return el("span", {}, b, file);
+  };
   const title = el("input", { value: m.title, maxLength: 200 }), desc = el("textarea", { value: m.description, maxLength: 5000, style: "min-height:110px" });
   const tags = el("input", { value: m.tags, maxLength: 500, placeholder: "type beat, trap, instrumental" });
   const privacy = el("select", {}, el("option", { value: "public", textContent: "Publique" }), el("option", { value: "unlisted", textContent: "Non répertoriée" }));
@@ -2385,17 +2419,21 @@ function renderYoutube() {
   const go = el("button", { className: "btn btn-primary", type: "submit" });
   const update = () => {
     const first = picks.find(([, x]) => x.checked);
-    preview.textContent = first ? "Titre de « " + first[0].title + " » : " + fill(title.value, first[0]) : "Coche au moins une prod.";
+    preview.textContent = first ? "Titre de « " + first[0].title + " » : " + fill(titles.get(first[0].id).value || title.value, first[0]) : "Coche au moins une prod.";
+    for (const [t] of picks) titles.get(t.id).placeholder = fill(title.value, t) + " (modèle)";
     go.textContent = count() ? "Programmer " + count() + " vidéo" + (count() > 1 ? "s" : "") : "Programmer";
     go.disabled = !count();
   };
   title.oninput = update;
   picks.forEach(([, x]) => { x.onchange = update; });
+  titles.forEach((x) => { x.oninput = update; });
   const form = el("form", { className: "stack", style: "padding:0" },
-    el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Chaîne : " + yt.channel + ". Une vidéo par prod : la pochette du pack sur un fond flouté, avec le son de la prod." }),
+    el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Chaîne : " + yt.channel + ". Une vidéo par prod : son image (ou la pochette du pack) sur un fond flouté, avec le son de la prod." }),
     el("div", { className: "sub-title", textContent: "Les prods" }),
-    el("div", { className: "mail-prods" }, ...picks.map(([t, x]) => el("label", { className: "mail-check" }, x, el("span", { className: "grow", textContent: t.title }),
-      ...[t.bpm ? t.bpm + " BPM" : "", t.key].filter(Boolean).map((b) => el("span", { className: "stage prod", textContent: b }))))),
+    el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Clique sur l'image d'une prod pour lui en donner une à elle (importée ou prise sur Pinterest). Un titre écrit pour une prod remplace le modèle." }),
+    el("div", { className: "mail-prods yt-prods" }, ...picks.map(([t, x]) => el("div", { className: "yt-prod" }, x, thumb(t),
+      el("div", { className: "grow" }, el("div", { className: "row" }, el("b", { textContent: t.title }),
+        ...[t.bpm ? t.bpm + " BPM" : "", t.key].filter(Boolean).map((b) => el("span", { className: "stage prod", textContent: b }))), titles.get(t.id))))),
     el("div", { className: "sub-title", textContent: "Titre et description" }),
     fieldOf("Modèle du titre ({titre}, {bpm}, {cle}, {artiste})", title), preview,
     fieldOf("Description ({lien} : la page d'écoute du pack, où l'on achète la licence)", desc), fieldOf("Tags, séparés par des virgules", tags),
@@ -2408,7 +2446,7 @@ function renderYoutube() {
     const model = { title: title.value, description: desc.value, tags: tags.value, privacy: privacy.value, every: Number(every.value) || 0 };
     try { localStorage.setItem(YT_KEY, JSON.stringify(model)); } catch {}
     go.disabled = true;
-    api("POST", "/me/sounds/youtube", { ...model, trackIds: picks.filter(([, x]) => x.checked).map(([t]) => t.id), publishAt: when.value === "date" ? new Date(start.value).getTime() : null })
+    api("POST", "/me/sounds/youtube", { ...model, trackIds: picks.filter(([, x]) => x.checked).map(([t]) => t.id), titles: Object.fromEntries([...titles].map(([id, x]) => [id, x.value])), publishAt: when.value === "date" ? new Date(start.value).getTime() : null })
       .then((r) => { yt.videos = r.videos; renderYoutube(); }, (error) => { go.disabled = false; fail(error); alert(error.message); });
   };
   update();
@@ -2426,6 +2464,34 @@ function renderYoutube() {
   }
 }
 lightClose($("youtube"));
+// Choisir une image sur Pinterest : le profil ou le tableau relié (gardé sur le compte) montre ses dernières épingles ;
+// un lien d'épingle donne son image seule.
+function openPinterest(t, done) {
+  const dialog = $("pinterest");
+  const source = el("input", { placeholder: "Lien de ton profil, d'un tableau ou d'une épingle Pinterest", maxLength: 300 });
+  const go = el("button", { className: "btn btn-primary", type: "submit", textContent: "Afficher" });
+  const status = el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Chargement…" }), grid = el("div", { className: "pin-grid" });
+  const show = (r) => {
+    if (r.source && !source.value) source.value = r.source;
+    status.textContent = r.images.length ? "Choisis l'image de la vidéo de « " + t.title + " »." : "Relie ton profil ou un tableau Pinterest public : ses dernières épingles s'affichent ici.";
+    grid.replaceChildren(...r.images.map((img) => el("button", { type: "button", className: "pin", title: "Prendre cette image",
+      onclick: (event) => { event.currentTarget.disabled = true; api("POST", "/me/sounds/tracks/" + t.id + "/video-cover", { url: img.url }).then((x) => { dialog.close(); done(x.videoCover); }, fail); } },
+      el("img", { src: img.thumb, alt: "", loading: "lazy", referrerPolicy: "no-referrer" }))));
+  };
+  const form = el("form", { className: "row" }, source, go);
+  form.onsubmit = (event) => {
+    event.preventDefault();
+    go.disabled = true; status.textContent = "Chargement…";
+    api("POST", "/me/sounds/pinterest", { source: source.value }).then(show, (error) => { status.textContent = error.message; }).finally(() => { go.disabled = false; });
+  };
+  dialog.replaceChildren(el("div", { className: "dlg-head" }, el("b", { textContent: "Pinterest · " + t.title }),
+    el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close"))),
+    el("div", { className: "stack" }, form, status, grid,
+      el("p", { className: "muted", style: "margin:0;font-size:12px", textContent: "Prends des images que tu as le droit d'utiliser : une vidéo avec l'image d'un autre peut être retirée par YouTube." })));
+  dialog.showModal();
+  api("GET", "/me/sounds/pinterest").then(show, (error) => { status.textContent = error.message; });
+}
+lightClose($("pinterest"));
 $("pack-youtube").onclick = () => openYoutube(project()).catch(fail);
 // Retour de Google après « Connecter ma chaîne YouTube » : la fenêtre se rouvre sur le pack, ou l'erreur s'affiche.
 const youtubeBack = new URLSearchParams(location.search).get("youtube");
