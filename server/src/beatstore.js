@@ -9,7 +9,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { config } from './config.js';
 import { get, all, run, now, transaction } from './db.js';
-import { HttpError, rateLimit } from './auth.js';
+import { HttpError, rateLimit, optionalUser } from './auth.js';
 import { sendMail } from './mail.js';
 import { seal, unseal, verifyStripeSignature } from './payments.js';
 
@@ -104,8 +104,8 @@ export function filesOf(trackId) {
  * Les licences qu'on peut acheter pour une prod : en vente, pas vendue en exclusivité, tous leurs fichiers présents, au
  * prix réglé pour cette prod s'il y en a un (0 : licence pas proposée pour elle).
  */
-export function offersOf(track, sellerId) {
-  if (!track.for_sale || track.sold || !sellerRow(sellerId)?.secret) return [];
+export function offersOf(track, sellerId, simulate = false) {
+  if (!track.for_sale || track.sold || !(simulate || sellerRow(sellerId)?.secret)) return [];
   const have = filesOf(track.id), custom = parse(track.license_prices || '{}', {});
   return licensesOf(sellerId).filter((l) => custom[l.id] !== 0 && l.files.length && l.files.every((k) => have[k]))
     .map((l) => (custom[l.id] ? { ...l, price: custom[l.id] } : l));
@@ -126,24 +126,78 @@ export function licensePricesOf(value, sellerId) {
 //------------------------------------------------------------------------------ Commandes
 const orderLicense = (o) => parse(o.license, { name: '', files: [], terms: '', exclusive: false });
 const shopUrl = (o) => `${config.siteUrl}/achat.html?o=${o.token}`;
-function contractOf(o) {
-  const l = orderLicense(o);
-  return [`CONTRAT DE LICENCE « ${l.name} »`, '',
-    `Commande n° ${o.id}, payée le ${new Date(o.paid_at || o.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`,
-    `Prod : « ${o.track_title} »`, `Concédant (beatmaker) : ${o.artist}`, `Licencié : ${[o.buyer_name, o.buyer_email && `<${o.buyer_email}>`].filter(Boolean).join(' ') || 'l\'acheteur'}`,
-    `Prix payé : ${eurosFr(o.amount)}`, `Fichiers fournis : ${l.files.map((k) => FILE_KINDS[k]).join(', ')}`,
-    `Type : licence ${l.exclusive ? 'exclusive' : 'non exclusive'}`, '', 'Conditions :', l.terms, '',
-    'Le concédant garantit être l\'auteur de la prod. Le licencié ne peut ni revendre ni redistribuer la prod seule, ni l\'enregistrer à son nom auprès d\'une société de gestion de droits.',
+//------------------------------------------------------------------------------ Contrat de licence
+// Chaque beatmaker règle son contrat : titre, son nom légal et un contact, l'introduction, les clauses générales (communes
+// à toutes ses licences), la conclusion et le bas de page ; les clauses propres à chaque licence sont ses conditions. Les
+// textes acceptent des champs remplis à l'achat : {prod}, {beatmaker}, {acheteur}, {licence}, {prix}, {date}, {commande},
+// {fichiers}. Le modèle est copié dans la commande au moment de l'achat : le modifier ensuite ne change pas les contrats signés.
+export const CONTRACT_DEFAULT = {
+  title: 'Contrat de licence « {licence} »',
+  legalName: '',
+  contact: '',
+  intro: 'Le présent contrat est conclu entre {beatmaker} (le concédant) et {acheteur} (le licencié). Il porte sur l\'utilisation de la prod « {prod} » selon la licence {licence}, achetée {prix} le {date}.',
+  clauses: [
+    'Le concédant garantit être l\'auteur de la prod et détenir les droits nécessaires pour accorder cette licence.',
+    'Le licencié ne peut ni revendre, ni louer, ni redistribuer la prod seule, même modifiée.',
+    'Le licencié ne peut pas enregistrer la prod à son nom auprès d\'une société de gestion de droits ni d\'un service d\'identification de contenu.',
+    'Toute utilisation qui dépasse les limites de cette licence demande l\'achat d\'une licence supérieure.',
+  ].join('\n'),
+  closing: 'Fait en ligne le {date}. Le paiement de la commande n° {commande} vaut acceptation du présent contrat par les deux parties.',
+  footer: '',
+  signatures: true,
+};
+const CONTRACT_LIMITS = { title: 140, legalName: 120, contact: 300, intro: 3000, clauses: 10000, closing: 2000, footer: 200 };
+/** Le modèle de contrat d'un beatmaker, complété par celui de départ. */
+export function contractTemplate(userId) {
+  const saved = parse(sellerRow(userId)?.contract || '{}', {});
+  return Object.fromEntries(Object.entries(CONTRACT_DEFAULT).map(([k, v]) => [k, typeof saved[k] === typeof v ? saved[k] : v]));
+}
+/** Le modèle envoyé par le beatmaker, vérifié : textes coupés à leur longueur, champs inconnus ignorés. */
+export function contractFields(body) {
+  const out = {};
+  for (const [k, max] of Object.entries(CONTRACT_LIMITS)) {
+    if (body?.[k] !== undefined) out[k] = String(body[k]).replace(/\r\n?/g, '\n').trim().slice(0, max);
+  }
+  if (body?.signatures !== undefined) out.signatures = !!body.signatures;
+  return out;
+}
+const lines = (text) => String(text || '').split('\n').map((x) => x.trim()).filter(Boolean);
+/**
+ * Le contrat d'une commande, prêt à mettre en page (PDF sur la page d'achat) ou en texte : les champs remplis, les
+ * clauses de la licence puis les clauses générales, une par ligne.
+ */
+export function contractOf(o) {
+  const l = orderLicense(o), t = { ...CONTRACT_DEFAULT, ...(l.contract || {}) };
+  const seller = t.legalName || o.artist, buyer = [o.buyer_name, o.buyer_email && `<${o.buyer_email}>`].filter(Boolean).join(' ') || 'l\'acheteur';
+  const date = new Date(o.paid_at || o.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  const files = l.files.map((k) => FILE_KINDS[k]).join(', ');
+  const values = { prod: o.track_title, beatmaker: seller, acheteur: buyer, licence: l.name, prix: eurosFr(o.amount), date, commande: String(o.id), fichiers: files };
+  const fill = (text) => String(text || '').replace(/\{(\w+)\}/g, (m, k) => values[k] ?? m);
+  return {
+    title: fill(t.title), intro: fill(t.intro), closing: fill(t.closing), footer: fill(t.footer), signatures: !!t.signatures,
+    parties: [['Concédant (beatmaker)', seller + (t.legalName && t.legalName !== o.artist ? ` (${o.artist})` : '')], ...(t.contact ? [['Contact du concédant', fill(t.contact)]] : []), ['Licencié', buyer]],
+    details: [['Commande', `n° ${o.id}, payée le ${date}`], ['Prod', `« ${o.track_title} »`], ['Licence', `${l.name} (${l.exclusive ? 'exclusive' : 'non exclusive'})`],
+      ['Fichiers fournis', files], ['Prix payé', eurosFr(o.amount)]],
+    licenseClauses: lines(fill(l.terms)), generalClauses: lines(fill(t.clauses)),
+    seller, buyer,
+  };
+}
+/** Le même contrat en texte simple. */
+function contractText(o) {
+  const c = contractOf(o), numbered = (list, from = 1) => list.map((x, i) => `${i + from}. ${x}`);
+  return [c.title.toUpperCase(), '', ...c.parties.map(([k, v]) => `${k} : ${v}`), '', c.intro, '', ...c.details.map(([k, v]) => `${k} : ${v}`), '',
+    'Conditions de la licence :', ...numbered(c.licenseClauses), '', 'Clauses générales :', ...numbered(c.generalClauses, c.licenseClauses.length + 1), '',
+    c.closing, ...(c.signatures ? ['', `Le concédant : ${c.seller}`, `Le licencié : ${c.buyer}`] : []), ...(c.footer ? ['', c.footer] : []),
   ].join('\n');
 }
 function orderView(o) {
   const l = orderLicense(o), paid = o.status === 'paid';
   return {
-    status: o.status, number: o.id, trackTitle: o.track_title, artist: o.artist, amount: o.amount, sandbox: !!o.sandbox, paidAt: o.paid_at,
+    status: o.status, number: o.id, trackTitle: o.track_title, artist: o.artist, amount: o.amount, sandbox: !!o.sandbox, simulated: o.provider === 'simulation', paidAt: o.paid_at,
     license: { name: l.name, terms: l.terms, exclusive: l.exclusive, files: l.files.map((k) => FILE_KINDS[k]) },
     buyerEmail: paid ? o.buyer_email : '',
     files: paid ? l.files.map((k) => ({ kind: k, label: FILE_KINDS[k], available: !!(o.track_id && fileFor(o.track_id, k)), url: `/api/sounds/orders/${o.token}/files/${k}` })) : [],
-    contract: paid ? contractOf(o) : '', contractUrl: paid ? `/api/sounds/orders/${o.token}/licence.txt` : null,
+    contract: paid ? contractOf(o) : null, contractUrl: paid ? `/api/sounds/orders/${o.token}/licence.txt` : null,
   };
 }
 const sellerOrderView = (o) => ({ id: o.id, status: o.status, trackTitle: o.track_title, license: orderLicense(o).name, amount: o.amount, sandbox: !!o.sandbox,
@@ -176,7 +230,8 @@ function markPaid(order, email, name) {
     now(), str(email, 200), str(name, 120), order.id).changes;
   const done = get('SELECT * FROM sound_orders WHERE id = ?', order.id);
   if (changed) {
-    if (orderLicense(done).exclusive && done.track_id) run('UPDATE sound_tracks SET sold = 1, for_sale = 0 WHERE id = ?', done.track_id);
+    // Une simulation ne retire pas une prod de la vente.
+    if (orderLicense(done).exclusive && done.track_id && done.provider !== 'simulation') run('UPDATE sound_tracks SET sold = 1, for_sale = 0 WHERE id = ?', done.track_id);
     deliver(done);
   }
   return done;
@@ -187,7 +242,7 @@ function deliver(o) {
     'Bonjour,', '', `Merci pour ton achat de « ${o.track_title} » de ${o.artist}, en licence ${l.name} (${price}).`, '',
     'Tes fichiers et ton contrat de licence t\'attendent ici :', shopUrl(o), '', 'Garde ce message : le lien reste valable.',
   ].join('\n')).catch((error) => console.error(`[ventes] e-mail de la commande ${o.id} : ${error.message}`));
-  const seller = get('SELECT email FROM users WHERE id = ?', o.seller_id);
+  const seller = o.provider !== 'simulation' && get('SELECT email FROM users WHERE id = ?', o.seller_id);
   if (seller) sendMail(seller.email, `Vente : « ${o.track_title} » en ${l.name}`, [
     'Bonjour,', '', `« ${o.track_title} » vient d'être achetée en licence ${l.name} pour ${price}${o.buyer_email ? ` par ${o.buyer_email}` : ''}.`,
     l.exclusive ? 'C\'était l\'exclusivité : la prod est retirée de la vente.' : '', '', 'Le détail est dans le panneau Ventes de ton pack, sur ONIRIQUE CLOUD.',
@@ -229,7 +284,7 @@ export function mountBeatStore(app, { me, track, room, receiveFile, openLink, li
     const licenses = licensesOf(req.user.id);
     const pending = all(`SELECT * FROM sound_orders WHERE seller_id = ? AND status = 'pending' AND provider_ref != '' AND created_at > ? LIMIT 10`, req.user.id, now() - 2 * 86400_000);
     await Promise.all(pending.map(verifyOrder));
-    res.json({ seller: sellerView(req.user.id), licenses, kinds: FILE_KINDS,
+    res.json({ seller: sellerView(req.user.id), licenses, kinds: FILE_KINDS, contract: contractTemplate(req.user.id),
       orders: all('SELECT * FROM sound_orders WHERE seller_id = ? ORDER BY created_at DESC LIMIT 200', req.user.id).map(sellerOrderView) });
   }));
   // Brancher son compte : la clé est essayée chez le prestataire avant d'être gardée (chiffrée).
@@ -303,6 +358,19 @@ export function mountBeatStore(app, { me, track, room, receiveFile, openLink, li
   app.delete('/api/me/sounds/store/licenses/:id', ...me, (req, res) => {
     run('DELETE FROM sound_licenses WHERE id = ?', ownLicense(req).id);
     res.json(licensesOf(req.user.id));
+  });
+  // Le modèle de contrat du beatmaker, et son aperçu sur une commande fictive (avec ses réglages pas encore enregistrés).
+  app.put('/api/me/sounds/store/contract', ...me, (req, res) => {
+    licensesOf(req.user.id);
+    run('UPDATE sound_sellers SET contract = ?, updated_at = ? WHERE user_id = ?', JSON.stringify({ ...contractTemplate(req.user.id), ...contractFields(req.body) }), now(), req.user.id);
+    res.json(contractTemplate(req.user.id));
+  });
+  app.post('/api/me/sounds/store/contract/preview', ...me, (req, res) => {
+    const l = licensesOf(req.user.id).find((x) => x.id === id(req.body.licenseId)) || licensesOf(req.user.id)[0];
+    if (!l) throw new HttpError(400, 'Crée d\'abord une licence.');
+    const contract = { ...contractTemplate(req.user.id), ...contractFields(req.body.contract) };
+    res.json(contractOf({ id: 1234, track_title: 'Titre de la prod', artist: req.user.name || 'Beatmaker', buyer_name: 'Prénom Nom', buyer_email: 'acheteur@exemple.fr',
+      amount: l.price, created_at: now(), paid_at: now(), license: JSON.stringify({ ...l, terms: req.body.terms ?? l.terms, contract }) }));
   });
   app.post('/api/me/sounds/store/orders/:id/check', ...me, wrap(async (req, res) => {
     const o = get('SELECT * FROM sound_orders WHERE id = ? AND seller_id = ?', id(req.params.id), req.user.id);
@@ -385,19 +453,33 @@ export function mountBeatStore(app, { me, track, room, receiveFile, openLink, li
   });
 
   // L'achat depuis la page d'écoute : la commande est créée, puis l'acheteur part payer chez le prestataire.
-  app.post('/api/sounds/share/:token/buy', wrap(async (req, res) => {
-    rateLimit(`sounds-buy:${req.ip}`, 30);
+  // La commande d'une licence choisie sur la page d'écoute ; ses conditions sont copiées telles qu'au moment de l'achat.
+  const newOrder = (req, simulate) => {
     const link = openLink(req), p = linkProject(link);
     const t = p.kind === 'pack' && linkTracks(link).find((x) => x.id === id(req.body.trackId));
     if (!t) throw new HttpError(404, 'Prod introuvable.');
-    const l = offersOf(t, p.user_id).find((x) => x.id === id(req.body.licenseId));
+    const l = offersOf(t, p.user_id, simulate).find((x) => x.id === id(req.body.licenseId));
     if (!l) throw new HttpError(400, 'Cette licence n\'est plus disponible pour cette prod.');
-    const s = sellerKeys(p.user_id);
+    const s = simulate ? { provider: 'simulation', sandbox: true } : sellerKeys(p.user_id);
     const token = crypto.randomBytes(24).toString('base64url');
     const artist = p.artist || p.author_name || 'ONIRIQUE';
     const oid = run(`INSERT INTO sound_orders (token, seller_id, track_id, link_id, track_title, artist, license, amount, provider, sandbox, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, token, p.user_id, t.id, link.id, t.title, artist,
-      JSON.stringify({ id: l.id, name: l.name, files: l.files, terms: l.terms, exclusive: l.exclusive }), l.price, s.provider, s.sandbox ? 1 : 0, now()).lastInsertRowid;
+      JSON.stringify({ id: l.id, name: l.name, files: l.files, terms: l.terms, exclusive: l.exclusive, contract: contractTemplate(p.user_id) }), l.price, s.provider, s.sandbox ? 1 : 0, now()).lastInsertRowid;
+    return { link, t, l, s, token, artist, oid };
+  };
+  // Un fondateur simule l'achat : la commande est payée tout de suite, sans prestataire, et livrée à son adresse.
+  app.post('/api/sounds/share/:token/simulate', (req, res) => {
+    const founder = optionalUser(req);
+    if (founder?.role !== 'founder') throw new HttpError(403, 'Réservé aux fondateurs.');
+    rateLimit(`sounds-simulate:${founder.id}`, 60);
+    const { oid, token } = newOrder(req, true);
+    markPaid(get('SELECT * FROM sound_orders WHERE id = ?', oid), founder.email, founder.name || '');
+    res.json({ url: `${config.siteUrl}/achat.html?o=${token}` });
+  });
+  app.post('/api/sounds/share/:token/buy', wrap(async (req, res) => {
+    rateLimit(`sounds-buy:${req.ip}`, 30);
+    const { link, t, l, s, token, artist, oid } = newOrder(req, false);
     const back = `${config.siteUrl}/ecoute?t=${link.token}`, done = `${config.siteUrl}/achat.html?o=${token}`;
     const label = `${t.title} — licence ${l.name}`.slice(0, 120);
     try {
@@ -449,6 +531,6 @@ export function mountBeatStore(app, { me, track, room, receiveFile, openLink, li
     const o = orderOf(req);
     if (o.status !== 'paid') throw new HttpError(403, 'La commande n\'est pas encore payée.');
     res.attachment(`Licence ${orderLicense(o).name} - ${o.track_title}.txt`);
-    res.type('text/plain; charset=utf-8').send(contractOf(o));
+    res.type('text/plain; charset=utf-8').send(contractText(o));
   });
 }

@@ -550,6 +550,8 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
 
 <script src="assets/sounds-player.js?v=10"></script>
 <script src="assets/audio-kit.js?v=2"></script>
+<script src="assets/pdf-kit.js"></script>
+<script src="assets/licence-pdf.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const TOKEN = "onirique.token";
@@ -1739,7 +1741,7 @@ function renderStore() {
     const form = el("form", { className: "stack", style: "padding:12px 14px" }, el("div", { className: "row" }, fieldOf("Nom", name), fieldOf("Prix (€)", price)),
       el("div", { className: "row", style: "flex-wrap:wrap" }, el("span", { className: "muted", style: "font-size:13px", textContent: "Fichiers livrés :" }), ...files.map(([, x]) => x)),
       el("label", { className: "mail-check" }, exclusive, "Exclusive : la prod est retirée de la vente dès l'achat"),
-      fieldOf("Conditions de la licence (reprises dans le contrat)", terms),
+      fieldOf("Clauses de cette licence (une par ligne, reprises dans le contrat)", terms),
       el("div", { className: "row" }, saveBtn, l ? el("button", { className: "btn btn-ghost", type: "button", textContent: "Supprimer",
         onclick: (event) => confirm("Supprimer la licence « " + l.name + " » ? Les commandes déjà payées gardent leur contrat.")
           && busy(event.target, async () => reload({ licenses: await api("DELETE", "/me/sounds/store/licenses/" + l.id) })) }) : ""));
@@ -1758,13 +1760,44 @@ function renderStore() {
       el("small", { textContent: l.files.map((k) => KINDS[k]).join(", ") + (l.exclusive ? " · exclusive" : "") }))), licenseForm(l)))),
     licenses.length < 12 ? el("li", {}, el("details", {}, el("summary", { className: "item" }, icon("plus"), el("div", { className: "grow", textContent: "Ajouter une licence" })), licenseForm(null))) : "");
 
+  // Le contrat de licence : le modèle du beatmaker, rempli à chaque achat, livré en PDF avec les fichiers.
+  const c = store.contract;
+  const cf = {
+    title: el("input", { value: c.title, maxLength: 140 }),
+    legalName: el("input", { value: c.legalName, maxLength: 120, placeholder: "Nom légal ou société (sinon ton nom d'artiste)" }),
+    contact: el("input", { value: c.contact, maxLength: 300, placeholder: "Adresse e-mail, adresse postale… (facultatif)" }),
+    intro: el("textarea", { value: c.intro, maxLength: 3000, style: "min-height:80px" }),
+    clauses: el("textarea", { value: c.clauses, maxLength: 10000, style: "min-height:140px" }),
+    closing: el("textarea", { value: c.closing, maxLength: 2000, style: "min-height:60px" }),
+    footer: el("input", { value: c.footer, maxLength: 200, placeholder: "Bas de chaque page (facultatif)" }),
+    signatures: el("input", { type: "checkbox", checked: c.signatures }),
+  };
+  const contractBody = () => Object.fromEntries(Object.entries(cf).map(([k, input]) => [k, input.type === "checkbox" ? input.checked : input.value]));
+  const pick = el("select", {}, ...licenses.map((l) => el("option", { value: l.id, textContent: l.name })));
+  const saveContract = el("button", { className: "btn btn-primary", type: "submit", textContent: "Enregistrer le contrat" });
+  const previewBtn = el("button", { className: "btn btn-ghost", type: "button", textContent: "Aperçu du PDF" });
+  previewBtn.onclick = () => busy(previewBtn, async () => {
+    const preview = await api("POST", "/me/sounds/store/contract/preview", { licenseId: Number(pick.value), contract: contractBody() });
+    OniriqueLicencePdf(preview).download("Aperçu contrat " + pick.selectedOptions[0].textContent + ".pdf");
+  });
+  const contractForm = el("form", { className: "stack" },
+    el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Remplis à l'achat : {prod}, {beatmaker}, {acheteur}, {licence}, {prix}, {date}, {commande}, {fichiers}. Une clause par ligne. Un achat garde le contrat tel qu'il était ce jour-là." }),
+    fieldOf("Titre du contrat", cf.title), fieldOf("Nom du concédant", cf.legalName), fieldOf("Contact du concédant", cf.contact),
+    fieldOf("Introduction", cf.intro), fieldOf("Clauses générales (pour toutes tes licences)", cf.clauses), fieldOf("Conclusion", cf.closing),
+    fieldOf("Bas de page", cf.footer), el("label", { className: "mail-check" }, cf.signatures, "Cases de signature en fin de contrat"),
+    el("div", { className: "row" }, saveContract, previewBtn, el("span", { className: "muted", style: "font-size:13px", textContent: "avec la licence" }), pick));
+  contractForm.onsubmit = (event) => {
+    event.preventDefault();
+    busy(saveContract, async () => reload({ contract: await api("PUT", "/me/sounds/store/contract", contractBody()) }));
+  };
+
   // Les commandes : payées, ou en attente (une commande PayPal peut être revérifiée).
   const status = { paid: "Payée", pending: "En attente" };
   const orderList = orders.length ? el("ul", { className: "group" }, ...orders.map((o) => {
     const check = o.status === "pending" && o.provider === "paypal" ? el("button", { className: "btn btn-ghost", type: "button", textContent: "Vérifier" }) : "";
     if (check) check.onclick = () => busy(check, async () => { const next = await api("POST", "/me/sounds/store/orders/" + o.id + "/check"); store.orders = orders.map((x) => (x.id === o.id ? next : x)); renderStore(); });
     return el("li", { className: "item" + (o.status === "paid" ? "" : " off") }, el("div", { className: "grow" }, "« " + o.trackTitle + " » · " + o.license + " · " + euros(o.amount),
-      el("small", { textContent: [status[o.status] || o.status, day(o.paidAt || o.createdAt), o.buyerEmail, o.sandbox ? "test" : ""].filter(Boolean).join(" · ") })), check);
+      el("small", { textContent: [o.provider === "simulation" ? "Simulée" : status[o.status] || o.status, day(o.paidAt || o.createdAt), o.buyerEmail, o.sandbox && o.provider !== "simulation" ? "test" : ""].filter(Boolean).join(" · ") })), check);
   })) : el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: "Aucune commande pour l'instant." });
 
   dialog.replaceChildren(
@@ -1775,6 +1808,7 @@ function renderStore() {
       el("div", { className: "sub-title", textContent: "Licences" }),
       el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Proposées sur la page d'écoute de chaque prod en vente dont les fichiers sont déposés. Le prix peut changer d'une prod à l'autre." }),
       licenseList,
+      el("div", { className: "sub-title", textContent: "Contrat de licence (PDF)" }), contractForm,
       el("div", { className: "sub-title", textContent: "Commandes" }), orderList));
 }
 lightClose($("store"));

@@ -310,6 +310,7 @@ const creditsLine = (credits) => {
 };
 
 function show(data) {
+  canSimulate = !!data.simulate;
   if (data.pass) { pass = data.pass; try { sessionStorage.setItem(PASS, pass); } catch {} }
   $("locked").hidden = $("account").hidden = true;
   $("room").hidden = false;
@@ -373,20 +374,28 @@ function show(data) {
 // contrat arrivent sur la page d'achat (et par e-mail) une fois le paiement confirmé.
 const euros = (cents) => (cents / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: cents % 100 ? 2 : 0 });
 const FILE_LABELS = { mp3: "MP3", wav: "WAV", stems: "Track stems" };
+let canSimulate = false;
 function chooseLicense(it) {
   const dialog = $("buy"), error = el("p", { className: "error" });
   const pay = el("button", { className: "btn", type: "submit", textContent: "Payer" });
+  // Un fondateur peut simuler le paiement pour voir la livraison et le contrat, sans rien payer.
+  const fake = canSimulate ? el("button", { className: "back", type: "button", textContent: "Simuler le paiement (fondateur)" }) : "";
   const form = el("form", {}, el("h2", { textContent: it.title }), el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: "Choisis ta licence." }),
     ...it.offers.map((o, i) => el("label", { className: "offer" }, el("input", { type: "radio", name: "license", value: o.id, checked: i === 0 }),
       el("b", { textContent: o.name + (o.exclusive ? " · exclusive" : "") }), el("span", { className: "price", textContent: euros(o.price) }),
       el("small", { textContent: "Fichiers : " + o.files.map((k) => FILE_LABELS[k]).join(", ") }),
       o.terms ? el("details", {}, el("summary", { textContent: "Conditions" }), o.terms) : "")),
-    error, el("div", { className: "row" }, el("button", { className: "back", type: "button", textContent: "Annuler", onclick: () => dialog.close() }), pay));
+    error, el("div", { className: "row" }, el("button", { className: "back", type: "button", textContent: "Annuler", onclick: () => dialog.close() }), fake, pay));
   form.onsubmit = async (event) => {
     event.preventDefault();
     pay.disabled = true; error.textContent = "";
     try { location.href = (await api("/buy", { trackId: it.trackId, licenseId: Number(new FormData(form).get("license")) })).url; }
     catch (e) { error.textContent = e.message; pay.disabled = false; }
+  };
+  if (fake) fake.onclick = async () => {
+    fake.disabled = true; error.textContent = "";
+    try { location.href = (await api("/simulate", { trackId: it.trackId, licenseId: Number(new FormData(form).get("license")) })).url; }
+    catch (e) { error.textContent = e.message; fake.disabled = false; }
   };
   dialog.replaceChildren(form);
   dialog.showModal();

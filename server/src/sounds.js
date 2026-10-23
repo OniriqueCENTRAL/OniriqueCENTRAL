@@ -250,6 +250,10 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'f
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'license_prices'`).get()) {
   db.exec(`ALTER TABLE sound_tracks ADD COLUMN license_prices TEXT NOT NULL DEFAULT '{}'`);
 }
+// Le modèle de contrat de licence du beatmaker (voir beatstore.js).
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_sellers') WHERE name = 'contract'`).get()) {
+  db.exec(`ALTER TABLE sound_sellers ADD COLUMN contract TEXT NOT NULL DEFAULT '{}'`);
+}
 // Le webhook Stripe du beatmaker : seul lui confirme qu'une commande est payée.
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_sellers') WHERE name = 'webhook_secret'`).get()) {
   db.exec('ALTER TABLE sound_sellers ADD COLUMN webhook_secret TEXT');
@@ -1104,15 +1108,17 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     const p = linkProject(link);
     const tracks = linkTracks(link);
     const comments = all(`SELECT * FROM sound_comments WHERE link_id = ? ORDER BY at`, link.id);
+    // Un fondateur peut simuler l'achat d'une prod en vente, même sans compte de paiement branché, pour voir les licences.
+    const simulate = p.kind === 'pack' && optionalUser(req)?.role === 'founder';
     res.set('Cache-Control', 'no-store');
     res.json({
       pass: link.password_hash ? passFor(link) : null,
-      ...saveState(req, link),
+      ...saveState(req, link), simulate,
       owner: p.artist || p.author_name || 'ONIRIQUE', ownerAvatar: media(p.author_avatar), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover), background: media(p.background), coverBy: p.cover_by, releaseDate: p.release_date,
       download: !!link.download, about: aboutOf(p.user_id, false),
       tracks: tracks.map((t) => ({
         id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), lyrics: t.lyrics, bpm: t.bpm, key: t.music_key,
-        offers: p.kind === 'pack' ? offersOf(t, p.user_id) : [], sold: !!t.sold,
+        offers: p.kind === 'pack' ? offersOf(t, p.user_id, simulate) : [], sold: !!t.sold,
         version: { id: t.vid, filename: t.filename, duration: t.duration, peaks: JSON.parse(t.peaks), url: audioUrl(t.vid), downloadUrl: link.download ? audioUrl(t.vid, true, link.id) : null },
         comments: comments.filter((c) => c.track_id === t.id).map(commentView),
       })),

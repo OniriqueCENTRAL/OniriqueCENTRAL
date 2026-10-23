@@ -164,6 +164,48 @@ try {
     assert.deepEqual([orders[0].status, orders[0].buyerEmail], ['paid', 'acheteur@test.fr']);
   });
 
+  await step('contrat personnalisé par le beatmaker : champs remplis à l\'achat, copié dans la commande', async () => {
+    const contract = await call('PUT', '/api/me/sounds/store/contract', { token: beatmaker.token, body: {
+      title: 'Licence {licence} — {beatmaker}', legalName: 'Studio Ghost SAS', contact: 'contact@ghost.fr', clauses: 'Clause maison : créditer {beatmaker} sur {prod}.\n\nSeconde clause.', footer: 'Studio Ghost', signatures: false, inconnu: 'x' } });
+    assert.equal(contract.legalName, 'Studio Ghost SAS');
+    assert.equal(contract.inconnu, undefined);
+    const preview = await call('POST', '/api/me/sounds/store/contract/preview', { token: beatmaker.token, body: { contract: { intro: 'Pour {acheteur}.' }, terms: 'Une ligne\nDeux lignes' } });
+    assert.deepEqual([preview.title.startsWith('Licence '), preview.intro, preview.licenseClauses], [true, 'Pour Prénom Nom <acheteur@exemple.fr>.', ['Une ligne', 'Deux lignes']]);
+    const page = await call('POST', `/api/sounds/share/${share}`, { body: {} });
+    const mp3Offer = page.tracks[0].offers.find((o) => o.name === 'MP3');
+    await call('POST', `/api/sounds/share/${share}/buy`, { body: { trackId: tid, licenseId: mp3Offer.id } });
+    const session = stripe.sessions.at(-1);
+    await hook(beatmaker.id, { type: 'checkout.session.completed', data: { object: { id: session.id, payment_status: 'paid', amount_total: 2999, currency: 'eur', customer_details: { email: 'b@test.fr', name: 'B' } } } });
+    const o = get('SELECT token FROM sound_orders WHERE provider_ref = ?', session.id);
+    // Changer le modèle après l'achat ne change pas le contrat vendu.
+    await call('PUT', '/api/me/sounds/store/contract', { token: beatmaker.token, body: { title: 'Autre titre' } });
+    const view = await call('GET', `/api/sounds/orders/${o.token}`);
+    assert.equal(view.contract.title, 'Licence MP3 — Studio Ghost SAS');
+    assert.deepEqual(view.contract.generalClauses, ['Clause maison : créditer Studio Ghost SAS sur Ghost.', 'Seconde clause.']);
+    assert.equal(view.contract.signatures, false);
+    const text = (await call('GET', `/api/sounds/orders/${o.token}/licence.txt`)).toString('utf8');
+    assert.ok(text.includes('Contact du concédant : contact@ghost.fr') && text.includes('Studio Ghost') && !text.includes('Le licencié : B'));
+  });
+
+  await step('simulation de paiement : réservée aux fondateurs, livrée sans prestataire, sans retirer une exclusive', async () => {
+    const boss = await account('fondateur', 'founder');
+    const page = await call('POST', `/api/sounds/share/${share}`, { token: boss.token, body: {} });
+    assert.equal(page.simulate, true);
+    assert.equal((await call('POST', `/api/sounds/share/${share}`, { body: {} })).simulate, false);
+    const exclusive = (await call('GET', '/api/me/sounds/store', { token: beatmaker.token })).licenses.find((l) => l.exclusive);
+    await call('PATCH', `/api/me/sounds/tracks/${tid}`, { token: beatmaker.token, body: { licensePrices: {} } });
+    await call('POST', `/api/sounds/share/${share}/simulate`, { token: other.token, body: { trackId: tid, licenseId: exclusive.id }, expect: 403 });
+    await call('POST', `/api/sounds/share/${share}/simulate`, { body: { trackId: tid, licenseId: exclusive.id }, expect: 403 });
+    const sellerMails = outbox.filter((m) => m.to === 'beatmaker@test.local').length;
+    const { url } = await call('POST', `/api/sounds/share/${share}/simulate`, { token: boss.token, body: { trackId: tid, licenseId: exclusive.id } });
+    const view = await call('GET', `/api/sounds/orders/${new URL(url).searchParams.get('o')}`);
+    assert.deepEqual([view.status, view.simulated, view.buyerEmail, view.files.map((f) => f.kind)], ['paid', true, 'fondateur@test.local', ['mp3', 'wav', 'stems']]);
+    assert.ok((await call('GET', view.files[2].url)).equals(zip));
+    assert.equal(get('SELECT sold FROM sound_tracks WHERE id = ?', tid).sold, 0);
+    assert.equal(outbox.filter((m) => m.to === 'beatmaker@test.local').length, sellerMails);
+    assert.ok(outbox.filter((m) => m.to === 'fondateur@test.local').at(-1).subject.includes('Exclusive'));
+  });
+
   console.log(`\n${passed} étapes réussies.`);
 } finally {
   server.close();

@@ -40,6 +40,15 @@ h1 { font: 800 clamp(22px, 5vw, 30px)/1.15 var(--f-display); margin: 10px 0 6px;
 .files a, .files span { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); text-decoration: none; font-weight: 600; }
 .files a:hover { border-color: var(--ember); }
 .files a::after { content: "Télécharger"; font: 600 13px var(--f-body); color: var(--ember); }
+.files button { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--ember); background: none; color: var(--mist); font: 600 16px var(--f-body); cursor: pointer; }
+.files button::after { content: "Télécharger le PDF"; font: 600 13px var(--f-body); color: var(--ember); }
+.contract { margin-top: 18px; padding: 18px; border-radius: 14px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,210,214,.07); font-size: 14px; color: var(--haze); }
+.contract h2 { margin: 0 0 10px; font: 700 16px var(--f-display); color: var(--mist); }
+.contract h3 { margin: 14px 0 4px; font: 700 14px var(--f-body); color: var(--mist); }
+.contract dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 10px 0; }
+.contract dt { color: var(--mist); font-weight: 600; }
+.contract dd { margin: 0; overflow-wrap: anywhere; }
+.contract ol { margin: 0; padding-left: 22px; }
 pre { white-space: pre-wrap; margin: 12px 0 0; padding: 16px; border-radius: 14px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,210,214,.07); font: 400 13px/1.6 var(--f-mono); color: var(--haze); }
 .error { color: #FF7A85; }
 </style>
@@ -48,6 +57,8 @@ pre { white-space: pre-wrap; margin: 12px 0 0; padding: 16px; border-radius: 14p
 <main class="wrap">
   <section class="panel" id="order" aria-live="polite"><p class="muted" style="margin:0">Chargement de ta commande…</p></section>
 </main>
+<script src="assets/pdf-kit.js"></script>
+<script src="assets/licence-pdf.js"></script>
 <script>
 // La page d'achat d'une prod : l'état de la commande, puis ses fichiers et son contrat de licence une fois le paiement
 // confirmé par le prestataire. Tant qu'il ne l'est pas, la page revient demander toutes les trois secondes.
@@ -61,6 +72,15 @@ const euros = (cents) => (cents / 100).toLocaleString("fr-FR", { style: "currenc
 const token = new URLSearchParams(location.search).get("o") || "";
 let tries = 0;
 
+// Le contrat lisible sur la page, comme dans le PDF.
+function contractView(c) {
+  const list = (pairs) => el("dl", {}, ...pairs.flatMap(([k, v]) => [el("dt", { textContent: k }), el("dd", { textContent: v })]));
+  const clauses = (title, items, from) => (items.length ? [el("h3", { textContent: title }), el("ol", { start: from }, ...items.map((x) => el("li", { textContent: x })))] : []);
+  return el("section", { className: "contract" }, el("h2", { textContent: c.title }), list(c.parties), c.intro ? el("p", { textContent: c.intro }) : "", list(c.details),
+    ...clauses("Conditions de la licence", c.licenseClauses, 1), ...clauses("Clauses générales", c.generalClauses, c.licenseClauses.length + 1),
+    c.closing ? el("p", { textContent: c.closing }) : "", c.footer ? el("p", { style: "font-size:12px", textContent: c.footer }) : "");
+}
+
 async function load() {
   let o;
   try {
@@ -73,18 +93,19 @@ async function load() {
   }
   const paid = o.status === "paid";
   $("order").replaceChildren(
-    el("div", { className: "eyebrow", textContent: "Commande n° " + o.number + (o.sandbox ? " · paiement de test" : "") }),
+    el("div", { className: "eyebrow", textContent: "Commande n° " + o.number + (o.simulated ? " · paiement simulé" : o.sandbox ? " · paiement de test" : "") }),
     el("h1", { textContent: o.trackTitle }),
     el("p", { className: "muted", style: "margin:0 0 12px", textContent: o.artist + " · licence " + o.license.name + " · " + euros(o.amount) }),
-    el("span", { className: "status" + (paid ? " paid" : ""), textContent: paid ? "Paiement confirmé" : "Paiement en cours de confirmation…" }),
+    el("span", { className: "status" + (paid ? " paid" : ""), textContent: o.simulated ? "Paiement simulé (aucun argent encaissé)" : paid ? "Paiement confirmé" : "Paiement en cours de confirmation…" }),
     paid ? el("ul", { className: "files" }, ...o.files.map((f) => el("li", {}, f.available
       ? el("a", { href: f.url, download: "", textContent: f.label })
       : el("span", { className: "muted", textContent: f.label + " : plus disponible, écris au beatmaker" }))),
+      el("li", {}, el("button", { type: "button", textContent: "Contrat de licence", onclick: () => OniriqueLicencePdf(o.contract).download("Licence " + o.license.name + " - " + o.trackTitle + ".pdf") })),
       el("li", {}, el("a", { href: o.contractUrl, download: "", textContent: "Contrat de licence (texte)" })))
       : el("p", { className: "muted", textContent: tries > 40 ? "La confirmation prend plus de temps que prévu. Tu recevras un e-mail dès qu'elle arrive ; tu peux garder cette page ouverte."
         : "Dès que le paiement est confirmé, tes fichiers apparaissent ici et un e-mail t'est envoyé." }),
     paid && o.buyerEmail ? el("p", { className: "muted", style: "font-size:14px", textContent: "Le lien de cette page a aussi été envoyé à " + o.buyerEmail + ". Garde-le : il reste valable." }) : "",
-    paid ? el("pre", { textContent: o.contract }) : "");
+    paid ? contractView(o.contract) : "");
   if (!paid && tries++ < 200) setTimeout(load, 3000);
 }
 load();
