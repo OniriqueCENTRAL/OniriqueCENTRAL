@@ -283,25 +283,33 @@ function syncLyrics() {
 player.audio.addEventListener("timeupdate", syncLyrics);
 // Avec la fiche de l'artiste dessous, les paroles sont plus courtes ; « Afficher plus » les agrandit et masque la fiche.
 function layoutSide() {
-  const lyrics = !$("lyrics").hidden, about = $("about").dataset.show === "1";
-  $("about").hidden = !about || (lyrics && lyricsExpanded);
+  const lyrics = !$("lyrics").hidden, about = $("about").dataset.show === "1" || !!document.querySelector(".about-extra");
+  for (const box of [$("about"), ...document.querySelectorAll(".about-extra")]) box.hidden = (box === $("about") && $("about").dataset.show !== "1") || (lyrics && lyricsExpanded);
   $("lyrics").classList.toggle("short", lyrics && about && !lyricsExpanded);
   $("lyrics-more").hidden = !(lyrics && about);
   $("lyrics-more").textContent = lyricsExpanded ? "Afficher moins" : "Afficher plus";
 }
 $("lyrics-more").onclick = () => { lyricsExpanded = !lyricsExpanded; layoutSide(); delete $("lyrics").dataset.current; syncLyrics(); };
-// « À propos de l'artiste » : la fiche que l'auteur a choisi d'afficher (photo, texte, lien).
-function renderAbout(a, name) {
+// Une fiche « À propos » en lecture : photo, nom, texte, lien ; null si elle n'a rien à montrer.
+function aboutCard(a, name, box = el("section", { className: "about about-extra" })) {
   const href = a && (a.link || a.linkPage);
-  const show = !!(a && (a.photo || a.bio || href));
-  $("about").dataset.show = show ? "1" : "";
-  if (show) {
-    const title = el("h2", { textContent: "À propos de l'artiste" });
-    $("about").replaceChildren(a.photo ? el("div", { className: "about-photo", style: `background-image:url("${a.photo}")` }, title) : title,
-      el("div", { className: "about-body" }, el("b", { textContent: name }),
-        a.bio ? el("p", { className: "about-bio", textContent: a.bio, title: "Lire tout", onclick: (event) => event.currentTarget.classList.toggle("open") }) : null,
-        href ? el("a", { className: "about-link", href, target: "_blank", rel: "noopener" }, icon("link"), a.link ? new URL(a.link).hostname.replace(/^www\./, "") : "Page de liens") : null));
-  }
+  if (!(a && (a.photo || a.bio || href))) return null;
+  const title = el("h2", { textContent: "À propos de l'artiste" });
+  box.replaceChildren(a.photo ? el("div", { className: "about-photo", style: `background-image:url("${a.photo}")` }, title) : title,
+    el("div", { className: "about-body" }, el("b", { textContent: name }),
+      a.bio ? el("p", { className: "about-bio", textContent: a.bio, title: "Lire tout", onclick: (event) => event.currentTarget.classList.toggle("open") }) : null,
+      href ? el("a", { className: "about-link", href, target: "_blank", rel: "noopener" }, icon("link"), a.link ? new URL(a.link).hostname.replace(/^www\./, "") : "Page de liens") : null));
+  return box;
+}
+// Les fiches des collaborateurs qui ont choisi de l'afficher, sous celle de l'auteur.
+function renderCollabAbouts(list) {
+  document.querySelectorAll(".about-extra").forEach((x) => x.remove());
+  $("about").after(...(list || []).map((a) => aboutCard(a, a.name)).filter(Boolean));
+}
+// « À propos de l'artiste » : la fiche que l'auteur a choisi d'afficher (photo, texte, lien), puis celles des collaborateurs.
+function renderAbout(a, name, collabs) {
+  $("about").dataset.show = aboutCard(a, name, $("about")) ? "1" : "";
+  renderCollabAbouts(collabs);
   layoutSide();
 }
 
@@ -341,7 +349,7 @@ function show(data) {
   items = data.tracks.map((t) => ({ key: "v" + t.version.id, id: t.version.id, trackId: t.id, title: t.title, feat: (t.credits || {}).feat, stage: t.stage, day: t.day,
     subtitle: [data.owner, OP.stageLabel(t.stage)].filter(Boolean).join(" · "), cover: data.cover,
     url: t.version.url, downloadUrl: t.version.downloadUrl, duration: t.version.duration, peaks: t.version.peaks, comments: t.comments, credits: t.credits || {}, lyrics: t.lyrics || "", bpm: t.bpm, key: t.key, offers: t.offers || [] }));
-  renderAbout(data.about, data.owner);
+  renderAbout(data.about, data.owner, data.collabAbouts);
   $("tracks").replaceChildren(...items.map((it, i) => {
     const row = el("li", { className: "trk", tabIndex: 0 },
       el("span", { className: "num", textContent: String(i + 1) }),

@@ -364,6 +364,8 @@ function aboutOf(userId, mine) {
   return { photo: media(a?.photo), bio: a?.bio || '', link: a?.link || '', visible: a ? !!a.visible : false,
     linkPage: handle ? `${config.linksUrl}/${handle}` : null };
 }
+// Les fiches affichées des collaborateurs d'un projet, sous celle de l'auteur.
+const aboutsOf = (people) => people.map((u) => { const a = aboutOf(u.id, false); return a && { ...a, name: u.name || 'ONIRIQUE' }; }).filter(Boolean);
 const creditsOf = (row) => { try { return JSON.parse(row.credits || '{}'); } catch { return {}; } };
 const person = (u) => ({ id: u.id, name: u.name || 'ONIRIQUE', avatar: media(u.avatar) });
 const linkView = (l) => ({
@@ -597,7 +599,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
         owner: person({ id: p.user_id, name: p.owner_name, avatar: p.owner_avatar }),
         collaborators: collabs.filter((c) => c.project_id === p.id).map(person),
         inviteUrl: p.user_id === u && p.invite_token ? `${config.siteUrl}/mes-sons#/invite/${p.invite_token}` : null,
-        about: aboutOf(p.user_id, p.user_id === u),
+        about: aboutOf(p.user_id, p.user_id === u), collabAbouts: aboutsOf(collabs.filter((c) => c.project_id === p.id)),
         // Le mail d'un pack (sa liste d'adresses comprise) ne se montre qu'à son auteur.
         mail: p.kind === 'pack' && p.user_id === u ? mailDraft(JSON.parse(p.mail || '{}')) : null,
         tracks: tracks.filter((t) => t.project_id === p.id).map((t) => {
@@ -1154,6 +1156,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       ...saveState(req, link), simulate, pay: p.kind === 'pack' ? payMethods(p.user_id) : [],
       owner: p.artist || p.author_name || 'ONIRIQUE', ownerAvatar: media(p.author_avatar), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover), background: media(p.background), coverBy: p.cover_by, releaseDate: p.release_date,
       download, about: aboutOf(p.user_id, false),
+      collabAbouts: aboutsOf(all('SELECT u.id, u.name FROM sound_collabs c JOIN users u ON u.id = c.user_id WHERE c.project_id = ? ORDER BY c.created_at', p.id)),
       tracks: tracks.map((t) => ({
         id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), lyrics: t.lyrics, bpm: t.bpm, key: t.music_key,
         offers: p.kind === 'pack' ? offersOf(t, p.user_id, simulate) : [], sold: !!t.sold,

@@ -773,13 +773,29 @@ player.audio.addEventListener("timeupdate", syncLyrics);
 // Avec la fiche de l'artiste dessous, les paroles sont plus courtes ; « Afficher plus » les agrandit et masque la fiche.
 let lyricsExpanded = false;
 function layoutSide() {
-  const lyrics = !$("lyrics").hidden, about = $("about").dataset.show === "1";
-  $("about").hidden = !about || (lyrics && lyricsExpanded);
+  const lyrics = !$("lyrics").hidden, about = $("about").dataset.show === "1" || !!document.querySelector(".about-extra");
+  for (const box of [$("about"), ...document.querySelectorAll(".about-extra")]) box.hidden = (box === $("about") && $("about").dataset.show !== "1") || (lyrics && lyricsExpanded);
   $("lyrics").classList.toggle("short", lyrics && about && !lyricsExpanded);
   $("lyrics-more").hidden = !(lyrics && about);
   $("lyrics-more").textContent = lyricsExpanded ? "Afficher moins" : "Afficher plus";
 }
 $("lyrics-more").onclick = () => { lyricsExpanded = !lyricsExpanded; layoutSide(); syncLyrics(); };
+// Une fiche « À propos » en lecture : photo, nom, texte, lien ; null si elle n'a rien à montrer.
+function aboutCard(a, name, box = el("section", { className: "about about-extra" })) {
+  const href = a && (a.link || a.linkPage);
+  if (!(a && (a.photo || a.bio || href))) return null;
+  const title = el("h2", { textContent: "À propos de l'artiste" });
+  box.replaceChildren(a.photo ? el("div", { className: "about-photo", style: `background-image:url("${a.photo}")` }, title) : title,
+    el("div", { className: "about-body" }, el("b", { textContent: name }),
+      a.bio ? el("p", { className: "about-bio", textContent: a.bio, title: "Lire tout", onclick: (event) => event.currentTarget.classList.toggle("open") }) : null,
+      href ? el("a", { className: "about-link", href, target: "_blank", rel: "noopener" }, icon("link"), a.link ? new URL(a.link).hostname.replace(/^www\./, "") : "Page de liens") : null));
+  return box;
+}
+// Les fiches des collaborateurs qui ont choisi de l'afficher, sous celle de l'auteur.
+function renderCollabAbouts(list) {
+  document.querySelectorAll(".about-extra").forEach((x) => x.remove());
+  $("about").after(...(list || []).map((a) => aboutCard(a, a.name)).filter(Boolean));
+}
 // « À propos de l'artiste » : la fiche de l'auteur du projet (photo, texte, lien). Il la remplit en mode édition, et
 // choisit de l'afficher ou non sur ses projets.
 function renderAbout(p) {
@@ -805,17 +821,9 @@ function renderAbout(p) {
           api("PATCH", "/me/sounds/about", { bio: bio.value, link: link.value, visible: shown.checked }).then(() => { saved.textContent = "Enregistré."; return refresh(); }, fail) }), saved)));
     box.dataset.show = "1";
   } else {
-    const href = a && (a.link || a.linkPage);
-    const show = !!(a && a.visible && (a.photo || a.bio || href));
-    box.dataset.show = show ? "1" : "";
-    if (show) {
-      const label = a.link ? new URL(a.link).hostname.replace(/^www\./, "") : "Page de liens";
-      box.replaceChildren(a.photo ? el("div", { className: "about-photo", style: `background-image:url("${a.photo}")` }, el("h2", { textContent: "À propos de l'artiste" })) : el("h2", { textContent: "À propos de l'artiste" }),
-        el("div", { className: "about-body" }, el("b", { textContent: name }),
-          a.bio ? el("p", { className: "about-bio", textContent: a.bio, title: "Lire tout", onclick: (event) => event.currentTarget.classList.toggle("open") }) : null,
-          href ? el("a", { className: "about-link", href, target: "_blank", rel: "noopener" }, icon("link"), label) : null));
-    }
+    box.dataset.show = a && a.visible && aboutCard(a, name, box) ? "1" : "";
   }
+  renderCollabAbouts(p.collabAbouts);
   layoutSide();
 }
 player.audio.addEventListener("seeked", () => { delete $("lyrics").dataset.current; syncLyrics(); });

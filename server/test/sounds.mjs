@@ -304,6 +304,13 @@ try {
     const heard = await call('POST', `/api/sounds/share/${shareToken(shared.url)}`);
     assert.equal(heard.owner, 'auteur-collab');
     assert.equal(heard.canSave, false);
+    // La fiche du collaborateur s'affiche sous celle de l'auteur, seulement s'il a choisi de la montrer.
+    assert.deepEqual(heard.collabAbouts, []);
+    await call('PATCH', '/api/me/sounds/about', { token: friend.token, body: { bio: 'Beatmaker', visible: false } });
+    assert.deepEqual((await call('POST', `/api/sounds/share/${shareToken(shared.url)}`)).collabAbouts, []);
+    await call('PATCH', '/api/me/sounds/about', { token: friend.token, body: { visible: true } });
+    assert.deepEqual((await call('POST', `/api/sounds/share/${shareToken(shared.url)}`)).collabAbouts.map((x) => [x.name, x.bio]), [['ami-collab', 'Beatmaker']]);
+    assert.equal((await call('GET', '/api/me/sounds', { token: owner.token })).projects.find((x) => x.id === pid).collabAbouts[0].bio, 'Beatmaker');
     await call('POST', `/api/sounds/share/${shareToken(shared.url)}/play`, { body: { trackId: added.id } });
     assert.equal((await call('GET', '/api/me/sounds', { token: owner.token })).projects.find((x) => x.id === pid).tracks.find((t) => t.id === added.id).plays, 1);
     assert.equal((await call('GET', '/api/me/sounds', { token: friend.token })).links.length, 2);
