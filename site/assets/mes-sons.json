@@ -1,7 +1,7 @@
 {
   "id": "/mes-sons",
-  "name": "Mes sons — ONIRIQUE",
-  "short_name": "Mes sons",
+  "name": "ONIRIQUE CLOUD — ONIRIQUE",
+  "short_name": "ONIRIQUE CLOUD",
   "description": "Ta musique en cours, tes versions et tes liens d'écoute privés.",
   "lang": "fr",
   "start_url": "/mes-sons?app=1",

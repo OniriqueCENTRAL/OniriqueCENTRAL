@@ -112,8 +112,15 @@ ${spark(1)}${spark(2)}${spark(3)}
       download,
       item("Support", "support.html"),
       ROLES[user.role] && user.role !== "vip" ? item("Administration", "admin.html") : null,
-      // Les Shorts YouTube programmés, sur la page compte : pour les rôles qui y ont droit.
-      ...((me.rights || []).includes("youtube") ? [el("hr"), el("h6", { textContent: "Outils" }), item("Shorts YouTube", "compte.html#youtube")] : []),
+      // Les outils, pour les rôles qui y ont droit : ONIRIQUE CLOUD, la page de liens, les Shorts YouTube programmés.
+      ...(() => {
+        const rights = me.rights || [], tools = [
+          rights.includes("sounds") && item("ONIRIQUE CLOUD", "mes-sons.html"),
+          rights.includes("links") && item("Mes liens", "mes-liens.html"),
+          rights.includes("youtube") && item("Shorts YouTube", "compte.html#youtube"),
+        ].filter(Boolean);
+        return tools.length ? [el("hr"), el("h6", { textContent: "Outils" }), ...tools] : [];
+      })(),
       el("hr"),
       out);
     menu.setAttribute("role", "menu");

@@ -106,6 +106,7 @@ try {
     assert.match(outbox.at(-1).subject, /auditeur écoute « Intro »/);
     await call('POST', `/api/sounds/share/${t}/comments`, { body: { pass: share.pass, trackId, at: 4.2, body: 'Le refrain !' }, expect: 400 });
     await call('POST', `/api/sounds/share/${t}/comments`, { body: { pass: share.pass, trackId, at: 4.2, body: 'Le refrain !', name: 'Sam' }, expect: 201 });
+    assert.match(outbox.at(-1).subject, /Sam a commenté « Intro »/);
     const data = await call('GET', '/api/me/sounds', { token: member.token });
     assert.equal(data.links[0].plays, 2);
     assert.equal(data.projects[0].tracks[0].comments[0].author, 'Sam');
@@ -185,6 +186,20 @@ try {
     const credited = await call('POST', `/api/sounds/share/${shareToken(fresh.url)}`, { token: listener.token, body: {} });
     assert.deepEqual(credited.tracks[0].credits, { beat: 'Kanni', mix: 'Gry' });
     assert.equal(credited.coverBy, 'Shurby');
+    // Les paroles : les sauts de ligne restent, les espaces de trop et les \r partent.
+    await call('PATCH', `/api/me/sounds/tracks/${t}`, { token: member.token, body: { lyrics: '[00:01.50]  Première   ligne \r\n\r\nDeuxième\n' } });
+    const lyrics = (await call('GET', '/api/me/sounds', { token: member.token })).projects.flatMap((x) => x.tracks).find((x) => x.id === t).lyrics;
+    assert.equal(lyrics, '[00:01.50] Première ligne\n\nDeuxième');
+    // La fiche « À propos de l'artiste » : lien complété en https, lien invalide refusé, masquée mais visible par son auteur.
+    await call('PATCH', '/api/me/sounds/about', { token: member.token, body: { link: 'pas un lien' }, expect: 400 });
+    const about = await call('PATCH', '/api/me/sounds/about', { token: member.token, body: { bio: ' Rappeur   de Paris \r\n\r\n\r\nDepuis 2020 ', link: 'onirique.store/x', visible: false } });
+    assert.deepEqual([about.bio, about.link, about.visible], ['Rappeur de Paris\n\nDepuis 2020', 'https://onirique.store/x', false]);
+    assert.equal((await call('GET', '/api/me/sounds', { token: member.token })).projects[0].about.visible, false);
+    assert.equal((await call('POST', `/api/sounds/share/${shareToken(fresh.url)}`, { token: listener.token, body: {} })).about, null);
+    await call('PATCH', '/api/me/sounds/about', { token: member.token, body: { visible: true } });
+    const heard = await call('POST', `/api/sounds/share/${shareToken(fresh.url)}`, { token: listener.token, body: {} });
+    assert.equal(heard.about.bio, 'Rappeur de Paris\n\nDepuis 2020');
+    assert.ok(heard.tracks.some((x) => x.lyrics === '[00:01.50] Première ligne\n\nDeuxième'));
     // La date de sortie du projet : une date réelle seulement, '' l'efface.
     await call('PATCH', `/api/me/sounds/projects/${a}`, { token: member.token, body: { releaseDate: '2026-02-30' }, expect: 400 });
     await call('PATCH', `/api/me/sounds/projects/${a}`, { token: member.token, body: { releaseDate: '2026-12-04' } });
@@ -330,6 +345,67 @@ try {
     let at = albums;
     for (let i = 2; i <= 8; i++) at = await folder('Niveau ' + i, at);
     await call('POST', '/api/me/sounds/folders', { token: me.token, body: { title: 'Trop bas', parentId: at }, expect: 400 });
+  });
+
+  await step('réglages : notifications par e-mail et sur l\'appareil, ouverture des nouveaux liens', async () => {
+    const prefs = await call('GET', '/api/me/notifications', { token: member.token });
+    assert.equal(prefs.mail.comment, true);
+    assert.equal(prefs.links.download, false);
+    const saved = await call('PUT', '/api/me/notifications', { token: member.token, body: { mail: { comment: false, inconnu: true }, links: { download: true } } });
+    assert.equal(saved.mail.comment, false);
+    assert.equal(saved.mail.inconnu, undefined);
+    assert.equal(saved.push.comment, true);
+    const pid = (await call('POST', '/api/me/sounds/projects', { token: member.token, body: { title: 'Réglages' }, expect: 201 })).id;
+    const tid = (await call('POST', `/api/me/sounds/projects/${pid}/tracks?filename=Essai.wav`, { token: member.token, raw: wav(), expect: 201 })).id;
+    const { url } = await call('POST', '/api/me/sounds/links', { token: member.token, body: { trackId: tid }, expect: 201 });
+    const share = await call('POST', `/api/sounds/share/${shareToken(url)}`, { body: {} });
+    assert.ok(share.tracks[0].version.downloadUrl, 'téléchargement autorisé par défaut');
+    const before = outbox.length;
+    await call('POST', `/api/sounds/share/${shareToken(url)}/comments`, { body: { trackId: tid, body: 'Encore', name: 'Lou' }, expect: 201 });
+    assert.equal(outbox.length, before, 'plus d\'e-mail pour les commentaires');
+    // Le téléchargement par le lien : l'adresse est signée avec le lien, qu'on ne peut pas retirer.
+    assert.ok((await call('GET', share.tracks[0].version.downloadUrl)).length > 0);
+    await call('GET', share.tracks[0].version.downloadUrl.replace(/&l=\d+/, ''), { expect: 403 });
+    assert.ok((await call('GET', '/api/push/key')).key.length > 40);
+    await call('POST', '/api/me/push', { token: member.token, body: { endpoint: 'http://x', keys: { p256dh: 'a', auth: 'b' } }, expect: 400 });
+    await call('POST', '/api/me/push', { token: member.token, body: { endpoint: 'https://push.test/abc', keys: { p256dh: 'a', auth: 'b' } }, expect: 201 });
+    assert.equal(get('SELECT user_id FROM push_subscriptions WHERE endpoint = ?', 'https://push.test/abc').user_id, member.id);
+    await call('DELETE', '/api/me/push', { token: member.token, body: { endpoint: 'https://push.test/abc' } });
+    assert.equal(get('SELECT 1 AS x FROM push_subscriptions'), undefined);
+  });
+
+  await step('pack de prods : BPM et clé lus dans le nom du fichier, vente, brouillon du mail', async () => {
+    const { prodFromFilename, musicKey } = await import('../src/sounds.js');
+    assert.deepEqual(prodFromFilename('Nightfall_140bpm_C#min.wav'), { title: 'Nightfall', bpm: 140, key: 'C# min' });
+    assert.deepEqual(prodFromFilename('DARK - 92 BPM - Am.mp3'), { title: 'DARK', bpm: 92, key: 'A min' });
+    assert.deepEqual(prodFromFilename('I Am Legend.wav'), { title: 'I Am Legend', bpm: 0, key: '' });
+    assert.equal(musicKey('bb majeur'), 'Bb maj');
+    assert.equal(musicKey('H'), null);
+    const pack = (await call('POST', '/api/me/sounds/projects', { token: member.token, body: { title: 'Pack', kind: 'pack' }, expect: 201 })).id;
+    const tid = (await call('POST', `/api/me/sounds/projects/${pack}/tracks?filename=Ghost%20150bpm%20Fmin.wav`, { token: member.token, raw: wav(), expect: 201 })).id;
+    await call('PATCH', `/api/me/sounds/tracks/${tid}`, { token: member.token, body: { key: 'zz' }, expect: 400 });
+    await call('PATCH', `/api/me/sounds/tracks/${tid}`, { token: member.token, body: { buyUrl: 'javascript:alert(1)' }, expect: 400 });
+    await call('PATCH', `/api/me/sounds/tracks/${tid}`, { token: member.token, body: { price: 2999, buyUrl: 'buy.stripe.com/abc' } });
+    await call('PATCH', `/api/me/sounds/projects/${pack}`, { token: member.token, body: { mail: { to: 'a@b.fr, nope', subject: 'Nouveau pack', trackIds: [tid], colors: { bg: 'red' } } } });
+    await call('PATCH', `/api/me/sounds/projects/${projectId}`, { token: member.token, body: { mail: {} }, expect: 400 });
+    const p = (await call('GET', '/api/me/sounds', { token: member.token })).projects.find((x) => x.id === pack);
+    assert.equal(p.kind, 'pack');
+    assert.deepEqual([p.tracks[0].title, p.tracks[0].bpm, p.tracks[0].key, p.tracks[0].price, p.tracks[0].buyUrl], ['Ghost', 150, 'F min', 2999, 'https://buy.stripe.com/abc']);
+    assert.equal(p.mail.colors.bg, '#0D0809');
+    const { html } = await call('POST', `/api/me/sounds/projects/${pack}/mail/preview`, { token: member.token, body: { ...p.mail, title: '<script>' } });
+    assert.ok(html.includes('150 BPM') && html.includes('https://buy.stripe.com/abc') && !html.includes('<script>'));
+  });
+
+  await step('VANISH : un fondateur voit les projets de tous les comptes, en lecture seule', async () => {
+    const boss = await account('fondateur-vanish', 'founder');
+    const all = await call('GET', '/api/me/sounds?vanish=1', { token: boss.token });
+    assert.equal(all.vanish, true);
+    const theirs = all.projects.find((x) => x.owner.id === member.id);
+    assert.ok(theirs && !theirs.mine && theirs.tracks.length);
+    assert.equal((await call('GET', '/api/me/sounds', { token: boss.token })).projects.length, 0);
+    const mine = await call('GET', '/api/me/sounds?vanish=1', { token: member.token });
+    assert.ok(!mine.vanish && !mine.projects.some((x) => x.owner.id !== member.id && !x.collaborators.some((c) => c.id === member.id)));
+    await call('PATCH', `/api/me/sounds/projects/${theirs.id}`, { token: boss.token, body: { title: 'x' }, expect: 404 });
   });
 
   console.log(`\n${passed} étapes réussies.`);

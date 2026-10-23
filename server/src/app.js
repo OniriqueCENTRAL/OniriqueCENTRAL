@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { pipeline } from 'node:stream/promises';
 import express from 'express';
 import { config } from './config.js';
@@ -35,6 +36,7 @@ import { announcementView, deleteAccount, maintenanceView, mountControl, packVie
 import { enrollment, matchStep, newRecoveryCodes, newSecret, recoveryHash } from './totp.js';
 import { mountLinkPages } from './linkpage.js';
 import { mountSounds } from './sounds.js';
+import { mountPush } from './push.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
@@ -488,7 +490,7 @@ export function createApp() {
       // Plugins pour lesquels un essai a déjà été lancé (expiré ou non) : l'essai ne se reprend pas.
       trialsUsed: all(`SELECT DISTINCT product_id AS id FROM licenses WHERE user_id = ? AND source = 'trial'`, req.user.id).map((r) => r.id),
       referral: referralView(req.user),
-      rights: rightsOf(req.user), // ce que ce compte peut ouvrir : Mes sons, page de liens, profil d'ingé…
+      rights: rightsOf(req.user), // ce que ce compte peut ouvrir : ONIRIQUE CLOUD, page de liens, profil d'ingé…
     });
   });
 
@@ -538,6 +540,7 @@ export function createApp() {
 
   mountLinkPages(app, { requireUser, receiveImage, removeMedia, wrap });
   mountSounds(app, { requireUser, receiveFile, receiveImage, removeMedia, wrap });
+  mountPush(app, { requireUser });
 
   // La photo d'ingé d'un fondateur : celle des crédits, distincte de la photo du compte.
   const engineerOnly = (req) => { if (!can(req.user, 'engineer')) throw new HttpError(403, "Le profil d'ingé n'est pas ouvert à ce compte."); };
@@ -1646,7 +1649,14 @@ export function createApp() {
     res.json({ available: !!stat, size: stat?.size ?? 0, updatedAt: stat?.mtimeMs ?? null });
   });
 
-  // Les droits des rôles (« Droits des rôles » dans le panel) : quels rôles ont Mes sons, la page de liens, etc.
+  // Les potards ONIRIQUE (onglet KNOB du panel) : la page n'est pas dans le site public, seul un fondateur la reçoit.
+  admin.get('/knobs', (req, res, next) => {
+    if (req.user.role !== 'founder') return next(new HttpError(403, 'Réservé aux fondateurs.'));
+    res.set('Cache-Control', 'no-store');
+    res.sendFile(fileURLToPath(new URL('potards.html', import.meta.url)));
+  });
+
+  // Les droits des rôles (« Droits des rôles » dans le panel) : quels rôles ont ONIRIQUE CLOUD, la page de liens, etc.
   admin.get('/rights', (req, res) => {
     if (req.user.role !== 'founder') throw new HttpError(403, 'Réservé aux fondateurs.');
     res.json({ roles: EDITABLE_ROLES, rights: Object.entries(RIGHTS).map(([id, r]) => ({ id, label: r.label, roles: rolesWith(id).filter((x) => x !== 'founder') })) });

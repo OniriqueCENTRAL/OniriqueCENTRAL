@@ -2,12 +2,13 @@
 // flottante en bas de page (pochette, forme d'onde, précédent, lecture, suivant, aléatoire, répétition, file, volume)
 // et, en la dépliant, la grande forme d'onde avec les commentaires placés dessus, la vitesse et la boucle. Sur téléphone,
 // la barre s'ouvre en lecteur plein écran : pochette ronde, forme d'onde qui défile sous la tête de lecture, partager,
-// précédent, lecture, suivant, répétition, et en bas la file, les commentaires et les réglages.
+// précédent, lecture, suivant, répétition, et en bas la file, les commentaires, les paroles et les réglages.
 //
 //   const player = OniriquePlayer.create({ onPlay(item), onComment(item, at, text, name) → Promise<comment>, askName,
 //                                          onDelete(item, comment) → Promise, onChange(item), onShare(item) })
 //   player.play(items, index)   joue une liste (un projet) à partir de ce titre ; player.enqueue(item) l'ajoute à la file
-//   item : { key, id, trackId, title, feat, subtitle, cover, url, downloadUrl, duration, peaks, comments }
+//   item : { key, id, trackId, title, feat, subtitle, cover, url, downloadUrl, duration, peaks, comments, lyrics }
+//   OniriquePlayer.parseLyrics(text) → [{ at, text }] : les paroles au format LRC, at en secondes (null : ligne sans repère)
 //   player.setAccent(color)      la couleur de la lecture (celle de la pochette du projet), null : la braise d'ONIRIQUE
 //   OniriquePlayer.peaksOf(file) → Promise<{ peaks, duration }>, calculés dans le navigateur à l'envoi
 //   OniriquePlayer.tint(url)     → Promise<{ accent, glow, deep } | null>, les couleurs tirées d'une pochette
@@ -46,6 +47,7 @@
     download: '<path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>',
     down: '<path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
     share: '<path d="M12 15V4m0 0L8 8m4-4 4 4M7 11H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
+    lyrics: '<path d="M12 3.5a3 3 0 0 0-3 3V12a3 3 0 0 0 6 0V6.5a3 3 0 0 0-3-3ZM5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
     comment: '<path d="M12 4c4.7 0 8.5 3.2 8.5 7.2S16.7 18.4 12 18.4c-1 0-2-.1-2.9-.4L4.5 20l1.3-3.7C4.3 15 3.5 13.2 3.5 11.2 3.5 7.2 7.3 4 12 4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
     sliders: '<path d="M4 7h9m4 0h3M4 12h3m4 0h9M4 17h11m4 0h1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="15" cy="7" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/>',
     expand: '<path d="m6 15 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
@@ -62,10 +64,10 @@
 .op-icon { display: inline-grid; place-items: center; line-height: 0; }
 .op-pill { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 40; width: min(1120px, calc(100vw - 24px));
   display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 8px; border-radius: 999px; border: 1px solid rgba(255,210,214,.16);
-  background: rgba(20,9,11,.92); backdrop-filter: blur(18px); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9), 0 0 40px -18px var(--op-accent, rgba(226,52,68,.55)); }
+  background: rgba(20,9,11,.95); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9), 0 0 40px -18px var(--op-accent, rgba(226,52,68,.55)); }
 .op-pill[hidden], .op-sheet[hidden], .op-queue[hidden], .op-comments[hidden] { display: none; }
 .op-cover { flex: none; width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: linear-gradient(135deg, #5C0008, #2A0A0E); border: 1px solid rgba(255,210,214,.16); cursor: pointer; }
-.op-pill.playing .op-cover { animation: op-spin 9s linear infinite; }
+.op-pill.playing .op-cover { animation: op-spin 9s linear infinite; will-change: transform; }
 @keyframes op-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .op-pill.playing .op-cover { animation: none; } }
 .op-meta { min-width: 0; width: 170px; flex: none; cursor: pointer; line-height: 1.25; }
@@ -82,7 +84,7 @@
 .op-vol { width: 80px; accent-color: var(--op-accent, var(--ember)); min-height: 0; padding: 0; }
 .op-sheet, .op-queue { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(80px + env(safe-area-inset-bottom)); z-index: 39; width: min(1120px, calc(100vw - 24px));
   max-height: min(62vh, 560px); overflow: auto; padding: 18px; border-radius: 22px; border: 1px solid rgba(255,210,214,.16);
-  background: rgba(20,9,11,.96); backdrop-filter: blur(18px); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9); display: grid; gap: 14px; }
+  background: rgba(20,9,11,.97); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9); display: grid; gap: 14px; }
 .op-head { display: flex; align-items: center; gap: 12px; }
 .op-head b { flex: 1; min-width: 0; font: 700 16px var(--f-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .op-wave { width: 100%; height: 110px; display: block; cursor: pointer; touch-action: none; }
@@ -157,6 +159,22 @@ dialog[open]::backdrop { animation: op-fade .22s ease-out; }
 .op-full.playing .op-disc { animation: op-spin 14s linear infinite; }
 .op-scrub { width: calc(100% + 36px); height: 64px; display: block; touch-action: none; cursor: grab; }
 .op-full-time { font: 500 15px var(--f-mono, monospace); letter-spacing: .02em; }
+/* Les paroles à la place de la pochette ronde ; synchronisées, la ligne chantée s'allume et reste au milieu */
+.op-lyrics { width: 100%; height: min(44vh, 400px); overflow-y: auto; touch-action: pan-y; overscroll-behavior: contain; scrollbar-width: none;
+  mask-image: linear-gradient(transparent, #000 14%, #000 86%, transparent); padding: 18% 2px; }
+.op-full.lyrics-on .op-disc, .op-lyrics[hidden] { display: none; }
+.op-lyrics p { margin: 0; padding: 5px 0; font: 700 clamp(19px, 5.4vw, 24px)/1.3 var(--f-body); color: var(--mist, #f6eeee); overflow-wrap: anywhere; }
+.op-lyrics p.gap { min-height: 12px; }
+.op-lyrics.synced p { color: rgba(246,238,238,.32); transition: color .25s; }
+.op-lyrics.synced p.past { color: rgba(246,238,238,.6); }
+.op-lyrics.synced p.on { color: #fff; }
+.op-full.lyrics-on .op-lyrics { animation: op-lyrics-in .5s cubic-bezier(.2, .8, .2, 1) both; }
+.op-full.lyrics-on .op-lyrics p { animation: op-lyrics-in .55s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i, 0) * 40ms + 80ms); }
+.op-full.disc-back .op-disc { animation: op-disc-in .5s cubic-bezier(.2, .8, .2, 1) both; }
+.op-full.disc-back.playing .op-disc { animation: op-disc-in .5s cubic-bezier(.2, .8, .2, 1) both, op-spin 14s linear .5s infinite; }
+@keyframes op-lyrics-in { from { opacity: 0; translate: 0 18px; } }
+@keyframes op-disc-in { from { opacity: 0; scale: .85; } }
+@media (prefers-reduced-motion: reduce) { .op-full.lyrics-on .op-lyrics, .op-full.lyrics-on .op-lyrics p, .op-full.disc-back .op-disc { animation: none; } }
 .op-full-controls { width: 100%; display: flex; align-items: center; justify-content: space-between; }
 .op-full-controls .op-btn { width: 52px; height: 52px; color: var(--mist, #f6eeee); }
 .op-full-controls .op-btn svg { width: 28px; height: 28px; }
@@ -244,13 +262,14 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     const fullClock = el("div", { className: "op-full-time" });
     const fullShare = btn("share", "Partager"), fullPrev = btn("prev", "Précédent"), fullPlay = btn("play", "Lecture", "big");
     const fullNext = btn("next", "Suivant"), fullRepeat = btn("repeat", "Répéter");
-    const fullQueue = btn("queue", "File d'attente"), fullComments = btn("comment", "Commentaires");
+    const fullQueue = btn("queue", "File d'attente"), fullComments = btn("comment", "Commentaires"), fullLyricsBtn = btn("lyrics", "Paroles");
+    const fullLyrics = el("div", { className: "op-lyrics", hidden: true });
     const fullSettings = el("button", { className: "op-settings", type: "button", ariaLabel: "Vitesse, boucle et téléchargement" }, icon("sliders"), "Réglages");
     const full = el("div", { className: "op-full", hidden: true, role: "dialog", ariaLabel: "Lecteur" }, fullBg,
       el("div", { className: "op-full-top" }, fullClose),
-      el("div", { className: "op-card" }, el("div", { className: "op-card-title" }, fullTitle, fullSub), disc, scrub, fullClock,
+      el("div", { className: "op-card" }, el("div", { className: "op-card-title" }, fullTitle, fullSub), disc, fullLyrics, scrub, fullClock,
         el("div", { className: "op-full-controls" }, onShare ? fullShare : el("span", { style: "width:52px" }), fullPrev, fullPlay, fullNext, fullRepeat)),
-      el("div", { className: "op-full-bar" }, el("div", {}, fullQueue, fullComments), fullSettings));
+      el("div", { className: "op-full-bar" }, el("div", {}, fullQueue, fullComments, fullLyricsBtn), fullSettings));
     document.body.append(full, sheet, queue, pill);
 
     const item = () => list[index] || null;
@@ -320,16 +339,57 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
       const rows = list.map((t, i) => ({ t, i, now: i === index })).filter((r) => r.i >= index).concat(upNext.map((t) => ({ t, i: -1 })));
       queueList.replaceChildren(...rows.map(({ t, i, now }) => el("li", { className: now ? "now" : "" }, el("button", {
         type: "button", onclick: () => (i >= 0 ? go(i) : (upNext.splice(upNext.indexOf(t), 1), insertNext(t))),
-      }, t.cover ? el("img", { src: t.cover, alt: "" }) : el("span", { className: "op-q-cover" }),
+      }, t.cover ? el("img", { src: t.cover + "?w=160", alt: "" }) : el("span", { className: "op-q-cover" }),
       el("span", {}, t.title, el("small", { textContent: (now ? "En cours · " : "") + (t.subtitle || "") }))))));
     }
     const insertNext = (t) => { list.splice(index + 1, 0, t); go(index + 1); };
 
     function tick() {
-      clock.textContent = fullClock.textContent = time(audio.currentTime) + " / " + time(duration());
+      const now = time(audio.currentTime) + " / " + time(duration());
+      if (clock.textContent !== now) clock.textContent = fullClock.textContent = now;
       if (loop && loop.b != null && audio.currentTime >= loop.b) audio.currentTime = loop.a;
-      draw();
+      draw(); syncLyrics();
     }
+    // Les paroles du titre en cours, redessinées quand elles changent (un titre suivant, ou des paroles enregistrées).
+    let lyricsOn = false, lyricsOf = null, lyricsLine = -1;
+    function syncLyrics() {
+      const t = item(), text = (t && t.lyrics) || "";
+      if (text !== lyricsOf) {
+        lyricsOf = text; lyricsLine = -1;
+        const lines = parseLyrics(text);
+        fullLyrics.classList.toggle("synced", lines.some((l) => l.at !== null));
+        fullLyrics.replaceChildren(...(text ? lines : []).map((l, i) => {
+          const row = el("p", { className: l.text.trim() ? "" : "gap", textContent: l.text.trim() ? l.text : l.at === null ? "" : "♪" });
+          row.dataset.at = l.at ?? "";
+          row.style.setProperty("--i", Math.min(i, 12)); // les premières lignes arrivent l'une après l'autre
+          if (l.at !== null) row.onclick = () => { audio.currentTime = l.at; audio.play().catch(() => {}); };
+          return row;
+        }));
+        fullLyrics.scrollTop = 0;
+        fullLyricsBtn.hidden = !text;
+        showLyrics(lyricsOn && !!text);
+      }
+      if (fullLyrics.hidden || !fullLyrics.classList.contains("synced")) return;
+      const now = audio.currentTime + 0.15, rows = fullLyrics.children;
+      let current = -1;
+      for (let i = 0; i < rows.length; i++) if (rows[i].dataset.at !== "" && Number(rows[i].dataset.at) <= now) current = i;
+      if (current === lyricsLine) return;
+      lyricsLine = current;
+      for (let i = 0; i < rows.length; i++) { rows[i].classList.toggle("on", i === current); rows[i].classList.toggle("past", i < current); }
+      const on = rows[current];
+      if (on) fullLyrics.scrollTo({ top: on.offsetTop - fullLyrics.offsetTop - fullLyrics.clientHeight / 2 + on.offsetHeight / 2, behavior: "smooth" });
+    }
+    function showLyrics(on) {
+      // La pochette revient en douceur quand on referme les paroles.
+      if (!on && !fullLyrics.hidden) { full.classList.remove("disc-back"); void full.offsetWidth; full.classList.add("disc-back"); }
+      fullLyrics.hidden = !on;
+      full.classList.toggle("lyrics-on", on);
+      fullLyricsBtn.classList.toggle("on", on);
+      lyricsLine = -1;
+    }
+    // Pendant la lecture, la forme d'onde suit l'image (timeupdate ne tombe que ~4 fois par seconde).
+    let frame = 0;
+    const animate = () => { tick(); frame = audio.paused ? 0 : requestAnimationFrame(animate); };
     function show() {
       const t = item();
       pill.hidden = false;
@@ -337,12 +397,12 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
       // Le titre, avec son « feat. » en badge s'il y en a un.
       for (const node of [title, sheetTitle, fullTitle]) node.replaceChildren(t.title, t.feat ? el("span", { className: "op-feat", textContent: "feat. " + t.feat }) : "");
       sub.textContent = fullSub.textContent = t.subtitle || "";
-      for (const img of [cover, disc]) if (t.cover) img.src = t.cover; else img.removeAttribute("src");
-      fullBg.style.backgroundImage = t.cover ? `url("${t.cover}")` : "";
+      for (const img of [cover, disc]) if (t.cover) img.src = t.cover + (img === cover ? "?w=160" : "?w=960"); else img.removeAttribute("src");
+      fullBg.style.backgroundImage = t.cover ? `url("${t.cover}?w=960")` : "";
       download.hidden = !t.downloadUrl;
       if (t.downloadUrl) download.href = t.downloadUrl;
       listComments(); listQueue(); tick();
-      if ("mediaSession" in navigator) navigator.mediaSession.metadata = new MediaMetadata({ title: t.title, artist: t.subtitle || "", artwork: t.cover ? [{ src: t.cover }] : [] });
+      if ("mediaSession" in navigator) navigator.mediaSession.metadata = new MediaMetadata({ title: t.title, artist: t.subtitle || "", artwork: t.cover ? [{ src: t.cover + "?w=480" }] : [] });
       if (onChange) onChange(t);
     }
     function go(i, autoplay = true) {
@@ -368,7 +428,7 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
       for (const b of [play, fullPlay]) { setIcon(b, on ? "pause" : "play"); b.ariaLabel = b.title = on ? "Pause" : "Lecture"; }
       pill.classList.toggle("playing", on); full.classList.toggle("playing", on);
     };
-    audio.addEventListener("play", () => playing(true));
+    audio.addEventListener("play", () => { if (!frame) frame = requestAnimationFrame(animate); playing(true); });
     audio.addEventListener("pause", () => playing(false));
     audio.addEventListener("ended", () => advance(false));
     let counted = null;
@@ -435,11 +495,12 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     };
     fullComments.onclick = () => panel("comments");
     fullSettings.onclick = () => panel("settings");
+    fullLyricsBtn.onclick = () => { lyricsOn = fullLyrics.hidden; showLyrics(lyricsOn); syncLyrics(); };
     addEventListener("resize", () => { if (!full.hidden && !phone()) closeFull(); });
     // Glisser vers le bas (ailleurs que sur la forme d'onde ou un bouton) referme le plein écran.
     let swipe = null;
     full.addEventListener("pointerdown", (event) => {
-      if (event.target === scrub || event.target.closest("button, input, a")) return;
+      if (event.target === scrub || event.target.closest("button, input, a, .op-lyrics")) return;
       swipe = { y: event.clientY, id: event.pointerId };
     });
     full.addEventListener("pointermove", (event) => {
@@ -579,7 +640,7 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
         } catch { resolve(null); }
       };
       img.onerror = () => resolve(null);
-      img.src = url;
+      img.src = url + "?w=160"; // 40 px lus : inutile de décoder la pochette entière
     });
   }
   function hsl(r, g, b) {
@@ -590,6 +651,11 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     const h = max === r ? ((g - b) / d + 6) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
     return [h / 6, s, l];
   }
+  // « [mm:ss.cc] texte » : une ligne synchronisée ; sans repère, la ligne s'affiche sans suivre la lecture.
+  const parseLyrics = (text) => (text || "").split("\n").map((line) => {
+    const m = line.match(/^\[(\d+):(\d{1,2}(?:\.\d+)?)\]\s?/);
+    return { at: m ? Number(m[1]) * 60 + Number(m[2]) : null, text: m ? line.slice(m[0].length) : line };
+  });
   const stageLabel = (s) => (s === "maquette" ? "Maquette" : s === "final" ? "Final" : /^v\d+$/.test(s || "") ? s.toUpperCase() : "");
 
   const releaseLabel = (day) => {
@@ -601,5 +667,5 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     return date > today ? `Date de sortie prévue : ${text}` : `Date de sortie : ${text}`;
   };
 
-  window.OniriquePlayer = { create, peaksOf, time, icon, tint, stageLabel, releaseLabel };
+  window.OniriquePlayer = { create, peaksOf, time, icon, tint, stageLabel, releaseLabel, parseLyrics };
 })();

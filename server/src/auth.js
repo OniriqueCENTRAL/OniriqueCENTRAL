@@ -90,7 +90,7 @@ export const ROLES = ['user', 'vip', ...PARTNERS, 'admin', 'founder'];
 // sont celles d'avant le réglage. Les fondateurs ont toujours tous ces droits, sauf « plugins » : eux s'accordent leurs
 // licences par le réglage « Mes licences », comme les admins et les partenaires.
 export const RIGHTS = {
-  sounds: { label: 'Mes sons', default: ['vip', 'admin'] },
+  sounds: { label: 'ONIRIQUE CLOUD', default: ['vip', 'admin'] },
   links: { label: 'Page de liens', default: ['vip', 'admin'] },
   plugins: { label: 'Tous les plugins offerts', default: ['vip'] },
   engineer: { label: "Profil d'ingé (crédits)", default: [] },
