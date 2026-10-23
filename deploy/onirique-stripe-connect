@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Règle « Se connecter avec Stripe » du panneau Ventes des packs de prods (Stripe Connect). À lancer sur le VPS, en root :
+#   onirique-stripe-connect        demande l'identifiant Connect, la clé secrète et le secret du webhook
+#   onirique-stripe-connect off    retire le réglage (les comptes déjà reliés ne peuvent plus encaisser)
+# Les secrets sont saisis ici, sans s'afficher, et ne quittent pas le serveur. La vente des plugins n'est pas touchée.
+#
+# À faire avant, dans le tableau de bord Stripe d'ONIRIQUE (dashboard.stripe.com) :
+#   1. Connect > Commencer : plateforme ou place de marché, comptes « Standard ».
+#   2. Paramètres > Connect > Onboarding options > OAuth : activer OAuth pour les comptes Standard, et ajouter l'URI de
+#      redirection affichée ci-dessous ; copier l'ID client (ca_…), en mode test et en mode réel.
+#   3. Développeurs > Webhooks > Ajouter un endpoint « Événements des comptes connectés », à l'adresse affichée
+#      ci-dessous, avec checkout.session.completed, checkout.session.async_payment_succeeded et
+#      account.application.deauthorized ; copier son secret de signature (whsec_…).
+#   4. Développeurs > Clés API : la clé secrète du même mode (sk_live_… ou sk_test_…).
+set -euo pipefail
+
+ENVFILE=/opt/onirique-central/server/.env
+stop() { echo "$1" >&2; exit 1; }
+
+if [ "${1:-}" != off ]; then
+  PUBLIC=$(grep -E '^PUBLIC_URL=' "$ENVFILE" | cut -d= -f2- | tr -d "'\"" | sed 's:/*$::')
+  [ -n "$PUBLIC" ] || stop "PUBLIC_URL manque dans $ENVFILE."
+  echo "URI de redirection OAuth à déclarer chez Stripe : $PUBLIC/api/sounds/stripe/connect/callback"
+  echo "Adresse du webhook des comptes connectés      : $PUBLIC/api/sounds/stripe/connect-webhook"
+  read -rp "ID client Connect (ca_…) : " ID
+  read -rsp "Clé secrète Stripe d'ONIRIQUE (sk_live_… ou sk_test_… ; rien ne s'affiche) : " KEY; echo
+  read -rsp "Secret du webhook des comptes connectés (whsec_… ; rien ne s'affiche) : " HOOK; echo
+  case "$ID" in ca_*) ;; *) stop "Ce n'est pas un ID client Connect (il commence par ca_). Rien n'est changé." ;; esac
+  case "$KEY" in sk_live_*|sk_test_*|rk_live_*|rk_test_*) ;; *) stop "Ce n'est pas une clé secrète Stripe. Rien n'est changé." ;; esac
+  case "$HOOK" in whsec_*) ;; *) stop "Ce n'est pas un secret de webhook (il commence par whsec_). Rien n'est changé." ;; esac
+  case "$ID$KEY$HOOK" in *"'"*|*" "*) stop "Valeur mal copiée (espace ou apostrophe). Rien n'est changé." ;; esac
+  # L'identifiant et la clé doivent être du même mode, sinon Stripe refuse chaque connexion.
+  CHECK=$(curl -fsS https://api.stripe.com/v1/account -u "$KEY:" 2>/dev/null) || stop "Stripe refuse cette clé secrète. Rien n'est changé."
+  echo "Compte Stripe : $(printf '%s' "$CHECK" | grep -o '"display_name": *"[^"]*"' | head -1 | cut -d'"' -f4)"
+fi
+
+sed -i '/^STRIPE_CONNECT_CLIENT_ID=/d; /^STRIPE_CONNECT_SECRET_KEY=/d; /^STRIPE_CONNECT_WEBHOOK_SECRET=/d' "$ENVFILE"
+[ "${1:-}" = off ] || printf "STRIPE_CONNECT_CLIENT_ID='%s'\nSTRIPE_CONNECT_SECRET_KEY='%s'\nSTRIPE_CONNECT_WEBHOOK_SECRET='%s'\n" "$ID" "$KEY" "$HOOK" >> "$ENVFILE"
+chown central:central "$ENVFILE"; chmod 600 "$ENVFILE"
+systemctl restart onirique-central
+sleep 3
+systemctl is-active -q onirique-central || stop "Le serveur n'a pas redémarré : journalctl -u onirique-central"
+if [ "${1:-}" = off ]; then echo "« Se connecter avec Stripe » retiré."; else echo "C'est bon : le bouton « Se connecter avec Stripe » apparaît dans le panneau Ventes des packs."; fi

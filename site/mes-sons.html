@@ -494,6 +494,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 #store summary { list-style: none; }
 #store summary::-webkit-details-marker { display: none; }
 #sale .item input:not([type]) { min-height: 0; padding: 8px 10px; }
+.stripe-connect { background: #635BFF; color: #fff; box-shadow: none; }
 .mail-frame { width: 100%; height: 100%; border: 0; border-left: 1px solid rgba(255,210,214,.08); background: #0d0809; }
 @media (max-width: 860px) {
   .mail-body { display: block; overflow-y: auto; }
@@ -2053,8 +2054,9 @@ function renderStore() {
   };
   const connectedRow = (title, note, provider) => el("ul", { className: "group" }, el("li", { className: "item" }, el("div", { className: "grow" }, title, el("small", { textContent: note })), off(provider, title)));
   const stripeBox = seller.stripe
-    ? connectedRow("Stripe · " + seller.stripe.account + (seller.stripe.sandbox ? " (mode test)" : ""), seller.stripe.webhook
-      ? "Paiement par carte. Chaque paiement est confirmé par Stripe (webhook) avant la livraison." : "Pas de webhook : rebranche le compte pour que les paiements soient confirmés.", "stripe")
+    ? connectedRow("Stripe · " + seller.stripe.account + (seller.stripe.sandbox ? " (mode test)" : ""), seller.stripe.connect
+      ? "Connecté avec Stripe. Les paiements arrivent sur ton compte Stripe, confirmés par Stripe avant la livraison."
+      : seller.stripe.webhook ? "Paiement par carte. Chaque paiement est confirmé par Stripe (webhook) avant la livraison." : "Pas de webhook : rebranche le compte pour que les paiements soient confirmés.", "stripe")
     : (() => {
       const secret = el("input", { type: "password", autocomplete: "off", placeholder: "sk_live_… (ou sk_test_… pour essayer)" });
       const hook = el("input", { type: "password", autocomplete: "off", placeholder: "whsec_… (facultatif)" });
@@ -2066,7 +2068,14 @@ function renderStore() {
         event.preventDefault();
         busy(go, async () => reload({ seller: await api("PUT", "/me/sounds/store/seller", { provider: "stripe", secret: secret.value, webhookSecret: hook.value }) }));
       };
-      return form;
+      if (!seller.connectAvailable) return form;
+      // « Se connecter avec Stripe » : le beatmaker se connecte chez Stripe (ou crée son compte) et revient ici, relié.
+      const link = el("button", { className: "btn btn-primary stripe-connect", type: "button", textContent: "Se connecter avec Stripe" });
+      link.onclick = () => busy(link, async () => { location.href = (await api("POST", "/me/sounds/store/stripe-connect", { back: openId() ? "#/p/" + openId() : "" })).url; });
+      return el("div", { className: "stack" },
+        el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Connecte ton compte Stripe en un clic (ou crée-le), sans clé à copier. L'argent de tes ventes arrive directement sur ton compte." }),
+        el("div", { className: "row" }, link),
+        el("details", {}, el("summary", { className: "muted", style: "cursor:pointer;font-size:13px", textContent: "Plutôt coller une clé secrète Stripe" }), form));
     })();
   const paypalBox = seller.paypal
     ? connectedRow("PayPal" + (seller.paypal.sandbox ? " (sandbox, pour essayer)" : ""), "Paiement par PayPal. Le paiement est encaissé par le serveur auprès de PayPal avant la livraison.", "paypal")
@@ -2184,6 +2193,19 @@ function renderStore() {
       el("div", { className: "sub-title", textContent: "Commandes" }), orderList));
 }
 lightClose($("store"));
+// Retour de Stripe après « Se connecter avec Stripe » : le panneau Ventes se rouvre, ou l'erreur s'affiche.
+const stripeBack = new URLSearchParams(location.search).get("stripe");
+if (stripeBack) {
+  history.replaceState(null, "", location.pathname + location.hash);
+  let tries = 0;
+  const reopen = setInterval(() => {
+    if (++tries > 100) return clearInterval(reopen);
+    if (!data) return;
+    clearInterval(reopen);
+    openStore().catch(fail);
+    if (stripeBack !== "ok") alert(stripeBack);
+  }, 100);
+}
 
 // ——— Préparer la sortie ———
 // Les tâches d'une sortie autour de sa date (celles de l'outil « Checklist de sortie », plus les siennes), cochées à

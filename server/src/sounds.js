@@ -300,6 +300,11 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_sellers') WHERE name = '
   db.exec(`UPDATE sound_sellers SET paypal_client_id = client_id, paypal_secret = secret, paypal_sandbox = sandbox,
     provider = '', client_id = '', secret = NULL, sandbox = 0, account = '' WHERE provider = 'paypal'`);
 }
+// Un compte Stripe branché par « Se connecter avec Stripe » (Stripe Connect, acct_…) : pas de clé du beatmaker, la
+// plateforme parle en son nom (beatstore.js).
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_sellers') WHERE name = 'connect_account'`).get()) {
+  db.exec(`ALTER TABLE sound_sellers ADD COLUMN connect_account TEXT NOT NULL DEFAULT ''`);
+}
 /** « c#m », « Bb minor », « F majeur »… → « C# min », « Bb min », « F maj » ; null si ce n'est pas une tonalité. */
 export function musicKey(value) {
   const m = /^([a-g])\s*(#|♯|b|♭)?\s*(m|min|minor|mineur|maj|major|majeur)?$/i.exec(String(value || '').trim());

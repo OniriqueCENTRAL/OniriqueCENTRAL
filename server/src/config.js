@@ -41,6 +41,11 @@ export const config = {
   adminPassword: env.ADMIN_PASSWORD || '',
   paymentsMode,
   stripeSecretKey: env.STRIPE_SECRET_KEY || '',
+  // Stripe Connect, pour « Se connecter avec Stripe » des beatmakers : l'identifiant de la plateforme (ca_…), sa clé
+  // secrète et le secret du webhook des comptes connectés. À part de la vente des plugins (deploy/onirique-stripe-connect).
+  stripeConnectClientId: env.STRIPE_CONNECT_CLIENT_ID || '',
+  stripeConnectSecretKey: env.STRIPE_CONNECT_SECRET_KEY || '',
+  stripeConnectWebhookSecret: env.STRIPE_CONNECT_WEBHOOK_SECRET || '',
   stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET || '',
   // Managed Payments : Stripe est le vendeur officiel (il facture, gère la TVA et les litiges). STRIPE_MANAGED=0
   // revient à l'encaissement classique, où le vendeur est l'éditeur.

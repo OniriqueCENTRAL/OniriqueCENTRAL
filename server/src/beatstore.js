@@ -41,11 +41,13 @@ export function licensesOf(userId) {
 }
 const licenseView = (l) => ({ id: l.id, name: l.name, price: l.price, files: parse(l.files, []), terms: l.terms, exclusive: !!l.exclusive });
 const sellerRow = (userId) => get('SELECT * FROM sound_sellers WHERE user_id = ?', userId);
+export const connectAvailable = () => !!(config.stripeConnectClientId && config.stripeConnectSecretKey);
+const hasStripe = (s) => !!(s && s.provider === 'stripe' && (s.secret || (s.connect_account && connectAvailable())));
 /** Les comptes de paiement tels que le beatmaker les voit (Stripe et PayPal, branchés ensemble ou non) : jamais leurs secrets. */
 export function sellerView(userId) {
-  const s = sellerRow(userId), stripe = !!(s?.secret && s.provider === 'stripe'), paypal = !!s?.paypal_secret;
-  return { connected: stripe || paypal,
-    stripe: stripe ? { sandbox: !!s.sandbox, account: s.account, webhook: !!s.webhook_secret } : null,
+  const s = sellerRow(userId), stripe = hasStripe(s), paypal = !!s?.paypal_secret;
+  return { connected: stripe || paypal, connectAvailable: connectAvailable(),
+    stripe: stripe ? { sandbox: !!s.sandbox, account: s.account, connect: !!s.connect_account, webhook: !!(s.webhook_secret || s.connect_account) } : null,
     paypal: paypal ? { sandbox: !!s.paypal_sandbox, clientId: s.paypal_client_id } : null };
 }
 /** Les moyens de paiement qu'un acheteur peut choisir chez ce beatmaker, Stripe (carte) d'abord. */
@@ -54,9 +56,10 @@ export function payMethods(userId) {
   return [v.stripe && 'stripe', v.paypal && 'paypal'].filter(Boolean);
 }
 
-async function stripeCall(key, method, route, params) {
+// account : un compte branché par « Se connecter avec Stripe », au nom duquel la plateforme ONIRIQUE parle (Stripe Connect).
+async function stripeCall(key, method, route, params, account = '') {
   const response = await fetch(`https://api.stripe.com/v1${route}`, {
-    method, headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    method, headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/x-www-form-urlencoded', ...(account ? { 'Stripe-Account': account } : {}) },
     body: params ? new URLSearchParams(params) : undefined,
   });
   const json = await response.json().catch(() => ({}));
@@ -89,6 +92,7 @@ async function dropHook(userId) {
 function sellerKeys(userId, provider) {
   const s = sellerRow(userId);
   if (provider === 'paypal') return s?.paypal_secret ? { provider, clientId: s.paypal_client_id, secret: unseal(s.paypal_secret), sandbox: !!s.paypal_sandbox } : null;
+  if (s?.connect_account && s.provider === 'stripe') return connectAvailable() ? { provider: 'stripe', secret: config.stripeConnectSecretKey, account: s.connect_account, sandbox: !!s.sandbox } : null;
   return s?.secret && s.provider === 'stripe' ? { provider: 'stripe', secret: unseal(s.secret), sandbox: !!s.sandbox } : null;
 }
 
@@ -215,7 +219,20 @@ const sellerOrderView = (o) => ({ id: o.id, status: o.status, trackTitle: o.trac
  * paiement la livre. Une commande Stripe ne change pas ici : seul le webhook signé la confirme.
  */
 export async function verifyOrder(order) {
-  if (order.status !== 'pending' || !order.provider_ref || order.provider !== 'paypal') return order;
+  if (order.status !== 'pending' || !order.provider_ref) return order;
+  if (order.provider === 'stripe') {
+    // Un compte branché par Stripe Connect : la plateforme relit la session chez Stripe, le webhook n'est qu'un raccourci.
+    const k = sellerKeys(order.seller_id, 'stripe');
+    if (!k?.account) return order;
+    try {
+      const session = await stripeCall(k.secret, 'GET', `/checkout/sessions/${encodeURIComponent(order.provider_ref)}`, null, k.account);
+      if (session.payment_status === 'paid' && session.amount_total === order.amount && session.currency === order.currency) {
+        return markPaid(order, session.customer_details?.email || '', session.customer_details?.name || '');
+      }
+    } catch (error) { console.error(`[ventes] commande ${order.id} : ${error.message}`); }
+    return order;
+  }
+  if (order.provider !== 'paypal') return order;
   const s = sellerKeys(order.seller_id, 'paypal');
   if (!s) return order;
   let paid = false, email = '', name = '';
@@ -258,8 +275,17 @@ function deliver(o) {
 // Les paiements laissés en route (acheteur parti avant le retour sur la page d'achat) : vérifiés toutes les cinq minutes
 // pendant deux jours.
 setInterval(() => {
-  for (const o of all(`SELECT * FROM sound_orders WHERE status = 'pending' AND provider = 'paypal' AND provider_ref != '' AND created_at > ? ORDER BY created_at DESC LIMIT 30`, now() - 2 * 86400_000)) verifyOrder(o);
+  for (const o of all(`SELECT * FROM sound_orders WHERE status = 'pending' AND provider IN ('paypal', 'stripe') AND provider_ref != '' AND created_at > ? ORDER BY created_at DESC LIMIT 30`, now() - 2 * 86400_000)) verifyOrder(o);
 }, 5 * 60_000).unref();
+
+// Les connexions à Stripe en cours (state → beatmaker), et le retrait de l'accès quand il débranche son compte.
+const connecting = new Map();
+async function deauthorize(s) {
+  if (!s?.connect_account || !connectAvailable()) return;
+  await fetch('https://connect.stripe.com/oauth/deauthorize', { method: 'POST',
+    headers: { Authorization: `Bearer ${config.stripeConnectSecretKey}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ client_id: config.stripeConnectClientId, stripe_user_id: s.connect_account }) }).catch(() => {});
+}
 
 //------------------------------------------------------------------------------ Routes
 const STRIPE_EVENTS = ['checkout.session.completed', 'checkout.session.async_payment_succeeded'];
@@ -269,6 +295,22 @@ const hookUrl = (userId) => `${config.publicUrl}/api/sounds/stripe/webhook/${use
  * avec le secret de son compte. Seul un paiement de ce montant, pour une commande de ce beatmaker, la confirme.
  */
 export function mountBeatStoreHooks(app, { express, wrap }) {
+  // Le webhook des comptes connectés (Stripe Connect) : un seul pour la plateforme, chaque événement dit de quel compte
+  // il vient. Un paiement confirme la commande ; un beatmaker qui retire l'accès chez Stripe est débranché.
+  app.post('/api/sounds/stripe/connect-webhook', express.raw({ type: '*/*', limit: '1mb' }), wrap(async (req, res) => {
+    if (!config.stripeConnectWebhookSecret) throw new HttpError(404, 'Introuvable.');
+    const raw = req.body.toString('utf8');
+    verifyStripeSignature(raw, req.headers['stripe-signature'], config.stripeConnectWebhookSecret);
+    const event = JSON.parse(raw), s = event.account && get(`SELECT * FROM sound_sellers WHERE connect_account = ?`, String(event.account));
+    if (s && event.type === 'account.application.deauthorized') {
+      run(`UPDATE sound_sellers SET provider = '', connect_account = '', account = '', updated_at = ? WHERE user_id = ?`, now(), s.user_id);
+    } else if (s && STRIPE_EVENTS.includes(event.type) && event.data?.object?.payment_status === 'paid') {
+      const session = event.data.object;
+      const o = get(`SELECT * FROM sound_orders WHERE seller_id = ? AND provider = 'stripe' AND provider_ref = ?`, s.user_id, String(session.id || ''));
+      if (o && session.amount_total === o.amount && session.currency === o.currency) markPaid(o, session.customer_details?.email || '', session.customer_details?.name || '');
+    }
+    res.json({ received: true });
+  }));
   app.post('/api/sounds/stripe/webhook/:seller', express.raw({ type: '*/*', limit: '1mb' }), wrap(async (req, res) => {
     const s = sellerRow(id(req.params.seller));
     if (!s?.webhook_secret || s.provider !== 'stripe') throw new HttpError(404, 'Introuvable.');
@@ -313,7 +355,8 @@ export function mountBeatStore(app, { me, track, room, receiveFile, openLink, li
         hook = await stripeCall(key, 'POST', '/webhook_endpoints', { url: hookUrl(req.user.id), ...Object.fromEntries(STRIPE_EVENTS.map((e, i) => [`enabled_events[${i}]`, e])) })
           .catch(() => { throw new HttpError(400, `Stripe n'a pas pu créer le webhook qui confirme les paiements. Crée-le dans ton tableau de bord Stripe (adresse : ${hookUrl(req.user.id)}, événement checkout.session.completed) et colle son secret whsec_.`); });
       }
-      run(`UPDATE sound_sellers SET provider = 'stripe', client_id = '', secret = ?, sandbox = ?, account = ?, webhook_secret = ?, webhook_id = ?, updated_at = ? WHERE user_id = ?`,
+      await deauthorize(sellerRow(req.user.id));
+      run(`UPDATE sound_sellers SET provider = 'stripe', client_id = '', connect_account = '', secret = ?, sandbox = ?, account = ?, webhook_secret = ?, webhook_id = ?, updated_at = ? WHERE user_id = ?`,
         seal(key), key.includes('_test_') ? 1 : 0, str(account.business_profile?.name || account.settings?.dashboard?.display_name || account.email || 'Compte Stripe', 120),
         seal(hook.secret), hook.id || '', now(), req.user.id);
     } else if (b.provider === 'paypal') {
@@ -325,12 +368,44 @@ export function mountBeatStore(app, { me, track, room, receiveFile, openLink, li
     } else throw new HttpError(400, 'Choisis Stripe ou PayPal.');
     res.json(sellerView(req.user.id));
   }));
+  // « Se connecter avec Stripe » (Stripe Connect, comptes Standard) : le beatmaker se connecte à son propre compte Stripe
+  // (ou en crée un), autorise ONIRIQUE, et revient sur son pack ; aucune clé à copier. L'argent va sur son compte.
+  app.post('/api/me/sounds/store/stripe-connect', ...me, (req, res) => {
+    if (!connectAvailable()) throw new HttpError(503, "« Se connecter avec Stripe » n'est pas encore réglé sur le serveur.");
+    licensesOf(req.user.id);
+    for (const [k, v] of connecting) if (v.expires < now()) connecting.delete(k);
+    const state = crypto.randomBytes(24).toString('base64url');
+    connecting.set(state, { userId: req.user.id, back: /^#\/p\/\d+$/.test(str(req.body?.back, 20)) ? str(req.body.back, 20) : '', expires: now() + 15 * 60_000 });
+    res.json({ url: 'https://connect.stripe.com/oauth/authorize?' + new URLSearchParams({ response_type: 'code', client_id: config.stripeConnectClientId,
+      scope: 'read_write', state, redirect_uri: `${config.publicUrl}/api/sounds/stripe/connect/callback` }) });
+  });
+  app.get('/api/sounds/stripe/connect/callback', wrap(async (req, res) => {
+    const entry = connecting.get(str(req.query.state, 100));
+    connecting.delete(str(req.query.state, 100));
+    let result = 'ok';
+    try {
+      if (!entry || entry.expires < now()) throw new HttpError(400, 'Connexion à Stripe expirée : recommence depuis le panneau Ventes.');
+      if (req.query.error) throw new HttpError(400, req.query.error === 'access_denied' ? 'Connexion à Stripe annulée.' : `Stripe refuse : ${str(req.query.error_description, 200) || req.query.error}`);
+      const token = await fetch('https://connect.stripe.com/oauth/token', { method: 'POST',
+        headers: { Authorization: `Bearer ${config.stripeConnectSecretKey}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ grant_type: 'authorization_code', code: str(req.query.code, 200) }) }).then((r) => r.json());
+      if (!token.stripe_user_id) throw new HttpError(502, `Stripe n'a pas relié le compte : ${token.error_description || token.error || 'réponse inattendue'}.`);
+      const account = await stripeCall(config.stripeConnectSecretKey, 'GET', `/accounts/${token.stripe_user_id}`).catch(() => ({}));
+      await dropHook(entry.userId);
+      run(`UPDATE sound_sellers SET provider = 'stripe', client_id = '', secret = NULL, connect_account = ?, sandbox = ?, account = ?, updated_at = ? WHERE user_id = ?`,
+        token.stripe_user_id, token.livemode === false ? 1 : 0,
+        str(account.business_profile?.name || account.settings?.dashboard?.display_name || account.email || 'Compte Stripe', 120), now(), entry.userId);
+    } catch (error) { result = error.message; }
+    res.redirect(`${config.siteUrl}/mes-sons?stripe=${encodeURIComponent(result)}${entry?.back || ''}`);
+  }));
+
   // Débrancher l'un des deux (?provider=stripe ou paypal) ; sans précision, les deux.
   app.delete('/api/me/sounds/store/seller', ...me, wrap(async (req, res) => {
     const which = String(req.query.provider || '');
     if (which !== 'paypal') {
       await dropHook(req.user.id);
-      run(`UPDATE sound_sellers SET provider = '', client_id = '', secret = NULL, sandbox = 0, account = '', updated_at = ? WHERE user_id = ?`, now(), req.user.id);
+      await deauthorize(sellerRow(req.user.id));
+      run(`UPDATE sound_sellers SET provider = '', client_id = '', secret = NULL, sandbox = 0, account = '', connect_account = '', updated_at = ? WHERE user_id = ?`, now(), req.user.id);
     }
     if (which !== 'stripe') run(`UPDATE sound_sellers SET paypal_client_id = '', paypal_secret = NULL, paypal_sandbox = 0, updated_at = ? WHERE user_id = ?`, now(), req.user.id);
     res.json(sellerView(req.user.id));
@@ -528,7 +603,7 @@ export function mountBeatStore(app, { me, track, room, receiveFile, openLink, li
           mode: 'payment', success_url: done, cancel_url: back, locale: 'fr', client_reference_id: String(oid), 'metadata[onirique_order]': String(oid),
           'line_items[0][quantity]': '1', 'line_items[0][price_data][currency]': 'eur', 'line_items[0][price_data][unit_amount]': String(l.price),
           'line_items[0][price_data][product_data][name]': label,
-        });
+        }, s.account);
         url = session.url; ref = session.id;
       } else {
         const order = await paypalCall(s, 'POST', '/v2/checkout/orders', {
