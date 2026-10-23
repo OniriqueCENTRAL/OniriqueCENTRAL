@@ -202,6 +202,26 @@ try {
     assert.ok(sent && sent.html.includes('réglé'));
   });
 
+  await step('acheteurs de VOCAL MINI : VOCALBOX moitié prix (pas avec un simple essai)', async () => {
+    const { createLicense } = await import('../src/licensing.js');
+    const mini = await call('POST', '/api/admin/products', { token: admin.token, body: { name: 'ONIRIQUE VOCAL MINI', priceCents: 4999 }, expect: 201 });
+    const box = await call('POST', '/api/admin/products', { token: admin.token, body: { name: 'VOCALBOX', priceCents: 14999 }, expect: 201 });
+    for (const p of [mini, box]) await call('POST', `/api/admin/products/${p.id}/versions?${new URLSearchParams({ version: '1.0.0', filename: 'P.vst3' })}`, { token: admin.token, raw: binary, expect: 201 });
+    const buyer = await account('acheteur-mini');
+    let q = await call('POST', '/api/promo/quote', { token: buyer.token, body: { productId: box.id } });
+    assert.equal(q.finalCents, 14999, 'sans VOCAL MINI : plein tarif');
+    createLicense({ productId: mini.id, userId: buyer.id, type: 'trial', expiresAt: Date.now() + 7 * 86400_000, source: 'trial' });
+    q = await call('POST', '/api/promo/quote', { token: buyer.token, body: { productId: box.id } });
+    assert.equal(q.finalCents, 14999, 'un essai de VOCAL MINI ne compte pas');
+    createLicense({ productId: mini.id, userId: buyer.id, source: 'stripe' });
+    q = await call('POST', '/api/promo/quote', { token: buyer.token, body: { productId: box.id } });
+    assert.equal(q.finalCents, 7500);
+    assert.equal(q.source, 'owner');
+    assert.match(q.note, /VOCAL MINI/);
+    q = await call('POST', '/api/promo/quote', { token: buyer.token, body: { productId: mini.id } });
+    assert.equal(q.discountCents, 0, 'la remise ne vaut que pour VOCALBOX');
+  });
+
   console.log(`\n${passed} étapes réussies.`);
 } finally {
   server.close();

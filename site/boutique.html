@@ -480,7 +480,7 @@ function showPrice(product, q) {
   $("price").replaceChildren(...(deal ? [el("s", { textContent: euros(q.priceCents) }), euros(q.finalCents)] : [euros(product.priceCents)]));
   const old = $("deal");
   if (old) old.remove();
-  if (deal) $("price").after(el("p", { className: "deal", id: "deal", textContent: q.source === "welcome" ? `${q.label} · cadeau de parrainage` : `${q.label} · code ${q.code}` }));
+  if (deal) $("price").after(el("p", { className: "deal", id: "deal", textContent: q.source === "welcome" ? `${q.label} · cadeau de parrainage` : q.source === "owner" ? (q.note || q.label) : `${q.label} · code ${q.code}` }));
   if (!$("buy").disabled) $("buy").textContent = "Acheter · " + euros(deal ? q.finalCents : product.priceCents);
 }
 async function quoteFor(product, code) {
