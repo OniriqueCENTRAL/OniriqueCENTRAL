@@ -756,11 +756,9 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     const link = get('SELECT token FROM sound_links WHERE project_id = ? AND user_id = ? ORDER BY created_at DESC', p.id, req.user.id);
     const draft = mailDraft(req.body), palette = draft.coverColors ? await coverPalette(p.cover) : null;
     res.json({ palette, html: packMailHtml(palette ? { ...draft, colors: palette } : draft, {
-      title: p.title, artist: p.artist || req.user.name || 'ONIRIQUE', cover: media(p.cover), listenUrl: link ? `${config.siteUrl}/ecoute?t=${link.token}` : '',
-      tracks: tracks.map((t) => {
-        const offers = offersOf(t, p.user_id);
-        return { id: t.id, title: t.title, bpm: t.bpm, key: t.music_key, price: offers.length ? Math.min(...offers.map((o) => o.price)) : 0, buyUrl: link ? `${config.siteUrl}/ecoute?t=${link.token}` : '' };
-      }),
+      // Sans lien encore créé (il l'est à l'envoi), l'aperçu montre quand même les boutons « Écouter ».
+      title: p.title, artist: p.artist || req.user.name || 'ONIRIQUE', cover: media(p.cover), listenUrl: link ? `${config.siteUrl}/ecoute?t=${link.token}` : `${config.siteUrl}/ecoute`,
+      tracks: tracks.map((t) => ({ id: t.id, title: t.title, bpm: t.bpm, key: t.music_key })),
     }) });
   }));
   app.delete('/api/me/sounds/projects/:id', ...me, (req, res) => {

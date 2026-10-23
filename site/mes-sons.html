@@ -1700,7 +1700,6 @@ function openMailer(p) {
     buttonUrl: el("input", { type: "url", value: d.buttonUrl, placeholder: "https://…" }),
     signature: el("input", { value: d.signature, maxLength: 200, placeholder: p.artist || data.owner.name }),
     footer: el("input", { value: d.footer, maxLength: 300, placeholder: "Une ligne sous le mail (facultatif)" }),
-    showPrices: el("input", { type: "checkbox", checked: d.showPrices }),
     coverColors: el("input", { type: "checkbox", checked: d.coverColors !== false }),
     font: el("select", {}, ...MAIL_FONTS.map(([v, l]) => el("option", { value: v, textContent: l, selected: d.font === v }))),
     titleFont: el("select", {}, ...MAIL_FONTS.map(([v, l]) => el("option", { value: v, textContent: l, selected: d.titleFont === v }))),
@@ -1758,7 +1757,7 @@ function openMailer(p) {
   const form = el("form", { className: "mail-form" });
   mailerForm = {
     draft: () => ({ ...Object.fromEntries(["to", "from", "subject", "preheader", "eyebrow", "title", "text", "image", "buttonLabel", "buttonUrl", "signature", "footer", "font", "titleFont"]
-      .map((k) => [k, f[k].value])), showPrices: f.showPrices.checked, coverColors: f.coverColors.checked,
+      .map((k) => [k, f[k].value])), coverColors: f.coverColors.checked,
       trackIds: [...form.querySelectorAll(".mail-prods input:checked")].map((x) => Number(x.value)),
       colors: Object.fromEntries(Object.entries(colors).map(([k, input]) => [k, input.value])) }),
   };
@@ -1924,7 +1923,6 @@ function openMailer(p) {
     section("Contenu"), field("Petit titre", f.eyebrow, false), field("Titre", f.title, false), field("Message", f.text), field("Image en tête (adresse)", f.image),
     field("Texte du bouton", f.buttonLabel, false), field("Lien du bouton", f.buttonUrl, false), field("Signature", f.signature, false), field("Bas du mail", f.footer, false),
     section("Prods du pack"), el("div", { className: "mail-prods wide" }),
-    el("label", { className: "mail-check wide" }, f.showPrices, "Afficher les prix et le bouton Acheter des prods en vente"),
     section("Style"), el("label", { className: "mail-check wide" }, f.coverColors, "Couleurs de la pochette : fond, carte et accent tirés de la pochette du pack"),
     field("Police du texte", f.font, false), field("Police des titres", f.titleFont, false),
     el("div", { className: "mail-colors wide" }, ...Object.entries(MAIL_COLORS).map(([k, [label]]) => el("label", { className: "mail-check" }, colors[k], label))),

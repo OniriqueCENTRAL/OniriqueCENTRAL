@@ -11,7 +11,6 @@ import { smtpTransport, testing, outbox } from './mail.js';
 import { escapeHtml } from './mailtemplate.js';
 import { seal, unseal } from './payments.js';
 import { mailDraft, packMailHtml, mailList } from './packmail.js';
-import { offersOf } from './beatstore.js';
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS sound_mailers (
@@ -432,10 +431,7 @@ async function deliver({ sid, m, d, p, link, tracks, sign }) {
     const unsubscribe = `${api}/${r.token}/desinscription`;
     const html = packMailHtml(draft, {
       title: p.title, artist: p.artist || m.from_name || 'ONIRIQUE', cover: p.cover ? `/api/media/${p.cover}` : null, listenUrl: listen,
-      tracks: tracks.map((t) => {
-        const offers = offersOf(t, p.user_id);
-        return { id: t.id, title: t.title, bpm: t.bpm, key: t.music_key, price: offers.length ? Math.min(...offers.map((o) => o.price)) : 0, buyUrl: listen };
-      }),
+      tracks: tracks.map((t) => ({ id: t.id, title: t.title, bpm: t.bpm, key: t.music_key })),
       link: follow, pixel: `${api}/${r.token}/o.gif`, unsubscribe,
     });
     const text = [draft.title || p.title, '', draft.text, '', `Écouter : ${listen}`, '', draft.signature || m.from_name || '', '', `Se désinscrire : ${unsubscribe}`].join('\n');

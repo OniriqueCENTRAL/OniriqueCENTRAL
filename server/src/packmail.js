@@ -12,7 +12,6 @@ const FONTS = {
 export const MAIL_COLORS = { bg: '#0D0809', card: '#1A080A', accent: '#E23444', text: '#F6EEEE', muted: '#B39A9D', button: '#F6EEEE', buttonText: '#0D0809' };
 const str = (value, max) => (typeof value === 'string' ? value.replace(/[^\S\n]+/g, ' ').trim().slice(0, max) : '');
 const https = (value) => { const url = str(value, 500); return /^https?:\/\/[^\s"'<>]+$/i.test(url) ? url : ''; };
-const euros = (cents) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: cents % 100 ? 2 : 0 }).format(cents / 100);
 const absolute = (url) => (!url ? '' : /^https?:/i.test(url) ? url : config.siteUrl + url);
 
 /** Un brouillon propre, quoi que le navigateur envoie. */
@@ -24,7 +23,7 @@ export function mailDraft(b = {}) {
     text: typeof b.text === 'string' ? b.text.replace(/\r\n?/g, '\n').slice(0, 8000) : '',
     image: https(b.image), buttonLabel: str(b.buttonLabel, 40), buttonUrl: https(b.buttonUrl), signature: str(b.signature, 200), footer: str(b.footer, 300),
     trackIds: Array.isArray(b.trackIds) ? [...new Set(b.trackIds.map(Number).filter((n) => Number.isInteger(n) && n > 0))].slice(0, 50) : [],
-    showPrices: b.showPrices !== false, coverColors: b.coverColors !== false, font: FONTS[b.font] ? b.font : 'grotesk', titleFont: FONTS[b.titleFont] ? b.titleFont : 'display', colors,
+    coverColors: b.coverColors !== false, font: FONTS[b.font] ? b.font : 'grotesk', titleFont: FONTS[b.titleFont] ? b.titleFont : 'display', colors,
   };
 }
 
@@ -46,7 +45,7 @@ function rich(text, c, go = (url) => url) {
 const unescape = (html) => html.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
 
 /**
- * Le mail en HTML. pack : { title, artist, cover, listenUrl, tracks: [{ id, title, bpm, key, price, buyUrl }] }, et pour
+ * Le mail en HTML. pack : { title, artist, cover, listenUrl, tracks: [{ id, title, bpm, key }] }, et pour
  * un envoi : link (réécrit chaque lien pour le suivi), pixel (image d'ouverture), unsubscribe (lien de désinscription).
  */
 export function packMailHtml(d, pack) {
@@ -56,14 +55,12 @@ export function packMailHtml(d, pack) {
   const prods = d.trackIds.map((id) => pack.tracks.find((t) => t.id === id)).filter(Boolean).map((t) => {
     const badges = [t.bpm ? `${t.bpm} BPM` : '', t.key].filter(Boolean)
       .map((b) => `<span style="display:inline-block;margin:6px 6px 0 0;padding:3px 9px;border:1px solid ${c.accent};border-radius:999px;font:600 11px/1.4 ${FONTS.mono};letter-spacing:.06em;color:${c.accent}">${escapeHtml(b)}</span>`).join('');
-    const sale = d.showPrices && t.price && t.buyUrl;
     return `<tr><td style="padding:12px 0;border-top:1px solid ${c.muted}33">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
 ${pack.cover ? `<td width="64" valign="top" style="padding-right:14px"><img src="${escapeHtml(absolute(pack.cover))}?w=160" width="64" height="64" alt="" style="display:block;border-radius:10px;object-fit:cover"></td>` : ''}
 <td valign="top"><div style="font:700 16px/1.3 ${font};color:${c.text}">${escapeHtml(t.title)}</div>${badges}</td>
 <td align="right" valign="middle" style="white-space:nowrap;padding-left:10px">
-${sale ? `<div style="font:800 17px/1 ${display};color:${c.text};padding-bottom:8px">${euros(t.price)}</div>${button('Acheter', t.buyUrl, c.accent, '#ffffff')}`
-    : pack.listenUrl ? button('Écouter', pack.listenUrl, 'transparent', c.text, { border: c.muted }) : ''}
+${pack.listenUrl ? button('Écouter', pack.listenUrl, c.accent, '#ffffff') : ''}
 </td></tr></table></td></tr>`;
   }).join('');
   const paragraphs = d.text.split(/\n{2,}/).map((s) => s.trim()).filter(Boolean)
