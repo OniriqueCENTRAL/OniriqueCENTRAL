@@ -145,7 +145,6 @@ textarea { padding: 12px 14px; min-height: 110px; resize: vertical; line-height:
 .release button.empty { border-style: dashed; color: var(--haze); font-weight: 500; }
 .release button.planned::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 8px var(--ember); }
 .release .clear { width: 26px; height: 26px; padding: 0; justify-content: center; border-radius: 50%; color: var(--haze); }
-.release input { position: absolute; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; min-height: 0; padding: 0; border: 0; }
 .add-bar { width: 100%; margin-top: 22px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 13px; border-radius: 14px; border: 1px dashed var(--line); background: rgba(255,255,255,.03); color: var(--mist); font: 600 14px var(--f-body); cursor: pointer; }
 .add-bar:hover { border-color: var(--ember); background: rgba(226,52,68,.08); }
 /* La file des envois : un fichier à la fois, chacun avec sa barre */
@@ -184,7 +183,7 @@ body.has-player .uploads { bottom: calc(92px + env(safe-area-inset-bottom)); }
 .feat.empty { border-style: dashed; background: none; color: var(--haze); }
 .feat:hover, .stage:hover { border-color: var(--ember); }
 /* Hors du mode édition : seulement ce qui est rempli, rien à cliquer pour modifier */
-body:not(.editing) .album .art { cursor: default; }
+body:not(.editing) .album .art { cursor: zoom-in; }
 body:not(.editing) .album .art .change, body:not(.editing) .add-bar { display: none; }
 body:not(.editing) .album-head h1 { cursor: default; }
 body:not(.editing) .trk .stage, body:not(.editing) .trk .feat { cursor: inherit; pointer-events: none; }
@@ -234,6 +233,13 @@ body.has-player .fab { bottom: calc(88px + env(safe-area-inset-bottom)); }
 /* Les fenêtres */
 dialog { padding: 0; border: 1px solid rgba(255,210,214,.16); border-radius: 24px; background: #150a0c; color: var(--mist); box-shadow: 0 40px 120px -30px rgba(0,0,0,1), 0 0 60px -30px rgba(226,52,68,.6); max-width: calc(100vw - 24px); max-height: calc(100dvh - 24px); }
 dialog::backdrop { background: rgba(5,2,3,.72); backdrop-filter: blur(4px); }
+/* La pochette en grand, avec ses actions en bas */
+#cover-view { width: min(640px, calc(100vw - 24px)); background: #111; }
+#cover-view img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; }
+#cover-view .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 14px; }
+#cover-view .bar .btn { padding: 10px 16px; font-size: 13px; }
+#cover-view .bar .btn-ghost { background: rgba(255,255,255,.07); border-color: transparent; }
+#cover-view .bar .btn-primary { margin-left: auto; box-shadow: none; }
 .dlg-head { display: flex; align-items: center; gap: 12px; padding: 18px 18px 0; }
 .dlg-head img, .dlg-head .cover-ph { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; flex: none; }
 .dlg-head b { flex: 1; min-width: 0; font: 700 17px var(--f-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -371,7 +377,17 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 .badges { display: inline-flex; align-items: center; gap: 6px; flex: none; }
 .stage.date { letter-spacing: .03em; }
 .stage.date:not(.empty) { border-style: solid; color: var(--mist); background: rgba(255,255,255,.04); }
-.day-picker { position: fixed; width: 1px; height: 1px; opacity: 0; border: 0; padding: 0; min-height: 0; pointer-events: none; }
+/* Le calendrier d'une date, ouvert sous son badge */
+.menu.cal { min-width: 0; width: 280px; padding: 12px; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.cal-head b { font: 700 13px var(--f-display); letter-spacing: .04em; text-transform: capitalize; }
+.menu.cal .cal-head button { width: 32px; height: 32px; padding: 0; justify-content: center; border-radius: 50%; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+.cal-grid small { padding: 4px 0; text-align: center; font: 600 10px var(--f-mono); letter-spacing: .08em; color: var(--haze); }
+.menu.cal .cal-grid button { height: 34px; padding: 0; justify-content: center; border-radius: 50%; font: 600 13px var(--f-body); }
+.menu.cal .cal-grid button.today { box-shadow: inset 0 0 0 1px var(--ember); }
+.menu.cal .cal-grid button.sel { background: var(--ember); color: var(--night); }
+.menu.cal .cal-foot { justify-content: center; margin-top: 6px; padding: 9px; font-size: 13px; color: var(--ember); }
 @media (max-width: 520px) { .trk .len { display: none; } }
 .mini-btn { padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: none; color: var(--mist); font: 600 12px var(--f-body); cursor: pointer; }
 .mini-btn:hover { border-color: var(--ember); }
@@ -513,7 +529,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
     </div>
     <div class="album">
       <div>
-        <button class="art" id="cover" type="button" aria-label="Changer la pochette"><span class="change">Changer la pochette</span></button>
+        <button class="art" id="cover" type="button" aria-label="Voir la pochette en grand"><span class="change">Changer la pochette</span></button>
         <div class="cover-by" id="cover-by"></div>
       </div>
       <div>
@@ -557,6 +573,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 </section>
 
 <dialog id="details"></dialog>
+<dialog id="cover-view"><img alt=""><div class="bar"><button class="btn btn-ghost" type="button" id="cover-save">Télécharger</button><button class="btn btn-ghost" type="button" id="cover-swap">Changer</button><button class="btn btn-primary" type="button" onclick="this.closest('dialog').close()">Fermer</button></div></dialog>
 <dialog id="install-help">
   <div class="dlg-head"><b>Sur l'écran d'accueil</b><button class="x" type="button" aria-label="Fermer" onclick="this.closest('dialog').close()">✕</button></div>
   <p class="muted" style="margin:10px 20px 14px;font-size:14px" id="install-intro"></p>
@@ -1169,18 +1186,16 @@ async function checkInvite() {
   $("collab").showModal();
 }
 
-// La date de sortie : un clic ouvre le calendrier du navigateur ; ✕ la retire.
+// La date de sortie : un clic ouvre le calendrier ; ✕ la retire.
 function drawRelease(p) {
   const label = OP.releaseLabel(p.releaseDate);
   const planned = label.startsWith("Date de sortie prévue");
   if (!editing) return $("release").replaceChildren(label ? el("span", { className: "chip" + (planned ? " planned" : ""), textContent: label }) : "");
-  const input = el("input", { type: "date", value: p.releaseDate || "", tabIndex: -1, ariaHidden: "true" });
   const save = (releaseDate) => api("PATCH", "/me/sounds/projects/" + p.id, { releaseDate }).then(refresh, fail);
-  input.onchange = () => input.value && save(input.value);
   const open = el("button", { type: "button", className: label ? (planned ? "planned" : "") : "empty", textContent: label || "Ajouter une date de sortie",
     title: "Choisir la date de sortie" });
-  open.onclick = () => { try { input.showPicker(); } catch { input.style.pointerEvents = "auto"; input.focus(); input.click(); } };
-  $("release").replaceChildren(open, input, label ? el("button", { type: "button", className: "clear", ariaLabel: "Retirer la date de sortie",
+  open.onclick = () => pickDay(open, p.releaseDate, save);
+  $("release").replaceChildren(open, label ? el("button", { type: "button", className: "clear", ariaLabel: "Retirer la date de sortie",
     title: "Retirer la date de sortie", onclick: () => save("") }, icon("close")) : "");
 }
 function renderProject(p) {
@@ -1218,16 +1233,38 @@ function renderProject(p) {
   $("tracklist").replaceChildren(...p.tracks.map((t, i) => trackRow(p, t, i)));
 }
 
-// La date d'un titre (création ou autre) : badge « 06/05/2026 », choisie au calendrier du navigateur.
+// La date d'un titre (création ou autre) : badge « 06/05/2026 », choisie dans un calendrier ouvert sous le badge.
 const dayLabel = (day) => (day ? day.split("-").reverse().join("/") : "");
+const isoDay = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 function pickDay(anchor, value, save) {
-  const r = anchor.getBoundingClientRect();
-  const input = el("input", { type: "date", className: "day-picker", value: value || "", style: "left:" + r.left + "px;top:" + r.bottom + "px" });
-  ((anchor.closest && anchor.closest("dialog[open]")) || document.body).append(input);
-  const done = () => setTimeout(() => input.remove(), 300);
-  input.onchange = () => { if (input.value) save(input.value); done(); };
-  input.onblur = done;
-  try { input.showPicker(); } catch { input.focus(); input.click(); }
+  closeMenu();
+  const today = isoDay(new Date()), month = value ? new Date(value + "T12:00") : new Date();
+  month.setDate(1);
+  const m = el("div", { className: "menu cal", role: "dialog", ariaLabel: "Choisir une date" });
+  const pick = (day) => { closeMenu(); save(day); };
+  const step = (n) => { month.setMonth(month.getMonth() + n); draw(); };
+  const draw = () => {
+    const y = month.getFullYear(), mo = month.getMonth(), blank = (new Date(y, mo, 1).getDay() + 6) % 7, days = new Date(y, mo + 1, 0).getDate();
+    const cells = Array.from({ length: days }, (_, i) => {
+      const day = isoDay(new Date(y, mo, i + 1));
+      return el("button", { type: "button", className: (day === value ? "sel" : "") + (day === today ? " today" : ""), textContent: String(i + 1),
+        ariaLabel: dayLabel(day), onclick: () => pick(day) });
+    });
+    m.replaceChildren(
+      el("div", { className: "cal-head" }, el("button", { type: "button", ariaLabel: "Mois précédent", onclick: () => step(-1) }, icon("back")),
+        el("b", { textContent: month.toLocaleDateString("fr-FR", { month: "long", year: "numeric" }) }),
+        el("button", { type: "button", ariaLabel: "Mois suivant", onclick: () => step(1) }, icon("chevron"))),
+      el("div", { className: "cal-grid" }, ...["L", "M", "M", "J", "V", "S", "D"].map((d) => el("small", { textContent: d })),
+        ...Array.from({ length: blank }, () => el("span")), ...cells),
+      el("button", { type: "button", className: "cal-foot", textContent: "Aujourd'hui", onclick: () => pick(today) }));
+  };
+  draw();
+  ((anchor.closest && anchor.closest("dialog[open]")) || document.body).append(m);
+  const r = anchor.getBoundingClientRect(), w = m.offsetWidth, h = m.offsetHeight;
+  m.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left)) + "px";
+  m.style.top = (r.bottom + h + 8 > innerHeight && r.top > h + 8 ? r.top - h - 8 : r.bottom + 8) + "px";
+  openMenu = m;
+  (m.querySelector(".sel") || m.querySelector(".today") || m.querySelector(".cal-grid button")).focus();
 }
 function dateButton(t, editable = editing) {
   if (!editable && !t.day) return "";
@@ -1574,7 +1611,26 @@ $("project-more").append(icon("more"));
 $("project-more").onclick = () => projectMenu($("project-more"), project());
 $("add-tracks").append(icon("plus"), "Ajouter des titres");
 $("add-tracks").onclick = () => pickFiles({ project: project() });
-$("cover").onclick = () => editing && pickCover(project());
+// Un clic sur la pochette l'agrandit, pour la télécharger ou (son projet) la changer ; sans pochette, on en choisit une.
+$("cover").onclick = () => {
+  const p = project();
+  if (!p.cover) return p.mine && pickCover(p);
+  $("cover-view").querySelector("img").src = p.cover;
+  $("cover-swap").hidden = !p.mine;
+  $("cover-save").replaceChildren(icon("download"), "Télécharger");
+  $("cover-swap").replaceChildren(icon("star"), "Changer");
+  $("cover-view").showModal();
+};
+$("cover-swap").onclick = () => { $("cover-view").close(); pickCover(project()); };
+$("cover-save").onclick = async () => {
+  const p = project();
+  try {
+    const blob = await fetch(p.cover).then((r) => (r.ok ? r.blob() : Promise.reject(new Error("La pochette n'a pas pu être téléchargée."))));
+    const a = el("a", { href: URL.createObjectURL(blob), download: (p.title || "pochette") + "." + ((blob.type.split("/")[1] || "jpg").replace("jpeg", "jpg")) });
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  } catch (error) { fail(error); }
+};
 // Le mode édition : les options de modification n'apparaissent que là, la page reste lisible le reste du temps.
 let editing = false;
 $("edit-toggle").onclick = () => { editing = !editing; document.body.classList.toggle("editing", editing); render(); };
