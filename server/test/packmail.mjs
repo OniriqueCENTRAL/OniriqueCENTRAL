@@ -125,8 +125,9 @@ try {
     const sent = await call('POST', `/api/me/sounds/projects/${pack}/mail/send`, { token: bm.token, expect: 202 });
     assert.equal(sent.total, 3);
     mails = outbox.slice(before);
-    // Pas de prix ni d'achat dans le mail : chaque prod renvoie vers la page d'écoute.
-    assert.ok(mails[0].html.includes('>Écouter</a>') && !mails[0].html.includes('Acheter') && !mails[0].html.includes('€'));
+    // Pas de prix ni d'achat dans le mail : une seule ligne pour le pack, avec son bouton « Écouter ».
+    assert.equal(mails[0].html.split('>Écouter</a>').length, 2);
+    assert.ok(!mails[0].html.includes('Acheter') && !mails[0].html.includes('€') && mails[0].html.includes('1 PROD<'));
     assert.deepEqual(mails.map((m) => [m.from, m.to, m.subject]), [
       ['"Kay Beats" <kay@gmail.com>', '"Booba" <booba@92i.fr>', 'Salut Booba, nouveau pack'],
       ['"Kay Beats" <kay@gmail.com>', '"Niska" <niska@test.fr>', 'Salut Niska, nouveau pack'],

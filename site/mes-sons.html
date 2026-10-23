@@ -1922,7 +1922,7 @@ function openMailer(p) {
     section("Expéditeur et objet"), field("Nom de l'expéditeur", f.from, false), field("Objet", f.subject, false), field("Phrase d'aperçu", f.preheader),
     section("Contenu"), field("Petit titre", f.eyebrow, false), field("Titre", f.title, false), field("Message", f.text), field("Image en tête (adresse)", f.image),
     field("Texte du bouton", f.buttonLabel, false), field("Lien du bouton", f.buttonUrl, false), field("Signature", f.signature, false), field("Bas du mail", f.footer, false),
-    section("Prods du pack"), el("div", { className: "mail-prods wide" }),
+    section("Prods du pack (leur nombre est affiché sur la ligne du pack)"), el("div", { className: "mail-prods wide" }),
     section("Style"), el("label", { className: "mail-check wide" }, f.coverColors, "Couleurs de la pochette : fond, carte et accent tirés de la pochette du pack"),
     field("Police du texte", f.font, false), field("Police des titres", f.titleFont, false),
     el("div", { className: "mail-colors wide" }, ...Object.entries(MAIL_COLORS).map(([k, [label]]) => el("label", { className: "mail-check" }, colors[k], label))),

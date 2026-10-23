@@ -52,17 +52,15 @@ export function packMailHtml(d, pack) {
   const c = d.colors, font = FONTS[d.font], display = FONTS[d.titleFont], go = pack.link || ((url) => url);
   const pad = (inner, top = 14) => `<tr><td style="padding:${top}px 36px 0">${inner}</td></tr>`;
   const button = (label, url, bg, fg, { big = false, border = bg } = {}) => `<a href="${escapeHtml(go(url))}" style="display:inline-block;padding:${big ? '15px 28px' : '10px 18px'};border:1px solid ${border};border-radius:999px;background:${bg};color:${fg};font:700 ${big ? 15 : 13}px/1 ${font};text-decoration:none">${escapeHtml(label)}</a>`;
-  const prods = d.trackIds.map((id) => pack.tracks.find((t) => t.id === id)).filter(Boolean).map((t) => {
-    const badges = [t.bpm ? `${t.bpm} BPM` : '', t.key].filter(Boolean)
-      .map((b) => `<span style="display:inline-block;margin:6px 6px 0 0;padding:3px 9px;border:1px solid ${c.accent};border-radius:999px;font:600 11px/1.4 ${FONTS.mono};letter-spacing:.06em;color:${c.accent}">${escapeHtml(b)}</span>`).join('');
-    return `<tr><td style="padding:12px 0;border-top:1px solid ${c.muted}33">
+  // Une seule ligne pour le pack (pochette, nom, nombre de prods choisies) et son bouton « Écouter » : le détail est sur la page.
+  const count = d.trackIds.filter((id) => pack.tracks.some((t) => t.id === id)).length;
+  const prods = count && pack.listenUrl ? `<tr><td style="padding:14px 0;border-top:1px solid ${c.muted}33;border-bottom:1px solid ${c.muted}33">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-${pack.cover ? `<td width="64" valign="top" style="padding-right:14px"><img src="${escapeHtml(absolute(pack.cover))}?w=160" width="64" height="64" alt="" style="display:block;border-radius:10px;object-fit:cover"></td>` : ''}
-<td valign="top"><div style="font:700 16px/1.3 ${font};color:${c.text}">${escapeHtml(t.title)}</div>${badges}</td>
-<td align="right" valign="middle" style="white-space:nowrap;padding-left:10px">
-${pack.listenUrl ? button('Écouter', pack.listenUrl, c.accent, '#ffffff') : ''}
-</td></tr></table></td></tr>`;
-  }).join('');
+${pack.cover ? `<td width="64" valign="middle" style="padding-right:14px"><img src="${escapeHtml(absolute(pack.cover))}?w=160" width="64" height="64" alt="" style="display:block;border-radius:10px;object-fit:cover"></td>` : ''}
+<td valign="middle"><div style="font:700 16px/1.3 ${font};color:${c.text}">${escapeHtml(pack.title)}</div>
+<div style="padding-top:4px;font:600 11px/1.4 ${FONTS.mono};letter-spacing:.06em;color:${c.accent}">${count} PROD${count > 1 ? 'S' : ''}</div></td>
+<td align="right" valign="middle" style="white-space:nowrap;padding-left:10px">${button('Écouter', pack.listenUrl, c.accent, '#ffffff')}</td>
+</tr></table></td></tr>` : '';
   const paragraphs = d.text.split(/\n{2,}/).map((s) => s.trim()).filter(Boolean)
     .map((s) => pad(`<p style="margin:0;font:400 16px/1.65 ${font};color:${c.muted}">${rich(s, c, go)}</p>`)).join('');
   return `<!doctype html>
