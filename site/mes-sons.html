@@ -1635,7 +1635,7 @@ function openMailer(p) {
   const drawLists = async (select) => {
     saved = await api("GET", "/me/sounds/mail-lists");
     lists.replaceChildren(el("option", { value: "", textContent: saved.length ? "Choisir une liste enregistrée…" : "Aucune liste enregistrée" }),
-      ...saved.map((l) => el("option", { value: l.id, textContent: l.name + " (" + l.count + ")", selected: l.id === select })));
+      ...saved.map((l) => el("option", { value: l.id, textContent: l.name + " (" + l.count + ")" + (l.shared && !l.mine ? " · partagée par ONIRIQUE" : ""), selected: l.id === select })));
   };
   const fill = (l) => { f.to.value = l.emails.join("\n"); update(); };
   lists.onchange = () => lists.value && api("GET", "/me/sounds/mail-lists/" + lists.value).then(fill, oops);
@@ -1655,7 +1655,7 @@ function openMailer(p) {
       const l = current(), name = await ask("Nom de la liste", l ? l.name : "");
       if (!name) return;
       try {
-        const next = l && name === l.name ? await api("PATCH", "/me/sounds/mail-lists/" + l.id, { emails: f.to.value })
+        const next = l && l.mine && name === l.name ? await api("PATCH", "/me/sounds/mail-lists/" + l.id, { emails: f.to.value })
           : await api("POST", "/me/sounds/mail-lists", { name, emails: f.to.value });
         await drawLists(next.id);
       } catch (error) { oops(error); }
@@ -1669,6 +1669,7 @@ function openMailer(p) {
     }),
     listButton("Supprimer la liste", async () => {
       const l = current();
+      if (l && !l.mine) return oops(new Error("Cette liste est partagée par ONIRIQUE : elle ne se supprime pas."));
       if (!l || !confirm("Supprimer la liste « " + l.name + " » ? Les adresses restent dans ce mail.")) return;
       try { await api("DELETE", "/me/sounds/mail-lists/" + l.id); await drawLists(); } catch (error) { oops(error); }
     }));
@@ -1780,14 +1781,17 @@ function openMailer(p) {
   // Les contacts d'une liste (nom, adresse) et ce que chacun a fait du dernier mail.
   const contactsPane = el("div", { className: "stack", hidden: true });
   async function drawContacts(listId) {
-    const pick = el("select", { style: "flex:1;min-width:180px" }, ...saved.map((l) => el("option", { value: l.id, textContent: l.name + " (" + l.count + ")", selected: l.id === listId })));
+    const pick = el("select", { style: "flex:1;min-width:180px" }, ...saved.map((l) => el("option", { value: l.id, textContent: l.name + " (" + l.count + ")" + (l.shared && !l.mine ? " · partagée par ONIRIQUE" : ""), selected: l.id === listId })));
     pick.onchange = () => drawContacts(Number(pick.value));
     const id = listId || (saved[0] && saved[0].id);
     if (!id) return contactsPane.replaceChildren(el("p", { className: "muted", textContent: "Importe un CSV (une colonne pour l'adresse, une pour le nom ou le blaze) pour voir tes contacts ici." }));
     const l = await api("GET", "/me/sounds/mail-lists/" + id);
     contactsPane.replaceChildren(el("div", { className: "row" }, pick, el("button", { className: "btn btn-ghost", type: "button", textContent: "Mettre dans le mail",
       onclick: () => { fill(l); showTab("mail"); } })),
-      el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: plural(l.contacts.length, "contact") }),
+      el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: plural(l.contacts.length, "contact") + (l.shared && !l.mine ? " · liste partagée par ONIRIQUE, en lecture seule" : "") }),
+      data.founder && l.mine ? el("label", { className: "mail-check" }, el("input", { type: "checkbox", checked: l.shared,
+        onchange: (event) => api("PATCH", "/me/sounds/mail-lists/" + l.id, { shared: event.target.checked }).then(() => drawLists(l.id), oops) }),
+        "Partagée avec tous les membres ONIRIQUE (en lecture seule)") : "",
       el("table", { className: "mail-table" }, el("thead", {}, el("tr", {}, ...["Nom", "Adresse", "Dernier mail"].map((h) => el("th", { textContent: h })))),
         el("tbody", {}, ...l.contacts.map((c) => el("tr", {}, el("td", { textContent: c.name || "—" }), el("td", { textContent: c.email }),
           el("td", { textContent: c.unsubscribed ? "Désinscrit" : c.last ? activity(c.last) : "Jamais écrit" }))))));

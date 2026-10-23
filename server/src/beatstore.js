@@ -433,12 +433,20 @@ export function mountBeatStore(app, { me, track, room, receiveFile, openLink, li
     if (!l) throw new HttpError(404, 'Liste introuvable.');
     return l;
   };
-  const listView = (l, full = false) => {
-    const contacts = listContacts(l);
-    if (!full) return { id: l.id, name: l.name, count: contacts.length, createdAt: l.created_at };
-    const last = new Map(all(`SELECT * FROM sound_mail_recipients WHERE user_id = ? AND status != 'wait' ORDER BY created_at`, l.user_id).map((r) => [r.email, r]));
-    const unsubscribed = new Set(all('SELECT email FROM sound_mail_unsubs WHERE user_id = ?', l.user_id).map((x) => x.email));
-    return { id: l.id, name: l.name, count: contacts.length, createdAt: l.created_at, emails: contacts.map((c) => c.email),
+  // Une liste partagée par un fondateur se lit (et sert aux mails) chez tous les membres ONIRIQUE, sans se modifier.
+  const seesShared = (user) => ['vip', 'founder'].includes(user.role);
+  const readableList = (req) => {
+    const l = get('SELECT * FROM sound_mail_lists WHERE id = ? AND (user_id = ? OR (shared = 1 AND ?))', id(req.params.id), req.user.id, seesShared(req.user) ? 1 : 0);
+    if (!l) throw new HttpError(404, 'Liste introuvable.');
+    return l;
+  };
+  // Le suivi et les désinscriptions sont ceux de celui qui regarde : chacun envoie depuis sa boîte.
+  const listView = (l, full = false, viewer = l.user_id) => {
+    const contacts = listContacts(l), head = { id: l.id, name: l.name, count: contacts.length, createdAt: l.created_at, shared: !!l.shared, mine: l.user_id === viewer };
+    if (!full) return head;
+    const last = new Map(all(`SELECT * FROM sound_mail_recipients WHERE user_id = ? AND status != 'wait' ORDER BY created_at`, viewer).map((r) => [r.email, r]));
+    const unsubscribed = new Set(all('SELECT email FROM sound_mail_unsubs WHERE user_id = ?', viewer).map((x) => x.email));
+    return { ...head, emails: contacts.map((c) => c.email),
       contacts: contacts.map((c) => {
         const r = last.get(c.email);
         return { ...c, unsubscribed: unsubscribed.has(c.email), last: r ? { sentAt: r.sent_at, status: r.status, openedAt: r.opened_at, clickedAt: r.clicked_at, plays: r.plays, downloads: r.downloads, lastAt: r.last_at } : null };
@@ -450,9 +458,10 @@ export function mountBeatStore(app, { me, track, room, receiveFile, openLink, li
     return JSON.stringify(contacts);
   };
   app.get('/api/me/sounds/mail-lists', ...me, (req, res) => {
-    res.json(all('SELECT * FROM sound_mail_lists WHERE user_id = ? ORDER BY created_at DESC', req.user.id).map((l) => listView(l)));
+    res.json(all('SELECT * FROM sound_mail_lists WHERE user_id = ? OR (shared = 1 AND ?) ORDER BY shared DESC, created_at DESC', req.user.id, seesShared(req.user) ? 1 : 0)
+      .map((l) => listView(l, false, req.user.id)));
   });
-  app.get('/api/me/sounds/mail-lists/:id', ...me, (req, res) => res.json(listView(ownList(req), true)));
+  app.get('/api/me/sounds/mail-lists/:id', ...me, (req, res) => res.json(listView(readableList(req), true, req.user.id)));
   app.post('/api/me/sounds/mail-lists', ...me, (req, res) => {
     rateLimit(`sounds-lists:${req.user.id}`, 100);
     const name = str(req.body.name, 80);
@@ -467,6 +476,10 @@ export function mountBeatStore(app, { me, track, room, receiveFile, openLink, li
     const l = ownList(req);
     if (req.body.name !== undefined) run('UPDATE sound_mail_lists SET name = ? WHERE id = ?', str(req.body.name, 80) || l.name, l.id);
     if (req.body.emails !== undefined) run('UPDATE sound_mail_lists SET emails = ? WHERE id = ?', listEmails(req.body.emails), l.id);
+    if (req.body.shared !== undefined) {
+      if (req.user.role !== 'founder') throw new HttpError(403, 'Seul un fondateur partage une liste avec les membres ONIRIQUE.');
+      run('UPDATE sound_mail_lists SET shared = ? WHERE id = ?', req.body.shared ? 1 : 0, l.id);
+    }
     res.json(listView(get('SELECT * FROM sound_mail_lists WHERE id = ?', l.id), true));
   });
   app.delete('/api/me/sounds/mail-lists/:id', ...me, (req, res) => {

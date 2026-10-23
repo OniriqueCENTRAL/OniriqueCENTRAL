@@ -260,6 +260,10 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_sellers') WHERE name = '
   db.exec('ALTER TABLE sound_sellers ADD COLUMN webhook_secret TEXT');
   db.exec(`ALTER TABLE sound_sellers ADD COLUMN webhook_id TEXT NOT NULL DEFAULT ''`);
 }
+// Une liste de contacts partagée par un fondateur avec tous les membres ONIRIQUE (par exemple « CSV ARTISTES BY ONIRIQUE »).
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_mail_lists') WHERE name = 'shared'`).get()) {
+  db.exec('ALTER TABLE sound_mail_lists ADD COLUMN shared INTEGER NOT NULL DEFAULT 0');
+}
 // PayPal à côté de Stripe : un beatmaker peut brancher les deux, l'acheteur choisit. Un compte PayPal branché avant
 // (dans les colonnes de Stripe) est déplacé dans les siennes.
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_sellers') WHERE name = 'paypal_secret'`).get()) {

@@ -105,7 +105,7 @@ export function contactsOf(text) {
   const head = cells(rows[0], sep).map((h) => h.toLowerCase());
   if (!head.some((h) => h.includes('@'))) {
     const col = (re) => head.findIndex((h) => re.test(h));
-    const mail = col(/mail|courriel/), alias = col(/artiste|pseudo|alias|blaze|rappeur|nom d'artiste/), first = col(/pr[ée]nom|first/),
+    const mail = col(/mail|courriel/), alias = col(/artist|pseudo|alias|blaze|rappeur|beatmaker|producer|nom d'artiste/), first = col(/pr[ée]nom|first/),
       last = col(/^(nom|name|nom de famille|last ?name|surname|full ?name|nom complet|contact)$/);
     for (const row of rows.slice(1).map((r) => cells(r, sep))) {
       add(mail >= 0 && EMAIL.test(row[mail]) ? row[mail] : row.find((c) => EMAIL.test(c)),
@@ -294,7 +294,7 @@ export function mountPackSend(app, { me, ownProject, sign, wrap }) {
     const today = get('SELECT COUNT(*) AS n FROM sound_mail_recipients WHERE user_id = ? AND created_at > ?', req.user.id, now() - 86400_000).n;
     if (today + emails.length > PER_DAY) throw new HttpError(400, `${PER_DAY} mails au plus par jour : il en reste ${Math.max(0, PER_DAY - today)} aujourd'hui.`);
     const names = new Map();
-    for (const l of all('SELECT emails FROM sound_mail_lists WHERE user_id = ? ORDER BY created_at', req.user.id)) {
+    for (const l of all('SELECT emails FROM sound_mail_lists WHERE user_id = ? OR (shared = 1 AND ?) ORDER BY shared, created_at', req.user.id, ['vip', 'founder'].includes(req.user.role) ? 1 : 0)) {
       for (const c of listContacts(l)) if (c.name && !names.has(c.email)) names.set(c.email, c.name);
     }
     const sid = run('INSERT INTO sound_mail_sends (user_id, project_id, subject, created_at) VALUES (?, ?, ?, ?)', req.user.id, p.id, d.subject, now()).lastInsertRowid;

@@ -177,6 +177,20 @@ try {
     assert.equal((await call('GET', `/api/me/sounds/mail-lists/${list.id}`, { token: bm.token })).contacts.find((c) => c.name === 'Booba').unsubscribed, true);
   });
 
+  await step('liste partagée par un fondateur : lue par les membres ONIRIQUE, intouchable par eux, invisible aux autres', async () => {
+    const boss = await account('fondateur', 'founder'), member = await account('membre', 'vip'), client = await account('client');
+    const l = await call('POST', '/api/me/sounds/mail-lists', { token: boss.token, body: { name: 'CSV ARTISTES BY ONIRIQUE', emails: 'Artist;Email\nORCA MUSIC;00orcamusic@gmail.com\nOnze;11onze.contactpro@gmail.com\n' }, expect: 201 });
+    await call('PATCH', `/api/me/sounds/mail-lists/${list.id}`, { token: bm.token, body: { shared: true }, expect: 403 });
+    await call('PATCH', `/api/me/sounds/mail-lists/${l.id}`, { token: boss.token, body: { shared: true } });
+    const seen = (await call('GET', '/api/me/sounds/mail-lists', { token: member.token })).find((x) => x.id === l.id);
+    assert.deepEqual([seen.name, seen.count, seen.shared, seen.mine], ['CSV ARTISTES BY ONIRIQUE', 2, true, false]);
+    assert.deepEqual((await call('GET', `/api/me/sounds/mail-lists/${l.id}`, { token: member.token })).contacts.map((c) => c.name), ['ORCA MUSIC', 'Onze']);
+    await call('PATCH', `/api/me/sounds/mail-lists/${l.id}`, { token: member.token, body: { name: 'x' }, expect: 404 });
+    await call('DELETE', `/api/me/sounds/mail-lists/${l.id}`, { token: member.token, expect: 404 });
+    // Un compte sans le rôle ONIRIQUE n'a pas ONIRIQUE CLOUD, ni la liste.
+    await call('GET', `/api/me/sounds/mail-lists/${l.id}`, { token: client.token, expect: 403 });
+  });
+
   await step('« Se connecter avec Google » : accès Gmail demandé, retour sur le pack, envoi par l\'API Gmail', async () => {
     const { url } = await call('POST', '/api/me/sounds/mailer/google', { token: bm.token, body: { projectId: pack, fromName: 'Kay Beats' } });
     const q = new URL(url).searchParams;
