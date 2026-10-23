@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=993a2aea"></script>
+<script src="assets/i18n.js?v=b74e34bc"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -12,11 +12,11 @@
 <style>
 /* Mêmes tokens que compte.html. */
 :root {
-  --night: #0D0809; --blood: #5C0008; --deep: #1A080A; --deep-2: #2A0A0E; --line: rgba(255,210,214,.13);
-  --mist: #F6EEEE; --haze: #A88F92; --ember: #E23444; --bone: #FFECEE;
-  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(226,52,68,.55);
+  --night: #09080A; --blood: #3D0910; --deep: #121012; --deep-2: #1C1517; --line: rgba(255,214,218,.10);
+  --mist: #F2ECEC; --haze: #978C8F; --ember: #E5384A; --bone: #FFF4F5;
+  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(229,56,74,.55);
   --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
-  --f-dream: "Grenze Gotisch", Georgia, serif;
+  --f-dream: "Unbounded", "Arial Black", system-ui, sans-serif;
   --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
   --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
   color-scheme: dark;
@@ -28,25 +28,25 @@ body {
 }
 /* Le halo sur un calque fixe : background-attachment: fixed ferait repeindre toute la page à chaque défilement. */
 body::before { content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
-  background: radial-gradient(120% 60% at 50% -10%, rgba(140,6,20,.8), rgba(92,0,8,.45) 36%, transparent 72%); }
+  background: radial-gradient(120% 60% at 50% -10%, rgba(140,6,20,.8), rgba(61,9,16,.45) 36%, transparent 72%); }
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
 .wrap { width: 100%; max-width: 1180px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 40px); }
 header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.6); backdrop-filter: blur(14px); }
 header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 16px; }
 .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 800 17px/1 var(--f-display); letter-spacing: .16em; }
-.brand img { width: 44px; height: auto; margin-block: -12px; filter: drop-shadow(0 0 6px rgba(226,52,68,.8)); }
+.brand img { width: 44px; height: auto; margin-block: -12px; filter: drop-shadow(0 0 6px rgba(229,56,74,.8)); }
 .between { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 main { padding-block: clamp(28px, 6vw, 56px) 120px; }
 h1 { font: 800 clamp(26px, 5vw, 38px)/1.1 var(--f-display); margin: 12px 0 8px; }
-h1 em { font: 600 1.3em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
+h1 em { font: 800 1em/1 var(--f-dream); font-style: normal; color: var(--ember); }
 .eyebrow { font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); display: flex; align-items: center; gap: 10px; }
 .eyebrow::before { content: ""; flex: none; width: 13px; height: 13px; background: var(--mist); clip-path: polygon(50% 0, 56% 44%, 100% 50%, 56% 56%, 50% 100%, 44% 56%, 0 50%, 44% 44%); filter: drop-shadow(0 0 4px var(--ember)); }
 .muted { color: var(--haze); }
 .panel { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 18px; padding: clamp(18px, 3vw, 24px); margin-top: 16px; }
 .panel > .eyebrow { margin-bottom: 16px; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 18px; border-radius: 999px; border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
-.btn-primary { background: var(--mist); color: var(--night); box-shadow: 0 10px 40px -10px rgba(226,52,68,.6); }
+.btn-primary { background: var(--mist); color: var(--night); box-shadow: 0 10px 40px -10px rgba(229,56,74,.6); }
 .btn-ghost { background: rgba(255,255,255,.03); color: var(--mist); border-color: var(--line); }
 .btn-ghost:hover { border-color: var(--ember); }
 .btn:disabled { opacity: .5; cursor: default; }
@@ -66,7 +66,7 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-
 
 /* L'éditeur à gauche, l'aperçu (un téléphone) à droite ; l'un sous l'autre sur un petit écran. */
 .studio { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 28px; align-items: start; margin-top: 20px; }
-.phone { position: sticky; top: 20px; height: min(780px, calc(100vh - 40px)); border-radius: 40px; border: 10px solid #000; box-shadow: 0 0 0 1px var(--line), 0 30px 80px -30px rgba(226,52,68,.5); overflow: auto; background: #000; }
+.phone { position: sticky; top: 20px; height: min(780px, calc(100vh - 40px)); border-radius: 40px; border: 10px solid #000; box-shadow: 0 0 0 1px var(--line), 0 30px 80px -30px rgba(229,56,74,.5); overflow: auto; background: #000; }
 .phone > .lp { min-height: 100%; }
 @media (max-width: 960px) {
   .studio { grid-template-columns: minmax(0, 1fr); }
@@ -145,7 +145,7 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-
     <div>
       <section class="panel">
         <div class="eyebrow">Adresse de la page</div>
-        <div class="address"><span>onirique.store/l/</span><input id="handle" maxlength="30" autocomplete="off" spellcheck="false" aria-label="Adresse de la page"></div>
+        <div class="address"><span id="address-base">onirique.online/</span><input id="handle" maxlength="30" autocomplete="off" spellcheck="false" aria-label="Adresse de la page"></div>
         <p class="muted" style="margin:10px 0 0;font-size:14px">Lettres minuscules, chiffres, point ou tiret. C'est ce lien que tu colles dans ta bio.</p>
         <div class="between" style="margin-top:12px">
           <button class="btn btn-ghost small" id="copy" type="button">Copier le lien</button>
@@ -246,6 +246,7 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-
 
 <script src="assets/deeplink.js?v=3"></script>
 <script src="assets/linkpage.js?v=4"></script>
+<script src="assets/cropper.js?v=2"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const TOKEN = "onirique.token";
@@ -265,6 +266,9 @@ async function api(method, path, body, raw) {
 
 // handle : l'adresse enregistrée (null tant que la page n'a jamais été enregistrée) ; page : la page en cours d'édition.
 let saved = null, page = null, media = { avatar: null, background: null }, dirty = false;
+// L'adresse publique des pages de liens, devant le pseudo (donnée par le serveur : https://onirique.online).
+let base = "https://onirique.online";
+const host = () => base.replace(/^https?:\/\//, "");
 
 function markDirty() {
   dirty = true;
@@ -286,7 +290,7 @@ function draw() {
   $("avatar-remove").hidden = !media.avatar;
   $("bg-remove").hidden = !media.background;
   $("open").hidden = !saved;
-  if (saved) $("open").href = "/l/" + saved;
+  if (saved) $("open").href = base + "/" + saved;
 }
 
 // Les réglages simples : un champ, une valeur de la page.
@@ -469,7 +473,7 @@ async function save() {
     const data = await api("PUT", "/me/links", { handle: $("handle").value, page });
     apply(data);
     dirty = false;
-    $("state").textContent = "Enregistré · onirique.store/l/" + saved;
+    $("state").textContent = "Enregistré · " + host() + "/" + saved;
     $("state").className = "state";
     loadStats();
     return true;
@@ -500,9 +504,17 @@ async function upload(kind, input) {
   if (!file) return;
   $("error").textContent = "";
   if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) { $("error").textContent = "Image attendue : PNG, JPEG ou WebP."; return; }
+  // La photo de la page passe par le cadrage (dans un rond, comme elle s'affiche).
+  let image = file;
+  if (kind === "avatar") {
+    const url = URL.createObjectURL(file);
+    const cut = await OniriqueCropper.open(url, { avatar: true }).catch(() => null).finally(() => URL.revokeObjectURL(url));
+    if (!cut) return;
+    image = cut.blob;
+  }
   if (!saved && !(await save())) return;
   try {
-    const data = await api("PUT", "/me/links/image?kind=" + kind, null, file);
+    const data = await api("PUT", "/me/links/image?kind=" + kind, null, image);
     media = { avatar: data.avatar, background: data.background };
     if (kind === "background") { page.theme.bg = "image"; fillFields(); markDirty(); } else draw();
   } catch (error) { $("error").textContent = error.message; }
@@ -563,7 +575,7 @@ async function loadStats() {
 $("stats-days").onchange = loadStats;
 
 $("copy").onclick = async () => {
-  const url = "https://onirique.store/l/" + ($("handle").value || "");
+  const url = base + "/" + ($("handle").value || "");
   try { await navigator.clipboard.writeText(url); $("copy").textContent = "Lien copié"; } catch { prompt("Copie ce lien :", url); }
   setTimeout(() => { $("copy").textContent = "Copier le lien"; }, 1800);
 };
@@ -573,6 +585,7 @@ $("copy").onclick = async () => {
   if (!token) return gate('<p>Connecte-toi d\'abord à ton compte.</p><a class="btn btn-primary" href="compte.html">Se connecter</a>');
   try {
     const data = await api("GET", "/me/links");
+    if (data.address) { base = data.address; $("address-base").textContent = host() + "/"; }
     $("studio").hidden = $("bar").hidden = false;
     if (!data.handle) $("handle").value = (data.page.name || "").toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "").slice(0, 30);
     apply(data);

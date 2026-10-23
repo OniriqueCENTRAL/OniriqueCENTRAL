@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=993a2aea"></script>
+<script src="assets/i18n.js?v=b74e34bc"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -13,17 +13,17 @@
 <link rel="stylesheet" href="assets/pages.css">
 <style>
 /* Boutique : la base des pages de texte, élargie, avec les cartes et la démo interactive. */
-:root { --blood: #5C0008; --deep-2: #2A0A0E; --f-dream: "Grenze Gotisch", Georgia, serif;
-  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(226,52,68,.55); }
-body { background: radial-gradient(120% 50% at 50% -10%, rgba(140,6,20,.75), rgba(92,0,8,.4) 38%, transparent 72%) fixed, var(--night); }
+:root { --blood: #3D0910; --deep-2: #1C1517; --f-dream: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(229,56,74,.55); }
+body { background: radial-gradient(120% 50% at 50% -10%, rgba(140,6,20,.75), rgba(61,9,16,.4) 38%, transparent 72%) fixed, var(--night); }
 .wrap { max-width: 1240px; }
 header nav { display: flex; align-items: center; gap: 10px; }
-h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
+h1 em { font: 800 1em/1 var(--f-dream); font-style: normal; color: var(--ember); }
 .lede { color: var(--haze); max-width: 60ch; }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 22px; margin-top: 34px; }
 .card { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 22px; overflow: hidden; background: linear-gradient(180deg, var(--deep-2), var(--deep)); color: inherit; text-decoration: none; transition: transform .2s, border-color .2s; }
-.card:hover { transform: translateY(-3px); border-color: rgba(226,52,68,.6); color: inherit; }
+.card:hover { transform: translateY(-3px); border-color: rgba(229,56,74,.6); color: inherit; }
 .card .shot { position: relative; overflow: hidden; aspect-ratio: 16 / 10; background: radial-gradient(80% 90% at 50% 0%, var(--blood), var(--night)) center / cover; border-bottom: 1px solid var(--line); display: grid; place-items: center; }
 /* l'image est sortie du flux : une capture plus haute que 16/10 ne peut plus agrandir la carte (ni toute sa rangée) */
 .card .shot img.cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
@@ -40,7 +40,7 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 /* un créateur sans plugin encore : « Bientôt disponible » */
 .soon { grid-column: 1 / -1; display: grid; justify-items: center; gap: 14px; padding: clamp(50px, 9vw, 110px) 20px; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(180deg, var(--deep-2), var(--deep)); text-align: center; }
 .soon h2 { margin: 0; font: 800 clamp(28px, 5vw, 54px)/1.1 var(--f-display); letter-spacing: .04em; text-transform: uppercase; }
-.soon h2 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-transform: none; text-shadow: var(--glow); }
+.soon h2 em { font: 800 1em/1 var(--f-dream); font-style: normal; text-transform: none; color: var(--ember); }
 .soon p { margin: 0; color: var(--haze); }
 /* Filtres de la liste : un créateur ou tous, puis le tri par prix */
 .filters { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 30px; }
@@ -62,7 +62,7 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 .card .tags span { padding: 4px 8px; border-radius: 999px; border: 1px solid var(--line); font: 500 10px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--haze); }
 /* Code promo et remise de parrainage, sous le prix */
 .side .price s { font-size: .5em; color: var(--haze); font-weight: 600; margin-right: 10px; vertical-align: middle; }
-.deal { display: inline-flex; align-items: center; gap: 8px; margin: 4px 0 0; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(226,52,68,.6); background: rgba(226,52,68,.16); color: var(--bone); font: 500 12px/1.2 var(--f-mono); letter-spacing: .06em; }
+.deal { display: inline-flex; align-items: center; gap: 8px; margin: 4px 0 0; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(229,56,74,.6); background: rgba(229,56,74,.16); color: var(--bone); font: 500 12px/1.2 var(--f-mono); letter-spacing: .06em; }
 .promo { margin: 0 0 14px; }
 .promo summary { cursor: pointer; font-size: 14px; color: var(--haze); }
 .promo summary:hover { color: var(--mist); }
@@ -76,8 +76,8 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 .side .price { font-size: 44px; margin: 14px 0 6px; }
 .side ul { margin: 18px 0 22px; padding: 0; list-style: none; display: grid; gap: 9px; font-size: 15px; }
 .side li::before { content: "✦ "; color: var(--ember-text); }
-.buy { display: flex; justify-content: center; width: 100%; padding: 15px 22px; border-radius: 999px; border: 0; background: var(--mist); color: var(--night); font: 600 15px/1 var(--f-body); cursor: pointer; box-shadow: 0 10px 40px -10px rgba(226,52,68,.6); }
-.buy:hover { box-shadow: 0 0 0 6px rgba(226,52,68,.18), 0 18px 50px -12px rgba(226,52,68,.8); }
+.buy { display: flex; justify-content: center; width: 100%; padding: 15px 22px; border-radius: 999px; border: 0; background: var(--mist); color: var(--night); font: 600 15px/1 var(--f-body); cursor: pointer; box-shadow: 0 10px 40px -10px rgba(229,56,74,.6); }
+.buy:hover { box-shadow: 0 0 0 6px rgba(229,56,74,.18), 0 18px 50px -12px rgba(229,56,74,.8); }
 /* Un bouton qui ne peut pas servir le montre : éteint, sans halo, et son texte dit pourquoi. */
 .buy:disabled { background: transparent; color: var(--haze); border: 1px solid var(--line); box-shadow: none; cursor: default; }
 .buy.ghost { margin-top: 10px; background: transparent; color: var(--mist); border: 1px solid var(--line); box-shadow: none; }
@@ -90,12 +90,12 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 /* Abonnement à la carte */
 .pick { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); gap: 28px; align-items: start; margin-top: 64px; padding-top: 44px; border-top: 1px solid var(--line); }
 .pick h2 { margin: 12px 0 8px; font: 800 clamp(22px, 4vw, 30px)/1.15 var(--f-display); }
-.pick h2 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
+.pick h2 em { font: 800 1em/1 var(--f-dream); font-style: normal; color: var(--ember); }
 /* Abonnement tout inclus : une carte par formule */
 .plans { margin-top: 64px; padding-top: 44px; border-top: 1px solid var(--line); }
 .plans + .pick { margin-top: 44px; }
 .plans h2 { margin: 12px 0 8px; font: 800 clamp(22px, 4vw, 30px)/1.15 var(--f-display); }
-.plans h2 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
+.plans h2 em { font: 800 1em/1 var(--f-dream); font-style: normal; color: var(--ember); }
 .plan-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 16px; margin-top: 22px; }
 .plan { display: grid; gap: 6px; align-content: start; padding: 24px; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(180deg, var(--deep-2), var(--deep)); }
 .plan strong { font: 800 14px/1.3 var(--f-display); letter-spacing: .08em; text-transform: uppercase; }
@@ -105,14 +105,14 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 .plan ul { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .plan li { padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); font: 500 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--mist); }
 .plan .was { font: 500 14px/1 var(--f-mono); color: var(--haze); text-decoration: line-through; }
-.plan .save { justify-self: start; padding: 5px 10px; border-radius: 999px; background: rgba(226,52,68,.18); border: 1px solid rgba(226,52,68,.6); font: 600 11px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--bone); }
+.plan .save { justify-self: start; padding: 5px 10px; border-radius: 999px; background: rgba(229,56,74,.18); border: 1px solid rgba(229,56,74,.6); font: 600 11px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--bone); }
 .packs { margin-top: 64px; padding-top: 44px; border-top: 1px solid var(--line); }
 .packs h2 { margin: 12px 0 8px; font: 800 clamp(22px, 4vw, 30px)/1.15 var(--f-display); }
-.packs h2 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
+.packs h2 em { font: 800 1em/1 var(--f-dream); font-style: normal; color: var(--ember); }
 .pick-list { display: grid; gap: 10px; margin-top: 22px; }
 .pick-item { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 16px; background: linear-gradient(180deg, var(--deep-2), var(--deep)); cursor: pointer; transition: border-color .2s; }
-.pick-item:hover { border-color: rgba(226,52,68,.6); }
-.pick-item:has(input:checked) { border-color: var(--ember); background: linear-gradient(180deg, rgba(226,52,68,.2), var(--deep)); }
+.pick-item:hover { border-color: rgba(229,56,74,.6); }
+.pick-item:has(input:checked) { border-color: var(--ember); background: linear-gradient(180deg, rgba(229,56,74,.2), var(--deep)); }
 .pick-item input { flex: none; width: 20px; height: 20px; accent-color: var(--ember); }
 .pick-item img { flex: none; width: 64px; height: 40px; object-fit: cover; object-position: top; border-radius: 8px; border: 1px solid var(--line); }
 .pick-item strong { display: block; font: 800 14px/1.3 var(--f-display); letter-spacing: .05em; }

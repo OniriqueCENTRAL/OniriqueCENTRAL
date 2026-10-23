@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=993a2aea"></script>
+<script src="assets/i18n.js?v=b74e34bc"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -115,17 +115,17 @@ function draw() {
   if (canvas.width !== width || canvas.height !== height || !peaks) { canvas.width = width; canvas.height = height; peaks = measure(width); }
   const g = canvas.getContext("2d"), mid = height / 2, x0 = start / audio.duration * width, x1 = end / audio.duration * width, f = fades();
   g.clearRect(0, 0, width, height);
-  g.fillStyle = "rgba(226,52,68,.13)";
+  g.fillStyle = "rgba(229,56,74,.13)";
   g.fillRect(x0, 0, x1 - x0, height);
   for (let x = 0; x < width; x++) {
     const inside = x >= x0 && x <= x1, t = x / width * audio.duration;
     // À l'intérieur du passage, la forme d'onde suit les fondus : on voit ce qu'on va entendre.
     const gain = !inside ? 1 : (f.in ? curve((t - start) / f.in) : 1) * (f.out ? curve((end - t) / f.out) : 1);
-    g.fillStyle = inside ? "#E23444" : "rgba(185,162,165,.35)";
+    g.fillStyle = inside ? "#E5384A" : "rgba(185,162,165,.35)";
     const top = mid - peaks[x * 2 + 1] * gain * mid * 0.92, bottom = mid - peaks[x * 2] * gain * mid * 0.92;
     g.fillRect(x, top, 1, Math.max(1, bottom - top));
   }
-  g.fillStyle = "#FFECEE";
+  g.fillStyle = "#FFF4F5";
   for (const x of [x0, x1]) g.fillRect(Math.round(x) - ratio, 0, 2 * ratio, height);
   if (player) {
     const at = start + (player.context.currentTime - player.startedAt);

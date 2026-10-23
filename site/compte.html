@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=993a2aea"></script>
+<script src="assets/i18n.js?v=b74e34bc"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -12,11 +12,11 @@
 <style>
 /* Mêmes tokens que onirique.html : la page compte doit se lire comme une page du site. */
 :root {
-  --night: #0D0809; --blood: #5C0008; --deep: #1A080A; --deep-2: #2A0A0E; --line: rgba(255,210,214,.13);
-  --mist: #F6EEEE; --haze: #A88F92; --ember: #E23444; --bone: #FFECEE;
-  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(226,52,68,.55);
+  --night: #09080A; --blood: #3D0910; --deep: #121012; --deep-2: #1C1517; --line: rgba(255,214,218,.10);
+  --mist: #F2ECEC; --haze: #978C8F; --ember: #E5384A; --bone: #FFF4F5;
+  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(229,56,74,.55);
   --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
-  --f-dream: "Grenze Gotisch", Georgia, serif;
+  --f-dream: "Unbounded", "Arial Black", system-ui, sans-serif;
   --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
   --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
   color-scheme: dark;
@@ -28,17 +28,17 @@ body {
 }
 /* Le halo sur un calque fixe : background-attachment: fixed ferait repeindre toute la page à chaque défilement. */
 body::before { content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
-  background: radial-gradient(120% 60% at 50% -10%, rgba(140,6,20,.8), rgba(92,0,8,.45) 36%, transparent 72%); }
+  background: radial-gradient(120% 60% at 50% -10%, rgba(140,6,20,.8), rgba(61,9,16,.45) 36%, transparent 72%); }
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
 .wrap { width: 100%; max-width: 860px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 40px); }
 header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.6); backdrop-filter: blur(14px); }
 header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 16px; }
 .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 800 17px/1 var(--f-display); letter-spacing: .16em; }
-.brand img { width: 44px; height: auto; margin-block: -12px; filter: drop-shadow(0 0 6px rgba(226,52,68,.8)); }
+.brand img { width: 44px; height: auto; margin-block: -12px; filter: drop-shadow(0 0 6px rgba(229,56,74,.8)); }
 main { padding-block: clamp(32px, 7vw, 72px); }
 h1 { font: 800 clamp(26px, 5vw, 38px)/1.1 var(--f-display); margin: 12px 0 8px; }
-h1 em { font: 600 1.3em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
+h1 em { font: 800 1em/1 var(--f-dream); font-style: normal; color: var(--ember); }
 h2 { font: 800 15px/1.3 var(--f-display); letter-spacing: .04em; margin: 0; }
 .eyebrow { font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); display: flex; align-items: center; gap: 10px; }
 .eyebrow::before { content: ""; flex: none; width: 13px; height: 13px; background: var(--mist); clip-path: polygon(50% 0, 56% 44%, 100% 50%, 56% 56%, 50% 100%, 44% 56%, 0 50%, 44% 44%); filter: drop-shadow(0 0 4px var(--ember)); }
@@ -46,7 +46,7 @@ h2 { font: 800 15px/1.3 var(--f-display); letter-spacing: .04em; margin: 0; }
 .panel { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 18px; padding: clamp(18px, 3vw, 26px); margin-top: 18px; }
 .panel > .eyebrow { margin-bottom: 16px; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 20px; border-radius: 999px; border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
-.btn-primary { background: var(--mist); color: var(--night); box-shadow: 0 10px 40px -10px rgba(226,52,68,.6); }
+.btn-primary { background: var(--mist); color: var(--night); box-shadow: 0 10px 40px -10px rgba(229,56,74,.6); }
 .btn-ghost { background: rgba(255,255,255,.03); color: var(--mist); border-color: var(--line); }
 .btn-ghost:hover { border-color: var(--ember); }
 .btn:disabled { opacity: .5; cursor: default; }
@@ -77,10 +77,10 @@ label.check input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; padd
 .row:first-child { border-top: 0; padding-top: 0; }
 .key { font: 500 13px/1.4 var(--f-mono); letter-spacing: .05em; color: var(--bone); word-break: break-all; }
 .pill { font: 500 11px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--haze); white-space: nowrap; }
-.pill.on { color: var(--bone); border-color: rgba(226,52,68,.6); background: rgba(226,52,68,.16); }
+.pill.on { color: var(--bone); border-color: rgba(229,56,74,.6); background: rgba(229,56,74,.16); }
 /* Photo de profil */
 .photo { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-bottom: 26px; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
-.photo img { flex: none; width: 84px; height: 84px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); box-shadow: 0 0 0 4px rgba(226,52,68,.14), 0 12px 34px -12px rgba(226,52,68,.7); }
+.photo img { flex: none; width: 84px; height: 84px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); box-shadow: 0 0 0 4px rgba(229,56,74,.14), 0 12px 34px -12px rgba(229,56,74,.7); }
 .photo p { margin: 8px 0 0; font-size: 13px; }
 .panel { scroll-margin-top: 20px; }
 .between { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; }
@@ -128,10 +128,10 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
 .stats { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 14px; color: var(--haze); }
 .stats strong { color: var(--mist); font: 700 17px var(--f-mono); margin-right: 6px; }
 .meter { height: 8px; border-radius: 999px; background: rgba(255,255,255,.06); overflow: hidden; }
-.meter i { display: block; height: 100%; background: linear-gradient(90deg, #5c0008, var(--ember)); border-radius: 999px; }
+.meter i { display: block; height: 100%; background: linear-gradient(90deg, #3D0910, var(--ember)); border-radius: 999px; }
 .gift { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 12px 0; border-top: 1px solid var(--line); }
 .gift .key { font-size: 15px; }
-.welcome { padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(226,52,68,.6); background: rgba(226,52,68,.12); color: var(--bone); font-size: 14px; }
+.welcome { padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(229,56,74,.6); background: rgba(229,56,74,.12); color: var(--bone); font-size: 14px; }
 [hidden] { display: none !important; }
 </style>
 
@@ -303,7 +303,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
       <div class="eyebrow">Parrainage</div>
       <div class="refer">
         <div>
-          <h2 style="font-size:20px">Invite tes amis, <em style="font:600 1.3em/.8 var(--f-dream);font-style:normal;text-shadow:var(--glow)">gagne des plugins</em></h2>
+          <h2 style="font-size:20px">Invite tes amis, <em style="font: 800 1em/1 var(--f-dream); font-style: normal; color: var(--ember);">gagne des plugins</em></h2>
           <p class="muted" style="margin:8px 0 0;max-width:60ch" id="ref-intro"></p>
         </div>
         <div class="perks" id="ref-perks"></div>
@@ -373,7 +373,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
       <form id="delete-form" class="settings" style="grid-template-columns:minmax(0,1fr)">
         <label>Mot de passe, pour confirmer<input id="delete-password" type="password" required autocomplete="current-password"></label>
         <div class="error" id="delete-notice" role="status"></div>
-        <div><button class="btn btn-ghost" type="submit" style="border-color:rgba(226,52,68,.6);color:#ff8a94">Supprimer définitivement mon compte</button></div>
+        <div><button class="btn btn-ghost" type="submit" style="border-color:rgba(229,56,74,.6);color:#ff8a94">Supprimer définitivement mon compte</button></div>
       </form>
     </div>
   </section>
@@ -383,6 +383,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
   <nav class="legal" aria-label="Pages légales"><a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="remboursement.html">Rétractation et remboursement</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a></nav>
 </main>
 
+<script src="assets/cropper.js?v=2"></script>
 <script src="assets/account.js?v=7"></script>
 <script src="assets/site-nav.js?v=12"></script>
 <script>
@@ -682,7 +683,7 @@ $("eng-form").onsubmit = async (event) => {
   }
 };
 
-// Photo de profil : recadrée en carré et réduite à 512 px ici, dans le navigateur, avant l'envoi.
+// Photo de profil : cadrée par le membre (déplacer, zoomer, dans un rond), en carré de 512 px, dans le navigateur avant l'envoi.
 $("avatar-pick").onclick = () => $("avatar-file").click();
 $("avatar-file").onchange = async (event) => {
   const file = event.target.files[0];
@@ -690,14 +691,11 @@ $("avatar-file").onchange = async (event) => {
   if (!file) return;
   say("avatar-notice", "");
   try {
-    const image = await createImageBitmap(file).catch(() => { throw new Error("Ce fichier n'est pas une image lisible."); });
-    const side = Math.min(image.width, image.height);
-    const canvas = Object.assign(document.createElement("canvas"), { width: 512, height: 512 });
-    const pen = canvas.getContext("2d");
-    pen.fillStyle = "#0d0809"; // sous une image transparente : la nuit de la charte, pas du noir pur
-    pen.fillRect(0, 0, 512, 512);
-    pen.drawImage(image, (image.width - side) / 2, (image.height - side) / 2, side, side, 0, 0, 512, 512);
-    const blob = await new Promise((done) => canvas.toBlob(done, "image/jpeg", 0.9));
+    const url = URL.createObjectURL(file);
+    const cut = await OniriqueCropper.open(url, { avatar: true }).catch(() => { throw new Error("Ce fichier n'est pas une image lisible."); })
+      .finally(() => URL.revokeObjectURL(url));
+    if (!cut) return;
+    const blob = cut.blob;
     const response = await fetch("/api/me/avatar", { method: "PUT", headers: { Authorization: "Bearer " + saved(), "Content-Type": "image/jpeg" }, body: blob });
     if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "La photo n'a pas pu être envoyée.");
     show(await api("GET", "/me"));

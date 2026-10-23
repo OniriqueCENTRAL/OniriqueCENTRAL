@@ -64,6 +64,9 @@
   "site/mentions-legales.html",
   "site/pages.mjs"
  ],
+ ", rien n'est effacé.": [
+  "site/mes-sons.html"
+ ],
  ", stéréo.": [
   "site/bpm-tonalite.html"
  ],
@@ -114,6 +117,9 @@
  ],
  ": compte ONIRIQUE demandé": [
   "server/src/sounds.js"
+ ],
+ ": crée ton propre lien pour le faire entendre. Tu pourras le protéger, le limiter dans le temps et le couper à tout moment ; il ne s'ouvrira plus si tu quittes le projet.": [
+  "site/mes-sons.html"
  ],
  ": date, titre écouté et, si l'auditeur est connecté à son compte Onirique, ce compte": [
   "site/confidentialite.html"
@@ -317,7 +323,7 @@
  ".lp, .lp * { box-sizing: border-box; } .lp { position: relative; min-height: 100%; color: var(--lp-text); font-family: var(--lp-font); overflow: hidden; isolation: isolate; } .lp-bg { position: absolute; inset: 0; z-index: -1; background: var(--lp-bg); background-size: cover; background-position: center; } .lp-bg::after { content: \"\"; position: absolute; inset: 0; background: rgba(0,0,0,var(--lp-dim)); } .lp-inner { max-width: 580px; margin: 0 auto; padding: 56px 18px 40px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; } .lp-avatar { width: 104px; height: 104px; object-fit: cover; border-radius: 50%; box-shadow: 0 10px 34px -12px rgba(0,0,0,.7); } .lp-avatar.square { border-radius: 22px; } .lp-name { margin: 6px 0 0; font: 700 clamp(22px, 6vw, 30px)/1.15 var(--lp-title); letter-spacing: .01em; overflow-wrap: anywhere; } .lp-bio { margin: 0; max-width: 46ch; font-size: 15px; line-height: 1.5; opacity: .86; white-space: pre-line; overflow-wrap: anywhere; } .lp-icons { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin: 4px 0 6px; } .lp-icons a { display: grid; place-items: center; width: 40px; height: 40px; color: var(--lp-text); border-radius: 50%; transition: transform .15s; } .lp-icons a:hover, .lp-icons a:focus-visible { transform: scale(1.12); outline: none; } .lp-icon { width: 24px; height: 24px; flex: none; background: currentColor; -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; } .lp-links { width: 100%; display: grid; gap: 14px; margin-top: 6px; } .lp-btn { position: relative; display: flex; align-items: center; justify-content: center; min-height: 58px; padding: 14px 54px; text-decoration: none; font: 600 15.5px/1.3 var(--lp-font); color: var(--lp-btn-text); border: 2px solid var(--lp-btn); border-radius: var(--lp-radius); transition: transform .15s, filter .15s; overflow-wrap: anywhere; } .lp-btn .lp-icon { position: absolute; left: 18px; top: 50%; margin-top: -12px; } .lp-btn:hover, .lp-btn:focus-visible { transform: translateY(-2px) scale(1.01); filter: brightness(1.08); outline: none; } .lp-btn.fill { background: var(--lp-btn); } .lp-btn.outline { background: transparent; } .lp-btn.glass { background: color-mix(in srgb, var(--lp-btn) 22%, transparent); border-color: color-mix(in srgb, var(--lp-btn) 70%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); } .lp.shadow .lp-btn { box-shadow: 0 10px 26px -14px rgba(0,0,0,.85); } .lp-foot { margin-top: 26px; font: 600 11px/1 'JetBrains Mono', monospace; letter-spacing: .2em; text-transform: uppercase; color: var(--lp-text); opacity: .55; text-decoration: none; } .lp-foot:hover { opacity: .9; } .lp-empty { opacity: .6; font-size: 14px; } .lp-tiktok { width: 100%; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--lp-btn) 18%, rgba(0,0,0,.35)); border: 1px solid color-mix(in srgb, var(--lp-btn) 50%, transparent); font-size: 13.5px; line-height: 1.45; } .lp-btn .lp-more { position: absolute; right: 20px; top: 50%; width: 9px; height: 9px; margin-top: -7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); opacity: .8; } .lp-sheet { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; } .lp.preview .lp-sheet { position: absolute; } .lp-sheet-back { position: absolute; inset: 0; background: rgba(0,0,0,.6); animation: lp-fade .2s ease-out; } .lp-sheet-card { position: relative; width: 100%; max-width: 480px; max-height: 86%; overflow: auto; padding: 22px 18px calc(22px + env(safe-area-inset-bottom)); border-radius: 26px 26px 0 0; background: color-mix(in srgb, var(--lp-sheet) 92%, #000); color: var(--lp-text); text-align: center; animation: lp-rise .25s ease-out; box-shadow: 0 -20px 60px -20px rgba(0,0,0,.8); } @keyframes lp-fade { from { opacity: 0; } } @keyframes lp-rise { from { transform: translateY(40px); opacity: 0; } } .lp-sheet-close { position: absolute; right: 12px; top: 12px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: rgba(255,255,255,.08); color: inherit; font-size: 15px; cursor: pointer; } .lp-sheet-cover { width: 120px; height: 120px; border-radius: 14px; object-fit: cover; box-shadow: 0 14px 34px -14px rgba(0,0,0,.9); } .lp-sheet-cover.artist { border-radius: 50%; } .lp-sheet-title { margin: 12px 0 0; font: 700 18px/1.25 var(--lp-title); overflow-wrap: anywhere; } .lp-sheet-artist { margin: 4px 0 0; font-size: 14px; opacity: .75; } .lp-sheet-list { display: grid; gap: 8px; margin-top: 18px; text-align: left; } .lp-plat { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--lp-text) 16%, transparent); color: inherit; text-decoration: none; font: 600 15px/1.2 var(--lp-font); } .lp-plat:hover, .lp-plat:focus-visible { background: color-mix(in srgb, var(--lp-text) 8%, transparent); outline: none; } .lp-plat b { flex: 1; font-weight: 600; } .lp-plat em { font: 600 11px/1 'JetBrains Mono', monospace; font-style: normal; letter-spacing: .12em; text-transform: uppercase; padding: 8px 12px; border-radius: 999px; background: var(--lp-btn); color: var(--lp-btn-text); }": [
   "site/assets/linkpage.js"
  ],
- ".op-icon { display: inline-grid; place-items: center; line-height: 0; } .op-pill { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 40; width: min(1120px, calc(100vw - 24px)); display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 8px; border-radius: 999px; border: 1px solid rgba(255,210,214,.16); background: rgba(20,9,11,.92); backdrop-filter: blur(18px); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9), 0 0 40px -18px var(--op-accent, rgba(226,52,68,.55)); } .op-pill[hidden], .op-sheet[hidden], .op-queue[hidden], .op-comments[hidden] { display: none; } .op-cover { flex: none; width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: linear-gradient(135deg, #5C0008, #2A0A0E); border: 1px solid rgba(255,210,214,.16); cursor: pointer; } .op-pill.playing .op-cover { animation: op-spin 9s linear infinite; } @keyframes op-spin { to { transform: rotate(360deg); } } @media (prefers-reduced-motion: reduce) { .op-pill.playing .op-cover { animation: none; } } .op-meta { min-width: 0; width: 170px; flex: none; cursor: pointer; line-height: 1.25; } .op-meta b { display: block; font: 700 13px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .op-meta b .op-feat, .op-head b .op-feat { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.13)); background: rgba(255,255,255,.05); font: 600 10.5px/1.5 var(--f-body); color: var(--mist); vertical-align: 1px; } .op-meta > span { display: block; font-size: 12px; color: var(--haze); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .op-mini { flex: 1; min-width: 200px; height: 44px; cursor: pointer; touch-action: none; display: block; } .op-time { flex: none; font: 500 11px var(--f-mono); color: var(--haze); white-space: nowrap; } .op-btn { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 50%; background: none; color: var(--mist); cursor: pointer; } .op-btn:hover { background: rgba(255,255,255,.06); } .op-btn.on { color: var(--op-accent, var(--ember)); } .op-btn.main { width: 42px; height: 42px; background: var(--mist); color: var(--night); } .op-btn.main:hover { background: #fff; } .op-vol { width: 80px; accent-color: var(--op-accent, var(--ember)); min-height: 0; padding: 0; } .op-sheet, .op-queue { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(80px + env(safe-area-inset-bottom)); z-index: 39; width: min(1120px, calc(100vw - 24px)); max-height: min(62vh, 560px); overflow: auto; padding: 18px; border-radius: 22px; border: 1px solid rgba(255,210,214,.16); background: rgba(20,9,11,.96); backdrop-filter: blur(18px); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9); display: grid; gap: 14px; } .op-head { display: flex; align-items: center; gap: 12px; } .op-head b { flex: 1; min-width: 0; font: 700 16px var(--f-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .op-wave { width: 100%; height: 110px; display: block; cursor: pointer; touch-action: none; } .op-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 13px; color: var(--haze); } .op-tools label { display: inline-flex; flex-direction: row; align-items: center; gap: 8px; font: 400 13px var(--f-body); letter-spacing: 0; text-transform: none; color: var(--haze); } .op-tools input[type=range] { width: 120px; min-height: 0; padding: 0; accent-color: var(--ember); } .op-tools input[type=checkbox] { width: 16px; height: 16px; min-height: 0; margin: 0; accent-color: var(--ember); } .op-chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; border: 1px solid rgba(255,210,214,.16); background: none; color: var(--mist); font: 600 12px var(--f-body); cursor: pointer; text-decoration: none; } .op-chip:hover { border-color: var(--ember); } .op-chip.on { background: var(--op-accent, var(--ember)); border-color: var(--op-accent, var(--ember)); color: var(--night); } .op-comments { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; } .op-comments li { display: flex; gap: 10px; align-items: baseline; } .op-comments button.at { flex: none; font: 600 12px var(--f-mono); color: var(--ember); background: none; border: 0; padding: 0; cursor: pointer; } .op-comments .who { color: var(--haze); } .op-say { display: flex; flex-wrap: wrap; gap: 8px; } .op-say input { flex: 1 1 220px; min-height: 40px; } .op-say input.op-name { flex: 0 1 150px; } .op-queue ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; } .op-queue li button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 8px; border: 0; border-radius: 12px; background: none; color: var(--mist); font: 500 14px var(--f-body); text-align: left; cursor: pointer; } .op-queue li button:hover { background: rgba(255,255,255,.05); } .op-queue li.now button { color: var(--ember); } .op-queue img, .op-queue .op-q-cover { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; flex: none; background: linear-gradient(135deg, #5C0008, #2A0A0E); } .op-queue small { display: block; color: var(--haze); font-size: 12px; } @media (max-width: 1000px) { .op-vol { display: none; } .op-mini { min-width: 120px; } } /* Les boutons : couleurs et bordures en fondu, petit enfoncement au clic, léger soulèvement des boutons principaux. scale / translate (et non transform) : les éléments déjà placés avec transform (barre, bouton +, panneaux) restent en place. */ button, .btn, .op-chip, a.op-chip, .tile .art, .trk, .item, .dots, .stage, .feat, .play, .round, .fab, .install, .edit-toggle, .add-bar { transition: background-color .22s ease, border-color .22s ease, color .22s ease, box-shadow .25s ease, opacity .2s ease, scale .16s ease, translate .22s ease; } button:active:not(:disabled), .btn:active, .op-chip:active, .stage:active, .feat:active, .dots:active, .install:active, .edit-toggle:active { scale: .94; } .op-btn.main:active, .round.white:active, .play-all:active, .tile .fab-play:active { scale: .9; } .trk:active, .item:active, .add-bar:active { scale: .985; } .tile .art:active { scale: .97; } .btn-primary:hover, .round.white:hover, .play-all:hover, .op-btn.main:hover, .fab:hover { translate: 0 -2px; } .tile .art:hover { translate: 0 -3px; box-shadow: 0 18px 40px -18px rgba(0,0,0,.9); } .tile .fab-play { transition: background-color .2s ease, scale .2s ease, opacity .2s ease; } .tile .art:hover .fab-play { scale: 1.08; } /* Menus, fenêtres et panneaux : ouverture en fondu, avec un léger zoom ou une montée. */ @keyframes op-pop { from { opacity: 0; scale: .96; } } @keyframes op-rise { from { opacity: 0; translate: 0 14px; } } @keyframes op-fade { from { opacity: 0; } } .menu { animation: op-pop .16s ease-out; transform-origin: top center; } dialog[open] { animation: op-pop .22s cubic-bezier(.2, .8, .2, 1); } dialog[open]::backdrop { animation: op-fade .22s ease-out; } .op-sheet, .op-queue, .uploads { animation: op-rise .26s cubic-bezier(.2, .8, .2, 1); } .op-pill { animation: op-rise .35s cubic-bezier(.2, .8, .2, 1); } .details-right > *, .share-body > * { animation: op-fade .25s ease-out both; } @media (prefers-reduced-motion: reduce) { *, *::before, *::after, dialog::backdrop { animation: none !important; transition: none !important; } } @media (max-width: 720px) { .op-pill { gap: 4px; padding-right: 8px; } .op-meta { width: auto; flex: 1; } .op-mini, .op-time, .op-hide-sm { display: none; } }": [
+ ".op-icon { display: inline-grid; place-items: center; line-height: 0; } .op-pill { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 40; width: min(1120px, calc(100vw - 24px)); display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 8px; border-radius: 999px; border: 1px solid rgba(255,210,214,.16); background: rgba(20,9,11,.92); backdrop-filter: blur(18px); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9), 0 0 40px -18px var(--op-accent, rgba(226,52,68,.55)); } .op-pill[hidden], .op-sheet[hidden], .op-queue[hidden], .op-comments[hidden] { display: none; } .op-cover { flex: none; width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: linear-gradient(135deg, #5C0008, #2A0A0E); border: 1px solid rgba(255,210,214,.16); cursor: pointer; } .op-pill.playing .op-cover { animation: op-spin 9s linear infinite; } @keyframes op-spin { to { transform: rotate(360deg); } } @media (prefers-reduced-motion: reduce) { .op-pill.playing .op-cover { animation: none; } } .op-meta { min-width: 0; width: 170px; flex: none; cursor: pointer; line-height: 1.25; } .op-meta b { display: block; font: 700 13px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .op-meta b .op-feat, .op-head b .op-feat { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.13)); background: rgba(255,255,255,.05); font: 600 10.5px/1.5 var(--f-body); color: var(--mist); vertical-align: 1px; } .op-meta > span { display: block; font-size: 12px; color: var(--haze); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .op-mini { flex: 1; min-width: 200px; height: 44px; cursor: pointer; touch-action: none; display: block; } .op-time { flex: none; font: 500 11px var(--f-mono); color: var(--haze); white-space: nowrap; } .op-btn { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 50%; background: none; color: var(--mist); cursor: pointer; } .op-btn:hover { background: rgba(255,255,255,.06); } .op-btn.on { color: var(--op-accent, var(--ember)); } .op-btn.main { width: 42px; height: 42px; background: var(--mist); color: var(--night); } .op-btn.main:hover { background: #fff; } .op-vol { width: 80px; accent-color: var(--op-accent, var(--ember)); min-height: 0; padding: 0; } .op-sheet, .op-queue { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(80px + env(safe-area-inset-bottom)); z-index: 39; width: min(1120px, calc(100vw - 24px)); max-height: min(62vh, 560px); overflow: auto; padding: 18px; border-radius: 22px; border: 1px solid rgba(255,210,214,.16); background: rgba(20,9,11,.96); backdrop-filter: blur(18px); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9); display: grid; gap: 14px; } .op-head { display: flex; align-items: center; gap: 12px; } .op-head b { flex: 1; min-width: 0; font: 700 16px var(--f-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .op-wave { width: 100%; height: 110px; display: block; cursor: pointer; touch-action: none; } .op-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 13px; color: var(--haze); } .op-tools label { display: inline-flex; flex-direction: row; align-items: center; gap: 8px; font: 400 13px var(--f-body); letter-spacing: 0; text-transform: none; color: var(--haze); } .op-tools input[type=range] { width: 120px; min-height: 0; padding: 0; accent-color: var(--ember); } .op-tools input[type=checkbox] { width: 16px; height: 16px; min-height: 0; margin: 0; accent-color: var(--ember); } .op-chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; border: 1px solid rgba(255,210,214,.16); background: none; color: var(--mist); font: 600 12px var(--f-body); cursor: pointer; text-decoration: none; } .op-chip:hover { border-color: var(--ember); } .op-chip.on { background: var(--op-accent, var(--ember)); border-color: var(--op-accent, var(--ember)); color: var(--night); } .op-comments { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; } .op-comments li { display: flex; gap: 10px; align-items: baseline; } .op-comments button.at { flex: none; font: 600 12px var(--f-mono); color: var(--ember); background: none; border: 0; padding: 0; cursor: pointer; } .op-comments .who { color: var(--haze); } .op-say { display: flex; flex-wrap: wrap; gap: 8px; } .op-say input { flex: 1 1 220px; min-height: 40px; } .op-say input.op-name { flex: 0 1 150px; } .op-queue ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; } .op-queue li button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 8px; border: 0; border-radius: 12px; background: none; color: var(--mist); font: 500 14px var(--f-body); text-align: left; cursor: pointer; } .op-queue li button:hover { background: rgba(255,255,255,.05); } .op-queue li.now button { color: var(--ember); } .op-queue img, .op-queue .op-q-cover { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; flex: none; background: linear-gradient(135deg, #5C0008, #2A0A0E); } .op-queue small { display: block; color: var(--haze); font-size: 12px; } @media (max-width: 1000px) { .op-vol { display: none; } .op-mini { min-width: 120px; } } /* Les boutons : couleurs et bordures en fondu, petit enfoncement au clic, léger soulèvement des boutons principaux. scale / translate (et non transform) : les éléments déjà placés avec transform (barre, bouton +, panneaux) restent en place. */ button, .btn, .op-chip, a.op-chip, .tile .art, .trk, .item, .dots, .stage, .feat, .play, .round, .fab, .install, .edit-toggle, .add-bar { transition: background-color .22s ease, border-color .22s ease, color .22s ease, box-shadow .25s ease, opacity .2s ease, scale .16s ease, translate .22s ease; } button:active:not(:disabled), .btn:active, .op-chip:active, .stage:active, .feat:active, .dots:active, .install:active, .edit-toggle:active { scale: .94; } .op-btn.main:active, .round.white:active, .play-all:active, .tile .fab-play:active { scale: .9; } .trk:active, .item:active, .add-bar:active { scale: .985; } .tile .art:active { scale: .97; } .btn-primary:hover, .round.white:hover, .play-all:hover, .op-btn.main:hover, .fab:hover { translate: 0 -2px; } .tile .art:hover { translate: 0 -3px; box-shadow: 0 18px 40px -18px rgba(0,0,0,.9); } .tile .fab-play { transition: background-color .2s ease, scale .2s ease, opacity .2s ease; } .tile .art:hover .fab-play { scale: 1.08; } /* Menus, fenêtres et panneaux : ouverture en fondu, avec un léger zoom ou une montée. */ @keyframes op-pop { from { opacity: 0; scale: .96; } } @keyframes op-rise { from { opacity: 0; translate: 0 14px; } } @keyframes op-fade { from { opacity: 0; } } .menu { animation: op-pop .16s ease-out; transform-origin: top center; } dialog[open] { animation: op-pop .22s cubic-bezier(.2, .8, .2, 1); } dialog[open]::backdrop { animation: op-fade .22s ease-out; } .op-sheet, .op-queue, .uploads { animation: op-rise .26s cubic-bezier(.2, .8, .2, 1); } .op-pill { animation: op-rise .35s cubic-bezier(.2, .8, .2, 1); } .details-right > *, .share-body > * { animation: op-fade .25s ease-out both; } @media (prefers-reduced-motion: reduce) { *, *::before, *::after, dialog::backdrop { animation: none !important; transition: none !important; } } @media (max-width: 720px) { .op-pill { gap: 4px; padding-right: 8px; } .op-meta { width: auto; flex: 1; } .op-mini, .op-time, .op-hide-sm { display: none; } } /* Le lecteur plein écran du téléphone. */ .op-full { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; justify-content: center; gap: 18px; overflow: hidden; padding: calc(52px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom)); background: #110a0c; color: var(--mist, #f6eeee); animation: op-rise .3s cubic-bezier(.2, .8, .2, 1); touch-action: none; } .op-full[hidden] { display: none; } .op-full-bg { position: absolute; inset: -60px; z-index: -1; background-size: cover; background-position: center; filter: blur(50px) brightness(.3) saturate(1.2); } .op-full-bg::after { content: \"\"; position: absolute; inset: 0; background: radial-gradient(120% 70% at 50% 35%, transparent, rgba(13,8,9,.85)); } .op-full-top { position: absolute; top: calc(8px + env(safe-area-inset-top)); left: 10px; } .op-full-top .op-btn { width: 44px; height: 44px; } .op-card { position: relative; display: grid; justify-items: center; gap: 22px; padding: 26px 18px 22px; border-radius: 34px; overflow: hidden; background: rgba(255,236,238,.06); border: 1px solid rgba(255,210,214,.1); box-shadow: 0 30px 80px -30px rgba(0,0,0,.9); } .op-card-title { text-align: center; max-width: 100%; } .op-card-title b { display: block; font: 600 clamp(18px, 5.6vw, 23px)/1.25 var(--f-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .op-card-title b .op-feat { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; border: 1px solid rgba(255,210,214,.2); font: 600 11px/1.5 var(--f-body); vertical-align: 3px; } .op-card-title span { display: block; margin-top: 4px; font-size: 15px; color: var(--haze, #b9a9ab); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .op-disc { width: min(66vw, 300px, 34vh); aspect-ratio: 1; border-radius: 50%; object-fit: cover; background: linear-gradient(135deg, #5C0008, #2A0A0E); border: 3px solid rgba(255,236,238,.18); box-shadow: 0 24px 60px -24px rgba(0,0,0,.95), 0 0 70px -30px var(--op-accent, #e23444); } .op-full.playing .op-disc { animation: op-spin 14s linear infinite; } .op-scrub { width: calc(100% + 36px); height: 64px; display: block; touch-action: none; cursor: grab; } .op-full-time { font: 500 15px var(--f-mono, monospace); letter-spacing: .02em; } .op-full-controls { width: 100%; display: flex; align-items: center; justify-content: space-between; } .op-full-controls .op-btn { width: 52px; height: 52px; color: var(--mist, #f6eeee); } .op-full-controls .op-btn svg { width: 28px; height: 28px; } .op-full-controls .op-btn.big { width: 72px; height: 72px; color: #fff; } .op-full-controls .op-btn.big svg { width: 54px; height: 54px; } .op-full-controls .op-btn.on { color: var(--op-accent, var(--ember)); } .op-full-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; } .op-full-bar > div, .op-full-bar > button { display: flex; align-items: center; gap: 6px; height: 62px; padding: 0 10px; border-radius: 999px; background: rgba(255,236,238,.07); border: 1px solid rgba(255,210,214,.1); } .op-full-bar .op-btn { width: 46px; height: 46px; } .op-full-bar svg { width: 24px; height: 24px; } .op-full-bar > button.op-settings { gap: 10px; padding: 0 22px 0 18px; color: var(--mist, #f6eeee); font: 500 17px var(--f-body); cursor: pointer; } .op-full-bar .op-btn.on, .op-full-bar > button.on { color: var(--op-accent, var(--ember)); } html.op-full-open, html.op-full-open body { overflow: hidden; } html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: calc(92px + env(safe-area-inset-bottom)); max-height: 58vh; } @media (max-height: 680px) { .op-card { gap: 12px; padding: 16px 14px; } .op-full { gap: 10px; } .op-scrub { height: 48px; } }": [
   "site/assets/sounds-player.js"
  ],
  ".sn-announce { position: relative; z-index: 60; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 48px; font: 600 14px/1.4 var(--f-body, system-ui); text-align: center; } .sn-announce p { margin: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 16px; } .sn-announce span { letter-spacing: .02em; } .sn-announce a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; } .sn-announce-x { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border: 0; border-radius: 999px; background: rgba(0,0,0,.18); color: inherit; font: 400 20px/1 var(--f-body, system-ui); cursor: pointer; } .sn-announce.tone-ember { background: linear-gradient(90deg, #8c0614, #e23444 60%, #8c0614); color: #fff; } .sn-announce.tone-gold { background: linear-gradient(90deg, #b8862b, #f2c46d 55%, #b8862b); color: #1a0d02; } .sn-announce.tone-calm { background: var(--deep-2, #2a0a0e); color: var(--mist, #f6eeee); border-bottom: 1px solid var(--line, rgba(255,210,214,.16)); }": [
@@ -444,14 +450,14 @@
  "« {} » part vers : {}. Environ {} minute(s), un message toutes les trois secondes.": [
   "app/renderer/views/admin.js"
  ],
+ "» ? Ce qu'il contient (projets et dossiers) remonte": [
+  "site/mes-sons.html"
+ ],
  "» ? Il disparaîtra de ta page ;": [
   "site/mes-sons.html"
  ],
  "» ? La vidéo ne sera pas publiée.": [
   "site/compte.html"
- ],
- "» ? Les projets qu'il contient reviennent dans Mes sons, rien n'est effacé.": [
-  "site/mes-sons.html"
  ],
  "» (Deezer, en MP3) : son volume peut différer un peu du titre entier, et l'air au-dessus de 16 kHz y est coupé.": [
   "site/comparer-mix.html"
@@ -857,8 +863,8 @@
  "{}/ecoute?t={}": [
   "server/src/sounds.js"
  ],
- "{}/l/{}": [
-  "server/src/linkpage.js"
+ "{}/l": [
+  "server/src/config.js"
  ],
  "{}/lookup?id={}&country=FR": [
   "server/src/music.js"
@@ -1086,6 +1092,9 @@
  ],
  "$p = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList": [
   "app/main/installer.js"
+ ],
+ "0 {}px": [
+  "site/assets/sounds-player.js"
  ],
  "0 0 10px {}": [
   "app/renderer/views/admin.js"
@@ -2749,9 +2758,6 @@
  "C'est noté : parrainé par {}.": [
   "site/compte.html"
  ],
- "C'est ton propre projet : il est déjà dans Mes sons.": [
-  "server/src/sounds.js"
- ],
  "C'est ton propre projet.": [
   "server/src/sounds.js"
  ],
@@ -2770,6 +2776,10 @@
   "site/gammes.html"
  ],
  "Cadrer l'image": [
+  "site/assets/cropper.js",
+  "app/renderer/cropper.js"
+ ],
+ "Cadrer ta photo": [
   "site/assets/cropper.js",
   "app/renderer/cropper.js"
  ],
@@ -2867,7 +2877,7 @@
  "Ce dont on a besoin entre deux prises : trouver un tempo, une gamme, vérifier un master, préparer un fichier, estimer une sortie. Tout tourne dans ton navigateur, et tes fichiers ne quittent pas ton appareil.": [
   "site/outils.html"
  ],
- "Ce dossier est vide. Range-y des projets avec leur menu ⋯, « Déplacer vers ».": [
+ "Ce dossier est vide. Range-y des projets ou d'autres dossiers avec leur menu ⋯, « Déplacer vers », ou en les faisant glisser dessus.": [
   "site/mes-sons.html"
  ],
  "Ce fichier commence par": [
@@ -2974,6 +2984,9 @@
  "Ce plugin n'est pas encore en vente. Si vous avez reçu une clé de licence, entrez-la dans l'onglet Licences.": [
   "app/renderer/views/library.js"
  ],
+ "Ce projet est déjà dans Mes sons : c'est le tien, ou tu y collabores.": [
+  "server/src/sounds.js"
+ ],
  "Ce que ça veut dire": [
   "site/comparer-mix.html"
  ],
@@ -3019,6 +3032,9 @@
  ],
  "Ce titre n'a pas d'extrait à écouter.": [
   "server/src/reference.js"
+ ],
+ "Ce titre vient du lien d'un autre membre : demande-lui de te le partager.": [
+  "site/mes-sons.html"
  ],
  "Celle du fichier": [
   "site/convertisseur.html"
@@ -3653,7 +3669,8 @@
   "server/src/sounds.js"
  ],
  "Commentaires": [
-  "site/mes-sons.html"
+  "site/mes-sons.html",
+  "site/assets/sounds-player.js"
  ],
  "Commentaires d'un auditeur": [
   "site/confidentialite.html"
@@ -3980,6 +3997,7 @@
   "site/delais.html"
  ],
  "Copie ce lien :": [
+  "site/ecoute.html",
   "site/mes-liens.html",
   "site/mes-sons.html"
  ],
@@ -4208,6 +4226,9 @@
  "D# / Eb": [
   "site/gammes.html"
  ],
+ "dans «": [
+  "site/mes-sons.html"
+ ],
  "Dans Google Authenticator, touchez +, puis « Scanner un code QR » et visez ce code. Entrez ensuite le code à 6 chiffres qui s'affiche, pour confirmer.": [
   "site/compte.html"
  ],
@@ -4219,6 +4240,9 @@
  ],
  "dans le dossier «": [
   "site/stems.html"
+ ],
+ "dans Mes sons": [
+  "site/mes-sons.html"
  ],
  "Dans Safari, touche le bouton Partager": [
   "site/mes-sons.html"
@@ -4788,9 +4812,7 @@
   "site/gammes.html"
  ],
  "Dossier": [
-  "site/admin.html"
- ],
- "Dossier ·": [
+  "site/admin.html",
   "site/mes-sons.html"
  ],
  "Dossier des plugins VST3": [
@@ -5181,7 +5203,7 @@
  "Enregistré : visible tout de suite sur le site.": [
   "site/admin.html"
  ],
- "Enregistré · onirique.store/l/": [
+ "Enregistré ·": [
   "site/mes-liens.html"
  ],
  "Enregistré.": [
@@ -5202,6 +5224,10 @@
  ],
  "Enregistrer la fiche": [
   "site/admin.html"
+ ],
+ "Enregistrer la photo": [
+  "site/assets/cropper.js",
+  "app/renderer/cropper.js"
  ],
  "Enregistrer le mot de passe": [
   "site/compte.html"
@@ -5547,6 +5573,9 @@
  "Exécution du service demandé": [
   "site/confidentialite.html"
  ],
+ "EXISTS (SELECT 1 FROM sound_projects lp WHERE lp.id = COALESCE(l.project_id, (SELECT project_id FROM sound_tracks WHERE id = l.track_id)) AND (lp.user_id = l.user_id OR lp.id IN (SELECT project_id FROM sound_collabs WHERE user_id = l.user_id)))": [
+  "server/src/sounds.js"
+ ],
  "Expand-Archive -LiteralPath {} -DestinationPath {} -Force": [
   "app/main/installer.js"
  ],
@@ -5625,6 +5654,10 @@
   "site/mes-sons.html"
  ],
  "Fais glisser l'image pour la placer, zoome avec la molette ou le curseur : ce qui est dans le cadre est ce que montreront la boutique et la page du plugin. Pour une interface en hauteur, « Garder l'image entière » l'envoie sans la rogner : la page du plugin la montre en entier, les cartes en montrent le milieu.": [
+  "site/assets/cropper.js",
+  "app/renderer/cropper.js"
+ ],
+ "Fais glisser la photo pour la placer, zoome avec la molette, deux doigts ou le curseur : ce qui est dans le rond est ce que tout le monde verra.": [
   "site/assets/cropper.js",
   "app/renderer/cropper.js"
  ],
@@ -5810,6 +5843,9 @@
  ],
  "Forme d'onde : fais glisser les bords pour choisir le passage": [
   "site/decoupe.html"
+ ],
+ "Forme d'onde : glisser pour avancer ou reculer": [
+  "site/assets/sounds-player.js"
  ],
  "Forme de la photo": [
   "site/mes-liens.html"
@@ -6112,7 +6148,7 @@
   "site/cgv.html",
   "site/pages.mjs"
  ],
- "Ils écoutent tout, ajoutent des titres et des versions, modifient noms, étapes, crédits et notes. Supprimer, partager et inviter restent à toi ; ce qu'ils envoient compte dans ton espace.": [
+ "Ils écoutent tout, ajoutent des titres et des versions, modifient noms, étapes, crédits et notes. Ils peuvent aussi le partager par leurs propres liens d'écoute. Supprimer et inviter restent à toi ; ce qu'ils envoient compte dans ton espace.": [
   "site/mes-sons.html"
  ],
  "Image": [
@@ -7485,6 +7521,9 @@
  "Lien copié : envoyez-le à vos amis.": [
   "app/renderer/views/account.js"
  ],
+ "Lien copié.": [
+  "site/ecoute.html"
+ ],
  "Lien copié. Envoie-le à tes amis.": [
   "site/compte.html"
  ],
@@ -8088,6 +8127,10 @@
  "MID": [
   "site/onirique.html"
  ],
+ "min(460px, 100%)": [
+  "site/assets/cropper.js",
+  "app/renderer/cropper.js"
+ ],
  "min(760px, 100%)": [
   "site/assets/cropper.js",
   "app/renderer/cropper.js"
@@ -8572,6 +8615,9 @@
  "Nouveau dossier": [
   "site/mes-sons.html"
  ],
+ "Nouveau dossier dedans…": [
+  "site/mes-sons.html"
+ ],
  "Nouveau dossier…": [
   "site/mes-sons.html"
  ],
@@ -8866,11 +8912,8 @@
  "ONIRIQUE:{}": [
   "server/src/totp.js"
  ],
- "onirique.store/l/": [
+ "onirique.online/": [
   "site/mes-liens.html"
- ],
- "onirique.store/l/{}": [
-  "server/src/linkpage.js"
  ],
  "onirique2:{}": [
   "app/main/installer.js"
@@ -9289,7 +9332,8 @@
  ],
  "Partager": [
   "site/compte.html",
-  "site/mes-sons.html"
+  "site/mes-sons.html",
+  "site/assets/sounds-player.js"
  ],
  "Partager le projet": [
   "site/mes-sons.html"
@@ -9337,6 +9381,12 @@
  "Pas encore d'écoute. Partage ce titre ou son projet pour le faire entendre.": [
   "site/mes-sons.html"
  ],
+ "Pas encore de commentaire : écris le premier, il sera placé à ce moment du titre.": [
+  "site/assets/sounds-player.js"
+ ],
+ "Pas encore de commentaire. Ceux qui écoutent tes liens peuvent en laisser un à un moment précis du titre.": [
+  "site/assets/sounds-player.js"
+ ],
  "Pas encore de compte ?": [
   "site/onirique.html"
  ],
@@ -9354,6 +9404,9 @@
  ],
  "Pas le fichier de ta référence ? Cherche-la": [
   "site/comparer-mix.html"
+ ],
+ "Pas plus de {} niveaux de dossiers.": [
+  "server/src/sounds.js"
  ],
  "Pas pour la qualité : un fichier 44,1 kHz passé en 96 kHz ne gagne aucun détail. Cela sert à mettre un fichier au format d'un projet ou d'un cahier des charges.": [
   "site/convertisseur.html"
@@ -9903,6 +9956,9 @@
  "private, max-age=600": [
   "server/src/app.js"
  ],
+ "Privé : pas de lien à toi": [
+  "site/mes-sons.html"
+ ],
  "Privé : toi seulement": [
   "site/mes-sons.html"
  ],
@@ -10247,6 +10303,9 @@
  "Réduire": [
   "app/renderer/app.js"
  ],
+ "Réduire le lecteur": [
+  "site/assets/sounds-player.js"
+ ],
  "réécouter": [
   "site/popularite.html"
  ],
@@ -10290,6 +10349,7 @@
  ],
  "Réglages": [
   "site/mes-sons.html",
+  "site/assets/sounds-player.js",
   "app/renderer/views/admin.js"
  ],
  "Régler un correcteur de hauteur": [
@@ -10627,6 +10687,9 @@
  "Retour": [
   "site/mes-sons.html"
  ],
+ "Retour à": [
+  "site/mes-sons.html"
+ ],
  "Retour à Mes sons": [
   "site/mes-sons.html"
  ],
@@ -10740,11 +10803,17 @@
  "rgba(226,52,68,.8)": [
   "site/onirique.html"
  ],
+ "rgba(246,238,238,.3)": [
+  "site/assets/sounds-player.js"
+ ],
  "rgba(246,238,238,.32)": [
   "site/assets/sounds-player.js"
  ],
  "rgba(246,238,238,.5)": [
   "site/mes-sons.html"
+ ],
+ "rgba(246,238,238,.8)": [
+  "site/assets/sounds-player.js"
  ],
  "rgba(255, 170, 90, 0.4)": [
   "app/renderer/app.js"
@@ -10800,7 +10869,9 @@
   "app/renderer/cropper.js"
  ],
  "rgba(255,236,238,.7)": [
-  "site/onirique.html"
+  "site/onirique.html",
+  "site/assets/cropper.js",
+  "app/renderer/cropper.js"
  ],
  "rgba(255,236,238,.75)": [
   "site/comparer-mix.html"
@@ -10814,6 +10885,10 @@
  ],
  "rgba(255,236,238,0)": [
   "site/onirique.html"
+ ],
+ "rgba(5,3,4,.62)": [
+  "site/assets/cropper.js",
+  "app/renderer/cropper.js"
  ],
  "rgba(5,3,4,.86)": [
   "site/assets/cropper.js",
@@ -12268,6 +12343,9 @@
  "Tu chantes": [
   "site/tessiture.html"
  ],
+ "Tu collabores sur ce projet de": [
+  "site/mes-sons.html"
+ ],
  "Tu ne connais pas la tonalité de ton instru ? Dépose-la dans le": [
   "site/gammes.html"
  ],
@@ -12365,6 +12443,9 @@
  ],
  "Un délai ou une reverb calés sur le tempo se fondent dans le morceau au lieu de le brouiller. Entre ton BPM : toutes les valeurs sont en millisecondes, prêtes à recopier.": [
   "site/delais.html"
+ ],
+ "Un dossier ne peut pas aller dans lui-même ni dans un de ses sous-dossiers.": [
+  "server/src/sounds.js"
  ],
  "Un écart de moins de 1,5 dB ne s'entend presque pas. Une référence est un repère, pas une cible : deux bons mixes du même style diffèrent toujours un peu.": [
   "site/comparer-mix.html"
@@ -12559,6 +12640,7 @@
  "url(\"{}\")": [
   "site/admin.html",
   "site/assets/demo-player.js",
+  "site/assets/sounds-player.js",
   "app/renderer/demo-player.js"
  ],
  "url(\"/assets/icons/{}.svg\")": [
@@ -12810,6 +12892,9 @@
  ],
  "Vitesse de modulation": [
   "site/delais.html"
+ ],
+ "Vitesse, boucle et téléchargement": [
+  "site/assets/sounds-player.js"
  ],
  "Vocal Glue": [
   "site/onirique.html"

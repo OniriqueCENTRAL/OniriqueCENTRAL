@@ -1,9 +1,11 @@
 // Le lecteur de « Mes sons », commun à mes-sons.html (le membre) et ecoute.html (l'auditeur d'un lien) : une barre
 // flottante en bas de page (pochette, forme d'onde, précédent, lecture, suivant, aléatoire, répétition, file, volume)
-// et, en la dépliant, la grande forme d'onde avec les commentaires placés dessus, la vitesse et la boucle.
+// et, en la dépliant, la grande forme d'onde avec les commentaires placés dessus, la vitesse et la boucle. Sur téléphone,
+// la barre s'ouvre en lecteur plein écran : pochette ronde, forme d'onde qui défile sous la tête de lecture, partager,
+// précédent, lecture, suivant, répétition, et en bas la file, les commentaires et les réglages.
 //
 //   const player = OniriquePlayer.create({ onPlay(item), onComment(item, at, text, name) → Promise<comment>, askName,
-//                                          onDelete(item, comment) → Promise, onChange(item) })
+//                                          onDelete(item, comment) → Promise, onChange(item), onShare(item) })
 //   player.play(items, index)   joue une liste (un projet) à partir de ce titre ; player.enqueue(item) l'ajoute à la file
 //   item : { key, id, trackId, title, feat, subtitle, cover, url, downloadUrl, duration, peaks, comments }
 //   player.setAccent(color)      la couleur de la lecture (celle de la pochette du projet), null : la braise d'ONIRIQUE
@@ -42,6 +44,10 @@
     back: '<path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
     chevron: '<path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
     download: '<path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>',
+    down: '<path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+    share: '<path d="M12 15V4m0 0L8 8m4-4 4 4M7 11H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
+    comment: '<path d="M12 4c4.7 0 8.5 3.2 8.5 7.2S16.7 18.4 12 18.4c-1 0-2-.1-2.9-.4L4.5 20l1.3-3.7C4.3 15 3.5 13.2 3.5 11.2 3.5 7.2 7.3 4 12 4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
+    sliders: '<path d="M4 7h9m4 0h3M4 12h3m4 0h9M4 17h11m4 0h1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="15" cy="7" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/>',
     expand: '<path d="m6 15 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
     star: '<path d="M12 1.5 13.3 10.7 22.5 12 13.3 13.3 12 22.5 10.7 13.3 1.5 12 10.7 10.7Z" fill="currentColor"/>',
   };
@@ -131,9 +137,44 @@ dialog[open]::backdrop { animation: op-fade .22s ease-out; }
   .op-meta { width: auto; flex: 1; }
   .op-mini, .op-time, .op-hide-sm { display: none; }
 }
+/* Le lecteur plein écran du téléphone. */
+.op-full { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; justify-content: center; gap: 18px; overflow: hidden;
+  padding: calc(52px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom)); background: #110a0c; color: var(--mist, #f6eeee);
+  animation: op-rise .3s cubic-bezier(.2, .8, .2, 1); touch-action: none; }
+.op-full[hidden] { display: none; }
+.op-full-bg { position: absolute; inset: -60px; z-index: -1; background-size: cover; background-position: center; filter: blur(50px) brightness(.3) saturate(1.2); }
+.op-full-bg::after { content: ""; position: absolute; inset: 0; background: radial-gradient(120% 70% at 50% 35%, transparent, rgba(13,8,9,.85)); }
+.op-full-top { position: absolute; top: calc(8px + env(safe-area-inset-top)); left: 10px; }
+.op-full-top .op-btn { width: 44px; height: 44px; }
+.op-card { position: relative; display: grid; justify-items: center; gap: 22px; padding: 26px 18px 22px; border-radius: 34px; overflow: hidden;
+  background: rgba(255,236,238,.06); border: 1px solid rgba(255,210,214,.1); box-shadow: 0 30px 80px -30px rgba(0,0,0,.9); }
+.op-card-title { text-align: center; max-width: 100%; }
+.op-card-title b { display: block; font: 600 clamp(18px, 5.6vw, 23px)/1.25 var(--f-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.op-card-title b .op-feat { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; border: 1px solid rgba(255,210,214,.2); font: 600 11px/1.5 var(--f-body); vertical-align: 3px; }
+.op-card-title span { display: block; margin-top: 4px; font-size: 15px; color: var(--haze, #b9a9ab); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.op-disc { width: min(66vw, 300px, 34vh); aspect-ratio: 1; border-radius: 50%; object-fit: cover; background: linear-gradient(135deg, #5C0008, #2A0A0E);
+  border: 3px solid rgba(255,236,238,.18); box-shadow: 0 24px 60px -24px rgba(0,0,0,.95), 0 0 70px -30px var(--op-accent, #e23444); }
+.op-full.playing .op-disc { animation: op-spin 14s linear infinite; }
+.op-scrub { width: calc(100% + 36px); height: 64px; display: block; touch-action: none; cursor: grab; }
+.op-full-time { font: 500 15px var(--f-mono, monospace); letter-spacing: .02em; }
+.op-full-controls { width: 100%; display: flex; align-items: center; justify-content: space-between; }
+.op-full-controls .op-btn { width: 52px; height: 52px; color: var(--mist, #f6eeee); }
+.op-full-controls .op-btn svg { width: 28px; height: 28px; }
+.op-full-controls .op-btn.big { width: 72px; height: 72px; color: #fff; }
+.op-full-controls .op-btn.big svg { width: 54px; height: 54px; }
+.op-full-controls .op-btn.on { color: var(--op-accent, var(--ember)); }
+.op-full-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.op-full-bar > div, .op-full-bar > button { display: flex; align-items: center; gap: 6px; height: 62px; padding: 0 10px; border-radius: 999px; background: rgba(255,236,238,.07); border: 1px solid rgba(255,210,214,.1); }
+.op-full-bar .op-btn { width: 46px; height: 46px; }
+.op-full-bar svg { width: 24px; height: 24px; }
+.op-full-bar > button.op-settings { gap: 10px; padding: 0 22px 0 18px; color: var(--mist, #f6eeee); font: 500 17px var(--f-body); cursor: pointer; }
+.op-full-bar .op-btn.on, .op-full-bar > button.on { color: var(--op-accent, var(--ember)); }
+html.op-full-open, html.op-full-open body { overflow: hidden; }
+html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: calc(92px + env(safe-area-inset-bottom)); max-height: 58vh; }
+@media (max-height: 680px) { .op-card { gap: 12px; padding: 16px 14px; } .op-full { gap: 10px; } .op-scrub { height: 48px; } }
 `;
 
-  function create({ onPlay, onComment, askName, onDelete, onChange } = {}) {
+  function create({ onPlay, onComment, askName, onDelete, onChange, onShare } = {}) {
     document.head.append(el("style", { textContent: css }));
     const audio = new Audio();
     audio.preload = "metadata";
@@ -193,7 +234,24 @@ dialog[open]::backdrop { animation: op-fade .22s ease-out; }
     const closeQueue = btn("close", "Fermer");
     const queue = el("div", { className: "op-queue", hidden: true },
       el("div", { className: "op-head" }, el("b", { textContent: "File d'attente" }), closeQueue), queueList);
-    document.body.append(sheet, queue, pill);
+    // Le lecteur plein écran (téléphone).
+    const phone = () => matchMedia("(max-width: 720px)").matches;
+    const fullBg = el("div", { className: "op-full-bg" });
+    const fullClose = btn("down", "Réduire le lecteur");
+    const fullTitle = el("b"), fullSub = el("span");
+    const disc = el("img", { className: "op-disc", alt: "" });
+    const scrub = el("canvas", { className: "op-scrub", ariaLabel: "Forme d'onde : glisser pour avancer ou reculer" });
+    const fullClock = el("div", { className: "op-full-time" });
+    const fullShare = btn("share", "Partager"), fullPrev = btn("prev", "Précédent"), fullPlay = btn("play", "Lecture", "big");
+    const fullNext = btn("next", "Suivant"), fullRepeat = btn("repeat", "Répéter");
+    const fullQueue = btn("queue", "File d'attente"), fullComments = btn("comment", "Commentaires");
+    const fullSettings = el("button", { className: "op-settings", type: "button", ariaLabel: "Vitesse, boucle et téléchargement" }, icon("sliders"), "Réglages");
+    const full = el("div", { className: "op-full", hidden: true, role: "dialog", ariaLabel: "Lecteur" }, fullBg,
+      el("div", { className: "op-full-top" }, fullClose),
+      el("div", { className: "op-card" }, el("div", { className: "op-card-title" }, fullTitle, fullSub), disc, scrub, fullClock,
+        el("div", { className: "op-full-controls" }, onShare ? fullShare : el("span", { style: "width:52px" }), fullPrev, fullPlay, fullNext, fullRepeat)),
+      el("div", { className: "op-full-bar" }, el("div", {}, fullQueue, fullComments), fullSettings));
+    document.body.append(full, sheet, queue, pill);
 
     const item = () => list[index] || null;
     const duration = () => (Number.isFinite(audio.duration) && audio.duration) || (item() && item().duration) || 0;
@@ -221,7 +279,27 @@ dialog[open]::backdrop { animation: op-fade .22s ease-out; }
         g.beginPath(); g.arc(Math.min(w - 4, Math.max(4, c.at / d * w)), 4, 3.5, 0, 7); g.fill();
       }
     }
-    const draw = () => { if (!pill.hidden) drawWave(mini, 3, false); if (!sheet.hidden) drawWave(wave, 3, true); };
+    // La forme d'onde du plein écran : la tête de lecture reste au milieu et le titre défile dessous, STEP pixels par valeur.
+    const STEP = 3;
+    function drawScrub() {
+      const dpr = window.devicePixelRatio || 1, w = scrub.clientWidth, h = scrub.clientHeight;
+      if (!w || !h) return;
+      if (scrub.width !== Math.round(w * dpr) || scrub.height !== Math.round(h * dpr)) { scrub.width = Math.round(w * dpr); scrub.height = Math.round(h * dpr); }
+      const g = scrub.getContext("2d");
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.clearRect(0, 0, w, h);
+      const t = item(), d = duration(), peaks = t && t.peaks && t.peaks.length ? t.peaks : null;
+      const n = peaks ? peaks.length : 600, at = (d ? audio.currentTime / d : 0) * n, mid = w / 2;
+      const first = Math.max(0, Math.floor(at - mid / STEP)), last = Math.min(n - 1, Math.ceil(at + (w - mid) / STEP));
+      for (let i = first; i <= last; i++) {
+        const x = mid + (i - at) * STEP, bh = Math.max(3, (peaks ? peaks[i] : 0.1) * (h - 6));
+        g.fillStyle = x < mid ? "rgba(246,238,238,.3)" : "rgba(246,238,238,.8)";
+        g.fillRect(x, (h - bh) / 2, 1.5, bh);
+      }
+      g.fillStyle = accent;
+      g.fillRect(mid - 1.5, 0, 3, h);
+    }
+    const draw = () => { if (!pill.hidden) drawWave(mini, 3, false); if (!sheet.hidden) drawWave(wave, 3, true); if (!full.hidden) drawScrub(); };
 
     function listComments() {
       const t = item();
@@ -232,7 +310,11 @@ dialog[open]::backdrop { animation: op-fade .22s ease-out; }
           if (!confirm("Supprimer ce commentaire ?")) return;
           try { await onDelete(t, c); t.comments.splice(t.comments.indexOf(c), 1); listComments(); draw(); } catch (error) { alert(error.message); }
         } }) : null)));
-      comments.hidden = !comments.children.length;
+      // Ouverts depuis le plein écran sans aucun commentaire : une ligne dit où ils apparaîtront.
+      if (!comments.children.length && full.dataset.panel === "comments") comments.append(el("li", { className: "who", textContent: onComment
+        ? "Pas encore de commentaire : écris le premier, il sera placé à ce moment du titre."
+        : "Pas encore de commentaire. Ceux qui écoutent tes liens peuvent en laisser un à un moment précis du titre." }));
+      comments.hidden = !comments.children.length || full.dataset.panel === "settings";
     }
     function listQueue() {
       const rows = list.map((t, i) => ({ t, i, now: i === index })).filter((r) => r.i >= index).concat(upNext.map((t) => ({ t, i: -1 })));
@@ -245,7 +327,7 @@ dialog[open]::backdrop { animation: op-fade .22s ease-out; }
 
     function tick() {
       const now = time(audio.currentTime) + " / " + time(duration());
-      if (clock.textContent !== now) clock.textContent = now;
+      if (clock.textContent !== now) clock.textContent = fullClock.textContent = now;
       if (loop && loop.b != null && audio.currentTime >= loop.b) audio.currentTime = loop.a;
       draw();
     }
@@ -257,9 +339,10 @@ dialog[open]::backdrop { animation: op-fade .22s ease-out; }
       pill.hidden = false;
       document.body.style.paddingBottom = "110px";
       // Le titre, avec son « feat. » en badge s'il y en a un.
-      for (const node of [title, sheetTitle]) node.replaceChildren(t.title, t.feat ? el("span", { className: "op-feat", textContent: "feat. " + t.feat }) : "");
-      sub.textContent = t.subtitle || "";
-      if (t.cover) cover.src = t.cover + "?w=160"; else cover.removeAttribute("src");
+      for (const node of [title, sheetTitle, fullTitle]) node.replaceChildren(t.title, t.feat ? el("span", { className: "op-feat", textContent: "feat. " + t.feat }) : "");
+      sub.textContent = fullSub.textContent = t.subtitle || "";
+      for (const img of [cover, disc]) if (t.cover) img.src = t.cover + (img === cover ? "?w=160" : "?w=960"); else img.removeAttribute("src");
+      fullBg.style.backgroundImage = t.cover ? `url("${t.cover}?w=960")` : "";
       download.hidden = !t.downloadUrl;
       if (t.downloadUrl) download.href = t.downloadUrl;
       listComments(); listQueue(); tick();
@@ -285,8 +368,12 @@ dialog[open]::backdrop { animation: op-fade .22s ease-out; }
 
     audio.addEventListener("timeupdate", tick);
     audio.addEventListener("loadedmetadata", tick);
-    audio.addEventListener("play", () => { if (!frame) frame = requestAnimationFrame(animate); setIcon(play, "pause"); play.ariaLabel = play.title = "Pause"; pill.classList.add("playing"); });
-    audio.addEventListener("pause", () => { setIcon(play, "play"); play.ariaLabel = play.title = "Lecture"; pill.classList.remove("playing"); });
+    const playing = (on) => {
+      for (const b of [play, fullPlay]) { setIcon(b, on ? "pause" : "play"); b.ariaLabel = b.title = on ? "Pause" : "Lecture"; }
+      pill.classList.toggle("playing", on); full.classList.toggle("playing", on);
+    };
+    audio.addEventListener("play", () => { if (!frame) frame = requestAnimationFrame(animate); playing(true); });
+    audio.addEventListener("pause", () => playing(false));
     audio.addEventListener("ended", () => advance(false));
     let counted = null;
     audio.addEventListener("playing", () => { const t = item(); if (onPlay && t && counted !== t.key) { counted = t.key; onPlay(t); } });
@@ -297,9 +384,11 @@ dialog[open]::backdrop { animation: op-fade .22s ease-out; }
     shuffleBtn.onclick = () => { shuffle = !shuffle; shuffleBtn.classList.toggle("on", shuffle); };
     repeatBtn.onclick = () => {
       repeat = { off: "all", all: "one", one: "off" }[repeat];
-      repeatBtn.classList.toggle("on", repeat !== "off");
-      setIcon(repeatBtn, repeat === "one" ? "repeat1" : "repeat");
-      repeatBtn.title = repeatBtn.ariaLabel = { off: "Répéter", all: "Répéter la liste", one: "Répéter le titre" }[repeat];
+      for (const b of [repeatBtn, fullRepeat]) {
+        b.classList.toggle("on", repeat !== "off");
+        setIcon(b, repeat === "one" ? "repeat1" : "repeat");
+        b.title = b.ariaLabel = { off: "Répéter", all: "Répéter la liste", one: "Répéter le titre" }[repeat];
+      }
     };
     const setVolume = (v) => {
       audio.volume = v; vol.value = v;
@@ -309,11 +398,77 @@ dialog[open]::backdrop { animation: op-fade .22s ease-out; }
     let before = volume || 1;
     vol.oninput = () => setVolume(Number(vol.value));
     volBtn.onclick = () => { if (audio.volume) { before = audio.volume; setVolume(0); } else setVolume(before); };
-    queueBtn.onclick = () => { queue.hidden = !queue.hidden; sheet.hidden = true; queueBtn.classList.toggle("on", !queue.hidden); listQueue(); };
-    closeQueue.onclick = () => { queue.hidden = true; queueBtn.classList.remove("on"); };
-    const toggleSheet = () => { sheet.hidden = !sheet.hidden; queue.hidden = true; more.classList.toggle("on", !sheet.hidden); draw(); };
-    more.onclick = meta.onclick = cover.onclick = toggleSheet;
-    closeSheet.onclick = () => { sheet.hidden = true; more.classList.remove("on"); };
+    // Les boutons du bas du plein écran s'allument avec le panneau qu'ils ouvrent.
+    const marks = () => {
+      fullQueue.classList.toggle("on", !queue.hidden);
+      fullComments.classList.toggle("on", !sheet.hidden && full.dataset.panel === "comments");
+      fullSettings.classList.toggle("on", !sheet.hidden && full.dataset.panel === "settings");
+    };
+    // Le panneau en entier (barre de l'ordinateur), ou seulement ses commentaires ou ses réglages (plein écran).
+    const tools = sheet.querySelector(".op-tools");
+    const part = (which) => { full.dataset.panel = which || ""; tools.hidden = wave.hidden = which === "comments"; say.hidden = comments.hidden = which === "settings"; if (which !== "settings") listComments(); };
+    queueBtn.onclick = () => { queue.hidden = !queue.hidden; sheet.hidden = true; queueBtn.classList.toggle("on", !queue.hidden); listQueue(); marks(); };
+    closeQueue.onclick = () => { queue.hidden = true; queueBtn.classList.remove("on"); marks(); };
+    const toggleSheet = () => { part(null); sheet.hidden = !sheet.hidden; queue.hidden = true; more.classList.toggle("on", !sheet.hidden); draw(); };
+    closeSheet.onclick = () => { sheet.hidden = true; more.classList.remove("on"); marks(); };
+
+    // Le plein écran : ouvert depuis la barre sur téléphone, refermé par la flèche ou en glissant vers le bas.
+    function openFull() {
+      if (!item()) return;
+      full.hidden = false; sheet.hidden = queue.hidden = true;
+      document.documentElement.classList.add("op-full-open");
+      marks(); tick();
+    }
+    function closeFull() {
+      full.hidden = sheet.hidden = queue.hidden = true;
+      document.documentElement.classList.remove("op-full-open");
+      more.classList.remove("on"); queueBtn.classList.remove("on");
+    }
+    more.onclick = meta.onclick = cover.onclick = () => (phone() ? openFull() : toggleSheet());
+    fullClose.onclick = closeFull;
+    fullPlay.onclick = () => play.onclick();
+    fullPrev.onclick = () => prev.onclick();
+    fullNext.onclick = () => next.onclick();
+    fullRepeat.onclick = () => repeatBtn.onclick();
+    fullShare.onclick = () => item() && onShare(item());
+    fullQueue.onclick = () => queueBtn.onclick();
+    const panel = (which) => {
+      if (!sheet.hidden && full.dataset.panel === which) sheet.hidden = true;
+      else { part(which); sheet.hidden = false; queue.hidden = true; }
+      marks(); draw();
+    };
+    fullComments.onclick = () => panel("comments");
+    fullSettings.onclick = () => panel("settings");
+    addEventListener("resize", () => { if (!full.hidden && !phone()) closeFull(); });
+    // Glisser vers le bas (ailleurs que sur la forme d'onde ou un bouton) referme le plein écran.
+    let swipe = null;
+    full.addEventListener("pointerdown", (event) => {
+      if (event.target === scrub || event.target.closest("button, input, a")) return;
+      swipe = { y: event.clientY, id: event.pointerId };
+    });
+    full.addEventListener("pointermove", (event) => {
+      if (swipe && swipe.id === event.pointerId) full.style.translate = `0 ${Math.max(0, event.clientY - swipe.y)}px`;
+    });
+    const endSwipe = (event) => {
+      if (!swipe || swipe.id !== event.pointerId) return;
+      const dy = event.clientY - swipe.y;
+      swipe = null; full.style.translate = "";
+      if (dy > 110) closeFull();
+    };
+    full.addEventListener("pointerup", endSwipe);
+    full.addEventListener("pointercancel", endSwipe);
+    // Glisser la forme d'onde : vers la gauche pour avancer, vers la droite pour reculer.
+    let drag = null;
+    scrub.addEventListener("pointerdown", (event) => { scrub.setPointerCapture(event.pointerId); drag = { x: event.clientX, t: audio.currentTime }; });
+    scrub.addEventListener("pointermove", (event) => {
+      const t = item(), d = duration();
+      if (!drag || !d) return;
+      const n = t.peaks && t.peaks.length ? t.peaks.length : 600;
+      audio.currentTime = Math.max(0, Math.min(d - 0.05, drag.t - (event.clientX - drag.x) / STEP / n * d));
+      tick();
+    });
+    scrub.addEventListener("pointerup", () => { drag = null; });
+    scrub.addEventListener("pointercancel", () => { drag = null; });
 
     const seek = (canvas) => (event) => {
       const r = canvas.getBoundingClientRect(), d = duration();
@@ -371,7 +526,7 @@ dialog[open]::backdrop { animation: op-fade .22s ease-out; }
       },
       toggle() { play.onclick(); },
       enqueue(t) { upNext.push(t); if (index < 0) { list = []; insertNext(upNext.shift()); } listQueue(); },
-      openDetails() { if (sheet.hidden) toggleSheet(); },
+      openDetails() { if (phone()) { openFull(); panel("comments"); } else if (sheet.hidden) toggleSheet(); },
       setAccent(color) {
         accent = color || "#E23444";
         for (const node of [pill, sheet, queue]) node.style.setProperty("--op-accent", accent);

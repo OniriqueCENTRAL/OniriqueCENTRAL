@@ -120,9 +120,14 @@ CREATE TABLE IF NOT EXISTS sound_saves (
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'folder_id'`).get()) {
   db.exec('ALTER TABLE sound_projects ADD COLUMN folder_id INTEGER REFERENCES sound_folders(id) ON DELETE SET NULL');
 }
+// Un dossier peut être rangé dans un autre (null : à la racine de Mes sons).
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_folders') WHERE name = 'parent_id'`).get()) {
+  db.exec('ALTER TABLE sound_folders ADD COLUMN parent_id INTEGER REFERENCES sound_folders(id) ON DELETE SET NULL');
+}
 // Les collaborateurs d'un projet (invités par un lien que l'auteur crée, coupe ou renouvelle) : ils écoutent, ajoutent
-// des titres et des versions, modifient noms, étapes, crédits et notes. Supprimer le projet, le partager et gérer ses
-// collaborateurs restent à l'auteur ; ce qu'ils envoient compte dans son espace.
+// des titres et des versions, modifient noms, étapes, crédits et notes, et le partagent par leurs propres liens d'écoute
+// (qui ne s'ouvrent plus s'ils quittent le projet). Supprimer le projet et gérer ses collaborateurs restent à l'auteur ;
+// ce qu'ils envoient compte dans son espace.
 db.exec(`
 CREATE TABLE IF NOT EXISTS sound_collabs (
   project_id INTEGER NOT NULL REFERENCES sound_projects(id) ON DELETE CASCADE,
@@ -136,6 +141,13 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 
 }
 // Un projet que le membre peut ouvrir : le sien, ou un projet où il est collaborateur (p = sound_projects).
 const ACCESS = '(p.user_id = ? OR p.id IN (SELECT project_id FROM sound_collabs WHERE user_id = ?))';
+// Un lien d'écoute (l = sound_links) dont l'auteur a encore accès au projet : l'auteur du projet ou l'un de ses
+// collaborateurs. Celui d'un collaborateur retiré (ou parti) ne s'ouvre plus.
+const LINK_OPEN = `EXISTS (SELECT 1 FROM sound_projects lp WHERE lp.id = COALESCE(l.project_id, (SELECT project_id FROM sound_tracks WHERE id = l.track_id))
+  AND (lp.user_id = l.user_id OR lp.id IN (SELECT project_id FROM sound_collabs WHERE user_id = l.user_id)))`;
+// Le projet d'un lien et le nom de son auteur (affiché aux auditeurs quand le projet n'a pas de nom d'artiste).
+const linkProject = (l) => get(`SELECT p.*, u.name AS author_name, u.avatar AS author_avatar FROM sound_projects p JOIN users u ON u.id = p.user_id
+  WHERE p.id = ?`, l.project_id || get('SELECT project_id FROM sound_tracks WHERE id = ?', l.track_id).project_id);
 // La date d'un titre (création, enregistrement…), affichée en badge à côté de son étape ; '' : pas de date.
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'day'`).get()) {
   db.exec(`ALTER TABLE sound_tracks ADD COLUMN day TEXT NOT NULL DEFAULT ''`);
@@ -230,14 +242,14 @@ const listeningPage = () => {
 
 /** Le lien et ce que son aperçu peut montrer ; null si le lien n'existe pas, n'est plus valable ou que l'auteur n'est plus membre. */
 function previewOf(token) {
-  const l = get(`SELECT l.*, u.name AS owner_name, u.role AS owner_role FROM sound_links l JOIN users u ON u.id = l.user_id WHERE l.token = ?`, String(token || '').slice(0, 40));
+  const l = get(`SELECT l.*, u.name AS owner_name, u.role AS owner_role FROM sound_links l JOIN users u ON u.id = l.user_id WHERE l.token = ? AND ${LINK_OPEN}`, String(token || '').slice(0, 40));
   if (!l || !rolesWith('sounds').includes(l.owner_role) || (l.expires_at && l.expires_at < now())) return null;
   if (l.password_hash || l.require_account) return { link: l, locked: true };
   const t = l.track_id ? get('SELECT * FROM sound_tracks WHERE id = ?', l.track_id) : null;
-  const p = get('SELECT * FROM sound_projects WHERE id = ?', l.project_id || t.project_id);
+  const p = linkProject(l);
   const tracks = l.track_id ? [t] : all('SELECT * FROM sound_tracks WHERE project_id = ? ORDER BY position, id', p.id);
   const seconds = tracks.reduce((sum, x) => sum + (get('SELECT duration FROM sound_versions WHERE id = ?', x.current_id)?.duration || 0), 0);
-  return { link: l, locked: false, owner: p.artist || l.owner_name || 'ONIRIQUE', title: t ? t.title : p.title, project: p.title, cover: p.cover,
+  return { link: l, locked: false, owner: p.artist || p.author_name || 'ONIRIQUE', title: t ? t.title : p.title, project: p.title, cover: p.cover,
     count: tracks.length, seconds, release: p.release_date, stage: t ? t.stage : '' };
 }
 const releaseText = (day) => {
@@ -350,7 +362,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (!row) throw new HttpError(404, 'Projet introuvable.');
     return row;
   };
-  // Ce que seul l'auteur fait : supprimer, partager, ranger dans ses dossiers, gérer les collaborateurs.
+  // Ce que seul l'auteur fait : supprimer, ranger dans ses dossiers, gérer les collaborateurs.
   const ownProject = (req, pid) => {
     const row = project(req, pid);
     if (row.user_id !== req.user.id) throw new HttpError(403, "Seul l'auteur du projet peut faire ça.");
@@ -412,9 +424,11 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       WHERE ${ACCESS} ORDER BY c.at`, u, u);
     const links = all(`SELECT l.*, (SELECT COUNT(*) FROM sound_plays WHERE link_id = l.id) AS plays,
       (SELECT MAX(created_at) FROM sound_plays WHERE link_id = l.id) AS last_play FROM sound_links l WHERE l.user_id = ? ORDER BY l.created_at DESC`, req.user.id);
-    // Les écoutes de chaque titre, tous liens confondus, et les auditeurs connectés (le dernier venu d'abord).
-    const plays = all(`SELECT s.track_id, s.link_id, s.created_at, u.id, u.name, u.avatar FROM sound_plays s JOIN sound_links l ON l.id = s.link_id
-      LEFT JOIN users u ON u.id = s.user_id WHERE l.user_id = ? ORDER BY s.created_at DESC`, req.user.id);
+    // Les écoutes de chaque titre, tous liens confondus (ceux de l'auteur et des collaborateurs), et les auditeurs
+    // connectés (le dernier venu d'abord).
+    const plays = all(`SELECT s.track_id, s.link_id, s.created_at, u.id, u.name, u.avatar FROM sound_plays s
+      JOIN sound_tracks t ON t.id = s.track_id JOIN sound_projects p ON p.id = t.project_id
+      LEFT JOIN users u ON u.id = s.user_id WHERE ${ACCESS} ORDER BY s.created_at DESC`, u, u);
     const listeners = (rows) => [...new Map(rows.filter((r) => r.id).map((r) => [r.id, { ...person(r), at: r.created_at }])).values()];
     const d = disk();
     res.json({
@@ -441,18 +455,18 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
         const mine = plays.filter((r) => r.link_id === l.id);
         return { ...linkView(l), plays: l.plays, lastPlay: l.last_play, listeners: listeners(mine) };
       }),
-      folders: all('SELECT id, title, created_at FROM sound_folders WHERE user_id = ? ORDER BY created_at DESC', req.user.id)
-        .map((f) => ({ id: f.id, title: f.title, createdAt: f.created_at })),
+      folders: all('SELECT id, title, parent_id, created_at FROM sound_folders WHERE user_id = ? ORDER BY created_at DESC', req.user.id)
+        .map((f) => ({ id: f.id, title: f.title, parentId: f.parent_id, createdAt: f.created_at })),
       // Les projets des autres, enregistrés : encore ouverts si le lien vit et que son auteur est toujours membre.
       saved: all(`SELECT s.id, s.folder_id, s.pass, s.created_at, l.id AS link_id, l.token, l.track_id, l.expires_at, l.password_hash,
-          u.name AS owner_name, u.avatar AS owner_avatar, u.role AS owner_role, p.title AS project_title, p.cover, p.artist, t.title AS track_title,
-          (SELECT COUNT(*) FROM sound_tracks WHERE project_id = p.id) AS tracks
+          a.name AS owner_name, a.avatar AS owner_avatar, u.role AS owner_role, p.title AS project_title, p.cover, p.artist, t.title AS track_title,
+          (SELECT COUNT(*) FROM sound_tracks WHERE project_id = p.id) AS tracks, ${LINK_OPEN} AS open
         FROM sound_saves s JOIN sound_links l ON l.id = s.link_id JOIN users u ON u.id = l.user_id
-        LEFT JOIN sound_tracks t ON t.id = l.track_id JOIN sound_projects p ON p.id = COALESCE(l.project_id, t.project_id)
+        LEFT JOIN sound_tracks t ON t.id = l.track_id JOIN sound_projects p ON p.id = COALESCE(l.project_id, t.project_id) JOIN users a ON a.id = p.user_id
         WHERE s.user_id = ? ORDER BY s.created_at DESC`, req.user.id).map((r) => ({
         id: r.id, token: r.token, folderId: r.folder_id, title: r.track_id ? r.track_title : r.project_title, owner: r.artist || r.owner_name || 'ONIRIQUE',
         ownerAvatar: media(r.owner_avatar), cover: media(r.cover), tracks: r.track_id ? 1 : r.tracks, createdAt: r.created_at,
-        available: rolesWith('sounds').includes(r.owner_role) && !(r.expires_at && r.expires_at < now()),
+        available: !!r.open && rolesWith('sounds').includes(r.owner_role) && !(r.expires_at && r.expires_at < now()),
         pass: r.password_hash && r.pass && same(r.pass, passFor({ id: r.link_id, password_hash: r.password_hash })) ? r.pass : null,
       })),
     });
@@ -465,22 +479,51 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (!f) throw new HttpError(404, 'Dossier introuvable.');
     return f.id;
   };
+  // Les dossiers au-dessus d'un dossier, du parent à la racine.
+  const ancestors = (fid) => {
+    const up = [];
+    for (let at = get('SELECT parent_id FROM sound_folders WHERE id = ?', fid)?.parent_id; at && up.length < 50; at = get('SELECT parent_id FROM sound_folders WHERE id = ?', at)?.parent_id) up.push(at);
+    return up;
+  };
+  const MAX_DEPTH = 8;
+  // Le dossier où en ranger un autre : jamais lui-même ni l'un de ses sous-dossiers, et pas plus de MAX_DEPTH niveaux.
+  const parentFor = (req, fid, value) => {
+    const parent = folderOf(req, value);
+    if (parent === null) return null;
+    if (fid && (parent === fid || ancestors(parent).includes(fid))) throw new HttpError(400, 'Un dossier ne peut pas aller dans lui-même ni dans un de ses sous-dossiers.');
+    const below = (id) => Math.max(0, ...all('SELECT id FROM sound_folders WHERE parent_id = ?', id).map((c) => 1 + below(c.id)));
+    if (ancestors(parent).length + 2 + (fid ? below(fid) : 0) > MAX_DEPTH) throw new HttpError(400, `Pas plus de ${MAX_DEPTH} niveaux de dossiers.`);
+    return parent;
+  };
   app.post('/api/me/sounds/folders', ...me, (req, res) => {
     rateLimit(`sounds:${req.user.id}`, 300);
     const title = str(req.body.title, 80);
     if (!title) throw new HttpError(400, 'Donne un nom au dossier.');
-    res.status(201).json({ id: run('INSERT INTO sound_folders (user_id, title, created_at) VALUES (?, ?, ?)', req.user.id, title, now()).lastInsertRowid });
+    const parent = parentFor(req, null, req.body.parentId);
+    res.status(201).json({ id: run('INSERT INTO sound_folders (user_id, title, parent_id, created_at) VALUES (?, ?, ?, ?)', req.user.id, title, parent, now()).lastInsertRowid });
   });
+  // Renommer un dossier, ou le ranger dans un autre (parentId null : à la racine).
   app.patch('/api/me/sounds/folders/:id', ...me, (req, res) => {
     const fid = folderOf(req, req.params.id);
-    const title = str(req.body.title, 80);
-    if (!title) throw new HttpError(400, 'Donne un nom au dossier.');
-    run('UPDATE sound_folders SET title = ? WHERE id = ?', title, fid);
+    if (req.body.title !== undefined) {
+      const title = str(req.body.title, 80);
+      if (!title) throw new HttpError(400, 'Donne un nom au dossier.');
+      run('UPDATE sound_folders SET title = ? WHERE id = ?', title, fid);
+    }
+    if (req.body.parentId !== undefined) run('UPDATE sound_folders SET parent_id = ? WHERE id = ?', parentFor(req, fid, req.body.parentId), fid);
     res.json({ ok: true });
   });
+  // Supprimer un dossier : ce qu'il contient (projets, projets enregistrés, sous-dossiers) remonte d'un niveau, rien n'est effacé.
   app.delete('/api/me/sounds/folders/:id', ...me, (req, res) => {
-    run('DELETE FROM sound_folders WHERE id = ?', folderOf(req, req.params.id));
-    res.json({ ok: true });
+    const fid = folderOf(req, req.params.id);
+    const parent = get('SELECT parent_id FROM sound_folders WHERE id = ?', fid).parent_id;
+    transaction(() => {
+      run('UPDATE sound_folders SET parent_id = ? WHERE parent_id = ?', parent, fid);
+      run('UPDATE sound_projects SET folder_id = ? WHERE folder_id = ?', parent, fid);
+      run('UPDATE sound_saves SET folder_id = ? WHERE folder_id = ?', parent, fid);
+      run('DELETE FROM sound_folders WHERE id = ?', fid);
+    });
+    res.json({ ok: true, parentId: parent });
   });
 
   // Les projets enregistrés : rangés dans un dossier, ou retirés de la page.
@@ -663,11 +706,11 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     res.json({ ok: true });
   });
 
-  // Les liens d'écoute : un projet entier ou un seul titre.
+  // Les liens d'écoute : un projet entier ou un seul titre, créés par l'auteur ou par un collaborateur (chacun gère les siens).
   app.post('/api/me/sounds/links', ...me, (req, res) => {
     rateLimit(`sounds:${req.user.id}`, 300);
-    const projectId = req.body.projectId ? ownProject(req, req.body.projectId).id : null;
-    const trackId = !projectId && req.body.trackId ? ownProject(req, track(req, req.body.trackId).project_id) && id(req.body.trackId) : null;
+    const projectId = req.body.projectId ? project(req, req.body.projectId).id : null;
+    const trackId = !projectId && req.body.trackId ? track(req, req.body.trackId).id : null;
     if (!projectId && !trackId) throw new HttpError(400, 'Choisis un projet ou un titre à partager.');
     const password = typeof req.body.password === 'string' ? req.body.password : '';
     if (password && password.length < 4) throw new HttpError(400, 'Mot de passe : 4 caractères au moins.');
@@ -773,13 +816,15 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   /** Un membre connecté qui n'est pas l'auteur peut enregistrer le projet dans « Mes sons ». */
   function saveState(req, link) {
     const viewer = optionalUser(req);
-    const canSave = !!viewer && rolesWith('sounds').includes(viewer.role) && viewer.id !== link.user_id;
+    const p = linkProject(link);
+    const canSave = !!viewer && rolesWith('sounds').includes(viewer.role) && viewer.id !== link.user_id && viewer.id !== p.user_id
+      && !get('SELECT 1 FROM sound_collabs WHERE project_id = ? AND user_id = ?', p.id, viewer.id);
     return { canSave, saved: canSave && !!get('SELECT 1 FROM sound_saves WHERE user_id = ? AND link_id = ?', viewer.id, link.id) };
   }
 
   function openLink(req) {
     const link = get(`SELECT l.*, u.name AS owner_name, u.email AS owner_email, u.avatar AS owner_avatar FROM sound_links l JOIN users u ON u.id = l.user_id
-      WHERE l.token = ? AND u.role IN (${rolesWith('sounds').map(() => '?').join(', ')})`, str(req.params.token, 40), ...rolesWith('sounds'));
+      WHERE l.token = ? AND ${LINK_OPEN} AND u.role IN (${rolesWith('sounds').map(() => '?').join(', ')})`, str(req.params.token, 40), ...rolesWith('sounds'));
     if (!link || (link.expires_at && link.expires_at < now())) throw new HttpError(404, "Ce lien d'écoute n'existe pas ou n'est plus valable.");
     if (link.require_account && !optionalUser(req)) {
       throw Object.assign(new HttpError(401, 'Connecte-toi à ton compte ONIRIQUE pour écouter ce lien.'), { data: { account: true } });
@@ -801,7 +846,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
 
   app.post('/api/sounds/share/:token/save', ...me, (req, res) => {
     const link = openLink(req);
-    if (link.user_id === req.user.id) throw new HttpError(400, "C'est ton propre projet : il est déjà dans Mes sons.");
+    if (!saveState(req, link).canSave) throw new HttpError(400, "Ce projet est déjà dans Mes sons : c'est le tien, ou tu y collabores.");
     run('INSERT OR IGNORE INTO sound_saves (user_id, link_id, pass, created_at) VALUES (?, ?, ?, ?)',
       req.user.id, link.id, link.password_hash ? passFor(link) : null, now());
     res.status(201).json({ saved: true });
@@ -814,15 +859,14 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   app.post('/api/sounds/share/:token', (req, res) => {
     rateLimit(`sounds-share:${req.ip}`, 300);
     const link = openLink(req);
-    const p = get('SELECT * FROM sound_projects WHERE id = ?', link.project_id
-      || get('SELECT project_id FROM sound_tracks WHERE id = ?', link.track_id).project_id);
+    const p = linkProject(link);
     const tracks = linkTracks(link);
     const comments = all(`SELECT * FROM sound_comments WHERE link_id = ? ORDER BY at`, link.id);
     res.set('Cache-Control', 'no-store');
     res.json({
       pass: link.password_hash ? passFor(link) : null,
       ...saveState(req, link),
-      owner: p.artist || link.owner_name || 'ONIRIQUE', ownerAvatar: media(link.owner_avatar), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover), background: media(p.background), coverBy: p.cover_by, releaseDate: p.release_date,
+      owner: p.artist || p.author_name || 'ONIRIQUE', ownerAvatar: media(p.author_avatar), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover), background: media(p.background), coverBy: p.cover_by, releaseDate: p.release_date,
       download: !!link.download,
       tracks: tracks.map((t) => ({
         id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t),

@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=993a2aea"></script>
+<script src="assets/i18n.js?v=b74e34bc"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -24,9 +24,9 @@
 .disk-head b { font: 800 18px/1.2 var(--f-display); }
 .disk-head small { color: var(--haze); font-size: 13px; }
 .disk-bar { height: 12px; margin: 12px 0 10px; border-radius: 999px; background: rgba(0,0,0,.45); border: 1px solid var(--line); overflow: hidden; }
-.disk-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #8c0614, #e23444); transition: width .4s; }
+.disk-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #8c0614, #E5384A); transition: width .4s; }
 .disk.warn .disk-bar i { background: linear-gradient(90deg, #b5651d, #f0a050); }
-.disk.full .disk-bar i { background: linear-gradient(90deg, #e23444, #ff5a68); box-shadow: 0 0 12px rgba(255,90,104,.7); }
+.disk.full .disk-bar i { background: linear-gradient(90deg, #E5384A, #ff5a68); box-shadow: 0 0 12px rgba(255,90,104,.7); }
 .disk .alert { margin: 8px 0 0; font-size: 13px; color: #f0a050; }
 .disk.full .alert { color: #ff7a85; }
 .bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 30px 0 12px; }
@@ -41,10 +41,10 @@ td.actions button, td.actions select { margin: 2px 0 2px 6px; }
 select.act { appearance: none; -webkit-appearance: none; padding: 7px 30px 7px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--mist); font: 600 13px/1 var(--f-body); cursor: pointer;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23ff6b78' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") right 12px center / 10px no-repeat; }
 select.act:hover, select.act:focus-visible { border-color: var(--ember); outline: none; }
-select.act:focus-visible { box-shadow: 0 0 0 3px rgba(226,52,68,.3); }
+select.act:focus-visible { box-shadow: 0 0 0 3px rgba(229,56,74,.3); }
 select.act option { background: var(--deep); color: var(--mist); }
 .pill { display: inline-block; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line); font: 500 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--haze); white-space: nowrap; }
-.pill.on { color: var(--bone); border-color: rgba(226,52,68,.7); background: rgba(226,52,68,.18); }
+.pill.on { color: var(--bone); border-color: rgba(229,56,74,.7); background: rgba(229,56,74,.18); }
 .sub { color: var(--haze); font-size: 13px; }
 /* Abonnements : nom et prix se changent dans le tableau */
 #plans input:not([type="checkbox"]) { width: 100%; min-width: 90px; height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.4); color: var(--mist); font: 500 14px var(--f-body); }
@@ -81,8 +81,8 @@ td .thumb { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; ve
 .product input[type="text"], .product textarea { width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.4); color: var(--mist); font: 500 14px var(--f-body); }
 .product textarea { min-height: 42px; resize: vertical; }
 .product input[type="file"] { font: 500 13px var(--f-body); color: var(--haze); max-width: 100%; }
-.product input[type="file"]::file-selector-button { margin-right: 12px; padding: 9px 16px; border-radius: 999px; border: 1px solid rgba(226,52,68,.6); background: rgba(226,52,68,.14); color: var(--mist); font: 600 13px/1 var(--f-body); cursor: pointer; }
-.product input[type="file"]::file-selector-button:hover { background: rgba(226,52,68,.3); border-color: var(--ember); }
+.product input[type="file"]::file-selector-button { margin-right: 12px; padding: 9px 16px; border-radius: 999px; border: 1px solid rgba(229,56,74,.6); background: rgba(229,56,74,.14); color: var(--mist); font: 600 13px/1 var(--f-body); cursor: pointer; }
+.product input[type="file"]::file-selector-button:hover { background: rgba(229,56,74,.3); border-color: var(--ember); }
 button.act[type="submit"] { background: var(--mist); color: var(--night); border-color: transparent; padding: 10px 18px; }
 .product .row { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 progress { width: 180px; height: 8px; accent-color: var(--ember); }
@@ -114,7 +114,7 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
 .box .checks { display: flex; flex-wrap: wrap; gap: 8px 18px; }
 .code { font: 700 14px var(--f-mono); letter-spacing: .06em; color: var(--bone); }
 .composer { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
-.composer iframe { width: 100%; height: 760px; border: 1px solid var(--line); border-radius: 14px; background: #0d0809; position: sticky; top: 14px; }
+.composer iframe { width: 100%; height: 760px; border: 1px solid var(--line); border-radius: 14px; background: #09080A; position: sticky; top: 14px; }
 .meter { height: 6px; border-radius: 999px; background: rgba(255,255,255,.07); overflow: hidden; min-width: 120px; margin-top: 6px; }
 .meter i { display: block; height: 100%; background: var(--ember); }
 @media (max-width: 900px) { .composer { grid-template-columns: minmax(0, 1fr); } .composer iframe { position: static; height: 620px; } }
@@ -122,7 +122,7 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
 .mail { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 14px; margin-top: 14px; }
 .mail-list { border: 1px solid var(--line); border-radius: 14px; background: var(--deep); max-height: 720px; overflow-y: auto; }
 .mail-item { display: block; width: 100%; padding: 12px 14px; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--haze); text-align: left; cursor: pointer; font: 400 13px/1.35 var(--f-body); }
-.mail-item:hover, .mail-item[aria-current="true"] { background: rgba(226,52,68,.12); }
+.mail-item:hover, .mail-item[aria-current="true"] { background: rgba(229,56,74,.12); }
 .mail-item.unread { color: var(--mist); }
 .mail-item.unread strong::before { content: "\25CF  "; color: var(--ember); }
 .mail-item strong { display: block; color: var(--mist); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -139,13 +139,13 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
 .tabs { position: sticky; top: 0; z-index: 30; display: flex; gap: 4px; overflow-x: auto; margin: 26px -4px 8px; padding: 10px 4px; background: linear-gradient(180deg, var(--night) 75%, transparent); scrollbar-width: none; }
 .tabs::-webkit-scrollbar { display: none; }
 .tabs button { flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 11px 16px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.02); color: var(--haze); font: 600 12px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; transition: color .2s, border-color .2s, background .2s; }
-.tabs button:hover { color: var(--mist); border-color: rgba(226,52,68,.5); }
-.tabs button[aria-selected="true"] { color: var(--bone); border-color: var(--ember); background: rgba(226,52,68,.16); }
+.tabs button:hover { color: var(--mist); border-color: rgba(229,56,74,.5); }
+.tabs button[aria-selected="true"] { color: var(--bone); border-color: var(--ember); background: rgba(229,56,74,.16); }
 .tabs button b { min-width: 18px; padding: 3px 6px; border-radius: 999px; background: var(--ember); color: #fff; font: 700 10px/1 var(--f-mono); letter-spacing: 0; }
 .tab > .bar:first-child, .tab > .tiles:first-child { margin-top: 10px; }
 /* Comptes : la photo à côté de l'adresse ; la suppression demande de taper SUPPRIME */
 .who { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.who .face { flex: none; width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); background: var(--deep-2, #2a0a0e); display: grid; place-items: center; font: 800 14px/1 var(--f-display); color: var(--bone); }
+.who .face { flex: none; width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); background: var(--deep-2, #1C1517); display: grid; place-items: center; font: 800 14px/1 var(--f-display); color: var(--bone); }
 .who > div { min-width: 0; overflow-wrap: anywhere; }
 button.act.danger { color: #ff8f99; border-color: rgba(255,122,133,.35); }
 button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1); }
@@ -164,7 +164,7 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
 .offer .row { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chips label { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 999px; font: 500 13px/1 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--mist); cursor: pointer; }
-.chips label:has(input:checked) { border-color: var(--ember); background: rgba(226,52,68,.14); }
+.chips label:has(input:checked) { border-color: var(--ember); background: rgba(229,56,74,.14); }
 .chips input { width: 15px; height: 15px; accent-color: var(--ember); }
 .offer .tag { justify-self: start; }
 /* Annonce et maintenance */
@@ -173,7 +173,7 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
 .box .switch input[type="checkbox"]::after { content: ""; position: absolute; left: 3px; top: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--haze); transition: transform .2s, background .2s; }
 .box .switch input[type="checkbox"]:checked { background: var(--ember); border-color: var(--ember); }
 .box .switch input[type="checkbox"]:checked::after { transform: translateX(22px); background: #fff; }
-.box .switch input[type="checkbox"]:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(226,52,68,.35); }
+.box .switch input[type="checkbox"]:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(229,56,74,.35); }
 .live-preview { margin-top: 4px; padding: 11px 16px; border-radius: 12px; font: 600 14px/1.4 var(--f-body); text-align: center; }
 .maint-state { display: inline-flex; align-items: center; gap: 8px; font: 600 12px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; }
 .maint-state i { width: 9px; height: 9px; border-radius: 50%; background: #5bd38c; box-shadow: 0 0 10px #5bd38c; }
@@ -840,7 +840,7 @@ async function loadPacks() {
 async function loadLive() {
   const { announcement, maintenance } = await api("GET", "/admin/live");
   const a = announcement || {};
-  const TONES = { ember: ["Rouge ONIRIQUE", "linear-gradient(90deg,#8c0614,#e23444)", "#fff"], gold: ["Or (promo)", "linear-gradient(90deg,#b8862b,#f2c46d)", "#1a0d02"], calm: ["Sobre", "#1f0c0f", "#f6eeee"] };
+  const TONES = { ember: ["Rouge ONIRIQUE", "linear-gradient(90deg,#8c0614,#E5384A)", "#fff"], gold: ["Or (promo)", "linear-gradient(90deg,#b8862b,#f2c46d)", "#1a0d02"], calm: ["Sobre", "#1f0c0f", "#F2ECEC"] };
   const on = el("input", { type: "checkbox", checked: !!a.active });
   const text = el("input", { type: "text", maxLength: 220, value: a.text || "", placeholder: "PROMO -20 % SUR TOUTE LA BOUTIQUE" });
   const link = el("input", { type: "text", maxLength: 300, value: a.link || "", placeholder: "boutique.html (facultatif)" });
@@ -1333,7 +1333,7 @@ async function loadMailings(first = false) {
       productIds: picks.filter((p) => p.box.checked).map((p) => p.id), audience: f.audience.value, service: f.service.checked });
     const preview = async () => {
       if (!f.subject.value.trim() || (!f.text.value.trim() && !picks.some((p) => p.box.checked))) {
-        $("mail-preview").srcdoc = `<body style="margin:0;display:grid;place-items:center;height:100vh;background:#0d0809;color:#a88f92;font:15px system-ui">L'aperçu s'affiche dès qu'il y a un objet et un message.</body>`;
+        $("mail-preview").srcdoc = `<body style="margin:0;display:grid;place-items:center;height:100vh;background:#09080A;color:#978C8F;font:15px system-ui">L'aperçu s'affiche dès qu'il y a un objet et un message.</body>`;
         return;
       }
       try { $("mail-preview").srcdoc = (await api("POST", "/admin/mailings/preview", content())).html; $("mail-error").textContent = ""; } catch (error) { fail(error); }

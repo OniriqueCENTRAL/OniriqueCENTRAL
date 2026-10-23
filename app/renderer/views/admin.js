@@ -112,7 +112,7 @@ function productForm(product) {
     tagline: h('input', { value: product?.tagline ?? '', maxLength: 140 }),
     description: h('textarea', { value: product?.description ?? '', maxLength: 4000, rows: 6 }),
     price: priceInput(product?.priceCents ?? 0),
-    accent: h('input', { type: 'color', value: product?.accent ?? '#e23444' }),
+    accent: h('input', { type: 'color', value: product?.accent ?? '#E5384A' }),
     published: h('input', { type: 'checkbox', checked: product?.published ?? true }),
     creator: h('select', null, Object.entries(CREATORS).map(([id, label]) => h('option', { value: id }, label))),
   };
