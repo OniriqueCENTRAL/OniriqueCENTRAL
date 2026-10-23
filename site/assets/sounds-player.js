@@ -188,6 +188,39 @@ dialog[open]::backdrop { animation: op-fade .22s ease-out; }
 .op-full-bar > button.op-settings { gap: 10px; padding: 0 22px 0 18px; color: var(--mist, #f6eeee); font: 500 17px var(--f-body); cursor: pointer; }
 .op-full-bar .op-btn.on, .op-full-bar > button.on { color: var(--op-accent, var(--ember)); }
 html.op-full-open, html.op-full-open body { overflow: hidden; }
+/* Les paroles en grand, sur toute la page : la pochette floutée en fond, teintée de sa couleur, qui respire avec le son
+   (--op-level, de 0 à 1) ; la ligne chantée s'allume, les suivantes attendent en retrait. La barre du lecteur reste dessus. */
+.op-stage { position: fixed; inset: 0; z-index: 38; display: flex; flex-direction: column; overflow: hidden; isolation: isolate;
+  color: var(--mist, #f6eeee); background: #0d0809; animation: op-stage-in .45s cubic-bezier(.2, .8, .2, 1) both; }
+.op-stage[hidden] { display: none; }
+.op-stage-bg { position: absolute; inset: -90px; z-index: -1; background: center / cover no-repeat;
+  filter: blur(80px) saturate(1.5) brightness(calc(.38 + var(--op-level, 0) * .14)); transform: scale(calc(1.05 + var(--op-level, 0) * .05)); transition: transform .14s linear, filter .14s linear; }
+.op-stage-bg::after { content: ""; position: absolute; inset: 0;
+  background: radial-gradient(80% 60% at 18% 12%, color-mix(in srgb, var(--op-accent, #e23444) 38%, transparent), transparent 70%),
+    radial-gradient(70% 55% at 90% 100%, color-mix(in srgb, var(--op-accent, #e23444) 22%, transparent), transparent 70%),
+    linear-gradient(180deg, rgba(13,8,9,.25), rgba(13,8,9,.78)); }
+.op-stage-top { flex: none; display: flex; align-items: center; gap: 14px; padding: calc(16px + env(safe-area-inset-top)) clamp(16px, 4vw, 48px) 8px; }
+.op-stage-top img { width: 52px; height: 52px; flex: none; border-radius: 12px; object-fit: cover; box-shadow: 0 10px 30px -10px rgba(0,0,0,.9), 0 0 36px -14px var(--op-accent, #e23444); }
+.op-stage-top > div { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.op-stage-top small { font: 500 11px/1 var(--f-mono, monospace); letter-spacing: .18em; text-transform: uppercase; color: var(--op-accent, #e23444); }
+.op-stage-top b { font: 700 17px/1.25 var(--f-display, sans-serif); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op-stage-top span { font-size: 13px; color: rgba(246,238,238,.62); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op-stage-top .op-btn { width: 44px; height: 44px; border-radius: 14px; background: rgba(255,236,238,.08); }
+.op-stage-lyrics { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; overscroll-behavior: contain; padding: 12vh clamp(20px, 9vw, 140px) 46vh;
+  -webkit-mask-image: linear-gradient(transparent, #000 10%, #000 78%, transparent); mask-image: linear-gradient(transparent, #000 10%, #000 78%, transparent); }
+.op-stage-lyrics::-webkit-scrollbar { display: none; }
+.op-stage-lyrics p { max-width: 1000px; margin: 0 auto; padding: .2em 0; font: 700 clamp(26px, 3.9vw, 50px)/1.2 var(--f-display, sans-serif); letter-spacing: -.015em;
+  color: rgba(255,236,238,.92); overflow-wrap: anywhere; transform-origin: left center; animation: op-lyrics-in .6s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i, 0) * 45ms + 120ms); }
+.op-stage-lyrics p.gap { min-height: .7em; }
+.op-stage-lyrics p.none { font-size: clamp(18px, 2.2vw, 24px); color: rgba(246,238,238,.6); }
+.op-stage-lyrics.synced p { color: rgba(255,236,238,.26); cursor: pointer; transition: color .4s, transform .4s cubic-bezier(.2, .8, .2, 1), text-shadow .2s, opacity .4s; }
+.op-stage-lyrics.synced p:hover { color: rgba(255,236,238,.6); }
+.op-stage-lyrics.synced p.past { color: rgba(255,236,238,.5); }
+.op-stage-lyrics.synced p.on { color: #fff; transform: scale(1.03);
+  text-shadow: 0 0 calc(14px + var(--op-level, 0) * 34px) color-mix(in srgb, var(--op-accent, #e23444) 75%, transparent); }
+html.op-stage-open, html.op-stage-open body { overflow: hidden; }
+@keyframes op-stage-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .op-stage, .op-stage-lyrics p { animation: none; } .op-stage-bg { transform: none; transition: none; } .op-stage-lyrics.synced p.on { transform: none; } }
 html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: calc(92px + env(safe-area-inset-bottom)); max-height: 58vh; }
 @media (max-height: 680px) { .op-card { gap: 12px; padding: 16px 14px; } .op-full { gap: 10px; } .op-scrub { height: 48px; } }
 `;
@@ -219,8 +252,10 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     const queueBtn = btn("queue", "File d'attente"), volBtn = btn("volume", "Couper le son", "op-hide-sm");
     const vol = el("input", { className: "op-vol op-hide-sm", type: "range", min: 0, max: 1, step: 0.01, value: volume, ariaLabel: "Volume" });
     const more = btn("expand", "Détails : commentaires, vitesse, boucle");
+    const stageBtn = btn("lyrics", "Paroles en grand", "op-hide-sm");
+    stageBtn.hidden = true;
     const pill = el("div", { className: "op-pill", hidden: true, role: "region", ariaLabel: "Lecteur" },
-      cover, meta, mini, clock, prev, play, next, shuffleBtn, repeatBtn, queueBtn, volBtn, vol, more);
+      cover, meta, mini, clock, prev, play, next, shuffleBtn, repeatBtn, stageBtn, queueBtn, volBtn, vol, more);
 
     // Le panneau déplié : grande forme d'onde, commentaires, vitesse, boucle, téléchargement.
     const sheetTitle = el("b");
@@ -270,7 +305,14 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
       el("div", { className: "op-card" }, el("div", { className: "op-card-title" }, fullTitle, fullSub), disc, fullLyrics, scrub, fullClock,
         el("div", { className: "op-full-controls" }, onShare ? fullShare : el("span", { style: "width:52px" }), fullPrev, fullPlay, fullNext, fullRepeat)),
       el("div", { className: "op-full-bar" }, el("div", {}, fullQueue, fullComments, fullLyricsBtn), fullSettings));
-    document.body.append(full, sheet, queue, pill);
+    // Les paroles en grand (ordinateur) : toute la page, la barre du lecteur par-dessus.
+    const stageBg = el("div", { className: "op-stage-bg" }), stageCover = el("img", { alt: "" });
+    const stageTitle = el("b"), stageSub = el("span"), stageMode = el("small");
+    const stageClose = btn("close", "Fermer les paroles");
+    const stageLyrics = el("div", { className: "op-stage-lyrics" });
+    const stage = el("div", { className: "op-stage", hidden: true, role: "dialog", ariaLabel: "Paroles" }, stageBg,
+      el("div", { className: "op-stage-top" }, stageCover, el("div", {}, stageMode, stageTitle, stageSub), stageClose), stageLyrics);
+    document.body.append(stage, full, sheet, queue, pill);
 
     const item = () => list[index] || null;
     const duration = () => (Number.isFinite(audio.duration) && audio.duration) || (item() && item().duration) || 0;
@@ -348,36 +390,47 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
       const now = time(audio.currentTime) + " / " + time(duration());
       if (clock.textContent !== now) clock.textContent = fullClock.textContent = now;
       if (loop && loop.b != null && audio.currentTime >= loop.b) audio.currentTime = loop.a;
-      draw(); syncLyrics();
+      draw(); syncLyrics(); pulse();
     }
     // Les paroles du titre en cours, redessinées quand elles changent (un titre suivant, ou des paroles enregistrées).
-    let lyricsOn = false, lyricsOf = null, lyricsLine = -1;
+    // Les deux vues des paroles (plein écran du téléphone, grande scène de l'ordinateur) : chacune suit la ligne chantée
+    // et la garde à sa hauteur (au milieu sur téléphone, au tiers sur la scène).
+    let lyricsOn = false, lyricsOf = null;
+    const lyricBoxes = [[fullLyrics, 0.5], [stageLyrics, 0.36]];
     function syncLyrics() {
       const t = item(), text = (t && t.lyrics) || "";
       if (text !== lyricsOf) {
-        lyricsOf = text; lyricsLine = -1;
-        const lines = parseLyrics(text);
-        fullLyrics.classList.toggle("synced", lines.some((l) => l.at !== null));
-        fullLyrics.replaceChildren(...(text ? lines : []).map((l, i) => {
-          const row = el("p", { className: l.text.trim() ? "" : "gap", textContent: l.text.trim() ? l.text : l.at === null ? "" : "♪" });
-          row.dataset.at = l.at ?? "";
-          row.style.setProperty("--i", Math.min(i, 12)); // les premières lignes arrivent l'une après l'autre
-          if (l.at !== null) row.onclick = () => { audio.currentTime = l.at; audio.play().catch(() => {}); };
-          return row;
-        }));
-        fullLyrics.scrollTop = 0;
-        fullLyricsBtn.hidden = !text;
+        lyricsOf = text;
+        const lines = parseLyrics(text), synced = lines.some((l) => l.at !== null);
+        for (const [box] of lyricBoxes) {
+          box.dataset.line = -1;
+          box.classList.toggle("synced", synced);
+          box.replaceChildren(...(text ? lines : []).map((l, i) => {
+            const row = el("p", { className: l.text.trim() ? "" : "gap", textContent: l.text.trim() ? l.text : l.at === null ? "" : "♪" });
+            row.dataset.at = l.at ?? "";
+            row.style.setProperty("--i", Math.min(i, 12)); // les premières lignes arrivent l'une après l'autre
+            if (l.at !== null) row.onclick = () => { audio.currentTime = l.at; audio.play().catch(() => {}); };
+            return row;
+          }));
+          box.scrollTop = 0;
+        }
+        if (!text && t) stageLyrics.append(el("p", { className: "none", textContent: "Pas encore de paroles pour « " + t.title + " »." }));
+        stageMode.textContent = !text ? "Paroles" : synced ? "Paroles synchronisées" : "Paroles";
+        fullLyricsBtn.hidden = stageBtn.hidden = !text;
         showLyrics(lyricsOn && !!text);
       }
-      if (fullLyrics.hidden || !fullLyrics.classList.contains("synced")) return;
-      const now = audio.currentTime + 0.15, rows = fullLyrics.children;
-      let current = -1;
-      for (let i = 0; i < rows.length; i++) if (rows[i].dataset.at !== "" && Number(rows[i].dataset.at) <= now) current = i;
-      if (current === lyricsLine) return;
-      lyricsLine = current;
-      for (let i = 0; i < rows.length; i++) { rows[i].classList.toggle("on", i === current); rows[i].classList.toggle("past", i < current); }
-      const on = rows[current];
-      if (on) fullLyrics.scrollTo({ top: on.offsetTop - fullLyrics.offsetTop - fullLyrics.clientHeight / 2 + on.offsetHeight / 2, behavior: "smooth" });
+      const now = audio.currentTime + 0.15;
+      for (const [box, at] of lyricBoxes) {
+        if (!box.classList.contains("synced") || box.hidden || (box === stageLyrics && stage.hidden)) continue;
+        const rows = box.children;
+        let current = -1;
+        for (let i = 0; i < rows.length; i++) if (rows[i].dataset.at !== "" && Number(rows[i].dataset.at) <= now) current = i;
+        if (current === Number(box.dataset.line)) continue;
+        box.dataset.line = current;
+        for (let i = 0; i < rows.length; i++) { rows[i].classList.toggle("on", i === current); rows[i].classList.toggle("past", i < current); }
+        const on = rows[current];
+        if (on) box.scrollTo({ top: on.offsetTop - box.offsetTop - box.clientHeight * at + on.offsetHeight / 2, behavior: "smooth" });
+      }
     }
     function showLyrics(on) {
       // La pochette revient en douceur quand on referme les paroles.
@@ -385,7 +438,47 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
       fullLyrics.hidden = !on;
       full.classList.toggle("lyrics-on", on);
       fullLyricsBtn.classList.toggle("on", on);
-      lyricsLine = -1;
+      fullLyrics.dataset.line = -1;
+    }
+    // Le fond de la scène respire avec le son : l'énergie des graves, lissée, de 0 à 1. Le son passe par un analyseur
+    // créé au premier affichage (il faut un geste de l'auditeur) ; s'il ne peut pas l'être, la scène reste immobile.
+    let analyser = null, bins = null, level = 0;
+    function listen() {
+      if (analyser !== null) return;
+      try {
+        const context = new (window.AudioContext || window.webkitAudioContext)();
+        const source = context.createMediaElementSource(audio);
+        analyser = context.createAnalyser();
+        analyser.fftSize = 256; analyser.smoothingTimeConstant = 0.7;
+        source.connect(analyser); analyser.connect(context.destination);
+        bins = new Uint8Array(analyser.frequencyBinCount);
+        audio.addEventListener("play", () => context.resume());
+        context.resume();
+      } catch { analyser = false; }
+    }
+    function pulse() {
+      if (stage.hidden) return;
+      let v = 0;
+      if (analyser && !audio.paused) {
+        analyser.getByteFrequencyData(bins);
+        for (let i = 1; i < 9; i++) v += bins[i];
+        v = Math.max(0, (v / 8 / 255 - 0.25) / 0.55);
+      }
+      level = audio.paused ? 0 : level + (Math.min(1, v) - level) * (v > level ? 0.45 : 0.12);
+      stage.style.setProperty("--op-level", level.toFixed(3));
+    }
+    function openStage() {
+      if (!item()) return;
+      stage.hidden = false; sheet.hidden = queue.hidden = true;
+      more.classList.remove("on"); queueBtn.classList.remove("on"); stageBtn.classList.add("on");
+      document.documentElement.classList.add("op-stage-open");
+      stageLyrics.dataset.line = -1;
+      listen(); tick();
+      if (audio.paused) pulse();
+    }
+    function closeStage() {
+      stage.hidden = true; stageBtn.classList.remove("on");
+      document.documentElement.classList.remove("op-stage-open");
     }
     // Pendant la lecture, la forme d'onde suit l'image (timeupdate ne tombe que ~4 fois par seconde).
     let frame = 0;
@@ -397,8 +490,11 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
       // Le titre, avec son « feat. » en badge s'il y en a un.
       for (const node of [title, sheetTitle, fullTitle]) node.replaceChildren(t.title, t.feat ? el("span", { className: "op-feat", textContent: "feat. " + t.feat }) : "");
       sub.textContent = fullSub.textContent = t.subtitle || "";
-      for (const img of [cover, disc]) if (t.cover) img.src = t.cover + (img === cover ? "?w=160" : "?w=960"); else img.removeAttribute("src");
-      fullBg.style.backgroundImage = t.cover ? `url("${t.cover}?w=960")` : "";
+      for (const img of [cover, disc, stageCover]) if (t.cover) img.src = t.cover + (img === disc ? "?w=960" : "?w=160"); else img.removeAttribute("src");
+      stageCover.hidden = !t.cover;
+      stageTitle.textContent = t.title + (t.feat ? " (feat. " + t.feat + ")" : "");
+      stageSub.textContent = t.subtitle || "";
+      fullBg.style.backgroundImage = stageBg.style.backgroundImage = t.cover ? `url("${t.cover}?w=960")` : "";
       download.hidden = !t.downloadUrl;
       if (t.downloadUrl) download.href = t.downloadUrl;
       listComments(); listQueue(); tick();
@@ -429,7 +525,7 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
       pill.classList.toggle("playing", on); full.classList.toggle("playing", on);
     };
     audio.addEventListener("play", () => { if (!frame) frame = requestAnimationFrame(animate); playing(true); });
-    audio.addEventListener("pause", () => playing(false));
+    audio.addEventListener("pause", () => { playing(false); pulse(); });
     audio.addEventListener("ended", () => advance(false));
     let counted = null;
     audio.addEventListener("playing", () => { const t = item(); if (onPlay && t && counted !== t.key) { counted = t.key; onPlay(t); } });
@@ -496,6 +592,10 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     fullComments.onclick = () => panel("comments");
     fullSettings.onclick = () => panel("settings");
     fullLyricsBtn.onclick = () => { lyricsOn = fullLyrics.hidden; showLyrics(lyricsOn); syncLyrics(); };
+    stageBtn.onclick = () => (stage.hidden ? openStage() : closeStage());
+    stageClose.onclick = closeStage;
+    // Sur téléphone, les paroles s'ouvrent dans le plein écran : la scène se referme si la fenêtre devient étroite.
+    addEventListener("resize", () => { if (!stage.hidden && phone()) closeStage(); });
     addEventListener("resize", () => { if (!full.hidden && !phone()) closeFull(); });
     // Glisser vers le bas (ailleurs que sur la forme d'onde ou un bouton) referme le plein écran.
     let swipe = null;
@@ -565,6 +665,7 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     addEventListener("resize", draw);
     document.addEventListener("keydown", (event) => {
       if (event.code === "Space" && item() && !/^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(event.target.tagName) && !document.querySelector("dialog[open]")) { event.preventDefault(); play.onclick(); }
+      if (event.key === "Escape" && !stage.hidden && !document.querySelector("dialog[open]")) closeStage();
     });
     if ("mediaSession" in navigator) {
       navigator.mediaSession.setActionHandler("previoustrack", () => prev.onclick());
@@ -586,7 +687,7 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
       openDetails() { if (phone()) { openFull(); panel("comments"); } else if (sheet.hidden) toggleSheet(); },
       setAccent(color) {
         accent = color || "#E23444";
-        for (const node of [pill, sheet, queue]) node.style.setProperty("--op-accent", accent);
+        for (const node of [pill, sheet, queue, stage]) node.style.setProperty("--op-accent", accent);
         draw();
       },
       redraw() { if (item()) { listComments(); draw(); } },
