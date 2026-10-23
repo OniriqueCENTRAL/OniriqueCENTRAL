@@ -702,6 +702,20 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       if (!title) throw new HttpError(400, 'Donne un nom au projet.');
       run('UPDATE sound_projects SET title = ? WHERE id = ?', title, p.id);
     }
+    // Un projet devient un pack de prods (ou redevient un projet) : son BPM et sa clé, quand il en manque, sont lus dans le
+    // nom du fichier de chaque son ; la page détecte ensuite sur le son ceux que le nom ne donne pas.
+    if (req.body.kind !== undefined) {
+      const kind = req.body.kind === 'pack' ? 'pack' : '';
+      run('UPDATE sound_projects SET kind = ? WHERE id = ?', kind, ownProject(req, p.id).id);
+      if (kind === 'pack') {
+        for (const t of all('SELECT t.id, t.title, t.bpm, t.music_key, v.filename FROM sound_tracks t JOIN sound_versions v ON v.id = t.current_id WHERE t.project_id = ?', p.id)) {
+          const prod = prodFromFilename(t.filename);
+          // Un titre jamais renommé (le nom du fichier) perd son BPM et sa clé, affichés à côté, comme à l'envoi dans un pack.
+          const title = t.title === t.filename.replace(/\.[a-z0-9]{2,5}$/i, '') ? prod.title || t.title : t.title;
+          run('UPDATE sound_tracks SET title = ?, bpm = ?, music_key = ? WHERE id = ?', title, t.bpm || prod.bpm, t.music_key || prod.key, t.id);
+        }
+      }
+    }
     if (req.body.mail !== undefined) {
       if (ownProject(req, p.id).kind !== 'pack') throw new HttpError(400, "Seul un pack de prods a un mail.");
       run('UPDATE sound_projects SET mail = ? WHERE id = ?', JSON.stringify(mailDraft(req.body.mail)), p.id);

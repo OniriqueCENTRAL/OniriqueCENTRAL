@@ -1054,6 +1054,9 @@ function projectMenu(anchor, p) {
     { label: "Partager", icon: "link", onclick: () => openShare("project", p.id) },
     p.mine && { label: "Collaborateurs…", icon: "plus", onclick: () => openCollab(p.id) },
     p.mine && { label: "Déplacer vers…", icon: "chevron", onclick: () => moveMenu(anchor, p.folderId, (folderId) => api("PATCH", "/me/sounds/projects/" + p.id, { folderId })) },
+    p.mine && (p.kind === "pack"
+      ? { label: "Repasser en projet classique", icon: "repeat", onclick: () => api("PATCH", "/me/sounds/projects/" + p.id, { kind: "" }).then(refresh, fail) }
+      : { label: "Passer en pack de prods", icon: "repeat", onclick: () => makePack(p).catch(fail) }),
     "-",
     { label: "Renommer", icon: "more", onclick: async () => {
       const title = await ask("Nom du projet", p.title);
@@ -1067,6 +1070,26 @@ function projectMenu(anchor, p) {
         confirm("Quitter « " + p.title + " » ? Il disparaîtra de ta page ; " + p.owner.name + " pourra t'inviter à nouveau.")
         && api("DELETE", "/me/sounds/projects/" + p.id + "/collabs/" + data.owner.id).then(() => { location.hash = ""; return refresh(); }).catch(fail) },
   ]);
+}
+
+// Un projet devient un pack de prods : le serveur lit le BPM et la clé dans le nom de chaque fichier, puis ceux qui
+// manquent encore sont détectés sur le son, comme à l'envoi d'une prod ; les badges se remplissent au fil de l'analyse.
+async function makePack(p) {
+  await api("PATCH", "/me/sounds/projects/" + p.id, { kind: "pack" });
+  await refresh();
+  const missing = project(p.id).tracks.filter((t) => !t.bpm || !t.key);
+  for (const [i, t] of missing.entries()) {
+    $("error").textContent = "Analyse du BPM et de la clé : " + (i + 1) + " sur " + missing.length + "…";
+    try {
+      const v = live(t), blob = await (await fetch(v.url)).blob();
+      const found = await detectProd(new File([blob], v.filename || t.title, { type: blob.type }));
+      const body = {};
+      if (!t.bpm && found.tempo && found.tempo.bpm >= 40 && found.tempo.bpm <= 300) body.bpm = Math.round(found.tempo.bpm);
+      if (!t.key && found.key) body.key = KEY_NAMES[found.key.tonic] + (found.key.mode === "major" ? " maj" : " min");
+      if (Object.keys(body).length) { await api("PATCH", "/me/sounds/tracks/" + t.id, body); await refresh(); }
+    } catch {}
+  }
+  $("error").textContent = "";
 }
 
 // ——— Collaboration ———

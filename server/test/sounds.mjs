@@ -395,6 +395,22 @@ try {
     assert.ok(html.includes('150 BPM') && !html.includes('<script>'));
   });
 
+  await step('un projet passe en pack de prods : BPM et clé lus dans les noms de fichiers ; et retour', async () => {
+    const pid = (await call('POST', '/api/me/sounds/projects', { token: member.token, body: { title: 'Instrus' }, expect: 201 })).id;
+    await call('POST', `/api/me/sounds/projects/${pid}/tracks?filename=Nightfall_140bpm_C%23min.wav`, { token: member.token, raw: wav(), expect: 201 });
+    const kept = (await call('POST', `/api/me/sounds/projects/${pid}/tracks?filename=Sans%20infos.wav`, { token: member.token, raw: wav(), expect: 201 })).id;
+    await call('PATCH', `/api/me/sounds/tracks/${kept}`, { token: member.token, body: { bpm: 90 } });
+    await call('PATCH', `/api/me/sounds/projects/${pid}`, { token: other.token, body: { kind: 'pack' }, expect: 403 });
+    await call('PATCH', `/api/me/sounds/projects/${pid}`, { token: member.token, body: { kind: 'pack' } });
+    let p = (await call('GET', '/api/me/sounds', { token: member.token })).projects.find((x) => x.id === pid);
+    assert.equal(p.kind, 'pack');
+    assert.ok(p.mail);
+    assert.deepEqual(p.tracks.map((t) => [t.title, t.bpm, t.key]), [['Nightfall', 140, 'C# min'], ['Sans infos', 90, '']]);
+    await call('PATCH', `/api/me/sounds/projects/${pid}`, { token: member.token, body: { kind: '' } });
+    p = (await call('GET', '/api/me/sounds', { token: member.token })).projects.find((x) => x.id === pid);
+    assert.deepEqual([p.kind, p.mail, p.tracks[0].bpm], ['', null, 140]);
+  });
+
   await step('VANISH : un fondateur voit les projets de tous les comptes, en lecture seule', async () => {
     const boss = await account('fondateur-vanish', 'founder');
     const all = await call('GET', '/api/me/sounds?vanish=1', { token: boss.token });
