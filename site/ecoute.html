@@ -209,6 +209,8 @@ const el = (tag, props = {}, ...children) => {
   return node;
 };
 const shareToken = new URLSearchParams(location.search).get("t") || "";
+// Le destinataire d'un mail de pack arrivé par son lien : ses écoutes et téléchargements sont suivis à son nom.
+const mailRecipient = new URLSearchParams(location.search).get("r") || undefined;
 let session = null;
 try { session = sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"); } catch {}
 const PASS = "onirique.ecoute." + shareToken;
@@ -219,7 +221,7 @@ async function api(path, body, method = "POST") {
   const response = await fetch("/api/sounds/share/" + encodeURIComponent(shareToken) + path, {
     method,
     headers: { "Content-Type": "application/json", ...(session ? { Authorization: "Bearer " + session } : {}) },
-    body: JSON.stringify({ pass, ...body }),
+    body: JSON.stringify({ pass, r: mailRecipient, ...body }),
   }).catch(() => { throw new Error("Serveur injoignable. Réessaie dans un instant."); });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw Object.assign(new Error(data.error || "Erreur " + response.status), { status: response.status, account: !!data.account });

@@ -24,7 +24,7 @@ export function mailDraft(b = {}) {
     text: typeof b.text === 'string' ? b.text.replace(/\r\n?/g, '\n').slice(0, 8000) : '',
     image: https(b.image), buttonLabel: str(b.buttonLabel, 40), buttonUrl: https(b.buttonUrl), signature: str(b.signature, 200), footer: str(b.footer, 300),
     trackIds: Array.isArray(b.trackIds) ? [...new Set(b.trackIds.map(Number).filter((n) => Number.isInteger(n) && n > 0))].slice(0, 50) : [],
-    showPrices: b.showPrices !== false, font: FONTS[b.font] ? b.font : 'grotesk', titleFont: FONTS[b.titleFont] ? b.titleFont : 'display', colors,
+    showPrices: b.showPrices !== false, coverColors: b.coverColors !== false, font: FONTS[b.font] ? b.font : 'grotesk', titleFont: FONTS[b.titleFont] ? b.titleFont : 'display', colors,
   };
 }
 
@@ -35,20 +35,24 @@ export function mailList(text) {
   return { valid, invalid: parts.filter((s) => !valid.includes(s)) };
 }
 
-// **gras**, [texte](https://…) et les adresses nues, aux couleurs du mail.
-function rich(text, c) {
+// **gras**, [texte](https://…) et les adresses nues, aux couleurs du mail ; go() réécrit l'adresse d'un lien (suivi).
+function rich(text, c, go = (url) => url) {
   let html = escapeHtml(text);
   html = html.replace(/\*\*(.+?)\*\*/g, `<strong style="color:${c.text}">$1</strong>`);
-  html = html.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, (_m, label, url) => `<a href="${url}" style="color:${c.accent}">${label}</a>`);
-  html = html.replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, (_m, before, url) => `${before}<a href="${url}" style="color:${c.accent};word-break:break-all">${url}</a>`);
+  html = html.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, (_m, label, url) => `<a href="${escapeHtml(go(unescape(url)))}" style="color:${c.accent}">${label}</a>`);
+  html = html.replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, (_m, before, url) => `${before}<a href="${escapeHtml(go(unescape(url)))}" style="color:${c.accent};word-break:break-all">${url}</a>`);
   return html.replace(/\n/g, '<br>');
 }
+const unescape = (html) => html.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
 
-/** Le mail en HTML. pack : { title, artist, cover, listenUrl, tracks: [{ id, title, bpm, key, price, buyUrl }] }. */
+/**
+ * Le mail en HTML. pack : { title, artist, cover, listenUrl, tracks: [{ id, title, bpm, key, price, buyUrl }] }, et pour
+ * un envoi : link (réécrit chaque lien pour le suivi), pixel (image d'ouverture), unsubscribe (lien de désinscription).
+ */
 export function packMailHtml(d, pack) {
-  const c = d.colors, font = FONTS[d.font], display = FONTS[d.titleFont];
+  const c = d.colors, font = FONTS[d.font], display = FONTS[d.titleFont], go = pack.link || ((url) => url);
   const pad = (inner, top = 14) => `<tr><td style="padding:${top}px 36px 0">${inner}</td></tr>`;
-  const button = (label, url, bg, fg, { big = false, border = bg } = {}) => `<a href="${escapeHtml(url)}" style="display:inline-block;padding:${big ? '15px 28px' : '10px 18px'};border:1px solid ${border};border-radius:999px;background:${bg};color:${fg};font:700 ${big ? 15 : 13}px/1 ${font};text-decoration:none">${escapeHtml(label)}</a>`;
+  const button = (label, url, bg, fg, { big = false, border = bg } = {}) => `<a href="${escapeHtml(go(url))}" style="display:inline-block;padding:${big ? '15px 28px' : '10px 18px'};border:1px solid ${border};border-radius:999px;background:${bg};color:${fg};font:700 ${big ? 15 : 13}px/1 ${font};text-decoration:none">${escapeHtml(label)}</a>`;
   const prods = d.trackIds.map((id) => pack.tracks.find((t) => t.id === id)).filter(Boolean).map((t) => {
     const badges = [t.bpm ? `${t.bpm} BPM` : '', t.key].filter(Boolean)
       .map((b) => `<span style="display:inline-block;margin:6px 6px 0 0;padding:3px 9px;border:1px solid ${c.accent};border-radius:999px;font:600 11px/1.4 ${FONTS.mono};letter-spacing:.06em;color:${c.accent}">${escapeHtml(b)}</span>`).join('');
@@ -63,7 +67,7 @@ ${sale ? `<div style="font:800 17px/1 ${display};color:${c.text};padding-bottom:
 </td></tr></table></td></tr>`;
   }).join('');
   const paragraphs = d.text.split(/\n{2,}/).map((s) => s.trim()).filter(Boolean)
-    .map((s) => pad(`<p style="margin:0;font:400 16px/1.65 ${font};color:${c.muted}">${rich(s, c)}</p>`)).join('');
+    .map((s) => pad(`<p style="margin:0;font:400 16px/1.65 ${font};color:${c.muted}">${rich(s, c, go)}</p>`)).join('');
   return `<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(d.subject || pack.title)}</title>
@@ -82,8 +86,10 @@ ${paragraphs}
 ${prods ? pad(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${prods}</table>`, 22) : ''}
 ${d.buttonLabel && d.buttonUrl ? pad(button(d.buttonLabel, d.buttonUrl, c.button, c.buttonText, { big: true }), 22) : ''}
 <tr><td style="padding:30px 36px 32px"><div style="height:1px;background:${c.muted}33;font-size:0;line-height:1px">&nbsp;</div>
-<p style="margin:16px 0 0;font:400 14px/1.6 ${font};color:${c.muted}">${rich(d.signature || d.from || pack.artist, c)}</p></td></tr>
+<p style="margin:16px 0 0;font:400 14px/1.6 ${font};color:${c.muted}">${rich(d.signature || d.from || pack.artist, c, go)}</p></td></tr>
 </table>
-${d.footer ? `<p style="margin:20px 0 0;font:400 12px/1.6 ${font};color:${c.muted}">${rich(d.footer, c)}</p>` : ''}
+${d.footer ? `<p style="margin:20px 0 0;font:400 12px/1.6 ${font};color:${c.muted}">${rich(d.footer, c, go)}</p>` : ''}
+${pack.unsubscribe ? `<p style="margin:14px 0 0;font:400 12px/1.6 ${font};color:${c.muted}"><a href="${escapeHtml(pack.unsubscribe)}" style="color:${c.muted}">Se désinscrire</a></p>` : ''}
+${pack.pixel ? `<img src="${escapeHtml(pack.pixel)}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0">` : ''}
 </td></tr></table></body></html>`;
 }

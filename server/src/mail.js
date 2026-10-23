@@ -4,7 +4,7 @@ import { config } from './config.js';
 import { renderEmail, textToBlocks } from './mailtemplate.js';
 
 // SMTP_HOST=test : rien n'est envoyé, les messages sont gardés dans `outbox` (tests automatiques).
-const testing = config.smtpHost === 'test';
+export const testing = config.smtpHost === 'test';
 const transport = testing
   ? nodemailer.createTransport({ jsonTransport: true })
   : config.smtpHost && nodemailer.createTransport({
@@ -15,6 +15,12 @@ const transport = testing
   });
 
 export const mailEnabled = !!transport;
+
+/** La boîte mail d'un membre (envoi des mails de ses packs) ; en test, rien ne part. */
+export function smtpTransport({ host, port, login, password }) {
+  return testing ? nodemailer.createTransport({ jsonTransport: true })
+    : nodemailer.createTransport({ host, port, secure: port === 465, auth: { user: login, pass: password }, connectionTimeout: 15000, greetingTimeout: 15000 });
+}
 export const outbox = [];
 
 /**

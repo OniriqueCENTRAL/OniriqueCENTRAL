@@ -14,7 +14,30 @@ Object.assign(process.env, { DATA_DIR: dataDir, PAYMENTS_MODE: 'demo', PORT: '0'
 const HOOK_SECRET = 'whsec_' + 'k'.repeat(32);
 const stripe = { sessions: [], hooks: [] };
 const realFetch = globalThis.fetch;
+// PayPal en sandbox, simulé : une commande attend l'accord de l'acheteur (approved), puis le serveur l'encaisse.
+const paypal = { orders: new Map(), captures: 0 };
+async function paypalFake(url, init) {
+  const route = new URL(url).pathname, reply = (json, status = 200) => new Response(JSON.stringify(json), { status, headers: { 'Content-Type': 'application/json' } });
+  if (route === '/v1/oauth2/token') {
+    return init.headers.Authorization === `Basic ${Buffer.from('client-paypal:secret-paypal').toString('base64')}` ? reply({ access_token: 'jeton' }) : reply({ error: 'invalid_client' }, 401);
+  }
+  if (route === '/v2/checkout/orders' && init.method === 'POST') {
+    const body = JSON.parse(init.body), id = `PP${paypal.orders.size + 1}`;
+    paypal.orders.set(id, { id, status: 'CREATED', amount: body.purchase_units[0].amount, body });
+    return reply({ id, status: 'CREATED', links: [{ rel: 'payer-action', href: `https://www.sandbox.paypal.com/checkoutnow?token=${id}` }] }, 201);
+  }
+  const o = paypal.orders.get(route.split('/')[4]);
+  if (!o) return reply({ message: 'introuvable' }, 404);
+  if (route.endsWith('/capture')) {
+    if (o.status !== 'APPROVED') return reply({ message: 'ORDER_NOT_APPROVED' }, 422);
+    paypal.captures++;
+    o.status = 'COMPLETED';
+  }
+  return reply({ id: o.id, status: o.status, payer: { email_address: 'acheteur-paypal@test.fr', name: { given_name: 'Ache', surname: 'Teur' } },
+    purchase_units: [{ payments: o.status === 'COMPLETED' ? { captures: [{ status: 'COMPLETED', amount: { value: o.amount.value, currency_code: o.amount.currency_code } }] } : {} }] });
+}
 globalThis.fetch = async (url, init = {}) => {
+  if (String(url).startsWith('https://api-m.sandbox.paypal.com')) return paypalFake(url, init);
   if (!String(url).startsWith('https://api.stripe.com/v1')) return realFetch(url, init);
   const route = String(url).slice('https://api.stripe.com/v1'.length), body = Object.fromEntries(new URLSearchParams(init.body || ''));
   const reply = (json) => new Response(JSON.stringify(json), { status: 200, headers: { 'Content-Type': 'application/json' } });
@@ -204,6 +227,29 @@ try {
     assert.equal(get('SELECT sold FROM sound_tracks WHERE id = ?', tid).sold, 0);
     assert.equal(outbox.filter((m) => m.to === 'beatmaker@test.local').length, sellerMails);
     assert.ok(outbox.filter((m) => m.to === 'fondateur@test.local').at(-1).subject.includes('Exclusive'));
+  });
+
+  await step('PayPal : compte branché, paiement approuvé puis encaissé par le serveur, la licence est livrée', async () => {
+    await call('PUT', '/api/me/sounds/store/seller', { token: beatmaker.token, body: { provider: 'paypal', clientId: 'client-paypal', secret: 'mauvais', sandbox: true }, expect: 502 });
+    const seller = await call('PUT', '/api/me/sounds/store/seller', { token: beatmaker.token, body: { provider: 'paypal', clientId: 'client-paypal', secret: 'secret-paypal', sandbox: true } });
+    assert.deepEqual([seller.provider, seller.connected, seller.sandbox, seller.webhook], ['paypal', true, true, false]);
+    const page = await call('POST', `/api/sounds/share/${share}`, { body: {} });
+    const mp3Offer = page.tracks[0].offers.find((o) => o.name === 'MP3');
+    const { url } = await call('POST', `/api/sounds/share/${share}/buy`, { body: { trackId: tid, licenseId: mp3Offer.id } });
+    assert.match(url, /^https:\/\/www\.sandbox\.paypal\.com\/checkoutnow\?token=PP1$/);
+    const created = paypal.orders.get('PP1');
+    assert.deepEqual(created.amount, { currency_code: 'EUR', value: '29.99' });
+    const o = get('SELECT token FROM sound_orders WHERE provider_ref = ?', 'PP1');
+    // L'acheteur revient sans avoir payé : rien n'est encaissé ni livré.
+    assert.equal((await call('GET', `/api/sounds/orders/${o.token}`)).status, 'pending');
+    assert.equal(paypal.captures, 0);
+    created.status = 'APPROVED';
+    const view = await call('GET', `/api/sounds/orders/${o.token}`);
+    assert.deepEqual([view.status, view.buyerEmail, view.files.map((f) => f.kind)], ['paid', 'acheteur-paypal@test.fr', ['mp3']]);
+    assert.ok((await call('GET', `/api/sounds/orders/${o.token}/files/mp3`)).equals(mp3));
+    await call('GET', `/api/sounds/orders/${o.token}`);
+    assert.equal(paypal.captures, 1);
+    assert.ok(outbox.some((m) => m.to === 'acheteur-paypal@test.fr'));
   });
 
   console.log(`\n${passed} étapes réussies.`);

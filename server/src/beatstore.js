@@ -12,6 +12,7 @@ import { get, all, run, now, transaction } from './db.js';
 import { HttpError, rateLimit, optionalUser } from './auth.js';
 import { sendMail } from './mail.js';
 import { seal, unseal, verifyStripeSignature } from './payments.js';
+import { contactsOf, listContacts } from './packsend.js';
 
 export const FILE_KINDS = { mp3: 'MP3', wav: 'WAV', stems: 'Track stems (ZIP)' };
 const MAX_FILE = { mp3: 100 * 1024 * 1024, wav: 500 * 1024 * 1024, stems: 2 * 1024 ** 3 };
@@ -27,7 +28,6 @@ const id = (value) => (Number.isInteger(Number(value)) && Number(value) > 0 ? Nu
 const euros = (cents) => (cents / 100).toFixed(2);
 const eurosFr = (cents) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: cents % 100 ? 2 : 0 }).format(cents / 100);
 const parse = (text, fallback) => { try { return JSON.parse(text); } catch { return fallback; } };
-const emailsOf = (text) => [...new Set(String(text || '').toLowerCase().match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/g) || [])];
 
 //------------------------------------------------------------------------------ Licences et compte de paiement
 /** Les licences d'un beatmaker ; les quatre licences de départ sont créées la première fois. */
@@ -415,17 +415,28 @@ export function mountBeatStore(app, { me, track, room, receiveFile, openLink, li
     res.json({ files: filesOf(t.id) });
   });
 
-  // Les listes d'adresses d'un membre, pour les mails de ses packs (importées d'un CSV ou collées).
+  // Les listes de contacts d'un membre (nom et adresse), pour les mails de ses packs : importées d'un CSV ou collées. Chaque
+  // contact vient avec ce qu'il a fait du dernier mail reçu (suivi).
   const ownList = (req) => {
     const l = get('SELECT * FROM sound_mail_lists WHERE id = ? AND user_id = ?', id(req.params.id), req.user.id);
     if (!l) throw new HttpError(404, 'Liste introuvable.');
     return l;
   };
-  const listView = (l, full = false) => ({ id: l.id, name: l.name, count: parse(l.emails, []).length, createdAt: l.created_at, ...(full ? { emails: parse(l.emails, []) } : {}) });
+  const listView = (l, full = false) => {
+    const contacts = listContacts(l);
+    if (!full) return { id: l.id, name: l.name, count: contacts.length, createdAt: l.created_at };
+    const last = new Map(all(`SELECT * FROM sound_mail_recipients WHERE user_id = ? AND status != 'wait' ORDER BY created_at`, l.user_id).map((r) => [r.email, r]));
+    const unsubscribed = new Set(all('SELECT email FROM sound_mail_unsubs WHERE user_id = ?', l.user_id).map((x) => x.email));
+    return { id: l.id, name: l.name, count: contacts.length, createdAt: l.created_at, emails: contacts.map((c) => c.email),
+      contacts: contacts.map((c) => {
+        const r = last.get(c.email);
+        return { ...c, unsubscribed: unsubscribed.has(c.email), last: r ? { sentAt: r.sent_at, status: r.status, openedAt: r.opened_at, clickedAt: r.clicked_at, plays: r.plays, downloads: r.downloads, lastAt: r.last_at } : null };
+      }) };
+  };
   const listEmails = (text) => {
-    const emails = emailsOf(text);
-    if (emails.length > 3000) throw new HttpError(400, '3 000 adresses au plus par liste.');
-    return JSON.stringify(emails);
+    const contacts = contactsOf(text);
+    if (contacts.length > 3000) throw new HttpError(400, '3 000 contacts au plus par liste.');
+    return JSON.stringify(contacts);
   };
   app.get('/api/me/sounds/mail-lists', ...me, (req, res) => {
     res.json(all('SELECT * FROM sound_mail_lists WHERE user_id = ? ORDER BY created_at DESC', req.user.id).map((l) => listView(l)));

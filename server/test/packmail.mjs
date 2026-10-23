@@ -1,0 +1,160 @@
+// Mails des packs de prods : contacts lus dans un CSV, boîte mail du membre, envoi, suivi de chaque destinataire,
+// désinscription, couleurs de la pochette et téléchargement d'office, sur une base jetable : node test/packmail.mjs
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import sharp from 'sharp';
+
+const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'onirique-central-packmail-'));
+Object.assign(process.env, { DATA_DIR: dataDir, PAYMENTS_MODE: 'demo', PORT: '0', ADMIN_EMAIL: '', ADMIN_PASSWORD: '',
+  SMTP_HOST: 'test', MAIL_FROM: 'support@test.local', SITE_URL: 'https://site.test', PUBLIC_URL: 'https://site.test' });
+
+const { createApp } = await import('../src/app.js');
+const { run, get, setSetting } = await import('../src/db.js');
+const { outbox } = await import('../src/mail.js');
+const { contactsOf } = await import('../src/packsend.js');
+
+const server = createApp().listen(0);
+const base = `http://127.0.0.1:${server.address().port}`;
+
+async function call(method, route, { token, body, raw, headers = {}, expect = 200, redirect = 'follow' } = {}) {
+  const response = await fetch(route.startsWith('http') ? route : base + route, {
+    method, redirect,
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(raw ? { 'Content-Type': 'application/octet-stream' } : body ? { 'Content-Type': 'application/json' } : {}), ...headers },
+    body: raw ?? (body ? JSON.stringify(body) : undefined),
+  });
+  const isJson = response.headers.get('content-type')?.includes('json');
+  const data = isJson ? await response.json() : Buffer.from(await response.arrayBuffer());
+  assert.equal(response.status, expect, `${method} ${route} → ${response.status} ${isJson ? JSON.stringify(data) : ''}`);
+  return Object.assign(data, { headers: response.headers });
+}
+let passed = 0;
+async function step(name, fn) { await fn(); passed++; console.log(`  ok  ${name}`); }
+async function account(name, role) {
+  const email = `${name}@test.local`;
+  const { token } = await call('POST', '/api/auth/register', { body: { email, password: 'motdepasse1', name }, expect: 201 });
+  const link = outbox.filter((m) => m.to === email).at(-1).text.match(/\?verify=([\w-]+)/)[1];
+  await call('POST', '/api/auth/verify', { body: { token: link } });
+  if (role) run('UPDATE users SET role = ? WHERE email = ?', role, email);
+  return { token, id: get('SELECT id FROM users WHERE email = ?', email).id };
+}
+const wav = Buffer.concat([Buffer.from('RIFF\0\0\0\0WAVEfmt '), Buffer.alloc(2000)]);
+setSetting('sounds_disk_max', 1);
+// L'adresse d'un mail envoyé vers le site devient une adresse du serveur de test.
+const local = (url) => url.replace('https://site.test', base);
+
+let bm, pack, tid, list, mails;
+try {
+  await step('contacts : en-tête reconnu, séparateurs, guillemets, noms sans en-tête', async () => {
+    assert.deepEqual(contactsOf('Artiste;Prénom;Nom;E-mail\nBooba;Élie;Yaffa;Booba@92i.fr\n"Niska, le vrai";;;niska@test.fr\nPas de mail;;;\n'),
+      [{ email: 'booba@92i.fr', name: 'Booba' }, { email: 'niska@test.fr', name: 'Niska, le vrai' }]);
+    assert.deepEqual(contactsOf('Prénom,Nom,Email\nWilliam,Kalubi,damso@test.fr\n'), [{ email: 'damso@test.fr', name: 'William Kalubi' }]);
+    assert.deepEqual(contactsOf('Damso <damso@test.fr>, Niska <niska@test.fr>\nbooba@92i.fr;Booba\nseul@test.fr\nDamso;DAMSO@test.fr'),
+      [{ email: 'damso@test.fr', name: 'Damso' }, { email: 'niska@test.fr', name: 'Niska' }, { email: 'booba@92i.fr', name: 'Booba' }, { email: 'seul@test.fr', name: '' }]);
+    assert.deepEqual(contactsOf('Nom\tMail\nSCH\tsch@test.fr\n'), [{ email: 'sch@test.fr', name: 'SCH' }]);
+  });
+
+  await step('liste de contacts importée : noms et adresses, vue CONTACTS', async () => {
+    bm = await account('beatmaker', 'vip');
+    list = await call('POST', '/api/me/sounds/mail-lists', { token: bm.token, body: { name: 'Rappeurs', emails: 'Nom;Mail\nBooba;booba@92i.fr\nNiska;niska@test.fr\nDamso;damso@test.fr\n' }, expect: 201 });
+    assert.deepEqual(list.contacts.map((c) => [c.name, c.email, c.last]), [['Booba', 'booba@92i.fr', null], ['Niska', 'niska@test.fr', null], ['Damso', 'damso@test.fr', null]]);
+    assert.deepEqual(list.emails, ['booba@92i.fr', 'niska@test.fr', 'damso@test.fr']);
+    // Une ancienne liste, qui ne gardait que les adresses, se lit toujours.
+    run(`UPDATE sound_mail_lists SET emails = '["vieux@test.fr"]' WHERE id = ?`, list.id);
+    assert.deepEqual((await call('GET', `/api/me/sounds/mail-lists/${list.id}`, { token: bm.token })).contacts.map((c) => [c.email, c.name]), [['vieux@test.fr', '']]);
+    await call('PATCH', `/api/me/sounds/mail-lists/${list.id}`, { token: bm.token, body: { emails: 'Booba <booba@92i.fr>\nNiska <niska@test.fr>\nDamso <damso@test.fr>' } });
+  });
+
+  await step('pack : téléchargement d\'office sur la page d\'écoute, couleurs de la pochette dans le mail', async () => {
+    pack = (await call('POST', '/api/me/sounds/projects', { token: bm.token, body: { title: 'Pack', kind: 'pack' }, expect: 201 })).id;
+    tid = (await call('POST', `/api/me/sounds/projects/${pack}/tracks?filename=Ghost%20150bpm%20Fmin.wav`, { token: bm.token, raw: wav, expect: 201 })).id;
+    const png = await sharp({ create: { width: 64, height: 64, channels: 3, background: { r: 20, g: 60, b: 200 } } }).png().toBuffer();
+    await call('PUT', `/api/me/sounds/projects/${pack}/cover`, { token: bm.token, raw: png, headers: { 'Content-Type': 'image/png' } });
+    const { url } = await call('POST', '/api/me/sounds/links', { token: bm.token, body: { projectId: pack, download: false }, expect: 201 });
+    const share = await call('POST', `/api/sounds/share/${new URL(url).searchParams.get('t')}`, { body: {} });
+    assert.ok(share.download && share.tracks[0].version.downloadUrl);
+    const { palette, html } = await call('POST', `/api/me/sounds/projects/${pack}/mail/preview`, { token: bm.token, body: { subject: 'x' } });
+    assert.ok(palette && html.includes(`background:${palette.bg}`));
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(palette.accent.slice(i, i + 2), 16));
+    assert.ok(b > r && b > g, `accent bleu attendu : ${palette.accent}`);
+    const manual = await call('POST', `/api/me/sounds/projects/${pack}/mail/preview`, { token: bm.token, body: { subject: 'x', coverColors: false, colors: { bg: '#123456' } } });
+    assert.equal(manual.palette, null);
+    assert.ok(manual.html.includes('background:#123456'));
+  });
+
+  await step('sans boîte mail connectée, rien ne part ; une boîte mal réglée est refusée', async () => {
+    await call('PATCH', `/api/me/sounds/projects/${pack}`, { token: bm.token, body: { mail: { to: 'booba@92i.fr, niska@test.fr, damso@test.fr', subject: 'Salut {nom}, nouveau pack', text: 'Yo {nom} !', trackIds: [tid] } } });
+    await call('POST', `/api/me/sounds/projects/${pack}/mail/send`, { token: bm.token, expect: 400 });
+    assert.deepEqual(await call('GET', '/api/me/sounds/mailer', { token: bm.token }).then((m) => m.connected), false);
+    for (const host of ['localhost', '127.0.0.1', 'pas un hôte']) {
+      await call('PUT', '/api/me/sounds/mailer', { token: bm.token, body: { host, port: 465, login: 'kay@gmail.com', password: 'x' }, expect: 400 });
+    }
+    await call('PUT', '/api/me/sounds/mailer', { token: bm.token, body: { host: 'smtp.gmail.com', port: 8080, login: 'kay@gmail.com', password: 'x' }, expect: 400 });
+    const m = await call('PUT', '/api/me/sounds/mailer', { token: bm.token, body: { host: 'smtp.gmail.com', port: 465, login: 'kay@gmail.com', password: 'mot-de-passe-app', fromName: 'Kay Beats' } });
+    assert.deepEqual([m.connected, m.fromEmail, m.password], [true, 'kay@gmail.com', undefined]);
+    assert.notEqual(get('SELECT secret FROM sound_mailers WHERE user_id = ?', bm.id).secret, 'mot-de-passe-app');
+  });
+
+  await step('envoi depuis la boîte du beatmaker : un mail par contact, à son nom, avec désinscription', async () => {
+    const before = outbox.length;
+    const sent = await call('POST', `/api/me/sounds/projects/${pack}/mail/send`, { token: bm.token, expect: 202 });
+    assert.equal(sent.total, 3);
+    mails = outbox.slice(before);
+    assert.deepEqual(mails.map((m) => [m.from, m.to, m.subject]), [
+      ['"Kay Beats" <kay@gmail.com>', '"Booba" <booba@92i.fr>', 'Salut Booba, nouveau pack'],
+      ['"Kay Beats" <kay@gmail.com>', '"Niska" <niska@test.fr>', 'Salut Niska, nouveau pack'],
+      ['"Kay Beats" <kay@gmail.com>', '"Damso" <damso@test.fr>', 'Salut Damso, nouveau pack']]);
+    assert.ok(mails[2].html.includes('Yo Damso !') && mails[2].headers['List-Unsubscribe']);
+  });
+
+  await step('suivi de Damso : ouverture, clic, écoute et téléchargement, à son nom', async () => {
+    const html = mails[2].html;
+    const pixel = html.match(/src="([^"]+o\.gif)"/)[1];
+    const listen = html.match(/href="(https:\/\/site\.test\/ecoute\?t=[^"]+&amp;r=[^"]+)"/)[1].replace(/&amp;/g, '&');
+    const [t, r] = [new URL(listen).searchParams.get('t'), new URL(listen).searchParams.get('r')];
+    await call('GET', local(pixel));
+    await call('GET', local(pixel)); // une seconde ouverture dans l'heure ne compte pas
+    const share = await call('POST', `/api/sounds/share/${t}`, { body: { r } });
+    await call('POST', `/api/sounds/share/${t}/play`, { body: { trackId: tid, r } });
+    const file = await call('GET', share.tracks[0].version.downloadUrl);
+    assert.ok(file.equals(wav));
+    // Un faux destinataire glissé dans l'adresse de téléchargement casse la signature.
+    await call('GET', share.tracks[0].version.downloadUrl.replace(`r=${r}`, 'r=autre'), { expect: 403 });
+    const sends = await call('GET', `/api/me/sounds/projects/${pack}/mail/sends`, { token: bm.token });
+    assert.deepEqual([sends[0].total, sends[0].sent, sends[0].opened, sends[0].clicked, sends[0].listened, sends[0].downloaded], [3, 3, 1, 1, 1, 1]);
+    const detail = await call('GET', `/api/me/sounds/mail/sends/${sends[0].id}`, { token: bm.token });
+    const damso = detail.recipients.find((x) => x.name === 'Damso');
+    assert.deepEqual([damso.plays, damso.downloads, !!damso.openedAt, !!damso.clickedAt], [1, 1, true, true]);
+    assert.deepEqual(damso.events.map((e) => e.type).sort(), ['download', 'open', 'play', 'visit']);
+    assert.equal(detail.recipients.find((x) => x.name === 'Booba').openedAt, null);
+    const contacts = (await call('GET', `/api/me/sounds/mail-lists/${list.id}`, { token: bm.token })).contacts;
+    assert.equal(contacts.find((c) => c.name === 'Damso').last.downloads, 1);
+    // Le beatmaker est prévenu au nom de Damso.
+    assert.ok(outbox.some((m) => m.to === 'beatmaker@test.local' && /^Damso (écoute|a téléchargé)/.test(m.subject)));
+  });
+
+  await step('liens externes par une redirection signée ; désinscription respectée au prochain envoi', async () => {
+    await call('PATCH', `/api/me/sounds/projects/${pack}`, { token: bm.token, body: { mail: { to: 'booba@92i.fr, niska@test.fr', subject: 'Re', text: 'Mon site : https://kay.fr/beats', trackIds: [] } } });
+    const before = outbox.length;
+    await call('POST', `/api/me/sounds/projects/${pack}/mail/send`, { token: bm.token, expect: 202 });
+    const booba = outbox.slice(before).find((m) => m.to.includes('booba'));
+    const out = booba.html.match(/href="([^"]+\/lien\?u=[^"]+)"/)[1].replace(/&amp;/g, '&');
+    const redirect = await call('GET', local(out), { redirect: 'manual', expect: 302 });
+    assert.equal(redirect.headers.get('location'), 'https://kay.fr/beats');
+    await call('GET', local(out.replace('kay.fr', 'pirate.fr')), { expect: 404 });
+    const unsub = booba.headers['List-Unsubscribe'].slice(1, -1);
+    assert.match((await call('GET', local(unsub))).toString(), /Me désinscrire/);
+    await call('POST', local(unsub));
+    const next = outbox.length;
+    const again = await call('POST', `/api/me/sounds/projects/${pack}/mail/send`, { token: bm.token, expect: 202 });
+    assert.equal(again.total, 1);
+    assert.deepEqual(outbox.slice(next).map((m) => m.to), ['"Niska" <niska@test.fr>']);
+    assert.equal((await call('GET', `/api/me/sounds/mail-lists/${list.id}`, { token: bm.token })).contacts.find((c) => c.name === 'Booba').unsubscribed, true);
+  });
+
+  console.log(`\n${passed} étapes réussies.`);
+} finally {
+  server.close();
+  try { fs.rmSync(dataDir, { recursive: true, force: true }); } catch {}
+}
