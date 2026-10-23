@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Potards ONIRIQUE</title>
+<meta name="description" content="Les dix potards dessinés par Nov d'après le logo ONIRIQUE, à tourner et à regarder en 360°.">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css">
+<style>
+.wrap { max-width: 1320px; }
+main { padding-bottom: 80px; }
+.lead { color: var(--haze); max-width: 640px; margin: 0; }
+
+/* La vue 360° : le potard choisi, en relief, qui tourne tout seul ou à la souris. */
+.stage { margin-top: 32px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 340px); gap: 32px; align-items: center; padding: 28px; border: 1px solid var(--line); border-radius: 26px;
+  background: radial-gradient(80% 90% at 30% 50%, rgba(226,52,68,.12), transparent 70%), linear-gradient(180deg, #170709, #0d0607); }
+.scene { height: 400px; perspective: 1100px; display: grid; place-items: center; cursor: grab; touch-action: none; user-select: none; }
+.scene:active { cursor: grabbing; }
+.knob3d { position: relative; width: 340px; height: 340px; transform-style: preserve-3d; }
+.knob3d > * { position: absolute; inset: 0; margin: auto; }
+.knob3d canvas { width: 340px; height: 340px; }
+.slice { border-radius: 50%; background: radial-gradient(circle at 35% 30%, #2b1114, #0c0607 70%); box-shadow: inset 0 0 0 1px rgba(255,210,214,.07); }
+.stage-info h2 { margin: 10px 0 8px; font: 800 26px/1.1 var(--f-display); }
+.stage-info p { color: var(--haze); margin: 0 0 18px; }
+.stage-info .hint { font: 500 12px/1.6 var(--f-mono); letter-spacing: .06em; color: var(--haze); opacity: .8; }
+@media (max-width: 820px) { .stage { grid-template-columns: 1fr; } .scene { height: 320px; } .knob3d, .knob3d canvas { width: 260px; height: 260px; } }
+
+/* La galerie */
+.grid { margin-top: 28px; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 228px), 1fr)); gap: 16px; }
+.card { display: flex; flex-direction: column; padding: 20px; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(180deg, #160709, #100607); transition: border-color .2s, background .2s; }
+.card.on { border-color: rgba(226,52,68,.75); background: linear-gradient(180deg, #2a0b0f, #1a0709); }
+.card header { display: flex; justify-content: space-between; gap: 10px; border: 0; }
+.card h3 { margin: 0; font: 700 12px/1.35 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; }
+.card .val { flex: none; font: 500 12px/1.35 var(--f-mono); color: var(--haze); }
+.card canvas { width: 168px; height: 168px; margin: 14px auto 10px; display: block; cursor: ns-resize; touch-action: none; border-radius: 50%; }
+.card p { margin: 0 0 16px; font-size: 15px; line-height: 1.45; color: #E9DDDE; }
+.card button { margin-top: auto; padding: 13px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.03); color: var(--haze); font: 600 12px/1 var(--f-mono); letter-spacing: .18em; text-transform: uppercase; cursor: pointer; transition: border-color .2s, color .2s, background .2s; }
+.card button:hover { border-color: var(--ember); color: var(--mist); }
+.card.on button { border-color: var(--ember); background: rgba(226,52,68,.18); color: var(--bone); }
+@media (prefers-reduced-motion: reduce) { .card, .card button { transition: none; } }
+</style>
+
+<header><div class="wrap"><a class="brand" href="/"><img src="assets/logo-small.png" alt="" width="40" height="36">ONIRIQUE</a></div></header>
+<main class="wrap">
+  <p class="eyebrow" style="margin-top:40px">Direction artistique · Nov</p>
+  <h1>Les potards ONIRIQUE</h1>
+  <p class="lead">Dix potards dessinés d'après le logo. Fais-les tourner en glissant vers le haut ou le bas, à la molette ou aux flèches ; double-clic pour revenir au réglage de départ.</p>
+
+  <section class="stage" aria-label="Vue 360°">
+    <div class="scene" id="scene"><div class="knob3d" id="knob3d"></div></div>
+    <div class="stage-info">
+      <p class="eyebrow" id="stage-value"></p>
+      <h2 id="stage-name"></h2>
+      <p id="stage-desc"></p>
+      <p class="hint">Glisse pour tourner autour · molette pour régler</p>
+    </div>
+  </section>
+
+  <div class="grid" id="grid"></div>
+</main>
+
+<script>
+const KNOBS = [
+  { id: "orbite", name: "Orbite", value: .62, desc: "Le « O » du logo en anneau blanc lumineux, l'orbite en pointillés qui s'allume, une étoile qui la parcourt." },
+  { id: "epine", name: "Épine", value: .62, desc: "Graduations en épines effilées comme les branches du logo, aiguille en longue épine courbée." },
+  { id: "etoile", name: "Étoile", value: .62, desc: "La grande étoile à quatre branches du logo sert d'aiguille ; une petite étoile brille au bout de l'arc." },
+  { id: "spectre", name: "Spectre", value: 0, desc: "Tout en blanc lumineux comme le logo : anneau de métal liquide irrégulier, épine vers le centre." },
+  { id: "viseur", name: "Viseur", value: .62, desc: "Les lignes de visée du logo : une croix qui tourne, sa branche haute traverse l'arc comme un trait de lumière." },
+  { id: "eclipse", name: "Éclipse", value: 0, desc: "Un disque noir cerné d'une couronne blanche ; les rayons du soleil s'allongent et s'allument jusqu'à la valeur." },
+  { id: "constellation", name: "Constellation", value: 0, desc: "Les graduations sont des étoiles reliées par un fil, une constellation qui s'allume ; une étoile parcourt l'orbite." },
+  { id: "ronce", name: "Ronce", value: 0, desc: "L'arc pousse des épines comme une ronce ; le bouton porte un anneau de métal liquide épineux." },
+  { id: "nova", name: "Nova", value: .54, desc: "Des rayons partent du centre ; le rayon principal traverse l'arc, des étoiles marquent la course." },
+  { id: "sceau", name: "Sceau", value: .41, desc: "Un sceau gravé : cercles, petit « O » au centre et quatre étoiles ; l'étoile du haut sert d'aiguille." },
+];
+for (const k of KNOBS) k.start = k.value;
+
+const EMBER = "#E23444", BONE = "#FFECEE", DIM = "rgba(255,236,238,.22)", PI = Math.PI;
+// La course : de -135° à +135° autour du haut, comme tous les potards ONIRIQUE.
+const ang = (t) => -1.25 * PI + 1.5 * PI * t;
+const at = (c, r, a) => [c + r * Math.cos(a), c + r * Math.sin(a)];
+const glow = (g, color, blur) => { g.shadowColor = color; g.shadowBlur = blur; };
+const noGlow = (g) => { g.shadowBlur = 0; };
+
+// L'étoile à quatre branches du logo, côtés creusés.
+function star(g, x, y, r, rot = 0, fill = BONE, blur = 10) {
+  g.save(); g.translate(x, y); g.rotate(rot); g.beginPath();
+  for (let i = 0; i < 4; i++) {
+    const a = i * PI / 2 - PI / 2, b = a + PI / 4;
+    if (i === 0) g.moveTo(r * Math.cos(a), r * Math.sin(a));
+    g.quadraticCurveTo(r * .16 * Math.cos(b), r * .16 * Math.sin(b), r * Math.cos(a + PI / 2), r * Math.sin(a + PI / 2));
+  }
+  g.closePath(); glow(g, fill, blur); g.fillStyle = fill; g.fill(); g.restore();
+}
+function body(g, c, r) {
+  const grad = g.createRadialGradient(c - r * .35, c - r * .4, r * .1, c, c, r);
+  grad.addColorStop(0, "#36161a"); grad.addColorStop(.6, "#160a0c"); grad.addColorStop(1, "#080405");
+  g.beginPath(); g.arc(c, c, r, 0, 2 * PI); g.fillStyle = grad;
+  g.shadowColor = "rgba(0,0,0,.8)"; g.shadowBlur = r * .25; g.shadowOffsetY = r * .08; g.fill();
+  g.shadowOffsetY = 0; noGlow(g);
+  g.strokeStyle = "rgba(255,220,225,.08)"; g.lineWidth = 1; g.stroke();
+}
+function arc(g, c, r, t0, t1, color, width, blur = 0, dash = []) {
+  if (t1 <= t0) return;
+  g.beginPath(); g.arc(c, c, r, ang(t0), ang(t1)); g.setLineDash(dash);
+  g.strokeStyle = color; g.lineWidth = width; g.lineCap = dash.length ? "butt" : "round";
+  if (blur) glow(g, color, blur); g.stroke(); noGlow(g); g.setLineDash([]);
+}
+function line(g, [x1, y1], [x2, y2], color, width, blur = 0) {
+  g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.strokeStyle = color; g.lineWidth = width; g.lineCap = "round";
+  if (blur) glow(g, color, blur); g.stroke(); noGlow(g);
+}
+// Un anneau irrégulier, comme du métal liquide ; spikes : épines qui en sortent.
+function liquidRing(g, c, r, seed, width, spikes = 0) {
+  g.beginPath();
+  for (let i = 0; i <= 120; i++) {
+    const a = i / 120 * 2 * PI;
+    let k = 1 + .07 * Math.sin(3 * a + seed) + .045 * Math.sin(5 * a + seed * 2.3) + .03 * Math.sin(9 * a + seed * .7);
+    if (spikes) { const d = (a * spikes / (2 * PI)) % 1; k += .16 * Math.max(0, 1 - Math.abs(d - .5) * 14); }
+    const [x, y] = at(c, r * k, a); i ? g.lineTo(x, y) : g.moveTo(x, y);
+  }
+  g.closePath(); g.strokeStyle = BONE; g.lineWidth = width; g.lineJoin = "round"; glow(g, "rgba(255,236,238,.9)", width * 3); g.stroke(); noGlow(g);
+}
+function thorn(g, from, to, w, color) {
+  const [x1, y1] = from, [x2, y2] = to, a = Math.atan2(y2 - y1, x2 - x1), n = a + PI / 2;
+  g.beginPath(); g.moveTo(x1 + w * Math.cos(n), y1 + w * Math.sin(n)); g.lineTo(x2, y2); g.lineTo(x1 - w * Math.cos(n), y1 - w * Math.sin(n)); g.closePath();
+  g.fillStyle = color; g.fill();
+}
+
+const DRAW = {
+  orbite(g, c, R, t) {
+    arc(g, c, R, 0, 1, "rgba(255,236,238,.3)", 2, 0, [3, 5]);
+    arc(g, c, R, 0, t, EMBER, 2.6, 10, [3, 5]);
+    for (const a of [PI, 0]) line(g, at(c, R + 4, a), at(c, R + 14, a), "rgba(255,236,238,.3)", 1.5);
+    body(g, c, R * .5);
+    g.beginPath(); g.arc(c, c, R * .56, 0, 2 * PI); g.strokeStyle = BONE; g.lineWidth = R * .11; glow(g, "rgba(255,236,238,.85)", R * .28); g.stroke(); noGlow(g);
+    line(g, at(c, R * .12, ang(t)), at(c, R * .4, ang(t)), EMBER, 2.2, 6);
+    star(g, ...at(c, R, ang(t)), R * .1);
+  },
+  epine(g, c, R, t) {
+    body(g, c, R * .66);
+    const N = 37;
+    for (let i = 0; i < N; i++) {
+      const u = i / (N - 1), a = ang(u), long = i % 4 === 0 ? 1.04 : .94, lit = u <= t + 1e-6;
+      glow(g, lit ? EMBER : "transparent", lit ? 8 : 0);
+      thorn(g, at(c, R * .75, a), at(c, R * long, a), 1.8, lit ? EMBER : DIM);
+    }
+    noGlow(g);
+    const a = ang(t), tip = at(c, R * .7, a), side = at(c, R * .35, a - .12);
+    const grad = g.createLinearGradient(c, c, ...tip); grad.addColorStop(0, "#ff8e9a"); grad.addColorStop(1, "#ffd6db");
+    g.beginPath(); const n = a + PI / 2;
+    g.moveTo(c + 4 * Math.cos(n), c + 4 * Math.sin(n)); g.quadraticCurveTo(...side, ...tip); g.lineTo(c - 4 * Math.cos(n), c - 4 * Math.sin(n)); g.closePath();
+    g.fillStyle = grad; glow(g, EMBER, 12); g.fill(); noGlow(g);
+    g.beginPath(); g.arc(c, c, R * .07, 0, 2 * PI); g.fillStyle = "#050203"; g.fill(); g.strokeStyle = "rgba(255,236,238,.25)"; g.stroke();
+  },
+  etoile(g, c, R, t) {
+    arc(g, c, R, 0, 1, "rgba(255,236,238,.12)", 3);
+    arc(g, c, R, 0, t, EMBER, 3, 12);
+    body(g, c, R * .74);
+    star(g, ...at(c, R, ang(t)), R * .09);
+    star(g, c, c, R * .44, ang(t) + PI / 2, BONE, 16);
+  },
+  spectre(g, c, R, t) {
+    g.beginPath(); g.arc(c, c, R * .82, 0, 2 * PI); g.fillStyle = "rgba(20,8,10,.9)"; g.fill();
+    g.strokeStyle = "rgba(255,236,238,.08)"; g.lineWidth = 6; g.stroke();
+    liquidRing(g, c, R * .58, 1.3 + t * 2, R * .1);
+    const a = ang(t); line(g, at(c, R * 1.02, a), at(c, R * .42, a), BONE, 1.6, 6);
+    star(g, ...at(c, R * 1.06, a), R * .09);
+  },
+  viseur(g, c, R, t) {
+    g.beginPath(); g.arc(c, c, R * 1.02, 0, 2 * PI); g.setLineDash([1, 5]); g.strokeStyle = "rgba(255,236,238,.3)"; g.lineWidth = 1.3; g.stroke(); g.setLineDash([]);
+    arc(g, c, R * .9, 0, t, EMBER, 2.6, 12);
+    body(g, c, R * .6);
+    g.beginPath(); g.arc(c, c, R * .56, 0, 2 * PI); g.strokeStyle = "rgba(255,236,238,.65)"; g.lineWidth = 1.2; g.stroke();
+    const a = ang(t);
+    for (let k = 1; k < 4; k++) line(g, at(c, R * .58, a + k * PI / 2), at(c, R * .78, a + k * PI / 2), "rgba(255,236,238,.4)", 1.3);
+    line(g, at(c, R * .22, a), at(c, R * 1.12, a), BONE, 1.6, 8);
+    star(g, ...at(c, R * 1.14, a), R * .07);
+    star(g, c, c, R * .08, 0, "rgba(255,236,238,.8)", 4);
+  },
+  eclipse(g, c, R, t) {
+    for (let i = 0; i < 120; i++) {
+      const a = i / 120 * 2 * PI, u = (((a - ang(0)) % (2 * PI)) + 2 * PI) % (2 * PI) / (1.5 * PI);
+      const lit = u <= 1 && u <= t, len = (lit ? .3 : .1) * (.6 + .4 * Math.abs(Math.sin(i * 7.31)));
+      line(g, at(c, R * .73, a), at(c, R * (.73 + len), a), lit ? BONE : "rgba(255,236,238,.45)", lit ? 1.4 : 1, lit ? 6 : 3);
+    }
+    g.beginPath(); g.arc(c, c, R * .7, 0, 2 * PI); g.fillStyle = "#000"; g.fill();
+    g.strokeStyle = BONE; g.lineWidth = 2; glow(g, BONE, 16); g.stroke(); noGlow(g);
+    star(g, ...at(c, R * .7, ang(t)), R * .1);
+  },
+  constellation(g, c, R, t) {
+    body(g, c, R * .62);
+    g.beginPath(); g.arc(c, c, R * .5, 0, 2 * PI); g.setLineDash([1, 4]); g.strokeStyle = "rgba(226,52,68,.4)"; g.lineWidth = 1.2; g.stroke(); g.setLineDash([]);
+    for (let i = 0; i < 6; i++) { const [x, y] = at(c, R * (.12 + .07 * i), i * 2.4); g.fillStyle = "rgba(255,236,238,.35)"; g.fillRect(x, y, 1.4, 1.4); }
+    const N = 11, pts = Array.from({ length: N }, (_, i) => at(c, R * (i % 2 ? .97 : 1.03), ang(i / (N - 1))));
+    for (let i = 1; i < N; i++) line(g, pts[i - 1], pts[i], (i / (N - 1)) <= t + 1e-6 ? EMBER : "rgba(255,236,238,.16)", 1, (i / (N - 1)) <= t ? 6 : 0);
+    pts.forEach((p, i) => { const lit = i / (N - 1) <= t + 1e-6 && t > 0; star(g, ...p, R * (i % 5 === 0 ? .075 : .055), 0, lit ? BONE : "rgba(255,236,238,.4)", lit ? 8 : 0); });
+    star(g, ...at(c, R * .62, ang(t)), R * .09, 0, "#ffc2c8", 12);
+  },
+  ronce(g, c, R, t) {
+    const N = 26;
+    arc(g, c, R * .92, 0, 1, "rgba(255,236,238,.18)", 1.6);
+    arc(g, c, R * .92, 0, t, EMBER, 2, 10);
+    for (let i = 0; i < N; i++) {
+      const u = (i + .5) / N, a = ang(u), lit = u <= t;
+      thorn(g, at(c, R * .92, a), at(c, R * (i % 2 ? 1.02 : 1.08), a + .06), 1.6, lit ? EMBER : "rgba(255,236,238,.22)");
+    }
+    body(g, c, R * .7);
+    liquidRing(g, c, R * .5, 4.1, R * .065, 9);
+    line(g, at(c, R * .1, ang(t)), at(c, R * .38, ang(t)), EMBER, 2, 6);
+  },
+  nova(g, c, R, t) {
+    arc(g, c, R, 0, 1, "rgba(255,236,238,.1)", 1.5);
+    arc(g, c, R, 0, t, EMBER, 3, 12);
+    for (let i = 0; i < 7; i++) { const u = i / 6; star(g, ...at(c, R * 1.16, ang(u)), R * .05, 0, u <= t ? EMBER : "rgba(255,236,238,.35)", u <= t ? 6 : 0); }
+    body(g, c, R * .72);
+    for (let i = 0; i < 8; i++) line(g, [c, c], at(c, R * (i % 2 ? .45 : .62), ang(t) + PI / 8 + i * PI / 4), "rgba(255,236,238,.3)", 1);
+    const a = ang(t), end = at(c, R * 1.08, a), grad = g.createLinearGradient(c, c, ...end);
+    grad.addColorStop(0, BONE); grad.addColorStop(1, EMBER);
+    line(g, [c, c], end, grad, 2, 10);
+    star(g, c, c, R * .12);
+  },
+  sceau(g, c, R, t) {
+    arc(g, c, R, 0, 1, "rgba(255,236,238,.1)", 1.5);
+    arc(g, c, R, 0, t, EMBER, 3, 12);
+    body(g, c, R * .8);
+    for (const k of [.72, .6, .44]) { g.beginPath(); g.arc(c, c, R * k, 0, 2 * PI); g.strokeStyle = "rgba(255,236,238,.11)"; g.lineWidth = 1.2; g.stroke(); }
+    g.beginPath(); g.arc(c, c, R * .1, 0, 2 * PI); g.strokeStyle = BONE; g.lineWidth = 2; glow(g, BONE, 8); g.stroke(); noGlow(g);
+    const a = ang(t);
+    for (let k = 0; k < 4; k++) star(g, ...at(c, R * .52, a + k * PI / 2), R * (k ? .06 : .09), 0, k ? "rgba(255,236,238,.45)" : EMBER, k ? 0 : 10);
+  },
+};
+
+function paint(canvas, k) {
+  const css = canvas.clientWidth || 168, dpr = window.devicePixelRatio || 1;
+  if (canvas.width !== Math.round(css * dpr)) { canvas.width = canvas.height = Math.round(css * dpr); }
+  const g = canvas.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, css, css);
+  DRAW[k.id](g, css / 2, css * .36, k.value);
+}
+
+// Régler un potard : glisser vers le haut ou le bas, molette, flèches, double-clic pour revenir au départ.
+function control(canvas, getKnob, onChange) {
+  let y0 = null, v0 = 0;
+  const set = (v) => { const k = getKnob(); k.value = Math.min(1, Math.max(0, v)); onChange(); };
+  canvas.addEventListener("pointerdown", (e) => { y0 = e.clientY; v0 = getKnob().value; canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener("pointermove", (e) => { if (y0 !== null) set(v0 + (y0 - e.clientY) / 220); });
+  canvas.addEventListener("pointerup", () => { y0 = null; });
+  canvas.addEventListener("wheel", (e) => { e.preventDefault(); set(getKnob().value - Math.sign(e.deltaY) * .03); }, { passive: false });
+  canvas.addEventListener("dblclick", () => set(getKnob().start));
+  canvas.addEventListener("keydown", (e) => {
+    const step = { ArrowUp: .02, ArrowRight: .02, ArrowDown: -.02, ArrowLeft: -.02, PageUp: .1, PageDown: -.1 }[e.key];
+    if (step) { e.preventDefault(); set(getKnob().value + step); }
+  });
+}
+
+// La vue 360° : un potard en relief, fait de tranches empilées sous le dessin.
+const stage = $("knob3d"), big = document.createElement("canvas"), SLICES = 16;
+function $(id) { return document.getElementById(id); }
+for (let i = SLICES; i > 0; i--) {
+  const s = document.createElement("div"); s.className = "slice";
+  s.style.transform = `translateZ(${-i * 1.6}px)`; s.style.filter = `brightness(${.55 + .45 * (1 - i / SLICES)})`;
+  stage.append(s);
+}
+big.tabIndex = 0; big.setAttribute("role", "slider"); big.ariaValueMin = 0; big.ariaValueMax = 100;
+big.style.transform = "translateZ(1px)";
+stage.append(big);
+let current = KNOBS[7];
+const slices = stage.querySelectorAll(".slice");
+const cards = new Map();
+
+function show() {
+  const k = current, pct = Math.round(k.value * 100) + " %";
+  paint(big, k);
+  // Les tranches font la taille du corps du potard, qui varie d'un modèle à l'autre.
+  const size = { orbite: .5, epine: .66, etoile: .74, spectre: .82, viseur: .6, eclipse: .7, constellation: .62, ronce: .7, nova: .72, sceau: .8 }[k.id] * .72;
+  slices.forEach((s) => { s.style.width = s.style.height = size * 100 + "%"; });
+  $("stage-name").textContent = k.name;
+  $("stage-desc").textContent = k.desc;
+  $("stage-value").textContent = "Logo · " + pct;
+  big.ariaLabel = k.name; big.ariaValueNow = Math.round(k.value * 100);
+  for (const [id, card] of cards) {
+    card.el.classList.toggle("on", id === k.id);
+    card.button.textContent = id === k.id ? "Affichée en 360°" : "Voir en 360°";
+  }
+}
+function refresh(k) {
+  const card = cards.get(k.id);
+  paint(card.canvas, k);
+  card.val.textContent = Math.round(k.value * 100) + " %";
+  card.canvas.ariaValueNow = Math.round(k.value * 100);
+  if (k === current) show();
+}
+
+for (const k of KNOBS) {
+  const el = document.createElement("article"); el.className = "card";
+  el.innerHTML = `<header><h3>Logo · ${k.name}</h3><span class="val"></span></header><canvas tabindex="0" role="slider" aria-valuemin="0" aria-valuemax="100" aria-label="${k.name}"></canvas><p></p><button type="button"></button>`;
+  el.querySelector("p").textContent = k.desc;
+  const card = { el, canvas: el.querySelector("canvas"), val: el.querySelector(".val"), button: el.querySelector("button") };
+  cards.set(k.id, card);
+  card.button.onclick = () => { current = k; show(); $("scene").scrollIntoView({ behavior: "smooth", block: "center" }); };
+  control(card.canvas, () => k, () => refresh(k));
+  $("grid").append(el);
+}
+control(big, () => current, () => refresh(current));
+addEventListener("resize", () => { KNOBS.forEach(refresh); show(); });
+KNOBS.forEach(refresh); show();
+
+// Tourner autour du potard : tout seul, ou en glissant sur la scène (hors du potard, qui se règle).
+let rx = -18, ry = 0, drag = null, idle = 0;
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+$("scene").addEventListener("pointerdown", (e) => { if (e.target === big) return; drag = { x: e.clientX, y: e.clientY, rx, ry }; $("scene").setPointerCapture(e.pointerId); });
+$("scene").addEventListener("pointermove", (e) => { if (!drag) return; ry = drag.ry + (e.clientX - drag.x) * .5; rx = Math.max(-80, Math.min(80, drag.rx - (e.clientY - drag.y) * .5)); idle = performance.now(); });
+$("scene").addEventListener("pointerup", () => { drag = null; idle = performance.now(); });
+(function spin(now) {
+  if (!drag && !reduce && now - idle > 1500) ry += .35;
+  stage.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
+  requestAnimationFrame(spin);
+})(0);
+</script>
