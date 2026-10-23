@@ -486,10 +486,11 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 #mailer summary::-webkit-details-marker { display: none; }
 /* Les ventes d'un pack : le panneau Ventes et la vente d'une prod. */
 #store, #sale { width: 620px; }
-#store[open], #sale[open], #plan[open], #stats[open] { display: flex; flex-direction: column; overflow: hidden; }
-#store .dlg-head, #sale .dlg-head, #plan .dlg-head, #stats .dlg-head { flex: none; padding-bottom: 14px; border-bottom: 1px solid rgba(255,210,214,.08); }
-#store > .stack, #sale > .stack, #plan > .stack, #stats > .stack { min-height: 0; align-content: start; grid-auto-rows: max-content; overflow-y: auto; overscroll-behavior: contain; padding: 16px 18px 20px; }
-#store .field, #sale .field { display: grid; gap: 6px; flex: 1; font-size: 13px; color: var(--haze); }
+#youtube { width: 640px; }
+#store[open], #sale[open], #plan[open], #stats[open], #youtube[open] { display: flex; flex-direction: column; overflow: hidden; }
+#store .dlg-head, #sale .dlg-head, #plan .dlg-head, #stats .dlg-head, #youtube .dlg-head { flex: none; padding-bottom: 14px; border-bottom: 1px solid rgba(255,210,214,.08); }
+#store > .stack, #sale > .stack, #plan > .stack, #stats > .stack, #youtube > .stack { min-height: 0; align-content: start; grid-auto-rows: max-content; overflow-y: auto; overscroll-behavior: contain; padding: 16px 18px 20px; }
+#store .field, #sale .field, #youtube .field { display: grid; gap: 6px; flex: 1; font-size: 13px; color: var(--haze); }
 #store summary { list-style: none; }
 #store summary::-webkit-details-marker { display: none; }
 #sale .item input:not([type]) { min-height: 0; padding: 8px 10px; }
@@ -572,6 +573,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
       <div><b style="font:700 15px var(--f-display)">Projets</b><small id="crumb-owner"></small></div>
       <button class="edit-toggle" id="pack-store" type="button" style="margin-left:auto" hidden>Ventes</button>
       <button class="edit-toggle" id="pack-mail" type="button" hidden>Mails</button>
+      <button class="edit-toggle" id="pack-youtube" type="button" hidden>YouTube</button>
     </div>
     <div class="album">
       <div>
@@ -620,6 +622,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 
 <dialog id="details"></dialog>
 <dialog id="plan"></dialog>
+<dialog id="youtube"></dialog>
 <dialog id="stats"></dialog>
 <dialog id="cover-view"><img alt=""><div class="bar"><button class="btn btn-ghost" type="button" id="cover-save">Télécharger</button><button class="btn btn-ghost" type="button" id="cover-swap">Changer</button><button class="btn btn-primary" type="button" onclick="this.closest('dialog').close()">Fermer</button></div></dialog>
 <dialog id="install-help">
@@ -1282,6 +1285,7 @@ function renderProject(p) {
   $("crumb-owner").textContent = data.owner.name;
   $("pack-mail").hidden = !p.mail;
   $("pack-store").hidden = !p.mail;
+  $("pack-youtube").hidden = !p.mail;
   if ($("sale").open) renderSale();
   if ($("plan").open) renderPlan();
   if ($("mailer").open && mailerId === p.id) drawMailerProds(p);
@@ -2304,6 +2308,117 @@ function renderSale() {
 }
 lightClose($("sale"));
 $("pack-store").onclick = () => openStore().catch(fail);
+
+// ——— Publier ses prods sur YouTube ———
+// Une vidéo par prod (la pochette du pack et le son), titre et description tirés d'un modèle, publiées sur la chaîne du
+// beatmaker à l'heure choisie, ou une par une à quelques jours d'écart. Le dernier modèle utilisé est gardé sur l'appareil.
+const YT_KEY = "onirique.youtube.modele";
+const YT_DEFAULT = { title: '[FREE] Type Beat - "{titre}"', description: "Prod. {artiste}\nLicences et achat : {lien}\n\n{bpm} BPM · {cle}", tags: "type beat, instrumental, beat", privacy: "public", every: 1 };
+let ytId = null, yt = null;
+async function openYoutube(p) {
+  ytId = p.id;
+  yt = await api("GET", "/me/sounds/youtube");
+  renderYoutube();
+  if (!$("youtube").open) $("youtube").showModal();
+}
+function renderYoutube() {
+  const p = ytId && project(ytId), dialog = $("youtube");
+  if (!p) return dialog.close();
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(YT_KEY) || "{}"); } catch {}
+  const m = { ...YT_DEFAULT, ...saved };
+  const head = el("div", { className: "dlg-head" }, el("b", { textContent: "Publier sur YouTube · " + p.title }),
+    el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close")));
+  const STATUS = { rendering: "Vidéo en fabrication…", draft: "Prête", scheduled: "Programmée", uploading: "Envoi en cours…", published: "Publiée", failed: "Échec" };
+  const videos = yt.videos.filter((v) => p.tracks.some((t) => t.id === v.trackId));
+  const list = videos.length ? el("ul", { className: "group" }, ...videos.map((v) => el("li", { className: "item" + (v.status === "failed" ? " off" : "") },
+    el("div", { className: "grow" }, v.title, el("small", { textContent: [STATUS[v.status] || v.status, v.publishAt && v.status !== "published" ? new Date(v.publishAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" }) : "", v.privacy === "unlisted" ? "non répertoriée" : "", v.error].filter(Boolean).join(" · ") })),
+    v.url ? el("a", { className: "mini-btn", href: v.url, target: "_blank", rel: "noopener", textContent: "Voir" }) : null,
+    ["rendering", "uploading"].includes(v.status) ? null : el("button", { className: "x", type: "button", ariaLabel: "Retirer de la liste",
+      onclick: () => (v.status === "published" || confirm("Retirer « " + v.title + " » de la file ?")) && api("DELETE", "/me/sounds/youtube/" + v.id).then((r) => { yt.videos = r.videos; renderYoutube(); }, fail) }, icon("close")))))
+    : null;
+  const stack = el("div", { className: "stack" });
+  dialog.replaceChildren(head, stack);
+  if (!yt.configured) return stack.append(el("p", { className: "muted", style: "margin:0", textContent: "La publication sur YouTube n'est pas encore réglée sur le serveur." }));
+  if (!yt.channel) {
+    const go = el("button", { className: "btn btn-primary", type: "button", textContent: "Connecter ma chaîne YouTube" });
+    go.onclick = () => api("POST", "/youtube/connect", { back: "mes-sons#/p/" + p.id }).then(({ url }) => { location.href = url; }, fail);
+    return stack.append(el("p", { className: "muted", style: "margin:0", textContent: "Les vidéos partent de ta propre chaîne : connecte-la une fois avec ton compte Google, tu reviendras ici." }), el("div", { className: "row" }, go), list || "");
+  }
+  // Le formulaire : les prods, le modèle, et quand publier.
+  const picks = p.tracks.map((t) => [t, el("input", { type: "checkbox", value: t.id, checked: !yt.videos.some((v) => v.trackId === t.id && v.status !== "failed") })]);
+  const title = el("input", { value: m.title, maxLength: 200 }), desc = el("textarea", { value: m.description, maxLength: 5000, style: "min-height:110px" });
+  const tags = el("input", { value: m.tags, maxLength: 500, placeholder: "type beat, trap, instrumental" });
+  const privacy = el("select", {}, el("option", { value: "public", textContent: "Publique" }), el("option", { value: "unlisted", textContent: "Non répertoriée" }));
+  privacy.value = m.privacy;
+  const when = el("select", {}, el("option", { value: "now", textContent: "Dès que la vidéo est prête" }), el("option", { value: "date", textContent: "À partir du…" }));
+  const local = (ms) => { const d = new Date(ms - new Date(ms).getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16); };
+  const start = el("input", { type: "datetime-local", value: local(Date.now() + 3600_000 - (Date.now() % 3600_000) + 3600_000), hidden: true });
+  const every = el("input", { type: "number", min: 0, max: 30, value: m.every, style: "width:80px" });
+  when.onchange = () => { start.hidden = when.value !== "date"; };
+  const fill = (tpl, t) => tpl.replace(/\{(titre|bpm|cle|artiste|lien)\}/gi, (_, k) => ({ titre: t.title, bpm: t.bpm ? String(t.bpm) : "", cle: t.key || "", artiste: p.artist || data.owner.name, lien: "onirique.store/ecoute?t=…" })[k.toLowerCase()])
+    .replace(/\(\s*\)|\[\s*\]/g, "").replace(/\s{2,}/g, " ").trim();
+  const preview = el("p", { className: "muted", style: "margin:0;font-size:13px" });
+  const count = () => picks.filter(([, x]) => x.checked).length;
+  const go = el("button", { className: "btn btn-primary", type: "submit" });
+  const update = () => {
+    const first = picks.find(([, x]) => x.checked);
+    preview.textContent = first ? "Titre de « " + first[0].title + " » : " + fill(title.value, first[0]) : "Coche au moins une prod.";
+    go.textContent = count() ? "Programmer " + count() + " vidéo" + (count() > 1 ? "s" : "") : "Programmer";
+    go.disabled = !count();
+  };
+  title.oninput = update;
+  picks.forEach(([, x]) => { x.onchange = update; });
+  const form = el("form", { className: "stack", style: "padding:0" },
+    el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Chaîne : " + yt.channel + ". Une vidéo par prod : la pochette du pack sur un fond flouté, avec le son de la prod." }),
+    el("div", { className: "sub-title", textContent: "Les prods" }),
+    el("div", { className: "mail-prods" }, ...picks.map(([t, x]) => el("label", { className: "mail-check" }, x, el("span", { className: "grow", textContent: t.title }),
+      ...[t.bpm ? t.bpm + " BPM" : "", t.key].filter(Boolean).map((b) => el("span", { className: "stage prod", textContent: b }))))),
+    el("div", { className: "sub-title", textContent: "Titre et description" }),
+    fieldOf("Modèle du titre ({titre}, {bpm}, {cle}, {artiste})", title), preview,
+    fieldOf("Description ({lien} : la page d'écoute du pack, où l'on achète la licence)", desc), fieldOf("Tags, séparés par des virgules", tags),
+    el("div", { className: "sub-title", textContent: "Publication" }),
+    el("div", { className: "row", style: "flex-wrap:wrap" }, fieldOf("Visibilité", privacy), fieldOf("Quand", when), start),
+    el("div", { className: "row" }, fieldOf("Puis une vidéo tous les (jours, 0 : toutes ensemble)", every)),
+    el("div", { className: "row" }, go));
+  form.onsubmit = (event) => {
+    event.preventDefault();
+    const model = { title: title.value, description: desc.value, tags: tags.value, privacy: privacy.value, every: Number(every.value) || 0 };
+    try { localStorage.setItem(YT_KEY, JSON.stringify(model)); } catch {}
+    go.disabled = true;
+    api("POST", "/me/sounds/youtube", { ...model, trackIds: picks.filter(([, x]) => x.checked).map(([t]) => t.id), publishAt: when.value === "date" ? new Date(start.value).getTime() : null })
+      .then((r) => { yt.videos = r.videos; renderYoutube(); }, (error) => { go.disabled = false; fail(error); alert(error.message); });
+  };
+  update();
+  stack.append(form, videos.length ? el("div", { className: "sub-title", textContent: "Vidéos de ce pack" }) : "", list || "");
+  // Tant qu'une vidéo se fabrique ou part, la liste se met à jour toute seule.
+  clearTimeout(renderYoutube.timer);
+  if (dialog.open && videos.some((v) => ["rendering", "uploading"].includes(v.status))) {
+    // Pas pendant qu'on écrit dans le formulaire : la liste attend la fin de la saisie.
+    const poll = () => api("GET", "/me/sounds/youtube").then((r) => {
+      yt = r;
+      if (!$("youtube").open) return;
+      if (form.contains(document.activeElement)) renderYoutube.timer = setTimeout(poll, 4000); else renderYoutube();
+    }).catch(() => {});
+    renderYoutube.timer = setTimeout(poll, 4000);
+  }
+}
+lightClose($("youtube"));
+$("pack-youtube").onclick = () => openYoutube(project()).catch(fail);
+// Retour de Google après « Connecter ma chaîne YouTube » : la fenêtre se rouvre sur le pack, ou l'erreur s'affiche.
+const youtubeBack = new URLSearchParams(location.search).get("youtube");
+if (youtubeBack) {
+  history.replaceState(null, "", location.pathname + location.hash);
+  let tries = 0;
+  const reopen = setInterval(() => {
+    if (++tries > 100) return clearInterval(reopen);
+    if (!data) return;
+    clearInterval(reopen);
+    if (project()) openYoutube(project()).catch(fail);
+    if (youtubeBack !== "ok") alert(youtubeBack);
+  }, 100);
+}
+
 
 // ——— Détails d'un titre ———
 let detailsId = null, detailsView = "main";

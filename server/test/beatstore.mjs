@@ -266,6 +266,25 @@ try {
     assert.deepEqual((await call('POST', `/api/sounds/share/${share}`, { body: {} })).tracks[0].offers, []);
   });
 
+  await step('YouTube : les prods programmées en vidéos, le modèle rempli pour chacune, une par jour', async () => {
+    await call('POST', '/api/me/sounds/youtube', { token: beatmaker.token, body: { trackIds: [tid], title: 'x' }, expect: 400 });
+    run(`INSERT INTO youtube_accounts (user_id, refresh_token, channel_id, channel_title, uploads, created_at) VALUES (?, 'x', 'UCx', 'Kay Beats', 'UUx', 0)`, beatmaker.id);
+    const second = (await call('POST', `/api/me/sounds/projects/${pack}/tracks?filename=Nuit%2090bpm.wav`, { token: beatmaker.token, raw: wav('nuit'), expect: 201 })).id;
+    await call('POST', '/api/me/sounds/youtube', { token: other.token, body: { trackIds: [tid], title: 'x' }, expect: 400 });
+    await call('POST', '/api/me/sounds/youtube', { token: beatmaker.token, body: { trackIds: [tid], title: '' }, expect: 400 });
+    const start = Date.now() + 3600_000;
+    const made = await call('POST', '/api/me/sounds/youtube', { token: beatmaker.token, expect: 202, body: {
+      trackIds: [tid, second], title: '[FREE] Type Beat - "{titre}" ({bpm} BPM) <b>', description: '{bpm} BPM · {cle}\nLicences : {lien}', tags: 'type beat, trap ,', privacy: 'unlisted', publishAt: start, every: 1 } });
+    assert.equal(made.count, 2);
+    const rows = made.videos.slice().sort((a, b) => a.publishAt - b.publishAt);
+    assert.deepEqual(rows.map((v) => [v.title, v.status, v.privacy]), [['[FREE] Type Beat - "Ghost" (150 BPM) b', 'scheduled', 'unlisted'], ['[FREE] Type Beat - "Nuit" (90 BPM) b', 'scheduled', 'unlisted']]);
+    assert.equal(rows[1].publishAt - rows[0].publishAt, 86_400_000);
+    assert.match(rows[0].description, /^150 BPM · F min\nLicences : http.*\/ecoute\?t=/);
+    assert.equal(get('SELECT tags FROM youtube_videos WHERE id = ?', rows[0].id).tags, 'type beat,trap');
+    const left = await call('DELETE', `/api/me/sounds/youtube/${rows[1].id}`, { token: beatmaker.token });
+    assert.equal(left.videos.length, 1);
+  });
+
   console.log(`\n${passed} étapes réussies.`);
 } finally {
   server.close();

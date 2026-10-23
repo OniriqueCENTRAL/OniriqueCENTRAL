@@ -30,7 +30,7 @@ import {
 } from './promos.js';
 import { mountNewsletter, setMarketing } from './newsletter.js';
 import * as mailbox from './mailbox.js';
-import { connectUrl, disconnect, finishConnect, videoFile, videoView, youtubeConfigured, youtubeState } from './youtube.js';
+import { connectBack, connectUrl, disconnect, finishConnect, videoFile, videoView, youtubeConfigured, youtubeState } from './youtube.js';
 import * as social from './social.js';
 import { announcementView, deleteAccount, maintenanceView, mountControl, packView, paidSubscription, planView } from './control.js';
 import { enrollment, matchStep, newRecoveryCodes, newSecret, recoveryHash } from './totp.js';
@@ -601,6 +601,9 @@ export function createApp() {
   const allowed = (right) => (req, res, next) => requireUser(req, res, (error) => next(error
     || (can(req.user, right) ? undefined : new HttpError(403, "Cette fonction n'est pas ouverte à ce compte."))));
   const team = allowed('youtube');
+  // Brancher sa chaîne : pour les Shorts, ou pour publier ses prods depuis ONIRIQUE CLOUD.
+  const channel = (req, res, next) => requireUser(req, res, (error) => next(error
+    || (can(req.user, 'youtube') || can(req.user, 'sounds') ? undefined : new HttpError(403, "Cette fonction n'est pas ouverte à ce compte."))));
   const instagram = allowed('instagram');
   const ownVideo = (req) => {
     const video = get('SELECT * FROM youtube_videos WHERE id = ? AND user_id = ?', int(req.params.id, 0), req.user.id);
@@ -611,21 +614,25 @@ export function createApp() {
 
   app.get('/api/youtube', team, wrap(async (req, res) => res.json(await youtubeState(req.user.id))));
 
-  app.post('/api/youtube/connect', team, (req, res) => {
+  app.post('/api/youtube/connect', channel, (req, res) => {
     if (!youtubeConfigured()) throw new HttpError(503, "La connexion à YouTube n'est pas encore réglée sur le serveur.");
-    res.json({ url: connectUrl(req.user.id) });
+    // Le retour : la page compte, ou un pack d'ONIRIQUE CLOUD (« mes-sons#/p/12 »), rien d'autre.
+    const back = /^mes-sons#\/p\/\d+$/.test(str(req.body?.back, 40)) ? str(req.body.back, 40) : 'compte';
+    res.json({ url: connectUrl(req.user.id, back) });
   });
 
   // Retour de Google, sans session : la demande en cours (state) dit de quel compte il s'agit.
   app.get('/api/youtube/callback', wrap(async (req, res) => {
     // La même adresse sert à « Se connecter avec Google » du panneau Mails des packs.
     if (ownsGoogleState(req.query.state)) return googleMailerCallback(req, res);
-    let result = 'ok';
+    let result = 'ok', back = connectBack(str(req.query.state));
     try { await finishConnect(str(req.query.state), str(req.query.code, 2000)); } catch (error) { result = error.message; }
-    res.redirect(`${config.siteUrl}/compte?youtube=${encodeURIComponent(result)}`);
+    // La réponse passe dans l'adresse, avant le « # » d'un pack : « /mes-sons?youtube=ok#/p/12 ».
+    const [page, hash = ''] = back.split('#');
+    res.redirect(`${config.siteUrl}/${page}?youtube=${encodeURIComponent(result)}${hash ? '#' + hash : ''}`);
   }));
 
-  app.delete('/api/youtube/account', team, wrap(async (req, res) => {
+  app.delete('/api/youtube/account', channel, wrap(async (req, res) => {
     await disconnect(req.user.id);
     res.json({ ok: true });
   }));

@@ -396,15 +396,20 @@ export function mountPackSend(app, { me, ownProject, sign, wrap }) {
 // Un envoi part en arrière-plan, par le lien d'écoute du pack ouvert à tous (sans mot de passe ni compte), créé s'il n'y
 // en a pas ; avec les couleurs de la pochette si le mail les demande.
 let signLinks = null; // la signature des liens suivis (sounds.js), donnée au montage des routes
-async function launch(sid, m, p, d) {
+/** Le lien d'écoute du pack ouvert à tous (sans mot de passe ni compte), créé s'il n'y en a pas. */
+export function openListenLink(p, label = 'Mails') {
   let link = get(`SELECT * FROM sound_links WHERE project_id = ? AND user_id = ? AND password_hash IS NULL AND require_account = 0
     AND (expires_at IS NULL OR expires_at > ?) ORDER BY created_at DESC`, p.id, p.user_id, now());
   if (!link) {
     const token = crypto.randomBytes(12).toString('base64url');
     run(`INSERT INTO sound_links (token, user_id, project_id, track_id, label, password_hash, expires_at, download, require_account, created_at)
-      VALUES (?, ?, ?, NULL, 'Mails', NULL, NULL, 1, 0, ?)`, token, p.user_id, p.id, now());
+      VALUES (?, ?, ?, NULL, ?, NULL, NULL, 1, 0, ?)`, token, p.user_id, p.id, label, now());
     link = get('SELECT * FROM sound_links WHERE token = ?', token);
   }
+  return link;
+}
+async function launch(sid, m, p, d) {
+  const link = openListenLink(p);
   const tracks = all('SELECT * FROM sound_tracks WHERE project_id = ? ORDER BY position, id', p.id);
   const palette = d.coverColors ? await coverPalette(p.cover) : null;
   const job = deliver({ sid, m, d: palette ? { ...d, colors: palette } : d, p, link, tracks, sign: signLinks });

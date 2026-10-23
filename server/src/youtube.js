@@ -32,10 +32,11 @@ const token = (params) => google('https://oauth2.googleapis.com/token', {
 // Une demande de connexion en cours : Google la rend telle quelle au retour, c'est elle qui dit de quel compte il s'agit.
 const pending = new Map();
 
-export function connectUrl(userId) {
+// back : la page où revenir après Google (« compte » pour les Shorts, un pack d'ONIRIQUE CLOUD pour les prods).
+export function connectUrl(userId, back = 'compte') {
   for (const [state, entry] of pending) if (entry.expires < now()) pending.delete(state);
   const state = crypto.randomBytes(24).toString('base64url');
-  pending.set(state, { userId, expires: now() + 10 * 60_000 });
+  pending.set(state, { userId, back, expires: now() + 10 * 60_000 });
   return 'https://accounts.google.com/o/oauth2/v2/auth?' + new URLSearchParams({
     client_id: config.googleClientId, redirect_uri: redirectUri(), response_type: 'code', scope: SCOPE,
     access_type: 'offline', prompt: 'consent', state, // « offline » et « consent » : Google rend un jeton qui dure
@@ -45,7 +46,7 @@ export function connectUrl(userId) {
 export async function finishConnect(state, code) {
   const entry = pending.get(state);
   pending.delete(state);
-  if (!entry || entry.expires < now() || !code) throw new HttpError(400, 'Connexion YouTube expirée ou refusée : recommencez.');
+  if (!entry || entry.expires < now() || !code) throw Object.assign(new HttpError(400, 'Connexion YouTube expirée ou refusée : recommencez.'), { back: entry?.back });
   const tokens = await token({ code, grant_type: 'authorization_code', redirect_uri: redirectUri() });
   if (!tokens.refresh_token) throw new HttpError(502, "Google n'a pas donné d'accès durable : recommencez.");
   const { items } = await google(`${API}/channels?part=snippet,contentDetails&mine=true`, { headers: { Authorization: `Bearer ${tokens.access_token}` } });
@@ -55,7 +56,10 @@ export async function finishConnect(state, code) {
        ON CONFLICT(user_id) DO UPDATE SET refresh_token = excluded.refresh_token, channel_id = excluded.channel_id,
          channel_title = excluded.channel_title, uploads = excluded.uploads`,
     entry.userId, seal(tokens.refresh_token), channel.id, channel.snippet.title, channel.contentDetails.relatedPlaylists.uploads, now());
+  return entry.back;
 }
+/** La page où revenir pour une demande en cours (lue avant que finishConnect ne l'efface). */
+export const connectBack = (state) => pending.get(state)?.back || 'compte';
 
 const accountOf = (userId) => get('SELECT * FROM youtube_accounts WHERE user_id = ?', userId);
 const accessToken = async (account) => (await token({ refresh_token: unseal(account.refresh_token), grant_type: 'refresh_token' })).access_token;
@@ -86,7 +90,7 @@ async function descriptions(userId, account) {
 
 export const videoView = (v) => ({
   id: v.id, filename: v.filename, size: v.size, title: v.title, description: v.description, publishAt: v.publish_at,
-  status: v.status, error: v.error, url: v.youtube_id ? `https://www.youtube.com/shorts/${v.youtube_id}` : null,
+  status: v.status, error: v.error, url: v.youtube_id ? (v.kind === 'beat' ? `https://www.youtube.com/watch?v=${v.youtube_id}` : `https://www.youtube.com/shorts/${v.youtube_id}`) : null,
 });
 
 export async function youtubeState(userId) {
@@ -94,7 +98,8 @@ export async function youtubeState(userId) {
   return {
     configured: youtubeConfigured(),
     channel: account ? account.channel_title : null,
-    videos: all('SELECT * FROM youtube_videos WHERE user_id = ? ORDER BY publish_at IS NULL DESC, publish_at, id', userId).map(videoView),
+    // Les vidéos de prods (beattube.js) ont leur liste dans ONIRIQUE CLOUD.
+    videos: all(`SELECT * FROM youtube_videos WHERE user_id = ? AND kind != 'beat' ORDER BY publish_at IS NULL DESC, publish_at, id`, userId).map(videoView),
     descriptions: await descriptions(userId, account),
   };
 }
@@ -110,8 +115,9 @@ async function publish(video) {
     method: 'POST',
     headers: { Authorization: authorization, 'Content-Type': 'application/json', 'X-Upload-Content-Type': video.mime, 'X-Upload-Content-Length': String(video.size) },
     body: JSON.stringify({
-      snippet: { title: video.title, description: video.description },
-      status: { privacyStatus: 'public', selfDeclaredMadeForKids: false },
+      // Une vidéo de prod (beattube.js) a ses tags, la catégorie Musique et sa visibilité ; un Short part public.
+      snippet: { title: video.title, description: video.description, ...(video.kind === 'beat' ? { tags: video.tags ? video.tags.split(',') : [], categoryId: '10' } : {}) },
+      status: { privacyStatus: video.privacy || 'public', selfDeclaredMadeForKids: false },
     }),
   });
   await read(session);

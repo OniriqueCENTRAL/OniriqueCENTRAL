@@ -17,6 +17,7 @@ import { mailDraft, packMailHtml } from './packmail.js';
 import { mountBeatStore, offersOf, filesOf, sellerView, licensesOf, licensePricesOf, payMethods } from './beatstore.js';
 import { mountPackSend, recipientFor, trackRecipient, coverPalette } from './packsend.js';
 import { writeZip, zipName, zipSize } from './zipstream.js';
+import { mountBeatTube } from './beattube.js';
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS sound_projects (
@@ -1385,6 +1386,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
 
   mountBeatStore(app, { me, track, room, receiveFile, openLink, linkTracks, linkProject, soundsDir, audioType, wrap });
   mountPackSend(app, { me, ownProject, sign, wrap });
+  mountBeatTube(app, { me, track, soundsDir, wrap });
 }
 
 // Les rappels de sortie : sept jours avant et la veille, à partir de 9 h (heure de Paris), un e-mail à l'auteur du projet et
