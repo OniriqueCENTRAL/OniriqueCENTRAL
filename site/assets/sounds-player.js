@@ -159,22 +159,7 @@ dialog[open]::backdrop { animation: op-fade .22s ease-out; }
 .op-full.playing .op-disc { animation: op-spin 14s linear infinite; }
 .op-scrub { width: calc(100% + 36px); height: 64px; display: block; touch-action: none; cursor: grab; }
 .op-full-time { font: 500 15px var(--f-mono, monospace); letter-spacing: .02em; }
-/* Les paroles à la place de la pochette ronde ; synchronisées, la ligne chantée s'allume et reste au milieu */
-.op-lyrics { width: 100%; height: min(44vh, 400px); overflow-y: auto; touch-action: pan-y; overscroll-behavior: contain; scrollbar-width: none;
-  mask-image: linear-gradient(transparent, #000 14%, #000 86%, transparent); padding: 18% 2px; }
-.op-full.lyrics-on .op-disc, .op-lyrics[hidden] { display: none; }
-.op-lyrics p { margin: 0; padding: 5px 0; font: 700 clamp(19px, 5.4vw, 24px)/1.3 var(--f-body); color: var(--mist, #f6eeee); overflow-wrap: anywhere; }
-.op-lyrics p.gap { min-height: 12px; }
-.op-lyrics.synced p { color: rgba(246,238,238,.32); transition: color .25s; }
-.op-lyrics.synced p.past { color: rgba(246,238,238,.6); }
-.op-lyrics.synced p.on { color: #fff; }
-.op-full.lyrics-on .op-lyrics { animation: op-lyrics-in .5s cubic-bezier(.2, .8, .2, 1) both; }
-.op-full.lyrics-on .op-lyrics p { animation: op-lyrics-in .55s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i, 0) * 40ms + 80ms); }
-.op-full.disc-back .op-disc { animation: op-disc-in .5s cubic-bezier(.2, .8, .2, 1) both; }
-.op-full.disc-back.playing .op-disc { animation: op-disc-in .5s cubic-bezier(.2, .8, .2, 1) both, op-spin 14s linear .5s infinite; }
 @keyframes op-lyrics-in { from { opacity: 0; translate: 0 18px; } }
-@keyframes op-disc-in { from { opacity: 0; scale: .85; } }
-@media (prefers-reduced-motion: reduce) { .op-full.lyrics-on .op-lyrics, .op-full.lyrics-on .op-lyrics p, .op-full.disc-back .op-disc { animation: none; } }
 .op-full-controls { width: 100%; display: flex; align-items: center; justify-content: space-between; }
 .op-full-controls .op-btn { width: 52px; height: 52px; color: var(--mist, #f6eeee); }
 .op-full-controls .op-btn svg { width: 28px; height: 28px; }
@@ -220,6 +205,31 @@ html.op-full-open, html.op-full-open body { overflow: hidden; }
 .op-stage-lyrics.synced p.on { color: #fff; transform: scale(1.03);
   text-shadow: 0 0 calc(14px + var(--op-level, 0) * 34px) color-mix(in srgb, var(--op-accent, #e23444) 75%, transparent); }
 html.op-stage-open, html.op-stage-open body { overflow: hidden; }
+@media (max-width: 720px) {
+  .op-stage-lyrics { padding: 6vh 22px 42vh; }
+  .op-stage-lyrics p { font-size: clamp(25px, 7.4vw, 34px); }
+}
+/* Choisir des lignes pour une story : les lignes touchées s'allument, la lecture ne fait plus défiler. */
+.op-stage.picking .op-stage-lyrics p { color: rgba(255,236,238,.36); cursor: pointer; transform: none; text-shadow: none; }
+.op-stage.picking .op-stage-lyrics p.picked { color: #fff; }
+.op-stage.picking .op-stage-lyrics p.gap { pointer-events: none; }
+.op-pick-bar { position: absolute; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom)); translate: -50% 0; display: flex; gap: 10px; }
+.op-pick-bar[hidden] { display: none; }
+.op-pick-bar button, .op-story-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 22px; border-radius: 999px;
+  border: 1px solid rgba(255,236,238,.18); background: rgba(20,9,11,.7); color: var(--mist, #f6eeee); font: 700 15px var(--f-body); cursor: pointer; backdrop-filter: blur(12px); white-space: nowrap; }
+.op-pick-bar button.go, .op-story-actions button.go { background: #fff; border-color: #fff; color: #120a0c; }
+.op-pick-bar button:disabled { opacity: .45; cursor: default; }
+html.op-picking .op-pill { display: none; }
+/* La carte à partager, comme une story : un aperçu qu'on touche pour changer la couleur, puis Partager. */
+.op-story { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 14px;
+  padding: calc(16px + env(safe-area-inset-top)) 16px calc(18px + env(safe-area-inset-bottom)); background: rgba(5,2,3,.78); backdrop-filter: blur(10px); animation: op-fade .2s ease-out; }
+.op-story[hidden] { display: none; }
+.op-story-sheet { width: min(460px, 100%); max-height: 100%; display: grid; justify-items: center; gap: 14px; padding: 12px 16px 18px; border-radius: 28px;
+  background: #1a1013; border: 1px solid rgba(255,210,214,.12); box-shadow: 0 30px 90px -30px #000; animation: op-rise .3s cubic-bezier(.2, .8, .2, 1); overflow: auto; }
+.op-story-sheet::before { content: ""; width: 40px; height: 4px; border-radius: 2px; background: rgba(255,236,238,.25); }
+.op-story canvas { height: min(54vh, 560px); aspect-ratio: 9 / 16; max-width: 100%; border-radius: 18px; cursor: pointer; box-shadow: 0 20px 50px -20px #000; }
+.op-story small { font-size: 13px; color: rgba(246,238,238,.6); text-align: center; }
+.op-story-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 @keyframes op-stage-in { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .op-stage, .op-stage-lyrics p { animation: none; } .op-stage-bg { transform: none; transition: none; } .op-stage-lyrics.synced p.on { transform: none; } }
 html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: calc(92px + env(safe-area-inset-bottom)); max-height: 58vh; }
@@ -299,21 +309,30 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     const fullShare = btn("share", "Partager"), fullPrev = btn("prev", "Précédent"), fullPlay = btn("play", "Lecture", "big");
     const fullNext = btn("next", "Suivant"), fullRepeat = btn("repeat", "Répéter");
     const fullQueue = btn("queue", "File d'attente"), fullComments = btn("comment", "Commentaires"), fullLyricsBtn = btn("lyrics", "Paroles");
-    const fullLyrics = el("div", { className: "op-lyrics", hidden: true });
     const fullSettings = el("button", { className: "op-settings", type: "button", ariaLabel: "Vitesse, boucle et téléchargement" }, icon("sliders"), "Réglages");
     const full = el("div", { className: "op-full", hidden: true, role: "dialog", ariaLabel: "Lecteur" }, fullBg,
       el("div", { className: "op-full-top" }, fullClose),
-      el("div", { className: "op-card" }, el("div", { className: "op-card-title" }, fullTitle, fullSub), disc, fullLyrics, scrub, fullClock,
+      el("div", { className: "op-card" }, el("div", { className: "op-card-title" }, fullTitle, fullSub), disc, scrub, fullClock,
         el("div", { className: "op-full-controls" }, onShare ? fullShare : el("span", { style: "width:52px" }), fullPrev, fullPlay, fullNext, fullRepeat)),
       el("div", { className: "op-full-bar" }, el("div", {}, fullQueue, fullComments, fullLyricsBtn), fullSettings));
-    // Les paroles en grand (ordinateur) : toute la page, la barre du lecteur par-dessus.
+    // Les paroles en grand : toute la page, la barre du lecteur par-dessus (sur téléphone aussi, depuis le plein écran).
     const stageBg = el("div", { className: "op-stage-bg" }), stageCover = el("img", { alt: "" });
     const stageTitle = el("b"), stageSub = el("span"), stageMode = el("small");
-    const stageClose = btn("close", "Fermer les paroles");
+    const stageClose = btn("close", "Fermer les paroles"), stageShare = btn("share", "Partager des paroles en story");
     const stageLyrics = el("div", { className: "op-stage-lyrics" });
+    const pickCancel = el("button", { type: "button", textContent: "Annuler" }), pickNext = el("button", { className: "go", type: "button" });
+    const pickBar = el("div", { className: "op-pick-bar", hidden: true }, pickCancel, pickNext);
     const stage = el("div", { className: "op-stage", hidden: true, role: "dialog", ariaLabel: "Paroles", tabIndex: -1 }, stageBg,
-      el("div", { className: "op-stage-top" }, stageCover, el("div", {}, stageMode, stageTitle, stageSub), stageClose), stageLyrics);
-    document.body.append(stage, full, sheet, queue, pill);
+      el("div", { className: "op-stage-top" }, stageCover, el("div", {}, stageMode, stageTitle, stageSub), stageShare, stageClose), stageLyrics, pickBar);
+    // La carte des paroles choisies, à partager en story.
+    const storyCanvas = el("canvas", { width: 1080, height: 1920, title: "Toucher pour changer la couleur" });
+    const storyShare = el("button", { className: "go", type: "button" }, icon("share"), "Partager");
+    const storySave = el("button", { type: "button" }, icon("download"), "Enregistrer");
+    const storyEdit = el("button", { type: "button", textContent: "Modifier les paroles" });
+    const storySheet = el("div", { className: "op-story-sheet" }, storyCanvas, el("small", { textContent: "Touche la carte pour changer sa couleur" }),
+      el("div", { className: "op-story-actions" }, storyShare, storySave, storyEdit));
+    const story = el("div", { className: "op-story", hidden: true, role: "dialog", ariaLabel: "Partager des paroles" }, storySheet);
+    document.body.append(stage, full, sheet, queue, pill, story);
 
     const item = () => list[index] || null;
     const duration = () => (Number.isFinite(audio.duration) && audio.duration) || (item() && item().duration) || 0;
@@ -394,10 +413,9 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
       draw(); syncLyrics(); pulse();
     }
     // Les paroles du titre en cours, redessinées quand elles changent (un titre suivant, ou des paroles enregistrées).
-    // Les deux vues des paroles (plein écran du téléphone, grande scène de l'ordinateur) : chacune suit la ligne chantée
-    // et la garde à sa hauteur (au milieu sur téléphone, au tiers sur la scène).
-    let lyricsOn = false, lyricsOf = null;
-    const lyricBoxes = [[fullLyrics, 0.5], [stageLyrics, 0.36]];
+    // La scène suit la ligne chantée et la garde au tiers de sa hauteur.
+    let lyricsOf = null;
+    const lyricBoxes = [[stageLyrics, 0.36]];
     function syncLyrics() {
       const t = item(), text = (t && t.lyrics) || "";
       if (text !== lyricsOf) {
@@ -410,19 +428,19 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
             const row = el("p", { className: l.text.trim() ? "" : "gap", textContent: l.text.trim() ? l.text : l.at === null ? "" : "♪" });
             row.dataset.at = l.at ?? "";
             row.style.setProperty("--i", Math.min(i, 12)); // les premières lignes arrivent l'une après l'autre
-            if (l.at !== null) row.onclick = () => { audio.currentTime = l.at; audio.play().catch(() => {}); };
+            if (l.text.trim()) row.onclick = () => (picking ? pick(row) : l.at !== null && (audio.currentTime = l.at, audio.play().catch(() => {})));
             return row;
           }));
           box.scrollTop = 0;
         }
         if (!text && t) stageLyrics.append(el("p", { className: "none", textContent: "Pas encore de paroles pour « " + t.title + " »." }));
         stageMode.textContent = !text ? "Paroles" : synced ? "Paroles synchronisées" : "Paroles";
-        fullLyricsBtn.hidden = stageBtn.hidden = !text;
-        showLyrics(lyricsOn && !!text);
+        fullLyricsBtn.hidden = stageBtn.hidden = stageShare.hidden = !text;
+        stopPicking();
       }
       const now = audio.currentTime + 0.15;
       for (const [box, at] of lyricBoxes) {
-        if (!box.classList.contains("synced") || box.hidden || (box === stageLyrics && stage.hidden)) continue;
+        if (!box.classList.contains("synced") || stage.hidden || picking) continue;
         const rows = box.children;
         let current = -1;
         for (let i = 0; i < rows.length; i++) if (rows[i].dataset.at !== "" && Number(rows[i].dataset.at) <= now) current = i;
@@ -433,14 +451,127 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
         if (on) box.scrollTo({ top: on.offsetTop - box.offsetTop - box.clientHeight * at + on.offsetHeight / 2, behavior: "smooth" });
       }
     }
-    function showLyrics(on) {
-      // La pochette revient en douceur quand on referme les paroles.
-      if (!on && !fullLyrics.hidden) { full.classList.remove("disc-back"); void full.offsetWidth; full.classList.add("disc-back"); }
-      fullLyrics.hidden = !on;
-      full.classList.toggle("lyrics-on", on);
-      fullLyricsBtn.classList.toggle("on", on);
-      fullLyrics.dataset.line = -1;
+    // Partager des paroles, comme Spotify : on touche des lignes (la ligne chantée est déjà prise), puis une carte se
+    // dessine (pochette, titre, lignes, ONIRIQUE) en image de story, envoyée par le partage du téléphone (Instagram…).
+    const MAX_PICK = 6;
+    let picking = false, storyColor = 0;
+    const picked = () => [...stageLyrics.children].filter((p) => p.classList.contains("picked"));
+    function showPicks() {
+      const n = picked().length;
+      stageMode.textContent = "Sélectionne les paroles";
+      stageSub.textContent = n ? n + (n > 1 ? " lignes sélectionnées" : " ligne sélectionnée") : "Touche jusqu'à " + MAX_PICK + " lignes";
+      pickNext.textContent = "Suivant";
+      pickNext.disabled = !n;
     }
+    function pick(row) {
+      if (!row.classList.contains("picked") && picked().length >= MAX_PICK) return;
+      row.classList.toggle("picked");
+      showPicks();
+    }
+    function startPicking() {
+      picking = true;
+      stage.classList.add("picking"); pickBar.hidden = false; stageShare.hidden = true;
+      document.documentElement.classList.add("op-picking");
+      if (!picked().length) { const on = stageLyrics.querySelector("p.on") || [...stageLyrics.children].find((p) => p.onclick); if (on) on.classList.add("picked"); }
+      showPicks();
+    }
+    function stopPicking() {
+      if (!picking) return;
+      picking = false;
+      stage.classList.remove("picking"); pickBar.hidden = true; story.hidden = true;
+      stageShare.hidden = !lyricsOf;
+      document.documentElement.classList.remove("op-picking");
+      for (const p of picked()) p.classList.remove("picked");
+      const t = item();
+      stageMode.textContent = parseLyrics(lyricsOf).some((l) => l.at !== null) ? "Paroles synchronisées" : "Paroles";
+      stageSub.textContent = (t && t.subtitle) || "";
+      stageLyrics.dataset.line = -1; syncLyrics();
+    }
+    // Le texte en lignes d'au plus « width » pixels.
+    function wrap(g, text, width) {
+      const lines = [];
+      for (const para of text) {
+        let line = "";
+        for (const word of para.split(/\s+/)) {
+          const next = line ? line + " " + word : word;
+          if (line && g.measureText(next).width > width) { lines.push(line); line = word; } else line = next;
+        }
+        lines.push(line);
+      }
+      return lines;
+    }
+    const loadImage = (src) => new Promise((resolve) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => resolve(null); img.src = src; });
+    const roundRect = (g, x, y, w, h, r) => { g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, r) : g.rect(x, y, w, h); };
+    async function drawStory() {
+      const t = item(), lines = picked().map((p) => p.textContent);
+      const colors = [[accent, "#120a0c"], ["#E23444", "#fff"], ["#F6EEEE", "#120a0c"], ["#151012", "#fff"]];
+      const [bg, fg] = colors[storyColor % colors.length];
+      const css = getComputedStyle(document.documentElement);
+      const body = css.getPropertyValue("--f-body").trim() || "system-ui, sans-serif", display = css.getPropertyValue("--f-display").trim() || body;
+      await Promise.all([document.fonts.load("800 80px " + body), document.fonts.load("700 40px " + display)]).catch(() => {});
+      const [cover, logo] = await Promise.all([t.cover ? loadImage(t.cover + "?w=480") : null, loadImage("/assets/logo-small.png")]);
+      const g = storyCanvas.getContext("2d"), W = 1080, H = 1920, X = 110, CW = W - 2 * X, PAD = 64;
+      // Le fond de la story : la pochette floutée et assombrie, sinon un dégradé de la couleur de la carte.
+      g.reset ? g.reset() : g.setTransform(1, 0, 0, 1, 0, 0);
+      g.fillStyle = "#0d0809"; g.fillRect(0, 0, W, H);
+      if (cover && "filter" in g) { g.filter = "blur(70px) brightness(.45) saturate(1.3)"; g.drawImage(cover, -300, -300, H + 600, H + 600); g.filter = "none"; }
+      else { const grad = g.createLinearGradient(0, 0, 0, H); grad.addColorStop(0, bg); grad.addColorStop(1, "#0d0809"); g.globalAlpha = .55; g.fillStyle = grad; g.fillRect(0, 0, W, H); g.globalAlpha = 1; }
+      // Les paroles : la plus grande taille qui tient sur la carte.
+      let size = 92, text;
+      do { g.font = `800 ${size}px ${body}`; text = wrap(g, lines, CW - 2 * PAD); size -= 4; } while (size > 44 && text.length * size * 1.18 > 900);
+      size += 4;
+      const lead = Math.round(size * 1.16), headH = 120, footH = 70;
+      const CH = PAD + headH + 70 + text.length * lead + 80 + footH + PAD, Y = Math.round((H - CH) / 2);
+      g.save(); g.shadowColor = "rgba(0,0,0,.5)"; g.shadowBlur = 80; g.shadowOffsetY = 30;
+      g.fillStyle = bg; roundRect(g, X, Y, CW, CH, 44); g.fill(); g.restore();
+      // L'en-tête : pochette, titre, artiste.
+      let x = X + PAD, y = Y + PAD;
+      if (cover) { g.save(); roundRect(g, x, y, headH, headH, 18); g.clip(); g.drawImage(cover, x, y, headH, headH); g.restore(); x += headH + 30; }
+      g.fillStyle = fg; g.textBaseline = "alphabetic";
+      const fit = (s, w) => { while (s.length > 1 && g.measureText(s).width > w) s = s.slice(0, -2) + "…"; return s; };
+      g.font = `700 44px ${body}`; g.fillText(fit(t.title + (t.feat ? " (feat. " + t.feat + ")" : ""), X + CW - PAD - x), x, y + 52);
+      g.globalAlpha = .72; g.font = `500 38px ${body}`; g.fillText(fit(t.subtitle || "", X + CW - PAD - x), x, y + 102); g.globalAlpha = 1;
+      // Les lignes choisies.
+      g.font = `800 ${size}px ${body}`;
+      y = Y + PAD + headH + 70 + size;
+      for (const line of text) { g.fillText(line, X + PAD, y); y += lead; }
+      // ONIRIQUE en bas de la carte.
+      y = Y + CH - PAD - footH;
+      if (logo) g.drawImage(logo, X + PAD, y + 4, 68, 68 * logo.height / logo.width);
+      g.font = `700 38px ${display}`; g.fillText("ONIRIQUE", X + PAD + (logo ? 86 : 0), y + 54);
+    }
+    // L'image est prête avant le toucher sur Partager : Safari n'ouvre le partage que dans le geste lui-même.
+    let storyImage = null;
+    async function paintStory() {
+      storyImage = null; storyShare.disabled = storySave.disabled = true;
+      await drawStory();
+      storyImage = await new Promise((resolve) => storyCanvas.toBlob((blob) => resolve(new File([blob], "onirique-paroles.png", { type: "image/png" })), "image/png"));
+      storyShare.disabled = storySave.disabled = false;
+    }
+    function openStory() {
+      story.hidden = false; pickBar.hidden = true;
+      paintStory();
+    }
+    function shareStory() {
+      if (!storyImage) return;
+      // Le partage du téléphone (Instagram, Snapchat…) ; sans lui, l'image s'enregistre.
+      if (navigator.canShare && navigator.canShare({ files: [storyImage] })) navigator.share({ files: [storyImage] }).catch((error) => { if (error.name !== "AbortError") saveStory(); });
+      else saveStory();
+    }
+    function saveStory() {
+      if (!storyImage) return;
+      const a = el("a", { href: URL.createObjectURL(storyImage), download: "onirique-paroles.png" });
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    }
+    stageShare.onclick = startPicking;
+    pickCancel.onclick = stopPicking;
+    pickNext.onclick = openStory;
+    storyCanvas.onclick = () => { storyColor++; paintStory(); };
+    storyShare.onclick = shareStory;
+    storySave.onclick = saveStory;
+    storyEdit.onclick = () => { story.hidden = true; pickBar.hidden = false; };
+    story.onclick = (event) => { if (event.target === story) storyEdit.onclick(); };
     // Le fond de la scène respire avec le son : l'énergie des graves, lissée, de 0 à 1. Le son passe par un analyseur
     // créé au premier affichage (il faut un geste de l'auditeur) ; s'il ne peut pas l'être, la scène reste immobile.
     let analyser = null, bins = null, level = 0;
@@ -480,6 +611,7 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
       if (audio.paused) pulse();
     }
     function closeStage() {
+      stopPicking();
       stage.hidden = true; stageBtn.classList.remove("on");
       document.documentElement.classList.remove("op-stage-open");
     }
@@ -594,11 +726,10 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     };
     fullComments.onclick = () => panel("comments");
     fullSettings.onclick = () => panel("settings");
-    fullLyricsBtn.onclick = () => { lyricsOn = fullLyrics.hidden; showLyrics(lyricsOn); syncLyrics(); };
+    // Sur téléphone, le micro du plein écran ouvre les paroles en grand, avec la barre du lecteur en bas.
+    fullLyricsBtn.onclick = () => { closeFull(); openStage(); };
     stageBtn.onclick = () => (stage.hidden ? openStage() : closeStage());
     stageClose.onclick = closeStage;
-    // Sur téléphone, les paroles s'ouvrent dans le plein écran : la scène se referme si la fenêtre devient étroite.
-    addEventListener("resize", () => { if (!stage.hidden && phone()) closeStage(); });
     addEventListener("resize", () => { if (!full.hidden && !phone()) closeFull(); });
     // Glisser vers le bas (ailleurs que sur la forme d'onde ou un bouton) referme le plein écran.
     let swipe = null;
@@ -671,7 +802,7 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
       // Sur les paroles en grand, Entrée et Espace lancent ou mettent en pause, même si un bouton du lecteur a gardé le focus.
       const onStage = !stage.hidden && (event.key === "Enter" || event.code === "Space") && !/^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName);
       if (onStage || (event.code === "Space" && item() && !/^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(event.target.tagName))) { event.preventDefault(); play.onclick(); }
-      if (event.key === "Escape" && !stage.hidden) closeStage();
+      if (event.key === "Escape" && !stage.hidden) (picking ? (story.hidden ? stopPicking() : storyEdit.onclick()) : closeStage());
     });
     if ("mediaSession" in navigator) {
       navigator.mediaSession.setActionHandler("previoustrack", () => prev.onclick());

@@ -379,6 +379,9 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 @media (max-width: 760px) {
   .details { grid-template-columns: minmax(0, 1fr); }
   .details-left { border-right: 0; border-bottom: 1px solid rgba(255,210,214,.08); }
+  /* Sur téléphone, la fenêtre défile d'un seul tenant au lieu d'une petite zone sous l'en-tête. */
+  .details-right { overflow: visible; max-height: none; }
+  #details { overscroll-behavior: contain; }
 }
 .versions li { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 14px; }
 .tag { font: 600 11px var(--f-mono); padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); }
@@ -660,7 +663,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 <dialog id="sale"></dialog>
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close('cancel')">Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
-<script src="assets/sounds-player.js?v=13"></script>
+<script src="assets/sounds-player.js?v=14"></script>
 <script src="assets/audio-kit.js?v=2"></script>
 <script src="assets/pdf-kit.js"></script>
 <script src="assets/release-steps.js"></script>
@@ -2379,8 +2382,11 @@ function renderYoutube() {
     ["rendering", "uploading"].includes(v.status) ? null : el("button", { className: "x", type: "button", ariaLabel: "Retirer de la liste",
       onclick: () => (v.status === "published" || confirm("Retirer « " + v.title + " » de la file ?")) && api("DELETE", "/me/sounds/youtube/" + v.id).then((r) => { yt.videos = r.videos; renderYoutube(); }, fail) }, icon("close")))))
     : null;
+  // La liste se redessine pendant les envois : on reste là où on avait défilé.
+  const scrolled = dialog.querySelector(".stack")?.scrollTop || 0;
   const stack = el("div", { className: "stack" });
   dialog.replaceChildren(head, stack);
+  requestAnimationFrame(() => { stack.scrollTop = scrolled; });
   if (!yt.configured) return stack.append(el("p", { className: "muted", style: "margin:0", textContent: "La publication sur YouTube n'est pas encore réglée sur le serveur." }));
   if (!yt.channel) {
     const go = el("button", { className: "btn btn-primary", type: "button", textContent: "Connecter ma chaîne YouTube" });
@@ -2432,8 +2438,12 @@ function renderYoutube() {
   title.oninput = update;
   picks.forEach(([, x]) => { x.onchange = update; });
   titles.forEach((x) => { x.oninput = update; });
+  const logout = el("button", { className: "mini-btn", type: "button", textContent: "Déconnecter" });
+  logout.onclick = () => confirm("Déconnecter la chaîne « " + yt.channel + " » ? Les vidéos programmées ne partiront plus tant qu'une chaîne n'est pas reconnectée.")
+    && api("DELETE", "/youtube/account").then(() => openYoutube(p), fail);
   const form = el("form", { className: "stack", style: "padding:0" },
-    el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Chaîne : " + yt.channel + ". Une vidéo par prod : son image (ou la pochette du pack) sur un fond flouté, avec le son de la prod." }),
+    el("div", { className: "row", style: "justify-content:space-between;gap:10px" }, el("b", { textContent: "Chaîne : " + yt.channel }), logout),
+    el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Une vidéo par prod : son image (ou la pochette du pack) sur un fond flouté, avec le son de la prod." }),
     el("div", { className: "sub-title", textContent: "Les prods" }),
     el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Clique sur l'image d'une prod pour lui en donner une à elle (importée ou prise sur Pinterest). Un titre écrit pour une prod remplace le modèle." }),
     el("div", { className: "mail-prods yt-prods" }, ...picks.map(([t, x]) => el("div", { className: "yt-prod" }, x, thumb(t),
@@ -2461,9 +2471,12 @@ function renderYoutube() {
   if (dialog.open && videos.some((v) => ["rendering", "uploading"].includes(v.status))) {
     // Pas pendant qu'on écrit dans le formulaire : la liste attend la fin de la saisie.
     const poll = () => api("GET", "/me/sounds/youtube").then((r) => {
-      yt = r;
       if (!$("youtube").open) return;
-      if (form.contains(document.activeElement)) renderYoutube.timer = setTimeout(poll, 4000); else renderYoutube();
+      // Rien n'a bougé : on ne touche pas à la fenêtre (ni au défilement, ni à ce qui est coché).
+      const same = JSON.stringify(r.videos) === JSON.stringify(yt.videos);
+      if (same || form.contains(document.activeElement)) { renderYoutube.timer = setTimeout(poll, 4000); return; }
+      yt = r;
+      renderYoutube();
     }).catch(() => {});
     renderYoutube.timer = setTimeout(poll, 4000);
   }
