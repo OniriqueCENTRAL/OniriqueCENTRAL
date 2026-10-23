@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=7cfd2007"></script>
+<script src="assets/i18n.js?v=52ca26be"></script>
 <script src="assets/ui.js?v=2"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
@@ -306,7 +306,12 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
 .lyrics-edit { min-height: 260px; font: 500 13px/1.5 var(--f-mono); }
 .sync-lines { max-height: 46vh; overflow-y: auto; }
 /* Sur téléphone : un grand bouton à taper en rythme, sans le zoom du double appui */
-#sync-mark { touch-action: manipulation; }
+#sync-mark, #sync-undo { touch-action: manipulation; }
+.sync-player { display: flex; align-items: center; gap: 12px; padding: 8px 14px 8px 8px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); }
+.sync-player b { flex: none; font: 500 13px var(--f-mono); color: var(--mist); }
+.sync-range { flex: 1; min-width: 0; accent-color: var(--ember); }
+.sync-keys .btn { gap: 10px; }
+.sync-keys kbd { padding: 2px 7px; border-radius: 6px; border: 1px solid currentColor; font: 600 11px/1.4 var(--f-mono); opacity: .7; }
 @media (pointer: coarse) { #sync-mark { flex: 1; min-height: 56px; font-size: 16px; } }
 .sync-lines li button { width: 100%; display: flex; gap: 12px; padding: 7px 10px; border: 0; border-radius: 10px; background: none; color: var(--haze); font: 500 14px var(--f-body); text-align: left; cursor: pointer; }
 .sync-lines li button span { flex: none; min-width: 64px; font: 500 12px/1.6 var(--f-mono); }
@@ -628,11 +633,7 @@ function syncLyrics() {
   if (on && box.dataset.current !== String(current)) box.scrollTo({ top: on.offsetTop - box.clientHeight / 2 + on.offsetHeight / 2, behavior: "smooth" });
   box.dataset.current = current;
 }
-player.audio.addEventListener("timeupdate", () => {
-  syncLyrics();
-  const clock = document.getElementById("sync-clock");
-  if (clock) clock.textContent = OP.time(player.audio.currentTime);
-});
+player.audio.addEventListener("timeupdate", syncLyrics);
 player.audio.addEventListener("seeked", () => { delete $("lyrics").dataset.current; syncLyrics(); });
 
 // ——— Menus et petites fenêtres ———
@@ -1306,12 +1307,34 @@ $("project-title").onclick = async () => {
 // ——— Détails d'un titre ———
 let detailsId = null, detailsView = "main";
 let sync = null; // la synchronisation des paroles en cours : { tid, lines: [{ at, text }], i : la prochaine ligne à marquer }
-// Pendant la synchronisation, Espace marque la ligne, où que soit le focus dans la fenêtre (hors champ de saisie).
-$("details").addEventListener("keydown", (event) => {
-  if (detailsView !== "lyrics-sync" || event.key !== " " || /^(INPUT|TEXTAREA)$/.test(event.target.tagName)) return;
-  event.preventDefault();
-  if (!event.repeat) document.getElementById("sync-mark")?.click();
+// La synchronisation a son propre lecteur : le lecteur du site se met en pause, et celui-ci s'arrête dès qu'on la quitte.
+const syncAudio = new Audio();
+syncAudio.preload = "auto";
+const syncing = () => $("details").open && detailsView === "lyrics-sync";
+$("details").addEventListener("close", () => syncAudio.pause());
+player.audio.addEventListener("play", () => syncAudio.pause());
+function syncProgress() {
+  const range = document.getElementById("sync-range"), clock = document.getElementById("sync-clock"), d = syncAudio.duration || 0;
+  if (range && !range.matches(":active")) { range.max = d; range.value = syncAudio.currentTime; }
+  if (clock) clock.textContent = OP.time(syncAudio.currentTime) + " / " + OP.time(d);
+}
+syncAudio.addEventListener("timeupdate", syncProgress);
+syncAudio.addEventListener("loadedmetadata", syncProgress);
+for (const type of ["play", "pause"]) syncAudio.addEventListener(type, () => {
+  const b = document.getElementById("sync-play");
+  if (b) { b.replaceChildren(icon(syncAudio.paused ? "play" : "pause")); b.ariaLabel = syncAudio.paused ? "Lecture" : "Pause"; }
+});
+// Espace marque la ligne, ↑ annule le dernier repère, où que soit le focus (hors champ de saisie). Le document les reçoit
+// en premier : après chaque repère la fenêtre est redessinée et le focus retombe sur la page.
+document.addEventListener("keydown", (event) => {
+  if (!syncing() || event.target.tagName === "TEXTAREA" || (event.target.tagName === "INPUT" && event.target.type !== "range")) return;
+  const id = event.key === " " ? "sync-mark" : event.key === "ArrowUp" ? "sync-undo" : null;
+  if (!id) return;
+  event.preventDefault(); event.stopPropagation();
+  if (!event.repeat) document.getElementById(id)?.click();
 }, true);
+// Sans cela, Espace relâché sur un bouton déjà cliqué le cliquerait une seconde fois.
+document.addEventListener("keyup", (event) => { if (syncing() && event.key === " ") event.preventDefault(); }, true);
 function openDetails(tid, view = "main") { detailsId = tid; detailsView = view; renderDetails(); if (!$("details").open) $("details").showModal(); }
 function drawPeaks(canvas, peaks) {
   requestAnimationFrame(() => {
@@ -1368,6 +1391,7 @@ const creditsList = (credits) => {
 function renderDetails() {
   // Ne pas effacer un nom en cours de saisie quand la page se met à jour (un envoi qui se termine, par exemple).
   if (document.activeElement && document.activeElement.classList.contains("title-edit")) return;
+  if (detailsView !== "lyrics-sync") syncAudio.pause();
   // Un outil ouvert garde son analyse : la fenêtre n'est pas redessinée tant qu'il montre ce même titre.
   const frame = $("details").querySelector(".tool-frame");
   if (frame && frame.dataset.key === detailsView + ":" + detailsId) return;
@@ -1459,31 +1483,49 @@ function renderDetails() {
           if (!lines.length) { text.focus(); return; }
           sync = { tid: t.id, lines, i: Math.max(0, lines.findIndex((l) => l.at === null)) };
           if (lines.every((l) => l.at !== null)) sync.i = lines.length;
+          player.audio.pause();
+          syncAudio.src = v.url;
           detailsView = "lyrics-sync"; renderDetails();
         } }), saved)];
   } else if (detailsView === "lyrics-sync") {
     if (!sync || sync.tid !== t.id) { detailsView = "lyrics"; return renderDetails(); }
-    const here = player.item && player.item.trackId === t.id;
     const next = sync.lines[sync.i], touch = matchMedia("(pointer: coarse)").matches;
-    const mark = el("button", { className: "btn btn-primary", id: "sync-mark", type: "button", disabled: here && !next,
-      textContent: !here ? "Lancer le titre" : next ? (touch ? "Marquer la ligne" : "Marquer la ligne (Espace)") : "Toutes les lignes sont marquées" });
+    const showNext = () => $("details").querySelector(".sync-lines .next")?.scrollIntoView({ block: "nearest" });
+    // Les touches à côté des boutons, comme sur Musixmatch (pas sur écran tactile).
+    const key = (label) => (touch ? null : el("kbd", { textContent: label }));
+    const mark = el("button", { className: "btn btn-primary", id: "sync-mark", type: "button", disabled: !next },
+      next ? (syncAudio.paused && !syncAudio.currentTime ? "Lancer le titre" : "Marquer la ligne") : "Toutes les lignes sont marquées", next ? key("Espace") : null);
     mark.onclick = () => {
-      if (!here) { playVersion(p, t, v); return renderDetails(); }
       if (!next) return;
-      next.at = player.audio.currentTime;
+      // Le premier appui lance le titre ; les suivants posent le repère de la ligne.
+      if (syncAudio.paused && !syncAudio.currentTime) { syncAudio.play().catch(fail); return renderDetails(); }
+      next.at = syncAudio.currentTime;
       sync.i++;
-      renderDetails();
-      $("details").querySelector(".sync-lines .next")?.scrollIntoView({ block: "nearest" });
+      renderDetails(); showNext();
     };
+    // Annuler le dernier repère : la ligne redevient à marquer, et le son repart 2 s avant elle.
+    const undo = el("button", { className: "btn btn-ghost", id: "sync-undo", type: "button", disabled: !sync.i }, "Annuler le dernier", key("↑"));
+    undo.onclick = () => {
+      if (!sync.i) return;
+      const l = sync.lines[--sync.i];
+      if (l.at !== null) syncAudio.currentTime = Math.max(0, l.at - 2);
+      l.at = null;
+      renderDetails(); showNext();
+    };
+    const playBtn = el("button", { className: "round", id: "sync-play", type: "button", ariaLabel: syncAudio.paused ? "Lecture" : "Pause",
+      onclick: () => (syncAudio.paused ? syncAudio.play().catch(fail) : syncAudio.pause()) }, icon(syncAudio.paused ? "play" : "pause"));
+    const range = el("input", { type: "range", id: "sync-range", className: "sync-range", min: 0, max: syncAudio.duration || v.duration || 0, step: 0.01, value: syncAudio.currentTime, ariaLabel: "Position dans le titre" });
+    range.oninput = () => { syncAudio.currentTime = Number(range.value); };
     const saved = el("span", { className: "muted", style: "font-size:13px" });
     right = [back("Synchroniser les paroles"),
       el("p", { className: "muted", style: "margin:0", textContent: touch ? "Lance le titre, puis touche Marquer au moment où chaque ligne commence. Touche une ligne pour la reprendre à partir de là."
-        : "Lance le titre, puis appuie sur Marquer (ou Espace) au moment où chaque ligne commence. Clique une ligne pour la reprendre à partir de là." }),
-      el("div", { className: "row" }, mark, el("b", { id: "sync-clock", style: "font:500 14px var(--f-mono)", textContent: OP.time(here ? player.audio.currentTime : 0) })),
+        : "Lance le titre, puis appuie sur Espace au moment où chaque ligne commence, ↑ pour annuler le dernier repère. Clique une ligne pour la reprendre à partir de là." }),
+      el("div", { className: "sync-player" }, playBtn, range, el("b", { id: "sync-clock", textContent: OP.time(syncAudio.currentTime) + " / " + OP.time(syncAudio.duration || v.duration) })),
+      el("div", { className: "row sync-keys" }, mark, undo),
       el("ol", { className: "group sync-lines" }, ...sync.lines.map((l, i) => el("li", { className: i === sync.i ? "next" : l.at !== null ? "done" : "" },
         el("button", { type: "button", onclick: () => {
           sync.i = i;
-          if (here && l.at !== null) player.audio.currentTime = Math.max(0, l.at - 2);
+          if (l.at !== null) syncAudio.currentTime = Math.max(0, l.at - 2);
           renderDetails();
         } }, el("span", { textContent: l.at === null ? "—" : OP.time(l.at) }), l.text)))),
       el("div", { className: "row" },
@@ -1491,7 +1533,7 @@ function renderDetails() {
           api("PATCH", "/me/sounds/tracks/" + t.id, { lyrics: lyricsText(sync.lines) }).then(() => { saved.textContent = "Enregistré."; return refresh(); }, fail) }),
         el("button", { className: "btn btn-ghost", type: "button", textContent: "Tout effacer", onclick: () => {
           sync.lines.forEach((l) => { l.at = null; }); sync.i = 0;
-          if (here) player.audio.currentTime = 0;
+          syncAudio.pause(); syncAudio.currentTime = 0;
           renderDetails();
         } }), saved)];
   } else if (detailsView === "comments") {

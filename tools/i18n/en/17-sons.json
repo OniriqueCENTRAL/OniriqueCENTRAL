@@ -366,5 +366,9 @@
  "Lance le titre, puis appuie sur Marquer (ou Espace) au moment où chaque ligne commence. Clique une ligne pour la reprendre à partir de là.": "Start the track, then press Mark (or Space) as each line begins. Click a line to redo it from there.",
  "Tout effacer": "Clear all",
  "Marquer la ligne": "Mark the line",
- "Lance le titre, puis touche Marquer au moment où chaque ligne commence. Touche une ligne pour la reprendre à partir de là.": "Start the track, then tap Mark as each line begins. Tap a line to redo it from there."
+ "Lance le titre, puis touche Marquer au moment où chaque ligne commence. Touche une ligne pour la reprendre à partir de là.": "Start the track, then tap Mark as each line begins. Tap a line to redo it from there.",
+ "Annuler le dernier": "Undo the last one",
+ "Espace": "Space",
+ "Position dans le titre": "Position in the track",
+ "Lance le titre, puis appuie sur Espace au moment où chaque ligne commence, ↑ pour annuler le dernier repère. Clique une ligne pour la reprendre à partir de là.": "Start the track, then press Space as each line begins, ↑ to undo the last mark. Click a line to redo it from there."
 }
