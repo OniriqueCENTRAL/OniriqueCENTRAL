@@ -110,6 +110,13 @@ try {
     const data = await call('GET', '/api/me/sounds', { token: member.token });
     assert.equal(data.links[0].plays, 2);
     assert.equal(data.projects[0].tracks[0].comments[0].author, 'Sam');
+    // Un retour coché « Réglé », puis remis à régler ; un autre compte ne peut pas y toucher.
+    const cid = data.projects[0].tracks[0].comments[0].id;
+    assert.equal(data.projects[0].tracks[0].comments[0].resolved, false);
+    assert.equal((await call('PATCH', `/api/me/sounds/comments/${cid}`, { token: member.token, body: { resolved: true } })).resolved, true);
+    await call('PATCH', `/api/me/sounds/comments/${cid}`, { token: listener.token, body: { resolved: false }, expect: 403 });
+    assert.equal((await call('GET', '/api/me/sounds', { token: member.token })).projects[0].tracks[0].comments[0].resolved, true);
+    assert.equal((await call('PATCH', `/api/me/sounds/comments/${cid}`, { token: member.token, body: { resolved: false } })).resolved, false);
     // Le lien supprimé ne s'ouvre plus.
     await call('DELETE', `/api/me/sounds/links/${data.links[0].id}`, { token: member.token });
     await call('POST', `/api/sounds/share/${t}`, { body: { pass: share.pass }, expect: 404 });

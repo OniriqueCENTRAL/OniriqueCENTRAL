@@ -86,6 +86,10 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 's
   db.exec(`ALTER TABLE sound_tracks ADD COLUMN stage TEXT NOT NULL DEFAULT ''`);
 }
 export const STAGE = /^(|maquette|final|v[1-9][0-9]?)$/;
+// Un commentaire coché « Réglé » : un retour de mix traité (null : encore à régler).
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_comments') WHERE name = 'resolved_at'`).get()) {
+  db.exec('ALTER TABLE sound_comments ADD COLUMN resolved_at INTEGER');
+}
 // Les crédits d'un titre (beatmaker, ingés mix, master, rec) et l'auteur de la pochette d'un projet.
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'credits'`).get()) {
   db.exec(`ALTER TABLE sound_tracks ADD COLUMN credits TEXT NOT NULL DEFAULT '{}'`);
@@ -353,7 +357,7 @@ const versionView = (v, i, download) => ({
   id: v.id, n: i + 1, filename: v.filename, size: v.size, duration: v.duration, peaks: JSON.parse(v.peaks), note: v.note,
   createdAt: v.created_at, url: audioUrl(v.id), downloadUrl: download ? audioUrl(v.id, true) : null,
 });
-const commentView = (c) => ({ id: c.id, trackId: c.track_id, versionId: c.version_id, author: c.author, at: c.at, body: c.body, createdAt: c.created_at });
+const commentView = (c) => ({ id: c.id, trackId: c.track_id, versionId: c.version_id, author: c.author, at: c.at, body: c.body, createdAt: c.created_at, resolved: !!c.resolved_at });
 const media = (name) => (name ? `/api/media/${name}` : null);
 // La fiche artiste d'un membre ; sans lien choisi, sa page de liens ONIRIQUE s'il en a une. Une fiche masquée n'est
 // montrée qu'à son auteur (pour la modifier).
@@ -1007,6 +1011,15 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (!c) throw new HttpError(404, 'Commentaire introuvable.');
     run('DELETE FROM sound_comments WHERE id = ?', c.id);
     res.json({ ok: true });
+  });
+
+  // « Réglé » : l'auteur ou un collaborateur coche un retour traité, ou le remet à régler.
+  app.patch('/api/me/sounds/comments/:id', ...me, (req, res) => {
+    const c = get(`SELECT c.id FROM sound_comments c JOIN sound_tracks t ON t.id = c.track_id JOIN sound_projects p ON p.id = t.project_id
+      WHERE c.id = ? AND ${ACCESS}`, id(req.params.id), req.user.id, req.user.id);
+    if (!c) throw new HttpError(404, 'Commentaire introuvable.');
+    run('UPDATE sound_comments SET resolved_at = ? WHERE id = ?', req.body.resolved ? now() : null, c.id);
+    res.json(commentView(get('SELECT * FROM sound_comments WHERE id = ?', c.id)));
   });
 
   // L'invitation à collaborer : un lien que l'auteur crée (ou renouvelle, l'ancien ne marche plus) et peut couper.

@@ -400,6 +400,22 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 .comment-row { display: flex; align-items: baseline; gap: 10px; padding: 12px 14px; }
 .comment-row .at { font: 600 12px var(--f-mono); color: var(--ember); background: none; border: 0; padding: 0; cursor: pointer; }
 .comment-row p { margin: 0; flex: 1; }
+/* « Réglé » : un retour de mix traité, coché et grisé */
+.comment-row .check { flex: none; align-self: center; width: 22px; height: 22px; padding: 0; border-radius: 50%; border: 1.5px solid var(--line); background: none; color: var(--night); display: grid; place-items: center; font: 700 12px var(--f-body); cursor: pointer; }
+.comment-row .check:hover { border-color: var(--ember); }
+.comment-row .check.on { background: var(--ember); border-color: var(--ember); }
+.comment-row.done p { opacity: .45; text-decoration: line-through; }
+.comment-row .tag { margin-left: 6px; vertical-align: 1px; }
+/* Comparer deux versions : A et B jouent ensemble, une seule s'entend */
+.compare { display: grid; gap: 12px; }
+.compare .ab { display: flex; gap: 8px; }
+.compare .ab button { flex: 1; padding: 14px 10px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.03); color: var(--mist); font: 800 22px/1 var(--f-display); cursor: pointer; }
+.compare .ab button small { display: block; margin-top: 6px; font: 600 11px var(--f-mono); letter-spacing: .06em; opacity: .8; }
+.compare .ab button.on { background: var(--ember); border-color: var(--ember); color: var(--night); }
+.compare .pick { display: grid; grid-template-columns: auto 1fr; gap: 8px 10px; align-items: center; font: 600 13px var(--f-body); }
+.compare .bar { display: flex; align-items: center; gap: 10px; }
+.compare .bar input { flex: 1; accent-color: var(--ember); }
+.compare .bar span { font: 600 12px var(--f-mono); color: var(--haze); min-width: 92px; text-align: right; }
 
 /* Partage */
 #share { width: 480px; }
@@ -1369,6 +1385,8 @@ function prodBadges(p, t) {
         offers.length ? "price" : t.forSale ? "price-off" : ""),
   };
 }
+// Les retours de mix d'un titre pas encore cochés « Réglé ».
+const toFix = (t) => t.comments.filter((c) => !c.resolved).length;
 function trackRow(p, t, i) {
   const v = live(t), prod = prodBadges(p, t);
   const more = el("button", { className: "dots", type: "button", ariaLabel: "Options de " + t.title }, icon("more"));
@@ -1376,7 +1394,7 @@ function trackRow(p, t, i) {
   const row = el("li", { className: "trk", draggable: true, tabIndex: 0, title: "Écouter (glisser pour réordonner)", style: "--i:" + (i + 3) },
     el("span", { className: "num", textContent: String(i + 1) }),
     el("div", {}, el("div", { className: "tline" }, el("b", { textContent: t.title }), ...prod.tempo, featButton(t)), el("small", { textContent: [day(v.createdAt), "v" + v.n + (t.versions.length > 1 ? " sur " + t.versions.length : ""),
-      t.comments.length ? t.comments.length + " commentaire" + (t.comments.length > 1 ? "s" : "") : null,
+      toFix(t) ? toFix(t) + " retour" + (toFix(t) > 1 ? "s" : "") + " à régler" : t.comments.length ? t.comments.length + " commentaire" + (t.comments.length > 1 ? "s" : "") : null,
       t.plays ? t.plays + " écoute" + (t.plays > 1 ? "s" : "") : null].filter(Boolean).join(" · ") })),
     el("span", { className: "badges" }, ...(p.kind === "pack" ? [prod.sale] : [dateButton(t), stageButton(t, editing)])), el("span", { className: "len", textContent: v.duration ? OP.time(v.duration) : "" }), more);
   row.dataset.id = t.id;
@@ -2209,7 +2227,85 @@ function syncBar(v) {
   range.oninput = () => { syncAudio.currentTime = Number(range.value); };
   return el("div", { className: "sync-player" }, playBtn, range, el("b", { id: "sync-clock", textContent: OP.time(syncAudio.currentTime) + " / " + OP.time(syncAudio.duration || v.duration) }));
 }
-$("details").addEventListener("close", () => syncAudio.pause());
+$("details").addEventListener("close", () => { syncAudio.pause(); stopCompare(); });
+
+// ——— Comparer deux versions ———
+// Les deux jouent en même temps, une seule s'entend : A/B bascule au même moment du son, sans repartir du début.
+const cmp = { tid: null, audios: [new Audio(), new Audio()], side: 0, ui: null };
+function stopCompare() { cmp.audios.forEach((a) => a.pause()); }
+function compareView(t) {
+  if (cmp.tid === t.id && cmp.ui) { cmp.draw(); return cmp.ui; }
+  stopCompare();
+  cmp.tid = t.id; cmp.side = 0;
+  const list = t.versions.slice().reverse(), current = live(t);
+  const ids = [current.id, (list.find((x) => x.id !== current.id) || current).id];
+  const versionAt = (i) => t.versions.find((x) => x.id === ids[i]);
+  const heard = () => cmp.audios[cmp.side];
+  const play = el("button", { className: "btn btn-primary", type: "button" });
+  const seek = el("input", { type: "range", min: 0, max: 1, step: 0.01, value: 0, ariaLabel: "Position" }), clock = el("span");
+  const sides = [0, 1].map((i) => el("button", { type: "button", onclick: () => toggle(i) }));
+  const draw = () => {
+    sides.forEach((x, i) => { x.className = i === cmp.side ? "on" : ""; x.ariaPressed = String(i === cmp.side); x.replaceChildren("AB"[i], el("small", { textContent: "v" + versionAt(i).n })); });
+    const h = heard(), length = h.duration || versionAt(cmp.side).duration || 0;
+    play.replaceChildren(icon(h.paused ? "play" : "pause"), h.paused ? "Écouter" : "Pause");
+    seek.max = length || 1;
+    if (seek !== document.activeElement) seek.value = h.currentTime || 0;
+    clock.textContent = OP.time(h.currentTime || 0) + " / " + OP.time(length);
+  };
+  // Une version chargée reprend au moment où l'on en est, et joue si l'autre joue.
+  const load = (i) => {
+    const audio = cmp.audios[i], at = heard().currentTime || 0, playing = !heard().paused;
+    audio.src = versionAt(i).url;
+    audio.muted = i !== cmp.side;
+    audio.addEventListener("loadedmetadata", () => { audio.currentTime = Math.min(at, audio.duration || at); if (playing) audio.play().catch(() => {}); }, { once: true });
+  };
+  // Basculer : la version qui devient audible se cale sur le moment de l'autre, puis prend le relais.
+  const toggle = (i) => {
+    if (i === cmp.side) return;
+    const from = heard(), to = cmp.audios[i];
+    cmp.side = i;
+    to.addEventListener("seeked", () => { if (cmp.side === i) { to.muted = false; from.muted = true; } }, { once: true });
+    to.currentTime = Math.min(from.currentTime, to.duration || from.currentTime);
+    if (!from.paused && to.paused) to.play().catch(() => {});
+    draw();
+  };
+  const selects = [0, 1].map((i) => {
+    const sel = el("select", { ariaLabel: "Version " + "AB"[i] }, ...list.map((x) => el("option", { value: x.id, textContent: "v" + x.n + (x.note ? " · " + x.note : "") + " · " + longDay(x.createdAt) })));
+    sel.value = String(ids[i]);
+    sel.onchange = () => { ids[i] = Number(sel.value); load(i); draw(); };
+    return sel;
+  });
+  play.onclick = () => {
+    const h = heard();
+    if (!h.paused) return stopCompare();
+    player.audio.pause();
+    cmp.audios[1 - cmp.side].currentTime = h.currentTime;
+    Promise.all(cmp.audios.map((x) => x.play())).catch(fail);
+  };
+  seek.oninput = () => cmp.audios.forEach((x) => { x.currentTime = Math.min(Number(seek.value), x.duration || Number(seek.value)); });
+  cmp.audios.forEach((x) => {
+    // La fenêtre fermée (ou une autre vue ouverte) arrête les deux, même si l'événement de fermeture n'est pas arrivé.
+    x.onplay = x.onpause = x.ontimeupdate = x.onloadedmetadata = () => {
+      if (!$("details").open || detailsView !== "compare" || cmp.tid !== t.id) stopCompare();
+      if (x === heard()) draw();
+    };
+    x.onended = () => { if (x === heard()) stopCompare(); };
+  });
+  load(0); load(1);
+  cmp.ui = el("div", { className: "compare" },
+    el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Les deux versions jouent ensemble : A et B changent ce que tu entends, au même moment du son. Touches A et B au clavier." }),
+    el("div", { className: "ab" }, ...sides),
+    el("div", { className: "row" }, play), el("div", { className: "bar" }, seek, clock),
+    el("div", { className: "pick" }, "A", selects[0], "B", selects[1]));
+  cmp.draw = draw;
+  draw();
+  return cmp.ui;
+}
+document.addEventListener("keydown", (event) => {
+  if (!$("details").open || detailsView !== "compare" || !cmp.ui || /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
+  const i = { a: 0, b: 1 }[event.key.toLowerCase()];
+  if (i !== undefined) cmp.ui.querySelectorAll(".ab button")[i].click();
+});
 player.audio.addEventListener("play", () => syncAudio.pause());
 function syncProgress() {
   const range = document.getElementById("sync-range"), clock = document.getElementById("sync-clock"), d = syncAudio.duration || 0;
@@ -2291,6 +2387,7 @@ function renderDetails() {
   // Ne pas effacer un nom en cours de saisie quand la page se met à jour (un envoi qui se termine, par exemple).
   if (document.activeElement && document.activeElement.classList.contains("title-edit")) return;
   if (!LYRICS_VIEWS.includes(detailsView)) syncAudio.pause();
+  if (detailsView !== "compare") stopCompare();
   // Un outil ouvert garde son analyse : la fenêtre n'est pas redessinée tant qu'il montre ce même titre.
   const frame = $("details").querySelector(".tool-frame");
   if (frame && frame.dataset.key === detailsView + ":" + detailsId) return;
@@ -2322,7 +2419,7 @@ function renderDetails() {
         item("queue", "Paroles", { state: !t.lyrics ? "" : parseLyrics(t.lyrics).some((l) => l.at !== null) ? "Synchronisées" : "Ajoutées", chevron: true,
           onclick: () => { detailsView = "lyrics"; renderDetails(); } }),
         item("more", "Notes", { state: v.note ? "1" : "", chevron: true, onclick: () => { detailsView = "notes"; renderDetails(); } }),
-        item("expand", "Commentaires", { state: t.comments.length ? String(t.comments.length) : "", chevron: true, onclick: () => { detailsView = "comments"; renderDetails(); } }),
+        item("expand", "Commentaires", { state: toFix(t) ? toFix(t) + " à régler" : t.comments.length ? String(t.comments.length) : "", chevron: true, onclick: () => { detailsView = "comments"; renderDetails(); } }),
         item("repeat", "Versions", { state: String(t.versions.length), chevron: true, onclick: () => { detailsView = "versions"; renderDetails(); } }),
         item("plus", "Remplacer l'audio", { hint: "Une nouvelle version : les précédentes restent dans l'historique", off: data.quota.full, onclick: data.quota.full ? null : () => pickFiles({ track: t }) }),
         item("queue", "Ajouter à la file", { onclick: () => { player.enqueue(itemOf(p, t)); $("details").close(); } })),
@@ -2432,10 +2529,17 @@ function renderDetails() {
           renderDetails();
         } }), saved)];
   } else if (detailsView === "comments") {
+    // Chaque commentaire est un retour à régler : coché « Réglé » une fois traité ; son moment se joue sur la version commentée.
+    const versionOf = (c) => t.versions.find((x) => x.id === c.versionId);
+    const left = toFix(t);
     right = [back("Commentaires"),
-      t.comments.length ? el("ul", { className: "group" }, ...t.comments.map((c) => el("li", { className: "comment-row" },
-        el("button", { className: "at", type: "button", textContent: OP.time(c.at), onclick: () => { playVersion(p, t, v); player.audio.addEventListener("loadedmetadata", () => { player.audio.currentTime = c.at; }, { once: true }); } }),
-        el("p", {}, el("b", { textContent: c.author + " " }), el("span", { className: "muted", textContent: c.body })),
+      t.comments.length ? el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: left ? left + " retour" + (left > 1 ? "s" : "") + " à régler : coche-les quand c'est fait." : "Tous les retours sont réglés." }) : null,
+      t.comments.length ? el("ul", { className: "group" }, ...t.comments.map((c) => el("li", { className: "comment-row" + (c.resolved ? " done" : "") },
+        el("button", { className: "check" + (c.resolved ? " on" : ""), type: "button", textContent: c.resolved ? "✓" : "", ariaPressed: String(c.resolved),
+          ariaLabel: c.resolved ? "Remettre à régler" : "Marquer comme réglé", title: c.resolved ? "Remettre à régler" : "Réglé",
+          onclick: () => api("PATCH", "/me/sounds/comments/" + c.id, { resolved: !c.resolved }).then(refresh, fail) }),
+        el("button", { className: "at", type: "button", textContent: OP.time(c.at), onclick: () => { playVersion(p, t, versionOf(c) || v); player.audio.addEventListener("loadedmetadata", () => { player.audio.currentTime = c.at; }, { once: true }); } }),
+        el("p", {}, el("b", { textContent: c.author + " " }), el("span", { className: "muted", textContent: c.body }), versionOf(c) ? el("span", { className: "tag", textContent: "v" + versionOf(c).n }) : null),
         el("button", { className: "x", type: "button", ariaLabel: "Supprimer ce commentaire", onclick: () => confirm("Supprimer ce commentaire ?") && api("DELETE", "/me/sounds/comments/" + c.id).then(refresh, fail) }, icon("close")))))
         : el("p", { className: "muted", style: "margin:0", textContent: "Aucun commentaire pour l'instant. Les personnes à qui tu partages ce titre peuvent en laisser à un moment précis, depuis le lecteur." })];
   } else if (detailsView === "versions") {
@@ -2448,7 +2552,11 @@ function renderDetails() {
         onclick: () => api("PATCH", "/me/sounds/tracks/" + t.id, { currentId: x.id }).then(refresh, fail) }),
       t.versions.length > 1 ? el("button", { className: "x", type: "button", ariaLabel: "Supprimer la version " + x.n,
         onclick: () => confirm("Supprimer la version " + x.n + " ?") && api("DELETE", "/me/sounds/versions/" + x.id).then(refresh, fail) }, icon("close")) : null))),
+    t.versions.length > 1 ? el("button", { className: "btn btn-primary", type: "button", onclick: () => { detailsView = "compare"; renderDetails(); } }, icon("repeat"), "Comparer deux versions") : null,
     el("button", { className: "btn btn-ghost", type: "button", disabled: data.quota.full, onclick: () => pickFiles({ track: t }) }, icon("plus"), "Envoyer une nouvelle version")];
+  } else if (detailsView === "compare") {
+    right = [el("h3", {}, el("button", { className: "x", type: "button", ariaLabel: "Retour", onclick: () => { detailsView = "versions"; renderDetails(); } }, icon("back")), "Comparer deux versions"),
+      compareView(t)];
   } else if (detailsView === "move") {
     right = [back("Déplacer vers"), group(...data.projects.map((x) => item("star", x.title, {
       state: x.id === p.id ? "Ici" : "", onclick: x.id === p.id ? null : () => api("PATCH", "/me/sounds/tracks/" + t.id, { projectId: x.id }).then(() => { detailsView = "main"; return refresh(); }).catch(fail),
