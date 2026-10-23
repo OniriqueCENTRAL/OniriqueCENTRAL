@@ -173,8 +173,9 @@ body.has-player .uploads { bottom: calc(92px + env(safe-area-inset-bottom)); }
 .trk .num { text-align: center; font: 500 13px var(--f-mono); color: var(--haze); }
 .trk.now .num { color: var(--ember); }
 .trk b { display: block; font: 700 15px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tline { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.tline b { min-width: 0; }
+/* Le titre garde sa place ; s'il manque de largeur, les badges (BPM, clé, invités) passent à la ligne au lieu de l'écraser. */
+.tline { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
+.tline b { flex: 0 1 auto; min-width: 0; max-width: 100%; }
 /* Le « feat. » à côté du titre, comme le badge d'étape */
 .feat { flex: none; max-width: 55%; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.05); color: var(--mist); font: 600 11px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
 .tile .caption b .feat { display: inline-block; max-width: 100%; margin-left: 6px; padding: 1px 8px; font: 600 10.5px/1.5 var(--f-body); color: var(--mist); vertical-align: 1px; cursor: default; }
@@ -294,8 +295,11 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
 /* Les paroles du titre en cours, sous la liste ; synchronisées, la ligne chantée s'allume comme sur Spotify */
 /* La colonne de droite : les paroles du titre en cours, puis « À propos de l'artiste » ; elle reste à l'écran au défilement */
 .side { position: sticky; top: 84px; display: grid; gap: 12px; align-content: start; min-width: 0; }
-.album:has(> .side > :not([hidden])) { grid-template-columns: minmax(0, 320px) minmax(0, 1fr) minmax(0, 320px); }
-@media (max-width: 1100px) { .album:has(> .side > :not([hidden])) { grid-template-columns: minmax(0, 340px) minmax(0, 1fr); } .album > .side { grid-column: 1 / -1; position: relative; top: 0; } }
+/* Avec les paroles ou « À propos », trois colonnes : la page s'élargit pour laisser à celle des titres 460 px au moins ;
+   plus étroite, la colonne de côté passe sous les titres. */
+main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
+.album:has(> .side > :not([hidden])) { grid-template-columns: minmax(0, 300px) minmax(460px, 1fr) minmax(0, 300px); }
+@media (max-width: 1300px) { .album:has(> .side > :not([hidden])) { grid-template-columns: minmax(0, 340px) minmax(0, 1fr); } .album > .side { grid-column: 1 / -1; position: relative; top: 0; } }
 @media (max-width: 820px) { .album:has(> .side > :not([hidden])) { grid-template-columns: minmax(0, 1fr); } }
 .lyrics.short { max-height: 250px; }
 .lyrics-more { justify-self: start; margin-top: -4px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line); background: rgba(0,0,0,.3); color: var(--mist); font: 600 13px var(--f-body); cursor: pointer; }
