@@ -11,6 +11,8 @@ import { HttpError } from './auth.js';
 import { testing } from './mail.js';
 import { openListenLink } from './packsend.js';
 import { videoFile, videoView } from './youtube.js';
+import { disconnectPinterest, finishPinterest, pinterestAccount, pinterestBack, pinterestBoardPins, pinterestBoards, pinterestConfigured,
+  pinterestConnectUrl, pinterestForYou } from './pinterest.js';
 
 // Le profil ou tableau Pinterest qu'un membre a relié, pour choisir l'image de ses vidéos parmi ses épingles.
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('users') WHERE name = 'pinterest'`).get()) db.exec(`ALTER TABLE users ADD COLUMN pinterest TEXT NOT NULL DEFAULT ''`);
@@ -138,8 +140,24 @@ export function mountBeatTube(app, { me, track, soundsDir, wrap, receiveImage, r
   app.get('/api/me/sounds/pinterest', ...me, wrap(async (req, res) => {
     const saved = get('SELECT pinterest FROM users WHERE id = ?', req.user.id).pinterest;
     const source = saved && pinterestSource(saved);
-    res.json({ source: saved, images: source ? await pinterestImages(source).catch(() => []) : [] });
+    res.json({ source: saved, images: source ? await pinterestImages(source).catch(() => []) : [],
+      configured: pinterestConfigured(), account: pinterestAccount(req.user.id)?.username ?? null });
   }));
+  // Le compte Pinterest relié : connexion (retour vers le pack), « Pour toi », ses tableaux et ceux qu'il suit, déconnexion.
+  app.post('/api/me/sounds/pinterest/connect', ...me, (req, res) => {
+    if (!pinterestConfigured()) throw new HttpError(503, "« Se connecter avec Pinterest » n'est pas encore réglé sur le serveur.");
+    res.json({ url: pinterestConnectUrl(req.user.id, /^#\/p\/\d+$/.test(str(req.body?.back, 20)) ? str(req.body.back, 20) : '') });
+  });
+  app.get('/api/pinterest/callback', wrap(async (req, res) => {
+    const state = str(req.query.state, 100);
+    let result = 'ok', back = pinterestBack(state);
+    try { back = await finishPinterest(state, str(req.query.code, 500)); } catch (error) { result = req.query.error === 'access_denied' ? 'Connexion à Pinterest annulée.' : error.message; }
+    res.redirect(`${config.siteUrl}/mes-sons?pinterest=${encodeURIComponent(result)}${back}`);
+  }));
+  app.delete('/api/me/sounds/pinterest/account', ...me, (req, res) => { disconnectPinterest(req.user.id); res.json({ ok: true }); });
+  app.get('/api/me/sounds/pinterest/for-you', ...me, wrap(async (req, res) => res.json({ images: await pinterestForYou(req.user.id) })));
+  app.get('/api/me/sounds/pinterest/boards', ...me, wrap(async (req, res) => res.json(await pinterestBoards(req.user.id))));
+  app.get('/api/me/sounds/pinterest/boards/:id', ...me, wrap(async (req, res) => res.json({ images: await pinterestBoardPins(req.user.id, req.params.id) })));
   app.post('/api/me/sounds/pinterest', ...me, wrap(async (req, res) => {
     const text = str(req.body?.source, 300), source = pinterestSource(text);
     if (!source) throw new HttpError(400, 'Colle le lien de ton profil, d\'un tableau ou d\'une épingle Pinterest.');

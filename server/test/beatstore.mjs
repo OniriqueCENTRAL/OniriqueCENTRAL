@@ -8,7 +8,8 @@ import path from 'node:path';
 
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'onirique-central-beatstore-'));
 Object.assign(process.env, { DATA_DIR: dataDir, PAYMENTS_MODE: 'demo', PORT: '0', ADMIN_EMAIL: '', ADMIN_PASSWORD: '',
-  SMTP_HOST: 'test', MAIL_FROM: 'support@test.local', SITE_URL: 'https://site.test', PUBLIC_URL: 'https://site.test' });
+  SMTP_HOST: 'test', MAIL_FROM: 'support@test.local', SITE_URL: 'https://site.test', PUBLIC_URL: 'https://site.test',
+  PINTEREST_APP_ID: '1500', PINTEREST_APP_SECRET: 'secret-pinterest' });
 
 // Stripe en mode test, simulé : il garde les pages de paiement demandées et donne un secret de webhook.
 const HOOK_SECRET = 'whsec_' + 'k'.repeat(32);
@@ -38,6 +39,25 @@ async function paypalFake(url, init) {
 }
 // Pinterest simulé : le flux d'un profil, la page d'une épingle et ses images.
 const PNG = Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), Buffer.alloc(200)]);
+// L'API Pinterest (v5) simulée : jetons, compte, tableaux du membre, tableaux suivis et leurs épingles.
+const pinApi = { tokens: 0, refreshed: 0 };
+const pinOf = (id, at) => ({ id, created_at: at, media: { images: { '236x': { url: `https://i.pinimg.com/236x/p/${id}.jpg` }, '1200x': { url: `https://i.pinimg.com/1200x/p/${id}.jpg` } } } });
+function pinterestApiFake(url, init) {
+  const u = new URL(String(url)), reply = (json, status = 200) => new Response(JSON.stringify(json), { status, headers: { 'Content-Type': 'application/json' } });
+  if (u.pathname === '/v5/oauth/token') {
+    assert.equal(init.headers.Authorization, `Basic ${Buffer.from('1500:secret-pinterest').toString('base64')}`);
+    const body = new URLSearchParams(init.body);
+    if (body.get('grant_type') === 'refresh_token') { pinApi.refreshed++; return reply({ access_token: 'jeton-2', refresh_token: 'renouv-2', expires_in: 2592000 }); }
+    return body.get('code') === 'bon-code' ? (pinApi.tokens++, reply({ access_token: 'jeton-1', refresh_token: 'renouv-1', expires_in: 2592000 })) : reply({ message: 'code invalide' }, 400);
+  }
+  if (!/^Bearer jeton-[12]$/.test(init.headers?.Authorization || '')) return reply({ message: 'Authentication failed.' }, 401);
+  if (u.pathname === '/v5/user_account') return reply({ username: 'kaybeats' });
+  if (u.pathname === '/v5/boards') return reply({ items: [{ id: '11', name: 'Covers', owner: { username: 'kaybeats' } }] });
+  if (u.pathname === '/v5/user_account/following/boards') return reply({ items: [{ id: '22', name: 'Dark', owner: { username: 'autre' } }] });
+  if (u.pathname === '/v5/boards/11/pins') return reply({ items: [pinOf('a', '2026-01-01T00:00:00'), pinOf('c', '2026-03-01T00:00:00')] });
+  if (u.pathname === '/v5/boards/22/pins') return reply({ items: [pinOf('b', '2026-02-01T00:00:00'), pinOf('a', '2026-01-01T00:00:00')] });
+  return reply({ message: 'introuvable' }, 404);
+}
 function pinterestFake(url) {
   const u = String(url);
   if (u.startsWith('https://i.pinimg.com/')) return new Response(PNG, { status: 200 });
@@ -49,6 +69,7 @@ function pinterestFake(url) {
   return new Response('introuvable', { status: 404 });
 }
 globalThis.fetch = async (url, init = {}) => {
+  if (String(url).startsWith('https://api.pinterest.com/')) return pinterestApiFake(url, init);
   if (/^https:\/\/(www\.pinterest\.com|i\.pinimg\.com)\//.test(String(url))) return pinterestFake(url);
   if (String(url).startsWith('https://api-m.sandbox.paypal.com')) return paypalFake(url, init);
   if (!String(url).startsWith('https://api.stripe.com/v1')) return realFetch(url, init);
@@ -322,6 +343,35 @@ try {
     const shown = (await call('GET', '/api/me/sounds', { token: beatmaker.token })).projects.find((x) => x.id === pack).tracks.find((x) => x.id === tid);
     assert.deepEqual([shown.videoTitle, shown.videoCover], ['Mon titre ({bpm} BPM)', picked.videoCover]);
     assert.equal((await call('DELETE', `/api/me/sounds/tracks/${tid}/video-cover`, { token: beatmaker.token })).videoCover, null);
+  });
+
+  await step('« Se connecter avec Pinterest » : « Pour toi » mêle ses tableaux et ceux qu\'il suit ; jeton renouvelé, déconnexion', async () => {
+    assert.equal((await call('GET', '/api/me/sounds/pinterest', { token: beatmaker.token })).account, null);
+    await call('GET', '/api/me/sounds/pinterest/for-you', { token: beatmaker.token, expect: 400 });
+    const { url } = await call('POST', '/api/me/sounds/pinterest/connect', { token: beatmaker.token, body: { back: `#/p/${pack}` } });
+    const q = new URL(url).searchParams;
+    assert.deepEqual([new URL(url).origin, q.get('client_id'), q.get('scope'), q.get('redirect_uri')],
+      ['https://www.pinterest.com', '1500', 'boards:read,pins:read,user_accounts:read', 'https://site.test/api/pinterest/callback']);
+    const back = await fetch(`${base}/api/pinterest/callback?state=${q.get('state')}&code=bon-code`, { redirect: 'manual' });
+    assert.equal(back.headers.get('location'), `https://site.test/mes-sons?pinterest=ok#/p/${pack}`);
+    const refused = await fetch(`${base}/api/pinterest/callback?state=${q.get('state')}&code=bon-code`, { redirect: 'manual' });
+    assert.match(decodeURIComponent(refused.headers.get('location')), /pinterest=Connexion à Pinterest expirée/);
+    assert.equal((await call('GET', '/api/me/sounds/pinterest', { token: beatmaker.token })).account, 'kaybeats');
+    assert.notEqual(get('SELECT access_token FROM pinterest_accounts WHERE user_id = ?', beatmaker.id).access_token, 'jeton-1');
+    const forYou = await call('GET', '/api/me/sounds/pinterest/for-you', { token: beatmaker.token });
+    assert.deepEqual(forYou.images.map((i) => i.url), ['c', 'b', 'a'].map((id) => `https://i.pinimg.com/1200x/p/${id}.jpg`));
+    const boards = await call('GET', '/api/me/sounds/pinterest/boards', { token: beatmaker.token });
+    assert.deepEqual([boards.mine.map((b) => b.name), boards.following.map((b) => b.owner)], [['Covers'], ['autre']]);
+    assert.equal((await call('GET', '/api/me/sounds/pinterest/boards/22', { token: beatmaker.token })).images.length, 2);
+    await call('GET', '/api/me/sounds/pinterest/boards/abc', { token: beatmaker.token, expect: 400 });
+    // Une image du fil se prend comme une autre image Pinterest.
+    assert.ok((await call('POST', `/api/me/sounds/tracks/${tid}/video-cover`, { token: beatmaker.token, body: { url: forYou.images[0].url } })).videoCover);
+    // Le jeton arrivé au bout est renouvelé tout seul.
+    run('UPDATE pinterest_accounts SET expires_at = 0 WHERE user_id = ?', beatmaker.id);
+    await call('GET', '/api/me/sounds/pinterest/boards', { token: beatmaker.token });
+    assert.equal(pinApi.refreshed, 1);
+    await call('DELETE', '/api/me/sounds/pinterest/account', { token: beatmaker.token });
+    assert.equal((await call('GET', '/api/me/sounds/pinterest', { token: beatmaker.token })).account, null);
   });
 
   console.log(`\n${passed} étapes réussies.`);

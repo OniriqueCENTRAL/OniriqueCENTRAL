@@ -497,6 +497,9 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 .yt-thumb { flex: none; width: 64px; height: 64px; padding: 0; overflow: hidden; border-radius: 10px; border: 1px dashed var(--line); background: rgba(255,255,255,.04); color: var(--haze); font: 600 11px var(--f-body); cursor: pointer; }
 .yt-thumb.own { border: 2px solid var(--ember); }
 .yt-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pin-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.mini-btn.on { background: var(--ember); border-color: var(--ember); color: var(--night); }
+.pinterest-connect { background: #E60023; color: #fff; box-shadow: none; }
 .pin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
 .pin-grid .pin { padding: 0; border: 0; border-radius: 12px; overflow: hidden; background: rgba(255,255,255,.04); cursor: pointer; aspect-ratio: 1; }
 .pin-grid .pin img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -2464,34 +2467,88 @@ function renderYoutube() {
   }
 }
 lightClose($("youtube"));
-// Choisir une image sur Pinterest : le profil ou le tableau relié (gardé sur le compte) montre ses dernières épingles ;
-// un lien d'épingle donne son image seule.
+// Choisir une image sur Pinterest. Compte relié : « Pour toi » (les dernières épingles de ses tableaux et de ceux qu'il
+// suit) et « Mes tableaux » ; sans compte relié, ou en plus : « Un lien » (profil, tableau ou épingle publics).
 function openPinterest(t, done) {
   const dialog = $("pinterest");
-  const source = el("input", { placeholder: "Lien de ton profil, d'un tableau ou d'une épingle Pinterest", maxLength: 300 });
-  const go = el("button", { className: "btn btn-primary", type: "submit", textContent: "Afficher" });
   const status = el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Chargement…" }), grid = el("div", { className: "pin-grid" });
-  const show = (r) => {
-    if (r.source && !source.value) source.value = r.source;
-    status.textContent = r.images.length ? "Choisis l'image de la vidéo de « " + t.title + " »." : "Relie ton profil ou un tableau Pinterest public : ses dernières épingles s'affichent ici.";
-    grid.replaceChildren(...r.images.map((img) => el("button", { type: "button", className: "pin", title: "Prendre cette image",
-      onclick: (event) => { event.currentTarget.disabled = true; api("POST", "/me/sounds/tracks/" + t.id + "/video-cover", { url: img.url }).then((x) => { dialog.close(); done(x.videoCover); }, fail); } },
+  const tabs = el("div", { className: "pin-tabs", role: "tablist" }), top = el("div", { className: "stack", style: "padding:0" });
+  const pick = (img) => (event) => {
+    event.currentTarget.disabled = true;
+    api("POST", "/me/sounds/tracks/" + t.id + "/video-cover", { url: img.url }).then((x) => { dialog.close(); done(x.videoCover); }, fail);
+  };
+  const show = (images, empty) => {
+    status.textContent = images.length ? "Choisis l'image de la vidéo de « " + t.title + " »." : empty;
+    grid.replaceChildren(...images.map((img) => el("button", { type: "button", className: "pin", title: "Prendre cette image", onclick: pick(img) },
       el("img", { src: img.thumb, alt: "", loading: "lazy", referrerPolicy: "no-referrer" }))));
   };
-  const form = el("form", { className: "row" }, source, go);
-  form.onsubmit = (event) => {
-    event.preventDefault();
-    go.disabled = true; status.textContent = "Chargement…";
-    api("POST", "/me/sounds/pinterest", { source: source.value }).then(show, (error) => { status.textContent = error.message; }).finally(() => { go.disabled = false; });
+  const load = (path, empty) => { status.textContent = "Chargement…"; grid.replaceChildren(); api("GET", path).then((r) => show(r.images, empty), (error) => { status.textContent = error.message; }); };
+  let info = null;
+  const views = {
+    foryou: () => { top.replaceChildren(); load("/me/sounds/pinterest/for-you", "Rien encore : enregistre des épingles dans tes tableaux ou suis des tableaux sur Pinterest."); },
+    boards: () => {
+      top.replaceChildren(); grid.replaceChildren(); status.textContent = "Chargement…";
+      api("GET", "/me/sounds/pinterest/boards").then((r) => {
+        const chip = (b) => el("button", { type: "button", className: "mini-btn", textContent: b.name + (b.owner ? " · " + b.owner : ""),
+          onclick: (event) => { top.querySelectorAll(".mini-btn").forEach((x) => x.classList.toggle("on", x === event.currentTarget)); load("/me/sounds/pinterest/boards/" + b.id, "Ce tableau est vide, ou il n'est pas public."); } });
+        top.replaceChildren(
+          r.mine.length ? el("div", { className: "row", style: "flex-wrap:wrap" }, el("span", { className: "muted", style: "font-size:13px", textContent: "Mes tableaux :" }), ...r.mine.map(chip)) : "",
+          r.following.length ? el("div", { className: "row", style: "flex-wrap:wrap" }, el("span", { className: "muted", style: "font-size:13px", textContent: "Tableaux suivis :" }), ...r.following.map(chip)) : "");
+        status.textContent = r.mine.length || r.following.length ? "Choisis un tableau." : "Tu n'as pas encore de tableau sur Pinterest.";
+      }, (error) => { status.textContent = error.message; });
+    },
+    link: () => {
+      const source = el("input", { placeholder: "Lien d'un profil, d'un tableau ou d'une épingle Pinterest", maxLength: 300, value: info.source || "" });
+      const go = el("button", { className: "btn btn-primary", type: "submit", textContent: "Afficher" });
+      const form = el("form", { className: "row" }, source, go);
+      form.onsubmit = (event) => {
+        event.preventDefault();
+        go.disabled = true; status.textContent = "Chargement…";
+        api("POST", "/me/sounds/pinterest", { source: source.value }).then((r) => show(r.images, ""), (error) => { status.textContent = error.message; }).finally(() => { go.disabled = false; });
+      };
+      top.replaceChildren(form);
+      show(info.images, "Colle le lien d'un profil ou d'un tableau public : ses dernières épingles s'affichent ici.");
+    },
   };
+  const tab = (key, label) => { const b = el("button", { type: "button", role: "tab", className: "mini-btn", textContent: label, onclick: () => open(key) }); b.dataset.key = key; return b; };
+  const open = (key) => { tabs.querySelectorAll("[role=tab]").forEach((x) => { x.classList.toggle("on", x.dataset.key === key); x.ariaSelected = String(x.dataset.key === key); }); views[key](); };
+  const account = el("div", { className: "row", style: "flex-wrap:wrap" });
   dialog.replaceChildren(el("div", { className: "dlg-head" }, el("b", { textContent: "Pinterest · " + t.title }),
     el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close"))),
-    el("div", { className: "stack" }, form, status, grid,
+    el("div", { className: "stack" }, account, tabs, top, status, grid,
       el("p", { className: "muted", style: "margin:0;font-size:12px", textContent: "Prends des images que tu as le droit d'utiliser : une vidéo avec l'image d'un autre peut être retirée par YouTube." })));
   dialog.showModal();
-  api("GET", "/me/sounds/pinterest").then(show, (error) => { status.textContent = error.message; });
+  api("GET", "/me/sounds/pinterest").then((r) => {
+    info = r;
+    if (r.account !== null) {
+      account.replaceChildren(el("span", { className: "muted", style: "font-size:13px", textContent: "Connecté à Pinterest" + (r.account ? " · " + r.account : "") }),
+        el("button", { className: "mini-btn", type: "button", textContent: "Se déconnecter", onclick: () => confirm("Déconnecter ton compte Pinterest ?") && api("DELETE", "/me/sounds/pinterest/account").then(() => openPinterest(t, done), fail) }));
+      tabs.replaceChildren(tab("foryou", "Pour toi"), tab("boards", "Mes tableaux"), tab("link", "Un lien"));
+      return open("foryou");
+    }
+    if (r.configured) {
+      const go = el("button", { className: "btn btn-primary pinterest-connect", type: "button", textContent: "Se connecter avec Pinterest" });
+      go.onclick = () => api("POST", "/me/sounds/pinterest/connect", { back: openId() ? "#/p/" + openId() : "" }).then(({ url }) => { location.href = url; }, fail);
+      account.replaceChildren(go, el("span", { className: "muted", style: "font-size:13px", textContent: "pour choisir parmi tes tableaux et ceux que tu suis" }));
+    }
+    tabs.replaceChildren(tab("link", "Un lien"));
+    open("link");
+  }, (error) => { status.textContent = error.message; });
 }
 lightClose($("pinterest"));
+// Retour de Pinterest après « Se connecter avec Pinterest » : la fenêtre YouTube du pack se rouvre, ou l'erreur s'affiche.
+const pinterestBackParam = new URLSearchParams(location.search).get("pinterest");
+if (pinterestBackParam) {
+  history.replaceState(null, "", location.pathname + location.hash);
+  let tries = 0;
+  const reopen = setInterval(() => {
+    if (++tries > 100) return clearInterval(reopen);
+    if (!data) return;
+    clearInterval(reopen);
+    if (project() && project().mail) openYoutube(project()).catch(fail);
+    if (pinterestBackParam !== "ok") alert(pinterestBackParam);
+  }, 100);
+}
 $("pack-youtube").onclick = () => openYoutube(project()).catch(fail);
 // Retour de Google après « Connecter ma chaîne YouTube » : la fenêtre se rouvre sur le pack, ou l'erreur s'affiche.
 const youtubeBack = new URLSearchParams(location.search).get("youtube");

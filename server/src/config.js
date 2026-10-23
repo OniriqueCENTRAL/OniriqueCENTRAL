@@ -31,6 +31,9 @@ export const config = {
   // Connexion des chaînes YouTube (page compte) : l'identifiant OAuth du projet Google, réglé par onirique-youtube.
   googleClientId: env.GOOGLE_CLIENT_ID || '',
   googleClientSecret: env.GOOGLE_CLIENT_SECRET || '',
+  // « Se connecter avec Pinterest » (images des vidéos de prods) : l'application créée sur developers.pinterest.com.
+  pinterestAppId: env.PINTEREST_APP_ID || '',
+  pinterestAppSecret: env.PINTEREST_APP_SECRET || '',
   // Réponses automatiques aux commentaires Instagram (page compte, social.js) : l'application Meta, réglée par onirique-social.
   instagramAppId: env.INSTAGRAM_APP_ID || '',
   instagramAppSecret: env.INSTAGRAM_APP_SECRET || '',
