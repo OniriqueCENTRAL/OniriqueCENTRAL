@@ -83,6 +83,19 @@ h1.title { font: 800 clamp(24px, 5vw, 36px)/1.12 var(--f-display); margin: 10px 
 .stage.prod { color: var(--mist); background: rgba(255,255,255,.04); letter-spacing: .04em; }
 .buy { padding: 7px 14px; border-radius: 999px; background: var(--ember); color: var(--night); font: 700 13px var(--f-body); text-decoration: none; white-space: nowrap; }
 .buy:hover { filter: brightness(1.1); }
+button.buy { border: 0; cursor: pointer; }
+/* Le choix de la licence avant le paiement */
+#buy { width: 520px; max-width: calc(100vw - 24px); padding: 22px; border: 1px solid var(--line); border-radius: 22px; background: #150a0c; color: var(--mist); }
+#buy::backdrop { background: rgba(5,2,3,.72); backdrop-filter: blur(4px); }
+#buy h2 { font: 800 18px var(--f-display); margin: 0 0 4px; }
+.offer { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 12px 14px; margin-top: 10px; border-radius: 14px; border: 1px solid var(--line); cursor: pointer; }
+.offer:has(input:checked) { border-color: var(--ember); background: color-mix(in srgb, var(--ember) 10%, transparent); }
+.offer input { min-height: 0; accent-color: var(--ember); }
+.offer b { font: 700 15px var(--f-body); }
+.offer .price { font: 700 15px var(--f-mono); }
+.offer small { grid-column: 2 / -1; color: var(--haze); font-size: 12.5px; }
+.offer details { grid-column: 2 / -1; font-size: 12.5px; color: var(--haze); }
+#buy .row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
 .stage.maquette { background: rgba(255,255,255,.06); }
 .stage.version { border-color: var(--ember); color: var(--ember); }
 .stage.final { border-color: var(--ember); background: var(--ember); color: var(--night); }
@@ -185,6 +198,7 @@ footer { padding: 30px 0 140px; text-align: center; font-size: 13px; }
 </main>
 <footer class="muted wrap">Partagé avec <a href="/">ONIRIQUE</a> · ONIRIQUE CLOUD</footer>
 
+<dialog id="buy"></dialog>
 <script src="assets/sounds-player.js?v=10"></script>
 <script>
 const $ = (id) => document.getElementById(id);
@@ -318,7 +332,7 @@ function show(data) {
   $("cover-by").replaceChildren("Pochette : ", el("b", { textContent: data.coverBy || "" }));
   items = data.tracks.map((t) => ({ key: "v" + t.version.id, id: t.version.id, trackId: t.id, title: t.title, feat: (t.credits || {}).feat, stage: t.stage, day: t.day,
     subtitle: [data.owner, OP.stageLabel(t.stage)].filter(Boolean).join(" · "), cover: data.cover,
-    url: t.version.url, downloadUrl: t.version.downloadUrl, duration: t.version.duration, peaks: t.version.peaks, comments: t.comments, credits: t.credits || {}, lyrics: t.lyrics || "", bpm: t.bpm, key: t.key, price: t.price, buyUrl: t.buyUrl }));
+    url: t.version.url, downloadUrl: t.version.downloadUrl, duration: t.version.duration, peaks: t.version.peaks, comments: t.comments, credits: t.credits || {}, lyrics: t.lyrics || "", bpm: t.bpm, key: t.key, offers: t.offers || [] }));
   renderAbout(data.about, data.owner);
   $("tracks").replaceChildren(...items.map((it, i) => {
     const row = el("li", { className: "trk", tabIndex: 0 },
@@ -326,8 +340,8 @@ function show(data) {
       el("div", {}, el("div", { className: "tline" }, el("b", { textContent: it.title }), it.bpm ? el("span", { className: "stage prod", textContent: it.bpm + " BPM" }) : "",
         it.key ? el("span", { className: "stage prod", textContent: it.key }) : "", it.credits.feat ? el("span", { className: "feat", textContent: "feat. " + it.credits.feat }) : ""), creditsLine(it.credits),
         it.comments.length ? el("small", { textContent: it.comments.length + " commentaire" + (it.comments.length > 1 ? "s" : "") }) : null),
-      el("span", { style: "display:inline-flex;gap:6px;align-items:center" }, it.price && it.buyUrl ? el("a", { className: "buy", href: it.buyUrl, target: "_blank", rel: "noopener",
-          ariaLabel: "Acheter " + it.title, onclick: (event) => event.stopPropagation() }, "Acheter · " + (it.price / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: it.price % 100 ? 2 : 0 })) : "",
+      el("span", { style: "display:inline-flex;gap:6px;align-items:center" }, it.offers.length ? el("button", { className: "buy", type: "button",
+          ariaLabel: "Acheter " + it.title, onclick: (event) => { event.stopPropagation(); chooseLicense(it); } }, "Acheter · dès " + euros(Math.min(...it.offers.map((o) => o.price)))) : "",
         it.day ? el("span", { className: "stage", textContent: it.day.split("-").reverse().join("/") }) : "",
         el("span", { className: "stage " + (it.stage === "maquette" || it.stage === "final" ? it.stage : it.stage ? "version" : ""), textContent: OP.stageLabel(it.stage) })),
       el("span", { className: "len", textContent: it.duration ? OP.time(it.duration) : "" }),
@@ -354,6 +368,30 @@ function show(data) {
     $("save").disabled = false;
   };
 }
+
+// L'achat d'une prod : le choix de la licence, puis le paiement chez le prestataire du beatmaker. Les fichiers et le
+// contrat arrivent sur la page d'achat (et par e-mail) une fois le paiement confirmé.
+const euros = (cents) => (cents / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: cents % 100 ? 2 : 0 });
+const FILE_LABELS = { mp3: "MP3", wav: "WAV", stems: "Track stems" };
+function chooseLicense(it) {
+  const dialog = $("buy"), error = el("p", { className: "error" });
+  const pay = el("button", { className: "btn", type: "submit", textContent: "Payer" });
+  const form = el("form", {}, el("h2", { textContent: it.title }), el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: "Choisis ta licence." }),
+    ...it.offers.map((o, i) => el("label", { className: "offer" }, el("input", { type: "radio", name: "license", value: o.id, checked: i === 0 }),
+      el("b", { textContent: o.name + (o.exclusive ? " · exclusive" : "") }), el("span", { className: "price", textContent: euros(o.price) }),
+      el("small", { textContent: "Fichiers : " + o.files.map((k) => FILE_LABELS[k]).join(", ") }),
+      o.terms ? el("details", {}, el("summary", { textContent: "Conditions" }), o.terms) : "")),
+    error, el("div", { className: "row" }, el("button", { className: "back", type: "button", textContent: "Annuler", onclick: () => dialog.close() }), pay));
+  form.onsubmit = async (event) => {
+    event.preventDefault();
+    pay.disabled = true; error.textContent = "";
+    try { location.href = (await api("/buy", { trackId: it.trackId, licenseId: Number(new FormData(form).get("license")) })).url; }
+    catch (e) { error.textContent = e.message; pay.disabled = false; }
+  };
+  dialog.replaceChildren(form);
+  dialog.showModal();
+}
+$("buy").addEventListener("click", (event) => { if (event.target === $("buy")) $("buy").close(); });
 
 async function open(password) {
   try {

@@ -36,6 +36,7 @@ import { announcementView, deleteAccount, maintenanceView, mountControl, packVie
 import { enrollment, matchStep, newRecoveryCodes, newSecret, recoveryHash } from './totp.js';
 import { mountLinkPages } from './linkpage.js';
 import { mountSounds } from './sounds.js';
+import { mountBeatStoreHooks } from './beatstore.js';
 import { mountPush } from './push.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -242,6 +243,9 @@ export function createApp() {
     await handleStripeEvent(JSON.parse(raw), account);
     res.json({ received: true });
   }));
+
+  // Les ventes de prods des beatmakers : un webhook par compte Stripe, lui aussi sur le corps brut.
+  mountBeatStoreHooks(app, { express, wrap });
 
   app.post('/api/lemon/webhook', express.raw({ type: '*/*', limit: '1mb' }), wrap(async (req, res) => {
     if (paymentsMode() !== 'lemon') throw new HttpError(404, 'Introuvable.');

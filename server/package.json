@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node src/index.js",
     "seed": "node src/seed.js",
-    "test": "node test/smoke.mjs && node test/roles.mjs && node test/new-features.mjs && node test/new-features.mjs migration && node test/new-features.mjs nomail && node test/youtube.mjs && node test/social.mjs && node test/promos.mjs && node test/control.mjs && node test/reference.mjs && node test/sounds.mjs"
+    "test": "node test/smoke.mjs && node test/roles.mjs && node test/new-features.mjs && node test/new-features.mjs migration && node test/new-features.mjs nomail && node test/youtube.mjs && node test/social.mjs && node test/promos.mjs && node test/control.mjs && node test/reference.mjs && node test/sounds.mjs && node test/beatstore.mjs"
   },
   "dependencies": {
     "express": "^4.21.2",

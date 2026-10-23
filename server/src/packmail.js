@@ -19,7 +19,7 @@ const absolute = (url) => (!url ? '' : /^https?:/i.test(url) ? url : config.site
 export function mailDraft(b = {}) {
   const colors = Object.fromEntries(Object.entries(MAIL_COLORS).map(([k, v]) => [k, /^#[0-9a-f]{6}$/i.test(b.colors?.[k]) ? b.colors[k] : v]));
   return {
-    to: typeof b.to === 'string' ? b.to.slice(0, 50000) : '',
+    to: typeof b.to === 'string' ? b.to.slice(0, 150000) : '',
     from: str(b.from, 80), subject: str(b.subject, 140), preheader: str(b.preheader, 160), eyebrow: str(b.eyebrow, 40), title: str(b.title, 120),
     text: typeof b.text === 'string' ? b.text.replace(/\r\n?/g, '\n').slice(0, 8000) : '',
     image: https(b.image), buttonLabel: str(b.buttonLabel, 40), buttonUrl: https(b.buttonUrl), signature: str(b.signature, 200), footer: str(b.footer, 300),

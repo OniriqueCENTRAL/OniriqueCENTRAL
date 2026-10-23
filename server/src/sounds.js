@@ -14,6 +14,7 @@ import { escapeHtml } from './mailtemplate.js';
 import { textImage } from './linkpage.js';
 import { push, wants, prefsOf } from './push.js';
 import { mailDraft, packMailHtml } from './packmail.js';
+import { mountBeatStore, offersOf, filesOf, sellerView, licensesOf, licensePricesOf } from './beatstore.js';
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS sound_projects (
@@ -177,6 +178,83 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 
   db.exec('ALTER TABLE sound_tracks ADD COLUMN price INTEGER NOT NULL DEFAULT 0');
   db.exec(`ALTER TABLE sound_tracks ADD COLUMN buy_url TEXT NOT NULL DEFAULT ''`);
 }
+// La vente des prods, façon BeatStars : les licences de chaque beatmaker (MP3, WAV, Track Stems, Exclusive…), les
+// fichiers livrés avec chaque prod, son compte de paiement (Stripe ou PayPal, clés chiffrées), les commandes, et ses
+// listes d'adresses pour les mails (importées d'un CSV).
+db.exec(`
+CREATE TABLE IF NOT EXISTS sound_licenses (
+  id         INTEGER PRIMARY KEY,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name       TEXT NOT NULL,
+  price      INTEGER NOT NULL,
+  files      TEXT NOT NULL DEFAULT '[]',
+  terms      TEXT NOT NULL DEFAULT '',
+  exclusive  INTEGER NOT NULL DEFAULT 0,
+  position   INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS sound_deliverables (
+  track_id   INTEGER NOT NULL REFERENCES sound_tracks(id) ON DELETE CASCADE,
+  kind       TEXT NOT NULL,
+  filename   TEXT NOT NULL,
+  stored_as  TEXT NOT NULL,
+  mime       TEXT NOT NULL,
+  size       INTEGER NOT NULL,
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (track_id, kind)
+);
+CREATE TABLE IF NOT EXISTS sound_sellers (
+  user_id    INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  provider   TEXT NOT NULL DEFAULT '',
+  client_id  TEXT NOT NULL DEFAULT '',
+  secret     TEXT,
+  sandbox    INTEGER NOT NULL DEFAULT 0,
+  account    TEXT NOT NULL DEFAULT '',
+  updated_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS sound_orders (
+  id           INTEGER PRIMARY KEY,
+  token        TEXT NOT NULL UNIQUE,
+  seller_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  track_id     INTEGER REFERENCES sound_tracks(id) ON DELETE SET NULL,
+  link_id      INTEGER REFERENCES sound_links(id) ON DELETE SET NULL,
+  track_title  TEXT NOT NULL,
+  artist       TEXT NOT NULL,
+  license      TEXT NOT NULL,
+  amount       INTEGER NOT NULL,
+  currency     TEXT NOT NULL DEFAULT 'eur',
+  provider     TEXT NOT NULL,
+  sandbox      INTEGER NOT NULL DEFAULT 0,
+  provider_ref TEXT NOT NULL DEFAULT '',
+  status       TEXT NOT NULL DEFAULT 'pending',
+  buyer_email  TEXT NOT NULL DEFAULT '',
+  buyer_name   TEXT NOT NULL DEFAULT '',
+  created_at   INTEGER NOT NULL,
+  paid_at      INTEGER
+);
+CREATE INDEX IF NOT EXISTS sound_orders_by_seller ON sound_orders (seller_id, created_at);
+CREATE TABLE IF NOT EXISTS sound_mail_lists (
+  id         INTEGER PRIMARY KEY,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name       TEXT NOT NULL,
+  emails     TEXT NOT NULL DEFAULT '[]',
+  created_at INTEGER NOT NULL
+);
+`);
+// Une prod en vente (licences du beatmaker), et vendue en exclusivité : alors plus personne ne peut l'acheter.
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'for_sale'`).get()) {
+  db.exec('ALTER TABLE sound_tracks ADD COLUMN for_sale INTEGER NOT NULL DEFAULT 0');
+  db.exec('ALTER TABLE sound_tracks ADD COLUMN sold INTEGER NOT NULL DEFAULT 0');
+}
+// Le prix de chaque licence pour une prod, quand il change de celui du beatmaker : { idLicence: centimes, 0 : pas proposée }.
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'license_prices'`).get()) {
+  db.exec(`ALTER TABLE sound_tracks ADD COLUMN license_prices TEXT NOT NULL DEFAULT '{}'`);
+}
+// Le webhook Stripe du beatmaker : seul lui confirme qu'une commande est payée.
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_sellers') WHERE name = 'webhook_secret'`).get()) {
+  db.exec('ALTER TABLE sound_sellers ADD COLUMN webhook_secret TEXT');
+  db.exec(`ALTER TABLE sound_sellers ADD COLUMN webhook_id TEXT NOT NULL DEFAULT ''`);
+}
 /** « c#m », « Bb minor », « F majeur »… → « C# min », « Bb min », « F maj » ; null si ce n'est pas une tonalité. */
 export function musicKey(value) {
   const m = /^([a-g])\s*(#|♯|b|♭)?\s*(m|min|minor|mineur|maj|major|majeur)?$/i.exec(String(value || '').trim());
@@ -219,8 +297,10 @@ function disk() {
   const total = s.blocks * s.bsize;
   return { total, used: total - s.bavail * s.bsize };
 }
-const usedBy = (userId) => get(`SELECT COALESCE(SUM(v.size), 0) AS n FROM sound_versions v JOIN sound_tracks t ON t.id = v.track_id
-  JOIN sound_projects p ON p.id = t.project_id WHERE p.user_id = ?`, userId).n;
+// Les versions et les fichiers livrés avec les prods comptent dans l'espace du membre.
+export const usedBy = (userId) => get(`SELECT COALESCE(SUM(v.size), 0) AS n FROM sound_versions v JOIN sound_tracks t ON t.id = v.track_id
+  JOIN sound_projects p ON p.id = t.project_id WHERE p.user_id = ?`, userId).n + get(`SELECT COALESCE(SUM(d.size), 0) AS n FROM sound_deliverables d
+  JOIN sound_tracks t ON t.id = d.track_id JOIN sound_projects p ON p.id = t.project_id WHERE p.user_id = ?`, userId).n;
 
 /** Le format d'un fichier audio, lu sur ses premiers octets : WAV, AIFF, FLAC, MP3, OGG ou M4A. */
 export function audioType(head) {
@@ -266,8 +346,6 @@ function aboutOf(userId, mine) {
     linkPage: handle ? `${config.linksUrl}/${handle}` : null };
 }
 const creditsOf = (row) => { try { return JSON.parse(row.credits || '{}'); } catch { return {}; } };
-// BPM, clé et vente d'une prod : le lien de paiement n'est donné qu'avec un prix.
-const saleOf = (t) => ({ bpm: t.bpm, key: t.music_key, price: t.buy_url ? t.price : 0, buyUrl: t.price ? t.buy_url : '' });
 const person = (u) => ({ id: u.id, name: u.name || 'ONIRIQUE', avatar: media(u.avatar) });
 const linkView = (l) => ({
   id: l.id, url: `${config.siteUrl}/ecoute?t=${l.token}`, projectId: l.project_id, trackId: l.track_id, label: l.label,
@@ -279,7 +357,7 @@ function removeVersionFiles(rows) {
 }
 /** Les fichiers qui ne correspondent plus à aucune version (compte supprimé, envoi interrompu) sont effacés au démarrage. */
 export function sweepSounds() {
-  const kept = new Set(all('SELECT stored_as FROM sound_versions').map((r) => r.stored_as));
+  const kept = new Set(all('SELECT stored_as FROM sound_versions UNION SELECT stored_as FROM sound_deliverables').map((r) => r.stored_as));
   for (const name of fs.readdirSync(soundsDir)) if (!kept.has(name)) fs.rmSync(path.join(soundsDir, name), { force: true });
 }
 
@@ -490,6 +568,8 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     const d = disk();
     res.json({
       owner: person(req.user), founder: req.user.role === 'founder', vanish,
+      // Le compte de paiement et les licences, pour les badges de vente des packs.
+      store: projects.some((p) => p.kind === 'pack' && p.user_id === u) ? { seller: sellerView(u), licenses: licensesOf(u) } : null,
       quota: { used: usedBy(req.user.id), limit: quotaBytes(), full: d.used / d.total >= diskMax() },
       projects: projects.map((p) => ({
         id: p.id, kind: p.kind, title: p.title, artist: p.artist, cover: media(p.cover), background: media(p.background), coverBy: p.cover_by, releaseDate: p.release_date, createdAt: p.created_at,
@@ -505,7 +585,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
           const mine = plays.filter((r) => r.track_id === t.id);
           return {
             id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), lyrics: t.lyrics, currentId: t.current_id, createdAt: t.created_at,
-            bpm: t.bpm, key: t.music_key, price: t.price, buyUrl: t.buy_url,
+            bpm: t.bpm, key: t.music_key, forSale: !!t.for_sale, sold: !!t.sold, ...(p.kind === 'pack' ? { files: filesOf(t.id), licensePrices: JSON.parse(t.license_prices || '{}') } : {}),
             versions: versions.filter((v) => v.track_id === t.id).map((v, i) => versionView(v, i, true)),
             comments: comments.filter((c) => c.track_id === t.id).map(commentView),
             plays: mine.length, lastPlay: mine[0]?.created_at ?? null, listeners: listeners(mine),
@@ -641,12 +721,16 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     const link = get('SELECT token FROM sound_links WHERE project_id = ? AND user_id = ? ORDER BY created_at DESC', p.id, req.user.id);
     res.json({ html: packMailHtml(mailDraft(req.body), {
       title: p.title, artist: p.artist || req.user.name || 'ONIRIQUE', cover: media(p.cover), listenUrl: link ? `${config.siteUrl}/ecoute?t=${link.token}` : '',
-      tracks: tracks.map((t) => ({ id: t.id, title: t.title, ...saleOf(t) })),
+      tracks: tracks.map((t) => {
+        const offers = offersOf(t, p.user_id);
+        return { id: t.id, title: t.title, bpm: t.bpm, key: t.music_key, price: offers.length ? Math.min(...offers.map((o) => o.price)) : 0, buyUrl: link ? `${config.siteUrl}/ecoute?t=${link.token}` : '' };
+      }),
     }) });
   });
   app.delete('/api/me/sounds/projects/:id', ...me, (req, res) => {
     const p = ownProject(req, req.params.id);
-    const files = all('SELECT v.stored_as FROM sound_versions v JOIN sound_tracks t ON t.id = v.track_id WHERE t.project_id = ?', p.id);
+    const files = all(`SELECT v.stored_as FROM sound_versions v JOIN sound_tracks t ON t.id = v.track_id WHERE t.project_id = ?
+      UNION ALL SELECT d.stored_as FROM sound_deliverables d JOIN sound_tracks t ON t.id = d.track_id WHERE t.project_id = ?`, p.id, p.id);
     run('DELETE FROM sound_projects WHERE id = ?', p.id);
     removeVersionFiles(files);
     if (p.cover) removeMedia(p.cover);
@@ -753,7 +837,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       if (day && !isDay(day)) throw new HttpError(400, 'Date invalide.');
       run('UPDATE sound_tracks SET day = ? WHERE id = ?', day, t.id);
     }
-    // La prod d'un pack : BPM (0 : aucun), clé ('' : aucune), prix en centimes et lien de paiement (0 / '' : pas en vente).
+    // La prod d'un pack : BPM (0 : aucun), clé ('' : aucune), mise en vente selon les licences du beatmaker.
     if (req.body.bpm !== undefined) {
       const bpm = Math.round(Number(req.body.bpm) || 0);
       if (bpm && (bpm < 40 || bpm > 300)) throw new HttpError(400, 'Le BPM va de 40 à 300.');
@@ -764,17 +848,8 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       if (key === null) throw new HttpError(400, 'Clé inconnue : écris par exemple « C# min » ou « F maj ».');
       run('UPDATE sound_tracks SET music_key = ? WHERE id = ?', key, t.id);
     }
-    if (req.body.price !== undefined) {
-      const price = Math.round(Number(req.body.price));
-      if (!Number.isInteger(price) || price < 0 || price > 100000_00) throw new HttpError(400, 'Prix invalide.');
-      run('UPDATE sound_tracks SET price = ? WHERE id = ?', price, t.id);
-    }
-    if (req.body.buyUrl !== undefined) {
-      let url = str(req.body.buyUrl, 500);
-      if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
-      if (url) { try { if (!/^https?:$/.test(new URL(url).protocol)) throw 0; } catch { throw new HttpError(400, 'Lien de paiement invalide.'); } }
-      run('UPDATE sound_tracks SET buy_url = ? WHERE id = ?', url, t.id);
-    }
+    if (req.body.forSale !== undefined) run('UPDATE sound_tracks SET for_sale = ? WHERE id = ? AND sold = 0', req.body.forSale ? 1 : 0, t.id);
+    if (req.body.licensePrices !== undefined) run('UPDATE sound_tracks SET license_prices = ? WHERE id = ?', licensePricesOf(req.body.licensePrices, t.owner_id), t.id);
     if (req.body.stage !== undefined) {
       const stage = String(req.body.stage).toLowerCase();
       if (!STAGE.test(stage)) throw new HttpError(400, 'Étape inconnue : maquette, V1 à V99 ou final.');
@@ -817,7 +892,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   });
   app.delete('/api/me/sounds/tracks/:id', ...me, (req, res) => {
     const t = track(req, req.params.id);
-    const files = all('SELECT stored_as FROM sound_versions WHERE track_id = ?', t.id);
+    const files = all('SELECT stored_as FROM sound_versions WHERE track_id = ? UNION ALL SELECT stored_as FROM sound_deliverables WHERE track_id = ?', t.id, t.id);
     run('DELETE FROM sound_tracks WHERE id = ?', t.id);
     removeVersionFiles(files);
     res.json({ ok: true });
@@ -1036,7 +1111,8 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       owner: p.artist || p.author_name || 'ONIRIQUE', ownerAvatar: media(p.author_avatar), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover), background: media(p.background), coverBy: p.cover_by, releaseDate: p.release_date,
       download: !!link.download, about: aboutOf(p.user_id, false),
       tracks: tracks.map((t) => ({
-        id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), lyrics: t.lyrics, ...saleOf(t),
+        id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), lyrics: t.lyrics, bpm: t.bpm, key: t.music_key,
+        offers: p.kind === 'pack' ? offersOf(t, p.user_id) : [], sold: !!t.sold,
         version: { id: t.vid, filename: t.filename, duration: t.duration, peaks: JSON.parse(t.peaks), url: audioUrl(t.vid), downloadUrl: link.download ? audioUrl(t.vid, true, link.id) : null },
         comments: comments.filter((c) => c.track_id === t.id).map(commentView),
       })),
@@ -1113,4 +1189,6 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (link) tell(link, 'download', { title: get('SELECT title FROM sound_tracks WHERE id = ?', v.track_id)?.title || v.filename, key: `${v.id}:${req.ip}` });
     res.sendFile(path.join(soundsDir, v.stored_as));
   });
+
+  mountBeatStore(app, { me, track, room, receiveFile, openLink, linkTracks, linkProject, soundsDir, audioType, wrap });
 }

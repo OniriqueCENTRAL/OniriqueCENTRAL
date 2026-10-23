@@ -399,6 +399,15 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
 .mail-prods { display: grid; gap: 8px; padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,210,214,.07); }
 .mail-prods .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mail-colors { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+/* Les ventes d'un pack : le panneau Ventes et la vente d'une prod. */
+#store, #sale { width: 620px; }
+#store[open], #sale[open] { display: flex; flex-direction: column; overflow: hidden; }
+#store .dlg-head, #sale .dlg-head { flex: none; padding-bottom: 14px; border-bottom: 1px solid rgba(255,210,214,.08); }
+#store > .stack, #sale > .stack { min-height: 0; align-content: start; grid-auto-rows: max-content; overflow-y: auto; overscroll-behavior: contain; padding: 16px 18px 20px; }
+#store .field, #sale .field { display: grid; gap: 6px; flex: 1; font-size: 13px; color: var(--haze); }
+#store summary { list-style: none; }
+#store summary::-webkit-details-marker { display: none; }
+#sale .item input:not([type]) { min-height: 0; padding: 8px 10px; }
 .mail-frame { width: 100%; height: 100%; border: 0; border-left: 1px solid rgba(255,210,214,.08); background: #0d0809; }
 @media (max-width: 860px) {
   .mail-body { display: block; overflow-y: auto; }
@@ -476,7 +485,8 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
     <div class="crumb">
       <button class="round" id="back" type="button" aria-label="Retour aux projets"></button>
       <div><b style="font:700 15px var(--f-display)">Projets</b><small id="crumb-owner"></small></div>
-      <button class="edit-toggle" id="pack-mail" type="button" style="margin-left:auto" hidden>Mails</button>
+      <button class="edit-toggle" id="pack-store" type="button" style="margin-left:auto" hidden>Ventes</button>
+      <button class="edit-toggle" id="pack-mail" type="button" hidden>Mails</button>
     </div>
     <div class="album">
       <div>
@@ -534,9 +544,12 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
 <dialog id="settings"></dialog>
 <dialog id="collab"></dialog>
 <dialog id="mailer"></dialog>
+<dialog id="store"></dialog>
+<dialog id="sale"></dialog>
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close('cancel')">Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
 <script src="assets/sounds-player.js?v=10"></script>
+<script src="assets/audio-kit.js?v=2"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const TOKEN = "onirique.token";
@@ -1124,6 +1137,8 @@ function renderProject(p) {
   tintOf(p.cover).then((t) => { if (openId() === p.id) theme(t); });
   $("crumb-owner").textContent = data.owner.name;
   $("pack-mail").hidden = !p.mail;
+  $("pack-store").hidden = !p.mail;
+  if ($("sale").open) renderSale();
   if ($("mailer").open && mailerId === p.id) drawMailerProds(p);
   if (!$("cover-by").contains(document.activeElement)) $("cover-by").replaceChildren(...(editing || p.coverBy ? [el("span", { className: "eyebrow", textContent: "Pochette" }),
     editing ? inlineEdit(p.coverBy, "Ajouter l'auteur de la pochette", 80, (coverBy) => api("PATCH", "/me/sounds/projects/" + p.id, { coverBy }).then(refresh), true)
@@ -1204,25 +1219,17 @@ function prodBadge(label, empty, title, onclick, cls = "") {
   b.onclick = (event) => { event.stopPropagation(); onclick(b); };
   return b;
 }
-// Le prix, puis le lien de paiement du beatmaker (Stripe, PayPal…) : la prod est en vente quand elle a les deux.
-async function editSale(t, save, onlyLink = false) {
-  let price = t.price;
-  if (!onlyLink) {
-    const v = await ask("Prix en euros (vide pour ne pas la vendre)", t.price ? String(t.price / 100).replace(".", ",") : "", true);
-    if (v === null) return;
-    const n = Number(v.replace(",", ".").replace(/[€\s]/g, ""));
-    if (!(n >= 0)) return fail(new Error("Prix invalide : écris par exemple 29,99."));
-    price = Math.round(n * 100);
-    if (!price) return save({ price: 0 });
-    if (t.buyUrl) return save({ price });
-  }
-  const url = await ask("Lien de paiement de la prod (Stripe, PayPal, Gumroad…)", t.buyUrl, true);
-  if (url !== null) save({ price, buyUrl: url });
-}
+// Les licences qu'un acheteur peut prendre pour une prod : celles du beatmaker dont les fichiers sont déposés, au prix
+// réglé pour cette prod (le même calcul que le serveur).
+const offersFor = (t) => (!data.store || !data.store.seller.connected || !t.forSale || t.sold ? [] : data.store.licenses
+  .filter((l) => (t.licensePrices || {})[l.id] !== 0 && l.files.every((k) => (t.files || {})[k]))
+  .map((l) => ({ ...l, price: (t.licensePrices || {})[l.id] || l.price })));
+const lowest = (offers) => Math.min(...offers.map((o) => o.price));
 function prodBadges(p, t) {
   if (p.kind !== "pack") return { tempo: [], sale: "" };
   const save = (body) => api("PATCH", "/me/sounds/tracks/" + t.id, body).then(refresh, fail);
-  const onSale = t.price && t.buyUrl;
+  const offers = offersFor(t);
+  const label = t.sold ? "Vendue" : offers.length ? "dès " + euros(lowest(offers)) : t.forSale ? "En vente · à compléter" : "";
   return {
     tempo: [
       prodBadge(t.bpm ? t.bpm + " BPM" : "", "+ BPM", "Tempo de la prod", async () => {
@@ -1234,16 +1241,9 @@ function prodBadges(p, t) {
         if (k !== null) save({ key: k });
       }),
     ],
-    sale: prodBadge(t.price ? euros(t.price) : "", "+ Prix", onSale ? "En vente" : t.price ? "Ajoute un lien de paiement pour la mettre en vente" : "Mettre la prod en vente", (b) => {
-      if (!t.price) return editSale(t, save);
-      menu(b, [
-        { label: "Changer le prix", icon: "repeat", onclick: () => editSale(t, save) },
-        { label: t.buyUrl ? "Changer le lien de paiement" : "Ajouter le lien de paiement", icon: "link", onclick: () => editSale(t, save, true) },
-        t.buyUrl && { label: "Ouvrir le lien de paiement", icon: "share", onclick: () => window.open(t.buyUrl, "_blank", "noopener") },
-        "-",
-        { label: "Retirer de la vente", icon: "close", danger: true, onclick: () => save({ price: 0, buyUrl: "" }) },
-      ]);
-    }, onSale ? "price" : t.price ? "price-off" : ""),
+    sale: !p.mine ? (label ? el("span", { className: "stage prod" + (offers.length ? " price" : ""), textContent: label }) : "")
+      : prodBadge(label, "+ Vendre", t.sold ? "Vendue en exclusivité" : offers.length ? "En vente : licences et fichiers" : "Mettre la prod en vente", () => openSale(t.id),
+        offers.length ? "price" : t.forSale ? "price-off" : ""),
   };
 }
 function trackRow(p, t, i) {
@@ -1344,8 +1344,19 @@ async function runUploads() {
       const path = job.trackId ? "/me/sounds/tracks/" + job.trackId + "/versions" + query : "/me/sounds/projects/" + job.projectId + "/tracks" + query;
       const done = await upload(path, job.file, (x) => setJob(job, "send", Math.round(x * 100) + " %", x * 0.97));
       if (wave) await api("PATCH", "/me/sounds/versions/" + (job.trackId ? done.id : done.versionId), wave);
-      setJob(job, "done", "Envoyé", 1);
       await refresh().catch(() => {});
+      // Une prod de pack sans BPM ou sans clé dans le nom du fichier : ils sont détectés sur le son, comme dans l'outil
+      // « BPM et tonalité », et restent modifiables à la main.
+      const t = !job.trackId && findTrack(done.id).p && findTrack(done.id).p.kind === "pack" && findTrack(done.id).t;
+      if (t && (!t.bpm || !t.key)) {
+        setJob(job, "read", "Analyse du BPM et de la clé…", 0.98);
+        const found = await detectProd(job.file).catch(() => ({}));
+        const body = {};
+        if (!t.bpm && found.tempo && found.tempo.bpm >= 40 && found.tempo.bpm <= 300) body.bpm = Math.round(found.tempo.bpm);
+        if (!t.key && found.key) body.key = KEY_NAMES[found.key.tonic] + (found.key.mode === "major" ? " maj" : " min");
+        if (Object.keys(body).length) await api("PATCH", "/me/sounds/tracks/" + t.id, body).then(refresh).catch(() => {});
+      }
+      setJob(job, "done", "Envoyé", 1);
     } catch (error) {
       setJob(job, "error", "Échec", 1);
       job.row.title = error.message;
@@ -1358,6 +1369,19 @@ async function runUploads() {
   drawUploads();
   // La liste se ferme toute seule quelques secondes après le dernier envoi réussi.
   if (!uploads.some((j) => j.state === "error")) setTimeout(() => { if (!uploading && uploads.every((j) => j.state === "done")) clearUploads(); }, 4000);
+}
+// Tempo et tonalité d'un son, avec le calcul de la page « BPM et tonalité » : quatre minutes au plus, prises au milieu.
+const KEY_NAMES = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+async function detectProd(file) {
+  const A = OniriqueAudio, source = await A.decode(file);
+  const length = Math.min(source.duration, 240), from = (source.duration - length) / 2;
+  const mono = await A.render(source, { rate: 22050, channels: 1, from, to: from + length });
+  return new Promise((resolve) => {
+    const worker = new Worker("assets/bpm-key-worker.js"), samples = mono.getChannelData(0);
+    worker.onmessage = (event) => { worker.terminate(); resolve(event.data); };
+    worker.onerror = () => { worker.terminate(); resolve({}); };
+    worker.postMessage({ samples, sampleRate: 22050 }, [samples.buffer]);
+  });
 }
 function clearUploads() {
   for (let i = uploads.length - 1; i >= 0; i--) if (uploads[i].state === "done" || uploads[i].state === "error") { uploads[i].row.remove(); uploads.splice(i, 1); }
@@ -1514,7 +1538,7 @@ function drawMailerProds(p, ids = mailerForm.draft().trackIds) {
   box.replaceChildren(...(p.tracks.length ? p.tracks.map((t) => el("label", { className: "mail-check" },
     el("input", { type: "checkbox", value: t.id, checked: chosen.has(t.id) }),
     el("span", { className: "grow", textContent: t.title }),
-    ...[t.bpm ? t.bpm + " BPM" : "", t.key, t.price && t.buyUrl ? euros(t.price) : ""].filter(Boolean).map((b) => el("span", { className: "stage prod", textContent: b }))))
+    ...[t.bpm ? t.bpm + " BPM" : "", t.key, offersFor(t).length ? "dès " + euros(lowest(offersFor(t))) : ""].filter(Boolean).map((b) => el("span", { className: "stage prod", textContent: b }))))
     : [el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: "Ajoute des prods au pack pour les mettre dans le mail." })]));
 }
 function openMailer(p) {
@@ -1522,7 +1546,7 @@ function openMailer(p) {
   const d = p.mail, dialog = $("mailer");
   const field = (label, input, wide = true) => el("label", { className: "field" + (wide ? " wide" : "") }, el("span", { textContent: label }), input);
   const f = {
-    to: el("textarea", { value: d.to, maxLength: 50000, placeholder: "Colle les adresses : une par ligne, ou séparées par des virgules", style: "min-height:90px" }),
+    to: el("textarea", { value: d.to, maxLength: 150000, placeholder: "Colle les adresses (une par ligne, ou séparées par des virgules), ou choisis une liste", style: "min-height:90px" }),
     from: el("input", { value: d.from, maxLength: 80, placeholder: p.artist || data.owner.name }),
     subject: el("input", { value: d.subject, maxLength: 140, placeholder: "Nouveau pack : " + p.title }),
     preheader: el("input", { value: d.preheader, maxLength: 160, placeholder: "La phrase grise après l'objet" }),
@@ -1541,6 +1565,52 @@ function openMailer(p) {
   const colors = Object.fromEntries(Object.entries(MAIL_COLORS).map(([k]) => [k, el("input", { type: "color", value: d.colors[k] })]));
   const total = el("small", { className: "muted" }), status = el("span", { className: "muted", style: "font-size:13px" });
   const frame = el("iframe", { className: "mail-frame", title: "Aperçu du mail" });
+  // Les listes d'adresses du compte : choisies pour remplir les destinataires, importées d'un CSV, enregistrées, exportées.
+  const oops = (error) => { status.textContent = error.message; };
+  const lists = el("select", { ariaLabel: "Listes enregistrées", style: "flex:1;min-width:180px" });
+  let saved = [];
+  const current = () => saved.find((l) => String(l.id) === lists.value);
+  const drawLists = async (select) => {
+    saved = await api("GET", "/me/sounds/mail-lists");
+    lists.replaceChildren(el("option", { value: "", textContent: saved.length ? "Choisir une liste enregistrée…" : "Aucune liste enregistrée" }),
+      ...saved.map((l) => el("option", { value: l.id, textContent: l.name + " (" + l.count + ")", selected: l.id === select })));
+  };
+  const fill = (l) => { f.to.value = l.emails.join("\n"); update(); };
+  lists.onchange = () => lists.value && api("GET", "/me/sounds/mail-lists/" + lists.value).then(fill, oops);
+  const csv = el("input", { type: "file", accept: ".csv,.txt,text/csv,text/plain", hidden: true });
+  csv.onchange = async () => {
+    const file = csv.files[0];
+    csv.value = "";
+    if (!file) return;
+    const name = await ask("Nom de la liste", file.name.replace(/\.[^.]+$/, "").slice(0, 80));
+    if (!name) return;
+    try { const l = await api("POST", "/me/sounds/mail-lists", { name, emails: await file.text() }); await drawLists(l.id); fill(l); } catch (error) { oops(error); }
+  };
+  const listButton = (label, onclick) => el("button", { className: "btn btn-ghost", type: "button", textContent: label, onclick });
+  const listBar = el("div", { className: "row wide" }, lists, csv,
+    listButton("Importer un CSV", () => csv.click()),
+    listButton("Enregistrer la liste", async () => {
+      const l = current(), name = await ask("Nom de la liste", l ? l.name : "");
+      if (!name) return;
+      try {
+        const next = l && name === l.name ? await api("PATCH", "/me/sounds/mail-lists/" + l.id, { emails: f.to.value })
+          : await api("POST", "/me/sounds/mail-lists", { name, emails: f.to.value });
+        await drawLists(next.id);
+      } catch (error) { oops(error); }
+    }),
+    listButton("Exporter en CSV", () => {
+      const { valid } = mailList(f.to.value);
+      if (!valid.length) return oops(new Error("Aucune adresse à exporter."));
+      const a = el("a", { href: URL.createObjectURL(new Blob(["email\r\n" + valid.join("\r\n") + "\r\n"], { type: "text/csv" })), download: ((current() || {}).name || "adresses") + ".csv" });
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }),
+    listButton("Supprimer la liste", async () => {
+      const l = current();
+      if (!l || !confirm("Supprimer la liste « " + l.name + " » ? Les adresses restent dans ce mail.")) return;
+      try { await api("DELETE", "/me/sounds/mail-lists/" + l.id); await drawLists(); } catch (error) { oops(error); }
+    }));
+  drawLists().catch(oops);
   const form = el("form", { className: "mail-form" });
   mailerForm = {
     draft: () => ({ ...Object.fromEntries(["to", "from", "subject", "preheader", "eyebrow", "title", "text", "image", "buttonLabel", "buttonUrl", "signature", "footer", "font", "titleFont"]
@@ -1572,7 +1642,7 @@ function openMailer(p) {
   const send = el("button", { className: "btn btn-primary", type: "button", textContent: "Envoyer", disabled: true, title: "L'envoi arrive bientôt" });
   const section = (title) => el("div", { className: "sub-title wide", textContent: title });
   form.append(
-    section("Destinataires"), field("Liste d'adresses", f.to), el("div", { className: "wide" }, total),
+    section("Destinataires"), listBar, field("Liste d'adresses", f.to), el("div", { className: "wide" }, total),
     section("Expéditeur et objet"), field("Nom de l'expéditeur", f.from, false), field("Objet", f.subject, false), field("Phrase d'aperçu", f.preheader),
     section("Contenu"), field("Petit titre", f.eyebrow, false), field("Titre", f.title, false), field("Message", f.text), field("Image en tête (adresse)", f.image),
     field("Texte du bouton", f.buttonLabel, false), field("Lien du bouton", f.buttonUrl, false), field("Signature", f.signature, false), field("Bas du mail", f.footer, false),
@@ -1596,6 +1666,186 @@ function openMailer(p) {
 }
 $("pack-mail").onclick = () => openMailer(project());
 lightClose($("mailer"));
+
+// ——— Les ventes d'un pack de prods ———
+// Le panneau Ventes : le compte de paiement du beatmaker (Stripe ou PayPal, ses clés gardées chiffrées), ses licences
+// (prix, fichiers livrés, conditions) et ses commandes. Puis, prod par prod, la mise en vente, les fichiers livrés et le
+// prix de chaque licence. L'acheteur paie chez le prestataire ; les fichiers et le contrat partent une fois le paiement
+// confirmé (webhook signé pour Stripe).
+const KINDS = { mp3: "MP3", wav: "WAV", stems: "Track stems (ZIP)" };
+const priceIn = (text) => { const n = Number(String(text).replace(",", ".").replace(/[€\s]/g, "")); return n > 0 ? Math.round(n * 100) : NaN; };
+const priceText = (cents) => String(cents / 100).replace(".", ",");
+const fieldOf = (label, input) => el("label", { className: "field" }, el("span", { textContent: label }), input);
+let store = null;
+async function openStore() {
+  store = await api("GET", "/me/sounds/store");
+  renderStore();
+  if (!$("store").open) $("store").showModal();
+}
+function renderStore() {
+  const dialog = $("store"), { seller, licenses, orders } = store;
+  const busy = async (button, work) => {
+    button.disabled = true;
+    try { await work(); } catch (error) { alert(error.message); }
+    button.disabled = false;
+  };
+  const reload = async (next) => { Object.assign(store, next); renderStore(); await refresh().catch(() => {}); };
+
+  // Le compte de paiement.
+  let account;
+  if (seller.connected) {
+    const off = el("button", { className: "btn btn-ghost", type: "button", textContent: "Débrancher" });
+    off.onclick = () => confirm("Débrancher ce compte ? Tes prods ne pourront plus être achetées tant qu'aucun compte n'est branché.")
+      && busy(off, async () => reload({ seller: await api("DELETE", "/me/sounds/store/seller") }));
+    account = el("ul", { className: "group" }, el("li", { className: "item" }, el("div", { className: "grow" },
+      (seller.provider === "stripe" ? "Stripe" : "PayPal") + " · " + seller.account + (seller.sandbox ? " (mode test)" : ""),
+      el("small", { textContent: seller.provider === "stripe" ? (seller.webhook ? "Webhook branché : chaque paiement est confirmé par Stripe avant la livraison."
+        : "Pas de webhook : rebranche le compte pour que les paiements soient confirmés.") : "Les paiements PayPal sont encaissés par le serveur avant la livraison." })), off));
+  } else {
+    const provider = el("select", {}, el("option", { value: "stripe", textContent: "Stripe" }), el("option", { value: "paypal", textContent: "PayPal" }));
+    const secret = el("input", { type: "password", autocomplete: "off", placeholder: "sk_live_… (ou sk_test_… pour essayer)" });
+    const hook = el("input", { type: "password", autocomplete: "off", placeholder: "whsec_… (facultatif)" });
+    const clientId = el("input", { autocomplete: "off", placeholder: "Client ID de ton application PayPal" });
+    const sandbox = el("input", { type: "checkbox" });
+    const secretLabel = el("span", { textContent: "Clé secrète Stripe" });
+    const stripeFields = el("div", { className: "stack" },
+      fieldOf("Secret du webhook, seulement si Stripe ne peut pas joindre le site (essai en local avec « stripe listen »)", hook));
+    const paypalFields = el("div", { className: "stack", hidden: true }, fieldOf("Client ID", clientId), el("label", { className: "mail-check" }, sandbox, "Mode sandbox (pour essayer)"));
+    provider.onchange = () => {
+      const isStripe = provider.value === "stripe";
+      stripeFields.hidden = !isStripe; paypalFields.hidden = isStripe;
+      secretLabel.textContent = isStripe ? "Clé secrète Stripe" : "Secret de ton application PayPal";
+      secret.placeholder = isStripe ? "sk_live_… (ou sk_test_… pour essayer)" : "";
+    };
+    const go = el("button", { className: "btn btn-primary", type: "submit", textContent: "Brancher le compte" });
+    account = el("form", { className: "stack" }, fieldOf("Prestataire", provider), paypalFields, el("label", { className: "field" }, secretLabel, secret), stripeFields,
+      el("div", { className: "row" }, go));
+    account.onsubmit = (event) => {
+      event.preventDefault();
+      busy(go, async () => reload({ seller: await api("PUT", "/me/sounds/store/seller", provider.value === "stripe"
+        ? { provider: "stripe", secret: secret.value, webhookSecret: hook.value }
+        : { provider: "paypal", clientId: clientId.value, secret: secret.value, sandbox: sandbox.checked }) }));
+    };
+  }
+
+  // Les licences : nom, prix, fichiers livrés, exclusivité et conditions.
+  const licenseForm = (l) => {
+    const name = el("input", { value: l ? l.name : "", maxLength: 60, placeholder: "Unlimited" });
+    const price = el("input", { value: l ? priceText(l.price) : "", inputMode: "decimal", placeholder: "149,99" });
+    const files = Object.entries(KINDS).map(([k, label]) => [k, el("label", { className: "mail-check" }, el("input", { type: "checkbox", value: k, checked: l ? l.files.includes(k) : k === "mp3" }), label)]);
+    const exclusive = el("input", { type: "checkbox", checked: !!(l && l.exclusive) });
+    const terms = el("textarea", { value: l ? l.terms : "", maxLength: 5000, placeholder: "Ce que l'acheteur a le droit de faire avec la prod", style: "min-height:90px" });
+    const saveBtn = el("button", { className: "btn btn-primary", type: "submit", textContent: l ? "Enregistrer" : "Ajouter la licence" });
+    const form = el("form", { className: "stack", style: "padding:12px 14px" }, el("div", { className: "row" }, fieldOf("Nom", name), fieldOf("Prix (€)", price)),
+      el("div", { className: "row", style: "flex-wrap:wrap" }, el("span", { className: "muted", style: "font-size:13px", textContent: "Fichiers livrés :" }), ...files.map(([, x]) => x)),
+      el("label", { className: "mail-check" }, exclusive, "Exclusive : la prod est retirée de la vente dès l'achat"),
+      fieldOf("Conditions de la licence (reprises dans le contrat)", terms),
+      el("div", { className: "row" }, saveBtn, l ? el("button", { className: "btn btn-ghost", type: "button", textContent: "Supprimer",
+        onclick: (event) => confirm("Supprimer la licence « " + l.name + " » ? Les commandes déjà payées gardent leur contrat.")
+          && busy(event.target, async () => reload({ licenses: await api("DELETE", "/me/sounds/store/licenses/" + l.id) })) }) : ""));
+    form.onsubmit = (event) => {
+      event.preventDefault();
+      const cents = priceIn(price.value);
+      if (!cents) return alert("Prix invalide : écris par exemple 29,99.");
+      const body = { name: name.value, price: cents, terms: terms.value, exclusive: exclusive.checked,
+        files: files.filter(([, x]) => x.querySelector("input").checked).map(([k]) => k) };
+      busy(saveBtn, async () => reload({ licenses: await api(l ? "PATCH" : "POST", "/me/sounds/store/licenses" + (l ? "/" + l.id : ""), body) }));
+    };
+    return form;
+  };
+  const licenseList = el("ul", { className: "group" }, ...licenses.map((l) => el("li", {}, el("details", {},
+    el("summary", { className: "item" }, el("div", { className: "grow" }, l.name + " · " + euros(l.price),
+      el("small", { textContent: l.files.map((k) => KINDS[k]).join(", ") + (l.exclusive ? " · exclusive" : "") }))), licenseForm(l)))),
+    licenses.length < 12 ? el("li", {}, el("details", {}, el("summary", { className: "item" }, icon("plus"), el("div", { className: "grow", textContent: "Ajouter une licence" })), licenseForm(null))) : "");
+
+  // Les commandes : payées, ou en attente (une commande PayPal peut être revérifiée).
+  const status = { paid: "Payée", pending: "En attente" };
+  const orderList = orders.length ? el("ul", { className: "group" }, ...orders.map((o) => {
+    const check = o.status === "pending" && o.provider === "paypal" ? el("button", { className: "btn btn-ghost", type: "button", textContent: "Vérifier" }) : "";
+    if (check) check.onclick = () => busy(check, async () => { const next = await api("POST", "/me/sounds/store/orders/" + o.id + "/check"); store.orders = orders.map((x) => (x.id === o.id ? next : x)); renderStore(); });
+    return el("li", { className: "item" + (o.status === "paid" ? "" : " off") }, el("div", { className: "grow" }, "« " + o.trackTitle + " » · " + o.license + " · " + euros(o.amount),
+      el("small", { textContent: [status[o.status] || o.status, day(o.paidAt || o.createdAt), o.buyerEmail, o.sandbox ? "test" : ""].filter(Boolean).join(" · ") })), check);
+  })) : el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: "Aucune commande pour l'instant." });
+
+  dialog.replaceChildren(
+    el("div", { className: "dlg-head" }, el("b", { textContent: "Ventes" }),
+      el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close"))),
+    el("div", { className: "stack" },
+      el("div", { className: "sub-title", textContent: "Compte de paiement" }), account,
+      el("div", { className: "sub-title", textContent: "Licences" }),
+      el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Proposées sur la page d'écoute de chaque prod en vente dont les fichiers sont déposés. Le prix peut changer d'une prod à l'autre." }),
+      licenseList,
+      el("div", { className: "sub-title", textContent: "Commandes" }), orderList));
+}
+lightClose($("store"));
+
+// La vente d'une prod : en vente ou non, ses fichiers livrés (MP3, WAV, stems) et le prix de chaque licence pour elle.
+let saleId = null;
+function openSale(tid) { saleId = tid; renderSale(); if (!$("sale").open) $("sale").showModal(); }
+function renderSale() {
+  const dialog = $("sale"), { p, t } = findTrack(saleId);
+  if (!t) return dialog.close();
+  const { seller, licenses } = data.store || { seller: {}, licenses: [] };
+  const save = (body) => api("PATCH", "/me/sounds/tracks/" + t.id, body).then(refresh).then(renderSale, fail);
+  const onSale = el("input", { type: "checkbox", checked: t.forSale, disabled: t.sold });
+  onSale.onchange = () => save({ forSale: onSale.checked });
+
+  const files = Object.entries(KINDS).map(([k, label]) => {
+    const f = (t.files || {})[k], input = el("input", { type: "file", hidden: true, accept: k === "stems" ? ".zip,.rar" : k === "mp3" ? ".mp3,audio/mpeg" : ".wav,audio/wav" });
+    const state = el("small", { textContent: f ? f.filename + " · " + (f.size < 1024 ** 2 ? Math.ceil(f.size / 1024) + " Ko" : (f.size / 1024 ** 2).toLocaleString("fr-FR", { maximumFractionDigits: 1 }) + " Mo") + (f.auto ? " (la version écoutée)" : "") : "Pas encore déposé" });
+    const put = el("button", { className: "btn btn-ghost", type: "button", textContent: f && !f.auto ? "Remplacer" : "Déposer", onclick: () => input.click() });
+    input.onchange = async () => {
+      const file = input.files[0];
+      input.value = "";
+      if (!file) return;
+      put.disabled = true;
+      try {
+        await upload("/me/sounds/tracks/" + t.id + "/files/" + k + "?filename=" + encodeURIComponent(file.name), file, (x) => { state.textContent = "Envoi… " + Math.round(x * 100) + " %"; }, "PUT");
+        await refresh(); renderSale();
+      } catch (error) { state.textContent = error.message; put.disabled = false; }
+    };
+    const drop = f && !f.auto ? el("button", { className: "btn btn-ghost", type: "button", textContent: "Retirer",
+      onclick: () => api("DELETE", "/me/sounds/tracks/" + t.id + "/files/" + k).then(refresh).then(renderSale, fail) }) : "";
+    return el("li", { className: "item" }, el("div", { className: "grow" }, label, state), input, drop, put);
+  });
+
+  // Le prix de chaque licence pour cette prod : vide, celui de la licence ; décochée, elle n'est pas proposée.
+  const custom = t.licensePrices || {};
+  const rows = licenses.map((l) => {
+    const offered = el("input", { type: "checkbox", checked: custom[l.id] !== 0 });
+    const price = el("input", { value: custom[l.id] ? priceText(custom[l.id]) : "", inputMode: "decimal", placeholder: priceText(l.price), style: "width:110px" });
+    const missing = l.files.filter((k) => !(t.files || {})[k]).map((k) => KINDS[k]);
+    return { l, offered, price, node: el("li", { className: "item" }, el("label", { className: "mail-check grow" }, offered,
+      el("div", {}, l.name, el("small", { textContent: missing.length ? "Manque : " + missing.join(", ") : l.files.map((k) => KINDS[k]).join(", ") }))), price, "€") };
+  });
+  const savePrices = el("button", { className: "btn btn-primary", type: "button", textContent: "Enregistrer les prix" });
+  savePrices.onclick = () => {
+    const body = {};
+    for (const r of rows) {
+      const cents = r.price.value.trim() ? priceIn(r.price.value) : null;
+      if (Number.isNaN(cents)) return alert("Prix invalide pour « " + r.l.name + " » : écris par exemple 29,99.");
+      body[r.l.id] = r.offered.checked ? cents : 0;
+    }
+    save({ licensePrices: body });
+  };
+
+  dialog.replaceChildren(
+    el("div", { className: "dlg-head" }, coverOf(p), el("b", { textContent: "Vente · " + t.title }),
+      el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close"))),
+    el("div", { className: "stack" },
+      !seller.connected ? el("p", { className: "muted", style: "margin:0;font-size:14px" }, "Aucun compte de paiement branché : les acheteurs ne verront pas cette prod en vente. ",
+        el("button", { className: "btn btn-ghost", type: "button", textContent: "Brancher un compte", onclick: () => openStore().catch(fail) })) : "",
+      el("ul", { className: "group" }, el("li", { className: "item" }, el("div", { className: "grow" }, t.sold ? "Vendue en exclusivité" : "En vente",
+        el("small", { textContent: t.sold ? "Elle n'est plus proposée à personne." : "Proposée sur la page d'écoute, avec le choix de la licence." })),
+        el("label", { className: "switch" }, onSale, el("span")))),
+      el("div", { className: "sub-title", textContent: "Fichiers livrés" }), el("ul", { className: "group" }, ...files),
+      el("div", { className: "sub-title", textContent: "Licences et prix pour cette prod" }),
+      el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Laisse un prix vide pour garder celui de la licence. Une licence n'est proposée que si tous ses fichiers sont déposés." }),
+      el("ul", { className: "group" }, ...rows.map((r) => r.node)),
+      el("div", { className: "row" }, savePrices, el("button", { className: "btn btn-ghost", type: "button", textContent: "Gérer les licences", onclick: () => openStore().catch(fail) }))));
+}
+lightClose($("sale"));
+$("pack-store").onclick = () => openStore().catch(fail);
 
 // ——— Détails d'un titre ———
 let detailsId = null, detailsView = "main";
