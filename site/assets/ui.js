@@ -34,6 +34,10 @@ html.lite *, html.lite *::before, html.lite *::after { animation: none !importan
 .ui-pop { position: fixed; inset: auto; margin: 0; z-index: 2147483000; box-sizing: border-box; border: 1px solid rgba(255,210,214,.18); border-radius: 14px; padding: 6px;
   background: #1a080a; color: #F6EEEE; box-shadow: 0 22px 60px -18px rgba(0,0,0,.95), 0 0 0 1px rgba(0,0,0,.4); font: 500 14px/1.3 "Hanken Grotesk", system-ui, sans-serif; overflow: visible; }
 .ui-pop[hidden] { display: none; }
+/* Les styles des pages (champs pleine largeur, hauteur minimale, marges) ne s'appliquent pas au contenu des menus. */
+.ui-pop *, .ui-pop *::before, .ui-pop *::after { box-sizing: border-box; margin: 0; min-width: 0; min-height: 0; max-width: none; letter-spacing: normal; text-transform: none; }
+.ui-pop input.ui-hex, .ui-pop button.ui-eye, .ui-pop .ui-presets button { width: auto; height: 34px; min-height: 0; box-shadow: none; transform: none; scale: none; translate: none; }
+.ui-pop .ui-presets button { width: 100%; height: auto; padding: 0; }
 .ui-list { max-height: min(340px, 60vh); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(255,210,214,.25) transparent; }
 .ui-opt { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 9px; cursor: pointer; white-space: nowrap; }
 .ui-opt::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; }
@@ -42,7 +46,7 @@ html.lite *, html.lite *::before, html.lite *::after { animation: none !importan
 .ui-opt.on { background: rgba(226,52,68,.16); }
 .ui-opt[aria-disabled="true"] { opacity: .4; cursor: default; }
 .ui-group { padding: 10px 12px 4px; font: 600 10.5px/1 "JetBrains Mono", monospace; letter-spacing: .14em; text-transform: uppercase; color: #B9A2A5; }
-.ui-color { width: 248px; padding: 12px; display: grid; gap: 12px; }
+.ui-color { width: 248px; padding: 12px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
 .ui-sv { position: relative; height: 150px; border-radius: 10px; cursor: crosshair; touch-action: none;
   background: linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, hsl(var(--h), 100%, 50%)); }
 .ui-hue { position: relative; height: 12px; border-radius: 999px; cursor: pointer; touch-action: none;
@@ -51,9 +55,9 @@ html.lite *, html.lite *::before, html.lite *::after { animation: none !importan
 .ui-hue .ui-dot { top: 50%; background: hsl(var(--h), 100%, 50%); }
 .ui-row { display: flex; align-items: center; gap: 8px; }
 .ui-swatch { flex: none; width: 34px; height: 34px; border-radius: 10px; border: 1px solid rgba(255,210,214,.18); }
-.ui-hex { flex: 1; min-width: 0; height: 34px; padding: 0 10px; border-radius: 10px; border: 1px solid rgba(255,210,214,.18); background: rgba(0,0,0,.4); color: #F6EEEE; font: 500 13px "JetBrains Mono", monospace; text-transform: uppercase; }
+.ui-pop input.ui-hex { flex: 1; min-width: 0; height: 34px; padding: 0 10px; border-radius: 10px; border: 1px solid rgba(255,210,214,.18); background: rgba(0,0,0,.4); color: #F6EEEE; font: 500 13px "JetBrains Mono", monospace; text-transform: uppercase; }
 .ui-hex:focus { outline: none; border-color: #E23444; }
-.ui-eye { flex: none; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; border: 1px solid rgba(255,210,214,.18); background: none; color: #F6EEEE; cursor: pointer; }
+.ui-pop button.ui-eye { flex: none; width: 34px; height: 34px; padding: 0; display: grid; place-items: center; border-radius: 10px; border: 1px solid rgba(255,210,214,.18); background: none; color: #F6EEEE; cursor: pointer; }
 .ui-eye:hover { border-color: #E23444; }
 .ui-presets { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
 .ui-presets button { aspect-ratio: 1; border-radius: 7px; border: 1px solid rgba(255,210,214,.18); cursor: pointer; padding: 0; }
