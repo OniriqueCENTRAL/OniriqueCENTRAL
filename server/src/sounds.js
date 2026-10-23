@@ -305,6 +305,10 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_sellers') WHERE name = '
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_sellers') WHERE name = 'connect_account'`).get()) {
   db.exec(`ALTER TABLE sound_sellers ADD COLUMN connect_account TEXT NOT NULL DEFAULT ''`);
 }
+// Le compte relié par Connect au moment de l'achat : une commande se vérifie là où elle a été faite.
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_orders') WHERE name = 'connect_account'`).get()) {
+  db.exec(`ALTER TABLE sound_orders ADD COLUMN connect_account TEXT NOT NULL DEFAULT ''`);
+}
 /** « c#m », « Bb minor », « F majeur »… → « C# min », « Bb min », « F maj » ; null si ce n'est pas une tonalité. */
 export function musicKey(value) {
   const m = /^([a-g])\s*(#|♯|b|♭)?\s*(m|min|minor|mineur|maj|major|majeur)?$/i.exec(String(value || '').trim());

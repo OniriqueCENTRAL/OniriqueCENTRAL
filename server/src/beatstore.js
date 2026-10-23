@@ -223,7 +223,7 @@ export async function verifyOrder(order) {
   if (order.provider === 'stripe') {
     // Un compte branché par Stripe Connect : la plateforme relit la session chez Stripe, le webhook n'est qu'un raccourci.
     const k = sellerKeys(order.seller_id, 'stripe');
-    if (!k?.account) return order;
+    if (!k?.account || k.account !== order.connect_account) return order;
     try {
       const session = await stripeCall(k.secret, 'GET', `/checkout/sessions/${encodeURIComponent(order.provider_ref)}`, null, k.account);
       if (session.payment_status === 'paid' && session.amount_total === order.amount && session.currency === order.currency) {
@@ -614,7 +614,7 @@ export function mountBeatStore(app, { me, track, room, receiveFile, openLink, li
         url = order.links?.find((x) => x.rel === 'payer-action' || x.rel === 'approve')?.href; ref = order.id;
       }
       if (!url || !ref) throw new HttpError(502, 'Le paiement n\'a pas pu démarrer.');
-      run('UPDATE sound_orders SET provider_ref = ? WHERE id = ?', ref, oid);
+      run('UPDATE sound_orders SET provider_ref = ?, connect_account = ? WHERE id = ?', ref, s.account || '', oid);
       res.json({ url });
     } catch (error) {
       run('DELETE FROM sound_orders WHERE id = ?', oid);
