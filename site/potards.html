@@ -5,12 +5,18 @@
 <title>Potards ONIRIQUE</title>
 <meta name="description" content="Les dix potards dessinés par Nov d'après le logo ONIRIQUE, à tourner et à regarder en 360°.">
 <meta name="robots" content="noindex">
+<script>if (/[?&]embed\b/.test(location.search)) document.documentElement.classList.add("embed");</script>
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="stylesheet" href="assets/fonts.css">
 <link rel="stylesheet" href="assets/pages.css">
 <style>
 .wrap { max-width: 1320px; }
 main { padding-bottom: 80px; }
+/* Dans l'onglet KNOB de l'administration : sans l'en-tête du site ni les marges de page. */
+.embed body > header { display: none; }
+.embed .wrap { max-width: none; padding-inline: 0; }
+.embed main { padding-bottom: 0; }
+.embed main > .eyebrow:first-child { margin-top: 14px !important; }
 .lead { color: var(--haze); max-width: 640px; margin: 0; }
 
 /* La vue 360° : le potard choisi, en relief, qui tourne tout seul ou à la souris. */

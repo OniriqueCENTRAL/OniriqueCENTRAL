@@ -143,6 +143,7 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
 .tabs button[aria-selected="true"] { color: var(--bone); border-color: var(--ember); background: rgba(226,52,68,.16); }
 .tabs button b { min-width: 18px; padding: 3px 6px; border-radius: 999px; background: var(--ember); color: #fff; font: 700 10px/1 var(--f-mono); letter-spacing: 0; }
 .tab > .bar:first-child, .tab > .tiles:first-child { margin-top: 10px; }
+.knobs { display: block; width: 100%; height: 1600px; border: 0; margin-top: 10px; }
 /* Comptes : la photo à côté de l'adresse ; la suppression demande de taper SUPPRIME */
 .who { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .who .face { flex: none; width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); background: var(--deep-2, #2a0a0e); display: grid; place-items: center; font: 800 14px/1 var(--f-display); color: var(--bone); }
@@ -367,6 +368,11 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
     <p class="sub" id="brand-info">Logos, couleurs, polices, modèles prêts à publier pour chaque réseau et le guide en PDF. Réservé aux fondateurs.</p>
     <p class="error" id="brand-error" role="alert"></p>
     </div>
+    </section>
+
+    <!-- Réservé aux fondateurs : les potards dessinés d'après le logo -->
+    <section class="tab" id="tab-knob" data-label="KNOB" hidden>
+    <iframe class="knobs" id="knobs" title="Les potards ONIRIQUE"></iframe>
     </section>
   </div>
 </main>
@@ -1384,7 +1390,7 @@ async function loadMailings(first = false) {
 
 //------------------------------------------------------------------------------ Rubriques
 // Une barre d'onglets : la rubrique choisie est gardée dans l'adresse (#boutique…) et sur l'appareil.
-const TAB_SLUGS = { "tab-db": "base", "tab-shop": "boutique", "tab-promo": "promos", "tab-mail": "mail", "tab-site": "site" };
+const TAB_SLUGS = { "tab-db": "base", "tab-shop": "boutique", "tab-promo": "promos", "tab-mail": "mail", "tab-site": "site", "tab-knob": "knob" };
 function markTab(id, badge) {
   const button = document.querySelector(`#tabs [aria-controls="${id}"]`);
   if (!button) return;
@@ -1463,6 +1469,14 @@ function showDisk(disk) {
     $("tiles").replaceChildren(...[["Comptes", o.users], ["Licences actives", o.licenses], ["Clés en attente", o.unclaimed], ["Abonnés", o.subscribers], ["Machines activées", o.activations], ["Demandes de support", o.supportMessages]]
       .map(([label, value]) => el("div", { className: "tile" }, el("b", { textContent: String(value) }), el("span", { textContent: label }))));
     showDisk(o.disk);
+    if (me.role === "founder") {
+      // La page des potards, à la hauteur de son contenu (même origine : sa taille se lit directement).
+      const frame = $("knobs");
+      const fit = () => { try { frame.style.height = frame.contentDocument.documentElement.scrollHeight + "px"; } catch {} };
+      frame.onload = () => { fit(); new ResizeObserver(fit).observe(frame.contentDocument.body); };
+      frame.src = "potards.html?embed";
+      $("tab-knob").hidden = false;
+    }
     setupTabs();
     await loadUsers();
     await loadSupport();
