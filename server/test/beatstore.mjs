@@ -138,6 +138,11 @@ try {
     share = new URL(url).searchParams.get('t');
     const page = await call('POST', `/api/sounds/share/${share}`, { body: {} });
     assert.deepEqual(page.tracks[0].offers.map((o) => [o.name, o.price]), [['MP3', 2999], ['WAV', 3500], ['Track stems', 9999]]);
+    // « Contacter le vendeur » : l'Instagram du beatmaker, réglé depuis Ventes.
+    assert.equal(page.contact, null);
+    await call('POST', '/api/me/profile', { token: beatmaker.token, body: { instagram: '@kay.beats' } });
+    assert.equal((await call('GET', '/api/me/sounds/store', { token: beatmaker.token })).instagram, 'https://www.instagram.com/kay.beats/');
+    assert.equal((await call('POST', `/api/sounds/share/${share}`, { body: {} })).contact, 'https://www.instagram.com/kay.beats/');
   });
 
   await step('achat : page Stripe Checkout au prix de la licence choisie, rien de livré avant le webhook', async () => {

@@ -159,7 +159,7 @@ const ACCESS = '(p.user_id = ? OR p.id IN (SELECT project_id FROM sound_collabs 
 const LINK_OPEN = `EXISTS (SELECT 1 FROM sound_projects lp WHERE lp.id = COALESCE(l.project_id, (SELECT project_id FROM sound_tracks WHERE id = l.track_id))
   AND (lp.user_id = l.user_id OR lp.id IN (SELECT project_id FROM sound_collabs WHERE user_id = l.user_id)))`;
 // Le projet d'un lien et le nom de son auteur (affiché aux auditeurs quand le projet n'a pas de nom d'artiste).
-const linkProject = (l) => get(`SELECT p.*, u.name AS author_name, u.avatar AS author_avatar FROM sound_projects p JOIN users u ON u.id = p.user_id
+const linkProject = (l) => get(`SELECT p.*, u.name AS author_name, u.avatar AS author_avatar, u.instagram AS author_instagram FROM sound_projects p JOIN users u ON u.id = p.user_id
   WHERE p.id = ?`, l.project_id || get('SELECT project_id FROM sound_tracks WHERE id = ?', l.track_id).project_id);
 // La date d'un titre (création, enregistrement…), affichée en badge à côté de son étape ; '' : pas de date.
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'day'`).get()) {
@@ -1155,7 +1155,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       pass: link.password_hash ? passFor(link) : null,
       ...saveState(req, link), simulate, pay: p.kind === 'pack' ? payMethods(p.user_id) : [],
       owner: p.artist || p.author_name || 'ONIRIQUE', ownerAvatar: media(p.author_avatar), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover), background: media(p.background), coverBy: p.cover_by, releaseDate: p.release_date,
-      download, about: aboutOf(p.user_id, false),
+      download, about: aboutOf(p.user_id, false), contact: p.kind === 'pack' ? p.author_instagram || null : null,
       collabAbouts: aboutsOf(all('SELECT u.id, u.name FROM sound_collabs c JOIN users u ON u.id = c.user_id WHERE c.project_id = ? ORDER BY c.created_at', p.id)),
       tracks: tracks.map((t) => ({
         id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), lyrics: t.lyrics, bpm: t.bpm, key: t.music_key,

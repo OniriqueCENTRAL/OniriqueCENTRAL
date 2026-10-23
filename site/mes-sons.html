@@ -2101,11 +2101,21 @@ function renderStore() {
       el("small", { textContent: [o.provider === "simulation" ? "Simulée" : status[o.status] || o.status, day(o.paidAt || o.createdAt), o.buyerEmail, o.sandbox && o.provider !== "simulation" ? "test" : ""].filter(Boolean).join(" · ") })), check);
   })) : el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: "Aucune commande pour l'instant." });
 
+  // Le bouton « Contacter le vendeur » des pages d'écoute des packs mène à l'Instagram du beatmaker.
+  const insta = el("input", { value: store.instagram || "", maxLength: 200, placeholder: "@ton_compte ou https://instagram.com/ton_compte" });
+  const instaBtn = el("button", { className: "btn btn-primary", type: "submit", textContent: "Enregistrer" });
+  const contactForm = el("form", { className: "stack" }, fieldOf("Instagram, pour le bouton « Contacter le vendeur » sur la page de tes packs (vide : pas de bouton)", insta),
+    el("div", { className: "row" }, instaBtn));
+  contactForm.onsubmit = (event) => {
+    event.preventDefault();
+    busy(instaBtn, async () => { await api("POST", "/me/profile", { instagram: insta.value }); reload(await api("GET", "/me/sounds/store")); });
+  };
   dialog.replaceChildren(
     el("div", { className: "dlg-head" }, el("b", { textContent: "Ventes" }),
       el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close"))),
     el("div", { className: "stack" },
       el("div", { className: "sub-title", textContent: "Comptes de paiement" }), account,
+      el("div", { className: "sub-title", textContent: "Contact" }), contactForm,
       el("div", { className: "sub-title", textContent: "Licences" }),
       el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Proposées sur la page d'écoute de chaque prod en vente dont les fichiers sont déposés. Le prix peut changer d'une prod à l'autre." }),
       licenseList,

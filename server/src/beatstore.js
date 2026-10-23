@@ -292,6 +292,7 @@ export function mountBeatStore(app, { me, track, room, receiveFile, openLink, li
     const pending = all(`SELECT * FROM sound_orders WHERE seller_id = ? AND status = 'pending' AND provider_ref != '' AND created_at > ? LIMIT 10`, req.user.id, now() - 2 * 86400_000);
     await Promise.all(pending.map(verifyOrder));
     res.json({ seller: sellerView(req.user.id), licenses, kinds: FILE_KINDS, contract: contractTemplate(req.user.id),
+      instagram: get('SELECT instagram FROM users WHERE id = ?', req.user.id).instagram,
       orders: all('SELECT * FROM sound_orders WHERE seller_id = ? ORDER BY created_at DESC LIMIT 200', req.user.id).map(sellerOrderView) });
   }));
   // Brancher son compte : la clé est essayée chez le prestataire avant d'être gardée (chiffrée).
