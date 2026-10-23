@@ -190,6 +190,16 @@ try {
     await call('PATCH', `/api/me/sounds/tracks/${t}`, { token: member.token, body: { lyrics: '[00:01.50]  Première   ligne \r\n\r\nDeuxième\n' } });
     const lyrics = (await call('GET', '/api/me/sounds', { token: member.token })).projects.flatMap((x) => x.tracks).find((x) => x.id === t).lyrics;
     assert.equal(lyrics, '[00:01.50] Première ligne\n\nDeuxième');
+    // La fiche « À propos de l'artiste » : lien complété en https, lien invalide refusé, masquée mais visible par son auteur.
+    await call('PATCH', '/api/me/sounds/about', { token: member.token, body: { link: 'pas un lien' }, expect: 400 });
+    const about = await call('PATCH', '/api/me/sounds/about', { token: member.token, body: { bio: ' Rappeur   de Paris \r\n\r\n\r\nDepuis 2020 ', link: 'onirique.store/x', visible: false } });
+    assert.deepEqual([about.bio, about.link, about.visible], ['Rappeur de Paris\n\nDepuis 2020', 'https://onirique.store/x', false]);
+    assert.equal((await call('GET', '/api/me/sounds', { token: member.token })).projects[0].about.visible, false);
+    assert.equal((await call('POST', `/api/sounds/share/${shareToken(fresh.url)}`, { token: listener.token, body: {} })).about, null);
+    await call('PATCH', '/api/me/sounds/about', { token: member.token, body: { visible: true } });
+    const heard = await call('POST', `/api/sounds/share/${shareToken(fresh.url)}`, { token: listener.token, body: {} });
+    assert.equal(heard.about.bio, 'Rappeur de Paris\n\nDepuis 2020');
+    assert.ok(heard.tracks.some((x) => x.lyrics === '[00:01.50] Première ligne\n\nDeuxième'));
     // La date de sortie du projet : une date réelle seulement, '' l'efface.
     await call('PATCH', `/api/me/sounds/projects/${a}`, { token: member.token, body: { releaseDate: '2026-02-30' }, expect: 400 });
     await call('PATCH', `/api/me/sounds/projects/${a}`, { token: member.token, body: { releaseDate: '2026-12-04' } });

@@ -99,6 +99,11 @@ export const CREDIT_ROLES = ['feat', 'beat', 'mix', 'master', 'rec'];
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'lyrics'`).get()) {
   db.exec(`ALTER TABLE sound_tracks ADD COLUMN lyrics TEXT NOT NULL DEFAULT ''`);
 }
+// « À propos de l'artiste » : la fiche d'un membre (photo, texte, lien), affichée à côté de ses projets s'il le choisit.
+db.exec(`CREATE TABLE IF NOT EXISTS sound_artists (
+  user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  photo TEXT, bio TEXT NOT NULL DEFAULT '', link TEXT NOT NULL DEFAULT '', visible INTEGER NOT NULL DEFAULT 1, updated_at INTEGER NOT NULL
+)`);
 // La date de sortie d'un projet (AAAA-MM-JJ, '' : pas de date) : prévue si elle est à venir, passée sinon.
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'release_date'`).get()) {
   db.exec(`ALTER TABLE sound_projects ADD COLUMN release_date TEXT NOT NULL DEFAULT ''`);
@@ -219,6 +224,15 @@ const versionView = (v, i, download) => ({
 });
 const commentView = (c) => ({ id: c.id, trackId: c.track_id, versionId: c.version_id, author: c.author, at: c.at, body: c.body, createdAt: c.created_at });
 const media = (name) => (name ? `/api/media/${name}` : null);
+// La fiche artiste d'un membre ; sans lien choisi, sa page de liens ONIRIQUE s'il en a une. Une fiche masquée n'est
+// montrée qu'à son auteur (pour la modifier).
+function aboutOf(userId, mine) {
+  const a = get('SELECT * FROM sound_artists WHERE user_id = ?', userId);
+  if (!a ? !mine : !a.visible && !mine) return null;
+  const handle = get('SELECT handle FROM link_pages WHERE user_id = ?', userId)?.handle;
+  return { photo: media(a?.photo), bio: a?.bio || '', link: a?.link || '', visible: a ? !!a.visible : false,
+    linkPage: handle ? `${config.linksUrl}/${handle}` : null };
+}
 const creditsOf = (row) => { try { return JSON.parse(row.credits || '{}'); } catch { return {}; } };
 const person = (u) => ({ id: u.id, name: u.name || 'ONIRIQUE', avatar: media(u.avatar) });
 const linkView = (l) => ({
@@ -450,6 +464,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
         owner: person({ id: p.user_id, name: p.owner_name, avatar: p.owner_avatar }),
         collaborators: collabs.filter((c) => c.project_id === p.id).map(person),
         inviteUrl: p.user_id === u && p.invite_token ? `${config.siteUrl}/mes-sons#/invite/${p.invite_token}` : null,
+        about: aboutOf(p.user_id, p.user_id === u),
         tracks: tracks.filter((t) => t.project_id === p.id).map((t) => {
           const mine = plays.filter((r) => r.track_id === t.id);
           return {
@@ -598,6 +613,40 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     const p = project(req, req.params.id);
     run('UPDATE sound_projects SET background = NULL WHERE id = ?', p.id);
     if (p.background) removeMedia(p.background);
+    res.json({ ok: true });
+  });
+  // La fiche « À propos de l'artiste » du membre : texte, lien (http ou https) et affichage ; la photo à part.
+  const ensureAbout = (userId) => run('INSERT OR IGNORE INTO sound_artists (user_id, updated_at) VALUES (?, ?)', userId, now());
+  app.patch('/api/me/sounds/about', ...me, (req, res) => {
+    ensureAbout(req.user.id);
+    const b = req.body || {};
+    if (typeof b.bio === 'string') {
+      const bio = b.bio.replace(/\r\n?/g, '\n').split('\n').map((line) => line.replace(/[^\S\n]+/g, ' ').trim()).join('\n').replace(/\n{3,}/g, '\n\n').trim().slice(0, 1500);
+      run('UPDATE sound_artists SET bio = ? WHERE user_id = ?', bio, req.user.id);
+    }
+    if (typeof b.link === 'string') {
+      let link = b.link.trim().slice(0, 300);
+      if (link && !/^https?:\/\//i.test(link)) link = 'https://' + link;
+      if (link) { try { new URL(link); } catch { throw new HttpError(400, 'Lien invalide.'); } }
+      run('UPDATE sound_artists SET link = ? WHERE user_id = ?', link, req.user.id);
+    }
+    if (b.visible !== undefined) run('UPDATE sound_artists SET visible = ? WHERE user_id = ?', b.visible ? 1 : 0, req.user.id);
+    run('UPDATE sound_artists SET updated_at = ? WHERE user_id = ?', now(), req.user.id);
+    res.json(aboutOf(req.user.id, true));
+  });
+  app.put('/api/me/sounds/about/photo', ...me, wrap(async (req, res) => {
+    rateLimit(`sounds-cover:${req.user.id}`, 30);
+    const name = await receiveImage(req, 5 * 1024 * 1024);
+    ensureAbout(req.user.id);
+    const before = get('SELECT photo FROM sound_artists WHERE user_id = ?', req.user.id).photo;
+    run('UPDATE sound_artists SET photo = ?, updated_at = ? WHERE user_id = ?', name, now(), req.user.id);
+    if (before) removeMedia(before);
+    res.json({ photo: media(name) });
+  }));
+  app.delete('/api/me/sounds/about/photo', ...me, (req, res) => {
+    const before = get('SELECT photo FROM sound_artists WHERE user_id = ?', req.user.id)?.photo;
+    run('UPDATE sound_artists SET photo = NULL WHERE user_id = ?', req.user.id);
+    if (before) removeMedia(before);
     res.json({ ok: true });
   });
   app.put('/api/me/sounds/projects/:id/cover', ...me, wrap(async (req, res) => {
@@ -907,9 +956,9 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       pass: link.password_hash ? passFor(link) : null,
       ...saveState(req, link),
       owner: p.artist || p.author_name || 'ONIRIQUE', ownerAvatar: media(p.author_avatar), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover), background: media(p.background), coverBy: p.cover_by, releaseDate: p.release_date,
-      download: !!link.download,
+      download: !!link.download, about: aboutOf(p.user_id, false),
       tracks: tracks.map((t) => ({
-        id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t),
+        id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), lyrics: t.lyrics,
         version: { id: t.vid, filename: t.filename, duration: t.duration, peaks: JSON.parse(t.peaks), url: audioUrl(t.vid), downloadUrl: link.download ? audioUrl(t.vid, true, link.id) : null },
         comments: comments.filter((c) => c.track_id === t.id).map(commentView),
       })),

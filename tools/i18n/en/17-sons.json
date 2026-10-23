@@ -370,5 +370,18 @@
  "Annuler le dernier": "Undo the last one",
  "Espace": "Space",
  "Position dans le titre": "Position in the track",
- "Lance le titre, puis appuie sur Espace au moment où chaque ligne commence, ↑ pour annuler le dernier repère. Clique une ligne pour la reprendre à partir de là.": "Start the track, then press Space as each line begins, ↑ to undo the last mark. Click a line to redo it from there."
+ "Lance le titre, puis appuie sur Espace au moment où chaque ligne commence, ↑ pour annuler le dernier repère. Clique une ligne pour la reprendre à partir de là.": "Start the track, then press Space as each line begins, ↑ to undo the last mark. Click a line to redo it from there.",
+ "À propos de l'artiste": "About the artist",
+ "Afficher plus": "Show more",
+ "Afficher moins": "Show less",
+ "Qui tu es, ton univers, tes projets…": "Who you are, your world, your projects…",
+ "Texte de présentation": "Bio",
+ "Lien": "Link",
+ "Afficher sur mes projets": "Show on my projects",
+ "Sous les paroles, pour tes collaborateurs et ceux qui écoutent tes liens": "Under the lyrics, for your collaborators and people listening through your links",
+ "Changer la photo": "Change the photo",
+ "Ajouter une photo": "Add a photo",
+ "Lire tout": "Read all",
+ "La photo doit faire 5 Mo au plus.": "The photo must be 5 MB or less.",
+ "Lien invalide.": "Invalid link."
 }
