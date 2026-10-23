@@ -215,7 +215,7 @@ try {
     assert.equal(q.finalCents, 14999, 'un essai de VOCAL MINI ne compte pas');
     createLicense({ productId: mini.id, userId: buyer.id, source: 'stripe' });
     q = await call('POST', '/api/promo/quote', { token: buyer.token, body: { productId: box.id } });
-    assert.equal(q.finalCents, 7500);
+    assert.equal(q.finalCents, 7499);   // 149,99 € -> 74,99 €
     assert.equal(q.source, 'owner');
     assert.match(q.note, /VOCAL MINI/);
     q = await call('POST', '/api/promo/quote', { token: buyer.token, body: { productId: mini.id } });
