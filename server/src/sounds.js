@@ -126,6 +126,12 @@ db.exec(`CREATE TABLE IF NOT EXISTS sound_artists (
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'release_date'`).get()) {
   db.exec(`ALTER TABLE sound_projects ADD COLUMN release_date TEXT NOT NULL DEFAULT ''`);
 }
+// La préparation de la sortie d'un projet : ses tâches (nom, jour par rapport à la sortie, faite ou non) et le choix des
+// rappels par e-mail ; « reminded » note les rappels envoyés pour la date en cours (« 2026-11-20:7,1 »).
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'plan'`).get()) {
+  db.exec(`ALTER TABLE sound_projects ADD COLUMN plan TEXT NOT NULL DEFAULT '';
+    ALTER TABLE sound_projects ADD COLUMN reminded TEXT NOT NULL DEFAULT '';`);
+}
 // Les dossiers d'un membre, et les projets d'autres membres qu'il a enregistrés (par leur lien d'écoute : le lien
 // coupé, le projet disparaît de sa page). Un dossier supprimé laisse ses projets à la racine.
 db.exec(`
@@ -390,6 +396,15 @@ function listenStats(rows) {
   return { listeners: who.size, followed: parts.length, average: parts.length ? parts.reduce((s, x) => s + x, 0) / parts.length : null,
     complete: share((x) => x >= 0.9), curve: parts.length ? Array.from({ length: 10 }, (_, i) => share((x) => x >= (i + 1) / 10 - 0.02)) : [] };
 }
+const planOf = (row) => { try { return row.plan ? JSON.parse(row.plan) : null; } catch { return null; } };
+/** Le plan de sortie envoyé par le membre : 40 tâches au plus, chacune à un jour donné autour de la sortie. */
+function planIn(body) {
+  if (body === null) return '';
+  if (!body || !Array.isArray(body.items) || body.items.length > 40) throw new HttpError(400, 'Préparation de la sortie : 40 tâches au plus.');
+  const items = body.items.map((x) => ({ label: str(x?.label, 100), note: str(x?.note, 160), days: Math.max(-365, Math.min(365, Math.round(Number(x?.days) || 0))), done: !!x?.done }))
+    .filter((x) => x.label);
+  return JSON.stringify({ items, remind: body.remind !== false });
+}
 const splitsOf = (row) => { try { return JSON.parse(row.splits || '[]'); } catch { return []; } };
 /** La répartition envoyée par le membre : 20 personnes au plus, des parts de 0 à 100 % qui ne dépassent pas 100 % en tout. */
 function splitsIn(list) {
@@ -632,7 +647,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       store: projects.some((p) => p.kind === 'pack' && p.user_id === u) ? { seller: sellerView(u), licenses: licensesOf(u) } : null,
       quota: { used: usedBy(req.user.id), limit: quotaBytes(), full: d.used / d.total >= diskMax() },
       projects: projects.map((p) => ({
-        id: p.id, kind: p.kind, title: p.title, artist: p.artist, cover: media(p.cover), background: media(p.background), coverBy: p.cover_by, releaseDate: p.release_date, createdAt: p.created_at,
+        id: p.id, kind: p.kind, title: p.title, artist: p.artist, cover: media(p.cover), background: media(p.background), coverBy: p.cover_by, releaseDate: p.release_date, plan: planOf(p), createdAt: p.created_at,
         // Les dossiers sont ceux de l'auteur : un projet où l'on collabore est à la racine de sa page.
         mine: p.user_id === u, folderId: p.user_id === u ? p.folder_id : null,
         owner: person({ id: p.user_id, name: p.owner_name, avatar: p.owner_avatar }),
@@ -777,10 +792,12 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (req.body.coverBy !== undefined) run('UPDATE sound_projects SET cover_by = ? WHERE id = ?', str(req.body.coverBy, 80), p.id);
     if (req.body.artist !== undefined) run('UPDATE sound_projects SET artist = ? WHERE id = ?', str(req.body.artist, 120), p.id);
     if (req.body.folderId !== undefined) run('UPDATE sound_projects SET folder_id = ? WHERE id = ?', folderOf(req, req.body.folderId), ownProject(req, p.id).id);
+    if (req.body.plan !== undefined) run('UPDATE sound_projects SET plan = ? WHERE id = ?', planIn(req.body.plan), p.id);
     if (req.body.releaseDate !== undefined) {
       const day = String(req.body.releaseDate || '');
       if (day && !isDay(day)) throw new HttpError(400, 'Date de sortie invalide.');
       run('UPDATE sound_projects SET release_date = ? WHERE id = ?', day, p.id);
+      if (day !== p.release_date) run(`UPDATE sound_projects SET reminded = '' WHERE id = ?`, p.id);
     }
     // L'ordre des titres : la liste de leurs identifiants, seulement ceux de ce projet.
     if (Array.isArray(req.body.order)) transaction(() => req.body.order.forEach((tid, i) =>
@@ -1305,4 +1322,37 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
 
   mountBeatStore(app, { me, track, room, receiveFile, openLink, linkTracks, linkProject, soundsDir, audioType, wrap });
   mountPackSend(app, { me, ownProject, sign, wrap });
+}
+
+// Les rappels de sortie : sept jours avant et la veille, à partir de 9 h (heure de Paris), un e-mail à l'auteur du projet et
+// à ses collaborateurs avec ce qu'il reste à faire. Chaque rappel ne part qu'une fois par date de sortie.
+const parisDay = (date = new Date()) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(date);
+const parisHour = () => Number(new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', hour: 'numeric', hourCycle: 'h23' }).format(new Date()));
+const dayShift = (day, n) => new Date(Date.parse(day + 'T12:00:00Z') + n * 86400_000).toISOString().slice(0, 10);
+const longDate = (day) => new Date(day + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+export async function remindReleases({ force = false } = {}) {
+  if (!force && parisHour() < 9) return 0;
+  const today = parisDay();
+  let sent = 0;
+  for (const p of all(`SELECT * FROM sound_projects WHERE release_date > ? AND plan != ''`, today)) {
+    const plan = planOf(p);
+    const left = Math.round((Date.parse(p.release_date) - Date.parse(today)) / 86400_000);
+    if (!plan || !plan.remind || ![7, 1].includes(left)) continue;
+    const [date, marks = ''] = p.reminded.split(':');
+    const done = date === p.release_date ? marks.split(',') : [];
+    if (done.includes(String(left))) continue;
+    run('UPDATE sound_projects SET reminded = ? WHERE id = ?', `${p.release_date}:${[...done, left].filter(Boolean).join(',')}`, p.id);
+    const todo = plan.items.filter((x) => !x.done);
+    const when = left === 1 ? 'demain' : `dans ${left} jours`;
+    const text = [`« ${p.title} » sort ${when}, le ${longDate(p.release_date)}.`, '',
+      ...(todo.length ? [`Il reste ${todo.length} tâche${todo.length > 1 ? 's' : ''} à faire :`, ...todo.map((x) => `- ${x.label} (${x.days === 0 ? 'le jour J' : `pour le ${longDate(dayShift(p.release_date, x.days))}`})`)]
+        : ['Toutes les tâches de la préparation sont faites. Bonne sortie !']),
+      '', `${config.siteUrl}/mes-sons#/p/${p.id}`, '', 'ONIRIQUE'].join('\n');
+    const people = all(`SELECT email FROM users WHERE id = ? OR id IN (SELECT user_id FROM sound_collabs WHERE project_id = ?)`, p.user_id, p.id);
+    for (const u of people) {
+      await sendMail(u.email, `« ${p.title} » sort ${when} — ONIRIQUE`, text, undefined, { buttonLabel: 'Ouvrir le projet', eyebrow: 'Préparation de la sortie' })
+        .then(() => { sent++; }, (error) => console.error('Rappel de sortie :', error.message));
+    }
+  }
+  return sent;
 }

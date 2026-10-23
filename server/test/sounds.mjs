@@ -11,7 +11,7 @@ Object.assign(process.env, { DATA_DIR: dataDir, PAYMENTS_MODE: 'demo', PORT: '0'
 const { createApp } = await import('../src/app.js');
 const { run, get, setSetting } = await import('../src/db.js');
 const { outbox } = await import('../src/mail.js');
-const { soundsDir } = await import('../src/sounds.js');
+const { soundsDir, remindReleases } = await import('../src/sounds.js');
 
 const server = createApp().listen(0);
 const base = `http://127.0.0.1:${server.address().port}`;
@@ -230,6 +230,26 @@ try {
     await call('PATCH', `/api/me/sounds/projects/${a}`, { token: member.token, body: { releaseDate: '2026-02-30' }, expect: 400 });
     await call('PATCH', `/api/me/sounds/projects/${a}`, { token: member.token, body: { releaseDate: '2026-12-04' } });
     assert.equal((await call('POST', `/api/sounds/share/${shareToken(fresh.url)}`, { token: listener.token, body: {} })).releaseDate, '2026-12-04');
+    // La préparation de la sortie : des tâches autour de la date, et un rappel sept jours avant puis la veille, une fois chacun.
+    await call('PATCH', `/api/me/sounds/projects/${a}`, { token: member.token, body: { plan: { items: Array(41).fill({ label: 'x' }) } }, expect: 400 });
+    await call('PATCH', `/api/me/sounds/projects/${a}`, { token: member.token, body: { plan: { items: [{ label: 'Master validé', days: -30, done: true }, { label: 'Clip', days: -2.4 }, { label: '' }] } } });
+    const planned = (await call('GET', '/api/me/sounds', { token: member.token })).projects.find((x) => x.id === a).plan;
+    assert.deepEqual(planned, { items: [{ label: 'Master validé', note: '', days: -30, done: true }, { label: 'Clip', note: '', days: -2, done: false }], remind: true });
+    const inDays = (n) => new Date(Date.parse(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date()) + 'T12:00:00Z') + n * 86400_000).toISOString().slice(0, 10);
+    await call('PATCH', `/api/me/sounds/projects/${a}`, { token: member.token, body: { releaseDate: inDays(7) } });
+    const mailsBefore = outbox.length;
+    assert.equal(await remindReleases({ force: true }), 1);
+    assert.match(outbox.at(-1).subject, /sort dans 7 jours/);
+    assert.ok(outbox.at(-1).text.includes('- Clip') && !outbox.at(-1).text.includes('Master validé'));
+    assert.equal(await remindReleases({ force: true }), 0, 'un seul rappel à J-7');
+    await call('PATCH', `/api/me/sounds/projects/${a}`, { token: member.token, body: { releaseDate: inDays(1) } });
+    assert.equal(await remindReleases({ force: true }), 1);
+    assert.match(outbox.at(-1).subject, /sort demain/);
+    await call('PATCH', `/api/me/sounds/projects/${a}`, { token: member.token, body: { releaseDate: inDays(7), plan: { items: planned.items, remind: false } } });
+    assert.equal(await remindReleases({ force: true }), 0, 'rappels coupés');
+    assert.equal(outbox.length, mailsBefore + 2);
+    await call('PATCH', `/api/me/sounds/projects/${a}`, { token: member.token, body: { plan: null } });
+    assert.equal((await call('GET', '/api/me/sounds', { token: member.token })).projects.find((x) => x.id === a).plan, null);
     await call('PATCH', `/api/me/sounds/projects/${a}`, { token: member.token, body: { releaseDate: '' } });
   });
 

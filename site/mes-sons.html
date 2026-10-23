@@ -196,6 +196,20 @@ body:not(.editing) .edit-only { display: none !important; }
 #page-bg.on { opacity: 1; }
 
 body.editing #edit-toggle { background: var(--mist); color: var(--night); border-color: var(--mist); }
+/* Préparer la sortie : le compte à rebours et les tâches faites, à côté de la date */
+.release .plan-chip { border-color: rgba(255,210,214,.16); background: rgba(255,255,255,.06); }
+#plan { width: 560px; }
+.plan-top { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.plan-top > div { display: grid; gap: 2px; }
+.plan-top .mini-btn { margin-left: auto; }
+.plan-count, .plan-done b { font: 800 26px/1 var(--f-display); color: var(--ember); }
+.plan-top span { font-size: 13px; }
+.plan-bar { height: 6px; border-radius: 99px; background: rgba(255,255,255,.07); overflow: hidden; }
+.plan-bar i { display: block; height: 100%; background: var(--ember); border-radius: inherit; }
+.plan-group { display: grid; gap: 6px; }
+.plan-task input { flex: none; width: 18px; height: 18px; accent-color: var(--ember); }
+.plan-task.done .grow { opacity: .5; text-decoration: line-through; }
+.plan-task.late small { color: #FF5A68; }
 .release .chip { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); font: 600 13px var(--f-body); }
 .release .chip.planned::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 8px var(--ember); }
 .trk.now b { color: var(--bone); }
@@ -472,9 +486,9 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 #mailer summary::-webkit-details-marker { display: none; }
 /* Les ventes d'un pack : le panneau Ventes et la vente d'une prod. */
 #store, #sale { width: 620px; }
-#store[open], #sale[open] { display: flex; flex-direction: column; overflow: hidden; }
-#store .dlg-head, #sale .dlg-head { flex: none; padding-bottom: 14px; border-bottom: 1px solid rgba(255,210,214,.08); }
-#store > .stack, #sale > .stack { min-height: 0; align-content: start; grid-auto-rows: max-content; overflow-y: auto; overscroll-behavior: contain; padding: 16px 18px 20px; }
+#store[open], #sale[open], #plan[open], #stats[open] { display: flex; flex-direction: column; overflow: hidden; }
+#store .dlg-head, #sale .dlg-head, #plan .dlg-head, #stats .dlg-head { flex: none; padding-bottom: 14px; border-bottom: 1px solid rgba(255,210,214,.08); }
+#store > .stack, #sale > .stack, #plan > .stack, #stats > .stack { min-height: 0; align-content: start; grid-auto-rows: max-content; overflow-y: auto; overscroll-behavior: contain; padding: 16px 18px 20px; }
 #store .field, #sale .field { display: grid; gap: 6px; flex: 1; font-size: 13px; color: var(--haze); }
 #store summary { list-style: none; }
 #store summary::-webkit-details-marker { display: none; }
@@ -605,6 +619,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 </section>
 
 <dialog id="details"></dialog>
+<dialog id="plan"></dialog>
 <dialog id="stats"></dialog>
 <dialog id="cover-view"><img alt=""><div class="bar"><button class="btn btn-ghost" type="button" id="cover-save">Télécharger</button><button class="btn btn-ghost" type="button" id="cover-swap">Changer</button><button class="btn btn-primary" type="button" onclick="this.closest('dialog').close()">Fermer</button></div></dialog>
 <dialog id="install-help">
@@ -624,6 +639,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 <script src="assets/sounds-player.js?v=13"></script>
 <script src="assets/audio-kit.js?v=2"></script>
 <script src="assets/pdf-kit.js"></script>
+<script src="assets/release-steps.js"></script>
 <script src="assets/licence-pdf.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
@@ -1139,6 +1155,7 @@ function projectMenu(anchor, p) {
     p.tracks.length && { label: "Ajouter à la file", icon: "queue", onclick: () => p.tracks.forEach((t) => player.enqueue(itemOf(p, t))) },
     { label: "Partager", icon: "link", onclick: () => openShare("project", p.id) },
     p.tracks.length && { label: "Statistiques", icon: "queue", onclick: () => openProjectStats(p) },
+    p.kind !== "pack" && { label: "Préparer la sortie", icon: "star", onclick: () => openPlan(p) },
     p.mine && { label: "Collaborateurs…", icon: "plus", onclick: () => openCollab(p.id) },
     p.mine && { label: "Déplacer vers…", icon: "chevron", onclick: () => moveMenu(anchor, p.folderId, (folderId) => api("PATCH", "/me/sounds/projects/" + p.id, { folderId })) },
     p.mine && (p.kind === "pack"
@@ -1244,13 +1261,17 @@ async function checkInvite() {
 function drawRelease(p) {
   const label = OP.releaseLabel(p.releaseDate);
   const planned = label.startsWith("Date de sortie prévue");
-  if (!editing) return $("release").replaceChildren(label ? el("span", { className: "chip" + (planned ? " planned" : ""), textContent: label }) : "");
+  // Une sortie prévue (ou déjà préparée) : son compte à rebours et ses tâches faites, qui ouvrent la préparation.
+  const items = planItems(p), plan = p.kind !== "pack" && (planned || p.plan)
+    ? el("button", { type: "button", className: "plan-chip", title: "Préparer la sortie", onclick: () => openPlan(p),
+      textContent: "Préparer la sortie" + (p.releaseDate && planned ? " · " + countdown(p.releaseDate) : "") + " · " + items.filter((x) => x.done).length + "/" + items.length }) : "";
+  if (!editing) return $("release").replaceChildren(label ? el("span", { className: "chip" + (planned ? " planned" : ""), textContent: label }) : "", plan);
   const save = (releaseDate) => api("PATCH", "/me/sounds/projects/" + p.id, { releaseDate }).then(refresh, fail);
   const open = el("button", { type: "button", className: label ? (planned ? "planned" : "") : "empty", textContent: label || "Ajouter une date de sortie",
     title: "Choisir la date de sortie" });
   open.onclick = () => pickDay(open, p.releaseDate, save);
   $("release").replaceChildren(open, label ? el("button", { type: "button", className: "clear", ariaLabel: "Retirer la date de sortie",
-    title: "Retirer la date de sortie", onclick: () => save("") }, icon("close")) : "");
+    title: "Retirer la date de sortie", onclick: () => save("") }, icon("close")) : "", plan);
 }
 function renderProject(p) {
   setBackground(p.background);
@@ -1261,6 +1282,7 @@ function renderProject(p) {
   $("pack-mail").hidden = !p.mail;
   $("pack-store").hidden = !p.mail;
   if ($("sale").open) renderSale();
+  if ($("plan").open) renderPlan();
   if ($("mailer").open && mailerId === p.id) drawMailerProds(p);
   if (!$("cover-by").contains(document.activeElement)) $("cover-by").replaceChildren(...(editing || p.coverBy ? [el("span", { className: "eyebrow", textContent: "Pochette" }),
     editing ? inlineEdit(p.coverBy, "Ajouter l'auteur de la pochette", 80, (coverBy) => api("PATCH", "/me/sounds/projects/" + p.id, { coverBy }).then(refresh), true)
@@ -2157,6 +2179,62 @@ function renderStore() {
       el("div", { className: "sub-title", textContent: "Commandes" }), orderList));
 }
 lightClose($("store"));
+
+// ——— Préparer la sortie ———
+// Les tâches d'une sortie autour de sa date (celles de l'outil « Checklist de sortie », plus les siennes), cochées à
+// plusieurs, et un rappel par e-mail sept jours avant et la veille.
+const todayIso = () => isoDay(new Date());
+const shiftDay = (day, n) => { const d = new Date(day + "T12:00"); d.setDate(d.getDate() + n); return isoDay(d); };
+const daysBetween = (from, to) => Math.round((new Date(to + "T12:00") - new Date(from + "T12:00")) / 86400000);
+const planItems = (p) => (p.plan ? p.plan.items : window.ONIRIQUE_RELEASE_STEPS.flatMap(([days, , tasks]) => tasks.map(([label, note]) => ({ label, note, days, done: false }))));
+const countdown = (day) => { const n = daysBetween(todayIso(), day); return n > 1 ? "J-" + n : n === 1 ? "Demain" : n === 0 ? "Jour J" : "Sorti"; };
+let planId = null;
+function openPlan(p) { planId = p.id; renderPlan(); if (!$("plan").open) $("plan").showModal(); }
+function renderPlan() {
+  const p = planId && project(planId), dialog = $("plan");
+  if (!p) return dialog.close();
+  const items = planItems(p), remind = p.plan ? p.plan.remind : true;
+  const save = (next, on = remind) => api("PATCH", "/me/sounds/projects/" + p.id, { plan: { items: next, remind: on } }).then(refresh).then(renderPlan, fail);
+  const day = p.releaseDate, today = todayIso(), done = items.filter((x) => x.done).length;
+  const stepName = (days) => (window.ONIRIQUE_RELEASE_STEPS.find(([d]) => d === days) || [])[1] || (days === 0 ? "Jour de sortie" : days < 0 ? "J" + days : "J+" + days);
+  const groups = [...new Set(items.map((x) => x.days))].sort((a, b) => a - b);
+  const remindInput = el("input", { type: "checkbox", checked: remind, ariaLabel: "Rappels par e-mail" });
+  remindInput.onchange = () => save(items, remindInput.checked);
+  const add = el("button", { className: "mini-btn", type: "button", textContent: "+ Ajouter une tâche" });
+  add.onclick = async () => {
+    const label = await ask("La tâche (clip, session photo, envoi presse…)");
+    if (!label) return;
+    if (!day) return save([...items, { label, days: 0, done: false }]);
+    pickDay(add, day, (when) => save([...items, { label, days: daysBetween(day, when), done: false }]));
+  };
+  dialog.replaceChildren(el("div", { className: "dlg-head" }, el("b", { textContent: "Préparer la sortie · " + p.title }),
+    el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close"))),
+    el("div", { className: "stack" },
+      el("div", { className: "plan-top" },
+        el("div", {}, el("b", { className: "plan-count", textContent: day ? countdown(day) : "—" }),
+          el("span", { className: "muted", textContent: day ? "Sortie le " + longDay(new Date(day + "T12:00").getTime()) : "Pas encore de date de sortie" })),
+        el("div", { className: "plan-done" }, el("b", { textContent: done + "/" + items.length }), el("span", { className: "muted", textContent: "tâches faites" })),
+        el("button", { className: "mini-btn", type: "button", textContent: day ? "Changer la date" : "Choisir la date", onclick: (event) => pickDay(event.currentTarget, day,
+          (releaseDate) => api("PATCH", "/me/sounds/projects/" + p.id, { releaseDate }).then(refresh).then(renderPlan, fail)) })),
+      el("div", { className: "plan-bar" }, el("i", { style: "width:" + (items.length ? Math.round(done / items.length * 100) : 0) + "%" })),
+      ...groups.map((g) => el("div", { className: "plan-group" },
+        el("div", { className: "sub-title", textContent: stepName(g) + (day ? " · " + dayLabel(shiftDay(day, g)) : "") }),
+        el("ul", { className: "group" }, ...items.map((x, i) => [x, i]).filter(([x]) => x.days === g).map(([x, i]) => {
+          const late = day && !x.done && shiftDay(day, x.days) < today;
+          const box = el("input", { type: "checkbox", checked: x.done, ariaLabel: x.label });
+          box.onchange = () => save(items.map((y, j) => (j === i ? { ...y, done: box.checked } : y)));
+          return el("li", { className: "item plan-task" + (x.done ? " done" : "") + (late ? " late" : "") }, box,
+            el("div", { className: "grow" }, x.label, x.note || late ? el("small", { textContent: [late ? "En retard" : "", x.note].filter(Boolean).join(" · ") }) : null),
+            el("button", { className: "x", type: "button", ariaLabel: "Retirer « " + x.label + " »", onclick: () => save(items.filter((_, j) => j !== i)) }, icon("close")));
+        })))),
+      el("div", { className: "row", style: "flex-wrap:wrap" }, add,
+        el("button", { className: "mini-btn", type: "button", textContent: "Remettre la liste de départ",
+          onclick: () => confirm("Remettre la liste de départ ? Les tâches ajoutées et les cases cochées seront perdues.") && api("PATCH", "/me/sounds/projects/" + p.id, { plan: null }).then(refresh).then(renderPlan, fail) })),
+      el("div", { className: "item" }, el("span", { className: "grow" }, "Rappels par e-mail",
+        el("small", { textContent: "Sept jours avant la sortie et la veille, avec ce qu'il reste à faire, à toi et à tes collaborateurs." })),
+        el("label", { className: "switch" }, remindInput, el("span")))));
+}
+lightClose($("plan"));
 
 // La vente d'une prod : en vente ou non, ses fichiers livrés (MP3, WAV, stems) et le prix de chaque licence pour elle.
 let saleId = null;
