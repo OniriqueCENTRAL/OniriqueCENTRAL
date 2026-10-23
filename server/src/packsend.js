@@ -65,7 +65,14 @@ CREATE TABLE IF NOT EXISTS sound_mail_unsubs (
 );
 `);
 
-const PER_SEND = 300, PER_DAY = 500;
+const PER_SEND = 300, PER_DAY = 450;
+// Les mails partis sur 24 h ou en attente depuis une même adresse (Gmail bloque l'expéditeur au-delà de ~500 par jour).
+const dayLoad = (m) => get(`SELECT COUNT(*) AS n FROM sound_mail_recipients WHERE user_id IN (SELECT user_id FROM sound_mailers WHERE from_email = ?)
+  AND (status = 'wait' OR sent_at > ?)`, m.from_email, now() - 86400_000).n;
+const checkQuota = (m, count) => {
+  const left = Math.max(0, PER_DAY - dayLoad(m));
+  if (count > left) throw new HttpError(400, `${PER_DAY} mails au plus par jour depuis ${m.from_email} : il en reste ${left} pour les prochaines 24 h.`);
+};
 // Entre deux mails d'un envoi, un délai pris au hasard entre 15 et 30 secondes : un envoi régulier et rapide ressemble à
 // du spam, et Gmail ou les autres boîtes bloquent l'expéditeur.
 export const GAP = [15_000, 30_000];
@@ -307,8 +314,7 @@ export function mountPackSend(app, { me, ownProject, sign, wrap }) {
     const emails = mailList(d.to).valid.filter((e) => !blocked.has(e));
     if (!emails.length) throw new HttpError(400, 'Aucun destinataire (les adresses désinscrites sont retirées).');
     if (emails.length > PER_SEND) throw new HttpError(400, `${PER_SEND} destinataires au plus par envoi.`);
-    const today = get('SELECT COUNT(*) AS n FROM sound_mail_recipients WHERE user_id = ? AND created_at > ?', req.user.id, now() - 86400_000).n;
-    if (today + emails.length > PER_DAY) throw new HttpError(400, `${PER_DAY} mails au plus par jour : il en reste ${Math.max(0, PER_DAY - today)} aujourd'hui.`);
+    checkQuota(m, emails.length);
     const names = new Map();
     for (const l of all('SELECT emails FROM sound_mail_lists WHERE user_id = ? OR (shared = 1 AND ?) ORDER BY shared, created_at', req.user.id, ['vip', 'founder'].includes(req.user.role) ? 1 : 0)) {
       for (const c of listContacts(l)) if (c.name && !names.has(c.email)) names.set(c.email, c.name);
@@ -329,8 +335,10 @@ export function mountPackSend(app, { me, ownProject, sign, wrap }) {
     if (!m) throw new HttpError(400, 'Connecte d\'abord ta boîte mail : les mails partent de ton adresse.');
     if (!sent.done_at) throw new HttpError(400, 'Cet envoi est encore en cours.');
     rateLimit(`sounds-send:${req.user.id}`, 20, 3600_000);
+    const failed = get(`SELECT COUNT(*) AS n FROM sound_mail_recipients WHERE send_id = ? AND status = 'error'`, sent.id).n;
+    if (!failed) throw new HttpError(400, 'Aucun échec à renvoyer.');
+    checkQuota(m, failed);
     const n = run(`UPDATE sound_mail_recipients SET status = 'wait', error = '' WHERE send_id = ? AND status = 'error'`, sent.id).changes;
-    if (!n) throw new HttpError(400, 'Aucun échec à renvoyer.');
     run('UPDATE sound_mail_sends SET done_at = NULL WHERE id = ?', sent.id);
     await launch(sent.id, m, p, mailDraft(parse(p.mail || '{}', {})));
     res.status(202).json({ id: sent.id, total: n });

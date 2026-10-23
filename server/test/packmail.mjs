@@ -240,6 +240,14 @@ try {
     assert.equal(outbox.length, before + 1);
     assert.equal(get('SELECT status FROM sound_mail_recipients WHERE id = ?', failed).status, 'sent');
     await call('POST', `/api/me/sounds/mail/sends/${last.id}/retry`, { token: bm.token, expect: 400 });
+    // 450 mails par jour depuis une même adresse : partis sur 24 h comptés, renvoi compris.
+    run(`UPDATE sound_mail_recipients SET sent_at = ? WHERE user_id = ?`, Date.now() - 86400_000 - 1, bm.id);
+    const fill = run('INSERT INTO sound_mail_sends (user_id, project_id, subject, created_at, done_at) VALUES (?, ?, ?, ?, ?)', bm.id, pack, 'x', Date.now(), Date.now()).lastInsertRowid;
+    for (let i = 0; i < 450; i++) run(`INSERT INTO sound_mail_recipients (send_id, user_id, token, email, status, sent_at, created_at) VALUES (?, ?, ?, ?, 'sent', ?, ?)`, fill, bm.id, `q${i}`, `q${i}@test.fr`, Date.now(), Date.now());
+    run(`UPDATE sound_mail_recipients SET status = 'error' WHERE id = ?`, failed);
+    const full = await call('POST', `/api/me/sounds/mail/sends/${last.id}/retry`, { token: bm.token, expect: 400 });
+    assert.match(full.error, /450 mails au plus par jour depuis .* il en reste 0 /);
+    run('DELETE FROM sound_mail_sends WHERE id = ?', fill);
     await call('DELETE', '/api/me/sounds/mailer', { token: bm.token });
     assert.equal(google.revoked, 1);
     await call('POST', `/api/me/sounds/mail/sends/${last.id}/retry`, { token: bm.token, expect: 400 });
