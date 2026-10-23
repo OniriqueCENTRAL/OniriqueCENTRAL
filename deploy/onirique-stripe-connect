@@ -25,6 +25,11 @@ if [ "${1:-}" != off ]; then
   read -rp "ID client Connect (ca_…) : " ID
   read -rsp "Clé secrète Stripe d'ONIRIQUE (sk_live_… ou sk_test_… ; rien ne s'affiche) : " KEY; echo
   read -rsp "Secret du webhook des comptes connectés (whsec_… ; rien ne s'affiche) : " HOOK; echo
+  # Un terminal qui colle ajoute parfois des caractères invisibles (collage « encadré », retour chariot) : seuls les
+  # caractères d'un identifiant Stripe sont gardés.
+  ID=$(printf '%s' "$ID" | sed 's/\[20[01]~//g' | tr -cd 'A-Za-z0-9_')
+  KEY=$(printf '%s' "$KEY" | sed 's/\[20[01]~//g' | tr -cd 'A-Za-z0-9_')
+  HOOK=$(printf '%s' "$HOOK" | sed 's/\[20[01]~//g' | tr -cd 'A-Za-z0-9_')
   case "$ID" in ca_*) ;; *) stop "Ce n'est pas un ID client Connect (il commence par ca_). Rien n'est changé." ;; esac
   case "$KEY" in sk_live_*|sk_test_*|rk_live_*|rk_test_*) ;; *) stop "Ce n'est pas une clé secrète Stripe. Rien n'est changé." ;; esac
   case "$HOOK" in whsec_*) ;; *) stop "Ce n'est pas un secret de webhook (il commence par whsec_). Rien n'est changé." ;; esac
