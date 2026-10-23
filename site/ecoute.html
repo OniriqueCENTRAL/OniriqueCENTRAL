@@ -240,9 +240,25 @@ async function api(path, body, method = "POST") {
 }
 
 let items = [];
+// Le suivi de l'écoute : un identifiant gardé par le navigateur (pour compter les personnes, pas les nommer) et jusqu'où
+// le titre a été écouté, envoyé toutes les 10 secondes d'écoute et quand la lecture s'arrête.
+let listener = "";
+try { listener = localStorage.getItem("onirique.listener") || ""; if (!listener) localStorage.setItem("onirique.listener", listener = crypto.randomUUID()); } catch {}
+let listen = null;
+// Page qui se ferme : une balise (sendBeacon), le seul envoi qui part encore ; sinon une requête normale.
+const sendListen = (force, leaving = false) => {
+  const a = player.audio, t = player.item;
+  if (!listen || !t || t.key !== listen.key || !(a.duration > 0)) return;
+  listen.reached = Math.max(listen.reached, a.currentTime);
+  if (!force && listen.reached - listen.sent < 10) return;
+  listen.sent = listen.reached;
+  const body = JSON.stringify({ pass, r: mailRecipient, play: listen.play, reached: listen.reached, length: a.duration });
+  if (leaving && navigator.sendBeacon) navigator.sendBeacon("/api/sounds/share/" + encodeURIComponent(shareToken) + "/progress", new Blob([body], { type: "application/json" }));
+  else api("/progress", { play: listen.play, reached: listen.reached, length: a.duration }).catch(() => {});
+};
 const player = OP.create({
   askName: !session,
-  onPlay: (t) => api("/play", { trackId: t.trackId }).catch(() => {}),
+  onPlay: (t) => api("/play", { trackId: t.trackId, listener }).then((r) => { listen = r.play ? { play: r.play, key: t.key, reached: 0, sent: 0 } : null; }, () => {}),
   onComment: (t, at, body, name) => api("/comments", { trackId: t.trackId, at, body, name }),
   // Partager depuis le lecteur plein écran : la feuille de partage du téléphone, sinon le lien copié.
   onShare: async () => {
@@ -287,6 +303,9 @@ function syncLyrics() {
   if (on) box.scrollTo({ top: on.offsetTop - box.clientHeight / 2 + on.offsetHeight / 2, behavior: "smooth" });
 }
 player.audio.addEventListener("timeupdate", syncLyrics);
+player.audio.addEventListener("timeupdate", () => sendListen(false));
+for (const type of ["pause", "ended"]) player.audio.addEventListener(type, () => sendListen(true));
+addEventListener("pagehide", () => sendListen(true, true));
 // Avec la fiche de l'artiste dessous, les paroles sont plus courtes ; « Afficher plus » les agrandit et masque la fiche.
 function layoutSide() {
   const lyrics = !$("lyrics").hidden, about = $("about").dataset.show === "1" || !!document.querySelector(".about-extra");
@@ -354,13 +373,13 @@ function show(data) {
   $("cover-by").replaceChildren("Pochette : ", el("b", { textContent: data.coverBy || "" }));
   items = data.tracks.map((t) => ({ key: "v" + t.version.id, id: t.version.id, trackId: t.id, title: t.title, feat: (t.credits || {}).feat, stage: t.stage, day: t.day,
     subtitle: [data.owner, OP.stageLabel(t.stage)].filter(Boolean).join(" · "), cover: data.cover,
-    url: t.version.url, downloadUrl: t.version.downloadUrl, duration: t.version.duration, peaks: t.version.peaks, comments: t.comments, credits: t.credits || {}, lyrics: t.lyrics || "", bpm: t.bpm, key: t.key, offers: t.offers || [] }));
+    url: t.version.url, downloadUrl: t.version.downloadUrl, duration: t.version.duration, peaks: t.version.peaks, comments: t.comments, credits: t.credits || {}, lyrics: t.lyrics || "", bpm: t.bpm, musicKey: t.key, offers: t.offers || [] }));
   renderAbout(data.about, data.owner, data.collabAbouts);
   $("tracks").replaceChildren(...items.map((it, i) => {
     const row = el("li", { className: "trk", tabIndex: 0 },
       el("span", { className: "num", textContent: String(i + 1) }),
       el("div", {}, el("div", { className: "tline" }, el("b", { textContent: it.title }), it.bpm ? el("span", { className: "stage prod", textContent: it.bpm + " BPM" }) : "",
-        it.key ? el("span", { className: "stage prod", textContent: it.key }) : "", it.credits.feat ? el("span", { className: "feat", textContent: "feat. " + it.credits.feat }) : ""), creditsLine(it.credits),
+        it.musicKey ? el("span", { className: "stage prod", textContent: it.musicKey }) : "", it.credits.feat ? el("span", { className: "feat", textContent: "feat. " + it.credits.feat }) : ""), creditsLine(it.credits),
         it.comments.length ? el("small", { textContent: it.comments.length + " commentaire" + (it.comments.length > 1 ? "s" : "") }) : null),
       el("span", { style: "display:inline-flex;gap:6px;align-items:center" }, it.offers.length ? el("button", { className: "buy", type: "button",
           ariaLabel: "Acheter " + it.title, onclick: (event) => { event.stopPropagation(); chooseLicense(it); } }, "Acheter · dès " + euros(Math.min(...it.offers.map((o) => o.price)))) : "",

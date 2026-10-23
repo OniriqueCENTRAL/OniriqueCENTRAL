@@ -86,6 +86,13 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 's
   db.exec(`ALTER TABLE sound_tracks ADD COLUMN stage TEXT NOT NULL DEFAULT ''`);
 }
 export const STAGE = /^(|maquette|final|v[1-9][0-9]?)$/;
+// Le suivi d'une écoute : l'auditeur (son compte, sinon un identifiant gardé par son navigateur), jusqu'où il est allé
+// dans le titre et la durée du titre, en secondes.
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_plays') WHERE name = 'listener'`).get()) {
+  db.exec(`ALTER TABLE sound_plays ADD COLUMN listener TEXT NOT NULL DEFAULT '';
+    ALTER TABLE sound_plays ADD COLUMN reached REAL NOT NULL DEFAULT 0;
+    ALTER TABLE sound_plays ADD COLUMN length REAL NOT NULL DEFAULT 0;`);
+}
 // Un commentaire coché « Réglé » : un retour de mix traité (null : encore à régler).
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_comments') WHERE name = 'resolved_at'`).get()) {
   db.exec('ALTER TABLE sound_comments ADD COLUMN resolved_at INTEGER');
@@ -374,6 +381,15 @@ function aboutOf(userId, mine) {
 }
 // Les fiches affichées des collaborateurs d'un projet, sous celle de l'auteur.
 const aboutsOf = (people) => people.map((u) => { const a = aboutOf(u.id, false); return a && { ...a, name: u.name || 'ONIRIQUE' }; }).filter(Boolean);
+// Ce que disent les écoutes d'un titre : auditeurs différents, part écoutée en moyenne, écoutes menées au bout et, pour
+// chaque dixième du titre, la part des écoutes encore là. Les écoutes d'avant ce suivi ne comptent que dans le total.
+function listenStats(rows) {
+  const who = new Set(rows.map((r) => r.listener).filter(Boolean));
+  const parts = rows.filter((r) => r.length > 0).map((r) => Math.min(1, r.reached / r.length));
+  const share = (test) => (parts.length ? parts.filter(test).length / parts.length : null);
+  return { listeners: who.size, followed: parts.length, average: parts.length ? parts.reduce((s, x) => s + x, 0) / parts.length : null,
+    complete: share((x) => x >= 0.9), curve: parts.length ? Array.from({ length: 10 }, (_, i) => share((x) => x >= (i + 1) / 10 - 0.02)) : [] };
+}
 const splitsOf = (row) => { try { return JSON.parse(row.splits || '[]'); } catch { return []; } };
 /** La répartition envoyée par le membre : 20 personnes au plus, des parts de 0 à 100 % qui ne dépassent pas 100 % en tout. */
 function splitsIn(list) {
@@ -605,7 +621,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       (SELECT MAX(created_at) FROM sound_plays WHERE link_id = l.id) AS last_play FROM sound_links l WHERE l.user_id = ? ORDER BY l.created_at DESC`, req.user.id);
     // Les écoutes de chaque titre, tous liens confondus (ceux de l'auteur et des collaborateurs), et les auditeurs
     // connectés (le dernier venu d'abord).
-    const plays = all(`SELECT s.track_id, s.link_id, s.created_at, u.id, u.name, u.avatar FROM sound_plays s
+    const plays = all(`SELECT s.track_id, s.link_id, s.created_at, s.listener, s.reached, s.length, u.id, u.name, u.avatar FROM sound_plays s
       JOIN sound_tracks t ON t.id = s.track_id JOIN sound_projects p ON p.id = t.project_id
       LEFT JOIN users u ON u.id = s.user_id WHERE ${scope} ORDER BY s.created_at DESC`, ...args);
     const listeners = (rows) => [...new Map(rows.filter((r) => r.id).map((r) => [r.id, { ...person(r), at: r.created_at }])).values()];
@@ -632,7 +648,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
             bpm: t.bpm, key: t.music_key, forSale: !!t.for_sale, sold: !!t.sold, ...(p.kind === 'pack' ? { files: filesOf(t.id), licensePrices: JSON.parse(t.license_prices || '{}') } : {}),
             versions: versions.filter((v) => v.track_id === t.id).map((v, i) => versionView(v, i, true)),
             comments: comments.filter((c) => c.track_id === t.id).map(commentView),
-            plays: mine.length, lastPlay: mine[0]?.created_at ?? null, listeners: listeners(mine),
+            plays: mine.length, lastPlay: mine[0]?.created_at ?? null, listeners: listeners(mine), stats: listenStats(mine),
           };
         }),
       })),
@@ -1205,10 +1221,21 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (!t) throw new HttpError(404, 'Titre introuvable.');
     const listener = optionalUser(req);
     const listenerId = listener && listener.id !== link.user_id ? listener.id : null;
-    run('INSERT INTO sound_plays (link_id, track_id, user_id, created_at) VALUES (?, ?, ?, ?)', link.id, t.id, listenerId, now());
+    // L'auditeur : son compte s'il est connecté, sinon l'identifiant que son navigateur garde (pour compter les personnes).
+    const who = listener ? `u${listener.id}` : str(req.body.listener, 40).replace(/[^\w-]/g, '');
+    const play = run('INSERT INTO sound_plays (link_id, track_id, user_id, listener, created_at) VALUES (?, ?, ?, ?, ?)', link.id, t.id, listenerId, who, now()).lastInsertRowid;
     const contact = contactOf(link, req);
     trackRecipient(contact, 'play', t.title);
     if (listener?.id !== link.user_id) tell(link, 'play', { who: contactName(contact) || nameOf(listener), title: t.title, key: `${t.id}:${listenerId || contact?.id || req.ip}` });
+    res.json({ ok: true, play });
+  });
+  // Jusqu'où l'écoute est allée : envoyé pendant la lecture, seul le point le plus loin est gardé.
+  app.post('/api/sounds/share/:token/progress', (req, res) => {
+    rateLimit(`sounds-progress:${req.ip}`, 600);
+    const link = openLink(req);
+    const reached = Number(req.body.reached), length = Number(req.body.length);
+    if (!(reached >= 0 && length > 0 && length < 86400)) throw new HttpError(400, 'Écoute invalide.');
+    run('UPDATE sound_plays SET reached = MAX(reached, ?), length = ? WHERE rowid = ? AND link_id = ?', Math.min(reached, length), length, id(req.body.play), link.id);
     res.json({ ok: true });
   });
 

@@ -110,6 +110,16 @@ try {
     const data = await call('GET', '/api/me/sounds', { token: member.token });
     assert.equal(data.links[0].plays, 2);
     assert.equal(data.projects[0].tracks[0].comments[0].author, 'Sam');
+    // Le suivi d'écoute : deux personnes (le compte connecté, un navigateur anonyme), l'une va au bout, l'autre part à 30 %.
+    const anon = await call('POST', `/api/sounds/share/${t}/play`, { body: { pass: share.pass, trackId, listener: 'nav-1' } });
+    await call('POST', `/api/sounds/share/${t}/progress`, { body: { pass: share.pass, play: anon.play, reached: 30, length: 100 } });
+    await call('POST', `/api/sounds/share/${t}/progress`, { body: { pass: share.pass, play: anon.play, reached: 12, length: 100 } });
+    await call('POST', `/api/sounds/share/${t}/progress`, { body: { pass: share.pass, play: anon.play, reached: 5, length: 0 }, expect: 400 });
+    const full = await call('POST', `/api/sounds/share/${t}/play`, { token: listener.token, body: { pass: share.pass, trackId } });
+    await call('POST', `/api/sounds/share/${t}/progress`, { body: { pass: share.pass, play: full.play, reached: 100, length: 100 } });
+    const stats = (await call('GET', '/api/me/sounds', { token: member.token })).projects[0].tracks[0].stats;
+    assert.deepEqual([stats.listeners, stats.followed, stats.average, stats.complete], [2, 2, 0.65, 0.5]);
+    assert.deepEqual(stats.curve.slice(0, 4), [1, 1, 1, 0.5]);
     // Un retour coché « Réglé », puis remis à régler ; un autre compte ne peut pas y toucher.
     const cid = data.projects[0].tracks[0].comments[0].id;
     assert.equal(data.projects[0].tracks[0].comments[0].resolved, false);

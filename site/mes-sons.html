@@ -400,6 +400,13 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 .comment-row { display: flex; align-items: baseline; gap: 10px; padding: 12px 14px; }
 .comment-row .at { font: 600 12px var(--f-mono); color: var(--ember); background: none; border: 0; padding: 0; cursor: pointer; }
 .comment-row p { margin: 0; flex: 1; }
+/* La courbe d'écoute : la part des écoutes encore là à chaque dixième du titre */
+.curve { display: grid; gap: 6px; }
+.curve .bars { display: flex; align-items: flex-end; gap: 4px; height: 90px; padding: 8px; border-radius: 14px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,210,214,.07); }
+.curve .bars i { flex: 1; border-radius: 4px 4px 1px 1px; background: var(--ember); opacity: .85; }
+.curve .axis { display: flex; justify-content: space-between; font: 600 11px var(--f-mono); color: var(--haze); }
+#stats { width: 520px; }
+.stat-pct { font: 800 16px var(--f-display); color: var(--ember); }
 /* La répartition d'un titre : une ligne par personne */
 .splits { display: grid; gap: 8px; }
 .splits .split { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.2fr) 74px 74px 30px; gap: 6px; align-items: center; }
@@ -598,6 +605,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 </section>
 
 <dialog id="details"></dialog>
+<dialog id="stats"></dialog>
 <dialog id="cover-view"><img alt=""><div class="bar"><button class="btn btn-ghost" type="button" id="cover-save">Télécharger</button><button class="btn btn-ghost" type="button" id="cover-swap">Changer</button><button class="btn btn-primary" type="button" onclick="this.closest('dialog').close()">Fermer</button></div></dialog>
 <dialog id="install-help">
   <div class="dlg-head"><b>Sur l'écran d'accueil</b><button class="x" type="button" aria-label="Fermer" onclick="this.closest('dialog').close()">✕</button></div>
@@ -890,7 +898,7 @@ const lightClose = (dialog) => {
   dialog.addEventListener("pointerdown", (event) => { fromBackdrop = event.target === dialog; });
   dialog.addEventListener("click", (event) => { if (event.target === dialog && fromBackdrop) dialog.close(); fromBackdrop = false; });
 };
-lightClose($("details")); lightClose($("share")); lightClose($("ask")); lightClose($("collab"));
+lightClose($("details")); lightClose($("stats")); lightClose($("share")); lightClose($("ask")); lightClose($("collab"));
 
 // ——— Données et vues ———
 async function refresh() {
@@ -1130,6 +1138,7 @@ function projectMenu(anchor, p) {
     p.tracks.length && { label: "Écouter", icon: "play", onclick: () => playProject(p) },
     p.tracks.length && { label: "Ajouter à la file", icon: "queue", onclick: () => p.tracks.forEach((t) => player.enqueue(itemOf(p, t))) },
     { label: "Partager", icon: "link", onclick: () => openShare("project", p.id) },
+    p.tracks.length && { label: "Statistiques", icon: "queue", onclick: () => openProjectStats(p) },
     p.mine && { label: "Collaborateurs…", icon: "plus", onclick: () => openCollab(p.id) },
     p.mine && { label: "Déplacer vers…", icon: "chevron", onclick: () => moveMenu(anchor, p.folderId, (folderId) => api("PATCH", "/me/sounds/projects/" + p.id, { folderId })) },
     p.mine && (p.kind === "pack"
@@ -2392,6 +2401,33 @@ const creditsList = (credits) => {
   const rows = CREDITS.filter(([k]) => credits && credits[k]);
   return rows.length ? el("div", { className: "credits-list" }, ...rows.map(([k, label]) => el("div", {}, el("span", { textContent: label }), el("b", { textContent: credits[k] })))) : null;
 };
+// La courbe d'écoute d'un titre : pour chaque dixième, la part des écoutes encore là ; et le moment où le plus de monde part.
+function listenCurve(st, duration) {
+  if (!st.curve.length) return el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "La courbe d'écoute apparaîtra dès les premières écoutes suivies." });
+  const drops = st.curve.map((x, i) => (i ? st.curve[i - 1] : 1) - x), worst = drops.indexOf(Math.max(...drops));
+  const at = duration ? " (vers " + OP.time(duration * worst / 10) + ")" : "";
+  return el("div", { className: "curve" },
+    el("div", { className: "bars" }, ...st.curve.map((x, i) => el("i", { style: "height:" + Math.max(2, Math.round(x * 100)) + "%", title: Math.round(x * 100) + " % encore là à " + (i + 1) * 10 + " % du titre" }))),
+    el("div", { className: "axis" }, el("span", { textContent: "Début" }), el("span", { textContent: "Fin" })),
+    el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: drops[worst] > 0.05
+      ? "C'est entre " + worst * 10 + " % et " + (worst + 1) * 10 + " % du titre" + at + " que le plus d'auditeurs décrochent (" + Math.round(drops[worst] * 100) + " %). Sur " + st.followed + " écoute" + (st.followed > 1 ? "s" : "") + " suivie" + (st.followed > 1 ? "s" : "") + "."
+      : "Les auditeurs restent jusqu'au bout. Sur " + st.followed + " écoute" + (st.followed > 1 ? "s" : "") + " suivie" + (st.followed > 1 ? "s" : "") + "." }));
+}
+// Les statistiques d'un projet : ses titres côte à côte, ceux qui accrochent le plus en premier.
+function openProjectStats(p) {
+  const pct = (x) => (x === null ? "—" : Math.round(x * 100) + " %");
+  const rows = p.tracks.slice().sort((a, b) => (b.stats.average ?? -1) - (a.stats.average ?? -1) || b.plays - a.plays);
+  const dialog = $("stats");
+  dialog.replaceChildren(el("div", { className: "dlg-head" }, el("b", { textContent: "Statistiques · " + p.title }),
+    el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close"))),
+    el("div", { className: "stack" },
+      el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Les titres qui accrochent le plus en premier : la part écoutée en moyenne, puis les écoutes et les personnes différentes, tous liens confondus." }),
+      rows.length ? el("ul", { className: "group" }, ...rows.map((t) => el("li", { className: "item", style: "cursor:pointer", onclick: () => { dialog.close(); openDetails(t.id, "stats"); } },
+        el("div", { className: "grow" }, t.title, el("small", { textContent: t.plays + " écoute" + (t.plays > 1 ? "s" : "") + " · " + t.stats.listeners + " personne" + (t.stats.listeners > 1 ? "s" : "") + " · " + pct(t.stats.complete) + " au bout" })),
+        el("b", { className: "stat-pct", textContent: pct(t.stats.average) }))))
+        : el("p", { className: "muted", style: "margin:0", textContent: "Pas encore de titre." })));
+  if (!dialog.open) dialog.showModal();
+}
 // La fiche de répartition (split sheet) d'un titre en PDF : le titre, les parts de chacun, puis une ligne de signature par personne.
 function splitSheetPdf(p, t, rows) {
   const pct = (n) => (Math.round(n * 100) / 100).toLocaleString("fr-FR") + " %";
@@ -2465,13 +2501,17 @@ function renderDetails() {
       group(item("close", "Supprimer", { danger: true, onclick: () => confirm("Supprimer « " + t.title + " » et toutes ses versions ?")
         && api("DELETE", "/me/sounds/tracks/" + t.id).then(() => { $("details").close(); return refresh(); }).catch(fail) }))];
   } else if (detailsView === "stats") {
+    const st = t.stats, pct = (x) => (x === null ? "—" : Math.round(x * 100) + " %");
     right = [back("Statistiques"),
       el("div", { className: "stat" }, el("div", {}, el("b", { textContent: String(t.plays) }), el("span", { textContent: "écoutes par tes liens" })),
-        el("div", {}, el("b", { textContent: String(t.listeners.length) }), el("span", { textContent: "auditeurs connectés" }))),
+        el("div", {}, el("b", { textContent: String(st.listeners) }), el("span", { textContent: "personnes différentes" }))),
+      el("div", { className: "stat" }, el("div", {}, el("b", { textContent: pct(st.average) }), el("span", { textContent: "du titre écouté en moyenne" })),
+        el("div", {}, el("b", { textContent: pct(st.complete) }), el("span", { textContent: "des écoutes vont au bout" }))),
+      listenCurve(st, v.duration),
       t.lastPlay ? el("p", { className: "muted", style: "margin:0", textContent: "Dernière écoute le " + longDay(t.lastPlay) + "." }) : el("p", { className: "muted", style: "margin:0", textContent: "Pas encore d'écoute. Partage ce titre ou son projet pour le faire entendre." }),
       t.listeners.length ? el("ul", { className: "group people" }, ...t.listeners.map((u) => el("li", {}, el("img", { src: avatar(u), alt: "" }),
         el("span", { className: "grow", textContent: u.name }), el("span", { className: "muted", style: "font-size:13px", textContent: longDay(u.at) })))) : null,
-      el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Les auditeurs qui ne sont pas connectés à un compte ONIRIQUE sont comptés sans être nommés." })];
+      el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Les auditeurs qui ne sont pas connectés à un compte ONIRIQUE sont comptés sans être nommés. La part écoutée est suivie depuis le 23 octobre 2026." })];
   } else if (detailsView === "tool-lufs" || detailsView === "tool-ref") {
     // Les outils du site, en version compacte, avec la version en avant déjà chargée.
     const page = detailsView === "tool-lufs" ? "volume-lufs.html" : "comparer-mix.html";
