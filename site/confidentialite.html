@@ -24,7 +24,7 @@
 <main class="wrap" id="contenu">
   <p class="eyebrow">Informations légales</p>
   <h1>Politique de confidentialité</h1>
-  <p class="updated">Dernière mise à jour : 19 octobre 2026</p>
+  <p class="updated">Dernière mise à jour : 23 octobre 2026</p>
   <p class="intro">Onirique collecte le strict nécessaire pour gérer votre compte et vos licences. Aucune publicité, aucun outil de mesure d'audience, aucun profilage, aucune revente de données.</p>
 
   <h2>Responsable du traitement</h2>
@@ -74,18 +74,41 @@
   </table></div>
   <p>Aucune adresse IP n'est conservée pour les écoutes. Un auditeur qui veut faire effacer un commentaire peut écrire à <a href="mailto:support@onirique.store">support@onirique.store</a>.</p>
 
+  <h2 id="google">Comptes Google des membres (Gmail et YouTube)</h2>
+  <p>Un membre ONIRIQUE peut, s'il le choisit, connecter son propre compte Google avec le bouton « Se connecter avec Google », pour deux usages, chacun connecté séparément :</p>
+  <ul>
+    <li><strong>Gmail</strong> (autorisation <code>gmail.send</code>) : envoyer, depuis sa propre adresse, les mails de présentation de ses packs de prods aux contacts qu'il a lui-même choisis. Onirique peut seulement envoyer des messages : il ne lit pas, ne consulte pas, ne modifie pas et ne supprime aucun message de la boîte du membre, ni ses contacts Google.</li>
+    <li><strong>YouTube</strong> (autorisations <code>youtube.upload</code> et <code>youtube.readonly</code>) : publier sur sa chaîne les Shorts qu'il a lui-même préparés et programmés, et afficher le nom de sa chaîne et la liste de ses vidéos publiées pour qu'il suive ses publications.</li>
+  </ul>
+  <div class="table"><table>
+    <thead><tr><th>Données</th><th>Pourquoi</th><th>Base légale</th><th>Durée de conservation</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Accès Gmail</strong> : adresse e-mail du compte Google, jeton d'accès délivré par Google, chiffré</td><td>Envoyer les mails que le membre a écrits et lancés lui-même</td><td>Consentement (le membre connecte son compte et peut le déconnecter)</td><td>Jusqu'à ce que le membre déconnecte sa boîte mail ou supprime son compte</td></tr>
+      <tr><td><strong>Accès YouTube</strong> : identifiant et nom de la chaîne, liste des vidéos publiées, jeton d'accès délivré par Google, chiffré</td><td>Publier les Shorts programmés par le membre et lui montrer ce qui est en ligne</td><td>Consentement (le membre connecte sa chaîne et peut la déconnecter)</td><td>Jusqu'à ce que le membre déconnecte sa chaîne ou supprime son compte</td></tr>
+      <tr><td><strong>Destinataires des mails d'un pack</strong> : adresse e-mail et nom fournis par le membre, ouverture du mail, clics, écoutes et téléchargements depuis le mail, désinscription</td><td>Envoyer le mail et montrer au membre le suivi de son envoi ; ne plus écrire à une personne désinscrite</td><td>Intérêt légitime du membre (présenter sa musique à ses contacts), avec un lien de désinscription dans chaque mail</td><td>Jusqu'à ce que le membre supprime l'envoi ou son compte ; une désinscription est gardée pour la respecter</td></tr>
+    </tbody>
+  </table></div>
+  <p>L'utilisation et le transfert à toute autre application des informations reçues des API Google respectent les <a href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener">règles relatives aux données utilisateur des services d'API Google</a> (Google API Services User Data Policy), y compris les exigences d'utilisation limitée (Limited Use). Concrètement :</p>
+  <ul>
+    <li>les données Google ne servent qu'aux deux fonctions ci-dessus, demandées par le membre et visibles dans son compte ;</li>
+    <li>elles ne sont ni vendues, ni transmises à des tiers, ni utilisées pour de la publicité, pour établir un profil ou pour entraîner des modèles d'intelligence artificielle ;</li>
+    <li>personne chez Onirique ne lit ces données, sauf avec l'accord exprès du membre (par exemple pour une demande de support), pour la sécurité du service ou pour respecter la loi.</li>
+  </ul>
+  <p><strong>Retirer l'accès</strong> : déconnecter sa boîte mail ou sa chaîne YouTube depuis son compte ONIRIQUE révoque l'accès auprès de Google et efface le jeton enregistré. Le membre peut aussi retirer l'accès à tout moment depuis son compte Google (myaccount.google.com, Sécurité, Applications tierces).</p>
+
   <h2>Qui reçoit vos données</h2>
   <p>Vos données sont accessibles à l'éditeur et aux prestataires suivants, uniquement pour les besoins décrits ci-dessus :</p>
   <ul>
     <li><strong>IONOS</strong> : hébergement du site et du serveur, dans un centre de données situé en Allemagne (Union européenne).</li>
     <li><strong>IONOS</strong> également pour la messagerie : les demandes de support et les e-mails que nous vous adressons (lien de réinitialisation du mot de passe) passent par la boîte e-mail d'Onirique, hébergée par IONOS.</li>
     <li><strong>Meta</strong> (Instagram), pour les réponses automatiques aux commentaires décrites ci-dessus : les réponses et les messages privés passent par l'API officielle d'Instagram, qui traite vos données sous sa propre responsabilité, selon sa politique de confidentialité.</li>
+    <li><strong>Google</strong> (Gmail et YouTube), pour les membres qui connectent leur compte Google : les mails de leurs packs passent par Gmail et leurs Shorts sont publiés sur YouTube, que Google traite sous sa propre responsabilité, selon sa politique de confidentialité.</li>
     <li><strong>Stripe</strong> et son service <strong>Link</strong>, vendeur officiel et prestataire de paiement, pour vos achats : Onirique lui transmet votre adresse e-mail et la désignation de ce que vous achetez ; vous lui communiquez vous-même, sur sa page de paiement, vos informations de paiement et de facturation. Stripe les traite sous sa propre responsabilité, selon sa politique de confidentialité.</li>
   </ul>
   <p>Vos données ne sont ni vendues, ni louées, ni utilisées à des fins publicitaires.</p>
 
   <h2>Transferts hors de l'Union européenne</h2>
-  <p>Le site, le serveur et la messagerie sont hébergés par IONOS dans l'Union européenne. Seuls le paiement et Instagram font exception : Meta peut traiter les données des réponses automatiques hors de l'Union européenne, et Stripe peut traiter les données d'une commande hors de l'Union européenne, avec les garanties décrites dans sa politique de confidentialité. N'indiquez dans un message de support aucune information sensible qui ne soit pas utile à votre demande.</p>
+  <p>Le site, le serveur et la messagerie sont hébergés par IONOS dans l'Union européenne. Seuls le paiement, Instagram et Google font exception : Google peut traiter hors de l'Union européenne les mails et les vidéos envoyés par les membres qui ont connecté leur compte, Meta peut traiter les données des réponses automatiques hors de l'Union européenne, et Stripe peut traiter les données d'une commande hors de l'Union européenne, avec les garanties décrites dans sa politique de confidentialité. N'indiquez dans un message de support aucune information sensible qui ne soit pas utile à votre demande.</p>
 
   <h2>Vos droits</h2>
   <p>Vous pouvez à tout moment demander l'accès à vos données, leur rectification, leur effacement, la limitation de leur traitement, leur portabilité, ou vous opposer à un traitement fondé sur l'intérêt légitime. Vous pouvez aussi définir des directives sur le sort de vos données après votre décès.</p>
