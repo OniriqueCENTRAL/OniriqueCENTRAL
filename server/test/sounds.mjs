@@ -171,11 +171,14 @@ try {
     assert.equal(played.plays, 1);
     assert.equal(played.listeners[0].name, 'auditeur');
     assert.equal(data.links[0].requireAccount, true);
-    // L'étape du titre : maquette, V2, final ; une autre valeur est refusée.
+    // L'étape du titre : maquette, V2, final ou un texte libre ; plus de 40 caractères est refusé.
     await call('PATCH', `/api/me/sounds/tracks/${t}`, { token: member.token, body: { stage: 'V2' } });
-    await call('PATCH', `/api/me/sounds/tracks/${t}`, { token: member.token, body: { stage: 'brouillon' }, expect: 400 });
+    await call('PATCH', `/api/me/sounds/tracks/${t}`, { token: member.token, body: { stage: 'x'.repeat(41) }, expect: 400 });
     const staged = await call('POST', `/api/sounds/share/${shareToken(fresh.url)}`, { token: listener.token, body: {} });
     assert.equal(staged.tracks[0].stage, 'v2');
+    // Un texte libre est gardé tel quel.
+    await call('PATCH', `/api/me/sounds/tracks/${t}`, { token: member.token, body: { stage: '  Mix  chez Thomas ' } });
+    assert.equal((await call('POST', `/api/sounds/share/${shareToken(fresh.url)}`, { token: listener.token, body: {} })).tracks[0].stage, 'Mix chez Thomas');
     // La date du titre : une vraie date seulement, '' l'efface.
     await call('PATCH', `/api/me/sounds/tracks/${t}`, { token: member.token, body: { day: '2026-13-01' }, expect: 400 });
     await call('PATCH', `/api/me/sounds/tracks/${t}`, { token: member.token, body: { day: '2026-05-06' } });

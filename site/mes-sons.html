@@ -362,7 +362,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 .tag { font: 600 11px var(--f-mono); padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); }
 .tag.on { background: var(--ember); border-color: var(--ember); color: var(--night); }
 /* L'étape d'un titre : maquette, V2…, final */
-.stage { flex: none; padding: 4px 10px; border-radius: 999px; border: 1px dashed var(--line); background: none; color: var(--haze); font: 600 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; white-space: nowrap; }
+.stage { flex: none; max-width: 16ch; overflow: hidden; text-overflow: ellipsis; padding: 4px 10px; border-radius: 999px; border: 1px dashed var(--line); background: none; color: var(--haze); font: 600 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; white-space: nowrap; }
 .stage:hover { border-color: var(--ember); color: var(--mist); }
 .stage.maquette { border-style: solid; color: var(--mist); background: rgba(255,255,255,.06); }
 .stage.version { border-style: solid; border-color: var(--ember); color: var(--ember); }
@@ -571,7 +571,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 <dialog id="sale"></dialog>
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close('cancel')">Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
-<script src="assets/sounds-player.js?v=12"></script>
+<script src="assets/sounds-player.js?v=13"></script>
 <script src="assets/audio-kit.js?v=2"></script>
 <script src="assets/pdf-kit.js"></script>
 <script src="assets/licence-pdf.js"></script>
@@ -662,6 +662,7 @@ function theme(t) {
 // Les étapes proposées : maquette, V1 à V5 (ou une autre), final.
 const STAGES = [["maquette", "Maquette"], ["v1", "V1"], ["v2", "V2"], ["v3", "V3"], ["v4", "V4"], ["v5", "V5"], ["final", "Final"]];
 const stageClass = (s) => (s === "maquette" || s === "final" ? s : s ? "version" : "");
+const customStage = (s) => !!s && !STAGES.some(([v]) => v === s) && !/^v\d+$/.test(s);
 function stageMenu(anchor, t) {
   const set = (stage) => api("PATCH", "/me/sounds/tracks/" + t.id, { stage }).then(refresh, fail);
   menu(anchor, [
@@ -669,6 +670,10 @@ function stageMenu(anchor, t) {
     { label: "Autre version…", onclick: async () => {
       const n = await ask("Numéro de la version (6 à 99)", /^v\d+$/.test(t.stage) ? t.stage.slice(1) : "");
       if (n && /^\d{1,2}$/.test(n) && Number(n) > 0) set("v" + Number(n));
+    } },
+    { label: (customStage(t.stage) ? "✓ " : "") + "Texte perso…", onclick: async () => {
+      const text = await ask("Ton texte (40 caractères au plus)", customStage(t.stage) ? t.stage : "");
+      if (text && text.trim()) set(text.trim().slice(0, 40));
     } },
     "-",
     { label: "Sans étape", onclick: () => set("") },
@@ -926,8 +931,8 @@ function renderGrid() {
 }
 const caption = (title, sub, more, feat) => el("div", { className: "caption" }, el("div", {},
   el("b", {}, title, feat ? el("span", { className: "feat", textContent: "feat. " + feat, title: "feat. " + feat }) : ""), sub), more);
-// Les artistes invités d'un projet : ceux de tous ses titres, chacun une fois.
-const projectFeat = (p) => [...new Set(p.tracks.flatMap((t) => (t.credits.feat || "").split(",").map((n) => n.trim()).filter(Boolean)))].join(", ");
+// Les artistes invités d'un son unique ; un projet de plusieurs titres n'affiche pas de feat. à côté de son nom.
+const projectFeat = (p) => p.tracks.length > 1 ? "" : [...new Set(p.tracks.flatMap((t) => (t.credits.feat || "").split(",").map((n) => n.trim()).filter(Boolean)))].join(", ");
 const dotsFor = (label, onclick) => { const b = el("button", { className: "dots", type: "button", ariaLabel: "Options de " + label }, icon("more")); b.onclick = () => onclick(b); b.openAt = onclick; return b; };
 // Glisser-déposer dans la grille : un projet (le mien ou un enregistré) se prend et se lâche sur un dossier.
 function dragSource(tile, value) {
@@ -1243,7 +1248,7 @@ function dateButton(t, editable = editing) {
 function stageButton(t, editable = true) {
   if (!editable && !t.stage) return "";
   const b = el("button", { className: "stage " + stageClass(t.stage), type: "button", textContent: OP.stageLabel(t.stage) || "Étape",
-    title: "Où en est ce titre : maquette, version, final", ariaLabel: "Étape de " + t.title + " : " + (OP.stageLabel(t.stage) || "non précisée") });
+    title: customStage(t.stage) ? t.stage : "Où en est ce titre : maquette, version, final", ariaLabel: "Étape de " + t.title + " : " + (OP.stageLabel(t.stage) || "non précisée") });
   b.onclick = (event) => { event.stopPropagation(); stageMenu(b, t); };
   return b;
 }

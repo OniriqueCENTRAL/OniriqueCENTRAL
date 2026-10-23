@@ -78,7 +78,7 @@ h1.title { font: 800 clamp(24px, 5vw, 36px)/1.12 var(--f-display); margin: 10px 
 .trk { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto auto auto; align-items: center; gap: 10px; padding: 11px 8px 11px 4px; border-radius: 12px; cursor: pointer; }
 .trk:hover { background: rgba(255,255,255,.04); }
 .trk.now { background: color-mix(in srgb, var(--ember) 13%, transparent); }
-.stage { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--mist); font: 600 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+.stage { display: inline-block; max-width: 16ch; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--mist); font: 600 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
 .stage:empty { display: none; }
 .stage.prod { color: var(--mist); background: rgba(255,255,255,.04); letter-spacing: .04em; }
 .buy { padding: 7px 14px; border-radius: 999px; background: var(--ember); color: var(--night); font: 700 13px var(--f-body); text-decoration: none; white-space: nowrap; }
@@ -204,7 +204,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1320px; }
 <footer class="muted wrap">Partagé avec <a href="/">ONIRIQUE</a> · ONIRIQUE CLOUD</footer>
 
 <dialog id="buy"></dialog>
-<script src="assets/sounds-player.js?v=12"></script>
+<script src="assets/sounds-player.js?v=13"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const OP = window.OniriquePlayer, icon = OP.icon;
@@ -351,7 +351,7 @@ function show(data) {
       el("span", { style: "display:inline-flex;gap:6px;align-items:center" }, it.offers.length ? el("button", { className: "buy", type: "button",
           ariaLabel: "Acheter " + it.title, onclick: (event) => { event.stopPropagation(); chooseLicense(it); } }, "Acheter · dès " + euros(Math.min(...it.offers.map((o) => o.price)))) : "",
         it.day ? el("span", { className: "stage", textContent: it.day.split("-").reverse().join("/") }) : "",
-        el("span", { className: "stage " + (it.stage === "maquette" || it.stage === "final" ? it.stage : it.stage ? "version" : ""), textContent: OP.stageLabel(it.stage) })),
+        el("span", { className: "stage " + (it.stage === "maquette" || it.stage === "final" ? it.stage : it.stage ? "version" : ""), textContent: OP.stageLabel(it.stage), title: OP.stageLabel(it.stage) })),
       el("span", { className: "len", textContent: it.duration ? OP.time(it.duration) : "" }),
       it.downloadUrl ? el("a", { className: "dl", href: it.downloadUrl, title: "Télécharger", ariaLabel: "Télécharger " + it.title, onclick: (event) => event.stopPropagation() }, icon("download")) : el("span"));
     row.dataset.id = it.trackId;

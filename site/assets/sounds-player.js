@@ -12,7 +12,7 @@
 //   player.setAccent(color)      la couleur de la lecture (celle de la pochette du projet), null : la braise d'ONIRIQUE
 //   OniriquePlayer.peaksOf(file) → Promise<{ peaks, duration }>, calculés dans le navigateur à l'envoi
 //   OniriquePlayer.tint(url)     → Promise<{ accent, glow, deep } | null>, les couleurs tirées d'une pochette
-//   OniriquePlayer.stageLabel(s) → « Maquette », « V2 », « Final », ou rien
+//   OniriquePlayer.stageLabel(s) → « Maquette », « V2 », « Final », le texte libre du membre, ou rien
 //   OniriquePlayer.releaseLabel(d) → « Date de sortie prévue : 4 décembre 2026 » (à venir) ou « Date de sortie : … » (passée)
 //   OniriquePlayer.icon(name)    → une icône SVG (play, pause, prev, next, shuffle, repeat, repeat1, queue, volume, mute,
 //                                  link, more, plus, close, back, download, chevron, star)
@@ -763,7 +763,7 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     const m = line.match(/^\[(\d+):(\d{1,2}(?:\.\d+)?)\]\s?/);
     return { at: m ? Number(m[1]) * 60 + Number(m[2]) : null, text: m ? line.slice(m[0].length) : line };
   });
-  const stageLabel = (s) => (s === "maquette" ? "Maquette" : s === "final" ? "Final" : /^v\d+$/.test(s || "") ? s.toUpperCase() : "");
+  const stageLabel = (s) => (s === "maquette" ? "Maquette" : s === "final" ? "Final" : /^v\d+$/.test(s || "") ? s.toUpperCase() : s || "");
 
   const releaseLabel = (day) => {
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day || "");

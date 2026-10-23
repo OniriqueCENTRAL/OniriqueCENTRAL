@@ -885,8 +885,10 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (req.body.forSale !== undefined) run('UPDATE sound_tracks SET for_sale = ? WHERE id = ? AND sold = 0', req.body.forSale ? 1 : 0, t.id);
     if (req.body.licensePrices !== undefined) run('UPDATE sound_tracks SET license_prices = ? WHERE id = ?', licensePricesOf(req.body.licensePrices, t.owner_id), t.id);
     if (req.body.stage !== undefined) {
-      const stage = String(req.body.stage).toLowerCase();
-      if (!STAGE.test(stage)) throw new HttpError(400, 'Étape inconnue : maquette, V1 à V99 ou final.');
+      // Maquette, V1 à V99, final, ou un texte libre du membre.
+      const raw = String(req.body.stage).replace(/\s+/g, ' ').trim();
+      if (raw.length > 40) throw new HttpError(400, 'Étape trop longue : 40 caractères au plus.');
+      const stage = STAGE.test(raw.toLowerCase()) ? raw.toLowerCase() : raw;
       run('UPDATE sound_tracks SET stage = ? WHERE id = ?', stage, t.id);
     }
     if (req.body.title !== undefined) {
