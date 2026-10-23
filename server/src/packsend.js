@@ -177,7 +177,12 @@ export function gmailTransport(m) {
       const raw = (await new MailComposer(message).compile().build()).toString('base64url');
       const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
         method: 'POST', headers: { Authorization: `Bearer ${access.token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ raw }) });
-      if (!response.ok) throw new Error(`Gmail refuse l'envoi (${(await response.json().catch(() => ({}))).error?.message || response.status})`);
+      if (!response.ok) {
+        const why = (await response.json().catch(() => ({}))).error?.message || String(response.status);
+        // L'API Gmail coupée dans le projet Google d'ONIRIQUE : seul un fondateur peut la réactiver.
+        if (/has not been used in project|is disabled|SERVICE_DISABLED/i.test(why)) throw new Error("L'API Gmail n'est pas activée dans le projet Google d'ONIRIQUE : un fondateur doit l'activer dans la console Google Cloud, puis « Renvoyer aux échecs ».");
+        throw new Error(`Gmail refuse l'envoi (${why})`);
+      }
     },
   };
 }
@@ -229,6 +234,7 @@ export async function googleMailerCallback(req, res) {
 
 //------------------------------------------------------------------------------ Routes
 export function mountPackSend(app, { me, ownProject, sign, wrap }) {
+  signLinks = sign;
   // La boîte mail du membre : essayée pour de bon avant d'être gardée, le mot de passe chiffré.
   app.get('/api/me/sounds/mailer', ...me, (req, res) => res.json(mailerView(req.user.id)));
   app.put('/api/me/sounds/mailer', ...me, wrap(async (req, res) => {
@@ -287,15 +293,6 @@ export function mountPackSend(app, { me, ownProject, sign, wrap }) {
     if (emails.length > PER_SEND) throw new HttpError(400, `${PER_SEND} destinataires au plus par envoi.`);
     const today = get('SELECT COUNT(*) AS n FROM sound_mail_recipients WHERE user_id = ? AND created_at > ?', req.user.id, now() - 86400_000).n;
     if (today + emails.length > PER_DAY) throw new HttpError(400, `${PER_DAY} mails au plus par jour : il en reste ${Math.max(0, PER_DAY - today)} aujourd'hui.`);
-    // Le lien d'écoute du pack, ouvert à tous (sans mot de passe ni compte) ; créé s'il n'y en a pas.
-    let link = get(`SELECT * FROM sound_links WHERE project_id = ? AND user_id = ? AND password_hash IS NULL AND require_account = 0
-      AND (expires_at IS NULL OR expires_at > ?) ORDER BY created_at DESC`, p.id, req.user.id, now());
-    if (!link) {
-      const token = crypto.randomBytes(12).toString('base64url');
-      run(`INSERT INTO sound_links (token, user_id, project_id, track_id, label, password_hash, expires_at, download, require_account, created_at)
-        VALUES (?, ?, ?, NULL, 'Mails', NULL, NULL, 1, 0, ?)`, token, req.user.id, p.id, now());
-      link = get('SELECT * FROM sound_links WHERE token = ?', token);
-    }
     const names = new Map();
     for (const l of all('SELECT emails FROM sound_mail_lists WHERE user_id = ? ORDER BY created_at', req.user.id)) {
       for (const c of listContacts(l)) if (c.name && !names.has(c.email)) names.set(c.email, c.name);
@@ -305,11 +302,22 @@ export function mountPackSend(app, { me, ownProject, sign, wrap }) {
       run('INSERT INTO sound_mail_recipients (send_id, user_id, token, email, name, created_at) VALUES (?, ?, ?, ?, ?, ?)',
         sid, req.user.id, crypto.randomBytes(16).toString('base64url'), email, names.get(email) || '', now());
     }
-    const tracks = all('SELECT * FROM sound_tracks WHERE project_id = ? ORDER BY position, id', p.id);
-    const palette = d.coverColors ? await coverPalette(p.cover) : null;
-    const job = deliver({ sid, m, d: palette ? { ...d, colors: palette } : d, p, link, tracks, sign });
-    if (testing) await job; else job.catch((error) => console.error(`[mails] envoi ${sid} : ${error.message}`));
+    await launch(sid, m, p, d);
     res.status(202).json({ id: sid, total: emails.length });
+  }));
+  // Renvoyer un envoi à ceux pour qui il a échoué (boîte mail rebranchée, API Gmail réactivée…), avec le mail du pack.
+  app.post('/api/me/sounds/mail/sends/:id/retry', ...me, wrap(async (req, res) => {
+    const sent = get('SELECT * FROM sound_mail_sends WHERE id = ? AND user_id = ?', Number(req.params.id) || 0, req.user.id);
+    if (!sent || !sent.project_id) throw new HttpError(404, 'Envoi introuvable.');
+    const p = ownProject(req, sent.project_id), m = mailerRow(req.user.id);
+    if (!m) throw new HttpError(400, 'Connecte d\'abord ta boîte mail : les mails partent de ton adresse.');
+    if (!sent.done_at) throw new HttpError(400, 'Cet envoi est encore en cours.');
+    rateLimit(`sounds-send:${req.user.id}`, 20, 3600_000);
+    const n = run(`UPDATE sound_mail_recipients SET status = 'wait', error = '' WHERE send_id = ? AND status = 'error'`, sent.id).changes;
+    if (!n) throw new HttpError(400, 'Aucun échec à renvoyer.');
+    run('UPDATE sound_mail_sends SET done_at = NULL WHERE id = ?', sent.id);
+    await launch(sent.id, m, p, mailDraft(parse(p.mail || '{}', {})));
+    res.status(202).json({ id: sent.id, total: n });
   }));
 
   // Le suivi : les envois d'un pack, puis chaque destinataire d'un envoi avec ce qu'il a fait.
@@ -360,6 +368,24 @@ export function mountPackSend(app, { me, ownProject, sign, wrap }) {
     trackRecipient(r, 'unsubscribe');
     res.type('html').send(unsubPage('C\'est fait', 'Tu es désinscrit : plus aucun mail de cet artiste ne te sera envoyé depuis ONIRIQUE.'));
   });
+}
+
+// Un envoi part en arrière-plan, par le lien d'écoute du pack ouvert à tous (sans mot de passe ni compte), créé s'il n'y
+// en a pas ; avec les couleurs de la pochette si le mail les demande.
+let signLinks = null; // la signature des liens suivis (sounds.js), donnée au montage des routes
+async function launch(sid, m, p, d) {
+  let link = get(`SELECT * FROM sound_links WHERE project_id = ? AND user_id = ? AND password_hash IS NULL AND require_account = 0
+    AND (expires_at IS NULL OR expires_at > ?) ORDER BY created_at DESC`, p.id, p.user_id, now());
+  if (!link) {
+    const token = crypto.randomBytes(12).toString('base64url');
+    run(`INSERT INTO sound_links (token, user_id, project_id, track_id, label, password_hash, expires_at, download, require_account, created_at)
+      VALUES (?, ?, ?, NULL, 'Mails', NULL, NULL, 1, 0, ?)`, token, p.user_id, p.id, now());
+    link = get('SELECT * FROM sound_links WHERE token = ?', token);
+  }
+  const tracks = all('SELECT * FROM sound_tracks WHERE project_id = ? ORDER BY position, id', p.id);
+  const palette = d.coverColors ? await coverPalette(p.cover) : null;
+  const job = deliver({ sid, m, d: palette ? { ...d, colors: palette } : d, p, link, tracks, sign: signLinks });
+  if (testing) await job; else job.catch((error) => console.error(`[mails] envoi ${sid} : ${error.message}`));
 }
 
 // Les messages d'un envoi, un par un ; le nom du contact remplace {nom}.

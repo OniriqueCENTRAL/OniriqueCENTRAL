@@ -1808,7 +1808,11 @@ function openMailer(p) {
     const stat = (n, one, many) => el("span", { className: "stage prod", textContent: n + " " + (Number(n) > 1 ? many : one) });
     trackingPane.replaceChildren(el("div", { className: "row" }, pick),
       el("div", { className: "row" }, stat(s.sent + "/" + s.total, "envoyés", "envoyés"), stat(s.opened, "ouvert", "ouverts"), stat(s.listened, "a écouté", "ont écouté"),
-        stat(s.downloaded, "a téléchargé", "ont téléchargé"), s.failed ? stat(s.failed, "échec", "échecs") : "", s.done ? "" : el("span", { className: "muted", style: "font-size:13px", textContent: "Envoi en cours…" })),
+        stat(s.downloaded, "a téléchargé", "ont téléchargé"), s.failed ? stat(s.failed, "échec", "échecs") : "",
+        s.failed && s.done ? el("button", { className: "btn btn-ghost", type: "button", textContent: "Renvoyer aux échecs", onclick: (event) => {
+          event.currentTarget.disabled = true;
+          api("POST", "/me/sounds/mail/sends/" + s.id + "/retry").then(() => drawTracking(s.id), (error) => { oops(error); drawTracking(s.id); });
+        } }) : "", s.done ? "" : el("span", { className: "muted", style: "font-size:13px", textContent: "Envoi en cours…" })),
       el("ul", { className: "group" }, ...detail.recipients.map((r) => el("li", {}, el("details", {},
         el("summary", { className: "item" }, el("div", { className: "grow" }, r.name || r.email, el("small", { textContent: (r.name ? r.email + " · " : "") + activity(r) + (r.error ? " · " + r.error : "") }))),
         el("ul", { className: "mail-events" }, ...(r.events.length ? r.events.map((e) => el("li", { textContent: when(e.at) + " · " + (r.name || r.email) + " " + EVENT[e.type] + (e.title && e.type !== "open" && e.type !== "visit" ? " « " + e.title + " »" : "") }))

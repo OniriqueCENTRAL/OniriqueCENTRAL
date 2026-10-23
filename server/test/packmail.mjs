@@ -24,6 +24,9 @@ globalThis.fetch = async (url, init = {}) => {
     return reply({ access_token: 'acces', refresh_token: 'durable', scope: 'openid email https://www.googleapis.com/auth/gmail.send', id_token: `x.${id}.y` });
   }
   if (u === 'https://oauth2.googleapis.com/revoke') { google.revoked++; return reply({}); }
+  if (u === 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send' && google.disabled) {
+    return reply({ error: { message: 'Gmail API has not been used in project 1 before or it is disabled.' } }, 403);
+  }
   if (u === 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send') {
     google.sent.push({ auth: init.headers.Authorization, raw: Buffer.from(JSON.parse(init.body).raw, 'base64url').toString() });
     return reply({ id: 'm1' });
@@ -192,8 +195,24 @@ try {
     await gmailTransport(get('SELECT * FROM sound_mailers WHERE user_id = ?', bm.id)).sendMail({ from: '"Kay Beats" <kay.beats@gmail.com>', to: 'damso@test.fr', subject: 'Nouveau pack', text: 'Yo' });
     assert.equal(google.sent[0].auth, 'Bearer acces');
     assert.ok(/Subject: Nouveau pack/.test(google.sent[0].raw) && /To: damso@test\.fr/.test(google.sent[0].raw));
+    // L'API Gmail coupée dans le projet Google : un message clair, en français.
+    google.disabled = true;
+    await assert.rejects(gmailTransport(get('SELECT * FROM sound_mailers WHERE user_id = ?', bm.id)).sendMail({ from: 'kay.beats@gmail.com', to: 'x@test.fr', subject: 's', text: 't' }),
+      /L'API Gmail n'est pas activée/);
+    google.disabled = false;
+    // Les échecs d'un envoi repartent avec « Renvoyer aux échecs », et eux seuls.
+    const sends = await call('GET', `/api/me/sounds/projects/${pack}/mail/sends`, { token: bm.token });
+    const last = sends[0], failed = get(`SELECT id FROM sound_mail_recipients WHERE send_id = ? LIMIT 1`, last.id).id;
+    run(`UPDATE sound_mail_recipients SET status = 'error', error = 'Gmail refuse' WHERE id = ?`, failed);
+    const before = outbox.length;
+    const retried = await call('POST', `/api/me/sounds/mail/sends/${last.id}/retry`, { token: bm.token, expect: 202 });
+    assert.equal(retried.total, 1);
+    assert.equal(outbox.length, before + 1);
+    assert.equal(get('SELECT status FROM sound_mail_recipients WHERE id = ?', failed).status, 'sent');
+    await call('POST', `/api/me/sounds/mail/sends/${last.id}/retry`, { token: bm.token, expect: 400 });
     await call('DELETE', '/api/me/sounds/mailer', { token: bm.token });
     assert.equal(google.revoked, 1);
+    await call('POST', `/api/me/sounds/mail/sends/${last.id}/retry`, { token: bm.token, expect: 400 });
   });
 
   console.log(`\n${passed} étapes réussies.`);
