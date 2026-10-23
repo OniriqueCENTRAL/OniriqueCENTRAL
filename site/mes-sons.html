@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=311d5d5d"></script>
+<script src="assets/i18n.js?v=08253320"></script>
 <script src="assets/ui.js?v=2"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
@@ -287,6 +287,21 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
 .credits-list div { display: flex; gap: 10px; justify-content: space-between; padding: 6px 10px; border-radius: 10px; background: rgba(255,255,255,.035); }
 .credits-list span { color: var(--haze); }
 .credits-form { display: grid; gap: 12px; }
+/* Les paroles du titre en cours, sous la liste ; synchronisées, la ligne chantée s'allume comme sur Spotify */
+.lyrics { position: relative; margin-top: 22px; padding: 18px 20px; max-height: min(60vh, 520px); overflow-y: auto; border-radius: 18px; border: 1px solid rgba(255,210,214,.08); background: rgba(0,0,0,.3); scrollbar-width: thin; scrollbar-color: var(--ember) transparent; }
+.lyrics h2 { margin: 0 0 12px; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
+.lyrics p { margin: 0; padding: 4px 0; font: 700 clamp(17px, 1.8vw, 22px)/1.35 var(--f-body); color: var(--mist); overflow-wrap: anywhere; }
+.lyrics p.gap { min-height: 14px; }
+.lyrics.synced p { color: rgba(246,238,238,.32); transition: color .25s; }
+.lyrics.synced p[data-at]:not([data-at=""]) { cursor: pointer; }
+.lyrics.synced p.past { color: rgba(246,238,238,.62); }
+.lyrics.synced p.on { color: #fff; }
+.lyrics-edit { min-height: 260px; font: 500 13px/1.5 var(--f-mono); }
+.sync-lines { max-height: 46vh; overflow-y: auto; }
+.sync-lines li button { width: 100%; display: flex; gap: 12px; padding: 7px 10px; border: 0; border-radius: 10px; background: none; color: var(--haze); font: 500 14px var(--f-body); text-align: left; cursor: pointer; }
+.sync-lines li button span { flex: none; min-width: 64px; font: 500 12px/1.6 var(--f-mono); }
+.sync-lines li.done button { color: var(--mist); }
+.sync-lines li.next button { background: color-mix(in srgb, var(--ember) 16%, transparent); color: #fff; }
 /* Les outils du site (volume, référence) ouverts dans la fenêtre d'un titre */
 .tool-frame { width: 100%; height: calc(100dvh - 150px); min-height: 420px; border: 1px solid rgba(255,210,214,.08); border-radius: 16px; background: var(--night); }
 .credits-form label { display: grid; gap: 6px; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
@@ -417,6 +432,7 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
         <button class="add-bar" id="add-tracks" type="button"></button>
         <p class="error" id="error" role="alert"></p>
         <ol class="tracklist" id="tracklist"></ol>
+        <div class="lyrics" id="lyrics" hidden></div>
       </div>
     </div>
   </section>
@@ -560,9 +576,55 @@ function markPlaying() {
   const p = openId() && project(), on = !!(p && player.playing && p.tracks.some((t) => t.id === now));
   $("play-all").replaceChildren(icon(on ? "pause" : "play"));
   $("play-all").ariaLabel = on ? "Pause" : "Écouter le projet";
+  renderLyrics();
 }
 player.audio.addEventListener("play", markPlaying);
 player.audio.addEventListener("pause", markPlaying);
+
+// ——— Paroles ———
+// Format LRC : « [mm:ss.cc] texte » est une ligne synchronisée ; sans repère, elle s'affiche sans suivre la lecture.
+const parseLyrics = (text) => (text || "").split("\n").map((line) => {
+  const m = line.match(/^\[(\d+):(\d{1,2}(?:\.\d+)?)\]\s?/);
+  return { at: m ? Number(m[1]) * 60 + Number(m[2]) : null, text: m ? line.slice(m[0].length) : line };
+});
+const stamp = (s) => { const cs = Math.round(s * 100); return "[" + String(Math.floor(cs / 6000)).padStart(2, "0") + ":" + ((cs % 6000) / 100).toFixed(2).padStart(5, "0") + "]"; };
+const lyricsText = (lines) => lines.map((l) => (l.at === null ? "" : stamp(l.at) + " ") + l.text).join("\n");
+// À droite de la pochette : les paroles du titre en cours s'il est dans le projet ouvert.
+let lyricsShown = "";
+function renderLyrics() {
+  const box = $("lyrics"), p = openId() && project(), t = p && player.item && p.tracks.find((x) => x.id === player.item.trackId);
+  const key = t && t.lyrics ? t.id + ":" + t.lyrics : "";
+  if (key === lyricsShown) return syncLyrics();
+  lyricsShown = key;
+  box.hidden = !key;
+  if (!key) return box.replaceChildren();
+  const lines = parseLyrics(t.lyrics);
+  box.classList.toggle("synced", lines.some((l) => l.at !== null));
+  box.replaceChildren(el("h2", { textContent: "Paroles" }), ...lines.map((l) => l.text.trim()
+    ? el("p", { textContent: l.text, onclick: l.at === null ? null : () => { player.audio.currentTime = l.at; if (!player.playing) player.toggle(); } })
+    : el("p", { className: "gap", textContent: l.at === null ? "" : "♪" })));
+  box.querySelectorAll("p").forEach((row, i) => { row.dataset.at = lines[i].at ?? ""; });
+  box.scrollTop = 0;
+  syncLyrics();
+}
+// La ligne chantée s'allume et reste au milieu de la boîte ; on ne fait défiler que la boîte, pas la page.
+function syncLyrics() {
+  const box = $("lyrics");
+  if (box.hidden || !box.classList.contains("synced")) return;
+  const now = player.audio.currentTime + 0.15, rows = [...box.querySelectorAll("p")];
+  let current = -1;
+  rows.forEach((row, i) => { if (row.dataset.at !== "" && Number(row.dataset.at) <= now) current = i; });
+  rows.forEach((row, i) => { row.classList.toggle("on", i === current); row.classList.toggle("past", i < current); });
+  const on = rows[current];
+  if (on && box.dataset.current !== String(current)) box.scrollTo({ top: on.offsetTop - box.clientHeight / 2 + on.offsetHeight / 2, behavior: "smooth" });
+  box.dataset.current = current;
+}
+player.audio.addEventListener("timeupdate", () => {
+  syncLyrics();
+  const clock = document.getElementById("sync-clock");
+  if (clock) clock.textContent = OP.time(player.audio.currentTime);
+});
+player.audio.addEventListener("seeked", () => { delete $("lyrics").dataset.current; syncLyrics(); });
 
 // ——— Menus et petites fenêtres ———
 let openMenu = null;
@@ -1234,6 +1296,13 @@ $("project-title").onclick = async () => {
 
 // ——— Détails d'un titre ———
 let detailsId = null, detailsView = "main";
+let sync = null; // la synchronisation des paroles en cours : { tid, lines: [{ at, text }], i : la prochaine ligne à marquer }
+// Pendant la synchronisation, Espace marque la ligne, où que soit le focus dans la fenêtre (hors champ de saisie).
+$("details").addEventListener("keydown", (event) => {
+  if (detailsView !== "lyrics-sync" || event.key !== " " || /^(INPUT|TEXTAREA)$/.test(event.target.tagName)) return;
+  event.preventDefault();
+  if (!event.repeat) document.getElementById("sync-mark")?.click();
+}, true);
 function openDetails(tid, view = "main") { detailsId = tid; detailsView = view; renderDetails(); if (!$("details").open) $("details").showModal(); }
 function drawPeaks(canvas, peaks) {
   requestAnimationFrame(() => {
@@ -1318,6 +1387,8 @@ function renderDetails() {
         item("queue", "Statistiques", { state: t.plays ? t.plays + " écoute" + (t.plays > 1 ? "s" : "") : "", chevron: true, onclick: () => { detailsView = "stats"; renderDetails(); } }),
         item("star", "Crédits", { state: CREDITS.filter(([k]) => t.credits[k]).length ? CREDITS.filter(([k]) => t.credits[k]).map(([k]) => t.credits[k]).join(", ") : "", chevron: true,
           onclick: () => { detailsView = "credits"; renderDetails(); } }),
+        item("queue", "Paroles", { state: !t.lyrics ? "" : parseLyrics(t.lyrics).some((l) => l.at !== null) ? "Synchronisées" : "Ajoutées", chevron: true,
+          onclick: () => { detailsView = "lyrics"; renderDetails(); } }),
         item("more", "Notes", { state: v.note ? "1" : "", chevron: true, onclick: () => { detailsView = "notes"; renderDetails(); } }),
         item("expand", "Commentaires", { state: t.comments.length ? String(t.comments.length) : "", chevron: true, onclick: () => { detailsView = "comments"; renderDetails(); } }),
         item("repeat", "Versions", { state: String(t.versions.length), chevron: true, onclick: () => { detailsView = "versions"; renderDetails(); } }),
@@ -1367,6 +1438,52 @@ function renderDetails() {
     right = [back("Notes"), el("p", { className: "muted", style: "margin:0", textContent: "La note de la version " + v.n + ", visible dans l'historique des versions." }), note,
       el("div", { className: "row" }, el("button", { className: "btn btn-primary", type: "button", textContent: "Enregistrer", onclick: () =>
         api("PATCH", "/me/sounds/versions/" + v.id, { note: note.value }).then(() => { saved.textContent = "Enregistré."; return refresh(); }, fail) }), saved)];
+  } else if (detailsView === "lyrics") {
+    const text = el("textarea", { className: "lyrics-edit", value: t.lyrics, maxLength: 20000, placeholder: "Colle les paroles ici, une ligne par ligne…", ariaLabel: "Paroles de " + t.title });
+    const saved = el("span", { className: "muted", style: "font-size:13px" });
+    right = [back("Paroles"), el("p", { className: "muted", style: "margin:0", textContent: "Elles s'affichent à côté du projet pendant l'écoute. Synchronise-les pour qu'elles défilent avec le son, ligne par ligne." }), text,
+      el("div", { className: "row" },
+        el("button", { className: "btn btn-primary", type: "button", textContent: "Enregistrer", onclick: () =>
+          api("PATCH", "/me/sounds/tracks/" + t.id, { lyrics: text.value }).then(() => { saved.textContent = "Enregistré."; return refresh(); }, fail) }),
+        el("button", { className: "btn btn-ghost", type: "button", textContent: "Synchroniser", onclick: () => {
+          const lines = parseLyrics(text.value).filter((l) => l.text.trim());
+          if (!lines.length) { text.focus(); return; }
+          sync = { tid: t.id, lines, i: Math.max(0, lines.findIndex((l) => l.at === null)) };
+          if (lines.every((l) => l.at !== null)) sync.i = lines.length;
+          detailsView = "lyrics-sync"; renderDetails();
+        } }), saved)];
+  } else if (detailsView === "lyrics-sync") {
+    if (!sync || sync.tid !== t.id) { detailsView = "lyrics"; return renderDetails(); }
+    const here = player.item && player.item.trackId === t.id;
+    const next = sync.lines[sync.i];
+    const mark = el("button", { className: "btn btn-primary", id: "sync-mark", type: "button", disabled: here && !next,
+      textContent: !here ? "Lancer le titre" : next ? "Marquer la ligne (Espace)" : "Toutes les lignes sont marquées" });
+    mark.onclick = () => {
+      if (!here) { playVersion(p, t, v); return renderDetails(); }
+      if (!next) return;
+      next.at = player.audio.currentTime;
+      sync.i++;
+      renderDetails();
+      $("details").querySelector(".sync-lines .next")?.scrollIntoView({ block: "nearest" });
+    };
+    const saved = el("span", { className: "muted", style: "font-size:13px" });
+    right = [back("Synchroniser les paroles"),
+      el("p", { className: "muted", style: "margin:0", textContent: "Lance le titre, puis appuie sur Marquer (ou Espace) au moment où chaque ligne commence. Clique une ligne pour la reprendre à partir de là." }),
+      el("div", { className: "row" }, mark, el("b", { id: "sync-clock", style: "font:500 14px var(--f-mono)", textContent: OP.time(here ? player.audio.currentTime : 0) })),
+      el("ol", { className: "group sync-lines" }, ...sync.lines.map((l, i) => el("li", { className: i === sync.i ? "next" : l.at !== null ? "done" : "" },
+        el("button", { type: "button", onclick: () => {
+          sync.i = i;
+          if (here && l.at !== null) player.audio.currentTime = Math.max(0, l.at - 2);
+          renderDetails();
+        } }, el("span", { textContent: l.at === null ? "—" : OP.time(l.at) }), l.text)))),
+      el("div", { className: "row" },
+        el("button", { className: "btn btn-primary", type: "button", textContent: "Enregistrer", onclick: () =>
+          api("PATCH", "/me/sounds/tracks/" + t.id, { lyrics: lyricsText(sync.lines) }).then(() => { saved.textContent = "Enregistré."; return refresh(); }, fail) }),
+        el("button", { className: "btn btn-ghost", type: "button", textContent: "Tout effacer", onclick: () => {
+          sync.lines.forEach((l) => { l.at = null; }); sync.i = 0;
+          if (here) player.audio.currentTime = 0;
+          renderDetails();
+        } }), saved)];
   } else if (detailsView === "comments") {
     right = [back("Commentaires"),
       t.comments.length ? el("ul", { className: "group" }, ...t.comments.map((c) => el("li", { className: "comment-row" },

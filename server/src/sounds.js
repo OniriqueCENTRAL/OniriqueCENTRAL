@@ -95,6 +95,10 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 
   db.exec(`ALTER TABLE sound_projects ADD COLUMN cover_by TEXT NOT NULL DEFAULT ''`);
 }
 export const CREDIT_ROLES = ['feat', 'beat', 'mix', 'master', 'rec'];
+// Les paroles d'un titre, une ligne par ligne ; « [mm:ss.cc] » en tête d'une ligne la synchronise (format LRC).
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'lyrics'`).get()) {
+  db.exec(`ALTER TABLE sound_tracks ADD COLUMN lyrics TEXT NOT NULL DEFAULT ''`);
+}
 // La date de sortie d'un projet (AAAA-MM-JJ, '' : pas de date) : prévue si elle est à venir, passée sinon.
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'release_date'`).get()) {
   db.exec(`ALTER TABLE sound_projects ADD COLUMN release_date TEXT NOT NULL DEFAULT ''`);
@@ -446,7 +450,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
         tracks: tracks.filter((t) => t.project_id === p.id).map((t) => {
           const mine = plays.filter((r) => r.track_id === t.id);
           return {
-            id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), currentId: t.current_id, createdAt: t.created_at,
+            id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), lyrics: t.lyrics, currentId: t.current_id, createdAt: t.created_at,
             versions: versions.filter((v) => v.track_id === t.id).map((v, i) => versionView(v, i, true)),
             comments: comments.filter((c) => c.track_id === t.id).map(commentView),
             plays: mine.length, lastPlay: mine[0]?.created_at ?? null, listeners: listeners(mine),
@@ -631,6 +635,10 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (req.body.credits && typeof req.body.credits === 'object') {
       const credits = Object.fromEntries(CREDIT_ROLES.map((role) => [role, str(req.body.credits[role], 120)]).filter(([, name]) => name));
       run('UPDATE sound_tracks SET credits = ? WHERE id = ?', JSON.stringify(credits), t.id);
+    }
+    if (typeof req.body.lyrics === 'string') {
+      const lyrics = req.body.lyrics.replace(/\r\n?/g, '\n').split('\n').map((line) => line.replace(/\s+/g, ' ').trim().slice(0, 300)).join('\n').trim().slice(0, 20000);
+      run('UPDATE sound_tracks SET lyrics = ? WHERE id = ?', lyrics, t.id);
     }
     if (req.body.day !== undefined) {
       const day = String(req.body.day || '');

@@ -352,5 +352,17 @@
  "Nouveau dossier dedans…": "New folder inside…",
  "Pas plus de {} niveaux de dossiers.": "No more than {} levels of folders.",
  "Retour à": "Back to",
- "Un dossier ne peut pas aller dans lui-même ni dans un de ses sous-dossiers.": "A folder can't go inside itself or one of its subfolders."
+ "Un dossier ne peut pas aller dans lui-même ni dans un de ses sous-dossiers.": "A folder can't go inside itself or one of its subfolders.",
+ "Paroles": "Lyrics",
+ "Synchronisées": "Synced",
+ "Ajoutées": "Added",
+ "Colle les paroles ici, une ligne par ligne…": "Paste the lyrics here, one line at a time…",
+ "Elles s'affichent à côté du projet pendant l'écoute. Synchronise-les pour qu'elles défilent avec le son, ligne par ligne.": "They show next to the project while it plays. Sync them so they scroll with the sound, line by line.",
+ "Synchroniser": "Sync",
+ "Synchroniser les paroles": "Sync the lyrics",
+ "Lancer le titre": "Start the track",
+ "Marquer la ligne (Espace)": "Mark the line (Space)",
+ "Toutes les lignes sont marquées": "Every line is marked",
+ "Lance le titre, puis appuie sur Marquer (ou Espace) au moment où chaque ligne commence. Clique une ligne pour la reprendre à partir de là.": "Start the track, then press Mark (or Space) as each line begins. Click a line to redo it from there.",
+ "Tout effacer": "Clear all"
 }

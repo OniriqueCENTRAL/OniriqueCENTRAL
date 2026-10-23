@@ -186,6 +186,10 @@ try {
     const credited = await call('POST', `/api/sounds/share/${shareToken(fresh.url)}`, { token: listener.token, body: {} });
     assert.deepEqual(credited.tracks[0].credits, { beat: 'Kanni', mix: 'Gry' });
     assert.equal(credited.coverBy, 'Shurby');
+    // Les paroles : les sauts de ligne restent, les espaces de trop et les \r partent.
+    await call('PATCH', `/api/me/sounds/tracks/${t}`, { token: member.token, body: { lyrics: '[00:01.50]  Première   ligne \r\n\r\nDeuxième\n' } });
+    const lyrics = (await call('GET', '/api/me/sounds', { token: member.token })).projects.flatMap((x) => x.tracks).find((x) => x.id === t).lyrics;
+    assert.equal(lyrics, '[00:01.50] Première ligne\n\nDeuxième');
     // La date de sortie du projet : une date réelle seulement, '' l'efface.
     await call('PATCH', `/api/me/sounds/projects/${a}`, { token: member.token, body: { releaseDate: '2026-02-30' }, expect: 400 });
     await call('PATCH', `/api/me/sounds/projects/${a}`, { token: member.token, body: { releaseDate: '2026-12-04' } });
