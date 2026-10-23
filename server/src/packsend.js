@@ -6,6 +6,7 @@ import sharp from 'sharp';
 import { config } from './config.js';
 import { db, get, all, run, now } from './db.js';
 import { HttpError, rateLimit } from './auth.js';
+import MailComposer from 'nodemailer/lib/mail-composer/index.js';
 import { smtpTransport, testing, outbox } from './mail.js';
 import { escapeHtml } from './mailtemplate.js';
 import { seal, unseal } from './payments.js';
@@ -148,12 +149,41 @@ export async function coverPalette(cover) {
 }
 
 //------------------------------------------------------------------------------ Boîte mail du membre
+// Deux façons de la brancher : « Se connecter avec Google » (host = 'google', l'accès Gmail gardé chiffré dans secret,
+// les mails partent par l'API Gmail), ou n'importe quelle boîte par SMTP (mot de passe d'application chiffré).
 const mailerRow = (userId) => get('SELECT * FROM sound_mailers WHERE user_id = ?', userId);
+export const googleReady = () => !!(config.googleClientId && config.googleClientSecret);
 export const mailerView = (userId) => {
   const m = mailerRow(userId);
-  return m ? { connected: true, host: m.host, port: m.port, login: m.login, fromName: m.from_name, fromEmail: m.from_email } : { connected: false };
+  return m ? { connected: true, google: m.host === 'google', host: m.host === 'google' ? 'Gmail' : m.host, port: m.port, login: m.login, fromName: m.from_name, fromEmail: m.from_email, googleReady: googleReady() }
+    : { connected: false, googleReady: googleReady() };
 };
-const transportOf = (m) => smtpTransport({ host: m.host, port: m.port, login: m.login, password: unseal(m.secret) });
+const googleToken = async (params) => {
+  const response = await fetch('https://oauth2.googleapis.com/token', { method: 'POST',
+    body: new URLSearchParams({ client_id: config.googleClientId, client_secret: config.googleClientSecret, ...params }) });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new HttpError(502, `Google refuse : ${data.error_description || data.error || response.status}`);
+  return data;
+};
+/** L'envoi par l'API Gmail : le message est composé ici (MIME), puis Gmail l'envoie depuis la boîte du membre. */
+export function gmailTransport(m) {
+  let access = null;
+  return {
+    async sendMail(message) {
+      if (!access || access.expires < now()) {
+        const t = await googleToken({ refresh_token: unseal(m.secret), grant_type: 'refresh_token' });
+        access = { token: t.access_token, expires: now() + ((t.expires_in || 3600) - 60) * 1000 };
+      }
+      const raw = (await new MailComposer(message).compile().build()).toString('base64url');
+      const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+        method: 'POST', headers: { Authorization: `Bearer ${access.token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ raw }) });
+      if (!response.ok) throw new Error(`Gmail refuse l'envoi (${(await response.json().catch(() => ({}))).error?.message || response.status})`);
+    },
+  };
+}
+const transportOf = (m) => (m.host === 'google' && !testing ? gmailTransport(m) : smtpTransport({ host: m.host, port: m.port, login: m.login, password: unseal(m.secret) }));
+// Les connexions Google en cours : la demande (state) dit de quel membre il s'agit, et sur quel pack revenir.
+const pendingGoogle = new Map();
 
 // Le suivi : chaque geste d'un destinataire, et ses compteurs.
 export function recipientFor(userId, token) {
@@ -196,10 +226,46 @@ export function mountPackSend(app, { me, ownProject, sign, wrap }) {
     req.user.id, host, port, login, seal(password), str(b.fromName, 80), fromEmail, now());
     res.json(mailerView(req.user.id));
   }));
-  app.delete('/api/me/sounds/mailer', ...me, (req, res) => {
+  app.delete('/api/me/sounds/mailer', ...me, wrap(async (req, res) => {
+    const m = mailerRow(req.user.id);
+    // Google oublie aussi l'accès de son côté ; s'il ne répond pas, la boîte est quand même débranchée ici.
+    if (m?.host === 'google') await fetch('https://oauth2.googleapis.com/revoke', { method: 'POST', body: new URLSearchParams({ token: unseal(m.secret) }) }).catch(() => {});
     run('DELETE FROM sound_mailers WHERE user_id = ?', req.user.id);
     res.json(mailerView(req.user.id));
+  }));
+
+  // « Se connecter avec Google » : seul le droit d'envoyer des mails est demandé (gmail.send), plus l'adresse du compte.
+  const googleBack = () => `${config.publicUrl}/api/sounds/mailer/google/callback`;
+  app.post('/api/me/sounds/mailer/google', ...me, (req, res) => {
+    if (!googleReady()) throw new HttpError(503, 'La connexion avec Google n\'est pas encore réglée sur le serveur.');
+    for (const [k, v] of pendingGoogle) if (v.expires < now()) pendingGoogle.delete(k);
+    const state = crypto.randomBytes(24).toString('base64url');
+    pendingGoogle.set(state, { userId: req.user.id, projectId: Number(req.body?.projectId) || 0, fromName: str(req.body?.fromName, 80), expires: now() + 10 * 60_000 });
+    res.json({ url: 'https://accounts.google.com/o/oauth2/v2/auth?' + new URLSearchParams({
+      client_id: config.googleClientId, redirect_uri: googleBack(), response_type: 'code', state,
+      scope: 'openid email https://www.googleapis.com/auth/gmail.send', access_type: 'offline', prompt: 'consent', // un accès qui dure
+    }) });
   });
+  // Retour de Google, sans session : la demande en cours dit de quel compte il s'agit ; on revient sur le panneau Mails.
+  app.get('/api/sounds/mailer/google/callback', wrap(async (req, res) => {
+    const entry = pendingGoogle.get(String(req.query.state || ''));
+    pendingGoogle.delete(String(req.query.state || ''));
+    let result = 'ok';
+    try {
+      if (!entry || entry.expires < now() || !req.query.code) throw new HttpError(400, 'Connexion Google expirée ou refusée : recommence.');
+      const t = await googleToken({ code: String(req.query.code).slice(0, 2000), grant_type: 'authorization_code', redirect_uri: googleBack() });
+      if (!t.refresh_token) throw new HttpError(502, 'Google n\'a pas donné d\'accès durable : recommence.');
+      if (!String(t.scope || '').includes('gmail.send')) throw new HttpError(400, 'Coche l\'autorisation d\'envoyer des e-mails pour que tes mails puissent partir.');
+      // L'adresse du compte, lue dans le jeton d'identité que Google vient de rendre directement à ce serveur.
+      const email = String(JSON.parse(Buffer.from(String(t.id_token || '').split('.')[1] || '', 'base64url').toString() || '{}').email || '').toLowerCase();
+      if (!EMAIL.test(email)) throw new HttpError(502, 'Google n\'a pas donné l\'adresse du compte : recommence.');
+      run(`INSERT INTO sound_mailers (user_id, host, port, login, secret, from_name, from_email, updated_at) VALUES (?, 'google', 0, ?, ?, ?, ?, ?)
+        ON CONFLICT (user_id) DO UPDATE SET host = excluded.host, port = excluded.port, login = excluded.login, secret = excluded.secret,
+          from_name = excluded.from_name, from_email = excluded.from_email, updated_at = excluded.updated_at`,
+      entry.userId, email, seal(t.refresh_token), entry.fromName, email, now());
+    } catch (error) { result = error.message; }
+    res.redirect(`${config.siteUrl}/mes-sons.html?google=${encodeURIComponent(result)}${entry?.projectId ? `#/p/${entry.projectId}` : ''}`);
+  }));
 
   // L'envoi du mail d'un pack : un destinataire par adresse du brouillon, chacun avec ses liens suivis ; parti en
   // arrière-plan, un message à la fois.

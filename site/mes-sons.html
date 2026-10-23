@@ -400,6 +400,13 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
 .mail-prods .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mail-colors { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
 .mail-colors input:disabled { opacity: .55; cursor: default; }
+/* « Se connecter avec Google », aux couleurs de Google ; les autres boîtes, repliées dessous */
+.google-btn { justify-self: start; display: inline-flex; align-items: center; gap: 12px; height: 46px; padding: 0 22px 0 14px; border: 1px solid #dadce0; border-radius: 999px; background: #fff; color: #1f1f1f; font: 600 15px "Roboto", var(--f-body); cursor: pointer; }
+.google-btn svg { width: 20px; height: 20px; }
+.google-btn:hover:not(:disabled) { background: #f2f2f2; }
+.google-btn:disabled { opacity: .5; cursor: default; }
+.other-box summary { cursor: pointer; color: var(--haze); font-size: 13px; }
+.other-box summary:hover { color: var(--mist); }
 /* Les onglets du panneau Mails, les contacts et le suivi des envois */
 .mail-tabs .edit-toggle { height: 38px; }
 .mail-tabs .edit-toggle.on { border-color: var(--ember); background: color-mix(in srgb, var(--ember) 16%, transparent); }
@@ -1692,17 +1699,17 @@ function openMailer(p) {
   // La boîte mail du membre : les mails partent de son adresse ; sans elle, rien ne part.
   let mailer = { connected: false };
   const mailbox = el("div", { className: "stack wide" });
-  const PRESETS = { gmail: ["Gmail", "smtp.gmail.com", 465], outlook: ["Outlook / Hotmail", "smtp-mail.outlook.com", 587], ionos: ["IONOS", "smtp.ionos.fr", 465], other: ["Autre", "", 465] };
+  const PRESETS = { outlook: ["Outlook / Hotmail", "smtp-mail.outlook.com", 587], ionos: ["IONOS", "smtp.ionos.fr", 465], gmail: ["Gmail (mot de passe d'application)", "smtp.gmail.com", 465], other: ["Autre", "", 465] };
   function drawMailbox() {
     if (mailer.connected) {
       mailbox.replaceChildren(el("ul", { className: "group" }, el("li", { className: "item" }, icon("link"), el("div", { className: "grow" },
-        "Envoi depuis " + (mailer.fromName ? mailer.fromName + " <" + mailer.fromEmail + ">" : mailer.fromEmail), el("small", { textContent: mailer.host + " · port " + mailer.port })),
+        "Envoi depuis " + (mailer.fromName ? mailer.fromName + " <" + mailer.fromEmail + ">" : mailer.fromEmail), el("small", { textContent: mailer.google ? "Gmail · connecté avec Google" : mailer.host + " · port " + mailer.port })),
         el("button", { className: "btn btn-ghost", type: "button", textContent: "Déconnecter",
           onclick: () => api("DELETE", "/me/sounds/mailer").then((m) => { mailer = m; drawMailbox(); drawSend(); }, oops) }))));
       return;
     }
     const preset = el("select", {}, ...Object.entries(PRESETS).map(([k, [label]]) => el("option", { value: k, textContent: label })));
-    const host = el("input", { value: PRESETS.gmail[1], placeholder: "smtp.exemple.fr", autocomplete: "off" }), port = el("input", { value: "465", inputMode: "numeric" });
+    const host = el("input", { value: PRESETS.outlook[1], placeholder: "smtp.exemple.fr", autocomplete: "off" }), port = el("input", { value: String(PRESETS.outlook[2]), inputMode: "numeric" });
     const login = el("input", { type: "email", placeholder: "ton.adresse@gmail.com", autocomplete: "off" });
     const password = el("input", { type: "password", placeholder: "Mot de passe d'application", autocomplete: "new-password" });
     const fromName = el("input", { value: p.artist || data.owner.name, maxLength: 80 });
@@ -1713,9 +1720,20 @@ function openMailer(p) {
       try { mailer = await api("PUT", "/me/sounds/mailer", { host: host.value, port: Number(port.value), login: login.value, password: password.value, fromName: fromName.value }); drawMailbox(); drawSend(); }
       catch (error) { oops(error); go.disabled = false; }
     };
-    mailbox.replaceChildren(el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Connecte la boîte mail d'où partent tes mails : sans elle, rien ne peut être envoyé. Gmail et Outlook demandent un mot de passe d'application (dans la sécurité de ton compte), pas ton mot de passe habituel." }),
-      el("div", { className: "mail-form" }, field("Boîte mail", preset, false), field("Nom de l'expéditeur", fromName, false), field("Adresse", login, false), field("Mot de passe", password, false),
-        field("Serveur d'envoi (SMTP)", host, false), field("Port", port, false)), el("div", { className: "row" }, go));
+    // Gmail : on autorise ONIRIQUE chez Google, sans mot de passe ; les autres boîtes passent par leur serveur d'envoi.
+    const withGoogle = el("button", { className: "google-btn", type: "button", disabled: !mailer.googleReady,
+      innerHTML: '<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>Se connecter avec Google</span>' });
+    withGoogle.onclick = async () => {
+      withGoogle.disabled = true;
+      try { location.href = (await api("POST", "/me/sounds/mailer/google", { projectId: p.id, fromName: p.artist || data.owner.name })).url; }
+      catch (error) { oops(error); withGoogle.disabled = false; }
+    };
+    mailbox.replaceChildren(el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Connecte la boîte mail d'où partent tes mails : sans elle, rien ne peut être envoyé." }),
+      withGoogle, mailer.googleReady ? "" : el("small", { className: "muted", textContent: "La connexion avec Google n'est pas encore réglée sur le serveur." }),
+      el("details", { className: "other-box" }, el("summary", { textContent: "Une autre boîte mail (Outlook, IONOS…)" }),
+        el("p", { className: "muted", style: "margin:10px 0;font-size:13px", textContent: "Avec le mot de passe d'application de la boîte (dans les réglages de sécurité de ton compte), pas ton mot de passe habituel." }),
+        el("div", { className: "mail-form" }, field("Boîte mail", preset, false), field("Nom de l'expéditeur", fromName, false), field("Adresse", login, false), field("Mot de passe", password, false),
+          field("Serveur d'envoi (SMTP)", host, false), field("Port", port, false)), el("div", { className: "row", style: "margin-top:10px" }, go)));
   }
   api("GET", "/me/sounds/mailer").then((m) => { mailer = m; drawMailbox(); drawSend(); }, oops);
   drawMailbox();
@@ -1818,6 +1836,19 @@ function openMailer(p) {
   if (!dialog.open) dialog.showModal();
 }
 $("pack-mail").onclick = () => openMailer(project());
+// Retour de Google après « Se connecter avec Google » : le panneau Mails se rouvre sur le pack, ou l'erreur s'affiche.
+const googleBack = new URLSearchParams(location.search).get("google");
+if (googleBack) {
+  history.replaceState(null, "", location.pathname + location.hash);
+  let tries = 0;
+  const reopen = setInterval(() => {
+    if (++tries > 100) return clearInterval(reopen);
+    if (!data) return;
+    clearInterval(reopen);
+    if (project() && project().mail) openMailer(project());
+    if (googleBack !== "ok") alert(googleBack);
+  }, 100);
+}
 lightClose($("mailer"));
 
 // ——— Les ventes d'un pack de prods ———

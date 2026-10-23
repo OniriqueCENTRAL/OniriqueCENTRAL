@@ -8,7 +8,28 @@ import sharp from 'sharp';
 
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'onirique-central-packmail-'));
 Object.assign(process.env, { DATA_DIR: dataDir, PAYMENTS_MODE: 'demo', PORT: '0', ADMIN_EMAIL: '', ADMIN_PASSWORD: '',
-  SMTP_HOST: 'test', MAIL_FROM: 'support@test.local', SITE_URL: 'https://site.test', PUBLIC_URL: 'https://site.test' });
+  SMTP_HOST: 'test', MAIL_FROM: 'support@test.local', SITE_URL: 'https://site.test', PUBLIC_URL: 'https://site.test',
+  GOOGLE_CLIENT_ID: 'client-google', GOOGLE_CLIENT_SECRET: 'secret-google' });
+
+// Google simulé : l'échange du code contre un accès durable, puis l'envoi par l'API Gmail.
+const google = { sent: [], revoked: 0 };
+const realFetch = globalThis.fetch;
+globalThis.fetch = async (url, init = {}) => {
+  const u = String(url), reply = (json, status = 200) => new Response(JSON.stringify(json), { status, headers: { 'Content-Type': 'application/json' } });
+  if (u === 'https://oauth2.googleapis.com/token') {
+    const b = new URLSearchParams(init.body);
+    if (b.get('grant_type') === 'refresh_token') return reply({ access_token: 'acces', expires_in: 3600 });
+    if (b.get('code') !== 'bon-code') return reply({ error: 'invalid_grant' }, 400);
+    const id = Buffer.from(JSON.stringify({ email: 'Kay.Beats@gmail.com' })).toString('base64url');
+    return reply({ access_token: 'acces', refresh_token: 'durable', scope: 'openid email https://www.googleapis.com/auth/gmail.send', id_token: `x.${id}.y` });
+  }
+  if (u === 'https://oauth2.googleapis.com/revoke') { google.revoked++; return reply({}); }
+  if (u === 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send') {
+    google.sent.push({ auth: init.headers.Authorization, raw: Buffer.from(JSON.parse(init.body).raw, 'base64url').toString() });
+    return reply({ id: 'm1' });
+  }
+  return realFetch(url, init);
+};
 
 const { createApp } = await import('../src/app.js');
 const { run, get, setSetting } = await import('../src/db.js');
@@ -151,6 +172,28 @@ try {
     assert.equal(again.total, 1);
     assert.deepEqual(outbox.slice(next).map((m) => m.to), ['"Niska" <niska@test.fr>']);
     assert.equal((await call('GET', `/api/me/sounds/mail-lists/${list.id}`, { token: bm.token })).contacts.find((c) => c.name === 'Booba').unsubscribed, true);
+  });
+
+  await step('« Se connecter avec Google » : accès Gmail demandé, retour sur le pack, envoi par l\'API Gmail', async () => {
+    const { url } = await call('POST', '/api/me/sounds/mailer/google', { token: bm.token, body: { projectId: pack, fromName: 'Kay Beats' } });
+    const q = new URL(url).searchParams;
+    assert.deepEqual([q.get('scope'), q.get('redirect_uri'), q.get('access_type')], ['openid email https://www.googleapis.com/auth/gmail.send', 'https://site.test/api/sounds/mailer/google/callback', 'offline']);
+    const refused = await call('GET', `/api/sounds/mailer/google/callback?state=${q.get('state')}&code=faux`, { redirect: 'manual', expect: 302 });
+    assert.match(decodeURIComponent(refused.headers.get('location')), /google=Google refuse/);
+    const { url: again } = await call('POST', '/api/me/sounds/mailer/google', { token: bm.token, body: { projectId: pack, fromName: 'Kay Beats' } });
+    const state = new URL(again).searchParams.get('state');
+    const back = await call('GET', `/api/sounds/mailer/google/callback?state=${state}&code=bon-code`, { redirect: 'manual', expect: 302 });
+    assert.equal(back.headers.get('location'), `https://site.test/mes-sons.html?google=ok#/p/${pack}`);
+    // Une demande ne sert qu'une fois.
+    assert.match(decodeURIComponent((await call('GET', `/api/sounds/mailer/google/callback?state=${state}&code=bon-code`, { redirect: 'manual', expect: 302 })).headers.get('location')), /expirée/);
+    const m = await call('GET', '/api/me/sounds/mailer', { token: bm.token });
+    assert.deepEqual([m.connected, m.google, m.fromEmail, m.fromName], [true, true, 'kay.beats@gmail.com', 'Kay Beats']);
+    const { gmailTransport } = await import('../src/packsend.js');
+    await gmailTransport(get('SELECT * FROM sound_mailers WHERE user_id = ?', bm.id)).sendMail({ from: '"Kay Beats" <kay.beats@gmail.com>', to: 'damso@test.fr', subject: 'Nouveau pack', text: 'Yo' });
+    assert.equal(google.sent[0].auth, 'Bearer acces');
+    assert.ok(/Subject: Nouveau pack/.test(google.sent[0].raw) && /To: damso@test\.fr/.test(google.sent[0].raw));
+    await call('DELETE', '/api/me/sounds/mailer', { token: bm.token });
+    assert.equal(google.revoked, 1);
   });
 
   console.log(`\n${passed} étapes réussies.`);
