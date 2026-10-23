@@ -402,7 +402,7 @@ try {
     assert.deepEqual([p.tracks[0].title, p.tracks[0].bpm, p.tracks[0].key, p.tracks[0].forSale], ['Ghost', 150, 'F min', true]);
     assert.equal(p.mail.colors.bg, '#0D0809');
     const { html } = await call('POST', `/api/me/sounds/projects/${pack}/mail/preview`, { token: member.token, body: { ...p.mail, title: '<script>' } });
-    assert.ok(html.includes('150 BPM') && !html.includes('<script>'));
+    assert.ok(html.includes('1 PROD<') && !html.includes('150 BPM') && !html.includes('<script>'));
   });
 
   await step('un projet passe en pack de prods : BPM et clé lus dans les noms de fichiers ; et retour', async () => {
