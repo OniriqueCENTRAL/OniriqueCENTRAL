@@ -430,7 +430,6 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
       <div>
         <div class="quota" id="quota"></div>
         <button class="install" id="install" type="button" hidden><img src="assets/app-icon-180.png" alt="">Ajouter à l'écran d'accueil</button>
-        <button class="install" id="vanish" type="button" aria-pressed="false" title="Voir les sons de tous les comptes, sans prévenir personne" hidden>VANISH</button>
         <button class="install" id="settings-open" type="button">Réglages</button>
       </div>
     </div>
@@ -829,8 +828,6 @@ function renderGrid() {
   $("vanish-accounts").hidden = !data.vanish || !!f;
   $("vanish-accounts").replaceChildren(...(data.vanish ? [chip("Tous", null), ...accounts.map((a) => chip(a.name, a.id, a))] : []));
   $("owner-name").textContent = data.vanish ? "VANISH : " + (chosen ? chosen.name : "tous les comptes") : data.owner.name;
-  $("vanish").hidden = !data.founder;
-  $("vanish").ariaPressed = String(!!data.vanish);
   $("quota").replaceChildren(size(q.used) + " sur " + size(q.limit), el("i", {}, el("b", { style: "width:" + Math.min(100, q.used / q.limit * 100) + "%" })));
   $("disk-full").textContent = q.full ? "L'espace de stockage d'ONIRIQUE est plein pour le moment : les envois sont fermés. Tes sons restent écoutables." : "";
   // À la racine : les dossiers, puis les projets hors dossier (les miens et ceux enregistrés), du plus récent au plus ancien.
@@ -1404,10 +1401,22 @@ $("project-title").onclick = async () => {
 // ——— Détails d'un titre ———
 let detailsId = null, detailsView = "main";
 let sync = null; // la synchronisation des paroles en cours : { tid, lines: [{ at, text }], i : la prochaine ligne à marquer }
-// La synchronisation a son propre lecteur : le lecteur du site se met en pause, et celui-ci s'arrête dès qu'on la quitte.
+// L'écriture et la synchronisation des paroles ont leur propre lecteur : le lecteur du site se met en pause, et celui-ci
+// s'arrête dès qu'on les quitte.
 const syncAudio = new Audio();
 syncAudio.preload = "auto";
-const syncing = () => $("details").open && detailsView === "lyrics-sync";
+const LYRICS_VIEWS = ["lyrics", "lyrics-sync"];
+const syncing = () => $("details").open && LYRICS_VIEWS.includes(detailsView);
+syncAudio.addEventListener("play", () => player.audio.pause());
+// Le lecteur des paroles : lecture, position et durée ; le même son d'un écran à l'autre, à la même position.
+function syncBar(v) {
+  if (syncAudio.dataset.vid !== String(v.id)) { syncAudio.src = v.url; syncAudio.dataset.vid = v.id; }
+  const playBtn = el("button", { className: "round", id: "sync-play", type: "button", ariaLabel: syncAudio.paused ? "Lecture" : "Pause",
+    onclick: () => (syncAudio.paused ? syncAudio.play().catch(fail) : syncAudio.pause()) }, icon(syncAudio.paused ? "play" : "pause"));
+  const range = el("input", { type: "range", id: "sync-range", className: "sync-range", min: 0, max: syncAudio.duration || v.duration || 0, step: 0.01, value: syncAudio.currentTime, ariaLabel: "Position dans le titre" });
+  range.oninput = () => { syncAudio.currentTime = Number(range.value); };
+  return el("div", { className: "sync-player" }, playBtn, range, el("b", { id: "sync-clock", textContent: OP.time(syncAudio.currentTime) + " / " + OP.time(syncAudio.duration || v.duration) }));
+}
 $("details").addEventListener("close", () => syncAudio.pause());
 player.audio.addEventListener("play", () => syncAudio.pause());
 function syncProgress() {
@@ -1489,7 +1498,7 @@ const creditsList = (credits) => {
 function renderDetails() {
   // Ne pas effacer un nom en cours de saisie quand la page se met à jour (un envoi qui se termine, par exemple).
   if (document.activeElement && document.activeElement.classList.contains("title-edit")) return;
-  if (detailsView !== "lyrics-sync") syncAudio.pause();
+  if (!LYRICS_VIEWS.includes(detailsView)) syncAudio.pause();
   // Un outil ouvert garde son analyse : la fenêtre n'est pas redessinée tant qu'il montre ce même titre.
   const frame = $("details").querySelector(".tool-frame");
   if (frame && frame.dataset.key === detailsView + ":" + detailsId) return;
@@ -1572,7 +1581,7 @@ function renderDetails() {
   } else if (detailsView === "lyrics") {
     const text = el("textarea", { className: "lyrics-edit", value: t.lyrics, maxLength: 20000, placeholder: "Colle les paroles ici, une ligne par ligne…", ariaLabel: "Paroles de " + t.title });
     const saved = el("span", { className: "muted", style: "font-size:13px" });
-    right = [back("Paroles"), el("p", { className: "muted", style: "margin:0", textContent: "Elles s'affichent à côté du projet pendant l'écoute. Synchronise-les pour qu'elles défilent avec le son, ligne par ligne." }), text,
+    right = [back("Paroles"), el("p", { className: "muted", style: "margin:0", textContent: "Elles s'affichent à côté du projet pendant l'écoute. Synchronise-les pour qu'elles défilent avec le son, ligne par ligne." }), syncBar(v), text,
       el("div", { className: "row" },
         el("button", { className: "btn btn-primary", type: "button", textContent: "Enregistrer", onclick: () =>
           api("PATCH", "/me/sounds/tracks/" + t.id, { lyrics: text.value }).then(() => { saved.textContent = "Enregistré."; return refresh(); }, fail) }),
@@ -1581,8 +1590,8 @@ function renderDetails() {
           if (!lines.length) { text.focus(); return; }
           sync = { tid: t.id, lines, i: Math.max(0, lines.findIndex((l) => l.at === null)) };
           if (lines.every((l) => l.at !== null)) sync.i = lines.length;
-          player.audio.pause();
-          syncAudio.src = v.url;
+          // La synchronisation part du début : son premier appui lance le titre.
+          syncAudio.pause(); syncAudio.currentTime = 0;
           detailsView = "lyrics-sync"; renderDetails();
         } }), saved)];
   } else if (detailsView === "lyrics-sync") {
@@ -1610,15 +1619,11 @@ function renderDetails() {
       l.at = null;
       renderDetails(); showNext();
     };
-    const playBtn = el("button", { className: "round", id: "sync-play", type: "button", ariaLabel: syncAudio.paused ? "Lecture" : "Pause",
-      onclick: () => (syncAudio.paused ? syncAudio.play().catch(fail) : syncAudio.pause()) }, icon(syncAudio.paused ? "play" : "pause"));
-    const range = el("input", { type: "range", id: "sync-range", className: "sync-range", min: 0, max: syncAudio.duration || v.duration || 0, step: 0.01, value: syncAudio.currentTime, ariaLabel: "Position dans le titre" });
-    range.oninput = () => { syncAudio.currentTime = Number(range.value); };
     const saved = el("span", { className: "muted", style: "font-size:13px" });
     right = [back("Synchroniser les paroles"),
       el("p", { className: "muted", style: "margin:0", textContent: touch ? "Lance le titre, puis touche Marquer au moment où chaque ligne commence. Touche une ligne pour la reprendre à partir de là."
         : "Lance le titre, puis appuie sur Espace au moment où chaque ligne commence, ↑ pour annuler le dernier repère. Clique une ligne pour la reprendre à partir de là." }),
-      el("div", { className: "sync-player" }, playBtn, range, el("b", { id: "sync-clock", textContent: OP.time(syncAudio.currentTime) + " / " + OP.time(syncAudio.duration || v.duration) })),
+      syncBar(v),
       el("div", { className: "row sync-keys" }, mark, undo),
       el("ol", { className: "group sync-lines" }, ...sync.lines.map((l, i) => el("li", { className: i === sync.i ? "next" : l.at !== null ? "done" : "" },
         el("button", { type: "button", onclick: () => {
@@ -1827,6 +1832,13 @@ async function openSettings() {
       el("div", { className: "row" }, toggleBtn, on ? test : null));
   }
   await drawDevice();
+  // VANISH (fondateurs) : les projets de tous les comptes, en lecture seule, sans prévenir personne.
+  const vanishSwitch = el("input", { type: "checkbox", checked: vanish, ariaLabel: "VANISH" });
+  vanishSwitch.onchange = () => {
+    vanish = vanishSwitch.checked;
+    try { vanish ? sessionStorage.setItem("onirique.vanish", "1") : sessionStorage.removeItem("onirique.vanish"); } catch {}
+    refresh().catch(fail);
+  };
 
   dialog.replaceChildren(
     el("div", { className: "dlg-head" }, el("b", { textContent: "Réglages" }), el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close"))),
@@ -1837,15 +1849,14 @@ async function openSettings() {
       group("mail", events.filter(([key]) => key !== "download").map(([key, label]) => [key, label, key === "play" ? "Si la personne est connectée à son compte" : ""])),
       el("div", { className: "sub-title", textContent: "Mes nouveaux liens d'écoute" }),
       group("links", [["download", "Téléchargement autorisé"], ["requireAccount", "Compte ONIRIQUE exigé pour écouter"]]),
-      el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Chaque lien garde ensuite ses propres réglages, à changer dans sa fenêtre de partage." })));
+      el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Chaque lien garde ensuite ses propres réglages, à changer dans sa fenêtre de partage." }),
+      data.founder ? el("div", { className: "sub-title", textContent: "Fondateurs" }) : null,
+      data.founder ? el("ul", { className: "group" }, el("li", {}, el("div", { className: "item" },
+        el("span", { className: "grow" }, "VANISH", el("small", { textContent: "Voir les sons de tous les comptes, sans prévenir personne" })),
+        el("label", { className: "switch" }, vanishSwitch, el("span"))))) : null));
   if (!dialog.open) dialog.showModal();
 }
 $("settings-open").onclick = openSettings;
-$("vanish").onclick = () => {
-  vanish = !vanish;
-  try { vanish ? sessionStorage.setItem("onirique.vanish", "1") : sessionStorage.removeItem("onirique.vanish"); } catch {}
-  refresh().catch(fail);
-};
 lightClose($("settings"));
 
 (async () => {
