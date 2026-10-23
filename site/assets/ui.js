@@ -73,7 +73,9 @@ html.lite *, html.lite *::before, html.lite *::after { animation: none !importan
   let current = null; // { pop, close }
   function openPop(anchor, pop, onClose) {
     closePop();
-    if (canPop) { pop.popover = "manual"; document.body.append(pop); pop.showPopover(); } else document.body.append(pop);
+    // Dans une fenêtre modale ouverte, le reste de la page ne se clique plus : la liste se range dans la fenêtre.
+    const host = anchor.closest?.("dialog[open]") || document.body;
+    if (canPop) { pop.popover = "manual"; host.append(pop); pop.showPopover(); } else host.append(pop);
     place(anchor, pop);
     current = { pop, anchor, close: onClose };
   }
