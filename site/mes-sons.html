@@ -1892,42 +1892,52 @@ function renderStore() {
   };
   const reload = async (next) => { Object.assign(store, next); renderStore(); await refresh().catch(() => {}); };
 
-  // Le compte de paiement.
-  let account;
-  if (seller.connected) {
-    const off = el("button", { className: "btn btn-ghost", type: "button", textContent: "Débrancher" });
-    off.onclick = () => confirm("Débrancher ce compte ? Tes prods ne pourront plus être achetées tant qu'aucun compte n'est branché.")
-      && busy(off, async () => reload({ seller: await api("DELETE", "/me/sounds/store/seller") }));
-    account = el("ul", { className: "group" }, el("li", { className: "item" }, el("div", { className: "grow" },
-      (seller.provider === "stripe" ? "Stripe" : "PayPal") + " · " + seller.account + (seller.sandbox ? " (mode test)" : ""),
-      el("small", { textContent: seller.provider === "stripe" ? (seller.webhook ? "Webhook branché : chaque paiement est confirmé par Stripe avant la livraison."
-        : "Pas de webhook : rebranche le compte pour que les paiements soient confirmés.") : "Les paiements PayPal sont encaissés par le serveur avant la livraison." })), off));
-  } else {
-    const provider = el("select", {}, el("option", { value: "stripe", textContent: "Stripe" }), el("option", { value: "paypal", textContent: "PayPal" }));
-    const secret = el("input", { type: "password", autocomplete: "off", placeholder: "sk_live_… (ou sk_test_… pour essayer)" });
-    const hook = el("input", { type: "password", autocomplete: "off", placeholder: "whsec_… (facultatif)" });
-    const clientId = el("input", { autocomplete: "off", placeholder: "Client ID de ton application PayPal" });
-    const sandbox = el("input", { type: "checkbox" });
-    const secretLabel = el("span", { textContent: "Clé secrète Stripe" });
-    const stripeFields = el("div", { className: "stack" },
-      fieldOf("Secret du webhook, seulement si Stripe ne peut pas joindre le site (essai en local avec « stripe listen »)", hook));
-    const paypalFields = el("div", { className: "stack", hidden: true }, fieldOf("Client ID", clientId), el("label", { className: "mail-check" }, sandbox, "Mode sandbox (pour essayer)"));
-    provider.onchange = () => {
-      const isStripe = provider.value === "stripe";
-      stripeFields.hidden = !isStripe; paypalFields.hidden = isStripe;
-      secretLabel.textContent = isStripe ? "Clé secrète Stripe" : "Secret de ton application PayPal";
-      secret.placeholder = isStripe ? "sk_live_… (ou sk_test_… pour essayer)" : "";
-    };
-    const go = el("button", { className: "btn btn-primary", type: "submit", textContent: "Brancher le compte" });
-    account = el("form", { className: "stack" }, fieldOf("Prestataire", provider), paypalFields, el("label", { className: "field" }, secretLabel, secret), stripeFields,
-      el("div", { className: "row" }, go));
-    account.onsubmit = (event) => {
-      event.preventDefault();
-      busy(go, async () => reload({ seller: await api("PUT", "/me/sounds/store/seller", provider.value === "stripe"
-        ? { provider: "stripe", secret: secret.value, webhookSecret: hook.value }
-        : { provider: "paypal", clientId: clientId.value, secret: secret.value, sandbox: sandbox.checked }) }));
-    };
-  }
+  // Les comptes de paiement : Stripe (carte bancaire) et PayPal, chacun branché à part ; avec les deux, l'acheteur choisit.
+  const off = (provider, label) => {
+    const b = el("button", { className: "btn btn-ghost", type: "button", textContent: "Débrancher" });
+    b.onclick = () => confirm("Débrancher " + label + " ?") && busy(b, async () => reload({ seller: await api("DELETE", "/me/sounds/store/seller?provider=" + provider) }));
+    return b;
+  };
+  const connectedRow = (title, note, provider) => el("ul", { className: "group" }, el("li", { className: "item" }, el("div", { className: "grow" }, title, el("small", { textContent: note })), off(provider, title)));
+  const stripeBox = seller.stripe
+    ? connectedRow("Stripe · " + seller.stripe.account + (seller.stripe.sandbox ? " (mode test)" : ""), seller.stripe.webhook
+      ? "Paiement par carte. Chaque paiement est confirmé par Stripe (webhook) avant la livraison." : "Pas de webhook : rebranche le compte pour que les paiements soient confirmés.", "stripe")
+    : (() => {
+      const secret = el("input", { type: "password", autocomplete: "off", placeholder: "sk_live_… (ou sk_test_… pour essayer)" });
+      const hook = el("input", { type: "password", autocomplete: "off", placeholder: "whsec_… (facultatif)" });
+      const go = el("button", { className: "btn btn-primary", type: "submit", textContent: "Brancher Stripe" });
+      const form = el("form", { className: "stack" }, fieldOf("Clé secrète Stripe (Développeurs → Clés API, dans ton tableau de bord Stripe)", secret),
+        el("details", {}, el("summary", { className: "muted", style: "cursor:pointer;font-size:13px", textContent: "Essai en local" }),
+          fieldOf("Secret du webhook, seulement si Stripe ne peut pas joindre le site (« stripe listen »)", hook)), el("div", { className: "row" }, go));
+      form.onsubmit = (event) => {
+        event.preventDefault();
+        busy(go, async () => reload({ seller: await api("PUT", "/me/sounds/store/seller", { provider: "stripe", secret: secret.value, webhookSecret: hook.value }) }));
+      };
+      return form;
+    })();
+  const paypalBox = seller.paypal
+    ? connectedRow("PayPal" + (seller.paypal.sandbox ? " (sandbox, pour essayer)" : ""), "Paiement par PayPal. Le paiement est encaissé par le serveur auprès de PayPal avant la livraison.", "paypal")
+    : (() => {
+      const clientId = el("input", { autocomplete: "off", placeholder: "Client ID" });
+      const secret = el("input", { type: "password", autocomplete: "off", placeholder: "Secret" });
+      const sandbox = el("input", { type: "checkbox" });
+      const go = el("button", { className: "btn btn-primary", type: "submit", textContent: "Brancher PayPal" });
+      const form = el("form", { className: "stack" },
+        el("ol", { className: "muted", style: "margin:0;padding-left:20px;font-size:13px;display:grid;gap:4px" },
+          el("li", {}, "Ouvre ", el("a", { href: "https://developer.paypal.com/dashboard/applications/live", target: "_blank", rel: "noopener", textContent: "developer.paypal.com" }), " et connecte-toi avec ton compte PayPal (un compte Business pour encaisser)."),
+          el("li", { textContent: "« Apps & Credentials », onglet « Live », puis « Create App » (un nom au choix, type Merchant)." }),
+          el("li", { textContent: "Copie le Client ID et le Secret de l'application, et colle-les ici." })),
+        fieldOf("Client ID", clientId), fieldOf("Secret", secret),
+        el("label", { className: "mail-check" }, sandbox, "Identifiants de l'onglet « Sandbox » (pour essayer sans vrai paiement)"), el("div", { className: "row" }, go));
+      form.onsubmit = (event) => {
+        event.preventDefault();
+        busy(go, async () => reload({ seller: await api("PUT", "/me/sounds/store/seller", { provider: "paypal", clientId: clientId.value, secret: secret.value, sandbox: sandbox.checked }) }));
+      };
+      return form;
+    })();
+  const account = el("div", { className: "stack" },
+    el("b", { textContent: "Carte bancaire (Stripe)", style: "font-size:14px" }), stripeBox,
+    el("b", { textContent: "PayPal", style: "font-size:14px;margin-top:6px" }), paypalBox);
 
   // Les licences : nom, prix, fichiers livrés, exclusivité et conditions.
   const licenseForm = (l) => {
@@ -2003,7 +2013,7 @@ function renderStore() {
     el("div", { className: "dlg-head" }, el("b", { textContent: "Ventes" }),
       el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close"))),
     el("div", { className: "stack" },
-      el("div", { className: "sub-title", textContent: "Compte de paiement" }), account,
+      el("div", { className: "sub-title", textContent: "Comptes de paiement" }), account,
       el("div", { className: "sub-title", textContent: "Licences" }),
       el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Proposées sur la page d'écoute de chaque prod en vente dont les fichiers sont déposés. Le prix peut changer d'une prod à l'autre." }),
       licenseList,

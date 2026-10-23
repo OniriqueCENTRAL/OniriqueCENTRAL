@@ -124,7 +124,7 @@ try {
     tid = (await call('POST', `/api/me/sounds/projects/${pack}/tracks?filename=Ghost%20150bpm%20Fmin.wav`, { token: beatmaker.token, raw: wav('ecoute'), expect: 201 })).id;
     await call('PUT', '/api/me/sounds/store/seller', { token: beatmaker.token, body: { provider: 'stripe', secret: 'sk_live_court' }, expect: 400 });
     const seller = await call('PUT', '/api/me/sounds/store/seller', { token: beatmaker.token, body: { provider: 'stripe', secret: 'sk_test_' + 'x'.repeat(24) } });
-    assert.deepEqual([seller.connected, seller.sandbox, seller.webhook, seller.account], [true, true, true, 'Studio Test']);
+    assert.deepEqual([seller.connected, seller.stripe.sandbox, seller.stripe.webhook, seller.stripe.account, seller.paypal], [true, true, true, 'Studio Test', null]);
     assert.equal(stripe.hooks[0].url, `https://site.test/api/sounds/stripe/webhook/${beatmaker.id}`);
     await call('PUT', `/api/me/sounds/tracks/${tid}/files/mp3?filename=Ghost.mp3`, { token: beatmaker.token, raw: mp3 });
     await call('PUT', `/api/me/sounds/tracks/${tid}/files/wav?filename=Ghost.wav`, { token: beatmaker.token, raw: wav('wav-livre') });
@@ -229,13 +229,16 @@ try {
     assert.ok(outbox.filter((m) => m.to === 'fondateur@test.local').at(-1).subject.includes('Exclusive'));
   });
 
-  await step('PayPal : compte branché, paiement approuvé puis encaissé par le serveur, la licence est livrée', async () => {
+  await step('PayPal à côté de Stripe : l\'acheteur choisit ; paiement approuvé puis encaissé par le serveur, la licence est livrée', async () => {
     await call('PUT', '/api/me/sounds/store/seller', { token: beatmaker.token, body: { provider: 'paypal', clientId: 'client-paypal', secret: 'mauvais', sandbox: true }, expect: 502 });
     const seller = await call('PUT', '/api/me/sounds/store/seller', { token: beatmaker.token, body: { provider: 'paypal', clientId: 'client-paypal', secret: 'secret-paypal', sandbox: true } });
-    assert.deepEqual([seller.provider, seller.connected, seller.sandbox, seller.webhook], ['paypal', true, true, false]);
+    assert.deepEqual([!!seller.stripe, seller.paypal], [true, { sandbox: true, clientId: 'client-paypal' }]);
     const page = await call('POST', `/api/sounds/share/${share}`, { body: {} });
+    assert.deepEqual(page.pay, ['stripe', 'paypal']);
     const mp3Offer = page.tracks[0].offers.find((o) => o.name === 'MP3');
-    const { url } = await call('POST', `/api/sounds/share/${share}/buy`, { body: { trackId: tid, licenseId: mp3Offer.id } });
+    // Sans choix, la carte (Stripe) ; avec PayPal choisi, la page PayPal.
+    assert.match((await call('POST', `/api/sounds/share/${share}/buy`, { body: { trackId: tid, licenseId: mp3Offer.id } })).url, /checkout\.stripe\.com/);
+    const { url } = await call('POST', `/api/sounds/share/${share}/buy`, { body: { trackId: tid, licenseId: mp3Offer.id, provider: 'paypal' } });
     assert.match(url, /^https:\/\/www\.sandbox\.paypal\.com\/checkoutnow\?token=PP1$/);
     const created = paypal.orders.get('PP1');
     assert.deepEqual(created.amount, { currency_code: 'EUR', value: '29.99' });
@@ -250,6 +253,12 @@ try {
     await call('GET', `/api/sounds/orders/${o.token}`);
     assert.equal(paypal.captures, 1);
     assert.ok(outbox.some((m) => m.to === 'acheteur-paypal@test.fr'));
+    // Débrancher PayPal laisse Stripe ; sans aucun des deux, plus rien n'est achetable.
+    const left = await call('DELETE', '/api/me/sounds/store/seller?provider=paypal', { token: beatmaker.token });
+    assert.deepEqual([!!left.stripe, left.paypal], [true, null]);
+    assert.deepEqual((await call('POST', `/api/sounds/share/${share}`, { body: {} })).pay, ['stripe']);
+    await call('DELETE', '/api/me/sounds/store/seller', { token: beatmaker.token });
+    assert.deepEqual((await call('POST', `/api/sounds/share/${share}`, { body: {} })).tracks[0].offers, []);
   });
 
   console.log(`\n${passed} étapes réussies.`);

@@ -95,7 +95,8 @@ button.buy { border: 0; cursor: pointer; }
 .offer .price { font: 700 15px var(--f-mono); }
 .offer small { grid-column: 2 / -1; color: var(--haze); font-size: 12.5px; }
 .offer details { grid-column: 2 / -1; font-size: 12.5px; color: var(--haze); }
-#buy .row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+#buy .row { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+#buy .btn.paypal { background: #FFC439; color: #111; }
 .stage.maquette { background: rgba(255,255,255,.06); }
 .stage.version { border-color: var(--ember); color: var(--ember); }
 .stage.final { border-color: var(--ember); background: var(--ember); color: var(--night); }
@@ -316,7 +317,7 @@ const creditsLine = (credits) => {
 };
 
 function show(data) {
-  canSimulate = !!data.simulate;
+  canSimulate = !!data.simulate; payMethods = data.pay || [];
   if (data.pass) { pass = data.pass; try { sessionStorage.setItem(PASS, pass); } catch {} }
   $("locked").hidden = $("account").hidden = true;
   $("room").hidden = false;
@@ -380,10 +381,17 @@ function show(data) {
 // contrat arrivent sur la page d'achat (et par e-mail) une fois le paiement confirmé.
 const euros = (cents) => (cents / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: cents % 100 ? 2 : 0 });
 const FILE_LABELS = { mp3: "MP3", wav: "WAV", stems: "Track stems" };
-let canSimulate = false;
+let canSimulate = false, payMethods = [];
 function chooseLicense(it) {
   const dialog = $("buy"), error = el("p", { className: "error" });
-  const pay = el("button", { className: "btn", type: "submit", textContent: "Payer" });
+  // Un bouton par moyen de paiement branché par le beatmaker : carte (Stripe) et PayPal.
+  const LABELS = { stripe: payMethods.length > 1 ? "Payer par carte" : "Payer", paypal: "Payer avec PayPal" };
+  const pays = (payMethods.length ? payMethods : ["stripe"]).map((m) => el("button", { className: "btn" + (m === "paypal" ? " paypal" : ""), type: "button", textContent: LABELS[m] || "Payer",
+    onclick: async (event) => {
+      pays.forEach((b) => { b.disabled = true; }); error.textContent = "";
+      try { location.href = (await api("/buy", { trackId: it.trackId, licenseId: Number(new FormData(form).get("license")), provider: m })).url; }
+      catch (e) { error.textContent = e.message; pays.forEach((b) => { b.disabled = false; }); }
+    } }));
   // Un fondateur peut simuler le paiement pour voir la livraison et le contrat, sans rien payer.
   const fake = canSimulate ? el("button", { className: "back", type: "button", textContent: "Simuler le paiement (fondateur)" }) : "";
   const form = el("form", {}, el("h2", { textContent: it.title }), el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: "Choisis ta licence." }),
@@ -391,13 +399,8 @@ function chooseLicense(it) {
       el("b", { textContent: o.name + (o.exclusive ? " · exclusive" : "") }), el("span", { className: "price", textContent: euros(o.price) }),
       el("small", { textContent: "Fichiers : " + o.files.map((k) => FILE_LABELS[k]).join(", ") }),
       o.terms ? el("details", {}, el("summary", { textContent: "Conditions" }), o.terms) : "")),
-    error, el("div", { className: "row" }, el("button", { className: "back", type: "button", textContent: "Annuler", onclick: () => dialog.close() }), fake, pay));
-  form.onsubmit = async (event) => {
-    event.preventDefault();
-    pay.disabled = true; error.textContent = "";
-    try { location.href = (await api("/buy", { trackId: it.trackId, licenseId: Number(new FormData(form).get("license")) })).url; }
-    catch (e) { error.textContent = e.message; pay.disabled = false; }
-  };
+    error, el("div", { className: "row" }, el("button", { className: "back", type: "button", textContent: "Annuler", onclick: () => dialog.close() }), fake, ...pays));
+  form.onsubmit = (event) => { event.preventDefault(); pays[0].click(); };
   if (fake) fake.onclick = async () => {
     fake.disabled = true; error.textContent = "";
     try { location.href = (await api("/simulate", { trackId: it.trackId, licenseId: Number(new FormData(form).get("license")) })).url; }

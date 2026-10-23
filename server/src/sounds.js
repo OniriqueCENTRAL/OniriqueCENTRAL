@@ -14,7 +14,7 @@ import { escapeHtml } from './mailtemplate.js';
 import { textImage } from './linkpage.js';
 import { push, wants, prefsOf } from './push.js';
 import { mailDraft, packMailHtml } from './packmail.js';
-import { mountBeatStore, offersOf, filesOf, sellerView, licensesOf, licensePricesOf } from './beatstore.js';
+import { mountBeatStore, offersOf, filesOf, sellerView, licensesOf, licensePricesOf, payMethods } from './beatstore.js';
 import { mountPackSend, recipientFor, trackRecipient, coverPalette } from './packsend.js';
 
 db.exec(`
@@ -259,6 +259,15 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_sellers') WHERE name = '
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_sellers') WHERE name = 'webhook_secret'`).get()) {
   db.exec('ALTER TABLE sound_sellers ADD COLUMN webhook_secret TEXT');
   db.exec(`ALTER TABLE sound_sellers ADD COLUMN webhook_id TEXT NOT NULL DEFAULT ''`);
+}
+// PayPal à côté de Stripe : un beatmaker peut brancher les deux, l'acheteur choisit. Un compte PayPal branché avant
+// (dans les colonnes de Stripe) est déplacé dans les siennes.
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_sellers') WHERE name = 'paypal_secret'`).get()) {
+  db.exec(`ALTER TABLE sound_sellers ADD COLUMN paypal_client_id TEXT NOT NULL DEFAULT ''`);
+  db.exec('ALTER TABLE sound_sellers ADD COLUMN paypal_secret TEXT');
+  db.exec('ALTER TABLE sound_sellers ADD COLUMN paypal_sandbox INTEGER NOT NULL DEFAULT 0');
+  db.exec(`UPDATE sound_sellers SET paypal_client_id = client_id, paypal_secret = secret, paypal_sandbox = sandbox,
+    provider = '', client_id = '', secret = NULL, sandbox = 0, account = '' WHERE provider = 'paypal'`);
 }
 /** « c#m », « Bb minor », « F majeur »… → « C# min », « Bb min », « F maj » ; null si ce n'est pas une tonalité. */
 export function musicKey(value) {
@@ -1136,7 +1145,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     res.set('Cache-Control', 'no-store');
     res.json({
       pass: link.password_hash ? passFor(link) : null,
-      ...saveState(req, link), simulate,
+      ...saveState(req, link), simulate, pay: p.kind === 'pack' ? payMethods(p.user_id) : [],
       owner: p.artist || p.author_name || 'ONIRIQUE', ownerAvatar: media(p.author_avatar), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover), background: media(p.background), coverBy: p.cover_by, releaseDate: p.release_date,
       download, about: aboutOf(p.user_id, false),
       tracks: tracks.map((t) => ({

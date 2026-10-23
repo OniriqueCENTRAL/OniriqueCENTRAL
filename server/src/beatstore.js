@@ -41,11 +41,17 @@ export function licensesOf(userId) {
 }
 const licenseView = (l) => ({ id: l.id, name: l.name, price: l.price, files: parse(l.files, []), terms: l.terms, exclusive: !!l.exclusive });
 const sellerRow = (userId) => get('SELECT * FROM sound_sellers WHERE user_id = ?', userId);
-/** Le compte de paiement tel que le beatmaker le voit : jamais sa clé secrète. */
+/** Les comptes de paiement tels que le beatmaker les voit (Stripe et PayPal, branchés ensemble ou non) : jamais leurs secrets. */
 export function sellerView(userId) {
-  const s = sellerRow(userId);
-  return { provider: s?.secret ? s.provider : '', connected: !!s?.secret, sandbox: !!s?.sandbox, account: s?.account || '', clientId: s?.provider === 'paypal' ? s.client_id : '',
-    webhook: !!s?.webhook_secret };
+  const s = sellerRow(userId), stripe = !!(s?.secret && s.provider === 'stripe'), paypal = !!s?.paypal_secret;
+  return { connected: stripe || paypal,
+    stripe: stripe ? { sandbox: !!s.sandbox, account: s.account, webhook: !!s.webhook_secret } : null,
+    paypal: paypal ? { sandbox: !!s.paypal_sandbox, clientId: s.paypal_client_id } : null };
+}
+/** Les moyens de paiement qu'un acheteur peut choisir chez ce beatmaker, Stripe (carte) d'abord. */
+export function payMethods(userId) {
+  const v = sellerView(userId);
+  return [v.stripe && 'stripe', v.paypal && 'paypal'].filter(Boolean);
 }
 
 async function stripeCall(key, method, route, params) {
@@ -80,9 +86,10 @@ async function dropHook(userId) {
   run(`UPDATE sound_sellers SET webhook_secret = NULL, webhook_id = '' WHERE user_id = ?`, userId);
 }
 // Le compte d'un beatmaker avec sa clé en clair, pour parler au prestataire ; null s'il n'est pas branché.
-function sellerKeys(userId) {
+function sellerKeys(userId, provider) {
   const s = sellerRow(userId);
-  return s?.secret ? { provider: s.provider, clientId: s.client_id, secret: unseal(s.secret), sandbox: !!s.sandbox } : null;
+  if (provider === 'paypal') return s?.paypal_secret ? { provider, clientId: s.paypal_client_id, secret: unseal(s.paypal_secret), sandbox: !!s.paypal_sandbox } : null;
+  return s?.secret && s.provider === 'stripe' ? { provider: 'stripe', secret: unseal(s.secret), sandbox: !!s.sandbox } : null;
 }
 
 //------------------------------------------------------------------------------ Fichiers livrés et offres
@@ -105,7 +112,7 @@ export function filesOf(trackId) {
  * prix réglé pour cette prod s'il y en a un (0 : licence pas proposée pour elle).
  */
 export function offersOf(track, sellerId, simulate = false) {
-  if (!track.for_sale || track.sold || !(simulate || sellerRow(sellerId)?.secret)) return [];
+  if (!track.for_sale || track.sold || !(simulate || payMethods(sellerId).length)) return [];
   const have = filesOf(track.id), custom = parse(track.license_prices || '{}', {});
   return licensesOf(sellerId).filter((l) => custom[l.id] !== 0 && l.files.length && l.files.every((k) => have[k]))
     .map((l) => (custom[l.id] ? { ...l, price: custom[l.id] } : l));
@@ -209,8 +216,8 @@ const sellerOrderView = (o) => ({ id: o.id, status: o.status, trackTitle: o.trac
  */
 export async function verifyOrder(order) {
   if (order.status !== 'pending' || !order.provider_ref || order.provider !== 'paypal') return order;
-  const s = sellerKeys(order.seller_id);
-  if (!s || s.provider !== order.provider) return order;
+  const s = sellerKeys(order.seller_id, 'paypal');
+  if (!s) return order;
   let paid = false, email = '', name = '';
   try {
     let o = await paypalCall(s, 'GET', `/v2/checkout/orders/${encodeURIComponent(order.provider_ref)}`);
@@ -312,15 +319,19 @@ export function mountBeatStore(app, { me, track, room, receiveFile, openLink, li
       const seller = { clientId: str(b.clientId, 200), secret: String(b.secret || '').trim().slice(0, 300), sandbox: !!b.sandbox };
       if (!seller.clientId || !seller.secret) throw new HttpError(400, 'Il faut le Client ID et le secret de ton application PayPal.');
       await paypalCall(seller);
-      await dropHook(req.user.id);
-      run(`UPDATE sound_sellers SET provider = 'paypal', client_id = ?, secret = ?, sandbox = ?, account = ?, updated_at = ? WHERE user_id = ?`,
-        seller.clientId, seal(seller.secret), seller.sandbox ? 1 : 0, seller.sandbox ? 'PayPal (sandbox)' : 'PayPal', now(), req.user.id);
+      run('UPDATE sound_sellers SET paypal_client_id = ?, paypal_secret = ?, paypal_sandbox = ?, updated_at = ? WHERE user_id = ?',
+        seller.clientId, seal(seller.secret), seller.sandbox ? 1 : 0, now(), req.user.id);
     } else throw new HttpError(400, 'Choisis Stripe ou PayPal.');
     res.json(sellerView(req.user.id));
   }));
+  // Débrancher l'un des deux (?provider=stripe ou paypal) ; sans précision, les deux.
   app.delete('/api/me/sounds/store/seller', ...me, wrap(async (req, res) => {
-    await dropHook(req.user.id);
-    run(`UPDATE sound_sellers SET provider = '', client_id = '', secret = NULL, sandbox = 0, account = '', updated_at = ? WHERE user_id = ?`, now(), req.user.id);
+    const which = String(req.query.provider || '');
+    if (which !== 'paypal') {
+      await dropHook(req.user.id);
+      run(`UPDATE sound_sellers SET provider = '', client_id = '', secret = NULL, sandbox = 0, account = '', updated_at = ? WHERE user_id = ?`, now(), req.user.id);
+    }
+    if (which !== 'stripe') run(`UPDATE sound_sellers SET paypal_client_id = '', paypal_secret = NULL, paypal_sandbox = 0, updated_at = ? WHERE user_id = ?`, now(), req.user.id);
     res.json(sellerView(req.user.id));
   }));
 
@@ -471,7 +482,10 @@ export function mountBeatStore(app, { me, track, room, receiveFile, openLink, li
     if (!t) throw new HttpError(404, 'Prod introuvable.');
     const l = offersOf(t, p.user_id, simulate).find((x) => x.id === id(req.body.licenseId));
     if (!l) throw new HttpError(400, 'Cette licence n\'est plus disponible pour cette prod.');
-    const s = simulate ? { provider: 'simulation', sandbox: true } : sellerKeys(p.user_id);
+    // Le moyen de paiement choisi par l'acheteur (carte par Stripe, ou PayPal), s'il est branché ; sinon le premier qui l'est.
+    const methods = payMethods(p.user_id);
+    if (!simulate && !methods.length) throw new HttpError(400, 'Ce beatmaker n\'a pas encore branché de moyen de paiement.');
+    const s = simulate ? { provider: 'simulation', sandbox: true } : sellerKeys(p.user_id, methods.includes(req.body.provider) ? req.body.provider : methods[0]);
     const token = crypto.randomBytes(24).toString('base64url');
     const artist = p.artist || p.author_name || 'ONIRIQUE';
     const oid = run(`INSERT INTO sound_orders (token, seller_id, track_id, link_id, track_title, artist, license, amount, provider, sandbox, created_at)
