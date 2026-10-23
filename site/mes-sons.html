@@ -1273,6 +1273,18 @@ const offersFor = (t) => (!data.store || !data.store.seller.connected || !t.forS
   .filter((l) => (t.licensePrices || {})[l.id] !== 0 && l.files.every((k) => (t.files || {})[k]))
   .map((l) => ({ ...l, price: (t.licensePrices || {})[l.id] || l.price })));
 const lowest = (offers) => Math.min(...offers.map((o) => o.price));
+// Ce qui empêche une prod en vente d'être achetable : compte de paiement, licence proposée, fichiers à déposer.
+function saleMissing(t) {
+  const store = data.store, files = t.files || {}, out = [];
+  if (!store || !store.seller.connected) out.push("un compte de paiement (Stripe ou PayPal), à brancher dans « Ventes »");
+  const licenses = (store ? store.licenses : []).filter((l) => (t.licensePrices || {})[l.id] !== 0);
+  if (!licenses.length) out.push("une licence proposée pour cette prod");
+  else if (!licenses.some((l) => l.files.every((k) => files[k]))) {
+    const need = [...new Set(licenses.flatMap((l) => l.files))].filter((k) => !files[k]);
+    out.push((need.length > 1 ? "les fichiers à déposer : " : "le fichier à déposer : ") + need.map((k) => KINDS[k]).join(", ") + " (clic sur ce badge, puis « Fichiers livrés »)");
+  }
+  return out;
+}
 function prodBadges(p, t) {
   if (p.kind !== "pack") return { tempo: [], sale: "" };
   const save = (body) => api("PATCH", "/me/sounds/tracks/" + t.id, body).then(refresh, fail);
@@ -1290,7 +1302,8 @@ function prodBadges(p, t) {
       }),
     ],
     sale: !p.mine ? (label ? el("span", { className: "stage prod" + (offers.length ? " price" : ""), textContent: label }) : "")
-      : prodBadge(label, "+ Vendre", t.sold ? "Vendue en exclusivité" : offers.length ? "En vente : licences et fichiers" : "Mettre la prod en vente", () => openSale(t.id),
+      : prodBadge(label, "+ Vendre", t.sold ? "Vendue en exclusivité" : offers.length ? "En vente : " + offers.map((o) => o.name + " " + euros(o.price)).join(", ")
+        : t.forSale ? "Pas encore achetable. Il manque :\n• " + saleMissing(t).join("\n• ") : "Mettre la prod en vente", () => openSale(t.id),
         offers.length ? "price" : t.forSale ? "price-off" : ""),
   };
 }
