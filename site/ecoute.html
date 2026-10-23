@@ -107,8 +107,9 @@ button.buy { border: 0; cursor: pointer; }
 .trk .len { font: 500 12px var(--f-mono); color: var(--haze); }
 .cover-by { margin-top: 12px; font-size: 14px; color: var(--haze); }
 .cover-by b { color: var(--mist); font-weight: 600; }
-.tline { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.tline b { min-width: 0; }
+/* Le titre garde sa place ; s'il manque de largeur, les badges (BPM, clé, invités) passent à la ligne au lieu de l'écraser. */
+.tline { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
+.tline b { flex: 0 1 auto; min-width: 0; max-width: 100%; }
 .feat { flex: none; max-width: 55%; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.05); font: 600 11px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .trk .credits { display: block; color: var(--haze); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dl { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 8px; color: var(--haze); }
