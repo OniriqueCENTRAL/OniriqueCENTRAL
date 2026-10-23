@@ -430,7 +430,7 @@ header .sn-lang { margin-left: 8px; }
     if (!target) return;
     event.preventDefault();
     history.pushState(null, "", url.hash);
-    goTo(target, !matchMedia("(prefers-reduced-motion: reduce)").matches);
+    goTo(target, !(matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.classList.contains("lite")));
   });
   // Arrivée depuis une autre page avec #section : même recalage une fois la page chargée.
   if (location.hash.length > 1) {

@@ -489,7 +489,7 @@ export function createApp() {
       // Plugins pour lesquels un essai a déjà été lancé (expiré ou non) : l'essai ne se reprend pas.
       trialsUsed: all(`SELECT DISTINCT product_id AS id FROM licenses WHERE user_id = ? AND source = 'trial'`, req.user.id).map((r) => r.id),
       referral: referralView(req.user),
-      rights: rightsOf(req.user), // ce que ce compte peut ouvrir : Mes sons, page de liens, profil d'ingé…
+      rights: rightsOf(req.user), // ce que ce compte peut ouvrir : ONIRIQUE CLOUD, page de liens, profil d'ingé…
     });
   });
 
@@ -1654,7 +1654,7 @@ export function createApp() {
     res.sendFile(fileURLToPath(new URL('potards.html', import.meta.url)));
   });
 
-  // Les droits des rôles (« Droits des rôles » dans le panel) : quels rôles ont Mes sons, la page de liens, etc.
+  // Les droits des rôles (« Droits des rôles » dans le panel) : quels rôles ont ONIRIQUE CLOUD, la page de liens, etc.
   admin.get('/rights', (req, res) => {
     if (req.user.role !== 'founder') throw new HttpError(403, 'Réservé aux fondateurs.');
     res.json({ roles: EDITABLE_ROLES, rights: Object.entries(RIGHTS).map(([id, r]) => ({ id, label: r.label, roles: rolesWith(id).filter((x) => x !== 'founder') })) });

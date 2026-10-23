@@ -393,7 +393,7 @@
  "· lien fermé": [
   "site/mes-sons.html"
  ],
- "· Mes sons": [
+ "· ONIRIQUE CLOUD": [
   "site/ecoute.html"
  ],
  "· ONIRIQUE": [
@@ -465,7 +465,7 @@
  "» comme référence": [
   "site/comparer-mix.html"
  ],
- "» de Mes sons ? Le projet reste chez": [
+ "» de ONIRIQUE CLOUD ? Le projet reste chez": [
   "site/mes-sons.html"
  ],
  "» et toutes ses versions ?": [
@@ -1015,7 +1015,7 @@
  "+ Date": [
   "site/mes-sons.html"
  ],
- "+ Enregistrer dans Mes sons": [
+ "+ Enregistrer dans ONIRIQUE CLOUD": [
   "site/ecoute.html"
  ],
  "+ feat.": [
@@ -1070,7 +1070,7 @@
  "−24 → +24 dB": [
   "site/onirique.html"
  ],
- "✓ Dans Mes sons": [
+ "✓ Dans ONIRIQUE CLOUD": [
   "site/ecoute.html"
  ],
  "✦ ONIRIQUE": [
@@ -2984,7 +2984,7 @@
  "Ce plugin n'est pas encore en vente. Si vous avez reçu une clé de licence, entrez-la dans l'onglet Licences.": [
   "app/renderer/views/library.js"
  ],
- "Ce projet est déjà dans Mes sons : c'est le tien, ou tu y collabores.": [
+ "Ce projet est déjà dans ONIRIQUE CLOUD : c'est le tien, ou tu y collabores.": [
   "server/src/sounds.js"
  ],
  "Ce que ça veut dire": [
@@ -3863,7 +3863,7 @@
  "Confirmation de commande :": [
   "server/src/payments.js"
  ],
- "Confirme : l'icône Mes sons apparaît sur ton écran d'accueil.": [
+ "Confirme : l'icône ONIRIQUE CLOUD apparaît sur ton écran d'accueil.": [
   "site/mes-sons.html"
  ],
  "Confirmer": [
@@ -4241,7 +4241,7 @@
  "dans le dossier «": [
   "site/stems.html"
  ],
- "dans Mes sons": [
+ "dans ONIRIQUE CLOUD": [
   "site/mes-sons.html"
  ],
  "Dans Safari, touche le bouton Partager": [
@@ -5078,7 +5078,7 @@
   "site/assets/site-nav.js",
   "app/renderer/app.js"
  ],
- "En acceptant, le projet apparaît dans ton Mes sons : tu pourras l'écouter, y ajouter des titres et des versions.": [
+ "En acceptant, le projet apparaît dans ton ONIRIQUE CLOUD : tu pourras l'écouter, y ajouter des titres et des versions.": [
   "site/mes-sons.html"
  ],
  "En ascension": [
@@ -6959,7 +6959,7 @@
  "Le format MP3 ajoute un court blanc au début du fichier, de quelques dizaines de millisecondes : la musique ne démarre donc pas à zéro, et tout le morceau glisse hors de la grille une fois importé. L'outil mesure ce blanc et te donne un fichier WAV qui commence exactement sur le premier son, avec le BPM et la tonalité dans son nom. Ce WAV est en 24 bits et en 48 kHz au moins (ou à la fréquence du fichier d'origine si elle est plus haute) : c'est la meilleure qualité que le fichier déposé permet, mais un MP3 converti en WAV ne retrouve pas ce que la compression lui a retiré. Importe ce WAV à la place du MP3 : il tombe sur les temps.": [
   "site/bpm-tonalite.html"
  ],
- "Le garder dans ta page Mes sons": [
+ "Le garder dans ta page ONIRIQUE CLOUD": [
   "site/ecoute.html"
  ],
  "Le lecteur Spotify": [
@@ -7133,7 +7133,7 @@
   "site/accordeur.html",
   "site/tessiture.html"
  ],
- "Le son n'a pas pu être lu : rouvre l'outil depuis Mes sons.": [
+ "Le son n'a pas pu être lu : rouvre l'outil depuis ONIRIQUE CLOUD.": [
   "site/assets/audio-kit.js"
  ],
  "Le son seul ne distingue pas une voix d'un piano ou d'une guitare : ces pistes-là sont rangées dans « Melodie » tant que leur nom n'en dit pas plus. Le type se corrige d'un clic dans le tableau, et le pack suit.": [
@@ -7314,7 +7314,7 @@
   "site/cgv.html",
   "site/pages.mjs"
  ],
- "Les lui montrer dans Mes sons": [
+ "Les lui montrer dans ONIRIQUE CLOUD": [
   "site/confidentialite.html"
  ],
  "Les membres ONIRIQUE peuvent déposer leur musique en cours sur le serveur d'Onirique et la faire écouter par des liens privés. Le membre choisit ce qu'il dépose et à qui il donne un lien ; Onirique ne diffuse jamais ces sons et ne s'en sert à aucune autre fin.": [
@@ -8002,7 +8002,7 @@
  "Mes licences : désactivées": [
   "app/renderer/app.js"
  ],
- "Mes sons": [
+ "ONIRIQUE CLOUD": [
   "site/admin.html",
   "site/compte.html",
   "site/confidentialite.html",
@@ -8011,7 +8011,7 @@
   "server/src/auth.js",
   "server/src/sounds.js"
  ],
- "Mes sons est réservé aux membres ONIRIQUE.": [
+ "ONIRIQUE CLOUD est réservé aux membres ONIRIQUE.": [
   "site/mes-sons.html",
   "server/src/sounds.js"
  ],
@@ -8806,7 +8806,7 @@
  "ONIRIQUE — Ma page de liens": [
   "site/mes-liens.html"
  ],
- "ONIRIQUE — Mes sons": [
+ "ONIRIQUE — ONIRIQUE CLOUD": [
   "site/mes-sons.html"
  ],
  "ONIRIQUE — plugins audio pour la voix": [
@@ -9084,7 +9084,7 @@
  "Ouvrir le panel support": [
   "app/renderer/views/admin.js"
  ],
- "Ouvrir Mes sons": [
+ "Ouvrir ONIRIQUE CLOUD": [
   "site/compte.html",
   "server/src/sounds.js"
  ],
@@ -9477,7 +9477,7 @@
  "Personne pour l'instant": [
   "site/mes-sons.html"
  ],
- "Personne pour l'instant. Envoie le lien d'invitation : la personne l'ouvre, accepte, et le projet apparaît dans son Mes sons.": [
+ "Personne pour l'instant. Envoie le lien d'invitation : la personne l'ouvre, accepte, et le projet apparaît dans son ONIRIQUE CLOUD.": [
   "site/mes-sons.html"
  ],
  "Petit titre": [
@@ -10641,7 +10641,7 @@
  "Retirer de la liste": [
   "site/compte.html"
  ],
- "Retirer de Mes sons": [
+ "Retirer de ONIRIQUE CLOUD": [
   "site/ecoute.html",
   "site/mes-sons.html"
  ],
@@ -10690,7 +10690,7 @@
  "Retour à": [
   "site/mes-sons.html"
  ],
- "Retour à Mes sons": [
+ "Retour à ONIRIQUE CLOUD": [
   "site/mes-sons.html"
  ],
  "Retour au compte": [
@@ -12561,7 +12561,7 @@
  "Une fourchette de revenus pour un nombre d'écoutes.": [
   "site/assets/tools-menu.js"
  ],
- "Une icône Mes sons, qui s'ouvre en plein écran comme une application.": [
+ "Une icône ONIRIQUE CLOUD, qui s'ouvre en plein écran comme une application.": [
   "site/mes-sons.html"
  ],
  "Une instru trop haute pour ta voix, un beat à essayer dix BPM plus vite : dépose le fichier, règle, écoute, télécharge. La hauteur et le tempo se changent l'un sans l'autre.": [

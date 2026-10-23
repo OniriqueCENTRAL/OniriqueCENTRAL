@@ -1,7 +1,8 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=b74e34bc"></script>
+<script src="assets/i18n.js?v=311d5d5d"></script>
+<script src="assets/ui.js?v=1"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Écoute privée</title>
 <meta name="robots" content="noindex, nofollow">
@@ -142,7 +143,7 @@ footer { padding: 30px 0 140px; text-align: center; font-size: 13px; }
     </div>
   </section>
 </main>
-<footer class="muted wrap">Partagé avec <a href="/">ONIRIQUE</a> · Mes sons</footer>
+<footer class="muted wrap">Partagé avec <a href="/">ONIRIQUE</a> · ONIRIQUE CLOUD</footer>
 
 <script src="assets/sounds-player.js?v=9"></script>
 <script>
@@ -235,13 +236,13 @@ function show(data) {
   }));
   $("play-all").replaceChildren(icon("play"));
   $("play-all").onclick = () => (player.item ? player.toggle() : player.play(items, 0));
-  // Un membre ONIRIQUE connecté (qui n'est pas l'auteur) peut garder le projet dans sa page Mes sons.
+  // Un membre ONIRIQUE connecté (qui n'est pas l'auteur) peut garder le projet dans sa page ONIRIQUE CLOUD.
   let saved = data.saved;
   const drawSave = () => {
     $("save").hidden = !data.canSave;
     $("save").classList.toggle("on", saved);
-    $("save").textContent = saved ? "✓ Dans Mes sons" : "+ Enregistrer dans Mes sons";
-    $("save").title = saved ? "Retirer de Mes sons" : "Le garder dans ta page Mes sons";
+    $("save").textContent = saved ? "✓ Dans ONIRIQUE CLOUD" : "+ Enregistrer dans ONIRIQUE CLOUD";
+    $("save").title = saved ? "Retirer de ONIRIQUE CLOUD" : "Le garder dans ta page ONIRIQUE CLOUD";
   };
   drawSave();
   $("save").onclick = async () => {
@@ -268,7 +269,7 @@ async function open(password) {
     }
   }
 }
-// Revenir : à la page d'où l'on vient sur le site (Mes sons, par exemple), sinon à Mes sons pour un membre connecté, sinon à l'accueil.
+// Revenir : à la page d'où l'on vient sur le site (ONIRIQUE CLOUD, par exemple), sinon à ONIRIQUE CLOUD pour un membre connecté, sinon à l'accueil.
 $("back").append(icon("back"), "Revenir");
 $("back").onclick = () => {
   let fromSite = false;

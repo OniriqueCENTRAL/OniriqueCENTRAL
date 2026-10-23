@@ -1,18 +1,19 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=b74e34bc"></script>
+<script src="assets/i18n.js?v=311d5d5d"></script>
+<script src="assets/ui.js?v=1"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ONIRIQUE — Mes sons</title>
+<title>ONIRIQUE — ONIRIQUE CLOUD</title>
 <meta name="robots" content="noindex">
 <link rel="manifest" href="assets/mes-sons.json">
 <meta name="theme-color" content="#0D0809">
 <link rel="apple-touch-icon" href="assets/app-icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Mes sons">
+<meta name="apple-mobile-web-app-title" content="ONIRIQUE CLOUD">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="stylesheet" href="assets/fonts.css">
@@ -43,7 +44,7 @@ button { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
 .wrap { width: 100%; max-width: 1180px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 40px); }
 header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.6); backdrop-filter: blur(14px); padding-top: env(safe-area-inset-top); }
-/* Ajouter Mes sons à l'écran d'accueil (téléphones seulement) */
+/* Ajouter ONIRIQUE CLOUD à l'écran d'accueil (téléphones seulement) */
 .install { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; padding: 9px 14px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); font: 600 13px var(--f-body); cursor: pointer; }
 .install:hover { border-color: var(--ember); }
 .install img { width: 22px; height: 22px; border-radius: 6px; }
@@ -354,7 +355,7 @@ textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opaci
 
   <section id="grid-view" hidden>
     <div class="crumb" id="folder-crumb" hidden>
-      <button class="round" id="folder-back" type="button" aria-label="Retour à Mes sons"></button>
+      <button class="round" id="folder-back" type="button" aria-label="Retour à ONIRIQUE CLOUD"></button>
       <div style="flex:1;min-width:0"><b id="folder-title" style="font:800 clamp(22px,4vw,30px)/1.1 var(--f-display)"></b><small id="folder-count"></small></div>
       <button class="round" id="folder-more" type="button" aria-label="Options du dossier"></button>
     </div>
@@ -626,7 +627,7 @@ function navigate(hash) {
     sec.classList.toggle("no-vt", !vt);
     setTimeout(() => sec.classList.remove("entering", "no-vt"), 1400);
   };
-  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reduced = (matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.classList.contains("lite"));
   if (!document.startViewTransition || reduced) { go(); enter(false); return; }
   const from = opening ? tileArt() : $("cover");
   if (from) from.style.viewTransitionName = "cover";
@@ -675,7 +676,7 @@ function renderGrid() {
     const up = folderPath(f).slice(0, -1).map((x) => x.title);
     $("folder-count").textContent = [up.length ? "dans " + up.join(" / ") : "", folders.length ? count(folders.length, "dossier", "dossiers") : "",
       count(items.length, "projet", "projets")].filter(Boolean).join(" · ");
-    $("folder-back").ariaLabel = $("folder-back").title = up.length ? "Retour à " + up.at(-1) : "Retour à Mes sons";
+    $("folder-back").ariaLabel = $("folder-back").title = up.length ? "Retour à " + up.at(-1) : "Retour à ONIRIQUE CLOUD";
   }
   $("empty").hidden = !!f || tiles.length > 0;
   if (f && !tiles.length) $("tiles").replaceChildren(el("p", { className: "muted", style: "grid-column:1/-1;margin:0",
@@ -759,8 +760,8 @@ function savedTile(x) {
       x.available && { label: "Écouter", icon: "play", onclick: () => playSaved(x) },
       { label: "Déplacer vers…", icon: "chevron", onclick: () => moveMenu(b, x.folderId, (folderId) => api("PATCH", "/me/sounds/saves/" + x.id, { folderId })) },
       "-",
-      { label: "Retirer de Mes sons", icon: "close", danger: true, onclick: () =>
-        confirm("Retirer « " + x.title + " » de Mes sons ? Le projet reste chez " + x.owner + ".") && api("DELETE", "/me/sounds/saves/" + x.id).then(refresh, fail) },
+      { label: "Retirer de ONIRIQUE CLOUD", icon: "close", danger: true, onclick: () =>
+        confirm("Retirer « " + x.title + " » de ONIRIQUE CLOUD ? Le projet reste chez " + x.owner + ".") && api("DELETE", "/me/sounds/saves/" + x.id).then(refresh, fail) },
     ])))), x);
 }
 // Un projet enregistré s'ouvre sur sa page d'écoute ; le mot de passe déjà donné y est repris.
@@ -810,7 +811,7 @@ function folderMenu(anchor, f) {
     } },
     "-",
     { label: "Supprimer le dossier", icon: "close", danger: true, onclick: () =>
-      confirm("Supprimer le dossier « " + f.title + " » ? Ce qu'il contient (projets et dossiers) remonte " + (f.parentId ? "dans « " + folder(f.parentId).title + " »" : "dans Mes sons") + ", rien n'est effacé.")
+      confirm("Supprimer le dossier « " + f.title + " » ? Ce qu'il contient (projets et dossiers) remonte " + (f.parentId ? "dans « " + folder(f.parentId).title + " »" : "dans ONIRIQUE CLOUD") + ", rien n'est effacé.")
       && api("DELETE", "/me/sounds/folders/" + f.id).then(() => { if (folderId() === f.id) location.hash = f.parentId ? "#/f/" + f.parentId : ""; return refresh(); }).catch(fail) },
   ]);
 }
@@ -851,7 +852,7 @@ function renderCollab() {
     ? el("ul", { className: "group people" }, ...p.collaborators.map((u) => el("li", {}, el("img", { src: avatar(u), alt: "" }), el("span", { className: "grow", textContent: u.name }),
       el("button", { className: "mini-btn", type: "button", textContent: "Retirer", onclick: () => confirm("Retirer " + u.name + " du projet ?")
         && api("DELETE", "/me/sounds/projects/" + p.id + "/collabs/" + u.id).then(async () => { await refresh(); renderCollab(); }, (e) => alert(e.message)) }))))
-    : el("p", { className: "muted", style: "margin:0 4px;font-size:14px", textContent: "Personne pour l'instant. Envoie le lien d'invitation : la personne l'ouvre, accepte, et le projet apparaît dans son Mes sons." });
+    : el("p", { className: "muted", style: "margin:0 4px;font-size:14px", textContent: "Personne pour l'instant. Envoie le lien d'invitation : la personne l'ouvre, accepte, et le projet apparaît dans son ONIRIQUE CLOUD." });
   const copy = el("button", { className: "btn btn-primary", type: "button" }, icon("link"), p.inviteUrl ? "Copier le lien d'invitation" : "Créer le lien d'invitation");
   copy.onclick = async () => {
     if (!p.inviteUrl) await invite("POST");
@@ -888,7 +889,7 @@ async function checkInvite() {
     el("div", { className: "share-body" }, el("p", { style: "margin:4px", innerHTML: "" },
       el("img", { src: avatar(info.owner), alt: "", style: "width:28px;height:28px;border-radius:50%;vertical-align:middle;margin-right:8px" }),
       el("b", { textContent: info.owner.name }), " t'invite à collaborer sur « " + info.project + " »."),
-      el("p", { className: "muted", style: "margin:0 4px;font-size:14px", textContent: "En acceptant, le projet apparaît dans ton Mes sons : tu pourras l'écouter, y ajouter des titres et des versions." })),
+      el("p", { className: "muted", style: "margin:0 4px;font-size:14px", textContent: "En acceptant, le projet apparaît dans ton ONIRIQUE CLOUD : tu pourras l'écouter, y ajouter des titres et des versions." })),
     el("div", { className: "share-foot", style: "grid-template-columns:1fr 1fr" }, refuse, accept));
   refuse.onclick = () => { $("collab").close(); location.hash = ""; };
   accept.onclick = async () => {
@@ -1461,7 +1462,7 @@ function renderShare() {
 }
 let dateRow = null;
 
-// Ajouter Mes sons à l'écran d'accueil : proposé sur téléphone, tant que la page n'est pas déjà ouverte depuis l'icône.
+// Ajouter ONIRIQUE CLOUD à l'écran d'accueil : proposé sur téléphone, tant que la page n'est pas déjà ouverte depuis l'icône.
 // Android : la fenêtre d'installation du navigateur quand il la propose ; sinon (et sur iPhone) les gestes à faire.
 let installEvent = null;
 const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
@@ -1479,10 +1480,10 @@ $("install").onclick = async () => {
     return;
   }
   const share = '<svg class="share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Partager"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"/></svg>';
-  $("install-intro").textContent = "Une icône Mes sons, qui s'ouvre en plein écran comme une application.";
+  $("install-intro").textContent = "Une icône ONIRIQUE CLOUD, qui s'ouvre en plein écran comme une application.";
   $("install-steps").innerHTML = ios
     ? "<li><span>Dans Safari, touche le bouton Partager " + share + " en bas de l'écran.</span></li><li><span>Fais défiler et touche « Sur l'écran d'accueil ».</span></li><li><span>Touche « Ajouter ». À la première ouverture, connecte-toi une fois.</span></li>"
-    : "<li><span>Ouvre le menu du navigateur (⋮ en haut à droite).</span></li><li><span>Touche « Ajouter à l'écran d'accueil » ou « Installer l'application ».</span></li><li><span>Confirme : l'icône Mes sons apparaît sur ton écran d'accueil.</span></li>";
+    : "<li><span>Ouvre le menu du navigateur (⋮ en haut à droite).</span></li><li><span>Touche « Ajouter à l'écran d'accueil » ou « Installer l'application ».</span></li><li><span>Confirme : l'icône ONIRIQUE CLOUD apparaît sur ton écran d'accueil.</span></li>";
   $("install-help").showModal();
 };
 lightClose($("install-help"));
@@ -1495,12 +1496,12 @@ lightClose($("install-help"));
     await refresh();
     checkInvite();
   } catch (error) {
-    gate(error.status === 403 ? "<p>Mes sons est réservé aux membres ONIRIQUE.</p>"
+    gate(error.status === 403 ? "<p>ONIRIQUE CLOUD est réservé aux membres ONIRIQUE.</p>"
       : error.status === 401 ? '<p>Ta session a expiré.</p><a class="btn btn-primary" href="compte.html?next=mes-sons">Se reconnecter</a>' : "<p></p>");
     if (error.status !== 403 && error.status !== 401) $("gate").firstChild.textContent = error.message;
   }
 })();
 </script>
-<script src="assets/account.js?v=7"></script>
-<script src="assets/site-nav.js?v=12"></script>
+<script src="assets/account.js?v=8"></script>
+<script src="assets/site-nav.js?v=13"></script>
 </html>

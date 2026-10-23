@@ -1,4 +1,4 @@
-// « Mes sons » : l'espace des membres ONIRIQUE (et des fondateurs) pour leur musique en cours, façon [untitled].
+// « ONIRIQUE CLOUD » : l'espace des membres ONIRIQUE (et des fondateurs) pour leur musique en cours, façon [untitled].
 // Des projets, des titres et leurs versions successives, des liens d'écoute privés (mot de passe, date de fin,
 // téléchargement au choix), les écoutes comptées et des commentaires placés à un moment du titre.
 // Les fichiers vont dans data/sounds/ ; chaque membre a un quota, et plus rien n'entre quand le disque est plein à 80 %.
@@ -120,7 +120,7 @@ CREATE TABLE IF NOT EXISTS sound_saves (
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'folder_id'`).get()) {
   db.exec('ALTER TABLE sound_projects ADD COLUMN folder_id INTEGER REFERENCES sound_folders(id) ON DELETE SET NULL');
 }
-// Un dossier peut être rangé dans un autre (null : à la racine de Mes sons).
+// Un dossier peut être rangé dans un autre (null : à la racine de ONIRIQUE CLOUD).
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_folders') WHERE name = 'parent_id'`).get()) {
   db.exec('ALTER TABLE sound_folders ADD COLUMN parent_id INTEGER REFERENCES sound_folders(id) ON DELETE SET NULL');
 }
@@ -354,7 +354,7 @@ function listeningHtml(v, token) {
 export function mountSounds(app, { requireUser, receiveFile, receiveImage, removeMedia, wrap }) {
   sweepSounds();
   const member = (req, _res, next) => (rolesWith('sounds').includes(req.user.role) ? next()
-    : next(new HttpError(403, 'Mes sons est réservé aux membres ONIRIQUE.')));
+    : next(new HttpError(403, 'ONIRIQUE CLOUD est réservé aux membres ONIRIQUE.')));
   const me = [requireUser, member];
 
   const project = (req, pid) => {
@@ -813,7 +813,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   // ——— Le côté auditeur : ecoute.html?t=<jeton> ———
 
   /** Le lien demandé, s'il est encore valable et que son auteur est toujours membre ; le mot de passe ou le laissez-passer vérifié. */
-  /** Un membre connecté qui n'est pas l'auteur peut enregistrer le projet dans « Mes sons ». */
+  /** Un membre connecté qui n'est pas l'auteur peut enregistrer le projet dans « ONIRIQUE CLOUD ». */
   function saveState(req, link) {
     const viewer = optionalUser(req);
     const p = linkProject(link);
@@ -846,7 +846,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
 
   app.post('/api/sounds/share/:token/save', ...me, (req, res) => {
     const link = openLink(req);
-    if (!saveState(req, link).canSave) throw new HttpError(400, "Ce projet est déjà dans Mes sons : c'est le tien, ou tu y collabores.");
+    if (!saveState(req, link).canSave) throw new HttpError(400, "Ce projet est déjà dans ONIRIQUE CLOUD : c'est le tien, ou tu y collabores.");
     run('INSERT OR IGNORE INTO sound_saves (user_id, link_id, pass, created_at) VALUES (?, ?, ?, ?)',
       req.user.id, link.id, link.password_hash ? passFor(link) : null, now());
     res.status(201).json({ saved: true });
@@ -890,7 +890,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (listenerId && !recent) {
       sendMail(link.owner_email, `${listener.name || listener.email} écoute « ${t.title} » — ONIRIQUE`,
         `${listener.name || listener.email} vient d'écouter « ${t.title} »${link.label ? ` (lien « ${link.label} »)` : ''}.\n\n${config.siteUrl}/mes-sons\n\nONIRIQUE`,
-        undefined, { buttonLabel: 'Ouvrir Mes sons', eyebrow: 'Mes sons' }).catch((error) => console.error('Avis d\'écoute :', error.message));
+        undefined, { buttonLabel: 'Ouvrir ONIRIQUE CLOUD', eyebrow: 'ONIRIQUE CLOUD' }).catch((error) => console.error('Avis d\'écoute :', error.message));
     }
     res.json({ ok: true });
   });
