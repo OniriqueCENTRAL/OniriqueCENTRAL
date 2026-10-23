@@ -72,6 +72,9 @@ h1.title { font: 800 clamp(24px, 5vw, 36px)/1.12 var(--f-display); margin: 10px 
 .save { margin: 10px 0 0 8px; display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); font: 600 13px var(--f-body); cursor: pointer; vertical-align: top; }
 .save:hover { border-color: var(--ember); }
 a.save { text-decoration: none; }
+/* Sous la pochette d'un pack, sur toute sa largeur */
+.save.contact { display: flex; justify-content: center; margin: 14px 0 0; padding: 11px 16px; font-size: 14px; }
+.save.contact[hidden] { display: none; }
 .save[hidden] { display: none; }
 .save.on { background: var(--ember); border-color: var(--ember); color: var(--night); }
 .play-all { width: 54px; height: 54px; flex: none; display: grid; place-items: center; border-radius: 50%; border: 0; background: var(--mist); color: var(--night); cursor: pointer; box-shadow: 0 10px 40px -10px var(--ember); }
@@ -182,6 +185,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1320px; }
     <div>
       <div class="art" id="cover"></div>
       <div class="cover-by" id="cover-by" hidden></div>
+      <a class="save contact" id="contact" target="_blank" rel="noopener" hidden>Contacter le vendeur</a>
     </div>
     <div>
       <div class="head">
@@ -189,7 +193,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1320px; }
           <div class="eyebrow">Écoute privée</div>
           <h1 class="title" id="title"></h1>
           <div class="meta" id="meta"></div>
-          <div class="release" id="release"></div><button class="save" id="save" type="button" hidden></button><a class="save" id="contact" target="_blank" rel="noopener" hidden>Contacter le vendeur</a>
+          <div class="release" id="release"></div><button class="save" id="save" type="button" hidden></button>
         </div>
         <button class="play-all" id="play-all" type="button" aria-label="Tout écouter"></button>
       </div>
