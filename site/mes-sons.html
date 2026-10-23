@@ -1318,7 +1318,8 @@ function syncProgress() {
   if (range && !range.matches(":active")) { range.max = d; range.value = syncAudio.currentTime; }
   if (clock) clock.textContent = OP.time(syncAudio.currentTime) + " / " + OP.time(d);
 }
-syncAudio.addEventListener("timeupdate", syncProgress);
+// Fenêtre fermée (croix, Échap, clic à côté) ou autre vue : le son s'arrête, même si l'évènement « close » se perd.
+syncAudio.addEventListener("timeupdate", () => (syncing() ? syncProgress() : syncAudio.pause()));
 syncAudio.addEventListener("loadedmetadata", syncProgress);
 for (const type of ["play", "pause"]) syncAudio.addEventListener(type, () => {
   const b = document.getElementById("sync-play");
