@@ -64,6 +64,9 @@
   "site/mentions-legales.html",
   "site/pages.mjs"
  ],
+ ", rien n'est effacé.": [
+  "site/mes-sons.html"
+ ],
  ", stéréo.": [
   "site/bpm-tonalite.html"
  ],
@@ -111,6 +114,12 @@
  ": clés, type, dates, plugin concerné": [
   "site/confidentialite.html",
   "site/pages.mjs"
+ ],
+ ": compte ONIRIQUE demandé": [
+  "server/src/sounds.js"
+ ],
+ ": crée ton propre lien pour le faire entendre. Tu pourras le protéger, le limiter dans le temps et le couper à tout moment ; il ne s'ouvrira plus si tu quittes le projet.": [
+  "site/mes-sons.html"
  ],
  ": date, titre écouté et, si l'auditeur est connecté à son compte Onirique, ce compte": [
   "site/confidentialite.html"
@@ -191,6 +200,9 @@
  ": les projets d'autres membres qu'un membre garde dans sa page, et ses dossiers": [
   "site/confidentialite.html"
  ],
+ ": mot de passe demandé": [
+  "server/src/sounds.js"
+ ],
  ": nom indiqué (ou celui de son compte), texte, moment du titre": [
   "site/confidentialite.html"
  ],
@@ -259,6 +271,10 @@
   "site/onirique.html",
   "site/assets/credits.js"
  ],
+ "?w=1920\")": [
+  "site/ecoute.html",
+  "site/mes-sons.html"
+ ],
  "?w=320": [
   "site/mes-liens.html"
  ],
@@ -286,6 +302,9 @@
  ". Voir les": [
   "site/cgv.html"
  ],
+ "../../site": [
+  "server/src/sounds.js"
+ ],
  ".aaxplugin/": [
   "server/src/app.js"
  ],
@@ -304,7 +323,7 @@
  ".lp, .lp * { box-sizing: border-box; } .lp { position: relative; min-height: 100%; color: var(--lp-text); font-family: var(--lp-font); overflow: hidden; isolation: isolate; } .lp-bg { position: absolute; inset: 0; z-index: -1; background: var(--lp-bg); background-size: cover; background-position: center; } .lp-bg::after { content: \"\"; position: absolute; inset: 0; background: rgba(0,0,0,var(--lp-dim)); } .lp-inner { max-width: 580px; margin: 0 auto; padding: 56px 18px 40px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; } .lp-avatar { width: 104px; height: 104px; object-fit: cover; border-radius: 50%; box-shadow: 0 10px 34px -12px rgba(0,0,0,.7); } .lp-avatar.square { border-radius: 22px; } .lp-name { margin: 6px 0 0; font: 700 clamp(22px, 6vw, 30px)/1.15 var(--lp-title); letter-spacing: .01em; overflow-wrap: anywhere; } .lp-bio { margin: 0; max-width: 46ch; font-size: 15px; line-height: 1.5; opacity: .86; white-space: pre-line; overflow-wrap: anywhere; } .lp-icons { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin: 4px 0 6px; } .lp-icons a { display: grid; place-items: center; width: 40px; height: 40px; color: var(--lp-text); border-radius: 50%; transition: transform .15s; } .lp-icons a:hover, .lp-icons a:focus-visible { transform: scale(1.12); outline: none; } .lp-icon { width: 24px; height: 24px; flex: none; background: currentColor; -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; } .lp-links { width: 100%; display: grid; gap: 14px; margin-top: 6px; } .lp-btn { position: relative; display: flex; align-items: center; justify-content: center; min-height: 58px; padding: 14px 54px; text-decoration: none; font: 600 15.5px/1.3 var(--lp-font); color: var(--lp-btn-text); border: 2px solid var(--lp-btn); border-radius: var(--lp-radius); transition: transform .15s, filter .15s; overflow-wrap: anywhere; } .lp-btn .lp-icon { position: absolute; left: 18px; top: 50%; margin-top: -12px; } .lp-btn:hover, .lp-btn:focus-visible { transform: translateY(-2px) scale(1.01); filter: brightness(1.08); outline: none; } .lp-btn.fill { background: var(--lp-btn); } .lp-btn.outline { background: transparent; } .lp-btn.glass { background: color-mix(in srgb, var(--lp-btn) 22%, transparent); border-color: color-mix(in srgb, var(--lp-btn) 70%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); } .lp.shadow .lp-btn { box-shadow: 0 10px 26px -14px rgba(0,0,0,.85); } .lp-foot { margin-top: 26px; font: 600 11px/1 'JetBrains Mono', monospace; letter-spacing: .2em; text-transform: uppercase; color: var(--lp-text); opacity: .55; text-decoration: none; } .lp-foot:hover { opacity: .9; } .lp-empty { opacity: .6; font-size: 14px; } .lp-tiktok { width: 100%; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--lp-btn) 18%, rgba(0,0,0,.35)); border: 1px solid color-mix(in srgb, var(--lp-btn) 50%, transparent); font-size: 13.5px; line-height: 1.45; } .lp-btn .lp-more { position: absolute; right: 20px; top: 50%; width: 9px; height: 9px; margin-top: -7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); opacity: .8; } .lp-sheet { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; } .lp.preview .lp-sheet { position: absolute; } .lp-sheet-back { position: absolute; inset: 0; background: rgba(0,0,0,.6); animation: lp-fade .2s ease-out; } .lp-sheet-card { position: relative; width: 100%; max-width: 480px; max-height: 86%; overflow: auto; padding: 22px 18px calc(22px + env(safe-area-inset-bottom)); border-radius: 26px 26px 0 0; background: color-mix(in srgb, var(--lp-sheet) 92%, #000); color: var(--lp-text); text-align: center; animation: lp-rise .25s ease-out; box-shadow: 0 -20px 60px -20px rgba(0,0,0,.8); } @keyframes lp-fade { from { opacity: 0; } } @keyframes lp-rise { from { transform: translateY(40px); opacity: 0; } } .lp-sheet-close { position: absolute; right: 12px; top: 12px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: rgba(255,255,255,.08); color: inherit; font-size: 15px; cursor: pointer; } .lp-sheet-cover { width: 120px; height: 120px; border-radius: 14px; object-fit: cover; box-shadow: 0 14px 34px -14px rgba(0,0,0,.9); } .lp-sheet-cover.artist { border-radius: 50%; } .lp-sheet-title { margin: 12px 0 0; font: 700 18px/1.25 var(--lp-title); overflow-wrap: anywhere; } .lp-sheet-artist { margin: 4px 0 0; font-size: 14px; opacity: .75; } .lp-sheet-list { display: grid; gap: 8px; margin-top: 18px; text-align: left; } .lp-plat { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--lp-text) 16%, transparent); color: inherit; text-decoration: none; font: 600 15px/1.2 var(--lp-font); } .lp-plat:hover, .lp-plat:focus-visible { background: color-mix(in srgb, var(--lp-text) 8%, transparent); outline: none; } .lp-plat b { flex: 1; font-weight: 600; } .lp-plat em { font: 600 11px/1 'JetBrains Mono', monospace; font-style: normal; letter-spacing: .12em; text-transform: uppercase; padding: 8px 12px; border-radius: 999px; background: var(--lp-btn); color: var(--lp-btn-text); }": [
   "site/assets/linkpage.js"
  ],
- ".op-icon { display: inline-grid; place-items: center; line-height: 0; } .op-pill { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 40; width: min(1120px, calc(100vw - 24px)); display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 8px; border-radius: 999px; border: 1px solid rgba(255,210,214,.16); background: rgba(20,9,11,.92); backdrop-filter: blur(18px); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9), 0 0 40px -18px var(--op-accent, rgba(226,52,68,.55)); } .op-pill[hidden], .op-sheet[hidden], .op-queue[hidden], .op-comments[hidden] { display: none; } .op-cover { flex: none; width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: linear-gradient(135deg, #5C0008, #2A0A0E); border: 1px solid rgba(255,210,214,.16); cursor: pointer; } .op-pill.playing .op-cover { animation: op-spin 9s linear infinite; } @keyframes op-spin { to { transform: rotate(360deg); } } @media (prefers-reduced-motion: reduce) { .op-pill.playing .op-cover { animation: none; } } .op-meta { min-width: 0; width: 170px; flex: none; cursor: pointer; line-height: 1.25; } .op-meta b { display: block; font: 700 13px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .op-meta span { display: block; font-size: 12px; color: var(--haze); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .op-mini { flex: 1; min-width: 200px; height: 44px; cursor: pointer; touch-action: none; display: block; } .op-time { flex: none; font: 500 11px var(--f-mono); color: var(--haze); white-space: nowrap; } .op-btn { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 50%; background: none; color: var(--mist); cursor: pointer; } .op-btn:hover { background: rgba(255,255,255,.06); } .op-btn.on { color: var(--op-accent, var(--ember)); } .op-btn.main { width: 42px; height: 42px; background: var(--mist); color: var(--night); } .op-btn.main:hover { background: #fff; } .op-vol { width: 80px; accent-color: var(--op-accent, var(--ember)); min-height: 0; padding: 0; } .op-sheet, .op-queue { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(80px + env(safe-area-inset-bottom)); z-index: 39; width: min(1120px, calc(100vw - 24px)); max-height: min(62vh, 560px); overflow: auto; padding: 18px; border-radius: 22px; border: 1px solid rgba(255,210,214,.16); background: rgba(20,9,11,.96); backdrop-filter: blur(18px); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9); display: grid; gap: 14px; } .op-head { display: flex; align-items: center; gap: 12px; } .op-head b { flex: 1; min-width: 0; font: 700 16px var(--f-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .op-wave { width: 100%; height: 110px; display: block; cursor: pointer; touch-action: none; } .op-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 13px; color: var(--haze); } .op-tools label { display: inline-flex; flex-direction: row; align-items: center; gap: 8px; font: 400 13px var(--f-body); letter-spacing: 0; text-transform: none; color: var(--haze); } .op-tools input[type=range] { width: 120px; min-height: 0; padding: 0; accent-color: var(--ember); } .op-tools input[type=checkbox] { width: 16px; height: 16px; min-height: 0; margin: 0; accent-color: var(--ember); } .op-chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; border: 1px solid rgba(255,210,214,.16); background: none; color: var(--mist); font: 600 12px var(--f-body); cursor: pointer; text-decoration: none; } .op-chip:hover { border-color: var(--ember); } .op-chip.on { background: var(--op-accent, var(--ember)); border-color: var(--op-accent, var(--ember)); color: var(--night); } .op-comments { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; } .op-comments li { display: flex; gap: 10px; align-items: baseline; } .op-comments button.at { flex: none; font: 600 12px var(--f-mono); color: var(--ember); background: none; border: 0; padding: 0; cursor: pointer; } .op-comments .who { color: var(--haze); } .op-say { display: flex; flex-wrap: wrap; gap: 8px; } .op-say input { flex: 1 1 220px; min-height: 40px; } .op-say input.op-name { flex: 0 1 150px; } .op-queue ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; } .op-queue li button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 8px; border: 0; border-radius: 12px; background: none; color: var(--mist); font: 500 14px var(--f-body); text-align: left; cursor: pointer; } .op-queue li button:hover { background: rgba(255,255,255,.05); } .op-queue li.now button { color: var(--ember); } .op-queue img, .op-queue .op-q-cover { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; flex: none; background: linear-gradient(135deg, #5C0008, #2A0A0E); } .op-queue small { display: block; color: var(--haze); font-size: 12px; } @media (max-width: 1000px) { .op-vol { display: none; } .op-mini { min-width: 120px; } } @media (max-width: 720px) { .op-pill { gap: 4px; padding-right: 8px; } .op-meta { width: auto; flex: 1; } .op-mini, .op-time, .op-hide-sm { display: none; } }": [
+ ".op-icon { display: inline-grid; place-items: center; line-height: 0; } .op-pill { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 40; width: min(1120px, calc(100vw - 24px)); display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 8px; border-radius: 999px; border: 1px solid rgba(255,210,214,.16); background: rgba(20,9,11,.92); backdrop-filter: blur(18px); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9), 0 0 40px -18px var(--op-accent, rgba(226,52,68,.55)); } .op-pill[hidden], .op-sheet[hidden], .op-queue[hidden], .op-comments[hidden] { display: none; } .op-cover { flex: none; width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: linear-gradient(135deg, #5C0008, #2A0A0E); border: 1px solid rgba(255,210,214,.16); cursor: pointer; } .op-pill.playing .op-cover { animation: op-spin 9s linear infinite; } @keyframes op-spin { to { transform: rotate(360deg); } } @media (prefers-reduced-motion: reduce) { .op-pill.playing .op-cover { animation: none; } } .op-meta { min-width: 0; width: 170px; flex: none; cursor: pointer; line-height: 1.25; } .op-meta b { display: block; font: 700 13px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .op-meta b .op-feat, .op-head b .op-feat { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.13)); background: rgba(255,255,255,.05); font: 600 10.5px/1.5 var(--f-body); color: var(--mist); vertical-align: 1px; } .op-meta > span { display: block; font-size: 12px; color: var(--haze); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .op-mini { flex: 1; min-width: 200px; height: 44px; cursor: pointer; touch-action: none; display: block; } .op-time { flex: none; font: 500 11px var(--f-mono); color: var(--haze); white-space: nowrap; } .op-btn { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 50%; background: none; color: var(--mist); cursor: pointer; } .op-btn:hover { background: rgba(255,255,255,.06); } .op-btn.on { color: var(--op-accent, var(--ember)); } .op-btn.main { width: 42px; height: 42px; background: var(--mist); color: var(--night); } .op-btn.main:hover { background: #fff; } .op-vol { width: 80px; accent-color: var(--op-accent, var(--ember)); min-height: 0; padding: 0; } .op-sheet, .op-queue { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(80px + env(safe-area-inset-bottom)); z-index: 39; width: min(1120px, calc(100vw - 24px)); max-height: min(62vh, 560px); overflow: auto; padding: 18px; border-radius: 22px; border: 1px solid rgba(255,210,214,.16); background: rgba(20,9,11,.96); backdrop-filter: blur(18px); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9); display: grid; gap: 14px; } .op-head { display: flex; align-items: center; gap: 12px; } .op-head b { flex: 1; min-width: 0; font: 700 16px var(--f-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .op-wave { width: 100%; height: 110px; display: block; cursor: pointer; touch-action: none; } .op-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 13px; color: var(--haze); } .op-tools label { display: inline-flex; flex-direction: row; align-items: center; gap: 8px; font: 400 13px var(--f-body); letter-spacing: 0; text-transform: none; color: var(--haze); } .op-tools input[type=range] { width: 120px; min-height: 0; padding: 0; accent-color: var(--ember); } .op-tools input[type=checkbox] { width: 16px; height: 16px; min-height: 0; margin: 0; accent-color: var(--ember); } .op-chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; border: 1px solid rgba(255,210,214,.16); background: none; color: var(--mist); font: 600 12px var(--f-body); cursor: pointer; text-decoration: none; } .op-chip:hover { border-color: var(--ember); } .op-chip.on { background: var(--op-accent, var(--ember)); border-color: var(--op-accent, var(--ember)); color: var(--night); } .op-comments { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; } .op-comments li { display: flex; gap: 10px; align-items: baseline; } .op-comments button.at { flex: none; font: 600 12px var(--f-mono); color: var(--ember); background: none; border: 0; padding: 0; cursor: pointer; } .op-comments .who { color: var(--haze); } .op-say { display: flex; flex-wrap: wrap; gap: 8px; } .op-say input { flex: 1 1 220px; min-height: 40px; } .op-say input.op-name { flex: 0 1 150px; } .op-queue ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; } .op-queue li button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 8px; border: 0; border-radius: 12px; background: none; color: var(--mist); font: 500 14px var(--f-body); text-align: left; cursor: pointer; } .op-queue li button:hover { background: rgba(255,255,255,.05); } .op-queue li.now button { color: var(--ember); } .op-queue img, .op-queue .op-q-cover { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; flex: none; background: linear-gradient(135deg, #5C0008, #2A0A0E); } .op-queue small { display: block; color: var(--haze); font-size: 12px; } @media (max-width: 1000px) { .op-vol { display: none; } .op-mini { min-width: 120px; } } /* Les boutons : couleurs et bordures en fondu, petit enfoncement au clic, léger soulèvement des boutons principaux. scale / translate (et non transform) : les éléments déjà placés avec transform (barre, bouton +, panneaux) restent en place. */ button, .btn, .op-chip, a.op-chip, .tile .art, .trk, .item, .dots, .stage, .feat, .play, .round, .fab, .install, .edit-toggle, .add-bar { transition: background-color .22s ease, border-color .22s ease, color .22s ease, box-shadow .25s ease, opacity .2s ease, scale .16s ease, translate .22s ease; } button:active:not(:disabled), .btn:active, .op-chip:active, .stage:active, .feat:active, .dots:active, .install:active, .edit-toggle:active { scale: .94; } .op-btn.main:active, .round.white:active, .play-all:active, .tile .fab-play:active { scale: .9; } .trk:active, .item:active, .add-bar:active { scale: .985; } .tile .art:active { scale: .97; } .btn-primary:hover, .round.white:hover, .play-all:hover, .op-btn.main:hover, .fab:hover { translate: 0 -2px; } .tile .art:hover { translate: 0 -3px; box-shadow: 0 18px 40px -18px rgba(0,0,0,.9); } .tile .fab-play { transition: background-color .2s ease, scale .2s ease, opacity .2s ease; } .tile .art:hover .fab-play { scale: 1.08; } /* Menus, fenêtres et panneaux : ouverture en fondu, avec un léger zoom ou une montée. */ @keyframes op-pop { from { opacity: 0; scale: .96; } } @keyframes op-rise { from { opacity: 0; translate: 0 14px; } } @keyframes op-fade { from { opacity: 0; } } .menu { animation: op-pop .16s ease-out; transform-origin: top center; } dialog[open] { animation: op-pop .22s cubic-bezier(.2, .8, .2, 1); } dialog[open]::backdrop { animation: op-fade .22s ease-out; } .op-sheet, .op-queue, .uploads { animation: op-rise .26s cubic-bezier(.2, .8, .2, 1); } .op-pill { animation: op-rise .35s cubic-bezier(.2, .8, .2, 1); } .details-right > *, .share-body > * { animation: op-fade .25s ease-out both; } @media (prefers-reduced-motion: reduce) { *, *::before, *::after, dialog::backdrop { animation: none !important; transition: none !important; } } @media (max-width: 720px) { .op-pill { gap: 4px; padding-right: 8px; } .op-meta { width: auto; flex: 1; } .op-mini, .op-time, .op-hide-sm { display: none; } } /* Le lecteur plein écran du téléphone. */ .op-full { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; justify-content: center; gap: 18px; overflow: hidden; padding: calc(52px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom)); background: #110a0c; color: var(--mist, #f6eeee); animation: op-rise .3s cubic-bezier(.2, .8, .2, 1); touch-action: none; } .op-full[hidden] { display: none; } .op-full-bg { position: absolute; inset: -60px; z-index: -1; background-size: cover; background-position: center; filter: blur(50px) brightness(.3) saturate(1.2); } .op-full-bg::after { content: \"\"; position: absolute; inset: 0; background: radial-gradient(120% 70% at 50% 35%, transparent, rgba(13,8,9,.85)); } .op-full-top { position: absolute; top: calc(8px + env(safe-area-inset-top)); left: 10px; } .op-full-top .op-btn { width: 44px; height: 44px; } .op-card { position: relative; display: grid; justify-items: center; gap: 22px; padding: 26px 18px 22px; border-radius: 34px; overflow: hidden; background: rgba(255,236,238,.06); border: 1px solid rgba(255,210,214,.1); box-shadow: 0 30px 80px -30px rgba(0,0,0,.9); } .op-card-title { text-align: center; max-width: 100%; } .op-card-title b { display: block; font: 600 clamp(18px, 5.6vw, 23px)/1.25 var(--f-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .op-card-title b .op-feat { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; border: 1px solid rgba(255,210,214,.2); font: 600 11px/1.5 var(--f-body); vertical-align: 3px; } .op-card-title span { display: block; margin-top: 4px; font-size: 15px; color: var(--haze, #b9a9ab); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .op-disc { width: min(66vw, 300px, 34vh); aspect-ratio: 1; border-radius: 50%; object-fit: cover; background: linear-gradient(135deg, #5C0008, #2A0A0E); border: 3px solid rgba(255,236,238,.18); box-shadow: 0 24px 60px -24px rgba(0,0,0,.95), 0 0 70px -30px var(--op-accent, #e23444); } .op-full.playing .op-disc { animation: op-spin 14s linear infinite; } .op-scrub { width: calc(100% + 36px); height: 64px; display: block; touch-action: none; cursor: grab; } .op-full-time { font: 500 15px var(--f-mono, monospace); letter-spacing: .02em; } .op-full-controls { width: 100%; display: flex; align-items: center; justify-content: space-between; } .op-full-controls .op-btn { width: 52px; height: 52px; color: var(--mist, #f6eeee); } .op-full-controls .op-btn svg { width: 28px; height: 28px; } .op-full-controls .op-btn.big { width: 72px; height: 72px; color: #fff; } .op-full-controls .op-btn.big svg { width: 54px; height: 54px; } .op-full-controls .op-btn.on { color: var(--op-accent, var(--ember)); } .op-full-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; } .op-full-bar > div, .op-full-bar > button { display: flex; align-items: center; gap: 6px; height: 62px; padding: 0 10px; border-radius: 999px; background: rgba(255,236,238,.07); border: 1px solid rgba(255,210,214,.1); } .op-full-bar .op-btn { width: 46px; height: 46px; } .op-full-bar svg { width: 24px; height: 24px; } .op-full-bar > button.op-settings { gap: 10px; padding: 0 22px 0 18px; color: var(--mist, #f6eeee); font: 500 17px var(--f-body); cursor: pointer; } .op-full-bar .op-btn.on, .op-full-bar > button.on { color: var(--op-accent, var(--ember)); } html.op-full-open, html.op-full-open body { overflow: hidden; } html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: calc(92px + env(safe-area-inset-bottom)); max-height: 58vh; } @media (max-height: 680px) { .op-card { gap: 12px; padding: 16px 14px; } .op-full { gap: 10px; } .op-scrub { height: 48px; } }": [
   "site/assets/sounds-player.js"
  ],
  ".sn-announce { position: relative; z-index: 60; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 48px; font: 600 14px/1.4 var(--f-body, system-ui); text-align: center; } .sn-announce p { margin: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 16px; } .sn-announce span { letter-spacing: .02em; } .sn-announce a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; } .sn-announce-x { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border: 0; border-radius: 999px; background: rgba(0,0,0,.18); color: inherit; font: 400 20px/1 var(--f-body, system-ui); cursor: pointer; } .sn-announce.tone-ember { background: linear-gradient(90deg, #8c0614, #e23444 60%, #8c0614); color: #fff; } .sn-announce.tone-gold { background: linear-gradient(90deg, #b8862b, #f2c46d 55%, #b8862b); color: #1a0d02; } .sn-announce.tone-calm { background: var(--deep-2, #2a0a0e); color: var(--mist, #f6eeee); border-bottom: 1px solid var(--line, rgba(255,210,214,.16)); }": [
@@ -335,6 +354,9 @@
   "site/admin.html",
   "app/renderer/views/admin.js"
  ],
+ "· avec": [
+  "site/mes-sons.html"
+ ],
  "· Camelot": [
   "site/bpm-tonalite.html"
  ],
@@ -343,6 +365,12 @@
  ],
  "· cliquer pour changer": [
   "site/comparer-mix.html"
+ ],
+ "· de": [
+  "site/mes-sons.html"
+ ],
+ "· en collab": [
+  "site/mes-sons.html"
  ],
  "· en retard": [
   "site/checklist-sortie.html"
@@ -422,11 +450,14 @@
  "« {} » part vers : {}. Environ {} minute(s), un message toutes les trois secondes.": [
   "app/renderer/views/admin.js"
  ],
+ "» ? Ce qu'il contient (projets et dossiers) remonte": [
+  "site/mes-sons.html"
+ ],
+ "» ? Il disparaîtra de ta page ;": [
+  "site/mes-sons.html"
+ ],
  "» ? La vidéo ne sera pas publiée.": [
   "site/compte.html"
- ],
- "» ? Les projets qu'il contient reviennent dans Mes sons, rien n'est effacé.": [
-  "site/mes-sons.html"
  ],
  "» (Deezer, en MP3) : son volume peut différer un peu du titre entier, et l'air au-dessus de 16 kHz y est coupé.": [
   "site/comparer-mix.html"
@@ -488,6 +519,9 @@
  "(max-width: 700px) 92vw, 520px": [
   "site/onirique.html"
  ],
+ "(p.user_id = ? OR p.id IN (SELECT project_id FROM sound_collabs WHERE user_id = ?))": [
+  "server/src/sounds.js"
+ ],
  "(recherche)": [
   "site/mes-liens.html"
  ],
@@ -544,6 +578,9 @@
  ],
  "{} – {} (extrait 30 s).mp3": [
   "site/comparer-mix.html"
+ ],
+ "{} — Écoute privée": [
+  "server/src/sounds.js"
  ],
  "{} — licence définitive": [
   "server/src/payments.js"
@@ -705,6 +742,12 @@
  "{} sur un plugin ONIRIQUE": [
   "server/src/promos.js"
  ],
+ "{} titre{}": [
+  "server/src/sounds.js"
+ ],
+ "{} titre{}{}": [
+  "server/src/sounds.js"
+ ],
  "{} version(s)": [
   "site/admin.html"
  ],
@@ -715,7 +758,8 @@
   "site/assets/pdf-kit.js"
  ],
  "{}-{}.png": [
-  "server/src/linkpage.js"
+  "server/src/linkpage.js",
+  "server/src/sounds.js"
  ],
  "{}-{}.webp": [
   "server/src/app.js"
@@ -753,6 +797,9 @@
  "{}/{}/comments?{}": [
   "server/src/social.js"
  ],
+ "{}/{}/conversations?{}": [
+  "server/src/social.js"
+ ],
  "{}/{}/messages": [
   "server/src/social.js"
  ],
@@ -767,6 +814,9 @@
  ],
  "{}/api/social/instagram/callback": [
   "server/src/social.js"
+ ],
+ "{}/api/sounds/share/{}/apercu.png?v={}": [
+  "server/src/sounds.js"
  ],
  "{}/api/stripe/webhook/{}": [
   "server/src/payments.js"
@@ -813,8 +863,8 @@
  "{}/ecoute?t={}": [
   "server/src/sounds.js"
  ],
- "{}/l/{}": [
-  "server/src/linkpage.js"
+ "{}/l": [
+  "server/src/config.js"
  ],
  "{}/lookup?id={}&country=FR": [
   "server/src/music.js"
@@ -829,6 +879,9 @@
   "server/src/social.js"
  ],
  "{}/mes-sons": [
+  "server/src/sounds.js"
+ ],
+ "{}/mes-sons#/invite/{}": [
   "server/src/sounds.js"
  ],
  "{}/oembed?url={}": [
@@ -959,8 +1012,14 @@
  "+ Ajouter un lien": [
   "site/mes-liens.html"
  ],
+ "+ Date": [
+  "site/mes-sons.html"
+ ],
  "+ Enregistrer dans Mes sons": [
   "site/ecoute.html"
+ ],
+ "+ feat.": [
+  "site/mes-sons.html"
  ],
  "＋ Nouveau code promo": [
   "site/admin.html"
@@ -1016,7 +1075,8 @@
  ],
  "✦ ONIRIQUE": [
   "site/assets/linkpage.js",
-  "server/src/linkpage.js"
+  "server/src/linkpage.js",
+  "server/src/sounds.js"
  ],
  "📎 {} ({} Ko)": [
   "site/admin.html"
@@ -1032,6 +1092,9 @@
  ],
  "$p = Start-Process powershell -Verb RunAs -Wait -PassThru -WindowStyle Hidden -ArgumentList": [
   "app/main/installer.js"
+ ],
+ "0 {}px": [
+  "site/assets/sounds-player.js"
  ],
  "0 0 10px {}": [
   "app/renderer/views/admin.js"
@@ -1530,6 +1593,9 @@
   "site/boutique.html",
   "app/renderer/ui.js"
  ],
+ "Accepter": [
+  "site/mes-sons.html"
+ ],
  "Accès au compte Instagram d'Onirique": [
   "site/confidentialite.html"
  ],
@@ -1777,6 +1843,9 @@
   "site/mes-sons.html",
   "app/renderer/views/licenses.js"
  ],
+ "Ajouter à l'écran d'accueil": [
+  "site/mes-sons.html"
+ ],
  "Ajouter à la file": [
   "site/mes-sons.html"
  ],
@@ -1796,11 +1865,17 @@
   "site/admin.html",
   "app/renderer/views/admin.js"
  ],
+ "Ajouter les artistes invités": [
+  "site/mes-sons.html"
+ ],
  "Ajouter un titre": [
   "app/renderer/views/admin.js"
  ],
  "Ajouter une clé de licence": [
   "app/renderer/views/licenses.js"
+ ],
+ "Ajouter une date (création, enregistrement…)": [
+  "site/mes-sons.html"
  ],
  "Ajouter une date de sortie": [
   "site/mes-sons.html"
@@ -2054,6 +2129,9 @@
  ],
  "Artiste introuvable. Vérifie le nom ou le lien, puis réessaie.": [
   "server/src/popularity.js"
+ ],
+ "Artistes invités de": [
+  "site/mes-sons.html"
  ],
  "assets/bpm-key-worker.js": [
   "site/bpm-tonalite.html",
@@ -2680,7 +2758,7 @@
  "C'est noté : parrainé par {}.": [
   "site/compte.html"
  ],
- "C'est ton propre projet : il est déjà dans Mes sons.": [
+ "C'est ton propre projet.": [
   "server/src/sounds.js"
  ],
  "C'est une information de service (conditions, sécurité, panne), sans publicité : la loi interdit d'envoyer de la publicité aux comptes qui ne l'ont pas acceptée.": [
@@ -2698,6 +2776,10 @@
   "site/gammes.html"
  ],
  "Cadrer l'image": [
+  "site/assets/cropper.js",
+  "app/renderer/cropper.js"
+ ],
+ "Cadrer ta photo": [
   "site/assets/cropper.js",
   "app/renderer/cropper.js"
  ],
@@ -2795,7 +2877,7 @@
  "Ce dont on a besoin entre deux prises : trouver un tempo, une gamme, vérifier un master, préparer un fichier, estimer une sortie. Tout tourne dans ton navigateur, et tes fichiers ne quittent pas ton appareil.": [
   "site/outils.html"
  ],
- "Ce dossier est vide. Range-y des projets avec leur menu ⋯, « Déplacer vers ».": [
+ "Ce dossier est vide. Range-y des projets ou d'autres dossiers avec leur menu ⋯, « Déplacer vers », ou en les faisant glisser dessus.": [
   "site/mes-sons.html"
  ],
  "Ce fichier commence par": [
@@ -2847,6 +2929,9 @@
  "Ce lien d'écoute n'existe pas ou n'est plus valable.": [
   "server/src/sounds.js"
  ],
+ "Ce lien d'écoute n'existe pas, ou n'est plus valable.": [
+  "server/src/sounds.js"
+ ],
  "Ce lien de désinscription n'est pas valable. Vous pouvez aussi vous désinscrire depuis votre page compte.": [
   "server/src/newsletter.js"
  ],
@@ -2859,6 +2944,9 @@
  ],
  "Ce lien n'est ouvert qu'aux personnes connectées à leur compte ONIRIQUE.": [
   "site/ecoute.html"
+ ],
+ "Ce lien n'existe pas, ou n'est plus valable.": [
+  "server/src/sounds.js"
  ],
  "Ce lien Spotify ne donne pas de titre : cherche-le par son nom.": [
   "server/src/reference.js"
@@ -2895,6 +2983,9 @@
  ],
  "Ce plugin n'est pas encore en vente. Si vous avez reçu une clé de licence, entrez-la dans l'onglet Licences.": [
   "app/renderer/views/library.js"
+ ],
+ "Ce projet est déjà dans Mes sons : c'est le tien, ou tu y collabores.": [
+  "server/src/sounds.js"
  ],
  "Ce que ça veut dire": [
   "site/comparer-mix.html"
@@ -2941,6 +3032,9 @@
  ],
  "Ce titre n'a pas d'extrait à écouter.": [
   "server/src/reference.js"
+ ],
+ "Ce titre vient du lien d'un autre membre : demande-lui de te le partager.": [
+  "site/mes-sons.html"
  ],
  "Celle du fichier": [
   "site/convertisseur.html"
@@ -2998,6 +3092,9 @@
  "Cette clé est réservée à une autre adresse e-mail.": [
   "server/src/app.js"
  ],
+ "Cette fonction n'est pas ouverte à ce compte.": [
+  "server/src/app.js"
+ ],
  "Cette formule n'est pas encore ouverte à la vente.": [
   "server/src/payments.js"
  ],
@@ -3008,6 +3105,9 @@
  ],
  "Cette installation": [
   "app/renderer/views/account.js"
+ ],
+ "Cette invitation n'existe pas ou n'est plus valable.": [
+  "server/src/sounds.js"
  ],
  "Cette page de liens n'existe pas, ou plus.": [
   "server/src/linkpage.js"
@@ -3089,6 +3189,9 @@
  "Changer la": [
   "site/transposition.html"
  ],
+ "Changer la date": [
+  "site/mes-sons.html"
+ ],
  "Changer la hauteur ou le tempo d'un morceau, l'un sans l'autre.": [
   "site/assets/tools-menu.js"
  ],
@@ -3097,6 +3200,9 @@
   "app/renderer/views/account.js"
  ],
  "Changer la pochette": [
+  "site/mes-sons.html"
+ ],
+ "Changer le fond": [
   "site/mes-sons.html"
  ],
  "Changer le lien Spotify fait reprendre la pochette du nouveau titre.": [
@@ -3366,6 +3472,9 @@
  "Clics": [
   "site/mes-liens.html"
  ],
+ "Clients": [
+  "site/admin.html"
+ ],
  "Clients et inscrits": [
   "server/src/newsletter.js"
  ],
@@ -3383,6 +3492,9 @@
  ],
  "Cloche, shelf grave, shelf aigu, coupe-bas, coupe-haut. Filtres appariés à l'analogique jusqu'en haut du spectre.": [
   "site/onirique.html"
+ ],
+ "Coche ce que chaque rôle peut utiliser. Les fondateurs ont toujours tout ; un changement vaut tout de suite pour tous les comptes du rôle.": [
+  "site/admin.html"
  ],
  "Coche un ou plusieurs plugins": [
   "site/boutique.html"
@@ -3495,11 +3607,20 @@
  "Codes utilisés": [
   "site/admin.html"
  ],
+ "Collaborateurs": [
+  "site/mes-sons.html"
+ ],
+ "Collaborateurs…": [
+  "site/mes-sons.html"
+ ],
  "Colle le lien de ta page Spotify, de ta chaîne YouTube, de ton profil Instagram… La plateforme est reconnue toute seule. « Bouton » : un grand bouton ; « Icône » : une petite icône en haut de la page ; « Musique » : pour un titre, un album ou un artiste, le visiteur choisit sa plateforme d'écoute (Spotify, Apple Music, Deezer, YouTube Music…). Glisse une ligne pour la déplacer.": [
   "site/mes-liens.html"
  ],
  "Collez le lien Spotify du titre : son nom et sa pochette sont récupérés tout seuls. Le titre apparaît dans la section Crédits de la page d'accueil.": [
   "app/renderer/views/admin.js"
+ ],
+ "color:var(--mist);font-weight:600": [
+  "site/mes-sons.html"
  ],
  "Combien rapportent des écoutes sur Spotify, Apple Music, Deezer, YouTube Music, Amazon Music et Tidal ? Une fourchette indicative, plateforme par plateforme. Gratuit.": [
   "site/revenus-streaming.html"
@@ -3548,7 +3669,8 @@
   "server/src/sounds.js"
  ],
  "Commentaires": [
-  "site/mes-sons.html"
+  "site/mes-sons.html",
+  "site/assets/sounds-player.js"
  ],
  "Commentaires d'un auditeur": [
   "site/confidentialite.html"
@@ -3583,6 +3705,9 @@
  ],
  "Compression opto sur 4 bandes, crémeuse pour la voix. Seuil et gain par bande, écoute en solo et presets dédiés.": [
   "site/onirique.html"
+ ],
+ "Compris": [
+  "site/mes-sons.html"
  ],
  "Compte": [
   "site/accordeur.html",
@@ -3637,6 +3762,9 @@
  ],
  "compte n° {}": [
   "app/renderer/views/support-admin.js"
+ ],
+ "compte ONIRIQUE demandé": [
+  "server/src/sounds.js"
  ],
  "Compte ONIRIQUE exigé": [
   "site/mes-sons.html"
@@ -3734,6 +3862,9 @@
  ],
  "Confirmation de commande :": [
   "server/src/payments.js"
+ ],
+ "Confirme : l'icône Mes sons apparaît sur ton écran d'accueil.": [
+  "site/mes-sons.html"
  ],
  "Confirmer": [
   "app/renderer/views/library.js"
@@ -3866,6 +3997,7 @@
   "site/delais.html"
  ],
  "Copie ce lien :": [
+  "site/ecoute.html",
   "site/mes-liens.html",
   "site/mes-sons.html"
  ],
@@ -3891,6 +4023,9 @@
   "site/mes-liens.html",
   "site/mes-sons.html",
   "app/renderer/views/account.js"
+ ],
+ "Copier le lien d'invitation": [
+  "site/mes-sons.html"
  ],
  "Copier tout": [
   "app/renderer/views/admin.js"
@@ -3935,6 +4070,9 @@
   "site/mes-liens.html"
  ],
  "Couper le lien ? Plus personne ne pourra écouter par lui.": [
+  "site/mes-sons.html"
+ ],
+ "Couper le lien d'invitation": [
   "site/mes-sons.html"
  ],
  "Couper le micro": [
@@ -4035,6 +4173,9 @@
   "site/admin.html",
   "app/renderer/views/admin.js"
  ],
+ "Créer le lien d'invitation": [
+  "site/mes-sons.html"
+ ],
  "Créer le lien et le copier": [
   "site/mes-sons.html"
  ],
@@ -4085,6 +4226,9 @@
  "D# / Eb": [
   "site/gammes.html"
  ],
+ "dans «": [
+  "site/mes-sons.html"
+ ],
  "Dans Google Authenticator, touchez +, puis « Scanner un code QR » et visez ce code. Entrez ensuite le code à 6 chiffres qui s'affiche, pour confirmer.": [
   "site/compte.html"
  ],
@@ -4096,6 +4240,12 @@
  ],
  "dans le dossier «": [
   "site/stems.html"
+ ],
+ "dans Mes sons": [
+  "site/mes-sons.html"
+ ],
+ "Dans Safari, touche le bouton Partager": [
+  "site/mes-sons.html"
  ],
  "dans ton ordre.": [
   "site/onirique.html"
@@ -4121,6 +4271,9 @@
  "Date d'expiration invalide.": [
   "server/src/app.js"
  ],
+ "Date de": [
+  "site/mes-sons.html"
+ ],
  "Date de fin": [
   "site/mes-sons.html"
  ],
@@ -4145,8 +4298,14 @@
  "Date de sortie prévue : {}": [
   "site/assets/sounds-player.js"
  ],
+ "Date du titre": [
+  "site/mes-sons.html"
+ ],
  "Date et pochette annoncées": [
   "site/checklist-sortie.html"
+ ],
+ "Date invalide.": [
+  "server/src/sounds.js"
  ],
  "Date limite du pitch Spotify": [
   "site/checklist-sortie.html"
@@ -4283,6 +4442,9 @@
  ],
  "Déjà abonné": [
   "app/renderer/views/subscription.js"
+ ],
+ "Déjà contacté en privé": [
+  "server/src/social.js"
  ],
  "Déjà mixé avec": [
   "site/credits.html",
@@ -4583,6 +4745,9 @@
  "display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px;align-items:end;margin-top:12px": [
   "site/admin.html"
  ],
+ "display:inline-flex;gap:6px": [
+  "site/ecoute.html"
+ ],
  "Disque : {} sur {} ({} %), dont {} de sons.": [
   "site/admin.html"
  ],
@@ -4647,9 +4812,7 @@
   "site/gammes.html"
  ],
  "Dossier": [
-  "site/admin.html"
- ],
- "Dossier ·": [
+  "site/admin.html",
   "site/mes-sons.html"
  ],
  "Dossier des plugins VST3": [
@@ -4670,6 +4833,9 @@
  "DRIVE": [
   "site/onirique.html"
  ],
+ "Droit": [
+  "site/admin.html"
+ ],
  "Droit de rétractation de 14 jours, cas où il ne s'applique plus, formulaire et délais de remboursement pour les achats Onirique.": [
   "site/remboursement.html",
   "site/pages.mjs"
@@ -4683,6 +4849,9 @@
  "Droits d'auteur et master": [
   "site/partage.html"
  ],
+ "Droits des rôles": [
+  "site/admin.html"
+ ],
  "Drums": [
   "site/assets/stem-kind.js"
  ],
@@ -4694,6 +4863,9 @@
  ],
  "Du corps et de la profondeur dans le grave.": [
   "site/onirique.html"
+ ],
+ "du projet ?": [
+  "site/mes-sons.html"
  ],
  "du studio": [
   "site/outils.html"
@@ -4777,6 +4949,18 @@
  ],
  "Écoute privée": [
   "site/ecoute.html"
+ ],
+ "ÉCOUTE PRIVÉE": [
+  "server/src/sounds.js"
+ ],
+ "Écoute privée · ONIRIQUE": [
+  "server/src/sounds.js"
+ ],
+ "ÉCOUTE PRIVÉE · PROTÉGÉE": [
+  "server/src/sounds.js"
+ ],
+ "Écoute privée sur ONIRIQUE": [
+  "server/src/sounds.js"
  ],
  "Écoute proposée pour": [
   "site/mes-liens.html"
@@ -4894,10 +5078,16 @@
   "site/assets/site-nav.js",
   "app/renderer/app.js"
  ],
+ "En acceptant, le projet apparaît dans ton Mes sons : tu pourras l'écouter, y ajouter des titres et des versions.": [
+  "site/mes-sons.html"
+ ],
  "En ascension": [
   "site/popularite.html"
  ],
  "En attente": [
+  "site/mes-sons.html"
+ ],
+ "en bas de l'écran.": [
   "site/mes-sons.html"
  ],
  "En boutique": [
@@ -4910,6 +5100,9 @@
  "En cas de manquement grave à ces règles, la licence peut être révoquée, après une mise en demeure restée sans effet lorsque le manquement peut être corrigé.": [
   "site/cgv.html",
   "site/pages.mjs"
+ ],
+ "En collab avec": [
+  "site/mes-sons.html"
  ],
  "en cours": [
   "site/admin.html"
@@ -5004,10 +5197,13 @@
  "Enregistré": [
   "site/mes-liens.html"
  ],
+ "Enregistré : valable tout de suite.": [
+  "site/admin.html"
+ ],
  "Enregistré : visible tout de suite sur le site.": [
   "site/admin.html"
  ],
- "Enregistré · onirique.store/l/": [
+ "Enregistré ·": [
   "site/mes-liens.html"
  ],
  "Enregistré.": [
@@ -5029,11 +5225,18 @@
  "Enregistrer la fiche": [
   "site/admin.html"
  ],
+ "Enregistrer la photo": [
+  "site/assets/cropper.js",
+  "app/renderer/cropper.js"
+ ],
  "Enregistrer le mot de passe": [
   "site/compte.html"
  ],
  "Enregistrer le profil d'ingé": [
   "site/compte.html"
+ ],
+ "Enregistrer les droits": [
+  "site/admin.html"
  ],
  "Enregistrez d'abord la page, puis ajoutez l'image.": [
   "server/src/linkpage.js"
@@ -5122,7 +5325,7 @@
  "Envoyé le": [
   "site/admin.html"
  ],
- "Envoyé une fois à chaque personne, juste après la réponse. Instagram l'accepte dans les 7 jours qui suivent le commentaire.": [
+ "Envoyé une fois à chaque personne, juste après la réponse. Instagram l'accepte dans les 7 jours qui suivent le commentaire. Une personne à qui vous avez déjà écrit en privé depuis la sortie de la publication (à la main ou non) ne reçoit rien.": [
   "site/compte.html"
  ],
  "Envoyer": [
@@ -5370,6 +5573,9 @@
  "Exécution du service demandé": [
   "site/confidentialite.html"
  ],
+ "EXISTS (SELECT 1 FROM sound_projects lp WHERE lp.id = COALESCE(l.project_id, (SELECT project_id FROM sound_tracks WHERE id = l.track_id)) AND (lp.user_id = l.user_id OR lp.id IN (SELECT project_id FROM sound_collabs WHERE user_id = l.user_id)))": [
+  "server/src/sounds.js"
+ ],
  "Expand-Archive -LiteralPath {} -DestinationPath {} -Force": [
   "app/main/installer.js"
  ],
@@ -5401,6 +5607,9 @@
  "Extrait de": [
   "site/decoupe.html",
   "site/assets/credits.js"
+ ],
+ "extrait de {}": [
+  "server/src/sounds.js"
  ],
  "Extraits publiés régulièrement": [
   "site/checklist-sortie.html"
@@ -5441,7 +5650,14 @@
  "Facultative. À chaque connexion, en plus du mot de passe, un code à 6 chiffres vous est demandé : celui que donne Google Authenticator sur votre téléphone (ou une application semblable : Microsoft Authenticator, 2FAS, 1Password…). Quelqu'un qui connaîtrait votre mot de passe ne pourrait pas entrer sans votre téléphone.": [
   "site/compte.html"
  ],
+ "Fais défiler et touche « Sur l'écran d'accueil ».": [
+  "site/mes-sons.html"
+ ],
  "Fais glisser l'image pour la placer, zoome avec la molette ou le curseur : ce qui est dans le cadre est ce que montreront la boutique et la page du plugin. Pour une interface en hauteur, « Garder l'image entière » l'envoie sans la rogner : la page du plugin la montre en entier, les cartes en montrent le milieu.": [
+  "site/assets/cropper.js",
+  "app/renderer/cropper.js"
+ ],
+ "Fais glisser la photo pour la placer, zoome avec la molette, deux doigts ou le curseur : ce qui est dans le rond est ce que tout le monde verra.": [
   "site/assets/cropper.js",
   "app/renderer/cropper.js"
  ],
@@ -5457,6 +5673,9 @@
  ],
  "fb://facewebmodal/f?href={}": [
   "site/assets/deeplink.js"
+ ],
+ "feat. (artistes invités, séparés par des virgules ; vide pour retirer)": [
+  "site/mes-sons.html"
  ],
  "Fermer": [
   "site/mes-sons.html",
@@ -5583,8 +5802,7 @@
   "app/renderer/ui.js"
  ],
  "Fondateurs": [
-  "site/mes-liens.html",
-  "site/assets/account.js"
+  "site/admin.html"
  ],
  "Fondu d'entrée": [
   "site/decoupe.html"
@@ -5625,6 +5843,9 @@
  ],
  "Forme d'onde : fais glisser les bords pour choisir le passage": [
   "site/decoupe.html"
+ ],
+ "Forme d'onde : glisser pour avancer ou reculer": [
+  "site/assets/sounds-player.js"
  ],
  "Forme de la photo": [
   "site/mes-liens.html"
@@ -5779,6 +6000,9 @@
  "grid-column:1/-1;margin:0": [
   "site/mes-sons.html"
  ],
+ "grid-template-columns:1fr 1fr": [
+  "site/mes-sons.html"
+ ],
  "group people": [
   "site/mes-sons.html"
  ],
@@ -5793,7 +6017,8 @@
  ],
  "Hanken Grotesk": [
   "site/assets/linkpage.js",
-  "server/src/linkpage.js"
+  "server/src/linkpage.js",
+  "server/src/sounds.js"
  ],
  "Harmonic minor (mineure harmonique)": [
   "site/gammes.html"
@@ -5882,6 +6107,9 @@
  "Icône": [
   "site/mes-liens.html"
  ],
+ "id,text,timestamp,username,from{id,username}": [
+  "server/src/social.js"
+ ],
  "Identifiant de machine invalide.": [
   "server/src/app.js"
  ],
@@ -5893,6 +6121,9 @@
  ],
  "if (Test-Path -LiteralPath {}) { try { Remove-Item -LiteralPath {} -Recurse -Force }": [
   "app/main/installer.js"
+ ],
+ "Ignoré": [
+  "site/compte.html"
  ],
  "II": [
   "site/gammes.html"
@@ -5916,6 +6147,9 @@
  "Il vous appartient de sauvegarder vos projets et vos réglages. Notre responsabilité ne peut pas être engagée pour un dommage causé par un usage du produit contraire à sa documentation, ou par un événement de force majeure. Rien dans ces conditions ne limite les droits que la loi accorde aux consommateurs.": [
   "site/cgv.html",
   "site/pages.mjs"
+ ],
+ "Ils écoutent tout, ajoutent des titres et des versions, modifient noms, étapes, crédits et notes. Ils peuvent aussi le partager par leurs propres liens d'écoute. Supprimer et inviter restent à toi ; ce qu'ils envoient compte dans ton espace.": [
+  "site/mes-sons.html"
  ],
  "Image": [
   "site/mes-liens.html"
@@ -6231,7 +6465,8 @@
  ],
  "JetBrains Mono": [
   "site/assets/linkpage.js",
-  "server/src/linkpage.js"
+  "server/src/linkpage.js",
+  "server/src/sounds.js"
  ],
  "Jour de sortie": [
   "site/checklist-sortie.html"
@@ -6350,6 +6585,9 @@
   "site/bpm-tonalite.html",
   "site/comparer-mix.html"
  ],
+ "L'ancien lien ne marchera plus": [
+  "site/mes-sons.html"
+ ],
  "L'ancienne adresse ne s'ouvrira plus": [
   "site/mes-sons.html"
  ],
@@ -6393,6 +6631,9 @@
  ],
  "L'équipe ONIRIQUE": [
   "server/src/mailtemplate.js"
+ ],
+ "L'espace de l'auteur du projet est plein : il doit faire de la place pour que tu envoies d'autres sons.": [
+  "server/src/sounds.js"
  ],
  "L'espace de musique des membres ONIRIQUE. Quand le disque du serveur est plein à 80 %, plus aucun envoi n'est accepté. Réservé aux fondateurs.": [
   "site/admin.html"
@@ -6542,10 +6783,8 @@
  "La note est écrite en notation anglaise, celle des logiciels de musique (C, D, E… pour do, ré, mi…), suivie de son octave : A4 est le la à 440 Hz. L'aiguille indique l'écart en cents, c'est-à-dire en centièmes de demi-ton : dans la zone verte, à moins de 5 cents, la note est juste à l'oreille.": [
   "site/accordeur.html"
  ],
- "La page de liens est réservée aux fondateurs d'ONIRIQUE.": [
-  "site/mes-liens.html"
- ],
- "La page de liens est réservée aux fondateurs.": [
+ "La page de liens est réservée aux membres ONIRIQUE.": [
+  "site/mes-liens.html",
   "server/src/linkpage.js"
  ],
  "La page lit ces formats, mais n'écrit que du WAV et du MP3, les deux que tous les logiciels et tous les services acceptent.": [
@@ -6714,6 +6953,9 @@
  "le fichier téléchargé n'a pas la bonne empreinte": [
   "app/main/mac-update.js"
  ],
+ "Le fond doit faire 8 Mo au plus.": [
+  "site/mes-sons.html"
+ ],
  "Le format MP3 ajoute un court blanc au début du fichier, de quelques dizaines de millisecondes : la musique ne démarre donc pas à zéro, et tout le morceau glisse hors de la grille une fois importé. L'outil mesure ce blanc et te donne un fichier WAV qui commence exactement sur le premier son, avec le BPM et la tonalité dans son nom. Ce WAV est en 24 bits et en 48 kHz au moins (ou à la fréquence du fichier d'origine si elle est plus haute) : c'est la meilleure qualité que le fichier déposé permet, mais un MP3 converti en WAV ne retrouve pas ce que la compression lui a retiré. Importe ce WAV à la place du MP3 : il tombe sur les temps.": [
   "site/bpm-tonalite.html"
  ],
@@ -6813,7 +7055,7 @@
   "site/remboursement.html",
   "site/pages.mjs"
  ],
- "Le profil d'ingé est réservé aux fondateurs.": [
+ "Le profil d'ingé n'est pas ouvert à ce compte.": [
   "server/src/app.js"
  ],
  "Le résultat est-il toujours juste ?": [
@@ -7023,6 +7265,9 @@
  ],
  "Les aigus se tassent, les sibilances s'arrondissent, une compression lente colle la voix au mix.": [
   "site/onirique.html"
+ ],
+ "Les artistes invités": [
+  "site/mes-sons.html"
  ],
  "Les auditeurs qui ne sont pas connectés à un compte ONIRIQUE sont comptés sans être nommés.": [
   "site/mes-sons.html"
@@ -7276,8 +7521,17 @@
  "Lien copié : envoyez-le à vos amis.": [
   "app/renderer/views/account.js"
  ],
+ "Lien copié.": [
+  "site/ecoute.html"
+ ],
  "Lien copié. Envoie-le à tes amis.": [
   "site/compte.html"
+ ],
+ "Lien d'écoute protégé": [
+  "server/src/sounds.js"
+ ],
+ "Lien d'écoute protégé, partagé sur ONIRIQUE{}.": [
+  "server/src/sounds.js"
  ],
  "Lien de la boutique avec ce code copié.": [
   "app/renderer/views/admin.js"
@@ -7295,6 +7549,9 @@
  "Lien envoyé à": [
   "site/onirique.html",
   "site/assets/site-nav.js"
+ ],
+ "Lien introuvable": [
+  "server/src/sounds.js"
  ],
  "Lien introuvable.": [
   "server/src/sounds.js"
@@ -7597,11 +7854,17 @@
   "site/mes-sons.html",
   "site/assets/sounds-player.js"
  ],
+ "margin-left:12px;vertical-align:middle;font-size:14px": [
+  "site/ecoute.html"
+ ],
  "margin-top:8px;gap:8px;flex-wrap:wrap": [
   "site/admin.html"
  ],
  "margin:0 0 8px;font:800 18px/1.3 var(--f-display)": [
   "site/admin.html"
+ ],
+ "margin:0 4px;font-size:13px": [
+  "site/mes-sons.html"
  ],
  "margin:0 4px;font-size:14px": [
   "site/mes-sons.html"
@@ -7671,6 +7934,7 @@
   "app/renderer/views/account.js"
  ],
  "Membres ONIRIQUE": [
+  "site/mes-liens.html",
   "site/mes-sons.html"
  ],
  "Mensuel": [
@@ -7742,7 +8006,9 @@
   "site/admin.html",
   "site/compte.html",
   "site/confidentialite.html",
+  "site/mes-sons.html",
   "site/onirique.html",
+  "server/src/auth.js",
   "server/src/sounds.js"
  ],
  "Mes sons est réservé aux membres ONIRIQUE.": [
@@ -7786,6 +8052,9 @@
  ],
  "Message supprimé.": [
   "app/renderer/views/support-admin.js"
+ ],
+ "messages.limit(50){from,created_time}": [
+  "server/src/social.js"
  ],
  "Mesure": [
   "site/admin.html",
@@ -7857,6 +8126,10 @@
  ],
  "MID": [
   "site/onirique.html"
+ ],
+ "min(460px, 100%)": [
+  "site/assets/cropper.js",
+  "app/renderer/cropper.js"
  ],
  "min(760px, 100%)": [
   "site/assets/cropper.js",
@@ -7939,6 +8212,7 @@
  "Modifier": [
   "site/admin.html",
   "site/compte.html",
+  "site/mes-sons.html",
   "app/renderer/views/admin.js"
  ],
  "Modifier « {} »": [
@@ -8054,6 +8328,9 @@
  ],
  "Mot de passe changé. Vos autres appareils sont déconnectés.": [
   "site/compte.html"
+ ],
+ "mot de passe demandé": [
+  "server/src/sounds.js"
  ],
  "Mot de passe du lien": [
   "site/mes-sons.html"
@@ -8338,7 +8615,13 @@
  "Nouveau dossier": [
   "site/mes-sons.html"
  ],
+ "Nouveau dossier dedans…": [
+  "site/mes-sons.html"
+ ],
  "Nouveau dossier…": [
+  "site/mes-sons.html"
+ ],
+ "Nouveau lien d'invitation": [
   "site/mes-sons.html"
  ],
  "Nouveau message": [
@@ -8442,6 +8725,9 @@
  ],
  "Offert avec votre rôle": [
   "site/boutique.html"
+ ],
+ "Offrir tous les plugins à tous les clients ? Plus personne n'aurait à les acheter.": [
+  "site/admin.html"
  ],
  "Ombre sous les boutons": [
   "site/mes-liens.html"
@@ -8626,11 +8912,8 @@
  "ONIRIQUE:{}": [
   "server/src/totp.js"
  ],
- "onirique.store/l/": [
+ "onirique.online/": [
   "site/mes-liens.html"
- ],
- "onirique.store/l/{}": [
-  "server/src/linkpage.js"
  ],
  "onirique2:{}": [
   "app/main/installer.js"
@@ -8740,6 +9023,7 @@
   "site/tessiture.html",
   "site/transposition.html",
   "site/volume-lufs.html",
+  "site/assets/account.js",
   "site/assets/site-nav.js",
   "site/assets/tools-menu.js"
  ],
@@ -8763,6 +9047,9 @@
  ],
  "Ouvre la voix, de la présence jusqu'à l'air.": [
   "site/onirique.html"
+ ],
+ "Ouvre le menu du navigateur (⋮ en haut à droite).": [
+  "site/mes-sons.html"
  ],
  "Ouvrir": [
   "site/mes-sons.html",
@@ -8849,7 +9136,11 @@
   "site/onirique.html"
  ],
  "Page de liens": [
-  "site/compte.html"
+  "site/compte.html",
+  "server/src/auth.js"
+ ],
+ "Page introuvable.": [
+  "server/src/sounds.js"
  ],
  "page Support": [
   "site/mentions-legales.html",
@@ -8948,8 +9239,12 @@
   "app/renderer/views/account.js",
   "app/renderer/views/admin.js"
  ],
+ "par « Mes licences »": [
+  "site/admin.html"
+ ],
  "par {}": [
-  "app/renderer/views/admin.js"
+  "app/renderer/views/admin.js",
+  "server/src/sounds.js"
  ],
  "Par {}": [
   "site/assets/credits.js"
@@ -9029,12 +9324,16 @@
  "Partage des droits d'un titre — ONIRIQUE": [
   "site/partage.html"
  ],
+ "Partagé par {} · {}": [
+  "server/src/sounds.js"
+ ],
  "Partage ton lien. Ton ami a {} % de remise sur son premier plugin ONIRIQUE ; toi, tu reçois un code de -{} % dès qu'il fait son premier achat": [
   "site/compte.html"
  ],
  "Partager": [
   "site/compte.html",
-  "site/mes-sons.html"
+  "site/mes-sons.html",
+  "site/assets/sounds-player.js"
  ],
  "Partager le projet": [
   "site/mes-sons.html"
@@ -9082,6 +9381,12 @@
  "Pas encore d'écoute. Partage ce titre ou son projet pour le faire entendre.": [
   "site/mes-sons.html"
  ],
+ "Pas encore de commentaire : écris le premier, il sera placé à ce moment du titre.": [
+  "site/assets/sounds-player.js"
+ ],
+ "Pas encore de commentaire. Ceux qui écoutent tes liens peuvent en laisser un à un moment précis du titre.": [
+  "site/assets/sounds-player.js"
+ ],
  "Pas encore de compte ?": [
   "site/onirique.html"
  ],
@@ -9099,6 +9404,9 @@
  ],
  "Pas le fichier de ta référence ? Cherche-la": [
   "site/comparer-mix.html"
+ ],
+ "Pas plus de {} niveaux de dossiers.": [
+  "server/src/sounds.js"
  ],
  "Pas pour la qualité : un fichier 44,1 kHz passé en 96 kHz ne gagne aucun détail. Cela sert à mettre un fichier au format d'un projet ou d'un cahier des charges.": [
   "site/convertisseur.html"
@@ -9167,6 +9475,9 @@
   "app/renderer/views/admin.js"
  ],
  "Personne pour l'instant": [
+  "site/mes-sons.html"
+ ],
+ "Personne pour l'instant. Envoie le lien d'invitation : la personne l'ouvre, accepte, et le projet apparaît dans son Mes sons.": [
   "site/mes-sons.html"
  ],
  "Petit titre": [
@@ -9382,6 +9693,9 @@
  "plus haut": [
   "site/bpm-tonalite.html"
  ],
+ "Plus personne ne pourra rejoindre le projet par lui": [
+  "site/mes-sons.html"
+ ],
  "Plus que {} ami{} acheteur{} avant ton plugin offert.": [
   "site/compte.html"
  ],
@@ -9567,6 +9881,9 @@
  "Pourquoi une fourchette": [
   "site/revenus-streaming.html"
  ],
+ "pourra t'inviter à nouveau.": [
+  "site/mes-sons.html"
+ ],
  "Pré-délai": [
   "site/delais.html"
  ],
@@ -9639,6 +9956,9 @@
  "private, max-age=600": [
   "server/src/app.js"
  ],
+ "Privé : pas de lien à toi": [
+  "site/mes-sons.html"
+ ],
  "Privé : toi seulement": [
   "site/mes-sons.html"
  ],
@@ -9709,6 +10029,9 @@
  "Profil d'ingé": [
   "site/compte.html"
  ],
+ "Profil d'ingé (crédits)": [
+  "server/src/auth.js"
+ ],
  "Profil d'ingé enregistré.": [
   "site/compte.html"
  ],
@@ -9762,6 +10085,9 @@
  "public, max-age=30": [
   "server/src/linkpage.js"
  ],
+ "public, max-age=3600": [
+  "server/src/sounds.js"
+ ],
  "public, max-age=60": [
   "server/src/app.js"
  ],
@@ -9801,6 +10127,9 @@
  ],
  "Puis-je essayer un plugin avant de l'acheter ?": [
   "site/onirique.html"
+ ],
+ "px;top:": [
+  "site/mes-sons.html"
  ],
  "Q de la bande sélectionnée": [
   "site/onirique.html"
@@ -9895,6 +10224,12 @@
  "Qui touche quoi sur un titre, dans une feuille à signer.": [
   "site/assets/tools-menu.js"
  ],
+ "Quitter «": [
+  "site/mes-sons.html"
+ ],
+ "Quitter le projet": [
+  "site/mes-sons.html"
+ ],
  "Quota : entre 0,1 et 1000 Go.": [
   "server/src/sounds.js"
  ],
@@ -9968,6 +10303,9 @@
  "Réduire": [
   "app/renderer/app.js"
  ],
+ "Réduire le lecteur": [
+  "site/assets/sounds-player.js"
+ ],
  "réécouter": [
   "site/popularite.html"
  ],
@@ -9997,6 +10335,9 @@
  "Refusé.": [
   "server/src/app.js"
  ],
+ "Refuser": [
+  "site/mes-sons.html"
+ ],
  "register:{}": [
   "server/src/app.js"
  ],
@@ -10008,6 +10349,7 @@
  ],
  "Réglages": [
   "site/mes-sons.html",
+  "site/assets/sounds-player.js",
   "app/renderer/views/admin.js"
  ],
  "Régler un correcteur de hauteur": [
@@ -10142,6 +10484,9 @@
  "Répéter le titre": [
   "site/assets/sounds-player.js"
  ],
+ "replies{from}": [
+  "server/src/social.js"
+ ],
  "Répondre": [
   "site/admin.html",
   "app/renderer/views/support-admin.js"
@@ -10180,6 +10525,9 @@
  ],
  "Réponses automatiques": [
   "site/compte.html"
+ ],
+ "Réponses automatiques Instagram": [
+  "server/src/auth.js"
  ],
  "Réponses automatiques sur Instagram": [
   "site/confidentialite.html"
@@ -10272,6 +10620,7 @@
   "site/admin.html",
   "site/compte.html",
   "site/mes-liens.html",
+  "site/mes-sons.html",
   "site/partage.html",
   "app/renderer/views/account.js",
   "app/renderer/views/admin.js"
@@ -10307,6 +10656,9 @@
  "Retirer l'image de {} ?": [
   "app/renderer/views/admin.js"
  ],
+ "Retirer la date": [
+  "site/mes-sons.html"
+ ],
  "Retirer la date de sortie": [
   "site/mes-sons.html"
  ],
@@ -10329,7 +10681,13 @@
  "Retirer la version {} ?": [
   "app/renderer/views/admin.js"
  ],
+ "Retirer le fond": [
+  "site/mes-sons.html"
+ ],
  "Retour": [
+  "site/mes-sons.html"
+ ],
+ "Retour à": [
   "site/mes-sons.html"
  ],
  "Retour à Mes sons": [
@@ -10373,6 +10731,9 @@
  ],
  "Retune Speed, Flex-Tune, Humanize, Natural Vibrato, Formant et Throat. Sortie MIDI des notes chantées.": [
   "server/src/seed.js"
+ ],
+ "Revenir": [
+  "site/ecoute.html"
  ],
  "Revenus de l'enregistrement (master)": [
   "site/partage.html"
@@ -10442,11 +10803,17 @@
  "rgba(226,52,68,.8)": [
   "site/onirique.html"
  ],
+ "rgba(246,238,238,.3)": [
+  "site/assets/sounds-player.js"
+ ],
  "rgba(246,238,238,.32)": [
   "site/assets/sounds-player.js"
  ],
  "rgba(246,238,238,.5)": [
   "site/mes-sons.html"
+ ],
+ "rgba(246,238,238,.8)": [
+  "site/assets/sounds-player.js"
  ],
  "rgba(255, 170, 90, 0.4)": [
   "app/renderer/app.js"
@@ -10502,7 +10869,9 @@
   "app/renderer/cropper.js"
  ],
  "rgba(255,236,238,.7)": [
-  "site/onirique.html"
+  "site/onirique.html",
+  "site/assets/cropper.js",
+  "app/renderer/cropper.js"
  ],
  "rgba(255,236,238,.75)": [
   "site/comparer-mix.html"
@@ -10516,6 +10885,10 @@
  ],
  "rgba(255,236,238,0)": [
   "site/onirique.html"
+ ],
+ "rgba(5,3,4,.62)": [
+  "site/assets/cropper.js",
+  "app/renderer/cropper.js"
  ],
  "rgba(5,3,4,.86)": [
   "site/assets/cropper.js",
@@ -10800,6 +11173,12 @@
  "Session expirée.": [
   "site/admin.html"
  ],
+ "Seul l'auteur du projet peut faire ça.": [
+  "server/src/sounds.js"
+ ],
+ "Seul l'auteur du projet peut retirer un collaborateur.": [
+  "server/src/sounds.js"
+ ],
  "Seul un fondateur ou le partenaire concerné peut régler ce compte.": [
   "server/src/app.js"
  ],
@@ -10842,6 +11221,9 @@
  "Shorts YouTube": [
   "site/compte.html",
   "site/assets/account.js"
+ ],
+ "Shorts YouTube programmés": [
+  "server/src/auth.js"
  ],
  "shot framed": [
   "app/renderer/views/library.js"
@@ -10969,6 +11351,9 @@
   "site/mentions-legales.html",
   "site/pages.mjs"
  ],
+ "Sorti le": [
+  "server/src/sounds.js"
+ ],
  "Sortie": [
   "site/admin.html",
   "site/assets/credits.js",
@@ -10978,10 +11363,19 @@
  "Sortie annoncée partout": [
   "site/checklist-sortie.html"
  ],
+ "Sortie prévue le": [
+  "server/src/sounds.js"
+ ],
+ "sounds-apercu:{}": [
+  "server/src/sounds.js"
+ ],
  "sounds-comment:{}": [
   "server/src/sounds.js"
  ],
  "sounds-cover:{}": [
+  "server/src/sounds.js"
+ ],
+ "sounds-invite:{}": [
   "server/src/sounds.js"
  ],
  "sounds-password:{}": [
@@ -11047,6 +11441,9 @@
  ],
  "Squirrel": [
   "app/main/installer.js"
+ ],
+ "stage date": [
+  "site/mes-sons.html"
  ],
  "Start-Process -FilePath {} -Wait -PassThru": [
   "app/main/installer.js"
@@ -11253,6 +11650,9 @@
  "Sur combien d'ordinateurs puis-je l'utiliser ?": [
   "site/onirique.html"
  ],
+ "Sur l'écran d'accueil": [
+  "site/mes-sons.html"
+ ],
  "Sur la plupart des plateformes, une écoute est comptée après 30 secondes. Sur Spotify, un titre doit en outre dépasser 1 000 écoutes sur douze mois pour générer des revenus.": [
   "site/revenus-streaming.html"
  ],
@@ -11304,6 +11704,9 @@
  ],
  "t.project_id = ?": [
   "server/src/sounds.js"
+ ],
+ "t'invite à collaborer sur «": [
+  "site/mes-sons.html"
  ],
  "TA LICENCE": [
   "site/onirique.html"
@@ -11500,6 +11903,7 @@
   "site/admin.html"
  ],
  "Terminé": [
+  "site/mes-sons.html",
   "app/renderer/views/admin.js"
  ],
  "Tes basses ne sont pas assez au centre : en mono ou en club, elles perdent de la force. Garde le sub et la basse au milieu.": [
@@ -11718,6 +12122,12 @@
  "totp_step INTEGER": [
   "server/src/db.js"
  ],
+ "Touche « Ajouter ». À la première ouverture, connecte-toi une fois.": [
+  "site/mes-sons.html"
+ ],
+ "Touche « Ajouter à l'écran d'accueil » ou « Installer l'application ».": [
+  "site/mes-sons.html"
+ ],
  "Toucher la vraie interface": [
   "site/onirique.html"
  ],
@@ -11773,6 +12183,9 @@
  ],
  "Tous les plugins lui sont offerts.": [
   "site/admin.html"
+ ],
+ "Tous les plugins offerts": [
+  "server/src/auth.js"
  ],
  "tous les plugins ONIRIQUE": [
   "app/renderer/views/subscription.js"
@@ -11930,6 +12343,9 @@
  "Tu chantes": [
   "site/tessiture.html"
  ],
+ "Tu collabores sur ce projet de": [
+  "site/mes-sons.html"
+ ],
  "Tu ne connais pas la tonalité de ton instru ? Dépose-la dans le": [
   "site/gammes.html"
  ],
@@ -12028,6 +12444,9 @@
  "Un délai ou une reverb calés sur le tempo se fondent dans le morceau au lieu de le brouiller. Entre ton BPM : toutes les valeurs sont en millisecondes, prêtes à recopier.": [
   "site/delais.html"
  ],
+ "Un dossier ne peut pas aller dans lui-même ni dans un de ses sous-dossiers.": [
+  "server/src/sounds.js"
+ ],
  "Un écart de moins de 1,5 dB ne s'entend presque pas. Une référence est un repère, pas une cible : deux bons mixes du même style diffèrent toujours un peu.": [
   "site/comparer-mix.html"
  ],
@@ -12048,6 +12467,9 @@
  ],
  "Un lien vient de partir : attendez encore {} s avant d'en demander un nouveau.": [
   "server/src/app.js"
+ ],
+ "un membre": [
+  "server/src/sounds.js"
  ],
  "Un message à tous les comptes doit être une information de service, sans publicité : cochez la case qui le confirme.": [
   "server/src/newsletter.js"
@@ -12116,9 +12538,13 @@
  "Un titre du même style · WAV de préférence": [
   "site/comparer-mix.html"
  ],
+ "Un titre extrait de {}": [
+  "server/src/sounds.js"
+ ],
  "Unbounded": [
   "site/assets/linkpage.js",
-  "server/src/linkpage.js"
+  "server/src/linkpage.js",
+  "server/src/sounds.js"
  ],
  "Une dernière étape": [
   "app/renderer/app.js"
@@ -12134,6 +12560,9 @@
  ],
  "Une fourchette de revenus pour un nombre d'écoutes.": [
   "site/assets/tools-menu.js"
+ ],
+ "Une icône Mes sons, qui s'ouvre en plein écran comme une application.": [
+  "site/mes-sons.html"
  ],
  "Une instru trop haute pour ta voix, un beat à essayer dix BPM plus vite : dépose le fichier, règle, écoute, télécharge. La hauteur et le tempo se changent l'un sans l'autre.": [
   "site/transposition.html"
@@ -12201,12 +12630,17 @@
  "url('{}')": [
   "site/assets/credits.js"
  ],
+ "url(\"": [
+  "site/ecoute.html",
+  "site/mes-sons.html"
+ ],
  "url(\"{}?w=1280\") center / cover": [
   "site/assets/linkpage.js"
  ],
  "url(\"{}\")": [
   "site/admin.html",
   "site/assets/demo-player.js",
+  "site/assets/sounds-player.js",
   "app/renderer/demo-player.js"
  ],
  "url(\"/assets/icons/{}.svg\")": [
@@ -12215,6 +12649,9 @@
  ],
  "use strict": [
   "site/onirique.html"
+ ],
+ "UTC": [
+  "server/src/sounds.js"
  ],
  "Utilisateur": [
   "site/admin.html",
@@ -12455,6 +12892,9 @@
  ],
  "Vitesse de modulation": [
   "site/delais.html"
+ ],
+ "Vitesse, boucle et téléchargement": [
+  "site/assets/sounds-player.js"
  ],
  "Vocal Glue": [
   "site/onirique.html"
@@ -12777,6 +13217,9 @@
  ],
  "width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.4);color:var(--mist);font:500 14px var(--f-body);color-scheme:dark": [
   "site/admin.html"
+ ],
+ "width:28px;height:28px;border-radius:50%;vertical-align:middle;margin-right:8px": [
+  "site/mes-sons.html"
  ],
  "window.OniriqueAnnounce&&OniriqueAnnounce({});": [
   "server/src/app.js"

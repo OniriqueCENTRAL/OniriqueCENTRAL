@@ -53,6 +53,8 @@ export const config = {
   lemonVariants: { once: env.LEMON_VARIANT_ONCE || '', month: env.LEMON_VARIANT_MONTH || '', year: env.LEMON_VARIANT_YEAR || '' },
   // Adresse du site où se trouve la page compte (lien de réinitialisation du mot de passe).
   siteUrl: (env.SITE_URL || env.PUBLIC_URL || `http://localhost:${env.PORT || 4850}`).replace(/\/+$/, ''),
+  // Adresse des pages de liens, suivie du pseudo : un domaine à elles (LINKS_URL=https://onirique.online), sinon <site>/l.
+  linksUrl: (env.LINKS_URL || `${(env.SITE_URL || env.PUBLIC_URL || `http://localhost:${env.PORT || 4850}`).replace(/\/+$/, '')}/l`).replace(/\/+$/, ''),
   smtpHost: env.SMTP_HOST || '',
   smtpPort: Number(env.SMTP_PORT || 587),
   smtpUser: env.SMTP_USER || '',

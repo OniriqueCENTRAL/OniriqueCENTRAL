@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=33fbad51"></script>
+<script src="assets/i18n.js?v=b74e34bc"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -252,7 +252,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
       </form>
     </div>
 
-    <!-- Réservé aux fondateurs : leur page « link in bio », éditée dans mes-liens.html -->
+    <!-- Réservé aux membres ONIRIQUE et aux fondateurs : leur page « link in bio », éditée dans mes-liens.html -->
     <div class="panel" id="liens-panel" hidden>
       <div class="eyebrow">Page de liens</div>
       <div class="between">
@@ -381,7 +381,8 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
   <nav class="legal" aria-label="Pages légales"><a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="remboursement.html">Rétractation et remboursement</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a></nav>
 </main>
 
-<script src="assets/account.js?v=6"></script>
+<script src="assets/cropper.js?v=2"></script>
+<script src="assets/account.js?v=7"></script>
 <script src="assets/site-nav.js?v=12"></script>
 <script>
 // Le site relaie /api vers le serveur ONIRIQUE CENTRAL (même origine : pas de CORS à gérer).
@@ -444,10 +445,12 @@ function show(me) {
   const role = { vip: "ONIRIQUE", abrasion: "Abrasion", relic: "Relic", admin: "Admin", founder: "Fondateur" }[me.user.role];
   $("email-line").textContent = me.user.email + (role ? " · " + role : "");
   $("profile-name").value = me.user.name || "";
-  // Profil d'ingé : les fondateurs seulement. Sans photo d'ingé, une silhouette (jamais la photo du compte).
-  $("inge").hidden = me.user.role !== "founder";
-  $("liens-panel").hidden = me.user.role !== "founder";
-  $("sons-panel").hidden = !["vip", "founder"].includes(me.user.role);
+  // Ce que le compte peut ouvrir dépend des droits de son rôle (réglés par les fondateurs dans le panel admin).
+  // Profil d'ingé : sans photo d'ingé, une silhouette (jamais la photo du compte).
+  const rights = me.rights || [];
+  $("inge").hidden = !rights.includes("engineer");
+  $("liens-panel").hidden = !rights.includes("links");
+  $("sons-panel").hidden = !rights.includes("sounds");
   $("eng-name").value = me.user.engineerName || "";
   $("eng-avatar").src = me.user.engineerAvatar || "assets/logo-small.png";
   $("eng-remove").hidden = !me.user.engineerAvatar;
@@ -459,16 +462,16 @@ function show(me) {
   $("verify-panel").hidden = me.user.emailVerified !== false;
   if (a2fStage !== "setup") showA2f(me.user.twoFactor ? "on" : "off");
   $("verify-email").textContent = me.user.email;
-  // Shorts YouTube : les fondateurs seulement. Chargé une fois par compte, pour ne pas effacer une saisie en cours.
-  $("youtube").hidden = me.user.role !== "founder";
+  // Shorts YouTube : chargé une fois par compte, pour ne pas effacer une saisie en cours.
+  $("youtube").hidden = !rights.includes("youtube");
   if (!$("youtube").hidden && show.youtube !== me.user.id) {
     show.youtube = me.user.id;
     loadYoutube().then(() => {
       if (youtubeResult) say("yt-notice", youtubeResult === "ok" ? "Chaîne reliée." : youtubeResult, youtubeResult !== "ok");
     });
   }
-  // Réponses automatiques Instagram : les fondateurs seulement, chargé une fois par compte.
-  $("social").hidden = me.user.role !== "founder";
+  // Réponses automatiques Instagram : chargé une fois par compte.
+  $("social").hidden = !rights.includes("instagram");
   if (!$("social").hidden && show.social !== me.user.id) {
     show.social = me.user.id;
     loadSocial().then(() => {
@@ -613,6 +616,7 @@ $("form").onsubmit = async (event) => {
     $("password").value = "";
     const me = await api("GET", "/me");
     show(me);
+    if (new URLSearchParams(location.search).get("next") === "mes-sons") { location.href = "mes-sons.html"; return; }
     if (new URLSearchParams(location.search).get("next") === "telecharger" && me.user.emailVerified !== false) window.OniriqueDownload?.open();
   } catch (error) {
     $("error").textContent = error.message;
@@ -677,7 +681,7 @@ $("eng-form").onsubmit = async (event) => {
   }
 };
 
-// Photo de profil : recadrée en carré et réduite à 512 px ici, dans le navigateur, avant l'envoi.
+// Photo de profil : cadrée par le membre (déplacer, zoomer, dans un rond), en carré de 512 px, dans le navigateur avant l'envoi.
 $("avatar-pick").onclick = () => $("avatar-file").click();
 $("avatar-file").onchange = async (event) => {
   const file = event.target.files[0];
@@ -685,14 +689,11 @@ $("avatar-file").onchange = async (event) => {
   if (!file) return;
   say("avatar-notice", "");
   try {
-    const image = await createImageBitmap(file).catch(() => { throw new Error("Ce fichier n'est pas une image lisible."); });
-    const side = Math.min(image.width, image.height);
-    const canvas = Object.assign(document.createElement("canvas"), { width: 512, height: 512 });
-    const pen = canvas.getContext("2d");
-    pen.fillStyle = "#0d0809"; // sous une image transparente : la nuit de la charte, pas du noir pur
-    pen.fillRect(0, 0, 512, 512);
-    pen.drawImage(image, (image.width - side) / 2, (image.height - side) / 2, side, side, 0, 0, 512, 512);
-    const blob = await new Promise((done) => canvas.toBlob(done, "image/jpeg", 0.9));
+    const url = URL.createObjectURL(file);
+    const cut = await OniriqueCropper.open(url, { avatar: true }).catch(() => { throw new Error("Ce fichier n'est pas une image lisible."); })
+      .finally(() => URL.revokeObjectURL(url));
+    if (!cut) return;
+    const blob = cut.blob;
     const response = await fetch("/api/me/avatar", { method: "PUT", headers: { Authorization: "Bearer " + saved(), "Content-Type": "image/jpeg" }, body: blob });
     if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "La photo n'a pas pu être envoyée.");
     show(await api("GET", "/me"));
@@ -1155,6 +1156,7 @@ $("logout").onclick = async () => {
   if (!saved()) { show(null); $("notice").textContent = verified && verified + (verified.startsWith("Adresse") ? " Connectez-vous." : ""); return; }
   try {
     const me = await api("GET", "/me");
+    if (new URLSearchParams(location.search).get("next") === "mes-sons") { location.href = "mes-sons.html"; return; }
     show(me);
     // Compte prêt (adresse validée) : le choix Windows / Mac s'ouvre tout de suite.
     if (wantsDownload && me.user.emailVerified !== false) window.OniriqueDownload?.open();

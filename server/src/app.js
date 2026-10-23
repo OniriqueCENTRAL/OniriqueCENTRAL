@@ -8,7 +8,7 @@ import { all, get, run, now, transaction, grantFounders, setting, setSetting } f
 import {
   HttpError, hashPassword, verifyPassword, createSession, destroySession,
   requireUser, requireVerified, requireAdmin, optionalUser, rateLimit, validEmail, publicUser, createResetToken, consumeResetToken,
-  ROLES, PARTNERS, isStaff, partnerOf, canSelfLicense,
+  ROLES, PARTNERS, isStaff, partnerOf, canSelfLicense, RIGHTS, EDITABLE_ROLES, rolesWith, can, rightsOf,
   createVerifyToken, consumeVerifyToken, mustVerify, shouldConfirm,
 } from './auth.js';
 import { mailEnabled, sendMail } from './mail.js';
@@ -488,6 +488,7 @@ export function createApp() {
       // Plugins pour lesquels un essai a déjà été lancé (expiré ou non) : l'essai ne se reprend pas.
       trialsUsed: all(`SELECT DISTINCT product_id AS id FROM licenses WHERE user_id = ? AND source = 'trial'`, req.user.id).map((r) => r.id),
       referral: referralView(req.user),
+      rights: rightsOf(req.user), // ce que ce compte peut ouvrir : Mes sons, page de liens, profil d'ingé…
     });
   });
 
@@ -539,7 +540,7 @@ export function createApp() {
   mountSounds(app, { requireUser, receiveFile, receiveImage, removeMedia, wrap });
 
   // La photo d'ingé d'un fondateur : celle des crédits, distincte de la photo du compte.
-  const engineerOnly = (req) => { if (req.user.role !== 'founder') throw new HttpError(403, "Le profil d'ingé est réservé aux fondateurs."); };
+  const engineerOnly = (req) => { if (!can(req.user, 'engineer')) throw new HttpError(403, "Le profil d'ingé n'est pas ouvert à ce compte."); };
   app.put('/api/me/engineer-avatar', requireUser, wrap(async (req, res) => {
     engineerOnly(req);
     rateLimit(`avatar:${req.user.id}`, 20);
@@ -589,8 +590,10 @@ export function createApp() {
   //============================================================================
   //  Shorts YouTube programmés (page compte) : les fondateurs seulement
   //============================================================================
-  const team = (req, res, next) => requireUser(req, res, (error) => next(error
-    || (req.user.role === 'founder' ? undefined : new HttpError(403, 'Réservé aux fondateurs.'))));
+  const allowed = (right) => (req, res, next) => requireUser(req, res, (error) => next(error
+    || (can(req.user, right) ? undefined : new HttpError(403, "Cette fonction n'est pas ouverte à ce compte."))));
+  const team = allowed('youtube');
+  const instagram = allowed('instagram');
   const ownVideo = (req) => {
     const video = get('SELECT * FROM youtube_videos WHERE id = ? AND user_id = ?', int(req.params.id, 0), req.user.id);
     if (!video) throw new HttpError(404, 'Vidéo introuvable.');
@@ -666,9 +669,9 @@ export function createApp() {
     return automation;
   };
 
-  app.get('/api/social', team, (req, res) => res.json(social.socialState(req.user.id)));
+  app.get('/api/social', instagram, (req, res) => res.json(social.socialState(req.user.id)));
 
-  app.post('/api/social/instagram/connect', team, (req, res) => {
+  app.post('/api/social/instagram/connect', instagram, (req, res) => {
     if (!social.platformConfigured()) throw new HttpError(503, "La connexion à Instagram n'est pas encore réglée sur le serveur.");
     res.json({ url: social.connectUrl(req.user.id) });
   });
@@ -683,24 +686,24 @@ export function createApp() {
     res.redirect(`${config.siteUrl}/compte?social=${encodeURIComponent(result)}`);
   }));
 
-  app.delete('/api/social/instagram/account', team, (req, res) => {
+  app.delete('/api/social/instagram/account', instagram, (req, res) => {
     social.disconnect(req.user.id);
     res.json({ ok: true });
   });
 
-  app.get('/api/social/instagram/posts', team, wrap(async (req, res) => res.json(await social.recentPosts(req.user.id))));
+  app.get('/api/social/instagram/posts', instagram, wrap(async (req, res) => res.json(await social.recentPosts(req.user.id))));
 
-  app.post('/api/social/automations', team, (req, res) => {
+  app.post('/api/social/automations', instagram, (req, res) => {
     const id = social.saveAutomation(req.user.id, req.body);
     res.status(201).json(social.automationView(get('SELECT * FROM social_automations WHERE id = ?', id)));
   });
 
-  app.patch('/api/social/automations/:id', team, (req, res) => {
+  app.patch('/api/social/automations/:id', instagram, (req, res) => {
     const id = social.saveAutomation(req.user.id, req.body, ownAutomation(req));
     res.json(social.automationView(get('SELECT * FROM social_automations WHERE id = ?', id)));
   });
 
-  app.delete('/api/social/automations/:id', team, (req, res) => {
+  app.delete('/api/social/automations/:id', instagram, (req, res) => {
     run('DELETE FROM social_automations WHERE id = ?', ownAutomation(req).id);
     res.json({ ok: true });
   });
@@ -708,7 +711,7 @@ export function createApp() {
   app.post('/api/me/profile', requireUser, (req, res) => {
     run('UPDATE users SET name = ? WHERE id = ?', req.body.name !== undefined ? str(req.body.name, 80) : req.user.name, req.user.id);
     if (req.body.engineerName !== undefined) {
-      if (req.user.role !== 'founder') throw new HttpError(403, "Le profil d'ingé est réservé aux fondateurs.");
+      engineerOnly(req);
       run('UPDATE users SET engineer_name = ? WHERE id = ?', str(req.body.engineerName, 40), req.user.id);
     }
     // Instagram : un nom de compte (@nom) ou l'adresse de son profil, gardé sous forme d'adresse.
@@ -1641,6 +1644,22 @@ export function createApp() {
     if (req.user.role !== 'founder') throw new HttpError(403, 'Réservé aux fondateurs.');
     const stat = fs.existsSync(brandKit) ? fs.statSync(brandKit) : null;
     res.json({ available: !!stat, size: stat?.size ?? 0, updatedAt: stat?.mtimeMs ?? null });
+  });
+
+  // Les droits des rôles (« Droits des rôles » dans le panel) : quels rôles ont Mes sons, la page de liens, etc.
+  admin.get('/rights', (req, res) => {
+    if (req.user.role !== 'founder') throw new HttpError(403, 'Réservé aux fondateurs.');
+    res.json({ roles: EDITABLE_ROLES, rights: Object.entries(RIGHTS).map(([id, r]) => ({ id, label: r.label, roles: rolesWith(id).filter((x) => x !== 'founder') })) });
+  });
+  admin.put('/rights', (req, res) => {
+    if (req.user.role !== 'founder') throw new HttpError(403, 'Réservé aux fondateurs.');
+    const next = {};
+    for (const id of Object.keys(RIGHTS)) {
+      const roles = req.body[id];
+      next[id] = Array.isArray(roles) ? [...new Set(roles.filter((r) => EDITABLE_ROLES.includes(r)))] : rolesWith(id).filter((x) => x !== 'founder');
+    }
+    setSetting('role_rights', next);
+    res.json({ ok: true });
   });
 
   // La boîte mail d'ONIRIQUE (IONOS), pour les fondateurs : dossiers, messages, pièces jointes, réponses.

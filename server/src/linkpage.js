@@ -1,4 +1,4 @@
-// Page de liens des fondateurs (onirique.store/l/<pseudo>), façon « link in bio » : profil, liens vers leurs
+// Page de liens des membres ONIRIQUE et des fondateurs (onirique.online/<pseudo>, ou <site>/l/<pseudo> sans LINKS_URL), façon « link in bio » : profil, liens vers leurs
 // plateformes et apparence entièrement réglable. Le serveur garde la page telle que l'éditeur l'envoie, une fois
 // chaque champ vérifié : rien d'autre que des couleurs, des choix connus, du texte et des liens http(s), mailto ou tel.
 // Il sert aussi la page publique elle-même, avec son titre, sa description et son image d'aperçu (lues par Instagram,
@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { config } from './config.js';
 import { all, get, run, now } from './db.js';
-import { HttpError, rateLimit } from './auth.js';
+import { HttpError, rateLimit, rolesWith } from './auth.js';
 import { alternatives, ORDER } from './music.js';
 
 export const HANDLE = /^[a-z0-9][a-z0-9._-]{1,29}$/;
@@ -78,7 +78,7 @@ export function cleanPage(input = {}) {
 
 const media = (name) => (name ? `/api/media/${name}` : null);
 const view = (row) => ({ handle: row.handle, page: JSON.parse(row.data), avatar: media(row.avatar), background: media(row.background) });
-const publicRow = (handle) => get(`SELECT p.* FROM link_pages p JOIN users u ON u.id = p.user_id WHERE p.handle = ? AND u.role = 'founder'`,
+const publicRow = (handle) => get(`SELECT p.* FROM link_pages p JOIN users u ON u.id = p.user_id WHERE p.handle = ? AND u.role IN (${rolesWith('links').map((r) => `'${r}'`).join(', ')})`,
   String(handle).toLowerCase());
 
 //==============================================================================
@@ -117,7 +117,7 @@ export function linkStats(userId, days) {
 const FONT_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fonts');
 const escapeXml = (s) => String(s).replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' })[c]);
 
-async function textImage(text, font, fontfile, size, fill, width, alpha = '100%') {
+export async function textImage(text, font, fontfile, size, fill, width, alpha = '100%') {
   const { data, info } = await sharp({ text: { text: `<span foreground="${fill}" fgalpha="${alpha}">${escapeXml(text)}</span>`, font: `${font} ${size}`,
     fontfile: path.join(FONT_DIR, fontfile), width, rgba: true, wrap: 'word' } }).png().toBuffer({ resolveWithObject: true });
   return { data, width: info.width, height: info.height };
@@ -159,7 +159,7 @@ export async function previewImage(row) {
   const width = W - left - 80;
   const name = await textImage(page.name || row.handle, 'Unbounded', 'Unbounded800.ttf', page.name.length > 18 ? 46 : 60, t.text, width);
   const bio = page.bio ? await textImage(page.bio.split('\n').slice(0, 3).join('\n').slice(0, 140), 'Hanken Grotesk', 'HankenGrotesk600.ttf', 26, t.text, width) : null;
-  const address = await textImage(`onirique.store/l/${row.handle}`, 'JetBrains Mono', 'JetBrainsMono500.ttf', 22, t.button.color, width);
+  const address = await textImage(`${linksHost}/${row.handle}`, 'JetBrains Mono', 'JetBrainsMono500.ttf', 22, t.button.color, width);
   const block = name.height + (bio ? 26 + Math.min(bio.height, 150) : 0) + 34 + address.height;
   let top = Math.max(60, Math.round((H - block) / 2));
   layers.push({ input: name.data, left, top });
@@ -178,14 +178,15 @@ export async function previewImage(row) {
 //  La page publique, servie avec ses balises de partage (titre, description, image).
 //==============================================================================
 const escapeHtml = (s) => String(s).replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' })[c]);
-const previewKey = (row) => crypto.createHash('sha1').update(`${row.data}|${row.avatar}|${row.background}|${row.handle}`).digest('hex').slice(0, 12);
+const linksHost = config.linksUrl.replace(/^https?:\/\//, '');
+const previewKey = (row) => crypto.createHash('sha1').update(`${row.data}|${row.avatar}|${row.background}|${row.handle}|${config.linksUrl}`).digest('hex').slice(0, 12);
 
 function pageHtml(row) {
   const data = row && view(row);
   const site = config.siteUrl;
   const title = data ? `${data.page.name || data.handle} · ONIRIQUE` : 'ONIRIQUE';
   const description = data ? (data.page.bio || `Tous les liens de ${data.page.name || data.handle} : musique, réseaux, contact.`).replace(/\s+/g, ' ').slice(0, 200) : '';
-  const url = data ? `${site}/l/${data.handle}` : site;
+  const url = data ? `${config.linksUrl}/${data.handle}` : site;
   const image = data ? `${site}/api/links/${data.handle}/apercu.png?v=${previewKey(row)}` : '';
   const json = JSON.stringify(data || null).replace(/</g, '\\u003c');
   const meta = data ? `
@@ -238,7 +239,7 @@ if (data) OniriqueLinkPage.render(document.getElementById("page"), data.page, da
 
 /** Les routes : la page publique (et son image), l'éditeur et les statistiques réservés aux fondateurs. */
 export function mountLinkPages(app, { requireUser, receiveImage, removeMedia, wrap }) {
-  const founderOnly = (req) => { if (req.user.role !== 'founder') throw new HttpError(403, 'La page de liens est réservée aux fondateurs.'); };
+  const founderOnly = (req) => { if (!rolesWith('links').includes(req.user.role)) throw new HttpError(403, 'La page de liens est réservée aux membres ONIRIQUE.'); };
   const own = (userId) => get('SELECT * FROM link_pages WHERE user_id = ?', userId);
 
   // La page publique elle-même. Une visite par personne et par demi-heure, sans les robots (aperçus des messageries).
@@ -289,7 +290,9 @@ export function mountLinkPages(app, { requireUser, receiveImage, removeMedia, wr
   app.get('/api/me/links', requireUser, (req, res) => {
     founderOnly(req);
     const row = own(req.user.id);
-    res.json(row ? view(row) : { handle: null, page: cleanPage({ name: req.user.engineer_name || req.user.name || '' }), avatar: null, background: null });
+    // address : le début de l'adresse publique (https://onirique.online), que l'éditeur affiche devant le pseudo.
+    res.json({ ...(row ? view(row) : { handle: null, page: cleanPage({ name: req.user.engineer_name || req.user.name || '' }), avatar: null, background: null }),
+      address: config.linksUrl });
   });
 
   /** Les liens « Musique » : leurs plateformes, reprises de la page enregistrée si le lien n'a pas changé, sinon cherchées. */

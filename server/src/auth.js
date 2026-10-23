@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { config } from './config.js';
-import { get, run, now } from './db.js';
+import { get, run, now, setting } from './db.js';
 import { mailEnabled } from './mail.js';
 
 export class HttpError extends Error {
@@ -86,6 +86,27 @@ export const mustVerify = (user) => mailEnabled && !user.email_verified && !isSt
 /** Les partenaires : chacun est à la fois un créateur de plugins et le rôle des comptes qui gèrent ces plugins. */
 export const PARTNERS = ['abrasion', 'relic'];
 export const ROLES = ['user', 'vip', ...PARTNERS, 'admin', 'founder'];
+// Les droits réglables par les fondateurs, rôle par rôle (panel admin, « Droits des rôles »). Les valeurs par défaut
+// sont celles d'avant le réglage. Les fondateurs ont toujours tous ces droits, sauf « plugins » : eux s'accordent leurs
+// licences par le réglage « Mes licences », comme les admins et les partenaires.
+export const RIGHTS = {
+  sounds: { label: 'Mes sons', default: ['vip', 'admin'] },
+  links: { label: 'Page de liens', default: ['vip', 'admin'] },
+  plugins: { label: 'Tous les plugins offerts', default: ['vip'] },
+  engineer: { label: "Profil d'ingé (crédits)", default: [] },
+  youtube: { label: 'Shorts YouTube programmés', default: [] },
+  instagram: { label: 'Réponses automatiques Instagram', default: [] },
+};
+// Les rôles dont les droits se règlent (les fondateurs ont tout).
+export const EDITABLE_ROLES = ['user', 'vip', 'abrasion', 'relic', 'admin'];
+/** Les rôles qui ont ce droit en ce moment. */
+export function rolesWith(right) {
+  const chosen = setting('role_rights', {})[right];
+  const roles = (Array.isArray(chosen) ? chosen : RIGHTS[right].default).filter((r) => EDITABLE_ROLES.includes(r));
+  return right === 'plugins' ? roles : [...roles, 'founder'];
+}
+export const can = (user, right) => !!user && rolesWith(right).includes(user.role);
+export const rightsOf = (user) => Object.keys(RIGHTS).filter((right) => can(user, right));
 export const isStaff = (user) => user.role === 'admin' || user.role === 'founder';
 /** Le créateur dont ce compte gère les plugins, pour un partenaire ; null pour tous les autres. */
 export const partnerOf = (user) => (PARTNERS.includes(user.role) ? user.role : null);

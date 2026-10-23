@@ -1,12 +1,19 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=33fbad51"></script>
+<script src="assets/i18n.js?v=b74e34bc"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Mes sons</title>
 <meta name="robots" content="noindex">
+<link rel="manifest" href="assets/mes-sons.json">
+<meta name="theme-color" content="#0D0809">
+<link rel="apple-touch-icon" href="assets/app-icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mes sons">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="stylesheet" href="assets/fonts.css">
 <style>
@@ -33,7 +40,16 @@ a { color: inherit; }
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
 .wrap { width: 100%; max-width: 1180px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 40px); }
-header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.6); backdrop-filter: blur(14px); }
+header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.6); backdrop-filter: blur(14px); padding-top: env(safe-area-inset-top); }
+/* Ajouter Mes sons à l'écran d'accueil (téléphones seulement) */
+.install { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; padding: 9px 14px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); font: 600 13px var(--f-body); cursor: pointer; }
+.install:hover { border-color: var(--ember); }
+.install img { width: 22px; height: 22px; border-radius: 6px; }
+#install-help { width: 400px; }
+#install-help .steps { margin: 0; padding: 0 20px 6px 20px; display: grid; gap: 14px; counter-reset: step; list-style: none; }
+#install-help .steps li { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; }
+#install-help .steps li::before { counter-increment: step; content: counter(step); flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--ember); color: var(--night); font: 700 13px var(--f-body); }
+#install-help .share { display: inline-block; vertical-align: -4px; width: 18px; height: 18px; }
 header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 16px; }
 .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 800 17px/1 var(--f-display); letter-spacing: .16em; }
 .brand img { width: 44px; height: auto; margin-block: -12px; filter: drop-shadow(0 0 6px rgba(226,52,68,.8)); }
@@ -142,6 +158,31 @@ body.has-player .uploads { bottom: calc(92px + env(safe-area-inset-bottom)); }
 .trk .num { text-align: center; font: 500 13px var(--f-mono); color: var(--haze); }
 .trk.now .num { color: var(--ember); }
 .trk b { display: block; font: 700 15px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tline { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.tline b { min-width: 0; }
+/* Le « feat. » à côté du titre, comme le badge d'étape */
+.feat { flex: none; max-width: 55%; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.05); color: var(--mist); font: 600 11px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.tile .caption b .feat { display: inline-block; max-width: 100%; margin-left: 6px; padding: 1px 8px; font: 600 10.5px/1.5 var(--f-body); color: var(--mist); vertical-align: 1px; cursor: default; }
+.album-head h1 .feat { margin-left: 14px; vertical-align: middle; font-size: 14px; cursor: inherit; }
+.details-left h2 .feat { margin-left: 8px; vertical-align: middle; font-size: 12px; }
+.feat.empty { border-style: dashed; background: none; color: var(--haze); }
+.feat:hover, .stage:hover { border-color: var(--ember); }
+/* Hors du mode édition : seulement ce qui est rempli, rien à cliquer pour modifier */
+body:not(.editing) .album .art { cursor: default; }
+body:not(.editing) .album .art .change, body:not(.editing) .add-bar { display: none; }
+body:not(.editing) .album-head h1 { cursor: default; }
+body:not(.editing) .trk .stage, body:not(.editing) .trk .feat { cursor: inherit; pointer-events: none; }
+.edit-toggle { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 16px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); font: 600 14px var(--f-body); cursor: pointer; }
+.edit-toggle:hover { border-color: var(--ember); }
+body:not(.editing) .edit-only { display: none !important; }
+/* L'image de fond d'un projet, derrière toute la page, assombrie pour garder le texte lisible */
+#page-bg { position: fixed; inset: 0; z-index: -1; background: center / cover no-repeat; opacity: 0; transition: opacity .5s ease; pointer-events: none; }
+#page-bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(13,8,9,.55), rgba(13,8,9,.82) 55%, rgba(13,8,9,.95)); }
+#page-bg.on { opacity: 1; }
+
+body.editing #edit-toggle { background: var(--mist); color: var(--night); border-color: var(--mist); }
+.release .chip { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); font: 600 13px var(--f-body); }
+.release .chip.planned::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 8px var(--ember); }
 .trk.now b { color: var(--bone); }
 .trk small { color: var(--haze); font-size: 12px; }
 .trk .len { font: 500 12px var(--f-mono); color: var(--haze); }
@@ -211,15 +252,25 @@ button.item:hover { background: rgba(255,255,255,.04); }
 .details-left h2 { font: 800 20px/1.2 var(--f-display); margin: 18px 0 0; overflow-wrap: anywhere; }
 .details-left h2 .n { color: var(--haze); }
 /* Le nom du titre se modifie sur place */
-.title-edit { padding: 2px 6px; margin: 0 -6px; border-radius: 8px; cursor: text; outline: none; }
+.title-edit { display: inline-block; min-width: 2ch; max-width: 100%; vertical-align: top; padding: 2px 6px; margin: 0 -6px; border-radius: 8px; cursor: text; outline: none; }
 .title-edit:hover { background: rgba(255,255,255,.05); }
 .title-edit:focus { background: rgba(0,0,0,.45); box-shadow: 0 0 0 1px var(--ember); }
-.title-edit:empty::before { content: attr(data-placeholder); color: var(--haze); font-style: italic; }
+/* Le champ passe à la ligne dans sa colonne au lieu de déborder ; sa hauteur suit le texte. */
+textarea.title-edit { display: block; width: 100%; max-width: 100%; min-height: 0; margin: 0; border: 0; background: transparent; color: inherit; font: inherit; line-height: inherit; letter-spacing: inherit; text-align: inherit; resize: none; overflow: hidden; }
+.details-left h2 { align-self: stretch; }
+textarea.title-edit::placeholder { color: var(--haze); font-style: italic; opacity: 1; }
 /* L'auteur de la pochette, sous la pochette du projet */
 .cover-by { display: flex; align-items: baseline; gap: 8px; margin-top: 12px; font-size: 14px; color: var(--haze); max-width: 400px; }
 .cover-by .eyebrow { flex: none; font-size: 11px; }
-.cover-by .title-edit { color: var(--mist); font-weight: 600; min-width: 40px; }
+/* Le nom d'artiste du projet, modifiable sur place en mode édition */
+.album-meta textarea.title-edit { display: inline-block; width: auto; min-width: 8ch; max-width: 100%; field-sizing: content; color: var(--mist); font-weight: 600; text-align: left; vertical-align: middle; }
+.cover-by .title-edit { flex: 1; color: var(--mist); font-weight: 600; min-width: 40px; text-align: left; }
 .tile.drop-cover .art { outline: 2px solid var(--ember); outline-offset: 3px; }
+/* Glisser un projet sur un dossier (ou sur ← pour le sortir du dossier) */
+.tile[draggable="true"] .art { cursor: grab; }
+.tile.dragging { opacity: .4; }
+.tile.drop-into .art { outline: 2px solid var(--ember); outline-offset: 4px; scale: 1.04; }
+#folder-back.drop-into { border-color: var(--ember); background: color-mix(in srgb, var(--ember) 18%, transparent); scale: 1.1; }
 /* Les crédits d'un titre */
 .credits-list { display: grid; gap: 4px; margin-top: 10px; width: 100%; font-size: 13px; text-align: left; }
 .credits-list div { display: flex; gap: 10px; justify-content: space-between; padding: 6px 10px; border-radius: 10px; background: rgba(255,255,255,.035); }
@@ -247,6 +298,11 @@ button.item:hover { background: rgba(255,255,255,.04); }
 .stage.maquette { border-style: solid; color: var(--mist); background: rgba(255,255,255,.06); }
 .stage.version { border-style: solid; border-color: var(--ember); color: var(--ember); }
 .stage.final { border-style: solid; border-color: var(--ember); background: var(--ember); color: var(--night); }
+/* Le badge de date d'un titre, à côté de son étape */
+.badges { display: inline-flex; align-items: center; gap: 6px; flex: none; }
+.stage.date { letter-spacing: .03em; }
+.stage.date:not(.empty) { border-style: solid; color: var(--mist); background: rgba(255,255,255,.04); }
+.day-picker { position: fixed; width: 1px; height: 1px; opacity: 0; border: 0; padding: 0; min-height: 0; pointer-events: none; }
 @media (max-width: 520px) { .trk .len { display: none; } }
 .mini-btn { padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: none; color: var(--mist); font: 600 12px var(--f-body); cursor: pointer; }
 .mini-btn:hover { border-color: var(--ember); }
@@ -270,14 +326,20 @@ button.item:hover { background: rgba(255,255,255,.04); }
 .inline { display: flex; gap: 8px; padding: 0 16px 14px; }
 .inline input { flex: 1; min-height: 40px; }
 .visibility { position: relative; }
-.visibility select { width: 100%; min-height: 56px; padding-left: 50px; appearance: none; font-weight: 700; cursor: pointer; border-radius: 16px; }
+.visibility button { width: 100%; min-height: 56px; padding: 0 44px 0 50px; border-radius: 16px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 700 16px var(--f-body); text-align: left; cursor: pointer; }
+.visibility button:hover, .visibility button[aria-expanded="true"] { border-color: var(--ember); }
 .visibility .op-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; }
 .visibility::after { content: ""; position: absolute; right: 18px; top: 50%; width: 8px; height: 8px; border: solid var(--haze); border-width: 0 2px 2px 0; transform: translateY(-70%) rotate(45deg); pointer-events: none; }
 #ask { width: 420px; }
+#collab { width: 460px; }
+.faces-row { display: inline-flex; align-items: center; gap: 6px; }
+.faces-row img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; border: 2px solid var(--night); margin-left: -8px; }
+.faces-row img:first-child { margin-left: 0; }
 #ask form { padding: 20px; display: grid; gap: 14px; }
 #ask b { font: 700 17px var(--f-display); }
 </style>
 
+<div id="page-bg" aria-hidden="true"></div>
 <header>
   <div class="wrap">
     <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
@@ -300,7 +362,10 @@ button.item:hover { background: rgba(255,255,255,.04); }
         <h1>Mes <em>sons</em></h1>
         <div class="muted" id="owner-name"></div>
       </div>
-      <div class="quota" id="quota"></div>
+      <div>
+        <div class="quota" id="quota"></div>
+        <button class="install" id="install" type="button" hidden><img src="assets/app-icon-180.png" alt="">Ajouter à l'écran d'accueil</button>
+      </div>
     </div>
     <p class="error" id="disk-full"></p>
     <div class="tiles" id="tiles"></div>
@@ -332,6 +397,9 @@ button.item:hover { background: rgba(255,255,255,.04); }
         </div>
         <div class="row" style="margin-top:16px">
           <button class="round" id="share-project" type="button" aria-label="Partager le projet" title="Partager le projet"></button>
+          <button class="edit-toggle" id="edit-toggle" type="button" aria-pressed="false">Modifier</button>
+          <button class="edit-toggle edit-only" id="bg-change" type="button">Changer le fond</button>
+          <button class="edit-toggle edit-only" id="bg-remove" type="button" hidden>Retirer le fond</button>
           <button class="round" id="project-more" type="button" aria-label="Plus d'options" title="Plus d'options"></button>
         </div>
         <button class="add-bar" id="add-tracks" type="button"></button>
@@ -345,6 +413,7 @@ button.item:hover { background: rgba(255,255,255,.04); }
 <button class="fab" id="fab" type="button" hidden></button>
 <input type="file" id="files" accept="audio/*,.wav,.aif,.aiff,.flac,.mp3,.ogg,.m4a" multiple hidden>
 <input type="file" id="cover-file" accept="image/png,image/jpeg,image/webp" hidden>
+<input type="file" id="bg-file" accept="image/png,image/jpeg,image/webp" hidden>
 <div class="drop-zone" id="drop-zone" hidden>Dépose tes sons ou une pochette ici</div>
 <section class="uploads" id="uploads" hidden aria-label="Envois en cours">
   <div class="uploads-head"><b>Envoi des sons</b><span id="uploads-count" role="status"></span><button class="x" id="uploads-close" type="button" aria-label="Fermer" hidden></button></div>
@@ -353,10 +422,17 @@ button.item:hover { background: rgba(255,255,255,.04); }
 </section>
 
 <dialog id="details"></dialog>
+<dialog id="install-help">
+  <div class="dlg-head"><b>Sur l'écran d'accueil</b><button class="x" type="button" aria-label="Fermer" onclick="this.closest('dialog').close()">✕</button></div>
+  <p class="muted" style="margin:10px 20px 14px;font-size:14px" id="install-intro"></p>
+  <ol class="steps" id="install-steps"></ol>
+  <div class="row" style="justify-content:flex-end;padding:16px 20px 20px"><button class="btn btn-primary" type="button" onclick="this.closest('dialog').close()">Compris</button></div>
+</dialog>
 <dialog id="share"></dialog>
-<dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" value="cancel" formnovalidate>Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
+<dialog id="collab"></dialog>
+<dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" value="cancel" formnovalidate>Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
-<script src="assets/sounds-player.js?v=4"></script>
+<script src="assets/sounds-player.js?v=8"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const TOKEN = "onirique.token";
@@ -407,6 +483,11 @@ const fail = (error) => { $("error").textContent = error.message; if ($("grid-vi
 const openId = () => { const m = /^#\/p\/(\d+)/.exec(location.hash); return m ? Number(m[1]) : null; };
 const folderId = () => { const m = /^#\/f\/(\d+)/.exec(location.hash); return m ? Number(m[1]) : null; };
 const folder = (id = folderId()) => data.folders.find((f) => f.id === id);
+// Les dossiers se rangent les uns dans les autres : ceux d'un niveau (null : la racine), et tous ceux en dessous d'un dossier.
+const subfolders = (id) => data.folders.filter((f) => (f.parentId || null) === id);
+const below = (id) => subfolders(id).flatMap((f) => [f.id, ...below(f.id)]);
+const folderPath = (f) => (f && f.parentId ? [...folderPath(folder(f.parentId)), f] : f ? [f] : []);
+const count = (n, one, many) => n + " " + (n > 1 ? many : one);
 const project = (id = openId()) => data.projects.find((p) => p.id === id);
 const findTrack = (tid) => { for (const p of data.projects) { const t = p.tracks.find((x) => x.id === tid); if (t) return { p, t }; } return {}; };
 const live = (t) => t.versions.find((v) => v.id === t.currentId) || t.versions.at(-1);
@@ -416,11 +497,13 @@ const projectLength = (p) => p.tracks.reduce((s, t) => s + (live(t).duration || 
 // ——— Le lecteur ———
 const itemOf = (p, t) => {
   const v = live(t);
-  return { key: "v" + v.id, id: v.id, trackId: t.id, title: t.title, subtitle: [p.title, OP.stageLabel(t.stage) || "v" + v.n].join(" · "), cover: p.cover, url: v.url,
+  return { key: "v" + v.id, id: v.id, trackId: t.id, title: t.title, feat: t.credits.feat, subtitle: [p.title, OP.stageLabel(t.stage) || "v" + v.n].join(" · "), cover: p.cover, url: v.url,
     downloadUrl: v.downloadUrl, duration: v.duration, peaks: v.peaks, comments: t.comments };
 };
 const player = OP.create({
   onDelete: (item, c) => api("DELETE", "/me/sounds/comments/" + c.id).then(refresh),
+  // Partager depuis le lecteur plein écran : la fenêtre de partage du titre (le sien, ou celui d'un projet où l'on collabore).
+  onShare: (item) => findTrack(item.trackId).t ? openShare("track", item.trackId) : alert("Ce titre vient du lien d'un autre membre : demande-lui de te le partager."),
   onChange: (it) => { document.body.classList.add("has-player"); markPlaying(); tintOf(it.cover).then((t) => player.setAccent(t && t.accent)); },
 });
 // Les couleurs de chaque pochette, lues une fois.
@@ -450,7 +533,7 @@ function playProject(p, i = 0) {
   player.play(p.tracks.map((t) => itemOf(p, t)), i);
 }
 function playVersion(p, t, v) {
-  player.play([{ key: "v" + v.id, id: v.id, trackId: t.id, title: t.title, subtitle: p.title + " · v" + v.n, cover: p.cover, url: v.url,
+  player.play([{ key: "v" + v.id, id: v.id, trackId: t.id, title: t.title, feat: t.credits.feat, subtitle: p.title + " · v" + v.n, cover: p.cover, url: v.url,
     downloadUrl: v.downloadUrl, duration: v.duration, peaks: v.peaks, comments: t.comments }], 0);
   // Une durée qui n'a pas pu être lue à l'envoi est enregistrée à la première écoute.
   if (!v.duration) player.audio.addEventListener("loadedmetadata", () => {
@@ -464,12 +547,14 @@ function markPlaying() {
 
 // ——— Menus et petites fenêtres ———
 let openMenu = null;
+const atPointer = (event) => ({ getBoundingClientRect: () => ({ left: event.clientX, right: event.clientX, top: event.clientY, bottom: event.clientY, width: 0, height: 0 }) });
 function menu(anchor, items) {
   closeMenu();
   const m = el("div", { className: "menu", role: "menu" }, ...items.filter(Boolean).map((it) => it === "-" ? el("hr") : el("button", {
     type: "button", role: "menuitem", className: it.danger ? "danger" : "", onclick: () => { closeMenu(); it.onclick(); },
   }, it.icon ? icon(it.icon) : null, it.label)));
-  document.body.append(m);
+  // Dans une fenêtre ouverte (partage, détails d'un titre), le menu s'y affiche : sinon il passerait derrière elle.
+  ((anchor.closest && anchor.closest("dialog[open]")) || document.body).append(m);
   const r = anchor.getBoundingClientRect(), w = m.offsetWidth, h = m.offsetHeight;
   const up = r.bottom + h + 8 > innerHeight;
   m.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + "px";
@@ -480,18 +565,24 @@ function menu(anchor, items) {
 function closeMenu() { if (openMenu) { openMenu.remove(); openMenu = null; } }
 document.addEventListener("pointerdown", (event) => { if (openMenu && !openMenu.contains(event.target)) closeMenu(); }, true);
 document.addEventListener("keydown", (event) => { if (event.key === "Escape") closeMenu(); });
-function ask(title, value = "") {
+function ask(title, value = "", allowEmpty = false) {
   return new Promise((resolve) => {
     $("ask-title").textContent = title;
     $("ask-input").value = value;
+    $("ask-input").required = !allowEmpty;
     $("ask").returnValue = "";
     $("ask").showModal();
     $("ask-input").select();
-    $("ask").onclose = () => resolve($("ask").returnValue === "ok" && $("ask-input").value.trim() ? $("ask-input").value.trim() : null);
+    $("ask").onclose = () => resolve($("ask").returnValue === "ok" && ($("ask-input").value.trim() || allowEmpty) ? $("ask-input").value.trim() : null);
   });
 }
-const lightClose = (dialog) => dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); });
-lightClose($("details")); lightClose($("share")); lightClose($("ask"));
+// Un clic sur le fond ferme la fenêtre ; pas une sélection de texte commencée dedans et relâchée dehors.
+const lightClose = (dialog) => {
+  let fromBackdrop = false;
+  dialog.addEventListener("pointerdown", (event) => { fromBackdrop = event.target === dialog; });
+  dialog.addEventListener("click", (event) => { if (event.target === dialog && fromBackdrop) dialog.close(); fromBackdrop = false; });
+};
+lightClose($("details")); lightClose($("share")); lightClose($("ask")); lightClose($("collab"));
 
 // ——— Données et vues ———
 async function refresh() {
@@ -509,7 +600,7 @@ function render() {
   if ($("share").open) renderShare();
   markPlaying();
 }
-addEventListener("hashchange", () => { closeMenu(); render(); scrollTo(0, 0); });
+addEventListener("hashchange", () => { closeMenu(); render(); scrollTo(0, 0); if (/^#\/invite\//.test(location.hash)) checkInvite(); });
 // Aller à un projet (#/p/<id>) ou revenir à la grille (""), avec l'animation : la pochette passe de la vignette à la
 // grande pochette (View Transitions quand le navigateur les connaît), puis le reste de la page arrive en cascade.
 function navigate(hash) {
@@ -546,8 +637,14 @@ function navigate(hash) {
   setTimeout(() => { if (!ran) vt.skipTransition(); }, 300);
 }
 
+// Le fond de la page : l'image du projet ouvert (en WebP à 1920 px), rien sur la grille.
+function setBackground(url) {
+  if (url) $("page-bg").style.backgroundImage = 'url("' + url + '?w=1920")';
+  $("page-bg").classList.toggle("on", !!url);
+}
 function renderGrid() {
   theme(null);
+  setBackground(null);
   const q = data.quota, f = folderId() && folder();
   $("owner-name").textContent = data.owner.name;
   $("quota").replaceChildren(size(q.used) + " sur " + size(q.limit), el("i", {}, el("b", { style: "width:" + Math.min(100, q.used / q.limit * 100) + "%" })));
@@ -556,21 +653,54 @@ function renderGrid() {
   const here = (x) => (x.folderId || null) === (f ? f.id : null);
   const items = [...data.projects.filter(here).map((x) => ({ kind: "project", x })), ...data.saved.filter(here).map((x) => ({ kind: "saved", x }))]
     .sort((a, b) => b.x.createdAt - a.x.createdAt);
-  const tiles = [...(f ? [] : data.folders.map(folderTile)), ...items.map(({ kind, x }) => (kind === "project" ? projectTile(x) : savedTile(x)))];
-  tiles.forEach((tile, i) => tile.style.setProperty("--i", i));
+  const folders = subfolders(f ? f.id : null);
+  const tiles = [...folders.map(folderTile), ...items.map(({ kind, x }) => (kind === "project" ? projectTile(x) : savedTile(x)))];
+  tiles.forEach((tile, i) => {
+    tile.style.setProperty("--i", i);
+    tile.oncontextmenu = (event) => { const dots = tile.querySelector(".dots"); if (dots) { event.preventDefault(); event.stopPropagation(); dots.openAt(atPointer(event)); } };
+  });
   $("tiles").replaceChildren(...tiles);
   $("grid-top").hidden = !!f;
   $("folder-crumb").hidden = !f;
   if (f) {
     $("folder-title").textContent = f.title;
-    $("folder-count").textContent = items.length + (items.length > 1 ? " projets" : " projet");
+    const up = folderPath(f).slice(0, -1).map((x) => x.title);
+    $("folder-count").textContent = [up.length ? "dans " + up.join(" / ") : "", folders.length ? count(folders.length, "dossier", "dossiers") : "",
+      count(items.length, "projet", "projets")].filter(Boolean).join(" · ");
+    $("folder-back").ariaLabel = $("folder-back").title = up.length ? "Retour à " + up.at(-1) : "Retour à Mes sons";
   }
   $("empty").hidden = !!f || tiles.length > 0;
-  if (f && !items.length) $("tiles").replaceChildren(el("p", { className: "muted", style: "grid-column:1/-1;margin:0",
-    textContent: "Ce dossier est vide. Range-y des projets avec leur menu ⋯, « Déplacer vers »." }));
+  if (f && !tiles.length) $("tiles").replaceChildren(el("p", { className: "muted", style: "grid-column:1/-1;margin:0",
+    textContent: "Ce dossier est vide. Range-y des projets ou d'autres dossiers avec leur menu ⋯, « Déplacer vers », ou en les faisant glisser dessus." }));
 }
-const caption = (title, sub, more) => el("div", { className: "caption" }, el("div", {}, el("b", { textContent: title }), sub), more);
-const dotsFor = (label, onclick) => { const b = el("button", { className: "dots", type: "button", ariaLabel: "Options de " + label }, icon("more")); b.onclick = () => onclick(b); return b; };
+const caption = (title, sub, more, feat) => el("div", { className: "caption" }, el("div", {},
+  el("b", {}, title, feat ? el("span", { className: "feat", textContent: "feat. " + feat, title: "feat. " + feat }) : ""), sub), more);
+// Les artistes invités d'un projet : ceux de tous ses titres, chacun une fois.
+const projectFeat = (p) => [...new Set(p.tracks.flatMap((t) => (t.credits.feat || "").split(",").map((n) => n.trim()).filter(Boolean)))].join(", ");
+const dotsFor = (label, onclick) => { const b = el("button", { className: "dots", type: "button", ariaLabel: "Options de " + label }, icon("more")); b.onclick = () => onclick(b); b.openAt = onclick; return b; };
+// Glisser-déposer dans la grille : un projet (le mien ou un enregistré) se prend et se lâche sur un dossier.
+function dragSource(tile, value) {
+  tile.draggable = true;
+  tile.ondragstart = (event) => { event.dataTransfer.setData("text/x-move", value); event.dataTransfer.effectAllowed = "move"; tile.classList.add("dragging"); };
+  tile.ondragend = () => tile.classList.remove("dragging");
+}
+function dropTarget(node, onMove, onFiles) {
+  const accepts = (event) => event.dataTransfer.types.includes("text/x-move") || (onFiles && event.dataTransfer.types.includes("Files"));
+  node.addEventListener("dragover", (event) => { if (!accepts(event)) return; event.preventDefault(); node.classList.add("drop-into"); });
+  node.addEventListener("dragleave", (event) => { if (!node.contains(event.relatedTarget)) node.classList.remove("drop-into"); });
+  node.addEventListener("drop", (event) => {
+    if (!accepts(event)) return;
+    event.preventDefault(); event.stopPropagation();
+    node.classList.remove("drop-into");
+    dragDepth = 0; $("drop-zone").hidden = true;
+    const moved = event.dataTransfer.getData("text/x-move");
+    if (moved) { const [kind, id] = moved.split(":"); onMove(kind, Number(id)); }
+    else if (onFiles) onFiles([...event.dataTransfer.files]);
+  });
+}
+const moveTo = (kind, id, folderId) => (kind === "folder"
+  ? (id === folderId ? Promise.resolve() : api("PATCH", "/me/sounds/folders/" + id, { parentId: folderId }))
+  : api("PATCH", (kind === "saved" ? "/me/sounds/saves/" : "/me/sounds/projects/") + id, { folderId })).then(refresh, fail);
 function projectTile(p) {
   const playBtn = el("button", { className: "fab-play", type: "button", ariaLabel: "Écouter " + p.title, hidden: !p.tracks.length }, icon("play"));
   playBtn.onclick = (event) => { event.stopPropagation(); playProject(p); };
@@ -578,29 +708,43 @@ function projectTile(p) {
   art.onclick = () => navigate("#/p/" + p.id);
   art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
   const tile = el("div", { className: "tile" }, art, caption(p.title,
-    el("span", { textContent: p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre") + (linkFor("project", p.id) ? " · partagé" : "") }),
-    dotsFor(p.title, (b) => projectMenu(b, p))));
+    el("span", { textContent: p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre")
+      + (p.mine ? "" : " · de " + (p.artist || p.owner.name)) + (linkFor("project", p.id) ? " · partagé" : "") + (p.mine && p.collaborators.length ? " · en collab" : "") }),
+    dotsFor(p.title, (b) => projectMenu(b, p)), projectFeat(p)));
   tile.dataset.id = p.id;
+  if (p.mine) dragSource(tile, "project:" + p.id);
   return tile;
 }
 function folderTile(f) {
-  const inside = [...data.projects, ...data.saved].filter((x) => x.folderId === f.id);
-  const covers = inside.slice(0, 4).map((x) => coverOf(x));
+  const inside = [...data.projects, ...data.saved].filter((x) => x.folderId === f.id), inner = subfolders(f.id);
+  // La mosaïque : les pochettes de ce qu'il contient, sous-dossiers compris.
+  const deep = below(f.id);
+  const covers = [...inside, ...[...data.projects, ...data.saved].filter((x) => deep.includes(x.folderId))].slice(0, 4).map((x) => coverOf(x));
   const mosaic = el("div", { className: "folder-art" + (covers.length ? "" : " empty") }, ...covers);
   if (!covers.length) mosaic.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4.6l2 2h8.4A1.5 1.5 0 0 1 21 9.5v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5Z"/></svg>';
   const art = el("div", { className: "art", role: "link", tabIndex: 0, ariaLabel: "Ouvrir le dossier " + f.title }, mosaic);
   art.onclick = () => { location.hash = "#/f/" + f.id; };
   art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
-  return el("div", { className: "tile" }, art, caption(f.title,
-    el("span", { textContent: "Dossier · " + inside.length + (inside.length > 1 ? " projets" : " projet") }), dotsFor(f.title, (b) => folderMenu(b, f))));
+  const tile = el("div", { className: "tile" }, art, caption(f.title,
+    el("span", { textContent: ["Dossier", inner.length ? count(inner.length, "dossier", "dossiers") : "", count(inside.length, "projet", "projets")].filter(Boolean).join(" · ") }),
+    dotsFor(f.title, (b) => folderMenu(b, f))));
+  tile.dataset.folder = f.id;
+  dragSource(tile, "folder:" + f.id);
+  // Un projet ou un dossier lâché ici y est rangé ; des sons lâchés ici deviennent un nouveau projet dans ce dossier.
+  dropTarget(tile, (kind, id) => moveTo(kind, id, f.id), (files) => {
+    const sounds = files.filter(isAudio);
+    if (sounds.length && !data.quota.full) newProjectWith(sounds, f.id).catch(fail);
+  });
+  return tile;
 }
+const savedSource = (tile, x) => { dragSource(tile, "saved:" + x.id); return tile; };
 function savedTile(x) {
   const playBtn = el("button", { className: "fab-play", type: "button", ariaLabel: "Écouter " + x.title, hidden: !x.available }, icon("play"));
   playBtn.onclick = (event) => { event.stopPropagation(); playSaved(x); };
   const art = el("div", { className: "art", role: "link", tabIndex: 0, ariaLabel: "Ouvrir " + x.title + " de " + x.owner }, coverOf(x), playBtn);
   art.onclick = () => openSaved(x);
   art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
-  return el("div", { className: "tile" + (x.available ? "" : " gone") }, art, caption(x.title,
+  return savedSource(el("div", { className: "tile" + (x.available ? "" : " gone") }, art, caption(x.title,
     el("span", { className: "owner" }, x.ownerAvatar ? el("img", { src: x.ownerAvatar, alt: "" }) : "", x.available ? x.owner : x.owner + " · lien fermé"),
     dotsFor(x.title, (b) => menu(b, [
       x.available && { label: "Ouvrir", icon: "chevron", onclick: () => openSaved(x) },
@@ -609,7 +753,7 @@ function savedTile(x) {
       "-",
       { label: "Retirer de Mes sons", icon: "close", danger: true, onclick: () =>
         confirm("Retirer « " + x.title + " » de Mes sons ? Le projet reste chez " + x.owner + ".") && api("DELETE", "/me/sounds/saves/" + x.id).then(refresh, fail) },
-    ]))));
+    ])))), x);
 }
 // Un projet enregistré s'ouvre sur sa page d'écoute ; le mot de passe déjà donné y est repris.
 function openSaved(x) {
@@ -622,17 +766,22 @@ async function playSaved(x) {
   }).catch(() => null);
   if (!response || !response.ok) return openSaved(x);
   const share = await response.json();
-  player.play(share.tracks.map((t) => ({ key: "v" + t.version.id, id: t.version.id, trackId: t.id, title: t.title,
+  player.play(share.tracks.map((t) => ({ key: "v" + t.version.id, id: t.version.id, trackId: t.id, title: t.title, feat: (t.credits || {}).feat,
     subtitle: [share.owner, OP.stageLabel(t.stage)].filter(Boolean).join(" · "), cover: share.cover, url: t.version.url,
     downloadUrl: t.version.downloadUrl, duration: t.version.duration, peaks: t.version.peaks, comments: t.comments })), 0);
 }
-// Ranger dans un dossier : la liste des dossiers, « Hors dossier », ou un nouveau dossier créé sur le moment.
-function moveMenu(anchor, current, apply) {
+// Ranger dans un dossier : l'arbre des dossiers (décalés d'un cran par niveau), « Hors dossier », ou un nouveau dossier
+// créé sur le moment. Pour ranger un dossier (moving), ni lui-même ni ses sous-dossiers ne sont proposés.
+function moveMenu(anchor, current, apply, moving = null) {
   const done = (folderId) => apply(folderId).then(refresh, fail);
+  const skip = moving ? [moving, ...below(moving)] : [];
+  const tree = (id, depth) => subfolders(id).filter((f) => !skip.includes(f.id)).flatMap((f) => [
+    { label: "\u2003".repeat(depth) + (current === f.id ? "✓ " : "") + f.title, onclick: () => current !== f.id && done(f.id) }, ...tree(f.id, depth + 1)]);
+  const choices = tree(null, 0);
   menu(anchor, [
-    ...data.folders.map((f) => ({ label: (current === f.id ? "✓ " : "") + f.title, onclick: () => current !== f.id && done(f.id) })),
+    ...choices,
     current && { label: "Hors dossier", onclick: () => done(null) },
-    data.folders.length || current ? "-" : null,
+    choices.length || current ? "-" : null,
     { label: "Nouveau dossier…", icon: "plus", onclick: async () => {
       const title = await ask("Nom du dossier");
       if (title) api("POST", "/me/sounds/folders", { title }).then(({ id }) => done(id), fail);
@@ -642,14 +791,19 @@ function moveMenu(anchor, current, apply) {
 function folderMenu(anchor, f) {
   menu(anchor, [
     { label: "Ouvrir", icon: "chevron", onclick: () => { location.hash = "#/f/" + f.id; } },
+    { label: "Nouveau dossier dedans…", icon: "plus", onclick: async () => {
+      const title = await ask("Nom du dossier");
+      if (title) api("POST", "/me/sounds/folders", { title, parentId: f.id }).then(refresh, fail);
+    } },
+    { label: "Déplacer vers…", icon: "chevron", onclick: () => moveMenu(anchor, f.parentId || null, (parentId) => api("PATCH", "/me/sounds/folders/" + f.id, { parentId }), f.id) },
     { label: "Renommer", icon: "more", onclick: async () => {
       const title = await ask("Nom du dossier", f.title);
       if (title) api("PATCH", "/me/sounds/folders/" + f.id, { title }).then(refresh, fail);
     } },
     "-",
     { label: "Supprimer le dossier", icon: "close", danger: true, onclick: () =>
-      confirm("Supprimer le dossier « " + f.title + " » ? Les projets qu'il contient reviennent dans Mes sons, rien n'est effacé.")
-      && api("DELETE", "/me/sounds/folders/" + f.id).then(() => { location.hash = ""; return refresh(); }).catch(fail) },
+      confirm("Supprimer le dossier « " + f.title + " » ? Ce qu'il contient (projets et dossiers) remonte " + (f.parentId ? "dans « " + folder(f.parentId).title + " »" : "dans Mes sons") + ", rien n'est effacé.")
+      && api("DELETE", "/me/sounds/folders/" + f.id).then(() => { if (folderId() === f.id) location.hash = f.parentId ? "#/f/" + f.parentId : ""; return refresh(); }).catch(fail) },
   ]);
 }
 function projectMenu(anchor, p) {
@@ -658,7 +812,8 @@ function projectMenu(anchor, p) {
     p.tracks.length && { label: "Écouter", icon: "play", onclick: () => playProject(p) },
     p.tracks.length && { label: "Ajouter à la file", icon: "queue", onclick: () => p.tracks.forEach((t) => player.enqueue(itemOf(p, t))) },
     { label: "Partager", icon: "link", onclick: () => openShare("project", p.id) },
-    { label: "Déplacer vers…", icon: "chevron", onclick: () => moveMenu(anchor, p.folderId, (folderId) => api("PATCH", "/me/sounds/projects/" + p.id, { folderId })) },
+    p.mine && { label: "Collaborateurs…", icon: "plus", onclick: () => openCollab(p.id) },
+    p.mine && { label: "Déplacer vers…", icon: "chevron", onclick: () => moveMenu(anchor, p.folderId, (folderId) => api("PATCH", "/me/sounds/projects/" + p.id, { folderId })) },
     "-",
     { label: "Renommer", icon: "more", onclick: async () => {
       const title = await ask("Nom du projet", p.title);
@@ -666,15 +821,80 @@ function projectMenu(anchor, p) {
     } },
     { label: "Changer la pochette", icon: "star", onclick: () => pickCover(p) },
     "-",
-    { label: "Supprimer le projet", icon: "close", danger: true, onclick: () =>
-      confirm("Supprimer « " + p.title + " », tous ses titres et leurs liens d'écoute ?") && api("DELETE", "/me/sounds/projects/" + p.id).then(() => { location.hash = ""; return refresh(); }).catch(fail) },
+    p.mine ? { label: "Supprimer le projet", icon: "close", danger: true, onclick: () =>
+      confirm("Supprimer « " + p.title + " », tous ses titres et leurs liens d'écoute ?") && api("DELETE", "/me/sounds/projects/" + p.id).then(() => { location.hash = ""; return refresh(); }).catch(fail) }
+      : { label: "Quitter le projet", icon: "close", danger: true, onclick: () =>
+        confirm("Quitter « " + p.title + " » ? Il disparaîtra de ta page ; " + p.owner.name + " pourra t'inviter à nouveau.")
+        && api("DELETE", "/me/sounds/projects/" + p.id + "/collabs/" + data.owner.id).then(() => { location.hash = ""; return refresh(); }).catch(fail) },
   ]);
+}
+
+// ——— Collaboration ———
+// L'auteur invite par un lien (créé, renouvelé ou coupé ici) ; la personne qui l'ouvre accepte ou refuse.
+let collabId = null;
+function openCollab(pid) { collabId = pid; renderCollab(); if (!$("collab").open) $("collab").showModal(); }
+function renderCollab() {
+  const p = project(collabId);
+  if (!p) { $("collab").close(); return; }
+  const invite = async (method) => {
+    try { await api(method, "/me/sounds/projects/" + p.id + "/invite"); await refresh(); renderCollab(); } catch (error) { alert(error.message); }
+  };
+  const people = p.collaborators.length
+    ? el("ul", { className: "group people" }, ...p.collaborators.map((u) => el("li", {}, el("img", { src: avatar(u), alt: "" }), el("span", { className: "grow", textContent: u.name }),
+      el("button", { className: "mini-btn", type: "button", textContent: "Retirer", onclick: () => confirm("Retirer " + u.name + " du projet ?")
+        && api("DELETE", "/me/sounds/projects/" + p.id + "/collabs/" + u.id).then(async () => { await refresh(); renderCollab(); }, (e) => alert(e.message)) }))))
+    : el("p", { className: "muted", style: "margin:0 4px;font-size:14px", textContent: "Personne pour l'instant. Envoie le lien d'invitation : la personne l'ouvre, accepte, et le projet apparaît dans son Mes sons." });
+  const copy = el("button", { className: "btn btn-primary", type: "button" }, icon("link"), p.inviteUrl ? "Copier le lien d'invitation" : "Créer le lien d'invitation");
+  copy.onclick = async () => {
+    if (!p.inviteUrl) await invite("POST");
+    const url = project(collabId).inviteUrl;
+    try { await navigator.clipboard.writeText(url); copy.replaceChildren(icon("link"), "Lien copié"); } catch { prompt("Copie ce lien :", url); }
+  };
+  $("collab").replaceChildren(
+    el("div", { className: "dlg-head" }, coverOf(p), el("b", { textContent: p.title }),
+      el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => $("collab").close() }, icon("close"))),
+    el("div", { className: "share-body" },
+      el("div", { className: "sub-title", textContent: "Collaborateurs" }), people,
+      el("p", { className: "muted", style: "margin:0 4px;font-size:13px", textContent: "Ils écoutent tout, ajoutent des titres et des versions, modifient noms, étapes, crédits et notes. Ils peuvent aussi le partager par leurs propres liens d'écoute. Supprimer et inviter restent à toi ; ce qu'ils envoient compte dans ton espace." }),
+      p.inviteUrl ? group(
+        item("repeat", "Nouveau lien d'invitation", { hint: "L'ancien lien ne marchera plus", onclick: () => invite("POST") }),
+        item("close", "Couper le lien d'invitation", { danger: true, hint: "Plus personne ne pourra rejoindre le projet par lui", onclick: () => invite("DELETE") })) : null),
+    el("div", { className: "share-foot" }, copy));
+}
+// Arrivé par un lien d'invitation (#/invite/<jeton>) : gardé le temps de se connecter, puis Accepter ou Refuser.
+try { const m = /^#\/invite\/([\w-]+)/.exec(location.hash); if (m) sessionStorage.setItem("onirique.invite", m[1]); } catch {}
+async function checkInvite() {
+  let tokenOf = null;
+  try { tokenOf = sessionStorage.getItem("onirique.invite"); } catch {}
+  const m = /^#\/invite\/([\w-]+)/.exec(location.hash);
+  if (m) tokenOf = m[1];
+  if (!tokenOf) return;
+  try { sessionStorage.removeItem("onirique.invite"); } catch {}
+  let info;
+  try { info = await api("GET", "/sounds/invite/" + tokenOf); } catch (error) { location.hash = ""; alert(error.message); return; }
+  if (info.mine || info.already) { location.hash = "#/p/" + info.projectId; return; }
+  const accept = el("button", { className: "btn btn-primary", type: "button", textContent: "Accepter" });
+  const refuse = el("button", { className: "btn btn-ghost", type: "button", textContent: "Refuser" });
+  $("collab").replaceChildren(
+    el("div", { className: "dlg-head" }, coverOf(info), el("b", { textContent: info.project })),
+    el("div", { className: "share-body" }, el("p", { style: "margin:4px", innerHTML: "" },
+      el("img", { src: avatar(info.owner), alt: "", style: "width:28px;height:28px;border-radius:50%;vertical-align:middle;margin-right:8px" }),
+      el("b", { textContent: info.owner.name }), " t'invite à collaborer sur « " + info.project + " »."),
+      el("p", { className: "muted", style: "margin:0 4px;font-size:14px", textContent: "En acceptant, le projet apparaît dans ton Mes sons : tu pourras l'écouter, y ajouter des titres et des versions." })),
+    el("div", { className: "share-foot", style: "grid-template-columns:1fr 1fr" }, refuse, accept));
+  refuse.onclick = () => { $("collab").close(); location.hash = ""; };
+  accept.onclick = async () => {
+    try { const { projectId } = await api("POST", "/sounds/invite/" + tokenOf + "/accept"); $("collab").close(); await refresh(); location.hash = "#/p/" + projectId; }
+    catch (error) { alert(error.message); }
+  };
+  $("collab").showModal();
 }
 
 // La date de sortie : un clic ouvre le calendrier du navigateur ; ✕ la retire.
 function drawRelease(p) {
   const label = OP.releaseLabel(p.releaseDate);
   const planned = label.startsWith("Date de sortie prévue");
+  if (!editing) return $("release").replaceChildren(label ? el("span", { className: "chip" + (planned ? " planned" : ""), textContent: label }) : "");
   const input = el("input", { type: "date", value: p.releaseDate || "", tabIndex: -1, ariaHidden: "true" });
   const save = (releaseDate) => api("PATCH", "/me/sounds/projects/" + p.id, { releaseDate }).then(refresh, fail);
   input.onchange = () => input.value && save(input.value);
@@ -685,28 +905,79 @@ function drawRelease(p) {
     title: "Retirer la date de sortie", onclick: () => save("") }, icon("close")) : "");
 }
 function renderProject(p) {
+  setBackground(p.background);
+  $("bg-remove").hidden = !p.background;
   tintOf(p.cover).then((t) => { if (openId() === p.id) theme(t); });
   $("crumb-owner").textContent = data.owner.name;
-  if (!$("cover-by").contains(document.activeElement)) $("cover-by").replaceChildren(el("span", { className: "eyebrow", textContent: "Pochette" }),
-    inlineEdit(p.coverBy, "Ajouter l'auteur de la pochette", 80, (coverBy) => api("PATCH", "/me/sounds/projects/" + p.id, { coverBy }).then(refresh), true));
+  if (!$("cover-by").contains(document.activeElement)) $("cover-by").replaceChildren(...(editing || p.coverBy ? [el("span", { className: "eyebrow", textContent: "Pochette" }),
+    editing ? inlineEdit(p.coverBy, "Ajouter l'auteur de la pochette", 80, (coverBy) => api("PATCH", "/me/sounds/projects/" + p.id, { coverBy }).then(refresh), true)
+      : el("span", { textContent: p.coverBy, style: "color:var(--mist);font-weight:600" })] : []));
+  $("edit-toggle").textContent = editing ? "Terminé" : "Modifier";
+  $("edit-toggle").ariaPressed = String(editing);
   if ($("cover").dataset.src !== (p.cover || "-")) {
     $("cover").dataset.src = p.cover || "-";
     $("cover").replaceChildren(coverOf(p), el("span", { className: "change", textContent: "Changer la pochette" }));
   }
-  $("project-title").textContent = p.title;
+  const feat = projectFeat(p);
+  $("project-title").replaceChildren(p.title, feat ? el("span", { className: "feat", textContent: "feat. " + feat }) : "");
   drawRelease(p);
-  $("project-meta").replaceChildren(el("img", { src: avatar(data.owner), alt: "" }),
-    data.owner.name + " · " + p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre") + (p.tracks.length ? " · " + length(projectLength(p)) : ""),
-    linkFor("project", p.id) ? el("span", { className: "tag on", textContent: "Partagé" }) : "");
+  // Le nom d'artiste : celui du projet s'il est rempli, sinon le nom du compte ; modifiable en mode édition.
+  if (!$("project-meta").contains(document.activeElement)) $("project-meta").replaceChildren(el("img", { src: avatar(p.owner), alt: "" }),
+    editing ? inlineEdit(p.artist || p.owner.name, p.owner.name, 120, (artist) => api("PATCH", "/me/sounds/projects/" + p.id, { artist: artist === p.owner.name ? "" : artist }).then(refresh), true)
+      : el("span", { textContent: p.artist || p.owner.name }),
+    " · " + p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre") + (p.tracks.length ? " · " + length(projectLength(p)) : ""),
+    linkFor("project", p.id) ? el("span", { className: "tag on", textContent: "Partagé" }) : "",
+    p.collaborators.length ? el("span", { className: "faces-row", title: "En collab avec " + p.collaborators.map((u) => u.name).join(", ") },
+      " · avec ", ...p.collaborators.slice(0, 4).map((u) => el("img", { src: avatar(u), alt: u.name }))) : "");
   $("play-all").disabled = !p.tracks.length;
   $("add-tracks").disabled = data.quota.full;
   $("tracklist").replaceChildren(...p.tracks.map((t, i) => trackRow(p, t, i)));
 }
 
-function stageButton(t) {
+// La date d'un titre (création ou autre) : badge « 06/05/2026 », choisie au calendrier du navigateur.
+const dayLabel = (day) => (day ? day.split("-").reverse().join("/") : "");
+function pickDay(anchor, value, save) {
+  const r = anchor.getBoundingClientRect();
+  const input = el("input", { type: "date", className: "day-picker", value: value || "", style: "left:" + r.left + "px;top:" + r.bottom + "px" });
+  ((anchor.closest && anchor.closest("dialog[open]")) || document.body).append(input);
+  const done = () => setTimeout(() => input.remove(), 300);
+  input.onchange = () => { if (input.value) save(input.value); done(); };
+  input.onblur = done;
+  try { input.showPicker(); } catch { input.focus(); input.click(); }
+}
+function dateButton(t, editable = editing) {
+  if (!editable && !t.day) return "";
+  const b = el("button", { className: "stage date" + (t.day ? "" : " empty"), type: "button", textContent: t.day ? dayLabel(t.day) : "+ Date",
+    title: t.day ? "Date du titre" : "Ajouter une date (création, enregistrement…)", ariaLabel: "Date de " + t.title + (t.day ? " : " + dayLabel(t.day) : "") });
+  b.onclick = (event) => {
+    event.stopPropagation();
+    const save = (day) => api("PATCH", "/me/sounds/tracks/" + t.id, { day }).then(refresh, fail);
+    if (!t.day) return pickDay(b, "", save);
+    menu(b, [
+      { label: "Changer la date", icon: "repeat", onclick: () => pickDay(b, t.day, save) },
+      { label: "Retirer la date", icon: "close", danger: true, onclick: () => save("") },
+    ]);
+  };
+  return b;
+}
+// Un badge (étape ou feat.) : modifiable dans la fenêtre d'un titre et en mode édition ; vide, il n'apparaît qu'en édition.
+function stageButton(t, editable = true) {
+  if (!editable && !t.stage) return "";
   const b = el("button", { className: "stage " + stageClass(t.stage), type: "button", textContent: OP.stageLabel(t.stage) || "Étape",
     title: "Où en est ce titre : maquette, version, final", ariaLabel: "Étape de " + t.title + " : " + (OP.stageLabel(t.stage) || "non précisée") });
   b.onclick = (event) => { event.stopPropagation(); stageMenu(b, t); };
+  return b;
+}
+function featButton(t, editable = editing) {
+  const feat = t.credits.feat || "";
+  if (!editable && !feat) return "";
+  const b = el("button", { className: "feat" + (feat ? "" : " empty"), type: "button", textContent: feat ? "feat. " + feat : "+ feat.",
+    title: feat ? "feat. " + feat : "Ajouter les artistes invités", ariaLabel: "Artistes invités de " + t.title + (feat ? " : " + feat : "") });
+  b.onclick = async (event) => {
+    event.stopPropagation();
+    const next = await ask("feat. (artistes invités, séparés par des virgules ; vide pour retirer)", feat, true);
+    if (next !== null) api("PATCH", "/me/sounds/tracks/" + t.id, { credits: { ...t.credits, feat: next } }).then(refresh, fail);
+  };
   return b;
 }
 function trackRow(p, t, i) {
@@ -715,11 +986,13 @@ function trackRow(p, t, i) {
   more.onclick = (event) => { event.stopPropagation(); openDetails(t.id); };
   const row = el("li", { className: "trk", draggable: true, tabIndex: 0, title: "Écouter (glisser pour réordonner)", style: "--i:" + (i + 3) },
     el("span", { className: "num", textContent: String(i + 1) }),
-    el("div", {}, el("b", { textContent: t.title }), el("small", { textContent: [day(v.createdAt), "v" + v.n + (t.versions.length > 1 ? " sur " + t.versions.length : ""),
+    el("div", {}, el("div", { className: "tline" }, el("b", { textContent: t.title }), featButton(t)), el("small", { textContent: [day(v.createdAt), "v" + v.n + (t.versions.length > 1 ? " sur " + t.versions.length : ""),
       t.comments.length ? t.comments.length + " commentaire" + (t.comments.length > 1 ? "s" : "") : null,
       t.plays ? t.plays + " écoute" + (t.plays > 1 ? "s" : "") : null].filter(Boolean).join(" · ") })),
-    stageButton(t), el("span", { className: "len", textContent: v.duration ? OP.time(v.duration) : "" }), more);
+    el("span", { className: "badges" }, dateButton(t), stageButton(t, editing)), el("span", { className: "len", textContent: v.duration ? OP.time(v.duration) : "" }), more);
   row.dataset.id = t.id;
+  row.draggable = editing;
+  row.title = editing ? "Écouter (glisser pour réordonner)" : "Écouter";
   row.onclick = () => playProject(p, i);
   row.onkeydown = (event) => { if (event.key === "Enter") row.onclick(); };
   // Réordonner en glissant les titres.
@@ -813,10 +1086,10 @@ $("uploads-close").append(icon("close"));
 $("uploads-close").onclick = clearUploads;
 addEventListener("beforeunload", (event) => { if (uploading) event.preventDefault(); });
 // Des sons déposés hors d'un projet : un nouveau projet, nommé d'après le premier fichier.
-async function newProjectWith(files) {
+async function newProjectWith(files, inFolder = folderId()) {
   const name = files[0].name.replace(/\.[a-z0-9]{2,5}$/i, "");
   const { id } = await api("POST", "/me/sounds/projects", { title: files.length > 1 ? "Nouveau projet" : name });
-  if (folderId()) await api("PATCH", "/me/sounds/projects/" + id, { folderId: folderId() });
+  if (inFolder) await api("PATCH", "/me/sounds/projects/" + id, { folderId: inFolder });
   await refresh();
   location.hash = "#/p/" + id;
   sendFiles(files, project(id));
@@ -841,6 +1114,19 @@ async function uploadCover(p, f) {
     await refresh();
   } catch (error) { fail(error); }
 }
+$("bg-change").onclick = () => $("bg-file").click();
+$("bg-file").onchange = async () => {
+  const f = $("bg-file").files[0], p = project();
+  $("bg-file").value = "";
+  if (!f || !p) return;
+  if (f.size > 8 * 1024 * 1024) return fail(new Error("Le fond doit faire 8 Mo au plus."));
+  try {
+    const response = await fetch("/api/me/sounds/projects/" + p.id + "/background", { method: "PUT", headers: { Authorization: "Bearer " + token, "Content-Type": f.type }, body: f });
+    if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Image refusée.");
+    await refresh();
+  } catch (error) { fail(error); }
+};
+$("bg-remove").onclick = () => api("DELETE", "/me/sounds/projects/" + project().id + "/background").then(refresh, fail);
 $("cover-file").onchange = () => {
   const f = $("cover-file").files[0];
   $("cover-file").value = "";
@@ -875,9 +1161,9 @@ addEventListener("drop", (event) => {
 
 // ——— Le bouton + ———
 $("fab").append(icon("plus"), "Ajouter");
-$("fab").onclick = () => {
+function addMenu(anchor) {
   const p = openId() && project();
-  menu($("fab"), [
+  menu(anchor, [
     p && { label: "Ajouter des sons à ce projet", icon: "plus", onclick: () => pickFiles({ project: p }) },
     { label: "Importer des sons", icon: "download", onclick: () => pickFiles(null) },
     { label: "Nouveau projet", icon: "star", onclick: async () => {
@@ -889,14 +1175,22 @@ $("fab").onclick = () => {
         await refresh(); location.hash = "#/p/" + id;
       } catch (error) { fail(error); }
     } },
-    !p && !folderId() && { label: "Nouveau dossier", icon: "plus", onclick: async () => {
+    !p && { label: "Nouveau dossier", icon: "plus", onclick: async () => {
       const title = await ask("Nom du dossier");
-      if (title) api("POST", "/me/sounds/folders", { title }).then(refresh, fail);
+      if (title) api("POST", "/me/sounds/folders", { title, parentId: folderId() }).then(refresh, fail);
     } },
   ]);
-};
+}
+$("fab").onclick = () => addMenu($("fab"));
+document.querySelector("main").addEventListener("contextmenu", (event) => {
+  if (!data || !$("gate").hidden || event.target.closest(".tile, .trk, input, textarea, a, button, .album .art")) return;
+  event.preventDefault();
+  addMenu(atPointer(event));
+});
+// Dans un dossier, un projet ou un dossier lâché sur ← remonte d'un niveau ; ← ramène au dossier du dessus.
+dropTarget($("folder-back"), (kind, id) => moveTo(kind, id, (folder() && folder().parentId) || null));
 $("folder-back").append(icon("back"));
-$("folder-back").onclick = () => { location.hash = ""; };
+$("folder-back").onclick = () => { const f = folder(); location.hash = f && f.parentId ? "#/f/" + f.parentId : ""; };
 $("folder-more").append(icon("more"));
 $("folder-more").onclick = () => folderMenu($("folder-more"), folder());
 $("back").append(icon("back"));
@@ -909,8 +1203,13 @@ $("project-more").append(icon("more"));
 $("project-more").onclick = () => projectMenu($("project-more"), project());
 $("add-tracks").append(icon("plus"), "Ajouter des titres");
 $("add-tracks").onclick = () => pickFiles({ project: project() });
-$("cover").onclick = () => pickCover(project());
+$("cover").onclick = () => editing && pickCover(project());
+// Le mode édition : les options de modification n'apparaissent que là, la page reste lisible le reste du temps.
+let editing = false;
+$("edit-toggle").onclick = () => { editing = !editing; document.body.classList.toggle("editing", editing); render(); };
+addEventListener("hashchange", () => { if (!openId() && editing) { editing = false; document.body.classList.remove("editing"); } });
 $("project-title").onclick = async () => {
+  if (!editing) return;
   const p = project(), title = await ask("Nom du projet", p.title);
   if (title) api("PATCH", "/me/sounds/projects/" + p.id, { title }).then(refresh, fail);
 };
@@ -943,26 +1242,29 @@ const item = (iconName, label, opts = {}) => {
 const group = (...rows) => el("ul", { className: "group" }, ...rows.filter(Boolean));
 // Un texte modifiable sur place : Entrée ou un clic ailleurs l'enregistre, Échap l'annule ; vide permis si allowEmpty.
 function inlineEdit(value, placeholder, max, save, allowEmpty) {
-  const span = el("span", { className: "title-edit", contentEditable: "plaintext-only", spellcheck: false, textContent: value || "",
-    title: "Cliquer pour modifier", role: "textbox", ariaLabel: placeholder });
-  span.dataset.placeholder = placeholder;
-  if (span.contentEditable !== "plaintext-only") span.contentEditable = "true";
-  span.onkeydown = (event) => {
-    if (event.key === "Enter") { event.preventDefault(); span.blur(); }
-    if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); span.textContent = value || ""; span.blur(); }
+  // Un vrai champ de saisie (et non un texte modifiable) : les accents tapés en deux temps (^ puis e, ¨ puis e, accents
+  // du Mac) et les claviers à composition y passent sans accroc.
+  const input = el("textarea", { className: "title-edit", value: value || "", placeholder, maxLength: max, spellcheck: false, autocomplete: "off",
+    rows: 1, title: "Cliquer pour modifier", ariaLabel: placeholder });
+  const fit = () => { input.style.height = "auto"; input.style.height = input.scrollHeight + "px"; };
+  requestAnimationFrame(fit); // une fois dans la page, sa hauteur réelle se mesure
+  input.oninput = fit;
+  input.onkeydown = (event) => {
+    if (event.isComposing) return; // Entrée qui valide un accent en cours, pas le nom
+    if (event.key === "Enter") { event.preventDefault(); input.blur(); }
+    if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); input.value = value || ""; fit(); input.blur(); }
   };
-  span.onpaste = (event) => { event.preventDefault(); document.execCommand("insertText", false, event.clipboardData.getData("text/plain").replace(/\s+/g, " ")); };
-  span.onblur = () => {
-    const next = span.textContent.replace(/\s+/g, " ").trim().slice(0, max);
-    span.textContent = next;
-    if (!next && !allowEmpty) { span.textContent = value || ""; return; }
-    if (next !== (value || "")) save(next).catch((error) => { span.textContent = value || ""; alert(error.message); });
+  input.onblur = () => {
+    const next = input.value.replace(/\s+/g, " ").trim().slice(0, max);
+    input.value = next;
+    if (!next && !allowEmpty) { input.value = value || ""; fit(); return; }
+    if (next !== (value || "")) save(next).catch((error) => { input.value = value || ""; fit(); alert(error.message); });
   };
-  return span;
+  return input;
 }
 const titleEditor = (t) => inlineEdit(t.title, "Nom du titre", 120, (title) => api("PATCH", "/me/sounds/tracks/" + t.id, { title }).then(refresh));
 // Les crédits d'un titre : la clé gardée par le serveur, le libellé, l'exemple du champ.
-const CREDITS = [["beat", "Beatmaker", "Qui a fait la prod"], ["mix", "Ingé mix", "Qui a mixé"], ["master", "Ingé master", "Qui a masterisé"], ["rec", "Ingé rec", "Qui a enregistré"]];
+const CREDITS = [["feat", "Feat.", "Les artistes invités"], ["beat", "Beatmaker", "Qui a fait la prod"], ["mix", "Ingé mix", "Qui a mixé"], ["master", "Ingé master", "Qui a masterisé"], ["rec", "Ingé rec", "Qui a enregistré"]];
 const creditsList = (credits) => {
   const rows = CREDITS.filter(([k]) => credits && credits[k]);
   return rows.length ? el("div", { className: "credits-list" }, ...rows.map(([k, label]) => el("div", {}, el("span", { textContent: label }), el("b", { textContent: credits[k] })))) : null;
@@ -980,7 +1282,7 @@ function renderDetails() {
   const canvas = el("canvas");
   drawPeaks(canvas, v.peaks);
   const left = el("div", { className: "details-left" }, close,
-    el("h2", {}, el("span", { className: "n", textContent: (i + 1) + ". " }), titleEditor(t)), stageButton(t),
+    el("h2", {}, el("span", { className: "n", textContent: (i + 1) + ". " }), titleEditor(t), featButton(t, true)), el("span", { className: "badges" }, stageButton(t), dateButton(t, true)),
     el("div", { className: "facts", textContent: [v.duration ? length(v.duration) : null, "v" + v.n + " sur " + t.versions.length, size(v.size)].filter(Boolean).join(" · ") }),
     canvas, el("div", { className: "file", textContent: v.filename }), creditsList(t.credits),
     el("button", { className: "btn btn-ghost", type: "button", style: "margin-top:10px", onclick: () => { playVersion(p, t, v); } }, icon("play"), "Écouter"));
@@ -1093,10 +1395,15 @@ function renderShare() {
     input.onchange = () => onchange(input.checked);
     return el("label", { className: "switch" }, input, el("span"));
   };
-  const select = el("select", { ariaLabel: "Qui peut écouter" },
-    el("option", { value: "private", textContent: "Privé : toi seulement", selected: !link }),
-    el("option", { value: "public", textContent: "Toute personne qui a le lien", selected: !!link }));
-  select.onchange = () => (select.value === "public" ? create() : unshare());
+  // Un collaborateur partage par ses propres liens : « privé » veut dire sans lien à lui (l'auteur et l'équipe gardent les leurs).
+  const privateLabel = p.mine ? "Privé : toi seulement" : "Privé : pas de lien à toi";
+  // Qui peut écouter : un menu du site (et non la liste du navigateur), comme les autres menus de la page.
+  const select = el("button", { type: "button", ariaLabel: "Qui peut écouter", ariaHasPopup: "menu",
+    textContent: link ? "Toute personne qui a le lien" : privateLabel });
+  select.onclick = () => menu(select, [
+    { label: (link ? "" : "✓ ") + privateLabel, icon: "close", onclick: () => link && unshare() },
+    { label: (link ? "✓ " : "") + "Toute personne qui a le lien", icon: "link", onclick: () => !link && create() },
+  ]);
   const unshare = () => {
     const all = data.links.filter((l) => (kind === "project" ? l.projectId === id : l.trackId === id));
     Promise.all(all.map((l) => api("DELETE", "/me/sounds/links/" + l.id))).then(refresh, (e) => alert(e.message));
@@ -1134,7 +1441,9 @@ function renderShare() {
     copyBtn.onclick = () => copy(link.url, copyBtn);
     foot.append(copyBtn);
   } else {
-    body.append(el("p", { className: "muted", style: "margin:0 4px;font-size:14px", textContent: kind === "project"
+    body.append(el("p", { className: "muted", style: "margin:0 4px;font-size:14px", textContent: !p.mine
+      ? "Tu collabores sur ce projet de " + p.owner.name + " : crée ton propre lien pour le faire entendre. Tu pourras le protéger, le limiter dans le temps et le couper à tout moment ; il ne s'ouvrira plus si tu quittes le projet."
+      : kind === "project"
       ? "Personne d'autre que toi ne peut écouter ce projet. Crée un lien pour le faire entendre : tu pourras le protéger, le limiter dans le temps et le couper à tout moment."
       : "Personne d'autre que toi ne peut écouter ce titre. Crée un lien pour le faire entendre." }));
     const make = el("button", { className: "btn btn-primary", type: "button" }, icon("link"), "Créer le lien et le copier");
@@ -1145,19 +1454,46 @@ function renderShare() {
 }
 let dateRow = null;
 
+// Ajouter Mes sons à l'écran d'accueil : proposé sur téléphone, tant que la page n'est pas déjà ouverte depuis l'icône.
+// Android : la fenêtre d'installation du navigateur quand il la propose ; sinon (et sur iPhone) les gestes à faire.
+let installEvent = null;
+const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const phone = matchMedia("(pointer: coarse)").matches;
+const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+$("install").hidden = standalone || !phone;
+addEventListener("beforeinstallprompt", (event) => { event.preventDefault(); installEvent = event; });
+addEventListener("appinstalled", () => { $("install").hidden = true; });
+$("install").onclick = async () => {
+  if (installEvent) {
+    installEvent.prompt();
+    const { outcome } = await installEvent.userChoice.catch(() => ({}));
+    if (outcome === "accepted") $("install").hidden = true;
+    installEvent = null;
+    return;
+  }
+  const share = '<svg class="share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Partager"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"/></svg>';
+  $("install-intro").textContent = "Une icône Mes sons, qui s'ouvre en plein écran comme une application.";
+  $("install-steps").innerHTML = ios
+    ? "<li><span>Dans Safari, touche le bouton Partager " + share + " en bas de l'écran.</span></li><li><span>Fais défiler et touche « Sur l'écran d'accueil ».</span></li><li><span>Touche « Ajouter ». À la première ouverture, connecte-toi une fois.</span></li>"
+    : "<li><span>Ouvre le menu du navigateur (⋮ en haut à droite).</span></li><li><span>Touche « Ajouter à l'écran d'accueil » ou « Installer l'application ».</span></li><li><span>Confirme : l'icône Mes sons apparaît sur ton écran d'accueil.</span></li>";
+  $("install-help").showModal();
+};
+lightClose($("install-help"));
+
 (async () => {
   const gate = (html) => { $("gate").hidden = false; $("gate").innerHTML = html; };
   $("empty-star").append(icon("star"));
-  if (!token) return gate('<p>Connecte-toi d\'abord à ton compte.</p><a class="btn btn-primary" href="compte.html">Se connecter</a>');
+  if (!token) return gate('<p>Connecte-toi d\'abord à ton compte.</p><a class="btn btn-primary" href="compte.html?next=mes-sons">Se connecter</a>');
   try {
     await refresh();
+    checkInvite();
   } catch (error) {
     gate(error.status === 403 ? "<p>Mes sons est réservé aux membres ONIRIQUE.</p>"
-      : error.status === 401 ? '<p>Ta session a expiré.</p><a class="btn btn-primary" href="compte.html">Se reconnecter</a>' : "<p></p>");
+      : error.status === 401 ? '<p>Ta session a expiré.</p><a class="btn btn-primary" href="compte.html?next=mes-sons">Se reconnecter</a>' : "<p></p>");
     if (error.status !== 403 && error.status !== 401) $("gate").firstChild.textContent = error.message;
   }
 })();
 </script>
-<script src="assets/account.js?v=6"></script>
+<script src="assets/account.js?v=7"></script>
 <script src="assets/site-nav.js?v=12"></script>
 </html>
