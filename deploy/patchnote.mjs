@@ -1,4 +1,4 @@
-// Publie une note de version (patch notes) sur le salon Discord d'ONIRIQUE, pour les changements qui comptent :
+// Publie une note de version (patch notes) sur le salon Discord d'ONIRIQUE (celle de la journée part chaque soir) :
 //
 //   node deploy/patchnote.mjs notes.md     envoie la note
 //   node deploy/patchnote.mjs --last       le dernier commit déjà annoncé (git log <commit>..origin/main : ce qui reste à annoncer)
