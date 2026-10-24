@@ -300,6 +300,22 @@ try {
     assert.deepEqual((await call('POST', `/api/sounds/share/${share}`, { body: {} })).tracks[0].offers, []);
   });
 
+  await step('YouTube, options : le modèle et le rendu des vidéos enregistrés sur le compte, et le filtre ffmpeg qui en sort', async () => {
+    const { videoFilter } = await import('../src/beattube.js');
+    let yt = await call('GET', '/api/me/sounds/youtube', { token: beatmaker.token });
+    assert.equal(yt.optionsSaved, false);
+    assert.deepEqual(yt.options.style, { background: 'blur', color: '#0d0809', blur: 40, dim: 25, size: 81 });
+    const saved = await call('PUT', '/api/me/sounds/youtube/options', { token: beatmaker.token,
+      body: { title: '{titre} beat', description: 'Achat : {lien}', style: { background: 'color', color: '#FF8800', blur: 999, size: 10, dim: 'x' } } });
+    assert.deepEqual(saved.style, { background: 'color', color: '#ff8800', blur: 60, dim: 25, size: 40 });
+    yt = await call('GET', '/api/me/sounds/youtube', { token: beatmaker.token });
+    assert.equal(yt.optionsSaved, true);
+    assert.equal(yt.options.title, '{titre} beat');
+    assert.ok(videoFilter(saved.style).includes('drawbox=x=0:y=0:w=iw:h=ih:color=0xff8800:t=fill') && videoFilter(saved.style).includes('scale=432:432'));
+    assert.ok(videoFilter({ background: 'blur', blur: 0, dim: 0, size: 100 }).includes('crop=1920:1080,null[bg]'));
+    await call('PUT', '/api/me/sounds/youtube/options', { token: beatmaker.token, body: {} });
+  });
+
   await step('YouTube : les prods programmées en vidéos, le modèle rempli pour chacune, une par jour', async () => {
     await call('POST', '/api/me/sounds/youtube', { token: beatmaker.token, body: { trackIds: [tid], title: 'x' }, expect: 400 });
     run(`INSERT INTO youtube_accounts (user_id, refresh_token, channel_id, channel_title, uploads, created_at) VALUES (?, 'x', 'UCx', 'Kay Beats', 'UUx', 0)`, beatmaker.id);

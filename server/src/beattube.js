@@ -22,6 +22,30 @@ for (const [column, type] of [['tags', `TEXT NOT NULL DEFAULT ''`], ['privacy', 
   if (!db.prepare(`SELECT 1 FROM pragma_table_info('youtube_videos') WHERE name = ?`).get(column)) db.exec(`ALTER TABLE youtube_videos ADD COLUMN ${column} ${type}`);
 }
 
+// Les options YouTube d'un beatmaker (onglet « Options ») : son modèle de titre et de description, et le réglage de ses
+// vidéos (fond flouté ou uni, flou, assombrissement, taille de l'image).
+db.exec(`CREATE TABLE IF NOT EXISTS youtube_beat_options (user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, options TEXT NOT NULL)`);
+export const YT_OPTIONS = {
+  title: '[FREE] Type Beat - "{titre}"', description: 'Prod. {artiste}\nLicences et achat : {lien}\n\n{bpm} BPM · {cle}', tags: 'type beat, instrumental, beat',
+  privacy: 'public', every: 1, style: { background: 'blur', color: '#0d0809', blur: 40, dim: 25, size: 81 },
+};
+const clamp = (value, min, max, fallback) => (Number.isFinite(Number(value)) ? Math.max(min, Math.min(max, Math.round(Number(value)))) : fallback);
+/** Des options propres, quoi que le navigateur envoie ; ce qui manque garde la valeur d'origine. */
+export function ytOptions(b = {}) {
+  const d = YT_OPTIONS, s = b.style || {};
+  return {
+    title: typeof b.title === 'string' ? b.title.trim().slice(0, 200) || d.title : d.title,
+    description: typeof b.description === 'string' ? b.description.replace(/\r\n?/g, '\n').slice(0, 5000) : d.description,
+    tags: typeof b.tags === 'string' ? b.tags.slice(0, 500) : d.tags,
+    privacy: b.privacy === 'unlisted' ? 'unlisted' : 'public', every: clamp(b.every, 0, 30, d.every),
+    style: {
+      background: s.background === 'color' ? 'color' : 'blur', color: /^#[0-9a-f]{6}$/i.test(s.color) ? s.color.toLowerCase() : d.style.color,
+      blur: clamp(s.blur, 0, 60, d.style.blur), dim: clamp(s.dim, 0, 60, d.style.dim), size: clamp(s.size, 40, 100, d.style.size),
+    },
+  };
+}
+const optionsOf = (userId) => ytOptions(JSON.parse(get('SELECT options FROM youtube_beat_options WHERE user_id = ?', userId)?.options || '{}'));
+
 const str = (value, max) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
 const clean = (text) => text.replace(/[<>]/g, ''); // YouTube refuse < et > dans un titre ou une description
 /** Le modèle rempli pour une prod : {titre}, {bpm}, {cle}, {artiste}, {lien} ; une variable vide disparaît proprement. */
@@ -31,12 +55,18 @@ export function fillTemplate(template, values) {
 }
 
 // La vidéo : 1920 × 1080, deux images par seconde (une image fixe n'a pas besoin de plus), le son en AAC 320 kb/s.
-const FILTER = '[0:v]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,boxblur=40:2,eq=brightness=-0.25[bg];'
-  + '[0:v]scale=880:880:force_original_aspect_ratio=decrease[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,format=yuv420p[v]';
-function render(cover, audio, out, seconds) {
+// Le fond : l'image elle-même agrandie, floutée et assombrie, ou une couleur unie ; l'image au centre, à la taille choisie.
+export function videoFilter(style = YT_OPTIONS.style) {
+  const side = Math.round(1080 * style.size / 100 / 2) * 2;
+  const bg = style.background === 'color' ? `drawbox=x=0:y=0:w=iw:h=ih:color=0x${style.color.slice(1)}:t=fill`
+    : [style.blur ? `boxblur=${style.blur}:2` : '', style.dim ? `eq=brightness=-${(style.dim / 100).toFixed(2)}` : ''].filter(Boolean).join(',') || 'null';
+  return `[0:v]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,${bg}[bg];`
+    + `[0:v]scale=${side}:${side}:force_original_aspect_ratio=decrease[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,format=yuv420p[v]`;
+}
+function render(cover, audio, out, seconds, style) {
   if (testing) { fs.copyFileSync(audio, out); return Promise.resolve(); } // pas de ffmpeg pendant les tests
   const image = cover ? ['-loop', '1', '-framerate', '2', '-i', cover] : ['-f', 'lavfi', '-i', 'color=c=0x0D0809:s=1920x1080:r=2'];
-  const args = ['-y', '-hide_banner', '-loglevel', 'error', ...image, '-i', audio, '-filter_complex', cover ? FILTER : '[0:v]format=yuv420p[v]',
+  const args = ['-y', '-hide_banner', '-loglevel', 'error', ...image, '-i', audio, '-filter_complex', cover ? videoFilter(style) : '[0:v]format=yuv420p[v]',
     '-map', '[v]', '-map', '1:a', '-c:v', 'libx264', '-preset', 'veryfast', '-tune', 'stillimage', '-r', '2',
     // La durée du son, quand elle est connue : sinon l'image fixe dépasse la fin de quelques secondes.
     '-c:a', 'aac', '-b:a', '320k', '-shortest', ...(seconds > 0 ? ['-t', seconds.toFixed(2)] : []), '-movflags', '+faststart', out];
@@ -56,7 +86,7 @@ async function renderQueue(soundsDir) {
       try {
         if (!row) throw new Error('La prod a été supprimée.');
         const cover = row.cover ? path.join(config.mediaDir, path.basename(row.cover)) : null;
-        await render(cover && fs.existsSync(cover) ? cover : null, path.join(soundsDir, row.stored_as), videoFile(v), row.duration);
+        await render(cover && fs.existsSync(cover) ? cover : null, path.join(soundsDir, row.stored_as), videoFile(v), row.duration, optionsOf(v.user_id).style);
         run(`UPDATE youtube_videos SET status = ?, size = ? WHERE id = ?`, v.publish_at ? 'scheduled' : 'draft', fs.statSync(videoFile(v)).size, v.id);
       } catch (error) {
         run(`UPDATE youtube_videos SET status = 'failed', error = ? WHERE id = ?`, `Vidéo non fabriquée : ${error.message}`.slice(0, 300), v.id);
@@ -174,7 +204,14 @@ export function mountBeatTube(app, { me, track, soundsDir, wrap, receiveImage, r
 
   app.get('/api/me/sounds/youtube', ...me, (req, res) => {
     const account = get('SELECT channel_title FROM youtube_accounts WHERE user_id = ?', req.user.id);
-    res.json({ configured: !!(config.googleClientId && config.googleClientSecret), channel: account?.channel_title || null, videos: mine(req.user.id) });
+    res.json({ configured: !!(config.googleClientId && config.googleClientSecret), channel: account?.channel_title || null, videos: mine(req.user.id),
+      options: optionsOf(req.user.id), optionsSaved: !!get('SELECT 1 FROM youtube_beat_options WHERE user_id = ?', req.user.id) });
+  });
+  // Les options : enregistrées en entier (ce qui manque reprend la valeur d'origine).
+  app.put('/api/me/sounds/youtube/options', ...me, (req, res) => {
+    const options = ytOptions(req.body);
+    run('INSERT INTO youtube_beat_options (user_id, options) VALUES (?, ?) ON CONFLICT (user_id) DO UPDATE SET options = excluded.options', req.user.id, JSON.stringify(options));
+    res.json(options);
   });
 
   // Programmer des prods : une vidéo par prod, le modèle de titre et de description rempli pour chacune, la première à
