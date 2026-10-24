@@ -707,7 +707,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     // VANISH : un fondateur voit les projets de tous les comptes, en lecture seule ; rien n'est compté ni signalé.
     const vanish = req.query.vanish === '1' && req.user.role === 'founder';
     const scope = vanish ? '1 = 1' : ACCESS, args = vanish ? [] : [u, u];
-    const projects = all(`SELECT p.*, o.name AS owner_name, o.avatar AS owner_avatar FROM sound_projects p JOIN users o ON o.id = p.user_id
+    const projects = all(`SELECT p.*, o.name AS owner_name, o.avatar AS owner_avatar, o.instagram AS owner_instagram FROM sound_projects p JOIN users o ON o.id = p.user_id
       WHERE ${scope} ORDER BY p.created_at DESC`, ...args);
     const collabFolders = new Map(all('SELECT project_id, folder_id FROM sound_collabs WHERE user_id = ?', u).map((c) => [c.project_id, c.folder_id]));
     const collabs = all(`SELECT c.project_id, u.id, u.name, u.avatar FROM sound_collabs c JOIN users u ON u.id = c.user_id
@@ -740,6 +740,8 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
         inviteUrl: p.user_id === u && p.invite_token ? `${config.siteUrl}/mes-sons#/invite/${p.invite_token}` : null,
         about: aboutOf(p.user_id, p.user_id === u), collabAbouts: aboutsOf(collabs.filter((c) => c.project_id === p.id)),
         // Le mail d'un pack (sa liste d'adresses comprise) ne se montre qu'à son auteur.
+        // « Contacter le vendeur », comme sur la page d'écoute (montré en mode visiteur).
+        contact: p.kind === 'pack' ? p.owner_instagram || null : null,
         mail: p.kind === 'pack' && p.user_id === u ? mailDraft(JSON.parse(p.mail || '{}')) : null,
         tracks: tracks.filter((t) => t.project_id === p.id).map((t) => {
           const mine = plays.filter((r) => r.track_id === t.id);

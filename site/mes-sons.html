@@ -204,7 +204,11 @@ body:not(.editing) .edit-only { display: none !important; }
 .visitor-toggle b { color: var(--haze); font-weight: 700; }
 body.visitor .visitor-toggle { background: var(--mist); color: var(--night); border-color: var(--mist); }
 body.visitor .visitor-toggle b { color: var(--night); }
-body.visitor :is(#edit-toggle, #share-project, #project-more, #pack-store, #pack-mail, #pack-youtube, #fab, #cover-swap, .plan-chip, .trk .dots, .trk small) { display: none !important; }
+/* Comme sur la page d'écoute : sous la pochette d'un pack, sur toute sa largeur, seulement en mode visiteur */
+.pack-contact { display: flex; justify-content: center; margin-top: 14px; padding: 11px 16px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); font: 600 14px var(--f-body); text-decoration: none; }
+.pack-contact:hover { border-color: var(--ember); }
+body:not(.visitor) .pack-contact { display: none; }
+body.visitor :is(#project-meta .tag, #edit-toggle, #share-project, #project-more, #pack-store, #pack-mail, #pack-youtube, #fab, #cover-swap, .plan-chip, .trk .dots, .trk small) { display: none !important; }
 body.editing #edit-toggle { background: var(--mist); color: var(--night); border-color: var(--mist); }
 /* Préparer la sortie : le compte à rebours et les tâches faites, à côté de la date */
 .release .plan-chip { border-color: rgba(255,210,214,.16); background: rgba(255,255,255,.06); }
@@ -640,6 +644,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
       <div>
         <button class="art" id="cover" type="button" aria-label="Voir la pochette en grand"><span class="change">Changer la pochette</span></button>
         <div class="cover-by" id="cover-by"></div>
+        <a class="pack-contact" id="pack-contact" target="_blank" rel="noopener" hidden>Contacter le vendeur</a>
       </div>
       <div>
         <div class="album-head">
@@ -1348,6 +1353,8 @@ function renderProject(p) {
   $("bg-remove").hidden = !p.background;
   OP.buttonColor(document.body, p.kind === "pack" && p.buttonColor);
   $("buy-color").hidden = p.kind !== "pack";
+  $("pack-contact").hidden = !p.contact;
+  if (p.contact) $("pack-contact").href = p.contact;
   $("buy-color-reset").hidden = p.kind !== "pack" || !p.buttonColor;
   if (document.activeElement !== $("buy-color").lastChild) $("buy-color").lastChild.value = p.buttonColor || "#e23444";
   tintOf(p.cover).then((t) => { if (openId() === p.id) theme(t); });
