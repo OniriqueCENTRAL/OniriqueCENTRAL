@@ -400,5 +400,9 @@
  "Nouveaux collaborateurs": "New collaborators",
  "Choisir ce qui s'affiche": "Choose what shows",
  "Choisir les notifications affichées": "Choose which notifications show",
- "Retour aux notifications": "Back to notifications"
+ "Retour aux notifications": "Back to notifications",
+ "Couleur des prix": "Price colour",
+ "Couleur de la pochette": "Cover colour",
+ "La couleur des prix et des boutons « Acheter » du pack": "The colour of the pack's prices and \"Buy\" buttons",
+ "Couleur invalide.": "Invalid colour."
 }

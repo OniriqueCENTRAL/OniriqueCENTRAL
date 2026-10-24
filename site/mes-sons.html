@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=ff8aa43a"></script>
+<script src="assets/i18n.js?v=4ce21315"></script>
 <script src="assets/ui.js?v=3"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
@@ -538,8 +538,12 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 .tline:has(.prod) { flex-wrap: wrap; row-gap: 4px; }
 .tline:has(.prod) b { min-width: auto; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .stage.prod:not(.empty) { border-style: solid; color: var(--mist); background: rgba(255,255,255,.04); letter-spacing: .04em; }
-.stage.prod.price { border-color: var(--ember); background: var(--ember); color: var(--night); }
-.stage.prod.price-off { border-style: dashed; border-color: var(--ember); }
+.stage.prod.price { border-color: var(--buy, var(--ember)); background: var(--buy, var(--ember)); color: var(--buy-ink, var(--night)); }
+.stage.prod.price-off { border-style: dashed; border-color: var(--buy, var(--ember)); }
+/* La couleur des boutons d'un pack : le nuancier natif, caché derrière le bouton */
+#buy-color { position: relative; }
+#buy-color i { width: 16px; height: 16px; border-radius: 50%; background: var(--buy, var(--ember)); box-shadow: 0 0 0 1px rgba(255,255,255,.3); }
+#buy-color input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .share-body { padding: 18px; display: grid; gap: 14px; }
 .faces { display: flex; }
 .faces img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid #150a0c; margin-left: -8px; }
@@ -651,6 +655,8 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
           <button class="edit-toggle" id="edit-toggle" type="button" aria-pressed="false">Modifier</button>
           <button class="edit-toggle edit-only" id="bg-change" type="button">Changer le fond</button>
           <button class="edit-toggle edit-only" id="bg-remove" type="button" hidden>Retirer le fond</button>
+          <label class="edit-toggle edit-only" id="buy-color" title="La couleur des prix et des boutons « Acheter » du pack" hidden><i></i>Couleur des prix<input type="color" aria-label="Couleur des prix"></label>
+          <button class="edit-toggle edit-only" id="buy-color-reset" type="button" hidden>Couleur de la pochette</button>
           <button class="round" id="project-more" type="button" aria-label="Plus d'options" title="Plus d'options"></button>
         </div>
         <button class="add-bar" id="add-tracks" type="button"></button>
@@ -697,7 +703,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 <dialog id="sale"></dialog>
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close('cancel')">Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
-<script src="assets/sounds-player.js?v=16"></script>
+<script src="assets/sounds-player.js?v=17"></script>
 <script src="assets/audio-kit.js?v=2"></script>
 <script src="assets/pdf-kit.js"></script>
 <script src="assets/release-steps.js"></script>
@@ -1340,6 +1346,10 @@ function renderProject(p) {
   setBackground(p.background);
   renderAbout(p);
   $("bg-remove").hidden = !p.background;
+  OP.buttonColor(document.body, p.kind === "pack" && p.buttonColor);
+  $("buy-color").hidden = p.kind !== "pack";
+  $("buy-color-reset").hidden = p.kind !== "pack" || !p.buttonColor;
+  if (document.activeElement !== $("buy-color").lastChild) $("buy-color").lastChild.value = p.buttonColor || "#e23444";
   tintOf(p.cover).then((t) => { if (openId() === p.id) theme(t); });
   $("crumb-owner").textContent = data.owner.name;
   $("pack-mail").hidden = !p.mail;
@@ -1660,6 +1670,10 @@ let coverTarget = null;
 function pickCover(p) { coverTarget = p; $("cover-file").click(); }
 const uploadCover = (p, f) => sendImage(f, "/me/sounds/projects/" + p.id + "/cover", 5 * 1024 * 1024, "La pochette doit faire 5 Mo au plus.");
 $("bg-change").onclick = () => $("bg-file").click();
+// La couleur se voit pendant qu'on la choisit ; elle est enregistrée une fois le nuancier refermé.
+$("buy-color").lastChild.oninput = (event) => OP.buttonColor(document.body, event.target.value);
+$("buy-color").lastChild.onchange = (event) => api("PATCH", "/me/sounds/projects/" + project().id, { buttonColor: event.target.value }).then(refresh, fail);
+$("buy-color-reset").onclick = () => api("PATCH", "/me/sounds/projects/" + project().id, { buttonColor: "" }).then(refresh, fail);
 $("bg-file").onchange = () => {
   const f = $("bg-file").files[0], p = project();
   $("bg-file").value = "";

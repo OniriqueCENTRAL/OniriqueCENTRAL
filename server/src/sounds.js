@@ -224,6 +224,10 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'd
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'background'`).get()) {
   db.exec('ALTER TABLE sound_projects ADD COLUMN background TEXT');
 }
+// La couleur des boutons d'un pack (prix, « Acheter »), choisie par le beatmaker ; '' : celle tirée de la pochette.
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'button_color'`).get()) {
+  db.exec(`ALTER TABLE sound_projects ADD COLUMN button_color TEXT NOT NULL DEFAULT ''`);
+}
 // Les packs de prods : un projet de beatmaker (kind = 'pack') et le brouillon de son mail ; chaque prod a son BPM, sa
 // clé (« C# min »), son prix en centimes et le lien de paiement du beatmaker (0 / '' : pas en vente).
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'kind'`).get()) {
@@ -728,7 +732,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       store: projects.some((p) => p.kind === 'pack' && p.user_id === u) ? { seller: sellerView(u), licenses: licensesOf(u) } : null,
       quota: { used: usedBy(req.user.id), limit: quotaBytes(), full: d.used / d.total >= diskMax() },
       projects: projects.map((p) => ({
-        id: p.id, kind: p.kind, title: p.title, artist: p.artist, cover: media(p.cover), background: media(p.background), coverBy: p.cover_by, releaseDate: p.release_date, plan: planOf(p), createdAt: p.created_at,
+        id: p.id, kind: p.kind, title: p.title, artist: p.artist, cover: media(p.cover), background: media(p.background), buttonColor: p.button_color, coverBy: p.cover_by, releaseDate: p.release_date, plan: planOf(p), createdAt: p.created_at,
         // Chacun range le projet dans ses dossiers : l'auteur dans le projet, un collaborateur dans sa place de collaborateur.
         mine: p.user_id === u, folderId: vanish ? null : p.user_id === u ? p.folder_id : collabFolders.get(p.id) ?? null,
         owner: person({ id: p.user_id, name: p.owner_name, avatar: p.owner_avatar }),
@@ -872,6 +876,11 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (req.body.mail !== undefined) {
       if (ownProject(req, p.id).kind !== 'pack') throw new HttpError(400, "Seul un pack de prods a un mail.");
       run('UPDATE sound_projects SET mail = ? WHERE id = ?', JSON.stringify(mailDraft(req.body.mail)), p.id);
+    }
+    if (req.body.buttonColor !== undefined) {
+      const color = String(req.body.buttonColor || '').toLowerCase();
+      if (color && !/^#[0-9a-f]{6}$/.test(color)) throw new HttpError(400, 'Couleur invalide.');
+      run('UPDATE sound_projects SET button_color = ? WHERE id = ?', color, p.id);
     }
     if (req.body.coverBy !== undefined) run('UPDATE sound_projects SET cover_by = ? WHERE id = ?', str(req.body.coverBy, 80), p.id);
     if (req.body.artist !== undefined) run('UPDATE sound_projects SET artist = ? WHERE id = ?', str(req.body.artist, 120), p.id);
@@ -1328,7 +1337,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     res.json({
       pass: link.password_hash ? passFor(link) : null,
       ...saveState(req, link), simulate, pay: p.kind === 'pack' ? payMethods(p.user_id) : [],
-      owner: p.artist || p.author_name || 'ONIRIQUE', ownerAvatar: media(p.author_avatar), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover), background: media(p.background), coverBy: p.cover_by, releaseDate: p.release_date,
+      owner: p.artist || p.author_name || 'ONIRIQUE', ownerAvatar: media(p.author_avatar), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover), background: media(p.background), buttonColor: p.button_color, coverBy: p.cover_by, releaseDate: p.release_date,
       download, about: aboutOf(p.user_id, false), contact: p.kind === 'pack' ? p.author_instagram || null : null,
       collabAbouts: aboutsOf(all('SELECT u.id, u.name FROM sound_collabs c JOIN users u ON u.id = c.user_id WHERE c.project_id = ? ORDER BY c.created_at', p.id)),
       tracks: tracks.map((t) => ({

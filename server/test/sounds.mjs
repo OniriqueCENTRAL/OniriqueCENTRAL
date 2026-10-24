@@ -474,6 +474,10 @@ try {
     const tid = (await call('POST', `/api/me/sounds/projects/${pack}/tracks?filename=Ghost%20150bpm%20Fmin.wav`, { token: member.token, raw: wav(), expect: 201 })).id;
     await call('PATCH', `/api/me/sounds/tracks/${tid}`, { token: member.token, body: { key: 'zz' }, expect: 400 });
     await call('PATCH', `/api/me/sounds/tracks/${tid}`, { token: member.token, body: { forSale: true } });
+    // La couleur des boutons du pack : un code #rrggbb, ou rien pour celle de la pochette.
+    await call('PATCH', `/api/me/sounds/projects/${pack}`, { token: member.token, body: { buttonColor: 'jaune' }, expect: 400 });
+    await call('PATCH', `/api/me/sounds/projects/${pack}`, { token: member.token, body: { buttonColor: '#F5E132' } });
+    assert.equal((await call('GET', '/api/me/sounds', { token: member.token })).projects.find((x) => x.id === pack).buttonColor, '#f5e132');
     await call('PATCH', `/api/me/sounds/projects/${pack}`, { token: member.token, body: { mail: { to: 'a@b.fr, nope', subject: 'Nouveau pack', trackIds: [tid], colors: { bg: 'red' } } } });
     await call('PATCH', `/api/me/sounds/projects/${projectId}`, { token: member.token, body: { mail: {} }, expect: 400 });
     const p = (await call('GET', '/api/me/sounds', { token: member.token })).projects.find((x) => x.id === pack);

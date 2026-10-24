@@ -963,5 +963,12 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     return date > today ? `Date de sortie prévue : ${text}` : `Date de sortie : ${text}`;
   };
 
-  window.OniriquePlayer = { create, peaksOf, time, icon, tint, stageLabel, releaseLabel, parseLyrics };
+  // Les boutons d'un pack à la couleur choisie par le beatmaker, le texte foncé ou clair selon ce qui se lit le mieux.
+  const buttonColor = (node, hex) => {
+    if (!hex) { node.style.removeProperty("--buy"); node.style.removeProperty("--buy-ink"); return; }
+    const n = parseInt(hex.slice(1), 16), light = 0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
+    node.style.setProperty("--buy", hex);
+    node.style.setProperty("--buy-ink", light > 150 ? "#0D0809" : "#F6EEEE");
+  };
+  window.OniriquePlayer = { create, peaksOf, time, icon, tint, stageLabel, releaseLabel, parseLyrics, buttonColor };
 })();
