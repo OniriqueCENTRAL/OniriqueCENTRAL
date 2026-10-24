@@ -2,6 +2,9 @@
 // Sans ce script, le lien mène à la page qui les liste tous (outils.html), dessinée à partir de la même liste.
 // Ajouter un outil : une ligne dans le bon groupe de OniriqueTools.
 window.OniriqueTools = [
+  ["Abonnement", [
+    ["ONIRIQUE CLOUD et page de liens", "cloud.html", "Tes projets, tes versions, tes collabs et ta page de liens : 1,99 € par mois ou 9,99 € par an."],
+  ]],
   ["Analyser", [
     ["BPM et tonalité", "bpm-tonalite.html", "Le tempo, la gamme et le detune d'un morceau, et un WAV calé sur la grille."],
     ["Volume avant sortie", "volume-lufs.html", "Le niveau LUFS et le pic réel d'un master, plateforme par plateforme."],

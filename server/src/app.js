@@ -22,7 +22,7 @@ import {
   publicKeyPem, publicKeyRaw, userActivations,
 } from './licensing.js';
 import {
-  cancelSubscription, checkout, connectStripe, disconnectStripe, handleLemonEvent, handleStripeEvent, paymentsMode, sellers,
+  cancelSubscription, cancelToolsSubscription, TOOLS, toolsSubscription, checkout, connectStripe, disconnectStripe, handleLemonEvent, handleStripeEvent, paymentsMode, sellers,
   stripeAccount, stripeAccountView, verifyLemonSignature, verifyStripeSignature,
 } from './payments.js';
 import {
@@ -935,6 +935,25 @@ export function createApp() {
       return res.json(await checkout(req.user, 'plan', plan));
     }
     throw new HttpError(400, 'Achat invalide.');
+  }));
+
+  // L'abonnement aux outils (ONIRIQUE CLOUD et page de liens) : son état pour la page /cloud, l'achat, la résiliation.
+  app.get('/api/tools', (req, res) => {
+    const user = optionalUser(req);
+    res.json({ prices: TOOLS.prices, open: paymentsMode() !== 'off', subscription: user ? toolsSubscription(user.id) : null,
+      // Un membre ONIRIQUE les a déjà par son rôle.
+      included: !!user && rolesWith('sounds').includes(user.role) && rolesWith('links').includes(user.role) });
+  });
+  app.post('/api/tools/checkout', requireVerified, wrap(async (req, res) => {
+    const interval = req.body.interval === 'year' ? 'year' : 'month';
+    if (toolsSubscription(req.user.id)?.active) throw new HttpError(409, 'Ton abonnement est déjà en cours.');
+    res.json(await checkout(req.user, 'tools', { id: 0, interval, price_cents: TOOLS.prices[interval],
+      name: `${TOOLS.name} — ${interval === 'year' ? 'annuel' : 'mensuel'}`,
+      successUrl: `${config.siteUrl}/cloud?merci=1`, cancelUrl: `${config.siteUrl}/cloud` }));
+  }));
+  app.post('/api/tools/cancel', requireUser, wrap(async (req, res) => {
+    await cancelToolsSubscription(req.user.id);
+    res.json({ subscription: toolsSubscription(req.user.id) });
   }));
 
   app.post('/api/subscription/cancel', requireUser, wrap(async (req, res) => {

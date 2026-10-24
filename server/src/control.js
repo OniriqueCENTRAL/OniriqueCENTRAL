@@ -207,6 +207,7 @@ export function mountControl(admin) {
         // Les abonnements et les packs sont encaissés par ONIRIQUE ; un plugin, par son créateur.
         creator: o.kind === 'product' ? o.product_creator || 'onirique' : 'onirique',
         item: o.kind === 'product' ? o.product_name || 'Plugin supprimé' : o.kind === 'pack' ? `Pack ${o.pack_name || '(supprimé)'}`
+          : o.kind === 'tools' ? 'Abonnement ONIRIQUE CLOUD et page de liens'
           : `Abonnement ${o.plan_name || ''}`.trim(),
         user: { id: o.user_id, email: o.email, name: o.name, avatar: o.avatar ? `/api/media/${o.avatar}` : null, deleted: o.user_id === null },
       }))

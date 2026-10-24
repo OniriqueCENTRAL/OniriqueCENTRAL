@@ -64,6 +64,28 @@ try {
     assert.deepEqual(empty.projects, []);
   });
 
+  await step('abonnement aux outils : ONIRIQUE CLOUD et page de liens pour un compte sans rôle, jusqu\'à la fin de la période', async () => {
+    const fan = await account('abonne');
+    await call('GET', '/api/me/links', { token: fan.token, expect: 403 });
+    let tools = await call('GET', '/api/tools', { token: fan.token });
+    assert.deepEqual([tools.prices, tools.subscription, tools.included], [{ month: 199, year: 999 }, null, false]);
+    assert.equal((await call('GET', '/api/tools', { token: member.token })).included, true);
+    await call('POST', '/api/tools/checkout', { body: { interval: 'year' }, expect: 401 });
+    assert.equal((await call('POST', '/api/tools/checkout', { token: fan.token, body: { interval: 'year' } })).granted, true);
+    await call('POST', '/api/tools/checkout', { token: fan.token, body: { interval: 'month' }, expect: 409 });
+    tools = await call('GET', '/api/tools', { token: fan.token });
+    assert.deepEqual([tools.subscription.interval, tools.subscription.active, tools.subscription.cancelAtPeriodEnd], ['year', true, false]);
+    assert.deepEqual((await call('GET', '/api/me', { token: fan.token })).rights.sort(), ['links', 'sounds']);
+    await call('GET', '/api/me/sounds', { token: fan.token });
+    await call('GET', '/api/me/links', { token: fan.token });
+    // Résilié : l'accès reste jusqu'à la fin de la période payée, puis se ferme (les sons restent sur le compte).
+    assert.equal((await call('POST', '/api/tools/cancel', { token: fan.token })).subscription.cancelAtPeriodEnd, true);
+    await call('GET', '/api/me/sounds', { token: fan.token });
+    run('UPDATE tool_subscriptions SET current_period_end = ? WHERE user_id = ?', Date.now() - 1000, fan.id);
+    await call('GET', '/api/me/sounds', { token: fan.token, expect: 403 });
+    assert.equal((await call('GET', '/api/tools', { token: fan.token })).subscription.active, false);
+  });
+
   await step('projet, titre et versions : la dernière envoyée est celle qu\'on écoute', async () => {
     projectId = (await call('POST', '/api/me/sounds/projects', { token: member.token, body: { title: 'Album' }, expect: 201 })).id;
     await call('POST', `/api/me/sounds/projects/${projectId}/tracks?filename=pas-un-son.wav`, { token: member.token, raw: Buffer.from('bonjour tout le monde'), expect: 400 });

@@ -8,7 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 import { db, get, all, run, now, setting, setSetting, transaction } from './db.js';
-import { HttpError, rateLimit, optionalUser, hashPassword, verifyPassword, rolesWith } from './auth.js';
+import { HttpError, rateLimit, optionalUser, hashPassword, verifyPassword, can, canSql } from './auth.js';
 import { sendMail } from './mail.js';
 import { escapeHtml } from './mailtemplate.js';
 import { textImage } from './linkpage.js';
@@ -534,7 +534,7 @@ const listeningPage = () => {
 /** Le lien et ce que son aperçu peut montrer ; null si le lien n'existe pas, n'est plus valable ou que l'auteur n'est plus membre. */
 function previewOf(token) {
   const l = get(`SELECT l.*, u.name AS owner_name, u.role AS owner_role FROM sound_links l JOIN users u ON u.id = l.user_id WHERE l.token = ? AND ${LINK_OPEN}`, String(token || '').slice(0, 40));
-  if (!l || !rolesWith('sounds').includes(l.owner_role) || (l.expires_at && l.expires_at < now())) return null;
+  if (!l || !can({ role: l.owner_role, id: l.user_id }, 'sounds') || (l.expires_at && l.expires_at < now())) return null;
   if (l.password_hash || l.require_account) return { link: l, locked: true };
   const t = l.track_id ? get('SELECT * FROM sound_tracks WHERE id = ?', l.track_id) : null;
   const p = linkProject(l);
@@ -644,8 +644,8 @@ function listeningHtml(v, token) {
 
 export function mountSounds(app, { requireUser, receiveFile, receiveImage, removeMedia, wrap }) {
   sweepSounds();
-  const member = (req, _res, next) => (rolesWith('sounds').includes(req.user.role) ? next()
-    : next(new HttpError(403, 'ONIRIQUE CLOUD est réservé aux membres ONIRIQUE.')));
+  const member = (req, _res, next) => (can(req.user, 'sounds') ? next()
+    : next(new HttpError(403, 'ONIRIQUE CLOUD demande un abonnement : 1,99 € par mois ou 9,99 € par an, sur onirique.store/cloud.')));
   const me = [requireUser, member];
 
   const project = (req, pid) => {
@@ -763,14 +763,14 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
         .map((f) => ({ id: f.id, title: f.title, parentId: f.parent_id, createdAt: f.created_at })),
       // Les projets des autres, enregistrés : encore ouverts si le lien vit et que son auteur est toujours membre.
       saved: all(`SELECT s.id, s.folder_id, s.pass, s.created_at, l.id AS link_id, l.token, l.track_id, l.expires_at, l.password_hash,
-          a.name AS owner_name, a.avatar AS owner_avatar, u.role AS owner_role, p.title AS project_title, p.cover, p.artist, t.title AS track_title,
+          a.name AS owner_name, a.avatar AS owner_avatar, u.role AS owner_role, l.user_id AS owner_id, p.title AS project_title, p.cover, p.artist, t.title AS track_title,
           (SELECT COUNT(*) FROM sound_tracks WHERE project_id = p.id) AS tracks, ${LINK_OPEN} AS open
         FROM sound_saves s JOIN sound_links l ON l.id = s.link_id JOIN users u ON u.id = l.user_id
         LEFT JOIN sound_tracks t ON t.id = l.track_id JOIN sound_projects p ON p.id = COALESCE(l.project_id, t.project_id) JOIN users a ON a.id = p.user_id
         WHERE s.user_id = ? ORDER BY s.created_at DESC`, req.user.id).map((r) => ({
         id: r.id, token: r.token, folderId: r.folder_id, title: r.track_id ? r.track_title : r.project_title, owner: r.artist || r.owner_name || 'ONIRIQUE',
         ownerAvatar: media(r.owner_avatar), cover: media(r.cover), tracks: r.track_id ? 1 : r.tracks, createdAt: r.created_at,
-        available: !!r.open && rolesWith('sounds').includes(r.owner_role) && !(r.expires_at && r.expires_at < now()),
+        available: !!r.open && can({ role: r.owner_role, id: r.owner_id }, 'sounds') && !(r.expires_at && r.expires_at < now()),
         pass: r.password_hash && r.pass && same(r.pass, passFor({ id: r.link_id, password_hash: r.password_hash })) ? r.pass : null,
       })),
     });
@@ -1262,14 +1262,14 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   function saveState(req, link) {
     const viewer = optionalUser(req);
     const p = linkProject(link);
-    const canSave = !!viewer && rolesWith('sounds').includes(viewer.role) && viewer.id !== link.user_id && viewer.id !== p.user_id
+    const canSave = !!viewer && can(viewer, 'sounds') && viewer.id !== link.user_id && viewer.id !== p.user_id
       && !get('SELECT 1 FROM sound_collabs WHERE project_id = ? AND user_id = ?', p.id, viewer.id);
     return { canSave, saved: canSave && !!get('SELECT 1 FROM sound_saves WHERE user_id = ? AND link_id = ?', viewer.id, link.id) };
   }
 
   function openLink(req) {
     const link = get(`SELECT l.*, u.name AS owner_name, u.email AS owner_email, u.avatar AS owner_avatar FROM sound_links l JOIN users u ON u.id = l.user_id
-      WHERE l.token = ? AND ${LINK_OPEN} AND u.role IN (${rolesWith('sounds').map(() => '?').join(', ')})`, str(req.params.token, 40), ...rolesWith('sounds'));
+      WHERE l.token = ? AND ${LINK_OPEN} AND ${canSql('sounds', 'u.role', 'u.id')}`, str(req.params.token, 40));
     if (!link || (link.expires_at && link.expires_at < now())) throw new HttpError(404, "Ce lien d'écoute n'existe pas ou n'est plus valable.");
     if (link.require_account && !optionalUser(req)) {
       throw Object.assign(new HttpError(401, 'Connecte-toi à ton compte ONIRIQUE pour écouter ce lien.'), { data: { account: true } });

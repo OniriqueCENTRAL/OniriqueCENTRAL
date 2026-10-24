@@ -68,6 +68,17 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   updated_at         INTEGER NOT NULL
 );
 
+-- L'abonnement aux outils (ONIRIQUE CLOUD et page de liens), à part de celui des plugins : un compte peut avoir les deux.
+CREATE TABLE IF NOT EXISTS tool_subscriptions (
+  user_id              INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  interval             TEXT NOT NULL CHECK (interval IN ('month', 'year')),
+  status               TEXT NOT NULL,
+  current_period_end   INTEGER NOT NULL,
+  cancel_at_period_end INTEGER NOT NULL DEFAULT 0,
+  stripe_subscription  TEXT,
+  updated_at           INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS licenses (
   id              INTEGER PRIMARY KEY,
   key             TEXT NOT NULL UNIQUE,

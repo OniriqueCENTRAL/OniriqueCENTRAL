@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<script src="assets/i18n.js?v=22af8a2b"></script>
+<script src="assets/ui.js?v=3"></script>
+<script src="assets/annonce.js?v=1"></script>
+<script src="/api/announce.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ONIRIQUE CLOUD et page de liens — l'abonnement des artistes · ONIRIQUE</title>
+<meta name="description" content="Tes sons, tes projets, tes collabs et ta page de liens au même endroit : ONIRIQUE CLOUD et la page de liens Onirique pour 1,99 € par mois ou 9,99 € par an.">
+<link rel="canonical" href="https://onirique.store/cloud">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css">
+<link rel="stylesheet" href="assets/tools.css">
+<style>
+.wrap { max-width: 1100px; }
+.hero h1 em { font-style: normal; color: var(--ember-text); }
+.duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 18px; margin-top: 44px; }
+.pitch { padding: clamp(22px, 4vw, 32px); border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(180deg, var(--deep-2), var(--deep)); }
+.pitch h2 { margin: 0 0 6px; }
+.pitch > p { color: var(--haze); }
+.pitch ul { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.pitch li { position: relative; margin: 0; padding-left: 26px; line-height: 1.5; font-size: 16px; }
+.pitch li::before { content: ""; position: absolute; left: 2px; top: 6px; width: 12px; height: 12px; background: var(--ember-text); clip-path: polygon(50% 0, 56% 44%, 100% 50%, 56% 56%, 50% 100%, 44% 56%, 0 50%, 44% 44%); }
+.pitch li b { color: var(--mist); }
+.why { margin-top: 56px; }
+.why .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 16px; margin-top: 18px; }
+.why .grid div { padding: 20px; border: 1px solid var(--line); border-radius: 18px; }
+.why .grid strong { display: block; margin-bottom: 6px; font: 700 15px/1.3 var(--f-display); }
+.why .grid span { color: var(--haze); font-size: 15px; line-height: 1.55; }
+.plans { margin-top: 56px; text-align: center; }
+.plans > p { color: var(--haze); }
+.offers { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; max-width: 640px; margin: 22px auto 0; }
+.offer { position: relative; display: grid; gap: 6px; justify-items: center; padding: 26px 20px 22px; border: 1px solid var(--line); border-radius: 22px; background: var(--deep); }
+.offer.best { border-color: rgba(226,52,68,.7); box-shadow: 0 20px 60px -30px rgba(226,52,68,.9); }
+.offer .tag { position: absolute; top: -11px; padding: 4px 10px; border-radius: 999px; background: var(--ember); color: #fff; font: 600 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
+.offer .price { font: 800 34px/1.1 var(--f-display); }
+.offer .price small { font: 500 15px var(--f-body); color: var(--haze); }
+.offer .note { min-height: 22px; color: var(--haze); font-size: 14px; }
+.offer .go { margin-top: 10px; }
+.status { max-width: 640px; margin: 22px auto 0; padding: 18px 22px; border: 1px solid var(--line); border-radius: 18px; background: var(--deep); }
+.status p { margin: 0; }
+.status .row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 14px; }
+.msg { min-height: 24px; margin-top: 14px; color: var(--ember-text); }
+.faq { max-width: 760px; margin: 56px auto 0; }
+.faq details { padding: 14px 0; border-top: 1px solid var(--line); }
+.faq summary { cursor: pointer; font-weight: 600; }
+.faq details p { margin: 10px 0 0; color: var(--haze); }
+</style>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="outils.html" data-tools>Outils</a><a class="btn" href="compte.html" data-account>Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <section class="hero">
+    <p class="eyebrow">Abonnement · 1,99 € par mois</p>
+    <h1>Tes sons et tes liens, <em>au même endroit</em></h1>
+    <p class="lede">ONIRIQUE CLOUD garde tes projets, tes versions et tes collabs, et les fait écouter par un lien. La page de liens réunit tout ce que tu fais derrière une seule adresse. Les deux, pour moins qu'un café par mois.</p>
+  </section>
+
+  <div class="duo">
+    <section class="pitch">
+      <h2>ONIRIQUE CLOUD</h2>
+      <p>Le studio de tes projets, du premier jet à la sortie.</p>
+      <ul>
+        <li><b>Projets, titres et versions</b> : chaque nouvelle version garde les précédentes, et on compare deux versions en A/B.</li>
+        <li><b>Liens d'écoute privés</b> : mot de passe, date d'expiration, téléchargement autorisé ou non, et les écoutes de chaque personne.</li>
+        <li><b>Collabs</b> : invite tes artistes et beatmakers, chacun ajoute ses sons et ses retours.</li>
+        <li><b>Paroles synchronisées</b>, en grand pendant l'écoute et en story depuis le téléphone.</li>
+        <li><b>Préparer la sortie</b> : compte à rebours, checklist et rappels par e-mail.</li>
+        <li><b>Packs de prods</b> : vends tes prods avec tes licences, envoie tes packs par mail et publie-les sur YouTube.</li>
+      </ul>
+    </section>
+    <section class="pitch">
+      <h2>Page de liens</h2>
+      <p>Une seule adresse pour tout ce que tu fais, à mettre dans ta bio.</p>
+      <ul>
+        <li><b>Ton adresse</b> : onirique.online/ton-nom.</li>
+        <li><b>Tous tes liens</b> : plateformes, réseaux, sorties, beat store, contact.</li>
+        <li><b>À ton image</b> : photo, fond, couleurs, et l'aperçu du téléphone pendant que tu la règles.</li>
+        <li><b>Statistiques</b> : visites et clics sur chaque lien, sur 7, 30 ou 90 jours.</li>
+      </ul>
+    </section>
+  </div>
+
+  <section class="why">
+    <h2>Pourquoi s'abonner</h2>
+    <div class="grid">
+      <div><strong>Fini les liens perdus</strong><span>Plus de sons éparpillés entre mails, Drive et messages : chaque version a sa place, et le bon lien part en un clic.</span></div>
+      <div><strong>Tu sais qui écoute</strong><span>Qui a ouvert ton lien, jusqu'où il a écouté, ce qu'il a téléchargé : tu relances au bon moment.</span></div>
+      <div><strong>Pensé pour la musique</strong><span>Versions, BPM, clé, crédits, répartition, paroles : tout ce qu'un dossier partagé ne sait pas faire.</span></div>
+      <div><strong>Le prix d'un café</strong><span>1,99 € par mois, ou 9,99 € par an, soit moins de 0,85 € par mois. Sans engagement, résiliable à tout moment.</span></div>
+    </div>
+  </section>
+
+  <section class="plans" id="abonnement">
+    <h2>S'abonner</h2>
+    <p>ONIRIQUE CLOUD et la page de liens, ensemble, dans les deux formules.</p>
+    <div class="status" id="status" hidden></div>
+    <div class="offers" id="offers">
+      <div class="offer">
+        <strong>Mensuel</strong>
+        <div class="price">1,99 € <small>/ mois</small></div>
+        <div class="note">Sans engagement</div>
+        <button class="go" type="button" data-interval="month">S'abonner au mois</button>
+      </div>
+      <div class="offer best">
+        <span class="tag">−58 %</span>
+        <strong>Annuel</strong>
+        <div class="price">9,99 € <small>/ an</small></div>
+        <div class="note">Soit 0,83 € par mois</div>
+        <button class="go" type="button" data-interval="year">S'abonner à l'année</button>
+      </div>
+    </div>
+    <p class="msg" id="msg" role="status"></p>
+  </section>
+
+  <section class="faq">
+    <h2>Questions</h2>
+    <details><summary>Que se passe-t-il si j'arrête ?</summary><p>Tu gardes l'accès jusqu'à la fin de la période payée. Ensuite ONIRIQUE CLOUD et ta page de liens se ferment, mais tes sons restent sur ton compte : ils reviennent si tu te réabonnes.</p></details>
+    <details><summary>Comment je résilie ?</summary><p>Sur cette page, une fois connecté : « Résilier ». Aucun prélèvement n'a lieu après la fin de la période en cours.</p></details>
+    <details><summary>Les plugins sont-ils compris ?</summary><p>Non : cet abonnement ne concerne que ONIRIQUE CLOUD et la page de liens. Les plugins s'achètent ou s'abonnent dans la <a href="boutique.html">boutique</a>.</p></details>
+    <details><summary>Comment je paie ?</summary><p>Par carte, sur une page de paiement sécurisée. Le reçu arrive par e-mail.</p></details>
+  </section>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="outils.html">Tous les outils</a><a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a>
+  </nav>
+</footer>
+
+<script>
+// L'abonnement : son état pour le compte connecté (/api/tools), l'achat (page de paiement) et la résiliation.
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const token = () => { try { return sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"); } catch { return null; } };
+  const api = async (method, path) => {
+    const response = await fetch("/api" + path, { method, headers: token() ? { Authorization: "Bearer " + token() } : {} });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw Object.assign(new Error(data.error || "Erreur " + response.status), { status: response.status });
+    return data;
+  };
+  const day = (ms) => new Date(ms).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  const msg = (text) => { $("msg").textContent = text; };
+  const status = (html, buttons = []) => {
+    $("status").hidden = false;
+    $("status").innerHTML = html;
+    if (buttons.length) $("status").append(Object.assign(document.createElement("div"), { className: "row" }));
+    buttons.forEach((b) => $("status").lastChild.append(b));
+  };
+  const button = (text, href, ghost) => Object.assign(document.createElement("a"), { className: "go" + (ghost ? " ghost" : ""), textContent: text, href });
+
+  async function draw() {
+    let tools;
+    try { tools = await api("GET", "/tools"); } catch (error) { return msg(error.message); }
+    const sub = tools.subscription;
+    $("offers").hidden = false;
+    if (tools.included) {
+      $("offers").hidden = true;
+      return status("<p>Ton compte de membre ONIRIQUE comprend déjà ONIRIQUE CLOUD et la page de liens.</p>", [button("Ouvrir ONIRIQUE CLOUD", "mes-sons.html"), button("Ma page de liens", "mes-liens.html", true)]);
+    }
+    if (sub && sub.active) {
+      $("offers").hidden = true;
+      const cancel = Object.assign(document.createElement("button"), { className: "go ghost", type: "button", textContent: "Résilier" });
+      cancel.onclick = async () => {
+        if (!confirm("Résilier ? Tu gardes l'accès jusqu'au " + day(sub.periodEnd) + ", sans nouveau prélèvement.")) return;
+        cancel.disabled = true;
+        try { await api("POST", "/tools/cancel"); draw(); } catch (error) { cancel.disabled = false; msg(error.message); }
+      };
+      const formula = sub.interval === "year" ? "annuel (9,99 € par an)" : "mensuel (1,99 € par mois)";
+      return status("<p>Ton abonnement " + formula + " est en cours. " + (sub.cancelAtPeriodEnd
+        ? "Il est résilié : l'accès reste ouvert jusqu'au <b>" + day(sub.periodEnd) + "</b>, sans nouveau prélèvement."
+        : "Prochain renouvellement le <b>" + day(sub.periodEnd) + "</b>.") + "</p>",
+        [button("Ouvrir ONIRIQUE CLOUD", "mes-sons.html"), button("Ma page de liens", "mes-liens.html", true), ...(sub.cancelAtPeriodEnd ? [] : [cancel])]);
+    }
+    if (sub && !sub.active) status("<p>Ton abonnement s'est terminé le " + day(sub.periodEnd) + ". Tes sons t'attendent : réabonne-toi pour les retrouver.</p>");
+    if (!tools.open) msg("Les abonnements ouvrent très bientôt.");
+  }
+
+  document.querySelectorAll("[data-interval]").forEach((b) => {
+    b.onclick = async () => {
+      if (!token()) { location.href = "compte.html?next=cloud"; return; }
+      b.disabled = true; msg("");
+      try {
+        const r = await fetch("/api/tools/checkout", { method: "POST", headers: { Authorization: "Bearer " + token(), "Content-Type": "application/json" }, body: JSON.stringify({ interval: b.dataset.interval }) });
+        const data = await r.json().catch(() => ({}));
+        if (r.status === 401) { location.href = "compte.html?next=cloud"; return; }
+        if (!r.ok) throw new Error(data.error || "Erreur " + r.status);
+        if (data.url) { location.href = data.url; return; }
+        draw();
+      } catch (error) { msg(error.message); }
+      b.disabled = false;
+    };
+  });
+  if (new URLSearchParams(location.search).has("merci")) msg("Merci ! Ton abonnement s'active dans quelques secondes.");
+  draw();
+})();
+</script>
+<script src="assets/tools-menu.js?v=3"></script>
+<script src="assets/account.js?v=8"></script>
+<script src="assets/site-nav.js?v=13"></script>
+</html>

@@ -9,6 +9,8 @@ import { sendMail } from './mail.js';
 import { afterPurchase, rewardSponsor } from './promos.js';
 
 const PERIOD_MS = { month: 31 * 86400_000, year: 366 * 86400_000 };
+/** L'abonnement aux outils : ONIRIQUE CLOUD et la page de liens, encaissé par le compte ONIRIQUE. */
+export const TOOLS = { name: 'ONIRIQUE CLOUD et page de liens', prices: { month: 199, year: 999 } };
 
 //==============================================================================
 //  Ce qu'un paiement réussi accorde (commun au mode démo et à Stripe)
@@ -35,7 +37,8 @@ function revokePurchase(userId, productId, source) {
 }
 
 /** Confirmation de commande par e-mail, pour un paiement réel. Un envoi raté ne retire rien à l'acheteur. */
-function confirmOrder(userId, what, amountCents, renewal = '', provider = 'stripe', currency = 'eur') {
+const LICENSE_READY = 'Votre licence est déjà sur votre compte : ouvrez ONIRIQUE CENTRAL, installez le plugin, il s\'active tout seul.\n';
+function confirmOrder(userId, what, amountCents, renewal = '', provider = 'stripe', currency = 'eur', ready = LICENSE_READY) {
   const user = get('SELECT email, name FROM users WHERE id = ?', userId);
   if (!user) return;
   let amount;
@@ -48,7 +51,7 @@ function confirmOrder(userId, what, amountCents, renewal = '', provider = 'strip
   }
   sendMail(user.email, 'Confirmation de commande — ONIRIQUE',
     `Bonjour${user.name ? ' ' + user.name : ''},\n\nMerci pour votre commande.\n\n  ${what}\n  ${amount} TTC${renewal}\n\n`
-    + 'Votre licence est déjà sur votre compte : ouvrez ONIRIQUE CENTRAL, installez le plugin, il s\'active tout seul.\n'
+    + ready
     + `Application et compte : ${config.siteUrl}\n\n`
     + (RESELLERS[provider]
       ? `Le paiement est encaissé par notre revendeur ${RESELLERS[provider]}, qui vous envoie le reçu séparément.\n\n`
@@ -103,6 +106,19 @@ export function setSubscription(userId, planId, { status, periodEnd, cancelAtPer
          stripe_subscription = excluded.stripe_subscription, product_ids = excluded.product_ids, updated_at = excluded.updated_at`,
     userId, planId, status, periodEnd, cancelAtPeriodEnd ? 1 : 0, stripeId,
     productIds?.length ? JSON.stringify(productIds) : null, now());
+}
+
+export function setToolsSubscription(userId, { interval, status, periodEnd, cancelAtPeriodEnd = 0, stripeId = null }) {
+  run(`INSERT INTO tool_subscriptions (user_id, interval, status, current_period_end, cancel_at_period_end, stripe_subscription, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (user_id) DO UPDATE SET interval = excluded.interval, status = excluded.status, current_period_end = excluded.current_period_end,
+         cancel_at_period_end = excluded.cancel_at_period_end, stripe_subscription = excluded.stripe_subscription, updated_at = excluded.updated_at`,
+    userId, interval === 'year' ? 'year' : 'month', status, periodEnd, cancelAtPeriodEnd ? 1 : 0, stripeId, now());
+}
+/** L'abonnement aux outils d'un compte, tel que la page le montre ; null s'il n'en a jamais eu. */
+export function toolsSubscription(userId) {
+  const s = get('SELECT * FROM tool_subscriptions WHERE user_id = ?', userId);
+  return !s ? null : { interval: s.interval, active: s.status === 'active' && s.current_period_end > now(), periodEnd: s.current_period_end, cancelAtPeriodEnd: !!s.cancel_at_period_end };
 }
 
 //==============================================================================
@@ -256,29 +272,30 @@ const discountMeta = (item) => (item.discount ? {
 const discountFrom = (meta = {}) => ({ promoId: Number(meta.promo_id) || null, welcome: meta.welcome === '1', discountCents: Number(meta.discount_cents) || 0 });
 
 async function stripeCheckout(user, kind, item) {
-  const creator = kind === 'plan' || kind === 'pack' ? 'onirique' : item.creator;
+  const recurring = kind === 'plan' || kind === 'tools';
+  const creator = recurring || kind === 'pack' ? 'onirique' : item.creator;
   const account = stripeAccount(creator);
   // Compte en mode essai : rien n'est encaissé, donc seuls l'équipe et le partenaire concerné peuvent commander, pour essayer.
   if (!account || (account.test && !isStaff(user) && user.role !== creator)) {
-    throw new HttpError(503, kind === 'plan' ? 'Les abonnements ne sont pas encore ouverts.' : 'Ce plugin n\'est pas encore en vente.');
+    throw new HttpError(503, recurring ? 'Les abonnements ne sont pas encore ouverts.' : 'Ce plugin n\'est pas encore en vente.');
   }
   // Un client Stripe n'existe que dans le compte qui l'a créé : il n'est réutilisé que chez ONIRIQUE.
   const customer = creator === 'onirique' ? user.stripe_customer : null;
   const session = await stripe('POST', '/checkout/sessions', {
-    mode: kind === 'plan' ? 'subscription' : 'payment',
+    mode: recurring ? 'subscription' : 'payment',
     customer: customer || undefined,
     customer_email: customer ? undefined : user.email,
     client_reference_id: user.id,
     locale: 'fr',
     ...sellerOptions(account.managed),
-    success_url: `${config.publicUrl}/checkout/done`,
-    cancel_url: `${config.publicUrl}/checkout/cancelled`,
+    success_url: item.successUrl || `${config.publicUrl}/checkout/done`,
+    cancel_url: item.cancelUrl || `${config.publicUrl}/checkout/cancelled`,
     metadata: { user_id: user.id, kind, ref_id: item.id, ...discountMeta(item) },
     // Les plugins d'un abonnement à la carte voyagent avec l'abonnement : c'est Stripe qui les rend au webhook.
     subscription_data: kind === 'plan'
       ? { metadata: { user_id: user.id, plan_id: item.id, product_ids: item.productIds ? JSON.stringify(item.productIds) : undefined } }
-      : undefined,
-    line_items: lineItems(kind, item.name, item.price_cents, item.interval),
+      : kind === 'tools' ? { metadata: { user_id: user.id, tools: item.interval } } : undefined,
+    line_items: lineItems(recurring ? 'plan' : kind, item.name, item.price_cents, item.interval),
   }, account.key);
   return { mode: 'stripe', url: session.url };
 }
@@ -288,6 +305,10 @@ const stripePeriodEnd = (sub) => (sub.current_period_end ?? sub.items?.data?.[0]
 
 function applyStripeSubscription(sub) {
   const userId = Number(sub.metadata?.user_id);
+  if (userId && sub.metadata?.tools) {
+    return setToolsSubscription(userId, { interval: sub.metadata.tools, status: ['active', 'trialing', 'past_due'].includes(sub.status) ? 'active' : 'ended',
+      periodEnd: stripePeriodEnd(sub), cancelAtPeriodEnd: sub.cancel_at_period_end, stripeId: sub.id });
+  }
   const planId = Number(sub.metadata?.plan_id);
   if (!userId || !planId) return;
   const live = ['active', 'trialing', 'past_due'].includes(sub.status);
@@ -333,6 +354,14 @@ export async function handleStripeEvent(event, account) {
       if (product && grantProduct(userId, product, 'stripe', object.id, paid)) {
         afterPurchase(userId, product.id, { ...discountFrom(object.metadata), orderRef: object.id, paidCents: paid });
         confirmOrder(userId, `${product.name} — licence définitive`, paid, '', stripeProvider(account), object.currency || 'eur');
+      }
+    } else if (object.mode === 'subscription' && object.subscription && platform && object.metadata?.kind === 'tools') {
+      const sub = await stripe('GET', `/subscriptions/${object.subscription}`, undefined, account.key);
+      applyStripeSubscription(sub);
+      if (event.type === 'checkout.session.completed' && recordOrder(userId, 'tools', 0, object.amount_total ?? 0, 'stripe', object.id)) {
+        confirmOrder(userId, `Abonnement ${TOOLS.name}`, object.amount_total ?? 0,
+          `, puis le même montant chaque ${sub.metadata?.tools === 'year' ? 'année' : 'mois'} jusqu'à résiliation (${config.siteUrl}/cloud)`, stripeProvider(account),
+          object.currency || 'eur', `ONIRIQUE CLOUD et votre page de liens sont ouverts : ${config.siteUrl}/mes-sons\n`);
       }
     } else if (object.mode === 'subscription' && object.subscription && platform) {
       applyStripeSubscription(await stripe('GET', `/subscriptions/${object.subscription}`, undefined, account.key));
@@ -469,6 +498,11 @@ export async function checkout(user, kind, item) {
     return { mode: 'free', granted: true };
   }
   const mode = paymentsMode();
+  if (kind === 'tools' && mode === 'demo') {
+    setToolsSubscription(user.id, { interval: item.interval, status: 'active', periodEnd: now() + PERIOD_MS[item.interval] });
+    return { mode: 'demo', granted: true };
+  }
+  if (kind === 'tools' && mode !== 'stripe') throw new HttpError(503, 'Les abonnements ne sont pas encore ouverts.');
   if (mode === 'demo') {
     if (kind === 'pack') {
       if (grantPack(user.id, get('SELECT * FROM packs WHERE id = ?', item.id), 'demo', null, item.price_cents)) rewardSponsor(user.id);
@@ -493,4 +527,13 @@ export async function cancelSubscription(userId) {
   // Chez Lemon Squeezy, supprimer un abonnement le résilie à la fin de la période payée.
   if (sub.stripe_subscription && paymentsMode() === 'lemon') await lemon('DELETE', `/subscriptions/${sub.stripe_subscription}`);
   run('UPDATE subscriptions SET cancel_at_period_end = 1, updated_at = ? WHERE user_id = ?', now(), userId);
+}
+
+/** Résilie l'abonnement aux outils à la fin de la période payée : l'accès reste ouvert jusque-là. */
+export async function cancelToolsSubscription(userId) {
+  const sub = get('SELECT * FROM tool_subscriptions WHERE user_id = ?', userId);
+  if (!sub || sub.status !== 'active') throw new HttpError(404, 'Aucun abonnement en cours.');
+  const platform = stripeAccount('onirique');
+  if (sub.stripe_subscription && platform) await stripe('POST', `/subscriptions/${sub.stripe_subscription}`, { cancel_at_period_end: true }, platform.key);
+  run('UPDATE tool_subscriptions SET cancel_at_period_end = 1, updated_at = ? WHERE user_id = ?', now(), userId);
 }

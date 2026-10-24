@@ -105,7 +105,14 @@ export function rolesWith(right) {
   const roles = (Array.isArray(chosen) ? chosen : RIGHTS[right].default).filter((r) => EDITABLE_ROLES.includes(r));
   return right === 'plugins' ? roles : [...roles, 'founder'];
 }
-export const can = (user, right) => !!user && rolesWith(right).includes(user.role);
+// Les droits que l'abonnement aux outils ouvre à n'importe quel compte, en plus des rôles qui les ont.
+export const TOOL_RIGHTS = ['sounds', 'links'];
+const TOOLS_ACTIVE = `SELECT 1 FROM tool_subscriptions ts WHERE ts.status = 'active' AND ts.current_period_end > CAST(strftime('%s', 'now') AS INTEGER) * 1000`;
+export const toolsActive = (userId) => !!get(`${TOOLS_ACTIVE} AND ts.user_id = ?`, userId);
+export const can = (user, right) => !!user && (rolesWith(right).includes(user.role) || (TOOL_RIGHTS.includes(right) && toolsActive(user.id)));
+/** can() en SQL, pour le compte dont le rôle et l'identifiant sont dans ces colonnes. */
+export const canSql = (right, roleColumn, idColumn) => `(${roleColumn} IN (${rolesWith(right).map((r) => `'${r}'`).join(', ')})`
+  + (TOOL_RIGHTS.includes(right) ? ` OR EXISTS (${TOOLS_ACTIVE} AND ts.user_id = ${idColumn}))` : ')');
 export const rightsOf = (user) => Object.keys(RIGHTS).filter((right) => can(user, right));
 export const isStaff = (user) => user.role === 'admin' || user.role === 'founder';
 /** Le créateur dont ce compte gère les plugins, pour un partenaire ; null pour tous les autres. */
