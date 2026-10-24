@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=4ce21315"></script>
+<script src="assets/i18n.js?v=8489b8a3"></script>
 <script src="assets/ui.js?v=3"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
@@ -506,6 +506,20 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 /* Les ventes d'un pack : le panneau Ventes et la vente d'une prod. */
 #store, #sale { width: 620px; }
 #youtube { width: 680px; }
+/* Chaîne connectée : le formulaire, et à côté l'aperçu de la vidéo telle que le serveur la fabrique */
+#youtube.wide { width: 1100px; }
+.yt-layout { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 24px; align-items: start; }
+.yt-preview { position: sticky; top: 0; display: grid; gap: 10px; }
+.yt-frame { position: relative; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 12px; background: #0D0809; }
+.yt-frame img { position: absolute; display: block; }
+.yt-frame .bg { inset: 0; width: 100%; height: 100%; object-fit: cover; filter: blur(9px) brightness(.68); transform: scale(1.12); }
+.yt-frame .fg { left: 27.1%; top: 9.25%; width: 45.8%; height: 81.5%; object-fit: contain; }
+.yt-frame .len { position: absolute; right: 8px; bottom: 8px; padding: 1px 5px; border-radius: 4px; background: rgba(0,0,0,.8); color: #fff; font: 600 12px var(--f-body); }
+.yt-preview .yt-name { font: 700 16px/1.3 var(--f-body); overflow-wrap: anywhere; }
+.yt-preview .yt-desc { margin: 0; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.05); color: var(--mist); font: 500 13px/1.5 var(--f-body); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 220px; overflow-y: auto; }
+.yt-prod { cursor: pointer; border-radius: 12px; padding: 4px; margin: -4px; }
+.yt-prod.shown { background: rgba(255,255,255,.05); }
+@media (max-width: 900px) { .yt-layout { grid-template-columns: minmax(0, 1fr); } .yt-preview { position: static; order: -1; } }
 #pinterest { width: 720px; }
 .yt-prods { gap: 10px; }
 .yt-prod { display: flex; align-items: center; gap: 10px; }
@@ -2423,7 +2437,7 @@ $("pack-store").onclick = () => openStore().catch(fail);
 // beatmaker à l'heure choisie, ou une par une à quelques jours d'écart. Le dernier modèle utilisé est gardé sur l'appareil.
 const YT_KEY = "onirique.youtube.modele";
 const YT_DEFAULT = { title: '[FREE] Type Beat - "{titre}"', description: "Prod. {artiste}\nLicences et achat : {lien}\n\n{bpm} BPM · {cle}", tags: "type beat, instrumental, beat", privacy: "public", every: 1 };
-let ytId = null, yt = null;
+let ytId = null, yt = null, ytShown = null; // ytShown : la prod montrée dans l'aperçu
 async function openYoutube(p) {
   ytId = p.id;
   yt = await api("GET", "/me/sounds/youtube");
@@ -2433,6 +2447,7 @@ async function openYoutube(p) {
 function renderYoutube() {
   const p = ytId && project(ytId), dialog = $("youtube");
   if (!p) return dialog.close();
+  dialog.classList.remove("wide");
   let saved = {};
   try { saved = JSON.parse(localStorage.getItem(YT_KEY) || "{}"); } catch {}
   const m = { ...YT_DEFAULT, ...saved };
@@ -2464,7 +2479,7 @@ function renderYoutube() {
   const thumb = (t) => {
     const img = () => (t.videoCover || p.cover ? el("img", { src: (t.videoCover || p.cover) + "?w=160", alt: "" }) : el("span", { textContent: "Image" }));
     const b = el("button", { className: "yt-thumb" + (t.videoCover ? " own" : ""), type: "button", title: "Image de la vidéo", ariaLabel: "Image de la vidéo de " + t.title }, img());
-    const set = (cover) => { t.videoCover = cover; b.classList.toggle("own", !!cover); b.replaceChildren(img()); };
+    const set = (cover) => { t.videoCover = cover; b.classList.toggle("own", !!cover); b.replaceChildren(img()); update(); };
     const file = el("input", { type: "file", accept: "image/png,image/jpeg,image/webp", hidden: true });
     file.onchange = () => {
       const f = file.files[0];
@@ -2487,8 +2502,26 @@ function renderYoutube() {
   const start = el("input", { type: "datetime-local", value: local(Date.now() + 3600_000 - (Date.now() % 3600_000) + 3600_000), hidden: true });
   const every = el("input", { type: "number", min: 0, max: 30, value: m.every, style: "width:80px" });
   when.onchange = () => { start.hidden = when.value !== "date"; };
-  const fill = (tpl, t) => tpl.replace(/\{(titre|bpm|cle|artiste|lien)\}/gi, (_, k) => ({ titre: t.title, bpm: t.bpm ? String(t.bpm) : "", cle: t.key || "", artiste: p.artist || data.owner.name, lien: "onirique.store/ecoute?t=…" })[k.toLowerCase()])
-    .replace(/\(\s*\)|\[\s*\]/g, "").replace(/\s{2,}/g, " ").trim();
+  // Le même remplissage que le serveur (fillTemplate) : les retours à la ligne de la description sont gardés.
+  const fill = (tpl, t) => tpl.replace(/\{(titre|bpm|cle|artiste|lien)\}/gi, (_, k) => ({ titre: t.title, bpm: t.bpm ? String(t.bpm) : "", cle: t.key || "", artiste: p.artist || data.owner.name, lien: location.origin + "/ecoute?t=…" })[k.toLowerCase()])
+    .replace(/\(\s*\)|\[\s*\]/g, "").replace(/[ 	]{2,}/g, " ").replace(/ +([,.)\]])/g, "$1").trim();
+  // L'aperçu : l'image de la prod (ou la pochette) au centre, sur elle-même floutée et assombrie, comme la vidéo fabriquée.
+  const aside = el("aside", { className: "yt-preview", ariaLabel: "Aperçu de la vidéo" });
+  const drawPreview = () => {
+    const t = p.tracks.find((x) => x.id === ytShown) || (picks.find(([, x]) => x.checked) || picks[0] || [])[0];
+    if (!t) return aside.replaceChildren();
+    picks.forEach(([x], i) => rows[i].classList.toggle("shown", x === t));
+    const src = t.videoCover || p.cover, v = live(t);
+    aside.replaceChildren(
+      el("div", { className: "sub-title", style: "margin:0", textContent: "Aperçu · " + t.title }),
+      el("div", { className: "yt-frame" }, ...(src ? [el("img", { className: "bg", src: src + "?w=960", alt: "" }), el("img", { className: "fg", src: src + "?w=960", alt: "" })] : []),
+        v.duration ? el("span", { className: "len", textContent: OP.time(v.duration) }) : ""),
+      el("div", { className: "yt-name", textContent: fill(titles.get(t.id).value || title.value, t).replace(/[<>]/g, "").slice(0, 100) || "(titre vide)" }),
+      el("small", { className: "muted", textContent: yt.channel + " · " + (privacy.value === "unlisted" ? "Non répertoriée" : "Publique") }),
+      el("p", { className: "yt-desc", textContent: fill(desc.value, t).replace(/[<>]/g, "") || "Pas de description." }),
+      tags.value.trim() ? el("small", { className: "muted", textContent: "Tags : " + tags.value }) : "",
+      p.tracks.length > 1 ? el("small", { className: "muted", textContent: "Clique sur une prod pour voir sa vidéo." }) : "");
+  };
   const preview = el("p", { className: "muted", style: "margin:0;font-size:13px" });
   const count = () => picks.filter(([, x]) => x.checked).length;
   const go = el("button", { className: "btn btn-primary", type: "submit" });
@@ -2498,10 +2531,20 @@ function renderYoutube() {
     for (const [t] of picks) titles.get(t.id).placeholder = fill(title.value, t) + " (modèle)";
     go.textContent = count() ? "Programmer " + count() + " vidéo" + (count() > 1 ? "s" : "") : "Programmer";
     go.disabled = !count();
+    drawPreview();
   };
-  title.oninput = update;
+  title.oninput = desc.oninput = tags.oninput = privacy.onchange = update;
   picks.forEach(([, x]) => { x.onchange = update; });
   titles.forEach((x) => { x.oninput = update; });
+  // Chaque prod : un clic ailleurs que sur la case, l'image ou le titre la montre dans l'aperçu.
+  const rows = picks.map(([t, x]) => {
+    const row = el("div", { className: "yt-prod" }, x, thumb(t),
+      el("div", { className: "grow" }, el("div", { className: "row" }, el("b", { textContent: t.title }),
+        ...[t.bpm ? t.bpm + " BPM" : "", t.key].filter(Boolean).map((b) => el("span", { className: "stage prod", textContent: b }))), titles.get(t.id)));
+    row.onclick = (event) => { if (event.target === x || event.target.closest("button")) return; ytShown = t.id; drawPreview(); };
+    titles.get(t.id).onfocus = () => { ytShown = t.id; drawPreview(); };
+    return row;
+  });
   const logout = el("button", { className: "mini-btn", type: "button", textContent: "Déconnecter" });
   logout.onclick = () => confirm("Déconnecter la chaîne « " + yt.channel + " » ? Les vidéos programmées ne partiront plus tant qu'une chaîne n'est pas reconnectée.")
     && api("DELETE", "/youtube/account").then(() => openYoutube(p), fail);
@@ -2510,9 +2553,7 @@ function renderYoutube() {
     el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Une vidéo par prod : son image (ou la pochette du pack) sur un fond flouté, avec le son de la prod." }),
     el("div", { className: "sub-title", textContent: "Les prods" }),
     el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Clique sur l'image d'une prod pour lui en donner une à elle (importée ou prise sur Pinterest). Un titre écrit pour une prod remplace le modèle." }),
-    el("div", { className: "mail-prods yt-prods" }, ...picks.map(([t, x]) => el("div", { className: "yt-prod" }, x, thumb(t),
-      el("div", { className: "grow" }, el("div", { className: "row" }, el("b", { textContent: t.title }),
-        ...[t.bpm ? t.bpm + " BPM" : "", t.key].filter(Boolean).map((b) => el("span", { className: "stage prod", textContent: b }))), titles.get(t.id))))),
+    el("div", { className: "mail-prods yt-prods" }, ...rows),
     el("div", { className: "sub-title", textContent: "Titre et description" }),
     fieldOf("Modèle du titre ({titre}, {bpm}, {cle}, {artiste})", title), preview,
     fieldOf("Description ({lien} : la page d'écoute du pack, où l'on achète la licence)", desc), fieldOf("Tags, séparés par des virgules", tags),
@@ -2528,8 +2569,9 @@ function renderYoutube() {
     api("POST", "/me/sounds/youtube", { ...model, trackIds: picks.filter(([, x]) => x.checked).map(([t]) => t.id), titles: Object.fromEntries([...titles].map(([id, x]) => [id, x.value])), publishAt: when.value === "date" ? new Date(start.value).getTime() : null })
       .then((r) => { yt.videos = r.videos; renderYoutube(); }, (error) => { go.disabled = false; fail(error); alert(error.message); });
   };
+  dialog.classList.add("wide");
   update();
-  stack.append(form, videos.length ? el("div", { className: "sub-title", textContent: "Vidéos de ce pack" }) : "", list || "");
+  stack.append(el("div", { className: "yt-layout" }, form, aside), videos.length ? el("div", { className: "sub-title", textContent: "Vidéos de ce pack" }) : "", list || "");
   // Tant qu'une vidéo se fabrique ou part, la liste se met à jour toute seule.
   clearTimeout(renderYoutube.timer);
   if (dialog.open && videos.some((v) => ["rendering", "uploading"].includes(v.status))) {
