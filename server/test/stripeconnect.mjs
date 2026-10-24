@@ -41,6 +41,7 @@ globalThis.fetch = async (url, init = {}) => {
 const { createApp } = await import('../src/app.js');
 const { run, get, setSetting } = await import('../src/db.js');
 const { outbox } = await import('../src/mail.js');
+const { config } = await import('../src/config.js');
 const server = createApp().listen(0);
 const base = `http://127.0.0.1:${server.address().port}`;
 
@@ -85,6 +86,10 @@ try {
     assert.equal(ok.location, `https://site.test/mes-sons?stripe=ok#/p/${pack}`);
     const { seller } = await call('GET', '/api/me/sounds/store', { token: beatmaker.token });
     assert.deepEqual([seller.connected, seller.stripe.connect, seller.stripe.account, seller.stripe.sandbox], [true, true, 'Kay Beats Studio', true]);
+    // Le serveur passé en clé réelle : le compte relié en test est à relier de nouveau, l'acheteur ne peut plus payer par lui.
+    config.stripeConnectSecretKey = 'sk_live_' + 'p'.repeat(24);
+    assert.equal((await call('GET', '/api/me/sounds/store', { token: beatmaker.token })).seller.connected, false);
+    config.stripeConnectSecretKey = PLATFORM;
     // Le state ne sert qu'une fois.
     assert.match(decodeURIComponent((await call('GET', `/api/sounds/stripe/connect/callback?state=${q.get('state')}&code=bon-code`, { expect: 302 })).location), /expirée/);
   });

@@ -42,7 +42,9 @@ export function licensesOf(userId) {
 const licenseView = (l) => ({ id: l.id, name: l.name, price: l.price, files: parse(l.files, []), terms: l.terms, exclusive: !!l.exclusive });
 const sellerRow = (userId) => get('SELECT * FROM sound_sellers WHERE user_id = ?', userId);
 export const connectAvailable = () => !!(config.stripeConnectClientId && config.stripeConnectSecretKey);
-const hasStripe = (s) => !!(s && s.provider === 'stripe' && (s.secret || (s.connect_account && connectAvailable())));
+// Un compte relié en test ne marche pas avec la clé réelle du serveur (et l'inverse) : il est à relier de nouveau.
+const connectUsable = (s) => !!(s.connect_account && connectAvailable() && !s.sandbox === config.stripeConnectSecretKey.startsWith('sk_live_'));
+const hasStripe = (s) => !!(s && s.provider === 'stripe' && (s.secret || connectUsable(s)));
 /** Les comptes de paiement tels que le beatmaker les voit (Stripe et PayPal, branchés ensemble ou non) : jamais leurs secrets. */
 export function sellerView(userId) {
   const s = sellerRow(userId), stripe = hasStripe(s), paypal = !!s?.paypal_secret;
@@ -92,7 +94,7 @@ async function dropHook(userId) {
 function sellerKeys(userId, provider) {
   const s = sellerRow(userId);
   if (provider === 'paypal') return s?.paypal_secret ? { provider, clientId: s.paypal_client_id, secret: unseal(s.paypal_secret), sandbox: !!s.paypal_sandbox } : null;
-  if (s?.connect_account && s.provider === 'stripe') return connectAvailable() ? { provider: 'stripe', secret: config.stripeConnectSecretKey, account: s.connect_account, sandbox: !!s.sandbox } : null;
+  if (s?.connect_account && s.provider === 'stripe') return connectUsable(s) ? { provider: 'stripe', secret: config.stripeConnectSecretKey, account: s.connect_account, sandbox: !!s.sandbox } : null;
   return s?.secret && s.provider === 'stripe' ? { provider: 'stripe', secret: unseal(s.secret), sandbox: !!s.sandbox } : null;
 }
 
