@@ -27,3 +27,4 @@ if [ "$mine" != "$theirs" ]; then
 fi
 
 ssh -o BatchMode=yes "$HOST" onirique-deploy "$(printf '%q' "$(git config user.name || echo inconnu)")"
+echo "Gros changement (nouveauté, refonte, correctif important) ? Annoncez-le sur Discord : node deploy/patchnote.mjs notes.md (pas pour les petits correctifs)."
