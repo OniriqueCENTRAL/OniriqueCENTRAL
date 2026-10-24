@@ -210,7 +210,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1320px; }
 <footer class="muted wrap">Partagé avec <a href="/">ONIRIQUE</a> · ONIRIQUE CLOUD</footer>
 
 <dialog id="buy"></dialog>
-<script src="assets/sounds-player.js?v=14"></script>
+<script src="assets/sounds-player.js?v=15"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const OP = window.OniriquePlayer, icon = OP.icon;
@@ -371,7 +371,7 @@ function show(data) {
   if (data.background) { $("page-bg").style.backgroundImage = 'url("' + data.background + '?w=1920")'; $("page-bg").classList.add("on"); }
   $("cover-by").hidden = !data.coverBy;
   $("cover-by").replaceChildren("Pochette : ", el("b", { textContent: data.coverBy || "" }));
-  items = data.tracks.map((t) => ({ key: "v" + t.version.id, id: t.version.id, trackId: t.id, title: t.title, feat: (t.credits || {}).feat, stage: t.stage, day: t.day,
+  items = data.tracks.map((t) => ({ key: "v" + t.version.id, id: t.version.id, trackId: t.id, title: t.title, feat: (t.credits || {}).feat, artist: data.owner, stage: t.stage, day: t.day,
     subtitle: [data.owner, OP.stageLabel(t.stage)].filter(Boolean).join(" · "), cover: data.cover,
     url: t.version.url, downloadUrl: t.version.downloadUrl, duration: t.version.duration, peaks: t.version.peaks, comments: t.comments, credits: t.credits || {}, lyrics: t.lyrics || "", bpm: t.bpm, musicKey: t.key, offers: t.offers || [] }));
   renderAbout(data.about, data.owner, data.collabAbouts);

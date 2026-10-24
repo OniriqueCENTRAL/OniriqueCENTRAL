@@ -451,7 +451,7 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
         if (on) box.scrollTo({ top: on.offsetTop - box.offsetTop - box.clientHeight * at + on.offsetHeight / 2, behavior: "smooth" });
       }
     }
-    // Partager des paroles, comme Spotify : on touche des lignes (la ligne chantée est déjà prise), puis une carte se
+    // Partager des paroles, comme Spotify : on touche des lignes, puis une carte se
     // dessine (pochette, titre, lignes, ONIRIQUE) en image de story, envoyée par le partage du téléphone (Instagram…).
     const MAX_PICK = 6;
     let picking = false, storyColor = 0;
@@ -472,7 +472,6 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
       picking = true;
       stage.classList.add("picking"); pickBar.hidden = false; stageShare.hidden = true;
       document.documentElement.classList.add("op-picking");
-      if (!picked().length) { const on = stageLyrics.querySelector("p.on") || [...stageLyrics.children].find((p) => p.onclick); if (on) on.classList.add("picked"); }
       showPicks();
     }
     function stopPicking() {
@@ -502,43 +501,101 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     }
     const loadImage = (src) => new Promise((resolve) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => resolve(null); img.src = src; });
     const roundRect = (g, x, y, w, h, r) => { g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, r) : g.rect(x, y, w, h); };
+    // La teinte d'une pochette (moyenne des couleurs vives) et sa saturation ; une pochette en noir et blanc donne s = 0.
+    function coverTone(img) {
+      try {
+        const c = el("canvas", { width: 40, height: 40 }), g = c.getContext("2d", { willReadFrequently: true });
+        g.drawImage(img, 0, 0, 40, 40);
+        const px = g.getImageData(0, 0, 40, 40).data;
+        let x = 0, y = 0, weight = 0;
+        for (let i = 0; i < px.length; i += 4) {
+          const [h, s, l] = hsl(px[i], px[i + 1], px[i + 2]), w = s * (1 - Math.abs(l - 0.5) * 1.6);
+          if (w > 0) { x += Math.cos(h * 2 * Math.PI) * w; y += Math.sin(h * 2 * Math.PI) * w; weight += w; }
+        }
+        const strength = weight / 1600;
+        return { h: Math.round(((Math.atan2(y, x) / (2 * Math.PI)) + 1) % 1 * 360), s: strength < 0.06 ? 0 : Math.min(1, 0.45 + strength) };
+      } catch { return null; }
+    }
+    // Les quatre cartes, toutes tirées de la pochette : sa couleur en profondeur, vive, claire, et la nuit d'ONIRIQUE.
+    function storyThemes(tone) {
+      const h = tone ? tone.h : 354, s = tone ? tone.s : 0.75, p = (v) => Math.round(v * s) + "%";
+      return [
+        { from: `hsl(${h} ${p(55)} 32%)`, to: `hsl(${h} ${p(60)} 15%)`, fg: "#fff", soft: `hsl(${h} ${p(70)} 82%)` },
+        { from: `hsl(${h} ${p(78)} 62%)`, to: `hsl(${h} ${p(74)} 48%)`, fg: `hsl(${h} ${p(60)} 9%)`, soft: `hsl(${h} ${p(55)} 18%)` },
+        { from: `hsl(${h} ${p(45)} 94%)`, to: `hsl(${h} ${p(38)} 84%)`, fg: `hsl(${h} ${p(50)} 11%)`, soft: `hsl(${h} ${p(55)} 34%)` },
+        { from: "#1c1215", to: "#0b0708", fg: "#f6eeee", soft: `hsl(${h} ${p(80)} 68%)` },
+      ];
+    }
     async function drawStory() {
-      const t = item(), lines = picked().map((p) => p.textContent);
-      const colors = [[accent, "#120a0c"], ["#E23444", "#fff"], ["#F6EEEE", "#120a0c"], ["#151012", "#fff"]];
-      const [bg, fg] = colors[storyColor % colors.length];
+      const t = item(), lines = picked().map((p) => p.textContent.trim());
       const css = getComputedStyle(document.documentElement);
       const body = css.getPropertyValue("--f-body").trim() || "system-ui, sans-serif", display = css.getPropertyValue("--f-display").trim() || body;
-      await Promise.all([document.fonts.load("800 80px " + body), document.fonts.load("700 40px " + display)]).catch(() => {});
+      const mono = '"JetBrains Mono", ui-monospace, monospace';
+      await Promise.all([document.fonts.load("700 80px " + display), document.fonts.load("700 40px " + body), document.fonts.load("500 40px " + body),
+        document.fonts.load("500 24px " + mono)]).catch(() => {});
       const [cover, logo] = await Promise.all([t.cover ? loadImage(t.cover + "?w=480") : null, loadImage("/assets/logo-small.png")]);
-      const g = storyCanvas.getContext("2d"), W = 1080, H = 1920, X = 110, CW = W - 2 * X, PAD = 64;
-      // Le fond de la story : la pochette floutée et assombrie, sinon un dégradé de la couleur de la carte.
+      const tone = cover ? coverTone(cover) : null, themes = storyThemes(tone), theme = themes[storyColor % themes.length];
+      const g = storyCanvas.getContext("2d"), W = 1080, H = 1920, X = 92, CW = W - 2 * X, PAD = 76;
+      const spacing = (px) => { if ("letterSpacing" in g) g.letterSpacing = px + "px"; };
       g.reset ? g.reset() : g.setTransform(1, 0, 0, 1, 0, 0);
-      g.fillStyle = "#0d0809"; g.fillRect(0, 0, W, H);
-      if (cover && "filter" in g) { g.filter = "blur(70px) brightness(.45) saturate(1.3)"; g.drawImage(cover, -300, -300, H + 600, H + 600); g.filter = "none"; }
-      else { const grad = g.createLinearGradient(0, 0, 0, H); grad.addColorStop(0, bg); grad.addColorStop(1, "#0d0809"); g.globalAlpha = .55; g.fillStyle = grad; g.fillRect(0, 0, W, H); g.globalAlpha = 1; }
-      // Les paroles : la plus grande taille qui tient sur la carte.
-      let size = 92, text;
-      do { g.font = `800 ${size}px ${body}`; text = wrap(g, lines, CW - 2 * PAD); size -= 4; } while (size > 44 && text.length * size * 1.18 > 900);
-      size += 4;
-      const lead = Math.round(size * 1.16), headH = 120, footH = 70;
-      const CH = PAD + headH + 70 + text.length * lead + 80 + footH + PAD, Y = Math.round((H - CH) / 2);
-      g.save(); g.shadowColor = "rgba(0,0,0,.5)"; g.shadowBlur = 80; g.shadowOffsetY = 30;
-      g.fillStyle = bg; roundRect(g, X, Y, CW, CH, 44); g.fill(); g.restore();
-      // L'en-tête : pochette, titre, artiste.
+      g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+      // Le fond : la pochette réduite puis agrandie (un flou qui marche dans tous les navigateurs), assombrie vers le bas.
+      g.fillStyle = theme.to; g.fillRect(0, 0, W, H);
+      if (cover) {
+        const side = Math.min(cover.width, cover.height * 9 / 16), tall = side * 16 / 9;
+        const small = el("canvas", { width: 18, height: 32 }), mid = el("canvas", { width: 72, height: 128 });
+        small.getContext("2d").drawImage(cover, (cover.width - side) / 2, (cover.height - tall) / 2, side, tall, 0, 0, 18, 32);
+        Object.assign(mid.getContext("2d"), { imageSmoothingQuality: "high" }).drawImage(small, 0, 0, 72, 128);
+        g.drawImage(mid, -60, -100, W + 120, H + 200);
+      }
+      const shade = g.createLinearGradient(0, 0, 0, H);
+      shade.addColorStop(0, "rgba(8,5,6,.30)"); shade.addColorStop(0.5, "rgba(8,5,6,.42)"); shade.addColorStop(1, "rgba(8,5,6,.78)");
+      g.fillStyle = shade; g.fillRect(0, 0, W, H);
+      // Les paroles en Unbounded, comme les paroles en grand : la plus grande taille qui tient (une dizaine de lignes au plus).
+      let size = 84, text;
+      for (;; size -= 3) {
+        g.font = `700 ${size}px ${display}`; spacing(-size * 0.02);
+        text = lines.map((l) => wrap(g, [l], CW - 2 * PAD)); // une phrase choisie = un bloc, séparé du suivant
+        if (size <= 40 || (text.flat().length * size * 1.2 + (text.length - 1) * size * 0.45 <= 820 && text.flat().every((l) => g.measureText(l).width <= CW - 2 * PAD))) break;
+      }
+      const lead = Math.round(size * 1.2), apart = Math.round(size * 0.45), headH = 132, gapTop = 92, gapBottom = 104, footH = 56;
+      const CH = PAD + headH + gapTop + text.flat().length * lead + (text.length - 1) * apart + gapBottom + footH + PAD, Y = Math.round((H - CH) / 2 - 20);
+      // La carte : dégradé de sa couleur, ombre portée et un filet de lumière sur le bord.
+      g.save(); g.shadowColor = "rgba(0,0,0,.55)"; g.shadowBlur = 90; g.shadowOffsetY = 36;
+      const card = g.createLinearGradient(X, Y, X + CW * 0.4, Y + CH);
+      card.addColorStop(0, theme.from); card.addColorStop(1, theme.to);
+      g.fillStyle = card; roundRect(g, X, Y, CW, CH, 56); g.fill(); g.restore();
+      g.strokeStyle = "rgba(255,255,255,.10)"; g.lineWidth = 2; roundRect(g, X + 1, Y + 1, CW - 2, CH - 2, 55); g.stroke();
+      // L'en-tête : la pochette, le titre, et l'artiste avec son feat.
       let x = X + PAD, y = Y + PAD;
-      if (cover) { g.save(); roundRect(g, x, y, headH, headH, 18); g.clip(); g.drawImage(cover, x, y, headH, headH); g.restore(); x += headH + 30; }
-      g.fillStyle = fg; g.textBaseline = "alphabetic";
-      const fit = (s, w) => { while (s.length > 1 && g.measureText(s).width > w) s = s.slice(0, -2) + "…"; return s; };
-      g.font = `700 44px ${body}`; g.fillText(fit(t.title + (t.feat ? " (feat. " + t.feat + ")" : ""), X + CW - PAD - x), x, y + 52);
-      g.globalAlpha = .72; g.font = `500 38px ${body}`; g.fillText(fit(t.subtitle || "", X + CW - PAD - x), x, y + 102); g.globalAlpha = 1;
+      if (cover) {
+        const side = Math.min(cover.width, cover.height);
+        g.save(); g.shadowColor = "rgba(0,0,0,.35)"; g.shadowBlur = 24; g.shadowOffsetY = 8;
+        roundRect(g, x, y, headH, headH, 22); g.fillStyle = "#000"; g.fill(); g.restore();
+        g.save(); roundRect(g, x, y, headH, headH, 22); g.clip();
+        g.drawImage(cover, (cover.width - side) / 2, (cover.height - side) / 2, side, side, x, y, headH, headH); g.restore();
+        x += headH + 34;
+      }
+      const room = X + CW - PAD - x;
+      const fit = (s) => { while (s.length > 1 && g.measureText(s).width > room) s = s.slice(0, -2).trimEnd() + "…"; return s; };
+      const artist = [t.artist || t.subtitle || "", t.feat ? "feat. " + t.feat : ""].filter(Boolean).join(" ");
+      g.textBaseline = "middle"; g.fillStyle = theme.fg;
+      g.font = `700 48px ${body}`; spacing(-0.5);
+      g.fillText(fit(t.title), x, y + (artist ? headH / 2 - 26 : headH / 2));
+      if (artist) { g.font = `500 38px ${body}`; spacing(0); g.globalAlpha = .74; g.fillText(fit(artist), x, y + headH / 2 + 30); g.globalAlpha = 1; }
       // Les lignes choisies.
-      g.font = `800 ${size}px ${body}`;
-      y = Y + PAD + headH + 70 + size;
-      for (const line of text) { g.fillText(line, X + PAD, y); y += lead; }
-      // ONIRIQUE en bas de la carte.
-      y = Y + CH - PAD - footH;
-      if (logo) g.drawImage(logo, X + PAD, y + 4, 68, 68 * logo.height / logo.width);
-      g.font = `700 38px ${display}`; g.fillText("ONIRIQUE", X + PAD + (logo ? 86 : 0), y + 54);
+      g.textBaseline = "alphabetic";
+      g.font = `700 ${size}px ${display}`; spacing(-size * 0.02);
+      y = Y + PAD + headH + gapTop + Math.round(size * 0.92);
+      for (const block of text) { for (const line of block) { g.fillText(line, X + PAD, y); y += lead; } y += apart; }
+      // Le pied : l'emblème et ONIRIQUE à gauche, « PAROLES » à droite.
+      y = Y + CH - PAD - footH / 2;
+      if (logo) { const lh = footH, lw = lh * logo.width / logo.height; g.drawImage(logo, X + PAD, y - lh / 2, lw, lh); x = X + PAD + lw + 18; } else x = X + PAD;
+      g.textBaseline = "middle"; g.fillStyle = theme.fg;
+      g.font = `700 30px ${display}`; spacing(6); g.fillText("ONIRIQUE", x, y + 1);
+      g.font = `500 22px ${mono}`; spacing(5); g.fillStyle = theme.soft; g.textAlign = "right";
+      g.fillText("PAROLES", X + CW - PAD, y + 1);
+      g.textAlign = "left"; spacing(0);
     }
     // L'image est prête avant le toucher sur Partager : Safari n'ouvre le partage que dans le geste lui-même.
     let storyImage = null;
