@@ -903,6 +903,14 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       run('UPDATE sound_tracks SET position = ? WHERE id = ? AND project_id = ?', i, id(tid), p.id)));
     res.json({ ok: true });
   });
+  // Une image du mail d'un pack (en tête ou sous le message), importée depuis l'ordinateur : son adresse complète,
+  // que le brouillon garde comme une adresse collée.
+  app.put('/api/me/sounds/projects/:id/mail/image', ...me, wrap(async (req, res) => {
+    const p = ownProject(req, req.params.id);
+    if (p.kind !== 'pack') throw new HttpError(400, "Seul un pack de prods a un mail.");
+    rateLimit(`sounds-cover:${req.user.id}`, 30);
+    res.json({ url: config.siteUrl + media(await receiveImage(req, 5 * 1024 * 1024)) });
+  }));
   // L'aperçu du mail d'un pack, tel qu'il est en train d'être rempli (rien n'est enregistré ni envoyé).
   app.post('/api/me/sounds/projects/:id/mail/preview', ...me, wrap(async (req, res) => {
     const p = ownProject(req, req.params.id);

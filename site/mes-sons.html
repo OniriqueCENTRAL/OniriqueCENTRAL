@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=8489b8a3"></script>
+<script src="assets/i18n.js?v=8be6b307"></script>
 <script src="assets/ui.js?v=3"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
@@ -1831,6 +1831,9 @@ $("project-title").onclick = async () => {
 // qu'il arrivera. Le brouillon s'enregistre au fil de la saisie ; l'envoi n'est pas encore ouvert.
 const MAIL_COLORS = { bg: ["Fond", "#0D0809"], card: ["Carte", "#1A080A"], accent: ["Accent", "#E23444"], text: ["Texte", "#F6EEEE"],
   muted: ["Texte secondaire", "#B39A9D"], button: ["Bouton", "#F6EEEE"], buttonText: ["Texte du bouton", "#0D0809"] };
+// Celles qui, tant qu'on ne les choisit pas, suivent les couleurs d'au-dessus (comme le serveur).
+const MAIL_FOLLOW = { title: ["Titre", (c) => c.text], link: ["Liens", (c) => c.accent], line: ["Traits", (c) => c.muted], listen: ["Bouton « Écouter »", (c) => c.accent],
+  listenText: ["Texte de « Écouter »", () => "#ffffff"], footer: ["Bas du mail", (c) => c.muted] };
 const MAIL_FONTS = [["grotesk", "Hanken Grotesk"], ["display", "Unbounded"], ["serif", "Georgia (serif)"], ["mono", "JetBrains Mono"]];
 const mailList = (text) => {
   const parts = text.split(/[\s,;]+/).map((s) => s.trim().toLowerCase()).filter(Boolean);
@@ -1861,6 +1864,7 @@ function openMailer(p) {
     title: el("input", { value: d.title, maxLength: 120, placeholder: p.title }),
     text: el("textarea", { value: d.text, maxLength: 8000, placeholder: "Le message. Une ligne vide entre deux paragraphes.\n**gras**, [texte du lien](https://…)" }),
     image: el("input", { type: "url", value: d.image, placeholder: "https://… (image en tête, facultatif)" }),
+    image2: el("input", { type: "url", value: d.image2 || "", placeholder: "https://… (image sous le message, facultatif)" }),
     buttonLabel: el("input", { value: d.buttonLabel, maxLength: 40, placeholder: "Écouter le pack" }),
     buttonUrl: el("input", { type: "url", value: d.buttonUrl, placeholder: "https://…" }),
     signature: el("input", { value: d.signature, maxLength: 200, placeholder: p.artist || data.owner.name }),
@@ -1869,7 +1873,25 @@ function openMailer(p) {
     font: el("select", {}, ...MAIL_FONTS.map(([v, l]) => el("option", { value: v, textContent: l, selected: d.font === v }))),
     titleFont: el("select", {}, ...MAIL_FONTS.map(([v, l]) => el("option", { value: v, textContent: l, selected: d.titleFont === v }))),
   };
-  const colors = Object.fromEntries(Object.entries(MAIL_COLORS).map(([k]) => [k, el("input", { type: "color", value: d.colors[k] })]));
+  const colors = Object.fromEntries([...Object.keys(MAIL_COLORS), ...Object.keys(MAIL_FOLLOW)].map((k) => [k, el("input", { type: "color", value: d.colors[k] || MAIL_FOLLOW[k][1](d.colors) })]));
+  // Les couleurs « qui suivent » choisies à la main ; les autres se redessinent d'après celles d'au-dessus.
+  const custom = new Set(Object.keys(MAIL_FOLLOW).filter((k) => d.colors[k]));
+  const base = () => Object.fromEntries(Object.keys(MAIL_COLORS).map((k) => [k, colors[k].value]));
+  const follow = () => { const b = base(); for (const [k, [, fn]] of Object.entries(MAIL_FOLLOW)) if (!custom.has(k)) colors[k].value = fn(b); };
+  // Toucher une couleur avec « Couleurs de la pochette » coché : on repart de celles de la pochette, modifiables une à une.
+  for (const [k, input] of Object.entries(colors)) input.addEventListener("input", () => { if (MAIL_FOLLOW[k]) custom.add(k); f.coverColors.checked = false; if (!MAIL_FOLLOW[k]) follow(); });
+  // Importer une image depuis l'ordinateur : son adresse remplit le champ.
+  const imageField = (input) => {
+    const file = el("input", { type: "file", accept: "image/png,image/jpeg,image/webp", hidden: true });
+    file.onchange = () => {
+      const pick = file.files[0];
+      file.value = "";
+      if (pick) upload("/me/sounds/projects/" + p.id + "/mail/image", pick, () => {}, "PUT").then((r) => { input.value = r.url; update(); }, oops);
+    };
+    return el("div", { className: "row", style: "gap:8px;flex-wrap:nowrap" }, input, file,
+      el("button", { className: "btn btn-ghost", type: "button", textContent: "Importer", onclick: () => file.click() }),
+      el("button", { className: "btn btn-ghost", type: "button", textContent: "Retirer", onclick: () => { input.value = ""; update(); } }));
+  };
   const total = el("small", { className: "muted" }), status = el("span", { className: "muted", style: "font-size:13px" });
   const frame = el("iframe", { className: "mail-frame", title: "Aperçu du mail" });
   // Les listes d'adresses du compte : choisies pour remplir les destinataires, importées d'un CSV, enregistrées, exportées.
@@ -1921,10 +1943,10 @@ function openMailer(p) {
   drawLists().catch(oops);
   const form = el("form", { className: "mail-form" });
   mailerForm = {
-    draft: () => ({ ...Object.fromEntries(["to", "from", "subject", "preheader", "eyebrow", "title", "text", "image", "buttonLabel", "buttonUrl", "signature", "footer", "font", "titleFont"]
+    draft: () => ({ ...Object.fromEntries(["to", "from", "subject", "preheader", "eyebrow", "title", "text", "image", "image2", "buttonLabel", "buttonUrl", "signature", "footer", "font", "titleFont"]
       .map((k) => [k, f[k].value])), coverColors: f.coverColors.checked,
       trackIds: [...form.querySelectorAll(".mail-prods input:checked")].map((x) => Number(x.value)),
-      colors: Object.fromEntries(Object.entries(colors).map(([k, input]) => [k, input.value])) }),
+      colors: Object.fromEntries(Object.entries(colors).filter(([k]) => !MAIL_FOLLOW[k] || custom.has(k)).map(([k, input]) => [k, input.value])) }),
   };
   const drawCount = () => {
     const { valid, invalid } = mailList(f.to.value);
@@ -1940,9 +1962,8 @@ function openMailer(p) {
       try {
         const [{ html, palette }] = await Promise.all([api("POST", "/me/sounds/projects/" + p.id + "/mail/preview", draft),
           api("PATCH", "/me/sounds/projects/" + p.id, { mail: draft })]);
-        // Couleurs de la pochette : elles remplacent celles choisies, qui restent visibles mais figées.
-        for (const [k, input] of Object.entries(colors)) { input.disabled = !!palette; if (palette) input.value = palette[k]; }
-        reset.disabled = !!palette;
+        // Couleurs de la pochette : elles s'affichent dans les cases, d'où l'on peut repartir pour les changer.
+        if (palette) { for (const k of Object.keys(MAIL_COLORS)) colors[k].value = palette[k]; custom.clear(); follow(); }
         drawSend();
         frame.srcdoc = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data: http:; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https: data:"><base target="_blank">` + html;
         p.mail = draft;
@@ -1951,7 +1972,7 @@ function openMailer(p) {
     }, 450);
   };
   const reset = el("button", { className: "btn btn-ghost", type: "button", textContent: "Couleurs d'origine",
-    onclick: () => { for (const [k, [, v]] of Object.entries(MAIL_COLORS)) colors[k].value = v; update(); } });
+    onclick: () => { for (const [k, [, v]] of Object.entries(MAIL_COLORS)) colors[k].value = v; custom.clear(); follow(); f.coverColors.checked = false; update(); } });
   const section = (title) => el("div", { className: "sub-title wide", textContent: title });
   const when = (t) => (t ? new Date(t).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "");
   const plural = (n, word) => n + " " + word + (n > 1 ? "s" : "");
@@ -2085,12 +2106,12 @@ function openMailer(p) {
   form.append(
     section("Destinataires"), listBar, field("Liste d'adresses", f.to), el("div", { className: "wide" }, total),
     section("Expéditeur et objet"), field("Nom de l'expéditeur", f.from, false), field("Objet", f.subject, false), field("Phrase d'aperçu", f.preheader),
-    section("Contenu"), field("Petit titre", f.eyebrow, false), field("Titre", f.title, false), field("Message", f.text), field("Image en tête (adresse)", f.image),
+    section("Contenu"), field("Petit titre", f.eyebrow, false), field("Titre", f.title, false), field("Message", f.text), field("Image en tête", imageField(f.image)), field("Image sous le message", imageField(f.image2)),
     field("Texte du bouton", f.buttonLabel, false), field("Lien du bouton", f.buttonUrl, false), field("Signature", f.signature, false), field("Bas du mail", f.footer, false),
     section("Prods du pack (leur nombre est affiché sur la ligne du pack)"), el("div", { className: "mail-prods wide" }),
     section("Style"), el("label", { className: "mail-check wide" }, f.coverColors, "Couleurs de la pochette : fond, carte et accent tirés de la pochette du pack"),
     field("Police du texte", f.font, false), field("Police des titres", f.titleFont, false),
-    el("div", { className: "mail-colors wide" }, ...Object.entries(MAIL_COLORS).map(([k, [label]]) => el("label", { className: "mail-check" }, colors[k], label))),
+    el("div", { className: "mail-colors wide" }, ...Object.entries({ ...MAIL_COLORS, ...MAIL_FOLLOW }).map(([k, [label]]) => el("label", { className: "mail-check" }, colors[k], label))),
     el("div", { className: "wide" }, reset));
   form.addEventListener("input", update);
   form.addEventListener("change", update);

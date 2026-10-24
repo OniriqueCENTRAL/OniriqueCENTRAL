@@ -10,18 +10,22 @@ const FONTS = {
   mono: "'JetBrains Mono', Consolas, 'Courier New', monospace",
 };
 export const MAIL_COLORS = { bg: '#0D0809', card: '#1A080A', accent: '#E23444', text: '#F6EEEE', muted: '#B39A9D', button: '#F6EEEE', buttonText: '#0D0809' };
+// Les couleurs qui, non choisies, suivent celles d'au-dessus : titre, liens, traits, bouton « Écouter », bas du mail.
+const FOLLOW = { title: (c) => c.text, link: (c) => c.accent, line: (c) => c.muted + '33', listen: (c) => c.accent, listenText: () => '#ffffff', footer: (c) => c.muted };
+const isColor = (v) => /^#[0-9a-f]{6}$/i.test(v);
 const str = (value, max) => (typeof value === 'string' ? value.replace(/[^\S\n]+/g, ' ').trim().slice(0, max) : '');
 const https = (value) => { const url = str(value, 500); return /^https?:\/\/[^\s"'<>]+$/i.test(url) ? url : ''; };
 const absolute = (url) => (!url ? '' : /^https?:/i.test(url) ? url : config.siteUrl + url);
 
 /** Un brouillon propre, quoi que le navigateur envoie. */
 export function mailDraft(b = {}) {
-  const colors = Object.fromEntries(Object.entries(MAIL_COLORS).map(([k, v]) => [k, /^#[0-9a-f]{6}$/i.test(b.colors?.[k]) ? b.colors[k] : v]));
+  const colors = Object.fromEntries([...Object.entries(MAIL_COLORS).map(([k, v]) => [k, isColor(b.colors?.[k]) ? b.colors[k] : v]),
+    ...Object.keys(FOLLOW).filter((k) => isColor(b.colors?.[k])).map((k) => [k, b.colors[k]])]);
   return {
     to: typeof b.to === 'string' ? b.to.slice(0, 150000) : '',
     from: str(b.from, 80), subject: str(b.subject, 140), preheader: str(b.preheader, 160), eyebrow: str(b.eyebrow, 40), title: str(b.title, 120),
     text: typeof b.text === 'string' ? b.text.replace(/\r\n?/g, '\n').slice(0, 8000) : '',
-    image: https(b.image), buttonLabel: str(b.buttonLabel, 40), buttonUrl: https(b.buttonUrl), signature: str(b.signature, 200), footer: str(b.footer, 300),
+    image: https(b.image), image2: https(b.image2), buttonLabel: str(b.buttonLabel, 40), buttonUrl: https(b.buttonUrl), signature: str(b.signature, 200), footer: str(b.footer, 300),
     trackIds: Array.isArray(b.trackIds) ? [...new Set(b.trackIds.map(Number).filter((n) => Number.isInteger(n) && n > 0))].slice(0, 50) : [],
     coverColors: b.coverColors !== false, font: FONTS[b.font] ? b.font : 'grotesk', titleFont: FONTS[b.titleFont] ? b.titleFont : 'display', colors,
   };
@@ -38,8 +42,8 @@ export function mailList(text) {
 function rich(text, c, go = (url) => url) {
   let html = escapeHtml(text);
   html = html.replace(/\*\*(.+?)\*\*/g, `<strong style="color:${c.text}">$1</strong>`);
-  html = html.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, (_m, label, url) => `<a href="${escapeHtml(go(unescape(url)))}" style="color:${c.accent}">${label}</a>`);
-  html = html.replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, (_m, before, url) => `${before}<a href="${escapeHtml(go(unescape(url)))}" style="color:${c.accent};word-break:break-all">${url}</a>`);
+  html = html.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, (_m, label, url) => `<a href="${escapeHtml(go(unescape(url)))}" style="color:${c.link}">${label}</a>`);
+  html = html.replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, (_m, before, url) => `${before}<a href="${escapeHtml(go(unescape(url)))}" style="color:${c.link};word-break:break-all">${url}</a>`);
   return html.replace(/\n/g, '<br>');
 }
 const unescape = (html) => html.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
@@ -49,17 +53,17 @@ const unescape = (html) => html.replace(/&amp;/g, '&').replace(/&quot;/g, '"').r
  * un envoi : link (réécrit chaque lien pour le suivi), pixel (image d'ouverture), unsubscribe (lien de désinscription).
  */
 export function packMailHtml(d, pack) {
-  const c = d.colors, font = FONTS[d.font], display = FONTS[d.titleFont], go = pack.link || ((url) => url);
+  const c = { ...Object.fromEntries(Object.entries(FOLLOW).map(([k, follow]) => [k, follow(d.colors)])), ...d.colors }, font = FONTS[d.font], display = FONTS[d.titleFont], go = pack.link || ((url) => url);
   const pad = (inner, top = 14) => `<tr><td style="padding:${top}px 36px 0">${inner}</td></tr>`;
   const button = (label, url, bg, fg, { big = false, border = bg } = {}) => `<a href="${escapeHtml(go(url))}" style="display:inline-block;padding:${big ? '15px 28px' : '10px 18px'};border:1px solid ${border};border-radius:999px;background:${bg};color:${fg};font:700 ${big ? 15 : 13}px/1 ${font};text-decoration:none">${escapeHtml(label)}</a>`;
   // Une seule ligne pour le pack (pochette, nom, nombre de prods choisies) et son bouton « Écouter » : le détail est sur la page.
   const count = d.trackIds.filter((id) => pack.tracks.some((t) => t.id === id)).length;
-  const prods = count && pack.listenUrl ? `<tr><td style="padding:14px 0;border-top:1px solid ${c.muted}33;border-bottom:1px solid ${c.muted}33">
+  const prods = count && pack.listenUrl ? `<tr><td style="padding:14px 0;border-top:1px solid ${c.line};border-bottom:1px solid ${c.line}">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
 ${pack.cover ? `<td width="64" valign="middle" style="padding-right:14px"><img src="${escapeHtml(absolute(pack.cover))}?w=160" width="64" height="64" alt="" style="display:block;border-radius:10px;object-fit:cover"></td>` : ''}
 <td valign="middle"><div style="font:700 16px/1.3 ${font};color:${c.text}">${escapeHtml(pack.title)}</div>
 <div style="padding-top:4px;font:600 11px/1.4 ${FONTS.mono};letter-spacing:.06em;color:${c.accent}">${count} PROD${count > 1 ? 'S' : ''}</div></td>
-<td align="right" valign="middle" style="white-space:nowrap;padding-left:10px">${button('Écouter', pack.listenUrl, c.accent, '#ffffff')}</td>
+<td align="right" valign="middle" style="white-space:nowrap;padding-left:10px">${button('Écouter', pack.listenUrl, c.listen, c.listenText)}</td>
 </tr></table></td></tr>` : '';
   const paragraphs = d.text.split(/\n{2,}/).map((s) => s.trim()).filter(Boolean)
     .map((s) => pad(`<p style="margin:0;font:400 16px/1.65 ${font};color:${c.muted}">${rich(s, c, go)}</p>`)).join('');
@@ -75,16 +79,17 @@ ${pack.cover ? `<td width="64" valign="middle" style="padding-right:14px"><img s
 ${d.image ? `<tr><td><img src="${escapeHtml(d.image)}" width="600" alt="" style="display:block;width:100%;height:auto"></td></tr>` : `<tr><td style="height:4px;line-height:4px;font-size:0;background:${c.accent}">&nbsp;</td></tr>`}
 <tr><td style="padding:30px 36px 0">
 ${d.eyebrow ? `<div style="font:600 12px/1 ${FONTS.mono};letter-spacing:.2em;text-transform:uppercase;color:${c.accent}">${escapeHtml(d.eyebrow)}</div>` : ''}
-<h1 style="margin:${d.eyebrow ? 14 : 0}px 0 0;font:800 28px/1.2 ${display};color:${c.text}">${escapeHtml(d.title || pack.title)}</h1>
+<h1 style="margin:${d.eyebrow ? 14 : 0}px 0 0;font:800 28px/1.2 ${display};color:${c.title}">${escapeHtml(d.title || pack.title)}</h1>
 </td></tr>
 ${paragraphs}
+${d.image2 ? pad(`<img src="${escapeHtml(d.image2)}" width="528" alt="" style="display:block;width:100%;height:auto;border-radius:14px">`, 22) : ''}
 ${prods ? pad(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${prods}</table>`, 22) : ''}
 ${d.buttonLabel && d.buttonUrl ? pad(button(d.buttonLabel, d.buttonUrl, c.button, c.buttonText, { big: true }), 22) : ''}
-<tr><td style="padding:30px 36px 32px"><div style="height:1px;background:${c.muted}33;font-size:0;line-height:1px">&nbsp;</div>
+<tr><td style="padding:30px 36px 32px"><div style="height:1px;background:${c.line};font-size:0;line-height:1px">&nbsp;</div>
 <p style="margin:16px 0 0;font:400 14px/1.6 ${font};color:${c.muted}">${rich(d.signature || d.from || pack.artist, c, go)}</p></td></tr>
 </table>
-${d.footer ? `<p style="margin:20px 0 0;font:400 12px/1.6 ${font};color:${c.muted}">${rich(d.footer, c, go)}</p>` : ''}
-${pack.unsubscribe ? `<p style="margin:14px 0 0;font:400 12px/1.6 ${font};color:${c.muted}"><a href="${escapeHtml(pack.unsubscribe)}" style="color:${c.muted}">Se désinscrire</a></p>` : ''}
+${d.footer ? `<p style="margin:20px 0 0;font:400 12px/1.6 ${font};color:${c.footer}">${rich(d.footer, c, go)}</p>` : ''}
+${pack.unsubscribe ? `<p style="margin:14px 0 0;font:400 12px/1.6 ${font};color:${c.footer}"><a href="${escapeHtml(pack.unsubscribe)}" style="color:${c.footer}">Se désinscrire</a></p>` : ''}
 ${pack.pixel ? `<img src="${escapeHtml(pack.pixel)}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0">` : ''}
 </td></tr></table></body></html>`;
 }

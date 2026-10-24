@@ -105,6 +105,15 @@ try {
     const manual = await call('POST', `/api/me/sounds/projects/${pack}/mail/preview`, { token: bm.token, body: { subject: 'x', coverColors: false, colors: { bg: '#123456' } } });
     assert.equal(manual.palette, null);
     assert.ok(manual.html.includes('background:#123456'));
+    // Les couleurs qui suivent (titre, liens…) se choisissent aussi ; une image sous le message ; une couleur invalide est ignorée.
+    const more = await call('POST', `/api/me/sounds/projects/${pack}/mail/preview`, { token: bm.token,
+      body: { subject: 'x', coverColors: false, title: 'Mon pack', image2: 'https://exemple.fr/photo.jpg', colors: { title: '#00ff00', footer: 'vert', text: '#111111' } } });
+    assert.ok(more.html.includes('color:#00ff00">Mon pack</h1>'));
+    assert.ok(more.html.includes('src="https://exemple.fr/photo.jpg"'));
+    assert.ok(!more.html.includes('vert'));
+    // Sans couleur de titre choisie, il suit celle du texte.
+    const plain = await call('POST', `/api/me/sounds/projects/${pack}/mail/preview`, { token: bm.token, body: { subject: 'x', coverColors: false, title: 'Mon pack', colors: { text: '#111111' } } });
+    assert.ok(plain.html.includes('color:#111111">Mon pack</h1>'));
   });
 
   await step('sans boîte mail connectée, rien ne part ; une boîte mal réglée est refusée', async () => {

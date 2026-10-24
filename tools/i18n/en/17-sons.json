@@ -408,5 +408,15 @@
  "Aperçu de la vidéo": "Video preview",
  "Clique sur une prod pour voir sa vidéo.": "Click a beat to see its video.",
  "Pas de description.": "No description.",
- "(titre vide)": "(empty title)"
+ "(titre vide)": "(empty title)",
+ "Titre": "Title",
+ "Liens": "Links",
+ "Traits": "Lines",
+ "Bouton « Écouter »": "\"Listen\" button",
+ "Texte de « Écouter »": "\"Listen\" text",
+ "Bas du mail": "Email footer",
+ "Image en tête": "Header image",
+ "Image sous le message": "Image below the message",
+ "Importer": "Upload",
+ "https://… (image sous le message, facultatif)": "https://… (image below the message, optional)"
 }
