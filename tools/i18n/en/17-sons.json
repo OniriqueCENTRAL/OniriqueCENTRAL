@@ -385,5 +385,20 @@
  "Ajouter une photo": "Add a photo",
  "Lire tout": "Read all",
  "La photo doit faire 5 Mo au plus.": "The photo must be 5 MB or less.",
- "Lien invalide.": "Invalid link."
+ "Lien invalide.": "Invalid link.",
+ "Notifications": "Notifications",
+ "Nouvelles": "New",
+ "Vues": "Seen",
+ "Afficher": "Show",
+ "Rien pour l'instant.": "Nothing yet.",
+ "Écoutes": "Plays",
+ "Téléchargements": "Downloads",
+ "Ajouts à un ONIRIQUE CLOUD": "Saves to an ONIRIQUE CLOUD",
+ "Titres ajoutés par un collaborateur": "Tracks added by a collaborator",
+ "Nouvelles versions d'un collaborateur": "New versions from a collaborator",
+ "Titres et projets renommés": "Renamed tracks and projects",
+ "Nouveaux collaborateurs": "New collaborators",
+ "Choisir ce qui s'affiche": "Choose what shows",
+ "Choisir les notifications affichées": "Choose which notifications show",
+ "Retour aux notifications": "Back to notifications"
 }

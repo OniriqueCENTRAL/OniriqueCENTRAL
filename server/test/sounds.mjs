@@ -381,6 +381,18 @@ try {
     await call('POST', `/api/sounds/share/${shareToken(shared.url)}/play`, { body: { trackId: added.id } });
     assert.equal((await call('GET', '/api/me/sounds', { token: owner.token })).projects.find((x) => x.id === pid).tracks.find((t) => t.id === added.id).plays, 1);
     assert.equal((await call('GET', '/api/me/sounds', { token: friend.token })).links.length, 2);
+    // La cloche : l'auteur voit ce qu'a fait son collaborateur (rien de ses propres gestes), le collaborateur l'écoute de son lien.
+    let bell = (await call('GET', '/api/me/sounds/notices', { token: owner.token })).items;
+    assert.deepEqual(bell.map((n) => [n.kind, n.who, n.text, n.seen]), [
+      ['rename', 'ami-collab', 'a renommé « b » en « Couplet »', false],
+      ['add', 'ami-collab', 'a ajouté « b » à « SEMINAIRE »', false],
+      ['join', 'ami-collab', 'a rejoint « SEMINAIRE »', false]]);
+    assert.equal(bell[0].projectId, pid);
+    assert.deepEqual((await call('GET', '/api/me/sounds/notices', { token: friend.token })).items.map((n) => [n.kind, n.text]), [['play', 'écoute « Couplet »']]);
+    await call('PUT', '/api/me/notifications', { token: owner.token, body: { inbox: { rename: false } } });
+    await call('POST', '/api/me/sounds/notices/seen', { token: owner.token });
+    bell = (await call('GET', '/api/me/sounds/notices', { token: owner.token })).items;
+    assert.deepEqual(bell.map((n) => [n.kind, n.seen]), [['add', true], ['join', true]]);
     // Mais ni supprimer le projet, ni le ranger, ni gérer l'invitation.
     await call('DELETE', `/api/me/sounds/projects/${pid}`, { token: friend.token, expect: 403 });
     await call('DELETE', `/api/me/sounds/projects/${pid}/invite`, { token: friend.token, expect: 403 });

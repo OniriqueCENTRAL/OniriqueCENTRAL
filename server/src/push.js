@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS notify_prefs (
 const DEFAULTS = {
   mail: { play: true, comment: true, save: true },
   push: { play: true, download: true, comment: true, save: true },
+  // Ce que montre la cloche d'ONIRIQUE CLOUD : les mêmes gestes, et ce que font les collaborateurs d'un projet.
+  inbox: { play: true, download: true, comment: true, save: true, add: true, version: true, rename: true, join: true },
   // Et comment s'ouvrent les nouveaux liens d'écoute.
   links: { download: false, requireAccount: false },
 };

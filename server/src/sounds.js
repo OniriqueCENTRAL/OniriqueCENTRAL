@@ -179,6 +179,34 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_collabs') WHERE name = 'folder_id'`).get()) {
   db.exec('ALTER TABLE sound_collabs ADD COLUMN folder_id INTEGER REFERENCES sound_folders(id) ON DELETE SET NULL');
 }
+// La cloche d'ONIRIQUE CLOUD : ce qui est arrivé aux sons du membre (écoutes, commentaires…) et ce qu'ont fait les
+// collaborateurs de ses projets. who : le nom affiché ; text : la suite de la phrase ; seen : déjà vue à l'ouverture.
+db.exec(`
+CREATE TABLE IF NOT EXISTS sound_notices (
+  id         INTEGER PRIMARY KEY,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kind       TEXT NOT NULL,
+  actor_id   INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  who        TEXT NOT NULL,
+  text       TEXT NOT NULL,
+  project_id INTEGER REFERENCES sound_projects(id) ON DELETE CASCADE,
+  at         INTEGER NOT NULL,
+  seen       INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS sound_notices_user ON sound_notices (user_id, at);
+`);
+/** Ajoute la notification à chacun (sauf à celui qui a fait le geste) ; on en garde 200 par membre. */
+function notice(userIds, kind, { actor = null, who, text, projectId = null }) {
+  for (const uid of new Set(userIds)) {
+    if (!uid || uid === actor?.id) continue;
+    run('INSERT INTO sound_notices (user_id, kind, actor_id, who, text, project_id, at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      uid, kind, actor?.id || null, who || (actor && (actor.name || actor.email)) || "Quelqu'un", text, projectId, now());
+    run('DELETE FROM sound_notices WHERE user_id = ? AND id NOT IN (SELECT id FROM sound_notices WHERE user_id = ? ORDER BY at DESC, id DESC LIMIT 200)', uid, uid);
+  }
+}
+// L'auteur et les collaborateurs d'un projet.
+const membersOf = (pid) => [get('SELECT user_id FROM sound_projects WHERE id = ?', pid)?.user_id,
+  ...all('SELECT user_id FROM sound_collabs WHERE project_id = ?', pid).map((c) => c.user_id)];
 // Un projet que le membre peut ouvrir : le sien, ou un projet où il est collaborateur (p = sound_projects).
 const ACCESS = '(p.user_id = ? OR p.id IN (SELECT project_id FROM sound_collabs WHERE user_id = ?))';
 // Un lien d'écoute (l = sound_links) dont l'auteur a encore accès au projet : l'auteur du projet ou l'un de ses
@@ -825,6 +853,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       const title = str(req.body.title, 120);
       if (!title) throw new HttpError(400, 'Donne un nom au projet.');
       run('UPDATE sound_projects SET title = ? WHERE id = ?', title, p.id);
+      if (title !== p.title) notice(membersOf(p.id), 'rename', { actor: req.user, text: `a renommé « ${p.title} » en « ${title} »`, projectId: p.id });
     }
     // Un projet devient un pack de prods (ou redevient un projet) : son BPM et sa clé, quand il en manque, sont lus dans le
     // nom du fichier de chaque son ; la page détecte ensuite sur le son ceux que le nom ne donne pas.
@@ -959,6 +988,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       run('UPDATE sound_tracks SET current_id = ? WHERE id = ?', addVersion(tid, file, ''), tid);
       return tid;
     });
+    notice(membersOf(p.id), 'add', { actor: req.user, text: `a ajouté « ${title} » à « ${p.title} »`, projectId: p.id });
     res.status(201).json({ id: trackId, versionId: get('SELECT current_id FROM sound_tracks WHERE id = ?', trackId).current_id });
   }));
   // Une nouvelle version d'un titre : elle devient celle qu'on écoute, les précédentes restent dans l'historique.
@@ -968,6 +998,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     const file = await receiveAudio(req, t.owner_id);
     const vid = addVersion(t.id, file, str(req.query.note, 300));
     run('UPDATE sound_tracks SET current_id = ? WHERE id = ?', vid, t.id);
+    notice(membersOf(t.project_id), 'version', { actor: req.user, text: `a envoyé une nouvelle version de « ${t.title} »`, projectId: t.project_id });
     res.status(201).json({ id: vid });
   }));
   app.patch('/api/me/sounds/tracks/:id', ...me, (req, res) => {
@@ -1011,6 +1042,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       const title = str(req.body.title, 120);
       if (!title) throw new HttpError(400, 'Donne un nom au titre.');
       run('UPDATE sound_tracks SET title = ? WHERE id = ?', title, t.id);
+      if (title !== t.title) notice(membersOf(t.project_id), 'rename', { actor: req.user, text: `a renommé « ${t.title} » en « ${title} »`, projectId: t.project_id });
     }
     if (req.body.currentId !== undefined) {
       if (!get('SELECT 1 FROM sound_versions WHERE id = ? AND track_id = ?', id(req.body.currentId), t.id)) throw new HttpError(400, 'Version inconnue.');
@@ -1135,6 +1167,21 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   });
 
   // L'invitation à collaborer : un lien que l'auteur crée (ou renouvelle, l'ancien ne marche plus) et peut couper.
+  // La cloche : les 60 dernières notifications des types choisis, avec la pochette du projet quand le membre y a encore accès.
+  app.get('/api/me/sounds/notices', ...me, (req, res) => {
+    const shown = Object.entries(prefsOf(req.user.id).inbox).filter(([, on]) => on).map(([kind]) => kind);
+    const rows = all(`SELECT n.*, u.name AS actor_name, u.avatar AS actor_avatar, p.cover, p.id AS pid FROM sound_notices n
+      LEFT JOIN users u ON u.id = n.actor_id LEFT JOIN sound_projects p ON p.id = n.project_id AND ${ACCESS}
+      WHERE n.user_id = ? AND n.kind IN (${shown.map(() => '?').join(',') || "''"}) ORDER BY n.at DESC, n.id DESC LIMIT 60`,
+    req.user.id, req.user.id, req.user.id, ...shown);
+    res.json({ items: rows.map((n) => ({ id: n.id, kind: n.kind, who: n.who, text: n.text, at: n.at, seen: !!n.seen, projectId: n.pid || null, cover: media(n.cover),
+      actor: n.actor_id ? person({ id: n.actor_id, name: n.actor_name, avatar: n.actor_avatar }) : null })) });
+  });
+  app.post('/api/me/sounds/notices/seen', ...me, (req, res) => {
+    run('UPDATE sound_notices SET seen = 1 WHERE user_id = ? AND seen = 0', req.user.id);
+    res.json({ ok: true });
+  });
+
   app.post('/api/me/sounds/projects/:id/invite', ...me, (req, res) => {
     const p = ownProject(req, req.params.id);
     const token = crypto.randomBytes(12).toString('base64url');
@@ -1168,7 +1215,9 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     rateLimit(`sounds-invite:${req.user.id}`, 60);
     const p = invitation(req.params.token);
     if (p.user_id === req.user.id) throw new HttpError(400, "C'est ton propre projet.");
-    run('INSERT OR IGNORE INTO sound_collabs (project_id, user_id, created_at) VALUES (?, ?, ?)', p.id, req.user.id, now());
+    if (run('INSERT OR IGNORE INTO sound_collabs (project_id, user_id, created_at) VALUES (?, ?, ?)', p.id, req.user.id, now()).changes) {
+      notice(membersOf(p.id), 'join', { actor: req.user, text: `a rejoint « ${p.title} »`, projectId: p.id });
+    }
     res.json({ projectId: p.id });
   });
 
@@ -1230,12 +1279,14 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (told.size > 20000) told.clear();
     told.set(k, now() + 86400_000);
     const where = link.label ? ` (lien « ${link.label} »)` : '';
-    const text = {
-      play: `${who || "Quelqu'un"} écoute « ${title} »`,
-      download: `${who || "Quelqu'un"} a téléchargé « ${title} »`,
-      comment: `${who} a commenté « ${title} »`,
-      save: `${who} a ajouté « ${title} » à son ONIRIQUE CLOUD`,
+    const verb = {
+      play: `écoute « ${title} »`,
+      download: `a téléchargé « ${title} »`,
+      comment: `a commenté « ${title} »`,
+      save: `a ajouté « ${title} » à son ONIRIQUE CLOUD`,
     }[event];
+    const text = `${who || "Quelqu'un"} ${verb}`;
+    notice([link.user_id], event, { who, text: verb + where, projectId: link.project_id || get('SELECT project_id FROM sound_tracks WHERE id = ?', link.track_id)?.project_id });
     if (wants(link.user_id, event, 'push')) push(link.user_id, { title: 'ONIRIQUE CLOUD', body: text + where, url: '/mes-sons' });
     if (who && wants(link.user_id, event, 'mail')) {
       sendMail(link.owner_email, `${text} — ONIRIQUE`, `${text}${where}.\n\n${config.siteUrl}/mes-sons\n\nONIRIQUE`,
