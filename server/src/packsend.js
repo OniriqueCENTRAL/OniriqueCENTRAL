@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import sharp from 'sharp';
 import { config } from './config.js';
-import { db, get, all, run, now } from './db.js';
+import { db, get, all, run, now, setting, setSetting } from './db.js';
 import { HttpError, rateLimit } from './auth.js';
 import MailComposer from 'nodemailer/lib/mail-composer/index.js';
 import { smtpTransport, testing, outbox } from './mail.js';
@@ -203,6 +203,16 @@ const pendingGoogle = new Map();
 export function recipientFor(userId, token) {
   return token ? get('SELECT * FROM sound_mail_recipients WHERE token = ? AND user_id = ?', String(token).slice(0, 64), userId) || null : null;
 }
+// Une vraie ouverture : pas l'anti-spam du destinataire, qui charge l'image de suivi dès la réception (dans les secondes
+// qui suivent l'envoi, souvent sous un faux navigateur). Gmail passe par son proxy d'images (GoogleImageProxy) : compté.
+const SCANNER = /^Mozilla\/5\.0$|Edge\/12\.246 Mozilla|bot|crawl|spider|preview|scan|python|curl|wget|java\//i;
+if (!setting('mail_opens_cleaned', false)) {
+  db.exec(`DELETE FROM sound_mail_events WHERE type = 'open' AND recipient_id IN (SELECT id FROM sound_mail_recipients WHERE opened_at - sent_at < 30000);
+    UPDATE sound_mail_recipients SET opened_at = (SELECT MIN(at) FROM sound_mail_events e WHERE e.recipient_id = sound_mail_recipients.id AND e.type != 'unsubscribe')
+      WHERE opened_at - sent_at < 30000;`);
+  setSetting('mail_opens_cleaned', true);
+}
+export const realOpen = (r, agent = '') => !!agent && !SCANNER.test(agent) && !(r.sent_at && now() - r.sent_at < 30_000);
 export function trackRecipient(r, type, title = '') {
   if (!r) return;
   const t = now();
@@ -365,7 +375,8 @@ export function mountPackSend(app, { me, ownProject, sign, wrap }) {
   const pixel = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
   const byToken = (req) => get('SELECT * FROM sound_mail_recipients WHERE token = ?', String(req.params.token).slice(0, 64));
   app.get('/api/sounds/m/:token/o.gif', (req, res) => {
-    trackRecipient(byToken(req), 'open');
+    const r = byToken(req);
+    if (r && realOpen(r, req.headers['user-agent'])) trackRecipient(r, 'open');
     res.set({ 'Content-Type': 'image/gif', 'Cache-Control': 'no-store, max-age=0' }).send(pixel);
   });
   app.get('/api/sounds/m/:token/lien', (req, res) => {

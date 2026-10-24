@@ -140,8 +140,17 @@ try {
     const pixel = html.match(/src="([^"]+o\.gif)"/)[1];
     const listen = html.match(/href="(https:\/\/site\.test\/ecoute\?t=[^"]+&amp;r=[^"]+)"/)[1].replace(/&amp;/g, '&');
     const [t, r] = [new URL(listen).searchParams.get('t'), new URL(listen).searchParams.get('r')];
-    await call('GET', local(pixel));
-    await call('GET', local(pixel)); // une seconde ouverture dans l'heure ne compte pas
+    // L'anti-spam du destinataire charge l'image dès la réception : pas une ouverture.
+    const scanner = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246 Mozilla/5.0' };
+    const gmail = { 'User-Agent': 'Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko Firefox/11.0 (via ggpht.com GoogleImageProxy)' };
+    await call('GET', local(pixel), { headers: scanner });
+    await call('GET', local(pixel), { headers: gmail }); // trop tôt après l'envoi : le mail vient d'arriver
+    assert.equal(get('SELECT opened_at FROM sound_mail_recipients WHERE token = ?', r).opened_at, null);
+    run('UPDATE sound_mail_recipients SET sent_at = sent_at - 60000 WHERE token = ?', r);
+    await call('GET', local(pixel), { headers: scanner });
+    assert.equal(get('SELECT opened_at FROM sound_mail_recipients WHERE token = ?', r).opened_at, null);
+    await call('GET', local(pixel), { headers: gmail }); // la vraie ouverture, par le proxy d'images de Gmail
+    await call('GET', local(pixel), { headers: gmail }); // une seconde ouverture dans l'heure ne compte pas
     const share = await call('POST', `/api/sounds/share/${t}`, { body: { r } });
     await call('POST', `/api/sounds/share/${t}/play`, { body: { trackId: tid, r } });
     const file = await call('GET', share.tracks[0].version.downloadUrl);
