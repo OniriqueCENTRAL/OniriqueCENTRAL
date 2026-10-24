@@ -197,7 +197,7 @@ export function mountControl(admin) {
              UNION ALL
              SELECT -a.id, a.kind, a.ref_id, a.amount_cents, a.provider, a.created_at, NULL, a.email, a.name, NULL
                FROM orders_archive a) o
-       LEFT JOIN products p ON o.kind = 'product' AND p.id = o.ref_id
+       LEFT JOIN products p ON o.kind IN ('product', 'monthly') AND p.id = o.ref_id
        LEFT JOIN plans pl ON o.kind = 'plan' AND pl.id = o.ref_id
        LEFT JOIN packs pk ON o.kind = 'pack' AND pk.id = o.ref_id
        WHERE (o.email LIKE ? OR o.name LIKE ? OR p.name LIKE ? OR pl.name LIKE ? OR pk.name LIKE ?)
@@ -205,9 +205,10 @@ export function mountControl(admin) {
       .map((o) => ({
         id: o.id, at: o.created_at, kind: o.kind, amountCents: o.amount_cents, provider: o.provider,
         // Les abonnements et les packs sont encaissés par ONIRIQUE ; un plugin, par son créateur.
-        creator: o.kind === 'product' ? o.product_creator || 'onirique' : 'onirique',
+        creator: ['product', 'monthly'].includes(o.kind) ? o.product_creator || 'onirique' : 'onirique',
         item: o.kind === 'product' ? o.product_name || 'Plugin supprimé' : o.kind === 'pack' ? `Pack ${o.pack_name || '(supprimé)'}`
           : o.kind === 'tools' ? 'Abonnement ONIRIQUE CLOUD et page de liens'
+          : o.kind === 'monthly' ? `${o.product_name || 'Plugin supprimé'} — abonnement mensuel`
           : `Abonnement ${o.plan_name || ''}`.trim(),
         user: { id: o.user_id, email: o.email, name: o.name, avatar: o.avatar ? `/api/media/${o.avatar}` : null, deleted: o.user_id === null },
       }))

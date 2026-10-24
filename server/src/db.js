@@ -279,6 +279,8 @@ CREATE TABLE IF NOT EXISTS youtube_videos (
 // n'est pas refabriquée toute seule.
 if (!hasColumn('products', 'image_manual')) db.exec('ALTER TABLE products ADD COLUMN image_manual INTEGER NOT NULL DEFAULT 0');
 if (!hasColumn('products', 'demo_off')) db.exec('ALTER TABLE products ADD COLUMN demo_off INTEGER NOT NULL DEFAULT 0');
+// L'abonnement mensuel à un seul plugin, à côté de l'achat à vie : son prix par mois (0 : pas proposé).
+if (!hasColumn('products', 'monthly_cents')) db.exec('ALTER TABLE products ADD COLUMN monthly_cents INTEGER NOT NULL DEFAULT 0');
 // L'ordre de la boutique et de l'application, choisi par l'équipe dans le panel. Au départ : l'ordre d'ajout.
 if (!hasColumn('products', 'position')) {
   db.exec('ALTER TABLE products ADD COLUMN position INTEGER NOT NULL DEFAULT 0');

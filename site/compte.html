@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=a1d26ae1"></script>
+<script src="assets/i18n.js?v=9152effc"></script>
 <script src="assets/ui.js?v=3"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
@@ -507,9 +507,23 @@ function show(me) {
     const row = el("div", "row");
     const left = el("div");
     left.append(el("h2", "", license.productName), el("div", "key", license.key));
+    const byMonth = (license.bundle || "").startsWith("sub:"), cancelled = license.note.includes("résilié");
     const state = license.status !== "active" ? "Révoquée" : expired ? "Expirée"
+      // La licence au mois court trois jours de plus que le mois payé, le temps que le paiement suivant passe.
+      : byMonth ? (cancelled ? "Se termine le " + date(license.expiresAt) : "Au mois · renouvelé le " + date(license.expiresAt - 3 * 86400000))
       : license.expiresAt ? "Jusqu'au " + date(license.expiresAt) : TYPES[license.type] || license.type;
     row.append(left, el("span", "pill" + (active ? " on" : ""), state));
+    if (byMonth && active && !cancelled) {
+      const stop = el("button", "btn btn-ghost", "Résilier");
+      stop.type = "button";
+      stop.onclick = async () => {
+        if (!confirm("Résilier l'abonnement à " + license.productName + " ? Plus de prélèvement ; le plugin reste utilisable jusqu'à la fin du mois payé.")) return;
+        stop.disabled = true;
+        try { await api("POST", "/licenses/" + license.id + "/cancel"); stop.replaceWith(el("span", "muted", "Résilié")); }
+        catch (error) { stop.disabled = false; alert(error.message); }
+      };
+      row.append(stop);
+    }
     rows.push(row);
   }
   if (!rows.length) rows.push(el("p", "muted", "Aucune licence pour le moment. Une clé reçue s'ajoute dans l'application, onglet Licences."));

@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=a1d26ae1"></script>
+<script src="assets/i18n.js?v=9152effc"></script>
 <script src="assets/ui.js?v=3"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
@@ -81,6 +81,10 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 .buy:hover { box-shadow: 0 0 0 6px rgba(226,52,68,.18), 0 18px 50px -12px rgba(226,52,68,.8); }
 /* Un bouton qui ne peut pas servir le montre : éteint, sans halo, et son texte dit pourquoi. */
 .buy:disabled { background: transparent; color: var(--haze); border: 1px solid var(--line); box-shadow: none; cursor: default; }
+/* À vie ou au mois : deux boutons collés, celui choisi plein */
+.formula { display: grid; grid-template-columns: 1fr 1fr; margin-top: 14px; padding: 4px; border: 1px solid var(--line); border-radius: 999px; }
+.formula button { padding: 9px 10px; border: 0; border-radius: 999px; background: none; color: var(--haze); font: 600 14px/1 var(--f-body); cursor: pointer; }
+.formula button[aria-pressed="true"] { background: var(--ember); color: #fff; }
 .buy.ghost { margin-top: 10px; background: transparent; color: var(--mist); border: 1px solid var(--line); box-shadow: none; }
 .buy.ghost:hover { border-color: var(--ember); box-shadow: none; }
 .note { margin: 14px 0 0; font-size: 13px; color: var(--haze); }
@@ -219,8 +223,11 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
       </div>
       <aside class="side">
         <p class="eyebrow" id="side-name"></p>
+        <div class="formula" id="formula" role="group" aria-label="Formule" hidden>
+          <button type="button" id="formula-life" aria-pressed="true">À vie</button><button type="button" id="formula-month" aria-pressed="false">Au mois</button>
+        </div>
         <div class="price" id="price"></div>
-        <p class="note" style="margin:0">TTC, paiement unique</p>
+        <p class="note" style="margin:0" id="price-note">TTC, paiement unique</p>
         <ul>
           <li id="kind">Plugin VST3</li>
           <li id="os">Windows 10 et 11, 64 bits</li>
@@ -341,6 +348,14 @@ async function setupTrial(product) {
     if (r?.ok) me = await r.json();
   }
   const owned = me && me.entitlements[product.id];
+  // Pris au mois : l'achat à vie reste ouvert ; seul « Au mois » est déjà fait.
+  const byMonth = owned && owned.via === "license" && me.licenses.some((l) => l.id === owned.licenseId && (l.bundle || "").startsWith("sub:"));
+  if (byMonth) {
+    monthlyBlocked = "Déjà pris au mois";
+    $("buy-note").textContent = "Tu as ce plugin au mois. Tu peux l'acheter à vie : pense ensuite à résilier ton abonnement depuis ton compte.";
+    return;
+  }
+  if (owned) monthlyBlocked = owned.via === "vip" ? "Offert avec votre rôle" : "Déjà à vous";
   if (owned) {
     // Rien à acheter : le bouton s'éteint et dit pourquoi, au lieu de rester un « Acheter » qui ne répond pas.
     if (owned.via === "license") {
@@ -519,6 +534,37 @@ function setupPromo(product) {
   }
 }
 
+// À vie ou au mois : le plugin au mois donne une licence qui se renouvelle chaque mois payé, résiliable depuis le compte.
+let monthly = false;
+function setupMonthly(product, catalog) {
+  if (!product.monthlyCents || !product.priceCents) return;
+  $("formula").hidden = false;
+  const lifeLabel = () => $("buy").textContent;
+  let life = null;
+  const pick = (month) => {
+    if (monthly === month) return;
+    monthly = month;
+    $("formula-life").ariaPressed = String(!month);
+    $("formula-month").ariaPressed = String(month);
+    $("promo").hidden = month || !product.priceCents;
+    $("price-note").textContent = month ? "TTC, par mois, sans engagement" : "TTC, paiement unique";
+    if (month) {
+      life = [[...$("price").childNodes], lifeLabel(), $("buy").disabled];
+      $("price").replaceChildren(euros(product.monthlyCents) + " / mois");
+      $("deal")?.remove();
+      $("buy").disabled = !!monthlyBlocked;
+      $("buy").textContent = monthlyBlocked || "S'abonner · " + euros(product.monthlyCents) + " / mois";
+    } else if (life) {
+      $("price").replaceChildren(...life[0]);
+      $("buy").textContent = life[1];
+      $("buy").disabled = life[2];
+    }
+  };
+  $("formula-life").onclick = () => pick(false);
+  $("formula-month").onclick = () => pick(true);
+}
+let monthlyBlocked = ""; // pourquoi le plugin ne se prend pas au mois pour ce compte (déjà à lui)
+
 async function buy(product, catalog) {
   const note = $("buy-note");
   // Chaque créateur vend sur son propre compte : tant que le sien n'est pas branché, son plugin n'est pas encore en vente.
@@ -531,12 +577,14 @@ async function buy(product, catalog) {
   if (!token) { location.href = "compte.html"; return; }
   $("buy").disabled = true;
   try {
-    const response = await fetch("/api/checkout", { method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify({ kind: "product", id: product.id, promo }) });
+    const body = monthly ? { kind: "monthly", id: product.id } : { kind: "product", id: product.id, promo };
+    const response = await fetch("/api/checkout", { method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await response.json();
     if (response.status === 401) { location.href = "compte.html"; return; }
     if (!response.ok) throw new Error(data.error || "Achat impossible.");
     if (data.url) location.href = data.url;
-    else note.textContent = "C'est ajouté à ton compte. Installe le plugin depuis Onirique Central.";
+    else note.textContent = monthly ? "Ton abonnement est actif. Installe le plugin depuis Onirique Central ; tu peux le résilier depuis ton compte."
+      : "C'est ajouté à ton compte. Installe le plugin depuis Onirique Central.";
   } catch (error) {
     note.textContent = error.message;
   }
@@ -578,7 +626,7 @@ async function buy(product, catalog) {
   $("desc").replaceChildren(...(product.description || product.tagline).split(/\n{2,}/).map((text) => el("p", { textContent: text })));
   $("buy").textContent = product.priceCents ? "Acheter · " + euros(product.priceCents) : "Obtenir";
   $("buy").onclick = () => buy(product, catalog);
-  setupTrial(product).then(() => { if (!$("buy").disabled) setupPromo(product); });
+  setupTrial(product).then(() => { if (!$("buy").disabled) setupPromo(product); setupMonthly(product, catalog); });
   $("detail").hidden = false;
 
   // Une interface web réelle (RAW) passe avant tout ; puis l'image choisie par un admin ; puis la démo en images.

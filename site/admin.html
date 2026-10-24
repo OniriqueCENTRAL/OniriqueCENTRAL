@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=a1d26ae1"></script>
+<script src="assets/i18n.js?v=9152effc"></script>
 <script src="assets/ui.js?v=3"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
@@ -599,6 +599,7 @@ function sheetForm(p) {
   const tagline = el("input", { type: "text", value: p?.tagline ?? "", maxLength: 140, placeholder: "Une phrase sous le nom" });
   const description = el("textarea", { value: p?.description ?? "", maxLength: 4000, rows: 5, placeholder: "Une ligne vide entre deux paragraphes" });
   const price = el("input", { type: "text", inputMode: "decimal", value: ((p?.priceCents ?? 0) / 100).toFixed(2).replace(".", ","), required: true });
+  const monthly = el("input", { type: "text", inputMode: "decimal", value: ((p?.monthlyCents ?? 0) / 100).toFixed(2).replace(".", ",") });
   const published = el("input", { type: "checkbox", checked: p?.published ?? true });
   // Le créateur ne se choisit que par l'équipe : les plugins d'un partenaire portent toujours son nom.
   const creator = el("select", {}, ...Object.entries(CREATORS).map(([id, label]) => el("option", { value: id, textContent: label, selected: id === (p?.creator ?? "onirique") })));
@@ -610,7 +611,7 @@ function sheetForm(p) {
   saved.setAttribute("role", "status");
   const form = el("form", {},
     el("label", {}, "Nom", name), el("label", {}, "Accroche", tagline),
-    el("label", {}, "Prix en € (0 = gratuit)", price), isStaff(me) ? el("label", {}, "Créateur", creator) : null,
+    el("label", {}, "Prix en € (0 = gratuit)", price), el("label", {}, "Prix par mois en € (0 = pas d'abonnement)", monthly), isStaff(me) ? el("label", {}, "Créateur", creator) : null,
     el("label", {}, "Description", description),
     el("label", {}, "Catégorie", category),
     el("div", { className: "row" }, el("label", { className: "inline" }, published, "Visible dans la boutique et l'application"), submit, saved));
@@ -620,8 +621,11 @@ function sheetForm(p) {
     const amount = price.value.trim().replace(/\s|€/g, "").replace(",", ".");
     if (!/^\d+(\.\d{1,2})?$/.test(amount)) { $("product-error").textContent = "Prix invalide : écrivez par exemple 49 ou 29,90."; price.focus(); return; }
     const cents = Math.round(Number(amount) * 100);
+    const perMonth = (monthly.value.trim() || "0").replace(/\s|€/g, "").replace(",", ".");
+    if (!/^\d+(\.\d{1,2})?$/.test(perMonth)) { $("product-error").textContent = "Prix par mois invalide : écrivez par exemple 9,99 (0 pour ne pas le proposer)."; monthly.focus(); return; }
     submit.disabled = true;
-    const body = { name: name.value.trim(), tagline: tagline.value.trim(), description: description.value.trim(), priceCents: cents, published: published.checked,
+    const body = { name: name.value.trim(), tagline: tagline.value.trim(), description: description.value.trim(), priceCents: cents,
+      monthlyCents: Math.round(Number(perMonth) * 100), published: published.checked,
       category: category.value,
       ...(isStaff(me) ? { creator: creator.value } : {}) };
     try {

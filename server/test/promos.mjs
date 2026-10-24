@@ -69,6 +69,30 @@ try {
     await call('PATCH', `/api/admin/products/${tuner.id}`, { token: admin.token, body: { category: '' } });
   });
 
+  await step('un plugin au mois : prix mensuel réglé dans le panel, licence d\'un mois, résiliation, puis achat à vie', async () => {
+    const dan = await account('dan');
+    await call('POST', '/api/checkout', { token: dan.token, body: { kind: 'monthly', id: meter.id }, expect: 404 });
+    await call('PATCH', `/api/admin/products/${meter.id}`, { token: admin.token, body: { monthlyCents: 10 }, expect: 400 });
+    await call('PATCH', `/api/admin/products/${meter.id}`, { token: admin.token, body: { monthlyCents: 999 } });
+    assert.equal((await call('GET', '/api/catalog')).products.find((p) => p.id === meter.id).monthlyCents, 999);
+    assert.equal((await call('POST', '/api/checkout', { token: dan.token, body: { kind: 'monthly', id: meter.id } })).granted, true);
+    let me = await call('GET', '/api/me', { token: dan.token });
+    const license = me.licenses.find((l) => l.productId === meter.id);
+    assert.deepEqual([license.type, license.note, license.bundle.startsWith('sub:demo_')], ['timed', 'Abonnement mensuel', true]);
+    assert.ok(license.expiresAt > Date.now() + 30 * 86400_000 && license.expiresAt < Date.now() + 35 * 86400_000);
+    assert.equal(me.entitlements[meter.id].via, 'license');
+    await call('POST', '/api/checkout', { token: dan.token, body: { kind: 'monthly', id: meter.id }, expect: 409 });
+    await call('POST', `/api/licenses/${license.id}/cancel`, { token: alice.token, expect: 404 });
+    await call('POST', `/api/licenses/${license.id}/cancel`, { token: dan.token });
+    me = await call('GET', '/api/me', { token: dan.token });
+    assert.equal(me.licenses.find((l) => l.id === license.id).note, 'Abonnement mensuel · résilié');
+    // Pendant le mois payé, l'achat à vie reste possible, et c'est lui qui compte ensuite.
+    assert.equal((await call('POST', '/api/checkout', { token: dan.token, body: { kind: 'product', id: meter.id } })).granted, true);
+    assert.equal((await call('GET', '/api/me', { token: dan.token })).entitlements[meter.id].type, 'perpetual');
+    await call('POST', '/api/checkout', { token: dan.token, body: { kind: 'product', id: meter.id }, expect: 409 });
+    await call('PATCH', `/api/admin/products/${meter.id}`, { token: admin.token, body: { monthlyCents: 0 } });
+  });
+
   await step('code promo : créé par un admin, vérifié, appliqué au paiement, une fois par compte', async () => {
     await call('POST', '/api/admin/promos', { token: admin.token, body: { code: 'noel20', percent: 20 }, expect: 201 });
     await call('POST', '/api/admin/promos', { token: admin.token, body: { code: 'NOEL20', percent: 10 }, expect: 409 });

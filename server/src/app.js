@@ -22,7 +22,7 @@ import {
   publicKeyPem, publicKeyRaw, userActivations,
 } from './licensing.js';
 import {
-  cancelSubscription, cancelToolsSubscription, TOOLS, toolsSubscription, checkout, connectStripe, disconnectStripe, handleLemonEvent, handleStripeEvent, paymentsMode, sellers,
+  cancelSubscription, cancelToolsSubscription, cancelMonthly, TOOLS, toolsSubscription, checkout, connectStripe, disconnectStripe, handleLemonEvent, handleStripeEvent, paymentsMode, sellers,
   stripeAccount, stripeAccountView, verifyLemonSignature, verifyStripeSignature,
 } from './payments.js';
 import {
@@ -117,7 +117,7 @@ function productView(p, platform) {
   return {
     id: p.id, slug: p.slug, name: p.name, tagline: p.tagline, description: p.description, accent: p.accent, createdAt: p.created_at,
     creator: p.creator, // "onirique" ou un partenaire ("abrasion", "relic")
-    priceCents: p.price_cents, image: p.image ? `/api/media/${p.image}` : null, published: !!p.published,
+    priceCents: p.price_cents, monthlyCents: p.monthly_cents || 0, image: p.image ? `/api/media/${p.image}` : null, published: !!p.published,
     demo: p.demo ? `/api/media/${p.demo}` : null,
     // imageManual : l'image a été choisie par un admin. demoOff : la démo a été retirée à la main, l'application ne la refabrique pas.
     imageManual: !!p.image_manual, demoOff: !!p.demo_off,
@@ -891,7 +891,9 @@ export function createApp() {
       const product = findProduct(req.body.id);
       if (!product.published) throw new HttpError(404, 'Produit introuvable.');
       const right = entitlement(req.user.id, product.id);
-      if (right?.via === 'license') throw new HttpError(409, 'Vous possédez déjà ce plugin.');
+      // Un plugin pris au mois peut s'acheter à vie (l'abonnement se résilie à part, depuis le compte).
+      const monthly = right?.licenseId && get(`SELECT 1 FROM licenses WHERE id = ? AND bundle LIKE 'sub:%'`, right.licenseId);
+      if (right?.via === 'license' && !monthly) throw new HttpError(409, 'Vous possédez déjà ce plugin.');
       if (normalizeCode(req.body.promo)) rateLimit(`promo:${req.user.id}`, 30);
       // Le prix est recalculé ici, quoi qu'ait affiché la page : la remise n'est jamais celle qu'envoie le navigateur.
       const q = product.price_cents > 0 ? quote(req.user, product, req.body.promo) : null;
@@ -899,6 +901,14 @@ export function createApp() {
         ? { ...product, price_cents: q.finalCents, discount: { promoId: q.promoId, welcome: q.welcome, discountCents: q.discountCents } }
         : product;
       return res.json(await checkout(req.user, 'product', item));
+    }
+    // Un plugin au mois : une licence qui se prolonge à chaque mois payé, sur le compte de son créateur.
+    if (kind === 'monthly') {
+      const product = findProduct(req.body.id);
+      if (!product.published || !(product.monthly_cents > 0)) throw new HttpError(404, "Ce plugin ne se prend pas au mois.");
+      const right = entitlement(req.user.id, product.id);
+      if (right?.via === 'license' && right.type !== 'trial') throw new HttpError(409, 'Vous avez déjà ce plugin.');
+      return res.json(await checkout(req.user, 'monthly', { ...product, price_cents: product.monthly_cents, interval: 'month', name: `${product.name} — abonnement mensuel` }));
     }
     // Abonnement à la carte : une liste de plugins, au prix du premier plus un supplément par plugin ajouté.
     if (kind === 'pick') {
@@ -954,6 +964,11 @@ export function createApp() {
   app.post('/api/tools/cancel', requireUser, wrap(async (req, res) => {
     await cancelToolsSubscription(req.user.id);
     res.json({ subscription: toolsSubscription(req.user.id) });
+  }));
+
+  app.post('/api/licenses/:id/cancel', requireUser, wrap(async (req, res) => {
+    await cancelMonthly(req.user.id, int(req.params.id, 0));
+    res.json({ ok: true });
   }));
 
   app.post('/api/subscription/cancel', requireUser, wrap(async (req, res) => {
@@ -1313,6 +1328,8 @@ export function createApp() {
     if (!/^#[0-9a-fA-F]{6}$/.test(accent)) throw new HttpError(400, 'Couleur invalide (format #rrggbb).');
     const price = body.priceCents !== undefined ? int(body.priceCents) : existing.price_cents ?? 0;
     if (price === null || price < 0 || price > 10_000_00) throw new HttpError(400, 'Prix invalide.');
+    const monthly = body.monthlyCents !== undefined ? int(body.monthlyCents) : existing.monthly_cents ?? 0;
+    if (monthly === null || monthly < 0 || monthly > 1_000_00 || (monthly > 0 && monthly < 50)) throw new HttpError(400, 'Prix mensuel invalide (0 ou au moins 0,50 €).');
     if (body.creator !== undefined && !CREATORS.includes(body.creator)) throw new HttpError(400, 'Créateur invalide.');
     // Une seule catégorie par plugin ; vide : devinée (categoryOf).
     let category = existing.category ?? '';
@@ -1322,7 +1339,7 @@ export function createApp() {
     }
     return {
       category,
-      name, accent, price,
+      name, accent, price, monthly,
       creator: body.creator ?? existing.creator ?? 'onirique',
       tagline: body.tagline !== undefined ? str(body.tagline, 140) : existing.tagline ?? '',
       description: body.description !== undefined ? str(body.description, 4000) : existing.description ?? '',
@@ -1337,9 +1354,9 @@ export function createApp() {
     if (get('SELECT id FROM products WHERE slug = ?', slug)) throw new HttpError(409, 'Un produit porte déjà cet identifiant.');
     // Un partenaire ne crée que des plugins à son nom.
     const { lastInsertRowid } = run(
-      `INSERT INTO products (slug, name, tagline, description, accent, price_cents, published, created_at, creator, category, position)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(position), 0) + 1 FROM products))`, // un nouveau plugin se range à la fin
-      slug, f.name, f.tagline, f.description, f.accent, f.price, f.published, now(), req.creator ?? f.creator, f.category);
+      `INSERT INTO products (slug, name, tagline, description, accent, price_cents, monthly_cents, published, created_at, creator, category, position)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(position), 0) + 1 FROM products))`, // un nouveau plugin se range à la fin
+      slug, f.name, f.tagline, f.description, f.accent, f.price, f.monthly, f.published, now(), req.creator ?? f.creator, f.category);
     res.status(201).json(productView(findProduct(lastInsertRowid)));
   });
 
@@ -1356,8 +1373,8 @@ export function createApp() {
   admin.patch('/products/:id', (req, res) => {
     const product = ownProduct(req, req.params.id);
     const f = productFields(req.body, product);
-    run('UPDATE products SET name = ?, tagline = ?, description = ?, accent = ?, price_cents = ?, published = ?, creator = ?, category = ? WHERE id = ?',
-      f.name, f.tagline, f.description, f.accent, f.price, f.published, req.creator ?? f.creator, f.category, product.id);
+    run('UPDATE products SET name = ?, tagline = ?, description = ?, accent = ?, price_cents = ?, monthly_cents = ?, published = ?, creator = ?, category = ? WHERE id = ?',
+      f.name, f.tagline, f.description, f.accent, f.price, f.monthly, f.published, req.creator ?? f.creator, f.category, product.id);
     res.json(productView(findProduct(product.id)));
   });
 

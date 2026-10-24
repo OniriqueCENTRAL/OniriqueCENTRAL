@@ -272,12 +272,13 @@ const discountMeta = (item) => (item.discount ? {
 const discountFrom = (meta = {}) => ({ promoId: Number(meta.promo_id) || null, welcome: meta.welcome === '1', discountCents: Number(meta.discount_cents) || 0 });
 
 async function stripeCheckout(user, kind, item) {
-  const recurring = kind === 'plan' || kind === 'tools';
-  const creator = recurring || kind === 'pack' ? 'onirique' : item.creator;
+  const recurring = kind === 'plan' || kind === 'tools' || kind === 'monthly';
+  // Un plugin au mois est encaissé, comme son achat, par son créateur ; les autres abonnements et les packs par ONIRIQUE.
+  const creator = kind === 'monthly' || kind === 'product' ? item.creator : 'onirique';
   const account = stripeAccount(creator);
   // Compte en mode essai : rien n'est encaissé, donc seuls l'équipe et le partenaire concerné peuvent commander, pour essayer.
   if (!account || (account.test && !isStaff(user) && user.role !== creator)) {
-    throw new HttpError(503, recurring ? 'Les abonnements ne sont pas encore ouverts.' : 'Ce plugin n\'est pas encore en vente.');
+    throw new HttpError(503, recurring && kind !== 'monthly' ? 'Les abonnements ne sont pas encore ouverts.' : 'Ce plugin n\'est pas encore en vente.');
   }
   // Un client Stripe n'existe que dans le compte qui l'a créé : il n'est réutilisé que chez ONIRIQUE.
   const customer = creator === 'onirique' ? user.stripe_customer : null;
@@ -294,7 +295,8 @@ async function stripeCheckout(user, kind, item) {
     // Les plugins d'un abonnement à la carte voyagent avec l'abonnement : c'est Stripe qui les rend au webhook.
     subscription_data: kind === 'plan'
       ? { metadata: { user_id: user.id, plan_id: item.id, product_ids: item.productIds ? JSON.stringify(item.productIds) : undefined } }
-      : kind === 'tools' ? { metadata: { user_id: user.id, tools: item.interval } } : undefined,
+      : kind === 'tools' ? { metadata: { user_id: user.id, tools: item.interval } }
+        : kind === 'monthly' ? { metadata: { user_id: user.id, monthly_product: item.id } } : undefined,
     line_items: lineItems(recurring ? 'plan' : kind, item.name, item.price_cents, item.interval),
   }, account.key);
   return { mode: 'stripe', url: session.url };
@@ -302,6 +304,24 @@ async function stripeCheckout(user, kind, item) {
 
 // Selon la version de l'API, la fin de période est sur l'abonnement ou sur sa ligne.
 const stripePeriodEnd = (sub) => (sub.current_period_end ?? sub.items?.data?.[0]?.current_period_end ?? 0) * 1000;
+
+// Un plugin au mois : sa licence dure jusqu'à la fin du mois payé, plus quelques jours le temps que le paiement suivant passe.
+const MONTHLY_GRACE = 3 * 86400_000;
+/** Crée ou prolonge la licence d'un plugin au mois ; ref : l'abonnement (Stripe, ou démo) qui la porte. */
+export function applyMonthly(userId, product, { ref, live, periodEnd, provider = 'stripe' }) {
+  const bundle = `sub:${ref}`;
+  const license = get('SELECT * FROM licenses WHERE user_id = ? AND bundle = ?', userId, bundle);
+  const expiresAt = live ? periodEnd + MONTHLY_GRACE : Math.min(now(), periodEnd + MONTHLY_GRACE);
+  if (license) return run('UPDATE licenses SET expires_at = ? WHERE id = ?', expiresAt, license.id);
+  if (live) createLicense({ productId: product.id, userId, type: 'timed', expiresAt, source: provider, note: 'Abonnement mensuel', bundle });
+}
+function applyStripeMonthly(sub, account) {
+  const userId = Number(sub.metadata?.user_id);
+  const product = get('SELECT * FROM products WHERE id = ? AND creator = ?', Number(sub.metadata?.monthly_product), account.creator);
+  if (!userId || !product) return null;
+  applyMonthly(userId, product, { ref: sub.id, live: ['active', 'trialing', 'past_due'].includes(sub.status), periodEnd: stripePeriodEnd(sub) });
+  return product;
+}
 
 function applyStripeSubscription(sub) {
   const userId = Number(sub.metadata?.user_id);
@@ -355,6 +375,12 @@ export async function handleStripeEvent(event, account) {
         afterPurchase(userId, product.id, { ...discountFrom(object.metadata), orderRef: object.id, paidCents: paid });
         confirmOrder(userId, `${product.name} — licence définitive`, paid, '', stripeProvider(account), object.currency || 'eur');
       }
+    } else if (object.mode === 'subscription' && object.subscription && object.metadata?.kind === 'monthly') {
+      const product = applyStripeMonthly(await stripe('GET', `/subscriptions/${object.subscription}`, undefined, account.key), account);
+      if (product && event.type === 'checkout.session.completed' && recordOrder(userId, 'monthly', product.id, object.amount_total ?? 0, 'stripe', object.id)) {
+        confirmOrder(userId, `${product.name} — abonnement mensuel`, object.amount_total ?? 0,
+          `, puis le même montant chaque mois jusqu'à résiliation (page Compte du site)`, stripeProvider(account), object.currency || 'eur');
+      }
     } else if (object.mode === 'subscription' && object.subscription && platform && object.metadata?.kind === 'tools') {
       const sub = await stripe('GET', `/subscriptions/${object.subscription}`, undefined, account.key);
       applyStripeSubscription(sub);
@@ -384,6 +410,8 @@ export async function handleStripeEvent(event, account) {
     if (session?.metadata?.kind === 'pack' && userId && platform && get('SELECT id FROM orders WHERE provider_ref = ?', session.id)) return revokePack(userId, session.id);
     if (session?.mode === 'payment' && userId && productId && get('SELECT id FROM orders WHERE provider_ref = ?', session.id)
         && get('SELECT id FROM products WHERE id = ? AND creator = ?', productId, account.creator)) revokePurchase(userId, productId, 'stripe');
+  } else if (event.type.startsWith('customer.subscription.') && object.metadata?.monthly_product) {
+    applyStripeMonthly(object, account);
   } else if (event.type.startsWith('customer.subscription.') && platform) {
     applyStripeSubscription(object);
   }
@@ -498,6 +526,11 @@ export async function checkout(user, kind, item) {
     return { mode: 'free', granted: true };
   }
   const mode = paymentsMode();
+  if (kind === 'monthly' && mode === 'demo') {
+    applyMonthly(user.id, item, { ref: `demo_${crypto.randomBytes(8).toString('hex')}`, live: true, periodEnd: now() + PERIOD_MS.month, provider: 'demo' });
+    return { mode: 'demo', granted: true };
+  }
+  if (kind === 'monthly' && mode !== 'stripe') throw new HttpError(503, 'Les achats ne sont pas encore ouverts.');
   if (kind === 'tools' && mode === 'demo') {
     setToolsSubscription(user.id, { interval: item.interval, status: 'active', periodEnd: now() + PERIOD_MS[item.interval] });
     return { mode: 'demo', granted: true };
@@ -536,4 +569,18 @@ export async function cancelToolsSubscription(userId) {
   const platform = stripeAccount('onirique');
   if (sub.stripe_subscription && platform) await stripe('POST', `/subscriptions/${sub.stripe_subscription}`, { cancel_at_period_end: true }, platform.key);
   run('UPDATE tool_subscriptions SET cancel_at_period_end = 1, updated_at = ? WHERE user_id = ?', now(), userId);
+}
+
+/** Résilie un plugin au mois (sa licence) : plus de prélèvement, la licence va jusqu'au bout du mois payé. */
+export async function cancelMonthly(userId, licenseId) {
+  const license = get(`SELECT l.*, p.creator FROM licenses l JOIN products p ON p.id = l.product_id
+    WHERE l.id = ? AND l.user_id = ? AND l.bundle LIKE 'sub:%'`, licenseId, userId);
+  if (!license) throw new HttpError(404, 'Abonnement introuvable.');
+  if (license.note.includes('résilié')) return;
+  const ref = license.bundle.slice(4), account = stripeAccount(license.creator);
+  if (!ref.startsWith('demo_')) {
+    if (!account) throw new HttpError(503, 'La résiliation est momentanément impossible : écrivez au support.');
+    await stripe('POST', `/subscriptions/${ref}`, { cancel_at_period_end: true }, account.key);
+  }
+  run(`UPDATE licenses SET note = 'Abonnement mensuel · résilié' WHERE id = ?`, license.id);
 }
