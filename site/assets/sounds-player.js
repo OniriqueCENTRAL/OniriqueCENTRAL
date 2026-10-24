@@ -82,7 +82,16 @@
 .op-btn.on { color: var(--op-accent, var(--ember)); }
 .op-btn.main { width: 42px; height: 42px; background: var(--mist); color: var(--night); }
 .op-btn.main:hover { background: #fff; }
-.op-vol { width: 80px; accent-color: var(--op-accent, var(--ember)); min-height: 0; padding: 0; }
+/* Le volume : un rail fin rempli de la couleur de lecture jusqu'au niveau (--p), et un petit bouton rond qui grossit au survol. */
+.op-vol { -webkit-appearance: none; appearance: none; width: 84px; height: 18px; min-height: 0; margin: 0; padding: 0; border: 0; background: none; cursor: pointer; --p: 100%; }
+.op-vol::-webkit-slider-runnable-track { height: 4px; border-radius: 99px; background: linear-gradient(90deg, var(--op-accent, var(--ember)) var(--p), rgba(246,238,238,.16) var(--p)); }
+.op-vol::-moz-range-track { height: 4px; border-radius: 99px; background: rgba(246,238,238,.16); }
+.op-vol::-moz-range-progress { height: 4px; border-radius: 99px; background: var(--op-accent, var(--ember)); }
+.op-vol::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: -4px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.6); transition: transform .15s; }
+.op-vol::-moz-range-thumb { width: 12px; height: 12px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.6); transition: transform .15s; }
+.op-vol:hover::-webkit-slider-thumb, .op-vol:active::-webkit-slider-thumb { transform: scale(1.25); }
+.op-vol:hover::-moz-range-thumb, .op-vol:active::-moz-range-thumb { transform: scale(1.25); }
+.op-vol:focus-visible { outline: 2px solid var(--op-accent, var(--ember)); outline-offset: 3px; border-radius: 99px; }
 .op-sheet, .op-queue { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(80px + env(safe-area-inset-bottom)); z-index: 39; width: min(1120px, calc(100vw - 24px));
   max-height: min(62vh, 560px); overflow: auto; padding: 18px; border-radius: 22px; border: 1px solid rgba(255,210,214,.16);
   background: rgba(20,9,11,.97); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9); display: grid; gap: 14px; }
@@ -263,6 +272,7 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     const shuffleBtn = btn("shuffle", "Aléatoire", "op-hide-sm"), repeatBtn = btn("repeat", "Répéter", "op-hide-sm");
     const queueBtn = btn("queue", "File d'attente"), volBtn = btn("volume", "Couper le son", "op-hide-sm");
     const vol = el("input", { className: "op-vol op-hide-sm", type: "range", min: 0, max: 1, step: 0.01, value: volume, ariaLabel: "Volume" });
+    vol.style.setProperty("--p", volume * 100 + "%");
     const more = btn("expand", "Détails : commentaires, vitesse, boucle");
     const stageBtn = btn("lyrics", "Paroles en grand", "op-hide-sm");
     stageBtn.hidden = true;
@@ -736,7 +746,7 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
       }
     };
     const setVolume = (v) => {
-      audio.volume = v; vol.value = v;
+      audio.volume = v; vol.value = v; vol.style.setProperty("--p", v * 100 + "%");
       setIcon(volBtn, v ? "volume" : "mute");
       try { localStorage.setItem("onirique.volume", String(v)); } catch {}
     };
