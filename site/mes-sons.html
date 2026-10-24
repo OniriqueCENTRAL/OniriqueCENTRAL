@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=84dd6992"></script>
+<script src="assets/i18n.js?v=57e37d46"></script>
 <script src="assets/ui.js?v=3"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
@@ -195,6 +195,12 @@ body:not(.editing) .edit-only { display: none !important; }
 #page-bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(13,8,9,.55), rgba(13,8,9,.82) 55%, rgba(13,8,9,.95)); }
 #page-bg.on { opacity: 1; }
 
+/* Mode visiteur : la page telle que la voient ceux qui écoutent le lien, sans rien de l'édition */
+.visitor-toggle { height: 34px; padding: 0 12px; border-radius: 10px; font: 700 11px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; }
+.visitor-toggle b { color: var(--haze); font-weight: 700; }
+body.visitor .visitor-toggle { background: var(--mist); color: var(--night); border-color: var(--mist); }
+body.visitor .visitor-toggle b { color: var(--night); }
+body.visitor :is(#edit-toggle, #share-project, #project-more, #pack-store, #pack-mail, #pack-youtube, #fab, #cover-swap, .plan-chip, .trk .dots, .trk small) { display: none !important; }
 body.editing #edit-toggle { background: var(--mist); color: var(--night); border-color: var(--mist); }
 /* Préparer la sortie : le compte à rebours et les tâches faites, à côté de la date */
 .release .plan-chip { border-color: rgba(255,210,214,.16); background: rgba(255,255,255,.06); }
@@ -594,6 +600,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
     <div class="crumb">
       <button class="round" id="back" type="button" aria-label="Retour aux projets"></button>
       <div><b style="font:700 15px var(--f-display)">Projets</b><small id="crumb-owner"></small></div>
+      <button class="edit-toggle visitor-toggle" id="visitor-toggle" type="button" aria-pressed="false" title="Voir la page comme ceux qui écoutent le lien">Visiteur <b>Off</b></button>
       <button class="edit-toggle" id="pack-store" type="button" style="margin-left:auto" hidden>Ventes</button>
       <button class="edit-toggle" id="pack-mail" type="button" hidden>Mails</button>
       <button class="edit-toggle" id="pack-youtube" type="button" hidden>YouTube</button>
@@ -1316,6 +1323,8 @@ function renderProject(p) {
   if (!$("cover-by").contains(document.activeElement)) $("cover-by").replaceChildren(...(editing || p.coverBy ? [el("span", { className: "eyebrow", textContent: "Pochette" }),
     editing ? inlineEdit(p.coverBy, "Ajouter l'auteur de la pochette", 80, (coverBy) => api("PATCH", "/me/sounds/projects/" + p.id, { coverBy }).then(refresh), true)
       : el("span", { textContent: p.coverBy, style: "color:var(--mist);font-weight:600" })] : []));
+  $("visitor-toggle").ariaPressed = String(visitor);
+  $("visitor-toggle").lastChild.textContent = visitor ? "On" : "Off";
   $("edit-toggle").textContent = editing ? "Terminé" : "Modifier";
   $("edit-toggle").ariaPressed = String(editing);
   if ($("cover").dataset.src !== (p.cover || "-")) {
@@ -1448,7 +1457,7 @@ function prodBadges(p, t) {
         if (k !== null) save({ key: k });
       }),
     ],
-    sale: !p.mine ? (label ? el("span", { className: "stage prod" + (offers.length ? " price" : ""), textContent: label }) : "")
+    sale: !p.mine || visitor ? (label ? el("span", { className: "stage prod" + (offers.length ? " price" : ""), textContent: label }) : "")
       : prodBadge(label, "+ Vendre", t.sold ? "Vendue en exclusivité" : offers.length ? "En vente : " + offers.map((o) => o.name + " " + euros(o.price)).join(", ")
         : t.forSale ? "Pas encore achetable. Il manque :\n• " + saleMissing(t).join("\n• ") : "Mettre la prod en vente", () => openSale(t.id),
         offers.length ? "price" : t.forSale ? "price-off" : ""),
@@ -1638,7 +1647,7 @@ $("cover-file").onchange = () => {
 // image devient la pochette du projet ouvert, ou celle du projet de la grille sur lequel on la lâche.
 let dragDepth = 0;
 const hasFiles = (event) => event.dataTransfer && [...event.dataTransfer.types].includes("Files") && ![...event.dataTransfer.types].includes("text/x-move");
-addEventListener("dragenter", (event) => { if (hasFiles(event) && data && !data.quota.full) { dragDepth++; $("drop-zone").hidden = false; } });
+addEventListener("dragenter", (event) => { if (hasFiles(event) && !visitor && data && !data.quota.full) { dragDepth++; $("drop-zone").hidden = false; } });
 addEventListener("dragleave", (event) => { if (hasFiles(event) && --dragDepth <= 0) { dragDepth = 0; $("drop-zone").hidden = true; } });
 const isImage = (f) => /^image\/(png|jpeg|webp)$/.test(f.type);
 addEventListener("dragover", (event) => {
@@ -1652,6 +1661,7 @@ addEventListener("drop", (event) => {
   if (!hasFiles(event)) return;
   event.preventDefault();
   dragDepth = 0; $("drop-zone").hidden = true;
+  if (visitor) return;
   document.querySelectorAll(".tile.drop-cover").forEach((x) => x.classList.remove("drop-cover"));
   const files = [...event.dataTransfer.files], image = files.find(isImage), sounds = files.filter(isAudio);
   const tile = event.target.closest && event.target.closest(".tile");
@@ -1742,6 +1752,11 @@ $("cover-save").onclick = async () => {
 let editing = false;
 $("edit-toggle").onclick = () => { editing = !editing; document.body.classList.toggle("editing", editing); render(); };
 addEventListener("hashchange", () => { if (!openId() && editing) { editing = false; document.body.classList.remove("editing"); } });
+// Le mode visiteur (créateur ou collaborateur) : la page sans rien de l'édition, le temps de vérifier ce que voient les autres.
+let visitor = false;
+const setVisitor = (on) => { visitor = on; document.body.classList.toggle("visitor", on); if (on && editing) { editing = false; document.body.classList.remove("editing"); } };
+$("visitor-toggle").onclick = () => { setVisitor(!visitor); render(); };
+addEventListener("hashchange", () => { if (!openId() && visitor) setVisitor(false); });
 $("project-title").onclick = async () => {
   if (!editing) return;
   const p = project(), title = await ask("Nom du projet", p.title);
