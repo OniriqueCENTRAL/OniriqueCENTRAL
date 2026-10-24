@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=2916354b"></script>
+<script src="assets/i18n.js?v=ecb46aa3"></script>
 <script src="assets/ui.js?v=3"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
@@ -515,7 +515,9 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 /* Le flou et l'assombrissement de ffmpeg (boxblur, eq=brightness), ramenés à la largeur de l'aperçu */
 .yt-frame .bg { inset: 0; width: 100%; height: 100%; object-fit: cover; filter: blur(calc(var(--yt-blur, 40) * 100cqw / 1920)) brightness(calc(1 - var(--yt-dim, 25) * .0128)); transform: scale(calc(1 + var(--yt-blur, 40) * .003)); }
 .yt-frame.solid .bg { display: none; }
-.yt-frame .fg { left: 50%; top: 50%; transform: translate(-50%, -50%); width: calc(var(--yt-size, 81) * .5625%); height: calc(var(--yt-size, 81) * 1%); object-fit: contain; }
+/* Le cadre de l'image : sa hauteur (taille), sa largeur selon le format ; recadrée sauf aux proportions d'origine */
+.yt-frame .fg { left: 50%; top: 50%; transform: translate(-50%, -50%); width: calc(var(--yt-size, 81) * .5625% * var(--yt-ratio, 1.7778)); height: calc(var(--yt-size, 81) * 1%); object-fit: cover; }
+.yt-frame[data-format="original"] .fg { object-fit: contain; }
 .yt-range { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; font-size: 13px; color: var(--haze); }
 .yt-range input { grid-column: 1 / -1; accent-color: var(--ember); }
 .yt-frame .len { position: absolute; right: 8px; bottom: 8px; padding: 1px 5px; border-radius: 4px; background: rgba(0,0,0,.8); color: #fff; font: 600 12px var(--f-body); }
@@ -2462,7 +2464,9 @@ $("pack-store").onclick = () => openStore().catch(fail);
 // beatmaker à l'heure choisie, ou une par une à quelques jours d'écart. Le dernier modèle utilisé est gardé sur l'appareil.
 // Le modèle d'avant les options enregistrées sur le compte (gardé sur l'appareil) : repris tant qu'aucune n'est enregistrée.
 const YT_KEY = "onirique.youtube.modele";
-const YT_STYLE = { background: "blur", color: "#0d0809", blur: 40, dim: 25, size: 81 };
+const YT_STYLE = { background: "blur", color: "#0d0809", blur: 40, dim: 25, size: 81, format: "original" };
+// Les formats de l'image au centre (comme le serveur) : la largeur de son cadre pour une hauteur de 1.
+const YT_FORMATS = [["original", "Proportions d'origine", 16 / 9], ["square", "Carré (recadré)", 1], ["portrait", "Portrait 4:5 (recadré)", 4 / 5], ["wide", "16:9 (recadré)", 16 / 9]];
 let ytId = null, yt = null, ytShown = null, ytTab = "publish"; // ytShown : la prod montrée dans l'aperçu
 async function openYoutube(p) {
   ytId = p.id;
@@ -2481,7 +2485,9 @@ function ytCard(p, t, o, ownTitle = "") {
   const frame = el("div", { className: "yt-frame" + (st.background === "color" ? " solid" : "") },
     ...(src ? [el("img", { className: "bg", src: src + "?w=960", alt: "" }), el("img", { className: "fg", src: src + "?w=960", alt: "" })] : []),
     v.duration ? el("span", { className: "len", textContent: OP.time(v.duration) }) : "");
-  frame.style.cssText = "--yt-color:" + (st.background === "color" ? st.color : "#0D0809") + ";--yt-blur:" + st.blur + ";--yt-dim:" + st.dim + ";--yt-size:" + st.size;
+  const format = YT_FORMATS.find(([k]) => k === st.format) || YT_FORMATS[0];
+  frame.dataset.format = format[0];
+  frame.style.cssText = "--yt-color:" + (st.background === "color" ? st.color : "#0D0809") + ";--yt-blur:" + st.blur + ";--yt-dim:" + st.dim + ";--yt-size:" + st.size + ";--yt-ratio:" + format[2];
   return [el("div", { className: "sub-title", style: "margin:0", textContent: "Aperçu · " + t.title }), frame,
     el("div", { className: "yt-name", textContent: ytFill(p, ownTitle || o.title, t).replace(/[<>]/g, "").slice(0, 100) || "(titre vide)" }),
     el("small", { className: "muted", textContent: yt.channel + " · " + (o.privacy === "unlisted" ? "Non répertoriée" : "Publique") }),
@@ -2499,17 +2505,18 @@ function ytOptionsPane(p) {
   const background = el("select", {}, el("option", { value: "blur", textContent: "L'image, floutée" }), el("option", { value: "color", textContent: "Une couleur unie" }));
   background.value = st.background;
   const color = el("input", { type: "color", value: st.color });
+  const format = el("select", {}, ...YT_FORMATS.map(([k, label]) => el("option", { value: k, textContent: label, selected: k === st.format })));
   const range = (label, key, min, max, unit) => {
     const input = el("input", { type: "range", min, max, value: st[key], ariaLabel: label }), out = el("b", { textContent: st[key] + unit });
     input.addEventListener("input", () => { out.textContent = input.value + unit; });
     return [input, el("label", { className: "yt-range" }, el("span", { textContent: label }), out, input)];
   };
-  const [blur, blurRow] = range("Flou du fond", "blur", 0, 60, ""), [dim, dimRow] = range("Assombrir le fond", "dim", 0, 60, " %"), [size, sizeRow] = range("Taille de l'image (hauteur de la vidéo)", "size", 40, 100, " %");
+  const [blur, blurRow] = range("Flou du fond", "blur", 0, 60, ""), [dim, dimRow] = range("Assombrir le fond", "dim", 0, 60, " %"), [size, sizeRow] = range("Taille de l'image (part de la hauteur de la vidéo)", "size", 40, 100, " %");
   const which = el("select", { ariaLabel: "Prod montrée dans l'aperçu" }, ...p.tracks.map((t) => el("option", { value: t.id, textContent: t.title, selected: t.id === ytShown })));
   const aside = el("aside", { className: "yt-preview", ariaLabel: "Aperçu de la vidéo" });
   const status = el("span", { className: "muted", style: "font-size:13px" });
   const current = () => ({ title: title.value, description: desc.value, tags: tags.value, privacy: privacy.value, every: Number(every.value) || 0,
-    style: { background: background.value, color: color.value, blur: Number(blur.value), dim: Number(dim.value), size: Number(size.value) } });
+    style: { background: background.value, color: color.value, blur: Number(blur.value), dim: Number(dim.value), size: Number(size.value), format: format.value } });
   const draw = () => {
     color.closest("label").hidden = background.value !== "color";
     blurRow.hidden = dimRow.hidden = background.value === "color";
@@ -2521,7 +2528,7 @@ function ytOptionsPane(p) {
   const save = el("button", { className: "btn btn-primary", type: "submit", textContent: "Enregistrer" });
   const reset = el("button", { className: "btn btn-ghost", type: "button", textContent: "Réglage d'origine" });
   reset.onclick = () => {
-    blur.value = YT_STYLE.blur; dim.value = YT_STYLE.dim; size.value = YT_STYLE.size; background.value = YT_STYLE.background; color.value = YT_STYLE.color;
+    blur.value = YT_STYLE.blur; dim.value = YT_STYLE.dim; size.value = YT_STYLE.size; background.value = YT_STYLE.background; color.value = YT_STYLE.color; format.value = YT_STYLE.format;
     [blur, dim, size].forEach((x) => x.dispatchEvent(new Event("input")));
     draw();
   };
@@ -2532,7 +2539,7 @@ function ytOptionsPane(p) {
     el("div", { className: "row", style: "flex-wrap:wrap" }, fieldOf("Visibilité", privacy), fieldOf("Une vidéo tous les (jours, 0 : toutes ensemble)", every)),
     el("div", { className: "sub-title", textContent: "Rendu des vidéos" }),
     el("div", { className: "row", style: "flex-wrap:wrap" }, fieldOf("Fond", background), fieldOf("Couleur du fond", color)),
-    blurRow, dimRow, sizeRow,
+    blurRow, dimRow, fieldOf("Format de l'image", format), sizeRow,
     el("div", { className: "row" }, save, reset, status));
   form.addEventListener("input", draw);
   form.addEventListener("change", draw);

@@ -27,8 +27,11 @@ for (const [column, type] of [['tags', `TEXT NOT NULL DEFAULT ''`], ['privacy', 
 db.exec(`CREATE TABLE IF NOT EXISTS youtube_beat_options (user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, options TEXT NOT NULL)`);
 export const YT_OPTIONS = {
   title: '[FREE] Type Beat - "{titre}"', description: 'Prod. {artiste}\nLicences et achat : {lien}\n\n{bpm} BPM · {cle}', tags: 'type beat, instrumental, beat',
-  privacy: 'public', every: 1, style: { background: 'blur', color: '#0d0809', blur: 40, dim: 25, size: 81 },
+  privacy: 'public', every: 1, style: { background: 'blur', color: '#0d0809', blur: 40, dim: 25, size: 81, format: 'original' },
 };
+// Le format de l'image au centre : ses proportions d'origine, ou recadrée en carré, en portrait 4:5 ou en 16:9 ;
+// la largeur de son cadre pour une hauteur de 1 (l'image d'origine tient dans un cadre 16:9 sans être coupée).
+export const IMAGE_FORMATS = { original: 16 / 9, square: 1, portrait: 4 / 5, wide: 16 / 9 };
 const clamp = (value, min, max, fallback) => (Number.isFinite(Number(value)) ? Math.max(min, Math.min(max, Math.round(Number(value)))) : fallback);
 /** Des options propres, quoi que le navigateur envoie ; ce qui manque garde la valeur d'origine. */
 export function ytOptions(b = {}) {
@@ -41,6 +44,7 @@ export function ytOptions(b = {}) {
     style: {
       background: s.background === 'color' ? 'color' : 'blur', color: /^#[0-9a-f]{6}$/i.test(s.color) ? s.color.toLowerCase() : d.style.color,
       blur: clamp(s.blur, 0, 60, d.style.blur), dim: clamp(s.dim, 0, 60, d.style.dim), size: clamp(s.size, 40, 100, d.style.size),
+      format: IMAGE_FORMATS[s.format] && Object.hasOwn(IMAGE_FORMATS, s.format) ? s.format : d.style.format,
     },
   };
 }
@@ -57,11 +61,12 @@ export function fillTemplate(template, values) {
 // La vidéo : 1920 × 1080, deux images par seconde (une image fixe n'a pas besoin de plus), le son en AAC 320 kb/s.
 // Le fond : l'image elle-même agrandie, floutée et assombrie, ou une couleur unie ; l'image au centre, à la taille choisie.
 export function videoFilter(style = YT_OPTIONS.style) {
-  const side = Math.round(1080 * style.size / 100 / 2) * 2;
+  const even = (n) => Math.round(n / 2) * 2, h = even(1080 * style.size / 100), format = style.format || 'original', w = even(h * IMAGE_FORMATS[format]);
+  const fg = format === 'original' ? `scale=${w}:${h}:force_original_aspect_ratio=decrease` : `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h}`;
   const bg = style.background === 'color' ? `drawbox=x=0:y=0:w=iw:h=ih:color=0x${style.color.slice(1)}:t=fill`
     : [style.blur ? `boxblur=${style.blur}:2` : '', style.dim ? `eq=brightness=-${(style.dim / 100).toFixed(2)}` : ''].filter(Boolean).join(',') || 'null';
   return `[0:v]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,${bg}[bg];`
-    + `[0:v]scale=${side}:${side}:force_original_aspect_ratio=decrease[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,format=yuv420p[v]`;
+    + `[0:v]${fg}[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,format=yuv420p[v]`;
 }
 function render(cover, audio, out, seconds, style) {
   if (testing) { fs.copyFileSync(audio, out); return Promise.resolve(); } // pas de ffmpeg pendant les tests

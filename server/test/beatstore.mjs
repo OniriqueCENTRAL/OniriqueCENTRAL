@@ -304,15 +304,19 @@ try {
     const { videoFilter } = await import('../src/beattube.js');
     let yt = await call('GET', '/api/me/sounds/youtube', { token: beatmaker.token });
     assert.equal(yt.optionsSaved, false);
-    assert.deepEqual(yt.options.style, { background: 'blur', color: '#0d0809', blur: 40, dim: 25, size: 81 });
+    assert.deepEqual(yt.options.style, { background: 'blur', color: '#0d0809', blur: 40, dim: 25, size: 81, format: 'original' });
     const saved = await call('PUT', '/api/me/sounds/youtube/options', { token: beatmaker.token,
-      body: { title: '{titre} beat', description: 'Achat : {lien}', style: { background: 'color', color: '#FF8800', blur: 999, size: 10, dim: 'x' } } });
-    assert.deepEqual(saved.style, { background: 'color', color: '#ff8800', blur: 60, dim: 25, size: 40 });
+      body: { title: '{titre} beat', description: 'Achat : {lien}', style: { background: 'color', color: '#FF8800', blur: 999, size: 10, dim: 'x', format: 'square' } } });
+    assert.deepEqual(saved.style, { background: 'color', color: '#ff8800', blur: 60, dim: 25, size: 40, format: 'square' });
     yt = await call('GET', '/api/me/sounds/youtube', { token: beatmaker.token });
     assert.equal(yt.optionsSaved, true);
     assert.equal(yt.options.title, '{titre} beat');
-    assert.ok(videoFilter(saved.style).includes('drawbox=x=0:y=0:w=iw:h=ih:color=0xff8800:t=fill') && videoFilter(saved.style).includes('scale=432:432'));
-    assert.ok(videoFilter({ background: 'blur', blur: 0, dim: 0, size: 100 }).includes('crop=1920:1080,null[bg]'));
+    assert.ok(videoFilter(saved.style).includes('drawbox=x=0:y=0:w=iw:h=ih:color=0xff8800:t=fill') && videoFilter(saved.style).includes('scale=432:432:force_original_aspect_ratio=increase,crop=432:432[fg]'));
+    // D'origine, l'image tient sans être coupée ; 16:9 à 100 % remplit la vidéo ; un format inconnu reprend celui d'origine.
+    assert.ok(videoFilter({ background: 'blur', blur: 0, dim: 0, size: 100, format: 'original' }).includes('crop=1920:1080,null[bg];[0:v]scale=1920:1080:force_original_aspect_ratio=decrease[fg]'));
+    assert.ok(videoFilter({ background: 'blur', blur: 0, dim: 0, size: 100, format: 'wide' }).includes('[0:v]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080[fg]'));
+    assert.ok(videoFilter({ ...saved.style, format: 'portrait' }).includes('crop=346:432[fg]'));
+    assert.equal((await call('PUT', '/api/me/sounds/youtube/options', { token: beatmaker.token, body: { style: { format: 'constructor' } } })).style.format, 'original');
     await call('PUT', '/api/me/sounds/youtube/options', { token: beatmaker.token, body: {} });
   });
 

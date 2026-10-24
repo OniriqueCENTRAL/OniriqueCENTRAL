@@ -439,5 +439,11 @@
  "Le rendu se règle dans « Options ».": "The look is set in \"Options\".",
  "Clique sur une prod pour voir sa vidéo. Le rendu se règle dans « Options ».": "Click a beat to see its video. The look is set in \"Options\".",
  "Une vidéo tous les (jours, 0 : toutes ensemble)": "One video every (days, 0: all together)",
- "Une vidéo par prod : son image (ou la pochette du pack) sur son fond, avec le son de la prod. Modèle et rendu par défaut : onglet « Options ».": "One video per beat: its image (or the pack cover) on its background, with the beat's audio. Default template and look: \"Options\" tab."
+ "Une vidéo par prod : son image (ou la pochette du pack) sur son fond, avec le son de la prod. Modèle et rendu par défaut : onglet « Options ».": "One video per beat: its image (or the pack cover) on its background, with the beat's audio. Default template and look: \"Options\" tab.",
+ "Format de l'image": "Image format",
+ "Proportions d'origine": "Original proportions",
+ "Carré (recadré)": "Square (cropped)",
+ "Portrait 4:5 (recadré)": "Portrait 4:5 (cropped)",
+ "16:9 (recadré)": "16:9 (cropped)",
+ "Taille de l'image (part de la hauteur de la vidéo)": "Image size (share of the video height)"
 }
