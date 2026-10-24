@@ -196,6 +196,10 @@ body:not(.editing) .edit-only { display: none !important; }
 #page-bg.on { opacity: 1; }
 
 /* Mode visiteur : la page telle que la voient ceux qui écoutent le lien, sans rien de l'édition */
+/* Tout en haut à gauche, sous la barre du site ; dans le fil de la page quand l'écran est trop étroit pour la marge */
+.visitor-bar { position: relative; height: 0; }
+.visitor-bar .visitor-toggle { position: absolute; top: 12px; left: 16px; }
+@media (max-width: 1500px) { .visitor-bar { height: auto; padding: 12px 16px 0; } .visitor-bar .visitor-toggle { position: static; } }
 .visitor-toggle { height: 34px; padding: 0 12px; border-radius: 10px; font: 700 11px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; }
 .visitor-toggle b { color: var(--haze); font-weight: 700; }
 body.visitor .visitor-toggle { background: var(--mist); color: var(--night); border-color: var(--mist); }
@@ -564,6 +568,9 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
     <div class="row"><a class="btn btn-ghost" href="compte.html">Mon compte</a><a href="compte.html" data-account data-account-manual hidden>Compte</a></div>
   </div>
 </header>
+<div class="visitor-bar" id="visitor-bar" hidden>
+  <button class="edit-toggle visitor-toggle" id="visitor-toggle" type="button" aria-pressed="false" title="Voir la page comme ceux qui écoutent le lien">Visiteur <b>Off</b></button>
+</div>
 
 <main class="wrap">
   <div class="panel gate" id="gate" hidden></div>
@@ -600,7 +607,6 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
     <div class="crumb">
       <button class="round" id="back" type="button" aria-label="Retour aux projets"></button>
       <div><b style="font:700 15px var(--f-display)">Projets</b><small id="crumb-owner"></small></div>
-      <button class="edit-toggle visitor-toggle" id="visitor-toggle" type="button" aria-pressed="false" title="Voir la page comme ceux qui écoutent le lien">Visiteur <b>Off</b></button>
       <button class="edit-toggle" id="pack-store" type="button" style="margin-left:auto" hidden>Ventes</button>
       <button class="edit-toggle" id="pack-mail" type="button" hidden>Mails</button>
       <button class="edit-toggle" id="pack-youtube" type="button" hidden>YouTube</button>
@@ -960,6 +966,7 @@ function render() {
   if ((openId() && !p) || (folderId() && !folder())) { location.hash = ""; return; }
   $("grid-view").hidden = !!p;
   $("project-view").hidden = !p;
+  $("visitor-bar").hidden = !p;
   $("fab").hidden = false;
   p ? renderProject(p) : renderGrid();
   if ($("details").open) renderDetails();
