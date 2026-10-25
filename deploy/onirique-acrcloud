@@ -12,14 +12,23 @@ set -euo pipefail
 ENVFILE=/opt/onirique-central/server/.env
 stop() { echo "$1" >&2; exit 1; }
 
+# Redemande tant que la valeur n'a pas la forme attendue : un collage qui finit par un retour à la ligne se valide
+# tout seul, et l'Entrée tapée ensuite tomberait vide dans la question suivante.
+ask() {
+  local v=''
+  while :; do
+    read -r ${3:-} -p "$1" v; [ -z "${3:-}" ] || echo >&2
+    v=${v//[[:space:]]/}; v=${v#https://}; v=${v#http://}; v=${v%%/*}
+    [[ $v =~ $2 ]] && break
+    [ -z "$v" ] || echo "Ça ne ressemble pas à la bonne valeur, recolle-la." >&2
+  done
+  printf '%s' "$v"
+}
+
 if [ "${1:-}" != off ]; then
-  read -rp "Host (ex. identify-eu-west-1.acrcloud.com) : " HOST
-  read -rp "Access Key : " KEY
-  read -rsp "Access Secret (rien ne s'affiche) : " SECRET; echo
-  HOST=${HOST#https://}; HOST=${HOST#http://}; HOST=${HOST%%/*}
-  case "$HOST" in *.acrcloud.com) ;; *) stop "Ce n'est pas un hôte ACRCloud. Rien n'est changé." ;; esac
-  case "$KEY$SECRET" in *"'"*|*" "*) stop "Valeur mal copiée (espace ou apostrophe). Rien n'est changé." ;; esac
-  [ -n "$KEY" ] && [ -n "$SECRET" ] || stop "Clé ou secret vide. Rien n'est changé."
+  HOST=$(ask "Host (ex. identify-eu-west-1.acrcloud.com) : " '^identify-[a-z0-9-]+\.acrcloud\.com$')
+  KEY=$(ask "Access Key : " '^[0-9a-f]{32}$')
+  SECRET=$(ask "Access Secret (rien ne s'affiche) : " '^[A-Za-z0-9]{20,}$' -s)
 fi
 
 sed -i '/^ACRCLOUD_HOST=/d; /^ACRCLOUD_KEY=/d; /^ACRCLOUD_SECRET=/d' "$ENVFILE"
