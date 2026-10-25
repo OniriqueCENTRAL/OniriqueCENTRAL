@@ -82,6 +82,13 @@ try {
     assert.equal(get(`SELECT COUNT(*) AS n FROM sound_scans WHERE status = 'wait'`).n, 0);
   });
 
+  await step('pack repassé en projet : ses scans disparaissent, et SCAN ne le prend plus', async () => {
+    await call('PATCH', `/api/me/sounds/projects/${pack}`, { token, body: { kind: '' } });
+    assert.equal(get('SELECT COUNT(*) AS n FROM sound_scans').n, 0);
+    assert.ok((await prodsOf(token)).every((t) => t.scan === undefined));
+    await call('POST', '/api/me/sounds/scan', { token, expect: 400 });
+  });
+
   await step('SCAN sans prod de pack : refusé', async () => {
     const other = 'vide@test.local';
     const { token: t2 } = await call('POST', '/api/auth/register', { body: { email: other, password: 'motdepasse1', name: 'Vide' }, expect: 201 });

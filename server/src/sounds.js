@@ -876,7 +876,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
           const title = t.title === t.filename.replace(/\.[a-z0-9]{2,5}$/i, '') ? prod.title || t.title : t.title;
           run('UPDATE sound_tracks SET title = ?, bpm = ?, music_key = ? WHERE id = ?', title, t.bpm || prod.bpm, t.music_key || prod.key, t.id);
         }
-      }
+      } else run('DELETE FROM sound_scans WHERE track_id IN (SELECT id FROM sound_tracks WHERE project_id = ?)', p.id); // le scan ne concerne que les packs
     }
     if (req.body.mail !== undefined) {
       if (ownProject(req, p.id).kind !== 'pack') throw new HttpError(400, "Seul un pack de prods a un mail.");
