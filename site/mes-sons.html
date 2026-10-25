@@ -562,6 +562,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 .tline:has(.prod) { flex-wrap: wrap; row-gap: 4px; }
 .tline:has(.prod) b { min-width: auto; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .stage.prod:not(.empty) { border-style: solid; color: var(--mist); background: rgba(255,255,255,.04); letter-spacing: .04em; }
+.stage.prod.on { border-color: var(--ember); color: var(--ember); }
 .stage.prod.price { border-color: var(--buy, var(--ember)); background: var(--buy, var(--ember)); color: var(--buy-ink, var(--night)); }
 .stage.prod.price-off { border-style: dashed; border-color: var(--buy, var(--ember)); }
 /* La couleur des boutons d'un pack : le nuancier natif, caché derrière le bouton */
@@ -2076,6 +2077,14 @@ function openMailer(p) {
   const trackingPane = el("div", { className: "stack", hidden: true });
   const EVENT = { open: "a ouvert le mail", visit: "est venu écouter", click: "a cliqué un lien", play: "a écouté", download: "a téléchargé", unsubscribe: "s'est désinscrit" };
   let trackingTimer = null;
+  // Les pastilles du suivi filtrent la liste et la trient par ce qu'elles comptent ; un second clic revient à tout le monde.
+  const FILTERS = {
+    opened: [(r) => r.openedAt, (a, b) => b.openedAt - a.openedAt],
+    listened: [(r) => r.plays > 0, (a, b) => b.plays - a.plays || b.lastAt - a.lastAt],
+    downloaded: [(r) => r.downloads > 0, (a, b) => b.downloads - a.downloads || b.lastAt - a.lastAt],
+    failed: [(r) => r.status === "error", () => 0],
+  };
+  let trackingFilter = null;
   async function drawTracking(sendId) {
     clearTimeout(trackingTimer);
     const sends = await api("GET", "/me/sounds/projects/" + p.id + "/mail/sends");
@@ -2084,15 +2093,19 @@ function openMailer(p) {
     const pick = el("select", { style: "flex:1;min-width:180px" }, ...sends.map((x) => el("option", { value: x.id, selected: x.id === s.id, textContent: when(x.createdAt) + " · " + x.subject })));
     pick.onchange = () => drawTracking(Number(pick.value));
     const detail = await api("GET", "/me/sounds/mail/sends/" + s.id);
-    const stat = (n, one, many) => el("span", { className: "stage prod", textContent: n + " " + (Number(n) > 1 ? many : one) });
+    const stat = (n, one, many, key) => el("button", { type: "button", className: "stage prod" + (trackingFilter === key ? " on" : ""), ariaPressed: String(trackingFilter === key),
+      textContent: n + " " + (Number(n) > 1 ? many : one), onclick: () => { trackingFilter = trackingFilter === key || !FILTERS[key] ? null : key; drawTracking(s.id); } });
+    const [keep, order] = FILTERS[trackingFilter] || [() => true, () => 0];
+    const shown = detail.recipients.filter(keep).sort(order);
     trackingPane.replaceChildren(el("div", { className: "row" }, pick),
-      el("div", { className: "row" }, stat(s.sent + "/" + s.total, "envoyés", "envoyés"), stat(s.opened, "ouvert", "ouverts"), stat(s.listened, "a écouté", "ont écouté"),
-        stat(s.downloaded, "a téléchargé", "ont téléchargé"), s.failed ? stat(s.failed, "échec", "échecs") : "",
+      el("div", { className: "row" }, stat(s.sent + "/" + s.total, "envoyés", "envoyés", null), stat(s.opened, "ouvert", "ouverts", "opened"), stat(s.listened, "a écouté", "ont écouté", "listened"),
+        stat(s.downloaded, "a téléchargé", "ont téléchargé", "downloaded"), s.failed ? stat(s.failed, "échec", "échecs", "failed") : "",
         s.failed && s.done ? el("button", { className: "btn btn-ghost", type: "button", textContent: "Renvoyer aux échecs", onclick: (event) => {
           event.currentTarget.disabled = true;
           api("POST", "/me/sounds/mail/sends/" + s.id + "/retry").then(() => drawTracking(s.id), (error) => { oops(error); drawTracking(s.id); });
         } }) : "", s.done ? "" : el("span", { className: "muted", style: "font-size:13px", textContent: "Envoi en cours : " + plural(s.waiting, "mail") + " à partir, environ " + duration(s.waiting * s.gap) + " (un mail toutes les 15 à 30 s, pour que Gmail ne bloque pas)" })),
-      el("ul", { className: "group" }, ...detail.recipients.map((r) => el("li", {}, el("details", {},
+      shown.length ? "" : el("p", { className: "muted", textContent: "Personne pour l'instant." }),
+      el("ul", { className: "group" }, ...shown.map((r) => el("li", {}, el("details", {},
         el("summary", { className: "item" }, el("div", { className: "grow" }, r.name || r.email, el("small", { textContent: (r.name ? r.email + " · " : "") + activity(r) + (r.error ? " · " + r.error : "") }))),
         el("ul", { className: "mail-events" }, ...(r.events.length ? r.events.map((e) => el("li", { textContent: when(e.at) + " · " + (r.name || r.email) + " " + EVENT[e.type] + (e.title && e.type !== "open" && e.type !== "visit" ? " « " + e.title + " »" : "") }))
           : [el("li", { textContent: "Rien pour l'instant." })])))))));
