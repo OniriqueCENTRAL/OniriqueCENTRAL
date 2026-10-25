@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Règle le scan des prods volées (bouton SCAN et scan au dépôt d'une prod). À lancer sur le VPS, en root :
+#   onirique-acrcloud        demande l'hôte, la clé d'accès et le secret du projet ACRCloud
+#   onirique-acrcloud off    retire le réglage (plus aucun scan)
+# Le secret est saisi ici, sans s'afficher, et ne quitte pas le serveur.
+#
+# À faire avant, sur console.acrcloud.com :
+#   Audio & Video Recognition > Create Project : type « Line-in Audio », bucket « ACRCloud Music »,
+#   cocher les métadonnées externes (Spotify, Deezer, YouTube). La page du projet donne Host, Access Key et Access Secret.
+set -euo pipefail
+
+ENVFILE=/opt/onirique-central/server/.env
+stop() { echo "$1" >&2; exit 1; }
+
+if [ "${1:-}" != off ]; then
+  read -rp "Host (ex. identify-eu-west-1.acrcloud.com) : " HOST
+  read -rp "Access Key : " KEY
+  read -rsp "Access Secret (rien ne s'affiche) : " SECRET; echo
+  HOST=${HOST#https://}; HOST=${HOST#http://}; HOST=${HOST%%/*}
+  case "$HOST" in *.acrcloud.com) ;; *) stop "Ce n'est pas un hôte ACRCloud. Rien n'est changé." ;; esac
+  case "$KEY$SECRET" in *"'"*|*" "*) stop "Valeur mal copiée (espace ou apostrophe). Rien n'est changé." ;; esac
+  [ -n "$KEY" ] && [ -n "$SECRET" ] || stop "Clé ou secret vide. Rien n'est changé."
+fi
+
+sed -i '/^ACRCLOUD_HOST=/d; /^ACRCLOUD_KEY=/d; /^ACRCLOUD_SECRET=/d' "$ENVFILE"
+[ "${1:-}" = off ] || printf "ACRCLOUD_HOST='%s'\nACRCLOUD_KEY='%s'\nACRCLOUD_SECRET='%s'\n" "$HOST" "$KEY" "$SECRET" >> "$ENVFILE"
+chown central:central "$ENVFILE"; chmod 600 "$ENVFILE"
+systemctl restart onirique-central
+sleep 3
+systemctl is-active -q onirique-central || stop "Le serveur n'a pas redémarré : journalctl -u onirique-central"
+if [ "${1:-}" = off ]; then echo "Scan des prods retiré."; else echo "C'est bon : le bouton SCAN de Mes sons est actif, et chaque prod déposée dans un pack est scannée."; fi

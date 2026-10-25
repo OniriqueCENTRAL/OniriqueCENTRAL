@@ -504,7 +504,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 #mailer summary { list-style: none; }
 #mailer summary::-webkit-details-marker { display: none; }
 /* Les ventes d'un pack : le panneau Ventes et la vente d'une prod. */
-#store, #sale { width: 620px; }
+#store, #sale, #scan { width: 620px; }
 #youtube { width: 680px; }
 /* Chaîne connectée : le formulaire, et à côté l'aperçu de la vidéo telle que le serveur la fabrique */
 #youtube.wide { width: 1100px; }
@@ -565,6 +565,13 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 .stage.prod.on { border-color: var(--ember); color: var(--ember); }
 .stage.prod.price { border-color: var(--buy, var(--ember)); background: var(--buy, var(--ember)); color: var(--buy-ink, var(--night)); }
 .stage.prod.price-off { border-style: dashed; border-color: var(--buy, var(--ember)); }
+/* Une prod retrouvée dans un titre sorti : le badge s'ouvre même hors édition. */
+.stage.prod.stolen { border-color: #FF5A68; color: #FF5A68; }
+body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
+.scan-hits { margin: 0; padding: 0 16px 14px 16px; list-style: none; display: grid; gap: 10px; }
+.scan-hits li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font: 600 14px var(--f-body); }
+.scan-hits li .grow { flex: 1; min-width: 180px; }
+.scan-hits small { display: block; color: var(--haze); font: 400 12.5px var(--f-body); }
 /* La couleur des boutons d'un pack : le nuancier natif, caché derrière le bouton */
 #buy-color { position: relative; }
 #buy-color i { width: 16px; height: 16px; border-radius: 50%; background: var(--buy, var(--ember)); box-shadow: 0 0 0 1px rgba(255,255,255,.3); }
@@ -641,6 +648,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
         <div class="quota" id="quota"></div>
         <button class="install" id="install" type="button" hidden><img src="assets/app-icon-180.png" alt="">Ajouter à l'écran d'accueil</button>
         <button class="install" id="settings-open" type="button">Réglages</button>
+        <button class="install" id="scan-open" type="button" hidden title="Chercher si tes prods ont été volées et sorties sur les plateformes">SCAN</button>
       </div>
     </div>
     <p class="error" id="disk-full"></p>
@@ -727,6 +735,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 <dialog id="mailer"></dialog>
 <dialog id="store"></dialog>
 <dialog id="sale"></dialog>
+<dialog id="scan"></dialog>
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close('cancel')">Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
 <script src="assets/sounds-player.js?v=18"></script>
@@ -1007,12 +1016,16 @@ const lightClose = (dialog) => {
   dialog.addEventListener("pointerdown", (event) => { fromBackdrop = event.target === dialog; });
   dialog.addEventListener("click", (event) => { if (event.target === dialog && fromBackdrop) dialog.close(); fromBackdrop = false; });
 };
-lightClose($("details")); lightClose($("stats")); lightClose($("share")); lightClose($("ask")); lightClose($("collab"));
+lightClose($("details")); lightClose($("stats")); lightClose($("share")); lightClose($("ask")); lightClose($("collab")); lightClose($("scan"));
 
 // ——— Données et vues ———
+let scanTimer = null;
 async function refresh() {
   data = await api("GET", "/me/sounds" + (vanish ? "?vanish=1" : ""));
   render();
+  // Des prods en cours de scan : la page se met à jour toute seule jusqu'au résultat.
+  clearTimeout(scanTimer);
+  if (data.projects.some((p) => p.tracks.some((t) => t.scan && t.scan.status === "wait"))) scanTimer = setTimeout(() => refresh().catch(() => {}), 6000);
 }
 function render() {
   const p = openId() && project();
@@ -1024,6 +1037,7 @@ function render() {
   p ? renderProject(p) : renderGrid();
   if ($("details").open) renderDetails();
   if ($("share").open) renderShare();
+  if ($("scan").open) renderScan();
   markPlaying();
 }
 addEventListener("hashchange", () => { closeMenu(); render(); scrollTo(0, 0); if (/^#\/invite\//.test(location.hash)) checkInvite(); });
@@ -1096,6 +1110,7 @@ function renderGrid() {
     tile.oncontextmenu = (event) => { const dots = tile.querySelector(".dots"); if (dots) { event.preventDefault(); event.stopPropagation(); dots.openAt(atPointer(event)); } };
   });
   $("tiles").replaceChildren(...tiles);
+  $("scan-open").hidden = data.vanish || !data.projects.some((x) => x.mine && x.kind === "pack");
   $("grid-top").hidden = !!f;
   $("folder-crumb").hidden = !f;
   if (f) {
@@ -1531,15 +1546,20 @@ function prodBadges(p, t) {
 }
 // Les retours de mix d'un titre pas encore cochés « Réglé ».
 const toFix = (t) => t.comments.filter((c) => !c.resolved).length;
+// Le scan d'une prod de mes packs : un badge si elle a été retrouvée dans un titre sorti, sinon une mention discrète.
+const scanned = (p, t) => (p.mine && !visitor && t.scan ? t.scan : null);
+const scanNote = (s) => (!s ? null : s.status === "wait" ? "scan en cours" : s.matches.length ? null : s.status === "error" ? "scan en échec" : "aucune copie trouvée");
 function trackRow(p, t, i) {
-  const v = live(t), prod = prodBadges(p, t);
+  const v = live(t), prod = prodBadges(p, t), scan = scanned(p, t);
+  const stolen = scan && scan.matches.length ? el("button", { className: "stage prod stolen", type: "button", textContent: "Volée ?",
+    title: "Retrouvée dans " + scan.matches.length + " titre" + (scan.matches.length > 1 ? "s sortis" : " sorti"), onclick: (event) => { event.stopPropagation(); openScan(t.id); } }) : "";
   const more = el("button", { className: "dots", type: "button", ariaLabel: "Options de " + t.title }, icon("more"));
   more.onclick = (event) => { event.stopPropagation(); openDetails(t.id); };
   const row = el("li", { className: "trk", draggable: true, tabIndex: 0, title: "Écouter (glisser pour réordonner)", style: "--i:" + (i + 3) },
     el("span", { className: "num", textContent: String(i + 1) }),
-    el("div", {}, el("div", { className: "tline" }, el("b", { textContent: t.title }), ...prod.tempo, featButton(t)), el("small", { textContent: [day(v.createdAt), "v" + v.n + (t.versions.length > 1 ? " sur " + t.versions.length : ""),
+    el("div", {}, el("div", { className: "tline" }, el("b", { textContent: t.title }), ...prod.tempo, featButton(t), stolen), el("small", { textContent: [day(v.createdAt), "v" + v.n + (t.versions.length > 1 ? " sur " + t.versions.length : ""),
       toFix(t) ? toFix(t) + " retour" + (toFix(t) > 1 ? "s" : "") + " à régler" : t.comments.length ? t.comments.length + " commentaire" + (t.comments.length > 1 ? "s" : "") : null,
-      t.plays ? t.plays + " écoute" + (t.plays > 1 ? "s" : "") : null].filter(Boolean).join(" · ") })),
+      t.plays ? t.plays + " écoute" + (t.plays > 1 ? "s" : "") : null, scanNote(scan)].filter(Boolean).join(" · ") })),
     el("span", { className: "badges" }, ...(p.kind === "pack" ? [prod.sale] : [dateButton(t), stageButton(t, editing)])), el("span", { className: "len", textContent: v.duration ? OP.time(v.duration) : "" }), more);
   row.dataset.id = t.id;
   row.draggable = editing;
@@ -3451,6 +3471,51 @@ async function openSettings() {
   if (!dialog.open) dialog.showModal();
 }
 $("settings-open").onclick = openSettings;
+
+// ——— SCAN : les prods de mes packs cherchées dans les titres sortis sur les plateformes (Spotify, Deezer, YouTube…) ———
+let scanOnly = null;
+function openScan(trackId = null) {
+  scanOnly = trackId;
+  renderScan();
+  if (!$("scan").open) $("scan").showModal();
+}
+$("scan-open").onclick = () => openScan();
+function renderScan() {
+  const dialog = $("scan");
+  const all = data.projects.filter((p) => p.mine && p.kind === "pack").flatMap((p) => p.tracks.map((t) => ({ p, t })));
+  const prods = scanOnly ? all.filter(({ t }) => t.id === scanOnly) : all;
+  if (!prods.length) return dialog.close();
+  const plural = (n, one, many) => n + " " + (n > 1 ? many : one);
+  const date = (d) => { const x = new Date(d); return isNaN(x) ? d : x.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }); };
+  const waiting = prods.filter(({ t }) => t.scan && t.scan.status === "wait").length;
+  const found = prods.filter(({ t }) => t.scan && t.scan.matches.length);
+  const failed = prods.filter(({ t }) => t.scan && t.scan.status === "error" && !t.scan.matches.length);
+  const clean = prods.filter(({ t }) => t.scan && t.scan.status === "done" && !t.scan.matches.length).length;
+  const never = prods.filter(({ t }) => !t.scan).length;
+  const head = el("div", { className: "dlg-head" }, el("b", { textContent: scanOnly ? "SCAN · " + prods[0].t.title : "SCAN · mes prods volées ?" }),
+    el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close")));
+  const stack = el("div", { className: "stack", style: "padding:14px 18px 18px" });
+  dialog.replaceChildren(head, stack);
+  if (!data.scanReady) return stack.append(el("p", { className: "muted", style: "margin:0", textContent: "Le scan des prods n'est pas encore réglé sur le serveur." }));
+  if (!scanOnly) {
+    const go = el("button", { className: "btn btn-primary", type: "button", textContent: waiting ? "Scan en cours…" : "Scanner mes " + plural(all.length, "prod", "prods"), disabled: !!waiting });
+    go.onclick = () => { go.disabled = true; api("POST", "/me/sounds/scan").then(refresh, (error) => { fail(error); go.disabled = false; }); };
+    stack.append(el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: "Chaque prod de tes packs est cherchée dans les titres sortis sur les plateformes (Spotify, Apple Music, Deezer, YouTube…). "
+      + "Si un artiste a sorti un son sur ta prod, il ressort ici, même avec sa voix par-dessus. Une prod déposée dans un pack est scannée toute seule." }),
+      el("div", { className: "row" }, go, el("span", { className: "muted", style: "font-size:13px", textContent: waiting ? "Encore " + plural(waiting, "prod", "prods") + " à scanner, quelques secondes chacune."
+        : [plural(found.length, "prod retrouvée", "prods retrouvées"), plural(clean, "sans copie trouvée", "sans copie trouvée"), never ? plural(never, "jamais scannée", "jamais scannées") : ""].filter(Boolean).join(" · ") })));
+  } else if (waiting) stack.append(el("p", { className: "muted", style: "margin:0", textContent: "Scan en cours…" }));
+  if (found.length) stack.append(el("ul", { className: "group" }, ...found.map(({ p, t }) => el("li", {},
+    el("div", { className: "item", style: "cursor:default" }, el("div", { className: "grow" }, t.title, el("small", { textContent: p.title + " · retrouvée dans " + plural(t.scan.matches.length, "titre sorti", "titres sortis") }))),
+    el("ul", { className: "scan-hits" }, ...t.scan.matches.map((m) => el("li", {},
+      el("div", { className: "grow" }, (m.artists ? m.artists + " · " : "") + m.title,
+        el("small", { textContent: [m.album && m.album !== m.title ? m.album : "", m.released ? "sorti le " + date(m.released) : "", "reconnue sur " + plural(m.hits, "extrait", "extraits")].filter(Boolean).join(" · ") })),
+      ...m.links.map((l) => el("a", { className: "mini-btn", href: l.url, target: "_blank", rel: "noopener", textContent: l.name })))))))));
+  else if (scanOnly && prods[0].t.scan && prods[0].t.scan.status === "done") stack.append(el("p", { style: "margin:0", textContent: "Aucune copie trouvée." }));
+  if (failed.length) stack.append(el("ul", { className: "group" }, ...failed.map(({ p, t }) => el("li", { className: "item", style: "cursor:default" },
+    el("div", { className: "grow" }, t.title, el("small", { textContent: p.title + " · scan en échec : " + t.scan.error }))))));
+  if (found.length) stack.append(el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "À vérifier avant d'agir : une prod faite sur un sample peut faire ressortir le morceau samplé, et tes propres sorties ressortent aussi." }));
+}
 
 // ——— La cloche : ce qui est arrivé à mes sons et ce qu'ont fait mes collaborateurs ; le « … » choisit ce qui s'y affiche ———
 const NOTICE_KINDS = [["play", "Écoutes"], ["download", "Téléchargements"], ["comment", "Commentaires"], ["save", "Ajouts à un ONIRIQUE CLOUD"],

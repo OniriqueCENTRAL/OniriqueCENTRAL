@@ -18,6 +18,7 @@ import { mountBeatStore, offersOf, filesOf, sellerView, licensesOf, licensePrice
 import { mountPackSend, recipientFor, trackRecipient, coverPalette } from './packsend.js';
 import { writeZip, zipName, zipSize } from './zipstream.js';
 import { mountBeatTube } from './beattube.js';
+import { mountBeatScan, queueScan, scansOf, scanConfigured } from './beatscan.js';
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS sound_projects (
@@ -726,8 +727,9 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       LEFT JOIN users u ON u.id = s.user_id WHERE ${scope} ORDER BY s.created_at DESC`, ...args);
     const listeners = (rows) => [...new Map(rows.filter((r) => r.id).map((r) => [r.id, { ...person(r), at: r.created_at }])).values()];
     const d = disk();
+    const scans = scansOf(u);
     res.json({
-      owner: person(req.user), founder: req.user.role === 'founder', vanish,
+      owner: person(req.user), founder: req.user.role === 'founder', vanish, scanReady: scanConfigured(),
       // Le compte de paiement et les licences, pour les badges de vente des packs.
       store: projects.some((p) => p.kind === 'pack' && p.user_id === u) ? { seller: sellerView(u), licenses: licensesOf(u) } : null,
       quota: { used: usedBy(req.user.id), limit: quotaBytes(), full: d.used / d.total >= diskMax() },
@@ -749,6 +751,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
             id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), splits: splitsOf(t), lyrics: t.lyrics, currentId: t.current_id, createdAt: t.created_at,
             bpm: t.bpm, key: t.music_key, forSale: !!t.for_sale, sold: !!t.sold,
             ...(p.kind === 'pack' ? { files: filesOf(t.id), licensePrices: JSON.parse(t.license_prices || '{}'), videoTitle: t.video_title, videoCover: media(t.video_cover) } : {}),
+            ...(p.kind === 'pack' && p.user_id === u ? { scan: scans.get(t.id) || null } : {}),
             versions: versions.filter((v) => v.track_id === t.id).map((v, i) => versionView(v, i, true)),
             comments: comments.filter((c) => c.track_id === t.id).map(commentView),
             plays: mine.length, lastPlay: mine[0]?.created_at ?? null, listeners: listeners(mine), stats: listenStats(mine),
@@ -1008,6 +1011,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       return tid;
     });
     notice(membersOf(p.id), 'add', { actor: req.user, text: `a ajouté « ${title} » à « ${p.title} »`, projectId: p.id });
+    queueScan([trackId]);
     res.status(201).json({ id: trackId, versionId: get('SELECT current_id FROM sound_tracks WHERE id = ?', trackId).current_id });
   }));
   // Une nouvelle version d'un titre : elle devient celle qu'on écoute, les précédentes restent dans l'historique.
@@ -1018,6 +1022,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     const vid = addVersion(t.id, file, str(req.query.note, 300));
     run('UPDATE sound_tracks SET current_id = ? WHERE id = ?', vid, t.id);
     notice(membersOf(t.project_id), 'version', { actor: req.user, text: `a envoyé une nouvelle version de « ${t.title} »`, projectId: t.project_id });
+    queueScan([t.id]);
     res.status(201).json({ id: vid });
   }));
   app.patch('/api/me/sounds/tracks/:id', ...me, (req, res) => {
@@ -1472,6 +1477,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   mountBeatStore(app, { me, track, room, receiveFile, openLink, linkTracks, linkProject, soundsDir, audioType, wrap });
   mountPackSend(app, { me, ownProject, sign, wrap });
   mountBeatTube(app, { me, track, soundsDir, wrap, receiveImage, removeMedia });
+  mountBeatScan(app, { me, soundsDir });
 }
 
 // Les rappels de sortie : sept jours avant et la veille, à partir de 9 h (heure de Paris), un e-mail à l'auteur du projet et
