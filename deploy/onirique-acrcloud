@@ -5,7 +5,7 @@
 # Le secret est saisi ici, sans s'afficher, et ne quitte pas le serveur.
 #
 # À faire avant, sur console.acrcloud.com :
-#   Audio & Video Recognition > Create Project : type « Line-in Audio », bucket « ACRCloud Music »,
+#   Audio & Video Recognition > Create Project : type « Recorded Audio » (plus tolérant : la prod seule face au titre avec voix), bucket « ACRCloud Music »,
 #   cocher les métadonnées externes (Spotify, Deezer, YouTube). La page du projet donne Host, Access Key et Access Secret.
 set -euo pipefail
 

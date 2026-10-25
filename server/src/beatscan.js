@@ -69,6 +69,7 @@ export async function scanFile(file, knownDuration) {
   for (const start of starts) {
     const sample = await excerpt(file, start);
     if (sample.length < 1000 && !testing) continue; // au-delà de la fin du son
+    if (!testing) await new Promise((resolve) => setTimeout(resolve, 600)); // ACRCloud refuse plus de 2 requêtes par seconde (essai)
     for (const m of await identify(sample)) {
       const seen = found.get(m.acrid);
       if (seen) seen.hits++; else found.set(m.acrid, { ...matchView(m), hits: 1 });
