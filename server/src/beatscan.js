@@ -61,7 +61,21 @@ function matchView(m) {
   };
 }
 
-/** Les titres sortis qui contiennent la prod, le plus souvent reconnu d'abord ; hits : le nombre d'extraits reconnus. */
+// Un titre n'est retenu que si deux extraits au moins y sont reconnus au même décalage : un son fait sur la prod la suit
+// dans l'ordre (extrait à 20 s et à 35 s → 15 s d'écart dans le titre aussi), alors qu'un sample ou une boucle commune
+// ressort à des endroits sans rapport.
+const ALIGN = 3; // secondes de tolérance sur le décalage
+/** Les plus grands groupes d'extraits reconnus au même décalage. */
+function aligned(hits) {
+  let best = [];
+  for (const h of hits) {
+    const group = hits.filter((o) => Math.abs(o.shift - h.shift) <= ALIGN);
+    if (group.length > best.length) best = group;
+  }
+  return best;
+}
+
+/** Les titres sortis qui contiennent la prod ; hits : les extraits reconnus au bon endroit, at : où la prod y commence à être reconnue (s). */
 export async function scanFile(file, knownDuration) {
   const seconds = await duration(file, knownDuration);
   const starts = [...new Set(SPOTS.map((at) => Math.max(0, Math.min(seconds * at, seconds - SAMPLE))).map((s) => Math.round(s)))];
@@ -71,11 +85,15 @@ export async function scanFile(file, knownDuration) {
     if (sample.length < 1000 && !testing) continue; // au-delà de la fin du son
     if (!testing) await new Promise((resolve) => setTimeout(resolve, 600)); // ACRCloud refuse plus de 2 requêtes par seconde (essai)
     for (const m of await identify(sample)) {
-      const seen = found.get(m.acrid);
-      if (seen) seen.hits++; else found.set(m.acrid, { ...matchView(m), hits: 1 });
+      // Où l'extrait tombe dans le titre trouvé, moins où il est dans la prod : le décalage entre les deux.
+      const inTitle = (m.db_begin_time_offset_ms ?? m.play_offset_ms ?? 0) / 1000, inProd = start + (m.sample_begin_time_offset_ms ?? 0) / 1000;
+      const seen = found.get(m.acrid) || found.set(m.acrid, { match: matchView(m), hits: [] }).get(m.acrid);
+      seen.hits.push({ start, shift: inTitle - inProd, inTitle });
     }
   }
-  return [...found.values()].sort((a, b) => b.hits - a.hits);
+  return [...found.values()].map(({ match, hits }) => ({ match, hits: aligned(hits) })).filter(({ hits }) => hits.length >= 2)
+    .map(({ match, hits }) => ({ ...match, hits: hits.length, at: Math.round(Math.min(...hits.map((h) => h.inTitle))) }))
+    .sort((a, b) => b.hits - a.hits);
 }
 
 // Une prod à la fois (chaque extrait est une requête payante, et le serveur n'a qu'un processeur) ; une file coupée
@@ -122,6 +140,10 @@ export const scansOf = (userId) => new Map(all(`SELECT s.* FROM sound_scans s JO
 
 export function mountBeatScan(app, { me, soundsDir: dir }) {
   soundsDir = dir;
+  // Titres trouvés avant la vérification du décalage (sans « at ») : effacés et revérifiés une fois.
+  const stale = all(`SELECT track_id FROM sound_scans WHERE matches != '[]' AND matches NOT LIKE '%"at":%'`).map((s) => s.track_id);
+  for (const id of stale) run(`UPDATE sound_scans SET matches = '[]' WHERE track_id = ?`, id);
+  queueScan(stale);
   scanQueue().catch((error) => console.error(`[scan] ${error.message}`));
   // « SCAN » : toutes les prods de tous les packs du membre, quelques fois par jour au plus.
   app.post('/api/me/sounds/scan', ...me, (req, res) => {

@@ -19,10 +19,17 @@ globalThis.fetch = async (url, init = {}) => {
   assert.equal(f.get('signature'), expected);
   acr.calls++;
   if (acr.down) return reply({ status: { code: 3003, msg: 'limit exceeded' } });
-  if (acr.calls % 4 === 1) return reply({ status: { code: 2004, msg: "Can't generate fingerprint" } }); // intro silencieuse
-  if (acr.calls % 4 !== 2) return reply({ status: { code: 1001, msg: 'No result' } });
-  return reply({ status: { code: 0, msg: 'Success' }, metadata: { music: [{ acrid: 'a1', title: 'Volé', artists: [{ name: 'Rappeur' }], album: { name: 'Album' }, release_date: '2026-01-02',
-    external_metadata: { spotify: { track: { id: 'sp1' } }, deezer: [{ track: { id: 42 } }], youtube: { vid: 'yt1' } } }] } });
+  // Extraits à 5, 20, 35 et 48 s d'une prod d'une minute. « Volé » reconnu à 20 s et 35 s, 10 s plus loin dans son titre
+  // (même décalage) ; « Sample commun » reconnu aux deux mêmes extraits, mais à des endroits sans rapport.
+  const k = (acr.calls - 1) % 4;
+  if (k === 0) return reply({ status: { code: 2004, msg: "Can't generate fingerprint" } }); // intro silencieuse
+  if (k === 3) return reply({ status: { code: 1001, msg: 'No result' } });
+  const at = k === 1 ? 30000 : 45000;
+  return reply({ status: { code: 0, msg: 'Success' }, metadata: { music: [
+    { acrid: 'a1', title: 'Volé', artists: [{ name: 'Rappeur' }], album: { name: 'Album' }, release_date: '2026-01-02', db_begin_time_offset_ms: at, sample_begin_time_offset_ms: 0,
+      external_metadata: { spotify: { track: { id: 'sp1' } }, deezer: [{ track: { id: 42 } }], youtube: { vid: 'yt1' } } },
+    { acrid: 'faux', title: 'Sample commun', artists: [{ name: 'Autre' }], db_begin_time_offset_ms: k === 1 ? 100000 : 5000, sample_begin_time_offset_ms: 0 },
+  ] } });
 };
 
 const { createApp } = await import('../src/app.js');
@@ -64,7 +71,7 @@ try {
     assert.equal(data.scanReady, true);
     const [ghost] = data.projects.find((p) => p.id === pack).tracks;
     assert.equal(ghost.scan.status, 'done');
-    assert.deepEqual(ghost.scan.matches, [{ id: 'a1', title: 'Volé', artists: 'Rappeur', album: 'Album', released: '2026-01-02', hits: 1, links: [
+    assert.deepEqual(ghost.scan.matches, [{ id: 'a1', title: 'Volé', artists: 'Rappeur', album: 'Album', released: '2026-01-02', hits: 2, at: 30, links: [
       { name: 'Spotify', url: 'https://open.spotify.com/track/sp1' }, { name: 'Deezer', url: 'https://www.deezer.com/track/42' }, { name: 'YouTube', url: 'https://www.youtube.com/watch?v=yt1' }] }]);
     assert.equal(data.projects.find((p) => p.id === album).tracks[0].scan, undefined); // hors pack : pas de scan
     assert.equal(acr.calls, 4); // quatre extraits par prod

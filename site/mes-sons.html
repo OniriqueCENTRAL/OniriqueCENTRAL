@@ -3509,7 +3509,7 @@ function renderScan() {
     el("div", { className: "item", style: "cursor:default" }, el("div", { className: "grow" }, t.title, el("small", { textContent: p.title + " · retrouvée dans " + plural(t.scan.matches.length, "titre sorti", "titres sortis") }))),
     el("ul", { className: "scan-hits" }, ...t.scan.matches.map((m) => el("li", {},
       el("div", { className: "grow" }, (m.artists ? m.artists + " · " : "") + m.title,
-        el("small", { textContent: [m.album && m.album !== m.title ? m.album : "", m.released ? "sorti le " + date(m.released) : "", "reconnue sur " + plural(m.hits, "extrait", "extraits")].filter(Boolean).join(" · ") })),
+        el("small", { textContent: [m.album && m.album !== m.title ? m.album : "", m.released ? "sorti le " + date(m.released) : "", m.at != null ? "ta prod entendue à " + OP.time(m.at) : "", "reconnue sur " + plural(m.hits, "extrait", "extraits")].filter(Boolean).join(" · ") })),
       ...m.links.map((l) => el("a", { className: "mini-btn", href: l.url, target: "_blank", rel: "noopener", textContent: l.name })))))))));
   else if (scanOnly && prods[0].t.scan && prods[0].t.scan.status === "done") stack.append(el("p", { style: "margin:0", textContent: "Aucune copie trouvée." }));
   if (failed.length) stack.append(el("ul", { className: "group" }, ...failed.map(({ p, t }) => el("li", { className: "item", style: "cursor:default" },
