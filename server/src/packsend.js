@@ -379,6 +379,16 @@ export function mountPackSend(app, { me, ownProject, sign, wrap }) {
     if (r && realOpen(r, req.headers['user-agent'])) trackRecipient(r, 'open');
     res.set({ 'Content-Type': 'image/gif', 'Cache-Control': 'no-store, max-age=0' }).send(pixel);
   });
+  // La pochette dans le mail : toujours celle du pack à cet instant (l'ancienne image est effacée quand on la change),
+  // en JPEG, que toutes les boîtes mail affichent, contrairement au WebP de /api/media.
+  app.get('/api/sounds/m/:token/pochette.jpg', wrap(async (req, res) => {
+    const r = byToken(req);
+    const cover = r && get('SELECT p.cover FROM sound_mail_sends s JOIN sound_projects p ON p.id = s.project_id WHERE s.id = ?', r.send_id)?.cover;
+    if (!cover) throw new HttpError(404, 'Pochette introuvable.');
+    const jpeg = await sharp(path.join(config.mediaDir, path.basename(cover))).resize(160, 160, { fit: 'cover' }).flatten({ background: '#111111' }).jpeg({ quality: 85 }).toBuffer()
+      .catch(() => { throw new HttpError(404, 'Pochette introuvable.'); });
+    res.set({ 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=3600' }).send(jpeg);
+  }));
   app.get('/api/sounds/m/:token/lien', (req, res) => {
     const r = byToken(req), url = String(req.query.u || '');
     if (!r || !/^https?:\/\//i.test(url) || String(req.query.s || '') !== sign(`mail.${r.token}.${url}`)) throw new HttpError(404, 'Lien introuvable.');
@@ -446,7 +456,7 @@ async function deliver({ sid, m, d, p, link, tracks, sign }) {
     const draft = { ...d, subject: name(d.subject), preheader: name(d.preheader), eyebrow: name(d.eyebrow), title: name(d.title), text: name(d.text), signature: name(d.signature) };
     const unsubscribe = `${api}/${r.token}/desinscription`;
     const html = packMailHtml(draft, {
-      title: p.title, artist: p.artist || m.from_name || 'ONIRIQUE', cover: p.cover ? `/api/media/${p.cover}` : null, listenUrl: listen,
+      title: p.title, artist: p.artist || m.from_name || 'ONIRIQUE', cover: p.cover ? `${api}/${r.token}/pochette.jpg` : null, listenUrl: listen,
       tracks: tracks.map((t) => ({ id: t.id, title: t.title, bpm: t.bpm, key: t.music_key })),
       link: follow, pixel: `${api}/${r.token}/o.gif`, unsubscribe,
     });

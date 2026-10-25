@@ -144,6 +144,14 @@ try {
     assert.ok(mails[2].html.includes('Yo Damso !') && mails[2].headers['List-Unsubscribe']);
   });
 
+  await step('pochette du mail : en JPEG, et toujours là après un changement de pochette', async () => {
+    const cover = local(mails[2].html.match(/src="([^"]+pochette\.jpg[^"]*)"/)[1].replace(/&amp;/g, '&'));
+    assert.equal((await call('GET', cover)).headers.get('content-type'), 'image/jpeg');
+    const png = await sharp({ create: { width: 64, height: 64, channels: 3, background: { r: 200, g: 20, b: 20 } } }).png().toBuffer();
+    await call('PUT', `/api/me/sounds/projects/${pack}/cover`, { token: bm.token, raw: png, headers: { 'Content-Type': 'image/png' } });
+    assert.equal((await call('GET', cover)).headers.get('content-type'), 'image/jpeg');
+  });
+
   await step('suivi de Damso : ouverture, clic, écoute et téléchargement, à son nom', async () => {
     const html = mails[2].html;
     const pixel = html.match(/src="([^"]+o\.gif)"/)[1];
