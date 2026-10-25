@@ -19,6 +19,7 @@ globalThis.fetch = async (url, init = {}) => {
   assert.equal(f.get('signature'), expected);
   acr.calls++;
   if (acr.down) return reply({ status: { code: 3003, msg: 'limit exceeded' } });
+  if (acr.calls % 4 === 1) return reply({ status: { code: 2004, msg: "Can't generate fingerprint" } }); // intro silencieuse
   if (acr.calls % 4 !== 2) return reply({ status: { code: 1001, msg: 'No result' } });
   return reply({ status: { code: 0, msg: 'Success' }, metadata: { music: [{ acrid: 'a1', title: 'Volé', artists: [{ name: 'Rappeur' }], album: { name: 'Album' }, release_date: '2026-01-02',
     external_metadata: { spotify: { track: { id: 'sp1' } }, deezer: [{ track: { id: 42 } }], youtube: { vid: 'yt1' } } }] } });

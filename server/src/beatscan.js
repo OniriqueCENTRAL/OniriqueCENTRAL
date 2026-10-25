@@ -43,7 +43,7 @@ async function identify(sample) {
   form.append('sample', new Blob([sample]), 'extrait.mp3');
   const response = await fetch(`https://${config.acrHost}/v1/identify`, { method: 'POST', body: form, signal: AbortSignal.timeout(30_000) });
   const body = await response.json().catch(() => ({}));
-  if (body.status?.code === 1001) return []; // rien de reconnu
+  if (body.status?.code === 1001 || body.status?.code === 2004) return []; // rien de reconnu, ou extrait sans rien à reconnaître (silence)
   if (body.status?.code !== 0) throw new Error(`Reconnaissance indisponible : ${body.status?.msg || `erreur ${response.status}`}`);
   return body.metadata?.music || [];
 }
