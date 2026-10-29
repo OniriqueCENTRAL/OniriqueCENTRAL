@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<script src="assets/i18n.js?v=06e9440d"></script>
+<script src="assets/ui.js?v=3"></script>
+<script src="assets/annonce.js?v=1"></script>
+<script src="/api/announce.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Devis beatmaker, graphiste, ingé son — ONIRIQUE</title>
+<meta name="description" content="Fais un devis propre de beatmaker, graphiste ou ingé son en quelques minutes et télécharge-le en PDF. Gratuit, sans compte.">
+<link rel="canonical" href="https://onirique.store/devis">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css">
+<link rel="stylesheet" href="assets/tools.css">
+<link rel="stylesheet" href="assets/outils-doc.css">
+<style>
+@page { size: A4; margin: 14mm; }
+.rows { display: grid; gap: 10px; }
+.line { display: grid; grid-template-columns: 1fr 56px 84px 32px; gap: 6px; align-items: start; }
+.line textarea { min-height: 42px !important; }
+.line button { height: 38px; border-radius: 8px; border: 1px solid var(--line); background: none; color: var(--haze); cursor: pointer; font-size: 18px; }
+.line button:hover { color: var(--ember); border-color: var(--ember); }
+.line-head { font-size: 11px; color: var(--haze); text-transform: uppercase; letter-spacing: .08em; }
+
+.dv { --a: #E23444; background: #fff; color: #111; font: 14px/1.5 var(--f-body); padding: 48px; }
+@media (max-width: 560px) { .dv { padding: 22px; font-size: 13px; } }
+@media print { .dv { padding: 0; } }
+.dv-top { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; padding-bottom: 22px; border-bottom: 3px solid var(--a); }
+.dv-top img { max-height: 64px; max-width: 180px; display: block; margin-bottom: 10px; }
+.dv-me strong { font: 700 17px var(--f-display); display: block; }
+.dv-me, .dv-client { white-space: pre-line; color: #444; }
+.dv-me strong, .dv-client strong { color: #111; }
+.dv-title { text-align: right; }
+.dv-title h2 { font: 800 34px/1 var(--f-display); color: var(--a); margin: 0 0 8px; letter-spacing: -.02em; }
+.dv-title p { margin: 0; font: 12px/1.7 var(--f-mono); color: #444; }
+.dv-mid { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin: 24px 0; }
+.dv-label { font: 500 10px var(--f-mono); text-transform: uppercase; letter-spacing: .14em; color: var(--a); margin: 0 0 4px; }
+.dv-client { min-width: 200px; padding: 12px 16px; background: #f6f4ee; border-radius: 8px; }
+.dv table { width: 100%; min-width: 0; border-collapse: collapse; font-size: inherit; }
+.dv th { text-align: left; font: 500 10px var(--f-mono); text-transform: uppercase; letter-spacing: .1em; color: #fff; background: var(--a); padding: 8px 10px; }
+.dv td { padding: 10px; border-top: 0; border-bottom: 1px solid #e5e2da; vertical-align: top; white-space: pre-line; }
+.dv tr { break-inside: avoid; }
+.dv .n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dv-totals { margin: 16px 0 0 auto; width: min(100%, 300px); break-inside: avoid; }
+.dv-totals div { display: flex; justify-content: space-between; padding: 5px 10px; font-variant-numeric: tabular-nums; }
+.dv-totals .ttc { background: #111; color: #fff; border-radius: 6px; font-weight: 700; font-size: 16px; padding: 10px; margin-top: 4px; }
+.dv-note { font-size: 12px; color: #666; text-align: right; margin: 6px 0 0; }
+.dv-cond { margin-top: 28px; white-space: pre-line; color: #444; font-size: 13px; break-inside: avoid; }
+.dv-sign { margin-top: 28px; display: flex; justify-content: flex-end; break-inside: avoid; }
+.dv-sign div { width: 260px; height: 110px; border: 1px dashed #bbb; border-radius: 8px; padding: 10px; font-size: 12px; color: #666; }
+</style>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="outils.html" data-tools>Outils</a><a class="btn" href="compte.html" data-account>Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <section class="hero">
+    <p class="eyebrow">Outil gratuit · sans compte</p>
+    <h1>Un <em>devis</em> propre, en deux minutes</h1>
+    <p class="lede">Choisis ton métier : des prestations types sont proposées, change-les comme tu veux. Le total se calcule tout seul. Rien n'est envoyé : ton brouillon reste dans ce navigateur.</p>
+  </section>
+
+  <div class="studio">
+  <form class="panel" id="form" autocomplete="off">
+    <fieldset>
+      <legend>Ton métier</legend>
+      <div class="opts" role="radiogroup" aria-label="Métier">
+        <label><input type="radio" name="metier" value="beatmaker"><span>Beatmaker</span></label>
+        <label><input type="radio" name="metier" value="graphiste"><span>Graphiste</span></label>
+        <label><input type="radio" name="metier" value="inge"><span>Ingé son</span></label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Toi</legend>
+      <label>Nom ou nom d'artiste<input name="nom"></label>
+      <div class="row2">
+        <label>Statut<input name="statut" placeholder="Auto-entrepreneur"></label>
+        <label>SIRET<input name="siret" inputmode="numeric"></label>
+      </div>
+      <label>Adresse<textarea name="adresse" rows="2"></textarea></label>
+      <div class="row2">
+        <label>E-mail<input name="email" type="email"></label>
+        <label>Téléphone<input name="tel" type="tel"></label>
+      </div>
+      <label>Logo<input type="file" id="logo" accept="image/*"></label>
+      <button type="button" class="go ghost" id="logo-off" hidden>Retirer le logo</button>
+      <label>Couleur<input type="color" name="accent"></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Client</legend>
+      <label>Nom du client<input name="client"></label>
+      <label>Adresse / infos<textarea name="clientInfo" rows="2"></textarea></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Le devis</legend>
+      <div class="row2">
+        <label>Numéro<input name="numero"></label>
+        <label>Date<input name="date" type="date"></label>
+      </div>
+      <label>Objet<input name="objet" placeholder="Ex. : prod du single « … »"></label>
+      <label>Valable (jours)<input name="validite" inputmode="numeric"></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Prestations</legend>
+      <div class="line line-head" aria-hidden="true"><span>Description</span><span>Qté</span><span>Prix €</span><span></span></div>
+      <div class="rows" id="rows" data-rows></div>
+      <button type="button" class="go ghost" id="add">+ Ajouter une ligne</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>TVA &amp; paiement</legend>
+      <label class="check"><input type="checkbox" name="franchise"> Pas de TVA (auto-entrepreneur)</label>
+      <div class="row2">
+        <label>TVA %<input name="tva" inputmode="decimal"></label>
+        <label>Acompte %<input name="acompte" inputmode="decimal"></label>
+      </div>
+      <label>Conditions<textarea name="conditions" rows="5"></textarea></label>
+    </fieldset>
+
+    <div class="actions">
+      <button type="button" class="go" id="pdf">Télécharger en PDF</button>
+      <button type="button" class="go ghost" id="reset">Tout effacer</button>
+    </div>
+    <p class="status" id="status" role="status"></p>
+    <p class="hint">Dans la fenêtre d'impression, choisis « Enregistrer au format PDF » et coche « Graphiques d'arrière-plan ».</p>
+  </form>
+
+  <div class="preview"><article class="doc dv" id="doc"></article></div>
+</div>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="outils.html">Tous les outils</a><a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a>
+  </nav>
+</footer>
+<script src="assets/tools-menu.js?v=5"></script>
+<script src="assets/outils-doc.js"></script>
+<script>
+"use strict";
+const KEY = "onirique-devis";
+const PRESETS = {
+  beatmaker: {
+    lignes: [
+      { d: "Licence non exclusive (MP3 + WAV)", q: "1", p: "50" },
+      { d: "Pistes séparées (stems)", q: "1", p: "80" },
+      { d: "Instru exclusive (cession des droits)", q: "1", p: "300" },
+    ],
+    conditions: "Droits cédés à réception du paiement complet.\nCrédit « prod. par … » obligatoire sur toutes les plateformes.\nFichiers livrés sous 7 jours après l'acompte.",
+  },
+  graphiste: {
+    lignes: [
+      { d: "Pochette single (3000 × 3000 px)", q: "1", p: "150" },
+      { d: "Déclinaisons réseaux (post, story, bannière)", q: "1", p: "60" },
+      { d: "Retouche supplémentaire", q: "1", p: "30" },
+    ],
+    conditions: "2 séries de retouches incluses.\nFichiers sources livrés après paiement complet.\nLivraison sous 10 jours après validation de la maquette.",
+  },
+  inge: {
+    lignes: [
+      { d: "Enregistrement (heure de studio)", q: "4", p: "35" },
+      { d: "Mixage (par titre)", q: "1", p: "150" },
+      { d: "Mastering (par titre)", q: "1", p: "50" },
+    ],
+    conditions: "2 allers-retours de corrections inclus par titre.\nHeures supplémentaires facturées au tarif horaire.\nFichiers finaux livrés après paiement complet.",
+  },
+};
+const today = new Date().toISOString().slice(0, 10);
+const DEFAULTS = {
+  metier: "beatmaker", accent: "#E23444", logo: "", franchise: true, tva: "20", acompte: "30", validite: "30",
+  date: today, numero: "DEV-" + today.replaceAll("-", "") + "-01",
+  lignes: structuredClone(PRESETS.beatmaker.lignes), conditions: PRESETS.beatmaker.conditions,
+};
+const { esc } = Outils;
+const euro = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
+const num = (v) => { const n = parseFloat(String(v ?? "").replace(",", ".").replace(/\s/g, "")); return Number.isFinite(n) ? n : 0; };
+
+// Tout est compté en centimes pour éviter les erreurs d'arrondi.
+function totals(s) {
+  const lines = s.lignes.map((l) => Math.round(num(l.q) * Math.round(num(l.p) * 100)));
+  const ht = lines.reduce((a, b) => a + b, 0);
+  const tva = s.franchise ? 0 : Math.round(ht * num(s.tva) / 100);
+  const ttc = ht + tva;
+  return { lines, ht, tva, ttc, acompte: Math.round(ttc * num(s.acompte) / 100) };
+}
+console.assert(totals({ lignes: [{ q: "3", p: "0,1" }, { q: "1", p: "19.99" }], franchise: false, tva: "20", acompte: "30" }).ttc === 2435, "calcul du devis");
+
+const form = document.getElementById("form");
+const rows = document.getElementById("rows");
+const doc = document.getElementById("doc");
+const status = document.getElementById("status");
+let state = Outils.load(KEY, DEFAULTS);
+const cents = (c) => euro.format(c / 100);
+
+function renderRows() {
+  rows.innerHTML = state.lignes.map((l, i) => `
+    <div class="line">
+      <textarea data-i="${i}" data-f="d" rows="1" aria-label="Description">${esc(l.d)}</textarea>
+      <input data-i="${i}" data-f="q" inputmode="decimal" value="${esc(l.q)}" aria-label="Quantité">
+      <input data-i="${i}" data-f="p" inputmode="decimal" value="${esc(l.p)}" aria-label="Prix unitaire">
+      <button type="button" data-del="${i}" aria-label="Supprimer la ligne">×</button>
+    </div>`).join("");
+}
+
+function render() {
+  const s = state, t = totals(s);
+  doc.style.setProperty("--a", s.accent || DEFAULTS.accent);
+  const fin = s.date && num(s.validite) ? new Date(new Date(s.date).getTime() + num(s.validite) * 864e5) : null;
+  const fr = (d) => d.toLocaleDateString("fr-FR");
+  const me = [s.statut, s.siret && "SIRET " + s.siret, s.adresse, s.email, s.tel].filter(Boolean).map(esc).join("\n");
+
+  doc.innerHTML = `
+    <div class="dv-top">
+      <div class="dv-me">
+        ${s.logo ? `<img src="${esc(s.logo)}" alt="">` : ""}
+        <strong>${esc(s.nom || "Ton nom")}</strong>${me}
+      </div>
+      <div class="dv-title">
+        <h2>DEVIS</h2>
+        <p>N° ${esc(s.numero)}<br>${s.date ? "Le " + fr(new Date(s.date)) : ""}${fin ? "<br>Valable jusqu'au " + fr(fin) : ""}</p>
+      </div>
+    </div>
+    <div class="dv-mid">
+      <div>${s.objet ? `<p class="dv-label">Objet</p><strong>${esc(s.objet)}</strong>` : ""}</div>
+      <div class="dv-client"><p class="dv-label">Pour</p><strong>${esc(s.client || "Nom du client")}</strong>${s.clientInfo ? "\n" + esc(s.clientInfo) : ""}</div>
+    </div>
+    <table>
+      <thead><tr><th>Prestation</th><th class="n">Qté</th><th class="n">Prix unit.</th><th class="n">Total</th></tr></thead>
+      <tbody>${s.lignes.map((l, i) => `<tr><td>${esc(l.d)}</td><td class="n">${esc(l.q)}</td><td class="n">${cents(Math.round(num(l.p) * 100))}</td><td class="n">${cents(t.lines[i])}</td></tr>`).join("")}</tbody>
+    </table>
+    <div class="dv-totals">
+      ${s.franchise ? "" : `<div><span>Total HT</span><span>${cents(t.ht)}</span></div><div><span>TVA ${esc(s.tva)} %</span><span>${cents(t.tva)}</span></div>`}
+      <div class="ttc"><span>${s.franchise ? "Total" : "Total TTC"}</span><span>${cents(t.ttc)}</span></div>
+      ${t.acompte ? `<div><span>Acompte à la signature (${esc(s.acompte)} %)</span><span>${cents(t.acompte)}</span></div>` : ""}
+    </div>
+    ${s.franchise ? `<p class="dv-note">TVA non applicable, art. 293 B du CGI</p>` : ""}
+    ${s.conditions?.trim() ? `<div class="dv-cond"><p class="dv-label">Conditions</p>${esc(s.conditions.trim())}</div>` : ""}
+    <div class="dv-sign"><div>Bon pour accord<br>Date et signature du client</div></div>`;
+
+  document.getElementById("logo-off").hidden = !s.logo;
+  status.textContent = Outils.save(KEY, s) ? "Brouillon enregistré sur cet appareil." : "Brouillon trop lourd pour être gardé : pense à télécharger ton PDF.";
+}
+
+Outils.bindForm(form, state, (name) => {
+  if (name === "metier") {
+    const preset = PRESETS[state.metier];
+    if (confirm("Remplacer les prestations et les conditions par celles de ce métier ?")) {
+      state.lignes = structuredClone(preset.lignes);
+      state.conditions = preset.conditions;
+      form.elements.conditions.value = state.conditions;
+      renderRows();
+    }
+  }
+  render();
+});
+
+rows.addEventListener("input", (e) => {
+  const { i, f } = e.target.dataset;
+  if (i === undefined) return;
+  state.lignes[i][f] = e.target.value;
+  render();
+});
+rows.addEventListener("click", (e) => {
+  const i = e.target.dataset.del;
+  if (i === undefined) return;
+  state.lignes.splice(i, 1);
+  renderRows(); render();
+});
+document.getElementById("add").addEventListener("click", () => {
+  state.lignes.push({ d: "", q: "1", p: "" });
+  renderRows(); render();
+  rows.querySelector(".line:last-child textarea").focus();
+});
+document.getElementById("logo").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try { state.logo = await Outils.readImage(file, 500, "image/png"); render(); }
+  catch { status.textContent = "Ce logo n'a pas pu être lu. Essaie un JPG ou un PNG."; }
+  e.target.value = "";
+});
+document.getElementById("logo-off").addEventListener("click", () => { state.logo = ""; render(); });
+document.getElementById("pdf").addEventListener("click", () => window.print());
+document.getElementById("reset").addEventListener("click", () => {
+  if (!confirm("Effacer tout le devis ?")) return;
+  Outils.clear(KEY);
+  location.reload();
+});
+
+renderRows();
+render();
+</script>
+</html>

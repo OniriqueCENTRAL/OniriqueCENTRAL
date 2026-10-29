@@ -28,6 +28,8 @@
 - [Calculateur revenus streaming](https://onirique.store/revenus-streaming) : fourchette de revenus pour un nombre d'écoutes par plateforme.
 - [Partage des droits](https://onirique.store/partage) : répartition des parts d'un titre, feuille à imprimer et à signer.
 - [Checklist de sortie](https://onirique.store/checklist-sortie) : étapes datées d'une sortie, de J-30 à J+7.
+- [Presskit](https://onirique.store/presskit) : presskit d'artiste personnalisé, en PDF.
+- [Devis](https://onirique.store/devis) : devis de beatmaker, graphiste ou ingé son, en PDF.
 - [Questions fréquentes](https://onirique.store/#faq) : compatibilité, installation, latence.
 
 ## Informations légales

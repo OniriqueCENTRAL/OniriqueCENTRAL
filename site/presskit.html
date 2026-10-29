@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<script src="assets/i18n.js?v=06e9440d"></script>
+<script src="assets/ui.js?v=3"></script>
+<script src="assets/annonce.js?v=1"></script>
+<script src="/api/announce.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Créer son presskit d'artiste — ONIRIQUE</title>
+<meta name="description" content="Crée ton presskit d'artiste en quelques minutes et télécharge-le en PDF. Gratuit, sans compte.">
+<link rel="canonical" href="https://onirique.store/presskit">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css">
+<link rel="stylesheet" href="assets/tools.css">
+<link rel="stylesheet" href="assets/outils-doc.css">
+<style>
+@page { size: A4; margin: 0; }
+.pk { --a: #E23444; --bg: #0D0809; --fg: #F6EEEE; --soft: rgba(246,238,238,.65); --rule: rgba(246,238,238,.15); --ft: var(--f-display);
+  background: var(--bg); color: var(--fg); font-family: var(--f-body); }
+.pk.light { --bg: #FAF9F5; --fg: #111; --soft: #5B5850; --rule: rgba(0,0,0,.12); }
+.pk-hero { position: relative; aspect-ratio: 16 / 10; background: linear-gradient(135deg, var(--a), var(--bg)); display: flex; align-items: flex-end; }
+.pk-hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.pk-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, var(--bg) 2%, transparent 55%); }
+.pk-title { position: relative; z-index: 1; padding: 0 48px 18px; }
+.pk-tag { font: 500 12px var(--f-mono); text-transform: uppercase; letter-spacing: .16em; color: var(--a); margin: 0 0 8px; }
+.pk-name { font: 800 clamp(26px, 10cqi, 68px)/.95 var(--ft); letter-spacing: -.02em; margin: 0; overflow-wrap: anywhere; }
+.pk-body { padding: 24px 48px 44px; display: grid; gap: 30px; }
+.pk h3 { font: 500 11px var(--f-mono); text-transform: uppercase; letter-spacing: .16em; color: var(--a); margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
+.pk-bio { white-space: pre-line; font-size: 15px; line-height: 1.6; margin: 0; }
+.pk-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.pk-stat { border: 1px solid var(--rule); border-radius: 10px; padding: 14px; break-inside: avoid; }
+.pk-stat b { display: block; font: 700 26px/1.1 var(--ft); color: var(--a); }
+.pk-stat span { font-size: 13px; color: var(--soft); }
+.pk-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+@media (max-width: 560px) { .pk-cols { grid-template-columns: 1fr; } .pk-title, .pk-body { padding-left: 22px; padding-right: 22px; } }
+.pk ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.pk li { break-inside: avoid; }
+.pk li small { display: block; color: var(--soft); font-size: 13px; }
+.pk blockquote { margin: 0; font-style: italic; }
+.pk-links a { text-decoration: none; overflow-wrap: anywhere; }
+.pk-links b { font-weight: 600; margin-right: 6px; }
+.pk-contact { background: var(--a); color: #fff; border-radius: 12px; padding: 18px 20px; display: grid; gap: 4px; break-inside: avoid; }
+.pk-contact strong { font: 700 15px var(--ft); }
+@media print { body:has(.pk:not(.light)) { background: #0D0809; } }
+</style>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="outils.html" data-tools>Outils</a><a class="btn" href="compte.html" data-account>Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <section class="hero">
+    <p class="eyebrow">Outil gratuit · sans compte</p>
+    <h1>Ton <em>presskit</em>, prêt à envoyer</h1>
+    <p class="lede">Remplis les champs, le presskit se met à jour à droite. Télécharge-le en PDF quand il te plaît. Rien n'est envoyé : ton brouillon reste dans ce navigateur.</p>
+  </section>
+
+  <div class="studio">
+  <form class="panel" id="form" autocomplete="off">
+    <fieldset>
+      <legend>Artiste</legend>
+      <label>Nom d'artiste<input name="nom" placeholder="euhZ"></label>
+      <div class="row2">
+        <label>Style<input name="genre" placeholder="Rap / Rage"></label>
+        <label>Ville<input name="ville" placeholder="Paris"></label>
+      </div>
+      <label>Photo<input type="file" id="photo" accept="image/*"></label>
+      <button type="button" class="go ghost" id="photo-off" hidden>Retirer la photo</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>Look</legend>
+      <div class="opts" role="radiogroup" aria-label="Fond">
+        <label><input type="radio" name="theme" value="dark"><span>Fond sombre</span></label>
+        <label><input type="radio" name="theme" value="light"><span>Fond clair</span></label>
+      </div>
+      <div class="row2">
+        <label>Couleur<input type="color" name="accent"></label>
+        <label>Police du nom
+          <select name="police">
+            <option value="display">Moderne</option>
+            <option value="dream">Gothique</option>
+            <option value="body">Simple</option>
+          </select>
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Bio</legend>
+      <label>Ton histoire en quelques lignes<textarea name="bio" rows="6" placeholder="D'où tu viens, ton son, tes influences, ce qui arrive…"></textarea></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Chiffres</legend>
+      <label>Un chiffre par ligne<textarea name="chiffres" placeholder="12 000 auditeurs mensuels&#10;3,4 M streams&#10;45 k abonnés TikTok"></textarea></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Sorties &amp; presse</legend>
+      <label>Sorties, une par ligne<textarea name="sorties" placeholder="Nom du single — 2026&#10;Nom de l'EP — 2025"></textarea></label>
+      <label>Presse, dates, premières parties…<textarea name="presse" placeholder="« Une voix à part. » — Nom du média&#10;Première partie de X — La Cigale"></textarea></label>
+      <p class="hint">Sépare le détail avec un tiret : « Titre — 2026 ».</p>
+    </fieldset>
+
+    <fieldset>
+      <legend>Liens</legend>
+      <label>Spotify<input name="spotify" inputmode="url" placeholder="open.spotify.com/artist/…"></label>
+      <label>Instagram<input name="instagram" inputmode="url" placeholder="instagram.com/…"></label>
+      <label>TikTok<input name="tiktok" inputmode="url" placeholder="tiktok.com/@…"></label>
+      <label>YouTube<input name="youtube" inputmode="url" placeholder="youtube.com/@…"></label>
+      <label>Site<input name="site" inputmode="url" placeholder="monsite.fr"></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Contact</legend>
+      <label>Booking / e-mail<input name="email" type="email" placeholder="booking@…"></label>
+      <div class="row2">
+        <label>Management<input name="manager" placeholder="Nom"></label>
+        <label>Téléphone<input name="tel" type="tel"></label>
+      </div>
+    </fieldset>
+
+    <div class="actions">
+      <button type="button" class="go" id="pdf">Télécharger en PDF</button>
+      <button type="button" class="go ghost" id="reset">Tout effacer</button>
+    </div>
+    <p class="status" id="status" role="status"></p>
+    <p class="hint">Dans la fenêtre d'impression, choisis « Enregistrer au format PDF » et coche « Graphiques d'arrière-plan ».</p>
+  </form>
+
+  <div class="preview"><article class="doc pk" id="doc"></article></div>
+</div>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="outils.html">Tous les outils</a><a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a>
+  </nav>
+</footer>
+<script src="assets/tools-menu.js?v=5"></script>
+<script src="assets/outils-doc.js"></script>
+<script>
+"use strict";
+const KEY = "onirique-presskit";
+const DEFAULTS = { theme: "dark", accent: "#E23444", police: "display", photo: "" };
+const FONTS = { display: "var(--f-display)", dream: "var(--f-dream)", body: "var(--f-body)" };
+const LINKS = [["spotify", "Spotify"], ["instagram", "Instagram"], ["tiktok", "TikTok"], ["youtube", "YouTube"], ["site", "Site"]];
+const { esc, lines, split } = Outils;
+
+const form = document.getElementById("form");
+const doc = document.getElementById("doc");
+const status = document.getElementById("status");
+let state = Outils.load(KEY, DEFAULTS);
+
+function list(text, quote) {
+  return lines(text).map((line) => {
+    const [main, detail] = split(line);
+    const body = quote ? `<blockquote>${esc(main)}</blockquote>` : `<strong>${esc(main)}</strong>`;
+    return `<li>${body}${detail ? `<small>${esc(detail)}</small>` : ""}</li>`;
+  }).join("");
+}
+
+function stat(line) {
+  // « 12 000 auditeurs » → gros chiffre + libellé
+  const m = /^(\d[\d\s.,]*\s?[kKmM]?\+?)\s+(.+)$/.exec(line);
+  return m ? `<div class="pk-stat"><b>${esc(m[1])}</b><span>${esc(m[2])}</span></div>`
+           : `<div class="pk-stat"><span>${esc(line)}</span></div>`;
+}
+
+function render() {
+  const s = state;
+  doc.className = "doc pk" + (s.theme === "light" ? " light" : "");
+  doc.style.setProperty("--a", s.accent || DEFAULTS.accent);
+  doc.style.setProperty("--ft", FONTS[s.police] || FONTS.display);
+  const tag = [s.genre, s.ville].filter(Boolean).map(esc).join(" · ");
+  const links = LINKS.filter(([k]) => s[k]?.trim()).map(([k, label]) =>
+    `<li><a href="${esc(Outils.url(s[k]))}"><b>${label}</b>${esc(s[k].trim().replace(/^https?:\/\/(www\.)?/i, ""))}</a></li>`).join("");
+  const contact = [s.email && `<a href="mailto:${esc(s.email)}">${esc(s.email)}</a>`, s.manager && `Management : ${esc(s.manager)}`, s.tel && esc(s.tel)].filter(Boolean);
+  const sorties = list(s.sorties), presse = list(s.presse, true);
+
+  doc.innerHTML = `
+    <header class="pk-hero">
+      ${s.photo ? `<img src="${esc(s.photo)}" alt="">` : ""}
+      <div class="pk-title">
+        ${tag ? `<p class="pk-tag">${tag}</p>` : ""}
+        <h2 class="pk-name">${esc(s.nom || "Ton nom d'artiste")}</h2>
+      </div>
+    </header>
+    <div class="pk-body">
+      ${s.bio?.trim() ? `<section><h3>Bio</h3><p class="pk-bio">${esc(s.bio.trim())}</p></section>` : ""}
+      ${lines(s.chiffres).length ? `<section><h3>En chiffres</h3><div class="pk-stats">${lines(s.chiffres).map(stat).join("")}</div></section>` : ""}
+      ${sorties || presse ? `<div class="pk-cols">
+        ${sorties ? `<section><h3>Sorties</h3><ul>${sorties}</ul></section>` : ""}
+        ${presse ? `<section><h3>Presse &amp; live</h3><ul>${presse}</ul></section>` : ""}
+      </div>` : ""}
+      ${links || contact.length ? `<div class="pk-cols">
+        ${links ? `<section class="pk-links"><h3>Écouter &amp; suivre</h3><ul>${links}</ul></section>` : ""}
+        ${contact.length ? `<section><h3>Contact</h3><div class="pk-contact"><strong>${esc(s.nom || "Booking")}</strong>${contact.map((c) => `<span>${c}</span>`).join("")}</div></section>` : ""}
+      </div>` : ""}
+    </div>`;
+  document.getElementById("photo-off").hidden = !s.photo;
+  status.textContent = Outils.save(KEY, s) ? "Brouillon enregistré sur cet appareil." : "Brouillon trop lourd pour être gardé : pense à télécharger ton PDF.";
+}
+
+Outils.bindForm(form, state, render);
+
+document.getElementById("photo").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try { state.photo = await Outils.readImage(file, 1400); render(); }
+  catch { status.textContent = "Cette image n'a pas pu être lue. Essaie un JPG ou un PNG."; }
+  e.target.value = "";
+});
+document.getElementById("photo-off").addEventListener("click", () => { state.photo = ""; render(); });
+document.getElementById("pdf").addEventListener("click", () => window.print());
+document.getElementById("reset").addEventListener("click", () => {
+  if (!confirm("Effacer tout le presskit ?")) return;
+  Outils.clear(KEY);
+  location.reload();
+});
+
+render();
+</script>
+</html>

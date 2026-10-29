@@ -1,0 +1,44 @@
+/* Presskit et devis : formulaire à gauche, document à droite (presskit.html, devis.html). */
+:root { --deep-2: #2A0A0E; --f-dream: "Grenze Gotisch", Georgia, serif; }
+[hidden] { display: none !important; }
+.studio { display: grid; grid-template-columns: minmax(300px, 420px) 1fr; gap: 28px; padding: 0 var(--gutter) 60px; max-width: 1400px; margin: 0 auto; align-items: start; }
+@media (max-width: 900px) { .studio { grid-template-columns: 1fr; } }
+
+.panel { display: grid; gap: 14px; }
+.panel fieldset { border: 1px solid var(--line); background: var(--deep); border-radius: 14px; padding: 16px; margin: 0; display: grid; gap: 12px; min-width: 0; }
+.panel legend { font: 500 12px var(--f-mono); text-transform: uppercase; letter-spacing: .12em; color: var(--ember); padding: 0 6px; }
+.panel label { display: grid; gap: 5px; font-size: 13px; color: var(--haze); }
+.panel .hint { font-size: 12px; color: var(--haze); opacity: .8; margin: 0; }
+.panel input:not([type=checkbox]):not([type=radio]):not([type=color]), .panel textarea, .panel select {
+  width: 100%; background: var(--night); color: var(--mist); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; font: 15px var(--f-body);
+}
+.panel textarea { min-height: 84px; resize: vertical; }
+.panel input:focus, .panel textarea:focus, .panel select:focus { outline: 2px solid var(--ember); outline-offset: 1px; }
+.panel input[type=color] { width: 54px; height: 36px; border: 1px solid var(--line); border-radius: 8px; background: none; padding: 2px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.check { display: flex !important; align-items: center; gap: 8px; color: var(--mist) !important; }
+.opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.opts label { display: block; }
+.opts input { position: absolute; opacity: 0; }
+.opts span { display: inline-block; padding: 8px 14px; border: 1px solid var(--line); border-radius: 99px; color: var(--mist); cursor: pointer; font-size: 14px; }
+.opts input:checked + span { background: var(--ember); border-color: var(--ember); }
+.opts input:focus-visible + span { outline: 2px solid var(--mist); }
+
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.status { font-size: 12px; color: var(--haze); }
+
+.preview { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow: auto; border-radius: 14px; }
+@media (max-width: 900px) { .preview { position: static; max-height: none; } }
+.doc { container-type: inline-size; width: 100%; max-width: 794px; margin: 0 auto; box-shadow: 0 20px 60px rgba(0,0,0,.5); border-radius: 4px; overflow: hidden; }
+
+@media print {
+  header, footer, .hero, .panel, .skip, .no-print { display: none !important; }
+  main.wrap { max-width: none; padding: 0; margin: 0; }
+  .studio { display: block; }
+  .preview { position: static; max-height: none; overflow: visible; }
+  .doc { max-width: none; box-shadow: none; border-radius: 0; }
+  body { background: #fff; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+.studio { padding: 0; margin-top: 28px; }
+.panel .go { font-size: 14px; padding: 12px 20px; }

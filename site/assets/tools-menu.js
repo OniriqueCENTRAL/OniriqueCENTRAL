@@ -30,6 +30,10 @@ window.OniriqueTools = [
     ["Calculateur revenus streaming", "revenus-streaming.html", "Une fourchette de revenus pour un nombre d'écoutes."],
     ["Partage des droits", "partage.html", "Qui touche quoi sur un titre, dans une feuille à signer."],
     ["Checklist de sortie", "checklist-sortie.html", "Les étapes d'une sortie, datées de J-30 à J+7."],
+    ["Presskit", "presskit.html", "Bio, photo, chiffres, sorties et contact dans un presskit à ta couleur, en PDF."],
+  ]],
+  ["Pro", [
+    ["Devis", "devis.html", "Un devis de beatmaker, graphiste ou ingé son, total et TVA calculés, en PDF."],
   ]],
 ];
 
