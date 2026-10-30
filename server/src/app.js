@@ -36,6 +36,7 @@ import { announcementView, deleteAccount, maintenanceView, mountControl, packVie
 import { enrollment, matchStep, newRecoveryCodes, newSecret, recoveryHash } from './totp.js';
 import { mountLinkPages } from './linkpage.js';
 import { mountSounds } from './sounds.js';
+import { mountCut } from './cut.js';
 import { mountBeatStoreHooks } from './beatstore.js';
 import { ownsGoogleState, googleMailerCallback } from './packsend.js';
 import { mountPush } from './push.js';
@@ -545,6 +546,7 @@ export function createApp() {
 
   mountLinkPages(app, { requireUser, receiveImage, removeMedia, wrap });
   mountSounds(app, { requireUser, receiveFile, receiveImage, removeMedia, wrap });
+  mountCut(app, { requireUser, receiveFile, wrap });
   mountPush(app, { requireUser });
 
   // La photo d'ingé d'un fondateur : celle des crédits, distincte de la photo du compte.

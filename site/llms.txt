@@ -30,6 +30,7 @@
 - [Checklist de sortie](https://onirique.store/checklist-sortie) : étapes datées d'une sortie, de J-30 à J+7.
 - [Presskit](https://onirique.store/presskit) : presskit d'artiste personnalisé, en PDF.
 - [Devis](https://onirique.store/devis) : devis de beatmaker, graphiste ou ingé son, en PDF.
+- [ONIRIQUE CUT](https://onirique.store/cut) : clips montés sur le beat d'un son, vidéo 9:16 pour TikTok (membres et abonnés CLOUD).
 - [Questions fréquentes](https://onirique.store/#faq) : compatibilité, installation, latence.
 
 ## Informations légales

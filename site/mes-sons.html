@@ -2955,6 +2955,12 @@ async function unpack(p, t) {
     await refresh();
   } catch (error) { fail(error); }
 }
+// ONIRIQUE CUT dans un nouvel onglet, avec la version en avant ; les paroles passent par sessionStorage (trop longues pour l'adresse).
+function openCut(t, v) {
+  try { sessionStorage.setItem("onirique.cut.lyrics", t.lyrics || ""); } catch { /* stockage indisponible */ }
+  const q = new URLSearchParams({ src: v.url, name: v.filename, title: t.title, bpm: t.bpm || "" });
+  open("cut.html?" + q, "_blank");
+}
 function openDetails(tid, view = "main") { detailsId = tid; detailsView = view; renderDetails(); if (!$("details").open) $("details").showModal(); }
 function drawPeaks(canvas, peaks) {
   requestAnimationFrame(() => {
@@ -3085,7 +3091,8 @@ function renderDetails() {
         item("star", "Étape", { state: OP.stageLabel(t.stage) || "Non précisée", chevron: true, onclick: (event) => stageMenu(event.currentTarget, t) })),
       group(
         item("volume", "Volume avant sortie", { hint: "LUFS, pics, et ce que chaque plateforme fera du titre", chevron: true, onclick: () => { detailsView = "tool-lufs"; renderDetails(); } }),
-        item("repeat", "Comparer à une référence", { hint: "Ton titre face à un son de référence, volumes égalisés", chevron: true, onclick: () => { detailsView = "tool-ref"; renderDetails(); } })),
+        item("repeat", "Comparer à une référence", { hint: "Ton titre face à un son de référence, volumes égalisés", chevron: true, onclick: () => { detailsView = "tool-ref"; renderDetails(); } }),
+        item("play", "Monter une vidéo sur le beat", { hint: "Tes clips coupés sur le tempo du titre, en vidéo TikTok (ONIRIQUE CUT)", onclick: () => openCut(t, v) })),
       group(
         item("queue", "Statistiques", { state: t.plays ? t.plays + " écoute" + (t.plays > 1 ? "s" : "") : "", chevron: true, onclick: () => { detailsView = "stats"; renderDetails(); } }),
         item("star", "Répartition", { hint: "Les parts de chacun, et la fiche à signer en PDF", state: t.splits.length ? t.splits.length + " personne" + (t.splits.length > 1 ? "s" : "") : "", chevron: true,

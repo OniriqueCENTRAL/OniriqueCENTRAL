@@ -4,6 +4,7 @@
 window.OniriqueTools = [
   ["Abonnement", [
     ["ONIRIQUE CLOUD et page de liens", "cloud.html", "Tes projets, tes versions, tes collabs et ta page de liens : 1,99 € par mois ou 9,99 € par an."],
+    ["ONIRIQUE CUT", "cut.html", "Tes clips montés sur le beat de ton son, en vidéo 9:16 pour TikTok. Inclus pour les membres et avec CLOUD."],
   ]],
   ["Analyser", [
     ["BPM et tonalité", "bpm-tonalite.html", "Le tempo, la gamme et le detune d'un morceau, et un WAV calé sur la grille."],
