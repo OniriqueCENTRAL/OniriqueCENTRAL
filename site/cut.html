@@ -98,6 +98,7 @@
           <div class="row">
             <button class="go" type="button" id="audio-pick">Choisir un fichier</button>
             <button class="go ghost" type="button" id="cloud-pick">Dans ONIRIQUE CLOUD</button>
+            <button class="mini" type="button" id="resume" hidden></button>
             <input id="audio-file" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" hidden>
           </div>
           <div class="picker" id="cloud-list" hidden></div>
@@ -155,7 +156,11 @@
           <label>Paroles synchronisées (facultatif)
             <textarea id="lyrics" placeholder="[00:12.50] Première ligne&#10;[00:15.80] Deuxième ligne"></textarea>
           </label>
-          <p class="muted">Une ligne par phrase, avec le moment où elle commence dans le morceau. Les paroles synchronisées dans ONIRIQUE CLOUD arrivent ici toutes seules.</p>
+          <p class="muted" id="lyrics-help"></p>
+          <div class="row" id="lyrics-cloud" hidden>
+            <button class="mini" type="button" id="lyrics-pull">Reprendre celles de CLOUD</button>
+            <button class="mini" type="button" id="lyrics-push">Enregistrer dans CLOUD</button>
+          </div>
         </div>
       </div>
     </div>
@@ -197,6 +202,9 @@ const savePrefs = () => { try { localStorage.setItem(PREFS, JSON.stringify(prefs
 
 const sound = { name: "", buffer: null, env: null, rms: null, bpm: 0, phase: 0, start: 0 };
 let clips = [], segments = [], lyrics = [], seed = 1;
+// Le titre de ONIRIQUE CLOUD en cours (null pour un fichier) et ses paroles telles que CLOUD les a.
+let cloud = null;
+const LAST = "onirique.cut.last";
 
 // ——— Accès : membres ONIRIQUE et abonnés CLOUD (le même droit que ONIRIQUE CLOUD) ———
 async function gate() {
@@ -275,10 +283,13 @@ async function loadSound(file, extra = {}) {
     const bpm = extra.bpm > 0 ? extra.bpm : await tempoOf(mono.slice());
     Object.assign(sound, { name: OniriqueAudio.baseName(file), buffer, env, rms, bpm: bpm || 120 });
     sound.phase = phaseOf(env, sound.bpm);
-    sound.start = bestStart();
-    if (!$("title").value) $("title").value = extra.title || sound.name;
-    if (extra.lyrics != null) $("lyrics").value = extra.lyrics;
+    sound.start = extra.start != null ? clampStart(extra.start) : bestStart();
+    cloud = extra.cloud || null;
+    // Un nouveau son repart avec son propre titre et ses propres paroles.
+    $("title").value = extra.title || sound.name;
+    $("lyrics").value = cloud ? cloud.lyrics : "";
     readLyrics();
+    showCloudLyrics();
     $("audio-state").textContent = "« " + file.name + " » · " + OniriqueAudio.clock(buffer.duration) + (bpm ? "" : " · tempo introuvable, règle-le à la main");
     $("bpm-row").hidden = $("step-window").hidden = $("step-clips").hidden = $("step-edit").hidden = false;
     refresh();
@@ -289,27 +300,85 @@ async function loadSound(file, extra = {}) {
   }
 }
 
-// Un son de ONIRIQUE CLOUD : la version en avant, son BPM et ses paroles s'il en a.
+// ——— ONIRIQUE CLOUD : ses titres, le dernier utilisé, ses paroles toujours à jour ———
+async function cloudTracks() {
+  const response = await fetch("/api/me/sounds", { headers: { Authorization: "Bearer " + TOKEN } }).catch(() => null);
+  if (!response || !response.ok) throw new Error("ONIRIQUE CLOUD ne répond pas. Réessaie dans un instant.");
+  const data = await response.json();
+  return (data.projects || []).flatMap((p) => p.tracks.map((t) => ({ p, t, v: t.versions.find((v) => v.id === t.currentId) || t.versions.at(-1) }))).filter((x) => x.v);
+}
+const syncedLines = (text) => (text || "").split("\n").filter((l) => /^\s*\[\d+:\d/.test(l)).length;
+/** Charge un titre de CLOUD (la version en avant), avec son BPM, ses paroles et, pour une reprise, le passage choisi. */
+async function loadCloud({ t, v }, keep = {}) {
+  $("audio-state").textContent = "Téléchargement de « " + t.title + " »…";
+  const response = await fetch(v.url).catch(() => null);
+  if (!response || !response.ok) { $("audio-state").textContent = "Ce son n'a pas pu être téléchargé. Réessaie dans un instant."; return; }
+  const blob = await response.blob();
+  await loadSound(new File([blob], v.filename || t.title, { type: blob.type }),
+    { title: t.title, bpm: keep.bpm || t.bpm, start: keep.start, cloud: { trackId: t.id, title: t.title, lyrics: t.lyrics || "" } });
+}
+async function loadCloudId(id, keep) {
+  try {
+    const found = (await cloudTracks()).find((x) => x.t.id === id);
+    if (found) return await loadCloud(found, keep);
+    $("audio-state").textContent = "Ce titre n'est plus dans ton ONIRIQUE CLOUD.";
+    try { localStorage.removeItem(LAST); } catch { /* stockage indisponible */ }
+    $("resume").hidden = true;
+  } catch (error) { $("audio-state").textContent = error.message; }
+}
+/** Le titre CLOUD en cours, gardé pour le retrouver tel quel la prochaine fois (passage et tempo compris). */
+function remember() {
+  if (!cloud || !sound.buffer) return;
+  try { localStorage.setItem(LAST, JSON.stringify({ trackId: cloud.trackId, title: cloud.title, start: sound.start, bpm: sound.bpm })); } catch { /* stockage indisponible */ }
+}
+const editedLyrics = () => !!cloud && $("lyrics").value.trim() !== cloud.lyrics.trim();
+function showCloudLyrics() {
+  const edited = editedLyrics(), n = cloud ? syncedLines(cloud.lyrics) : 0;
+  $("lyrics-cloud").hidden = !edited;
+  $("lyrics-help").textContent = !cloud ? "Une ligne par phrase, avec le moment où elle commence dans le morceau. Un son pris dans ONIRIQUE CLOUD arrive avec ses paroles synchronisées."
+    : edited ? "Tu as modifié les paroles ici : enregistre-les dans CLOUD pour les garder sur le titre, ou reprends celles de CLOUD."
+    : n ? "Paroles synchronisées dans ONIRIQUE CLOUD (" + n + " ligne" + (n > 1 ? "s" : "") + ") : elles défilent sur la vidéo et se mettent à jour quand tu les changes dans CLOUD."
+    : cloud.lyrics.trim() ? "Ce titre a des paroles dans CLOUD, mais pas encore synchronisées : synchronise-les dans CLOUD (Paroles) pour les voir défiler ici."
+    : "Pas encore de paroles pour ce titre dans CLOUD. Tu peux les écrire ici et les enregistrer dans CLOUD.";
+}
+/** Les paroles du titre telles qu'elles sont dans CLOUD maintenant ; quiet : sans jamais écraser ce qui a été modifié ici. */
+async function pullLyrics(quiet) {
+  if (!cloud || (quiet && editedLyrics())) return;
+  if (!quiet && editedLyrics() && !confirm("Remplacer les paroles modifiées ici par celles de ONIRIQUE CLOUD ?")) return;
+  const id = cloud.trackId;
+  try {
+    const found = (await cloudTracks()).find((x) => x.t.id === id);
+    if (!found || !cloud || cloud.trackId !== id || (quiet && editedLyrics())) return;
+    cloud.lyrics = found.t.lyrics || "";
+    $("lyrics").value = cloud.lyrics;
+    readLyrics(); showCloudLyrics();
+    if (!playing && segments.length) draw(position, false);
+  } catch (error) { if (!quiet) alert(error.message); }
+}
+async function pushLyrics() {
+  const button = $("lyrics-push");
+  button.disabled = true;
+  try {
+    const response = await fetch("/api/me/sounds/tracks/" + cloud.trackId, { method: "PATCH",
+      headers: { Authorization: "Bearer " + TOKEN, "Content-Type": "application/json" }, body: JSON.stringify({ lyrics: $("lyrics").value }) });
+    if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Les paroles n'ont pas pu être enregistrées.");
+    cloud.lyrics = $("lyrics").value;
+    await pullLyrics(true); // la version rangée par le serveur
+  } catch (error) { alert(error.message); } finally { button.disabled = false; showCloudLyrics(); }
+}
+
 async function openCloud() {
   const list = $("cloud-list");
   if (!list.hidden) { list.hidden = true; return; }
   list.hidden = false; list.replaceChildren(Object.assign(document.createElement("p"), { className: "muted", textContent: "Chargement…" }));
   try {
-    const data = await (await fetch("/api/me/sounds", { headers: { Authorization: "Bearer " + TOKEN } })).json();
-    const items = (data.projects || []).flatMap((p) => p.tracks.map((t) => ({ p, t, v: t.versions.find((v) => v.id === t.currentId) || t.versions.at(-1) }))).filter((x) => x.v);
+    const items = await cloudTracks();
     if (!items.length) { list.firstChild.textContent = "Aucun son dans ton ONIRIQUE CLOUD pour l'instant."; return; }
     list.replaceChildren(...items.map(({ p, t, v }) => {
       const b = document.createElement("button");
       b.type = "button";
-      b.append(t.title, Object.assign(document.createElement("small"), { textContent: p.title }));
-      b.onclick = async () => {
-        list.hidden = true;
-        $("audio-state").textContent = "Téléchargement de « " + t.title + " »…";
-        const response = await fetch(v.url).catch(() => null);
-        if (!response || !response.ok) { $("audio-state").textContent = "Ce son n'a pas pu être téléchargé. Réessaie dans un instant."; return; }
-        const blob = await response.blob();
-        loadSound(new File([blob], v.filename || t.title, { type: blob.type }), { title: t.title, bpm: t.bpm, lyrics: t.lyrics || "" });
-      };
+      b.append(t.title, Object.assign(document.createElement("small"), { textContent: p.title + (syncedLines(t.lyrics) ? " · paroles synchro" : "") }));
+      b.onclick = () => { list.hidden = true; loadCloud({ t, v }); };
       return b;
     }));
   } catch { list.firstChild.textContent = "ONIRIQUE CLOUD ne répond pas. Réessaie dans un instant."; }
@@ -549,6 +618,7 @@ function drawScrub(t) {
 function refresh() {
   stop();
   if (sound.buffer) sound.start = clampStart(sound.start);
+  remember();
   build();
   renderClips();
   $("bpm").textContent = sound.bpm ? (Math.round(sound.bpm * 10) / 10).toString().replace(".", ",") : "—";
@@ -689,15 +759,26 @@ function start() {
   $("artist").value = prefs.artist || "";
   $("artist").oninput = () => { prefs.artist = $("artist").value; savePrefs(); if (!playing) draw(position, false); };
   $("title").oninput = () => { if (!playing) draw(position, false); };
-  $("lyrics").oninput = () => { readLyrics(); if (!playing) draw(position, false); };
+  $("lyrics").oninput = () => { readLyrics(); showCloudLyrics(); if (!playing) draw(position, false); };
+  $("lyrics-pull").onclick = () => pullLyrics(false);
+  $("lyrics-push").onclick = pushLyrics;
+  showCloudLyrics();
+  // Retour sur l'onglet (après avoir synchronisé dans CLOUD, par exemple) : les paroles de CLOUD sont reprises.
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && !recording) pullLyrics(true); });
   addEventListener("resize", () => { drawWave(); drawScrub(now()); });
   dragWindow(); dragScrub();
   // Les polices du site, chargées avant de dessiner du texte sur la vidéo.
   for (const [weight, family] of Object.values(FONTS)) document.fonts.load(`${weight} 80px "${family}"`).then(() => !playing && segments.length && draw(position, false));
-  // Ouvert depuis ONIRIQUE CLOUD (?src=…&name=…&title=…&bpm=…).
-  const q = new URLSearchParams(location.search);
-  OniriqueAudio.fromLink((file) => loadSound(file, { title: q.get("title") || "", bpm: Number(q.get("bpm")) || 0, lyrics: sessionStorage.getItem("onirique.cut.lyrics") }),
-    (error) => { $("audio-state").textContent = error.message; });
+  // Ouvert depuis un titre de ONIRIQUE CLOUD (?track=…) ; sinon, le dernier titre CLOUD utilisé se reprend d'un clic.
+  const q = new URLSearchParams(location.search), track = Number(q.get("track"));
+  let last = null;
+  try { last = JSON.parse(localStorage.getItem(LAST) || "null"); } catch { /* rien de mémorisé */ }
+  if (track) loadCloudId(track, last && last.trackId === track ? last : {});
+  else if (last && last.trackId) {
+    $("resume").hidden = false;
+    $("resume").textContent = "Reprendre « " + last.title + " »";
+    $("resume").onclick = () => { $("resume").hidden = true; loadCloudId(last.trackId, last); };
+  }
 }
 
 gate();
