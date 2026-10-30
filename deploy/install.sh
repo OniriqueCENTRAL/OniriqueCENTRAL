@@ -165,17 +165,13 @@ ufw allow OpenSSH >/dev/null
 ufw allow 'Nginx Full' >/dev/null
 ufw --force enable >/dev/null
 
-# Sauvegarde chaque nuit : copie cohérente de la base, clés de signature, fichiers des plugins. 14 jours gardés.
-cat > /etc/cron.daily/onirique-central-backup <<EOF
-#!/bin/sh
-set -e
-D=/var/backups/onirique-central/\$(date +%F)
-mkdir -p "\$D"
-sqlite3 $DATA/central.db ".backup '\$D/central.db'"
-cp -a $DATA/keys $DATA/files $DATA/media "\$D/"
-find /var/backups/onirique-central -mindepth 1 -maxdepth 1 -type d -mtime +14 -exec rm -rf {} +
-EOF
-chmod +x /etc/cron.daily/onirique-central-backup
+# Sauvegarde chaque nuit (deploy/onirique-backup) : base, clés de signature, fichiers des plugins, images. 14 jours
+# gardés ; un fichier inchangé d'un jour à l'autre n'est stocké qu'une fois.
+install -m 755 "$(dirname "$0")/onirique-backup" /usr/local/bin/onirique-backup
+printf '#!/bin/sh
+exec /usr/local/bin/onirique-backup
+' > /etc/cron.daily/onirique-central-backup
+chmod 755 /etc/cron.daily/onirique-central-backup
 
 sleep 2
 curl -fsS http://127.0.0.1:4850/api/health && echo

@@ -1,0 +1,21 @@
+#!/bin/sh
+# La sauvegarde de la nuit (lancée par /etc/cron.daily/onirique-central-backup) : copie cohérente de la base, clés de
+# signature, fichiers des plugins et images. 14 jours gardés.
+# Chaque jour est une copie complète qui se restaure seule, mais un fichier qui n'a pas changé depuis la veille n'y prend
+# pas de place : il est partagé avec la sauvegarde précédente (lien physique, rsync --link-dest).
+set -e
+DATA=/var/lib/onirique-central
+ROOT=/var/backups/onirique-central
+TODAY=$(date +%F)
+D=$ROOT/$TODAY
+PREV=$(find "$ROOT" -mindepth 1 -maxdepth 1 -type d ! -name "$TODAY" | sort | tail -n 1)
+mkdir -p "$D"
+sqlite3 "$DATA/central.db" ".backup '$D/central.db'"
+for part in keys files media; do
+  if [ -n "$PREV" ] && [ -d "$PREV/$part" ]; then
+    rsync -a --delete --link-dest="$PREV/$part" "$DATA/$part/" "$D/$part/"
+  else
+    rsync -a --delete "$DATA/$part/" "$D/$part/"
+  fi
+done
+find "$ROOT" -mindepth 1 -maxdepth 1 -type d -mtime +14 -exec rm -rf {} +

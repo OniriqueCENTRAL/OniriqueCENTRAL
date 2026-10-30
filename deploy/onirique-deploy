@@ -84,6 +84,13 @@ rsync -a --exclude build.ps1 --exclude pages.mjs "$work/site/" "$site/"
 # Les outils du serveur qui viennent du dépôt (livraison, publication des plugins, ce script).
 for tool in "$work"/deploy/onirique-*; do install -m 755 "$tool" /usr/local/bin/; done
 install -m 644 "$work/deploy/publish-plugin.mjs" /usr/local/lib/onirique/publish-plugin.mjs
+# La sauvegarde de la nuit passe par deploy/onirique-backup (copies partagées entre les jours).
+printf '#!/bin/sh
+exec /usr/local/bin/onirique-backup
+' > /etc/cron.daily/onirique-central-backup
+chmod 755 /etc/cron.daily/onirique-central-backup
+# Les copies du serveur gardées à chaque envoi : les 30 dernières suffisent pour revenir en arrière.
+find /root/sauvegardes -mindepth 1 -maxdepth 1 -type d -name '20[0-9][0-9][0-9][0-9][0-9][0-9]T*' | sort | head -n -30 | xargs -r rm -rf
 
 echo "$commit" > "$state/commit"
 echo "$(date -u +%FT%TZ) $who : $label" >> "$state/journal"
