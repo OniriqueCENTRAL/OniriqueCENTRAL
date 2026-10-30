@@ -248,7 +248,7 @@ export async function googleMailerCallback(req, res) {
         from_name = excluded.from_name, from_email = excluded.from_email, updated_at = excluded.updated_at`,
     entry.userId, email, seal(t.refresh_token), entry.fromName, email, now());
   } catch (error) { result = error.message; }
-  res.redirect(`${config.siteUrl}/${entry?.back || 'mes-sons'}.html?google=${encodeURIComponent(result)}${entry?.projectId ? `#/p/${entry.projectId}` : ''}`);
+  res.redirect(`${config.siteUrl}/${entry?.back || 'mes-sons'}?google=${encodeURIComponent(result)}${entry?.projectId ? `#/p/${entry.projectId}` : ''}`);
 }
 
 //------------------------------------------------------------------------------ Routes

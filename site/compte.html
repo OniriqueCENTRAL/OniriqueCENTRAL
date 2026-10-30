@@ -144,7 +144,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
 <header>
   <div class="wrap">
     <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
-    <div class="between"><a class="btn btn-ghost" href="/">Retour au site</a><a href="compte.html" data-account data-account-manual hidden>Compte</a></div>
+    <div class="between"><a class="btn btn-ghost" href="/">Retour au site</a><a href="compte" data-account data-account-manual hidden>Compte</a></div>
   </div>
 </header>
 
@@ -168,7 +168,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
         <label class="check" id="remember-field"><input type="checkbox" id="remember" checked><span>Se souvenir de moi sur cet appareil</span></label>
         <label id="ref-field" hidden>Code de parrainage (facultatif)<input id="ref" maxlength="12" autocomplete="off" spellcheck="false" style="text-transform:uppercase;font-family:var(--f-mono)"></label>
         <label class="check" id="news-field" hidden><input type="checkbox" id="news"><span>J'accepte de recevoir par e-mail les nouveautés, offres et codes promo d'ONIRIQUE. Désinscription en un clic dans chaque message.</span></label>
-        <label class="check" id="terms-field" hidden><input type="checkbox" id="terms"><span>J'accepte les <a href="cgv.html" target="_blank" rel="noopener">conditions générales</a> et j'ai lu la <a href="confidentialite.html" target="_blank" rel="noopener">politique de confidentialité</a>.</span></label>
+        <label class="check" id="terms-field" hidden><input type="checkbox" id="terms"><span>J'accepte les <a href="cgv" target="_blank" rel="noopener">conditions générales</a> et j'ai lu la <a href="confidentialite" target="_blank" rel="noopener">politique de confidentialité</a>.</span></label>
         <div class="error" id="error" role="alert"></div>
         <div class="notice" id="notice" role="status"></div>
         <div class="between">
@@ -188,7 +188,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
         <p class="muted" id="email-line"></p>
       </div>
       <div class="between">
-        <a class="btn btn-ghost" id="admin-link" href="admin.html" hidden>Administration</a>
+        <a class="btn btn-ghost" id="admin-link" href="admin" hidden>Administration</a>
         <button class="btn btn-ghost" id="logout" type="button">Se déconnecter</button>
       </div>
     </div>
@@ -300,7 +300,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
         <div class="eyebrow">Page de liens</div>
         <div class="between">
           <p class="muted" style="margin:0;max-width:52ch">Ta page à mettre en bio Instagram ou TikTok : tes plateformes, chacune ouverte directement dans son application. Apparence entièrement personnalisable.</p>
-          <a class="btn btn-primary" href="mes-liens.html">Créer ou modifier ma page</a>
+          <a class="btn btn-primary" href="mes-liens">Créer ou modifier ma page</a>
         </div>
       </div>
   
@@ -309,7 +309,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
         <div class="eyebrow">ONIRIQUE CLOUD</div>
         <div class="between">
           <p class="muted" style="margin:0;max-width:52ch">Ta musique en cours, rangée par projet, avec ses versions. Partage-la par un lien privé, vois qui écoute et lis les commentaires.</p>
-          <a class="btn btn-primary" href="mes-sons.html">Ouvrir ONIRIQUE CLOUD</a>
+          <a class="btn btn-primary" href="mes-sons">Ouvrir ONIRIQUE CLOUD</a>
         </div>
       </div>
   
@@ -391,7 +391,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
 
   <p class="muted" id="loading">Chargement…</p>
 
-  <nav class="legal" aria-label="Pages légales"><a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="remboursement.html">Rétractation et remboursement</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a></nav>
+  <nav class="legal" aria-label="Pages légales"><a href="mentions-legales">Mentions légales</a><a href="cgv">CGV et CGU</a><a href="remboursement">Rétractation et remboursement</a><a href="confidentialite">Confidentialité</a><a href="cookies">Cookies</a><a href="support">Support</a></nav>
 </main>
 
 <script src="assets/cropper.js?v=2"></script>
@@ -643,7 +643,7 @@ $("form").onsubmit = async (event) => {
     $("password").value = "";
     const me = await api("GET", "/me");
     show(me);
-    if (["mes-sons", "cloud"].includes(new URLSearchParams(location.search).get("next"))) { location.href = new URLSearchParams(location.search).get("next") + ".html"; return; }
+    if (["mes-sons", "cloud"].includes(new URLSearchParams(location.search).get("next"))) { location.href = new URLSearchParams(location.search).get("next"); return; }
     if (new URLSearchParams(location.search).get("next") === "telecharger" && me.user.emailVerified !== false) window.OniriqueDownload?.open();
   } catch (error) {
     $("error").textContent = error.message;
@@ -1183,7 +1183,7 @@ $("logout").onclick = async () => {
   if (!saved()) { show(null); $("notice").textContent = verified && verified + (verified.startsWith("Adresse") ? " Connectez-vous." : ""); return; }
   try {
     const me = await api("GET", "/me");
-    if (["mes-sons", "cloud"].includes(new URLSearchParams(location.search).get("next"))) { location.href = new URLSearchParams(location.search).get("next") + ".html"; return; }
+    if (["mes-sons", "cloud"].includes(new URLSearchParams(location.search).get("next"))) { location.href = new URLSearchParams(location.search).get("next"); return; }
     show(me);
     // Compte prêt (adresse validée) : le choix Windows / Mac s'ouvre tout de suite.
     if (wantsDownload && me.user.emailVerified !== false) window.OniriqueDownload?.open();

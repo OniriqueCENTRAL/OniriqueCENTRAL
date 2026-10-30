@@ -9,8 +9,8 @@
   const at = (hash) => (home ? hash : "/" + hash);
   // L'ordre des rubriques, partout : celui de l'en-tête de la page d'accueil.
   const SECTIONS = [
-    ["Boutique", "boutique.html"], ["Téléchargement", at("#telechargement")], ["Outils", "outils.html"],
-    ["Crédits", at("#credits")], ["FAQ", at("#faq")], ["Support", "support.html"],
+    ["Boutique", "boutique"], ["Téléchargement", at("#telechargement")], ["Outils", "outils"],
+    ["Crédits", at("#credits")], ["FAQ", at("#faq")], ["Support", "support"],
   ];
   const el = (tag, props = {}, ...children) => {
     const node = Object.assign(document.createElement(tag), props);
@@ -157,7 +157,7 @@ header .sn-lang { margin-left: 8px; }
 
   const tools = el("div", { className: "sn-tools", hidden: true }, ...(window.OniriqueTools || []).map(([group, list]) =>
     el("div", {}, el("h3", { textContent: group }), ...list.map(([name, href]) => el("a", { href, textContent: name })))),
-    el("a", { href: "outils.html", textContent: "Tous les outils →" }));
+    el("a", { href: "outils", textContent: "Tous les outils →" }));
   const links = el("nav", { className: "sn-links" });
   links.setAttribute("aria-label", "Rubriques");
   for (const [name, href] of SECTIONS) {
@@ -174,8 +174,8 @@ header .sn-lang { margin-left: 8px; }
   const socialsBox = el("div", { className: "sn-socials", hidden: true });
   const signedIn = (() => { try { return !!(sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token")); } catch { return false; } })();
   const account = el("div", { className: "sn-account" },
-    el("a", { className: "sn-ghost", href: "compte.html", textContent: signedIn ? "Mon compte" : "Connexion" }),
-    el("a", { className: "sn-primary", href: "boutique.html", textContent: "Acheter" }));
+    el("a", { className: "sn-ghost", href: "compte", textContent: signedIn ? "Mon compte" : "Connexion" }),
+    el("a", { className: "sn-primary", href: "boutique", textContent: "Acheter" }));
   const panel = el("div", { className: "sn-panel", hidden: true },
     el("div", { className: "sn-top" }, el("b", { textContent: "ONIRIQUE" }), close), links, socialsTitle, socialsBox, account);
   panel.setAttribute("role", "dialog");
@@ -263,7 +263,7 @@ header .sn-lang { margin-left: 8px; }
       el("p", { className: "sn-maint-eyebrow", textContent: "ONIRIQUE" }),
       el("h1", { textContent: "On revient vite." }),
       el("p", { className: "sn-maint-text", textContent: m.message || "Le site est en maintenance, le temps d'une petite intervention. Les plugins et ONIRIQUE CENTRAL continuent de fonctionner." }),
-      el("a", { href: "/compte.html", className: "sn-maint-link", textContent: "Espace équipe" }));
+      el("a", { href: "/compte", className: "sn-maint-link", textContent: "Espace équipe" }));
     document.documentElement.classList.add("sn-lock");
     document.body.append(page);
   };
@@ -301,8 +301,8 @@ header .sn-lang { margin-left: 8px; }
       box.append(el("h2", { textContent: "Crée ton compte d'abord" }),
         el("p", { className: "sn-dl-text", textContent: "ONIRIQUE CENTRAL se télécharge avec un compte ONIRIQUE gratuit, dont l'adresse e-mail est validée. C'est ce compte qui active tes plugins et tes essais." }),
         el("div", { className: "sn-dl-row" },
-          el("a", { className: "sn-dl-main", href: "/compte.html?inscription=1&next=telecharger", textContent: "Créer mon compte" }),
-          el("a", { className: "sn-dl-ghost", href: "/compte.html?next=telecharger", textContent: "J'ai déjà un compte" })));
+          el("a", { className: "sn-dl-main", href: "/compte?inscription=1&next=telecharger", textContent: "Créer mon compte" }),
+          el("a", { className: "sn-dl-ghost", href: "/compte?next=telecharger", textContent: "J'ai déjà un compte" })));
       return;
     }
     if (user.emailVerified === false) {

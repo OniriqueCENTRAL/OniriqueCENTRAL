@@ -159,7 +159,7 @@ const unsubscribedPage = (title, text) => `<!doctype html><html lang="fr"><meta 
 <div style="font:800 15px/1 'Arial Black',sans-serif;letter-spacing:.32em">ONIRIQUE</div>
 <h1 style="font:800 24px/1.25 'Arial Black',sans-serif;margin:22px 0 10px">${escapeHtml(title)}</h1>
 <p style="color:#b39a9d;margin:0 0 22px">${escapeHtml(text)}</p>
-<a href="${config.siteUrl}/compte.html" style="display:inline-block;padding:13px 24px;border-radius:999px;background:#f6eeee;color:#0d0809;font-weight:700;text-decoration:none">Mon compte</a>
+<a href="${config.siteUrl}/compte" style="display:inline-block;padding:13px 24px;border-radius:999px;background:#f6eeee;color:#0d0809;font-weight:700;text-decoration:none">Mon compte</a>
 </div></body></html>`;
 
 export function mountNewsletter(app, admin) {

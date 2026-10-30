@@ -245,7 +245,7 @@ try {
     const { url: again } = await call('POST', '/api/me/sounds/mailer/google', { token: bm.token, body: { projectId: pack, fromName: 'Kay Beats' } });
     const state = new URL(again).searchParams.get('state');
     const back = await call('GET', `/api/youtube/callback?state=${state}&code=bon-code`, { redirect: 'manual', expect: 302 });
-    assert.equal(back.headers.get('location'), `https://site.test/mes-sons.html?google=ok#/p/${pack}`);
+    assert.equal(back.headers.get('location'), `https://site.test/mes-sons?google=ok#/p/${pack}`);
     // Une demande ne sert qu'une fois.
     assert.match(decodeURIComponent((await call('GET', `/api/youtube/callback?state=${state}&code=bon-code`, { redirect: 'manual', expect: 302 })).headers.get('location')), /expirée/);
     const m = await call('GET', '/api/me/sounds/mailer', { token: bm.token });

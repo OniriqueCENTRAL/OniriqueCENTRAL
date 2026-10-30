@@ -93,8 +93,7 @@ export function authView() {
   queueMicrotask(() => (mode === 'register' ? name : email).focus());
   return h('div', { class: 'auth-box' }, hero(), englishOffer(),
     h('div', { class: 'segmented' }, tab('login', 'Connexion'), tab('register', 'Créer un compte')),
-    form,
-    h('p', { class: 'muted mono', style: { 'font-size': '11px', 'margin-top': '16px' } }, state.data.settings.serverUrl));
+    form);
 }
 
 /** Serveur injoignable : on laisse corriger l'adresse. */

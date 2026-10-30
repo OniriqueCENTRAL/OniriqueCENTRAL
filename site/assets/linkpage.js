@@ -1,4 +1,4 @@
-// Affichage d'une page de liens de fondateur : la page publique (/l/<pseudo>) et l'aperçu de l'éditeur (mes-liens.html)
+// Affichage d'une page de liens de fondateur : la page publique (/l/<pseudo>) et l'aperçu de l'éditeur (mes-liens)
 // passent par le même rendu. Les choix d'apparence sont ceux que le serveur accepte (server/src/linkpage.js).
 (function () {
   const FONTS = {

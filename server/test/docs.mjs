@@ -65,10 +65,10 @@ try {
     const { url } = await call('POST', '/api/me/sounds/mailer/google', { token: kay.token, body: { back: 'presskit' } });
     const state = new URL(url).searchParams.get('state');
     const back = await call('GET', `/api/youtube/callback?state=${state}&code=faux`, { redirect: 'manual', expect: 302 });
-    assert.match(back.headers.get('location'), /^https:\/\/site\.test\/presskit\.html\?google=/);
+    assert.match(back.headers.get('location'), /^https:\/\/site\.test\/presskit\?google=/);
     const { url: other } = await call('POST', '/api/me/sounds/mailer/google', { token: kay.token, body: { back: '../evil' } });
     const away = await call('GET', `/api/youtube/callback?state=${new URL(other).searchParams.get('state')}&code=faux`, { redirect: 'manual', expect: 302 });
-    assert.match(away.headers.get('location'), /^https:\/\/site\.test\/mes-sons\.html\?google=/);
+    assert.match(away.headers.get('location'), /^https:\/\/site\.test\/mes-sons\?google=/);
   });
 
   await step('devis à signer : réservé aux comptes ONIRIQUE', async () => {
@@ -80,7 +80,7 @@ try {
   await step('devis à signer : gardé avec son empreinte, le lien part depuis la boîte du membre', async () => {
     await call('POST', '/api/me/docs/sign', { token: kay.token, body: { data: { pas: 'un devis' } }, expect: 400 });
     const r = await call('POST', '/api/me/docs/sign', { token: kay.token, body: { data: devis, to: 'damso@test.fr' }, expect: 201 });
-    assert.match(r.link, /^https:\/\/site\.test\/devis\.html\?signer=[\w-]{20,}$/);
+    assert.match(r.link, /^https:\/\/site\.test\/devis\?signer=[\w-]{20,}$/);
     link = r.token;
     const mail = outbox.at(-1);
     assert.deepEqual([mail.from, mail.to, mail.subject], ['"Kay Beats" <kay@gmail.com>', 'damso@test.fr', 'Devis DEV-1 à signer — Kay Beats']);
@@ -114,7 +114,7 @@ try {
     const toKay = outbox.find((m) => m.to === kay.email && /signé par William Kalubi/.test(m.subject));
     const toClient = outbox.find((m) => m.to === 'damso@test.fr' && /signature est enregistrée/.test(m.subject));
     for (const m of [toKay, toClient]) {
-      assert.ok(m.text.includes(`https://site.test/devis.html?signer=${link}`));
+      assert.ok(m.text.includes(`https://site.test/devis?signer=${link}`));
       assert.ok(m.text.includes(s.hash));
       assert.match(m.text, /Signé par : William Kalubi/);
       assert.equal(m.attachments[0].filename, 'Devis DEV-1 signé.pdf');

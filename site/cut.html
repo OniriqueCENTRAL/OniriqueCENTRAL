@@ -71,7 +71,7 @@
 <header>
   <div class="wrap">
     <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
-    <nav aria-label="Navigation"><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="outils.html" data-tools>Outils</a><a class="btn" href="compte.html" data-account>Compte</a></nav>
+    <nav aria-label="Navigation"><a class="btn" href="boutique">Boutique</a><a class="btn" href="outils" data-tools>Outils</a><a class="btn" href="compte" data-account>Compte</a></nav>
   </div>
 </header>
 
@@ -86,7 +86,7 @@
     <div class="stack">
       <p class="step-title" style="justify-content:center" id="locked-title">ONIRIQUE CUT est réservé aux membres</p>
       <p id="locked-text">Il est inclus pour les membres ONIRIQUE et avec l'abonnement CLOUD et page de liens (1,99 € par mois ou 9,99 € par an).</p>
-      <div class="actions"><a class="go" id="locked-go" href="cloud.html">Voir l'abonnement</a><a class="go ghost" href="compte.html">Mon compte</a></div>
+      <div class="actions"><a class="go" id="locked-go" href="cloud">Voir l'abonnement</a><a class="go ghost" href="compte">Mon compte</a></div>
     </div>
   </div>
 
@@ -197,7 +197,7 @@
 
 <footer>
   <nav class="wrap" aria-label="Pages légales">
-    <a href="outils.html">Tous les outils</a><a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a>
+    <a href="outils">Tous les outils</a><a href="mentions-legales">Mentions légales</a><a href="cgv">CGV et CGU</a><a href="confidentialite">Confidentialité</a><a href="cookies">Cookies</a><a href="support">Support</a>
   </nav>
 </footer>
 <script src="assets/tools-menu.js?v=6"></script>
@@ -233,11 +233,11 @@ const LAST = "onirique.cut.last";
 
 // ——— Accès : membres ONIRIQUE et abonnés CLOUD (le même droit que ONIRIQUE CLOUD) ———
 async function gate() {
-  if (!TOKEN) return lock("Connecte-toi pour ouvrir ONIRIQUE CUT", "Il est inclus pour les membres ONIRIQUE et avec l'abonnement CLOUD et page de liens.", "compte.html", "Me connecter");
+  if (!TOKEN) return lock("Connecte-toi pour ouvrir ONIRIQUE CUT", "Il est inclus pour les membres ONIRIQUE et avec l'abonnement CLOUD et page de liens.", "compte", "Me connecter");
   const response = await fetch("/api/me", { headers: { Authorization: "Bearer " + TOKEN } }).catch(() => null);
-  if (!response || response.status === 401) return lock("Connecte-toi pour ouvrir ONIRIQUE CUT", "Ta session a expiré.", "compte.html", "Me connecter");
+  if (!response || response.status === 401) return lock("Connecte-toi pour ouvrir ONIRIQUE CUT", "Ta session a expiré.", "compte", "Me connecter");
   const me = await response.json().catch(() => ({}));
-  if (!(me.rights || []).includes("sounds")) return lock("ONIRIQUE CUT est réservé aux membres", $("locked-text").textContent, "cloud.html", "Voir l'abonnement");
+  if (!(me.rights || []).includes("sounds")) return lock("ONIRIQUE CUT est réservé aux membres", $("locked-text").textContent, "cloud", "Voir l'abonnement");
   $("studio").hidden = false;
   start();
 }

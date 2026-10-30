@@ -1,4 +1,4 @@
-// ONIRIQUE CUT (site/cut.html) : le montage se fait dans le navigateur, qui enregistre la vidéo en temps réel. Le serveur
+// ONIRIQUE CUT (site/cut) : le montage se fait dans le navigateur, qui enregistre la vidéo en temps réel. Le serveur
 // la remet au format que TikTok, Instagram et YouTube acceptent sans broncher : MP4 H.264 + AAC, 1080 × 1920, 30 images
 // par seconde constantes (l'enregistrement du navigateur a un rythme d'images variable). Réservé aux comptes qui ont
 // ONIRIQUE CLOUD (membres ONIRIQUE et abonnés aux outils). Rien n'est gardé : les deux fichiers sont effacés aussitôt.

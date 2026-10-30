@@ -35,8 +35,8 @@
 
 ## Informations légales
 
-- [Mentions légales et contact](https://onirique.store/mentions-legales.html)
-- [Conditions générales de vente et d'utilisation](https://onirique.store/cgv.html)
-- [Rétractation et remboursement](https://onirique.store/remboursement.html)
-- [Politique de confidentialité](https://onirique.store/confidentialite.html)
-- [Cookies](https://onirique.store/cookies.html)
+- [Mentions légales et contact](https://onirique.store/mentions-legales)
+- [Conditions générales de vente et d'utilisation](https://onirique.store/cgv)
+- [Rétractation et remboursement](https://onirique.store/remboursement)
+- [Politique de confidentialité](https://onirique.store/confidentialite)
+- [Cookies](https://onirique.store/cookies)

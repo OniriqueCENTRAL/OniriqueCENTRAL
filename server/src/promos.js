@@ -218,7 +218,7 @@ export function rewardSponsor(userId) {
   const hello = `Bonjour${sponsor.name ? ' ' + sponsor.name : ''},`;
   const howTo = `À entrer dans le champ « Code promo » au moment d'acheter, sur le site ou dans ONIRIQUE CENTRAL. Valable ${settings.rewardDays} jours, une fois. Vos codes sont aussi sur votre page compte.`;
   sendMail(sponsor.email, 'Votre parrainage vous rapporte — ONIRIQUE',
-    `${hello}\n\nUn ami que vous avez invité vient de faire son premier achat. Merci !\n\nVotre récompense :\n\n${lines}\n\n${howTo}\n\n${config.siteUrl}/boutique.html\n\nONIRIQUE`,
+    `${hello}\n\nUn ami que vous avez invité vient de faire son premier achat. Merci !\n\nVotre récompense :\n\n${lines}\n\n${howTo}\n\n${config.siteUrl}/boutique\n\nONIRIQUE`,
     undefined, { html: renderEmail({
       eyebrow: 'Parrainage', title: 'Votre ami a craqué. Merci !', preheader: `${what(made[made.length - 1])} : votre récompense de parrainage.`,
       blocks: [
@@ -226,9 +226,9 @@ export function rewardSponsor(userId) {
         { text: 'Un ami que vous avez invité vient de faire son premier achat chez ONIRIQUE. Voici votre récompense :' },
         ...made.map((r) => ({ code: r.code, caption: r.percent === 100 ? 'Plugin offert' : 'Votre code', detail: what(r) })),
         { text: howTo },
-        { button: { label: 'Choisir mon plugin', url: `${config.siteUrl}/boutique.html` } },
+        { button: { label: 'Choisir mon plugin', url: `${config.siteUrl}/boutique` } },
         { divider: true },
-        { text: `Continuez d'inviter : chaque ami qui achète vous rapporte un nouveau code${settings.milestone ? `, et tous les ${settings.milestone} amis acheteurs, un plugin offert` : ''}. Votre lien : ${config.siteUrl}/compte.html?ref=${referralCode(sponsor)}` },
+        { text: `Continuez d'inviter : chaque ami qui achète vous rapporte un nouveau code${settings.milestone ? `, et tous les ${settings.milestone} amis acheteurs, un plugin offert` : ''}. Votre lien : ${config.siteUrl}/compte?ref=${referralCode(sponsor)}` },
       ],
     }) })
     .catch((error) => console.error('Récompense de parrainage :', error.message));
@@ -254,7 +254,7 @@ export function referralView(user) {
   }));
   const sponsor = user.referred_by ? get('SELECT name, email FROM users WHERE id = ?', user.referred_by) : null;
   return {
-    enabled: settings.enabled, code, link: `${config.siteUrl}/compte.html?ref=${code}`,
+    enabled: settings.enabled, code, link: `${config.siteUrl}/compte?ref=${code}`,
     friendPercent: settings.friendPercent, rewardPercent: settings.rewardPercent, milestone: settings.milestone, rewardDays: settings.rewardDays,
     invited, converted, rewards,
     // Le prochain palier : combien d'amis acheteurs il reste avant le plugin offert.

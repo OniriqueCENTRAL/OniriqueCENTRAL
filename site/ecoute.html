@@ -176,7 +176,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1320px; }
     <div class="eyebrow" style="justify-content:center">Compte exigé</div>
     <h1>Connecte-toi</h1>
     <p class="muted" style="margin:0 0 16px">Ce lien n'est ouvert qu'aux personnes connectées à leur compte ONIRIQUE.</p>
-    <a class="btn" id="login" href="compte.html">Se connecter ou créer un compte</a>
+    <a class="btn" id="login" href="compte">Se connecter ou créer un compte</a>
   </section>
   <section class="panel" id="gone" hidden><p class="error" id="gone-text" style="margin:0"></p></section>
 
@@ -471,7 +471,7 @@ $("back").onclick = () => {
   let fromSite = false;
   try { fromSite = new URL(document.referrer).origin === location.origin; } catch {}
   if (fromSite && history.length > 1) history.back();
-  else location.href = session ? "mes-sons.html" : "/";
+  else location.href = session ? "mes-sons" : "/";
 };
 $("pw-form").onsubmit = (event) => { event.preventDefault(); if ($("pw").value) open($("pw").value); };
 open();

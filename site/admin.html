@@ -187,7 +187,7 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
 <header>
   <div class="wrap">
     <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
-    <a class="btn" href="compte.html" data-account>Mon compte</a>
+    <a class="btn" href="compte" data-account>Mon compte</a>
   </div>
 </header>
 
@@ -413,7 +413,7 @@ const isPartner = (user) => user.role === "abrasion" || user.role === "relic";
 const isStaff = (user) => user.role === "admin" || user.role === "founder";
 
 function gate(text, link) {
-  $("gate").replaceChildren(text, link ? " " : "", link ? el("a", { href: "compte.html", textContent: link }) : "");
+  $("gate").replaceChildren(text, link ? " " : "", link ? el("a", { href: "compte", textContent: link }) : "");
   $("gate").hidden = false;
   $("panel").hidden = true;
 }
@@ -854,7 +854,7 @@ async function loadLive() {
   const TONES = { ember: ["Rouge ONIRIQUE", "linear-gradient(90deg,#8c0614,#e23444)", "#fff"], gold: ["Or (promo)", "linear-gradient(90deg,#b8862b,#f2c46d)", "#1a0d02"], calm: ["Sobre", "#1f0c0f", "#f6eeee"] };
   const on = el("input", { type: "checkbox", checked: !!a.active });
   const text = el("input", { type: "text", maxLength: 220, value: a.text || "", placeholder: "PROMO -20 % SUR TOUTE LA BOUTIQUE" });
-  const link = el("input", { type: "text", maxLength: 300, value: a.link || "", placeholder: "boutique.html (facultatif)" });
+  const link = el("input", { type: "text", maxLength: 300, value: a.link || "", placeholder: "boutique (facultatif)" });
   const label = el("input", { type: "text", maxLength: 40, value: a.linkLabel || "", placeholder: "J'en profite" });
   const tone = el("select", {}, ...Object.entries(TONES).map(([id, [name]]) => el("option", { value: id, textContent: name })));
   tone.value = a.tone || "ember";
@@ -1069,7 +1069,7 @@ async function loadPromos() {
     const toggle = el("button", { className: "act", type: "button", textContent: p.active ? "Désactiver" : "Réactiver" });
     toggle.onclick = async () => { try { await api("PATCH", "/admin/promos/" + p.id, { active: !p.active }); await loadPromos(); } catch (error) { fail(error); } };
     const copy = el("button", { className: "act", type: "button", textContent: "Copier le lien" });
-    copy.onclick = async () => { await navigator.clipboard.writeText(`${location.origin}/boutique.html?code=${p.code}`).catch(() => {}); copy.textContent = "Lien copié"; };
+    copy.onclick = async () => { await navigator.clipboard.writeText(`${location.origin}/boutique?code=${p.code}`).catch(() => {}); copy.textContent = "Lien copié"; };
     const remove = el("button", { className: "act", type: "button", textContent: "Supprimer" });
     remove.onclick = async () => {
       if (!window.confirm(`Supprimer le code ${p.code} ? Il ne pourra plus servir${p.uses ? ` ; ses ${p.uses} utilisation(s) sortent des chiffres` : ""}.`)) return;
@@ -1334,7 +1334,7 @@ async function loadMailings(first = false) {
       promoCode: el("input", { type: "text", maxLength: 40, placeholder: "Facultatif", style: "text-transform:uppercase;font-family:var(--f-mono)" }),
       promoText: el("input", { type: "text", maxLength: 140, placeholder: "-20 % jusqu'à dimanche" }),
       buttonLabel: el("input", { type: "text", maxLength: 40, placeholder: "Voir la boutique" }),
-      buttonUrl: el("input", { type: "url", placeholder: "https://onirique.store/boutique.html" }),
+      buttonUrl: el("input", { type: "url", placeholder: "https://onirique.store/boutique" }),
       service: el("input", { type: "checkbox" }),
     };
     const picks = products.filter((p) => p.published).map((p) => ({ id: p.id, box: el("input", { type: "checkbox" }), name: p.name }));

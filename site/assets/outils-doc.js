@@ -76,7 +76,7 @@ const Outils = {
       if (google !== "ok") alert(google);
     }
     if (!Outils.token()) {
-      box.innerHTML = `<p class="hint">Pour envoyer depuis ta boîte mail, <a href="compte.html">connecte-toi à ton compte ONIRIQUE</a> (gratuit).</p>`;
+      box.innerHTML = `<p class="hint">Pour envoyer depuis ta boîte mail, <a href="compte">connecte-toi à ton compte ONIRIQUE</a> (gratuit).</p>`;
       return onChange(null);
     }
     let m;

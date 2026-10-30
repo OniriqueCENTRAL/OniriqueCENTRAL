@@ -622,7 +622,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 <header>
   <div class="wrap">
     <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
-    <div class="row"><button class="round bell" id="bell" type="button" aria-label="Notifications" aria-expanded="false" hidden></button><a class="btn btn-ghost" href="compte.html">Mon compte</a><a href="compte.html" data-account data-account-manual hidden>Compte</a></div>
+    <div class="row"><button class="round bell" id="bell" type="button" aria-label="Notifications" aria-expanded="false" hidden></button><a class="btn btn-ghost" href="compte">Mon compte</a><a href="compte" data-account data-account-manual hidden>Compte</a></div>
   </div>
 </header>
 <div class="visitor-bar" id="visitor-bar" hidden>
@@ -1209,7 +1209,7 @@ function savedTile(x) {
 // Un projet enregistré s'ouvre sur sa page d'écoute ; le mot de passe déjà donné y est repris.
 function openSaved(x) {
   try { if (x.pass) sessionStorage.setItem("onirique.ecoute." + x.token, x.pass); } catch {}
-  location.href = "ecoute.html?t=" + encodeURIComponent(x.token);
+  location.href = "ecoute?t=" + encodeURIComponent(x.token);
 }
 async function playSaved(x) {
   const response = await fetch("/api/sounds/share/" + encodeURIComponent(x.token), {
@@ -2956,7 +2956,7 @@ async function unpack(p, t) {
   } catch (error) { fail(error); }
 }
 // ONIRIQUE CUT dans un nouvel onglet : il reprend le titre (version en avant, BPM, paroles à jour) depuis CLOUD.
-function openCut(t) { open("cut.html?track=" + t.id, "_blank"); }
+function openCut(t) { open("cut?track=" + t.id, "_blank"); }
 function openDetails(tid, view = "main") { detailsId = tid; detailsView = view; renderDetails(); if (!$("details").open) $("details").showModal(); }
 function drawPeaks(canvas, peaks) {
   requestAnimationFrame(() => {
@@ -3129,7 +3129,7 @@ function renderDetails() {
       el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Les auditeurs qui ne sont pas connectés à un compte ONIRIQUE sont comptés sans être nommés. La part écoutée est suivie depuis le 23 octobre 2026." })];
   } else if (detailsView === "tool-lufs" || detailsView === "tool-ref") {
     // Les outils du site, en version compacte, avec la version en avant déjà chargée.
-    const page = detailsView === "tool-lufs" ? "volume-lufs.html" : "comparer-mix.html";
+    const page = detailsView === "tool-lufs" ? "volume-lufs" : "comparer-mix";
     right = [back(detailsView === "tool-lufs" ? "Volume avant sortie" : "Comparer à une référence"),
       el("iframe", { className: "tool-frame", title: detailsView === "tool-lufs" ? "Volume avant sortie" : "Comparer à une référence",
         src: page + "?embed=1&src=" + encodeURIComponent(v.url) + "&name=" + encodeURIComponent(v.filename) })];
@@ -3603,7 +3603,7 @@ lightClose($("settings"));
 (async () => {
   const gate = (html) => { $("gate").hidden = false; $("gate").innerHTML = html; };
   $("empty-star").append(icon("star"));
-  if (!token) return gate('<p>Connecte-toi d\'abord à ton compte.</p><a class="btn btn-primary" href="compte.html?next=mes-sons">Se connecter</a>');
+  if (!token) return gate('<p>Connecte-toi d\'abord à ton compte.</p><a class="btn btn-primary" href="compte?next=mes-sons">Se connecter</a>');
   try {
     await refresh();
     checkInvite();
@@ -3611,8 +3611,8 @@ lightClose($("settings"));
     loadNotices();
     setInterval(() => { if (document.visibilityState === "visible") loadNotices(); }, 60000);
   } catch (error) {
-    gate(error.status === 403 ? "<p>ONIRIQUE CLOUD fait partie de l'abonnement ONIRIQUE CLOUD et page de liens : 1,99 € par mois ou 9,99 € par an.</p><a class=\"btn btn-primary\" href=\"cloud.html\">Découvrir l'abonnement</a>"
-      : error.status === 401 ? '<p>Ta session a expiré.</p><a class="btn btn-primary" href="compte.html?next=mes-sons">Se reconnecter</a>' : "<p></p>");
+    gate(error.status === 403 ? "<p>ONIRIQUE CLOUD fait partie de l'abonnement ONIRIQUE CLOUD et page de liens : 1,99 € par mois ou 9,99 € par an.</p><a class=\"btn btn-primary\" href=\"cloud\">Découvrir l'abonnement</a>"
+      : error.status === 401 ? '<p>Ta session a expiré.</p><a class="btn btn-primary" href="compte?next=mes-sons">Se reconnecter</a>' : "<p></p>");
     if (error.status !== 403 && error.status !== 401) $("gate").firstChild.textContent = error.message;
   }
 })();

@@ -33,7 +33,7 @@ const text = (value, max = 4000) => (typeof value === 'string' ? value.trim().sl
 const when = (ms) => new Date(ms).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'long', timeStyle: 'short' });
 // Les comptes ONIRIQUE (rôle vip) et l'équipe : seuls à pouvoir faire signer un devis en ligne.
 export const ONIRIQUE = ['vip', 'admin', 'founder'];
-const signLink = (token) => `${config.siteUrl}/devis.html?signer=${token}`;
+const signLink = (token) => `${config.siteUrl}/devis?signer=${token}`;
 
 /** Le message part de la boîte mail reliée par le membre (Gmail ou autre). */
 async function sendFrom(m, message) {

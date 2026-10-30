@@ -55,7 +55,7 @@ function confirmOrder(userId, what, amountCents, renewal = '', provider = 'strip
     + `Application et compte : ${config.siteUrl}\n\n`
     + (RESELLERS[provider]
       ? `Le paiement est encaissé par notre revendeur ${RESELLERS[provider]}, qui vous envoie le reçu séparément.\n\n`
-      : `Le contenu vous est fourni dès le paiement, comme vous l'avez demandé en commandant : le droit de rétractation ne s'applique plus (${config.siteUrl}/remboursement.html).\n\n`)
+      : `Le contenu vous est fourni dès le paiement, comme vous l'avez demandé en commandant : le droit de rétractation ne s'applique plus (${config.siteUrl}/remboursement).\n\n`)
     + `Une question : ${config.supportEmail}\n\nONIRIQUE`, undefined, { eyebrow: 'Commande' })
     .catch((error) => console.error('Confirmation de commande :', error.message));
 }
@@ -181,7 +181,7 @@ const sellerOptions = (managed) => (managed ? { managed_payments: { enabled: tru
   // Demande une adresse de CGV réglée dans le tableau de bord Stripe.
   consent_collection: { terms_of_service: 'required' },
   custom_text: { terms_of_service_acceptance: { message:
-    `J'accepte les [conditions générales de vente](${config.siteUrl}/cgv.html) et je demande à recevoir mon achat tout de suite : je renonce à mon droit de rétractation.` } },
+    `J'accepte les [conditions générales de vente](${config.siteUrl}/cgv) et je demande à recevoir mon achat tout de suite : je renonce à mon droit de rétractation.` } },
 });
 const lineItems = (kind, name, cents, interval) => [{
   quantity: 1,
