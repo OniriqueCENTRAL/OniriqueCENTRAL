@@ -71,8 +71,13 @@ try {
     assert.match(away.headers.get('location'), /^https:\/\/site\.test\/mes-sons\.html\?google=/);
   });
 
-  await step('devis à signer : gardé avec son empreinte, le lien part depuis la boîte du membre', async () => {
+  await step('devis à signer : réservé aux comptes ONIRIQUE', async () => {
     await call('POST', '/api/me/docs/sign', { body: { data: devis }, expect: 401 });
+    assert.match((await call('POST', '/api/me/docs/sign', { token: kay.token, body: { data: devis }, expect: 403 })).error, /comptes ONIRIQUE/);
+    run(`UPDATE users SET role = 'vip' WHERE id = ?`, kay.id);
+  });
+
+  await step('devis à signer : gardé avec son empreinte, le lien part depuis la boîte du membre', async () => {
     await call('POST', '/api/me/docs/sign', { token: kay.token, body: { data: { pas: 'un devis' } }, expect: 400 });
     const r = await call('POST', '/api/me/docs/sign', { token: kay.token, body: { data: devis, to: 'damso@test.fr' }, expect: 201 });
     assert.match(r.link, /^https:\/\/site\.test\/devis\.html\?signer=[\w-]{20,}$/);
@@ -102,8 +107,8 @@ try {
     await call('POST', '/api/docs/sign/inconnu', { body: { name: 'William Kalubi', signature: png, accept: true }, expect: 404 });
   });
 
-  await step('signé : trace gardée, l\'émetteur et le client reçoivent le devis signé ; une seule signature', async () => {
-    const s = await call('POST', `/api/docs/sign/${link}`, { body: { name: 'William Kalubi', signature: png, accept: true }, headers: { 'User-Agent': 'Téléphone de test' } });
+  await step('signé : trace gardée, l\'émetteur (adresse du compte) et le client reçoivent la copie signée en PDF ; une seule signature', async () => {
+    const s = await call('POST', `/api/docs/sign/${link}`, { body: { name: 'William Kalubi', signature: png, accept: true, pdf }, headers: { 'User-Agent': 'Téléphone de test' } });
     assert.deepEqual([s.signed, s.signerName, s.signature, s.signerAgent], [true, 'William Kalubi', png, 'Téléphone de test']);
     assert.ok(s.signedAt && s.signerIp);
     const toKay = outbox.find((m) => m.to === kay.email && /signé par William Kalubi/.test(m.subject));
@@ -112,6 +117,7 @@ try {
       assert.ok(m.text.includes(`https://site.test/devis.html?signer=${link}`));
       assert.ok(m.text.includes(s.hash));
       assert.match(m.text, /Signé par : William Kalubi/);
+      assert.equal(m.attachments[0].filename, 'Devis DEV-1 signé.pdf');
     }
     await call('POST', `/api/docs/sign/${link}`, { body: { name: 'Quelqu\'un', signature: png, accept: true }, expect: 409 });
     assert.equal((await call('GET', `/api/docs/sign/${link}`)).signerName, 'William Kalubi');

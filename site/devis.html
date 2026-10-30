@@ -130,9 +130,9 @@
       <label>Conditions<textarea name="conditions" rows="5"></textarea></label>
     </fieldset>
 
-    <fieldset>
+    <fieldset id="sign-box" hidden>
       <legend>Faire signer en ligne</legend>
-      <p class="hint">Ton client reçoit un lien, lit le devis et signe au doigt ou à la souris. Tu reçois le devis signé par mail, avec la date, son nom et la trace de la signature.</p>
+      <p class="hint">Ton client reçoit un lien, lit le devis et signe au doigt ou à la souris. Tu reçois une copie du devis signé sur l'adresse de ton compte, avec la date, son nom et la trace de la signature.</p>
       <div id="mailbox"></div>
       <label>E-mail du client<input id="sign-to" type="email" placeholder="Vide : tu reçois juste le lien à lui donner"></label>
       <label>Message (facultatif)<textarea id="sign-text" rows="3"></textarea></label>
@@ -283,7 +283,7 @@ function render() {
       ? `Bon pour accord, le ${new Date(signed.signedAt).toLocaleDateString("fr-FR")}<img src="${esc(signed.signature)}" alt="Signature">${esc(signed.signerName)}`
       : "Bon pour accord<br>Date et signature du client"}</div></div>
     ${signed?.signed ? `<p class="dv-trace">Signé électroniquement sur onirique.store par ${esc(signed.signerName)} le ${new Date(signed.signedAt).toLocaleString("fr-FR")}
-      · adresse IP ${esc(signed.signerIp)} · empreinte du devis (SHA-256) ${esc(signed.hash)}</p>` : ""}`;
+      ${signed.signerIp ? `· adresse IP ${esc(signed.signerIp)}` : ""} · empreinte du devis (SHA-256) ${esc(signed.hash)}</p>` : ""}`;
 
   document.getElementById("logo-off").hidden = !s.logo;
   if (!signer) status.textContent = Outils.save(KEY, s) ? "Brouillon enregistré sur cet appareil." : "Brouillon trop lourd pour être gardé : pense à télécharger ton PDF.";
@@ -337,11 +337,17 @@ document.getElementById("reset").addEventListener("click", () => {
 // Envoyer le devis à signer : il est gardé tel quel sur le serveur, et le client reçoit le lien.
 const signSend = document.getElementById("sign-send"), signNote = document.getElementById("sign-note"), signLink = document.getElementById("sign-link");
 let mailer = null;
-if (!signer) Outils.mailbox(document.getElementById("mailbox"), "devis", (m) => {
+// Réservé aux comptes ONIRIQUE (et à l'équipe) : pour les autres, le cadre reste caché.
+if (!signer && Outils.token()) Outils.api("GET", "/me").then((me) => {
+  if (!["vip", "admin", "founder"].includes((me.user || me).role)) return;
+  document.getElementById("sign-box").hidden = false;
+  Outils.mailbox(document.getElementById("mailbox"), "devis", onMailbox);
+}, () => {});
+function onMailbox(m) {
   mailer = m;
   signSend.disabled = !Outils.token();
   if (Outils.token() && !m) signNote.textContent = "Sans boîte mail reliée, le lien part d'ONIRIQUE ; la réponse du client revient à ton adresse.";
-});
+}
 signSend.addEventListener("click", async () => {
   const to = document.getElementById("sign-to").value.trim();
   if (to && !confirm(`Envoyer le devis à signer à ${to}${mailer ? " depuis " + mailer.fromEmail : ""} ?`)) return;
@@ -382,7 +388,11 @@ async function openSigner() {
     if (!document.getElementById("sg-ok").checked) return (note.textContent = "Coche « Bon pour accord » pour signer.");
     e.target.disabled = true;
     note.textContent = "Signature…";
-    try { signed = await Outils.api("POST", "/docs/sign/" + encodeURIComponent(signer), { name, signature: pad.png(), accept: true }); render(); done(); }
+    // La copie en PDF part avec la signature : le devis dessiné tel qu'il sera signé (l'adresse IP est dans le mail).
+    const tryout = { ...signed, signed: true, signerName: name, signature: pad.png(), signedAt: Date.now(), signerIp: "" };
+    let pdf = "";
+    try { const real = signed; signed = tryout; render(); pdf = await Outils.base64(await Outils.pdf(doc)); signed = real; } catch { /* sans copie, la signature compte quand même */ }
+    try { signed = await Outils.api("POST", "/docs/sign/" + encodeURIComponent(signer), { name, signature: tryout.signature, accept: true, pdf }); render(); done(); }
     catch (error) { note.textContent = error.message; e.target.disabled = false; }
   };
 }

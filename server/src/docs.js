@@ -31,6 +31,8 @@ const EMAIL = /^[^@\s<>"]+@[^@\s<>"]+\.[a-z]{2,}$/i;
 const str = (value, max = 200) => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, max) : '');
 const text = (value, max = 4000) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
 const when = (ms) => new Date(ms).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'long', timeStyle: 'short' });
+// Les comptes ONIRIQUE (rôle vip) et l'équipe : seuls à pouvoir faire signer un devis en ligne.
+export const ONIRIQUE = ['vip', 'admin', 'founder'];
 const signLink = (token) => `${config.siteUrl}/devis.html?signer=${token}`;
 
 /** Le message part de la boîte mail reliée par le membre (Gmail ou autre). */
@@ -69,6 +71,7 @@ export function mountDocs(app, { requireUser, wrap }) {
 
   // Un devis à faire signer : gardé tel quel (son empreinte le prouve), et le lien envoyé au client s'il y a son adresse.
   app.post('/api/me/docs/sign', requireUser, big, wrap(async (req, res) => {
+    if (!ONIRIQUE.includes(req.user.role)) throw new HttpError(403, 'La signature en ligne des devis est réservée aux comptes ONIRIQUE.');
     rateLimit(`docs-sign:${req.user.id}`, 30, 3600_000);
     const b = req.body || {};
     const d = b.data;
@@ -110,6 +113,10 @@ export function mountDocs(app, { requireUser, wrap }) {
     if (name.length < 2) throw new HttpError(400, 'Écris ton nom complet.');
     if (b.accept !== true) throw new HttpError(400, 'Coche « Bon pour accord » pour signer.');
     if (!/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(signature) || signature.length > 400_000) throw new HttpError(400, 'Signe dans le cadre avant de valider.');
+    // La copie du devis signé en PDF, fabriquée par le navigateur du client ; la preuve reste la trace et l'empreinte.
+    const pdf = Buffer.from(String(b.pdf || ''), 'base64');
+    const copy = pdf.subarray(0, 5).toString() === '%PDF-' && pdf.length <= 4 * 1024 * 1024
+      ? [{ filename: `${d.title} signé.pdf`.replace(/[\\/:*?"<>|]/g, ' '), content: pdf, contentType: 'application/pdf' }] : undefined;
     const at = now(), ip = String(req.ip || ''), agent = str(req.headers['user-agent'], 300);
     // La condition « pas encore signé » dans la requête : deux signatures en même temps, une seule passe.
     if (!run(`UPDATE doc_signs SET signer_name = ?, signature = ?, signed_at = ?, signer_ip = ?, signer_agent = ? WHERE id = ? AND signed_at IS NULL`,
@@ -119,10 +126,11 @@ export function mountDocs(app, { requireUser, wrap }) {
     const trace = `Signé par : ${name}\nLe : ${when(at)} (heure de Paris)\nAdresse IP : ${ip}\nAppareil : ${agent || 'inconnu'}\nEmpreinte du devis (SHA-256) : ${d.hash}`;
     const link = signLink(d.token);
     const mails = [sendMail(owner.email, `${d.title} signé par ${name} — ONIRIQUE`,
-      `Bonjour,\n\nTon devis vient d'être signé en ligne.\n\n${trace}\n\nVoir et télécharger le devis signé :\n${link}`, undefined, { buttonLabel: 'Voir le devis signé' })];
+      `Bonjour,\n\nTon devis vient d'être signé en ligne${copy ? ' : la copie signée est en pièce jointe' : ''}.\n\n${trace}\n\nVoir et télécharger le devis signé :\n${link}`, undefined,
+      { buttonLabel: 'Voir le devis signé', attachments: copy })];
     if (d.client_email) {
       mails.push(sendMail(d.client_email, `${d.title} : ta signature est enregistrée — ONIRIQUE`,
-        `Bonjour,\n\nMerci, ta signature est enregistrée. Garde ce mail : il en est la preuve.\n\n${trace}\n\nRevoir le devis signé :\n${link}`, owner.email, { buttonLabel: 'Revoir le devis signé' }));
+        `Bonjour,\n\nMerci, ta signature est enregistrée. Garde ce mail : il en est la preuve.\n\n${trace}\n\nRevoir le devis signé :\n${link}`, owner.email, { buttonLabel: 'Revoir le devis signé', attachments: copy }));
     }
     // La signature est gardée même si un mail ne part pas : le lien montre toujours le devis signé.
     await Promise.all(mails.map((p) => p.catch((error) => console.error(`[devis] mail de signature : ${error.message}`))));
