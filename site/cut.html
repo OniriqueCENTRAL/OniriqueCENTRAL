@@ -362,7 +362,7 @@ function showCloudLyrics() {
   $("lyrics-cloud").hidden = !edited;
   $("lyrics-help").textContent = !cloud ? "Une ligne par phrase, avec le moment où elle commence dans le morceau. Un son pris dans ONIRIQUE CLOUD arrive avec ses paroles synchronisées."
     : edited ? "Tu as modifié les paroles ici : enregistre-les dans CLOUD pour les garder sur le titre, ou reprends celles de CLOUD."
-    : n ? "Paroles synchronisées dans ONIRIQUE CLOUD (" + n + " ligne" + (n > 1 ? "s" : "") + ") : elles défilent sur la vidéo et se mettent à jour quand tu les changes dans CLOUD."
+    : n ? "Paroles synchronisées dans ONIRIQUE CLOUD (" + n + " ligne" + (n > 1 ? "s" : "") + (/<\d+:\d/.test(cloud.lyrics) ? ", mot par mot" : ", ligne par ligne : synchronise-les mot par mot dans CLOUD pour un « mot par mot » parfait") + ") : elles se mettent à jour quand tu les changes dans CLOUD."
     : cloud.lyrics.trim() ? "Ce titre a des paroles dans CLOUD, mais pas encore synchronisées : synchronise-les dans CLOUD (Paroles) pour les voir défiler ici."
     : "Pas encore de paroles pour ce titre dans CLOUD. Tu peux les écrire ici et les enregistrer dans CLOUD.";
 }
@@ -484,7 +484,10 @@ function readLyrics() {
   lyrics = [];
   for (const line of $("lyrics").value.split("\n")) {
     const m = /^\s*\[(\d+):(\d+(?:[.,]\d+)?)\]\s*(.*)$/.exec(line);
-    if (m && m[3].trim()) lyrics.push({ at: Number(m[1]) * 60 + Number(m[2].replace(",", ".")), text: m[3].trim() });
+    if (!m || !m[3].trim()) continue;
+    // Synchronisées mot par mot dans CLOUD : « <mm:ss.cc>mot » devant chaque mot.
+    const words = [...m[3].matchAll(/<(\d+):(\d+(?:[.,]\d+)?)>\s*([^<]*)/g)].map((w) => ({ at: Number(w[1]) * 60 + Number(w[2].replace(",", ".")), text: w[3].trim() })).filter((w) => w.text);
+    lyrics.push({ at: Number(m[1]) * 60 + Number(m[2].replace(",", ".")), text: words.length ? words.map((w) => w.text).join(" ") : m[3].trim(), words: words.length ? words : null });
   }
   lyrics.sort((a, b) => a.at - b.at);
 }
@@ -569,7 +572,15 @@ function drawPicture(src, r, scale) {
 function wordAt(now) {
   const k = lyrics.findLastIndex((l) => l.at <= now);
   if (k < 0) return "";
-  const line = lyrics[k], words = line.text.split(/\s+/).filter(Boolean);
+  const line = lyrics[k];
+  if (line.words) {
+    // Les moments marqués mot par mot dans CLOUD : chaque mot reste jusqu'au suivant (1,5 s au plus après le dernier).
+    const w = line.words.findLastIndex((x) => x.at <= now);
+    if (w < 0) return "";
+    const until = line.words[w + 1] ? line.words[w + 1].at : Math.min(lyrics[k + 1] ? lyrics[k + 1].at : Infinity, line.words[w].at + 1.5);
+    return now < until ? line.words[w].text : "";
+  }
+  const words = line.text.split(/\s+/).filter(Boolean);
   const next = lyrics[k + 1] ? lyrics[k + 1].at : Infinity, length = Math.min(next - line.at, words.length * 0.55 + 0.6);
   if (now > line.at + length + 0.4 || !words.length) return "";
   const weights = words.map((w) => w.length + 2), total = weights.reduce((a, b) => a + b, 0);
@@ -672,6 +683,7 @@ function draw(t, playing) {
 }
 
 // ——— Lecture : le son mène, l'image suit ———
+const FADE = 0.012; // 12 ms de fondu : inaudible, mais évite le clic d'un son coupé net
 let ctx = null, source = null, startedAt = 0, position = 0, playing = false, frame = 0, recording = null;
 const now = () => (playing ? Math.min(span(), ctx.currentTime - startedAt) : position);
 function play(from = position, extraOut = null) {
@@ -679,8 +691,13 @@ function play(from = position, extraOut = null) {
   ctx.resume();
   source = ctx.createBufferSource();
   source.buffer = sound.buffer;
-  source.connect(ctx.destination);
-  if (extraOut) source.connect(extraOut);
+  const level = ctx.createGain();
+  level.gain.setValueAtTime(0, ctx.currentTime);
+  level.gain.linearRampToValueAtTime(1, ctx.currentTime + FADE);
+  source.connect(level);
+  level.connect(ctx.destination);
+  if (extraOut) level.connect(extraOut);
+  source.level = level;
   shown = -1;
   startedAt = ctx.currentTime - from;
   source.start(0, sound.start + from, span() - from);
@@ -690,7 +707,12 @@ function play(from = position, extraOut = null) {
   setPlayIcon();
 }
 function stop() {
-  if (playing) { position = now(); playing = false; try { source.stop(); } catch { /* déjà arrêté */ } }
+  if (playing) {
+    position = now(); playing = false;
+    const end = ctx.currentTime + FADE, g0 = source.level.gain;
+    g0.cancelScheduledValues(ctx.currentTime); g0.setValueAtTime(g0.value, ctx.currentTime); g0.linearRampToValueAtTime(0, end);
+    try { source.stop(end + .01); } catch { /* déjà arrêté */ }
+  }
   pool.forEach((v) => v.pause());
   cancelAnimationFrame(frame); clearTimeout(frame);
   setPlayIcon();
@@ -698,6 +720,11 @@ function stop() {
 function finish() { stop(); if (recording) recording.done(); else { position = 0; seek(0); } }
 // Pendant un export, l'image avance à 30 images par seconde au minuteur : l'enregistrement ne dépend pas de l'affichage.
 function loop() { const t = now(); draw(t, playing); drawScrub(t); if (playing) frame = recording ? setTimeout(loop, 1000 / 30) : requestAnimationFrame(loop); }
+/** Après une option qui ne change que l'image (ou l'ordre des coupes) : on redessine sans couper le son. */
+function restyle(rebuild) {
+  if (rebuild) { build(); shown = -1; renderClips(); $("reshuffle").hidden = prefs.order !== "mix"; }
+  if (!playing) { draw(position, false); drawScrub(position); setTimeout(() => !playing && draw(position, false), 120); }
+}
 function seek(t) {
   const was = playing && !recording;
   if (playing) stop();
@@ -879,12 +906,12 @@ function start() {
   $("nudge-minus").onclick = () => { sound.phase -= beatLength() / 20; sound.start = clampStart(sound.start - beatLength() / 20); refresh(); };
   $("nudge-plus").onclick = () => { sound.phase += beatLength() / 20; sound.start = clampStart(sound.start + beatLength() / 20); refresh(); };
   $("best").onclick = () => { sound.start = bestStart(); position = 0; refresh(); };
-  $("reshuffle").onclick = () => { prefs.shuffle = (prefs.shuffle || 0) + 1; refresh(); };
+  $("reshuffle").onclick = () => { prefs.shuffle = (prefs.shuffle || 0) + 1; restyle(true); };
   $("play").onclick = () => (playing ? stop() : play(position >= span() - .1 ? 0 : position));
   $("export").onclick = exportVideo;
   chips("duration", "duration", () => { sound.start = sound.buffer ? bestStart() : 0; position = 0; refresh(); });
-  chips("order", "order"); chips("cadence", "cadence"); chips("place", "place", () => seek(position)); chips("font", "font", () => seek(position));
-  const redraw = () => { $("word-row").hidden = prefs.lyricsMode !== "word"; $("sign-row").hidden = prefs.lyricsMode !== "card"; seek(position); };
+  chips("order", "order", () => restyle(true)); chips("cadence", "cadence", () => restyle(true)); chips("place", "place", () => restyle()); chips("font", "font", () => restyle());
+  const redraw = () => { $("word-row").hidden = prefs.lyricsMode !== "word"; $("sign-row").hidden = prefs.lyricsMode !== "card"; restyle(); };
   chips("frame", "frame", redraw); chips("lyricsMode", "lyricsMode", redraw); chips("wordStyle", "wordStyle", redraw);
   const boxes = ["zoom", "flash", "retro"];
   chips("preset", "preset", () => {
@@ -892,7 +919,7 @@ function start() {
     marks.forEach((m) => m()); boxes.forEach((id) => { $(id).checked = !!prefs[id]; });
     redraw();
   });
-  for (const id of boxes) { $(id).checked = !!prefs[id]; $(id).onchange = () => { prefs[id] = $(id).checked; savePrefs(); seek(position); }; }
+  for (const id of boxes) { $(id).checked = !!prefs[id]; $(id).onchange = () => { prefs[id] = $(id).checked; savePrefs(); restyle(); }; }
   for (const id of ["hook", "sign"]) { $(id).value = prefs[id] || ""; $(id).oninput = () => { prefs[id] = $(id).value; savePrefs(); if (!playing) draw(position, false); }; }
   $("word-row").hidden = prefs.lyricsMode !== "word"; $("sign-row").hidden = prefs.lyricsMode !== "card";
   $("artist").value = prefs.artist || "";

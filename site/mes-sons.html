@@ -369,6 +369,17 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 @media (prefers-reduced-motion: reduce) { .lyrics:not([hidden]), .lyrics p, .about { animation: none; } }
 .lyrics-edit { min-height: 260px; font: 500 13px/1.5 var(--f-mono); }
 .sync-lines { max-height: 46vh; overflow-y: auto; }
+.word-lines { max-height: 42vh; overflow-y: auto; }
+.word-lines li { display: flex; gap: 12px; padding: 7px 10px; border-radius: 10px; }
+.word-lines li.next { background: color-mix(in srgb, var(--ember) 12%, transparent); }
+.word-lines .when { flex: none; min-width: 52px; font: 500 12px/2 var(--f-mono); color: var(--haze); }
+.word-lines .words { display: flex; flex-wrap: wrap; gap: 4px; }
+.word-lines .words button { padding: 3px 8px; border: 1px solid var(--line); border-radius: 8px; background: none; color: var(--haze); font: 500 14px var(--f-body); cursor: pointer; }
+.word-lines .words button.done { color: var(--mist); border-color: transparent; background: rgba(255,255,255,.06); }
+.word-lines .words button.next { color: #fff; border-color: var(--ember); background: var(--ember); }
+.chips-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.chips-row .speed { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: none; color: var(--mist); font: 500 13px var(--f-mono); cursor: pointer; }
+.chips-row .speed.on { background: var(--ember); border-color: var(--ember); color: #fff; }
 /* Sur téléphone : un grand bouton à taper en rythme, sans le zoom du double appui */
 #sync-mark, #sync-undo { touch-action: manipulation; }
 .sync-player { display: flex; align-items: center; gap: 12px; padding: 8px 14px 8px 8px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); }
@@ -738,7 +749,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 <dialog id="scan"></dialog>
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close('cancel')">Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
-<script src="assets/sounds-player.js?v=18"></script>
+<script src="assets/sounds-player.js?v=19"></script>
 <script src="assets/audio-kit.js?v=2"></script>
 <script src="assets/pdf-kit.js"></script>
 <script src="assets/release-steps.js"></script>
@@ -885,7 +896,18 @@ player.audio.addEventListener("pause", markPlaying);
 // ——— Paroles ———
 const parseLyrics = OP.parseLyrics;
 const stamp = (s) => { const cs = Math.round(s * 100); return "[" + String(Math.floor(cs / 6000)).padStart(2, "0") + ":" + ((cs % 6000) / 100).toFixed(2).padStart(5, "0") + "]"; };
-const lyricsText = (lines) => lines.map((l) => (l.at === null ? "" : stamp(l.at) + " ") + l.text).join("\n");
+// Les paroles telles qu'on les enregistre ; words : avec le moment de chaque mot (seulement si tous les mots de la ligne en ont un).
+const lyricsText = (lines, words = true) => lines.map((l) => (l.at === null ? "" : stamp(l.at) + " ")
+  + (words && l.words && l.words.length && l.words.every((w) => w.at !== null) ? l.words.map((w) => "<" + stamp(w.at).slice(1, -1) + ">" + w.text).join(" ") : l.text)).join("\n");
+/** Des paroles retapées à la main gardent les mots déjà synchronisés des lignes qui n'ont pas changé. */
+function keepWords(lines, before) {
+  const old = parseLyrics(before).filter((l) => l.words);
+  for (const l of lines) {
+    const i = old.findIndex((o) => o.text === l.text && (l.at === null || Math.abs(o.at - l.at) < .02));
+    if (i >= 0) { l.words = old[i].words; if (l.at === null) l.at = old[i].at; old.splice(i, 1); }
+  }
+  return lines;
+}
 // À droite de la pochette : les paroles du titre en cours s'il est dans le projet ouvert.
 let lyricsShown = "";
 function renderLyrics() {
@@ -2828,12 +2850,15 @@ let sync = null; // la synchronisation des paroles en cours : { tid, lines: [{ a
 // s'arrête dès qu'on les quitte.
 const syncAudio = new Audio();
 syncAudio.preload = "auto";
-const LYRICS_VIEWS = ["lyrics", "lyrics-sync"];
+const LYRICS_VIEWS = ["lyrics", "lyrics-sync", "lyrics-words"];
+let wsync = null; // la synchronisation mot par mot en cours : { tid, lines, li, wi : le prochain mot à marquer, rate : la vitesse }
 const syncing = () => $("details").open && LYRICS_VIEWS.includes(detailsView);
 syncAudio.addEventListener("play", () => player.audio.pause());
 // Le lecteur des paroles : lecture, position et durée ; le même son d'un écran à l'autre, à la même position.
 function syncBar(v) {
   if (syncAudio.dataset.vid !== String(v.id)) { syncAudio.src = v.url; syncAudio.dataset.vid = v.id; }
+  syncAudio.preservesPitch = true;
+  syncAudio.playbackRate = detailsView === "lyrics-words" && wsync ? wsync.rate : 1;
   const playBtn = el("button", { className: "round", id: "sync-play", type: "button", ariaLabel: syncAudio.paused ? "Lecture" : "Pause",
     onclick: () => (syncAudio.paused ? syncAudio.play().catch(fail) : syncAudio.pause()) }, icon(syncAudio.paused ? "play" : "pause"));
   const range = el("input", { type: "range", id: "sync-range", className: "sync-range", min: 0, max: syncAudio.duration || v.duration || 0, step: 0.01, value: syncAudio.currentTime, ariaLabel: "Position dans le titre" });
@@ -3197,21 +3222,34 @@ function renderDetails() {
       el("div", { className: "row" }, el("button", { className: "btn btn-primary", type: "button", textContent: "Enregistrer", onclick: () =>
         api("PATCH", "/me/sounds/versions/" + v.id, { note: note.value }).then(() => { saved.textContent = "Enregistré."; return refresh(); }, fail) }), saved)];
   } else if (detailsView === "lyrics") {
-    const text = el("textarea", { className: "lyrics-edit", value: t.lyrics, maxLength: 20000, placeholder: "Colle les paroles ici, une ligne par ligne…", ariaLabel: "Paroles de " + t.title });
+    const text = el("textarea", { className: "lyrics-edit", value: lyricsText(parseLyrics(t.lyrics), false), maxLength: 20000, placeholder: "Colle les paroles ici, une ligne par ligne…", ariaLabel: "Paroles de " + t.title });
     const saved = el("span", { className: "muted", style: "font-size:13px" });
     right = [back("Paroles"), el("p", { className: "muted", style: "margin:0", textContent: "Elles s'affichent à côté du projet pendant l'écoute. Synchronise-les pour qu'elles défilent avec le son, ligne par ligne." }), syncBar(v), text,
       el("div", { className: "row" },
         el("button", { className: "btn btn-primary", type: "button", textContent: "Enregistrer", onclick: () =>
-          api("PATCH", "/me/sounds/tracks/" + t.id, { lyrics: text.value }).then(() => { saved.textContent = "Enregistré."; return refresh(); }, fail) }),
+          api("PATCH", "/me/sounds/tracks/" + t.id, { lyrics: lyricsText(keepWords(parseLyrics(text.value), t.lyrics)) }).then(() => { saved.textContent = "Enregistré."; return refresh(); }, fail) }),
         el("button", { className: "btn btn-ghost", type: "button", textContent: "Synchroniser", onclick: () => {
-          const lines = parseLyrics(text.value).filter((l) => l.text.trim());
+          const lines = keepWords(parseLyrics(text.value), t.lyrics).filter((l) => l.text.trim());
           if (!lines.length) { text.focus(); return; }
           sync = { tid: t.id, lines, i: Math.max(0, lines.findIndex((l) => l.at === null)) };
           if (lines.every((l) => l.at !== null)) sync.i = lines.length;
           // La synchronisation part du début : son premier appui lance le titre.
           syncAudio.pause(); syncAudio.currentTime = 0;
           detailsView = "lyrics-sync"; renderDetails();
-        } }), saved)];
+        } }),
+        el("button", { className: "btn btn-ghost", type: "button", textContent: "Mot par mot (pour CUT)", onclick: () => {
+          const lines = keepWords(parseLyrics(text.value), t.lyrics).filter((l) => l.text.trim());
+          if (!lines.length) { text.focus(); return; }
+          for (const l of lines) l.words = l.words || l.text.split(/\s+/).filter(Boolean).map((w) => ({ at: null, text: w }));
+          wsync = { tid: t.id, lines, li: 0, wi: 0, rate: wsync ? wsync.rate : 0.5 };
+          const first = lines.findIndex((l) => l.words.some((w) => w.at === null));
+          if (first < 0) wsync.li = lines.length; else { wsync.li = first; wsync.wi = lines[first].words.findIndex((w) => w.at === null); }
+          // On reprend un peu avant la première ligne à faire, si elle est déjà calée ligne par ligne.
+          const ref = first > 0 ? lines[first - 1].words.at(-1).at : lines[Math.max(0, first)]?.at;
+          syncAudio.pause(); syncAudio.currentTime = ref != null ? Math.max(0, ref - 2) : 0;
+          detailsView = "lyrics-words"; renderDetails();
+        } }), saved),
+      el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Mot par mot : chaque mot apparaît pile quand il est chanté dans les vidéos ONIRIQUE CUT (styles « mot par mot »). Le lecteur peut ralentir le son pour être précis." })];
   } else if (detailsView === "lyrics-sync") {
     if (!sync || sync.tid !== t.id) { detailsView = "lyrics"; return renderDetails(); }
     const next = sync.lines[sync.i], touch = matchMedia("(pointer: coarse)").matches;
@@ -3225,6 +3263,7 @@ function renderDetails() {
       // Le premier appui lance le titre ; les suivants posent le repère de la ligne.
       if (syncAudio.paused && !syncAudio.currentTime) { syncAudio.play().catch(fail); return renderDetails(); }
       next.at = syncAudio.currentTime;
+      delete next.words;
       sync.i++;
       renderDetails(); showNext();
     };
@@ -3254,6 +3293,63 @@ function renderDetails() {
           api("PATCH", "/me/sounds/tracks/" + t.id, { lyrics: lyricsText(sync.lines) }).then(() => { saved.textContent = "Enregistré."; return refresh(); }, fail) }),
         el("button", { className: "btn btn-ghost", type: "button", textContent: "Tout effacer", onclick: () => {
           sync.lines.forEach((l) => { l.at = null; }); sync.i = 0;
+          syncAudio.pause(); syncAudio.currentTime = 0;
+          renderDetails();
+        } }), saved)];
+  } else if (detailsView === "lyrics-words") {
+    if (!wsync || wsync.tid !== t.id) { detailsView = "lyrics"; return renderDetails(); }
+    const s = wsync, touch = matchMedia("(pointer: coarse)").matches, line = s.lines[s.li], word = line && line.words[s.wi];
+    const key = (label) => (touch ? null : el("kbd", { textContent: label }));
+    const go = (at) => { syncAudio.currentTime = Math.max(0, at); };
+    const mark = el("button", { className: "btn btn-primary", id: "sync-mark", type: "button", disabled: !word },
+      word ? (syncAudio.paused ? "Lancer le son" : "Marquer « " + word.text + " »") : "Tous les mots sont marqués", word ? key("Espace") : null);
+    mark.onclick = () => {
+      if (!word) return;
+      // Le premier appui lance le son ; les suivants posent le moment du mot.
+      if (syncAudio.paused) { syncAudio.play().catch(fail); return renderDetails(); }
+      word.at = syncAudio.currentTime;
+      if (s.wi === 0) line.at = word.at;
+      if (++s.wi >= line.words.length) { s.li++; s.wi = 0; }
+      renderDetails();
+      $("details").querySelector(".word-lines .next")?.scrollIntoView({ block: "nearest" });
+    };
+    // Annuler le dernier mot : il redevient à marquer, et le son repart un peu avant.
+    const undo = el("button", { className: "btn btn-ghost", id: "sync-undo", type: "button", disabled: !s.li && !s.wi }, "Annuler le dernier", key("↑"));
+    undo.onclick = () => {
+      if (!s.li && !s.wi) return;
+      if (s.wi > 0) s.wi--; else { s.li--; s.wi = s.lines[s.li].words.length - 1; }
+      const w = s.lines[s.li].words[s.wi];
+      if (w.at !== null) go(w.at - 1.5);
+      w.at = null;
+      renderDetails();
+    };
+    const speeds = el("div", { className: "chips-row" }, el("span", { className: "muted", textContent: "Vitesse" }),
+      ...[0.25, 0.5, 1, 1.25].map((r) => el("button", { type: "button", className: "speed" + (s.rate === r ? " on" : ""), ariaPressed: String(s.rate === r),
+        textContent: r.toFixed(2).replace(".", ","), onclick: () => { s.rate = r; syncAudio.playbackRate = r; renderDetails(); } })));
+    const done = s.lines.reduce((n, l) => n + l.words.filter((w) => w.at !== null).length, 0), total = s.lines.reduce((n, l) => n + l.words.length, 0);
+    const saved = el("span", { className: "muted", style: "font-size:13px" });
+    right = [back("Synchroniser mot par mot"),
+      el("p", { className: "muted", style: "margin:0", textContent: (touch ? "Lance le son, puis touche Marquer à chaque mot chanté." : "Lance le son, puis appuie sur Espace à chaque mot chanté, ↑ pour annuler.")
+        + " Ralentis le son (0,25 ou 0,50) pour être précis. Touche un mot pour reprendre à partir de lui." }),
+      syncBar(v), speeds,
+      el("div", { className: "row sync-keys" }, mark, undo, el("span", { className: "muted", style: "font-size:13px", textContent: done + " / " + total + " mots" })),
+      el("ol", { className: "group word-lines" }, ...s.lines.map((l, li) => el("li", { className: li === s.li ? "next" : l.words.every((w) => w.at !== null) ? "done" : "" },
+        el("span", { className: "when", textContent: l.at === null ? "—" : OP.time(l.at) }),
+        el("span", { className: "words" }, ...l.words.map((w, wi) => el("button", { type: "button",
+          className: (li === s.li && wi === s.wi ? "next" : w.at !== null ? "done" : ""), textContent: w.text,
+          title: w.at === null ? "Pas encore marqué" : OP.time(w.at),
+          onclick: () => {
+            s.li = li; s.wi = wi;
+            const prev = wi > 0 ? l.words[wi - 1].at : li > 0 ? s.lines[li - 1].words.at(-1).at : null;
+            const at = w.at ?? prev ?? l.at;
+            if (at !== null && at !== undefined) go(at - 1.5);
+            renderDetails();
+          } })))))),
+      el("div", { className: "row" },
+        el("button", { className: "btn btn-primary", type: "button", textContent: "Enregistrer", onclick: () =>
+          api("PATCH", "/me/sounds/tracks/" + t.id, { lyrics: lyricsText(s.lines) }).then(() => { saved.textContent = "Enregistré."; return refresh(); }, fail) }),
+        el("button", { className: "btn btn-ghost", type: "button", textContent: "Tout effacer", onclick: () => {
+          s.lines.forEach((l) => l.words.forEach((w) => { w.at = null; })); s.li = 0; s.wi = 0;
           syncAudio.pause(); syncAudio.currentTime = 0;
           renderDetails();
         } }), saved)];

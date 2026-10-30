@@ -958,9 +958,12 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     return [h / 6, s, l];
   }
   // « [mm:ss.cc] texte » : une ligne synchronisée ; sans repère, la ligne s'affiche sans suivre la lecture.
+  // Synchronisée mot par mot (pour ONIRIQUE CUT) : « [mm:ss.cc] <mm:ss.cc>mot <mm:ss.cc>mot… » ; words garde le moment de chaque mot.
   const parseLyrics = (text) => (text || "").split("\n").map((line) => {
-    const m = line.match(/^\[(\d+):(\d{1,2}(?:\.\d+)?)\]\s?/);
-    return { at: m ? Number(m[1]) * 60 + Number(m[2]) : null, text: m ? line.slice(m[0].length) : line };
+    const m = line.match(/^\[(\d+):(\d{1,2}(?:\.\d+)?)\]\s?/), rest = m ? line.slice(m[0].length) : line;
+    const words = [...rest.matchAll(/<(\d+):(\d{1,2}(?:\.\d+)?)>\s*([^<]*)/g)]
+      .map((w) => ({ at: Number(w[1]) * 60 + Number(w[2]), text: w[3].trim() })).filter((w) => w.text);
+    return { at: m ? Number(m[1]) * 60 + Number(m[2]) : null, text: words.length ? words.map((w) => w.text).join(" ") : rest, ...(words.length ? { words } : {}) };
   });
   const stageLabel = (s) => (s === "maquette" ? "Maquette" : s === "final" ? "Final" : /^v\d+$/.test(s || "") ? s.toUpperCase() : s || "");
 

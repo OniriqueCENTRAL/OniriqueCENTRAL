@@ -1034,7 +1034,8 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     }
     if (req.body.splits !== undefined) run('UPDATE sound_tracks SET splits = ? WHERE id = ?', JSON.stringify(splitsIn(req.body.splits)), t.id);
     if (typeof req.body.lyrics === 'string') {
-      const lyrics = req.body.lyrics.replace(/\r\n?/g, '\n').split('\n').map((line) => line.replace(/\s+/g, ' ').trim().slice(0, 300)).join('\n').trim().slice(0, 20000);
+      // Une ligne synchronisée mot par mot porte le moment de chaque mot (« <mm:ss.cc>mot ») : elle est bien plus longue.
+      const lyrics = req.body.lyrics.replace(/\r\n?/g, '\n').split('\n').map((line) => line.replace(/\s+/g, ' ').trim().slice(0, 2000)).join('\n').trim().slice(0, 60000);
       run('UPDATE sound_tracks SET lyrics = ? WHERE id = ?', lyrics, t.id);
     }
     if (req.body.day !== undefined) {

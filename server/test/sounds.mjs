@@ -255,6 +255,11 @@ try {
     await call('PATCH', `/api/me/sounds/tracks/${t}`, { token: member.token, body: { lyrics: '[00:01.50]  Première   ligne \r\n\r\nDeuxième\n' } });
     const lyrics = (await call('GET', '/api/me/sounds', { token: member.token })).projects.flatMap((x) => x.tracks).find((x) => x.id === t).lyrics;
     assert.equal(lyrics, '[00:01.50] Première ligne\n\nDeuxième');
+    // Une ligne synchronisée mot par mot (pour ONIRIQUE CUT) garde le moment de chacun de ses mots, même longue.
+    const wordLine = '[00:10.00] ' + Array.from({ length: 40 }, (_, i) => `<00:${String(10 + i).padStart(2, '0')}.25>mot${i}`).join(' ');
+    await call('PATCH', `/api/me/sounds/tracks/${t}`, { token: member.token, body: { lyrics: wordLine } });
+    assert.equal((await call('GET', '/api/me/sounds', { token: member.token })).projects.flatMap((x) => x.tracks).find((x) => x.id === t).lyrics, wordLine);
+    await call('PATCH', `/api/me/sounds/tracks/${t}`, { token: member.token, body: { lyrics: '[00:01.50] Première ligne\n\nDeuxième' } });
     // La fiche « À propos de l'artiste » : lien complété en https, lien invalide refusé, masquée mais visible par son auteur.
     await call('PATCH', '/api/me/sounds/about', { token: member.token, body: { link: 'pas un lien' }, expect: 400 });
     const about = await call('PATCH', '/api/me/sounds/about', { token: member.token, body: { bio: ' Rappeur   de Paris \r\n\r\n\r\nDepuis 2020 ', link: 'onirique.store/x', visible: false } });
