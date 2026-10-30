@@ -74,6 +74,7 @@
 .go.wide { width: 100%; max-width: 340px; justify-self: center; text-align: center; }
 .bar { height: 6px; border-radius: 999px; background: rgba(255,210,214,.12); overflow: hidden; }
 .bar i { display: block; height: 100%; width: 0; background: var(--ember); transition: width .2s; }
+.mute { justify-content: center; font-size: 14px !important; }
 .status { max-width: 340px; width: 100%; margin: 0 auto; display: grid; gap: 8px; font-size: 14px; color: var(--haze); text-align: center; }
 .locked { text-align: center; }
 .locked .actions { justify-content: center; }
@@ -261,8 +262,9 @@
         <span class="time" id="time">0:00</span>
       </div>
       <button class="go wide" type="button" id="export" disabled>Exporter la vidéo</button>
+      <label class="check mute"><input type="checkbox" id="mute"> Couper le son pendant l'export (la vidéo garde son son)</label>
       <div class="status" id="status" hidden><span id="status-text"></span><div class="bar"><i id="status-bar"></i></div></div>
-      <p class="hint" style="text-align:center">MP4 1080 × 1920, 30 images par seconde. L'enregistrement se fait en temps réel : garde cet onglet ouvert.</p>
+      <p class="hint" style="text-align:center">MP4 1080 × 1920, 30 images par seconde, son d'origine en AAC 320 kb/s. L'enregistrement se fait en temps réel : garde cet onglet ouvert.</p>
     </aside>
   </div>
 </main>
@@ -881,8 +883,12 @@ function play(from = position, extraOut = null) {
   level.gain.setValueAtTime(0, ctx.currentTime);
   level.gain.linearRampToValueAtTime(1, ctx.currentTime + FADE);
   source.connect(level);
-  level.connect(ctx.destination);
+  const monitor = ctx.createGain(); // ce qu'on entend (coupé par « MUTE » pendant un export) ; l'enregistrement, lui, garde le son
+  monitor.gain.value = recording && prefs.mute ? 0 : 1;
+  level.connect(monitor);
+  monitor.connect(ctx.destination);
   if (extraOut) level.connect(extraOut);
+  source.monitor = monitor;
   source.level = level;
   shown = -1;
   startedAt = ctx.currentTime - from;
@@ -1014,6 +1020,31 @@ function refresh() {
 }
 
 // ——— Export : enregistrement en temps réel, puis MP4 propre par le serveur ———
+const CEILING = 0.891; // −1 dBFS : la marge qui évite toute saturation à l'encodage AAC
+/** Le son du passage tel qu'il est dans le fichier (sans passer par l'enregistrement du navigateur), en WAV 24 bits, avec les
+ *  mêmes fondus aux bords que l'aperçu. Un son qui monte au-dessus de −1 dBFS est baissé d'autant (jamais monté). */
+async function passageWav() {
+  const part = await OniriqueAudio.render(sound.buffer, { from: sound.start, to: sound.start + span() });
+  const channels = OniriqueAudio.channelsOf(part).map((c) => Float32Array.from(c)), rate = part.sampleRate;
+  const fadeIn = Math.max(1, Math.round(FADE * rate)), fadeOut = Math.max(1, Math.round((prefs.loop ? .03 : FADE) * rate));
+  let peak = 0;
+  for (const c of channels) for (let i = 0; i < c.length; i++) { const a = Math.abs(c[i]); if (a > peak) peak = a; }
+  const gain = peak > CEILING ? CEILING / peak : 1;
+  for (const c of channels) for (let i = 0, n = c.length; i < n; i++) c[i] *= gain * Math.min(1, i / fadeIn, (n - 1 - i) / fadeOut);
+  return OniriqueAudio.wav(channels, rate, 24);
+}
+/** Un envoi au serveur, avec l'avancement (0 à 1). */
+const upload = (url, body, type, progress) => new Promise((resolve, reject) => {
+  const xhr = new XMLHttpRequest();
+  xhr.open("POST", url);
+  xhr.setRequestHeader("Authorization", "Bearer " + TOKEN);
+  xhr.setRequestHeader("Content-Type", "application/octet-stream");
+  xhr.responseType = type;
+  xhr.upload.onprogress = (e) => e.lengthComputable && progress(e.loaded / e.total);
+  xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve(xhr.response) : reject(new Error("Le serveur n'a pas pu préparer le MP4.")));
+  xhr.onerror = () => reject(new Error("Le serveur ne répond pas."));
+  xhr.send(body);
+});
 function pickMime() {
   return ["video/mp4;codecs=avc1.640028,mp4a.40.2", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"]
     .find((m) => window.MediaRecorder && MediaRecorder.isTypeSupported(m));
@@ -1032,25 +1063,36 @@ async function exportVideo() {
   stop();
   const lockUi = (on) => document.querySelectorAll("#studio button, #studio input, #studio textarea").forEach((x) => { x.disabled = on; });
   lockUi(true);
+  $("mute").disabled = false; // on peut couper ou remettre le son pendant l'enregistrement
   try {
+    // Le son d'origine du passage part d'abord ; s'il ne passe pas, la vidéo garde le son enregistré par le navigateur.
+    let audioId = null;
+    try {
+      setStatus("Préparation du son en qualité d'origine…", .01);
+      audioId = (await upload("/api/cut/audio", await passageWav(), "json", (p) => setStatus("Préparation du son en qualité d'origine…", .01 + .07 * p))).id;
+    } catch { audioId = null; }
     // Les trois premières coupes chargées avant de lancer l'enregistrement.
     position = 0; shown = -1; draw(0, false);
     await Promise.all(pool.map((v) => (v.dataset.seg && v.readyState < 2 ? new Promise((r) => { v.onseeked = v.oncanplay = r; setTimeout(r, 3000); }) : null)));
     ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
     const out = ctx.createMediaStreamDestination();
     const stream = new MediaStream([...screen.captureStream(30).getVideoTracks(), ...out.stream.getAudioTracks()]);
-    const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 14_000_000, audioBitsPerSecond: 192_000 });
+    const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 14_000_000, audioBitsPerSecond: 320_000 });
     const chunks = [];
     recorder.ondataavailable = (event) => event.data.size && chunks.push(event.data);
     let aborted = false;
     const hidden = () => { if (document.hidden && recording) { aborted = true; finish(); } };
     document.addEventListener("visibilitychange", hidden);
     const recorded = new Promise((resolve) => { recorder.onstop = () => resolve(new Blob(chunks, { type: mime.split(";")[0] })); });
-    const ticker = setInterval(() => setStatus("Enregistrement… " + OniriqueAudio.clock(now()) + " / " + OniriqueAudio.clock(span()) + " · garde cet onglet ouvert", now() / span() * .7), 250);
+    const ticker = setInterval(() => setStatus("Enregistrement… " + OniriqueAudio.clock(now()) + " / " + OniriqueAudio.clock(span()) + " · garde cet onglet ouvert", .08 + now() / span() * .64), 250);
+    // Le son part dès que l'enregistrement a vraiment commencé ; l'écart restant est mesuré pour caler le son d'origine.
+    let offset = 0;
     await new Promise((resolve) => {
       recording = { done: () => { recording = null; setTimeout(() => recorder.stop(), 150); resolve(); } };
       recorder.start(1000);
+      const began = performance.now();
       play(0, out);
+      offset = (performance.now() - began) / 1000;
     });
     clearInterval(ticker);
     document.removeEventListener("visibilitychange", hidden);
@@ -1058,17 +1100,8 @@ async function exportVideo() {
     if (aborted) { setStatus("Enregistrement arrêté : l'onglet a été quitté. Relance l'export et reste sur cette page.", 0); return; }
 
     setStatus("Préparation du MP4 pour TikTok…", .72);
-    const mp4 = await new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open("POST", "/api/cut/mp4");
-      xhr.setRequestHeader("Authorization", "Bearer " + TOKEN);
-      xhr.setRequestHeader("Content-Type", "application/octet-stream");
-      xhr.responseType = "blob";
-      xhr.upload.onprogress = (e) => e.lengthComputable && setStatus("Préparation du MP4 pour TikTok…", .72 + .2 * e.loaded / e.total);
-      xhr.onload = () => (xhr.status === 200 ? resolve(xhr.response) : reject(new Error("Le serveur n'a pas pu préparer le MP4.")));
-      xhr.onerror = () => reject(new Error("Le serveur ne répond pas."));
-      xhr.send(raw);
-    }).catch((error) => { save(raw, fileName(mime.includes("mp4") ? "mp4" : "webm")); throw new Error(error.message + " La vidéo telle qu'enregistrée a été téléchargée à la place."); });
+    const mp4 = await upload("/api/cut/mp4" + (audioId ? "?audio=" + audioId + "&offset=" + offset.toFixed(3) : ""), raw, "blob",
+      (p) => setStatus("Préparation du MP4 pour TikTok…", .72 + .2 * p)).catch((error) => { save(raw, fileName(mime.includes("mp4") ? "mp4" : "webm")); throw new Error(error.message + " La vidéo telle qu'enregistrée a été téléchargée à la place."); });
     save(mp4, fileName("mp4"));
     setStatus("C'est prêt : ta vidéo est dans tes téléchargements.", 1);
   } catch (error) {
@@ -1149,6 +1182,11 @@ function start() {
   $("reshuffle").onclick = () => { prefs.shuffle = (prefs.shuffle || 0) + 1; restyle(true); };
   $("play").onclick = () => (playing ? stop() : play(position >= span() - .1 ? 0 : position));
   $("export").onclick = exportVideo;
+  $("mute").checked = !!prefs.mute;
+  $("mute").onchange = () => {
+    prefs.mute = $("mute").checked; savePrefs();
+    if (recording && source && source.monitor) source.monitor.gain.setTargetAtTime(prefs.mute ? 0 : 1, ctx.currentTime, .02);
+  };
   chips("duration", "duration", () => { sound.start = sound.buffer ? bestStart() : 0; position = 0; refresh(); });
   // Une durée au choix, au dixième de seconde.
   $("dur-custom").onchange = () => {
