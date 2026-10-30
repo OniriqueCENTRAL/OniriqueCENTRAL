@@ -2943,6 +2943,18 @@ document.addEventListener("keydown", (event) => {
 }, true);
 // Sans cela, Espace relâché sur un bouton déjà cliqué le cliquerait une seconde fois.
 document.addEventListener("keyup", (event) => { if (syncing() && event.key === " ") event.preventDefault(); }, true);
+// Retirer une prod d'un pack sans la perdre : elle part, avec toutes ses versions, dans le pack « Prods hors pack », créé au besoin.
+const OUTSIDE_PACK = "Prods hors pack";
+async function unpack(p, t) {
+  if (!confirm("Retirer « " + t.title + " » de « " + p.title + " » ? La prod et toutes ses versions vont dans « " + OUTSIDE_PACK + " ».")) return;
+  try {
+    const home = data.projects.find((x) => x.mine && x.kind === "pack" && x.title === OUTSIDE_PACK);
+    const id = home ? home.id : (await api("POST", "/me/sounds/projects", { title: OUTSIDE_PACK, kind: "pack" })).id;
+    await api("PATCH", "/me/sounds/tracks/" + t.id, { projectId: id });
+    $("details").close();
+    await refresh();
+  } catch (error) { fail(error); }
+}
 function openDetails(tid, view = "main") { detailsId = tid; detailsView = view; renderDetails(); if (!$("details").open) $("details").showModal(); }
 function drawPeaks(canvas, peaks) {
   requestAnimationFrame(() => {
@@ -3097,7 +3109,8 @@ function renderDetails() {
           if (title) await api("PATCH", "/me/sounds/tracks/" + t.id, { title }).then(refresh, fail);
           openDetails(t.id);
         } })),
-      group(item("close", "Supprimer", { danger: true, onclick: () => confirm("Supprimer « " + t.title + " » et toutes ses versions ?")
+      group(p.mine && p.kind === "pack" && p.title !== OUTSIDE_PACK && item("chevron", "Retirer du pack", { hint: "La prod et ses versions vont dans « " + OUTSIDE_PACK + " »", onclick: () => unpack(p, t) }),
+        item("close", "Supprimer", { danger: true, onclick: () => confirm("Supprimer « " + t.title + " » et toutes ses versions ?")
         && api("DELETE", "/me/sounds/tracks/" + t.id).then(() => { $("details").close(); return refresh(); }).catch(fail) }))];
   } else if (detailsView === "stats") {
     const st = t.stats, pct = (x) => (x === null ? "—" : Math.round(x * 100) + " %");
