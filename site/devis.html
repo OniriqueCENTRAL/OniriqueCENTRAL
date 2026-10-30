@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="assets/fonts.css">
 <link rel="stylesheet" href="assets/pages.css">
 <link rel="stylesheet" href="assets/tools.css">
-<link rel="stylesheet" href="assets/outils-doc.css">
+<link rel="stylesheet" href="assets/outils-doc.css?v=2">
 <style>
 @page { size: A4; margin: 14mm; }
 .rows { display: grid; gap: 10px; }
@@ -48,7 +48,10 @@
 .dv-note { font-size: 12px; color: #666; text-align: right; margin: 6px 0 0; }
 .dv-cond { margin-top: 28px; white-space: pre-line; color: #444; font-size: 13px; break-inside: avoid; }
 .dv-sign { margin-top: 28px; display: flex; justify-content: flex-end; break-inside: avoid; }
-.dv-sign div { width: 260px; height: 110px; border: 1px dashed #bbb; border-radius: 8px; padding: 10px; font-size: 12px; color: #666; }
+.dv-sign div { width: 260px; min-height: 110px; border: 1px dashed #bbb; border-radius: 8px; padding: 10px; font-size: 12px; color: #666; }
+.dv-sign img { display: block; width: 100%; height: 90px; object-fit: contain; }
+.dv-trace { margin: 14px 0 0; font: 10px/1.5 var(--f-mono); color: #777; overflow-wrap: anywhere; break-inside: avoid; }
+#sg-form { display: grid; gap: 12px; }
 </style>
 
 <a class="skip" href="#contenu">Aller au contenu</a>
@@ -63,7 +66,7 @@
   <section class="hero">
     <p class="eyebrow">Outil gratuit · sans compte</p>
     <h1>Un <em>devis</em> propre, en deux minutes</h1>
-    <p class="lede">Choisis ton métier : des prestations types sont proposées, change-les comme tu veux. Le total se calcule tout seul. Rien n'est envoyé : ton brouillon reste dans ce navigateur.</p>
+    <p class="lede">Choisis ton métier : des prestations types sont proposées, change-les comme tu veux. Le total se calcule tout seul. Fais-le signer en ligne par ton client, ou télécharge-le en PDF. Ton brouillon reste dans ce navigateur.</p>
   </section>
 
   <div class="studio">
@@ -127,6 +130,17 @@
       <label>Conditions<textarea name="conditions" rows="5"></textarea></label>
     </fieldset>
 
+    <fieldset>
+      <legend>Faire signer en ligne</legend>
+      <p class="hint">Ton client reçoit un lien, lit le devis et signe au doigt ou à la souris. Tu reçois le devis signé par mail, avec la date, son nom et la trace de la signature.</p>
+      <div id="mailbox"></div>
+      <label>E-mail du client<input id="sign-to" type="email" placeholder="Vide : tu reçois juste le lien à lui donner"></label>
+      <label>Message (facultatif)<textarea id="sign-text" rows="3"></textarea></label>
+      <button type="button" class="go" id="sign-send">Envoyer le devis à signer</button>
+      <p class="status" id="sign-note" role="status"></p>
+      <label id="sign-link" hidden>Lien de signature<input readonly></label>
+    </fieldset>
+
     <div class="actions">
       <button type="button" class="go" id="pdf">Télécharger en PDF</button>
       <button type="button" class="go ghost" id="reset">Tout effacer</button>
@@ -134,6 +148,23 @@
     <p class="status" id="status" role="status"></p>
     <p class="hint">Dans la fenêtre d'impression, choisis « Enregistrer au format PDF » et coche « Graphiques d'arrière-plan ».</p>
   </form>
+
+  <!-- Le client qui ouvre le lien de signature (devis.html?signer=…) : le devis à droite, la signature ici. -->
+  <div class="panel" id="signer" hidden>
+    <fieldset>
+      <legend>Signer le devis</legend>
+      <div id="sg-form">
+        <label>Ton nom complet<input id="sg-name" autocomplete="name"></label>
+        <p class="hint">Signe dans le cadre blanc, au doigt ou à la souris.</p>
+        <canvas class="pad" id="sg-pad" aria-label="Cadre de signature"></canvas>
+        <div class="actions"><button type="button" class="go ghost" id="sg-clear">Effacer la signature</button></div>
+        <label class="check"><input type="checkbox" id="sg-ok"> Bon pour accord : j'ai lu ce devis et je l'accepte.</label>
+        <button type="button" class="go" id="sg-go">Signer le devis</button>
+      </div>
+      <p class="status" id="sg-note" role="status"></p>
+      <div class="actions" id="sg-done" hidden><button type="button" class="go" id="sg-pdf">Télécharger le devis signé</button></div>
+    </fieldset>
+  </div>
 
   <div class="preview"><article class="doc dv" id="doc"></article></div>
 </div>
@@ -145,7 +176,7 @@
   </nav>
 </footer>
 <script src="assets/tools-menu.js?v=6"></script>
-<script src="assets/outils-doc.js"></script>
+<script src="assets/outils-doc.js?v=2"></script>
 <script>
 "use strict";
 const KEY = "onirique-devis";
@@ -200,6 +231,9 @@ const rows = document.getElementById("rows");
 const doc = document.getElementById("doc");
 const status = document.getElementById("status");
 let state = Outils.load(KEY, DEFAULTS);
+// Le lien de signature reçu par le client : le devis vient du serveur, et n'est pas gardé comme brouillon.
+const signer = new URLSearchParams(location.search).get("signer");
+let signed = null;
 const cents = (c) => euro.format(c / 100);
 
 function renderRows() {
@@ -245,10 +279,14 @@ function render() {
     </div>
     ${s.franchise ? `<p class="dv-note">TVA non applicable, art. 293 B du CGI</p>` : ""}
     ${s.conditions?.trim() ? `<div class="dv-cond"><p class="dv-label">Conditions</p>${esc(s.conditions.trim())}</div>` : ""}
-    <div class="dv-sign"><div>Bon pour accord<br>Date et signature du client</div></div>`;
+    <div class="dv-sign"><div>${signed?.signed
+      ? `Bon pour accord, le ${new Date(signed.signedAt).toLocaleDateString("fr-FR")}<img src="${esc(signed.signature)}" alt="Signature">${esc(signed.signerName)}`
+      : "Bon pour accord<br>Date et signature du client"}</div></div>
+    ${signed?.signed ? `<p class="dv-trace">Signé électroniquement sur onirique.store par ${esc(signed.signerName)} le ${new Date(signed.signedAt).toLocaleString("fr-FR")}
+      · adresse IP ${esc(signed.signerIp)} · empreinte du devis (SHA-256) ${esc(signed.hash)}</p>` : ""}`;
 
   document.getElementById("logo-off").hidden = !s.logo;
-  status.textContent = Outils.save(KEY, s) ? "Brouillon enregistré sur cet appareil." : "Brouillon trop lourd pour être gardé : pense à télécharger ton PDF.";
+  if (!signer) status.textContent = Outils.save(KEY, s) ? "Brouillon enregistré sur cet appareil." : "Brouillon trop lourd pour être gardé : pense à télécharger ton PDF.";
 }
 
 Outils.bindForm(form, state, (name) => {
@@ -296,7 +334,61 @@ document.getElementById("reset").addEventListener("click", () => {
   location.reload();
 });
 
-renderRows();
-render();
+// Envoyer le devis à signer : il est gardé tel quel sur le serveur, et le client reçoit le lien.
+const signSend = document.getElementById("sign-send"), signNote = document.getElementById("sign-note"), signLink = document.getElementById("sign-link");
+let mailer = null;
+if (!signer) Outils.mailbox(document.getElementById("mailbox"), "devis", (m) => {
+  mailer = m;
+  signSend.disabled = !Outils.token();
+  if (Outils.token() && !m) signNote.textContent = "Sans boîte mail reliée, le lien part d'ONIRIQUE ; la réponse du client revient à ton adresse.";
+});
+signSend.addEventListener("click", async () => {
+  const to = document.getElementById("sign-to").value.trim();
+  if (to && !confirm(`Envoyer le devis à signer à ${to}${mailer ? " depuis " + mailer.fromEmail : ""} ?`)) return;
+  signSend.disabled = true;
+  signNote.textContent = "Envoi…";
+  try {
+    const r = await Outils.api("POST", "/me/docs/sign", { data: state, to, text: document.getElementById("sign-text").value });
+    signNote.textContent = to ? `Envoyé à ${to}. Tu recevras un mail dès qu'il aura signé.` : "Lien prêt : donne-le à ton client. Tu recevras un mail dès qu'il aura signé.";
+    signLink.hidden = false;
+    signLink.querySelector("input").value = r.link;
+    signLink.querySelector("input").select();
+  } catch (error) { signNote.textContent = error.message; }
+  signSend.disabled = false;
+});
+
+async function openSigner() {
+  form.hidden = true;
+  document.getElementById("signer").hidden = false;
+  document.querySelector(".hero").innerHTML = `<p class="eyebrow">Devis à signer</p><h1>Lis le devis, puis <em>signe</em></h1>
+    <p class="lede">Ta signature, ton nom, la date et l'adresse IP de ton appareil sont enregistrés avec le devis.</p>`;
+  const note = document.getElementById("sg-note");
+  const done = () => {
+    document.getElementById("sg-form").hidden = true;
+    document.getElementById("sg-done").hidden = false;
+    note.textContent = `Signé par ${signed.signerName} le ${new Date(signed.signedAt).toLocaleString("fr-FR")}.`;
+  };
+  try { signed = await Outils.api("GET", "/docs/sign/" + encodeURIComponent(signer)); }
+  catch (error) { note.textContent = error.message; document.getElementById("sg-form").hidden = true; return; }
+  state = { ...DEFAULTS, ...signed.data };
+  render();
+  if (signed.signed) return done();
+  const pad = Outils.signPad(document.getElementById("sg-pad"));
+  document.getElementById("sg-clear").onclick = pad.clear;
+  document.getElementById("sg-go").onclick = async (e) => {
+    const name = document.getElementById("sg-name").value.trim();
+    if (name.length < 2) return (note.textContent = "Écris ton nom complet.");
+    if (pad.empty()) return (note.textContent = "Signe dans le cadre blanc.");
+    if (!document.getElementById("sg-ok").checked) return (note.textContent = "Coche « Bon pour accord » pour signer.");
+    e.target.disabled = true;
+    note.textContent = "Signature…";
+    try { signed = await Outils.api("POST", "/docs/sign/" + encodeURIComponent(signer), { name, signature: pad.png(), accept: true }); render(); done(); }
+    catch (error) { note.textContent = error.message; e.target.disabled = false; }
+  };
+}
+document.getElementById("sg-pdf").addEventListener("click", () => window.print());
+
+if (signer) openSigner();
+else { renderRows(); render(); }
 </script>
 </html>

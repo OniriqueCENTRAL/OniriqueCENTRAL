@@ -40,6 +40,7 @@ import { mountCut } from './cut.js';
 import { mountBeatStoreHooks } from './beatstore.js';
 import { ownsGoogleState, googleMailerCallback } from './packsend.js';
 import { mountPush } from './push.js';
+import { mountDocs } from './docs.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
@@ -271,6 +272,9 @@ export function createApp() {
     res.json({ received: true });
     social.handleInstagramWebhook(JSON.parse(raw)).catch(console.error);
   });
+
+  // Le PDF du presskit et le devis à signer (avec son logo) dépassent la limite habituelle : leur parseur passe avant.
+  mountDocs(app, { requireUser, wrap });
 
   app.use('/api', express.json({ limit: '200kb' }));
 

@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="assets/fonts.css">
 <link rel="stylesheet" href="assets/pages.css">
 <link rel="stylesheet" href="assets/tools.css">
-<link rel="stylesheet" href="assets/outils-doc.css">
+<link rel="stylesheet" href="assets/outils-doc.css?v=2">
 <style>
 @page { size: A4; margin: 0; }
 .pk { --a: #E23444; --bg: #0D0809; --fg: #F6EEEE; --soft: rgba(246,238,238,.65); --rule: rgba(246,238,238,.15); --ft: var(--f-display);
@@ -57,7 +57,7 @@
   <section class="hero">
     <p class="eyebrow">Outil gratuit · sans compte</p>
     <h1>Ton <em>presskit</em>, prêt à envoyer</h1>
-    <p class="lede">Remplis les champs, le presskit se met à jour à droite. Télécharge-le en PDF quand il te plaît. Rien n'est envoyé : ton brouillon reste dans ce navigateur.</p>
+    <p class="lede">Remplis les champs, le presskit se met à jour à droite. Télécharge-le en PDF, ou envoie-le par mail à ton client depuis ton Gmail. Ton brouillon reste dans ce navigateur.</p>
   </section>
 
   <div class="studio">
@@ -126,6 +126,19 @@
       </div>
     </fieldset>
 
+    <fieldset>
+      <legend>Envoyer par mail</legend>
+      <p class="hint">Le presskit part en PDF, en pièce jointe, depuis ta boîte mail.</p>
+      <div id="mailbox"></div>
+      <label>E-mail du client<input id="send-to" type="email" placeholder="booking@salle.fr"></label>
+      <label>Objet<input id="send-subject"></label>
+      <label>Message<textarea id="send-text" rows="4">Bonjour,
+
+Voici mon presskit en pièce jointe. Je reste dispo pour en parler.</textarea></label>
+      <button type="button" class="go" id="send" disabled>Envoyer le presskit</button>
+      <p class="status" id="send-note" role="status"></p>
+    </fieldset>
+
     <div class="actions">
       <button type="button" class="go" id="pdf">Télécharger en PDF</button>
       <button type="button" class="go ghost" id="reset">Tout effacer</button>
@@ -144,7 +157,7 @@
   </nav>
 </footer>
 <script src="assets/tools-menu.js?v=6"></script>
-<script src="assets/outils-doc.js"></script>
+<script src="assets/outils-doc.js?v=2"></script>
 <script>
 "use strict";
 const KEY = "onirique-presskit";
@@ -219,6 +232,27 @@ document.getElementById("photo").addEventListener("change", async (e) => {
 });
 document.getElementById("photo-off").addEventListener("click", () => { state.photo = ""; render(); });
 document.getElementById("pdf").addEventListener("click", () => window.print());
+
+// L'envoi au client : le PDF est fabriqué ici, puis part depuis la boîte mail reliée.
+const send = document.getElementById("send"), sendNote = document.getElementById("send-note");
+let mailer = null;
+Outils.mailbox(document.getElementById("mailbox"), "presskit", (m) => { mailer = m; send.disabled = !m; });
+send.addEventListener("click", async () => {
+  const to = document.getElementById("send-to").value.trim();
+  const subject = document.getElementById("send-subject").value.trim() || "Presskit — " + (state.nom || "artiste");
+  if (!to) return (sendNote.textContent = "Écris l'adresse e-mail du client.");
+  if (!confirm(`Envoyer le presskit à ${to} depuis ${mailer.fromEmail} ?`)) return;
+  send.disabled = true;
+  sendNote.textContent = "Fabrication du PDF…";
+  try {
+    const pdf = await Outils.pdf(doc);
+    sendNote.textContent = "Envoi…";
+    await Outils.api("POST", "/me/docs/send", { to, subject, text: document.getElementById("send-text").value,
+      filename: "Presskit " + (state.nom || ""), pdf: await Outils.base64(pdf) });
+    sendNote.textContent = `Envoyé à ${to}.`;
+  } catch (error) { sendNote.textContent = error.message; }
+  send.disabled = false;
+});
 document.getElementById("reset").addEventListener("click", () => {
   if (!confirm("Effacer tout le presskit ?")) return;
   Outils.clear(KEY);

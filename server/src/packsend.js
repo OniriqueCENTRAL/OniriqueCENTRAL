@@ -160,7 +160,7 @@ export async function coverPalette(cover) {
 //------------------------------------------------------------------------------ Boîte mail du membre
 // Deux façons de la brancher : « Se connecter avec Google » (host = 'google', l'accès Gmail gardé chiffré dans secret,
 // les mails partent par l'API Gmail), ou n'importe quelle boîte par SMTP (mot de passe d'application chiffré).
-const mailerRow = (userId) => get('SELECT * FROM sound_mailers WHERE user_id = ?', userId);
+export const mailerRow = (userId) => get('SELECT * FROM sound_mailers WHERE user_id = ?', userId);
 export const googleReady = () => !!(config.googleClientId && config.googleClientSecret);
 export const mailerView = (userId) => {
   const m = mailerRow(userId);
@@ -195,7 +195,7 @@ export function gmailTransport(m) {
     },
   };
 }
-const transportOf = (m) => (m.host === 'google' && !testing ? gmailTransport(m) : smtpTransport({ host: m.host, port: m.port, login: m.login, password: unseal(m.secret) }));
+export const transportOf = (m) => (m.host === 'google' && !testing ? gmailTransport(m) : smtpTransport({ host: m.host, port: m.port, login: m.login, password: unseal(m.secret) }));
 // Les connexions Google en cours : la demande (state) dit de quel membre il s'agit, et sur quel pack revenir.
 const pendingGoogle = new Map();
 
@@ -248,7 +248,7 @@ export async function googleMailerCallback(req, res) {
         from_name = excluded.from_name, from_email = excluded.from_email, updated_at = excluded.updated_at`,
     entry.userId, email, seal(t.refresh_token), entry.fromName, email, now());
   } catch (error) { result = error.message; }
-  res.redirect(`${config.siteUrl}/mes-sons.html?google=${encodeURIComponent(result)}${entry?.projectId ? `#/p/${entry.projectId}` : ''}`);
+  res.redirect(`${config.siteUrl}/${entry?.back || 'mes-sons'}.html?google=${encodeURIComponent(result)}${entry?.projectId ? `#/p/${entry.projectId}` : ''}`);
 }
 
 //------------------------------------------------------------------------------ Routes
@@ -268,8 +268,10 @@ export function mountPackSend(app, { me, ownProject, sign, wrap }) {
   signLinks = sign;
   if (!testing) setTimeout(() => resumeSends().catch((error) => console.error(`[mails] reprise : ${error.message}`)), 5000).unref();
   // La boîte mail du membre : essayée pour de bon avant d'être gardée, le mot de passe chiffré.
-  app.get('/api/me/sounds/mailer', ...me, (req, res) => res.json(mailerView(req.user.id)));
-  app.put('/api/me/sounds/mailer', ...me, wrap(async (req, res) => {
+  // La boîte mail sert aussi au presskit et au devis (outils gratuits) : un compte connecté suffit, sans ONIRIQUE CLOUD.
+  const user = me[0];
+  app.get('/api/me/sounds/mailer', user, (req, res) => res.json(mailerView(req.user.id)));
+  app.put('/api/me/sounds/mailer', user, wrap(async (req, res) => {
     rateLimit(`sounds-mailer:${req.user.id}`, 20);
     const b = req.body || {};
     const host = str(b.host, 120).toLowerCase(), port = Number(b.port), login = str(b.login, 200), password = String(b.password || '');
@@ -288,7 +290,7 @@ export function mountPackSend(app, { me, ownProject, sign, wrap }) {
     req.user.id, host, port, login, seal(password), str(b.fromName, 80), fromEmail, now());
     res.json(mailerView(req.user.id));
   }));
-  app.delete('/api/me/sounds/mailer', ...me, wrap(async (req, res) => {
+  app.delete('/api/me/sounds/mailer', user, wrap(async (req, res) => {
     const m = mailerRow(req.user.id);
     // Google oublie aussi l'accès de son côté ; s'il ne répond pas, la boîte est quand même débranchée ici.
     if (m?.host === 'google') await fetch('https://oauth2.googleapis.com/revoke', { method: 'POST', body: new URLSearchParams({ token: unseal(m.secret) }) }).catch(() => {});
@@ -298,11 +300,12 @@ export function mountPackSend(app, { me, ownProject, sign, wrap }) {
 
   // « Se connecter avec Google » : seul le droit d'envoyer des mails est demandé (gmail.send), plus l'adresse du compte.
   // Google revient par l'adresse déjà déclarée pour YouTube (même client OAuth) ; la demande en cours dit que c'est un mail.
-  app.post('/api/me/sounds/mailer/google', ...me, (req, res) => {
+  app.post('/api/me/sounds/mailer/google', user, (req, res) => {
     if (!googleReady()) throw new HttpError(503, 'La connexion avec Google n\'est pas encore réglée sur le serveur.');
     for (const [k, v] of pendingGoogle) if (v.expires < now()) pendingGoogle.delete(k);
     const state = crypto.randomBytes(24).toString('base64url');
-    pendingGoogle.set(state, { userId: req.user.id, projectId: Number(req.body?.projectId) || 0, fromName: str(req.body?.fromName, 80), expires: now() + 10 * 60_000 });
+    pendingGoogle.set(state, { userId: req.user.id, projectId: Number(req.body?.projectId) || 0, fromName: str(req.body?.fromName, 80),
+      back: ['presskit', 'devis'].includes(req.body?.back) ? req.body.back : '', expires: now() + 10 * 60_000 });
     res.json({ url: 'https://accounts.google.com/o/oauth2/v2/auth?' + new URLSearchParams({
       client_id: config.googleClientId, redirect_uri: googleBack(), response_type: 'code', state,
       scope: 'openid email https://www.googleapis.com/auth/gmail.send', access_type: 'offline', prompt: 'consent', // un accès qui dure
