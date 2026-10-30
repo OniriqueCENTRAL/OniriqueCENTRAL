@@ -283,7 +283,7 @@ function render() {
       ? `Bon pour accord, le ${new Date(signed.signedAt).toLocaleDateString("fr-FR")}<img src="${esc(signed.signature)}" alt="Signature">${esc(signed.signerName)}`
       : "Bon pour accord<br>Date et signature du client"}</div></div>
     ${signed?.signed ? `<p class="dv-trace">Signé électroniquement sur onirique.store par ${esc(signed.signerName)} le ${new Date(signed.signedAt).toLocaleString("fr-FR")}
-      ${signed.signerIp ? `· adresse IP ${esc(signed.signerIp)}` : ""} · empreinte du devis (SHA-256) ${esc(signed.hash)}</p>` : ""}`;
+      · empreinte du devis (SHA-256) ${esc(signed.hash)}</p>` : ""}`;
 
   document.getElementById("logo-off").hidden = !s.logo;
   if (!signer) status.textContent = Outils.save(KEY, s) ? "Brouillon enregistré sur cet appareil." : "Brouillon trop lourd pour être gardé : pense à télécharger ton PDF.";
@@ -367,7 +367,7 @@ async function openSigner() {
   form.hidden = true;
   document.getElementById("signer").hidden = false;
   document.querySelector(".hero").innerHTML = `<p class="eyebrow">Devis à signer</p><h1>Lis le devis, puis <em>signe</em></h1>
-    <p class="lede">Ta signature, ton nom, la date et l'adresse IP de ton appareil sont enregistrés avec le devis.</p>`;
+    <p class="lede">Ton nom, ta signature et la date sont ajoutés au devis. Le devis signé part ensuite en PDF par mail : il n'est pas gardé en ligne.</p>`;
   const note = document.getElementById("sg-note");
   const done = () => {
     document.getElementById("sg-form").hidden = true;
@@ -376,6 +376,13 @@ async function openSigner() {
   };
   try { signed = await Outils.api("GET", "/docs/sign/" + encodeURIComponent(signer)); }
   catch (error) { note.textContent = error.message; document.getElementById("sg-form").hidden = true; return; }
+  // Le devis signé est parti par mail et a été effacé du serveur : il n'en reste que la trace.
+  if (!signed.data) {
+    document.getElementById("sg-form").hidden = true;
+    document.querySelector(".preview").hidden = true;
+    note.textContent = `Ce devis a été signé par ${signed.signerName} le ${new Date(signed.signedAt).toLocaleString("fr-FR")}. Le devis signé a été envoyé en PDF par mail : il n'est plus gardé en ligne.`;
+    return;
+  }
   state = { ...DEFAULTS, ...signed.data };
   render();
   if (signed.signed) return done();
@@ -387,9 +394,9 @@ async function openSigner() {
     if (pad.empty()) return (note.textContent = "Signe dans le cadre blanc.");
     if (!document.getElementById("sg-ok").checked) return (note.textContent = "Coche « Bon pour accord » pour signer.");
     e.target.disabled = true;
-    note.textContent = "Signature…";
-    // La copie en PDF part avec la signature : le devis dessiné tel qu'il sera signé (l'adresse IP est dans le mail).
-    const tryout = { ...signed, signed: true, signerName: name, signature: pad.png(), signedAt: Date.now(), signerIp: "" };
+    note.textContent = "Préparation du devis signé…";
+    // Le PDF part avec la signature : le devis dessiné tel qu'il sera signé.
+    const tryout = { ...signed, signed: true, signerName: name, signature: pad.png(), signedAt: Date.now() };
     let pdf = "";
     try { const real = signed; signed = tryout; render(); pdf = await Outils.base64(await Outils.pdf(doc)); signed = real; } catch { /* sans copie, la signature compte quand même */ }
     try { signed = await Outils.api("POST", "/docs/sign/" + encodeURIComponent(signer), { name, signature: tryout.signature, accept: true, pdf }); render(); done(); }

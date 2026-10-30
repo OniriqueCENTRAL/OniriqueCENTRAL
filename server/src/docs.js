@@ -1,6 +1,7 @@
 // Presskit et devis (menu Outils) : le PDF envoyé au client depuis la boîte mail du membre, et le devis signé en ligne.
-// Le client reçoit un lien (devis.html?signer=…), lit le devis, signe au doigt ou à la souris ; l'émetteur reçoit le
-// devis signé avec sa trace : nom, date, adresse IP, appareil et empreinte SHA-256 du devis.
+// Le client reçoit un lien (devis?signer=…), lit le devis, signe au doigt ou à la souris ; l'émetteur et le client
+// reçoivent le devis signé en PDF par mail, avec le nom, la date et l'empreinte SHA-256 du devis. Une fois le PDF
+// parti, le devis et la signature sont effacés du serveur : il n'en garde que la trace (nom, date, empreinte).
 import crypto from 'node:crypto';
 import express from 'express';
 import { config } from './config.js';
@@ -27,6 +28,9 @@ CREATE TABLE IF NOT EXISTS doc_signs (
 );
 `);
 
+// Ni adresse IP ni appareil du signataire : plus gardés (ceux des premières signatures sont effacés).
+db.exec('UPDATE doc_signs SET signer_ip = NULL, signer_agent = NULL WHERE signer_ip IS NOT NULL OR signer_agent IS NOT NULL');
+
 const EMAIL = /^[^@\s<>"]+@[^@\s<>"]+\.[a-z]{2,}$/i;
 const str = (value, max = 200) => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, max) : '');
 const text = (value, max = 4000) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
@@ -45,8 +49,8 @@ async function sendFrom(m, message) {
 }
 
 const view = (d, owner) => ({
-  title: d.title, data: JSON.parse(d.data), hash: d.hash, from: owner?.name || '', createdAt: d.created_at,
-  signed: !!d.signed_at, signerName: d.signer_name, signature: d.signature, signedAt: d.signed_at, signerIp: d.signer_ip, signerAgent: d.signer_agent,
+  title: d.title, data: d.data ? JSON.parse(d.data) : null, hash: d.hash, from: owner?.name || '', createdAt: d.created_at,
+  signed: !!d.signed_at, signerName: d.signer_name, signature: d.signature, signedAt: d.signed_at,
 });
 
 export function mountDocs(app, { requireUser, wrap }) {
@@ -113,27 +117,31 @@ export function mountDocs(app, { requireUser, wrap }) {
     if (name.length < 2) throw new HttpError(400, 'Écris ton nom complet.');
     if (b.accept !== true) throw new HttpError(400, 'Coche « Bon pour accord » pour signer.');
     if (!/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(signature) || signature.length > 400_000) throw new HttpError(400, 'Signe dans le cadre avant de valider.');
-    // La copie du devis signé en PDF, fabriquée par le navigateur du client ; la preuve reste la trace et l'empreinte.
+    // La copie du devis signé en PDF, fabriquée par le navigateur du client ; l'empreinte prouve le devis d'origine.
     const pdf = Buffer.from(String(b.pdf || ''), 'base64');
     const copy = pdf.subarray(0, 5).toString() === '%PDF-' && pdf.length <= 4 * 1024 * 1024
       ? [{ filename: `${d.title} signé.pdf`.replace(/[\\/:*?"<>|]/g, ' '), content: pdf, contentType: 'application/pdf' }] : undefined;
-    const at = now(), ip = String(req.ip || ''), agent = str(req.headers['user-agent'], 300);
+    const at = now();
     // La condition « pas encore signé » dans la requête : deux signatures en même temps, une seule passe.
-    if (!run(`UPDATE doc_signs SET signer_name = ?, signature = ?, signed_at = ?, signer_ip = ?, signer_agent = ? WHERE id = ? AND signed_at IS NULL`,
-      name, signature, at, ip, agent, d.id).changes) throw new HttpError(409, 'Ce devis est déjà signé.');
+    if (!run(`UPDATE doc_signs SET signer_name = ?, signature = ?, signed_at = ? WHERE id = ? AND signed_at IS NULL`,
+      name, signature, at, d.id).changes) throw new HttpError(409, 'Ce devis est déjà signé.');
 
     const owner = get('SELECT name, email FROM users WHERE id = ?', d.user_id);
-    const trace = `Signé par : ${name}\nLe : ${when(at)} (heure de Paris)\nAdresse IP : ${ip}\nAppareil : ${agent || 'inconnu'}\nEmpreinte du devis (SHA-256) : ${d.hash}`;
-    const link = signLink(d.token);
+    const trace = `Signé par : ${name}\nLe : ${when(at)} (heure de Paris)\nEmpreinte du devis (SHA-256) : ${d.hash}`;
+    // Sans PDF (navigateur qui n'a pas pu le fabriquer), le devis signé reste visible par son lien.
+    const see = copy ? '' : `\n\nVoir et télécharger le devis signé :\n${signLink(d.token)}`;
     const mails = [sendMail(owner.email, `${d.title} signé par ${name} — ONIRIQUE`,
-      `Bonjour,\n\nTon devis vient d'être signé en ligne${copy ? ' : la copie signée est en pièce jointe' : ''}.\n\n${trace}\n\nVoir et télécharger le devis signé :\n${link}`, undefined,
+      `Bonjour,\n\nTon devis vient d'être signé en ligne${copy ? ' : le devis signé est en pièce jointe, garde ce mail' : ''}.\n\n${trace}${see}`, undefined,
       { buttonLabel: 'Voir le devis signé', attachments: copy })];
     if (d.client_email) {
       mails.push(sendMail(d.client_email, `${d.title} : ta signature est enregistrée — ONIRIQUE`,
-        `Bonjour,\n\nMerci, ta signature est enregistrée. Garde ce mail : il en est la preuve.\n\n${trace}\n\nRevoir le devis signé :\n${link}`, owner.email, { buttonLabel: 'Revoir le devis signé', attachments: copy }));
+        `Bonjour,\n\nMerci, ta signature est enregistrée${copy ? ' : le devis signé est en pièce jointe' : ''}. Garde ce mail : il en est la preuve.\n\n${trace}${see}`, owner.email,
+        { buttonLabel: 'Revoir le devis signé', attachments: copy }));
     }
-    // La signature est gardée même si un mail ne part pas : le lien montre toujours le devis signé.
-    await Promise.all(mails.map((p) => p.catch((error) => console.error(`[devis] mail de signature : ${error.message}`))));
-    res.json(view(get('SELECT * FROM doc_signs WHERE id = ?', d.id), owner));
+    const sent = await Promise.all(mails.map((p) => p.then(() => true, (error) => { console.error(`[devis] mail de signature : ${error.message}`); return false; })));
+    const signedView = view(get('SELECT * FROM doc_signs WHERE id = ?', d.id), owner);
+    // Le PDF est parti chez l'émetteur : le devis et la signature n'ont plus à rester sur le serveur.
+    if (copy && sent[0]) run(`UPDATE doc_signs SET data = '', signature = NULL WHERE id = ?`, d.id);
+    res.json(signedView);
   }));
 }

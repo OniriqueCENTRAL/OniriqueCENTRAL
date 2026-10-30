@@ -40,7 +40,7 @@ const pdf = Buffer.concat([Buffer.from('%PDF-1.4\n'), Buffer.alloc(300_000, 7)])
 const devis = { numero: 'DEV-1', nom: 'Kay Beats', objet: 'Prod du single', client: 'Damso', lignes: [{ d: 'Instru exclusive', q: '1', p: '300' }], logo: 'data:image/png;base64,' + 'A'.repeat(250_000) };
 const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
 
-let kay, link;
+let kay, link, noPdf;
 try {
   await step('presskit : sans compte refusé, sans boîte mail refusé (compte gratuit, sans ONIRIQUE CLOUD)', async () => {
     await call('POST', '/api/me/docs/send', { body: { to: 'booking@salle.fr', subject: 'Presskit', pdf }, expect: 401 });
@@ -91,7 +91,7 @@ try {
 
   await step('sans boîte mail reliée : le lien part d\'ONIRIQUE, la réponse revient au membre ; sans adresse, juste le lien', async () => {
     await call('DELETE', '/api/me/sounds/mailer', { token: kay.token });
-    await call('POST', '/api/me/docs/sign', { token: kay.token, body: { data: devis, to: 'niska@test.fr' }, expect: 201 });
+    noPdf = (await call('POST', '/api/me/docs/sign', { token: kay.token, body: { data: devis, to: 'niska@test.fr' }, expect: 201 })).token;
     const mail = outbox.at(-1);
     assert.deepEqual([mail.from, mail.to, mail.replyTo], ['ONIRIQUE <support@test.local>', 'niska@test.fr', kay.email]);
     const count = outbox.length;
@@ -107,20 +107,30 @@ try {
     await call('POST', '/api/docs/sign/inconnu', { body: { name: 'William Kalubi', signature: png, accept: true }, expect: 404 });
   });
 
-  await step('signé : trace gardée, l\'émetteur (adresse du compte) et le client reçoivent la copie signée en PDF ; une seule signature', async () => {
+  await step('signé : le PDF part par mail à l\'émetteur et au client, sans IP ni appareil, puis le devis est effacé du serveur', async () => {
     const s = await call('POST', `/api/docs/sign/${link}`, { body: { name: 'William Kalubi', signature: png, accept: true, pdf }, headers: { 'User-Agent': 'Téléphone de test' } });
-    assert.deepEqual([s.signed, s.signerName, s.signature, s.signerAgent], [true, 'William Kalubi', png, 'Téléphone de test']);
-    assert.ok(s.signedAt && s.signerIp);
+    assert.deepEqual([s.signed, s.signerName, s.signature, s.data.client, 'signerIp' in s], [true, 'William Kalubi', png, 'Damso', false]);
     const toKay = outbox.find((m) => m.to === kay.email && /signé par William Kalubi/.test(m.subject));
     const toClient = outbox.find((m) => m.to === 'damso@test.fr' && /signature est enregistrée/.test(m.subject));
     for (const m of [toKay, toClient]) {
-      assert.ok(m.text.includes(`https://site.test/devis?signer=${link}`));
       assert.ok(m.text.includes(s.hash));
       assert.match(m.text, /Signé par : William Kalubi/);
+      assert.doesNotMatch(m.text, /IP|Appareil|Téléphone de test|127\.0\.0\.1|signer=/);
       assert.equal(m.attachments[0].filename, 'Devis DEV-1 signé.pdf');
     }
+    const row = get('SELECT * FROM doc_signs WHERE token = ?', link);
+    assert.deepEqual([row.data, row.signature, row.signer_ip, row.signer_agent, row.signer_name], ['', null, null, null, 'William Kalubi']);
+    const after = await call('GET', `/api/docs/sign/${link}`);
+    assert.deepEqual([after.signed, after.data, after.signature, after.signerName], [true, null, null, 'William Kalubi']);
     await call('POST', `/api/docs/sign/${link}`, { body: { name: 'Quelqu\'un', signature: png, accept: true }, expect: 409 });
-    assert.equal((await call('GET', `/api/docs/sign/${link}`)).signerName, 'William Kalubi');
+  });
+
+  await step('signé sans PDF (navigateur qui n\'a pas pu le fabriquer) : le devis reste visible par son lien, donné dans le mail', async () => {
+    await call('POST', `/api/docs/sign/${noPdf}`, { body: { name: 'Niska', signature: png, accept: true } });
+    const toKay = outbox.find((m) => m.to === kay.email && /signé par Niska/.test(m.subject));
+    assert.ok(toKay.text.includes(`https://site.test/devis?signer=${noPdf}`));
+    assert.equal(toKay.attachments, undefined);
+    assert.equal((await call('GET', `/api/docs/sign/${noPdf}`)).data.client, 'Damso');
   });
 
   await step('compte supprimé : ses devis à signer partent avec lui', async () => {
