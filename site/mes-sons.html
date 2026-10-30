@@ -377,6 +377,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 .word-lines .words button { padding: 3px 8px; border: 1px solid var(--line); border-radius: 8px; background: none; color: var(--haze); font: 500 14px var(--f-body); cursor: pointer; }
 .word-lines .words button.done { color: var(--mist); border-color: transparent; background: rgba(255,255,255,.06); }
 .word-lines .words button.next { color: #fff; border-color: var(--ember); background: var(--ember); }
+.word-lines .words button.strong { font-weight: 800; text-transform: uppercase; box-shadow: inset 0 -3px 0 #ffd23f; }
 .chips-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .chips-row .speed { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: none; color: var(--mist); font: 500 13px var(--f-mono); cursor: pointer; }
 .chips-row .speed.on { background: var(--ember); border-color: var(--ember); color: #fff; }
@@ -749,7 +750,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 <dialog id="scan"></dialog>
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close('cancel')">Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
-<script src="assets/sounds-player.js?v=19"></script>
+<script src="assets/sounds-player.js?v=20"></script>
 <script src="assets/audio-kit.js?v=2"></script>
 <script src="assets/pdf-kit.js"></script>
 <script src="assets/release-steps.js"></script>
@@ -897,8 +898,11 @@ player.audio.addEventListener("pause", markPlaying);
 const parseLyrics = OP.parseLyrics;
 const stamp = (s) => { const cs = Math.round(s * 100); return "[" + String(Math.floor(cs / 6000)).padStart(2, "0") + ":" + ((cs % 6000) / 100).toFixed(2).padStart(5, "0") + "]"; };
 // Les paroles telles qu'on les enregistre ; words : avec le moment de chaque mot (seulement si tous les mots de la ligne en ont un).
+// Un mot FORT (pour ONIRIQUE CUT) s'écrit entre ** ; marked : la ligne telle qu'écrite, étoiles comprises.
 const lyricsText = (lines, words = true) => lines.map((l) => (l.at === null ? "" : stamp(l.at) + " ")
-  + (words && l.words && l.words.length && l.words.every((w) => w.at !== null) ? l.words.map((w) => "<" + stamp(w.at).slice(1, -1) + ">" + w.text).join(" ") : l.text)).join("\n");
+  + (words && l.words && l.words.length && l.words.every((w) => w.at !== null)
+    ? l.words.map((w) => "<" + stamp(w.at).slice(1, -1) + ">" + (w.strong ? "**" + w.text + "**" : w.text)).join(" ")
+    : l.marked ?? (l.words && l.words.some((w) => w.strong) ? l.words.map((w) => (w.strong ? "**" + w.text + "**" : w.text)).join(" ") : l.text))).join("\n");
 /** Des paroles retapées à la main gardent les mots déjà synchronisés des lignes qui n'ont pas changé. */
 function keepWords(lines, before) {
   const old = parseLyrics(before).filter((l) => l.words);
@@ -3240,8 +3244,13 @@ function renderDetails() {
         el("button", { className: "btn btn-ghost", type: "button", textContent: "Mot par mot (pour CUT)", onclick: () => {
           const lines = keepWords(parseLyrics(text.value), t.lyrics).filter((l) => l.text.trim());
           if (!lines.length) { text.focus(); return; }
-          for (const l of lines) l.words = l.words || l.text.split(/\s+/).filter(Boolean).map((w) => ({ at: null, text: w }));
-          wsync = { tid: t.id, lines, li: 0, wi: 0, rate: wsync ? wsync.rate : 0.5 };
+          for (const l of lines) {
+            l.words = l.words || OP.gluePunct((l.marked ?? l.text).split(/\s+/).filter(Boolean)
+              .map((w) => { const m = /^\*\*(.+?)\*\*(.*)$/.exec(w); return m ? { at: null, text: m[1] + m[2], strong: true } : { at: null, text: w }; }))
+              .map(({ ti, parts, ...w }) => w);
+            delete l.marked;
+          }
+          wsync = { tid: t.id, lines, li: 0, wi: 0, rate: wsync ? wsync.rate : 0.5, strongMode: false };
           const first = lines.findIndex((l) => l.words.some((w) => w.at === null));
           if (first < 0) wsync.li = lines.length; else { wsync.li = first; wsync.wi = lines[first].words.findIndex((w) => w.at === null); }
           // On reprend un peu avant la première ligne à faire, si elle est déjà calée ligne par ligne.
@@ -3249,7 +3258,7 @@ function renderDetails() {
           syncAudio.pause(); syncAudio.currentTime = ref != null ? Math.max(0, ref - 2) : 0;
           detailsView = "lyrics-words"; renderDetails();
         } }), saved),
-      el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Mot par mot : chaque mot apparaît pile quand il est chanté dans les vidéos ONIRIQUE CUT (styles « mot par mot »). Le lecteur peut ralentir le son pour être précis." })];
+      el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Mot par mot : chaque mot apparaît pile quand il est chanté dans les vidéos ONIRIQUE CUT (styles « mot par mot »). Le lecteur peut ralentir le son pour être précis. Un mot entouré de ** (comme **ça**) est un mot FORT : il ressort en grand dans CUT." })];
   } else if (detailsView === "lyrics-sync") {
     if (!sync || sync.tid !== t.id) { detailsView = "lyrics"; return renderDetails(); }
     const next = sync.lines[sync.i], touch = matchMedia("(pointer: coarse)").matches;
@@ -3325,7 +3334,9 @@ function renderDetails() {
     };
     const speeds = el("div", { className: "chips-row" }, el("span", { className: "muted", textContent: "Vitesse" }),
       ...[0.25, 0.5, 1, 1.25].map((r) => el("button", { type: "button", className: "speed" + (s.rate === r ? " on" : ""), ariaPressed: String(s.rate === r),
-        textContent: r.toFixed(2).replace(".", ","), onclick: () => { s.rate = r; syncAudio.playbackRate = r; renderDetails(); } })));
+        textContent: r.toFixed(2).replace(".", ","), onclick: () => { s.rate = r; syncAudio.playbackRate = r; renderDetails(); } })),
+      el("button", { type: "button", className: "speed" + (s.strongMode ? " on" : ""), ariaPressed: String(!!s.strongMode), style: "margin-left:auto",
+        textContent: s.strongMode ? "Mots FORTS : touche les mots" : "Choisir les mots FORTS", onclick: () => { s.strongMode = !s.strongMode; renderDetails(); } }));
     const done = s.lines.reduce((n, l) => n + l.words.filter((w) => w.at !== null).length, 0), total = s.lines.reduce((n, l) => n + l.words.length, 0);
     const saved = el("span", { className: "muted", style: "font-size:13px" });
     right = [back("Synchroniser mot par mot"),
@@ -3336,9 +3347,11 @@ function renderDetails() {
       el("ol", { className: "group word-lines" }, ...s.lines.map((l, li) => el("li", { className: li === s.li ? "next" : l.words.every((w) => w.at !== null) ? "done" : "" },
         el("span", { className: "when", textContent: l.at === null ? "—" : OP.time(l.at) }),
         el("span", { className: "words" }, ...l.words.map((w, wi) => el("button", { type: "button",
-          className: (li === s.li && wi === s.wi ? "next" : w.at !== null ? "done" : ""), textContent: w.text,
-          title: w.at === null ? "Pas encore marqué" : OP.time(w.at),
+          className: (li === s.li && wi === s.wi ? "next" : w.at !== null ? "done" : "") + (w.strong ? " strong" : ""), textContent: w.text,
+          title: s.strongMode ? (w.strong ? "Mot FORT : touche pour le remettre normal" : "Touche pour le mettre en FORT") : w.at === null ? "Pas encore marqué" : OP.time(w.at),
           onclick: () => {
+            // Mode « mots forts » : le mot ressortira en grand dans ONIRIQUE CUT.
+            if (s.strongMode) { w.strong = !w.strong; return renderDetails(); }
             s.li = li; s.wi = wi;
             const prev = wi > 0 ? l.words[wi - 1].at : li > 0 ? s.lines[li - 1].words.at(-1).at : null;
             const at = w.at ?? prev ?? l.at;

@@ -11,6 +11,7 @@
 <link rel="canonical" href="https://onirique.store/cut">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/fonts-cut.css">
 <link rel="stylesheet" href="assets/pages.css">
 <link rel="stylesheet" href="assets/tools.css">
 <style>
@@ -38,6 +39,17 @@
 .wave { position: relative; height: 96px; border-radius: 14px; background: rgba(0,0,0,.4); overflow: hidden; cursor: grab; touch-action: none; user-select: none; }
 .wave.drag { cursor: grabbing; }
 .wave canvas { width: 100%; height: 100%; display: block; }
+.loupe { position: relative; height: 64px; border-radius: 12px; background: rgba(0,0,0,.4); overflow: hidden; cursor: ew-resize; touch-action: none; user-select: none; }
+.loupe canvas { width: 100%; height: 100%; display: block; }
+.inline { display: inline-flex !important; align-items: center; gap: 8px; }
+.card .inline input { width: 116px; }
+.card input[type="color"] { width: 56px; height: 40px; padding: 3px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.35); cursor: pointer; }
+.row > .grow { flex: 1; min-width: 150px; }
+.sub { padding-top: 14px; border-top: 1px solid var(--line); }
+.sub-title { margin: 0; font: 800 14px/1.2 var(--f-display); }
+.strong-words { display: flex; flex-wrap: wrap; gap: 6px; }
+.strong-words button { padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: rgba(0,0,0,.3); color: var(--mist); font: 500 14px var(--f-body); cursor: pointer; }
+.strong-words button[aria-pressed="true"] { background: var(--ember); border-color: var(--ember); color: #fff; font-weight: 800; text-transform: uppercase; }
 .bpm { display: flex; align-items: center; gap: 8px; }
 .bpm output { min-width: 3.4em; text-align: center; font: 800 30px/1 var(--f-display); font-variant-numeric: tabular-nums; }
 .bpm small { font: 500 11px/1 var(--f-mono); letter-spacing: .14em; color: var(--haze); }
@@ -115,10 +127,31 @@
           <p class="step-title"><b>2</b>Le passage</p>
           <div class="row">
             <div class="chips" id="duration" role="group" aria-label="Durée"><button type="button" data-v="8">8 s</button><button type="button" data-v="15">15 s</button><button type="button" data-v="30">30 s</button><button type="button" data-v="60">60 s</button></div>
+            <label class="inline">ou<input type="text" id="dur-custom" inputmode="decimal" aria-label="Durée du passage en secondes">s</label>
             <button class="mini" type="button" id="best">Meilleur passage</button>
           </div>
           <div class="wave" id="wave"><canvas></canvas></div>
-          <p class="muted">Fais glisser la zone rouge : elle se cale toute seule sur le début d'une mesure. « Meilleur passage » cherche le moment le plus fort, souvent le refrain ou le drop.</p>
+          <div class="loupe" id="loupe" title="Fais glisser la forme d'onde pour régler le début au centième"><canvas></canvas></div>
+          <div class="row">
+            <label class="inline">Début<input type="text" id="start-at" inputmode="decimal" aria-label="Début du passage, en minutes et secondes"></label>
+            <div class="row nudges" style="gap:6px">
+              <button class="mini" type="button" data-nudge="-bar" title="Une mesure plus tôt">−1 mesure</button>
+              <button class="mini step" type="button" data-nudge="-beat" title="Un temps plus tôt">−1 temps</button>
+              <button class="mini step" type="button" data-nudge="-0.1">−0,1 s</button>
+              <button class="mini step" type="button" data-nudge="-0.01">−0,01 s</button>
+              <button class="mini step" type="button" data-nudge="0.01">+0,01 s</button>
+              <button class="mini step" type="button" data-nudge="0.1">+0,1 s</button>
+              <button class="mini step" type="button" data-nudge="beat" title="Un temps plus tard">+1 temps</button>
+              <button class="mini" type="button" data-nudge="bar" title="Une mesure plus tard">+1 mesure</button>
+            </div>
+          </div>
+          <div class="row">
+            <label class="check"><input type="checkbox" id="snap"> Caler sur les mesures</label>
+            <label class="check"><input type="checkbox" id="loop"> BOUCLE : la fin s'enchaîne pile avec le début</label>
+            <button class="mini" type="button" id="hear-start">Écouter le début</button>
+          </div>
+          <p class="muted" id="window-info"></p>
+          <p class="muted">Fais glisser la zone rouge, puis règle le début au centième avec la loupe (fais glisser la forme d'onde) ou les boutons. Pour régler au centième, décoche « Caler sur les mesures ». En BOUCLE, le passage fait un nombre entier de mesures : la vidéo repart sur le temps, sans coupure.</p>
         </div>
       </div>
 
@@ -159,14 +192,53 @@
           </div>
           <div class="row">
             <div class="chips" id="place" role="group" aria-label="Place du titre"><button type="button" data-v="top">En haut</button><button type="button" data-v="middle">Au milieu</button><button type="button" data-v="bottom">En bas</button><button type="button" data-v="none">Masqué</button></div>
-            <div class="chips" id="font" role="group" aria-label="Police"><button type="button" data-v="display">Moderne</button><button type="button" data-v="dream">Gothique</button><button type="button" data-v="body">Simple</button></div>
           </div>
           <label>Accroche (petit texte au-dessus de l'image)<input type="text" id="hook" maxlength="80" placeholder="le son il a une vibe spéciale"></label>
           <label>Paroles à l'écran
             <div class="chips wrap-in" id="lyricsMode" role="group" aria-label="Paroles à l'écran"><button type="button" data-v="line">Ligne entière</button><button type="button" data-v="word">Mot par mot</button><button type="button" data-v="card">Carte paroles</button></div>
           </label>
-          <div class="row" id="word-row">
-            <div class="chips" id="wordStyle" role="group" aria-label="Style des mots"><button type="button" data-v="pixel">Pixel blanc</button><button type="button" data-v="red">Rouge</button><button type="button" data-v="white">Blanc gras</button></div>
+          <div class="stack sub">
+            <p class="sub-title">Style du texte</p>
+            <div class="chips wrap-in" id="textStyle" role="group" aria-label="Styles de texte"><button type="button" data-v="classic">Classique</button><button type="button" data-v="pixel">Pixel blanc</button><button type="button" data-v="red">Rouge</button><button type="button" data-v="white">Blanc gras</button><button type="button" data-v="neon">Néon</button><button type="button" data-v="retro">Rétro</button></div>
+            <div class="fields">
+              <label>Police des paroles<select id="lyricFont"></select></label>
+              <label>Police du titre<select id="titleFont"></select></label>
+            </div>
+            <div class="row">
+              <label>Couleur<input type="color" id="textColor"></label>
+              <label class="grow">Taille du texte<input type="range" id="textSize" min="50" max="200" step="5"></label>
+            </div>
+            <div class="row">
+              <label>Contour<input type="color" id="strokeColor"></label>
+              <label class="grow">Épaisseur du contour<input type="range" id="stroke" min="0" max="20"></label>
+            </div>
+            <div class="row">
+              <label>Lueur<input type="color" id="glowColor"></label>
+              <label class="grow">Force de la lueur<input type="range" id="glow" min="0" max="100"></label>
+            </div>
+            <div class="row">
+              <label>Ombre<input type="color" id="shadowColor"></label>
+              <label class="grow">Flou de l'ombre<input type="range" id="shadowBlur" min="0" max="60"></label>
+              <label class="grow">Décalage de l'ombre<input type="range" id="shadowOffset" min="0" max="30"></label>
+            </div>
+            <div class="row">
+              <label class="check"><input type="checkbox" id="caps"> MAJUSCULES</label>
+              <label class="check"><input type="checkbox" id="pixel"> Texte pixelisé</label>
+            </div>
+          </div>
+          <div class="stack sub" id="word-row">
+            <p class="sub-title">Mots FORTS</p>
+            <p class="muted">Un mot fort s'affiche en plus grand, avec sa couleur, sa lueur et un petit « pop ». Touche les mots du passage pour les mettre en FORT ; tu peux aussi les marquer dans ONIRIQUE CLOUD (synchro mot par mot).</p>
+            <div class="strong-words" id="strong-words"></div>
+            <div class="fields">
+              <label>Taille du mot fort<input type="range" id="strongSize" min="100" max="300" step="5"></label>
+              <label>Police du mot fort<select id="strongFont"></select></label>
+            </div>
+            <div class="row">
+              <label>Couleur<input type="color" id="strongColor"></label>
+              <label>Lueur<input type="color" id="strongGlowColor"></label>
+              <label class="grow">Force de la lueur<input type="range" id="strongGlow" min="0" max="100"></label>
+            </div>
           </div>
           <label id="sign-row">Signature sous la carte (à droite)<input type="text" id="sign" maxlength="24" placeholder="PAROLES"></label>
           <label>Paroles synchronisées (facultatif)
@@ -208,21 +280,43 @@ const $ = (id) => document.getElementById(id);
 const W = 1080, H = 1920, RATE = 22050, HOP = 512, FPS = RATE / HOP;
 const TOKEN = sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token");
 const PREFS = "onirique.cut";
-const FONTS = { display: ["800", "Unbounded"], dream: ["600", "Grenze Gotisch"], body: ["700", "Hanken Grotesk"] };
+// Les polices du texte : nom, graisse, libellé (assets/fonts.css et assets/fonts-cut.css, servies par le site).
+const FONT_LIST = [
+  ["Hanken Grotesk", "800", "Hanken Grotesk (simple)"], ["Unbounded", "800", "Unbounded (moderne)"], ["Press Start 2P", "400", "Press Start 2P (pixel)"],
+  ["Silkscreen", "700", "Silkscreen (pixel)"], ["VT323", "400", "VT323 (écran rétro)"], ["Anton", "400", "Anton (affiche)"], ["Bebas Neue", "400", "Bebas Neue (étroite)"],
+  ["Grenze Gotisch", "600", "Grenze Gotisch (gothique)"], ["Permanent Marker", "400", "Permanent Marker (marqueur)"], ["JetBrains Mono", "500", "JetBrains Mono (machine)"],
+];
+const fontOf = (family) => FONT_LIST.find((f) => f[0] === family) || FONT_LIST[0];
+// Les styles de texte : des réglages de départ, que chaque curseur peut ensuite changer.
+const TEXT_STYLES = {
+  classic: { lyricFont: "Hanken Grotesk", textColor: "#ffffff", stroke: 0, glow: 0, shadowColor: "#000000", shadowBlur: 26, shadowOffset: 0, caps: false, pixel: false },
+  pixel: { lyricFont: "Press Start 2P", textColor: "#ffffff", stroke: 0, glowColor: "#ffffff", glow: 45, shadowBlur: 0, shadowOffset: 0, caps: true, pixel: false },
+  red: { lyricFont: "Anton", textColor: "#ff2525", strokeColor: "#3a0000", stroke: 7, glow: 0, shadowColor: "#000000", shadowBlur: 24, shadowOffset: 0, caps: true, pixel: false },
+  white: { lyricFont: "Hanken Grotesk", textColor: "#ffffff", strokeColor: "#000000", stroke: 5, glow: 0, shadowColor: "#000000", shadowBlur: 24, shadowOffset: 0, caps: true, pixel: false },
+  neon: { lyricFont: "Bebas Neue", textColor: "#ffffff", stroke: 0, glowColor: "#ff2bd6", glow: 85, shadowBlur: 0, shadowOffset: 0, caps: true, pixel: false },
+  retro: { lyricFont: "VT323", textColor: "#f6ff7a", stroke: 0, glowColor: "#f6ff7a", glow: 25, shadowColor: "#000000", shadowBlur: 0, shadowOffset: 6, caps: true, pixel: true },
+};
 const VARIED = [2, 2, 2, 1, 1, 4, 2, 2, 1, 1, 1, 1, 4];
 
 // Les réglages qu'on retrouve d'une fois sur l'autre ; le son et les clips, eux, restent sur l'appareil le temps de la page.
-let prefs = { duration: 15, order: "seq", cadence: "2", zoom: true, flash: false, place: "bottom", font: "display", artist: "",
-  preset: "classic", frame: "full", retro: false, lyricsMode: "line", wordStyle: "pixel", hook: "", sign: "" };
+let prefs = { duration: 15, order: "seq", cadence: "2", zoom: true, flash: false, place: "bottom", artist: "", snap: true, loop: false,
+  preset: "classic", frame: "full", retro: false, lyricsMode: "line", hook: "", sign: "", textStyle: "classic", titleFont: "Unbounded", textSize: 100,
+  strokeColor: "#000000", glowColor: "#ffffff", ...TEXT_STYLES.classic,
+  strongSize: 170, strongColor: "#ffffff", strongGlowColor: "#ffffff", strongGlow: 45, strongFont: "" };
 // Les styles rapides : des montages de TikTok de rap qui marchent, réglés d'un clic.
 const PRESETS = {
-  classic: { frame: "full", retro: false, lyricsMode: "line", place: "bottom", zoom: true, flash: false },
-  pixel: { frame: "43", retro: true, lyricsMode: "word", wordStyle: "pixel", place: "none", zoom: false, flash: false },
-  red: { frame: "169", retro: false, lyricsMode: "word", wordStyle: "red", place: "none", zoom: false, flash: false },
-  card: { frame: "43", retro: false, lyricsMode: "card", place: "none", zoom: false, flash: false },
+  classic: { frame: "full", retro: false, lyricsMode: "line", place: "bottom", zoom: true, flash: false, textStyle: "classic" },
+  pixel: { frame: "43", retro: true, lyricsMode: "word", place: "none", zoom: false, flash: false, textStyle: "pixel" },
+  red: { frame: "169", retro: false, lyricsMode: "word", place: "none", zoom: false, flash: false, textStyle: "red" },
+  card: { frame: "43", retro: false, lyricsMode: "card", place: "none", zoom: false, flash: false, textStyle: "classic" },
 };
 const FRAMES = { full: 0, 169: 9 / 16, 43: 3 / 4, 11: 1 };
-try { Object.assign(prefs, JSON.parse(localStorage.getItem(PREFS) || "{}")); } catch { /* rien de mémorisé */ }
+try {
+  const saved = JSON.parse(localStorage.getItem(PREFS) || "{}");
+  Object.assign(prefs, saved);
+  // Réglages d'avant : la police du titre en trois choix.
+  if (saved.font && !saved.titleFont) prefs.titleFont = { display: "Unbounded", dream: "Grenze Gotisch", body: "Hanken Grotesk" }[saved.font] || "Unbounded";
+} catch { /* rien de mémorisé */ }
 const savePrefs = () => { try { localStorage.setItem(PREFS, JSON.stringify(prefs)); } catch { /* stockage indisponible */ } };
 
 const sound = { name: "", buffer: null, env: null, rms: null, bpm: 0, phase: 0, start: 0 };
@@ -279,12 +373,27 @@ function phaseOf(env, bpm) {
 }
 const beatLength = () => 60 / sound.bpm;
 const barLength = () => 4 * beatLength();
-/** La durée du passage : celle choisie, ou tout le morceau s'il est plus court. */
-const span = () => (sound.buffer ? Math.min(prefs.duration, sound.buffer.duration) : prefs.duration);
+/** La durée du passage : celle choisie, ou tout le morceau s'il est plus court. En BOUCLE : un nombre entier de mesures,
+ *  pour que la fin retombe pile sur le début. */
+const span = () => {
+  if (!sound.buffer) return prefs.duration;
+  const d = prefs.loop && sound.bpm ? Math.max(1, Math.round(prefs.duration / barLength())) * barLength() : prefs.duration;
+  return Math.min(d, sound.buffer.duration);
+};
 /** Le début de mesure le plus proche (la grille part du premier temps trouvé). */
 const snapBar = (t) => Math.max(0, sound.phase + Math.round((t - sound.phase) / barLength()) * barLength());
 const maxStart = () => Math.max(0, sound.buffer.duration - span());
-const clampStart = (t) => { let s = snapBar(Math.min(t, maxStart())); while (s > maxStart() && s > 0) s -= barLength(); return Math.max(0, s); };
+const snapping = () => prefs.snap || prefs.loop;
+/** Un début possible : calé sur une mesure, ou au centième près quand on ne cale pas. */
+const clampStart = (t) => {
+  t = Math.max(0, Math.min(t, maxStart()));
+  if (!snapping()) return Math.round(t * 100) / 100;
+  let s = snapBar(t);
+  while (s > maxStart() + 1e-6 && s > 0) s -= barLength();
+  return Math.max(0, s);
+};
+const clockFine = (s) => Math.floor(s / 60) + ":" + (s % 60).toFixed(2).padStart(5, "0").replace(".", ",");
+const parseClock = (text) => { const m = /^\s*(?:(\d+):)?(\d+(?:[.,]\d+)?)\s*$/.exec(text || ""); return m ? Number(m[1] || 0) * 60 + Number(m[2].replace(",", ".")) : NaN; };
 
 /** Le passage le plus fort de la durée choisie, de préférence celui qui démarre sur une montée (refrain, drop). */
 function bestStart() {
@@ -468,6 +577,7 @@ function build() {
   segments.forEach((s, i) => {
     let c = prefs.order === "mix" ? Math.floor(random() * clips.length) : i % clips.length;
     if (prefs.order === "mix" && clips.length > 1 && c === last) c = (c + 1) % clips.length;
+    if (prefs.loop && clips.length > 1 && i === segments.length - 1 && c === segments[0].clip) c = (c + 1) % clips.length;
     last = c;
     const clip = clips[c], length = s.t1 - s.t0;
     s.clip = c;
@@ -479,17 +589,67 @@ function build() {
   });
 }
 
-/** Paroles LRC : [mm:ss.cc] texte ; les lignes sans repère sont ignorées. */
+// La ponctuation reste avec son mot : « ? », « , », « . », « ! », « » » vont avec le mot d'avant ; « « », « ( », « ¿ » avec le mot d'après.
+// ti : le mot principal du groupe (celui qu'on marque FORT), parts : tous les morceaux d'origine.
+const PUNCT_ONLY = /^[\p{P}\p{S}]+$/u, OPENS = /^[«“‘(\[{¿¡]+$/u;
+function gluePunct(words) {
+  const out = [], join = (a, b, main) => ({ ...a, text: a.text + " " + b.text, strong: !!(a.strong || b.strong), ti: main.ti, parts: [...(a.parts || [a.ti]), ...(b.parts || [b.ti])] });
+  let open = null, quotes = 0;
+  for (const w of words) {
+    const bare = w.text.replace(/\*\*/g, ""), punct = PUNCT_ONLY.test(bare);
+    const opening = punct && (OPENS.test(bare) || (/^["']+$/.test(bare) && quotes++ % 2 === 0) || !out.length);
+    if (opening) { open = open ? join(open, w, open) : w; continue; }
+    if (punct) { out[out.length - 1] = join(out.at(-1), w, out.at(-1)); continue; }
+    out.push(open ? join(open, w, w) : w);
+    open = null;
+  }
+  if (open) { if (out.length) out[out.length - 1] = join(out.at(-1), open, out.at(-1)); else out.push(open); }
+  return out;
+}
+/** Un mot entouré de ** est un mot FORT : il ressort en grand dans le mot par mot. */
+const strongOf = (w) => { const m = /^\*\*(.+?)\*\*(.*)$/.exec(w.text); return m ? { ...w, text: m[1] + m[2], strong: true } : w; };
+/** Paroles LRC : [mm:ss.cc] texte ; les lignes sans repère sont ignorées. row : la ligne dans le champ, pour y marquer les mots forts. */
 function readLyrics() {
   lyrics = [];
-  for (const line of $("lyrics").value.split("\n")) {
-    const m = /^\s*\[(\d+):(\d+(?:[.,]\d+)?)\]\s*(.*)$/.exec(line);
-    if (!m || !m[3].trim()) continue;
+  $("lyrics").value.split("\n").forEach((raw, row) => {
+    const m = /^\s*\[(\d+):(\d+(?:[.,]\d+)?)\]\s*(.*)$/.exec(raw);
+    if (!m || !m[3].trim()) return;
     // Synchronisées mot par mot dans CLOUD : « <mm:ss.cc>mot » devant chaque mot.
-    const words = [...m[3].matchAll(/<(\d+):(\d+(?:[.,]\d+)?)>\s*([^<]*)/g)].map((w) => ({ at: Number(w[1]) * 60 + Number(w[2].replace(",", ".")), text: w[3].trim() })).filter((w) => w.text);
-    lyrics.push({ at: Number(m[1]) * 60 + Number(m[2].replace(",", ".")), text: words.length ? words.map((w) => w.text).join(" ") : m[3].trim(), words: words.length ? words : null });
-  }
+    const words = gluePunct([...m[3].matchAll(/<(\d+):(\d+(?:[.,]\d+)?)>\s*([^<]*)/g)].map((w) => ({ at: Number(w[1]) * 60 + Number(w[2].replace(",", ".")), text: w[3].trim() }))
+      .filter((w) => w.text).map((w, ti) => strongOf({ ...w, ti })));
+    const plain = words.length ? null : gluePunct(m[3].trim().split(/\s+/).map((text, ti) => strongOf({ text, ti })));
+    lyrics.push({ row, at: Number(m[1]) * 60 + Number(m[2].replace(",", ".")), words: words.length ? words : null, plain, text: (words.length ? words : plain).map((w) => w.text).join(" ") });
+  });
   lyrics.sort((a, b) => a.at - b.at);
+  renderStrong();
+}
+/** Les mots du passage, à toucher pour les mettre en FORT (ou les remettre normaux). */
+function renderStrong() {
+  const box = $("strong-words");
+  if (!box) return;
+  const from = sound.start, to = sound.start + span(), items = [];
+  if (sound.buffer) for (const l of lyrics) {
+    if (l.words) l.words.forEach((w) => { if (w.at >= from - .05 && w.at < to) items.push({ l, w, tagged: true }); });
+    else if (l.at >= from - .05 && l.at < to) l.plain.forEach((w) => items.push({ l, w, tagged: false }));
+  }
+  box.replaceChildren(...items.map(({ l, w, tagged }) => Object.assign(document.createElement("button"), { type: "button", textContent: w.text,
+    ariaPressed: String(!!w.strong), title: w.strong ? "Mot FORT : touche pour le remettre normal" : "Touche pour le mettre en FORT",
+    onclick: () => toggleStrong(l.row, w, tagged) })));
+  if (!items.length) box.append(Object.assign(document.createElement("p"), { className: "muted", style: "margin:0", textContent: "Pas de paroles synchronisées dans ce passage." }));
+}
+/** Met le mot w de la ligne row en FORT (ou l'enlève), directement dans les paroles : « Enregistrer dans CLOUD » le garde sur le titre.
+ *  Les étoiles entourent le mot lui-même, sa ponctuation reste à côté. */
+function toggleStrong(row, w, tagged) {
+  const rows = $("lyrics").value.split("\n"), on = !w.strong, parts = w.parts || [w.ti];
+  const mark = (k, word) => { const bare = word.replace(/\*\*/g, ""); return on && k === w.ti ? "**" + bare + "**" : bare; };
+  let k = -1;
+  if (tagged) rows[row] = rows[row].replace(/(<\d+:\d+(?:[.,]\d+)?>\s*)([^<]*?)(\s*)(?=<|$)/g, (all, tag, word, sp) => (word && parts.includes(++k) ? tag + mark(k, word) + sp : all));
+  else {
+    const m = /^(\s*\[[^\]]*\]\s*)(.*)$/.exec(rows[row]);
+    rows[row] = m[1] + m[2].trim().split(/\s+/).map((tok, i) => (parts.includes(i) ? mark(i, tok) : tok)).join(" ");
+  }
+  $("lyrics").value = rows.join("\n");
+  readLyrics(); showCloudLyrics(); restyle();
 }
 
 // ——— L'image ———
@@ -517,10 +677,10 @@ function prepare(i) {
 }
 const segmentAt = (t) => { let i = segments.findIndex((s) => t < s.t1); return i < 0 ? segments.length - 1 : i; };
 
-function wrapText(text, maxWidth) {
+function wrapText(text, maxWidth, c = g) {
   const words = text.split(/\s+/), lines = [];
   let line = "";
-  for (const w of words) { const next = line ? line + " " + w : w; if (line && g.measureText(next).width > maxWidth) { lines.push(line); line = w; } else line = next; }
+  for (const w of words) { const next = line ? line + " " + w : w; if (line && c.measureText(next).width > maxWidth) { lines.push(line); line = w; } else line = next; }
   if (line) lines.push(line);
   return lines;
 }
@@ -532,6 +692,49 @@ function text(lines, y, size, weight, family, color = "#fff") {
   all.forEach((l, k) => { g.fillStyle = color; g.fillText(l, W / 2, y + (k - (all.length - 1) / 2) * size * 1.12); });
   g.shadowBlur = 0;
   return all.length * size * 1.12;
+}
+
+// Le texte pixelisé passe par un calque, réduit puis agrandi sans lissage.
+const layer = document.createElement("canvas"), lg = layer.getContext("2d"), shrink = document.createElement("canvas"), sk = shrink.getContext("2d");
+layer.width = W; layer.height = H;
+const textScale = () => prefs.textSize / 100;
+/** Le style du texte choisi (police des paroles, couleur, contour, lueur, ombre). */
+const textLook = (extra = {}) => ({ font: prefs.lyricFont, color: prefs.textColor, stroke: prefs.stroke, strokeColor: prefs.strokeColor, glow: prefs.glow, glowColor: prefs.glowColor,
+  shadowColor: prefs.shadowColor, shadowBlur: prefs.shadowBlur, shadowOffset: prefs.shadowOffset, caps: prefs.caps, pixel: prefs.pixel, maxW: W * .86, ...extra });
+/** Des lignes de texte centrées sur cy : ombre, puis lueur, puis contour, puis la couleur. Rend la hauteur utilisée. */
+function paint(lines, cy, o) {
+  const c = o.pixel ? lg : g, [family, weight] = fontOf(o.font);
+  if (o.pixel) c.clearRect(0, 0, W, H);
+  let size = o.size;
+  c.font = `${weight} ${size}px "${family}"`;
+  const all = lines.map((l) => (o.caps ? l.toUpperCase() : l)).flatMap((l) => (o.wrap === false ? [l] : wrapText(l, o.maxW, c)));
+  const widest = Math.max(...all.map((l) => c.measureText(l).width));
+  if (widest > o.maxW) { size = Math.max(12, Math.floor(size * o.maxW / widest)); c.font = `${weight} ${size}px "${family}"`; }
+  const lh = size * 1.15, y0 = cy - (all.length - 1) / 2 * lh, each = (fn) => all.forEach((l, k) => fn(l, W / 2, y0 + k * lh));
+  c.save();
+  c.textAlign = "center"; c.textBaseline = "middle"; c.lineJoin = "round";
+  if (o.shadowBlur || o.shadowOffset) {
+    c.shadowColor = o.shadowColor; c.shadowBlur = o.shadowBlur; c.shadowOffsetX = c.shadowOffsetY = o.shadowOffset;
+    c.fillStyle = c.strokeStyle = o.shadowColor; c.lineWidth = o.stroke * 2;
+    if (o.stroke) each((l, x, y) => c.strokeText(l, x, y));
+    each((l, x, y) => c.fillText(l, x, y));
+  }
+  c.shadowOffsetX = c.shadowOffsetY = 0;
+  if (o.glow) {
+    c.shadowColor = o.glowColor; c.shadowBlur = o.glow * .8; c.fillStyle = o.color;
+    for (let n = o.glow > 55 ? 2 : 1; n > 0; n--) each((l, x, y) => c.fillText(l, x, y));
+  }
+  c.shadowBlur = 0; c.shadowColor = "transparent";
+  if (o.stroke) { c.lineWidth = o.stroke * 2; c.strokeStyle = o.strokeColor; each((l, x, y) => c.strokeText(l, x, y)); }
+  c.fillStyle = o.color;
+  each((l, x, y) => c.fillText(l, x, y));
+  c.restore();
+  if (o.pixel) {
+    shrink.width = W / 5; shrink.height = H / 5;
+    sk.imageSmoothingEnabled = false; sk.drawImage(layer, 0, 0, shrink.width, shrink.height);
+    g.save(); g.imageSmoothingEnabled = false; g.drawImage(shrink, 0, 0, W, H); g.restore();
+  }
+  return all.length * lh;
 }
 
 /** La zone de l'image : tout l'écran, ou une bande au milieu (le reste en noir). */
@@ -568,55 +771,37 @@ function drawPicture(src, r, scale) {
   g.restore();
 }
 
-/** Le mot chanté à cet instant : les mots d'une ligne se partagent sa durée, au prorata de leur longueur. */
+/** Le mot chanté à cet instant ({ text, at, strong }) ; sans moments par mot, les mots d'une ligne se partagent sa durée. */
 function wordAt(now) {
   const k = lyrics.findLastIndex((l) => l.at <= now);
-  if (k < 0) return "";
+  if (k < 0) return null;
   const line = lyrics[k];
   if (line.words) {
     // Les moments marqués mot par mot dans CLOUD : chaque mot reste jusqu'au suivant (1,5 s au plus après le dernier).
     const w = line.words.findLastIndex((x) => x.at <= now);
-    if (w < 0) return "";
+    if (w < 0) return null;
     const until = line.words[w + 1] ? line.words[w + 1].at : Math.min(lyrics[k + 1] ? lyrics[k + 1].at : Infinity, line.words[w].at + 1.5);
-    return now < until ? line.words[w].text : "";
+    return now < until ? line.words[w] : null;
   }
-  const words = line.text.split(/\s+/).filter(Boolean);
+  const words = line.plain;
   const next = lyrics[k + 1] ? lyrics[k + 1].at : Infinity, length = Math.min(next - line.at, words.length * 0.55 + 0.6);
-  if (now > line.at + length + 0.4 || !words.length) return "";
-  const weights = words.map((w) => w.length + 2), total = weights.reduce((a, b) => a + b, 0);
+  if (now > line.at + length + 0.4 || !words.length) return null;
+  const weights = words.map((w) => w.text.length + 2), total = weights.reduce((a, b) => a + b, 0);
   let at = line.at;
-  for (let i = 0; i < words.length; i++) { at += weights[i] / total * length; if (now < at) return words[i]; }
-  return words.at(-1);
+  for (let i = 0; i < words.length; i++) { const from = at; at += weights[i] / total * length; if (now < at) return { ...words[i], at: from }; }
+  return { ...words.at(-1), at: at - weights.at(-1) / total * length };
 }
-/** Un mot seul, en gros au centre de l'image, dans le style choisi. */
-function bigWord(word, cy, maxW) {
-  word = word.toUpperCase();
-  g.textAlign = "center"; g.textBaseline = "middle";
-  if (prefs.wordStyle === "pixel") {
-    // Écrit en tout petit puis agrandi sans lissage : de vrais pixels, quelle que soit la police.
-    const small = document.createElement("canvas"), sg = small.getContext("2d"), size = 24;
-    sg.font = `800 ${size}px "Hanken Grotesk"`;
-    const wTxt = Math.min(sg.measureText(word).width, maxW / 7);
-    small.width = Math.ceil(wTxt + 8); small.height = size + 10;
-    sg.font = `800 ${size}px "Hanken Grotesk"`; sg.textAlign = "center"; sg.textBaseline = "middle"; sg.fillStyle = "#fff";
-    sg.fillText(word, small.width / 2, small.height / 2, wTxt);
-    const scale = Math.min(7, maxW / small.width);
-    g.imageSmoothingEnabled = false;
-    g.shadowColor = "rgba(255,255,255,.55)"; g.shadowBlur = 26;
-    g.drawImage(small, W / 2 - small.width * scale / 2, cy - small.height * scale / 2, small.width * scale, small.height * scale);
-    g.shadowBlur = 0; g.imageSmoothingEnabled = true;
-    return;
+/** Un mot seul, en gros au centre de l'image, dans le style choisi ; un mot FORT plus grand, dans ses couleurs, avec un « pop ». */
+function bigWord(word, cy, maxW, now) {
+  // Une police large (Press Start 2P…) écrit plus petit, pour laisser au mot fort la place d'être plus grand.
+  g.font = `800 100px "Hanken Grotesk"`; const ref = g.measureText("DADAIS").width;
+  const [family, weight] = fontOf(prefs.lyricFont); g.font = `${weight} 100px "${family}"`;
+  const o = textLook({ size: 150 * textScale() * Math.min(1.15, ref / g.measureText("DADAIS").width), maxW, wrap: false });
+  if (word.strong) {
+    const pop = 1 + .22 * Math.exp(-Math.max(0, now - word.at) * 14);
+    Object.assign(o, { size: o.size * prefs.strongSize / 100 * pop, color: prefs.strongColor, glowColor: prefs.strongGlowColor, glow: prefs.strongGlow, font: prefs.strongFont || o.font, maxW: W * .94 });
   }
-  const red = prefs.wordStyle === "red", size = red ? 170 : 150;
-  g.font = red ? `${size}px Impact, Haettenschweiler, "Arial Black", "Unbounded", sans-serif` : `800 ${size}px "Hanken Grotesk"`;
-  const fit = Math.min(1, maxW / g.measureText(word).width);
-  g.save(); g.translate(W / 2, cy); g.scale(fit, fit);
-  g.lineJoin = "round"; g.lineWidth = red ? 14 : 10; g.strokeStyle = red ? "#3a0000" : "rgba(0,0,0,.85)";
-  g.shadowColor = "rgba(0,0,0,.6)"; g.shadowBlur = 24;
-  g.strokeText(word, 0, 0);
-  g.shadowBlur = 0; g.fillStyle = red ? "#ff2525" : "#fff";
-  g.fillText(word, 0, 0);
-  g.restore();
+  paint([word.text], cy, o);
 }
 /** La carte paroles : la ligne dans un encadré blanc en bas de l'image, l'artiste et le titre sous l'image. */
 function lyricCard(text, r, title, artist) {
@@ -670,16 +855,17 @@ function draw(t, playing) {
   const hook = $("hook").value.trim();
   if (hook) text([hook], r.y ? Math.max(70, r.y - 60) : H * .1, 44, "600", "Hanken Grotesk");
 
-  const [weight, family] = FONTS[prefs.font] || FONTS.display, title = $("title").value.trim(), artist = $("artist").value.trim();
+  const title = $("title").value.trim(), artist = $("artist").value.trim(), ts = textScale();
   const y = { top: H * .16, middle: H * .45, bottom: H * .76 }[prefs.place] || H * .76;
+  const titleLook = textLook({ font: prefs.titleFont, size: (prefs.titleFont === "Grenze Gotisch" ? 124 : 96) * ts, caps: prefs.caps || prefs.titleFont === "Unbounded" });
   if (prefs.place === "none") { /* titre masqué */ } else if (title) {
-    const used = text([prefs.font === "display" ? title.toUpperCase() : title], y, prefs.font === "dream" ? 124 : 96, weight, family);
-    if (artist) text([artist], y + used / 2 + 50, 44, "500", "Hanken Grotesk", "rgba(255,255,255,.85)");
-  } else if (artist) text([artist], y, 56, weight, family);
+    const used = paint([title], y, titleLook);
+    if (artist) paint([artist], y + used / 2 + 50 * ts, textLook({ size: 44 * ts, glow: prefs.glow / 2 }));
+  } else if (artist) paint([artist], y, { ...titleLook, size: 56 * ts });
   const now = t + sound.start, line = lyrics.filter((l) => l.at <= now).at(-1);
-  if (prefs.lyricsMode === "word") { const word = wordAt(now); if (word) bigWord(word, r.y + r.h / 2, r.w * .86); }
+  if (prefs.lyricsMode === "word") { const word = wordAt(now); if (word) bigWord(word, r.y + r.h / 2, r.w * .86, now); }
   else if (prefs.lyricsMode === "card") lyricCard(line && now - line.at < 8 ? line.text : "", r, title, artist);
-  else if (line && now - line.at < 8) text([line.text], prefs.place === "bottom" ? H * .62 : H * .8, 62, "700", "Hanken Grotesk");
+  else if (line && now - line.at < 8) paint([line.text], prefs.place === "bottom" ? H * .62 : H * .8, textLook({ size: 62 * ts }));
 }
 
 // ——— Lecture : le son mène, l'image suit ———
@@ -701,6 +887,9 @@ function play(from = position, extraOut = null) {
   shown = -1;
   startedAt = ctx.currentTime - from;
   source.start(0, sound.start + from, span() - from);
+  // Fondu de sortie à la fin du passage : en BOUCLE, la fin rejoint le début sans clic.
+  const end = ctx.currentTime + span() - from, out = prefs.loop ? .03 : FADE;
+  if (end - out > ctx.currentTime + FADE) { level.gain.setValueAtTime(1, end - out); level.gain.linearRampToValueAtTime(0, end); }
   playing = true;
   source.onended = () => { if (playing) { position = 0; finish(); } }; // stop() passe playing à false avant : seule la fin du son arrive ici
   loop();
@@ -717,7 +906,13 @@ function stop() {
   cancelAnimationFrame(frame); clearTimeout(frame);
   setPlayIcon();
 }
-function finish() { stop(); if (recording) recording.done(); else { position = 0; seek(0); } }
+function finish() {
+  stop();
+  if (recording) recording.done();
+  else if (prefs.loop && !hearing) { position = 0; play(0); } // en BOUCLE, l'aperçu tourne en continu
+  else { position = 0; seek(0); }
+}
+let hearing = 0; // « Écouter le début » en cours (un minuteur)
 // Pendant un export, l'image avance à 30 images par seconde au minuteur : l'enregistrement ne dépend pas de l'affichage.
 function loop() { const t = now(); draw(t, playing); drawScrub(t); if (playing) frame = recording ? setTimeout(loop, 1000 / 30) : requestAnimationFrame(loop); }
 /** Après une option qui ne change que l'image (ou l'ordre des coupes) : on redessine sans couper le son. */
@@ -758,6 +953,37 @@ function drawWave() {
     c.fillRect(x, (h - bar) / 2, 1, bar);
   }
   c.strokeStyle = "#e23444"; c.lineWidth = 2 * (devicePixelRatio || 1); c.strokeRect(x0, 1, x1 - x0, h - 2);
+  drawLoupe(); windowInfo();
+}
+const LOUPE = 3; // la loupe montre 3 s avant et après le début du passage
+/** La loupe : la forme d'onde autour du début, avec les temps et les mesures, pour régler le début au centième. */
+function drawLoupe() {
+  const canvas = $("loupe").firstElementChild, c = sizeCanvas(canvas), w = canvas.width, h = canvas.height;
+  const from = sound.start - LOUPE, to = sound.start + LOUPE, px = (t) => (t - from) / (to - from) * w, d = devicePixelRatio || 1;
+  c.clearRect(0, 0, w, h);
+  c.fillStyle = "rgba(226,52,68,.16)"; c.fillRect(px(sound.start), 0, w, h);
+  let peak = 0; for (const v of sound.rms) peak = Math.max(peak, v);
+  for (let x = 0; x < w; x++) {
+    const t = from + x / w * (to - from), i = Math.floor(t * FPS), m = i >= 0 && i < sound.rms.length ? sound.rms[i] : 0, bar = Math.max(1, m / (peak || 1) * h * .85);
+    c.fillStyle = t >= sound.start ? "#ff6b78" : "rgba(246,238,238,.35)";
+    c.fillRect(x, (h - bar) / 2, 1, bar);
+  }
+  const beat = beatLength();
+  for (let k = Math.ceil((from - sound.phase) / beat); sound.phase + k * beat <= to; k++) {
+    const isBar = ((k % 4) + 4) % 4 === 0;
+    c.fillStyle = isBar ? "rgba(255,255,255,.6)" : "rgba(255,255,255,.2)";
+    c.fillRect(px(sound.phase + k * beat), 0, (isBar ? 2 : 1) * d, h);
+  }
+  c.fillStyle = "#fff"; c.fillRect(px(sound.start) - d, 0, 3 * d, h);
+}
+/** Le début et la durée en chiffres, et les boutons fins seulement quand on ne cale pas sur les mesures. */
+function windowInfo() {
+  const bars = span() / barLength(), f = (x) => (Math.round(x * 100) / 100).toString().replace(".", ",");
+  if (document.activeElement !== $("start-at")) $("start-at").value = clockFine(sound.start);
+  if (document.activeElement !== $("dur-custom")) $("dur-custom").value = Math.round(span() * 10) / 10;
+  $("window-info").textContent = "De " + clockFine(sound.start) + " à " + clockFine(sound.start + span()) + " · " + f(span()) + " s · "
+    + f(Math.round(bars * 10) / 10) + " mesure" + (bars >= 1.95 ? "s" : "") + (prefs.loop ? " · en BOUCLE" : "");
+  document.querySelectorAll(".nudges .step").forEach((b) => { b.hidden = snapping(); });
 }
 function drawScrub(t) {
   const canvas = $("scrub").firstElementChild, c = sizeCanvas(canvas), w = canvas.width, h = canvas.height;
@@ -774,6 +1000,7 @@ function refresh() {
   if (sound.buffer) sound.start = clampStart(sound.start);
   remember();
   build();
+  renderStrong();
   renderClips();
   $("bpm").textContent = sound.bpm ? (Math.round(sound.bpm * 10) / 10).toString().replace(".", ",") : "—";
   $("reshuffle").hidden = prefs.order !== "mix";
@@ -882,6 +1109,19 @@ function dragWindow() {
   const end = () => { if (grab === null) return; grab = null; box.classList.remove("drag"); position = 0; refresh(); };
   box.addEventListener("pointerup", end); box.addEventListener("pointercancel", end);
 }
+/** La loupe : on fait glisser la forme d'onde, le début bouge au centième (ou de mesure en mesure si on cale). */
+function dragLoupe() {
+  const box = $("loupe");
+  let grab = null;
+  box.addEventListener("pointerdown", (event) => { if (!sound.buffer) return; grab = { x: event.clientX, start: sound.start }; box.setPointerCapture(event.pointerId); });
+  box.addEventListener("pointermove", (event) => {
+    if (!grab) return;
+    const dt = (event.clientX - grab.x) / box.getBoundingClientRect().width * 2 * LOUPE;
+    sound.start = clampStart(grab.start - dt); drawWave();
+  });
+  const end = () => { if (!grab) return; grab = null; position = 0; refresh(); };
+  box.addEventListener("pointerup", end); box.addEventListener("pointercancel", end);
+}
 function dragScrub() {
   const box = $("scrub");
   let down = false;
@@ -910,16 +1150,67 @@ function start() {
   $("play").onclick = () => (playing ? stop() : play(position >= span() - .1 ? 0 : position));
   $("export").onclick = exportVideo;
   chips("duration", "duration", () => { sound.start = sound.buffer ? bestStart() : 0; position = 0; refresh(); });
-  chips("order", "order", () => restyle(true)); chips("cadence", "cadence", () => restyle(true)); chips("place", "place", () => restyle()); chips("font", "font", () => restyle());
+  // Une durée au choix, au dixième de seconde.
+  $("dur-custom").onchange = () => {
+    const v = Number(String($("dur-custom").value).replace(",", "."));
+    if (!(v > 0)) return windowInfo();
+    prefs.duration = Math.round(Math.min(180, Math.max(2, v)) * 10) / 10; savePrefs(); marks.forEach((m) => m());
+    position = 0; refresh();
+  };
+  $("start-at").onchange = () => {
+    const t = parseClock($("start-at").value);
+    if (Number.isFinite(t) && sound.buffer) { sound.start = clampStart(t); position = 0; refresh(); } else windowInfo();
+  };
+  document.querySelectorAll("[data-nudge]").forEach((b) => {
+    b.onclick = () => {
+      if (!sound.buffer) return;
+      const n = b.dataset.nudge, step = { bar: barLength(), beat: beatLength() }[n.replace("-", "")] ?? Math.abs(Number(n));
+      sound.start = clampStart(sound.start + (n.startsWith("-") ? -step : step)); position = 0; refresh();
+    };
+  });
+  for (const id of ["snap", "loop"]) {
+    $(id).checked = !!prefs[id];
+    $(id).onchange = () => { prefs[id] = $(id).checked; savePrefs(); position = 0; refresh(); };
+  }
+  $("hear-start").onclick = () => {
+    if (!sound.buffer) return;
+    clearTimeout(hearing); hearing = 0;
+    if (playing) stop();
+    play(0);
+    hearing = setTimeout(() => { hearing = 0; if (playing) { stop(); position = 0; seek(0); } }, 3000);
+  };
+  chips("order", "order", () => restyle(true)); chips("cadence", "cadence", () => restyle(true)); chips("place", "place", () => restyle());
   const redraw = () => { $("word-row").hidden = prefs.lyricsMode !== "word"; $("sign-row").hidden = prefs.lyricsMode !== "card"; restyle(); };
-  chips("frame", "frame", redraw); chips("lyricsMode", "lyricsMode", redraw); chips("wordStyle", "wordStyle", redraw);
+  chips("frame", "frame", redraw); chips("lyricsMode", "lyricsMode", redraw);
+  // Le style du texte : polices, couleurs, contour, lueur, ombre, mots forts.
+  const STYLE_INPUTS = ["lyricFont", "titleFont", "strongFont", "textColor", "textSize", "strokeColor", "stroke", "glowColor", "glow", "shadowColor", "shadowBlur", "shadowOffset",
+    "caps", "pixel", "strongSize", "strongColor", "strongGlowColor", "strongGlow"];
+  for (const id of ["lyricFont", "titleFont", "strongFont"]) {
+    $(id).replaceChildren(...(id === "strongFont" ? [new Option("Même police que les paroles", "")] : []), ...FONT_LIST.map(([family, , label]) => new Option(label, family)));
+  }
+  const loadFont = (family) => { if (!family) return; const [f, w] = fontOf(family); document.fonts.load(`${w} 80px "${f}"`).then(() => !playing && segments.length && draw(position, false)); };
   const boxes = ["zoom", "flash", "retro"];
+  const syncControls = () => {
+    for (const id of STYLE_INPUTS) { const el = $(id); if (el.type === "checkbox") el.checked = !!prefs[id]; else el.value = prefs[id]; }
+    boxes.forEach((id) => { $(id).checked = !!prefs[id]; });
+    marks.forEach((m) => m());
+  };
+  for (const id of STYLE_INPUTS) {
+    $(id).addEventListener("input", () => {
+      const el = $(id);
+      prefs[id] = el.type === "checkbox" ? el.checked : el.type === "range" ? Number(el.value) : el.value;
+      if (/Font$/.test(id)) loadFont(prefs[id]);
+      savePrefs(); restyle();
+    });
+  }
+  chips("textStyle", "textStyle", () => { Object.assign(prefs, TEXT_STYLES[prefs.textStyle]); savePrefs(); loadFont(prefs.lyricFont); syncControls(); restyle(); });
   chips("preset", "preset", () => {
-    Object.assign(prefs, PRESETS[prefs.preset]); savePrefs();
-    marks.forEach((m) => m()); boxes.forEach((id) => { $(id).checked = !!prefs[id]; });
+    Object.assign(prefs, PRESETS[prefs.preset], TEXT_STYLES[PRESETS[prefs.preset].textStyle]); savePrefs();
+    loadFont(prefs.lyricFont); syncControls();
     redraw();
   });
-  for (const id of boxes) { $(id).checked = !!prefs[id]; $(id).onchange = () => { prefs[id] = $(id).checked; savePrefs(); restyle(); }; }
+  syncControls();
+  for (const id of boxes) { $(id).onchange = () => { prefs[id] = $(id).checked; savePrefs(); restyle(); }; }
   for (const id of ["hook", "sign"]) { $(id).value = prefs[id] || ""; $(id).oninput = () => { prefs[id] = $(id).value; savePrefs(); if (!playing) draw(position, false); }; }
   $("word-row").hidden = prefs.lyricsMode !== "word"; $("sign-row").hidden = prefs.lyricsMode !== "card";
   $("artist").value = prefs.artist || "";
@@ -932,9 +1223,9 @@ function start() {
   // Retour sur l'onglet (après avoir synchronisé dans CLOUD, par exemple) : les paroles de CLOUD sont reprises.
   document.addEventListener("visibilitychange", () => { if (!document.hidden && !recording) pullLyrics(true); });
   addEventListener("resize", () => { drawWave(); drawScrub(now()); });
-  dragWindow(); dragScrub();
-  // Les polices du site, chargées avant de dessiner du texte sur la vidéo.
-  for (const [weight, family] of Object.values(FONTS)) document.fonts.load(`${weight} 80px "${family}"`).then(() => !playing && segments.length && draw(position, false));
+  dragWindow(); dragScrub(); dragLoupe();
+  // Les polices choisies, chargées avant de dessiner du texte sur la vidéo.
+  [prefs.lyricFont, prefs.titleFont, prefs.strongFont, "Hanken Grotesk"].forEach(loadFont);
   // Ouvert depuis un titre de ONIRIQUE CLOUD (?track=…) ; sinon, le dernier titre CLOUD utilisé se reprend d'un clic.
   const q = new URLSearchParams(location.search), track = Number(q.get("track"));
   let last = null;

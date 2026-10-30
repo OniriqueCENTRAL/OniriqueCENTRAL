@@ -1,0 +1,9 @@
+/* Polices en plus pour les textes de ONIRIQUE CUT, servies par le site (SIL OFL 1.1 ; Permanent Marker : Apache 2.0).
+   Seule la page cut.html les charge, et seulement celles qu'on choisit. */
+@font-face { font-family: 'Press Start 2P'; font-weight: 400; font-display: swap; src: url(fonts/PressStart2P-latin.woff2?v=1) format('woff2'); }
+@font-face { font-family: 'Silkscreen'; font-weight: 400; font-display: swap; src: url(fonts/Silkscreen-latin.woff2?v=1) format('woff2'); }
+@font-face { font-family: 'Silkscreen'; font-weight: 700; font-display: swap; src: url(fonts/Silkscreen-700-latin.woff2?v=1) format('woff2'); }
+@font-face { font-family: 'VT323'; font-weight: 400; font-display: swap; src: url(fonts/VT323-latin.woff2?v=1) format('woff2'); }
+@font-face { font-family: 'Anton'; font-weight: 400; font-display: swap; src: url(fonts/Anton-latin.woff2?v=1) format('woff2'); }
+@font-face { font-family: 'Bebas Neue'; font-weight: 400; font-display: swap; src: url(fonts/BebasNeue-latin.woff2?v=1) format('woff2'); }
+@font-face { font-family: 'Permanent Marker'; font-weight: 400; font-display: swap; src: url(fonts/PermanentMarker-latin.woff2?v=1) format('woff2'); }
