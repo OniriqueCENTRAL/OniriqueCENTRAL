@@ -22,7 +22,7 @@ export const cutArgs = (input, output, audio = null, offset = 0) => ['-y', '-hid
   ...(audio ? [...(offset > 0 ? ['-itsoffset', offset.toFixed(3)] : offset < 0 ? ['-ss', (-offset).toFixed(3)] : []), '-i', audio,
     '-map', '0:v:0', '-map', '1:a:0', '-shortest'] : []),
   '-vf', 'scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,format=yuv420p',
-  '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '19', '-profile:v', 'high', '-c:a', 'aac', '-b:a', '320k',
+  '-c:v', 'libx264', '-preset', 'slow', '-crf', '16', '-profile:v', 'high', '-tune', 'film', '-c:a', 'aac', '-b:a', '320k',
   '-movflags', '+faststart', output];
 
 function toMp4(input, output, audio, offset) {

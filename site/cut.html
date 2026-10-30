@@ -46,6 +46,20 @@
 .card input[type="color"] { width: 56px; height: 40px; padding: 3px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.35); cursor: pointer; }
 .row > .grow { flex: 1; min-width: 150px; }
 .sub { padding-top: 14px; border-top: 1px solid var(--line); }
+.panel { border: 1px solid var(--line); border-radius: 14px; background: rgba(0,0,0,.2); }
+.panel > summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 13px 16px; cursor: pointer; list-style: none; font: 800 14px/1.2 var(--f-display); }
+.panel > summary::-webkit-details-marker { display: none; }
+.panel > summary::after { content: "+"; font: 500 20px/1 var(--f-mono); color: var(--ember-text); }
+.panel[open] > summary::after { content: "−"; }
+.panel > .stack { padding: 0 16px 16px; }
+.clip.focus { outline: 3px solid var(--ember); outline-offset: 2px; }
+.clip { cursor: default; }
+.each .clip { cursor: pointer; }
+.styles-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.styles-list span { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.styles-list button { padding: 7px 12px; border: 0; background: rgba(0,0,0,.3); color: var(--mist); font: 500 13px var(--f-body); cursor: pointer; }
+.styles-list button + button { border-left: 1px solid var(--line); color: var(--haze); }
+.styles-list button:hover { background: var(--ember); color: #fff; }
 .sub-title { margin: 0; font: 800 14px/1.2 var(--f-display); }
 .strong-words { display: flex; flex-wrap: wrap; gap: 6px; }
 .strong-words button { padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: rgba(0,0,0,.3); color: var(--mist); font: 500 14px var(--f-body); cursor: pointer; }
@@ -128,31 +142,37 @@
           <p class="step-title"><b>2</b>Le passage</p>
           <div class="row">
             <div class="chips" id="duration" role="group" aria-label="Durée"><button type="button" data-v="8">8 s</button><button type="button" data-v="15">15 s</button><button type="button" data-v="30">30 s</button><button type="button" data-v="60">60 s</button></div>
-            <label class="inline">ou<input type="text" id="dur-custom" inputmode="decimal" aria-label="Durée du passage en secondes">s</label>
             <button class="mini" type="button" id="best">Meilleur passage</button>
           </div>
           <div class="wave" id="wave"><canvas></canvas></div>
-          <div class="loupe" id="loupe" title="Fais glisser la forme d'onde pour régler le début au centième"><canvas></canvas></div>
           <div class="row">
             <label class="inline">Début<input type="text" id="start-at" inputmode="decimal" aria-label="Début du passage, en minutes et secondes"></label>
-            <div class="row nudges" style="gap:6px">
-              <button class="mini" type="button" data-nudge="-bar" title="Une mesure plus tôt">−1 mesure</button>
-              <button class="mini step" type="button" data-nudge="-beat" title="Un temps plus tôt">−1 temps</button>
-              <button class="mini step" type="button" data-nudge="-0.1">−0,1 s</button>
-              <button class="mini step" type="button" data-nudge="-0.01">−0,01 s</button>
-              <button class="mini step" type="button" data-nudge="0.01">+0,01 s</button>
-              <button class="mini step" type="button" data-nudge="0.1">+0,1 s</button>
-              <button class="mini step" type="button" data-nudge="beat" title="Un temps plus tard">+1 temps</button>
-              <button class="mini" type="button" data-nudge="bar" title="Une mesure plus tard">+1 mesure</button>
-            </div>
+            <label class="inline">Fin<input type="text" id="end-at" inputmode="decimal" aria-label="Fin du passage, en minutes et secondes"></label>
+            <label class="inline">Durée<input type="text" id="dur-custom" inputmode="decimal" aria-label="Durée du passage en secondes">s</label>
           </div>
           <div class="row">
-            <label class="check"><input type="checkbox" id="snap"> Caler sur les mesures</label>
-            <label class="check"><input type="checkbox" id="loop"> BOUCLE : la fin s'enchaîne pile avec le début</label>
+            <label class="check"><input type="checkbox" id="loop"> BOUCLE : la fin s'enchaîne avec le début</label>
             <button class="mini" type="button" id="hear-start">Écouter le début</button>
           </div>
           <p class="muted" id="window-info"></p>
-          <p class="muted">Fais glisser la zone rouge, puis règle le début au centième avec la loupe (fais glisser la forme d'onde) ou les boutons. Pour régler au centième, décoche « Caler sur les mesures ». En BOUCLE, le passage fait un nombre entier de mesures : la vidéo repart sur le temps, sans coupure.</p>
+          <details class="panel">
+            <summary>Réglage fin du début</summary>
+            <div class="stack">
+              <div class="loupe" id="loupe" title="Fais glisser la forme d'onde pour régler le début au centième"><canvas></canvas></div>
+              <div class="row nudges" style="gap:6px">
+                <button class="mini" type="button" data-nudge="-bar" title="Une mesure plus tôt">−1 mesure</button>
+                <button class="mini step" type="button" data-nudge="-beat" title="Un temps plus tôt">−1 temps</button>
+                <button class="mini step" type="button" data-nudge="-0.1">−0,1 s</button>
+                <button class="mini step" type="button" data-nudge="-0.01">−0,01 s</button>
+                <button class="mini step" type="button" data-nudge="0.01">+0,01 s</button>
+                <button class="mini step" type="button" data-nudge="0.1">+0,1 s</button>
+                <button class="mini step" type="button" data-nudge="beat" title="Un temps plus tard">+1 temps</button>
+                <button class="mini" type="button" data-nudge="bar" title="Une mesure plus tard">+1 mesure</button>
+              </div>
+              <label class="check"><input type="checkbox" id="snap"> Caler le début sur les mesures</label>
+            </div>
+          </details>
+          <p class="muted">Fais glisser la zone rouge pour la déplacer, ou ses bords blancs pour choisir le début et la fin : le passage dure exactement ce que tu veux, BOUCLE comprise. Les coupes, les zooms et les effets se calent tout seuls sur le tempo à l'intérieur.</p>
         </div>
       </div>
 
@@ -165,7 +185,10 @@
             <div class="chips" id="order" role="group" aria-label="Ordre des clips"><button type="button" data-v="seq">Dans l'ordre</button><button type="button" data-v="mix">Mélangés</button></div>
             <button class="mini" type="button" id="reshuffle" hidden>Autre mélange</button>
           </div>
-          <p class="muted">Les vidéos sont recadrées en vertical, sans son : seul ton morceau s'entend. Chaque coupe montre un nouveau moment du clip.</p>
+          <label>Ce que tu exportes
+            <div class="chips wrap-in" id="batch" role="group" aria-label="Ce que tu exportes"><button type="button" data-v="one">Un montage avec tous les clips</button><button type="button" data-v="each">Une vidéo par fond</button></div>
+          </label>
+          <p class="muted" id="batch-help">Les vidéos sont recadrées en vertical, sans son : seul ton morceau s'entend. Chaque coupe montre un nouveau moment du clip.</p>
         </div>
       </div>
 
@@ -175,81 +198,145 @@
           <label>Styles rapides
             <div class="chips wrap-in" id="preset" role="group" aria-label="Styles rapides"><button type="button" data-v="classic">Classique</button><button type="button" data-v="pixel">Mot par mot pixel</button><button type="button" data-v="red">Mot par mot rouge</button><button type="button" data-v="card">Carte paroles</button></div>
           </label>
-          <p class="muted">Un style règle tout d'un coup ; tu peux ensuite changer chaque réglage ci-dessous.</p>
-          <label>Cadre de l'image
-            <div class="chips wrap-in" id="frame" role="group" aria-label="Cadre de l'image"><button type="button" data-v="full">Plein écran</button><button type="button" data-v="169">Bande 16:9</button><button type="button" data-v="43">Bande 4:3</button><button type="button" data-v="11">Carré</button></div>
-          </label>
-          <label>Rythme des coupes
-            <div class="chips wrap-in" id="cadence" role="group" aria-label="Rythme des coupes"><button type="button" data-v="1">Chaque temps</button><button type="button" data-v="2">Tous les 2 temps</button><button type="button" data-v="4">Chaque mesure</button><button type="button" data-v="mix">Varié</button></div>
-          </label>
-          <div class="row">
-            <label class="check"><input type="checkbox" id="zoom"> Zoom sur le beat</label>
-            <label class="check"><input type="checkbox" id="flash"> Flash aux coupes</label>
-            <label class="check"><input type="checkbox" id="retro"> Look rétro (pixels et grain)</label>
-          </div>
-          <div class="fields">
-            <label>Titre<input type="text" id="title" maxlength="60" placeholder="Nom du son"></label>
-            <label>Artiste<input type="text" id="artist" maxlength="60" placeholder="Ton nom d'artiste"></label>
-          </div>
-          <div class="row">
-            <div class="chips" id="place" role="group" aria-label="Place du titre"><button type="button" data-v="top">En haut</button><button type="button" data-v="middle">Au milieu</button><button type="button" data-v="bottom">En bas</button><button type="button" data-v="none">Masqué</button></div>
-          </div>
-          <label>Accroche (petit texte au-dessus de l'image)<input type="text" id="hook" maxlength="80" placeholder="le son il a une vibe spéciale"></label>
-          <label>Paroles à l'écran
-            <div class="chips wrap-in" id="lyricsMode" role="group" aria-label="Paroles à l'écran"><button type="button" data-v="line">Ligne entière</button><button type="button" data-v="word">Mot par mot</button><button type="button" data-v="card">Carte paroles</button></div>
-          </label>
-          <div class="stack sub">
-            <p class="sub-title">Style du texte</p>
-            <div class="chips wrap-in" id="textStyle" role="group" aria-label="Styles de texte"><button type="button" data-v="classic">Classique</button><button type="button" data-v="pixel">Pixel blanc</button><button type="button" data-v="red">Rouge</button><button type="button" data-v="white">Blanc gras</button><button type="button" data-v="neon">Néon</button><button type="button" data-v="retro">Rétro</button></div>
-            <div class="fields">
-              <label>Police des paroles<select id="lyricFont"></select></label>
-              <label>Police du titre<select id="titleFont"></select></label>
+          <p class="muted">Un style règle tout d'un coup ; ouvre les menus pour changer chaque réglage.</p>
+
+          <details class="panel">
+            <summary>Image et coupes</summary>
+            <div class="stack">
+              <label>Cadre de l'image
+                <div class="chips wrap-in" id="frame" role="group" aria-label="Cadre de l'image"><button type="button" data-v="full">Plein écran</button><button type="button" data-v="169">Bande 16:9</button><button type="button" data-v="43">Bande 4:3</button><button type="button" data-v="11">Carré</button></div>
+              </label>
+              <label>Rythme des coupes
+                <div class="chips wrap-in" id="cadence" role="group" aria-label="Rythme des coupes"><button type="button" data-v="1">Chaque temps</button><button type="button" data-v="2">Tous les 2 temps</button><button type="button" data-v="4">Chaque mesure</button><button type="button" data-v="mix">Varié</button></div>
+              </label>
+              <div class="row">
+                <label class="check"><input type="checkbox" id="zoom"> Zoom sur le beat</label>
+                <label class="check"><input type="checkbox" id="flash"> Flash aux coupes</label>
+                <label class="check"><input type="checkbox" id="retro"> Look rétro (pixels et grain)</label>
+                <label class="check"><input type="checkbox" id="photoMove"> Photos qui avancent doucement</label>
+              </div>
+              <p class="muted">Sans option cochée, une photo reste telle quelle, sans bouger.</p>
             </div>
-            <div class="row">
-              <label>Couleur<input type="color" id="textColor"></label>
-              <label class="grow">Taille du texte<input type="range" id="textSize" min="50" max="200" step="5"></label>
+          </details>
+
+          <details class="panel">
+            <summary>Effets vidéo</summary>
+            <div class="stack">
+              <div class="row">
+                <label class="check"><input type="checkbox" id="bw"> Noir et blanc</label>
+                <label class="check"><input type="checkbox" id="shake"> Secousse sur le beat</label>
+                <label class="check"><input type="checkbox" id="rgbSplit"> Décalage RVB sur le beat</label>
+                <label class="check"><input type="checkbox" id="fadeEnds"> Fondu au noir (début et fin)</label>
+              </div>
+              <div class="row">
+                <label class="grow">Luminosité<input type="range" id="brightness" min="50" max="150" step="5"></label>
+                <label class="grow">Contraste<input type="range" id="contrast" min="50" max="200" step="5"></label>
+                <label class="grow">Saturation<input type="range" id="saturation" min="0" max="250" step="5"></label>
+              </div>
+              <div class="row">
+                <label class="grow">Vignette (bords sombres)<input type="range" id="vignette" min="0" max="100" step="5"></label>
+                <label>Teinte<input type="color" id="tint"></label>
+                <label class="grow">Force de la teinte<input type="range" id="tintAmount" min="0" max="80" step="5"></label>
+              </div>
+              <button class="mini" type="button" id="fx-reset" style="justify-self:start">Remettre les effets à zéro</button>
             </div>
-            <div class="row">
-              <label>Contour<input type="color" id="strokeColor"></label>
-              <label class="grow">Épaisseur du contour<input type="range" id="stroke" min="0" max="20"></label>
+          </details>
+
+          <details class="panel">
+            <summary>Titre et accroche</summary>
+            <div class="stack">
+              <div class="fields">
+                <label>Titre<input type="text" id="title" maxlength="60" placeholder="Nom du son"></label>
+                <label>Artiste<input type="text" id="artist" maxlength="60" placeholder="Ton nom d'artiste"></label>
+              </div>
+              <label>Place du titre
+                <div class="chips wrap-in" id="place" role="group" aria-label="Place du titre"><button type="button" data-v="top">En haut</button><button type="button" data-v="middle">Au milieu</button><button type="button" data-v="bottom">En bas</button><button type="button" data-v="none">Masqué</button></div>
+              </label>
+              <label>Accroche (petit texte au-dessus de l'image)<input type="text" id="hook" maxlength="80" placeholder="le son il a une vibe spéciale"></label>
             </div>
-            <div class="row">
-              <label>Lueur<input type="color" id="glowColor"></label>
-              <label class="grow">Force de la lueur<input type="range" id="glow" min="0" max="100"></label>
+          </details>
+
+          <details class="panel" open>
+            <summary>Paroles</summary>
+            <div class="stack">
+              <label>Paroles à l'écran
+                <div class="chips wrap-in" id="lyricsMode" role="group" aria-label="Paroles à l'écran"><button type="button" data-v="line">Ligne entière</button><button type="button" data-v="word">Mot par mot</button><button type="button" data-v="card">Carte paroles</button></div>
+              </label>
+              <label>Place des paroles
+                <div class="chips wrap-in" id="lyricsPlace" role="group" aria-label="Place des paroles"><button type="button" data-v="top">En haut</button><button type="button" data-v="middle">Au milieu</button><button type="button" data-v="bottom">En bas</button></div>
+              </label>
+              <label id="sign-row">Signature sous la carte (à droite)<input type="text" id="sign" maxlength="24" placeholder="PAROLES"></label>
+              <label>Paroles synchronisées (facultatif)
+                <textarea id="lyrics" placeholder="[00:12.50] Première ligne&#10;[00:15.80] Deuxième ligne"></textarea>
+              </label>
+              <p class="muted" id="lyrics-help"></p>
+              <div class="row" id="lyrics-cloud" hidden>
+                <button class="mini" type="button" id="lyrics-pull">Reprendre celles de CLOUD</button>
+                <button class="mini" type="button" id="lyrics-push">Enregistrer dans CLOUD</button>
+              </div>
             </div>
-            <div class="row">
-              <label>Ombre<input type="color" id="shadowColor"></label>
-              <label class="grow">Flou de l'ombre<input type="range" id="shadowBlur" min="0" max="60"></label>
-              <label class="grow">Décalage de l'ombre<input type="range" id="shadowOffset" min="0" max="30"></label>
+          </details>
+
+          <details class="panel">
+            <summary>Style du texte</summary>
+            <div class="stack">
+              <div class="chips wrap-in" id="textStyle" role="group" aria-label="Styles de texte"><button type="button" data-v="classic">Classique</button><button type="button" data-v="pixel">Pixel blanc</button><button type="button" data-v="red">Rouge</button><button type="button" data-v="white">Blanc gras</button><button type="button" data-v="neon">Néon</button><button type="button" data-v="retro">Rétro</button></div>
+              <div class="fields">
+                <label>Police des paroles<select id="lyricFont"></select></label>
+                <label>Police du titre<select id="titleFont"></select></label>
+              </div>
+              <div class="row">
+                <label>Couleur<input type="color" id="textColor"></label>
+                <label class="grow">Taille du texte<input type="range" id="textSize" min="50" max="200" step="5"></label>
+              </div>
+              <div class="row">
+                <label>Contour<input type="color" id="strokeColor"></label>
+                <label class="grow">Épaisseur du contour<input type="range" id="stroke" min="0" max="20"></label>
+              </div>
+              <div class="row">
+                <label>Lueur<input type="color" id="glowColor"></label>
+                <label class="grow">Force de la lueur<input type="range" id="glow" min="0" max="100"></label>
+              </div>
+              <div class="row">
+                <label>Ombre<input type="color" id="shadowColor"></label>
+                <label class="grow">Flou de l'ombre<input type="range" id="shadowBlur" min="0" max="60"></label>
+                <label class="grow">Décalage de l'ombre<input type="range" id="shadowOffset" min="0" max="30"></label>
+              </div>
+              <div class="row">
+                <label class="check"><input type="checkbox" id="caps"> MAJUSCULES</label>
+                <label class="check"><input type="checkbox" id="pixel"> Texte pixelisé</label>
+              </div>
             </div>
-            <div class="row">
-              <label class="check"><input type="checkbox" id="caps"> MAJUSCULES</label>
-              <label class="check"><input type="checkbox" id="pixel"> Texte pixelisé</label>
+          </details>
+
+          <details class="panel" id="word-row">
+            <summary>Mots FORTS</summary>
+            <div class="stack">
+              <p class="muted">Un mot fort s'affiche en plus grand, avec sa couleur, sa lueur et un petit « pop ». Touche les mots du passage pour les mettre en FORT ; tu peux aussi les marquer dans ONIRIQUE CLOUD (synchro mot par mot).</p>
+              <div class="strong-words" id="strong-words"></div>
+              <div class="fields">
+                <label>Taille du mot fort<input type="range" id="strongSize" min="100" max="300" step="5"></label>
+                <label>Police du mot fort<select id="strongFont"></select></label>
+              </div>
+              <div class="row">
+                <label>Couleur<input type="color" id="strongColor"></label>
+                <label>Lueur<input type="color" id="strongGlowColor"></label>
+                <label class="grow">Force de la lueur<input type="range" id="strongGlow" min="0" max="100"></label>
+              </div>
             </div>
-          </div>
-          <div class="stack sub" id="word-row">
-            <p class="sub-title">Mots FORTS</p>
-            <p class="muted">Un mot fort s'affiche en plus grand, avec sa couleur, sa lueur et un petit « pop ». Touche les mots du passage pour les mettre en FORT ; tu peux aussi les marquer dans ONIRIQUE CLOUD (synchro mot par mot).</p>
-            <div class="strong-words" id="strong-words"></div>
-            <div class="fields">
-              <label>Taille du mot fort<input type="range" id="strongSize" min="100" max="300" step="5"></label>
-              <label>Police du mot fort<select id="strongFont"></select></label>
+          </details>
+
+          <details class="panel">
+            <summary>Mes styles</summary>
+            <div class="stack">
+              <p class="muted">Enregistre tous tes réglages d'image, d'effets et de texte pour les retrouver d'un clic. Ils restent dans ce navigateur, rien n'est envoyé.</p>
+              <div class="row">
+                <input type="text" id="style-name" maxlength="30" placeholder="Nom du style" style="flex:1;min-width:150px">
+                <button class="mini" type="button" id="style-save">Enregistrer ce style</button>
+              </div>
+              <div class="styles-list" id="my-styles"></div>
             </div>
-            <div class="row">
-              <label>Couleur<input type="color" id="strongColor"></label>
-              <label>Lueur<input type="color" id="strongGlowColor"></label>
-              <label class="grow">Force de la lueur<input type="range" id="strongGlow" min="0" max="100"></label>
-            </div>
-          </div>
-          <label id="sign-row">Signature sous la carte (à droite)<input type="text" id="sign" maxlength="24" placeholder="PAROLES"></label>
-          <label>Paroles synchronisées (facultatif)
-            <textarea id="lyrics" placeholder="[00:12.50] Première ligne&#10;[00:15.80] Deuxième ligne"></textarea>
-          </label>
-          <p class="muted" id="lyrics-help"></p>
-          <div class="row" id="lyrics-cloud" hidden>
-            <button class="mini" type="button" id="lyrics-pull">Reprendre celles de CLOUD</button>
-            <button class="mini" type="button" id="lyrics-push">Enregistrer dans CLOUD</button>
-          </div>
+          </details>
         </div>
       </div>
     </div>
@@ -264,7 +351,7 @@
       <button class="go wide" type="button" id="export" disabled>Exporter la vidéo</button>
       <label class="check mute"><input type="checkbox" id="mute"> Couper le son pendant l'export (la vidéo garde son son)</label>
       <div class="status" id="status" hidden><span id="status-text"></span><div class="bar"><i id="status-bar"></i></div></div>
-      <p class="hint" style="text-align:center">MP4 1080 × 1920, 30 images par seconde, son d'origine en AAC 320 kb/s. L'enregistrement se fait en temps réel : garde cet onglet ouvert.</p>
+      <p class="hint" style="text-align:center">MP4 1080 × 1920 en haute qualité, 30 images par seconde, son d'origine en AAC 320 kb/s. L'enregistrement se fait en temps réel : garde cet onglet ouvert. Rien n'est gardé sur nos serveurs : tes sons, clips et vidéos restent chez toi.</p>
     </aside>
   </div>
 </main>
@@ -301,16 +388,18 @@ const TEXT_STYLES = {
 const VARIED = [2, 2, 2, 1, 1, 4, 2, 2, 1, 1, 1, 1, 4];
 
 // Les réglages qu'on retrouve d'une fois sur l'autre ; le son et les clips, eux, restent sur l'appareil le temps de la page.
-let prefs = { duration: 15, order: "seq", cadence: "2", zoom: true, flash: false, place: "bottom", artist: "", snap: true, loop: false,
+// Les effets vidéo, à zéro (aucun effet).
+const FX = { bw: false, shake: false, rgbSplit: false, fadeEnds: false, brightness: 100, contrast: 100, saturation: 100, vignette: 0, tint: "#ff2a3a", tintAmount: 0, photoMove: false };
+let prefs = { duration: 15, order: "seq", cadence: "2", zoom: false, flash: false, place: "bottom", artist: "", snap: false, loop: false, batch: "one", lyricsPlace: "bottom", ...FX,
   preset: "classic", frame: "full", retro: false, lyricsMode: "line", hook: "", sign: "", textStyle: "classic", titleFont: "Unbounded", textSize: 100,
   strokeColor: "#000000", glowColor: "#ffffff", ...TEXT_STYLES.classic,
   strongSize: 170, strongColor: "#ffffff", strongGlowColor: "#ffffff", strongGlow: 45, strongFont: "" };
 // Les styles rapides : des montages de TikTok de rap qui marchent, réglés d'un clic.
 const PRESETS = {
-  classic: { frame: "full", retro: false, lyricsMode: "line", place: "bottom", zoom: true, flash: false, textStyle: "classic" },
-  pixel: { frame: "43", retro: true, lyricsMode: "word", place: "none", zoom: false, flash: false, textStyle: "pixel" },
-  red: { frame: "169", retro: false, lyricsMode: "word", place: "none", zoom: false, flash: false, textStyle: "red" },
-  card: { frame: "43", retro: false, lyricsMode: "card", place: "none", zoom: false, flash: false, textStyle: "classic" },
+  classic: { frame: "full", retro: false, lyricsMode: "line", lyricsPlace: "bottom", place: "bottom", zoom: false, flash: false, textStyle: "classic" },
+  pixel: { frame: "43", retro: true, lyricsMode: "word", lyricsPlace: "middle", place: "none", zoom: false, flash: false, textStyle: "pixel" },
+  red: { frame: "169", retro: false, lyricsMode: "word", lyricsPlace: "middle", place: "none", zoom: false, flash: false, textStyle: "red" },
+  card: { frame: "43", retro: false, lyricsMode: "card", lyricsPlace: "bottom", place: "none", zoom: false, flash: false, textStyle: "classic" },
 };
 const FRAMES = { full: 0, 169: 9 / 16, 43: 3 / 4, 11: 1 };
 try {
@@ -318,11 +407,14 @@ try {
   Object.assign(prefs, saved);
   // Réglages d'avant : la police du titre en trois choix.
   if (saved.font && !saved.titleFont) prefs.titleFont = { display: "Unbounded", dream: "Grenze Gotisch", body: "Hanken Grotesk" }[saved.font] || "Unbounded";
+  // Réglages d'avant la v2 : plus de zoom ni de calage imposés, une photo reste fixe tant qu'on ne demande rien.
+  if ((saved.v || 1) < 2) { prefs.zoom = false; prefs.snap = false; }
+  prefs.v = 2;
 } catch { /* rien de mémorisé */ }
 const savePrefs = () => { try { localStorage.setItem(PREFS, JSON.stringify(prefs)); } catch { /* stockage indisponible */ } };
 
 const sound = { name: "", buffer: null, env: null, rms: null, bpm: 0, phase: 0, start: 0 };
-let clips = [], segments = [], lyrics = [], seed = 1;
+let clips = [], segments = [], lyrics = [], seed = 1, focus = 0; // focus : le fond montré, en « une vidéo par fond »
 // Le titre de ONIRIQUE CLOUD en cours (null pour un fichier) et ses paroles telles que CLOUD les a.
 let cloud = null;
 const LAST = "onirique.cut.last";
@@ -375,17 +467,12 @@ function phaseOf(env, bpm) {
 }
 const beatLength = () => 60 / sound.bpm;
 const barLength = () => 4 * beatLength();
-/** La durée du passage : celle choisie, ou tout le morceau s'il est plus court. En BOUCLE : un nombre entier de mesures,
- *  pour que la fin retombe pile sur le début. */
-const span = () => {
-  if (!sound.buffer) return prefs.duration;
-  const d = prefs.loop && sound.bpm ? Math.max(1, Math.round(prefs.duration / barLength())) * barLength() : prefs.duration;
-  return Math.min(d, sound.buffer.duration);
-};
+/** La durée du passage : exactement celle choisie (BOUCLE comprise), ou tout le morceau s'il est plus court. */
+const span = () => (sound.buffer ? Math.min(prefs.duration, sound.buffer.duration) : prefs.duration);
 /** Le début de mesure le plus proche (la grille part du premier temps trouvé). */
 const snapBar = (t) => Math.max(0, sound.phase + Math.round((t - sound.phase) / barLength()) * barLength());
 const maxStart = () => Math.max(0, sound.buffer.duration - span());
-const snapping = () => prefs.snap || prefs.loop;
+const snapping = () => prefs.snap;
 /** Un début possible : calé sur une mesure, ou au centième près quand on ne cale pas. */
 const clampStart = (t) => {
   t = Math.max(0, Math.min(t, maxStart()));
@@ -554,10 +641,19 @@ function renderClips() {
     const d = document.createElement("div");
     d.className = "clip"; d.style.backgroundImage = `url("${c.kind === "image" ? c.url : c.thumb}")`;
     const remove = Object.assign(document.createElement("button"), { type: "button", textContent: "×", ariaLabel: "Retirer " + c.name });
-    remove.onclick = () => { stop(); URL.revokeObjectURL(c.url); clips.splice(i, 1); refresh(); };
+    remove.onclick = (event) => { event.stopPropagation(); stop(); URL.revokeObjectURL(c.url); clips.splice(i, 1); if (focus >= i && focus > 0) focus--; refresh(); };
+    // En « une vidéo par fond » : toucher un clip le montre dans l'aperçu.
+    d.classList.toggle("focus", prefs.batch === "each" && i === focus);
+    d.onclick = () => { if (prefs.batch === "each" && focus !== i) { focus = i; restyle(true); } };
     d.append(Object.assign(document.createElement("span"), { textContent: c.kind === "image" ? "Photo" : OniriqueAudio.clock(c.duration) }), remove);
     return d;
   }), $("clips-add"));
+  box.classList.toggle("each", prefs.batch === "each");
+  const many = prefs.batch === "each" && clips.length > 1;
+  $("export").textContent = many ? "Exporter " + clips.length + " vidéos (une par fond)" : "Exporter la vidéo";
+  $("batch-help").textContent = prefs.batch === "each"
+    ? "Chaque clip devient le fond de sa propre vidéo, avec le même son et les mêmes textes. Touche un clip pour le voir dans l'aperçu ; l'export fait toutes les vidéos d'un coup."
+    : "Les vidéos sont recadrées en vertical, sans son : seul ton morceau s'entend. Chaque coupe montre un nouveau moment du clip.";
 }
 
 // ——— Le montage : une coupe par groupe de temps, un clip par coupe ———
@@ -566,6 +662,12 @@ function build() {
   segments = [];
   pool.forEach((v) => { delete v.dataset.seg; });
   if (!sound.buffer || !clips.length) return;
+  // Une vidéo par fond : un seul plan sur tout le passage, le clip choisi (qui repart du début s'il est plus court).
+  if (prefs.batch === "each") {
+    focus = Math.max(0, Math.min(focus, clips.length - 1));
+    segments = [{ t0: 0, t1: span(), clip: focus, from: 0, hold: true }];
+    return;
+  }
   const beat = beatLength(), end = span(), pattern = prefs.cadence === "mix" ? VARIED : [Number(prefs.cadence)];
   // Le passage commence sur un temps : les coupes tombent pile dessus.
   for (let t = 0, k = 0; t < end - 0.02; k++) {
@@ -753,15 +855,25 @@ grain.width = grain.height = 256;
   for (let i = 0; i < data.data.length; i += 4) { const v = Math.random() * 255; data.data[i] = data.data[i + 1] = data.data[i + 2] = v; data.data[i + 3] = 34; }
   gc.putImageData(data, 0, 0);
 }
-function drawPicture(src, r, scale) {
+/** Les filtres d'image choisis (noir et blanc, luminosité, contraste, saturation) ; "none" sans effet. */
+function fxFilter() {
+  const parts = [prefs.bw && "grayscale(1)", prefs.brightness !== 100 && `brightness(${prefs.brightness}%)`,
+    prefs.contrast !== 100 && `contrast(${prefs.contrast}%)`, prefs.saturation !== 100 && `saturate(${prefs.saturation}%)`].filter(Boolean);
+  return parts.length ? parts.join(" ") : "none";
+}
+function drawPicture(src, r, scale, dx = 0, dy = 0) {
+  const filter = fxFilter();
   if (!prefs.retro) {
-    g.save(); g.beginPath(); g.rect(r.x, r.y, r.w, r.h); g.clip(); g.translate(r.x, r.y);
+    g.save(); g.beginPath(); g.rect(r.x, r.y, r.w, r.h); g.clip(); g.translate(r.x + dx, r.y + dy);
+    g.filter = filter;
     drawCover(g, src, r.w, r.h, scale);
     g.restore();
     return;
   }
   tiny.width = Math.round(r.w / 4); tiny.height = Math.round(r.h / 4);
+  tg.filter = filter;
   drawCover(tg, src, tiny.width, tiny.height, scale);
+  tg.filter = "none";
   g.imageSmoothingEnabled = false;
   g.drawImage(tiny, r.x, r.y, r.w, r.h);
   g.imageSmoothingEnabled = true;
@@ -771,6 +883,35 @@ function drawPicture(src, r, scale) {
   const ox = Math.random() * 256, oy = Math.random() * 256;
   g.translate(-ox, -oy); g.fillRect(r.x, r.y, r.w + 256, r.h + 256);
   g.restore();
+}
+
+// Le décalage RVB : une copie rouge et une copie bleu-vert de l'image, décalées sur le beat.
+const split = document.createElement("canvas"), sp = split.getContext("2d");
+function rgbSplit(r, amount) {
+  split.width = r.w; split.height = r.h;
+  for (const [color, shift] of [["#ff0000", 1], ["#00ffff", -1]]) {
+    sp.globalCompositeOperation = "copy"; sp.drawImage(screen, r.x, r.y, r.w, r.h, 0, 0, r.w, r.h);
+    sp.globalCompositeOperation = "multiply"; sp.fillStyle = color; sp.fillRect(0, 0, r.w, r.h);
+    g.save(); g.beginPath(); g.rect(r.x, r.y, r.w, r.h); g.clip();
+    g.globalCompositeOperation = "screen"; g.globalAlpha = .6 * amount;
+    g.drawImage(split, r.x + shift * 18 * amount, r.y);
+    g.restore();
+  }
+}
+/** Les effets posés sur l'image : teinte, vignette, décalage RVB. */
+function drawEffects(r, beatEnv) {
+  if (prefs.tintAmount > 0) {
+    g.save(); g.beginPath(); g.rect(r.x, r.y, r.w, r.h); g.clip();
+    g.globalCompositeOperation = "color"; g.globalAlpha = prefs.tintAmount / 100; g.fillStyle = prefs.tint; g.fillRect(r.x, r.y, r.w, r.h);
+    g.restore();
+  }
+  if (prefs.vignette > 0) {
+    const cx = r.x + r.w / 2, cy = r.y + r.h / 2, big = Math.hypot(r.w, r.h) / 2;
+    const v = g.createRadialGradient(cx, cy, big * .35, cx, cy, big);
+    v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, `rgba(0,0,0,${prefs.vignette / 100})`);
+    g.fillStyle = v; g.fillRect(r.x, r.y, r.w, r.h);
+  }
+  if (prefs.rgbSplit && beatEnv > .05) rgbSplit(r, beatEnv);
 }
 
 /** Le mot chanté à cet instant ({ text, at, strong }) ; sans moments par mot, les mots d'une ligne se partagent sa durée. */
@@ -834,19 +975,24 @@ function draw(t, playing) {
   }
   let src = clip.kind === "image" ? clip.img : pool[i % 3];
   if (clip.kind === "video") {
-    const v = src, want = s.from + (t - s.t0);
+    const v = src, want = s.hold ? t % Math.max(.1, clip.duration - .05) : s.from + (t - s.t0);
     if (playing) { if (v.paused) v.play().catch(() => {}); if (Math.abs(v.currentTime - want) > .25) v.currentTime = want; }
     else if (Math.abs(v.currentTime - want) > .04) v.currentTime = want;
     if (v.readyState < 2) return; // l'image précédente reste le temps que la vidéo arrive
   }
+  // Les temps du morceau : le zoom, la secousse et le décalage RVB partent de chaque temps.
+  const song = t + sound.start - sound.phase, sinceBeat = ((song % beatLength()) + beatLength()) % beatLength();
+  const beatEnv = Math.exp(-sinceBeat * 9), beatIndex = Math.floor(song / beatLength());
   {
-    const sinceBeat = (((t + sound.start - sound.phase) % beatLength()) + beatLength()) % beatLength();
-    const pulse = prefs.zoom ? 0.075 * Math.exp(-sinceBeat * 9) : 0;
-    const drift = clip.kind === "image" ? 1.04 + 0.08 * (t - s.t0) / (s.t1 - s.t0) : 1.0;
+    const pulse = prefs.zoom ? 0.075 * beatEnv : 0;
+    // Une photo reste fixe ; elle n'avance doucement que si on le demande.
+    const drift = clip.kind === "image" && prefs.photoMove ? 1.04 + 0.08 * (t - s.t0) / (s.t1 - s.t0) : 1.0;
+    const shake = prefs.shake ? 26 * beatEnv : 0, dx = shake * Math.sin(beatIndex * 91.7), dy = shake * Math.cos(beatIndex * 47.3);
     g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
-    drawPicture(src, frameRect(), drift * (1 + pulse));
+    drawPicture(src, frameRect(), drift * (1 + pulse) * (1 + shake / 300), dx, dy);
   }
   const r = frameRect();
+  drawEffects(r, beatEnv);
   // Un léger voile en haut et en bas (plein écran) : le texte reste lisible sur n'importe quelle image.
   if (!r.y) {
     const shade = g.createLinearGradient(0, 0, 0, H);
@@ -865,9 +1011,17 @@ function draw(t, playing) {
     if (artist) paint([artist], y + used / 2 + 50 * ts, textLook({ size: 44 * ts, glow: prefs.glow / 2 }));
   } else if (artist) paint([artist], y, { ...titleLook, size: 56 * ts });
   const now = t + sound.start, line = lyrics.filter((l) => l.at <= now).at(-1);
-  if (prefs.lyricsMode === "word") { const word = wordAt(now); if (word) bigWord(word, r.y + r.h / 2, r.w * .86, now); }
+  // La place des paroles : en haut, au milieu ou en bas (de l'image pour le mot par mot, de l'écran pour la ligne).
+  const wordY = { top: r.y + r.h * .24, middle: r.y + r.h / 2, bottom: r.y + r.h * .78 }[prefs.lyricsPlace] ?? r.y + r.h / 2;
+  const lineY = { top: prefs.place === "top" ? H * .3 : H * .18, middle: H * .5, bottom: prefs.place === "bottom" ? H * .62 : H * .8 }[prefs.lyricsPlace] ?? H * .8;
+  if (prefs.lyricsMode === "word") { const word = wordAt(now); if (word) bigWord(word, wordY, r.w * .86, now); }
   else if (prefs.lyricsMode === "card") lyricCard(line && now - line.at < 8 ? line.text : "", r, title, artist);
-  else if (line && now - line.at < 8) paint([line.text], prefs.place === "bottom" ? H * .62 : H * .8, textLook({ size: 62 * ts }));
+  else if (line && now - line.at < 8) paint([line.text], lineY, textLook({ size: 62 * ts }));
+  // Fondu au noir au début et à la fin (pas en BOUCLE : la vidéo doit s'enchaîner).
+  if (prefs.fadeEnds && !prefs.loop) {
+    const a = Math.max(0, 1 - t / .5, 1 - (span() - t) / .5);
+    if (a > 0) { g.fillStyle = `rgba(0,0,0,${Math.min(1, a)})`; g.fillRect(0, 0, W, H); }
+  }
 }
 
 // ——— Lecture : le son mène, l'image suit ———
@@ -959,6 +1113,9 @@ function drawWave() {
     c.fillRect(x, (h - bar) / 2, 1, bar);
   }
   c.strokeStyle = "#e23444"; c.lineWidth = 2 * (devicePixelRatio || 1); c.strokeRect(x0, 1, x1 - x0, h - 2);
+  // Les poignées du début et de la fin : on les attrape pour choisir le segment exact.
+  const d = devicePixelRatio || 1;
+  for (const x of [x0, x1]) { c.fillStyle = "#fff"; c.fillRect(x - 2 * d, 0, 4 * d, h); c.fillRect(x - 6 * d, h / 2 - 14 * d, 12 * d, 28 * d); }
   drawLoupe(); windowInfo();
 }
 const LOUPE = 3; // la loupe montre 3 s avant et après le début du passage
@@ -986,9 +1143,10 @@ function drawLoupe() {
 function windowInfo() {
   const bars = span() / barLength(), f = (x) => (Math.round(x * 100) / 100).toString().replace(".", ",");
   if (document.activeElement !== $("start-at")) $("start-at").value = clockFine(sound.start);
-  if (document.activeElement !== $("dur-custom")) $("dur-custom").value = Math.round(span() * 10) / 10;
-  $("window-info").textContent = "De " + clockFine(sound.start) + " à " + clockFine(sound.start + span()) + " · " + f(span()) + " s · "
-    + f(Math.round(bars * 10) / 10) + " mesure" + (bars >= 1.95 ? "s" : "") + (prefs.loop ? " · en BOUCLE" : "");
+  if (document.activeElement !== $("end-at")) $("end-at").value = clockFine(sound.start + span());
+  if (document.activeElement !== $("dur-custom")) $("dur-custom").value = f(span());
+  $("window-info").textContent = "De " + clockFine(sound.start) + " à " + clockFine(sound.start + span()) + " · " + f(span()) + " s · environ "
+    + f(Math.round(bars * 10) / 10) + " mesure" + (bars >= 1.95 ? "s" : "") + (prefs.loop ? " · en BOUCLE : la fin repart sur le début" : "");
   document.querySelectorAll(".nudges .step").forEach((b) => { b.hidden = snapping(); });
 }
 function drawScrub(t) {
@@ -1054,22 +1212,49 @@ function setStatus(message, part) {
   $("status-text").textContent = message || "";
   $("status-bar").style.width = Math.round((part || 0) * 100) + "%";
 }
-const fileName = (ext) => (($("title").value.trim() || sound.name || "video").replace(/[\\/:*?"<>|]+/g, "").slice(0, 60) + " - ONIRIQUE CUT." + ext);
+const fileName = (ext, suffix = "") => (($("title").value.trim() || sound.name || "video").replace(/[\\/:*?"<>|]+/g, "").slice(0, 60) + " - ONIRIQUE CUT" + suffix + "." + ext);
 function save(blob, name) { const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: name }); a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 60_000); }
 
+/** L'export : une vidéo, ou une par fond (« Une vidéo par fond ») rangées dans un dossier choisi quand le navigateur le permet. */
 async function exportVideo() {
   const mime = pickMime();
   if (!mime || !screen.captureStream) { alert("Ce navigateur ne sait pas enregistrer de vidéo. Ouvre ONIRIQUE CUT dans Chrome, Edge ou Safari."); return; }
   stop();
-  const lockUi = (on) => document.querySelectorAll("#studio button, #studio input, #studio textarea").forEach((x) => { x.disabled = on; });
+  const lockUi = (on) => document.querySelectorAll("#studio button, #studio input, #studio textarea, #studio select").forEach((x) => { x.disabled = on; });
+  const list = prefs.batch === "each" && clips.length > 1 ? clips.map((_, i) => i) : [null], kept = focus;
+  // Plusieurs vidéos : un dossier où les ranger (Chrome, Edge) ; sinon elles arrivent une par une dans les téléchargements.
+  let folder = null;
+  if (list.length > 1 && window.showDirectoryPicker) { try { folder = await window.showDirectoryPicker({ mode: "readwrite" }); } catch { folder = null; } }
   lockUi(true);
   $("mute").disabled = false; // on peut couper ou remettre le son pendant l'enregistrement
   try {
-    // Le son d'origine du passage part d'abord ; s'il ne passe pas, la vidéo garde le son enregistré par le navigateur.
+    const wav = await passageWav().catch(() => null);
+    for (let n = 0; n < list.length; n++) {
+      if (list[n] !== null) { focus = list[n]; build(); renderClips(); }
+      const label = list.length > 1 ? "Vidéo " + (n + 1) + " / " + list.length + " · " : "";
+      const blob = await exportOne(mime, wav, (message, part) => setStatus(label + message, (n + part) / list.length));
+      const name = fileName("mp4", list[n] === null ? "" : " - fond " + (list[n] + 1));
+      if (folder) { const file = await folder.getFileHandle(name, { create: true }), w = await file.createWritable(); await w.write(blob); await w.close(); }
+      else save(blob, name);
+    }
+    setStatus(list.length > 1 ? "C'est prêt : " + list.length + " vidéos " + (folder ? "dans le dossier choisi." : "dans tes téléchargements.") : "C'est prêt : ta vidéo est dans tes téléchargements.", 1);
+  } catch (error) {
+    setStatus(error.message || "L'export a échoué.", 0);
+  } finally {
+    recording = null;
+    focus = kept;
+    lockUi(false);
+    refresh();
+  }
+}
+/** Une vidéo : le son d'origine part d'abord (s'il ne passe pas, la vidéo garde le son enregistré par le navigateur), puis
+ *  l'enregistrement en temps réel, puis le MP4 propre du serveur. progress(message, 0 à 1). */
+async function exportOne(mime, wav, progress) {
+  {
     let audioId = null;
-    try {
-      setStatus("Préparation du son en qualité d'origine…", .01);
-      audioId = (await upload("/api/cut/audio", await passageWav(), "json", (p) => setStatus("Préparation du son en qualité d'origine…", .01 + .07 * p))).id;
+    if (wav) try {
+      progress("Préparation du son en qualité d'origine…", .01);
+      audioId = (await upload("/api/cut/audio", wav, "json", (p) => progress("Préparation du son en qualité d'origine…", .01 + .07 * p))).id;
     } catch { audioId = null; }
     // Les trois premières coupes chargées avant de lancer l'enregistrement.
     position = 0; shown = -1; draw(0, false);
@@ -1077,14 +1262,14 @@ async function exportVideo() {
     ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
     const out = ctx.createMediaStreamDestination();
     const stream = new MediaStream([...screen.captureStream(30).getVideoTracks(), ...out.stream.getAudioTracks()]);
-    const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 14_000_000, audioBitsPerSecond: 320_000 });
+    const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 40_000_000, audioBitsPerSecond: 320_000 });
     const chunks = [];
     recorder.ondataavailable = (event) => event.data.size && chunks.push(event.data);
     let aborted = false;
     const hidden = () => { if (document.hidden && recording) { aborted = true; finish(); } };
     document.addEventListener("visibilitychange", hidden);
     const recorded = new Promise((resolve) => { recorder.onstop = () => resolve(new Blob(chunks, { type: mime.split(";")[0] })); });
-    const ticker = setInterval(() => setStatus("Enregistrement… " + OniriqueAudio.clock(now()) + " / " + OniriqueAudio.clock(span()) + " · garde cet onglet ouvert", .08 + now() / span() * .64), 250);
+    const ticker = setInterval(() => progress("Enregistrement… " + OniriqueAudio.clock(now()) + " / " + OniriqueAudio.clock(span()) + " · garde cet onglet ouvert", .08 + now() / span() * .64), 250);
     // Le son part dès que l'enregistrement a vraiment commencé ; l'écart restant est mesuré pour caler le son d'origine.
     let offset = 0;
     await new Promise((resolve) => {
@@ -1097,19 +1282,11 @@ async function exportVideo() {
     clearInterval(ticker);
     document.removeEventListener("visibilitychange", hidden);
     const raw = await recorded;
-    if (aborted) { setStatus("Enregistrement arrêté : l'onglet a été quitté. Relance l'export et reste sur cette page.", 0); return; }
+    if (aborted) throw new Error("Enregistrement arrêté : l'onglet a été quitté. Relance l'export et reste sur cette page.");
 
-    setStatus("Préparation du MP4 pour TikTok…", .72);
-    const mp4 = await upload("/api/cut/mp4" + (audioId ? "?audio=" + audioId + "&offset=" + offset.toFixed(3) : ""), raw, "blob",
-      (p) => setStatus("Préparation du MP4 pour TikTok…", .72 + .2 * p)).catch((error) => { save(raw, fileName(mime.includes("mp4") ? "mp4" : "webm")); throw new Error(error.message + " La vidéo telle qu'enregistrée a été téléchargée à la place."); });
-    save(mp4, fileName("mp4"));
-    setStatus("C'est prêt : ta vidéo est dans tes téléchargements.", 1);
-  } catch (error) {
-    setStatus(error.message || "L'export a échoué.", 0);
-  } finally {
-    recording = null;
-    lockUi(false);
-    refresh();
+    progress("Préparation du MP4 en haute qualité…", .72);
+    return await upload("/api/cut/mp4" + (audioId ? "?audio=" + audioId + "&offset=" + offset.toFixed(3) : ""), raw, "blob",
+      (p) => progress("Préparation du MP4 en haute qualité…", .72 + .2 * p)).catch((error) => { save(raw, fileName(mime.includes("mp4") ? "mp4" : "webm")); throw new Error(error.message + " La vidéo telle qu'enregistrée a été téléchargée à la place."); });
   }
 }
 
@@ -1127,19 +1304,38 @@ function chips(id, key, after = refresh) {
   });
   mark();
 }
+/** Le segment sur la forme d'onde : on déplace la zone, ou on tire son début ou sa fin (au centième, durée libre). */
 function dragWindow() {
   const box = $("wave");
   let grab = null;
-  const at = (event) => { const r = box.getBoundingClientRect(); return (event.clientX - r.left) / r.width * sound.buffer.duration; };
+  const at = (event) => { const r = box.getBoundingClientRect(); return Math.max(0, Math.min(1, (event.clientX - r.left) / r.width)) * sound.buffer.duration; };
+  const edge = (event) => {
+    const r = box.getBoundingClientRect(), x = (t) => r.left + t / sound.buffer.duration * r.width;
+    if (Math.abs(event.clientX - x(sound.start + span())) < 12) return "end";
+    if (Math.abs(event.clientX - x(sound.start)) < 12) return "start";
+    return null;
+  };
+  const round = (x) => Math.round(x * 100) / 100;
   box.addEventListener("pointerdown", (event) => {
     if (!sound.buffer) return;
-    const t = at(event), inside = t >= sound.start && t <= sound.start + span();
-    grab = inside ? t - sound.start : span() / 2;
+    const t = at(event), kind = edge(event), inside = t >= sound.start && t <= sound.start + span();
+    grab = { kind: kind || "move", offset: inside ? t - sound.start : span() / 2, end: sound.start + span() };
     box.setPointerCapture(event.pointerId); box.classList.add("drag");
-    sound.start = clampStart(t - grab); drawWave();
+    if (!kind) { sound.start = clampStart(t - grab.offset); drawWave(); }
   });
-  box.addEventListener("pointermove", (event) => { if (grab === null) return; sound.start = clampStart(at(event) - grab); drawWave(); });
-  const end = () => { if (grab === null) return; grab = null; box.classList.remove("drag"); position = 0; refresh(); };
+  box.addEventListener("pointermove", (event) => {
+    if (!sound.buffer) return;
+    if (grab === null) { box.style.cursor = edge(event) ? "ew-resize" : ""; return; }
+    const t = at(event);
+    if (grab.kind === "start") {
+      let start = Math.max(0, Math.min(t, grab.end - 1));
+      if (prefs.snap) start = Math.min(snapBar(start), grab.end - 1);
+      sound.start = round(start); prefs.duration = round(grab.end - sound.start);
+    } else if (grab.kind === "end") prefs.duration = round(Math.max(1, Math.min(t, sound.buffer.duration) - sound.start));
+    else sound.start = clampStart(t - grab.offset);
+    drawWave();
+  });
+  const end = () => { if (grab === null) return; grab = null; box.classList.remove("drag"); savePrefs(); marks.forEach((m) => m()); position = 0; refresh(); };
   box.addEventListener("pointerup", end); box.addEventListener("pointercancel", end);
 }
 /** La loupe : on fait glisser la forme d'onde, le début bouge au centième (ou de mesure en mesure si on cale). */
@@ -1192,7 +1388,13 @@ function start() {
   $("dur-custom").onchange = () => {
     const v = Number(String($("dur-custom").value).replace(",", "."));
     if (!(v > 0)) return windowInfo();
-    prefs.duration = Math.round(Math.min(180, Math.max(2, v)) * 10) / 10; savePrefs(); marks.forEach((m) => m());
+    prefs.duration = Math.round(Math.min(300, Math.max(1, v)) * 100) / 100; savePrefs(); marks.forEach((m) => m());
+    position = 0; refresh();
+  };
+  $("end-at").onchange = () => {
+    const t = parseClock($("end-at").value);
+    if (!Number.isFinite(t) || !sound.buffer) return windowInfo();
+    prefs.duration = Math.round(Math.max(1, Math.min(t, sound.buffer.duration) - sound.start) * 100) / 100; savePrefs(); marks.forEach((m) => m());
     position = 0; refresh();
   };
   $("start-at").onchange = () => {
@@ -1218,11 +1420,13 @@ function start() {
     hearing = setTimeout(() => { hearing = 0; if (playing) { stop(); position = 0; seek(0); } }, 3000);
   };
   chips("order", "order", () => restyle(true)); chips("cadence", "cadence", () => restyle(true)); chips("place", "place", () => restyle());
+  chips("lyricsPlace", "lyricsPlace", () => restyle());
+  chips("batch", "batch", () => { focus = 0; restyle(true); });
   const redraw = () => { $("word-row").hidden = prefs.lyricsMode !== "word"; $("sign-row").hidden = prefs.lyricsMode !== "card"; restyle(); };
   chips("frame", "frame", redraw); chips("lyricsMode", "lyricsMode", redraw);
   // Le style du texte : polices, couleurs, contour, lueur, ombre, mots forts.
   const STYLE_INPUTS = ["lyricFont", "titleFont", "strongFont", "textColor", "textSize", "strokeColor", "stroke", "glowColor", "glow", "shadowColor", "shadowBlur", "shadowOffset",
-    "caps", "pixel", "strongSize", "strongColor", "strongGlowColor", "strongGlow"];
+    "caps", "pixel", "strongSize", "strongColor", "strongGlowColor", "strongGlow", ...Object.keys(FX)];
   for (const id of ["lyricFont", "titleFont", "strongFont"]) {
     $(id).replaceChildren(...(id === "strongFont" ? [new Option("Même police que les paroles", "")] : []), ...FONT_LIST.map(([family, , label]) => new Option(label, family)));
   }
@@ -1248,6 +1452,28 @@ function start() {
     redraw();
   });
   syncControls();
+  $("fx-reset").onclick = () => { Object.assign(prefs, FX); savePrefs(); syncControls(); restyle(); };
+  // Mes styles : tous les réglages d'image, d'effets et de texte, gardés dans ce navigateur.
+  const STYLES = "onirique.cut.styles", NOT_STYLE = ["duration", "order", "snap", "loop", "mute", "batch", "artist", "hook", "sign", "shuffle", "v"];
+  const myStyles = () => { try { return JSON.parse(localStorage.getItem(STYLES) || "[]"); } catch { return []; } };
+  const keepStyles = (list) => { try { localStorage.setItem(STYLES, JSON.stringify(list)); } catch { alert("Ce navigateur ne permet pas d'enregistrer de style."); } };
+  const renderStyles = () => {
+    const list = myStyles();
+    $("my-styles").replaceChildren(...(list.length ? list.map((st, i) => {
+      const use = Object.assign(document.createElement("button"), { type: "button", textContent: st.name, title: "Appliquer ce style" });
+      use.onclick = () => { Object.assign(prefs, st.prefs); savePrefs(); [prefs.lyricFont, prefs.titleFont, prefs.strongFont].forEach(loadFont); syncControls(); redraw(); };
+      const del = Object.assign(document.createElement("button"), { type: "button", textContent: "×", ariaLabel: "Supprimer le style " + st.name });
+      del.onclick = () => { if (confirm("Supprimer le style « " + st.name + " » ?")) { keepStyles(myStyles().filter((_, k) => k !== i)); renderStyles(); } };
+      const pill = document.createElement("span"); pill.append(use, del); return pill;
+    }) : [Object.assign(document.createElement("p"), { className: "muted", style: "margin:0", textContent: "Aucun style enregistré pour l'instant." })]));
+  };
+  $("style-save").onclick = () => {
+    const name = $("style-name").value.trim() || "Style " + (myStyles().length + 1);
+    const snapshot = Object.fromEntries(Object.entries(prefs).filter(([k]) => !NOT_STYLE.includes(k)));
+    keepStyles([...myStyles().filter((st) => st.name !== name), { name, prefs: snapshot }]);
+    $("style-name").value = ""; renderStyles();
+  };
+  renderStyles();
   for (const id of boxes) { $(id).onchange = () => { prefs[id] = $(id).checked; savePrefs(); restyle(); }; }
   for (const id of ["hook", "sign"]) { $(id).value = prefs[id] || ""; $(id).oninput = () => { prefs[id] = $(id).value; savePrefs(); if (!playing) draw(position, false); }; }
   $("word-row").hidden = prefs.lyricsMode !== "word"; $("sign-row").hidden = prefs.lyricsMode !== "card";
