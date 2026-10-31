@@ -49,6 +49,8 @@
     <div class="bar">
       <label class="btn">+ Ajouter des photos<input type="file" id="add" accept="image/png,image/jpeg,image/webp" multiple hidden></label>
       <button type="button" class="btn" id="reset">Tout remettre dans la réserve</button>
+      <input id="title" maxlength="60" placeholder="Titre de l'image" aria-label="Titre de l'image exportée" style="flex:1;min-width:160px">
+      <button type="button" class="btn" id="export">Exporter en JPG</button>
     </div>
     <div class="tl" id="tl"></div>
     <div class="pool"><div class="tl-drop" id="pool" data-tier="" aria-label="Réserve"></div></div>
@@ -71,6 +73,7 @@ function itemEl(it) {
   b.className = "it";
   b.draggable = true;
   b.dataset.id = it.id;
+  b.item = it;
   b.title = it.name || "Photo de " + it.by;
   if (it.src) b.innerHTML = `<img alt="" src="${Outils.esc(it.src)}">`;
   else b.innerHTML = `<span class="ini">${Outils.esc((it.name || "?").slice(0, 1).toUpperCase())}</span>`;
@@ -141,6 +144,108 @@ document.getElementById("add").addEventListener("change", async (e) => {
     try { pool.append(itemEl(await upload(f))); } catch (err) { say(`${f.name} : ${err.message}`); return; }
   }
   say(files.length > 1 ? "Photos ajoutées à la réserve." : "Photo ajoutée à la réserve.");
+});
+
+// L'image à envoyer : dessinée dans un canvas aux couleurs ONIRIQUE, rangées et images comme sur la page.
+const loadImg = (src) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; });
+function wrapText(g, text, width) {
+  const lines = [];
+  let line = "";
+  for (const w of text.split(" ")) {
+    const next = line ? line + " " + w : w;
+    if (line && g.measureText(next).width > width) { lines.push(line); line = w; } else line = next;
+  }
+  return line ? [...lines, line] : lines;
+}
+async function exportJpg() {
+  await document.fonts.ready;
+  const W = 1600, PAD = 56, LABEL = 220, SIZE = 124, GAP = 8;
+  const perLine = Math.floor((W - PAD * 2 - LABEL - GAP) / (SIZE + GAP));
+  const rows = [...tl.querySelectorAll(".tl-row")].map((r) => ({
+    label: r.querySelector(".tl-label").textContent.trim(), color: COLORS[r.querySelector(".tl-label").dataset.tier],
+    items: [...r.querySelectorAll(".it")].map((el) => el.item),
+  }));
+  const heights = rows.map((r) => Math.max(1, Math.ceil(r.items.length / perLine)) * (SIZE + GAP) + GAP);
+  const HEAD = 170, FOOT = 80;
+  const H = HEAD + heights.reduce((a, b) => a + b, 0) + FOOT;
+  const c = document.createElement("canvas");
+  c.width = W; c.height = H;
+  const g = c.getContext("2d");
+  const imgs = new Map(await Promise.all(rows.flatMap((r) => r.items).filter((it) => it.src).map(async (it) => [it.id, await loadImg(it.src)])));
+
+  const bg = g.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, "#2a0a0e"); bg.addColorStop(1, "#0d0809");
+  g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  g.fillStyle = "#e23444"; g.fillRect(0, 0, W, 8);
+  g.textBaseline = "alphabetic";
+  g.fillStyle = "#e23444"; g.font = '500 20px "JetBrains Mono", monospace';
+  g.fillText("✦ ONIRIQUE · TIER LIST", PAD, 66);
+  g.fillStyle = "#f6eeee"; g.font = '800 54px "Unbounded", "Arial Black", sans-serif';
+  const title = document.getElementById("title").value.trim() || "Tier list";
+  let t = title;
+  while (g.measureText(t).width > W - PAD * 2 && t.length > 1) t = t.slice(0, -2) + "…";
+  g.fillText(t, PAD, 132);
+
+  let y = HEAD;
+  g.save();
+  g.beginPath(); g.roundRect(PAD, y, W - PAD * 2, H - HEAD - FOOT, 18); g.clip();
+  rows.forEach((r, i) => {
+    const h = heights[i];
+    g.fillStyle = r.color; g.fillRect(PAD, y, LABEL, h);
+    g.fillStyle = i % 2 ? "#161012" : "#1b1315"; g.fillRect(PAD + LABEL, y, W - PAD * 2 - LABEL, h);
+    g.fillStyle = "#111"; g.textAlign = "center"; g.textBaseline = "middle";
+    // Une lettre en grand ; un nom long en plus petit, sur plusieurs lignes.
+    let size = r.label.length <= 3 ? 64 : 26, lines;
+    do {
+      g.font = r.label.length <= 3 ? `800 ${size}px "Unbounded", "Arial Black", sans-serif` : `700 ${size}px "Hanken Grotesk", "Segoe UI", sans-serif`;
+      lines = wrapText(g, r.label, LABEL - 28);
+      size -= 2;
+    } while (size > 12 && (lines.length * size * 1.25 > h - 20 || lines.some((l) => g.measureText(l).width > LABEL - 20)));
+    const lh = (size + 2) * 1.25;
+    lines.forEach((l, k) => g.fillText(l, PAD + LABEL / 2, y + h / 2 + (k - (lines.length - 1) / 2) * lh));
+    r.items.forEach((it, k) => {
+      const x = PAD + LABEL + GAP + (k % perLine) * (SIZE + GAP), iy = y + GAP + Math.floor(k / perLine) * (SIZE + GAP);
+      g.save();
+      g.beginPath(); g.roundRect(x, iy, SIZE, SIZE, 10); g.clip();
+      const img = imgs.get(it.id);
+      if (img) {
+        const s = Math.min(img.width, img.height); // recadrée au carré, comme sur la page
+        g.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, x, iy, SIZE, SIZE);
+      } else {
+        g.fillStyle = "#3a0d13"; g.fillRect(x, iy, SIZE, SIZE);
+        g.fillStyle = "#f6eeee"; g.font = '800 46px "Unbounded", "Arial Black", sans-serif';
+        g.fillText((it.name || "?").slice(0, 1).toUpperCase(), x + SIZE / 2, iy + SIZE / 2 - 8);
+      }
+      if (it.name) {
+        g.fillStyle = "rgba(0,0,0,.72)"; g.fillRect(x, iy + SIZE - 26, SIZE, 26);
+        g.fillStyle = "#fff"; g.font = '500 14px "JetBrains Mono", monospace';
+        let n = it.name;
+        while (g.measureText(n).width > SIZE - 10 && n.length > 1) n = n.slice(0, -2) + "…";
+        g.fillText(n, x + SIZE / 2, iy + SIZE - 13);
+      }
+      g.restore();
+    });
+    g.fillStyle = "#000"; g.fillRect(PAD, y + h - 2, W - PAD * 2, 2);
+    y += h;
+  });
+  g.restore();
+  g.textAlign = "right"; g.textBaseline = "alphabetic";
+  g.fillStyle = "#b9a2a5"; g.font = '500 18px "JetBrains Mono", monospace';
+  g.fillText("onirique.store", W - PAD, H - 30);
+
+  const blob = await new Promise((ok) => c.toBlob(ok, "image/jpeg", 0.92));
+  const file = new File([blob], (title.replace(/[\/:*?"<>|]/g, " ").trim() || "Tier list") + ".jpg", { type: "image/jpeg" });
+  // Sur téléphone, le menu de partage (pour l'envoyer direct) ; sinon le fichier se télécharge.
+  if (navigator.canShare?.({ files: [file] }) && matchMedia("(pointer: coarse)").matches) {
+    try { await navigator.share({ files: [file] }); return; } catch (e) { if (e.name === "AbortError") return; }
+  }
+  const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(file), download: file.name });
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
+}
+document.getElementById("export").addEventListener("click", async (e) => {
+  e.target.disabled = true;
+  try { await exportJpg(); } catch (err) { say("Export impossible : " + err.message); } finally { e.target.disabled = false; }
 });
 
 document.getElementById("reset").addEventListener("click", () => {
