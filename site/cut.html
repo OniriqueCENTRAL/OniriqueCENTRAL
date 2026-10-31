@@ -493,7 +493,8 @@
       <label class="check mute" id="keep-box" hidden><input type="checkbox" id="keepCloud"> Garder aussi dans mon cloud CUT</label>
       <details class="panel" id="lib-panel" hidden>
         <summary>Mes vidéos CUT (cloud)</summary>
-        <div class="stack"><p class="muted" id="lib-info">Réservé aux fondateurs : les vidéos exportées avec « Garder aussi dans mon cloud CUT » arrivent ici.</p><div class="stack" id="lib-list" style="padding:0"></div></div>
+        <div class="stack"><p class="muted" id="lib-info">Réservé aux fondateurs : les vidéos exportées avec « Garder aussi dans mon cloud CUT » arrivent ici.</p><div class="stack" id="lib-list" style="padding:0"></div>
+          <p class="muted" style="margin:0;font-size:12px">Sur ton téléphone : <a href="mes-videos" target="_blank" rel="noopener">onirique.store/mes-videos</a>. Ajoute-la à l'écran d'accueil (appweb ONIRIQUE CUT) pour envoyer tes vidéos vers TikTok.</p></div>
       </details>
       <div class="status" id="status" hidden><span id="status-text"></span><div class="bar"><i id="status-bar"></i></div></div>
       <p class="hint" style="text-align:center">MP4 1080 × 1920 en haute qualité, 30 images par seconde, son d'origine en AAC 320 kb/s. La vidéo se fabrique image par image : garde cet onglet ouvert. Rien n'est gardé sur nos serveurs : tes sons, clips et vidéos restent chez toi.</p>
@@ -605,9 +606,9 @@ const LAST = "onirique.cut.last";
 
 // ——— Accès : membres ONIRIQUE et abonnés CLOUD (le même droit que ONIRIQUE CLOUD) ———
 async function gate() {
-  if (!TOKEN) return lock("Connecte-toi pour ouvrir ONIRIQUE CUT", "Il est inclus pour les membres ONIRIQUE et avec l'abonnement CLOUD et page de liens.", "compte", "Me connecter");
+  if (!TOKEN) return lock("Connecte-toi pour ouvrir ONIRIQUE CUT", "Il est inclus pour les membres ONIRIQUE et avec l'abonnement CLOUD et page de liens.", "compte?next=cut", "Me connecter");
   const response = await fetch("/api/me", { headers: { Authorization: "Bearer " + TOKEN } }).catch(() => null);
-  if (!response || response.status === 401) return lock("Connecte-toi pour ouvrir ONIRIQUE CUT", "Ta session a expiré.", "compte", "Me connecter");
+  if (!response || response.status === 401) return lock("Connecte-toi pour ouvrir ONIRIQUE CUT", "Ta session a expiré.", "compte?next=cut", "Me connecter");
   const me = await response.json().catch(() => ({}));
   if (!(me.rights || []).includes("sounds")) return lock("ONIRIQUE CUT est réservé aux membres", $("locked-text").textContent, "cloud", "Voir l'abonnement");
   isFounder = !!(me.user && me.user.role === "founder");

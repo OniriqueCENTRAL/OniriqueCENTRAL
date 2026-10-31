@@ -2,7 +2,8 @@
 // de WebCodecs, l'enregistre en temps réel). Le serveur en fait le MP4 que TikTok, Instagram et YouTube acceptent sans
 // broncher : H.264 + AAC, 1080 × 1920, 30 images par seconde constantes. Réservé aux comptes qui ont
 // ONIRIQUE CLOUD (membres ONIRIQUE et abonnés aux outils). Rien n'est gardé : les fichiers sont effacés aussitôt.
-// Seule exception : le cloud CUT des fondateurs (les vidéos qu'ils choisissent de garder, dossier cut-library).
+// Seule exception : le cloud CUT des fondateurs (les vidéos qu'ils choisissent de garder, dossier cut-library), qu'ils
+// retrouvent aussi sur téléphone dans l'appweb ONIRIQUE CUT (site/mes-videos), pour les envoyer vers TikTok.
 //
 // Le son : la page envoie d'abord celui du passage tel qu'il est dans le fichier (WAV, POST /api/cut/audio), puis la
 // vidéo (POST /api/cut/mp4?audio=…&offset=…). Le son n'est encodé qu'une fois, en AAC 320 kb/s, à sa fréquence d'origine,
@@ -35,7 +36,16 @@ function signKey() {
 const sign = (text) => crypto.createHmac('sha256', signKey()).update(text).digest('base64url');
 const same = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 const videoUrl = (id, download = false) => { const e = now() + 6 * 3600_000, d = download ? 1 : 0; return `/api/cut/video/${id}?e=${e}&d=${d}&s=${sign(`cutvideo.${id}.${e}.${d}`)}`; };
-const videoView = (v) => ({ id: v.id, name: v.name, size: v.size, duration: v.duration, createdAt: v.created_at, url: videoUrl(v.id), downloadUrl: videoUrl(v.id, true) });
+// L'image d'aperçu : le lien change une fois par jour, pour que le téléphone la garde en cache d'une visite à l'autre.
+const DAY = 86_400_000;
+const posterUrl = (id) => { const e = (Math.floor(now() / DAY) + 2) * DAY; return `/api/cut/poster/${id}?e=${e}&s=${sign(`cutposter.${id}.${e}`)}`; };
+const videoView = (v) => ({ id: v.id, name: v.name, size: v.size, duration: v.duration, createdAt: v.created_at, url: videoUrl(v.id), downloadUrl: videoUrl(v.id, true), poster: posterUrl(v.id) });
+// L'aperçu (une image de la vidéo, 360 px de large) est fait par ffmpeg à sa première demande, puis gardé à côté de la
+// vidéo. Un à la fois : le serveur a peu de mémoire.
+let posterQueue = Promise.resolve();
+const makePoster = (video, poster, duration) => (posterQueue = posterQueue.then(() => (fs.existsSync(poster) || testing ? null
+  : new Promise((resolve) => execFile('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-ss', Math.min(1, duration / 2).toFixed(2), '-i', video,
+    '-frames:v', '1', '-vf', 'scale=360:-2', '-q:v', '4', poster], { timeout: 60_000 }, () => resolve()))))); // pas de ffmpeg pendant les tests
 
 const MAX_BYTES = 600 * 1024 * 1024; // une minute en 1080p tient largement dedans
 const AUDIO_MAX = 300 * 1024 * 1024; // trois minutes en WAV 24 bits stéréo 48 kHz : 52 Mo
@@ -84,7 +94,7 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
   fs.mkdirSync(libDir, { recursive: true });
   // Les fichiers dont la vidéo n'existe plus (compte supprimé, par exemple) partent au démarrage.
   const kept = new Set(all('SELECT stored_as FROM cut_videos').map((v) => v.stored_as));
-  for (const name of fs.readdirSync(libDir)) if (!kept.has(name)) fs.rmSync(path.join(libDir, name), { force: true });
+  for (const name of fs.readdirSync(libDir)) if (!kept.has(name.replace(/\.jpg$/, ''))) fs.rmSync(path.join(libDir, name), { force: true });
   const founder = (req, _res, next) => (req.user.role === 'founder' ? next() : next(new HttpError(403, 'Le cloud CUT est réservé aux fondateurs.')));
   const ownVideo = (req) => {
     const v = get('SELECT * FROM cut_videos WHERE id = ? AND user_id = ?', Number(req.params.id) || 0, req.user.id);
@@ -117,6 +127,7 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
     const v = ownVideo(req);
     run('DELETE FROM cut_videos WHERE id = ?', v.id);
     fs.rmSync(path.join(libDir, v.stored_as), { force: true });
+    fs.rmSync(path.join(libDir, v.stored_as + '.jpg'), { force: true });
     res.json({ ok: true });
   });
   // La lecture (avec avance rapide) et le téléchargement, par lien signé.
@@ -128,6 +139,17 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
     if (d) res.attachment(v.name + '.mp4');
     res.sendFile(path.join(libDir, v.stored_as), { headers: { 'Content-Type': 'video/mp4', 'Cache-Control': 'private, max-age=3600', 'X-Content-Type-Options': 'nosniff' } });
   });
+
+  app.get('/api/cut/poster/:id', wrap(async (req, res) => {
+    const vid = Number(req.params.id) || 0, e = Number(req.query.e), s = String(req.query.s || '');
+    if (!(e > now()) || !same(s, sign(`cutposter.${vid}.${e}`))) throw new HttpError(403, 'Ce lien a expiré : rouvre « Mes vidéos CUT ».');
+    const v = get('SELECT * FROM cut_videos WHERE id = ?', vid);
+    if (!v) throw new HttpError(404, 'Vidéo introuvable.');
+    const poster = path.join(libDir, v.stored_as + '.jpg');
+    await makePoster(path.join(libDir, v.stored_as), poster, v.duration);
+    if (!fs.existsSync(poster)) throw new HttpError(404, "Pas d'aperçu pour cette vidéo.");
+    res.sendFile(poster, { headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'private, max-age=86400', 'X-Content-Type-Options': 'nosniff' } });
+  }));
 
   app.post('/api/cut/audio', requireUser, member, wrap(async (req, res) => {
     rateLimit(`cut-audio:${req.user.id}`, 60, 3600_000);
