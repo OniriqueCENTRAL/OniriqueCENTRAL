@@ -1077,7 +1077,8 @@ function shortTexts(caption, name) {
   const cta = (prefs.ytCta || CTA).replace(/\{son\}/g, title && artist ? title + " - " + artist : son).trim();
   return {
     title: head.replace(/#\S+/g, "").replace(/\s+/g, " ").trim().slice(0, 100),
-    description: [...(quote ? ['"' + quote + '"'] : []), son, "", cta, "", hashtags].join("\n").replace(/\n{3,}/g, "\n\n").trim(),
+    // Le nom du son une seule fois : sa ligne « Artiste - Titre » saute si la phrase d'appel le dit déjà ({son}).
+    description: [...(quote ? ['"' + quote + '"'] : []), ...(/\{son\}/.test(prefs.ytCta || CTA) ? [] : [son]), "", cta, "", hashtags].join("\n").replace(/\n{3,}/g, "\n\n").trim(),
     tags: [...new Set([artist, title, son, ...tags.map((t) => t.slice(1)), "lyrics video", "short music", "rap fr", "musique " + new Date().getFullYear(),
       "film edit", "edit musique", ...(artist ? [artist + " " + title] : [])].map((t) => t.trim()).filter(Boolean))],
   };
