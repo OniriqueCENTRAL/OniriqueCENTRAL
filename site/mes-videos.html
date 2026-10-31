@@ -57,6 +57,11 @@ h1 { font: 800 clamp(26px, 7vw, 38px)/1.1 var(--f-display); margin: 8px 0 6px; }
 .bulk .muted { font-size: 13px; }
 .panel { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 18px; padding: 22px; margin-top: 8px; text-align: center; }
 .panel p { margin: 0 0 14px; }
+.remind { text-align: left; margin: 0 0 16px; padding: 14px 18px; }
+.remind summary { cursor: pointer; font: 700 15px var(--f-body); }
+.remind p { margin: 8px 0; font-size: 14px; }
+.remind input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--ember); }
+.remind input[type="time"] { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); font: 600 15px var(--f-body); }
 /* La grille des vidéos : deux colonnes sur téléphone, plus sur un grand écran. */
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
 .card { display: grid; gap: 6px; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; min-width: 0; }
@@ -106,6 +111,13 @@ dialog::backdrop { background: rgba(5,2,3,.8); backdrop-filter: blur(4px); }
   <h1>Mes vidéos</h1>
   <p class="lead muted">Les vidéos gardées depuis ONIRIQUE CUT. Touche-en une pour l'envoyer vers TikTok ou l'enregistrer sur ton téléphone : elle ne se télécharge qu'une fois, puis reste dans l'appli.</p>
   <button class="install" id="install" type="button" hidden><img src="assets/cut-icon-180.png" alt="">Ajouter à l'écran d'accueil</button>
+  <details class="panel remind" id="remind" hidden>
+    <summary>Rappel TikTok</summary>
+    <p class="muted">Une notification chaque jour, à ton heure, pour penser à poster.</p>
+    <div class="row"><label class="row"><input type="checkbox" id="r-on"> Me le rappeler chaque jour à</label><input type="time" id="r-time" value="18:00" aria-label="Heure du rappel"></div>
+    <div class="row" style="margin-top:10px"><button class="btn btn-ghost" type="button" id="r-test">Envoyer un essai</button></div>
+    <p class="muted" id="r-note" aria-live="polite"></p>
+  </details>
   <div class="panel" id="gate" hidden></div>
   <p class="muted" id="status" aria-live="polite"></p>
   <div class="row bulk" id="bulk" hidden><button class="btn btn-ghost" type="button" id="all">Tout télécharger</button><span class="muted" id="all-note" aria-live="polite"></span></div>
@@ -138,8 +150,9 @@ const size = (n) => (n >= 1024 ** 3 ? (n / 1024 ** 3).toFixed(2) + " Go" : Math.
 const clock = (s) => { s = Math.round(s || 0); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
 const when = (ms) => new Date(ms).toLocaleDateString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 const fileName = (v) => (v.name || "video").replace(/[\\/:*?"<>|]+/g, "").trim() + ".mp4";
-async function api(method, path) {
-  const response = await fetch("/api" + path, { method, headers: { Authorization: "Bearer " + token } })
+async function api(method, path, body) {
+  const response = await fetch("/api" + path, { method, body: body && JSON.stringify(body),
+    headers: { Authorization: "Bearer " + token, ...(body ? { "Content-Type": "application/json" } : {}) } })
     .catch(() => { throw new Error("Serveur injoignable. Réessaie dans un instant."); });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw Object.assign(new Error(data.error || "Erreur " + response.status), { status: response.status });
@@ -228,6 +241,7 @@ async function load() {
     videosNow = videos;
     await syncStore(videos);
     $("gate").hidden = true; $("reload").hidden = false;
+    loadReminder();
     $("status").textContent = videos.length ? "" : "Aucune vidéo pour l'instant. Dans ONIRIQUE CUT, sur ton ordinateur, coche « Garder aussi dans mon cloud CUT » avant d'exporter : la vidéo arrivera ici.";
     $("list").replaceChildren(...videos.map((v) => card(v, stored.has(v.id))));
     allButton();
@@ -355,6 +369,48 @@ for (const dialog of [$("viewer"), $("install-help")]) {
   dialog.addEventListener("pointerdown", (event) => { fromBackdrop = event.target === dialog; });
   dialog.addEventListener("click", (event) => { if (event.target === dialog && fromBackdrop) dialog.close(); fromBackdrop = false; });
 }
+
+// ——— Le rappel quotidien « poste ton TikTok » : une notification sur ce téléphone, à l'heure choisie ———
+// Les notifications passent par sw.js, comme celles d'ONIRIQUE CLOUD ; sur iPhone, seulement depuis l'icône de l'écran d'accueil.
+const canPush = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+const keyBytes = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+async function enablePush() {
+  if (!canPush) throw new Error(ios && !standalone ? "Sur iPhone, ajoute d'abord ONIRIQUE CUT à l'écran d'accueil, puis active le rappel depuis l'icône." : "Ce navigateur ne peut pas recevoir de notifications.");
+  if (await Notification.requestPermission() !== "granted") throw new Error("Notifications refusées : autorise-les pour ONIRIQUE dans les réglages du téléphone ou du navigateur.");
+  const r = await navigator.serviceWorker.register("/sw.js");
+  const { key } = await api("GET", "/push/key");
+  const sub = (await r.pushManager.getSubscription()) || await r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(key) });
+  await api("POST", "/me/push", sub.toJSON());
+}
+const hourText = (time) => time.replace(":", " h ");
+let reminderShown = false;
+async function loadReminder() {
+  if (reminderShown) return;
+  reminderShown = true; $("remind").hidden = false;
+  try {
+    const r = await api("GET", "/cut/reminder");
+    $("r-on").checked = r.on; $("r-time").value = r.time;
+    if (r.on) $("r-note").textContent = "Rappel chaque jour à " + hourText(r.time) + ".";
+  } catch { /* le réglage reste à faire */ }
+  // Un téléphone déjà abonné le redit au serveur à chaque ouverture (il a pu l'oublier).
+  if (canPush && Notification.permission === "granted") navigator.serviceWorker.register("/sw.js").then((r) => r.pushManager.getSubscription())
+    .then((sub) => sub && api("POST", "/me/push", sub.toJSON())).catch(() => {});
+}
+async function saveReminder() {
+  const on = $("r-on").checked, time = $("r-time").value || "18:00";
+  $("r-note").textContent = "";
+  try {
+    if (on) await enablePush();
+    await api("PUT", "/cut/reminder", { on, time, tz: Intl.DateTimeFormat().resolvedOptions().timeZone });
+    $("r-note").textContent = on ? "Rappel chaque jour à " + hourText(time) + " sur ce téléphone." : "Rappel coupé.";
+  } catch (error) { $("r-on").checked = !on; $("r-note").textContent = error.message; }
+}
+$("r-on").onchange = saveReminder;
+$("r-time").onchange = () => { if ($("r-on").checked) saveReminder(); };
+$("r-test").onclick = async () => {
+  try { await enablePush(); await api("POST", "/me/push/test"); $("r-note").textContent = "Essai envoyé : la notification arrive dans quelques secondes."; }
+  catch (error) { $("r-note").textContent = error.message; }
+};
 
 // ——— Ajouter ONIRIQUE CUT à l'écran d'accueil (comme ONIRIQUE CLOUD) : sur téléphone, tant que la page n'est pas ouverte depuis l'icône ———
 let installEvent = null;

@@ -309,6 +309,7 @@
 
                 <p class="sub-title">Transition vers la musique</p>
                 <div class="chips wrap-in" id="transition" role="group" aria-label="Transition entre le film et la musique"><button type="button" data-v="cut">Aucune</button><button type="button" data-v="flash">Flash blanc</button><button type="button" data-v="black">Fondu au noir</button><button type="button" data-v="zoom">Zoom</button><button type="button" data-v="whip">Glissement</button><button type="button" data-v="blur">Flou</button><button type="button" data-v="shake">Secousse</button><button type="button" data-v="glitch">Glitch</button><button type="button" data-v="rewind">Rembobinage VHS</button><button type="button" data-v="freeze">Arrêt sur image</button></div>
+                <label class="grow">Intensité de la transition<input type="range" id="transAmt" min="10" max="300" step="10"></label>
                 <div class="row">
                   <label class="check"><input type="checkbox" id="introFade"> Fondu du son entre le film et la musique</label>
                   <label class="check"><input type="checkbox" id="dropGap"> Silence juste avant le drop</label>
@@ -319,9 +320,11 @@
                   <div class="chips wrap-in" id="underPart" role="group" aria-label="Musique sous la réplique"><button type="button" data-v="none">Rien</button><button type="button" data-v="full">Le son entier</button><button type="button" data-v="prod">La prod (sans voix)</button><button type="button" data-v="melo">Mélodie</button><button type="button" data-v="drums">Drums</button><button type="button" data-v="bass">Basse</button><button type="button" data-v="vocals">Voix seule</button></div>
                 </label>
                 <label class="grow">Volume sous la réplique<input type="range" id="underVol" min="0" max="150" step="5"></label>
+                <div class="row"><button class="mini" type="button" id="stem-hear">Écouter tout le morceau avec cette piste</button></div>
                 <p class="muted" id="stem-status">La prod, la mélodie, les drums, la basse et la voix sont séparées dans ton navigateur (séparation rapide, approchée : parfaite pour poser une prod sous une réplique).</p>
 
                 <p class="sub-title">Après la réplique</p>
+                <label>Clip après la transition<select id="afterClip"></select></label>
                 <label class="check"><input type="checkbox" id="filmContinue"> Le film continue sous la musique (la suite de l'extrait)</label>
               </div>
               <p class="sub-title">Volumes</p>
@@ -352,6 +355,10 @@
                 <label class="check"><input type="checkbox" id="retro"> Look rétro (pixels et grain)</label>
                 <label class="check"><input type="checkbox" id="photoMove"> Photos qui avancent doucement</label>
               </div>
+              <div class="row">
+                <label class="grow">Force du zoom<input type="range" id="zoomAmt" min="10" max="300" step="10"></label>
+                <label class="grow">Force du flash<input type="range" id="flashAmt" min="10" max="300" step="10"></label>
+              </div>
               <p class="muted">Sans option cochée, une photo reste telle quelle, sans bouger.</p>
             </div>
           </details>
@@ -364,6 +371,10 @@
                 <label class="check"><input type="checkbox" id="shake"> Secousse sur le beat</label>
                 <label class="check"><input type="checkbox" id="rgbSplit"> Décalage RVB sur le beat</label>
                 <label class="check"><input type="checkbox" id="fadeEnds"> Fondu au noir (début et fin)</label>
+              </div>
+              <div class="row">
+                <label class="grow">Force de la secousse<input type="range" id="shakeAmt" min="10" max="300" step="10"></label>
+                <label class="grow">Force du décalage RVB<input type="range" id="rgbAmt" min="10" max="300" step="10"></label>
               </div>
               <div class="row">
                 <label class="grow">Luminosité<input type="range" id="brightness" min="50" max="150" step="5"></label>
@@ -390,6 +401,7 @@
                 <div class="chips wrap-in" id="place" role="group" aria-label="Place du titre"><button type="button" data-v="top">En haut</button><button type="button" data-v="middle">Au milieu</button><button type="button" data-v="bottom">En bas</button><button type="button" data-v="none">Masqué</button></div>
               </label>
               <label>Accroche (petit texte au-dessus de l'image)<input type="text" id="hook" maxlength="80" placeholder="le son il a une vibe spéciale"></label>
+              <label class="check"><input type="checkbox" id="hookOn"> Afficher l'accroche</label>
             </div>
           </details>
 
@@ -494,7 +506,7 @@
       <details class="panel" id="lib-panel" hidden>
         <summary>Mes vidéos CUT (cloud)</summary>
         <div class="stack"><p class="muted" id="lib-info">Réservé aux fondateurs : les vidéos exportées avec « Garder aussi dans mon cloud CUT » arrivent ici.</p><div class="stack" id="lib-list" style="padding:0"></div>
-          <p class="muted" style="margin:0;font-size:12px">Sur ton téléphone : <a href="mes-videos" target="_blank" rel="noopener">onirique.store/mes-videos</a>. Ajoute-la à l'écran d'accueil (appweb ONIRIQUE CUT) pour envoyer tes vidéos vers TikTok.</p></div>
+          <p class="muted" style="margin:0;font-size:12px">Sur ton téléphone : <a href="mes-videos" target="_blank" rel="noopener">onirique.store/mes-videos</a>. Ajoute-la à l'écran d'accueil (appweb ONIRIQUE CUT) pour envoyer tes vidéos vers TikTok. Le rappel quotidien « poste ton TikTok » se règle dans l'appweb, en haut de la liste.</p></div>
       </details>
       <div class="status" id="status" hidden><span id="status-text"></span><div class="bar"><i id="status-bar"></i></div></div>
       <p class="hint" style="text-align:center">MP4 1080 × 1920 en haute qualité, 30 images par seconde, son d'origine en AAC 320 kb/s. La vidéo se fabrique image par image : garde cet onglet ouvert. Rien n'est gardé sur nos serveurs : tes sons, clips et vidéos restent chez toi.</p>
@@ -563,24 +575,24 @@ const VARIED = [2, 2, 2, 1, 1, 4, 2, 2, 1, 1, 1, 1, 4];
 
 // Les réglages qu'on retrouve d'une fois sur l'autre ; le son et les clips, eux, restent sur l'appareil le temps de la page.
 // Les effets vidéo, à zéro (aucun effet).
-const FX = { bw: false, shake: false, rgbSplit: false, fadeEnds: false, brightness: 100, contrast: 100, saturation: 100, vignette: 0, tint: "#ff2a3a", tintAmount: 0, photoMove: false };
+const FX = { bw: false, shake: false, shakeAmt: 100, rgbSplit: false, rgbAmt: 100, fadeEnds: false, brightness: 100, contrast: 100, saturation: 100, vignette: 0, tint: "#ff2a3a", tintAmount: 0, photoMove: false };
 // Les options de films : réplique d'ouverture, volumes, ralenti.
 // Le style du texte de la réplique (quand « Style de texte propre à la réplique » est coché).
 const ILOOK = { iOwn: false, iFont: "Hanken Grotesk", iPlace: "bottom", iColor: "#ffffff", iSize: 100, iStroke: 0, iStrokeColor: "#000000", iGlow: 0, iGlowColor: "#ffffff",
   iShadowColor: "#000000", iShadowBlur: 0, iShadowOffset: 0, iCaps: false, iBox: true, iBoxColor: "#000000", iBoxAlpha: 62 };
-const FILM = { ...ILOOK, trackFades: {}, introOn: false, introClip: 0, introIn: 0, introLen: 4, filmVol: 100, introLyrics: "", introSubMode: "sub", introFade: false, transition: "flash",
-  dropGap: false, underPart: "none", underVol: 70, filmContinue: false, musicVol: 100, clipVol: 0, slowmo: "100" };
-let prefs = { previewVol: 80, ...FILM, duration: 15, order: "seq", cadence: "2", zoom: false, flash: false, place: "bottom", artist: "", snap: false, loop: false, batch: "one", lyricsPlace: "bottom", ...FX,
-  preset: "classic", frame: "full", retro: false, lyricsMode: "line", hook: "", sign: "", textStyle: "classic", titleFont: "Unbounded", textSize: 100,
+const FILM = { ...ILOOK, trackFades: {}, introOn: false, introClip: 0, introIn: 0, introLen: 4, filmVol: 100, introLyrics: "", introSubMode: "sub", introFade: false, transition: "flash", transAmt: 100,
+  dropGap: false, underPart: "none", underVol: 70, filmContinue: false, afterClip: -1, musicVol: 100, clipVol: 0, slowmo: "100" };
+let prefs = { previewVol: 80, ...FILM, duration: 15, order: "seq", cadence: "2", zoom: false, zoomAmt: 100, flash: false, flashAmt: 100, place: "none", artist: "", snap: false, loop: false, batch: "one", lyricsPlace: "bottom", ...FX,
+  preset: "classic", frame: "full", retro: false, lyricsMode: "line", hook: "", hookOn: false, sign: "", textStyle: "classic", titleFont: "Unbounded", textSize: 100,
   strokeColor: "#000000", glowColor: "#ffffff", ...TEXT_STYLES.classic,
   strongSize: 170, strongColor: "#ffffff", strongGlowColor: "#ffffff", strongGlow: 45, strongFont: "" };
-// Les styles rapides : des montages de TikTok de rap qui marchent, réglés d'un clic.
+// Les styles rapides : des montages de TikTok de rap qui marchent, réglés d'un clic. Le titre et l'accroche y partent masqués.
 const PRESETS = {
-  classic: { frame: "full", retro: false, lyricsMode: "line", lyricsPlace: "bottom", place: "bottom", zoom: false, flash: false, textStyle: "classic" },
-  pixel: { frame: "43", retro: true, lyricsMode: "word", lyricsPlace: "middle", place: "none", zoom: false, flash: false, textStyle: "pixel" },
-  red: { frame: "169", retro: false, lyricsMode: "word", lyricsPlace: "middle", place: "none", zoom: false, flash: false, textStyle: "red" },
-  film: { frame: "169", retro: false, lyricsMode: "line", lyricsPlace: "bottom", place: "none", zoom: false, flash: false, textStyle: "white", introOn: true },
-  card: { frame: "43", retro: false, lyricsMode: "card", lyricsPlace: "bottom", place: "none", zoom: false, flash: false, textStyle: "classic" },
+  classic: { frame: "full", retro: false, lyricsMode: "line", lyricsPlace: "bottom", place: "none", hookOn: false, zoom: false, flash: false, textStyle: "classic" },
+  pixel: { frame: "43", retro: true, lyricsMode: "word", lyricsPlace: "middle", place: "none", hookOn: false, zoom: false, flash: false, textStyle: "pixel" },
+  red: { frame: "169", retro: false, lyricsMode: "word", lyricsPlace: "middle", place: "none", hookOn: false, zoom: false, flash: false, textStyle: "red" },
+  film: { frame: "169", retro: false, lyricsMode: "line", lyricsPlace: "bottom", place: "none", hookOn: false, zoom: false, flash: false, textStyle: "white", introOn: true },
+  card: { frame: "43", retro: false, lyricsMode: "card", lyricsPlace: "bottom", place: "none", hookOn: false, zoom: false, flash: false, textStyle: "classic" },
 };
 const FRAMES = { full: 0, 169: 9 / 16, 43: 3 / 4, 11: 1 };
 try {
@@ -593,8 +605,11 @@ try {
   // Avant : un sous-titre unique et un « flash au drop » à cocher.
   if (saved.introSub && !saved.introLyrics) prefs.introLyrics = saved.introSub;
   if (saved.dropFlash === false && !saved.transition) prefs.transition = "cut";
-  prefs.v = 2;
+  // v3 : le titre et l'accroche sont masqués par défaut.
+  if ((saved.v || 1) < 3) { prefs.place = "none"; prefs.hookOn = false; }
+  prefs.v = 3;
 } catch { /* rien de mémorisé */ }
+prefs.afterClip = -1; // les clips ne restent pas d'une visite à l'autre : leur numéro non plus
 const savePrefs = () => { try { localStorage.setItem(PREFS, JSON.stringify(prefs)); } catch { /* stockage indisponible */ } };
 
 const sound = { name: "", buffer: null, env: null, rms: null, bpm: 0, phase: 0, start: 0 };
@@ -682,7 +697,7 @@ function bestStart() {
 }
 
 async function loadSound(file, extra = {}) {
-  stop();
+  stop(); stopStemHear(); fullStems = fullJob = null;
   $("audio-state").textContent = "Analyse de « " + file.name + " »…";
   $("audio-pick").disabled = $("cloud-pick").disabled = true;
   try {
@@ -829,7 +844,9 @@ function renderClips() {
     const d = document.createElement("div");
     d.className = "clip"; d.style.backgroundImage = `url("${c.kind === "image" ? c.url : c.thumb}")`;
     const remove = Object.assign(document.createElement("button"), { type: "button", textContent: "×", ariaLabel: "Retirer " + c.name });
-    remove.onclick = (event) => { event.stopPropagation(); stop(); manual = null; overlays = overlays.filter((o) => o.clip !== i).map((o) => ({ ...o, clip: o.clip > i ? o.clip - 1 : o.clip })); URL.revokeObjectURL(c.url); clips.splice(i, 1); if (focus >= i && focus > 0) focus--; refresh(); };
+    remove.onclick = (event) => { event.stopPropagation(); stop(); manual = null; overlays = overlays.filter((o) => o.clip !== i).map((o) => ({ ...o, clip: o.clip > i ? o.clip - 1 : o.clip })); URL.revokeObjectURL(c.url); clips.splice(i, 1); if (focus >= i && focus > 0) focus--;
+      if (prefs.afterClip === i) prefs.afterClip = -1; else if (prefs.afterClip > i) prefs.afterClip--;
+      refresh(); };
     // En « une vidéo par fond » : toucher un clip le montre dans l'aperçu.
     d.classList.toggle("focus", prefs.batch === "each" && i === focus);
     d.onclick = () => { if (prefs.batch === "each" && focus !== i) { focus = i; restyle(true); } };
@@ -936,13 +953,69 @@ async function separate(key) {
   const a = Math.floor((sound.start - len) * rate), n = Math.floor(len * rate), b = sound.buffer;
   const L = b.getChannelData(0).slice(a, a + n), R = (b.numberOfChannels > 1 ? b.getChannelData(1) : b.getChannelData(0)).slice(a, a + n);
   const worker = new Worker("assets/stems-worker.js");
-  const out = await new Promise((resolve, reject) => { worker.onmessage = (e) => resolve(e.data); worker.onerror = reject; worker.postMessage({ L, R, rate }, [L.buffer, R.buffer]); })
-    .finally(() => worker.terminate());
-  const make = ([l, r]) => { const x = new AudioBuffer({ length: l.length, numberOfChannels: 2, sampleRate: rate }); x.copyToChannel(l, 0); x.copyToChannel(r, 1); return x; };
+  const out = await stemsOf(worker, L, R, rate).finally(() => worker.terminate());
+  const make =([l, r]) => { const x = new AudioBuffer({ length: l.length, numberOfChannels: 2, sampleRate: rate }); x.copyToChannel(l, 0); x.copyToChannel(r, 1); return x; };
   const result = { key, parts: Object.fromEntries(STEMS.map((k) => [k, make(out[k])])) };
   if (key === stemKey()) stems = result;
   $("stem-status").textContent = "Pistes séparées : prod, mélodie, drums, basse et voix (séparation rapide, approchée).";
   return result;
+}
+const stemsOf = (worker, L, R, rate) => new Promise((resolve, reject) => {
+  worker.onmessage = (e) => resolve(e.data); worker.onerror = reject; worker.postMessage({ L, R, rate }, [L.buffer, R.buffer]);
+});
+// ——— Écouter tout le morceau avec une piste séparée : pour entendre ce que donne la séparation ———
+let fullStems = null, fullJob = null, stemHear = null;
+/** Les pistes de tout le morceau, séparées par tranches de 30 s (le worker ne tiendrait pas un morceau entier en mémoire). */
+function separateAll() {
+  const b = sound.buffer;
+  if (fullStems && fullStems.b === b) return Promise.resolve(fullStems);
+  if (fullJob && fullJob.b === b) return fullJob.done;
+  fullJob = { b, done: (async () => {
+    const rate = b.sampleRate, slice = 30 * rate, worker = new Worker("assets/stems-worker.js");
+    const parts = Object.fromEntries(STEMS.map((k) => [k, new AudioBuffer({ length: b.length, numberOfChannels: 2, sampleRate: rate })]));
+    try {
+      for (let a = 0; a < b.length; a += slice) {
+        $("stem-status").textContent = "Séparation de tout le morceau… " + Math.round(a / b.length * 100) + " %";
+        const L = b.getChannelData(0).slice(a, a + slice), R = b.getChannelData(b.numberOfChannels > 1 ? 1 : 0).slice(a, a + slice);
+        const out = await stemsOf(worker, L, R, rate);
+        for (const k of STEMS) { parts[k].copyToChannel(out[k][0], 0, a); parts[k].copyToChannel(out[k][1], 1, a); }
+      }
+    } finally { worker.terminate(); }
+    const result = { b, parts };
+    if (sound.buffer === b) fullStems = result;
+    return result;
+  })() };
+  return fullJob.done;
+}
+function stopStemHear() {
+  if (!stemHear) return;
+  try { stemHear.src.stop(); } catch { /* déjà arrêté */ }
+  stemHear = null;
+  $("stem-hear").textContent = "Écouter tout le morceau avec cette piste";
+}
+const PART_NAMES = { none: "le son entier", full: "le son entier", prod: "la prod (sans voix)", melo: "la mélodie", drums: "les drums", bass: "la basse", vocals: "la voix seule" };
+/** Joue tout le morceau avec la piste choisie dans « Sous la réplique », depuis from (en secondes). */
+async function hearStem(from = 0) {
+  stopStemHear(); stop();
+  const part = prefs.underPart;
+  let buffer = sound.buffer;
+  if (STEMS.includes(part)) {
+    $("stem-hear").disabled = true;
+    try { buffer = (await separateAll()).parts[part]; }
+    catch { fullJob = null; $("stem-status").textContent = "La séparation n'a pas marché sur ce morceau."; return; }
+    finally { $("stem-hear").disabled = false; }
+    if (prefs.underPart !== part || playing) return; // on a changé d'avis pendant la séparation
+  }
+  ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+  ctx.resume();
+  const src = ctx.createBufferSource(), level = ctx.createGain();
+  src.buffer = buffer; level.gain.value = prefs.previewVol / 100;
+  src.connect(level).connect(ctx.destination);
+  src.start(0, Math.min(from, buffer.duration - .05));
+  stemHear = { src, at: ctx.currentTime - from };
+  src.onended = () => { if (stemHear && stemHear.src === src) stopStemHear(); };
+  $("stem-hear").textContent = "Arrêter l'écoute";
+  $("stem-status").textContent = "Tu écoutes " + PART_NAMES[part] + ", sur tout le morceau. Touche une autre piste pour comparer au même moment.";
 }
 const scheduleMix = () => { clearTimeout(mixTimer); mixTimer = setTimeout(() => ensureMix(), 250); };
 
@@ -974,13 +1047,15 @@ function build() {
   }
   seed = 7 + (prefs.shuffle || 0) * 7919;
   const cursor = clips.map(() => 0);
+  // Après la réplique, seulement le clip choisi dans « Clip après la transition » ; sinon tous les clips.
+  const ids = introLen() > 0 && clips[prefs.afterClip] ? [prefs.afterClip] : clips.map((_, k) => k);
   let last = -1;
   segments.forEach((s, i) => {
-    let c = prefs.order === "mix" ? Math.floor(random() * clips.length) : i % clips.length;
-    if (prefs.order === "mix" && clips.length > 1 && c === last) c = (c + 1) % clips.length;
-    if (prefs.loop && clips.length > 1 && i === segments.length - 1 && c === segments[0].clip) c = (c + 1) % clips.length;
-    last = c;
-    const clip = clips[c], length = (s.t1 - s.t0) * slow();
+    let k = prefs.order === "mix" ? Math.floor(random() * ids.length) : i % ids.length;
+    if (prefs.order === "mix" && ids.length > 1 && k === last) k = (k + 1) % ids.length;
+    if (prefs.loop && ids.length > 1 && i === segments.length - 1 && ids[k] === segments[0].clip) k = (k + 1) % ids.length;
+    last = k;
+    const c = ids[k], clip = clips[c], length = (s.t1 - s.t0) * slow();
     s.clip = c;
     if (clip.kind === "video") {
       const room = Math.max(0, clip.duration - length - 0.05);
@@ -1217,7 +1292,7 @@ function drawEffects(r, beatEnv) {
     v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, `rgba(0,0,0,${prefs.vignette / 100})`);
     g.fillStyle = v; g.fillRect(r.x, r.y, r.w, r.h);
   }
-  if (prefs.rgbSplit && beatEnv > .05) rgbSplit(r, beatEnv);
+  if (prefs.rgbSplit && beatEnv > .05) rgbSplit(r, beatEnv, 18 * prefs.rgbAmt / 100);
 }
 
 /** Le mot chanté à cet instant ({ text, at, strong }) ; sans moments par mot, les mots d'une ligne se partagent sa durée. */
@@ -1321,7 +1396,7 @@ function drawIntro(t, playing) {
   g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
   drawPicture(v, r, 1);
   drawEffects(r, 0);
-  const hook = $("hook").value.trim();
+  const hook = prefs.hookOn && $("hook").value.trim();
   if (hook) text([hook], r.y ? Math.max(70, r.y - 60) : H * .1, 44, "600", "Hanken Grotesk");
   const lines = introLines();
   if (lines.length && prefs.introSubMode === "word") {
@@ -1363,16 +1438,17 @@ function vhs(a) {
 /** La transition entre la réplique et la musique ; d : secondes depuis le drop (négatif juste avant). */
 function transitionAt(d) {
   const before = d < 0 ? -d : Infinity, after = d >= 0 ? d : Infinity, ramp = (x, len) => (x < len ? 1 - x / len : 0);
+  const f = prefs.transAmt / 100; // « Intensité de la transition » (100 % : la transition d'origine)
   switch (prefs.transition) {
-    case "flash": { const a = .9 * Math.exp(-after * 7); if (a > .01) overlay(`rgba(255,255,255,${a})`); break; }
-    case "black": { const a = Math.max(ramp(before, .4), ramp(after, .3)); if (a > 0) overlay(`rgba(0,0,0,${a})`); break; }
-    case "zoom": { const k = 1 + .7 * ramp(before, .4) + .3 * ramp(after, .3); if (k > 1.001) warp({ scale: k, blur: (k - 1) * 22 }); break; }
-    case "whip": { const x = before < Infinity ? -ramp(before, .3) * W * .9 : ramp(after, .3) * W * .9; if (Math.abs(x) > 1) warp({ dx: x, blur: Math.abs(x) / 30 }); break; }
-    case "blur": { const b = 28 * Math.max(ramp(before, .4), ramp(after, .5)); if (b > .5) warp({ blur: b }); break; }
-    case "shake": { const a = after < .6 ? 46 * Math.exp(-after * 6) : 0; if (a > 1) warp({ dx: a * Math.sin(after * 90), dy: a * Math.cos(after * 77), scale: 1.1 }); break; }
-    case "glitch": { const a = Math.max(ramp(before, .25), ramp(after, .35)); if (a > .05) glitch(a); break; }
-    case "rewind": { if (before < .6) vhs(ramp(before, .6)); else { const a = .6 * ramp(after, .15); if (a > 0) overlay(`rgba(255,255,255,${a})`); } break; }
-    case "freeze": { if (before < .45) { warp({ scale: 1.04 + .06 * ramp(before, .45), filter: "grayscale(1) contrast(1.25)" }); } else { const a = .8 * ramp(after, .2); if (a > 0) overlay(`rgba(255,255,255,${a})`); } break; }
+    case "flash": { const a = Math.min(1, .9 * f * Math.exp(-after * 7)); if (a > .01) overlay(`rgba(255,255,255,${a})`); break; }
+    case "black": { const a = Math.min(1, f * Math.max(ramp(before, .4), ramp(after, .3))); if (a > 0) overlay(`rgba(0,0,0,${a})`); break; }
+    case "zoom": { const k = 1 + f * (.7 * ramp(before, .4) + .3 * ramp(after, .3)); if (k > 1.001) warp({ scale: k, blur: (k - 1) * 22 }); break; }
+    case "whip": { const x = f * (before < Infinity ? -ramp(before, .3) * W * .9 : ramp(after, .3) * W * .9); if (Math.abs(x) > 1) warp({ dx: x, blur: Math.abs(x) / 30 }); break; }
+    case "blur": { const b = 28 * f * Math.max(ramp(before, .4), ramp(after, .5)); if (b > .5) warp({ blur: b }); break; }
+    case "shake": { const a = after < .6 ? 46 * f * Math.exp(-after * 6) : 0; if (a > 1) warp({ dx: a * Math.sin(after * 90), dy: a * Math.cos(after * 77), scale: 1 + .1 * Math.max(1, f) }); break; }
+    case "glitch": { const a = f * Math.max(ramp(before, .25), ramp(after, .35)); if (a > .05) glitch(a); break; }
+    case "rewind": { if (before < .6) vhs(Math.min(1.5, f * ramp(before, .6))); else { const a = Math.min(1, .6 * f * ramp(after, .15)); if (a > 0) overlay(`rgba(255,255,255,${a})`); } break; }
+    case "freeze": { if (before < .45) { warp({ scale: 1.04 + .06 * f * ramp(before, .45), filter: "grayscale(1) contrast(1.25)" }); } else { const a = Math.min(1, .8 * f * ramp(after, .2)); if (a > 0) overlay(`rgba(255,255,255,${a})`); } break; }
     default: break; // coupe sèche
   }
 }
@@ -1411,10 +1487,10 @@ function drawMusic(t, playing) {
   const song = t + sound.start - sound.phase, sinceBeat = ((song % beatLength()) + beatLength()) % beatLength();
   const beatEnv = Math.exp(-sinceBeat * 9), beatIndex = Math.floor(song / beatLength());
   {
-    const pulse = prefs.zoom ? 0.075 * beatEnv : 0;
+    const pulse = prefs.zoom ? 0.075 * prefs.zoomAmt / 100 * beatEnv : 0;
     // Une photo reste fixe ; elle n'avance doucement que si on le demande.
     const drift = clip.kind === "image" && prefs.photoMove ? 1.04 + 0.08 * (t - s.t0) / (s.t1 - s.t0) : 1.0;
-    const shake = prefs.shake ? 26 * beatEnv : 0, dx = shake * Math.sin(beatIndex * 91.7), dy = shake * Math.cos(beatIndex * 47.3);
+    const shake = prefs.shake ? 26 * prefs.shakeAmt / 100 * beatEnv : 0, dx = shake * Math.sin(beatIndex * 91.7), dy = shake * Math.cos(beatIndex * 47.3);
     g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
     drawPicture(src, frameRect(), drift * (1 + pulse) * (1 + shake / 300), dx, dy);
   }
@@ -1426,14 +1502,15 @@ function drawMusic(t, playing) {
     shade.addColorStop(0, "rgba(0,0,0,.35)"); shade.addColorStop(.25, "rgba(0,0,0,0)"); shade.addColorStop(.7, "rgba(0,0,0,0)"); shade.addColorStop(1, "rgba(0,0,0,.45)");
     g.fillStyle = shade; g.fillRect(0, 0, W, H);
   }
-  if (prefs.flash) { const a = .6 * Math.exp(-(t - s.t0) * 11); if (a > .01) { g.fillStyle = `rgba(255,255,255,${a})`; g.fillRect(r.x, r.y, r.w, r.h); } }
-  const hook = $("hook").value.trim();
+  if (prefs.flash) { const a = Math.min(1, .6 * prefs.flashAmt / 100 * Math.exp(-(t - s.t0) * 11)); if (a > .01) { g.fillStyle = `rgba(255,255,255,${a})`; g.fillRect(r.x, r.y, r.w, r.h); } }
+  const hook = prefs.hookOn && $("hook").value.trim();
   if (hook) text([hook], r.y ? Math.max(70, r.y - 60) : H * .1, 44, "600", "Hanken Grotesk");
 
   const title = $("title").value.trim(), artist = $("artist").value.trim(), ts = textScale();
   const y = { top: H * .16, middle: H * .45, bottom: H * .76 }[prefs.place] || H * .76;
   const titleLook = textLook({ font: prefs.titleFont, size: (prefs.titleFont === "Grenze Gotisch" ? 124 : 96) * ts, caps: prefs.caps || prefs.titleFont === "Unbounded" });
-  if (prefs.place === "none") { /* titre masqué */ } else if (title) {
+  // Masqué, ou en carte paroles (le titre y est écrit sous l'image) : pas de grand titre.
+  if (prefs.place === "none" || prefs.lyricsMode === "card") { /* titre masqué */ } else if (title) {
     const used = paint([title], y, titleLook);
     if (artist) paint([artist], y + used / 2 + 50 * ts, textLook({ size: 44 * ts, glow: prefs.glow / 2 }));
   } else if (artist) paint([artist], y, { ...titleLook, size: 56 * ts });
@@ -1442,7 +1519,7 @@ function drawMusic(t, playing) {
   const wordY = { top: r.y + r.h * .24, middle: r.y + r.h / 2, bottom: r.y + r.h * .78 }[prefs.lyricsPlace] ?? r.y + r.h / 2;
   const lineY = { top: prefs.place === "top" ? H * .3 : H * .18, middle: H * .5, bottom: prefs.place === "bottom" ? H * .62 : H * .8 }[prefs.lyricsPlace] ?? H * .8;
   if (prefs.lyricsMode === "word") { const word = wordAt(now); if (word) bigWord(word, wordY, r.w * .86, now); }
-  else if (prefs.lyricsMode === "card") lyricCard(line && now - line.at < 8 ? line.text : "", r, title, artist);
+  else if (prefs.lyricsMode === "card") lyricCard(line && now - line.at < 8 ? line.text : "", r, prefs.place === "none" ? "" : title, prefs.place === "none" ? "" : artist);
   else if (line && now - line.at < 8) paint([line.text], lineY, textLook({ size: 62 * ts }));
 }
 /** Fondu au noir au début et à la fin de toute la vidéo (pas en BOUCLE : la vidéo doit s'enchaîner). */
@@ -1454,12 +1531,14 @@ function fadeEnds(t) {
 
 // ——— Lecture : le son mène, l'image suit ———
 const FADE = 0.012; // 12 ms de fondu : inaudible, mais évite le clic d'un son coupé net
-let ctx = null, source = null, startedAt = 0, position = 0, playing = false, frame = 0, recording = null;
+let ctx = null, source = null, startedAt = 0, position = 0, playing = false, frame = 0, recording = null, resumeTimer = 0;
 const now = () => (playing ? Math.min(total(), ctx.currentTime - startedAt) : position);
 function play(from = position, extraOut = null) {
+  clearTimeout(resumeTimer); resumeTimer = 0;
+  stopStemHear();
   ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
   ctx.resume();
-  source = ctx.createBufferSource();
+  const me = source = ctx.createBufferSource();
   // Avec une option de film, le son mixé (réplique + musique + clips) ; sinon la musique seule.
   const mixed = filmActive() && mix ? mix.buffer : null;
   source.buffer = mixed || sound.buffer;
@@ -1483,11 +1562,13 @@ function play(from = position, extraOut = null) {
   const end = ctx.currentTime + (mixed ? length : span()) - from, out = prefs.loop ? .03 : FADE;
   if (end - out > ctx.currentTime + FADE) { level.gain.setValueAtTime(1, end - out); level.gain.linearRampToValueAtTime(0, end); }
   playing = true;
-  source.onended = () => { if (playing) { position = 0; finish(); } }; // stop() passe playing à false avant : seule la fin du son arrive ici
+  // Seule la fin du son en cours arrive ici : un son arrêté (stop, ou seek qui relance) finit après, quand un autre joue déjà.
+  source.onended = () => { if (playing && source === me) { position = 0; finish(); } };
   loop();
   setPlayIcon();
 }
 function stop() {
+  clearTimeout(resumeTimer); resumeTimer = 0;
   if (playing) {
     position = now(); playing = false;
     const end = ctx.currentTime + FADE, g0 = source.level.gain;
@@ -1514,12 +1595,15 @@ function restyle(rebuild) {
   if (rebuild) { build(); shown = -1; renderClips(); $("reshuffle").hidden = prefs.order !== "mix"; }
   if (!playing) { draw(position, false); drawScrub(position); setTimeout(() => !playing && draw(position, false), 120); }
 }
+// Pendant qu'on fait glisser la tête de lecture, la lecture attend qu'on s'arrête : relancer le son et les vidéos à chaque
+// mouvement les faisait sauter.
 function seek(t) {
-  const was = playing && !recording;
-  if (playing) stop();
+  const was = (playing || resumeTimer) && !recording;
+  if (playing || resumeTimer) stop();
   position = Math.max(0, Math.min(total() - .05, t));
   shown = -1;
-  if (was) play(position); else { draw(position, false); drawScrub(position); setTimeout(() => !playing && draw(position, false), 120); }
+  draw(position, false); drawScrub(position); setTimeout(() => !playing && draw(position, false), 120);
+  if (was) resumeTimer = setTimeout(() => { resumeTimer = 0; play(position); }, 200);
 }
 function setPlayIcon() {
   $("play").innerHTML = playing ? '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>' : '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
@@ -2427,6 +2511,9 @@ function filmUi() {
   $("introClip").replaceChildren(...(videos.length ? videos.map(([c, i]) => new Option((i + 1) + ". " + c.name, i)) : [new Option("Ajoute d'abord un clip vidéo", "")]));
   if (videos.length && !introClip()) prefs.introClip = videos[0][1];
   $("introClip").value = String(prefs.introClip);
+  $("afterClip").replaceChildren(new Option("Tous les clips (le montage)", -1), ...clips.map((c, i) => new Option((i + 1) + ". " + c.name, i)));
+  $("afterClip").value = String(clips[prefs.afterClip] ? prefs.afterClip : -1);
+  $("afterClip").disabled = !!prefs.filmContinue; // « la suite de l'extrait » garde le clip de la réplique
   $("introOn").checked = !!prefs.introOn; $("intro-box").hidden = !prefs.introOn;
   for (const id of ["filmVol", "musicVol", "clipVol"]) $(id).value = prefs[id];
   for (const id of ["introFade", "dropGap", "filmContinue"]) $(id).checked = !!prefs[id];
@@ -2471,12 +2558,12 @@ function start() {
     if (playing && source && source.monitor && !(recording && prefs.mute)) source.monitor.gain.setTargetAtTime(prefs.previewVol / 100, ctx.currentTime, .02);
   };
   // Options de films : la réplique change la durée de la vidéo (tout se recalcule) ; les volumes ne changent que le mixage.
-  for (const id of ["introOn", "introClip", "filmVol", "introFade", "dropGap", "musicVol", "clipVol", "underVol", "filmContinue"]) {
+  for (const id of ["introOn", "introClip", "afterClip", "filmVol", "introFade", "dropGap", "musicVol", "clipVol", "underVol", "filmContinue"]) {
     $(id).addEventListener("change", () => {
       const el = $(id);
-      prefs[id] = el.type === "checkbox" ? el.checked : el.type === "range" || id === "introClip" ? Number(el.value) : el.value;
+      prefs[id] = el.type === "checkbox" ? el.checked : el.type === "range" || el.tagName === "SELECT" ? Number(el.value) : el.value;
       savePrefs();
-      if (id === "introOn" || id === "introClip" || id === "filmContinue") { position = 0; refresh(); } else { scheduleMix(); restyle(); }
+      if (id === "introOn" || id === "introClip" || id === "afterClip" || id === "filmContinue") { position = 0; refresh(); } else { scheduleMix(); restyle(); }
       if (id === "introClip") drawIntroWave();
     });
   }
@@ -2490,7 +2577,8 @@ function start() {
   chips("slowmo", "slowmo", () => restyle(true));
   chips("transition", "transition", () => restyle());
   chips("introSubMode", "introSubMode", () => restyle());
-  chips("underPart", "underPart", () => { ensureStems(); scheduleMix(); });
+  chips("underPart", "underPart", () => { if (stemHear) hearStem(ctx.currentTime - stemHear.at); ensureStems(); scheduleMix(); });
+  $("stem-hear").onclick = () => (stemHear ? stopStemHear() : hearStem(0));
   $("introLyrics").addEventListener("input", () => { prefs.introLyrics = $("introLyrics").value; savePrefs(); restyle(); });
   $("isync-line").onclick = () => startIsync("line");
   $("isync-word").onclick = () => startIsync("word");
@@ -2570,14 +2658,14 @@ function start() {
   chips("frame", "frame", redraw); chips("lyricsMode", "lyricsMode", redraw);
   // Le style du texte : polices, couleurs, contour, lueur, ombre, mots forts.
   const STYLE_INPUTS = ["lyricFont", "titleFont", "strongFont", "textColor", "textSize", "strokeColor", "stroke", "glowColor", "glow", "shadowColor", "shadowBlur", "shadowOffset",
-    "caps", "pixel", "strongSize", "strongColor", "strongGlowColor", "strongGlow", ...Object.keys(FX), ...Object.keys(ILOOK).filter((k) => k !== "iPlace")];
+    "caps", "pixel", "strongSize", "strongColor", "strongGlowColor", "strongGlow", "zoomAmt", "flashAmt", "transAmt", ...Object.keys(FX), ...Object.keys(ILOOK).filter((k) => k !== "iPlace")];
   chips("iPlace", "iPlace", () => restyle());
   $("iOwn").addEventListener("input", () => { $("ilook").hidden = !$("iOwn").checked; });
   for (const id of ["lyricFont", "titleFont", "strongFont", "iFont"]) {
     $(id).replaceChildren(...(id === "strongFont" ? [new Option("Même police que les paroles", "")] : []), ...FONT_LIST.map(([family, , label]) => new Option(label, family)));
   }
   const loadFont = (family) => { if (!family) return; const [f, w] = fontOf(family); document.fonts.load(`${w} 80px "${f}"`).then(() => !playing && segments.length && draw(position, false)); };
-  const boxes = ["zoom", "flash", "retro"];
+  const boxes = ["zoom", "flash", "retro", "hookOn"];
   const syncControls = () => {
     for (const id of STYLE_INPUTS) { const el = $(id); if (el.type === "checkbox") el.checked = !!prefs[id]; else el.value = prefs[id]; }
     boxes.forEach((id) => { $(id).checked = !!prefs[id]; });
@@ -2622,7 +2710,14 @@ function start() {
   };
   renderStyles();
   for (const id of boxes) { $(id).onchange = () => { prefs[id] = $(id).checked; savePrefs(); restyle(); }; }
-  for (const id of ["hook", "sign"]) { $(id).value = prefs[id] || ""; $(id).oninput = () => { prefs[id] = $(id).value; savePrefs(); if (!playing) draw(position, false); }; }
+  for (const id of ["hook", "sign"]) {
+    $(id).value = prefs[id] || "";
+    $(id).oninput = () => {
+      prefs[id] = $(id).value;
+      if (id === "hook" && prefs.hook.trim() && !prefs.hookOn) { prefs.hookOn = $("hookOn").checked = true; } // écrire une accroche l'affiche
+      savePrefs(); if (!playing) draw(position, false);
+    };
+  }
   $("word-row").hidden = prefs.lyricsMode !== "word"; $("sign-row").hidden = prefs.lyricsMode !== "card";
   $("artist").value = prefs.artist || "";
   $("artist").oninput = () => { prefs.artist = $("artist").value; savePrefs(); if (!playing) draw(position, false); };

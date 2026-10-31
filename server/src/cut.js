@@ -16,6 +16,7 @@ import { config } from './config.js';
 import { HttpError, rateLimit, can } from './auth.js';
 import { testing } from './mail.js';
 import { db, get, all, run, now, setting, setSetting } from './db.js';
+import { push } from './push.js';
 
 db.exec(`CREATE TABLE IF NOT EXISTS cut_videos (
   id         INTEGER PRIMARY KEY,
@@ -26,6 +27,33 @@ db.exec(`CREATE TABLE IF NOT EXISTS cut_videos (
   duration   REAL NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL
 )`);
+// Le rappel quotidien des fondateurs (« poste ton TikTok ») : leur heure, leur fuseau, et le dernier jour où il est parti.
+db.exec(`CREATE TABLE IF NOT EXISTS cut_reminders (
+  user_id  INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  time     TEXT NOT NULL,
+  tz       TEXT NOT NULL,
+  last_day TEXT NOT NULL DEFAULT ''
+)`);
+/** Le jour (AAAA-MM-JJ) et la minute de la journée à l'instant ms, dans le fuseau tz. */
+export function localNow(ms, tz) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    .formatToParts(ms).map((x) => [x.type, x.value]));
+  return { day: `${p.year}-${p.month}-${p.day}`, minutes: Number(p.hour) * 60 + Number(p.minute) };
+}
+const minutesOf = (time) => { const [h, m] = time.split(':').map(Number); return h * 60 + m; };
+/** Vérifié chaque minute : le rappel part une fois par jour, dans l'heure qui suit l'heure choisie (un serveur redémarré ne le rate pas). */
+export function remindCut(at = now()) {
+  const sent = [];
+  for (const r of all("SELECT r.* FROM cut_reminders r JOIN users u ON u.id = r.user_id WHERE u.role = 'founder'")) {
+    const { day, minutes } = localNow(at, r.tz), late = minutes - minutesOf(r.time);
+    if (r.last_day === day || late < 0 || late >= 60) continue;
+    run('UPDATE cut_reminders SET last_day = ? WHERE user_id = ?', day, r.user_id);
+    push(r.user_id, { title: 'ONIRIQUE CUT', body: "C'est l'heure de poster ton TikTok du jour : tes vidéos t'attendent.", url: '/mes-videos' });
+    sent.push(r.user_id);
+  }
+  return sent;
+}
+
 const LIBRARY_MAX = 1024 * 1024 * 1024; // une vidéo gardée : 1 Go au plus
 // Les liens de lecture et de téléchargement des vidéos gardées : signés, valables 6 heures (une balise <video> n'envoie pas de jeton).
 function signKey() {
@@ -130,6 +158,23 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
     fs.rmSync(path.join(libDir, v.stored_as + '.jpg'), { force: true });
     res.json({ ok: true });
   });
+  // Le rappel quotidien : il arrive sur les appareils où les notifications sont activées (l'appweb sur le téléphone).
+  app.get('/api/cut/reminder', requireUser, member, founder, (req, res) => {
+    const r = get('SELECT time, tz FROM cut_reminders WHERE user_id = ?', req.user.id);
+    res.json(r ? { on: true, time: r.time, tz: r.tz } : { on: false, time: '18:00' });
+  });
+  app.put('/api/cut/reminder', requireUser, member, founder, (req, res) => {
+    const time = String(req.body?.time || '18:00'), tz = String(req.body?.tz || 'Europe/Paris');
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new HttpError(400, 'Heure invalide.');
+    try { localNow(now(), tz); } catch { throw new HttpError(400, 'Fuseau horaire inconnu.'); }
+    if (req.body?.on !== true) { run('DELETE FROM cut_reminders WHERE user_id = ?', req.user.id); return res.json({ on: false, time }); }
+    // Réglé après l'heure du jour : le premier rappel part demain.
+    const { day, minutes } = localNow(now(), tz);
+    run(`INSERT INTO cut_reminders (user_id, time, tz, last_day) VALUES (?, ?, ?, ?)
+      ON CONFLICT (user_id) DO UPDATE SET time = excluded.time, tz = excluded.tz, last_day = excluded.last_day`, req.user.id, time, tz, minutes >= minutesOf(time) ? day : '');
+    res.json({ on: true, time, tz });
+  });
+
   // La lecture (avec avance rapide) et le téléchargement, par lien signé.
   app.get('/api/cut/video/:id', (req, res) => {
     const vid = Number(req.params.id) || 0, e = Number(req.query.e), d = req.query.d === '1' ? 1 : 0, s = String(req.query.s || '');

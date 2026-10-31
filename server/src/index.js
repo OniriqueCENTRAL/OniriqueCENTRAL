@@ -4,6 +4,7 @@ import { publishDue } from './youtube.js';
 import { pollComments } from './social.js';
 import { remindReleases } from './sounds.js';
 import { sweepMedia } from './sweep.js';
+import { remindCut } from './cut.js';
 
 createApp().listen(config.port, () => {
   console.log(`ONIRIQUE CENTRAL — API sur ${config.publicUrl} (paiements : ${config.paymentsMode})`);
@@ -20,6 +21,9 @@ setInterval(() => pollComments().catch(console.error), 120_000);
 
 // Les rappels de sortie des projets ONIRIQUE CLOUD (sept jours avant et la veille), vérifiés toutes les heures.
 setInterval(() => remindReleases().catch(console.error), 3600_000);
+
+// Le rappel quotidien « poste ton TikTok » des fondateurs (ONIRIQUE CUT), à leur heure, vérifié chaque minute.
+setInterval(() => { try { remindCut(); } catch (error) { console.error('Rappel CUT :', error.message); } }, 60_000);
 
 // Le ménage de media/ (images et démos que plus rien ne cite), une minute après le démarrage puis chaque jour.
 const sweep = () => { try { const r = sweepMedia(); if (r.files) console.log(`Ménage de media/ : ${r.files} fichiers, ${Math.round(r.bytes / 1048576)} Mo libérés`); } catch (error) { console.error('Ménage de media/ :', error.message); } };
