@@ -33,6 +33,14 @@
 .round { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; border: 0; background: var(--mist); color: var(--night); cursor: pointer; }
 .round:disabled { opacity: .4; cursor: default; }
 .round svg { width: 20px; height: 20px; }
+/* Le lecteur des pistes : flottant en bas à gauche, dans la marge vide (1240 px de contenu au centre) ; sur petit écran, en bas. */
+.side-player { position: fixed; z-index: 30; left: 24px; bottom: 24px; width: min(300px, calc(100vw - 48px)); display: grid; gap: 10px; padding: 14px 16px;
+  border-radius: 18px; border: 1px solid var(--line); background: rgba(13,8,9,.94); backdrop-filter: blur(12px); box-shadow: 0 20px 60px -20px #000, 0 0 40px -24px rgba(226,52,68,.7); }
+.side-player .row { justify-content: space-between; flex-wrap: nowrap; }
+.side-player label { display: grid; gap: 6px; font: 500 11px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
+.side-player select { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: #150a0c; color: var(--mist); font: 500 14px var(--f-body); }
+.side-player input[type="range"] { flex: 1; min-width: 0; accent-color: var(--ember); }
+@media (max-width: 600px) { .side-player { left: 16px; right: 16px; bottom: 16px; width: auto; } }
 .scrub { position: relative; height: 34px; cursor: pointer; touch-action: none; }
 .scrub canvas { width: 100%; height: 100%; display: block; }
 .time { font: 500 12px/1 var(--f-mono); color: var(--haze); font-variant-numeric: tabular-nums; }
@@ -320,8 +328,7 @@
                   <div class="chips wrap-in" id="underPart" role="group" aria-label="Musique sous la réplique"><button type="button" data-v="none">Rien</button><button type="button" data-v="full">Le son entier</button><button type="button" data-v="prod">La prod (sans voix)</button><button type="button" data-v="melo">Mélodie</button><button type="button" data-v="drums">Drums</button><button type="button" data-v="bass">Basse</button><button type="button" data-v="vocals">Voix seule</button></div>
                 </label>
                 <label class="grow">Volume sous la réplique<input type="range" id="underVol" min="0" max="150" step="5"></label>
-                <div class="row"><button class="mini" type="button" id="stem-hear">Écouter tout le morceau avec cette piste</button></div>
-                <p class="muted" id="stem-status">La prod, la mélodie, les drums, la basse et la voix sont séparées dans ton navigateur (séparation rapide, approchée : parfaite pour poser une prod sous une réplique).</p>
+                <div class="row"><button class="mini" type="button" id="stem-hear">Écouter tout le morceau avec cette piste</button></div>                <p class="muted" id="stem-status">La prod, la mélodie, les drums, la basse et la voix sont séparées dans ton navigateur (séparation rapide, approchée : parfaite pour poser une prod sous une réplique).</p>
 
                 <p class="sub-title">Après la réplique</p>
                 <label>Clip après la transition<select id="afterClip"></select></label>
@@ -540,6 +547,13 @@
       <div class="adv-sel" id="adv-sel"></div>
     </section>
   </div>
+  <!-- Le lecteur des pistes séparées : hors des réglages, dans le vide à gauche de la page. -->
+  <aside class="side-player" id="stem-player" hidden aria-label="Écoute des pistes séparées">
+    <div class="row"><b>Écoute des pistes</b><button class="mini" type="button" id="stem-close" aria-label="Fermer le lecteur des pistes">×</button></div>
+    <label>Piste<select id="stem-part"></select></label>
+    <div class="row"><button class="round" type="button" id="stem-play" aria-label="Lecture"></button><input type="range" id="stem-pos" min="0" max="1" step="0.1" value="0" aria-label="Moment du morceau à écouter"></div>
+    <span class="time" id="stem-time">0:00</span>
+  </aside>
 </main>
 
 <footer>
@@ -706,6 +720,7 @@ async function loadSound(file, extra = {}) {
     const { env, rms } = envelope(mono);
     const bpm = extra.bpm > 0 ? extra.bpm : await tempoOf(mono.slice());
     Object.assign(sound, { name: OniriqueAudio.baseName(file), buffer, env, rms, bpm: bpm || 120 });
+    $("stem-pos").max = buffer.duration; $("stem-pos").value = 0; stemClock();
     sound.phase = phaseOf(env, sound.bpm);
     sound.start = extra.start != null ? clampStart(extra.start) : bestStart();
     cloud = extra.cloud || null;
@@ -987,11 +1002,19 @@ function separateAll() {
   })() };
   return fullJob.done;
 }
+// La barre de lecture de l'écoute : elle suit le son, et on la fait glisser pour aller droit au passage qui nous intéresse.
+let stemSeeking = false;
+const stemAt = () => Math.min(Number($("stem-pos").max), ctx.currentTime - stemHear.at);
+function stemIcon() { $("stem-play").innerHTML = stemHear ? PAUSE_SVG : PLAY_SVG; $("stem-play").ariaLabel = stemHear ? "Pause" : "Lecture"; }
+function stemClock() { $("stem-time").textContent = OniriqueAudio.clock(Number($("stem-pos").value)) + " / " + OniriqueAudio.clock(Number($("stem-pos").max)); }
 function stopStemHear() {
   if (!stemHear) return;
   try { stemHear.src.stop(); } catch { /* déjà arrêté */ }
+  clearInterval(stemHear.tick);
+  if (!stemSeeking) { $("stem-pos").value = stemAt(); stemClock(); } // la prochaine écoute repart d'ici
   stemHear = null;
   $("stem-hear").textContent = "Écouter tout le morceau avec cette piste";
+  stemIcon();
 }
 const PART_NAMES = { none: "le son entier", full: "le son entier", prod: "la prod (sans voix)", melo: "la mélodie", drums: "les drums", bass: "la basse", vocals: "la voix seule" };
 /** Joue tout le morceau avec la piste choisie dans « Sous la réplique », depuis from (en secondes). */
@@ -1000,10 +1023,10 @@ async function hearStem(from = 0) {
   const part = prefs.underPart;
   let buffer = sound.buffer;
   if (STEMS.includes(part)) {
-    $("stem-hear").disabled = true;
+    $("stem-hear").disabled = $("stem-play").disabled = true;
     try { buffer = (await separateAll()).parts[part]; }
     catch { fullJob = null; $("stem-status").textContent = "La séparation n'a pas marché sur ce morceau."; return; }
-    finally { $("stem-hear").disabled = false; }
+    finally { $("stem-hear").disabled = $("stem-play").disabled = false; }
     if (prefs.underPart !== part || playing) return; // on a changé d'avis pendant la séparation
   }
   ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
@@ -1012,9 +1035,10 @@ async function hearStem(from = 0) {
   src.buffer = buffer; level.gain.value = prefs.previewVol / 100;
   src.connect(level).connect(ctx.destination);
   src.start(0, Math.min(from, buffer.duration - .05));
-  stemHear = { src, at: ctx.currentTime - from };
+  stemHear = { src, at: ctx.currentTime - from, tick: setInterval(() => { if (stemHear && !stemSeeking) { $("stem-pos").value = stemAt(); stemClock(); } }, 200) };
   src.onended = () => { if (stemHear && stemHear.src === src) stopStemHear(); };
   $("stem-hear").textContent = "Arrêter l'écoute";
+  $("stem-player").hidden = false; stemIcon();
   $("stem-status").textContent = "Tu écoutes " + PART_NAMES[part] + ", sur tout le morceau. Touche une autre piste pour comparer au même moment.";
 }
 const scheduleMix = () => { clearTimeout(mixTimer); mixTimer = setTimeout(() => ensureMix(), 250); };
@@ -1605,8 +1629,10 @@ function seek(t) {
   draw(position, false); drawScrub(position); setTimeout(() => !playing && draw(position, false), 120);
   if (was) resumeTimer = setTimeout(() => { resumeTimer = 0; play(position); }, 200);
 }
+const PLAY_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+const PAUSE_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>';
 function setPlayIcon() {
-  $("play").innerHTML = playing ? '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>' : '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+  $("play").innerHTML = playing ? PAUSE_SVG : PLAY_SVG;
   $("play").ariaLabel = playing ? "Pause" : "Lecture";
   for (const id of ["adv-play", "adv-play2"]) { $(id).innerHTML = $("play").innerHTML; $(id).ariaLabel = $("play").ariaLabel; }
 }
@@ -2577,8 +2603,22 @@ function start() {
   chips("slowmo", "slowmo", () => restyle(true));
   chips("transition", "transition", () => restyle());
   chips("introSubMode", "introSubMode", () => restyle());
-  chips("underPart", "underPart", () => { if (stemHear) hearStem(ctx.currentTime - stemHear.at); ensureStems(); scheduleMix(); });
-  $("stem-hear").onclick = () => (stemHear ? stopStemHear() : hearStem(0));
+  chips("underPart", "underPart", () => { $("stem-part").value = prefs.underPart; if (stemHear) hearStem(ctx.currentTime - stemHear.at); ensureStems(); scheduleMix(); });
+  // Le lecteur flottant : ses pistes sont celles de « Sous la réplique » (choisir l'une change l'autre).
+  $("stem-part").replaceChildren(...[...$("underPart").querySelectorAll("button")].map((b) => new Option(b.textContent, b.dataset.v)));
+  $("stem-part").value = prefs.underPart;
+  $("stem-part").onchange = () => $("underPart").querySelector(`[data-v="${$("stem-part").value}"]`).click();
+  const toggleStem = () => {
+    if (stemHear) return stopStemHear();
+    const from = Number($("stem-pos").value);
+    hearStem(from >= Number($("stem-pos").max) - .5 ? 0 : from); // arrivé au bout : on repart du début
+  };
+  $("stem-hear").onclick = $("stem-play").onclick = toggleStem;
+  $("stem-close").onclick = () => { stopStemHear(); $("stem-player").hidden = true; };
+  stemIcon();
+  // Pendant le glissé, seule l'heure bouge ; au lâcher, l'écoute en cours saute au nouvel endroit.
+  $("stem-pos").oninput = () => { stemSeeking = true; stemClock(); };
+  $("stem-pos").onchange = () => { stemSeeking = false; if (stemHear) hearStem(Number($("stem-pos").value)); };
   $("introLyrics").addEventListener("input", () => { prefs.introLyrics = $("introLyrics").value; savePrefs(); restyle(); });
   $("isync-line").onclick = () => startIsync("line");
   $("isync-word").onclick = () => startIsync("word");
