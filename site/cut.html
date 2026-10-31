@@ -360,7 +360,7 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
               <div class="chips wrap-in" id="lyricsPlace" role="group" aria-label="Place des paroles"><button type="button" data-v="top">En haut</button><button type="button" data-v="middle">Au milieu</button><button type="button" data-v="bottom">En bas</button></div>
             </label>
             <label id="sign-row">Signature sous la carte (à droite)<input type="text" id="sign" maxlength="24" placeholder="PAROLES"></label>
-            <div class="row"><button class="go ghost" type="button" id="lyrics-auto">Écrire les paroles avec l'IA</button><span class="muted" id="lyrics-auto-status">Elles s'écrivent et se calent mot par mot toutes seules ; tu n'as plus qu'à corriger.</span></div>
+            <div class="row"><button class="go ghost" type="button" id="lyrics-auto">Écrire les paroles avec l'IA</button><span class="muted" id="lyrics-auto-status">Elles s'écrivent et se calent mot par mot toutes seules. Mieux : colle d'abord tes paroles (sans les temps), l'IA les cale sans aucune faute.</span></div>
             <label>Paroles synchronisées (facultatif)
               <textarea id="lyrics" placeholder="[00:12.50] Première ligne&#10;[00:15.80] Deuxième ligne"></textarea>
             </label>
@@ -1404,7 +1404,8 @@ const stemsOf = (worker, L, R, rate) => new Promise((resolve, reject) => {
 // ——— Les paroles automatiques (assets/ai-lyrics.js) : écrites et calées mot par mot par une IA, sur la voix seule ———
 async function autoLyrics() {
   if (!sound.buffer) return;
-  if ($("lyrics").value.trim() && !confirm("Remplacer les paroles actuelles par celles écrites par l'IA ?")) return;
+  // Des paroles déjà là : l'IA les cale mot par mot sans toucher au texte (aucune faute) ; sinon elle les écrit.
+  const written = $("lyrics").value.trim();
   const status = (text) => { $("lyrics-auto-status").textContent = text; };
   $("lyrics-auto").disabled = true;
   try {
@@ -1413,12 +1414,12 @@ async function autoLyrics() {
     status("Séparation de la voix…");
     let voice = null;
     try { const all = await separateAll(); if (!/rapide/.test(all.note)) voice = all.parts.vocals; } catch { /* le module isole la voix lui-même */ }
-    const out = await ai.transcribe(voice || sound.buffer, status, { isolated: !!voice });
-    if (!out.words) return status("L'IA n'a pas entendu de paroles dans ce son.");
+    const out = await ai.transcribe(voice || sound.buffer, status, { isolated: !!voice, written });
+    if (!out.words) return status(written ? "L'IA n'a pas réussi à caler ces paroles sur le son." : "L'IA n'a pas entendu de paroles dans ce son.");
     $("lyrics").value = out.lrc;
     readLyrics(); showCloudLyrics(); keepSet();
     if (!playing) draw(position, false);
-    status(out.words + " mots écrits et calés par l'IA" + (out.device === "gpu" ? "" : " (sur le processeur)") + ". Relis-les : corrige un mot directement dans le texte" + (cloud ? ", puis enregistre-les dans CLOUD." : "."));
+    status(out.words + (out.aligned ? " mots de tes paroles calés par l'IA, ton texte est gardé" : " mots écrits et calés par l'IA") + (out.device === "gpu" ? "" : " (sur le processeur)") + (out.aligned ? "." : ". Relis-les : corrige un mot directement dans le texte") + (cloud ? " Enregistre-les dans CLOUD pour les garder." : ""));
   } catch (error) {
     status("Les paroles automatiques n'ont pas marché : " + error.message);
   } finally { $("lyrics-auto").disabled = false; }

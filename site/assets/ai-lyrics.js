@@ -23,6 +23,51 @@ export function wordsToLrc(words) {
   return lines.map((l) => "[" + stamp(l[0].start) + "] " + l.map((w) => "<" + stamp(w.start) + ">" + w.text).join(" ")).join("\n");
 }
 
+const norm = (w) => w.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+/** Proches à l'écrit : identiques, ou au plus un tiers de lettres différentes (« hive » / « vie »). */
+function close(a, b) {
+  if (a === b) return 2;
+  if (!a || !b || Math.abs(a.length - b.length) > Math.max(a.length, b.length) / 2) return -1;
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  return d[a.length][b.length] <= Math.max(a.length, b.length) / 3 ? 1 : -1;
+}
+
+/** Cale des paroles déjà écrites sur les mots entendus par l'IA : le texte écrit est gardé tel quel, l'IA ne donne que le
+ *  moment de chaque mot. Alignement mot à mot (Needleman-Wunsch) ; un mot écrit que l'IA n'a pas reconnu prend un temps
+ *  réparti entre ses voisins reconnus. Rend du LRC mot par mot, une ligne par ligne écrite. */
+export function alignLyrics(text, heard) {
+  const lines = text.split("\n").map((l) => l.replace(/^\s*\[[^\]]*\]\s*/, "").replace(/<[^>]*>\s*/g, "").trim()).filter(Boolean);
+  const written = lines.flatMap((l, line) => l.split(/\s+/).map((t) => ({ text: t, line, key: norm(t.replace(/\*\*/g, "")), at: null })));
+  const n = written.length, m = heard.length, keys = heard.map((w) => norm(w.text));
+  if (!n || !m) return "";
+  // Le meilleur alignement : +2 mot identique, +1 mot proche, −1 mot différent ou sauté.
+  const score = Array.from({ length: n + 1 }, (_, i) => Float32Array.from({ length: m + 1 }, (_, j) => -(i + j)));
+  for (let i = 1; i <= n; i++) for (let j = 1; j <= m; j++) {
+    score[i][j] = Math.max(score[i - 1][j - 1] + close(written[i - 1].key, keys[j - 1]), score[i - 1][j] - 1, score[i][j - 1] - 1);
+  }
+  for (let i = n, j = m; i > 0 && j > 0;) {
+    const s = close(written[i - 1].key, keys[j - 1]);
+    if (score[i][j] === score[i - 1][j - 1] + s) { if (s > 0) written[i - 1].at = heard[j - 1].start; i--; j--; }
+    else if (score[i][j] === score[i - 1][j] - 1) i--;
+    else j--;
+  }
+  // Les mots non reconnus : entre le mot reconnu d'avant et celui d'après, à intervalles égaux.
+  for (let i = 0; i < n; i++) {
+    if (written[i].at !== null) continue;
+    let a = i - 1, b = i + 1;
+    while (a >= 0 && written[a].at === null) a--;
+    while (b < n && written[b].at === null) b++;
+    const from = a >= 0 ? written[a].at : null, to = b < n ? written[b].at : null;
+    if (from !== null && to !== null) for (let k = a + 1; k < b; k++) written[k].at = from + (to - from) * (k - a) / (b - a);
+    else if (from !== null) for (let k = a + 1; k < b; k++) written[k].at = from + .35 * (k - a);
+    else if (to !== null) for (let k = a + 1; k < b; k++) written[k].at = Math.max(0, to - .35 * (b - k));
+    else return "";
+  }
+  return lines.map((_, li) => { const ws = written.filter((w) => w.line === li); return "[" + stamp(ws[0].at) + "] " + ws.map((w) => "<" + stamp(w.at) + ">" + w.text).join(" "); }).join("\n");
+}
+
 /** Un AudioBuffer rééchantillonné (channels voies, rate Hz), en Float32Array par voie. */
 async function resample(buffer, rate, channels) {
   const off = new OfflineAudioContext(channels, Math.ceil(buffer.duration * rate), rate), src = off.createBufferSource();
@@ -53,10 +98,15 @@ export async function isolateVoice(buffer, status = () => {}) {
   } catch { return null; }
 }
 
-export async function transcribe(buffer, status = () => {}, { isolated = false, language = "french" } = {}) {
+/** written : des paroles déjà écrites (avec ou sans temps) à caler ; sinon l'IA les écrit elle-même. */
+export async function transcribe(buffer, status = () => {}, { isolated = false, language = "french", written = "" } = {}) {
   const voice = isolated ? buffer : (await isolateVoice(buffer, status)) || buffer; // sans séparation : le morceau entier
   const [audio] = await resample(voice, 16000, 1);
   const out = await runWorker(new URL("whisper-worker.js", import.meta.url), { audio, language }, [audio.buffer], (d) => status(d.phase === "download"
-    ? "Téléchargement de l'IA des paroles (environ 600 Mo, une seule fois sur cet appareil)… " + pct(d.value) : "L'IA écoute les paroles…" + (d.value ? " " + pct(d.value) : "")));
-  return { lrc: wordsToLrc(out.words), words: out.words.length, device: out.device };
+    ? "Téléchargement de l'IA des paroles (environ 760 Mo, une seule fois sur cet appareil)… " + pct(d.value) : "L'IA écoute les paroles…" + (d.value ? " " + pct(d.value) : "")));
+  if (written.trim() && out.words.length) {
+    const lrc = alignLyrics(written, out.words);
+    return { lrc, words: lrc ? (lrc.match(/</g) || []).length : 0, device: out.device, aligned: true };
+  }
+  return { lrc: wordsToLrc(out.words), words: out.words.length, device: out.device, aligned: false };
 }

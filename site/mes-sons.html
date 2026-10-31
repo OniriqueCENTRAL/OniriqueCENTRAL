@@ -3252,17 +3252,19 @@ function renderDetails() {
     const saved = el("span", { className: "muted", style: "font-size:13px", textContent: lyricsNote });
     lyricsNote = "";
     // Les paroles écrites et calées mot par mot par une IA, sur la voix isolée : rien ne quitte le navigateur.
-    const ai = el("button", { className: "btn btn-ghost", type: "button", textContent: "Transcrire avec l'IA" });
+    const ai = el("button", { className: "btn btn-ghost", type: "button", textContent: text.value.trim() ? "Caler avec l'IA" : "Transcrire avec l'IA", title: "Paroles déjà écrites : l'IA les cale mot par mot. Sinon, elle les écrit." });
+    text.addEventListener("input", () => { ai.textContent = text.value.trim() ? "Caler avec l'IA" : "Transcrire avec l'IA"; });
     ai.onclick = async () => {
-      if (text.value.trim() && !confirm("Remplacer les paroles par celles écrites par l'IA ?")) return;
+      // Des paroles déjà écrites : l'IA les cale mot par mot sans toucher au texte ; sinon elle les écrit.
+      const written = text.value.trim();
       ai.disabled = true;
       try {
         saved.textContent = "Lecture du son…";
         const buffer = await new AudioContext().decodeAudioData(await (await fetch(v.url)).arrayBuffer());
-        const out = await (await import("./assets/ai-lyrics.js")).transcribe(buffer, (m) => { saved.textContent = m; });
-        if (!out.words) { saved.textContent = "L'IA n'a pas entendu de paroles dans ce son."; return; }
+        const out = await (await import("./assets/ai-lyrics.js")).transcribe(buffer, (m) => { saved.textContent = m; }, { written });
+        if (!out.words) { saved.textContent = written ? "L'IA n'a pas réussi à caler ces paroles sur le son." : "L'IA n'a pas entendu de paroles dans ce son."; return; }
         await api("PATCH", "/me/sounds/tracks/" + t.id, { lyrics: out.lrc });
-        lyricsNote = out.words + " mots écrits et calés mot par mot par l'IA : relis-les et corrige un mot si besoin.";
+        lyricsNote = out.aligned ? out.words + " mots de tes paroles calés mot par mot par l'IA (ton texte est gardé)." : out.words + " mots écrits et calés mot par mot par l'IA : relis-les et corrige un mot si besoin. Astuce : colle tes paroles d'abord, l'IA les calera sans faute.";
         await refresh();
       } catch (error) { saved.textContent = "La transcription n'a pas marché : " + error.message; }
       finally { ai.disabled = false; }
