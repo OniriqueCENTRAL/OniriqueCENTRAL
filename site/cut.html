@@ -557,7 +557,7 @@ const FX = { bw: false, shake: false, rgbSplit: false, fadeEnds: false, brightne
 // Le style du texte de la réplique (quand « Style de texte propre à la réplique » est coché).
 const ILOOK = { iOwn: false, iFont: "Hanken Grotesk", iPlace: "bottom", iColor: "#ffffff", iSize: 100, iStroke: 0, iStrokeColor: "#000000", iGlow: 0, iGlowColor: "#ffffff",
   iShadowColor: "#000000", iShadowBlur: 0, iShadowOffset: 0, iCaps: false, iBox: true, iBoxColor: "#000000", iBoxAlpha: 62 };
-const FILM = { ...ILOOK, introOn: false, introClip: 0, introIn: 0, introLen: 4, filmVol: 100, introLyrics: "", introSubMode: "sub", introFade: false, transition: "flash",
+const FILM = { ...ILOOK, trackFades: {}, introOn: false, introClip: 0, introIn: 0, introLen: 4, filmVol: 100, introLyrics: "", introSubMode: "sub", introFade: false, transition: "flash",
   dropGap: false, underPart: "none", underVol: 70, filmContinue: false, musicVol: 100, clipVol: 0, slowmo: "100" };
 let prefs = { previewVol: 80, ...FILM, duration: 15, order: "seq", cadence: "2", zoom: false, flash: false, place: "bottom", artist: "", snap: false, loop: false, batch: "one", lyricsPlace: "bottom", ...FX,
   preset: "classic", frame: "full", retro: false, lyricsMode: "line", hook: "", sign: "", textStyle: "classic", titleFont: "Unbounded", textSize: 100,
@@ -849,10 +849,12 @@ async function clipAudio(c) {
   return c.audio;
 }
 // Le son mixé (réplique + musique + son des clips) n'existe que si une option de film le demande ; sinon la musique seule.
-const filmActive = () => introLen() > 0 || prefs.musicVol !== 100 || (prefs.clipVol > 0 && clips.some((c) => c.kind === "video")) || extras.length > 0 || mutedTracks.size > 0;
+/** Le fondu d'une piste du mixage : celui choisi dans la timeline, sinon celui d'origine (def). */
+const trackFade = (track, which, def) => { const f = (prefs.trackFades || {})[track]; return f && f[which] != null ? Math.max(.004, f[which]) : def; };
+const filmActive = () => Object.keys(prefs.trackFades || {}).length > 0 || introLen() > 0 || prefs.musicVol !== 100 || (prefs.clipVol > 0 && clips.some((c) => c.kind === "video")) || extras.length > 0 || mutedTracks.size > 0;
 let mix = null, mixing = null, mixTimer = 0;
 const mixKey = () => JSON.stringify([sound.start, span(), prefs.musicVol, prefs.clipVol, prefs.introOn, prefs.introClip, prefs.introIn, introLen(), prefs.filmVol, prefs.introFade,
-  prefs.dropGap, prefs.underPart, prefs.underVol,
+  prefs.dropGap, prefs.underPart, prefs.underVol, prefs.trackFades,
   prefs.slowmo, clips.map((c) => c.url), segments.map((x) => [x.t0, x.t1, x.clip, x.from, !!x.hold]),
   extras.map((e) => [e.id, e.at, e.offset, e.length, e.vol, e.fadeIn, e.fadeOut, e.track]), [...mutedTracks]]);
 /** Le mixage du son de toute la vidéo, fait hors temps réel : la réplique (son du film), puis la musique, et le son des clips dessous. */
@@ -872,21 +874,21 @@ async function buildMix(key) {
   const gap = prefs.dropGap ? .22 : 0; // « Silence juste avant le drop »
   if (intro) {
     const a = await clipAudio(introClip());
-    if (a) add(a, 0, prefs.introIn, intro - gap + (prefs.introFade && !gap ? .2 : 0), vol("film", prefs.filmVol), .01, gap ? .03 : crossfade, false);
+    if (a) add(a, 0, prefs.introIn, intro - gap + (prefs.introFade && !gap ? .2 : 0), vol("film", prefs.filmVol), trackFade("film", "in", .01), trackFade("film", "out", gap ? .03 : crossfade), false);
     // Sous la réplique : la musique qui mène au drop (le son entier, ou une seule piste séparée).
     const len = Math.min(sound.start, intro), at = intro - len;
     if (prefs.underPart !== "none" && prefs.underVol > 0 && len - gap > .05) {
-      if (prefs.underPart === "full") add(sound.buffer, at, sound.start - len, len - gap, vol("under", prefs.underVol), .3, gap ? .03 : .004, false);
-      else { const st = await ensureStems(); if (st && st.parts[prefs.underPart]) add(st.parts[prefs.underPart], at, 0, len - gap, vol("under", prefs.underVol), .3, .03, false); }
+      if (prefs.underPart === "full") add(sound.buffer, at, sound.start - len, len - gap, vol("under", prefs.underVol), trackFade("under", "in", .3), trackFade("under", "out", gap ? .03 : .004), false);
+      else { const st = await ensureStems(); if (st && st.parts[prefs.underPart]) add(st.parts[prefs.underPart], at, 0, len - gap, vol("under", prefs.underVol), trackFade("under", "in", .3), trackFade("under", "out", .03), false); }
     }
   }
-  add(sound.buffer, intro, sound.start, span(), vol("music", prefs.musicVol), prefs.introFade && intro ? .25 : FADE, prefs.loop ? .03 : FADE, false);
+  add(sound.buffer, intro, sound.start, span(), vol("music", prefs.musicVol), trackFade("music", "in", prefs.introFade && intro ? .25 : FADE), trackFade("music", "out", prefs.loop ? .03 : FADE), false);
   // Le son des clips sous la musique (pas au ralenti : le son resterait décalé de l'image).
   if (prefs.clipVol > 0 && slow() === 1) for (const x of segments) {
     const c = clips[x.clip];
     if (c.kind !== "video") continue;
     const a = await clipAudio(c);
-    if (a) add(a, intro + x.t0, x.hold ? 0 : x.from, x.t1 - x.t0, vol("clips", prefs.clipVol), .008, .008, !!x.hold);
+    if (a) add(a, intro + x.t0, x.hold ? 0 : x.from, x.t1 - x.t0, vol("clips", prefs.clipVol), trackFade("clips", "in", .008), trackFade("clips", "out", .008), !!x.hold);
   }
   // Les sons ajoutés dans la timeline, superposés au reste.
   for (const e of extras) if (e.at < T && !mutedTracks.has("extra" + e.track)) add(e.buffer, e.at, e.offset, Math.min(e.length, T - e.at), e.vol / 100, Math.max(.005, e.fadeIn), Math.max(.005, e.fadeOut), false);
@@ -1838,6 +1840,7 @@ function drawAdv() {
         x.fillStyle = "rgba(0,0,0,.38)";
         for (let px = 0; px < cw - 2; px++) { const i = Math.floor((c.offset + px / adv.pps) * rate), v = i >= 0 && i < rms.length ? rms[i] : 0, hh = Math.max(.5, v * amp); x.fillRect(cx + 1 + px, mid - hh, 1, hh * 2); }
       }
+      if (isAudioRow(row) && "buffer" in c) drawFades(x, row, c, cx, cw, y);
       x.save(); x.beginPath(); x.rect(cx, y, cw, ROW); x.clip();
       x.fillStyle = "rgba(0,0,0,.78)"; x.font = "700 11px 'Hanken Grotesk', sans-serif"; x.textBaseline = "top"; x.fillText(c.label || "", cx + 8, y + 8);
       x.restore();
@@ -1922,8 +1925,8 @@ function renderAdvSel() {
   } else if (clip && clip.extra) {
     const e = clip.extra;
     box.append(range("Volume", e.vol, 0, 200, 5, (v) => { e.vol = v; scheduleMix(); }),
-      range("Fondu d'entrée", e.fadeIn, 0, 3, .05, (v) => { e.fadeIn = v; scheduleMix(); }),
-      range("Fondu de sortie", e.fadeOut, 0, 3, .05, (v) => { e.fadeOut = v; scheduleMix(); }),
+      range("Fondu d'entrée", e.fadeIn, 0, Math.max(.1, e.length), .01, (v) => { e.fadeIn = v; scheduleMix(); drawAdv(); }),
+      range("Fondu de sortie", e.fadeOut, 0, Math.max(.1, e.length), .01, (v) => { e.fadeOut = v; scheduleMix(); drawAdv(); }),
       button("Couper au curseur", () => {
         const t = now();
         if (t <= e.at + .05 || t >= e.at + e.length - .05) return;
@@ -1934,6 +1937,17 @@ function renderAdvSel() {
       button("Supprimer", () => { extras = extras.filter((x) => x !== e); adv.sel = null; scheduleMix(); renderAdv(); }));
   } else if (row.vol) {
     box.append(range("Volume de la piste", prefs[row.vol], 0, row.vol === "filmVol" ? 200 : 150, 5, (v) => { prefs[row.vol] = v; savePrefs(); filmUi(); scheduleMix(); }));
+    // Les fondus de la piste (chaque coupe pour « Son des clips »), au centième de seconde.
+    const ref = clip || row.clips[0], longest = Math.max(.1, ...row.clips.map((c) => c.len));
+    if (ref) {
+      const fadeRange = (label, which) => {
+        const shown = Object.assign(document.createElement("span"), { textContent: fadeOf(row, ref, which).toFixed(2).replace(".", ",") + " s" });
+        const l = range(label, fadeOf(row, ref, which), 0, longest, .01, (v) => { setFade(row, ref, which, v); shown.textContent = v.toFixed(2).replace(".", ",") + " s"; savePrefs(); scheduleMix(); drawAdv(); });
+        l.append(shown); return l;
+      };
+      box.append(fadeRange("Fondu d'entrée", "in"), fadeRange("Fondu de sortie", "out"),
+        button("Fondus d'origine", () => { const f = { ...(prefs.trackFades || {}) }; delete f[row.id]; prefs.trackFades = f; savePrefs(); scheduleMix(); renderAdv(); }));
+    }
     if (row.id === "film") box.append(Object.assign(document.createElement("span"), { className: "muted", textContent: "Tire les bords de la réplique pour la recouper ; glisse-la pour faire défiler le film dessous." }));
   } else if (!isAudioRow(row) && row.id !== "video") box.append(Object.assign(document.createElement("span"), { className: "muted", textContent: row.id === "v-film"
     ? "Tire les bords de la réplique pour la recouper ; glisse-la pour faire défiler le film dessous."
@@ -1941,6 +1955,28 @@ function renderAdvSel() {
   else box.append(Object.assign(document.createElement("span"), { className: "muted", textContent: "La piste Image montre le montage : la réplique, puis chaque coupe calée sur le tempo." }));
 }
 /** Où tombe le pointeur : la règle, ou un bloc (et lequel de ses bords). */
+// Les fondus d'origine de chaque piste, tels qu'on les montre tant qu'on n'y a pas touché.
+const FADE_DEFAULT = { film: { in: .01, out: .04 }, under: { in: .3, out: .03 }, music: { in: .012, out: .012 }, clips: { in: .008, out: .008 } };
+/** Le fondu (en secondes) d'un bloc de son : le sien pour un son ajouté, celui de sa piste sinon. */
+function fadeOf(row, clip, which) {
+  if (clip.extra) return which === "in" ? clip.extra.fadeIn : clip.extra.fadeOut;
+  const f = (prefs.trackFades || {})[row.id];
+  return f && f[which] != null ? f[which] : (FADE_DEFAULT[row.id] || { in: 0, out: 0 })[which];
+}
+function setFade(row, clip, which, value) {
+  if (clip.extra) { clip.extra[which === "in" ? "fadeIn" : "fadeOut"] = value; return; }
+  prefs.trackFades = { ...(prefs.trackFades || {}), [row.id]: { ...((prefs.trackFades || {})[row.id] || {}), [which]: value } };
+}
+/** La pente sombre d'un fondu, et sa poignée blanche qu'on tire pour changer sa longueur. */
+function drawFades(x, row, c, cx, cw, y) {
+  const top = y + 4, bot = y + ROW - 4, fi = Math.min(fadeOf(row, c, "in"), c.len) * adv.pps, fo = Math.min(fadeOf(row, c, "out"), c.len) * adv.pps;
+  x.fillStyle = "rgba(0,0,0,.38)"; x.strokeStyle = "rgba(255,255,255,.85)"; x.lineWidth = 1.5;
+  if (fi > 1) { x.beginPath(); x.moveTo(cx + 1, top); x.lineTo(cx + 1 + fi, top); x.lineTo(cx + 1, bot); x.fill(); x.beginPath(); x.moveTo(cx + 1, bot); x.lineTo(cx + 1 + fi, top); x.stroke(); }
+  if (fo > 1) { x.beginPath(); x.moveTo(cx + cw - 1 - fo, top); x.lineTo(cx + cw - 1, top); x.lineTo(cx + cw - 1, bot); x.fill(); x.beginPath(); x.moveTo(cx + cw - 1 - fo, top); x.lineTo(cx + cw - 1, bot); x.stroke(); }
+  x.fillStyle = "#fff";
+  x.fillRect(Math.max(cx + 1, cx + 1 + fi - 4), top, 8, 8);
+  x.fillRect(Math.min(cx + cw - 9, cx + cw - 1 - fo - 4), top, 8, 8);
+}
 function hitAdv(event) {
   const r = $("adv-canvas").getBoundingClientRect(), px = event.clientX - r.left, py = event.clientY - r.top, t = Math.max(0, px / adv.pps);
   if (py < RULER) return { ruler: true, t };
@@ -1948,6 +1984,13 @@ function hitAdv(event) {
   if (!row) return null;
   const clip = [...row.clips].reverse().find((c) => t >= c.start && t <= c.start + c.len);
   if (!clip) return { row, t };
+  // Les poignées de fondu, en haut d'un bloc de son.
+  const top = RULER + adv.rows.indexOf(row) * ROW + 4;
+  if (isAudioRow(row) && py - top < 14) {
+    const fi = (clip.start + Math.min(fadeOf(row, clip, "in"), clip.len)) * adv.pps, fo = (clip.start + clip.len - Math.min(fadeOf(row, clip, "out"), clip.len)) * adv.pps;
+    if (Math.abs(px - fi) < 8) return { row, clip, t, edge: "FI" };
+    if (Math.abs(px - fo) < 8) return { row, clip, t, edge: "FO" };
+  }
   const edge = Math.abs(px - clip.start * adv.pps) < 8 ? "L" : Math.abs(px - (clip.start + clip.len) * adv.pps) < 8 ? "R" : null;
   return { row, clip, t, edge };
 }
@@ -1960,6 +2003,12 @@ function dragAdv() {
     canvas.setPointerCapture(event.pointerId);
     if (h.ruler) { adv.drag = { kind: "seek" }; seek(Math.min(h.t, total() - .05)); drawAdvHead(position); return; }
     adv.sel = h.clip ? h.clip.key : null; adv.selRow = h.row.id;
+    if (h.edge === "FI" || h.edge === "FO") {
+      const which = h.edge === "FI" ? "in" : "out";
+      adv.drag = { kind: h.edge, which, clip: h.clip, row: h.row, x0: event.clientX, orig: fadeOf(h.row, h.clip, which) };
+      renderAdv();
+      return;
+    }
     if (editable(h.clip)) {
       const item = h.clip.extra || h.clip.ov;
       adv.drag = { kind: h.edge || "move", clip: h.clip, x0: event.clientX, y0: event.clientY,
@@ -1969,9 +2018,15 @@ function dragAdv() {
   });
   canvas.addEventListener("pointermove", (event) => {
     const d = adv.drag;
-    if (!d) { const h = hitAdv(event); canvas.style.cursor = h && h.edge && editable(h.clip) ? "ew-resize" : h && editable(h.clip) ? "grab" : h && h.ruler ? "pointer" : "default"; return; }
+    if (!d) { const h = hitAdv(event); canvas.style.cursor = h && (h.edge === "FI" || h.edge === "FO") ? "ew-resize" : h && h.edge && editable(h.clip) ? "ew-resize" : h && editable(h.clip) ? "grab" : h && h.ruler ? "pointer" : "default"; return; }
     if (d.kind === "seek") { seek(Math.min(Math.max(0, (event.clientX - canvas.getBoundingClientRect().left) / adv.pps), total() - .05)); drawAdvHead(position); return; }
     const dt = (event.clientX - d.x0) / adv.pps;
+    if (d.kind === "FI" || d.kind === "FO") {
+      // Une poignée de fondu : vers l'intérieur du bloc, le fondu s'allonge.
+      setFade(d.row, d.clip, d.which, round(clamp(d.orig + (d.kind === "FI" ? dt : -dt), 0, d.clip.len)));
+      drawAdv();
+      return;
+    }
     const item = d.clip.extra || d.clip.ov;
     if (item) {
       // Un son ajouté ou une superposition : on le déplace (aussi d'une piste à l'autre), on recoupe ses bords.
@@ -2000,6 +2055,7 @@ function dragAdv() {
     const d = adv.drag;
     adv.drag = null;
     if (!d || d.kind === "seek") return;
+    if (d.kind === "FI" || d.kind === "FO") { savePrefs(); scheduleMix(); renderAdv(); return; }
     if (d.clip.extra) { scheduleMix(); renderAdv(); }
     else if (d.clip.ov) { restyle(); renderAdv(); }
     else if (d.clip.seg !== undefined) { restyle(true); scheduleMix(); renderAdv(); }
