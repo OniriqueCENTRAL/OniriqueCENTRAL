@@ -264,9 +264,41 @@
                 <label>Affichage des paroles de la réplique
                   <div class="chips wrap-in" id="introSubMode" role="group" aria-label="Affichage des paroles de la réplique"><button type="button" data-v="sub">Sous-titre (cinéma)</button><button type="button" data-v="word">Mot par mot</button></div>
                 </label>
+                <label class="check"><input type="checkbox" id="iOwn"> Style de texte propre à la réplique</label>
+                <div class="stack" id="ilook" style="padding:0">
+                  <div class="fields">
+                    <label>Police<select id="iFont"></select></label>
+                    <label>Place du texte
+                      <div class="chips wrap-in" id="iPlace" role="group" aria-label="Place du texte de la réplique"><button type="button" data-v="top">En haut</button><button type="button" data-v="middle">Au milieu</button><button type="button" data-v="bottom">En bas</button></div>
+                    </label>
+                  </div>
+                  <div class="row">
+                    <label>Couleur<input type="color" id="iColor"></label>
+                    <label class="grow">Taille<input type="range" id="iSize" min="50" max="200" step="5"></label>
+                  </div>
+                  <div class="row">
+                    <label>Contour<input type="color" id="iStrokeColor"></label>
+                    <label class="grow">Épaisseur du contour<input type="range" id="iStroke" min="0" max="20"></label>
+                  </div>
+                  <div class="row">
+                    <label>Lueur<input type="color" id="iGlowColor"></label>
+                    <label class="grow">Force de la lueur<input type="range" id="iGlow" min="0" max="100"></label>
+                  </div>
+                  <div class="row">
+                    <label>Ombre<input type="color" id="iShadowColor"></label>
+                    <label class="grow">Flou de l'ombre<input type="range" id="iShadowBlur" min="0" max="60"></label>
+                    <label class="grow">Décalage de l'ombre<input type="range" id="iShadowOffset" min="0" max="30"></label>
+                  </div>
+                  <div class="row">
+                    <label class="check"><input type="checkbox" id="iCaps"> MAJUSCULES</label>
+                    <label class="check"><input type="checkbox" id="iBox"> Fond derrière le texte</label>
+                    <label>Fond<input type="color" id="iBoxColor"></label>
+                    <label class="grow">Opacité du fond<input type="range" id="iBoxAlpha" min="0" max="100" step="5"></label>
+                  </div>
+                </div>
 
                 <p class="sub-title">Transition vers la musique</p>
-                <div class="chips wrap-in" id="transition" role="group" aria-label="Transition entre le film et la musique"><button type="button" data-v="cut">Coupe sèche</button><button type="button" data-v="flash">Flash blanc</button><button type="button" data-v="black">Fondu au noir</button><button type="button" data-v="zoom">Zoom</button><button type="button" data-v="whip">Glissement</button><button type="button" data-v="blur">Flou</button><button type="button" data-v="shake">Secousse</button><button type="button" data-v="glitch">Glitch</button><button type="button" data-v="rewind">Rembobinage VHS</button><button type="button" data-v="freeze">Arrêt sur image</button></div>
+                <div class="chips wrap-in" id="transition" role="group" aria-label="Transition entre le film et la musique"><button type="button" data-v="cut">Aucune</button><button type="button" data-v="flash">Flash blanc</button><button type="button" data-v="black">Fondu au noir</button><button type="button" data-v="zoom">Zoom</button><button type="button" data-v="whip">Glissement</button><button type="button" data-v="blur">Flou</button><button type="button" data-v="shake">Secousse</button><button type="button" data-v="glitch">Glitch</button><button type="button" data-v="rewind">Rembobinage VHS</button><button type="button" data-v="freeze">Arrêt sur image</button></div>
                 <div class="row">
                   <label class="check"><input type="checkbox" id="introFade"> Fondu du son entre le film et la musique</label>
                   <label class="check"><input type="checkbox" id="dropGap"> Silence juste avant le drop</label>
@@ -506,7 +538,10 @@ const VARIED = [2, 2, 2, 1, 1, 4, 2, 2, 1, 1, 1, 1, 4];
 // Les effets vidéo, à zéro (aucun effet).
 const FX = { bw: false, shake: false, rgbSplit: false, fadeEnds: false, brightness: 100, contrast: 100, saturation: 100, vignette: 0, tint: "#ff2a3a", tintAmount: 0, photoMove: false };
 // Les options de films : réplique d'ouverture, volumes, ralenti.
-const FILM = { introOn: false, introClip: 0, introIn: 0, introLen: 4, filmVol: 100, introLyrics: "", introSubMode: "sub", introFade: false, transition: "flash",
+// Le style du texte de la réplique (quand « Style de texte propre à la réplique » est coché).
+const ILOOK = { iOwn: false, iFont: "Hanken Grotesk", iPlace: "bottom", iColor: "#ffffff", iSize: 100, iStroke: 0, iStrokeColor: "#000000", iGlow: 0, iGlowColor: "#ffffff",
+  iShadowColor: "#000000", iShadowBlur: 0, iShadowOffset: 0, iCaps: false, iBox: true, iBoxColor: "#000000", iBoxAlpha: 62 };
+const FILM = { ...ILOOK, introOn: false, introClip: 0, introIn: 0, introLen: 4, filmVol: 100, introLyrics: "", introSubMode: "sub", introFade: false, transition: "flash",
   dropGap: false, underPart: "none", underVol: 70, filmContinue: false, musicVol: 100, clipVol: 0, slowmo: "100" };
 let prefs = { previewVol: 80, ...FILM, duration: 15, order: "seq", cadence: "2", zoom: false, flash: false, place: "bottom", artist: "", snap: false, loop: false, batch: "one", lyricsPlace: "bottom", ...FX,
   preset: "classic", frame: "full", retro: false, lyricsMode: "line", hook: "", sign: "", textStyle: "classic", titleFont: "Unbounded", textSize: 100,
@@ -1166,11 +1201,12 @@ function wordAt(now, list = lyrics) {
   return { ...words.at(-1), at: at - weights.at(-1) / total * length };
 }
 /** Un mot seul, en gros au centre de l'image, dans le style choisi ; un mot FORT plus grand, dans ses couleurs, avec un « pop ». */
-function bigWord(word, cy, maxW, now) {
+function bigWord(word, cy, maxW, now, look = null) {
   // Une police large (Press Start 2P…) écrit plus petit, pour laisser au mot fort la place d'être plus grand.
   g.font = `800 100px "Hanken Grotesk"`; const ref = g.measureText("DADAIS").width;
-  const [family, weight] = fontOf(prefs.lyricFont); g.font = `${weight} 100px "${family}"`;
-  const o = textLook({ size: 150 * textScale() * Math.min(1.15, ref / g.measureText("DADAIS").width), maxW, wrap: false });
+  const [family, weight] = fontOf(look ? look.font : prefs.lyricFont); g.font = `${weight} 100px "${family}"`;
+  const scale = look ? look.scale : textScale();
+  const o = { ...textLook(), ...(look || {}), size: 150 * scale * Math.min(1.15, ref / g.measureText("DADAIS").width), maxW, wrap: false };
   if (word.strong) {
     const pop = 1 + .22 * Math.exp(-Math.max(0, now - word.at) * 14);
     Object.assign(o, { size: o.size * prefs.strongSize / 100 * pop, color: prefs.strongColor, glowColor: prefs.strongGlowColor, glow: prefs.strongGlow, font: prefs.strongFont || o.font, maxW: W * .94 });
@@ -1198,7 +1234,30 @@ function lyricCard(text, r, title, artist) {
 
 const introVideo = Object.assign(document.createElement("video"), { muted: true, playsInline: true, preload: "auto" });
 /** Un sous-titre comme au cinéma : blanc sur un fond sombre, en bas de l'image. */
+/** Le style propre à la réplique, ou null (alors : sous-titre de cinéma, et le style des paroles en mot par mot). */
+const introLook = () => (prefs.iOwn ? { font: prefs.iFont, color: prefs.iColor, stroke: prefs.iStroke, strokeColor: prefs.iStrokeColor, glow: prefs.iGlow, glowColor: prefs.iGlowColor,
+  shadowColor: prefs.iShadowColor, shadowBlur: prefs.iShadowBlur, shadowOffset: prefs.iShadowOffset, caps: prefs.iCaps, pixel: false, scale: prefs.iSize / 100 } : null);
+/** La hauteur où poser le texte de la réplique, dans l'image. */
+const introY = (r, height) => {
+  const edge = r.y ? 36 : 260, place = prefs.iOwn ? prefs.iPlace : "bottom";
+  return place === "top" ? r.y + edge + height / 2 : place === "middle" ? r.y + r.h / 2 : r.y + r.h - edge - height / 2;
+};
+/** Le sous-titre de la réplique dans le style choisi, avec un fond si on le veut. */
+function styledSubtitle(text, r, look) {
+  const [family, weight] = fontOf(look.font), size = Math.round(46 * look.scale), lh = size * 1.25;
+  g.font = `${weight} ${size}px "${family}"`;
+  const lines = wrapText(look.caps ? text.toUpperCase() : text, r.w * .82), boxH = lines.length * lh + size * .5;
+  const cy = introY(r, boxH);
+  if (prefs.iBox && prefs.iBoxAlpha > 0) {
+    const boxW = Math.max(...lines.map((l) => g.measureText(l).width)) + size * .9, hex = prefs.iBoxColor.replace("#", "");
+    const [R, G, B] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    g.fillStyle = `rgba(${R},${G},${B},${prefs.iBoxAlpha / 100})`; g.fillRect((W - boxW) / 2, cy - boxH / 2, boxW, boxH);
+  }
+  paint(lines, cy, { ...look, size, maxW: r.w * .9, wrap: false, caps: false });
+}
 function subtitle(text, r) {
+  const look = introLook();
+  if (look) return styledSubtitle(text, r, look);
   g.font = `500 46px "Hanken Grotesk"`;
   const lines = wrapText(text, r.w * .82), lh = 58, boxH = lines.length * lh + 24, boxW = Math.max(...lines.map((l) => g.measureText(l).width)) + 40;
   const by = r.y + r.h - (r.y ? 36 : 260) - boxH;
@@ -1226,8 +1285,9 @@ function drawIntro(t, playing) {
   if (hook) text([hook], r.y ? Math.max(70, r.y - 60) : H * .1, 44, "600", "Hanken Grotesk");
   const lines = introLines();
   if (lines.length && prefs.introSubMode === "word") {
-    const word = wordAt(t, lines), y = { top: r.y + r.h * .24, middle: r.y + r.h / 2, bottom: r.y + r.h * .78 }[prefs.lyricsPlace] ?? r.y + r.h / 2;
-    if (word) bigWord(word, y, r.w * .86, t);
+    const look = introLook(), place = look ? prefs.iPlace : prefs.lyricsPlace;
+    const word = wordAt(t, lines), y = { top: r.y + r.h * .24, middle: r.y + r.h / 2, bottom: r.y + r.h * .78 }[place] ?? r.y + r.h / 2;
+    if (word) bigWord(word, y, r.w * .86, t, look);
   } else if (lines.length) {
     const line = lines.filter((l) => l.at <= t).at(-1);
     if (line && t - line.at < 6) subtitle(line.text, r);
@@ -2020,6 +2080,7 @@ function filmUi() {
   for (const id of ["introFade", "dropGap", "filmContinue"]) $(id).checked = !!prefs[id];
   $("underVol").value = prefs.underVol;
   if (document.activeElement !== $("introLyrics")) $("introLyrics").value = prefs.introLyrics;
+  $("ilook").hidden = !prefs.iOwn;
   if (document.activeElement !== $("introIn")) $("introIn").value = String(prefs.introIn).replace(".", ",");
   if (document.activeElement !== $("introLen")) $("introLen").value = (introLen() || prefs.introLen).toFixed(2).replace(".", ",");
   drawIntroWave();
@@ -2148,8 +2209,10 @@ function start() {
   chips("frame", "frame", redraw); chips("lyricsMode", "lyricsMode", redraw);
   // Le style du texte : polices, couleurs, contour, lueur, ombre, mots forts.
   const STYLE_INPUTS = ["lyricFont", "titleFont", "strongFont", "textColor", "textSize", "strokeColor", "stroke", "glowColor", "glow", "shadowColor", "shadowBlur", "shadowOffset",
-    "caps", "pixel", "strongSize", "strongColor", "strongGlowColor", "strongGlow", ...Object.keys(FX)];
-  for (const id of ["lyricFont", "titleFont", "strongFont"]) {
+    "caps", "pixel", "strongSize", "strongColor", "strongGlowColor", "strongGlow", ...Object.keys(FX), ...Object.keys(ILOOK).filter((k) => k !== "iPlace")];
+  chips("iPlace", "iPlace", () => restyle());
+  $("iOwn").addEventListener("input", () => { $("ilook").hidden = !$("iOwn").checked; });
+  for (const id of ["lyricFont", "titleFont", "strongFont", "iFont"]) {
     $(id).replaceChildren(...(id === "strongFont" ? [new Option("Même police que les paroles", "")] : []), ...FONT_LIST.map(([family, , label]) => new Option(label, family)));
   }
   const loadFont = (family) => { if (!family) return; const [f, w] = fontOf(family); document.fonts.load(`${w} 80px "${f}"`).then(() => !playing && segments.length && draw(position, false)); };
