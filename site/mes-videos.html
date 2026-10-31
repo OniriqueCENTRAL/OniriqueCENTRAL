@@ -53,6 +53,8 @@ h1 { font: 800 clamp(26px, 7vw, 38px)/1.1 var(--f-display); margin: 8px 0 6px; }
 .round svg { width: 20px; height: 20px; }
 .install { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 16px; padding: 9px 14px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); font: 600 13px var(--f-body); cursor: pointer; }
 .install img { width: 22px; height: 22px; border-radius: 6px; }
+.bulk { margin: 0 0 16px; }
+.bulk .muted { font-size: 13px; }
 .panel { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 18px; padding: 22px; margin-top: 8px; text-align: center; }
 .panel p { margin: 0 0 14px; }
 /* La grille des vidéos : deux colonnes sur téléphone, plus sur un grand écran. */
@@ -106,6 +108,7 @@ dialog::backdrop { background: rgba(5,2,3,.8); backdrop-filter: blur(4px); }
   <button class="install" id="install" type="button" hidden><img src="assets/cut-icon-180.png" alt="">Ajouter à l'écran d'accueil</button>
   <div class="panel" id="gate" hidden></div>
   <p class="muted" id="status" aria-live="polite"></p>
+  <div class="row bulk" id="bulk" hidden><button class="btn btn-ghost" type="button" id="all">Tout télécharger</button><span class="muted" id="all-note" aria-live="polite"></span></div>
   <div class="grid" id="list"></div>
 </main>
 
@@ -150,17 +153,23 @@ const canShareFiles = (() => { try { return !!navigator.canShare && navigator.ca
 $("open-cut").hidden = phone; // le montage se fait sur ordinateur
 
 // ——— Les vidéos déjà venues sur ce téléphone : gardées dans l'appli (Cache Storage), elles ne se téléchargent qu'une fois ———
-const STORE = "onirique-cut-videos", KEEP = 10; // au plus 10 vidéos gardées : le téléphone ne se remplit pas
+const STORE = "onirique-cut-videos", ROOM = 3e9; // au plus 3 Go de vidéos, et 80 % de la place que le téléphone donne à l'appli
 const keyOf = (id) => "/cut-video/" + id; // une clé fixe (le lien de la vidéo, lui, change à chaque visite)
 const idOf = (request) => Number(new URL(request.url).pathname.split("/").pop());
-/** Les vidéos gardées sur ce téléphone ; celles qui ne sont plus dans le cloud partent aussi d'ici. */
-async function storedIds(videos) {
-  const ids = new Set();
+const stored = new Set(); // les vidéos gardées sur ce téléphone
+let videosNow = []; // la liste affichée
+/** Relit les vidéos gardées sur ce téléphone ; celles qui ne sont plus dans le cloud partent aussi d'ici. */
+async function syncStore(videos) {
+  stored.clear();
   try {
     const cache = await caches.open(STORE), alive = new Set(videos.map((v) => v.id));
-    for (const request of await cache.keys()) { if (alive.has(idOf(request))) ids.add(idOf(request)); else await cache.delete(request); }
+    for (const request of await cache.keys()) { if (alive.has(idOf(request))) stored.add(idOf(request)); else await cache.delete(request); }
   } catch { /* pas de stockage : rien n'est gardé */ }
-  return ids;
+}
+/** Assez de place sur le téléphone pour une vidéo de plus ? */
+async function roomFor(bytes) {
+  try { const { usage = 0, quota = 0 } = await navigator.storage.estimate(); return !quota || usage + bytes < Math.min(quota * .8, ROOM); }
+  catch { return true; }
 }
 async function fromStore(v) {
   try {
@@ -168,17 +177,43 @@ async function fromStore(v) {
     return hit ? new File([await hit.blob()], fileName(v), { type: "video/mp4" }) : null;
   } catch { return null; }
 }
+/** Garde la vidéo sur le téléphone ; false s'il n'y a plus de place (elle resservira alors le temps de cette visite). */
 async function toStore(v, file) {
   try {
-    const cache = await caches.open(STORE);
-    await cache.put(keyOf(v.id), new Response(file, { headers: { "Content-Type": "video/mp4" } }));
-    const keys = await cache.keys();
-    for (const request of keys.slice(0, Math.max(0, keys.length - KEEP))) await cache.delete(request); // les plus anciennes partent
+    if (!(await roomFor(file.size))) return false;
+    await (await caches.open(STORE)).put(keyOf(v.id), new Response(file, { headers: { "Content-Type": "video/mp4" } }));
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
-    markHere(v.id);
-  } catch { /* plus de place : elle resservira le temps de cette visite */ }
+    stored.add(v.id); markHere(v.id); allButton();
+    return true;
+  } catch { return false; }
 }
-async function forget(id) { try { await (await caches.open(STORE)).delete(keyOf(id)); } catch { /* rien de gardé */ } }
+async function forget(id) { stored.delete(id); try { await (await caches.open(STORE)).delete(keyOf(id)); } catch { /* rien de gardé */ } }
+/** Télécharge une vidéo et la garde sur le téléphone. La fenêtre de la vidéo et « Tout télécharger » se partagent le même
+ *  téléchargement : une vidéo n'est jamais tirée deux fois. onProgress(0 à 1). */
+const inflight = new Map();
+function fetchVideo(v, onProgress) {
+  let entry = inflight.get(v.id);
+  if (!entry) {
+    entry = { listeners: new Set() };
+    entry.promise = (async () => {
+      const response = await fetch(v.url);
+      if (!response.ok) throw new Error("Téléchargement impossible.");
+      const total = Number(response.headers.get("content-length")) || v.size || 1, reader = response.body.getReader(), parts = [];
+      for (let got = 0; ;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        parts.push(value); got += value.length;
+        entry.listeners.forEach((listener) => listener(Math.min(.99, got / total)));
+      }
+      const file = new File(parts, fileName(v), { type: "video/mp4" });
+      await toStore(v, file);
+      return file;
+    })().finally(() => inflight.delete(v.id));
+    inflight.set(v.id, entry);
+  }
+  if (onProgress) entry.listeners.add(onProgress);
+  return entry.promise;
+}
 const hereBadge = () => el("span", { className: "here", textContent: "✓ Sur le téléphone" });
 function markHere(id) { const thumb = document.querySelector('.card[data-id="' + id + '"] .thumb'); if (thumb && !thumb.querySelector(".here")) thumb.append(hereBadge()); }
 
@@ -190,10 +225,12 @@ async function load() {
   try {
     const { videos } = await api("GET", "/cut/library");
     loadedAt = Date.now();
-    const here = await storedIds(videos);
+    videosNow = videos;
+    await syncStore(videos);
     $("gate").hidden = true; $("reload").hidden = false;
     $("status").textContent = videos.length ? "" : "Aucune vidéo pour l'instant. Dans ONIRIQUE CUT, sur ton ordinateur, coche « Garder aussi dans mon cloud CUT » avant d'exporter : la vidéo arrivera ici.";
-    $("list").replaceChildren(...videos.map((v) => card(v, here.has(v.id))));
+    $("list").replaceChildren(...videos.map((v) => card(v, stored.has(v.id))));
+    allButton();
   } catch (error) {
     if (error.status === 401) gate('<p>Ta session a expiré.</p><a class="btn btn-primary" href="compte?next=mes-videos">Se reconnecter</a>');
     else if (error.status === 403) gate("<p>Mes vidéos CUT est réservé aux fondateurs d'ONIRIQUE.</p><a class=\"btn btn-ghost\" href=\"/\">Retour au site</a>");
@@ -211,6 +248,43 @@ function card(v, here) {
   return button;
 }
 $("reload").onclick = load;
+
+// ——— « Tout télécharger » : toutes les vidéos sur le téléphone d'un coup (une à la fois), sans les ouvrir une par une ———
+let bulkRunning = false;
+function allButton() {
+  if (bulkRunning) return;
+  const missing = videosNow.filter((v) => !stored.has(v.id)).length;
+  $("bulk").hidden = !videosNow.length;
+  $("all").disabled = canShareFiles && !missing;
+  $("all").textContent = !canShareFiles ? "Tout télécharger (" + videosNow.length + ")" : missing ? "Tout télécharger (" + missing + ")" : "✓ Toutes sur le téléphone";
+}
+$("all").onclick = async () => {
+  // Sur ordinateur : chaque fichier part dans le dossier des téléchargements.
+  if (!canShareFiles) {
+    for (const v of videosNow) {
+      const link = el("a", { href: v.downloadUrl, download: "" });
+      document.body.append(link); link.click(); link.remove();
+      await new Promise((resolve) => setTimeout(resolve, 700));
+    }
+    return;
+  }
+  const todo = videosNow.filter((v) => !stored.has(v.id));
+  bulkRunning = true; $("all").disabled = true; $("all-note").textContent = "";
+  try {
+    for (let n = 0; n < todo.length; n++) {
+      const v = todo[n];
+      if (stored.has(v.id)) continue; // gardée entre-temps (ouverte pendant ce temps)
+      const label = (part) => { $("all").textContent = "Téléchargement " + (n + 1) + " / " + todo.length + " · " + Math.round(part * 100) + " %"; };
+      label(0);
+      if (await roomFor(v.size)) await fetchVideo(v, label);
+      if (!stored.has(v.id)) { $("all-note").textContent = "Plus assez de place sur ce téléphone : supprime des vidéos du cloud pour en garder d'autres."; break; }
+    }
+  } catch {
+    $("all-note").textContent = "Le téléchargement s'est arrêté : touche « Tout télécharger » pour reprendre.";
+  } finally {
+    bulkRunning = false; allButton();
+  }
+};
 // De retour sur l'appli (une vidéo vient peut-être d'être exportée sur l'ordinateur) : la liste se met à jour.
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && token && loadedAt && Date.now() - loadedAt > 60_000 && !$("viewer").open) load(); });
 
@@ -219,8 +293,7 @@ document.addEventListener("visibilitychange", () => { if (document.visibilitySta
 // avoir le fichier sous la main pour s'ouvrir aussitôt le bouton touché), puis la garde : les fois suivantes, tout est immédiat.
 let job = null;
 function openVideo(v) {
-  if (job) job.abort.abort();
-  const mine = job = { v, file: null, abort: new AbortController(), local: null };
+  const mine = job = { v, file: null, local: null };
   $("v-name").textContent = v.name;
   $("v-meta").textContent = when(v.createdAt) + " · " + clock(v.duration) + " · " + size(v.size);
   $("player").poster = v.poster; $("player").removeAttribute("src"); // la source vient ensuite : le téléphone, sinon le serveur
@@ -251,20 +324,11 @@ async function prepare(mine) {
   if (!canShareFiles) return; // sur ordinateur, le lien Télécharger suffit
   share.disabled = true; share.textContent = "Téléchargement…";
   try {
-    const response = await fetch(mine.v.url, { signal: mine.abort.signal });
-    if (!response.ok) throw new Error();
-    const total = Number(response.headers.get("content-length")) || mine.v.size || 1, reader = response.body.getReader(), parts = [];
-    for (let got = 0; ;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      parts.push(value); got += value.length;
-      if (job === mine) share.textContent = "Téléchargement… " + Math.min(99, Math.round(got / total * 100)) + " %";
-    }
-    const file = new File(parts, fileName(mine.v), { type: "video/mp4" });
-    toStore(mine.v, file);
+    // Fenêtre fermée avant la fin : le téléchargement continue et la vidéo reste quand même sur le téléphone.
+    const file = await fetchVideo(mine.v, (part) => { if (job === mine) share.textContent = "Téléchargement… " + Math.round(part * 100) + " %"; });
     if (job === mine) useFile(mine, file, false); // la lecture déjà lancée continue
   } catch {
-    if (job === mine && !mine.abort.signal.aborted) { share.disabled = false; share.textContent = "Réessayer"; }
+    if (job === mine) { share.disabled = false; share.textContent = "Réessayer"; }
   }
 }
 $("v-share").onclick = async () => {
@@ -282,7 +346,7 @@ $("v-delete").onclick = async () => {
 };
 $("viewer").addEventListener("close", () => {
   const player = $("player"); player.pause(); player.removeAttribute("src"); player.load();
-  if (job) { job.abort.abort(); if (job.local) URL.revokeObjectURL(job.local); }
+  if (job && job.local) URL.revokeObjectURL(job.local);
   job = null; // le fichier en mémoire est libéré (il reste gardé dans l'appli)
 });
 // Toucher à côté de la fenêtre la ferme.
