@@ -477,6 +477,7 @@
       </div>
       <label class="vol">Volume<input type="range" id="previewVol" min="0" max="100" aria-label="Volume de l'aperçu"></label>
       <button class="go ghost wide" type="button" id="adv-open" disabled>Avancé : timeline des sons</button>
+      <button class="go ghost wide" type="button" id="adv-open-video" disabled>Avancé : timeline vidéo</button>
       <button class="go wide" type="button" id="export" disabled>Exporter la vidéo</button>
       <label class="check mute"><input type="checkbox" id="mute"> Couper le son pendant l'export (la vidéo garde son son)</label>
       <div class="status" id="status" hidden><span id="status-text"></span><div class="bar"><i id="status-bar"></i></div></div>
@@ -485,7 +486,9 @@
 
     <section class="adv" id="adv" hidden aria-label="Timeline des sons">
       <div class="adv-bar">
-        <h2>Timeline des sons</h2>
+        <h2 id="adv-title">Timeline des sons</h2>
+        <div class="chips" id="adv-mode" role="group" aria-label="Timeline"><button type="button" data-v="audio">Sons</button><button type="button" data-v="video">Vidéo</button></div>
+        <label class="check" id="adv-snap-box" style="text-transform:none;letter-spacing:0;font:400 13px var(--f-body);color:var(--mist)"><input type="checkbox" id="adv-snap" checked> Caler les coupes sur les temps</label>
         <button class="round" type="button" id="adv-play" aria-label="Lecture"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button>
         <span class="time" id="adv-time">0:00</span>
         <label>Zoom<input type="range" id="adv-zoom" min="10" max="220" step="5"></label>
@@ -798,7 +801,7 @@ function renderClips() {
     const d = document.createElement("div");
     d.className = "clip"; d.style.backgroundImage = `url("${c.kind === "image" ? c.url : c.thumb}")`;
     const remove = Object.assign(document.createElement("button"), { type: "button", textContent: "×", ariaLabel: "Retirer " + c.name });
-    remove.onclick = (event) => { event.stopPropagation(); stop(); URL.revokeObjectURL(c.url); clips.splice(i, 1); if (focus >= i && focus > 0) focus--; refresh(); };
+    remove.onclick = (event) => { event.stopPropagation(); stop(); manual = null; overlays = overlays.filter((o) => o.clip !== i).map((o) => ({ ...o, clip: o.clip > i ? o.clip - 1 : o.clip })); URL.revokeObjectURL(c.url); clips.splice(i, 1); if (focus >= i && focus > 0) focus--; refresh(); };
     // En « une vidéo par fond » : toucher un clip le montre dans l'aperçu.
     d.classList.toggle("focus", prefs.batch === "each" && i === focus);
     d.onclick = () => { if (prefs.batch === "each" && focus !== i) { focus = i; restyle(true); } };
@@ -918,6 +921,8 @@ function random() { seed = (seed * 16807) % 2147483647; return seed / 2147483647
 function build() {
   segments = [];
   pool.forEach((v) => { delete v.dataset.seg; });
+  // Le montage retouché dans la timeline vidéo l'emporte sur le montage automatique (sauf « une vidéo par fond » et « la suite du film »).
+  if (manual && clips.length && sound.buffer && prefs.batch !== "each" && !(prefs.filmContinue && introLen() > 0)) { segments = fitManual(); return; }
   if (!sound.buffer || !clips.length) return;
   // La suite du film : après la réplique, le clip continue, d'un seul plan, sous la musique.
   if (prefs.filmContinue && introLen() > 0 && prefs.batch !== "each") {
@@ -1345,6 +1350,7 @@ function draw(t, playing) {
     if (intro) introVideo.pause();
     if (drawMusic(t - intro, playing) === false) return;
   }
+  if (overlays.length) drawOverlays(full, playing);
   if (intro) transitionAt(full - intro);
   fadeEnds(full);
 }
@@ -1453,6 +1459,7 @@ function stop() {
   }
   pool.forEach((v) => v.pause());
   introVideo.pause();
+  overlays.forEach((o) => o.video && o.video.pause());
   cancelAnimationFrame(frame); clearTimeout(frame);
   setPlayIcon();
 }
@@ -1570,7 +1577,7 @@ function refresh() {
   scheduleMix();
   position = Math.min(position, total() - .05);
   if (ready) seek(position); else drawScrub(0);
-  $("adv-open").disabled = !ready;
+  $("adv-open").disabled = $("adv-open-video").disabled = !ready;
   if (adv.open) renderAdv();
 }
 
@@ -1688,9 +1695,45 @@ async function exportOne(mime, wav, progress) {
   }
 }
 
+// ——— Le montage retouché à la main, et les superpositions (timeline vidéo) ———
+let manual = null; // les coupes retouchées : [{ t0, t1, clip, from }] (temps depuis le drop), null : montage automatique
+/** Le montage retouché, ajusté à la durée du passage. */
+function fitManual() {
+  const end = span(), list = manual.filter((x) => x.t0 < end - .05).map((x) => ({ ...x, clip: clips[x.clip] ? x.clip : 0 }));
+  if (!list.length) return [{ t0: 0, t1: end, clip: 0, from: 0 }];
+  list[list.length - 1].t1 = end;
+  return list;
+}
+const startManual = () => manual || (manual = segments.map((x) => ({ t0: x.t0, t1: x.t1, clip: x.clip, from: x.from || 0 })));
+/** Le temps du morceau le plus proche d'un temps (depuis le drop), pour caler une coupe. */
+const snapBeat = (t) => { if (!sound.bpm) return t; const song = sound.start + t; return sound.phase + Math.round((song - sound.phase) / beatLength()) * beatLength() - sound.start; };
+// Les superpositions : une image ou une vidéo posée par-dessus (logo, sticker, deuxième vidéo), dans la page seulement.
+let overlays = [], overlayId = 0;
+const OV_POS = { tl: "En haut à gauche", tr: "En haut à droite", c: "Au centre", bl: "En bas à gauche", br: "En bas à droite" };
+function drawOverlays(t, playing) {
+  for (const o of overlays) {
+    const c = clips[o.clip], on = c && t >= o.at && t < o.at + o.length;
+    if (!on) { if (o.video) o.video.pause(); continue; }
+    let src = c.img;
+    if (c.kind === "video") {
+      src = o.video || (o.video = Object.assign(document.createElement("video"), { muted: true, playsInline: true, preload: "auto" }));
+      if (src.src !== c.url) src.src = c.url;
+      const want = (o.offset + (t - o.at)) % Math.max(.1, c.duration - .05);
+      if (playing) { if (src.paused) src.play().catch(() => {}); if (Math.abs(src.currentTime - want) > .3) src.currentTime = want; }
+      else { src.pause(); if (Math.abs(src.currentTime - want) > .04) src.currentTime = want; }
+      if (src.readyState < 2) continue;
+    }
+    const sw = src.videoWidth || src.naturalWidth, sh = src.videoHeight || src.naturalHeight;
+    if (!sw || !sh) continue;
+    const w = W * o.scale / 100, h = w * sh / sw, m = 48;
+    const x = { tl: m, bl: m, tr: W - w - m, br: W - w - m, c: (W - w) / 2 }[o.pos], y = { tl: 200, tr: 200, bl: H - h - 260, br: H - h - 260, c: (H - h) / 2 }[o.pos];
+    g.save(); g.globalAlpha = o.opacity / 100; g.drawImage(src, x, y, w, h); g.restore();
+  }
+}
+
 // ——— Avancé : la timeline des sons, façon logiciel de montage ———
 const ROW = 46, RULER = 28;
-const adv = { open: false, pps: 50, sel: null, selRow: null, drag: null, tracks: 1, rows: [] };
+const adv = { open: false, mode: "audio", pps: 50, sel: null, selRow: null, drag: null, tracks: 1, vtracks: 1, rows: [] };
 // Les sons ajoutés (bruitages, ad-libs, autre fichier) : ils restent dans la page, rien n'est envoyé ni gardé.
 let extras = [], extraId = 0;
 const mutedTracks = new Set();
@@ -1705,7 +1748,20 @@ function rmsOf(buffer) {
   return (buffer.rmsCache = r);
 }
 /** Les pistes de la timeline : l'image, puis chaque son (réplique, sous la réplique, musique, clips, sons ajoutés). */
+/** Les pistes de la timeline vidéo : la réplique, le montage (une coupe par bloc), les superpositions. */
+function videoModel() {
+  const intro = introLen(), rows = [], editable = prefs.batch !== "each" && !(prefs.filmContinue && intro > 0);
+  if (intro) rows.push({ id: "v-film", name: "Réplique", color: "#e45d4b", clips: [{ key: "film", start: 0, len: intro, label: "Réplique", thumb: introClip(), edit: true }] });
+  rows.push({ id: "v-main", name: manual ? "Montage (retouché)" : "Montage", color: "#3d8fd6",
+    clips: segments.map((x, i) => ({ key: "s" + i, start: intro + x.t0, len: x.t1 - x.t0, label: clips[x.clip] ? clips[x.clip].name : "", thumb: clips[x.clip], seg: editable ? i : undefined })) });
+  for (let k = 0; k < adv.vtracks; k++) rows.push({ id: "ov" + k, name: "Superposition " + (k + 1), color: "#2fb5a8",
+    clips: overlays.filter((o) => o.track === k).map((o) => ({ key: o.id, start: o.at, len: o.length, label: clips[o.clip] ? clips[o.clip].name : "", thumb: clips[o.clip], ov: o })) });
+  return rows;
+}
+/** La miniature d'un clip (chargée une fois), pour les blocs de la timeline vidéo. */
+const thumbOf = (c) => c.thumbEl || (c.thumbEl = Object.assign(new Image(), { src: c.kind === "image" ? c.url : c.thumb, onload: () => adv.open && drawAdv() }));
 function tracksModel() {
+  if (adv.mode === "video") return videoModel();
   const intro = introLen(), T = total(), rows = [], under = Math.min(sound.start, intro);
   rows.push({ id: "video", name: "Image", color: "#3d8fd6", clips: [
     ...(intro ? [{ key: "v-intro", start: 0, len: intro, label: "Réplique", color: "#e45d4b" }] : []),
@@ -1747,6 +1803,15 @@ function drawAdv() {
       const cx = c.start * adv.pps, cw = Math.max(3, c.len * adv.pps), shape = () => { x.beginPath(); if (x.roundRect) x.roundRect(cx + 1, y + 4, cw - 2, ROW - 8, 5); else x.rect(cx + 1, y + 4, cw - 2, ROW - 8); };
       x.globalAlpha = muted ? .3 : 1;
       x.fillStyle = c.color || row.color; shape(); x.fill();
+      // Vidéo : la miniature du clip, répétée le long du bloc.
+      if (c.thumb && c.thumb.kind) {
+        const img = thumbOf(c.thumb), th = ROW - 12, tw = th * 9 / 16;
+        if (img.complete && img.naturalWidth) {
+          x.save(); x.beginPath(); x.rect(cx + 3, y + 6, cw - 6, ROW - 12); x.clip();
+          for (let px = cx + 3; px < cx + cw - 3; px += tw + 2) { const s = Math.max(img.naturalWidth / tw, img.naturalHeight / th); const sw = tw * s, sh = th * s; x.drawImage(img, (img.naturalWidth - sw) / 2, (img.naturalHeight - sh) / 2, sw, sh, px, y + 6, tw, th); }
+          x.restore();
+        }
+      }
       const rms = rmsOf(c.buffer);
       if (rms) {
         const rate = c.buffer.sampleRate / 1024, mid = y + ROW / 2 + 5, amp = (ROW - 24) / 2;
@@ -1781,7 +1846,7 @@ function renderAdv() {
     head.className = "adv-head";
     const strip = document.createElement("i"); strip.style.background = row.color;
     head.append(strip, Object.assign(document.createElement("span"), { textContent: row.name, title: row.name }));
-    if (row.id !== "video") {
+    if (adv.mode === "audio" && row.id !== "video") {
       Object.assign(mute, { type: "button", textContent: "M", title: "Couper cette piste", ariaPressed: String(mutedTracks.has(row.id)) });
       mute.onclick = () => { if (mutedTracks.has(row.id)) mutedTracks.delete(row.id); else mutedTracks.add(row.id); scheduleMix(); renderAdv(); };
       head.append(mute);
@@ -1803,7 +1868,38 @@ function renderAdvSel() {
   box.replaceChildren();
   if (!row) { box.append(Object.assign(document.createElement("span"), { className: "muted", textContent: "Touche un bloc pour le régler. Glisse un son ajouté pour le déplacer (aussi d'une piste à l'autre), tire ses bords pour le recouper. Clique sur la règle pour te placer." })); return; }
   box.append(Object.assign(document.createElement("b"), { textContent: clip && clip.extra ? clip.extra.name : row.name }));
-  if (clip && clip.extra) {
+  const pick = (value, on) => {
+    const sel = document.createElement("select");
+    sel.append(...clips.map((c, i) => new Option((i + 1) + ". " + c.name, i)));
+    sel.value = String(value); sel.onchange = () => on(Number(sel.value));
+    const l = document.createElement("label"); l.append("Clip", sel); return l;
+  };
+  if (clip && clip.seg !== undefined) {
+    // Une coupe du montage : son clip, le moment du clip qu'elle montre, couper, fusionner, supprimer.
+    const i = clip.seg, x = segments[i], c = clips[x.clip], len = (x.t1 - x.t0) * slow();
+    const change = (fn) => { startManual(); fn(manual); restyle(true); scheduleMix(); renderAdv(); };
+    box.append(pick(x.clip, (v) => change((m) => { m[i].clip = v; m[i].from = 0; })));
+    if (c && c.kind === "video") box.append(range("Moment du clip", x.from || 0, 0, Math.max(0, c.duration - len), .05, (v) => { startManual()[i].from = v; restyle(true); scheduleMix(); drawAdv(); }));
+    box.append(button("Couper au curseur", () => change((m) => {
+      const t = now() - introLen();
+      if (t <= m[i].t0 + .1 || t >= m[i].t1 - .1) return;
+      m.splice(i + 1, 0, { ...m[i], t0: t, from: (m[i].from || 0) + (t - m[i].t0) * slow() }); m[i].t1 = t;
+    })));
+    if (i < segments.length - 1) box.append(button("Fusionner avec la suivante", () => change((m) => { m[i].t1 = m[i + 1].t1; m.splice(i + 1, 1); })));
+    if (segments.length > 1) box.append(button("Supprimer la coupe", () => change((m) => { if (i > 0) m[i - 1].t1 = m[i].t1; else m[1].t0 = 0; m.splice(i, 1); adv.sel = null; })));
+    if (manual) box.append(button("Revenir au montage automatique", () => { manual = null; restyle(true); scheduleMix(); renderAdv(); }));
+  } else if (clip && clip.ov) {
+    // Une superposition : son clip, sa taille, sa place, son opacité.
+    const o = clip.ov, redraw = () => { restyle(); drawAdv(); };
+    box.append(pick(o.clip, (v) => { o.clip = v; o.offset = 0; if (o.video) o.video.removeAttribute("src"); renderAdv(); restyle(); }),
+      range("Taille", o.scale, 10, 100, 1, (v) => { o.scale = v; redraw(); }),
+      range("Opacité", o.opacity, 10, 100, 5, (v) => { o.opacity = v; redraw(); }));
+    const place = document.createElement("select");
+    place.append(...Object.entries(OV_POS).map(([k, label]) => new Option(label, k))); place.value = o.pos;
+    place.onchange = () => { o.pos = place.value; redraw(); };
+    const l = document.createElement("label"); l.append("Place", place); box.append(l);
+    box.append(button("Supprimer", () => { overlays = overlays.filter((v) => v !== o); adv.sel = null; restyle(); renderAdv(); }));
+  } else if (clip && clip.extra) {
     const e = clip.extra;
     box.append(range("Volume", e.vol, 0, 200, 5, (v) => { e.vol = v; scheduleMix(); }),
       range("Fondu d'entrée", e.fadeIn, 0, 3, .05, (v) => { e.fadeIn = v; scheduleMix(); }),
@@ -1819,7 +1915,10 @@ function renderAdvSel() {
   } else if (row.vol) {
     box.append(range("Volume de la piste", prefs[row.vol], 0, row.vol === "filmVol" ? 200 : 150, 5, (v) => { prefs[row.vol] = v; savePrefs(); filmUi(); scheduleMix(); }));
     if (row.id === "film") box.append(Object.assign(document.createElement("span"), { className: "muted", textContent: "Tire les bords de la réplique pour la recouper ; glisse-la pour faire défiler le film dessous." }));
-  } else box.append(Object.assign(document.createElement("span"), { className: "muted", textContent: "La piste Image montre le montage : la réplique, puis chaque coupe calée sur le tempo." }));
+  } else if (adv.mode === "video") box.append(Object.assign(document.createElement("span"), { className: "muted", textContent: row.id === "v-film"
+    ? "Tire les bords de la réplique pour la recouper ; glisse-la pour faire défiler le film dessous."
+    : "Touche une coupe pour changer son clip, le couper ou le fusionner ; tire la limite entre deux coupes pour la déplacer ; glisse une coupe pour choisir le moment du clip. « + Superposition » pose une image ou une vidéo par-dessus." }));
+  else box.append(Object.assign(document.createElement("span"), { className: "muted", textContent: "La piste Image montre le montage : la réplique, puis chaque coupe calée sur le tempo." }));
 }
 /** Où tombe le pointeur : la règle, ou un bloc (et lequel de ses bords). */
 function hitAdv(event) {
@@ -1834,28 +1933,40 @@ function hitAdv(event) {
 }
 function dragAdv() {
   const canvas = $("adv-canvas"), round = (v) => Math.round(v * 100) / 100, clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const editable = (c) => c && (c.extra || c.edit || c.ov || c.seg !== undefined);
   canvas.addEventListener("pointerdown", (event) => {
     const h = hitAdv(event);
     if (!h) return;
     canvas.setPointerCapture(event.pointerId);
     if (h.ruler) { adv.drag = { kind: "seek" }; seek(Math.min(h.t, total() - .05)); drawAdvHead(position); return; }
     adv.sel = h.clip ? h.clip.key : null; adv.selRow = h.row.id;
-    if (h.clip && (h.clip.extra || h.clip.edit)) {
+    if (editable(h.clip)) {
+      const item = h.clip.extra || h.clip.ov;
       adv.drag = { kind: h.edge || "move", clip: h.clip, x0: event.clientX, y0: event.clientY,
-        orig: h.clip.extra ? { ...h.clip.extra } : { introIn: prefs.introIn, introLen: introLen() } };
+        orig: item ? { ...item } : h.clip.seg !== undefined ? startManual().map((x) => ({ ...x })) : { introIn: prefs.introIn, introLen: introLen() } };
     }
     renderAdv();
   });
   canvas.addEventListener("pointermove", (event) => {
     const d = adv.drag;
-    if (!d) { const h = hitAdv(event); canvas.style.cursor = h && h.edge && (h.clip.extra || h.clip.edit) ? "ew-resize" : h && h.clip && (h.clip.extra || h.clip.edit) ? "grab" : h && h.ruler ? "pointer" : "default"; return; }
-    if (d.kind === "seek") { const h = hitAdv(event); seek(Math.min(Math.max(0, (event.clientX - canvas.getBoundingClientRect().left) / adv.pps), total() - .05)); drawAdvHead(position); return; }
+    if (!d) { const h = hitAdv(event); canvas.style.cursor = h && h.edge && editable(h.clip) ? "ew-resize" : h && editable(h.clip) ? "grab" : h && h.ruler ? "pointer" : "default"; return; }
+    if (d.kind === "seek") { seek(Math.min(Math.max(0, (event.clientX - canvas.getBoundingClientRect().left) / adv.pps), total() - .05)); drawAdvHead(position); return; }
     const dt = (event.clientX - d.x0) / adv.pps;
-    if (d.clip.extra) {
-      const e = d.clip.extra, o = d.orig;
-      if (d.kind === "move") { e.at = round(clamp(o.at + dt, 0, total() - .1)); e.track = clamp(o.track + Math.round((event.clientY - d.y0) / ROW), 0, adv.tracks - 1); }
-      else if (d.kind === "L") { const k = clamp(dt, -o.offset, o.length - .1); e.at = round(o.at + k); e.offset = round(o.offset + k); e.length = round(o.length - k); }
-      else e.length = round(clamp(o.length + dt, .1, e.buffer.duration - e.offset));
+    const item = d.clip.extra || d.clip.ov;
+    if (item) {
+      // Un son ajouté ou une superposition : on le déplace (aussi d'une piste à l'autre), on recoupe ses bords.
+      const o = d.orig, tracks = d.clip.extra ? adv.tracks : adv.vtracks;
+      const maxLen = d.clip.extra ? item.buffer.duration - item.offset : Infinity; // une superposition vidéo repart du début si elle dure plus que son clip
+      if (d.kind === "move") { item.at = round(clamp(o.at + dt, 0, total() - .1)); item.track = clamp(o.track + Math.round((event.clientY - d.y0) / ROW), 0, tracks - 1); }
+      else if (d.kind === "L") { const k = clamp(dt, -Math.min(o.offset, o.at), o.length - .1); item.at = round(o.at + k); item.offset = round(o.offset + k); item.length = round(o.length - k); }
+      else item.length = round(clamp(o.length + dt, .1, Math.min(maxLen, total() - item.at)));
+    } else if (d.clip.seg !== undefined) {
+      // Une coupe du montage : ses bords déplacent le point de coupe, son milieu choisit le moment du clip.
+      const i = d.clip.seg, o = d.orig, m = manual, snap = (t) => ($("adv-snap").checked ? snapBeat(t) : t);
+      if (d.kind === "L" && i > 0) { const b = clamp(snap(o[i].t0 + dt), o[i - 1].t0 + .1, o[i].t1 - .1); m[i - 1].t1 = m[i].t0 = round(b); }
+      else if (d.kind === "R" && i < m.length - 1) { const b = clamp(snap(o[i].t1 + dt), o[i].t0 + .1, o[i + 1].t1 - .1); m[i].t1 = m[i + 1].t0 = round(b); }
+      else if (d.kind === "move") { const c = clips[m[i].clip]; if (c && c.kind === "video") m[i].from = round(clamp(o[i].from - dt * slow(), 0, Math.max(0, c.duration - (m[i].t1 - m[i].t0) * slow()))); }
+      build();
     } else {
       // La réplique : les bords la recoupent dans le film, le milieu fait défiler le film dessous.
       const o = d.orig, c = introClip();
@@ -1869,9 +1980,22 @@ function dragAdv() {
     const d = adv.drag;
     adv.drag = null;
     if (!d || d.kind === "seek") return;
-    if (d.clip.extra) { scheduleMix(); renderAdv(); } else { savePrefs(); position = 0; refresh(); }
+    if (d.clip.extra) { scheduleMix(); renderAdv(); }
+    else if (d.clip.ov) { restyle(); renderAdv(); }
+    else if (d.clip.seg !== undefined) { restyle(true); scheduleMix(); renderAdv(); }
+    else { savePrefs(); position = 0; refresh(); }
   };
   canvas.addEventListener("pointerup", end); canvas.addEventListener("pointercancel", end);
+}
+/** Poser une superposition (le premier clip, 3 s) à la tête de lecture, sur une piste libre. */
+function addOverlay() {
+  if (!clips.length) return;
+  const at = Math.min(position, Math.max(0, total() - .5)), length = Math.min(3, total() - at);
+  const busy = (k) => overlays.some((o) => o.track === k && o.at < at + length && at < o.at + o.length);
+  let track = 0; while (track < adv.vtracks && busy(track)) track++;
+  if (track === adv.vtracks) adv.vtracks++;
+  const o = { id: "o" + ++overlayId, clip: 0, at, length, offset: 0, track, scale: 35, pos: "tr", opacity: 100 };
+  overlays.push(o); adv.sel = o.id; restyle(); renderAdv();
 }
 /** Ajouter des sons (un fichier audio, ou le son d'une vidéo) à la tête de lecture, sur une piste « Sons ajoutés ». */
 async function addExtras(files) {
@@ -1888,10 +2012,19 @@ async function addExtras(files) {
   }
   scheduleMix(); renderAdv();
 }
-function openAdv() {
+/** Sons ou Vidéo : le titre, les boutons et les pistes suivent. */
+function setAdvMode(mode) {
+  adv.mode = mode; adv.sel = null; adv.selRow = null;
+  $("adv-title").textContent = mode === "video" ? "Timeline vidéo" : "Timeline des sons";
+  $("adv-add").textContent = mode === "video" ? "+ Superposition" : "+ Ajouter un son";
+  $("adv-snap-box").hidden = mode !== "video";
+  document.querySelectorAll("#adv-mode button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === mode)));
+  renderAdv();
+}
+function openAdv(mode = "audio") {
   adv.open = true; $("adv").hidden = false; document.body.style.overflow = "hidden";
   $("adv-zoom").value = adv.pps;
-  renderAdv();
+  setAdvMode(mode);
   // Le son des clips se décode en fond ; la timeline se redessine quand il arrive.
   Promise.all(clips.filter((c) => c.kind === "video").map(clipAudio)).then(() => adv.open && renderAdv());
   if (STEMS.includes(prefs.underPart)) ensureStems().then(() => adv.open && renderAdv());
@@ -2109,7 +2242,7 @@ function start() {
   $("nudge-minus").onclick = () => { sound.phase -= beatLength() / 20; sound.start = clampStart(sound.start - beatLength() / 20); refresh(); };
   $("nudge-plus").onclick = () => { sound.phase += beatLength() / 20; sound.start = clampStart(sound.start + beatLength() / 20); refresh(); };
   $("best").onclick = () => { sound.start = bestStart(); position = 0; refresh(); };
-  $("reshuffle").onclick = () => { prefs.shuffle = (prefs.shuffle || 0) + 1; restyle(true); };
+  $("reshuffle").onclick = () => { prefs.shuffle = (prefs.shuffle || 0) + 1; manual = null; restyle(true); };
   $("play").onclick = async () => { if (playing) return stop(); await ensureMix(); play(position >= total() - .1 ? 0 : position); };
   // Le volume de l'aperçu (ce qu'on entend ; la vidéo exportée garde son son).
   $("previewVol").value = prefs.previewVol;
@@ -2202,7 +2335,7 @@ function start() {
     play(0);
     hearing = setTimeout(() => { hearing = 0; if (playing) { stop(); position = 0; seek(0); } }, 3000);
   };
-  chips("order", "order", () => restyle(true)); chips("cadence", "cadence", () => restyle(true)); chips("place", "place", () => restyle());
+  chips("order", "order", () => { manual = null; restyle(true); }); chips("cadence", "cadence", () => { manual = null; restyle(true); }); chips("place", "place", () => restyle());
   chips("lyricsPlace", "lyricsPlace", () => restyle());
   chips("batch", "batch", () => { focus = 0; restyle(true); });
   const redraw = () => { $("word-row").hidden = prefs.lyricsMode !== "word"; $("sign-row").hidden = prefs.lyricsMode !== "card"; restyle(); };
@@ -2275,19 +2408,22 @@ function start() {
   addEventListener("resize", () => { drawWave(); drawScrub(now()); });
   dragWindow(); dragScrub(); dragLoupe(); dragAdv();
   // Avancé : la timeline des sons.
-  $("adv-open").onclick = openAdv;
+  $("adv-open").onclick = () => openAdv("audio");
   $("adv-close").onclick = closeAdv;
   $("adv-play").onclick = () => $("play").click();
   $("adv-zoom").oninput = () => { adv.pps = Number($("adv-zoom").value); drawAdv(); };
-  $("adv-add").onclick = () => $("adv-file").click();
+  $("adv-add").onclick = () => (adv.mode === "video" ? addOverlay() : $("adv-file").click());
+  $("adv-open-video").onclick = () => openAdv("video");
+  $("adv-mode").onclick = (event) => { const b = event.target.closest("button"); if (b) setAdvMode(b.dataset.v); };
   $("adv-file").onchange = () => { addExtras([...$("adv-file").files]); $("adv-file").value = ""; };
-  $("adv-track").onclick = () => { adv.tracks++; renderAdv(); };
+  $("adv-track").onclick = () => { if (adv.mode === "video") adv.vtracks++; else adv.tracks++; renderAdv(); };
   addEventListener("resize", () => adv.open && drawAdv());
   document.addEventListener("keydown", (event) => {
     if (!adv.open || isync || /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName)) return;
     if (event.key === " ") { event.preventDefault(); if (!event.repeat) $("play").click(); }
     else if (event.key === "Escape") closeAdv();
     else if ((event.key === "Delete" || event.key === "Backspace") && extras.some((e) => e.id === adv.sel)) { extras = extras.filter((e) => e.id !== adv.sel); adv.sel = null; scheduleMix(); renderAdv(); }
+    else if ((event.key === "Delete" || event.key === "Backspace") && overlays.some((o) => o.id === adv.sel)) { overlays = overlays.filter((o) => o.id !== adv.sel); adv.sel = null; restyle(); renderAdv(); }
   });
   // Les polices choisies, chargées avant de dessiner du texte sur la vidéo.
   [prefs.lyricFont, prefs.titleFont, prefs.strongFont, "Hanken Grotesk", "VT323"].forEach(loadFont);
