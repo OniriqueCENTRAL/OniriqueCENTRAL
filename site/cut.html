@@ -1083,7 +1083,26 @@ function shortTexts(caption, name) {
       "film edit", "edit musique", ...(artist ? [artist + " " + title] : [])].map((t) => t.trim()).filter(Boolean))],
   };
 }
+/** Une phrase du son pour une vidéo gardée sans phrase (exportée avant les descriptions) : dans ses paroles d'ONIRIQUE
+ *  CLOUD, la ligne la plus répétée (le refrain, ce qu'on entend le plus dans les vidéos), sinon la première ligne assez longue. */
+let cloudLyricsList = null;
+async function cloudPhrase(son) {
+  const want = tagOf(son.split(" - ").at(-1) || son);
+  cloudLyricsList = cloudLyricsList || cloudTracks().catch(() => []);
+  const found = (await cloudLyricsList).find(({ t }) => tagOf(t.title) === want);
+  if (!found || !found.t.lyrics) return "";
+  const lines = found.t.lyrics.split("\n").map((l) => bareLine(l).replace(/\*\*/g, "").replace(/\s+/g, " ").trim()).filter((l) => l.length >= 12 && l.length <= 90);
+  const count = new Map();
+  for (const l of lines) count.set(l.toLowerCase(), (count.get(l.toLowerCase()) || 0) + 1);
+  return (lines.slice().sort((a, b) => count.get(b.toLowerCase()) - count.get(a.toLowerCase()))[0] || "").replace(/[\s,.;:]+$/, "");
+}
 async function scheduleShort(video, caption) {
+  // Pas de phrase de la vidéo dans sa description : on en prend une dans les paroles du son (CLOUD).
+  if (!/«/.test(caption || "")) {
+    const son = ((caption || "").split("\n").map((l) => /^Le son\s*:\s*(.+)$/.exec(l)).find(Boolean) || [])[1] || video.name.split(" - ONIRIQUE CUT")[0];
+    const phrase = await cloudPhrase(son);
+    if (phrase) caption = "« " + phrase + " » " + ((MOODS.find(([re]) => re.test(phrase)) || [null, "🥹"])[1]) + "\n" + (caption || "Le son : " + (prefs.artist ? prefs.artist + " - " : "") + son);
+  }
   const state = await bankFetch("/api/cut/youtube");
   if (!state.channel) throw new Error("Relie d'abord ta chaîne YouTube dans ton compte (Shorts YouTube).");
   const publishAt = nextSlot(state.scheduled), { title, description, tags } = shortTexts(caption, video.name);
