@@ -328,7 +328,8 @@
                   <div class="chips wrap-in" id="underPart" role="group" aria-label="Musique sous la réplique"><button type="button" data-v="none">Rien</button><button type="button" data-v="full">Le son entier</button><button type="button" data-v="prod">La prod (sans voix)</button><button type="button" data-v="melo">Mélodie</button><button type="button" data-v="drums">Drums</button><button type="button" data-v="bass">Basse</button><button type="button" data-v="vocals">Voix seule</button></div>
                 </label>
                 <label class="grow">Volume sous la réplique<input type="range" id="underVol" min="0" max="150" step="5"></label>
-                <div class="row"><button class="mini" type="button" id="stem-hear">Écouter tout le morceau avec cette piste</button></div>                <p class="muted" id="stem-status">La prod, la mélodie, les drums, la basse et la voix sont séparées dans ton navigateur (séparation rapide, approchée : parfaite pour poser une prod sous une réplique).</p>
+                <div class="row"><button class="mini" type="button" id="stem-hear">Écouter tout le morceau avec cette piste</button></div>
+                <p class="muted" id="stem-status">La prod, la mélodie, les drums, la basse et la voix sont séparées dans ton navigateur par une IA (Demucs) : rien n’est envoyé. La première fois, l’IA se télécharge (172 Mo), puis reste sur l’appareil.</p>
 
                 <p class="sub-title">Après la réplique</p>
                 <label>Clip après la transition<select id="afterClip"></select></label>
@@ -950,7 +951,47 @@ async function ensureMix() {
   if (!mixing || mixing.key !== key) mixing = { key, done: buildMix(key).catch(() => {}) };
   await mixing.done;
 }
-// Les pistes séparées de la musique qui mène au drop (assets/stems-worker.js), calculées une fois par passage.
+// ——— La séparation des pistes : par IA (Demucs, assets/demucs-worker.js), sinon la séparation rapide (assets/stems-worker.js) ———
+let demucs = null, demucsQueue = Promise.resolve();
+const AI_RATE = 44100; // ce que le modèle attend
+/** Les échantillons [a, a + n[ du son, en stéréo à 44 100 Hz. */
+async function at44k(a, n) {
+  const b = sound.buffer, slice = new AudioBuffer({ length: n, numberOfChannels: 2, sampleRate: b.sampleRate });
+  for (let c = 0; c < 2; c++) slice.copyToChannel(b.getChannelData(Math.min(c, b.numberOfChannels - 1)).subarray(a, a + n), c);
+  if (b.sampleRate === AI_RATE) return [slice.getChannelData(0), slice.getChannelData(1)];
+  const off = new OfflineAudioContext(2, Math.ceil(n * AI_RATE / b.sampleRate), AI_RATE), src = off.createBufferSource();
+  src.buffer = slice; src.connect(off.destination); src.start();
+  const r = await off.startRendering();
+  return [r.getChannelData(0), r.getChannelData(1)];
+}
+const pct = (x) => Math.round(x * 100) + " %";
+/** Les pistes des échantillons [a, a + n[ par IA ({ device, parts } à 44 100 Hz, chaque piste en [gauche, droite]) ; une à la fois. */
+function aiStems(a, n, what) {
+  const job = demucsQueue.then(async () => {
+    const [L, R] = await at44k(a, n);
+    demucs = demucs || new Worker("assets/demucs-worker.js", { type: "module" });
+    const out = await new Promise((resolve, reject) => {
+      demucs.onmessage = ({ data }) => {
+        if (data.type === "done") resolve(data);
+        else if (data.type === "error") reject(new Error(data.message));
+        else $("stem-status").textContent = data.phase === "download"
+          ? "Téléchargement de l'IA de séparation (172 Mo, une seule fois sur cet appareil)… " + pct(data.value)
+          : "Séparation par IA de " + what + "… " + pct(data.value);
+      };
+      demucs.onerror = (event) => reject(new Error(event.message || "L'IA de séparation n'a pas pu démarrer."));
+      demucs.postMessage({ L, R }, [L.buffer, R.buffer]);
+    }).catch((error) => { demucs.terminate(); demucs = null; throw error; });
+    const { drums, bass, other, vocals } = out.parts;
+    const prod = [0, 1].map((c) => drums[c].map((v, i) => v + bass[c][i] + other[c][i])); // le morceau sans la voix
+    return { device: out.device, parts: { prod, melo: other, drums, bass, vocals } };
+  });
+  demucsQueue = job.catch(() => {});
+  return job;
+}
+const aiDone = (device) => "Pistes séparées par IA (Demucs" + (device === "gpu" ? ", sur la carte graphique)." : ", sur le processeur).");
+const FAST_NOTE = " L'IA n'a pas pu tourner dans ce navigateur : séparation rapide, approchée (essaie Chrome ou Edge à jour).";
+
+// Les pistes séparées de la musique qui mène au drop, calculées une fois par passage.
 let stems = null, stemJob = null;
 const STEMS = ["prod", "melo", "drums", "bass", "vocals"];
 const stemKey = () => JSON.stringify([sound.name, sound.start, introLen()]);
@@ -964,15 +1005,22 @@ async function ensureStems() {
 async function separate(key) {
   const len = Math.min(sound.start, introLen(), 30), rate = sound.buffer.sampleRate;
   if (len < .2) { $("stem-status").textContent = "Le passage commence trop tôt dans le morceau : il n'y a rien avant le drop à séparer."; return null; }
-  $("stem-status").textContent = "Séparation des pistes… quelques secondes.";
+  $("stem-status").textContent = "Séparation des pistes…";
   const a = Math.floor((sound.start - len) * rate), n = Math.floor(len * rate), b = sound.buffer;
-  const L = b.getChannelData(0).slice(a, a + n), R = (b.numberOfChannels > 1 ? b.getChannelData(1) : b.getChannelData(0)).slice(a, a + n);
-  const worker = new Worker("assets/stems-worker.js");
-  const out = await stemsOf(worker, L, R, rate).finally(() => worker.terminate());
-  const make =([l, r]) => { const x = new AudioBuffer({ length: l.length, numberOfChannels: 2, sampleRate: rate }); x.copyToChannel(l, 0); x.copyToChannel(r, 1); return x; };
-  const result = { key, parts: Object.fromEntries(STEMS.map((k) => [k, make(out[k])])) };
+  const make = (sr) => ([l, r]) => { const x = new AudioBuffer({ length: l.length, numberOfChannels: 2, sampleRate: sr }); x.copyToChannel(l, 0); x.copyToChannel(r, 1); return x; };
+  let parts, note;
+  try {
+    const ai = await aiStems(a, n, "la musique sous la réplique");
+    parts = Object.fromEntries(STEMS.map((k) => [k, make(AI_RATE)(ai.parts[k])])); note = aiDone(ai.device);
+  } catch {
+    const L = b.getChannelData(0).slice(a, a + n), R = (b.numberOfChannels > 1 ? b.getChannelData(1) : b.getChannelData(0)).slice(a, a + n);
+    const worker = new Worker("assets/stems-worker.js");
+    const out = await stemsOf(worker, L, R, rate).finally(() => worker.terminate());
+    parts = Object.fromEntries(STEMS.map((k) => [k, make(rate)(out[k])])); note = "Pistes séparées." + FAST_NOTE;
+  }
+  const result = { key, parts };
   if (key === stemKey()) stems = result;
-  $("stem-status").textContent = "Pistes séparées : prod, mélodie, drums, basse et voix (séparation rapide, approchée).";
+  $("stem-status").textContent = note;
   return result;
 }
 const stemsOf = (worker, L, R, rate) => new Promise((resolve, reject) => {
@@ -980,12 +1028,22 @@ const stemsOf = (worker, L, R, rate) => new Promise((resolve, reject) => {
 });
 // ——— Écouter tout le morceau avec une piste séparée : pour entendre ce que donne la séparation ———
 let fullStems = null, fullJob = null, stemHear = null;
-/** Les pistes de tout le morceau, séparées par tranches de 30 s (le worker ne tiendrait pas un morceau entier en mémoire). */
+/** Les pistes de tout le morceau : par IA, sinon par la séparation rapide, par tranches de 30 s (le worker ne tiendrait pas un morceau entier en mémoire). */
 function separateAll() {
   const b = sound.buffer;
   if (fullStems && fullStems.b === b) return Promise.resolve(fullStems);
   if (fullJob && fullJob.b === b) return fullJob.done;
   fullJob = { b, done: (async () => {
+    try {
+      const ai = await aiStems(0, b.length, "tout le morceau");
+      const parts = Object.fromEntries(STEMS.map((k) => {
+        const [l, r] = ai.parts[k], x = new AudioBuffer({ length: l.length, numberOfChannels: 2, sampleRate: AI_RATE });
+        x.copyToChannel(l, 0); x.copyToChannel(r, 1); return [k, x];
+      }));
+      const result = { b, parts, note: aiDone(ai.device) };
+      if (sound.buffer === b) fullStems = result;
+      return result;
+    } catch { /* la séparation rapide, ci-dessous */ }
     const rate = b.sampleRate, slice = 30 * rate, worker = new Worker("assets/stems-worker.js");
     const parts = Object.fromEntries(STEMS.map((k) => [k, new AudioBuffer({ length: b.length, numberOfChannels: 2, sampleRate: rate })]));
     try {
@@ -996,7 +1054,7 @@ function separateAll() {
         for (const k of STEMS) { parts[k].copyToChannel(out[k][0], 0, a); parts[k].copyToChannel(out[k][1], 1, a); }
       }
     } finally { worker.terminate(); }
-    const result = { b, parts };
+    const result = { b, parts, note: FAST_NOTE.trim() };
     if (sound.buffer === b) fullStems = result;
     return result;
   })() };
@@ -1021,10 +1079,10 @@ const PART_NAMES = { none: "le son entier", full: "le son entier", prod: "la pro
 async function hearStem(from = 0) {
   stopStemHear(); stop();
   const part = prefs.underPart;
-  let buffer = sound.buffer;
+  let buffer = sound.buffer, note = "";
   if (STEMS.includes(part)) {
     $("stem-hear").disabled = $("stem-play").disabled = true;
-    try { buffer = (await separateAll()).parts[part]; }
+    try { const all = await separateAll(); buffer = all.parts[part]; note = " " + all.note; }
     catch { fullJob = null; $("stem-status").textContent = "La séparation n'a pas marché sur ce morceau."; return; }
     finally { $("stem-hear").disabled = $("stem-play").disabled = false; }
     if (prefs.underPart !== part || playing) return; // on a changé d'avis pendant la séparation
@@ -1039,7 +1097,7 @@ async function hearStem(from = 0) {
   src.onended = () => { if (stemHear && stemHear.src === src) stopStemHear(); };
   $("stem-hear").textContent = "Arrêter l'écoute";
   $("stem-player").hidden = false; stemIcon();
-  $("stem-status").textContent = "Tu écoutes " + PART_NAMES[part] + ", sur tout le morceau. Touche une autre piste pour comparer au même moment.";
+  $("stem-status").textContent = "Tu écoutes " + PART_NAMES[part] + ", sur tout le morceau. Touche une autre piste pour comparer au même moment." + note;
 }
 const scheduleMix = () => { clearTimeout(mixTimer); mixTimer = setTimeout(() => ensureMix(), 250); };
 
