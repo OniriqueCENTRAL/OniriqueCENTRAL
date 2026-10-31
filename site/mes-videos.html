@@ -85,6 +85,12 @@ dialog::backdrop { background: rgba(5,2,3,.8); backdrop-filter: blur(4px); }
 #viewer .meta { margin: 8px 16px 0; font-size: 13px; }
 #viewer .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 16px 0; }
 #viewer .actions #v-share { grid-column: 1 / -1; padding-block: 15px; font-size: 15px; }
+#viewer .extra { display: grid; gap: 10px; padding: 12px 16px 0; }
+.field { display: grid; gap: 6px; font: 500 11px/1.2 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
+.field input, .field textarea { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist);
+  font: 500 15px/1.4 var(--f-body); letter-spacing: 0; text-transform: none; resize: vertical; color-scheme: dark; }
+.day { position: absolute; left: 8px; bottom: 8px; padding: 3px 7px; border-radius: 8px; background: rgba(0,0,0,.72); font: 600 11px/1 var(--f-body); }
+.day.today { background: var(--ember); color: #fff; }
 #viewer .hint { margin: 10px 16px calc(16px + env(safe-area-inset-bottom)); font-size: 13px; }
 @media (max-width: 640px) {
   #viewer { width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; margin: 0; top: 0; bottom: 0; border-radius: 0; border: 0; padding-top: env(safe-area-inset-top); }
@@ -120,7 +126,7 @@ dialog::backdrop { background: rgba(5,2,3,.8); backdrop-filter: blur(4px); }
   </details>
   <div class="panel" id="gate" hidden></div>
   <p class="muted" id="status" aria-live="polite"></p>
-  <div class="row bulk" id="bulk" hidden><button class="btn btn-ghost" type="button" id="all">Tout télécharger</button><span class="muted" id="all-note" aria-live="polite"></span></div>
+  <div class="row bulk" id="bulk" hidden><button class="btn btn-ghost" type="button" id="plan">Planifier : une par jour</button><button class="btn btn-ghost" type="button" id="all">Tout télécharger</button><span class="muted" id="all-note" aria-live="polite"></span></div>
   <div class="grid" id="list"></div>
 </main>
 
@@ -132,6 +138,12 @@ dialog::backdrop { background: rgba(5,2,3,.8); backdrop-filter: blur(4px); }
     <button class="btn btn-primary" type="button" id="v-share">Envoyer vers TikTok</button>
     <a class="btn btn-ghost" id="v-download" download>Télécharger</a>
     <button class="btn btn-ghost danger" type="button" id="v-delete">Supprimer</button>
+  </div>
+  <div class="extra">
+    <label class="field">Prévue le<input type="date" id="v-day"></label>
+    <label class="field">Légende TikTok<textarea id="v-caption" rows="3"></textarea></label>
+    <label class="field">Mes hashtags (pour toutes mes vidéos)<input type="text" id="v-tags" placeholder="#rap #rapfr #nouveauson"></label>
+    <div class="row"><button class="btn btn-ghost" type="button" id="v-copy">Copier la légende</button><span class="muted" id="v-copied" aria-live="polite"></span></div>
   </div>
   <p class="muted hint" id="v-hint"></p>
 </dialog>
@@ -245,18 +257,69 @@ async function load() {
     $("status").textContent = videos.length ? "" : "Aucune vidéo pour l'instant. Dans ONIRIQUE CUT, sur ton ordinateur, coche « Garder aussi dans mon cloud CUT » avant d'exporter : la vidéo arrivera ici.";
     $("list").replaceChildren(...videos.map((v) => card(v, stored.has(v.id))));
     allButton();
+    const wanted = Number(new URLSearchParams(location.search).get("v")), open = wanted && videos.find((v) => v.id === wanted);
+    if (open) { history.replaceState(null, "", location.pathname); openVideo(open); }
   } catch (error) {
     if (error.status === 401) gate('<p>Ta session a expiré.</p><a class="btn btn-primary" href="compte?next=mes-videos">Se reconnecter</a>');
     else if (error.status === 403) gate("<p>Mes vidéos CUT est réservé aux fondateurs d'ONIRIQUE.</p><a class=\"btn btn-ghost\" href=\"/\">Retour au site</a>");
     else { gate('<p></p><button class="btn btn-primary" type="button">Réessayer</button>'); $("gate").firstChild.textContent = error.message; $("gate").querySelector("button").onclick = load; }
   } finally { $("reload").disabled = false; }
 }
+// ——— Le planning : le jour où chaque vidéo doit partir ; le rappel du jour la nomme et l'ouvre ———
+const ymd = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+const dayText = (day) => (day === ymd(new Date()) ? "Aujourd'hui" : new Date(day + "T12:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" }));
+const dayBadge = (v) => (v.scheduledDay ? el("span", { className: "day" + (v.scheduledDay === ymd(new Date()) ? " today" : ""), textContent: "📅 " + dayText(v.scheduledDay) }) : null);
+async function planDay(v, day) {
+  const saved = await api("PATCH", "/cut/library/" + v.id, { day: day || null });
+  v.scheduledDay = saved.scheduledDay;
+  const old = document.querySelector('.card[data-id="' + v.id + '"]');
+  if (old) old.replaceWith(card(v, stored.has(v.id)));
+}
+/** Les vidéos sans jour prennent chacune le prochain jour libre, à partir d'aujourd'hui (les plus anciennes d'abord). */
+$("plan").onclick = async () => {
+  const taken = new Set(videosNow.map((v) => v.scheduledDay).filter(Boolean)), todo = videosNow.filter((v) => !v.scheduledDay).reverse();
+  if (!todo.length) return alert("Toutes tes vidéos ont déjà un jour.");
+  const d = new Date();
+  $("plan").disabled = true;
+  try {
+    for (const v of todo) {
+      while (taken.has(ymd(d))) d.setDate(d.getDate() + 1);
+      taken.add(ymd(d));
+      await planDay(v, ymd(d));
+    }
+  } catch (error) { alert(error.message); } finally { $("plan").disabled = false; }
+};
+
+// ——— La légende TikTok : le titre, l'artiste et tes hashtags, prête à copier ———
+const TAGS = "onirique.cut.tags", CAPTIONS = "onirique.cut.captions";
+const readJson = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } };
+const writeJson = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* stockage indisponible */ } };
+const tagOf = (text) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\p{L}\p{N}]+/gu, "").toLowerCase();
+function captionOf(v) {
+  const saved = readJson(CAPTIONS, {})[v.id];
+  if (saved) return saved;
+  const title = v.name.split(" - ONIRIQUE CUT")[0].trim(), artist = (readJson("onirique.cut", {}).artist || "").trim();
+  const tags = (localStorage.getItem(TAGS) || "#rap #rapfr #nouveauson #musique").trim();
+  return [title + (artist ? " — " + artist : ""), "", [tags, artist && "#" + tagOf(artist), title && "#" + tagOf(title)].filter(Boolean).join(" ")].join("\n");
+}
+async function copyCaption() {
+  try { await navigator.clipboard.writeText($("v-caption").value); $("v-copied").textContent = "Légende copiée : colle-la dans TikTok."; }
+  catch { $("v-caption").select(); $("v-copied").textContent = "Sélectionnée : copie-la, puis colle-la dans TikTok."; }
+}
+$("v-copy").onclick = copyCaption;
+$("v-caption").oninput = () => { if (job) { const all = readJson(CAPTIONS, {}); all[job.v.id] = $("v-caption").value; writeJson(CAPTIONS, all); } };
+$("v-tags").onchange = () => {
+  try { localStorage.setItem(TAGS, $("v-tags").value.trim()); } catch { /* stockage indisponible */ }
+  if (job && !readJson(CAPTIONS, {})[job.v.id]) $("v-caption").value = captionOf(job.v);
+};
+$("v-day").onchange = () => { if (job) planDay(job.v, $("v-day").value).catch((error) => { $("v-hint").textContent = error.message; }); };
+
 function card(v, here) {
   const thumb = el("img", { src: v.poster, alt: "", loading: "lazy", decoding: "async" });
   // Pas d'aperçu : la vidéo elle-même montre une de ses images.
   thumb.onerror = () => thumb.replaceWith(el("video", { src: v.url + "#t=1", muted: true, playsInline: true, preload: "metadata" }));
   const button = el("button", { type: "button", className: "card", onclick: () => openVideo(v) },
-    el("span", { className: "thumb" }, thumb, here ? hereBadge() : null, el("span", { className: "dur", textContent: clock(v.duration) })),
+    el("span", { className: "thumb" }, thumb, here ? hereBadge() : null, el("span", { className: "dur", textContent: clock(v.duration) }), dayBadge(v)),
     el("b", { textContent: v.name }), el("small", { textContent: when(v.createdAt) + " · " + size(v.size) }));
   button.dataset.id = v.id;
   return button;
@@ -318,6 +381,8 @@ function openVideo(v) {
     ? "Dans le menu qui s'ouvre, choisis TikTok : la vidéo arrive dans TikTok, prête à publier." + (ios ? " « Enregistrer la vidéo » la range dans tes Photos." : "")
     : "Télécharge la vidéo, puis dans TikTok touche + et choisis-la dans ta galerie.");
   if (!phone) $("v-hint").append(" Depuis un ordinateur : télécharge-la, puis ", el("a", { href: "https://www.tiktok.com/upload", target: "_blank", rel: "noopener", textContent: "tiktok.com/upload" }), ".");
+  $("v-day").value = v.scheduledDay || ""; $("v-caption").value = captionOf(v); $("v-copied").textContent = "";
+  try { $("v-tags").value = localStorage.getItem(TAGS) || ""; } catch { /* stockage indisponible */ }
   $("viewer").showModal();
   prepare(mine);
 }
@@ -349,6 +414,7 @@ $("v-share").onclick = async () => {
   const mine = job;
   if (!mine) return;
   if (!mine.file) return prepare(mine);
+  await navigator.clipboard.writeText($("v-caption").value).then(() => { $("v-copied").textContent = "Légende copiée : colle-la dans TikTok."; }, () => {});
   try { await navigator.share({ files: [mine.file] }); }
   catch (error) { if (error.name !== "AbortError") $("v-hint").textContent = "Le partage n'a pas marché : télécharge la vidéo, puis choisis-la dans TikTok."; }
 };

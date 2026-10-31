@@ -48,13 +48,38 @@ export function remindCut(at = now()) {
     const { day, minutes } = localNow(at, r.tz), late = minutes - minutesOf(r.time);
     if (r.last_day === day || late < 0 || late >= 60) continue;
     run('UPDATE cut_reminders SET last_day = ? WHERE user_id = ?', day, r.user_id);
-    push(r.user_id, { title: 'ONIRIQUE CUT', body: "C'est l'heure de poster ton TikTok du jour : tes vidéos t'attendent.", url: '/mes-videos' });
+    // La vidéo prévue pour aujourd'hui, s'il y en a une : le rappel la nomme et l'ouvre.
+    const planned = get('SELECT id, name FROM cut_videos WHERE user_id = ? AND scheduled_day = ? ORDER BY created_at LIMIT 1', r.user_id, day);
+    push(r.user_id, planned
+      ? { title: 'ONIRIQUE CUT', body: `C'est l'heure de poster ton TikTok du jour : « ${planned.name} ».`, url: '/mes-videos?v=' + planned.id }
+      : { title: 'ONIRIQUE CUT', body: "C'est l'heure de poster ton TikTok du jour : tes vidéos t'attendent.", url: '/mes-videos' });
     sent.push(r.user_id);
   }
   return sent;
 }
 
+// Le planning : le jour où une vidéo gardée doit être postée (AAAA-MM-JJ, dans le fuseau du fondateur).
+if (!all('PRAGMA table_info(cut_videos)').some((c) => c.name === 'scheduled_day')) db.exec('ALTER TABLE cut_videos ADD COLUMN scheduled_day TEXT');
+// La banque de fonds : les clips (vidéos, photos) qu'un fondateur garde pour les réutiliser d'un son à l'autre.
+db.exec(`CREATE TABLE IF NOT EXISTS cut_backgrounds (
+  id         INTEGER PRIMARY KEY,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name       TEXT NOT NULL,
+  stored_as  TEXT NOT NULL,
+  mime       TEXT NOT NULL,
+  size       INTEGER NOT NULL,
+  created_at INTEGER NOT NULL
+)`);
 const LIBRARY_MAX = 1024 * 1024 * 1024; // une vidéo gardée : 1 Go au plus
+/** Le type d'un fond d'après ses premiers octets (jamais d'après ce qu'annonce le navigateur) ; null si ce n'est ni une vidéo ni une photo. */
+export function backgroundType(head) {
+  if (head.toString('latin1', 4, 8) === 'ftyp') return head.toString('latin1', 8, 10) === 'qt' ? 'video/quicktime' : 'video/mp4';
+  if (head.readUInt32BE(0) === 0x1a45dfa3) return 'video/webm';
+  if (head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff) return 'image/jpeg';
+  if (head.readUInt32BE(0) === 0x89504e47) return 'image/png';
+  if (head.toString('latin1', 0, 4) === 'RIFF' && head.toString('latin1', 8, 12) === 'WEBP') return 'image/webp';
+  return null;
+}
 // Les liens de lecture et de téléchargement des vidéos gardées : signés, valables 6 heures (une balise <video> n'envoie pas de jeton).
 function signKey() {
   let key = setting('cut_key', null);
@@ -67,7 +92,10 @@ const videoUrl = (id, download = false) => { const e = now() + 6 * 3600_000, d =
 // L'image d'aperçu : le lien change une fois par jour, pour que le téléphone la garde en cache d'une visite à l'autre.
 const DAY = 86_400_000;
 const posterUrl = (id) => { const e = (Math.floor(now() / DAY) + 2) * DAY; return `/api/cut/poster/${id}?e=${e}&s=${sign(`cutposter.${id}.${e}`)}`; };
-const videoView = (v) => ({ id: v.id, name: v.name, size: v.size, duration: v.duration, createdAt: v.created_at, url: videoUrl(v.id), downloadUrl: videoUrl(v.id, true), poster: posterUrl(v.id) });
+const videoView = (v) => ({ id: v.id, name: v.name, size: v.size, duration: v.duration, createdAt: v.created_at, scheduledDay: v.scheduled_day || null,
+  url: videoUrl(v.id), downloadUrl: videoUrl(v.id, true), poster: posterUrl(v.id) });
+const backgroundUrl = (id) => { const e = now() + 6 * 3600_000; return `/api/cut/background/${id}?e=${e}&s=${sign(`cutbg.${id}.${e}`)}`; };
+const backgroundView = (b) => ({ id: b.id, name: b.name, type: b.mime, size: b.size, createdAt: b.created_at, url: backgroundUrl(b.id) });
 // L'aperçu (une image de la vidéo, 360 px de large) est fait par ffmpeg à sa première demande, puis gardé à côté de la
 // vidéo. Un à la fois : le serveur a peu de mémoire.
 let posterQueue = Promise.resolve();
@@ -158,6 +186,54 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
     fs.rmSync(path.join(libDir, v.stored_as + '.jpg'), { force: true });
     res.json({ ok: true });
   });
+  // Le planning : le jour où la vidéo doit partir (null : pas de jour).
+  app.patch('/api/cut/library/:id', requireUser, member, founder, (req, res) => {
+    const v = ownVideo(req), day = req.body?.day ?? null;
+    if (day !== null && !/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(String(day))) throw new HttpError(400, 'Jour invalide.');
+    run('UPDATE cut_videos SET scheduled_day = ? WHERE id = ?', day, v.id);
+    res.json(videoView(get('SELECT * FROM cut_videos WHERE id = ?', v.id)));
+  });
+
+  // ——— La banque de fonds des fondateurs : des clips gardés pour les réutiliser d'un son à l'autre ———
+  const bgDir = path.join(config.dataDir, 'cut-backgrounds');
+  fs.mkdirSync(bgDir, { recursive: true });
+  const bgKept = new Set(all('SELECT stored_as FROM cut_backgrounds').map((b) => b.stored_as));
+  for (const name of fs.readdirSync(bgDir)) if (!bgKept.has(name)) fs.rmSync(path.join(bgDir, name), { force: true });
+  app.post('/api/cut/backgrounds', requireUser, member, founder, wrap(async (req, res) => {
+    rateLimit(`cut-bg:${req.user.id}`, 200, 3600_000);
+    const length = Number(req.headers['content-length']);
+    if (!Number.isFinite(length) || length <= 0) throw new HttpError(411, 'Taille du fichier inconnue.');
+    const disk = fs.statfsSync(config.dataDir), total = disk.blocks * disk.bsize, used = total - disk.bavail * disk.bsize;
+    if ((used + length) / total > setting('sounds_disk_max', 0.8)) throw new HttpError(507, "Le disque du serveur est presque plein : le fond n'a pas été gardé.");
+    const stored = await receiveFile(req, bgDir, LIBRARY_MAX), file = path.join(bgDir, stored.storedAs);
+    const head = Buffer.alloc(16), fd = fs.openSync(file, 'r');
+    fs.readSync(fd, head, 0, 16, 0);
+    fs.closeSync(fd);
+    const mime = backgroundType(head);
+    if (!mime) { fs.rmSync(file, { force: true }); throw new HttpError(400, 'Vidéo (MP4, MOV, WebM) ou photo (JPEG, PNG, WebP) attendue.'); }
+    const name = String(req.query.name || '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '').trim().slice(0, 100) || 'Fond';
+    const id = run('INSERT INTO cut_backgrounds (user_id, name, stored_as, mime, size, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+      req.user.id, name, stored.storedAs, mime, stored.size, now()).lastInsertRowid;
+    res.status(201).json(backgroundView(get('SELECT * FROM cut_backgrounds WHERE id = ?', id)));
+  }));
+  app.get('/api/cut/backgrounds', requireUser, member, founder, (req, res) => {
+    res.json({ backgrounds: all('SELECT * FROM cut_backgrounds WHERE user_id = ? ORDER BY created_at DESC', req.user.id).map(backgroundView) });
+  });
+  app.delete('/api/cut/backgrounds/:id', requireUser, member, founder, (req, res) => {
+    const b = get('SELECT * FROM cut_backgrounds WHERE id = ? AND user_id = ?', Number(req.params.id) || 0, req.user.id);
+    if (!b) throw new HttpError(404, 'Fond introuvable.');
+    run('DELETE FROM cut_backgrounds WHERE id = ?', b.id);
+    fs.rmSync(path.join(bgDir, b.stored_as), { force: true });
+    res.json({ ok: true });
+  });
+  app.get('/api/cut/background/:id', (req, res) => {
+    const id = Number(req.params.id) || 0, e = Number(req.query.e), sig = String(req.query.s || '');
+    if (!(e > now()) || !same(sig, sign(`cutbg.${id}.${e}`))) throw new HttpError(403, 'Ce lien a expiré : rouvre ta banque de fonds.');
+    const b = get('SELECT * FROM cut_backgrounds WHERE id = ?', id);
+    if (!b) throw new HttpError(404, 'Fond introuvable.');
+    res.sendFile(path.join(bgDir, b.stored_as), { headers: { 'Content-Type': b.mime, 'Cache-Control': 'private, max-age=3600', 'X-Content-Type-Options': 'nosniff' } });
+  });
+
   // Le rappel quotidien : il arrive sur les appareils où les notifications sont activées (l'appweb sur le téléphone).
   app.get('/api/cut/reminder', requireUser, member, founder, (req, res) => {
     const r = get('SELECT time, tz FROM cut_reminders WHERE user_id = ?', req.user.id);

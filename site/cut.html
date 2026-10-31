@@ -161,6 +161,21 @@ h2.step-title { font: 800 19px/1.2 var(--f-display); }
 /* Pas encore de son : une grande zone où le déposer. */
 .studio:not(.has-sound) .pick-row { justify-content: center; padding: clamp(28px, 6vw, 48px) 20px; border: 1.5px dashed rgba(255,210,214,.3); border-radius: 18px; background: rgba(0,0,0,.3); }
 .studio:not(.has-sound) #audio-state { text-align: center; }
+.compare { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+.compare button { display: grid; gap: 6px; padding: 6px; border: 1px solid var(--line); border-radius: 12px; background: rgba(0,0,0,.3); color: var(--mist); font: 600 12px/1.2 var(--f-body); cursor: pointer; }
+.compare button[aria-pressed="true"] { border-color: var(--ember); }
+.compare canvas { width: 100%; aspect-ratio: 9 / 16; border-radius: 8px; background: #000; }
+.series { max-width: 340px; width: 100%; justify-self: center; }
+.series .row { gap: 6px 14px; }
+.bank { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+.bank .tile { position: relative; display: grid; gap: 4px; padding: 0; border: 0; background: none; color: var(--mist); font: 500 11px/1.25 var(--f-body); text-align: left; cursor: pointer; }
+.bank .tile img, .bank .tile video { width: 100%; aspect-ratio: 9 / 16; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); background: #000; }
+.bank .tile:hover img, .bank .tile:hover video { border-color: var(--ember); }
+.bank .tile span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bank .tile i { position: absolute; top: 5px; right: 5px; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; background: rgba(0,0,0,.7); font-style: normal; }
+.bank .tile i:hover { background: var(--ember); }
+kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font: 500 11px var(--f-mono); color: var(--mist); }
+@media (pointer: coarse) { .keys { display: none; } }
 .panel.inset { margin: 0 clamp(18px, 4vw, 34px) 22px; padding: 0; }
 /* Les styles rapides : de grandes cartes avec un petit aperçu de l'écran. */
 .chips.presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); gap: 10px; padding: 0; border: 0; border-radius: 0; }
@@ -241,6 +256,7 @@ h2.step-title { font: 800 19px/1.2 var(--f-display); }
           </div>
           <div class="picker" id="cloud-list" hidden></div>
           <p class="muted" id="audio-state">MP3, WAV, FLAC, M4A… ou glisse-le n'importe où sur la page.</p>
+          <button class="go ghost" type="button" id="clips-restore" hidden></button>
           <div class="row" id="bpm-row" hidden>
             <div class="bpm"><button class="mini" type="button" id="bpm-half" title="Deux fois plus lent">½</button><output id="bpm">—</output><button class="mini" type="button" id="bpm-double" title="Deux fois plus vite">×2</button><small>BPM</small></div>
             <div class="row" style="gap:6px"><span class="muted">Caler les coupes</span><button class="mini" type="button" id="nudge-minus" title="Coupes un peu plus tôt">−</button><button class="mini" type="button" id="nudge-plus" title="Coupes un peu plus tard">+</button></div>
@@ -252,8 +268,9 @@ h2.step-title { font: 800 19px/1.2 var(--f-display); }
           <h2 class="step-title">Le passage</h2>
           <div class="row">
             <div class="chips" id="duration" role="group" aria-label="Durée"><button type="button" data-v="8">8 s</button><button type="button" data-v="15">15 s</button><button type="button" data-v="30">30 s</button><button type="button" data-v="60">60 s</button></div>
-            <button class="mini" type="button" id="best">Meilleur passage</button>
+            <button class="mini" type="button" id="best" hidden>Meilleur passage</button>
           </div>
+          <div class="row passages"><span class="muted">Passages proposés</span><span class="row" id="passages" style="gap:6px"></span></div>
           <div class="wave" id="wave"><canvas></canvas></div>
           <div class="row">
             <label class="inline">Début<input type="text" id="start-at" inputmode="decimal" aria-label="Début du passage, en minutes et secondes"></label>
@@ -294,6 +311,12 @@ h2.step-title { font: 800 19px/1.2 var(--f-display); }
           <h2 class="step-title">Tes clips</h2><p class="muted">Vidéos ou photos : chaque coupe tombe sur le beat et montre un nouveau moment du clip.</p>
           <div class="clips" id="clips"><button class="add" type="button" id="clips-add"><b>+</b>Vidéos<br>ou photos</button></div>
           <input id="clips-file" type="file" accept="video/*,image/*" multiple hidden>
+          <div class="row" id="bank-row" hidden>
+            <button class="mini" type="button" id="bank-open">Ma banque de fonds</button>
+            <button class="mini" type="button" id="bank-save">Garder ces clips dans ma banque</button>
+            <span class="muted" id="bank-state"></span>
+          </div>
+          <div class="bank" id="bank" hidden></div>
           <div class="row">
             <div class="chips" id="order" role="group" aria-label="Ordre des clips"><button type="button" data-v="seq">Dans l'ordre</button><button type="button" data-v="mix">Mélangés</button></div>
             <button class="mini" type="button" id="reshuffle" hidden>Autre mélange</button>
@@ -319,6 +342,8 @@ h2.step-title { font: 800 19px/1.2 var(--f-display); }
             <button type="button" data-v="card"><i class="look look-card"></i>Carte paroles<small>La phrase dans un encadré blanc</small></button>
             <button type="button" data-v="film"><i class="look look-film"></i>Extrait de film<small>Une réplique de film, puis le drop</small></button>
           </div>
+          <div class="row"><button class="mini" type="button" id="compare-open">Comparer les styles sur ma vidéo</button></div>
+          <div class="compare" id="compare" hidden></div>
         </div>
         <div class="stack">
           <h3 class="sub-title">Paroles</h3>
@@ -329,6 +354,7 @@ h2.step-title { font: 800 19px/1.2 var(--f-display); }
               <div class="chips wrap-in" id="lyricsPlace" role="group" aria-label="Place des paroles"><button type="button" data-v="top">En haut</button><button type="button" data-v="middle">Au milieu</button><button type="button" data-v="bottom">En bas</button></div>
             </label>
             <label id="sign-row">Signature sous la carte (à droite)<input type="text" id="sign" maxlength="24" placeholder="PAROLES"></label>
+            <div class="row"><button class="go ghost" type="button" id="lyrics-auto">Écrire les paroles avec l'IA</button><span class="muted" id="lyrics-auto-status">Elles s'écrivent et se calent mot par mot toutes seules ; tu n'as plus qu'à corriger.</span></div>
             <label>Paroles synchronisées (facultatif)
               <textarea id="lyrics" placeholder="[00:12.50] Première ligne&#10;[00:15.80] Deuxième ligne"></textarea>
             </label>
@@ -429,6 +455,8 @@ h2.step-title { font: 800 19px/1.2 var(--f-display); }
               <label class="check"><input type="checkbox" id="flash"> Flash aux coupes</label>
               <label class="check"><input type="checkbox" id="retro"> Look rétro (pixels et grain)</label>
               <label class="check"><input type="checkbox" id="photoMove"> Photos qui avancent doucement</label>
+            <label class="check"><input type="checkbox" id="bestMoments"> Prendre les meilleurs moments des clips (ça bouge, c'est net)</label>
+            <label class="check"><input type="checkbox" id="smartCrop"> Recadrage intelligent : l'image suit le sujet</label>
             </div>
             <div class="row">
               <label class="grow">Force du zoom<input type="range" id="zoomAmt" min="10" max="300" step="10"></label>
@@ -580,6 +608,15 @@ h2.step-title { font: 800 19px/1.2 var(--f-display); }
       <label class="vol">Volume<input type="range" id="previewVol" min="0" max="100" aria-label="Volume de l'aperçu"></label>
       <button class="go wide export" type="button" id="export" disabled>Exporter la vidéo</button>
       <div class="status" id="status" hidden><span id="status-text"></span><div class="bar"><i id="status-bar"></i></div></div>
+      <details class="panel series">
+        <summary>Exporter une série</summary>
+        <div class="stack">
+          <p class="muted">Plusieurs vidéos d'un coup : tes meilleurs passages croisés avec les styles cochés, chacune avec un autre mélange de tes clips. De quoi poster toute la semaine.</p>
+          <div class="chips" id="seriesCount" role="group" aria-label="Nombre de vidéos"><button type="button" data-v="3">3</button><button type="button" data-v="5">5</button><button type="button" data-v="7">7</button></div>
+          <div class="row" id="series-styles"></div>
+          <button class="go wide" type="button" id="series-go" disabled>Exporter la série</button>
+        </div>
+      </details>
       <label class="check mute" id="keep-box" hidden><input type="checkbox" id="keepCloud"> Garder aussi dans mon cloud CUT</label>
       <label class="check mute"><input type="checkbox" id="mute"> Couper le son pendant l'export (la vidéo garde son son)</label>
       <div class="adv-links"><span>Avancé</span><button class="mini" type="button" id="adv-open" disabled>Timeline des sons</button><button class="mini" type="button" id="adv-open-video" disabled>Timeline vidéo</button></div>
@@ -589,6 +626,7 @@ h2.step-title { font: 800 19px/1.2 var(--f-display); }
           <p class="muted" style="margin:0;font-size:12px">Sur ton téléphone : <a href="mes-videos" target="_blank" rel="noopener">onirique.store/mes-videos</a>. Ajoute-la à l'écran d'accueil (appweb ONIRIQUE CUT) pour envoyer tes vidéos vers TikTok. Le rappel quotidien « poste ton TikTok » se règle dans l'appweb, en haut de la liste.</p></div>
       </details>
       <p class="hint" style="text-align:center">MP4 1080 × 1920, 30 images par seconde, son en haute qualité. Avec des clips MP4 ou MOV, tu peux changer d'onglet pendant l'export. Tes sons, clips et vidéos restent chez toi.</p>
+      <p class="hint keys" style="text-align:center">Raccourcis : <kbd>Espace</kbd> lecture · <kbd>1</kbd>–<kbd>6</kbd> étapes · <kbd>E</kbd> exporter · <kbd>←</kbd> <kbd>→</kbd> une seconde</p>
     </aside>
 
     <section class="adv" id="adv" hidden aria-label="Timeline des sons">
@@ -668,7 +706,7 @@ const ILOOK = { iOwn: false, iFont: "Hanken Grotesk", iPlace: "bottom", iColor: 
   iShadowColor: "#000000", iShadowBlur: 0, iShadowOffset: 0, iCaps: false, iBox: true, iBoxColor: "#000000", iBoxAlpha: 62 };
 const FILM = { ...ILOOK, trackFades: {}, introOn: false, introClip: 0, introIn: 0, introLen: 4, filmVol: 100, introLyrics: "", introSubMode: "sub", introFade: false, transition: "flash", transAmt: 100,
   dropGap: false, underPart: "none", underVol: 70, filmContinue: false, afterClip: -1, musicVol: 100, clipVol: 0, slowmo: "100" };
-let prefs = { previewVol: 80, ...FILM, duration: 15, order: "seq", cadence: "2", zoom: false, zoomAmt: 100, flash: false, flashAmt: 100, place: "none", artist: "", snap: false, loop: false, batch: "one", lyricsPlace: "bottom", ...FX,
+let prefs = { previewVol: 80, ...FILM, duration: 15, order: "seq", cadence: "2", seriesCount: "5", seriesStyles: ["classic", "pixel", "red", "card"], bestMoments: true, smartCrop: true, zoom: false, zoomAmt: 100, flash: false, flashAmt: 100, place: "none", artist: "", snap: false, loop: false, batch: "one", lyricsPlace: "bottom", ...FX,
   preset: "classic", frame: "full", retro: false, lyricsMode: "line", hook: "", hookOn: false, sign: "", textStyle: "classic", titleFont: "Unbounded", textSize: 100,
   strokeColor: "#000000", glowColor: "#ffffff", ...TEXT_STYLES.classic,
   strongSize: 170, strongColor: "#ffffff", strongGlowColor: "#ffffff", strongGlow: 45, strongFont: "" };
@@ -771,15 +809,57 @@ const clampStart = (t) => {
 const clockFine = (s) => Math.floor(s / 60) + ":" + (s % 60).toFixed(2).padStart(5, "0").replace(".", ",");
 const parseClock = (text) => { const m = /^\s*(?:(\d+):)?(\d+(?:[.,]\d+)?)\s*$/.exec(text || ""); return m ? Number(m[1] || 0) * 60 + Number(m[2].replace(",", ".")) : NaN; };
 
-/** Le passage le plus fort de la durée choisie, de préférence celui qui démarre sur une montée (refrain, drop). */
-function bestStart() {
+/** Les k passages les plus forts de la durée choisie, sans se chevaucher, de préférence ceux qui démarrent sur une montée
+ *  (refrain, drop) : [{ start, drop }], le meilleur d'abord ; drop : le passage démarre sur une nette montée. */
+function bestStarts(k) {
   const level = (from, to) => { const a = Math.max(0, Math.floor(from * FPS)), b = Math.min(sound.rms.length, Math.ceil(to * FPS)); let s = 0; for (let i = a; i < b; i++) s += sound.rms[i]; return b > a ? s / (b - a) : 0; };
-  let best = 0, score = -Infinity;
+  const all = [];
   for (let t = sound.phase; t <= maxStart() + 0.01; t += barLength()) {
-    const s = level(t, t + span()) + 0.6 * (level(t, t + 2 * barLength()) - level(t - 2 * barLength(), t));
-    if (s > score) { score = s; best = t; }
+    const rise = level(t, t + 2 * barLength()) - level(t - 2 * barLength(), t);
+    all.push({ start: t, score: level(t, t + span()) + 0.6 * rise, rise });
   }
-  return best;
+  all.sort((a, b) => b.score - a.score);
+  const mean = all.reduce((s, x) => s + Math.abs(x.rise), 0) / Math.max(1, all.length), picked = [];
+  for (const x of all) if (picked.length < k && picked.every((p) => Math.abs(p.start - x.start) >= span() * .75)) picked.push(x);
+  // « drop » : seulement la plus nette montée des passages proposés, et si elle sort vraiment du lot.
+  const top = Math.max(...picked.map((p) => p.rise));
+  return picked.length ? picked.map((p) => ({ start: p.start, drop: p.rise === top && top > 2 * mean })) : [{ start: 0, drop: false }];
+}
+const bestStart = () => bestStarts(1)[0].start;
+/** Les trois meilleurs passages, en boutons : un toucher le choisit et le fait écouter. */
+/** Les styles rapides côte à côte, dessinés sur l'image en cours de l'aperçu (un toucher en choisit un). */
+async function renderCompare() {
+  if ($("compare").hidden || !segments.length || playing) return;
+  const names = Object.keys(STYLE_NAMES);
+  await Promise.all(names.map((p) => { const [family, weight] = fontOf(TEXT_STYLES[PRESETS[p].textStyle].lyricFont); return document.fonts.load(weight + ' 80px "' + family + '"').catch(() => {}); }));
+  if (playing) return;
+  const saved = { ...prefs }, cells = [];
+  for (const p of names) {
+    Object.assign(prefs, PRESETS[p], TEXT_STYLES[PRESETS[p].textStyle]);
+    draw(position, false);
+    const c = Object.assign(document.createElement("canvas"), { width: 216, height: 384 });
+    c.getContext("2d").drawImage(screen, 0, 0, 216, 384);
+    const b = Object.assign(document.createElement("button"), { type: "button", title: "Choisir « " + STYLE_NAMES[p] + " »" });
+    b.setAttribute("aria-pressed", String(saved.preset === p));
+    b.append(c, STYLE_NAMES[p]);
+    b.onclick = () => { document.querySelector('#preset [data-v="' + p + '"]').click(); compareLater(); };
+    cells.push(b);
+  }
+  Object.assign(prefs, saved);
+  draw(position, false);
+  $("compare").replaceChildren(...cells);
+}
+let compareTimer = 0;
+const compareLater = () => { clearTimeout(compareTimer); compareTimer = setTimeout(renderCompare, 250); };
+function renderPassages() {
+  if (!sound.buffer) return;
+  $("passages").replaceChildren(...bestStarts(3).map((p, i) => {
+    const b = Object.assign(document.createElement("button"), { type: "button", className: "mini" });
+    b.textContent = (i ? "Passage " + (i + 1) : "Le meilleur") + " · " + OniriqueAudio.clock(p.start) + (p.drop ? " · drop" : "");
+    b.setAttribute("aria-pressed", String(Math.abs(p.start - sound.start) < .05));
+    b.onclick = async () => { sound.start = clampStart(p.start); position = 0; refresh(); await ensureMix(); play(0); };
+    return b;
+  }));
 }
 
 async function loadSound(file, extra = {}) {
@@ -791,7 +871,8 @@ async function loadSound(file, extra = {}) {
     const mono = (await OniriqueAudio.render(buffer, { rate: RATE, channels: 1 })).getChannelData(0);
     const { env, rms } = envelope(mono);
     const bpm = extra.bpm > 0 ? extra.bpm : await tempoOf(mono.slice());
-    Object.assign(sound, { name: OniriqueAudio.baseName(file), buffer, env, rms, bpm: bpm || 120 });
+    Object.assign(sound, { name: OniriqueAudio.baseName(file), buffer, env, rms, bpm: bpm || 120, file });
+    if (!extra.cloud) keepFile(file); // un son de ONIRIQUE CLOUD se retélécharge : seul un fichier est gardé ici
     $("stem-pos").max = buffer.duration; $("stem-pos").value = 0; stemClock();
     sound.phase = phaseOf(env, sound.bpm);
     sound.start = extra.start != null ? clampStart(extra.start) : bestStart();
@@ -804,6 +885,7 @@ async function loadSound(file, extra = {}) {
     $("audio-state").textContent = "« " + file.name + " » · " + OniriqueAudio.clock(buffer.duration) + (bpm ? "" : " · tempo introuvable, règle-le à la main");
     $("bpm-row").hidden = $("step-window").hidden = $("step-clips").hidden = $("step-edit").hidden = false;
     refresh();
+    offerClips();
   } catch (error) {
     $("audio-state").textContent = error.message || "Ce fichier n'a pas pu être lu.";
   } finally {
@@ -895,6 +977,157 @@ async function openCloud() {
   } catch { list.firstChild.textContent = "ONIRIQUE CLOUD ne répond pas. Réessaie dans un instant."; }
 }
 
+// ——— Les montages gardés sur cet appareil (IndexedDB : rien n'est envoyé) : le son, les clips et les réglages de chaque son,
+// pour tout reprendre d'un clic à la visite suivante ———
+const KEEP = (() => {
+  let base = null;
+  const open = () => base || (base = new Promise((resolve, reject) => {
+    const r = indexedDB.open("onirique-cut", 1);
+    r.onupgradeneeded = () => { r.result.createObjectStore("files"); r.result.createObjectStore("sets"); };
+    r.onsuccess = () => resolve(r.result); r.onerror = () => reject(r.error);
+  }));
+  const run = async (store, mode, fn) => { const db = await open(); return new Promise((resolve, reject) => {
+    const t = db.transaction(store, mode), req = fn(t.objectStore(store));
+    t.oncomplete = () => resolve(req && req.result); t.onerror = t.onabort = () => reject(t.error);
+  }); };
+  return { get: (st, k) => run(st, "readonly", (o) => o.get(k)), put: (st, k, v) => run(st, "readwrite", (o) => o.put(v, k)),
+    del: (st, k) => run(st, "readwrite", (o) => o.delete(k)), all: (st) => run(st, "readonly", (o) => o.getAll()), keys: (st) => run(st, "readonly", (o) => o.getAllKeys()) };
+})();
+const fileKey = (f) => [f.name, f.size, f.lastModified].join("|");
+const KEEP_MAX = 1024 ** 3; // un fichier de plus de 1 Go n'est pas gardé
+/** Garde un fichier (son ou clip) une seule fois, sous sa clé. */
+const keepFile = (file) => { if (file && file.size < KEEP_MAX) KEEP.get("files", fileKey(file)).then((had) => had || KEEP.put("files", fileKey(file), file)).catch(() => {}); };
+const setKey = () => (cloud ? "cloud:" + cloud.trackId : "file:" + sound.name + "|" + Math.round(sound.buffer.duration));
+let keepTimer = 0;
+/** Le montage en cours, gardé pour ce son (un peu après le dernier changement). */
+function keepSet() {
+  clearTimeout(keepTimer);
+  if (!sound.buffer || !clips.length) return;
+  keepTimer = setTimeout(() => {
+    const snapshot = Object.fromEntries(Object.entries(prefs).filter(([k]) => !["previewVol", "mute", "keepCloud"].includes(k)));
+    const set = { key: setKey(), at: Date.now(), title: $("title").value || sound.name, start: sound.start, bpm: sound.bpm, prefs: snapshot,
+      sound: cloud ? null : fileKey(sound.file), cloudTrack: cloud ? cloud.trackId : null, lyrics: cloud ? null : $("lyrics").value,
+      clips: clips.filter((c) => c.file && c.file.size < KEEP_MAX).map((c) => fileKey(c.file)) };
+    KEEP.put("sets", set.key, set).then(() => KEEP.put("sets", "@last", set.key)).catch(() => {});
+  }, 1500);
+}
+/** Ménage : les 15 derniers montages, et seulement les fichiers qu'ils utilisent. */
+async function tidyKept() {
+  const sets = (await KEEP.all("sets")).filter((x) => x && x.key).sort((a, b) => b.at - a.at);
+  for (const old of sets.slice(15)) await KEEP.del("sets", old.key);
+  const used = new Set(sets.slice(0, 15).flatMap((x) => [x.sound, ...x.clips]));
+  for (const k of await KEEP.keys("files")) if (!used.has(k)) await KEEP.del("files", k);
+}
+/** Reprend un montage gardé : le son (fichier ou ONIRIQUE CLOUD), ses réglages, puis ses clips. */
+async function restoreSet(set, withSound = true) {
+  $("resume").hidden = $("clips-restore").hidden = true;
+  if (withSound) {
+    if (set.cloudTrack) await loadCloudId(set.cloudTrack, { start: set.start, bpm: set.bpm });
+    else { const f = await KEEP.get("files", set.sound).catch(() => null); if (f) await loadSound(f, { start: set.start, bpm: set.bpm, title: set.title }); }
+    if (!sound.buffer) { $("audio-state").textContent = "Le son de ce montage n'est plus sur cet appareil."; return; }
+  }
+  Object.assign(prefs, set.prefs); savePrefs(); syncAll();
+  if (set.lyrics != null && !cloud) { $("lyrics").value = set.lyrics; readLyrics(); }
+  const files = (await Promise.all(set.clips.map((k) => KEEP.get("files", k).catch(() => null)))).filter(Boolean);
+  await addClips(files);
+  sound.start = clampStart(set.start); position = 0; refresh();
+  if (files.length < set.clips.length) $("batch-help").textContent = (set.clips.length - files.length) + " clip(s) de ce montage ne sont plus sur cet appareil.";
+}
+/** Après le choix d'un son : s'il a déjà un montage gardé, ses clips et réglages se reprennent d'un clic. */
+async function offerClips() {
+  const set = await KEEP.get("sets", setKey()).catch(() => null);
+  if (!set || clips.length || !set.clips.length) { $("clips-restore").hidden = true; return; }
+  $("clips-restore").hidden = false;
+  $("clips-restore").textContent = "Reprendre le montage de ce son (" + set.clips.length + " clip" + (set.clips.length > 1 ? "s" : "") + " et réglages)";
+  $("clips-restore").onclick = () => restoreSet(set, false);
+}
+let syncAll = () => {}; // remet chaque réglage affiché à jour (défini dans start)
+
+// ——— L'analyse des clips (assets/clip-frames.js) : leurs meilleurs moments pour le montage, et où est le sujet pour le recadrage ———
+let analyzing = Promise.resolve();
+/** Les débuts des meilleurs moments du clip (ça bouge et c'est net), du meilleur au moins bon, espacés d'au moins len s. */
+function momentsOf(a, len = 1.5) {
+  const z = (x) => { const m = x.reduce((s, v) => s + v, 0) / x.length, sd = Math.sqrt(x.reduce((s, v) => s + (v - m) ** 2, 0) / x.length) || 1; return x.map((v) => (v - m) / sd); };
+  const zm = z(a.motion), zs = z(a.sharp), w = Math.max(1, Math.round(len / a.step)), n = zm.length - w;
+  const win = Array.from({ length: Math.max(0, n) }, (_, i) => { let s = 0; for (let j = i; j < i + w; j++) s += zm[j] + zs[j]; return s / w; });
+  const picked = [];
+  for (const i of win.map((_, i) => i).sort((p, q) => win[q] - win[p])) if (picked.every((j) => Math.abs(i - j) * a.step >= len)) picked.push(i);
+  return picked.map((i) => i * a.step);
+}
+/** Où est le sujet dans l'image que montre src (0 à gauche, 1 à droite ; 0,5 sans analyse ou sans recadrage intelligent). */
+function focusOf(src) {
+  if (!prefs.smartCrop || !src.src) return .5;
+  const c = clips.find((x) => x.url === src.src), a = c && c.analysis;
+  if (!a) return .5;
+  const t = src.__frame ? src.__at || 0 : src.currentTime;
+  return a.focus[Math.max(0, Math.min(a.focus.length - 1, Math.round(t / a.step)))];
+}
+/** Analyse un clip vidéo en arrière-plan (un à la fois), puis refait le montage avec ses meilleurs moments. */
+function analyzeLater(c) {
+  c.analyzing = true;
+  analyzing = analyzing.then(async () => {
+    try {
+      const lib = clips.includes(c) && await framesLib();
+      const a = lib && await lib.analyzeClip(c.file, c.duration);
+      if (a) { c.analysis = a; c.moments = momentsOf(a); }
+    } catch { /* ce clip garde le montage habituel */ }
+    c.analyzing = false;
+    if (!clips.includes(c)) return;
+    if (!playing && !recording) restyle(true); else renderClips();
+  });
+}
+
+// ——— La banque de fonds (fondateurs) : des clips gardés dans le cloud CUT, à réutiliser d'un son à l'autre ———
+const bankFetch = (path, options = {}) => fetch(path, { ...options, headers: { Authorization: "Bearer " + TOKEN, ...(options.headers || {}) } })
+  .then(async (r) => { const data = await r.json().catch(() => ({})); if (!r.ok) throw new Error(data.error || "Ta banque de fonds ne répond pas."); return data; });
+async function renderBank() {
+  const box = $("bank");
+  box.replaceChildren(Object.assign(document.createElement("p"), { className: "muted", textContent: "Chargement…" }));
+  try {
+    const { backgrounds } = await bankFetch("/api/cut/backgrounds");
+    if (!backgrounds.length) { box.firstChild.textContent = "Ta banque est vide : ajoute des clips, puis « Garder ces clips dans ma banque »."; return; }
+    box.replaceChildren(...backgrounds.map((b) => {
+      const tile = Object.assign(document.createElement("button"), { type: "button", className: "tile", title: "Ajouter « " + b.name + " » aux clips" });
+      const look = b.type.startsWith("image/") ? Object.assign(document.createElement("img"), { src: b.url, alt: "", loading: "lazy" })
+        : Object.assign(document.createElement("video"), { src: b.url + "#t=1", muted: true, preload: "metadata", playsInline: true });
+      const drop = Object.assign(document.createElement("i"), { textContent: "×", title: "Retirer de ma banque" });
+      drop.onclick = async (event) => {
+        event.stopPropagation();
+        if (!confirm("Retirer « " + b.name + " » de ta banque de fonds ?")) return;
+        await bankFetch("/api/cut/backgrounds/" + b.id, { method: "DELETE" }).catch((e) => alert(e.message));
+        renderBank();
+      };
+      tile.onclick = async () => {
+        $("bank-state").textContent = "Ajout de « " + b.name + " »…";
+        try {
+          const blob = await (await fetch(b.url)).blob();
+          await addClips([new File([blob], b.name, { type: b.type, lastModified: b.createdAt })]);
+          $("bank-state").textContent = "« " + b.name + " » ajouté.";
+        } catch { $("bank-state").textContent = "Ce fond n'a pas pu être téléchargé."; }
+      };
+      tile.append(look, Object.assign(document.createElement("span"), { textContent: b.name }), drop);
+      return tile;
+    }));
+  } catch (error) { box.firstChild.textContent = error.message; }
+}
+/** Envoie dans la banque les clips qui n'y sont pas encore (même nom et même taille). */
+async function saveToBank() {
+  const button = $("bank-save");
+  button.disabled = true;
+  try {
+    const { backgrounds } = await bankFetch("/api/cut/backgrounds"), there = new Set(backgrounds.map((b) => b.name + "|" + b.size));
+    const todo = clips.filter((c) => c.file && !there.has(c.file.name + "|" + c.file.size));
+    if (!todo.length) { $("bank-state").textContent = clips.length ? "Ces clips sont déjà dans ta banque." : "Ajoute d'abord des clips."; return; }
+    for (const [i, c] of todo.entries()) {
+      await upload("/api/cut/backgrounds?name=" + encodeURIComponent(c.file.name), c.file, "json",
+        (p) => { $("bank-state").textContent = "Envoi " + (i + 1) + " / " + todo.length + "… " + pct(p); });
+    }
+    $("bank-state").textContent = todo.length + " clip" + (todo.length > 1 ? "s gardés" : " gardé") + " dans ta banque de fonds.";
+    if (!$("bank").hidden) renderBank();
+  } catch (error) { $("bank-state").textContent = error.message || "L'envoi dans ta banque n'a pas marché."; }
+  finally { button.disabled = false; }
+}
+
 // ——— Les clips ———
 async function addClips(files) {
   for (const file of files) {
@@ -904,7 +1137,7 @@ async function addClips(files) {
     if (file.type.startsWith("image/")) {
       const img = new Image();
       await new Promise((resolve) => { img.onload = img.onerror = resolve; img.src = url; });
-      if (img.naturalWidth) clips.push({ kind: "image", url, img, name: file.name, duration: Infinity });
+      if (img.naturalWidth) { clips.push({ kind: "image", url, img, name: file.name, file, duration: Infinity }); keepFile(file); }
     } else if (file.type.startsWith("video/") || /\.(mp4|mov|webm|m4v)$/i.test(file.name)) {
       const v = document.createElement("video");
       v.muted = true; v.preload = "metadata"; v.src = url;
@@ -920,6 +1153,8 @@ async function addClips(files) {
         const thumb = document.createElement("canvas"); thumb.width = 180; thumb.height = 320;
         drawCover(thumb.getContext("2d"), v, 180, 320, 1);
         clips.push({ kind: "video", url, name: file.name, file, duration: v.duration, thumb: thumb.toDataURL("image/jpeg", .7) });
+        keepFile(file);
+        analyzeLater(clips.at(-1));
       }
     }
     refresh(); // chaque clip apparaît dès qu'il est prêt
@@ -937,7 +1172,7 @@ function renderClips() {
     // En « une vidéo par fond » : toucher un clip le montre dans l'aperçu.
     d.classList.toggle("focus", prefs.batch === "each" && i === focus);
     d.onclick = () => { if (prefs.batch === "each" && focus !== i) { focus = i; restyle(true); } };
-    d.append(Object.assign(document.createElement("span"), { textContent: c.kind === "image" ? "Photo" : OniriqueAudio.clock(c.duration) }), remove);
+    d.append(Object.assign(document.createElement("span"), { textContent: c.kind === "image" ? "Photo" : c.analyzing ? "Analyse…" : OniriqueAudio.clock(c.duration) }), remove);
     return d;
   }), $("clips-add"));
   box.classList.toggle("each", prefs.batch === "each");
@@ -1097,6 +1332,55 @@ async function separate(key) {
 const stemsOf = (worker, L, R, rate) => new Promise((resolve, reject) => {
   worker.onmessage = (e) => resolve(e.data); worker.onerror = reject; worker.postMessage({ L, R, rate }, [L.buffer, R.buffer]);
 });
+// ——— Les paroles automatiques (assets/whisper-worker.js) : écrites et calées mot par mot par une IA, sur la voix seule ———
+let whisper = null;
+/** Des mots datés en paroles LRC mot par mot : une ligne par phrase (un silence, une ponctuation finale, une majuscule
+ *  de début de phrase, ou 10 mots au plus). */
+function wordsToLrc(words) {
+  const lines = [];
+  let line = [];
+  words.forEach((w, i) => {
+    const prev = words[i - 1];
+    const sentence = line.length >= 2 && /^\p{Lu}/u.test(w.text) && !/^(I|Ok|OK)$/.test(w.text);
+    if (line.length && (w.start - prev.end > .6 || line.length >= 10 || sentence || /[.!?…]$/.test(prev.text))) { lines.push(line); line = []; }
+    line.push(w);
+  });
+  if (line.length) lines.push(line);
+  return lines.map((l) => "[" + lrcStamp(l[0].start) + "] " + l.map((w) => "<" + lrcStamp(w.start) + ">" + w.text).join(" ")).join("\n");
+}
+async function autoLyrics() {
+  if (!sound.buffer) return;
+  if ($("lyrics").value.trim() && !confirm("Remplacer les paroles actuelles par celles écrites par l'IA ?")) return;
+  const status = (text) => { $("lyrics-auto-status").textContent = text; };
+  $("lyrics-auto").disabled = true;
+  try {
+    // La voix seule (séparée par l'IA Demucs) se comprend bien mieux que le morceau avec sa prod.
+    let voice = sound.buffer;
+    status("Séparation de la voix…");
+    try { const all = await separateAll(); if (!/rapide/.test(all.note)) voice = all.parts.vocals; } catch { /* le morceau entier */ }
+    const off = new OfflineAudioContext(1, Math.ceil(voice.duration * 16000), 16000), src = off.createBufferSource();
+    src.buffer = voice; src.connect(off.destination); src.start();
+    const audio = (await off.startRendering()).getChannelData(0).slice();
+    whisper = whisper || new Worker("assets/whisper-worker.js", { type: "module" });
+    const out = await new Promise((resolve, reject) => {
+      whisper.onmessage = ({ data }) => {
+        if (data.type === "done") resolve(data);
+        else if (data.type === "error") reject(new Error(data.message));
+        else status(data.phase === "download" ? "Téléchargement de l'IA des paroles (environ 600 Mo, une seule fois sur cet appareil)… " + pct(data.value) : "L'IA écoute les paroles… " + (data.value ? pct(data.value) : ""));
+      };
+      whisper.onerror = (event) => reject(new Error(event.message || "l'IA des paroles n'a pas pu démarrer"));
+      whisper.postMessage({ audio, language: "french" }, [audio.buffer]);
+    }).catch((error) => { whisper.terminate(); whisper = null; throw error; });
+    if (!out.words.length) return status("L'IA n'a pas entendu de paroles dans ce son.");
+    $("lyrics").value = wordsToLrc(out.words);
+    readLyrics(); showCloudLyrics(); keepSet();
+    if (!playing) draw(position, false);
+    status(out.words.length + " mots écrits et calés par l'IA" + (out.device === "gpu" ? "" : " (sur le processeur)") + ". Relis-les : corrige un mot directement dans le texte" + (cloud ? ", puis enregistre-les dans CLOUD." : "."));
+  } catch (error) {
+    status("Les paroles automatiques n'ont pas marché : " + error.message);
+  } finally { $("lyrics-auto").disabled = false; }
+}
+
 // ——— Écouter tout le morceau avec une piste séparée : pour entendre ce que donne la séparation ———
 let fullStems = null, fullJob = null, stemHear = null;
 /** Les pistes de tout le morceau : par IA, sinon par la séparation rapide, par tranches de 30 s (le worker ne tiendrait pas un morceau entier en mémoire). */
@@ -1210,7 +1494,11 @@ function build() {
     last = k;
     const c = ids[k], clip = clips[c], length = (s.t1 - s.t0) * slow();
     s.clip = c;
-    if (clip.kind === "video") {
+    const best = prefs.bestMoments && clip.moments && clip.moments.filter((t) => t <= clip.duration - length - 0.05);
+    if (clip.kind === "video" && best && best.length) {
+      // Les meilleurs moments du clip (assets/clip-frames.js) : dans l'ordre de qualité, ou au hasard parmi les meilleurs.
+      s.from = prefs.order === "mix" ? best[Math.floor(random() * Math.min(best.length, 6))] : best[cursor[c]++ % best.length];
+    } else if (clip.kind === "video") {
       const room = Math.max(0, clip.duration - length - 0.05);
       if (prefs.order === "mix") s.from = random() * room;
       else { if (cursor[c] > room) cursor[c] = 0; s.from = cursor[c]; cursor[c] += length; }
@@ -1318,7 +1606,9 @@ function drawCover(ctx, src, w, h, scale) {
   if (!sw || !sh) return false;
   const s = Math.max(w / sw, h / sh) * scale, dw = sw * s, dh = sh * s;
   ctx.imageSmoothingQuality = "high"; // agrandie ou réduite, l'image reste nette (le lissage par défaut est le plus grossier)
-  drawPicIn(ctx, p, (w - dw) / 2, (h - dh) / 2, dw, dh);
+  // Recadrage intelligent : une image plus large que le cadre se cale sur le sujet au lieu du centre.
+  const x = dw > w ? Math.min(0, Math.max(w - dw, w / 2 - focusOf(src) * dw)) : (w - dw) / 2;
+  drawPicIn(ctx, p, x, (h - dh) / 2, dw, dh);
   return true;
 }
 /** Le lecteur vidéo de la coupe i, prêt à son premier instant (trois lecteurs tournent : l'actuel et les deux suivants). */
@@ -1775,6 +2065,7 @@ function seek(t) {
   position = Math.max(0, Math.min(total() - .05, t));
   shown = -1;
   draw(position, false); drawScrub(position); setTimeout(() => !playing && draw(position, false), 120);
+  compareLater();
   if (was) resumeTimer = setTimeout(() => { resumeTimer = 0; play(position); }, 200);
 }
 const PLAY_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
@@ -1864,10 +2155,11 @@ function refresh() {
   $("bpm").textContent = sound.bpm ? (Math.round(sound.bpm * 10) / 10).toString().replace(".", ",") : "—";
   $("reshuffle").hidden = prefs.order !== "mix";
   const ready = !!(sound.buffer && clips.length);
-  $("play").disabled = $("export").disabled = !ready;
+  $("play").disabled = $("export").disabled = $("series-go").disabled = !ready;
   $("screen-empty").hidden = ready;
   if (!ready) g.clearRect(0, 0, W, H);
   drawWave();
+  renderPassages();
   filmUi();
   scheduleMix();
   position = Math.min(position, total() - .05);
@@ -1875,6 +2167,7 @@ function refresh() {
   $("adv-open").disabled = $("adv-open-video").disabled = !ready;
   syncTabs();
   if (adv.open) renderAdv();
+  keepSet();
 }
 
 // ——— Export : la vidéo image par image (ou, faute de mieux, l'enregistrement en temps réel), puis MP4 propre par le serveur ———
@@ -1896,7 +2189,8 @@ const settle = (v) => new Promise((resolve) => {
 });
 /** Dessine l'image du temps t une fois chaque vidéo calée sur la bonne image. */
 const exportVideos = () => [introVideo, ...pool, ...overlays.map((o) => o.video)].filter(Boolean);
-let clipFrames = null; // assets/clip-frames.js, chargé au premier export
+let clipFrames = null, framesModule = null; // assets/clip-frames.js, chargé au premier besoin
+const framesLib = () => framesModule || (framesModule = import("./assets/clip-frames.js").catch(() => null));
 async function drawAt(t) {
   for (let tries = 0; ; tries++) {
     let drawn = draw(t, false) !== false;
@@ -1908,7 +2202,7 @@ async function drawAt(t) {
           if (v.__reader) v.__reader.close();
           v.__reader = await clipFrames(decoded.get(v.src)); v.__readerSrc = v.src; v.__rot = v.__reader.rotation;
         }
-        v.__frame = await v.__reader.frameAt(v.__want); v.__want = null;
+        v.__frame = await v.__reader.frameAt(v.__want); v.__at = v.__want; v.__want = null;
       }
       drawn = draw(t, false) !== false;
     }
@@ -1930,7 +2224,7 @@ async function encodeExact(codec, progress) {
   const count = Math.max(1, Math.round(total() * 30));
   // Les clips que WebCodecs sait décoder ne passent plus par une balise vidéo : si c'est le cas de tous, l'export continue
   // même quand on change d'onglet (un onglet caché freine les balises vidéo, pas le décodeur).
-  if (!clipFrames) clipFrames = await import("./assets/clip-frames.js").then((m) => m.clipFrames, () => null);
+  if (!clipFrames) clipFrames = (await framesLib())?.clipFrames || null;
   if (clipFrames) for (const c of clips) if (c.kind === "video" && c.file && await clipFrames(c.file)) decoded.set(c.url, c.file);
   const background = clips.every((c) => c.kind !== "video" || decoded.has(c.url));
   exact = true; shown = -1;
@@ -1981,7 +2275,9 @@ const upload = (url, body, type, progress) => new Promise((resolve, reject) => {
   xhr.setRequestHeader("Content-Type", "application/octet-stream");
   xhr.responseType = type;
   xhr.upload.onprogress = (e) => e.lengthComputable && progress(e.loaded / e.total);
-  xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve(xhr.response) : reject(new Error("Le serveur n'a pas pu préparer le MP4.")));
+  // Le message du serveur quand il en donne un (réponse JSON) ; sinon le message habituel de l'export.
+  xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve(xhr.response)
+    : reject(new Error((type === "json" && xhr.response && xhr.response.error) || "Le serveur n'a pas pu préparer le MP4.")));
   xhr.onerror = () => reject(new Error("Le serveur ne répond pas."));
   xhr.send(body);
 });
@@ -1998,12 +2294,13 @@ const fileName = (ext, suffix = "") => (($("title").value.trim() || sound.name |
 function save(blob, name) { const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: name }); a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 60_000); }
 
 /** L'export : une vidéo, ou une par fond (« Une vidéo par fond ») rangées dans un dossier choisi quand le navigateur le permet. */
-async function exportVideo() {
+async function exportVideo(series = null) {
   const mime = pickMime();
   if (!encoderCodec && (!mime || !screen.captureStream)) { alert("Ce navigateur ne sait pas enregistrer de vidéo. Ouvre ONIRIQUE CUT dans Chrome, Edge ou Safari."); return; }
   stop();
   const lockUi = (on) => document.querySelectorAll("#studio button, #studio input, #studio textarea, #studio select").forEach((x) => { x.disabled = on; });
-  const list = prefs.batch === "each" && clips.length > 1 ? clips.map((_, i) => i) : [null], kept = focus;
+  const list = series || (prefs.batch === "each" && clips.length > 1 ? clips.map((_, i) => i) : [null]), kept = focus;
+  const savedPrefs = { ...prefs }, savedStart = sound.start;
   // Plusieurs vidéos : un dossier où les ranger (Chrome, Edge) ; sinon elles arrivent une par une dans les téléchargements.
   let folder = null;
   if (list.length > 1 && window.showDirectoryPicker) { try { folder = await window.showDirectoryPicker({ mode: "readwrite" }); } catch { folder = null; } }
@@ -2013,10 +2310,13 @@ async function exportVideo() {
     const wav = await passageWav().catch(() => null);
     let savedToCloud = 0, cloudFailed = false;
     for (let n = 0; n < list.length; n++) {
-      if (list[n] !== null) { focus = list[n]; build(); renderClips(); }
+      if (series) await series[n].apply();
+      else if (list[n] !== null) { focus = list[n]; build(); renderClips(); }
       const label = list.length > 1 ? "Vidéo " + (n + 1) + " / " + list.length + " · " : "";
-      const blob = await exportOne(mime, wav, (message, part) => setStatus(label + message, (n + part) / list.length));
-      const name = fileName("mp4", list[n] === null ? "" : " - fond " + (list[n] + 1));
+      // Une série change de passage d'une vidéo à l'autre : le son se refait pour chacune.
+      const sound_ = series ? await passageWav().catch(() => null) : wav;
+      const blob = await exportOne(mime, sound_, (message, part) => setStatus(label + message, (n + part) / list.length));
+      const name = fileName("mp4", series ? series[n].suffix : list[n] === null ? "" : " - fond " + (list[n] + 1));
       if (folder) { const file = await folder.getFileHandle(name, { create: true }), w = await file.createWritable(); await w.write(blob); await w.close(); }
       else save(blob, name);
       // Fondateurs : la vidéo part aussi dans le cloud CUT.
@@ -2029,7 +2329,7 @@ async function exportVideo() {
       }
     }
     setStatus((list.length > 1 ? "C'est prêt : " + list.length + " vidéos " + (folder ? "dans le dossier choisi." : "dans tes téléchargements.") : "C'est prêt : ta vidéo est dans tes téléchargements.")
-      + (savedToCloud ? " Gardée" + (savedToCloud > 1 ? "s" : "") + " aussi dans ton cloud CUT." : "") + (cloudFailed ? " Le cloud CUT n'a pas pu la garder." : ""), 1);
+      + (savedToCloud ? " Gardée" + (savedToCloud > 1 ? "s" : "") + " aussi dans ton cloud CUT." : "") + (cloudFailed ? " Le cloud CUT n'a pas pu " + (list.length > 1 ? "toutes les garder." : "la garder.") : ""), 1);
     if (savedToCloud) renderLibrary();
     // Fini pendant qu'on était sur un autre onglet : l'onglet le dit dans son titre jusqu'à ce qu'on y revienne.
     if (document.hidden) { const title = document.title; document.title = "✓ Vidéo prête · " + title; document.addEventListener("visibilitychange", () => { document.title = title; }, { once: true }); }
@@ -2038,9 +2338,27 @@ async function exportVideo() {
   } finally {
     recording = null;
     focus = kept;
+    if (series) { Object.assign(prefs, savedPrefs); sound.start = savedStart; manual = null; savePrefs(); syncAll(); }
     lockUi(false);
     refresh();
   }
+}
+const STYLE_NAMES = { classic: "Classique", pixel: "Mot par mot pixel", red: "Mot par mot rouge", card: "Carte paroles" };
+/** Une série : les meilleurs passages croisés avec les styles cochés, chaque vidéo avec un autre mélange des clips. */
+function exportSeries() {
+  const passages = bestStarts(3).map((p) => p.start), styles = (prefs.seriesStyles || []).filter((x) => STYLE_NAMES[x]);
+  if (!styles.length) return alert("Coche au moins un style pour la série.");
+  const series = Array.from({ length: Number(prefs.seriesCount) || 5 }, (_, k) => {
+    const style = styles[k % styles.length], start = passages[k % passages.length];
+    return { suffix: " - série " + (k + 1) + " (" + STYLE_NAMES[style] + ", " + OniriqueAudio.clock(start).replace(":", "m") + ")",
+      apply: async () => {
+        Object.assign(prefs, PRESETS[style], TEXT_STYLES[PRESETS[style].textStyle], { shuffle: k, introOn: false });
+        const [family, weight] = fontOf(prefs.lyricFont);
+        await document.fonts.load(weight + ' 80px "' + family + '"').catch(() => {});
+        manual = null; sound.start = clampStart(start); build(); shown = -1;
+      } };
+  });
+  return exportVideo(series);
 }
 /** Une vidéo : le son d'origine part d'abord, puis la vidéo image par image (ou, sans WebCodecs ou sans le son d'origine,
  *  l'enregistrement en temps réel avec le son du navigateur), puis le MP4 propre du serveur. progress(message, 0 à 1). */
@@ -2853,11 +3171,22 @@ function start() {
     hearing = setTimeout(() => { hearing = 0; if (playing) { stop(); position = 0; seek(0); } }, (introLen() + 1.5) * 1000);
   };
   dragIntro();
-  $("export").onclick = exportVideo;
+  $("export").onclick = () => exportVideo();
+  chips("seriesCount", "seriesCount", () => { $("series-go").textContent = "Exporter " + prefs.seriesCount + " vidéos"; });
+  $("series-go").textContent = "Exporter " + prefs.seriesCount + " vidéos";
+  $("series-styles").replaceChildren(...Object.entries(STYLE_NAMES).map(([k, label]) => {
+    const box = Object.assign(document.createElement("input"), { type: "checkbox", checked: (prefs.seriesStyles || []).includes(k) });
+    box.onchange = () => { prefs.seriesStyles = Object.keys(STYLE_NAMES).filter((x) => x === k ? box.checked : (prefs.seriesStyles || []).includes(x)); savePrefs(); };
+    const l = Object.assign(document.createElement("label"), { className: "check" }); l.append(box, " " + label); return l;
+  }));
+  $("series-go").onclick = exportSeries;
+  $("compare-open").onclick = () => { $("compare").hidden = !$("compare").hidden; $("compare-open").textContent = $("compare").hidden ? "Comparer les styles sur ma vidéo" : "Masquer la comparaison"; renderCompare(); };
   $("mute").checked = !!prefs.mute;
   // Fondateurs : le cloud CUT (la case est cochée d'office).
   if (isFounder) {
-    $("keep-box").hidden = $("lib-panel").hidden = false;
+    $("keep-box").hidden = $("lib-panel").hidden = $("bank-row").hidden = false;
+    $("bank-open").onclick = () => { $("bank").hidden = !$("bank").hidden; if (!$("bank").hidden) renderBank(); };
+    $("bank-save").onclick = saveToBank;
     $("keepCloud").checked = prefs.keepCloud !== false;
     $("keepCloud").onchange = () => { prefs.keepCloud = $("keepCloud").checked; savePrefs(); };
     if (prefs.keepCloud === undefined) prefs.keepCloud = true;
@@ -2917,7 +3246,7 @@ function start() {
     $(id).replaceChildren(...(id === "strongFont" ? [new Option("Même police que les paroles", "")] : []), ...FONT_LIST.map(([family, , label]) => new Option(label, family)));
   }
   const loadFont = (family) => { if (!family) return; const [f, w] = fontOf(family); document.fonts.load(`${w} 80px "${f}"`).then(() => !playing && segments.length && draw(position, false)); };
-  const boxes = ["zoom", "flash", "retro", "hookOn"];
+  const boxes = ["zoom", "flash", "retro", "hookOn", "bestMoments", "smartCrop"];
   const syncControls = () => {
     for (const id of STYLE_INPUTS) { const el = $(id); if (el.type === "checkbox") el.checked = !!prefs[id]; else el.value = prefs[id]; }
     boxes.forEach((id) => { $(id).checked = !!prefs[id]; });
@@ -2939,6 +3268,7 @@ function start() {
     redraw();
   });
   syncControls();
+  syncAll = () => { syncControls(); [prefs.lyricFont, prefs.titleFont, prefs.strongFont].forEach(loadFont); redraw(); };
   $("fx-reset").onclick = () => { Object.assign(prefs, FX); savePrefs(); syncControls(); restyle(); };
   // Mes styles : tous les réglages d'image, d'effets et de texte, gardés dans ce navigateur.
   const STYLES = "onirique.cut.styles", NOT_STYLE = ["duration", "order", "snap", "loop", "mute", "batch", "artist", "hook", "sign", "shuffle", "v"];
@@ -2961,7 +3291,7 @@ function start() {
     $("style-name").value = ""; renderStyles();
   };
   renderStyles();
-  for (const id of boxes) { $(id).onchange = () => { prefs[id] = $(id).checked; savePrefs(); restyle(); }; }
+  for (const id of boxes) { $(id).onchange = () => { prefs[id] = $(id).checked; savePrefs(); restyle(id === "bestMoments"); }; }
   for (const id of ["hook", "sign"]) {
     $(id).value = prefs[id] || "";
     $(id).oninput = () => {
@@ -2976,6 +3306,7 @@ function start() {
   $("title").oninput = () => { if (!playing) draw(position, false); };
   $("lyrics").oninput = () => { readLyrics(); showCloudLyrics(); if (!playing) draw(position, false); };
   $("lyrics-pull").onclick = () => pullLyrics(false);
+  $("lyrics-auto").onclick = autoLyrics;
   $("lyrics-push").onclick = pushLyrics;
   showCloudLyrics();
   // Retour sur l'onglet (après avoir synchronisé dans CLOUD, par exemple) : les paroles de CLOUD sont reprises.
@@ -3003,18 +3334,37 @@ function start() {
     else if ((event.key === "Delete" || event.key === "Backspace") && extras.some((e) => e.id === adv.sel)) { extras = extras.filter((e) => e.id !== adv.sel); adv.sel = null; scheduleMix(); renderAdv(); }
     else if ((event.key === "Delete" || event.key === "Backspace") && overlays.some((o) => o.id === adv.sel)) { overlays = overlays.filter((o) => o.id !== adv.sel); adv.sel = null; restyle(); renderAdv(); }
   });
+  // Les raccourcis du studio (hors champ de saisie, hors timeline et synchro) : Espace lit, 1 à 6 changent d'étape, E exporte,
+  // ← et → reculent ou avancent d'une seconde.
+  document.addEventListener("keydown", (event) => {
+    if (adv.open || isync || event.ctrlKey || event.metaKey || event.altKey || /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(event.target.tagName) || event.target.isContentEditable) return;
+    const tab = ["son", "clips", "style", "texte", "image", "film"][Number(event.key) - 1];
+    if (event.key === " ") { if (!$("play").disabled) { event.preventDefault(); if (!event.repeat) $("play").click(); } }
+    else if (tab) showTab(tab);
+    else if (event.key === "e" || event.key === "E") { if (!$("export").disabled) $("export").click(); }
+    else if ((event.key === "ArrowLeft" || event.key === "ArrowRight") && !$("play").disabled) { event.preventDefault(); seek((playing ? now() : position) + (event.key === "ArrowRight" ? 1 : -1)); }
+  });
   // Les polices choisies, chargées avant de dessiner du texte sur la vidéo.
   [prefs.lyricFont, prefs.titleFont, prefs.strongFont, "Hanken Grotesk", "VT323"].forEach(loadFont);
   // Ouvert depuis un titre de ONIRIQUE CLOUD (?track=…) ; sinon, le dernier titre CLOUD utilisé se reprend d'un clic.
   const q = new URLSearchParams(location.search), track = Number(q.get("track"));
   let last = null;
   try { last = JSON.parse(localStorage.getItem(LAST) || "null"); } catch { /* rien de mémorisé */ }
-  if (track) loadCloudId(track, last && last.trackId === track ? last : {});
-  else if (last && last.trackId) {
+  const resumeCloud = () => {
+    if (!last || !last.trackId) return;
     $("resume").hidden = false;
     $("resume").textContent = "Reprendre « " + last.title + " »";
     $("resume").onclick = () => { $("resume").hidden = true; loadCloudId(last.trackId, last); };
-  }
+  };
+  if (track) loadCloudId(track, last && last.trackId === track ? last : {});
+  // Sinon, le dernier montage gardé sur cet appareil (son, clips, réglages) se reprend d'un clic.
+  else KEEP.get("sets", "@last").then((k) => k && KEEP.get("sets", k)).then((set) => {
+    if (!set || sound.buffer) return resumeCloud();
+    $("resume").hidden = false;
+    $("resume").textContent = "Reprendre « " + set.title + " » · son, " + set.clips.length + " clip" + (set.clips.length > 1 ? "s" : "") + " et réglages";
+    $("resume").onclick = () => restoreSet(set);
+  }, resumeCloud);
+  tidyKept().catch(() => {});
 }
 
 gate();
