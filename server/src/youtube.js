@@ -116,7 +116,8 @@ async function publish(video) {
     headers: { Authorization: authorization, 'Content-Type': 'application/json', 'X-Upload-Content-Type': video.mime, 'X-Upload-Content-Length': String(video.size) },
     body: JSON.stringify({
       // Une vidéo de prod (beattube.js) a ses tags, la catégorie Musique et sa visibilité ; un Short part public.
-      snippet: { title: video.title, description: video.description, ...(video.kind === 'beat' ? { tags: video.tags ? video.tags.split(',') : [], categoryId: '10' } : {}) },
+      // Les tags (mots-clés cachés) : ceux d'une prod, ou ceux qu'ONIRIQUE CUT donne à un Short de musique (catégorie Musique).
+      snippet: { title: video.title, description: video.description, ...(video.kind === 'beat' || video.tags ? { tags: video.tags ? video.tags.split(',') : [], categoryId: '10' } : {}) },
       status: { privacyStatus: video.privacy || 'public', selfDeclaredMadeForKids: false },
     }),
   });

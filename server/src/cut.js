@@ -206,6 +206,8 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
     const title = String(req.body?.title || v.name).replace(/[<>]/g, '').trim().slice(0, 100) || 'Short';
     const description = String(req.body?.description ?? v.caption).replace(/[<>]/g, '').trim().slice(0, 5000);
     const publishAt = Number(req.body?.publishAt);
+    // Les mots-clés cachés du Short (« lyrics video », « rap fr »…) : 500 caractères au plus, comme YouTube.
+    const tags = (Array.isArray(req.body?.tags) ? req.body.tags : []).map((t) => String(t).replace(/[<>,]/g, '').trim().slice(0, 30)).filter(Boolean).join(',').slice(0, 500);
     if (!(publishAt > now() - 60_000 && publishAt < now() + 366 * 86_400_000)) throw new HttpError(400, "Choisis une date à venir, dans l'année.");
     if (get(`SELECT COUNT(*) AS n FROM youtube_videos WHERE user_id = ? AND status != 'published'`, req.user.id).n >= 30) {
       throw new HttpError(400, 'Trente Shorts attendent déjà : laisse-en partir avant d\'en programmer d\'autres.');
@@ -213,8 +215,8 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
     const storedAs = crypto.randomBytes(16).toString('hex');
     fs.mkdirSync(config.videosDir, { recursive: true });
     fs.copyFileSync(path.join(libDir, v.stored_as), path.join(config.videosDir, storedAs));
-    const id = run(`INSERT INTO youtube_videos (user_id, stored_as, filename, mime, size, title, description, publish_at, status, created_at)
-      VALUES (?, ?, ?, 'video/mp4', ?, ?, ?, ?, 'scheduled', ?)`, req.user.id, storedAs, v.name + '.mp4', v.size, title, description, publishAt, now()).lastInsertRowid;
+    const id = run(`INSERT INTO youtube_videos (user_id, stored_as, filename, mime, size, title, description, publish_at, status, tags, created_at)
+      VALUES (?, ?, ?, 'video/mp4', ?, ?, ?, ?, 'scheduled', ?, ?)`, req.user.id, storedAs, v.name + '.mp4', v.size, title, description, publishAt, tags, now()).lastInsertRowid;
     res.status(201).json({ id, title, publishAt });
   }));
   // Les Shorts déjà programmés (leurs heures), pour trouver le prochain jour libre.
