@@ -41,6 +41,7 @@ import { mountBeatStoreHooks } from './beatstore.js';
 import { ownsGoogleState, googleMailerCallback } from './packsend.js';
 import { mountPush } from './push.js';
 import { mountDocs } from './docs.js';
+import { mountTierList } from './tierlist.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
@@ -551,6 +552,7 @@ export function createApp() {
   mountLinkPages(app, { requireUser, receiveImage, removeMedia, wrap });
   mountSounds(app, { requireUser, receiveFile, receiveImage, removeMedia, wrap });
   mountCut(app, { requireUser, receiveFile, wrap });
+  mountTierList(app, { requireUser, receiveImage, removeMedia, wrap });
   mountPush(app, { requireUser });
 
   // La photo d'ingé d'un fondateur : celle des crédits, distincte de la photo du compte.
