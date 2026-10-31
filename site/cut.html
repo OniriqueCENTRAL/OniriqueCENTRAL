@@ -1221,14 +1221,33 @@ let shown = -1;
 let exact = false; // pendant l'export image par image, chaque vidéo se cale à l'image près
 /** Cale une vidéo sur le temps voulu. À l'export, à l'image près : une milliseconde après le temps voulu, car le navigateur arrondit
  *  le temps demandé et, pile au début d'une image, montrerait parfois la précédente. */
-function seekTo(v, want) { if (Math.abs(v.currentTime - want) > (exact ? .002 : .04)) v.currentTime = want + (exact ? .001 : 0); }
+function seekTo(v, want) {
+  // À l'export, un clip lu par WebCodecs (assets/clip-frames.js) n'est pas calé : drawAt va chercher son image à ce temps-là.
+  if (exact && decoded.has(v.src)) { v.__want = want; return; }
+  if (Math.abs(v.currentTime - want) > (exact ? .002 : .04)) v.currentTime = want + (exact ? .001 : 0);
+}
+const decoded = new Map(); // pendant l'export : adresse d'un clip → son fichier, quand WebCodecs sait le décoder
+/** Ce qu'on dessine pour src : l'image décodée par WebCodecs (export), avec la rotation du téléphone, sinon la vidéo ou la photo. */
+function picture(src) {
+  const f = src.__frame, img = f || src, rot = f ? src.__rot : 0;
+  const w = img.displayWidth || img.videoWidth || img.naturalWidth || img.width, h = img.displayHeight || img.videoHeight || img.naturalHeight || img.height;
+  return rot % 180 ? { img, rot, w: h, h: w } : { img, rot, w, h };
+}
+/** Dessine l'image p dans le cadre (x, y, w, h), tournée s'il le faut. */
+function drawPicIn(ctx, p, x, y, w, h) {
+  if (!p.rot) return ctx.drawImage(p.img, x, y, w, h);
+  ctx.save(); ctx.translate(x + w / 2, y + h / 2); ctx.rotate(p.rot * Math.PI / 180);
+  const [a, b] = p.rot % 180 ? [h, w] : [w, h];
+  ctx.drawImage(p.img, -a / 2, -b / 2, a, b);
+  ctx.restore();
+}
 
 function drawCover(ctx, src, w, h, scale) {
-  const sw = src.videoWidth || src.naturalWidth || src.width, sh = src.videoHeight || src.naturalHeight || src.height;
+  const p = picture(src), sw = p.w, sh = p.h;
   if (!sw || !sh) return false;
   const s = Math.max(w / sw, h / sh) * scale, dw = sw * s, dh = sh * s;
   ctx.imageSmoothingQuality = "high"; // agrandie ou réduite, l'image reste nette (le lissage par défaut est le plus grossier)
-  ctx.drawImage(src, (w - dw) / 2, (h - dh) / 2, dw, dh);
+  drawPicIn(ctx, p, (w - dw) / 2, (h - dh) / 2, dw, dh);
   return true;
 }
 /** Le lecteur vidéo de la coupe i, prêt à son premier instant (trois lecteurs tournent : l'actuel et les deux suivants). */
@@ -1240,7 +1259,7 @@ function prepare(i) {
   v.dataset.seg = String(i);
   if (v.src !== clips[s.clip].url) v.src = clips[s.clip].url;
   v.pause();
-  v.currentTime = s.from + (exact ? .001 : 0);
+  if (!(exact && decoded.has(v.src))) v.currentTime = s.from + (exact ? .001 : 0);
 }
 const segmentAt = (t) => { let i = segments.findIndex((s) => t < s.t1); return i < 0 ? segments.length - 1 : i; };
 
@@ -1473,7 +1492,7 @@ function drawIntro(t, playing) {
   if (v.playbackRate !== 1) v.playbackRate = 1;
   if (playing && !frozen) { if (v.paused) v.play().catch(() => {}); if (Math.abs(v.currentTime - want) > .25) v.currentTime = want; }
   else { v.pause(); seekTo(v, want); }
-  if (v.readyState < 2) return false;
+  if (v.readyState < 2 && !v.__frame) return false;
   const r = frameRect();
   g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
   drawPicture(v, r, 1);
@@ -1563,7 +1582,7 @@ function drawMusic(t, playing) {
     if (v.playbackRate !== rate) v.playbackRate = rate;
     if (playing) { if (v.paused) v.play().catch(() => {}); if (Math.abs(v.currentTime - want) > .25) v.currentTime = want; }
     else seekTo(v, want);
-    if (v.readyState < 2) return false; // l'image précédente reste le temps que la vidéo arrive
+    if (v.readyState < 2 && !v.__frame) return false; // l'image précédente reste le temps que la vidéo arrive
   }
   // Les temps du morceau : le zoom, la secousse et le décalage RVB partent de chaque temps.
   const song = t + sound.start - sound.phase, sinceBeat = ((song % beatLength()) + beatLength()) % beatLength();
@@ -1804,10 +1823,24 @@ const settle = (v) => new Promise((resolve) => {
   v.addEventListener("seeked", done); v.addEventListener("loadeddata", done);
 });
 /** Dessine l'image du temps t une fois chaque vidéo calée sur la bonne image. */
+const exportVideos = () => [introVideo, ...pool, ...overlays.map((o) => o.video)].filter(Boolean);
+let clipFrames = null; // assets/clip-frames.js, chargé au premier export
 async function drawAt(t) {
   for (let tries = 0; ; tries++) {
-    const drawn = draw(t, false) !== false;
-    const busy = [introVideo, ...pool, ...overlays.map((o) => o.video)].filter((v) => v && v.currentSrc && !v.error && (v.seeking || v.readyState < 2));
+    let drawn = draw(t, false) !== false;
+    // Les clips décodés par WebCodecs : l'image du temps voulu, puis on redessine avec.
+    const wanted = exportVideos().filter((v) => v.__want != null && decoded.has(v.src));
+    if (wanted.length) {
+      for (const v of wanted) {
+        if (v.__readerSrc !== v.src) {
+          if (v.__reader) v.__reader.close();
+          v.__reader = await clipFrames(decoded.get(v.src)); v.__readerSrc = v.src; v.__rot = v.__reader.rotation;
+        }
+        v.__frame = await v.__reader.frameAt(v.__want); v.__want = null;
+      }
+      drawn = draw(t, false) !== false;
+    }
+    const busy = exportVideos().filter((v) => v.currentSrc && !decoded.has(v.src) && !v.error && (v.seeking || v.readyState < 2));
     if ((drawn && !busy.length) || tries > 8) return;
     await Promise.all(busy.map(settle));
   }
@@ -1823,11 +1856,16 @@ async function encodeExact(codec, progress) {
   encoder.ondequeue = () => wake();
   encoder.configure(encoderConfig(codec));
   const count = Math.max(1, Math.round(total() * 30));
+  // Les clips que WebCodecs sait décoder ne passent plus par une balise vidéo : si c'est le cas de tous, l'export continue
+  // même quand on change d'onglet (un onglet caché freine les balises vidéo, pas le décodeur).
+  if (!clipFrames) clipFrames = await import("./assets/clip-frames.js").then((m) => m.clipFrames, () => null);
+  if (clipFrames) for (const c of clips) if (c.kind === "video" && c.file && await clipFrames(c.file)) decoded.set(c.url, c.file);
+  const background = clips.every((c) => c.kind !== "video" || decoded.has(c.url));
   exact = true; shown = -1;
   try {
     for (let n = 0; n < count; n++) {
-      // Onglet caché : le navigateur ralentit les vidéos ; on reprend quand on revient.
-      while (document.hidden) {
+      // Un clip qui passe encore par sa balise vidéo : onglet caché, le navigateur la freine ; on reprend quand on revient.
+      while (document.hidden && !background) {
         progress("En pause : reviens sur cet onglet pour finir la vidéo.", .08 + n / count * .64);
         await new Promise((resolve) => document.addEventListener("visibilitychange", resolve, { once: true }));
       }
@@ -1837,12 +1875,14 @@ async function encodeExact(codec, progress) {
       frame.close();
       while (encoder.encodeQueueSize > 3 && !failed) await new Promise((resolve) => { wake = resolve; });
       if (failed) throw failed;
-      if (n % 6 === 0) progress("Fabrication de la vidéo, image par image… " + OniriqueAudio.clock(n / 30) + " / " + OniriqueAudio.clock(total()) + " · garde cet onglet ouvert", .08 + n / count * .64);
+      if (n % 6 === 0) progress("Fabrication de la vidéo, image par image… " + OniriqueAudio.clock(n / 30) + " / " + OniriqueAudio.clock(total()) + (background ? " · tu peux changer d'onglet" : " · garde cet onglet ouvert"), .08 + n / count * .64);
     }
     await encoder.flush();
     if (failed) throw failed;
   } finally {
     exact = false;
+    for (const v of exportVideos()) { if (v.__reader) v.__reader.close(); delete v.__reader; delete v.__readerSrc; delete v.__frame; delete v.__want; }
+    decoded.clear(); shown = -1;
     if (encoder.state !== "closed") encoder.close();
   }
   return new Blob(chunks, { type: "video/h264" });
@@ -1919,6 +1959,8 @@ async function exportVideo() {
     setStatus((list.length > 1 ? "C'est prêt : " + list.length + " vidéos " + (folder ? "dans le dossier choisi." : "dans tes téléchargements.") : "C'est prêt : ta vidéo est dans tes téléchargements.")
       + (savedToCloud ? " Gardée" + (savedToCloud > 1 ? "s" : "") + " aussi dans ton cloud CUT." : "") + (cloudFailed ? " Le cloud CUT n'a pas pu la garder." : ""), 1);
     if (savedToCloud) renderLibrary();
+    // Fini pendant qu'on était sur un autre onglet : l'onglet le dit dans son titre jusqu'à ce qu'on y revienne.
+    if (document.hidden) { const title = document.title; document.title = "✓ Vidéo prête · " + title; document.addEventListener("visibilitychange", () => { document.title = title; }, { once: true }); }
   } catch (error) {
     setStatus(error.message || "L'export a échoué.", 0);
   } finally {
@@ -2006,13 +2048,13 @@ function drawOverlays(t, playing) {
       const want = (o.offset + (t - o.at)) % Math.max(.1, c.duration - .05);
       if (playing) { if (src.paused) src.play().catch(() => {}); if (Math.abs(src.currentTime - want) > .3) src.currentTime = want; }
       else { src.pause(); seekTo(src, want); }
-      if (src.readyState < 2) continue;
+      if (src.readyState < 2 && !src.__frame) continue;
     }
-    const sw = src.videoWidth || src.naturalWidth, sh = src.videoHeight || src.naturalHeight;
+    const p = picture(src), sw = p.w, sh = p.h;
     if (!sw || !sh) continue;
     const w = W * o.scale / 100, h = w * sh / sw, m = 48;
     const x = { tl: m, bl: m, tr: W - w - m, br: W - w - m, c: (W - w) / 2 }[o.pos], y = { tl: 200, tr: 200, bl: H - h - 260, br: H - h - 260, c: (H - h) / 2 }[o.pos];
-    g.save(); g.globalAlpha = o.opacity / 100; g.drawImage(src, x, y, w, h); g.restore();
+    g.save(); g.globalAlpha = o.opacity / 100; drawPicIn(g, p, x, y, w, h); g.restore();
   }
 }
 
