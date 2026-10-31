@@ -66,7 +66,12 @@
 .adv-bar .time { min-width: 110px; }
 .adv-bar label { display: flex; align-items: center; gap: 8px; font: 500 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--haze); }
 .adv-bar input[type="range"] { width: 120px; accent-color: var(--ember); }
-.adv-main { display: grid; grid-template-columns: 168px minmax(0, 1fr); overflow-y: auto; border: 1px solid var(--line); border-radius: 12px; background: #140e10; }
+.adv-body { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 12px; min-height: 0; }
+.adv-preview { display: grid; align-content: start; gap: 10px; }
+.adv-preview canvas { width: 100%; aspect-ratio: 9 / 16; display: block; border-radius: 12px; background: #000; border: 1px solid var(--line); }
+.adv-preview .row { justify-content: center; gap: 10px; }
+@media (max-width: 760px) { .adv-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); } .adv-preview { grid-template-columns: 96px 1fr; align-items: center; } }
+.adv-main { min-height: 0; display: grid; grid-template-columns: 168px minmax(0, 1fr); overflow-y: auto; border: 1px solid var(--line); border-radius: 12px; background: #140e10; }
 .adv-heads { padding-top: 28px; border-right: 1px solid var(--line); background: #1a1214; }
 .adv-head { height: 46px; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 0; border-bottom: 1px solid rgba(255,255,255,.05); font: 600 12px/1.2 var(--f-body); color: var(--mist); }
 .adv-head i { align-self: stretch; width: 6px; flex: none; }
@@ -486,20 +491,28 @@
 
     <section class="adv" id="adv" hidden aria-label="Timeline des sons">
       <div class="adv-bar">
+        <div class="chips" id="adv-mode" role="group" aria-label="Timeline"><button type="button" data-v="both">Combiné</button><button type="button" data-v="audio">Sons</button><button type="button" data-v="video">Vidéo</button></div>
         <h2 id="adv-title">Timeline des sons</h2>
-        <div class="chips" id="adv-mode" role="group" aria-label="Timeline"><button type="button" data-v="audio">Sons</button><button type="button" data-v="video">Vidéo</button></div>
         <label class="check" id="adv-snap-box" style="text-transform:none;letter-spacing:0;font:400 13px var(--f-body);color:var(--mist)"><input type="checkbox" id="adv-snap" checked> Caler les coupes sur les temps</label>
         <button class="round" type="button" id="adv-play" aria-label="Lecture"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button>
         <span class="time" id="adv-time">0:00</span>
         <label>Zoom<input type="range" id="adv-zoom" min="10" max="220" step="5"></label>
         <button class="mini" type="button" id="adv-add">+ Ajouter un son</button>
-        <button class="mini" type="button" id="adv-track">+ Piste</button>
+        <button class="mini" type="button" id="adv-track">+ Piste son</button>
+        <button class="mini" type="button" id="adv-add-ov">+ Superposition</button>
+        <button class="mini" type="button" id="adv-track-v">+ Piste vidéo</button>
         <input id="adv-file" type="file" accept="audio/*,video/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" multiple hidden>
         <button class="go" type="button" id="adv-close">Fermer</button>
       </div>
-      <div class="adv-main">
-        <div class="adv-heads" id="adv-heads"></div>
-        <div class="adv-scroll" id="adv-scroll"><canvas id="adv-canvas"></canvas><canvas id="adv-head-canvas"></canvas></div>
+      <div class="adv-body">
+        <div class="adv-preview">
+          <canvas id="adv-preview" aria-label="Aperçu de la vidéo"></canvas>
+          <div class="row"><button class="round" type="button" id="adv-play2" aria-label="Lecture"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button><span class="time" id="adv-time2">0:00</span></div>
+        </div>
+        <div class="adv-main">
+          <div class="adv-heads" id="adv-heads"></div>
+          <div class="adv-scroll" id="adv-scroll"><canvas id="adv-canvas"></canvas><canvas id="adv-head-canvas"></canvas></div>
+        </div>
       </div>
       <div class="adv-sel" id="adv-sel"></div>
     </section>
@@ -1487,7 +1500,7 @@ function seek(t) {
 function setPlayIcon() {
   $("play").innerHTML = playing ? '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>' : '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
   $("play").ariaLabel = playing ? "Pause" : "Lecture";
-  $("adv-play").innerHTML = $("play").innerHTML; $("adv-play").ariaLabel = $("play").ariaLabel;
+  for (const id of ["adv-play", "adv-play2"]) { $(id).innerHTML = $("play").innerHTML; $(id).ariaLabel = $("play").ariaLabel; }
 }
 
 // ——— La forme d'onde du morceau (passage choisi en rouge) et la barre de lecture ———
@@ -1751,7 +1764,7 @@ function rmsOf(buffer) {
 /** Les pistes de la timeline vidéo : la réplique, le montage (une coupe par bloc), les superpositions. */
 function videoModel() {
   const intro = introLen(), rows = [], editable = prefs.batch !== "each" && !(prefs.filmContinue && intro > 0);
-  if (intro) rows.push({ id: "v-film", name: "Réplique", color: "#e45d4b", clips: [{ key: "film", start: 0, len: intro, label: "Réplique", thumb: introClip(), edit: true }] });
+  if (intro) rows.push({ id: "v-film", name: "Réplique", color: "#e45d4b", clips: [{ key: "vfilm", start: 0, len: intro, label: "Réplique", thumb: introClip(), edit: true }] });
   rows.push({ id: "v-main", name: manual ? "Montage (retouché)" : "Montage", color: "#3d8fd6",
     clips: segments.map((x, i) => ({ key: "s" + i, start: intro + x.t0, len: x.t1 - x.t0, label: clips[x.clip] ? clips[x.clip].name : "", thumb: clips[x.clip], seg: editable ? i : undefined })) });
   for (let k = 0; k < adv.vtracks; k++) rows.push({ id: "ov" + k, name: "Superposition " + (k + 1), color: "#2fb5a8",
@@ -1760,8 +1773,15 @@ function videoModel() {
 }
 /** La miniature d'un clip (chargée une fois), pour les blocs de la timeline vidéo. */
 const thumbOf = (c) => c.thumbEl || (c.thumbEl = Object.assign(new Image(), { src: c.kind === "image" ? c.url : c.thumb, onload: () => adv.open && drawAdv() }));
+/** Une piste de son (avec son bouton M), par opposition aux pistes de l'image. */
+const isAudioRow = (row) => row.id !== "video" && !/^(v-|ov)/.test(row.id);
 function tracksModel() {
   if (adv.mode === "video") return videoModel();
+  // Combiné : l'image en haut, puis tous les sons, sur la même règle.
+  if (adv.mode === "both") return [...videoModel(), ...audioModel().filter((r) => r.id !== "video")];
+  return audioModel();
+}
+function audioModel() {
   const intro = introLen(), T = total(), rows = [], under = Math.min(sound.start, intro);
   rows.push({ id: "video", name: "Image", color: "#3d8fd6", clips: [
     ...(intro ? [{ key: "v-intro", start: 0, len: intro, label: "Réplique", color: "#e45d4b" }] : []),
@@ -1846,7 +1866,7 @@ function renderAdv() {
     head.className = "adv-head";
     const strip = document.createElement("i"); strip.style.background = row.color;
     head.append(strip, Object.assign(document.createElement("span"), { textContent: row.name, title: row.name }));
-    if (adv.mode === "audio" && row.id !== "video") {
+    if (isAudioRow(row)) {
       Object.assign(mute, { type: "button", textContent: "M", title: "Couper cette piste", ariaPressed: String(mutedTracks.has(row.id)) });
       mute.onclick = () => { if (mutedTracks.has(row.id)) mutedTracks.delete(row.id); else mutedTracks.add(row.id); scheduleMix(); renderAdv(); };
       head.append(mute);
@@ -1915,7 +1935,7 @@ function renderAdvSel() {
   } else if (row.vol) {
     box.append(range("Volume de la piste", prefs[row.vol], 0, row.vol === "filmVol" ? 200 : 150, 5, (v) => { prefs[row.vol] = v; savePrefs(); filmUi(); scheduleMix(); }));
     if (row.id === "film") box.append(Object.assign(document.createElement("span"), { className: "muted", textContent: "Tire les bords de la réplique pour la recouper ; glisse-la pour faire défiler le film dessous." }));
-  } else if (adv.mode === "video") box.append(Object.assign(document.createElement("span"), { className: "muted", textContent: row.id === "v-film"
+  } else if (!isAudioRow(row) && row.id !== "video") box.append(Object.assign(document.createElement("span"), { className: "muted", textContent: row.id === "v-film"
     ? "Tire les bords de la réplique pour la recouper ; glisse-la pour faire défiler le film dessous."
     : "Touche une coupe pour changer son clip, le couper ou le fusionner ; tire la limite entre deux coupes pour la déplacer ; glisse une coupe pour choisir le moment du clip. « + Superposition » pose une image ou une vidéo par-dessus." }));
   else box.append(Object.assign(document.createElement("span"), { className: "muted", textContent: "La piste Image montre le montage : la réplique, puis chaque coupe calée sur le tempo." }));
@@ -2015,9 +2035,9 @@ async function addExtras(files) {
 /** Sons ou Vidéo : le titre, les boutons et les pistes suivent. */
 function setAdvMode(mode) {
   adv.mode = mode; adv.sel = null; adv.selRow = null;
-  $("adv-title").textContent = mode === "video" ? "Timeline vidéo" : "Timeline des sons";
-  $("adv-add").textContent = mode === "video" ? "+ Superposition" : "+ Ajouter un son";
-  $("adv-snap-box").hidden = mode !== "video";
+  $("adv-title").textContent = { both: "Timeline : image et sons", video: "Timeline vidéo", audio: "Timeline des sons" }[mode];
+  $("adv-add").hidden = $("adv-track").hidden = mode === "video";
+  $("adv-add-ov").hidden = $("adv-track-v").hidden = $("adv-snap-box").hidden = mode === "audio";
   document.querySelectorAll("#adv-mode button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === mode)));
   renderAdv();
 }
@@ -2025,11 +2045,23 @@ function openAdv(mode = "audio") {
   adv.open = true; $("adv").hidden = false; document.body.style.overflow = "hidden";
   $("adv-zoom").value = adv.pps;
   setAdvMode(mode);
+  cancelAnimationFrame(advFrame); mirrorAdv();
   // Le son des clips se décode en fond ; la timeline se redessine quand il arrive.
   Promise.all(clips.filter((c) => c.kind === "video").map(clipAudio)).then(() => adv.open && renderAdv());
   if (STEMS.includes(prefs.underPart)) ensureStems().then(() => adv.open && renderAdv());
 }
-function closeAdv() { adv.open = false; $("adv").hidden = true; document.body.style.overflow = ""; }
+function closeAdv() { adv.open = false; $("adv").hidden = true; document.body.style.overflow = ""; cancelAnimationFrame(advFrame); }
+/** L'aperçu de la timeline : une copie de l'aperçu principal, image par image, tant que la timeline est ouverte. */
+let advFrame = 0;
+function mirrorAdv() {
+  const c = $("adv-preview"), d = devicePixelRatio || 1, w = Math.round(c.clientWidth * d);
+  if (w > 0) {
+    if (c.width !== w) { c.width = w; c.height = Math.round(w * 16 / 9); }
+    c.getContext("2d").drawImage(screen, 0, 0, c.width, c.height);
+  }
+  $("adv-time2").textContent = OniriqueAudio.clock(now()) + " / " + OniriqueAudio.clock(total());
+  if (adv.open) advFrame = requestAnimationFrame(mirrorAdv);
+}
 
 // ——— Les commandes ———
 const marks = [];
@@ -2412,11 +2444,14 @@ function start() {
   $("adv-close").onclick = closeAdv;
   $("adv-play").onclick = () => $("play").click();
   $("adv-zoom").oninput = () => { adv.pps = Number($("adv-zoom").value); drawAdv(); };
-  $("adv-add").onclick = () => (adv.mode === "video" ? addOverlay() : $("adv-file").click());
+  $("adv-add").onclick = () => $("adv-file").click();
+  $("adv-add-ov").onclick = addOverlay;
+  $("adv-track-v").onclick = () => { adv.vtracks++; renderAdv(); };
+  $("adv-play2").onclick = () => $("play").click();
   $("adv-open-video").onclick = () => openAdv("video");
   $("adv-mode").onclick = (event) => { const b = event.target.closest("button"); if (b) setAdvMode(b.dataset.v); };
   $("adv-file").onchange = () => { addExtras([...$("adv-file").files]); $("adv-file").value = ""; };
-  $("adv-track").onclick = () => { if (adv.mode === "video") adv.vtracks++; else adv.tracks++; renderAdv(); };
+  $("adv-track").onclick = () => { adv.tracks++; renderAdv(); };
   addEventListener("resize", () => adv.open && drawAdv());
   document.addEventListener("keydown", (event) => {
     if (!adv.open || isync || /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName)) return;
