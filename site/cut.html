@@ -2312,11 +2312,11 @@ function renderIsync() {
     type: "button", textContent: it.text, className: k === s.i ? "next" : it.at !== null ? "done" : "", ariaPressed: String(it.at !== null),
     title: it.at === null ? "Pas encore marqué" : it.at.toFixed(2).replace(".", ",") + " s",
     onclick: () => { s.i = k; const back = it.at ?? s.items[k - 1]?.at ?? 0; isyncPlayer.currentTime = prefs.introIn + Math.max(0, back - 1); renderIsync(); } })));
-  $("isync-mark").textContent = !next ? "Tout est marqué" : isyncPlayer.paused ? "Lancer la réplique (Espace)" : "Marquer « " + next.text + " » (Espace)";
+  $("isync-mark").textContent = !next ? "Tout est marqué" : isyncPlayer.paused ? "Lancer la réplique (↓)" : "Marquer « " + next.text + " » (↓)";
   $("isync-mark").disabled = !next;
   document.querySelectorAll("[data-rate]").forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.rate) === s.rate)));
   $("isync-help").textContent = s.items.filter((x) => x.at !== null).length + " / " + s.items.length + (s.mode === "line" ? " phrases" : " mots")
-    + " · Lance la réplique, puis appuie sur Espace au moment où chaque " + (s.mode === "line" ? "phrase" : "mot") + " commence. Ralentis le son pour être précis.";
+    + " · Lance la réplique, puis appuie sur ↓ (flèche du bas) au moment où chaque " + (s.mode === "line" ? "phrase" : "mot") + " commence. Ralentis le son pour être précis.";
 }
 function markIsync() {
   const s = isync;
@@ -2425,10 +2425,10 @@ function start() {
   $("isync-done").onclick = finishIsync;
   document.querySelectorAll("[data-rate]").forEach((b) => { b.onclick = () => { if (!isync) return; isync.rate = Number(b.dataset.rate); isyncPlayer.playbackRate = isync.rate; renderIsync(); }; });
   isyncPlayer.addEventListener("play", renderIsync); isyncPlayer.addEventListener("pause", () => isync && renderIsync());
-  // Espace marque, ↑ annule, pendant la synchronisation de la réplique (hors champ de saisie).
+  // ↓ (ou Espace) marque, ↑ annule, pendant la synchronisation de la réplique (hors champ de saisie).
   document.addEventListener("keydown", (event) => {
     if (!isync || /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName)) return;
-    if (event.key === " ") { event.preventDefault(); if (!event.repeat) markIsync(); }
+    if (event.key === "ArrowDown" || event.key === " ") { event.preventDefault(); if (!event.repeat) markIsync(); }
     else if (event.key === "ArrowUp") { event.preventDefault(); undoIsync(); }
   });
   $("intro-hear").onclick = async () => {

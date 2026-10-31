@@ -2961,11 +2961,11 @@ for (const type of ["play", "pause"]) syncAudio.addEventListener(type, () => {
   const b = document.getElementById("sync-play");
   if (b) { b.replaceChildren(icon(syncAudio.paused ? "play" : "pause")); b.ariaLabel = syncAudio.paused ? "Lecture" : "Pause"; }
 });
-// Espace marque la ligne, ↑ annule le dernier repère, où que soit le focus (hors champ de saisie). Le document les reçoit
+// ↓ (ou Espace) marque la ligne, ↑ annule le dernier repère, où que soit le focus (hors champ de saisie). Le document les reçoit
 // en premier : après chaque repère la fenêtre est redessinée et le focus retombe sur la page.
 document.addEventListener("keydown", (event) => {
   if (!syncing() || event.target.tagName === "TEXTAREA" || (event.target.tagName === "INPUT" && event.target.type !== "range")) return;
-  const id = event.key === " " ? "sync-mark" : event.key === "ArrowUp" ? "sync-undo" : null;
+  const id = event.key === "ArrowDown" || event.key === " " ? "sync-mark" : event.key === "ArrowUp" ? "sync-undo" : null;
   if (!id) return;
   event.preventDefault(); event.stopPropagation();
   if (!event.repeat) document.getElementById(id)?.click();
@@ -3266,7 +3266,7 @@ function renderDetails() {
     // Les touches à côté des boutons, comme sur Musixmatch (pas sur écran tactile).
     const key = (label) => (touch ? null : el("kbd", { textContent: label }));
     const mark = el("button", { className: "btn btn-primary", id: "sync-mark", type: "button", disabled: !next },
-      next ? (syncAudio.paused && !syncAudio.currentTime ? "Lancer le titre" : "Marquer la ligne") : "Toutes les lignes sont marquées", next ? key("Espace") : null);
+      next ? (syncAudio.paused && !syncAudio.currentTime ? "Lancer le titre" : "Marquer la ligne") : "Toutes les lignes sont marquées", next ? key("↓") : null);
     mark.onclick = () => {
       if (!next) return;
       // Le premier appui lance le titre ; les suivants posent le repère de la ligne.
@@ -3288,7 +3288,7 @@ function renderDetails() {
     const saved = el("span", { className: "muted", style: "font-size:13px" });
     right = [back("Synchroniser les paroles"),
       el("p", { className: "muted", style: "margin:0", textContent: touch ? "Lance le titre, puis touche Marquer au moment où chaque ligne commence. Touche une ligne pour la reprendre à partir de là."
-        : "Lance le titre, puis appuie sur Espace au moment où chaque ligne commence, ↑ pour annuler le dernier repère. Clique une ligne pour la reprendre à partir de là." }),
+        : "Lance le titre, puis appuie sur ↓ (flèche du bas) au moment où chaque ligne commence, ↑ pour annuler le dernier repère. Clique une ligne pour la reprendre à partir de là." }),
       syncBar(v),
       el("div", { className: "row sync-keys" }, mark, undo),
       el("ol", { className: "group sync-lines" }, ...sync.lines.map((l, i) => el("li", { className: i === sync.i ? "next" : l.at !== null ? "done" : "" },
@@ -3311,7 +3311,7 @@ function renderDetails() {
     const key = (label) => (touch ? null : el("kbd", { textContent: label }));
     const go = (at) => { syncAudio.currentTime = Math.max(0, at); };
     const mark = el("button", { className: "btn btn-primary", id: "sync-mark", type: "button", disabled: !word },
-      word ? (syncAudio.paused ? "Lancer le son" : "Marquer « " + word.text + " »") : "Tous les mots sont marqués", word ? key("Espace") : null);
+      word ? (syncAudio.paused ? "Lancer le son" : "Marquer « " + word.text + " »") : "Tous les mots sont marqués", word ? key("↓") : null);
     mark.onclick = () => {
       if (!word) return;
       // Le premier appui lance le son ; les suivants posent le moment du mot.
@@ -3340,7 +3340,7 @@ function renderDetails() {
     const done = s.lines.reduce((n, l) => n + l.words.filter((w) => w.at !== null).length, 0), total = s.lines.reduce((n, l) => n + l.words.length, 0);
     const saved = el("span", { className: "muted", style: "font-size:13px" });
     right = [back("Synchroniser mot par mot"),
-      el("p", { className: "muted", style: "margin:0", textContent: (touch ? "Lance le son, puis touche Marquer à chaque mot chanté." : "Lance le son, puis appuie sur Espace à chaque mot chanté, ↑ pour annuler.")
+      el("p", { className: "muted", style: "margin:0", textContent: (touch ? "Lance le son, puis touche Marquer à chaque mot chanté." : "Lance le son, puis appuie sur ↓ (flèche du bas) à chaque mot chanté, ↑ pour annuler.")
         + " Ralentis le son (0,25 ou 0,50) pour être précis. Touche un mot pour reprendre à partir de lui." }),
       syncBar(v), speeds,
       el("div", { className: "row sync-keys" }, mark, undo, el("span", { className: "muted", style: "font-size:13px", textContent: done + " / " + total + " mots" })),
@@ -3400,7 +3400,12 @@ function renderDetails() {
       state: x.id === p.id ? "Ici" : "", onclick: x.id === p.id ? null : () => api("PATCH", "/me/sounds/tracks/" + t.id, { projectId: x.id }).then(() => { detailsView = "main"; return refresh(); }).catch(fail),
     })))];
   }
-  $("details").replaceChildren(el("div", { className: "details" }, left, el("div", { className: "details-right" }, ...right.filter(Boolean))));
+  // Redessinée sur la même vue (un repère posé, par exemple), la fenêtre reste où on avait défilé, au lieu de remonter tout en haut.
+  const SCROLLERS = [".details-right", ".sync-lines", ".word-lines"], dialog = $("details");
+  const scrolled = dialog.dataset.view === detailsView + ":" + detailsId ? [dialog.scrollTop, ...SCROLLERS.map((q) => dialog.querySelector(q)?.scrollTop || 0)] : null;
+  dialog.dataset.view = detailsView + ":" + detailsId;
+  dialog.replaceChildren(el("div", { className: "details" }, left, el("div", { className: "details-right" }, ...right.filter(Boolean))));
+  if (scrolled) { dialog.scrollTop = scrolled[0]; SCROLLERS.forEach((q, n) => { const box = dialog.querySelector(q); if (box) box.scrollTop = scrolled[n + 1]; }); }
 }
 
 // ——— Partage ———
