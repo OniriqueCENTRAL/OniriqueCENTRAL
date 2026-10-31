@@ -739,7 +739,7 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
       <label class="field">Tes hashtags YouTube<textarea id="ytTags" rows="3" placeholder="#rapfr #euhz #undergroundmusic #rap #musique #nouveauson"></textarea></label>
       <p class="muted small" id="yt-tags-next">Chaque Short en prend 3 différents, à tour de rôle dans ta liste.</p>
       <label class="field">Ta phrase d'appel (dans la description, {son} = le titre du son)<textarea id="ytCta" rows="3"></textarea></label>
-      <p class="muted small">Titre : « la phrase » + émoji + 3 hashtags. Description : la phrase, « Artiste - Titre », ta phrase d'appel, les hashtags. Les mots-clés cachés se remplissent seuls.</p>
+      <p class="muted small">Titre : « la phrase » + émoji, sans hashtag. Description : la phrase, « Artiste - Titre », ta phrase d'appel, les hashtags. Les mots-clés cachés se remplissent seuls.</p>
     </section>
     <section>
       <h3>À venir <span class="muted" id="yt-count"></span></h3>
@@ -1064,7 +1064,7 @@ function nextTags(peek = false) {
 }
 const CTA = 'Ma musique "{son}" est disponible sur toutes les plateformes de stream !! 🥹 Tu peux aussi la trouver dans l\'onglet "Sorties" de ma chaîne YouTube. 💜';
 /** Titre, description et mots-clés d'un Short, sur le modèle des Shorts de musique qui marchent (@Willyodoff) et le tien :
- *    titre : « la phrase » + son émoji + tes 3 hashtags du tour (la phrase raccourcie pour tenir dans les 100 caractères)
+ *    titre : « la phrase » + son émoji, sans hashtag (la phrase raccourcie pour tenir dans les 100 caractères)
  *    description : "la phrase" / Artiste - Titre / ta phrase d'appel (le son est dispo partout) / les mêmes hashtags
  *    mots-clés cachés : l'artiste, le son, tes hashtags, et ce que cherchent les gens (lyrics video, rap fr, musique…) */
 function shortTexts(caption, name) {
@@ -1072,12 +1072,12 @@ function shortTexts(caption, name) {
   const son = ((lines.map((l) => /^Le son\s*:\s*(.+)$/.exec(l)).find(Boolean) || [])[1] || name.split(" - ONIRIQUE CUT")[0]).replace(/\s+[^\p{L}\p{N}\s]+$/u, "").trim();
   const quote = q ? q[1].replace(/[<>]/g, "") : "", emoji = q ? q[2].trim() : "", tags = nextTags();
   const [artist, title] = son.includes(" - ") ? son.split(" - ") : ["", son], hashtags = tags.join(" ");
-  const room = 100 - (emoji ? emoji.length + 1 : 0) - (hashtags ? hashtags.length + 1 : 0) - 4;
+  const room = 100 - (emoji ? emoji.length + 1 : 0) - 4;
   const said = quote.length > room ? quote.slice(0, Math.max(10, room - 1)).replace(/\s+\S*$/, "") + "…" : quote;
   const head = quote ? "« " + said + " »" + (emoji ? " " + emoji : "") : son;
   const cta = (prefs.ytCta || CTA).replace(/\{son\}/g, title && artist ? title + " - " + artist : son).trim();
   return {
-    title: (head + (hashtags ? " " + hashtags : "")).replace(/\s+/g, " ").slice(0, 100),
+    title: head.replace(/#\S+/g, "").replace(/\s+/g, " ").trim().slice(0, 100),
     description: [...(quote ? ['"' + quote + '"'] : []), son, "", cta, "", hashtags].join("\n").replace(/\n{3,}/g, "\n\n").trim(),
     tags: [...new Set([artist, title, son, ...tags.map((t) => t.slice(1)), "lyrics video", "short music", "rap fr", "musique " + new Date().getFullYear(),
       "film edit", "edit musique", ...(artist ? [artist + " " + title] : [])].map((t) => t.trim()).filter(Boolean))],
