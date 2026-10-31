@@ -386,6 +386,11 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 .sync-player { display: flex; align-items: center; gap: 12px; padding: 8px 14px 8px 8px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); }
 .sync-player b { flex: none; font: 500 13px var(--f-mono); color: var(--mist); }
 .sync-range { flex: 1; min-width: 0; accent-color: var(--ember); }
+.sync-vol { flex: none; width: 80px; accent-color: var(--ember); }
+.sync-vol-ico { flex: none; display: flex; margin-right: -6px; color: var(--mist); }
+.sync-vol-ico svg { width: 18px; height: 18px; }
+/* Sur téléphone, le volume passe à la ligne pour laisser de la place à la position. */
+@media (max-width: 560px) { .sync-player { flex-wrap: wrap; border-radius: 24px; } .sync-range { min-width: 120px; } .sync-vol-ico { margin-left: 8px; } .sync-vol { flex: 1; } }
 .sync-keys .btn { gap: 10px; }
 .sync-keys kbd { padding: 2px 7px; border-radius: 6px; border: 1px solid currentColor; font: 600 11px/1.4 var(--f-mono); opacity: .7; }
 @media (pointer: coarse) { #sync-mark { flex: 1; min-height: 56px; font-size: 16px; } }
@@ -2854,6 +2859,8 @@ let sync = null; // la synchronisation des paroles en cours : { tid, lines: [{ a
 // s'arrête dès qu'on les quitte.
 const syncAudio = new Audio();
 syncAudio.preload = "auto";
+// Son volume à lui, gardé d'une visite à l'autre.
+try { const v = Number(localStorage.getItem("onirique.syncVolume") ?? 1); if (v >= 0 && v <= 1) syncAudio.volume = v; } catch {}
 const LYRICS_VIEWS = ["lyrics", "lyrics-sync", "lyrics-words"];
 let wsync = null; // la synchronisation mot par mot en cours : { tid, lines, li, wi : le prochain mot à marquer, rate : la vitesse }
 const syncing = () => $("details").open && LYRICS_VIEWS.includes(detailsView);
@@ -2867,7 +2874,10 @@ function syncBar(v) {
     onclick: () => (syncAudio.paused ? syncAudio.play().catch(fail) : syncAudio.pause()) }, icon(syncAudio.paused ? "play" : "pause"));
   const range = el("input", { type: "range", id: "sync-range", className: "sync-range", min: 0, max: syncAudio.duration || v.duration || 0, step: 0.01, value: syncAudio.currentTime, ariaLabel: "Position dans le titre" });
   range.oninput = () => { syncAudio.currentTime = Number(range.value); };
-  return el("div", { className: "sync-player" }, playBtn, range, el("b", { id: "sync-clock", textContent: OP.time(syncAudio.currentTime) + " / " + OP.time(syncAudio.duration || v.duration) }));
+  const vol = el("input", { type: "range", className: "sync-vol", min: 0, max: 1, step: 0.01, value: syncAudio.volume, ariaLabel: "Volume" });
+  vol.oninput = () => { syncAudio.volume = Number(vol.value); try { localStorage.setItem("onirique.syncVolume", vol.value); } catch {} };
+  return el("div", { className: "sync-player" }, playBtn, range, el("b", { id: "sync-clock", textContent: OP.time(syncAudio.currentTime) + " / " + OP.time(syncAudio.duration || v.duration) }),
+    el("span", { className: "sync-vol-ico", title: "Volume" }, icon("volume")), vol);
 }
 $("details").addEventListener("close", () => { syncAudio.pause(); stopCompare(); });
 
