@@ -65,6 +65,8 @@ try {
     await call('PUT', '/api/tierlist', { token: kay.token, body: { A: ['<script>'] }, expect: 400 });
     assert.deepEqual((await call('GET', '/api/tierlist', { token: kay.token })).placement, { S: [photo, `u${lou.id}`] });
     assert.deepEqual((await call('GET', '/api/tierlist', { token: lou.token })).placement, {});
+    await call('PUT', '/api/tierlist', { token: lou.token, body: { S: [], labels: { S: '  Mieux  en  clash royale ', Z: 'x', A: 5 } } });
+    assert.deepEqual((await call('GET', '/api/tierlist', { token: lou.token })).placement.labels, { S: 'Mieux en clash royale' });
   });
 
   await step('seul celui qui a ajouté la photo la retire', async () => {

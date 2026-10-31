@@ -34,10 +34,15 @@ export function mountTierList(app, { requireUser, receiveImage, removeMedia, wra
     res.set('Cache-Control', 'no-store').json({ tiers: TIERS, members, photos, placement: saved ? JSON.parse(saved.data) : {} });
   });
 
-  // Le classement : { S: ["u3", "p7"], A: [...] }. Ce qui n'y est pas reste dans la réserve.
+  // Le classement : { S: ["u3", "p7"], A: [...], labels: { S: "Légende" } }. Ce qui n'y est pas reste dans la réserve.
   app.put('/api/tierlist', requireUser, onirique, (req, res) => {
     const b = req.body && typeof req.body === 'object' ? req.body : {};
     const placement = {};
+    if (b.labels !== undefined) {
+      if (!b.labels || typeof b.labels !== 'object') throw new HttpError(400, 'Noms des rangées illisibles.');
+      placement.labels = {};
+      for (const t of TIERS) if (typeof b.labels[t] === 'string') placement.labels[t] = b.labels[t].replace(/\s+/g, ' ').trim().slice(0, 60);
+    }
     for (const t of TIERS) {
       if (b[t] === undefined) continue;
       if (!Array.isArray(b[t]) || b[t].length > 500 || !b[t].every((x) => typeof x === 'string' && ITEM.test(x))) throw new HttpError(400, 'Classement illisible.');
