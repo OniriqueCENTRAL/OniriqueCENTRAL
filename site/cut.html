@@ -58,6 +58,28 @@
 .strong-words button[aria-pressed="true"].done { background: rgba(255,255,255,.12); border-color: transparent; text-transform: none; font-weight: 500; }
 .vol { display: flex; align-items: center; gap: 10px; max-width: 340px; width: 100%; margin: 0 auto; font: 500 12px/1 var(--f-mono); letter-spacing: .08em; color: var(--haze); text-transform: uppercase; }
 .vol input { flex: 1; accent-color: var(--ember); }
+/* La timeline « Avancé » : des pistes en couleur, comme dans un logiciel de montage. */
+.adv { position: fixed; inset: 0; z-index: 90; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 12px; padding: 16px; background: rgba(10,6,7,.97); }
+.adv[hidden] { display: none; }
+.adv-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.adv-bar h2 { margin: 0 auto 0 0; font: 800 18px/1.2 var(--f-display); }
+.adv-bar .time { min-width: 110px; }
+.adv-bar label { display: flex; align-items: center; gap: 8px; font: 500 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--haze); }
+.adv-bar input[type="range"] { width: 120px; accent-color: var(--ember); }
+.adv-main { display: grid; grid-template-columns: 168px minmax(0, 1fr); overflow-y: auto; border: 1px solid var(--line); border-radius: 12px; background: #140e10; }
+.adv-heads { padding-top: 28px; border-right: 1px solid var(--line); background: #1a1214; }
+.adv-head { height: 46px; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 0; border-bottom: 1px solid rgba(255,255,255,.05); font: 600 12px/1.2 var(--f-body); color: var(--mist); }
+.adv-head i { align-self: stretch; width: 6px; flex: none; }
+.adv-head span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adv-head button { width: 26px; height: 24px; border-radius: 6px; border: 1px solid var(--line); background: none; color: var(--haze); font: 700 11px var(--f-mono); cursor: pointer; }
+.adv-head button[aria-pressed="true"] { background: #ffd23f; border-color: #ffd23f; color: #000; }
+.adv-scroll { position: relative; overflow-x: auto; overflow-y: hidden; }
+.adv-scroll canvas { display: block; touch-action: none; }
+#adv-head-canvas { position: absolute; left: 0; top: 0; pointer-events: none; }
+.adv-sel { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; min-height: 56px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: #1a1214; font-size: 14px; }
+.adv-sel b { font: 800 14px var(--f-display); }
+.adv-sel label { display: flex; align-items: center; gap: 8px; font: 500 11px/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--haze); }
+.adv-sel input[type="range"] { width: 130px; accent-color: var(--ember); }
 .clip { cursor: default; }
 .each .clip { cursor: pointer; }
 .styles-list { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -422,11 +444,30 @@
         <span class="time" id="time">0:00</span>
       </div>
       <label class="vol">Volume<input type="range" id="previewVol" min="0" max="100" aria-label="Volume de l'aperçu"></label>
+      <button class="go ghost wide" type="button" id="adv-open" disabled>Avancé : timeline des sons</button>
       <button class="go wide" type="button" id="export" disabled>Exporter la vidéo</button>
       <label class="check mute"><input type="checkbox" id="mute"> Couper le son pendant l'export (la vidéo garde son son)</label>
       <div class="status" id="status" hidden><span id="status-text"></span><div class="bar"><i id="status-bar"></i></div></div>
       <p class="hint" style="text-align:center">MP4 1080 × 1920 en haute qualité, 30 images par seconde, son d'origine en AAC 320 kb/s. L'enregistrement se fait en temps réel : garde cet onglet ouvert. Rien n'est gardé sur nos serveurs : tes sons, clips et vidéos restent chez toi.</p>
     </aside>
+
+    <section class="adv" id="adv" hidden aria-label="Timeline des sons">
+      <div class="adv-bar">
+        <h2>Timeline des sons</h2>
+        <button class="round" type="button" id="adv-play" aria-label="Lecture"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button>
+        <span class="time" id="adv-time">0:00</span>
+        <label>Zoom<input type="range" id="adv-zoom" min="10" max="220" step="5"></label>
+        <button class="mini" type="button" id="adv-add">+ Ajouter un son</button>
+        <button class="mini" type="button" id="adv-track">+ Piste</button>
+        <input id="adv-file" type="file" accept="audio/*,video/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" multiple hidden>
+        <button class="go" type="button" id="adv-close">Fermer</button>
+      </div>
+      <div class="adv-main">
+        <div class="adv-heads" id="adv-heads"></div>
+        <div class="adv-scroll" id="adv-scroll"><canvas id="adv-canvas"></canvas><canvas id="adv-head-canvas"></canvas></div>
+      </div>
+      <div class="adv-sel" id="adv-sel"></div>
+    </section>
   </div>
 </main>
 
@@ -757,11 +798,12 @@ async function clipAudio(c) {
   return c.audio;
 }
 // Le son mixé (réplique + musique + son des clips) n'existe que si une option de film le demande ; sinon la musique seule.
-const filmActive = () => introLen() > 0 || prefs.musicVol !== 100 || (prefs.clipVol > 0 && clips.some((c) => c.kind === "video"));
+const filmActive = () => introLen() > 0 || prefs.musicVol !== 100 || (prefs.clipVol > 0 && clips.some((c) => c.kind === "video")) || extras.length > 0 || mutedTracks.size > 0;
 let mix = null, mixing = null, mixTimer = 0;
 const mixKey = () => JSON.stringify([sound.start, span(), prefs.musicVol, prefs.clipVol, prefs.introOn, prefs.introClip, prefs.introIn, introLen(), prefs.filmVol, prefs.introFade,
   prefs.dropGap, prefs.underPart, prefs.underVol,
-  prefs.slowmo, clips.map((c) => c.url), segments.map((x) => [x.t0, x.t1, x.clip, x.from, !!x.hold])]);
+  prefs.slowmo, clips.map((c) => c.url), segments.map((x) => [x.t0, x.t1, x.clip, x.from, !!x.hold]),
+  extras.map((e) => [e.id, e.at, e.offset, e.length, e.vol, e.fadeIn, e.fadeOut, e.track]), [...mutedTracks]]);
 /** Le mixage du son de toute la vidéo, fait hors temps réel : la réplique (son du film), puis la musique, et le son des clips dessous. */
 async function buildMix(key) {
   const rate = sound.buffer.sampleRate, intro = introLen(), T = intro + span();
@@ -774,26 +816,29 @@ async function buildMix(key) {
     src.connect(level).connect(off.destination);
     src.start(at, from % buffer.duration, loop ? undefined : length); src.stop(at + length);
   };
+  const vol = (track, value) => (mutedTracks.has(track) ? 0 : value / 100); // une piste coupée (M) dans la timeline ne s'entend plus
   const crossfade = prefs.introFade ? .35 : .04;
   const gap = prefs.dropGap ? .22 : 0; // « Silence juste avant le drop »
   if (intro) {
     const a = await clipAudio(introClip());
-    if (a) add(a, 0, prefs.introIn, intro - gap + (prefs.introFade && !gap ? .2 : 0), prefs.filmVol / 100, .01, gap ? .03 : crossfade, false);
+    if (a) add(a, 0, prefs.introIn, intro - gap + (prefs.introFade && !gap ? .2 : 0), vol("film", prefs.filmVol), .01, gap ? .03 : crossfade, false);
     // Sous la réplique : la musique qui mène au drop (le son entier, ou une seule piste séparée).
     const len = Math.min(sound.start, intro), at = intro - len;
     if (prefs.underPart !== "none" && prefs.underVol > 0 && len - gap > .05) {
-      if (prefs.underPart === "full") add(sound.buffer, at, sound.start - len, len - gap, prefs.underVol / 100, .3, gap ? .03 : .004, false);
-      else { const st = await ensureStems(); if (st && st.parts[prefs.underPart]) add(st.parts[prefs.underPart], at, 0, len - gap, prefs.underVol / 100, .3, .03, false); }
+      if (prefs.underPart === "full") add(sound.buffer, at, sound.start - len, len - gap, vol("under", prefs.underVol), .3, gap ? .03 : .004, false);
+      else { const st = await ensureStems(); if (st && st.parts[prefs.underPart]) add(st.parts[prefs.underPart], at, 0, len - gap, vol("under", prefs.underVol), .3, .03, false); }
     }
   }
-  add(sound.buffer, intro, sound.start, span(), prefs.musicVol / 100, prefs.introFade && intro ? .25 : FADE, prefs.loop ? .03 : FADE, false);
+  add(sound.buffer, intro, sound.start, span(), vol("music", prefs.musicVol), prefs.introFade && intro ? .25 : FADE, prefs.loop ? .03 : FADE, false);
   // Le son des clips sous la musique (pas au ralenti : le son resterait décalé de l'image).
   if (prefs.clipVol > 0 && slow() === 1) for (const x of segments) {
     const c = clips[x.clip];
     if (c.kind !== "video") continue;
     const a = await clipAudio(c);
-    if (a) add(a, intro + x.t0, x.hold ? 0 : x.from, x.t1 - x.t0, prefs.clipVol / 100, .008, .008, !!x.hold);
+    if (a) add(a, intro + x.t0, x.hold ? 0 : x.from, x.t1 - x.t0, vol("clips", prefs.clipVol), .008, .008, !!x.hold);
   }
+  // Les sons ajoutés dans la timeline, superposés au reste.
+  for (const e of extras) if (e.at < T && !mutedTracks.has("extra" + e.track)) add(e.buffer, e.at, e.offset, Math.min(e.length, T - e.at), e.vol / 100, Math.max(.005, e.fadeIn), Math.max(.005, e.fadeOut), false);
   const buffer = await off.startRendering();
   if (key === mixKey()) mix = { key, buffer };
 }
@@ -1359,7 +1404,7 @@ function finish() {
 }
 let hearing = 0; // « Écouter le début » en cours (un minuteur)
 // Pendant un export, l'image avance à 30 images par seconde au minuteur : l'enregistrement ne dépend pas de l'affichage.
-function loop() { const t = now(); draw(t, playing); drawScrub(t); if (playing) frame = recording ? setTimeout(loop, 1000 / 30) : requestAnimationFrame(loop); }
+function loop() { const t = now(); draw(t, playing); drawScrub(t); if (adv.open) drawAdvHead(t); if (playing) frame = recording ? setTimeout(loop, 1000 / 30) : requestAnimationFrame(loop); }
 /** Après une option qui ne change que l'image (ou l'ordre des coupes) : on redessine sans couper le son. */
 function restyle(rebuild) {
   if (rebuild) { build(); shown = -1; renderClips(); $("reshuffle").hidden = prefs.order !== "mix"; }
@@ -1375,6 +1420,7 @@ function seek(t) {
 function setPlayIcon() {
   $("play").innerHTML = playing ? '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>' : '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
   $("play").ariaLabel = playing ? "Pause" : "Lecture";
+  $("adv-play").innerHTML = $("play").innerHTML; $("adv-play").ariaLabel = $("play").ariaLabel;
 }
 
 // ——— La forme d'onde du morceau (passage choisi en rouge) et la barre de lecture ———
@@ -1464,6 +1510,8 @@ function refresh() {
   scheduleMix();
   position = Math.min(position, total() - .05);
   if (ready) seek(position); else drawScrub(0);
+  $("adv-open").disabled = !ready;
+  if (adv.open) renderAdv();
 }
 
 // ——— Export : enregistrement en temps réel, puis MP4 propre par le serveur ———
@@ -1579,6 +1627,216 @@ async function exportOne(mime, wav, progress) {
       (p) => progress("Préparation du MP4 en haute qualité…", .72 + .2 * p)).catch((error) => { save(raw, fileName(mime.includes("mp4") ? "mp4" : "webm")); throw new Error(error.message + " La vidéo telle qu'enregistrée a été téléchargée à la place."); });
   }
 }
+
+// ——— Avancé : la timeline des sons, façon logiciel de montage ———
+const ROW = 46, RULER = 28;
+const adv = { open: false, pps: 50, sel: null, selRow: null, drag: null, tracks: 1, rows: [] };
+// Les sons ajoutés (bruitages, ad-libs, autre fichier) : ils restent dans la page, rien n'est envoyé ni gardé.
+let extras = [], extraId = 0;
+const mutedTracks = new Set();
+/** L'enveloppe d'un son (une valeur par bloc de 1024 échantillons, de 0 à 1), calculée une fois. */
+function rmsOf(buffer) {
+  if (!buffer) return null;
+  if (buffer.rmsCache) return buffer.rmsCache;
+  const d = buffer.getChannelData(0), n = Math.floor(d.length / 1024), r = new Float32Array(n);
+  let peak = 1e-9;
+  for (let f = 0; f < n; f++) { let e = 0; for (let i = f * 1024; i < (f + 1) * 1024; i++) e += d[i] * d[i]; r[f] = Math.sqrt(e / 1024); if (r[f] > peak) peak = r[f]; }
+  for (let f = 0; f < n; f++) r[f] /= peak;
+  return (buffer.rmsCache = r);
+}
+/** Les pistes de la timeline : l'image, puis chaque son (réplique, sous la réplique, musique, clips, sons ajoutés). */
+function tracksModel() {
+  const intro = introLen(), T = total(), rows = [], under = Math.min(sound.start, intro);
+  rows.push({ id: "video", name: "Image", color: "#3d8fd6", clips: [
+    ...(intro ? [{ key: "v-intro", start: 0, len: intro, label: "Réplique", color: "#e45d4b" }] : []),
+    ...segments.map((x, i) => ({ key: "v" + i, start: intro + x.t0, len: x.t1 - x.t0, label: clips[x.clip] ? clips[x.clip].name : "" }))] });
+  if (intro) rows.push({ id: "film", name: "Réplique (film)", color: "#e8c23a", vol: "filmVol",
+    clips: [{ key: "film", start: 0, len: intro, label: "Réplique", buffer: introClip().audio, offset: prefs.introIn, edit: true }] });
+  if (intro && prefs.underPart !== "none" && under > 0) rows.push({ id: "under", name: "Sous la réplique", color: "#4cc38a", vol: "underVol",
+    clips: [{ key: "under", start: intro - under, len: under, label: { full: "Le son entier", prod: "Prod", melo: "Mélodie", drums: "Drums", bass: "Basse", vocals: "Voix" }[prefs.underPart],
+      buffer: prefs.underPart === "full" ? sound.buffer : stems && stems.parts[prefs.underPart], offset: prefs.underPart === "full" ? sound.start - under : 0 }] });
+  rows.push({ id: "music", name: "Musique", color: "#ef6a55", vol: "musicVol", clips: [{ key: "music", start: intro, len: span(), label: sound.name, buffer: sound.buffer, offset: sound.start }] });
+  if (clips.some((c) => c.kind === "video")) rows.push({ id: "clips", name: "Son des clips", color: "#a46bd8", vol: "clipVol",
+    clips: segments.map((x, i) => [x, i]).filter(([x]) => clips[x.clip].kind === "video").map(([x, i]) => ({ key: "a" + i, start: intro + x.t0, len: x.t1 - x.t0, label: clips[x.clip].name, buffer: clips[x.clip].audio, offset: x.hold ? 0 : x.from })) });
+  for (let k = 0; k < adv.tracks; k++) rows.push({ id: "extra" + k, name: "Sons ajoutés " + (k + 1), color: "#d65fa8", extra: k,
+    clips: extras.filter((e) => e.track === k).map((e) => ({ key: e.id, start: e.at, len: Math.min(e.length, Math.max(.05, T - e.at)), label: e.name, buffer: e.buffer, offset: e.offset, extra: e })) });
+  return rows;
+}
+function drawAdv() {
+  const rows = tracksModel(), T = total(), d = devicePixelRatio || 1, box = $("adv-scroll");
+  adv.rows = rows;
+  const w = Math.min(30000, Math.max(box.clientWidth, Math.ceil(T * adv.pps) + 80)), h = RULER + rows.length * ROW;
+  for (const c of [$("adv-canvas"), $("adv-head-canvas")]) { c.width = w * d; c.height = h * d; c.style.width = w + "px"; c.style.height = h + "px"; }
+  const x = $("adv-canvas").getContext("2d");
+  x.setTransform(d, 0, 0, d, 0, 0); x.clearRect(0, 0, w, h);
+  // La règle : les secondes.
+  x.fillStyle = "#1d1416"; x.fillRect(0, 0, w, RULER);
+  x.fillStyle = "rgba(255,255,255,.55)"; x.font = "500 10px 'JetBrains Mono', monospace"; x.textBaseline = "middle";
+  const step = adv.pps > 120 ? .5 : adv.pps > 40 ? 1 : adv.pps > 18 ? 2 : 5;
+  for (let k = 0; k * step <= T + 1e-6; k++) { const px = k * step * adv.pps; x.fillRect(px, RULER - 7, 1, 7); if (Number.isInteger(k * step)) x.fillText(OniriqueAudio.clock(k * step), px + 3, RULER / 2 - 2); }
+  // Les temps de la musique, en fond.
+  const intro = introLen();
+  if (sound.bpm) {
+    x.fillStyle = "rgba(255,255,255,.05)";
+    for (let b = Math.ceil((sound.start - sound.phase) / beatLength()); ; b++) { const t = intro + sound.phase + b * beatLength() - sound.start; if (t > T) break; if (t >= intro) x.fillRect(t * adv.pps, RULER, 1, h - RULER); }
+  }
+  rows.forEach((row, ri) => {
+    const y = RULER + ri * ROW, muted = mutedTracks.has(row.id);
+    x.fillStyle = ri % 2 ? "#181113" : "#1c1416"; x.fillRect(0, y, w, ROW);
+    for (const c of row.clips) {
+      const cx = c.start * adv.pps, cw = Math.max(3, c.len * adv.pps), shape = () => { x.beginPath(); if (x.roundRect) x.roundRect(cx + 1, y + 4, cw - 2, ROW - 8, 5); else x.rect(cx + 1, y + 4, cw - 2, ROW - 8); };
+      x.globalAlpha = muted ? .3 : 1;
+      x.fillStyle = c.color || row.color; shape(); x.fill();
+      const rms = rmsOf(c.buffer);
+      if (rms) {
+        const rate = c.buffer.sampleRate / 1024, mid = y + ROW / 2 + 5, amp = (ROW - 24) / 2;
+        x.fillStyle = "rgba(0,0,0,.38)";
+        for (let px = 0; px < cw - 2; px++) { const i = Math.floor((c.offset + px / adv.pps) * rate), v = i >= 0 && i < rms.length ? rms[i] : 0, hh = Math.max(.5, v * amp); x.fillRect(cx + 1 + px, mid - hh, 1, hh * 2); }
+      }
+      x.save(); x.beginPath(); x.rect(cx, y, cw, ROW); x.clip();
+      x.fillStyle = "rgba(0,0,0,.78)"; x.font = "700 11px 'Hanken Grotesk', sans-serif"; x.textBaseline = "top"; x.fillText(c.label || "", cx + 8, y + 8);
+      x.restore();
+      if (adv.sel === c.key) { x.strokeStyle = "#fff"; x.lineWidth = 2; shape(); x.stroke(); }
+      x.globalAlpha = 1;
+    }
+  });
+  drawAdvHead(now());
+}
+/** La tête de lecture (sur un calque à part : elle bouge sans tout redessiner). */
+function drawAdvHead(t) {
+  const c = $("adv-head-canvas"), d = devicePixelRatio || 1, x = c.getContext("2d"), px = t * adv.pps;
+  x.setTransform(d, 0, 0, d, 0, 0); x.clearRect(0, 0, c.width / d, c.height / d);
+  x.fillStyle = "#fff"; x.fillRect(px - 1, 0, 2, c.height / d);
+  x.beginPath(); x.moveTo(px - 7, 0); x.lineTo(px + 7, 0); x.lineTo(px, 10); x.fill();
+  $("adv-time").textContent = OniriqueAudio.clock(t) + " / " + OniriqueAudio.clock(total());
+  // Pendant la lecture, la timeline suit la tête de lecture.
+  const box = $("adv-scroll");
+  if (playing && (px > box.scrollLeft + box.clientWidth - 40 || px < box.scrollLeft)) box.scrollLeft = px - 60;
+}
+function renderAdv() {
+  if (!adv.open) return;
+  drawAdv();
+  $("adv-heads").replaceChildren(...adv.rows.map((row) => {
+    const head = document.createElement("div"), mute = document.createElement("button");
+    head.className = "adv-head";
+    const strip = document.createElement("i"); strip.style.background = row.color;
+    head.append(strip, Object.assign(document.createElement("span"), { textContent: row.name, title: row.name }));
+    if (row.id !== "video") {
+      Object.assign(mute, { type: "button", textContent: "M", title: "Couper cette piste", ariaPressed: String(mutedTracks.has(row.id)) });
+      mute.onclick = () => { if (mutedTracks.has(row.id)) mutedTracks.delete(row.id); else mutedTracks.add(row.id); scheduleMix(); renderAdv(); };
+      head.append(mute);
+    }
+    return head;
+  }));
+  renderAdvSel();
+}
+/** Le réglage du bloc touché : volume, fondus, couper, dupliquer, supprimer. */
+function renderAdvSel() {
+  const box = $("adv-sel"), row = adv.rows.find((r) => r.clips.some((c) => c.key === adv.sel)) || adv.rows.find((r) => r.id === adv.selRow);
+  const clip = row && row.clips.find((c) => c.key === adv.sel);
+  const range = (label, value, min, max, step, on) => {
+    const input = Object.assign(document.createElement("input"), { type: "range", min, max, step, value });
+    input.oninput = () => on(Number(input.value));
+    const l = document.createElement("label"); l.append(label, input); return l;
+  };
+  const button = (label, on) => Object.assign(document.createElement("button"), { className: "mini", type: "button", textContent: label, onclick: on });
+  box.replaceChildren();
+  if (!row) { box.append(Object.assign(document.createElement("span"), { className: "muted", textContent: "Touche un bloc pour le régler. Glisse un son ajouté pour le déplacer (aussi d'une piste à l'autre), tire ses bords pour le recouper. Clique sur la règle pour te placer." })); return; }
+  box.append(Object.assign(document.createElement("b"), { textContent: clip && clip.extra ? clip.extra.name : row.name }));
+  if (clip && clip.extra) {
+    const e = clip.extra;
+    box.append(range("Volume", e.vol, 0, 200, 5, (v) => { e.vol = v; scheduleMix(); }),
+      range("Fondu d'entrée", e.fadeIn, 0, 3, .05, (v) => { e.fadeIn = v; scheduleMix(); }),
+      range("Fondu de sortie", e.fadeOut, 0, 3, .05, (v) => { e.fadeOut = v; scheduleMix(); }),
+      button("Couper au curseur", () => {
+        const t = now();
+        if (t <= e.at + .05 || t >= e.at + e.length - .05) return;
+        extras.push({ ...e, id: "x" + ++extraId, at: t, offset: e.offset + (t - e.at), length: e.at + e.length - t });
+        e.length = t - e.at; scheduleMix(); renderAdv();
+      }),
+      button("Dupliquer", () => { const copy = { ...e, id: "x" + ++extraId, at: Math.min(e.at + e.length, total() - .1) }; extras.push(copy); adv.sel = copy.id; scheduleMix(); renderAdv(); }),
+      button("Supprimer", () => { extras = extras.filter((x) => x !== e); adv.sel = null; scheduleMix(); renderAdv(); }));
+  } else if (row.vol) {
+    box.append(range("Volume de la piste", prefs[row.vol], 0, row.vol === "filmVol" ? 200 : 150, 5, (v) => { prefs[row.vol] = v; savePrefs(); filmUi(); scheduleMix(); }));
+    if (row.id === "film") box.append(Object.assign(document.createElement("span"), { className: "muted", textContent: "Tire les bords de la réplique pour la recouper ; glisse-la pour faire défiler le film dessous." }));
+  } else box.append(Object.assign(document.createElement("span"), { className: "muted", textContent: "La piste Image montre le montage : la réplique, puis chaque coupe calée sur le tempo." }));
+}
+/** Où tombe le pointeur : la règle, ou un bloc (et lequel de ses bords). */
+function hitAdv(event) {
+  const r = $("adv-canvas").getBoundingClientRect(), px = event.clientX - r.left, py = event.clientY - r.top, t = Math.max(0, px / adv.pps);
+  if (py < RULER) return { ruler: true, t };
+  const row = adv.rows[Math.floor((py - RULER) / ROW)];
+  if (!row) return null;
+  const clip = [...row.clips].reverse().find((c) => t >= c.start && t <= c.start + c.len);
+  if (!clip) return { row, t };
+  const edge = Math.abs(px - clip.start * adv.pps) < 8 ? "L" : Math.abs(px - (clip.start + clip.len) * adv.pps) < 8 ? "R" : null;
+  return { row, clip, t, edge };
+}
+function dragAdv() {
+  const canvas = $("adv-canvas"), round = (v) => Math.round(v * 100) / 100, clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  canvas.addEventListener("pointerdown", (event) => {
+    const h = hitAdv(event);
+    if (!h) return;
+    canvas.setPointerCapture(event.pointerId);
+    if (h.ruler) { adv.drag = { kind: "seek" }; seek(Math.min(h.t, total() - .05)); drawAdvHead(position); return; }
+    adv.sel = h.clip ? h.clip.key : null; adv.selRow = h.row.id;
+    if (h.clip && (h.clip.extra || h.clip.edit)) {
+      adv.drag = { kind: h.edge || "move", clip: h.clip, x0: event.clientX, y0: event.clientY,
+        orig: h.clip.extra ? { ...h.clip.extra } : { introIn: prefs.introIn, introLen: introLen() } };
+    }
+    renderAdv();
+  });
+  canvas.addEventListener("pointermove", (event) => {
+    const d = adv.drag;
+    if (!d) { const h = hitAdv(event); canvas.style.cursor = h && h.edge && (h.clip.extra || h.clip.edit) ? "ew-resize" : h && h.clip && (h.clip.extra || h.clip.edit) ? "grab" : h && h.ruler ? "pointer" : "default"; return; }
+    if (d.kind === "seek") { const h = hitAdv(event); seek(Math.min(Math.max(0, (event.clientX - canvas.getBoundingClientRect().left) / adv.pps), total() - .05)); drawAdvHead(position); return; }
+    const dt = (event.clientX - d.x0) / adv.pps;
+    if (d.clip.extra) {
+      const e = d.clip.extra, o = d.orig;
+      if (d.kind === "move") { e.at = round(clamp(o.at + dt, 0, total() - .1)); e.track = clamp(o.track + Math.round((event.clientY - d.y0) / ROW), 0, adv.tracks - 1); }
+      else if (d.kind === "L") { const k = clamp(dt, -o.offset, o.length - .1); e.at = round(o.at + k); e.offset = round(o.offset + k); e.length = round(o.length - k); }
+      else e.length = round(clamp(o.length + dt, .1, e.buffer.duration - e.offset));
+    } else {
+      // La réplique : les bords la recoupent dans le film, le milieu fait défiler le film dessous.
+      const o = d.orig, c = introClip();
+      if (d.kind === "R") prefs.introLen = round(clamp(o.introLen + dt, .5, c.duration - o.introIn));
+      else if (d.kind === "L") { const k = clamp(dt, -o.introIn, o.introLen - .5); prefs.introIn = round(o.introIn + k); prefs.introLen = round(o.introLen - k); }
+      else prefs.introIn = round(clamp(o.introIn - dt, 0, c.duration - o.introLen));
+    }
+    drawAdv();
+  });
+  const end = () => {
+    const d = adv.drag;
+    adv.drag = null;
+    if (!d || d.kind === "seek") return;
+    if (d.clip.extra) { scheduleMix(); renderAdv(); } else { savePrefs(); position = 0; refresh(); }
+  };
+  canvas.addEventListener("pointerup", end); canvas.addEventListener("pointercancel", end);
+}
+/** Ajouter des sons (un fichier audio, ou le son d'une vidéo) à la tête de lecture, sur une piste « Sons ajoutés ». */
+async function addExtras(files) {
+  for (const file of files) {
+    try {
+      const buffer = await new OfflineAudioContext(2, 1, sound.buffer ? sound.buffer.sampleRate : 44100).decodeAudioData(await file.arrayBuffer());
+      const at = Math.min(position, Math.max(0, total() - .1));
+      const busy = (k) => extras.some((e) => e.track === k && e.at < at + buffer.duration && at < e.at + e.length);
+      let track = 0; while (track < adv.tracks && busy(track)) track++;
+      if (track === adv.tracks) adv.tracks++;
+      const e = { id: "x" + ++extraId, name: file.name.replace(/\.[^.]+$/, ""), buffer, at, offset: 0, length: buffer.duration, vol: 100, fadeIn: .02, fadeOut: .05, track };
+      extras.push(e); adv.sel = e.id;
+    } catch { alert("« " + file.name + " » n'a pas pu être lu : essaie un MP3, un WAV ou une vidéo MP4."); }
+  }
+  scheduleMix(); renderAdv();
+}
+function openAdv() {
+  adv.open = true; $("adv").hidden = false; document.body.style.overflow = "hidden";
+  $("adv-zoom").value = adv.pps;
+  renderAdv();
+  // Le son des clips se décode en fond ; la timeline se redessine quand il arrive.
+  Promise.all(clips.filter((c) => c.kind === "video").map(clipAudio)).then(() => adv.open && renderAdv());
+  if (STEMS.includes(prefs.underPart)) ensureStems().then(() => adv.open && renderAdv());
+}
+function closeAdv() { adv.open = false; $("adv").hidden = true; document.body.style.overflow = ""; }
 
 // ——— Les commandes ———
 const marks = [];
@@ -1952,7 +2210,22 @@ function start() {
   // Retour sur l'onglet (après avoir synchronisé dans CLOUD, par exemple) : les paroles de CLOUD sont reprises.
   document.addEventListener("visibilitychange", () => { if (!document.hidden && !recording) pullLyrics(true); });
   addEventListener("resize", () => { drawWave(); drawScrub(now()); });
-  dragWindow(); dragScrub(); dragLoupe();
+  dragWindow(); dragScrub(); dragLoupe(); dragAdv();
+  // Avancé : la timeline des sons.
+  $("adv-open").onclick = openAdv;
+  $("adv-close").onclick = closeAdv;
+  $("adv-play").onclick = () => $("play").click();
+  $("adv-zoom").oninput = () => { adv.pps = Number($("adv-zoom").value); drawAdv(); };
+  $("adv-add").onclick = () => $("adv-file").click();
+  $("adv-file").onchange = () => { addExtras([...$("adv-file").files]); $("adv-file").value = ""; };
+  $("adv-track").onclick = () => { adv.tracks++; renderAdv(); };
+  addEventListener("resize", () => adv.open && drawAdv());
+  document.addEventListener("keydown", (event) => {
+    if (!adv.open || isync || /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName)) return;
+    if (event.key === " ") { event.preventDefault(); if (!event.repeat) $("play").click(); }
+    else if (event.key === "Escape") closeAdv();
+    else if ((event.key === "Delete" || event.key === "Backspace") && extras.some((e) => e.id === adv.sel)) { extras = extras.filter((e) => e.id !== adv.sel); adv.sel = null; scheduleMix(); renderAdv(); }
+  });
   // Les polices choisies, chargées avant de dessiner du texte sur la vidéo.
   [prefs.lyricFont, prefs.titleFont, prefs.strongFont, "Hanken Grotesk", "VT323"].forEach(loadFont);
   // Ouvert depuis un titre de ONIRIQUE CLOUD (?track=…) ; sinon, le dernier titre CLOUD utilisé se reprend d'un clic.
