@@ -211,6 +211,14 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
 /* Grand écran : la marge suffit, le menu reste ouvert et le lecteur des pistes passe à droite. */
 @media (min-width: 1700px) { .shorts-tab, #shorts-close { display: none; } .side-player { left: auto; right: 24px; } }
 @media (max-width: 1699px) { .shorts:not(.open) { display: none; } }
+/* L'aperçu suit la page, comme sur les pages de liens : la colonne reste à l'écran et défile seule ; la vidéo, la lecture
+   et Exporter restent en haut, le reste (description, série, cloud) passe dessous. */
+@media (min-width: 921px) {
+  .screen { max-height: calc(100vh - 32px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(255,210,214,.25) transparent; padding-right: 4px; }
+  .screen-top { position: sticky; top: 0; z-index: 3; display: grid; gap: 10px; padding-bottom: 10px; background: linear-gradient(var(--night) 92%, transparent); }
+  .screen-top .frame { width: min(100%, 340px, calc((100vh - 270px) * 9 / 16)); }
+}
+@media (max-width: 920px) { .screen-top { display: grid; gap: 12px; } }
 .panel.inset { margin: 0 clamp(18px, 4vw, 34px) 22px; padding: 0; }
 /* Les styles rapides : de grandes cartes avec un petit aperçu de l'écran. */
 .chips.presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); gap: 10px; padding: 0; border: 0; border-radius: 0; }
@@ -634,6 +642,7 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
     </div>
 
     <aside class="screen" aria-label="Aperçu">
+      <div class="screen-top">
       <div class="frame"><canvas id="screen" width="1080" height="1920"></canvas><div class="empty" id="screen-empty"><b>Ton aperçu</b>Ajoute ton son puis tes clips.</div></div>
       <div class="transport">
         <button class="round" type="button" id="play" aria-label="Lecture" disabled><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button>
@@ -643,6 +652,8 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
       <label class="vol">Volume<input type="range" id="previewVol" min="0" max="100" aria-label="Volume de l'aperçu"></label>
       <label class="check mute"><input type="checkbox" id="safeGuide"> Montrer la zone visible sur TikTok</label>
       <button class="go wide export" type="button" id="export" disabled>Exporter la vidéo</button>
+      <div class="status" id="status" hidden><span id="status-text"></span><div class="bar"><i id="status-bar"></i></div></div>
+      </div>
       <details class="panel caption-box" id="caption-panel" open>
         <summary>Description TikTok</summary>
         <div class="stack">
@@ -651,7 +662,6 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
           <label class="field">Tes hashtags de niche<input type="text" id="nicheTag" placeholder="#undergroundmusic #rapfr"></label>
         </div>
       </details>
-      <div class="status" id="status" hidden><span id="status-text"></span><div class="bar"><i id="status-bar"></i></div></div>
       <details class="panel series">
         <summary>Exporter une série</summary>
         <div class="stack">
@@ -711,6 +721,9 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
       <label class="check"><input type="checkbox" id="ytAuto"> Chaque vidéo gardée dans le cloud CUT part aussi en Short</label>
       <div class="row"><span class="muted">Un par jour, vers</span><input type="time" id="ytTime" aria-label="Heure de publication des Shorts"></div>
       <p class="muted small">L'heure varie de quelques minutes chaque jour (par exemple 17 h 54, 18 h 07…) : la chaîne ne ressemble pas à un robot.</p>
+      <label class="field">Tes hashtags YouTube<textarea id="ytTags" rows="3" placeholder="#rapfr #euhz #undergroundmusic #rap #musique #nouveauson"></textarea></label>
+      <p class="muted small" id="yt-tags-next">Chaque Short en prend 3 différents, à tour de rôle dans ta liste.</p>
+      <p class="muted small">Chaque Short part avec : la phrase entre guillemets, « Artiste - Titre », puis ces 3 hashtags.</p>
     </section>
     <section>
       <h3>À venir <span class="muted" id="yt-count"></span></h3>
@@ -1016,12 +1029,40 @@ function shortCard(v) {
     el("p", { className: "muted small", textContent: (v.description || "").split("\n")[0] }),
     details, when, el("div", { className: "row" }, save, drop, note));
 }
+/** Les 3 hashtags qui partiront avec le prochain Short. */
+function renderTagsNext() {
+  const list = ytTagList(), next = nextTags(true);
+  $("yt-tags-next").textContent = !list.length ? "Écris tes hashtags : chaque Short en prendra 3 différents, à tour de rôle."
+    : list.length < 3 ? "Ajoute au moins 3 hashtags pour qu'ils tournent. Prochain Short : " + next.join(" ")
+    : list.length + " hashtags, 3 par Short à tour de rôle. Prochain Short : " + next.join(" ");
+}
+/** Tes hashtags YouTube (la case du menu Shorts), dans l'ordre, sans doublon. */
+const ytTagList = () => [...new Set((prefs.ytTags || "").split(/[\s,;]+/).map((t) => t.replace(/^#*/, "")).filter(Boolean).map((t) => "#" + t))];
+/** Les 3 hashtags du prochain Short : à tour de rôle dans ta liste (sans les consommer si peek). */
+function nextTags(peek = false) {
+  const list = ytTagList(), n = list.length;
+  if (!n) return [];
+  const start = (prefs.ytTagIndex || 0) % n, tags = Array.from({ length: Math.min(3, n) }, (_, k) => list[(start + k) % n]);
+  if (!peek) { prefs.ytTagIndex = (start + tags.length) % n; savePrefs(); }
+  return tags;
+}
+/** Titre et description d'un Short, sur le modèle choisi, à partir de la description TikTok de la vidéo :
+ *    titre : la phrase (réplique ou paroles) et son émoji, sinon « Artiste - Titre »
+ *    description : "la phrase" / Artiste - Titre / (ligne vide) / 3 de tes hashtags, à tour de rôle */
+function shortTexts(caption, name) {
+  const lines = (caption || "").split("\n"), q = /«\s*(.+?)\s*»\s*(.*)$/.exec(lines[0] || "");
+  const son = (lines.map((l) => /^Le son\s*:\s*(.+)$/.exec(l)).find(Boolean) || [])[1] || name.split(" - ONIRIQUE CUT")[0].trim();
+  const quote = q ? q[1].replace(/[<>]/g, "") : "", emoji = q ? q[2].trim() : "", tags = nextTags();
+  return { title: (quote ? quote + (emoji ? " " + emoji : "") : son).replace(/\s+/g, " ").slice(0, 100),
+    description: [...(quote ? ['"' + quote + '"'] : []), son, "", tags.join(" ")].join("\n").trim() };
+}
 async function scheduleShort(video, caption) {
   const state = await bankFetch("/api/cut/youtube");
   if (!state.channel) throw new Error("Relie d'abord ta chaîne YouTube dans ton compte (Shorts YouTube).");
-  const publishAt = nextSlot(state.scheduled), first = (caption || video.name).split("\n")[0].replace(/[«»<>]/g, "").replace(/\s+/g, " ").trim();
+  const publishAt = nextSlot(state.scheduled), { title, description } = shortTexts(caption, video.name);
   await bankFetch("/api/cut/library/" + video.id + "/youtube", { method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ publishAt, title: (first || video.name).slice(0, 100), description: (caption ? caption + "\n" : "") + "#shorts" }) });
+    body: JSON.stringify({ publishAt, title, description }) });
+  renderTagsNext();
   if (shortsAllowed) renderShorts();
   return whenText(publishAt);
 }
@@ -3384,6 +3425,9 @@ function start() {
       $("ytAuto").checked = !!prefs.ytAuto; $("ytTime").value = prefs.ytTime || "18:00";
       $("ytAuto").onchange = () => { prefs.ytAuto = $("ytAuto").checked; if (prefs.ytAuto && !$("keepCloud").checked) { $("keepCloud").checked = true; prefs.keepCloud = true; } savePrefs(); };
       $("ytTime").onchange = () => { prefs.ytTime = $("ytTime").value || "18:00"; savePrefs(); };
+      $("ytTags").value = prefs.ytTags || "";
+      $("ytTags").oninput = () => { prefs.ytTags = $("ytTags").value; savePrefs(); renderTagsNext(); };
+      renderTagsNext();
     }).catch(() => {});
     $("keepCloud").checked = prefs.keepCloud !== false;
     $("keepCloud").onchange = () => { prefs.keepCloud = $("keepCloud").checked; savePrefs(); };
