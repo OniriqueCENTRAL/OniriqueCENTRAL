@@ -496,7 +496,7 @@
         <div class="stack"><p class="muted" id="lib-info">Réservé aux fondateurs : les vidéos exportées avec « Garder aussi dans mon cloud CUT » arrivent ici.</p><div class="stack" id="lib-list" style="padding:0"></div></div>
       </details>
       <div class="status" id="status" hidden><span id="status-text"></span><div class="bar"><i id="status-bar"></i></div></div>
-      <p class="hint" style="text-align:center">MP4 1080 × 1920 en haute qualité, 30 images par seconde, son d'origine en AAC 320 kb/s. L'enregistrement se fait en temps réel : garde cet onglet ouvert. Rien n'est gardé sur nos serveurs : tes sons, clips et vidéos restent chez toi.</p>
+      <p class="hint" style="text-align:center">MP4 1080 × 1920 en haute qualité, 30 images par seconde, son d'origine en AAC 320 kb/s. La vidéo se fabrique image par image : garde cet onglet ouvert. Rien n'est gardé sur nos serveurs : tes sons, clips et vidéos restent chez toi.</p>
     </aside>
 
     <section class="adv" id="adv" hidden aria-label="Timeline des sons">
@@ -795,6 +795,8 @@ async function openCloud() {
 // ——— Les clips ———
 async function addClips(files) {
   for (const file of files) {
+    // Une vidéo déjà sortie de ONIRIQUE CUT a ses paroles incrustées dans l'image : elles se verraient sous les nouvelles.
+    if (/ONIRIQUE CUT/i.test(file.name) && !confirm("« " + file.name + " » est une vidéo déjà faite avec ONIRIQUE CUT : ses paroles sont incrustées dans l'image et se mélangeraient aux nouvelles. L'ajouter quand même comme fond ?")) continue;
     const url = URL.createObjectURL(file);
     if (file.type.startsWith("image/")) {
       const img = new Image();
@@ -1058,11 +1060,16 @@ function toggleStrong(row, w, tagged) {
 const screen = $("screen"), g = screen.getContext("2d");
 const pool = [0, 1, 2].map(() => Object.assign(document.createElement("video"), { muted: true, playsInline: true, preload: "auto" }));
 let shown = -1;
+let exact = false; // pendant l'export image par image, chaque vidéo se cale à l'image près
+/** Cale une vidéo sur le temps voulu. À l'export, à l'image près : une milliseconde après le temps voulu, car le navigateur arrondit
+ *  le temps demandé et, pile au début d'une image, montrerait parfois la précédente. */
+function seekTo(v, want) { if (Math.abs(v.currentTime - want) > (exact ? .002 : .04)) v.currentTime = want + (exact ? .001 : 0); }
 
 function drawCover(ctx, src, w, h, scale) {
   const sw = src.videoWidth || src.naturalWidth || src.width, sh = src.videoHeight || src.naturalHeight || src.height;
   if (!sw || !sh) return false;
   const s = Math.max(w / sw, h / sh) * scale, dw = sw * s, dh = sh * s;
+  ctx.imageSmoothingQuality = "high"; // agrandie ou réduite, l'image reste nette (le lissage par défaut est le plus grossier)
   ctx.drawImage(src, (w - dw) / 2, (h - dh) / 2, dw, dh);
   return true;
 }
@@ -1075,7 +1082,7 @@ function prepare(i) {
   v.dataset.seg = String(i);
   if (v.src !== clips[s.clip].url) v.src = clips[s.clip].url;
   v.pause();
-  v.currentTime = s.from;
+  v.currentTime = s.from + (exact ? .001 : 0);
 }
 const segmentAt = (t) => { let i = segments.findIndex((s) => t < s.t1); return i < 0 ? segments.length - 1 : i; };
 
@@ -1307,7 +1314,7 @@ function drawIntro(t, playing) {
   if (v.src !== c.url) v.src = c.url;
   if (v.playbackRate !== 1) v.playbackRate = 1;
   if (playing && !frozen) { if (v.paused) v.play().catch(() => {}); if (Math.abs(v.currentTime - want) > .25) v.currentTime = want; }
-  else { v.pause(); if (Math.abs(v.currentTime - want) > .04) v.currentTime = want; }
+  else { v.pause(); seekTo(v, want); }
   if (v.readyState < 2) return false;
   const r = frameRect();
   g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
@@ -1349,7 +1356,7 @@ function vhs(a) {
   warp({ dx: (Math.random() - .5) * 34 * a, filter: `saturate(${(1 - .6 * a).toFixed(2)}) contrast(${(1 + .3 * a).toFixed(2)})` });
   g.fillStyle = `rgba(0,0,0,${.28 * a})`;
   for (let y = 0; y < H; y += 6) g.fillRect(0, y, W, 2);
-  g.fillStyle = `rgba(255,255,255,${.18 * a})`; g.fillRect(0, (performance.now() * .9) % H, W, 46);
+  g.fillStyle = `rgba(255,255,255,${.18 * a})`; g.fillRect(0, H * .3 + (1 - a) * 540, W, 46);
   g.font = `400 84px "VT323", monospace`; g.fillStyle = `rgba(255,255,255,${a})`; g.textAlign = "left"; g.textBaseline = "top"; g.fillText("◀◀ REW", 70, 140);
 }
 /** La transition entre la réplique et la musique ; d : secondes depuis le drop (négatif juste avant). */
@@ -1368,18 +1375,20 @@ function transitionAt(d) {
     default: break; // coupe sèche
   }
 }
+/** L'image du temps t ; false si elle n'a pas pu être faite (une vidéo pas encore prête : l'image précédente reste). */
 function draw(t, playing) {
-  if (!segments.length) return;
+  if (!segments.length) return false;
   // La réplique d'ouverture d'abord, puis la musique (t compte depuis le drop), puis la transition entre les deux.
   const intro = introLen(), full = t;
-  if (t < intro) { if (drawIntro(t, playing) === false) return; }
+  if (t < intro) { if (drawIntro(t, playing) === false) return false; }
   else {
     if (intro) introVideo.pause();
-    if (drawMusic(t - intro, playing) === false) return;
+    if (drawMusic(t - intro, playing) === false) return false;
   }
   if (overlays.length) drawOverlays(full, playing);
   if (intro) transitionAt(full - intro);
   fadeEnds(full);
+  return true;
 }
 function drawMusic(t, playing) {
   const i = segmentAt(t), s = segments[i], clip = clips[s.clip];
@@ -1394,7 +1403,7 @@ function drawMusic(t, playing) {
       : s.hold ? (t * rate) % Math.max(.1, clip.duration - .05) : s.from + (t - s.t0) * rate;
     if (v.playbackRate !== rate) v.playbackRate = rate;
     if (playing) { if (v.paused) v.play().catch(() => {}); if (Math.abs(v.currentTime - want) > .25) v.currentTime = want; }
-    else if (Math.abs(v.currentTime - want) > .04) v.currentTime = want;
+    else seekTo(v, want);
     if (v.readyState < 2) return false; // l'image précédente reste le temps que la vidéo arrive
   }
   // Les temps du morceau : le zoom, la secousse et le décalage RVB partent de chaque temps.
@@ -1608,7 +1617,67 @@ function refresh() {
   if (adv.open) renderAdv();
 }
 
-// ——— Export : enregistrement en temps réel, puis MP4 propre par le serveur ———
+// ——— Export : la vidéo image par image (ou, faute de mieux, l'enregistrement en temps réel), puis MP4 propre par le serveur ———
+// Image par image : chaque image est dessinée à son temps exact, les vidéos calées à l'image près, puis encodée en H.264
+// (WebCodecs) sans avoir à suivre le temps réel : ni image sautée, ni encodage bâclé pour tenir la cadence.
+const AVC = ["avc1.640033", "avc1.640029", "avc1.4d0033", "avc1.42e033"]; // High 5.1, High 4.1, Main 5.1, Baseline 5.1
+const encoderConfig = (codec) => ({ codec, width: W, height: H, bitrate: 30_000_000, framerate: 30, bitrateMode: "variable", latencyMode: "quality", avc: { format: "annexb" } });
+let encoderCodec = null; // le H.264 que ce navigateur sait encoder en 1080 × 1920, sinon l'enregistrement en temps réel
+async function pickEncoder() {
+  if (!window.VideoEncoder || !window.VideoFrame) return null;
+  for (const codec of AVC) { try { if ((await VideoEncoder.isConfigSupported(encoderConfig(codec))).supported) return codec; } catch { /* suivant */ } }
+  return null;
+}
+/** Attend qu'une vidéo ait fini de se caler (ou de se charger). */
+const settle = (v) => new Promise((resolve) => {
+  const done = () => { clearTimeout(timer); v.removeEventListener("seeked", done); v.removeEventListener("loadeddata", done); resolve(); };
+  const timer = setTimeout(done, 3000);
+  v.addEventListener("seeked", done); v.addEventListener("loadeddata", done);
+});
+/** Dessine l'image du temps t une fois chaque vidéo calée sur la bonne image. */
+async function drawAt(t) {
+  for (let tries = 0; ; tries++) {
+    const drawn = draw(t, false) !== false;
+    const busy = [introVideo, ...pool, ...overlays.map((o) => o.video)].filter((v) => v && v.currentSrc && !v.error && (v.seeking || v.readyState < 2));
+    if ((drawn && !busy.length) || tries > 8) return;
+    await Promise.all(busy.map(settle));
+  }
+}
+/** Toute la vidéo, image par image, en H.264 brut. */
+async function encodeExact(codec, progress) {
+  const chunks = [];
+  let failed = null, wake = () => {};
+  const encoder = new VideoEncoder({
+    output: (chunk) => { const bytes = new Uint8Array(chunk.byteLength); chunk.copyTo(bytes); chunks.push(bytes); wake(); },
+    error: (error) => { failed = error; wake(); },
+  });
+  encoder.ondequeue = () => wake();
+  encoder.configure(encoderConfig(codec));
+  const count = Math.max(1, Math.round(total() * 30));
+  exact = true; shown = -1;
+  try {
+    for (let n = 0; n < count; n++) {
+      // Onglet caché : le navigateur ralentit les vidéos ; on reprend quand on revient.
+      while (document.hidden) {
+        progress("En pause : reviens sur cet onglet pour finir la vidéo.", .08 + n / count * .64);
+        await new Promise((resolve) => document.addEventListener("visibilitychange", resolve, { once: true }));
+      }
+      await drawAt(n / 30);
+      const frame = new VideoFrame(screen, { timestamp: Math.round(n * 1e6 / 30), duration: Math.round(1e6 / 30) });
+      encoder.encode(frame, { keyFrame: n % 60 === 0 });
+      frame.close();
+      while (encoder.encodeQueueSize > 3 && !failed) await new Promise((resolve) => { wake = resolve; });
+      if (failed) throw failed;
+      if (n % 6 === 0) progress("Fabrication de la vidéo, image par image… " + OniriqueAudio.clock(n / 30) + " / " + OniriqueAudio.clock(total()) + " · garde cet onglet ouvert", .08 + n / count * .64);
+    }
+    await encoder.flush();
+    if (failed) throw failed;
+  } finally {
+    exact = false;
+    if (encoder.state !== "closed") encoder.close();
+  }
+  return new Blob(chunks, { type: "video/h264" });
+}
 const CEILING = 0.891; // −1 dBFS : la marge qui évite toute saturation à l'encodage AAC
 /** Le son du passage tel qu'il est dans le fichier (sans passer par l'enregistrement du navigateur), en WAV 24 bits, avec les
  *  mêmes fondus aux bords que l'aperçu. Un son qui monte au-dessus de −1 dBFS est baissé d'autant (jamais monté). */
@@ -1650,7 +1719,7 @@ function save(blob, name) { const a = Object.assign(document.createElement("a"),
 /** L'export : une vidéo, ou une par fond (« Une vidéo par fond ») rangées dans un dossier choisi quand le navigateur le permet. */
 async function exportVideo() {
   const mime = pickMime();
-  if (!mime || !screen.captureStream) { alert("Ce navigateur ne sait pas enregistrer de vidéo. Ouvre ONIRIQUE CUT dans Chrome, Edge ou Safari."); return; }
+  if (!encoderCodec && (!mime || !screen.captureStream)) { alert("Ce navigateur ne sait pas enregistrer de vidéo. Ouvre ONIRIQUE CUT dans Chrome, Edge ou Safari."); return; }
   stop();
   const lockUi = (on) => document.querySelectorAll("#studio button, #studio input, #studio textarea, #studio select").forEach((x) => { x.disabled = on; });
   const list = prefs.batch === "each" && clips.length > 1 ? clips.map((_, i) => i) : [null], kept = focus;
@@ -1690,8 +1759,8 @@ async function exportVideo() {
     refresh();
   }
 }
-/** Une vidéo : le son d'origine part d'abord (s'il ne passe pas, la vidéo garde le son enregistré par le navigateur), puis
- *  l'enregistrement en temps réel, puis le MP4 propre du serveur. progress(message, 0 à 1). */
+/** Une vidéo : le son d'origine part d'abord, puis la vidéo image par image (ou, sans WebCodecs ou sans le son d'origine,
+ *  l'enregistrement en temps réel avec le son du navigateur), puis le MP4 propre du serveur. progress(message, 0 à 1). */
 async function exportOne(mime, wav, progress) {
   {
     let audioId = null;
@@ -1702,34 +1771,43 @@ async function exportOne(mime, wav, progress) {
     // Les trois premières coupes chargées avant de lancer l'enregistrement.
     position = 0; shown = -1; draw(0, false);
     await Promise.all([introVideo, ...pool].map((v) => ((v.dataset.seg || (v === introVideo && introLen())) && v.readyState < 2 ? new Promise((r) => { v.onseeked = v.oncanplay = r; setTimeout(r, 3000); }) : null)));
-    ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
-    const out = ctx.createMediaStreamDestination();
-    const stream = new MediaStream([...screen.captureStream(30).getVideoTracks(), ...out.stream.getAudioTracks()]);
-    const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 40_000_000, audioBitsPerSecond: 320_000 });
-    const chunks = [];
-    recorder.ondataavailable = (event) => event.data.size && chunks.push(event.data);
-    let aborted = false;
-    const hidden = () => { if (document.hidden && recording) { aborted = true; finish(); } };
-    document.addEventListener("visibilitychange", hidden);
-    const recorded = new Promise((resolve) => { recorder.onstop = () => resolve(new Blob(chunks, { type: mime.split(";")[0] })); });
-    const ticker = setInterval(() => progress("Enregistrement… " + OniriqueAudio.clock(now()) + " / " + OniriqueAudio.clock(total()) + " · garde cet onglet ouvert", .08 + now() / total() * .64), 250);
-    // Le son part dès que l'enregistrement a vraiment commencé ; l'écart restant est mesuré pour caler le son d'origine.
-    let offset = 0;
-    await new Promise((resolve) => {
-      recording = { done: () => { recording = null; setTimeout(() => recorder.stop(), 150); resolve(); } };
-      recorder.start(1000);
-      const began = performance.now();
-      play(0, out);
-      offset = (performance.now() - began) / 1000;
-    });
-    clearInterval(ticker);
-    document.removeEventListener("visibilitychange", hidden);
-    const raw = await recorded;
-    if (aborted) throw new Error("Enregistrement arrêté : l'onglet a été quitté. Relance l'export et reste sur cette page.");
+    let raw = null, query = audioId ? "?audio=" + audioId : "";
+    if (audioId && encoderCodec) raw = await encodeExact(encoderCodec, progress).catch(() => null);
+    if (raw) query += "&raw=h264";
+    else {
+      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+      const out = ctx.createMediaStreamDestination();
+      const stream = new MediaStream([...screen.captureStream(30).getVideoTracks(), ...out.stream.getAudioTracks()]);
+      const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 40_000_000, audioBitsPerSecond: 320_000 });
+      const chunks = [];
+      recorder.ondataavailable = (event) => event.data.size && chunks.push(event.data);
+      let aborted = false;
+      const hidden = () => { if (document.hidden && recording) { aborted = true; finish(); } };
+      document.addEventListener("visibilitychange", hidden);
+      const recorded = new Promise((resolve) => { recorder.onstop = () => resolve(new Blob(chunks, { type: mime.split(";")[0] })); });
+      const ticker = setInterval(() => progress("Enregistrement… " + OniriqueAudio.clock(now()) + " / " + OniriqueAudio.clock(total()) + " · garde cet onglet ouvert", .08 + now() / total() * .64), 250);
+      // Le son part dès que l'enregistrement a vraiment commencé ; l'écart restant est mesuré pour caler le son d'origine.
+      let offset = 0;
+      await new Promise((resolve) => {
+        recording = { done: () => { recording = null; setTimeout(() => recorder.stop(), 150); resolve(); } };
+        recorder.start(1000);
+        const began = performance.now();
+        play(0, out);
+        offset = (performance.now() - began) / 1000;
+      });
+      clearInterval(ticker);
+      document.removeEventListener("visibilitychange", hidden);
+      raw = await recorded;
+      if (aborted) throw new Error("Enregistrement arrêté : l'onglet a été quitté. Relance l'export et reste sur cette page.");
+      if (audioId) query += "&offset=" + offset.toFixed(3);
+    }
 
     progress("Préparation du MP4 en haute qualité…", .72);
-    return await upload("/api/cut/mp4" + (audioId ? "?audio=" + audioId + "&offset=" + offset.toFixed(3) : ""), raw, "blob",
-      (p) => progress("Préparation du MP4 en haute qualité…", .72 + .2 * p)).catch((error) => { save(raw, fileName(mime.includes("mp4") ? "mp4" : "webm")); throw new Error(error.message + " La vidéo telle qu'enregistrée a été téléchargée à la place."); });
+    return await upload("/api/cut/mp4" + query, raw, "blob", (p) => progress("Préparation du MP4 en haute qualité…", .72 + .2 * p)).catch((error) => {
+      if (raw.type === "video/h264") throw error; // l'image par image n'est lisible qu'une fois passé par le serveur
+      save(raw, fileName(mime.includes("mp4") ? "mp4" : "webm"));
+      throw new Error(error.message + " La vidéo telle qu'enregistrée a été téléchargée à la place.");
+    });
   }
 }
 
@@ -1758,7 +1836,7 @@ function drawOverlays(t, playing) {
       if (src.src !== c.url) src.src = c.url;
       const want = (o.offset + (t - o.at)) % Math.max(.1, c.duration - .05);
       if (playing) { if (src.paused) src.play().catch(() => {}); if (Math.abs(src.currentTime - want) > .3) src.currentTime = want; }
-      else { src.pause(); if (Math.abs(src.currentTime - want) > .04) src.currentTime = want; }
+      else { src.pause(); seekTo(src, want); }
       if (src.readyState < 2) continue;
     }
     const sw = src.videoWidth || src.naturalWidth, sh = src.videoHeight || src.naturalHeight;
@@ -2159,12 +2237,6 @@ async function renderLibrary() {
       bar.append(
         button("Lire", () => { const old = item.querySelector("video"); if (old) return old.remove(); item.insertBefore(Object.assign(document.createElement("video"), { src: v.url, controls: true, autoplay: true, playsInline: true }), bar); }),
         Object.assign(document.createElement("a"), { className: "mini", href: v.downloadUrl, textContent: "Télécharger", style: "text-decoration:none" }),
-        button("Utiliser comme clip", async (event) => {
-          event.target.disabled = true; event.target.textContent = "Chargement…";
-          const blob = await (await fetch(v.url)).blob();
-          await addClips([new File([blob], v.name + ".mp4", { type: "video/mp4" })]);
-          event.target.textContent = "Ajoutée aux clips";
-        }),
         button("Supprimer", async () => {
           if (!confirm("Supprimer « " + v.name + " » de ton cloud CUT ?")) return;
           await fetch("/api/cut/library/" + v.id, { method: "DELETE", headers: { Authorization: "Bearer " + TOKEN } });
@@ -2374,6 +2446,7 @@ function dragScrub() {
 }
 
 function start() {
+  pickEncoder().then((codec) => { encoderCodec = codec; $("mute").parentElement.hidden = !!codec; });
   const isAudio = (file) => file.type.startsWith("audio/") || /\.(mp3|wav|flac|m4a|aac|ogg|opus|aiff?)$/i.test(file.name);
   OniriqueAudio.dropZone($("audio-pick"), $("audio-file"), (files) => {
     const audio = files.find(isAudio), others = files.filter((f) => !isAudio(f));

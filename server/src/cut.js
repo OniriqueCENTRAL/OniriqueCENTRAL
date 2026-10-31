@@ -1,6 +1,6 @@
-// ONIRIQUE CUT (site/cut) : le montage se fait dans le navigateur, qui enregistre la vidéo en temps réel. Le serveur
-// la remet au format que TikTok, Instagram et YouTube acceptent sans broncher : MP4 H.264 + AAC, 1080 × 1920, 30 images
-// par seconde constantes (l'enregistrement du navigateur a un rythme d'images variable). Réservé aux comptes qui ont
+// ONIRIQUE CUT (site/cut) : le montage se fait dans le navigateur, qui encode la vidéo image par image en H.264 (ou, faute
+// de WebCodecs, l'enregistre en temps réel). Le serveur en fait le MP4 que TikTok, Instagram et YouTube acceptent sans
+// broncher : H.264 + AAC, 1080 × 1920, 30 images par seconde constantes. Réservé aux comptes qui ont
 // ONIRIQUE CLOUD (membres ONIRIQUE et abonnés aux outils). Rien n'est gardé : les fichiers sont effacés aussitôt.
 // Seule exception : le cloud CUT des fondateurs (les vidéos qu'ils choisissent de garder, dossier cut-library).
 //
@@ -42,16 +42,22 @@ const AUDIO_MAX = 300 * 1024 * 1024; // trois minutes en WAV 24 bits stéréo 48
 const AUDIO_TTL = 30 * 60_000; // un son envoyé sans vidéo derrière est effacé au bout d'une demi-heure
 
 /** offset : de combien de secondes le son démarre après le début de la vidéo (négatif : avant). */
-export const cutArgs = (input, output, audio = null, offset = 0) => ['-y', '-hide_banner', '-loglevel', 'error', '-i', input,
+// raw : la vidéo arrive en H.264 brut, encodée image par image par la page : gardée telle quelle à 30 images par seconde
+// exactes (aucun second encodage, donc aucune perte, et presque rien à faire pour le serveur). Sinon, l'enregistrement en
+// temps réel est réencodé en x264, réglé pour tenir dans la mémoire du serveur (1 cœur, moins de 2 Go).
+export const cutArgs = (input, output, audio = null, offset = 0, raw = false) => ['-y', '-hide_banner', '-loglevel', 'error',
+  ...(raw ? ['-r', '30', '-f', 'h264'] : []), '-i', input,
   ...(audio ? [...(offset > 0 ? ['-itsoffset', offset.toFixed(3)] : offset < 0 ? ['-ss', (-offset).toFixed(3)] : []), '-i', audio,
-    '-map', '0:v:0', '-map', '1:a:0', '-shortest'] : []),
-  '-vf', 'scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,format=yuv420p',
-  '-c:v', 'libx264', '-preset', 'slow', '-crf', '16', '-profile:v', 'high', '-tune', 'film', '-c:a', 'aac', '-b:a', '320k',
+    // Pas de -shortest avec le H.264 brut copié : ffmpeg y perd tout le son (le son a déjà la durée exacte de la vidéo).
+    '-map', '0:v:0', '-map', '1:a:0', ...(raw ? [] : ['-shortest'])] : []),
+  ...(raw ? ['-c:v', 'copy'] : ['-vf', 'scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,format=yuv420p',
+    '-c:v', 'libx264', '-preset', 'slow', '-crf', '14', '-threads', '1', '-x264-params', 'rc-lookahead=20', '-profile:v', 'high', '-tune', 'film']),
+  '-c:a', 'aac', '-b:a', '320k',
   '-movflags', '+faststart', output];
 
-function toMp4(input, output, audio, offset) {
+function toMp4(input, output, audio, offset, raw) {
   if (testing) { fs.copyFileSync(input, output); return Promise.resolve(); } // pas de ffmpeg pendant les tests
-  return new Promise((resolve, reject) => execFile('ffmpeg', cutArgs(input, output, audio, offset), { timeout: 10 * 60_000 }, (error, _out, stderr) =>
+  return new Promise((resolve, reject) => execFile('ffmpeg', cutArgs(input, output, audio, offset, raw), { timeout: 10 * 60_000 }, (error, _out, stderr) =>
     (error ? reject(new HttpError(500, 'La conversion en MP4 a échoué : ' + (String(stderr || error.message).trim().split('\n').pop().slice(0, 160) || 'ffmpeg'))) : resolve())));
 }
 
@@ -148,7 +154,7 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
     const input = path.join(dir, file.storedAs), output = input + '.mp4';
     const clean = () => { fs.rmSync(input, { force: true }); fs.rmSync(output, { force: true }); };
     // Le son ne sert qu'une fois : effacé dès que le MP4 est fait (ou raté).
-    try { await toMp4(input, output, audio?.file, offset); } catch (error) { clean(); throw error; } finally { if (audio) forget(audioId); }
+    try { await toMp4(input, output, audio?.file, offset, req.query.raw === 'h264'); } catch (error) { clean(); throw error; } finally { if (audio) forget(audioId); }
     res.set({ 'Content-Type': 'video/mp4', 'Content-Length': fs.statSync(output).size, 'Cache-Control': 'no-store' });
     const stream = fs.createReadStream(output);
     stream.on('close', clean);
