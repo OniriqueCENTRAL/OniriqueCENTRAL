@@ -387,6 +387,15 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 .sync-player b { flex: none; font: 500 13px var(--f-mono); color: var(--mist); }
 .sync-range { flex: 1; min-width: 0; accent-color: var(--ember); }
 .sync-vol { flex: none; width: 80px; accent-color: var(--ember); }
+/* Les barres du lecteur sont dessinées ici, comme celle du lecteur du site : sans ça, le style des champs (fond, bordure, 44 px)
+   les transforme en blocs gris dans certains navigateurs. --p est le niveau rempli. */
+.sync-player input[type="range"] { -webkit-appearance: none; appearance: none; height: 18px; min-height: 0; padding: 0; border: 0; border-radius: 0; background: none; cursor: pointer; --p: 0%; }
+.sync-player input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 99px; background: linear-gradient(90deg, var(--ember) var(--p), rgba(246,238,238,.16) var(--p)); }
+.sync-player input[type="range"]::-moz-range-track { height: 4px; border-radius: 99px; background: rgba(246,238,238,.16); }
+.sync-player input[type="range"]::-moz-range-progress { height: 4px; border-radius: 99px; background: var(--ember); }
+.sync-player input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: -4px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.6); }
+.sync-player input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.6); }
+.sync-player input[type="range"]:focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 99px; }
 .sync-vol-ico { flex: none; display: flex; margin-right: -6px; color: var(--mist); }
 .sync-vol-ico svg { width: 18px; height: 18px; }
 /* Sur téléphone, le volume passe à la ligne pour laisser de la place à la position. */
@@ -2873,12 +2882,14 @@ function syncBar(v) {
   const playBtn = el("button", { className: "round", id: "sync-play", type: "button", ariaLabel: syncAudio.paused ? "Lecture" : "Pause",
     onclick: () => (syncAudio.paused ? syncAudio.play().catch(fail) : syncAudio.pause()) }, icon(syncAudio.paused ? "play" : "pause"));
   const range = el("input", { type: "range", id: "sync-range", className: "sync-range", min: 0, max: syncAudio.duration || v.duration || 0, step: 0.01, value: syncAudio.currentTime, ariaLabel: "Position dans le titre" });
-  range.oninput = () => { syncAudio.currentTime = Number(range.value); };
+  range.oninput = () => { syncAudio.currentTime = Number(range.value); fillRange(range); };
   const vol = el("input", { type: "range", className: "sync-vol", min: 0, max: 1, step: 0.01, value: syncAudio.volume, ariaLabel: "Volume" });
-  vol.oninput = () => { syncAudio.volume = Number(vol.value); try { localStorage.setItem("onirique.syncVolume", vol.value); } catch {} };
+  vol.oninput = () => { syncAudio.volume = Number(vol.value); fillRange(vol); try { localStorage.setItem("onirique.syncVolume", vol.value); } catch {} };
+  fillRange(range); fillRange(vol);
   return el("div", { className: "sync-player" }, playBtn, range, el("b", { id: "sync-clock", textContent: OP.time(syncAudio.currentTime) + " / " + OP.time(syncAudio.duration || v.duration) }),
     el("span", { className: "sync-vol-ico", title: "Volume" }, icon("volume")), vol);
 }
+const fillRange = (r) => r.style.setProperty("--p", (Number(r.max) > 0 ? r.value / r.max * 100 : 0) + "%");
 $("details").addEventListener("close", () => { syncAudio.pause(); stopCompare(); });
 
 // ——— Comparer deux versions ———
@@ -2961,7 +2972,7 @@ document.addEventListener("keydown", (event) => {
 player.audio.addEventListener("play", () => syncAudio.pause());
 function syncProgress() {
   const range = document.getElementById("sync-range"), clock = document.getElementById("sync-clock"), d = syncAudio.duration || 0;
-  if (range && !range.matches(":active")) { range.max = d; range.value = syncAudio.currentTime; }
+  if (range && !range.matches(":active")) { range.max = d; range.value = syncAudio.currentTime; fillRange(range); }
   if (clock) clock.textContent = OP.time(syncAudio.currentTime) + " / " + OP.time(d);
 }
 // Fenêtre fermée (croix, Échap, clic à côté) ou autre vue : le son s'arrête, même si l'évènement « close » se perd.
