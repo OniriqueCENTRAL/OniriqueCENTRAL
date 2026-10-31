@@ -137,6 +137,61 @@
 .status { max-width: 340px; width: 100%; margin: 0 auto; display: grid; gap: 8px; font-size: 14px; color: var(--haze); text-align: center; }
 .locked { text-align: center; }
 .locked .actions { justify-content: center; }
+
+/* ——— Une étape à la fois : les onglets, puis « Suivant » en bas de chaque étape ——— */
+.hero { padding-block: 8px 4px; }
+.hero h1 { font-size: clamp(26px, 4.4vw, 42px); margin-block: 10px 6px; }
+.studio { margin-top: 18px; }
+.tabs { position: sticky; top: 8px; z-index: 6; display: flex; gap: 4px; padding: 5px; overflow-x: auto; border: 1px solid var(--line); border-radius: 16px;
+  background: rgba(13,8,9,.92); backdrop-filter: blur(10px); scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs button { flex: 1 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 14px; border: 0; border-radius: 11px;
+  background: none; color: var(--haze); font: 700 14px/1 var(--f-body); white-space: nowrap; cursor: pointer; }
+.tabs button b { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line); font: 600 11px/1 var(--f-mono); }
+.tabs button:hover:not(:disabled) { color: var(--mist); }
+.tabs button[aria-selected="true"] { background: var(--ember); color: #fff; }
+.tabs button[aria-selected="true"] b { border-color: rgba(255,255,255,.55); }
+.tabs button:disabled { opacity: .35; cursor: default; }
+.tabs-help { margin: 10px 4px 0; }
+.tab-panel { margin-top: 14px; }
+.tab-panel > .card { margin-top: 0; }
+.tab-panel > .card + .card { margin-top: 14px; }
+h2.step-title { font: 800 19px/1.2 var(--f-display); }
+.next { display: flex; justify-content: flex-end; margin-top: 14px; }
+/* Pas encore de son : une grande zone où le déposer. */
+.studio:not(.has-sound) .pick-row { justify-content: center; padding: clamp(28px, 6vw, 48px) 20px; border: 1.5px dashed rgba(255,210,214,.3); border-radius: 18px; background: rgba(0,0,0,.3); }
+.studio:not(.has-sound) #audio-state { text-align: center; }
+.panel.inset { margin: 0 clamp(18px, 4vw, 34px) 22px; padding: 0; }
+/* Les styles rapides : de grandes cartes avec un petit aperçu de l'écran. */
+.chips.presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); gap: 10px; padding: 0; border: 0; border-radius: 0; }
+.chips.presets button { display: grid; grid-template-columns: 40px 1fr; grid-template-rows: auto 1fr; column-gap: 12px; row-gap: 4px; align-items: start; padding: 12px;
+  border: 1px solid var(--line); border-radius: 14px; background: rgba(0,0,0,.3); color: var(--mist); font: 700 14px/1.2 var(--f-body); letter-spacing: 0; text-transform: none; text-align: left; }
+.chips.presets button:hover { border-color: rgba(226,52,68,.6); }
+.chips.presets button[aria-pressed="true"] { border-color: var(--ember); background: rgba(226,52,68,.16); color: #fff; }
+.chips.presets small { grid-column: 2; font: 400 12px/1.35 var(--f-body); color: var(--haze); }
+.look { grid-row: span 2; position: relative; width: 40px; aspect-ratio: 9 / 16; border-radius: 6px; overflow: hidden; border: 1px solid var(--line);
+  background: linear-gradient(160deg, #5a2a30, #1b0c0f); }
+.look::before, .look::after { content: ""; position: absolute; left: 50%; transform: translateX(-50%); }
+.look-classic::after { bottom: 18%; width: 70%; height: 3px; border-radius: 2px; background: #fff; }
+.look-pixel { background: #000; } .look-pixel::before { top: 30%; width: 100%; height: 40%; background: linear-gradient(160deg, #6b5a3a, #2a2216); }
+.look-pixel::after { top: 46%; width: 50%; height: 5px; background: #fff; }
+.look-red { background: #000; } .look-red::before { top: 36%; width: 100%; height: 28%; background: linear-gradient(160deg, #5a2a30, #1b0c0f); }
+.look-red::after { top: 47%; width: 55%; height: 5px; background: #ff2525; }
+.look-card::after { bottom: 14%; left: 12%; transform: none; width: 60%; height: 9px; border-radius: 1px; background: #fff; }
+.look-film { background: #000; } .look-film::before { top: 36%; width: 100%; height: 28%; background: linear-gradient(160deg, #2e3a52, #10141d); }
+.look-film::after { top: 58%; width: 60%; height: 3px; background: rgba(255,255,255,.85); }
+/* L'aperçu : la vidéo, la lecture, puis le grand bouton Exporter ; l'avancé en petit. */
+.go.export { padding-block: 17px; font-size: 16px; }
+.adv-links { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; font: 500 11px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
+.adv-links span { margin-right: 4px; }
+.frame { width: min(100%, 340px, calc(62vh * 9 / 16)); }
+@media (max-width: 920px) {
+  .frame { width: min(100%, 300px, calc(52vh * 9 / 16)); }
+  .tabs { top: 0; border-radius: 0 0 14px 14px; margin-inline: -4px; }
+  .tabs button { padding: 10px 11px; font-size: 13px; }
+  .chips.presets button { grid-template-columns: 28px 1fr; padding: 10px 12px; }
+  .look { width: 28px; }
+}
 </style>
 
 <a class="skip" href="#contenu">Aller au contenu</a>
@@ -151,7 +206,7 @@
   <section class="hero">
     <p class="eyebrow">ONIRIQUE CUT · membres et abonnés CLOUD</p>
     <h1>Tes clips, <em>calés sur le beat</em></h1>
-    <p class="lede">Ton son, tes clips : le tempo est trouvé, le meilleur passage choisi, chaque coupe tombe sur le temps. Tu repars avec une vidéo 9:16 prête pour TikTok, Reels et Shorts.</p>
+    <p class="lede">Ton son, tes clips, un style : chaque coupe tombe sur le temps. Une vidéo 9:16 prête pour TikTok, Reels et Shorts.</p>
   </section>
 
   <div class="card locked" id="locked" hidden>
@@ -164,10 +219,21 @@
 
   <div class="studio" id="studio" hidden>
     <div class="steps">
+      <nav class="tabs" id="tabs" role="tablist" aria-label="Étapes du montage">
+        <button type="button" role="tab" data-tab="son"><b>1</b>Son</button>
+        <button type="button" role="tab" data-tab="clips"><b>2</b>Clips</button>
+        <button type="button" role="tab" data-tab="style"><b>3</b>Style</button>
+        <button type="button" role="tab" data-tab="texte"><b>4</b>Texte</button>
+        <button type="button" role="tab" data-tab="image"><b>5</b>Image</button>
+        <button type="button" role="tab" data-tab="film"><b>6</b>Film</button>
+      </nav>
+      <p class="muted tabs-help" id="tabs-help">Commence par ton son : les autres étapes s'ouvrent ensuite.</p>
+
+      <section class="tab-panel" data-panel="son" role="tabpanel" aria-label="Son">
       <div class="card">
         <div class="stack">
-          <p class="step-title"><b>1</b>Ton son</p>
-          <div class="row">
+          <h2 class="step-title">Ton son</h2>
+          <div class="row pick-row">
             <button class="go" type="button" id="audio-pick">Choisir un fichier</button>
             <button class="go ghost" type="button" id="cloud-pick">Dans ONIRIQUE CLOUD</button>
             <button class="mini" type="button" id="resume" hidden></button>
@@ -181,10 +247,9 @@
           </div>
         </div>
       </div>
-
       <div class="card" id="step-window" hidden>
         <div class="stack">
-          <p class="step-title"><b>2</b>Le passage</p>
+          <h2 class="step-title">Le passage</h2>
           <div class="row">
             <div class="chips" id="duration" role="group" aria-label="Durée"><button type="button" data-v="8">8 s</button><button type="button" data-v="15">15 s</button><button type="button" data-v="30">30 s</button><button type="button" data-v="60">60 s</button></div>
             <button class="mini" type="button" id="best">Meilleur passage</button>
@@ -220,10 +285,13 @@
           <p class="muted">Fais glisser la zone rouge pour la déplacer, ou ses bords blancs pour choisir le début et la fin : le passage dure exactement ce que tu veux, BOUCLE comprise. Les coupes, les zooms et les effets se calent tout seuls sur le tempo à l'intérieur.</p>
         </div>
       </div>
+      <div class="next"><button class="go" type="button" data-next="clips">Suivant : tes clips →</button></div>
+      </section>
 
+      <section class="tab-panel" data-panel="clips" role="tabpanel" aria-label="Clips" hidden>
       <div class="card" id="step-clips" hidden>
         <div class="stack">
-          <p class="step-title"><b>3</b>Tes clips</p>
+          <h2 class="step-title">Tes clips</h2><p class="muted">Vidéos ou photos : chaque coupe tombe sur le beat et montre un nouveau moment du clip.</p>
           <div class="clips" id="clips"><button class="add" type="button" id="clips-add"><b>+</b>Vidéos<br>ou photos</button></div>
           <input id="clips-file" type="file" accept="video/*,image/*" multiple hidden>
           <div class="row">
@@ -236,266 +304,270 @@
           <p class="muted" id="batch-help">Les vidéos sont recadrées en vertical, sans son : seul ton morceau s'entend. Chaque coupe montre un nouveau moment du clip.</p>
         </div>
       </div>
+      <div class="next"><button class="go" type="button" data-next="style">Suivant : le style →</button></div>
+      </section>
 
+      <section class="tab-panel" data-panel="style" role="tabpanel" aria-label="Style" hidden>
       <div class="card" id="step-edit" hidden>
         <div class="stack">
-          <p class="step-title"><b>4</b>Le montage</p>
-          <label>Styles rapides
-            <div class="chips wrap-in" id="preset" role="group" aria-label="Styles rapides"><button type="button" data-v="classic">Classique</button><button type="button" data-v="pixel">Mot par mot pixel</button><button type="button" data-v="red">Mot par mot rouge</button><button type="button" data-v="card">Carte paroles</button><button type="button" data-v="film">Extrait de film</button></div>
-          </label>
-          <p class="muted">Un style règle tout d'un coup ; ouvre les menus pour changer chaque réglage.</p>
-
-          <details class="panel" id="film-panel">
-            <summary>OPTIONS DE FILMS</summary>
-            <div class="stack">
-              <p class="muted">Pour les montages à partir d'extraits de films : une réplique du film avec son vrai son, sous-titrée, puis la musique qui tombe au drop.</p>
-              <p class="sub-title">Réplique d'ouverture</p>
-              <label class="check"><input type="checkbox" id="introOn"> Commencer par une réplique du film (avec son son), puis la musique tombe</label>
-              <div class="stack" id="intro-box" style="padding:0">
-                <label>Clip de la réplique<select id="introClip"></select></label>
-                <div class="wave small" id="intro-wave" title="Le son du clip : fais glisser la zone, ou ses bords, pour choisir la réplique"><canvas></canvas></div>
-                <div class="row">
-                  <label class="inline">Début<input type="text" id="introIn" inputmode="decimal" aria-label="Début de la réplique dans le clip"></label>
-                  <label class="inline">Durée<input type="text" id="introLen" inputmode="decimal" aria-label="Durée de la réplique en secondes">s</label>
-                  <button class="mini" type="button" id="intro-hear">Écouter la réplique</button>
-                </div>
-                <label class="grow">Volume du film<input type="range" id="filmVol" min="0" max="200" step="5"></label>
-
-                <p class="sub-title">Paroles de la réplique</p>
-                <label>Ce qui est dit dans l'extrait (une phrase par ligne)
-                  <textarea id="introLyrics" placeholder="T'as cru que c'était fini ?&#10;Moi je commence à peine."></textarea>
-                </label>
-                <div class="row">
-                  <button class="mini" type="button" id="isync-line">Synchroniser phrase par phrase</button>
-                  <button class="mini" type="button" id="isync-word">Synchroniser mot par mot</button>
-                </div>
-                <div class="stack sub" id="isync" hidden style="padding-left:0;padding-right:0">
-                  <div class="row" style="gap:6px"><span class="muted">Vitesse</span><button class="mini" type="button" data-rate="0.25">0,25</button><button class="mini" type="button" data-rate="0.5">0,50</button><button class="mini" type="button" data-rate="1">1,00</button><button class="mini" type="button" data-rate="1.25">1,25</button></div>
-                  <div class="row">
-                    <button class="go" type="button" id="isync-mark">Lancer la réplique</button>
-                    <button class="mini" type="button" id="isync-undo">Annuler le dernier (↑)</button>
-                    <button class="mini" type="button" id="isync-done">Terminer</button>
-                  </div>
-                  <div class="strong-words" id="isync-items"></div>
-                  <p class="muted" id="isync-help"></p>
-                </div>
-                <label>Affichage des paroles de la réplique
-                  <div class="chips wrap-in" id="introSubMode" role="group" aria-label="Affichage des paroles de la réplique"><button type="button" data-v="sub">Sous-titre (cinéma)</button><button type="button" data-v="word">Mot par mot</button></div>
-                </label>
-                <label class="check"><input type="checkbox" id="iOwn"> Style de texte propre à la réplique</label>
-                <div class="stack" id="ilook" style="padding:0">
-                  <div class="fields">
-                    <label>Police<select id="iFont"></select></label>
-                    <label>Place du texte
-                      <div class="chips wrap-in" id="iPlace" role="group" aria-label="Place du texte de la réplique"><button type="button" data-v="top">En haut</button><button type="button" data-v="middle">Au milieu</button><button type="button" data-v="bottom">En bas</button></div>
-                    </label>
-                  </div>
-                  <div class="row">
-                    <label>Couleur<input type="color" id="iColor"></label>
-                    <label class="grow">Taille<input type="range" id="iSize" min="50" max="200" step="5"></label>
-                  </div>
-                  <div class="row">
-                    <label>Contour<input type="color" id="iStrokeColor"></label>
-                    <label class="grow">Épaisseur du contour<input type="range" id="iStroke" min="0" max="20"></label>
-                  </div>
-                  <div class="row">
-                    <label>Lueur<input type="color" id="iGlowColor"></label>
-                    <label class="grow">Force de la lueur<input type="range" id="iGlow" min="0" max="100"></label>
-                  </div>
-                  <div class="row">
-                    <label>Ombre<input type="color" id="iShadowColor"></label>
-                    <label class="grow">Flou de l'ombre<input type="range" id="iShadowBlur" min="0" max="60"></label>
-                    <label class="grow">Décalage de l'ombre<input type="range" id="iShadowOffset" min="0" max="30"></label>
-                  </div>
-                  <div class="row">
-                    <label class="check"><input type="checkbox" id="iCaps"> MAJUSCULES</label>
-                    <label class="check"><input type="checkbox" id="iBox"> Fond derrière le texte</label>
-                    <label>Fond<input type="color" id="iBoxColor"></label>
-                    <label class="grow">Opacité du fond<input type="range" id="iBoxAlpha" min="0" max="100" step="5"></label>
-                  </div>
-                </div>
-
-                <p class="sub-title">Transition vers la musique</p>
-                <div class="chips wrap-in" id="transition" role="group" aria-label="Transition entre le film et la musique"><button type="button" data-v="cut">Aucune</button><button type="button" data-v="flash">Flash blanc</button><button type="button" data-v="black">Fondu au noir</button><button type="button" data-v="zoom">Zoom</button><button type="button" data-v="whip">Glissement</button><button type="button" data-v="blur">Flou</button><button type="button" data-v="shake">Secousse</button><button type="button" data-v="glitch">Glitch</button><button type="button" data-v="rewind">Rembobinage VHS</button><button type="button" data-v="freeze">Arrêt sur image</button></div>
-                <label class="grow">Intensité de la transition<input type="range" id="transAmt" min="10" max="300" step="10"></label>
-                <div class="row">
-                  <label class="check"><input type="checkbox" id="introFade"> Fondu du son entre le film et la musique</label>
-                  <label class="check"><input type="checkbox" id="dropGap"> Silence juste avant le drop</label>
-                </div>
-
-                <p class="sub-title">Sous la réplique</p>
-                <label>La musique qui mène au drop, jouée sous la réplique
-                  <div class="chips wrap-in" id="underPart" role="group" aria-label="Musique sous la réplique"><button type="button" data-v="none">Rien</button><button type="button" data-v="full">Le son entier</button><button type="button" data-v="prod">La prod (sans voix)</button><button type="button" data-v="melo">Mélodie</button><button type="button" data-v="drums">Drums</button><button type="button" data-v="bass">Basse</button><button type="button" data-v="vocals">Voix seule</button></div>
-                </label>
-                <label class="grow">Volume sous la réplique<input type="range" id="underVol" min="0" max="150" step="5"></label>
-                <div class="row"><button class="mini" type="button" id="stem-hear">Écouter tout le morceau avec cette piste</button></div>
-                <p class="muted" id="stem-status">La prod, la mélodie, les drums, la basse et la voix sont séparées dans ton navigateur par une IA (Demucs) : rien n’est envoyé. La première fois, l’IA se télécharge (172 Mo), puis reste sur l’appareil.</p>
-
-                <p class="sub-title">Après la réplique</p>
-                <label>Clip après la transition<select id="afterClip"></select></label>
-                <label class="check"><input type="checkbox" id="filmContinue"> Le film continue sous la musique (la suite de l'extrait)</label>
-              </div>
-              <p class="sub-title">Volumes</p>
-              <div class="row">
-                <label class="grow">Volume de la musique<input type="range" id="musicVol" min="0" max="150" step="5"></label>
-                <label class="grow">Son des clips sous la musique<input type="range" id="clipVol" min="0" max="150" step="5"></label>
-              </div>
-              <p class="sub-title">Image des extraits</p>
-              <label>Vitesse des clips
-                <div class="chips wrap-in" id="slowmo" role="group" aria-label="Vitesse des clips"><button type="button" data-v="100">Normale</button><button type="button" data-v="75">Ralenti 75 %</button><button type="button" data-v="50">Ralenti 50 %</button></div>
-              </label>
-              <p class="muted">Astuce : « Bande 16:9 » (menu Image et coupes) donne les bandes noires du cinéma, et le sous-titre s'affiche en bas de l'image. Le son final (film, musique, pistes) est mixé ici puis encodé une seule fois, en haute qualité.</p>
+          <h2 class="step-title">Choisis un style</h2>
+          <p class="muted">Un clic règle tout d'un coup (cadre, paroles, texte) ; tu peux ensuite tout ajuster dans les étapes suivantes.</p>
+          <div class="chips presets" id="preset" role="group" aria-label="Styles rapides">
+            <button type="button" data-v="classic"><i class="look look-classic"></i>Classique<small>La ligne de paroles en bas, plein écran</small></button>
+            <button type="button" data-v="pixel"><i class="look look-pixel"></i>Mot par mot pixel<small>Gros mots au centre, look rétro 4:3</small></button>
+            <button type="button" data-v="red"><i class="look look-red"></i>Mot par mot rouge<small>Mots rouges au centre, bande 16:9</small></button>
+            <button type="button" data-v="card"><i class="look look-card"></i>Carte paroles<small>La phrase dans un encadré blanc</small></button>
+            <button type="button" data-v="film"><i class="look look-film"></i>Extrait de film<small>Une réplique de film, puis le drop</small></button>
+          </div>
+        </div>
+        <div class="stack">
+          <h3 class="sub-title">Paroles</h3>
+            <label>Paroles à l'écran
+              <div class="chips wrap-in" id="lyricsMode" role="group" aria-label="Paroles à l'écran"><button type="button" data-v="line">Ligne entière</button><button type="button" data-v="word">Mot par mot</button><button type="button" data-v="card">Carte paroles</button></div>
+            </label>
+            <label>Place des paroles
+              <div class="chips wrap-in" id="lyricsPlace" role="group" aria-label="Place des paroles"><button type="button" data-v="top">En haut</button><button type="button" data-v="middle">Au milieu</button><button type="button" data-v="bottom">En bas</button></div>
+            </label>
+            <label id="sign-row">Signature sous la carte (à droite)<input type="text" id="sign" maxlength="24" placeholder="PAROLES"></label>
+            <label>Paroles synchronisées (facultatif)
+              <textarea id="lyrics" placeholder="[00:12.50] Première ligne&#10;[00:15.80] Deuxième ligne"></textarea>
+            </label>
+            <p class="muted" id="lyrics-help"></p>
+            <div class="row" id="lyrics-cloud" hidden>
+              <button class="mini" type="button" id="lyrics-pull">Reprendre celles de CLOUD</button>
+              <button class="mini" type="button" id="lyrics-push">Enregistrer dans CLOUD</button>
             </div>
-          </details>
-
-          <details class="panel">
-            <summary>Image et coupes</summary>
-            <div class="stack">
-              <label>Cadre de l'image
-                <div class="chips wrap-in" id="frame" role="group" aria-label="Cadre de l'image"><button type="button" data-v="full">Plein écran</button><button type="button" data-v="169">Bande 16:9</button><button type="button" data-v="43">Bande 4:3</button><button type="button" data-v="11">Carré</button></div>
-              </label>
-              <label>Rythme des coupes
-                <div class="chips wrap-in" id="cadence" role="group" aria-label="Rythme des coupes"><button type="button" data-v="1">Chaque temps</button><button type="button" data-v="2">Tous les 2 temps</button><button type="button" data-v="4">Chaque mesure</button><button type="button" data-v="mix">Varié</button></div>
-              </label>
-              <div class="row">
-                <label class="check"><input type="checkbox" id="zoom"> Zoom sur le beat</label>
-                <label class="check"><input type="checkbox" id="flash"> Flash aux coupes</label>
-                <label class="check"><input type="checkbox" id="retro"> Look rétro (pixels et grain)</label>
-                <label class="check"><input type="checkbox" id="photoMove"> Photos qui avancent doucement</label>
-              </div>
-              <div class="row">
-                <label class="grow">Force du zoom<input type="range" id="zoomAmt" min="10" max="300" step="10"></label>
-                <label class="grow">Force du flash<input type="range" id="flashAmt" min="10" max="300" step="10"></label>
-              </div>
-              <p class="muted">Sans option cochée, une photo reste telle quelle, sans bouger.</p>
+        </div>
+        <details class="panel inset">
+          <summary>Mes styles enregistrés</summary>
+          <div class="stack">
+            <p class="muted">Enregistre tous tes réglages d'image, d'effets et de texte pour les retrouver d'un clic. Ils restent dans ce navigateur, rien n'est envoyé.</p>
+            <div class="row">
+              <input type="text" id="style-name" maxlength="30" placeholder="Nom du style" style="flex:1;min-width:150px">
+              <button class="mini" type="button" id="style-save">Enregistrer ce style</button>
             </div>
-          </details>
+            <div class="styles-list" id="my-styles"></div>
+          </div>
+        </details>
+      </div>
+      <div class="next"><button class="go" type="button" data-next="texte">Suivant : le texte →</button></div>
+      </section>
 
-          <details class="panel">
-            <summary>Effets vidéo</summary>
-            <div class="stack">
-              <div class="row">
-                <label class="check"><input type="checkbox" id="bw"> Noir et blanc</label>
-                <label class="check"><input type="checkbox" id="shake"> Secousse sur le beat</label>
-                <label class="check"><input type="checkbox" id="rgbSplit"> Décalage RVB sur le beat</label>
-                <label class="check"><input type="checkbox" id="fadeEnds"> Fondu au noir (début et fin)</label>
-              </div>
-              <div class="row">
-                <label class="grow">Force de la secousse<input type="range" id="shakeAmt" min="10" max="300" step="10"></label>
-                <label class="grow">Force du décalage RVB<input type="range" id="rgbAmt" min="10" max="300" step="10"></label>
-              </div>
-              <div class="row">
-                <label class="grow">Luminosité<input type="range" id="brightness" min="50" max="150" step="5"></label>
-                <label class="grow">Contraste<input type="range" id="contrast" min="50" max="200" step="5"></label>
-                <label class="grow">Saturation<input type="range" id="saturation" min="0" max="250" step="5"></label>
-              </div>
-              <div class="row">
-                <label class="grow">Vignette (bords sombres)<input type="range" id="vignette" min="0" max="100" step="5"></label>
-                <label>Teinte<input type="color" id="tint"></label>
-                <label class="grow">Force de la teinte<input type="range" id="tintAmount" min="0" max="80" step="5"></label>
-              </div>
-              <button class="mini" type="button" id="fx-reset" style="justify-self:start">Remettre les effets à zéro</button>
+      <section class="tab-panel" data-panel="texte" role="tabpanel" aria-label="Texte" hidden>
+      <div class="card">
+        <div class="stack">
+          <h3 class="sub-title">Style du texte</h3>
+            <div class="chips wrap-in" id="textStyle" role="group" aria-label="Styles de texte"><button type="button" data-v="classic">Classique</button><button type="button" data-v="pixel">Pixel blanc</button><button type="button" data-v="red">Rouge</button><button type="button" data-v="white">Blanc gras</button><button type="button" data-v="neon">Néon</button><button type="button" data-v="retro">Rétro</button></div>
+            <div class="fields">
+              <label>Police des paroles<select id="lyricFont"></select></label>
+              <label>Police du titre<select id="titleFont"></select></label>
             </div>
-          </details>
-
-          <details class="panel">
-            <summary>Titre et accroche</summary>
-            <div class="stack">
-              <div class="fields">
-                <label>Titre<input type="text" id="title" maxlength="60" placeholder="Nom du son"></label>
-                <label>Artiste<input type="text" id="artist" maxlength="60" placeholder="Ton nom d'artiste"></label>
-              </div>
-              <label>Place du titre
-                <div class="chips wrap-in" id="place" role="group" aria-label="Place du titre"><button type="button" data-v="top">En haut</button><button type="button" data-v="middle">Au milieu</button><button type="button" data-v="bottom">En bas</button><button type="button" data-v="none">Masqué</button></div>
-              </label>
-              <label>Accroche (petit texte au-dessus de l'image)<input type="text" id="hook" maxlength="80" placeholder="le son il a une vibe spéciale"></label>
-              <label class="check"><input type="checkbox" id="hookOn"> Afficher l'accroche</label>
+            <div class="row">
+              <label>Couleur<input type="color" id="textColor"></label>
+              <label class="grow">Taille du texte<input type="range" id="textSize" min="50" max="200" step="5"></label>
             </div>
-          </details>
-
-          <details class="panel" open>
-            <summary>Paroles</summary>
-            <div class="stack">
-              <label>Paroles à l'écran
-                <div class="chips wrap-in" id="lyricsMode" role="group" aria-label="Paroles à l'écran"><button type="button" data-v="line">Ligne entière</button><button type="button" data-v="word">Mot par mot</button><button type="button" data-v="card">Carte paroles</button></div>
-              </label>
-              <label>Place des paroles
-                <div class="chips wrap-in" id="lyricsPlace" role="group" aria-label="Place des paroles"><button type="button" data-v="top">En haut</button><button type="button" data-v="middle">Au milieu</button><button type="button" data-v="bottom">En bas</button></div>
-              </label>
-              <label id="sign-row">Signature sous la carte (à droite)<input type="text" id="sign" maxlength="24" placeholder="PAROLES"></label>
-              <label>Paroles synchronisées (facultatif)
-                <textarea id="lyrics" placeholder="[00:12.50] Première ligne&#10;[00:15.80] Deuxième ligne"></textarea>
-              </label>
-              <p class="muted" id="lyrics-help"></p>
-              <div class="row" id="lyrics-cloud" hidden>
-                <button class="mini" type="button" id="lyrics-pull">Reprendre celles de CLOUD</button>
-                <button class="mini" type="button" id="lyrics-push">Enregistrer dans CLOUD</button>
-              </div>
+            <div class="row">
+              <label>Contour<input type="color" id="strokeColor"></label>
+              <label class="grow">Épaisseur du contour<input type="range" id="stroke" min="0" max="20"></label>
             </div>
-          </details>
-
-          <details class="panel">
-            <summary>Style du texte</summary>
-            <div class="stack">
-              <div class="chips wrap-in" id="textStyle" role="group" aria-label="Styles de texte"><button type="button" data-v="classic">Classique</button><button type="button" data-v="pixel">Pixel blanc</button><button type="button" data-v="red">Rouge</button><button type="button" data-v="white">Blanc gras</button><button type="button" data-v="neon">Néon</button><button type="button" data-v="retro">Rétro</button></div>
-              <div class="fields">
-                <label>Police des paroles<select id="lyricFont"></select></label>
-                <label>Police du titre<select id="titleFont"></select></label>
-              </div>
-              <div class="row">
-                <label>Couleur<input type="color" id="textColor"></label>
-                <label class="grow">Taille du texte<input type="range" id="textSize" min="50" max="200" step="5"></label>
-              </div>
-              <div class="row">
-                <label>Contour<input type="color" id="strokeColor"></label>
-                <label class="grow">Épaisseur du contour<input type="range" id="stroke" min="0" max="20"></label>
-              </div>
-              <div class="row">
-                <label>Lueur<input type="color" id="glowColor"></label>
-                <label class="grow">Force de la lueur<input type="range" id="glow" min="0" max="100"></label>
-              </div>
-              <div class="row">
-                <label>Ombre<input type="color" id="shadowColor"></label>
-                <label class="grow">Flou de l'ombre<input type="range" id="shadowBlur" min="0" max="60"></label>
-                <label class="grow">Décalage de l'ombre<input type="range" id="shadowOffset" min="0" max="30"></label>
-              </div>
-              <div class="row">
-                <label class="check"><input type="checkbox" id="caps"> MAJUSCULES</label>
-                <label class="check"><input type="checkbox" id="pixel"> Texte pixelisé</label>
-              </div>
+            <div class="row">
+              <label>Lueur<input type="color" id="glowColor"></label>
+              <label class="grow">Force de la lueur<input type="range" id="glow" min="0" max="100"></label>
             </div>
-          </details>
-
-          <details class="panel" id="word-row">
-            <summary>Mots FORTS</summary>
-            <div class="stack">
-              <p class="muted">Un mot fort s'affiche en plus grand, avec sa couleur, sa lueur et un petit « pop ». Touche les mots du passage pour les mettre en FORT ; tu peux aussi les marquer dans ONIRIQUE CLOUD (synchro mot par mot).</p>
-              <div class="strong-words" id="strong-words"></div>
-              <div class="fields">
-                <label>Taille du mot fort<input type="range" id="strongSize" min="100" max="300" step="5"></label>
-                <label>Police du mot fort<select id="strongFont"></select></label>
-              </div>
-              <div class="row">
-                <label>Couleur<input type="color" id="strongColor"></label>
-                <label>Lueur<input type="color" id="strongGlowColor"></label>
-                <label class="grow">Force de la lueur<input type="range" id="strongGlow" min="0" max="100"></label>
-              </div>
+            <div class="row">
+              <label>Ombre<input type="color" id="shadowColor"></label>
+              <label class="grow">Flou de l'ombre<input type="range" id="shadowBlur" min="0" max="60"></label>
+              <label class="grow">Décalage de l'ombre<input type="range" id="shadowOffset" min="0" max="30"></label>
             </div>
-          </details>
-
-          <details class="panel">
-            <summary>Mes styles</summary>
-            <div class="stack">
-              <p class="muted">Enregistre tous tes réglages d'image, d'effets et de texte pour les retrouver d'un clic. Ils restent dans ce navigateur, rien n'est envoyé.</p>
-              <div class="row">
-                <input type="text" id="style-name" maxlength="30" placeholder="Nom du style" style="flex:1;min-width:150px">
-                <button class="mini" type="button" id="style-save">Enregistrer ce style</button>
-              </div>
-              <div class="styles-list" id="my-styles"></div>
+            <div class="row">
+              <label class="check"><input type="checkbox" id="caps"> MAJUSCULES</label>
+              <label class="check"><input type="checkbox" id="pixel"> Texte pixelisé</label>
             </div>
-          </details>
+        </div>
+        <div class="stack" id="word-row">
+          <h3 class="sub-title">Mots FORTS</h3>
+            <p class="muted">Un mot fort s'affiche en plus grand, avec sa couleur, sa lueur et un petit « pop ». Touche les mots du passage pour les mettre en FORT ; tu peux aussi les marquer dans ONIRIQUE CLOUD (synchro mot par mot).</p>
+            <div class="strong-words" id="strong-words"></div>
+            <div class="fields">
+              <label>Taille du mot fort<input type="range" id="strongSize" min="100" max="300" step="5"></label>
+              <label>Police du mot fort<select id="strongFont"></select></label>
+            </div>
+            <div class="row">
+              <label>Couleur<input type="color" id="strongColor"></label>
+              <label>Lueur<input type="color" id="strongGlowColor"></label>
+              <label class="grow">Force de la lueur<input type="range" id="strongGlow" min="0" max="100"></label>
+            </div>
+        </div>
+        <div class="stack">
+          <h3 class="sub-title">Titre et accroche</h3>
+            <div class="fields">
+              <label>Titre<input type="text" id="title" maxlength="60" placeholder="Nom du son"></label>
+              <label>Artiste<input type="text" id="artist" maxlength="60" placeholder="Ton nom d'artiste"></label>
+            </div>
+            <label>Place du titre
+              <div class="chips wrap-in" id="place" role="group" aria-label="Place du titre"><button type="button" data-v="top">En haut</button><button type="button" data-v="middle">Au milieu</button><button type="button" data-v="bottom">En bas</button><button type="button" data-v="none">Masqué</button></div>
+            </label>
+            <label>Accroche (petit texte au-dessus de l'image)<input type="text" id="hook" maxlength="80" placeholder="le son il a une vibe spéciale"></label>
+            <label class="check"><input type="checkbox" id="hookOn"> Afficher l'accroche</label>
         </div>
       </div>
+      <div class="next"><button class="go" type="button" data-next="image">Suivant : l'image →</button></div>
+      </section>
+
+      <section class="tab-panel" data-panel="image" role="tabpanel" aria-label="Image" hidden>
+      <div class="card">
+        <div class="stack">
+          <h3 class="sub-title">Image et coupes</h3>
+            <label>Cadre de l'image
+              <div class="chips wrap-in" id="frame" role="group" aria-label="Cadre de l'image"><button type="button" data-v="full">Plein écran</button><button type="button" data-v="169">Bande 16:9</button><button type="button" data-v="43">Bande 4:3</button><button type="button" data-v="11">Carré</button></div>
+            </label>
+            <label>Rythme des coupes
+              <div class="chips wrap-in" id="cadence" role="group" aria-label="Rythme des coupes"><button type="button" data-v="1">Chaque temps</button><button type="button" data-v="2">Tous les 2 temps</button><button type="button" data-v="4">Chaque mesure</button><button type="button" data-v="mix">Varié</button></div>
+            </label>
+            <div class="row">
+              <label class="check"><input type="checkbox" id="zoom"> Zoom sur le beat</label>
+              <label class="check"><input type="checkbox" id="flash"> Flash aux coupes</label>
+              <label class="check"><input type="checkbox" id="retro"> Look rétro (pixels et grain)</label>
+              <label class="check"><input type="checkbox" id="photoMove"> Photos qui avancent doucement</label>
+            </div>
+            <div class="row">
+              <label class="grow">Force du zoom<input type="range" id="zoomAmt" min="10" max="300" step="10"></label>
+              <label class="grow">Force du flash<input type="range" id="flashAmt" min="10" max="300" step="10"></label>
+            </div>
+            <p class="muted">Sans option cochée, une photo reste telle quelle, sans bouger.</p>
+        </div>
+        <div class="stack">
+          <h3 class="sub-title">Effets vidéo</h3>
+            <div class="row">
+              <label class="check"><input type="checkbox" id="bw"> Noir et blanc</label>
+              <label class="check"><input type="checkbox" id="shake"> Secousse sur le beat</label>
+              <label class="check"><input type="checkbox" id="rgbSplit"> Décalage RVB sur le beat</label>
+              <label class="check"><input type="checkbox" id="fadeEnds"> Fondu au noir (début et fin)</label>
+            </div>
+            <div class="row">
+              <label class="grow">Force de la secousse<input type="range" id="shakeAmt" min="10" max="300" step="10"></label>
+              <label class="grow">Force du décalage RVB<input type="range" id="rgbAmt" min="10" max="300" step="10"></label>
+            </div>
+            <div class="row">
+              <label class="grow">Luminosité<input type="range" id="brightness" min="50" max="150" step="5"></label>
+              <label class="grow">Contraste<input type="range" id="contrast" min="50" max="200" step="5"></label>
+              <label class="grow">Saturation<input type="range" id="saturation" min="0" max="250" step="5"></label>
+            </div>
+            <div class="row">
+              <label class="grow">Vignette (bords sombres)<input type="range" id="vignette" min="0" max="100" step="5"></label>
+              <label>Teinte<input type="color" id="tint"></label>
+              <label class="grow">Force de la teinte<input type="range" id="tintAmount" min="0" max="80" step="5"></label>
+            </div>
+            <button class="mini" type="button" id="fx-reset" style="justify-self:start">Remettre les effets à zéro</button>
+        </div>
+      </div>
+      <div class="next"><button class="go" type="button" data-next="film">Suivant : options de films →</button></div>
+      </section>
+
+      <section class="tab-panel" data-panel="film" role="tabpanel" aria-label="Film" hidden>
+      <div class="card" id="film-panel">
+        <div class="stack">
+          <h2 class="step-title">Options de films</h2>
+          <p class="muted">Pour les montages à partir d'extraits de films : une réplique du film avec son vrai son, sous-titrée, puis la musique qui tombe au drop.</p>
+          <p class="sub-title">Réplique d'ouverture</p>
+          <label class="check"><input type="checkbox" id="introOn"> Commencer par une réplique du film (avec son son), puis la musique tombe</label>
+          <div class="stack" id="intro-box" style="padding:0">
+            <label>Clip de la réplique<select id="introClip"></select></label>
+            <div class="wave small" id="intro-wave" title="Le son du clip : fais glisser la zone, ou ses bords, pour choisir la réplique"><canvas></canvas></div>
+            <div class="row">
+              <label class="inline">Début<input type="text" id="introIn" inputmode="decimal" aria-label="Début de la réplique dans le clip"></label>
+              <label class="inline">Durée<input type="text" id="introLen" inputmode="decimal" aria-label="Durée de la réplique en secondes">s</label>
+              <button class="mini" type="button" id="intro-hear">Écouter la réplique</button>
+            </div>
+            <label class="grow">Volume du film<input type="range" id="filmVol" min="0" max="200" step="5"></label>
+
+            <p class="sub-title">Paroles de la réplique</p>
+            <label>Ce qui est dit dans l'extrait (une phrase par ligne)
+              <textarea id="introLyrics" placeholder="T'as cru que c'était fini ?&#10;Moi je commence à peine."></textarea>
+            </label>
+            <div class="row">
+              <button class="mini" type="button" id="isync-line">Synchroniser phrase par phrase</button>
+              <button class="mini" type="button" id="isync-word">Synchroniser mot par mot</button>
+            </div>
+            <div class="stack sub" id="isync" hidden style="padding-left:0;padding-right:0">
+              <div class="row" style="gap:6px"><span class="muted">Vitesse</span><button class="mini" type="button" data-rate="0.25">0,25</button><button class="mini" type="button" data-rate="0.5">0,50</button><button class="mini" type="button" data-rate="1">1,00</button><button class="mini" type="button" data-rate="1.25">1,25</button></div>
+              <div class="row">
+                <button class="go" type="button" id="isync-mark">Lancer la réplique</button>
+                <button class="mini" type="button" id="isync-undo">Annuler le dernier (↑)</button>
+                <button class="mini" type="button" id="isync-done">Terminer</button>
+              </div>
+              <div class="strong-words" id="isync-items"></div>
+              <p class="muted" id="isync-help"></p>
+            </div>
+            <label>Affichage des paroles de la réplique
+              <div class="chips wrap-in" id="introSubMode" role="group" aria-label="Affichage des paroles de la réplique"><button type="button" data-v="sub">Sous-titre (cinéma)</button><button type="button" data-v="word">Mot par mot</button></div>
+            </label>
+            <label class="check"><input type="checkbox" id="iOwn"> Style de texte propre à la réplique</label>
+            <div class="stack" id="ilook" style="padding:0">
+              <div class="fields">
+                <label>Police<select id="iFont"></select></label>
+                <label>Place du texte
+                  <div class="chips wrap-in" id="iPlace" role="group" aria-label="Place du texte de la réplique"><button type="button" data-v="top">En haut</button><button type="button" data-v="middle">Au milieu</button><button type="button" data-v="bottom">En bas</button></div>
+                </label>
+              </div>
+              <div class="row">
+                <label>Couleur<input type="color" id="iColor"></label>
+                <label class="grow">Taille<input type="range" id="iSize" min="50" max="200" step="5"></label>
+              </div>
+              <div class="row">
+                <label>Contour<input type="color" id="iStrokeColor"></label>
+                <label class="grow">Épaisseur du contour<input type="range" id="iStroke" min="0" max="20"></label>
+              </div>
+              <div class="row">
+                <label>Lueur<input type="color" id="iGlowColor"></label>
+                <label class="grow">Force de la lueur<input type="range" id="iGlow" min="0" max="100"></label>
+              </div>
+              <div class="row">
+                <label>Ombre<input type="color" id="iShadowColor"></label>
+                <label class="grow">Flou de l'ombre<input type="range" id="iShadowBlur" min="0" max="60"></label>
+                <label class="grow">Décalage de l'ombre<input type="range" id="iShadowOffset" min="0" max="30"></label>
+              </div>
+              <div class="row">
+                <label class="check"><input type="checkbox" id="iCaps"> MAJUSCULES</label>
+                <label class="check"><input type="checkbox" id="iBox"> Fond derrière le texte</label>
+                <label>Fond<input type="color" id="iBoxColor"></label>
+                <label class="grow">Opacité du fond<input type="range" id="iBoxAlpha" min="0" max="100" step="5"></label>
+              </div>
+            </div>
+
+            <p class="sub-title">Transition vers la musique</p>
+            <div class="chips wrap-in" id="transition" role="group" aria-label="Transition entre le film et la musique"><button type="button" data-v="cut">Aucune</button><button type="button" data-v="flash">Flash blanc</button><button type="button" data-v="black">Fondu au noir</button><button type="button" data-v="zoom">Zoom</button><button type="button" data-v="whip">Glissement</button><button type="button" data-v="blur">Flou</button><button type="button" data-v="shake">Secousse</button><button type="button" data-v="glitch">Glitch</button><button type="button" data-v="rewind">Rembobinage VHS</button><button type="button" data-v="freeze">Arrêt sur image</button></div>
+            <label class="grow">Intensité de la transition<input type="range" id="transAmt" min="10" max="300" step="10"></label>
+            <div class="row">
+              <label class="check"><input type="checkbox" id="introFade"> Fondu du son entre le film et la musique</label>
+              <label class="check"><input type="checkbox" id="dropGap"> Silence juste avant le drop</label>
+            </div>
+
+            <p class="sub-title">Sous la réplique</p>
+            <label>La musique qui mène au drop, jouée sous la réplique
+              <div class="chips wrap-in" id="underPart" role="group" aria-label="Musique sous la réplique"><button type="button" data-v="none">Rien</button><button type="button" data-v="full">Le son entier</button><button type="button" data-v="prod">La prod (sans voix)</button><button type="button" data-v="melo">Mélodie</button><button type="button" data-v="drums">Drums</button><button type="button" data-v="bass">Basse</button><button type="button" data-v="vocals">Voix seule</button></div>
+            </label>
+            <label class="grow">Volume sous la réplique<input type="range" id="underVol" min="0" max="150" step="5"></label>
+            <div class="row"><button class="mini" type="button" id="stem-hear">Écouter tout le morceau avec cette piste</button></div>
+            <p class="muted" id="stem-status">La prod, la mélodie, les drums, la basse et la voix sont séparées dans ton navigateur par une IA (Demucs) : rien n’est envoyé. La première fois, l’IA se télécharge (172 Mo), puis reste sur l’appareil.</p>
+
+            <p class="sub-title">Après la réplique</p>
+            <label>Clip après la transition<select id="afterClip"></select></label>
+            <label class="check"><input type="checkbox" id="filmContinue"> Le film continue sous la musique (la suite de l'extrait)</label>
+          </div>
+          <p class="sub-title">Volumes</p>
+          <div class="row">
+            <label class="grow">Volume de la musique<input type="range" id="musicVol" min="0" max="150" step="5"></label>
+            <label class="grow">Son des clips sous la musique<input type="range" id="clipVol" min="0" max="150" step="5"></label>
+          </div>
+          <p class="sub-title">Image des extraits</p>
+          <label>Vitesse des clips
+            <div class="chips wrap-in" id="slowmo" role="group" aria-label="Vitesse des clips"><button type="button" data-v="100">Normale</button><button type="button" data-v="75">Ralenti 75 %</button><button type="button" data-v="50">Ralenti 50 %</button></div>
+          </label>
+          <p class="muted">Astuce : « Bande 16:9 » (menu Image et coupes) donne les bandes noires du cinéma, et le sous-titre s'affiche en bas de l'image. Le son final (film, musique, pistes) est mixé ici puis encodé une seule fois, en haute qualité.</p>
+        </div>
+      </div>
+      </section>
     </div>
 
     <aside class="screen" aria-label="Aperçu">
@@ -506,18 +578,17 @@
         <span class="time" id="time">0:00</span>
       </div>
       <label class="vol">Volume<input type="range" id="previewVol" min="0" max="100" aria-label="Volume de l'aperçu"></label>
-      <button class="go ghost wide" type="button" id="adv-open" disabled>Avancé : timeline des sons</button>
-      <button class="go ghost wide" type="button" id="adv-open-video" disabled>Avancé : timeline vidéo</button>
-      <button class="go wide" type="button" id="export" disabled>Exporter la vidéo</button>
-      <label class="check mute"><input type="checkbox" id="mute"> Couper le son pendant l'export (la vidéo garde son son)</label>
+      <button class="go wide export" type="button" id="export" disabled>Exporter la vidéo</button>
+      <div class="status" id="status" hidden><span id="status-text"></span><div class="bar"><i id="status-bar"></i></div></div>
       <label class="check mute" id="keep-box" hidden><input type="checkbox" id="keepCloud"> Garder aussi dans mon cloud CUT</label>
+      <label class="check mute"><input type="checkbox" id="mute"> Couper le son pendant l'export (la vidéo garde son son)</label>
+      <div class="adv-links"><span>Avancé</span><button class="mini" type="button" id="adv-open" disabled>Timeline des sons</button><button class="mini" type="button" id="adv-open-video" disabled>Timeline vidéo</button></div>
       <details class="panel" id="lib-panel" hidden>
         <summary>Mes vidéos CUT (cloud)</summary>
         <div class="stack"><p class="muted" id="lib-info">Réservé aux fondateurs : les vidéos exportées avec « Garder aussi dans mon cloud CUT » arrivent ici.</p><div class="stack" id="lib-list" style="padding:0"></div>
           <p class="muted" style="margin:0;font-size:12px">Sur ton téléphone : <a href="mes-videos" target="_blank" rel="noopener">onirique.store/mes-videos</a>. Ajoute-la à l'écran d'accueil (appweb ONIRIQUE CUT) pour envoyer tes vidéos vers TikTok. Le rappel quotidien « poste ton TikTok » se règle dans l'appweb, en haut de la liste.</p></div>
       </details>
-      <div class="status" id="status" hidden><span id="status-text"></span><div class="bar"><i id="status-bar"></i></div></div>
-      <p class="hint" style="text-align:center">MP4 1080 × 1920 en haute qualité, 30 images par seconde, son d'origine en AAC 320 kb/s. La vidéo se fabrique image par image : garde cet onglet ouvert. Rien n'est gardé sur nos serveurs : tes sons, clips et vidéos restent chez toi.</p>
+      <p class="hint" style="text-align:center">MP4 1080 × 1920, 30 images par seconde, son en haute qualité. Avec des clips MP4 ou MOV, tu peux changer d'onglet pendant l'export. Tes sons, clips et vidéos restent chez toi.</p>
     </aside>
 
     <section class="adv" id="adv" hidden aria-label="Timeline des sons">
@@ -1802,6 +1873,7 @@ function refresh() {
   position = Math.min(position, total() - .05);
   if (ready) seek(position); else drawScrub(0);
   $("adv-open").disabled = $("adv-open-video").disabled = !ready;
+  syncTabs();
   if (adv.open) renderAdv();
 }
 
@@ -2659,7 +2731,47 @@ function dragScrub() {
   box.addEventListener("pointerup", () => { down = false; });
 }
 
+// ——— Les étapes en onglets : une à la fois ; elles s'ouvrent une fois le son choisi ———
+const TAB = "onirique.cut.tab";
+function syncTabs() {
+  document.querySelectorAll("[data-tab]").forEach((b) => { if (b.dataset.tab !== "son") b.disabled = !sound.buffer; });
+  $("tabs-help").hidden = !!sound.buffer;
+  $("studio").classList.toggle("has-sound", !!sound.buffer);
+  document.querySelectorAll("[data-next]").forEach((b) => { b.parentElement.hidden = !sound.buffer; });
+  const current = document.querySelector("[data-tab][aria-selected=\"true\"]");
+  if (!current || current.disabled) showTab("son");
+}
+function showTab(name) {
+  const tab = document.querySelector(`[data-tab="${name}"]`);
+  if (!tab || tab.disabled) name = "son";
+  document.querySelectorAll("[data-tab]").forEach((b) => { const on = b.dataset.tab === name; b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1; });
+  document.querySelectorAll("[data-panel]").forEach((p) => { p.hidden = p.dataset.panel !== name; });
+  try { localStorage.setItem(TAB, name); } catch { /* stockage indisponible */ }
+  const shownTab = document.querySelector(`[data-tab="${name}"]`), bar = $("tabs");
+  bar.scrollLeft = shownTab.offsetLeft - (bar.clientWidth - shownTab.offsetWidth) / 2; // sur téléphone, l'onglet reste visible
+  // Les formes d'onde se dessinent à la taille de leur cadre : il faut qu'il soit visible.
+  if (name === "son") drawWave();
+  if (name === "film") drawIntroWave();
+}
+function initTabs() {
+  const tabs = [...document.querySelectorAll("[data-tab]")];
+  for (const b of tabs) b.onclick = () => showTab(b.dataset.tab);
+  // Flèches gauche et droite : l'onglet voisin (ouvert).
+  $("tabs").addEventListener("keydown", (event) => {
+    const step = { ArrowRight: 1, ArrowLeft: -1 }[event.key];
+    if (!step) return;
+    const open = tabs.filter((b) => !b.disabled), i = open.findIndex((b) => b.getAttribute("aria-selected") === "true");
+    const to = open[(i + step + open.length) % open.length];
+    showTab(to.dataset.tab); to.focus(); event.preventDefault();
+  });
+  document.querySelectorAll("[data-next]").forEach((b) => { b.onclick = () => { showTab(b.dataset.next); $("tabs").scrollIntoView({ block: "start", behavior: "smooth" }); }; });
+  let last = "son";
+  try { last = localStorage.getItem(TAB) || "son"; } catch { /* stockage indisponible */ }
+  syncTabs(); showTab(last);
+}
+
 function start() {
+  initTabs();
   pickEncoder().then((codec) => { encoderCodec = codec; $("mute").parentElement.hidden = !!codec; });
   const isAudio = (file) => file.type.startsWith("audio/") || /\.(mp3|wav|flac|m4a|aac|ogg|opus|aiff?)$/i.test(file.name);
   OniriqueAudio.dropZone($("audio-pick"), $("audio-file"), (files) => {
@@ -2822,7 +2934,7 @@ function start() {
   chips("textStyle", "textStyle", () => { Object.assign(prefs, TEXT_STYLES[prefs.textStyle]); savePrefs(); loadFont(prefs.lyricFont); syncControls(); restyle(); });
   chips("preset", "preset", () => {
     Object.assign(prefs, PRESETS[prefs.preset], TEXT_STYLES[PRESETS[prefs.preset].textStyle]); savePrefs();
-    if (PRESETS[prefs.preset].introOn) { $("film-panel").open = true; position = 0; refresh(); }
+    if (PRESETS[prefs.preset].introOn) { position = 0; refresh(); showTab("film"); } // l'extrait de film : on va choisir la réplique
     loadFont(prefs.lyricFont); syncControls();
     redraw();
   });
