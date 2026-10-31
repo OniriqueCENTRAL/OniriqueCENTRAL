@@ -54,6 +54,8 @@
 .panel > .stack { padding: 0 16px 16px; }
 .clip.focus { outline: 3px solid var(--ember); outline-offset: 2px; }
 .wave.small { height: 72px; }
+.strong-words button.next { outline: 2px solid var(--ember); outline-offset: 1px; }
+.strong-words button[aria-pressed="true"].done { background: rgba(255,255,255,.12); border-color: transparent; text-transform: none; font-weight: 500; }
 .vol { display: flex; align-items: center; gap: 10px; max-width: 340px; width: 100%; margin: 0 auto; font: 500 12px/1 var(--f-mono); letter-spacing: .08em; color: var(--haze); text-transform: uppercase; }
 .vol input { flex: 1; accent-color: var(--ember); }
 .clip { cursor: default; }
@@ -206,7 +208,7 @@
           <details class="panel" id="film-panel">
             <summary>OPTIONS DE FILMS</summary>
             <div class="stack">
-              <p class="muted">Pour les montages à partir d'extraits de films : une réplique du film avec son vrai son avant que la musique tombe, le son des clips, le ralenti.</p>
+              <p class="muted">Pour les montages à partir d'extraits de films : une réplique du film avec son vrai son, sous-titrée, puis la musique qui tombe au drop.</p>
               <p class="sub-title">Réplique d'ouverture</p>
               <label class="check"><input type="checkbox" id="introOn"> Commencer par une réplique du film (avec son son), puis la musique tombe</label>
               <div class="stack" id="intro-box" style="padding:0">
@@ -218,11 +220,45 @@
                   <button class="mini" type="button" id="intro-hear">Écouter la réplique</button>
                 </div>
                 <label class="grow">Volume du film<input type="range" id="filmVol" min="0" max="200" step="5"></label>
-                <label>Sous-titre de la réplique<input type="text" id="introSub" maxlength="140" placeholder="« T'as cru que c'était fini ? »"></label>
+
+                <p class="sub-title">Paroles de la réplique</p>
+                <label>Ce qui est dit dans l'extrait (une phrase par ligne)
+                  <textarea id="introLyrics" placeholder="T'as cru que c'était fini ?&#10;Moi je commence à peine."></textarea>
+                </label>
                 <div class="row">
-                  <label class="check"><input type="checkbox" id="introFade"> Fondu entre le film et la musique</label>
-                  <label class="check"><input type="checkbox" id="dropFlash"> Flash au drop</label>
+                  <button class="mini" type="button" id="isync-line">Synchroniser phrase par phrase</button>
+                  <button class="mini" type="button" id="isync-word">Synchroniser mot par mot</button>
                 </div>
+                <div class="stack sub" id="isync" hidden style="padding-left:0;padding-right:0">
+                  <div class="row" style="gap:6px"><span class="muted">Vitesse</span><button class="mini" type="button" data-rate="0.25">0,25</button><button class="mini" type="button" data-rate="0.5">0,50</button><button class="mini" type="button" data-rate="1">1,00</button><button class="mini" type="button" data-rate="1.25">1,25</button></div>
+                  <div class="row">
+                    <button class="go" type="button" id="isync-mark">Lancer la réplique</button>
+                    <button class="mini" type="button" id="isync-undo">Annuler le dernier (↑)</button>
+                    <button class="mini" type="button" id="isync-done">Terminer</button>
+                  </div>
+                  <div class="strong-words" id="isync-items"></div>
+                  <p class="muted" id="isync-help"></p>
+                </div>
+                <label>Affichage des paroles de la réplique
+                  <div class="chips wrap-in" id="introSubMode" role="group" aria-label="Affichage des paroles de la réplique"><button type="button" data-v="sub">Sous-titre (cinéma)</button><button type="button" data-v="word">Mot par mot</button></div>
+                </label>
+
+                <p class="sub-title">Transition vers la musique</p>
+                <div class="chips wrap-in" id="transition" role="group" aria-label="Transition entre le film et la musique"><button type="button" data-v="cut">Coupe sèche</button><button type="button" data-v="flash">Flash blanc</button><button type="button" data-v="black">Fondu au noir</button><button type="button" data-v="zoom">Zoom</button><button type="button" data-v="whip">Glissement</button><button type="button" data-v="blur">Flou</button><button type="button" data-v="shake">Secousse</button><button type="button" data-v="glitch">Glitch</button><button type="button" data-v="rewind">Rembobinage VHS</button><button type="button" data-v="freeze">Arrêt sur image</button></div>
+                <div class="row">
+                  <label class="check"><input type="checkbox" id="introFade"> Fondu du son entre le film et la musique</label>
+                  <label class="check"><input type="checkbox" id="dropGap"> Silence juste avant le drop</label>
+                </div>
+
+                <p class="sub-title">Sous la réplique</p>
+                <label>La musique qui mène au drop, jouée sous la réplique
+                  <div class="chips wrap-in" id="underPart" role="group" aria-label="Musique sous la réplique"><button type="button" data-v="none">Rien</button><button type="button" data-v="full">Le son entier</button><button type="button" data-v="prod">La prod (sans voix)</button><button type="button" data-v="melo">Mélodie</button><button type="button" data-v="drums">Drums</button><button type="button" data-v="bass">Basse</button><button type="button" data-v="vocals">Voix seule</button></div>
+                </label>
+                <label class="grow">Volume sous la réplique<input type="range" id="underVol" min="0" max="150" step="5"></label>
+                <p class="muted" id="stem-status">La prod, la mélodie, les drums, la basse et la voix sont séparées dans ton navigateur (séparation rapide, approchée : parfaite pour poser une prod sous une réplique).</p>
+
+                <p class="sub-title">Après la réplique</p>
+                <label class="check"><input type="checkbox" id="filmContinue"> Le film continue sous la musique (la suite de l'extrait)</label>
               </div>
               <p class="sub-title">Volumes</p>
               <div class="row">
@@ -233,7 +269,7 @@
               <label>Vitesse des clips
                 <div class="chips wrap-in" id="slowmo" role="group" aria-label="Vitesse des clips"><button type="button" data-v="100">Normale</button><button type="button" data-v="75">Ralenti 75 %</button><button type="button" data-v="50">Ralenti 50 %</button></div>
               </label>
-              <p class="muted">Astuce : « Bande 16:9 » (menu Image et coupes) donne les bandes noires du cinéma, et le sous-titre s'affiche en bas de l'image comme au cinéma. Le son final (film et musique) est mixé ici puis encodé une seule fois, en haute qualité.</p>
+              <p class="muted">Astuce : « Bande 16:9 » (menu Image et coupes) donne les bandes noires du cinéma, et le sous-titre s'affiche en bas de l'image. Le son final (film, musique, pistes) est mixé ici puis encodé une seule fois, en haute qualité.</p>
             </div>
           </details>
 
@@ -429,7 +465,8 @@ const VARIED = [2, 2, 2, 1, 1, 4, 2, 2, 1, 1, 1, 1, 4];
 // Les effets vidéo, à zéro (aucun effet).
 const FX = { bw: false, shake: false, rgbSplit: false, fadeEnds: false, brightness: 100, contrast: 100, saturation: 100, vignette: 0, tint: "#ff2a3a", tintAmount: 0, photoMove: false };
 // Les options de films : réplique d'ouverture, volumes, ralenti.
-const FILM = { introOn: false, introClip: 0, introIn: 0, introLen: 4, filmVol: 100, introSub: "", introFade: false, dropFlash: true, musicVol: 100, clipVol: 0, slowmo: "100" };
+const FILM = { introOn: false, introClip: 0, introIn: 0, introLen: 4, filmVol: 100, introLyrics: "", introSubMode: "sub", introFade: false, transition: "flash",
+  dropGap: false, underPart: "none", underVol: 70, filmContinue: false, musicVol: 100, clipVol: 0, slowmo: "100" };
 let prefs = { previewVol: 80, ...FILM, duration: 15, order: "seq", cadence: "2", zoom: false, flash: false, place: "bottom", artist: "", snap: false, loop: false, batch: "one", lyricsPlace: "bottom", ...FX,
   preset: "classic", frame: "full", retro: false, lyricsMode: "line", hook: "", sign: "", textStyle: "classic", titleFont: "Unbounded", textSize: 100,
   strokeColor: "#000000", glowColor: "#ffffff", ...TEXT_STYLES.classic,
@@ -450,6 +487,9 @@ try {
   if (saved.font && !saved.titleFont) prefs.titleFont = { display: "Unbounded", dream: "Grenze Gotisch", body: "Hanken Grotesk" }[saved.font] || "Unbounded";
   // Réglages d'avant la v2 : plus de zoom ni de calage imposés, une photo reste fixe tant qu'on ne demande rien.
   if ((saved.v || 1) < 2) { prefs.zoom = false; prefs.snap = false; }
+  // Avant : un sous-titre unique et un « flash au drop » à cocher.
+  if (saved.introSub && !saved.introLyrics) prefs.introLyrics = saved.introSub;
+  if (saved.dropFlash === false && !saved.transition) prefs.transition = "cut";
   prefs.v = 2;
 } catch { /* rien de mémorisé */ }
 const savePrefs = () => { try { localStorage.setItem(PREFS, JSON.stringify(prefs)); } catch { /* stockage indisponible */ } };
@@ -720,6 +760,7 @@ async function clipAudio(c) {
 const filmActive = () => introLen() > 0 || prefs.musicVol !== 100 || (prefs.clipVol > 0 && clips.some((c) => c.kind === "video"));
 let mix = null, mixing = null, mixTimer = 0;
 const mixKey = () => JSON.stringify([sound.start, span(), prefs.musicVol, prefs.clipVol, prefs.introOn, prefs.introClip, prefs.introIn, introLen(), prefs.filmVol, prefs.introFade,
+  prefs.dropGap, prefs.underPart, prefs.underVol,
   prefs.slowmo, clips.map((c) => c.url), segments.map((x) => [x.t0, x.t1, x.clip, x.from, !!x.hold])]);
 /** Le mixage du son de toute la vidéo, fait hors temps réel : la réplique (son du film), puis la musique, et le son des clips dessous. */
 async function buildMix(key) {
@@ -734,7 +775,17 @@ async function buildMix(key) {
     src.start(at, from % buffer.duration, loop ? undefined : length); src.stop(at + length);
   };
   const crossfade = prefs.introFade ? .35 : .04;
-  if (intro) { const a = await clipAudio(introClip()); if (a) add(a, 0, prefs.introIn, intro + (prefs.introFade ? .2 : 0), prefs.filmVol / 100, .01, crossfade, false); }
+  const gap = prefs.dropGap ? .22 : 0; // « Silence juste avant le drop »
+  if (intro) {
+    const a = await clipAudio(introClip());
+    if (a) add(a, 0, prefs.introIn, intro - gap + (prefs.introFade && !gap ? .2 : 0), prefs.filmVol / 100, .01, gap ? .03 : crossfade, false);
+    // Sous la réplique : la musique qui mène au drop (le son entier, ou une seule piste séparée).
+    const len = Math.min(sound.start, intro), at = intro - len;
+    if (prefs.underPart !== "none" && prefs.underVol > 0 && len - gap > .05) {
+      if (prefs.underPart === "full") add(sound.buffer, at, sound.start - len, len - gap, prefs.underVol / 100, .3, gap ? .03 : .004, false);
+      else { const st = await ensureStems(); if (st && st.parts[prefs.underPart]) add(st.parts[prefs.underPart], at, 0, len - gap, prefs.underVol / 100, .3, .03, false); }
+    }
+  }
   add(sound.buffer, intro, sound.start, span(), prefs.musicVol / 100, prefs.introFade && intro ? .25 : FADE, prefs.loop ? .03 : FADE, false);
   // Le son des clips sous la musique (pas au ralenti : le son resterait décalé de l'image).
   if (prefs.clipVol > 0 && slow() === 1) for (const x of segments) {
@@ -754,6 +805,32 @@ async function ensureMix() {
   if (!mixing || mixing.key !== key) mixing = { key, done: buildMix(key).catch(() => {}) };
   await mixing.done;
 }
+// Les pistes séparées de la musique qui mène au drop (assets/stems-worker.js), calculées une fois par passage.
+let stems = null, stemJob = null;
+const STEMS = ["prod", "melo", "drums", "bass", "vocals"];
+const stemKey = () => JSON.stringify([sound.name, sound.start, introLen()]);
+async function ensureStems() {
+  if (!STEMS.includes(prefs.underPart) || !introLen() || !sound.buffer) return null;
+  const key = stemKey();
+  if (stems && stems.key === key) return stems;
+  if (!stemJob || stemJob.key !== key) stemJob = { key, done: separate(key).catch(() => { $("stem-status").textContent = "La séparation des pistes n'a pas marché sur ce passage."; return null; }) };
+  return stemJob.done;
+}
+async function separate(key) {
+  const len = Math.min(sound.start, introLen(), 30), rate = sound.buffer.sampleRate;
+  if (len < .2) { $("stem-status").textContent = "Le passage commence trop tôt dans le morceau : il n'y a rien avant le drop à séparer."; return null; }
+  $("stem-status").textContent = "Séparation des pistes… quelques secondes.";
+  const a = Math.floor((sound.start - len) * rate), n = Math.floor(len * rate), b = sound.buffer;
+  const L = b.getChannelData(0).slice(a, a + n), R = (b.numberOfChannels > 1 ? b.getChannelData(1) : b.getChannelData(0)).slice(a, a + n);
+  const worker = new Worker("assets/stems-worker.js");
+  const out = await new Promise((resolve, reject) => { worker.onmessage = (e) => resolve(e.data); worker.onerror = reject; worker.postMessage({ L, R, rate }, [L.buffer, R.buffer]); })
+    .finally(() => worker.terminate());
+  const make = ([l, r]) => { const x = new AudioBuffer({ length: l.length, numberOfChannels: 2, sampleRate: rate }); x.copyToChannel(l, 0); x.copyToChannel(r, 1); return x; };
+  const result = { key, parts: Object.fromEntries(STEMS.map((k) => [k, make(out[k])])) };
+  if (key === stemKey()) stems = result;
+  $("stem-status").textContent = "Pistes séparées : prod, mélodie, drums, basse et voix (séparation rapide, approchée).";
+  return result;
+}
 const scheduleMix = () => { clearTimeout(mixTimer); mixTimer = setTimeout(() => ensureMix(), 250); };
 
 // ——— Le montage : une coupe par groupe de temps, un clip par coupe ———
@@ -762,6 +839,11 @@ function build() {
   segments = [];
   pool.forEach((v) => { delete v.dataset.seg; });
   if (!sound.buffer || !clips.length) return;
+  // La suite du film : après la réplique, le clip continue, d'un seul plan, sous la musique.
+  if (prefs.filmContinue && introLen() > 0 && prefs.batch !== "each") {
+    segments = [{ t0: 0, t1: span(), clip: prefs.introClip, from: prefs.introIn + introLen(), cont: true }];
+    return;
+  }
   // Une vidéo par fond : un seul plan sur tout le passage, le clip choisi (qui repart du début s'il est plus court).
   if (prefs.batch === "each") {
     focus = Math.max(0, Math.min(focus, clips.length - 1));
@@ -813,20 +895,24 @@ function gluePunct(words) {
 /** Un mot entouré de ** est un mot FORT : il ressort en grand dans le mot par mot. */
 const strongOf = (w) => { const m = /^\*\*(.+?)\*\*(.*)$/.exec(w.text); return m ? { ...w, text: m[1] + m[2], strong: true } : w; };
 /** Paroles LRC : [mm:ss.cc] texte ; les lignes sans repère sont ignorées. row : la ligne dans le champ, pour y marquer les mots forts. */
-function readLyrics() {
-  lyrics = [];
-  $("lyrics").value.split("\n").forEach((raw, row) => {
+function parseLrc(text) {
+  const out = [];
+  String(text || "").split("\n").forEach((raw, row) => {
     const m = /^\s*\[(\d+):(\d+(?:[.,]\d+)?)\]\s*(.*)$/.exec(raw);
     if (!m || !m[3].trim()) return;
     // Synchronisées mot par mot dans CLOUD : « <mm:ss.cc>mot » devant chaque mot.
     const words = gluePunct([...m[3].matchAll(/<(\d+):(\d+(?:[.,]\d+)?)>\s*([^<]*)/g)].map((w) => ({ at: Number(w[1]) * 60 + Number(w[2].replace(",", ".")), text: w[3].trim() }))
       .filter((w) => w.text).map((w, ti) => strongOf({ ...w, ti })));
     const plain = words.length ? null : gluePunct(m[3].trim().split(/\s+/).map((text, ti) => strongOf({ text, ti })));
-    lyrics.push({ row, at: Number(m[1]) * 60 + Number(m[2].replace(",", ".")), words: words.length ? words : null, plain, text: (words.length ? words : plain).map((w) => w.text).join(" ") });
+    out.push({ row, at: Number(m[1]) * 60 + Number(m[2].replace(",", ".")), words: words.length ? words : null, plain, text: (words.length ? words : plain).map((w) => w.text).join(" ") });
   });
-  lyrics.sort((a, b) => a.at - b.at);
-  renderStrong();
+  return out.sort((a, b) => a.at - b.at);
 }
+function readLyrics() { lyrics = parseLrc($("lyrics").value); renderStrong(); }
+// Les paroles de la réplique, lues une fois par texte.
+let introParsed = { text: null, lines: [] };
+const introLines = () => (introParsed.text === prefs.introLyrics ? introParsed.lines : (introParsed = { text: prefs.introLyrics, lines: parseLrc(prefs.introLyrics) }).lines);
+const bareLine = (l) => l.replace(/^\s*\[[^\]]*\]\s*/, "").replace(/<[^>]*>\s*/g, "").trim();
 /** Les mots du passage, à toucher pour les mettre en FORT (ou les remettre normaux). */
 function renderStrong() {
   const box = $("strong-words");
@@ -987,14 +1073,14 @@ function drawPicture(src, r, scale, dx = 0, dy = 0) {
 
 // Le décalage RVB : une copie rouge et une copie bleu-vert de l'image, décalées sur le beat.
 const split = document.createElement("canvas"), sp = split.getContext("2d");
-function rgbSplit(r, amount) {
+function rgbSplit(r, amount, px = 18) {
   split.width = r.w; split.height = r.h;
   for (const [color, shift] of [["#ff0000", 1], ["#00ffff", -1]]) {
     sp.globalCompositeOperation = "copy"; sp.drawImage(screen, r.x, r.y, r.w, r.h, 0, 0, r.w, r.h);
     sp.globalCompositeOperation = "multiply"; sp.fillStyle = color; sp.fillRect(0, 0, r.w, r.h);
     g.save(); g.beginPath(); g.rect(r.x, r.y, r.w, r.h); g.clip();
     g.globalCompositeOperation = "screen"; g.globalAlpha = .6 * amount;
-    g.drawImage(split, r.x + shift * 18 * amount, r.y);
+    g.drawImage(split, r.x + shift * px * amount, r.y);
     g.restore();
   }
 }
@@ -1015,19 +1101,19 @@ function drawEffects(r, beatEnv) {
 }
 
 /** Le mot chanté à cet instant ({ text, at, strong }) ; sans moments par mot, les mots d'une ligne se partagent sa durée. */
-function wordAt(now) {
-  const k = lyrics.findLastIndex((l) => l.at <= now);
+function wordAt(now, list = lyrics) {
+  const k = list.findLastIndex((l) => l.at <= now);
   if (k < 0) return null;
-  const line = lyrics[k];
+  const line = list[k];
   if (line.words) {
     // Les moments marqués mot par mot dans CLOUD : chaque mot reste jusqu'au suivant (1,5 s au plus après le dernier).
     const w = line.words.findLastIndex((x) => x.at <= now);
     if (w < 0) return null;
-    const until = line.words[w + 1] ? line.words[w + 1].at : Math.min(lyrics[k + 1] ? lyrics[k + 1].at : Infinity, line.words[w].at + 1.5);
+    const until = line.words[w + 1] ? line.words[w + 1].at : Math.min(list[k + 1] ? list[k + 1].at : Infinity, line.words[w].at + 1.5);
     return now < until ? line.words[w] : null;
   }
   const words = line.plain;
-  const next = lyrics[k + 1] ? lyrics[k + 1].at : Infinity, length = Math.min(next - line.at, words.length * 0.55 + 0.6);
+  const next = list[k + 1] ? list[k + 1].at : Infinity, length = Math.min(next - line.at, words.length * 0.55 + 0.6);
   if (now > line.at + length + 0.4 || !words.length) return null;
   const weights = words.map((w) => w.text.length + 2), total = weights.reduce((a, b) => a + b, 0);
   let at = line.at;
@@ -1066,40 +1152,98 @@ function lyricCard(text, r, title, artist) {
 }
 
 const introVideo = Object.assign(document.createElement("video"), { muted: true, playsInline: true, preload: "auto" });
-/** La réplique d'ouverture : le clip du film, son sous-titre, l'accroche. */
+/** Un sous-titre comme au cinéma : blanc sur un fond sombre, en bas de l'image. */
+function subtitle(text, r) {
+  g.font = `500 46px "Hanken Grotesk"`;
+  const lines = wrapText(text, r.w * .82), lh = 58, boxH = lines.length * lh + 24, boxW = Math.max(...lines.map((l) => g.measureText(l).width)) + 40;
+  const by = r.y + r.h - (r.y ? 36 : 260) - boxH;
+  g.fillStyle = "rgba(0,0,0,.62)"; g.fillRect((W - boxW) / 2, by, boxW, boxH);
+  g.fillStyle = "#fff"; g.textAlign = "center"; g.textBaseline = "middle";
+  lines.forEach((l, k) => g.fillText(l, W / 2, by + 12 + lh / 2 + k * lh));
+}
+/** La réplique d'ouverture : le clip du film, ses paroles (sous-titre ou mot par mot), l'accroche. */
 function drawIntro(t, playing) {
-  const c = introClip(), v = introVideo, want = prefs.introIn + t;
+  const c = introClip(), v = introVideo, intro = introLen();
+  // « Arrêt sur image » : l'image se fige un peu avant le drop.
+  const frozen = prefs.transition === "freeze" && t > intro - .45, want = prefs.introIn + (frozen ? intro - .45 : t);
   // Pendant la réplique, les premières coupes de la musique se chargent déjà : le drop tombe sans attente.
   if (shown !== -2) { shown = -2; pool.forEach((x) => x.pause()); prepare(0); prepare(1); prepare(2); }
   if (v.src !== c.url) v.src = c.url;
   if (v.playbackRate !== 1) v.playbackRate = 1;
-  if (playing) { if (v.paused) v.play().catch(() => {}); if (Math.abs(v.currentTime - want) > .25) v.currentTime = want; }
+  if (playing && !frozen) { if (v.paused) v.play().catch(() => {}); if (Math.abs(v.currentTime - want) > .25) v.currentTime = want; }
   else { v.pause(); if (Math.abs(v.currentTime - want) > .04) v.currentTime = want; }
-  if (v.readyState < 2) return;
+  if (v.readyState < 2) return false;
   const r = frameRect();
   g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
   drawPicture(v, r, 1);
   drawEffects(r, 0);
   const hook = $("hook").value.trim();
   if (hook) text([hook], r.y ? Math.max(70, r.y - 60) : H * .1, 44, "600", "Hanken Grotesk");
-  // Le sous-titre, comme au cinéma : blanc sur un fond sombre, en bas de l'image.
-  const sub = prefs.introSub.trim();
-  if (sub) {
-    g.font = `500 46px "Hanken Grotesk"`;
-    const lines = wrapText(sub, r.w * .82), lh = 58, boxH = lines.length * lh + 24, boxW = Math.max(...lines.map((l) => g.measureText(l).width)) + 40;
-    const by = r.y + r.h - (r.y ? 36 : 260) - boxH;
-    g.fillStyle = "rgba(0,0,0,.62)"; g.fillRect((W - boxW) / 2, by, boxW, boxH);
-    g.fillStyle = "#fff"; g.textAlign = "center"; g.textBaseline = "middle";
-    lines.forEach((l, k) => g.fillText(l, W / 2, by + 12 + lh / 2 + k * lh));
+  const lines = introLines();
+  if (lines.length && prefs.introSubMode === "word") {
+    const word = wordAt(t, lines), y = { top: r.y + r.h * .24, middle: r.y + r.h / 2, bottom: r.y + r.h * .78 }[prefs.lyricsPlace] ?? r.y + r.h / 2;
+    if (word) bigWord(word, y, r.w * .86, t);
+  } else if (lines.length) {
+    const line = lines.filter((l) => l.at <= t).at(-1);
+    if (line && t - line.at < 6) subtitle(line.text, r);
+  } else {
+    // Pas encore synchronisées : tout le texte, du début à la fin de la réplique.
+    const all = prefs.introLyrics.split("\n").map(bareLine).filter(Boolean).join(" ");
+    if (all) subtitle(all, r);
+  }
+}
+const overlay = (color) => { g.fillStyle = color; g.fillRect(0, 0, W, H); };
+/** Redessine toute l'image décalée, agrandie, floutée ou filtrée (pour les transitions). */
+function warp({ scale = 1, dx = 0, dy = 0, blur = 0, filter = "" }) {
+  split.width = W; split.height = H;
+  sp.globalCompositeOperation = "copy"; sp.drawImage(screen, 0, 0);
+  g.save();
+  g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
+  g.filter = [blur > .5 ? `blur(${blur.toFixed(1)}px)` : "", filter].join(" ").trim() || "none";
+  g.translate(W / 2 + dx, H / 2 + dy); g.scale(scale, scale); g.drawImage(split, -W / 2, -H / 2);
+  g.restore();
+}
+function glitch(a) {
+  rgbSplit({ x: 0, y: 0, w: W, h: H }, Math.min(1, a * 1.5), 46);
+  split.width = W; split.height = H; sp.globalCompositeOperation = "copy"; sp.drawImage(screen, 0, 0);
+  for (let k = 0; k < 8; k++) { const y = Math.floor(Math.random() * H), h = 20 + Math.random() * 140; g.drawImage(split, 0, y, W, h, (Math.random() - .5) * 220 * a, y, W, h); }
+}
+function vhs(a) {
+  warp({ dx: (Math.random() - .5) * 34 * a, filter: `saturate(${(1 - .6 * a).toFixed(2)}) contrast(${(1 + .3 * a).toFixed(2)})` });
+  g.fillStyle = `rgba(0,0,0,${.28 * a})`;
+  for (let y = 0; y < H; y += 6) g.fillRect(0, y, W, 2);
+  g.fillStyle = `rgba(255,255,255,${.18 * a})`; g.fillRect(0, (performance.now() * .9) % H, W, 46);
+  g.font = `400 84px "VT323", monospace`; g.fillStyle = `rgba(255,255,255,${a})`; g.textAlign = "left"; g.textBaseline = "top"; g.fillText("◀◀ REW", 70, 140);
+}
+/** La transition entre la réplique et la musique ; d : secondes depuis le drop (négatif juste avant). */
+function transitionAt(d) {
+  const before = d < 0 ? -d : Infinity, after = d >= 0 ? d : Infinity, ramp = (x, len) => (x < len ? 1 - x / len : 0);
+  switch (prefs.transition) {
+    case "flash": { const a = .9 * Math.exp(-after * 7); if (a > .01) overlay(`rgba(255,255,255,${a})`); break; }
+    case "black": { const a = Math.max(ramp(before, .4), ramp(after, .3)); if (a > 0) overlay(`rgba(0,0,0,${a})`); break; }
+    case "zoom": { const k = 1 + .7 * ramp(before, .4) + .3 * ramp(after, .3); if (k > 1.001) warp({ scale: k, blur: (k - 1) * 22 }); break; }
+    case "whip": { const x = before < Infinity ? -ramp(before, .3) * W * .9 : ramp(after, .3) * W * .9; if (Math.abs(x) > 1) warp({ dx: x, blur: Math.abs(x) / 30 }); break; }
+    case "blur": { const b = 28 * Math.max(ramp(before, .4), ramp(after, .5)); if (b > .5) warp({ blur: b }); break; }
+    case "shake": { const a = after < .6 ? 46 * Math.exp(-after * 6) : 0; if (a > 1) warp({ dx: a * Math.sin(after * 90), dy: a * Math.cos(after * 77), scale: 1.1 }); break; }
+    case "glitch": { const a = Math.max(ramp(before, .25), ramp(after, .35)); if (a > .05) glitch(a); break; }
+    case "rewind": { if (before < .6) vhs(ramp(before, .6)); else { const a = .6 * ramp(after, .15); if (a > 0) overlay(`rgba(255,255,255,${a})`); } break; }
+    case "freeze": { if (before < .45) { warp({ scale: 1.04 + .06 * ramp(before, .45), filter: "grayscale(1) contrast(1.25)" }); } else { const a = .8 * ramp(after, .2); if (a > 0) overlay(`rgba(255,255,255,${a})`); } break; }
+    default: break; // coupe sèche
   }
 }
 function draw(t, playing) {
   if (!segments.length) return;
-  // La réplique d'ouverture d'abord ; ensuite, t compte depuis le début de la musique.
+  // La réplique d'ouverture d'abord, puis la musique (t compte depuis le drop), puis la transition entre les deux.
   const intro = introLen(), full = t;
-  if (t < intro) { drawIntro(t, playing); fadeEnds(full); return; }
-  if (intro) introVideo.pause();
-  t -= intro;
+  if (t < intro) { if (drawIntro(t, playing) === false) return; }
+  else {
+    if (intro) introVideo.pause();
+    if (drawMusic(t - intro, playing) === false) return;
+  }
+  if (intro) transitionAt(full - intro);
+  fadeEnds(full);
+}
+function drawMusic(t, playing) {
   const i = segmentAt(t), s = segments[i], clip = clips[s.clip];
   if (i !== shown) {
     shown = i;
@@ -1108,11 +1252,12 @@ function draw(t, playing) {
   }
   let src = clip.kind === "image" ? clip.img : pool[i % 3];
   if (clip.kind === "video") {
-    const v = src, rate = slow(), want = s.hold ? (t * rate) % Math.max(.1, clip.duration - .05) : s.from + (t - s.t0) * rate;
+    const v = src, rate = slow(), want = s.cont ? Math.min(s.from + t * rate, clip.duration - .05)
+      : s.hold ? (t * rate) % Math.max(.1, clip.duration - .05) : s.from + (t - s.t0) * rate;
     if (v.playbackRate !== rate) v.playbackRate = rate;
     if (playing) { if (v.paused) v.play().catch(() => {}); if (Math.abs(v.currentTime - want) > .25) v.currentTime = want; }
     else if (Math.abs(v.currentTime - want) > .04) v.currentTime = want;
-    if (v.readyState < 2) return; // l'image précédente reste le temps que la vidéo arrive
+    if (v.readyState < 2) return false; // l'image précédente reste le temps que la vidéo arrive
   }
   // Les temps du morceau : le zoom, la secousse et le décalage RVB partent de chaque temps.
   const song = t + sound.start - sound.phase, sinceBeat = ((song % beatLength()) + beatLength()) % beatLength();
@@ -1127,8 +1272,6 @@ function draw(t, playing) {
   }
   const r = frameRect();
   drawEffects(r, beatEnv);
-  // Le drop après la réplique : un flash blanc quand la musique tombe.
-  if (intro && prefs.dropFlash) { const a = .85 * Math.exp(-t * 7); if (a > .01) { g.fillStyle = `rgba(255,255,255,${a})`; g.fillRect(r.x, r.y, r.w, r.h); } }
   // Un léger voile en haut et en bas (plein écran) : le texte reste lisible sur n'importe quelle image.
   if (!r.y) {
     const shade = g.createLinearGradient(0, 0, 0, H);
@@ -1153,7 +1296,6 @@ function draw(t, playing) {
   if (prefs.lyricsMode === "word") { const word = wordAt(now); if (word) bigWord(word, wordY, r.w * .86, now); }
   else if (prefs.lyricsMode === "card") lyricCard(line && now - line.at < 8 ? line.text : "", r, title, artist);
   else if (line && now - line.at < 8) paint([line.text], lineY, textLook({ size: 62 * ts }));
-  fadeEnds(full);
 }
 /** Fondu au noir au début et à la fin de toute la vidéo (pas en BOUCLE : la vidéo doit s'enchaîner). */
 function fadeEnds(t) {
@@ -1552,6 +1694,63 @@ function dragIntro() {
   const end = () => { if (!grab) return; grab = null; savePrefs(); position = 0; refresh(); };
   box.addEventListener("pointerup", end); box.addEventListener("pointercancel", end);
 }
+// ——— Synchroniser les paroles de la réplique, comme dans ONIRIQUE CLOUD : phrase par phrase ou mot par mot ———
+const isyncPlayer = Object.assign(document.createElement("video"), { playsInline: true, preload: "auto" });
+isyncPlayer.preservesPitch = true;
+let isync = null; // { mode, lines, items: [{ text, line, at }], i, rate }
+const lrcStamp = (x) => { const cs = Math.round(x * 100); return String(Math.floor(cs / 6000)).padStart(2, "0") + ":" + ((cs % 6000) / 100).toFixed(2).padStart(5, "0"); };
+function startIsync(mode) {
+  const c = introClip(), lines = prefs.introLyrics.split("\n").map(bareLine).filter(Boolean);
+  if (!c || !lines.length) { alert(!c ? "Choisis d'abord le clip de la réplique." : "Écris d'abord ce qui est dit dans l'extrait, une phrase par ligne."); return; }
+  const items = mode === "line" ? lines.map((text, line) => ({ text, line, at: null }))
+    : lines.flatMap((l, line) => gluePunct(l.split(/\s+/).map((text, ti) => ({ text, ti }))).map((w) => ({ text: w.text, line, at: null })));
+  isync = { mode, lines, items, i: 0, rate: isync ? isync.rate : .5 };
+  stop();
+  isyncPlayer.src = c.url; isyncPlayer.currentTime = prefs.introIn; isyncPlayer.playbackRate = isync.rate;
+  $("isync").hidden = false; renderIsync();
+}
+function renderIsync() {
+  const s = isync, next = s.items[s.i];
+  $("isync-items").replaceChildren(...s.items.map((it, k) => Object.assign(document.createElement("button"), {
+    type: "button", textContent: it.text, className: k === s.i ? "next" : it.at !== null ? "done" : "", ariaPressed: String(it.at !== null),
+    title: it.at === null ? "Pas encore marqué" : it.at.toFixed(2).replace(".", ",") + " s",
+    onclick: () => { s.i = k; const back = it.at ?? s.items[k - 1]?.at ?? 0; isyncPlayer.currentTime = prefs.introIn + Math.max(0, back - 1); renderIsync(); } })));
+  $("isync-mark").textContent = !next ? "Tout est marqué" : isyncPlayer.paused ? "Lancer la réplique (Espace)" : "Marquer « " + next.text + " » (Espace)";
+  $("isync-mark").disabled = !next;
+  document.querySelectorAll("[data-rate]").forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.rate) === s.rate)));
+  $("isync-help").textContent = s.items.filter((x) => x.at !== null).length + " / " + s.items.length + (s.mode === "line" ? " phrases" : " mots")
+    + " · Lance la réplique, puis appuie sur Espace au moment où chaque " + (s.mode === "line" ? "phrase" : "mot") + " commence. Ralentis le son pour être précis.";
+}
+function markIsync() {
+  const s = isync;
+  if (!s || !s.items[s.i]) return;
+  if (isyncPlayer.paused) { isyncPlayer.play().catch(() => {}); return renderIsync(); }
+  s.items[s.i++].at = Math.max(0, Math.round((isyncPlayer.currentTime - prefs.introIn) * 100) / 100);
+  if (!s.items[s.i]) isyncPlayer.pause();
+  renderIsync();
+}
+function undoIsync() {
+  const s = isync;
+  if (!s || !s.i) return;
+  const it = s.items[--s.i];
+  if (it.at !== null) isyncPlayer.currentTime = prefs.introIn + Math.max(0, it.at - 1.5);
+  it.at = null; renderIsync();
+}
+/** Terminer : les paroles de la réplique s'écrivent en LRC (temps depuis le début de la réplique), mot par mot si on l'a fait. */
+function finishIsync() {
+  const s = isync;
+  isyncPlayer.pause();
+  prefs.introLyrics = s.lines.map((l, k) => {
+    const its = s.items.filter((x) => x.line === k);
+    if (!its.length || its.some((x) => x.at === null)) return l;
+    return "[" + lrcStamp(its[0].at) + "] " + (s.mode === "line" ? l : its.map((x) => "<" + lrcStamp(x.at) + ">" + x.text).join(" "));
+  }).join("\n");
+  $("introLyrics").value = prefs.introLyrics; savePrefs();
+  isync = null; $("isync").hidden = true;
+  if (prefs.introSubMode !== "word" && s.mode === "word") { prefs.introSubMode = "word"; savePrefs(); marks.forEach((m) => m()); }
+  restyle();
+}
+
 /** Le menu OPTIONS DE FILMS à jour : la liste des clips vidéo, les champs, la forme d'onde. */
 function filmUi() {
   const videos = clips.map((c, i) => [c, i]).filter(([c]) => c.kind === "video");
@@ -1560,8 +1759,9 @@ function filmUi() {
   $("introClip").value = String(prefs.introClip);
   $("introOn").checked = !!prefs.introOn; $("intro-box").hidden = !prefs.introOn;
   for (const id of ["filmVol", "musicVol", "clipVol"]) $(id).value = prefs[id];
-  for (const id of ["introFade", "dropFlash"]) $(id).checked = !!prefs[id];
-  if (document.activeElement !== $("introSub")) $("introSub").value = prefs.introSub;
+  for (const id of ["introFade", "dropGap", "filmContinue"]) $(id).checked = !!prefs[id];
+  $("underVol").value = prefs.underVol;
+  if (document.activeElement !== $("introLyrics")) $("introLyrics").value = prefs.introLyrics;
   if (document.activeElement !== $("introIn")) $("introIn").value = String(prefs.introIn).replace(".", ",");
   if (document.activeElement !== $("introLen")) $("introLen").value = (introLen() || prefs.introLen).toFixed(2).replace(".", ",");
   drawIntroWave();
@@ -1599,12 +1799,12 @@ function start() {
     if (playing && source && source.monitor && !(recording && prefs.mute)) source.monitor.gain.setTargetAtTime(prefs.previewVol / 100, ctx.currentTime, .02);
   };
   // Options de films : la réplique change la durée de la vidéo (tout se recalcule) ; les volumes ne changent que le mixage.
-  for (const id of ["introOn", "introClip", "filmVol", "introSub", "introFade", "dropFlash", "musicVol", "clipVol"]) {
-    $(id).addEventListener(/introSub/.test(id) ? "input" : "change", () => {
+  for (const id of ["introOn", "introClip", "filmVol", "introFade", "dropGap", "musicVol", "clipVol", "underVol", "filmContinue"]) {
+    $(id).addEventListener("change", () => {
       const el = $(id);
       prefs[id] = el.type === "checkbox" ? el.checked : el.type === "range" || id === "introClip" ? Number(el.value) : el.value;
       savePrefs();
-      if (id === "introOn" || id === "introClip") { position = 0; refresh(); } else { scheduleMix(); restyle(); }
+      if (id === "introOn" || id === "introClip" || id === "filmContinue") { position = 0; refresh(); } else { scheduleMix(); restyle(); }
       if (id === "introClip") drawIntroWave();
     });
   }
@@ -1616,6 +1816,23 @@ function start() {
     };
   }
   chips("slowmo", "slowmo", () => restyle(true));
+  chips("transition", "transition", () => restyle());
+  chips("introSubMode", "introSubMode", () => restyle());
+  chips("underPart", "underPart", () => { ensureStems(); scheduleMix(); });
+  $("introLyrics").addEventListener("input", () => { prefs.introLyrics = $("introLyrics").value; savePrefs(); restyle(); });
+  $("isync-line").onclick = () => startIsync("line");
+  $("isync-word").onclick = () => startIsync("word");
+  $("isync-mark").onclick = markIsync;
+  $("isync-undo").onclick = undoIsync;
+  $("isync-done").onclick = finishIsync;
+  document.querySelectorAll("[data-rate]").forEach((b) => { b.onclick = () => { if (!isync) return; isync.rate = Number(b.dataset.rate); isyncPlayer.playbackRate = isync.rate; renderIsync(); }; });
+  isyncPlayer.addEventListener("play", renderIsync); isyncPlayer.addEventListener("pause", () => isync && renderIsync());
+  // Espace marque, ↑ annule, pendant la synchronisation de la réplique (hors champ de saisie).
+  document.addEventListener("keydown", (event) => {
+    if (!isync || /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName)) return;
+    if (event.key === " ") { event.preventDefault(); if (!event.repeat) markIsync(); }
+    else if (event.key === "ArrowUp") { event.preventDefault(); undoIsync(); }
+  });
   $("intro-hear").onclick = async () => {
     if (!introLen()) return;
     await ensureMix(); clearTimeout(hearing); hearing = 0;
@@ -1737,7 +1954,7 @@ function start() {
   addEventListener("resize", () => { drawWave(); drawScrub(now()); });
   dragWindow(); dragScrub(); dragLoupe();
   // Les polices choisies, chargées avant de dessiner du texte sur la vidéo.
-  [prefs.lyricFont, prefs.titleFont, prefs.strongFont, "Hanken Grotesk"].forEach(loadFont);
+  [prefs.lyricFont, prefs.titleFont, prefs.strongFont, "Hanken Grotesk", "VT323"].forEach(loadFont);
   // Ouvert depuis un titre de ONIRIQUE CLOUD (?track=…) ; sinon, le dernier titre CLOUD utilisé se reprend d'un clic.
   const q = new URLSearchParams(location.search), track = Number(q.get("track"));
   let last = null;
