@@ -60,6 +60,8 @@ export function remindCut(at = now()) {
 
 // Le planning : le jour où une vidéo gardée doit être postée (AAAA-MM-JJ, dans le fuseau du fondateur).
 if (!all('PRAGMA table_info(cut_videos)').some((c) => c.name === 'scheduled_day')) db.exec('ALTER TABLE cut_videos ADD COLUMN scheduled_day TEXT');
+// La description proposée par CUT (style TikTok), reprise par l'appweb et pour YouTube.
+if (!all('PRAGMA table_info(cut_videos)').some((c) => c.name === 'caption')) db.exec("ALTER TABLE cut_videos ADD COLUMN caption TEXT NOT NULL DEFAULT ''");
 // La banque de fonds : les clips (vidéos, photos) qu'un fondateur garde pour les réutiliser d'un son à l'autre.
 db.exec(`CREATE TABLE IF NOT EXISTS cut_backgrounds (
   id         INTEGER PRIMARY KEY,
@@ -92,7 +94,7 @@ const videoUrl = (id, download = false) => { const e = now() + 6 * 3600_000, d =
 // L'image d'aperçu : le lien change une fois par jour, pour que le téléphone la garde en cache d'une visite à l'autre.
 const DAY = 86_400_000;
 const posterUrl = (id) => { const e = (Math.floor(now() / DAY) + 2) * DAY; return `/api/cut/poster/${id}?e=${e}&s=${sign(`cutposter.${id}.${e}`)}`; };
-const videoView = (v) => ({ id: v.id, name: v.name, size: v.size, duration: v.duration, createdAt: v.created_at, scheduledDay: v.scheduled_day || null,
+const videoView = (v) => ({ id: v.id, name: v.name, size: v.size, duration: v.duration, createdAt: v.created_at, scheduledDay: v.scheduled_day || null, caption: v.caption || '',
   url: videoUrl(v.id), downloadUrl: videoUrl(v.id, true), poster: posterUrl(v.id) });
 const backgroundUrl = (id) => { const e = now() + 6 * 3600_000; return `/api/cut/background/${id}?e=${e}&s=${sign(`cutbg.${id}.${e}`)}`; };
 const backgroundView = (b) => ({ id: b.id, name: b.name, type: b.mime, size: b.size, createdAt: b.created_at, url: backgroundUrl(b.id) });
@@ -172,8 +174,9 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
     if (head.toString('latin1', 4, 8) !== 'ftyp') { fs.rmSync(file, { force: true }); throw new HttpError(400, 'Vidéo MP4 attendue.'); }
     const name = String(req.query.name || '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '').trim().slice(0, 100) || 'Vidéo ONIRIQUE CUT';
     const duration = Math.max(0, Math.min(3600, Number(req.query.duration) || 0));
-    const id = run('INSERT INTO cut_videos (user_id, name, stored_as, size, duration, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-      req.user.id, name, stored.storedAs, stored.size, duration, now()).lastInsertRowid;
+    const caption = String(req.query.caption || '').replace(/[\u0000-\u0009\u000b-\u001f]+/g, '').trim().slice(0, 2200);
+    const id = run('INSERT INTO cut_videos (user_id, name, stored_as, size, duration, caption, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      req.user.id, name, stored.storedAs, stored.size, duration, caption, now()).lastInsertRowid;
     res.status(201).json(videoView(get('SELECT * FROM cut_videos WHERE id = ?', id)));
   }));
   app.get('/api/cut/library', requireUser, member, founder, (req, res) => {
@@ -193,6 +196,33 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
     run('UPDATE cut_videos SET scheduled_day = ? WHERE id = ?', day, v.id);
     res.json(videoView(get('SELECT * FROM cut_videos WHERE id = ?', v.id)));
   });
+
+  const channelOf = (userId) => get('SELECT channel_title FROM youtube_accounts WHERE user_id = ?', userId)?.channel_title || null;
+  // En Short YouTube programmé : la vidéo est copiée ici vers les Shorts (youtube.js), qui la publie à l'heure dite.
+  app.post('/api/cut/library/:id/youtube', requireUser, member, founder, wrap(async (req, res) => {
+    if (!can(req.user, 'youtube')) throw new HttpError(403, "Les Shorts YouTube ne sont pas ouverts à ce compte.");
+    const v = ownVideo(req);
+    if (!channelOf(req.user.id)) throw new HttpError(400, 'Relie d\'abord ta chaîne YouTube dans ton compte (Shorts YouTube).');
+    const title = String(req.body?.title || v.name).replace(/[<>]/g, '').trim().slice(0, 100) || 'Short';
+    const description = String(req.body?.description ?? v.caption).replace(/[<>]/g, '').trim().slice(0, 5000);
+    const publishAt = Number(req.body?.publishAt);
+    if (!(publishAt > now() - 60_000 && publishAt < now() + 366 * 86_400_000)) throw new HttpError(400, "Choisis une date à venir, dans l'année.");
+    if (get(`SELECT COUNT(*) AS n FROM youtube_videos WHERE user_id = ? AND status != 'published'`, req.user.id).n >= 30) {
+      throw new HttpError(400, 'Trente Shorts attendent déjà : laisse-en partir avant d\'en programmer d\'autres.');
+    }
+    const storedAs = crypto.randomBytes(16).toString('hex');
+    fs.mkdirSync(config.videosDir, { recursive: true });
+    fs.copyFileSync(path.join(libDir, v.stored_as), path.join(config.videosDir, storedAs));
+    const id = run(`INSERT INTO youtube_videos (user_id, stored_as, filename, mime, size, title, description, publish_at, status, created_at)
+      VALUES (?, ?, ?, 'video/mp4', ?, ?, ?, ?, 'scheduled', ?)`, req.user.id, storedAs, v.name + '.mp4', v.size, title, description, publishAt, now()).lastInsertRowid;
+    res.status(201).json({ id, title, publishAt });
+  }));
+  // Les Shorts déjà programmés (leurs heures), pour trouver le prochain jour libre.
+  app.get('/api/cut/youtube', requireUser, member, founder, wrap(async (req, res) => {
+    const allowed = can(req.user, 'youtube');
+    res.json({ allowed, channel: allowed ? channelOf(req.user.id) : null,
+      scheduled: allowed ? all("SELECT publish_at FROM youtube_videos WHERE user_id = ? AND status IN ('scheduled', 'uploading')", req.user.id).map((x) => x.publish_at) : [] });
+  }));
 
   // ——— La banque de fonds des fondateurs : des clips gardés pour les réutiliser d'un son à l'autre ———
   const bgDir = path.join(config.dataDir, 'cut-backgrounds');

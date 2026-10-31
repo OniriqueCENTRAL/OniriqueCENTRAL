@@ -2863,6 +2863,7 @@ if (youtubeBack) {
 
 // ——— Détails d'un titre ———
 let detailsId = null, detailsView = "main";
+let lyricsNote = ""; // le dernier message de la transcription par IA, gardé quand la vue se redessine
 let sync = null; // la synchronisation des paroles en cours : { tid, lines: [{ at, text }], i : la prochaine ligne à marquer }
 // L'écriture et la synchronisation des paroles ont leur propre lecteur : le lecteur du site se met en pause, et celui-ci
 // s'arrête dès qu'on les quitte.
@@ -3248,7 +3249,24 @@ function renderDetails() {
         api("PATCH", "/me/sounds/versions/" + v.id, { note: note.value }).then(() => { saved.textContent = "Enregistré."; return refresh(); }, fail) }), saved)];
   } else if (detailsView === "lyrics") {
     const text = el("textarea", { className: "lyrics-edit", value: lyricsText(parseLyrics(t.lyrics), false), maxLength: 20000, placeholder: "Colle les paroles ici, une ligne par ligne…", ariaLabel: "Paroles de " + t.title });
-    const saved = el("span", { className: "muted", style: "font-size:13px" });
+    const saved = el("span", { className: "muted", style: "font-size:13px", textContent: lyricsNote });
+    lyricsNote = "";
+    // Les paroles écrites et calées mot par mot par une IA, sur la voix isolée : rien ne quitte le navigateur.
+    const ai = el("button", { className: "btn btn-ghost", type: "button", textContent: "Transcrire avec l'IA" });
+    ai.onclick = async () => {
+      if (text.value.trim() && !confirm("Remplacer les paroles par celles écrites par l'IA ?")) return;
+      ai.disabled = true;
+      try {
+        saved.textContent = "Lecture du son…";
+        const buffer = await new AudioContext().decodeAudioData(await (await fetch(v.url)).arrayBuffer());
+        const out = await (await import("./assets/ai-lyrics.js")).transcribe(buffer, (m) => { saved.textContent = m; });
+        if (!out.words) { saved.textContent = "L'IA n'a pas entendu de paroles dans ce son."; return; }
+        await api("PATCH", "/me/sounds/tracks/" + t.id, { lyrics: out.lrc });
+        lyricsNote = out.words + " mots écrits et calés mot par mot par l'IA : relis-les et corrige un mot si besoin.";
+        await refresh();
+      } catch (error) { saved.textContent = "La transcription n'a pas marché : " + error.message; }
+      finally { ai.disabled = false; }
+    };
     right = [back("Paroles"), el("p", { className: "muted", style: "margin:0", textContent: "Elles s'affichent à côté du projet pendant l'écoute. Synchronise-les pour qu'elles défilent avec le son, ligne par ligne." }), syncBar(v), text,
       el("div", { className: "row" },
         el("button", { className: "btn btn-primary", type: "button", textContent: "Enregistrer", onclick: () =>
@@ -3278,7 +3296,7 @@ function renderDetails() {
           const ref = first > 0 ? lines[first - 1].words.at(-1).at : lines[Math.max(0, first)]?.at;
           syncAudio.pause(); syncAudio.currentTime = ref != null ? Math.max(0, ref - 2) : 0;
           detailsView = "lyrics-words"; renderDetails();
-        } }), saved),
+        } }), ai, saved),
       el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Mot par mot : chaque mot apparaît pile quand il est chanté dans les vidéos ONIRIQUE CUT (styles « mot par mot »). Le lecteur peut ralentir le son pour être précis. Un mot entouré de ** (comme **ça**) est un mot FORT : il ressort en grand dans CUT." })];
   } else if (detailsView === "lyrics-sync") {
     if (!sync || sync.tid !== t.id) { detailsView = "lyrics"; return renderDetails(); }

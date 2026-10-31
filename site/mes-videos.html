@@ -298,6 +298,7 @@ const tagOf = (text) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").re
 function captionOf(v) {
   const saved = readJson(CAPTIONS, {})[v.id];
   if (saved) return saved;
+  if (v.caption) return v.caption; // la description proposée par CUT à l'export
   const title = v.name.split(" - ONIRIQUE CUT")[0].trim(), artist = (readJson("onirique.cut", {}).artist || "").trim();
   const tags = (localStorage.getItem(TAGS) || "#rap #rapfr #nouveauson #musique").trim();
   return [title + (artist ? " — " + artist : ""), "", [tags, artist && "#" + tagOf(artist), title && "#" + tagOf(title)].filter(Boolean).join(" ")].join("\n");

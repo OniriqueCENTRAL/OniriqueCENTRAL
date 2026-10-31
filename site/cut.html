@@ -176,6 +176,12 @@ h2.step-title { font: 800 19px/1.2 var(--f-display); }
 .bank .tile i:hover { background: var(--ember); }
 kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font: 500 11px var(--f-mono); color: var(--mist); }
 @media (pointer: coarse) { .keys { display: none; } }
+.caption-box { max-width: 340px; width: 100%; justify-self: center; }
+.caption-box textarea, .caption-box input[type="text"], .yt-box input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.35);
+  color: var(--mist); font: 500 14px/1.45 var(--f-body); letter-spacing: 0; text-transform: none; resize: vertical; color-scheme: dark; }
+.field { display: grid; gap: 6px; font: 500 11px/1.2 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
+.yt-box { max-width: 340px; width: 100%; justify-self: center; display: grid; gap: 6px; }
+.yt-box .row { justify-content: center; }
 .panel.inset { margin: 0 clamp(18px, 4vw, 34px) 22px; padding: 0; }
 /* Les styles rapides : de grandes cartes avec un petit aperçu de l'écran. */
 .chips.presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); gap: 10px; padding: 0; border: 0; border-radius: 0; }
@@ -278,7 +284,7 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
             <label class="inline">Durée<input type="text" id="dur-custom" inputmode="decimal" aria-label="Durée du passage en secondes">s</label>
           </div>
           <div class="row">
-            <label class="check"><input type="checkbox" id="loop"> BOUCLE : la fin s'enchaîne avec le début</label>
+            <label class="check"><input type="checkbox" id="loop"> BOUCLE : la fin s'enchaîne avec le début (le son, et le dernier plan mène au premier)</label>
             <button class="mini" type="button" id="hear-start">Écouter le début</button>
           </div>
           <p class="muted" id="window-info"></p>
@@ -606,7 +612,16 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
         <span class="time" id="time">0:00</span>
       </div>
       <label class="vol">Volume<input type="range" id="previewVol" min="0" max="100" aria-label="Volume de l'aperçu"></label>
+      <label class="check mute"><input type="checkbox" id="safeGuide"> Montrer la zone visible sur TikTok</label>
       <button class="go wide export" type="button" id="export" disabled>Exporter la vidéo</button>
+      <details class="panel caption-box" id="caption-panel" open>
+        <summary>Description TikTok</summary>
+        <div class="stack">
+          <textarea id="caption" rows="5" aria-label="Description de la vidéo"></textarea>
+          <div class="row"><button class="mini" type="button" id="caption-new">Autre idée</button><button class="mini" type="button" id="caption-copy">Copier</button><span class="muted" id="caption-state"></span></div>
+          <label class="field">Tes hashtags de niche<input type="text" id="nicheTag" placeholder="#undergroundmusic #rapfr"></label>
+        </div>
+      </details>
       <div class="status" id="status" hidden><span id="status-text"></span><div class="bar"><i id="status-bar"></i></div></div>
       <details class="panel series">
         <summary>Exporter une série</summary>
@@ -618,6 +633,11 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
         </div>
       </details>
       <label class="check mute" id="keep-box" hidden><input type="checkbox" id="keepCloud"> Garder aussi dans mon cloud CUT</label>
+      <div class="yt-box" id="yt-box" hidden>
+        <label class="check mute"><input type="checkbox" id="ytAuto"> Programmer aussi en Short YouTube</label>
+        <div class="row"><span class="muted">Un par jour, à</span><input type="time" id="ytTime" style="width:auto" aria-label="Heure de publication des Shorts"></div>
+        <p class="muted" id="yt-state" style="margin:0;text-align:center;font-size:12px"></p>
+      </div>
       <label class="check mute"><input type="checkbox" id="mute"> Couper le son pendant l'export (la vidéo garde son son)</label>
       <div class="adv-links"><span>Avancé</span><button class="mini" type="button" id="adv-open" disabled>Timeline des sons</button><button class="mini" type="button" id="adv-open-video" disabled>Timeline vidéo</button></div>
       <details class="panel" id="lib-panel" hidden>
@@ -677,6 +697,8 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
 "use strict";
 const $ = (id) => document.getElementById(id);
 const W = 1080, H = 1920, RATE = 22050, HOP = 512, FPS = RATE / HOP;
+// Sur un téléphone plus allongé que 9:16, TikTok remplit l'écran : jusqu'à ~10 % de chaque côté disparaît. Le texte reste dedans.
+const SAFE = 108, SAFE_W = W - 2 * SAFE;
 const TOKEN = sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token");
 const PREFS = "onirique.cut";
 // Les polices du texte : nom, graisse, libellé (assets/fonts.css et assets/fonts-cut.css, servies par le site).
@@ -706,7 +728,7 @@ const ILOOK = { iOwn: false, iFont: "Hanken Grotesk", iPlace: "bottom", iColor: 
   iShadowColor: "#000000", iShadowBlur: 0, iShadowOffset: 0, iCaps: false, iBox: true, iBoxColor: "#000000", iBoxAlpha: 62 };
 const FILM = { ...ILOOK, trackFades: {}, introOn: false, introClip: 0, introIn: 0, introLen: 4, filmVol: 100, introLyrics: "", introSubMode: "sub", introFade: false, transition: "flash", transAmt: 100,
   dropGap: false, underPart: "none", underVol: 70, filmContinue: false, afterClip: -1, musicVol: 100, clipVol: 0, slowmo: "100" };
-let prefs = { previewVol: 80, ...FILM, duration: 15, order: "seq", cadence: "2", seriesCount: "5", seriesStyles: ["classic", "pixel", "red", "card"], bestMoments: true, smartCrop: true, zoom: false, zoomAmt: 100, flash: false, flashAmt: 100, place: "none", artist: "", snap: false, loop: false, batch: "one", lyricsPlace: "bottom", ...FX,
+let prefs = { previewVol: 80, ...FILM, duration: 15, order: "seq", cadence: "2", nicheTag: "#undergroundmusic #rapfr", safeGuide: false, ytAuto: false, ytTime: "18:00", seriesCount: "5", seriesStyles: ["classic", "pixel", "red", "card"], bestMoments: true, smartCrop: true, zoom: false, zoomAmt: 100, flash: false, flashAmt: 100, place: "none", artist: "", snap: false, loop: false, batch: "one", lyricsPlace: "bottom", ...FX,
   preset: "classic", frame: "full", retro: false, lyricsMode: "line", hook: "", hookOn: false, sign: "", textStyle: "classic", titleFont: "Unbounded", textSize: 100,
   strokeColor: "#000000", glowColor: "#ffffff", ...TEXT_STYLES.classic,
   strongSize: 170, strongColor: "#ffffff", strongGlowColor: "#ffffff", strongGlow: 45, strongFont: "" };
@@ -851,6 +873,51 @@ async function renderCompare() {
 }
 let compareTimer = 0;
 const compareLater = () => { clearTimeout(compareTimer); compareTimer = setTimeout(renderCompare, 250); };
+// ——— La description TikTok, sur la logique des comptes de rap qui marchent (@cmoipriilick, @encorewillyod) : une phrase entre
+// « » (la réplique du film, sinon une ligne chantée du passage), un émoji d'humeur, « Le son : Artiste - Titre », puis peu
+// de hashtags : l'univers de la vidéo (le film, le personnage), puis la niche (jamais de #fyp) ———
+const MOODS = [[/\?\s*$/, "🧐"], [/(triste|seul|pleur|mal\b|froid|mort|vide|perdu|peur|angoiss|dur\b|fatigu)/i, "😔"],
+  [/(amour|cœur|coeur|aime|bébé|manqu|elle\b)/i, "🥹"], [/(argent|billet|oseille|bénef|money|thune)/i, "💸"], [/(nuit|rêve|reve|lune|étoile)/i, "💭"]];
+const GENERIC = /^(img|vid|video|clip|copy|copie|final|edit|export|screen|record|untitled|sans|titre|tiktok|onirique|cut|fond|scene|scène|extrait|partie|part|film|movie|\d+)$/i;
+const tagOf = (text) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\p{L}\p{N}]+/gu, "").toLowerCase();
+let captionK = 0, captionEdited = false;
+function captionIdea(k = captionK) {
+  const title = ($("title").value.trim() || sound.name || "").trim(), artist = (prefs.artist || "").trim();
+  const clean = (t) => t.replace(/\*\*/g, "").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+  // La réplique, synchronisée ou non (une phrase par ligne).
+  const film = introLen() > 0 ? prefs.introLyrics.split("\n").map((l) => clean(bareLine(l))).filter(Boolean) : [];
+  const sung = lyrics.filter((l) => l.at >= sound.start - .5 && l.at < sound.start + span()).map((l) => clean(l.text));
+  const quotes = [...film, ...sung].filter((t) => t.length >= 8 && t.length <= 90);
+  const quote = quotes.length ? quotes[k % quotes.length] : "";
+  const mood = (MOODS.find(([re]) => re.test(quote)) || [null, ["😔", "🫩", "🥹", "🎶"][k % 4]])[1];
+  const son = "Le son : " + (artist ? artist + " - " : "") + title;
+  // L'univers : les mots du nom du clip de la réplique (souvent le film), sinon ceux des clips.
+  const names = introLen() > 0 && introClip() ? [introClip().name] : clips.map((c) => c.name);
+  const topic = [...new Set(names.flatMap((n) => n.replace(/\.[^.]+$/, "").split(/[\s_\-.()[\]]+/)).map(tagOf).filter((w) => w.length >= 4 && !GENERIC.test(w)))].slice(0, 2);
+  const niche = (prefs.nicheTag || "").split(/\s+/).map((t) => tagOf(t)).filter(Boolean);
+  const tags = [...new Set([...topic, introLen() > 0 ? "filmedit" : null, ...niche].filter(Boolean))].slice(0, 5);
+  return [quote ? "« " + quote + " » " + mood : son + " " + mood, quote ? son : null, tags.map((t) => "#" + t).join(" ")].filter(Boolean).join("\n");
+}
+/** La description à jour (tant qu'on ne l'a pas écrite soi-même). */
+function syncCaption() { if (!captionEdited && sound.buffer) $("caption").value = captionIdea(); }
+
+// ——— Les Shorts YouTube (fondateurs) : une vidéo gardée dans le cloud CUT part sur la chaîne au prochain jour libre ———
+/** Le prochain créneau libre : chaque jour à l'heure choisie, à partir d'aujourd'hui, un jour sans Short déjà prévu. */
+function nextSlot(scheduled) {
+  const [h, m] = (prefs.ytTime || "18:00").split(":").map(Number), taken = new Set(scheduled.map((t) => new Date(t).toDateString()));
+  const d = new Date(); d.setHours(h, m, 0, 0);
+  while (d.getTime() < Date.now() + 10 * 60_000 || taken.has(d.toDateString())) d.setDate(d.getDate() + 1);
+  return d.getTime();
+}
+async function scheduleShort(video, caption) {
+  const state = await bankFetch("/api/cut/youtube");
+  if (!state.channel) throw new Error("Relie d'abord ta chaîne YouTube dans ton compte (Shorts YouTube).");
+  const publishAt = nextSlot(state.scheduled), first = (caption || video.name).split("\n")[0].replace(/[«»<>]/g, "").trim();
+  await bankFetch("/api/cut/library/" + video.id + "/youtube", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ publishAt, title: (first || video.name).slice(0, 100), description: (caption ? caption + "\n" : "") + "#shorts" }) });
+  return new Date(publishAt).toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+}
+
 function renderPassages() {
   if (!sound.buffer) return;
   $("passages").replaceChildren(...bestStarts(3).map((p, i) => {
@@ -1229,6 +1296,8 @@ async function buildMix(key) {
   if (intro) {
     const a = await clipAudio(introClip());
     if (a) add(a, 0, prefs.introIn, intro - gap + (prefs.introFade && !gap ? .2 : 0), vol("film", prefs.filmVol), trackFade("film", "in", .01), trackFade("film", "out", gap ? .03 : crossfade), false);
+    const tailCut = prefs.loop && segments.find((x) => x.tail && x.clip === prefs.introClip);
+    if (a && tailCut) add(a, intro + tailCut.t0, tailCut.from, tailCut.t1 - tailCut.t0, vol("film", prefs.filmVol), .15, .004, false);
     // Sous la réplique : la musique qui mène au drop (le son entier, ou une seule piste séparée).
     const len = Math.min(sound.start, intro), at = intro - len;
     if (prefs.underPart !== "none" && prefs.underVol > 0 && len - gap > .05) {
@@ -1332,50 +1401,24 @@ async function separate(key) {
 const stemsOf = (worker, L, R, rate) => new Promise((resolve, reject) => {
   worker.onmessage = (e) => resolve(e.data); worker.onerror = reject; worker.postMessage({ L, R, rate }, [L.buffer, R.buffer]);
 });
-// ——— Les paroles automatiques (assets/whisper-worker.js) : écrites et calées mot par mot par une IA, sur la voix seule ———
-let whisper = null;
-/** Des mots datés en paroles LRC mot par mot : une ligne par phrase (un silence, une ponctuation finale, une majuscule
- *  de début de phrase, ou 10 mots au plus). */
-function wordsToLrc(words) {
-  const lines = [];
-  let line = [];
-  words.forEach((w, i) => {
-    const prev = words[i - 1];
-    const sentence = line.length >= 2 && /^\p{Lu}/u.test(w.text) && !/^(I|Ok|OK)$/.test(w.text);
-    if (line.length && (w.start - prev.end > .6 || line.length >= 10 || sentence || /[.!?…]$/.test(prev.text))) { lines.push(line); line = []; }
-    line.push(w);
-  });
-  if (line.length) lines.push(line);
-  return lines.map((l) => "[" + lrcStamp(l[0].start) + "] " + l.map((w) => "<" + lrcStamp(w.start) + ">" + w.text).join(" ")).join("\n");
-}
+// ——— Les paroles automatiques (assets/ai-lyrics.js) : écrites et calées mot par mot par une IA, sur la voix seule ———
 async function autoLyrics() {
   if (!sound.buffer) return;
   if ($("lyrics").value.trim() && !confirm("Remplacer les paroles actuelles par celles écrites par l'IA ?")) return;
   const status = (text) => { $("lyrics-auto-status").textContent = text; };
   $("lyrics-auto").disabled = true;
   try {
-    // La voix seule (séparée par l'IA Demucs) se comprend bien mieux que le morceau avec sa prod.
-    let voice = sound.buffer;
+    const ai = await import("./assets/ai-lyrics.js");
+    // La voix seule (séparée par Demucs, déjà calculée pour l'écoute des pistes) se comprend bien mieux que le morceau avec sa prod.
     status("Séparation de la voix…");
-    try { const all = await separateAll(); if (!/rapide/.test(all.note)) voice = all.parts.vocals; } catch { /* le morceau entier */ }
-    const off = new OfflineAudioContext(1, Math.ceil(voice.duration * 16000), 16000), src = off.createBufferSource();
-    src.buffer = voice; src.connect(off.destination); src.start();
-    const audio = (await off.startRendering()).getChannelData(0).slice();
-    whisper = whisper || new Worker("assets/whisper-worker.js", { type: "module" });
-    const out = await new Promise((resolve, reject) => {
-      whisper.onmessage = ({ data }) => {
-        if (data.type === "done") resolve(data);
-        else if (data.type === "error") reject(new Error(data.message));
-        else status(data.phase === "download" ? "Téléchargement de l'IA des paroles (environ 600 Mo, une seule fois sur cet appareil)… " + pct(data.value) : "L'IA écoute les paroles… " + (data.value ? pct(data.value) : ""));
-      };
-      whisper.onerror = (event) => reject(new Error(event.message || "l'IA des paroles n'a pas pu démarrer"));
-      whisper.postMessage({ audio, language: "french" }, [audio.buffer]);
-    }).catch((error) => { whisper.terminate(); whisper = null; throw error; });
-    if (!out.words.length) return status("L'IA n'a pas entendu de paroles dans ce son.");
-    $("lyrics").value = wordsToLrc(out.words);
+    let voice = null;
+    try { const all = await separateAll(); if (!/rapide/.test(all.note)) voice = all.parts.vocals; } catch { /* le module isole la voix lui-même */ }
+    const out = await ai.transcribe(voice || sound.buffer, status, { isolated: !!voice });
+    if (!out.words) return status("L'IA n'a pas entendu de paroles dans ce son.");
+    $("lyrics").value = out.lrc;
     readLyrics(); showCloudLyrics(); keepSet();
     if (!playing) draw(position, false);
-    status(out.words.length + " mots écrits et calés par l'IA" + (out.device === "gpu" ? "" : " (sur le processeur)") + ". Relis-les : corrige un mot directement dans le texte" + (cloud ? ", puis enregistre-les dans CLOUD." : "."));
+    status(out.words + " mots écrits et calés par l'IA" + (out.device === "gpu" ? "" : " (sur le processeur)") + ". Relis-les : corrige un mot directement dans le texte" + (cloud ? ", puis enregistre-les dans CLOUD." : "."));
   } catch (error) {
     status("Les paroles automatiques n'ont pas marché : " + error.message);
   } finally { $("lyrics-auto").disabled = false; }
@@ -1490,7 +1533,6 @@ function build() {
   segments.forEach((s, i) => {
     let k = prefs.order === "mix" ? Math.floor(random() * ids.length) : i % ids.length;
     if (prefs.order === "mix" && ids.length > 1 && k === last) k = (k + 1) % ids.length;
-    if (prefs.loop && ids.length > 1 && i === segments.length - 1 && ids[k] === segments[0].clip) k = (k + 1) % ids.length;
     last = k;
     const c = ids[k], clip = clips[c], length = (s.t1 - s.t0) * slow();
     s.clip = c;
@@ -1504,6 +1546,16 @@ function build() {
       else { if (cursor[c] > room) cursor[c] = 0; s.from = cursor[c]; cursor[c] += length; }
     }
   });
+  // BOUCLE, comme les montages de films qui tournent en boucle sur TikTok : la dernière coupe (moins d'une seconde) montre le
+  // même plan que la toute première image, juste avant elle. Au retour au début, le geste continue sans coupure.
+  if (prefs.loop && segments.length > 1) {
+    const first = introLen() > 0 ? { clip: prefs.introClip, from: prefs.introIn } : segments[0], c = clips[first.clip];
+    const last = segments.at(-1), tail = Math.min(.8, beat, last.t1 - last.t0), from = (first.from || 0) - tail * slow();
+    if (c && c.kind === "video" && from >= 0) {
+      if (last.t1 - last.t0 - tail > .25) { last.t1 -= tail; segments.push({ t0: last.t1, t1: end, clip: first.clip, from, tail: true }); }
+      else Object.assign(last, { clip: first.clip, from, tail: true });
+    }
+  }
 }
 
 // La ponctuation reste avec son mot : « ? », « , », « . », « ! », « » » vont avec le mot d'avant ; « « », « ( », « ¿ » avec le mot d'après.
@@ -1635,7 +1687,7 @@ function text(lines, y, size, weight, family, color = "#fff") {
   g.font = `${weight} ${size}px "${family}"`;
   g.textAlign = "center"; g.textBaseline = "middle";
   g.shadowColor = "rgba(0,0,0,.75)"; g.shadowBlur = size * .35;
-  const all = lines.flatMap((l) => wrapText(l, W * .84));
+  const all = lines.flatMap((l) => wrapText(l, SAFE_W));
   all.forEach((l, k) => { g.fillStyle = color; g.fillText(l, W / 2, y + (k - (all.length - 1) / 2) * size * 1.12); });
   g.shadowBlur = 0;
   return all.length * size * 1.12;
@@ -1647,7 +1699,7 @@ layer.width = W; layer.height = H;
 const textScale = () => prefs.textSize / 100;
 /** Le style du texte choisi (police des paroles, couleur, contour, lueur, ombre). */
 const textLook = (extra = {}) => ({ font: prefs.lyricFont, color: prefs.textColor, stroke: prefs.stroke, strokeColor: prefs.strokeColor, glow: prefs.glow, glowColor: prefs.glowColor,
-  shadowColor: prefs.shadowColor, shadowBlur: prefs.shadowBlur, shadowOffset: prefs.shadowOffset, caps: prefs.caps, pixel: prefs.pixel, maxW: W * .86, ...extra });
+  shadowColor: prefs.shadowColor, shadowBlur: prefs.shadowBlur, shadowOffset: prefs.shadowOffset, caps: prefs.caps, pixel: prefs.pixel, maxW: SAFE_W, ...extra });
 /** Des lignes de texte centrées sur cy : ombre, puis lueur, puis contour, puis la couleur. Rend la hauteur utilisée. */
 function paint(lines, cy, o) {
   const c = o.pixel ? lg : g, [family, weight] = fontOf(o.font);
@@ -1786,7 +1838,7 @@ function bigWord(word, cy, maxW, now, look = null) {
   const o = { ...textLook(), ...(look || {}), size: 150 * scale * Math.min(1.15, ref / g.measureText("DADAIS").width), maxW, wrap: false };
   if (word.strong) {
     const pop = 1 + .22 * Math.exp(-Math.max(0, now - word.at) * 14);
-    Object.assign(o, { size: o.size * prefs.strongSize / 100 * pop, color: prefs.strongColor, glowColor: prefs.strongGlowColor, glow: prefs.strongGlow, font: prefs.strongFont || o.font, maxW: W * .94 });
+    Object.assign(o, { size: o.size * prefs.strongSize / 100 * pop, color: prefs.strongColor, glowColor: prefs.strongGlowColor, glow: prefs.strongGlow, font: prefs.strongFont || o.font, maxW: SAFE_W });
   }
   paint([word.text], cy, o);
 }
@@ -1794,8 +1846,8 @@ function bigWord(word, cy, maxW, now, look = null) {
 function lyricCard(text, r, title, artist) {
   if (text) {
     g.font = `500 46px "Hanken Grotesk"`;
-    const lines = wrapText(text, r.w * .78), lh = 58, boxH = lines.length * lh + 26;
-    const boxW = Math.max(...lines.map((l) => g.measureText(l).width)) + 44, bx = r.x + 40, by = r.y + r.h - 40 - boxH;
+    const lines = wrapText(text, Math.min(r.w * .78, SAFE_W - 44)), lh = 58, boxH = lines.length * lh + 26;
+    const boxW = Math.max(...lines.map((l) => g.measureText(l).width)) + 44, bx = Math.max(r.x + 40, SAFE), by = r.y + r.h - 40 - boxH;
     g.fillStyle = "#fff"; g.fillRect(bx, by, boxW, boxH);
     g.fillStyle = "#000"; g.textAlign = "left"; g.textBaseline = "middle";
     lines.forEach((l, k) => g.fillText(l, bx + 22, by + 13 + lh / 2 + k * lh));
@@ -1804,9 +1856,9 @@ function lyricCard(text, r, title, artist) {
   if (below > H - 40) return;
   g.textBaseline = "middle"; g.fillStyle = "rgba(255,255,255,.9)";
   const left = [artist.toUpperCase(), title && `"${title.toUpperCase()}"`].filter(Boolean).join(", ");
-  if (left) { g.font = `600 34px "Hanken Grotesk"`; g.textAlign = "left"; g.fillText(left, 40, below, W * .58); }
+  if (left) { g.font = `600 34px "Hanken Grotesk"`; g.textAlign = "left"; g.fillText(left, SAFE, below, W * .5); }
   const sign = $("sign").value.trim().toUpperCase();
-  if (sign) { g.font = `500 32px "JetBrains Mono"`; g.textAlign = "right"; g.fillText(sign.split("").join(" "), W - 40, below, W * .38); }
+  if (sign) { g.font = `500 32px "JetBrains Mono"`; g.textAlign = "right"; g.fillText(sign.split("").join(" "), W - SAFE, below, W * .3); }
 }
 
 const introVideo = Object.assign(document.createElement("video"), { muted: true, playsInline: true, preload: "auto" });
@@ -1823,20 +1875,20 @@ const introY = (r, height) => {
 function styledSubtitle(text, r, look) {
   const [family, weight] = fontOf(look.font), size = Math.round(46 * look.scale), lh = size * 1.25;
   g.font = `${weight} ${size}px "${family}"`;
-  const lines = wrapText(look.caps ? text.toUpperCase() : text, r.w * .82), boxH = lines.length * lh + size * .5;
+  const lines = wrapText(look.caps ? text.toUpperCase() : text, Math.min(r.w * .82, SAFE_W)), boxH = lines.length * lh + size * .5;
   const cy = introY(r, boxH);
   if (prefs.iBox && prefs.iBoxAlpha > 0) {
     const boxW = Math.max(...lines.map((l) => g.measureText(l).width)) + size * .9, hex = prefs.iBoxColor.replace("#", "");
     const [R, G, B] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
     g.fillStyle = `rgba(${R},${G},${B},${prefs.iBoxAlpha / 100})`; g.fillRect((W - boxW) / 2, cy - boxH / 2, boxW, boxH);
   }
-  paint(lines, cy, { ...look, size, maxW: r.w * .9, wrap: false, caps: false });
+  paint(lines, cy, { ...look, size, maxW: Math.min(r.w * .9, SAFE_W), wrap: false, caps: false });
 }
 function subtitle(text, r) {
   const look = introLook();
   if (look) return styledSubtitle(text, r, look);
   g.font = `500 46px "Hanken Grotesk"`;
-  const lines = wrapText(text, r.w * .82), lh = 58, boxH = lines.length * lh + 24, boxW = Math.max(...lines.map((l) => g.measureText(l).width)) + 40;
+  const lines = wrapText(text, Math.min(r.w * .82, SAFE_W)), lh = 58, boxH = lines.length * lh + 24, boxW = Math.max(...lines.map((l) => g.measureText(l).width)) + 40;
   const by = r.y + r.h - (r.y ? 36 : 260) - boxH;
   g.fillStyle = "rgba(0,0,0,.62)"; g.fillRect((W - boxW) / 2, by, boxW, boxH);
   g.fillStyle = "#fff"; g.textAlign = "center"; g.textBaseline = "middle";
@@ -1864,7 +1916,7 @@ function drawIntro(t, playing) {
   if (lines.length && prefs.introSubMode === "word") {
     const look = introLook(), place = look ? prefs.iPlace : prefs.lyricsPlace;
     const word = wordAt(t, lines), y = { top: r.y + r.h * .24, middle: r.y + r.h / 2, bottom: r.y + r.h * .78 }[place] ?? r.y + r.h / 2;
-    if (word) bigWord(word, y, r.w * .86, t, look);
+    if (word) bigWord(word, y, Math.min(r.w * .86, SAFE_W), t, look);
   } else if (lines.length) {
     const line = lines.filter((l) => l.at <= t).at(-1);
     if (line && t - line.at < 6) subtitle(line.text, r);
@@ -1927,7 +1979,17 @@ function draw(t, playing) {
   if (overlays.length) drawOverlays(full, playing);
   if (intro) transitionAt(full - intro);
   fadeEnds(full);
+  if (prefs.safeGuide && !exact && !recording) safeGuide();
   return true;
+}
+/** Le cadre de ce que montre TikTok (côtés rognés sur téléphone allongé, onglets en haut, description en bas) : aperçu seulement. */
+function safeGuide() {
+  g.save();
+  g.setLineDash([18, 14]); g.lineWidth = 4; g.strokeStyle = "rgba(255,255,255,.6)";
+  g.strokeRect(SAFE, 150, SAFE_W, H - 150 - 430);
+  g.font = '600 30px "Hanken Grotesk"'; g.fillStyle = "rgba(255,255,255,.75)"; g.textAlign = "center"; g.textBaseline = "middle";
+  g.fillText("Zone visible sur TikTok", W / 2, 118);
+  g.restore();
 }
 function drawMusic(t, playing) {
   const i = segmentAt(t), s = segments[i], clip = clips[s.clip];
@@ -1980,7 +2042,7 @@ function drawMusic(t, playing) {
   // La place des paroles : en haut, au milieu ou en bas (de l'image pour le mot par mot, de l'écran pour la ligne).
   const wordY = { top: r.y + r.h * .24, middle: r.y + r.h / 2, bottom: r.y + r.h * .78 }[prefs.lyricsPlace] ?? r.y + r.h / 2;
   const lineY = { top: prefs.place === "top" ? H * .3 : H * .18, middle: H * .5, bottom: prefs.place === "bottom" ? H * .62 : H * .8 }[prefs.lyricsPlace] ?? H * .8;
-  if (prefs.lyricsMode === "word") { const word = wordAt(now); if (word) bigWord(word, wordY, r.w * .86, now); }
+  if (prefs.lyricsMode === "word") { const word = wordAt(now); if (word) bigWord(word, wordY, Math.min(r.w * .86, SAFE_W), now); }
   else if (prefs.lyricsMode === "card") lyricCard(line && now - line.at < 8 ? line.text : "", r, prefs.place === "none" ? "" : title, prefs.place === "none" ? "" : artist);
   else if (line && now - line.at < 8) paint([line.text], lineY, textLook({ size: 62 * ts }));
 }
@@ -2168,6 +2230,7 @@ function refresh() {
   syncTabs();
   if (adv.open) renderAdv();
   keepSet();
+  syncCaption();
 }
 
 // ——— Export : la vidéo image par image (ou, faute de mieux, l'enregistrement en temps réel), puis MP4 propre par le serveur ———
@@ -2308,7 +2371,8 @@ async function exportVideo(series = null) {
   $("mute").disabled = false; // on peut couper ou remettre le son pendant l'enregistrement
   try {
     const wav = await passageWav().catch(() => null);
-    let savedToCloud = 0, cloudFailed = false;
+    let savedToCloud = 0, cloudFailed = false, shortError = "";
+    const shorts = [];
     for (let n = 0; n < list.length; n++) {
       if (series) await series[n].apply();
       else if (list[n] !== null) { focus = list[n]; build(); renderClips(); }
@@ -2322,14 +2386,17 @@ async function exportVideo(series = null) {
       // Fondateurs : la vidéo part aussi dans le cloud CUT.
       if (isFounder && prefs.keepCloud && blob.type === "video/mp4") {
         try {
-          await upload("/api/cut/library?name=" + encodeURIComponent(name.replace(/\.mp4$/, "")) + "&duration=" + total().toFixed(2), blob, "json",
+          const caption = series ? captionIdea(n) : $("caption").value;
+          const keptVideo = await upload("/api/cut/library?name=" + encodeURIComponent(name.replace(/\.mp4$/, "")) + "&duration=" + total().toFixed(2) + "&caption=" + encodeURIComponent(caption), blob, "json",
             (p) => setStatus(label + "Enregistrement dans ton cloud CUT…", (n + .92 + .08 * p) / list.length));
           savedToCloud++;
+          if (prefs.ytAuto) { try { shorts.push(await scheduleShort(keptVideo, caption)); } catch (error) { shortError = error.message; } }
         } catch { cloudFailed = true; }
       }
     }
     setStatus((list.length > 1 ? "C'est prêt : " + list.length + " vidéos " + (folder ? "dans le dossier choisi." : "dans tes téléchargements.") : "C'est prêt : ta vidéo est dans tes téléchargements.")
-      + (savedToCloud ? " Gardée" + (savedToCloud > 1 ? "s" : "") + " aussi dans ton cloud CUT." : "") + (cloudFailed ? " Le cloud CUT n'a pas pu " + (list.length > 1 ? "toutes les garder." : "la garder.") : ""), 1);
+      + (savedToCloud ? " Gardée" + (savedToCloud > 1 ? "s" : "") + " aussi dans ton cloud CUT." : "") + (cloudFailed ? " Le cloud CUT n'a pas pu " + (list.length > 1 ? "toutes les garder." : "la garder.") : "")
+      + (shorts.length ? " Short YouTube programmé : " + shorts.join(", ") + "." : "") + (shortError ? " Short YouTube : " + shortError : ""), 1);
     if (savedToCloud) renderLibrary();
     // Fini pendant qu'on était sur un autre onglet : l'onglet le dit dans son titre jusqu'à ce qu'on y revienne.
     if (document.hidden) { const title = document.title; document.title = "✓ Vidéo prête · " + title; document.addEventListener("visibilitychange", () => { document.title = title; }, { once: true }); }
@@ -2838,6 +2905,10 @@ async function renderLibrary() {
       bar.append(
         button("Lire", () => { const old = item.querySelector("video"); if (old) return old.remove(); item.insertBefore(Object.assign(document.createElement("video"), { src: v.url, controls: true, autoplay: true, playsInline: true }), bar); }),
         Object.assign(document.createElement("a"), { className: "mini", href: v.downloadUrl, textContent: "Télécharger", style: "text-decoration:none" }),
+        ...($("yt-box").hidden ? [] : [button("Short YouTube", async (event) => {
+          const b = event.currentTarget; b.disabled = true;
+          try { b.textContent = "Prévu " + await scheduleShort(v, v.caption); } catch (error) { alert(error.message); b.disabled = false; }
+        })]),
         button("Supprimer", async () => {
           if (!confirm("Supprimer « " + v.name + " » de ton cloud CUT ?")) return;
           await fetch("/api/cut/library/" + v.id, { method: "DELETE", headers: { Authorization: "Bearer " + TOKEN } });
@@ -3172,6 +3243,11 @@ function start() {
   };
   dragIntro();
   $("export").onclick = () => exportVideo();
+  $("caption").oninput = () => { captionEdited = true; };
+  $("caption-new").onclick = () => { captionK++; captionEdited = false; syncCaption(); };
+  $("caption-copy").onclick = () => navigator.clipboard.writeText($("caption").value).then(() => { $("caption-state").textContent = "Copiée."; }, () => { $("caption").select(); });
+  $("nicheTag").value = prefs.nicheTag || "";
+  $("nicheTag").onchange = () => { prefs.nicheTag = $("nicheTag").value.trim(); savePrefs(); syncCaption(); };
   chips("seriesCount", "seriesCount", () => { $("series-go").textContent = "Exporter " + prefs.seriesCount + " vidéos"; });
   $("series-go").textContent = "Exporter " + prefs.seriesCount + " vidéos";
   $("series-styles").replaceChildren(...Object.entries(STYLE_NAMES).map(([k, label]) => {
@@ -3187,6 +3263,15 @@ function start() {
     $("keep-box").hidden = $("lib-panel").hidden = $("bank-row").hidden = false;
     $("bank-open").onclick = () => { $("bank").hidden = !$("bank").hidden; if (!$("bank").hidden) renderBank(); };
     $("bank-save").onclick = saveToBank;
+    // Shorts YouTube : seulement si ce compte y a droit ; la case n'agit que pour une vidéo gardée dans le cloud CUT.
+    bankFetch("/api/cut/youtube").then((state) => {
+      if (!state.allowed) return;
+      $("yt-box").hidden = false;
+      $("ytAuto").checked = !!prefs.ytAuto; $("ytTime").value = prefs.ytTime || "18:00";
+      $("yt-state").textContent = state.channel ? "Chaîne : " + state.channel + ". Les vidéos gardées dans ton cloud CUT partent au prochain jour libre." : "Relie ta chaîne YouTube dans ton compte pour programmer des Shorts.";
+      $("ytAuto").onchange = () => { prefs.ytAuto = $("ytAuto").checked; if (prefs.ytAuto && !$("keepCloud").checked) { $("keepCloud").checked = true; prefs.keepCloud = true; } savePrefs(); };
+      $("ytTime").onchange = () => { prefs.ytTime = $("ytTime").value || "18:00"; savePrefs(); };
+    }).catch(() => {});
     $("keepCloud").checked = prefs.keepCloud !== false;
     $("keepCloud").onchange = () => { prefs.keepCloud = $("keepCloud").checked; savePrefs(); };
     if (prefs.keepCloud === undefined) prefs.keepCloud = true;
@@ -3246,7 +3331,7 @@ function start() {
     $(id).replaceChildren(...(id === "strongFont" ? [new Option("Même police que les paroles", "")] : []), ...FONT_LIST.map(([family, , label]) => new Option(label, family)));
   }
   const loadFont = (family) => { if (!family) return; const [f, w] = fontOf(family); document.fonts.load(`${w} 80px "${f}"`).then(() => !playing && segments.length && draw(position, false)); };
-  const boxes = ["zoom", "flash", "retro", "hookOn", "bestMoments", "smartCrop"];
+  const boxes = ["zoom", "flash", "retro", "hookOn", "bestMoments", "smartCrop", "safeGuide"];
   const syncControls = () => {
     for (const id of STYLE_INPUTS) { const el = $(id); if (el.type === "checkbox") el.checked = !!prefs[id]; else el.value = prefs[id]; }
     boxes.forEach((id) => { $(id).checked = !!prefs[id]; });
@@ -3304,7 +3389,7 @@ function start() {
   $("artist").value = prefs.artist || "";
   $("artist").oninput = () => { prefs.artist = $("artist").value; savePrefs(); if (!playing) draw(position, false); };
   $("title").oninput = () => { if (!playing) draw(position, false); };
-  $("lyrics").oninput = () => { readLyrics(); showCloudLyrics(); if (!playing) draw(position, false); };
+  $("lyrics").oninput = () => { readLyrics(); showCloudLyrics(); syncCaption(); if (!playing) draw(position, false); };
   $("lyrics-pull").onclick = () => pullLyrics(false);
   $("lyrics-auto").onclick = autoLyrics;
   $("lyrics-push").onclick = pushLyrics;
