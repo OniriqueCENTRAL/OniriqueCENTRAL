@@ -98,11 +98,14 @@ export async function isolateVoice(buffer, status = () => {}) {
   } catch { return null; }
 }
 
-/** written : des paroles déjà écrites (avec ou sans temps) à caler ; sinon l'IA les écrit elle-même. */
-export async function transcribe(buffer, status = () => {}, { isolated = false, language = "french", written = "" } = {}) {
-  const voice = isolated ? buffer : (await isolateVoice(buffer, status)) || buffer; // sans séparation : le morceau entier
-  const [audio] = await resample(voice, 16000, 1);
-  const out = await runWorker(new URL("whisper-worker.js", import.meta.url), { audio, language }, [audio.buffer], (d) => status(d.phase === "download"
+/** buffer : le morceau tel quel. voice : sa voix isolée, si on l'a déjà (sinon elle est isolée ici).
+ *  written : des paroles déjà écrites (avec ou sans temps) à caler ; sinon l'IA les écrit elle-même.
+ *  La voix isolée ne sert qu'à repérer où l'on chante : Whisper écoute le morceau tel quel, qu'il comprend mieux (mesuré sur
+ *  deux titres de euhZ : 44,7 et 37,7 % de mots faux, contre 50,7 et 44,4 % sur la voix isolée, abîmée par la séparation). */
+export async function transcribe(buffer, status = () => {}, { voice = null, language = "french", written = "" } = {}) {
+  const guideVoice = voice || (await isolateVoice(buffer, status)) || buffer;
+  const [audio] = await resample(buffer, 16000, 1), [guide] = await resample(guideVoice, 16000, 1);
+  const out = await runWorker(new URL("whisper-worker.js", import.meta.url), { audio, guide, language }, [audio.buffer, guide.buffer], (d) => status(d.phase === "download"
     ? "Téléchargement de l'IA des paroles (environ 760 Mo, une seule fois sur cet appareil)… " + pct(d.value) : "L'IA écoute les paroles…" + (d.value ? " " + pct(d.value) : "")));
   if (written.trim() && out.words.length) {
     const lrc = alignLyrics(written, out.words);

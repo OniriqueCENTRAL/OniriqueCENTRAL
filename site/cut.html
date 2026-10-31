@@ -1522,7 +1522,7 @@ async function autoLyrics() {
     status("Séparation de la voix…");
     let voice = null;
     try { const all = await separateAll(); if (!/rapide/.test(all.note)) voice = all.parts.vocals; } catch { /* le module isole la voix lui-même */ }
-    const out = await ai.transcribe(voice || sound.buffer, status, { isolated: !!voice, written });
+    const out = await ai.transcribe(sound.buffer, status, { voice, written });
     if (!out.words) return status(written ? "L'IA n'a pas réussi à caler ces paroles sur le son." : "L'IA n'a pas entendu de paroles dans ce son.");
     $("lyrics").value = out.lrc;
     readLyrics(); showCloudLyrics(); keepSet();

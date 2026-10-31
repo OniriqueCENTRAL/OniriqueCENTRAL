@@ -2,7 +2,7 @@
 // chaque mot. Tourne dans ce Web Worker (module), sur la carte graphique (WebGPU) ou le processeur. Rien ne quitte le
 // navigateur : seul le modèle (~760 Mo sur carte graphique) se télécharge, une fois, puis reste dans le cache du navigateur.
 //
-//   postMessage({ audio, language })  (mono, 16 000 Hz)
+//   postMessage({ audio, guide, language })  (mono, 16 000 Hz ; guide : la voix isolée, pour savoir où l'on chante)
 //     →  { type: "progress", phase: "download" | "transcribe", value: 0…1 }
 //     →  { type: "done", device, words: [{ text, start, end }] }   ou   { type: "error", message }
 import { pipeline, env } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.6/dist/transformers.min.js";
@@ -73,7 +73,7 @@ async function listen(asr, audio, from, to, language) {
 self.onmessage = async ({ data }) => {
   const post = (message) => self.postMessage(message);
   try {
-    const asr = await transcriber(post), language = data.language || "french", audio = data.audio, list = pieces(audio), words = [];
+    const asr = await transcriber(post), language = data.language || "french", audio = data.audio, list = pieces(data.guide || audio), words = [];
     post({ type: "progress", phase: "transcribe", value: 0 });
     for (const [k, [from, to]] of list.entries()) {
       let got = await listen(asr, audio, from, to, language);
