@@ -27,6 +27,8 @@
 @media (max-width: 920px) { .screen { position: static; } }
 .frame { position: relative; aspect-ratio: 9 / 16; width: 100%; max-width: 340px; margin: 0 auto; border-radius: 22px; overflow: hidden; background: #000; border: 1px solid var(--line); box-shadow: 0 30px 80px -30px rgba(226,52,68,.5); }
 .frame canvas { width: 100%; height: 100%; display: block; }
+#stack-handle { position: absolute; z-index: 2; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; background: #fff; border: 3px solid #e23444; box-shadow: 0 0 0 2px rgba(0,0,0,.4); cursor: nwse-resize; touch-action: none; }
+#stack-handle[hidden] { display: none; }
 /* Les curseurs : un seul dessin pour tous (la partie avant le rond en rouge, --p posé par paintRanges). */
 input[type="range"] { -webkit-appearance: none; appearance: none; height: 22px; padding: 0; background: transparent; cursor: pointer; --p: 50%; }
 input[type="range"]:disabled { opacity: .45; cursor: default; }
@@ -699,7 +701,8 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
               <div class="chips wrap-in" id="introSubMode" role="group" aria-label="Affichage des paroles de la réplique"><button type="button" data-v="sub">Sous-titre (cinéma)</button><button type="button" data-v="word">Mot par mot</button><button type="button" data-v="stack">Empilé (édit de film)</button></div>
             </label>
             <label class="check"><input type="checkbox" id="introType"> Effet écriture : le texte s'écrit lettre par lettre, calé sur la synchro (affichage Empilé)</label>
-            <p class="muted">En « Empilé », fais glisser le texte sur l'aperçu pour le placer où il ne cache rien.</p>
+            <p class="muted">En « Empilé », fais glisser le texte sur l'aperçu pour le placer où il ne cache rien, et tire le rond blanc de son coin (ou la molette de la souris dessus) pour le grandir ou le réduire.</p>
+            <label class="grow">Taille du texte empilé<input type="range" id="stackSize" min="15" max="200" step="5"></label>
             <label class="check"><input type="checkbox" id="iOwn"> Style de texte propre à la réplique</label>
             <div class="stack" id="ilook" style="padding:0">
               <div class="fields">
@@ -864,7 +867,7 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
 
     <aside class="screen" aria-label="Aperçu">
       <div class="screen-top">
-      <div class="frame"><canvas id="screen" width="1080" height="1920"></canvas><div class="hud" id="hud" hidden aria-hidden="true"></div><div class="empty" id="screen-empty"><b>Ton aperçu</b>Ajoute ton son puis tes clips.</div></div>
+      <div class="frame"><canvas id="screen" width="1080" height="1920"></canvas><i id="stack-handle" hidden title="Tire pour grandir ou réduire le texte"></i><div class="hud" id="hud" hidden aria-hidden="true"></div><div class="empty" id="screen-empty"><b>Ton aperçu</b>Ajoute ton son puis tes clips.</div></div>
       <div class="transport">
         <button class="round" type="button" id="play" aria-label="Lecture" disabled><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button>
         <div class="scrub" id="scrub"><canvas></canvas></div>
@@ -966,7 +969,7 @@ const FX = { bw: false, shake: false, shakeAmt: 100, rgbSplit: false, rgbAmt: 10
 // Le style du texte de la réplique (quand « Style de texte propre à la réplique » est coché).
 const ILOOK = { iOwn: false, iFont: "Hanken Grotesk", iPlace: "bottom", iColor: "#ffffff", iSize: 100, iStroke: 0, iStrokeColor: "#000000", iGlow: 0, iGlowColor: "#ffffff",
   iShadowColor: "#000000", iShadowBlur: 0, iShadowOffset: 0, iCaps: false, iBox: true, iBoxColor: "#000000", iBoxAlpha: 62 };
-const FILM = { ...ILOOK, trackFades: {}, introOn: false, introClip: 0, introIn: 0, introLen: 4, filmVol: 100, introLyrics: "", introSubMode: "sub", introType: false, stackX: .5, stackY: .4, introGaps: true, introFade: false, transition: "flash", transAmt: 100,
+const FILM = { ...ILOOK, trackFades: {}, introOn: false, introClip: 0, introIn: 0, introLen: 4, filmVol: 100, introLyrics: "", introSubMode: "sub", introType: false, stackX: .5, stackY: .4, stackSize: 70, introGaps: true, introFade: false, transition: "flash", transAmt: 100,
   dropGap: false, underPart: "none", underVol: 70, filmContinue: false, afterClip: -1, afterIn: 0, afterLen: 0, musicVol: 100, clipVol: 0, slowmo: "100" };
 let prefs = { previewVol: 80, ...FILM, duration: 15, order: "seq", cadence: "2", nicheTag: "#undergroundmusic #rapfr", hud: "none", ytAuto: false, ytTime: "18:00", igAuto: false, igTime: "18:30", igTrial: "", seriesCount: "5", seriesStyles: ["classic", "pixel", "red", "card"], bestMoments: true, zoom: false, zoomAmt: 100, flash: false, flashAmt: 100, place: "none", artist: "", snap: false, loop: false, batch: "one", lyricsPlace: "bottom", ...FX,
   preset: "classic", frame: "full", retro: false, lyricsMode: "line", hook: "", hookOn: false, sign: "", textStyle: "classic", titleFont: "Unbounded", textSize: 100,
@@ -2459,7 +2462,7 @@ function timedWords(line, list) {
 /** La phrase en bloc empilé ; avec l'effet écriture, chaque mot s'écrit lettre par lettre à son moment. */
 function stackedLine(words, t, typing) {
   const look = introLook() || { font: "Bebas Neue", color: "#ff2525", stroke: 0, strokeColor: "#000000", glow: 0, glowColor: "#ffffff", shadowColor: "#000000", shadowBlur: 34, shadowOffset: 3, caps: true, scale: 1 };
-  const [family, weight] = fontOf(look.font), big = 240 * look.scale, up = (s) => (look.caps ? s.toUpperCase() : s);
+  const [family, weight] = fontOf(look.font), big = 240 * look.scale * prefs.stackSize / 100, up = (s) => (look.caps ? s.toUpperCase() : s);
   const small = (w) => !w.strong && SMALL_WORDS.has(w.text.toLowerCase().replace(/[^\p{L}']/gu, ""));
   // Un petit mot (« ça », « le »…) en petit, les autres en grand ; deux mots courts de même taille partagent une ligne.
   const rows = [];
@@ -2584,6 +2587,10 @@ function draw(t, playing) {
   if (intro) transitionAt(full - intro);
   fadeEnds(full);
   screen.style.touchAction = stackBox ? "none" : ""; // sur téléphone, glisser le bloc ne fait pas défiler la page
+  // La poignée pour redimensionner le bloc : un élément posé sur l'aperçu, donc absente de la vidéo exportée.
+  const handle = $("stack-handle");
+  handle.hidden = !stackBox || exact;
+  if (stackBox) { handle.style.left = (stackBox.x + stackBox.w) / W * 100 + "%"; handle.style.top = (stackBox.y + stackBox.h) / H * 100 + "%"; }
   return true;
 }
 // ——— Le HUD : l'interface de TikTok, des Shorts ou d'Instagram par-dessus l'aperçu, pour voir ce qu'elle cache ———
@@ -3881,7 +3888,7 @@ function filmUi() {
   $("afterClip").disabled = !!prefs.filmContinue; // « la suite de l'extrait » garde le clip de la réplique
   drawAfterWave();
   $("introOn").checked = !!prefs.introOn; $("intro-box").hidden = !prefs.introOn;
-  for (const id of ["filmVol", "musicVol", "clipVol"]) $(id).value = prefs[id];
+  for (const id of ["filmVol", "musicVol", "clipVol", "stackSize"]) $(id).value = prefs[id];
   for (const id of ["introFade", "introGaps", "introType", "dropGap", "filmContinue"]) $(id).checked = !!prefs[id];
   $("underVol").value = prefs.underVol;
   if (document.activeElement !== $("introLyrics")) $("introLyrics").value = prefs.introLyrics;
@@ -4022,6 +4029,21 @@ function start() {
     });
     const drop = () => { if (grab) { grab = null; savePrefs(); } };
     screen.addEventListener("pointerup", drop); screen.addEventListener("pointercancel", drop);
+    // La taille : la poignée du coin (l'écart au centre du bloc change sa taille d'autant), ou la molette sur le bloc.
+    const resize = (size) => { prefs.stackSize = Math.min(200, Math.max(15, Math.round(size))); $("stackSize").value = prefs.stackSize; paintRanges(); restyle(); };
+    const handle = $("stack-handle");
+    let pull = null;
+    handle.addEventListener("pointerdown", (e) => {
+      const c = [stackBox.x + stackBox.w / 2, stackBox.y + stackBox.h / 2], p = at(e);
+      pull = { c, d: Math.max(20, Math.hypot(p[0] - c[0], p[1] - c[1])), size: prefs.stackSize };
+      handle.setPointerCapture(e.pointerId); e.preventDefault();
+    });
+    handle.addEventListener("pointermove", (e) => { if (pull) { const p = at(e); resize(pull.size * Math.hypot(p[0] - pull.c[0], p[1] - pull.c[1]) / pull.d); } });
+    const release = () => { if (pull) { pull = null; savePrefs(); } };
+    handle.addEventListener("pointerup", release); handle.addEventListener("pointercancel", release);
+    screen.addEventListener("wheel", (e) => { if (!inside(at(e))) return; e.preventDefault(); resize(prefs.stackSize * (e.deltaY < 0 ? 1.08 : 1 / 1.08)); savePrefs(); }, { passive: false });
+    $("stackSize").value = prefs.stackSize;
+    $("stackSize").addEventListener("input", () => { prefs.stackSize = Number($("stackSize").value); savePrefs(); restyle(); });
   }
   // Choisir la musique sous la réplique la fait aussi écouter dans le lecteur ; l'inverse non : le lecteur ne sert qu'à écouter.
   chips("underPart", "underPart", () => { if (prefs.underPart !== "none") { stemPick = prefs.underPart; $("stem-part").value = stemPick; if (stemHear) hearStem(ctx.currentTime - stemHear.at); } ensureStems(); scheduleMix(); });
