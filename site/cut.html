@@ -446,6 +446,11 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
           <h2 class="step-title">Tes clips</h2><p class="muted">Vidéos ou photos : chaque coupe tombe sur le beat et montre un nouveau moment du clip.</p>
           <div class="clips" id="clips"><button class="add" type="button" id="clips-add"><b>+</b>Vidéos<br>ou photos</button></div>
           <input id="clips-file" type="file" accept="video/*,image/*" multiple hidden>
+          <div class="stack zone-box" id="zone-box" hidden>
+            <label>Extrait du clip <select id="zone-clip" aria-label="Clip dont on choisit l'extrait"></select></label>
+            <div class="wave small" id="zone-wave" title="Fais glisser la zone, ou ses bords, pour choisir le passage du clip"><canvas></canvas></div>
+            <div class="row"><span class="muted" id="zone-range"></span><button class="mini" type="button" id="zone-all">Tout le clip</button></div>
+          </div>
           <div class="row" id="bank-row" hidden>
             <button class="mini" type="button" id="bank-open">Ma banque de fonds</button>
             <button class="mini" type="button" id="bank-save">Garder ces clips dans ma banque</button>
@@ -1680,6 +1685,22 @@ async function addClips(files) {
     refresh(); // chaque clip apparaît dès qu'il est prêt
   }
 }
+// ——— L'extrait de chaque clip vidéo (étape Clips) ———
+let zoneIndex = 0;
+const zoneClip = () => { const c = clips[zoneIndex]; return c && c.kind === "video" ? c : null; };
+const zoneOf = () => { const c = zoneClip(); return c.zone || [0, c.duration]; };
+function drawZoneBox() {
+  const videos = clips.map((c, i) => [c, i]).filter(([c]) => c.kind === "video"), mmss = (t) => Math.floor(t / 60) + ":" + String(Math.floor(t % 60)).padStart(2, "0");
+  $("zone-box").hidden = !videos.length;
+  if (!videos.length) return;
+  if (!zoneClip()) zoneIndex = videos[0][1];
+  $("zone-clip").replaceChildren(...videos.map(([c, i]) => new Option((i + 1) + ". " + c.name + (c.zone ? " (extrait)" : ""), i)));
+  $("zone-clip").value = String(zoneIndex);
+  const [a, b] = zoneOf();
+  $("zone-range").textContent = zoneClip().zone ? "Les coupes prennent de " + mmss(a) + " à " + mmss(b) + "." : "Tout le clip est utilisé : fais glisser la zone pour n'en garder qu'un passage.";
+  $("zone-all").hidden = !zoneClip().zone;
+  drawClipWave($("zone-wave"), zoneClip, zoneOf);
+}
 function renderClips() {
   const box = $("clips");
   box.replaceChildren(...clips.map((c, i) => {
@@ -2001,7 +2022,7 @@ function build() {
     const c = ids[k], clip = clips[c], length = (s.t1 - s.t0) * slow();
     s.clip = c;
     // L'extrait choisi pour l'après-réplique (sinon tout le clip).
-    const [lo, hi] = ids.length === 1 && c === prefs.afterClip && prefs.afterLen > 0 ? [prefs.afterIn, Math.min(clip.duration, prefs.afterIn + prefs.afterLen)] : [0, clip.duration];
+    const [lo, hi] = ids.length === 1 && c === prefs.afterClip && prefs.afterLen > 0 ? [prefs.afterIn, Math.min(clip.duration, prefs.afterIn + prefs.afterLen)] : clip.zone || [0, clip.duration];
     const best = prefs.bestMoments && clip.moments && clip.moments.filter((t) => t >= lo && t <= hi - length - 0.05);
     if (clip.kind === "video" && best && best.length) {
       // Les meilleurs moments du clip (assets/clip-frames.js) : dans l'ordre de qualité, ou au hasard parmi les meilleurs.
@@ -2764,6 +2785,7 @@ function refresh() {
   build();
   renderStrong();
   renderClips();
+  drawZoneBox();
   $("bpm").textContent = sound.bpm ? (Math.round(sound.bpm * 10) / 10).toString().replace(".", ",") : "—";
   $("reshuffle").hidden = prefs.order !== "mix";
   const ready = !!(sound.buffer && clips.length);
@@ -3553,7 +3575,7 @@ function drawAfterWave() {
 }
 async function drawClipWave(box, clipOf, zone) {
   const c = clipOf(), canvas = box.firstElementChild;
-  if (!c || box.hidden || $("intro-box").hidden) return;
+  if (!c || !box.offsetParent) return; // pas à l’écran : rien à dessiner
   if (c.rms === undefined) { await clipAudio(c); if (clipOf() !== c) return; }
   const x = sizeCanvas(canvas), w = canvas.width, h = canvas.height, d = devicePixelRatio || 1;
   x.clearRect(0, 0, w, h);
@@ -3745,6 +3767,7 @@ function showTab(name) {
   // Les formes d'onde se dessinent à la taille de leur cadre : il faut qu'il soit visible.
   if (name === "son") drawWave();
   if (name === "film") { drawIntroWave(); drawAfterWave(); }
+  if (name === "clips") drawZoneBox();
 }
 function initTabs() {
   const tabs = [...document.querySelectorAll("[data-tab]")];
@@ -3871,6 +3894,9 @@ function start() {
     hearing = setTimeout(() => { hearing = 0; if (playing) { stop(); position = 0; seek(0); } }, (introLen() + 1.5) * 1000);
   };
   dragIntro();
+  dragZone($("zone-wave"), zoneClip, zoneOf, (a, b) => { zoneClip().zone = [a, b]; drawZoneBox(); }, 1);
+  $("zone-clip").onchange = () => { zoneIndex = Number($("zone-clip").value); drawZoneBox(); };
+  $("zone-all").onclick = () => { delete zoneClip().zone; position = 0; refresh(); };
   $("export").onclick = () => exportVideo();
   $("caption").oninput = () => { captionEdited = true; renderHud(); };
   chips("hudPick", "hud", renderHud); renderHud();
