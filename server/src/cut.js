@@ -317,6 +317,8 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
       scheduled: shorts.filter((x) => x.status === 'scheduled' || x.status === 'uploading').map((x) => x.publish_at),
       // Les vidéos du cloud CUT déjà en Short, et la lecture des Shorts pas encore partis (leur fichier attend ici).
       inShorts: [...new Set(shorts.map((x) => x.cut_video_id ?? names.get(x.filename)).filter(Boolean))],
+      // L’heure prévue (ou l’état) du Short de chaque vidéo du cloud CUT, affichée sur son aperçu.
+      slots: Object.fromEntries(shorts.map((x) => [x.cut_video_id ?? names.get(x.filename), { at: x.publish_at, status: x.status }]).filter(([id]) => id)),
       plays: Object.fromEntries(shorts.filter((x) => x.status !== 'published' && fs.existsSync(path.join(config.videosDir, x.stored_as))).map((x) => [x.id, shortUrl(x.id)])) });
   }));
   // La lecture d'un Short qui attend son heure, par lien signé (une balise <video> n'envoie pas de jeton).
@@ -330,7 +332,7 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
 
   // ——— Les Reels Instagram programmés (fondateurs, droit « instagram ») ———
   const reelsRight = (req, _res, next) => (can(req.user, 'instagram') ? next() : next(new HttpError(403, "Les Reels Instagram ne sont pas ouverts à ce compte.")));
-  const reelView = (r) => ({ id: r.id, name: r.name, caption: r.caption, trial: r.trial, publishAt: r.publish_at, status: r.status, error: r.error, url: r.permalink || null,
+  const reelView = (r) => ({ id: r.id, cutVideoId: r.cut_video_id, name: r.name, caption: r.caption, trial: r.trial, publishAt: r.publish_at, status: r.status, error: r.error, url: r.permalink || null,
     play: r.status !== 'published' && fs.existsSync(path.join(reelsDir, r.stored_as)) ? reelUrl(r.id) : null });
   const ownReel = (req) => {
     const r = get('SELECT * FROM cut_reels WHERE id = ? AND user_id = ?', Number(req.params.id) || 0, req.user.id);

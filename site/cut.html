@@ -102,8 +102,8 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 5px 
 .vthumb img, .vthumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .vthumb:hover { border-color: var(--ember); }
 .vdur { position: absolute; right: 8px; bottom: 8px; padding: 2px 6px; border-radius: 6px; background: rgba(0,0,0,.8); color: #fff; font: 600 12px var(--f-body); }
-.vbadges { position: absolute; left: 8px; top: 8px; display: grid; gap: 4px; justify-items: start; }
-.vbadges span { padding: 3px 7px; border-radius: 6px; background: rgba(0,0,0,.75); color: #fff; font: 600 11px var(--f-body); }
+.vbadges { position: absolute; left: 8px; right: 8px; top: 8px; display: grid; gap: 4px; justify-items: start; }
+.vbadges span { max-width: 100%; line-height: 1.3; padding: 3px 7px; border-radius: 6px; background: rgba(0,0,0,.75); color: #fff; font: 600 11px var(--f-body); }
 .vbadges .yt { background: #c4302b; } .vbadges .ig { background: #8a3ab9; }
 .vrow { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: start; }
 .vtitle { font: 700 14px/1.3 var(--f-body); color: var(--mist); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -1151,12 +1151,13 @@ const whenText = (ms) => new Date(ms).toLocaleString("fr-FR", { weekday: "long",
 const localInput = (ms) => { const d = new Date(ms - new Date(ms).getTimezoneOffset() * 60_000); return d.toISOString().slice(0, 16); };
 let shortsAllowed = false;
 let inShorts = new Set(); // les vidéos du cloud CUT déjà en Short (programmé ou publié) : elles ne repartent pas
+let shortSlots = {}, reelSlots = {}; // id de la vidéo → { at, status } de son Short et de son Reel (affichés sur l’aperçu)
 /** Le menu des Shorts : la chaîne, les Shorts à venir (lecture, date, titre, description modifiables), les vidéos du cloud CUT à ajouter. */
 async function renderShorts() {
   const [yt, cut, lib] = await Promise.all([bankFetch("/api/youtube").catch(() => null), bankFetch("/api/cut/youtube").catch(() => ({ inShorts: [], plays: {} })),
     bankFetch("/api/cut/library").catch(() => ({ videos: [] }))]);
   if (!yt) { $("yt-list").replaceChildren(Object.assign(document.createElement("p"), { className: "muted small", textContent: "YouTube ne répond pas. Réessaie dans un instant." })); return; }
-  inShorts = new Set(cut.inShorts || []);
+  inShorts = new Set(cut.inShorts || []); shortSlots = cut.slots || {};
   if (!$("cloud-page").hidden) renderLibrary(); // le badge « Short » apparaît tout de suite
   $("yt-state").replaceChildren(...(yt.channel ? ["Chaîne : " + yt.channel] : ["Pas encore de chaîne reliée : ", Object.assign(document.createElement("a"), { href: "compte", textContent: "relier ma chaîne YouTube" }), "."]));
   const upcoming = yt.videos.filter((v) => v.status !== "published").sort((a, b) => (a.publishAt || Infinity) - (b.publishAt || Infinity));
@@ -1241,7 +1242,7 @@ async function renderReels() {
   const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
   const [st, lib] = await Promise.all([bankFetch("/api/cut/reels").catch(() => null), bankFetch("/api/cut/library").catch(() => ({ videos: [] }))]);
   if (!st) { $("ig-list").replaceChildren(el("p", { className: "muted small", textContent: "Le serveur ne répond pas. Réessaie dans un instant." })); return; }
-  inReels = new Set(st.inReels || []);
+  inReels = new Set(st.inReels || []); reelSlots = Object.fromEntries(st.reels.map((r) => [r.cutVideoId, { at: r.publishAt, status: r.status }]));
   if (!$("cloud-page").hidden) renderLibrary();
   $("ig-state").replaceChildren(...(st.account ? ["Compte : @" + st.account]
     : st.configured ? ["Pas encore de compte Instagram relié : ", el("a", { href: "compte", textContent: "relier mon Instagram" }), ". Tes Reels attendent, et partent dès qu'il est relié."]
@@ -3499,6 +3500,9 @@ function mirrorAdv() {
 }
 
 // ——— Le cloud CUT des fondateurs : les vidéos gardées, à lire, télécharger, supprimer ou réutiliser comme clip ———
+/** « Short · mar. 3 nov. · 18:04 » : quand la vidéo part (ou « publié », « raté »). */
+const slotText = (name, slot) => !slot ? name : name + " · " + (slot.status === "published" ? "publié" : slot.status === "failed" ? "raté, à reprogrammer" : slot.status === "uploading" ? "en cours d’envoi" : !slot.at ? "sans date"
+  : new Date(slot.at).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" }) + " · " + new Date(slot.at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }));
 async function renderLibrary() {
   if (!isFounder) return;
   const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids.filter((k) => k !== null)); return n; };
@@ -3511,7 +3515,7 @@ async function renderLibrary() {
     $("lib-info").textContent = videos.length ? videos.length + " vidéo" + (videos.length > 1 ? "s" : "") + " · touche une vidéo pour la lire, « ⋮ » pour tout le reste." : "Aucune vidéo pour l'instant : coche « Garder aussi dans mon cloud CUT » avant d'exporter.";
     $("lib-list").replaceChildren(...videos.map((v) => {
       const thumb = el("div", { className: "vthumb", title: "Lire" }, el("img", { src: v.poster, alt: "", loading: "lazy", onerror: (event) => event.target.replaceWith(el("video", { src: v.url + "#t=1", muted: true, preload: "metadata", playsInline: true })) }), el("span", { className: "vdur", textContent: OniriqueAudio.clock(v.duration) }),
-        el("div", { className: "vbadges" }, inShorts.has(v.id) ? el("span", { className: "yt", textContent: "Short" }) : null, inReels.has(v.id) ? el("span", { className: "ig", textContent: "Reel" }) : null));
+        el("div", { className: "vbadges" }, inShorts.has(v.id) ? el("span", { className: "yt", textContent: slotText("Short", shortSlots[v.id]) }) : null, inReels.has(v.id) ? el("span", { className: "ig", textContent: slotText("Reel", reelSlots[v.id]) }) : null));
       const play = () => {
         const old = thumb.querySelector("video");
         if (old) { old.remove(); return; }
