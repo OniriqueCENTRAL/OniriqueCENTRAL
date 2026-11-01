@@ -90,6 +90,9 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 5px 
 .fx-opts label small { text-transform: none; letter-spacing: 0; font-family: var(--f-body); }
 .fx-tint { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: end; }
 /* « Mes vidéos CUT » : une page par-dessus CUT, en grille d'aperçus comme l'accueil de YouTube. */
+.cloud-short { display: inline-flex; justify-self: center; align-items: center; gap: 8px; padding: 9px 16px; border: 1px solid var(--line); border-radius: 99px; background: rgba(0,0,0,.3); color: var(--mist); font: 600 13px var(--f-body); cursor: pointer; }
+.cloud-short:hover { border-color: var(--ember); }
+.cloud-short svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
 .cloud-open { width: 100%; display: flex; justify-content: center; gap: 10px; align-items: baseline; }
 .cloud-open small { font-weight: 500; opacity: .75; }
 .cloud-page { position: fixed; inset: 0; z-index: 90; overflow-y: auto; padding: 0 24px 40px; background: var(--night); }
@@ -115,6 +118,8 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 5px 
 .vmenu button:hover:not(:disabled), .vmenu a:hover { background: rgba(226,52,68,.16); }
 .vmenu button:disabled { opacity: .45; cursor: default; }
 .vmenu .danger { color: var(--ember-text); }
+.vmenu svg { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.vmenu hr { margin: 4px 6px; border: 0; border-top: 1px solid var(--line); }
 .vedit { display: grid; gap: 8px; }
 .vedit input, .vedit textarea { width: 100%; }
 .cloud-foot { margin-top: 30px; font-size: 12px; }
@@ -745,7 +750,7 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
             <p class="sub-title">Après la réplique</p>
             <label>Clip après la transition<select id="afterClip"></select></label>
             <div class="wave small" id="after-wave" hidden title="Le son du clip : fais glisser la zone, ou ses bords, pour choisir l'extrait montré après la réplique"><canvas></canvas></div>
-            <p class="muted" id="after-range" hidden></p>
+            <div class="row" id="after-row" hidden><label class="inline">Début de l'extrait<input type="number" id="after-in" min="0" step="0.1" inputmode="decimal" aria-label="Début de l'extrait après le drop, en secondes"> s</label><span class="muted" id="after-range"></span></div>
             <label class="check"><input type="checkbox" id="filmContinue"> Le film continue sous la musique (la suite de l'extrait)</label>
           </div>
           <p class="sub-title">Volumes</p>
@@ -868,6 +873,7 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
       <div class="hud-pick"><span>HUD</span><div class="chips" id="hudPick" role="group" aria-label="Interface affichée sur l'aperçu"><button type="button" data-v="none">Aucun</button><button type="button" data-v="tiktok">TikTok</button><button type="button" data-v="shorts">Shorts</button><button type="button" data-v="insta">Instagram</button></div></div>
       <label class="check mute"><input type="checkbox" id="mute"> Couper le son pendant l'export et quand l'IA travaille</label>
       <button class="go wide export" type="button" id="export" disabled>Exporter la vidéo</button>
+      <button class="cloud-short" type="button" id="cloud-short" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h7v6H4zM13 5h7v6h-7zM4 13h7v6H4zM13 13h7v6h-7z"/></svg>Mes vidéos CUT</button>
       <div class="status" id="status" hidden><span id="status-text"></span><div class="bar"><i id="status-bar"></i></div></div>
       </div>
     </aside>
@@ -2058,7 +2064,9 @@ function build() {
     const c = ids[k], clip = clips[c], length = (s.t1 - s.t0) * slow();
     s.clip = c;
     // L'extrait choisi pour l'après-réplique (sinon tout le clip).
-    const [lo, hi] = ids.length === 1 && c === prefs.afterClip && prefs.afterLen > 0 ? [prefs.afterIn, Math.min(clip.duration, prefs.afterIn + prefs.afterLen)] : clip.zone || [0, clip.duration];
+    const locked = ids.length === 1 && c === prefs.afterClip && clip.kind === "video";
+    if (locked) { s.from = afterZone()[0] + s.t0 * slow(); return; }
+    const [lo, hi] = clip.zone || [0, clip.duration];
     const best = prefs.bestMoments && clip.moments && clip.moments.filter((t) => t >= lo && t <= hi - length - 0.05);
     if (clip.kind === "video" && best && best.length) {
       // Les meilleurs moments du clip (assets/clip-frames.js) : dans l'ordre de qualité, ou au hasard parmi les meilleurs.
@@ -3520,7 +3528,9 @@ async function renderLibrary() {
         const old = thumb.querySelector("video");
         if (old) { old.remove(); return; }
         $("lib-list").querySelectorAll("video").forEach((x) => x.remove()); // une seule à la fois
-        thumb.prepend(el("video", { src: v.url, controls: true, autoplay: true, playsInline: true }));
+        const video = el("video", { src: v.url, controls: true, autoplay: true, playsInline: true, disablePictureInPicture: true });
+        video.setAttribute("controlslist", "nodownload noplaybackrate noremoteplayback");
+        thumb.prepend(video);
       };
       thumb.onclick = (event) => { if (event.target.tagName !== "VIDEO") play(); };
       const card = el("article", { className: "vcard" }), more = el("button", { className: "vmore", type: "button", textContent: "⋮", ariaLabel: "Actions pour " + v.name, ariaExpanded: "false" });
@@ -3530,15 +3540,23 @@ async function renderLibrary() {
         event.stopPropagation();
         if (card.querySelector(".vmenu")) return closeMenu();
         document.querySelectorAll(".vmenu").forEach((m) => m.remove());
-        const item = (label, on, extra = {}) => el("button", { type: "button", textContent: label, onclick: on, ...extra });
+        const svg = (d) => { const n = document.createElementNS("http://www.w3.org/2000/svg", "svg"); n.setAttribute("viewBox", "0 0 24 24"); n.innerHTML = d; return n; };
+        const ICON = { play: '<path d="M8 5v14l11-7z"/>', yt: '<rect x="3" y="6" width="18" height="12" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/>', ig: '<rect x="4" y="4" width="16" height="16" rx="4.5"/><circle cx="12" cy="12" r="3.6"/><circle cx="16.8" cy="7.2" r=".6"/>',
+          edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/>', copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
+          down: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>', trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>', check: '<path d="M5 12l5 5 9-10"/>' };
+        const item = (icon, label, on, extra = {}) => el("button", { type: "button", role: "menuitem", onclick: on, ...extra }, svg(ICON[icon]), el("span", { textContent: label }));
+        const sep = () => el("hr");
         card.append(el("div", { className: "vmenu", role: "menu" },
-          item("▶  Lire", () => { closeMenu(); play(); }),
-          ...(shortsAllowed ? [item(inShorts.has(v.id) ? "✓  Déjà programmée sur YouTube" : "▶  Programmer sur YouTube (Short)", schedule(scheduleShort, "Short YouTube prévu"), { disabled: inShorts.has(v.id) })] : []),
-          ...(reelsAllowed ? [item(inReels.has(v.id) ? "✓  Déjà programmée sur Instagram" : "◎  Programmer sur Instagram (Reel)", schedule(scheduleReel, "Reel Instagram prévu"), { disabled: inReels.has(v.id) })] : []),
-          item("✎  Modifier le titre et la description", () => { closeMenu(); editCard(); }),
-          item("⧉  Copier la description", () => { closeMenu(); navigator.clipboard.writeText(v.caption || "").then(() => alert("Description copiée."), () => {}); }, { disabled: !v.caption }),
-          el("a", { href: v.downloadUrl, textContent: "⤓  Télécharger", onclick: closeMenu }),
-          item("🗑  Supprimer", async () => {
+          item("play", "Lire", () => { closeMenu(); play(); }),
+          sep(),
+          ...(shortsAllowed ? [item(inShorts.has(v.id) ? "check" : "yt", inShorts.has(v.id) ? "Déjà programmée sur YouTube" : "Programmer sur YouTube (Short)", schedule(scheduleShort, "Short YouTube prévu"), { disabled: inShorts.has(v.id) })] : []),
+          ...(reelsAllowed ? [item(inReels.has(v.id) ? "check" : "ig", inReels.has(v.id) ? "Déjà programmée sur Instagram" : "Programmer sur Instagram (Reel)", schedule(scheduleReel, "Reel Instagram prévu"), { disabled: inReels.has(v.id) })] : []),
+          sep(),
+          item("edit", "Modifier le titre et la description", () => { closeMenu(); editCard(); }),
+          item("copy", "Copier la description", () => { closeMenu(); navigator.clipboard.writeText(v.caption || "").then(() => alert("Description copiée."), () => {}); }, { disabled: !v.caption }),
+          el("a", { href: v.downloadUrl, role: "menuitem", onclick: closeMenu }, svg(ICON.down), el("span", { textContent: "Télécharger" })),
+          sep(),
+          item("trash", "Supprimer", async () => {
             closeMenu();
             if (!confirm("Supprimer « " + v.name + " » de ton cloud CUT ?")) return;
             await fetch("/api/cut/library/" + v.id, { method: "DELETE", headers: { Authorization: "Bearer " + TOKEN } });
@@ -3633,13 +3651,17 @@ function dragLoupe() {
 /** La forme d'onde du son du clip de la réplique : on y voit où le film parle. */
 const drawIntroWave = () => drawClipWave($("intro-wave"), introClip, () => [prefs.introIn, prefs.introIn + introLen()]);
 const afterClip = () => { const c = !prefs.filmContinue && clips[prefs.afterClip]; return c && c.kind === "video" ? c : null; };
-const afterZone = () => { const c = afterClip(); return prefs.afterLen > 0 ? [prefs.afterIn, Math.min(c.duration, prefs.afterIn + prefs.afterLen)] : [0, c.duration]; };
+const afterZone = () => {
+  const c = afterClip(), need = Math.min(c.duration, span() * slow()), a = Math.max(0, Math.min(prefs.afterIn || 0, c.duration - need));
+  return [a, a + need];
+};
 function drawAfterWave() {
   const c = afterClip(), mmss = (t) => Math.floor(t / 60) + ":" + String(Math.floor(t % 60)).padStart(2, "0");
-  $("after-wave").hidden = $("after-range").hidden = !c || $("intro-box").hidden;
+  $("after-wave").hidden = $("after-row").hidden = !c || $("intro-box").hidden;
   if (!c) return;
   const [a, b] = afterZone();
-  $("after-range").textContent = "Extrait de " + mmss(a) + " à " + mmss(b) + " : les coupes après la réplique sont prises dedans.";
+  if (document.activeElement !== $("after-in")) $("after-in").value = a.toFixed(1);
+  $("after-range").textContent = "de " + mmss(a) + " à " + mmss(b) + " (" + (b - a).toFixed(1).replace(".", ",") + " s, la durée de la musique après le drop) : la vidéo montre exactement ce passage.";
   drawClipWave($("after-wave"), afterClip, afterZone);
 }
 async function drawClipWave(box, clipOf, zone) {
@@ -3669,10 +3691,12 @@ function dragIntro() {
     $("introIn").value = prefs.introIn.toString().replace(".", ","); $("introLen").value = introLen().toFixed(2).replace(".", ",");
     drawIntroWave();
   });
-  dragZone($("after-wave"), afterClip, afterZone, (a, b) => { prefs.afterIn = a; prefs.afterLen = b - a; drawAfterWave(); }, 1);
+  dragZone($("after-wave"), afterClip, afterZone, (a) => { prefs.afterIn = a; drawAfterWave(); }, 1, true);
+  $("after-in").onchange = () => { prefs.afterIn = Math.max(0, Number(String($("after-in").value).replace(",", ".")) || 0); savePrefs(); position = 0; refresh(); drawAfterWave(); };
 }
 /** Une zone sur l'onde d'un clip : on la déplace, ou on tire son début ou sa fin (min secondes au moins). */
-function dragZone(box, clipOf, zone, set, min = .5) {
+/** fixed : la zone garde sa longueur, on la fait seulement glisser. */
+function dragZone(box, clipOf, zone, set, min = .5, fixed = false) {
   let grab = null;
   const at = (event) => { const r = box.getBoundingClientRect(), c = clipOf(); return Math.max(0, Math.min(1, (event.clientX - r.left) / r.width)) * (c ? c.duration : 0); };
   const edge = (event) => {
@@ -3685,13 +3709,13 @@ function dragZone(box, clipOf, zone, set, min = .5) {
   box.addEventListener("pointerdown", (event) => {
     if (!clipOf()) return;
     const [a, b] = zone();
-    grab = { kind: edge(event) || "move", offset: at(event) - a, start: a, end: b };
+    grab = { kind: (!fixed && edge(event)) || "move", offset: at(event) - a, start: a, end: b };
     box.setPointerCapture(event.pointerId);
   });
   box.addEventListener("pointermove", (event) => {
     const c = clipOf();
     if (!c) return;
-    if (!grab) { box.style.cursor = edge(event) ? "ew-resize" : "grab"; return; }
+    if (!grab) { box.style.cursor = !fixed && edge(event) ? "ew-resize" : "grab"; return; }
     const t = at(event), len = grab.end - grab.start;
     if (grab.kind === "start") set(round(Math.max(0, Math.min(t, grab.end - min))), grab.end);
     else if (grab.kind === "end") set(grab.start, round(Math.max(grab.start + min, Math.min(t, c.duration))));
@@ -4021,6 +4045,8 @@ function start() {
     $("keepCloud").checked = prefs.keepCloud !== false;
     $("keepCloud").onchange = () => { prefs.keepCloud = $("keepCloud").checked; savePrefs(); };
     if (prefs.keepCloud === undefined) prefs.keepCloud = true;
+    $("cloud-short").hidden = false;
+    $("cloud-short").onclick = () => $("cloud-open").click();
     $("cloud-open").onclick = () => { $("cloud-page").hidden = false; document.body.style.overflow = "hidden"; renderLibrary(); };
     const closeCloud = () => { $("cloud-page").hidden = true; document.body.style.overflow = ""; $("lib-list").querySelectorAll("video").forEach((x) => x.pause()); };
     $("cloud-close").onclick = closeCloud;
