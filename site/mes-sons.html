@@ -3379,12 +3379,34 @@ function renderDetails() {
       el("button", { type: "button", className: "speed" + (s.strongMode ? " on" : ""), ariaPressed: String(!!s.strongMode), style: "margin-left:auto",
         textContent: s.strongMode ? "Mots FORTS : touche les mots" : "Choisir les mots FORTS", onclick: () => { s.strongMode = !s.strongMode; renderDetails(); } }));
     const done = s.lines.reduce((n, l) => n + l.words.filter((w) => w.at !== null).length, 0), total = s.lines.reduce((n, l) => n + l.words.length, 0);
-    const saved = el("span", { className: "muted", style: "font-size:13px" });
+    const saved = el("span", { className: "muted", style: "font-size:13px", textContent: s.note || "" });
+    s.note = "";
+    // L'IA cale chaque mot sur la voix (rien ne quitte le navigateur) : le texte ne change pas.
+    const aiWords = el("button", { className: "btn btn-ghost", type: "button", textContent: "Caler avec l'IA",
+      title: "L'IA donne son moment à chaque mot ; ton texte et le moment des lignes déjà calées restent les tiens." });
+    aiWords.onclick = async () => {
+      aiWords.disabled = true;
+      try {
+        syncAudio.pause();
+        saved.textContent = "Lecture du son…";
+        const buffer = await new AudioContext().decodeAudioData(await (await fetch(v.url)).arrayBuffer());
+        const written = s.lines.map((l) => l.words.map((w) => w.text).join(" ")).join("\n");
+        const out = await (await import("./assets/ai-lyrics.js")).transcribe(buffer, (m) => { saved.textContent = m; }, { written });
+        const times = [...out.lrc.matchAll(/<(\d+):(\d+(?:[.,]\d+)?)>/g)].map((m) => Number(m[1]) * 60 + Number(m[2].replace(",", ".")));
+        if (!out.aligned || !times.length) { saved.textContent = "L'IA n'a pas réussi à caler ces paroles sur le son."; return; }
+        s.lines.flatMap((l) => l.words).forEach((w, i) => { if (times[i] !== undefined) w.at = times[i]; });
+        s.lines.forEach((l) => { if (l.at === null && l.words.length && l.words[0].at !== null) l.at = l.words[0].at; });
+        s.li = s.lines.length; s.wi = 0;
+        s.note = times.length + " mots calés par l'IA, ton texte est gardé. Écoute pour vérifier, touche un mot pour le reprendre à la main, puis Enregistrer.";
+        renderDetails();
+      } catch (error) { saved.textContent = "Le calage par l'IA n'a pas marché : " + error.message; }
+      finally { aiWords.disabled = false; }
+    };
     right = [back("Synchroniser mot par mot"),
       el("p", { className: "muted", style: "margin:0", textContent: (touch ? "Lance le son, puis touche Marquer à chaque mot chanté." : "Lance le son, puis appuie sur ↓ (flèche du bas) à chaque mot chanté, ↑ pour annuler.")
         + " Ralentis le son (0,25 ou 0,50) pour être précis. Touche un mot pour reprendre à partir de lui." }),
       syncBar(v), speeds,
-      el("div", { className: "row sync-keys" }, mark, undo, el("span", { className: "muted", style: "font-size:13px", textContent: done + " / " + total + " mots" })),
+      el("div", { className: "row sync-keys" }, mark, undo, aiWords, el("span", { className: "muted", style: "font-size:13px", textContent: done + " / " + total + " mots" })),
       el("ol", { className: "group word-lines" }, ...s.lines.map((l, li) => el("li", { className: li === s.li ? "next" : l.words.every((w) => w.at !== null) ? "done" : "" },
         el("span", { className: "when", textContent: l.at === null ? "—" : OP.time(l.at) }),
         el("span", { className: "words" }, ...l.words.map((w, wi) => el("button", { type: "button",
