@@ -53,9 +53,11 @@ export async function finishConnect(state, code) {
     client_id: config.instagramAppId, client_secret: config.instagramAppSecret, grant_type: 'authorization_code',
     redirect_uri: redirectUri(), code: code.replace(/#_$/, ''),
   }) });
+  // Un refus ici vient presque toujours du compte (personnel, ou testeur pas encore accepté) : on le dit, avec l'étape.
+  const blocked = (step) => (error) => { throw new HttpError(502, `Instagram a refusé ${step}. Vérifiez que le compte est professionnel ou créateur, et que l'invitation de testeur de l'application est acceptée dans Instagram (Paramètres > Applications et sites web), puis recommencez. Détail : ${error.message.replace(/^Instagram refuse : /, '')}`); };
   const long = await ig(`https://graph.instagram.com/access_token?${new URLSearchParams({
-    grant_type: 'ig_exchange_token', client_secret: config.instagramAppSecret, access_token: short.access_token })}`);
-  const me = await ig(`${IG_GRAPH}/me?${new URLSearchParams({ fields: 'id,user_id,username,account_type', access_token: long.access_token })}`);
+    grant_type: 'ig_exchange_token', client_secret: config.instagramAppSecret, access_token: short.access_token })}`).catch(blocked('le jeton longue durée'));
+  const me = await ig(`${IG_GRAPH}/me?${new URLSearchParams({ fields: 'id,user_id,username,account_type', access_token: long.access_token })}`).catch(blocked("l'accès au compte"));
   // Le compte a deux identifiants : le professionnel (user_id) et celui propre à l'application (id). Les deux sont
   // gardés : le webhook et les commentaires peuvent désigner le compte par l'un ou l'autre.
   run(`INSERT INTO social_accounts (user_id, platform, account_id, alt_id, username, access_token, expires_at, error, created_at)
