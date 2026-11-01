@@ -203,6 +203,27 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
 .short details summary { cursor: pointer; font-size: 12px; color: var(--haze); }
 .short details[open] { display: grid; gap: 6px; }
 .short .row { gap: 6px; }
+.short-video { width: 100%; max-height: 420px; border-radius: 10px; background: #000; }
+/* Le calendrier des Shorts, aux couleurs du site. */
+.datefield { position: relative; }
+.date-btn { width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.35); color: var(--mist); font: 600 13px var(--f-body); text-align: left; cursor: pointer; }
+.date-btn:hover { border-color: var(--ember); }
+.cal { position: absolute; z-index: 20; left: 0; top: calc(100% + 6px); width: 290px; display: grid; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 14px;
+  background: #150a0c; box-shadow: 0 20px 50px -15px #000, 0 0 30px -20px rgba(226,52,68,.7); }
+.cal-head { display: flex; align-items: center; justify-content: space-between; text-transform: capitalize; font: 800 14px var(--f-display); }
+.cal .nav { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line); background: none; color: var(--mist); font-size: 18px; cursor: pointer; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; }
+.cal-grid span { font: 500 10px/1.8 var(--f-mono); text-transform: uppercase; color: var(--haze); }
+.cal .day { position: relative; height: 32px; border: 0; border-radius: 8px; background: none; color: var(--mist); font: 600 13px var(--f-body); cursor: pointer; }
+.cal .day:hover:not(:disabled) { background: rgba(226,52,68,.2); }
+.cal .day.out { color: var(--haze); opacity: .5; }
+.cal .day:disabled { opacity: .25; cursor: default; }
+.cal .day.today { box-shadow: inset 0 0 0 1px var(--line); }
+.cal .day.picked { background: var(--ember); color: #fff; }
+.cal .day.busy::after { content: ""; position: absolute; left: 50%; bottom: 3px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--ember-text); }
+.cal .day.picked.busy::after { background: #fff; }
+.cal-time { display: flex; align-items: center; gap: 6px; }
+.cal-time select { flex: 1; }
 /* L'aperçu suit la page, comme sur les pages de liens : la colonne reste à l'écran et défile seule ; la vidéo, la lecture
    et Exporter restent en haut, le reste (description, série, cloud) passe dessous. */
 .screen-top { display: grid; gap: 10px; }
@@ -985,33 +1006,85 @@ function nextSlot(scheduled) {
 const whenText = (ms) => new Date(ms).toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
 const localInput = (ms) => { const d = new Date(ms - new Date(ms).getTimezoneOffset() * 60_000); return d.toISOString().slice(0, 16); };
 let shortsAllowed = false;
-/** Le menu des Shorts : la chaîne, les Shorts à venir (date, titre, description modifiables), les vidéos du cloud CUT à ajouter. */
+let inShorts = new Set(); // les vidéos du cloud CUT déjà en Short (programmé ou publié) : elles ne repartent pas
+/** Le menu des Shorts : la chaîne, les Shorts à venir (lecture, date, titre, description modifiables), les vidéos du cloud CUT à ajouter. */
 async function renderShorts() {
-  const yt = await bankFetch("/api/youtube").catch(() => null), lib = await bankFetch("/api/cut/library").catch(() => ({ videos: [] }));
+  const [yt, cut, lib] = await Promise.all([bankFetch("/api/youtube").catch(() => null), bankFetch("/api/cut/youtube").catch(() => ({ inShorts: [], plays: {} })),
+    bankFetch("/api/cut/library").catch(() => ({ videos: [] }))]);
   if (!yt) { $("yt-list").replaceChildren(Object.assign(document.createElement("p"), { className: "muted small", textContent: "YouTube ne répond pas. Réessaie dans un instant." })); return; }
+  inShorts = new Set(cut.inShorts || []);
+  if ($("lib-panel").open) renderLibrary(); // le bouton « Short YouTube » se grise tout de suite
   $("yt-state").replaceChildren(...(yt.channel ? ["Chaîne : " + yt.channel] : ["Pas encore de chaîne reliée : ", Object.assign(document.createElement("a"), { href: "compte", textContent: "relier ma chaîne YouTube" }), "."]));
   const upcoming = yt.videos.filter((v) => v.status !== "published").sort((a, b) => (a.publishAt || Infinity) - (b.publishAt || Infinity));
   $("yt-count").textContent = $("yt-sum").textContent = upcoming.length ? "(" + upcoming.length + " à venir)" : "";
-  $("yt-list").replaceChildren(...(upcoming.length ? upcoming.map(shortCard) : [Object.assign(document.createElement("p"), { className: "muted small", textContent: "Aucun Short prévu. Coche la programmation, ou ajoute une vidéo du cloud CUT." })]));
+  // Les jours qui ont déjà un Short : marqués d'un point dans le calendrier.
+  const busy = upcoming.filter((v) => v.publishAt).map((v) => [v.id, new Date(v.publishAt).toDateString()]);
+  $("yt-list").replaceChildren(...(upcoming.length ? upcoming.map((v) => shortCard(v, (cut.plays || {})[v.id], new Set(busy.filter(([id]) => id !== v.id).map(([, d]) => d))))
+    : [Object.assign(document.createElement("p"), { className: "muted small", textContent: "Aucun Short prévu. Coche la programmation, ou ajoute une vidéo du cloud CUT." })]));
   const done = yt.videos.filter((v) => v.status === "published").slice(-8).reverse();
   $("yt-done-box").hidden = !done.length;
   $("yt-done").replaceChildren(...done.map((v) => {
     const a = Object.assign(document.createElement("a"), { href: v.url, target: "_blank", rel: "noopener", textContent: v.title });
     const box = document.createElement("div"); box.className = "short"; box.append(a); return box;
   }));
-  $("yt-pick").replaceChildren(...lib.videos.map((v) => new Option(v.name, v.id)));
-  $("yt-add").disabled = !lib.videos.length || !yt.channel;
+  // Les vidéos déjà en Short restent dans la liste, grisées : elles ne repartent pas.
+  $("yt-pick").replaceChildren(...lib.videos.map((v) => Object.assign(new Option(v.name + (inShorts.has(v.id) ? " — déjà en Short" : ""), v.id), { disabled: inShorts.has(v.id) })));
+  const free = lib.videos.filter((v) => !inShorts.has(v.id));
+  if (free.length) $("yt-pick").value = String(free[0].id);
+  $("yt-add").disabled = !free.length || !yt.channel;
   $("yt-add").onclick = async () => {
-    const v = lib.videos.find((x) => String(x.id) === $("yt-pick").value);
+    const v = free.find((x) => String(x.id) === $("yt-pick").value);
     if (!v) return;
     $("yt-add").disabled = true;
     try { await scheduleShort(v, v.caption); await renderShorts(); } catch (error) { alert(error.message); } finally { $("yt-add").disabled = false; }
   };
 }
-/** Un Short à venir : quand, et ce qui partira (titre, description) ; tout se modifie, ou se retire. */
-function shortCard(v) {
+const MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+const shortWhen = (ms) => new Date(ms).toLocaleString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).replace(":", " h ");
+/** Un calendrier aux couleurs du site : le mois en grille (lundi en premier), l'heure et les minutes ; un point sous les
+ *  jours qui ont déjà un autre Short. Rend { el, get } : un bouton qui montre la date choisie et ouvre le calendrier. */
+function dateField(ms, busy) {
   const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
-  const when = el("input", { type: "datetime-local", value: v.publishAt ? localInput(v.publishAt) : "", ariaLabel: "Date et heure de publication" });
+  let value = ms || null;
+  const month = new Date(value || Date.now()); month.setDate(1); month.setHours(0, 0, 0, 0);
+  const wrap = el("div", { className: "datefield" }), button = el("button", { type: "button", className: "date-btn" }), pop = el("div", { className: "cal", hidden: true });
+  const label = () => { button.textContent = value ? "📅 " + shortWhen(value) : "📅 Choisir le jour et l'heure"; };
+  const hours = el("select", { ariaLabel: "Heure" }, ...Array.from({ length: 24 }, (_, h) => new Option(String(h).padStart(2, "0") + " h", h)));
+  const minutes = el("select", { ariaLabel: "Minutes" }, ...Array.from({ length: 60 }, (_, m) => new Option(String(m).padStart(2, "0"), m)));
+  const setTime = () => { const d = new Date(value || Date.now()); d.setHours(Number(hours.value), Number(minutes.value), 0, 0); value = d.getTime(); label(); };
+  hours.onchange = minutes.onchange = setTime;
+  const draw = () => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const first = new Date(month), start = new Date(first); start.setDate(1 - ((first.getDay() + 6) % 7));
+    const picked = value && new Date(value).toDateString();
+    const days = Array.from({ length: 42 }, (_, k) => {
+      const d = new Date(start); d.setDate(start.getDate() + k);
+      const b = el("button", { type: "button", textContent: String(d.getDate()), disabled: d < today,
+        className: ["day", d.getMonth() !== month.getMonth() ? "out" : "", d.toDateString() === today.toDateString() ? "today" : "",
+          d.toDateString() === picked ? "picked" : "", busy.has(d.toDateString()) ? "busy" : ""].filter(Boolean).join(" "),
+        title: busy.has(d.toDateString()) ? "Un autre Short est déjà prévu ce jour-là" : "" });
+      b.onclick = () => { const v = new Date(value || Date.now()); v.setFullYear(d.getFullYear(), d.getMonth(), d.getDate()); value = v.getTime(); setTime(); draw(); };
+      return b;
+    });
+    const go = (n) => el("button", { type: "button", className: "nav", textContent: n < 0 ? "‹" : "›", ariaLabel: n < 0 ? "Mois précédent" : "Mois suivant",
+      onclick: () => { month.setMonth(month.getMonth() + n); draw(); } });
+    pop.replaceChildren(
+      el("div", { className: "cal-head" }, go(-1), el("b", { textContent: MONTHS[month.getMonth()] + " " + month.getFullYear() }), go(1)),
+      el("div", { className: "cal-grid" }, ...["lu", "ma", "me", "je", "ve", "sa", "di"].map((t) => el("span", { textContent: t })), ...days),
+      el("div", { className: "cal-time" }, el("span", { className: "muted small", textContent: "Heure" }), hours, minutes,
+        el("button", { type: "button", className: "mini", textContent: "OK", onclick: () => { pop.hidden = true; } })),
+      el("p", { className: "muted small", textContent: "• un autre Short est déjà prévu ce jour-là" }));
+  };
+  if (value) { const d = new Date(value); hours.value = d.getHours(); minutes.value = d.getMinutes(); } else { hours.value = 18; minutes.value = 0; }
+  button.onclick = () => { pop.hidden = !pop.hidden; if (!pop.hidden) draw(); };
+  document.addEventListener("pointerdown", (event) => { if (!wrap.contains(event.target)) pop.hidden = true; });
+  label(); wrap.append(button, pop);
+  return { el: wrap, get: () => value };
+}
+/** Un Short à venir : le lire, quand il part, et ce qui partira (titre, description) ; tout se modifie, ou se retire. */
+function shortCard(v, playUrl, busy) {
+  const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
+  const when = dateField(v.publishAt, busy);
   const title = el("input", { type: "text", value: v.title, maxLength: 100, ariaLabel: "Titre du Short" });
   const desc = el("textarea", { value: v.description || "", rows: 5, ariaLabel: "Description du Short" });
   const note = el("span", { className: "muted small" });
@@ -1020,22 +1093,32 @@ function shortCard(v) {
     save.disabled = true;
     try {
       await bankFetch("/api/youtube/videos/" + v.id, { method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title.value, description: desc.value, publishAt: when.value ? new Date(when.value).getTime() : null }) });
+        body: JSON.stringify({ title: title.value, description: desc.value, publishAt: when.get() }) });
       note.textContent = "Enregistré."; renderShorts();
     } catch (error) { note.textContent = error.message; } finally { save.disabled = false; }
   };
   const drop = el("button", { className: "mini", type: "button", textContent: "Retirer" });
   drop.onclick = async () => {
-    if (!confirm("Retirer « " + v.title + " » des Shorts programmés ? (La vidéo reste dans ton cloud CUT.)")) return;
+    if (!confirm("Retirer « " + v.title + " » des Shorts programmés ? (La vidéo reste dans ton cloud CUT, et pourra repartir.)")) return;
     await bankFetch("/api/youtube/videos/" + v.id, { method: "DELETE" }).catch((error) => alert(error.message));
     renderShorts();
   };
+  // Lire : la vidéo telle qu'elle partira, dans la carte.
+  const card = el("div", { className: "short" });
+  const play = el("button", { className: "mini", type: "button", textContent: "Lire", disabled: !playUrl });
+  play.onclick = () => {
+    const old = card.querySelector("video");
+    if (old) { old.remove(); play.textContent = "Lire"; return; }
+    card.insertBefore(el("video", { src: playUrl, controls: true, autoplay: true, playsInline: true, className: "short-video" }), card.querySelector(".row"));
+    play.textContent = "Fermer";
+  };
   const details = el("details", {}, el("summary", { textContent: "Titre et description" }), title, desc);
-  return el("div", { className: "short" },
+  card.append(
     el("span", { className: "when", textContent: v.status === "uploading" ? "Envoi en cours…" : v.publishAt ? whenText(v.publishAt) : "Sans date (en attente)" }),
     el("b", { textContent: v.title }),
     v.error ? el("span", { className: "err", textContent: v.error }) : "",
-    details, when, el("div", { className: "row" }, save, drop, note));
+    el("div", { className: "row" }, play), details, when.el, el("div", { className: "row" }, save, drop, note));
+  return card;
 }
 /** Les 3 hashtags qui partiront avec le prochain Short. */
 function renderTagsNext() {
@@ -3101,7 +3184,7 @@ async function renderLibrary() {
       bar.append(
         button("Lire", () => { const old = item.querySelector("video"); if (old) return old.remove(); item.insertBefore(Object.assign(document.createElement("video"), { src: v.url, controls: true, autoplay: true, playsInline: true }), bar); }),
         Object.assign(document.createElement("a"), { className: "mini", href: v.downloadUrl, textContent: "Télécharger", style: "text-decoration:none" }),
-        ...(!shortsAllowed ? [] : [button("Short YouTube", async (event) => {
+        ...(!shortsAllowed ? [] : inShorts.has(v.id) ? [Object.assign(button("Déjà en Short", () => {}), { disabled: true })] : [button("Short YouTube", async (event) => {
           const b = event.currentTarget; b.disabled = true;
           try { b.textContent = "Prévu " + await scheduleShort(v, v.caption); } catch (error) { alert(error.message); b.disabled = false; }
         })]),

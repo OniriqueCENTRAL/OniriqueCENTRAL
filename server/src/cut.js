@@ -72,6 +72,8 @@ db.exec(`CREATE TABLE IF NOT EXISTS cut_backgrounds (
   size       INTEGER NOT NULL,
   created_at INTEGER NOT NULL
 )`);
+// Un Short fait depuis le cloud CUT garde la vidéo d'où il vient : elle ne peut pas partir deux fois.
+if (!all('PRAGMA table_info(youtube_videos)').some((c) => c.name === 'cut_video_id')) db.exec('ALTER TABLE youtube_videos ADD COLUMN cut_video_id INTEGER');
 const LIBRARY_MAX = 1024 * 1024 * 1024; // une vidéo gardée : 1 Go au plus
 /** Le type d'un fond d'après ses premiers octets (jamais d'après ce qu'annonce le navigateur) ; null si ce n'est ni une vidéo ni une photo. */
 export function backgroundType(head) {
@@ -96,6 +98,7 @@ const DAY = 86_400_000;
 const posterUrl = (id) => { const e = (Math.floor(now() / DAY) + 2) * DAY; return `/api/cut/poster/${id}?e=${e}&s=${sign(`cutposter.${id}.${e}`)}`; };
 const videoView = (v) => ({ id: v.id, name: v.name, size: v.size, duration: v.duration, createdAt: v.created_at, scheduledDay: v.scheduled_day || null, caption: v.caption || '',
   url: videoUrl(v.id), downloadUrl: videoUrl(v.id, true), poster: posterUrl(v.id) });
+const shortUrl = (id) => { const e = now() + 6 * 3600_000; return `/api/cut/short/${id}?e=${e}&s=${sign(`cutshort.${id}.${e}`)}`; };
 const backgroundUrl = (id) => { const e = now() + 6 * 3600_000; return `/api/cut/background/${id}?e=${e}&s=${sign(`cutbg.${id}.${e}`)}`; };
 const backgroundView = (b) => ({ id: b.id, name: b.name, type: b.mime, size: b.size, createdAt: b.created_at, url: backgroundUrl(b.id) });
 // L'aperçu (une image de la vidéo, 360 px de large) est fait par ffmpeg à sa première demande, puis gardé à côté de la
@@ -212,19 +215,36 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
     if (get(`SELECT COUNT(*) AS n FROM youtube_videos WHERE user_id = ? AND status != 'published'`, req.user.id).n >= 30) {
       throw new HttpError(400, 'Trente Shorts attendent déjà : laisse-en partir avant d\'en programmer d\'autres.');
     }
+    // Déjà en Short (programmé, en attente ou publié) : on ne la renvoie pas. Les Shorts d'avant le lien se reconnaissent à leur nom.
+    if (get('SELECT 1 FROM youtube_videos WHERE user_id = ? AND (cut_video_id = ? OR (cut_video_id IS NULL AND filename = ?))', req.user.id, v.id, v.name + '.mp4')) {
+      throw new HttpError(409, 'Cette vidéo est déjà en Short (programmée ou publiée) : elle ne part pas deux fois.');
+    }
     const storedAs = crypto.randomBytes(16).toString('hex');
     fs.mkdirSync(config.videosDir, { recursive: true });
     fs.copyFileSync(path.join(libDir, v.stored_as), path.join(config.videosDir, storedAs));
-    const id = run(`INSERT INTO youtube_videos (user_id, stored_as, filename, mime, size, title, description, publish_at, status, tags, created_at)
-      VALUES (?, ?, ?, 'video/mp4', ?, ?, ?, ?, 'scheduled', ?, ?)`, req.user.id, storedAs, v.name + '.mp4', v.size, title, description, publishAt, tags, now()).lastInsertRowid;
+    const id = run(`INSERT INTO youtube_videos (user_id, stored_as, filename, mime, size, title, description, publish_at, status, tags, cut_video_id, created_at)
+      VALUES (?, ?, ?, 'video/mp4', ?, ?, ?, ?, 'scheduled', ?, ?, ?)`, req.user.id, storedAs, v.name + '.mp4', v.size, title, description, publishAt, tags, v.id, now()).lastInsertRowid;
     res.status(201).json({ id, title, publishAt });
   }));
   // Les Shorts déjà programmés (leurs heures), pour trouver le prochain jour libre.
   app.get('/api/cut/youtube', requireUser, member, founder, wrap(async (req, res) => {
     const allowed = can(req.user, 'youtube');
+    const shorts = allowed ? all('SELECT id, stored_as, filename, status, publish_at, cut_video_id FROM youtube_videos WHERE user_id = ? AND kind != ?', req.user.id, 'beat') : [];
+    const names = new Map(all('SELECT id, name FROM cut_videos WHERE user_id = ?', req.user.id).map((v) => [v.name + '.mp4', v.id]));
     res.json({ allowed, channel: allowed ? channelOf(req.user.id) : null,
-      scheduled: allowed ? all("SELECT publish_at FROM youtube_videos WHERE user_id = ? AND status IN ('scheduled', 'uploading')", req.user.id).map((x) => x.publish_at) : [] });
+      scheduled: shorts.filter((x) => x.status === 'scheduled' || x.status === 'uploading').map((x) => x.publish_at),
+      // Les vidéos du cloud CUT déjà en Short, et la lecture des Shorts pas encore partis (leur fichier attend ici).
+      inShorts: [...new Set(shorts.map((x) => x.cut_video_id ?? names.get(x.filename)).filter(Boolean))],
+      plays: Object.fromEntries(shorts.filter((x) => x.status !== 'published' && fs.existsSync(path.join(config.videosDir, x.stored_as))).map((x) => [x.id, shortUrl(x.id)])) });
   }));
+  // La lecture d'un Short qui attend son heure, par lien signé (une balise <video> n'envoie pas de jeton).
+  app.get('/api/cut/short/:id', (req, res) => {
+    const id = Number(req.params.id) || 0, e = Number(req.query.e), sig = String(req.query.s || '');
+    if (!(e > now()) || !same(sig, sign(`cutshort.${id}.${e}`))) throw new HttpError(403, 'Ce lien a expiré : rouvre le menu Shorts.');
+    const x = get('SELECT * FROM youtube_videos WHERE id = ?', id);
+    if (!x || !fs.existsSync(path.join(config.videosDir, x.stored_as))) throw new HttpError(404, 'Vidéo introuvable.');
+    res.sendFile(path.join(config.videosDir, x.stored_as), { headers: { 'Content-Type': x.mime, 'Cache-Control': 'private, max-age=3600', 'X-Content-Type-Options': 'nosniff' } });
+  });
 
   // ——— La banque de fonds des fondateurs : des clips gardés pour les réutiliser d'un son à l'autre ———
   const bgDir = path.join(config.dataDir, 'cut-backgrounds');
