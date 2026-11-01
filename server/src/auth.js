@@ -95,7 +95,7 @@ export const RIGHTS = {
   plugins: { label: 'Tous les plugins offerts', default: ['vip'] },
   engineer: { label: "Profil d'ingé (crédits)", default: [] },
   youtube: { label: 'Shorts YouTube programmés', default: [] },
-  instagram: { label: 'Réponses automatiques Instagram', default: [] },
+  instagram: { label: 'Instagram (réponses automatiques, Reels programmés)', default: [] },
 };
 // Les rôles dont les droits se règlent (les fondateurs ont tout).
 export const EDITABLE_ROLES = ['user', 'vip', 'abrasion', 'relic', 'admin'];

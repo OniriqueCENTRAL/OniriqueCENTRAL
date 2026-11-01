@@ -772,6 +772,33 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
               </section>
               </div>
             </details>
+            <details class="panel shorts" id="reels" hidden>
+              <summary>Reels Instagram <span class="muted" id="ig-sum"></span></summary>
+              <div class="stack">
+              <p class="shorts-channel" id="ig-state"></p>
+              <section>
+                <h3>Programmation</h3>
+                <label class="check"><input type="checkbox" id="igAuto"> Chaque vidéo gardée dans le cloud CUT part aussi en Reel</label>
+                <div class="row"><span class="muted">Un par jour, vers</span><input type="time" id="igTime" aria-label="Heure de publication des Reels"></div>
+                <label>Type de Reel
+                  <div class="chips wrap-in" id="igTrial" role="group" aria-label="Type de Reel"><button type="button" data-v="">Reel normal</button><button type="button" data-v="MANUAL">Reel d'essai (je le partage moi-même)</button><button type="button" data-v="SS_PERFORMANCE">Reel d'essai (partagé tout seul s'il marche)</button></div>
+                </label>
+                <p class="muted small">Un Reel d'essai est d'abord montré aux gens qui ne te suivent pas : tu vois s'il accroche avant qu'il arrive chez tes abonnés. La description est celle de la vidéo (comme pour TikTok), modifiable avant le départ. L'heure varie de quelques minutes chaque jour.</p>
+              </section>
+              <section>
+                <h3>À venir <span class="muted" id="ig-count"></span></h3>
+                <div class="shorts-list" id="ig-list"><p class="muted small">Chargement…</p></div>
+              </section>
+              <section>
+                <h3>Ajouter depuis le cloud CUT</h3>
+                <div class="row"><select id="ig-pick" aria-label="Vidéo du cloud CUT à programmer en Reel"></select><button class="mini" type="button" id="ig-add">Programmer</button></div>
+              </section>
+              <section id="ig-done-box" hidden>
+                <h3>Déjà publiés</h3>
+                <div class="shorts-list" id="ig-done"></div>
+              </section>
+              </div>
+            </details>
         </div>
         <div class="stack">
           <p class="hint">MP4 1080 × 1920, 30 images par seconde, son en haute qualité. Avec des clips MP4 ou MOV, tu peux changer d'onglet pendant l'export. Tes sons, clips et vidéos restent chez toi.</p>
@@ -876,7 +903,7 @@ const ILOOK = { iOwn: false, iFont: "Hanken Grotesk", iPlace: "bottom", iColor: 
   iShadowColor: "#000000", iShadowBlur: 0, iShadowOffset: 0, iCaps: false, iBox: true, iBoxColor: "#000000", iBoxAlpha: 62 };
 const FILM = { ...ILOOK, trackFades: {}, introOn: false, introClip: 0, introIn: 0, introLen: 4, filmVol: 100, introLyrics: "", introSubMode: "sub", introGaps: true, introFade: false, transition: "flash", transAmt: 100,
   dropGap: false, underPart: "none", underVol: 70, filmContinue: false, afterClip: -1, afterIn: 0, afterLen: 0, musicVol: 100, clipVol: 0, slowmo: "100" };
-let prefs = { previewVol: 80, ...FILM, duration: 15, order: "seq", cadence: "2", nicheTag: "#undergroundmusic #rapfr", hud: "none", ytAuto: false, ytTime: "18:00", seriesCount: "5", seriesStyles: ["classic", "pixel", "red", "card"], bestMoments: true, smartCrop: true, zoom: false, zoomAmt: 100, flash: false, flashAmt: 100, place: "none", artist: "", snap: false, loop: false, batch: "one", lyricsPlace: "bottom", ...FX,
+let prefs = { previewVol: 80, ...FILM, duration: 15, order: "seq", cadence: "2", nicheTag: "#undergroundmusic #rapfr", hud: "none", ytAuto: false, ytTime: "18:00", igAuto: false, igTime: "18:30", igTrial: "", seriesCount: "5", seriesStyles: ["classic", "pixel", "red", "card"], bestMoments: true, smartCrop: true, zoom: false, zoomAmt: 100, flash: false, flashAmt: 100, place: "none", artist: "", snap: false, loop: false, batch: "one", lyricsPlace: "bottom", ...FX,
   preset: "classic", frame: "full", retro: false, lyricsMode: "line", hook: "", hookOn: false, sign: "", textStyle: "classic", titleFont: "Unbounded", textSize: 100,
   strokeColor: "#000000", glowColor: "#ffffff", ...TEXT_STYLES.classic,
   strongSize: 170, strongColor: "#ffffff", strongGlowColor: "#ffffff", strongGlow: 45, strongFont: "", strongFx: "none" };
@@ -1055,8 +1082,8 @@ function syncCaption() { if (!captionEdited && sound.buffer) $("caption").value 
 // ——— Les Shorts YouTube (fondateurs) : une vidéo gardée dans le cloud CUT part sur la chaîne au prochain jour libre ———
 /** Le prochain créneau libre : un jour sans Short déjà prévu, vers l'heure choisie, décalée de −9 à +9 minutes (et de
  *  quelques secondes) pour que la chaîne ne publie pas pile à la même minute chaque jour, comme un robot. */
-function nextSlot(scheduled) {
-  const [h, m] = (prefs.ytTime || "18:00").split(":").map(Number), taken = new Set(scheduled.map((t) => new Date(t).toDateString()));
+function nextSlot(scheduled, time = prefs.ytTime) {
+  const [h, m] = (time || "18:00").split(":").map(Number), taken = new Set(scheduled.map((t) => new Date(t).toDateString()));
   const d = new Date(); d.setHours(h, m, 0, 0);
   while (d.getTime() < Date.now() + 15 * 60_000 || taken.has(d.toDateString())) d.setDate(d.getDate() + 1);
   let shift = 0;
@@ -1140,6 +1167,85 @@ function dateField(ms, busy) {
   document.addEventListener("pointerdown", (event) => { if (!wrap.contains(event.target)) pop.hidden = true; });
   label(); wrap.append(button, pop);
   return { el: wrap, get: () => value };
+}
+// ——— Les Reels Instagram (fondateurs) : comme les Shorts, avec les Reels d'essai ———
+let reelsAllowed = false, inReels = new Set();
+const TRIAL_NAMES = { "": "Reel normal", MANUAL: "Reel d'essai · je le partage moi-même", SS_PERFORMANCE: "Reel d'essai · partagé tout seul s'il marche" };
+/** Programme une vidéo du cloud CUT en Reel au prochain jour libre ; rend l'heure, en clair. */
+async function scheduleReel(video, caption) {
+  const state = await bankFetch("/api/cut/reels");
+  const publishAt = nextSlot(state.reels.filter((r) => r.status !== "published").map((r) => r.publishAt), prefs.igTime);
+  await bankFetch("/api/cut/library/" + video.id + "/reel", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ publishAt, caption: caption || video.caption || "", trial: prefs.igTrial || "" }) });
+  if (reelsAllowed) renderReels();
+  return whenText(publishAt);
+}
+async function renderReels() {
+  const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
+  const [st, lib] = await Promise.all([bankFetch("/api/cut/reels").catch(() => null), bankFetch("/api/cut/library").catch(() => ({ videos: [] }))]);
+  if (!st) { $("ig-list").replaceChildren(el("p", { className: "muted small", textContent: "Le serveur ne répond pas. Réessaie dans un instant." })); return; }
+  inReels = new Set(st.inReels || []);
+  if ($("lib-panel").open) renderLibrary();
+  $("ig-state").replaceChildren(...(st.account ? ["Compte : @" + st.account]
+    : st.configured ? ["Pas encore de compte Instagram relié : ", el("a", { href: "compte", textContent: "relier mon Instagram" }), ". Tes Reels attendent, et partent dès qu'il est relié."]
+    : ["Instagram n'est pas encore branché sur le site (l'app Meta reste à créer). Tu peux déjà programmer : les Reels partiront une fois le branchement fait."]));
+  const upcoming = st.reels.filter((r) => r.status !== "published"), done = st.reels.filter((r) => r.status === "published").slice(-8).reverse();
+  $("ig-count").textContent = $("ig-sum").textContent = upcoming.length ? "(" + upcoming.length + " à venir)" : "";
+  const busy = upcoming.map((r) => [r.id, new Date(r.publishAt).toDateString()]);
+  $("ig-list").replaceChildren(...(upcoming.length ? upcoming.map((r) => reelCard(r, new Set(busy.filter(([id]) => id !== r.id).map(([, d]) => d))))
+    : [el("p", { className: "muted small", textContent: "Aucun Reel prévu. Coche la programmation, ou ajoute une vidéo du cloud CUT." })]));
+  $("ig-done-box").hidden = !done.length;
+  $("ig-done").replaceChildren(...done.map((r) => el("div", { className: "short" }, r.url ? el("a", { href: r.url, target: "_blank", rel: "noopener", textContent: r.name }) : r.name,
+    el("span", { className: "muted small", textContent: " · " + TRIAL_NAMES[r.trial] }))));
+  $("ig-pick").replaceChildren(...lib.videos.map((v) => Object.assign(new Option(v.name + (inReels.has(v.id) ? " — déjà en Reel" : ""), v.id), { disabled: inReels.has(v.id) })));
+  const free = lib.videos.filter((v) => !inReels.has(v.id));
+  if (free.length) $("ig-pick").value = String(free[0].id);
+  $("ig-add").disabled = !free.length;
+  $("ig-add").onclick = async () => {
+    const v = free.find((x) => String(x.id) === $("ig-pick").value);
+    if (!v) return;
+    $("ig-add").disabled = true;
+    try { await scheduleReel(v, v.caption); } catch (error) { alert(error.message); } finally { $("ig-add").disabled = false; }
+  };
+}
+/** Un Reel à venir : le lire, quand il part, sa description et son type ; tout se modifie, ou se retire. */
+function reelCard(r, busy) {
+  const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
+  const when = dateField(r.publishAt, busy);
+  const caption = el("textarea", { value: r.caption, rows: 5, maxLength: 2200, ariaLabel: "Description du Reel" });
+  const trial = el("select", { ariaLabel: "Type de Reel" }, ...Object.entries(TRIAL_NAMES).map(([v, t]) => new Option(t, v)));
+  trial.value = r.trial;
+  const note = el("span", { className: "muted small" });
+  const save = el("button", { className: "mini", type: "button", textContent: "Enregistrer" });
+  save.onclick = async () => {
+    save.disabled = true;
+    try {
+      await bankFetch("/api/cut/reels/" + r.id, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caption: caption.value, trial: trial.value, publishAt: when.get() }) });
+      note.textContent = "Enregistré."; renderReels();
+    } catch (error) { note.textContent = error.message; } finally { save.disabled = false; }
+  };
+  const drop = el("button", { className: "mini", type: "button", textContent: "Retirer" });
+  drop.onclick = async () => {
+    if (!confirm("Retirer « " + r.name + " » des Reels programmés ? (La vidéo reste dans ton cloud CUT, et pourra repartir.)")) return;
+    await bankFetch("/api/cut/reels/" + r.id, { method: "DELETE" }).catch((error) => alert(error.message));
+    renderReels();
+  };
+  const card = el("div", { className: "short" });
+  const play = el("button", { className: "mini", type: "button", textContent: "Lire", disabled: !r.play });
+  play.onclick = () => {
+    const old = card.querySelector("video");
+    if (old) { old.remove(); play.textContent = "Lire"; return; }
+    card.insertBefore(el("video", { src: r.play, controls: true, autoplay: true, playsInline: true, className: "short-video" }), card.querySelector(".row"));
+    play.textContent = "Fermer";
+  };
+  card.append(
+    el("span", { className: "when", textContent: r.status === "uploading" ? "Envoi en cours…" : whenText(r.publishAt) }),
+    el("b", { textContent: r.name }),
+    el("span", { className: "muted small", textContent: TRIAL_NAMES[r.trial] }),
+    r.error ? el("span", { className: r.status === "failed" ? "err" : "muted small", textContent: r.error }) : "",
+    el("div", { className: "row" }, play), el("details", {}, el("summary", { textContent: "Description et type" }), caption, trial), when.el,
+    el("div", { className: "row" }, save, drop, note));
+  return card;
 }
 /** Un Short à venir : le lire, quand il part, et ce qui partira (titre, description) ; tout se modifie, ou se retire. */
 function shortCard(v, playUrl, busy) {
@@ -2791,8 +2897,8 @@ async function exportVideo(series = null) {
   $("mute").disabled = false; // on peut couper ou remettre le son pendant l'enregistrement
   try {
     const wav = await passageWav().catch(() => null);
-    let savedToCloud = 0, cloudFailed = false, shortError = "";
-    const shorts = [];
+    let savedToCloud = 0, cloudFailed = false, shortError = "", reelError = "";
+    const shorts = [], reels = [];
     for (let n = 0; n < list.length; n++) {
       if (series) await series[n].apply();
       else if (list[n] !== null) { focus = list[n]; build(); renderClips(); }
@@ -2811,12 +2917,14 @@ async function exportVideo(series = null) {
             (p) => setStatus(label + "Enregistrement dans ton cloud CUT…", (n + .92 + .08 * p) / list.length));
           savedToCloud++;
           if (prefs.ytAuto) { try { shorts.push(await scheduleShort(keptVideo, caption)); } catch (error) { shortError = error.message; } }
+          if (prefs.igAuto && reelsAllowed) { try { reels.push(await scheduleReel(keptVideo, caption)); } catch (error) { reelError = error.message; } }
         } catch { cloudFailed = true; }
       }
     }
     setStatus((list.length > 1 ? "C'est prêt : " + list.length + " vidéos " + (folder ? "dans le dossier choisi." : "dans tes téléchargements.") : "C'est prêt : ta vidéo est dans tes téléchargements.")
       + (savedToCloud ? " Gardée" + (savedToCloud > 1 ? "s" : "") + " aussi dans ton cloud CUT." : "") + (cloudFailed ? " Le cloud CUT n'a pas pu " + (list.length > 1 ? "toutes les garder." : "la garder.") : "")
-      + (shorts.length ? " Short YouTube programmé : " + shorts.join(", ") + "." : "") + (shortError ? " Short YouTube : " + shortError : ""), 1);
+      + (shorts.length ? " Short YouTube programmé : " + shorts.join(", ") + "." : "") + (shortError ? " Short YouTube : " + shortError : "")
+      + (reels.length ? " Reel Instagram programmé : " + reels.join(", ") + "." : "") + (reelError ? " Reel Instagram : " + reelError : ""), 1);
     if (savedToCloud) renderLibrary();
     // Fini pendant qu'on était sur un autre onglet : l'onglet le dit dans son titre jusqu'à ce qu'on y revienne.
     if (document.hidden) { const title = document.title; document.title = "✓ Vidéo prête · " + title; document.addEventListener("visibilitychange", () => { document.title = title; }, { once: true }); }
@@ -3329,6 +3437,10 @@ async function renderLibrary() {
           const b = event.currentTarget; b.disabled = true;
           try { b.textContent = "Prévu " + await scheduleShort(v, v.caption); } catch (error) { alert(error.message); b.disabled = false; }
         })]),
+        ...(!reelsAllowed ? [] : inReels.has(v.id) ? [Object.assign(button("Déjà en Reel", () => {}), { disabled: true })] : [button("Reel Instagram", async (event) => {
+          const b = event.currentTarget; b.disabled = true;
+          try { b.textContent = "Reel prévu " + await scheduleReel(v, v.caption); } catch (error) { alert(error.message); b.disabled = false; }
+        })]),
         button("Supprimer", async () => {
           if (!confirm("Supprimer « " + v.name + " » de ton cloud CUT ?")) return;
           await fetch("/api/cut/library/" + v.id, { method: "DELETE", headers: { Authorization: "Bearer " + TOKEN } });
@@ -3836,6 +3948,16 @@ function start() {
       $("ytTags").value = prefs.ytTags || "";
       $("ytTags").oninput = () => { prefs.ytTags = $("ytTags").value; savePrefs(); renderTagsNext(); };
       renderTagsNext();
+    }).catch(() => {});
+    bankFetch("/api/cut/reels").then((state) => {
+      if (!state.allowed) return;
+      reelsAllowed = true;
+      $("reels").hidden = false;
+      renderReels();
+      $("igAuto").checked = !!prefs.igAuto; $("igTime").value = prefs.igTime || "18:30";
+      $("igAuto").onchange = () => { prefs.igAuto = $("igAuto").checked; if (prefs.igAuto && !$("keepCloud").checked) { $("keepCloud").checked = true; prefs.keepCloud = true; } savePrefs(); };
+      $("igTime").onchange = () => { prefs.igTime = $("igTime").value || "18:30"; savePrefs(); };
+      chips("igTrial", "igTrial", () => {});
     }).catch(() => {});
     $("keepCloud").checked = prefs.keepCloud !== false;
     $("keepCloud").onchange = () => { prefs.keepCloud = $("keepCloud").checked; savePrefs(); };

@@ -17,6 +17,7 @@ import { HttpError, rateLimit, can } from './auth.js';
 import { testing } from './mail.js';
 import { db, get, all, run, now, setting, setSetting } from './db.js';
 import { push } from './push.js';
+import { platformConfigured, instagramAccess, instagramName } from './social.js';
 
 db.exec(`CREATE TABLE IF NOT EXISTS cut_videos (
   id         INTEGER PRIMARY KEY,
@@ -34,6 +35,76 @@ db.exec(`CREATE TABLE IF NOT EXISTS cut_reminders (
   tz       TEXT NOT NULL,
   last_day TEXT NOT NULL DEFAULT ''
 )`);
+// Les Reels Instagram programmés depuis le cloud CUT (fondateurs) : la vidéo est copiée ici et part à l'heure dite.
+// trial : '' (Reel normal), 'MANUAL' (Reel d'essai, montré d'abord aux non-abonnés ; on le partage à ses abonnés dans
+// l'appli) ou 'SS_PERFORMANCE' (Reel d'essai partagé tout seul à ses abonnés s'il marche bien).
+db.exec(`CREATE TABLE IF NOT EXISTS cut_reels (
+  id           INTEGER PRIMARY KEY,
+  user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  cut_video_id INTEGER,
+  name         TEXT NOT NULL,
+  stored_as    TEXT NOT NULL,
+  size         INTEGER NOT NULL,
+  caption      TEXT NOT NULL DEFAULT '',
+  trial        TEXT NOT NULL DEFAULT '',
+  publish_at   INTEGER NOT NULL,
+  status       TEXT NOT NULL DEFAULT 'scheduled',
+  media_id     TEXT,
+  permalink    TEXT,
+  error        TEXT NOT NULL DEFAULT '',
+  created_at   INTEGER NOT NULL
+)`);
+const reelsDir = path.join(config.dataDir, 'cut-reels');
+fs.mkdirSync(reelsDir, { recursive: true });
+const TRIALS = ['', 'MANUAL', 'SS_PERFORMANCE'];
+// Un envoi coupé par un redémarrage a peut-être abouti : il n'est pas refait tout seul, pour ne pas publier deux fois.
+run(`UPDATE cut_reels SET status = 'failed', error = 'Envoi interrompu par un redémarrage du serveur : regarde sur Instagram avant de reprogrammer.' WHERE status = 'uploading'`);
+const pause = (ms) => new Promise((resolve) => setTimeout(resolve, testing ? 0 : ms));
+/** Un Reel publié en trois temps : Instagram va chercher la vidéo ici (lien signé), la prépare, puis on la publie. */
+async function publishReel(reel, { igId, token, call, graph }) {
+  const videoUrl = config.publicUrl + reelUrl(reel.id, 3);
+  const body = new URLSearchParams({ media_type: 'REELS', video_url: videoUrl, caption: reel.caption, access_token: token });
+  if (reel.trial) body.set('trial_params', JSON.stringify({ graduation_strategy: reel.trial }));
+  else body.set('share_to_feed', 'true');
+  const { id: container } = await call(`${graph}/${igId}/media`, { method: 'POST', body });
+  // Instagram prépare la vidéo (quelques secondes à quelques minutes) : on regarde toutes les 15 s, 10 minutes au plus.
+  for (let k = 0; ; k++) {
+    const { status_code: state } = await call(`${graph}/${container}?${new URLSearchParams({ fields: 'status_code', access_token: token })}`);
+    if (state === 'FINISHED') break;
+    if (state === 'ERROR' || state === 'EXPIRED' || k >= 40) throw new Error(state === 'ERROR' ? 'Instagram n\'a pas accepté la vidéo (format ou durée).' : 'Instagram n\'a pas fini de préparer la vidéo à temps.');
+    await pause(15_000);
+  }
+  const { id } = await call(`${graph}/${igId}/media_publish`, { method: 'POST', body: new URLSearchParams({ creation_id: container, access_token: token }) });
+  const { permalink = null } = await call(`${graph}/${id}?${new URLSearchParams({ fields: 'permalink', access_token: token })}`).catch(() => ({}));
+  return { id, permalink };
+}
+let reelsBusy = false;
+/** Publie les Reels dont l'heure est passée, un à la fois (appelé chaque minute). Un Reel publié ne garde plus son fichier ici. */
+export async function publishDueReels() {
+  if (reelsBusy) return;
+  reelsBusy = true;
+  try {
+    for (const reel of all(`SELECT * FROM cut_reels WHERE status = 'scheduled' AND publish_at <= ? ORDER BY publish_at`, now())) {
+      const access = await instagramAccess(reel.user_id).catch(() => null);
+      if (!access) {
+        // Instagram pas encore relié : le Reel attend. Après 12 h de retard, il ne part plus tout seul (pas de rafale le jour où l'on relie).
+        if (now() - reel.publish_at > 12 * 3600_000) run(`UPDATE cut_reels SET status = 'failed', error = ? WHERE id = ?`, "Instagram n'était pas relié à l'heure prévue : relie-le, puis reprogramme ce Reel.", reel.id);
+        else run(`UPDATE cut_reels SET error = ? WHERE id = ?`, 'En attente : relie ton compte Instagram pour qu\'il parte.', reel.id);
+        continue;
+      }
+      run(`UPDATE cut_reels SET status = 'uploading', error = '' WHERE id = ?`, reel.id);
+      try {
+        const { id, permalink } = await publishReel(reel, access);
+        run(`UPDATE cut_reels SET status = 'published', media_id = ?, permalink = ?, error = '' WHERE id = ?`, id, permalink, reel.id);
+        fs.rmSync(path.join(reelsDir, reel.stored_as), { force: true });
+      } catch (error) {
+        run(`UPDATE cut_reels SET status = 'failed', error = ? WHERE id = ?`, String(error.message).replace(/^Instagram refuse : .*permission.*/i, 'Instagram refuse la publication : reconnecte ton compte Instagram (la permission de publier a été ajoutée).').slice(0, 300), reel.id);
+      }
+    }
+  } finally {
+    reelsBusy = false;
+  }
+}
 /** Le jour (AAAA-MM-JJ) et la minute de la journée à l'instant ms, dans le fuseau tz. */
 export function localNow(ms, tz) {
   const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
@@ -99,6 +170,7 @@ const posterUrl = (id) => { const e = (Math.floor(now() / DAY) + 2) * DAY; retur
 const videoView = (v) => ({ id: v.id, name: v.name, size: v.size, duration: v.duration, createdAt: v.created_at, scheduledDay: v.scheduled_day || null, caption: v.caption || '',
   url: videoUrl(v.id), downloadUrl: videoUrl(v.id, true), poster: posterUrl(v.id) });
 const shortUrl = (id) => { const e = now() + 6 * 3600_000; return `/api/cut/short/${id}?e=${e}&s=${sign(`cutshort.${id}.${e}`)}`; };
+const reelUrl = (id, hours = 6) => { const e = now() + hours * 3600_000; return `/api/cut/reel/${id}?e=${e}&s=${sign(`cutreel.${id}.${e}`)}`; };
 const backgroundUrl = (id) => { const e = now() + 6 * 3600_000; return `/api/cut/background/${id}?e=${e}&s=${sign(`cutbg.${id}.${e}`)}`; };
 const backgroundView = (b) => ({ id: b.id, name: b.name, type: b.mime, size: b.size, createdAt: b.created_at, url: backgroundUrl(b.id) });
 // L'aperçu (une image de la vidéo, 360 px de large) est fait par ffmpeg à sa première demande, puis gardé à côté de la
@@ -244,6 +316,69 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
     const x = get('SELECT * FROM youtube_videos WHERE id = ?', id);
     if (!x || !fs.existsSync(path.join(config.videosDir, x.stored_as))) throw new HttpError(404, 'Vidéo introuvable.');
     res.sendFile(path.join(config.videosDir, x.stored_as), { headers: { 'Content-Type': x.mime, 'Cache-Control': 'private, max-age=3600', 'X-Content-Type-Options': 'nosniff' } });
+  });
+
+  // ——— Les Reels Instagram programmés (fondateurs, droit « instagram ») ———
+  const reelsRight = (req, _res, next) => (can(req.user, 'instagram') ? next() : next(new HttpError(403, "Les Reels Instagram ne sont pas ouverts à ce compte.")));
+  const reelView = (r) => ({ id: r.id, name: r.name, caption: r.caption, trial: r.trial, publishAt: r.publish_at, status: r.status, error: r.error, url: r.permalink || null,
+    play: r.status !== 'published' && fs.existsSync(path.join(reelsDir, r.stored_as)) ? reelUrl(r.id) : null });
+  const ownReel = (req) => {
+    const r = get('SELECT * FROM cut_reels WHERE id = ? AND user_id = ?', Number(req.params.id) || 0, req.user.id);
+    if (!r) throw new HttpError(404, 'Reel introuvable.');
+    if (r.status === 'uploading') throw new HttpError(409, 'Ce Reel est en train de partir sur Instagram.');
+    return r;
+  };
+  const reelFields = (body, r = {}) => {
+    const caption = typeof body?.caption === 'string' ? body.caption.trim().slice(0, 2200) : r.caption ?? '';
+    if ((caption.match(/#[\p{L}\p{N}_]+/gu) || []).length > 30) throw new HttpError(400, 'Instagram accepte 30 hashtags au plus.');
+    const trial = body?.trial === undefined ? r.trial ?? '' : String(body.trial || '');
+    if (!TRIALS.includes(trial)) throw new HttpError(400, 'Type de Reel inconnu.');
+    const publishAt = body?.publishAt === undefined ? r.publish_at : Number(body.publishAt);
+    if (!(publishAt > now() - 60_000 && publishAt < now() + 366 * 86_400_000)) throw new HttpError(400, "Choisis une date à venir, dans l'année.");
+    return { caption, trial, publishAt };
+  };
+  app.get('/api/cut/reels', requireUser, member, founder, (req, res) => {
+    const allowed = can(req.user, 'instagram'), reels = allowed ? all('SELECT * FROM cut_reels WHERE user_id = ? ORDER BY publish_at', req.user.id) : [];
+    res.json({ allowed, configured: platformConfigured(), account: allowed ? instagramName(req.user.id) : null, reels: reels.map(reelView),
+      inReels: [...new Set(reels.map((r) => r.cut_video_id).filter(Boolean))] });
+  });
+  app.post('/api/cut/library/:id/reel', requireUser, member, founder, reelsRight, (req, res) => {
+    const v = ownVideo(req), { caption, trial, publishAt } = reelFields({ caption: v.caption, ...req.body });
+    if (get(`SELECT COUNT(*) AS n FROM cut_reels WHERE user_id = ? AND status != 'published'`, req.user.id).n >= 30) {
+      throw new HttpError(400, 'Trente Reels attendent déjà : laisse-en partir avant d\'en programmer d\'autres.');
+    }
+    if (get('SELECT 1 FROM cut_reels WHERE user_id = ? AND cut_video_id = ?', req.user.id, v.id)) {
+      throw new HttpError(409, 'Cette vidéo est déjà en Reel (programmé ou publié) : elle ne part pas deux fois.');
+    }
+    const storedAs = crypto.randomBytes(16).toString('hex');
+    fs.copyFileSync(path.join(libDir, v.stored_as), path.join(reelsDir, storedAs));
+    const id = run(`INSERT INTO cut_reels (user_id, cut_video_id, name, stored_as, size, caption, trial, publish_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      req.user.id, v.id, v.name, storedAs, v.size, caption, trial, publishAt, now()).lastInsertRowid;
+    res.status(201).json(reelView(get('SELECT * FROM cut_reels WHERE id = ?', id)));
+  });
+  // La description, le type (normal ou d'essai) et l'heure ; un Reel raté repart programmé.
+  app.patch('/api/cut/reels/:id', requireUser, member, founder, reelsRight, (req, res) => {
+    const r = ownReel(req);
+    if (r.status === 'published') throw new HttpError(409, 'Ce Reel est déjà publié.');
+    if (!fs.existsSync(path.join(reelsDir, r.stored_as))) throw new HttpError(410, 'La vidéo de ce Reel n\'est plus là : retire-le et reprogramme-la depuis le cloud CUT.');
+    const { caption, trial, publishAt } = reelFields(req.body, r);
+    run(`UPDATE cut_reels SET caption = ?, trial = ?, publish_at = ?, status = 'scheduled', error = '' WHERE id = ?`, caption, trial, publishAt, r.id);
+    res.json(reelView(get('SELECT * FROM cut_reels WHERE id = ?', r.id)));
+  });
+  // Retire le Reel d'ici (un Reel publié reste sur Instagram : seule sa ligne disparaît, et la vidéo pourra repartir).
+  app.delete('/api/cut/reels/:id', requireUser, member, founder, reelsRight, (req, res) => {
+    const r = ownReel(req);
+    fs.rmSync(path.join(reelsDir, r.stored_as), { force: true });
+    run('DELETE FROM cut_reels WHERE id = ?', r.id);
+    res.json({ ok: true });
+  });
+  // La vidéo d'un Reel par lien signé : Instagram vient la chercher là à l'heure dite ; la page la lit aussi (« Lire »).
+  app.get('/api/cut/reel/:id', (req, res) => {
+    const id = Number(req.params.id) || 0, e = Number(req.query.e), sig = String(req.query.s || '');
+    if (!(e > now()) || !same(sig, sign(`cutreel.${id}.${e}`))) throw new HttpError(403, 'Ce lien a expiré.');
+    const r = get('SELECT * FROM cut_reels WHERE id = ?', id);
+    if (!r || !fs.existsSync(path.join(reelsDir, r.stored_as))) throw new HttpError(404, 'Vidéo introuvable.');
+    res.sendFile(path.join(reelsDir, r.stored_as), { headers: { 'Content-Type': 'video/mp4', 'Cache-Control': 'private, max-age=3600', 'X-Content-Type-Options': 'nosniff' } });
   });
 
   // ——— La banque de fonds des fondateurs : des clips gardés pour les réutiliser d'un son à l'autre ———

@@ -11,7 +11,8 @@ import { seal, unseal } from './payments.js';
 // Les commentaires arrivent par le webhook de Meta, et sont aussi relus toutes les deux minutes si un webhook se perd.
 
 const IG_GRAPH = 'https://graph.instagram.com/v23.0';
-const IG_SCOPE = 'instagram_business_basic,instagram_business_manage_comments,instagram_business_manage_messages';
+// instagram_business_content_publish : publier les Reels programmés depuis ONIRIQUE CUT (cut.js).
+const IG_SCOPE = 'instagram_business_basic,instagram_business_manage_comments,instagram_business_manage_messages,instagram_business_content_publish';
 // Longueurs acceptées par Instagram.
 const LIMITS = { dm: 1000, reply: 2200 };
 
@@ -68,6 +69,12 @@ export async function finishConnect(state, code) {
 }
 
 const accountOf = (userId) => get(`SELECT * FROM social_accounts WHERE user_id = ? AND platform = 'instagram'`, userId);
+/** Le compte Instagram relié (pour publier des Reels, cut.js) : son nom, et de quoi appeler l'API ; null s'il n'est pas relié. */
+export const instagramName = (userId) => accountOf(userId)?.username ?? null;
+export async function instagramAccess(userId) {
+  const account = accountOf(userId);
+  return account ? { igId: account.account_id, token: await freshToken(account), call: ig, graph: IG_GRAPH } : null;
+}
 
 export function disconnect(userId) {
   run(`DELETE FROM social_accounts WHERE user_id = ? AND platform = 'instagram'`, userId);
