@@ -182,10 +182,8 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
 .field { display: grid; gap: 6px; font: 500 11px/1.2 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
 .yt-box { max-width: 340px; width: 100%; justify-self: center; display: grid; gap: 6px; }
 .yt-box .row { justify-content: center; }
-/* Le menu des Shorts : dans la marge gauche sur grand écran (le contenu fait 1240 px au centre), en tiroir sinon. */
-.shorts { position: fixed; z-index: 40; left: 20px; top: 20px; bottom: 20px; width: min(320px, calc(100vw - 40px)); display: flex; flex-direction: column; gap: 14px;
-  padding: 16px; overflow-y: auto; border-radius: 18px; border: 1px solid var(--line); background: rgba(13,8,9,.96); backdrop-filter: blur(12px);
-  box-shadow: 0 20px 60px -20px #000, 0 0 40px -24px rgba(226,52,68,.7); }
+/* Le menu des Shorts : un menu déroulant dans l'étape Publier. */
+.shorts > .stack { gap: 14px; }
 .shorts-head { display: flex; justify-content: space-between; align-items: center; font: 800 16px/1.2 var(--f-display); }
 .shorts-channel { margin: 0; font-size: 13px; color: var(--haze); }
 .shorts-channel a { color: var(--ember-text); }
@@ -205,12 +203,6 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
 .short details summary { cursor: pointer; font-size: 12px; color: var(--haze); }
 .short details[open] { display: grid; gap: 6px; }
 .short .row { gap: 6px; }
-.shorts-tab { position: fixed; z-index: 39; left: 0; top: 40%; display: grid; justify-items: center; gap: 4px; padding: 12px 8px; border: 1px solid var(--line); border-left: 0;
-  border-radius: 0 12px 12px 0; background: var(--ember); color: #fff; font: 700 12px/1 var(--f-body); writing-mode: vertical-rl; cursor: pointer; }
-.shorts-tab b { writing-mode: horizontal-tb; font-size: 10px; }
-/* Grand écran : la marge suffit, le menu reste ouvert et le lecteur des pistes passe à droite. */
-@media (min-width: 1740px) { .shorts { width: min(320px, calc((100vw - 1240px) / 2)); } .shorts-tab, #shorts-close { display: none; } .side-player { left: auto; right: 24px; } }
-@media (max-width: 1739px) { .shorts:not(.open) { display: none; } }
 /* L'aperçu suit la page, comme sur les pages de liens : la colonne reste à l'écran et défile seule ; la vidéo, la lecture
    et Exporter restent en haut, le reste (description, série, cloud) passe dessous. */
 .screen-top { display: grid; gap: 10px; }
@@ -674,6 +666,35 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
             <div class="stack"><p class="muted" id="lib-info">Réservé aux fondateurs : les vidéos exportées avec « Garder aussi dans mon cloud CUT » arrivent ici.</p><div class="stack" id="lib-list" style="padding:0"></div>
               <p class="muted" style="margin:0;font-size:12px">Sur ton téléphone : <a href="mes-videos" target="_blank" rel="noopener">onirique.store/mes-videos</a>. Ajoute-la à l'écran d'accueil (appweb ONIRIQUE CUT) pour envoyer tes vidéos vers TikTok. Le rappel quotidien « poste ton TikTok » se règle dans l'appweb, en haut de la liste.</p></div>
           </details>
+          <!-- Les Shorts YouTube des fondateurs : un menu déroulant, fermé tant qu'on ne l'ouvre pas. -->
+            <details class="panel shorts" id="shorts" hidden>
+              <summary>Shorts YouTube <span class="muted" id="yt-sum"></span></summary>
+              <div class="stack">
+              <p class="shorts-channel" id="yt-state"></p>
+              <section>
+                <h3>Programmation</h3>
+                <label class="check"><input type="checkbox" id="ytAuto"> Chaque vidéo gardée dans le cloud CUT part aussi en Short</label>
+                <div class="row"><span class="muted">Un par jour, vers</span><input type="time" id="ytTime" aria-label="Heure de publication des Shorts"></div>
+                <p class="muted small">L'heure varie de quelques minutes chaque jour (par exemple 17 h 54, 18 h 07…) : la chaîne ne ressemble pas à un robot.</p>
+                <label class="field">Tes hashtags YouTube<textarea id="ytTags" rows="3" placeholder="#rapfr #euhz #undergroundmusic #rap #musique #nouveauson"></textarea></label>
+                <p class="muted small" id="yt-tags-next">Chaque Short en prend 3 différents, à tour de rôle dans ta liste.</p>
+                <label class="field">Ta phrase d'appel (dans la description, {son} = le titre du son)<textarea id="ytCta" rows="3"></textarea></label>
+                <p class="muted small">Titre : « la phrase » + émoji, sans hashtag. Description : la phrase, « Artiste - Titre », ta phrase d'appel, les hashtags. Les mots-clés cachés se remplissent seuls.</p>
+              </section>
+              <section>
+                <h3>À venir <span class="muted" id="yt-count"></span></h3>
+                <div class="shorts-list" id="yt-list"><p class="muted small">Chargement…</p></div>
+              </section>
+              <section>
+                <h3>Ajouter depuis le cloud CUT</h3>
+                <div class="row"><select id="yt-pick" aria-label="Vidéo du cloud CUT à programmer"></select><button class="mini" type="button" id="yt-add">Programmer</button></div>
+              </section>
+              <section id="yt-done-box" hidden>
+                <h3>Déjà publiés</h3>
+                <div class="shorts-list" id="yt-done"></div>
+              </section>
+              </div>
+            </details>
         </div>
         <div class="stack">
           <p class="hint">MP4 1080 × 1920, 30 images par seconde, son en haute qualité. Avec des clips MP4 ou MOV, tu peux changer d'onglet pendant l'export. Tes sons, clips et vidéos restent chez toi.</p>
@@ -726,34 +747,6 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
       <div class="adv-sel" id="adv-sel"></div>
     </section>
   </div>
-  <!-- Les Shorts YouTube des fondateurs : un menu à gauche (dans la marge sur grand écran, en tiroir sinon). -->
-  <button class="shorts-tab" type="button" id="shorts-tab" hidden aria-controls="shorts" aria-expanded="false"><b>▶</b>Shorts</button>
-  <aside class="shorts" id="shorts" hidden aria-label="Shorts YouTube">
-    <div class="shorts-head"><b>Shorts YouTube</b><button class="mini" type="button" id="shorts-close" aria-label="Fermer le menu des Shorts">×</button></div>
-    <p class="shorts-channel" id="yt-state"></p>
-    <section>
-      <h3>Programmation</h3>
-      <label class="check"><input type="checkbox" id="ytAuto"> Chaque vidéo gardée dans le cloud CUT part aussi en Short</label>
-      <div class="row"><span class="muted">Un par jour, vers</span><input type="time" id="ytTime" aria-label="Heure de publication des Shorts"></div>
-      <p class="muted small">L'heure varie de quelques minutes chaque jour (par exemple 17 h 54, 18 h 07…) : la chaîne ne ressemble pas à un robot.</p>
-      <label class="field">Tes hashtags YouTube<textarea id="ytTags" rows="3" placeholder="#rapfr #euhz #undergroundmusic #rap #musique #nouveauson"></textarea></label>
-      <p class="muted small" id="yt-tags-next">Chaque Short en prend 3 différents, à tour de rôle dans ta liste.</p>
-      <label class="field">Ta phrase d'appel (dans la description, {son} = le titre du son)<textarea id="ytCta" rows="3"></textarea></label>
-      <p class="muted small">Titre : « la phrase » + émoji, sans hashtag. Description : la phrase, « Artiste - Titre », ta phrase d'appel, les hashtags. Les mots-clés cachés se remplissent seuls.</p>
-    </section>
-    <section>
-      <h3>À venir <span class="muted" id="yt-count"></span></h3>
-      <div class="shorts-list" id="yt-list"><p class="muted small">Chargement…</p></div>
-    </section>
-    <section>
-      <h3>Ajouter depuis le cloud CUT</h3>
-      <div class="row"><select id="yt-pick" aria-label="Vidéo du cloud CUT à programmer"></select><button class="mini" type="button" id="yt-add">Programmer</button></div>
-    </section>
-    <section id="yt-done-box" hidden>
-      <h3>Déjà publiés</h3>
-      <div class="shorts-list" id="yt-done"></div>
-    </section>
-  </aside>
   <!-- Le lecteur des pistes séparées : hors des réglages, dans le vide à gauche de la page. -->
   <aside class="side-player" id="stem-player" hidden aria-label="Écoute des pistes séparées">
     <div class="row"><b>Écoute des pistes</b><button class="mini" type="button" id="stem-close" aria-label="Fermer le lecteur des pistes">×</button></div>
@@ -998,7 +991,7 @@ async function renderShorts() {
   if (!yt) { $("yt-list").replaceChildren(Object.assign(document.createElement("p"), { className: "muted small", textContent: "YouTube ne répond pas. Réessaie dans un instant." })); return; }
   $("yt-state").replaceChildren(...(yt.channel ? ["Chaîne : " + yt.channel] : ["Pas encore de chaîne reliée : ", Object.assign(document.createElement("a"), { href: "compte", textContent: "relier ma chaîne YouTube" }), "."]));
   const upcoming = yt.videos.filter((v) => v.status !== "published").sort((a, b) => (a.publishAt || Infinity) - (b.publishAt || Infinity));
-  $("yt-count").textContent = upcoming.length ? "(" + upcoming.length + ")" : "";
+  $("yt-count").textContent = $("yt-sum").textContent = upcoming.length ? "(" + upcoming.length + " à venir)" : "";
   $("yt-list").replaceChildren(...(upcoming.length ? upcoming.map(shortCard) : [Object.assign(document.createElement("p"), { className: "muted small", textContent: "Aucun Short prévu. Coche la programmation, ou ajoute une vidéo du cloud CUT." })]));
   const done = yt.videos.filter((v) => v.status === "published").slice(-8).reverse();
   $("yt-done-box").hidden = !done.length;
@@ -1083,25 +1076,32 @@ function shortTexts(caption, name) {
       "film edit", "edit musique", ...(artist ? [artist + " " + title] : [])].map((t) => t.trim()).filter(Boolean))],
   };
 }
-/** Une phrase du son pour une vidéo gardée sans phrase (exportée avant les descriptions) : dans ses paroles d'ONIRIQUE
- *  CLOUD, la ligne la plus répétée (le refrain, ce qu'on entend le plus dans les vidéos), sinon la première ligne assez longue. */
+/** Les phrases d'un son, dans ses paroles d'ONIRIQUE CLOUD : les lignes les plus répétées d'abord (le refrain, ce qu'on
+ *  entend le plus dans les vidéos), puis les autres dans l'ordre du son ; chacune une fois. */
 let cloudLyricsList = null;
-async function cloudPhrase(son) {
+async function cloudPhrases(son) {
   const want = tagOf(son.split(" - ").at(-1) || son);
   cloudLyricsList = cloudLyricsList || cloudTracks().catch(() => []);
   const found = (await cloudLyricsList).find(({ t }) => tagOf(t.title) === want);
-  if (!found || !found.t.lyrics) return "";
-  const lines = found.t.lyrics.split("\n").map((l) => bareLine(l).replace(/\*\*/g, "").replace(/\s+/g, " ").trim()).filter((l) => l.length >= 12 && l.length <= 90);
-  const count = new Map();
-  for (const l of lines) count.set(l.toLowerCase(), (count.get(l.toLowerCase()) || 0) + 1);
-  return (lines.slice().sort((a, b) => count.get(b.toLowerCase()) - count.get(a.toLowerCase()))[0] || "").replace(/[\s,.;:]+$/, "");
+  if (!found || !found.t.lyrics) return [];
+  const lines = found.t.lyrics.split("\n").map((l) => bareLine(l).replace(/\*\*/g, "").replace(/\s+/g, " ").replace(/[\s,.;:]+$/, "").trim()).filter((l) => l.length >= 12 && l.length <= 90);
+  const count = new Map(), first = new Map();
+  lines.forEach((l, i) => { const k = tagOf(l); count.set(k, (count.get(k) || 0) + 1); if (!first.has(k)) first.set(k, [l, i]); });
+  return [...first.entries()].sort(([a, [, ia]], [b, [, ib]]) => count.get(b) - count.get(a) || ia - ib).map(([, [l]]) => l);
 }
+let phraseTurn = 0;
 async function scheduleShort(video, caption) {
-  // Pas de phrase de la vidéo dans sa description : on en prend une dans les paroles du son (CLOUD).
-  if (!/«/.test(caption || "")) {
-    const son = ((caption || "").split("\n").map((l) => /^Le son\s*:\s*(.+)$/.exec(l)).find(Boolean) || [])[1] || video.name.split(" - ONIRIQUE CUT")[0];
-    const phrase = await cloudPhrase(son);
-    if (phrase) caption = "« " + phrase + " » " + ((MOODS.find(([re]) => re.test(phrase)) || [null, "🥹"])[1]) + "\n" + (caption || "Le son : " + (prefs.artist ? prefs.artist + " - " : "") + son);
+  // La phrase du titre : celle de la vidéo si elle en a une, sinon une du son (CLOUD) ; jamais une phrase déjà prise par un
+  // autre Short (programmé ou publié), pour que 5 vidéos du même passage ne partent pas toutes avec le même titre.
+  const lines = (caption || "").split("\n"), own = (/«\s*(.+?)\s*»/.exec(lines[0] || "") || [])[1] || "";
+  const son = (lines.map((l) => /^Le son\s*:\s*(.+)$/.exec(l)).find(Boolean) || [])[1] || video.name.split(" - ONIRIQUE CUT")[0];
+  const taken = ((await bankFetch("/api/youtube").catch(() => null)) || { videos: [] }).videos.map((v) => tagOf(v.title));
+  const used = (p) => { const k = tagOf(p).slice(0, 28); return taken.some((t) => t.includes(k)); };
+  const choices = [...new Set([own, ...await cloudPhrases(son)].filter(Boolean))];
+  const phrase = choices.find((p) => !used(p)) || choices[phraseTurn++ % Math.max(1, choices.length)];
+  if (phrase && phrase !== own) {
+    const rest = own ? lines.slice(1).join("\n") : (caption || "Le son : " + (prefs.artist ? prefs.artist + " - " : "") + son);
+    caption = "« " + phrase + " » " + ((MOODS.find(([re]) => re.test(phrase)) || [null, ["🥹", "😣", "😪", "🤧"][Math.floor(Math.random() * 4)]])[1]) + "\n" + rest;
   }
   const state = await bankFetch("/api/cut/youtube");
   if (!state.channel) throw new Error("Relie d'abord ta chaîne YouTube dans ton compte (Shorts YouTube).");
@@ -3463,10 +3463,7 @@ function start() {
     bankFetch("/api/cut/youtube").then((state) => {
       if (!state.allowed) return;
       shortsAllowed = true;
-      $("shorts").hidden = $("shorts-tab").hidden = false;
-      const toggle = (open) => { $("shorts").classList.toggle("open", open); $("shorts-tab").setAttribute("aria-expanded", String(open)); };
-      $("shorts-tab").onclick = () => toggle(!$("shorts").classList.contains("open"));
-      $("shorts-close").onclick = () => toggle(false);
+      $("shorts").hidden = false;
       renderShorts();
       $("ytAuto").checked = !!prefs.ytAuto; $("ytTime").value = prefs.ytTime || "18:00";
       $("ytAuto").onchange = () => { prefs.ytAuto = $("ytAuto").checked; if (prefs.ytAuto && !$("keepCloud").checked) { $("keepCloud").checked = true; prefs.keepCloud = true; } savePrefs(); };
