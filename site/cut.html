@@ -27,6 +27,44 @@
 @media (max-width: 920px) { .screen { position: static; } }
 .frame { position: relative; aspect-ratio: 9 / 16; width: 100%; max-width: 340px; margin: 0 auto; border-radius: 22px; overflow: hidden; background: #000; border: 1px solid var(--line); box-shadow: 0 30px 80px -30px rgba(226,52,68,.5); }
 .frame canvas { width: 100%; height: 100%; display: block; }
+.frame { container-type: inline-size; }
+.hud { position: absolute; inset: 0; pointer-events: none; color: #fff; font: 500 3.6cqw/1.3 -apple-system, "Segoe UI", Roboto, sans-serif; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+.hud svg { width: 7.5cqw; height: 7.5cqw; fill: #fff; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
+.hud-top { position: absolute; top: 4.5cqw; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 5cqw; font-size: 4.3cqw; }
+.hud-top > span:not(.hud-btn) { opacity: .7; }
+.hud-top .hud-btn:last-child { position: absolute; right: 4cqw; }
+.hud-rail { position: absolute; right: 2.5cqw; bottom: 30%; display: grid; justify-items: center; gap: 4.5cqw; }
+.hud-btn { display: grid; justify-items: center; gap: .6cqw; }
+.hud-btn small { font-size: 3cqw; font-weight: 600; }
+.hud-avatar { position: relative; width: 11cqw; height: 11cqw; border-radius: 50%; border: .5cqw solid #fff; background: linear-gradient(135deg, #e23444, #2a0a0e); }
+.hud-avatar i { position: absolute; left: 50%; bottom: -2.4cqw; width: 4.6cqw; height: 4.6cqw; margin-left: -2.3cqw; border-radius: 50%; background: #fe2c55; font: 700 3.6cqw/4.6cqw sans-serif; text-align: center; font-style: normal; }
+.hud-avatar.small { width: 7.5cqw; height: 7.5cqw; border-width: .3cqw; }
+.hud-disc { width: 10cqw; height: 10cqw; border-radius: 50%; background: radial-gradient(circle, #e23444 25%, #222 27%, #111 60%, #333 62%); animation: hud-spin 4s linear infinite; }
+.hud-cover { width: 9cqw; height: 9cqw; border-radius: 2cqw; border: .5cqw solid #fff; background: linear-gradient(135deg, #e23444, #2a0a0e); }
+@keyframes hud-spin { to { transform: rotate(360deg); } }
+.hud-info { position: absolute; left: 3.5cqw; right: 20cqw; bottom: 17%; display: grid; gap: 1.5cqw; }
+.hud-info b { font-size: 4.2cqw; font-weight: 700; }
+.hud-info p { margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.hud-sound { display: flex !important; align-items: center; gap: 1.5cqw; }
+.hud-sound svg { width: 4cqw; height: 4cqw; flex: none; }
+.hud-nav { position: absolute; left: 0; right: 0; bottom: 0; height: 13%; display: flex; justify-content: space-around; align-items: center; background: #000; text-shadow: none; }
+.hud-nav svg { width: 6.5cqw; height: 6.5cqw; }
+.hud-add { display: grid; place-items: center; width: 12cqw; height: 8cqw; border-radius: 2.2cqw; background: #fff; box-shadow: -1cqw 0 0 #25f4ee, 1cqw 0 0 #fe2c55; }
+.hud-add svg { fill: #000; filter: none; width: 5.5cqw; }
+.hud-tiktok .hud-info { bottom: 15.5%; }
+.hud-tiktok .hud-rail { bottom: 16%; }
+.hud-shorts .hud-info, .hud-insta .hud-info { bottom: 5%; }
+.hud-shorts .hud-rail, .hud-insta .hud-rail { bottom: 15%; }
+.hud-shorts .hud-top, .hud-insta .hud-top { justify-content: flex-end; padding-right: 4cqw; gap: 5cqw; }
+.hud-shorts .hud-top .hud-btn:last-child, .hud-insta .hud-top .hud-btn:last-child { position: static; }
+.hud-insta .hud-top b { position: absolute; left: 4cqw; font-size: 5.5cqw; }
+.hud-chan { display: flex; align-items: center; gap: 2cqw; }
+.hud-sub { padding: 1.2cqw 3cqw; border-radius: 99px; background: #fff; color: #0f0f0f; font-weight: 700; font-size: 3.2cqw; text-shadow: none; }
+.hud-follow { padding: .8cqw 2.6cqw; border-radius: 2cqw; border: .3cqw solid #fff; font-weight: 600; font-size: 3.2cqw; }
+.hud-bar { position: absolute; left: 0; right: 0; bottom: 0; height: .8cqw; background: rgba(255,255,255,.35); }
+.hud-bar::after { content: ""; position: absolute; inset: 0 70% 0 0; background: #f00; }
+.hud-pick { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.hud-pick > span { font: 500 11px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
 .frame .empty { position: absolute; inset: 0; display: grid; place-content: center; gap: 8px; padding: 24px; text-align: center; color: var(--haze); font-size: 14px; }
 .frame .empty b { font: 800 16px/1.3 var(--f-display); color: var(--mist); }
 .transport { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; max-width: 340px; width: 100%; margin: 0 auto; }
@@ -733,14 +771,14 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
 
     <aside class="screen" aria-label="Aperçu">
       <div class="screen-top">
-      <div class="frame"><canvas id="screen" width="1080" height="1920"></canvas><div class="empty" id="screen-empty"><b>Ton aperçu</b>Ajoute ton son puis tes clips.</div></div>
+      <div class="frame"><canvas id="screen" width="1080" height="1920"></canvas><div class="hud" id="hud" hidden aria-hidden="true"></div><div class="empty" id="screen-empty"><b>Ton aperçu</b>Ajoute ton son puis tes clips.</div></div>
       <div class="transport">
         <button class="round" type="button" id="play" aria-label="Lecture" disabled><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button>
         <div class="scrub" id="scrub"><canvas></canvas></div>
         <span class="time" id="time">0:00</span>
       </div>
       <label class="vol">Volume<input type="range" id="previewVol" min="0" max="100" aria-label="Volume de l'aperçu"></label>
-      <label class="check mute"><input type="checkbox" id="safeGuide"> Montrer la zone visible sur TikTok</label>
+      <div class="hud-pick"><span>HUD</span><div class="chips" id="hudPick" role="group" aria-label="Interface affichée sur l'aperçu"><button type="button" data-v="none">Aucun</button><button type="button" data-v="tiktok">TikTok</button><button type="button" data-v="shorts">Shorts</button><button type="button" data-v="insta">Instagram</button></div></div>
       <label class="check mute"><input type="checkbox" id="mute"> Couper le son pendant l'export et quand l'IA travaille</label>
       <button class="go wide export" type="button" id="export" disabled>Exporter la vidéo</button>
       <div class="status" id="status" hidden><span id="status-text"></span><div class="bar"><i id="status-bar"></i></div></div>
@@ -826,7 +864,7 @@ const ILOOK = { iOwn: false, iFont: "Hanken Grotesk", iPlace: "bottom", iColor: 
   iShadowColor: "#000000", iShadowBlur: 0, iShadowOffset: 0, iCaps: false, iBox: true, iBoxColor: "#000000", iBoxAlpha: 62 };
 const FILM = { ...ILOOK, trackFades: {}, introOn: false, introClip: 0, introIn: 0, introLen: 4, filmVol: 100, introLyrics: "", introSubMode: "sub", introGaps: true, introFade: false, transition: "flash", transAmt: 100,
   dropGap: false, underPart: "none", underVol: 70, filmContinue: false, afterClip: -1, afterIn: 0, afterLen: 0, musicVol: 100, clipVol: 0, slowmo: "100" };
-let prefs = { previewVol: 80, ...FILM, duration: 15, order: "seq", cadence: "2", nicheTag: "#undergroundmusic #rapfr", safeGuide: false, ytAuto: false, ytTime: "18:00", seriesCount: "5", seriesStyles: ["classic", "pixel", "red", "card"], bestMoments: true, smartCrop: true, zoom: false, zoomAmt: 100, flash: false, flashAmt: 100, place: "none", artist: "", snap: false, loop: false, batch: "one", lyricsPlace: "bottom", ...FX,
+let prefs = { previewVol: 80, ...FILM, duration: 15, order: "seq", cadence: "2", nicheTag: "#undergroundmusic #rapfr", hud: "none", ytAuto: false, ytTime: "18:00", seriesCount: "5", seriesStyles: ["classic", "pixel", "red", "card"], bestMoments: true, smartCrop: true, zoom: false, zoomAmt: 100, flash: false, flashAmt: 100, place: "none", artist: "", snap: false, loop: false, batch: "one", lyricsPlace: "bottom", ...FX,
   preset: "classic", frame: "full", retro: false, lyricsMode: "line", hook: "", hookOn: false, sign: "", textStyle: "classic", titleFont: "Unbounded", textSize: 100,
   strokeColor: "#000000", glowColor: "#ffffff", ...TEXT_STYLES.classic,
   strongSize: 170, strongColor: "#ffffff", strongGlowColor: "#ffffff", strongGlow: 45, strongFont: "", strongFx: "none" };
@@ -1000,7 +1038,7 @@ function captionIdea(k = captionK) {
   return [quote ? "« " + quote + " » " + mood : son + " " + mood, quote ? son : null, tags.map((t) => "#" + t).join(" ")].filter(Boolean).join("\n");
 }
 /** La description à jour (tant qu'on ne l'a pas écrite soi-même). */
-function syncCaption() { if (!captionEdited && sound.buffer) $("caption").value = captionIdea(); }
+function syncCaption() { if (!captionEdited && sound.buffer) $("caption").value = captionIdea(); renderHud(); }
 
 // ——— Les Shorts YouTube (fondateurs) : une vidéo gardée dans le cloud CUT part sur la chaîne au prochain jour libre ———
 /** Le prochain créneau libre : un jour sans Short déjà prévu, vers l'heure choisie, décalée de −9 à +9 minutes (et de
@@ -2296,17 +2334,49 @@ function draw(t, playing) {
   if (overlays.length) drawOverlays(full, playing);
   if (intro) transitionAt(full - intro);
   fadeEnds(full);
-  if (prefs.safeGuide && !exact && !recording) safeGuide();
   return true;
 }
-/** Le cadre de ce que montre TikTok (côtés rognés sur téléphone allongé, onglets en haut, description en bas) : aperçu seulement. */
-function safeGuide() {
-  g.save();
-  g.setLineDash([18, 14]); g.lineWidth = 4; g.strokeStyle = "rgba(255,255,255,.6)";
-  g.strokeRect(SAFE, 150, SAFE_W, H - 150 - 430);
-  g.font = '600 30px "Hanken Grotesk"'; g.fillStyle = "rgba(255,255,255,.75)"; g.textAlign = "center"; g.textBaseline = "middle";
-  g.fillText("Zone visible sur TikTok", W / 2, 118);
-  g.restore();
+// ——— Le HUD : l'interface de TikTok, des Shorts ou d'Instagram par-dessus l'aperçu, pour voir ce qu'elle cache ———
+const ICONS = {
+  heart: '<path d="M12 21s-7.5-4.6-9.5-9.2C1.2 8.6 3.3 5 6.8 5c2 0 3.4 1.1 4.2 2.4h2C13.8 6.1 15.2 5 17.2 5c3.5 0 5.6 3.6 4.3 6.8C19.5 16.4 12 21 12 21z"/>',
+  bubble: '<path d="M12 3C6.5 3 2 6.8 2 11.5c0 2.6 1.4 4.9 3.6 6.5L5 22l4.3-2.4c.9.2 1.8.4 2.7.4 5.5 0 10-3.8 10-8.5S17.5 3 12 3z"/>',
+  mark: '<path d="M6 2h12a1 1 0 0 1 1 1v19l-7-4.5L5 22V3a1 1 0 0 1 1-1z"/>',
+  share: '<path d="M13 4v4.2C6.6 9 3.5 13.4 3 20c2.3-3.6 5.5-5.2 10-5.2V19l8-7.5L13 4z"/>',
+  up: '<path d="M2 21h4V10H2v11zm20-10c0-1.1-.9-2-2-2h-6.3l1-4.6v-.3c0-.4-.2-.8-.4-1.1L13.2 2 6.6 8.6c-.4.4-.6.9-.6 1.4v9c0 1.1.9 2 2 2h9c.8 0 1.5-.5 1.8-1.2l3-7.1c.1-.2.2-.5.2-.7v-2z"/>',
+  down: '<path d="M22 3h-4v11h4V3zM2 13c0 1.1.9 2 2 2h6.3l-1 4.6v.3c0 .4.2.8.4 1.1l1.1 1 6.6-6.6c.4-.4.6-.9.6-1.4V5c0-1.1-.9-2-2-2H7c-.8 0-1.5.5-1.8 1.2l-3 7.1c-.1.2-.2.5-.2.7v2z"/>',
+  plane: '<path d="M2 3l20 9-20 9 3-9-3-9zm3 9h8"/>',
+  remix: '<path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>',
+  dots: '<circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>',
+  search: '<path d="M10 3a7 7 0 1 0 4.2 12.6l5.1 5.1 1.4-1.4-5.1-5.1A7 7 0 0 0 10 3zm0 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10z"/>',
+  camera: '<path d="M9 3 7.2 5H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9zm3 5a5 5 0 1 1 0 10 5 5 0 0 1 0-10z"/>',
+  note: '<path d="M9 3v12.3A3.5 3.5 0 1 0 11 18V8h6V3H9z"/>',
+  home: '<path d="M12 3 2 11h3v10h5v-6h4v6h5V11h3L12 3z"/>',
+  user: '<path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-5 0-9 2.5-9 6v2h18v-2c0-3.5-4-6-9-6z"/>',
+  plus: '<path d="M11 4h2v16h-2zM4 11h16v2H4z"/>',
+};
+const icon = (name, label = "") => '<span class="hud-btn"><svg viewBox="0 0 24 24">' + ICONS[name] + "</svg>" + (label ? "<small>" + label + "</small>" : "") + "</span>";
+const escapeHtml = (x) => String(x).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+/** Le HUD choisi, avec ton nom d'artiste et le début de ta description. */
+function renderHud() {
+  const box = $("hud"), kind = prefs.hud;
+  box.hidden = kind === "none" || !kind;
+  if (box.hidden) return;
+  const name = escapeHtml(($("artist").value.trim() || "ton_compte").replace(/\s+/g, ""));
+  const caption = escapeHtml(($("caption").value.split("\n").find((l) => l.trim()) || "Ta description ici").trim());
+  const song = escapeHtml($("title").value.trim() || "son original");
+  box.className = "hud hud-" + kind;
+  box.innerHTML = kind === "tiktok"
+    ? '<div class="hud-top"><span>Abonnements</span><b>Pour toi</b>' + icon("search") + "</div>"
+      + '<div class="hud-rail"><span class="hud-avatar"><i>+</i></span>' + icon("heart", "12,4 k") + icon("bubble", "318") + icon("mark", "1 024") + icon("share", "Partager") + '<span class="hud-disc"></span></div>'
+      + '<div class="hud-info"><b>' + name + '</b><p>' + caption + '</p><p class="hud-sound">' + ICONS.note.replace("<path", '<svg viewBox="0 0 24 24"><path') + "</svg> " + song + " - " + name + "</p></div>"
+      + '<div class="hud-nav">' + icon("home", "Accueil") + icon("user", "Amis") + '<span class="hud-add">' + '<svg viewBox="0 0 24 24">' + ICONS.plus + "</svg></span>" + icon("bubble", "Messages") + icon("user", "Profil") + "</div>"
+    : kind === "shorts"
+    ? '<div class="hud-top">' + icon("search") + icon("dots") + "</div>"
+      + '<div class="hud-rail">' + icon("up", "8,1 k") + icon("down", "Je n\'aime pas") + icon("bubble", "214") + icon("share", "Partager") + icon("remix", "Remixer") + '<span class="hud-cover"></span></div>'
+      + '<div class="hud-info"><div class="hud-chan"><span class="hud-avatar small"></span><b>@' + name + '</b><span class="hud-sub">S\'abonner</span></div><p>' + caption + '</p></div><div class="hud-bar"></div>'
+    : '<div class="hud-top"><b>Reels</b>' + icon("camera") + "</div>"
+      + '<div class="hud-rail">' + icon("heart", "9 870") + icon("bubble", "156") + icon("plane", "1 203") + icon("dots") + '<span class="hud-cover"></span></div>'
+      + '<div class="hud-info"><div class="hud-chan"><span class="hud-avatar small"></span><b>' + name + '</b><span class="hud-follow">Suivre</span></div><p>' + caption + '</p><p class="hud-sound">' + ICONS.note.replace("<path", '<svg viewBox="0 0 24 24"><path') + "</svg> " + name + " · " + song + "</p></div>";
 }
 function drawMusic(t, playing) {
   const i = segmentAt(t), s = segments[i], clip = clips[s.clip];
@@ -3639,7 +3709,9 @@ function start() {
   };
   dragIntro();
   $("export").onclick = () => exportVideo();
-  $("caption").oninput = () => { captionEdited = true; };
+  $("caption").oninput = () => { captionEdited = true; renderHud(); };
+  chips("hudPick", "hud", renderHud); renderHud();
+  for (const id of ["artist", "title"]) $(id).addEventListener("input", renderHud);
   $("caption-new").onclick = () => { captionK++; captionEdited = false; syncCaption(); };
   $("caption-copy").onclick = () => navigator.clipboard.writeText($("caption").value).then(() => { $("caption-state").textContent = "Copiée."; }, () => { $("caption").select(); });
   $("nicheTag").value = prefs.nicheTag || "";
@@ -3732,7 +3804,7 @@ function start() {
     $(id).replaceChildren(...(id === "strongFont" ? [new Option("Même police que les paroles", "")] : []), ...FONT_LIST.map(([family, , label]) => new Option(label, family)));
   }
   const loadFont = (family) => { if (!family) return; const [f, w] = fontOf(family); document.fonts.load(`${w} 80px "${f}"`).then(() => !playing && segments.length && draw(position, false)); };
-  const boxes = ["zoom", "flash", "retro", "hookOn", "bestMoments", "smartCrop", "safeGuide"];
+  const boxes = ["zoom", "flash", "retro", "hookOn", "bestMoments", "smartCrop"];
   const syncControls = () => {
     for (const id of STYLE_INPUTS) { const el = $(id); if (el.type === "checkbox") el.checked = !!prefs[id]; else el.value = prefs[id]; }
     boxes.forEach((id) => { $(id).checked = !!prefs[id]; });
