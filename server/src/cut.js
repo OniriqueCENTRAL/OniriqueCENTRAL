@@ -266,9 +266,19 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
   });
   // Le planning : le jour où la vidéo doit partir (null : pas de jour).
   app.patch('/api/cut/library/:id', requireUser, member, founder, (req, res) => {
-    const v = ownVideo(req), day = req.body?.day ?? null;
-    if (day !== null && !/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(String(day))) throw new HttpError(400, 'Jour invalide.');
-    run('UPDATE cut_videos SET scheduled_day = ? WHERE id = ?', day, v.id);
+    const v = ownVideo(req);
+    // Le titre et la description (page « Mes vidéos CUT ») ; le jour prévu (appweb), seulement s'il est donné.
+    if (typeof req.body?.name === 'string') {
+      const name = req.body.name.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '').trim().slice(0, 100);
+      if (!name) throw new HttpError(400, 'Titre attendu.');
+      run('UPDATE cut_videos SET name = ? WHERE id = ?', name, v.id);
+    }
+    if (typeof req.body?.caption === 'string') run('UPDATE cut_videos SET caption = ? WHERE id = ?', req.body.caption.replace(/[\u0000-\u0009\u000b-\u001f]+/g, '').trim().slice(0, 2200), v.id);
+    if ('day' in (req.body || {})) {
+      const day = req.body.day ?? null;
+      if (day !== null && !/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(String(day))) throw new HttpError(400, 'Jour invalide.');
+      run('UPDATE cut_videos SET scheduled_day = ? WHERE id = ?', day, v.id);
+    }
     res.json(videoView(get('SELECT * FROM cut_videos WHERE id = ?', v.id)));
   });
 
