@@ -63,12 +63,6 @@
 .hud-follow { padding: .8cqw 2.6cqw; border-radius: 2cqw; border: .3cqw solid #fff; font-weight: 600; font-size: 3.2cqw; }
 .hud-bar { position: absolute; left: 0; right: 0; bottom: 0; height: .8cqw; background: rgba(255,255,255,.35); }
 .hud-bar::after { content: ""; position: absolute; inset: 0 70% 0 0; background: #f00; }
-.find { padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: rgba(0,0,0,.25); }
-.find-results { display: grid; gap: 6px; }
-.find-results button { display: flex; gap: 10px; align-items: baseline; width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: rgba(0,0,0,.3); color: var(--mist); font: 500 13px/1.4 var(--f-body); text-align: left; cursor: pointer; }
-.find-results button:hover { border-color: var(--ember); }
-.find-results button b { flex: none; font: 600 12px var(--f-mono); color: var(--ember-text); }
-.find-results mark { background: none; color: #fff; font-weight: 700; }
 .hud-pick { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .hud-pick > span { font: 500 11px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
 .frame .empty { position: absolute; inset: 0; display: grid; place-content: center; gap: 8px; padding: 24px; text-align: center; color: var(--haze); font-size: 14px; }
@@ -558,7 +552,6 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
               <label class="check"><input type="checkbox" id="retro"> Look rétro (pixels et grain)</label>
               <label class="check"><input type="checkbox" id="photoMove"> Photos qui avancent doucement</label>
             <label class="check"><input type="checkbox" id="bestMoments"> Prendre les meilleurs moments des clips (ça bouge, c'est net)</label>
-            <label class="check"><input type="checkbox" id="smartCrop"> Recadrage intelligent : l'image suit le sujet</label>
             </div>
             <div class="row">
               <label class="grow">Force du zoom<input type="range" id="zoomAmt" min="10" max="300" step="10"></label>
@@ -608,12 +601,6 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
               <label class="inline">Début<input type="text" id="introIn" inputmode="decimal" aria-label="Début de la réplique dans le clip"></label>
               <label class="inline">Durée<input type="text" id="introLen" inputmode="decimal" aria-label="Durée de la réplique en secondes">s</label>
               <button class="mini" type="button" id="intro-hear">Écouter la réplique</button>
-            </div>
-            <div class="stack find" id="find-box">
-              <label>Trouver une réplique : tape une phrase dite dans le clip
-                <input type="search" id="find-q" placeholder="ex. t'es parti en vacances dans ta cave" autocomplete="off"></label>
-              <div class="row"><button class="mini" type="button" id="find-go">Chercher</button><span class="muted" id="find-status">L'IA écoute le clip une fois (rien n'est envoyé), puis la recherche est immédiate.</span></div>
-              <div class="find-results" id="find-results"></div>
             </div>
             <label class="grow">Volume du film<input type="range" id="filmVol" min="0" max="200" step="5"></label>
 
@@ -905,7 +892,7 @@ const ILOOK = { iOwn: false, iFont: "Hanken Grotesk", iPlace: "bottom", iColor: 
   iShadowColor: "#000000", iShadowBlur: 0, iShadowOffset: 0, iCaps: false, iBox: true, iBoxColor: "#000000", iBoxAlpha: 62 };
 const FILM = { ...ILOOK, trackFades: {}, introOn: false, introClip: 0, introIn: 0, introLen: 4, filmVol: 100, introLyrics: "", introSubMode: "sub", introGaps: true, introFade: false, transition: "flash", transAmt: 100,
   dropGap: false, underPart: "none", underVol: 70, filmContinue: false, afterClip: -1, afterIn: 0, afterLen: 0, musicVol: 100, clipVol: 0, slowmo: "100" };
-let prefs = { previewVol: 80, ...FILM, duration: 15, order: "seq", cadence: "2", nicheTag: "#undergroundmusic #rapfr", hud: "none", ytAuto: false, ytTime: "18:00", igAuto: false, igTime: "18:30", igTrial: "", seriesCount: "5", seriesStyles: ["classic", "pixel", "red", "card"], bestMoments: true, smartCrop: true, zoom: false, zoomAmt: 100, flash: false, flashAmt: 100, place: "none", artist: "", snap: false, loop: false, batch: "one", lyricsPlace: "bottom", ...FX,
+let prefs = { previewVol: 80, ...FILM, duration: 15, order: "seq", cadence: "2", nicheTag: "#undergroundmusic #rapfr", hud: "none", ytAuto: false, ytTime: "18:00", igAuto: false, igTime: "18:30", igTrial: "", seriesCount: "5", seriesStyles: ["classic", "pixel", "red", "card"], bestMoments: true, zoom: false, zoomAmt: 100, flash: false, flashAmt: 100, place: "none", artist: "", snap: false, loop: false, batch: "one", lyricsPlace: "bottom", ...FX,
   preset: "classic", frame: "full", retro: false, lyricsMode: "line", hook: "", hookOn: false, sign: "", textStyle: "classic", titleFont: "Unbounded", textSize: 100,
   strokeColor: "#000000", glowColor: "#ffffff", ...TEXT_STYLES.classic,
   strongSize: 170, strongColor: "#ffffff", strongGlowColor: "#ffffff", strongGlow: 45, strongFont: "", strongFx: "none" };
@@ -1567,14 +1554,6 @@ function momentsOf(a, len = 1.5) {
   for (const i of win.map((_, i) => i).sort((p, q) => win[q] - win[p])) if (picked.every((j) => Math.abs(i - j) * a.step >= len)) picked.push(i);
   return picked.map((i) => i * a.step);
 }
-/** Où est le sujet dans l'image que montre src (0 à gauche, 1 à droite ; 0,5 sans analyse ou sans recadrage intelligent). */
-function focusOf(src) {
-  if (!prefs.smartCrop || !src.src) return .5;
-  const c = clips.find((x) => x.url === src.src), a = c && c.analysis;
-  if (!a) return .5;
-  const t = src.__frame ? src.__at || 0 : src.currentTime;
-  return a.focus[Math.max(0, Math.min(a.focus.length - 1, Math.round(t / a.step)))];
-}
 /** Analyse un clip vidéo en arrière-plan (un à la fois), puis refait le montage avec ses meilleurs moments. */
 function analyzeLater(c) {
   c.analyzing = true;
@@ -2126,9 +2105,7 @@ function drawCover(ctx, src, w, h, scale) {
   if (!sw || !sh) return false;
   const s = Math.max(w / sw, h / sh) * scale, dw = sw * s, dh = sh * s;
   ctx.imageSmoothingQuality = "high"; // agrandie ou réduite, l'image reste nette (le lissage par défaut est le plus grossier)
-  // Recadrage intelligent : une image plus large que le cadre se cale sur le sujet au lieu du centre.
-  const x = dw > w ? Math.min(0, Math.max(w - dw, w / 2 - focusOf(src) * dw)) : (w - dw) / 2;
-  drawPicIn(ctx, p, x, (h - dh) / 2, dw, dh);
+  drawPicIn(ctx, p, (w - dw) / 2, (h - dh) / 2, dw, dh);
   return true;
 }
 /** Le lecteur vidéo de la coupe i, prêt à son premier instant (trois lecteurs tournent : l'actuel et les deux suivants). */
@@ -3646,14 +3623,6 @@ async function aiIsync(write = false) {
   if (!c || !introLen()) return alert("Choisis d'abord le clip et le passage de la réplique.");
   $("isync-ai").disabled = $("isync-write").disabled = true;
   try {
-    // Le clip déjà écouté en entier (Trouver une réplique) : les mots de la partie choisie sont déjà là, rien à réécouter.
-    if (write && c.words) {
-      const ai = await import("./assets/ai-lyrics.js"), from = prefs.introIn, to = from + introLen();
-      const part = c.words.filter((w) => w.start >= from - .05 && w.start < to).map((w) => ({ ...w, start: Math.max(0, w.start - from), end: Math.min(to, w.end) - from }));
-      if (!part.length) return status("L'IA n'a pas entendu de paroles dans cette partie.");
-      prefs.introLyrics = $("introLyrics").value = ai.wordsToLrc(part, true, true); savePrefs(); restyle();
-      return status(part.length + " mots écrits et calés par l'IA (pris dans l'écoute du clip) : relis-les, corrige un mot directement dans le texte.");
-    }
     status("Lecture du son du clip…");
     const a = await clipAudio(c);
     if (!a) return status("Le son de ce clip ne se lit pas ici.");
@@ -3667,82 +3636,6 @@ async function aiIsync(write = false) {
     prefs.introLyrics = $("introLyrics").value = out.lrc; savePrefs(); restyle();
     status(out.words + (out.aligned ? " mots calés par l'IA, ton texte est gardé." : " mots écrits et calés par l'IA : relis-les, corrige un mot directement dans le texte."));
   } catch (error) { status("L'IA n'a pas marché : " + error.message); } finally { $("isync-ai").disabled = $("isync-write").disabled = false; }
-}
-// ——— Trouver une réplique : les mots de tout le clip (écoutés une fois par l'IA, réglage film), puis une recherche souple ———
-/** Les mots datés de tout le clip, écoutés une fois (gardés tant que le clip est là). */
-async function clipWords(c, status) {
-  if (c.words) return c.words;
-  const a = await clipAudio(c);
-  if (!a) throw new Error("Le son de ce clip ne se lit pas ici.");
-  const ai = await import("./assets/ai-lyrics.js");
-  const out = await aiWork(() => ai.transcribe(a, status, { film: true }));
-  return (c.words = out.heard || []);
-}
-const plainWord = (w) => w.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
-/** Deux mots proches : identiques, l'un commence l'autre (4 lettres au moins), ou au plus un tiers de lettres différentes. */
-function nearWord(a, b) {
-  if (a === b) return true;
-  if (!a || !b) return false;
-  if (Math.min(a.length, b.length) >= 4 && (a.startsWith(b) || b.startsWith(a))) return true;
-  const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
-  for (let j = 1; j <= b.length; j++) d[0][j] = j;
-  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
-  return d[a.length][b.length] <= Math.floor(Math.max(a.length, b.length) / 3);
-}
-/** Les passages qui ressemblent le plus à la phrase cherchée : chaque mot cherché, dans l'ordre, à deux mots près.
- *  Rend [{ from, to, score }] (indices des mots), du plus ressemblant au moins, sans doublons qui se chevauchent. */
-function findPhrase(words, query) {
-  const want = query.split(/\s+/).map(plainWord).filter(Boolean), keys = words.map((w) => plainWord(w.text));
-  if (!want.length) return [];
-  const hits = [];
-  for (let i = 0; i < keys.length; i++) {
-    if (!nearWord(keys[i], want[0]) && !(want[1] && nearWord(keys[i], want[1]))) continue;
-    let k = nearWord(keys[i], want[0]) ? 1 : 2, found = 1, j = i, gap = 0;
-    for (let x = i + 1; x < keys.length && k < want.length && gap <= 2; x++) {
-      if (nearWord(keys[x], want[k])) { found++; k++; j = x; gap = 0; }
-      else if (want[k + 1] && nearWord(keys[x], want[k + 1])) { found++; k += 2; j = x; gap = 0; }
-      else gap++;
-    }
-    const score = found / want.length;
-    if (score >= .5) hits.push({ from: i, to: j, score });
-  }
-  hits.sort((a, b) => b.score - a.score || a.from - b.from);
-  const kept = [];
-  for (const h of hits) if (!kept.some((k) => h.from <= k.to && h.to >= k.from)) kept.push(h);
-  return kept.slice(0, 6);
-}
-/** Cale la réplique sur les mots [from, to] : le passage (avec un peu d'air autour) et ses paroles synchronisées mot par mot. */
-function useFound(words, from, to) {
-  const c = introClip(), start = Math.max(0, words[from].start - .25), end = Math.min(c.duration, Math.max(words[to].end + .5, start + 1.5));
-  prefs.introIn = Math.round(start * 100) / 100; prefs.introLen = Math.round((end - start) * 100) / 100;
-  const part = words.slice(from, to + 1), at = (x) => lrcStamp(Math.max(0, x - prefs.introIn));
-  prefs.introLyrics = "[" + at(part[0].start) + "] " + part.map((w) => "<" + at(w.start) + ">" + w.text).join(" ") + "\n[" + at(Math.min(words[to].end, end)) + "]";
-  $("introLyrics").value = prefs.introLyrics;
-  $("introIn").value = prefs.introIn.toString().replace(".", ","); $("introLen").value = introLen().toFixed(2).replace(".", ",");
-  savePrefs(); position = 0; refresh(); drawIntroWave();
-  $("intro-hear").click(); // on l'entend tout de suite
-}
-async function findReplica() {
-  const c = introClip(), q = $("find-q").value.trim(), status = (text) => { $("find-status").textContent = text; };
-  if (!c) return status("Choisis d'abord le clip (le film) de la réplique.");
-  if (!q) return status("Tape une phrase dite dans le clip.");
-  if (!c.words && c.duration > 20 * 60 && !confirm("Ce clip dure " + Math.round(c.duration / 60) + " minutes : l'IA va l'écouter en entier, ça peut prendre plusieurs minutes. On y va ?")) return;
-  $("find-go").disabled = true;
-  try {
-    const words = await clipWords(c, (text) => status(text.replace("les paroles", "le clip")));
-    if (introClip() !== c) return;
-    const found = findPhrase(words, q);
-    status(!words.length ? "L'IA n'a entendu aucune parole dans ce clip." : found.length ? "Touche un passage pour y caler la réplique (les paroles suivent)." : "Pas trouvé : essaie avec moins de mots, ou d'autres mots de la phrase.");
-    $("find-results").replaceChildren(...found.map(({ from, to }) => {
-      const b = document.createElement("button"), before = words.slice(Math.max(0, from - 4), from), after = words.slice(to + 1, to + 5);
-      b.type = "button";
-      b.append(Object.assign(document.createElement("b"), { textContent: OniriqueAudio.clock(words[from].start) }),
-        Object.assign(document.createElement("span"), { textContent: (before.length ? "… " : "") + before.map((w) => w.text).join(" ") + " " }));
-      b.lastChild.append(Object.assign(document.createElement("mark"), { textContent: words.slice(from, to + 1).map((w) => w.text).join(" ") }), " " + after.map((w) => w.text).join(" ") + (after.length ? " …" : ""));
-      b.onclick = () => useFound(words, from, to);
-      return b;
-    }));
-  } catch (error) { status("La recherche n'a pas marché : " + error.message); } finally { $("find-go").disabled = false; }
 }
 /** Terminer : les paroles de la réplique s'écrivent en LRC (temps depuis le début de la réplique), mot par mot si on l'a fait. */
 function finishIsync() {
@@ -3870,7 +3763,7 @@ function start() {
       if (id === "afterClip") prefs.afterIn = prefs.afterLen = 0; // un autre clip : tout le clip
       savePrefs();
       if (id === "introOn" || id === "introClip" || id === "afterClip" || id === "filmContinue") { position = 0; refresh(); } else { scheduleMix(); restyle(); }
-      if (id === "introClip") { drawIntroWave(); $("find-results").replaceChildren(); }
+      if (id === "introClip") drawIntroWave();
       if (id === "afterClip" || id === "filmContinue" || id === "introOn") drawAfterWave();
     });
   }
@@ -3909,8 +3802,6 @@ function start() {
   $("isync-end").onclick = endIsync;
   $("isync-ai").onclick = () => aiIsync(false);
   $("isync-write").onclick = () => aiIsync(true);
-  $("find-go").onclick = findReplica;
-  $("find-q").addEventListener("keydown", (event) => { if (event.key === "Enter") { event.preventDefault(); findReplica(); } });
   $("isync-done").onclick = finishIsync;
   document.querySelectorAll("[data-rate]").forEach((b) => { b.onclick = () => { if (!isync) return; isync.rate = Number(b.dataset.rate); isyncPlayer.playbackRate = isync.rate; renderIsync(); }; });
   isyncPlayer.addEventListener("play", renderIsync); isyncPlayer.addEventListener("pause", () => isync && renderIsync());
@@ -4035,7 +3926,7 @@ function start() {
     $(id).replaceChildren(...(id === "strongFont" ? [new Option("Même police que les paroles", "")] : []), ...FONT_LIST.map(([family, , label]) => new Option(label, family)));
   }
   const loadFont = (family) => { if (!family) return; const [f, w] = fontOf(family); document.fonts.load(`${w} 80px "${f}"`).then(() => !playing && segments.length && draw(position, false)); };
-  const boxes = ["zoom", "flash", "retro", "hookOn", "bestMoments", "smartCrop"];
+  const boxes = ["zoom", "flash", "retro", "hookOn", "bestMoments"];
   const syncControls = () => {
     for (const id of STYLE_INPUTS) { const el = $(id); if (el.type === "checkbox") el.checked = !!prefs[id]; else el.value = prefs[id]; }
     boxes.forEach((id) => { $(id).checked = !!prefs[id]; });
