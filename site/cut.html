@@ -573,12 +573,16 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
             <div class="row">
               <button class="mini" type="button" id="isync-line">Synchroniser phrase par phrase</button>
               <button class="mini" type="button" id="isync-word">Synchroniser mot par mot</button>
+              <button class="mini" type="button" id="isync-ai">Caler avec l'IA</button>
             </div>
+            <p class="muted" id="isync-ai-status" hidden></p>
+            <label class="check"><input type="checkbox" id="introGaps"> Effacer le texte pendant les blancs entre deux phrases</label>
             <div class="stack sub" id="isync" hidden style="padding-left:0;padding-right:0">
               <div class="row" style="gap:6px"><span class="muted">Vitesse</span><button class="mini" type="button" data-rate="0.25">0,25</button><button class="mini" type="button" data-rate="0.5">0,50</button><button class="mini" type="button" data-rate="1">1,00</button><button class="mini" type="button" data-rate="1.25">1,25</button></div>
               <div class="row">
                 <button class="go" type="button" id="isync-mark">Lancer la réplique</button>
                 <button class="mini" type="button" id="isync-undo">Annuler le dernier (↑)</button>
+                <button class="mini" type="button" id="isync-end">Fin de phrase (→)</button>
                 <button class="mini" type="button" id="isync-done">Terminer</button>
               </div>
               <div class="strong-words" id="isync-items"></div>
@@ -638,6 +642,8 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
 
             <p class="sub-title">Après la réplique</p>
             <label>Clip après la transition<select id="afterClip"></select></label>
+            <div class="wave small" id="after-wave" hidden title="Le son du clip : fais glisser la zone, ou ses bords, pour choisir l'extrait montré après la réplique"><canvas></canvas></div>
+            <p class="muted" id="after-range" hidden></p>
             <label class="check"><input type="checkbox" id="filmContinue"> Le film continue sous la musique (la suite de l'extrait)</label>
           </div>
           <p class="sub-title">Volumes</p>
@@ -817,8 +823,8 @@ const FX = { bw: false, shake: false, shakeAmt: 100, rgbSplit: false, rgbAmt: 10
 // Le style du texte de la réplique (quand « Style de texte propre à la réplique » est coché).
 const ILOOK = { iOwn: false, iFont: "Hanken Grotesk", iPlace: "bottom", iColor: "#ffffff", iSize: 100, iStroke: 0, iStrokeColor: "#000000", iGlow: 0, iGlowColor: "#ffffff",
   iShadowColor: "#000000", iShadowBlur: 0, iShadowOffset: 0, iCaps: false, iBox: true, iBoxColor: "#000000", iBoxAlpha: 62 };
-const FILM = { ...ILOOK, trackFades: {}, introOn: false, introClip: 0, introIn: 0, introLen: 4, filmVol: 100, introLyrics: "", introSubMode: "sub", introFade: false, transition: "flash", transAmt: 100,
-  dropGap: false, underPart: "none", underVol: 70, filmContinue: false, afterClip: -1, musicVol: 100, clipVol: 0, slowmo: "100" };
+const FILM = { ...ILOOK, trackFades: {}, introOn: false, introClip: 0, introIn: 0, introLen: 4, filmVol: 100, introLyrics: "", introSubMode: "sub", introGaps: true, introFade: false, transition: "flash", transAmt: 100,
+  dropGap: false, underPart: "none", underVol: 70, filmContinue: false, afterClip: -1, afterIn: 0, afterLen: 0, musicVol: 100, clipVol: 0, slowmo: "100" };
 let prefs = { previewVol: 80, ...FILM, duration: 15, order: "seq", cadence: "2", nicheTag: "#undergroundmusic #rapfr", safeGuide: false, ytAuto: false, ytTime: "18:00", seriesCount: "5", seriesStyles: ["classic", "pixel", "red", "card"], bestMoments: true, smartCrop: true, zoom: false, zoomAmt: 100, flash: false, flashAmt: 100, place: "none", artist: "", snap: false, loop: false, batch: "one", lyricsPlace: "bottom", ...FX,
   preset: "classic", frame: "full", retro: false, lyricsMode: "line", hook: "", hookOn: false, sign: "", textStyle: "classic", titleFont: "Unbounded", textSize: 100,
   strokeColor: "#000000", glowColor: "#ffffff", ...TEXT_STYLES.classic,
@@ -846,7 +852,7 @@ try {
   if ((saved.v || 1) < 3) { prefs.place = "none"; prefs.hookOn = false; }
   prefs.v = 3;
 } catch { /* rien de mémorisé */ }
-prefs.afterClip = -1; // les clips ne restent pas d'une visite à l'autre : leur numéro non plus
+prefs.afterClip = -1; prefs.afterLen = 0; // les clips ne restent pas d'une visite à l'autre : leur numéro et leur extrait non plus
 const savePrefs = () => { try { localStorage.setItem(PREFS, JSON.stringify(prefs)); } catch { /* stockage indisponible */ } };
 
 const sound = { name: "", buffer: null, env: null, rms: null, bpm: 0, phase: 0, start: 0 };
@@ -1815,14 +1821,16 @@ function build() {
     last = k;
     const c = ids[k], clip = clips[c], length = (s.t1 - s.t0) * slow();
     s.clip = c;
-    const best = prefs.bestMoments && clip.moments && clip.moments.filter((t) => t <= clip.duration - length - 0.05);
+    // L'extrait choisi pour l'après-réplique (sinon tout le clip).
+    const [lo, hi] = ids.length === 1 && c === prefs.afterClip && prefs.afterLen > 0 ? [prefs.afterIn, Math.min(clip.duration, prefs.afterIn + prefs.afterLen)] : [0, clip.duration];
+    const best = prefs.bestMoments && clip.moments && clip.moments.filter((t) => t >= lo && t <= hi - length - 0.05);
     if (clip.kind === "video" && best && best.length) {
       // Les meilleurs moments du clip (assets/clip-frames.js) : dans l'ordre de qualité, ou au hasard parmi les meilleurs.
       s.from = prefs.order === "mix" ? best[Math.floor(random() * Math.min(best.length, 6))] : best[cursor[c]++ % best.length];
     } else if (clip.kind === "video") {
-      const room = Math.max(0, clip.duration - length - 0.05);
-      if (prefs.order === "mix") s.from = random() * room;
-      else { if (cursor[c] > room) cursor[c] = 0; s.from = cursor[c]; cursor[c] += length; }
+      const room = Math.max(0, hi - lo - length - 0.05);
+      if (prefs.order === "mix") s.from = lo + random() * room;
+      else { if (cursor[c] > room) cursor[c] = 0; s.from = lo + cursor[c]; cursor[c] += length; }
     }
   });
   // BOUCLE, comme les montages de films qui tournent en boucle sur TikTok : la dernière coupe (moins d'une seconde) montre le
@@ -1858,17 +1866,26 @@ function gluePunct(words) {
 const strongOf = (w) => { const m = /^\*\*(.+?)\*\*(.*)$/.exec(w.text); return m ? { ...w, text: m[1] + m[2], strong: true } : w; };
 /** Paroles LRC : [mm:ss.cc] texte ; les lignes sans repère sont ignorées. row : la ligne dans le champ, pour y marquer les mots forts. */
 function parseLrc(text) {
-  const out = [];
+  const out = [], blanks = [];
   String(text || "").split("\n").forEach((raw, row) => {
     const m = /^\s*\[(\d+):(\d+(?:[.,]\d+)?)\]\s*(.*)$/.exec(raw);
-    if (!m || !m[3].trim()) return;
+    if (!m) return;
+    if (!m[3].trim()) { blanks.push(Number(m[1]) * 60 + Number(m[2].replace(",", "."))); return; }
     // Synchronisées mot par mot dans CLOUD : « <mm:ss.cc>mot » devant chaque mot.
     const words = gluePunct([...m[3].matchAll(/<(\d+):(\d+(?:[.,]\d+)?)>\s*([^<]*)/g)].map((w) => ({ at: Number(w[1]) * 60 + Number(w[2].replace(",", ".")), text: w[3].trim() }))
       .filter((w) => w.text).map((w, ti) => strongOf({ ...w, ti })));
     const plain = words.length ? null : gluePunct(m[3].trim().split(/\s+/).map((text, ti) => strongOf({ text, ti })));
     out.push({ row, at: Number(m[1]) * 60 + Number(m[2].replace(",", ".")), words: words.length ? words : null, plain, text: (words.length ? words : plain).map((w) => w.text).join(" ") });
   });
-  return out.sort((a, b) => a.at - b.at);
+  out.sort((a, b) => a.at - b.at);
+  out.forEach((l, k) => { const end = blanks.find((b) => b > l.at && !(out[k + 1] && b > out[k + 1].at)); if (end !== undefined) l.end = end; });
+  return out;
+}
+/** Quand une phrase quitte l'écran : à sa fin marquée (un blanc), sinon peu après son dernier mot ; jamais après la suivante. */
+function lineEnd(line, list) {
+  const next = list[list.indexOf(line) + 1];
+  const end = line.end ?? (line.words ? line.words.at(-1).at + 1 : line.at + line.plain.length * .45 + .9);
+  return next ? Math.min(end, next.at) : end;
 }
 function readLyrics() { lyrics = parseLrc($("lyrics").value); renderStrong(); }
 // Les paroles de la réplique, lues une fois par texte.
@@ -2097,7 +2114,7 @@ function wordAt(now, list = lyrics) {
     // Les moments marqués mot par mot dans CLOUD : chaque mot reste jusqu'au suivant (1,5 s au plus après le dernier).
     const w = line.words.findLastIndex((x) => x.at <= now);
     if (w < 0) return null;
-    const until = line.words[w + 1] ? line.words[w + 1].at : Math.min(list[k + 1] ? list[k + 1].at : Infinity, line.words[w].at + 1.5);
+    const until = line.words[w + 1] ? line.words[w + 1].at : Math.min(list[k + 1] ? list[k + 1].at : Infinity, line.end ?? line.words[w].at + 1.5);
     return now < until ? line.words[w] : null;
   }
   const words = line.plain;
@@ -2198,7 +2215,7 @@ function drawIntro(t, playing) {
     if (word) bigWord(word, y, Math.min(r.w * .86, SAFE_W), t, look);
   } else if (lines.length) {
     const line = lines.filter((l) => l.at <= t).at(-1);
-    if (line && t - line.at < 6) subtitle(line.text, r);
+    if (line && t < (prefs.introGaps ? lineEnd(line, lines) : line.at + 6)) subtitle(line.text, r);
   } else {
     // Pas encore synchronisées : tout le texte, du début à la fin de la réplique.
     const all = prefs.introLyrics.split("\n").map(bareLine).filter(Boolean).join(" ");
@@ -3262,13 +3279,24 @@ function dragLoupe() {
   box.addEventListener("pointerup", end); box.addEventListener("pointercancel", end);
 }
 /** La forme d'onde du son du clip de la réplique : on y voit où le film parle. */
-async function drawIntroWave() {
-  const c = introClip(), canvas = $("intro-wave").firstElementChild;
-  if (!c || $("intro-box").hidden) return;
-  if (c.rms === undefined) { await clipAudio(c); if (introClip() !== c) return; }
+const drawIntroWave = () => drawWave($("intro-wave"), introClip, () => [prefs.introIn, prefs.introIn + introLen()]);
+const afterClip = () => { const c = !prefs.filmContinue && clips[prefs.afterClip]; return c && c.kind === "video" ? c : null; };
+const afterZone = () => { const c = afterClip(); return prefs.afterLen > 0 ? [prefs.afterIn, Math.min(c.duration, prefs.afterIn + prefs.afterLen)] : [0, c.duration]; };
+function drawAfterWave() {
+  const c = afterClip(), mmss = (t) => Math.floor(t / 60) + ":" + String(Math.floor(t % 60)).padStart(2, "0");
+  $("after-wave").hidden = $("after-range").hidden = !c || $("intro-box").hidden;
+  if (!c) return;
+  const [a, b] = afterZone();
+  $("after-range").textContent = "Extrait de " + mmss(a) + " à " + mmss(b) + " : les coupes après la réplique sont prises dedans.";
+  drawWave($("after-wave"), afterClip, afterZone);
+}
+async function drawWave(box, clipOf, zone) {
+  const c = clipOf(), canvas = box.firstElementChild;
+  if (!c || box.hidden || $("intro-box").hidden) return;
+  if (c.rms === undefined) { await clipAudio(c); if (clipOf() !== c) return; }
   const x = sizeCanvas(canvas), w = canvas.width, h = canvas.height, d = devicePixelRatio || 1;
   x.clearRect(0, 0, w, h);
-  const x0 = prefs.introIn / c.duration * w, x1 = (prefs.introIn + introLen()) / c.duration * w;
+  const [z0, z1] = zone(), x0 = z0 / c.duration * w, x1 = z1 / c.duration * w;
   x.fillStyle = "rgba(90,160,255,.25)"; x.fillRect(x0, 0, x1 - x0, h);
   if (c.rms) {
     let peak = 0; for (const v of c.rms) peak = Math.max(peak, v);
@@ -3284,32 +3312,38 @@ async function drawIntroWave() {
 }
 /** La zone de la réplique : on la déplace, ou on tire son début ou sa fin. */
 function dragIntro() {
-  const box = $("intro-wave");
+  dragZone($("intro-wave"), introClip, () => [prefs.introIn, prefs.introIn + introLen()], (a, b) => {
+    prefs.introIn = a; prefs.introLen = b - a;
+    $("introIn").value = prefs.introIn.toString().replace(".", ","); $("introLen").value = introLen().toFixed(2).replace(".", ",");
+    drawIntroWave();
+  });
+  dragZone($("after-wave"), afterClip, afterZone, (a, b) => { prefs.afterIn = a; prefs.afterLen = b - a; drawAfterWave(); }, 1);
+}
+/** Une zone sur l'onde d'un clip : on la déplace, ou on tire son début ou sa fin (min secondes au moins). */
+function dragZone(box, clipOf, zone, set, min = .5) {
   let grab = null;
-  const at = (event) => { const r = box.getBoundingClientRect(), c = introClip(); return Math.max(0, Math.min(1, (event.clientX - r.left) / r.width)) * (c ? c.duration : 0); };
+  const at = (event) => { const r = box.getBoundingClientRect(), c = clipOf(); return Math.max(0, Math.min(1, (event.clientX - r.left) / r.width)) * (c ? c.duration : 0); };
   const edge = (event) => {
-    const r = box.getBoundingClientRect(), c = introClip(), x = (t) => r.left + t / c.duration * r.width;
-    if (Math.abs(event.clientX - x(prefs.introIn + introLen())) < 12) return "end";
-    if (Math.abs(event.clientX - x(prefs.introIn)) < 12) return "start";
+    const r = box.getBoundingClientRect(), c = clipOf(), x = (t) => r.left + t / c.duration * r.width, [a, b] = zone();
+    if (Math.abs(event.clientX - x(b)) < 12) return "end";
+    if (Math.abs(event.clientX - x(a)) < 12) return "start";
     return null;
   };
   const round = (x) => Math.round(x * 100) / 100;
   box.addEventListener("pointerdown", (event) => {
-    if (!introClip()) return;
-    const t = at(event);
-    grab = { kind: edge(event) || "move", offset: t - prefs.introIn, end: prefs.introIn + introLen() };
+    if (!clipOf()) return;
+    const [a, b] = zone();
+    grab = { kind: edge(event) || "move", offset: at(event) - a, start: a, end: b };
     box.setPointerCapture(event.pointerId);
   });
   box.addEventListener("pointermove", (event) => {
-    const c = introClip();
+    const c = clipOf();
     if (!c) return;
     if (!grab) { box.style.cursor = edge(event) ? "ew-resize" : "grab"; return; }
-    const t = at(event);
-    if (grab.kind === "start") { prefs.introIn = round(Math.max(0, Math.min(t, grab.end - .5))); prefs.introLen = round(grab.end - prefs.introIn); }
-    else if (grab.kind === "end") prefs.introLen = round(Math.max(.5, Math.min(t, c.duration) - prefs.introIn));
-    else prefs.introIn = round(Math.max(0, Math.min(t - grab.offset, c.duration - prefs.introLen)));
-    $("introIn").value = prefs.introIn.toString().replace(".", ","); $("introLen").value = introLen().toFixed(2).replace(".", ",");
-    drawIntroWave();
+    const t = at(event), len = grab.end - grab.start;
+    if (grab.kind === "start") set(round(Math.max(0, Math.min(t, grab.end - min))), grab.end);
+    else if (grab.kind === "end") set(grab.start, round(Math.max(grab.start + min, Math.min(t, c.duration))));
+    else { const a = round(Math.max(0, Math.min(t - grab.offset, c.duration - len))); set(a, round(a + len)); }
   });
   const end = () => { if (!grab) return; grab = null; savePrefs(); position = 0; refresh(); };
   box.addEventListener("pointerup", end); box.addEventListener("pointercancel", end);
@@ -3339,7 +3373,7 @@ function renderIsync() {
   $("isync-mark").disabled = !next;
   document.querySelectorAll("[data-rate]").forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.rate) === s.rate)));
   $("isync-help").textContent = s.items.filter((x) => x.at !== null).length + " / " + s.items.length + (s.mode === "line" ? " phrases" : " mots")
-    + " · Lance la réplique, puis appuie sur ↓ (flèche du bas) au moment où chaque " + (s.mode === "line" ? "phrase" : "mot") + " commence. Ralentis le son pour être précis.";
+    + " · Lance la réplique, puis appuie sur ↓ (flèche du bas) au moment où chaque " + (s.mode === "line" ? "phrase" : "mot") + " commence, et sur → quand une phrase s'arrête avant un blanc. Ralentis le son pour être précis.";
 }
 function markIsync() {
   const s = isync;
@@ -3349,12 +3383,38 @@ function markIsync() {
   if (!s.items[s.i]) isyncPlayer.pause();
   renderIsync();
 }
+function endIsync() {
+  const s = isync, it = s && s.items[s.i - 1];
+  if (!it || isyncPlayer.paused) return;
+  it.end = Math.max(it.at, Math.round((isyncPlayer.currentTime - prefs.introIn) * 100) / 100);
+  renderIsync();
+}
 function undoIsync() {
   const s = isync;
   if (!s || !s.i) return;
   const it = s.items[--s.i];
   if (it.at !== null) isyncPlayer.currentTime = prefs.introIn + Math.max(0, it.at - 1.5);
-  it.at = null; renderIsync();
+  it.at = null; it.end = undefined; renderIsync();
+}
+/** La réplique calée par l'IA (assets/ai-lyrics.js) : le texte écrit est gardé, sinon l'IA l'écrit ; les blancs sont marqués. */
+async function aiIsync() {
+  const c = introClip(), status = (text) => { $("isync-ai-status").hidden = false; $("isync-ai-status").textContent = text; };
+  if (!c || !introLen()) return alert("Choisis d'abord le clip et le passage de la réplique.");
+  $("isync-ai").disabled = true;
+  try {
+    status("Lecture du son du clip…");
+    const a = await clipAudio(c);
+    if (!a) return status("Le son de ce clip ne se lit pas ici.");
+    const from = Math.floor(prefs.introIn * a.sampleRate), len = Math.max(1, Math.floor(introLen() * a.sampleRate));
+    const part = new AudioBuffer({ length: len, numberOfChannels: a.numberOfChannels, sampleRate: a.sampleRate });
+    for (let ch = 0; ch < a.numberOfChannels; ch++) part.copyToChannel(a.getChannelData(ch).subarray(from, from + len), ch);
+    const ai = await import("./assets/ai-lyrics.js");
+    const written = prefs.introLyrics.split("\n").map(bareLine).filter(Boolean).join("\n");
+    const out = await ai.transcribe(part, status, { written, ends: true });
+    if (!out.words) return status(written ? "L'IA n'a pas réussi à caler ce texte sur la réplique." : "L'IA n'a pas entendu de paroles dans la réplique.");
+    prefs.introLyrics = $("introLyrics").value = out.lrc; savePrefs(); restyle();
+    status(out.words + (out.aligned ? " mots calés par l'IA, ton texte est gardé." : " mots écrits et calés par l'IA : relis-les, corrige un mot directement dans le texte."));
+  } catch (error) { status("L'IA n'a pas marché : " + error.message); } finally { $("isync-ai").disabled = false; }
 }
 /** Terminer : les paroles de la réplique s'écrivent en LRC (temps depuis le début de la réplique), mot par mot si on l'a fait. */
 function finishIsync() {
@@ -3363,7 +3423,8 @@ function finishIsync() {
   prefs.introLyrics = s.lines.map((l, k) => {
     const its = s.items.filter((x) => x.line === k);
     if (!its.length || its.some((x) => x.at === null)) return l;
-    return "[" + lrcStamp(its[0].at) + "] " + (s.mode === "line" ? l : its.map((x) => "<" + lrcStamp(x.at) + ">" + x.text).join(" "));
+    const end = its.at(-1).end;
+    return "[" + lrcStamp(its[0].at) + "] " + (s.mode === "line" ? l : its.map((x) => "<" + lrcStamp(x.at) + ">" + x.text).join(" ")) + (end != null ? "\n[" + lrcStamp(end) + "]" : "");
   }).join("\n");
   $("introLyrics").value = prefs.introLyrics; savePrefs();
   isync = null; $("isync").hidden = true;
@@ -3380,9 +3441,10 @@ function filmUi() {
   $("afterClip").replaceChildren(new Option("Tous les clips (le montage)", -1), ...clips.map((c, i) => new Option((i + 1) + ". " + c.name, i)));
   $("afterClip").value = String(clips[prefs.afterClip] ? prefs.afterClip : -1);
   $("afterClip").disabled = !!prefs.filmContinue; // « la suite de l'extrait » garde le clip de la réplique
+  drawAfterWave();
   $("introOn").checked = !!prefs.introOn; $("intro-box").hidden = !prefs.introOn;
   for (const id of ["filmVol", "musicVol", "clipVol"]) $(id).value = prefs[id];
-  for (const id of ["introFade", "dropGap", "filmContinue"]) $(id).checked = !!prefs[id];
+  for (const id of ["introFade", "introGaps", "dropGap", "filmContinue"]) $(id).checked = !!prefs[id];
   $("underVol").value = prefs.underVol;
   if (document.activeElement !== $("introLyrics")) $("introLyrics").value = prefs.introLyrics;
   $("ilook").hidden = !prefs.iOwn;
@@ -3419,7 +3481,7 @@ function showTab(name) {
   bar.scrollLeft = shownTab.offsetLeft - (bar.clientWidth - shownTab.offsetWidth) / 2; // sur téléphone, l'onglet reste visible
   // Les formes d'onde se dessinent à la taille de leur cadre : il faut qu'il soit visible.
   if (name === "son") drawWave();
-  if (name === "film") drawIntroWave();
+  if (name === "film") { drawIntroWave(); drawAfterWave(); }
 }
 function initTabs() {
   const tabs = [...document.querySelectorAll("[data-tab]")];
@@ -3464,13 +3526,15 @@ function start() {
     if (playing && source && source.monitor && !(recording && prefs.mute)) source.monitor.gain.setTargetAtTime(prefs.previewVol / 100, ctx.currentTime, .02);
   };
   // Options de films : la réplique change la durée de la vidéo (tout se recalcule) ; les volumes ne changent que le mixage.
-  for (const id of ["introOn", "introClip", "afterClip", "filmVol", "introFade", "dropGap", "musicVol", "clipVol", "underVol", "filmContinue"]) {
+  for (const id of ["introOn", "introClip", "afterClip", "filmVol", "introFade", "introGaps", "dropGap", "musicVol", "clipVol", "underVol", "filmContinue"]) {
     $(id).addEventListener("change", () => {
       const el = $(id);
       prefs[id] = el.type === "checkbox" ? el.checked : el.type === "range" || el.tagName === "SELECT" ? Number(el.value) : el.value;
+      if (id === "afterClip") prefs.afterIn = prefs.afterLen = 0; // un autre clip : tout le clip
       savePrefs();
       if (id === "introOn" || id === "introClip" || id === "afterClip" || id === "filmContinue") { position = 0; refresh(); } else { scheduleMix(); restyle(); }
       if (id === "introClip") drawIntroWave();
+      if (id === "afterClip" || id === "filmContinue" || id === "introOn") drawAfterWave();
     });
   }
   for (const id of ["introIn", "introLen"]) {
@@ -3504,6 +3568,8 @@ function start() {
   $("isync-word").onclick = () => startIsync("word");
   $("isync-mark").onclick = markIsync;
   $("isync-undo").onclick = undoIsync;
+  $("isync-end").onclick = endIsync;
+  $("isync-ai").onclick = aiIsync;
   $("isync-done").onclick = finishIsync;
   document.querySelectorAll("[data-rate]").forEach((b) => { b.onclick = () => { if (!isync) return; isync.rate = Number(b.dataset.rate); isyncPlayer.playbackRate = isync.rate; renderIsync(); }; });
   isyncPlayer.addEventListener("play", renderIsync); isyncPlayer.addEventListener("pause", () => isync && renderIsync());
@@ -3512,6 +3578,7 @@ function start() {
     if (!isync || /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName)) return;
     if (event.key === "ArrowDown" || event.key === " ") { event.preventDefault(); if (!event.repeat) markIsync(); }
     else if (event.key === "ArrowUp") { event.preventDefault(); undoIsync(); }
+    else if (event.key === "ArrowRight") { event.preventDefault(); endIsync(); }
   });
   $("intro-hear").onclick = async () => {
     if (!introLen()) return;

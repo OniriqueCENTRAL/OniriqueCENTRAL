@@ -10,7 +10,7 @@ const stamp = (x) => { const cs = Math.round(x * 100); return String(Math.floor(
 
 /** Des mots datés en LRC mot par mot : une ligne par phrase (un silence, une ponctuation finale, une majuscule de début
  *  de phrase, ou 10 mots au plus). */
-export function wordsToLrc(words) {
+export function wordsToLrc(words, ends = false) {
   const lines = [];
   let line = [];
   words.forEach((w, i) => {
@@ -20,7 +20,12 @@ export function wordsToLrc(words) {
     line.push(w);
   });
   if (line.length) lines.push(line);
-  return lines.map((l) => "[" + stamp(l[0].start) + "] " + l.map((w) => "<" + stamp(w.start) + ">" + w.text).join(" ")).join("\n");
+  return lines.map((l, k) => "[" + stamp(l[0].start) + "] " + l.map((w) => "<" + stamp(w.start) + ">" + w.text).join(" ")
+    + blank(ends, l.at(-1).end, lines[k + 1] && lines[k + 1][0].start)).join("\n");
+}
+/** ends : la fin d'une phrase avant un blanc (plus de 0,3 s sans voix), en ligne datée vide ; sinon rien. */
+function blank(ends, end, next) {
+  return ends && end != null && !(next - end < .3) ? "\n[" + stamp(end) + "]" : "";
 }
 
 const norm = (w) => w.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
@@ -37,7 +42,7 @@ function close(a, b) {
 /** Cale des paroles déjà écrites sur les mots entendus par l'IA : le texte écrit est gardé tel quel, l'IA ne donne que le
  *  moment de chaque mot. Alignement mot à mot (Needleman-Wunsch) ; un mot écrit que l'IA n'a pas reconnu prend un temps
  *  réparti entre ses voisins reconnus. Rend du LRC mot par mot, une ligne par ligne écrite. */
-export function alignLyrics(text, heard) {
+export function alignLyrics(text, heard, ends = false) {
   const lines = text.split("\n").map((l) => l.replace(/^\s*\[[^\]]*\]\s*/, "").replace(/<[^>]*>\s*/g, "").trim()).filter(Boolean);
   const written = lines.flatMap((l, line) => l.split(/\s+/).map((t) => ({ text: t, line, key: norm(t.replace(/\*\*/g, "")), at: null })));
   const n = written.length, m = heard.length, keys = heard.map((w) => norm(w.text));
@@ -49,7 +54,7 @@ export function alignLyrics(text, heard) {
   }
   for (let i = n, j = m; i > 0 && j > 0;) {
     const s = close(written[i - 1].key, keys[j - 1]);
-    if (score[i][j] === score[i - 1][j - 1] + s) { if (s > 0) written[i - 1].at = heard[j - 1].start; i--; j--; }
+    if (score[i][j] === score[i - 1][j - 1] + s) { if (s > 0) { written[i - 1].at = heard[j - 1].start; written[i - 1].end = heard[j - 1].end; } i--; j--; }
     else if (score[i][j] === score[i - 1][j] - 1) i--;
     else j--;
   }
@@ -65,7 +70,9 @@ export function alignLyrics(text, heard) {
     else if (to !== null) for (let k = a + 1; k < b; k++) written[k].at = Math.max(0, to - .35 * (b - k));
     else return "";
   }
-  return lines.map((_, li) => { const ws = written.filter((w) => w.line === li); return "[" + stamp(ws[0].at) + "] " + ws.map((w) => "<" + stamp(w.at) + ">" + w.text).join(" "); }).join("\n");
+  const rows = lines.map((_, li) => written.filter((w) => w.line === li));
+  return rows.map((ws, li) => "[" + stamp(ws[0].at) + "] " + ws.map((w) => "<" + stamp(w.at) + ">" + w.text).join(" ")
+    + blank(ends, ws.at(-1).end ?? ws.at(-1).at + .5, rows[li + 1] && rows[li + 1][0].at)).join("\n");
 }
 
 /** Un AudioBuffer rééchantillonné (channels voies, rate Hz), en Float32Array par voie. */
@@ -102,14 +109,14 @@ export async function isolateVoice(buffer, status = () => {}) {
  *  written : des paroles déjà écrites (avec ou sans temps) à caler ; sinon l'IA les écrit elle-même.
  *  La voix isolée ne sert qu'à repérer où l'on chante : Whisper écoute le morceau tel quel, qu'il comprend mieux (mesuré sur
  *  deux titres de euhZ : 44,7 et 37,7 % de mots faux, contre 50,7 et 44,4 % sur la voix isolée, abîmée par la séparation). */
-export async function transcribe(buffer, status = () => {}, { voice = null, language = "french", written = "" } = {}) {
+export async function transcribe(buffer, status = () => {}, { voice = null, language = "french", written = "", ends = false } = {}) {
   const guideVoice = voice || (await isolateVoice(buffer, status)) || buffer;
   const [audio] = await resample(buffer, 16000, 1), [guide] = await resample(guideVoice, 16000, 1);
   const out = await runWorker(new URL("whisper-worker.js", import.meta.url), { audio, guide, language }, [audio.buffer, guide.buffer], (d) => status(d.phase === "download"
     ? "Téléchargement de l'IA des paroles (environ 760 Mo, une seule fois sur cet appareil)… " + pct(d.value) : "L'IA écoute les paroles…" + (d.value ? " " + pct(d.value) : "")));
   if (written.trim() && out.words.length) {
-    const lrc = alignLyrics(written, out.words);
+    const lrc = alignLyrics(written, out.words, ends);
     return { lrc, words: lrc ? (lrc.match(/</g) || []).length : 0, device: out.device, aligned: true };
   }
-  return { lrc: wordsToLrc(out.words), words: out.words.length, device: out.device, aligned: false };
+  return { lrc: wordsToLrc(out.words, ends), words: out.words.length, device: out.device, aligned: false };
 }

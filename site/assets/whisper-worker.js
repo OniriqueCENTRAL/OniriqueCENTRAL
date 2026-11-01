@@ -63,7 +63,8 @@ async function listen(asr, audio, from, to, language) {
   const words = [];
   for (const c of r.chunks || []) {
     if (!Number.isFinite(c.timestamp[0]) || !c.text.trim()) continue;
-    const start = from / RATE + c.timestamp[0], end = from / RATE + (c.timestamp[1] ?? c.timestamp[0]);
+    if (c.timestamp[0] >= (to - from) / RATE) continue; // après la fin de ce qu'on lui a fait écouter : inventé
+    const start = from / RATE + c.timestamp[0], end = from / RATE + Math.min((to - from) / RATE, c.timestamp[1] ?? c.timestamp[0]);
     if (words.length && !/^\s/.test(c.text)) { const w = words.at(-1); w.text += c.text.trim(); w.end = end; }
     else words.push({ text: c.text.trim(), start, end });
   }
