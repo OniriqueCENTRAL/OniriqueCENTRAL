@@ -330,7 +330,7 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
 .frame-big { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 7px 11px; border: 1px solid rgba(255,255,255,.25); border-radius: 99px; background: rgba(0,0,0,.55); color: #fff; font: 600 12px var(--f-body); cursor: pointer; backdrop-filter: blur(4px); }
 .frame-big svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .frame-big:hover { border-color: var(--ember); }
-.screen-top.big { position: fixed; inset: 0; z-index: 95; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 16px; background: rgba(8,4,5,.96); }
+.screen-top.big { position: fixed; inset: 0; z-index: 95; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 16px; background: #0b0607; }
 .screen-top.big > :not(.frame):not(.transport):not(.vol-row) { display: none !important; }
 .screen-top.big .vol-row { width: min(92vw, 560px); max-width: none; }
 .screen-top.big .frame { width: min(92vw, calc((100vh - 150px) * 9 / 16)) !important; max-width: none; }
@@ -3872,13 +3872,17 @@ function start() {
   // Un second clic pendant la préparation du son l'annule (comme une pause) au lieu de lancer une deuxième lecture.
   let starting = 0;
   // L’aperçu en grand, et retour (le même bouton, ou Échap).
+  // En grand, l’aperçu passe tout devant la page (sa colonne « collante » le gardait sous les onglets), puis revient à sa place.
+  const topBox = document.querySelector(".screen-top"), topHome = topBox.parentElement, topNext = topBox.nextSibling;
   const bigView = (on) => {
-    document.querySelector(".screen-top").classList.toggle("big", on);
+    if (on) document.body.append(topBox); else topHome.insertBefore(topBox, topNext);
+    topBox.classList.toggle("big", on);
+    document.body.style.overflow = on ? "hidden" : "";
     $("big").querySelector("span").textContent = on ? "Réduire" : "Agrandir";
     $("big").ariaLabel = on ? "Revenir à l’aperçu normal" : "Voir l’aperçu en grand";
     drawScrub(now());
   };
-  $("big").onclick = () => bigView(!document.querySelector(".screen-top").classList.contains("big"));
+  $("big").onclick = () => bigView(!topBox.classList.contains("big"));
   document.addEventListener("keydown", (event) => { if (event.key === "Escape" && document.querySelector(".screen-top.big")) bigView(false); });
   $("resync").onclick = () => { resync = true; if (!playing) draw(position, false); };
   $("play").onclick = async () => {
