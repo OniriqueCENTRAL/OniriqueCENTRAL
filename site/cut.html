@@ -73,6 +73,22 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 5px 
 .hud-follow { padding: .8cqw 2.6cqw; border-radius: 2cqw; border: .3cqw solid #fff; font-weight: 600; font-size: 3.2cqw; }
 .hud-bar { position: absolute; left: 0; right: 0; bottom: 0; height: .8cqw; background: rgba(255,255,255,.35); }
 .hud-bar::after { content: ""; position: absolute; inset: 0 70% 0 0; background: #f00; }
+/* Les effets : une ligne par effet ; ses réglages se déplient dessous quand il est coché. */
+.fx-list { display: grid; gap: 6px; }
+.fx { border: 1px solid var(--line); border-radius: 12px; background: rgba(0,0,0,.22); }
+.fx > .check, .fx > summary { display: flex; align-items: center; gap: 10px; padding: 11px 14px; cursor: pointer; font: 500 14px/1.3 var(--f-body); color: var(--mist); }
+.fx > summary { list-style: none; }
+.fx > summary::-webkit-details-marker { display: none; }
+.fx > summary::after { content: "▾"; margin-left: auto; color: var(--haze); transition: transform .15s; }
+.fx[open] > summary::after { transform: rotate(180deg); }
+.fx small { font-size: 12px; color: var(--haze); }
+.fx.on { border-color: rgba(226,52,68,.55); background: rgba(226,52,68,.08); }
+.fx-opts { display: grid; gap: 12px; padding: 4px 14px 14px 42px; }
+.fx-group .fx-opts { padding-left: 14px; }
+.fx:not(.on):not(details) .fx-opts { display: none; }
+.fx-opts label { display: grid; gap: 6px; font: 500 11px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--haze); }
+.fx-opts label small { text-transform: none; letter-spacing: 0; font-family: var(--f-body); }
+.fx-tint { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: end; }
 .hud-pick { display: grid; gap: 6px; max-width: 340px; width: 100%; margin: 0 auto; }
 /* Les 4 choix du HUD tiennent toujours dans la case : 4 colonnes égales, texte resserré. */
 .hud-pick .chips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 4px; }
@@ -559,40 +575,28 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
             <label>Rythme des coupes
               <div class="chips wrap-in" id="cadence" role="group" aria-label="Rythme des coupes"><button type="button" data-v="1">Chaque temps</button><button type="button" data-v="2">Tous les 2 temps</button><button type="button" data-v="4">Chaque mesure</button><button type="button" data-v="mix">Varié</button></div>
             </label>
-            <div class="row">
-              <label class="check"><input type="checkbox" id="zoom"> Zoom sur le beat</label>
-              <label class="check"><input type="checkbox" id="flash"> Flash aux coupes</label>
-              <label class="check"><input type="checkbox" id="retro"> Look rétro (pixels et grain)</label>
-              <label class="check"><input type="checkbox" id="photoMove"> Photos qui avancent doucement</label>
-            <label class="check"><input type="checkbox" id="bestMoments"> Prendre les meilleurs moments des clips (ça bouge, c'est net)</label>
+            <div class="fx-list">
+              <div class="fx" data-fx="bestMoments"><label class="check"><input type="checkbox" id="bestMoments"> Prendre les meilleurs moments des clips <small>ça bouge, c'est net</small></label></div>
+              <div class="fx" data-fx="zoom"><label class="check"><input type="checkbox" id="zoom"> Zoom sur le beat</label><div class="fx-opts"><label>Force du zoom<input type="range" id="zoomAmt" min="10" max="300" step="10"></label></div></div>
+              <div class="fx" data-fx="flash"><label class="check"><input type="checkbox" id="flash"> Flash aux coupes</label><div class="fx-opts"><label>Force du flash<input type="range" id="flashAmt" min="10" max="300" step="10"></label></div></div>
+              <div class="fx" data-fx="retro"><label class="check"><input type="checkbox" id="retro"> Look rétro <small>pixels et grain</small></label></div>
+              <div class="fx" data-fx="photoMove"><label class="check"><input type="checkbox" id="photoMove"> Photos qui avancent doucement <small>sinon une photo reste fixe</small></label></div>
             </div>
-            <div class="row">
-              <label class="grow">Force du zoom<input type="range" id="zoomAmt" min="10" max="300" step="10"></label>
-              <label class="grow">Force du flash<input type="range" id="flashAmt" min="10" max="300" step="10"></label>
-            </div>
-            <p class="muted">Sans option cochée, une photo reste telle quelle, sans bouger.</p>
         </div>
         <div class="stack">
           <h3 class="sub-title">Effets vidéo</h3>
-            <div class="row">
-              <label class="check"><input type="checkbox" id="bw"> Noir et blanc</label>
-              <label class="check"><input type="checkbox" id="shake"> Secousse sur le beat</label>
-              <label class="check"><input type="checkbox" id="rgbSplit"> Décalage RVB sur le beat</label>
-              <label class="check"><input type="checkbox" id="fadeEnds"> Fondu au noir (début et fin)</label>
-            </div>
-            <div class="row">
-              <label class="grow">Force de la secousse<input type="range" id="shakeAmt" min="10" max="300" step="10"></label>
-              <label class="grow">Force du décalage RVB<input type="range" id="rgbAmt" min="10" max="300" step="10"></label>
-            </div>
-            <div class="row">
-              <label class="grow">Luminosité<input type="range" id="brightness" min="50" max="150" step="5"></label>
-              <label class="grow">Contraste<input type="range" id="contrast" min="50" max="200" step="5"></label>
-              <label class="grow">Saturation<input type="range" id="saturation" min="0" max="250" step="5"></label>
-            </div>
-            <div class="row">
-              <label class="grow">Vignette (bords sombres)<input type="range" id="vignette" min="0" max="100" step="5"></label>
-              <label>Teinte<input type="color" id="tint"></label>
-              <label class="grow">Force de la teinte<input type="range" id="tintAmount" min="0" max="80" step="5"></label>
+            <div class="fx-list">
+              <div class="fx" data-fx="bw"><label class="check"><input type="checkbox" id="bw"> Noir et blanc</label></div>
+              <div class="fx" data-fx="shake"><label class="check"><input type="checkbox" id="shake"> Secousse sur le beat</label><div class="fx-opts"><label>Force de la secousse<input type="range" id="shakeAmt" min="10" max="300" step="10"></label></div></div>
+              <div class="fx" data-fx="rgbSplit"><label class="check"><input type="checkbox" id="rgbSplit"> Décalage RVB sur le beat <small>image dédoublée rouge et bleu</small></label><div class="fx-opts"><label>Force du décalage<input type="range" id="rgbAmt" min="10" max="300" step="10"></label></div></div>
+              <div class="fx" data-fx="fadeEnds"><label class="check"><input type="checkbox" id="fadeEnds"> Fondu au noir <small>au début et à la fin</small></label></div>
+              <details class="fx fx-group"><summary>Couleurs de l'image <small>luminosité, contraste, saturation, vignette, teinte</small></summary><div class="fx-opts">
+                <label>Luminosité<input type="range" id="brightness" min="50" max="150" step="5"></label>
+                <label>Contraste<input type="range" id="contrast" min="50" max="200" step="5"></label>
+                <label>Saturation<input type="range" id="saturation" min="0" max="250" step="5"></label>
+                <label>Vignette <small>bords sombres</small><input type="range" id="vignette" min="0" max="100" step="5"></label>
+                <div class="fx-tint"><label>Teinte<input type="color" id="tint"></label><label>Force de la teinte<input type="range" id="tintAmount" min="0" max="80" step="5"></label></div>
+              </div></details>
             </div>
             <button class="mini" type="button" id="fx-reset" style="justify-self:start">Remettre les effets à zéro</button>
         </div>
@@ -2730,6 +2734,11 @@ function drawScrub(t) {
 
 // ——— Tout redessiner après un changement ———
 /** La partie remplie de chaque curseur suit sa valeur (aussi quand la page la change elle-même). */
+function markFx() {
+  document.querySelectorAll(".fx[data-fx]").forEach((row) => row.classList.toggle("on", !!row.querySelector('input[type="checkbox"]')?.checked));
+  paintRanges();
+}
+document.addEventListener("change", (event) => { if (event.target.closest(".fx[data-fx]")) markFx(); });
 function paintRanges() {
   document.querySelectorAll('input[type="range"]').forEach((r) => {
     const min = Number(r.min) || 0, max = Number(r.max) || 100, v = Number(r.value);
@@ -3953,6 +3962,7 @@ function start() {
     for (const id of STYLE_INPUTS) { const el = $(id); if (el.type === "checkbox") el.checked = !!prefs[id]; else el.value = prefs[id]; }
     boxes.forEach((id) => { $(id).checked = !!prefs[id]; });
     marks.forEach((m) => m());
+    markFx(); // les lignes d’effets et leurs curseurs suivent
   };
   for (const id of STYLE_INPUTS) {
     $(id).addEventListener("input", () => {
@@ -3969,7 +3979,7 @@ function start() {
     loadFont(prefs.lyricFont); syncControls();
     redraw();
   });
-  syncControls(); paintRanges();
+  syncControls();
   syncAll = () => { syncControls(); [prefs.lyricFont, prefs.titleFont, prefs.strongFont].forEach(loadFont); redraw(); };
   $("fx-reset").onclick = () => { Object.assign(prefs, FX); savePrefs(); syncControls(); restyle(); };
   // Mes styles : tous les réglages d'image, d'effets et de texte, gardés dans ce navigateur.
