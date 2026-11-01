@@ -683,6 +683,7 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
               <button class="mini" type="button" id="isync-word">Synchroniser mot par mot</button>
               <button class="mini" type="button" id="isync-write">Transcrire avec l'IA</button>
               <button class="mini" type="button" id="isync-ai">Caler mon texte avec l'IA</button>
+              <button class="mini" type="button" id="isync-clear">Retirer les repères de temps</button>
             </div>
             <p class="muted" id="isync-ai-status" hidden></p>
             <label class="check"><input type="checkbox" id="introGaps"> Effacer le texte pendant les blancs entre deux phrases</label>
@@ -4063,6 +4064,12 @@ function start() {
   $("stem-pos").oninput = () => { stemSeeking = true; stemClock(); };
   $("stem-pos").onchange = () => { stemSeeking = false; if (stemHear) hearStem(Number($("stem-pos").value)); };
   $("introLyrics").addEventListener("input", () => { prefs.introLyrics = $("introLyrics").value; savePrefs(); restyle(); });
+  // Le texte seul, sans les [00:00.32] et <00:00.62> : la synchro est perdue, d'où la question.
+  $("isync-clear").onclick = () => {
+    if (!/[[<]\d+:\d+/.test(prefs.introLyrics) || !confirm("Retirer les repères de temps ? Le texte reste, mais il faudra le resynchroniser.")) return;
+    prefs.introLyrics = $("introLyrics").value = prefs.introLyrics.split("\n").map(bareLine).filter(Boolean).join("\n");
+    savePrefs(); restyle();
+  };
   $("isync-line").onclick = () => startIsync("line");
   $("isync-word").onclick = () => startIsync("word");
   $("isync-mark").onclick = markIsync;
