@@ -1759,7 +1759,7 @@ function renderClips() {
     return d;
   }), $("clips-add"));
   box.classList.toggle("each", prefs.batch === "each");
-  const many = prefs.batch === "each" && clips.length > 1;
+  const many = oneEach() && clips.length > 1;
   $("export").textContent = many ? "Exporter " + clips.length + " vidéos (une par fond)" : "Exporter la vidéo";
   $("batch-help").textContent = prefs.batch === "each"
     ? "Chaque clip devient le fond de sa propre vidéo, avec le même son et les mêmes textes. Touche un clip pour le voir dans l'aperçu ; l'export fait toutes les vidéos d'un coup."
@@ -2028,11 +2028,14 @@ const scheduleMix = () => { clearTimeout(mixTimer); mixTimer = setTimeout(() => 
 
 // ——— Le montage : une coupe par groupe de temps, un clip par coupe ———
 function random() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+/** Un clip choisi pour « Après la réplique » : il fait la vidéo (une seule), avant « une vidéo par fond » et la timeline. */
+const afterChosen = () => introLen() > 0 && !prefs.filmContinue && clips[prefs.afterClip]?.kind === "video";
+const oneEach = () => prefs.batch === "each" && !afterChosen();
 function build() {
   segments = [];
   pool.forEach((v) => { delete v.dataset.seg; });
   // Le montage retouché dans la timeline vidéo l'emporte sur le montage automatique (sauf « une vidéo par fond » et « la suite du film »).
-  if (manual && clips.length && sound.buffer && prefs.batch !== "each" && !(prefs.filmContinue && introLen() > 0)) { segments = fitManual(); return; }
+  if (manual && clips.length && sound.buffer && !oneEach() && !afterChosen() && !(prefs.filmContinue && introLen() > 0)) { segments = fitManual(); return; }
   if (!sound.buffer || !clips.length) return;
   // La suite du film : après la réplique, le clip continue, d'un seul plan, sous la musique.
   if (prefs.filmContinue && introLen() > 0 && prefs.batch !== "each") {
@@ -2040,7 +2043,7 @@ function build() {
     return;
   }
   // Une vidéo par fond : un seul plan sur tout le passage, le clip choisi (qui repart du début s'il est plus court).
-  if (prefs.batch === "each") {
+  if (oneEach()) {
     focus = Math.max(0, Math.min(focus, clips.length - 1));
     segments = [{ t0: 0, t1: span(), clip: focus, from: 0, hold: true }];
     return;
@@ -2979,7 +2982,7 @@ async function exportVideo(series = null) {
   if (!encoderCodec && (!mime || !screen.captureStream)) { alert("Ce navigateur ne sait pas enregistrer de vidéo. Ouvre ONIRIQUE CUT dans Chrome, Edge ou Safari."); return; }
   stop();
   const lockUi = (on) => document.querySelectorAll("#studio button, #studio input, #studio textarea, #studio select").forEach((x) => { x.disabled = on; });
-  const list = series || (prefs.batch === "each" && clips.length > 1 ? clips.map((_, i) => i) : [null]), kept = focus;
+  const list = series || (oneEach() && clips.length > 1 ? clips.map((_, i) => i) : [null]), kept = focus;
   const savedPrefs = { ...prefs }, savedStart = sound.start;
   // Plusieurs vidéos : un dossier où les ranger (Chrome, Edge) ; sinon elles arrivent une par une dans les téléchargements.
   let folder = null;
