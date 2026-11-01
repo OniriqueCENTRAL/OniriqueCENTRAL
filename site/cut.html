@@ -63,6 +63,12 @@
 .hud-follow { padding: .8cqw 2.6cqw; border-radius: 2cqw; border: .3cqw solid #fff; font-weight: 600; font-size: 3.2cqw; }
 .hud-bar { position: absolute; left: 0; right: 0; bottom: 0; height: .8cqw; background: rgba(255,255,255,.35); }
 .hud-bar::after { content: ""; position: absolute; inset: 0 70% 0 0; background: #f00; }
+.find { padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: rgba(0,0,0,.25); }
+.find-results { display: grid; gap: 6px; }
+.find-results button { display: flex; gap: 10px; align-items: baseline; width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: rgba(0,0,0,.3); color: var(--mist); font: 500 13px/1.4 var(--f-body); text-align: left; cursor: pointer; }
+.find-results button:hover { border-color: var(--ember); }
+.find-results button b { flex: none; font: 600 12px var(--f-mono); color: var(--ember-text); }
+.find-results mark { background: none; color: #fff; font-weight: 700; }
 .hud-pick { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .hud-pick > span { font: 500 11px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
 .frame .empty { position: absolute; inset: 0; display: grid; place-content: center; gap: 8px; padding: 24px; text-align: center; color: var(--haze); font-size: 14px; }
@@ -602,6 +608,12 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
               <label class="inline">Début<input type="text" id="introIn" inputmode="decimal" aria-label="Début de la réplique dans le clip"></label>
               <label class="inline">Durée<input type="text" id="introLen" inputmode="decimal" aria-label="Durée de la réplique en secondes">s</label>
               <button class="mini" type="button" id="intro-hear">Écouter la réplique</button>
+            </div>
+            <div class="stack find" id="find-box">
+              <label>Trouver une réplique : tape une phrase dite dans le clip
+                <input type="search" id="find-q" placeholder="ex. t'es parti en vacances dans ta cave" autocomplete="off"></label>
+              <div class="row"><button class="mini" type="button" id="find-go">Chercher</button><span class="muted" id="find-status">L'IA écoute le clip une fois (rien n'est envoyé), puis la recherche est immédiate.</span></div>
+              <div class="find-results" id="find-results"></div>
             </div>
             <label class="grow">Volume du film<input type="range" id="filmVol" min="0" max="200" step="5"></label>
 
@@ -3528,6 +3540,82 @@ async function aiIsync() {
     status(out.words + (out.aligned ? " mots calés par l'IA, ton texte est gardé." : " mots écrits et calés par l'IA : relis-les, corrige un mot directement dans le texte."));
   } catch (error) { status("L'IA n'a pas marché : " + error.message); } finally { $("isync-ai").disabled = false; }
 }
+// ——— Trouver une réplique : les mots de tout le clip (écoutés une fois par l'IA, réglage film), puis une recherche souple ———
+/** Les mots datés de tout le clip, écoutés une fois (gardés tant que le clip est là). */
+async function clipWords(c, status) {
+  if (c.words) return c.words;
+  const a = await clipAudio(c);
+  if (!a) throw new Error("Le son de ce clip ne se lit pas ici.");
+  const ai = await import("./assets/ai-lyrics.js");
+  const out = await aiWork(() => ai.transcribe(a, status, { film: true }));
+  return (c.words = out.heard || []);
+}
+const plainWord = (w) => w.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+/** Deux mots proches : identiques, l'un commence l'autre (4 lettres au moins), ou au plus un tiers de lettres différentes. */
+function nearWord(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (Math.min(a.length, b.length) >= 4 && (a.startsWith(b) || b.startsWith(a))) return true;
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  return d[a.length][b.length] <= Math.floor(Math.max(a.length, b.length) / 3);
+}
+/** Les passages qui ressemblent le plus à la phrase cherchée : chaque mot cherché, dans l'ordre, à deux mots près.
+ *  Rend [{ from, to, score }] (indices des mots), du plus ressemblant au moins, sans doublons qui se chevauchent. */
+function findPhrase(words, query) {
+  const want = query.split(/\s+/).map(plainWord).filter(Boolean), keys = words.map((w) => plainWord(w.text));
+  if (!want.length) return [];
+  const hits = [];
+  for (let i = 0; i < keys.length; i++) {
+    if (!nearWord(keys[i], want[0]) && !(want[1] && nearWord(keys[i], want[1]))) continue;
+    let k = nearWord(keys[i], want[0]) ? 1 : 2, found = 1, j = i, gap = 0;
+    for (let x = i + 1; x < keys.length && k < want.length && gap <= 2; x++) {
+      if (nearWord(keys[x], want[k])) { found++; k++; j = x; gap = 0; }
+      else if (want[k + 1] && nearWord(keys[x], want[k + 1])) { found++; k += 2; j = x; gap = 0; }
+      else gap++;
+    }
+    const score = found / want.length;
+    if (score >= .5) hits.push({ from: i, to: j, score });
+  }
+  hits.sort((a, b) => b.score - a.score || a.from - b.from);
+  const kept = [];
+  for (const h of hits) if (!kept.some((k) => h.from <= k.to && h.to >= k.from)) kept.push(h);
+  return kept.slice(0, 6);
+}
+/** Cale la réplique sur les mots [from, to] : le passage (avec un peu d'air autour) et ses paroles synchronisées mot par mot. */
+function useFound(words, from, to) {
+  const c = introClip(), start = Math.max(0, words[from].start - .25), end = Math.min(c.duration, Math.max(words[to].end + .5, start + 1.5));
+  prefs.introIn = Math.round(start * 100) / 100; prefs.introLen = Math.round((end - start) * 100) / 100;
+  const part = words.slice(from, to + 1), at = (x) => lrcStamp(Math.max(0, x - prefs.introIn));
+  prefs.introLyrics = "[" + at(part[0].start) + "] " + part.map((w) => "<" + at(w.start) + ">" + w.text).join(" ") + "\n[" + at(Math.min(words[to].end, end)) + "]";
+  $("introLyrics").value = prefs.introLyrics;
+  $("introIn").value = prefs.introIn.toString().replace(".", ","); $("introLen").value = introLen().toFixed(2).replace(".", ",");
+  savePrefs(); position = 0; refresh(); drawIntroWave();
+  $("intro-hear").click(); // on l'entend tout de suite
+}
+async function findReplica() {
+  const c = introClip(), q = $("find-q").value.trim(), status = (text) => { $("find-status").textContent = text; };
+  if (!c) return status("Choisis d'abord le clip (le film) de la réplique.");
+  if (!q) return status("Tape une phrase dite dans le clip.");
+  if (!c.words && c.duration > 20 * 60 && !confirm("Ce clip dure " + Math.round(c.duration / 60) + " minutes : l'IA va l'écouter en entier, ça peut prendre plusieurs minutes. On y va ?")) return;
+  $("find-go").disabled = true;
+  try {
+    const words = await clipWords(c, (text) => status(text.replace("les paroles", "le clip")));
+    if (introClip() !== c) return;
+    const found = findPhrase(words, q);
+    status(!words.length ? "L'IA n'a entendu aucune parole dans ce clip." : found.length ? "Touche un passage pour y caler la réplique (les paroles suivent)." : "Pas trouvé : essaie avec moins de mots, ou d'autres mots de la phrase.");
+    $("find-results").replaceChildren(...found.map(({ from, to }) => {
+      const b = document.createElement("button"), before = words.slice(Math.max(0, from - 4), from), after = words.slice(to + 1, to + 5);
+      b.type = "button";
+      b.append(Object.assign(document.createElement("b"), { textContent: OniriqueAudio.clock(words[from].start) }),
+        Object.assign(document.createElement("span"), { textContent: (before.length ? "… " : "") + before.map((w) => w.text).join(" ") + " " }));
+      b.lastChild.append(Object.assign(document.createElement("mark"), { textContent: words.slice(from, to + 1).map((w) => w.text).join(" ") }), " " + after.map((w) => w.text).join(" ") + (after.length ? " …" : ""));
+      b.onclick = () => useFound(words, from, to);
+      return b;
+    }));
+  } catch (error) { status("La recherche n'a pas marché : " + error.message); } finally { $("find-go").disabled = false; }
+}
 /** Terminer : les paroles de la réplique s'écrivent en LRC (temps depuis le début de la réplique), mot par mot si on l'a fait. */
 function finishIsync() {
   const s = isync;
@@ -3653,7 +3741,7 @@ function start() {
       if (id === "afterClip") prefs.afterIn = prefs.afterLen = 0; // un autre clip : tout le clip
       savePrefs();
       if (id === "introOn" || id === "introClip" || id === "afterClip" || id === "filmContinue") { position = 0; refresh(); } else { scheduleMix(); restyle(); }
-      if (id === "introClip") drawIntroWave();
+      if (id === "introClip") { drawIntroWave(); $("find-results").replaceChildren(); }
       if (id === "afterClip" || id === "filmContinue" || id === "introOn") drawAfterWave();
     });
   }
@@ -3691,6 +3779,8 @@ function start() {
   $("isync-undo").onclick = undoIsync;
   $("isync-end").onclick = endIsync;
   $("isync-ai").onclick = aiIsync;
+  $("find-go").onclick = findReplica;
+  $("find-q").addEventListener("keydown", (event) => { if (event.key === "Enter") { event.preventDefault(); findReplica(); } });
   $("isync-done").onclick = finishIsync;
   document.querySelectorAll("[data-rate]").forEach((b) => { b.onclick = () => { if (!isync) return; isync.rate = Number(b.dataset.rate); isyncPlayer.playbackRate = isync.rate; renderIsync(); }; });
   isyncPlayer.addEventListener("play", renderIsync); isyncPlayer.addEventListener("pause", () => isync && renderIsync());

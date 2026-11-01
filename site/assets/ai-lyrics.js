@@ -129,7 +129,7 @@ export async function transcribe(buffer, status = () => {}, { voice = null, lang
   const heard = film ? filmWords(out.words) : out.words;
   if (written.trim() && heard.length) {
     const lrc = alignLyrics(written, heard, ends);
-    return { lrc, words: lrc ? (lrc.match(/</g) || []).length : 0, device: out.device, aligned: true };
+    return { lrc, words: lrc ? (lrc.match(/</g) || []).length : 0, device: out.device, aligned: true, heard };
   }
-  return { lrc: wordsToLrc(heard, ends, film), words: heard.length, device: out.device, aligned: false };
+  return { lrc: wordsToLrc(heard, ends, film), words: heard.length, device: out.device, aligned: false, heard };
 }
