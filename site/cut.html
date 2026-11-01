@@ -624,7 +624,8 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
             <div class="row">
               <button class="mini" type="button" id="isync-line">Synchroniser phrase par phrase</button>
               <button class="mini" type="button" id="isync-word">Synchroniser mot par mot</button>
-              <button class="mini" type="button" id="isync-ai">Caler avec l'IA</button>
+              <button class="mini" type="button" id="isync-write">Transcrire avec l'IA</button>
+              <button class="mini" type="button" id="isync-ai">Caler mon texte avec l'IA</button>
             </div>
             <p class="muted" id="isync-ai-status" hidden></p>
             <label class="check"><input type="checkbox" id="introGaps"> Effacer le texte pendant les blancs entre deux phrases</label>
@@ -3633,11 +3634,21 @@ function undoIsync() {
   it.at = null; it.end = undefined; renderIsync();
 }
 /** La réplique calée par l'IA (assets/ai-lyrics.js) : le texte écrit est gardé, sinon l'IA l'écrit ; les blancs sont marqués. */
-async function aiIsync() {
+/** write : l'IA écrit ce qui est dit dans la partie choisie (le texte d'avant est remplacé) ; sinon elle cale le texte écrit
+ *  (ou l'écrit s'il n'y en a pas). Seule la partie choisie est écoutée. */
+async function aiIsync(write = false) {
   const c = introClip(), status = (text) => { $("isync-ai-status").hidden = false; $("isync-ai-status").textContent = text; };
   if (!c || !introLen()) return alert("Choisis d'abord le clip et le passage de la réplique.");
-  $("isync-ai").disabled = true;
+  $("isync-ai").disabled = $("isync-write").disabled = true;
   try {
+    // Le clip déjà écouté en entier (Trouver une réplique) : les mots de la partie choisie sont déjà là, rien à réécouter.
+    if (write && c.words) {
+      const ai = await import("./assets/ai-lyrics.js"), from = prefs.introIn, to = from + introLen();
+      const part = c.words.filter((w) => w.start >= from - .05 && w.start < to).map((w) => ({ ...w, start: Math.max(0, w.start - from), end: Math.min(to, w.end) - from }));
+      if (!part.length) return status("L'IA n'a pas entendu de paroles dans cette partie.");
+      prefs.introLyrics = $("introLyrics").value = ai.wordsToLrc(part, true, true); savePrefs(); restyle();
+      return status(part.length + " mots écrits et calés par l'IA (pris dans l'écoute du clip) : relis-les, corrige un mot directement dans le texte.");
+    }
     status("Lecture du son du clip…");
     const a = await clipAudio(c);
     if (!a) return status("Le son de ce clip ne se lit pas ici.");
@@ -3645,12 +3656,12 @@ async function aiIsync() {
     const part = new AudioBuffer({ length: len, numberOfChannels: a.numberOfChannels, sampleRate: a.sampleRate });
     for (let ch = 0; ch < a.numberOfChannels; ch++) part.copyToChannel(a.getChannelData(ch).subarray(from, from + len), ch);
     const ai = await import("./assets/ai-lyrics.js");
-    const written = prefs.introLyrics.split("\n").map(bareLine).filter(Boolean).join("\n");
+    const written = write ? "" : prefs.introLyrics.split("\n").map(bareLine).filter(Boolean).join("\n");
     const out = await aiWork(() => ai.transcribe(part, status, { written, ends: true, film: true }));
     if (!out.words) return status(written ? "L'IA n'a pas réussi à caler ce texte sur la réplique." : "L'IA n'a pas entendu de paroles dans la réplique.");
     prefs.introLyrics = $("introLyrics").value = out.lrc; savePrefs(); restyle();
     status(out.words + (out.aligned ? " mots calés par l'IA, ton texte est gardé." : " mots écrits et calés par l'IA : relis-les, corrige un mot directement dans le texte."));
-  } catch (error) { status("L'IA n'a pas marché : " + error.message); } finally { $("isync-ai").disabled = false; }
+  } catch (error) { status("L'IA n'a pas marché : " + error.message); } finally { $("isync-ai").disabled = $("isync-write").disabled = false; }
 }
 // ——— Trouver une réplique : les mots de tout le clip (écoutés une fois par l'IA, réglage film), puis une recherche souple ———
 /** Les mots datés de tout le clip, écoutés une fois (gardés tant que le clip est là). */
@@ -3890,7 +3901,8 @@ function start() {
   $("isync-mark").onclick = markIsync;
   $("isync-undo").onclick = undoIsync;
   $("isync-end").onclick = endIsync;
-  $("isync-ai").onclick = aiIsync;
+  $("isync-ai").onclick = () => aiIsync(false);
+  $("isync-write").onclick = () => aiIsync(true);
   $("find-go").onclick = findReplica;
   $("find-q").addEventListener("keydown", (event) => { if (event.key === "Enter") { event.preventDefault(); findReplica(); } });
   $("isync-done").onclick = finishIsync;
