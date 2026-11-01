@@ -458,7 +458,7 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
       <div class="card" id="step-edit" hidden>
         <div class="stack">
           <h2 class="step-title">Choisis un style</h2>
-          <p class="muted">Un clic règle tout d'un coup (cadre, paroles, texte) ; tu peux ensuite tout ajuster dans les étapes suivantes.</p>
+          <p class="muted">Un clic règle tout d'un coup (cadre, paroles, texte) ; tu peux ensuite tout ajuster dans les étapes suivantes : les paroles et le texte dans « Texte », l'image et les effets dans « Image ».</p>
           <div class="chips presets" id="preset" role="group" aria-label="Styles rapides">
             <button type="button" data-v="classic"><i class="look look-classic"></i>Classique<small>La ligne de paroles en bas, plein écran</small></button>
             <button type="button" data-v="pixel"><i class="look look-pixel"></i>Mot par mot pixel<small>Gros mots au centre, look rétro 4:3</small></button>
@@ -469,6 +469,23 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
           <div class="row"><button class="mini" type="button" id="compare-open">Comparer les styles sur ma vidéo</button></div>
           <div class="compare" id="compare" hidden></div>
         </div>
+        <details class="panel inset">
+          <summary>Mes styles enregistrés</summary>
+          <div class="stack">
+            <p class="muted">Enregistre tous tes réglages d'image, d'effets et de texte pour les retrouver d'un clic. Ils restent dans ce navigateur, rien n'est envoyé.</p>
+            <div class="row">
+              <input type="text" id="style-name" maxlength="30" placeholder="Nom du style" style="flex:1;min-width:150px">
+              <button class="mini" type="button" id="style-save">Enregistrer ce style</button>
+            </div>
+            <div class="styles-list" id="my-styles"></div>
+          </div>
+        </details>
+      </div>
+      <div class="next"><button class="go" type="button" data-next="texte">Suivant : le texte →</button></div>
+      </section>
+
+      <section class="tab-panel" data-panel="texte" role="tabpanel" aria-label="Texte" hidden>
+      <div class="card">
         <div class="stack">
           <h3 class="sub-title">Paroles</h3>
             <label>Paroles à l'écran
@@ -488,23 +505,6 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
               <button class="mini" type="button" id="lyrics-push">Enregistrer dans CLOUD</button>
             </div>
         </div>
-        <details class="panel inset">
-          <summary>Mes styles enregistrés</summary>
-          <div class="stack">
-            <p class="muted">Enregistre tous tes réglages d'image, d'effets et de texte pour les retrouver d'un clic. Ils restent dans ce navigateur, rien n'est envoyé.</p>
-            <div class="row">
-              <input type="text" id="style-name" maxlength="30" placeholder="Nom du style" style="flex:1;min-width:150px">
-              <button class="mini" type="button" id="style-save">Enregistrer ce style</button>
-            </div>
-            <div class="styles-list" id="my-styles"></div>
-          </div>
-        </details>
-      </div>
-      <div class="next"><button class="go" type="button" data-next="texte">Suivant : le texte →</button></div>
-      </section>
-
-      <section class="tab-panel" data-panel="texte" role="tabpanel" aria-label="Texte" hidden>
-      <div class="card">
         <div class="stack">
           <h3 class="sub-title">Style du texte</h3>
             <div class="chips wrap-in" id="textStyle" role="group" aria-label="Styles de texte"><button type="button" data-v="classic">Classique</button><button type="button" data-v="pixel">Pixel blanc</button><button type="button" data-v="red">Rouge</button><button type="button" data-v="white">Blanc gras</button><button type="button" data-v="neon">Néon</button><button type="button" data-v="retro">Rétro</button></div>
