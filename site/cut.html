@@ -122,8 +122,39 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 5px 
 .vmenu .danger { color: var(--ember-text); }
 .vmenu svg { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .vmenu hr { margin: 4px 6px; border: 0; border-top: 1px solid var(--line); }
-.vedit { display: grid; gap: 8px; }
-.vedit input, .vedit textarea { width: 100%; }
+/* La fenêtre d'une vidéo du cloud : le lecteur, puis le titre et la description. */
+#vdlg { width: min(940px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); padding: 0; border: 1px solid var(--line); border-radius: 20px; background: #140a0c; color: var(--mist); }
+#vdlg::backdrop { background: rgba(0,0,0,.78); backdrop-filter: blur(4px); }
+.vdlg-body { display: grid; grid-template-columns: minmax(0, 340px) 1fr; gap: 24px; padding: 18px; }
+.vplayer { position: relative; aspect-ratio: 9 / 16; max-height: calc(100dvh - 64px); border-radius: 14px; overflow: hidden; background: #000; }
+.vplayer video { width: 100%; height: 100%; object-fit: contain; display: block; background: #000; cursor: pointer; }
+/* En plein écran, la vidéo garde son format (bandes noires autour), sans être recadrée. */
+.vplayer:fullscreen { aspect-ratio: auto; max-height: none; border-radius: 0; }
+.vp-big { position: absolute; inset: 0; margin: auto; width: 74px; height: 74px; border-radius: 50%; border: 0; background: rgba(226,52,68,.92); color: #fff; display: grid; place-items: center; cursor: pointer; transition: opacity .2s; }
+.vp-big svg { width: 32px; height: 32px; fill: currentColor; margin-left: 4px; }
+.vplayer.playing .vp-big { opacity: 0; pointer-events: none; }
+.vp-bar { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 6px; padding: 30px 10px 10px; background: linear-gradient(transparent, rgba(0,0,0,.85)); transition: opacity .25s; }
+.vplayer.playing.idle .vp-bar { opacity: 0; }
+.vplayer.playing.idle { cursor: none; }
+.vp-bar button { flex: none; width: 34px; height: 34px; border: 0; border-radius: 50%; background: none; color: #fff; display: grid; place-items: center; cursor: pointer; }
+.vp-bar button:hover { background: rgba(255,255,255,.15); }
+.vp-bar svg { width: 20px; height: 20px; fill: currentColor; }
+.vp-bar { flex-wrap: wrap; }
+.vp-bar input[type="range"] { order: -1; flex: 1 0 100%; min-width: 0; }
+.vp-time { flex: 1; font: 500 12px var(--f-mono); color: #fff; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.vdlg-form { display: grid; gap: 14px; align-content: start; min-width: 0; }
+.vdlg-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; font: 800 19px/1.2 var(--f-display); }
+.vdlg-form label { display: grid; gap: 6px; font: 500 11px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--haze); }
+.vdlg-form label small { justify-self: end; margin-top: -20px; letter-spacing: 0; }
+.vdlg-form input, .vdlg-form textarea { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.35); color: var(--mist); font: 400 15px/1.5 var(--f-body); text-transform: none; letter-spacing: 0; }
+.vdlg-form input:focus, .vdlg-form textarea:focus { outline: none; border-color: var(--ember); }
+.vdlg-form textarea { min-height: 260px; resize: vertical; }
+.vdlg-actions { justify-content: flex-end; }
+@media (max-width: 720px) {
+  .vdlg-body { grid-template-columns: 1fr; padding: 14px; gap: 16px; }
+  .vplayer { height: 58dvh; width: auto; justify-self: center; }
+  .vdlg-form textarea { min-height: 160px; }
+}
 .cloud-foot { margin-top: 30px; font-size: 12px; }
 @media (max-width: 520px) { .cloud-page { padding: 0 12px 30px; } .cloud-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 10px; } }
 .hud-pick { display: grid; gap: 6px; max-width: 340px; width: 100%; margin: 0 auto; }
@@ -929,6 +960,34 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
     <span class="time" id="stem-time">0:00</span>
   </aside>
 </main>
+
+<dialog id="vdlg" aria-labelledby="vdlg-title">
+  <div class="vdlg-body">
+    <div class="vplayer" id="vplayer">
+      <video id="vplay" playsinline preload="metadata" disablepictureinpicture></video>
+      <button class="vp-big" type="button" id="vp-big" aria-label="Lecture"></button>
+      <div class="vp-bar">
+        <button type="button" id="vp-play" aria-label="Lecture ou pause"></button>
+        <span class="vp-time" id="vp-time">0:00 / 0:00</span>
+        <input type="range" id="vp-seek" min="0" max="1000" value="0" aria-label="Moment de la vidéo">
+        <button type="button" id="vp-mute" aria-label="Couper ou remettre le son"></button>
+        <button type="button" id="vp-full" aria-label="Plein écran"></button>
+      </div>
+    </div>
+    <form class="vdlg-form" id="vdlg-form" method="dialog">
+      <div class="vdlg-head"><span id="vdlg-title">Ta vidéo</span><button class="mini" type="button" id="vdlg-x" aria-label="Fermer">✕</button></div>
+      <p class="vsub" id="vdlg-sub" style="margin:-8px 0 0"></p>
+      <label>Titre<small id="vdlg-tn"></small><input type="text" id="vdlg-name" maxlength="100"></label>
+      <label>Description<small id="vdlg-cn"></small><textarea id="vdlg-cap" maxlength="2200"></textarea></label>
+      <p class="muted" id="vdlg-msg" aria-live="polite" style="margin:0"></p>
+      <div class="row vdlg-actions">
+        <button class="mini" type="button" id="vdlg-copy">Copier la description</button>
+        <button class="mini" type="button" id="vdlg-cancel">Annuler</button>
+        <button class="go" type="submit" id="vdlg-save">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</dialog>
 
 <footer>
   <nav class="wrap" aria-label="Pages légales">
@@ -3594,15 +3653,9 @@ async function renderLibrary() {
     $("lib-list").replaceChildren(...videos.map((v) => {
       const thumb = el("div", { className: "vthumb", title: "Lire" }, el("img", { src: v.poster, alt: "", loading: "lazy", onerror: (event) => event.target.replaceWith(el("video", { src: v.url + "#t=1", muted: true, preload: "metadata", playsInline: true })) }), el("span", { className: "vdur", textContent: OniriqueAudio.clock(v.duration) }),
         el("div", { className: "vbadges" }, inShorts.has(v.id) ? el("span", { className: "yt", textContent: slotText("Short", shortSlots[v.id]) }) : null, inReels.has(v.id) ? el("span", { className: "ig", textContent: slotText("Reel", reelSlots[v.id]) }) : null));
-      const play = () => {
-        const old = thumb.querySelector("video");
-        if (old) { old.remove(); return; }
-        $("lib-list").querySelectorAll("video").forEach((x) => x.remove()); // une seule à la fois
-        const video = el("video", { src: v.url, controls: true, autoplay: true, playsInline: true, disablePictureInPicture: true });
-        video.setAttribute("controlslist", "nodownload noplaybackrate noremoteplayback");
-        thumb.prepend(video);
-      };
-      thumb.onclick = (event) => { if (event.target.tagName !== "VIDEO") play(); };
+      const sub = ago(v.createdAt) + " · " + mo(v.size) + " · " + OniriqueAudio.clock(v.duration);
+      const play = () => openVideo(v, false, sub), editCard = () => openVideo(v, true, sub);
+      thumb.onclick = play;
       const card = el("article", { className: "vcard" }), more = el("button", { className: "vmore", type: "button", textContent: "⋮", ariaLabel: "Actions pour " + v.name, ariaExpanded: "false" });
       const schedule = (fn, done) => async () => { closeMenu(); try { alert(done + " " + await fn(v, v.caption) + "."); renderLibrary(); } catch (error) { alert(error.message); } };
       const closeMenu = () => { card.querySelector(".vmenu")?.remove(); more.ariaExpanded = "false"; };
@@ -3638,23 +3691,72 @@ async function renderLibrary() {
         more.ariaExpanded = "true";
       };
       const info = el("div", { className: "vrow" }, el("div", {}, el("div", { className: "vtitle", textContent: v.name }), el("div", { className: "vsub", textContent: ago(v.createdAt) + " · " + mo(v.size) })), more);
-      // Modifier : le titre et la description, sur place.
-      const editCard = () => {
-        const title = el("input", { type: "text", value: v.name, maxLength: 100, ariaLabel: "Titre" }), caption = el("textarea", { value: v.caption || "", rows: 6, maxLength: 2200, ariaLabel: "Description" });
-        const save = el("button", { className: "mini", type: "button", textContent: "Enregistrer" }), cancel = el("button", { className: "mini", type: "button", textContent: "Annuler", onclick: () => renderLibrary() });
-        save.onclick = async () => {
-          save.disabled = true;
-          const r = await fetch("/api/cut/library/" + v.id, { method: "PATCH", headers: { Authorization: "Bearer " + TOKEN, "Content-Type": "application/json" }, body: JSON.stringify({ name: title.value, caption: caption.value }) });
-          if (!r.ok) { alert((await r.json().catch(() => ({}))).error || "Pas enregistré."); save.disabled = false; return; }
-          renderLibrary();
-        };
-        info.replaceWith(el("div", { className: "vedit" }, el("label", {}, "Titre", title), el("label", {}, "Description", caption), el("div", { className: "row" }, save, cancel)));
-        title.focus();
-      };
       card.append(thumb, info);
       return card;
     }));
   } catch { $("lib-info").textContent = "Le cloud CUT ne répond pas. Réessaie dans un instant."; }
+}
+// ——— La fenêtre d'une vidéo du cloud : le lecteur maison à gauche, le titre et la description à droite ———
+const VP_ICON = { play: '<path d="M8 5v14l11-7z"/>', pause: '<path d="M7 5h4v14H7zM13 5h4v14h-4z"/>',
+  vol: '<path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  mute: '<path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  full: '<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' };
+const vpIcon = (b, name) => { b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + VP_ICON[name] + "</svg>"; };
+let vdlgVideo = null;
+const vdlgDirty = () => vdlgVideo && ($("vdlg-name").value !== vdlgVideo.name || $("vdlg-cap").value !== (vdlgVideo.caption || ""));
+const vdlgCount = () => { $("vdlg-tn").textContent = $("vdlg-name").value.length + " / 100"; $("vdlg-cn").textContent = $("vdlg-cap").value.length + " / 2200"; };
+/** Ouvre la vidéo v : lecture tout de suite, ou (edit) le curseur dans le titre. */
+function openVideo(v, edit, sub) {
+  vdlgVideo = v;
+  const p = $("vplay");
+  p.poster = v.poster || ""; p.src = v.url; p.currentTime = 0;
+  $("vdlg-sub").textContent = sub;
+  $("vdlg-name").value = v.name; $("vdlg-cap").value = v.caption || ""; vdlgCount();
+  $("vdlg-msg").textContent = ""; $("vdlg-save").disabled = false;
+  $("vdlg").showModal();
+  if (edit) $("vdlg-name").focus(); else { $("vp-play").focus(); p.play().catch(() => {}); }
+}
+{
+  const dlg = $("vdlg"), p = $("vplay"), box = $("vplayer"), seek = $("vp-seek");
+  const sync = () => { box.classList.toggle("playing", !p.paused); vpIcon($("vp-play"), p.paused ? "play" : "pause"); };
+  const toggle = () => (p.paused ? p.play().catch(() => {}) : p.pause());
+  const tick = () => { const d = p.duration || 0; seek.value = d ? p.currentTime / d * 1000 : 0; seek.style.setProperty("--p", seek.value / 10 + "%"); $("vp-time").textContent = OniriqueAudio.clock(p.currentTime) + " / " + OniriqueAudio.clock(d); };
+  for (const e of ["play", "pause", "ended"]) p.addEventListener(e, sync);
+  for (const e of ["timeupdate", "loadedmetadata", "seeked"]) p.addEventListener(e, tick);
+  p.onclick = toggle; $("vp-big").onclick = toggle; $("vp-play").onclick = toggle;
+  seek.oninput = () => { if (p.duration) p.currentTime = seek.value / 1000 * p.duration; tick(); };
+  $("vp-mute").onclick = () => { p.muted = !p.muted; vpIcon($("vp-mute"), p.muted ? "mute" : "vol"); };
+  // Plein écran du lecteur entier (la vidéo y garde son format) ; sur iPhone, le plein écran de la vidéo elle-même.
+  $("vp-full").onclick = () => (document.fullscreenElement ? document.exitFullscreen() : box.requestFullscreen ? box.requestFullscreen() : p.webkitEnterFullscreen && p.webkitEnterFullscreen());
+  // Les commandes s'effacent pendant la lecture quand on ne touche à rien.
+  let idle = 0;
+  const wake = () => { box.classList.remove("idle"); clearTimeout(idle); idle = setTimeout(() => box.classList.add("idle"), 2200); };
+  box.addEventListener("pointermove", wake); box.addEventListener("pointerdown", wake);
+  vpIcon($("vp-big"), "play"); vpIcon($("vp-mute"), "vol"); vpIcon($("vp-full"), "full"); sync();
+  // Espace : lecture/pause ; flèches : 5 s en arrière ou en avant (hors des champs de texte).
+  dlg.addEventListener("keydown", (e) => {
+    if (/^(INPUT|TEXTAREA)$/.test(e.target.tagName) && e.target !== seek) return;
+    if (e.key === " " && e.target.tagName !== "BUTTON") { e.preventDefault(); toggle(); }
+    else if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && e.target !== seek && p.duration) { e.preventDefault(); p.currentTime = Math.max(0, Math.min(p.duration, p.currentTime + (e.key === "ArrowLeft" ? -5 : 5))); }
+  });
+  const close = () => { if (!vdlgDirty() || confirm("Fermer sans enregistrer tes changements ?")) dlg.close(); };
+  $("vdlg-x").onclick = close; $("vdlg-cancel").onclick = close;
+  dlg.addEventListener("cancel", (e) => { e.preventDefault(); close(); }); // Échap
+  dlg.addEventListener("click", (e) => { if (e.target === dlg) close(); }); // clic à côté de la fenêtre
+  dlg.addEventListener("close", () => { if (dlg.open) return; // rouverte entre-temps sur une autre vidéo
+    p.pause(); p.removeAttribute("src"); p.load(); if (document.fullscreenElement) document.exitFullscreen(); vdlgVideo = null; });
+  $("vdlg-name").oninput = vdlgCount; $("vdlg-cap").oninput = vdlgCount;
+  $("vdlg-copy").onclick = () => navigator.clipboard.writeText($("vdlg-cap").value).then(() => { $("vdlg-msg").textContent = "Description copiée."; }, () => {});
+  $("vdlg-form").onsubmit = async (e) => {
+    e.preventDefault();
+    const v = vdlgVideo, name = $("vdlg-name").value.trim();
+    if (!name) { $("vdlg-msg").textContent = "Le titre ne peut pas être vide."; $("vdlg-name").focus(); return; }
+    $("vdlg-save").disabled = true; $("vdlg-msg").textContent = "Enregistrement…";
+    const r = await fetch("/api/cut/library/" + v.id, { method: "PATCH", headers: { Authorization: "Bearer " + TOKEN, "Content-Type": "application/json" }, body: JSON.stringify({ name, caption: $("vdlg-cap").value }) }).catch(() => null);
+    if (!r || !r.ok) { $("vdlg-msg").textContent = (r && (await r.json().catch(() => ({}))).error) || "Pas enregistré : réessaie dans un instant."; $("vdlg-save").disabled = false; return; }
+    v.name = name; v.caption = $("vdlg-cap").value;
+    dlg.close(); renderLibrary();
+  };
 }
 
 // ——— Les commandes ———
