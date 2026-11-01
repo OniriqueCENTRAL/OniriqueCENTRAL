@@ -96,6 +96,14 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
 .btn svg { flex: none; width: 20px; height: 14px; }
 .shorts { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; margin-top: 20px; }
 .shorts:empty { display: none; }
+/* La liste des Shorts, repliée : un clic sur sa ligne la déroule. */
+.yt-list { margin-top: 18px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.02); }
+.yt-list > summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; list-style: none; font: 600 14px/1.3 var(--f-body); color: var(--mist); }
+.yt-list > summary::-webkit-details-marker { display: none; }
+.yt-list > summary::after { content: ""; flex: none; width: 9px; height: 9px; margin-right: 4px; border-right: 2px solid var(--haze); border-bottom: 2px solid var(--haze); transform: rotate(45deg) translateY(-3px); transition: transform .2s; }
+.yt-list[open] > summary::after { transform: rotate(-135deg) translateY(-3px); }
+.yt-list > summary:hover { color: #fff; }
+.yt-list > .shorts { margin: 0; padding: 0 14px 14px; }
 .short { max-width: none; padding: 18px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.025); }
 .short.failed { border-color: rgba(255,122,133,.55); }
 .short h2 { word-break: break-word; }
@@ -357,7 +365,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
           </div>
         </div>
         <div class="notice" id="yt-notice" role="status" style="margin-top:12px"></div>
-        <div class="shorts" id="yt-videos"></div>
+        <details class="yt-list" id="yt-list" hidden><summary id="yt-sum"></summary><div class="shorts" id="yt-videos"></div></details>
       </div>
   
       <div class="panel" id="social" hidden>
@@ -798,6 +806,7 @@ function shortCard(video) {
   // Publiée ou en cours : plus rien à régler, une simple ligne.
   if (video.status === "published" || video.status === "uploading") {
     const card = el("div", "short");
+    card.dataset.status = video.status;
     name.append(el("h2", "", video.title), el("div", "muted", moment(video.publishAt)));
     card.append(head);
     if (video.url) {
@@ -813,6 +822,7 @@ function shortCard(video) {
   }
 
   const card = el("form", "short" + (video.status === "failed" ? " failed" : ""));
+  card.dataset.status = video.status;
   name.append(el("h2", "", video.filename), el("div", "muted", video.status === "scheduled" ? size + " · sort " + moment(video.publishAt) : size));
   const title = Object.assign(el("input"), { value: video.title, maxLength: 100, required: true });
   const text = Object.assign(el("textarea"), { value: video.description, maxLength: 5000 });
@@ -883,6 +893,15 @@ async function loadYoutube() {
   }
 }
 
+// Le titre du menu déroulant des Shorts : combien il y en a, et dans quel état ; il s'ouvre seul quand une vidéo a échoué.
+new MutationObserver(() => {
+  const cards = [...$("yt-videos").children], count = (s) => cards.filter((c) => c.dataset.status === s).length;
+  const plural = (n, word) => n + " " + word + (n > 1 ? "s" : "");
+  const parts = [count("scheduled") && plural(count("scheduled"), "programmé"), count("draft") && plural(count("draft"), "à régler"), count("failed") && plural(count("failed"), "raté"), count("published") && plural(count("published"), "publié")].filter(Boolean);
+  $("yt-list").hidden = !cards.length;
+  $("yt-sum").textContent = (cards.length > 1 ? cards.length + " Shorts" : "1 Short") + (parts.length ? " · " + parts.join(" · ") : "");
+  if (count("failed")) $("yt-list").open = true;
+}).observe($("yt-videos"), { childList: true });
 $("yt-connect").onclick = async () => {
   try {
     location.href = (await api("POST", "/youtube/connect")).url;
@@ -922,6 +941,7 @@ $("yt-files").onchange = async (event) => {
         request.send(file);
       });
       $("yt-videos").prepend(shortCard(video));
+      $("yt-list").open = true; // la vidéo ajoutée est à régler : la liste s'ouvre
       done++;
     } catch (error) {
       say("yt-notice", file.name + " : " + error.message, true);
