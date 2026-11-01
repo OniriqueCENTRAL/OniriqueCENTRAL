@@ -469,11 +469,12 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
         </div>
         <div class="stack" id="word-row">
           <h3 class="sub-title">Mots FORTS</h3>
-            <p class="muted">Un mot fort s'affiche en plus grand, avec sa couleur, sa lueur et un petit « pop ». Touche les mots du passage pour les mettre en FORT ; tu peux aussi les marquer dans ONIRIQUE CLOUD (synchro mot par mot).</p>
+            <p class="muted">Un mot fort s'affiche en plus grand, avec sa couleur et sa lueur, et l'effet d'apparition de ton choix. Touche les mots du passage pour les mettre en FORT ; tu peux aussi les marquer dans ONIRIQUE CLOUD (synchro mot par mot).</p>
             <div class="strong-words" id="strong-words"></div>
             <div class="fields">
               <label>Taille du mot fort<input type="range" id="strongSize" min="100" max="300" step="5"></label>
               <label>Police du mot fort<select id="strongFont"></select></label>
+              <label>Effet quand il apparaît<select id="strongFx"><option value="none">Aucun</option><option value="pop">Pop (gonfle puis se pose)</option><option value="zoom">Zoom (arrive de loin)</option><option value="shake">Secousse</option><option value="flash">Flash blanc</option></select></label>
             </div>
             <div class="row">
               <label>Couleur<input type="color" id="strongColor"></label>
@@ -828,7 +829,7 @@ const FILM = { ...ILOOK, trackFades: {}, introOn: false, introClip: 0, introIn: 
 let prefs = { previewVol: 80, ...FILM, duration: 15, order: "seq", cadence: "2", nicheTag: "#undergroundmusic #rapfr", safeGuide: false, ytAuto: false, ytTime: "18:00", seriesCount: "5", seriesStyles: ["classic", "pixel", "red", "card"], bestMoments: true, smartCrop: true, zoom: false, zoomAmt: 100, flash: false, flashAmt: 100, place: "none", artist: "", snap: false, loop: false, batch: "one", lyricsPlace: "bottom", ...FX,
   preset: "classic", frame: "full", retro: false, lyricsMode: "line", hook: "", hookOn: false, sign: "", textStyle: "classic", titleFont: "Unbounded", textSize: 100,
   strokeColor: "#000000", glowColor: "#ffffff", ...TEXT_STYLES.classic,
-  strongSize: 170, strongColor: "#ffffff", strongGlowColor: "#ffffff", strongGlow: 45, strongFont: "" };
+  strongSize: 170, strongColor: "#ffffff", strongGlowColor: "#ffffff", strongGlow: 45, strongFont: "", strongFx: "none" };
 // Les styles rapides : des montages de TikTok de rap qui marchent, réglés d'un clic. Le titre et l'accroche y partent masqués.
 const PRESETS = {
   classic: { frame: "full", retro: false, lyricsMode: "line", lyricsPlace: "bottom", place: "none", hookOn: false, zoom: false, flash: false, textStyle: "classic" },
@@ -2003,9 +2004,13 @@ function paint(lines, cy, o) {
   let size = o.size;
   c.font = `${weight} ${size}px "${family}"`;
   const all = lines.map((l) => (o.caps ? l.toUpperCase() : l)).flatMap((l) => (o.wrap === false ? [l] : wrapText(l, o.maxW, c)));
-  const widest = Math.max(...all.map((l) => c.measureText(l).width));
+  // L'encre de chaque ligne (ce qui se voit vraiment), avec le contour et l'ombre portée autour.
+  c.textAlign = "center";
+  const pad = (o.stroke || 0) + Math.abs(o.shadowOffset || 0), ink = (l) => { const m = c.measureText(l); return { w: m.actualBoundingBoxLeft + m.actualBoundingBoxRight + 2 * pad, mid: (m.actualBoundingBoxRight - m.actualBoundingBoxLeft + (o.shadowOffset || 0)) / 2 }; };
+  const widest = Math.max(...all.map((l) => ink(l).w));
   if (widest > o.maxW) { size = Math.max(12, Math.floor(size * o.maxW / widest)); c.font = `${weight} ${size}px "${family}"`; }
-  const lh = size * 1.15, y0 = cy - (all.length - 1) / 2 * lh, each = (fn) => all.forEach((l, k) => fn(l, W / 2, y0 + k * lh));
+  const mids = all.map((l) => ink(l).mid);
+  const lh = size * 1.15, y0 = cy - (all.length - 1) / 2 * lh, each = (fn) => all.forEach((l, k) => fn(l, W / 2 - mids[k] + (o.dx || 0), y0 + k * lh));
   c.save();
   c.textAlign = "center"; c.textBaseline = "middle"; c.lineJoin = "round";
   if (o.shadowBlur || o.shadowOffset) {
@@ -2133,8 +2138,11 @@ function bigWord(word, cy, maxW, now, look = null) {
   const scale = look ? look.scale : textScale();
   const o = { ...textLook(), ...(look || {}), size: 150 * scale * Math.min(1.15, ref / g.measureText("DADAIS").width), maxW, wrap: false };
   if (word.strong) {
-    const pop = 1 + .22 * Math.exp(-Math.max(0, now - word.at) * 14);
-    Object.assign(o, { size: o.size * prefs.strongSize / 100 * pop, color: prefs.strongColor, glowColor: prefs.strongGlowColor, glow: prefs.strongGlow, font: prefs.strongFont || o.font, maxW: SAFE_W });
+    const d = Math.max(0, now - word.at), fx = prefs.strongFx;
+    const grow = fx === "pop" ? 1 + .22 * Math.exp(-d * 14) : fx === "zoom" ? 1 - .45 * Math.exp(-d * 12) : 1;
+    Object.assign(o, { size: o.size * prefs.strongSize / 100 * grow, color: fx === "flash" && d < .12 ? "#ffffff" : prefs.strongColor, glowColor: prefs.strongGlowColor,
+      glow: fx === "flash" && d < .12 ? 100 : prefs.strongGlow, font: prefs.strongFont || o.font, maxW: SAFE_W * .94 * Math.min(1, grow),
+      dx: fx === "shake" ? Math.sin(d * 70) * 16 * Math.exp(-d * 9) : 0 });
   }
   paint([word.text], cy, o);
 }
@@ -3676,7 +3684,7 @@ function start() {
   chips("frame", "frame", redraw); chips("lyricsMode", "lyricsMode", redraw);
   // Le style du texte : polices, couleurs, contour, lueur, ombre, mots forts.
   const STYLE_INPUTS = ["lyricFont", "titleFont", "strongFont", "textColor", "textSize", "strokeColor", "stroke", "glowColor", "glow", "shadowColor", "shadowBlur", "shadowOffset",
-    "caps", "pixel", "strongSize", "strongColor", "strongGlowColor", "strongGlow", "zoomAmt", "flashAmt", "transAmt", ...Object.keys(FX), ...Object.keys(ILOOK).filter((k) => k !== "iPlace")];
+    "caps", "pixel", "strongSize", "strongColor", "strongGlowColor", "strongGlow", "strongFx", "zoomAmt", "flashAmt", "transAmt", ...Object.keys(FX), ...Object.keys(ILOOK).filter((k) => k !== "iPlace")];
   chips("iPlace", "iPlace", () => restyle());
   $("iOwn").addEventListener("input", () => { $("ilook").hidden = !$("iOwn").checked; });
   for (const id of ["lyricFont", "titleFont", "strongFont", "iFont"]) {
