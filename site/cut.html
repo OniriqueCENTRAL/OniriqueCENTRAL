@@ -926,7 +926,7 @@ const tempoOf = (samples) => new Promise((resolve) => {
   const worker = new Worker("assets/bpm-key-worker.js");
   worker.onmessage = (event) => { worker.terminate(); resolve(event.data.tempo ? event.data.tempo.bpm : 0); };
   worker.onerror = () => { worker.terminate(); resolve(0); };
-  worker.postMessage({ samples, sampleRate: RATE }, [samples.buffer]);
+  worker.postMessage({ samples, sampleRate: RATE, only: "tempo" }, [samples.buffer]); // la tonalité ne sert pas ici
 });
 /** Les attaques (montée d'énergie trame par trame) et le volume de chaque trame de 512 échantillons. */
 function envelope(x) {
@@ -2610,7 +2610,8 @@ function drawScrub(t) {
   segments.forEach((s, k) => { c.fillStyle = k % 2 ? "rgba(246,238,238,.16)" : "rgba(246,238,238,.28)"; c.fillRect(X(intro + s.t0) + 1, h * .3, X(s.t1 - s.t0) - 2, h * .4); });
   c.fillStyle = "#e23444"; c.fillRect(0, h * .3, X(t), h * .4);
   c.fillStyle = "#fff"; c.fillRect(X(t) - 1, 0, 2 * (devicePixelRatio || 1), h);
-  $("time").textContent = OniriqueAudio.clock(t) + " / " + OniriqueAudio.clock(T);
+  const clock = OniriqueAudio.clock(t) + " / " + OniriqueAudio.clock(T);
+  if ($("time").textContent !== clock) $("time").textContent = clock; // seulement quand elle change : moins de travail pour la page
 }
 
 // ——— Tout redessiner après un changement ———
@@ -3390,7 +3391,7 @@ function dragLoupe() {
   box.addEventListener("pointerup", end); box.addEventListener("pointercancel", end);
 }
 /** La forme d'onde du son du clip de la réplique : on y voit où le film parle. */
-const drawIntroWave = () => drawWave($("intro-wave"), introClip, () => [prefs.introIn, prefs.introIn + introLen()]);
+const drawIntroWave = () => drawClipWave($("intro-wave"), introClip, () => [prefs.introIn, prefs.introIn + introLen()]);
 const afterClip = () => { const c = !prefs.filmContinue && clips[prefs.afterClip]; return c && c.kind === "video" ? c : null; };
 const afterZone = () => { const c = afterClip(); return prefs.afterLen > 0 ? [prefs.afterIn, Math.min(c.duration, prefs.afterIn + prefs.afterLen)] : [0, c.duration]; };
 function drawAfterWave() {
@@ -3399,9 +3400,9 @@ function drawAfterWave() {
   if (!c) return;
   const [a, b] = afterZone();
   $("after-range").textContent = "Extrait de " + mmss(a) + " à " + mmss(b) + " : les coupes après la réplique sont prises dedans.";
-  drawWave($("after-wave"), afterClip, afterZone);
+  drawClipWave($("after-wave"), afterClip, afterZone);
 }
-async function drawWave(box, clipOf, zone) {
+async function drawClipWave(box, clipOf, zone) {
   const c = clipOf(), canvas = box.firstElementChild;
   if (!c || box.hidden || $("intro-box").hidden) return;
   if (c.rms === undefined) { await clipAudio(c); if (clipOf() !== c) return; }

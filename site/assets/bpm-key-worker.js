@@ -204,8 +204,9 @@ function tonality(x, sampleRate) {
   return { key: keys[0], second: keys[1], chroma: Array.from(chroma, (v) => (max ? v / max : 0)), tuning: 440 * 2 ** (offset / 12) };
 }
 
-function analyse({ samples, sampleRate }) {
-  const t = tempo(samples, sampleRate), k = tonality(samples, sampleRate);
+// only: "tempo" : seulement le tempo (ONIRIQUE CUT n’a pas besoin de la tonalité, le plus long à calculer).
+function analyse({ samples, sampleRate, only }) {
+  const t = tempo(samples, sampleRate), k = only === "tempo" ? null : tonality(samples, sampleRate);
   if (!t && !k) return { error: 'Ce fichier est trop court ou silencieux pour être analysé.' };
   return { tempo: t, key: k && k.key, second: k && k.second, chroma: k && k.chroma, tuning: k && k.tuning };
 }
