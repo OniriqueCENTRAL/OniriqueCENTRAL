@@ -1774,6 +1774,8 @@ function renderClips() {
 
 // ——— Options de films : la réplique d'ouverture, le son des clips, le mixage ———
 const introClip = () => { const c = clips[prefs.introClip]; return c && c.kind === "video" ? c : null; };
+/** Ce qui reconnaît le fichier du clip de la réplique d'une visite à l'autre ; "" sans clip. */
+const introKey = () => { const c = introClip(); return c ? c.name + ":" + c.file.size : ""; };
 /** La durée de la réplique d'ouverture (0 sans réplique). */
 const introLen = () => { const c = prefs.introOn && introClip(); return c ? Math.max(0, Math.min(prefs.introLen, c.duration - prefs.introIn)) : 0; };
 /** La durée de toute la vidéo : la réplique, puis le passage de la musique. */
@@ -3883,6 +3885,10 @@ function filmUi() {
   const videos = clips.map((c, i) => [c, i]).filter(([c]) => c.kind === "video");
   $("introClip").replaceChildren(...(videos.length ? videos.map(([c, i]) => new Option((i + 1) + ". " + c.name, i)) : [new Option("Ajoute d'abord un clip vidéo", "")]));
   if (videos.length && !introClip()) prefs.introClip = videos[0][1];
+  // Le texte de la réplique va avec son clip : un autre clip (ou une nouvelle visite avec d'autres vidéos) repart d'un texte vide.
+  // introFor "" : le texte a été écrit avant d'ajouter un clip, il est pour celui qui arrive.
+  const key = introKey();
+  if (key && prefs.introFor !== key) { if (prefs.introFor !== "") { prefs.introLyrics = ""; prefs.introIn = 0; } prefs.introFor = key; savePrefs(); }
   $("introClip").value = String(prefs.introClip);
   $("afterClip").replaceChildren(new Option("Tous les clips (le montage)", -1), ...clips.map((c, i) => new Option((i + 1) + ". " + c.name, i)));
   $("afterClip").value = String(clips[prefs.afterClip] ? prefs.afterClip : -1);
@@ -4063,7 +4069,7 @@ function start() {
   // Pendant le glissé, seule l'heure bouge ; au lâcher, l'écoute en cours saute au nouvel endroit.
   $("stem-pos").oninput = () => { stemSeeking = true; stemClock(); };
   $("stem-pos").onchange = () => { stemSeeking = false; if (stemHear) hearStem(Number($("stem-pos").value)); };
-  $("introLyrics").addEventListener("input", () => { prefs.introLyrics = $("introLyrics").value; savePrefs(); restyle(); });
+  $("introLyrics").addEventListener("input", () => { prefs.introLyrics = $("introLyrics").value; prefs.introFor = introKey(); savePrefs(); restyle(); });
   // Le texte seul, sans les [00:00.32] et <00:00.62> : la synchro est perdue, d'où la question.
   $("isync-clear").onclick = () => {
     if (!/[[<]\d+:\d+/.test(prefs.introLyrics) || !confirm("Retirer les repères de temps ? Le texte reste, mais il faudra le resynchroniser.")) return;
