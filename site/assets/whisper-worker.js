@@ -13,6 +13,23 @@ const GPU = { model: "onnx-community/whisper-large-v3-turbo_timestamped", revisi
   device: "webgpu", dtype: { encoder_model: "q4", decoder_model_merged: "q4" } };
 const CPU = { model: "onnx-community/whisper-small_timestamped", revision: "65caa70f294b46e1c33ff820aae6b16d048ab818", device: "wasm", dtype: "q8" };
 env.allowLocalModels = false;
+// Le modèle se garde dans les fichiers du navigateur (OPFS) : le cache web refuse les fichiers de plus de ~200 Mo, et le gros
+// fichier du modèle se retéléchargeait à chaque fois. Lu depuis le disque, il ne passe pas non plus par une copie en mémoire.
+const hash = (x) => { let h = 2166136261; for (const ch of x) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return (h >>> 0).toString(36); };
+const fileName = (key) => { const k = String(key && key.url ? key.url : key); return hash(k) + "-" + k.split("/").pop().replace(/[^\w.-]/g, "_").slice(-80); };
+const folder = () => navigator.storage.getDirectory().then((root) => root.getDirectoryHandle("whisper", { create: true }));
+const opfsCache = {
+  async match(key) {
+    try { const file = await (await (await folder()).getFileHandle(fileName(key))).getFile(); return file.size ? new Response(file, { headers: { "content-length": String(file.size) } }) : undefined; }
+    catch { return undefined; }
+  },
+  async put(key, response) {
+    // Une copie : la réponse elle-même sert encore au chargement du modèle.
+    try { const copy = response.clone(), w = await (await (await folder()).getFileHandle(fileName(key), { create: true })).createWritable(); await copy.body.pipeTo(w); }
+    catch { /* pas de place : il se retéléchargera la prochaine fois */ }
+  },
+};
+if (self.navigator.storage && self.navigator.storage.getDirectory) { env.useBrowserCache = false; env.useCustomCache = true; env.customCache = opfsCache; }
 
 let ready = null, device = "cpu";
 async function transcriber(post) {

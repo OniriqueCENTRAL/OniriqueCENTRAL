@@ -687,7 +687,6 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
             </div>
           </details>
           <label class="check mute" id="keep-box" hidden><input type="checkbox" id="keepCloud"> Garder aussi dans mon cloud CUT</label>
-          <label class="check mute"><input type="checkbox" id="mute"> Couper le son pendant l'export (la vidéo garde son son)</label>
           <div class="adv-links"><span>Avancé</span><button class="mini" type="button" id="adv-open" disabled>Timeline des sons</button><button class="mini" type="button" id="adv-open-video" disabled>Timeline vidéo</button></div>
           <details class="panel" id="lib-panel" hidden>
             <summary>Mes vidéos CUT (cloud)</summary>
@@ -742,6 +741,7 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
       </div>
       <label class="vol">Volume<input type="range" id="previewVol" min="0" max="100" aria-label="Volume de l'aperçu"></label>
       <label class="check mute"><input type="checkbox" id="safeGuide"> Montrer la zone visible sur TikTok</label>
+      <label class="check mute"><input type="checkbox" id="mute"> Couper le son pendant l'export et quand l'IA travaille</label>
       <button class="go wide export" type="button" id="export" disabled>Exporter la vidéo</button>
       <div class="status" id="status" hidden><span id="status-text"></span><div class="bar"><i id="status-bar"></i></div></div>
       </div>
@@ -853,7 +853,8 @@ try {
   if ((saved.v || 1) < 3) { prefs.place = "none"; prefs.hookOn = false; }
   // v4 : le lecteur des pistes changeait la musique sous la réplique ; on la remet à « Rien » une fois.
   if ((saved.v || 1) < 4) prefs.underPart = "none";
-  prefs.v = 4;
+  if ((saved.v || 1) < 5) prefs.mute = true; // v5 : couper le son pendant l'export et le travail de l'IA, par défaut
+  prefs.v = 5;
 } catch { /* rien de mémorisé */ }
 prefs.afterClip = -1; prefs.afterLen = 0; // les clips ne restent pas d'une visite à l'autre : leur numéro et leur extrait non plus
 const savePrefs = () => { try { localStorage.setItem(PREFS, JSON.stringify(prefs)); } catch { /* stockage indisponible */ } };
@@ -1520,7 +1521,7 @@ function renderClips() {
     const d = document.createElement("div");
     d.className = "clip"; d.style.backgroundImage = `url("${c.kind === "image" ? c.url : c.thumb}")`;
     const remove = Object.assign(document.createElement("button"), { type: "button", textContent: "×", ariaLabel: "Retirer " + c.name });
-    remove.onclick = (event) => { event.stopPropagation(); stop(); manual = null; overlays = overlays.filter((o) => o.clip !== i).map((o) => ({ ...o, clip: o.clip > i ? o.clip - 1 : o.clip })); URL.revokeObjectURL(c.url); clips.splice(i, 1); if (focus >= i && focus > 0) focus--;
+    remove.onclick = (event) => { event.stopPropagation(); stop(); manual = null; overlays = overlays.filter((o) => o.clip !== i).map((o) => ({ ...o, clip: o.clip > i ? o.clip - 1 : o.clip })); URL.revokeObjectURL(c.url); if (framesModule) framesModule.then((m) => m && m.forget(c.file)); clips.splice(i, 1); if (focus >= i && focus > 0) focus--;
       if (prefs.afterClip === i) prefs.afterClip = -1; else if (prefs.afterClip > i) prefs.afterClip--;
       refresh(); };
     // En « une vidéo par fond » : toucher un clip le montre dans l'aperçu.
@@ -1545,16 +1546,22 @@ const introLen = () => { const c = prefs.introOn && introClip(); return c ? Math
 const total = () => introLen() + span();
 const slow = () => Number(prefs.slowmo) / 100;
 /** Le son d'un clip vidéo (décodé une fois ; null s'il n'en a pas). */
-async function clipAudio(c) {
-  if (c.audio !== undefined) return c.audio;
-  try {
-    if (!c.file || c.file.size > 500 * 1024 * 1024) throw new Error("trop gros");
-    const a = await new OfflineAudioContext(2, 1, sound.buffer ? sound.buffer.sampleRate : 44100).decodeAudioData(await c.file.arrayBuffer());
-    const n = Math.floor(a.length / 1024), rms = new Float32Array(n), d = a.getChannelData(0);
-    for (let f = 0; f < n; f++) { let e = 0; for (let i = f * 1024; i < (f + 1) * 1024; i++) e += d[i] * d[i]; rms[f] = Math.sqrt(e / 1024); }
-    c.audio = a; c.rms = rms;
-  } catch { c.audio = null; c.rms = null; }
-  return c.audio;
+function clipAudio(c) {
+  if (c.audio !== undefined) return Promise.resolve(c.audio);
+  // Une seule fois, même demandé de plusieurs endroits en même temps.
+  return c.audioJob || (c.audioJob = (async () => {
+    try {
+      if (!c.file || c.file.size > 500 * 1024 * 1024) throw new Error("trop gros");
+      // Plus de 3 minutes : 24 kHz, deux fois moins de mémoire (la voix d'un film reste nette).
+      const rate = c.duration > 180 ? 24000 : sound.buffer ? sound.buffer.sampleRate : 44100;
+      const a = await new OfflineAudioContext(2, 1, rate).decodeAudioData(await c.file.arrayBuffer());
+      const n = Math.floor(a.length / 1024), rms = new Float32Array(n), d = a.getChannelData(0);
+      for (let f = 0; f < n; f++) { let e = 0; for (let i = f * 1024; i < (f + 1) * 1024; i += 4) e += d[i] * d[i]; rms[f] = Math.sqrt(e / 256); }
+      c.audio = a; c.rms = rms;
+    } catch { c.audio = null; c.rms = null; }
+    c.audioJob = null;
+    return c.audio;
+  })());
 }
 // Le son mixé (réplique + musique + son des clips) n'existe que si une option de film le demande ; sinon la musique seule.
 /** Le fondu d'une piste du mixage : celui choisi dans la timeline, sinon celui d'origine (def). */
@@ -1614,7 +1621,7 @@ async function ensureMix() {
   await mixing.done;
 }
 // ——— La séparation des pistes : par IA (Demucs, assets/demucs-worker.js), sinon la séparation rapide (assets/stems-worker.js) ———
-let demucs = null, demucsQueue = Promise.resolve();
+let demucs = null, demucsQueue = Promise.resolve(), demucsIdle = 0;
 const AI_RATE = 44100; // ce que le modèle attend
 /** Les échantillons [a, a + n[ du son, en stéréo à 44 100 Hz. */
 async function at44k(a, n) {
@@ -1629,7 +1636,8 @@ async function at44k(a, n) {
 const pct = (x) => Math.round(x * 100) + " %";
 /** Les pistes des échantillons [a, a + n[ par IA ({ device, parts } à 44 100 Hz, chaque piste en [gauche, droite]) ; une à la fois. */
 function aiStems(a, n, what) {
-  const job = demucsQueue.then(async () => {
+  clearTimeout(demucsIdle);
+  const job = demucsQueue.then(() => aiWork(async () => {
     const [L, R] = await at44k(a, n);
     demucs = demucs || new Worker("assets/demucs-worker.js", { type: "module" });
     const out = await new Promise((resolve, reject) => {
@@ -1646,8 +1654,11 @@ function aiStems(a, n, what) {
     const { drums, bass, other, vocals } = out.parts;
     const prod = [0, 1].map((c) => drums[c].map((v, i) => v + bass[c][i] + other[c][i])); // le morceau sans la voix
     return { device: out.device, parts: { prod, melo: other, drums, bass, vocals } };
+  }));
+  demucsQueue = job.catch(() => {}).then(() => {
+    clearTimeout(demucsIdle);
+    demucsIdle = setTimeout(() => { if (demucs) { demucs.terminate(); demucs = null; } }, 60_000);
   });
-  demucsQueue = job.catch(() => {});
   return job;
 }
 const aiDone = (device) => "Pistes séparées par IA (Demucs" + (device === "gpu" ? ", sur la carte graphique)." : ", sur le processeur).");
@@ -1701,7 +1712,7 @@ async function autoLyrics() {
     status("Séparation de la voix…");
     let voice = null;
     try { const all = await separateAll(); if (!/rapide/.test(all.note)) voice = all.parts.vocals; } catch { /* le module isole la voix lui-même */ }
-    const out = await ai.transcribe(sound.buffer, status, { voice, written });
+    const out = await aiWork(() => ai.transcribe(sound.buffer, status, { voice, written }));
     if (!out.words) return status(written ? "L'IA n'a pas réussi à caler ces paroles sur le son." : "L'IA n'a pas entendu de paroles dans ce son.");
     $("lyrics").value = out.lrc;
     readLyrics(); showCloudLyrics(); keepSet();
@@ -1777,7 +1788,7 @@ async function hearStem(from = 0) {
   ctx.resume();
   const src = ctx.createBufferSource(), level = ctx.createGain();
   src.buffer = buffer; level.gain.value = prefs.previewVol / 100;
-  src.connect(level).connect(ctx.destination);
+  src.connect(level).connect(pageOut());
   src.start(0, Math.min(from, buffer.duration - .05));
   stemHear = { src, at: ctx.currentTime - from, tick: setInterval(() => { if (stemHear && !stemSeeking) { $("stem-pos").value = stemAt(); stemClock(); } }, 200) };
   src.onended = () => { if (stemHear && stemHear.src === src) stopStemHear(); };
@@ -2362,6 +2373,25 @@ function fadeEnds(t) {
 // ——— Lecture : le son mène, l'image suit ———
 const FADE = 0.012; // 12 ms de fondu : inaudible, mais évite le clic d'un son coupé net
 let ctx = null, source = null, startedAt = 0, position = 0, playing = false, frame = 0, recording = null, resumeTimer = 0;
+// Tout le son de la page sort par ici : coupé pendant l'export et pendant que l'IA travaille, si la case est cochée
+// (l'enregistrement de l'export, lui, se branche avant : la vidéo garde son son).
+let master = null;
+const busy = { export: false, ai: 0 };
+function pageOut() {
+  ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+  if (!master) { master = ctx.createGain(); master.connect(ctx.destination); applyMute(); }
+  return master;
+}
+function applyMute() {
+  const quiet = !!prefs.mute && (busy.export || busy.ai > 0);
+  if (master) master.gain.setTargetAtTime(quiet ? 0 : 1, ctx.currentTime, .03);
+  isyncPlayer.muted = quiet;
+}
+/** Un travail d'IA : le son de la page se coupe pendant ce temps (si la case est cochée). */
+async function aiWork(fn) {
+  busy.ai++; applyMute();
+  try { return await fn(); } finally { busy.ai--; applyMute(); }
+}
 const now = () => (playing ? Math.min(total(), ctx.currentTime - startedAt) : position);
 function play(from = position, extraOut = null) {
   if (playing) stop(); // une seule lecture à la fois : l'ancienne s'arrête (sinon elle continuait en fond, hors de portée)
@@ -2378,9 +2408,9 @@ function play(from = position, extraOut = null) {
   level.gain.linearRampToValueAtTime(1, ctx.currentTime + FADE);
   source.connect(level);
   const monitor = ctx.createGain(); // ce qu'on entend (coupé par « MUTE » pendant un export) ; l'enregistrement, lui, garde le son
-  monitor.gain.value = recording && prefs.mute ? 0 : prefs.previewVol / 100;
+  monitor.gain.value = prefs.previewVol / 100;
   level.connect(monitor);
-  monitor.connect(ctx.destination);
+  monitor.connect(pageOut());
   if (extraOut) level.connect(extraOut);
   source.monitor = monitor;
   source.level = level;
@@ -2544,7 +2574,7 @@ function refresh() {
 // Image par image : chaque image est dessinée à son temps exact, les vidéos calées à l'image près, puis encodée en H.264
 // (WebCodecs) sans avoir à suivre le temps réel : ni image sautée, ni encodage bâclé pour tenir la cadence.
 const AVC = ["avc1.640033", "avc1.640029", "avc1.4d0033", "avc1.42e033"]; // High 5.1, High 4.1, Main 5.1, Baseline 5.1
-const encoderConfig = (codec) => ({ codec, width: W, height: H, bitrate: 30_000_000, framerate: 30, bitrateMode: "variable", latencyMode: "quality", avc: { format: "annexb" } });
+const encoderConfig = (codec) => ({ codec, width: W, height: H, bitrate: 20_000_000, framerate: 30, bitrateMode: "variable", latencyMode: "quality", avc: { format: "annexb" } });
 let encoderCodec = null; // le H.264 que ce navigateur sait encoder en 1080 × 1920, sinon l'enregistrement en temps réel
 async function pickEncoder() {
   if (!window.VideoEncoder || !window.VideoFrame) return null;
@@ -2674,7 +2704,7 @@ async function exportVideo(series = null) {
   // Plusieurs vidéos : un dossier où les ranger (Chrome, Edge) ; sinon elles arrivent une par une dans les téléchargements.
   let folder = null;
   if (list.length > 1 && window.showDirectoryPicker) { try { folder = await window.showDirectoryPicker({ mode: "readwrite" }); } catch { folder = null; } }
-  lockUi(true);
+  lockUi(true); busy.export = true; applyMute();
   $("mute").disabled = false; // on peut couper ou remettre le son pendant l'enregistrement
   try {
     const wav = await passageWav().catch(() => null);
@@ -2713,7 +2743,7 @@ async function exportVideo(series = null) {
     recording = null;
     focus = kept;
     if (series) { Object.assign(prefs, savedPrefs); sound.start = savedStart; manual = null; savePrefs(); syncAll(); }
-    lockUi(false);
+    lockUi(false); busy.export = false; applyMute();
     refresh();
   }
 }
@@ -3421,7 +3451,7 @@ async function aiIsync() {
     for (let ch = 0; ch < a.numberOfChannels; ch++) part.copyToChannel(a.getChannelData(ch).subarray(from, from + len), ch);
     const ai = await import("./assets/ai-lyrics.js");
     const written = prefs.introLyrics.split("\n").map(bareLine).filter(Boolean).join("\n");
-    const out = await ai.transcribe(part, status, { written, ends: true });
+    const out = await aiWork(() => ai.transcribe(part, status, { written, ends: true, film: true }));
     if (!out.words) return status(written ? "L'IA n'a pas réussi à caler ce texte sur la réplique." : "L'IA n'a pas entendu de paroles dans la réplique.");
     prefs.introLyrics = $("introLyrics").value = out.lrc; savePrefs(); restyle();
     status(out.words + (out.aligned ? " mots calés par l'IA, ton texte est gardé." : " mots écrits et calés par l'IA : relis-les, corrige un mot directement dans le texte."));
@@ -3513,7 +3543,7 @@ function initTabs() {
 
 function start() {
   initTabs();
-  pickEncoder().then((codec) => { encoderCodec = codec; $("mute").parentElement.hidden = !!codec; });
+  pickEncoder().then((codec) => { encoderCodec = codec; });
   const isAudio = (file) => file.type.startsWith("audio/") || /\.(mp3|wav|flac|m4a|aac|ogg|opus|aiff?)$/i.test(file.name);
   OniriqueAudio.dropZone($("audio-pick"), $("audio-file"), (files) => {
     const audio = files.find(isAudio), others = files.filter((f) => !isAudio(f));
@@ -3542,7 +3572,7 @@ function start() {
   $("previewVol").value = prefs.previewVol;
   $("previewVol").oninput = () => {
     prefs.previewVol = Number($("previewVol").value); savePrefs();
-    if (playing && source && source.monitor && !(recording && prefs.mute)) source.monitor.gain.setTargetAtTime(prefs.previewVol / 100, ctx.currentTime, .02);
+    if (playing && source && source.monitor) source.monitor.gain.setTargetAtTime(prefs.previewVol / 100, ctx.currentTime, .02);
   };
   // Options de films : la réplique change la durée de la vidéo (tout se recalcule) ; les volumes ne changent que le mixage.
   for (const id of ["introOn", "introClip", "afterClip", "filmVol", "introFade", "introGaps", "dropGap", "musicVol", "clipVol", "underVol", "filmContinue"]) {
@@ -3650,8 +3680,7 @@ function start() {
     $("lib-panel").addEventListener("toggle", () => { if ($("lib-panel").open) renderLibrary(); });
   }
   $("mute").onchange = () => {
-    prefs.mute = $("mute").checked; savePrefs();
-    if (recording && source && source.monitor) source.monitor.gain.setTargetAtTime(prefs.mute ? 0 : 1, ctx.currentTime, .02);
+    prefs.mute = $("mute").checked; savePrefs(); applyMute();
   };
   chips("duration", "duration", () => { sound.start = sound.buffer ? bestStart() : 0; position = 0; refresh(); });
   // Une durée au choix, au dixième de seconde.

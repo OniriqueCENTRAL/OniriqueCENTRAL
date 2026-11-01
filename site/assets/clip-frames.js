@@ -44,6 +44,9 @@ async function demux(file) {
     offset: Math.min(...samples.map((s) => s.cts)) / timescale };
 }
 
+/** Un clip retiré : ses images compressées gardées pour l'export sont libérées. */
+export function forget(file) { demuxed.delete(file); }
+
 export async function clipFrames(file) {
   if (!window.VideoDecoder) return null;
   if (!demuxed.has(file)) demuxed.set(file, demux(file).catch(() => null));

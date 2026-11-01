@@ -10,13 +10,17 @@ const stamp = (x) => { const cs = Math.round(x * 100); return String(Math.floor(
 
 /** Des mots datés en LRC mot par mot : une ligne par phrase (un silence, une ponctuation finale, une majuscule de début
  *  de phrase, ou 10 mots au plus). */
-export function wordsToLrc(words, ends = false) {
+export function wordsToLrc(words, ends = false, film = false) {
   const lines = [];
   let line = [];
   words.forEach((w, i) => {
     const prev = words[i - 1];
     const sentence = line.length >= 2 && /^\p{Lu}/u.test(w.text) && !/^(I|Ok|OK)$/.test(w.text);
-    if (line.length && (w.start - prev.end > .6 || line.length >= 10 || sentence || /[.!?…]$/.test(prev.text))) { lines.push(line); line = []; }
+    // Film : une réplique va jusqu'à 14 mots (sans laisser un mot seul à la fin), et deux mots dits à plus d'1,2 s d'écart
+    // sont deux répliques même si l'IA a étiré la fin du premier.
+    const long = film ? line.length >= 14 && words.length - i > 2 : line.length >= 10;
+    const apart = film && prev && w.start - prev.start > 1.2;
+    if (line.length && (w.start - prev.end > .6 || apart || long || sentence || /[.!?…]$/.test(prev.text))) { lines.push(line); line = []; }
     line.push(w);
   });
   if (line.length) lines.push(line);
@@ -75,6 +79,13 @@ export function alignLyrics(text, heard, ends = false) {
     + blank(ends, ws.at(-1).end ?? ws.at(-1).at + .5, rows[li + 1] && rows[li + 1][0].at)).join("\n");
 }
 
+/** Les mots d'un dialogue de film, nettoyés : sans les tirets de dialogue des sous-titres (« - T'es »), et une fin de mot
+ *  que l'IA étire sur le silence d'après est ramenée à la durée normale d'un mot dit (le blanc se voit alors). */
+function filmWords(words) {
+  const out = words.map((w) => ({ ...w, text: w.text.replace(/^[-–—]+\s*/, "") })).filter((w) => w.text);
+  return out.map((w, i) => ({ ...w, end: Math.min(w.end, w.start + .3 + .07 * w.text.length, out[i + 1] ? out[i + 1].start : Infinity) }));
+}
+
 /** Un AudioBuffer rééchantillonné (channels voies, rate Hz), en Float32Array par voie. */
 async function resample(buffer, rate, channels) {
   const off = new OfflineAudioContext(channels, Math.ceil(buffer.duration * rate), rate), src = off.createBufferSource();
@@ -109,14 +120,16 @@ export async function isolateVoice(buffer, status = () => {}) {
  *  written : des paroles déjà écrites (avec ou sans temps) à caler ; sinon l'IA les écrit elle-même.
  *  La voix isolée ne sert qu'à repérer où l'on chante : Whisper écoute le morceau tel quel, qu'il comprend mieux (mesuré sur
  *  deux titres de euhZ : 44,7 et 37,7 % de mots faux, contre 50,7 et 44,4 % sur la voix isolée, abîmée par la séparation). */
-export async function transcribe(buffer, status = () => {}, { voice = null, language = "french", written = "", ends = false } = {}) {
-  const guideVoice = voice || (await isolateVoice(buffer, status)) || buffer;
+export async function transcribe(buffer, status = () => {}, { voice = null, language = "french", written = "", ends = false, film = false } = {}) {
+  // film : un dialogue s'entend bien tel quel ; isoler la voix (172 Mo d'IA en plus) donnait exactement le même texte, en plus lent.
+  const guideVoice = film ? buffer : voice || (await isolateVoice(buffer, status)) || buffer;
   const [audio] = await resample(buffer, 16000, 1), [guide] = await resample(guideVoice, 16000, 1);
   const out = await runWorker(new URL("whisper-worker.js", import.meta.url), { audio, guide, language }, [audio.buffer, guide.buffer], (d) => status(d.phase === "download"
-    ? "Téléchargement de l'IA des paroles (environ 760 Mo, une seule fois sur cet appareil)… " + pct(d.value) : "L'IA écoute les paroles…" + (d.value ? " " + pct(d.value) : "")));
-  if (written.trim() && out.words.length) {
-    const lrc = alignLyrics(written, out.words, ends);
+    ? "Chargement de l'IA des paroles (la première fois, environ 760 Mo à télécharger)… " + pct(d.value) : "L'IA écoute les paroles…" + (d.value ? " " + pct(d.value) : "")));
+  const heard = film ? filmWords(out.words) : out.words;
+  if (written.trim() && heard.length) {
+    const lrc = alignLyrics(written, heard, ends);
     return { lrc, words: lrc ? (lrc.match(/</g) || []).length : 0, device: out.device, aligned: true };
   }
-  return { lrc: wordsToLrc(out.words, ends), words: out.words.length, device: out.device, aligned: false };
+  return { lrc: wordsToLrc(heard, ends, film), words: heard.length, device: out.device, aligned: false };
 }
