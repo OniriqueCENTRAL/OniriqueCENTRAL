@@ -73,7 +73,7 @@
 .hud-pick > span { font: 500 11px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
 .frame .empty { position: absolute; inset: 0; display: grid; place-content: center; gap: 8px; padding: 24px; text-align: center; color: var(--haze); font-size: 14px; }
 .frame .empty b { font: 800 16px/1.3 var(--f-display); color: var(--mist); }
-.transport { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; max-width: 340px; width: 100%; margin: 0 auto; }
+.transport { display: grid; grid-template-columns: auto 1fr auto auto; gap: 12px; align-items: center; max-width: 340px; width: 100%; margin: 0 auto; }
 .round { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%; border: 0; background: var(--mist); color: var(--night); cursor: pointer; }
 .round:disabled { opacity: .4; cursor: default; }
 .round svg { width: 20px; height: 20px; }
@@ -816,6 +816,7 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
         <button class="round" type="button" id="play" aria-label="Lecture" disabled><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button>
         <div class="scrub" id="scrub"><canvas></canvas></div>
         <span class="time" id="time">0:00</span>
+        <button class="mini" type="button" id="resync" title="Recaler l'image : remet la vidéo de l'aperçu au bon moment du son" aria-label="Recaler l'image sur le son">Recaler</button>
       </div>
       <label class="vol">Volume<input type="range" id="previewVol" min="0" max="100" aria-label="Volume de l'aperçu"></label>
       <div class="hud-pick"><span>HUD</span><div class="chips" id="hudPick" role="group" aria-label="Interface affichée sur l'aperçu"><button type="button" data-v="none">Aucun</button><button type="button" data-v="tiktok">TikTok</button><button type="button" data-v="shorts">Shorts</button><button type="button" data-v="insta">Instagram</button></div></div>
@@ -2377,7 +2378,7 @@ function drawIntro(t, playing) {
   if (shown !== -2) { shown = -2; pool.forEach((x) => x.pause()); prepare(0); prepare(1); prepare(2); }
   if (v.src !== c.url) v.src = c.url;
   if (v.playbackRate !== 1) v.playbackRate = 1;
-  if (playing && !frozen) { if (v.paused) v.play().catch(() => {}); if (Math.abs(v.currentTime - want) > .25) v.currentTime = want; }
+  if (playing && !frozen) { if (v.paused) v.play().catch(() => {}); if (drift(v, want, .25)) v.currentTime = want; }
   else { v.pause(); seekTo(v, want); }
   if (v.readyState < 2 && !v.__frame) return false;
   const r = frameRect();
@@ -2509,7 +2510,7 @@ function drawMusic(t, playing) {
     const v = src, rate = slow(), want = s.cont ? Math.min(s.from + t * rate, clip.duration - .05)
       : s.hold ? (t * rate) % Math.max(.1, clip.duration - .05) : s.from + (t - s.t0) * rate;
     if (v.playbackRate !== rate) v.playbackRate = rate;
-    if (playing) { if (v.paused) v.play().catch(() => {}); if (Math.abs(v.currentTime - want) > .25) v.currentTime = want; }
+    if (playing) { if (v.paused) v.play().catch(() => {}); if (drift(v, want, .25)) v.currentTime = want; }
     else seekTo(v, want);
     if (v.readyState < 2 && !v.__frame) return false; // l'image précédente reste le temps que la vidéo arrive
   }
@@ -2639,7 +2640,11 @@ function finish() {
 }
 let hearing = 0; // « Écouter le début » en cours (un minuteur)
 // Pendant un export, l'image avance à 30 images par seconde au minuteur : l'enregistrement ne dépend pas de l'affichage.
-function loop() { const t = now(); draw(t, playing); drawScrub(t); if (adv.open) drawAdvHead(t); if (playing) frame = recording ? setTimeout(loop, 1000 / 30) : requestAnimationFrame(loop); }
+// Le calage de l'image sur le son pendant la lecture : seulement à l'export, au bouton « Recaler l'image », ou quand un clip
+// est arrivé au bout (il boucle). Sinon l'aperçu laisse la vidéo jouer, sans sauts.
+let resync = false;
+const drift = (v, want, tolerance) => (recording || resync || v.ended) && Math.abs(v.currentTime - want) > tolerance;
+function loop() { const t = now(); draw(t, playing); resync = false; drawScrub(t); if (adv.open) drawAdvHead(t); if (playing) frame = recording ? setTimeout(loop, 1000 / 30) : requestAnimationFrame(loop); }
 /** Après une option qui ne change que l'image (ou l'ordre des coupes) : on redessine sans couper le son. */
 function restyle(rebuild) {
   if (rebuild) { build(); shown = -1; renderClips(); $("reshuffle").hidden = prefs.order !== "mix"; }
@@ -3032,7 +3037,7 @@ function drawOverlays(t, playing) {
       src = o.video || (o.video = Object.assign(document.createElement("video"), { muted: true, playsInline: true, preload: "auto" }));
       if (src.src !== c.url) src.src = c.url;
       const want = (o.offset + (t - o.at)) % Math.max(.1, c.duration - .05);
-      if (playing) { if (src.paused) src.play().catch(() => {}); if (Math.abs(src.currentTime - want) > .3) src.currentTime = want; }
+      if (playing) { if (src.paused) src.play().catch(() => {}); if (drift(src, want, .3)) src.currentTime = want; }
       else { src.pause(); seekTo(src, want); }
       if (src.readyState < 2 && !src.__frame) continue;
     }
@@ -3843,6 +3848,7 @@ function start() {
   $("reshuffle").onclick = () => { prefs.shuffle = (prefs.shuffle || 0) + 1; manual = null; restyle(true); };
   // Un second clic pendant la préparation du son l'annule (comme une pause) au lieu de lancer une deuxième lecture.
   let starting = 0;
+  $("resync").onclick = () => { resync = true; if (!playing) draw(position, false); };
   $("play").onclick = async () => {
     if (playing || starting) { starting = 0; return stop(); }
     const me = starting = performance.now();
