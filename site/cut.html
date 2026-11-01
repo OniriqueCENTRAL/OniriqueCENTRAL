@@ -851,7 +851,9 @@ try {
   if (saved.dropFlash === false && !saved.transition) prefs.transition = "cut";
   // v3 : le titre et l'accroche sont masqués par défaut.
   if ((saved.v || 1) < 3) { prefs.place = "none"; prefs.hookOn = false; }
-  prefs.v = 3;
+  // v4 : le lecteur des pistes changeait la musique sous la réplique ; on la remet à « Rien » une fois.
+  if ((saved.v || 1) < 4) prefs.underPart = "none";
+  prefs.v = 4;
 } catch { /* rien de mémorisé */ }
 prefs.afterClip = -1; prefs.afterLen = 0; // les clips ne restent pas d'une visite à l'autre : leur numéro et leur extrait non plus
 const savePrefs = () => { try { localStorage.setItem(PREFS, JSON.stringify(prefs)); } catch { /* stockage indisponible */ } };
@@ -1711,7 +1713,7 @@ async function autoLyrics() {
 }
 
 // ——— Écouter tout le morceau avec une piste séparée : pour entendre ce que donne la séparation ———
-let fullStems = null, fullJob = null, stemHear = null;
+let fullStems = null, fullJob = null, stemHear = null, stemPick = "full"; // stemPick : la piste écoutée dans le lecteur
 /** Les pistes de tout le morceau : par IA, sinon par la séparation rapide, par tranches de 30 s (le worker ne tiendrait pas un morceau entier en mémoire). */
 function separateAll() {
   const b = sound.buffer;
@@ -1762,14 +1764,14 @@ const PART_NAMES = { none: "le son entier", full: "le son entier", prod: "la pro
 /** Joue tout le morceau avec la piste choisie dans « Sous la réplique », depuis from (en secondes). */
 async function hearStem(from = 0) {
   stopStemHear(); stop();
-  const part = prefs.underPart;
+  const part = stemPick;
   let buffer = sound.buffer, note = "";
   if (STEMS.includes(part)) {
     $("stem-hear").disabled = $("stem-play").disabled = true;
     try { const all = await separateAll(); buffer = all.parts[part]; note = " " + all.note; }
     catch { fullJob = null; $("stem-status").textContent = "La séparation n'a pas marché sur ce morceau."; return; }
     finally { $("stem-hear").disabled = $("stem-play").disabled = false; }
-    if (prefs.underPart !== part || playing) return; // on a changé d'avis pendant la séparation
+    if (stemPick !== part || playing) return; // on a changé d'avis pendant la séparation
   }
   ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
   ctx.resume();
@@ -2362,6 +2364,7 @@ const FADE = 0.012; // 12 ms de fondu : inaudible, mais évite le clic d'un son 
 let ctx = null, source = null, startedAt = 0, position = 0, playing = false, frame = 0, recording = null, resumeTimer = 0;
 const now = () => (playing ? Math.min(total(), ctx.currentTime - startedAt) : position);
 function play(from = position, extraOut = null) {
+  if (playing) stop(); // une seule lecture à la fois : l'ancienne s'arrête (sinon elle continuait en fond, hors de portée)
   clearTimeout(resumeTimer); resumeTimer = 0;
   stopStemHear();
   ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
@@ -3526,7 +3529,15 @@ function start() {
   $("nudge-plus").onclick = () => { sound.phase += beatLength() / 20; sound.start = clampStart(sound.start + beatLength() / 20); refresh(); };
   $("best").onclick = () => { sound.start = bestStart(); position = 0; refresh(); };
   $("reshuffle").onclick = () => { prefs.shuffle = (prefs.shuffle || 0) + 1; manual = null; restyle(true); };
-  $("play").onclick = async () => { if (playing) return stop(); await ensureMix(); play(position >= total() - .1 ? 0 : position); };
+  // Un second clic pendant la préparation du son l'annule (comme une pause) au lieu de lancer une deuxième lecture.
+  let starting = 0;
+  $("play").onclick = async () => {
+    if (playing || starting) { starting = 0; return stop(); }
+    const me = starting = performance.now();
+    await ensureMix();
+    if (starting !== me) return;
+    starting = 0; play(position >= total() - .1 ? 0 : position);
+  };
   // Le volume de l'aperçu (ce qu'on entend ; la vidéo exportée garde son son).
   $("previewVol").value = prefs.previewVol;
   $("previewVol").oninput = () => {
@@ -3555,11 +3566,12 @@ function start() {
   chips("slowmo", "slowmo", () => restyle(true));
   chips("transition", "transition", () => restyle());
   chips("introSubMode", "introSubMode", () => restyle());
-  chips("underPart", "underPart", () => { $("stem-part").value = prefs.underPart; if (stemHear) hearStem(ctx.currentTime - stemHear.at); ensureStems(); scheduleMix(); });
-  // Le lecteur flottant : ses pistes sont celles de « Sous la réplique » (choisir l'une change l'autre).
-  $("stem-part").replaceChildren(...[...$("underPart").querySelectorAll("button")].map((b) => new Option(b.textContent, b.dataset.v)));
-  $("stem-part").value = prefs.underPart;
-  $("stem-part").onchange = () => $("underPart").querySelector(`[data-v="${$("stem-part").value}"]`).click();
+  // Choisir la musique sous la réplique la fait aussi écouter dans le lecteur ; l'inverse non : le lecteur ne sert qu'à écouter.
+  chips("underPart", "underPart", () => { if (prefs.underPart !== "none") { stemPick = prefs.underPart; $("stem-part").value = stemPick; if (stemHear) hearStem(ctx.currentTime - stemHear.at); } ensureStems(); scheduleMix(); });
+  // Le lecteur flottant : les mêmes pistes, sans « Rien ».
+  $("stem-part").replaceChildren(...[...$("underPart").querySelectorAll("button")].filter((b) => b.dataset.v !== "none").map((b) => new Option(b.textContent, b.dataset.v)));
+  stemPick = prefs.underPart === "none" ? "full" : prefs.underPart; $("stem-part").value = stemPick;
+  $("stem-part").onchange = () => { stemPick = $("stem-part").value; if (stemHear) hearStem(ctx.currentTime - stemHear.at); };
   const toggleStem = () => {
     if (stemHear) return stopStemHear();
     const from = Number($("stem-pos").value);
