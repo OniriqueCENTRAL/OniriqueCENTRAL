@@ -51,6 +51,27 @@ const run = (bin, args, options = {}) => new Promise((resolve, reject) => execFi
   { timeout: 8 * 60_000, maxBuffer: 64 * 1024 * 1024, ...options },
   (error, stdout, stderr) => (error ? reject(Object.assign(error, { stderr: String(stderr) })) : resolve(stdout))));
 
+// yt-dlp suit les changements de YouTube presque chaque semaine : celui du système (apt) est vite trop vieux. Le serveur
+// garde donc la dernière version officielle (GitHub, en HTTPS) dans ses données, rafraîchie une fois par jour, et retombe
+// sur celui du système si GitHub ne répond pas. Node sert de moteur JavaScript aux défis de YouTube.
+const YTDLP = path.join(config.dataDir, 'yt-dlp');
+const YTDLP_URL = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp';
+let updating = null;
+async function ytdlpCommand() {
+  if (process.platform === 'win32') return ['yt-dlp', []]; // la version officielle se lance par python3 : serveur Linux seulement
+  const age = (() => { try { return Date.now() - fs.statSync(YTDLP).mtimeMs; } catch { return Infinity; } })();
+  if (age > 24 * 3600_000) {
+    updating ||= (async () => {
+      const response = await fetch(YTDLP_URL, { signal: AbortSignal.timeout(60_000) });
+      if (!response.ok) throw new Error('GitHub ' + response.status);
+      fs.writeFileSync(YTDLP + '.new', Buffer.from(await response.arrayBuffer()), { mode: 0o755 });
+      fs.renameSync(YTDLP + '.new', YTDLP);
+    })().catch((error) => console.error('yt-dlp : mise à jour impossible,', error.message)).finally(() => { updating = null; });
+    await updating;
+  }
+  return fs.existsSync(YTDLP) ? [YTDLP, ['--js-runtimes', 'node', '--remote-components', 'ejs:github']] : ['yt-dlp', []];
+}
+
 export function mountDownloader(app, { optionalUser, wrap }) {
   app.post('/api/downloader/youtube', wrap(async (req, res) => {
     const user = optionalUser(req);
@@ -71,8 +92,9 @@ export function mountDownloader(app, { optionalUser, wrap }) {
     try {
       // 1. Le flux audio d'origine, sans conversion (un seul encodage, à la fin).
       let title;
+      const [bin, extra] = await ytdlpCommand();
       try {
-        title = String(await run('yt-dlp', ['--no-playlist', '--no-progress', '--no-warnings', '--no-simulate', '-O', '%(title)s',
+        title = String(await run(bin, [...extra, '--no-playlist', '--no-progress', '--no-warnings', '--no-simulate', '-O', '%(title)s',
           '--match-filter', `duration <= ${MAX_SECONDS}`, '-f', 'bestaudio/best', '-o', path.join(dir, 'source.%(ext)s'),
           '--', `https://www.youtube.com/watch?v=${id}`], { encoding: 'utf8' })).trim();
       } catch (error) {
