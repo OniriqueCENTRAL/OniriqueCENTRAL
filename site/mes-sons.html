@@ -272,7 +272,7 @@ dialog::backdrop { background: rgba(5,2,3,.72); backdrop-filter: blur(4px); }
 #cover-view .bar .btn-primary { margin-left: auto; box-shadow: none; }
 /* Chercher la pochette d'un son sorti : les pochettes trouvées sur Apple Music, une touche pour choisir */
 #cover-find { width: min(720px, calc(100vw - 24px)); }
-#cover-find .find-body { display: grid; gap: 14px; padding: 16px 18px 18px; }
+#cover-find .find-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 16px 18px 18px; }
 #cover-find form { display: flex; gap: 8px; }
 #cover-find input { flex: 1; min-width: 0; height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.4); color: var(--mist); font: 500 15px var(--f-body); }
 #cover-find .found { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; max-height: 56vh; overflow-y: auto; }
@@ -933,15 +933,23 @@ player.audio.addEventListener("pause", markPlaying);
 const parseLyrics = OP.parseLyrics;
 /** Les paroles d'un son déjà sorti sur LRCLIB (base libre, sans clé), synchronisées ligne par ligne quand elles existent ; null sinon. */
 async function findLyrics(artist, title, duration) {
-  const q = (path, params) => fetch("https://lrclib.net/api/" + path + "?" + new URLSearchParams(params)).then((r) => (r.ok ? r.json() : null));
-  // D'abord le titre exact à la bonne durée, sinon la recherche : le plus proche en durée, les synchronisées d'abord.
-  let hit = duration ? await q("get", { artist_name: artist, track_name: title, duration: Math.round(duration) }) : null;
-  if (!hit || !(hit.syncedLyrics || hit.plainLyrics)) {
-    const near = (x) => (duration ? Math.abs(x.duration - duration) : 0);
-    hit = ((await q("search", { artist_name: artist, track_name: title })) || [])
-      .filter((x) => !x.instrumental && (x.syncedLyrics || x.plainLyrics) && near(x) < 15)
-      .sort((a, b) => !!b.syncedLyrics - !!a.syncedLyrics || near(a) - near(b))[0];
-  }
+  // LRCLIB est souvent surchargé (503) : on réessaie, et seul un vrai « introuvable » (404) compte comme rien trouvé.
+  const q = async (path, params) => {
+    for (let i = 0; ; i++) {
+      const r = await fetch("https://lrclib.net/api/" + path + "?" + new URLSearchParams(params));
+      if (r.ok) return r.json();
+      if (r.status === 404) return null;
+      if (i === 4 || (r.status !== 503 && r.status !== 429)) throw new Error("LRCLIB " + r.status);
+      await new Promise((done) => setTimeout(done, 700 * (i + 1)));
+    }
+  };
+  // La recherche (par champs, puis en texte libre) : le plus proche en durée, les synchronisées d'abord. Pas /api/get :
+  // il va chercher ailleurs ce qu'il n'a pas, et c'est lui qui est surchargé.
+  const near = (x) => (duration ? Math.abs(x.duration - duration) : 0);
+  const pick = (list) => (list || []).filter((x) => !x.instrumental && (x.syncedLyrics || x.plainLyrics) && near(x) < 15)
+    .sort((a, b) => !!b.syncedLyrics - !!a.syncedLyrics || near(a) - near(b))[0];
+  // La recherche en texte libre n'est qu'un secours : si elle échoue, rien n'est trouvé (pas une erreur).
+  const hit = pick(await q("search", { artist_name: artist, track_name: title })) || pick(await q("search", { q: artist + " " + title }).catch(() => null));
   return hit && (hit.syncedLyrics || hit.plainLyrics) ? { synced: hit.syncedLyrics || "", plain: hit.plainLyrics || "", artist: hit.artistName, title: hit.trackName } : null;
 }
 const stamp = (s) => { const cs = Math.round(s * 100); return "[" + String(Math.floor(cs / 6000)).padStart(2, "0") + ":" + ((cs % 6000) / 100).toFixed(2).padStart(5, "0") + "]"; };
@@ -1917,15 +1925,31 @@ async function searchCovers() {
   if (!q) return;
   box.replaceChildren(); note.textContent = "Recherche…";
   try {
-    // Les titres et les albums : un single n'est parfois trouvé que par l'un des deux. Une pochette n'apparaît qu'une fois.
-    const ask = (entity) => fetch("https://itunes.apple.com/search?" + new URLSearchParams({ term: q, entity, limit: "25", country: "FR" })).then((r) => (r.ok ? r.json() : { results: [] }));
-    const [songs, albums] = await Promise.all([ask("song"), ask("album")]);
-    const seen = new Set(), found = [...songs.results, ...albums.results].filter((x) => x.artworkUrl100 && !seen.has(x.artworkUrl100) && seen.add(x.artworkUrl100));
+    // La recherche libre d'Apple Music trouve peu de chose : on y ajoute tout le catalogue de l'artiste (singles, EP, albums).
+    const p = findTarget, artist = p.artist || p.owner.name, who = q.toLowerCase().includes(artist.toLowerCase()) ? artist : q;
+    const flat = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+    const title = flat(q.toLowerCase().replace(artist.toLowerCase(), ""));
+    const ask = (path, params) => fetch("https://itunes.apple.com/" + path + "?" + new URLSearchParams({ country: "FR", ...params })).then((r) => (r.ok ? r.json() : { results: [] }), () => ({ results: [] }));
+    const [songs, albums, byArtist] = await Promise.all([ask("search", { term: q, entity: "song", limit: "25" }), ask("search", { term: q, entity: "album", limit: "25" }), ask("search", { term: who, entity: "song", limit: "25" })]);
+    const ids = [...new Set([...songs.results, ...byArtist.results].filter((x) => flat(x.artistName || "") === flat(who)).map((x) => x.artistId))].slice(0, 2);
+    // Ses sorties, et ses titres : un titre d'EP (« MGL » sur « ATARI ») est trouvé par son nom, avec la pochette de l'EP.
+    const catalog = (await Promise.all(ids.flatMap((id) => ["album", "song"].map((entity) => ask("lookup", { id, entity, limit: "200" })))))
+      .flatMap((x) => x.results.filter((r) => r.wrapperType === "collection" || r.wrapperType === "track"));
+    // Le titre cherché d'abord (« NIQUE UN F*CHO » répond aussi à « nique un facho » : on compare sans les signes), puis le reste.
+    // Une étoile du titre sorti (« F*CHO ») vaut n'importe quelle lettre.
+    const near = (x) => {
+      const name = (x.trackName || x.collectionName || "").replace(/ - (single|ep)$/i, "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9*]+/g, "");
+      return title && name && new RegExp(name.replace(/\*/g, "[a-z0-9]?")).test(title) ? 0 : 1;
+    };
+    // Trié avant de retirer les doublons : la pochette d'un titre trouvé garde le nom de ce titre.
+    const seen = new Set(), found = [...songs.results, ...albums.results, ...catalog, ...byArtist.results]
+      .map((x, i) => [near(x), i, x]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map((e) => e[2])
+      .filter((x) => x.artworkUrl100 && !seen.has(x.artworkUrl100) && seen.add(x.artworkUrl100));
     if (!found.length) { note.textContent = "Aucune pochette trouvée. Un son tout juste sorti peut mettre quelques jours à apparaître : change la recherche, ou choisis une image sur l'appareil."; return; }
     note.textContent = found.length + " pochette" + (found.length > 1 ? "s" : "") + " trouvée" + (found.length > 1 ? "s" : "") + ".";
     box.replaceChildren(...found.map((x) => el("button", { type: "button", title: "Prendre cette pochette", onclick: () => takeCover(x) },
       el("img", { src: x.artworkUrl100.replace(/\/\d+x\d+bb\./, "/300x300bb."), alt: "", loading: "lazy" }),
-      el("b", { textContent: x.trackName || x.collectionName }), el("small", { textContent: x.artistName }))));
+      el("b", { textContent: (x.trackName || x.collectionName).replace(/ - (Single|EP)$/, "") }), el("small", { textContent: x.artistName }))));
   } catch { note.textContent = "Apple Music ne répond pas. Réessaie dans un instant."; }
 }
 /** La pochette choisie, en 1500 px (le serveur la veut sous 5 Mo), envoyée comme une image choisie à la main. */
@@ -3345,13 +3369,15 @@ function renderDetails() {
     find.onclick = async () => {
       if (text.value.trim() && !confirm("Remplacer les paroles écrites ici par celles trouvées ?")) return;
       find.disabled = true; saved.textContent = "Recherche des paroles…";
+      // Genius ne donne pas ses paroles aux autres sites : on l'ouvre sur la bonne recherche, pour les copier ici à la main.
+      const elsewhere = (why) => saved.replaceChildren(why + " ", el("a", { href: "https://genius.com/search?q=" + encodeURIComponent((p.artist || p.owner.name) + " " + t.title), target: "_blank", rel: "noopener", textContent: "Les chercher sur Genius" }), " pour les coller ici (« Caler avec l'IA » les synchronise ensuite), ou « Transcrire avec l'IA ».");
       try {
         const found = await findLyrics(p.artist || p.owner.name, t.title, v.duration);
-        if (!found) { saved.textContent = "Pas de paroles trouvées pour « " + t.title + " ». Essaie « Transcrire avec l'IA »."; return; }
+        if (!found) { elsewhere("Pas de paroles trouvées pour « " + t.title + " »."); return; }
         text.value = found.synced || found.plain; text.dispatchEvent(new Event("input"));
         saved.textContent = (found.synced ? "Paroles synchronisées trouvées" : "Paroles trouvées (sans synchro)") + " : « " + found.artist + " - " + found.title + " ». Relis-les, puis Enregistrer."
           + (found.synced ? " Si ta version n'est pas celle qui est sortie, resynchronise-les." : "");
-      } catch { saved.textContent = "La recherche de paroles ne répond pas. Réessaie dans un instant."; }
+      } catch { elsewhere("La base de paroles (LRCLIB) ne répond pas pour « " + t.title + " » : réessaie dans une minute, ou"); }
       finally { find.disabled = false; }
     };
     right = [back("Paroles"), el("p", { className: "muted", style: "margin:0", textContent: "Elles s'affichent à côté du projet pendant l'écoute. Synchronise-les pour qu'elles défilent avec le son, ligne par ligne." }), syncBar(v), text,
