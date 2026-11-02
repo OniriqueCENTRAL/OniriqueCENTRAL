@@ -325,11 +325,15 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
 .shorts section { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
 .shorts h3 { margin: 0; font: 800 13px/1.2 var(--f-display); }
 .shorts .small { margin: 0; font-size: 12px !important; }
-.shorts input[type="time"], .shorts input[type="datetime-local"], .shorts input[type="text"], .shorts textarea, .shorts select, .perday { padding: 8px 10px; border-radius: 10px;
+.shorts input[type="time"], .shorts input[type="datetime-local"], .shorts input[type="text"], .shorts textarea, .shorts select, .plan input { padding: 8px 10px; border-radius: 10px;
   border: 1px solid var(--line); background: rgba(0,0,0,.35); color: var(--mist); font: 500 13px/1.4 var(--f-body); color-scheme: dark; min-width: 0; }
 .shorts textarea { width: 100%; resize: vertical; }
-.perday { width: 4.5em; }
-.cloud-plan { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 16px; }
+.plan { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.plan input.perday { width: 4.2em; padding: 8px 10px; }
+.plan-name { min-width: 4.5em; font: 800 14px/1 var(--f-display); }
+.redo { justify-self: start; align-self: flex-start; border-color: var(--ember); }
+.cloud-plan { display: grid; gap: 12px; margin: 0 0 20px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.03); }
+.cloud-plan h3 { margin: 0; font: 800 13px/1.2 var(--f-display); }
 .shorts select { flex: 1; }
 .shorts .check { font-size: 13px !important; }
 .shorts-list { display: grid; gap: 8px; }
@@ -842,8 +846,9 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
               <section>
                 <h3>Programmation</h3>
                 <label class="check"><input type="checkbox" id="ytAuto"> Chaque vidéo gardée dans le cloud CUT part aussi en Short</label>
-                <div class="row"><input type="number" class="perday" min="1" max="10" data-perday="ytPerDay" aria-label="Shorts par jour"><span class="muted">par jour, à partir de</span><input type="time" id="ytTime" aria-label="Heure de publication des Shorts"><button class="mini redo" type="button" hidden>TOUT REPROGRAMMER</button></div>
-                <p class="muted small">Plusieurs par jour : espacés de 3 h (moins si minuit approche). L'heure varie de quelques minutes chaque jour (par exemple 17 h 54, 18 h 07…) : la chaîne ne ressemble pas à un robot.</p>
+                <div class="plan" data-plan="yt"></div>
+                <button class="mini redo" type="button" hidden>TOUT REPROGRAMMER</button>
+                <p class="muted small">Une heure par Short du jour. L'heure varie de quelques minutes chaque jour (par exemple 17 h 54, 18 h 07…) : la chaîne ne ressemble pas à un robot.</p>
                 <label class="field">Tes hashtags YouTube<textarea id="ytTags" rows="3" placeholder="#rapfr #euhz #undergroundmusic #rap #musique #nouveauson"></textarea></label>
                 <p class="muted small" id="yt-tags-next">Chaque Short en prend 3 différents, à tour de rôle dans ta liste.</p>
                 <label class="field">Ta phrase d'appel (dans la description, {son} = le titre du son)<textarea id="ytCta" rows="3"></textarea></label>
@@ -870,7 +875,8 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
               <section>
                 <h3>Programmation</h3>
                 <label class="check"><input type="checkbox" id="igAuto"> Chaque vidéo gardée dans le cloud CUT part aussi en Reel</label>
-                <div class="row"><input type="number" class="perday" min="1" max="10" data-perday="igPerDay" aria-label="Reels par jour"><span class="muted">par jour, à partir de</span><input type="time" id="igTime" aria-label="Heure de publication des Reels"><button class="mini redo" type="button" hidden>TOUT REPROGRAMMER</button></div>
+                <div class="plan" data-plan="ig"></div>
+                <button class="mini redo" type="button" hidden>TOUT REPROGRAMMER</button>
                 <label>Type de Reel
                   <div class="chips wrap-in" id="igTrial" role="group" aria-label="Type de Reel"><button type="button" data-v="">Reel normal</button><button type="button" data-v="MANUAL">Reel d'essai (je le partage moi-même)</button><button type="button" data-v="SS_PERFORMANCE">Reel d'essai (partagé tout seul s'il marche)</button></div>
                 </label>
@@ -923,8 +929,9 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
         <button class="mini" type="button" id="cloud-close">Fermer ✕</button>
       </header>
       <div class="cloud-plan" id="cloud-plan" hidden>
-        <label id="cloud-yt-n" hidden><input type="number" class="perday" min="1" max="10" data-perday="ytPerDay"> Shorts par jour</label>
-        <label id="cloud-ig-n" hidden><input type="number" class="perday" min="1" max="10" data-perday="igPerDay"> Reels par jour</label>
+        <h3>Créneaux de publication</h3>
+        <div class="plan" data-plan="yt" data-title id="cloud-yt" hidden></div>
+        <div class="plan" data-plan="ig" data-title id="cloud-ig" hidden></div>
         <button class="mini redo" type="button" hidden>TOUT REPROGRAMMER</button>
       </div>
       <div class="cloud-grid" id="lib-list"></div>
@@ -1217,24 +1224,37 @@ function syncCaption() { if (!captionEdited && sound.buffer) $("caption").value 
 // ——— Les Shorts YouTube (fondateurs) : une vidéo gardée dans le cloud CUT part sur la chaîne au prochain jour libre ———
 /** Le prochain créneau libre : un jour sans Short déjà prévu, vers l'heure choisie, décalée de −9 à +9 minutes (et de
  *  quelques secondes) pour que la chaîne ne publie pas pile à la même minute chaque jour, comme un robot. */
-function nextSlot(scheduled, time = prefs.ytTime, perDay = prefs.ytPerDay) {
-  perDay = Number(perDay) || 1;
-  const [h, m] = (time || "18:00").split(":").map(Number), count = {};
-  scheduled.forEach((t) => { const k = new Date(t).toDateString(); count[k] = (count[k] || 0) + 1; });
-  // Plusieurs par jour : le n-ième part 3 h après le précédent, resserré pour rester avant minuit.
-  const gap = perDay > 1 ? Math.max(15, Math.min(180, (23 * 60 + 50 - h * 60 - m) / (perDay - 1))) * 60_000 : 0;
+function nextSlot(scheduled, times = slotTimes("yt")) {
+  const slotsOf = (day) => times.map((t) => { const [h, m] = t.split(":").map(Number); return new Date(day).setHours(h, m, 0, 0); });
+  // Une vidéo déjà prévue occupe le créneau libre le plus proche de son heure, ce jour-là.
+  const taken = {};
+  for (const t of scheduled) {
+    const day = new Date(t).setHours(0, 0, 0, 0), slots = slotsOf(day), used = (taken[day] ||= new Set());
+    const free = slots.map((_, k) => k).filter((k) => !used.has(k));
+    if (free.length) used.add(free.reduce((a, k) => (Math.abs(slots[k] - t) < Math.abs(slots[a] - t) ? k : a)));
+  }
   let shift = 0;
   while (Math.abs(shift) < 2) shift = Math.round(Math.random() * 18 - 9);
-  for (const d = new Date(new Date().setHours(h, m, 0, 0)); ; d.setDate(d.getDate() + 1)) {
-    for (let k = count[d.toDateString()] || 0; k < perDay; k++) {
-      const at = d.getTime() + k * gap;
-      if (at >= Date.now() + 15 * 60_000) return at + shift * 60_000 + Math.floor(Math.random() * 50) * 1000;
-    }
+  for (const d = new Date(new Date().setHours(0, 0, 0, 0)); ; d.setDate(d.getDate() + 1)) {
+    const day = d.getTime(), slots = slotsOf(day), k = slots.findIndex((at, i) => !taken[day]?.has(i) && at >= Date.now() + 15 * 60_000);
+    if (k >= 0) return slots[k] + shift * 60_000 + Math.floor(Math.random() * 50) * 1000;
   }
 }
+/** Les créneaux d'une plateforme (« yt » ou « ig ») : une heure par vidéo du jour, dans l'ordre de la journée. */
+function slotTimes(p) {
+  const saved = prefs[p + "Times"];
+  if (Array.isArray(saved) && saved.length) return [...saved].sort();
+  // Pas encore de créneaux : l'heure d'avant, puis toutes les 3 h (l'ancien réglage « N par jour »).
+  const first = prefs[p + "Time"] || (p === "yt" ? "18:00" : "18:30");
+  return Array.from({ length: Number(prefs[p + "PerDay"]) || 1 }, (_, k) => addMinutes(first, k * 180));
+}
+const addMinutes = (time, min) => {
+  const [h, m] = time.split(":").map(Number), t = Math.min(23 * 60 + 50, h * 60 + m + min);
+  return String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0");
+};
 /** TOUT REPROGRAMMER : les Shorts et Reels à venir reprennent, dans leur ordre, les créneaux du réglage actuel. */
 async function reprogramAll() {
-  if (!confirm("Reprogrammer tous les Shorts et Reels à venir selon le nombre par jour et l'heure choisis ?")) return;
+  if (!confirm("Reprogrammer tous les Shorts et Reels à venir sur tes créneaux ?")) return;
   document.querySelectorAll(".redo").forEach((b) => { b.disabled = true; });
   let n = 0;
   try {
@@ -1251,7 +1271,7 @@ async function reprogramAll() {
     if (reelsAllowed) {
       const st = await bankFetch("/api/cut/reels"), placed = st.reels.filter((r) => r.status === "uploading").map((r) => r.publishAt);
       for (const r of st.reels.filter((r) => r.status === "scheduled")) { // déjà triés par heure
-        const publishAt = nextSlot(placed, prefs.igTime, prefs.igPerDay); placed.push(publishAt);
+        const publishAt = nextSlot(placed, slotTimes("ig")); placed.push(publishAt);
         await bankFetch("/api/cut/reels/" + r.id, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ publishAt }) });
         n++;
       }
@@ -1262,12 +1282,26 @@ async function reprogramAll() {
   } catch (error) { alert(error.message + (n ? " (" + n + " déjà reprogrammée" + (n > 1 ? "s" : "") + ")" : "")); }
   finally { document.querySelectorAll(".redo").forEach((b) => { b.disabled = false; }); }
 }
-/** Le nombre par jour (menus Shorts et Reels, cloud CUT) ; changé, le bouton TOUT REPROGRAMMER apparaît. */
+/** Le nombre par jour et ses créneaux (menus Shorts et Reels, cloud CUT) ; changés, le bouton TOUT REPROGRAMMER apparaît. */
 const showRedo = () => document.querySelectorAll(".redo").forEach((b) => { b.hidden = false; });
-function perDayUi() {
-  document.querySelectorAll("[data-perday]").forEach((input) => {
-    input.value = prefs[input.dataset.perday] || 1;
-    input.onchange = () => { prefs[input.dataset.perday] = Math.min(10, Math.max(1, Math.round(Number(input.value)) || 1)); savePrefs(); perDayUi(); showRedo(); };
+const PLAN_NAMES = { yt: "Shorts", ig: "Reels" };
+function planUi() {
+  const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
+  document.querySelectorAll("[data-plan]").forEach((box) => {
+    const p = box.dataset.plan, times = slotTimes(p);
+    const save = (list) => { prefs[p + "Times"] = list.sort(); prefs[p + "Time"] = list[0]; savePrefs(); planUi(); showRedo(); };
+    const count = el("input", { type: "number", className: "perday", min: 1, max: 10, value: times.length, ariaLabel: PLAN_NAMES[p] + " par jour" });
+    count.onchange = () => {
+      const n = Math.min(10, Math.max(1, Math.round(Number(count.value)) || 1));
+      save(Array.from({ length: n }, (_, k) => times[k] || addMinutes(times[times.length - 1], 180 * (k - times.length + 1))));
+    };
+    box.replaceChildren(...("title" in box.dataset ? [el("b", { className: "plan-name", textContent: PLAN_NAMES[p] })] : []),
+      count, el("span", { className: "muted", textContent: "par jour, à" }),
+      ...times.map((t, i) => {
+        const input = el("input", { type: "time", value: t, ariaLabel: PLAN_NAMES[p] + " : créneau " + (i + 1) });
+        input.onchange = () => { const list = [...times]; list[i] = input.value || t; save(list); };
+        return input;
+      }));
   });
   document.querySelectorAll(".redo").forEach((b) => { b.onclick = reprogramAll; });
 }
@@ -1356,7 +1390,7 @@ const TRIAL_NAMES = { "": "Reel normal", MANUAL: "Reel d'essai · je le partage 
 /** Programme une vidéo du cloud CUT en Reel au prochain jour libre ; rend l'heure, en clair. */
 async function scheduleReel(video, caption) {
   const state = await bankFetch("/api/cut/reels");
-  const publishAt = nextSlot(state.reels.filter((r) => r.status !== "published").map((r) => r.publishAt), prefs.igTime, prefs.igPerDay);
+  const publishAt = nextSlot(state.reels.filter((r) => r.status !== "published").map((r) => r.publishAt), slotTimes("ig"));
   await bankFetch("/api/cut/library/" + video.id + "/reel", { method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ publishAt, caption: caption || video.caption || "", trial: prefs.igTrial || "" }) });
   if (reelsAllowed) renderReels();
@@ -4307,10 +4341,9 @@ function start() {
       shortsAllowed = true;
       $("shorts").hidden = false;
       renderShorts();
-      $("ytAuto").checked = !!prefs.ytAuto; $("ytTime").value = prefs.ytTime || "18:00";
+      $("ytAuto").checked = !!prefs.ytAuto;
       $("ytAuto").onchange = () => { prefs.ytAuto = $("ytAuto").checked; if (prefs.ytAuto && !$("keepCloud").checked) { $("keepCloud").checked = true; prefs.keepCloud = true; } savePrefs(); };
-      $("ytTime").onchange = () => { prefs.ytTime = $("ytTime").value || "18:00"; savePrefs(); showRedo(); };
-      $("cloud-plan").hidden = $("cloud-yt-n").hidden = false; perDayUi();
+      $("cloud-plan").hidden = $("cloud-yt").hidden = false; planUi();
       $("ytCta").value = prefs.ytCta || CTA;
       $("ytCta").onchange = () => { prefs.ytCta = $("ytCta").value.trim() || CTA; savePrefs(); };
       $("ytTags").value = prefs.ytTags || "";
@@ -4322,10 +4355,9 @@ function start() {
       reelsAllowed = true;
       $("reels").hidden = false;
       renderReels();
-      $("igAuto").checked = !!prefs.igAuto; $("igTime").value = prefs.igTime || "18:30";
+      $("igAuto").checked = !!prefs.igAuto;
       $("igAuto").onchange = () => { prefs.igAuto = $("igAuto").checked; if (prefs.igAuto && !$("keepCloud").checked) { $("keepCloud").checked = true; prefs.keepCloud = true; } savePrefs(); };
-      $("igTime").onchange = () => { prefs.igTime = $("igTime").value || "18:30"; savePrefs(); showRedo(); };
-      $("cloud-plan").hidden = $("cloud-ig-n").hidden = false; perDayUi();
+      $("cloud-plan").hidden = $("cloud-ig").hidden = false; planUi();
       chips("igTrial", "igTrial", () => {});
     }).catch(() => {});
     $("keepCloud").checked = prefs.keepCloud !== false;
