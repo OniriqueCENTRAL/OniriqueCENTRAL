@@ -1203,13 +1203,16 @@ const MOODS = [[/\?\s*$/, "🧐"], [/(triste|seul|pleur|mal\b|froid|mort|vide|pe
 const GENERIC = /^(img|vid|video|clip|copy|copie|final|edit|export|screen|record|untitled|sans|titre|tiktok|onirique|cut|fond|scene|scène|extrait|partie|part|film|movie|\d+)$/i;
 const tagOf = (text) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\p{L}\p{N}]+/gu, "").toLowerCase();
 let captionK = 0, captionEdited = false;
-function captionIdea(k = captionK) {
-  const title = ($("title").value.trim() || sound.name || "").trim(), artist = (prefs.artist || "").trim();
+/** Les phrases du montage en cours : la réplique du film (une phrase par ligne), puis les lignes chantées du passage. */
+function montagePhrases() {
   const clean = (t) => t.replace(/\*\*/g, "").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
-  // La réplique, synchronisée ou non (une phrase par ligne).
   const film = introLen() > 0 ? prefs.introLyrics.split("\n").map((l) => clean(bareLine(l))).filter(Boolean) : [];
   const sung = lyrics.filter((l) => l.at >= sound.start - .5 && l.at < sound.start + span()).map((l) => clean(l.text));
-  const quotes = [...film, ...sung].filter((t) => t.length >= 8 && t.length <= 90);
+  return [...film, ...sung].filter((t) => t.length >= 8 && t.length <= 90);
+}
+function captionIdea(k = captionK) {
+  const title = ($("title").value.trim() || sound.name || "").trim(), artist = (prefs.artist || "").trim();
+  const quotes = montagePhrases();
   const quote = quotes.length ? quotes[k % quotes.length] : "";
   const mood = (MOODS.find(([re]) => re.test(quote)) || [null, ["😔", "🫩", "🥹", "🎶"][k % 4]])[1];
   const son = "Le son : " + (artist ? artist + " - " : "") + title;
@@ -1528,7 +1531,7 @@ const CTA = 'Ma musique "{son}" est disponible sur toutes les plateformes de str
  *    mots-clés cachés : l'artiste, le son, tes hashtags, et ce que cherchent les gens (lyrics video, rap fr, musique…) */
 function shortTexts(caption, name) {
   const lines = (caption || "").split("\n"), q = /«\s*(.+?)\s*»\s*(.*)$/.exec(lines[0] || "");
-  const son = ((lines.map((l) => /^Le son\s*:\s*(.+)$/.exec(l)).find(Boolean) || [])[1] || name.split(" - ONIRIQUE CUT")[0]).replace(/\s+[^\p{L}\p{N}\s]+$/u, "").trim();
+  const son = ((lines.map((l) => /^Le son\s*:\s*(.+)$/.exec(l)).find(Boolean) || [])[1] || bareName(name)).replace(/\s+[^\p{L}\p{N}\s]+$/u, "").trim();
   const quote = q ? q[1].replace(/[<>]/g, "") : "", emoji = q ? q[2].trim() : "", tags = nextTags();
   const [artist, title] = son.includes(" - ") ? son.split(" - ") : ["", son], hashtags = tags.join(" ");
   const room = 100 - (emoji ? emoji.length + 1 : 0) - 4;
@@ -1557,14 +1560,17 @@ async function cloudPhrases(son) {
   return [...first.entries()].sort(([a, [, ia]], [b, [, ib]]) => count.get(b) - count.get(a) || ia - ib).map(([, [l]]) => l);
 }
 let phraseTurn = 0;
-async function scheduleShort(video, caption) {
-  // La phrase du titre : celle de la vidéo si elle en a une, sinon une du son (CLOUD) ; jamais une phrase déjà prise par un
-  // autre Short (programmé ou publié), pour que 5 vidéos du même passage ne partent pas toutes avec le même titre.
+/** Le nom d'une vidéo sans « - ONIRIQUE CUT » ni « - fond 2 » : ce qui reste quand aucune phrase n'est trouvée. */
+const bareName = (name) => (name || "").replace(/\s*-?\s*ONIRIQUE CUT.*$/i, "").trim();
+async function scheduleShort(video, caption, extra = []) {
+  // La phrase du titre : celle de la description si elle en a une, sinon le texte du montage (réplique du film, lignes
+  // chantées : extra), sinon une du son (CLOUD) ; jamais une phrase déjà prise par un autre Short (programmé ou publié),
+  // pour que 5 vidéos du même passage ne partent pas toutes avec le même titre.
   const lines = (caption || "").split("\n"), own = (/«\s*(.+?)\s*»/.exec(lines[0] || "") || [])[1] || "";
-  const son = (lines.map((l) => /^Le son\s*:\s*(.+)$/.exec(l)).find(Boolean) || [])[1] || video.name.split(" - ONIRIQUE CUT")[0];
+  const son = ((lines.map((l) => /^Le son\s*:\s*(.+)$/.exec(l)).find(Boolean) || [])[1] || bareName(video.name)).replace(/\s+[^\p{L}\p{N}\s]+$/u, "").trim();
   const taken = ((await bankFetch("/api/youtube").catch(() => null)) || { videos: [] }).videos.map((v) => tagOf(v.title));
   const used = (p) => { const k = tagOf(p).slice(0, 28); return taken.some((t) => t.includes(k)); };
-  const choices = [...new Set([own, ...await cloudPhrases(son)].filter(Boolean))];
+  const choices = [...new Set([own, ...extra, ...await cloudPhrases(son)].filter(Boolean))];
   const phrase = choices.find((p) => !used(p)) || choices[phraseTurn++ % Math.max(1, choices.length)];
   if (phrase && phrase !== own) {
     const rest = own ? lines.slice(1).join("\n") : (caption || "Le son : " + (prefs.artist ? prefs.artist + " - " : "") + son);
@@ -3259,7 +3265,7 @@ async function exportVideo(series = null) {
           const keptVideo = await upload("/api/cut/library?name=" + encodeURIComponent(name.replace(/\.mp4$/, "")) + "&duration=" + total().toFixed(2) + "&caption=" + encodeURIComponent(caption), blob, "json",
             (p) => setStatus(label + "Enregistrement dans ton cloud CUT…", (n + .92 + .08 * p) / list.length));
           savedToCloud++;
-          if (prefs.ytAuto) { try { shorts.push(await scheduleShort(keptVideo, caption)); } catch (error) { shortError = error.message; } }
+          if (prefs.ytAuto) { try { shorts.push(await scheduleShort(keptVideo, caption, montagePhrases())); } catch (error) { shortError = error.message; } }
           if (prefs.igAuto && reelsAllowed) { try { reels.push(await scheduleReel(keptVideo, caption)); } catch (error) { reelError = error.message; } }
         } catch { cloudFailed = true; }
       }

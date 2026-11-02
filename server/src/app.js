@@ -36,7 +36,7 @@ import { announcementView, deleteAccount, maintenanceView, mountControl, packVie
 import { enrollment, matchStep, newRecoveryCodes, newSecret, recoveryHash } from './totp.js';
 import { mountLinkPages } from './linkpage.js';
 import { mountSounds } from './sounds.js';
-import { mountCut } from './cut.js';
+import { mountCut, shortTitle } from './cut.js';
 import { mountBeatStoreHooks } from './beatstore.js';
 import { ownsGoogleState, googleMailerCallback } from './packsend.js';
 import { mountPush } from './push.js';
@@ -660,9 +660,12 @@ export function createApp() {
       throw new HttpError(400, "Trente vidéos attendent déjà : publiez-en ou retirez-en avant d'en ajouter.");
     }
     const file = await receiveFile(req, config.videosDir, 512 * 1024 * 1024);
+    // Une vidéo exportée de ONIRIQUE CUT : son titre reprend la phrase de sa description (gardée dans le cloud CUT).
+    const base = filename.replace(/\.[^.]+$/, '');
+    const kept = get('SELECT caption FROM cut_videos WHERE user_id = ? AND name = ? ORDER BY created_at DESC LIMIT 1', req.user.id, base);
     const { lastInsertRowid } = run(
       'INSERT INTO youtube_videos (user_id, stored_as, filename, mime, size, title, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      req.user.id, file.storedAs, filename, mime, file.size, filename.replace(/\.[^.]+$/, '').slice(0, 100), now());
+      req.user.id, file.storedAs, filename, mime, file.size, shortTitle(base, kept?.caption), now());
     res.status(201).json(videoView(get('SELECT * FROM youtube_videos WHERE id = ?', lastInsertRowid)));
   }));
 

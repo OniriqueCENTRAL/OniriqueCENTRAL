@@ -204,6 +204,14 @@ function toMp4(input, output, audio, offset, raw) {
     (error ? reject(new HttpError(500, 'La conversion en MP4 a échoué : ' + (String(stderr || error.message).trim().split('\n').pop().slice(0, 160) || 'ffmpeg'))) : resolve())));
 }
 
+/** Le titre d'un Short qui n'en a pas reçu : la phrase entre « » de la description (réplique du film ou ligne chantée),
+ *  sinon le nom de la vidéo sans « - ONIRIQUE CUT » (jamais « Titre - ONIRIQUE CUT »). */
+export function shortTitle(name, caption = '') {
+  const quote = (/«\s*(.+?)\s*»/.exec(String(caption)) || [])[1];
+  const base = quote ? `« ${quote} »` : String(name || '').replace(/\s*-?\s*ONIRIQUE CUT.*$/i, '').trim();
+  return base.replace(/[<>]/g, '').trim().slice(0, 100) || 'Short';
+}
+
 export function mountCut(app, { requireUser, receiveFile, wrap }) {
   const dir = path.join(config.dataDir, 'cut');
   fs.mkdirSync(dir, { recursive: true });
@@ -289,7 +297,7 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
     if (!can(req.user, 'youtube')) throw new HttpError(403, "Les Shorts YouTube ne sont pas ouverts à ce compte.");
     const v = ownVideo(req);
     if (!channelOf(req.user.id)) throw new HttpError(400, 'Relie d\'abord ta chaîne YouTube dans ton compte (Shorts YouTube).');
-    const title = String(req.body?.title || v.name).replace(/[<>]/g, '').trim().slice(0, 100) || 'Short';
+    const title = String(req.body?.title || '').replace(/[<>]/g, '').trim().slice(0, 100) || shortTitle(v.name, v.caption);
     const description = String(req.body?.description ?? v.caption).replace(/[<>]/g, '').trim().slice(0, 5000);
     const publishAt = Number(req.body?.publishAt);
     // Les mots-clés cachés du Short (« lyrics video », « rap fr »…) : 500 caractères au plus, comme YouTube.
