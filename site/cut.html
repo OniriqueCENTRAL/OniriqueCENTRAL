@@ -325,9 +325,11 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
 .shorts section { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
 .shorts h3 { margin: 0; font: 800 13px/1.2 var(--f-display); }
 .shorts .small { margin: 0; font-size: 12px !important; }
-.shorts input[type="time"], .shorts input[type="datetime-local"], .shorts input[type="text"], .shorts textarea, .shorts select { padding: 8px 10px; border-radius: 10px;
+.shorts input[type="time"], .shorts input[type="datetime-local"], .shorts input[type="text"], .shorts textarea, .shorts select, .perday { padding: 8px 10px; border-radius: 10px;
   border: 1px solid var(--line); background: rgba(0,0,0,.35); color: var(--mist); font: 500 13px/1.4 var(--f-body); color-scheme: dark; min-width: 0; }
 .shorts textarea { width: 100%; resize: vertical; }
+.perday { width: 4.5em; }
+.cloud-plan { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 16px; }
 .shorts select { flex: 1; }
 .shorts .check { font-size: 13px !important; }
 .shorts-list { display: grid; gap: 8px; }
@@ -840,8 +842,8 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
               <section>
                 <h3>Programmation</h3>
                 <label class="check"><input type="checkbox" id="ytAuto"> Chaque vidéo gardée dans le cloud CUT part aussi en Short</label>
-                <div class="row"><span class="muted">Un par jour, vers</span><input type="time" id="ytTime" aria-label="Heure de publication des Shorts"></div>
-                <p class="muted small">L'heure varie de quelques minutes chaque jour (par exemple 17 h 54, 18 h 07…) : la chaîne ne ressemble pas à un robot.</p>
+                <div class="row"><input type="number" class="perday" min="1" max="10" data-perday="ytPerDay" aria-label="Shorts par jour"><span class="muted">par jour, à partir de</span><input type="time" id="ytTime" aria-label="Heure de publication des Shorts"><button class="mini redo" type="button" hidden>TOUT REPROGRAMMER</button></div>
+                <p class="muted small">Plusieurs par jour : espacés de 3 h (moins si minuit approche). L'heure varie de quelques minutes chaque jour (par exemple 17 h 54, 18 h 07…) : la chaîne ne ressemble pas à un robot.</p>
                 <label class="field">Tes hashtags YouTube<textarea id="ytTags" rows="3" placeholder="#rapfr #euhz #undergroundmusic #rap #musique #nouveauson"></textarea></label>
                 <p class="muted small" id="yt-tags-next">Chaque Short en prend 3 différents, à tour de rôle dans ta liste.</p>
                 <label class="field">Ta phrase d'appel (dans la description, {son} = le titre du son)<textarea id="ytCta" rows="3"></textarea></label>
@@ -868,7 +870,7 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
               <section>
                 <h3>Programmation</h3>
                 <label class="check"><input type="checkbox" id="igAuto"> Chaque vidéo gardée dans le cloud CUT part aussi en Reel</label>
-                <div class="row"><span class="muted">Un par jour, vers</span><input type="time" id="igTime" aria-label="Heure de publication des Reels"></div>
+                <div class="row"><input type="number" class="perday" min="1" max="10" data-perday="igPerDay" aria-label="Reels par jour"><span class="muted">par jour, à partir de</span><input type="time" id="igTime" aria-label="Heure de publication des Reels"><button class="mini redo" type="button" hidden>TOUT REPROGRAMMER</button></div>
                 <label>Type de Reel
                   <div class="chips wrap-in" id="igTrial" role="group" aria-label="Type de Reel"><button type="button" data-v="">Reel normal</button><button type="button" data-v="MANUAL">Reel d'essai (je le partage moi-même)</button><button type="button" data-v="SS_PERFORMANCE">Reel d'essai (partagé tout seul s'il marche)</button></div>
                 </label>
@@ -920,6 +922,11 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
         <div><h2>Mes vidéos CUT</h2><p class="muted" id="lib-info"></p></div>
         <button class="mini" type="button" id="cloud-close">Fermer ✕</button>
       </header>
+      <div class="cloud-plan" id="cloud-plan" hidden>
+        <label id="cloud-yt-n" hidden><input type="number" class="perday" min="1" max="10" data-perday="ytPerDay"> Shorts par jour</label>
+        <label id="cloud-ig-n" hidden><input type="number" class="perday" min="1" max="10" data-perday="igPerDay"> Reels par jour</label>
+        <button class="mini redo" type="button" hidden>TOUT REPROGRAMMER</button>
+      </div>
       <div class="cloud-grid" id="lib-list"></div>
       <p class="muted cloud-foot">Sur ton téléphone : <a href="mes-videos" target="_blank" rel="noopener">onirique.store/mes-videos</a> (appweb ONIRIQUE CUT) pour envoyer tes vidéos vers TikTok.</p>
     </section>
@@ -1210,13 +1217,59 @@ function syncCaption() { if (!captionEdited && sound.buffer) $("caption").value 
 // ——— Les Shorts YouTube (fondateurs) : une vidéo gardée dans le cloud CUT part sur la chaîne au prochain jour libre ———
 /** Le prochain créneau libre : un jour sans Short déjà prévu, vers l'heure choisie, décalée de −9 à +9 minutes (et de
  *  quelques secondes) pour que la chaîne ne publie pas pile à la même minute chaque jour, comme un robot. */
-function nextSlot(scheduled, time = prefs.ytTime) {
-  const [h, m] = (time || "18:00").split(":").map(Number), taken = new Set(scheduled.map((t) => new Date(t).toDateString()));
-  const d = new Date(); d.setHours(h, m, 0, 0);
-  while (d.getTime() < Date.now() + 15 * 60_000 || taken.has(d.toDateString())) d.setDate(d.getDate() + 1);
+function nextSlot(scheduled, time = prefs.ytTime, perDay = prefs.ytPerDay) {
+  perDay = Number(perDay) || 1;
+  const [h, m] = (time || "18:00").split(":").map(Number), count = {};
+  scheduled.forEach((t) => { const k = new Date(t).toDateString(); count[k] = (count[k] || 0) + 1; });
+  // Plusieurs par jour : le n-ième part 3 h après le précédent, resserré pour rester avant minuit.
+  const gap = perDay > 1 ? Math.max(15, Math.min(180, (23 * 60 + 50 - h * 60 - m) / (perDay - 1))) * 60_000 : 0;
   let shift = 0;
   while (Math.abs(shift) < 2) shift = Math.round(Math.random() * 18 - 9);
-  return d.getTime() + shift * 60_000 + Math.floor(Math.random() * 50) * 1000;
+  for (const d = new Date(new Date().setHours(h, m, 0, 0)); ; d.setDate(d.getDate() + 1)) {
+    for (let k = count[d.toDateString()] || 0; k < perDay; k++) {
+      const at = d.getTime() + k * gap;
+      if (at >= Date.now() + 15 * 60_000) return at + shift * 60_000 + Math.floor(Math.random() * 50) * 1000;
+    }
+  }
+}
+/** TOUT REPROGRAMMER : les Shorts et Reels à venir reprennent, dans leur ordre, les créneaux du réglage actuel. */
+async function reprogramAll() {
+  if (!confirm("Reprogrammer tous les Shorts et Reels à venir selon le nombre par jour et l'heure choisis ?")) return;
+  document.querySelectorAll(".redo").forEach((b) => { b.disabled = true; });
+  let n = 0;
+  try {
+    if (shortsAllowed) {
+      const yt = await bankFetch("/api/youtube"), placed = yt.videos.filter((v) => v.status === "uploading" && v.publishAt).map((v) => v.publishAt);
+      for (const v of yt.videos.filter((v) => v.status === "scheduled").sort((a, b) => a.publishAt - b.publishAt)) {
+        const publishAt = nextSlot(placed); placed.push(publishAt);
+        await bankFetch("/api/youtube/videos/" + v.id, { method: "PATCH", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: v.title, description: v.description || "", publishAt }) });
+        n++;
+      }
+      renderShorts();
+    }
+    if (reelsAllowed) {
+      const st = await bankFetch("/api/cut/reels"), placed = st.reels.filter((r) => r.status === "uploading").map((r) => r.publishAt);
+      for (const r of st.reels.filter((r) => r.status === "scheduled")) { // déjà triés par heure
+        const publishAt = nextSlot(placed, prefs.igTime, prefs.igPerDay); placed.push(publishAt);
+        await bankFetch("/api/cut/reels/" + r.id, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ publishAt }) });
+        n++;
+      }
+      renderReels();
+    }
+    document.querySelectorAll(".redo").forEach((b) => { b.hidden = true; });
+    alert(n + " vidéo" + (n > 1 ? "s reprogrammées." : " reprogrammée."));
+  } catch (error) { alert(error.message + (n ? " (" + n + " déjà reprogrammée" + (n > 1 ? "s" : "") + ")" : "")); }
+  finally { document.querySelectorAll(".redo").forEach((b) => { b.disabled = false; }); }
+}
+/** Le nombre par jour (menus Shorts et Reels, cloud CUT) ; changé, le bouton TOUT REPROGRAMMER apparaît. */
+const showRedo = () => document.querySelectorAll(".redo").forEach((b) => { b.hidden = false; });
+function perDayUi() {
+  document.querySelectorAll("[data-perday]").forEach((input) => {
+    input.value = prefs[input.dataset.perday] || 1;
+    input.onchange = () => { prefs[input.dataset.perday] = Math.min(10, Math.max(1, Math.round(Number(input.value)) || 1)); savePrefs(); perDayUi(); showRedo(); };
+  });
+  document.querySelectorAll(".redo").forEach((b) => { b.onclick = reprogramAll; });
 }
 const whenText = (ms) => new Date(ms).toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
 const localInput = (ms) => { const d = new Date(ms - new Date(ms).getTimezoneOffset() * 60_000); return d.toISOString().slice(0, 16); };
@@ -1303,7 +1356,7 @@ const TRIAL_NAMES = { "": "Reel normal", MANUAL: "Reel d'essai · je le partage 
 /** Programme une vidéo du cloud CUT en Reel au prochain jour libre ; rend l'heure, en clair. */
 async function scheduleReel(video, caption) {
   const state = await bankFetch("/api/cut/reels");
-  const publishAt = nextSlot(state.reels.filter((r) => r.status !== "published").map((r) => r.publishAt), prefs.igTime);
+  const publishAt = nextSlot(state.reels.filter((r) => r.status !== "published").map((r) => r.publishAt), prefs.igTime, prefs.igPerDay);
   await bankFetch("/api/cut/library/" + video.id + "/reel", { method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ publishAt, caption: caption || video.caption || "", trial: prefs.igTrial || "" }) });
   if (reelsAllowed) renderReels();
@@ -4256,7 +4309,8 @@ function start() {
       renderShorts();
       $("ytAuto").checked = !!prefs.ytAuto; $("ytTime").value = prefs.ytTime || "18:00";
       $("ytAuto").onchange = () => { prefs.ytAuto = $("ytAuto").checked; if (prefs.ytAuto && !$("keepCloud").checked) { $("keepCloud").checked = true; prefs.keepCloud = true; } savePrefs(); };
-      $("ytTime").onchange = () => { prefs.ytTime = $("ytTime").value || "18:00"; savePrefs(); };
+      $("ytTime").onchange = () => { prefs.ytTime = $("ytTime").value || "18:00"; savePrefs(); showRedo(); };
+      $("cloud-plan").hidden = $("cloud-yt-n").hidden = false; perDayUi();
       $("ytCta").value = prefs.ytCta || CTA;
       $("ytCta").onchange = () => { prefs.ytCta = $("ytCta").value.trim() || CTA; savePrefs(); };
       $("ytTags").value = prefs.ytTags || "";
@@ -4270,7 +4324,8 @@ function start() {
       renderReels();
       $("igAuto").checked = !!prefs.igAuto; $("igTime").value = prefs.igTime || "18:30";
       $("igAuto").onchange = () => { prefs.igAuto = $("igAuto").checked; if (prefs.igAuto && !$("keepCloud").checked) { $("keepCloud").checked = true; prefs.keepCloud = true; } savePrefs(); };
-      $("igTime").onchange = () => { prefs.igTime = $("igTime").value || "18:30"; savePrefs(); };
+      $("igTime").onchange = () => { prefs.igTime = $("igTime").value || "18:30"; savePrefs(); showRedo(); };
+      $("cloud-plan").hidden = $("cloud-ig-n").hidden = false; perDayUi();
       chips("igTrial", "igTrial", () => {});
     }).catch(() => {});
     $("keepCloud").checked = prefs.keepCloud !== false;
