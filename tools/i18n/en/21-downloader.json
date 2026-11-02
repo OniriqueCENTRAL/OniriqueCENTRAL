@@ -6,7 +6,6 @@
  "» téléchargé.": "” downloaded.",
  "(Google), pour le": "(Google), for the",
  "(voir les": "(see the",
- ") est un outil gratuit qui extrait l'audio d'une vidéo YouTube dont vous fournissez le lien, et le convertit en MP3 ou en WAV. Il est utilisable sans compte, dans la limite d'un téléchargement par minute ; les comptes ayant le rôle ONIRIQUE ou supérieur n'ont pas de limite. En l'utilisant, vous acceptez les conditions suivantes.": ") is a free tool that extracts the audio of a YouTube video whose link you provide and converts it to MP3 or WAV. It can be used without an account, within a limit of one download per minute; accounts with the ONIRIQUE role or higher have no limit. By using it, you accept the following terms.",
  "). Nous y donnons suite dans les meilleurs délais.": "). We will act on it as soon as possible.",
  "12. Downloader": "12. Downloader",
  "13. Propriété intellectuelle": "13. Intellectual property",
@@ -20,7 +19,6 @@
  "Aucun blanc au début.": "No silence at the start.",
  "Aucun stockage.": "No storage.",
  "Calcul du BPM et de la tonalité…": "Finding the BPM and key…",
- "Colle un lien YouTube et récupère son audio en MP3 ou en WAV, au nom de la vidéo, sans le blanc du début.": "Paste a YouTube link and get its audio as MP3 or WAV, named after the video, without the silence at the start.",
  "Colle un lien youtube.com ou youtu.be valide.": "Paste a valid youtube.com or youtu.be link.",
  "conditions du Downloader": "Downloader terms",
  "Connexion perdue pendant le téléchargement.": "Connection lost during the download.",
@@ -58,7 +56,6 @@
  "Téléchargement… (jusqu'à une minute)": "Downloading… (up to a minute)",
  "Ton audio.": "Your audio.",
  "Ton format.": "Your format.",
- "Un lien YouTube en MP3 ou en WAV, au nom de la vidéo, sans blanc au début ; option PROD avec BPM et tonalité.": "A YouTube link to MP3 or WAV, named after the video, with no silence at the start; PROD option with BPM and key.",
  "Un téléchargement par minute sans le rôle ONIRIQUE : réessaie dans {} s.": "One download per minute without the ONIRIQUE role: try again in {} s.",
  "Un titulaire de droits qui estime qu'un usage du Downloader porte atteinte à ses droits peut le signaler à": "A rights holder who believes a use of the Downloader infringes their rights can report it to",
  "Uniquement pour des vidéos dont tu as les droits (les tiennes, celles de tes collabs, celles sous licence libre). En téléchargeant, tu acceptes les": "Only for videos you have the rights to (your own, your collabs', those under a free licence). By downloading, you accept the",
@@ -73,5 +70,9 @@
  "WAV 24 bits, 48 kHz": "WAV 24-bit, 48 kHz",
  "YouTube bloque le serveur pour le moment : réessaie plus tard.": "YouTube is blocking the server for now: try again later.",
  "YouTube est une marque de Google LLC. Onirique n'est ni affilié à YouTube ni approuvé par YouTube ou Google ; le nom n'est cité que pour désigner la plateforme dont le": "YouTube is a trademark of Google LLC. Onirique is neither affiliated with nor endorsed by YouTube or Google; the name is only used to refer to the platform the",
- "YouTube n'a pas rendu cette vidéo.": "YouTube did not return this video."
+ "YouTube n'a pas rendu cette vidéo.": "YouTube did not return this video.",
+ "Colle un lien YouTube et récupère son audio en MP3 ou en WAV, sans le blanc du début, ou la vidéo en MP4 HD, au nom de la vidéo.": "Paste a YouTube link and get its audio as MP3 or WAV, without the silence at the start, or the video as HD MP4, named after the video.",
+ "Un lien YouTube en MP3, en WAV ou en vidéo MP4 HD, au nom de la vidéo ; option PROD avec BPM et tonalité.": "A YouTube link to MP3, WAV or HD MP4 video, named after the video; PROD option with BPM and key.",
+ ") est un outil gratuit qui récupère une vidéo YouTube dont vous fournissez le lien, en MP3 ou en WAV pour l'audio, ou en MP4 pour la vidéo. Il est utilisable sans compte, dans la limite d'un téléchargement par minute ; les comptes ayant le rôle ONIRIQUE ou supérieur n'ont pas de limite. En l'utilisant, vous acceptez les conditions suivantes.": ") is a free tool that fetches a YouTube video whose link you provide, as MP3 or WAV for the audio, or as MP4 for the video. It can be used without an account, within a limit of one download per minute; accounts with the ONIRIQUE role or higher have no limit. By using it, you accept the following terms.",
+ "MP4 HD (vidéo jusqu'à 1080p)": "HD MP4 (video up to 1080p)"
 }

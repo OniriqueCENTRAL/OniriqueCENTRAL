@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=cfbb3ac1"></script>
+<script src="assets/i18n.js?v=f6a91ba1"></script>
 <script src="assets/ui.js?v=3"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
@@ -38,7 +38,7 @@
   <section class="hero">
     <p class="eyebrow">Outil gratuit</p>
     <h1>Ton audio. <em>Ton format.</em></h1>
-    <p class="lede">Colle un lien YouTube et récupère son audio en MP3 ou en WAV, au nom de la vidéo, sans le blanc du début.</p>
+    <p class="lede">Colle un lien YouTube et récupère son audio en MP3 ou en WAV, sans le blanc du début, ou la vidéo en MP4 HD, au nom de la vidéo.</p>
   </section>
 
   <article class="card" id="studio">
@@ -50,7 +50,7 @@
         <button class="go ghost" id="analyze" type="button">Aperçu</button>
       </div>
       <div class="row">
-        <select id="yt-format" aria-label="Format du téléchargement" style="flex:1 1 200px"><option value="mp3:320">MP3 320 kbit/s</option><option value="mp3:192">MP3 192 kbit/s</option><option value="mp3:128">MP3 128 kbit/s</option><option value="wav:0">WAV 24 bits, 48 kHz</option></select>
+        <select id="yt-format" aria-label="Format du téléchargement" style="flex:1 1 200px"><option value="mp3:320">MP3 320 kbit/s</option><option value="mp3:192">MP3 192 kbit/s</option><option value="mp3:128">MP3 128 kbit/s</option><option value="wav:0">WAV 24 bits, 48 kHz</option><option value="mp4:0">MP4 HD (vidéo jusqu'à 1080p)</option></select>
         <button class="go" id="yt-download" type="button">Télécharger</button>
       </div>
       <label class="tick"><input id="prod" type="checkbox"> PROD <small>— ajoute le BPM et la tonalité au nom : « Titre - 140 BPM - F minor »</small></label>
@@ -121,6 +121,9 @@ const EN = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
 const keyName = (k) => EN[k.tonic] + (k.mode === "major" ? " major" : " minor");
 const bpmText = (bpm) => (Math.abs(bpm - Math.round(bpm)) < 0.2 ? String(Math.round(bpm)) : bpm.toFixed(1).replace(".", ","));
 
+// Une vidéo garde son nom tel quel : PROD ne vaut que pour l'audio.
+$("yt-format").addEventListener("change", () => { $("prod").disabled = $("yt-format").value.startsWith("mp4"); });
+
 async function prodTag(blob) {
   const audio = await A.decode(new File([blob], "son"));
   const length = Math.min(audio.duration, ANALYSE_SECONDS);
@@ -158,7 +161,8 @@ $("yt-download").onclick = async () => {
     const named = (response.headers.get("Content-Disposition") || "").match(/filename\*=UTF-8''([^;]+)|filename="([^"]+)"/);
     let base = named ? decodeURIComponent(named[1] || named[2]).replace(/\.[^.]+$/, "") : "YouTube";
     let tag = "";
-    if ($("prod").checked) {
+    const prod = $("prod").checked && format !== "mp4";
+    if (prod) {
       button.textContent = "Calcul du BPM et de la tonalité…";
       tag = await prodTag(blob).catch(() => "");
       if (tag) base += " - " + tag;
@@ -166,8 +170,8 @@ $("yt-download").onclick = async () => {
     A.download(blob, base + "." + format);
     const lead = +response.headers.get("X-Lead-Ms") || 0;
     $("done").textContent = "« " + base + "." + format + " » téléchargé. "
-      + (lead ? lead + " ms de blanc retirés au début : le son démarre sur le premier temps." : "Aucun blanc au début.")
-      + ($("prod").checked && !tag ? " BPM et tonalité non trouvés pour ce son." : "");
+      + (format === "mp4" ? "" : lead ? lead + " ms de blanc retirés au début : le son démarre sur le premier temps." : "Aucun blanc au début.")
+      + (prod && !tag ? " BPM et tonalité non trouvés pour ce son." : "");
   } catch (error) {
     $("url-error").textContent = error instanceof TypeError ? "Connexion perdue pendant le téléchargement." : error.message;
   }
@@ -175,7 +179,7 @@ $("yt-download").onclick = async () => {
   button.disabled = false;
 };
 </script>
-<script src="assets/tools-menu.js?v=11"></script>
+<script src="assets/tools-menu.js?v=12"></script>
 <script src="assets/account.js?v=8"></script>
 <script src="assets/site-nav.js?v=14"></script>
 </html>

@@ -79,7 +79,7 @@ export function mountDownloader(app, { optionalUser, wrap }) {
     const key = user ? 'u' + user.id : 'ip:' + req.ip;
     const id = youtubeId(req.body?.url);
     if (!id) throw new HttpError(400, 'Colle un lien youtube.com ou youtu.be valide.');
-    const format = req.body?.format === 'wav' ? 'wav' : 'mp3';
+    const format = ['wav', 'mp4'].includes(req.body?.format) ? req.body.format : 'mp3';
     const kbps = ['128', '192', '320'].includes(String(req.body?.kbps)) ? String(req.body.kbps) : '320';
     const wait = free ? waitFor(key) : 0;
     if (wait) throw new HttpError(429, `Un téléchargement par minute sans le rôle ONIRIQUE : réessaie dans ${Math.ceil(wait / 1000)} s.`);
@@ -90,12 +90,17 @@ export function mountDownloader(app, { optionalUser, wrap }) {
     const dir = fs.mkdtempSync(path.join(workDir, 'job-'));
     const clean = () => fs.rm(dir, { recursive: true, force: true }, () => {});
     try {
-      // 1. Le flux audio d'origine, sans conversion (un seul encodage, à la fin).
+      // 1. Le flux audio d'origine, sans conversion (un seul encodage, à la fin). En MP4 : la vidéo HD (1080p au plus,
+      //    H.264 d'abord, lisible partout) et le son AAC, réunis sans réencodage.
       let title;
       const [bin, extra] = await ytdlpCommand();
+      const pick = format === 'mp4'
+        ? ['-f', 'bv*[height<=1080][vcodec^=avc1]+ba[ext=m4a]/bv*[height<=1080][ext=mp4]+ba[ext=m4a]/b[height<=1080][ext=mp4]/bv*[height<=1080]+ba',
+          '--merge-output-format', 'mp4', '--max-filesize', '1500M']
+        : ['-f', 'bestaudio/best'];
       try {
         title = String(await run(bin, [...extra, '--no-playlist', '--no-progress', '--no-warnings', '--no-simulate', '-O', '%(title)s',
-          '--match-filter', `duration <= ${MAX_SECONDS}`, '-f', 'bestaudio/best', '-o', path.join(dir, 'source.%(ext)s'),
+          '--match-filter', `duration <= ${MAX_SECONDS}`, ...pick, '-o', path.join(dir, 'source.%(ext)s'),
           '--', `https://www.youtube.com/watch?v=${id}`], { encoding: 'utf8' })).trim();
       } catch (error) {
         const why = error.stderr || '';
@@ -110,6 +115,10 @@ export function mountDownloader(app, { optionalUser, wrap }) {
       const source = fs.readdirSync(dir).find((name) => name.startsWith('source.'));
       if (!source) throw new HttpError(422, 'Vidéo trop longue (20 minutes au plus) ou sans piste audio.');
       const input = path.join(dir, source);
+      if (format === 'mp4') { // l'image et le son restent tels quels : couper le début décalerait la vidéo
+        res.set({ 'Cache-Control': 'no-store', 'X-Title': encodeURIComponent(title), 'X-Lead-Ms': '0' });
+        return res.download(input, `${fileTitle(title)}.mp4`, () => { clean(); running--; });
+      }
 
       // 2. Le blanc du début, mesuré à la fréquence du fichier rendu (48 kHz en WAV, 44,1 kHz en MP3).
       const rate = format === 'wav' ? 48000 : 44100, channels = 2;
