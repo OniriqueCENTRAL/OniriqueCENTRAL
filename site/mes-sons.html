@@ -270,6 +270,17 @@ dialog::backdrop { background: rgba(5,2,3,.72); backdrop-filter: blur(4px); }
 #cover-view .bar .btn { padding: 10px 16px; font-size: 13px; }
 #cover-view .bar .btn-ghost { background: rgba(255,255,255,.07); border-color: transparent; }
 #cover-view .bar .btn-primary { margin-left: auto; box-shadow: none; }
+/* Chercher la pochette d'un son sorti : les pochettes trouvées sur Apple Music, une touche pour choisir */
+#cover-find { width: min(720px, calc(100vw - 24px)); }
+#cover-find .find-body { display: grid; gap: 14px; padding: 16px 18px 18px; }
+#cover-find form { display: flex; gap: 8px; }
+#cover-find input { flex: 1; min-width: 0; height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.4); color: var(--mist); font: 500 15px var(--f-body); }
+#cover-find .found { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; max-height: 56vh; overflow-y: auto; }
+#cover-find .found button { display: grid; gap: 6px; padding: 0; border: 0; background: none; color: var(--mist); text-align: left; cursor: pointer; }
+#cover-find .found img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; border: 2px solid transparent; }
+#cover-find .found button:hover img, #cover-find .found button:focus-visible img { border-color: var(--ember); }
+#cover-find .found b { font: 600 13px/1.3 var(--f-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#cover-find .found small { margin-top: -4px; font: 500 12px var(--f-body); color: var(--haze); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dlg-head { display: flex; align-items: center; gap: 12px; padding: 18px 18px 0; }
 .dlg-head img, .dlg-head .cover-ph { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; flex: none; }
 .dlg-head b { flex: 1; min-width: 0; font: 700 17px var(--f-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -748,7 +759,17 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 <dialog id="youtube"></dialog>
 <dialog id="pinterest"></dialog>
 <dialog id="stats"></dialog>
-<dialog id="cover-view"><img alt=""><div class="bar"><button class="btn btn-ghost" type="button" id="cover-save">Télécharger</button><button class="btn btn-ghost" type="button" id="cover-swap">Changer</button><button class="btn btn-primary" type="button" onclick="this.closest('dialog').close()">Fermer</button></div></dialog>
+<dialog id="cover-view"><img alt=""><div class="bar"><button class="btn btn-ghost" type="button" id="cover-save">Télécharger</button><button class="btn btn-ghost" type="button" id="cover-swap">Changer</button><button class="btn btn-ghost" type="button" id="cover-search">Chercher la pochette</button><button class="btn btn-primary" type="button" onclick="this.closest('dialog').close()">Fermer</button></div></dialog>
+<dialog id="cover-find" aria-labelledby="cover-find-title">
+  <div class="dlg-head"><b id="cover-find-title">Chercher la pochette</b><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close()" aria-label="Fermer">✕</button></div>
+  <div class="find-body">
+    <p class="muted" style="margin:0;font-size:14px">Pour un son déjà sorti : les pochettes trouvées sur Apple Music. Touche la bonne, elle devient la pochette du projet.</p>
+    <form id="cover-find-form"><input id="cover-find-q" aria-label="Artiste et titre à chercher" placeholder="Artiste et titre"><button class="btn btn-primary" type="submit">Chercher</button></form>
+    <p class="muted" id="cover-find-note" style="margin:0;font-size:14px" aria-live="polite"></p>
+    <div class="found" id="cover-found"></div>
+    <div><button class="btn btn-ghost" type="button" id="cover-find-file">Choisir une image sur l'appareil</button></div>
+  </div>
+</dialog>
 <dialog id="install-help">
   <div class="dlg-head"><b>Sur l'écran d'accueil</b><button class="x" type="button" aria-label="Fermer" onclick="this.closest('dialog').close()">✕</button></div>
   <p class="muted" style="margin:10px 20px 14px;font-size:14px" id="install-intro"></p>
@@ -1874,14 +1895,51 @@ $("add-tracks").onclick = () => pickFiles({ project: project() });
 // Un clic sur la pochette l'agrandit, pour la télécharger ou (son projet) la changer ; sans pochette, on en choisit une.
 $("cover").onclick = () => {
   const p = project();
-  if (!p.cover) return p.mine && pickCover(p);
+  if (!p.cover) return p.mine && findCover(p);
   $("cover-view").querySelector("img").src = p.cover;
-  $("cover-swap").hidden = !p.mine;
+  $("cover-swap").hidden = $("cover-search").hidden = !p.mine;
   $("cover-save").replaceChildren(icon("download"), "Télécharger");
   $("cover-swap").replaceChildren(icon("star"), "Changer");
   $("cover-view").showModal();
 };
 $("cover-swap").onclick = () => { $("cover-view").close(); pickCover(project()); };
+$("cover-search").onclick = () => { $("cover-view").close(); findCover(project()); };
+// ——— Chercher la pochette d'un son déjà sorti, sur Apple Music (recherche iTunes : libre, sans clé) ———
+let findTarget = null;
+function findCover(p) {
+  findTarget = p;
+  $("cover-find-q").value = (p.artist || p.owner.name) + " " + p.title;
+  $("cover-find").showModal();
+  searchCovers();
+}
+async function searchCovers() {
+  const q = $("cover-find-q").value.trim(), box = $("cover-found"), note = $("cover-find-note");
+  if (!q) return;
+  box.replaceChildren(); note.textContent = "Recherche…";
+  try {
+    // Les titres et les albums : un single n'est parfois trouvé que par l'un des deux. Une pochette n'apparaît qu'une fois.
+    const ask = (entity) => fetch("https://itunes.apple.com/search?" + new URLSearchParams({ term: q, entity, limit: "25", country: "FR" })).then((r) => (r.ok ? r.json() : { results: [] }));
+    const [songs, albums] = await Promise.all([ask("song"), ask("album")]);
+    const seen = new Set(), found = [...songs.results, ...albums.results].filter((x) => x.artworkUrl100 && !seen.has(x.artworkUrl100) && seen.add(x.artworkUrl100));
+    if (!found.length) { note.textContent = "Aucune pochette trouvée. Un son tout juste sorti peut mettre quelques jours à apparaître : change la recherche, ou choisis une image sur l'appareil."; return; }
+    note.textContent = found.length + " pochette" + (found.length > 1 ? "s" : "") + " trouvée" + (found.length > 1 ? "s" : "") + ".";
+    box.replaceChildren(...found.map((x) => el("button", { type: "button", title: "Prendre cette pochette", onclick: () => takeCover(x) },
+      el("img", { src: x.artworkUrl100.replace(/\/\d+x\d+bb\./, "/300x300bb."), alt: "", loading: "lazy" }),
+      el("b", { textContent: x.trackName || x.collectionName }), el("small", { textContent: x.artistName }))));
+  } catch { note.textContent = "Apple Music ne répond pas. Réessaie dans un instant."; }
+}
+/** La pochette choisie, en 1500 px (le serveur la veut sous 5 Mo), envoyée comme une image choisie à la main. */
+async function takeCover(x) {
+  const note = $("cover-find-note");
+  note.textContent = "Récupération de la pochette…";
+  try {
+    const blob = await fetch(x.artworkUrl100.replace(/\/\d+x\d+bb\./, "/1500x1500bb.")).then((r) => (r.ok ? r.blob() : Promise.reject()));
+    $("cover-find").close();
+    uploadCover(findTarget, new File([blob], (x.collectionName || x.trackName || "pochette") + ".jpg", { type: blob.type || "image/jpeg" }));
+  } catch { note.textContent = "Cette pochette n'a pas pu être récupérée. Essaie une autre."; }
+}
+$("cover-find-form").onsubmit = (event) => { event.preventDefault(); searchCovers(); };
+$("cover-find-file").onclick = () => { $("cover-find").close(); pickCover(findTarget); };
 $("cover-save").onclick = async () => {
   const p = project();
   try {
