@@ -260,6 +260,8 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 5px 
 .picker button { display: flex; justify-content: space-between; gap: 12px; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.3); color: var(--mist); font: 500 15px/1.3 var(--f-body); text-align: left; cursor: pointer; }
 .picker button:hover { border-color: var(--ember); }
 .picker small { color: var(--haze); font: 500 11px/1.3 var(--f-mono); white-space: nowrap; }
+.picker input[type="search"] { position: sticky; top: 0; z-index: 1; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--deep, #1a080a); color: var(--mist); font: 500 15px/1.3 var(--f-body); }
+.picker button[hidden] { display: none; }
 .go.wide { width: 100%; max-width: 340px; justify-self: center; text-align: center; }
 .bar { height: 6px; border-radius: 999px; background: rgba(255,210,214,.12); overflow: hidden; }
 .bar i { display: block; height: 100%; width: 0; background: var(--ember); transition: width .2s; }
@@ -1694,13 +1696,22 @@ async function openCloud() {
   try {
     const items = await cloudTracks();
     if (!items.length) { list.firstChild.textContent = "Aucun son dans ton ONIRIQUE CLOUD pour l'instant."; return; }
-    list.replaceChildren(...items.map(({ p, t, v }) => {
+    const buttons = items.map(({ p, t, v }) => {
       const b = document.createElement("button");
       b.type = "button";
-      b.append(t.title, Object.assign(document.createElement("small"), { textContent: p.title + (syncedLines(t.lyrics) ? " · paroles synchro" : "") }));
+      // Un projet en collab le dit (avec l'autre ou les autres) : noyé dans une longue liste, on le croyait absent.
+      const partners = p.mine === false ? [p.owner] : p.collaborators || [];
+      const note = p.title + (partners.length ? " · collab avec " + partners.map((x) => x.name).join(", ") : "") + (syncedLines(t.lyrics) ? " · paroles synchro" : "");
+      b.append(t.title, Object.assign(document.createElement("small"), { textContent: note }));
+      b.dataset.find = (t.title + " " + note).toLowerCase();
       b.onclick = () => { list.hidden = true; loadCloud({ t, v }); };
       return b;
-    }));
+    });
+    // Une recherche dès que la liste est longue (titre, projet, « collab », nom du collaborateur).
+    const search = Object.assign(document.createElement("input"), { type: "search", placeholder: "Chercher un titre, un projet, « collab »…", ariaLabel: "Chercher un son de ONIRIQUE CLOUD" });
+    search.oninput = () => { const q = search.value.trim().toLowerCase(); buttons.forEach((b) => { b.hidden = !!q && !b.dataset.find.includes(q); }); };
+    list.replaceChildren(...(buttons.length > 8 ? [search] : []), ...buttons);
+    if (buttons.length > 8) search.focus();
   } catch { list.firstChild.textContent = "ONIRIQUE CLOUD ne répond pas. Réessaie dans un instant."; }
 }
 
