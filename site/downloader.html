@@ -13,12 +13,15 @@
 <link rel="stylesheet" href="assets/pages.css">
 <link rel="stylesheet" href="assets/tools.css">
 <style>
-.opt { display: grid; gap: 8px; }
+.opt { display: grid; gap: 12px; }
 .card p.error { color: #FF7A85; }
+.card p.done { color: var(--mist); }
 .locked { text-align: center; }
 .locked .row { justify-content: center; }
 .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .row input { flex: 1 1 260px; }
+.card label.tick { display: flex; align-items: center; gap: 10px; font: 500 15px/1.4 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--mist); cursor: pointer; }
+.tick small { color: var(--haze); }
 .yt { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 20px; align-items: center; }
 .yt iframe { width: 100%; aspect-ratio: 16 / 9; border: 1px solid var(--line); border-radius: 14px; background: #000; display: block; }
 .yt h3 { margin: 6px 0 4px; font: 700 18px/1.3 var(--f-display); color: var(--mist); overflow-wrap: anywhere; }
@@ -37,7 +40,7 @@
   <section class="hero">
     <p class="eyebrow">Réservé aux fondateurs</p>
     <h1>Ton audio. <em>Ton format.</em></h1>
-    <p class="lede">Colle un lien YouTube et récupère son audio en MP3 ou en WAV. Ou dépose une vidéo ou un son de ton ordinateur.</p>
+    <p class="lede">Colle un lien YouTube et récupère son audio en MP3 ou en WAV, au nom de la vidéo, sans le blanc du début.</p>
   </section>
 
   <article class="card locked" id="locked" hidden>
@@ -48,52 +51,28 @@
     </div>
   </article>
 
-  <div id="studio" hidden>
-    <article class="card">
-      <p class="head"><b>01 — Lien YouTube</b><span>20 minutes au plus</span></p>
-      <div class="opt">
-        <label for="url">Lien de la vidéo</label>
-        <div class="row">
-          <input id="url" type="text" inputmode="url" placeholder="https://www.youtube.com/watch?v=…" autocomplete="off" spellcheck="false">
-          <button class="go ghost" id="analyze" type="button">Aperçu</button>
-        </div>
-        <div class="row">
-          <select id="yt-format" aria-label="Format du téléchargement" style="flex:1 1 200px"><option value="mp3:320">MP3 320 kbit/s</option><option value="mp3:192">MP3 192 kbit/s</option><option value="mp3:128">MP3 128 kbit/s</option><option value="wav:0">WAV</option></select>
-          <button class="go" id="yt-download" type="button">Télécharger</button>
-        </div>
-        <p class="hint">Uniquement pour des vidéos dont tu as les droits (les tiennes, celles de tes collabs…).</p>
-        <p class="error" id="url-error" role="alert"></p>
+  <article class="card" id="studio" hidden>
+    <p class="head"><b>Lien YouTube</b><span>20 minutes au plus</span></p>
+    <div class="opt">
+      <label for="url">Lien de la vidéo</label>
+      <div class="row">
+        <input id="url" type="text" inputmode="url" placeholder="https://www.youtube.com/watch?v=…" autocomplete="off" spellcheck="false">
+        <button class="go ghost" id="analyze" type="button">Aperçu</button>
       </div>
-      <div class="yt" id="yt" hidden>
-        <iframe id="yt-player" title="Lecteur YouTube" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-        <div><p class="eyebrow">Aperçu YouTube</p><h3 id="yt-title"></h3><p id="yt-author"></p><p><a id="yt-open" target="_blank" rel="noopener noreferrer">Ouvrir sur YouTube ↗</a></p></div>
+      <div class="row">
+        <select id="yt-format" aria-label="Format du téléchargement" style="flex:1 1 200px"><option value="mp3:320">MP3 320 kbit/s</option><option value="mp3:192">MP3 192 kbit/s</option><option value="mp3:128">MP3 128 kbit/s</option><option value="wav:0">WAV 24 bits, 48 kHz</option></select>
+        <button class="go" id="yt-download" type="button">Télécharger</button>
       </div>
-    </article>
-
-    <button class="drop" id="drop" type="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14.5v3A2.5 2.5 0 0 0 7.5 20h9a2.5 2.5 0 0 0 2.5-2.5v-3"/></svg>
-      <strong>02 — Dépose une vidéo ou un son ici</strong>
-      <span>ou clique pour le choisir · MP4, MOV, WEBM, MP3, WAV, FLAC, M4A, OGG · 300 Mo au plus</span>
-    </button>
-    <input id="file" type="file" accept="audio/*,video/*,.mp4,.mov,.m4v,.webm,.mp3,.wav,.m4a,.aac,.flac,.ogg,.opus" hidden>
-    <p class="hint">La conversion se fait dans ton navigateur : le fichier n'est envoyé nulle part.</p>
-    <p class="error" id="error" role="alert"></p>
-
-    <article class="card" id="panel" hidden>
-      <p class="head"><b id="r-file"></b><span id="r-info"></span></p>
-      <div class="opt">
-        <span class="label">03 — Format</span>
-        <div><div class="chips" id="format"><button type="button" data-v="mp3" aria-pressed="true">MP3</button><button type="button" data-v="wav" aria-pressed="false">WAV</button></div></div>
-        <div class="fields" id="mp3-options">
-          <label>Qualité MP3<select id="kbps"><option value="128">128 kbit/s (léger)</option><option value="192" selected>192 kbit/s (équilibré)</option><option value="320">320 kbit/s (élevé)</option></select></label>
-        </div>
-      </div>
-      <div class="dim split">
-        <p id="r-out"></p>
-        <button class="go" id="go" type="button">Convertir et télécharger</button>
-      </div>
-    </article>
-  </div>
+      <label class="tick"><input id="prod" type="checkbox"> PROD <small>— ajoute le BPM et la tonalité au nom : « Titre - 140 BPM - F minor »</small></label>
+      <p class="hint">Uniquement pour des vidéos dont tu as les droits (les tiennes, celles de tes collabs…).</p>
+      <p class="error" id="url-error" role="alert"></p>
+      <p class="done" id="done" aria-live="polite"></p>
+    </div>
+    <div class="yt" id="yt" hidden>
+      <iframe id="yt-player" title="Lecteur YouTube" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+      <div><p class="eyebrow">Aperçu YouTube</p><h3 id="yt-title"></h3><p id="yt-author"></p><p><a id="yt-open" target="_blank" rel="noopener noreferrer">Ouvrir sur YouTube ↗</a></p></div>
+    </div>
+  </article>
 </main>
 
 <footer>
@@ -106,9 +85,7 @@
 <script>
 const $ = (id) => document.getElementById(id);
 const A = OniriqueAudio;
-const MAX_BYTES = 300 * 1024 * 1024, MAX_SECONDS = 1200;
 const TOKEN = (() => { try { return sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"); } catch { return null; } })();
-let file = null, audio = null, format = "mp3";
 
 // ——— Accès : le droit « downloader » (fondateurs ; réglable dans l'admin, « Droits des rôles ») ———
 async function gate() {
@@ -125,7 +102,7 @@ function lock(title, text, href, label) {
   $("locked").hidden = false;
 }
 
-// ——— Lien YouTube : identifiant de la vidéo, puis titre et chaîne par oEmbed (jamais le flux) ———
+// ——— Lien YouTube : identifiant de la vidéo, puis titre et chaîne par oEmbed pour l'aperçu ———
 function videoId(raw) {
   let url;
   try { url = new URL(raw.trim()); } catch { return ""; }
@@ -159,9 +136,33 @@ $("analyze").onclick = async () => {
 };
 $("url").addEventListener("keydown", (event) => { if (event.key === "Enter") $("analyze").click(); });
 
-// ——— Télécharger : le serveur extrait l'audio avec yt-dlp (server/src/downloader.js) et renvoie le fichier ———
+// ——— PROD : BPM et tonalité, comme l'outil BPM et tonalité (assets/bpm-key-worker.js, mêmes noms) ———
+const RATE = 22050, ANALYSE_SECONDS = 240; // au-delà, seul le milieu du morceau est analysé
+const EN = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+const keyName = (k) => EN[k.tonic] + (k.mode === "major" ? " major" : " minor");
+const bpmText = (bpm) => (Math.abs(bpm - Math.round(bpm)) < 0.2 ? String(Math.round(bpm)) : bpm.toFixed(1).replace(".", ","));
+
+async function prodTag(blob) {
+  const audio = await A.decode(new File([blob], "son"));
+  const length = Math.min(audio.duration, ANALYSE_SECONDS);
+  const offline = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, Math.max(1, Math.floor(length * RATE)), RATE);
+  const source = offline.createBufferSource();
+  source.buffer = audio;
+  source.connect(offline.destination);
+  source.start(0, (audio.duration - length) / 2, length);
+  const samples = (await offline.startRendering()).getChannelData(0);
+  const r = await new Promise((resolve, reject) => {
+    const worker = new Worker("assets/bpm-key-worker.js");
+    worker.onmessage = (event) => { worker.terminate(); resolve(event.data); };
+    worker.onerror = () => { worker.terminate(); reject(new Error("L'analyse du BPM et de la tonalité a échoué.")); };
+    worker.postMessage({ samples, sampleRate: RATE }, [samples.buffer]);
+  });
+  return [r.tempo && bpmText(r.tempo.bpm) + " BPM", r.key && keyName(r.key)].filter(Boolean).join(" - ");
+}
+
+// ——— Télécharger : le serveur extrait l'audio avec yt-dlp, retire le blanc du début (server/src/downloader.js) ———
 $("yt-download").onclick = async () => {
-  $("url-error").textContent = "";
+  $("url-error").textContent = $("done").textContent = "";
   if (!videoId($("url").value)) { $("url-error").textContent = "Colle un lien youtube.com ou youtu.be valide."; return; }
   const [format, kbps] = $("yt-format").value.split(":");
   const button = $("yt-download"), label = button.textContent;
@@ -173,82 +174,30 @@ $("yt-download").onclick = async () => {
       body: JSON.stringify({ url: $("url").value.trim(), format, kbps }),
     });
     if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Le téléchargement a échoué.");
-    const name = (response.headers.get("Content-Disposition") || "").match(/filename\*=UTF-8''([^;]+)/);
-    A.download(await response.blob(), name ? decodeURIComponent(name[1]) : "youtube." + format);
+    const blob = await response.blob();
+    // Le nom choisi par le serveur (titre nettoyé) : filename*= quand il a des accents, filename="" sinon.
+    const named = (response.headers.get("Content-Disposition") || "").match(/filename\*=UTF-8''([^;]+)|filename="([^"]+)"/);
+    let base = named ? decodeURIComponent(named[1] || named[2]).replace(/\.[^.]+$/, "") : "YouTube";
+    let tag = "";
+    if ($("prod").checked) {
+      button.textContent = "Calcul du BPM et de la tonalité…";
+      tag = await prodTag(blob).catch(() => "");
+      if (tag) base += " - " + tag;
+    }
+    A.download(blob, base + "." + format);
+    const lead = +response.headers.get("X-Lead-Ms") || 0;
+    $("done").textContent = "« " + base + "." + format + " » téléchargé. "
+      + (lead ? lead + " ms de blanc retirés au début : le son démarre sur le premier temps." : "Aucun blanc au début.")
+      + ($("prod").checked && !tag ? " BPM et tonalité non trouvés pour ce son." : "");
   } catch (error) {
     $("url-error").textContent = error instanceof TypeError ? "Connexion perdue pendant le téléchargement." : error.message;
   }
   button.textContent = label;
   button.disabled = false;
 };
-
-// ——— Conversion : décodée et encodée dans le navigateur (assets/audio-kit.js) ———
-/** Ce qui sera produit : MP3 en 44,1 ou 48 kHz, deux voies au plus ; WAV 16 bits à la fréquence du fichier. */
-function target() {
-  if (format === "mp3") return { rate: audio.sampleRate === 48000 || audio.sampleRate === 96000 ? 48000 : 44100, channels: Math.min(2, audio.numberOfChannels), kbps: +$("kbps").value };
-  return { rate: audio.sampleRate, channels: audio.numberOfChannels, bits: 16 };
-}
-
-function describe() {
-  if (!audio) return;
-  const t = target();
-  const bytes = format === "mp3" ? audio.duration * t.kbps * 125 : audio.duration * t.rate * t.channels * 2;
-  $("r-out").textContent = (format === "mp3" ? "MP3 " + t.kbps + " kbit/s" : "WAV 16 bits") + " · environ " + A.decimal(bytes / 1e6) + " Mo";
-  $("mp3-options").hidden = format !== "mp3";
-}
-
-document.querySelectorAll("#format button").forEach((button) => {
-  button.onclick = () => {
-    format = button.dataset.v;
-    document.querySelectorAll("#format button").forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
-    describe();
-  };
-});
-$("panel").addEventListener("change", describe);
-
-async function open(chosen) {
-  $("error").textContent = "";
-  if (chosen.size > MAX_BYTES) { $("error").textContent = "Ce fichier dépasse 300 Mo."; return; }
-  A.busy($("drop"), true, "Lecture du fichier…");
-  try {
-    // Une vidéo n'écrit pas sa fréquence là où audio-kit la lit : sans plancher, elle sortirait à celle de la carte son.
-    const decoded = await A.decode(chosen, { minRate: 44100 }).catch(() => { throw new Error("Aucune piste audio lisible dans « " + chosen.name + " ». Essaie en MP4, MOV, WEBM, MP3 ou WAV."); });
-    if (decoded.duration > MAX_SECONDS) throw new Error("Ce fichier est trop long (20 minutes au plus).");
-    file = chosen; audio = decoded;
-    $("r-file").textContent = file.name;
-    $("r-info").textContent = A.clock(audio.duration) + " · " + A.decimal(audio.sampleRate / 1000) + " kHz";
-    $("panel").hidden = false;
-    describe();
-    A.busy($("drop"), false, "Choisir un autre fichier");
-  } catch (error) {
-    $("panel").hidden = true;
-    $("error").textContent = error.message;
-    A.busy($("drop"), false);
-  }
-}
-
-$("go").onclick = async () => {
-  if (!audio) return;
-  $("error").textContent = "";
-  $("go").disabled = true;
-  const label = $("go").textContent;
-  try {
-    const t = target();
-    $("go").textContent = "Conversion…";
-    const same = t.rate === audio.sampleRate && t.channels === audio.numberOfChannels;
-    const out = A.channelsOf(same ? audio : await A.render(audio, { rate: t.rate, channels: t.channels }));
-    const blob = format === "mp3"
-      ? await A.mp3(out, t.rate, t.kbps, (p) => { $("go").textContent = "Encodage " + Math.round(p * 100) + " %"; })
-      : A.wav(out, t.rate, t.bits);
-    A.download(blob, A.baseName(file) + "." + format);
-  } catch (error) { $("error").textContent = error.message || "La conversion a échoué."; }
-  $("go").textContent = label;
-  $("go").disabled = false;
-};
-A.dropZone($("drop"), $("file"), open);
 gate();
 </script>
-<script src="assets/tools-menu.js?v=9"></script>
+<script src="assets/tools-menu.js?v=10"></script>
 <script src="assets/account.js?v=8"></script>
 <script src="assets/site-nav.js?v=14"></script>
 </html>
