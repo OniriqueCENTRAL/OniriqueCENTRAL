@@ -910,6 +910,19 @@ player.audio.addEventListener("pause", markPlaying);
 
 // ——— Paroles ———
 const parseLyrics = OP.parseLyrics;
+/** Les paroles d'un son déjà sorti sur LRCLIB (base libre, sans clé), synchronisées ligne par ligne quand elles existent ; null sinon. */
+async function findLyrics(artist, title, duration) {
+  const q = (path, params) => fetch("https://lrclib.net/api/" + path + "?" + new URLSearchParams(params)).then((r) => (r.ok ? r.json() : null));
+  // D'abord le titre exact à la bonne durée, sinon la recherche : le plus proche en durée, les synchronisées d'abord.
+  let hit = duration ? await q("get", { artist_name: artist, track_name: title, duration: Math.round(duration) }) : null;
+  if (!hit || !(hit.syncedLyrics || hit.plainLyrics)) {
+    const near = (x) => (duration ? Math.abs(x.duration - duration) : 0);
+    hit = ((await q("search", { artist_name: artist, track_name: title })) || [])
+      .filter((x) => !x.instrumental && (x.syncedLyrics || x.plainLyrics) && near(x) < 15)
+      .sort((a, b) => !!b.syncedLyrics - !!a.syncedLyrics || near(a) - near(b))[0];
+  }
+  return hit && (hit.syncedLyrics || hit.plainLyrics) ? { synced: hit.syncedLyrics || "", plain: hit.plainLyrics || "", artist: hit.artistName, title: hit.trackName } : null;
+}
 const stamp = (s) => { const cs = Math.round(s * 100); return "[" + String(Math.floor(cs / 6000)).padStart(2, "0") + ":" + ((cs % 6000) / 100).toFixed(2).padStart(5, "0") + "]"; };
 // Les paroles telles qu'on les enregistre ; words : avec le moment de chaque mot (seulement si tous les mots de la ligne en ont un).
 // Un mot FORT (pour ONIRIQUE CUT) s'écrit entre ** ; marked : la ligne telle qu'écrite, étoiles comprises.
@@ -3269,6 +3282,20 @@ function renderDetails() {
       } catch (error) { saved.textContent = "La transcription n'a pas marché : " + error.message; }
       finally { ai.disabled = false; }
     };
+    // Un son déjà sorti : ses paroles sur LRCLIB, à relire avant d'enregistrer.
+    const find = el("button", { className: "btn btn-ghost", type: "button", textContent: "Chercher les paroles", title: "Pour un son déjà sorti : ses paroles sur LRCLIB, une base de paroles libre (synchronisées quand elles existent)." });
+    find.onclick = async () => {
+      if (text.value.trim() && !confirm("Remplacer les paroles écrites ici par celles trouvées ?")) return;
+      find.disabled = true; saved.textContent = "Recherche des paroles…";
+      try {
+        const found = await findLyrics(p.artist || p.owner.name, t.title, v.duration);
+        if (!found) { saved.textContent = "Pas de paroles trouvées pour « " + t.title + " ». Essaie « Transcrire avec l'IA »."; return; }
+        text.value = found.synced || found.plain; text.dispatchEvent(new Event("input"));
+        saved.textContent = (found.synced ? "Paroles synchronisées trouvées" : "Paroles trouvées (sans synchro)") + " : « " + found.artist + " - " + found.title + " ». Relis-les, puis Enregistrer."
+          + (found.synced ? " Si ta version n'est pas celle qui est sortie, resynchronise-les." : "");
+      } catch { saved.textContent = "La recherche de paroles ne répond pas. Réessaie dans un instant."; }
+      finally { find.disabled = false; }
+    };
     right = [back("Paroles"), el("p", { className: "muted", style: "margin:0", textContent: "Elles s'affichent à côté du projet pendant l'écoute. Synchronise-les pour qu'elles défilent avec le son, ligne par ligne." }), syncBar(v), text,
       el("div", { className: "row" },
         el("button", { className: "btn btn-primary", type: "button", textContent: "Enregistrer", onclick: () =>
@@ -3298,7 +3325,7 @@ function renderDetails() {
           const ref = first > 0 ? lines[first - 1].words.at(-1).at : lines[Math.max(0, first)]?.at;
           syncAudio.pause(); syncAudio.currentTime = ref != null ? Math.max(0, ref - 2) : 0;
           detailsView = "lyrics-words"; renderDetails();
-        } }), ai, saved),
+        } }), find, ai, saved),
       el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Mot par mot : chaque mot apparaît pile quand il est chanté dans les vidéos ONIRIQUE CUT (styles « mot par mot »). Le lecteur peut ralentir le son pour être précis. Un mot entouré de ** (comme **ça**) est un mot FORT : il ressort en grand dans CUT." })];
   } else if (detailsView === "lyrics-sync") {
     if (!sync || sync.tid !== t.id) { detailsView = "lyrics"; return renderDetails(); }
