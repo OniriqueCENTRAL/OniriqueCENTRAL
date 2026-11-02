@@ -931,6 +931,20 @@ player.audio.addEventListener("pause", markPlaying);
 
 // ——— Paroles ———
 const parseLyrics = OP.parseLyrics;
+/** Le titre et l'artiste d'un son tels qu'ils sont sortis, d'après le catalogue Apple Music de l'artiste ; null s'il n'y est pas.
+ *  On compare sans accents ni signes, et une étoile du titre sorti (« F*CHO ») vaut n'importe quelle lettre. */
+async function officialTitle(artist, title) {
+  const flat = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9*]+/g, "");
+  const ask = (path, params) => fetch("https://itunes.apple.com/" + path + "?" + new URLSearchParams({ country: "FR", ...params })).then((r) => r.json());
+  const ids = [...new Set((await ask("search", { term: artist, entity: "song", limit: "25" })).results.filter((x) => flat(x.artistName) === flat(artist)).map((x) => x.artistId))];
+  const want = flat(title);
+  for (const id of ids.slice(0, 2)) {
+    const songs = (await ask("lookup", { id, entity: "song", limit: "200" })).results.filter((x) => x.wrapperType === "track");
+    const hit = songs.find((x) => new RegExp("^" + flat(x.trackName.replace(/\s*[([](feat|with|avec)\.?[^)\]]*[)\]]/i, "")).replace(/\*/g, "[a-z0-9]?") + "$").test(want));
+    if (hit) return { title: hit.trackName.replace(/\s*[([](feat|with|avec)\.?[^)\]]*[)\]]/i, ""), artist: hit.artistName.split(/\s*[&,]\s*/)[0] };
+  }
+  return null;
+}
 /** Les paroles d'un son déjà sorti sur LRCLIB (base libre, sans clé), synchronisées ligne par ligne quand elles existent ; null sinon. */
 async function findLyrics(artist, title, duration) {
   // LRCLIB est souvent surchargé (503) : on réessaie, et seul un vrai « introuvable » (404) compte comme rien trouvé.
@@ -949,7 +963,10 @@ async function findLyrics(artist, title, duration) {
   const pick = (list) => (list || []).filter((x) => !x.instrumental && (x.syncedLyrics || x.plainLyrics) && near(x) < 15)
     .sort((a, b) => !!b.syncedLyrics - !!a.syncedLyrics || near(a) - near(b))[0];
   // La recherche en texte libre n'est qu'un secours : si elle échoue, rien n'est trouvé (pas une erreur).
-  const hit = pick(await q("search", { artist_name: artist, track_name: title })) || pick(await q("search", { q: artist + " " + title }).catch(() => null));
+  let hit = pick(await q("search", { artist_name: artist, track_name: title })) || pick(await q("search", { q: artist + " " + title }).catch(() => null));
+  // Pas trouvé : le titre tel qu'il est sorti (« PHARES ÉTEINTS », « NIQUE UN F*CHO ») peut différer de celui du projet.
+  const official = hit ? null : await officialTitle(artist, title).catch(() => null);
+  if (official && official.title !== title) hit = pick(await q("search", { artist_name: official.artist, track_name: official.title }).catch(() => null));
   return hit && (hit.syncedLyrics || hit.plainLyrics) ? { synced: hit.syncedLyrics || "", plain: hit.plainLyrics || "", artist: hit.artistName, title: hit.trackName } : null;
 }
 const stamp = (s) => { const cs = Math.round(s * 100); return "[" + String(Math.floor(cs / 6000)).padStart(2, "0") + ":" + ((cs % 6000) / 100).toFixed(2).padStart(5, "0") + "]"; };
@@ -3369,15 +3386,18 @@ function renderDetails() {
     find.onclick = async () => {
       if (text.value.trim() && !confirm("Remplacer les paroles écrites ici par celles trouvées ?")) return;
       find.disabled = true; saved.textContent = "Recherche des paroles…";
-      // Genius ne donne pas ses paroles aux autres sites : on l'ouvre sur la bonne recherche, pour les copier ici à la main.
-      const elsewhere = (why) => saved.replaceChildren(why + " ", el("a", { href: "https://genius.com/search?q=" + encodeURIComponent((p.artist || p.owner.name) + " " + t.title), target: "_blank", rel: "noopener", textContent: "Les chercher sur Genius" }), " pour les coller ici (« Caler avec l'IA » les synchronise ensuite), ou « Transcrire avec l'IA ».");
+      // Genius et Musixmatch ne donnent pas leurs paroles aux autres sites : on les ouvre sur la bonne recherche, pour les
+      // copier ici à la main.
+      const query = encodeURIComponent((p.artist || p.owner.name) + " " + t.title), link = (href, text) => el("a", { href, target: "_blank", rel: "noopener", textContent: text });
+      const elsewhere = (why) => saved.replaceChildren(why + " Les chercher sur ", link("https://genius.com/search?q=" + query, "Genius"), " ou ", link("https://www.musixmatch.com/search?query=" + query, "Musixmatch"),
+        " pour les coller ici (« Caler avec l'IA » les synchronise ensuite), ou « Transcrire avec l'IA ».");
       try {
         const found = await findLyrics(p.artist || p.owner.name, t.title, v.duration);
         if (!found) { elsewhere("Pas de paroles trouvées pour « " + t.title + " »."); return; }
         text.value = found.synced || found.plain; text.dispatchEvent(new Event("input"));
         saved.textContent = (found.synced ? "Paroles synchronisées trouvées" : "Paroles trouvées (sans synchro)") + " : « " + found.artist + " - " + found.title + " ». Relis-les, puis Enregistrer."
           + (found.synced ? " Si ta version n'est pas celle qui est sortie, resynchronise-les." : "");
-      } catch { elsewhere("La base de paroles (LRCLIB) ne répond pas pour « " + t.title + " » : réessaie dans une minute, ou"); }
+      } catch { elsewhere("La base de paroles (LRCLIB) ne répond pas pour « " + t.title + " » : réessaie dans une minute."); }
       finally { find.disabled = false; }
     };
     right = [back("Paroles"), el("p", { className: "muted", style: "margin:0", textContent: "Elles s'affichent à côté du projet pendant l'écoute. Synchronise-les pour qu'elles défilent avec le son, ligne par ligne." }), syncBar(v), text,
