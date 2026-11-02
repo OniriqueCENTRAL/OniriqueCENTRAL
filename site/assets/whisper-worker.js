@@ -3,7 +3,7 @@
 // navigateur : seul le modèle (~760 Mo sur carte graphique) se télécharge, une fois, puis reste dans le cache du navigateur.
 //
 //   postMessage({ audio, guide, language })  (mono, 16 000 Hz ; guide : la voix isolée, pour savoir où l'on chante)
-//     →  { type: "progress", phase: "download" | "transcribe", value: 0…1 }
+//     →  { type: "progress", phase: "download" | "load" | "transcribe", value: 0…1 }  (load : le modèle est lu depuis l'appareil)
 //     →  { type: "done", device, words: [{ text, start, end }] }   ou   { type: "error", message }
 import { pipeline, env } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.6/dist/transformers.min.js";
 
@@ -18,9 +18,15 @@ env.allowLocalModels = false;
 const hash = (x) => { let h = 2166136261; for (const ch of x) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return (h >>> 0).toString(36); };
 const fileName = (key) => { const k = String(key && key.url ? key.url : key); return hash(k) + "-" + k.split("/").pop().replace(/[^\w.-]/g, "_").slice(-80); };
 const folder = () => navigator.storage.getDirectory().then((root) => root.getDirectoryHandle("whisper", { create: true }));
+const onDisk = new Set(); // les fichiers du modèle lus depuis l'appareil : leur « progression » n'est pas un téléchargement
 const opfsCache = {
   async match(key) {
-    try { const file = await (await (await folder()).getFileHandle(fileName(key))).getFile(); return file.size ? new Response(file, { headers: { "content-length": String(file.size) } }) : undefined; }
+    try {
+      const file = await (await (await folder()).getFileHandle(fileName(key))).getFile();
+      if (!file.size) return undefined;
+      onDisk.add(String(key && key.url ? key.url : key).split("/").pop());
+      return new Response(file, { headers: { "content-length": String(file.size) } });
+    }
     catch { return undefined; }
   },
   async put(key, response) {
@@ -43,7 +49,9 @@ async function transcriber(post) {
     files.set(x.file, [x.loaded, x.total]);
     let loaded = 0, total = 0;
     for (const [l, t] of files.values()) { loaded += l; total += t; }
-    post({ type: "progress", phase: "download", value: loaded / total });
+    // Seuls les fichiers du modèle (.onnx) comptent : le moteur, lui, vient du cache ordinaire du navigateur.
+    const fetching = [...files.keys()].some((f) => /\.onnx/.test(f) && !onDisk.has(String(f).split("/").pop()));
+    post({ type: "progress", phase: fetching ? "download" : "load", value: loaded / total });
   };
   const { model, ...options } = adapter ? GPU : CPU;
   ready = pipeline("automatic-speech-recognition", model, { progress_callback, ...options });

@@ -49,7 +49,7 @@
       <span>ou clique pour le choisir · MP3, WAV, FLAC, M4A, OGG</span>
     </button>
     <input id="file" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" hidden>
-    <p class="hint">Sans compte. La séparation se fait dans ton navigateur : ton fichier n'est envoyé nulle part. La première fois, l'IA se télécharge (172 Mo), puis reste sur l'appareil.</p>
+    <p class="hint" id="hint">Sans compte. La séparation se fait dans ton navigateur : ton fichier n'est envoyé nulle part. La première fois, l'IA se télécharge (172 Mo), puis reste sur l'appareil.</p>
     <p class="error" id="error" role="alert"></p>
   </section>
 
@@ -101,11 +101,13 @@ let file = null, parts = null, working = false;
 /** Les pistes du son par IA (assets/demucs-worker.js), chacune en [gauche, droite] à 44,1 kHz. */
 function separate(L, R) {
   return new Promise((resolve, reject) => {
-    const worker = new Worker("assets/demucs-worker.js", { type: "module" });
+    try { navigator.storage.persist().catch(() => {}); } catch { /* navigateur trop ancien */ } // que le navigateur garde l'IA téléchargée
+    const worker = new Worker("assets/demucs-worker.js?v=2", { type: "module" });
     const done = (fn, value) => { worker.terminate(); fn(value); };
     worker.onmessage = ({ data }) => {
       if (data.type === "done") done(resolve, data);
       else if (data.type === "error") done(reject, new Error(data.message));
+      else if (data.phase === "load") progress("IA déjà sur cet appareil : chargement…", 0);
       else progress(data.phase === "download" ? "Téléchargement de l'IA (172 Mo, une seule fois sur cet appareil)…" : "Séparation des pistes par IA…", data.value);
     };
     worker.onerror = (event) => done(reject, new Error(event.message || "L'IA n'a pas pu démarrer dans ce navigateur."));
@@ -211,6 +213,8 @@ async function open(chosen) {
 }
 
 A.dropZone($("drop"), $("file"), open);
+// L'IA déjà sur l'appareil (cache de assets/demucs-worker.js) : rien à télécharger, on le dit.
+caches.open("onirique-demucs").then((c) => c.keys()).then((k) => { if (k.length) $("hint").textContent = "Sans compte. La séparation se fait dans ton navigateur : ton fichier n'est envoyé nulle part. L'IA est déjà installée sur cet appareil."; }).catch(() => {});
 A.fromLink(open, (error) => { $("error").textContent = error.message; });
 </script>
 <script src="assets/tools-menu.js?v=7"></script>

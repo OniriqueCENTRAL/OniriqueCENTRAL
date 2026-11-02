@@ -3,7 +3,7 @@
 // (WASM, bien plus lent). Rien ne quitte le navigateur : seul le modèle (172 Mo) se télécharge, une fois, puis reste en cache.
 //
 //   postMessage({ L, R })  (stéréo, 44 100 Hz)
-//     →  { type: "progress", phase: "download" | "separate", value: 0…1 } (plusieurs fois)
+//     →  { type: "progress", phase: "download" | "load" | "separate", value: 0…1 } (plusieurs fois ; load : déjà sur l'appareil)
 //     →  { type: "done", device: "gpu" | "cpu", parts: { drums, bass, other, vocals } }  (chaque piste : [gauche, droite])
 //     ou { type: "error", message }
 import * as ort from "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.23.2/dist/ort.webgpu.min.mjs";
@@ -16,10 +16,10 @@ ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.23.2/di
 ort.env.wasm.numThreads = 1; // plusieurs fils demandent une page isolée (COOP/COEP), ce que le site n'est pas
 
 /** Le modèle : depuis le cache du navigateur, sinon téléchargé (avec sa progression) puis gardé. */
-async function modelBytes(progress) {
+async function modelBytes(progress, loading) {
   const cache = await caches.open("onirique-demucs").catch(() => null);
   const hit = cache && await cache.match(MODEL).catch(() => null);
-  if (hit) return hit.arrayBuffer();
+  if (hit) { loading(); return hit.arrayBuffer(); }
   const response = await fetch(MODEL);
   if (!response.ok || !response.body) throw new Error("Le modèle d'IA n'a pas pu être téléchargé.");
   const reader = response.body.getReader(), chunks = [];
@@ -40,7 +40,7 @@ async function ready(post) {
   const adapter = self.navigator.gpu ? await self.navigator.gpu.requestAdapter().catch(() => null) : null;
   device = adapter ? "gpu" : "cpu";
   const p = new DemucsProcessor({ ort, sessionOptions: { executionProviders: adapter ? ["webgpu", "wasm"] : ["wasm"] } });
-  await p.loadModel(await modelBytes((value) => post({ type: "progress", phase: "download", value })));
+  await p.loadModel(await modelBytes((value) => post({ type: "progress", phase: "download", value }), () => post({ type: "progress", phase: "load", value: 0 })));
   return (processor = p);
 }
 

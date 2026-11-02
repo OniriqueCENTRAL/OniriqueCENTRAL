@@ -94,8 +94,12 @@ async function resample(buffer, rate, channels) {
   return Array.from({ length: channels }, (_, c) => r.getChannelData(c).slice());
 }
 
+/** Demande au navigateur de ne pas effacer les IA téléchargées quand il fait de la place (sans fenêtre : il décide seul). */
+export const keepModels = () => { try { navigator.storage.persist().catch(() => {}); } catch { /* navigateur trop ancien */ } };
+
 /** Fait tourner un worker (module) une fois : progress reçoit ses messages de progression. */
 function runWorker(url, message, transfer, progress) {
+  keepModels();
   const worker = new Worker(url, { type: "module" });
   return new Promise((resolve, reject) => {
     worker.onmessage = ({ data }) => (data.type === "done" ? resolve(data) : data.type === "error" ? reject(new Error(data.message)) : progress(data));
@@ -108,8 +112,8 @@ function runWorker(url, message, transfer, progress) {
 export async function isolateVoice(buffer, status = () => {}) {
   try {
     const [L, R] = await resample(buffer, 44100, 2);
-    const out = await runWorker(new URL("demucs-worker.js", import.meta.url), { L, R }, [L.buffer, R.buffer], (d) => status(d.phase === "download"
-      ? "Téléchargement de l'IA de séparation (172 Mo, une seule fois)… " + pct(d.value) : "Séparation de la voix… " + pct(d.value)));
+    const out = await runWorker(new URL("demucs-worker.js?v=2", import.meta.url), { L, R }, [L.buffer, R.buffer], (d) => status(d.phase === "download"
+      ? "Téléchargement de l'IA de séparation (172 Mo, une seule fois)… " + pct(d.value) : d.phase === "load" ? "IA de séparation déjà sur cet appareil : chargement…" : "Séparation de la voix… " + pct(d.value)));
     const [l, r] = out.parts.vocals, voice = new AudioBuffer({ length: l.length, numberOfChannels: 2, sampleRate: 44100 });
     voice.copyToChannel(l, 0); voice.copyToChannel(r, 1);
     return voice;
@@ -124,8 +128,8 @@ export async function transcribe(buffer, status = () => {}, { voice = null, lang
   // film : un dialogue s'entend bien tel quel ; isoler la voix (172 Mo d'IA en plus) donnait exactement le même texte, en plus lent.
   const guideVoice = film ? buffer : voice || (await isolateVoice(buffer, status)) || buffer;
   const [audio] = await resample(buffer, 16000, 1), [guide] = await resample(guideVoice, 16000, 1);
-  const out = await runWorker(new URL("whisper-worker.js", import.meta.url), { audio, guide, language }, [audio.buffer, guide.buffer], (d) => status(d.phase === "download"
-    ? "Chargement de l'IA des paroles (la première fois, environ 760 Mo à télécharger)… " + pct(d.value) : "L'IA écoute les paroles…" + (d.value ? " " + pct(d.value) : "")));
+  const out = await runWorker(new URL("whisper-worker.js?v=2", import.meta.url), { audio, guide, language }, [audio.buffer, guide.buffer], (d) => status(d.phase === "download"
+    ? "Téléchargement de l'IA des paroles (760 Mo, une seule fois sur cet appareil)… " + pct(d.value) : d.phase === "load" ? "IA des paroles déjà sur cet appareil : chargement… " + pct(d.value) : "L'IA écoute les paroles…" + (d.value ? " " + pct(d.value) : "")));
   const heard = film ? filmWords(out.words) : out.words;
   if (written.trim() && heard.length) {
     const lrc = alignLyrics(written, heard, ends);

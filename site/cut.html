@@ -2030,13 +2030,15 @@ function aiStems(a, n, what) {
   clearTimeout(demucsIdle);
   const job = demucsQueue.then(() => aiWork(async () => {
     const [L, R] = await at44k(a, n);
-    demucs = demucs || new Worker("assets/demucs-worker.js", { type: "module" });
+    if (!demucs) { try { navigator.storage.persist().catch(() => {}); } catch { /* navigateur trop ancien */ } } // que le navigateur garde l'IA téléchargée
+    demucs = demucs || new Worker("assets/demucs-worker.js?v=2", { type: "module" });
     const out = await new Promise((resolve, reject) => {
       demucs.onmessage = ({ data }) => {
         if (data.type === "done") resolve(data);
         else if (data.type === "error") reject(new Error(data.message));
         else $("stem-status").textContent = data.phase === "download"
           ? "Téléchargement de l'IA de séparation (172 Mo, une seule fois sur cet appareil)… " + pct(data.value)
+          : data.phase === "load" ? "IA de séparation déjà sur cet appareil : chargement…"
           : "Séparation par IA de " + what + "… " + pct(data.value);
       };
       demucs.onerror = (event) => reject(new Error(event.message || "L'IA de séparation n'a pas pu démarrer."));
@@ -2052,6 +2054,10 @@ function aiStems(a, n, what) {
   });
   return job;
 }
+// L'IA déjà sur l'appareil (dans le cache de assets/demucs-worker.js) : on le dit, plutôt que « la première fois, elle se télécharge ».
+caches.open("onirique-demucs").then((c) => c.keys()).then((k) => {
+  if (k.length && /première fois/.test($("stem-status").textContent)) $("stem-status").textContent = "La prod, la mélodie, les drums, la basse et la voix sont séparées dans ton navigateur par une IA (Demucs) : rien n’est envoyé. L’IA est déjà installée sur cet appareil.";
+}).catch(() => {});
 const aiDone = (device) => "Pistes séparées par IA (Demucs" + (device === "gpu" ? ", sur la carte graphique)." : ", sur le processeur).");
 const FAST_NOTE = " L'IA n'a pas pu tourner dans ce navigateur : séparation rapide, approchée (essaie Chrome ou Edge à jour).";
 
@@ -2108,7 +2114,7 @@ async function autoLyrics() {
   const status = (text) => { $("lyrics-auto-status").textContent = text; };
   $("lyrics-auto").disabled = true;
   try {
-    const ai = await import("./assets/ai-lyrics.js");
+    const ai = await import("./assets/ai-lyrics.js?v=2");
     // La voix seule (séparée par Demucs, déjà calculée pour l'écoute des pistes) se comprend bien mieux que le morceau avec sa prod.
     status("Séparation de la voix…");
     let voice = null;
@@ -4064,7 +4070,7 @@ async function aiIsync(write = false) {
     const from = Math.floor(prefs.introIn * a.sampleRate), len = Math.max(1, Math.floor(introLen() * a.sampleRate));
     const part = new AudioBuffer({ length: len, numberOfChannels: a.numberOfChannels, sampleRate: a.sampleRate });
     for (let ch = 0; ch < a.numberOfChannels; ch++) part.copyToChannel(a.getChannelData(ch).subarray(from, from + len), ch);
-    const ai = await import("./assets/ai-lyrics.js");
+    const ai = await import("./assets/ai-lyrics.js?v=2");
     const written = write ? "" : prefs.introLyrics.split("\n").map(bareLine).filter(Boolean).join("\n");
     const out = await aiWork(() => ai.transcribe(part, status, { written, ends: true, film: true }));
     if (!out.words) return status(written ? "L'IA n'a pas réussi à caler ce texte sur la réplique." : "L'IA n'a pas entendu de paroles dans la réplique.");

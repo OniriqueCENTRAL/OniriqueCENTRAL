@@ -3398,7 +3398,7 @@ function renderDetails() {
       try {
         saved.textContent = "Lecture du son…";
         const buffer = await new AudioContext().decodeAudioData(await (await fetch(v.url)).arrayBuffer());
-        const out = await (await import("./assets/ai-lyrics.js")).transcribe(buffer, (m) => { saved.textContent = m; }, { written });
+        const out = await (await import("./assets/ai-lyrics.js?v=2")).transcribe(buffer, (m) => { saved.textContent = m; }, { written });
         if (!out.words) { saved.textContent = written ? "L'IA n'a pas réussi à caler ces paroles sur le son." : "L'IA n'a pas entendu de paroles dans ce son."; return; }
         await api("PATCH", "/me/sounds/tracks/" + t.id, { lyrics: out.lrc });
         lyricsNote = out.aligned ? out.words + " mots de tes paroles calés mot par mot par l'IA (ton texte est gardé)." : out.words + " mots écrits et calés mot par mot par l'IA : relis-les et corrige un mot si besoin. Astuce : colle tes paroles d'abord, l'IA les calera sans faute.";
@@ -3547,7 +3547,7 @@ function renderDetails() {
         saved.textContent = "Lecture du son…";
         const buffer = await new AudioContext().decodeAudioData(await (await fetch(v.url)).arrayBuffer());
         const written = s.lines.map((l) => l.words.map((w) => w.text).join(" ")).join("\n");
-        const out = await (await import("./assets/ai-lyrics.js")).transcribe(buffer, (m) => { saved.textContent = m; }, { written });
+        const out = await (await import("./assets/ai-lyrics.js?v=2")).transcribe(buffer, (m) => { saved.textContent = m; }, { written });
         const times = [...out.lrc.matchAll(/<(\d+):(\d+(?:[.,]\d+)?)>/g)].map((m) => Number(m[1]) * 60 + Number(m[2].replace(",", ".")));
         if (!out.aligned || !times.length) { saved.textContent = "L'IA n'a pas réussi à caler ces paroles sur le son."; return; }
         s.lines.flatMap((l) => l.words).forEach((w, i) => { if (times[i] !== undefined) w.at = times[i]; });
