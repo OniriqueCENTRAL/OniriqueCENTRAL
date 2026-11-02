@@ -156,7 +156,7 @@ header .sn-lang { margin-left: 8px; }
   close.style.display = "inline-flex";
 
   const tools = el("div", { className: "sn-tools", hidden: true }, ...(window.OniriqueTools || []).map(([group, list]) =>
-    el("div", {}, el("h3", { textContent: group }), ...list.map(([name, href]) => el("a", { href, textContent: name })))),
+    el("div", {}, el("h3", { textContent: group }), ...list.map(([name, href, , right]) => window.OniriqueTools.restrict(el("a", { href, textContent: name }), right)))),
     el("a", { href: "outils", textContent: "Tous les outils →" }));
   const links = el("nav", { className: "sn-links" });
   links.setAttribute("aria-label", "Rubriques");

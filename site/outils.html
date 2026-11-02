@@ -62,11 +62,11 @@ addEventListener("DOMContentLoaded", () => {
   const el = (tag, props = {}, ...children) => { const node = Object.assign(document.createElement(tag), props); node.append(...children); return node; };
   document.getElementById("groups").append(...window.OniriqueTools.map(([group, tools]) =>
     el("section", { className: "group" }, el("h2", { textContent: group }),
-      el("div", { className: "grid" }, ...tools.map(([name, href, text]) =>
-        el("a", { className: "tool", href }, el("strong", { textContent: name }), el("span", { textContent: text }), el("em", { textContent: "Ouvrir →" })))))));
+      el("div", { className: "grid" }, ...tools.map(([name, href, text, right]) => window.OniriqueTools.restrict(
+        el("a", { className: "tool", href }, el("strong", { textContent: name }), el("span", { textContent: text }), el("em", { textContent: "Ouvrir →" })), right))))));
 });
 </script>
-<script src="assets/tools-menu.js?v=7"></script>
+<script src="assets/tools-menu.js?v=8"></script>
 <script src="assets/account.js?v=8"></script>
-<script src="assets/site-nav.js?v=13"></script>
+<script src="assets/site-nav.js?v=14"></script>
 </html>

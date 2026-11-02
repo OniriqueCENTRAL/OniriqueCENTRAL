@@ -1,6 +1,7 @@
 // Le menu « Outils » de l'en-tête : le lien marqué data-tools devient un bouton qui déroule les outils, par thème.
 // Sans ce script, le lien mène à la page qui les liste tous (outils), dessinée à partir de la même liste.
-// Ajouter un outil : une ligne dans le bon groupe de OniriqueTools.
+// Ajouter un outil : une ligne dans le bon groupe de OniriqueTools. Un 4e champ (un droit de /api/me) le cache aux
+// comptes qui ne l'ont pas : chaque liste marque ces liens data-right, montrés quand le compte est connu.
 window.OniriqueTools = [
   ["Abonnement", [
     ["ONIRIQUE CLOUD et page de liens", "cloud", "Tes projets, tes versions, tes collabs et ta page de liens : 1,99 € par mois ou 9,99 € par an."],
@@ -27,6 +28,7 @@ window.OniriqueTools = [
     ["Convertisseur", "convertisseur", "WAV ou MP3, avec le choix de la fréquence et de la résolution."],
     ["Découpe et fondu", "decoupe", "Garder un passage, ajouter un fondu, exporter."],
     ["Transposer", "transposition", "Changer la hauteur ou le tempo d'un morceau, l'un sans l'autre."],
+    ["AudioFlow", "audioflow", "L'audio d'une vidéo en MP3 ou en WAV, avec l'aperçu d'un lien YouTube.", "audioflow"],
   ]],
   ["Sortie", [
     ["Calculateur revenus streaming", "revenus-streaming", "Une fourchette de revenus pour un nombre d'écoutes."],
@@ -38,6 +40,15 @@ window.OniriqueTools = [
     ["Devis", "devis", "Un devis de beatmaker, graphiste ou ingé son, total et TVA calculés, en PDF."],
   ]],
 ];
+
+window.OniriqueTools.restrict = (node, right) => {
+  if (right) Object.assign(node, { hidden: true }).dataset.right = right;
+  return node;
+};
+document.addEventListener("onirique:account", (event) => {
+  const rights = event.detail.rights || [];
+  document.querySelectorAll("[data-right]").forEach((node) => { node.hidden = !rights.includes(node.dataset.right); });
+});
 
 (() => {
   const link = document.querySelector("a[data-tools]");
@@ -81,7 +92,7 @@ window.OniriqueTools = [
   all.className = "tools-all";
   const menu = el("div", { className: "tools-menu", hidden: true },
     el("div", { className: "tools-groups" }, ...window.OniriqueTools.map(([group, tools]) =>
-      el("div", { className: "tools-group" }, el("h3", { textContent: group }), ...tools.map(([name, href]) => item(name, href))))),
+      el("div", { className: "tools-group" }, el("h3", { textContent: group }), ...tools.map(([name, href, , right]) => window.OniriqueTools.restrict(item(name, href), right))))),
     all);
   menu.setAttribute("role", "menu");
   const open = (on) => {
