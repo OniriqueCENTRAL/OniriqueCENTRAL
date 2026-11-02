@@ -1,0 +1,6 @@
+{
+ "Retirer les temps": "Remove timestamps",
+ "Ces paroles n'ont pas de temps.": "These lyrics have no timestamps.",
+ "Retirer tous les temps de ces paroles (lignes et mots) ? Le texte est gardé, mais il faudra les resynchroniser.": "Remove all timestamps from these lyrics (lines and words)? The text is kept, but you will need to sync them again.",
+ "Temps retirés : il ne reste que le texte.": "Timestamps removed: only the text remains."
+}

@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=b5dacfa1"></script>
+<script src="assets/i18n.js?v=ce23f423"></script>
 <script src="assets/ui.js?v=3"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
@@ -3454,6 +3454,14 @@ function renderDetails() {
           const ref = first > 0 ? lines[first - 1].words.at(-1).at : lines[Math.max(0, first)]?.at;
           syncAudio.pause(); syncAudio.currentTime = ref != null ? Math.max(0, ref - 2) : 0;
           detailsView = "lyrics-words"; renderDetails();
+        } }),
+        // Enregistré tout de suite : Enregistrer remettrait les temps des mots déjà calés (keepWords). Les ** sont gardés.
+        el("button", { className: "btn btn-ghost", type: "button", textContent: "Retirer les temps", onclick: () => {
+          const lines = parseLyrics(text.value);
+          if (!lines.some((l) => l.at !== null || l.words)) { saved.textContent = "Ces paroles n'ont pas de temps."; return; }
+          if (!confirm("Retirer tous les temps de ces paroles (lignes et mots) ? Le texte est gardé, mais il faudra les resynchroniser.")) return;
+          const plain = lyricsText(lines.map((l) => ({ ...l, at: null })), false);
+          api("PATCH", "/me/sounds/tracks/" + t.id, { lyrics: plain }).then(() => { lyricsNote = "Temps retirés : il ne reste que le texte."; return refresh(); }, fail);
         } }), find, ai, saved),
       el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Mot par mot : chaque mot apparaît pile quand il est chanté dans les vidéos ONIRIQUE CUT (styles « mot par mot »). Le lecteur peut ralentir le son pour être précis. Un mot entouré de ** (comme **ça**) est un mot FORT : il ressort en grand dans CUT." })];
   } else if (detailsView === "lyrics-sync") {
