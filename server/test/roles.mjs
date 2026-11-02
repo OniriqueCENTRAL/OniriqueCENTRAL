@@ -443,10 +443,10 @@ try {
     const member = await account('membre-droits', 'vip');
     const relic = await account('relic-droits', 'relic');
     const lambda = await account('client-droits');
-    // Au départ : Mes sons et la page de liens pour les membres et les admins, rien pour un client ni un partenaire.
+    // Au départ : Mes sons et la page de liens et les Shorts YouTube pour les membres et les admins, rien pour un client ni un partenaire.
     const start = await call('GET', '/api/admin/rights', { token: founder.token });
     assert.deepEqual(start.rights.find((r) => r.id === 'sounds').roles, ['vip', 'admin']);
-    assert.deepEqual((await call('GET', '/api/me', { token: member.token })).rights.sort(), ['links', 'plugins', 'sounds']);
+    assert.deepEqual((await call('GET', '/api/me', { token: member.token })).rights.sort(), ['links', 'plugins', 'sounds', 'youtube']);
     await call('GET', '/api/me/sounds', { token: relic.token, expect: 403 });
     // Un admin ne règle pas les droits.
     await call('GET', '/api/admin/rights', { token: admin.token, expect: 403 });

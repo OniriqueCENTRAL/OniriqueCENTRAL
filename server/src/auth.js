@@ -94,7 +94,7 @@ export const RIGHTS = {
   links: { label: 'Page de liens', default: ['vip', 'admin'] },
   plugins: { label: 'Tous les plugins offerts', default: ['vip'] },
   engineer: { label: "Profil d'ingé (crédits)", default: [] },
-  youtube: { label: 'Shorts YouTube programmés', default: [] },
+  youtube: { label: 'Shorts YouTube programmés', default: ['vip', 'admin'] },
   instagram: { label: 'Instagram (réponses automatiques, Reels programmés)', default: [] },
 };
 // Les rôles dont les droits se règlent (les fondateurs ont tout).

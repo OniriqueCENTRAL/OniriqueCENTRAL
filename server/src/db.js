@@ -365,6 +365,17 @@ if (!db.prepare(`SELECT 1 FROM settings WHERE key = 'categories_single'`).get())
   rangeCategories();
   db.prepare(`INSERT INTO settings (key, value) VALUES ('categories_single', 'true')`).run();
 }
+// Les Shorts d'ONIRIQUE CUT s'ouvrent aux membres ONIRIQUE et aux admins (2 novembre 2026), une seule fois : même si les
+// droits des rôles ont déjà été réglés dans le panel ; on peut ensuite les retirer de nouveau depuis le panel.
+if (!db.prepare(`SELECT 1 FROM settings WHERE key = 'shorts_onirique'`).get()) {
+  const row = db.prepare(`SELECT value FROM settings WHERE key = 'role_rights'`).get();
+  if (row) {
+    const rights = JSON.parse(row.value);
+    if (Array.isArray(rights.youtube)) rights.youtube = [...new Set([...rights.youtube, 'vip', 'admin'])];
+    db.prepare(`UPDATE settings SET value = ? WHERE key = 'role_rights'`).run(JSON.stringify(rights));
+  }
+  db.prepare(`INSERT INTO settings (key, value) VALUES ('shorts_onirique', 'true')`).run();
+}
 
 // Abonnements réglables depuis le panel : un texte de présentation et les plugins compris (vide : tous les plugins
 // ONIRIQUE). Packs : plusieurs plugins achetés une fois, au prix du pack, chacun avec sa licence définitive.

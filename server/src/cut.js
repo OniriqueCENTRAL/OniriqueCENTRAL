@@ -115,7 +115,7 @@ const minutesOf = (time) => { const [h, m] = time.split(':').map(Number); return
 /** Vérifié chaque minute : le rappel part une fois par jour, dans l'heure qui suit l'heure choisie (un serveur redémarré ne le rate pas). */
 export function remindCut(at = now()) {
   const sent = [];
-  for (const r of all("SELECT r.* FROM cut_reminders r JOIN users u ON u.id = r.user_id WHERE u.role = 'founder'")) {
+  for (const r of all("SELECT r.* FROM cut_reminders r JOIN users u ON u.id = r.user_id WHERE u.role IN ('vip', 'admin', 'founder')")) {
     const { day, minutes } = localNow(at, r.tz), late = minutes - minutesOf(r.time);
     if (r.last_day === day || late < 0 || late >= 60) continue;
     run('UPDATE cut_reminders SET last_day = ? WHERE user_id = ?', day, r.user_id);
@@ -222,20 +222,21 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
     audios.delete(id);
   };
 
-  // ——— Le cloud CUT des fondateurs ———
+  // ——— Le cloud CUT des membres ONIRIQUE (vip, admin, fondateurs) ———
   const libDir = path.join(config.dataDir, 'cut-library');
   fs.mkdirSync(libDir, { recursive: true });
   // Les fichiers dont la vidéo n'existe plus (compte supprimé, par exemple) partent au démarrage.
   const kept = new Set(all('SELECT stored_as FROM cut_videos').map((v) => v.stored_as));
   for (const name of fs.readdirSync(libDir)) if (!kept.has(name.replace(/\.jpg$/, ''))) fs.rmSync(path.join(libDir, name), { force: true });
-  const founder = (req, _res, next) => (req.user.role === 'founder' ? next() : next(new HttpError(403, 'Le cloud CUT est réservé aux fondateurs.')));
+  // Les membres ONIRIQUE et l'équipe, pas les abonnés CLOUD.
+  const onirique = (req, _res, next) => (['vip', 'admin', 'founder'].includes(req.user.role) ? next() : next(new HttpError(403, 'Le cloud CUT est réservé aux membres ONIRIQUE.')));
   const ownVideo = (req) => {
     const v = get('SELECT * FROM cut_videos WHERE id = ? AND user_id = ?', Number(req.params.id) || 0, req.user.id);
     if (!v) throw new HttpError(404, 'Vidéo introuvable.');
     return v;
   };
 
-  app.post('/api/cut/library', requireUser, member, founder, wrap(async (req, res) => {
+  app.post('/api/cut/library', requireUser, member, onirique, wrap(async (req, res) => {
     rateLimit(`cut-library:${req.user.id}`, 120, 3600_000);
     const length = Number(req.headers['content-length']);
     if (!Number.isFinite(length) || length <= 0) throw new HttpError(411, 'Taille de la vidéo inconnue.');
@@ -254,10 +255,10 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
       req.user.id, name, stored.storedAs, stored.size, duration, caption, now()).lastInsertRowid;
     res.status(201).json(videoView(get('SELECT * FROM cut_videos WHERE id = ?', id)));
   }));
-  app.get('/api/cut/library', requireUser, member, founder, (req, res) => {
+  app.get('/api/cut/library', requireUser, member, onirique, (req, res) => {
     res.json({ videos: all('SELECT * FROM cut_videos WHERE user_id = ? ORDER BY created_at DESC', req.user.id).map(videoView) });
   });
-  app.delete('/api/cut/library/:id', requireUser, member, founder, (req, res) => {
+  app.delete('/api/cut/library/:id', requireUser, member, onirique, (req, res) => {
     const v = ownVideo(req);
     run('DELETE FROM cut_videos WHERE id = ?', v.id);
     fs.rmSync(path.join(libDir, v.stored_as), { force: true });
@@ -265,7 +266,7 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
     res.json({ ok: true });
   });
   // Le planning : le jour où la vidéo doit partir (null : pas de jour).
-  app.patch('/api/cut/library/:id', requireUser, member, founder, (req, res) => {
+  app.patch('/api/cut/library/:id', requireUser, member, onirique, (req, res) => {
     const v = ownVideo(req);
     // Le titre et la description (page « Mes vidéos CUT ») ; le jour prévu (appweb), seulement s'il est donné.
     if (typeof req.body?.name === 'string') {
@@ -284,7 +285,7 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
 
   const channelOf = (userId) => get('SELECT channel_title FROM youtube_accounts WHERE user_id = ?', userId)?.channel_title || null;
   // En Short YouTube programmé : la vidéo est copiée ici vers les Shorts (youtube.js), qui la publie à l'heure dite.
-  app.post('/api/cut/library/:id/youtube', requireUser, member, founder, wrap(async (req, res) => {
+  app.post('/api/cut/library/:id/youtube', requireUser, member, onirique, wrap(async (req, res) => {
     if (!can(req.user, 'youtube')) throw new HttpError(403, "Les Shorts YouTube ne sont pas ouverts à ce compte.");
     const v = ownVideo(req);
     if (!channelOf(req.user.id)) throw new HttpError(400, 'Relie d\'abord ta chaîne YouTube dans ton compte (Shorts YouTube).');
@@ -309,7 +310,7 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
     res.status(201).json({ id, title, publishAt });
   }));
   // Les Shorts déjà programmés (leurs heures), pour trouver le prochain jour libre.
-  app.get('/api/cut/youtube', requireUser, member, founder, wrap(async (req, res) => {
+  app.get('/api/cut/youtube', requireUser, member, onirique, wrap(async (req, res) => {
     const allowed = can(req.user, 'youtube');
     const shorts = allowed ? all('SELECT id, stored_as, filename, status, publish_at, cut_video_id FROM youtube_videos WHERE user_id = ? AND kind != ?', req.user.id, 'beat') : [];
     const names = new Map(all('SELECT id, name FROM cut_videos WHERE user_id = ?', req.user.id).map((v) => [v.name + '.mp4', v.id]));
@@ -349,12 +350,12 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
     if (!(publishAt > now() - 60_000 && publishAt < now() + 366 * 86_400_000)) throw new HttpError(400, "Choisis une date à venir, dans l'année.");
     return { caption, trial, publishAt };
   };
-  app.get('/api/cut/reels', requireUser, member, founder, (req, res) => {
+  app.get('/api/cut/reels', requireUser, member, onirique, (req, res) => {
     const allowed = can(req.user, 'instagram'), reels = allowed ? all('SELECT * FROM cut_reels WHERE user_id = ? ORDER BY publish_at', req.user.id) : [];
     res.json({ allowed, configured: platformConfigured(), account: allowed ? instagramName(req.user.id) : null, reels: reels.map(reelView),
       inReels: [...new Set(reels.map((r) => r.cut_video_id).filter(Boolean))] });
   });
-  app.post('/api/cut/library/:id/reel', requireUser, member, founder, reelsRight, (req, res) => {
+  app.post('/api/cut/library/:id/reel', requireUser, member, onirique, reelsRight, (req, res) => {
     const v = ownVideo(req), { caption, trial, publishAt } = reelFields({ caption: v.caption, ...req.body });
     if (get(`SELECT COUNT(*) AS n FROM cut_reels WHERE user_id = ? AND status != 'published'`, req.user.id).n >= 30) {
       throw new HttpError(400, 'Trente Reels attendent déjà : laisse-en partir avant d\'en programmer d\'autres.');
@@ -369,7 +370,7 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
     res.status(201).json(reelView(get('SELECT * FROM cut_reels WHERE id = ?', id)));
   });
   // La description, le type (normal ou d'essai) et l'heure ; un Reel raté repart programmé.
-  app.patch('/api/cut/reels/:id', requireUser, member, founder, reelsRight, (req, res) => {
+  app.patch('/api/cut/reels/:id', requireUser, member, onirique, reelsRight, (req, res) => {
     const r = ownReel(req);
     if (r.status === 'published') throw new HttpError(409, 'Ce Reel est déjà publié.');
     if (!fs.existsSync(path.join(reelsDir, r.stored_as))) throw new HttpError(410, 'La vidéo de ce Reel n\'est plus là : retire-le et reprogramme-la depuis le cloud CUT.');
@@ -378,7 +379,7 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
     res.json(reelView(get('SELECT * FROM cut_reels WHERE id = ?', r.id)));
   });
   // Retire le Reel d'ici (un Reel publié reste sur Instagram : seule sa ligne disparaît, et la vidéo pourra repartir).
-  app.delete('/api/cut/reels/:id', requireUser, member, founder, reelsRight, (req, res) => {
+  app.delete('/api/cut/reels/:id', requireUser, member, onirique, reelsRight, (req, res) => {
     const r = ownReel(req);
     fs.rmSync(path.join(reelsDir, r.stored_as), { force: true });
     run('DELETE FROM cut_reels WHERE id = ?', r.id);
@@ -398,7 +399,7 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
   fs.mkdirSync(bgDir, { recursive: true });
   const bgKept = new Set(all('SELECT stored_as FROM cut_backgrounds').map((b) => b.stored_as));
   for (const name of fs.readdirSync(bgDir)) if (!bgKept.has(name)) fs.rmSync(path.join(bgDir, name), { force: true });
-  app.post('/api/cut/backgrounds', requireUser, member, founder, wrap(async (req, res) => {
+  app.post('/api/cut/backgrounds', requireUser, member, onirique, wrap(async (req, res) => {
     rateLimit(`cut-bg:${req.user.id}`, 200, 3600_000);
     const length = Number(req.headers['content-length']);
     if (!Number.isFinite(length) || length <= 0) throw new HttpError(411, 'Taille du fichier inconnue.');
@@ -415,10 +416,10 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
       req.user.id, name, stored.storedAs, mime, stored.size, now()).lastInsertRowid;
     res.status(201).json(backgroundView(get('SELECT * FROM cut_backgrounds WHERE id = ?', id)));
   }));
-  app.get('/api/cut/backgrounds', requireUser, member, founder, (req, res) => {
+  app.get('/api/cut/backgrounds', requireUser, member, onirique, (req, res) => {
     res.json({ backgrounds: all('SELECT * FROM cut_backgrounds WHERE user_id = ? ORDER BY created_at DESC', req.user.id).map(backgroundView) });
   });
-  app.delete('/api/cut/backgrounds/:id', requireUser, member, founder, (req, res) => {
+  app.delete('/api/cut/backgrounds/:id', requireUser, member, onirique, (req, res) => {
     const b = get('SELECT * FROM cut_backgrounds WHERE id = ? AND user_id = ?', Number(req.params.id) || 0, req.user.id);
     if (!b) throw new HttpError(404, 'Fond introuvable.');
     run('DELETE FROM cut_backgrounds WHERE id = ?', b.id);
@@ -434,11 +435,11 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
   });
 
   // Le rappel quotidien : il arrive sur les appareils où les notifications sont activées (l'appweb sur le téléphone).
-  app.get('/api/cut/reminder', requireUser, member, founder, (req, res) => {
+  app.get('/api/cut/reminder', requireUser, member, onirique, (req, res) => {
     const r = get('SELECT time, tz FROM cut_reminders WHERE user_id = ?', req.user.id);
     res.json(r ? { on: true, time: r.time, tz: r.tz } : { on: false, time: '18:00' });
   });
-  app.put('/api/cut/reminder', requireUser, member, founder, (req, res) => {
+  app.put('/api/cut/reminder', requireUser, member, onirique, (req, res) => {
     const time = String(req.body?.time || '18:00'), tz = String(req.body?.tz || 'Europe/Paris');
     if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new HttpError(400, 'Heure invalide.');
     try { localNow(now(), tz); } catch { throw new HttpError(400, 'Fuseau horaire inconnu.'); }

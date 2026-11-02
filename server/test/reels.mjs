@@ -57,8 +57,8 @@ try {
   assert.ok(a.id && b.id, 'vidéos gardées : ' + JSON.stringify(a));
   const soon = Date.now() + 3600_000;
 
-  // Réservé : un membre n'a pas le cloud CUT ; Instagram non relié, l'état le dit (le menu est prêt quand même).
-  assert.equal((await call(vip.token, 'GET', '/api/cut/reels')).status, 403);
+  // Réservé : un membre ONIRIQUE a le cloud CUT, pas les Reels ; Instagram non relié, l'état le dit (le menu est prêt quand même).
+  assert.equal((await (await call(vip.token, 'GET', '/api/cut/reels')).json()).allowed, false);
   const empty = await (await call(boss.token, 'GET', '/api/cut/reels')).json();
   assert.deepEqual(empty, { allowed: true, configured: true, account: null, reels: [], inReels: [] });
 

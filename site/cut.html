@@ -1082,7 +1082,7 @@ const sound = { name: "", buffer: null, env: null, rms: null, bpm: 0, phase: 0, 
 let clips = [], segments = [], lyrics = [], seed = 1, focus = 0; // focus : le fond montré, en « une vidéo par fond »
 // Le titre de ONIRIQUE CLOUD en cours (null pour un fichier) et ses paroles telles que CLOUD les a.
 let cloud = null;
-let isFounder = false; // les fondateurs ont un cloud CUT pour garder leurs vidéos
+let isFounder = false; // membres ONIRIQUE, admins et fondateurs (pas les abonnés) : un cloud CUT pour garder leurs vidéos et les Shorts
 const LAST = "onirique.cut.last";
 
 // ——— Accès : membres ONIRIQUE et abonnés CLOUD (le même droit que ONIRIQUE CLOUD) ———
@@ -1092,7 +1092,7 @@ async function gate() {
   if (!response || response.status === 401) return lock("Connecte-toi pour ouvrir ONIRIQUE CUT", "Ta session a expiré.", "compte?next=cut", "Me connecter");
   const me = await response.json().catch(() => ({}));
   if (!(me.rights || []).includes("sounds")) return lock("ONIRIQUE CUT est réservé aux membres", $("locked-text").textContent, "cloud", "Voir l'abonnement");
-  isFounder = !!(me.user && me.user.role === "founder");
+  isFounder = !!(me.user && ["vip", "admin", "founder"].includes(me.user.role));
   $("studio").hidden = false;
   start();
 }
