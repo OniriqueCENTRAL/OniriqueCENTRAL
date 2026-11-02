@@ -1,4 +1,4 @@
-// Séparation des pistes par IA pour ONIRIQUE CUT : Demucs v4 « htdemucs » (Meta, licence MIT), porté pour le navigateur
+// Séparation des pistes par IA pour ONIRIQUE CUT et IA SPLIT (split.html) : Demucs v4 « htdemucs » (Meta, licence MIT), porté pour le navigateur
 // par demucs-web (MIT). Tourne dans ce Web Worker (module), sur la carte graphique (WebGPU) ou, à défaut, sur le processeur
 // (WASM, bien plus lent). Rien ne quitte le navigateur : seul le modèle (172 Mo) se télécharge, une fois, puis reste en cache.
 //

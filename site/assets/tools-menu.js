@@ -10,6 +10,7 @@ window.OniriqueTools = [
     ["BPM et tonalité", "bpm-tonalite", "Le tempo, la gamme et le detune d'un morceau, et un WAV calé sur la grille."],
     ["Volume avant sortie", "volume-lufs", "Le niveau LUFS et le pic réel d'un master, plateforme par plateforme."],
     ["Comparer à une référence", "comparer-mix", "Ton mix face à un titre de référence : volume, fréquences, stéréo, et l'écoute A/B à volume égal."],
+    ["IA SPLIT", "split", "Sépare un morceau par IA : voix seule, instru sans voix, mélodie, drums et basse, en WAV."],
     ["Stems et packs de prods", "stems", "Stems contrôlés, reconnus et renommés ; prods renommées avec leur BPM et leur tonalité, en un pack."],
     ["Popularité", "popularite", "Le score de popularité Spotify d'un artiste ou d'un titre."],
   ]],

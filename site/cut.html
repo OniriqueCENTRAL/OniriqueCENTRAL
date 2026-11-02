@@ -1001,7 +1001,7 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
     <a href="outils">Tous les outils</a><a href="mentions-legales">Mentions légales</a><a href="cgv">CGV et CGU</a><a href="confidentialite">Confidentialité</a><a href="cookies">Cookies</a><a href="support">Support</a>
   </nav>
 </footer>
-<script src="assets/tools-menu.js?v=6"></script>
+<script src="assets/tools-menu.js?v=7"></script>
 <script src="assets/audio-kit.js"></script>
 <script>
 "use strict";
@@ -1933,6 +1933,7 @@ async function buildMix(key) {
     src.start(at, from % buffer.duration, loop ? undefined : length); src.stop(at + length);
   };
   const vol = (track, value) => (mutedTracks.has(track) ? 0 : value / 100); // une piste coupée (M) dans la timeline ne s'entend plus
+  let missing = false; // la piste séparée pas encore là : ce mixage sera refait à la prochaine lecture
   const crossfade = prefs.introFade ? .35 : .04;
   const gap = prefs.dropGap ? .22 : 0; // « Silence juste avant le drop »
   if (intro) {
@@ -1944,7 +1945,12 @@ async function buildMix(key) {
     const len = Math.min(sound.start, intro), at = intro - len;
     if (prefs.underPart !== "none" && prefs.underVol > 0 && len - gap > .05) {
       if (prefs.underPart === "full") add(sound.buffer, at, sound.start - len, len - gap, vol("under", prefs.underVol), trackFade("under", "in", .3), trackFade("under", "out", gap ? .03 : .004), false);
-      else { const st = await ensureStems(); if (st && st.parts[prefs.underPart]) add(st.parts[prefs.underPart], at, 0, len - gap, vol("under", prefs.underVol), trackFade("under", "in", .3), trackFade("under", "out", .03), false); }
+      else {
+        const st = await ensureStems(), part = st && st.parts[prefs.underPart];
+        // La piste séparée finit au drop (30 s au plus) : on la cale sur sa fin.
+        if (part) { const pl = Math.min(len, part.duration); add(part, intro - pl, 0, pl - gap, vol("under", prefs.underVol), trackFade("under", "in", .3), trackFade("under", "out", .03), false); }
+        else missing = true;
+      }
     }
   }
   add(sound.buffer, intro, sound.start, span(), vol("music", prefs.musicVol), trackFade("music", "in", prefs.introFade && intro ? .25 : FADE), trackFade("music", "out", prefs.loop ? .03 : FADE), false);
@@ -1958,14 +1964,17 @@ async function buildMix(key) {
   // Les sons ajoutés dans la timeline, superposés au reste.
   for (const e of extras) if (e.at < T && !mutedTracks.has("extra" + e.track)) add(e.buffer, e.at, e.offset, Math.min(e.length, T - e.at), e.vol / 100, Math.max(.005, e.fadeIn), Math.max(.005, e.fadeOut), false);
   const buffer = await off.startRendering();
-  if (key === mixKey()) mix = { key, buffer };
+  if (key === mixKey()) mix = { key: missing ? null : key, buffer };
 }
 /** Le mixage à jour (attendu avant de jouer ou d'exporter). */
 async function ensureMix() {
   if (!sound.buffer || !filmActive()) { mix = null; return; }
   const key = mixKey();
   if (mix && mix.key === key) return;
-  if (!mixing || mixing.key !== key) mixing = { key, done: buildMix(key).catch(() => {}) };
+  if (!mixing || mixing.key !== key || !mixing.pending) {
+    const job = mixing = { key, pending: true };
+    job.done = buildMix(key).catch(() => {}).finally(() => { job.pending = false; });
+  }
   await mixing.done;
 }
 // ——— La séparation des pistes : par IA (Demucs, assets/demucs-worker.js), sinon la séparation rapide (assets/stems-worker.js) ———
@@ -2020,7 +2029,11 @@ async function ensureStems() {
   if (!STEMS.includes(prefs.underPart) || !introLen() || !sound.buffer) return null;
   const key = stemKey();
   if (stems && stems.key === key) return stems;
-  if (!stemJob || stemJob.key !== key) stemJob = { key, done: separate(key).catch(() => { $("stem-status").textContent = "La séparation des pistes n'a pas marché sur ce passage."; return null; }) };
+  if (!stemJob || stemJob.key !== key) {
+    const job = stemJob = { key };
+    job.done = separate(key).catch(() => { $("stem-status").textContent = "La séparation des pistes n'a pas marché sur ce passage."; return null; })
+      .then((r) => { if (!r && stemJob === job) stemJob = null; return r; }); // un échec se retente à la prochaine lecture
+  }
   return stemJob.done;
 }
 async function separate(key) {
@@ -2030,7 +2043,13 @@ async function separate(key) {
   const a = Math.floor((sound.start - len) * rate), n = Math.floor(len * rate), b = sound.buffer;
   const make = (sr) => ([l, r]) => { const x = new AudioBuffer({ length: l.length, numberOfChannels: 2, sampleRate: sr }); x.copyToChannel(l, 0); x.copyToChannel(r, 1); return x; };
   let parts, note;
-  try {
+  // Tout le morceau déjà séparé (ou en cours, pour l'écoute des pistes) : on y prend le passage, sans refaire tourner l'IA.
+  const whole = (fullStems && fullStems.b === b) || (fullJob && fullJob.b === b) ? await separateAll().catch(() => null) : null;
+  if (whole && whole.b === b) {
+    const r = whole.parts.vocals.sampleRate, a0 = Math.floor((sound.start - len) * r), n0 = Math.floor(len * r);
+    parts = Object.fromEntries(STEMS.map((k) => [k, make(r)([0, 1].map((c) => whole.parts[k].getChannelData(c).slice(a0, a0 + n0)))]));
+    note = whole.note;
+  } else try {
     const ai = await aiStems(a, n, "la musique sous la réplique");
     parts = Object.fromEntries(STEMS.map((k) => [k, make(AI_RATE)(ai.parts[k])])); note = aiDone(ai.device);
   } catch {
