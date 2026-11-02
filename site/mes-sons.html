@@ -115,6 +115,13 @@ textarea { padding: 12px 14px; min-height: 110px; resize: vertical; line-height:
 .folder-art > :only-child, .folder-art > :nth-child(3):last-child { grid-column: 1 / -1; }
 .folder-art.empty { display: grid; place-items: center; grid-template-columns: 1fr; color: var(--haze); }
 .folder-art.empty svg { width: 34%; height: 34%; }
+.trash-art { position: absolute; inset: 0; display: grid; place-items: center; color: var(--haze); background: radial-gradient(circle at 50% 62%, rgba(226,52,68,.10), transparent 62%), linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.015)); transition: background .3s; }
+.trash-art svg { width: 46%; height: 46%; overflow: visible; transition: transform .4s; }
+.trash-art .teeth, .trash-art .glow { stroke: var(--ember); opacity: .4; }
+.trash-art.full { color: var(--mist); background: radial-gradient(circle at 50% 62%, rgba(226,52,68,.42), rgba(226,52,68,.06) 58%, transparent 75%), linear-gradient(160deg, rgba(255,255,255,.06), rgba(10,4,5,.4)); }
+.trash-art.full .teeth, .trash-art.full .glow { opacity: 1; filter: drop-shadow(0 0 5px var(--ember)); }
+.tile .art:hover .trash-art svg { transform: translateY(-3px) rotate(-3deg); }
+.trash-cover { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; flex: none; }
 .tile.gone .art { opacity: .45; filter: grayscale(1); }
 .tile .owner { display: inline-flex; align-items: center; gap: 6px; }
 .tile .owner img { width: 16px; height: 16px; border-radius: 50%; object-fit: cover; }
@@ -252,7 +259,7 @@ body.editing #edit-toggle { background: var(--mist); color: var(--night); border
 .fab { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 35; display: inline-flex; align-items: center; gap: 8px; padding: 14px 26px; border-radius: 999px; border: 1px solid rgba(255,210,214,.18); background: rgba(26,8,10,.95); color: var(--mist); font: 700 15px var(--f-body); cursor: pointer; box-shadow: 0 16px 50px -14px rgba(0,0,0,.9), 0 0 36px -16px var(--ember); }
 .fab:hover { border-color: var(--ember); }
 body.has-player .fab { bottom: calc(88px + env(safe-area-inset-bottom)); }
-.menu { position: fixed; z-index: 70; min-width: 220px; padding: 6px; border-radius: 16px; border: 1px solid rgba(255,210,214,.16); background: rgba(26,8,10,.98); box-shadow: 0 20px 60px -20px rgba(0,0,0,.95); }
+.menu { position: fixed; z-index: 70; min-width: 220px; overflow-y: auto; overscroll-behavior: contain; padding: 6px; border-radius: 16px; border: 1px solid rgba(255,210,214,.16); background: rgba(26,8,10,.98); box-shadow: 0 20px 60px -20px rgba(0,0,0,.95); }
 .menu button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 11px 12px; border: 0; border-radius: 10px; background: none; color: var(--mist); font: 600 14px var(--f-body); text-align: left; cursor: pointer; }
 .menu button:hover, .menu button:focus-visible { background: rgba(255,255,255,.06); }
 .menu button.danger { color: #FF5A68; }
@@ -685,7 +692,6 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
         <div class="quota" id="quota"></div>
         <button class="install" id="install" type="button" hidden><img src="assets/app-icon-180.png" alt="">Ajouter à l'écran d'accueil</button>
         <button class="install" id="settings-open" type="button">Réglages</button>
-        <button class="install" id="trash-open" type="button">Corbeille</button>
         <button class="install" id="scan-open" type="button" hidden title="Chercher si tes prods ont été volées et sorties sur les plateformes">SCAN</button>
       </div>
     </div>
@@ -1090,10 +1096,12 @@ function menu(anchor, items) {
   }, it.icon ? icon(it.icon) : null, it.label)));
   // Dans une fenêtre ouverte (partage, détails d'un titre), le menu s'y affiche : sinon il passerait derrière elle.
   ((anchor.closest && anchor.closest("dialog[open]")) || document.body).append(m);
-  const r = anchor.getBoundingClientRect(), w = m.offsetWidth, h = m.offsetHeight;
-  const up = r.bottom + h + 8 > innerHeight;
+  // Du côté où il y a le plus de place ; trop long pour l'écran, il défile au lieu d'en sortir.
+  const r = anchor.getBoundingClientRect(), w = m.offsetWidth, below = innerHeight - r.bottom - 16, above = r.top - 16;
+  const up = m.offsetHeight > below && above > below;
+  m.style.maxHeight = (up ? above : below) + "px";
   m.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + "px";
-  m.style.top = (up ? r.top - h - 8 : r.bottom + 8) + "px";
+  m.style.top = (up ? r.top - m.offsetHeight - 8 : r.bottom + 8) + "px";
   openMenu = m;
   m.querySelector("button")?.focus();
 }
@@ -1205,13 +1213,12 @@ function renderGrid() {
     : [...data.projects.filter(here).map((x) => ({ kind: "project", x })), ...data.saved.filter(here).map((x) => ({ kind: "saved", x }))])
     .sort((a, b) => b.x.createdAt - a.x.createdAt);
   const folders = data.vanish ? [] : subfolders(f ? f.id : null);
-  const tiles = [...folders.map(folderTile), ...items.map(({ kind, x }) => (kind === "project" ? projectTile(x) : savedTile(x)))];
+  const tiles = [...folders.map(folderTile), ...items.map(({ kind, x }) => (kind === "project" ? projectTile(x) : savedTile(x))), ...(f || data.vanish ? [] : [trashTile()])];
   tiles.forEach((tile, i) => {
     tile.style.setProperty("--i", i);
     tile.oncontextmenu = (event) => { const dots = tile.querySelector(".dots"); if (dots) { event.preventDefault(); event.stopPropagation(); dots.openAt(atPointer(event)); } };
   });
   $("tiles").replaceChildren(...tiles);
-  $("trash-open").hidden = data.vanish;
   $("scan-open").hidden = data.vanish || !data.projects.some((x) => x.mine && x.kind === "pack");
   $("grid-top").hidden = !!f;
   $("folder-crumb").hidden = !f;
@@ -1222,7 +1229,7 @@ function renderGrid() {
       count(items.length, "projet", "projets")].filter(Boolean).join(" · ");
     $("folder-back").ariaLabel = $("folder-back").title = up.length ? "Retour à " + up.at(-1) : "Retour à ONIRIQUE CLOUD";
   }
-  $("empty").hidden = !!f || tiles.length > 0;
+  $("empty").hidden = !!f || tiles.length > (data.vanish ? 0 : 1); // la tuile Corbeille seule : rien à montrer encore
   if (f && !tiles.length) $("tiles").replaceChildren(el("p", { className: "muted", style: "grid-column:1/-1;margin:0",
     textContent: "Ce dossier est vide. Range-y des projets ou d'autres dossiers avec leur menu ⋯, « Déplacer vers », ou en les faisant glisser dessus." }));
 }
@@ -1289,6 +1296,21 @@ function folderTile(f) {
     if (sounds.length && !data.quota.full) newProjectWith(sounds, f.id).catch(fail);
   });
   return tile;
+}
+// La corbeille, rangée comme un dossier après les projets : une poubelle au trait, des dents en guise de bord de couvercle.
+const TRASH_SVG = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">'
+  + '<path d="M19 9.5h10"/><path d="M8 14.5h32"/>'
+  + '<path class="teeth" d="M12 14.5l2 3.2 2-3.2 2 3.2 2-3.2 2 3.2 2-3.2 2 3.2 2-3.2 2 3.2 2-3.2 2 3.2 2-3.2"/>'
+  + '<path d="M11.5 14.5l2.6 26a2.4 2.4 0 0 0 2.4 2.1h15a2.4 2.4 0 0 0 2.4-2.1l2.6-26"/>'
+  + '<path class="glow" d="M20 23.5v12M28 23.5v12M24 22.5v14"/></svg>';
+function trashTile() {
+  const inner = el("div", { className: "trash-art" + (data.trash ? " full" : "") });
+  inner.innerHTML = TRASH_SVG;
+  const art = el("div", { className: "art", role: "button", tabIndex: 0, ariaLabel: "Ouvrir la corbeille" }, inner);
+  art.onclick = openTrash;
+  art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
+  return el("div", { className: "tile" }, art, caption("CORBEILLE",
+    el("span", { textContent: data.trash ? count(data.trash, "élément", "éléments") + " · 30 jours" : "Vide" })));
 }
 const savedSource = (tile, x) => { dragSource(tile, "saved:" + x.id); return tile; };
 function savedTile(x) {
@@ -1380,8 +1402,8 @@ function projectMenu(anchor, p) {
     } },
     { label: "Changer la pochette", icon: "star", onclick: () => pickCover(p) },
     "-",
-    p.mine ? { label: "Supprimer le projet", icon: "close", danger: true, onclick: () =>
-      confirm("Supprimer « " + p.title + " », tous ses titres et leurs liens d'écoute ?") && api("DELETE", "/me/sounds/projects/" + p.id).then(() => { location.hash = ""; return refresh(); }).catch(fail) }
+    p.mine ? { label: "Envoyer à la corbeille", icon: "close", danger: true, onclick: () =>
+      confirm("Mettre « " + p.title + " » et tous ses titres à la corbeille ? Ses liens d'écoute sont fermés, et tu pourras le restaurer pendant 30 jours.") && api("DELETE", "/me/sounds/projects/" + p.id).then(() => { location.hash = ""; return refresh(); }).catch(fail) }
       : { label: "Quitter le projet", icon: "close", danger: true, onclick: () =>
         confirm("Quitter « " + p.title + " » ? Il disparaîtra de ta page ; " + p.owner.name + " pourra t'inviter à nouveau.")
         && api("DELETE", "/me/sounds/projects/" + p.id + "/collabs/" + data.owner.id).then(() => { location.hash = ""; return refresh(); }).catch(fail) },
@@ -3806,19 +3828,25 @@ async function openTrash() {
   try { trash = await api("GET", "/me/sounds/trash"); } catch (e) { return alert(e.message); }
   const left = (ms) => { const d = Math.max(0, Math.ceil((ms - Date.now()) / 86400000)); return d <= 1 ? "effacé demain" : "effacé dans " + d + " jours"; };
   const act = (promise) => promise.then(() => Promise.all([refresh(), openTrash()]), fail);
+  const line = (title, sub, cover, restore, erase) => el("li", {}, el("div", { className: "item" }, cover,
+    el("span", { className: "grow" }, title, el("small", { textContent: sub })),
+    el("button", { className: "btn btn-ghost", type: "button", textContent: "Restaurer", onclick: () => act(api("POST", restore)) }),
+    el("button", { className: "x", type: "button", ariaLabel: "Effacer « " + title + " » pour de bon",
+      onclick: () => confirm("Effacer « " + title + " » pour de bon ? Ça ne pourra pas être annulé.") && act(api("DELETE", erase)) }, icon("close"))));
   dialog.replaceChildren(
     el("div", { className: "dlg-head" }, el("b", { textContent: "Corbeille" }), el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close"))),
     el("div", { className: "stack" },
-      el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Les titres supprimés restent ici " + trash.days + " jours, puis sont effacés pour de bon. Ils ne comptent plus dans ton espace et leurs liens d'écoute sont fermés tant qu'ils y sont." }),
-      trash.tracks.length ? el("ul", { className: "group" }, ...trash.tracks.map((t) => el("li", {}, el("div", { className: "item" },
-        el("span", { className: "grow" }, t.title, el("small", { textContent: (t.from ? t.from + " · " : "") + size(t.size) + " · " + left(t.purgeAt) })),
-        el("button", { className: "btn btn-ghost", type: "button", textContent: "Restaurer", onclick: () => act(api("POST", "/me/sounds/trash/" + t.id + "/restore")) }),
-        el("button", { className: "x", type: "button", ariaLabel: "Effacer « " + t.title + " » pour de bon",
-          onclick: () => confirm("Effacer « " + t.title + " » pour de bon ? Ça ne pourra pas être annulé.") && act(api("DELETE", "/me/sounds/trash/" + t.id)) }, icon("close"))))))
-        : el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: "La corbeille est vide." })));
+      el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Les projets et les titres supprimés restent ici " + trash.days + " jours, puis sont effacés pour de bon. Ils ne comptent plus dans ton espace et leurs liens d'écoute sont fermés tant qu'ils y sont." }),
+      trash.projects.length ? el("div", { className: "sub-title", textContent: "Projets" }) : null,
+      trash.projects.length ? el("ul", { className: "group" }, ...trash.projects.map((p) => line(p.title,
+        count(p.tracks, "titre", "titres") + " · " + size(p.size) + " · " + left(p.purgeAt), p.cover ? el("img", { className: "trash-cover", src: p.cover, alt: "" }) : null,
+        "/me/sounds/trash/projects/" + p.id + "/restore", "/me/sounds/trash/projects/" + p.id))) : null,
+      trash.tracks.length && trash.projects.length ? el("div", { className: "sub-title", textContent: "Titres" }) : null,
+      trash.tracks.length ? el("ul", { className: "group" }, ...trash.tracks.map((t) => line(t.title, (t.from ? t.from + " · " : "") + size(t.size) + " · " + left(t.purgeAt), null,
+        "/me/sounds/trash/" + t.id + "/restore", "/me/sounds/trash/" + t.id))) : null,
+      trash.tracks.length || trash.projects.length ? null : el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: "La corbeille est vide." })));
   if (!dialog.open) dialog.showModal();
 }
-$("trash-open").onclick = openTrash;
 
 // ——— SCAN : les prods de mes packs cherchées dans les titres sortis sur les plateformes (Spotify, Deezer, YouTube…) ———
 let scanOnly = null;

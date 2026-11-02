@@ -192,7 +192,7 @@ try {
     setSetting('sounds_disk_max', 1);
   });
 
-  await step('supprimer une version, puis le projet : les fichiers partent avec', async () => {
+  await step('supprimer une version, puis le projet et vider la corbeille : les fichiers partent avec', async () => {
     const files = () => fs.readdirSync(soundsDir).length;
     assert.equal(files(), 2);
     await call('DELETE', `/api/me/sounds/versions/${v2}`, { token: member.token });
@@ -201,6 +201,8 @@ try {
     assert.equal(left.currentId, left.versions[0].id);
     await call('DELETE', `/api/me/sounds/versions/${left.versions[0].id}`, { token: member.token, expect: 400 });
     await call('DELETE', `/api/me/sounds/projects/${projectId}`, { token: member.token });
+    assert.equal(files(), 1, 'gardé dans la corbeille');
+    await call('DELETE', `/api/me/sounds/trash/projects/${projectId}`, { token: member.token });
     assert.equal(files(), 0);
   });
 
@@ -555,6 +557,7 @@ try {
     await call('DELETE', `/api/me/sounds/projects/${pid}`, { token: member.token });
     const back = (await call('POST', `/api/me/sounds/trash/${tid}/restore`, { token: member.token })).projectId;
     assert.equal((await call('GET', '/api/me/sounds', { token: member.token })).projects.find((p) => p.id === back).title, 'Sons restaurés');
+    await call('DELETE', `/api/me/sounds/trash/projects/${pid}`, { token: member.token });
     // Effacé à la main, puis effacé tout seul 30 jours après.
     const files = () => fs.readdirSync(soundsDir).length;
     await call('DELETE', `/api/me/sounds/tracks/${tid}`, { token: member.token });
@@ -569,8 +572,33 @@ try {
     const gone = (await call('POST', `/api/me/sounds/projects/${back}/tracks?filename=B.wav`, { token: member.token, raw: wav(), expect: 201 })).id;
     await call('DELETE', `/api/me/sounds/tracks/${gone}`, { token: member.token });
     await call('DELETE', `/api/me/sounds/trash/${gone}`, { token: member.token });
+    // Un projet supprimé va aussi dans la corbeille : caché, puis restauré, puis effacé pour de bon.
+    const keep = (await call('POST', `/api/me/sounds/projects/${back}/tracks?filename=C.wav`, { token: member.token, raw: wav(), expect: 201 })).id;
+    const plink = await call('POST', '/api/me/sounds/links', { token: member.token, body: { projectId: back }, expect: 201 });
+    assert.equal((await call('DELETE', `/api/me/sounds/projects/${back}`, { token: member.token })).trashDays, 30);
+    const hidden = await call('GET', '/api/me/sounds', { token: member.token });
+    assert.ok(!hidden.projects.some((p) => p.id === back));
+    assert.equal(hidden.trash, 1);
+    await call('POST', `/api/sounds/share/${shareToken(plink.url)}`, { body: {}, expect: 404 });
+    await call('PATCH', `/api/me/sounds/tracks/${keep}`, { token: member.token, body: { title: 'x' }, expect: 404 });
+    const inTrash = await call('GET', '/api/me/sounds/trash', { token: member.token });
+    assert.equal(inTrash.projects[0].id, back);
+    assert.equal(inTrash.projects[0].tracks, 1);
+    await call('POST', `/api/me/sounds/trash/projects/${back}/restore`, { token: member.token });
+    assert.ok((await call('GET', '/api/me/sounds', { token: member.token })).projects.some((p) => p.id === back));
+    await call('POST', `/api/sounds/share/${shareToken(plink.url)}`, { body: {} });
     await call('DELETE', `/api/me/sounds/projects/${back}`, { token: member.token });
-    assert.equal((await call('GET', '/api/me/sounds/trash', { token: member.token })).tracks.length, 0);
+    const count = files();
+    await call('DELETE', `/api/me/sounds/trash/projects/${back}`, { token: member.token });
+    assert.equal(files(), count - 1);
+    await call('POST', `/api/me/sounds/trash/projects/${back}/restore`, { token: member.token, expect: 404 });
+    // Effacé tout seul après 30 jours.
+    const old = (await call('POST', '/api/me/sounds/projects', { token: member.token, body: { title: 'Vieux' }, expect: 201 })).id;
+    await call('DELETE', `/api/me/sounds/projects/${old}`, { token: member.token });
+    run('UPDATE sound_projects SET trashed_at = ? WHERE id = ?', Date.now() - 31 * 86400_000, old);
+    assert.equal(purgeTrash(), 1);
+    const empty = await call('GET', '/api/me/sounds/trash', { token: member.token });
+    assert.equal(empty.tracks.length + empty.projects.length, 0);
   });
 
   await step('VANISH : un fondateur voit les projets de tous les comptes, en lecture seule', async () => {
