@@ -95,7 +95,7 @@ function personal(c, user, service) {
     blocks.push(/^#\s+/.test(chunk) ? { heading: chunk.replace(/^#\s+/, '') } : { text: chunk.trim() });
   }
   for (const id of c.productIds) {
-    const p = get('SELECT * FROM products WHERE id = ? AND published = 1', id);
+    const p = get('SELECT * FROM products WHERE id = ? AND published = 1 AND founders_only = 0', id);
     if (p) blocks.push({ product: { slug: p.slug, name: p.name, tagline: p.tagline, priceCents: p.price_cents, image: p.image ? `/api/media/${p.image}` : null, creatorLabel: CREATOR_LABELS[p.creator] } });
   }
   if (c.promoCode) blocks.push({ code: c.promoCode, caption: 'Code promo', detail: c.promoText || 'À entrer au moment d\'acheter, sur le site ou dans ONIRIQUE CENTRAL.' });

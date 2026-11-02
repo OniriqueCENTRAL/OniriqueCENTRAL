@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=06e9440d"></script>
+<script src="assets/i18n.js?v=4b118058"></script>
 <script src="assets/ui.js?v=3"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
@@ -601,6 +601,8 @@ function sheetForm(p) {
   const price = el("input", { type: "text", inputMode: "decimal", value: ((p?.priceCents ?? 0) / 100).toFixed(2).replace(".", ","), required: true });
   const monthly = el("input", { type: "text", inputMode: "decimal", value: ((p?.monthlyCents ?? 0) / 100).toFixed(2).replace(".", ",") });
   const published = el("input", { type: "checkbox", checked: p?.published ?? true });
+  // Réservé aux fondateurs : un plugin en développement ou en test, que personne d'autre ne voit ni ne télécharge.
+  const foundersOnly = el("input", { type: "checkbox", checked: p?.foundersOnly ?? false });
   // Le créateur ne se choisit que par l'équipe : les plugins d'un partenaire portent toujours son nom.
   const creator = el("select", {}, ...Object.entries(CREATORS).map(([id, label]) => el("option", { value: id, textContent: label, selected: id === (p?.creator ?? "onirique") })));
   // Catégorie de la boutique : une seule par plugin ; « Automatique » la devine à partir du nom et du texte.
@@ -614,7 +616,8 @@ function sheetForm(p) {
     el("label", {}, "Prix en € (0 = gratuit)", price), el("label", {}, "Prix par mois en € (0 = pas d'abonnement)", monthly), isStaff(me) ? el("label", {}, "Créateur", creator) : null,
     el("label", {}, "Description", description),
     el("label", {}, "Catégorie", category),
-    el("div", { className: "row" }, el("label", { className: "inline" }, published, "Visible dans la boutique et l'application"), submit, saved));
+    el("div", { className: "row" }, el("label", { className: "inline" }, published, "Visible dans la boutique et l'application"),
+      me.role === "founder" ? el("label", { className: "inline" }, foundersOnly, "Fondateurs seulement") : null, submit, saved));
   form.onsubmit = async (event) => {
     event.preventDefault();
     $("product-error").textContent = "";
@@ -627,6 +630,7 @@ function sheetForm(p) {
     const body = { name: name.value.trim(), tagline: tagline.value.trim(), description: description.value.trim(), priceCents: cents,
       monthlyCents: Math.round(Number(perMonth) * 100), published: published.checked,
       category: category.value,
+      ...(me.role === "founder" ? { foundersOnly: foundersOnly.checked } : {}),
       ...(isStaff(me) ? { creator: creator.value } : {}) };
     try {
       await api(p ? "PATCH" : "POST", p ? "/admin/products/" + p.id : "/admin/products", body);
@@ -662,7 +666,7 @@ function showOrder(products) {
     const arrow = (text, label, to, focus) => Object.assign(el("button", { className: "act", type: "button", textContent: text, disabled: to < 0 || to >= products.length }),
       { onclick: () => place(i, to, focus), ariaLabel: label + " " + p.name });
     const li = el("li", { draggable: true, title: "Glisser pour changer sa place" }, el("span", { className: "grip", textContent: "⋮⋮", ariaHidden: "true" }),
-      el("span", { textContent: p.name }), p.published ? null : el("small", { textContent: "masqué" }),
+      el("span", { textContent: p.name }), p.published ? null : el("small", { textContent: "masqué" }), p.foundersOnly ? el("small", { textContent: "fondateurs" }) : null,
       arrow("↑", "Monter", i - 1, "button"), arrow("↓", "Descendre", i + 1, "button:last-child"));
     const after = (event) => event.clientY > li.getBoundingClientRect().top + li.offsetHeight / 2; // déposé sous le milieu : après ce plugin
     li.ondragstart = (event) => { dragged = i; event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", p.name); li.classList.add("dragging"); };
@@ -747,7 +751,7 @@ async function loadProducts() {
       el("div", {}, shot, pictureTools, el("div", { className: "sub", style: "margin-top:8px", textContent: p.demo ? "Démo interactive en ligne" : p.latest && /\.vst3$/i.test(p.latest.filename) ? "Aperçu et démo : créés tout seuls dès qu'un admin ouvre l'application CENTRAL" : "Pas encore de démo interactive" })),
       el("div", {},
         el("h3", { textContent: p.name }),
-        el("div", { className: "sub", textContent: [CREATORS[p.creator] || CREATORS.onirique, p.published ? "Visible dans la boutique" : "Masqué", euros(p.priceCents), p.latest ? `version actuelle ${p.latest.version} du ${date(p.latest.createdAt)}` : "aucune version en ligne", `${p.versions.length} version(s)`,
+        el("div", { className: "sub", textContent: [CREATORS[p.creator] || CREATORS.onirique, p.published ? (p.foundersOnly ? "Fondateurs seulement" : "Visible dans la boutique") : "Masqué", euros(p.priceCents), p.latest ? `version actuelle ${p.latest.version} du ${date(p.latest.createdAt)}` : "aucune version en ligne", `${p.versions.length} version(s)`,
           // le plugin vérifie-t-il sa licence ? d'après le fichier de la version actuelle de chaque système
           ...[["win", "Windows"], ["mac", "Mac"]].filter(([key]) => p.licensed && p.licensed[key] !== undefined)
             .map(([key, label]) => p.licensed[key] === true ? `licence ${label} : oui` : p.licensed[key] === false ? `SANS LICENCE ${label}` : `licence ${label} : illisible`)].join(" · ") }),

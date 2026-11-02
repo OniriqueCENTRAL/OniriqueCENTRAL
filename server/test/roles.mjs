@@ -474,6 +474,41 @@ try {
     assert.equal(youtubeId('ftp://youtu.be/dQw4w9WgXcQ'), '');
   });
 
+  await step('plugin réservé aux fondateurs : invisible et intouchable pour tous les autres', async () => {
+    await call('POST', '/api/admin/products', { token: admin.token, body: { name: 'ONIRIQUE SECRET', foundersOnly: true }, expect: 403 });
+    const secret = await call('POST', '/api/admin/products', { token: founder.token, body: { name: 'ONIRIQUE SECRET', priceCents: 1000, foundersOnly: true }, expect: 201 });
+    assert.equal(secret.foundersOnly, true);
+    const version = await upload(founder.token, secret.id, '1.0.0');
+    run(`UPDATE users SET role = 'vip' WHERE id = ?`, vip.id);
+    run(`INSERT OR REPLACE INTO subscriptions (user_id, plan_id, status, current_period_end, updated_at) SELECT ?, id, 'active', ?, ? FROM plans LIMIT 1`,
+      user.id, Date.now() + 86400_000, Date.now());
+
+    const ids = async (token) => (await call('GET', '/api/catalog', { token })).products.map((p) => p.id);
+    assert.ok(!(await ids()).includes(secret.id));
+    for (const who of [admin, vip, user, partner]) {
+      assert.ok(!(await ids(who.token)).includes(secret.id));
+      await call('GET', `/api/download/${version.id}`, { token: who.token, expect: 404 });
+      await call('POST', '/api/licenses/trial', { token: who.token, body: { productId: secret.id, machineId: machineFor(who.id) }, expect: 404 });
+      await call('POST', '/api/licenses/activate', { token: who.token, body: { productId: secret.id, machineId: machine, machineName: 'PC' }, expect: 403 });
+      assert.ok(!(await call('GET', '/api/me', { token: who.token })).entitlements?.[secret.id]);
+    }
+    assert.ok(!(await call('GET', '/api/admin/products', { token: admin.token })).some((p) => p.id === secret.id));
+    await call('PATCH', `/api/admin/products/${secret.id}`, { token: admin.token, body: { name: 'VU' }, expect: 404 });
+    await call('POST', '/api/admin/licenses', { token: admin.token, body: { productId: secret.id }, expect: 404 });
+    const all = await call('POST', '/api/admin/licenses', { token: founder.token, body: { productId: 'all' }, expect: 201 });
+    assert.ok(!get('SELECT 1 FROM licenses WHERE product_id = ? AND key IN (' + all.map(() => '?').join(',') + ')', secret.id, ...all.map((l) => l.key ?? l)));
+
+    // Le fondateur, lui, le voit, le télécharge et l'active ; le décocher le rend à tout le monde.
+    assert.ok((await ids(founder.token)).includes(secret.id));
+    assert.deepEqual(await call('GET', `/api/download/${version.id}`, { token: founder.token }), binary);
+    run('UPDATE users SET self_licenses = 1 WHERE id = ?', founder.id); // ses licences, comme pour tout plugin
+    await call('POST', '/api/licenses/activate', { token: founder.token, body: { productId: secret.id, machineId: machine, machineName: 'PC' } });
+    assert.ok((await call('GET', '/api/admin/products', { token: founder.token })).some((p) => p.id === secret.id && p.foundersOnly));
+    await call('PATCH', `/api/admin/products/${secret.id}`, { token: founder.token, body: { foundersOnly: false } });
+    assert.ok((await ids()).includes(secret.id));
+    await call('GET', `/api/download/${version.id}`, { token: admin.token });
+  });
+
   console.log(`\n${passed} étapes réussies.`);
 } finally {
   server.close();

@@ -121,7 +121,7 @@ function productView(p, platform) {
   return {
     id: p.id, slug: p.slug, name: p.name, tagline: p.tagline, description: p.description, accent: p.accent, createdAt: p.created_at,
     creator: p.creator, // "onirique" ou un partenaire ("abrasion", "relic")
-    priceCents: p.price_cents, monthlyCents: p.monthly_cents || 0, image: p.image ? `/api/media/${p.image}` : null, published: !!p.published,
+    priceCents: p.price_cents, monthlyCents: p.monthly_cents || 0, image: p.image ? `/api/media/${p.image}` : null, published: !!p.published, foundersOnly: !!p.founders_only,
     demo: p.demo ? `/api/media/${p.demo}` : null,
     // imageManual : l'image a été choisie par un admin. demoOff : la démo a été retirée à la main, l'application ne la refabrique pas.
     imageManual: !!p.image_manual, demoOff: !!p.demo_off,
@@ -200,6 +200,9 @@ const licenseView = (l) => ({
   source: l.source, note: l.note, createdAt: l.created_at, activations: l.activations ?? undefined,
   bundle: l.bundle ?? null, // la clé du pack ALL LICENCE dont cette licence fait partie
 });
+
+/** Ce qu'un compte (ou un visiteur : null) ne voit pas : un produit hors ligne, ou réservé aux fondateurs. */
+const hiddenFrom = (product, user) => !product.published || (!!product.founders_only && user?.role !== 'founder');
 
 function findProduct(id) {
   const product = get('SELECT * FROM products WHERE id = ?', int(id, 0));
@@ -305,8 +308,9 @@ export function createApp() {
 
   app.get('/api/catalog', (req, res) => {
     const platform = platformOf(req.get('X-Onirique-Platform'));
+    const user = optionalUser(req); // l'application envoie le compte connecté : un fondateur voit aussi ses plugins réservés
     res.json({
-      products: all('SELECT * FROM products WHERE published = 1 ORDER BY position, created_at').map((p) => productView(p, platform)),
+      products: all('SELECT * FROM products WHERE published = 1 ORDER BY position, created_at').filter((p) => !hiddenFrom(p, user)).map((p) => productView(p, platform)),
       plans: all(`SELECT * FROM plans WHERE active = 1 AND kind = 'all' ORDER BY price_cents`).map(planView),
       packs: all('SELECT * FROM packs WHERE active = 1 ORDER BY price_cents').map(packView),
       // Abonnement à la carte : le prix du premier plugin et de chaque plugin ajouté, par mois.
@@ -860,7 +864,7 @@ export function createApp() {
   app.post('/api/licenses/trial', requireVerified, (req, res) => {
     rateLimit(`trial:${req.user.id}`, 10);
     const product = findProduct(req.body.productId);
-    if (!product.published) throw new HttpError(404, 'Produit introuvable.');
+    if (hiddenFrom(product, req.user)) throw new HttpError(404, 'Produit introuvable.');
     if (get('SELECT id FROM licenses WHERE user_id = ? AND product_id = ?', req.user.id, product.id)) {
       throw new HttpError(409, `Vous avez déjà utilisé votre essai de ${product.name}, ou vous possédez déjà ce plugin.`);
     }
@@ -889,7 +893,7 @@ export function createApp() {
   app.post('/api/promo/quote', requireUser, (req, res) => {
     if (normalizeCode(req.body.code)) rateLimit(`promo:${req.user.id}`, 30);
     const product = findProduct(req.body.productId);
-    if (!product.published) throw new HttpError(404, 'Produit introuvable.');
+    if (hiddenFrom(product, req.user)) throw new HttpError(404, 'Produit introuvable.');
     const q = quote(req.user, product, req.body.code);
     res.json({ priceCents: q.priceCents, finalCents: q.finalCents, discountCents: q.discountCents, label: q.label, code: q.code,
       source: q.source, note: q.ignored });
@@ -899,7 +903,7 @@ export function createApp() {
     const kind = req.body.kind;
     if (kind === 'product') {
       const product = findProduct(req.body.id);
-      if (!product.published) throw new HttpError(404, 'Produit introuvable.');
+      if (hiddenFrom(product, req.user)) throw new HttpError(404, 'Produit introuvable.');
       const right = entitlement(req.user.id, product.id);
       // Un plugin pris au mois peut s'acheter à vie (l'abonnement se résilie à part, depuis le compte).
       const monthly = right?.licenseId && get(`SELECT 1 FROM licenses WHERE id = ? AND bundle LIKE 'sub:%'`, right.licenseId);
@@ -915,7 +919,7 @@ export function createApp() {
     // Un plugin au mois : une licence qui se prolonge à chaque mois payé, sur le compte de son créateur.
     if (kind === 'monthly') {
       const product = findProduct(req.body.id);
-      if (!product.published || !(product.monthly_cents > 0)) throw new HttpError(404, "Ce plugin ne se prend pas au mois.");
+      if (hiddenFrom(product, req.user) || !(product.monthly_cents > 0)) throw new HttpError(404, "Ce plugin ne se prend pas au mois.");
       const right = entitlement(req.user.id, product.id);
       if (right?.via === 'license' && right.type !== 'trial') throw new HttpError(409, 'Vous avez déjà ce plugin.');
       return res.json(await checkout(req.user, 'monthly', { ...product, price_cents: product.monthly_cents, interval: 'month', name: `${product.name} — abonnement mensuel` }));
@@ -925,7 +929,7 @@ export function createApp() {
       const ids = [...new Set((Array.isArray(req.body.productIds) ? req.body.productIds : []).map((id) => int(id, 0)))];
       if (!ids.length || ids.length > 50) throw new HttpError(400, 'Choisissez au moins un plugin.');
       const products = ids.map((id) => get('SELECT * FROM products WHERE id = ? AND published = 1', id));
-      if (products.some((p) => !p)) throw new HttpError(404, 'Produit introuvable.');
+      if (products.some((p) => !p || hiddenFrom(p, req.user))) throw new HttpError(404, 'Produit introuvable.');
       const partner = products.find((p) => p.creator !== 'onirique');
       if (partner) throw new HttpError(400, `${partner.name} ne fait pas partie des abonnements : il s'achète à l'unité.`);
       const free = products.find((p) => p.price_cents === 0);
@@ -989,7 +993,7 @@ export function createApp() {
   // Installer un plugin, même gratuit, demande une adresse validée (comme l'essai et l'achat).
   app.get('/api/download/:versionId', requireVerified, (req, res, next) => {
     const version = get('SELECT * FROM versions WHERE id = ?', int(req.params.versionId, 0));
-    if (!version) throw new HttpError(404, 'Version introuvable.');
+    if (!version || hiddenFrom({ ...findProduct(version.product_id), published: 1 }, req.user)) throw new HttpError(404, 'Version introuvable.');
     // L'équipe télécharge tout, un partenaire ses propres plugins ; les autres, ce à quoi ils ont droit.
     const mine = partnerOf(req.user) && get('SELECT creator FROM products WHERE id = ?', version.product_id)?.creator === partnerOf(req.user);
     if (!isStaff(req.user) && !mine && !entitlement(req.user.id, version.product_id)) {
@@ -1114,7 +1118,7 @@ export function createApp() {
   /** Le produit, s'il est du ressort de ce compte : un partenaire ne touche qu'aux plugins de son créateur. */
   function ownProduct(req, id) {
     const product = findProduct(id);
-    if (req.creator && product.creator !== req.creator) throw new HttpError(404, 'Produit introuvable.');
+    if ((req.creator && product.creator !== req.creator) || hiddenFrom({ ...product, published: 1 }, req.user)) throw new HttpError(404, 'Produit introuvable.');
     return product;
   }
   /** La licence, si son plugin est du ressort de ce compte. */
@@ -1320,7 +1324,8 @@ export function createApp() {
   // Produits
   // Le panel admin voit en plus, pour chaque version et pour la version actuelle de chaque système, si le plugin
   // embarque le module de licence (licensed : true, false, ou null pour un installateur qu'on ne peut pas lire).
-  admin.get('/products', (req, res) => res.json(all('SELECT * FROM products WHERE ? IS NULL OR creator = ? ORDER BY position, created_at', req.creator, req.creator).map((p) => {
+  admin.get('/products', (req, res) => res.json(all('SELECT * FROM products WHERE ? IS NULL OR creator = ? ORDER BY position, created_at', req.creator, req.creator)
+    .filter((p) => !hiddenFrom({ ...p, published: 1 }, req.user)).map((p) => {
     const view = productView(p);
     const rows = productVersions(p.id);
     const current = (platform) => { const v = rows.find((row) => row.platform === platform); return v ? versionLicensed(v) : undefined; };
@@ -1354,19 +1359,21 @@ export function createApp() {
       tagline: body.tagline !== undefined ? str(body.tagline, 140) : existing.tagline ?? '',
       description: body.description !== undefined ? str(body.description, 4000) : existing.description ?? '',
       published: body.published !== undefined ? (body.published ? 1 : 0) : existing.published ?? 1,
+      foundersOnly: body.foundersOnly !== undefined ? (body.foundersOnly ? 1 : 0) : existing.founders_only ?? 0,
     };
   }
 
   admin.post('/products', (req, res) => {
     const f = productFields(req.body);
+    if (f.foundersOnly && req.user.role !== 'founder') throw new HttpError(403, 'Seul un fondateur réserve un plugin aux fondateurs.');
     const slug = (str(req.body.slug, 40) || f.name).toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     if (!slug) throw new HttpError(400, 'Identifiant invalide.');
     if (get('SELECT id FROM products WHERE slug = ?', slug)) throw new HttpError(409, 'Un produit porte déjà cet identifiant.');
     // Un partenaire ne crée que des plugins à son nom.
     const { lastInsertRowid } = run(
-      `INSERT INTO products (slug, name, tagline, description, accent, price_cents, monthly_cents, published, created_at, creator, category, position)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(position), 0) + 1 FROM products))`, // un nouveau plugin se range à la fin
-      slug, f.name, f.tagline, f.description, f.accent, f.price, f.monthly, f.published, now(), req.creator ?? f.creator, f.category);
+      `INSERT INTO products (slug, name, tagline, description, accent, price_cents, monthly_cents, published, created_at, creator, category, founders_only, position)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(position), 0) + 1 FROM products))`, // un nouveau plugin se range à la fin
+      slug, f.name, f.tagline, f.description, f.accent, f.price, f.monthly, f.published, now(), req.creator ?? f.creator, f.category, f.foundersOnly);
     res.status(201).json(productView(findProduct(lastInsertRowid)));
   });
 
@@ -1383,8 +1390,9 @@ export function createApp() {
   admin.patch('/products/:id', (req, res) => {
     const product = ownProduct(req, req.params.id);
     const f = productFields(req.body, product);
-    run('UPDATE products SET name = ?, tagline = ?, description = ?, accent = ?, price_cents = ?, monthly_cents = ?, published = ?, creator = ?, category = ? WHERE id = ?',
-      f.name, f.tagline, f.description, f.accent, f.price, f.monthly, f.published, req.creator ?? f.creator, f.category, product.id);
+    if (f.foundersOnly !== product.founders_only && req.user.role !== 'founder') throw new HttpError(403, 'Seul un fondateur réserve un plugin aux fondateurs.');
+    run('UPDATE products SET name = ?, tagline = ?, description = ?, accent = ?, price_cents = ?, monthly_cents = ?, published = ?, creator = ?, category = ?, founders_only = ? WHERE id = ?',
+      f.name, f.tagline, f.description, f.accent, f.price, f.monthly, f.published, req.creator ?? f.creator, f.category, f.foundersOnly, product.id);
     res.json(productView(findProduct(product.id)));
   });
 
@@ -1527,7 +1535,7 @@ export function createApp() {
     // (pour un partenaire : chacun de ses plugins).
     const everything = req.body.productId === 'all';
     const products = everything
-      ? all('SELECT * FROM products WHERE ? IS NULL OR creator = ? ORDER BY created_at', req.creator, req.creator)
+      ? all('SELECT * FROM products WHERE (? IS NULL OR creator = ?) AND founders_only = 0 ORDER BY created_at', req.creator, req.creator)
       : [ownProduct(req, req.body.productId)];
     if (!products.length) throw new HttpError(400, 'Aucun plugin à mettre dans la licence.');
     const type = LICENSE_TYPES.includes(req.body.type) ? req.body.type : 'perpetual';
