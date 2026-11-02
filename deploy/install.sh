@@ -18,7 +18,7 @@ WWW=/var/www/site
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -q
-apt-get install -yq nginx certbot python3-certbot-nginx ufw sqlite3 curl
+apt-get install -yq nginx certbot python3-certbot-nginx ufw sqlite3 curl ffmpeg yt-dlp
 # Le serveur demande Node 22.13 ou plus : celui d'Ubuntu s'il suffit (26.04), sinon NodeSource (24.04 n'a que le 18).
 node_ok() { node -e 'process.exit(process.versions.node.split(".")[0] >= 22 ? 0 : 1)' 2>/dev/null; }
 node_ok || apt-get install -yq nodejs npm

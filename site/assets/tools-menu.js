@@ -28,7 +28,7 @@ window.OniriqueTools = [
     ["Convertisseur", "convertisseur", "WAV ou MP3, avec le choix de la fréquence et de la résolution."],
     ["Découpe et fondu", "decoupe", "Garder un passage, ajouter un fondu, exporter."],
     ["Transposer", "transposition", "Changer la hauteur ou le tempo d'un morceau, l'un sans l'autre."],
-    ["AudioFlow", "audioflow", "L'audio d'une vidéo en MP3 ou en WAV, avec l'aperçu d'un lien YouTube.", "audioflow"],
+    ["Downloader", "downloader", "Un lien YouTube ou une vidéo en MP3 ou en WAV.", "downloader"],
   ]],
   ["Sortie", [
     ["Calculateur revenus streaming", "revenus-streaming", "Une fourchette de revenus pour un nombre d'écoutes."],

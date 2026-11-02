@@ -42,6 +42,7 @@ import { ownsGoogleState, googleMailerCallback } from './packsend.js';
 import { mountPush } from './push.js';
 import { mountDocs } from './docs.js';
 import { mountTierList } from './tierlist.js';
+import { mountDownloader } from './downloader.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
@@ -608,6 +609,7 @@ export function createApp() {
   //============================================================================
   const allowed = (right) => (req, res, next) => requireUser(req, res, (error) => next(error
     || (can(req.user, right) ? undefined : new HttpError(403, "Cette fonction n'est pas ouverte à ce compte."))));
+  mountDownloader(app, { allowed, wrap });
   const team = allowed('youtube');
   // Brancher sa chaîne : pour les Shorts, ou pour publier ses prods depuis ONIRIQUE CLOUD.
   const channel = (req, res, next) => requireUser(req, res, (error) => next(error

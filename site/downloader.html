@@ -6,7 +6,7 @@
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>AudioFlow — ONIRIQUE</title>
+<title>Downloader — ONIRIQUE</title>
 <meta name="robots" content="noindex">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="stylesheet" href="assets/fonts.css">
@@ -37,27 +37,31 @@
   <section class="hero">
     <p class="eyebrow">Réservé aux fondateurs</p>
     <h1>Ton audio. <em>Ton format.</em></h1>
-    <p class="lede">Sors le son d'une vidéo ou d'un fichier audio en MP3 ou en WAV. Colle un lien YouTube pour retrouver le titre et revoir la vidéo à côté.</p>
+    <p class="lede">Colle un lien YouTube et récupère son audio en MP3 ou en WAV. Ou dépose une vidéo ou un son de ton ordinateur.</p>
   </section>
 
   <article class="card locked" id="locked" hidden>
     <div>
-      <p class="eyebrow" id="locked-title">Connecte-toi pour ouvrir AudioFlow</p>
+      <p class="eyebrow" id="locked-title">Connecte-toi pour ouvrir Downloader</p>
       <p id="locked-text">Cet outil est réservé aux comptes fondateurs pour l'instant.</p>
-      <div class="row" style="margin-top:16px"><a class="go" id="locked-go" href="compte?next=audioflow">Me connecter</a><a class="go ghost" href="outils">Les autres outils</a></div>
+      <div class="row" style="margin-top:16px"><a class="go" id="locked-go" href="compte?next=downloader">Me connecter</a><a class="go ghost" href="outils">Les autres outils</a></div>
     </div>
   </article>
 
   <div id="studio" hidden>
     <article class="card">
-      <p class="head"><b>01 — Lien YouTube</b><span>facultatif</span></p>
+      <p class="head"><b>01 — Lien YouTube</b><span>20 minutes au plus</span></p>
       <div class="opt">
         <label for="url">Lien de la vidéo</label>
         <div class="row">
           <input id="url" type="text" inputmode="url" placeholder="https://www.youtube.com/watch?v=…" autocomplete="off" spellcheck="false">
-          <button class="go ghost" id="analyze" type="button">Analyser</button>
+          <button class="go ghost" id="analyze" type="button">Aperçu</button>
         </div>
-        <p class="hint">Le lien sert à l'aperçu : titre, chaîne et lecteur. Pour la conversion, dépose le fichier de la vidéo plus bas.</p>
+        <div class="row">
+          <select id="yt-format" aria-label="Format du téléchargement" style="flex:1 1 200px"><option value="mp3:320">MP3 320 kbit/s</option><option value="mp3:192">MP3 192 kbit/s</option><option value="mp3:128">MP3 128 kbit/s</option><option value="wav:0">WAV</option></select>
+          <button class="go" id="yt-download" type="button">Télécharger</button>
+        </div>
+        <p class="hint">Uniquement pour des vidéos dont tu as les droits (les tiennes, celles de tes collabs…).</p>
         <p class="error" id="url-error" role="alert"></p>
       </div>
       <div class="yt" id="yt" hidden>
@@ -106,13 +110,13 @@ const MAX_BYTES = 300 * 1024 * 1024, MAX_SECONDS = 1200;
 const TOKEN = (() => { try { return sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"); } catch { return null; } })();
 let file = null, audio = null, format = "mp3";
 
-// ——— Accès : le droit « audioflow » (fondateurs ; réglable dans l'admin, « Droits des rôles ») ———
+// ——— Accès : le droit « downloader » (fondateurs ; réglable dans l'admin, « Droits des rôles ») ———
 async function gate() {
-  if (!TOKEN) return lock("Connecte-toi pour ouvrir AudioFlow", "Cet outil est réservé aux comptes fondateurs pour l'instant.", "compte?next=audioflow", "Me connecter");
+  if (!TOKEN) return lock("Connecte-toi pour ouvrir Downloader", "Cet outil est réservé aux comptes fondateurs pour l'instant.", "compte?next=downloader", "Me connecter");
   const response = await fetch("/api/me", { headers: { Authorization: "Bearer " + TOKEN } }).catch(() => null);
-  if (!response || response.status === 401) return lock("Connecte-toi pour ouvrir AudioFlow", "Ta session a expiré.", "compte?next=audioflow", "Me connecter");
+  if (!response || response.status === 401) return lock("Connecte-toi pour ouvrir Downloader", "Ta session a expiré.", "compte?next=downloader", "Me connecter");
   const me = await response.json().catch(() => ({}));
-  if (!(me.rights || []).includes("audioflow")) return lock("AudioFlow est réservé aux fondateurs", "Il n'est pas encore ouvert à ce compte.", "outils", "Voir les outils");
+  if (!(me.rights || []).includes("downloader")) return lock("Downloader est réservé aux fondateurs", "Il n'est pas encore ouvert à ce compte.", "outils", "Voir les outils");
   $("studio").hidden = false;
 }
 function lock(title, text, href, label) {
@@ -154,6 +158,29 @@ $("analyze").onclick = async () => {
   $("analyze").disabled = false;
 };
 $("url").addEventListener("keydown", (event) => { if (event.key === "Enter") $("analyze").click(); });
+
+// ——— Télécharger : le serveur extrait l'audio avec yt-dlp (server/src/downloader.js) et renvoie le fichier ———
+$("yt-download").onclick = async () => {
+  $("url-error").textContent = "";
+  if (!videoId($("url").value)) { $("url-error").textContent = "Colle un lien youtube.com ou youtu.be valide."; return; }
+  const [format, kbps] = $("yt-format").value.split(":");
+  const button = $("yt-download"), label = button.textContent;
+  button.disabled = true;
+  button.textContent = "Téléchargement… (jusqu'à une minute)";
+  try {
+    const response = await fetch("/api/downloader/youtube", {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + TOKEN },
+      body: JSON.stringify({ url: $("url").value.trim(), format, kbps }),
+    });
+    if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Le téléchargement a échoué.");
+    const name = (response.headers.get("Content-Disposition") || "").match(/filename\*=UTF-8''([^;]+)/);
+    A.download(await response.blob(), name ? decodeURIComponent(name[1]) : "youtube." + format);
+  } catch (error) {
+    $("url-error").textContent = error instanceof TypeError ? "Connexion perdue pendant le téléchargement." : error.message;
+  }
+  button.textContent = label;
+  button.disabled = false;
+};
 
 // ——— Conversion : décodée et encodée dans le navigateur (assets/audio-kit.js) ———
 /** Ce qui sera produit : MP3 en 44,1 ou 48 kHz, deux voies au plus ; WAV 16 bits à la fréquence du fichier. */
