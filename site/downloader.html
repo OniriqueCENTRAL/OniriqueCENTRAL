@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=f6a91ba1"></script>
+<script src="assets/i18n.js?v=b5dacfa1"></script>
 <script src="assets/ui.js?v=3"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
@@ -38,15 +38,15 @@
   <section class="hero">
     <p class="eyebrow">Outil gratuit</p>
     <h1>Ton audio. <em>Ton format.</em></h1>
-    <p class="lede">Colle un lien YouTube et récupère son audio en MP3 ou en WAV, sans le blanc du début, ou la vidéo en MP4 HD, au nom de la vidéo.</p>
+    <p class="lede">Colle un lien YouTube ou TikTok et récupère son audio en MP3 ou en WAV, sans le blanc du début, ou la vidéo en MP4 HD, au nom de la vidéo.</p>
   </section>
 
   <article class="card" id="studio">
-    <p class="head"><b>Lien YouTube</b><span>20 minutes au plus</span></p>
+    <p class="head"><b>Lien YouTube ou TikTok</b><span>20 minutes au plus</span></p>
     <div class="opt">
       <label for="url">Lien de la vidéo</label>
       <div class="row">
-        <input id="url" type="text" inputmode="url" placeholder="https://www.youtube.com/watch?v=…" autocomplete="off" spellcheck="false">
+        <input id="url" type="text" inputmode="url" placeholder="Lien YouTube ou TikTok…" autocomplete="off" spellcheck="false">
         <button class="go ghost" id="analyze" type="button">Aperçu</button>
       </div>
       <div class="row">
@@ -54,7 +54,7 @@
         <button class="go" id="yt-download" type="button">Télécharger</button>
       </div>
       <label class="tick"><input id="prod" type="checkbox"> PROD <small>— ajoute le BPM et la tonalité au nom : « Titre - 140 BPM - F minor »</small></label>
-      <p class="hint">Uniquement pour des vidéos dont tu as les droits (les tiennes, celles de tes collabs, celles sous licence libre). En téléchargeant, tu acceptes les <a href="cgv#downloader">conditions du Downloader</a>. L'aperçu charge le lecteur de YouTube, qui peut alors déposer des cookies (<a href="cookies#youtube">en savoir plus</a>).</p>
+      <p class="hint">Uniquement pour des vidéos dont tu as les droits (les tiennes, celles de tes collabs, celles sous licence libre). En téléchargeant, tu acceptes les <a href="cgv#downloader">conditions du Downloader</a>. L'aperçu d'un lien YouTube charge le lecteur de YouTube, qui peut alors déposer des cookies (<a href="cookies#youtube">en savoir plus</a>).</p>
       <p class="hint" id="limit">Sans compte ou avec un compte gratuit : un téléchargement par minute. Sans limite avec le rôle ONIRIQUE.</p>
       <p class="error" id="url-error" role="alert"></p>
       <p class="done" id="done" aria-live="polite"></p>
@@ -81,7 +81,7 @@ const TOKEN = (() => { try { return sessionStorage.getItem("onirique.token") || 
 // Les rôles ONIRIQUE et au-dessus n'ont pas de limite (server/src/downloader.js) : la mention disparaît pour eux.
 document.addEventListener("onirique:account", (event) => { $("limit").hidden = (event.detail.user || {}).role !== "user"; });
 
-// ——— Lien YouTube : identifiant de la vidéo, puis titre et chaîne par oEmbed pour l'aperçu ———
+// ——— Lien YouTube ou TikTok : vérifié ici, puis titre et auteur par oEmbed pour l'aperçu ———
 function videoId(raw) {
   let url;
   try { url = new URL(raw.trim()); } catch { return ""; }
@@ -91,12 +91,24 @@ function videoId(raw) {
   else if (host === "youtube.com") id = url.pathname === "/watch" ? url.searchParams.get("v") || "" : (url.pathname.match(/^\/(?:embed|shorts|live)\/([^/]+)/) || [])[1] || "";
   return /^[A-Za-z0-9_-]{11}$/.test(id) ? id : "";
 }
+/** Un lien de vidéo TikTok (complet ou court) ; le serveur le revérifie (server/src/downloader.js). */
+function tiktokLink(raw) {
+  let url;
+  try { url = new URL(raw.trim()); } catch { return ""; }
+  const host = url.hostname.toLowerCase();
+  const ok = /^(vm|vt)\.tiktok\.com$/.test(host) ? /^\/[A-Za-z0-9]{5,20}\/?$/.test(url.pathname)
+    : /^((www|m)\.)?tiktok\.com$/.test(host) && /^\/(@[A-Za-z0-9._-]+\/video\/\d+|t\/[A-Za-z0-9]+)\/?$/.test(url.pathname);
+  return ok ? url.origin + url.pathname : "";
+}
+const validLink = (raw) => videoId(raw) || tiktokLink(raw);
 
 $("analyze").onclick = async () => {
   $("url-error").textContent = "";
   $("yt").hidden = true;
   const id = videoId($("url").value);
-  if (!id) { $("url-error").textContent = "Colle un lien youtube.com ou youtu.be valide."; return; }
+  // TikTok ne donne plus de titre ni d'auteur dans son aperçu public : on télécharge directement.
+  if (!id && tiktokLink($("url").value)) { $("url-error").textContent = "Pas d'aperçu pour un lien TikTok : clique directement sur « Télécharger »."; return; }
+  if (!id) { $("url-error").textContent = "Colle un lien YouTube ou TikTok valide."; return; }
   const watch = "https://www.youtube.com/watch?v=" + id;
   $("analyze").disabled = true;
   try {
@@ -145,7 +157,7 @@ async function prodTag(blob) {
 // ——— Télécharger : le serveur extrait l'audio avec yt-dlp, retire le blanc du début (server/src/downloader.js) ———
 $("yt-download").onclick = async () => {
   $("url-error").textContent = $("done").textContent = "";
-  if (!videoId($("url").value)) { $("url-error").textContent = "Colle un lien youtube.com ou youtu.be valide."; return; }
+  if (!validLink($("url").value)) { $("url-error").textContent = "Colle un lien YouTube ou TikTok valide."; return; }
   const [format, kbps] = $("yt-format").value.split(":");
   const button = $("yt-download"), label = button.textContent;
   button.disabled = true;
@@ -157,9 +169,11 @@ $("yt-download").onclick = async () => {
     });
     if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Le téléchargement a échoué.");
     const blob = await response.blob();
-    // Le nom choisi par le serveur (titre nettoyé) : filename*= quand il a des accents, filename="" sinon.
-    const named = (response.headers.get("Content-Disposition") || "").match(/filename\*=UTF-8''([^;]+)|filename="([^"]+)"/);
-    let base = named ? decodeURIComponent(named[1] || named[2]).replace(/\.[^.]+$/, "") : "YouTube";
+    // Le nom choisi par le serveur (titre nettoyé) : filename*= (le vrai titre) quand il a des accents ou des emojis,
+    // sinon filename="" ; ce dernier, toujours écrit avant, n'en a qu'une copie en « ? ».
+    const disposition = response.headers.get("Content-Disposition") || "";
+    const named = disposition.match(/filename\*=UTF-8''([^;]+)/) || disposition.match(/filename="([^"]+)"/);
+    let base = named ? decodeURIComponent(named[1]).replace(/\.[^.]+$/, "") : "Vidéo";
     let tag = "";
     const prod = $("prod").checked && format !== "mp4";
     if (prod) {
@@ -179,7 +193,7 @@ $("yt-download").onclick = async () => {
   button.disabled = false;
 };
 </script>
-<script src="assets/tools-menu.js?v=12"></script>
+<script src="assets/tools-menu.js?v=13"></script>
 <script src="assets/account.js?v=8"></script>
 <script src="assets/site-nav.js?v=14"></script>
 </html>

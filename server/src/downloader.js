@@ -1,4 +1,4 @@
-// Downloader (page downloader) : l'audio d'une vidéo YouTube en MP3 ou WAV, par yt-dlp et FFmpeg installés sur le serveur.
+// Downloader (page downloader) : une vidéo YouTube ou TikTok en MP3, WAV ou MP4, par yt-dlp et FFmpeg sur le serveur.
 // Ouvert à tous ; sans compte ou avec un compte gratuit, un téléchargement par minute ; les rôles ONIRIQUE et au-dessus,
 // sans limite. Le fichier est fait dans un dossier jetable, envoyé, puis effacé.
 // Comme l'outil BPM et tonalité, le blanc du début (sous -60 dB) est retiré : le son démarre sur le premier échantillon.
@@ -35,6 +35,34 @@ export function youtubeId(raw) {
     : url.pathname === '/watch' ? url.searchParams.get('v')
     : (url.pathname.match(/^\/(?:embed|shorts|live)\/([^/]+)/) || [])[1];
   return VIDEO_ID.test(id || '') ? id : '';
+}
+
+const TIKTOK_HOSTS = new Set(['tiktok.com', 'www.tiktok.com', 'm.tiktok.com']);
+const TIKTOK_SHORT = new Set(['vm.tiktok.com', 'vt.tiktok.com']);
+/** L'adresse propre d'une vidéo TikTok (lien complet ou lien court de partage) ; '' sinon. Rebâtie à partir des
+ *  seules parties vérifiées : rien d'autre du lien collé n'arrive à yt-dlp. */
+export function tiktokUrl(raw) {
+  let url;
+  try { url = new URL(String(raw || '').trim()); } catch { return ''; }
+  const host = url.hostname.toLowerCase();
+  if (!['http:', 'https:'].includes(url.protocol)) return '';
+  if (TIKTOK_SHORT.has(host)) {
+    const code = url.pathname.split('/')[1] || '';
+    return /^[A-Za-z0-9]{5,20}$/.test(code) ? `https://${host}/${code}/` : '';
+  }
+  if (!TIKTOK_HOSTS.has(host)) return '';
+  const full = url.pathname.match(/^\/(@[A-Za-z0-9._-]{1,40})\/video\/(\d{5,25})\/?$/);
+  if (full) return `https://www.tiktok.com/${full[1]}/video/${full[2]}`;
+  const share = url.pathname.match(/^\/t\/([A-Za-z0-9]{5,20})\/?$/);
+  return share ? `https://www.tiktok.com/t/${share[1]}/` : '';
+}
+
+/** Ce que yt-dlp doit lire pour ce lien : l'adresse et le site ; null si ce n'est ni YouTube ni TikTok. */
+export function sourceOf(raw) {
+  const id = youtubeId(raw);
+  if (id) return { site: 'youtube', url: `https://www.youtube.com/watch?v=${id}` };
+  const tiktok = tiktokUrl(raw);
+  return tiktok ? { site: 'tiktok', url: tiktok } : null;
 }
 
 /** Le nombre d'images (échantillons par voie) avant le premier son au-dessus du seuil, dans du f32le entrelacé. */
@@ -77,8 +105,9 @@ export function mountDownloader(app, { optionalUser, wrap }) {
     const user = optionalUser(req);
     const free = !user || user.role === 'user'; // ONIRIQUE (vip), partenaires, admins, fondateurs : sans limite
     const key = user ? 'u' + user.id : 'ip:' + req.ip;
-    const id = youtubeId(req.body?.url);
-    if (!id) throw new HttpError(400, 'Colle un lien youtube.com ou youtu.be valide.');
+    const source = sourceOf(req.body?.url);
+    if (!source) throw new HttpError(400, 'Colle un lien YouTube ou TikTok valide.');
+    const site = source.site === 'tiktok' ? 'TikTok' : 'YouTube';
     const format = ['wav', 'mp4'].includes(req.body?.format) ? req.body.format : 'mp3';
     const kbps = ['128', '192', '320'].includes(String(req.body?.kbps)) ? String(req.body.kbps) : '320';
     const wait = free ? waitFor(key) : 0;
@@ -94,27 +123,30 @@ export function mountDownloader(app, { optionalUser, wrap }) {
       //    H.264 d'abord, lisible partout) et le son AAC, réunis sans réencodage.
       let title;
       const [bin, extra] = await ytdlpCommand();
-      const pick = format === 'mp4'
-        ? ['-f', 'bv*[height<=1080][vcodec^=avc1]+ba[ext=m4a]/bv*[height<=1080][ext=mp4]+ba[ext=m4a]/b[height<=1080][ext=mp4]/bv*[height<=1080]+ba',
-          '--merge-output-format', 'mp4', '--max-filesize', '1500M']
-        : ['-f', 'bestaudio/best'];
+      //    TikTok : vidéo et son sont dans le même fichier (H.264 d'abord) ; sa piste « audio » à part est le son original
+      //    de la musique, pas forcément celui de la vidéo : l'audio se tire donc de la vidéo elle-même.
+      const pick = source.site === 'tiktok' ? ['-f', 'b[vcodec^=h264]/b', '--max-filesize', '1500M']
+        : format === 'mp4'
+          ? ['-f', 'bv*[height<=1080][vcodec^=avc1]+ba[ext=m4a]/bv*[height<=1080][ext=mp4]+ba[ext=m4a]/b[height<=1080][ext=mp4]/bv*[height<=1080]+ba',
+            '--merge-output-format', 'mp4', '--max-filesize', '1500M']
+          : ['-f', 'bestaudio/best'];
       try {
-        title = String(await run(bin, [...extra, '--no-playlist', '--no-progress', '--no-warnings', '--no-simulate', '-O', '%(title)s',
+        title = String(await run(bin, [...extra, '--encoding', 'utf-8', '--no-playlist', '--no-progress', '--no-warnings', '--no-simulate', '-O', '%(title)s',
           '--match-filter', `duration <= ${MAX_SECONDS}`, ...pick, '-o', path.join(dir, 'source.%(ext)s'),
-          '--', `https://www.youtube.com/watch?v=${id}`], { encoding: 'utf8' })).trim();
+          '--', source.url], { encoding: 'utf8', env: { ...process.env, PYTHONIOENCODING: 'utf-8' } })).trim();
       } catch (error) {
         const why = error.stderr || '';
         if (error.killed) throw new HttpError(504, 'Le téléchargement a pris trop de temps.');
-        if (/Sign in to confirm|bot/i.test(why)) throw new HttpError(502, 'YouTube bloque le serveur pour le moment : réessaie plus tard.');
+        if (/Sign in to confirm|bot/i.test(why)) throw new HttpError(502, `${site} bloque le serveur pour le moment : réessaie plus tard.`);
         if (/Private|unavailable|removed/i.test(why)) throw new HttpError(404, 'Vidéo privée, supprimée ou indisponible.');
         // La raison donnée par yt-dlp (sa ligne ERROR), pour savoir quoi corriger.
         const reason = (why.match(/ERROR:[^\n]*/) || [''])[0].replace(/^ERROR:\s*(\[[^\]]*\]\s*)*/, '').slice(0, 200);
         console.error('yt-dlp :', why.slice(-800));
-        throw new HttpError(502, "YouTube n'a pas rendu cette vidéo." + (reason ? ' Raison : ' + reason : ' Réessaie dans un moment.'));
+        throw new HttpError(502, `${site} n'a pas rendu cette vidéo.` + (reason ? ' Raison : ' + reason : ' Réessaie dans un moment.'));
       }
-      const source = fs.readdirSync(dir).find((name) => name.startsWith('source.'));
-      if (!source) throw new HttpError(422, 'Vidéo trop longue (20 minutes au plus) ou sans piste audio.');
-      const input = path.join(dir, source);
+      const got = fs.readdirSync(dir).find((name) => name.startsWith('source.'));
+      if (!got) throw new HttpError(422, 'Vidéo trop longue (20 minutes au plus) ou sans piste audio.');
+      const input = path.join(dir, got);
       if (format === 'mp4') { // l'image et le son restent tels quels : couper le début décalerait la vidéo
         res.set({ 'Cache-Control': 'no-store', 'X-Title': encodeURIComponent(title), 'X-Lead-Ms': '0' });
         return res.download(input, `${fileTitle(title)}.mp4`, () => { clean(); running--; });

@@ -465,7 +465,12 @@ try {
     await call('POST', '/api/downloader/youtube', { body: { url: 'https://evil.test/x' }, expect: 400 });
     await call('POST', '/api/downloader/youtube', { token: founder.token, body: { url: 'https://evil.test/watch?v=dQw4w9WgXcQ' }, expect: 400 });
     await call('POST', '/api/downloader/youtube', { token: founder.token, body: { url: 'https://youtube.com/watch?v=--exec=rm' }, expect: 400 });
-    const { youtubeId } = await import('../src/downloader.js');
+    const { youtubeId, tiktokUrl } = await import('../src/downloader.js');
+    // TikTok : l'adresse est rebâtie à partir des seules parties vérifiées.
+    assert.equal(tiktokUrl('https://www.tiktok.com/@scout2015/video/6718335390845095173?lang=fr'), 'https://www.tiktok.com/@scout2015/video/6718335390845095173');
+    assert.equal(tiktokUrl('https://vm.tiktok.com/ZMeNmpa9w/'), 'https://vm.tiktok.com/ZMeNmpa9w/');
+    assert.equal(tiktokUrl('https://www.tiktok.com/@a/video/1;rm'), '');
+    assert.equal(tiktokUrl('https://evil.test/@a/video/123456'), '');
     assert.equal(youtubeId('https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=3'), 'dQw4w9WgXcQ');
     assert.equal(youtubeId('https://youtube.com/shorts/dQw4w9WgXcQ'), 'dQw4w9WgXcQ');
     assert.equal(youtubeId('https://music.youtube.com/watch?v=dQw4w9WgXcQ'), 'dQw4w9WgXcQ');
