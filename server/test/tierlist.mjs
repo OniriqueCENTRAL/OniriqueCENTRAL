@@ -42,31 +42,44 @@ try {
   const kay = await account('kay'), lou = await account('lou'), bob = await account('bob');
   run("UPDATE users SET role = 'vip' WHERE id IN (?, ?)", kay.id, lou.id);
 
-  await step('réservée : sans compte 401, compte non ONIRIQUE 403', async () => {
+  await step('sans compte 401 ; un compte hors équipe voit la tier list sans les membres ni les photos des autres', async () => {
     await call('GET', '/api/tierlist', { expect: 401 });
-    await call('GET', '/api/tierlist', { token: bob.token, expect: 403 });
-    assert.equal((await upload(bob.token, png)).status, 403);
+    const r = await call('GET', '/api/tierlist', { token: bob.token });
+    assert.equal(r.members, undefined);
+    assert.deepEqual(r.placement.rows.map((x) => x.label), ['S', 'A', 'B', 'C', 'D', 'F']);
   });
 
-  let photo;
-  await step('les comptes ONIRIQUE sont classables, une photo ajoutée est visible par les autres membres', async () => {
+  let photo, bobPhoto;
+  await step("l'équipe peut importer ses membres et voit ses photos, pas celles des autres comptes", async () => {
     const r = await call('GET', '/api/tierlist', { token: kay.token });
     assert.deepEqual(r.members.map((m) => m.id).sort(), [`u${kay.id}`, `u${lou.id}`].sort());
     assert.equal((await upload(kay.token, Buffer.from('pas une image'))).status, 400);
     const up = await upload(kay.token, png);
     assert.equal(up.status, 201);
     photo = (await up.json()).id;
-    const seen = await call('GET', '/api/tierlist', { token: lou.token });
-    assert.deepEqual(seen.photos.map((p) => [p.id, p.mine]), [[photo, false]]);
+    bobPhoto = (await (await upload(bob.token, png)).json()).id;
+    assert.deepEqual((await call('GET', '/api/tierlist', { token: lou.token })).photos.map((p) => [p.id, p.mine]), [[photo, false]]);
+    assert.deepEqual((await call('GET', '/api/tierlist', { token: bob.token })).photos.map((p) => [p.id, p.mine]), [[bobPhoto, true]]);
   });
 
-  await step('chacun garde son classement, refusé s\'il est illisible', async () => {
-    await call('PUT', '/api/tierlist', { token: kay.token, body: { S: [photo, `u${lou.id}`, photo], Z: ['u1'] } });
-    await call('PUT', '/api/tierlist', { token: kay.token, body: { A: ['<script>'] }, expect: 400 });
-    assert.deepEqual((await call('GET', '/api/tierlist', { token: kay.token })).placement, { S: [photo, `u${lou.id}`] });
-    assert.deepEqual((await call('GET', '/api/tierlist', { token: lou.token })).placement, {});
-    await call('PUT', '/api/tierlist', { token: lou.token, body: { S: [], labels: { S: '  Mieux  en  clash royale ', Z: 'x', A: 5 } } });
-    assert.deepEqual((await call('GET', '/api/tierlist', { token: lou.token })).placement.labels, { S: 'Mieux en clash royale' });
+  await step("chacun garde ses rangées, ses textes sous les images ; refusé s'il est illisible", async () => {
+    await call('PUT', '/api/tierlist', { token: kay.token, body: { rows: [{ label: '  Mieux  en  clash royale ', items: [photo, `u${lou.id}`, photo] }, { label: 'Nouvelle', items: [] }],
+      captions: { [photo]: '  le boss ', '<x>': 'non', [`u${lou.id}`]: '  ' }, withMembers: true } });
+    await call('PUT', '/api/tierlist', { token: kay.token, body: { rows: [{ label: 'A', items: ['<script>'] }] }, expect: 400 });
+    await call('PUT', '/api/tierlist', { token: kay.token, body: { S: [] }, expect: 400 });
+    assert.deepEqual((await call('GET', '/api/tierlist', { token: kay.token })).placement, {
+      rows: [{ label: 'Mieux en clash royale', items: [photo, `u${lou.id}`] }, { label: 'Nouvelle', items: [] }], captions: { [photo]: 'le boss' }, withMembers: true });
+    assert.equal((await call('GET', '/api/tierlist', { token: lou.token })).placement.rows[0].items.length, 0);
+    await call('PUT', '/api/tierlist', { token: bob.token, body: { rows: [], withMembers: true } });
+    assert.equal((await call('GET', '/api/tierlist', { token: bob.token })).placement.withMembers, false);
+  });
+
+  await step('un ancien classement S/A/… est relu en rangées', async () => {
+    run('INSERT INTO tier_lists (user_id, data, updated_at) VALUES (?, ?, 0) ON CONFLICT(user_id) DO UPDATE SET data = excluded.data', lou.id,
+      JSON.stringify({ S: [`u${kay.id}`], labels: { S: 'Top' } }));
+    const { placement } = await call('GET', '/api/tierlist', { token: lou.token });
+    assert.deepEqual(placement.rows[0], { label: 'Top', items: [`u${kay.id}`] });
+    assert.equal(placement.withMembers, true);
   });
 
   await step('seul celui qui a ajouté la photo la retire', async () => {

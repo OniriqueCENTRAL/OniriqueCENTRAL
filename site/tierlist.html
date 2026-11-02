@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="assets/pages.css">
 <style>
 .tl { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #111; }
-.tl-row { display: grid; grid-template-columns: 110px 1fr; min-height: 92px; border-top: 1px solid #000; }
+.tl-row { position: relative; display: grid; grid-template-columns: 110px 1fr; min-height: 92px; border-top: 1px solid #000; }
 .tl-row:first-child { border-top: 0; }
 .tl-label { display: grid; place-items: center; padding: 6px; color: #111; font: 800 28px/1.1 var(--f-display); text-align: center; overflow-wrap: anywhere; outline: 0; cursor: text; }
 .tl-label.long { font: 500 13px/1.3 var(--f-body); }
@@ -19,14 +19,17 @@
 .tl-drop { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 4px; padding: 4px; min-height: 84px; }
 .tl-drop.over, .tl-drop.target { background: rgba(226, 52, 68, .18); cursor: pointer; }
 .pool { margin-top: 18px; border: 1px dashed var(--line); border-radius: 12px; }
-.it { position: relative; width: 80px; height: 80px; border-radius: 6px; overflow: hidden; background: #2a0a0e; cursor: grab; touch-action: manipulation; border: 2px solid transparent; padding: 0; }
+.it { display: flex; flex-direction: column; width: 80px; border-radius: 6px; background: none; cursor: grab; touch-action: manipulation; border: 2px solid transparent; padding: 0; }
 .it.sel { border-color: var(--ember, #e23444); }
+.it .pic { position: relative; aspect-ratio: 1; border-radius: 4px; overflow: hidden; background: #2a0a0e; }
+.it .cap { padding: 2px 1px 0; color: var(--mist, #f6eeee); font: 11px/1.25 var(--f-body); text-align: center; overflow-wrap: anywhere; }
 .it img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
 .it .nm { position: absolute; inset: auto 0 0 0; padding: 2px 4px; background: rgba(0,0,0,.7); color: #fff; font: 10px/1.3 var(--f-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .it .ini { display: grid; place-items: center; height: 100%; color: var(--mist, #f6eeee); font: 700 26px var(--f-display); }
-.it .x { position: absolute; top: 2px; right: 2px; width: 22px; height: 22px; border-radius: 50%; border: 0; background: rgba(0,0,0,.75); color: #fff; cursor: pointer; font-size: 14px; line-height: 1; }
+.it .x, .it .ed, .tl-row .rm { position: absolute; top: 2px; right: 2px; width: 22px; height: 22px; border-radius: 50%; border: 0; background: rgba(0,0,0,.75); color: #fff; cursor: pointer; font-size: 14px; line-height: 1; }
+.it .ed { right: auto; left: 2px; font-size: 12px; }
 .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 0 0 14px; }
-@media (max-width: 560px) { .tl-row { grid-template-columns: 76px 1fr; } .it { width: 64px; height: 64px; } }
+@media (max-width: 560px) { .tl-row { grid-template-columns: 76px 1fr; } .it { width: 64px; } }
 </style>
 
 <a class="skip" href="#contenu">Aller au contenu</a>
@@ -39,15 +42,17 @@
 
 <main class="wrap" id="contenu">
   <section class="hero">
-    <p class="eyebrow">Réservé aux comptes ONIRIQUE</p>
+    <p class="eyebrow">Avec ton compte ONIRIQUE</p>
     <h1>La <em>tier list</em></h1>
-    <p class="lede">Glisse les membres ONIRIQUE et les photos dans les rangées. Touche le nom d'une rangée (S, A…) pour le changer. Sur téléphone : touche une image, puis la rangée. Ton classement est enregistré sur ton compte ; les photos ajoutées sont visibles par tous les membres.</p>
+    <p class="lede">Ajoute tes photos et glisse-les dans les rangées. Touche le nom d'une rangée (S, A…) pour le changer, ✎ sur une image pour écrire un texte dessous. Sur téléphone : touche une image, puis la rangée. Ton classement est enregistré sur ton compte.</p>
   </section>
 
   <p class="status" id="status" role="status"></p>
   <div id="app" hidden>
     <div class="bar">
       <label class="btn">+ Ajouter des photos<input type="file" id="add" accept="image/png,image/jpeg,image/webp" multiple hidden></label>
+      <button type="button" class="btn" id="members" hidden>Importer les membres ONIRIQUE</button>
+      <button type="button" class="btn" id="addrow">+ Ajouter une rangée</button>
       <button type="button" class="btn" id="reset">Tout remettre dans la réserve</button>
       <input id="title" maxlength="60" placeholder="Titre de l'image" aria-label="Titre de l'image exportée" style="flex:1;min-width:160px">
       <button type="button" class="btn" id="export">Exporter en JPG</button>
@@ -60,10 +65,11 @@
 <script src="assets/tools-menu.js?v=7"></script>
 <script src="assets/outils-doc.js?v=2"></script>
 <script>
-const COLORS = { S: "#ff7f7f", A: "#ffbf7f", B: "#ffdf7f", C: "#ffff7f", D: "#bfff7f", F: "#7fffff" };
+const COLORS = ["#ff7f7f", "#ffbf7f", "#ffdf7f", "#ffff7f", "#bfff7f", "#7fffff", "#7fbfff", "#bf7fff", "#ff7fdf"];
 const status = document.getElementById("status"), tl = document.getElementById("tl"), pool = document.getElementById("pool");
 const items = new Map(); // id → élément .it
-let selected = null, saveTimer = null;
+const captions = {}; // id → texte sous l'image
+let selected = null, saveTimer = null, withMembers = false;
 
 const say = (text) => { status.textContent = text; };
 
@@ -75,15 +81,29 @@ function itemEl(it) {
   b.dataset.id = it.id;
   b.item = it;
   b.title = it.name || "Photo de " + it.by;
-  if (it.src) b.innerHTML = `<img alt="" src="${Outils.esc(it.src)}">`;
-  else b.innerHTML = `<span class="ini">${Outils.esc((it.name || "?").slice(0, 1).toUpperCase())}</span>`;
-  if (it.name) b.insertAdjacentHTML("beforeend", `<span class="nm">${Outils.esc(it.name)}</span>`);
+  b.innerHTML = `<span class="pic"></span><span class="cap"></span>`;
+  const pic = b.firstChild, cap = b.lastChild;
+  if (it.src) pic.innerHTML = `<img alt="" src="${Outils.esc(it.src)}">`;
+  else pic.innerHTML = `<span class="ini">${Outils.esc((it.name || "?").slice(0, 1).toUpperCase())}</span>`;
+  if (it.name) pic.insertAdjacentHTML("beforeend", `<span class="nm">${Outils.esc(it.name)}</span>`);
+  cap.textContent = captions[it.id] || "";
   b.setAttribute("aria-label", b.title);
+  const ed = document.createElement("span");
+  ed.className = "ed"; ed.textContent = "✎"; ed.title = "Texte sous l'image"; ed.setAttribute("role", "button");
+  ed.onclick = (e) => {
+    e.stopPropagation();
+    const text = prompt("Texte sous l'image (vide pour l'enlever) :", captions[it.id] || "");
+    if (text === null) return;
+    captions[it.id] = text.replace(/\s+/g, " ").trim().slice(0, 80);
+    cap.textContent = captions[it.id];
+    save();
+  };
+  pic.append(ed);
   if (it.mine) {
     const x = document.createElement("span");
     x.className = "x"; x.textContent = "×"; x.title = "Retirer ma photo"; x.setAttribute("role", "button");
     x.onclick = (e) => { e.stopPropagation(); removePhoto(it.id); };
-    b.append(x);
+    pic.append(x);
   }
   b.addEventListener("dragstart", (e) => e.dataTransfer.setData("text/plain", it.id));
   b.addEventListener("click", (e) => {
@@ -116,10 +136,11 @@ function move(id, zone, before) {
 function save() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
-    const placement = {};
-    tl.querySelectorAll(".tl-drop").forEach((z) => { placement[z.dataset.tier] = [...z.children].map((c) => c.dataset.id); });
-    placement.labels = {};
-    tl.querySelectorAll(".tl-label").forEach((l) => { placement.labels[l.dataset.tier] = l.textContent.trim() || l.dataset.tier; });
+    const placement = {
+      rows: [...tl.querySelectorAll(".tl-row")].map((r) => ({ label: r.querySelector(".tl-label").textContent.trim(), items: [...r.querySelectorAll(".it")].map((c) => c.dataset.id) })),
+      captions: Object.fromEntries(Object.entries(captions).filter(([id, t]) => t && items.has(id))),
+      withMembers,
+    };
     try { await Outils.api("PUT", "/tierlist", placement); say("Classement enregistré."); } catch (e) { say(e.message); }
   }, 500);
 }
@@ -161,11 +182,12 @@ async function exportJpg() {
   await document.fonts.ready;
   const W = 1600, PAD = 56, LABEL = 220, SIZE = 124, GAP = 8;
   const perLine = Math.floor((W - PAD * 2 - LABEL - GAP) / (SIZE + GAP));
-  const rows = [...tl.querySelectorAll(".tl-row")].map((r) => ({
-    label: r.querySelector(".tl-label").textContent.trim(), color: COLORS[r.querySelector(".tl-label").dataset.tier],
-    items: [...r.querySelectorAll(".it")].map((el) => el.item),
-  }));
-  const heights = rows.map((r) => Math.max(1, Math.ceil(r.items.length / perLine)) * (SIZE + GAP) + GAP);
+  const CAP = 30; // place du texte sous l'image, seulement dans les rangées qui en ont
+  const rows = [...tl.querySelectorAll(".tl-row")].map((r, i) => {
+    const its = [...r.querySelectorAll(".it")].map((el) => el.item);
+    return { label: r.querySelector(".tl-label").textContent.trim(), color: COLORS[i % COLORS.length], items: its, cell: SIZE + (its.some((it) => captions[it.id]) ? CAP : 0) };
+  });
+  const heights = rows.map((r) => Math.max(1, Math.ceil(r.items.length / perLine)) * (r.cell + GAP) + GAP);
   const HEAD = 170, FOOT = 80;
   const H = HEAD + heights.reduce((a, b) => a + b, 0) + FOOT;
   const c = document.createElement("canvas");
@@ -204,7 +226,7 @@ async function exportJpg() {
     const lh = (size + 2) * 1.25;
     lines.forEach((l, k) => g.fillText(l, PAD + LABEL / 2, y + h / 2 + (k - (lines.length - 1) / 2) * lh));
     r.items.forEach((it, k) => {
-      const x = PAD + LABEL + GAP + (k % perLine) * (SIZE + GAP), iy = y + GAP + Math.floor(k / perLine) * (SIZE + GAP);
+      const x = PAD + LABEL + GAP + (k % perLine) * (SIZE + GAP), iy = y + GAP + Math.floor(k / perLine) * (r.cell + GAP);
       g.save();
       g.beginPath(); g.roundRect(x, iy, SIZE, SIZE, 10); g.clip();
       const img = imgs.get(it.id);
@@ -224,6 +246,12 @@ async function exportJpg() {
         g.fillText(n, x + SIZE / 2, iy + SIZE - 13);
       }
       g.restore();
+      if (captions[it.id]) {
+        g.fillStyle = "#f6eeee"; g.font = '600 15px "Hanken Grotesk", "Segoe UI", sans-serif';
+        let n = captions[it.id];
+        while (g.measureText(n).width > SIZE + GAP - 2 && n.length > 1) n = n.slice(0, -2) + "…";
+        g.fillText(n, x + SIZE / 2, iy + SIZE + CAP / 2);
+      }
     });
     g.fillStyle = "#000"; g.fillRect(PAD, y + h - 2, W - PAD * 2, 2);
     y += h;
@@ -254,28 +282,59 @@ document.getElementById("reset").addEventListener("click", () => {
   save();
 });
 
+function paint() { tl.querySelectorAll(".tl-label").forEach((l, i) => { l.style.background = COLORS[i % COLORS.length]; }); }
+
+function addRow(name, ids = []) {
+  const row = document.createElement("div");
+  row.className = "tl-row";
+  row.innerHTML = `<div class="tl-label" contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-label="Nom de la rangée"></div><div class="tl-drop" aria-label="Rangée"></div><button type="button" class="rm" title="Supprimer la rangée" aria-label="Supprimer la rangée">×</button>`;
+  const [label, zone, rm] = row.children;
+  label.textContent = name;
+  label.classList.toggle("long", name.length > 3);
+  label.addEventListener("input", () => { if (label.textContent.length > 60) label.textContent = label.textContent.slice(0, 60); label.classList.toggle("long", label.textContent.length > 3); save(); });
+  label.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); label.blur(); } });
+  rm.addEventListener("click", () => {
+    if (!confirm(`Supprimer la rangée « ${label.textContent.trim()} » ? Ses images retournent dans la réserve.`)) return;
+    zone.querySelectorAll(".it").forEach((el) => pool.append(el));
+    row.remove();
+    paint();
+    save();
+  });
+  for (const id of ids) if (items.has(id) && !items.get(id).parentNode) zone.append(items.get(id));
+  dropZone(zone);
+  tl.append(row);
+  paint();
+  return label;
+}
+
+document.getElementById("addrow").addEventListener("click", () => {
+  const label = addRow("?");
+  save();
+  label.focus();
+  getSelection().selectAllChildren(label);
+});
+
 (async () => {
-  if (!Outils.token()) { say("Connecte-toi avec ton compte ONIRIQUE pour voir la tier list."); return; }
+  if (!Outils.token()) { say("Connecte-toi avec ton compte ONIRIQUE pour faire ta tier list."); return; }
   let data;
   try { data = await Outils.api("GET", "/tierlist"); } catch (e) { say(e.message); return; }
-  for (const t of data.tiers) {
-    const row = document.createElement("div");
-    row.className = "tl-row";
-    row.innerHTML = `<div class="tl-label" style="background:${COLORS[t]}" data-tier="${t}" contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-label="Nom de la rangée ${t}"></div><div class="tl-drop" data-tier="${t}" aria-label="Rangée ${t}"></div>`;
-    const label = row.firstChild;
-    label.textContent = (data.placement.labels || {})[t] || t;
-    label.classList.toggle("long", label.textContent.length > 3);
-    label.addEventListener("input", () => { if (label.textContent.length > 60) label.textContent = label.textContent.slice(0, 60); label.classList.toggle("long", label.textContent.length > 3); save(); });
-    label.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); label.blur(); } });
-    tl.append(row);
-  }
-  for (const it of [...data.members, ...data.photos]) itemEl(it);
-  for (const t of data.tiers) {
-    const zone = tl.querySelector(`[data-tier="${t}"]`);
-    for (const id of data.placement[t] || []) if (items.has(id) && !items.get(id).parentNode) zone.append(items.get(id));
-  }
+  const { placement } = data;
+  Object.assign(captions, placement.captions);
+  withMembers = !!(data.members && placement.withMembers);
+  for (const it of [...(withMembers ? data.members : []), ...data.photos]) itemEl(it);
+  for (const r of placement.rows) addRow(r.label, r.items);
   for (const el of items.values()) if (!el.parentNode) pool.append(el);
-  document.querySelectorAll(".tl-drop").forEach(dropZone);
+  dropZone(pool);
+  // Les membres ONIRIQUE n'arrivent que sur demande, et le serveur ne les envoie qu'à l'équipe.
+  const importBtn = document.getElementById("members");
+  importBtn.hidden = !data.members || withMembers;
+  importBtn.addEventListener("click", () => {
+    withMembers = true;
+    for (const m of data.members) if (!items.has(m.id)) pool.prepend(itemEl(m));
+    importBtn.hidden = true;
+    say("Membres ONIRIQUE ajoutés à la réserve.");
+    save();
+  });
   document.getElementById("app").hidden = false;
 })();
 </script>
