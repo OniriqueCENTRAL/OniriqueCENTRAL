@@ -54,10 +54,10 @@ header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.6); back
 .install img { width: 22px; height: 22px; border-radius: 6px; }
 #install-help { width: 400px; }
 /* Réglages : l'en-tête et sa croix restent en haut, seul le contenu défile ; sur téléphone, un panneau qui monte du bas. */
-#settings { width: 440px; }
-#settings[open] { display: flex; flex-direction: column; overflow: hidden; }
-#settings .dlg-head { flex: none; padding-bottom: 14px; border-bottom: 1px solid rgba(255,210,214,.08); }
-#settings .stack { min-height: 0; align-content: start; grid-auto-rows: max-content; padding: 16px 18px calc(20px + env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; }
+#settings, #trash { width: 440px; }
+#settings[open], #trash[open] { display: flex; flex-direction: column; overflow: hidden; }
+#settings .dlg-head, #trash .dlg-head { flex: none; padding-bottom: 14px; border-bottom: 1px solid rgba(255,210,214,.08); }
+#settings .stack, #trash .stack { min-height: 0; align-content: start; grid-auto-rows: max-content; padding: 16px 18px calc(20px + env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; }
 @media (max-width: 640px) {
   #settings { width: 100vw; max-width: 100vw; max-height: 88dvh; bottom: 0; margin: auto 0 0; border-radius: 24px 24px 0 0; border-bottom: 0; }
 }
@@ -685,6 +685,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
         <div class="quota" id="quota"></div>
         <button class="install" id="install" type="button" hidden><img src="assets/app-icon-180.png" alt="">Ajouter à l'écran d'accueil</button>
         <button class="install" id="settings-open" type="button">Réglages</button>
+        <button class="install" id="trash-open" type="button">Corbeille</button>
         <button class="install" id="scan-open" type="button" hidden title="Chercher si tes prods ont été volées et sorties sur les plateformes">SCAN</button>
       </div>
     </div>
@@ -778,6 +779,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 </dialog>
 <dialog id="share"></dialog>
 <dialog id="settings"></dialog>
+<dialog id="trash"></dialog>
 <dialog id="collab"></dialog>
 <dialog id="mailer"></dialog>
 <dialog id="store"></dialog>
@@ -1209,6 +1211,7 @@ function renderGrid() {
     tile.oncontextmenu = (event) => { const dots = tile.querySelector(".dots"); if (dots) { event.preventDefault(); event.stopPropagation(); dots.openAt(atPointer(event)); } };
   });
   $("tiles").replaceChildren(...tiles);
+  $("trash-open").hidden = data.vanish;
   $("scan-open").hidden = data.vanish || !data.projects.some((x) => x.mine && x.kind === "pack");
   $("grid-top").hidden = !!f;
   $("folder-crumb").hidden = !f;
@@ -3276,7 +3279,7 @@ function renderDetails() {
           openDetails(t.id);
         } })),
       group(p.mine && p.kind === "pack" && p.title !== OUTSIDE_PACK && item("chevron", "Retirer du pack", { hint: "La prod et ses versions vont dans « " + OUTSIDE_PACK + " »", onclick: () => unpack(p, t) }),
-        item("close", "Supprimer", { danger: true, onclick: () => confirm("Supprimer « " + t.title + " » et toutes ses versions ?")
+        item("close", "Supprimer", { hint: "Il reste 30 jours dans la corbeille", danger: true, onclick: () => confirm("Mettre « " + t.title + " » et toutes ses versions à la corbeille ? Tu pourras le restaurer pendant 30 jours.")
         && api("DELETE", "/me/sounds/tracks/" + t.id).then(() => { $("details").close(); return refresh(); }).catch(fail) }))];
   } else if (detailsView === "stats") {
     const st = t.stats, pct = (x) => (x === null ? "—" : Math.round(x * 100) + " %");
@@ -3795,6 +3798,27 @@ async function openSettings() {
   if (!dialog.open) dialog.showModal();
 }
 $("settings-open").onclick = openSettings;
+
+// ——— La corbeille : les titres supprimés, à restaurer ou à effacer, effacés tout seuls 30 jours après ———
+async function openTrash() {
+  const dialog = $("trash");
+  let trash;
+  try { trash = await api("GET", "/me/sounds/trash"); } catch (e) { return alert(e.message); }
+  const left = (ms) => { const d = Math.max(0, Math.ceil((ms - Date.now()) / 86400000)); return d <= 1 ? "effacé demain" : "effacé dans " + d + " jours"; };
+  const act = (promise) => promise.then(() => Promise.all([refresh(), openTrash()]), fail);
+  dialog.replaceChildren(
+    el("div", { className: "dlg-head" }, el("b", { textContent: "Corbeille" }), el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close"))),
+    el("div", { className: "stack" },
+      el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Les titres supprimés restent ici " + trash.days + " jours, puis sont effacés pour de bon. Ils ne comptent plus dans ton espace et leurs liens d'écoute sont fermés tant qu'ils y sont." }),
+      trash.tracks.length ? el("ul", { className: "group" }, ...trash.tracks.map((t) => el("li", {}, el("div", { className: "item" },
+        el("span", { className: "grow" }, t.title, el("small", { textContent: (t.from ? t.from + " · " : "") + size(t.size) + " · " + left(t.purgeAt) })),
+        el("button", { className: "btn btn-ghost", type: "button", textContent: "Restaurer", onclick: () => act(api("POST", "/me/sounds/trash/" + t.id + "/restore")) }),
+        el("button", { className: "x", type: "button", ariaLabel: "Effacer « " + t.title + " » pour de bon",
+          onclick: () => confirm("Effacer « " + t.title + " » pour de bon ? Ça ne pourra pas être annulé.") && act(api("DELETE", "/me/sounds/trash/" + t.id)) }, icon("close"))))))
+        : el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: "La corbeille est vide." })));
+  if (!dialog.open) dialog.showModal();
+}
+$("trash-open").onclick = openTrash;
 
 // ——— SCAN : les prods de mes packs cherchées dans les titres sortis sur les plateformes (Spotify, Deezer, YouTube…) ———
 let scanOnly = null;
