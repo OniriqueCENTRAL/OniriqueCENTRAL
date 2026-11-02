@@ -613,7 +613,7 @@ export function createApp() {
   //============================================================================
   const allowed = (right) => (req, res, next) => requireUser(req, res, (error) => next(error
     || (can(req.user, right) ? undefined : new HttpError(403, "Cette fonction n'est pas ouverte à ce compte."))));
-  mountDownloader(app, { allowed, wrap });
+  mountDownloader(app, { optionalUser, wrap });
   const team = allowed('youtube');
   // Brancher sa chaîne : pour les Shorts, ou pour publier ses prods depuis ONIRIQUE CLOUD.
   const channel = (req, res, next) => requireUser(req, res, (error) => next(error

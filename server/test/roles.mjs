@@ -461,10 +461,8 @@ try {
     assert.ok((await call('GET', '/api/me', { token: founder.token })).rights.includes('links'));
     run(`DELETE FROM settings WHERE key = 'role_rights'`);
     await call('GET', '/api/me/links', { token: member.token });
-    // Downloader : fondateurs seulement par défaut ; un lien qui n'est pas YouTube n'atteint jamais yt-dlp.
-    const body = { url: 'https://youtu.be/dQw4w9WgXcQ', format: 'mp3' };
-    await call('POST', '/api/downloader/youtube', { token: member.token, body, expect: 403 });
-    await call('POST', '/api/downloader/youtube', { body, expect: 401 });
+    // Downloader : ouvert à tous (limité à un par minute sans le rôle ONIRIQUE) ; un lien qui n'est pas YouTube n'atteint jamais yt-dlp.
+    await call('POST', '/api/downloader/youtube', { body: { url: 'https://evil.test/x' }, expect: 400 });
     await call('POST', '/api/downloader/youtube', { token: founder.token, body: { url: 'https://evil.test/watch?v=dQw4w9WgXcQ' }, expect: 400 });
     await call('POST', '/api/downloader/youtube', { token: founder.token, body: { url: 'https://youtube.com/watch?v=--exec=rm' }, expect: 400 });
     const { youtubeId } = await import('../src/downloader.js');

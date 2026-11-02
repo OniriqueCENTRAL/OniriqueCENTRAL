@@ -16,8 +16,6 @@
 .opt { display: grid; gap: 12px; }
 .card p.error { color: #FF7A85; }
 .card p.done { color: var(--mist); }
-.locked { text-align: center; }
-.locked .row { justify-content: center; }
 .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .row input { flex: 1 1 260px; }
 .card label.tick { display: flex; align-items: center; gap: 10px; font: 500 15px/1.4 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--mist); cursor: pointer; }
@@ -38,20 +36,12 @@
 
 <main class="wrap" id="contenu">
   <section class="hero">
-    <p class="eyebrow">Réservé aux fondateurs</p>
+    <p class="eyebrow">Outil gratuit</p>
     <h1>Ton audio. <em>Ton format.</em></h1>
     <p class="lede">Colle un lien YouTube et récupère son audio en MP3 ou en WAV, au nom de la vidéo, sans le blanc du début.</p>
   </section>
 
-  <article class="card locked" id="locked" hidden>
-    <div>
-      <p class="eyebrow" id="locked-title">Connecte-toi pour ouvrir Downloader</p>
-      <p id="locked-text">Cet outil est réservé aux comptes fondateurs pour l'instant.</p>
-      <div class="row" style="margin-top:16px"><a class="go" id="locked-go" href="compte?next=downloader">Me connecter</a><a class="go ghost" href="outils">Les autres outils</a></div>
-    </div>
-  </article>
-
-  <article class="card" id="studio" hidden>
+  <article class="card" id="studio">
     <p class="head"><b>Lien YouTube</b><span>20 minutes au plus</span></p>
     <div class="opt">
       <label for="url">Lien de la vidéo</label>
@@ -65,6 +55,7 @@
       </div>
       <label class="tick"><input id="prod" type="checkbox"> PROD <small>— ajoute le BPM et la tonalité au nom : « Titre - 140 BPM - F minor »</small></label>
       <p class="hint">Uniquement pour des vidéos dont tu as les droits (les tiennes, celles de tes collabs…).</p>
+      <p class="hint" id="limit">Sans compte ou avec un compte gratuit : un téléchargement par minute. Sans limite avec le rôle ONIRIQUE.</p>
       <p class="error" id="url-error" role="alert"></p>
       <p class="done" id="done" aria-live="polite"></p>
     </div>
@@ -87,20 +78,8 @@ const $ = (id) => document.getElementById(id);
 const A = OniriqueAudio;
 const TOKEN = (() => { try { return sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"); } catch { return null; } })();
 
-// ——— Accès : le droit « downloader » (fondateurs ; réglable dans l'admin, « Droits des rôles ») ———
-async function gate() {
-  if (!TOKEN) return lock("Connecte-toi pour ouvrir Downloader", "Cet outil est réservé aux comptes fondateurs pour l'instant.", "compte?next=downloader", "Me connecter");
-  const response = await fetch("/api/me", { headers: { Authorization: "Bearer " + TOKEN } }).catch(() => null);
-  if (!response || response.status === 401) return lock("Connecte-toi pour ouvrir Downloader", "Ta session a expiré.", "compte?next=downloader", "Me connecter");
-  const me = await response.json().catch(() => ({}));
-  if (!(me.rights || []).includes("downloader")) return lock("Downloader est réservé aux fondateurs", "Il n'est pas encore ouvert à ce compte.", "outils", "Voir les outils");
-  $("studio").hidden = false;
-}
-function lock(title, text, href, label) {
-  $("locked-title").textContent = title; $("locked-text").textContent = text;
-  $("locked-go").href = href; $("locked-go").textContent = label;
-  $("locked").hidden = false;
-}
+// Les rôles ONIRIQUE et au-dessus n'ont pas de limite (server/src/downloader.js) : la mention disparaît pour eux.
+document.addEventListener("onirique:account", (event) => { $("limit").hidden = (event.detail.user || {}).role !== "user"; });
 
 // ——— Lien YouTube : identifiant de la vidéo, puis titre et chaîne par oEmbed pour l'aperçu ———
 function videoId(raw) {
@@ -170,7 +149,7 @@ $("yt-download").onclick = async () => {
   button.textContent = "Téléchargement… (jusqu'à une minute)";
   try {
     const response = await fetch("/api/downloader/youtube", {
-      method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + TOKEN },
+      method: "POST", headers: { "Content-Type": "application/json", ...(TOKEN ? { Authorization: "Bearer " + TOKEN } : {}) },
       body: JSON.stringify({ url: $("url").value.trim(), format, kbps }),
     });
     if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Le téléchargement a échoué.");
@@ -195,9 +174,8 @@ $("yt-download").onclick = async () => {
   button.textContent = label;
   button.disabled = false;
 };
-gate();
 </script>
-<script src="assets/tools-menu.js?v=10"></script>
+<script src="assets/tools-menu.js?v=11"></script>
 <script src="assets/account.js?v=8"></script>
 <script src="assets/site-nav.js?v=14"></script>
 </html>

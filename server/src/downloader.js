@@ -1,5 +1,6 @@
 // Downloader (page downloader) : l'audio d'une vidéo YouTube en MP3 ou WAV, par yt-dlp et FFmpeg installés sur le serveur.
-// Réservé au droit « downloader » (fondateurs par défaut). Le fichier est fait dans un dossier jetable, envoyé, puis effacé.
+// Ouvert à tous ; sans compte ou avec un compte gratuit, un téléchargement par minute ; les rôles ONIRIQUE et au-dessus,
+// sans limite. Le fichier est fait dans un dossier jetable, envoyé, puis effacé.
 // Comme l'outil BPM et tonalité, le blanc du début (sous -60 dB) est retiré : le son démarre sur le premier échantillon.
 import { execFile } from 'node:child_process';
 import fs from 'node:fs';
@@ -13,7 +14,17 @@ const MAX_SECONDS = 20 * 60;
 const SILENCE = 0.001; // -60 dB, le seuil de l'outil BPM et tonalité
 const SCAN_SECONDS = 30; // le blanc se cherche dans les 30 premières secondes
 const workDir = path.join(config.dataDir, 'downloader');
-let running = 0; // un serveur modeste : deux extractions à la fois au plus
+const MAX_RUNNING = 3; // un serveur modeste : trois extractions à la fois au plus
+const WAIT_MS = 60_000; // sans compte ou compte gratuit : un téléchargement par minute
+let running = 0;
+const lastStart = new Map(); // compte (u12) ou IP → heure du dernier téléchargement
+
+/** Millisecondes à attendre avant le prochain téléchargement de cette clé ; 0 si c'est permis tout de suite. */
+export function waitFor(key, t = Date.now()) {
+  const last = lastStart.get(key);
+  return last && t - last < WAIT_MS ? WAIT_MS - (t - last) : 0;
+}
+setInterval(() => { const t = Date.now(); for (const [key, last] of lastStart) if (t - last >= WAIT_MS) lastStart.delete(key); }, WAIT_MS).unref();
 
 /** L'identifiant de la vidéo d'un lien youtube.com / youtu.be ; '' sinon. */
 export function youtubeId(raw) {
@@ -40,14 +51,20 @@ const run = (bin, args, options = {}) => new Promise((resolve, reject) => execFi
   { timeout: 8 * 60_000, maxBuffer: 64 * 1024 * 1024, ...options },
   (error, stdout, stderr) => (error ? reject(Object.assign(error, { stderr: String(stderr) })) : resolve(stdout))));
 
-export function mountDownloader(app, { allowed, wrap }) {
-  app.post('/api/downloader/youtube', allowed('downloader'), wrap(async (req, res) => {
+export function mountDownloader(app, { optionalUser, wrap }) {
+  app.post('/api/downloader/youtube', wrap(async (req, res) => {
+    const user = optionalUser(req);
+    const free = !user || user.role === 'user'; // ONIRIQUE (vip), partenaires, admins, fondateurs : sans limite
+    const key = user ? 'u' + user.id : 'ip:' + req.ip;
     const id = youtubeId(req.body?.url);
     if (!id) throw new HttpError(400, 'Colle un lien youtube.com ou youtu.be valide.');
     const format = req.body?.format === 'wav' ? 'wav' : 'mp3';
     const kbps = ['128', '192', '320'].includes(String(req.body?.kbps)) ? String(req.body.kbps) : '320';
-    if (running >= 2) throw new HttpError(429, 'Deux téléchargements sont déjà en cours : réessaie dans une minute.');
+    const wait = free ? waitFor(key) : 0;
+    if (wait) throw new HttpError(429, `Un téléchargement par minute sans le rôle ONIRIQUE : réessaie dans ${Math.ceil(wait / 1000)} s.`);
+    if (running >= MAX_RUNNING) throw new HttpError(429, "Le serveur est occupé par d'autres téléchargements : réessaie dans une minute.");
     running++;
+    if (free) lastStart.set(key, Date.now());
     fs.mkdirSync(workDir, { recursive: true });
     const dir = fs.mkdtempSync(path.join(workDir, 'job-'));
     const clean = () => fs.rm(dir, { recursive: true, force: true }, () => {});
@@ -63,7 +80,10 @@ export function mountDownloader(app, { allowed, wrap }) {
         if (error.killed) throw new HttpError(504, 'Le téléchargement a pris trop de temps.');
         if (/Sign in to confirm|bot/i.test(why)) throw new HttpError(502, 'YouTube bloque le serveur pour le moment : réessaie plus tard.');
         if (/Private|unavailable|removed/i.test(why)) throw new HttpError(404, 'Vidéo privée, supprimée ou indisponible.');
-        throw new HttpError(502, "YouTube n'a pas rendu cette vidéo. Réessaie, ou mets à jour yt-dlp sur le serveur.");
+        // La raison donnée par yt-dlp (sa ligne ERROR), pour savoir quoi corriger.
+        const reason = (why.match(/ERROR:[^\n]*/) || [''])[0].replace(/^ERROR:\s*(\[[^\]]*\]\s*)*/, '').slice(0, 200);
+        console.error('yt-dlp :', why.slice(-800));
+        throw new HttpError(502, "YouTube n'a pas rendu cette vidéo." + (reason ? ' Raison : ' + reason : ' Réessaie dans un moment.'));
       }
       const source = fs.readdirSync(dir).find((name) => name.startsWith('source.'));
       if (!source) throw new HttpError(422, 'Vidéo trop longue (20 minutes au plus) ou sans piste audio.');
@@ -87,6 +107,7 @@ export function mountDownloader(app, { allowed, wrap }) {
       res.download(output, `${fileTitle(title)}.${format}`, () => { clean(); running--; });
     } catch (error) {
       clean(); running--;
+      if (free) lastStart.delete(key); // un téléchargement raté ne compte pas
       throw error;
     }
   }));

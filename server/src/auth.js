@@ -96,7 +96,6 @@ export const RIGHTS = {
   engineer: { label: "Profil d'ingé (crédits)", default: [] },
   youtube: { label: 'Shorts YouTube programmés', default: ['vip', 'admin'] },
   instagram: { label: 'Instagram (réponses automatiques, Reels programmés)', default: [] },
-  downloader: { label: "Downloader (l'audio d'une vidéo ou d'un lien YouTube en MP3 / WAV)", default: [] },
 };
 // Les rôles dont les droits se règlent (les fondateurs ont tout).
 export const EDITABLE_ROLES = ['user', 'vip', 'abrasion', 'relic', 'admin'];
