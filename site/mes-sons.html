@@ -3279,7 +3279,7 @@ function renderDetails() {
           openDetails(t.id);
         } })),
       group(p.mine && p.kind === "pack" && p.title !== OUTSIDE_PACK && item("chevron", "Retirer du pack", { hint: "La prod et ses versions vont dans « " + OUTSIDE_PACK + " »", onclick: () => unpack(p, t) }),
-        item("close", "Supprimer", { hint: "Il reste 30 jours dans la corbeille", danger: true, onclick: () => confirm("Mettre « " + t.title + " » et toutes ses versions à la corbeille ? Tu pourras le restaurer pendant 30 jours.")
+        item("close", "Envoyer à la corbeille", { hint: "Tu peux le restaurer pendant 30 jours", danger: true, onclick: () => confirm("Mettre « " + t.title + " » et toutes ses versions à la corbeille ? Tu pourras le restaurer pendant 30 jours.")
         && api("DELETE", "/me/sounds/tracks/" + t.id).then(() => { $("details").close(); return refresh(); }).catch(fail) }))];
   } else if (detailsView === "stats") {
     const st = t.stats, pct = (x) => (x === null ? "—" : Math.round(x * 100) + " %");
