@@ -84,6 +84,10 @@ const run = (bin, args, options = {}) => new Promise((resolve, reject) => execFi
 // sur celui du système si GitHub ne répond pas. Node sert de moteur JavaScript aux défis de YouTube.
 const YTDLP = path.join(config.dataDir, 'yt-dlp');
 const YTDLP_URL = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp';
+// YouTube refuse l'adresse du serveur (« Sign in to confirm you're not a bot ») : il passe donc par un compte YouTube
+// de secours, jamais un compte personnel, dont les cookies (format Netscape) sont posés à la main dans ce fichier.
+// yt-dlp les rafraîchit lui-même. Sans le fichier, rien ne change.
+const YOUTUBE_COOKIES = path.join(config.dataDir, 'youtube-cookies.txt');
 let updating = null;
 async function ytdlpCommand() {
   if (process.platform === 'win32') return ['yt-dlp', []]; // la version officielle se lance par python3 : serveur Linux seulement
@@ -123,6 +127,7 @@ export function mountDownloader(app, { optionalUser, wrap }) {
       //    H.264 d'abord, lisible partout) et le son AAC, réunis sans réencodage.
       let title;
       const [bin, extra] = await ytdlpCommand();
+      const cookies = source.site === 'youtube' && fs.existsSync(YOUTUBE_COOKIES) ? ['--cookies', YOUTUBE_COOKIES] : [];
       //    TikTok : vidéo et son sont dans le même fichier (H.264 d'abord) ; sa piste « audio » à part est le son original
       //    de la musique, pas forcément celui de la vidéo : l'audio se tire donc de la vidéo elle-même.
       const pick = source.site === 'tiktok' ? ['-f', 'b[vcodec^=h264]/b', '--max-filesize', '1500M']
@@ -131,7 +136,7 @@ export function mountDownloader(app, { optionalUser, wrap }) {
             '--merge-output-format', 'mp4', '--max-filesize', '1500M']
           : ['-f', 'bestaudio/best'];
       try {
-        title = String(await run(bin, [...extra, '--encoding', 'utf-8', '--no-playlist', '--no-progress', '--no-warnings', '--no-simulate', '-O', '%(title)s',
+        title = String(await run(bin, [...extra, ...cookies, '--encoding', 'utf-8', '--no-playlist', '--no-progress', '--no-warnings', '--no-simulate', '-O', '%(title)s',
           '--match-filter', `duration <= ${MAX_SECONDS}`, ...pick, '-o', path.join(dir, 'source.%(ext)s'),
           '--', source.url], { encoding: 'utf8', env: { ...process.env, PYTHONIOENCODING: 'utf-8' } })).trim();
       } catch (error) {
