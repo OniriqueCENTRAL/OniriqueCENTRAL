@@ -25,7 +25,7 @@ window.OniriqueTools = [
     ["Tessiture", "tessiture", "Ta note la plus basse, la plus haute, et les tonalités qui te vont."],
   ]],
   ["Fichiers", [
-    ["Convertisseur", "convertisseur", "WAV ou MP3, avec le choix de la fréquence et de la résolution."],
+    ["Convertisseur", "convertisseur", "WAV ou MP3, avec le choix de la fréquence et de la résolution ; JPG, PNG ou WEBP pour les images."],
     ["Découpe et fondu", "decoupe", "Garder un passage, ajouter un fondu, exporter."],
     ["Transposer", "transposition", "Changer la hauteur ou le tempo d'un morceau, l'un sans l'autre."],
     ["Downloader", "downloader", "Un lien YouTube ou TikTok en MP3, en WAV ou en vidéo MP4 HD, au nom de la vidéo ; option PROD avec BPM et tonalité."],

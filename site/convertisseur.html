@@ -1,13 +1,13 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=ce23f423"></script>
+<script src="assets/i18n.js?v=753583a6"></script>
 <script src="assets/ui.js?v=3"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Convertisseur audio WAV et MP3 — ONIRIQUE</title>
-<meta name="description" content="Convertis un fichier audio en WAV (16, 24 ou 32 bits, 44,1 à 96 kHz) ou en MP3 jusqu'à 320 kbit/s, dans ton navigateur. Gratuit, sans compte, sans envoi du fichier.">
+<title>Convertisseur WAV, MP3, JPG et PNG — ONIRIQUE</title>
+<meta name="description" content="Convertis un fichier audio en WAV (16, 24 ou 32 bits, 44,1 à 96 kHz) ou en MP3 jusqu'à 320 kbit/s, et une image en JPG, PNG ou WEBP, dans ton navigateur. Gratuit, sans compte, sans envoi du fichier.">
 <link rel="canonical" href="https://onirique.store/convertisseur">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="stylesheet" href="assets/fonts.css">
@@ -28,15 +28,15 @@
 <main class="wrap" id="contenu">
   <section class="hero">
     <p class="eyebrow">Outil gratuit</p>
-    <h1>Convertir en <em>WAV</em> ou en <em>MP3</em></h1>
-    <p class="lede">Un MP3 320 pour envoyer une instru, un WAV 24 bits pour un distributeur, un 44,1 kHz pour un vieux projet : dépose le fichier, choisis le format, télécharge.</p>
+    <h1>Convertir un <em>son</em> ou une <em>image</em></h1>
+    <p class="lede">Un MP3 320 pour envoyer une instru, un WAV 24 bits pour un distributeur, un 44,1 kHz pour un vieux projet, une cover en JPG ou en PNG : dépose le fichier, choisis le format, télécharge.</p>
 
     <button class="drop" id="drop" type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>
-      <strong>Dépose un fichier audio ici</strong>
-      <span>ou clique pour le choisir · MP3, WAV, FLAC, M4A, OGG</span>
+      <strong>Dépose un fichier audio ou une image ici</strong>
+      <span>ou clique pour le choisir · MP3, WAV, FLAC, M4A, OGG · JPG, PNG, WEBP, GIF</span>
     </button>
-    <input id="file" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" hidden>
+    <input id="file" type="file" accept="audio/*,image/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" hidden>
     <p class="hint">Sans compte. La conversion se fait dans ton navigateur : ton fichier n'est envoyé nulle part.</p>
     <p class="error" id="error" role="alert"></p>
   </section>
@@ -62,9 +62,25 @@
     </div>
   </article>
 
+  <article class="card" id="img-panel" hidden>
+    <p class="head"><b id="i-file"></b><span id="i-info"></span></p>
+    <div class="opt">
+      <span class="label">Format</span>
+      <div><div class="chips" id="img-format"><button type="button" data-v="jpg" aria-pressed="true">JPG</button><button type="button" data-v="png" aria-pressed="false">PNG</button><button type="button" data-v="webp" aria-pressed="false">WEBP</button></div></div>
+    </div>
+    <div class="fields" id="quality-box">
+      <label>Qualité<select id="quality"><option value="0.95">Maximale</option><option value="0.85" selected>Haute (le bon compromis)</option><option value="0.7">Moyenne (léger)</option></select></label>
+    </div>
+    <div class="dim split">
+      <p id="i-out"></p>
+      <button class="go" id="img-go" type="button">Convertir et télécharger</button>
+    </div>
+  </article>
+
   <section class="text">
     <h2>Quel format choisir</h2>
     <p><strong>WAV 24 bits</strong>, à la fréquence du projet : pour tout ce qui part au mix, au mastering ou chez un distributeur. <strong>WAV 16 bits, 44,1 kHz</strong> : le format du CD, encore demandé par certains services. <strong>MP3 320 kbit/s</strong> : pour envoyer une maquette ou une instru par message, dix fois plus léger et sans différence audible pour la plupart des écoutes.</p>
+    <p><strong>JPG</strong> : pour une photo ou une cover, le plus léger et accepté partout. <strong>PNG</strong> : sans perte et avec la transparence, pour un logo ou un visuel avec du texte. <strong>WEBP</strong> : aussi net que le JPG en plus léger, pour le web.</p>
     <h2>Questions fréquentes</h2>
     <details><summary>Convertir un MP3 en WAV améliore-t-il le son ?</summary>
       <p>Non. Le WAV obtenu contient exactement ce que contient le MP3 : ce que la compression a retiré ne revient pas. La conversion est utile quand un logiciel ou un service exige du WAV, pas pour gagner en qualité.</p></details>
@@ -72,6 +88,8 @@
       <p>Pas pour la qualité : un fichier 44,1 kHz passé en 96 kHz ne gagne aucun détail. Cela sert à mettre un fichier au format d'un projet ou d'un cahier des charges.</p></details>
     <details><summary>Pourquoi pas de FLAC, d'AAC ou d'OGG en sortie ?</summary>
       <p>La page lit ces formats, mais n'écrit que du WAV et du MP3, les deux que tous les logiciels et tous les services acceptent.</p></details>
+    <details><summary>Que devient la transparence en JPG ?</summary>
+      <p>Le JPG ne connaît pas la transparence : les parties transparentes deviennent blanches. Pour la garder, choisis PNG ou WEBP.</p></details>
     <details><summary>Mon MP3 est décalé dans mon DAW, que faire ?</summary>
       <p>Utilise le <a href="bpm-tonalite">détecteur de BPM et de tonalité</a> : il retire le blanc que le format MP3 ajoute au début et rend un WAV calé sur la grille.</p></details>
   </section>
@@ -122,6 +140,8 @@ $("panel").addEventListener("change", describe);
 async function open(chosen) {
   $("error").textContent = "";
   if (chosen.size > MAX_BYTES) { $("error").textContent = "Ce fichier est trop lourd (400 Mo au plus)."; return; }
+  if (chosen.type.startsWith("image/") || /\.(jpe?g|png|webp|gif|bmp|avif|svg|heic|heif|tiff?)$/i.test(chosen.name)) return openImage(chosen);
+  $("img-panel").hidden = true;
   A.busy($("drop"), true, "Lecture du fichier…");
   try {
     const decoded = await A.decode(chosen);
@@ -129,7 +149,7 @@ async function open(chosen) {
     file = chosen; audio = decoded;
     $("r-file").textContent = file.name;
     $("r-info").textContent = A.clock(audio.duration) + " · " + khz(audio.sampleRate) + " · " + voices(audio.numberOfChannels);
-    $("panel").hidden = false;
+    $("panel").hidden = false; $("img-panel").hidden = true;
     describe();
     A.busy($("drop"), false, "Choisir un autre fichier");
   } catch (error) {
@@ -157,6 +177,59 @@ $("go").onclick = async () => {
   $("go").textContent = label;
   $("go").disabled = false;
 };
+
+// ——— Les images : le navigateur les lit (JPG, PNG, WEBP, GIF, BMP, AVIF, SVG…) et les réécrit dans le format choisi ———
+const IMG = { jpg: "image/jpeg", png: "image/png", webp: "image/webp" };
+let picture = null, imgFormat = "jpg";
+
+function describeImage() {
+  if (!picture) return;
+  $("quality-box").hidden = imgFormat === "png";
+  $("i-out").textContent = imgFormat.toUpperCase() + ", " + picture.naturalWidth + " × " + picture.naturalHeight + " px";
+}
+document.querySelectorAll("#img-format button").forEach((button) => {
+  button.onclick = () => {
+    imgFormat = button.dataset.v;
+    document.querySelectorAll("#img-format button").forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
+    describeImage();
+  };
+});
+
+async function openImage(chosen) {
+  const img = new Image();
+  img.src = URL.createObjectURL(chosen);
+  try {
+    await img.decode();
+    if (!img.naturalWidth) throw new Error(); // un SVG sans taille
+    if (img.naturalWidth * img.naturalHeight > 100e6) throw new Error("Cette image est trop grande (100 millions de pixels au plus).");
+    if (picture) URL.revokeObjectURL(picture.src);
+    file = chosen; picture = img; audio = null;
+    $("i-file").textContent = file.name;
+    $("i-info").textContent = img.naturalWidth + " × " + img.naturalHeight + " px · " + (file.size < 1e6 ? Math.ceil(file.size / 1e3) + " Ko" : A.decimal(file.size / 1e6) + " Mo");
+    $("img-panel").hidden = false; $("panel").hidden = true;
+    describeImage();
+    A.busy($("drop"), false, "Choisir un autre fichier");
+  } catch (error) {
+    URL.revokeObjectURL(img.src);
+    $("img-panel").hidden = true;
+    $("error").textContent = error.message || "Ce navigateur ne sait pas lire cette image.";
+  }
+}
+
+$("img-go").onclick = async () => {
+  if (!picture) return;
+  $("error").textContent = "";
+  const canvas = document.createElement("canvas"), c = canvas.getContext("2d");
+  canvas.width = picture.naturalWidth; canvas.height = picture.naturalHeight;
+  if (imgFormat === "jpg") { c.fillStyle = "#fff"; c.fillRect(0, 0, canvas.width, canvas.height); } // le JPG n'a pas de transparence
+  c.drawImage(picture, 0, 0);
+  const blob = await new Promise((done) => canvas.toBlob(done, IMG[imgFormat], +$("quality").value));
+  // Safari ne sait pas écrire le WEBP : il rendrait un PNG sous un faux nom.
+  if (!blob || blob.type !== IMG[imgFormat]) { $("error").textContent = "Ce navigateur ne sait pas écrire du " + imgFormat.toUpperCase() + " : essaie Chrome, Edge ou Firefox, ou choisis un autre format."; return; }
+  A.download(blob, A.baseName(file) + "." + imgFormat);
+};
+$("img-panel").addEventListener("change", describeImage);
+
 A.dropZone($("drop"), $("file"), open);
 </script>
 <script src="assets/tools-menu.js?v=13"></script>
