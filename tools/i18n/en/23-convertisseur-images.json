@@ -14,5 +14,6 @@
  "Ce navigateur ne sait pas lire cette image.": "This browser can't read this image.",
  "Ce navigateur ne sait pas écrire du {} : essaie Chrome, Edge ou Firefox, ou choisis un autre format.": "This browser can't write {}: try Chrome, Edge or Firefox, or choose another format.",
  "{}, {} × {} px": "{}, {} × {} px",
- "WAV ou MP3, avec le choix de la fréquence et de la résolution ; JPG, PNG ou WEBP pour les images.": "WAV or MP3, with a choice of sample rate and bit depth; JPG, PNG or WEBP for images."
+ "WAV ou MP3, avec le choix de la fréquence et de la résolution ; JPG, PNG ou WEBP pour les images.": "WAV or MP3, with a choice of sample rate and bit depth; JPG, PNG or WEBP for images.",
+ "Vidéos ou photos : chaque coupe tombe sur le beat et montre un nouveau moment du clip. Glisse-les ici, ou n'importe où sur la page.": "Videos or photos: each cut lands on the beat and shows a new moment of the clip. Drag them here, or anywhere on the page."
 }

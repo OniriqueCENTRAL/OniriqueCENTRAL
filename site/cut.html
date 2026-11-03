@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=753583a6"></script>
+<script src="assets/i18n.js?v=5874a133"></script>
 <script src="assets/ui.js?v=3"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
@@ -519,7 +519,7 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
       <section class="tab-panel" data-panel="clips" role="tabpanel" aria-label="Clips" hidden>
       <div class="card" id="step-clips" hidden>
         <div class="stack">
-          <h2 class="step-title">Tes clips</h2><p class="muted">Vidéos ou photos : chaque coupe tombe sur le beat et montre un nouveau moment du clip.</p>
+          <h2 class="step-title">Tes clips</h2><p class="muted">Vidéos ou photos : chaque coupe tombe sur le beat et montre un nouveau moment du clip. Glisse-les ici, ou n'importe où sur la page.</p>
           <div class="clips" id="clips"><button class="add" type="button" id="clips-add"><b>+</b>Vidéos<br>ou photos</button></div>
           <input id="clips-file" type="file" accept="video/*,image/*" multiple hidden>
           <div class="stack zone-box" id="zone-box" hidden>
@@ -4195,6 +4195,10 @@ function start() {
   $("cloud-pick").onclick = openCloud;
   $("clips-add").onclick = () => $("clips-file").click();
   $("clips-file").onchange = () => { addClips([...$("clips-file").files]); $("clips-file").value = ""; };
+  // Les fichiers glissés sur la page passent par la zone du son ci-dessus (les vidéos et photos vont aux clips) : la case « + » s'allume aussi.
+  const carriesFiles = (event) => [...(event.dataTransfer?.types || [])].includes("Files");
+  addEventListener("dragover", (event) => { if (carriesFiles(event)) $("clips-add").classList.add("over"); });
+  for (const type of ["dragleave", "drop"]) addEventListener(type, () => $("clips-add").classList.remove("over"));
   $("bpm-half").onclick = () => { if (sound.bpm / 2 < 45) return; sound.bpm /= 2; sound.phase = phaseOf(sound.env, sound.bpm); refresh(); };
   $("bpm-double").onclick = () => { if (sound.bpm * 2 > 260) return; sound.bpm *= 2; sound.phase = phaseOf(sound.env, sound.bpm); refresh(); };
   // Recaler la grille d'un vingtième de temps : les coupes et le zoom bougent ensemble.
