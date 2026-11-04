@@ -19,6 +19,13 @@ db.exec(`CREATE TABLE IF NOT EXISTS sound_scans (
   scanned_at INTEGER
 )`);
 
+// Les titres que le beatmaker a écartés (« Ce n'est pas un vol ») : un nouveau scan ne les signale plus.
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_scans') WHERE name = 'dismissed'`).get()) {
+  db.exec(`ALTER TABLE sound_scans ADD COLUMN dismissed TEXT NOT NULL DEFAULT '[]'`);
+}
+const matchKey = (m) => String(m.id || `${m.title}|${m.artists}`).toLowerCase();
+const kept = (matches, dismissed) => { const out = new Set(JSON.parse(dismissed || '[]')); return matches.filter((m) => !out.has(matchKey(m))); };
+
 export const scanConfigured = () => !!(config.acrHost && config.acrKey && config.acrSecret);
 
 // Quatre extraits de 12 s (ACRCloud en veut 10 à 15), répartis sur la prod : l'intro, souvent sans voix, et le reste.
@@ -112,7 +119,7 @@ async function drain() {
       WHERE track_id = ? AND version_id = ? AND queued_at = ?`, status, matches, error, now(), s.track_id, s.version_id, s.queued_at);
     try {
       if (!v) throw new Error('La version a été supprimée.');
-      done('done', JSON.stringify(await scanFile(path.join(soundsDir, v.stored_as), v.duration)), null);
+      done('done', JSON.stringify(kept(await scanFile(path.join(soundsDir, v.stored_as), v.duration), s.dismissed)), null);
     } catch (error) {
       done('error', null, String(error.message).slice(0, 300));
     }
@@ -145,6 +152,15 @@ export function mountBeatScan(app, { me, soundsDir: dir }) {
   for (const id of stale) run(`UPDATE sound_scans SET matches = '[]' WHERE track_id = ?`, id);
   queueScan(stale);
   scanQueue().catch((error) => console.error(`[scan] ${error.message}`));
+  // « Ce n'est pas un vol » : le badge « Volée ? » disparaît, et ces titres-là ne reviennent plus aux scans suivants.
+  app.post('/api/me/sounds/tracks/:id/scan/dismiss', ...me, (req, res) => {
+    const s = get(`SELECT s.* FROM sound_scans s JOIN sound_tracks t ON t.id = s.track_id JOIN sound_projects p ON p.id = t.project_id
+      WHERE s.track_id = ? AND p.user_id = ?`, Number(req.params.id) || 0, req.user.id);
+    if (!s) throw new HttpError(404, 'Prod introuvable.');
+    const dismissed = [...new Set([...JSON.parse(s.dismissed || '[]'), ...JSON.parse(s.matches).map(matchKey)])];
+    run(`UPDATE sound_scans SET matches = '[]', dismissed = ? WHERE track_id = ?`, JSON.stringify(dismissed), s.track_id);
+    res.json({ ok: true });
+  });
   // « SCAN » : toutes les prods de tous les packs du membre, quelques fois par jour au plus.
   app.post('/api/me/sounds/scan', ...me, (req, res) => {
     if (!scanConfigured()) throw new HttpError(503, "Le scan des prods n'est pas encore réglé sur le serveur.");

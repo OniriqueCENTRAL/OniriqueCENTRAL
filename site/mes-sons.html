@@ -4091,7 +4091,9 @@ function renderScan() {
         : [plural(found.length, "prod retrouvée", "prods retrouvées"), plural(clean, "sans copie trouvée", "sans copie trouvée"), never ? plural(never, "jamais scannée", "jamais scannées") : ""].filter(Boolean).join(" · ") })));
   } else if (waiting) stack.append(el("p", { className: "muted", style: "margin:0", textContent: "Scan en cours…" }));
   if (found.length) stack.append(el("ul", { className: "group" }, ...found.map(({ p, t }) => el("li", {},
-    el("div", { className: "item", style: "cursor:default" }, el("div", { className: "grow" }, t.title, el("small", { textContent: p.title + " · retrouvée dans " + plural(t.scan.matches.length, "titre sorti", "titres sortis") }))),
+    el("div", { className: "item", style: "cursor:default" }, el("div", { className: "grow" }, t.title, el("small", { textContent: p.title + " · retrouvée dans " + plural(t.scan.matches.length, "titre sorti", "titres sortis") })),
+      el("button", { className: "btn btn-ghost", type: "button", textContent: "Ce n'est pas un vol", title: "Retirer le badge « Volée ? » : ces titres ne seront plus signalés pour cette prod",
+        onclick: (event) => { event.currentTarget.disabled = true; api("POST", "/me/sounds/tracks/" + t.id + "/scan/dismiss").then(refresh).then(renderScan, fail); } })),
     el("ul", { className: "scan-hits" }, ...t.scan.matches.map((m) => el("li", {},
       el("div", { className: "grow" }, (m.artists ? m.artists + " · " : "") + m.title,
         el("small", { textContent: [m.album && m.album !== m.title ? m.album : "", m.released ? "sorti le " + date(m.released) : "", m.at != null ? "ta prod entendue à " + OP.time(m.at) : "", "reconnue sur " + plural(m.hits, "extrait", "extraits")].filter(Boolean).join(" · ") })),

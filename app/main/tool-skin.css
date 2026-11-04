@@ -156,3 +156,6 @@ dialog { border-radius: 30px !important; background: linear-gradient(160deg, rgb
 
 /* CLOUD : la colonne des playlists posée sur le fond de l'application, séparée d'un simple filet */
 .library { background: transparent !important; backdrop-filter: none !important; border: 0 !important; border-right: 1px solid rgba(255,235,238,.06) !important; box-shadow: none !important; }
+
+/* CLOUD : le bouton « Visiteur » (voir la page comme un auditeur) n'a pas sa place dans l'application */
+#visitor-bar, .visitor-bar { display: none !important; }

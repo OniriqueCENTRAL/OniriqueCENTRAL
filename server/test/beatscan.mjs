@@ -89,6 +89,18 @@ try {
     assert.equal(get(`SELECT COUNT(*) AS n FROM sound_scans WHERE status = 'wait'`).n, 0);
   });
 
+  await step('« Ce n\'est pas un vol » : le badge disparaît, et le titre ne revient pas au scan suivant', async () => {
+    acr.down = false;
+    const ghost = (await prodsOf(token)).find((t) => t.title === 'Ghost');
+    await call('POST', `/api/me/sounds/tracks/${ghost.id}/scan/dismiss`, { token: 'faux', expect: 401 });
+    await call('POST', `/api/me/sounds/tracks/${ghost.id}/scan/dismiss`, { token });
+    assert.deepEqual((await prodsOf(token)).find((t) => t.title === 'Ghost').scan.matches, []);
+    await call('POST', '/api/me/sounds/scan', { token });
+    await scanQueue();
+    const again = (await prodsOf(token)).find((t) => t.title === 'Ghost').scan;
+    assert.deepEqual([again.status, again.matches], ['done', []]);
+  });
+
   await step('pack repassé en projet : ses scans disparaissent, et SCAN ne le prend plus', async () => {
     await call('PATCH', `/api/me/sounds/projects/${pack}`, { token, body: { kind: '' } });
     assert.equal(get('SELECT COUNT(*) AS n FROM sound_scans').n, 0);
