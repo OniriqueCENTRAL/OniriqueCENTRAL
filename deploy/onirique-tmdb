@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Règle la clé TMDB de la page Films des fondateurs. À lancer sur le VPS, en root :
+#   onirique-tmdb        demande la clé (rien ne s'affiche)
+#   onirique-tmdb off    retire la clé (la page Films affiche que la clé manque)
+# La clé est saisie ici et ne quitte pas le serveur.
+#
+# À faire avant, sur themoviedb.org : créer un compte, puis Paramètres > API > « Créer » (usage personnel).
+# Coller soit la « Clé de l'API » (32 caractères), soit le « Jeton d'accès en lecture à l'API » (long, commence par eyJ).
+set -euo pipefail
+
+ENVFILE=/opt/onirique-central/server/.env
+stop() { echo "$1" >&2; exit 1; }
+
+if [ "${1:-}" != off ]; then
+  while :; do
+    read -r -s -p "Clé TMDB (rien ne s'affiche) : " KEY; echo >&2
+    KEY=${KEY//[[:space:]]/}
+    [[ $KEY =~ ^[0-9a-f]{32}$ || $KEY =~ ^eyJ[A-Za-z0-9._-]{40,}$ ]] && break
+    [ -z "$KEY" ] || echo "Ça ne ressemble pas à une clé TMDB, recolle-la." >&2
+  done
+fi
+
+sed -i '/^TMDB_API_KEY=/d' "$ENVFILE"
+[ "${1:-}" = off ] || printf "TMDB_API_KEY='%s'\n" "$KEY" >> "$ENVFILE"
+chown central:central "$ENVFILE"; chmod 600 "$ENVFILE"
+systemctl restart onirique-central
+sleep 3
+systemctl is-active -q onirique-central || stop "Le serveur n'a pas redémarré : journalctl -u onirique-central"
+if [ "${1:-}" = off ]; then echo "Clé TMDB retirée."; else echo "C'est bon : la page onirique.store/films est active pour les fondateurs."; fi

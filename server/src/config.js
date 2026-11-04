@@ -82,6 +82,9 @@ export const config = {
   acrHost: (env.ACRCLOUD_HOST || '').replace(/^https?:\/\//, '').replace(/\/+$/, ''),
   acrKey: env.ACRCLOUD_KEY || '',
   acrSecret: env.ACRCLOUD_SECRET || '',
+  // Page Films des fondateurs (films.js) : l'API de TMDB, clé v3 ou jeton v4, réglée par onirique-tmdb.
+  tmdbKey: (env.TMDB_API_KEY || '').trim(),
+  tmdbApi: (env.TMDB_API || 'https://api.themoviedb.org/3').replace(/\/+$/, ''),
   // Recherche de titres et extraits de 30 s (outil « Comparer à une référence ») : l'API publique de Deezer.
   deezerApi: (env.DEEZER_API || 'https://api.deezer.com').replace(/\/+$/, ''),
   // Liens « Musique » des pages de liens (src/music.js) : recherche iTunes et pages publiques de Spotify.
