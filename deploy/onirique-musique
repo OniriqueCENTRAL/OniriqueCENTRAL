@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Branche Spotify et Apple Music sur ONIRIQUE CLOUD (connexion des comptes, titres joués en entier). Sur le VPS, en root :
+#   onirique-musique spotify   demande le Client ID de l'application Spotify
+#   onirique-musique apple     demande l'identifiant d'équipe, l'identifiant de la clé MusicKit, puis la clé (.p8) à coller
+#   onirique-musique off       retire les deux réglages
+#
+# À faire avant :
+#   Spotify : developer.spotify.com > Dashboard > Create app ; Redirect URI : https://onirique.store/mes-sons ;
+#     API : « Web API » et « Web Playback SDK ». Settings donne le Client ID (pas besoin du secret). En mode développement,
+#     seuls les comptes ajoutés dans « User Management » (25 au plus) peuvent se connecter.
+#   Apple : developer.apple.com (programme développeur) > Certificates, IDs & Profiles > Identifiers : un « Media ID »
+#     avec MusicKit ; puis Keys > « + » : une clé avec Media Services (MusicKit), liée à ce Media ID. Télécharger le .p8
+#     (une seule fois possible), noter le Key ID ; le Team ID est en haut à droite du compte.
+set -euo pipefail
+
+ENVFILE=/opt/onirique-central/server/.env
+KEYS=/var/lib/onirique-central/keys
+stop() { echo "$1" >&2; exit 1; }
+ask() {
+  local v=''
+  while :; do
+    read -r -p "$1" v
+    v=${v//[[:space:]]/}
+    [[ $v =~ $2 ]] && break
+    [ -z "$v" ] || echo "Ça ne ressemble pas à la bonne valeur, recolle-la." >&2
+  done
+  printf '%s' "$v"
+}
+
+case "${1:-}" in
+  spotify)
+    ID=$(ask "Client ID Spotify : " '^[0-9a-f]{32}$')
+    sed -i '/^SPOTIFY_CLIENT_ID=/d' "$ENVFILE"
+    printf "SPOTIFY_CLIENT_ID='%s'\n" "$ID" >> "$ENVFILE" ;;
+  apple)
+    TEAM=$(ask "Team ID Apple : " '^[A-Z0-9]{10}$')
+    KEY=$(ask "Key ID de la clé MusicKit : " '^[A-Z0-9]{10}$')
+    echo "Colle la clé (le contenu du fichier .p8, de -----BEGIN à -----END), puis Entrée et Ctrl+D :"
+    P8=$(cat)
+    [[ $P8 == *"-----BEGIN PRIVATE KEY-----"* && $P8 == *"-----END PRIVATE KEY-----"* ]] || stop "Ce n'est pas une clé .p8 : rien n'a changé."
+    mkdir -p "$KEYS"
+    printf '%s\n' "$P8" > "$KEYS/apple-music.p8"
+    chown central:central "$KEYS/apple-music.p8"; chmod 600 "$KEYS/apple-music.p8"
+    sed -i '/^APPLE_TEAM_ID=/d; /^APPLE_MUSIC_KEY_ID=/d' "$ENVFILE"
+    printf "APPLE_TEAM_ID='%s'\nAPPLE_MUSIC_KEY_ID='%s'\n" "$TEAM" "$KEY" >> "$ENVFILE" ;;
+  off)
+    sed -i '/^SPOTIFY_CLIENT_ID=/d; /^APPLE_TEAM_ID=/d; /^APPLE_MUSIC_KEY_ID=/d' "$ENVFILE"
+    rm -f "$KEYS/apple-music.p8" ;;
+  *) stop "Usage : onirique-musique spotify | apple | off" ;;
+esac
+
+chown central:central "$ENVFILE"; chmod 600 "$ENVFILE"
+systemctl restart onirique-central
+sleep 3
+systemctl is-active -q onirique-central || stop "Le serveur n'a pas redémarré : journalctl -u onirique-central"
+echo "C'est bon : dans ONIRIQUE CLOUD, Réglages > Mes plateformes (ou + > Depuis Spotify, Deezer ou Apple Music > Mes comptes)."

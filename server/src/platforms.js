@@ -10,10 +10,13 @@
 // relayé tel quel au lecteur (même adresse que la page, pour que le lecteur puisse l'analyser). L'écoute entière se
 // fait sur la plateforme.
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 import { config } from './config.js';
 import { db, get, all, run, now, transaction, setting, setSetting } from './db.js';
 import { HttpError, rateLimit, can } from './auth.js';
 import { identify } from './music.js';
+import { seal, unseal } from './payments.js';
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS sound_platform_accounts (
@@ -351,6 +354,92 @@ async function profileOf(platform, link) {
   throw new HttpError(404, 'Plateforme inconnue.');
 }
 
+//------------------------------------------------------------------------------ Comptes connectés : Spotify et Apple Music
+// Avec un compte connecté, un titre se joue en entier dans le lecteur du CLOUD (abonnés Spotify Premium, abonnés Apple
+// Music). Spotify : connexion PKCE (sans secret), le jeton de renouvellement chiffré dans la base (comme les clés
+// Stripe), un jeton d'accès d'une heure rendu au lecteur. Apple Music : le jeton développeur signé ici avec la clé
+// MusicKit de l'équipe ; la connexion de l'abonné, elle, reste dans son navigateur (MusicKit).
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_platform_accounts') WHERE name = 'token'`).get()) {
+  db.exec('ALTER TABLE sound_platform_accounts ADD COLUMN token TEXT');
+  db.exec('ALTER TABLE sound_platform_accounts ADD COLUMN premium INTEGER NOT NULL DEFAULT 0');
+}
+export const SPOTIFY_SCOPES = 'streaming user-read-email user-read-private user-modify-playback-state user-read-playback-state playlist-read-private playlist-read-collaborative';
+/** L'adresse de retour déclarée chez Spotify : la page ONIRIQUE CLOUD. */
+export const spotifyRedirect = () => `${config.siteUrl}/mes-sons`;
+const appleKeyPath = () => path.join(config.keysDir, 'apple-music.p8');
+export const appleReady = () => !!(config.appleTeamId && config.appleMusicKeyId && fs.existsSync(appleKeyPath()));
+
+async function spotifyForm(body) {
+  let r;
+  try {
+    r = await fetch(`${config.spotifyAccounts}/api/token`, { method: 'POST', signal: AbortSignal.timeout(9000),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ client_id: config.spotifyClientId, ...body }) });
+  } catch {
+    throw new HttpError(502, 'Spotify ne répond pas, réessaie dans un instant.');
+  }
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok || !data.access_token) throw new HttpError(400, data.error === 'invalid_grant' ? 'La connexion à Spotify a expiré : reconnecte ton compte.' : 'Spotify a refusé la connexion.');
+  return data;
+}
+async function spotifyGet(token, route) {
+  let r;
+  try {
+    r = await fetch(`${config.spotifyApi}/v1${route}`, { signal: AbortSignal.timeout(9000), headers: { Authorization: `Bearer ${token}` } });
+  } catch {
+    throw new HttpError(502, 'Spotify ne répond pas, réessaie dans un instant.');
+  }
+  if (r.status === 401) throw new HttpError(401, 'La connexion à Spotify a expiré : reconnecte ton compte.');
+  if (r.status === 403) throw new HttpError(403, "Spotify refuse ce compte : il doit être ajouté aux utilisateurs de l'application ONIRIQUE sur developer.spotify.com.");
+  if (r.status === 404) throw new HttpError(404, 'Introuvable sur Spotify.');
+  if (!r.ok) throw new HttpError(502, 'Spotify ne répond pas, réessaie dans un instant.');
+  return r.json();
+}
+/** Le jeton d'accès Spotify d'un membre, renouvelé s'il expire dans la minute. */
+async function spotifyToken(userId) {
+  const row = get(`SELECT token FROM sound_platform_accounts WHERE user_id = ? AND platform = 'spotify'`, userId);
+  if (!row?.token) throw new HttpError(404, "Connecte d'abord ton compte Spotify.");
+  const t = JSON.parse(unseal(row.token));
+  if (t.expiresAt > now() + 60_000) return t;
+  const data = await spotifyForm({ grant_type: 'refresh_token', refresh_token: t.refresh });
+  const next = { access: data.access_token, refresh: data.refresh_token || t.refresh, expiresAt: now() + (Number(data.expires_in) || 3600) * 1000 };
+  run(`UPDATE sound_platform_accounts SET token = ? WHERE user_id = ? AND platform = 'spotify'`, seal(JSON.stringify(next)), userId);
+  return next;
+}
+const spotifyTrack = (t, album) => cleanItem({ platform: 'spotify', id: t?.id, title: t?.name, artist: (t?.artists || []).map((a) => a?.name).filter(Boolean).join(', '),
+  cover: ((album || t?.album)?.images || []).find((i) => i?.width && i.width <= 320)?.url || (album || t?.album)?.images?.[0]?.url,
+  duration: t?.duration_ms / 1000, preview: t?.preview_url });
+/** Une playlist ou un album Spotify par le compte connecté : tous ses titres (jusqu'à MAX_IMPORT), privée comprise. */
+async function spotifyFull(userId, kind, id) {
+  const { access } = await spotifyToken(userId);
+  const info = await spotifyGet(access, `/${kind}s/${id}`);
+  const items = [];
+  let next = `/${kind}s/${id}/tracks?limit=${kind === 'album' ? 50 : 100}`;
+  while (next && items.length < MAX_IMPORT) {
+    const page = await spotifyGet(access, next);
+    for (const it of page.items || []) {
+      const t = kind === 'album' ? it : it?.track;
+      const x = t && t.type !== 'episode' && spotifyTrack(t, kind === 'album' ? info : null);
+      if (x) items.push(x);
+    }
+    // La page suivante, sur la même API (son adresse absolue n'est jamais suivie telle quelle).
+    next = null;
+    try { if (page.next) { const u = new URL(page.next); next = u.pathname.replace(/^\/v1/, '') + u.search; } } catch { /* fin */ }
+  }
+  return { kind, platform: 'spotify', title: text(info.name), cover: coverUrl(info.images?.[0]?.url), items: items.slice(0, MAX_IMPORT) };
+}
+let appleCache = null;
+/** Le jeton développeur d'Apple Music (MusicKit), signé avec la clé de l'équipe, valable douze heures. */
+export function appleDeveloperToken() {
+  if (!appleReady()) throw new HttpError(404, "Apple Music n'est pas encore branché sur ONIRIQUE.");
+  if (appleCache && appleCache.exp > now() + 3600_000) return appleCache.token;
+  const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
+  const iat = Math.floor(now() / 1000), exp = iat + 12 * 3600;
+  const head = `${b64({ alg: 'ES256', kid: config.appleMusicKeyId })}.${b64({ iss: config.appleTeamId, iat, exp })}`;
+  const sig = crypto.sign('sha256', Buffer.from(head), { key: fs.readFileSync(appleKeyPath(), 'utf8'), dsaEncoding: 'ieee-p1363' }).toString('base64url');
+  appleCache = { token: `${head}.${sig}`, exp: exp * 1000 };
+  return appleCache.token;
+}
+
 //------------------------------------------------------------------------------ Routes
 // Les projets qu'on peut toucher : les siens et ceux où l'on collabore (comme dans sounds.js), hors corbeille.
 const ACCESS = `(p.kind != 'trash' AND p.trashed_at IS NULL AND (p.user_id = ? OR p.id IN (SELECT project_id FROM sound_collabs WHERE user_id = ?)))`;
@@ -375,7 +464,8 @@ export function mountPlatforms(app, { requireUser, wrap }) {
 
   // Les comptes liés, et les titres de plateformes de toutes les playlists qu'on voit, en une fois.
   app.get('/api/me/platforms', ...me, (req, res) => {
-    const accounts = all('SELECT platform, url, name FROM sound_platform_accounts WHERE user_id = ? ORDER BY created_at', req.user.id);
+    const accounts = all('SELECT platform, url, name, token IS NOT NULL AS connected, premium FROM sound_platform_accounts WHERE user_id = ? ORDER BY created_at', req.user.id)
+      .map((a) => ({ platform: a.platform, url: a.url, name: a.name, connected: !!a.connected, premium: !!a.premium }));
     const items = all(`SELECT i.* FROM sound_platform_items i JOIN sound_projects p ON p.id = i.project_id WHERE ${ACCESS} ORDER BY i.project_id, i.position, i.id`,
       req.user.id, req.user.id).map(view);
     // La place des sons du CLOUD dans les playlists, pour les mêler aux titres des plateformes dans le bon ordre.
@@ -404,13 +494,56 @@ export function mountPlatforms(app, { requireUser, wrap }) {
       url: `https://www.deezer.com/playlist/${l.id}`, loved: !!l.is_loved_track })));
   }));
 
+  // Ce qui est branché sur ONIRIQUE : l'application Spotify (connexion des comptes) et la clé MusicKit d'Apple.
+  app.get('/api/platforms/config', ...me, (req, res) => res.json({
+    spotify: config.spotifyClientId ? { clientId: config.spotifyClientId, redirectUri: spotifyRedirect(), scopes: SPOTIFY_SCOPES } : null,
+    apple: appleReady(),
+  }));
+  // Le retour de Spotify (code et vérificateur PKCE) : le compte du membre est connecté.
+  app.post('/api/me/platforms/spotify/connect', ...me, wrap(async (req, res) => {
+    if (!config.spotifyClientId) throw new HttpError(404, "Spotify n'est pas encore branché sur ONIRIQUE.");
+    rateLimit(`spotify-connect:${req.user.id}`, 20, 3600_000);
+    const code = text(req.body?.code, 1000), verifier = String(req.body?.verifier || '');
+    if (!code || !/^[A-Za-z0-9._~-]{43,128}$/.test(verifier)) throw new HttpError(400, 'Connexion Spotify illisible : recommence.');
+    const data = await spotifyForm({ grant_type: 'authorization_code', code, redirect_uri: spotifyRedirect(), code_verifier: verifier });
+    if (!data.refresh_token) throw new HttpError(502, 'Spotify a refusé la connexion.');
+    const token = { access: data.access_token, refresh: data.refresh_token, expiresAt: now() + (Number(data.expires_in) || 3600) * 1000 };
+    const profile = await spotifyGet(token.access, '/me');
+    const id = String(profile.id || '');
+    if (!/^[A-Za-z0-9._-]{1,64}$/.test(id)) throw new HttpError(502, 'Réponse illisible de Spotify.');
+    const name = text(profile.display_name, 80) || id, premium = profile.product === 'premium' ? 1 : 0;
+    run(`INSERT INTO sound_platform_accounts (user_id, platform, url, name, ext_id, token, premium, created_at) VALUES (?, 'spotify', ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id, platform) DO UPDATE SET url = excluded.url, name = excluded.name, ext_id = excluded.ext_id, token = excluded.token, premium = excluded.premium`,
+      req.user.id, `https://open.spotify.com/user/${id}`, name, id, seal(JSON.stringify(token)), premium, now());
+    res.json({ platform: 'spotify', name, connected: true, premium: !!premium });
+  }));
+  // Le jeton d'accès du lecteur Spotify (une heure) : il ne quitte que vers le navigateur du membre lui-même.
+  app.get('/api/me/platforms/spotify/token', ...me, wrap(async (req, res) => {
+    rateLimit(`spotify-token:${req.user.id}`, 600, 3600_000);
+    const t = await spotifyToken(req.user.id);
+    res.set('Cache-Control', 'no-store').json({ accessToken: t.access, expiresAt: t.expiresAt });
+  }));
+  // Les playlists du compte Spotify connecté (privées comprises).
+  app.get('/api/me/platforms/spotify/playlists', ...me, wrap(async (req, res) => {
+    rateLimit(`platform-read:${req.user.id}`, 120, 3600_000);
+    const { access } = await spotifyToken(req.user.id);
+    const page = await spotifyGet(access, '/me/playlists?limit=50');
+    res.json((page.items || []).filter((l) => l && ID.spotify.test(String(l.id))).map((l) => ({ title: text(l.name), count: Number(l.tracks?.total) || 0,
+      cover: coverUrl(l.images?.[0]?.url), url: `https://open.spotify.com/playlist/${l.id}` })));
+  }));
+  app.get('/api/platforms/apple/token', ...me, (req, res) => res.set('Cache-Control', 'no-store').json({ token: appleDeveloperToken() }));
+
   app.get('/api/platforms/search', ...me, wrap(async (req, res) => {
     rateLimit(`platform-read:${req.user.id}`, 300, 3600_000);
     res.json((await searchPlatform(String(req.query.source || ''), req.query.q)).map(shown));
   }));
   app.post('/api/platforms/resolve', ...me, wrap(async (req, res) => {
     rateLimit(`platform-read:${req.user.id}`, 120, 3600_000);
-    const found = await resolveLink(req.body?.url);
+    // Un compte Spotify connecté lit la playlist ou l'album en entier par l'API (la page publique s'arrête à 30 titres).
+    const link = text(req.body?.url, 500);
+    const sp = /^https:\/\/open\.spotify\.com\/(?:intl-[a-z-]+\/)?(playlist|album)\/([A-Za-z0-9]{22})/.exec(link);
+    const connected = sp && get(`SELECT token FROM sound_platform_accounts WHERE user_id = ? AND platform = 'spotify'`, req.user.id)?.token;
+    const found = connected ? await spotifyFull(req.user.id, sp[1], sp[2]).catch(() => resolveLink(link)) : await resolveLink(link);
     res.json({ ...found, items: found.items.map(shown) });
   }));
   // L'extrait d'un résultat de recherche (avant de l'ajouter) : une adresse signée par la recherche elle-même.

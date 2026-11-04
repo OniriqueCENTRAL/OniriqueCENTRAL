@@ -87,6 +87,14 @@ export const config = {
   // Liens « Musique » des pages de liens (src/music.js) : recherche iTunes et pages publiques de Spotify.
   itunesApi: (env.ITUNES_API || 'https://itunes.apple.com').replace(/\/+$/, ''),
   spotifyWeb: (env.SPOTIFY_WEB || 'https://open.spotify.com').replace(/\/+$/, ''),
+  // Comptes Spotify et Apple Music dans ONIRIQUE CLOUD (platforms.js), réglés par onirique-musique : l'application
+  // déclarée sur developer.spotify.com (son Client ID, sans secret : connexion PKCE) et la clé MusicKit d'Apple
+  // (identifiant d'équipe, identifiant de clé, et la clé elle-même dans keys/apple-music.p8).
+  spotifyClientId: env.SPOTIFY_CLIENT_ID || '',
+  spotifyAccounts: (env.SPOTIFY_ACCOUNTS || 'https://accounts.spotify.com').replace(/\/+$/, ''),
+  spotifyApi: (env.SPOTIFY_API || 'https://api.spotify.com').replace(/\/+$/, ''),
+  appleTeamId: env.APPLE_TEAM_ID || '',
+  appleMusicKeyId: env.APPLE_MUSIC_KEY_ID || '',
   // Activations simultanées par défaut, et marge laissée hors ligne aux abonnés.
   defaultMaxActivations: 2,
   subscriptionGraceDays: 3,

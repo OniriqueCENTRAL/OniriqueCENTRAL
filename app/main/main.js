@@ -1,4 +1,4 @@
-const { app, BrowserWindow, WebContentsView, clipboard, dialog, ipcMain, session, shell } = require('electron');
+const { app, BrowserWindow, WebContentsView, clipboard, components, dialog, ipcMain, session, shell } = require('electron');
 const { spawn } = require('node:child_process');
 const { autoUpdater } = require('electron-updater');
 const macUpdate = require('./mac-update');
@@ -21,13 +21,18 @@ const TOOL_STAYS = { cut: ['cut', 'mes-videos', 'api'], cloud: ['mes-sons', 'api
 // Les pages du site qui ont leur propre écran dans l'application.
 const APP_ROUTES = { compte: 'account', boutique: 'plugins', cut: 'cut', 'mes-sons': 'cloud' };
 const TOOL_SKIN = fs.readFileSync(path.join(__dirname, 'tool-skin.css'), 'utf8');
+// Les connexions aux plateformes (Spotify, Apple Music, et les comptes Google, Apple ou Facebook qu'elles proposent)
+// restent dans l'application : la vue y passe, ou une petite fenêtre s'ouvre (MusicKit), puis on revient au CLOUD.
+const AUTH_HOSTS = /^(accounts\.spotify\.com|challenge\.spotify\.com|[a-z0-9-]+\.apple\.com|accounts\.google\.com|(www|m)\.facebook\.com)$/;
+const isAuth = (url) => { try { const u = new URL(url); return u.protocol === 'https:' && AUTH_HOSTS.test(u.hostname); } catch { return false; } };
 const pageOf = (url) => new URL(url).pathname.replace(/^\/+/, '').replace(/\.html$/, '').split('/')[0];
 
 function toolView(tool, lang) {
   if (!TOOL_PAGES[tool]) throw new Error('Outil inconnu.');
   if (!toolViews.has(tool)) toolViews.set(tool, (async () => {
-    // Session en mémoire seulement : rien du site n'est écrit sur le disque, tout disparaît à la fermeture.
-    const ses = session.fromPartition('onirique-web');
+    // Une session à part, gardée d'une ouverture à l'autre : les connexions à Spotify et Apple Music y restent. Le jeton
+    // du compte ONIRIQUE, lui, n'y est jamais écrit (stockage de la vue, effacé à sa fermeture).
+    const ses = session.fromPartition('persist:onirique-web');
     // Pas de bandeau d'annonce du site dans l'application : il n'est même pas demandé.
     if (!ses.oniriqueReady) {
       ses.oniriqueReady = true;
@@ -41,13 +46,19 @@ function toolView(tool, lang) {
     // Une adresse du site : restée dans la vue si elle fait partie de l'outil, sinon l'écran de l'application qui lui
     // correspond (compte, boutique, l'autre outil), sinon le navigateur. Hors du site (paiement, réseaux) : le navigateur.
     const route = (url) => {
+      if (isAuth(url)) return true;
       const inSite = url === SITE || url.startsWith(SITE + '/');
       if (inSite && TOOL_STAYS[tool].includes(pageOf(url))) return true;
       if (inSite && APP_ROUTES[pageOf(url)]) win?.webContents.send('navigate', APP_ROUTES[pageOf(url)]);
       else if (/^https:\/\//.test(url)) shell.openExternal(url);
       return false;
     };
-    web.setWindowOpenHandler(({ url }) => { if (route(url)) web.loadURL(url); return { action: 'deny' }; });
+    web.setWindowOpenHandler(({ url }) => {
+      // MusicKit ouvre sa connexion dans une fenêtre qui lui répond : elle s'ouvre, au-dessus de l'application.
+      if (isAuth(url)) return { action: 'allow', overrideBrowserWindowOptions: { parent: win, width: 520, height: 720, autoHideMenuBar: true, backgroundColor: '#09080A' } };
+      if (route(url)) web.loadURL(url);
+      return { action: 'deny' };
+    });
     web.on('will-navigate', (event, url) => { if (!route(url)) event.preventDefault(); });
     web.on('dom-ready', () => web.insertCSS(TOOL_SKIN).catch(() => {}));
     web.on('zoom-changed', () => web.setZoomLevel(0));
@@ -203,7 +214,9 @@ function picked(filePath) {
   return filePath;
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Le lecteur des musiques protégées (Spotify, Apple Music) : celui d'Electron de castlabs, prêt avant la fenêtre.
+  if (components) await components.whenReady().catch((error) => console.error('Lecteur protégé :', error.message));
   // Sur Mac, le dossier ONIRIQUE des plugins existe dès l'ouverture, avant la première installation.
   if (process.platform === 'darwin') fs.mkdir(store.vst3Dir, { recursive: true }, () => {});
   // Sur Mac, une fois par version : les plugins déjà installés retrouvent une signature valide (voir installer.repairMac).

@@ -1,6 +1,7 @@
 // Spotify, Deezer et Apple Music dans les playlists d'ONIRIQUE CLOUD, face à de fausses plateformes locales :
 // node test/platforms.mjs
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
@@ -38,6 +39,37 @@ const fake = http.createServer((req, res) => {
   if (url.pathname === `/spotify/track/${SP3}`) return html('<meta property="og:description" content="SDM · Album · Song · 2024">');
   if (url.pathname === '/spotify/oembed') return json({ title: 'Troisième', thumbnail_url: 'https://i.scdn.co/image/t3' });
   if (url.pathname === '/spotify/user/novmusic') return html('<meta property="og:title" content="Nov">');
+  // Faux Spotify : la connexion PKCE (code « bon » → jetons), le renouvellement, le profil, les playlists et leurs pages.
+  if (url.pathname === '/spaccounts/api/token') {
+    let body = '';
+    req.on('data', (c) => { body += c; });
+    return req.on('end', () => {
+      const f = new URLSearchParams(body);
+      if (f.get('client_id') !== 'client-test') { res.statusCode = 400; return json({ error: 'invalid_client' }); }
+      if (f.get('grant_type') === 'authorization_code' && f.get('code') === 'bon' && f.get('code_verifier') === VERIFIER && f.get('redirect_uri') === 'https://site.test/mes-sons') {
+        return json({ access_token: 'acces-1', refresh_token: 'renouvelle-1', expires_in: 1 });
+      }
+      if (f.get('grant_type') === 'refresh_token' && f.get('refresh_token') === 'renouvelle-1') return json({ access_token: 'acces-2', expires_in: 3600 });
+      res.statusCode = 400;
+      json({ error: 'invalid_grant' });
+    });
+  }
+  if (url.pathname.startsWith('/spapi/v1/')) {
+    if (!/^Bearer acces-[12]$/.test(req.headers.authorization || '')) { res.statusCode = 401; return json({}); }
+    const route = url.pathname.slice(9);
+    if (route === '/me') return json({ id: 'nov', display_name: 'Nov', product: 'premium' });
+    if (route === '/me/playlists') return json({ items: [{ id: 'Q'.repeat(22), name: 'Privée', tracks: { total: 3 }, images: [{ url: 'https://i.scdn.co/image/q' }] }, { id: 'piège', name: 'x' }] });
+    if (route === `/playlists/${'Q'.repeat(22)}`) return json({ name: 'Privée', images: [{ url: 'https://i.scdn.co/image/q' }] });
+    if (route === `/playlists/${'Q'.repeat(22)}/tracks`) {
+      const t = (id, name) => ({ track: { type: 'track', id, name, duration_ms: 180000, artists: [{ name: 'Nov' }], album: { images: [{ width: 300, url: 'https://i.scdn.co/image/a' }] } } });
+      // La page suivante est annoncée par une adresse absolue de la vraie API : seul son chemin est suivi.
+      return url.searchParams.get('offset') === '100' ? json({ items: [t(SP3, 'Trois')], next: null })
+        : json({ items: [t(SP1, 'Un'), t(SP2, 'Deux'), { track: { type: 'episode', id: 'E'.repeat(22), name: 'Podcast' } }],
+          next: `https://api.spotify.com/v1/playlists/${'Q'.repeat(22)}/tracks?offset=100&limit=100` });
+    }
+    res.statusCode = 404;
+    return json({});
+  }
   res.statusCode = 404;
   res.end();
 });
@@ -45,9 +77,15 @@ await new Promise((resolve) => fake.listen(0, '127.0.0.1', resolve));
 const self = `http://127.0.0.1:${fake.address().port}`;
 
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'onirique-central-platforms-'));
+const VERIFIER = 'v'.repeat(50);
+// La clé MusicKit de l'équipe (une clé EC P-256, comme celle qu'Apple fournit en .p8).
+const apple = crypto.generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
+fs.mkdirSync(path.join(dataDir, 'keys'), { recursive: true });
+fs.writeFileSync(path.join(dataDir, 'keys', 'apple-music.p8'), apple.privateKey.export({ type: 'pkcs8', format: 'pem' }));
 Object.assign(process.env, { DATA_DIR: dataDir, PAYMENTS_MODE: 'demo', PORT: '0', ADMIN_EMAIL: '', ADMIN_PASSWORD: '', SMTP_HOST: 'test',
   MAIL_FROM: 'support@test.local', SITE_URL: 'https://site.test', PUBLIC_URL: 'https://site.test', FOUNDER_EMAILS: '',
-  DEEZER_API: self, ITUNES_API: `${self}/itunes`, SPOTIFY_WEB: `${self}/spotify` });
+  DEEZER_API: self, ITUNES_API: `${self}/itunes`, SPOTIFY_WEB: `${self}/spotify`,
+  SPOTIFY_CLIENT_ID: 'client-test', SPOTIFY_ACCOUNTS: `${self}/spaccounts`, SPOTIFY_API: `${self}/spapi`, APPLE_TEAM_ID: 'EQUIPE1234', APPLE_MUSIC_KEY_ID: 'CLE1234567' });
 const { createApp } = await import('../src/app.js');
 const { db, run, get, now } = await import('../src/db.js');
 const { outbox } = await import('../src/mail.js');
@@ -184,6 +222,35 @@ try {
     assert.deepEqual((await call('GET', '/api/me/platforms', { token: member.token })).accounts.map((a) => a.platform), ['deezer', 'spotify', 'apple']);
     await call('DELETE', '/api/me/platforms/spotify', { token: member.token });
     assert.deepEqual((await call('GET', '/api/me/platforms', { token: member.token })).accounts.map((a) => a.platform), ['deezer', 'apple']);
+  });
+
+  await step('compte Spotify connecté : PKCE, jeton chiffré et renouvelé, playlists privées, playlist entière', async () => {
+    const conf = await call('GET', '/api/platforms/config', { token: member.token });
+    assert.deepEqual([conf.spotify.clientId, conf.spotify.redirectUri, conf.apple], ['client-test', 'https://site.test/mes-sons', true]);
+    await call('POST', '/api/me/platforms/spotify/connect', { token: member.token, body: { code: 'bon', verifier: 'court' }, expect: 400 });
+    await call('POST', '/api/me/platforms/spotify/connect', { token: member.token, body: { code: 'mauvais', verifier: VERIFIER }, expect: 400 });
+    const c = await call('POST', '/api/me/platforms/spotify/connect', { token: member.token, body: { code: 'bon', verifier: VERIFIER } });
+    assert.deepEqual([c.name, c.premium, c.connected], ['Nov', true, true]);
+    // Le jeton n'est jamais renvoyé avec les comptes, et il est chiffré dans la base.
+    const acc = (await call('GET', '/api/me/platforms', { token: member.token })).accounts.find((a) => a.platform === 'spotify');
+    assert.deepEqual(acc, { platform: 'spotify', url: 'https://open.spotify.com/user/nov', name: 'Nov', connected: true, premium: true });
+    assert.ok(!get(`SELECT token FROM sound_platform_accounts WHERE platform = 'spotify'`).token.includes('renouvelle-1'));
+    // Le premier jeton expire tout de suite : le lecteur reçoit le jeton renouvelé.
+    assert.equal((await call('GET', '/api/me/platforms/spotify/token', { token: member.token })).accessToken, 'acces-2');
+    await call('GET', '/api/me/platforms/spotify/token', { token: stranger.token, expect: 404 });
+    assert.deepEqual((await call('GET', '/api/me/platforms/spotify/playlists', { token: member.token })).map((l) => [l.title, l.count]), [['Privée', 3]]);
+    const full = await call('POST', '/api/platforms/resolve', { token: member.token, body: { url: `https://open.spotify.com/playlist/${'Q'.repeat(22)}` } });
+    assert.deepEqual(full.items.map((x) => x.title), ['Un', 'Deux', 'Trois']);
+  });
+
+  await step('Apple Music : jeton développeur signé ES256 avec la clé de l’équipe', async () => {
+    const { token } = await call('GET', '/api/platforms/apple/token', { token: member.token });
+    const [h, p, sig] = token.split('.');
+    const head = JSON.parse(Buffer.from(h, 'base64url')), body = JSON.parse(Buffer.from(p, 'base64url'));
+    assert.deepEqual([head.alg, head.kid, body.iss], ['ES256', 'CLE1234567', 'EQUIPE1234']);
+    assert.ok(body.exp - body.iat <= 12 * 3600);
+    assert.ok(crypto.verify('sha256', Buffer.from(`${h}.${p}`), { key: apple.publicKey, dsaEncoding: 'ieee-p1363' }, Buffer.from(sig, 'base64url')));
+    await call('GET', '/api/platforms/apple/token', { token: client.token, expect: 403 });
   });
 
   await step('une playlist supprimée emporte ses titres de plateformes', async () => {

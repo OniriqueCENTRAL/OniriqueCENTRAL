@@ -14,6 +14,9 @@
 //   OniriquePlayer.tint(url)     → Promise<{ accent, glow, deep } | null>, les couleurs tirées d'une pochette
 //   OniriquePlayer.stageLabel(s) → « Maquette », « V2 », « Final », le texte libre du membre, ou rien
 //   OniriquePlayer.releaseLabel(d) → « Date de sortie prévue : 4 décembre 2026 » (à venir) ou « Date de sortie : … » (passée)
+//   OniriquePlayer.engines       les lecteurs des plateformes (assets/platforms.js) : un titre { engine: "spotify", extId }
+//                                se joue en entier par le compte de l'auditeur, sous la même interface ; sans compte
+//                                (ou si la plateforme refuse), son url (l'extrait de 30 s) prend le relais.
 //   OniriquePlayer.icon(name)    → une icône SVG (play, pause, prev, next, shuffle, repeat, repeat1, queue, volume, mute,
 //                                  link, more, plus, close, back, download, chevron, star)
 (() => {
@@ -246,9 +249,53 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
 @media (max-height: 680px) { .op-card { gap: 12px; padding: 16px 14px; } .op-full { gap: 10px; } .op-scrub { height: 48px; } }
 `;
 
+  // Les moteurs des plateformes : { load(item, fire) → Promise, play(), pause(), stop(), seek(s), paused, currentTime,
+  // duration, setVolume(v) }. fire(type) prévient le lecteur (play, pause, playing, timeupdate, loadedmetadata, ended).
+  const engines = {};
+  /** Ce que le lecteur appelle « audio » : l'élément <audio>, ou le moteur de la plateforme du titre en cours. */
+  function media(element) {
+    const TYPES = ["timeupdate", "loadedmetadata", "play", "pause", "ended", "playing", "error"];
+    const listeners = {};
+    let engine = null;
+    const fire = (type) => (listeners[type] || []).forEach((fn) => fn());
+    for (const type of TYPES) element.addEventListener(type, () => { if (!engine) fire(type); });
+    const off = () => { if (engine) { try { engine.stop(); } catch {} engine = null; } };
+    return {
+      el: element,
+      addEventListener(type, fn) { if (TYPES.includes(type)) (listeners[type] ||= []).push(fn); else element.addEventListener(type, fn); },
+      /** Le titre suivant : par sa plateforme si son moteur est prêt, sinon par son fichier (ou son extrait). */
+      load(item) {
+        const next = item && item.engine && engines[item.engine];
+        if (engine && engine !== next) off();
+        if (!next) { element.src = item.url; return; }
+        element.pause();
+        engine = next;
+        const fallback = () => { if (engine !== next) return; off(); element.src = item.url; element.play().catch(() => {}); };
+        return Promise.resolve(next.load(item, (type) => { if (engine === next) fire(type); })).then((ok) => { if (ok === false) fallback(); }, fallback);
+      },
+      play() { return engine ? Promise.resolve(engine.play()) : element.play(); },
+      pause() { if (engine) engine.pause(); else element.pause(); },
+      get paused() { return engine ? engine.paused : element.paused; },
+      get currentTime() { return engine ? engine.currentTime : element.currentTime; },
+      set currentTime(value) { if (engine) engine.seek(value); else element.currentTime = value; },
+      get duration() { return engine ? engine.duration : element.duration; },
+      get volume() { return element.volume; },
+      set volume(value) { element.volume = value; for (const e of Object.values(engines)) e.setVolume?.(value); },
+      get playbackRate() { return element.playbackRate; },
+      set playbackRate(value) { element.playbackRate = value; },
+      get preservesPitch() { return element.preservesPitch; },
+      set preservesPitch(value) { element.preservesPitch = value; },
+      get preload() { return element.preload; },
+      set preload(value) { element.preload = value; },
+      get src() { return element.src; },
+      set src(value) { off(); element.src = value; },
+      get error() { return engine ? null : element.error; },
+    };
+  }
+
   function create({ onPlay, onComment, askName, onDelete, onChange, onShare } = {}) {
     document.head.append(el("style", { textContent: css }));
-    const audio = new Audio();
+    const audio = media(new Audio());
     audio.preload = "metadata";
     let list = [], index = -1, upNext = [], shuffle = false, repeat = "off", loop = null;
     let volume = 1, accent = "#E23444";
@@ -647,7 +694,7 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
       if (analyser !== null) return;
       try {
         const context = new (window.AudioContext || window.webkitAudioContext)();
-        const source = context.createMediaElementSource(audio);
+        const source = context.createMediaElementSource(audio.el);
         analyser = context.createAnalyser();
         analyser.fftSize = 256; analyser.smoothingTimeConstant = 0.7;
         source.connect(analyser); analyser.connect(context.destination);
@@ -707,9 +754,9 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     function go(i, autoplay = true) {
       if (i < 0 || i >= list.length) return;
       index = i; loop = null;
-      audio.src = list[i].url;
+      const loading = audio.load(list[i]);
       applySpeed(); showLoop(); show();
-      if (autoplay) audio.play().catch(() => {});
+      if (autoplay) Promise.resolve(loading).then(() => audio.play()).catch(() => {});
     }
     // La suite : la file d'abord, puis la liste (au hasard si demandé), puis du début si la répétition est mise.
     function advance(manual) {
@@ -1004,5 +1051,5 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     node.style.setProperty("--buy", hex);
     node.style.setProperty("--buy-ink", light > 150 ? "#0D0809" : "#F6EEEE");
   };
-  window.OniriquePlayer = { create, peaksOf, time, icon, tint, stageLabel, releaseLabel, parseLyrics, gluePunct, buttonColor };
+  window.OniriquePlayer = { create, engines, peaksOf, time, icon, tint, stageLabel, releaseLabel, parseLyrics, gluePunct, buttonColor };
 })();

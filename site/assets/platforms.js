@@ -45,8 +45,176 @@
 
   function setup(options) { ctx = options; }
   async function load() {
+    if (!conf) {
+      try { conf = await ctx.api("GET", "/platforms/config"); } catch { conf = { spotify: null, apple: false }; }
+      await spotifyReturn();
+      // Un compte Apple Music déjà connecté sur cet appareil : MusicKit se prépare, sans rien demander.
+      if (conf.apple && remembered("apple")) appleKit().then((m) => { appleOn = m.isAuthorized; if (!appleOn) remember("apple", false); }).catch(() => {});
+    }
     try { state = await ctx.api("GET", "/me/platforms"); } catch { state = { accounts: [], items: [], positions: {} }; }
     return state;
+  }
+
+  //---------------------------------------------------------------------------- Comptes connectés et lecture entière
+  // Spotify (abonnés Premium) et Apple Music (abonnés Apple Music) jouent les titres en entier dans le lecteur du CLOUD,
+  // sous son interface (OniriquePlayer.engines). Sans compte, ou si la plateforme refuse, c'est l'extrait de 30 s.
+  let conf = null, appleOn = false, spToken = null;
+  const remembered = (name) => { try { return localStorage.getItem("onirique." + name) === "1"; } catch { return false; } };
+  const remember = (name, on) => { try { on ? localStorage.setItem("onirique." + name, "1") : localStorage.removeItem("onirique." + name); } catch {} };
+  const loadScript = (src) => new Promise((ok, ko) => {
+    const node = document.createElement("script");
+    node.src = src; node.onload = ok; node.onerror = () => ko(new Error("Le lecteur de la plateforme ne se charge pas."));
+    document.head.append(node);
+  });
+  const once = (fn) => { let pending = null; return () => (pending ||= fn().catch((error) => { pending = null; throw error; })); };
+  const spotifyAccount = () => state.accounts.find((a) => a.platform === "spotify" && a.connected);
+  /** Le titre se joue-t-il en entier ici ? */
+  const full = (platform) => (platform === "spotify" ? !!(conf && conf.spotify && spotifyAccount()?.premium) : platform === "apple" ? !!(conf && conf.apple && appleOn) : false);
+
+  // Spotify : connexion PKCE (le vérificateur reste dans l'onglet, le code part au serveur qui garde le compte).
+  const b64url = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  async function spotifyLogin() {
+    const verifier = b64url(crypto.getRandomValues(new Uint8Array(48)));
+    const challenge = b64url(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)));
+    const nonce = b64url(crypto.getRandomValues(new Uint8Array(12)));
+    sessionStorage.setItem("onirique.spotify", JSON.stringify({ verifier, state: nonce, back: location.hash }));
+    location.href = "https://accounts.spotify.com/authorize?" + new URLSearchParams({ client_id: conf.spotify.clientId, response_type: "code",
+      redirect_uri: conf.spotify.redirectUri, code_challenge_method: "S256", code_challenge: challenge, scope: conf.spotify.scopes, state: nonce });
+  }
+  async function spotifyReturn() {
+    const q = new URLSearchParams(location.search);
+    if (!q.has("code") && !q.has("error")) return;
+    let saved = null;
+    try { saved = JSON.parse(sessionStorage.getItem("onirique.spotify") || "null"); } catch {}
+    sessionStorage.removeItem("onirique.spotify");
+    history.replaceState(null, "", location.pathname + ((saved && saved.back) || ""));
+    if (!saved || saved.state !== q.get("state")) return;
+    if (q.get("error")) return alert(q.get("error") === "access_denied" ? "Connexion à Spotify annulée." : "Spotify a refusé la connexion.");
+    try { await ctx.api("POST", "/me/platforms/spotify/connect", { code: q.get("code"), verifier: saved.verifier }); } catch (error) { alert(error.message); }
+  }
+  async function spotifyAccess() {
+    if (!spToken || spToken.expiresAt < Date.now() + 60_000) spToken = await ctx.api("GET", "/me/platforms/spotify/token");
+    return spToken.accessToken;
+  }
+  // Le lecteur Spotify de cet appareil (« ONIRIQUE CLOUD » dans les appareils Spotify), prêt une fois pour toutes.
+  const spotifyDevice = once(async () => {
+    if (!window.Spotify) {
+      const ready = new Promise((ok) => { window.onSpotifyWebPlaybackSDKReady = ok; });
+      await loadScript("https://sdk.scdn.co/spotify-player.js");
+      await ready;
+    }
+    const player = new window.Spotify.Player({ name: "ONIRIQUE CLOUD", volume: ctx.player.audio.volume,
+      getOAuthToken: (cb) => spotifyAccess().then(cb, () => cb("")) });
+    const device = await new Promise((ok, ko) => {
+      player.addListener("ready", ({ device_id }) => ok(device_id));
+      for (const type of ["initialization_error", "authentication_error", "account_error"]) player.addListener(type, ({ message }) => ko(new Error(message)));
+      player.connect().then((done) => { if (!done) ko(new Error("Spotify n'a pas pu démarrer.")); });
+      setTimeout(() => ko(new Error("Spotify ne répond pas.")), 15000);
+    });
+    player.addListener("player_state_changed", (st) => spotify.changed(st));
+    return { player, device };
+  });
+  const spotify = {
+    cur: null, fire: null, base: 0, at: 0, dur: 0, paused: true, done: false, timer: null, player: null,
+    async load(item, fire) {
+      Object.assign(this, { cur: item, fire, base: 0, at: performance.now(), dur: item.duration || 0, paused: true, done: false });
+      const { player, device } = await spotifyDevice();
+      this.player = player;
+      const response = await fetch("https://api.spotify.com/v1/me/player/play?device_id=" + encodeURIComponent(device), { method: "PUT",
+        headers: { Authorization: "Bearer " + (await spotifyAccess()), "Content-Type": "application/json" }, body: JSON.stringify({ uris: ["spotify:track:" + item.extId] }) });
+      if (!response.ok) return false;
+      fire("loadedmetadata");
+      return true;
+    },
+    changed(st) {
+      if (!st || !this.cur) return;
+      const t = st.track_window && st.track_window.current_track;
+      const id = t && ((t.linked_from && t.linked_from.id) || t.id);
+      // La fin du titre : Spotify s'arrête au début, le titre passé dans « précédents ».
+      if (st.paused && st.position === 0 && (st.track_window.previous_tracks || []).some((x) => ((x.linked_from && x.linked_from.id) || x.id) === this.cur.extId)) {
+        if (!this.done) { this.done = true; this.paused = true; this.tick(false); this.fire("ended"); }
+        return;
+      }
+      if (id !== this.cur.extId) return;
+      const was = this.paused;
+      Object.assign(this, { base: st.position / 1000, at: performance.now(), dur: st.duration / 1000 || this.dur, paused: st.paused });
+      if (was !== st.paused) { this.fire(st.paused ? "pause" : "play"); if (!st.paused) this.fire("playing"); }
+      this.tick(!st.paused);
+    },
+    tick(on) { clearInterval(this.timer); this.timer = on ? setInterval(() => this.fire && this.fire("timeupdate"), 250) : null; },
+    play() { return this.player && this.player.resume(); },
+    pause() { if (this.player) this.player.pause(); },
+    stop() { this.tick(false); if (this.player && !this.paused) this.player.pause(); this.cur = null; },
+    seek(s) { if (this.player) this.player.seek(Math.round(s * 1000)); this.base = s; this.at = performance.now(); },
+    get currentTime() { return this.paused ? this.base : this.base + (performance.now() - this.at) / 1000; },
+    get duration() { return this.dur; },
+    setVolume(v) { if (this.player) this.player.setVolume(v); },
+  };
+
+  // Apple Music : MusicKit, avec le jeton développeur d'ONIRIQUE ; la connexion de l'abonné reste sur cet appareil.
+  const appleKit = once(async () => {
+    if (!window.MusicKit || !window.MusicKit.configure) {
+      const loaded = new Promise((ok) => document.addEventListener("musickitloaded", ok, { once: true }));
+      await loadScript("https://js-cdn.music.apple.com/musickit/v3/musickit.js");
+      if (!window.MusicKit || !window.MusicKit.configure) await loaded;
+    }
+    const { token } = await ctx.api("GET", "/platforms/apple/token");
+    await window.MusicKit.configure({ developerToken: token, app: { name: "ONIRIQUE CLOUD", build: "1.0" } });
+    const m = window.MusicKit.getInstance();
+    const S = window.MusicKit.PlaybackStates;
+    m.addEventListener("playbackStateDidChange", () => {
+      if (!apple.fire) return;
+      const st = m.playbackState;
+      if (st === S.playing) { apple.fire("play"); apple.fire("playing"); }
+      else if (st === S.paused || st === S.stopped) apple.fire("pause");
+      else if (st === S.ended || st === S.completed) apple.fire("ended");
+    });
+    m.addEventListener("playbackTimeDidChange", () => apple.fire && apple.fire("timeupdate"));
+    return m;
+  });
+  const apple = {
+    cur: null, fire: null, m: null,
+    async load(item, fire) {
+      const m = await appleKit();
+      if (!m.isAuthorized) return false;
+      Object.assign(this, { cur: item, fire: null, m });
+      m.volume = ctx.player.audio.volume;
+      await m.setQueue({ song: item.extId, startPlaying: true });
+      this.fire = fire;
+      fire("loadedmetadata");
+      return true;
+    },
+    play() { return this.m && this.m.play(); },
+    pause() { if (this.m) this.m.pause(); },
+    stop() { const m = this.m; this.fire = null; this.cur = null; if (m) m.stop(); },
+    seek(s) { if (this.m) this.m.seekToTime(s); },
+    get paused() { return !this.m || this.m.playbackState !== window.MusicKit.PlaybackStates.playing; },
+    get currentTime() { return (this.m && this.m.currentPlaybackTime) || 0; },
+    get duration() { return (this.m && this.m.currentPlaybackDuration) || (this.cur && this.cur.duration) || 0; },
+    setVolume(v) { if (this.m) this.m.volume = v; },
+  };
+  if (window.OniriquePlayer) Object.assign(window.OniriquePlayer.engines, { spotify, apple });
+
+  // Les playlists d'un compte connecté : Spotify par le serveur ; Apple Music (bibliothèque) par MusicKit, ici.
+  async function appleLibrary() {
+    const m = await appleKit();
+    const r = await m.api.music("/v1/me/library/playlists", { limit: 100 });
+    return (r.data.data || []).map((l) => ({ id: l.id, title: l.attributes.name, count: null,
+      cover: l.attributes.artwork ? l.attributes.artwork.url.replace("{w}", "120").replace("{h}", "120") : null }));
+  }
+  async function appleLibraryTracks(list) {
+    const m = await appleKit(), items = [];
+    let next = "/v1/me/library/playlists/" + encodeURIComponent(list.id) + "/tracks";
+    while (next && items.length < 200) {
+      const r = await m.api.music(next, { limit: 100 });
+      for (const t of r.data.data || []) {
+        const a = t.attributes || {}, id = a.playParams && a.playParams.catalogId;
+        if (id) items.push({ platform: "apple", id: String(id), title: a.name, artist: a.artistName, duration: Math.round((a.durationInMillis || 0) / 1000),
+          cover: a.artwork ? a.artwork.url.replace("{w}", "300").replace("{h}", "300") : null, listen: null });
+      }
+      next = r.data.next || null;
+    }
+    return { kind: "playlist", platform: "apple", title: list.title, cover: list.cover, items };
   }
   const itemsOf = (pid) => state.items.filter((x) => x.projectId === pid);
   /** La playlist dans son ordre : les sons du CLOUD (à leur place) et les titres des plateformes. */
@@ -55,9 +223,10 @@
     const items = itemsOf(p.id).map((x) => ({ key: "x" + x.id, item: x, at: x.position, rank: 1 }));
     return [...tracks, ...items].sort((a, b) => a.at - b.at || a.rank - b.rank);
   }
+  // En entier par le compte de l'auditeur quand c'est possible, sinon l'extrait (url) ; le lecteur bascule tout seul.
   const playerItem = (x) => ({ key: "x" + x.id, id: null, trackId: null, title: x.title, artist: x.artist,
-    subtitle: [x.artist, NAMES[x.platform] + " · extrait 30 s"].filter(Boolean).join(" · "), cover: x.cover, url: x.listen,
-    duration: 30, peaks: [], comments: [], lyrics: "" });
+    subtitle: [x.artist, NAMES[x.platform] + (full(x.platform) ? "" : " · extrait 30 s")].filter(Boolean).join(" · "), cover: x.cover, url: x.listen,
+    engine: full(x.platform) ? x.platform : null, extId: x.extId || x.id, duration: full(x.platform) ? x.duration || 0 : 30, peaks: [], comments: [], lyrics: "" });
 
   function row(p, x, i, onPlay) {
     const { el, icon } = ctx;
@@ -128,8 +297,8 @@
   function resultRow(x) {
     const { el, icon, player } = ctx;
     const key = "pv" + x.platform + x.id, on = player.playing && player.item && player.item.key === key, inside = added.has(x.platform + ":" + x.id);
-    const listen = el("button", { className: "pick-art" + (on ? " on" : ""), type: "button", disabled: !x.listen, ariaLabel: (on ? "Pause : " : "Écouter ") + x.title,
-      onclick: () => { if (player.item && player.item.key === key) player.toggle(); else player.play([{ ...playerItem({ ...x, id: x.id }), key }], 0); setTimeout(draw, 300); } },
+    const listen = el("button", { className: "pick-art" + (on ? " on" : ""), type: "button", disabled: !x.listen && !full(x.platform), ariaLabel: (on ? "Pause : " : "Écouter ") + x.title,
+      onclick: () => { if (player.item && player.item.key === key) player.toggle(); else player.play([{ ...playerItem({ ...x, id: x.id }), key, engine: full(x.platform) ? x.platform : null, extId: x.id }], 0); setTimeout(draw, 300); } },
       x.cover ? el("img", { src: x.cover, alt: "" }) : el("span", { className: "cover-ph" }), el("i", {}, icon(on ? "pause" : "play")));
     return el("li", {}, el("div", { className: "item" }, listen,
       el("span", { className: "grow pick-name" }, el("b", { className: "tline", textContent: x.title }), el("small", { textContent: [x.artist, time(x.duration)].filter(Boolean).join(" · ") })),
@@ -138,9 +307,60 @@
         onclick: () => add([x]) }) : ""));
   }
 
+  let ownLists = { spotify: null, apple: null };
+  async function loadOwnLists(platform) {
+    try { ownLists[platform] = platform === "spotify" ? await ctx.api("GET", "/me/platforms/spotify/playlists") : await appleLibrary(); }
+    catch (e) { ownLists[platform] = []; error = e.message; }
+    draw();
+  }
+  // Une liste de playlists à importer : un clic les lit, prêtes à ajouter.
+  function listOf(lists, open) {
+    const { el } = ctx;
+    return lists === null ? el("p", { className: "pf-note", textContent: "Chargement de tes playlists…" })
+      : lists.length ? el("ul", { className: "group pf-list" }, ...lists.map((l) => el("li", {}, el("button", { className: "item", type: "button", onclick: () => open(l) },
+        l.cover ? el("img", { src: l.cover, alt: "", style: "width:40px;height:40px;border-radius:8px;object-fit:cover" }) : el("span", { className: "cover-ph" }),
+        el("span", { className: "grow pick-name" }, el("b", { textContent: l.title }), el("small", { textContent: l.count === null ? "Bibliothèque" : l.count + " titres" })),
+        el("span", { className: "pf-tag", textContent: target ? "Importer" : "Ouvrir" })))))
+        : el("p", { className: "pf-note", textContent: "Aucune playlist sur ce compte." });
+  }
+  /** Spotify ou Apple Music branchés sur ONIRIQUE : se connecter pour de vrai, écouter en entier, importer ses playlists. */
+  function connectedBox(platform) {
+    const { el } = ctx;
+    const a = state.accounts.find((x) => x.platform === platform);
+    const on = platform === "spotify" ? !!(a && a.connected) : appleOn;
+    const head = el("div", { className: "pf-acc-head" }, el("b", { textContent: NAMES[platform] }),
+      on ? el("span", { className: "pf-tag", textContent: platform === "spotify" ? (a.premium ? "Premium · " + a.name : "Gratuit · " + a.name) : "Connecté" }) : "",
+      on ? el("button", { className: "btn btn-ghost", type: "button", textContent: "Déconnecter", onclick: async () => {
+        if (platform === "spotify") { await ctx.api("DELETE", "/me/platforms/spotify").catch((e) => { error = e.message; }); spToken = null; await load(); }
+        else { try { (await appleKit()).unauthorize(); } catch {} appleOn = false; remember("apple", false); }
+        ownLists[platform] = null; ctx.changed(); draw();
+      } }) : el("button", { className: "btn btn-primary", type: "button", disabled: busy, textContent: "Se connecter", onclick: async () => {
+        if (platform === "spotify") return spotifyLogin();
+        busy = true; error = ""; draw();
+        try { const m = await appleKit(); await m.authorize(); appleOn = m.isAuthorized; remember("apple", appleOn); if (appleOn) { ctx.changed(); loadOwnLists("apple"); } }
+        catch (e) { error = "Connexion à Apple Music impossible : " + e.message; }
+        busy = false; draw();
+      } }));
+    const note = !on ? (platform === "spotify" ? "Connecte ton compte : tes titres Spotify se jouent en entier ici (abonnés Premium), et tes playlists s'importent en entier, privées comprises."
+      : "Connecte ton compte : tes titres Apple Music se jouent en entier ici (abonnés Apple Music), et ta bibliothèque s'importe.")
+      : platform === "spotify" && !a.premium ? "Spotify ne laisse jouer les titres en entier qu'aux comptes Premium : tu entends les extraits de 30 s. Tes playlists s'importent quand même en entier."
+        : "Tes titres " + NAMES[platform] + " se jouent en entier ici, mêlés à tes sons du CLOUD.";
+    const box = el("div", { className: "group pf-acc" }, head, el("p", { className: "pf-note", textContent: note }));
+    if (on) {
+      if (ownLists[platform] === null && !busy) setTimeout(() => loadOwnLists(platform), 0);
+      box.append(listOf(ownLists[platform], (l) => {
+        tab = "link";
+        if (platform === "spotify") { query = l.url; resolve(l.url); }
+        else { query = ""; busy = true; found = null; draw(); appleLibraryTracks(l).then((r) => { found = r; }, (e) => { error = e.message; }).then(() => { busy = false; draw(); }); }
+      }));
+    }
+    return box;
+  }
+
   function accountsPanel() {
     const { el } = ctx;
     return el("div", { className: "stack" }, ...["deezer", "spotify", "apple"].map((platform) => {
+      if ((platform === "spotify" && conf && conf.spotify) || (platform === "apple" && conf && conf.apple)) return connectedBox(platform);
       const a = state.accounts.find((x) => x.platform === platform);
       const input = el("input", { type: "url", placeholder: NAMES[platform] + " : lien de ton profil", autocomplete: "off" });
       const form = el("form", { onsubmit: async (event) => {
