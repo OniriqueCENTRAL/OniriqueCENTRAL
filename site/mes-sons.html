@@ -3824,9 +3824,7 @@ async function openSettings() {
       data.founder ? el("div", { className: "sub-title", textContent: "Fondateurs" }) : null,
       data.founder ? el("ul", { className: "group" }, el("li", {}, el("div", { className: "item" },
         el("span", { className: "grow" }, "VANISH", el("small", { textContent: "Voir les sons de tous les comptes, sans prévenir personne" })),
-        el("label", { className: "switch" }, vanishSwitch, el("span")))),
-        el("li", {}, el("a", { className: "item", href: "films", style: "text-decoration:none" },
-          el("span", { className: "grow" }, "Films", el("small", { textContent: "Les nouveaux films, la recherche et la fiche de chacun" }))))) : null));
+        el("label", { className: "switch" }, vanishSwitch, el("span"))))) : null));
   if (!dialog.open) dialog.showModal();
 }
 $("settings-open").onclick = openSettings;

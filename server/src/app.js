@@ -42,7 +42,6 @@ import { ownsGoogleState, googleMailerCallback } from './packsend.js';
 import { mountPush } from './push.js';
 import { mountDocs } from './docs.js';
 import { mountTierList } from './tierlist.js';
-import { mountFilms } from './films.js';
 import { mountDownloader } from './downloader.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -560,7 +559,6 @@ export function createApp() {
   mountCut(app, { requireUser, receiveFile, wrap });
   mountTierList(app, { requireUser, receiveImage, removeMedia, wrap });
   mountPush(app, { requireUser });
-  mountFilms(app, { requireUser, receiveFile, wrap });
 
   // La photo d'ingé d'un fondateur : celle des crédits, distincte de la photo du compte.
   const engineerOnly = (req) => { if (!can(req.user, 'engineer')) throw new HttpError(403, "Le profil d'ingé n'est pas ouvert à ce compte."); };
