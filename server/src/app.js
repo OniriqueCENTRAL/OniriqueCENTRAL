@@ -1613,8 +1613,9 @@ export function createApp() {
          CASE WHEN u.avatar IS NULL THEN NULL ELSE '/api/media/' || u.avatar END AS avatar,
          (SELECT COUNT(*) FROM licenses l WHERE l.user_id = u.id AND l.status = 'active') AS licenses,
          (SELECT COUNT(*) FROM licenses l WHERE l.user_id = u.id AND l.source = 'trial') AS trials,
-         EXISTS (SELECT 1 FROM subscriptions s WHERE s.user_id = u.id AND s.status = 'active' AND s.current_period_end > ?) AS subscribed
-       FROM users u WHERE u.email LIKE ? OR u.name LIKE ? ORDER BY u.created_at DESC LIMIT 500`, now(), q, q));
+         EXISTS (SELECT 1 FROM subscriptions s WHERE s.user_id = u.id AND s.status = 'active' AND s.current_period_end > ?) AS subscribed,
+         (SELECT ? || '/' || p.handle FROM link_pages p WHERE p.user_id = u.id) AS linkPage
+       FROM users u WHERE u.email LIKE ? OR u.name LIKE ? ORDER BY u.created_at DESC LIMIT 500`, now(), config.linksUrl, q, q));
   });
 
   admin.patch('/users/:id', (req, res) => {

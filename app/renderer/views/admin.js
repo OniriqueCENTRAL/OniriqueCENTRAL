@@ -438,6 +438,7 @@ function usersTab() {
     h('td', null, u.subscribed ? pill('Abonné', '', true) : h('span', { class: 'muted' }, '—')),
     h('td', { class: 'muted' }, date(u.createdAt)),
     h('td', { class: 'actions' },
+      u.linkPage ? h('a', { class: 'btn small quiet', href: u.linkPage, target: '_blank' }, 'Page de liens') : null,
       // Rend ses essais gratuits à un compte : il pourra relancer un essai de chaque plugin.
       u.trials ? button(`Réinitialiser les essais (${u.trials})`, () => confirm('Réinitialiser les essais gratuits ?',
         `Les ${u.trials} essai(s) de ${u.email}, en cours ou terminés, sont effacés : il pourra relancer un essai de 7 jours pour chaque plugin. Un essai en cours s'arrête tout de suite.`,

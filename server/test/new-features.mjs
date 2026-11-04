@@ -208,6 +208,8 @@ try {
     const linkMember = (await api('POST', '/auth/login', { email: 'membre-liens@site.test', password: 'motdepasse' })).data.token;
     check((await api('PUT', '/me/links', { handle: 'membre-onirique', page: { name: 'Membre' } }, linkMember)).status === 200, 'un membre ONIRIQUE crée sa page');
     check((await fetch(`${base.replace(/\/api$/, '')}/l/membre-onirique`)).status === 200, 'et elle est en ligne');
+    const linkRow = (await api('GET', '/admin/users?q=membre-liens', null, admin)).data[0];
+    check(linkRow.linkPage?.endsWith('/l/membre-onirique'), 'les admins voient sa page de liens dans les comptes');
     const blank = (await api('GET', '/me/links', null, founder)).data;
     check(blank.handle === null && blank.page.theme.button.style === 'glass', 'au départ : pas de page, un thème par défaut');
     check((await api('PUT', '/me/links', { handle: 'A B', page: {} }, founder)).status === 400, 'une adresse invalide est refusée');
