@@ -1,4 +1,4 @@
-import { h, star, toast, eyebrow, button, attempt, ROLES, isStaff, hasPanel, defaultAvatar } from './ui.js';
+import { h, toast, eyebrow, button, attempt, led, navIcon, starKnob, ROLES, isStaff, hasPanel, defaultAvatar } from './ui.js';
 import { authView, offlineView } from './views/auth.js';
 import { libraryView, detailView, status } from './views/library.js';
 import { licensesView } from './views/licenses.js';
@@ -80,10 +80,17 @@ function langSwitch() {
     }, label)));
 }
 
+/** L'étoile à quatre branches de la barre du haut, comme sur VOCALBOX. */
+function titleStar() {
+  const box = h('span', { class: 'sigil', 'aria-hidden': 'true' });
+  box.innerHTML = '<svg viewBox="0 0 20 20" width="20" height="20"><path d="M10 0Q11.2 8.8 20 10Q11.2 11.2 10 20Q8.8 11.2 0 10Q8.8 8.8 10 0Z" fill="#FFECEE"/></svg>';
+  return box;
+}
+
 function titlebar() {
   const mac = central.platform === 'darwin'; // macOS dessine ses propres boutons, à gauche
   return h('header', { class: `titlebar${mac ? ' mac' : ''}` },
-    h('img', { class: 'sigil', src: 'assets/sigil.png', alt: '' }),
+    titleStar(),
     h('div', { class: 'wordmark' }, h('b', null, 'ONIRIQUE'), h('i', null, 'Central')),
     h('div', { class: 'spacer' }),
     langSwitch(),
@@ -107,22 +114,35 @@ export function avatar(user, big = false) {
   return image;
 }
 
+/** Les outils du site, ouverts dans une fenêtre de l'application avec la session du compte. */
+const TOOLS = [['cut', 'ONIRIQUE CUT', 'Clips sur le beat'], ['cloud', 'ONIRIQUE CLOUD', 'Mes sons · projets']];
+
 function sidebar() {
   const { me } = state.data;
-  const item = (name, label, count) => h('button', {
+  // Une rubrique : un carré de la chaîne, avec son icône, son nom, sa ligne de description et son témoin.
+  const item = (name, label, sub, count) => h('button', {
     class: `nav-item${state.route.name === name ? ' active' : ''}`, onclick: () => go(name),
-  }, star(), label, count ? h('span', { class: 'count' }, String(count)) : null);
+    'aria-current': state.route.name === name ? 'page' : null,
+  }, navIcon(name), h('span', { class: 'name' }, label), count ? h('span', { class: 'count' }, String(count)) : led(state.route.name === name),
+    h('span', { class: 'sub' }, sub));
+  const tool = ([id, label, sub]) => h('button', {
+    class: 'nav-item tool', title: `Ouvrir ${label}`,
+    onclick: () => attempt(() => call('open:tool', id)),
+  }, navIcon(id), h('span', { class: 'name' }, label.replace(/^ONIRIQUE\s+/, '')), h('span', { class: 'arrow', 'aria-hidden': 'true' }, '↗'), h('span', { class: 'sub' }, sub));
 
   const subscribed = me.subscription?.status === 'active' && (me.subscription.kind === 'pick' ? 'À la carte' : 'All Access');
   // Le rôle du compte reste visible, à côté de l'abonnement s'il y en a un.
   const plan = [me.user.role !== 'user' ? ROLES[me.user.role] : null, subscribed].filter(Boolean).join(' · ') || 'Compte';
   return h('nav', { class: 'sidebar' },
-    item('plugins', 'Plugins', pendingUpdates(state.data)),
-    item('licenses', 'Licences'),
-    item('subscription', 'Abonnement'),
-    item('support', 'Support'),
-    hasPanel(me.user) ? [h('div', { class: 'eyebrow nav-label' }, 'Studio'), item('admin', 'Panel admin'),
-      isStaff(me.user) ? item('support-admin', 'Panel support') : null,
+    h('div', { class: 'eyebrow nav-label' }, 'Central'),
+    item('plugins', 'Plugins', 'Bibliothèque', pendingUpdates(state.data)),
+    item('licenses', 'Licences', 'Clés · machines'),
+    item('subscription', 'Abonnement', 'Formules · packs'),
+    item('support', 'Support', 'Écrire à l\'équipe'),
+    h('div', { class: 'eyebrow nav-label' }, 'Outils'),
+    TOOLS.map(tool),
+    hasPanel(me.user) ? [h('div', { class: 'eyebrow nav-label' }, 'Studio'), item('admin', 'Panel admin', 'Catalogue · ventes'),
+      isStaff(me.user) ? item('support-admin', 'Panel support', 'Demandes reçues') : null,
       // L'équipe et les partenaires s'accordent tous les plugins, ou y renoncent pour voir l'application comme un client.
       h('button', {
         class: 'nav-item', 'aria-pressed': String(!!me.user.selfLicenses),
@@ -132,7 +152,8 @@ function sidebar() {
           if (await attempt(() => call('api', 'POST', '/api/me/self-licenses', { enabled }),
             enabled ? 'Vos licences sont activées : tous les plugins sont offerts à ce compte.' : 'Vos licences sont désactivées : vous voyez l\'application comme un client.')) await refresh();
         },
-      }, h('span', { class: `led${me.user.selfLicenses ? ' on' : ''}` }), me.user.selfLicenses ? 'Mes licences : activées' : 'Mes licences : désactivées')] : null,
+      }, navIcon('self'), h('span', { class: 'name' }, 'Mes licences'), led(!!me.user.selfLicenses),
+        h('span', { class: 'sub' }, me.user.selfLicenses ? 'Activées' : 'Désactivées'))] : null,
     h('div', { class: 'spacer' }),
     // Le site ONIRIQUE, juste au-dessus du compte.
     h('button', { class: 'site-link', title: 'Ouvrir onirique.store dans le navigateur', onclick: () => call('open:site', '') },
@@ -178,7 +199,7 @@ function verifyBanner() {
 function verifyGate() {
   const { user } = state.data.me;
   return h('div', { class: 'auth-box verify-gate' },
-    h('img', { class: 'hero', src: 'assets/sigil.png', alt: '' }),
+    starKnob(0.62),
     h('div', { class: 'wordmark' }, h('b', null, 'ONIRIQUE'), h('i', null, 'Central')),
     h('div', { class: 'panel stack', style: { 'text-align': 'left' } },
       eyebrow('Une dernière étape'),
@@ -195,7 +216,7 @@ export function render() {
   const root = document.getElementById('app');
   let content;
   if (state.offline) content = h('div', { class: 'auth' }, offlineView());
-  else if (!state.data) content = h('div', { class: 'auth' }, h('div', { class: 'muted mono' }, 'Connexion au serveur…'));
+  else if (!state.data) content = h('div', { class: 'auth' }, h('div', { class: 'auth-box' }, starKnob(0.35), h('div', { class: 'eyebrow', style: { 'justify-content': 'center' } }, 'Connexion au serveur…')));
   else if (!state.data.me) content = h('div', { class: 'auth' }, authView());
   else if (state.data.me.user.emailVerified === false) content = h('div', { class: 'auth' }, verifyGate());
   else {

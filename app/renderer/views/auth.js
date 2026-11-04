@@ -1,12 +1,13 @@
-import { h, field, toast } from '../ui.js';
+import { h, field, toast, starKnob } from '../ui.js';
 import { state, call, refresh, render, globe } from '../app.js';
 
 let mode = 'login';
 let askCode = false; // le compte a l'A2F : le code de l'application d'authentification est demandé
 
 const hero = () => [
-  h('img', { class: 'hero', src: 'assets/sigil.png', alt: '' }),
+  starKnob(0.62),
   h('div', { class: 'wordmark' }, h('b', null, 'ONIRIQUE'), h('i', null, 'Central')),
+  h('div', { class: 'tagline' }, 'Plugins · licences · mises à jour'),
 ];
 
 /** Un système qui n'est pas en français : une fois, la proposition de passer l'application en anglais (écrite en anglais). */

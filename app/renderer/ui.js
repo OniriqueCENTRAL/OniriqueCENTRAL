@@ -43,6 +43,44 @@ ${spark(1)}${spark(2)}${spark(3)}
   return "data:image/svg+xml," + encodeURIComponent(svg);
 }
 
+/** Le potard « Étoile » de la charte : piste, arc braise, corps sombre, deux étoiles qui tournent avec la valeur (0 à 1). */
+export function starKnob(value = 0.62, size = 150) {
+  const svg = `<svg class="star-knob" width="${size}" height="${size}" viewBox="0 0 100 100" aria-hidden="true">
+<defs><radialGradient id="kb" cx="32%" cy="30%" r="80%"><stop offset="0" stop-color="#36161a"/><stop offset=".6" stop-color="#160a0c"/><stop offset="1" stop-color="#080405"/></radialGradient></defs>
+<circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,236,238,.12)" stroke-width="3" stroke-dasharray="207.3 277" stroke-linecap="round" transform="rotate(135 50 50)"/>
+<circle class="arc" cx="50" cy="50" r="44" fill="none" stroke="#E23444" stroke-width="3" stroke-dasharray="0 277" stroke-linecap="round" transform="rotate(135 50 50)"/>
+<circle class="shade" cx="50" cy="52.5" r="32.6" fill="rgba(0,0,0,.7)"/>
+<circle cx="50" cy="50" r="32.6" fill="url(#kb)" stroke="rgba(255,220,225,.08)" stroke-width=".5"/>
+<g class="cap"><path d="M50 2 Q50.45 5.55 54 6 Q50.45 6.45 50 10 Q49.55 6.45 46 6 Q49.55 5.55 50 2Z" fill="#FFECEE"/>
+<path d="M50 30.6 Q52.19 47.81 69.4 50 Q52.19 52.19 50 69.4 Q47.81 52.19 30.6 50 Q47.81 47.81 50 30.6Z" fill="#FFECEE"/></g></svg>`;
+  const box = h('div', { class: 'hero' });
+  box.innerHTML = svg; // dessin fixe, aucune donnée extérieure
+  // Le potard monte à sa valeur à l'arrivée, comme un module qui s'allume.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    box.querySelector('.arc').setAttribute('stroke-dasharray', `${(207.3 * value).toFixed(1)} 277`);
+    box.querySelector('.cap').style.transform = `rotate(${-135 + 270 * value}deg)`;
+  }));
+  return box;
+}
+
+/** Icônes au trait (24 × 24, trait rose) des rubriques. */
+const ICONS = {
+  plugins: 'M3 17a9 9 0 0 1 18 0M12 17l4.5-6.5',
+  licenses: 'M15.5 8.5a3.5 3.5 0 1 1-7 0a3.5 3.5 0 0 1 7 0M12 12v9M12 17h3M12 20h2',
+  subscription: 'M4 12a8 8 0 0 1 14-5.3M20 4v4h-4M20 12a8 8 0 0 1-14 5.3M4 20v-4h4',
+  support: 'M4 5h16v11H9l-5 4z',
+  admin: 'M6 4v16M12 4v16M18 4v16M4 9h4M10 15h4M16 7h4',
+  'support-admin': 'M4 14a8 8 0 0 1 16 0M4 14v5h3v-6H4M20 14v5h-3v-6h3',
+  cut: 'M9 6a3 3 0 1 1-6 0a3 3 0 0 1 6 0M9 18a3 3 0 1 1-6 0a3 3 0 0 1 6 0M8.2 7.8L20 18M8.2 16.2L20 6',
+  cloud: 'M7 18a4.5 4.5 0 0 1-.6-9a6 6 0 0 1 11.4 1.5A3.8 3.8 0 0 1 17.5 18z',
+  self: 'M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0',
+};
+export function navIcon(name) {
+  const box = h('span', { class: 'ico', 'aria-hidden': 'true' });
+  box.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${ICONS[name]}"/></svg>`;
+  return box;
+}
+
 export const star = () => h('span', { class: 'star' });
 export const eyebrow = (text) => h('div', { class: 'eyebrow' }, star(), text);
 export const led = (on) => h('span', { class: `led${on ? ' on' : ''}` });

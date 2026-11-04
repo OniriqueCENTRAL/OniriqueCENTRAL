@@ -10,6 +10,7 @@ const installer = require('./installer');
 const store = require('./store');
 
 let win = null;
+const toolWindows = new Map(); // CUT et CLOUD : une fenêtre chacun
 
 function createWindow() {
   win = new BrowserWindow({
@@ -296,6 +297,33 @@ app.whenReady().then(() => {
   handle('open:site', (page) => {
     const allowed = ['', 'boutique.html', 'compte.html', 'support.html', 'outils.html', 'compte.html#parrainage'];
     return shell.openExternal('https://onirique.store/' + (allowed.includes(page) ? page : ''));
+  });
+  // ONIRIQUE CUT et ONIRIQUE CLOUD : la page du site dans une fenêtre de l'application, déjà connectée au compte.
+  // La session passe par le sessionStorage de cette fenêtre (jamais dans l'adresse) et disparaît à sa fermeture.
+  handle('open:tool', async (tool) => {
+    const page = { cut: 'cut.html', cloud: 'mes-sons.html' }[tool];
+    if (!page) throw new Error('Outil inconnu.');
+    const open = toolWindows.get(tool);
+    if (open && !open.isDestroyed()) return open.focus();
+    const site = 'https://onirique.store';
+    const w = new BrowserWindow({
+      width: 1360, height: 880, minWidth: 900, minHeight: 600, backgroundColor: '#09080A', show: false, autoHideMenuBar: true,
+      icon: path.join(__dirname, '..', 'renderer', 'assets', 'logo.png'),
+      webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, partition: 'onirique-web' },
+    });
+    toolWindows.set(tool, w);
+    w.removeMenu();
+    w.once('ready-to-show', () => w.show());
+    // Le site reste dans la fenêtre ; ce qui en sort (paiement, réseaux) s'ouvre dans le navigateur.
+    const inside = (url) => url === site || url.startsWith(site + '/');
+    const outside = (url) => { if (/^https:\/\//.test(url)) shell.openExternal(url); };
+    w.webContents.setWindowOpenHandler(({ url }) => (inside(url) ? { action: 'allow' } : (outside(url), { action: 'deny' })));
+    w.webContents.on('will-navigate', (event, url) => { if (!inside(url)) { event.preventDefault(); outside(url); } });
+    if (store.token) {
+      await w.loadURL(site + '/robots.txt');
+      await w.webContents.executeJavaScript(`sessionStorage.setItem("onirique.token", ${JSON.stringify(store.token)})`);
+    }
+    await w.loadURL(`${site}/${page}`);
   });
   // Répondre à une demande de support : la messagerie de ce PC s'ouvre sur un message adressé à la personne.
   handle('open:mail', (email, subject) => {
