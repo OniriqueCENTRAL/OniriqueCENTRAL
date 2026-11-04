@@ -257,6 +257,13 @@
     setVolume() {}, // le lecteur intégré de Spotify garde son propre volume
   };
   /** Se connecter à Spotify sur cet appareil : sa vraie page de connexion, dans une petite fenêtre. */
+  // Dans l'application ONIRIQUE CENTRAL, l'état de la connexion se lit (cookie de session de Spotify sur cet appareil).
+  let spWeb = null;
+  async function spotifyChanged() {
+    if (!window.oniriqueApp) return;
+    try { spWeb = await window.oniriqueApp.spotify(); } catch { spWeb = null; }
+    if (dialog && dialog.open) draw();
+  }
   const spotifyWebLogin = () => window.open("https://accounts.spotify.com/login?continue=" + encodeURIComponent("https://open.spotify.com/"), "spotify-login", "width=520,height=720");
   if (window.OniriquePlayer) Object.assign(window.OniriquePlayer.engines, { spotify, apple, spotifyEmbed });
 
@@ -426,10 +433,17 @@
     const { el } = ctx;
     return el("div", { className: "stack" }, ...["deezer", "spotify", "apple"].map((platform) => {
       if ((platform === "spotify" && conf && conf.spotify) || (platform === "apple" && conf && conf.apple)) return connectedBox(platform);
-      if (platform === "spotify") return el("div", { className: "group pf-acc" },
-        el("div", { className: "pf-acc-head" }, el("b", { textContent: "Spotify" }),
-          el("button", { className: "btn btn-primary", type: "button", textContent: "Se connecter à Spotify", onclick: spotifyWebLogin })),
-        el("p", { className: "pf-note", textContent: "Connecte-toi une fois à ton compte Spotify sur cet appareil : tes titres Spotify se jouent en entier dans le lecteur du CLOUD, mêlés à tes sons (sinon, leur extrait). Déjà connecté ? Rien à faire. Pour importer une playlist, colle son lien dans « Coller un lien »." }));
+      if (platform === "spotify") {
+        if (spWeb === null && window.oniriqueApp) setTimeout(spotifyChanged, 0);
+        return el("div", { className: "group pf-acc" },
+          el("div", { className: "pf-acc-head" }, el("b", { textContent: "Spotify" }),
+            spWeb ? el("span", { className: "pf-tag", textContent: "Connecté" }) : "",
+            spWeb ? el("button", { className: "btn btn-ghost", type: "button", textContent: "Se déconnecter", onclick: async () => { await window.oniriqueApp.spotifyLogout().catch(() => {}); spotifyChanged(); } })
+              : el("button", { className: "btn btn-primary", type: "button", textContent: "Se connecter à Spotify", onclick: spotifyWebLogin })),
+          el("p", { className: "pf-note", textContent: spWeb
+            ? "Ton compte Spotify est connecté sur cet appareil : tes titres Spotify se jouent en entier dans le lecteur du CLOUD, mêlés à tes sons. Pour importer une playlist, colle son lien dans « Coller un lien »."
+            : "Connecte-toi une fois à ton compte Spotify sur cet appareil : tes titres Spotify se jouent en entier dans le lecteur du CLOUD, mêlés à tes sons (sinon, leur extrait). Pour importer une playlist, colle son lien dans « Coller un lien »." }));
+      }
       const a = state.accounts.find((x) => x.platform === platform);
       const input = el("input", { type: "url", placeholder: NAMES[platform] + " : lien de ton profil", autocomplete: "off" });
       const form = el("form", { onsubmit: async (event) => {
@@ -503,5 +517,5 @@
     if (box && document.activeElement !== box && tab !== "accounts") setTimeout(() => box.focus(), 0);
   }
 
-  window.OniriquePlatforms = { NAMES, setup, load, itemsOf, mixed, playerItem, row, order, openAdd, openAccounts };
+  window.OniriquePlatforms = { NAMES, setup, load, spotifyChanged, itemsOf, mixed, playerItem, row, order, openAdd, openAccounts };
 })();

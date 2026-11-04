@@ -66,8 +66,10 @@ function toolView(tool, lang) {
       return { action: 'deny' };
     });
     web.on('will-navigate', (event, url) => { if (!route(url)) event.preventDefault(); });
-    // La fenêtre de connexion à Spotify se ferme d'elle-même une fois le compte connecté (son cookie de session posé).
+    // La fenêtre de connexion à Spotify se ferme d'elle-même une fois le compte connecté (son cookie de session posé) ;
+    // à sa fermeture, la page relit l'état de la connexion.
     web.on('did-create-window', (child) => {
+      child.on('closed', () => { if (!web.isDestroyed()) web.executeJavaScript('window.OniriquePlatforms && window.OniriquePlatforms.spotifyChanged && window.OniriquePlatforms.spotifyChanged()').catch(() => {}); });
       child.webContents.on('did-navigate', async (_event, url) => {
         if (/^https:\/\/open\.spotify\.com\//.test(url) && (await ses.cookies.get({ name: 'sp_dc' }).catch(() => [])).length && !child.isDestroyed()) child.close();
       });
@@ -93,6 +95,22 @@ function toolView(tool, lang) {
   })());
   return toolViews.get(tool);
 }
+
+// Spotify connecté sur cet appareil (son cookie de session dans la session de CUT et CLOUD), et la déconnexion.
+const webSession = () => session.fromPartition('persist:onirique-web');
+ipcMain.handle('tool:spotify', async (event) => {
+  if (!toolContents.has(event.sender.id)) return false;
+  return (await webSession().cookies.get({ name: 'sp_dc' })).some((c) => /(^|\.)spotify\.com$/.test(c.domain.replace(/^\./, '')));
+});
+ipcMain.handle('tool:spotify-logout', async (event) => {
+  if (!toolContents.has(event.sender.id)) return false;
+  const ses = webSession();
+  for (const c of await ses.cookies.get({})) {
+    const host = c.domain.replace(/^\./, '');
+    if (/(^|\.)spotify\.com$/.test(host)) await ses.cookies.remove(`https://${host}${c.path}`, c.name).catch(() => {});
+  }
+  return true;
+});
 
 // La fenêtre de confirmation de CUT et CLOUD, à la DA de l'application : la page attend la réponse (appel synchrone,
 // comme alert/confirm/prompt du navigateur) pendant que la fenêtre, posée sur l'application, est ouverte.
