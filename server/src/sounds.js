@@ -401,8 +401,9 @@ function disk() {
   return { total, used: total - s.bavail * s.bsize };
 }
 // Les versions et les fichiers livrés avec les prods comptent dans l'espace du membre (pas ceux de la corbeille).
-export const usedBy = (userId) => get(`SELECT COALESCE(SUM(v.size), 0) AS n FROM sound_versions v JOIN sound_tracks t ON t.id = v.track_id
-  JOIN sound_projects p ON p.id = t.project_id WHERE p.user_id = ? AND p.kind != 'trash' AND p.trashed_at IS NULL`, userId).n + get(`SELECT COALESCE(SUM(d.size), 0) AS n FROM sound_deliverables d
+// Un fichier présent dans plusieurs projets ne compte qu'une fois.
+export const usedBy = (userId) => get(`SELECT COALESCE(SUM(size), 0) AS n FROM (SELECT DISTINCT v.stored_as, v.size FROM sound_versions v JOIN sound_tracks t ON t.id = v.track_id
+  JOIN sound_projects p ON p.id = t.project_id WHERE p.user_id = ? AND p.kind != 'trash' AND p.trashed_at IS NULL)`, userId).n + get(`SELECT COALESCE(SUM(d.size), 0) AS n FROM sound_deliverables d
   JOIN sound_tracks t ON t.id = d.track_id JOIN sound_projects p ON p.id = t.project_id WHERE p.user_id = ? AND p.kind != 'trash' AND p.trashed_at IS NULL`, userId).n;
 
 /** Le format d'un fichier audio, lu sur ses premiers octets : WAV, AIFF, FLAC, MP3, OGG ou M4A. */
@@ -523,8 +524,9 @@ function projectZip(p) {
   return entries;
 }
 
+// Un même fichier peut servir à plusieurs titres (« Ajouter à… ») : il n'est effacé qu'une fois plus utilisé nulle part.
 function removeVersionFiles(rows) {
-  for (const r of rows) fs.rmSync(path.join(soundsDir, r.stored_as), { force: true });
+  for (const r of rows) if (!get('SELECT 1 FROM sound_versions WHERE stored_as = ? UNION ALL SELECT 1 FROM sound_deliverables WHERE stored_as = ?', r.stored_as, r.stored_as)) fs.rmSync(path.join(soundsDir, r.stored_as), { force: true });
 }
 /** Efface un titre pour de bon : ses versions, ses fichiers livrés, ses commentaires et ses écoutes. */
 function eraseTrack(trackId) {
@@ -1126,6 +1128,27 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       const vid = run(`INSERT INTO sound_versions (track_id, filename, stored_as, mime, size, duration, peaks, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         created, v.filename, storedAs, v.mime, v.size, v.duration, v.peaks, v.note, now()).lastInsertRowid;
       run('UPDATE sound_tracks SET current_id = ? WHERE id = ?', vid, created);
+      return created;
+    });
+    res.status(201).json({ id: tid });
+  });
+  // Ajouter un titre à un autre projet (playlist, album, pack) sans le renvoyer : un nouveau titre à la fin de ce projet,
+  // avec les mêmes versions, qui pointent sur les mêmes fichiers (rien n'est copié sur le disque).
+  app.post('/api/me/sounds/tracks/:id/add', ...me, (req, res) => {
+    const t = track(req, req.params.id), to = project(req, req.body.projectId);
+    if (to.id === t.project_id) throw new HttpError(400, 'Ce titre est déjà dans ce projet.');
+    const versions = all('SELECT * FROM sound_versions WHERE track_id = ? ORDER BY id', t.id);
+    // Un autre propriétaire (projet où l'on collabore) : le fichier compte dans son espace à lui.
+    if (to.user_id !== t.owner_id) room(req, versions.reduce((n, v) => n + v.size, 0), to.user_id);
+    const tid = transaction(() => {
+      const created = run(`INSERT INTO sound_tracks (project_id, title, position, stage, credits, splits, lyrics, day, bpm, music_key, price, buy_url, for_sale, sold, license_prices, created_at)
+        VALUES (?, ?, (SELECT COALESCE(MAX(position), -1) + 1 FROM sound_tracks WHERE project_id = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        to.id, t.title, to.id, t.stage, t.credits, t.splits, t.lyrics, t.day, t.bpm, t.music_key, t.price, t.buy_url, t.for_sale, t.sold, t.license_prices, now()).lastInsertRowid;
+      for (const v of versions) {
+        const vid = run(`INSERT INTO sound_versions (track_id, filename, stored_as, mime, size, duration, peaks, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          created, v.filename, v.stored_as, v.mime, v.size, v.duration, v.peaks, v.note, v.created_at).lastInsertRowid;
+        if (v.id === t.current_id) run('UPDATE sound_tracks SET current_id = ? WHERE id = ?', vid, created);
+      }
       return created;
     });
     res.status(201).json({ id: tid });

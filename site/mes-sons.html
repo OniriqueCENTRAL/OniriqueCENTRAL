@@ -3293,6 +3293,7 @@ function renderDetails() {
       group(
         item("download", "Exporter", { hint: "Le fichier original de la version en avant", onclick: () => { location.href = v.downloadUrl; } }),
         item("chevron", "Déplacer", { chevron: true, onclick: () => { detailsView = "move"; renderDetails(); } }),
+        item("plus", "Ajouter à…", { hint: "Une playlist, un album ou un pack, sans renvoyer le fichier", chevron: true, onclick: () => { detailsView = "add"; renderDetails(); } }),
         item("star", "Dupliquer", { onclick: () => api("POST", "/me/sounds/tracks/" + t.id + "/duplicate").then(refresh, (e) => alert(e.message)) }),
         item("more", "Renommer", { onclick: async () => {
           $("details").close();
@@ -3625,6 +3626,11 @@ function renderDetails() {
   } else if (detailsView === "move") {
     right = [back("Déplacer vers"), group(...data.projects.map((x) => item("star", x.title, {
       state: x.id === p.id ? "Ici" : "", onclick: x.id === p.id ? null : () => api("PATCH", "/me/sounds/tracks/" + t.id, { projectId: x.id }).then(() => { detailsView = "main"; return refresh(); }).catch(fail),
+    })))];
+  } else if (detailsView === "add") {
+    right = [back("Ajouter à"), group(...data.projects.map((x) => item("star", x.title, {
+      state: x.id === p.id ? "Ici" : x.tracks.some((y) => y.title === t.title) ? "Déjà dedans" : "",
+      onclick: x.id === p.id ? null : () => api("POST", "/me/sounds/tracks/" + t.id + "/add", { projectId: x.id }).then(() => { detailsView = "main"; return refresh(); }).catch(fail),
     })))];
   }
   // Redessinée sur la même vue (un repère posé, par exemple), la fenêtre reste où on avait défilé, au lieu de remonter tout en haut.

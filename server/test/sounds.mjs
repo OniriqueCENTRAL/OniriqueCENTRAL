@@ -215,6 +215,17 @@ try {
     let data = await call('GET', '/api/me/sounds', { token: member.token });
     assert.equal(data.projects.find((p) => p.id === b).tracks[0].title, 'Son (copie)');
     assert.equal(fs.readdirSync(soundsDir).length, 2, 'le fichier est copié');
+    // Ajouter à un autre projet : un titre de plus, le même fichier ; il reste tant qu'un titre s'en sert.
+    const used = (await call('GET', '/api/me/sounds', { token: member.token })).quota.used;
+    const added = (await call('POST', `/api/me/sounds/tracks/${t}/add`, { token: member.token, body: { projectId: b }, expect: 201 })).id;
+    await call('POST', `/api/me/sounds/tracks/${t}/add`, { token: member.token, body: { projectId: a }, expect: 400 });
+    data = await call('GET', '/api/me/sounds', { token: member.token });
+    assert.equal(data.projects.find((p) => p.id === b).tracks.find((x) => x.id === added).title, 'Son');
+    assert.equal(fs.readdirSync(soundsDir).length, 2, 'rien de copié');
+    assert.equal(data.quota.used, used, 'compté une seule fois');
+    await call('DELETE', `/api/me/sounds/tracks/${added}`, { token: member.token });
+    await call('DELETE', `/api/me/sounds/trash/${added}`, { token: member.token });
+    assert.equal(fs.readdirSync(soundsDir).length, 2, 'le fichier sert encore au titre de départ');
 
     const link = await call('POST', '/api/me/sounds/links', { token: member.token, body: { trackId: t }, expect: 201 });
     await call('PATCH', `/api/me/sounds/links/${link.id}`, { token: member.token, body: { requireAccount: true, download: true } });
