@@ -139,3 +139,10 @@ input[type="checkbox"]:not(.switch input):checked::after { left: 21px; backgroun
   font: 500 11px "JetBrains Mono", monospace !important; letter-spacing: .14em !important; text-transform: uppercase; }
 .edit-toggle:hover, .edit-toggle[aria-pressed="true"] { color: #fff !important; box-shadow: 0 0 0 1px rgba(255,110,125,.55) inset; }
 .album-head h1 { font-size: clamp(22px, 3vw, 34px) !important; }
+
+/* CLOUD : la fenêtre Spotify, Deezer, Apple Music (assets/platforms.js), aux onglets de l'application */
+#platform-add .pf-tabs { border-radius: 14px !important; background: linear-gradient(160deg, rgba(255,255,255,.075), rgba(255,255,255,.02) 40%, rgba(255,255,255,.035)), rgba(14,10,12,.55); border-color: rgba(255,235,238,.10) !important; }
+#platform-add .pf-tabs button { border-radius: 10px !important; font-size: 10.5px !important; letter-spacing: .14em !important; color: #bba7aa; }
+#platform-add .pf-tabs button[aria-selected="true"] { background: linear-gradient(180deg, rgba(229,56,74,.6), rgba(110,10,24,.6)) !important; box-shadow: 0 0 0 1px rgba(255,120,135,.5) inset, 0 0 18px rgba(229,56,74,.3); color: #fff; }
+.pf-tag { border-radius: 8px !important; font: 500 9px "JetBrains Mono", monospace !important; letter-spacing: .12em !important; text-transform: uppercase; }
+dialog { border-radius: 30px !important; background: linear-gradient(160deg, rgba(40,26,30,.96), rgba(16,12,14,.97) 45%, rgba(20,15,17,.97)) !important; border-color: rgba(255,235,238,.14) !important; }

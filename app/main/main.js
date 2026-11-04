@@ -13,7 +13,8 @@ let win = null;
 
 /** CUT et CLOUD : une vue chacun, créée à la première ouverture, gardée tant que le compte ne change pas. */
 const toolViews = new Map();
-const SITE = 'https://onirique.store';
+// ONIRIQUE_SITE : un site local, pour essayer CUT et CLOUD avant de les mettre en ligne (comme ONIRIQUE_SERVER pour l'API).
+const SITE = (process.env.ONIRIQUE_SITE || 'https://onirique.store').replace(/\/+$/, '');
 const TOOL_PAGES = { cut: 'cut.html', cloud: 'mes-sons.html' };
 // Les pages du site que chaque outil garde dans sa vue ; « api/ » : les téléchargements.
 const TOOL_STAYS = { cut: ['cut', 'mes-videos', 'api'], cloud: ['mes-sons', 'api'] };
