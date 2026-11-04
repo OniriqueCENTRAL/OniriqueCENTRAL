@@ -13,11 +13,10 @@ let win = null;
 
 /** CUT et CLOUD : une vue chacun, créée à la première ouverture, gardée tant que le compte ne change pas. */
 const toolViews = new Map();
+let shownTool = null; // l'outil à l'écran, pour le bouton « précédent » de la souris
 // ONIRIQUE_SITE : un site local, pour essayer CUT et CLOUD avant de les mettre en ligne (comme ONIRIQUE_SERVER pour l'API).
 const SITE = (process.env.ONIRIQUE_SITE || 'https://onirique.store').replace(/\/+$/, '');
 const TOOL_PAGES = { cut: 'cut.html', cloud: 'mes-sons.html' };
-// Les pages du site que chaque outil garde dans sa vue ; « api/ » : les téléchargements.
-const TOOL_STAYS = { cut: ['cut', 'mes-videos', 'api'], cloud: ['mes-sons', 'api'] };
 // Les pages du site qui ont leur propre écran dans l'application.
 const APP_ROUTES = { compte: 'account', boutique: 'plugins', cut: 'cut', 'mes-sons': 'cloud' };
 const TOOL_SKIN = fs.readFileSync(path.join(__dirname, 'tool-skin.css'), 'utf8');
@@ -39,20 +38,24 @@ function toolView(tool, lang) {
       ses.webRequest.onBeforeRequest({ urls: [`${SITE}/api/announce.js*`] }, (_details, callback) => callback({ cancel: true }));
     }
     const view = new WebContentsView({ webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, session: ses } });
-    view.setBackgroundColor('#100c0e'); // la teinte du panneau de l'application, sous la page
-    view.setBorderRadius(22);
+    view.setBackgroundColor('#00000000'); // transparente : le fond de l'application (nuit et braise) continue sous la page
     view.setVisible(false);
     const web = view.webContents;
-    // Une adresse du site : restée dans la vue si elle fait partie de l'outil, sinon l'écran de l'application qui lui
-    // correspond (compte, boutique, l'autre outil), sinon le navigateur. Hors du site (paiement, réseaux) : le navigateur.
+    // Tout ce qui commence dans l'application y reste : une page du site s'ouvre dans la vue (sauf celles qui ont leur
+    // propre écran : compte, boutique, l'autre outil). Seul ce qui sort du site (paiement, réseaux) part au navigateur.
     const route = (url) => {
       if (isAuth(url)) return true;
       const inSite = url === SITE || url.startsWith(SITE + '/');
-      if (inSite && TOOL_STAYS[tool].includes(pageOf(url))) return true;
-      if (inSite && APP_ROUTES[pageOf(url)]) win?.webContents.send('navigate', APP_ROUTES[pageOf(url)]);
+      const screen = inSite && APP_ROUTES[pageOf(url)];
+      if (inSite && (!screen || screen === tool)) return true;
+      if (screen) win?.webContents.send('navigate', screen);
       else if (/^https:\/\//.test(url)) shell.openExternal(url);
       return false;
     };
+    // Le bouton « précédent » de la souris revient à la page d'avant, comme dans un navigateur.
+    win?.on('app-command', (_event, command) => {
+      if (command === 'browser-backward' && !web.isDestroyed() && shownTool === tool && web.navigationHistory.canGoBack()) web.navigationHistory.goBack();
+    });
     web.setWindowOpenHandler(({ url }) => {
       // MusicKit ouvre sa connexion dans une fenêtre qui lui répond : elle s'ouvre, au-dessus de l'application.
       if (isAuth(url)) return { action: 'allow', overrideBrowserWindowOptions: { parent: win, width: 520, height: 720, autoHideMenuBar: true, backgroundColor: '#09080A' } };
@@ -387,8 +390,17 @@ app.whenReady().then(async () => {
     if (!win.contentView.children.includes(view)) win.contentView.addChildView(view);
     view.setBounds(Object.fromEntries(['x', 'y', 'width', 'height'].map((k) => [k, Math.max(0, Math.round(Number(bounds?.[k]) || 0))])));
     view.setVisible(true);
+    shownTool = tool;
   });
-  handle('tool:hide', async () => { for (const view of toolViews.values()) (await view).setVisible(false); });
+  // Un clic sur la rubrique déjà ouverte : retour à l'accueil de l'outil (après une page d'écoute, une autre page…).
+  handle('tool:home', async (tool) => {
+    if (!toolViews.has(tool)) return;
+    const web = (await toolViews.get(tool)).webContents;
+    if (pageOf(web.getURL()) !== TOOL_PAGES[tool].replace(/\.html$/, '')) await web.loadURL(`${SITE}/${TOOL_PAGES[tool]}`).catch(() => {});
+    else web.executeJavaScript('location.hash = ""; scrollTo(0, 0)').catch(() => {});
+  });
+  handle('tool:hide', async () => {
+    shownTool = null; for (const view of toolViews.values()) (await view).setVisible(false); });
   // Répondre à une demande de support : la messagerie de ce PC s'ouvre sur un message adressé à la personne.
   handle('open:mail', (email, subject) => {
     if (typeof email !== 'string' || !/^[^\s@<>"'?&]+@[^\s@<>"'?&]+\.[^\s@<>"'?&]+$/.test(email)) throw new Error('Adresse e-mail invalide.');

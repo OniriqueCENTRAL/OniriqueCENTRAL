@@ -134,7 +134,8 @@ function sidebar() {
   const { me } = state.data;
   // Une rubrique : un carré de la chaîne, avec son icône, son nom, sa ligne de description et son témoin.
   const item = (name, label, sub, count) => h('button', {
-    class: `nav-item${state.route.name === name ? ' active' : ''}`, onclick: () => go(name),
+    class: `nav-item${state.route.name === name ? ' active' : ''}`,
+    onclick: () => (state.route.name === name && TOOL_ROUTES.includes(name) ? call('tool:home', name).catch(() => {}) : go(name)),
     'aria-current': state.route.name === name ? 'page' : null,
   }, navIcon(name), h('span', { class: 'name' }, label), count ? h('span', { class: 'count' }, String(count)) : led(state.route.name === name),
     h('span', { class: 'sub' }, sub));

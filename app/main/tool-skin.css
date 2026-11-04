@@ -17,7 +17,8 @@ body > header:not(:has(.bell:not([hidden]))) { display: none !important; }
 body > header { border: 0 !important; background: transparent !important; backdrop-filter: none !important; }
 body > header .brand, body > header a.btn, body > header nav { display: none !important; }
 main { padding-top: 22px !important; }
-.wrap { max-width: 1240px; }
+/* Toute la largeur de l'écran, avec des marges qui suivent la fenêtre */
+.wrap { max-width: none !important; padding-inline: clamp(20px, 3vw, 56px) !important; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { background: rgba(255, 235, 238, .12); border-radius: 10px; border: 3px solid transparent; background-clip: content-box; }
 ::selection { background: var(--ember); color: #fff; }
@@ -152,3 +153,6 @@ dialog { border-radius: 30px !important; background: linear-gradient(160deg, rgb
 .hero h1 { margin-bottom: 0 !important; }
 /* CLOUD : le bouton « Ajouter » rangé en bas à droite, hors de la liste */
 .fab { left: auto !important; right: 22px !important; transform: none !important; }
+
+/* CLOUD : la colonne des playlists posée sur le fond de l'application, séparée d'un simple filet */
+.library { background: transparent !important; backdrop-filter: none !important; border: 0 !important; border-right: 1px solid rgba(255,235,238,.06) !important; box-shadow: none !important; }
