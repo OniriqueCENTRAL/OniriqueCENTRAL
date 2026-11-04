@@ -359,8 +359,32 @@ try {
     assert.equal(data.folders.length, 0);
     assert.equal(data.projects.find((x) => x.id === mine).folderId, null);
     assert.equal(data.saved[0].folderId, null);
-    // L'auteur coupe son lien : le projet disparaît de la page du membre.
+    // Un son du projet enregistré va dans une de mes playlists (pas ailleurs) : ni copié, ni compté, ni téléchargeable.
+    const theirTrack = (await call('POST', `/api/sounds/share/${t}`, { token: member.token, body: { pass } })).tracks[0].id;
+    const pl = (await call('POST', '/api/me/sounds/projects', { token: member.token, body: { title: 'Mix', kind: 'playlist' }, expect: 201 })).id;
+    const used = data.quota.used;
+    await call('POST', `/api/me/sounds/saves/${saved.id}/add`, { token: member.token, body: { trackId: theirTrack, projectId: mine }, expect: 400 });
+    await call('POST', `/api/me/sounds/saves/${saved.id}/add`, { token: member.token, body: { trackId: trackId, projectId: pl }, expect: 404 });
+    const added = (await call('POST', `/api/me/sounds/saves/${saved.id}/add`, { token: member.token, body: { trackId: theirTrack, projectId: pl }, expect: 201 })).id;
+    await call('POST', `/api/me/sounds/tracks/${added}/duplicate`, { token: member.token, expect: 400 });
+    await call('PATCH', `/api/me/sounds/projects/${pl}`, { token: member.token, body: { kind: 'pack' }, expect: 400 });
+    data = await call('GET', '/api/me/sounds', { token: member.token });
+    let inList = data.projects.find((x) => x.id === pl).tracks;
+    assert.equal(inList.length, 1);
+    assert.equal(inList[0].foreign, true);
+    assert.equal(inList[0].versions[0].downloadUrl, null);
+    assert.equal(data.quota.used, used, "le son d'un autre ne compte pas dans mon espace");
+    // Je retire le projet de mes enregistrements : le son quitte la playlist ; je le remets, puis l'auteur coupe son lien.
+    await call('DELETE', `/api/me/sounds/saves/${saved.id}`, { token: member.token });
+    assert.equal((await call('GET', '/api/me/sounds', { token: member.token })).projects.find((x) => x.id === pl).tracks.length, 0);
+    await call('POST', `/api/sounds/share/${t}/save`, { token: member.token, body: { pass }, expect: 201 });
+    const again = (await call('GET', '/api/me/sounds', { token: member.token })).saved[0].id;
+    await call('POST', `/api/me/sounds/saves/${again}/add`, { token: member.token, body: { trackId: theirTrack, projectId: pl }, expect: 201 });
+    const files = fs.readdirSync(soundsDir).length;
+    // L'auteur coupe son lien : le projet disparaît de la page du membre, et son son de la playlist.
     await call('DELETE', `/api/me/sounds/links/${link.id}`, { token: other.token });
+    assert.equal((await call('GET', '/api/me/sounds', { token: member.token })).projects.find((x) => x.id === pl).tracks.length, 0);
+    assert.equal(fs.readdirSync(soundsDir).length, files, "le fichier de l'auteur reste chez lui");
     assert.equal((await call('GET', '/api/me/sounds', { token: member.token })).saved.length, 0);
   });
 

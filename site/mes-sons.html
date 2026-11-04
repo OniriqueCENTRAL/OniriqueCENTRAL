@@ -3421,10 +3421,10 @@ function renderDetails() {
         item("plus", "Remplacer l'audio", { hint: "Une nouvelle version : les précédentes restent dans l'historique", off: data.quota.full, onclick: data.quota.full ? null : () => pickFiles({ track: t }) }),
         item("queue", "Ajouter à la file", { onclick: () => { player.enqueue(itemOf(p, t)); $("details").close(); } })),
       group(
-        item("download", "Exporter", { hint: "Le fichier original de la version en avant", onclick: () => { location.href = v.downloadUrl; } }),
+        v.downloadUrl && item("download", "Exporter", { hint: "Le fichier original de la version en avant", onclick: () => { location.href = v.downloadUrl; } }),
         item("chevron", "Déplacer", { chevron: true, onclick: () => { detailsView = "move"; renderDetails(); } }),
         item("plus", "Ajouter à…", { hint: "Une playlist, un album ou un pack, sans renvoyer le fichier", chevron: true, onclick: () => { detailsView = "add"; renderDetails(); } }),
-        item("star", "Dupliquer", { onclick: () => api("POST", "/me/sounds/tracks/" + t.id + "/duplicate").then(refresh, (e) => alert(e.message)) }),
+        !t.foreign && item("star", "Dupliquer", { onclick: () => api("POST", "/me/sounds/tracks/" + t.id + "/duplicate").then(refresh, (e) => alert(e.message)) }),
         item("more", "Renommer", { onclick: async () => {
           $("details").close();
           const title = await ask("Nom du titre", t.title);
@@ -3756,11 +3756,11 @@ function renderDetails() {
     right = [el("h3", {}, el("button", { className: "x", type: "button", ariaLabel: "Retour", onclick: () => { detailsView = "versions"; renderDetails(); } }, icon("back")), "Comparer deux versions"),
       compareView(t)];
   } else if (detailsView === "move") {
-    right = [back("Déplacer vers"), group(...data.projects.map((x) => item("star", x.title, {
+    right = [back("Déplacer vers"), group(...data.projects.filter((x) => !t.foreign || x.kind === "playlist").map((x) => item("star", x.title, {
       state: x.id === p.id ? "Ici" : "", onclick: x.id === p.id ? null : () => api("PATCH", "/me/sounds/tracks/" + t.id, { projectId: x.id }).then(() => { detailsView = "main"; return refresh(); }).catch(fail),
     })))];
   } else if (detailsView === "add") {
-    right = [back("Ajouter à"), group(...data.projects.map((x) => item(x.kind === "playlist" ? "queue" : "star", x.title, {
+    right = [back("Ajouter à"), group(...data.projects.filter((x) => !t.foreign || x.kind === "playlist").map((x) => item(x.kind === "playlist" ? "queue" : "star", x.title, {
       state: x.id === p.id ? "Ici" : x.tracks.some((y) => y.title === t.title) ? "Déjà dedans" : "",
       onclick: x.id === p.id ? null : () => api("POST", "/me/sounds/tracks/" + t.id + "/add", { projectId: x.id }).then(() => { detailsView = "main"; return refresh(); }).catch(fail),
     })))];
@@ -3972,33 +3972,55 @@ $("settings-open").onclick = openSettings;
 
 // ——— La corbeille : les titres supprimés, à restaurer ou à effacer, effacés tout seuls 30 jours après ———
 // ——— Une playlist : choisir des sons déjà dans ONIRIQUE CLOUD, ajoutés sans être renvoyés ———
-let pickFor = null, pickQuery = "";
-function openPick(p) { pickFor = p.id; pickQuery = ""; renderPick(); if (!$("pick").open) $("pick").showModal(); }
+let pickFor = null, pickQuery = "", pickSaved = {};
+function openPick(p) {
+  pickFor = p.id; pickQuery = "";
+  $("pick").replaceChildren(); // une nouvelle fenêtre repart du haut
+  renderPick();
+  if (!$("pick").open) $("pick").showModal();
+  // Les sons des projets enregistrés (liens d'autres membres) se chargent à part, puis la liste se redessine.
+  Promise.all(data.saved.filter((x) => x.available).map((x) => fetch("/api/sounds/share/" + encodeURIComponent(x.token), {
+    method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify({ pass: x.pass }),
+  }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((share) => { pickSaved[x.id] = share ? share.tracks : []; }))).then(() => { if ($("pick").open) renderPick(); });
+}
 function renderPick() {
   const dialog = $("pick"), p = project(pickFor);
   if (!p) return dialog.close();
   const inside = new Set(p.tracks.map((t) => t.title.toLowerCase()));
   const q = pickQuery.trim().toLowerCase();
-  const rows = data.projects.filter((x) => x.id !== p.id && x.kind !== "playlist").flatMap((x) => x.tracks.map((t) => ({ x, t })))
-    .filter(({ x, t }) => !q || (t.title + " " + x.title).toLowerCase().includes(q));
+  const match = (e) => !q || (e.title + " " + e.sub).toLowerCase().includes(q);
+  const rows = data.projects.filter((x) => x.id !== p.id && x.kind !== "playlist").flatMap((x) => x.tracks.map((t) => ({
+    key: t.id, art: x, title: t.title, feat: t.credits.feat, sub: x.title, item: () => itemOf(x, t), add: () => api("POST", "/me/sounds/tracks/" + t.id + "/add", { projectId: p.id }) }))).filter(match);
+  // Les sons des projets que d'autres membres m'ont partagés et que j'ai enregistrés.
+  const others = data.saved.filter((x) => x.available && pickSaved[x.id]).flatMap((x) => pickSaved[x.id].map((t) => ({
+    key: t.id, art: x, title: t.title, feat: (t.credits || {}).feat, sub: x.title + " · de " + x.owner,
+    item: () => ({ key: "v" + t.version.id, id: t.version.id, trackId: t.id, title: t.title, feat: (t.credits || {}).feat, artist: x.owner, subtitle: x.title, cover: x.cover,
+      url: t.version.url, duration: t.version.duration, peaks: t.version.peaks }),
+    add: () => api("POST", "/me/sounds/saves/" + x.id + "/add", { projectId: p.id, trackId: t.id }) }))).filter(match);
+  const line = (e) => {
+    const added = inside.has(e.title.toLowerCase()), on = player.playing && player.item && player.item.trackId === e.key;
+    // La pochette du projet du son, avec la lecture par-dessus (un clic lance, un second met en pause) ; le feat. à côté du titre.
+    const listen = el("button", { className: "pick-art" + (on ? " on" : ""), type: "button", ariaLabel: (on ? "Pause : " : "Écouter ") + e.title, ariaPressed: String(on),
+      onclick: () => (player.item && player.item.trackId === e.key ? player.toggle() : player.play([e.item()], 0)) }, coverOf(e.art), el("i", {}, icon(on ? "pause" : "play")));
+    const feat = e.feat ? el("span", { className: "feat", textContent: "feat. " + e.feat, title: "feat. " + e.feat }) : "";
+    return el("li", {}, el("div", { className: "item" }, listen, el("span", { className: "grow pick-name" }, el("b", { className: "tline" }, e.title, feat), el("small", { textContent: e.sub })),
+      el("button", { className: added ? "btn btn-ghost" : "btn btn-primary", type: "button", disabled: added, textContent: added ? "Déjà dedans" : "Ajouter",
+        onclick: () => e.add().then(refresh).then(renderPick, fail) })));
+  };
+  const keep = dialog.querySelector(".stack")?.scrollTop || 0; // « Ajouter » redessine la liste : on reste au même endroit
   const search = el("input", { type: "search", placeholder: "Chercher un son ou un projet", value: pickQuery, autocomplete: "off",
     oninput: () => { pickQuery = search.value; renderPick(); const box = $("pick").querySelector("input"); box.focus(); box.setSelectionRange(box.value.length, box.value.length); } });
   dialog.replaceChildren(
     el("div", { className: "dlg-head" }, el("b", { textContent: "Ajouter à « " + p.title + " »" }), el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close"))),
     el("div", { className: "stack" }, search,
-      rows.length ? el("ul", { className: "group" }, ...rows.map(({ x, t }) => {
-        const added = inside.has(t.title.toLowerCase()), on = player.playing && player.item && player.item.trackId === t.id;
-        // Écouter le son avant de l'ajouter : un clic le lance, un second le met en pause.
-        // La pochette du projet du son, avec la lecture par-dessus ; le feat. à côté du titre.
-        const listen = el("button", { className: "pick-art" + (on ? " on" : ""), type: "button", ariaLabel: (on ? "Pause : " : "Écouter ") + t.title, ariaPressed: String(on),
-          onclick: () => (player.item && player.item.trackId === t.id ? player.toggle() : player.play([itemOf(x, t)], 0)) }, coverOf(x), el("i", {}, icon(on ? "pause" : "play")));
-        const feat = t.credits.feat ? el("span", { className: "feat", textContent: "feat. " + t.credits.feat, title: "feat. " + t.credits.feat }) : "";
-        return el("li", {}, el("div", { className: "item" }, listen, el("span", { className: "grow pick-name" }, el("b", { className: "tline" }, t.title, feat), el("small", { textContent: x.title })),
-          el("button", { className: added ? "btn btn-ghost" : "btn btn-primary", type: "button", disabled: added, textContent: added ? "Déjà dedans" : "Ajouter",
-            onclick: () => api("POST", "/me/sounds/tracks/" + t.id + "/add", { projectId: p.id }).then(refresh).then(renderPick, fail) })));
-      })) : el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: q ? "Aucun son ne correspond." : "Pas encore de son dans tes autres projets." })),
+      rows.length ? el("ul", { className: "group" }, ...rows.map(line)) : null,
+      others.length ? el("div", { className: "sub-title", textContent: "Enregistrés dans ONIRIQUE CLOUD" }) : null,
+      others.length ? el("ul", { className: "group" }, ...others.map(line)) : null,
+      rows.length || others.length ? null : el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: q ? "Aucun son ne correspond." : "Pas encore de son dans tes autres projets." })),
     el("div", { className: "pick-foot" }, pickPlayer(),
       el("button", { className: "btn btn-primary pick-done", type: "button", onclick: () => dialog.close() }, "Validé")));
+  const stack = dialog.querySelector(".stack");
+  if (stack) stack.scrollTop = keep;
 }
 // Le lecteur du bas de la fenêtre : celui de la page est derrière elle, donc on le pilote d'ici (même son, même volume).
 function pickPlayer() {

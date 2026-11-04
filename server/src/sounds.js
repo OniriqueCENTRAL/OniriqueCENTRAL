@@ -251,6 +251,12 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 
   db.exec('ALTER TABLE sound_projects ADD COLUMN trashed_at INTEGER');
 }
 export const TRASH_DAYS = 30;
+// Un son d'un autre membre, ajouté à une playlist depuis un lien enregistré : via_link est ce lien, via_track le titre
+// d'origine. Le lien supprimé ou le titre effacé emportent la copie (ON DELETE CASCADE) ; dropRevoked() retire le reste.
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'via_link'`).get()) {
+  db.exec(`ALTER TABLE sound_tracks ADD COLUMN via_link INTEGER REFERENCES sound_links(id) ON DELETE CASCADE;
+    ALTER TABLE sound_tracks ADD COLUMN via_track INTEGER REFERENCES sound_tracks(id) ON DELETE CASCADE;`);
+}
 // Ce qu'un membre peut faire d'un projet : un projet classique (''), un pack de prods, ou une playlist (des sons déjà
 // dans ONIRIQUE CLOUD, ajoutés par « Ajouter à… » sans être renvoyés).
 const KINDS = ['', 'pack', 'playlist'];
@@ -407,7 +413,7 @@ function disk() {
 // Les versions et les fichiers livrés avec les prods comptent dans l'espace du membre (pas ceux de la corbeille).
 // Un fichier présent dans plusieurs projets ne compte qu'une fois.
 export const usedBy = (userId) => get(`SELECT COALESCE(SUM(size), 0) AS n FROM (SELECT DISTINCT v.stored_as, v.size FROM sound_versions v JOIN sound_tracks t ON t.id = v.track_id
-  JOIN sound_projects p ON p.id = t.project_id WHERE p.user_id = ? AND p.kind != 'trash' AND p.trashed_at IS NULL)`, userId).n + get(`SELECT COALESCE(SUM(d.size), 0) AS n FROM sound_deliverables d
+  JOIN sound_projects p ON p.id = t.project_id WHERE p.user_id = ? AND p.kind != 'trash' AND p.trashed_at IS NULL AND t.via_link IS NULL)`, userId).n + get(`SELECT COALESCE(SUM(d.size), 0) AS n FROM sound_deliverables d
   JOIN sound_tracks t ON t.id = d.track_id JOIN sound_projects p ON p.id = t.project_id WHERE p.user_id = ? AND p.kind != 'trash' AND p.trashed_at IS NULL`, userId).n;
 
 /** Le format d'un fichier audio, lu sur ses premiers octets : WAV, AIFF, FLAC, MP3, OGG ou M4A. */
@@ -508,7 +514,7 @@ function projectZip(p) {
     if (fs.existsSync(file)) entries.push({ name: `${folder}/Pochette${path.extname(file)}`, path: file });
   }
   const labels = { feat: 'Feat.', beat: 'Beatmaker', mix: 'Ingé mix', master: 'Ingé master', rec: 'Ingé rec' };
-  all('SELECT * FROM sound_tracks WHERE project_id = ? ORDER BY position, id', p.id).forEach((t, i) => {
+  all('SELECT * FROM sound_tracks WHERE project_id = ? AND via_link IS NULL ORDER BY position, id', p.id).forEach((t, i) => {
     const dir = `${folder}/${String(i + 1).padStart(2, '0')} - ${zipName(t.title)}`, credits = creditsOf(t);
     const versions = all('SELECT * FROM sound_versions WHERE track_id = ? ORDER BY id', t.id);
     versions.forEach((v, n) => {
@@ -545,8 +551,20 @@ function eraseProject(projectId) {
   run('DELETE FROM sound_projects WHERE id = ?', projectId);
   removeVersionFiles(files);
 }
+/** Retire des playlists les sons d'autres membres dont l'accès est coupé : lien fermé ou expiré, auteur plus membre,
+ *  titre sorti du projet partagé, ou lien retiré de ses enregistrements par celui qui a fait la playlist. */
+export function dropRevoked(userId = null) {
+  const gone = all(`SELECT t.id FROM sound_tracks t JOIN sound_projects mp ON mp.id = t.project_id JOIN sound_links l ON l.id = t.via_link
+      JOIN users u ON u.id = l.user_id LEFT JOIN sound_tracks src ON src.id = t.via_track
+    WHERE (? IS NULL OR mp.user_id = ?) AND (src.id IS NULL OR NOT ${LINK_OPEN} OR NOT ${canSql('sounds', 'u.role', 'u.id')}
+      OR (l.expires_at IS NOT NULL AND l.expires_at < ?) OR (l.track_id IS NOT NULL AND l.track_id != src.id) OR (l.track_id IS NULL AND src.project_id != l.project_id)
+      OR NOT EXISTS (SELECT 1 FROM sound_saves s WHERE s.link_id = l.id AND s.user_id = mp.user_id))`, userId, userId, now());
+  for (const t of gone) eraseTrack(t.id);
+  return gone.length;
+}
 /** Vide la corbeille de ce qui a été supprimé il y a plus de 30 jours ; rend le nombre de titres et de projets effacés. */
 export function purgeTrash() {
+  dropRevoked();
   const limit = now() - TRASH_DAYS * 86400_000;
   const tracks = all('SELECT id FROM sound_tracks WHERE trashed_at < ?', limit), projects = all('SELECT id FROM sound_projects WHERE trashed_at < ?', limit);
   for (const t of tracks) eraseTrack(t.id);
@@ -744,6 +762,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   // Tout l'espace du membre en une fois : projets, titres, versions, commentaires, liens et place occupée.
   app.get('/api/me/sounds', ...me, (req, res) => {
     const u = req.user.id;
+    dropRevoked(u);
     // VANISH : un fondateur voit les projets de tous les comptes, en lecture seule ; rien n'est compté ni signalé.
     const vanish = req.query.vanish === '1' && req.user.role === 'founder';
     const scope = vanish ? `p.kind != 'trash' AND p.trashed_at IS NULL` : ACCESS, args = vanish ? [] : [u, u];
@@ -794,7 +813,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
             bpm: t.bpm, key: t.music_key, forSale: !!t.for_sale, sold: !!t.sold,
             ...(p.kind === 'pack' ? { files: filesOf(t.id), licensePrices: JSON.parse(t.license_prices || '{}'), videoTitle: t.video_title, videoCover: media(t.video_cover) } : {}),
             ...(p.kind === 'pack' && p.user_id === u ? { scan: scans.get(t.id) || null } : {}),
-            versions: versions.filter((v) => v.track_id === t.id).map((v, i) => versionView(v, i, true)),
+            versions: versions.filter((v) => v.track_id === t.id).map((v, i) => versionView(v, i, !t.via_link)), foreign: !!t.via_link,
             comments: comments.filter((c) => c.track_id === t.id).map(commentView),
             plays: mine.length, lastPlay: mine[0]?.created_at ?? null, listeners: listeners(mine), stats: listenStats(mine),
           };
@@ -910,6 +929,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     // nom du fichier de chaque son ; la page détecte ensuite sur le son ceux que le nom ne donne pas.
     if (req.body.kind !== undefined) {
       const kind = KINDS.includes(req.body.kind) ? req.body.kind : '';
+      if (kind === 'pack' && get('SELECT 1 FROM sound_tracks WHERE project_id = ? AND via_link IS NOT NULL', p.id)) throw new HttpError(400, "Cette playlist contient des sons d'autres membres : elle ne peut pas devenir un pack.");
       run('UPDATE sound_projects SET kind = ? WHERE id = ?', kind, ownProject(req, p.id).id);
       if (kind === 'pack') {
         for (const t of all('SELECT t.id, t.title, t.bpm, t.music_key, v.filename FROM sound_tracks t JOIN sound_versions v ON v.id = t.current_id WHERE t.project_id = ?', p.id)) {
@@ -1113,6 +1133,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     // Déplacer le titre dans un autre projet du membre : il arrive à la fin.
     if (req.body.projectId !== undefined && id(req.body.projectId) !== t.project_id) {
       const to = project(req, req.body.projectId);
+      if (t.via_link && to.kind !== 'playlist') throw new HttpError(400, "Ce son vient d'un autre membre : il ne peut aller que dans une playlist.");
       run('UPDATE sound_tracks SET project_id = ?, position = ? WHERE id = ?', to.id, nextPosition(to.id), t.id);
     }
     res.json({ ok: true });
@@ -1120,6 +1141,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   // Dupliquer un titre : un nouveau titre juste après, avec une copie du fichier de la version en avant.
   app.post('/api/me/sounds/tracks/:id/duplicate', ...me, (req, res) => {
     const t = track(req, req.params.id);
+    if (t.via_link) throw new HttpError(400, "Ce son vient d'un autre membre : il ne se duplique pas.");
     rateLimit(`sounds-upload:${req.user.id}`, 200, 3600_000);
     const v = get('SELECT * FROM sound_versions WHERE id = ?', t.current_id);
     room(req, v.size, t.owner_id);
@@ -1143,11 +1165,16 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (to.id === t.project_id) throw new HttpError(400, 'Ce titre est déjà dans ce projet.');
     const versions = all('SELECT * FROM sound_versions WHERE track_id = ? ORDER BY id', t.id);
     // Un autre propriétaire (projet où l'on collabore) : le fichier compte dans son espace à lui.
-    if (to.user_id !== t.owner_id) room(req, versions.reduce((n, v) => n + v.size, 0), to.user_id);
-    const tid = transaction(() => {
-      const created = run(`INSERT INTO sound_tracks (project_id, title, position, stage, credits, splits, lyrics, day, bpm, music_key, price, buy_url, for_sale, sold, license_prices, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        to.id, t.title, nextPosition(to.id), t.stage, t.credits, t.splits, t.lyrics, t.day, t.bpm, t.music_key, t.price, t.buy_url, t.for_sale, t.sold, t.license_prices, now()).lastInsertRowid;
+    if (to.user_id !== t.owner_id && !t.via_link) room(req, versions.reduce((n, v) => n + v.size, 0), to.user_id);
+    // Le son d'un autre membre ne va que dans une playlist.
+    if (t.via_link && to.kind !== 'playlist') throw new HttpError(400, "Ce son vient d'un autre membre : il ne peut aller que dans une playlist.");
+    res.status(201).json({ id: copyTrack(t, versions, to.id, t.via_link, t.via_track) });
+  });
+  function copyTrack(t, versions, projectId, viaLink = null, viaTrack = null) {
+    return transaction(() => {
+      const created = run(`INSERT INTO sound_tracks (project_id, title, position, stage, credits, splits, lyrics, day, bpm, music_key, price, buy_url, for_sale, sold, license_prices, via_link, via_track, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        projectId, t.title, nextPosition(projectId), t.stage, t.credits, t.splits, t.lyrics, t.day, t.bpm, t.music_key, t.price, t.buy_url, t.for_sale, t.sold, t.license_prices, viaLink, viaTrack, now()).lastInsertRowid;
       for (const v of versions) {
         const vid = run(`INSERT INTO sound_versions (track_id, filename, stored_as, mime, size, duration, peaks, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           created, v.filename, v.stored_as, v.mime, v.size, v.duration, v.peaks, v.note, v.created_at).lastInsertRowid;
@@ -1155,7 +1182,19 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       }
       return created;
     });
-    res.status(201).json({ id: tid });
+  }
+  // Ajouter à une de mes playlists un son d'un projet enregistré (le lien d'un autre membre) : rien n'est copié sur le
+  // disque ni compté dans mon espace, et le son s'en va si l'accès est coupé.
+  app.post('/api/me/sounds/saves/:id/add', ...me, (req, res) => {
+    const save = ownSave(req), to = project(req, req.body.projectId);
+    if (to.kind !== 'playlist') throw new HttpError(400, "Les sons des autres ne s'ajoutent qu'à une playlist.");
+    const link = get(`SELECT l.* FROM sound_links l JOIN users u ON u.id = l.user_id WHERE l.id = ? AND ${LINK_OPEN} AND ${canSql('sounds', 'u.role', 'u.id')}`, save.link_id);
+    if (!link || (link.expires_at && link.expires_at < now())) throw new HttpError(404, "Ce lien d'écoute n'est plus valable.");
+    if (link.password_hash && !(save.pass && same(save.pass, passFor(link)))) throw new HttpError(403, 'Ouvre ce lien une fois avec son mot de passe pour en ajouter les sons.');
+    const t = get(`SELECT * FROM sound_tracks WHERE id = ? AND ${link.track_id ? 'id' : 'project_id'} = ?`, id(req.body.trackId), link.track_id || link.project_id);
+    if (!t) throw new HttpError(404, "Ce son n'est pas dans ce lien.");
+    const versions = all('SELECT * FROM sound_versions WHERE track_id = ? ORDER BY id', t.id);
+    res.status(201).json({ id: copyTrack(t, versions, to.id, link.id, t.id) });
   });
   // Supprimer un titre l'envoie dans la corbeille de l'auteur du projet (même supprimé par un collaborateur).
   app.delete('/api/me/sounds/tracks/:id', ...me, (req, res) => {
@@ -1462,7 +1501,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       tracks: tracks.map((t) => ({
         id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), lyrics: t.lyrics, bpm: t.bpm, key: t.music_key,
         offers: p.kind === 'pack' ? offersOf(t, p.user_id, simulate) : [], sold: !!t.sold,
-        version: { id: t.vid, filename: t.filename, duration: t.duration, peaks: JSON.parse(t.peaks), url: audioUrl(t.vid), downloadUrl: download ? audioUrl(t.vid, true, link.id, contact?.token) : null },
+        version: { id: t.vid, filename: t.filename, duration: t.duration, peaks: JSON.parse(t.peaks), url: audioUrl(t.vid), downloadUrl: download && !t.via_link ? audioUrl(t.vid, true, link.id, contact?.token) : null },
         comments: comments.filter((c) => c.track_id === t.id).map(commentView),
       })),
     });
