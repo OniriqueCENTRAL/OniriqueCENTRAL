@@ -114,8 +114,21 @@ export function avatar(user, big = false) {
   return image;
 }
 
-/** Les outils du site, ouverts dans une fenêtre de l'application avec la session du compte. */
-const TOOLS = [['cut', 'ONIRIQUE CUT', 'Clips sur le beat'], ['cloud', 'ONIRIQUE CLOUD', 'Mes sons · projets']];
+/** Les outils du site, affichés dans l'application avec la session du compte (la vue est posée par main.js). */
+const TOOL_ROUTES = ['cut', 'cloud'];
+
+function toolPage(tool) {
+  const host = h('div', { class: 'tool-host' }, h('div', { class: 'tool-wait' }, starKnob(0.4, 110), h('div', { class: 'eyebrow' }, 'Ouverture…')));
+  // La page du site suit exactement la place de ce cadre, même quand la fenêtre change de taille.
+  const sync = () => {
+    if (!host.isConnected || state.route.name !== tool) return;
+    const r = host.getBoundingClientRect();
+    call('tool:show', tool, { x: r.left, y: r.top, width: r.width, height: r.height }, window.OniriqueI18n?.lang)
+      .then(() => host.replaceChildren(), (error) => toast(error.message, true));
+  };
+  new ResizeObserver(sync).observe(host);
+  return host;
+}
 
 function sidebar() {
   const { me } = state.data;
@@ -125,10 +138,6 @@ function sidebar() {
     'aria-current': state.route.name === name ? 'page' : null,
   }, navIcon(name), h('span', { class: 'name' }, label), count ? h('span', { class: 'count' }, String(count)) : led(state.route.name === name),
     h('span', { class: 'sub' }, sub));
-  const tool = ([id, label, sub]) => h('button', {
-    class: 'nav-item tool', title: `Ouvrir ${label}`,
-    onclick: () => attempt(() => call('open:tool', id)),
-  }, navIcon(id), h('span', { class: 'name' }, label.replace(/^ONIRIQUE\s+/, '')), h('span', { class: 'arrow', 'aria-hidden': 'true' }, '↗'), h('span', { class: 'sub' }, sub));
 
   const subscribed = me.subscription?.status === 'active' && (me.subscription.kind === 'pick' ? 'À la carte' : 'All Access');
   // Le rôle du compte reste visible, à côté de l'abonnement s'il y en a un.
@@ -140,7 +149,8 @@ function sidebar() {
     item('subscription', 'Abonnement', 'Formules · packs'),
     item('support', 'Support', 'Écrire à l\'équipe'),
     h('div', { class: 'eyebrow nav-label' }, 'Outils'),
-    TOOLS.map(tool),
+    item('cut', 'CUT', 'Clips sur le beat'),
+    item('cloud', 'CLOUD', 'Mes sons · projets'),
     hasPanel(me.user) ? [h('div', { class: 'eyebrow nav-label' }, 'Studio'), item('admin', 'Panel admin', 'Catalogue · ventes'),
       isStaff(me.user) ? item('support-admin', 'Panel support', 'Demandes reçues') : null,
       // L'équipe et les partenaires s'accordent tous les plugins, ou y renoncent pour voir l'application comme un client.
@@ -175,6 +185,8 @@ const VIEWS = {
   account: accountView,
   admin: adminView,
   'support-admin': supportAdminView,
+  cut: () => toolPage('cut'),
+  cloud: () => toolPage('cloud'),
 };
 
 /** Les écrans réservés : le panel admin (équipe et partenaires), le panel support (équipe seulement). */
@@ -222,12 +234,14 @@ export function render() {
   else {
     if (!allowed(state.route.name, state.data.me.user)) state.route = { name: 'plugins', id: null };
     content = h('div', { class: 'shell' }, sidebar(),
-      h('main', { class: 'main' }, h('div', { class: 'inner' }, verifyBanner(), VIEWS[state.route.name]())));
+      h('main', { class: 'main' }, h('div', { class: TOOL_ROUTES.includes(state.route.name) ? 'inner tool' : 'inner' }, verifyBanner(), VIEWS[state.route.name]())));
   }
   const scroll = document.querySelector('.main')?.scrollTop ?? 0;
   root.replaceChildren(titlebar(), content);
   const main = document.querySelector('.main');
   if (main) main.scrollTop = scroll;
+  // Hors de CUT et CLOUD (autre rubrique, connexion, hors ligne), leur page est retirée de l'écran.
+  if (!document.querySelector('.tool-host')) call('tool:hide').catch(() => {});
 }
 
 central.onProgress(({ id, phase, ratio }) => {
@@ -266,6 +280,7 @@ setInterval(async () => {
 }, 60_000);
 window.addEventListener('unhandledrejection', (event) => toast(event.reason?.message || 'Erreur inattendue.', true));
 
+central.onNavigate((route) => { if (VIEWS[route] && state.data?.me) go(route); });
 central.onUpdateReady((version) => {
   state.update = version;
   toast(`La version ${version} est téléchargée : elle s'installera à la fermeture de l'application.`);

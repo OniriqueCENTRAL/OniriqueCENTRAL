@@ -1,4 +1,4 @@
-const { app, BrowserWindow, clipboard, dialog, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, WebContentsView, clipboard, dialog, ipcMain, session, shell } = require('electron');
 const { spawn } = require('node:child_process');
 const { autoUpdater } = require('electron-updater');
 const macUpdate = require('./mac-update');
@@ -10,7 +10,69 @@ const installer = require('./installer');
 const store = require('./store');
 
 let win = null;
-const toolWindows = new Map(); // CUT et CLOUD : une fenêtre chacun
+
+/** CUT et CLOUD : une vue chacun, créée à la première ouverture, gardée tant que le compte ne change pas. */
+const toolViews = new Map();
+const SITE = 'https://onirique.store';
+const TOOL_PAGES = { cut: 'cut.html', cloud: 'mes-sons.html' };
+// Les pages du site que chaque outil garde dans sa vue ; « api/ » : les téléchargements.
+const TOOL_STAYS = { cut: ['cut', 'mes-videos', 'api'], cloud: ['mes-sons', 'api'] };
+// Les pages du site qui ont leur propre écran dans l'application.
+const APP_ROUTES = { compte: 'account', boutique: 'plugins', cut: 'cut', 'mes-sons': 'cloud' };
+const TOOL_SKIN = fs.readFileSync(path.join(__dirname, 'tool-skin.css'), 'utf8');
+const pageOf = (url) => new URL(url).pathname.replace(/^\/+/, '').replace(/\.html$/, '').split('/')[0];
+
+function toolView(tool, lang) {
+  if (!TOOL_PAGES[tool]) throw new Error('Outil inconnu.');
+  if (!toolViews.has(tool)) toolViews.set(tool, (async () => {
+    // Session en mémoire seulement : rien du site n'est écrit sur le disque, tout disparaît à la fermeture.
+    const ses = session.fromPartition('onirique-web');
+    // Pas de bandeau d'annonce du site dans l'application : il n'est même pas demandé.
+    if (!ses.oniriqueReady) {
+      ses.oniriqueReady = true;
+      ses.webRequest.onBeforeRequest({ urls: [`${SITE}/api/announce.js*`] }, (_details, callback) => callback({ cancel: true }));
+    }
+    const view = new WebContentsView({ webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, session: ses } });
+    view.setBackgroundColor('#100c0e'); // la teinte du panneau de l'application, sous la page
+    view.setBorderRadius(22);
+    view.setVisible(false);
+    const web = view.webContents;
+    // Une adresse du site : restée dans la vue si elle fait partie de l'outil, sinon l'écran de l'application qui lui
+    // correspond (compte, boutique, l'autre outil), sinon le navigateur. Hors du site (paiement, réseaux) : le navigateur.
+    const route = (url) => {
+      const inSite = url === SITE || url.startsWith(SITE + '/');
+      if (inSite && TOOL_STAYS[tool].includes(pageOf(url))) return true;
+      if (inSite && APP_ROUTES[pageOf(url)]) win?.webContents.send('navigate', APP_ROUTES[pageOf(url)]);
+      else if (/^https:\/\//.test(url)) shell.openExternal(url);
+      return false;
+    };
+    web.setWindowOpenHandler(({ url }) => { if (route(url)) web.loadURL(url); return { action: 'deny' }; });
+    web.on('will-navigate', (event, url) => { if (!route(url)) event.preventDefault(); });
+    web.on('dom-ready', () => web.insertCSS(TOOL_SKIN).catch(() => {}));
+    web.on('zoom-changed', () => web.setZoomLevel(0));
+    web.setVisualZoomLevelLimits(1, 1).catch(() => {});
+    // La session du compte et la langue de l'application passent par le stockage de la vue, jamais par l'adresse.
+    await web.loadURL(SITE + '/robots.txt');
+    await web.executeJavaScript(`try { localStorage.setItem("onirique.lang", ${JSON.stringify(lang === 'en' ? 'en' : 'fr')});
+      ${store.token ? `sessionStorage.setItem("onirique.token", ${JSON.stringify(store.token)});` : ''} } catch {}`);
+    // La vue ne se montre qu'une fois la page chargée et habillée.
+    await web.loadURL(`${SITE}/${TOOL_PAGES[tool]}`).catch(() => {});
+    return view;
+  })());
+  return toolViews.get(tool);
+}
+
+/** À la connexion ou à la déconnexion, les vues de l'ancien compte disparaissent. */
+async function closeTools() {
+  const views = [...toolViews.values()];
+  toolViews.clear();
+  for (const pending of views) {
+    const view = await pending.catch(() => null);
+    if (!view) continue;
+    win?.contentView.removeChildView(view);
+    view.webContents.close();
+  }
+}
 
 function createWindow() {
   win = new BrowserWindow({
@@ -154,6 +216,7 @@ app.whenReady().then(() => {
     try {
       const { token } = await api.request('POST', '/api/auth/login', { email, password, ...(code ? { code } : {}) });
       store.token = token;
+      await closeTools();
     } catch (error) {
       if (error.twoFactor && !code) return { twoFactor: true };
       throw error;
@@ -163,14 +226,17 @@ app.whenReady().then(() => {
   handle('auth:register', async (email, password, name, ref, newsletter) => {
     const { token } = await api.request('POST', '/api/auth/register', { email, password, name, ref, newsletter: newsletter === true });
     store.token = token;
+    await closeTools();
   });
   handle('auth:logout', async () => {
     await api.request('POST', '/api/auth/logout').catch(() => {});
     store.token = '';
+    await closeTools();
   });
   handle('auth:password', async (current, next) => {
     const { token } = await api.request('POST', '/api/me/password', { current, next });
     store.token = token;
+    await closeTools();
   });
 
   // Passe-plat vers l'API pour tout ce qui n'a pas besoin du disque ni du jeton.
@@ -298,33 +364,17 @@ app.whenReady().then(() => {
     const allowed = ['', 'boutique.html', 'compte.html', 'support.html', 'outils.html', 'compte.html#parrainage'];
     return shell.openExternal('https://onirique.store/' + (allowed.includes(page) ? page : ''));
   });
-  // ONIRIQUE CUT et ONIRIQUE CLOUD : la page du site dans une fenêtre de l'application, déjà connectée au compte.
-  // La session passe par le sessionStorage de cette fenêtre (jamais dans l'adresse) et disparaît à sa fermeture.
-  handle('open:tool', async (tool) => {
-    const page = { cut: 'cut.html', cloud: 'mes-sons.html' }[tool];
-    if (!page) throw new Error('Outil inconnu.');
-    const open = toolWindows.get(tool);
-    if (open && !open.isDestroyed()) return open.focus();
-    const site = 'https://onirique.store';
-    const w = new BrowserWindow({
-      width: 1360, height: 880, minWidth: 900, minHeight: 600, backgroundColor: '#09080A', show: false, autoHideMenuBar: true,
-      icon: path.join(__dirname, '..', 'renderer', 'assets', 'logo.png'),
-      webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, partition: 'onirique-web' },
-    });
-    toolWindows.set(tool, w);
-    w.removeMenu();
-    w.once('ready-to-show', () => w.show());
-    // Le site reste dans la fenêtre ; ce qui en sort (paiement, réseaux) s'ouvre dans le navigateur.
-    const inside = (url) => url === site || url.startsWith(site + '/');
-    const outside = (url) => { if (/^https:\/\//.test(url)) shell.openExternal(url); };
-    w.webContents.setWindowOpenHandler(({ url }) => (inside(url) ? { action: 'allow' } : (outside(url), { action: 'deny' })));
-    w.webContents.on('will-navigate', (event, url) => { if (!inside(url)) { event.preventDefault(); outside(url); } });
-    if (store.token) {
-      await w.loadURL(site + '/robots.txt');
-      await w.webContents.executeJavaScript(`sessionStorage.setItem("onirique.token", ${JSON.stringify(store.token)})`);
-    }
-    await w.loadURL(`${site}/${page}`);
+  // ONIRIQUE CUT et ONIRIQUE CLOUD, dans la fenêtre de l'application : la page du site posée dans le panneau
+  // principal, à l'endroit que l'interface indique, et habillée aux couleurs de l'application (tool-skin.css, ici
+  // seulement : le site ne change pas).
+  handle('tool:show', async (tool, bounds, lang) => {
+    const view = await toolView(tool, lang);
+    for (const [name, other] of toolViews) if (name !== tool) (await other).setVisible(false);
+    if (!win.contentView.children.includes(view)) win.contentView.addChildView(view);
+    view.setBounds(Object.fromEntries(['x', 'y', 'width', 'height'].map((k) => [k, Math.max(0, Math.round(Number(bounds?.[k]) || 0))])));
+    view.setVisible(true);
   });
+  handle('tool:hide', async () => { for (const view of toolViews.values()) (await view).setVisible(false); });
   // Répondre à une demande de support : la messagerie de ce PC s'ouvre sur un message adressé à la personne.
   handle('open:mail', (email, subject) => {
     if (typeof email !== 'string' || !/^[^\s@<>"'?&]+@[^\s@<>"'?&]+\.[^\s@<>"'?&]+$/.test(email)) throw new Error('Adresse e-mail invalide.');

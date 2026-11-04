@@ -1,0 +1,141 @@
+/* ONIRIQUE CUT et ONIRIQUE CLOUD dans l'application : la DA « Nuit & Braise » de la CENTRAL, posée par-dessus
+   les pages du site seulement quand elles s'affichent ici (main.js, insertCSS). Le site, lui, ne change pas. */
+:root {
+  --night: #09080A; --deep: #121012; --deep-2: #0f0b0d; --blood: #7a0d1c;
+  --mist: #F4ECEC; --bone: #F4ECEC; --soft: #cdb8bb; --haze: #a8939a;
+  --ember: #E5384A; --ember-text: #ff8e9a;
+  --line: rgba(255, 235, 238, .10);
+  --card: rgba(14, 10, 12, .55);
+  --glow: none;
+  --f-dream: "Unbounded", "Segoe UI", sans-serif;
+}
+
+/* La page se fond dans le panneau de l'application : fond transparent, ni en-tête du site, ni bandeau, ni pied. */
+html, body { background: transparent !important; }
+body::before, body::after, #page-bg, .skip, .sn-announce, footer { display: none !important; }
+body > header:not(:has(.bell:not([hidden]))) { display: none !important; }
+body > header { border: 0 !important; background: transparent !important; backdrop-filter: none !important; }
+body > header .brand, body > header a.btn, body > header nav { display: none !important; }
+main { padding-top: 22px !important; }
+.wrap { max-width: 1240px; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: rgba(255, 235, 238, .12); border-radius: 10px; border: 3px solid transparent; background-clip: content-box; }
+::selection { background: var(--ember); color: #fff; }
+
+/* Titres : Unbounded, accent braise, sans gothique ni halo */
+h1 { font-family: "Unbounded", sans-serif !important; font-weight: 800 !important; letter-spacing: .05em !important; text-transform: uppercase; }
+.hero h1 { font-size: clamp(22px, 3vw, 30px) !important; }
+h1 em, h2 em { font: inherit !important; color: var(--ember) !important; text-shadow: none !important; }
+.eyebrow { font: 500 10px/1 "JetBrains Mono", monospace !important; letter-spacing: .12em !important; color: var(--haze) !important; }
+.eyebrow::before { width: 7px !important; height: 7px !important; border-radius: 4px; clip-path: none !important; background: var(--ember) !important; box-shadow: 0 0 8px var(--ember); filter: none !important; }
+
+/* Verre : cartes et panneaux */
+.card, .panel {
+  background: linear-gradient(160deg, rgba(255,255,255,.075), rgba(255,255,255,.02) 40%, rgba(255,255,255,.035)), rgba(14,10,12,.55) !important;
+  border: 1px solid rgba(255, 235, 238, .10) !important; border-radius: 22px !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.4), 0 18px 40px rgba(0,0,0,.45) !important;
+}
+.card .head, .card .dim { background: rgba(0, 0, 0, .28) !important; }
+
+/* Boutons : mono majuscules, rayon 12 ; le bouton principal s'allume en braise */
+.btn, .go, .fab, .mini-btn, .round {
+  border-radius: 12px !important; font-family: "JetBrains Mono", monospace !important; font-weight: 500 !important;
+  letter-spacing: .14em !important; text-transform: uppercase; font-size: 11px !important;
+  transition: all .25s cubic-bezier(.2,.8,.2,1);
+}
+.btn-ghost, .go.ghost, .fab, .mini-btn, .round { background: rgba(255,255,255,.04) !important; color: #d8c6c8 !important; border: 0 !important; box-shadow: 0 0 0 1px rgba(255,255,255,.10) inset !important; }
+.btn-ghost:hover, .go.ghost:hover, .fab:hover, .mini-btn:hover, .round:hover { color: #fff !important; background: rgba(255,255,255,.07) !important; }
+.btn-primary, .go:not(.ghost), .round.white {
+  background: linear-gradient(180deg, rgba(229,56,74,.55), rgba(120,12,28,.55)) !important; color: #fff !important; border: 0 !important;
+  box-shadow: 0 0 0 1px rgba(255,110,125,.55) inset, 0 6px 22px rgba(229,56,74,.35) !important;
+}
+.btn-primary:hover, .go:not(.ghost):hover { transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(255,140,150,.7) inset, 0 8px 26px rgba(229,56,74,.45) !important; }
+.fab { backdrop-filter: blur(22px) saturate(140%); }
+
+/* Onglets (les étapes de CUT) : conteneur de verre, pastille choisie en braise */
+.tabs { border-radius: 14px !important; padding: 4px !important; background: linear-gradient(160deg, rgba(255,255,255,.075), rgba(255,255,255,.02) 40%, rgba(255,255,255,.035)), rgba(14,10,12,.7) !important; border: 1px solid rgba(255,235,238,.10) !important; backdrop-filter: blur(22px); }
+.tabs button { border-radius: 10px !important; font: 500 10.5px "JetBrains Mono", monospace !important; letter-spacing: .14em !important; text-transform: uppercase; color: #bba7aa; }
+.tabs button[aria-selected="true"] { background: linear-gradient(180deg, rgba(229,56,74,.6), rgba(110,10,24,.6)) !important; box-shadow: 0 0 0 1px rgba(255,120,135,.5) inset, 0 0 18px rgba(229,56,74,.3); }
+
+/* Champs */
+input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]), select, textarea {
+  border-radius: 12px !important; border: 0 !important; background: rgba(0,0,0,.45) !important;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.10) inset, inset 0 2px 6px rgba(0,0,0,.4) !important;
+}
+input:focus, select:focus, textarea:focus { outline: none !important; box-shadow: 0 0 0 1px rgba(255,110,125,.7) inset, 0 0 18px rgba(229,56,74,.2) !important; }
+
+/* Zone de dépôt et vignettes */
+.drop { border-radius: 22px !important; border-color: rgba(255, 235, 238, .16) !important; background: rgba(0,0,0,.35) !important; }
+.drop:hover, .drop.over { border-color: rgba(255,110,125,.6) !important; background: rgba(229,56,74,.06) !important; }
+.tile .art { border-radius: 18px !important; border-color: rgba(255,235,238,.10) !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 18px 40px rgba(0,0,0,.45); transition: transform .35s cubic-bezier(.2,.8,.2,1), border-color .35s; }
+.tile .art:hover { transform: translateY(-4px); border-color: rgba(255,140,150,.35) !important; }
+.tile .caption b { font-family: "Unbounded", sans-serif !important; font-weight: 800 !important; font-size: 12px !important; letter-spacing: .03em; text-transform: uppercase; }
+.tile .caption span, .crumb small { font: 500 10px "JetBrains Mono", monospace !important; letter-spacing: .12em; text-transform: uppercase; color: var(--haze) !important; }
+.frame { border-radius: 22px !important; box-shadow: 0 0 0 1px rgba(255,220,225,.10), 0 18px 40px rgba(0,0,0,.45) !important; }
+
+/* Une application, pas une page : ni bandeau, ni invitation à installer, ni sélection du texte hors des champs */
+.sn-announce, #install, #install-help { display: none !important; }
+body { user-select: none; -webkit-user-drag: none; }
+input, textarea, select, [contenteditable="true"], [contenteditable=""] { user-select: text; }
+a { text-decoration: none !important; }
+img { -webkit-user-drag: none; }
+
+/* L'en-tête de l'outil, comme celui d'un module : à gauche, point braise, titre, description */
+.hero { text-align: left !important; }
+.hero .eyebrow { justify-content: flex-start !important; }
+.hero .lede { margin-inline: 0 !important; max-width: 72ch; color: var(--soft) !important; font-size: 14px !important; }
+
+/* Ce que site-nav.js ajoute au site (langue, menu, invitation à télécharger l'app, réseaux) : l'application a les siens */
+.sn-lang, .sn-langbar, .sn-burger, .sn-panel, .sn-dl, .sn-foot, .sn-socials, .sn-account, .sn-tools { display: none !important; }
+/* L'en-tête ne garde que la cloche des notifications, en haut à droite */
+body > header .wrap { justify-content: flex-end !important; padding-block: 14px 0 !important; }
+
+/* CUT : la barre des étapes tient sur une ligne, les titres d'étape sont ceux d'un module */
+.hero h1 { font-size: 22px !important; }
+.tabs button { padding: 10px 10px !important; font-size: 10px !important; letter-spacing: .1em !important; gap: 6px !important; }
+.step-title { font: 800 14px/1.3 "Unbounded", sans-serif !important; letter-spacing: .05em !important; text-transform: uppercase; }
+.step-title b { color: var(--ember-text) !important; }
+
+/* Cases à cocher : l'interrupteur de l'application */
+input[type="checkbox"]:not(.switch input) {
+  appearance: none; flex: none; width: 40px !important; height: 22px !important; margin: 0; padding: 0; border-radius: 11px; position: relative; cursor: pointer;
+  background: rgba(0,0,0,.45); box-shadow: 0 0 0 1px rgba(255,255,255,.12) inset; transition: all .3s; accent-color: auto;
+}
+input[type="checkbox"]:not(.switch input)::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 8px; background: #d9c6c9; transition: all .35s cubic-bezier(.2,.8,.2,1); }
+input[type="checkbox"]:not(.switch input):checked { background: linear-gradient(90deg, rgba(229,56,74,.75), rgba(140,16,32,.75)); }
+input[type="checkbox"]:not(.switch input):checked::after { left: 21px; background: #fff; box-shadow: 0 0 10px rgba(255,140,150,.8); }
+
+/* CLOUD : les boutons de l'en-tête (Réglages, SCAN) et les pastilles */
+.install { border-radius: 12px !important; border: 0 !important; background: rgba(255,255,255,.04) !important; box-shadow: 0 0 0 1px rgba(255,255,255,.10) inset;
+  font: 500 11px "JetBrains Mono", monospace !important; letter-spacing: .14em; text-transform: uppercase; color: #d8c6c8 !important; }
+.install:hover, .install[aria-pressed="true"] { color: #fff !important; box-shadow: 0 0 0 1px rgba(255,110,125,.55) inset; }
+
+/* CUT : les sept étapes toujours entières, sur deux lignes si la fenêtre est étroite ; le numéro en petit, devant */
+.tabs { flex-wrap: wrap !important; overflow: visible !important; }
+.tabs button { flex: 1 1 auto !important; min-width: 0; white-space: nowrap; }
+.tabs button b { width: auto !important; height: auto !important; border: 0 !important; border-radius: 0 !important; background: none !important;
+  font: 500 9px/1 "JetBrains Mono", monospace !important; color: var(--ember-text) !important; opacity: .9; }
+.tabs button[aria-selected="true"] b { color: #fff !important; }
+.tabs button:disabled b { color: inherit !important; opacity: .6; }
+/* Pastilles de choix (HUD, formats…) : les onglets de l'application */
+.chips:not(.presets) { border-radius: 14px !important; border: 1px solid rgba(255,235,238,.10) !important; background: linear-gradient(160deg, rgba(255,255,255,.075), rgba(255,255,255,.02) 40%, rgba(255,255,255,.035)), rgba(14,10,12,.55); }
+.chips:not(.presets) button { border-radius: 10px !important; font-size: 10.5px !important; letter-spacing: .14em !important; color: #bba7aa; }
+.chips:not(.presets) button[aria-pressed="true"] { background: linear-gradient(180deg, rgba(229,56,74,.6), rgba(110,10,24,.6)) !important; box-shadow: 0 0 0 1px rgba(255,120,135,.5) inset, 0 0 18px rgba(229,56,74,.3); }
+.chips.presets button { border-radius: 16px !important; }
+.chips.presets button[aria-pressed="true"] { border-color: rgba(255,110,125,.75) !important; box-shadow: 0 0 0 1px rgba(255,110,125,.5) inset, 0 0 24px rgba(229,56,74,.25); }
+/* Petits boutons (Recaler, Agrandir) */
+.mini, .frame-big { border-radius: 10px !important; border: 0 !important; background: rgba(255,255,255,.04) !important; box-shadow: 0 0 0 1px rgba(255,255,255,.10) inset;
+  font: 500 10px "JetBrains Mono", monospace !important; letter-spacing: .14em !important; text-transform: uppercase; color: #d8c6c8 !important; }
+.mini:hover, .frame-big:hover { color: #fff !important; background: rgba(255,255,255,.07) !important; }
+
+/* Une seule couleur vive : la braise. Sur le site, la pochette écouté teinte la page ; dans l'application, non. */
+:root { --ember: #E5384A !important; --glow-1: rgba(229,56,74,.28) !important; --glow-2: rgba(122,13,28,.3) !important; }
+.tag { border-radius: 8px !important; font: 500 9px "JetBrains Mono", monospace !important; letter-spacing: .12em; text-transform: uppercase; }
+.tag.on { background: linear-gradient(180deg, rgba(229,56,74,.45), rgba(110,10,24,.45)) !important; border-color: rgba(255,110,125,.5) !important; color: #fff !important; }
+.album .art { border-radius: 22px !important; box-shadow: 0 0 0 1px rgba(255,220,225,.10), 0 18px 40px rgba(0,0,0,.45), 0 30px 90px -30px rgba(229,56,74,.35) !important; }
+/* Le mode « Visiteur » reste, aux couleurs de l'application */
+.visitor-toggle { border-radius: 12px !important; font: 500 10px "JetBrains Mono", monospace !important; letter-spacing: .14em !important; text-transform: uppercase; }
+.edit-toggle { border-radius: 12px !important; border: 0 !important; box-shadow: 0 0 0 1px rgba(255,255,255,.10) inset; color: #d8c6c8 !important;
+  font: 500 11px "JetBrains Mono", monospace !important; letter-spacing: .14em !important; text-transform: uppercase; }
+.edit-toggle:hover, .edit-toggle[aria-pressed="true"] { color: #fff !important; box-shadow: 0 0 0 1px rgba(255,110,125,.55) inset; }
+.album-head h1 { font-size: clamp(22px, 3vw, 34px) !important; }

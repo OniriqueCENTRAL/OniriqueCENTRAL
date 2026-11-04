@@ -58,7 +58,7 @@
       }
     ],
     "mac": {
-      "icon": "build/icon.png",
+      "icon": "build/icon-mac.png",
       "category": "public.app-category.music",
       "target": "dir",
       "identity": null

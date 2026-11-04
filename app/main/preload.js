@@ -5,7 +5,7 @@ const CHANNELS = [
   'auth:login', 'auth:register', 'auth:logout', 'auth:password', 'me:avatar', 'me:instagramAvatar',
   'plugin:install', 'plugin:uninstall', 'plugin:reveal', 'plugin:open',
   'license:activate', 'license:deactivate',
-  'admin:previewMail', 'admin:pick', 'admin:uploadVersion', 'admin:uploadImage', 'admin:refreshDemo', 'open:webmail', 'open:mail', 'open:site', 'open:tool',
+  'admin:previewMail', 'admin:pick', 'admin:uploadVersion', 'admin:uploadImage', 'admin:refreshDemo', 'open:webmail', 'open:mail', 'open:site', 'tool:show', 'tool:hide',
   'settings:server', 'settings:vst3Dir',
 ];
 
@@ -21,6 +21,8 @@ contextBridge.exposeInMainWorld('central', {
   window: (action) => ipcRenderer.send('window', action),
   onProgress: (listener) => ipcRenderer.on('progress', (_event, data) => listener(data)),
   onMaximized: (listener) => ipcRenderer.on('window:maximized', (_event, value) => listener(value)),
+  // CUT et CLOUD demandent un écran de l'application (compte, boutique, l'autre outil).
+  onNavigate: (listener) => ipcRenderer.on('navigate', (_event, route) => listener(route)),
   // Mise à jour : version téléchargée et prête (ou null), et redémarrage immédiat pour l'installer.
   updateReady: () => ipcRenderer.invoke('update:state'),
   onUpdateReady: (listener) => ipcRenderer.on('update:ready', (_event, version) => listener(version)),

@@ -94,6 +94,7 @@ body {
 /* ---------- Structure ---------- */
 .shell { display: grid; grid-template-columns: 252px 1fr; min-height: 0; }
 .sidebar { display: flex; flex-direction: column; gap: 8px; padding: 22px 0 20px 20px; min-height: 0; overflow-y: auto; }
+.sidebar > *, .sidebar .nav-item, .sidebar .site-link, .sidebar .user-chip { flex-shrink: 0; } /* fenêtre basse : la colonne défile, les carrés gardent leur hauteur */
 .nav-label { margin: 14px 4px 2px; }
 
 /* Les rubriques : des carrés de la chaîne, en colonne */
@@ -117,8 +118,6 @@ body {
   grid-row: span 2; min-width: 22px; height: 20px; padding: 0 6px; border-radius: 8px; display: grid; place-items: center;
   background: var(--lit-bg); box-shadow: var(--lit-shadow); color: #fff; font: 500 10px var(--mono); letter-spacing: 0;
 }
-.nav-item.tool .arrow { grid-row: span 2; color: var(--haze); font: 500 12px var(--mono); transition: transform .35s var(--ease), color .35s; }
-.nav-item.tool:hover .arrow { color: #fff; transform: translate(2px, -2px); }
 .nav-item[aria-pressed] .led { opacity: 1; }
 .sidebar .spacer { flex: 1; min-height: 8px; }
 /* Le site ONIRIQUE, juste au-dessus du compte */
@@ -152,6 +151,12 @@ body {
   background: var(--glass-bg); border: 1px solid var(--line); box-shadow: var(--glass-shadow);
   animation: arrive .55s var(--ease);
 }
+/* CUT et CLOUD : la page du site occupe tout le panneau (posée par-dessus, au pixel près : pas d'animation). */
+.main:has(> .inner.tool) { overflow: hidden; }
+.main > .inner.tool { height: 100%; min-height: 0; padding: 6px; animation: none; }
+.tool-host { height: 100%; border-radius: 22px; display: grid; place-items: center; }
+.tool-wait { display: grid; justify-items: center; gap: 14px; }
+.tool-wait .hero { width: 110px; height: 110px; }
 @keyframes arrive { from { transform: translateY(18px); filter: blur(8px); opacity: 0; } }
 
 /* ---------- Éléments de la charte ---------- */
@@ -385,5 +390,4 @@ button.key.copy:hover { color: var(--pink); }
 @media (max-width: 1080px) {
   .detail, .grid2 { grid-template-columns: 1fr; }
   .grid3 { grid-template-columns: 1fr 1fr; }
-  .shell { grid-template-columns: 220px 1fr; }
 }
