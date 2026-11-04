@@ -1636,12 +1636,31 @@ async function cloudTracks() {
   return (data.projects || []).flatMap((p) => p.tracks.map((t) => ({ p, t, v: t.versions.find((v) => v.id === t.currentId) || t.versions.at(-1) }))).filter((x) => x.v);
 }
 const syncedLines = (text) => (text || "").split("\n").filter((l) => /^\s*\[\d+:\d/.test(l)).length;
+/** Télécharge un fichier du serveur avec son avancement. Hors du cache du navigateur : un aperçu <video> de la même
+ *  adresse y garde la place et bloquerait ce téléchargement sans fin. Sans données pendant 30 s : abandon. */
+async function download(url, onProgress) {
+  const stall = new AbortController();
+  let timer = setTimeout(() => stall.abort(), 30000);
+  try {
+    const response = await fetch(url, { cache: "no-store", signal: stall.signal });
+    if (!response.ok) throw new Error(response.status === 403 ? "lien expiré, recharge la page" : "le serveur ne répond pas");
+    const total = Number(response.headers.get("Content-Length")) || 0, reader = response.body.getReader(), chunks = [];
+    for (let got = 0, part; !(part = await reader.read()).done;) {
+      clearTimeout(timer); timer = setTimeout(() => stall.abort(), 30000);
+      chunks.push(part.value); got += part.value.length;
+      if (total) onProgress(got / total);
+    }
+    return new Blob(chunks, { type: response.headers.get("Content-Type") || "" });
+  } catch (error) { throw error.name === "AbortError" ? new Error("connexion coupée") : error; }
+  finally { clearTimeout(timer); }
+}
 /** Charge un titre de CLOUD (la version en avant), avec son BPM, ses paroles et, pour une reprise, le passage choisi. */
 async function loadCloud({ t, v }, keep = {}) {
-  $("audio-state").textContent = "Téléchargement de « " + t.title + " »…";
-  const response = await fetch(v.url).catch(() => null);
-  if (!response || !response.ok) { $("audio-state").textContent = "Ce son n'a pas pu être téléchargé. Réessaie dans un instant."; return; }
-  const blob = await response.blob();
+  const state = (p) => { $("audio-state").textContent = "Téléchargement de « " + t.title + " »…" + (p == null ? "" : " " + pct(p)); };
+  state();
+  let blob;
+  try { blob = await download(v.url, state); }
+  catch (error) { $("audio-state").textContent = "Ce son n'a pas pu être téléchargé (" + error.message + "). Réessaie."; return; }
   await loadSound(new File([blob], v.filename || t.title, { type: blob.type }),
     { title: t.title, bpm: keep.bpm || t.bpm, start: keep.start, cloud: { trackId: t.id, title: t.title, lyrics: t.lyrics || "" } });
 }
@@ -1835,11 +1854,11 @@ async function renderBank() {
       };
       tile.onclick = async () => {
         $("bank-state").textContent = "Ajout de « " + b.name + " »…";
-        try {
-          const blob = await (await fetch(b.url)).blob();
-          await addClips([new File([blob], b.name, { type: b.type, lastModified: b.createdAt })]);
-          $("bank-state").textContent = "« " + b.name + " » ajouté.";
-        } catch { $("bank-state").textContent = "Ce fond n'a pas pu être téléchargé."; }
+        let blob;
+        try { blob = await download(b.url, (p) => { $("bank-state").textContent = "Ajout de « " + b.name + " »… " + pct(p); }); }
+        catch (error) { $("bank-state").textContent = "Ce fond n'a pas pu être téléchargé (" + error.message + ")."; return; }
+        await addClips([new File([blob], b.name, { type: b.type, lastModified: b.createdAt })]);
+        $("bank-state").textContent = "« " + b.name + " » ajouté.";
       };
       tile.append(look, Object.assign(document.createElement("span"), { textContent: b.name }), drop);
       return tile;
