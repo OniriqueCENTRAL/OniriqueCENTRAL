@@ -99,6 +99,47 @@ try {
     await call('/api/films/movie/404', { token: founder, expect: 404 });
     await call('/api/films/movie/1;rm', { token: founder, expect: 404 });
   });
+  const send = (method, route, { token, body, expect = 200 } = {}) => fetch(base + route, { method, body,
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), 'Content-Type': 'application/octet-stream' } })
+    .then(async (r) => { const data = await r.json().catch(() => ({})); assert.equal(r.status, expect, `${method} ${route} → ${r.status} ${JSON.stringify(data)}`); return data; });
+  const mp4 = Buffer.concat([Buffer.from([0, 0, 0, 0x18]), Buffer.from('ftypisom'), Buffer.alloc(5000, 1)]);
+  let video, subs;
+  await step('lecteur : dépôt, sources et suppression refusés à qui n\'est pas fondateur', async () => {
+    const member = await account('membre-lecteur', 'vip');
+    for (const token of [undefined, member]) {
+      const expect = token ? 403 : 401;
+      await call('/api/films/movie/1/sources', { token, expect });
+      await send('POST', '/api/films/movie/1/videos', { token, body: mp4, expect });
+      await send('POST', '/api/films/movie/1/subtitles', { token, body: 'x', expect });
+      await send('DELETE', '/api/films/files/1', { token, expect });
+    }
+    assert.equal(get('SELECT COUNT(*) AS n FROM film_files').n, 0);
+  });
+  await step('lecteur : une vidéo MP4 et des sous-titres SRT déposés deviennent des sources signées', async () => {
+    await send('POST', '/api/films/movie/1/videos', { token: founder, body: Buffer.from('pas une vidéo, du texte'), expect: 400 });
+    await send('POST', '/api/films/movie/1/subtitles', { token: founder, body: 'pas des sous-titres', expect: 400 });
+    await send('POST', '/api/films/movie/1/videos?label=VF%201080p&lang=fr', { token: founder, body: mp4, expect: 201 });
+    await send('POST', '/api/films/movie/1/subtitles?label=Fran%C3%A7ais&lang=fr', { token: founder, body: '﻿1\r\n00:00:01,500 --> 00:00:03,000\r\nBonjour\r\n', expect: 201 });
+    ({ sources: [video], subtitles: [subs] } = await call('/api/films/movie/1/sources', { token: founder }));
+    assert.deepEqual([video.label, video.lang, video.type, video.from, video.size], ['VF 1080p', 'fr', 'mp4', 'Mes vidéos', mp4.length]);
+    assert.equal((await call('/api/films/movie/2/sources', { token: founder })).sources.length, 0);
+    // Le lecteur lit sans jeton, par l'adresse signée, et peut sauter dans le fichier.
+    const part = await fetch(base + video.url, { headers: { Range: 'bytes=4-11' } });
+    assert.deepEqual([part.status, part.headers.get('content-type'), await part.text()], [206, 'video/mp4', 'ftypisom']);
+    const vtt = await fetch(base + subs.url);
+    assert.equal(await vtt.text(), 'WEBVTT\n\n1\n00:00:01.500 --> 00:00:03.000\nBonjour\n');
+  });
+  await step('lecteur : une adresse modifiée ou expirée est refusée', async () => {
+    assert.equal((await fetch(base + video.url.replace(/s=./, 's=A'))).status, 403);
+    assert.equal((await fetch(base + `/api/film-file/${video.id}?e=1&s=x`)).status, 403);
+    assert.equal((await fetch(base + video.url.replace(`/film-file/${video.id}?`, `/film-file/${subs.id}?`))).status, 403);
+  });
+  await step('lecteur : un fondateur supprime le fichier, du disque aussi', async () => {
+    const stored = get('SELECT stored_as FROM film_files WHERE id = ?', video.id).stored_as;
+    await send('DELETE', `/api/films/files/${video.id}`, { token: founder });
+    assert.equal(fs.existsSync(path.join(dataDir, 'films', stored)), false);
+    assert.equal((await call('/api/films/movie/1/sources', { token: founder })).sources.length, 0);
+  });
   console.log(`films : ${passed} vérifications passées`);
 } finally {
   server.close();

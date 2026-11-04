@@ -560,7 +560,7 @@ export function createApp() {
   mountCut(app, { requireUser, receiveFile, wrap });
   mountTierList(app, { requireUser, receiveImage, removeMedia, wrap });
   mountPush(app, { requireUser });
-  mountFilms(app, { requireUser, wrap });
+  mountFilms(app, { requireUser, receiveFile, wrap });
 
   // La photo d'ingé d'un fondateur : celle des crédits, distincte de la photo du compte.
   const engineerOnly = (req) => { if (!can(req.user, 'engineer')) throw new HttpError(403, "Le profil d'ingé n'est pas ouvert à ce compte."); };

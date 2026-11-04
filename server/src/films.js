@@ -2,9 +2,33 @@
 // la recherche et la fiche d'un film, avec où le regarder en France, d'après l'API de TMDB (themoviedb.org).
 // La clé reste sur le serveur (TMDB_API_KEY dans le .env, réglée par onirique-tmdb) ; la page elle-même n'est servie
 // qu'à un fondateur, comme les potards.
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 import { HttpError, rateLimit } from './auth.js';
+import { db, get, all, run, now, setting, setSetting } from './db.js';
+
+// Les fichiers déposés par les fondateurs pour un film (vidéos et sous-titres) : la source « Mes vidéos ».
+db.exec(`
+CREATE TABLE IF NOT EXISTS film_files (
+  id INTEGER PRIMARY KEY,
+  tmdb_id INTEGER NOT NULL,
+  kind TEXT NOT NULL,              -- video | subtitle
+  label TEXT NOT NULL,
+  lang TEXT NOT NULL DEFAULT '',
+  mime TEXT NOT NULL,
+  stored_as TEXT NOT NULL,
+  size INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS film_files_tmdb ON film_files (tmdb_id);
+`);
+export const filmsDir = path.join(config.dataDir, 'films');
+const VIDEO_MAX = 2 * 1024 ** 3;   // la limite d'envoi de nginx
+const SUB_MAX = 2 * 1024 ** 2;
 
 const IMG = 'https://image.tmdb.org/t/p/';
 const LISTS = { now_playing: 'movie/now_playing', upcoming: 'movie/upcoming', popular: 'movie/popular', top_rated: 'movie/top_rated', trending: 'trending/movie/week' };
@@ -76,7 +100,73 @@ export async function filmDetails(id) {
   };
 }
 
-export function mountFilms(app, { requireUser, wrap }) {
+// ——— Les sources de lecture ———
+// Chaque fournisseur est un adaptateur { name, enabled(), sources(tmdbId) } qui rend des sources
+// { label, type: 'mp4' | 'webm' | 'hls', url } et des sous-titres { label, lang, url } en WebVTT. Le lecteur de la page
+// ne connaît que ce format. N'entre ici qu'un fournisseur dont le droit de diffuser les films est établi.
+function signKey() {
+  let key = setting('films_key', null);
+  if (!key) { key = crypto.randomBytes(32).toString('hex'); setSetting('films_key', key); }
+  return key;
+}
+const sign = (value) => crypto.createHmac('sha256', signKey()).update(value).digest('base64url');
+// Un lecteur <video> n'envoie pas de jeton : l'adresse du fichier est signée et vaut six heures.
+const fileUrl = (id) => { const e = now() + 6 * 3600_000; return `/api/film-file/${id}?e=${e}&s=${sign(`${id}.${e}`)}`; };
+const uploads = {
+  name: 'Mes vidéos',
+  enabled: () => true,
+  sources(tmdbId) {
+    const rows = all('SELECT * FROM film_files WHERE tmdb_id = ? ORDER BY kind, created_at', tmdbId);
+    const out = (f) => ({ id: f.id, label: f.label, lang: f.lang, size: f.size, url: fileUrl(f.id), type: f.mime === 'video/webm' ? 'webm' : 'mp4', removable: true });
+    return { sources: rows.filter((f) => f.kind === 'video').map(out), subtitles: rows.filter((f) => f.kind === 'subtitle').map(out) };
+  },
+};
+export const ADAPTERS = [uploads];
+
+export async function filmSources(id) {
+  if (!/^\d{1,9}$/.test(String(id))) throw new HttpError(404, 'Film introuvable.');
+  const sources = [], subtitles = [];
+  for (const adapter of ADAPTERS.filter((a) => a.enabled())) {
+    // Un fournisseur en panne ne prive pas le lecteur des autres.
+    const r = await Promise.resolve().then(() => adapter.sources(Number(id))).catch(() => null);
+    if (r) { sources.push(...r.sources.map((s) => ({ ...s, from: adapter.name }))); subtitles.push(...r.subtitles); }
+  }
+  return { sources, subtitles };
+}
+
+/** Le type d'une vidéo d'après ses premiers octets : seuls MP4 et WebM se lisent dans un navigateur. */
+function videoType(file) {
+  const head = Buffer.alloc(12);
+  const fd = fs.openSync(file, 'r');
+  try { fs.readSync(fd, head, 0, 12, 0); } finally { fs.closeSync(fd); }
+  if (head.toString('latin1', 4, 8) === 'ftyp') return 'video/mp4';
+  if (head.readUInt32BE(0) === 0x1a45dfa3) return 'video/webm';
+  return null;
+}
+/** Des sous-titres SRT ou WebVTT, rendus en WebVTT (null s'ils sont illisibles). */
+export function toVtt(raw) {
+  const body = raw.replace(/^﻿/, '').replace(/\r\n?/g, '\n').trim();
+  if (/^WEBVTT/.test(body)) return body + '\n';
+  if (!/\d{2}:\d{2}:\d{2}[,.]\d{3} --> \d{2}:\d{2}:\d{2}[,.]\d{3}/.test(body)) return null;
+  return 'WEBVTT\n\n' + body.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2') + '\n';
+}
+const tmdbIdOf = (req) => { if (!/^\d{1,9}$/.test(req.params.id)) throw new HttpError(404, 'Film introuvable.'); return Number(req.params.id); };
+const addFile = (req, tmdbId, kind, mime, file, fallback) => run(
+  'INSERT INTO film_files (tmdb_id, kind, label, lang, mime, stored_as, size, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+  tmdbId, kind, text(req.query.label, 60) || fallback, text(req.query.lang, 10), mime, file.storedAs, file.size, req.user.id, now()).lastInsertRowid;
+
+export function mountFilms(app, { requireUser, receiveFile, wrap }) {
+  fs.mkdirSync(filmsDir, { recursive: true });
+  // Le fichier, par son adresse signée (hors de /api/films : un lecteur <video> n'a pas de jeton). Range géré par sendFile.
+  app.get('/api/film-file/:id', (req, res) => {
+    const id = Number.parseInt(req.params.id, 10), e = Number(req.query.e), s = String(req.query.s || ''), good = sign(`${id}.${e}`);
+    if (!(e > now()) || s.length !== good.length || !crypto.timingSafeEqual(Buffer.from(s), Buffer.from(good))) throw new HttpError(403, 'Ce lien de lecture a expiré : recharge la page.');
+    const f = get('SELECT * FROM film_files WHERE id = ?', id);
+    if (!f) throw new HttpError(404, 'Fichier introuvable.');
+    res.set({ 'Content-Type': f.mime, 'Cache-Control': 'private, max-age=3600', 'X-Content-Type-Options': 'nosniff' });
+    res.sendFile(path.join(filmsDir, f.stored_as));
+  });
+
   // Tout ce qui est sous /api/films, page comprise, est refusé à qui n'est pas fondateur.
   app.use('/api/films', (req, res, next) => requireUser(req, res, (error) => next(error
     || (req.user.role === 'founder' ? undefined : new HttpError(403, 'Réservé aux fondateurs.')))));
@@ -88,4 +178,26 @@ export function mountFilms(app, { requireUser, wrap }) {
   app.get('/api/films/list/:kind', wrap(async (req, res) => res.json(await filmList(req.params.kind, req.query.page))));
   app.get('/api/films/search', wrap(async (req, res) => res.json(await filmSearch(req.query.q, req.query.page))));
   app.get('/api/films/movie/:id', wrap(async (req, res) => res.json(await filmDetails(req.params.id))));
+  app.get('/api/films/movie/:id/sources', wrap(async (req, res) => res.json(await filmSources(req.params.id))));
+
+  // Déposer une vidéo ou des sous-titres pour un film (corps brut ; nom et langue dans l'adresse).
+  app.post('/api/films/movie/:id/videos', wrap(async (req, res) => {
+    const tmdbId = tmdbIdOf(req), file = await receiveFile(req, filmsDir, VIDEO_MAX), target = path.join(filmsDir, file.storedAs), mime = videoType(target);
+    if (!mime) { fs.rmSync(target, { force: true }); throw new HttpError(400, 'Seules les vidéos MP4 et WebM se lisent dans un navigateur.'); }
+    res.status(201).json({ id: addFile(req, tmdbId, 'video', mime, file, 'Vidéo') });
+  }));
+  app.post('/api/films/movie/:id/subtitles', wrap(async (req, res) => {
+    const tmdbId = tmdbIdOf(req), file = await receiveFile(req, filmsDir, SUB_MAX), target = path.join(filmsDir, file.storedAs);
+    const vtt = toVtt(fs.readFileSync(target, 'utf8'));
+    if (!vtt) { fs.rmSync(target, { force: true }); throw new HttpError(400, 'Sous-titres illisibles : il faut un fichier SRT ou VTT.'); }
+    fs.writeFileSync(target, vtt);
+    res.status(201).json({ id: addFile(req, tmdbId, 'subtitle', 'text/vtt; charset=utf-8', { ...file, size: Buffer.byteLength(vtt) }, 'Sous-titres') });
+  }));
+  app.delete('/api/films/files/:fid', (req, res) => {
+    const f = get('SELECT * FROM film_files WHERE id = ?', Number.parseInt(req.params.fid, 10));
+    if (!f) throw new HttpError(404, 'Fichier introuvable.');
+    run('DELETE FROM film_files WHERE id = ?', f.id);
+    fs.rmSync(path.join(filmsDir, f.stored_as), { force: true });
+    res.json({ ok: true });
+  });
 }
