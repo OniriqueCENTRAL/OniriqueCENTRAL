@@ -70,7 +70,8 @@
     const open = el("a", { className: "pf-link", href: x.url, target: "_blank", rel: "noopener", ariaLabel: "Écouter en entier sur " + NAMES[x.platform],
       title: "Écouter en entier sur " + NAMES[x.platform], onclick: (event) => event.stopPropagation() }, icon("link"));
     const li = el("li", { className: "trk pf", tabIndex: 0, title: "Écouter l'extrait de 30 s" },
-      el("span", { className: "num", textContent: String(i + 1) }),
+      // La pochette du titre, là où un son du CLOUD a son numéro : on voit d'un coup d'œil ce qui vient d'une plateforme.
+      x.cover ? el("img", { className: "pf-cover", src: x.cover, alt: "", loading: "lazy" }) : el("span", { className: "num", textContent: String(i + 1) }),
       el("div", {}, el("div", { className: "tline" }, el("b", { textContent: x.title })),
         el("small", { textContent: [x.artist, "extrait 30 s"].filter(Boolean).join(" · ") })),
       el("span", { className: "badges" }, el("span", { className: "pf-tag", textContent: NAMES[x.platform] })),

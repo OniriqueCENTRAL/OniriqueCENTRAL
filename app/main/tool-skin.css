@@ -146,3 +146,9 @@ input[type="checkbox"]:not(.switch input):checked::after { left: 21px; backgroun
 #platform-add .pf-tabs button[aria-selected="true"] { background: linear-gradient(180deg, rgba(229,56,74,.6), rgba(110,10,24,.6)) !important; box-shadow: 0 0 0 1px rgba(255,120,135,.5) inset, 0 0 18px rgba(229,56,74,.3); color: #fff; }
 .pf-tag { border-radius: 8px !important; font: 500 9px "JetBrains Mono", monospace !important; letter-spacing: .12em !important; text-transform: uppercase; }
 dialog { border-radius: 30px !important; background: linear-gradient(160deg, rgba(40,26,30,.96), rgba(16,12,14,.97) 45%, rgba(20,15,17,.97)) !important; border-color: rgba(255,235,238,.14) !important; }
+
+/* CUT : un en-tête d'écran, pas de page de présentation */
+.hero .lede { display: none !important; }
+.hero h1 { margin-bottom: 0 !important; }
+/* CLOUD : le bouton « Ajouter » rangé en bas à droite, hors de la liste */
+.fab { left: auto !important; right: 22px !important; transform: none !important; }
