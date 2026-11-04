@@ -592,7 +592,8 @@ export function mountPlatforms(app, { requireUser, wrap }) {
     if (!fresh(req.query.e, req.query.s, `item${id}`)) throw new HttpError(403, 'Extrait expiré : recharge la page.');
     const r = get('SELECT * FROM sound_platform_items WHERE id = ?', id);
     if (!r) throw new HttpError(404, 'Titre introuvable.');
-    let source = r.preview;
+    // Les extraits de Deezer sont des adresses signées qui expirent en quelques heures : une fraîche à chaque écoute.
+    let source = r.platform === 'deezer' ? previewUrl((await getJson(`${config.deezerApi}/track/${r.ext_id}`).catch(() => null))?.preview) || r.preview : r.preview;
     if (!source) {
       source = await deezerPreviewFor(r).catch(() => null);
       if (!source) throw new HttpError(404, "Pas d'extrait pour ce titre : écoute-le sur sa plateforme.");
