@@ -808,13 +808,13 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
         .map((f) => ({ id: f.id, title: f.title, parentId: f.parent_id, createdAt: f.created_at })),
       // Les projets des autres, enregistrés : encore ouverts si le lien vit et que son auteur est toujours membre.
       saved: all(`SELECT s.id, s.folder_id, s.pass, s.created_at, l.id AS link_id, l.token, l.track_id, l.expires_at, l.password_hash,
-          a.name AS owner_name, a.avatar AS owner_avatar, u.role AS owner_role, l.user_id AS owner_id, p.title AS project_title, p.cover, p.artist, t.title AS track_title,
+          a.name AS owner_name, a.avatar AS owner_avatar, u.role AS owner_role, l.user_id AS owner_id, p.title AS project_title, p.cover, p.artist, p.kind, t.title AS track_title,
           (SELECT COUNT(*) FROM sound_tracks WHERE project_id = p.id) AS tracks, ${LINK_OPEN} AS open
         FROM sound_saves s JOIN sound_links l ON l.id = s.link_id JOIN users u ON u.id = l.user_id
         LEFT JOIN sound_tracks t ON t.id = l.track_id JOIN sound_projects p ON p.id = COALESCE(l.project_id, t.project_id) JOIN users a ON a.id = p.user_id
         WHERE s.user_id = ? ORDER BY s.created_at DESC`, req.user.id).map((r) => ({
         id: r.id, token: r.token, folderId: r.folder_id, title: r.track_id ? r.track_title : r.project_title, owner: r.artist || r.owner_name || 'ONIRIQUE',
-        ownerAvatar: media(r.owner_avatar), cover: media(r.cover), tracks: r.track_id ? 1 : r.tracks, createdAt: r.created_at,
+        ownerAvatar: media(r.owner_avatar), cover: media(r.cover), tracks: r.track_id ? 1 : r.tracks, createdAt: r.created_at, kind: r.track_id ? '' : r.kind,
         available: !!r.open && can({ role: r.owner_role, id: r.owner_id }, 'sounds') && !(r.expires_at && r.expires_at < now()),
         pass: r.password_hash && r.pass && same(r.pass, passFor({ id: r.link_id, password_hash: r.password_hash })) ? r.pass : null,
       })),

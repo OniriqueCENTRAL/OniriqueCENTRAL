@@ -215,6 +215,7 @@ body.visitor .visitor-toggle b { color: var(--night); }
 .pack-contact { display: flex; justify-content: center; margin-top: 14px; padding: 11px 16px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); font: 600 14px var(--f-body); text-decoration: none; }
 .pack-contact:hover { border-color: var(--ember); }
 body:not(.visitor) .pack-contact { display: none; }
+body.is-playlist :is(#project-more, #bg-change, #bg-remove) { display: none !important; }
 body.visitor :is(#project-meta .tag, #edit-toggle, #share-project, #project-more, #pack-store, #pack-mail, #pack-youtube, #fab, #cover-swap, .plan-chip, .trk .dots, .trk small) { display: none !important; }
 body.editing #edit-toggle { background: var(--mist); color: var(--night); border-color: var(--mist); }
 /* Préparer la sortie : le compte à rebours et les tâches faites, à côté de la date */
@@ -689,6 +690,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 .library-list::-webkit-scrollbar { display: none; }
 .pl { display: flex; align-items: center; gap: 12px; flex: none; width: 230px; padding: 8px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); color: var(--mist); text-align: left; cursor: pointer; transition: border-color .2s, background .2s; }
 .pl:hover { border-color: rgba(226,52,68,.55); background: rgba(42,10,14,.8); }
+.pl.gone { opacity: .45; filter: grayscale(1); cursor: default; }
 .pl[aria-current="page"] { border-color: var(--ember); background: rgba(92,0,8,.35); box-shadow: 0 0 26px -12px var(--ember); }
 .pl img, .pl .cover-ph { width: 48px; height: 48px; flex: none; border-radius: 9px; object-fit: cover; }
 .pl .cover-ph svg { width: 40%; height: 40%; }
@@ -1195,7 +1197,9 @@ function render() {
   if ((openId() && !p) || (folderId() && !folder())) { location.hash = ""; return; }
   $("grid-view").hidden = !!p;
   $("project-view").hidden = !p;
-  $("visitor-bar").hidden = !p;
+  $("visitor-bar").hidden = !p || p.kind === "playlist";
+  if (p && p.kind === "playlist" && visitor) setVisitor(false);
+  document.body.classList.toggle("is-playlist", !!(p && p.kind === "playlist"));
   $("fab").hidden = false;
   p ? renderProject(p) : renderGrid();
   renderLibrary();
@@ -1248,13 +1252,25 @@ function setBackground(url) {
 }
 // La colonne des playlists (les miennes et celles où je collabore), la playlist ouverte en surbrillance.
 function renderLibrary() {
-  const box = $("library"), lists = data.vanish ? [] : data.projects.filter((x) => x.kind === "playlist");
+  const box = $("library"), lists = data.vanish ? [] : [...data.projects.filter((x) => x.kind === "playlist"),
+    ...data.saved.filter((x) => x.kind === "playlist").map((x) => ({ ...x, received: true }))];
   box.hidden = !!data.vanish;
   document.body.classList.toggle("has-library", !box.hidden);
   if (box.hidden) return;
   const add = el("button", { className: "round", type: "button", ariaLabel: "Créer une playlist", title: "Créer une playlist", onclick: createPlaylist }, icon("plus"));
   box.replaceChildren(el("div", { className: "library-head" }, el("span", { textContent: "Playlists" }), add),
     lists.length ? el("div", { className: "library-list" }, ...lists.sort((a, b) => b.createdAt - a.createdAt).map((x) => {
+      // Une playlist envoyée par quelqu'un (enregistrée depuis son lien) s'ouvre sur sa page d'écoute.
+      if (x.received) {
+        const row = el("button", { className: "pl" + (x.available ? "" : " gone"), type: "button", onclick: () => x.available && openSaved(x) },
+          coverOf(x), el("span", {}, el("b", { textContent: x.title }), el("small", { textContent: "Playlist · de " + x.owner + (x.available ? "" : " · lien fermé") })));
+        row.oncontextmenu = (event) => { event.preventDefault(); event.stopPropagation(); menu(row, [
+          x.available && { label: "Écouter", icon: "play", onclick: () => playSaved(x) },
+          { label: "Retirer de mes playlists", icon: "close", danger: true, onclick: () =>
+            confirm("Retirer « " + x.title + " » de tes playlists ? Elle reste chez " + x.owner + ".") && api("DELETE", "/me/sounds/saves/" + x.id).then(refresh, fail) },
+        ]); };
+        return row;
+      }
       const row = el("button", { className: "pl", type: "button", ariaCurrent: openId() === x.id ? "page" : null, onclick: () => navigate("#/p/" + x.id) },
         coverOf(x), el("span", {}, el("b", { textContent: x.title }), el("small", { textContent: "Playlist · " + count(entriesOf(x).length, "titre", "titres") + (x.mine ? "" : " · de " + (x.artist || x.owner.name)) })));
       row.oncontextmenu = (event) => { event.preventDefault(); event.stopPropagation(); projectMenu(row, x); };
@@ -1288,7 +1304,7 @@ function renderGrid() {
   // À la racine : les dossiers, puis les projets hors dossier (les miens et ceux enregistrés), du plus récent au plus ancien.
   const here = (x) => (x.folderId || null) === (f ? f.id : null);
   const items = (data.vanish ? data.projects.filter((x) => !chosen || x.owner.id === chosen.id).map((x) => ({ kind: "project", x }))
-    : [...data.projects.filter((x) => here(x) && x.kind !== "playlist").map((x) => ({ kind: "project", x })), ...data.saved.filter(here).map((x) => ({ kind: "saved", x }))])
+    : [...data.projects.filter((x) => here(x) && x.kind !== "playlist").map((x) => ({ kind: "project", x })), ...data.saved.filter((x) => here(x) && x.kind !== "playlist").map((x) => ({ kind: "saved", x }))])
     .sort((a, b) => b.x.createdAt - a.x.createdAt);
   const folders = data.vanish ? [] : subfolders(f ? f.id : null);
   const tiles = [...folders.map(folderTile), ...items.map(({ kind, x }) => (kind === "project" ? projectTile(x) : savedTile(x))), ...(f || data.vanish ? [] : [trashTile()])];
