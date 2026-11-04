@@ -786,6 +786,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 <dialog id="share"></dialog>
 <dialog id="settings"></dialog>
 <dialog id="trash"></dialog>
+<dialog id="pick"></dialog>
 <dialog id="collab"></dialog>
 <dialog id="mailer"></dialog>
 <dialog id="store"></dialog>
@@ -1268,7 +1269,7 @@ function projectTile(p) {
   art.onclick = () => navigate("#/p/" + p.id);
   art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
   const tile = el("div", { className: "tile" }, art, caption(p.title,
-    el("span", { textContent: (p.kind === "pack" ? "Pack · " + count(p.tracks.length, "prod", "prods") : p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre"))
+    el("span", { textContent: (p.kind === "pack" ? "Pack · " + count(p.tracks.length, "prod", "prods") : (p.kind === "playlist" ? "Playlist · " : "") + count(p.tracks.length, "titre", "titres"))
       + (p.mine ? "" : " · de " + (p.artist || p.owner.name)) + (linkFor("project", p.id) ? " · partagé" : "") + (p.mine && p.collaborators.length ? " · en collab" : "") }),
     dotsFor(p.title, (b) => projectMenu(b, p)), projectFeat(p)));
   tile.dataset.id = p.id;
@@ -1388,13 +1389,14 @@ function projectMenu(anchor, p) {
     p.tracks.length && { label: "Ajouter à la file", icon: "queue", onclick: () => p.tracks.forEach((t) => player.enqueue(itemOf(p, t))) },
     { label: "Partager", icon: "link", onclick: () => openShare("project", p.id) },
     p.tracks.length && { label: "Statistiques", icon: "queue", onclick: () => openProjectStats(p) },
-    p.kind !== "pack" && { label: "Préparer la sortie", icon: "star", onclick: () => openPlan(p) },
+    !p.kind && { label: "Préparer la sortie", icon: "star", onclick: () => openPlan(p) },
     p.tracks.length && { label: "Télécharger le projet (.zip)", icon: "download", onclick: () => downloadProject(p) },
     p.mine && { label: "Collaborateurs…", icon: "plus", onclick: () => openCollab(p.id) },
     !data.vanish && { label: "Déplacer vers…", icon: "chevron", onclick: () => moveMenu(anchor, p.folderId, (folderId) => api("PATCH", "/me/sounds/projects/" + p.id, { folderId })) },
-    p.mine && (p.kind === "pack"
-      ? { label: "Repasser en projet classique", icon: "repeat", onclick: () => api("PATCH", "/me/sounds/projects/" + p.id, { kind: "" }).then(refresh, fail) }
-      : { label: "Passer en pack de prods", icon: "repeat", onclick: () => makePack(p).catch(fail) }),
+    p.mine && p.kind === "playlist" && !data.vanish && { label: "Ajouter des sons du CLOUD", icon: "plus", onclick: () => openPick(p) },
+    p.mine && p.kind && { label: "Repasser en projet classique", icon: "repeat", onclick: () => api("PATCH", "/me/sounds/projects/" + p.id, { kind: "" }).then(refresh, fail) },
+    p.mine && p.kind !== "pack" && { label: "Passer en pack de prods", icon: "repeat", onclick: () => makePack(p).catch(fail) },
+    p.mine && p.kind !== "playlist" && { label: "Transformer en Playlist", icon: "queue", onclick: () => api("PATCH", "/me/sounds/projects/" + p.id, { kind: "playlist" }).then(refresh, fail) },
     "-",
     { label: "Renommer", icon: "more", onclick: async () => {
       const title = await ask("Nom du projet", p.title);
@@ -1543,7 +1545,7 @@ function renderProject(p) {
   if (!$("project-meta").contains(document.activeElement)) $("project-meta").replaceChildren(el("img", { src: avatar(p.owner), alt: "" }),
     editing ? inlineEdit(p.artist || p.owner.name, p.owner.name, 120, (artist) => api("PATCH", "/me/sounds/projects/" + p.id, { artist: artist === p.owner.name ? "" : artist }).then(refresh), true)
       : el("span", { textContent: p.artist || p.owner.name }),
-    " · " + (p.kind === "pack" ? "Pack de " + count(p.tracks.length, "prod", "prods") : p.tracks.length + (p.tracks.length > 1 ? " titres" : " titre")) + (p.tracks.length ? " · " + length(projectLength(p)) : ""),
+    " · " + (p.kind === "pack" ? "Pack de " + count(p.tracks.length, "prod", "prods") : (p.kind === "playlist" ? "Playlist de " : "") + count(p.tracks.length, "titre", "titres")) + (p.tracks.length ? " · " + length(projectLength(p)) : ""),
     linkFor("project", p.id) ? el("span", { className: "tag on", textContent: "Partagé" }) : "",
     p.collaborators.length ? el("span", { className: "faces-row", title: "En collab avec " + p.collaborators.map((u) => u.name).join(", ") },
       " · avec ", ...p.collaborators.slice(0, 4).map((u) => el("img", { src: avatar(u), alt: u.name }))) : "");
@@ -1890,6 +1892,7 @@ $("fab").append(icon("plus"), "Ajouter");
 function addMenu(anchor) {
   const p = openId() && project();
   menu(anchor, [
+    p && p.kind === "playlist" && { label: "Ajouter des sons du CLOUD", icon: "queue", onclick: () => openPick(p) },
     p && { label: "Ajouter des sons à ce projet", icon: "plus", onclick: () => pickFiles({ project: p }) },
     { label: "Importer des sons", icon: "download", onclick: () => pickFiles(null) },
     { label: "Nouveau projet", icon: "star", onclick: async () => {
@@ -1908,6 +1911,15 @@ function addMenu(anchor) {
         const { id } = await api("POST", "/me/sounds/projects", { title, kind: "pack" });
         if (folderId()) await api("PATCH", "/me/sounds/projects/" + id, { folderId: folderId() });
         await refresh(); location.hash = "#/p/" + id;
+      } catch (error) { fail(error); }
+    } },
+    { label: "Créer une playlist", icon: "queue", onclick: async () => {
+      const title = await ask("Nom de la playlist");
+      if (!title) return;
+      try {
+        const { id } = await api("POST", "/me/sounds/projects", { title, kind: "playlist" });
+        if (folderId()) await api("PATCH", "/me/sounds/projects/" + id, { folderId: folderId() });
+        await refresh(); location.hash = "#/p/" + id; openPick(project(id));
       } catch (error) { fail(error); }
     } },
     !p && { label: "Nouveau dossier", icon: "plus", onclick: async () => {
@@ -3302,6 +3314,8 @@ function renderDetails() {
           openDetails(t.id);
         } })),
       group(p.mine && p.kind === "pack" && p.title !== OUTSIDE_PACK && item("chevron", "Retirer du pack", { hint: "La prod et ses versions vont dans « " + OUTSIDE_PACK + " »", onclick: () => unpack(p, t) }),
+        p.kind === "playlist" ? item("close", "Retirer de la playlist", { hint: "Le son reste dans ses autres projets", danger: true, onclick: () =>
+          api("DELETE", "/me/sounds/tracks/" + t.id).then(() => { $("details").close(); return refresh(); }).catch(fail) }) :
         item("close", "Envoyer à la corbeille", { hint: "Tu peux le restaurer pendant 30 jours", danger: true, onclick: () => confirm("Mettre « " + t.title + " » et toutes ses versions à la corbeille ? Tu pourras le restaurer pendant 30 jours.")
         && api("DELETE", "/me/sounds/tracks/" + t.id).then(() => { $("details").close(); return refresh(); }).catch(fail) }))];
   } else if (detailsView === "stats") {
@@ -3628,7 +3642,7 @@ function renderDetails() {
       state: x.id === p.id ? "Ici" : "", onclick: x.id === p.id ? null : () => api("PATCH", "/me/sounds/tracks/" + t.id, { projectId: x.id }).then(() => { detailsView = "main"; return refresh(); }).catch(fail),
     })))];
   } else if (detailsView === "add") {
-    right = [back("Ajouter à"), group(...data.projects.map((x) => item("star", x.title, {
+    right = [back("Ajouter à"), group(...data.projects.map((x) => item(x.kind === "playlist" ? "queue" : "star", x.title, {
       state: x.id === p.id ? "Ici" : x.tracks.some((y) => y.title === t.title) ? "Déjà dedans" : "",
       onclick: x.id === p.id ? null : () => api("POST", "/me/sounds/tracks/" + t.id + "/add", { projectId: x.id }).then(() => { detailsView = "main"; return refresh(); }).catch(fail),
     })))];
@@ -3836,6 +3850,30 @@ async function openSettings() {
 $("settings-open").onclick = openSettings;
 
 // ——— La corbeille : les titres supprimés, à restaurer ou à effacer, effacés tout seuls 30 jours après ———
+// ——— Une playlist : choisir des sons déjà dans ONIRIQUE CLOUD, ajoutés sans être renvoyés ———
+let pickFor = null, pickQuery = "";
+function openPick(p) { pickFor = p.id; pickQuery = ""; renderPick(); if (!$("pick").open) $("pick").showModal(); }
+function renderPick() {
+  const dialog = $("pick"), p = project(pickFor);
+  if (!p) return dialog.close();
+  const inside = new Set(p.tracks.map((t) => t.title.toLowerCase()));
+  const q = pickQuery.trim().toLowerCase();
+  const rows = data.projects.filter((x) => x.id !== p.id && x.kind !== "playlist").flatMap((x) => x.tracks.map((t) => ({ x, t })))
+    .filter(({ x, t }) => !q || (t.title + " " + x.title).toLowerCase().includes(q));
+  const search = el("input", { type: "search", placeholder: "Chercher un son ou un projet", value: pickQuery, autocomplete: "off",
+    oninput: () => { pickQuery = search.value; renderPick(); } });
+  dialog.replaceChildren(
+    el("div", { className: "dlg-head" }, el("b", { textContent: "Ajouter à « " + p.title + " »" }), el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close"))),
+    el("div", { className: "stack" }, search,
+      rows.length ? el("ul", { className: "group" }, ...rows.map(({ x, t }) => {
+        const added = inside.has(t.title.toLowerCase());
+        return el("li", {}, el("div", { className: "item" }, el("span", { className: "grow" }, t.title, el("small", { textContent: x.title })),
+          el("button", { className: added ? "btn btn-ghost" : "btn btn-primary", type: "button", disabled: added, textContent: added ? "Déjà dedans" : "Ajouter",
+            onclick: () => api("POST", "/me/sounds/tracks/" + t.id + "/add", { projectId: p.id }).then(refresh).then(renderPick, fail) })));
+      })) : el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: q ? "Aucun son ne correspond." : "Pas encore de son dans tes autres projets." })));
+  if (document.activeElement !== search && pickQuery) { search.focus(); search.setSelectionRange(search.value.length, search.value.length); }
+}
+
 async function openTrash() {
   const dialog = $("trash");
   let trash;

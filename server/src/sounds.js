@@ -250,6 +250,9 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 
   db.exec('ALTER TABLE sound_projects ADD COLUMN trashed_at INTEGER');
 }
 export const TRASH_DAYS = 30;
+// Ce qu'un membre peut faire d'un projet : un projet classique (''), un pack de prods, ou une playlist (des sons déjà
+// dans ONIRIQUE CLOUD, ajoutés par « Ajouter à… » sans être renvoyés).
+const KINDS = ['', 'pack', 'playlist'];
 // La vente des prods, façon BeatStars : les licences de chaque beatmaker (MP3, WAV, Track Stems, Exclusive…), les
 // fichiers livrés avec chaque prod, son compte de paiement (Stripe ou PayPal, clés chiffrées), les commandes, et ses
 // listes d'adresses pour les mails (importées d'un CSV).
@@ -891,7 +894,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     rateLimit(`sounds:${req.user.id}`, 300);
     const title = str(req.body.title, 120);
     if (!title) throw new HttpError(400, 'Donne un nom au projet.');
-    const kind = req.body.kind === 'pack' ? 'pack' : '';
+    const kind = KINDS.includes(req.body.kind) ? req.body.kind : '';
     res.status(201).json({ id: run('INSERT INTO sound_projects (user_id, title, kind, created_at) VALUES (?, ?, ?, ?)', req.user.id, title, kind, now()).lastInsertRowid });
   });
   app.patch('/api/me/sounds/projects/:id', ...me, (req, res) => {
@@ -905,7 +908,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     // Un projet devient un pack de prods (ou redevient un projet) : son BPM et sa clé, quand il en manque, sont lus dans le
     // nom du fichier de chaque son ; la page détecte ensuite sur le son ceux que le nom ne donne pas.
     if (req.body.kind !== undefined) {
-      const kind = req.body.kind === 'pack' ? 'pack' : '';
+      const kind = KINDS.includes(req.body.kind) ? req.body.kind : '';
       run('UPDATE sound_projects SET kind = ? WHERE id = ?', kind, ownProject(req, p.id).id);
       if (kind === 'pack') {
         for (const t of all('SELECT t.id, t.title, t.bpm, t.music_key, v.filename FROM sound_tracks t JOIN sound_versions v ON v.id = t.current_id WHERE t.project_id = ?', p.id)) {

@@ -226,6 +226,17 @@ try {
     await call('DELETE', `/api/me/sounds/tracks/${added}`, { token: member.token });
     await call('DELETE', `/api/me/sounds/trash/${added}`, { token: member.token });
     assert.equal(fs.readdirSync(soundsDir).length, 2, 'le fichier sert encore au titre de départ');
+    // Une playlist : créée telle quelle ou transformée depuis un projet, elle reçoit des sons déjà dans le CLOUD.
+    const pl = (await call('POST', '/api/me/sounds/projects', { token: member.token, body: { title: 'Ma playlist', kind: 'playlist' }, expect: 201 })).id;
+    await call('POST', `/api/me/sounds/tracks/${t}/add`, { token: member.token, body: { projectId: pl }, expect: 201 });
+    await call('PATCH', `/api/me/sounds/projects/${b}`, { token: member.token, body: { kind: 'playlist' } });
+    await call('POST', '/api/me/sounds/projects', { token: member.token, body: { title: 'X', kind: 'nimportequoi' }, expect: 201 });
+    data = await call('GET', '/api/me/sounds', { token: member.token });
+    assert.equal(data.projects.find((p) => p.id === pl).kind, 'playlist');
+    assert.equal(data.projects.find((p) => p.id === pl).tracks.length, 1);
+    assert.equal(data.projects.find((p) => p.id === b).kind, 'playlist');
+    assert.equal(data.projects.find((p) => p.title === 'X').kind, '');
+    assert.equal(fs.readdirSync(soundsDir).length, 2, 'toujours rien de copié');
 
     const link = await call('POST', '/api/me/sounds/links', { token: member.token, body: { trackId: t }, expect: 201 });
     await call('PATCH', `/api/me/sounds/links/${link.id}`, { token: member.token, body: { requireAccount: true, download: true } });
