@@ -22,7 +22,7 @@
     "productName": "ONIRIQUE CENTRAL",
     "electronDist": "node_modules/electron/dist",
     "electronVersion": "44.10.1",
-    "afterPack": "build/vmp-sign.js",
+    "afterSign": "build/vmp-sign.js",
     "files": [
       "main/**",
       "renderer/**"

@@ -2,7 +2,8 @@
 // castlabs pour lire en entier. Sans l'outil castlabs-evs et son compte, la construction continue et le signale :
 //   pip install castlabs-evs
 //   python -m castlabs_evs.account signup     (une fois, compte gratuit ; ensuite : python -m castlabs_evs.account reauth)
-// L'application n'a pas de signature Authenticode : la signature VMP se fait donc juste après l'empaquetage.
+// Elle se fait en tout dernier (afterSign) : electron-builder modifie encore l'exécutable après l'empaquetage (icône,
+// informations de version), ce qui casserait une signature posée plus tôt.
 const { execFileSync } = require('node:child_process');
 
 exports.default = async function vmpSign(context) {
