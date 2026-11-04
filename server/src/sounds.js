@@ -19,6 +19,7 @@ import { mountPackSend, recipientFor, trackRecipient, coverPalette } from './pac
 import { writeZip, zipName, zipSize } from './zipstream.js';
 import { mountBeatTube } from './beattube.js';
 import { mountBeatScan, queueScan, scansOf, scanConfigured } from './beatscan.js';
+import { nextPosition } from './platforms.js'; // la fin d'une playlist compte aussi ses titres Spotify, Deezer, Apple Music
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS sound_projects (
@@ -1040,7 +1041,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     const prod = p.kind === 'pack' ? prodFromFilename(file.filename) : { title: file.filename.replace(/\.[a-z0-9]{2,5}$/i, ''), bpm: 0, key: '' };
     const title = str(req.query.title, 120) || str(prod.title, 120);
     const trackId = transaction(() => {
-      const position = get('SELECT COALESCE(MAX(position), -1) + 1 AS n FROM sound_tracks WHERE project_id = ?', p.id).n;
+      const position = nextPosition(p.id);
       const tid = run('INSERT INTO sound_tracks (project_id, title, position, bpm, music_key, created_at) VALUES (?, ?, ?, ?, ?, ?)',
         p.id, title, position, prod.bpm, prod.key || '', now()).lastInsertRowid;
       run('UPDATE sound_tracks SET current_id = ? WHERE id = ?', addVersion(tid, file, ''), tid);
@@ -1112,7 +1113,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     // Déplacer le titre dans un autre projet du membre : il arrive à la fin.
     if (req.body.projectId !== undefined && id(req.body.projectId) !== t.project_id) {
       const to = project(req, req.body.projectId);
-      run('UPDATE sound_tracks SET project_id = ?, position = (SELECT COALESCE(MAX(position), -1) + 1 FROM sound_tracks WHERE project_id = ?) WHERE id = ?', to.id, to.id, t.id);
+      run('UPDATE sound_tracks SET project_id = ?, position = ? WHERE id = ?', to.id, nextPosition(to.id), t.id);
     }
     res.json({ ok: true });
   });
@@ -1145,8 +1146,8 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (to.user_id !== t.owner_id) room(req, versions.reduce((n, v) => n + v.size, 0), to.user_id);
     const tid = transaction(() => {
       const created = run(`INSERT INTO sound_tracks (project_id, title, position, stage, credits, splits, lyrics, day, bpm, music_key, price, buy_url, for_sale, sold, license_prices, created_at)
-        VALUES (?, ?, (SELECT COALESCE(MAX(position), -1) + 1 FROM sound_tracks WHERE project_id = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        to.id, t.title, to.id, t.stage, t.credits, t.splits, t.lyrics, t.day, t.bpm, t.music_key, t.price, t.buy_url, t.for_sale, t.sold, t.license_prices, now()).lastInsertRowid;
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        to.id, t.title, nextPosition(to.id), t.stage, t.credits, t.splits, t.lyrics, t.day, t.bpm, t.music_key, t.price, t.buy_url, t.for_sale, t.sold, t.license_prices, now()).lastInsertRowid;
       for (const v of versions) {
         const vid = run(`INSERT INTO sound_versions (track_id, filename, stored_as, mime, size, duration, peaks, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           created, v.filename, v.stored_as, v.mime, v.size, v.duration, v.peaks, v.note, v.created_at).lastInsertRowid;
@@ -1193,8 +1194,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     const to = get(`SELECT id FROM sound_projects WHERE id = ? AND kind != 'trash' AND trashed_at IS NULL`, t.trashed_from)?.id
       ?? get(`SELECT id FROM sound_projects WHERE user_id = ? AND kind = '' AND title = 'Sons restaurés'`, req.user.id)?.id
       ?? run(`INSERT INTO sound_projects (user_id, title, kind, created_at) VALUES (?, 'Sons restaurés', '', ?)`, req.user.id, now()).lastInsertRowid;
-    run(`UPDATE sound_tracks SET project_id = ?, trashed_from = NULL, trashed_at = NULL,
-      position = (SELECT COALESCE(MAX(position), -1) + 1 FROM sound_tracks WHERE project_id = ?) WHERE id = ?`, to, to, t.id);
+    run(`UPDATE sound_tracks SET project_id = ?, trashed_from = NULL, trashed_at = NULL, position = ? WHERE id = ?`, to, nextPosition(to), t.id);
     res.json({ ok: true, projectId: to });
   });
   app.post('/api/me/sounds/trash/projects/:id/restore', ...me, (req, res) => {

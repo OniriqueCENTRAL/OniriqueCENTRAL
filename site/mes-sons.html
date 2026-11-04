@@ -840,6 +840,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close('cancel')">Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
 <script src="assets/sounds-player.js?v=20"></script>
+<script src="assets/platforms.js?v=1"></script>
 <script src="assets/audio-kit.js?v=2"></script>
 <script src="assets/pdf-kit.js"></script>
 <script src="assets/release-steps.js"></script>
@@ -933,6 +934,9 @@ const player = OP.create({
   onShare: (item) => findTrack(item.trackId).t ? openShare("track", item.trackId) : alert("Ce titre vient du lien d'un autre membre : demande-lui de te le partager."),
   onChange: (it) => { document.body.classList.add("has-player"); markPlaying(); tintOf(it.cover).then((t) => player.setAccent(t && t.accent)); },
 });
+// Spotify, Deezer et Apple Music dans les playlists (assets/platforms.js).
+const PF = window.OniriquePlatforms;
+PF.setup({ api, el, icon, player, changed: () => render() });
 // Les couleurs de chaque pochette, lues une fois.
 const tints = new Map();
 const tintOf = (url) => { if (!tints.has(url)) tints.set(url, OP.tint(url)); return tints.get(url); };
@@ -960,9 +964,12 @@ function stageMenu(anchor, t) {
     { label: "Sans étape", onclick: () => set("") },
   ]);
 }
+// Une playlist se joue dans son ordre, sons du CLOUD et extraits des plateformes mêlés.
+const entriesOf = (p) => (p.kind === "playlist" ? PF.mixed(p) : p.tracks.map((t) => ({ key: "t" + t.id, track: t })));
 function playProject(p, i = 0) {
-  if (!p.tracks.length) return;
-  player.play(p.tracks.map((t) => itemOf(p, t)), i);
+  const list = entriesOf(p);
+  if (!list.length) return;
+  player.play(list.map((x) => (x.track ? itemOf(p, x.track) : PF.playerItem(x.item))), i);
 }
 function playVersion(p, t, v) {
   player.play([{ key: "v" + v.id, id: v.id, trackId: t.id, title: t.title, feat: t.credits.feat, artist: p.artist || p.owner.name, subtitle: p.title + " · v" + v.n, cover: p.cover, url: v.url,
@@ -974,7 +981,7 @@ function playVersion(p, t, v) {
 }
 function markPlaying() {
   const now = player.item && player.item.trackId;
-  document.querySelectorAll(".trk").forEach((row) => row.classList.toggle("now", Number(row.dataset.id) === now));
+  document.querySelectorAll(".trk").forEach((row) => row.classList.toggle("now", row.dataset.key ? !!player.item && player.item.key === row.dataset.key : Number(row.dataset.id) === now));
   const p = openId() && project(), on = !!(p && player.playing && p.tracks.some((t) => t.id === now));
   $("play-all").replaceChildren(icon(on ? "pause" : "play"));
   $("play-all").ariaLabel = on ? "Pause" : "Écouter le projet";
@@ -1177,7 +1184,7 @@ lightClose($("details")); lightClose($("stats")); lightClose($("share")); lightC
 // ——— Données et vues ———
 let scanTimer = null;
 async function refresh() {
-  data = await api("GET", "/me/sounds" + (vanish ? "?vanish=1" : ""));
+  [data] = await Promise.all([api("GET", "/me/sounds" + (vanish ? "?vanish=1" : "")), PF.load()]);
   render();
   // Des prods en cours de scan : la page se met à jour toute seule jusqu'au résultat.
   clearTimeout(scanTimer);
@@ -1249,7 +1256,7 @@ function renderLibrary() {
   box.replaceChildren(el("div", { className: "library-head" }, el("span", { textContent: "Playlists" }), add),
     lists.length ? el("div", { className: "library-list" }, ...lists.sort((a, b) => b.createdAt - a.createdAt).map((x) => {
       const row = el("button", { className: "pl", type: "button", ariaCurrent: openId() === x.id ? "page" : null, onclick: () => navigate("#/p/" + x.id) },
-        coverOf(x), el("span", {}, el("b", { textContent: x.title }), el("small", { textContent: "Playlist · " + count(x.tracks.length, "titre", "titres") + (x.mine ? "" : " · de " + (x.artist || x.owner.name)) })));
+        coverOf(x), el("span", {}, el("b", { textContent: x.title }), el("small", { textContent: "Playlist · " + count(entriesOf(x).length, "titre", "titres") + (x.mine ? "" : " · de " + (x.artist || x.owner.name)) })));
       row.oncontextmenu = (event) => { event.preventDefault(); event.stopPropagation(); projectMenu(row, x); };
       return row;
     })) : el("p", { className: "library-empty", textContent: "Crée ta première playlist avec le +, puis ajoute-y des sons déjà dans ton CLOUD." }));
@@ -1339,7 +1346,7 @@ function projectTile(p) {
   art.onclick = () => navigate("#/p/" + p.id);
   art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
   const tile = el("div", { className: "tile" }, art, caption(p.title,
-    el("span", { textContent: (p.kind === "pack" ? "Pack · " + count(p.tracks.length, "prod", "prods") : (p.kind === "playlist" ? "Playlist · " : "") + count(p.tracks.length, "titre", "titres"))
+    el("span", { textContent: (p.kind === "pack" ? "Pack · " + count(p.tracks.length, "prod", "prods") : (p.kind === "playlist" ? "Playlist · " : "") + count(entriesOf(p).length, "titre", "titres"))
       + (p.mine ? "" : " · de " + (p.artist || p.owner.name)) + (linkFor("project", p.id) ? " · partagé" : "") + (p.mine && p.collaborators.length ? " · en collab" : "") }),
     dotsFor(p.title, (b) => projectMenu(b, p)), projectFeat(p)));
   tile.dataset.id = p.id;
@@ -1464,6 +1471,7 @@ function projectMenu(anchor, p) {
     p.mine && { label: "Collaborateurs…", icon: "plus", onclick: () => openCollab(p.id) },
     !data.vanish && { label: "Déplacer vers…", icon: "chevron", onclick: () => moveMenu(anchor, p.folderId, (folderId) => api("PATCH", "/me/sounds/projects/" + p.id, { folderId })) },
     p.mine && p.kind === "playlist" && !data.vanish && { label: "Ajouter des sons du CLOUD", icon: "plus", onclick: () => openPick(p) },
+    p.kind === "playlist" && !data.vanish && { label: "Depuis Spotify, Deezer ou Apple Music", icon: "link", onclick: () => PF.openAdd(p) },
     p.mine && p.kind && { label: "Repasser en projet classique", icon: "repeat", onclick: () => api("PATCH", "/me/sounds/projects/" + p.id, { kind: "" }).then(refresh, fail) },
     p.mine && p.kind !== "pack" && { label: "Passer en pack de prods", icon: "repeat", onclick: () => makePack(p).catch(fail) },
     p.mine && p.kind !== "playlist" && { label: "Transformer en Playlist", icon: "queue", onclick: () => api("PATCH", "/me/sounds/projects/" + p.id, { kind: "playlist" }).then(refresh, fail) },
@@ -1615,13 +1623,13 @@ function renderProject(p) {
   if (!$("project-meta").contains(document.activeElement)) $("project-meta").replaceChildren(el("img", { src: avatar(p.owner), alt: "" }),
     editing ? inlineEdit(p.artist || p.owner.name, p.owner.name, 120, (artist) => api("PATCH", "/me/sounds/projects/" + p.id, { artist: artist === p.owner.name ? "" : artist }).then(refresh), true)
       : el("span", { textContent: p.artist || p.owner.name }),
-    " · " + (p.kind === "pack" ? "Pack de " + count(p.tracks.length, "prod", "prods") : (p.kind === "playlist" ? "Playlist de " : "") + count(p.tracks.length, "titre", "titres")) + (p.tracks.length ? " · " + length(projectLength(p)) : ""),
+    " · " + (p.kind === "pack" ? "Pack de " + count(p.tracks.length, "prod", "prods") : (p.kind === "playlist" ? "Playlist de " : "") + count(entriesOf(p).length, "titre", "titres")) + (p.tracks.length ? " · " + length(projectLength(p)) : ""),
     linkFor("project", p.id) ? el("span", { className: "tag on", textContent: "Partagé" }) : "",
     p.collaborators.length ? el("span", { className: "faces-row", title: "En collab avec " + p.collaborators.map((u) => u.name).join(", ") },
       " · avec ", ...p.collaborators.slice(0, 4).map((u) => el("img", { src: avatar(u), alt: u.name }))) : "");
-  $("play-all").disabled = !p.tracks.length;
+  $("play-all").disabled = !entriesOf(p).length;
   $("add-tracks").disabled = data.quota.full;
-  $("tracklist").replaceChildren(...p.tracks.map((t, i) => trackRow(p, t, i)));
+  $("tracklist").replaceChildren(...entriesOf(p).map((x, i) => (x.track ? trackRow(p, x.track, i) : platformRow(p, x.item, i))));
 }
 
 // La date d'un titre (création ou autre) : badge « 06/05/2026 », choisie dans un calendrier ouvert sous le badge.
@@ -1773,8 +1781,9 @@ function trackRow(p, t, i) {
   };
   row.ondragleave = () => row.classList.remove("drop-after", "drop-before");
   row.ondrop = (event) => {
-    const moved = Number(event.dataTransfer.getData("text/x-track"));
+    const raw = event.dataTransfer.getData("text/x-track"), moved = Number(raw);
     row.classList.remove("drop-after", "drop-before");
+    if (p.kind === "playlist") { event.preventDefault(); event.stopPropagation(); return dropInPlaylist(p, raw, "t" + t.id, event.offsetY > row.offsetHeight / 2); }
     if (!moved || moved === t.id) return;
     event.preventDefault(); event.stopPropagation();
     const order = p.tracks.map((x) => x.id).filter((x) => x !== moved);
@@ -1782,6 +1791,36 @@ function trackRow(p, t, i) {
     api("PATCH", "/me/sounds/projects/" + p.id, { order }).then(refresh, fail);
   };
   return row;
+}
+
+// Un titre d'une plateforme dans une playlist : écouter son extrait, l'ouvrir sur sa plateforme, le déplacer, le retirer.
+function platformRow(p, x, i) {
+  const row = PF.row(p, x, i, () => playProject(p, i));
+  row.style.setProperty("--i", i + 3);
+  row.draggable = editing;
+  row.addEventListener("dragstart", (event) => { event.dataTransfer.setData("text/x-track", "x" + x.id); row.classList.add("dragging"); });
+  row.ondragend = () => row.classList.remove("dragging");
+  row.ondragover = (event) => {
+    if (!event.dataTransfer.types.includes("text/x-track")) return;
+    event.preventDefault();
+    const after = event.offsetY > row.offsetHeight / 2;
+    row.classList.toggle("drop-after", after); row.classList.toggle("drop-before", !after);
+  };
+  row.ondragleave = () => row.classList.remove("drop-after", "drop-before");
+  row.ondrop = (event) => {
+    row.classList.remove("drop-after", "drop-before");
+    event.preventDefault(); event.stopPropagation();
+    dropInPlaylist(p, event.dataTransfer.getData("text/x-track"), "x" + x.id, event.offsetY > row.offsetHeight / 2);
+  };
+  return row;
+}
+/** Un titre lâché sur un autre dans une playlist : « 12 » (un son du CLOUD) ou « x5 » (un titre de plateforme). */
+function dropInPlaylist(p, raw, onto, after) {
+  const moved = /^x\d+$/.test(raw) ? raw : /^\d+$/.test(raw) ? "t" + raw : null;
+  if (!moved || moved === onto) return;
+  const keys = entriesOf(p).map((x) => x.key).filter((k) => k !== moved);
+  keys.splice(keys.indexOf(onto) + (after ? 1 : 0), 0, moved);
+  PF.order(p, keys).then(refresh, fail);
 }
 
 // ——— Envois ———
@@ -1963,6 +2002,7 @@ function addMenu(anchor) {
   const p = openId() && project();
   menu(anchor, [
     p && p.kind === "playlist" && { label: "Ajouter des sons du CLOUD", icon: "queue", onclick: () => openPick(p) },
+    p && p.kind === "playlist" && { label: "Depuis Spotify, Deezer ou Apple Music", icon: "link", onclick: () => PF.openAdd(p) },
     p && { label: "Ajouter des sons à ce projet", icon: "plus", onclick: () => pickFiles({ project: p }) },
     { label: "Importer des sons", icon: "download", onclick: () => pickFiles(null) },
     { label: "Nouveau projet", icon: "star", onclick: async () => {
@@ -3903,6 +3943,9 @@ async function openSettings() {
       el("div", { className: "sub-title", textContent: "Mes nouveaux liens d'écoute" }),
       group("links", [["download", "Téléchargement autorisé"], ["requireAccount", "Compte ONIRIQUE exigé pour écouter"]]),
       el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Chaque lien garde ensuite ses propres réglages, à changer dans sa fenêtre de partage." }),
+      el("div", { className: "sub-title", textContent: "Mes plateformes" }),
+      el("ul", { className: "group" }, el("li", {}, el("button", { className: "item", type: "button", onclick: () => { dialog.close(); PF.openAccounts(); } },
+        el("span", { className: "grow" }, "Spotify, Deezer, Apple Music", el("small", { textContent: "Lier mes comptes, pour mêler leurs titres à mes sons dans mes playlists" })), icon("chevron")))),
       data.founder ? el("div", { className: "sub-title", textContent: "Fondateurs" }) : null,
       data.founder ? el("ul", { className: "group" }, el("li", {}, el("div", { className: "item" },
         el("span", { className: "grow" }, "VANISH", el("small", { textContent: "Voir les sons de tous les comptes, sans prévenir personne" })),
