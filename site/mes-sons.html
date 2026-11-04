@@ -54,10 +54,10 @@ header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.6); back
 .install img { width: 22px; height: 22px; border-radius: 6px; }
 #install-help { width: 400px; }
 /* Réglages : l'en-tête et sa croix restent en haut, seul le contenu défile ; sur téléphone, un panneau qui monte du bas. */
-#settings, #trash { width: 440px; }
-#settings[open], #trash[open] { display: flex; flex-direction: column; overflow: hidden; }
-#settings .dlg-head, #trash .dlg-head { flex: none; padding-bottom: 14px; border-bottom: 1px solid rgba(255,210,214,.08); }
-#settings .stack, #trash .stack { min-height: 0; align-content: start; grid-auto-rows: max-content; padding: 16px 18px calc(20px + env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; }
+#settings, #trash, #pick { width: 440px; }
+#settings[open], #trash[open], #pick[open] { display: flex; flex-direction: column; overflow: hidden; }
+#settings .dlg-head, #trash .dlg-head, #pick .dlg-head { flex: none; padding-bottom: 14px; border-bottom: 1px solid rgba(255,210,214,.08); }
+#settings .stack, #trash .stack, #pick .stack { min-height: 0; align-content: start; grid-auto-rows: max-content; padding: 16px 18px calc(20px + env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; }
 @media (max-width: 640px) {
   #settings { width: 100vw; max-width: 100vw; max-height: 88dvh; bottom: 0; margin: auto 0 0; border-radius: 24px 24px 0 0; border-bottom: 0; }
 }
@@ -661,6 +661,27 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 .notices-body .group { margin: 4px 4px 0; }
 .notices-body .item { font-size: 14px; padding: 12px 14px; cursor: default; }
 /* Les playlists, façon bibliothèque Spotify : une colonne à gauche sur ordinateur, un bandeau qui défile sur téléphone. */
+/* Le lecteur du choix des sons : écouter, avancer et régler le volume sans quitter la fenêtre. */
+.pick-art { position: relative; flex: none; width: 48px; height: 48px; padding: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: none; cursor: pointer; }
+.pick-art img, .pick-art .cover-ph { width: 100%; height: 100%; object-fit: cover; display: grid; }
+.pick-art .cover-ph svg { width: 40%; height: 40%; }
+.pick-art i { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(13,8,9,.55); color: #fff; filter: drop-shadow(0 1px 3px rgba(0,0,0,.8)); opacity: .9; transition: opacity .2s, background .2s; }
+.pick-art:hover i { background: rgba(13,8,9,.25); opacity: 1; }
+.pick-art.on { border-color: var(--ember); box-shadow: 0 0 18px -6px var(--ember); }
+.pick-art.on i { background: rgba(92,0,8,.5); }
+.pick-name { display: grid; min-width: 0; }
+.pick-name .tline { display: flex; align-items: center; gap: 8px; min-width: 0; font-weight: 600; }
+.pick-name .tline .feat { max-width: 50%; }
+.pick-foot { flex: none; border-top: 1px solid rgba(255,210,214,.1); background: rgba(13,8,9,.6); padding-bottom: env(safe-area-inset-bottom); }
+.pick-done { display: flex; justify-content: center; width: calc(100% - 32px); margin: 12px 16px 14px; }
+.pick-player { flex: none; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 6px 12px; padding: 12px 16px 0; }
+.pick-player .who { display: grid; min-width: 0; line-height: 1.3; }
+.pick-player .who b { font: 700 14px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pick-player .who small { color: var(--haze); font-size: 12px; }
+.pick-player .vol { display: flex; align-items: center; gap: 2px; }
+.pick-player .seek { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; font: 500 11px var(--f-mono); color: var(--haze); }
+.pick-player .op-vol { display: block; } /* le lecteur de la page les cache sous 1000 px de large ; ici on les garde */
+.pick-player .seek .op-vol { flex: 1; width: auto; }
 .library { margin: 0 0 28px; }
 .library-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); }
 .library-head .round { width: 32px; height: 32px; }
@@ -3909,13 +3930,47 @@ function renderPick() {
       rows.length ? el("ul", { className: "group" }, ...rows.map(({ x, t }) => {
         const added = inside.has(t.title.toLowerCase()), on = player.playing && player.item && player.item.trackId === t.id;
         // Écouter le son avant de l'ajouter : un clic le lance, un second le met en pause.
-        const listen = el("button", { className: "round", type: "button", ariaLabel: (on ? "Pause : " : "Écouter ") + t.title, ariaPressed: String(on),
-          onclick: () => (player.item && player.item.trackId === t.id ? player.toggle() : player.play([itemOf(x, t)], 0)) }, icon(on ? "pause" : "play"));
-        return el("li", {}, el("div", { className: "item" }, listen, el("span", { className: "grow" }, t.title, el("small", { textContent: x.title })),
+        // La pochette du projet du son, avec la lecture par-dessus ; le feat. à côté du titre.
+        const listen = el("button", { className: "pick-art" + (on ? " on" : ""), type: "button", ariaLabel: (on ? "Pause : " : "Écouter ") + t.title, ariaPressed: String(on),
+          onclick: () => (player.item && player.item.trackId === t.id ? player.toggle() : player.play([itemOf(x, t)], 0)) }, coverOf(x), el("i", {}, icon(on ? "pause" : "play")));
+        const feat = t.credits.feat ? el("span", { className: "feat", textContent: "feat. " + t.credits.feat, title: "feat. " + t.credits.feat }) : "";
+        return el("li", {}, el("div", { className: "item" }, listen, el("span", { className: "grow pick-name" }, el("b", { className: "tline" }, t.title, feat), el("small", { textContent: x.title })),
           el("button", { className: added ? "btn btn-ghost" : "btn btn-primary", type: "button", disabled: added, textContent: added ? "Déjà dedans" : "Ajouter",
             onclick: () => api("POST", "/me/sounds/tracks/" + t.id + "/add", { projectId: p.id }).then(refresh).then(renderPick, fail) })));
-      })) : el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: q ? "Aucun son ne correspond." : "Pas encore de son dans tes autres projets." })));
+      })) : el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: q ? "Aucun son ne correspond." : "Pas encore de son dans tes autres projets." })),
+    el("div", { className: "pick-foot" }, pickPlayer(),
+      el("button", { className: "btn btn-primary pick-done", type: "button", onclick: () => dialog.close() }, "Validé")));
 }
+// Le lecteur du bas de la fenêtre : celui de la page est derrière elle, donc on le pilote d'ici (même son, même volume).
+function pickPlayer() {
+  const it = player.item, a = player.audio;
+  if (!it) return null;
+  const mainVol = document.querySelector(".op-vol:not(.pick-range)");
+  const setVol = (v) => { if (mainVol) { mainVol.value = v; mainVol.dispatchEvent(new Event("input")); } else a.volume = v; vol.style.setProperty("--p", v * 100 + "%"); mute.replaceChildren(icon(v ? "volume" : "mute")); };
+  const vol = el("input", { className: "op-vol pick-range", type: "range", min: 0, max: 1, step: 0.01, value: a.volume, ariaLabel: "Volume", oninput: () => setVol(Number(vol.value)) });
+  vol.style.setProperty("--p", a.volume * 100 + "%");
+  let before = a.volume || 1;
+  const mute = el("button", { className: "op-btn", type: "button", ariaLabel: "Couper le son", onclick: () => { if (a.volume) { before = a.volume; setVol(0); vol.value = 0; } else { setVol(before); vol.value = before; } } }, icon(a.volume ? "volume" : "mute"));
+  const seek = el("input", { className: "op-vol pick-range pick-seek", type: "range", min: 0, max: 1, step: 0.001, value: 0, ariaLabel: "Position dans le son",
+    oninput: () => { if (a.duration) a.currentTime = Number(seek.value) * a.duration; } });
+  const box = el("div", { className: "pick-player" },
+    el("button", { className: "op-btn main", type: "button", ariaLabel: player.playing ? "Pause" : "Lecture", onclick: () => player.toggle() }, icon(player.playing ? "pause" : "play")),
+    el("span", { className: "who" }, el("b", { textContent: it.title }), el("small", { textContent: it.subtitle || it.artist || "" })),
+    el("span", { className: "vol" }, mute, vol),
+    el("div", { className: "seek" }, el("span", { className: "pick-now" }), seek, el("span", { className: "pick-len" })));
+  pickTime(box);
+  return box;
+}
+function pickTime(box = $("pick").querySelector(".pick-player")) {
+  if (!box) return;
+  const a = player.audio, d = Number.isFinite(a.duration) ? a.duration : 0, seek = box.querySelector(".pick-seek");
+  if (document.activeElement !== seek) seek.value = d ? a.currentTime / d : 0;
+  seek.style.setProperty("--p", (d ? a.currentTime / d * 100 : 0) + "%");
+  box.querySelector(".pick-now").textContent = OP.time(a.currentTime || 0);
+  box.querySelector(".pick-len").textContent = d ? OP.time(d) : "–:––";
+}
+player.audio.addEventListener("timeupdate", () => { if ($("pick").open) pickTime(); });
+player.audio.addEventListener("loadedmetadata", () => { if ($("pick").open) pickTime(); });
 
 async function openTrash() {
   const dialog = $("trash");
