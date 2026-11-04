@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'">
+  <title>ONIRIQUE CENTRAL</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="dialog.css">
+</head>
+<body>
+  <form class="dialog-box" id="box">
+    <p id="message"></p>
+    <input id="value" autocomplete="off" hidden>
+    <div class="dialog-buttons">
+      <button class="btn quiet" type="button" id="cancel">Annuler</button>
+      <button class="btn primary" type="submit" id="ok">OK</button>
+    </div>
+  </form>
+  <script src="dialog.js"></script>
+</body>
+</html>

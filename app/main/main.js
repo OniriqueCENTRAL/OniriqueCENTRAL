@@ -13,7 +13,8 @@ let win = null;
 
 /** CUT et CLOUD : une vue chacun, créée à la première ouverture, gardée tant que le compte ne change pas. */
 const toolViews = new Map();
-let shownTool = null; // l'outil à l'écran, pour le bouton « précédent » de la souris
+let shownTool = null;
+const toolContents = new Set(); // les pages de CUT et CLOUD, seules à pouvoir ouvrir la fenêtre de confirmation // l'outil à l'écran, pour le bouton « précédent » de la souris
 // ONIRIQUE_SITE : un site local, pour essayer CUT et CLOUD avant de les mettre en ligne (comme ONIRIQUE_SERVER pour l'API).
 const SITE = (process.env.ONIRIQUE_SITE || 'https://onirique.store').replace(/\/+$/, '');
 const TOOL_PAGES = { cut: 'cut.html', cloud: 'mes-sons.html' };
@@ -37,7 +38,9 @@ function toolView(tool, lang) {
       ses.oniriqueReady = true;
       ses.webRequest.onBeforeRequest({ urls: [`${SITE}/api/announce.js*`] }, (_details, callback) => callback({ cancel: true }));
     }
-    const view = new WebContentsView({ webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, session: ses } });
+    const view = new WebContentsView({ webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, session: ses,
+      preload: path.join(__dirname, 'tool-preload.js') } });
+    toolContents.add(view.webContents.id);
     view.setBackgroundColor('#00000000'); // transparente : le fond de l'application (nuit et braise) continue sous la page
     view.setVisible(false);
     const web = view.webContents;
@@ -69,7 +72,15 @@ function toolView(tool, lang) {
         if (/^https:\/\/open\.spotify\.com\//.test(url) && (await ses.cookies.get({ name: 'sp_dc' }).catch(() => [])).length && !child.isDestroyed()) child.close();
       });
     });
-    web.on('dom-ready', () => web.insertCSS(TOOL_SKIN).catch(() => {}));
+    web.on('dom-ready', () => {
+      web.insertCSS(TOOL_SKIN).catch(() => {});
+      // Les fenêtres « OK / Annuler » de la page : celles de l'application (voir tool:dialog), plus la boîte de Windows.
+      web.executeJavaScript(`if (window.oniriqueDialog) {
+        window.alert = (m) => { window.oniriqueDialog('alert', m); };
+        window.confirm = (m) => window.oniriqueDialog('confirm', m) === true;
+        window.prompt = (m, v) => { const r = window.oniriqueDialog('prompt', m, v); return typeof r === 'string' ? r : null; };
+      }`).catch(() => {});
+    });
     web.on('zoom-changed', () => web.setZoomLevel(0));
     web.setVisualZoomLevelLimits(1, 1).catch(() => {});
     // La session du compte et la langue de l'application passent par le stockage de la vue, jamais par l'adresse.
@@ -82,6 +93,24 @@ function toolView(tool, lang) {
   })());
   return toolViews.get(tool);
 }
+
+// La fenêtre de confirmation de CUT et CLOUD, à la DA de l'application : la page attend la réponse (appel synchrone,
+// comme alert/confirm/prompt du navigateur) pendant que la fenêtre, posée sur l'application, est ouverte.
+ipcMain.on('tool:dialog', (event, kind, message, value) => {
+  if (!toolContents.has(event.sender.id) || !['alert', 'confirm', 'prompt'].includes(kind) || !win) { event.returnValue = kind === 'prompt' ? null : false; return; }
+  const lines = String(message).split(String.fromCharCode(10)).reduce((n, l) => n + Math.max(1, Math.ceil(l.length / 58)), 0);
+  const dialogWin = new BrowserWindow({ parent: win, modal: true, show: false, frame: false, transparent: true, resizable: false, skipTaskbar: true,
+    width: 500, height: Math.min(460, 150 + lines * 22 + (kind === 'prompt' ? 56 : 0)), backgroundColor: '#00000000',
+    webPreferences: { preload: path.join(__dirname, 'dialog-preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false } });
+  dialogWin.removeMenu();
+  let answered = false;
+  const reply = (result) => { if (answered) return; answered = true; event.returnValue = result; ipcMain.removeListener('dialog:answer', onAnswer); if (!dialogWin.isDestroyed()) dialogWin.close(); };
+  const onAnswer = (e, result) => { if (e.sender === dialogWin.webContents) reply(kind === 'prompt' ? (typeof result === 'string' ? result : null) : result === true); };
+  ipcMain.on('dialog:answer', onAnswer);
+  dialogWin.on('closed', () => reply(kind === 'prompt' ? null : kind === 'alert'));
+  dialogWin.once('ready-to-show', () => dialogWin.show());
+  dialogWin.loadFile(path.join(__dirname, '..', 'renderer', 'dialog.html'), { query: { kind, message: String(message).slice(0, 2000), value: String(value).slice(0, 500) } });
+});
 
 /** À la connexion ou à la déconnexion, les vues de l'ancien compte disparaissent. */
 async function closeTools() {
