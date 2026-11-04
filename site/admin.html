@@ -375,6 +375,11 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
     <section class="tab" id="tab-knob" data-label="KNOB" hidden>
     <iframe class="knobs" id="knobs" title="Les potards ONIRIQUE"></iframe>
     </section>
+
+    <!-- Réservé aux fondateurs : la charte de la nouvelle interface (d'après VOCALBOX) -->
+    <section class="tab" id="tab-da" data-label="DA" hidden>
+    <iframe class="knobs" id="da" title="La DA ONIRIQUE"></iframe>
+    </section>
   </div>
 </main>
 
@@ -1395,7 +1400,7 @@ async function loadMailings(first = false) {
 
 //------------------------------------------------------------------------------ Rubriques
 // Une barre d'onglets : la rubrique choisie est gardée dans l'adresse (#boutique…) et sur l'appareil.
-const TAB_SLUGS = { "tab-db": "base", "tab-shop": "boutique", "tab-promo": "promos", "tab-mail": "mail", "tab-site": "site", "tab-knob": "knob" };
+const TAB_SLUGS = { "tab-db": "base", "tab-shop": "boutique", "tab-promo": "promos", "tab-mail": "mail", "tab-site": "site", "tab-knob": "knob", "tab-da": "da" };
 function markTab(id, badge) {
   const button = document.querySelector(`#tabs [aria-controls="${id}"]`);
   if (!button) return;
@@ -1483,6 +1488,14 @@ function showDisk(disk) {
         .then((r) => (r.ok ? r.text() : Promise.reject())).then((html) => { frame.srcdoc = html; })
         .catch(() => { $("tab-knob").replaceChildren(el("p", { className: "error", textContent: "Les potards n'ont pas pu être chargés : rechargez la page." })); });
       $("tab-knob").hidden = false;
+      // la charte (DA), de la même façon
+      const da = $("da");
+      const fitDa = () => { try { da.style.height = da.contentDocument.documentElement.scrollHeight + "px"; } catch {} };
+      da.onload = () => { fitDa(); new ResizeObserver(fitDa).observe(da.contentDocument.body); };
+      fetch("/api/admin/da", { headers: { Authorization: "Bearer " + token } })
+        .then((r) => (r.ok ? r.text() : Promise.reject())).then((html) => { da.srcdoc = html; })
+        .catch(() => { $("tab-da").replaceChildren(el("p", { className: "error", textContent: "La DA n'a pas pu être chargée : rechargez la page." })); });
+      $("tab-da").hidden = false;
     }
     setupTabs();
     await loadUsers();
