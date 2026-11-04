@@ -63,6 +63,12 @@ function toolView(tool, lang) {
       return { action: 'deny' };
     });
     web.on('will-navigate', (event, url) => { if (!route(url)) event.preventDefault(); });
+    // La fenêtre de connexion à Spotify se ferme d'elle-même une fois le compte connecté (son cookie de session posé).
+    web.on('did-create-window', (child) => {
+      child.webContents.on('did-navigate', async (_event, url) => {
+        if (/^https:\/\/open\.spotify\.com\//.test(url) && (await ses.cookies.get({ name: 'sp_dc' }).catch(() => [])).length && !child.isDestroyed()) child.close();
+      });
+    });
     web.on('dom-ready', () => web.insertCSS(TOOL_SKIN).catch(() => {}));
     web.on('zoom-changed', () => web.setZoomLevel(0));
     web.setVisualZoomLevelLimits(1, 1).catch(() => {});
