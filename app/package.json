@@ -20,6 +20,8 @@
   "build": {
     "appId": "com.onirique.central",
     "productName": "ONIRIQUE CENTRAL",
+    "electronDist": "node_modules/electron/dist",
+    "electronVersion": "33.4.11",
     "files": [
       "main/**",
       "renderer/**"
