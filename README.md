@@ -69,7 +69,7 @@ par prix. `npm test` déroule ces règles dans `server/test/roles.mjs`.
 Le code vit dans un dépôt git sur le serveur. Pour le récupérer, avec un accès SSH au serveur :
 
 ```bash
-git clone root@217.160.106.244:/srv/git/onirique-central.git
+git clone root@212.227.165.177:/srv/git/onirique-central.git
 ```
 
 Puis, comme d'habitude : `git pull` avant de commencer, `git commit`, `git push` une fois fini.

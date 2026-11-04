@@ -8,7 +8,7 @@
 # passent un par un : si quelqu'un d'autre est en train d'envoyer, le vôtre attend son tour (deploy/onirique-deploy).
 set -euo pipefail
 
-HOST=root@217.160.106.244
+HOST=root@212.227.165.177
 cd "$(dirname "$0")/.."
 stop() { echo "$1" >&2; exit 1; }
 

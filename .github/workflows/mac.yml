@@ -92,6 +92,6 @@ jobs:
           fi
           # L'empreinte (publique) doit être celle qu'affiche le serveur : ssh-keygen -lf /home/livraison/.ssh/authorized_keys
           echo "Empreinte de la clé utilisée : $(ssh-keygen -lf ~/.ssh/livraison.pub)"
-          echo "217.160.106.244 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICV3xBScmxJy34Jgjtvb0R4UCG3jmzkSU+/T1lDrvD/l" > ~/.ssh/known_hosts
-          ssh -i ~/.ssh/livraison -o IdentitiesOnly=yes -o BatchMode=yes livraison@217.160.106.244 central-dmg < "app/dist/ONIRIQUE-CENTRAL.dmg"
-          ssh -i ~/.ssh/livraison -o IdentitiesOnly=yes -o BatchMode=yes livraison@217.160.106.244 central-mac-zip < "app/dist/ONIRIQUE-CENTRAL-mac.zip"
+          echo "212.227.165.177 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFH55mUNdFgsIuK9wr6/8ioQ22idbndalUSARaSFDaa1" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/livraison -o IdentitiesOnly=yes -o BatchMode=yes livraison@212.227.165.177 central-dmg < "app/dist/ONIRIQUE-CENTRAL.dmg"
+          ssh -i ~/.ssh/livraison -o IdentitiesOnly=yes -o BatchMode=yes livraison@212.227.165.177 central-mac-zip < "app/dist/ONIRIQUE-CENTRAL-mac.zip"

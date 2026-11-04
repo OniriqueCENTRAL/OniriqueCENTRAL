@@ -8,7 +8,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 
-const HOST = 'root@217.160.106.244', LAST = '/etc/onirique/patchnote-last';
+const HOST = 'root@212.227.165.177', LAST = '/etc/onirique/patchnote-last';
 const ssh = (command, input) => execFileSync('ssh', ['-o', 'BatchMode=yes', HOST, command], { input, encoding: 'utf8' });
 
 if (process.argv[2] === '--last') {

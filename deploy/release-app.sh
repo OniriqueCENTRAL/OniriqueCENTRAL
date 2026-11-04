@@ -11,7 +11,7 @@
 set -euo pipefail
 stop() { echo "$1" >&2; exit 1; }
 
-HOST=root@217.160.106.244
+HOST=root@212.227.165.177
 REMOTE=/var/www/site/telechargement
 cd "$(dirname "$0")/../app"
 

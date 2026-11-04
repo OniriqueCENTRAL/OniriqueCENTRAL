@@ -9,7 +9,7 @@
 set -euo pipefail
 
 # Même file d'attente que deploy/deploy.sh : une seule mise en ligne à la fois sur le serveur.
-ssh -o BatchMode=yes root@217.160.106.244 flock /var/lock/onirique-deploy.lock python3 - <<'PYTHON'
+ssh -o BatchMode=yes root@212.227.165.177 flock /var/lock/onirique-deploy.lock python3 - <<'PYTHON'
 import hashlib, json, os, plistlib, shutil, zipfile
 
 source, site = '/srv/livraison', '/var/www/site/telechargement'
