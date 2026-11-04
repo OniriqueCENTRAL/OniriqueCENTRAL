@@ -15,23 +15,23 @@ const todo = (label) => `<mark class="todo">[à compléter : ${label}]</mark>`;
 const mail = () => (ID.email ? `<a href="mailto:${ID.email}">${ID.email}</a>` : todo('e-mail de contact'));
 
 const NAV = [
-  ['mentions-legales.html', 'Mentions légales'],
-  ['cgv.html', 'CGV et CGU'],
-  ['remboursement.html', 'Rétractation et remboursement'],
-  ['confidentialite.html', 'Confidentialité'],
-  ['cookies.html', 'Cookies'],
+  ['mentions-legales', 'Mentions légales'],
+  ['cgv', 'CGV et CGU'],
+  ['remboursement', 'Rétractation et remboursement'],
+  ['confidentialite', 'Confidentialité'],
+  ['cookies', 'Cookies'],
 ];
 
 const page = ({ file, title, description, intro, body }) => `<!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=ad5318d8"></script>
+<script src="assets/i18n.js?v=2f9cddc9"></script>
 <script src="assets/ui.js?v=3"></script>
 <script src="assets/annonce.js?v=1"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${title} — ONIRIQUE</title>
 <meta name="description" content="${description}">
-<link rel="canonical" href="https://onirique.store/${file}">
+<link rel="canonical" href="https://onirique.store/${file.replace('.html', '')}">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="stylesheet" href="assets/fonts.css">
 <link rel="stylesheet" href="assets/pages.css">
@@ -54,7 +54,7 @@ ${body}
 
 <footer>
   <nav class="wrap" aria-label="Pages légales">
-    ${NAV.map(([href, label]) => `<a href="${href}"${href === file ? ' aria-current="page"' : ''}>${label}</a>`).join('\n    ')}
+    ${NAV.map(([href, label]) => `<a href="${href}"${href + '.html' === file ? ' aria-current="page"' : ''}>${label}</a>`).join('\n    ')}
     <a href="support.html">Support</a>
     <a href="compte.html">Compte</a>
   </nav>

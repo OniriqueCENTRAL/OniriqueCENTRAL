@@ -69,6 +69,9 @@
  ", puis le même montant chaque {} jusqu'à résiliation (onglet Abonnement de l'application)": [
   "server/src/payments.js"
  ],
+ ", puis le même montant chaque mois jusqu'à résiliation (page Compte du site)": [
+  "server/src/payments.js"
+ ],
  ", puis renommée avec son propre tempo et sa propre tonalité : « Nuit blanche - 140 BPM - F minor.wav ». Le pack se télécharge en un .zip. Un tempo peut se lire deux fois plus vite ou deux fois plus lentement (70 ou 140) : les boutons ÷2 et ×2 du tableau le remettent comme tu le comptes. Les fichiers ne sont pas réencodés.": [
   "site/stems.html"
  ],
@@ -317,6 +320,9 @@
  ": visites et clics sur chaque lien, sur 7, 30 ou 90 jours.": [
   "site/cloud.html"
  ],
+ "? Plus de prélèvement ; le plugin reste utilisable jusqu'à la fin du mois payé.": [
+  "site/compte.html"
+ ],
  "?bpm=": [
   "site/delais.html"
  ],
@@ -422,7 +428,7 @@
  ".mp3,audio/mpeg": [
   "site/mes-sons.html"
  ],
- ".op-icon { display: inline-grid; place-items: center; line-height: 0; } .op-pill { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 40; width: min(1120px, calc(100vw - 24px)); display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 8px; border-radius: 999px; border: 1px solid rgba(255,210,214,.16); background: rgba(20,9,11,.95); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9), 0 0 40px -18px var(--op-accent, rgba(226,52,68,.55)); } .op-pill[hidden], .op-sheet[hidden], .op-queue[hidden], .op-comments[hidden] { display: none; } .op-cover { flex: none; width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: linear-gradient(135deg, #5C0008, #2A0A0E); border: 1px solid rgba(255,210,214,.16); cursor: pointer; } .op-pill.playing .op-cover { animation: op-spin 9s linear infinite; will-change: transform; } @keyframes op-spin { to { transform: rotate(360deg); } } @media (prefers-reduced-motion: reduce) { .op-pill.playing .op-cover { animation: none; } } .op-meta { min-width: 0; width: 170px; flex: none; cursor: pointer; line-height: 1.25; } .op-meta b { display: block; font: 700 13px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .op-meta b .op-feat, .op-head b .op-feat { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.13)); background: rgba(255,255,255,.05); font: 600 10.5px/1.5 var(--f-body); color: var(--mist); vertical-align: 1px; } .op-meta > span { display: block; font-size: 12px; color: var(--haze); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .op-mini { flex: 1; min-width: 200px; height: 44px; cursor: pointer; touch-action: none; display: block; } .op-time { flex: none; font: 500 11px var(--f-mono); color: var(--haze); white-space: nowrap; } .op-btn { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 50%; background: none; color: var(--mist); cursor: pointer; } .op-btn:hover { background: rgba(255,255,255,.06); } .op-btn.on { color: var(--op-accent, var(--ember)); } .op-btn.main { width: 42px; height: 42px; background: var(--mist); color: var(--night); } .op-btn.main:hover { background: #fff; } .op-vol { width: 80px; accent-color: var(--op-accent, var(--ember)); min-height: 0; padding: 0; } .op-sheet, .op-queue { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(80px + env(safe-area-inset-bottom)); z-index: 39; width: min(1120px, calc(100vw - 24px)); max-height: min(62vh, 560px); overflow: auto; padding: 18px; border-radius: 22px; border: 1px solid rgba(255,210,214,.16); background: rgba(20,9,11,.97); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9); display: grid; gap: 14px; } .op-head { display: flex; align-items: center; gap: 12px; } .op-head b { flex: 1; min-width: 0; font: 700 16px var(--f-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .op-wave { width: 100%; height: 110px; display: block; cursor: pointer; touch-action: none; } .op-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 13px; color: var(--haze); } .op-tools label { display: inline-flex; flex-direction: row; align-items: center; gap: 8px; font: 400 13px var(--f-body); letter-spacing: 0; text-transform: none; color: var(--haze); } .op-tools input[type=range] { width: 120px; min-height: 0; padding: 0; accent-color: var(--ember); } .op-tools input[type=checkbox] { width: 16px; height: 16px; min-height: 0; margin: 0; accent-color: var(--ember); } .op-chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; border: 1px solid rgba(255,210,214,.16); background: none; color: var(--mist); font: 600 12px var(--f-body); cursor: pointer; text-decoration: none; } .op-chip:hover { border-color: var(--ember); } .op-chip.on { background: var(--op-accent, var(--ember)); border-color: var(--op-accent, var(--ember)); color: var(--night); } .op-comments { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; } .op-comments li { display: flex; gap: 10px; align-items: baseline; } .op-comments button.at { flex: none; font: 600 12px var(--f-mono); color: var(--ember); background: none; border: 0; padding: 0; cursor: pointer; } .op-comments .who { color: var(--haze); } .op-say { display: flex; flex-wrap: wrap; gap: 8px; } .op-say input { flex: 1 1 220px; min-height: 40px; } .op-say input.op-name { flex: 0 1 150px; } .op-queue ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; } .op-queue li button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 8px; border: 0; border-radius: 12px; background: none; color: var(--mist); font: 500 14px var(--f-body); text-align: left; cursor: pointer; } .op-queue li button:hover { background: rgba(255,255,255,.05); } .op-queue li.now button { color: var(--ember); } .op-queue img, .op-queue .op-q-cover { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; flex: none; background: linear-gradient(135deg, #5C0008, #2A0A0E); } .op-queue small { display: block; color: var(--haze); font-size: 12px; } @media (max-width: 1000px) { .op-vol { display: none; } .op-mini { min-width: 120px; } } /* Les boutons : couleurs et bordures en fondu, petit enfoncement au clic, léger soulèvement des boutons principaux. scale / translate (et non transform) : les éléments déjà placés avec transform (barre, bouton +, panneaux) restent en place. */ button, .btn, .op-chip, a.op-chip, .tile .art, .trk, .item, .dots, .stage, .feat, .play, .round, .fab, .install, .edit-toggle, .add-bar { transition: background-color .22s ease, border-color .22s ease, color .22s ease, box-shadow .25s ease, opacity .2s ease, scale .16s ease, translate .22s ease; } button:active:not(:disabled), .btn:active, .op-chip:active, .stage:active, .feat:active, .dots:active, .install:active, .edit-toggle:active { scale: .94; } .op-btn.main:active, .round.white:active, .play-all:active, .tile .fab-play:active { scale: .9; } .trk:active, .item:active, .add-bar:active { scale: .985; } .tile .art:active { scale: .97; } .btn-primary:hover, .round.white:hover, .play-all:hover, .op-btn.main:hover, .fab:hover { translate: 0 -2px; } .tile .art:hover { translate: 0 -3px; box-shadow: 0 18px 40px -18px rgba(0,0,0,.9); } .tile .fab-play { transition: background-color .2s ease, scale .2s ease, opacity .2s ease; } .tile .art:hover .fab-play { scale: 1.08; } /* Menus, fenêtres et panneaux : ouverture en fondu, avec un léger zoom ou une montée. */ @keyframes op-pop { from { opacity: 0; scale: .96; } } @keyframes op-rise { from { opacity: 0; translate: 0 14px; } } @keyframes op-fade { from { opacity: 0; } } .menu { animation: op-pop .16s ease-out; transform-origin: top center; } dialog[open] { animation: op-pop .22s cubic-bezier(.2, .8, .2, 1); } dialog[open]::backdrop { animation: op-fade .22s ease-out; } .op-sheet, .op-queue, .uploads { animation: op-rise .26s cubic-bezier(.2, .8, .2, 1); } .op-pill { animation: op-rise .35s cubic-bezier(.2, .8, .2, 1); } .details-right > *, .share-body > * { animation: op-fade .25s ease-out both; } @media (prefers-reduced-motion: reduce) { *, *::before, *::after, dialog::backdrop { animation: none !important; transition: none !important; } } @media (max-width: 720px) { .op-pill { gap: 4px; padding-right: 8px; } .op-meta { width: auto; flex: 1; } .op-mini, .op-time, .op-hide-sm { display: none; } } /* Le lecteur plein écran du téléphone. */ .op-full { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; justify-content: center; gap: 18px; overflow: hidden; padding: calc(52px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom)); background: #110a0c; color: var(--mist, #f6eeee); animation: op-rise .3s cubic-bezier(.2, .8, .2, 1); touch-action: none; } .op-full[hidden] { display: none; } .op-full-bg { position: absolute; inset: -60px; z-index: -1; background-size: cover; background-position: center; filter: blur(50px) brightness(.3) saturate(1.2); } .op-full-bg::after { content: \"\"; position: absolute; inset: 0; background: radial-gradient(120% 70% at 50% 35%, transparent, rgba(13,8,9,.85)); } .op-full-top { position: absolute; top: calc(8px + env(safe-area-inset-top)); left: 10px; } .op-full-top .op-btn { width: 44px; height: 44px; } .op-card { position: relative; display: grid; justify-items: center; gap: 22px; padding: 26px 18px 22px; border-radius: 34px; overflow: hidden; background: rgba(255,236,238,.06); border: 1px solid rgba(255,210,214,.1); box-shadow: 0 30px 80px -30px rgba(0,0,0,.9); } .op-card-title { text-align: center; max-width: 100%; } .op-card-title b { display: block; font: 600 clamp(18px, 5.6vw, 23px)/1.25 var(--f-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .op-card-title b .op-feat { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; border: 1px solid rgba(255,210,214,.2); font: 600 11px/1.5 var(--f-body); vertical-align: 3px; } .op-card-title span { display: block; margin-top: 4px; font-size: 15px; color: var(--haze, #b9a9ab); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .op-disc { width: min(66vw, 300px, 34vh); aspect-ratio: 1; border-radius: 50%; object-fit: cover; background: linear-gradient(135deg, #5C0008, #2A0A0E); border: 3px solid rgba(255,236,238,.18); box-shadow: 0 24px 60px -24px rgba(0,0,0,.95), 0 0 70px -30px var(--op-accent, #e23444); } .op-full.playing .op-disc { animation: op-spin 14s linear infinite; } .op-scrub { width: calc(100% + 36px); height: 64px; display: block; touch-action: none; cursor: grab; } .op-full-time { font: 500 15px var(--f-mono, monospace); letter-spacing: .02em; } @keyframes op-lyrics-in { from { opacity: 0; translate: 0 18px; } } .op-full-controls { width: 100%; display: flex; align-items: center; justify-content: space-between; } .op-full-controls .op-btn { width: 52px; height: 52px; color: var(--mist, #f6eeee); } .op-full-controls .op-btn svg { width: 28px; height: 28px; } .op-full-controls .op-btn.big { width: 72px; height: 72px; color: #fff; } .op-full-controls .op-btn.big svg { width: 54px; height: 54px; } .op-full-controls .op-btn.on { color: var(--op-accent, var(--ember)); } .op-full-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; } .op-full-bar > div, .op-full-bar > button { display: flex; align-items: center; gap: 6px; height: 62px; padding: 0 10px; border-radius: 999px; background: rgba(255,236,238,.07); border: 1px solid rgba(255,210,214,.1); } .op-full-bar .op-btn { width: 46px; height: 46px; } .op-full-bar svg { width: 24px; height: 24px; } .op-full-bar > button.op-settings { gap: 10px; padding: 0 22px 0 18px; color: var(--mist, #f6eeee); font: 500 17px var(--f-body); cursor: pointer; } .op-full-bar .op-btn.on, .op-full-bar > button.on { color: var(--op-accent, var(--ember)); } html.op-full-open, html.op-full-open body { overflow: hidden; } /* Les paroles en grand, sur toute la page : la pochette floutée en fond, teintée de sa couleur, qui respire avec le son (--op-level, de 0 à 1) ; la ligne chantée s'allume, les suivantes attendent en retrait. La barre du lecteur reste dessus. */ .op-stage { position: fixed; inset: 0; z-index: 38; display: flex; flex-direction: column; overflow: hidden; isolation: isolate; color: var(--mist, #f6eeee); background: #0d0809; animation: op-stage-in .45s cubic-bezier(.2, .8, .2, 1) both; } .op-stage[hidden] { display: none; } .op-stage:focus { outline: none; } .op-stage-bg { position: absolute; inset: -90px; z-index: -1; background: center / cover no-repeat; filter: blur(80px) saturate(1.5) brightness(calc(.38 + var(--op-level, 0) * .14)); transform: scale(calc(1.05 + var(--op-level, 0) * .05)); transition: transform .14s linear, filter .14s linear; } .op-stage-bg::after { content: \"\"; position: absolute; inset: 0; background: radial-gradient(80% 60% at 18% 12%, color-mix(in srgb, var(--op-accent, #e23444) 38%, transparent), transparent 70%), radial-gradient(70% 55% at 90% 100%, color-mix(in srgb, var(--op-accent, #e23444) 22%, transparent), transparent 70%), linear-gradient(180deg, rgba(13,8,9,.25), rgba(13,8,9,.78)); } .op-stage-top { flex: none; display: flex; align-items: center; gap: 14px; padding: calc(16px + env(safe-area-inset-top)) clamp(16px, 4vw, 48px) 8px; } .op-stage-top img { width: 52px; height: 52px; flex: none; border-radius: 12px; object-fit: cover; box-shadow: 0 10px 30px -10px rgba(0,0,0,.9), 0 0 36px -14px var(--op-accent, #e23444); } .op-stage-top > div { flex: 1; min-width: 0; display: grid; gap: 2px; } .op-stage-top small { font: 500 11px/1 var(--f-mono, monospace); letter-spacing: .18em; text-transform: uppercase; color: var(--op-accent, #e23444); } .op-stage-top b { font: 700 17px/1.25 var(--f-display, sans-serif); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .op-stage-top span { font-size: 13px; color: rgba(246,238,238,.62); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .op-stage-top .op-btn { width: 44px; height: 44px; border-radius: 14px; background: rgba(255,236,238,.08); } .op-stage-lyrics { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; overscroll-behavior: contain; padding: 12vh clamp(20px, 9vw, 140px) 46vh; -webkit-mask-image: linear-gradient(transparent, #000 10%, #000 78%, transparent); mask-image: linear-gradient(transparent, #000 10%, #000 78%, transparent); } .op-stage-lyrics::-webkit-scrollbar { display: none; } .op-stage-lyrics p { max-width: 1000px; margin: 0 auto; padding: .2em 0; font: 700 clamp(26px, 3.9vw, 50px)/1.2 var(--f-display, sans-serif); letter-spacing: -.015em; color: rgba(255,236,238,.92); overflow-wrap: anywhere; transform-origin: left center; animation: op-lyrics-in .6s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i, 0) * 45ms + 120ms); } .op-stage-lyrics p.gap { min-height: .7em; } .op-stage-lyrics p.none { font-size: clamp(18px, 2.2vw, 24px); color: rgba(246,238,238,.6); } .op-stage-lyrics.synced p { color: rgba(255,236,238,.26); cursor: pointer; transition: color .4s, transform .4s cubic-bezier(.2, .8, .2, 1), text-shadow .2s, opacity .4s; } .op-stage-lyrics.synced p:hover { color: rgba(255,236,238,.6); } .op-stage-lyrics.synced p.past { color: rgba(255,236,238,.5); } .op-stage-lyrics.synced p.on { color: #fff; transform: scale(1.03); text-shadow: 0 0 calc(14px + var(--op-level, 0) * 34px) color-mix(in srgb, var(--op-accent, #e23444) 75%, transparent); } html.op-stage-open, html.op-stage-open body { overflow: hidden; } @media (max-width: 720px) { .op-stage-lyrics { padding: 6vh 22px 42vh; } .op-stage-lyrics p { font-size: clamp(25px, 7.4vw, 34px); } } /* Choisir des lignes pour une story : les lignes touchées s'allument, la lecture ne fait plus défiler. */ .op-stage.picking .op-stage-lyrics p { color: rgba(255,236,238,.36); cursor: pointer; transform: none; text-shadow: none; } .op-stage.picking .op-stage-lyrics p.picked { color: #fff; } .op-stage.picking .op-stage-lyrics p.gap { pointer-events: none; } .op-pick-bar { position: absolute; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom)); translate: -50% 0; display: flex; gap: 10px; } .op-pick-bar[hidden] { display: none; } .op-pick-bar button, .op-story-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 22px; border-radius: 999px; border: 1px solid rgba(255,236,238,.18); background: rgba(20,9,11,.7); color: var(--mist, #f6eeee); font: 700 15px var(--f-body); cursor: pointer; backdrop-filter: blur(12px); white-space: nowrap; } .op-pick-bar button.go, .op-story-actions button.go { background: #fff; border-color: #fff; color: #120a0c; } .op-pick-bar button:disabled { opacity: .45; cursor: default; } html.op-picking .op-pill { display: none; } /* La carte à partager, comme une story : un aperçu qu'on touche pour changer la couleur, puis Partager. */ .op-story { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 14px; padding: calc(16px + env(safe-area-inset-top)) 16px calc(18px + env(safe-area-inset-bottom)); background: rgba(5,2,3,.78); backdrop-filter: blur(10px); animation: op-fade .2s ease-out; } .op-story[hidden] { display: none; } .op-story-sheet { width: min(460px, 100%); max-height: 100%; display: grid; justify-items: center; gap: 14px; padding: 12px 16px 18px; border-radius: 28px; background: #1a1013; border: 1px solid rgba(255,210,214,.12); box-shadow: 0 30px 90px -30px #000; animation: op-rise .3s cubic-bezier(.2, .8, .2, 1); overflow: auto; } .op-story-sheet::before { content: \"\"; width: 40px; height: 4px; border-radius: 2px; background: rgba(255,236,238,.25); } .op-story canvas { height: min(54vh, 560px); aspect-ratio: 9 / 16; max-width: 100%; border-radius: 18px; cursor: pointer; box-shadow: 0 20px 50px -20px #000; } .op-story small { font-size: 13px; color: rgba(246,238,238,.6); text-align: center; } .op-story-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; } @keyframes op-stage-in { from { opacity: 0; } } @media (prefers-reduced-motion: reduce) { .op-stage, .op-stage-lyrics p { animation: none; } .op-stage-bg { transform: none; transition: none; } .op-stage-lyrics.synced p.on { transform: none; } } html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: calc(92px + env(safe-area-inset-bottom)); max-height: 58vh; } @media (max-height: 680px) { .op-card { gap: 12px; padding: 16px 14px; } .op-full { gap: 10px; } .op-scrub { height: 48px; } }": [
+ ".op-icon { display: inline-grid; place-items: center; line-height: 0; } .op-pill { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 40; width: min(1120px, calc(100vw - 24px)); display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 8px; border-radius: 999px; border: 1px solid rgba(255,210,214,.16); background: rgba(20,9,11,.95); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9), 0 0 40px -18px var(--op-accent, rgba(226,52,68,.55)); } .op-pill[hidden], .op-sheet[hidden], .op-queue[hidden], .op-comments[hidden] { display: none; } .op-cover { flex: none; width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: linear-gradient(135deg, #5C0008, #2A0A0E); border: 1px solid rgba(255,210,214,.16); cursor: pointer; } .op-pill.playing .op-cover { animation: op-spin 9s linear infinite; will-change: transform; } @keyframes op-spin { to { transform: rotate(360deg); } } @media (prefers-reduced-motion: reduce) { .op-pill.playing .op-cover { animation: none; } } .op-meta { min-width: 0; width: 170px; flex: none; cursor: pointer; line-height: 1.25; } .op-meta b { display: block; font: 700 13px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .op-meta b .op-feat, .op-head b .op-feat { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line, rgba(255,210,214,.13)); background: rgba(255,255,255,.05); font: 600 10.5px/1.5 var(--f-body); color: var(--mist); vertical-align: 1px; } .op-meta > span { display: block; font-size: 12px; color: var(--haze); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .op-mini { flex: 1; min-width: 200px; height: 44px; cursor: pointer; touch-action: none; display: block; } .op-time { flex: none; font: 500 11px var(--f-mono); color: var(--haze); white-space: nowrap; } .op-btn { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 50%; background: none; color: var(--mist); cursor: pointer; } .op-btn:hover { background: rgba(255,255,255,.06); } .op-btn.on { color: var(--op-accent, var(--ember)); } .op-btn.main { width: 42px; height: 42px; background: var(--mist); color: var(--night); } .op-btn.main:hover { background: #fff; } /* Le volume : un rail fin rempli de la couleur de lecture jusqu'au niveau (--p), et un petit bouton rond qui grossit au survol. */ .op-vol { -webkit-appearance: none; appearance: none; width: 84px; height: 18px; min-height: 0; margin: 0; padding: 0; border: 0; background: none; cursor: pointer; --p: 100%; } .op-vol::-webkit-slider-runnable-track { height: 4px; border-radius: 99px; background: linear-gradient(90deg, var(--op-accent, var(--ember)) var(--p), rgba(246,238,238,.16) var(--p)); } .op-vol::-moz-range-track { height: 4px; border-radius: 99px; background: rgba(246,238,238,.16); } .op-vol::-moz-range-progress { height: 4px; border-radius: 99px; background: var(--op-accent, var(--ember)); } .op-vol::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: -4px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.6); transition: transform .15s; } .op-vol::-moz-range-thumb { width: 12px; height: 12px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.6); transition: transform .15s; } .op-vol:hover::-webkit-slider-thumb, .op-vol:active::-webkit-slider-thumb { transform: scale(1.25); } .op-vol:hover::-moz-range-thumb, .op-vol:active::-moz-range-thumb { transform: scale(1.25); } .op-vol:focus-visible { outline: 2px solid var(--op-accent, var(--ember)); outline-offset: 3px; border-radius: 99px; } .op-sheet, .op-queue { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(80px + env(safe-area-inset-bottom)); z-index: 39; width: min(1120px, calc(100vw - 24px)); max-height: min(62vh, 560px); overflow: auto; padding: 18px; border-radius: 22px; border: 1px solid rgba(255,210,214,.16); background: rgba(20,9,11,.97); box-shadow: 0 20px 60px -20px rgba(0,0,0,.9); display: grid; gap: 14px; } .op-head { display: flex; align-items: center; gap: 12px; } .op-head b { flex: 1; min-width: 0; font: 700 16px var(--f-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .op-wave { width: 100%; height: 110px; display: block; cursor: pointer; touch-action: none; } .op-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 13px; color: var(--haze); } .op-tools label { display: inline-flex; flex-direction: row; align-items: center; gap: 8px; font: 400 13px var(--f-body); letter-spacing: 0; text-transform: none; color: var(--haze); } .op-tools input[type=range] { width: 120px; min-height: 0; padding: 0; accent-color: var(--ember); } .op-tools input[type=checkbox] { width: 16px; height: 16px; min-height: 0; margin: 0; accent-color: var(--ember); } .op-chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; border: 1px solid rgba(255,210,214,.16); background: none; color: var(--mist); font: 600 12px var(--f-body); cursor: pointer; text-decoration: none; } .op-chip:hover { border-color: var(--ember); } .op-chip.on { background: var(--op-accent, var(--ember)); border-color: var(--op-accent, var(--ember)); color: var(--night); } .op-comments { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; } .op-comments li { display: flex; gap: 10px; align-items: baseline; } .op-comments button.at { flex: none; font: 600 12px var(--f-mono); color: var(--ember); background: none; border: 0; padding: 0; cursor: pointer; } .op-comments .who { color: var(--haze); } .op-say { display: flex; flex-wrap: wrap; gap: 8px; } .op-say input { flex: 1 1 220px; min-height: 40px; } .op-say input.op-name { flex: 0 1 150px; } .op-queue ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; } .op-queue li button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 8px; border: 0; border-radius: 12px; background: none; color: var(--mist); font: 500 14px var(--f-body); text-align: left; cursor: pointer; } .op-queue li button:hover { background: rgba(255,255,255,.05); } .op-queue li.now button { color: var(--ember); } .op-queue img, .op-queue .op-q-cover { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; flex: none; background: linear-gradient(135deg, #5C0008, #2A0A0E); } .op-queue small { display: block; color: var(--haze); font-size: 12px; } @media (max-width: 1000px) { .op-vol { display: none; } .op-mini { min-width: 120px; } } /* Les boutons : couleurs et bordures en fondu, petit enfoncement au clic, léger soulèvement des boutons principaux. scale / translate (et non transform) : les éléments déjà placés avec transform (barre, bouton +, panneaux) restent en place. */ button, .btn, .op-chip, a.op-chip, .tile .art, .trk, .item, .dots, .stage, .feat, .play, .round, .fab, .install, .edit-toggle, .add-bar { transition: background-color .22s ease, border-color .22s ease, color .22s ease, box-shadow .25s ease, opacity .2s ease, scale .16s ease, translate .22s ease; } button:active:not(:disabled), .btn:active, .op-chip:active, .stage:active, .feat:active, .dots:active, .install:active, .edit-toggle:active { scale: .94; } .op-btn.main:active, .round.white:active, .play-all:active, .tile .fab-play:active { scale: .9; } .trk:active, .item:active, .add-bar:active { scale: .985; } .tile .art:active { scale: .97; } .btn-primary:hover, .round.white:hover, .play-all:hover, .op-btn.main:hover, .fab:hover { translate: 0 -2px; } .tile .art:hover { translate: 0 -3px; box-shadow: 0 18px 40px -18px rgba(0,0,0,.9); } .tile .fab-play { transition: background-color .2s ease, scale .2s ease, opacity .2s ease; } .tile .art:hover .fab-play { scale: 1.08; } /* Menus, fenêtres et panneaux : ouverture en fondu, avec un léger zoom ou une montée. */ @keyframes op-pop { from { opacity: 0; scale: .96; } } @keyframes op-rise { from { opacity: 0; translate: 0 14px; } } @keyframes op-fade { from { opacity: 0; } } .menu { animation: op-pop .16s ease-out; transform-origin: top center; } dialog[open] { animation: op-pop .22s cubic-bezier(.2, .8, .2, 1); } dialog[open]::backdrop { animation: op-fade .22s ease-out; } .op-sheet, .op-queue, .uploads { animation: op-rise .26s cubic-bezier(.2, .8, .2, 1); } .op-pill { animation: op-rise .35s cubic-bezier(.2, .8, .2, 1); } .details-right > *, .share-body > * { animation: op-fade .25s ease-out both; } @media (prefers-reduced-motion: reduce) { *, *::before, *::after, dialog::backdrop { animation: none !important; transition: none !important; } } @media (max-width: 720px) { .op-pill { gap: 4px; padding-right: 8px; } .op-meta { width: auto; flex: 1; } .op-mini, .op-time, .op-hide-sm { display: none; } } /* Le lecteur plein écran du téléphone. */ .op-full { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; justify-content: center; gap: 18px; overflow: hidden; padding: calc(52px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom)); background: #110a0c; color: var(--mist, #f6eeee); animation: op-rise .3s cubic-bezier(.2, .8, .2, 1); touch-action: none; } .op-full[hidden] { display: none; } .op-full-bg { position: absolute; inset: -60px; z-index: -1; background-size: cover; background-position: center; filter: blur(50px) brightness(.3) saturate(1.2); } .op-full-bg::after { content: \"\"; position: absolute; inset: 0; background: radial-gradient(120% 70% at 50% 35%, transparent, rgba(13,8,9,.85)); } .op-full-top { position: absolute; top: calc(8px + env(safe-area-inset-top)); left: 10px; } .op-full-top .op-btn { width: 44px; height: 44px; } .op-card { position: relative; display: grid; justify-items: center; gap: 22px; padding: 26px 18px 22px; border-radius: 34px; overflow: hidden; background: rgba(255,236,238,.06); border: 1px solid rgba(255,210,214,.1); box-shadow: 0 30px 80px -30px rgba(0,0,0,.9); } .op-card-title { text-align: center; max-width: 100%; } .op-card-title b { display: block; font: 600 clamp(18px, 5.6vw, 23px)/1.25 var(--f-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .op-card-title b .op-feat { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; border: 1px solid rgba(255,210,214,.2); font: 600 11px/1.5 var(--f-body); vertical-align: 3px; } .op-card-title span { display: block; margin-top: 4px; font-size: 15px; color: var(--haze, #b9a9ab); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .op-disc { width: min(66vw, 300px, 34vh); aspect-ratio: 1; border-radius: 50%; object-fit: cover; background: linear-gradient(135deg, #5C0008, #2A0A0E); border: 3px solid rgba(255,236,238,.18); box-shadow: 0 24px 60px -24px rgba(0,0,0,.95), 0 0 70px -30px var(--op-accent, #e23444); } .op-full.playing .op-disc { animation: op-spin 14s linear infinite; } .op-scrub { width: calc(100% + 36px); height: 64px; display: block; touch-action: none; cursor: grab; } .op-full-time { font: 500 15px var(--f-mono, monospace); letter-spacing: .02em; } @keyframes op-lyrics-in { from { opacity: 0; translate: 0 18px; } } .op-full-controls { width: 100%; display: flex; align-items: center; justify-content: space-between; } .op-full-controls .op-btn { width: 52px; height: 52px; color: var(--mist, #f6eeee); } .op-full-controls .op-btn svg { width: 28px; height: 28px; } .op-full-controls .op-btn.big { width: 72px; height: 72px; color: #fff; } .op-full-controls .op-btn.big svg { width: 54px; height: 54px; } .op-full-controls .op-btn.on { color: var(--op-accent, var(--ember)); } .op-full-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; } .op-full-bar > div, .op-full-bar > button { display: flex; align-items: center; gap: 6px; height: 62px; padding: 0 10px; border-radius: 999px; background: rgba(255,236,238,.07); border: 1px solid rgba(255,210,214,.1); } .op-full-bar .op-btn { width: 46px; height: 46px; } .op-full-bar svg { width: 24px; height: 24px; } .op-full-bar > button.op-settings { gap: 10px; padding: 0 22px 0 18px; color: var(--mist, #f6eeee); font: 500 17px var(--f-body); cursor: pointer; } .op-full-bar .op-btn.on, .op-full-bar > button.on { color: var(--op-accent, var(--ember)); } html.op-full-open, html.op-full-open body { overflow: hidden; } /* Les paroles en grand, sur toute la page : la pochette floutée en fond, teintée de sa couleur, qui respire avec le son (--op-level, de 0 à 1) ; la ligne chantée s'allume, les suivantes attendent en retrait. La barre du lecteur reste dessus. */ .op-stage { position: fixed; inset: 0; z-index: 38; display: flex; flex-direction: column; overflow: hidden; isolation: isolate; color: var(--mist, #f6eeee); background: #0d0809; animation: op-stage-in .45s cubic-bezier(.2, .8, .2, 1) both; } .op-stage[hidden] { display: none; } .op-stage:focus { outline: none; } .op-stage-bg { position: absolute; inset: -90px; z-index: -1; background: center / cover no-repeat; filter: blur(80px) saturate(1.5) brightness(calc(.38 + var(--op-level, 0) * .14)); transform: scale(calc(1.05 + var(--op-level, 0) * .05)); transition: transform .14s linear, filter .14s linear; } .op-stage-bg::after { content: \"\"; position: absolute; inset: 0; background: radial-gradient(80% 60% at 18% 12%, color-mix(in srgb, var(--op-accent, #e23444) 38%, transparent), transparent 70%), radial-gradient(70% 55% at 90% 100%, color-mix(in srgb, var(--op-accent, #e23444) 22%, transparent), transparent 70%), linear-gradient(180deg, rgba(13,8,9,.25), rgba(13,8,9,.78)); } .op-stage-top { flex: none; display: flex; align-items: center; gap: 14px; padding: calc(16px + env(safe-area-inset-top)) clamp(16px, 4vw, 48px) 8px; } .op-stage-top img { width: 52px; height: 52px; flex: none; border-radius: 12px; object-fit: cover; box-shadow: 0 10px 30px -10px rgba(0,0,0,.9), 0 0 36px -14px var(--op-accent, #e23444); } .op-stage-top > div { flex: 1; min-width: 0; display: grid; gap: 2px; } .op-stage-top small { font: 500 11px/1 var(--f-mono, monospace); letter-spacing: .18em; text-transform: uppercase; color: var(--op-accent, #e23444); } .op-stage-top b { font: 700 17px/1.25 var(--f-display, sans-serif); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .op-stage-top span { font-size: 13px; color: rgba(246,238,238,.62); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .op-stage-top .op-btn { width: 44px; height: 44px; border-radius: 14px; background: rgba(255,236,238,.08); } .op-stage-lyrics { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; overscroll-behavior: contain; padding: 12vh clamp(20px, 9vw, 140px) 46vh; -webkit-mask-image: linear-gradient(transparent, #000 10%, #000 78%, transparent); mask-image: linear-gradient(transparent, #000 10%, #000 78%, transparent); } .op-stage-lyrics::-webkit-scrollbar { display: none; } .op-stage-lyrics p { max-width: 1000px; margin: 0 auto; padding: .2em 0; font: 700 clamp(26px, 3.9vw, 50px)/1.2 var(--f-display, sans-serif); letter-spacing: -.015em; color: rgba(255,236,238,.92); overflow-wrap: anywhere; transform-origin: left center; animation: op-lyrics-in .6s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i, 0) * 45ms + 120ms); } .op-stage-lyrics p.gap { min-height: .7em; } .op-stage-lyrics p.none { font-size: clamp(18px, 2.2vw, 24px); color: rgba(246,238,238,.6); } .op-stage-lyrics.synced p { color: rgba(255,236,238,.26); cursor: pointer; transition: color .4s, transform .4s cubic-bezier(.2, .8, .2, 1), text-shadow .2s, opacity .4s; } .op-stage-lyrics.synced p:hover { color: rgba(255,236,238,.6); } .op-stage-lyrics.synced p.past { color: rgba(255,236,238,.5); } .op-stage-lyrics.synced p.on { color: #fff; transform: scale(1.03); text-shadow: 0 0 calc(14px + var(--op-level, 0) * 34px) color-mix(in srgb, var(--op-accent, #e23444) 75%, transparent); } html.op-stage-open, html.op-stage-open body { overflow: hidden; } @media (max-width: 720px) { .op-stage-lyrics { padding: 6vh 22px 42vh; } .op-stage-lyrics p { font-size: clamp(25px, 7.4vw, 34px); } } /* Choisir des lignes pour une story : les lignes touchées s'allument, la lecture ne fait plus défiler. */ .op-stage.picking .op-stage-lyrics p { color: rgba(255,236,238,.36); cursor: pointer; transform: none; text-shadow: none; } .op-stage.picking .op-stage-lyrics p.picked { color: #fff; } .op-stage.picking .op-stage-lyrics p.gap { pointer-events: none; } .op-pick-bar { position: absolute; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom)); translate: -50% 0; display: flex; gap: 10px; } .op-pick-bar[hidden] { display: none; } .op-pick-bar button, .op-story-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 22px; border-radius: 999px; border: 1px solid rgba(255,236,238,.18); background: rgba(20,9,11,.7); color: var(--mist, #f6eeee); font: 700 15px var(--f-body); cursor: pointer; backdrop-filter: blur(12px); white-space: nowrap; } .op-pick-bar button.go, .op-story-actions button.go { background: #fff; border-color: #fff; color: #120a0c; } .op-pick-bar button:disabled { opacity: .45; cursor: default; } html.op-picking .op-pill { display: none; } /* La carte à partager, comme une story : un aperçu qu'on touche pour changer la couleur, puis Partager. */ .op-story { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 14px; padding: calc(16px + env(safe-area-inset-top)) 16px calc(18px + env(safe-area-inset-bottom)); background: rgba(5,2,3,.78); backdrop-filter: blur(10px); animation: op-fade .2s ease-out; } .op-story[hidden] { display: none; } .op-story-sheet { width: min(460px, 100%); max-height: 100%; display: grid; justify-items: center; gap: 14px; padding: 12px 16px 18px; border-radius: 28px; background: #1a1013; border: 1px solid rgba(255,210,214,.12); box-shadow: 0 30px 90px -30px #000; animation: op-rise .3s cubic-bezier(.2, .8, .2, 1); overflow: auto; } .op-story-sheet::before { content: \"\"; width: 40px; height: 4px; border-radius: 2px; background: rgba(255,236,238,.25); } .op-story canvas { height: min(54vh, 560px); aspect-ratio: 9 / 16; max-width: 100%; border-radius: 18px; cursor: pointer; box-shadow: 0 20px 50px -20px #000; } .op-story small { font-size: 13px; color: rgba(246,238,238,.6); text-align: center; } .op-story-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; } @keyframes op-stage-in { from { opacity: 0; } } @media (prefers-reduced-motion: reduce) { .op-stage, .op-stage-lyrics p { animation: none; } .op-stage-bg { transform: none; transition: none; } .op-stage-lyrics.synced p.on { transform: none; } } html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: calc(92px + env(safe-area-inset-bottom)); max-height: 58vh; } @media (max-height: 680px) { .op-card { gap: 12px; padding: 16px 14px; } .op-full { gap: 10px; } .op-scrub { height: 48px; } }": [
   "site/assets/sounds-player.js"
  ],
  ".r{}": [
@@ -437,7 +443,7 @@
  ".tile[data-id=\"": [
   "site/mes-sons.html"
  ],
- ".tools { position: relative; display: inline-flex; } :where(.tools-btn) { border: 0; padding: 0; background: none; color: inherit; font: inherit; cursor: pointer; } .tools-btn { display: inline-flex; align-items: center; gap: 7px; background: none; cursor: pointer; } .tools-btn:hover { color: var(--mist, #f6eeee); } .tools-btn.btn:hover, .tools-btn.btn[aria-expanded=\"true\"], .tools-btn.btn.here { border-color: var(--ember, #e23444); } .tools-btn::after { content: \"\"; width: 6px; height: 6px; margin-top: -3px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); transition: transform .2s; } .tools-btn[aria-expanded=\"true\"]::after { margin-top: 3px; transform: rotate(225deg); } .tools-menu { position: absolute; left: 50%; top: calc(100% + 12px); z-index: 80; width: min(660px, calc(100vw - 24px)); max-height: min(78vh, 640px); overflow-y: auto; translate: -50% 0; padding: 16px 12px 8px; border-radius: 18px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: linear-gradient(180deg, var(--deep-2, #2a0a0e), var(--deep, #1a080a)); box-shadow: 0 24px 60px -12px rgba(0,0,0,.8); text-align: left; } .tools-groups { columns: 3 170px; column-gap: 8px; } .tools-group { break-inside: avoid; margin: 0 0 12px; } .tools-group h3 { margin: 0 0 4px; padding: 0 12px; font: 500 10px/1.6 var(--f-mono, ui-monospace, monospace); letter-spacing: .16em; text-transform: uppercase; color: var(--haze, #b9a2a5); } .tools-menu a { display: block; padding: 9px 12px; border-radius: 10px; color: var(--mist, #f6eeee); font: 500 14px/1.25 var(--f-body, system-ui, sans-serif); text-decoration: none; } .tools-menu a:hover, .tools-menu a:focus-visible, .tools-menu a[aria-current=\"page\"] { background: rgba(226,52,68,.16); color: var(--mist, #f6eeee); outline: none; } .tools-menu .tools-all { margin-top: 2px; padding-block: 12px; border-top: 1px solid var(--line, rgba(255,210,214,.16)); border-radius: 0 0 10px 10px; color: var(--ember-text, #ff6b78); font: 500 12px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .1em; text-transform: uppercase; }": [
+ ".tools { position: relative; display: inline-flex; } :where(.tools-btn) { border: 0; padding: 0; background: none; color: inherit; font: inherit; cursor: pointer; } .tools-btn { display: inline-flex; align-items: center; gap: 7px; background: none; cursor: pointer; } .tools-btn:hover { color: var(--mist, #f6eeee); } .tools-btn.btn:hover, .tools-btn.btn[aria-expanded=\"true\"], .tools-btn.btn.here { border-color: var(--ember, #e23444); } .tools-btn::after { content: \"\"; width: 6px; height: 6px; margin-top: -3px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); transition: transform .2s; } .tools-btn[aria-expanded=\"true\"]::after { margin-top: 3px; transform: rotate(225deg); } .tools-menu { position: absolute; left: 50%; top: calc(100% + 12px); z-index: 80; width: min(660px, calc(100vw - 24px)); max-height: min(78vh, 640px); overflow-y: auto; translate: -50% 0; padding: 16px 12px 8px; border-radius: 18px; border: 1px solid var(--line, rgba(255,210,214,.16)); background: linear-gradient(180deg, var(--deep-2, #2a0a0e), var(--deep, #1a080a)); box-shadow: 0 24px 60px -12px rgba(0,0,0,.8); text-align: left; } .tools-groups { columns: 3 170px; column-gap: 8px; } .tools-group { break-inside: avoid; margin: 0 0 12px; } .tools-group h3 { margin: 0 0 4px; padding: 0 12px; font: 500 10px/1.6 var(--f-mono, ui-monospace, monospace); letter-spacing: .16em; text-transform: uppercase; color: var(--haze, #b9a2a5); } .tools-menu a { display: block; white-space: normal; padding: 9px 12px; border-radius: 10px; color: var(--mist, #f6eeee); font: 500 14px/1.25 var(--f-body, system-ui, sans-serif); text-decoration: none; } .tools-menu a:hover, .tools-menu a:focus-visible, .tools-menu a[aria-current=\"page\"] { background: rgba(226,52,68,.16); color: var(--mist, #f6eeee); outline: none; } .tools-menu .tools-all { margin-top: 2px; padding-block: 12px; border-top: 1px solid var(--line, rgba(255,210,214,.16)); border-radius: 0 0 10px 10px; color: var(--ember-text, #ff6b78); font: 500 12px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .1em; text-transform: uppercase; }": [
   "site/assets/tools-menu.js"
  ],
  ".vst3,.zip,.exe,.msi,.pkg": [
@@ -541,11 +547,17 @@
  "· port": [
   "site/mes-sons.html"
  ],
+ "· retrouvée dans": [
+  "site/mes-sons.html"
+ ],
  "· sans système de licence : {}": [
   "app/renderer/views/admin.js"
  ],
  "· sature": [
   "site/stems.html"
+ ],
+ "· scan en échec :": [
+  "site/mes-sons.html"
  ],
  "· sort": [
   "site/compte.html"
@@ -833,6 +845,9 @@
  "[réglé]": [
   "server/src/sounds.js"
  ],
+ "[scan] {}": [
+  "server/src/beatscan.js"
+ ],
  "[Support] {}": [
   "server/src/app.js"
  ],
@@ -853,6 +868,11 @@
  ],
  "{} – {} (extrait 30 s).mp3": [
   "site/comparer-mix.html"
+ ],
+ "{} — abonnement mensuel": [
+  "server/src/app.js",
+  "server/src/control.js",
+  "server/src/payments.js"
  ],
  "{} — Écoute privée": [
   "server/src/sounds.js"
@@ -924,6 +944,9 @@
  ],
  "{} 0 obj {} endobj": [
   "site/assets/pdf-kit.js"
+ ],
+ "{} a échoué.": [
+  "server/src/beatscan.js"
  ],
  "{} achat(s).": [
   "site/admin.html"
@@ -1104,6 +1127,9 @@
   "server/src/social.js"
  ],
  "{}/{}/o.gif": [
+  "server/src/packsend.js"
+ ],
+ "{}/{}/pochette.jpg": [
   "server/src/packsend.js"
  ],
  "{}/{}/replies": [
@@ -1989,6 +2015,9 @@
  "a renommé « {} » en « {} »": [
   "server/src/sounds.js"
  ],
+ "à scanner, quelques secondes chacune.": [
+  "site/mes-sons.html"
+ ],
  "a téléchargé": [
   "site/mes-sons.html"
  ],
@@ -2016,6 +2045,12 @@
  ],
  "à vérifier": [
   "site/stems.html"
+ ],
+ "À vérifier avant d'agir : une prod faite sur un sample peut faire ressortir le morceau samplé, et tes propres sorties ressortent aussi.": [
+  "site/mes-sons.html"
+ ],
+ "À vie": [
+  "site/boutique.html"
  ],
  "A#": [
   "site/bpm-tonalite.html",
@@ -2083,8 +2118,14 @@
  "Abonnement impossible.": [
   "site/boutique.html"
  ],
+ "Abonnement introuvable.": [
+  "server/src/payments.js"
+ ],
  "Abonnement invalide.": [
   "server/src/push.js"
+ ],
+ "Abonnement mensuel": [
+  "server/src/payments.js"
  ],
  "Abonnement ONIRIQUE CLOUD et page de liens": [
   "server/src/control.js"
@@ -2833,6 +2874,12 @@
  "au micro": [
   "site/accordeur.html"
  ],
+ "Au mois": [
+  "site/boutique.html"
+ ],
+ "Au mois · renouvelé le": [
+  "site/compte.html"
+ ],
  "au tempo": [
   "site/delais.html"
  ],
@@ -2960,6 +3007,12 @@
  "Aucune commande pour l'instant.": [
   "site/mes-sons.html"
  ],
+ "aucune copie trouvée": [
+  "site/mes-sons.html"
+ ],
+ "Aucune copie trouvée.": [
+  "site/mes-sons.html"
+ ],
  "Aucune de ces pistes n'a pu être lue. Essaie en WAV ou en MP3.": [
   "site/stems.html"
  ],
@@ -3009,6 +3062,9 @@
  ],
  "Aucune plateforme ne paie un tarif fixe par écoute. Chacune répartit chaque mois une part de ses recettes entre les ayants droit : le montant dépend du pays de l'auditeur, de son abonnement (gratuit ou payant) et du total des écoutes du mois. Les taux utilisés ici sont des moyennes publiées par des observateurs du secteur, pas des tarifs officiels : prends le résultat comme un ordre de grandeur.": [
   "site/revenus-streaming.html"
+ ],
+ "Aucune prod à scanner : dépose des prods dans un pack.": [
+  "server/src/beatscan.js"
  ],
  "Aucune publication trouvée sur ce compte.": [
   "site/compte.html"
@@ -3777,6 +3833,9 @@
  "Ce plugin n'est pas encore en vente. Si vous avez reçu une clé de licence, entrez-la dans l'onglet Licences.": [
   "app/renderer/views/library.js"
  ],
+ "Ce plugin ne se prend pas au mois.": [
+  "server/src/app.js"
+ ],
  "Ce projet dépasse 4 Go : télécharge ses titres un par un.": [
   "server/src/sounds.js"
  ],
@@ -4098,6 +4157,9 @@
  "Chaque plugin s'essaie en temps réel dans ton DAW, sur tes propres prises. L'export reste remplacé par un bruit blanc jusqu'à l'achat.": [
   "site/onirique.html"
  ],
+ "Chaque prod de tes packs est cherchée dans les titres sortis sur les plateformes (Spotify, Apple Music, Deezer, YouTube…).": [
+  "site/mes-sons.html"
+ ],
  "Chaque prod est mesurée à part : son tempo et sa tonalité sont écrits dans son nom. Corrige une valeur dans le tableau si elle est fausse, puis télécharge le pack : un .zip où toutes tes prods sont déjà renommées.": [
   "site/stems.html"
  ],
@@ -4142,6 +4204,9 @@
  ],
  "Chercher dans les crédits": [
   "site/credits.html"
+ ],
+ "Chercher si tes prods ont été volées et sorties sur les plateformes": [
+  "site/mes-sons.html"
  ],
  "Chercher un achat": [
   "site/admin.html"
@@ -4215,7 +4280,7 @@
  "Choisis « Un pack de prods » et dépose tes instrus, quinze d'un coup si tu veux. Chacune est analysée séparément, comme dans l'outil": [
   "site/stems.html"
  ],
- "Choisis de 1 à 30 prods.": [
+ "Choisis de 1 à 50 prods.": [
   "server/src/beattube.js"
  ],
  "Choisis l'image de la vidéo de «": [
@@ -4288,6 +4353,9 @@
  ],
  "Cinquante automations au plus : retirez-en avant d'en ajouter.": [
   "server/src/social.js"
+ ],
+ "Cinquante vidéos au plus en attente : il en reste {} à programmer.": [
+  "server/src/beattube.js"
  ],
  "Clair": [
   "site/assets/linkpage.js"
@@ -5298,6 +5366,9 @@
  "Croche pointée": [
   "site/delais.html"
  ],
+ "csv=p=0": [
+  "server/src/beatscan.js"
+ ],
  "cursor:pointer;font-size:13px": [
   "site/mes-sons.html"
  ],
@@ -5534,7 +5605,8 @@
  "Deezer": [
   "site/revenus-streaming.html",
   "site/volume-lufs.html",
-  "site/assets/deeplink.js"
+  "site/assets/deeplink.js",
+  "server/src/beatscan.js"
  ],
  "deezer://www.deezer.com{}": [
   "site/assets/deeplink.js"
@@ -5569,6 +5641,9 @@
  ],
  "Déjà possédé": [
   "app/renderer/views/subscription.js"
+ ],
+ "Déjà pris au mois": [
+  "site/boutique.html"
  ],
  "Délais": [
   "site/delais.html"
@@ -5626,6 +5701,9 @@
  ],
  "Démo retirée.": [
   "app/renderer/views/admin.js"
+ ],
+ "demo_{}": [
+  "server/src/payments.js"
  ],
  "demo-{}.vst3": [
   "app/main/main.js"
@@ -6423,6 +6501,9 @@
   "site/convertisseur.html",
   "site/decoupe.html"
  ],
+ "Encore": [
+  "site/mes-sons.html"
+ ],
  "Encore…": [
   "site/delais.html"
  ],
@@ -6675,6 +6756,9 @@
   "app/main/main.js",
   "app/main/mac-update.js"
  ],
+ "erreur {}": [
+  "server/src/beatscan.js"
+ ],
  "Erreur {}.": [
   "app/main/api.js"
  ],
@@ -6924,6 +7008,9 @@
  ],
  "Exporter en CSV": [
   "site/mes-sons.html"
+ ],
+ "extrait {}": [
+  "server/src/beatscan.js"
  ],
  "Extrait de": [
   "site/decoupe.html",
@@ -7208,6 +7295,9 @@
  "Format inconnu.": [
   "server/src/beatstore.js"
  ],
+ "format=duration": [
+  "server/src/beatscan.js"
+ ],
  "Formats installés ensemble": [
   "app/renderer/views/library.js"
  ],
@@ -7236,6 +7326,9 @@
  "Formulaire de rétractation": [
   "site/remboursement.html",
   "site/pages.mjs"
+ ],
+ "Formule": [
+  "site/boutique.html"
  ],
  "Formule enregistrée.": [
   "app/renderer/views/admin.js"
@@ -7992,6 +8085,12 @@
  "Jamais écrit": [
   "site/mes-sons.html"
  ],
+ "jamais scannée": [
+  "site/mes-sons.html"
+ ],
+ "jamais scannées": [
+  "site/mes-sons.html"
+ ],
  "Je t'envoie ça en DM {pseudo} 🔥": [
   "site/compte.html"
  ],
@@ -8426,6 +8525,9 @@
  "La relative partage exactement les mêmes notes. La dominante et la sous-dominante n'en changent qu'une : ce sont les enchaînements les plus doux, pour un mix DJ comme pour une modulation.": [
   "site/gammes.html"
  ],
+ "La résiliation est momentanément impossible : écrivez au support.": [
+  "server/src/payments.js"
+ ],
  "La SACEM en France.": [
   "site/assets/release-steps.js"
  ],
@@ -8447,6 +8549,9 @@
  ],
  "La version {} existe déjà pour {} ({}).": [
   "server/src/app.js"
+ ],
+ "La version a été supprimée.": [
+  "server/src/beatscan.js"
  ],
  "La version en ligne n'est pas un fichier .vst3.": [
   "app/main/main.js"
@@ -8741,6 +8846,10 @@
  ],
  "Le résultat reste propre dans une plage raisonnable : jusqu'à trois ou quatre demi-tons, ou quinze pour cent de tempo. Au-delà, le son s'altère : c'est utile pour essayer une idée, moins pour un fichier final. Pour une version définitive, demande au beatmaker un export dans la bonne tonalité.": [
   "site/transposition.html"
+ ],
+ "Le scan des prods n'est pas encore réglé sur le serveur.": [
+  "site/mes-sons.html",
+  "server/src/beatscan.js"
  ],
  "Le score d'un titre et celui de l'artiste sont-ils liés ?": [
   "site/popularite.html"
@@ -11205,6 +11314,9 @@
  "padding:12px 14px": [
   "site/mes-sons.html"
  ],
+ "padding:14px 18px 18px": [
+  "site/mes-sons.html"
+ ],
  "padding:22px clamp(18px,4vw,34px);": [
   "site/checklist-sortie.html"
  ],
@@ -11666,6 +11778,9 @@
  "Personne pour l'instant": [
   "site/mes-sons.html"
  ],
+ "Personne pour l'instant.": [
+  "site/mes-sons.html"
+ ],
  "Personne pour l'instant. Envoie le lien d'invitation : la personne l'ouvre, accepte, et le projet apparaît dans son ONIRIQUE CLOUD.": [
   "site/mes-sons.html"
  ],
@@ -11947,6 +12062,9 @@
  ],
  "Pochette de {} par {}": [
   "site/assets/credits.js"
+ ],
+ "Pochette introuvable.": [
+  "server/src/packsend.js"
  ],
  "Pointée": [
   "site/delais.html"
@@ -12283,6 +12401,15 @@
   "server/src/app.js",
   "server/src/control.js"
  ],
+ "Prix mensuel invalide (0 ou au moins 0,50 €).": [
+  "server/src/app.js"
+ ],
+ "Prix par mois en € (0 = pas d'abonnement)": [
+  "site/admin.html"
+ ],
+ "Prix par mois invalide : écrivez par exemple 9,99 (0 pour ne pas le proposer).": [
+  "site/admin.html"
+ ],
  "Prix payé": [
   "server/src/beatstore.js"
  ],
@@ -12308,6 +12435,9 @@
  "Prod montrée dans l'aperçu": [
   "site/mes-sons.html"
  ],
+ "prod retrouvée": [
+  "site/mes-sons.html"
+ ],
  "Prod. {artiste} Licences et achat : {lien}": [
   "server/src/beattube.js"
  ],
@@ -12315,6 +12445,9 @@
   "site/stems.html"
  ],
  "Prods du pack (leur nombre est affiché sur la ligne du pack)": [
+  "site/mes-sons.html"
+ ],
+ "prods retrouvées": [
   "site/mes-sons.html"
  ],
  "product new": [
@@ -12415,6 +12548,7 @@
   "server/src/linkpage.js"
  ],
  "public, max-age=3600": [
+  "server/src/packsend.js",
   "server/src/sounds.js"
  ],
  "public, max-age=60": [
@@ -12663,11 +12797,17 @@
  "Récompense de parrainage :": [
   "server/src/promos.js"
  ],
+ "Reconnaissance indisponible : {}": [
+  "server/src/beatscan.js"
+ ],
  "Reconnu à son nom": [
   "site/stems.html"
  ],
  "Reconnu au son": [
   "site/stems.html"
+ ],
+ "reconnue sur": [
+  "site/mes-sons.html"
  ],
  "Reçu le": [
   "site/admin.html",
@@ -13001,11 +13141,15 @@
  "reset:{}": [
   "server/src/app.js"
  ],
+ "Résilié": [
+  "site/compte.html"
+ ],
  "Résilié : vous gardez l'accès jusqu'au {}.": [
   "app/renderer/views/subscription.js"
  ],
  "Résilier": [
   "site/cloud.html",
+  "site/compte.html",
   "app/renderer/views/subscription.js"
  ],
  "Résilier ? Tu gardes l'accès jusqu'au": [
@@ -13013,6 +13157,9 @@
  ],
  "Résilier l'abonnement ?": [
   "app/renderer/views/subscription.js"
+ ],
+ "Résilier l'abonnement à": [
+  "site/compte.html"
  ],
  "Résolution": [
   "site/convertisseur.html"
@@ -13168,6 +13315,9 @@
  ],
  "Rétractation et remboursement — ONIRIQUE": [
   "site/remboursement.html"
+ ],
+ "Retrouvée dans": [
+  "site/mes-sons.html"
  ],
  "Retune Speed, Flex-Tune, Humanize, Natural Vibrato, Formant et Throat. Sortie MIDI des notes chantées.": [
   "server/src/seed.js"
@@ -13441,10 +13591,16 @@
  "Rubriques de l'administration": [
   "site/admin.html"
  ],
+ "s sortis": [
+  "site/mes-sons.html"
+ ],
  "S'abonner": [
   "site/boutique.html",
   "site/cloud.html",
   "app/renderer/views/subscription.js"
+ ],
+ "S'abonner ·": [
+  "site/boutique.html"
  ],
  "S'abonner · {} / mois": [
   "site/boutique.html"
@@ -13495,6 +13651,9 @@
  ],
  "Sans compte. Un lien d'artiste ou de titre copié depuis Spotify donne le résultat exact.": [
   "site/popularite.html"
+ ],
+ "sans copie trouvée": [
+  "site/mes-sons.html"
  ],
  "Sans engagement": [
   "site/cloud.html"
@@ -13548,6 +13707,27 @@
  ],
  "scale={}:{}:force_original_aspect_ratio=increase,crop={}:{}": [
   "server/src/beattube.js"
+ ],
+ "SCAN": [
+  "site/mes-sons.html"
+ ],
+ "SCAN ·": [
+  "site/mes-sons.html"
+ ],
+ "SCAN · mes prods volées ?": [
+  "site/mes-sons.html"
+ ],
+ "scan en cours": [
+  "site/mes-sons.html"
+ ],
+ "Scan en cours…": [
+  "site/mes-sons.html"
+ ],
+ "scan en échec": [
+  "site/mes-sons.html"
+ ],
+ "Scanner mes": [
+  "site/mes-sons.html"
  ],
  "Score de popularité :": [
   "site/popularite.html"
@@ -13606,6 +13786,9 @@
  "Se termine": [
   "site/compte.html",
   "app/renderer/views/subscription.js"
+ ],
+ "Se termine le": [
+  "site/compte.html"
  ],
  "search/album": [
   "server/src/music.js"
@@ -13777,6 +13960,9 @@
  "Si la personne est connectée à son compte": [
   "site/mes-sons.html"
  ],
+ "Si un artiste a sorti un son sur ta prod, il ressort ici, même avec sa voix par-dessus. Une prod déposée dans un pack est scannée toute seule.": [
+  "site/mes-sons.html"
+ ],
  "Si un compte existe avec cette adresse, un lien vient d'être envoyé. Il est valable une heure.": [
   "site/compte.html",
   "app/renderer/views/auth.js"
@@ -13911,6 +14097,9 @@
  "Sorti": [
   "site/mes-sons.html"
  ],
+ "sorti le": [
+  "site/mes-sons.html"
+ ],
  "Sorti le": [
   "server/src/sounds.js"
  ],
@@ -13964,6 +14153,9 @@
  ],
  "sounds-progress:{}": [
   "server/src/sounds.js"
+ ],
+ "sounds-scan:{}": [
+  "server/src/beatscan.js"
  ],
  "sounds-seller:{}": [
   "server/src/beatstore.js"
@@ -14022,7 +14214,8 @@
   "site/revenus-streaming.html",
   "site/volume-lufs.html",
   "site/assets/deeplink.js",
-  "server/src/app.js"
+  "server/src/app.js",
+  "server/src/beatscan.js"
  ],
  "Spotify ↗": [
   "site/admin.html"
@@ -14050,6 +14243,9 @@
  ],
  "stage prod": [
   "site/ecoute.html",
+  "site/mes-sons.html"
+ ],
+ "stage prod stolen": [
   "site/mes-sons.html"
  ],
  "Start-Process -FilePath {} -Wait -PassThru": [
@@ -14136,6 +14332,9 @@
  ],
  "sub-title wide": [
   "site/mes-sons.html"
+ ],
+ "sub:{}": [
+  "server/src/payments.js"
  ],
  "Suivant": [
   "site/assets/sounds-player.js"
@@ -14764,6 +14963,9 @@
  "Titre ou nom de l'album": [
   "site/admin.html"
  ],
+ "titre sorti": [
+  "site/mes-sons.html"
+ ],
  "Titre trop court pour la mesurer.": [
   "site/volume-lufs.html"
  ],
@@ -14788,6 +14990,9 @@
  "Titres les plus écoutés": [
   "site/popularite.html"
  ],
+ "titres sortis": [
+  "site/mes-sons.html"
+ ],
  "Titulaire": [
   "app/renderer/views/admin.js"
  ],
@@ -14800,6 +15005,9 @@
  "Ton abonnement": [
   "site/boutique.html",
   "site/cloud.html"
+ ],
+ "Ton abonnement est actif. Installe le plugin depuis Onirique Central ; tu peux le résilier depuis ton compte.": [
+  "site/boutique.html"
  ],
  "Ton abonnement est déjà en cours.": [
   "server/src/app.js"
@@ -15105,9 +15313,6 @@
  "Trente vidéos attendent déjà : publiez-en ou retirez-en avant d'en ajouter.": [
   "server/src/app.js"
  ],
- "Trente vidéos au plus en attente : il en reste {} à programmer.": [
-  "server/src/beattube.js"
- ],
  "Très compressé : peu d'écart entre couplets et refrains.": [
   "site/volume-lufs.html"
  ],
@@ -15167,6 +15372,9 @@
   "site/boutique.html"
  ],
  "TTC, par mois, sans engagement": [
+  "site/boutique.html"
+ ],
+ "Tu as ce plugin au mois. Tu peux l'acheter à vie : pense ensuite à résilier ton abonnement depuis ton compte.": [
   "site/boutique.html"
  ],
  "Tu as un fichier plutôt qu'un rythme en tête ? Le": [
@@ -15927,6 +16135,9 @@
   "site/admin.html",
   "app/renderer/views/admin.js"
  ],
+ "Volée ?": [
+  "site/mes-sons.html"
+ ],
  "Volume": [
   "site/comparer-mix.html",
   "site/onirique.html",
@@ -16035,6 +16246,9 @@
  ],
  "Votre remise de parrainage est plus forte que ce code : c'est elle qui s'applique.": [
   "server/src/promos.js"
+ ],
+ "Vous avez déjà ce plugin.": [
+  "server/src/app.js"
  ],
  "Vous avez déjà un abonnement en cours.": [
   "server/src/app.js"

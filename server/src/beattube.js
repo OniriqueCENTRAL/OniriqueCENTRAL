@@ -224,9 +224,9 @@ export function mountBeatTube(app, { me, track, soundsDir, wrap, receiveImage, r
   app.post('/api/me/sounds/youtube', ...me, wrap(async (req, res) => {
     if (!get('SELECT 1 FROM youtube_accounts WHERE user_id = ?', req.user.id)) throw new HttpError(400, "Connecte d'abord ta chaîne YouTube.");
     const ids = Array.isArray(req.body.trackIds) ? [...new Set(req.body.trackIds.map(Number).filter(Number.isInteger))] : [];
-    if (!ids.length || ids.length > 30) throw new HttpError(400, 'Choisis de 1 à 30 prods.');
+    if (!ids.length || ids.length > 50) throw new HttpError(400, 'Choisis de 1 à 50 prods.');
     const waiting = get(`SELECT COUNT(*) AS n FROM youtube_videos WHERE user_id = ? AND status NOT IN ('published', 'failed')`, req.user.id).n;
-    if (waiting + ids.length > 30) throw new HttpError(400, `Trente vidéos au plus en attente : il en reste ${Math.max(0, 30 - waiting)} à programmer.`);
+    if (waiting + ids.length > 50) throw new HttpError(400, `Cinquante vidéos au plus en attente : il en reste ${Math.max(0, 50 - waiting)} à programmer.`);
     const titleTemplate = str(req.body.title, 200), descTemplate = str(req.body.description, 5000);
     if (!titleTemplate) throw new HttpError(400, 'Écris le modèle du titre.');
     const tags = str(req.body.tags, 500).split(',').map((t) => clean(t).trim()).filter(Boolean).join(',');

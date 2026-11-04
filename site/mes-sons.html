@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=ad5318d8"></script>
+<script src="assets/i18n.js?v=2f9cddc9"></script>
 <script src="assets/ui.js?v=3"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
@@ -54,10 +54,10 @@ header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.6); back
 .install img { width: 22px; height: 22px; border-radius: 6px; }
 #install-help { width: 400px; }
 /* Réglages : l'en-tête et sa croix restent en haut, seul le contenu défile ; sur téléphone, un panneau qui monte du bas. */
-#settings { width: 440px; }
-#settings[open] { display: flex; flex-direction: column; overflow: hidden; }
-#settings .dlg-head { flex: none; padding-bottom: 14px; border-bottom: 1px solid rgba(255,210,214,.08); }
-#settings .stack { min-height: 0; align-content: start; grid-auto-rows: max-content; padding: 16px 18px calc(20px + env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; }
+#settings, #trash { width: 440px; }
+#settings[open], #trash[open] { display: flex; flex-direction: column; overflow: hidden; }
+#settings .dlg-head, #trash .dlg-head { flex: none; padding-bottom: 14px; border-bottom: 1px solid rgba(255,210,214,.08); }
+#settings .stack, #trash .stack { min-height: 0; align-content: start; grid-auto-rows: max-content; padding: 16px 18px calc(20px + env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; }
 @media (max-width: 640px) {
   #settings { width: 100vw; max-width: 100vw; max-height: 88dvh; bottom: 0; margin: auto 0 0; border-radius: 24px 24px 0 0; border-bottom: 0; }
 }
@@ -115,6 +115,13 @@ textarea { padding: 12px 14px; min-height: 110px; resize: vertical; line-height:
 .folder-art > :only-child, .folder-art > :nth-child(3):last-child { grid-column: 1 / -1; }
 .folder-art.empty { display: grid; place-items: center; grid-template-columns: 1fr; color: var(--haze); }
 .folder-art.empty svg { width: 34%; height: 34%; }
+.trash-art { position: absolute; inset: 0; display: grid; place-items: center; color: var(--haze); background: radial-gradient(circle at 50% 62%, rgba(226,52,68,.10), transparent 62%), linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.015)); transition: background .3s; }
+.trash-art svg { width: 46%; height: 46%; overflow: visible; transition: transform .4s; }
+.trash-art .teeth, .trash-art .glow { stroke: var(--ember); opacity: .4; }
+.trash-art.full { color: var(--mist); background: radial-gradient(circle at 50% 62%, rgba(226,52,68,.42), rgba(226,52,68,.06) 58%, transparent 75%), linear-gradient(160deg, rgba(255,255,255,.06), rgba(10,4,5,.4)); }
+.trash-art.full .teeth, .trash-art.full .glow { opacity: 1; filter: drop-shadow(0 0 5px var(--ember)); }
+.tile .art:hover .trash-art svg { transform: translateY(-3px) rotate(-3deg); }
+.trash-cover { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; flex: none; }
 .tile.gone .art { opacity: .45; filter: grayscale(1); }
 .tile .owner { display: inline-flex; align-items: center; gap: 6px; }
 .tile .owner img { width: 16px; height: 16px; border-radius: 50%; object-fit: cover; }
@@ -252,7 +259,7 @@ body.editing #edit-toggle { background: var(--mist); color: var(--night); border
 .fab { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 35; display: inline-flex; align-items: center; gap: 8px; padding: 14px 26px; border-radius: 999px; border: 1px solid rgba(255,210,214,.18); background: rgba(26,8,10,.95); color: var(--mist); font: 700 15px var(--f-body); cursor: pointer; box-shadow: 0 16px 50px -14px rgba(0,0,0,.9), 0 0 36px -16px var(--ember); }
 .fab:hover { border-color: var(--ember); }
 body.has-player .fab { bottom: calc(88px + env(safe-area-inset-bottom)); }
-.menu { position: fixed; z-index: 70; min-width: 220px; padding: 6px; border-radius: 16px; border: 1px solid rgba(255,210,214,.16); background: rgba(26,8,10,.98); box-shadow: 0 20px 60px -20px rgba(0,0,0,.95); }
+.menu { position: fixed; z-index: 70; min-width: 220px; overflow-y: auto; overscroll-behavior: contain; padding: 6px; border-radius: 16px; border: 1px solid rgba(255,210,214,.16); background: rgba(26,8,10,.98); box-shadow: 0 20px 60px -20px rgba(0,0,0,.95); }
 .menu button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 11px 12px; border: 0; border-radius: 10px; background: none; color: var(--mist); font: 600 14px var(--f-body); text-align: left; cursor: pointer; }
 .menu button:hover, .menu button:focus-visible { background: rgba(255,255,255,.06); }
 .menu button.danger { color: #FF5A68; }
@@ -270,6 +277,17 @@ dialog::backdrop { background: rgba(5,2,3,.72); backdrop-filter: blur(4px); }
 #cover-view .bar .btn { padding: 10px 16px; font-size: 13px; }
 #cover-view .bar .btn-ghost { background: rgba(255,255,255,.07); border-color: transparent; }
 #cover-view .bar .btn-primary { margin-left: auto; box-shadow: none; }
+/* Chercher la pochette d'un son sorti : les pochettes trouvées sur Apple Music, une touche pour choisir */
+#cover-find { width: min(720px, calc(100vw - 24px)); }
+#cover-find .find-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 16px 18px 18px; }
+#cover-find form { display: flex; gap: 8px; }
+#cover-find input { flex: 1; min-width: 0; height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.4); color: var(--mist); font: 500 15px var(--f-body); }
+#cover-find .found { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; max-height: 56vh; overflow-y: auto; }
+#cover-find .found button { display: grid; gap: 6px; padding: 0; border: 0; background: none; color: var(--mist); text-align: left; cursor: pointer; }
+#cover-find .found img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; border: 2px solid transparent; }
+#cover-find .found button:hover img, #cover-find .found button:focus-visible img { border-color: var(--ember); }
+#cover-find .found b { font: 600 13px/1.3 var(--f-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#cover-find .found small { margin-top: -4px; font: 500 12px var(--f-body); color: var(--haze); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dlg-head { display: flex; align-items: center; gap: 12px; padding: 18px 18px 0; }
 .dlg-head img, .dlg-head .cover-ph { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; flex: none; }
 .dlg-head b { flex: 1; min-width: 0; font: 700 17px var(--f-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -369,11 +387,37 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 @media (prefers-reduced-motion: reduce) { .lyrics:not([hidden]), .lyrics p, .about { animation: none; } }
 .lyrics-edit { min-height: 260px; font: 500 13px/1.5 var(--f-mono); }
 .sync-lines { max-height: 46vh; overflow-y: auto; }
+.word-lines { max-height: 42vh; overflow-y: auto; }
+.word-lines li { display: flex; gap: 12px; padding: 7px 10px; border-radius: 10px; }
+.word-lines li.next { background: color-mix(in srgb, var(--ember) 12%, transparent); }
+.word-lines .when { flex: none; min-width: 52px; font: 500 12px/2 var(--f-mono); color: var(--haze); }
+.word-lines .words { display: flex; flex-wrap: wrap; gap: 4px; }
+.word-lines .words button { padding: 3px 8px; border: 1px solid var(--line); border-radius: 8px; background: none; color: var(--haze); font: 500 14px var(--f-body); cursor: pointer; }
+.word-lines .words button.done { color: var(--mist); border-color: transparent; background: rgba(255,255,255,.06); }
+.word-lines .words button.next { color: #fff; border-color: var(--ember); background: var(--ember); }
+.word-lines .words button.strong { font-weight: 800; text-transform: uppercase; box-shadow: inset 0 -3px 0 #ffd23f; }
+.chips-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.chips-row .speed { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: none; color: var(--mist); font: 500 13px var(--f-mono); cursor: pointer; }
+.chips-row .speed.on { background: var(--ember); border-color: var(--ember); color: #fff; }
 /* Sur téléphone : un grand bouton à taper en rythme, sans le zoom du double appui */
 #sync-mark, #sync-undo { touch-action: manipulation; }
 .sync-player { display: flex; align-items: center; gap: 12px; padding: 8px 14px 8px 8px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); }
 .sync-player b { flex: none; font: 500 13px var(--f-mono); color: var(--mist); }
 .sync-range { flex: 1; min-width: 0; accent-color: var(--ember); }
+.sync-vol { flex: none; width: 80px; accent-color: var(--ember); }
+/* Les barres du lecteur sont dessinées ici, comme celle du lecteur du site : sans ça, le style des champs (fond, bordure, 44 px)
+   les transforme en blocs gris dans certains navigateurs. --p est le niveau rempli. */
+.sync-player input[type="range"] { -webkit-appearance: none; appearance: none; height: 18px; min-height: 0; padding: 0; border: 0; border-radius: 0; background: none; cursor: pointer; --p: 0%; }
+.sync-player input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 99px; background: linear-gradient(90deg, var(--ember) var(--p), rgba(246,238,238,.16) var(--p)); }
+.sync-player input[type="range"]::-moz-range-track { height: 4px; border-radius: 99px; background: rgba(246,238,238,.16); }
+.sync-player input[type="range"]::-moz-range-progress { height: 4px; border-radius: 99px; background: var(--ember); }
+.sync-player input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: -4px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.6); }
+.sync-player input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.6); }
+.sync-player input[type="range"]:focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 99px; }
+.sync-vol-ico { flex: none; display: flex; margin-right: -6px; color: var(--mist); }
+.sync-vol-ico svg { width: 18px; height: 18px; }
+/* Sur téléphone, le volume passe à la ligne pour laisser de la place à la position. */
+@media (max-width: 560px) { .sync-player { flex-wrap: wrap; border-radius: 24px; } .sync-range { min-width: 120px; } .sync-vol-ico { margin-left: 8px; } .sync-vol { flex: 1; } }
 .sync-keys .btn { gap: 10px; }
 .sync-keys kbd { padding: 2px 7px; border-radius: 6px; border: 1px solid currentColor; font: 600 11px/1.4 var(--f-mono); opacity: .7; }
 @media (pointer: coarse) { #sync-mark { flex: 1; min-height: 56px; font-size: 16px; } }
@@ -504,7 +548,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 #mailer summary { list-style: none; }
 #mailer summary::-webkit-details-marker { display: none; }
 /* Les ventes d'un pack : le panneau Ventes et la vente d'une prod. */
-#store, #sale { width: 620px; }
+#store, #sale, #scan { width: 620px; }
 #youtube { width: 680px; }
 /* Chaîne connectée : le formulaire, et à côté l'aperçu de la vidéo telle que le serveur la fabrique */
 #youtube.wide { width: 1100px; }
@@ -562,8 +606,16 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 .tline:has(.prod) { flex-wrap: wrap; row-gap: 4px; }
 .tline:has(.prod) b { min-width: auto; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .stage.prod:not(.empty) { border-style: solid; color: var(--mist); background: rgba(255,255,255,.04); letter-spacing: .04em; }
+.stage.prod.on { border-color: var(--ember); color: var(--ember); }
 .stage.prod.price { border-color: var(--buy, var(--ember)); background: var(--buy, var(--ember)); color: var(--buy-ink, var(--night)); }
 .stage.prod.price-off { border-style: dashed; border-color: var(--buy, var(--ember)); }
+/* Une prod retrouvée dans un titre sorti : le badge s'ouvre même hors édition. */
+.stage.prod.stolen { border-color: #FF5A68; color: #FF5A68; }
+body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
+.scan-hits { margin: 0; padding: 0 16px 14px 16px; list-style: none; display: grid; gap: 10px; }
+.scan-hits li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font: 600 14px var(--f-body); }
+.scan-hits li .grow { flex: 1; min-width: 180px; }
+.scan-hits small { display: block; color: var(--haze); font: 400 12.5px var(--f-body); }
 /* La couleur des boutons d'un pack : le nuancier natif, caché derrière le bouton */
 #buy-color { position: relative; }
 #buy-color i { width: 16px; height: 16px; border-radius: 50%; background: var(--buy, var(--ember)); box-shadow: 0 0 0 1px rgba(255,255,255,.3); }
@@ -614,7 +666,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 <header>
   <div class="wrap">
     <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
-    <div class="row"><button class="round bell" id="bell" type="button" aria-label="Notifications" aria-expanded="false" hidden></button><a class="btn btn-ghost" href="compte.html">Mon compte</a><a href="compte.html" data-account data-account-manual hidden>Compte</a></div>
+    <div class="row"><button class="round bell" id="bell" type="button" aria-label="Notifications" aria-expanded="false" hidden></button><a class="btn btn-ghost" href="compte">Mon compte</a><a href="compte" data-account data-account-manual hidden>Compte</a></div>
   </div>
 </header>
 <div class="visitor-bar" id="visitor-bar" hidden>
@@ -640,6 +692,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
         <div class="quota" id="quota"></div>
         <button class="install" id="install" type="button" hidden><img src="assets/app-icon-180.png" alt="">Ajouter à l'écran d'accueil</button>
         <button class="install" id="settings-open" type="button">Réglages</button>
+        <button class="install" id="scan-open" type="button" hidden title="Chercher si tes prods ont été volées et sorties sur les plateformes">SCAN</button>
       </div>
     </div>
     <p class="error" id="disk-full"></p>
@@ -713,7 +766,17 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 <dialog id="youtube"></dialog>
 <dialog id="pinterest"></dialog>
 <dialog id="stats"></dialog>
-<dialog id="cover-view"><img alt=""><div class="bar"><button class="btn btn-ghost" type="button" id="cover-save">Télécharger</button><button class="btn btn-ghost" type="button" id="cover-swap">Changer</button><button class="btn btn-primary" type="button" onclick="this.closest('dialog').close()">Fermer</button></div></dialog>
+<dialog id="cover-view"><img alt=""><div class="bar"><button class="btn btn-ghost" type="button" id="cover-save">Télécharger</button><button class="btn btn-ghost" type="button" id="cover-swap">Changer</button><button class="btn btn-ghost" type="button" id="cover-search">Chercher la pochette</button><button class="btn btn-primary" type="button" onclick="this.closest('dialog').close()">Fermer</button></div></dialog>
+<dialog id="cover-find" aria-labelledby="cover-find-title">
+  <div class="dlg-head"><b id="cover-find-title">Chercher la pochette</b><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close()" aria-label="Fermer">✕</button></div>
+  <div class="find-body">
+    <p class="muted" style="margin:0;font-size:14px">Pour un son déjà sorti : les pochettes trouvées sur Apple Music. Touche la bonne, elle devient la pochette du projet.</p>
+    <form id="cover-find-form"><input id="cover-find-q" aria-label="Artiste et titre à chercher" placeholder="Artiste et titre"><button class="btn btn-primary" type="submit">Chercher</button></form>
+    <p class="muted" id="cover-find-note" style="margin:0;font-size:14px" aria-live="polite"></p>
+    <div class="found" id="cover-found"></div>
+    <div><button class="btn btn-ghost" type="button" id="cover-find-file">Choisir une image sur l'appareil</button></div>
+  </div>
+</dialog>
 <dialog id="install-help">
   <div class="dlg-head"><b>Sur l'écran d'accueil</b><button class="x" type="button" aria-label="Fermer" onclick="this.closest('dialog').close()">✕</button></div>
   <p class="muted" style="margin:10px 20px 14px;font-size:14px" id="install-intro"></p>
@@ -722,13 +785,15 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1400px; }
 </dialog>
 <dialog id="share"></dialog>
 <dialog id="settings"></dialog>
+<dialog id="trash"></dialog>
 <dialog id="collab"></dialog>
 <dialog id="mailer"></dialog>
 <dialog id="store"></dialog>
 <dialog id="sale"></dialog>
+<dialog id="scan"></dialog>
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close('cancel')">Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
-<script src="assets/sounds-player.js?v=18"></script>
+<script src="assets/sounds-player.js?v=20"></script>
 <script src="assets/audio-kit.js?v=2"></script>
 <script src="assets/pdf-kit.js"></script>
 <script src="assets/release-steps.js"></script>
@@ -874,8 +939,60 @@ player.audio.addEventListener("pause", markPlaying);
 
 // ——— Paroles ———
 const parseLyrics = OP.parseLyrics;
+/** Le titre et l'artiste d'un son tels qu'ils sont sortis, d'après le catalogue Apple Music de l'artiste ; null s'il n'y est pas.
+ *  On compare sans accents ni signes, et une étoile du titre sorti (« F*CHO ») vaut n'importe quelle lettre. */
+async function officialTitle(artist, title) {
+  const flat = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9*]+/g, "");
+  const ask = (path, params) => fetch("https://itunes.apple.com/" + path + "?" + new URLSearchParams({ country: "FR", ...params })).then((r) => r.json());
+  const ids = [...new Set((await ask("search", { term: artist, entity: "song", limit: "25" })).results.filter((x) => flat(x.artistName) === flat(artist)).map((x) => x.artistId))];
+  const want = flat(title);
+  for (const id of ids.slice(0, 2)) {
+    const songs = (await ask("lookup", { id, entity: "song", limit: "200" })).results.filter((x) => x.wrapperType === "track");
+    const hit = songs.find((x) => new RegExp("^" + flat(x.trackName.replace(/\s*[([](feat|with|avec)\.?[^)\]]*[)\]]/i, "")).replace(/\*/g, "[a-z0-9]?") + "$").test(want));
+    if (hit) return { title: hit.trackName.replace(/\s*[([](feat|with|avec)\.?[^)\]]*[)\]]/i, ""), artist: hit.artistName.split(/\s*[&,]\s*/)[0] };
+  }
+  return null;
+}
+/** Les paroles d'un son déjà sorti sur LRCLIB (base libre, sans clé), synchronisées ligne par ligne quand elles existent ; null sinon. */
+async function findLyrics(artist, title, duration) {
+  // LRCLIB est souvent surchargé (503) : on réessaie, et seul un vrai « introuvable » (404) compte comme rien trouvé.
+  const q = async (path, params) => {
+    for (let i = 0; ; i++) {
+      const r = await fetch("https://lrclib.net/api/" + path + "?" + new URLSearchParams(params));
+      if (r.ok) return r.json();
+      if (r.status === 404) return null;
+      if (i === 4 || (r.status !== 503 && r.status !== 429)) throw new Error("LRCLIB " + r.status);
+      await new Promise((done) => setTimeout(done, 700 * (i + 1)));
+    }
+  };
+  // La recherche (par champs, puis en texte libre) : le plus proche en durée, les synchronisées d'abord. Pas /api/get :
+  // il va chercher ailleurs ce qu'il n'a pas, et c'est lui qui est surchargé.
+  const near = (x) => (duration ? Math.abs(x.duration - duration) : 0);
+  const pick = (list) => (list || []).filter((x) => !x.instrumental && (x.syncedLyrics || x.plainLyrics) && near(x) < 15)
+    .sort((a, b) => !!b.syncedLyrics - !!a.syncedLyrics || near(a) - near(b))[0];
+  // La recherche en texte libre n'est qu'un secours : si elle échoue, rien n'est trouvé (pas une erreur).
+  let hit = pick(await q("search", { artist_name: artist, track_name: title })) || pick(await q("search", { q: artist + " " + title }).catch(() => null));
+  // Pas trouvé : le titre tel qu'il est sorti (« PHARES ÉTEINTS », « NIQUE UN F*CHO ») peut différer de celui du projet.
+  const official = hit ? null : await officialTitle(artist, title).catch(() => null);
+  if (official && official.title !== title) hit = pick(await q("search", { artist_name: official.artist, track_name: official.title }).catch(() => null));
+  return hit && (hit.syncedLyrics || hit.plainLyrics) ? { synced: hit.syncedLyrics || "", plain: hit.plainLyrics || "", artist: hit.artistName, title: hit.trackName } : null;
+}
 const stamp = (s) => { const cs = Math.round(s * 100); return "[" + String(Math.floor(cs / 6000)).padStart(2, "0") + ":" + ((cs % 6000) / 100).toFixed(2).padStart(5, "0") + "]"; };
-const lyricsText = (lines) => lines.map((l) => (l.at === null ? "" : stamp(l.at) + " ") + l.text).join("\n");
+// Les paroles telles qu'on les enregistre ; words : avec le moment de chaque mot (seulement si tous les mots de la ligne en ont un).
+// Un mot FORT (pour ONIRIQUE CUT) s'écrit entre ** ; marked : la ligne telle qu'écrite, étoiles comprises.
+const lyricsText = (lines, words = true) => lines.map((l) => (l.at === null ? "" : stamp(l.at) + " ")
+  + (words && l.words && l.words.length && l.words.every((w) => w.at !== null)
+    ? l.words.map((w) => "<" + stamp(w.at).slice(1, -1) + ">" + (w.strong ? "**" + w.text + "**" : w.text)).join(" ")
+    : l.marked ?? (l.words && l.words.some((w) => w.strong) ? l.words.map((w) => (w.strong ? "**" + w.text + "**" : w.text)).join(" ") : l.text))).join("\n");
+/** Des paroles retapées à la main gardent les mots déjà synchronisés des lignes qui n'ont pas changé. */
+function keepWords(lines, before) {
+  const old = parseLyrics(before).filter((l) => l.words);
+  for (const l of lines) {
+    const i = old.findIndex((o) => o.text === l.text && (l.at === null || Math.abs(o.at - l.at) < .02));
+    if (i >= 0) { l.words = old[i].words; if (l.at === null) l.at = old[i].at; old.splice(i, 1); }
+  }
+  return lines;
+}
 // À droite de la pochette : les paroles du titre en cours s'il est dans le projet ouvert.
 let lyricsShown = "";
 function renderLyrics() {
@@ -979,10 +1096,12 @@ function menu(anchor, items) {
   }, it.icon ? icon(it.icon) : null, it.label)));
   // Dans une fenêtre ouverte (partage, détails d'un titre), le menu s'y affiche : sinon il passerait derrière elle.
   ((anchor.closest && anchor.closest("dialog[open]")) || document.body).append(m);
-  const r = anchor.getBoundingClientRect(), w = m.offsetWidth, h = m.offsetHeight;
-  const up = r.bottom + h + 8 > innerHeight;
+  // Du côté où il y a le plus de place ; trop long pour l'écran, il défile au lieu d'en sortir.
+  const r = anchor.getBoundingClientRect(), w = m.offsetWidth, below = innerHeight - r.bottom - 16, above = r.top - 16;
+  const up = m.offsetHeight > below && above > below;
+  m.style.maxHeight = (up ? above : below) + "px";
   m.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + "px";
-  m.style.top = (up ? r.top - h - 8 : r.bottom + 8) + "px";
+  m.style.top = (up ? r.top - m.offsetHeight - 8 : r.bottom + 8) + "px";
   openMenu = m;
   m.querySelector("button")?.focus();
 }
@@ -1006,12 +1125,16 @@ const lightClose = (dialog) => {
   dialog.addEventListener("pointerdown", (event) => { fromBackdrop = event.target === dialog; });
   dialog.addEventListener("click", (event) => { if (event.target === dialog && fromBackdrop) dialog.close(); fromBackdrop = false; });
 };
-lightClose($("details")); lightClose($("stats")); lightClose($("share")); lightClose($("ask")); lightClose($("collab"));
+lightClose($("details")); lightClose($("stats")); lightClose($("share")); lightClose($("ask")); lightClose($("collab")); lightClose($("scan"));
 
 // ——— Données et vues ———
+let scanTimer = null;
 async function refresh() {
   data = await api("GET", "/me/sounds" + (vanish ? "?vanish=1" : ""));
   render();
+  // Des prods en cours de scan : la page se met à jour toute seule jusqu'au résultat.
+  clearTimeout(scanTimer);
+  if (data.projects.some((p) => p.tracks.some((t) => t.scan && t.scan.status === "wait"))) scanTimer = setTimeout(() => refresh().catch(() => {}), 6000);
 }
 function render() {
   const p = openId() && project();
@@ -1023,6 +1146,7 @@ function render() {
   p ? renderProject(p) : renderGrid();
   if ($("details").open) renderDetails();
   if ($("share").open) renderShare();
+  if ($("scan").open) renderScan();
   markPlaying();
 }
 addEventListener("hashchange", () => { closeMenu(); render(); scrollTo(0, 0); if (/^#\/invite\//.test(location.hash)) checkInvite(); });
@@ -1089,12 +1213,13 @@ function renderGrid() {
     : [...data.projects.filter(here).map((x) => ({ kind: "project", x })), ...data.saved.filter(here).map((x) => ({ kind: "saved", x }))])
     .sort((a, b) => b.x.createdAt - a.x.createdAt);
   const folders = data.vanish ? [] : subfolders(f ? f.id : null);
-  const tiles = [...folders.map(folderTile), ...items.map(({ kind, x }) => (kind === "project" ? projectTile(x) : savedTile(x)))];
+  const tiles = [...folders.map(folderTile), ...items.map(({ kind, x }) => (kind === "project" ? projectTile(x) : savedTile(x))), ...(f || data.vanish ? [] : [trashTile()])];
   tiles.forEach((tile, i) => {
     tile.style.setProperty("--i", i);
     tile.oncontextmenu = (event) => { const dots = tile.querySelector(".dots"); if (dots) { event.preventDefault(); event.stopPropagation(); dots.openAt(atPointer(event)); } };
   });
   $("tiles").replaceChildren(...tiles);
+  $("scan-open").hidden = data.vanish || !data.projects.some((x) => x.mine && x.kind === "pack");
   $("grid-top").hidden = !!f;
   $("folder-crumb").hidden = !f;
   if (f) {
@@ -1104,7 +1229,7 @@ function renderGrid() {
       count(items.length, "projet", "projets")].filter(Boolean).join(" · ");
     $("folder-back").ariaLabel = $("folder-back").title = up.length ? "Retour à " + up.at(-1) : "Retour à ONIRIQUE CLOUD";
   }
-  $("empty").hidden = !!f || tiles.length > 0;
+  $("empty").hidden = !!f || tiles.length > (data.vanish ? 0 : 1); // la tuile Corbeille seule : rien à montrer encore
   if (f && !tiles.length) $("tiles").replaceChildren(el("p", { className: "muted", style: "grid-column:1/-1;margin:0",
     textContent: "Ce dossier est vide. Range-y des projets ou d'autres dossiers avec leur menu ⋯, « Déplacer vers », ou en les faisant glisser dessus." }));
 }
@@ -1172,6 +1297,21 @@ function folderTile(f) {
   });
   return tile;
 }
+// La corbeille, rangée comme un dossier après les projets : une poubelle au trait, des dents en guise de bord de couvercle.
+const TRASH_SVG = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">'
+  + '<path d="M19 9.5h10"/><path d="M8 14.5h32"/>'
+  + '<path class="teeth" d="M12 14.5l2 3.2 2-3.2 2 3.2 2-3.2 2 3.2 2-3.2 2 3.2 2-3.2 2 3.2 2-3.2 2 3.2 2-3.2"/>'
+  + '<path d="M11.5 14.5l2.6 26a2.4 2.4 0 0 0 2.4 2.1h15a2.4 2.4 0 0 0 2.4-2.1l2.6-26"/>'
+  + '<path class="glow" d="M20 23.5v12M28 23.5v12M24 22.5v14"/></svg>';
+function trashTile() {
+  const inner = el("div", { className: "trash-art" + (data.trash ? " full" : "") });
+  inner.innerHTML = TRASH_SVG;
+  const art = el("div", { className: "art", role: "button", tabIndex: 0, ariaLabel: "Ouvrir la corbeille" }, inner);
+  art.onclick = openTrash;
+  art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
+  return el("div", { className: "tile" }, art, caption("CORBEILLE",
+    el("span", { textContent: data.trash ? count(data.trash, "élément", "éléments") + " · 30 jours" : "Vide" })));
+}
 const savedSource = (tile, x) => { dragSource(tile, "saved:" + x.id); return tile; };
 function savedTile(x) {
   const playBtn = el("button", { className: "fab-play", type: "button", ariaLabel: "Écouter " + x.title, hidden: !x.available }, icon("play"));
@@ -1193,7 +1333,7 @@ function savedTile(x) {
 // Un projet enregistré s'ouvre sur sa page d'écoute ; le mot de passe déjà donné y est repris.
 function openSaved(x) {
   try { if (x.pass) sessionStorage.setItem("onirique.ecoute." + x.token, x.pass); } catch {}
-  location.href = "ecoute.html?t=" + encodeURIComponent(x.token);
+  location.href = "ecoute?t=" + encodeURIComponent(x.token);
 }
 async function playSaved(x) {
   const response = await fetch("/api/sounds/share/" + encodeURIComponent(x.token), {
@@ -1262,8 +1402,8 @@ function projectMenu(anchor, p) {
     } },
     { label: "Changer la pochette", icon: "star", onclick: () => pickCover(p) },
     "-",
-    p.mine ? { label: "Supprimer le projet", icon: "close", danger: true, onclick: () =>
-      confirm("Supprimer « " + p.title + " », tous ses titres et leurs liens d'écoute ?") && api("DELETE", "/me/sounds/projects/" + p.id).then(() => { location.hash = ""; return refresh(); }).catch(fail) }
+    p.mine ? { label: "Envoyer à la corbeille", icon: "close", danger: true, onclick: () =>
+      confirm("Mettre « " + p.title + " » et tous ses titres à la corbeille ? Ses liens d'écoute sont fermés, et tu pourras le restaurer pendant 30 jours.") && api("DELETE", "/me/sounds/projects/" + p.id).then(() => { location.hash = ""; return refresh(); }).catch(fail) }
       : { label: "Quitter le projet", icon: "close", danger: true, onclick: () =>
         confirm("Quitter « " + p.title + " » ? Il disparaîtra de ta page ; " + p.owner.name + " pourra t'inviter à nouveau.")
         && api("DELETE", "/me/sounds/projects/" + p.id + "/collabs/" + data.owner.id).then(() => { location.hash = ""; return refresh(); }).catch(fail) },
@@ -1530,15 +1670,20 @@ function prodBadges(p, t) {
 }
 // Les retours de mix d'un titre pas encore cochés « Réglé ».
 const toFix = (t) => t.comments.filter((c) => !c.resolved).length;
+// Le scan d'une prod de mes packs : un badge si elle a été retrouvée dans un titre sorti, sinon une mention discrète.
+const scanned = (p, t) => (p.mine && !visitor && t.scan ? t.scan : null);
+const scanNote = (s) => (!s ? null : s.status === "wait" ? "scan en cours" : s.matches.length ? null : s.status === "error" ? "scan en échec" : "aucune copie trouvée");
 function trackRow(p, t, i) {
-  const v = live(t), prod = prodBadges(p, t);
+  const v = live(t), prod = prodBadges(p, t), scan = scanned(p, t);
+  const stolen = scan && scan.matches.length ? el("button", { className: "stage prod stolen", type: "button", textContent: "Volée ?",
+    title: "Retrouvée dans " + scan.matches.length + " titre" + (scan.matches.length > 1 ? "s sortis" : " sorti"), onclick: (event) => { event.stopPropagation(); openScan(t.id); } }) : "";
   const more = el("button", { className: "dots", type: "button", ariaLabel: "Options de " + t.title }, icon("more"));
   more.onclick = (event) => { event.stopPropagation(); openDetails(t.id); };
   const row = el("li", { className: "trk", draggable: true, tabIndex: 0, title: "Écouter (glisser pour réordonner)", style: "--i:" + (i + 3) },
     el("span", { className: "num", textContent: String(i + 1) }),
-    el("div", {}, el("div", { className: "tline" }, el("b", { textContent: t.title }), ...prod.tempo, featButton(t)), el("small", { textContent: [day(v.createdAt), "v" + v.n + (t.versions.length > 1 ? " sur " + t.versions.length : ""),
+    el("div", {}, el("div", { className: "tline" }, el("b", { textContent: t.title }), ...prod.tempo, featButton(t), stolen), el("small", { textContent: [day(v.createdAt), "v" + v.n + (t.versions.length > 1 ? " sur " + t.versions.length : ""),
       toFix(t) ? toFix(t) + " retour" + (toFix(t) > 1 ? "s" : "") + " à régler" : t.comments.length ? t.comments.length + " commentaire" + (t.comments.length > 1 ? "s" : "") : null,
-      t.plays ? t.plays + " écoute" + (t.plays > 1 ? "s" : "") : null].filter(Boolean).join(" · ") })),
+      t.plays ? t.plays + " écoute" + (t.plays > 1 ? "s" : "") : null, scanNote(scan)].filter(Boolean).join(" · ") })),
     el("span", { className: "badges" }, ...(p.kind === "pack" ? [prod.sale] : [dateButton(t), stageButton(t, editing)])), el("span", { className: "len", textContent: v.duration ? OP.time(v.duration) : "" }), more);
   row.dataset.id = t.id;
   row.draggable = editing;
@@ -1800,14 +1945,67 @@ $("add-tracks").onclick = () => pickFiles({ project: project() });
 // Un clic sur la pochette l'agrandit, pour la télécharger ou (son projet) la changer ; sans pochette, on en choisit une.
 $("cover").onclick = () => {
   const p = project();
-  if (!p.cover) return p.mine && pickCover(p);
+  if (!p.cover) return p.mine && findCover(p);
   $("cover-view").querySelector("img").src = p.cover;
-  $("cover-swap").hidden = !p.mine;
+  $("cover-swap").hidden = $("cover-search").hidden = !p.mine;
   $("cover-save").replaceChildren(icon("download"), "Télécharger");
   $("cover-swap").replaceChildren(icon("star"), "Changer");
   $("cover-view").showModal();
 };
 $("cover-swap").onclick = () => { $("cover-view").close(); pickCover(project()); };
+$("cover-search").onclick = () => { $("cover-view").close(); findCover(project()); };
+// ——— Chercher la pochette d'un son déjà sorti, sur Apple Music (recherche iTunes : libre, sans clé) ———
+let findTarget = null;
+function findCover(p) {
+  findTarget = p;
+  $("cover-find-q").value = (p.artist || p.owner.name) + " " + p.title;
+  $("cover-find").showModal();
+  searchCovers();
+}
+async function searchCovers() {
+  const q = $("cover-find-q").value.trim(), box = $("cover-found"), note = $("cover-find-note");
+  if (!q) return;
+  box.replaceChildren(); note.textContent = "Recherche…";
+  try {
+    // La recherche libre d'Apple Music trouve peu de chose : on y ajoute tout le catalogue de l'artiste (singles, EP, albums).
+    const p = findTarget, artist = p.artist || p.owner.name, who = q.toLowerCase().includes(artist.toLowerCase()) ? artist : q;
+    const flat = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+    const title = flat(q.toLowerCase().replace(artist.toLowerCase(), ""));
+    const ask = (path, params) => fetch("https://itunes.apple.com/" + path + "?" + new URLSearchParams({ country: "FR", ...params })).then((r) => (r.ok ? r.json() : { results: [] }), () => ({ results: [] }));
+    const [songs, albums, byArtist] = await Promise.all([ask("search", { term: q, entity: "song", limit: "25" }), ask("search", { term: q, entity: "album", limit: "25" }), ask("search", { term: who, entity: "song", limit: "25" })]);
+    const ids = [...new Set([...songs.results, ...byArtist.results].filter((x) => flat(x.artistName || "") === flat(who)).map((x) => x.artistId))].slice(0, 2);
+    // Ses sorties, et ses titres : un titre d'EP (« MGL » sur « ATARI ») est trouvé par son nom, avec la pochette de l'EP.
+    const catalog = (await Promise.all(ids.flatMap((id) => ["album", "song"].map((entity) => ask("lookup", { id, entity, limit: "200" })))))
+      .flatMap((x) => x.results.filter((r) => r.wrapperType === "collection" || r.wrapperType === "track"));
+    // Le titre cherché d'abord (« NIQUE UN F*CHO » répond aussi à « nique un facho » : on compare sans les signes), puis le reste.
+    // Une étoile du titre sorti (« F*CHO ») vaut n'importe quelle lettre.
+    const near = (x) => {
+      const name = (x.trackName || x.collectionName || "").replace(/ - (single|ep)$/i, "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9*]+/g, "");
+      return title && name && new RegExp(name.replace(/\*/g, "[a-z0-9]?")).test(title) ? 0 : 1;
+    };
+    // Trié avant de retirer les doublons : la pochette d'un titre trouvé garde le nom de ce titre.
+    const seen = new Set(), found = [...songs.results, ...albums.results, ...catalog, ...byArtist.results]
+      .map((x, i) => [near(x), i, x]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map((e) => e[2])
+      .filter((x) => x.artworkUrl100 && !seen.has(x.artworkUrl100) && seen.add(x.artworkUrl100));
+    if (!found.length) { note.textContent = "Aucune pochette trouvée. Un son tout juste sorti peut mettre quelques jours à apparaître : change la recherche, ou choisis une image sur l'appareil."; return; }
+    note.textContent = found.length + " pochette" + (found.length > 1 ? "s" : "") + " trouvée" + (found.length > 1 ? "s" : "") + ".";
+    box.replaceChildren(...found.map((x) => el("button", { type: "button", title: "Prendre cette pochette", onclick: () => takeCover(x) },
+      el("img", { src: x.artworkUrl100.replace(/\/\d+x\d+bb\./, "/300x300bb."), alt: "", loading: "lazy" }),
+      el("b", { textContent: (x.trackName || x.collectionName).replace(/ - (Single|EP)$/, "") }), el("small", { textContent: x.artistName }))));
+  } catch { note.textContent = "Apple Music ne répond pas. Réessaie dans un instant."; }
+}
+/** La pochette choisie, en 1500 px (le serveur la veut sous 5 Mo), envoyée comme une image choisie à la main. */
+async function takeCover(x) {
+  const note = $("cover-find-note");
+  note.textContent = "Récupération de la pochette…";
+  try {
+    const blob = await fetch(x.artworkUrl100.replace(/\/\d+x\d+bb\./, "/1500x1500bb.")).then((r) => (r.ok ? r.blob() : Promise.reject()));
+    $("cover-find").close();
+    uploadCover(findTarget, new File([blob], (x.collectionName || x.trackName || "pochette") + ".jpg", { type: blob.type || "image/jpeg" }));
+  } catch { note.textContent = "Cette pochette n'a pas pu être récupérée. Essaie une autre."; }
+}
+$("cover-find-form").onsubmit = (event) => { event.preventDefault(); searchCovers(); };
+$("cover-find-file").onclick = () => { $("cover-find").close(); pickCover(findTarget); };
 $("cover-save").onclick = async () => {
   const p = project();
   try {
@@ -2076,6 +2274,14 @@ function openMailer(p) {
   const trackingPane = el("div", { className: "stack", hidden: true });
   const EVENT = { open: "a ouvert le mail", visit: "est venu écouter", click: "a cliqué un lien", play: "a écouté", download: "a téléchargé", unsubscribe: "s'est désinscrit" };
   let trackingTimer = null;
+  // Les pastilles du suivi filtrent la liste et la trient par ce qu'elles comptent ; un second clic revient à tout le monde.
+  const FILTERS = {
+    opened: [(r) => r.openedAt, (a, b) => b.openedAt - a.openedAt],
+    listened: [(r) => r.plays > 0, (a, b) => b.plays - a.plays || b.lastAt - a.lastAt],
+    downloaded: [(r) => r.downloads > 0, (a, b) => b.downloads - a.downloads || b.lastAt - a.lastAt],
+    failed: [(r) => r.status === "error", () => 0],
+  };
+  let trackingFilter = null;
   async function drawTracking(sendId) {
     clearTimeout(trackingTimer);
     const sends = await api("GET", "/me/sounds/projects/" + p.id + "/mail/sends");
@@ -2084,15 +2290,19 @@ function openMailer(p) {
     const pick = el("select", { style: "flex:1;min-width:180px" }, ...sends.map((x) => el("option", { value: x.id, selected: x.id === s.id, textContent: when(x.createdAt) + " · " + x.subject })));
     pick.onchange = () => drawTracking(Number(pick.value));
     const detail = await api("GET", "/me/sounds/mail/sends/" + s.id);
-    const stat = (n, one, many) => el("span", { className: "stage prod", textContent: n + " " + (Number(n) > 1 ? many : one) });
+    const stat = (n, one, many, key) => el("button", { type: "button", className: "stage prod" + (trackingFilter === key ? " on" : ""), ariaPressed: String(trackingFilter === key),
+      textContent: n + " " + (Number(n) > 1 ? many : one), onclick: () => { trackingFilter = trackingFilter === key || !FILTERS[key] ? null : key; drawTracking(s.id); } });
+    const [keep, order] = FILTERS[trackingFilter] || [() => true, () => 0];
+    const shown = detail.recipients.filter(keep).sort(order);
     trackingPane.replaceChildren(el("div", { className: "row" }, pick),
-      el("div", { className: "row" }, stat(s.sent + "/" + s.total, "envoyés", "envoyés"), stat(s.opened, "ouvert", "ouverts"), stat(s.listened, "a écouté", "ont écouté"),
-        stat(s.downloaded, "a téléchargé", "ont téléchargé"), s.failed ? stat(s.failed, "échec", "échecs") : "",
+      el("div", { className: "row" }, stat(s.sent + "/" + s.total, "envoyés", "envoyés", null), stat(s.opened, "ouvert", "ouverts", "opened"), stat(s.listened, "a écouté", "ont écouté", "listened"),
+        stat(s.downloaded, "a téléchargé", "ont téléchargé", "downloaded"), s.failed ? stat(s.failed, "échec", "échecs", "failed") : "",
         s.failed && s.done ? el("button", { className: "btn btn-ghost", type: "button", textContent: "Renvoyer aux échecs", onclick: (event) => {
           event.currentTarget.disabled = true;
           api("POST", "/me/sounds/mail/sends/" + s.id + "/retry").then(() => drawTracking(s.id), (error) => { oops(error); drawTracking(s.id); });
         } }) : "", s.done ? "" : el("span", { className: "muted", style: "font-size:13px", textContent: "Envoi en cours : " + plural(s.waiting, "mail") + " à partir, environ " + duration(s.waiting * s.gap) + " (un mail toutes les 15 à 30 s, pour que Gmail ne bloque pas)" })),
-      el("ul", { className: "group" }, ...detail.recipients.map((r) => el("li", {}, el("details", {},
+      shown.length ? "" : el("p", { className: "muted", textContent: "Personne pour l'instant." }),
+      el("ul", { className: "group" }, ...shown.map((r) => el("li", {}, el("details", {},
         el("summary", { className: "item" }, el("div", { className: "grow" }, r.name || r.email, el("small", { textContent: (r.name ? r.email + " · " : "") + activity(r) + (r.error ? " · " + r.error : "") }))),
         el("ul", { className: "mail-events" }, ...(r.events.length ? r.events.map((e) => el("li", { textContent: when(e.at) + " · " + (r.name || r.email) + " " + EVENT[e.type] + (e.title && e.type !== "open" && e.type !== "visit" ? " « " + e.title + " »" : "") }))
           : [el("li", { textContent: "Rien pour l'instant." })])))))));
@@ -2790,23 +3000,34 @@ if (youtubeBack) {
 
 // ——— Détails d'un titre ———
 let detailsId = null, detailsView = "main";
+let lyricsNote = ""; // le dernier message de la transcription par IA, gardé quand la vue se redessine
 let sync = null; // la synchronisation des paroles en cours : { tid, lines: [{ at, text }], i : la prochaine ligne à marquer }
 // L'écriture et la synchronisation des paroles ont leur propre lecteur : le lecteur du site se met en pause, et celui-ci
 // s'arrête dès qu'on les quitte.
 const syncAudio = new Audio();
 syncAudio.preload = "auto";
-const LYRICS_VIEWS = ["lyrics", "lyrics-sync"];
+// Son volume à lui, gardé d'une visite à l'autre.
+try { const v = Number(localStorage.getItem("onirique.syncVolume") ?? 1); if (v >= 0 && v <= 1) syncAudio.volume = v; } catch {}
+const LYRICS_VIEWS = ["lyrics", "lyrics-sync", "lyrics-words"];
+let wsync = null; // la synchronisation mot par mot en cours : { tid, lines, li, wi : le prochain mot à marquer, rate : la vitesse }
 const syncing = () => $("details").open && LYRICS_VIEWS.includes(detailsView);
 syncAudio.addEventListener("play", () => player.audio.pause());
 // Le lecteur des paroles : lecture, position et durée ; le même son d'un écran à l'autre, à la même position.
 function syncBar(v) {
   if (syncAudio.dataset.vid !== String(v.id)) { syncAudio.src = v.url; syncAudio.dataset.vid = v.id; }
+  syncAudio.preservesPitch = true;
+  syncAudio.playbackRate = detailsView === "lyrics-words" && wsync ? wsync.rate : 1;
   const playBtn = el("button", { className: "round", id: "sync-play", type: "button", ariaLabel: syncAudio.paused ? "Lecture" : "Pause",
     onclick: () => (syncAudio.paused ? syncAudio.play().catch(fail) : syncAudio.pause()) }, icon(syncAudio.paused ? "play" : "pause"));
   const range = el("input", { type: "range", id: "sync-range", className: "sync-range", min: 0, max: syncAudio.duration || v.duration || 0, step: 0.01, value: syncAudio.currentTime, ariaLabel: "Position dans le titre" });
-  range.oninput = () => { syncAudio.currentTime = Number(range.value); };
-  return el("div", { className: "sync-player" }, playBtn, range, el("b", { id: "sync-clock", textContent: OP.time(syncAudio.currentTime) + " / " + OP.time(syncAudio.duration || v.duration) }));
+  range.oninput = () => { syncAudio.currentTime = Number(range.value); fillRange(range); };
+  const vol = el("input", { type: "range", className: "sync-vol", min: 0, max: 1, step: 0.01, value: syncAudio.volume, ariaLabel: "Volume" });
+  vol.oninput = () => { syncAudio.volume = Number(vol.value); fillRange(vol); try { localStorage.setItem("onirique.syncVolume", vol.value); } catch {} };
+  fillRange(range); fillRange(vol);
+  return el("div", { className: "sync-player" }, playBtn, range, el("b", { id: "sync-clock", textContent: OP.time(syncAudio.currentTime) + " / " + OP.time(syncAudio.duration || v.duration) }),
+    el("span", { className: "sync-vol-ico", title: "Volume" }, icon("volume")), vol);
 }
+const fillRange = (r) => r.style.setProperty("--p", (Number(r.max) > 0 ? r.value / r.max * 100 : 0) + "%");
 $("details").addEventListener("close", () => { syncAudio.pause(); stopCompare(); });
 
 // ——— Comparer deux versions ———
@@ -2889,7 +3110,7 @@ document.addEventListener("keydown", (event) => {
 player.audio.addEventListener("play", () => syncAudio.pause());
 function syncProgress() {
   const range = document.getElementById("sync-range"), clock = document.getElementById("sync-clock"), d = syncAudio.duration || 0;
-  if (range && !range.matches(":active")) { range.max = d; range.value = syncAudio.currentTime; }
+  if (range && !range.matches(":active")) { range.max = d; range.value = syncAudio.currentTime; fillRange(range); }
   if (clock) clock.textContent = OP.time(syncAudio.currentTime) + " / " + OP.time(d);
 }
 // Fenêtre fermée (croix, Échap, clic à côté) ou autre vue : le son s'arrête, même si l'évènement « close » se perd.
@@ -2899,17 +3120,31 @@ for (const type of ["play", "pause"]) syncAudio.addEventListener(type, () => {
   const b = document.getElementById("sync-play");
   if (b) { b.replaceChildren(icon(syncAudio.paused ? "play" : "pause")); b.ariaLabel = syncAudio.paused ? "Lecture" : "Pause"; }
 });
-// Espace marque la ligne, ↑ annule le dernier repère, où que soit le focus (hors champ de saisie). Le document les reçoit
+// ↓ (ou Espace) marque la ligne, ↑ annule le dernier repère, où que soit le focus (hors champ de saisie). Le document les reçoit
 // en premier : après chaque repère la fenêtre est redessinée et le focus retombe sur la page.
 document.addEventListener("keydown", (event) => {
   if (!syncing() || event.target.tagName === "TEXTAREA" || (event.target.tagName === "INPUT" && event.target.type !== "range")) return;
-  const id = event.key === " " ? "sync-mark" : event.key === "ArrowUp" ? "sync-undo" : null;
+  const id = event.key === "ArrowDown" || event.key === " " ? "sync-mark" : event.key === "ArrowUp" ? "sync-undo" : null;
   if (!id) return;
   event.preventDefault(); event.stopPropagation();
   if (!event.repeat) document.getElementById(id)?.click();
 }, true);
 // Sans cela, Espace relâché sur un bouton déjà cliqué le cliquerait une seconde fois.
 document.addEventListener("keyup", (event) => { if (syncing() && event.key === " ") event.preventDefault(); }, true);
+// Retirer une prod d'un pack sans la perdre : elle part, avec toutes ses versions, dans le pack « Prods hors pack », créé au besoin.
+const OUTSIDE_PACK = "Prods hors pack";
+async function unpack(p, t) {
+  if (!confirm("Retirer « " + t.title + " » de « " + p.title + " » ? La prod et toutes ses versions vont dans « " + OUTSIDE_PACK + " ».")) return;
+  try {
+    const home = data.projects.find((x) => x.mine && x.kind === "pack" && x.title === OUTSIDE_PACK);
+    const id = home ? home.id : (await api("POST", "/me/sounds/projects", { title: OUTSIDE_PACK, kind: "pack" })).id;
+    await api("PATCH", "/me/sounds/tracks/" + t.id, { projectId: id });
+    $("details").close();
+    await refresh();
+  } catch (error) { fail(error); }
+}
+// ONIRIQUE CUT dans un nouvel onglet : il reprend le titre (version en avant, BPM, paroles à jour) depuis CLOUD.
+function openCut(t) { open("cut?track=" + t.id, "_blank"); }
 function openDetails(tid, view = "main") { detailsId = tid; detailsView = view; renderDetails(); if (!$("details").open) $("details").showModal(); }
 function drawPeaks(canvas, peaks) {
   requestAnimationFrame(() => {
@@ -3040,7 +3275,8 @@ function renderDetails() {
         item("star", "Étape", { state: OP.stageLabel(t.stage) || "Non précisée", chevron: true, onclick: (event) => stageMenu(event.currentTarget, t) })),
       group(
         item("volume", "Volume avant sortie", { hint: "LUFS, pics, et ce que chaque plateforme fera du titre", chevron: true, onclick: () => { detailsView = "tool-lufs"; renderDetails(); } }),
-        item("repeat", "Comparer à une référence", { hint: "Ton titre face à un son de référence, volumes égalisés", chevron: true, onclick: () => { detailsView = "tool-ref"; renderDetails(); } })),
+        item("repeat", "Comparer à une référence", { hint: "Ton titre face à un son de référence, volumes égalisés", chevron: true, onclick: () => { detailsView = "tool-ref"; renderDetails(); } }),
+        item("play", "Monter une vidéo sur le beat", { hint: "Tes clips coupés sur le tempo du titre, en vidéo TikTok (ONIRIQUE CUT)", onclick: () => openCut(t) })),
       group(
         item("queue", "Statistiques", { state: t.plays ? t.plays + " écoute" + (t.plays > 1 ? "s" : "") : "", chevron: true, onclick: () => { detailsView = "stats"; renderDetails(); } }),
         item("star", "Répartition", { hint: "Les parts de chacun, et la fiche à signer en PDF", state: t.splits.length ? t.splits.length + " personne" + (t.splits.length > 1 ? "s" : "") : "", chevron: true,
@@ -3064,7 +3300,8 @@ function renderDetails() {
           if (title) await api("PATCH", "/me/sounds/tracks/" + t.id, { title }).then(refresh, fail);
           openDetails(t.id);
         } })),
-      group(item("close", "Supprimer", { danger: true, onclick: () => confirm("Supprimer « " + t.title + " » et toutes ses versions ?")
+      group(p.mine && p.kind === "pack" && p.title !== OUTSIDE_PACK && item("chevron", "Retirer du pack", { hint: "La prod et ses versions vont dans « " + OUTSIDE_PACK + " »", onclick: () => unpack(p, t) }),
+        item("close", "Envoyer à la corbeille", { hint: "Tu peux le restaurer pendant 30 jours", danger: true, onclick: () => confirm("Mettre « " + t.title + " » et toutes ses versions à la corbeille ? Tu pourras le restaurer pendant 30 jours.")
         && api("DELETE", "/me/sounds/tracks/" + t.id).then(() => { $("details").close(); return refresh(); }).catch(fail) }))];
   } else if (detailsView === "stats") {
     const st = t.stats, pct = (x) => (x === null ? "—" : Math.round(x * 100) + " %");
@@ -3080,7 +3317,7 @@ function renderDetails() {
       el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Les auditeurs qui ne sont pas connectés à un compte ONIRIQUE sont comptés sans être nommés. La part écoutée est suivie depuis le 23 octobre 2026." })];
   } else if (detailsView === "tool-lufs" || detailsView === "tool-ref") {
     // Les outils du site, en version compacte, avec la version en avant déjà chargée.
-    const page = detailsView === "tool-lufs" ? "volume-lufs.html" : "comparer-mix.html";
+    const page = detailsView === "tool-lufs" ? "volume-lufs" : "comparer-mix";
     right = [back(detailsView === "tool-lufs" ? "Volume avant sortie" : "Comparer à une référence"),
       el("iframe", { className: "tool-frame", title: detailsView === "tool-lufs" ? "Volume avant sortie" : "Comparer à une référence",
         src: page + "?embed=1&src=" + encodeURIComponent(v.url) + "&name=" + encodeURIComponent(v.filename) })];
@@ -3148,21 +3385,85 @@ function renderDetails() {
       el("div", { className: "row" }, el("button", { className: "btn btn-primary", type: "button", textContent: "Enregistrer", onclick: () =>
         api("PATCH", "/me/sounds/versions/" + v.id, { note: note.value }).then(() => { saved.textContent = "Enregistré."; return refresh(); }, fail) }), saved)];
   } else if (detailsView === "lyrics") {
-    const text = el("textarea", { className: "lyrics-edit", value: t.lyrics, maxLength: 20000, placeholder: "Colle les paroles ici, une ligne par ligne…", ariaLabel: "Paroles de " + t.title });
-    const saved = el("span", { className: "muted", style: "font-size:13px" });
+    const text = el("textarea", { className: "lyrics-edit", value: lyricsText(parseLyrics(t.lyrics), false), maxLength: 20000, placeholder: "Colle les paroles ici, une ligne par ligne…", ariaLabel: "Paroles de " + t.title });
+    const saved = el("span", { className: "muted", style: "font-size:13px", textContent: lyricsNote });
+    lyricsNote = "";
+    // Les paroles écrites et calées mot par mot par une IA, sur la voix isolée : rien ne quitte le navigateur.
+    const ai = el("button", { className: "btn btn-ghost", type: "button", textContent: text.value.trim() ? "Caler avec l'IA" : "Transcrire avec l'IA", title: "Paroles déjà écrites : l'IA les cale mot par mot. Sinon, elle les écrit." });
+    text.addEventListener("input", () => { ai.textContent = text.value.trim() ? "Caler avec l'IA" : "Transcrire avec l'IA"; });
+    ai.onclick = async () => {
+      // Des paroles déjà écrites : l'IA les cale mot par mot sans toucher au texte ; sinon elle les écrit.
+      const written = text.value.trim();
+      ai.disabled = true;
+      try {
+        saved.textContent = "Lecture du son…";
+        const buffer = await new AudioContext().decodeAudioData(await (await fetch(v.url)).arrayBuffer());
+        const out = await (await import("./assets/ai-lyrics.js?v=2")).transcribe(buffer, (m) => { saved.textContent = m; }, { written });
+        if (!out.words) { saved.textContent = written ? "L'IA n'a pas réussi à caler ces paroles sur le son." : "L'IA n'a pas entendu de paroles dans ce son."; return; }
+        await api("PATCH", "/me/sounds/tracks/" + t.id, { lyrics: out.lrc });
+        lyricsNote = out.aligned ? out.words + " mots de tes paroles calés mot par mot par l'IA (ton texte est gardé)." : out.words + " mots écrits et calés mot par mot par l'IA : relis-les et corrige un mot si besoin. Astuce : colle tes paroles d'abord, l'IA les calera sans faute.";
+        await refresh();
+      } catch (error) { saved.textContent = "La transcription n'a pas marché : " + error.message; }
+      finally { ai.disabled = false; }
+    };
+    // Un son déjà sorti : ses paroles sur LRCLIB, à relire avant d'enregistrer.
+    const find = el("button", { className: "btn btn-ghost", type: "button", textContent: "Chercher les paroles", title: "Pour un son déjà sorti : ses paroles sur LRCLIB, une base de paroles libre (synchronisées quand elles existent)." });
+    find.onclick = async () => {
+      if (text.value.trim() && !confirm("Remplacer les paroles écrites ici par celles trouvées ?")) return;
+      find.disabled = true; saved.textContent = "Recherche des paroles…";
+      // Genius et Musixmatch ne donnent pas leurs paroles aux autres sites : on les ouvre sur la bonne recherche, pour les
+      // copier ici à la main.
+      const query = encodeURIComponent((p.artist || p.owner.name) + " " + t.title), link = (href, text) => el("a", { href, target: "_blank", rel: "noopener", textContent: text });
+      const elsewhere = (why) => saved.replaceChildren(why + " Les chercher sur ", link("https://genius.com/search?q=" + query, "Genius"), " ou ", link("https://www.musixmatch.com/search?query=" + query, "Musixmatch"),
+        " pour les coller ici (« Caler avec l'IA » les synchronise ensuite), ou « Transcrire avec l'IA ».");
+      try {
+        const found = await findLyrics(p.artist || p.owner.name, t.title, v.duration);
+        if (!found) { elsewhere("Pas de paroles trouvées pour « " + t.title + " »."); return; }
+        text.value = found.synced || found.plain; text.dispatchEvent(new Event("input"));
+        saved.textContent = (found.synced ? "Paroles synchronisées trouvées" : "Paroles trouvées (sans synchro)") + " : « " + found.artist + " - " + found.title + " ». Relis-les, puis Enregistrer."
+          + (found.synced ? " Si ta version n'est pas celle qui est sortie, resynchronise-les." : "");
+      } catch { elsewhere("La base de paroles (LRCLIB) ne répond pas pour « " + t.title + " » : réessaie dans une minute."); }
+      finally { find.disabled = false; }
+    };
     right = [back("Paroles"), el("p", { className: "muted", style: "margin:0", textContent: "Elles s'affichent à côté du projet pendant l'écoute. Synchronise-les pour qu'elles défilent avec le son, ligne par ligne." }), syncBar(v), text,
       el("div", { className: "row" },
         el("button", { className: "btn btn-primary", type: "button", textContent: "Enregistrer", onclick: () =>
-          api("PATCH", "/me/sounds/tracks/" + t.id, { lyrics: text.value }).then(() => { saved.textContent = "Enregistré."; return refresh(); }, fail) }),
+          api("PATCH", "/me/sounds/tracks/" + t.id, { lyrics: lyricsText(keepWords(parseLyrics(text.value), t.lyrics)) }).then(() => { saved.textContent = "Enregistré."; return refresh(); }, fail) }),
         el("button", { className: "btn btn-ghost", type: "button", textContent: "Synchroniser", onclick: () => {
-          const lines = parseLyrics(text.value).filter((l) => l.text.trim());
+          const lines = keepWords(parseLyrics(text.value), t.lyrics).filter((l) => l.text.trim());
           if (!lines.length) { text.focus(); return; }
           sync = { tid: t.id, lines, i: Math.max(0, lines.findIndex((l) => l.at === null)) };
           if (lines.every((l) => l.at !== null)) sync.i = lines.length;
           // La synchronisation part du début : son premier appui lance le titre.
           syncAudio.pause(); syncAudio.currentTime = 0;
           detailsView = "lyrics-sync"; renderDetails();
-        } }), saved)];
+        } }),
+        el("button", { className: "btn btn-ghost", type: "button", textContent: "Mot par mot (pour CUT)", onclick: () => {
+          const lines = keepWords(parseLyrics(text.value), t.lyrics).filter((l) => l.text.trim());
+          if (!lines.length) { text.focus(); return; }
+          for (const l of lines) {
+            l.words = l.words || OP.gluePunct((l.marked ?? l.text).split(/\s+/).filter(Boolean)
+              .map((w) => { const m = /^\*\*(.+?)\*\*(.*)$/.exec(w); return m ? { at: null, text: m[1] + m[2], strong: true } : { at: null, text: w }; }))
+              .map(({ ti, parts, ...w }) => w);
+            delete l.marked;
+          }
+          wsync = { tid: t.id, lines, li: 0, wi: 0, rate: wsync ? wsync.rate : 0.5, strongMode: false };
+          const first = lines.findIndex((l) => l.words.some((w) => w.at === null));
+          if (first < 0) wsync.li = lines.length; else { wsync.li = first; wsync.wi = lines[first].words.findIndex((w) => w.at === null); }
+          // On reprend un peu avant la première ligne à faire, si elle est déjà calée ligne par ligne.
+          const ref = first > 0 ? lines[first - 1].words.at(-1).at : lines[Math.max(0, first)]?.at;
+          syncAudio.pause(); syncAudio.currentTime = ref != null ? Math.max(0, ref - 2) : 0;
+          detailsView = "lyrics-words"; renderDetails();
+        } }),
+        // Enregistré tout de suite : Enregistrer remettrait les temps des mots déjà calés (keepWords). Les ** sont gardés.
+        el("button", { className: "btn btn-ghost", type: "button", textContent: "Retirer les temps", onclick: () => {
+          const lines = parseLyrics(text.value);
+          if (!lines.some((l) => l.at !== null || l.words)) { saved.textContent = "Ces paroles n'ont pas de temps."; return; }
+          if (!confirm("Retirer tous les temps de ces paroles (lignes et mots) ? Le texte est gardé, mais il faudra les resynchroniser.")) return;
+          const plain = lyricsText(lines.map((l) => ({ ...l, at: null })), false);
+          api("PATCH", "/me/sounds/tracks/" + t.id, { lyrics: plain }).then(() => { lyricsNote = "Temps retirés : il ne reste que le texte."; return refresh(); }, fail);
+        } }), find, ai, saved),
+      el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Mot par mot : chaque mot apparaît pile quand il est chanté dans les vidéos ONIRIQUE CUT (styles « mot par mot »). Le lecteur peut ralentir le son pour être précis. Un mot entouré de ** (comme **ça**) est un mot FORT : il ressort en grand dans CUT." })];
   } else if (detailsView === "lyrics-sync") {
     if (!sync || sync.tid !== t.id) { detailsView = "lyrics"; return renderDetails(); }
     const next = sync.lines[sync.i], touch = matchMedia("(pointer: coarse)").matches;
@@ -3170,12 +3471,13 @@ function renderDetails() {
     // Les touches à côté des boutons, comme sur Musixmatch (pas sur écran tactile).
     const key = (label) => (touch ? null : el("kbd", { textContent: label }));
     const mark = el("button", { className: "btn btn-primary", id: "sync-mark", type: "button", disabled: !next },
-      next ? (syncAudio.paused && !syncAudio.currentTime ? "Lancer le titre" : "Marquer la ligne") : "Toutes les lignes sont marquées", next ? key("Espace") : null);
+      next ? (syncAudio.paused && !syncAudio.currentTime ? "Lancer le titre" : "Marquer la ligne") : "Toutes les lignes sont marquées", next ? key("↓") : null);
     mark.onclick = () => {
       if (!next) return;
       // Le premier appui lance le titre ; les suivants posent le repère de la ligne.
       if (syncAudio.paused && !syncAudio.currentTime) { syncAudio.play().catch(fail); return renderDetails(); }
       next.at = syncAudio.currentTime;
+      delete next.words;
       sync.i++;
       renderDetails(); showNext();
     };
@@ -3191,7 +3493,7 @@ function renderDetails() {
     const saved = el("span", { className: "muted", style: "font-size:13px" });
     right = [back("Synchroniser les paroles"),
       el("p", { className: "muted", style: "margin:0", textContent: touch ? "Lance le titre, puis touche Marquer au moment où chaque ligne commence. Touche une ligne pour la reprendre à partir de là."
-        : "Lance le titre, puis appuie sur Espace au moment où chaque ligne commence, ↑ pour annuler le dernier repère. Clique une ligne pour la reprendre à partir de là." }),
+        : "Lance le titre, puis appuie sur ↓ (flèche du bas) au moment où chaque ligne commence, ↑ pour annuler le dernier repère. Clique une ligne pour la reprendre à partir de là." }),
       syncBar(v),
       el("div", { className: "row sync-keys" }, mark, undo),
       el("ol", { className: "group sync-lines" }, ...sync.lines.map((l, i) => el("li", { className: i === sync.i ? "next" : l.at !== null ? "done" : "" },
@@ -3205,6 +3507,89 @@ function renderDetails() {
           api("PATCH", "/me/sounds/tracks/" + t.id, { lyrics: lyricsText(sync.lines) }).then(() => { saved.textContent = "Enregistré."; return refresh(); }, fail) }),
         el("button", { className: "btn btn-ghost", type: "button", textContent: "Tout effacer", onclick: () => {
           sync.lines.forEach((l) => { l.at = null; }); sync.i = 0;
+          syncAudio.pause(); syncAudio.currentTime = 0;
+          renderDetails();
+        } }), saved)];
+  } else if (detailsView === "lyrics-words") {
+    if (!wsync || wsync.tid !== t.id) { detailsView = "lyrics"; return renderDetails(); }
+    const s = wsync, touch = matchMedia("(pointer: coarse)").matches, line = s.lines[s.li], word = line && line.words[s.wi];
+    const key = (label) => (touch ? null : el("kbd", { textContent: label }));
+    const go = (at) => { syncAudio.currentTime = Math.max(0, at); };
+    const mark = el("button", { className: "btn btn-primary", id: "sync-mark", type: "button", disabled: !word },
+      word ? (syncAudio.paused ? "Lancer le son" : "Marquer « " + word.text + " »") : "Tous les mots sont marqués", word ? key("↓") : null);
+    mark.onclick = () => {
+      if (!word) return;
+      // Le premier appui lance le son ; les suivants posent le moment du mot.
+      if (syncAudio.paused) { syncAudio.play().catch(fail); return renderDetails(); }
+      word.at = syncAudio.currentTime;
+      if (s.wi === 0) line.at = word.at;
+      if (++s.wi >= line.words.length) { s.li++; s.wi = 0; }
+      renderDetails();
+      $("details").querySelector(".word-lines .next")?.scrollIntoView({ block: "nearest" });
+    };
+    // Annuler le dernier mot : il redevient à marquer, et le son repart un peu avant.
+    const undo = el("button", { className: "btn btn-ghost", id: "sync-undo", type: "button", disabled: !s.li && !s.wi }, "Annuler le dernier", key("↑"));
+    undo.onclick = () => {
+      if (!s.li && !s.wi) return;
+      if (s.wi > 0) s.wi--; else { s.li--; s.wi = s.lines[s.li].words.length - 1; }
+      const w = s.lines[s.li].words[s.wi];
+      if (w.at !== null) go(w.at - 1.5);
+      w.at = null;
+      renderDetails();
+    };
+    const speeds = el("div", { className: "chips-row" }, el("span", { className: "muted", textContent: "Vitesse" }),
+      ...[0.25, 0.5, 1, 1.25].map((r) => el("button", { type: "button", className: "speed" + (s.rate === r ? " on" : ""), ariaPressed: String(s.rate === r),
+        textContent: r.toFixed(2).replace(".", ","), onclick: () => { s.rate = r; syncAudio.playbackRate = r; renderDetails(); } })),
+      el("button", { type: "button", className: "speed" + (s.strongMode ? " on" : ""), ariaPressed: String(!!s.strongMode), style: "margin-left:auto",
+        textContent: s.strongMode ? "Mots FORTS : touche les mots" : "Choisir les mots FORTS", onclick: () => { s.strongMode = !s.strongMode; renderDetails(); } }));
+    const done = s.lines.reduce((n, l) => n + l.words.filter((w) => w.at !== null).length, 0), total = s.lines.reduce((n, l) => n + l.words.length, 0);
+    const saved = el("span", { className: "muted", style: "font-size:13px", textContent: s.note || "" });
+    s.note = "";
+    // L'IA cale chaque mot sur la voix (rien ne quitte le navigateur) : le texte ne change pas.
+    const aiWords = el("button", { className: "btn btn-ghost", type: "button", textContent: "Caler avec l'IA",
+      title: "L'IA donne son moment à chaque mot ; ton texte et le moment des lignes déjà calées restent les tiens." });
+    aiWords.onclick = async () => {
+      aiWords.disabled = true;
+      try {
+        syncAudio.pause();
+        saved.textContent = "Lecture du son…";
+        const buffer = await new AudioContext().decodeAudioData(await (await fetch(v.url)).arrayBuffer());
+        const written = s.lines.map((l) => l.words.map((w) => w.text).join(" ")).join("\n");
+        const out = await (await import("./assets/ai-lyrics.js?v=2")).transcribe(buffer, (m) => { saved.textContent = m; }, { written });
+        const times = [...out.lrc.matchAll(/<(\d+):(\d+(?:[.,]\d+)?)>/g)].map((m) => Number(m[1]) * 60 + Number(m[2].replace(",", ".")));
+        if (!out.aligned || !times.length) { saved.textContent = "L'IA n'a pas réussi à caler ces paroles sur le son."; return; }
+        s.lines.flatMap((l) => l.words).forEach((w, i) => { if (times[i] !== undefined) w.at = times[i]; });
+        s.lines.forEach((l) => { if (l.at === null && l.words.length && l.words[0].at !== null) l.at = l.words[0].at; });
+        s.li = s.lines.length; s.wi = 0;
+        s.note = times.length + " mots calés par l'IA, ton texte est gardé. Écoute pour vérifier, touche un mot pour le reprendre à la main, puis Enregistrer.";
+        renderDetails();
+      } catch (error) { saved.textContent = "Le calage par l'IA n'a pas marché : " + error.message; }
+      finally { aiWords.disabled = false; }
+    };
+    right = [back("Synchroniser mot par mot"),
+      el("p", { className: "muted", style: "margin:0", textContent: (touch ? "Lance le son, puis touche Marquer à chaque mot chanté." : "Lance le son, puis appuie sur ↓ (flèche du bas) à chaque mot chanté, ↑ pour annuler.")
+        + " Ralentis le son (0,25 ou 0,50) pour être précis. Touche un mot pour reprendre à partir de lui." }),
+      syncBar(v), speeds,
+      el("div", { className: "row sync-keys" }, mark, undo, aiWords, el("span", { className: "muted", style: "font-size:13px", textContent: done + " / " + total + " mots" })),
+      el("ol", { className: "group word-lines" }, ...s.lines.map((l, li) => el("li", { className: li === s.li ? "next" : l.words.every((w) => w.at !== null) ? "done" : "" },
+        el("span", { className: "when", textContent: l.at === null ? "—" : OP.time(l.at) }),
+        el("span", { className: "words" }, ...l.words.map((w, wi) => el("button", { type: "button",
+          className: (li === s.li && wi === s.wi ? "next" : w.at !== null ? "done" : "") + (w.strong ? " strong" : ""), textContent: w.text,
+          title: s.strongMode ? (w.strong ? "Mot FORT : touche pour le remettre normal" : "Touche pour le mettre en FORT") : w.at === null ? "Pas encore marqué" : OP.time(w.at),
+          onclick: () => {
+            // Mode « mots forts » : le mot ressortira en grand dans ONIRIQUE CUT.
+            if (s.strongMode) { w.strong = !w.strong; return renderDetails(); }
+            s.li = li; s.wi = wi;
+            const prev = wi > 0 ? l.words[wi - 1].at : li > 0 ? s.lines[li - 1].words.at(-1).at : null;
+            const at = w.at ?? prev ?? l.at;
+            if (at !== null && at !== undefined) go(at - 1.5);
+            renderDetails();
+          } })))))),
+      el("div", { className: "row" },
+        el("button", { className: "btn btn-primary", type: "button", textContent: "Enregistrer", onclick: () =>
+          api("PATCH", "/me/sounds/tracks/" + t.id, { lyrics: lyricsText(s.lines) }).then(() => { saved.textContent = "Enregistré."; return refresh(); }, fail) }),
+        el("button", { className: "btn btn-ghost", type: "button", textContent: "Tout effacer", onclick: () => {
+          s.lines.forEach((l) => l.words.forEach((w) => { w.at = null; })); s.li = 0; s.wi = 0;
           syncAudio.pause(); syncAudio.currentTime = 0;
           renderDetails();
         } }), saved)];
@@ -3242,7 +3627,12 @@ function renderDetails() {
       state: x.id === p.id ? "Ici" : "", onclick: x.id === p.id ? null : () => api("PATCH", "/me/sounds/tracks/" + t.id, { projectId: x.id }).then(() => { detailsView = "main"; return refresh(); }).catch(fail),
     })))];
   }
-  $("details").replaceChildren(el("div", { className: "details" }, left, el("div", { className: "details-right" }, ...right.filter(Boolean))));
+  // Redessinée sur la même vue (un repère posé, par exemple), la fenêtre reste où on avait défilé, au lieu de remonter tout en haut.
+  const SCROLLERS = [".details-right", ".sync-lines", ".word-lines"], dialog = $("details");
+  const scrolled = dialog.dataset.view === detailsView + ":" + detailsId ? [dialog.scrollTop, ...SCROLLERS.map((q) => dialog.querySelector(q)?.scrollTop || 0)] : null;
+  dialog.dataset.view = detailsView + ":" + detailsId;
+  dialog.replaceChildren(el("div", { className: "details" }, left, el("div", { className: "details-right" }, ...right.filter(Boolean))));
+  if (scrolled) { dialog.scrollTop = scrolled[0]; SCROLLERS.forEach((q, n) => { const box = dialog.querySelector(q); if (box) box.scrollTop = scrolled[n + 1]; }); }
 }
 
 // ——— Partage ———
@@ -3439,6 +3829,78 @@ async function openSettings() {
 }
 $("settings-open").onclick = openSettings;
 
+// ——— La corbeille : les titres supprimés, à restaurer ou à effacer, effacés tout seuls 30 jours après ———
+async function openTrash() {
+  const dialog = $("trash");
+  let trash;
+  try { trash = await api("GET", "/me/sounds/trash"); } catch (e) { return alert(e.message); }
+  const left = (ms) => { const d = Math.max(0, Math.ceil((ms - Date.now()) / 86400000)); return d <= 1 ? "effacé demain" : "effacé dans " + d + " jours"; };
+  const act = (promise) => promise.then(() => Promise.all([refresh(), openTrash()]), fail);
+  const line = (title, sub, cover, restore, erase) => el("li", {}, el("div", { className: "item" }, cover,
+    el("span", { className: "grow" }, title, el("small", { textContent: sub })),
+    el("button", { className: "btn btn-ghost", type: "button", textContent: "Restaurer", onclick: () => act(api("POST", restore)) }),
+    el("button", { className: "x", type: "button", ariaLabel: "Effacer « " + title + " » pour de bon",
+      onclick: () => confirm("Effacer « " + title + " » pour de bon ? Ça ne pourra pas être annulé.") && act(api("DELETE", erase)) }, icon("close"))));
+  dialog.replaceChildren(
+    el("div", { className: "dlg-head" }, el("b", { textContent: "Corbeille" }), el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close"))),
+    el("div", { className: "stack" },
+      el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Les projets et les titres supprimés restent ici " + trash.days + " jours, puis sont effacés pour de bon. Ils ne comptent plus dans ton espace et leurs liens d'écoute sont fermés tant qu'ils y sont." }),
+      trash.projects.length ? el("div", { className: "sub-title", textContent: "Projets" }) : null,
+      trash.projects.length ? el("ul", { className: "group" }, ...trash.projects.map((p) => line(p.title,
+        count(p.tracks, "titre", "titres") + " · " + size(p.size) + " · " + left(p.purgeAt), p.cover ? el("img", { className: "trash-cover", src: p.cover, alt: "" }) : null,
+        "/me/sounds/trash/projects/" + p.id + "/restore", "/me/sounds/trash/projects/" + p.id))) : null,
+      trash.tracks.length && trash.projects.length ? el("div", { className: "sub-title", textContent: "Titres" }) : null,
+      trash.tracks.length ? el("ul", { className: "group" }, ...trash.tracks.map((t) => line(t.title, (t.from ? t.from + " · " : "") + size(t.size) + " · " + left(t.purgeAt), null,
+        "/me/sounds/trash/" + t.id + "/restore", "/me/sounds/trash/" + t.id))) : null,
+      trash.tracks.length || trash.projects.length ? null : el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: "La corbeille est vide." })));
+  if (!dialog.open) dialog.showModal();
+}
+
+// ——— SCAN : les prods de mes packs cherchées dans les titres sortis sur les plateformes (Spotify, Deezer, YouTube…) ———
+let scanOnly = null;
+function openScan(trackId = null) {
+  scanOnly = trackId;
+  renderScan();
+  if (!$("scan").open) $("scan").showModal();
+}
+$("scan-open").onclick = () => openScan();
+function renderScan() {
+  const dialog = $("scan");
+  const all = data.projects.filter((p) => p.mine && p.kind === "pack").flatMap((p) => p.tracks.map((t) => ({ p, t })));
+  const prods = scanOnly ? all.filter(({ t }) => t.id === scanOnly) : all;
+  if (!prods.length) return dialog.close();
+  const plural = (n, one, many) => n + " " + (n > 1 ? many : one);
+  const date = (d) => { const x = new Date(d); return isNaN(x) ? d : x.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }); };
+  const waiting = prods.filter(({ t }) => t.scan && t.scan.status === "wait").length;
+  const found = prods.filter(({ t }) => t.scan && t.scan.matches.length);
+  const failed = prods.filter(({ t }) => t.scan && t.scan.status === "error" && !t.scan.matches.length);
+  const clean = prods.filter(({ t }) => t.scan && t.scan.status === "done" && !t.scan.matches.length).length;
+  const never = prods.filter(({ t }) => !t.scan).length;
+  const head = el("div", { className: "dlg-head" }, el("b", { textContent: scanOnly ? "SCAN · " + prods[0].t.title : "SCAN · mes prods volées ?" }),
+    el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close")));
+  const stack = el("div", { className: "stack", style: "padding:14px 18px 18px" });
+  dialog.replaceChildren(head, stack);
+  if (!data.scanReady) return stack.append(el("p", { className: "muted", style: "margin:0", textContent: "Le scan des prods n'est pas encore réglé sur le serveur." }));
+  if (!scanOnly) {
+    const go = el("button", { className: "btn btn-primary", type: "button", textContent: waiting ? "Scan en cours…" : "Scanner mes " + plural(all.length, "prod", "prods"), disabled: !!waiting });
+    go.onclick = () => { go.disabled = true; api("POST", "/me/sounds/scan").then(refresh, (error) => { fail(error); go.disabled = false; }); };
+    stack.append(el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: "Chaque prod de tes packs est cherchée dans les titres sortis sur les plateformes (Spotify, Apple Music, Deezer, YouTube…). "
+      + "Si un artiste a sorti un son sur ta prod, il ressort ici, même avec sa voix par-dessus. Une prod déposée dans un pack est scannée toute seule." }),
+      el("div", { className: "row" }, go, el("span", { className: "muted", style: "font-size:13px", textContent: waiting ? "Encore " + plural(waiting, "prod", "prods") + " à scanner, quelques secondes chacune."
+        : [plural(found.length, "prod retrouvée", "prods retrouvées"), plural(clean, "sans copie trouvée", "sans copie trouvée"), never ? plural(never, "jamais scannée", "jamais scannées") : ""].filter(Boolean).join(" · ") })));
+  } else if (waiting) stack.append(el("p", { className: "muted", style: "margin:0", textContent: "Scan en cours…" }));
+  if (found.length) stack.append(el("ul", { className: "group" }, ...found.map(({ p, t }) => el("li", {},
+    el("div", { className: "item", style: "cursor:default" }, el("div", { className: "grow" }, t.title, el("small", { textContent: p.title + " · retrouvée dans " + plural(t.scan.matches.length, "titre sorti", "titres sortis") }))),
+    el("ul", { className: "scan-hits" }, ...t.scan.matches.map((m) => el("li", {},
+      el("div", { className: "grow" }, (m.artists ? m.artists + " · " : "") + m.title,
+        el("small", { textContent: [m.album && m.album !== m.title ? m.album : "", m.released ? "sorti le " + date(m.released) : "", m.at != null ? "ta prod entendue à " + OP.time(m.at) : "", "reconnue sur " + plural(m.hits, "extrait", "extraits")].filter(Boolean).join(" · ") })),
+      ...m.links.map((l) => el("a", { className: "mini-btn", href: l.url, target: "_blank", rel: "noopener", textContent: l.name })))))))));
+  else if (scanOnly && prods[0].t.scan && prods[0].t.scan.status === "done") stack.append(el("p", { style: "margin:0", textContent: "Aucune copie trouvée." }));
+  if (failed.length) stack.append(el("ul", { className: "group" }, ...failed.map(({ p, t }) => el("li", { className: "item", style: "cursor:default" },
+    el("div", { className: "grow" }, t.title, el("small", { textContent: p.title + " · scan en échec : " + t.scan.error }))))));
+  if (found.length) stack.append(el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "À vérifier avant d'agir : une prod faite sur un sample peut faire ressortir le morceau samplé, et tes propres sorties ressortent aussi." }));
+}
+
 // ——— La cloche : ce qui est arrivé à mes sons et ce qu'ont fait mes collaborateurs ; le « … » choisit ce qui s'y affiche ———
 const NOTICE_KINDS = [["play", "Écoutes"], ["download", "Téléchargements"], ["comment", "Commentaires"], ["save", "Ajouts à un ONIRIQUE CLOUD"],
   ["add", "Titres ajoutés par un collaborateur"], ["version", "Nouvelles versions d'un collaborateur"], ["rename", "Titres et projets renommés"], ["join", "Nouveaux collaborateurs"]];
@@ -3509,7 +3971,7 @@ lightClose($("settings"));
 (async () => {
   const gate = (html) => { $("gate").hidden = false; $("gate").innerHTML = html; };
   $("empty-star").append(icon("star"));
-  if (!token) return gate('<p>Connecte-toi d\'abord à ton compte.</p><a class="btn btn-primary" href="compte.html?next=mes-sons">Se connecter</a>');
+  if (!token) return gate('<p>Connecte-toi d\'abord à ton compte.</p><a class="btn btn-primary" href="compte?next=mes-sons">Se connecter</a>');
   try {
     await refresh();
     checkInvite();
@@ -3517,12 +3979,12 @@ lightClose($("settings"));
     loadNotices();
     setInterval(() => { if (document.visibilityState === "visible") loadNotices(); }, 60000);
   } catch (error) {
-    gate(error.status === 403 ? "<p>ONIRIQUE CLOUD fait partie de l'abonnement ONIRIQUE CLOUD et page de liens : 1,99 € par mois ou 9,99 € par an.</p><a class=\"btn btn-primary\" href=\"cloud.html\">Découvrir l'abonnement</a>"
-      : error.status === 401 ? '<p>Ta session a expiré.</p><a class="btn btn-primary" href="compte.html?next=mes-sons">Se reconnecter</a>' : "<p></p>");
+    gate(error.status === 403 ? "<p>ONIRIQUE CLOUD fait partie de l'abonnement ONIRIQUE CLOUD et page de liens : 1,99 € par mois ou 9,99 € par an.</p><a class=\"btn btn-primary\" href=\"cloud\">Découvrir l'abonnement</a>"
+      : error.status === 401 ? '<p>Ta session a expiré.</p><a class="btn btn-primary" href="compte?next=mes-sons">Se reconnecter</a>' : "<p></p>");
     if (error.status !== 403 && error.status !== 401) $("gate").firstChild.textContent = error.message;
   }
 })();
 </script>
 <script src="assets/account.js?v=8"></script>
-<script src="assets/site-nav.js?v=13"></script>
+<script src="assets/site-nav.js?v=14"></script>
 </html>

@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=ad5318d8"></script>
+<script src="assets/i18n.js?v=2f9cddc9"></script>
 <script src="assets/ui.js?v=3"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
@@ -139,7 +139,7 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-
 <header>
   <div class="wrap">
     <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
-    <div class="between"><a class="btn btn-ghost" href="compte.html">Mon compte</a><a href="compte.html" data-account data-account-manual hidden>Compte</a></div>
+    <div class="between"><a class="btn btn-ghost" href="compte">Mon compte</a><a href="compte" data-account data-account-manual hidden>Compte</a></div>
   </div>
 </header>
 
@@ -591,7 +591,7 @@ $("copy").onclick = async () => {
 
 (async () => {
   const gate = (html) => { $("gate").hidden = false; $("gate").innerHTML = html; };
-  if (!token) return gate('<p>Connecte-toi d\'abord à ton compte.</p><a class="btn btn-primary" href="compte.html">Se connecter</a>');
+  if (!token) return gate('<p>Connecte-toi d\'abord à ton compte.</p><a class="btn btn-primary" href="compte">Se connecter</a>');
   try {
     const data = await api("GET", "/me/links");
     if (data.address) { base = data.address; $("address-base").textContent = host() + "/"; }
@@ -601,12 +601,12 @@ $("copy").onclick = async () => {
     if (!saved) { dirty = true; $("state").textContent = "Pas encore en ligne : enregistre ta page"; $("state").className = "state dirty"; }
     loadStats();
   } catch (error) {
-    gate(error.status === 403 ? "<p>La page de liens fait partie de l'abonnement ONIRIQUE CLOUD et page de liens : 1,99 € par mois ou 9,99 € par an.</p><a class=\"btn btn-primary\" href=\"cloud.html\">Découvrir l'abonnement</a>"
-      : error.status === 401 ? '<p>Ta session a expiré.</p><a class="btn btn-primary" href="compte.html">Se reconnecter</a>' : "<p></p>");
+    gate(error.status === 403 ? "<p>La page de liens fait partie de l'abonnement ONIRIQUE CLOUD et page de liens : 1,99 € par mois ou 9,99 € par an.</p><a class=\"btn btn-primary\" href=\"cloud\">Découvrir l'abonnement</a>"
+      : error.status === 401 ? '<p>Ta session a expiré.</p><a class="btn btn-primary" href="compte">Se reconnecter</a>' : "<p></p>");
     if (error.status !== 403 && error.status !== 401) $("gate").firstChild.textContent = error.message;
   }
 })();
 </script>
 <script src="assets/account.js?v=8"></script>
-<script src="assets/site-nav.js?v=13"></script>
+<script src="assets/site-nav.js?v=14"></script>
 </html>

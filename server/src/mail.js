@@ -26,7 +26,7 @@ export const outbox = [];
 /**
  * Envoie un e-mail depuis l'adresse d'ONIRIQUE. Il part en deux versions : le texte simple, et sa mise en page à la
  * charte (mailtemplate.js), faite à partir du texte si `options.html` n'est pas fourni.
- * options : { html, buttonLabel (le bouton d'une adresse seule sur sa ligne), eyebrow, headers }
+ * options : { html, buttonLabel (le bouton d'une adresse seule sur sa ligne), eyebrow, headers, attachments }
  */
 export async function sendMail(to, subject, text, replyTo, options = {}) {
   const html = options.html ?? renderEmail({
@@ -35,7 +35,7 @@ export async function sendMail(to, subject, text, replyTo, options = {}) {
     eyebrow: options.eyebrow || 'ONIRIQUE',
     blocks: textToBlocks(text, options.buttonLabel),
   });
-  const message = { from: `ONIRIQUE <${config.mailFrom}>`, to, subject, text, html, replyTo, headers: options.headers };
+  const message = { from: `ONIRIQUE <${config.mailFrom}>`, to, subject, text, html, replyTo, headers: options.headers, attachments: options.attachments };
   if (testing) outbox.push(message);
   return transport.sendMail(message);
 }

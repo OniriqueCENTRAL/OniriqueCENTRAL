@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<script src="assets/i18n.js?v=2f9cddc9"></script>
+<script src="assets/ui.js?v=3"></script>
+<script src="assets/annonce.js?v=1"></script>
+<script src="/api/announce.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IA SPLIT : séparer la voix, l'instru, les drums et la basse — ONIRIQUE</title>
+<meta name="description" content="Sépare un morceau en pistes par IA (Demucs) : voix seule, instru sans voix, mélodie, drums et basse, en WAV. Gratuit, sans compte, dans ton navigateur : ton fichier n'est envoyé nulle part.">
+<link rel="canonical" href="https://onirique.store/split">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css">
+<link rel="stylesheet" href="assets/tools.css">
+<style>
+.bar { height: 6px; border-radius: 999px; background: rgba(0,0,0,.42); overflow: hidden; margin-top: 12px; }
+.bar i { display: block; height: 100%; width: 0; background: var(--ember); transition: width .3s; }
+#stems { display: grid; gap: 12px; }
+.player { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; margin-bottom: 6px; }
+.player .play { width: 48px; height: 48px; border-radius: 50%; border: 0; background: var(--ember); color: #fff; cursor: pointer; font-size: 15px; }
+.player input { width: 100%; accent-color: var(--ember); }
+.player span { font: 500 13px/1 var(--f-mono); color: var(--haze); font-variant-numeric: tabular-nums; }
+.vol { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.vol button { width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 50%; background: rgba(0,0,0,.42); cursor: pointer; font-size: 16px; }
+.vol input { flex: 0 1 160px; width: 160px; min-width: 0; accent-color: var(--ember); }
+.stem { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.stem .pick { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 14px; background: rgba(0,0,0,.42); color: var(--mist); font: 600 16px/1.3 var(--f-body); text-align: left; cursor: pointer; }
+.stem .pick::before { content: ""; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--haze); flex: none; }
+.stem .pick[aria-pressed="true"] { border-color: var(--ember); background: rgba(226,52,68,.16); }
+.stem .pick[aria-pressed="true"]::before { background: var(--ember); border-color: var(--ember); }
+.stem .go { padding: 11px 18px; font-size: 14px; }
+</style>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="boutique">Boutique</a><a class="btn" href="outils" data-tools>Outils</a><a class="btn" href="compte" data-account>Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <section class="hero">
+    <p class="eyebrow">Outil gratuit</p>
+    <h1><em>IA SPLIT</em> : sépare ton morceau en pistes</h1>
+    <p class="lede">La voix seule pour une acapella, l'instru sans voix pour un remix, les drums ou la basse pour un sample : dépose un son, l'IA le sépare, tu écoutes et tu télécharges chaque piste en WAV.</p>
+
+    <button class="drop" id="drop" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h6"/></svg>
+      <strong>Dépose un fichier audio ici</strong>
+      <span>ou clique pour le choisir · MP3, WAV, FLAC, M4A, OGG</span>
+    </button>
+    <input id="file" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" hidden>
+    <p class="hint" id="hint">Sans compte. La séparation se fait dans ton navigateur : ton fichier n'est envoyé nulle part. La première fois, l'IA se télécharge (172 Mo), puis reste sur l'appareil.</p>
+    <p class="error" id="error" role="alert"></p>
+  </section>
+
+  <article class="card" id="panel" hidden>
+    <p class="head"><b id="r-file"></b><span id="r-info"></span></p>
+    <div id="progress">
+      <p id="status" aria-live="polite"></p>
+      <div class="bar"><i id="bar"></i></div>
+    </div>
+    <div id="stems-box" hidden>
+      <div class="player">
+        <button class="play" id="toggle" type="button" aria-label="Lecture">▶</button>
+        <input type="range" id="seek" min="0" max="1" step="0.01" value="0" aria-label="Position dans le son">
+        <span id="time">0:00 / 0:00</span>
+      </div>
+      <div class="vol">
+        <button id="mute" type="button" aria-label="Couper le son">🔊</button>
+        <input type="range" id="volume" min="0" max="1" step="0.01" value="1" aria-label="Volume">
+      </div>
+      <div id="stems"></div>
+    </div>
+  </article>
+
+  <section class="text">
+    <h2>Les pistes</h2>
+    <p><strong>Voix</strong> : le chant seul, pour une acapella ou caler des paroles. <strong>Instru</strong> : tout sauf la voix (drums, basse et mélodie ensemble). <strong>Mélodie</strong> : les instruments mélodiques, sans drums ni basse. <strong>Drums</strong> et <strong>Basse</strong> : chacune seule.</p>
+    <h2>Questions fréquentes</h2>
+    <details><summary>Quelle IA sépare les pistes ?</summary>
+      <p>Demucs v4 (htdemucs), un modèle ouvert de Meta, parmi les meilleurs pour séparer la voix, les drums et la basse. Il tourne dans ton navigateur, sur la carte graphique quand c'est possible.</p></details>
+    <details><summary>Pourquoi c'est lent chez moi ?</summary>
+      <p>Sans carte graphique accessible au navigateur (WebGPU), l'IA tourne sur le processeur : plusieurs minutes pour un morceau. Chrome ou Edge à jour, sur ordinateur, vont le plus vite.</p></details>
+    <details><summary>Les pistes sont-elles parfaites ?</summary>
+      <p>Très propres sur la plupart des morceaux, mais il peut rester un peu de reverb ou de bruit d'une piste dans une autre. Pour un vrai remix, rien ne remplace les stems d'origine du producteur.</p></details>
+    <details><summary>Et pour une vidéo TikTok ?</summary>
+      <p>Dans <a href="cut">ONIRIQUE CUT</a>, l'IA SPLIT met directement la piste de ton choix sous une réplique de film, avant le drop.</p></details>
+  </section>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="outils">Tous les outils</a><a href="mentions-legales">Mentions légales</a><a href="cgv">CGV et CGU</a><a href="confidentialite">Confidentialité</a><a href="cookies">Cookies</a><a href="support">Support</a>
+  </nav>
+</footer>
+
+<script src="assets/audio-kit.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const A = OniriqueAudio;
+const MAX_BYTES = 400e6, MAX_SECONDS = 900, AI_RATE = 44100; // le modèle attend du 44,1 kHz stéréo
+const NAMES = [["vocals", "Voix", "voix"], ["prod", "Instru (sans voix)", "instru"], ["melo", "Mélodie", "melodie"], ["drums", "Drums", "drums"], ["bass", "Basse", "basse"]];
+let file = null, parts = null, working = false;
+
+/** Les pistes du son par IA (assets/demucs-worker.js), chacune en [gauche, droite] à 44,1 kHz. */
+function separate(L, R) {
+  return new Promise((resolve, reject) => {
+    try { navigator.storage.persist().catch(() => {}); } catch { /* navigateur trop ancien */ } // que le navigateur garde l'IA téléchargée
+    const worker = new Worker("assets/demucs-worker.js?v=2", { type: "module" });
+    const done = (fn, value) => { worker.terminate(); fn(value); };
+    worker.onmessage = ({ data }) => {
+      if (data.type === "done") done(resolve, data);
+      else if (data.type === "error") done(reject, new Error(data.message));
+      else if (data.phase === "load") progress("IA déjà sur cet appareil : chargement…", 0);
+      else progress(data.phase === "download" ? "Téléchargement de l'IA (172 Mo, une seule fois sur cet appareil)…" : "Séparation des pistes par IA…", data.value);
+    };
+    worker.onerror = (event) => done(reject, new Error(event.message || "L'IA n'a pas pu démarrer dans ce navigateur."));
+    worker.postMessage({ L, R }, [L.buffer, R.buffer]);
+  });
+}
+function progress(text, value) {
+  $("status").textContent = text + " " + Math.round(value * 100) + " %";
+  $("bar").style.width = value * 100 + "%";
+}
+
+// ——— Le lecteur : une piste à la fois ; changer de piste ou de position enchaîne en fondu, sans couper la lecture ———
+const FADE = .06;
+let ctx = null, master = null, voice = null, current = "vocals", pos = 0, seeking = false, buffers = {}, lastVolume = 1;
+const duration = () => parts.vocals[0].length / AI_RATE;
+const now = () => (voice ? Math.min(duration(), ctx.currentTime - voice.at) : pos);
+function bufferOf(key) {
+  if (!buffers[key]) {
+    const [l, r] = parts[key], b = new AudioBuffer({ length: l.length, numberOfChannels: 2, sampleRate: AI_RATE });
+    b.copyToChannel(l, 0); b.copyToChannel(r, 1); buffers[key] = b;
+  }
+  return buffers[key];
+}
+function fadeOut(v) {
+  if (!v) return;
+  const t = ctx.currentTime, g = v.gain.gain;
+  v.src.onended = null;
+  g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(0, t + FADE);
+  v.src.stop(t + FADE + .01);
+}
+/** Joue la piste choisie depuis from (secondes) ; ce qui jouait s'efface pendant que la nouvelle monte. */
+function start(from) {
+  if (!ctx) {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    master = ctx.createGain(); master.gain.value = Number($("volume").value); master.connect(ctx.destination);
+  }
+  ctx.resume();
+  const src = ctx.createBufferSource(), gain = ctx.createGain(), t = ctx.currentTime;
+  src.buffer = bufferOf(current); src.connect(gain).connect(master);
+  gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime(1, t + FADE);
+  src.start(t, Math.min(from, duration() - .05));
+  fadeOut(voice);
+  voice = { src, gain, at: t - from };
+  src.onended = () => { if (voice && voice.src === src) { voice = null; pos = 0; render(); } };
+  render();
+}
+function pause() { pos = now(); fadeOut(voice); voice = null; render(); }
+function render() {
+  $("toggle").textContent = voice ? "❚❚" : "▶";
+  $("toggle").ariaLabel = voice ? "Pause" : "Lecture";
+  if (!seeking) $("seek").value = now();
+  $("time").textContent = A.clock(Number($("seek").value)) + " / " + A.clock(duration());
+  document.querySelectorAll(".pick").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.key === current)));
+}
+$("toggle").onclick = () => (voice ? pause() : start(pos >= duration() - .1 ? 0 : pos));
+$("seek").oninput = () => { seeking = true; render(); };
+$("seek").onchange = () => { seeking = false; pos = Number($("seek").value); if (voice) start(pos); else render(); };
+setInterval(() => { if (voice) render(); }, 200);
+function setVolume() {
+  const v = Number($("volume").value);
+  if (master) master.gain.setTargetAtTime(v, ctx.currentTime, .02); // sans clic
+  $("mute").textContent = v ? "🔊" : "🔇";
+  $("mute").ariaLabel = v ? "Couper le son" : "Remettre le son";
+}
+$("volume").oninput = setVolume;
+$("mute").onclick = () => { const v = Number($("volume").value); if (v) lastVolume = v; $("volume").value = v ? 0 : lastVolume; setVolume(); };
+
+function showStems(device) {
+  $("status").textContent = "Pistes séparées par IA (Demucs, " + (device === "gpu" ? "sur la carte graphique)." : "sur le processeur).");
+  $("bar").style.width = "100%";
+  $("stems").replaceChildren(...NAMES.map(([key, name, slug]) => {
+    const row = document.createElement("div"), pick = document.createElement("button"), save = document.createElement("button");
+    row.className = "stem";
+    pick.type = save.type = "button"; pick.className = "pick"; pick.textContent = name; pick.dataset.key = key;
+    pick.onclick = () => { current = key; if (voice) start(now()); else render(); }; // même moment, autre piste
+    save.className = "go ghost"; save.textContent = "WAV"; save.ariaLabel = "Télécharger : " + name;
+    save.onclick = () => A.download(A.wav(parts[key], AI_RATE, 24), A.baseName(file) + " - " + slug + ".wav");
+    row.append(pick, save);
+    return row;
+  }));
+  $("seek").max = duration(); pos = 0;
+  $("stems-box").hidden = false;
+  render();
+}
+
+async function open(chosen) {
+  if (working) return;
+  $("error").textContent = "";
+  if (chosen.size > MAX_BYTES) { $("error").textContent = "Ce fichier est trop lourd (400 Mo au plus)."; return; }
+  if (voice) pause();
+  working = true; parts = null; buffers = {};
+  A.busy($("drop"), true, "Lecture du fichier…");
+  try {
+    const audio = await A.decode(chosen);
+    if (audio.duration > MAX_SECONDS) throw new Error("Ce fichier est trop long (15 minutes au plus).");
+    file = chosen;
+    $("r-file").textContent = file.name;
+    $("r-info").textContent = A.clock(audio.duration);
+    $("stems-box").hidden = true; $("panel").hidden = false;
+    A.busy($("drop"), true, "Séparation en cours…");
+    progress("Préparation…", 0);
+    const [L, R] = A.channelsOf(await A.render(audio, { rate: AI_RATE, channels: 2 })).map((c) => c.slice());
+    const out = await separate(L, R);
+    const { drums, bass, other, vocals } = out.parts;
+    const prod = [0, 1].map((c) => drums[c].map((v, i) => v + bass[c][i] + other[c][i])); // le morceau sans la voix
+    parts = { vocals, prod, melo: other, drums, bass };
+    showStems(out.device);
+  } catch (error) {
+    $("panel").hidden = !file || !parts;
+    $("error").textContent = (error.message || "La séparation a échoué.") + (file ? " Essaie Chrome ou Edge à jour, sur ordinateur." : "");
+  }
+  working = false;
+  A.busy($("drop"), false, "Choisir un autre fichier");
+}
+
+A.dropZone($("drop"), $("file"), open);
+// L'IA déjà sur l'appareil (cache de assets/demucs-worker.js) : rien à télécharger, on le dit.
+caches.open("onirique-demucs").then((c) => c.keys()).then((k) => { if (k.length) $("hint").textContent = "Sans compte. La séparation se fait dans ton navigateur : ton fichier n'est envoyé nulle part. L'IA est déjà installée sur cet appareil."; }).catch(() => {});
+A.fromLink(open, (error) => { $("error").textContent = error.message; });
+</script>
+<script src="assets/tools-menu.js?v=13"></script>
+<script src="assets/account.js?v=8"></script>
+<script src="assets/site-nav.js?v=14"></script>
+</html>

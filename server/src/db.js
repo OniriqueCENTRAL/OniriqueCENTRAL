@@ -280,6 +280,8 @@ CREATE TABLE IF NOT EXISTS youtube_videos (
 if (!hasColumn('products', 'image_manual')) db.exec('ALTER TABLE products ADD COLUMN image_manual INTEGER NOT NULL DEFAULT 0');
 if (!hasColumn('products', 'demo_off')) db.exec('ALTER TABLE products ADD COLUMN demo_off INTEGER NOT NULL DEFAULT 0');
 // L'abonnement mensuel à un seul plugin, à côté de l'achat à vie : son prix par mois (0 : pas proposé).
+// Un plugin « fondateurs seulement » : en développement ou en test, seuls les fondateurs le voient, l'installent et l'activent.
+if (!hasColumn('products', 'founders_only')) db.exec('ALTER TABLE products ADD COLUMN founders_only INTEGER NOT NULL DEFAULT 0');
 if (!hasColumn('products', 'monthly_cents')) db.exec('ALTER TABLE products ADD COLUMN monthly_cents INTEGER NOT NULL DEFAULT 0');
 // L'ordre de la boutique et de l'application, choisi par l'équipe dans le panel. Au départ : l'ordre d'ajout.
 if (!hasColumn('products', 'position')) {
@@ -364,6 +366,17 @@ if (!hasColumn('products', 'category')) {
 if (!db.prepare(`SELECT 1 FROM settings WHERE key = 'categories_single'`).get()) {
   rangeCategories();
   db.prepare(`INSERT INTO settings (key, value) VALUES ('categories_single', 'true')`).run();
+}
+// Les Shorts d'ONIRIQUE CUT s'ouvrent aux membres ONIRIQUE et aux admins (2 novembre 2026), une seule fois : même si les
+// droits des rôles ont déjà été réglés dans le panel ; on peut ensuite les retirer de nouveau depuis le panel.
+if (!db.prepare(`SELECT 1 FROM settings WHERE key = 'shorts_onirique'`).get()) {
+  const row = db.prepare(`SELECT value FROM settings WHERE key = 'role_rights'`).get();
+  if (row) {
+    const rights = JSON.parse(row.value);
+    if (Array.isArray(rights.youtube)) rights.youtube = [...new Set([...rights.youtube, 'vip', 'admin'])];
+    db.prepare(`UPDATE settings SET value = ? WHERE key = 'role_rights'`).run(JSON.stringify(rights));
+  }
+  db.prepare(`INSERT INTO settings (key, value) VALUES ('shorts_onirique', 'true')`).run();
 }
 
 // Abonnements réglables depuis le panel : un texte de présentation et les plugins compris (vide : tous les plugins

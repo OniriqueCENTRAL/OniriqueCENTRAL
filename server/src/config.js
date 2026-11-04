@@ -78,6 +78,10 @@ export const config = {
   supportEmail: env.SUPPORT_EMAIL || env.MAIL_FROM || env.SMTP_USER || '',
   // D'où vient le score de popularité Spotify de la page « Popularité » du site (voir popularity.js).
   popularitySource: env.POPULARITY_SOURCE || 'https://groover.co/core/distantapi/spotify/popularity/',
+  // Le scan des prods volées (beatscan.js) : un projet ACRCloud de reconnaissance musicale, réglé par onirique-acrcloud.
+  acrHost: (env.ACRCLOUD_HOST || '').replace(/^https?:\/\//, '').replace(/\/+$/, ''),
+  acrKey: env.ACRCLOUD_KEY || '',
+  acrSecret: env.ACRCLOUD_SECRET || '',
   // Recherche de titres et extraits de 30 s (outil « Comparer à une référence ») : l'API publique de Deezer.
   deezerApi: (env.DEEZER_API || 'https://api.deezer.com').replace(/\/+$/, ''),
   // Liens « Musique » des pages de liens (src/music.js) : recherche iTunes et pages publiques de Spotify.

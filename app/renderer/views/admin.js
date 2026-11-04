@@ -621,7 +621,7 @@ function promosTab() {
       h('td', { class: 'muted' }, p.expiresAt ? date(p.expiresAt) : '—'),
       h('td', null, !p.active ? pill('Désactivé', 'warn') : expired ? pill('Expiré', 'warn') : full ? pill('Épuisé', 'warn') : pill('Actif', '', true)),
       h('td', { class: 'actions' },
-        button('Lien', () => attempt(() => call('clipboard', `https://onirique.store/boutique.html?code=${p.code}`), 'Lien de la boutique avec ce code copié.'), 'small quiet'),
+        button('Lien', () => attempt(() => call('clipboard', `https://onirique.store/boutique?code=${p.code}`), 'Lien de la boutique avec ce code copié.'), 'small quiet'),
         button(p.active ? 'Désactiver' : 'Réactiver', () => changed(() => api('PATCH', `/promos/${p.id}`, { active: !p.active }), p.active ? 'Code désactivé.' : 'Code réactivé.'), 'small quiet'),
         button('Supprimer', () => confirm(`Supprimer ${p.code} ?`, 'Le code ne pourra plus servir.', 'Supprimer', () => changed(() => api('DELETE', `/promos/${p.id}`), 'Code supprimé.'), 'danger'), 'small quiet danger')));
   };
@@ -699,7 +699,7 @@ function mailingsTab() {
     promoCode: input('promoCode', { class: 'mono', maxLength: 40, placeholder: 'Facultatif' }),
     promoText: input('promoText', { maxLength: 140, placeholder: '-20 % jusqu\'à dimanche' }),
     buttonLabel: input('buttonLabel', { maxLength: 40, placeholder: 'Voir la boutique' }),
-    buttonUrl: input('buttonUrl', { type: 'url', placeholder: 'https://onirique.store/boutique.html' }),
+    buttonUrl: input('buttonUrl', { type: 'url', placeholder: 'https://onirique.store/boutique' }),
   };
   draft.productIds ??= [];
   const picks = data.products.filter((p) => p.published).map((p) => {

@@ -97,27 +97,27 @@ ${spark(1)}${spark(2)}${spark(3)}
       await fetch("/api/auth/logout", { method: "POST", headers: { Authorization: "Bearer " + token() } }).catch(() => {});
       try { sessionStorage.removeItem(TOKEN); localStorage.removeItem(TOKEN); } catch {}
       // Une page réservée renvoie au compte ; les autres se rechargent simplement, déconnectées.
-      if (/admin/.test(location.pathname)) location.href = "compte.html"; else location.reload();
+      if (/admin/.test(location.pathname)) location.href = "compte"; else location.reload();
     };
     const download = item("Télécharger l'application", "/#telechargement"); // le choix entre Windows et Mac
     const menu = el("div", { className: "acct-menu", hidden: true },
       el("div", { className: "acct-head" }, el("img", { src: avatar(user), alt: "" }),
         el("div", {}, el("strong", { textContent: name }), el("small", { textContent: user.email }), ROLES[user.role] ? el("em", { textContent: ROLES[user.role] }) : null)),
-      item("Mon compte", "compte.html"),
-      item("Paramètres", "compte.html#parametres"),
-      item("Mes licences", "compte.html#licences"),
-      item("Parrainage", "compte.html#parrainage"),
+      item("Mon compte", "compte"),
+      item("Paramètres", "compte#parametres"),
+      item("Mes licences", "compte#licences"),
+      item("Parrainage", "compte#parrainage"),
       el("hr"),
-      item("Boutique", "boutique.html"),
+      item("Boutique", "boutique"),
       download,
-      item("Support", "support.html"),
-      ROLES[user.role] && user.role !== "vip" ? item("Administration", "admin.html") : null,
+      item("Support", "support"),
+      ROLES[user.role] && user.role !== "vip" ? item("Administration", "admin") : null,
       // Les outils, pour les rôles qui y ont droit : ONIRIQUE CLOUD, la page de liens, les Shorts YouTube programmés.
       ...(() => {
         const rights = me.rights || [], tools = [
-          rights.includes("sounds") && item("ONIRIQUE CLOUD", "mes-sons.html"),
-          rights.includes("links") && item("Mes liens", "mes-liens.html"),
-          rights.includes("youtube") && item("Shorts YouTube", "compte.html#youtube"),
+          rights.includes("sounds") && item("ONIRIQUE CLOUD", "mes-sons"),
+          rights.includes("links") && item("Mes liens", "mes-liens"),
+          rights.includes("youtube") && item("Shorts YouTube", "compte#youtube"),
         ].filter(Boolean);
         return tools.length ? [el("hr"), el("h6", { textContent: "Outils" }), ...tools] : [];
       })(),

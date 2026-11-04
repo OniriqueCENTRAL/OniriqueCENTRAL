@@ -139,7 +139,7 @@ try {
   await step('parrainage : l\'ami invité a sa remise sur un plugin ONIRIQUE, pas sur celui d\'un partenaire', async () => {
     const me = await call('GET', '/api/me', { token: alice.token });
     assert.match(me.referral.code, /^[A-Z2-9]{7}$/);
-    assert.equal(me.referral.link, `https://site.test/compte.html?ref=${me.referral.code}`);
+    assert.equal(me.referral.link, `https://site.test/compte?ref=${me.referral.code}`);
     bob = await account('bob', null, { ref: me.referral.code.toLowerCase(), newsletter: true });
     const bobMe = await call('GET', '/api/me', { token: bob.token });
     assert.equal(bobMe.referral.sponsor, 'alice');
@@ -193,7 +193,7 @@ try {
     assert.equal((await call('GET', '/api/me', { token: carol.token })).user.newsletter, false);
     const info = await call('GET', '/api/admin/mailings', { token: admin.token });
     assert.equal(info.audiences.find((a) => a.id === 'newsletter').count, 1);
-    const content = { subject: 'Nouveau : {prenom}, découvre METER', title: 'Salut {prenom}', text: 'Il est **sorti**.', productIds: [meter.id], promoCode: 'NOEL20', buttonLabel: 'Voir', buttonUrl: 'https://site.test/boutique.html' };
+    const content = { subject: 'Nouveau : {prenom}, découvre METER', title: 'Salut {prenom}', text: 'Il est **sorti**.', productIds: [meter.id], promoCode: 'NOEL20', buttonLabel: 'Voir', buttonUrl: 'https://site.test/boutique' };
     const preview = await call('POST', '/api/admin/mailings/preview', { token: admin.token, body: content });
     assert.ok(preview.html.includes('METER') && preview.html.includes('NOEL20'));
     await call('POST', '/api/admin/mailings', { token: admin.token, body: { ...content, audience: 'all' }, expect: 400 });

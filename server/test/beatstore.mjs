@@ -213,7 +213,7 @@ try {
     await hook(beatmaker.id, event);
     await hook(beatmaker.id, event); // Stripe renvoie parfois le même événement : une seule livraison.
     assert.equal(outbox.filter((m) => m.to === 'acheteur@test.fr').length, 1);
-    assert.match(outbox.find((m) => m.to === 'acheteur@test.fr').text, new RegExp(`achat\\.html\\?o=${order.token}`));
+    assert.match(outbox.find((m) => m.to === 'acheteur@test.fr').text, new RegExp(`achat\\?o=${order.token}`));
     const view = await call('GET', `/api/sounds/orders/${order.token}`);
     assert.deepEqual([view.status, view.buyerEmail, view.license.name, view.files.map((f) => f.kind)], ['paid', 'acheteur@test.fr', 'WAV', ['mp3', 'wav']]);
     const file = await call('GET', `/api/sounds/orders/${order.token}/files/wav`);

@@ -138,7 +138,7 @@ export function licensePricesOf(value, sellerId) {
 
 //------------------------------------------------------------------------------ Commandes
 const orderLicense = (o) => parse(o.license, { name: '', files: [], terms: '', exclusive: false });
-const shopUrl = (o) => `${config.siteUrl}/achat.html?o=${o.token}`;
+const shopUrl = (o) => `${config.siteUrl}/achat?o=${o.token}`;
 //------------------------------------------------------------------------------ Contrat de licence
 // Chaque beatmaker règle son contrat : titre, son nom légal et un contact, l'introduction, les clauses générales (communes
 // à toutes ses licences), la conclusion et le bas de page ; les clauses propres à chaque licence sont ses conditions. Les
@@ -591,12 +591,12 @@ export function mountBeatStore(app, { me, track, room, receiveFile, openLink, li
     rateLimit(`sounds-simulate:${founder.id}`, 60);
     const { oid, token } = newOrder(req, true);
     markPaid(get('SELECT * FROM sound_orders WHERE id = ?', oid), founder.email, founder.name || '');
-    res.json({ url: `${config.siteUrl}/achat.html?o=${token}` });
+    res.json({ url: `${config.siteUrl}/achat?o=${token}` });
   });
   app.post('/api/sounds/share/:token/buy', wrap(async (req, res) => {
     rateLimit(`sounds-buy:${req.ip}`, 30);
     const { link, t, l, s, token, artist, oid } = newOrder(req, false);
-    const back = `${config.siteUrl}/ecoute?t=${link.token}`, done = `${config.siteUrl}/achat.html?o=${token}`;
+    const back = `${config.siteUrl}/ecoute?t=${link.token}`, done = `${config.siteUrl}/achat?o=${token}`;
     const label = `${t.title} — licence ${l.name}`.slice(0, 120);
     try {
       let url, ref;

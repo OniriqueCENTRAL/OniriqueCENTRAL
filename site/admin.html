@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=ad5318d8"></script>
+<script src="assets/i18n.js?v=2f9cddc9"></script>
 <script src="assets/ui.js?v=3"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
@@ -187,7 +187,7 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
 <header>
   <div class="wrap">
     <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
-    <a class="btn" href="compte.html" data-account>Mon compte</a>
+    <a class="btn" href="compte" data-account>Mon compte</a>
   </div>
 </header>
 
@@ -385,7 +385,7 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
 
 <script src="assets/cropper.js"></script>
 <script src="assets/account.js?v=8"></script>
-<script src="assets/site-nav.js?v=13"></script>
+<script src="assets/site-nav.js?v=14"></script>
 <script>
 // Tout passe par l'API du CENTRAL, qui revérifie le rôle admin à chaque appel : cette page n'ouvre aucun droit par elle-même.
 const $ = (id) => document.getElementById(id);
@@ -418,7 +418,7 @@ const isPartner = (user) => user.role === "abrasion" || user.role === "relic";
 const isStaff = (user) => user.role === "admin" || user.role === "founder";
 
 function gate(text, link) {
-  $("gate").replaceChildren(text, link ? " " : "", link ? el("a", { href: "compte.html", textContent: link }) : "");
+  $("gate").replaceChildren(text, link ? " " : "", link ? el("a", { href: "compte", textContent: link }) : "");
   $("gate").hidden = false;
   $("panel").hidden = true;
 }
@@ -606,6 +606,8 @@ function sheetForm(p) {
   const price = el("input", { type: "text", inputMode: "decimal", value: ((p?.priceCents ?? 0) / 100).toFixed(2).replace(".", ","), required: true });
   const monthly = el("input", { type: "text", inputMode: "decimal", value: ((p?.monthlyCents ?? 0) / 100).toFixed(2).replace(".", ",") });
   const published = el("input", { type: "checkbox", checked: p?.published ?? true });
+  // Réservé aux fondateurs : un plugin en développement ou en test, que personne d'autre ne voit ni ne télécharge.
+  const foundersOnly = el("input", { type: "checkbox", checked: p?.foundersOnly ?? false });
   // Le créateur ne se choisit que par l'équipe : les plugins d'un partenaire portent toujours son nom.
   const creator = el("select", {}, ...Object.entries(CREATORS).map(([id, label]) => el("option", { value: id, textContent: label, selected: id === (p?.creator ?? "onirique") })));
   // Catégorie de la boutique : une seule par plugin ; « Automatique » la devine à partir du nom et du texte.
@@ -619,7 +621,8 @@ function sheetForm(p) {
     el("label", {}, "Prix en € (0 = gratuit)", price), el("label", {}, "Prix par mois en € (0 = pas d'abonnement)", monthly), isStaff(me) ? el("label", {}, "Créateur", creator) : null,
     el("label", {}, "Description", description),
     el("label", {}, "Catégorie", category),
-    el("div", { className: "row" }, el("label", { className: "inline" }, published, "Visible dans la boutique et l'application"), submit, saved));
+    el("div", { className: "row" }, el("label", { className: "inline" }, published, "Visible dans la boutique et l'application"),
+      me.role === "founder" ? el("label", { className: "inline" }, foundersOnly, "Fondateurs seulement") : null, submit, saved));
   form.onsubmit = async (event) => {
     event.preventDefault();
     $("product-error").textContent = "";
@@ -632,6 +635,7 @@ function sheetForm(p) {
     const body = { name: name.value.trim(), tagline: tagline.value.trim(), description: description.value.trim(), priceCents: cents,
       monthlyCents: Math.round(Number(perMonth) * 100), published: published.checked,
       category: category.value,
+      ...(me.role === "founder" ? { foundersOnly: foundersOnly.checked } : {}),
       ...(isStaff(me) ? { creator: creator.value } : {}) };
     try {
       await api(p ? "PATCH" : "POST", p ? "/admin/products/" + p.id : "/admin/products", body);
@@ -667,7 +671,7 @@ function showOrder(products) {
     const arrow = (text, label, to, focus) => Object.assign(el("button", { className: "act", type: "button", textContent: text, disabled: to < 0 || to >= products.length }),
       { onclick: () => place(i, to, focus), ariaLabel: label + " " + p.name });
     const li = el("li", { draggable: true, title: "Glisser pour changer sa place" }, el("span", { className: "grip", textContent: "⋮⋮", ariaHidden: "true" }),
-      el("span", { textContent: p.name }), p.published ? null : el("small", { textContent: "masqué" }),
+      el("span", { textContent: p.name }), p.published ? null : el("small", { textContent: "masqué" }), p.foundersOnly ? el("small", { textContent: "fondateurs" }) : null,
       arrow("↑", "Monter", i - 1, "button"), arrow("↓", "Descendre", i + 1, "button:last-child"));
     const after = (event) => event.clientY > li.getBoundingClientRect().top + li.offsetHeight / 2; // déposé sous le milieu : après ce plugin
     li.ondragstart = (event) => { dragged = i; event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", p.name); li.classList.add("dragging"); };
@@ -752,7 +756,7 @@ async function loadProducts() {
       el("div", {}, shot, pictureTools, el("div", { className: "sub", style: "margin-top:8px", textContent: p.demo ? "Démo interactive en ligne" : p.latest && /\.vst3$/i.test(p.latest.filename) ? "Aperçu et démo : créés tout seuls dès qu'un admin ouvre l'application CENTRAL" : "Pas encore de démo interactive" })),
       el("div", {},
         el("h3", { textContent: p.name }),
-        el("div", { className: "sub", textContent: [CREATORS[p.creator] || CREATORS.onirique, p.published ? "Visible dans la boutique" : "Masqué", euros(p.priceCents), p.latest ? `version actuelle ${p.latest.version} du ${date(p.latest.createdAt)}` : "aucune version en ligne", `${p.versions.length} version(s)`,
+        el("div", { className: "sub", textContent: [CREATORS[p.creator] || CREATORS.onirique, p.published ? (p.foundersOnly ? "Fondateurs seulement" : "Visible dans la boutique") : "Masqué", euros(p.priceCents), p.latest ? `version actuelle ${p.latest.version} du ${date(p.latest.createdAt)}` : "aucune version en ligne", `${p.versions.length} version(s)`,
           // le plugin vérifie-t-il sa licence ? d'après le fichier de la version actuelle de chaque système
           ...[["win", "Windows"], ["mac", "Mac"]].filter(([key]) => p.licensed && p.licensed[key] !== undefined)
             .map(([key, label]) => p.licensed[key] === true ? `licence ${label} : oui` : p.licensed[key] === false ? `SANS LICENCE ${label}` : `licence ${label} : illisible`)].join(" · ") }),
@@ -859,7 +863,7 @@ async function loadLive() {
   const TONES = { ember: ["Rouge ONIRIQUE", "linear-gradient(90deg,#8c0614,#e23444)", "#fff"], gold: ["Or (promo)", "linear-gradient(90deg,#b8862b,#f2c46d)", "#1a0d02"], calm: ["Sobre", "#1f0c0f", "#f6eeee"] };
   const on = el("input", { type: "checkbox", checked: !!a.active });
   const text = el("input", { type: "text", maxLength: 220, value: a.text || "", placeholder: "PROMO -20 % SUR TOUTE LA BOUTIQUE" });
-  const link = el("input", { type: "text", maxLength: 300, value: a.link || "", placeholder: "boutique.html (facultatif)" });
+  const link = el("input", { type: "text", maxLength: 300, value: a.link || "", placeholder: "boutique (facultatif)" });
   const label = el("input", { type: "text", maxLength: 40, value: a.linkLabel || "", placeholder: "J'en profite" });
   const tone = el("select", {}, ...Object.entries(TONES).map(([id, [name]]) => el("option", { value: id, textContent: name })));
   tone.value = a.tone || "ember";
@@ -1074,7 +1078,7 @@ async function loadPromos() {
     const toggle = el("button", { className: "act", type: "button", textContent: p.active ? "Désactiver" : "Réactiver" });
     toggle.onclick = async () => { try { await api("PATCH", "/admin/promos/" + p.id, { active: !p.active }); await loadPromos(); } catch (error) { fail(error); } };
     const copy = el("button", { className: "act", type: "button", textContent: "Copier le lien" });
-    copy.onclick = async () => { await navigator.clipboard.writeText(`${location.origin}/boutique.html?code=${p.code}`).catch(() => {}); copy.textContent = "Lien copié"; };
+    copy.onclick = async () => { await navigator.clipboard.writeText(`${location.origin}/boutique?code=${p.code}`).catch(() => {}); copy.textContent = "Lien copié"; };
     const remove = el("button", { className: "act", type: "button", textContent: "Supprimer" });
     remove.onclick = async () => {
       if (!window.confirm(`Supprimer le code ${p.code} ? Il ne pourra plus servir${p.uses ? ` ; ses ${p.uses} utilisation(s) sortent des chiffres` : ""}.`)) return;
@@ -1339,7 +1343,7 @@ async function loadMailings(first = false) {
       promoCode: el("input", { type: "text", maxLength: 40, placeholder: "Facultatif", style: "text-transform:uppercase;font-family:var(--f-mono)" }),
       promoText: el("input", { type: "text", maxLength: 140, placeholder: "-20 % jusqu'à dimanche" }),
       buttonLabel: el("input", { type: "text", maxLength: 40, placeholder: "Voir la boutique" }),
-      buttonUrl: el("input", { type: "url", placeholder: "https://onirique.store/boutique.html" }),
+      buttonUrl: el("input", { type: "url", placeholder: "https://onirique.store/boutique" }),
       service: el("input", { type: "checkbox" }),
     };
     const picks = products.filter((p) => p.published).map((p) => ({ id: p.id, box: el("input", { type: "checkbox" }), name: p.name }));

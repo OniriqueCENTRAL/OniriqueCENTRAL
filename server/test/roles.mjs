@@ -443,10 +443,10 @@ try {
     const member = await account('membre-droits', 'vip');
     const relic = await account('relic-droits', 'relic');
     const lambda = await account('client-droits');
-    // Au départ : Mes sons et la page de liens pour les membres et les admins, rien pour un client ni un partenaire.
+    // Au départ : Mes sons et la page de liens et les Shorts YouTube pour les membres et les admins, rien pour un client ni un partenaire.
     const start = await call('GET', '/api/admin/rights', { token: founder.token });
     assert.deepEqual(start.rights.find((r) => r.id === 'sounds').roles, ['vip', 'admin']);
-    assert.deepEqual((await call('GET', '/api/me', { token: member.token })).rights.sort(), ['links', 'plugins', 'sounds']);
+    assert.deepEqual((await call('GET', '/api/me', { token: member.token })).rights.sort(), ['links', 'plugins', 'sounds', 'youtube']);
     await call('GET', '/api/me/sounds', { token: relic.token, expect: 403 });
     // Un admin ne règle pas les droits.
     await call('GET', '/api/admin/rights', { token: admin.token, expect: 403 });
@@ -461,6 +461,55 @@ try {
     assert.ok((await call('GET', '/api/me', { token: founder.token })).rights.includes('links'));
     run(`DELETE FROM settings WHERE key = 'role_rights'`);
     await call('GET', '/api/me/links', { token: member.token });
+    // Downloader : ouvert à tous (limité à un par minute sans le rôle ONIRIQUE) ; un lien qui n'est pas YouTube n'atteint jamais yt-dlp.
+    await call('POST', '/api/downloader/youtube', { body: { url: 'https://evil.test/x' }, expect: 400 });
+    await call('POST', '/api/downloader/youtube', { token: founder.token, body: { url: 'https://evil.test/watch?v=dQw4w9WgXcQ' }, expect: 400 });
+    await call('POST', '/api/downloader/youtube', { token: founder.token, body: { url: 'https://youtube.com/watch?v=--exec=rm' }, expect: 400 });
+    const { youtubeId, tiktokUrl } = await import('../src/downloader.js');
+    // TikTok : l'adresse est rebâtie à partir des seules parties vérifiées.
+    assert.equal(tiktokUrl('https://www.tiktok.com/@scout2015/video/6718335390845095173?lang=fr'), 'https://www.tiktok.com/@scout2015/video/6718335390845095173');
+    assert.equal(tiktokUrl('https://vm.tiktok.com/ZMeNmpa9w/'), 'https://vm.tiktok.com/ZMeNmpa9w/');
+    assert.equal(tiktokUrl('https://www.tiktok.com/@a/video/1;rm'), '');
+    assert.equal(tiktokUrl('https://evil.test/@a/video/123456'), '');
+    assert.equal(youtubeId('https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=3'), 'dQw4w9WgXcQ');
+    assert.equal(youtubeId('https://youtube.com/shorts/dQw4w9WgXcQ'), 'dQw4w9WgXcQ');
+    assert.equal(youtubeId('https://music.youtube.com/watch?v=dQw4w9WgXcQ'), 'dQw4w9WgXcQ');
+    assert.equal(youtubeId('ftp://youtu.be/dQw4w9WgXcQ'), '');
+  });
+
+  await step('plugin réservé aux fondateurs : invisible et intouchable pour tous les autres', async () => {
+    await call('POST', '/api/admin/products', { token: admin.token, body: { name: 'ONIRIQUE SECRET', foundersOnly: true }, expect: 403 });
+    const secret = await call('POST', '/api/admin/products', { token: founder.token, body: { name: 'ONIRIQUE SECRET', priceCents: 1000, foundersOnly: true }, expect: 201 });
+    assert.equal(secret.foundersOnly, true);
+    const version = await upload(founder.token, secret.id, '1.0.0');
+    run(`UPDATE users SET role = 'vip' WHERE id = ?`, vip.id);
+    run(`INSERT OR REPLACE INTO subscriptions (user_id, plan_id, status, current_period_end, updated_at) SELECT ?, id, 'active', ?, ? FROM plans LIMIT 1`,
+      user.id, Date.now() + 86400_000, Date.now());
+
+    const ids = async (token) => (await call('GET', '/api/catalog', { token })).products.map((p) => p.id);
+    assert.ok(!(await ids()).includes(secret.id));
+    for (const who of [admin, vip, user, partner]) {
+      assert.ok(!(await ids(who.token)).includes(secret.id));
+      await call('GET', `/api/download/${version.id}`, { token: who.token, expect: 404 });
+      await call('POST', '/api/licenses/trial', { token: who.token, body: { productId: secret.id, machineId: machineFor(who.id) }, expect: 404 });
+      await call('POST', '/api/licenses/activate', { token: who.token, body: { productId: secret.id, machineId: machine, machineName: 'PC' }, expect: 403 });
+      assert.ok(!(await call('GET', '/api/me', { token: who.token })).entitlements?.[secret.id]);
+    }
+    assert.ok(!(await call('GET', '/api/admin/products', { token: admin.token })).some((p) => p.id === secret.id));
+    await call('PATCH', `/api/admin/products/${secret.id}`, { token: admin.token, body: { name: 'VU' }, expect: 404 });
+    await call('POST', '/api/admin/licenses', { token: admin.token, body: { productId: secret.id }, expect: 404 });
+    const all = await call('POST', '/api/admin/licenses', { token: founder.token, body: { productId: 'all' }, expect: 201 });
+    assert.ok(!get('SELECT 1 FROM licenses WHERE product_id = ? AND key IN (' + all.map(() => '?').join(',') + ')', secret.id, ...all.map((l) => l.key ?? l)));
+
+    // Le fondateur, lui, le voit, le télécharge et l'active ; le décocher le rend à tout le monde.
+    assert.ok((await ids(founder.token)).includes(secret.id));
+    assert.deepEqual(await call('GET', `/api/download/${version.id}`, { token: founder.token }), binary);
+    run('UPDATE users SET self_licenses = 1 WHERE id = ?', founder.id); // ses licences, comme pour tout plugin
+    await call('POST', '/api/licenses/activate', { token: founder.token, body: { productId: secret.id, machineId: machine, machineName: 'PC' } });
+    assert.ok((await call('GET', '/api/admin/products', { token: founder.token })).some((p) => p.id === secret.id && p.foundersOnly));
+    await call('PATCH', `/api/admin/products/${secret.id}`, { token: founder.token, body: { foundersOnly: false } });
+    assert.ok((await ids()).includes(secret.id));
+    await call('GET', `/api/download/${version.id}`, { token: admin.token });
   });
 
   console.log(`\n${passed} étapes réussies.`);

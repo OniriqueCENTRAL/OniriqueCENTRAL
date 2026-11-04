@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=ad5318d8"></script>
+<script src="assets/i18n.js?v=2f9cddc9"></script>
 <script src="assets/ui.js?v=3"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
@@ -54,7 +54,7 @@ h2 { font: 800 15px/1.3 var(--f-display); letter-spacing: .04em; margin: 0; }
 .tabs { display: inline-flex; padding: 4px; gap: 2px; border-radius: 999px; background: rgba(0,0,0,.35); border: 1px solid var(--line); }
 .tabs button { padding: 9px 18px; border: 0; border-radius: 999px; background: none; color: var(--haze); cursor: pointer; font: 500 12px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; }
 .tabs button[aria-selected="true"] { background: #D12A3A; color: #fff; } /* braise assombrie : blanc lisible en 12 px (5,1:1) */
-form { display: grid; gap: 14px; max-width: 420px; }
+form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; max-width: 420px; }
 label { display: grid; gap: 7px; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
 input { height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px var(--f-body); }
 label.check { display: flex; align-items: flex-start; gap: 10px; font: 400 14px/1.5 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--mist); }
@@ -87,21 +87,30 @@ label.check input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; padd
 /* Compte : les infos à gauche, les plugins et services à droite ; une seule colonne sur téléphone */
 #auth { max-width: 780px; margin-inline: auto; }
 .cols { display: grid; gap: 18px; margin-top: 18px; align-items: start; }
-.col { display: grid; gap: 18px; min-width: 0; }
+/* minmax(0, 1fr) : un contenu long (une description en bulle…) se coupe au lieu d'élargir la colonne et toute la page. */
+.col { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; min-width: 0; }
 .col > .panel { margin-top: 0; }
 @media (min-width: 980px) { .cols { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 24px; } }.between { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; }
 /* Shorts YouTube programmés : une carte par vidéo */
 textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 15px/1.5 var(--f-body); resize: vertical; }
 .btn svg { flex: none; width: 20px; height: 14px; }
-.shorts { display: grid; gap: 14px; margin-top: 20px; }
+.shorts { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; margin-top: 20px; }
 .shorts:empty { display: none; }
+/* La liste des Shorts, repliée : un clic sur sa ligne la déroule. */
+.yt-list { margin-top: 18px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.02); }
+.yt-list > summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; list-style: none; font: 600 14px/1.3 var(--f-body); color: var(--mist); }
+.yt-list > summary::-webkit-details-marker { display: none; }
+.yt-list > summary::after { content: ""; flex: none; width: 9px; height: 9px; margin-right: 4px; border-right: 2px solid var(--haze); border-bottom: 2px solid var(--haze); transform: rotate(45deg) translateY(-3px); transition: transform .2s; }
+.yt-list[open] > summary::after { transform: rotate(-135deg) translateY(-3px); }
+.yt-list > summary:hover { color: #fff; }
+.yt-list > .shorts { margin: 0; padding: 0 14px 14px; }
 .short { max-width: none; padding: 18px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.025); }
 .short.failed { border-color: rgba(255,122,133,.55); }
 .short h2 { word-break: break-word; }
 .short .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 14px; }
 .short .wide { grid-column: 1 / -1; }
 .chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
-.chip { max-width: min(100%, 34ch); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: none; color: var(--haze); font: 400 13px/1.2 var(--f-body); cursor: pointer; }
+.chip { max-width: 34ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: none; color: var(--haze); font: 400 13px/1.2 var(--f-body); cursor: pointer; }
 .chip:hover { border-color: var(--ember); color: var(--mist); }
 /* Réponses automatiques : les comptes reliés, le choix de la publication, une carte par automation */
 .accounts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px; }
@@ -144,7 +153,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
 <header>
   <div class="wrap">
     <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
-    <div class="between"><a class="btn btn-ghost" href="/">Retour au site</a><a href="compte.html" data-account data-account-manual hidden>Compte</a></div>
+    <div class="between"><a class="btn btn-ghost" href="/">Retour au site</a><a href="compte" data-account data-account-manual hidden>Compte</a></div>
   </div>
 </header>
 
@@ -168,7 +177,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
         <label class="check" id="remember-field"><input type="checkbox" id="remember" checked><span>Se souvenir de moi sur cet appareil</span></label>
         <label id="ref-field" hidden>Code de parrainage (facultatif)<input id="ref" maxlength="12" autocomplete="off" spellcheck="false" style="text-transform:uppercase;font-family:var(--f-mono)"></label>
         <label class="check" id="news-field" hidden><input type="checkbox" id="news"><span>J'accepte de recevoir par e-mail les nouveautés, offres et codes promo d'ONIRIQUE. Désinscription en un clic dans chaque message.</span></label>
-        <label class="check" id="terms-field" hidden><input type="checkbox" id="terms"><span>J'accepte les <a href="cgv.html" target="_blank" rel="noopener">conditions générales</a> et j'ai lu la <a href="confidentialite.html" target="_blank" rel="noopener">politique de confidentialité</a>.</span></label>
+        <label class="check" id="terms-field" hidden><input type="checkbox" id="terms"><span>J'accepte les <a href="cgv" target="_blank" rel="noopener">conditions générales</a> et j'ai lu la <a href="confidentialite" target="_blank" rel="noopener">politique de confidentialité</a>.</span></label>
         <div class="error" id="error" role="alert"></div>
         <div class="notice" id="notice" role="status"></div>
         <div class="between">
@@ -188,7 +197,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
         <p class="muted" id="email-line"></p>
       </div>
       <div class="between">
-        <a class="btn btn-ghost" id="admin-link" href="admin.html" hidden>Administration</a>
+        <a class="btn btn-ghost" id="admin-link" href="admin" hidden>Administration</a>
         <button class="btn btn-ghost" id="logout" type="button">Se déconnecter</button>
       </div>
     </div>
@@ -300,7 +309,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
         <div class="eyebrow">Page de liens</div>
         <div class="between">
           <p class="muted" style="margin:0;max-width:52ch">Ta page à mettre en bio Instagram ou TikTok : tes plateformes, chacune ouverte directement dans son application. Apparence entièrement personnalisable.</p>
-          <a class="btn btn-primary" href="mes-liens.html">Créer ou modifier ma page</a>
+          <a class="btn btn-primary" href="mes-liens">Créer ou modifier ma page</a>
         </div>
       </div>
   
@@ -309,7 +318,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
         <div class="eyebrow">ONIRIQUE CLOUD</div>
         <div class="between">
           <p class="muted" style="margin:0;max-width:52ch">Ta musique en cours, rangée par projet, avec ses versions. Partage-la par un lien privé, vois qui écoute et lis les commentaires.</p>
-          <a class="btn btn-primary" href="mes-sons.html">Ouvrir ONIRIQUE CLOUD</a>
+          <a class="btn btn-primary" href="mes-sons">Ouvrir ONIRIQUE CLOUD</a>
         </div>
       </div>
   
@@ -356,7 +365,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
           </div>
         </div>
         <div class="notice" id="yt-notice" role="status" style="margin-top:12px"></div>
-        <div class="shorts" id="yt-videos"></div>
+        <details class="yt-list" id="yt-list" hidden><summary id="yt-sum"></summary><div class="shorts" id="yt-videos"></div></details>
       </div>
   
       <div class="panel" id="social" hidden>
@@ -391,12 +400,12 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
 
   <p class="muted" id="loading">Chargement…</p>
 
-  <nav class="legal" aria-label="Pages légales"><a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="remboursement.html">Rétractation et remboursement</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a></nav>
+  <nav class="legal" aria-label="Pages légales"><a href="mentions-legales">Mentions légales</a><a href="cgv">CGV et CGU</a><a href="remboursement">Rétractation et remboursement</a><a href="confidentialite">Confidentialité</a><a href="cookies">Cookies</a><a href="support">Support</a></nav>
 </main>
 
 <script src="assets/cropper.js?v=2"></script>
 <script src="assets/account.js?v=8"></script>
-<script src="assets/site-nav.js?v=13"></script>
+<script src="assets/site-nav.js?v=14"></script>
 <script>
 // Le site relaie /api vers le serveur ONIRIQUE CENTRAL (même origine : pas de CORS à gérer).
 const $ = (id) => document.getElementById(id);
@@ -643,7 +652,7 @@ $("form").onsubmit = async (event) => {
     $("password").value = "";
     const me = await api("GET", "/me");
     show(me);
-    if (["mes-sons", "cloud"].includes(new URLSearchParams(location.search).get("next"))) { location.href = new URLSearchParams(location.search).get("next") + ".html"; return; }
+    if (["mes-sons", "cloud", "cut", "mes-videos"].includes(new URLSearchParams(location.search).get("next"))) { location.href = new URLSearchParams(location.search).get("next"); return; }
     if (new URLSearchParams(location.search).get("next") === "telecharger" && me.user.emailVerified !== false) window.OniriqueDownload?.open();
   } catch (error) {
     $("error").textContent = error.message;
@@ -797,6 +806,7 @@ function shortCard(video) {
   // Publiée ou en cours : plus rien à régler, une simple ligne.
   if (video.status === "published" || video.status === "uploading") {
     const card = el("div", "short");
+    card.dataset.status = video.status;
     name.append(el("h2", "", video.title), el("div", "muted", moment(video.publishAt)));
     card.append(head);
     if (video.url) {
@@ -812,6 +822,7 @@ function shortCard(video) {
   }
 
   const card = el("form", "short" + (video.status === "failed" ? " failed" : ""));
+  card.dataset.status = video.status;
   name.append(el("h2", "", video.filename), el("div", "muted", video.status === "scheduled" ? size + " · sort " + moment(video.publishAt) : size));
   const title = Object.assign(el("input"), { value: video.title, maxLength: 100, required: true });
   const text = Object.assign(el("textarea"), { value: video.description, maxLength: 5000 });
@@ -882,6 +893,15 @@ async function loadYoutube() {
   }
 }
 
+// Le titre du menu déroulant des Shorts : combien il y en a, et dans quel état ; il s'ouvre seul quand une vidéo a échoué.
+new MutationObserver(() => {
+  const cards = [...$("yt-videos").children], count = (s) => cards.filter((c) => c.dataset.status === s).length;
+  const plural = (n, word) => n + " " + word + (n > 1 ? "s" : "");
+  const parts = [count("scheduled") && plural(count("scheduled"), "programmé"), count("draft") && plural(count("draft"), "à régler"), count("failed") && plural(count("failed"), "raté"), count("published") && plural(count("published"), "publié")].filter(Boolean);
+  $("yt-list").hidden = !cards.length;
+  $("yt-sum").textContent = (cards.length > 1 ? cards.length + " Shorts" : "1 Short") + (parts.length ? " · " + parts.join(" · ") : "");
+  if (count("failed")) $("yt-list").open = true;
+}).observe($("yt-videos"), { childList: true });
 $("yt-connect").onclick = async () => {
   try {
     location.href = (await api("POST", "/youtube/connect")).url;
@@ -921,6 +941,7 @@ $("yt-files").onchange = async (event) => {
         request.send(file);
       });
       $("yt-videos").prepend(shortCard(video));
+      $("yt-list").open = true; // la vidéo ajoutée est à régler : la liste s'ouvre
       done++;
     } catch (error) {
       say("yt-notice", file.name + " : " + error.message, true);
@@ -1183,7 +1204,7 @@ $("logout").onclick = async () => {
   if (!saved()) { show(null); $("notice").textContent = verified && verified + (verified.startsWith("Adresse") ? " Connectez-vous." : ""); return; }
   try {
     const me = await api("GET", "/me");
-    if (["mes-sons", "cloud"].includes(new URLSearchParams(location.search).get("next"))) { location.href = new URLSearchParams(location.search).get("next") + ".html"; return; }
+    if (["mes-sons", "cloud", "cut", "mes-videos"].includes(new URLSearchParams(location.search).get("next"))) { location.href = new URLSearchParams(location.search).get("next"); return; }
     show(me);
     // Compte prêt (adresse validée) : le choix Windows / Mac s'ouvre tout de suite.
     if (wantsDownload && me.user.emailVerified !== false) window.OniriqueDownload?.open();

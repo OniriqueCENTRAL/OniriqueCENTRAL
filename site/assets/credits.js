@@ -27,11 +27,11 @@ window.OniriqueCredits = {
           ${c.duration ? `<div><dt>Durée</dt><dd>${esc(c.duration)}</dd></div>` : ""}
           <div><dt>Format</dt><dd>${esc(c.kind)}</dd></div>
         </dl>
-        <div class="plugins-used">${(c.plugins && c.plugins.length ? c.plugins : c.plugin ? [c.plugin] : [{ name: "Onirique VocalBox" }]).map((p, i) => `<a class="plugin-used" href="${p.slug ? "boutique.html?p=" + encodeURIComponent(p.slug) : "#vocalbox"}"><img src="assets/logo-small.webp?v=1" alt="" width="160" height="145"><span><b>${esc(p.name)}</b>${i === 0 && c.usedOn ? `<small>Utilisé sur : ${esc(c.usedOn)}</small>` : ""}</span></a>`).join("")}</div>
+        <div class="plugins-used">${(c.plugins && c.plugins.length ? c.plugins : c.plugin ? [c.plugin] : [{ name: "Onirique VocalBox" }]).map((p, i) => `<a class="plugin-used" href="${p.slug ? "boutique?p=" + encodeURIComponent(p.slug) : "#vocalbox"}"><img src="assets/logo-small.webp?v=1" alt="" width="160" height="145"><span><b>${esc(p.name)}</b>${i === 0 && c.usedOn ? `<small>Utilisé sur : ${esc(c.usedOn)}</small>` : ""}</span></a>`).join("")}</div>
         ${engineers(c).length ? `<p class="credit-engineer">Par ${engineers(c).map(person).join('<span class="credit-and">&amp;</span>')}</p>` : ""}
       </div>
       <div class="credit-player">
-        <div class="embed${c.spotifyType === "album" ? " album" : ""}"><button type="button" class="embed-load" data-spotify="${esc(c.spotifyId)}" data-type="${c.spotifyType === "album" ? "album" : "track"}" data-title="${esc(c.title)}">Charger le lecteur Spotify<small>Spotify déposera alors ses propres cookies. <a href="cookies.html">En savoir plus</a></small></button></div>
+        <div class="embed${c.spotifyType === "album" ? " album" : ""}"><button type="button" class="embed-load" data-spotify="${esc(c.spotifyId)}" data-type="${c.spotifyType === "album" ? "album" : "track"}" data-title="${esc(c.title)}">Charger le lecteur Spotify<small>Spotify déposera alors ses propres cookies. <a href="cookies">En savoir plus</a></small></button></div>
         <div class="open-links">${c.appleMusic ? `<a class="open-link" href="${esc(c.appleMusic)}" target="_blank" rel="noopener">Écouter sur Apple Music ↗</a>` : ""}<a class="open-link" href="https://open.spotify.com/${c.spotifyType === "album" ? "album" : "track"}/${esc(c.spotifyId)}" target="_blank" rel="noopener">${c.spotifyType === "album" ? "Écouter l'album sur Spotify ↗" : "Écouter en entier sur Spotify ↗"}</a></div>
       </div>
     </article>`).join("");

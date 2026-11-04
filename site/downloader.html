@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<script src="assets/i18n.js?v=2f9cddc9"></script>
+<script src="assets/ui.js?v=3"></script>
+<script src="assets/annonce.js?v=1"></script>
+<script src="/api/announce.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Downloader — ONIRIQUE</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css">
+<link rel="stylesheet" href="assets/tools.css">
+<style>
+.opt { display: grid; gap: 12px; }
+.card p.error { color: #FF7A85; }
+.card p.done { color: var(--mist); }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.row input { flex: 1 1 260px; }
+.card label.tick { display: flex; align-items: center; gap: 10px; font: 500 15px/1.4 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--mist); cursor: pointer; }
+.tick small { color: var(--haze); }
+.yt { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 20px; align-items: center; }
+.yt iframe { width: 100%; aspect-ratio: 16 / 9; border: 1px solid var(--line); border-radius: 14px; background: #000; display: block; }
+.yt h3 { margin: 6px 0 4px; font: 700 18px/1.3 var(--f-display); color: var(--mist); overflow-wrap: anywhere; }
+@media (max-width: 640px) { .yt { grid-template-columns: 1fr; } }
+</style>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="boutique">Boutique</a><a class="btn" href="outils" data-tools>Outils</a><a class="btn" href="compte" data-account>Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <section class="hero">
+    <p class="eyebrow">Outil gratuit</p>
+    <h1>Ton audio. <em>Ton format.</em></h1>
+    <p class="lede">Colle un lien YouTube ou TikTok et récupère son audio en MP3 ou en WAV, sans le blanc du début, ou la vidéo en MP4 HD, au nom de la vidéo.</p>
+  </section>
+
+  <article class="card" id="studio">
+    <p class="head"><b>Lien YouTube ou TikTok</b><span>20 minutes au plus</span></p>
+    <div class="opt">
+      <label for="url">Lien de la vidéo</label>
+      <div class="row">
+        <input id="url" type="text" inputmode="url" placeholder="Lien YouTube ou TikTok…" autocomplete="off" spellcheck="false">
+        <button class="go ghost" id="analyze" type="button">Aperçu</button>
+      </div>
+      <div class="row">
+        <select id="yt-format" aria-label="Format du téléchargement" style="flex:1 1 200px"><option value="mp3:320">MP3 320 kbit/s</option><option value="mp3:192">MP3 192 kbit/s</option><option value="mp3:128">MP3 128 kbit/s</option><option value="wav:0">WAV 24 bits, 48 kHz</option><option value="mp4:0">MP4 HD (vidéo jusqu'à 1080p)</option></select>
+        <button class="go" id="yt-download" type="button">Télécharger</button>
+      </div>
+      <label class="tick"><input id="prod" type="checkbox"> PROD <small>— ajoute le BPM et la tonalité au nom : « Titre - 140 BPM - F minor »</small></label>
+      <p class="hint">Uniquement pour des vidéos dont tu as les droits (les tiennes, celles de tes collabs, celles sous licence libre). En téléchargeant, tu acceptes les <a href="cgv#downloader">conditions du Downloader</a>. L'aperçu d'un lien YouTube charge le lecteur de YouTube, qui peut alors déposer des cookies (<a href="cookies#youtube">en savoir plus</a>).</p>
+      <p class="hint" id="limit">Sans compte ou avec un compte gratuit : un téléchargement par minute. Sans limite avec le rôle ONIRIQUE.</p>
+      <p class="error" id="url-error" role="alert"></p>
+      <p class="done" id="done" aria-live="polite"></p>
+    </div>
+    <div class="yt" id="yt" hidden>
+      <iframe id="yt-player" title="Lecteur YouTube" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+      <div><p class="eyebrow">Aperçu YouTube</p><h3 id="yt-title"></h3><p id="yt-author"></p><p><a id="yt-open" target="_blank" rel="noopener noreferrer">Ouvrir sur YouTube ↗</a></p></div>
+    </div>
+  </article>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="outils">Tous les outils</a><a href="mentions-legales">Mentions légales</a><a href="cgv">CGV et CGU</a><a href="confidentialite">Confidentialité</a><a href="cookies">Cookies</a><a href="support">Support</a>
+  </nav>
+</footer>
+
+<script src="assets/audio-kit.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const A = OniriqueAudio;
+const TOKEN = (() => { try { return sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"); } catch { return null; } })();
+
+// Les rôles ONIRIQUE et au-dessus n'ont pas de limite (server/src/downloader.js) : la mention disparaît pour eux.
+document.addEventListener("onirique:account", (event) => { $("limit").hidden = (event.detail.user || {}).role !== "user"; });
+
+// ——— Lien YouTube ou TikTok : vérifié ici, puis titre et auteur par oEmbed pour l'aperçu ———
+function videoId(raw) {
+  let url;
+  try { url = new URL(raw.trim()); } catch { return ""; }
+  const host = url.hostname.toLowerCase().replace(/^(www|m|music)\./, "");
+  let id = "";
+  if (host === "youtu.be") id = url.pathname.split("/")[1] || "";
+  else if (host === "youtube.com") id = url.pathname === "/watch" ? url.searchParams.get("v") || "" : (url.pathname.match(/^\/(?:embed|shorts|live)\/([^/]+)/) || [])[1] || "";
+  return /^[A-Za-z0-9_-]{11}$/.test(id) ? id : "";
+}
+/** Un lien de vidéo TikTok (complet ou court) ; le serveur le revérifie (server/src/downloader.js). */
+function tiktokLink(raw) {
+  let url;
+  try { url = new URL(raw.trim()); } catch { return ""; }
+  const host = url.hostname.toLowerCase();
+  const ok = /^(vm|vt)\.tiktok\.com$/.test(host) ? /^\/[A-Za-z0-9]{5,20}\/?$/.test(url.pathname)
+    : /^((www|m)\.)?tiktok\.com$/.test(host) && /^\/(@[A-Za-z0-9._-]+\/video\/\d+|t\/[A-Za-z0-9]+)\/?$/.test(url.pathname);
+  return ok ? url.origin + url.pathname : "";
+}
+const validLink = (raw) => videoId(raw) || tiktokLink(raw);
+
+$("analyze").onclick = async () => {
+  $("url-error").textContent = "";
+  $("yt").hidden = true;
+  const id = videoId($("url").value);
+  // TikTok ne donne plus de titre ni d'auteur dans son aperçu public : on télécharge directement.
+  if (!id && tiktokLink($("url").value)) { $("url-error").textContent = "Pas d'aperçu pour un lien TikTok : clique directement sur « Télécharger »."; return; }
+  if (!id) { $("url-error").textContent = "Colle un lien YouTube ou TikTok valide."; return; }
+  const watch = "https://www.youtube.com/watch?v=" + id;
+  $("analyze").disabled = true;
+  try {
+    const response = await fetch("https://www.youtube.com/oembed?format=json&url=" + encodeURIComponent(watch));
+    if (!response.ok) throw new Error("Vidéo introuvable, privée ou dont l'intégration est désactivée.");
+    const data = await response.json();
+    $("yt-title").textContent = data.title || "Vidéo YouTube";
+    $("yt-author").textContent = data.author_name || "";
+    $("yt-open").href = watch;
+    $("yt-player").src = "https://www.youtube-nocookie.com/embed/" + id + "?rel=0";
+    $("yt").hidden = false;
+  } catch (error) {
+    $("url-error").textContent = error instanceof TypeError ? "Impossible de joindre YouTube : vérifie ta connexion." : error.message;
+  }
+  $("analyze").disabled = false;
+};
+$("url").addEventListener("keydown", (event) => { if (event.key === "Enter") $("analyze").click(); });
+
+// ——— PROD : BPM et tonalité, comme l'outil BPM et tonalité (assets/bpm-key-worker.js, mêmes noms) ———
+const RATE = 22050, ANALYSE_SECONDS = 240; // au-delà, seul le milieu du morceau est analysé
+const EN = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+const keyName = (k) => EN[k.tonic] + (k.mode === "major" ? " major" : " minor");
+const bpmText = (bpm) => (Math.abs(bpm - Math.round(bpm)) < 0.2 ? String(Math.round(bpm)) : bpm.toFixed(1).replace(".", ","));
+
+// Une vidéo garde son nom tel quel : PROD ne vaut que pour l'audio.
+$("yt-format").addEventListener("change", () => { $("prod").disabled = $("yt-format").value.startsWith("mp4"); });
+
+async function prodTag(blob) {
+  const audio = await A.decode(new File([blob], "son"));
+  const length = Math.min(audio.duration, ANALYSE_SECONDS);
+  const offline = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, Math.max(1, Math.floor(length * RATE)), RATE);
+  const source = offline.createBufferSource();
+  source.buffer = audio;
+  source.connect(offline.destination);
+  source.start(0, (audio.duration - length) / 2, length);
+  const samples = (await offline.startRendering()).getChannelData(0);
+  const r = await new Promise((resolve, reject) => {
+    const worker = new Worker("assets/bpm-key-worker.js");
+    worker.onmessage = (event) => { worker.terminate(); resolve(event.data); };
+    worker.onerror = () => { worker.terminate(); reject(new Error("L'analyse du BPM et de la tonalité a échoué.")); };
+    worker.postMessage({ samples, sampleRate: RATE }, [samples.buffer]);
+  });
+  return [r.tempo && bpmText(r.tempo.bpm) + " BPM", r.key && keyName(r.key)].filter(Boolean).join(" - ");
+}
+
+// ——— Télécharger : le serveur extrait l'audio avec yt-dlp, retire le blanc du début (server/src/downloader.js) ———
+$("yt-download").onclick = async () => {
+  $("url-error").textContent = $("done").textContent = "";
+  if (!validLink($("url").value)) { $("url-error").textContent = "Colle un lien YouTube ou TikTok valide."; return; }
+  const [format, kbps] = $("yt-format").value.split(":");
+  const button = $("yt-download"), label = button.textContent;
+  button.disabled = true;
+  button.textContent = "Téléchargement… (jusqu'à une minute)";
+  try {
+    const response = await fetch("/api/downloader/youtube", {
+      method: "POST", headers: { "Content-Type": "application/json", ...(TOKEN ? { Authorization: "Bearer " + TOKEN } : {}) },
+      body: JSON.stringify({ url: $("url").value.trim(), format, kbps }),
+    });
+    if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Le téléchargement a échoué.");
+    const blob = await response.blob();
+    // Le nom choisi par le serveur (titre nettoyé) : filename*= (le vrai titre) quand il a des accents ou des emojis,
+    // sinon filename="" ; ce dernier, toujours écrit avant, n'en a qu'une copie en « ? ».
+    const disposition = response.headers.get("Content-Disposition") || "";
+    const named = disposition.match(/filename\*=UTF-8''([^;]+)/) || disposition.match(/filename="([^"]+)"/);
+    let base = named ? decodeURIComponent(named[1]).replace(/\.[^.]+$/, "") : "Vidéo";
+    let tag = "";
+    const prod = $("prod").checked && format !== "mp4";
+    if (prod) {
+      button.textContent = "Calcul du BPM et de la tonalité…";
+      tag = await prodTag(blob).catch(() => "");
+      if (tag) base += " - " + tag;
+    }
+    A.download(blob, base + "." + format);
+    const lead = +response.headers.get("X-Lead-Ms") || 0;
+    $("done").textContent = "« " + base + "." + format + " » téléchargé. "
+      + (format === "mp4" ? "" : lead ? lead + " ms de blanc retirés au début : le son démarre sur le premier temps." : "Aucun blanc au début.")
+      + (prod && !tag ? " BPM et tonalité non trouvés pour ce son." : "");
+  } catch (error) {
+    $("url-error").textContent = error instanceof TypeError ? "Connexion perdue pendant le téléchargement." : error.message;
+  }
+  button.textContent = label;
+  button.disabled = false;
+};
+</script>
+<script src="assets/tools-menu.js?v=13"></script>
+<script src="assets/account.js?v=8"></script>
+<script src="assets/site-nav.js?v=14"></script>
+</html>

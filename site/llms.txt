@@ -16,24 +16,28 @@
 - [BPM et tonalité](https://onirique.store/bpm-tonalite) : outil gratuit qui détecte le tempo et la tonalité d'un fichier audio, dans le navigateur.
 - [Outils gratuits](https://onirique.store/outils) : tous les outils gratuits pour artistes et beatmakers.
 - [Volume avant sortie](https://onirique.store/volume-lufs) : mesure le volume LUFS et le pic réel d'un master, plateforme par plateforme.
+- [IA SPLIT](https://onirique.store/split) : sépare un morceau par IA (Demucs) en voix, instru, mélodie, drums et basse, dans le navigateur.
 - [Vérificateur de stems](https://onirique.store/stems) : contrôle la durée, le format et la saturation des pistes d'un projet.
 - [Tap tempo](https://onirique.store/tap-tempo) : donne le BPM d'un rythme tapé.
 - [Délais et reverb](https://onirique.store/delais) : temps de délai, pré-délai et reverb en millisecondes pour un BPM.
 - [Gammes](https://onirique.store/gammes) : notes, accords et tonalités voisines d'une gamme.
 - [Accordeur](https://onirique.store/accordeur) : note chantée ou jouée au micro et écart en cents.
 - [Tessiture](https://onirique.store/tessiture) : étendue de la voix et zone de confort, au micro.
-- [Convertisseur audio](https://onirique.store/convertisseur) : conversion en WAV ou en MP3 dans le navigateur.
+- [Convertisseur audio et image](https://onirique.store/convertisseur) : conversion en WAV ou en MP3, et des images en JPG, PNG ou WEBP, dans le navigateur.
 - [Découpe et fondu](https://onirique.store/decoupe) : garde un passage d'un morceau, avec fondus, export WAV ou MP3.
 - [Transposer](https://onirique.store/transposition) : change la hauteur ou le tempo d'un morceau, l'un sans l'autre.
 - [Calculateur revenus streaming](https://onirique.store/revenus-streaming) : fourchette de revenus pour un nombre d'écoutes par plateforme.
 - [Partage des droits](https://onirique.store/partage) : répartition des parts d'un titre, feuille à imprimer et à signer.
 - [Checklist de sortie](https://onirique.store/checklist-sortie) : étapes datées d'une sortie, de J-30 à J+7.
+- [Presskit](https://onirique.store/presskit) : presskit d'artiste personnalisé, en PDF.
+- [Devis](https://onirique.store/devis) : devis de beatmaker, graphiste ou ingé son, en PDF.
+- [ONIRIQUE CUT](https://onirique.store/cut) : clips montés sur le beat d'un son, vidéo 9:16 pour TikTok (membres et abonnés CLOUD).
 - [Questions fréquentes](https://onirique.store/#faq) : compatibilité, installation, latence.
 
 ## Informations légales
 
-- [Mentions légales et contact](https://onirique.store/mentions-legales.html)
-- [Conditions générales de vente et d'utilisation](https://onirique.store/cgv.html)
-- [Rétractation et remboursement](https://onirique.store/remboursement.html)
-- [Politique de confidentialité](https://onirique.store/confidentialite.html)
-- [Cookies](https://onirique.store/cookies.html)
+- [Mentions légales et contact](https://onirique.store/mentions-legales)
+- [Conditions générales de vente et d'utilisation](https://onirique.store/cgv)
+- [Rétractation et remboursement](https://onirique.store/remboursement)
+- [Politique de confidentialité](https://onirique.store/confidentialite)
+- [Cookies](https://onirique.store/cookies)

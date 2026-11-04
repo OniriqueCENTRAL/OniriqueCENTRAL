@@ -12,6 +12,9 @@
 #   5. Rôles de l'application : ajouter votre compte Instagram comme testeur et accepter l'invitation dans l'appli
 #      Instagram (Paramètres > Applications et sites web). En mode développement, cela suffit pour votre propre compte.
 #   6. Dans l'appli Instagram : Paramètres > Messages > Outils connectés > « Autoriser l'accès aux messages » (pour les DM).
+#   7. Reels programmés depuis ONIRIQUE CUT : dans « API setup with Instagram login », la permission
+#      instagram_business_content_publish doit être cochée (elle est demandée à la connexion du compte).
+#      Un compte déjà relié avant ce réglage doit être reconnecté une fois (page compte) pour l'accorder.
 # Le compte relié doit être un compte professionnel ou créateur.
 set -euo pipefail
 

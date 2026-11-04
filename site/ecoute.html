@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=ad5318d8"></script>
+<script src="assets/i18n.js?v=2f9cddc9"></script>
 <script src="assets/ui.js?v=3"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Écoute privée</title>
@@ -176,7 +176,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1320px; }
     <div class="eyebrow" style="justify-content:center">Compte exigé</div>
     <h1>Connecte-toi</h1>
     <p class="muted" style="margin:0 0 16px">Ce lien n'est ouvert qu'aux personnes connectées à leur compte ONIRIQUE.</p>
-    <a class="btn" id="login" href="compte.html">Se connecter ou créer un compte</a>
+    <a class="btn" id="login" href="compte">Se connecter ou créer un compte</a>
   </section>
   <section class="panel" id="gone" hidden><p class="error" id="gone-text" style="margin:0"></p></section>
 
@@ -210,7 +210,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1320px; }
 <footer class="muted wrap">Partagé avec <a href="/">ONIRIQUE</a> · ONIRIQUE CLOUD</footer>
 
 <dialog id="buy"></dialog>
-<script src="assets/sounds-player.js?v=18"></script>
+<script src="assets/sounds-player.js?v=20"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const OP = window.OniriquePlayer, icon = OP.icon;
@@ -471,7 +471,7 @@ $("back").onclick = () => {
   let fromSite = false;
   try { fromSite = new URL(document.referrer).origin === location.origin; } catch {}
   if (fromSite && history.length > 1) history.back();
-  else location.href = session ? "mes-sons.html" : "/";
+  else location.href = session ? "mes-sons" : "/";
 };
 $("pw-form").onsubmit = (event) => { event.preventDefault(); if ($("pw").value) open($("pw").value); };
 open();

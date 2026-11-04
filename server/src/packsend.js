@@ -160,7 +160,7 @@ export async function coverPalette(cover) {
 //------------------------------------------------------------------------------ Boîte mail du membre
 // Deux façons de la brancher : « Se connecter avec Google » (host = 'google', l'accès Gmail gardé chiffré dans secret,
 // les mails partent par l'API Gmail), ou n'importe quelle boîte par SMTP (mot de passe d'application chiffré).
-const mailerRow = (userId) => get('SELECT * FROM sound_mailers WHERE user_id = ?', userId);
+export const mailerRow = (userId) => get('SELECT * FROM sound_mailers WHERE user_id = ?', userId);
 export const googleReady = () => !!(config.googleClientId && config.googleClientSecret);
 export const mailerView = (userId) => {
   const m = mailerRow(userId);
@@ -195,7 +195,7 @@ export function gmailTransport(m) {
     },
   };
 }
-const transportOf = (m) => (m.host === 'google' && !testing ? gmailTransport(m) : smtpTransport({ host: m.host, port: m.port, login: m.login, password: unseal(m.secret) }));
+export const transportOf = (m) => (m.host === 'google' && !testing ? gmailTransport(m) : smtpTransport({ host: m.host, port: m.port, login: m.login, password: unseal(m.secret) }));
 // Les connexions Google en cours : la demande (state) dit de quel membre il s'agit, et sur quel pack revenir.
 const pendingGoogle = new Map();
 
@@ -248,7 +248,7 @@ export async function googleMailerCallback(req, res) {
         from_name = excluded.from_name, from_email = excluded.from_email, updated_at = excluded.updated_at`,
     entry.userId, email, seal(t.refresh_token), entry.fromName, email, now());
   } catch (error) { result = error.message; }
-  res.redirect(`${config.siteUrl}/mes-sons.html?google=${encodeURIComponent(result)}${entry?.projectId ? `#/p/${entry.projectId}` : ''}`);
+  res.redirect(`${config.siteUrl}/${entry?.back || 'mes-sons'}?google=${encodeURIComponent(result)}${entry?.projectId ? `#/p/${entry.projectId}` : ''}`);
 }
 
 //------------------------------------------------------------------------------ Routes
@@ -268,8 +268,10 @@ export function mountPackSend(app, { me, ownProject, sign, wrap }) {
   signLinks = sign;
   if (!testing) setTimeout(() => resumeSends().catch((error) => console.error(`[mails] reprise : ${error.message}`)), 5000).unref();
   // La boîte mail du membre : essayée pour de bon avant d'être gardée, le mot de passe chiffré.
-  app.get('/api/me/sounds/mailer', ...me, (req, res) => res.json(mailerView(req.user.id)));
-  app.put('/api/me/sounds/mailer', ...me, wrap(async (req, res) => {
+  // La boîte mail sert aussi au presskit et au devis (outils gratuits) : un compte connecté suffit, sans ONIRIQUE CLOUD.
+  const user = me[0];
+  app.get('/api/me/sounds/mailer', user, (req, res) => res.json(mailerView(req.user.id)));
+  app.put('/api/me/sounds/mailer', user, wrap(async (req, res) => {
     rateLimit(`sounds-mailer:${req.user.id}`, 20);
     const b = req.body || {};
     const host = str(b.host, 120).toLowerCase(), port = Number(b.port), login = str(b.login, 200), password = String(b.password || '');
@@ -288,7 +290,7 @@ export function mountPackSend(app, { me, ownProject, sign, wrap }) {
     req.user.id, host, port, login, seal(password), str(b.fromName, 80), fromEmail, now());
     res.json(mailerView(req.user.id));
   }));
-  app.delete('/api/me/sounds/mailer', ...me, wrap(async (req, res) => {
+  app.delete('/api/me/sounds/mailer', user, wrap(async (req, res) => {
     const m = mailerRow(req.user.id);
     // Google oublie aussi l'accès de son côté ; s'il ne répond pas, la boîte est quand même débranchée ici.
     if (m?.host === 'google') await fetch('https://oauth2.googleapis.com/revoke', { method: 'POST', body: new URLSearchParams({ token: unseal(m.secret) }) }).catch(() => {});
@@ -298,11 +300,12 @@ export function mountPackSend(app, { me, ownProject, sign, wrap }) {
 
   // « Se connecter avec Google » : seul le droit d'envoyer des mails est demandé (gmail.send), plus l'adresse du compte.
   // Google revient par l'adresse déjà déclarée pour YouTube (même client OAuth) ; la demande en cours dit que c'est un mail.
-  app.post('/api/me/sounds/mailer/google', ...me, (req, res) => {
+  app.post('/api/me/sounds/mailer/google', user, (req, res) => {
     if (!googleReady()) throw new HttpError(503, 'La connexion avec Google n\'est pas encore réglée sur le serveur.');
     for (const [k, v] of pendingGoogle) if (v.expires < now()) pendingGoogle.delete(k);
     const state = crypto.randomBytes(24).toString('base64url');
-    pendingGoogle.set(state, { userId: req.user.id, projectId: Number(req.body?.projectId) || 0, fromName: str(req.body?.fromName, 80), expires: now() + 10 * 60_000 });
+    pendingGoogle.set(state, { userId: req.user.id, projectId: Number(req.body?.projectId) || 0, fromName: str(req.body?.fromName, 80),
+      back: ['presskit', 'devis'].includes(req.body?.back) ? req.body.back : '', expires: now() + 10 * 60_000 });
     res.json({ url: 'https://accounts.google.com/o/oauth2/v2/auth?' + new URLSearchParams({
       client_id: config.googleClientId, redirect_uri: googleBack(), response_type: 'code', state,
       scope: 'openid email https://www.googleapis.com/auth/gmail.send', access_type: 'offline', prompt: 'consent', // un accès qui dure
@@ -379,6 +382,16 @@ export function mountPackSend(app, { me, ownProject, sign, wrap }) {
     if (r && realOpen(r, req.headers['user-agent'])) trackRecipient(r, 'open');
     res.set({ 'Content-Type': 'image/gif', 'Cache-Control': 'no-store, max-age=0' }).send(pixel);
   });
+  // La pochette dans le mail : toujours celle du pack à cet instant (l'ancienne image est effacée quand on la change),
+  // en JPEG, que toutes les boîtes mail affichent, contrairement au WebP de /api/media.
+  app.get('/api/sounds/m/:token/pochette.jpg', wrap(async (req, res) => {
+    const r = byToken(req);
+    const cover = r && get('SELECT p.cover FROM sound_mail_sends s JOIN sound_projects p ON p.id = s.project_id WHERE s.id = ?', r.send_id)?.cover;
+    if (!cover) throw new HttpError(404, 'Pochette introuvable.');
+    const jpeg = await sharp(path.join(config.mediaDir, path.basename(cover))).resize(160, 160, { fit: 'cover' }).flatten({ background: '#111111' }).jpeg({ quality: 85 }).toBuffer()
+      .catch(() => { throw new HttpError(404, 'Pochette introuvable.'); });
+    res.set({ 'Content-Type': 'image/jpeg', 'Cache-Control': 'public, max-age=3600' }).send(jpeg);
+  }));
   app.get('/api/sounds/m/:token/lien', (req, res) => {
     const r = byToken(req), url = String(req.query.u || '');
     if (!r || !/^https?:\/\//i.test(url) || String(req.query.s || '') !== sign(`mail.${r.token}.${url}`)) throw new HttpError(404, 'Lien introuvable.');
@@ -446,7 +459,7 @@ async function deliver({ sid, m, d, p, link, tracks, sign }) {
     const draft = { ...d, subject: name(d.subject), preheader: name(d.preheader), eyebrow: name(d.eyebrow), title: name(d.title), text: name(d.text), signature: name(d.signature) };
     const unsubscribe = `${api}/${r.token}/desinscription`;
     const html = packMailHtml(draft, {
-      title: p.title, artist: p.artist || m.from_name || 'ONIRIQUE', cover: p.cover ? `/api/media/${p.cover}` : null, listenUrl: listen,
+      title: p.title, artist: p.artist || m.from_name || 'ONIRIQUE', cover: p.cover ? `${api}/${r.token}/pochette.jpg` : null, listenUrl: listen,
       tracks: tracks.map((t) => ({ id: t.id, title: t.title, bpm: t.bpm, key: t.music_key })),
       link: follow, pixel: `${api}/${r.token}/o.gif`, unsubscribe,
     });

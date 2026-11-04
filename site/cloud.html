@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=ad5318d8"></script>
+<script src="assets/i18n.js?v=2f9cddc9"></script>
 <script src="assets/ui.js?v=3"></script>
 <script src="assets/annonce.js?v=1"></script>
 <script src="/api/announce.js"></script>
@@ -54,7 +54,7 @@
 <header>
   <div class="wrap">
     <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
-    <nav aria-label="Navigation"><a class="btn" href="boutique.html">Boutique</a><a class="btn" href="outils.html" data-tools>Outils</a><a class="btn" href="compte.html" data-account>Compte</a></nav>
+    <nav aria-label="Navigation"><a class="btn" href="boutique">Boutique</a><a class="btn" href="outils" data-tools>Outils</a><a class="btn" href="compte" data-account>Compte</a></nav>
   </div>
 </header>
 
@@ -126,14 +126,14 @@
     <h2>Questions</h2>
     <details><summary>Que se passe-t-il si j'arrête ?</summary><p>Tu gardes l'accès jusqu'à la fin de la période payée. Ensuite ONIRIQUE CLOUD et ta page de liens se ferment, mais tes sons restent sur ton compte : ils reviennent si tu te réabonnes.</p></details>
     <details><summary>Comment je résilie ?</summary><p>Sur cette page, une fois connecté : « Résilier ». Aucun prélèvement n'a lieu après la fin de la période en cours.</p></details>
-    <details><summary>Les plugins sont-ils compris ?</summary><p>Non : cet abonnement ne concerne que ONIRIQUE CLOUD et la page de liens. Les plugins s'achètent ou s'abonnent dans la <a href="boutique.html">boutique</a>.</p></details>
+    <details><summary>Les plugins sont-ils compris ?</summary><p>Non : cet abonnement ne concerne que ONIRIQUE CLOUD et la page de liens. Les plugins s'achètent ou s'abonnent dans la <a href="boutique">boutique</a>.</p></details>
     <details><summary>Comment je paie ?</summary><p>Par carte, sur une page de paiement sécurisée. Le reçu arrive par e-mail.</p></details>
   </section>
 </main>
 
 <footer>
   <nav class="wrap" aria-label="Pages légales">
-    <a href="outils.html">Tous les outils</a><a href="mentions-legales.html">Mentions légales</a><a href="cgv.html">CGV et CGU</a><a href="confidentialite.html">Confidentialité</a><a href="cookies.html">Cookies</a><a href="support.html">Support</a>
+    <a href="outils">Tous les outils</a><a href="mentions-legales">Mentions légales</a><a href="cgv">CGV et CGU</a><a href="confidentialite">Confidentialité</a><a href="cookies">Cookies</a><a href="support">Support</a>
   </nav>
 </footer>
 
@@ -165,7 +165,7 @@
     $("offers").hidden = false;
     if (tools.included) {
       $("offers").hidden = true;
-      return status("<p>Ton compte de membre ONIRIQUE comprend déjà ONIRIQUE CLOUD et la page de liens.</p>", [button("Ouvrir ONIRIQUE CLOUD", "mes-sons.html"), button("Ma page de liens", "mes-liens.html", true)]);
+      return status("<p>Ton compte de membre ONIRIQUE comprend déjà ONIRIQUE CLOUD et la page de liens.</p>", [button("Ouvrir ONIRIQUE CLOUD", "mes-sons"), button("Ma page de liens", "mes-liens", true)]);
     }
     if (sub && sub.active) {
       $("offers").hidden = true;
@@ -179,7 +179,7 @@
       return status("<p>Ton abonnement " + formula + " est en cours. " + (sub.cancelAtPeriodEnd
         ? "Il est résilié : l'accès reste ouvert jusqu'au <b>" + day(sub.periodEnd) + "</b>, sans nouveau prélèvement."
         : "Prochain renouvellement le <b>" + day(sub.periodEnd) + "</b>.") + "</p>",
-        [button("Ouvrir ONIRIQUE CLOUD", "mes-sons.html"), button("Ma page de liens", "mes-liens.html", true), ...(sub.cancelAtPeriodEnd ? [] : [cancel])]);
+        [button("Ouvrir ONIRIQUE CLOUD", "mes-sons"), button("Ma page de liens", "mes-liens", true), ...(sub.cancelAtPeriodEnd ? [] : [cancel])]);
     }
     if (sub && !sub.active) status("<p>Ton abonnement s'est terminé le " + day(sub.periodEnd) + ". Tes sons t'attendent : réabonne-toi pour les retrouver.</p>");
     if (!tools.open) msg("Les abonnements ouvrent très bientôt.");
@@ -187,12 +187,12 @@
 
   document.querySelectorAll("[data-interval]").forEach((b) => {
     b.onclick = async () => {
-      if (!token()) { location.href = "compte.html?next=cloud"; return; }
+      if (!token()) { location.href = "compte?next=cloud"; return; }
       b.disabled = true; msg("");
       try {
         const r = await fetch("/api/tools/checkout", { method: "POST", headers: { Authorization: "Bearer " + token(), "Content-Type": "application/json" }, body: JSON.stringify({ interval: b.dataset.interval }) });
         const data = await r.json().catch(() => ({}));
-        if (r.status === 401) { location.href = "compte.html?next=cloud"; return; }
+        if (r.status === 401) { location.href = "compte?next=cloud"; return; }
         if (!r.ok) throw new Error(data.error || "Erreur " + r.status);
         if (data.url) { location.href = data.url; return; }
         draw();
@@ -204,7 +204,7 @@
   draw();
 })();
 </script>
-<script src="assets/tools-menu.js?v=4"></script>
+<script src="assets/tools-menu.js?v=13"></script>
 <script src="assets/account.js?v=8"></script>
-<script src="assets/site-nav.js?v=13"></script>
+<script src="assets/site-nav.js?v=14"></script>
 </html>

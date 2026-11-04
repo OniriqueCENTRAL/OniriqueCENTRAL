@@ -957,10 +957,34 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     const h = max === r ? ((g - b) / d + 6) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
     return [h / 6, s, l];
   }
+  // La ponctuation reste avec son mot : « ? », « , », « . », « ! », « » » vont avec le mot d'avant ; « « », « ( », « ¿ » avec le mot d'après.
+  // ti : le mot principal du groupe (celui qu'on marque FORT), parts : tous les morceaux d'origine.
+  const PUNCT_ONLY = /^[\p{P}\p{S}]+$/u, OPENS = /^[«“‘(\[{¿¡]+$/u;
+  function gluePunct(words) {
+    const out = [], join = (a, b, main) => ({ ...a, text: a.text + " " + b.text, strong: !!(a.strong || b.strong), ti: main.ti, parts: [...(a.parts || [a.ti]), ...(b.parts || [b.ti])] });
+    let open = null, quotes = 0;
+    for (const w of words) {
+      const bare = w.text.replace(/\*\*/g, ""), punct = PUNCT_ONLY.test(bare);
+      const opening = punct && (OPENS.test(bare) || (/^["']+$/.test(bare) && quotes++ % 2 === 0) || !out.length);
+      if (opening) { open = open ? join(open, w, open) : w; continue; }
+      if (punct) { out[out.length - 1] = join(out.at(-1), w, out.at(-1)); continue; }
+      out.push(open ? join(open, w, w) : w);
+      open = null;
+    }
+    if (open) { if (out.length) out[out.length - 1] = join(out.at(-1), open, out.at(-1)); else out.push(open); }
+    return out;
+  }
   // « [mm:ss.cc] texte » : une ligne synchronisée ; sans repère, la ligne s'affiche sans suivre la lecture.
+  // Synchronisée mot par mot (pour ONIRIQUE CUT) : « [mm:ss.cc] <mm:ss.cc>mot <mm:ss.cc>mot… » ; words garde le moment de chaque mot.
   const parseLyrics = (text) => (text || "").split("\n").map((line) => {
-    const m = line.match(/^\[(\d+):(\d{1,2}(?:\.\d+)?)\]\s?/);
-    return { at: m ? Number(m[1]) * 60 + Number(m[2]) : null, text: m ? line.slice(m[0].length) : line };
+    const m = line.match(/^\[(\d+):(\d{1,2}(?:\.\d+)?)\]\s?/), rest = m ? line.slice(m[0].length) : line;
+    // Un mot entouré de ** est un mot FORT (il ressort en grand dans ONIRIQUE CUT) : affiché sans les étoiles.
+    const bare = (t) => t.replace(/\*\*(.+?)\*\*/g, "$1");
+    const words = gluePunct([...rest.matchAll(/<(\d+):(\d{1,2}(?:\.\d+)?)>\s*([^<]*)/g)]
+      .map((w) => ({ at: Number(w[1]) * 60 + Number(w[2]), text: bare(w[3].trim()), ...(/^\*\*.+\*\*/.test(w[3].trim()) ? { strong: true } : {}) })).filter((w) => w.text))
+      .map(({ ti, parts, ...w }) => w);
+    return { at: m ? Number(m[1]) * 60 + Number(m[2]) : null, text: words.length ? words.map((w) => w.text).join(" ") : bare(rest),
+      ...(words.length ? { words } : {}), ...(!words.length && rest.includes("**") ? { marked: rest } : {}) };
   });
   const stageLabel = (s) => (s === "maquette" ? "Maquette" : s === "final" ? "Final" : /^v\d+$/.test(s || "") ? s.toUpperCase() : s || "");
 
@@ -980,5 +1004,5 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     node.style.setProperty("--buy", hex);
     node.style.setProperty("--buy-ink", light > 150 ? "#0D0809" : "#F6EEEE");
   };
-  window.OniriquePlayer = { create, peaksOf, time, icon, tint, stageLabel, releaseLabel, parseLyrics, buttonColor };
+  window.OniriquePlayer = { create, peaksOf, time, icon, tint, stageLabel, releaseLabel, parseLyrics, gluePunct, buttonColor };
 })();

@@ -18,6 +18,7 @@ import { mountBeatStore, offersOf, filesOf, sellerView, licensesOf, licensePrice
 import { mountPackSend, recipientFor, trackRecipient, coverPalette } from './packsend.js';
 import { writeZip, zipName, zipSize } from './zipstream.js';
 import { mountBeatTube } from './beattube.js';
+import { mountBeatScan, queueScan, scansOf, scanConfigured } from './beatscan.js';
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS sound_projects (
@@ -208,11 +209,11 @@ function notice(userIds, kind, { actor = null, who, text, projectId = null }) {
 const membersOf = (pid) => [get('SELECT user_id FROM sound_projects WHERE id = ?', pid)?.user_id,
   ...all('SELECT user_id FROM sound_collabs WHERE project_id = ?', pid).map((c) => c.user_id)];
 // Un projet que le membre peut ouvrir : le sien, ou un projet où il est collaborateur (p = sound_projects).
-const ACCESS = '(p.user_id = ? OR p.id IN (SELECT project_id FROM sound_collabs WHERE user_id = ?))';
+const ACCESS = `(p.kind != 'trash' AND p.trashed_at IS NULL AND (p.user_id = ? OR p.id IN (SELECT project_id FROM sound_collabs WHERE user_id = ?)))`;
 // Un lien d'écoute (l = sound_links) dont l'auteur a encore accès au projet : l'auteur du projet ou l'un de ses
 // collaborateurs. Celui d'un collaborateur retiré (ou parti) ne s'ouvre plus.
 const LINK_OPEN = `EXISTS (SELECT 1 FROM sound_projects lp WHERE lp.id = COALESCE(l.project_id, (SELECT project_id FROM sound_tracks WHERE id = l.track_id))
-  AND (lp.user_id = l.user_id OR lp.id IN (SELECT project_id FROM sound_collabs WHERE user_id = l.user_id)))`;
+  AND lp.kind != 'trash' AND lp.trashed_at IS NULL AND (lp.user_id = l.user_id OR lp.id IN (SELECT project_id FROM sound_collabs WHERE user_id = l.user_id)))`;
 // Le projet d'un lien et le nom de son auteur (affiché aux auditeurs quand le projet n'a pas de nom d'artiste).
 const linkProject = (l) => get(`SELECT p.*, u.name AS author_name, u.avatar AS author_avatar, u.instagram AS author_instagram FROM sound_projects p JOIN users u ON u.id = p.user_id
   WHERE p.id = ?`, l.project_id || get('SELECT project_id FROM sound_tracks WHERE id = ?', l.track_id).project_id);
@@ -238,6 +239,17 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 
   db.exec('ALTER TABLE sound_tracks ADD COLUMN price INTEGER NOT NULL DEFAULT 0');
   db.exec(`ALTER TABLE sound_tracks ADD COLUMN buy_url TEXT NOT NULL DEFAULT ''`);
 }
+// La corbeille : un titre supprimé part dans un projet caché de l'auteur (kind = 'trash'), que ACCESS et LINK_OPEN
+// écartent, avec le projet d'où il vient et l'heure de la suppression ; il est effacé pour de bon 30 jours après.
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'trashed_at'`).get()) {
+  db.exec('ALTER TABLE sound_tracks ADD COLUMN trashed_from INTEGER');
+  db.exec('ALTER TABLE sound_tracks ADD COLUMN trashed_at INTEGER');
+}
+// Un projet supprimé reste en place, marqué (trashed_at) : caché partout, puis effacé 30 jours après.
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'trashed_at'`).get()) {
+  db.exec('ALTER TABLE sound_projects ADD COLUMN trashed_at INTEGER');
+}
+export const TRASH_DAYS = 30;
 // La vente des prods, façon BeatStars : les licences de chaque beatmaker (MP3, WAV, Track Stems, Exclusive…), les
 // fichiers livrés avec chaque prod, son compte de paiement (Stripe ou PayPal, clés chiffrées), les commandes, et ses
 // listes d'adresses pour les mails (importées d'un CSV).
@@ -388,10 +400,10 @@ function disk() {
   const total = s.blocks * s.bsize;
   return { total, used: total - s.bavail * s.bsize };
 }
-// Les versions et les fichiers livrés avec les prods comptent dans l'espace du membre.
+// Les versions et les fichiers livrés avec les prods comptent dans l'espace du membre (pas ceux de la corbeille).
 export const usedBy = (userId) => get(`SELECT COALESCE(SUM(v.size), 0) AS n FROM sound_versions v JOIN sound_tracks t ON t.id = v.track_id
-  JOIN sound_projects p ON p.id = t.project_id WHERE p.user_id = ?`, userId).n + get(`SELECT COALESCE(SUM(d.size), 0) AS n FROM sound_deliverables d
-  JOIN sound_tracks t ON t.id = d.track_id JOIN sound_projects p ON p.id = t.project_id WHERE p.user_id = ?`, userId).n;
+  JOIN sound_projects p ON p.id = t.project_id WHERE p.user_id = ? AND p.kind != 'trash' AND p.trashed_at IS NULL`, userId).n + get(`SELECT COALESCE(SUM(d.size), 0) AS n FROM sound_deliverables d
+  JOIN sound_tracks t ON t.id = d.track_id JOIN sound_projects p ON p.id = t.project_id WHERE p.user_id = ? AND p.kind != 'trash' AND p.trashed_at IS NULL`, userId).n;
 
 /** Le format d'un fichier audio, lu sur ses premiers octets : WAV, AIFF, FLAC, MP3, OGG ou M4A. */
 export function audioType(head) {
@@ -513,6 +525,27 @@ function projectZip(p) {
 
 function removeVersionFiles(rows) {
   for (const r of rows) fs.rmSync(path.join(soundsDir, r.stored_as), { force: true });
+}
+/** Efface un titre pour de bon : ses versions, ses fichiers livrés, ses commentaires et ses écoutes. */
+function eraseTrack(trackId) {
+  const files = all('SELECT stored_as FROM sound_versions WHERE track_id = ? UNION ALL SELECT stored_as FROM sound_deliverables WHERE track_id = ?', trackId, trackId);
+  run('DELETE FROM sound_tracks WHERE id = ?', trackId);
+  removeVersionFiles(files);
+}
+/** Efface un projet pour de bon avec ses titres (sa pochette et son fond partent au ménage de media/). */
+function eraseProject(projectId) {
+  const files = all(`SELECT v.stored_as FROM sound_versions v JOIN sound_tracks t ON t.id = v.track_id WHERE t.project_id = ?
+    UNION ALL SELECT d.stored_as FROM sound_deliverables d JOIN sound_tracks t ON t.id = d.track_id WHERE t.project_id = ?`, projectId, projectId);
+  run('DELETE FROM sound_projects WHERE id = ?', projectId);
+  removeVersionFiles(files);
+}
+/** Vide la corbeille de ce qui a été supprimé il y a plus de 30 jours ; rend le nombre de titres et de projets effacés. */
+export function purgeTrash() {
+  const limit = now() - TRASH_DAYS * 86400_000;
+  const tracks = all('SELECT id FROM sound_tracks WHERE trashed_at < ?', limit), projects = all('SELECT id FROM sound_projects WHERE trashed_at < ?', limit);
+  for (const t of tracks) eraseTrack(t.id);
+  for (const p of projects) eraseProject(p.id);
+  return tracks.length + projects.length;
 }
 /** Les fichiers qui ne correspondent plus à aucune version (compte supprimé, envoi interrompu) sont effacés au démarrage. */
 export function sweepSounds() {
@@ -643,6 +676,7 @@ function listeningHtml(v, token) {
 }
 
 export function mountSounds(app, { requireUser, receiveFile, receiveImage, removeMedia, wrap }) {
+  purgeTrash();
   sweepSounds();
   const member = (req, _res, next) => (can(req.user, 'sounds') ? next()
     : next(new HttpError(403, 'ONIRIQUE CLOUD demande un abonnement : 1,99 € par mois ou 9,99 € par an, sur onirique.store/cloud.')));
@@ -706,7 +740,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     const u = req.user.id;
     // VANISH : un fondateur voit les projets de tous les comptes, en lecture seule ; rien n'est compté ni signalé.
     const vanish = req.query.vanish === '1' && req.user.role === 'founder';
-    const scope = vanish ? '1 = 1' : ACCESS, args = vanish ? [] : [u, u];
+    const scope = vanish ? `p.kind != 'trash' AND p.trashed_at IS NULL` : ACCESS, args = vanish ? [] : [u, u];
     const projects = all(`SELECT p.*, o.name AS owner_name, o.avatar AS owner_avatar, o.instagram AS owner_instagram FROM sound_projects p JOIN users o ON o.id = p.user_id
       WHERE ${scope} ORDER BY p.created_at DESC`, ...args);
     const collabFolders = new Map(all('SELECT project_id, folder_id FROM sound_collabs WHERE user_id = ?', u).map((c) => [c.project_id, c.folder_id]));
@@ -726,11 +760,15 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       LEFT JOIN users u ON u.id = s.user_id WHERE ${scope} ORDER BY s.created_at DESC`, ...args);
     const listeners = (rows) => [...new Map(rows.filter((r) => r.id).map((r) => [r.id, { ...person(r), at: r.created_at }])).values()];
     const d = disk();
+    const scans = scansOf(u);
     res.json({
-      owner: person(req.user), founder: req.user.role === 'founder', vanish,
+      owner: person(req.user), founder: req.user.role === 'founder', vanish, scanReady: scanConfigured(),
       // Le compte de paiement et les licences, pour les badges de vente des packs.
       store: projects.some((p) => p.kind === 'pack' && p.user_id === u) ? { seller: sellerView(u), licenses: licensesOf(u) } : null,
       quota: { used: usedBy(req.user.id), limit: quotaBytes(), full: d.used / d.total >= diskMax() },
+      // Ce qui attend dans la corbeille (titres et projets), pour la tuile « Corbeille ».
+      trash: get(`SELECT (SELECT COUNT(*) FROM sound_tracks t JOIN sound_projects p ON p.id = t.project_id WHERE p.kind = 'trash' AND p.user_id = ?)
+        + (SELECT COUNT(*) FROM sound_projects WHERE user_id = ? AND trashed_at IS NOT NULL) AS n`, u, u).n,
       projects: projects.map((p) => ({
         id: p.id, kind: p.kind, title: p.title, artist: p.artist, cover: media(p.cover), background: media(p.background), buttonColor: p.button_color, coverBy: p.cover_by, releaseDate: p.release_date, plan: planOf(p), createdAt: p.created_at,
         // Chacun range le projet dans ses dossiers : l'auteur dans le projet, un collaborateur dans sa place de collaborateur.
@@ -749,6 +787,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
             id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), splits: splitsOf(t), lyrics: t.lyrics, currentId: t.current_id, createdAt: t.created_at,
             bpm: t.bpm, key: t.music_key, forSale: !!t.for_sale, sold: !!t.sold,
             ...(p.kind === 'pack' ? { files: filesOf(t.id), licensePrices: JSON.parse(t.license_prices || '{}'), videoTitle: t.video_title, videoCover: media(t.video_cover) } : {}),
+            ...(p.kind === 'pack' && p.user_id === u ? { scan: scans.get(t.id) || null } : {}),
             versions: versions.filter((v) => v.track_id === t.id).map((v, i) => versionView(v, i, true)),
             comments: comments.filter((c) => c.track_id === t.id).map(commentView),
             plays: mine.length, lastPlay: mine[0]?.created_at ?? null, listeners: listeners(mine), stats: listenStats(mine),
@@ -873,7 +912,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
           const title = t.title === t.filename.replace(/\.[a-z0-9]{2,5}$/i, '') ? prod.title || t.title : t.title;
           run('UPDATE sound_tracks SET title = ?, bpm = ?, music_key = ? WHERE id = ?', title, t.bpm || prod.bpm, t.music_key || prod.key, t.id);
         }
-      }
+      } else run('DELETE FROM sound_scans WHERE track_id IN (SELECT id FROM sound_tracks WHERE project_id = ?)', p.id); // le scan ne concerne que les packs
     }
     if (req.body.mail !== undefined) {
       if (ownProject(req, p.id).kind !== 'pack') throw new HttpError(400, "Seul un pack de prods a un mail.");
@@ -924,15 +963,10 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       tracks: tracks.map((t) => ({ id: t.id, title: t.title, bpm: t.bpm, key: t.music_key })),
     }) });
   }));
+  // Supprimer un projet l'envoie dans la corbeille : caché pour tous (collaborateurs et liens compris) pendant 30 jours.
   app.delete('/api/me/sounds/projects/:id', ...me, (req, res) => {
-    const p = ownProject(req, req.params.id);
-    const files = all(`SELECT v.stored_as FROM sound_versions v JOIN sound_tracks t ON t.id = v.track_id WHERE t.project_id = ?
-      UNION ALL SELECT d.stored_as FROM sound_deliverables d JOIN sound_tracks t ON t.id = d.track_id WHERE t.project_id = ?`, p.id, p.id);
-    run('DELETE FROM sound_projects WHERE id = ?', p.id);
-    removeVersionFiles(files);
-    if (p.cover) removeMedia(p.cover);
-    if (p.background) removeMedia(p.background);
-    res.json({ ok: true });
+    run('UPDATE sound_projects SET trashed_at = ? WHERE id = ?', now(), ownProject(req, req.params.id).id);
+    res.json({ ok: true, trashDays: TRASH_DAYS });
   });
   // Le fond de la page du projet : une image (8 Mo au plus) ; DELETE le retire.
   app.put('/api/me/sounds/projects/:id/background', ...me, wrap(async (req, res) => {
@@ -1008,6 +1042,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       return tid;
     });
     notice(membersOf(p.id), 'add', { actor: req.user, text: `a ajouté « ${title} » à « ${p.title} »`, projectId: p.id });
+    queueScan([trackId]);
     res.status(201).json({ id: trackId, versionId: get('SELECT current_id FROM sound_tracks WHERE id = ?', trackId).current_id });
   }));
   // Une nouvelle version d'un titre : elle devient celle qu'on écoute, les précédentes restent dans l'historique.
@@ -1018,6 +1053,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     const vid = addVersion(t.id, file, str(req.query.note, 300));
     run('UPDATE sound_tracks SET current_id = ? WHERE id = ?', vid, t.id);
     notice(membersOf(t.project_id), 'version', { actor: req.user, text: `a envoyé une nouvelle version de « ${t.title} »`, projectId: t.project_id });
+    queueScan([t.id]);
     res.status(201).json({ id: vid });
   }));
   app.patch('/api/me/sounds/tracks/:id', ...me, (req, res) => {
@@ -1029,7 +1065,8 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     }
     if (req.body.splits !== undefined) run('UPDATE sound_tracks SET splits = ? WHERE id = ?', JSON.stringify(splitsIn(req.body.splits)), t.id);
     if (typeof req.body.lyrics === 'string') {
-      const lyrics = req.body.lyrics.replace(/\r\n?/g, '\n').split('\n').map((line) => line.replace(/\s+/g, ' ').trim().slice(0, 300)).join('\n').trim().slice(0, 20000);
+      // Une ligne synchronisée mot par mot porte le moment de chaque mot (« <mm:ss.cc>mot ») : elle est bien plus longue.
+      const lyrics = req.body.lyrics.replace(/\r\n?/g, '\n').split('\n').map((line) => line.replace(/\s+/g, ' ').trim().slice(0, 2000)).join('\n').trim().slice(0, 60000);
       run('UPDATE sound_tracks SET lyrics = ? WHERE id = ?', lyrics, t.id);
     }
     if (req.body.day !== undefined) {
@@ -1093,11 +1130,57 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     });
     res.status(201).json({ id: tid });
   });
+  // Supprimer un titre l'envoie dans la corbeille de l'auteur du projet (même supprimé par un collaborateur).
   app.delete('/api/me/sounds/tracks/:id', ...me, (req, res) => {
     const t = track(req, req.params.id);
-    const files = all('SELECT stored_as FROM sound_versions WHERE track_id = ? UNION ALL SELECT stored_as FROM sound_deliverables WHERE track_id = ?', t.id, t.id);
-    run('DELETE FROM sound_tracks WHERE id = ?', t.id);
-    removeVersionFiles(files);
+    const trash = get(`SELECT id FROM sound_projects WHERE user_id = ? AND kind = 'trash'`, t.owner_id)?.id
+      ?? run(`INSERT INTO sound_projects (user_id, title, kind, created_at) VALUES (?, 'Corbeille', 'trash', ?)`, t.owner_id, now()).lastInsertRowid;
+    run('UPDATE sound_tracks SET project_id = ?, trashed_from = ?, trashed_at = ? WHERE id = ?', trash, t.project_id, now(), t.id);
+    res.json({ ok: true, trashDays: TRASH_DAYS });
+  });
+  // La corbeille du membre : ses titres supprimés, le projet d'où ils viennent et le jour où ils seront effacés.
+  const trashed = (req, tid) => {
+    const row = get(`SELECT t.* FROM sound_tracks t JOIN sound_projects p ON p.id = t.project_id WHERE t.id = ? AND p.kind = 'trash' AND p.user_id = ?`, id(tid), req.user.id);
+    if (!row) throw new HttpError(404, "Ce titre n'est plus dans la corbeille.");
+    return row;
+  };
+  const trashedProject = (req, pid) => {
+    const row = get('SELECT * FROM sound_projects WHERE id = ? AND user_id = ? AND trashed_at IS NOT NULL', id(pid), req.user.id);
+    if (!row) throw new HttpError(404, "Ce projet n'est plus dans la corbeille.");
+    return row;
+  };
+  app.get('/api/me/sounds/trash', ...me, (req, res) => {
+    const projects = all(`SELECT p.id, p.title, p.cover, p.trashed_at, (SELECT COUNT(*) FROM sound_tracks WHERE project_id = p.id) AS tracks,
+        (SELECT COALESCE(SUM(v.size), 0) FROM sound_versions v JOIN sound_tracks t ON t.id = v.track_id WHERE t.project_id = p.id) AS size
+      FROM sound_projects p WHERE p.user_id = ? AND p.trashed_at IS NOT NULL ORDER BY p.trashed_at DESC`, req.user.id);
+    const rows = all(`SELECT t.id, t.title, t.trashed_at, f.title AS from_title, f.kind AS from_kind,
+        (SELECT COALESCE(SUM(size), 0) FROM sound_versions WHERE track_id = t.id) AS size
+      FROM sound_tracks t JOIN sound_projects p ON p.id = t.project_id LEFT JOIN sound_projects f ON f.id = t.trashed_from
+      WHERE p.kind = 'trash' AND p.user_id = ? ORDER BY t.trashed_at DESC`, req.user.id);
+    res.json({ days: TRASH_DAYS, projects: projects.map((p) => ({ id: p.id, title: p.title, cover: media(p.cover), tracks: p.tracks, size: p.size,
+      trashedAt: p.trashed_at, purgeAt: p.trashed_at + TRASH_DAYS * 86400_000 })), tracks: rows.map((r) => ({ id: r.id, title: r.title, from: r.from_kind === 'trash' ? null : r.from_title ?? null, size: r.size,
+      trashedAt: r.trashed_at, purgeAt: r.trashed_at + TRASH_DAYS * 86400_000 })) });
+  });
+  // Restaurer : le titre revient à la fin de son projet, ou dans « Sons restaurés » si ce projet a été supprimé entre-temps.
+  app.post('/api/me/sounds/trash/:id/restore', ...me, (req, res) => {
+    const t = trashed(req, req.params.id);
+    const to = get(`SELECT id FROM sound_projects WHERE id = ? AND kind != 'trash' AND trashed_at IS NULL`, t.trashed_from)?.id
+      ?? get(`SELECT id FROM sound_projects WHERE user_id = ? AND kind = '' AND title = 'Sons restaurés'`, req.user.id)?.id
+      ?? run(`INSERT INTO sound_projects (user_id, title, kind, created_at) VALUES (?, 'Sons restaurés', '', ?)`, req.user.id, now()).lastInsertRowid;
+    run(`UPDATE sound_tracks SET project_id = ?, trashed_from = NULL, trashed_at = NULL,
+      position = (SELECT COALESCE(MAX(position), -1) + 1 FROM sound_tracks WHERE project_id = ?) WHERE id = ?`, to, to, t.id);
+    res.json({ ok: true, projectId: to });
+  });
+  app.post('/api/me/sounds/trash/projects/:id/restore', ...me, (req, res) => {
+    run('UPDATE sound_projects SET trashed_at = NULL WHERE id = ?', trashedProject(req, req.params.id).id);
+    res.json({ ok: true });
+  });
+  app.delete('/api/me/sounds/trash/projects/:id', ...me, (req, res) => {
+    eraseProject(trashedProject(req, req.params.id).id);
+    res.json({ ok: true });
+  });
+  app.delete('/api/me/sounds/trash/:id', ...me, (req, res) => {
+    eraseTrack(trashed(req, req.params.id).id);
     res.json({ ok: true });
   });
 
@@ -1220,7 +1303,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   });
   const invitation = (token) => {
     const p = get(`SELECT p.*, u.name AS owner_name, u.avatar AS owner_avatar FROM sound_projects p JOIN users u ON u.id = p.user_id
-      WHERE p.invite_token = ?`, str(token, 40));
+      WHERE p.invite_token = ? AND p.trashed_at IS NULL`, str(token, 40));
     if (!p || !p.invite_token) throw new HttpError(404, "Cette invitation n'existe pas ou n'est plus valable.");
     return p;
   };
@@ -1472,6 +1555,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   mountBeatStore(app, { me, track, room, receiveFile, openLink, linkTracks, linkProject, soundsDir, audioType, wrap });
   mountPackSend(app, { me, ownProject, sign, wrap });
   mountBeatTube(app, { me, track, soundsDir, wrap, receiveImage, removeMedia });
+  mountBeatScan(app, { me, soundsDir });
 }
 
 // Les rappels de sortie : sept jours avant et la veille, à partir de 9 h (heure de Paris), un e-mail à l'auteur du projet et
@@ -1484,7 +1568,7 @@ export async function remindReleases({ force = false } = {}) {
   if (!force && parisHour() < 9) return 0;
   const today = parisDay();
   let sent = 0;
-  for (const p of all(`SELECT * FROM sound_projects WHERE release_date > ? AND plan != ''`, today)) {
+  for (const p of all(`SELECT * FROM sound_projects WHERE release_date > ? AND plan != '' AND trashed_at IS NULL`, today)) {
     const plan = planOf(p);
     const left = Math.round((Date.parse(p.release_date) - Date.parse(today)) / 86400_000);
     if (!plan || !plan.remind || ![7, 1].includes(left)) continue;
