@@ -463,17 +463,21 @@ function flyTo(x, y, z = 2.4) { Object.assign(goal, { ax: 42, az: -4, z: Math.mi
   // Deux doigts : leur milieu, leur écart et leur angle (pincer = zoomer, tourner = tourner, glisser ensemble = incliner).
   const pair = () => { const [p, q] = [...pts.values()]; return { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2, d: Math.hypot(q.x - p.x, q.y - p.y), a: Math.atan2(q.y - p.y, q.x - p.x) }; };
   // Clic droit maintenu : la carte tourne (gauche-droite) et s'incline (haut-bas) au lieu de glisser.
-  scene.addEventListener("contextmenu", (e) => e.preventDefault());
+  // Ni sur la carte, ni sur les villes (leurs points et leurs noms sont posés au-dessus, dans #labels).
+  for (const layer of [scene, $("labels")]) layer.addEventListener("contextmenu", (e) => e.preventDefault());
   // Pas de sélection de texte ni de glisser-déposer du navigateur (curseur « interdit », et la carte ne suivait plus).
   scene.addEventListener("dragstart", (e) => e.preventDefault());
-  scene.addEventListener("pointerdown", (e) => {
+  const down = (e) => {
     if (e.target.closest(".city")) return;
     if (e.pointerType === "mouse") { e.preventDefault(); getSelection()?.removeAllRanges(); }
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pts.size === 1) spin = e.button === 2;
     pinch = pts.size === 2 ? pair() : null;
     scene.classList.add("drag"); scene.setPointerCapture(e.pointerId);
-  });
+  };
+  scene.addEventListener("pointerdown", down);
+  // Un clic droit commencé sur une ville fait tourner la carte comme ailleurs (le clic gauche, lui, ouvre la ville).
+  $("labels").addEventListener("pointerdown", (e) => { if (e.button === 2) down(e); });
   scene.addEventListener("pointermove", (e) => {
     const was = pts.get(e.pointerId);
     if (!was) return;
