@@ -60,6 +60,8 @@ header > * { pointer-events: auto; }
 @keyframes appear { to { opacity: var(--o, .8); } }
 .web { stroke: rgba(255,142,154,.75); stroke-width: 1.2; stroke-dasharray: 4 12; filter: url(#glow); opacity: 0; }
 .web.on { opacity: 1; transition: opacity 1s; }
+/* Tout près, les pointillés agrandis deviendraient de grosses taches floues : ils s'effacent. */
+#plane.close .web.on { opacity: 0; }
 
 /* Les villes : un point sur le plan ; l'étiquette se redresse face à la caméra (elle annule l'inclinaison du plan). */
 .city { position: absolute; width: 0; height: 0; transform-style: preserve-3d; }
@@ -358,13 +360,28 @@ function tick(t) {
     plane.style.setProperty("--z", view[2]); // la taille réelle du plan : K fois plus grand, K fois moins zoomé
     plane.style.setProperty("--px", view[3] + "px");
     plane.style.setProperty("--py", view[4] + "px");
+    plane.classList.toggle("close", cam.z / fit() > 7);
     const rects = nodes.map((node) => node.getBoundingClientRect());
-    nodes.forEach((node, i) => { node.at = `translate(${rects[i].left.toFixed(1)}px, ${rects[i].top.toFixed(1)}px)`; });
+    nodes.forEach((node, i) => { node.at = `translate(${rects[i].left.toFixed(1)}px, ${rects[i].top.toFixed(1)}px)`; node.xy = [rects[i].left, rects[i].top]; node.lead = node.group = null; });
+    // Les villes trop proches à l'écran se regroupent sous la plus peuplée : « PARIS +2 », le total de leurs membres.
+    const act = nodes.filter((n) => n.classList.contains("has")).sort((a, b) => b.n - a.n);
+    for (const n of act) {
+      if (n.lead) continue;
+      n.group = [n];
+      for (const o of act) if (o !== n && !o.lead && !o.group && Math.hypot(o.xy[0] - n.xy[0], o.xy[1] - n.xy[1]) < 44) { o.lead = n; n.group.push(o); }
+    }
+    for (const n of nodes) {
+      const k = n.group?.length || 1, total = n.group ? n.group.reduce((t, o) => t + o.n, 0) : n.n;
+      const label = n.cname + (k > 1 ? " +" + (k - 1) : "") + "|" + (total ? total + (total > 1 ? " membres" : " membre") : "");
+      if (n.label !== label) { n.label = label; const [b, i] = label.split("|"); n.tag.querySelector("b").textContent = b; n.tag.querySelector("i").textContent = i; }
+      n.pin.hidden = !!n.lead;
+      if (n.group) n.pin.style.setProperty("--s", (total ? 9 + Math.sqrt(total) * 4 : 5) + "px");
+    }
   }
   for (const node of nodes) {
     const has = node.classList.contains("has"), on = node.classList.contains("on");
     node.pin.classList.toggle("has", has); node.pin.classList.toggle("on", on);
-    const show = has || on || (!still && node.pin.matches(":hover"));
+    const show = !node.lead && (has || on || (!still && node.pin.matches(":hover")));
     node.tag.classList.toggle("show", show);
     if (node.pinAt !== node.at) { node.pinAt = node.at; node.pin.style.transform = node.at; }
     if (show && node.tagAt !== node.at) { node.tagAt = node.at; node.tag.style.transform = `${node.at} translate(-50%, calc(-100% - 14px))`; }
@@ -374,13 +391,16 @@ function tick(t) {
 const K = 2.5; // le facteur de dessin du plan (voir #plane)
 const fit = () => Math.min(1.25, Math.max(.3, Math.min(innerWidth / (innerWidth > 860 ? 1150 : 900), innerHeight / 820)));
 function home() { Object.assign(goal, { ax: 50, az: -9, z: fit(), px: 0, py: 0 }); }
-function flyTo(x, y, z = 2.4) { Object.assign(goal, { ax: 42, az: -4, z: Math.min(4, z) * fit(), px: (500 - x) * K, py: (500 - y) * K }); }
+const ZMAX = 40; // assez près pour séparer deux villes voisines (Paris et Ivry-sur-Seine)
+// Le zoom qui écarte d'au moins 80 px à l'écran deux points distants de d (en unités du plan).
+const zoomToSplit = (d, min = 2.6) => Math.max(min, 80 / (Math.max(d, .5) * fit()));
+function flyTo(x, y, z = 2.4) { Object.assign(goal, { ax: 42, az: -4, z: Math.min(ZMAX, z) * fit(), px: (500 - x) * K, py: (500 - y) * K }); }
 
 (function controls() {
   const scene = $("scene"), pts = new Map(); // les doigts (ou la souris) posés sur la carte
   let spin = false, pinch = null;
   const tilt = (d) => { goal.ax = Math.min(72, Math.max(0, goal.ax + d)); };
-  const zoomBy = (f) => { goal.z = Math.min(4.5 * fit(), Math.max(.4 * fit(), goal.z * f)); };
+  const zoomBy = (f) => { goal.z = Math.min(ZMAX * fit(), Math.max(.4 * fit(), goal.z * f)); };
   // Deux doigts : leur milieu, leur écart et leur angle (pincer = zoomer, tourner = tourner, glisser ensemble = incliner).
   const pair = () => { const [p, q] = [...pts.values()]; return { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2, d: Math.hypot(q.x - p.x, q.y - p.y), a: Math.atan2(q.y - p.y, q.x - p.x) }; };
   // Clic droit maintenu : la carte tourne (gauche-droite) et s'incline (haut-bas) au lieu de glisser.
@@ -415,7 +435,7 @@ function flyTo(x, y, z = 2.4) { Object.assign(goal, { ax: 42, az: -4, z: Math.mi
   });
   const end = (e) => { pts.delete(e.pointerId); pinch = pts.size === 2 ? pair() : null; if (!pts.size) scene.classList.remove("drag"); };
   scene.addEventListener("pointerup", end); scene.addEventListener("pointercancel", end);
-  scene.addEventListener("wheel", (e) => { e.preventDefault(); goal.z = Math.min(4.5 * fit(), Math.max(.4 * fit(), goal.z * Math.exp(-e.deltaY / 600))); }, { passive: false });
+  scene.addEventListener("wheel", (e) => { e.preventDefault(); goal.z = Math.min(ZMAX * fit(), Math.max(.4 * fit(), goal.z * Math.exp(-e.deltaY / 600))); }, { passive: false });
   $("zoom-in").onclick = () => zoomBy(1.4);
   $("zoom-out").onclick = () => zoomBy(1 / 1.4);
   // Sans geste : passer de la vue inclinée à la vue de dessus, et inversement.
@@ -439,12 +459,13 @@ function drawCities() {
     if (!node) {
       const [x, y] = project(c.lon, c.lat);
       node = el("div", { className: "city", style: `left:${x * K}px;top:${y * K}px` }); // le point d'ancrage sur le plan
-      node.pin = el("div", { className: "pin", style: `--d:${(Math.random() * 2.6).toFixed(2)}s` }, el("button", { className: "dot", type: "button", ariaLabel: c.name, onclick: () => openCity(c.id) }));
+      node.pin = el("div", { className: "pin", style: `--d:${(Math.random() * 2.6).toFixed(2)}s` }, el("button", { className: "dot", type: "button", ariaLabel: c.name, onclick: () => (node.group?.length > 1 ? openGroup(node.group) : openCity(c.id)) }));
       node.tag = el("div", { className: "tag" }, el("b", { textContent: c.name }), el("i"));
       node.dataset.x = x; node.dataset.y = y;
       cityNodes.set(c.id, node); plane.append(node); $("labels").append(node.pin, node.tag);
     }
     const n = (counts.get(c.id) || []).length;
+    node.n = n; node.cname = c.name; node.label = null;
     node.classList.toggle("has", n > 0);
     node.pin.style.setProperty("--s", (n ? 9 + Math.sqrt(n) * 4 : 5) + "px");
     node.tag.querySelector("i").textContent = n ? n + (n > 1 ? " membres" : " membre") : "";
@@ -514,7 +535,17 @@ function openCity(id, quiet, fromHistory) {
   $("city").classList.add("open");
   document.body.classList.add("city-open");
   if (!quiet) loadConcerts(c);
-  if (!quiet && !c.far) { const [x, y] = project(c.lon, c.lat); flyTo(x, y, 2.6); }
+  if (!quiet && !c.far) {
+    const [x, y] = project(c.lon, c.lat), byId = byCity();
+    const near = Math.min(Infinity, ...DATA.cities.filter((o) => o.id !== id && !o.far && byId.has(o.id)).map((o) => { const [u, v] = project(o.lon, o.lat); return Math.hypot(u - x, v - y); }));
+    flyTo(x, y, zoomToSplit(near));
+  }
+}
+function openGroup(group) {
+  const xy = group.map((n) => [+n.dataset.x, +n.dataset.y]);
+  let d = Infinity;
+  xy.forEach((p, i) => xy.slice(i + 1).forEach((q) => { d = Math.min(d, Math.hypot(p[0] - q[0], p[1] - q[1])); }));
+  flyTo(xy.reduce((t, p) => t + p[0], 0) / xy.length, xy.reduce((t, p) => t + p[1], 0) / xy.length, zoomToSplit(d, goal.z / fit() * 1.5));
 }
 function closeCity() { current = null; clearHalls(); $("city").classList.remove("open"); document.body.classList.remove("city-open"); for (const node of cityNodes.values()) node.classList.remove("on"); }
 const leaveCity = () => { if (history.state?.city) history.back(); else { closeCity(); home(); } };
