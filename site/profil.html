@@ -228,7 +228,9 @@ const when = (t) => new Date(t).toLocaleDateString("fr-FR", { day: "numeric", mo
 const avatarOf = (src) => (src ? src + "?w=160" : "assets/favicon.png?v=2");
 
 let profile = null, mine = null;
-const meta = fetch("/api/members/map").then((r) => (r.ok ? r.json() : null)).catch(() => null);
+// Les métiers du CV (la liste du serveur), demandés seulement quand on règle sa page.
+let metaCache = null;
+const cvMeta = () => (metaCache ||= fetch("/api/members/roles").then((r) => (r.ok ? r.json() : null)).catch(() => null));
 // Les badges de rôle : ONIRIQUE, Beta-Testeur et Beta-Testeuse ont le même, les autres rôles aussi le leur.
 const ROLES = { vip: "ONIRIQUE", beta: "Beta-Testeur", betaf: "Beta-Testeuse", abrasion: "Abrasion", relic: "Relic", admin: "Admin", founder: "Fondateur" };
 const badge = (role) => (ROLES[role] ? el("span", { className: "role small", textContent: ROLES[role] }) : null);
@@ -349,8 +351,8 @@ function openEdit() {
   $("edit-title").textContent = mine ? "Régler ma page" : "Crée ta page";
   $("f-handle").value = m.handle; hint(); $("f-bio").value = m.bio; $("f-color").value = m.color; $("f-comments").checked = m.comments;
   const links = m.links || [];
-  // Les villes et les métiers viennent du serveur (la même liste que la carte).
-  meta.then((d) => {
+  // Les métiers viennent du serveur (la même liste que la carte).
+  cvMeta().then((d) => {
     if (!d) return;
     const cv = m.cv || { roles: [] };
     $("f-roles").replaceChildren(...d.roles.map((r) => el("label", { className: "chip pick" }, el("input", { type: "checkbox", value: r, checked: cv.roles.includes(r) }), r)));

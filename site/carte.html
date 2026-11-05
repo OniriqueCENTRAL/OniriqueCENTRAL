@@ -55,12 +55,11 @@ header > * { pointer-events: auto; }
 .land { fill: rgba(229,56,74,.035); opacity: 0; animation: fade 2s 1.8s forwards; }
 @keyframes draw { to { stroke-dashoffset: 0; } }
 @keyframes fade { to { opacity: 1; } }
-.star { fill: #ffe9ec; opacity: 0; animation: appear .6s forwards, twinkle var(--t, 3s) var(--d, 0s) ease-in-out infinite alternate; }
-@keyframes appear { to { opacity: .8; } }
-@keyframes twinkle { from { opacity: .25; } to { opacity: 1; } }
-.web { stroke: rgba(255,142,154,.75); stroke-width: 1.2; stroke-dasharray: 4 12; filter: url(#glow); animation: flow 2.8s linear infinite; opacity: 0; }
+/* Fixes une fois allumées : une animation sans fin ferait repeindre tout le plan (2500 px, flou compris) à chaque image. */
+.star { fill: #ffe9ec; opacity: 0; animation: appear .6s forwards; }
+@keyframes appear { to { opacity: var(--o, .8); } }
+.web { stroke: rgba(255,142,154,.75); stroke-width: 1.2; stroke-dasharray: 4 12; filter: url(#glow); opacity: 0; }
 .web.on { opacity: 1; transition: opacity 1s; }
-@keyframes flow { to { stroke-dashoffset: -34; } }
 
 /* Les villes : un point sur le plan ; l'étiquette se redresse face à la caméra (elle annule l'inclinaison du plan). */
 .city { position: absolute; width: 0; height: 0; transform-style: preserve-3d; }
@@ -276,20 +275,23 @@ const cityNodes = new Map();
   const c = $("sky"), g = c.getContext("2d");
   let stars = [], w = 0, h = 0, mx = 0, my = 0;
   const size = () => {
-    const dpr = Math.min(2, devicePixelRatio || 1);
+    const dpr = Math.min(1.5, devicePixelRatio || 1);
     w = c.width = innerWidth * dpr; h = c.height = innerHeight * dpr; c.style.width = innerWidth + "px"; c.style.height = innerHeight + "px";
     stars = Array.from({ length: Math.round(innerWidth * innerHeight / 2600) }, () => ({ x: Math.random() * w, y: Math.random() * h, r: Math.random() * 1.3 * dpr + .2, p: Math.random() * 6.28, s: .4 + Math.random() * 1.4, z: Math.random() }));
   };
   addEventListener("resize", size); size();
   addEventListener("pointermove", (e) => { mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5; });
+  let last = 0;
   const frame = (t) => {
+    if (!reduced) requestAnimationFrame(frame);
+    if (t - last < 33) return;
+    last = t;
     g.clearRect(0, 0, w, h);
     for (const s of stars) {
       const a = reduced ? .6 : .35 + .65 * Math.abs(Math.sin(s.p + t / 1000 * s.s));
       g.globalAlpha = a; g.fillStyle = s.z > .92 ? "#ffb3bb" : "#fff1f3";
       g.beginPath(); g.arc((s.x - mx * 30 * s.z + w) % w, (s.y - my * 30 * s.z + h) % h, s.r, 0, 6.29); g.fill();
     }
-    if (!reduced) requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);
 })();
@@ -309,7 +311,7 @@ function drawShapes() {
     for (let at = 0; at < len; at += 9 + Math.random() * 9) {
       const p = path.getPointAtLength(at), big = Math.random() < .12;
       const star = svgEl("circle", { cx: (p.x + (Math.random() - .5) * 2).toFixed(1), cy: (p.y + (Math.random() - .5) * 2).toFixed(1), r: big ? 2.1 : .6 + Math.random() * .9, class: "star" });
-      star.style.cssText = `animation-delay:${(at / len * 3).toFixed(2)}s,${(at / len * 3 + .6).toFixed(2)}s;--t:${(1.6 + Math.random() * 3).toFixed(2)}s`;
+      star.style.cssText = `animation-delay:${(at / len * 3).toFixed(2)}s;--o:${(.35 + Math.random() * .6).toFixed(2)}`;
       stars.append(star);
     }
   }
@@ -328,15 +330,16 @@ function tick(t) {
   s.setProperty("--z", (cam.z / K).toFixed(5)); // la taille réelle du plan : K fois plus grand, K fois moins zoomé
   $("plane").style.setProperty("--px", cam.px.toFixed(2) + "px");
   $("plane").style.setProperty("--py", cam.py.toFixed(2) + "px");
-  for (const node of cityNodes.values()) {
+  const nodes = [...cityNodes.values()], rects = nodes.map((node) => node.getBoundingClientRect());
+  nodes.forEach((node, i) => {
     const has = node.classList.contains("has"), on = node.classList.contains("on");
     node.pin.classList.toggle("has", has); node.pin.classList.toggle("on", on);
-    const r = node.getBoundingClientRect(), at = `translate(${r.left.toFixed(1)}px, ${r.top.toFixed(1)}px)`;
-    node.pin.style.transform = at;
+    const at = `translate(${rects[i].left.toFixed(1)}px, ${rects[i].top.toFixed(1)}px)`;
     const show = has || on || node.pin.matches(":hover");
     node.tag.classList.toggle("show", show);
-    if (show) node.tag.style.transform = `${at} translate(-50%, calc(-100% - 14px))`;
-  }
+    if (node.at !== at) { node.at = at; node.pin.style.transform = at; }
+    if (show && node.tagAt !== at) { node.tagAt = at; node.tag.style.transform = `${at} translate(-50%, calc(-100% - 14px))`; }
+  });
   requestAnimationFrame(tick);
 }
 const K = 2.5; // le facteur de dessin du plan (voir #plane)

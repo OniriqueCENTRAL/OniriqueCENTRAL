@@ -129,6 +129,7 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
       ON CONFLICT(user_id) DO UPDATE SET handle = excluded.handle, bio = excluded.bio, color = excluded.color, comments = excluded.comments, links = excluded.links,
         city = excluded.city, place = excluded.place, cv = excluded.cv`,
       req.user.id, handle, clean(req.body?.bio, 600), color, req.body?.comments === false ? 0 : 1, links, city, place && !CITY.has(city) ? JSON.stringify(place) : '', cv, now());
+    mapCache = null;
     res.json({ handle });
   }));
   app.put('/api/me/profile/page/banner', requireUser, wrap(async (req, res) => {
@@ -230,7 +231,10 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
   });
 
   // La carte des membres : les villes, les métiers, et chaque page de profil qui a choisi sa ville.
+  // La carte est la même pour tous : gardée 30 s en mémoire, et refaite dès qu'une page de profil change.
+  let mapCache = null;
   app.get('/api/members/map', (req, res) => {
+    if (mapCache && Date.now() - mapCache.at < 30_000) return res.set('Cache-Control', 'public, max-age=60').type('json').send(mapCache.body);
     const members = all(`SELECT p.user_id, p.handle, p.city, p.place, p.cv, p.color, u.name, u.avatar, u.role, lp.handle AS link_handle,
         (SELECT COUNT(*) FROM user_follows f WHERE f.followed_id = p.user_id) AS followers
       FROM user_profiles p JOIN users u ON u.id = p.user_id LEFT JOIN link_pages lp ON lp.user_id = p.user_id
@@ -248,8 +252,10 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
       return { handle: m.handle, name: m.name || 'Membre', avatar: media(m.avatar), role: m.role, color: m.color, city: m.city, cv: { roles: cv.roles, skills: cv.skills, open: cv.open },
         followers: m.followers, playlists: lists.get(m.handle) || [], linkPage: cv.showLinks && m.link_handle ? `${config.linksUrl}/${m.link_handle}` : null };
     });
-    res.set('Cache-Control', 'public, max-age=60').json({ cities, roles: CV_ROLES, members: list });
+    mapCache = { at: Date.now(), body: JSON.stringify({ cities, roles: CV_ROLES, members: list }) };
+    res.set('Cache-Control', 'public, max-age=60').type('json').send(mapCache.body);
   });
+  app.get('/api/members/roles', (_req, res) => res.set('Cache-Control', 'public, max-age=86400').json({ roles: CV_ROLES }));
   // Chercher son lieu (page de profil) : les villes de la liste et toutes les communes de France.
   app.get('/api/places', wrap(async (req, res) => {
     rateLimit(`places:${req.ip}`, 300, 3600_000);
