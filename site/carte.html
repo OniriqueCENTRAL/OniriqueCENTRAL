@@ -44,6 +44,7 @@ header > * { pointer-events: auto; }
 /* La scène 3D : le plan de la carte est incliné (--ax), tourné (--az) et zoomé (--z) ; la caméra le suit en douceur. */
 #scene { position: fixed; inset: 0; z-index: 1; perspective: 1400px; /* = PERSP dans le script */ perspective-origin: 50% 40%; cursor: grab; touch-action: none; }
 #scene.drag { cursor: grabbing; }
+#scene, #labels { user-select: none; -webkit-user-select: none; }
 /* Le plan est dessiné à 2,5 fois sa taille (2500 px) puis réduit d'autant : zoomé, le tracé reste net au lieu d'être agrandi en pixels. */
 #plane { position: absolute; left: 50%; top: 54%; width: 2500px; height: 2500px; margin: -1250px 0 0 -1250px; transform-style: preserve-3d;
   transform: rotateX(var(--ax)) rotateZ(var(--az)) scale(var(--z)) translate(var(--px, 0px), var(--py, 0px)); }
@@ -463,8 +464,11 @@ function flyTo(x, y, z = 2.4) { Object.assign(goal, { ax: 42, az: -4, z: Math.mi
   const pair = () => { const [p, q] = [...pts.values()]; return { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2, d: Math.hypot(q.x - p.x, q.y - p.y), a: Math.atan2(q.y - p.y, q.x - p.x) }; };
   // Clic droit maintenu : la carte tourne (gauche-droite) et s'incline (haut-bas) au lieu de glisser.
   scene.addEventListener("contextmenu", (e) => e.preventDefault());
+  // Pas de sélection de texte ni de glisser-déposer du navigateur (curseur « interdit », et la carte ne suivait plus).
+  scene.addEventListener("dragstart", (e) => e.preventDefault());
   scene.addEventListener("pointerdown", (e) => {
     if (e.target.closest(".city")) return;
+    if (e.pointerType === "mouse") { e.preventDefault(); getSelection()?.removeAllRanges(); }
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pts.size === 1) spin = e.button === 2;
     pinch = pts.size === 2 ? pair() : null;
