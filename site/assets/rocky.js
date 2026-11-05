@@ -4,8 +4,19 @@
   if (document.getElementById("rocky")) return;
   const KEY = "rocky-chat";
   // Un petit être de pierre à cinq pattes, sans yeux : son humeur change avec la conversation (assets/rocky/*.svg).
-  const AVATAR = `<img src="/assets/rocky/rocky-idle.svg" alt="">`;
-  const mood = (m) => root.querySelectorAll(".rk-av img, .rk-fab img").forEach((i) => (i.src = `/assets/rocky/rocky-${m}.svg`));
+  const AVATAR = `<img src="/assets/rocky/rocky-idle.svg?v=3" alt="">`;
+  let state = "idle", nap, busy = false;
+  const mood = (m) => {
+    if (m === state) return;
+    state = m;
+    root.querySelectorAll(".rk-av img, .rk-fab img").forEach((i) => (i.src = `/assets/rocky/rocky-${m}.svg?v=3`));
+  };
+  // Sans qu'on lui parle pendant 40 s, Rocky s'endort (ZZzz) ; il se réveille dès qu'on s'approche ou qu'on écrit.
+  const wake = () => {
+    clearTimeout(nap);
+    if (state === "sleeping" && !busy) mood("idle");
+    nap = setTimeout(() => !busy && mood("sleeping"), 40000);
+  };
 
   const css = document.createElement("style");
   css.textContent = `
@@ -39,6 +50,8 @@
     </div>
     <button class="rk-fab" type="button" aria-label="Ouvrir le chat avec Rocky">${AVATAR}</button>`;
   document.body.append(root);
+  ["pointerenter", "input", "focusin"].forEach((e) => root.addEventListener(e, wake));
+  wake();
   const [panel, fab, log, form] = ["rk-panel", "rk-fab", "rk-log"].map((c) => root.querySelector("." + c)).concat(root.querySelector("form"));
   const input = form.q, send = form.querySelector("button");
 
@@ -93,7 +106,8 @@
     input.value = "";
     add("user", text);
     history.push({ role: "user", content: text });
-    send.disabled = true;
+    send.disabled = busy = true;
+    clearTimeout(nap);
     const wait = add("assistant", "…");
     mood("thinking");
     try {
@@ -104,7 +118,7 @@
       add("assistant", data.reply);
       history.push({ role: "assistant", content: data.reply });
       chord();
-      mood("happy"); setTimeout(() => mood("idle"), 2500);
+      mood("happy"); setTimeout(() => state === "happy" && mood("idle"), 2500);
     } catch {
       wait.remove();
       mood("sleeping");
@@ -112,7 +126,8 @@
       history.pop();
     } finally {
       save();
-      send.disabled = false;
+      send.disabled = busy = false;
+      nap = setTimeout(() => mood("sleeping"), 40000);
       input.focus();
     }
   });
