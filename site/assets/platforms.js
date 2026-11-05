@@ -53,9 +53,13 @@
   document.head.append(style);
 
   function setup(options) { ctx = options; }
+  // Pour l'instant : seulement dans l'application ONIRIQUE CENTRAL, et pour les membres ONIRIQUE (le serveur refuse les autres).
+  let on = false;
+  const enabled = () => on;
   async function load() {
+    if (!window.oniriqueApp) { on = false; state = { accounts: [], items: [], positions: {} }; return state; }
     if (!conf) {
-      try { conf = await ctx.api("GET", "/platforms/config"); } catch { conf = { spotify: null, apple: false }; }
+      try { conf = await ctx.api("GET", "/platforms/config"); on = true; } catch { conf = { spotify: null, apple: false }; on = false; }
       await spotifyReturn();
       // Un compte Apple Music déjà connecté sur cet appareil : MusicKit se prépare, sans rien demander.
       if (conf.apple && remembered("apple")) appleKit().then((m) => { appleOn = m.isAuthorized; if (!appleOn) remember("apple", false); }).catch(() => {});
@@ -580,5 +584,5 @@
     if (box && document.activeElement !== box && tab === "search") setTimeout(() => box.focus(), 0);
   }
 
-  window.OniriquePlatforms = { NAMES, setup, load, spotifyChanged, playable, openSearch, itemsOf, mixed, playerItem, row, order, openAdd, openAccounts };
+  window.OniriquePlatforms = { NAMES, enabled, setup, load, spotifyChanged, playable, openSearch, itemsOf, mixed, playerItem, row, order, openAdd, openAccounts };
 })();

@@ -17,6 +17,7 @@ import { db, get, all, run, now, transaction, setting, setSetting } from './db.j
 import { HttpError, rateLimit, can } from './auth.js';
 import { identify } from './music.js';
 import { seal, unseal } from './payments.js';
+import { ONIRIQUE } from './docs.js';
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS sound_platform_accounts (
@@ -452,8 +453,9 @@ const view = (r) => ({ id: r.id, projectId: r.project_id, position: r.position, 
   cover: r.cover, duration: r.duration, url: r.url, listen: itemListenUrl(r.id) });
 
 export function mountPlatforms(app, { requireUser, wrap }) {
-  const member = (req, _res, next) => (can(req.user, 'sounds') ? next()
-    : next(new HttpError(403, 'ONIRIQUE CLOUD demande un abonnement : 1,99 € par mois ou 9,99 € par an, sur onirique.store/cloud.')));
+  // Réservé pour l'instant aux membres ONIRIQUE (et à l'équipe), dans l'application ONIRIQUE CENTRAL.
+  const member = (req, _res, next) => (can(req.user, 'sounds') && ONIRIQUE.includes(req.user.role) ? next()
+    : next(new HttpError(403, 'Spotify dans ONIRIQUE CLOUD est réservé aux membres ONIRIQUE.')));
   const me = [requireUser, member];
   const playlist = (req, pid) => {
     const p = get(`SELECT p.* FROM sound_projects p WHERE p.id = ? AND ${ACCESS}`, Number(pid) || 0, req.user.id, req.user.id);

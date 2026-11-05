@@ -734,7 +734,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
         <div class="eyebrow">Membres ONIRIQUE</div>
         <h1>Mes <em>sons</em></h1>
         <div class="muted" id="owner-name"></div>
-        <form class="pf-search" id="pf-search" role="search"><input type="search" placeholder="Chercher un son sur Spotify" aria-label="Chercher un son sur Spotify" autocomplete="off"></form>
+        <form class="pf-search" id="pf-search" role="search" hidden><input type="search" placeholder="Chercher un son sur Spotify" aria-label="Chercher un son sur Spotify" autocomplete="off"></form>
       </div>
       <div>
         <div class="quota" id="quota"></div>
@@ -843,7 +843,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close('cancel')">Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
 <script src="assets/sounds-player.js?v=21"></script>
-<script src="assets/platforms.js?v=7"></script>
+<script src="assets/platforms.js?v=8"></script>
 <script src="assets/audio-kit.js?v=2"></script>
 <script src="assets/pdf-kit.js"></script>
 <script src="assets/release-steps.js"></script>
@@ -1198,6 +1198,7 @@ async function refresh() {
   if (data.projects.some((p) => p.tracks.some((t) => t.scan && t.scan.status === "wait"))) scanTimer = setTimeout(() => refresh().catch(() => {}), 6000);
 }
 function render() {
+  $("pf-search").hidden = !PF.enabled() || !!data.vanish;
   const p = openId() && project();
   if ((openId() && !p) || (folderId() && !folder())) { location.hash = ""; return; }
   $("grid-view").hidden = !!p;
@@ -1492,7 +1493,7 @@ function projectMenu(anchor, p) {
     p.mine && { label: "Collaborateurs…", icon: "plus", onclick: () => openCollab(p.id) },
     !data.vanish && { label: "Déplacer vers…", icon: "chevron", onclick: () => moveMenu(anchor, p.folderId, (folderId) => api("PATCH", "/me/sounds/projects/" + p.id, { folderId })) },
     p.mine && p.kind === "playlist" && !data.vanish && { label: "Ajouter des sons du CLOUD", icon: "plus", onclick: () => openPick(p) },
-    p.kind === "playlist" && !data.vanish && { label: "Depuis Spotify", icon: "link", onclick: () => PF.openAdd(p) },
+    p.kind === "playlist" && !data.vanish && PF.enabled() && { label: "Depuis Spotify", icon: "link", onclick: () => PF.openAdd(p) },
     p.mine && p.kind && { label: "Repasser en projet classique", icon: "repeat", onclick: () => api("PATCH", "/me/sounds/projects/" + p.id, { kind: "" }).then(refresh, fail) },
     p.mine && p.kind !== "pack" && { label: "Passer en pack de prods", icon: "repeat", onclick: () => makePack(p).catch(fail) },
     p.mine && p.kind !== "playlist" && { label: "Transformer en Playlist", icon: "queue", onclick: () => api("PATCH", "/me/sounds/projects/" + p.id, { kind: "playlist" }).then(refresh, fail) },
@@ -2023,7 +2024,7 @@ function addMenu(anchor) {
   const p = openId() && project();
   menu(anchor, [
     p && p.kind === "playlist" && { label: "Ajouter des sons du CLOUD", icon: "queue", onclick: () => openPick(p) },
-    p && p.kind === "playlist" && { label: "Depuis Spotify", icon: "link", onclick: () => PF.openAdd(p) },
+    p && p.kind === "playlist" && PF.enabled() && { label: "Depuis Spotify", icon: "link", onclick: () => PF.openAdd(p) },
     p && { label: "Ajouter des sons à ce projet", icon: "plus", onclick: () => pickFiles({ project: p }) },
     { label: "Importer des sons", icon: "download", onclick: () => pickFiles(null) },
     { label: "Nouveau projet", icon: "star", onclick: async () => {
@@ -3964,8 +3965,8 @@ async function openSettings() {
       el("div", { className: "sub-title", textContent: "Mes nouveaux liens d'écoute" }),
       group("links", [["download", "Téléchargement autorisé"], ["requireAccount", "Compte ONIRIQUE exigé pour écouter"]]),
       el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Chaque lien garde ensuite ses propres réglages, à changer dans sa fenêtre de partage." }),
-      el("div", { className: "sub-title", textContent: "Mes plateformes" }),
-      el("ul", { className: "group" }, el("li", {}, el("button", { className: "item", type: "button", onclick: () => { dialog.close(); PF.openAccounts(); } },
+      PF.enabled() ? el("div", { className: "sub-title", textContent: "Mes plateformes" }) : null,
+      !PF.enabled() ? null : el("ul", { className: "group" }, el("li", {}, el("button", { className: "item", type: "button", onclick: () => { dialog.close(); PF.openAccounts(); } },
         el("span", { className: "grow" }, "Spotify", el("small", { textContent: "Connecter mon compte, pour mêler ses titres à mes sons dans mes playlists" })), icon("chevron")))),
       data.founder ? el("div", { className: "sub-title", textContent: "Fondateurs" }) : null,
       data.founder ? el("ul", { className: "group" }, el("li", {}, el("div", { className: "item" },

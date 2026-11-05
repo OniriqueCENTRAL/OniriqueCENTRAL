@@ -132,6 +132,9 @@ try {
     stranger = await account('autre', 'vip');
     client = await account('client');
     await call('GET', '/api/me/platforms', { token: client.token, expect: 403 });
+    // Un partenaire qui a ONIRIQUE CLOUD, mais n'est pas membre ONIRIQUE : pas de Spotify pour l'instant.
+    const partner = await account('partenaire', 'abrasion');
+    await call('GET', '/api/me/platforms', { token: partner.token, expect: 403 });
     await call('GET', '/api/platforms/search?source=deezer&q=jefe', { token: client.token, expect: 403 });
   });
 
