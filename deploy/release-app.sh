@@ -19,6 +19,12 @@ cd "$(dirname "$0")/../app"
 git fetch -q origin
 [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || stop "Votre copie n'est pas celle du dépôt : git pull ou git push, puis relancez."
 
+# Une faute de syntaxe dans un fichier de l'interface laisse la fenêtre vide pour tout le monde : rien ne part sans
+# que chaque fichier se lise (la version 1.0.70 l'a appris à ses dépens).
+for f in renderer/*.js renderer/views/*.js main/*.js build/*.js; do
+  node --check "$f" || stop "Faute de syntaxe dans app/$f : rien n'est publié."
+done
+
 npm version "${1:-patch}" --no-git-tag-version > /dev/null
 VERSION=$(node -p "require('./package.json').version")
 # Le numéro est réservé tout de suite dans le dépôt : deux personnes ne construisent jamais la même version.
