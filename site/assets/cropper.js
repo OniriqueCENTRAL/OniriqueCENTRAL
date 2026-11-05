@@ -3,6 +3,9 @@
 //
 //   OniriqueCropper.open(src, { aspect: 16 / 10, width: 1600 })  →  Promise<{ dataUrl, blob, whole } | null>   (null : annulé)
 //
+// Une bannière ou une autre image : { title, hint, noKeep: true } changent le titre, le texte d'aide, et retirent
+// « Garder l'image entière ».
+//
 // Pour une photo de profil : OniriqueCropper.open(src, { avatar: true }) — cadre carré, rond dessiné par-dessus (ce qui en
 // déborde est assombri), 512 pixels, sans « Garder l'image entière ».
 //
@@ -25,8 +28,8 @@ window.OniriqueCropper = (() => {
       image.onload = () => {
         const veil = make("div", { position: "fixed", inset: "0", zIndex: "9999", display: "grid", placeItems: "center", padding: "16px", background: "rgba(5,3,4,.86)" });
         const panel = make("div", { width: avatar ? "min(460px, 100%)" : "min(760px, 100%)", maxHeight: "100%", overflowY: "auto", boxSizing: "border-box", display: "grid", gap: "14px", padding: "18px", borderRadius: "18px", border: "1px solid rgba(255,236,238,.16)", background: "#170d10", color: "#ffecee", font: "500 14px/1.4 system-ui, sans-serif" });
-        const title = make("strong", { font: "700 16px/1.2 system-ui, sans-serif" }, { textContent: avatar ? "Cadrer ta photo" : "Cadrer l'image" });
-        const hint = make("span", { color: "rgba(255,236,238,.62)" }, { textContent: avatar ? "Fais glisser la photo pour la placer, zoome avec la molette, deux doigts ou le curseur : ce qui est dans le rond est ce que tout le monde verra." : "Fais glisser l'image pour la placer, zoome avec la molette ou le curseur : ce qui est dans le cadre est ce que montreront la boutique et la page du plugin. Pour une interface en hauteur, « Garder l'image entière » l'envoie sans la rogner : la page du plugin la montre en entier, les cartes en montrent le milieu." });
+        const title = make("strong", { font: "700 16px/1.2 system-ui, sans-serif" }, { textContent: options.title || (avatar ? "Cadrer ta photo" : "Cadrer l'image") });
+        const hint = make("span", { color: "rgba(255,236,238,.62)" }, { textContent: options.hint || (avatar ? "Fais glisser la photo pour la placer, zoome avec la molette, deux doigts ou le curseur : ce qui est dans le rond est ce que tout le monde verra." : "Fais glisser l'image pour la placer, zoome avec la molette ou le curseur : ce qui est dans le cadre est ce que montreront la boutique et la page du plugin. Pour une interface en hauteur, « Garder l'image entière » l'envoie sans la rogner : la page du plugin la montre en entier, les cartes en montrent le milieu.") });
         const canvas = make("canvas", { width: "100%", display: "block", borderRadius: "12px", border: "1px solid rgba(255,236,238,.22)", cursor: "grab", touchAction: "none", background: BACK });
         const zoom = make("input", { flex: "1", accentColor: "#e23444" }, { type: "range", min: "0", max: "1000", value: "0" });
         zoom.setAttribute("aria-label", "Zoom");
@@ -36,7 +39,7 @@ window.OniriqueCropper = (() => {
         const tools = make("div", { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px" });
         const actions = make("div", { display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: "10px" });
         tools.append(make("span", {}, { textContent: "Zoom" }), zoom, fill, whole);
-        actions.append(...(avatar ? [cancel, save] : [cancel, keep, save]));
+        actions.append(...(avatar || options.noKeep ? [cancel, save] : [cancel, keep, save]));
         panel.append(title, hint, canvas, tools, actions);
         veil.append(panel);
         document.body.append(veil);
