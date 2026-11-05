@@ -91,6 +91,7 @@ function toolView(tool, lang) {
       ${store.token ? `sessionStorage.setItem("onirique.token", ${JSON.stringify(store.token)});` : ''} } catch {}`);
     // La vue ne se montre qu'une fois la page chargée et habillée.
     await web.loadURL(`${SITE}/${TOOL_PAGES[tool]}`).catch(() => {});
+    web.navigationHistory.clear(); // sinon « Retour » ramène sur robots.txt, la page qui a servi à poser la session
     return view;
   })());
   return toolViews.get(tool);
