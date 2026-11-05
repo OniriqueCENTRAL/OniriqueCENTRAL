@@ -109,13 +109,31 @@ const viewFor = (tool) => (tool === 'cloud' && pageOpen && toolViews.has('page')
 // La place de l'outil à l'écran (donnée par l'interface) : CLOUD la retrouve en revenant.
 let toolBounds = { x: 0, y: 0, width: 0, height: 0 };
 /**
- * Cacher une vue. CLOUD, lui, n'est jamais vraiment caché : réduit à un point, il reste « visible » pour Chromium, qui
- * sinon le met en veille et coupe le lecteur Spotify (un son du CLOUD continuerait, Spotify non).
+ * Cacher une vue. CLOUD, lui, n'est jamais vraiment caché, sinon Chromium le met en veille et Spotify coupe son lecteur :
+ * il reste dans la fenêtre, réduit à la taille du lecteur Spotify intégré (posé en bas à droite de la page, et que
+ * Spotify arrête dès qu'il sort de la partie affichée), rendu transparent et inerte, glissé sous le mini lecteur.
  */
+const PARKED = { width: 320, height: 80 };
+let parked = false;
 async function hideView(view) {
   const cloud = toolViews.has('cloud') ? await toolViews.get('cloud').catch(() => null) : null;
-  if (view && view === cloud) { view.setBounds({ x: 0, y: 0, width: 1, height: 1 }); view.setVisible(true); }
-  else view?.setVisible(false);
+  if (!view || view !== cloud) return view?.setVisible(false);
+  parked = true;
+  parkCloud(view);
+  view.setVisible(true);
+  view.webContents.executeJavaScript('document.documentElement.classList.add("onirique-parked")').catch(() => {});
+}
+function parkCloud(view) {
+  const b = win.getContentBounds(), off = store.miniOffset || { right: 24, bottom: 24 };
+  const clamp = (v, max) => Math.round(Math.min(Math.max(0, v), Math.max(0, max)));
+  view.setBounds({ x: clamp(b.width - off.right - (MINI.width + PARKED.width) / 2, b.width - PARKED.width),
+    y: clamp(b.height - off.bottom - PARKED.height, b.height - PARKED.height), ...PARKED });
+}
+/** Une vue revient à l'écran : CLOUD redevient opaque et cliquable. */
+async function showView(view) {
+  view.setVisible(true);
+  const cloud = toolViews.has('cloud') ? await toolViews.get('cloud').catch(() => null) : null;
+  if (view === cloud) { parked = false; view.webContents.executeJavaScript('document.documentElement.classList.remove("onirique-parked")').catch(() => {}); }
 }
 async function swapCloud() {
   if (shownTool !== 'cloud' || !toolViews.has('cloud')) return;
@@ -125,7 +143,7 @@ async function swapCloud() {
   if (!win.contentView.children.includes(show)) win.contentView.addChildView(show);
   show.setBounds(toolBounds);
   await hideView(hide);
-  if (frozen) await hideView(show); else show.setVisible(true);
+  if (frozen) await hideView(show); else await showView(show);
 }
 async function openPage(url) {
   pageOpen = true;
@@ -166,6 +184,7 @@ function placeMini() {
   if (!mini || mini.isDestroyed() || !win) return;
   const b = win.getContentBounds(), off = store.miniOffset || { right: 24, bottom: 24 };
   mini.setPosition(Math.round(b.x + b.width - MINI.width - off.right), Math.round(b.y + b.height - MINI.height - off.bottom));
+  if (parked && toolViews.has('cloud')) toolViews.get('cloud').then(parkCloud, () => {}); // la fenêtre change de taille : CLOUD reste dessous
 }
 function createMini() {
   mini = new BrowserWindow({ parent: win, ...MINI, show: false, frame: false, transparent: true, resizable: false, skipTaskbar: true,
@@ -176,6 +195,7 @@ function createMini() {
   mini.on('moved', () => {
     const b = win.getContentBounds(), [x, y] = mini.getPosition();
     store.miniOffset = { right: b.x + b.width - MINI.width - x, bottom: b.y + b.height - MINI.height - y };
+    if (parked && toolViews.has('cloud')) toolViews.get('cloud').then(parkCloud, () => {}); // CLOUD suit, toujours dessous
   });
   for (const e of ['move', 'resize', 'maximize', 'unmaximize']) win.on(e, placeMini);
   win.on('minimize', () => mini.hide());
@@ -589,7 +609,7 @@ app.whenReady().then(async () => {
     toolBounds = Object.fromEntries(['x', 'y', 'width', 'height'].map((k) => [k, Math.max(0, Math.round(Number(bounds?.[k]) || 0))]));
     view.setBounds(toolBounds);
     // Une fenêtre de l'application est ouverte : l'outil reste caché derrière son image.
-    if (frozen) await hideView(view); else view.setVisible(true);
+    if (frozen) await hideView(view); else await showView(view);
     shownTool = tool;
   });
   // Un clic sur la rubrique déjà ouverte : retour à l'accueil de l'outil (après une page d'écoute, une autre page…).
@@ -622,7 +642,7 @@ app.whenReady().then(async () => {
   });
   handle('tool:thaw', async () => {
     frozen = false;
-    if (shownTool && toolViews.has(shownTool)) { const view = await viewFor(shownTool); view.setBounds(toolBounds); view.setVisible(true); }
+    if (shownTool && toolViews.has(shownTool)) { const view = await viewFor(shownTool); view.setBounds(toolBounds); await showView(view); }
   });
   handle('tool:hide', async () => {
     shownTool = null; for (const view of toolViews.values()) await hideView(await view); });

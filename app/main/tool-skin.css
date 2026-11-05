@@ -163,3 +163,7 @@ dialog { border-radius: 30px !important; background: linear-gradient(160deg, rgb
 
 /* CLOUD dans l'application : pas de bouton « Ajouter », le clic droit sur la page suffit */
 .fab { display: none !important; }
+/* CLOUD réduit sous le mini lecteur (son lecteur Spotify continue) : invisible et inerte. */
+.onirique-parked, .onirique-parked * { opacity: 0 !important; pointer-events: none !important; cursor: default !important; }
+html.onirique-parked, html.onirique-parked body { overflow: hidden !important; scrollbar-width: none !important; }
+html.onirique-parked::-webkit-scrollbar { display: none !important; }
