@@ -60,14 +60,14 @@ const fake = http.createServer((req, res) => {
     if (route === '/me') return json({ id: 'nov', display_name: 'Nov', product: 'premium' });
     if (route === '/search') return json({ tracks: { items: [{ type: 'track', id: SP1, name: url.searchParams.get('q'), duration_ms: 200000, artists: [{ name: 'Ninho' }],
       album: { images: [{ width: 300, url: 'https://i.scdn.co/image/s' }] } }] } });
-    if (route === '/me/playlists') return json({ items: [{ id: 'Q'.repeat(22), name: 'Privée', tracks: { total: 3 }, images: [{ url: 'https://i.scdn.co/image/q' }] }, { id: 'piège', name: 'x' }] });
+    if (route === '/me/playlists') return json({ items: [{ id: 'Q'.repeat(22), name: 'Privée', items: { total: 3 }, images: [{ url: 'https://i.scdn.co/image/q' }] }, { id: 'piège', name: 'x' }] });
     if (route === `/playlists/${'Q'.repeat(22)}`) return json({ name: 'Privée', images: [{ url: 'https://i.scdn.co/image/q' }] });
-    if (route === `/playlists/${'Q'.repeat(22)}/tracks`) {
-      const t = (id, name) => ({ track: { type: 'track', id, name, duration_ms: 180000, artists: [{ name: 'Nov' }], album: { images: [{ width: 300, url: 'https://i.scdn.co/image/a' }] } } });
+    if (route === `/playlists/${'Q'.repeat(22)}/items`) {
+      const t = (id, name) => ({ item: { type: 'track', id, name, duration_ms: 180000, artists: [{ name: 'Nov' }], album: { images: [{ width: 300, url: 'https://i.scdn.co/image/a' }] } } });
       // La page suivante est annoncée par une adresse absolue de la vraie API : seul son chemin est suivi.
       return url.searchParams.get('offset') === '100' ? json({ items: [t(SP3, 'Trois')], next: null })
         : json({ items: [t(SP1, 'Un'), t(SP2, 'Deux'), { track: { type: 'episode', id: 'E'.repeat(22), name: 'Podcast' } }],
-          next: `https://api.spotify.com/v1/playlists/${'Q'.repeat(22)}/tracks?offset=100&limit=100` });
+          next: `https://api.spotify.com/v1/playlists/${'Q'.repeat(22)}/items?offset=100&limit=100` });
     }
     res.statusCode = 404;
     return json({});

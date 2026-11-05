@@ -413,11 +413,12 @@ async function spotifyFull(userId, kind, id) {
   const { access } = await spotifyToken(userId);
   const info = await spotifyGet(access, `/${kind}s/${id}`);
   const items = [];
-  let next = `/${kind}s/${id}/tracks?limit=${kind === 'album' ? 50 : 100}`;
+  // Depuis 2026, Spotify sert les titres d'une playlist sous /items (l'ancienne adresse /tracks reste pour les albums).
+  let next = kind === 'album' ? `/albums/${id}/tracks?limit=50` : `/playlists/${id}/items?limit=100`;
   while (next && items.length < MAX_IMPORT) {
     const page = await spotifyGet(access, next);
     for (const it of page.items || []) {
-      const t = kind === 'album' ? it : it?.track;
+      const t = kind === 'album' ? it : it?.item || it?.track;
       const x = t && t.type !== 'episode' && spotifyTrack(t, kind === 'album' ? info : null);
       if (x) items.push(x);
     }
@@ -528,7 +529,7 @@ export function mountPlatforms(app, { requireUser, wrap }) {
     rateLimit(`platform-read:${req.user.id}`, 120, 3600_000);
     const { access } = await spotifyToken(req.user.id);
     const page = await spotifyGet(access, '/me/playlists?limit=50');
-    res.json((page.items || []).filter((l) => l && ID.spotify.test(String(l.id))).map((l) => ({ title: text(l.name), count: Number(l.tracks?.total) || 0,
+    res.json((page.items || []).filter((l) => l && ID.spotify.test(String(l.id))).map((l) => ({ title: text(l.name), count: Number(l.items?.total ?? l.tracks?.total) || 0,
       cover: coverUrl(l.images?.[0]?.url), url: `https://open.spotify.com/playlist/${l.id}` })));
   }));
   app.get('/api/platforms/apple/token', ...me, (req, res) => res.set('Cache-Control', 'no-store').json({ token: appleDeveloperToken() }));
@@ -552,7 +553,9 @@ export function mountPlatforms(app, { requireUser, wrap }) {
     const link = text(req.body?.url, 500);
     const sp = /^https:\/\/open\.spotify\.com\/(?:intl-[a-z-]+\/)?(playlist|album)\/([A-Za-z0-9]{22})/.exec(link);
     const connected = sp && get(`SELECT token FROM sound_platform_accounts WHERE user_id = ? AND platform = 'spotify'`, req.user.id)?.token;
-    const found = connected ? await spotifyFull(req.user.id, sp[1], sp[2]).catch(() => resolveLink(link)) : await resolveLink(link);
+    // Si le compte n'y arrive pas, la page publique est tentée ; si elle échoue aussi (playlist privée), c'est l'erreur
+    // de Spotify qui est montrée, pas celle de la page.
+    const found = connected ? await spotifyFull(req.user.id, sp[1], sp[2]).catch((error) => resolveLink(link).catch(() => { throw error; })) : await resolveLink(link);
     res.json({ ...found, items: found.items.map(shown) });
   }));
   // L'extrait d'un résultat de recherche (avant de l'ajouter) : une adresse signée par la recherche elle-même.
