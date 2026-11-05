@@ -24,7 +24,10 @@ jobs:
         run: |
           npm ci
           npm run sync-player
-          npx electron-builder --mac dir --universal
+          # L'Electron de castlabs (Widevine) pour Mac, Intel et Apple Silicon, pris sur ses versions publiées : le
+          # dossier local de package.json (electronDist) ne sert qu'à la construction Windows.
+          V=$(node -p "require('./package.json').build.electronVersion")+wvcus
+          npx electron-builder --mac dir --universal -c.electronDist= -c.electronVersion="$V"             -c.electronDownload.mirror=https://github.com/castlabs/electron-releases/releases/download/ -c.electronDownload.customDir="v$V"
 
       # Sans compte Apple Developer, l'application porte une signature locale (« ad hoc ») : c'est le minimum
       # pour qu'elle se lance sur un Mac Apple Silicon. macOS demandera quand même de l'autoriser à la première ouverture.

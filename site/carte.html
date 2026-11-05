@@ -95,7 +95,7 @@ header > * { pointer-events: auto; }
 .count { font: 500 12px var(--f-mono); color: var(--haze); letter-spacing: .06em; }
 .count b { color: var(--mist); }
 #search { width: 100%; min-height: 42px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.45); color: var(--mist); font: 500 14px var(--f-body); }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { border: 1px solid var(--line); background: rgba(255,255,255,.03); border-radius: 999px; padding: 6px 11px; font: 600 12px var(--f-body); cursor: pointer; }
 .chip.on { border-color: var(--ember); background: rgba(229,56,74,.22); }
 .toggle { display: flex; align-items: center; gap: 10px; font: 600 13px var(--f-body); cursor: pointer; }
@@ -154,7 +154,7 @@ header > * { pointer-events: auto; }
 .cvcard .who > div { min-width: 0; }
 .cvcard small { display: block; color: var(--haze); font: 500 11px var(--f-mono); }
 .cvcard p { margin: 0; font-size: 13px; color: #d9c6c9; }
-.cvcard .chips span { border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; font: 600 11px var(--f-body); }
+.cvcard .tags span { border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; font: 600 11px var(--f-body); }
 .badge { display: inline-flex; align-items: center; flex: none; font: 500 9px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; padding: 4px 8px; border-radius: 999px; color: #ffecee; border: 1px solid rgba(229,56,74,.7); background: rgba(229,56,74,.18); white-space: nowrap; }
 .cvcard .links { display: flex; flex-wrap: wrap; gap: 6px; }
 .cvcard .links a { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); text-decoration: none; font: 600 12px var(--f-body); }
@@ -167,7 +167,8 @@ header > * { pointer-events: auto; }
 .empty { color: var(--haze); font-size: 14px; }
 
 /* « Plus loin » : la francophonie hors de la carte, en bande en bas. */
-#far { position: fixed; z-index: 10; left: 50%; bottom: 18px; transform: translateX(-50%); max-width: calc(100vw - 24px); display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+/* La bande s'arrête avant les boutons de zoom (à droite) : rien ne se superpose. */
+#far { position: fixed; z-index: 10; left: clamp(12px, 3vw, 28px); right: calc(clamp(12px, 3vw, 28px) + 58px); bottom: 18px; width: fit-content; max-width: calc(100vw - 2 * clamp(12px, 3vw, 28px) - 58px); margin-inline: auto; display: flex; align-items: center; gap: 10px; padding: 10px 14px;
   animation: rise .8s .7s both cubic-bezier(.2, .8, .2, 1); }
 #far .eyebrow { flex: none; }
 #far-list { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
@@ -190,7 +191,7 @@ header > * { pointer-events: auto; }
   #plane { top: 40%; }
   #city { left: 12px; right: 12px; top: auto; bottom: 12px; width: auto; height: 62vh; transform: translateY(calc(100% + 30px)); }
   #zoom { display: none; }
-  #far { bottom: 12px; }
+  #far { bottom: 12px; right: 12px; left: 12px; max-width: none; }
   .hide-phone { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01s !important; animation-iteration-count: 1 !important; transition: none !important; } }
@@ -222,7 +223,7 @@ header > * { pointer-events: auto; }
   </div>
   <input id="search" type="search" placeholder="Une ville, un membre…" aria-label="Chercher une ville ou un membre" autocomplete="off">
   <div class="results" id="results"></div>
-  <div><span class="eyebrow" style="margin-bottom:10px">Métiers</span><div class="chips" id="roles"></div></div>
+  <div><span class="eyebrow" style="margin-bottom:10px">Métiers</span><div class="tags" id="roles"></div></div>
   <label class="toggle"><input type="checkbox" id="open-only"> Ouverts aux collaborations</label>
   <div id="cta"></div>
   <div><span class="eyebrow" style="margin-bottom:8px">Les villes les plus actives</span><div class="top" id="top"></div></div>
@@ -407,7 +408,7 @@ function card(m, i) {
     el("a", { className: "who", href: page, style: "text-decoration:none" }, el("img", { src: m.avatar ? m.avatar + "?w=120" : "assets/favicon.png?v=2", alt: "", loading: "lazy" }),
       el("div", {}, el("div", { className: "name" }, el("b", { textContent: m.name }), ROLES[m.role] ? el("span", { className: "badge", textContent: ROLES[m.role] }) : null),
         el("small", { textContent: "@" + m.handle + " · " + m.followers + " abonné" + (m.followers > 1 ? "s" : "") }))),
-    m.cv.roles.length ? el("div", { className: "chips" }, ...m.cv.roles.map((r) => el("span", { textContent: r }))) : null,
+    m.cv.roles.length ? el("div", { className: "tags" }, ...m.cv.roles.map((r) => el("span", { textContent: r }))) : null,
     m.cv.skills ? el("p", { textContent: m.cv.skills }) : null,
     m.cv.open ? el("span", { className: "open", textContent: "✦ Ouvert aux collaborations" }) : null,
     el("div", { className: "links" }, el("a", { href: page, textContent: "Sa page" }), m.linkPage ? el("a", { href: m.linkPage, target: "_blank", rel: "noopener", textContent: "↗ Page de liens" }) : null));

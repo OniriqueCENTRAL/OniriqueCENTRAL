@@ -114,7 +114,7 @@ dialog li small { display: block; color: var(--haze); font-size: 12px; overflow:
 .link-rows { display: grid; gap: 8px; }
 .cv-edit { display: grid; gap: 16px; padding: 16px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.02); }
 select { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 15px var(--f-body); letter-spacing: 0; text-transform: none; }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.03); font: 600 13px var(--f-body); color: var(--mist); letter-spacing: 0; text-transform: none; }
 .chip.pick { cursor: pointer; }
 .chip.pick input { display: none; }
@@ -179,7 +179,7 @@ select { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px sol
       <div><label>Liens (Instagram, Spotify, YouTube, ton site…)</label><div class="link-rows" id="f-links" style="margin-top:8px"></div></div>
       <div class="cv-edit">
         <label>Ta ville (sur la carte des membres)<select id="f-city"><option value="">Pas sur la carte</option></select></label>
-        <div><label>Ce que tu fais (jusqu'à 6)</label><div class="chips" id="f-roles"></div></div>
+        <div><label>Ce que tu fais (jusqu'à 6)</label><div class="tags" id="f-roles"></div></div>
         <label>Ce que tu sais faire, ton matériel, tes styles<input id="f-skills" maxlength="300" placeholder="Trap, drill, mix voix, Neumann U87…"></label>
         <label class="check"><input id="f-open" type="checkbox"> Ouvert aux collaborations</label>
         <label class="check" id="f-showlinks-row"><input id="f-showlinks" type="checkbox"> Afficher ma page de liens sur mon profil et la carte</label>
@@ -266,7 +266,7 @@ function drawView() {
   $("cv-panel").hidden = !(p.city || cv.roles.length || cv.skills || cv.open);
   $("cv").replaceChildren(...[
     p.city ? el("a", { className: "cv-city", href: "carte?u=" + encodeURIComponent(p.handle), title: "Voir sur la carte" }, "✦ " + p.city.name, el("small", { textContent: " · " + p.city.country })) : null,
-    cv.roles.length ? el("div", { className: "chips" }, ...cv.roles.map((r) => el("span", { className: "chip", textContent: r }))) : null,
+    cv.roles.length ? el("div", { className: "tags" }, ...cv.roles.map((r) => el("span", { className: "chip", textContent: r }))) : null,
     cv.skills ? el("p", { className: "bio", textContent: cv.skills }) : null,
     cv.open ? el("span", { className: "open-badge", textContent: "Ouvert aux collaborations" }) : null].filter(Boolean));
   $("follows-me").hidden = !p.followsMe;
