@@ -28,7 +28,7 @@ jobs:
           # dossier local de package.json (electronDist) ne sert qu'à la construction Windows.
           node -e "const f='package.json', p=require('./'+f); delete p.build.electronDist; p.build.electronVersion+='+wvcus';
             p.build.electronDownload={ mirror: 'https://github.com/castlabs/electron-releases/releases/download/', customDir: 'v'+p.build.electronVersion };
-            p.build.mac.singleArchFiles='**/Electron Framework.sig'; // la signature Widevine de castlabs diffère entre Intel et Apple Silicon
+            p.build.afterPack='build/mac-drop-sig.js'; delete p.build.afterSign; // voir app/build/mac-drop-sig.js
             require('fs').writeFileSync(f, JSON.stringify(p, null, 2))"
           npx electron-builder --mac dir --universal
 
