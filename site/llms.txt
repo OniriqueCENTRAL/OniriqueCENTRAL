@@ -32,7 +32,7 @@
 - [Presskit](https://onirique.store/presskit) : presskit d'artiste personnalisé, en PDF.
 - [Devis](https://onirique.store/devis) : devis de beatmaker, graphiste ou ingé son, en PDF.
 - [ONIRIQUE CUT](https://onirique.store/cut) : clips montés sur le beat d'un son, vidéo 9:16 pour TikTok (membres et abonnés CLOUD).
-- [Questions fréquentes](https://onirique.store/#faq) : compatibilité, installation, latence.
+- [Questions fréquentes](https://onirique.store/#faq) : plugins et licences, abonnements et paiement, remboursement, application ONIRIQUE CENTRAL, ONIRIQUE CLOUD, pages de profil, outils gratuits, ONIRIQUE CUT, compte et support.
 
 ## Informations légales
 

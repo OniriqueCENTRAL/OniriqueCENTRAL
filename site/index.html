@@ -165,7 +165,7 @@ p { margin: 0; }
 .hero-shot small { color: var(--mist); }
 .hero-side { display: grid; gap: 28px; min-width: 0; justify-items: start; }
 .hero-side .lede { margin-top: -4px; }
-/* Raccourci vers ONIRIQUE CLOUD : le CLOUD pour ceux qui y ont droit, la page d'abonnement pour les autres */
+/* Raccourci vers ONIRIQUE CLOUD, montré seulement aux membres ONIRIQUE et aux fondateurs */
 .sons-shortcut { display: flex; align-items: center; gap: 14px; max-width: 100%; padding: 12px 18px 12px 12px; border-radius: 18px; border: 1px solid rgba(226,52,68,.45); background: linear-gradient(120deg, rgba(92,0,8,.55), rgba(13,8,9,.6)); color: var(--mist); text-decoration: none; box-shadow: 0 0 40px -14px rgba(226,52,68,.7); transition: transform .2s, border-color .2s; }
 .sons-shortcut:hover { transform: translateY(-2px); border-color: var(--ember); }
 .sons-shortcut[hidden] { display: none; }
@@ -324,6 +324,14 @@ input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border: 0; bord
 /* faq */
 .faq { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 40px 80px; }
 .faq h2 { font-size: clamp(34px, 4.4vw, 60px); }
+/* La FAQ en rubriques ; le titre reste à l'écran pendant qu'on la parcourt. */
+.faq > .reveal:first-child { position: sticky; top: 110px; align-self: start; }
+.faq-group { margin: 44px 0 6px; font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); }
+.faq-group:first-child { margin-top: 0; }
+.faq-list details:first-of-type { border-top: 1px solid var(--line); }
+.faq-group + details { border-top: 1px solid var(--line); }
+details p a { color: var(--bone); }
+@media (max-width: 860px) { .faq > .reveal:first-child { position: static; } }
 details { border-bottom: 1px solid var(--line); }
 details:first-child { border-top: 1px solid var(--line); }
 summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 24px 0; font: 600 18px/1.35 var(--f-body); }
@@ -585,7 +593,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
     <div class="wrap">
       <div class="hero-grid">
         <div class="hero-side rise">
-          <a class="sons-shortcut" id="sonsShortcut" href="cloud">
+          <a class="sons-shortcut" id="sonsShortcut" href="mes-sons" hidden>
             <span class="sigil" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 1.5 13.3 10.7 22.5 12 13.3 13.3 12 22.5 10.7 13.3 1.5 12 10.7 10.7Z" fill="currentColor"/></svg></span>
             <span><b>ONIRIQUE CLOUD</b><small>Tes projets, tes versions et tes liens d'écoute privés</small></span>
             <span class="go" aria-hidden="true">→</span>
@@ -797,13 +805,49 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
         <span class="eyebrow">Questions</span>
         <h2 style="margin-top:18px">Avant de <em class="dream">rêver.</em></h2>
       </div>
-      <div class="reveal">
+      <div class="reveal faq-list">
+        <h3 class="faq-group">Plugins et licences</h3>
         <details open><summary>Avec quels logiciels les plugins ONIRIQUE fonctionnent-ils ?</summary><p>Avec tout DAW compatible VST3 sous Windows : FL Studio, Ableton Live, Reaper, Cubase, Studio One, Bitwig… Sur Mac, les plugins disponibles s'ouvrent aussi en Audio Unit dans Logic Pro et GarageBand.</p></details>
         <details><summary>Est-ce disponible sur Mac ?</summary><p>L'application ONIRIQUE CENTRAL existe pour Mac. La plupart des plugins le sont aussi, en VST3 et Audio Unit (Intel et Apple Silicon) : dans la boutique, chaque plugin indique les systèmes pour lesquels il est disponible.</p></details>
         <details><summary>Comment installer un plugin ?</summary><p>Avec l'application ONIRIQUE CENTRAL, gratuite : connecte-toi avec ton compte, puis installe le plugin en un clic. Elle le place au bon endroit et active sa licence toute seule. Relance ensuite le scan des plugins de ton DAW (dans FL Studio : Options → Manage plugins → Find installed plugins).</p></details>
         <details><summary>Puis-je essayer un plugin avant de l'acheter ?</summary><p>Oui : chaque plugin payant s'essaie gratuitement pendant 7 jours, une fois par compte. Sur sa fiche de la boutique, tu peux aussi essayer son interface directement dans ton navigateur.</p></details>
+        <details><summary>Y a-t-il des plugins gratuits ?</summary><p>Oui : ONIRIQUE RISER, METERBOX et PLAYER (Windows et Mac), STREAM et BROADCAST (Windows) sont gratuits. Il suffit d'un compte pour les installer depuis ONIRIQUE CENTRAL.</p></details>
         <details><summary>Sur combien d'ordinateurs puis-je l'utiliser ?</summary><p>Une licence s'active sur deux ordinateurs à la fois par défaut, par exemple ton PC fixe et ton portable.</p></details>
+        <details><summary>J'ai changé d'ordinateur : comment récupérer ma place ?</summary><p>Sur l'ancien ordinateur, dans la bibliothèque d'ONIRIQUE CENTRAL, choisis « Désactiver » sur le plugin : la place est rendue et tu peux l'activer sur le nouveau. Si l'ancien ordinateur n'est plus accessible, écris au support, qui libère la licence.</p></details>
         <details><summary>Les mises à jour sont-elles comprises ?</summary><p>Oui. Quand une nouvelle version sort, ONIRIQUE CENTRAL te la propose et l'installe : ce qui change est indiqué dans l'historique des versions de chaque plugin.</p></details>
+        <details><summary>C'est quoi les plugins ABRASION et RELIC ?</summary><p>Ce sont des créateurs partenaires vendus sur la boutique ONIRIQUE (par exemple RELIC BLOOM). Leurs plugins s'achètent à l'unité : ils ne font pas partie des abonnements ONIRIQUE.</p></details>
+
+        <h3 class="faq-group">Abonnements et paiement</h3>
+        <details><summary>Quels abonnements existent pour les plugins ?</summary><p>Plusieurs formules, mensuelles ou annuelles : All Access ONIRIQUE (tous les plugins ONIRIQUE), Essential (une sélection), ou l'abonnement à la carte, où tu coches les plugins voulus et le prix suit. Les prix à jour sont dans la <a href="boutique">boutique</a>. Les abonnements couvrent les plugins ONIRIQUE, pas ceux des partenaires.</p></details>
+        <details><summary>Comment je paie ?</summary><p>Par carte, sur une page de paiement sécurisée (Stripe). Le reçu arrive par e-mail, et la licence apparaît tout de suite dans ton compte et dans ONIRIQUE CENTRAL.</p></details>
+        <details><summary>Comment je résilie un abonnement ?</summary><p>Dans Mon compte, ou dans ONIRIQUE CENTRAL : « Résilier ». Tu gardes l'accès jusqu'à la fin de la période payée, et plus rien n'est prélevé ensuite.</p></details>
+        <details><summary>Puis-je être remboursé ?</summary><p>Tu as quatorze jours pour te rétracter après un achat ou un abonnement, sauf si tu as demandé à en profiter tout de suite en renonçant à ce droit lors du paiement. Écris à support@onirique.store. Tout est détaillé sur la page <a href="remboursement">Rétractation et remboursement</a>.</p></details>
+        <details><summary>Comment marche le parrainage ?</summary><p>Dans Mon compte, rubrique Parrainage, tu trouves ton lien à partager. Ton ami a une remise sur son premier plugin ONIRIQUE, et toi, tu reçois un code de réduction dès qu'il fait son premier achat.</p></details>
+
+        <h3 class="faq-group">L'application ONIRIQUE CENTRAL</h3>
+        <details><summary>À quoi sert ONIRIQUE CENTRAL ?</summary><p>C'est l'application gratuite d'ONIRIQUE : elle installe tes plugins, les met à jour et active leurs licences. Tu y retrouves aussi ONIRIQUE CUT et ONIRIQUE CLOUD, déjà connectés à ton compte, et tu peux choisir sa couleur dans les Paramètres (l'engrenage en haut).</p></details>
+        <details><summary>Windows bloque l'installateur, c'est normal ?</summary><p>Windows peut afficher un avertissement SmartScreen pour une application récente. Clique sur « Informations complémentaires », puis « Exécuter quand même ». Télécharge toujours l'installateur depuis onirique.store.</p></details>
+        <details><summary>Comment mettre à jour l'application ?</summary><p>Elle se met à jour toute seule : quand une nouvelle version est prête, elle s'installe à la prochaine fermeture de l'application.</p></details>
+
+        <h3 class="faq-group">ONIRIQUE CLOUD</h3>
+        <details><summary>C'est quoi ONIRIQUE CLOUD ?</summary><p>Ton espace pour ranger ta musique en cours : projets, versions de chaque titre, BPM, tonalité, crédits, paroles, playlists. Tu partages un son ou un projet par un lien d'écoute (avec mot de passe, date de fin ou téléchargement si tu veux), et on peut te laisser des commentaires à un moment précis du titre.</p></details>
+        <details><summary>Combien coûte ONIRIQUE CLOUD ?</summary><p>1,99 € par mois ou 9,99 € par an, sans engagement ; il est inclus pour les membres ONIRIQUE. L'abonnement comprend aussi la page de liens. Les plugins ne sont pas compris. Tout est sur la page <a href="cloud">ONIRIQUE CLOUD</a>.</p></details>
+        <details><summary>Si j'arrête mon abonnement CLOUD, je perds mes sons ?</summary><p>Non. Après la fin de la période payée, ONIRIQUE CLOUD et ta page de liens se ferment, mais tes sons restent sur ton compte : ils reviennent si tu te réabonnes.</p></details>
+        <details><summary>Comment fonctionnent les playlists, les notes et « Découvrir » ?</summary><p>Une playlist se note de 1 à 5 étoiles, et chacun peut lui donner un up par jour (à chaque son aussi). En haut du CLOUD, « Découvrir » montre le top de la semaine, les mieux notées, les nouveautés et les playlists des membres que tu suis. Une playlist privée n'y apparaît pas : seuls ceux qui ont son lien la voient.</p></details>
+        <details><summary>Puis-je ajouter des titres Spotify ?</summary><p>Oui, pour les membres ONIRIQUE, dans l'application ONIRIQUE CENTRAL : connecte ton compte Spotify, cherche un titre ou importe tes playlists, et ils se jouent dans le lecteur du CLOUD, mêlés à tes sons.</p></details>
+        <details><summary>Le bouton SCAN, c'est quoi ?</summary><p>Il cherche si une de tes prods a été sortie sur les plateformes sans toi. Si c'est un faux positif, « Ce n'est pas un vol » retire l'alerte pour de bon.</p></details>
+
+        <h3 class="faq-group">Pages de profil et communauté</h3>
+        <details><summary>Comment créer ma page de profil ?</summary><p>Dans Mon compte, rubrique Page de profil : choisis ton adresse, ta bio, ta couleur, ta bannière et jusqu'à six liens. Tes playlists publiques y apparaissent toutes seules.</p></details>
+        <details><summary>Comment suivre quelqu'un ou lui écrire ?</summary><p>Sur sa page de profil : « S'abonner » pour suivre ses playlists dans « Découvrir », « Message » pour lui écrire en privé. Tu peux aussi commenter sa page, répondre aux commentaires et les aimer. Tes messages et ton activité sont dans <a href="messages">Messages</a>.</p></details>
+
+        <h3 class="faq-group">Outils et ONIRIQUE CUT</h3>
+        <details><summary>Les outils gratuits demandent-ils un compte ?</summary><p>Non : BPM et tonalité, volume LUFS, IA SPLIT, convertisseur, accordeur et les autres <a href="outils">outils gratuits</a> fonctionnent dans ton navigateur. Tes fichiers restent sur ton appareil.</p></details>
+        <details><summary>C'est quoi ONIRIQUE CUT ?</summary><p>Un outil qui monte tes clips sur le beat d'un son, en vidéo verticale 9:16 pour TikTok, les Reels et les Shorts. Il est réservé aux membres ONIRIQUE et aux abonnés d'ONIRIQUE CLOUD.</p></details>
+
+        <h3 class="faq-group">Compte et aide</h3>
+        <details><summary>J'ai oublié mon mot de passe.</summary><p>Sur la page <a href="compte">Compte</a>, choisis « Mot de passe oublié » : un lien pour en choisir un nouveau arrive par e-mail. Tu peux aussi activer la double authentification dans tes paramètres.</p></details>
+        <details><summary>Comment contacter ONIRIQUE ?</summary><p>Par la page <a href="support">Support</a> : la réponse arrive par e-mail. Pour une question rapide, ROCKY, la bulle en bas à droite, répond tout de suite.</p></details>
       </div>
     </div>
   </section>
@@ -1790,8 +1834,7 @@ function heroFacts(products, shown, euros, terms) {
   const free = products.find(p => p.priceCents === 0);
   if (free) { $("#heroFree").textContent = free.name + " : gratuit"; $("#heroFree").hidden = false; }
   if (!shown.length) return shot.remove();
-  const order = shown.filter(ours).sort((a, b) => b.priceCents - a.priceCents);
-  if (!order.length) return shot.remove();
+  const order = [...shown].sort((a, b) => b.priceCents - a.priceCents);
   let at = 0;
   const paint = () => {
     const p = order[at];
@@ -1834,9 +1877,6 @@ function heroFacts(products, shown, euros, terms) {
     for (const name of ["--rx", "--ry", "--gx", "--gy"]) shot.style.removeProperty(name);
   });
 }
-
-// Les défilements de l'accueil ne montrent que les plugins ONIRIQUE, pas ceux des partenaires (RELIC, ABRASION).
-const ours = p => !/^(relic|abrasion)$/i.test(p.creator || "");
 
 // Collection : les plugins publiés dans le CENTRAL qui ont une image (elle se change depuis la page admin).
 // Le catalogue, téléchargé une fois pour toute la page (collection, haut de page, vitrine des plugins).
@@ -1921,7 +1961,7 @@ Promise.all([catalogReady, OniriqueDemo.web("")]).then(async ([catalog]) => {
   const products = catalog?.products || [];
   const webs = await Promise.all(products.map(p => OniriqueDemo.web(p.slug)));
   // une interface web réelle compte comme démo ; une image choisie par un admin passe avant la démo automatique
-  const demos = products.filter((p, i) => ours(p) && (webs[i] || (p.demo && !p.imageManual)));
+  const demos = products.filter((p, i) => webs[i] || (p.demo && !p.imageManual));
   if (demos.length) showcase(demos);
   else $("#vbMock").parentElement.hidden = false; // aucune démo en ligne : la maquette de VocalBox tient lieu d'aperçu
 }).catch(() => { $("#vbMock").parentElement.hidden = false; });
@@ -1947,10 +1987,9 @@ $$("[data-buy]").forEach(a => {
 </script>
 <script src="assets/tools-menu.js?v=13" defer></script>
 <script>
-// ONIRIQUE CLOUD : le raccourci ouvre le CLOUD aux comptes qui y ont droit (membres, abonnés), une fois leur compte
-// lu ; les autres arrivent sur la page de l'abonnement.
+// ONIRIQUE CLOUD : le raccourci n'apparaît qu'aux comptes qui y ont droit, une fois leur compte lu.
 document.addEventListener("onirique:account", (event) => {
-  document.getElementById("sonsShortcut").href = ((event.detail && event.detail.rights) || []).includes("sounds") ? "mes-sons" : "cloud";
+  document.getElementById("sonsShortcut").hidden = !((event.detail && event.detail.rights) || []).includes("sounds");
 });
 </script>
 <script src="assets/account.js?v=10" defer></script>

@@ -23,7 +23,12 @@ Object.assign(process.env, { DATA_DIR: fs.mkdtempSync(path.join(os.tmpdir(), 'on
   ADMIN_EMAIL: '', ADMIN_PASSWORD: '', FOUNDER_EMAILS: '', ANTHROPIC_API_KEY: 'cle-test', ANTHROPIC_API: `http://127.0.0.1:${fake.address().port}`,
   ...(GEMINI ? { GEMINI_API_KEY: 'gem-test', GEMINI_API: `http://127.0.0.1:${fake.address().port}`, GEMINI_MODEL: 'modele' } : {}) });
 const { createApp } = await import('../src/app.js');
-const { cleanMessages } = await import('../src/rocky.js');
+const { cleanMessages, faqText } = await import('../src/rocky.js');
+// ROCKY lit la FAQ de la page d'accueil : chaque question avec sa réponse, sans balises.
+const faq = faqText(fs.readFileSync(new URL('../../site/onirique.html', import.meta.url), 'utf8'));
+assert.ok(faq.split('\n\n').length >= 25, 'la FAQ doit compter au moins 25 questions');
+assert.match(faq, /^Q : Avec quels logiciels[^\n]*\nR : Avec tout DAW/);
+assert.ok(!/<[a-z]/.test(faq), 'pas de balise HTML dans le texte donné à ROCKY');
 const server = createApp().listen(0);
 const ask = (messages) => fetch(`http://127.0.0.1:${server.address().port}/api/rocky`, { method: 'POST',
   headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages }) });
