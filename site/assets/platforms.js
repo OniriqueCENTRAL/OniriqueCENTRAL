@@ -37,9 +37,7 @@
 #platform-add .pf-acc-head { display: flex; align-items: center; gap: 10px; }
 #platform-add .pf-acc-head b { flex: 1; font: 700 15px var(--f-display); }
 .pf-tag { flex: none; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); font: 600 10.5px/1.5 var(--f-mono); letter-spacing: .06em; color: var(--haze); white-space: nowrap; }
-.trk.pf .pf-link { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; color: var(--haze); }
-.trk.pf .pf-link:hover { color: var(--mist); background: rgba(255,255,255,.06); }
-.trk.pf .pf-cover { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; }
+.trk .pf-cover { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; }
 .pf-embed { position: fixed; right: 0; bottom: 0; z-index: -1; width: 300px; height: 80px; opacity: 0; pointer-events: none; overflow: hidden; }
 .pf-embed[hidden] { display: none; }
 .pf-search { margin-top: 16px; max-width: 420px; }
@@ -338,16 +336,14 @@
       ctx.api("DELETE", "/me/sounds/platform-items/" + x.id).then(load).then(ctx.changed, (error) => alert(error.message));
     };
     // Le titre entier, sur sa plateforme (dans l'application ONIRIQUE CENTRAL : le navigateur ou l'application de la plateforme).
-    const open = el("a", { className: "pf-link", href: x.url, target: "_blank", rel: "noopener", ariaLabel: "Écouter en entier sur " + NAMES[x.platform],
-      title: "Écouter en entier sur " + NAMES[x.platform], onclick: (event) => event.stopPropagation() }, icon("link"));
-    const li = el("li", { className: "trk pf", tabIndex: 0, title: "Écouter l'extrait de 30 s" },
+    const li = el("li", { className: "trk pf", tabIndex: 0, title: "Écouter" },
       // La pochette du titre, là où un son du CLOUD a son numéro : on voit d'un coup d'œil ce qui vient d'une plateforme.
       x.cover ? el("img", { className: "pf-cover", src: x.cover, alt: "", loading: "lazy" }) : el("span", { className: "num", textContent: String(i + 1) }),
       el("div", {}, el("div", { className: "tline" }, el("b", { textContent: x.title })),
         el("small", { textContent: [x.artist, engineFor(x.platform) ? "" : "extrait 30 s"].filter(Boolean).join(" · ") })),
       el("span", { className: "badges" }, el("span", { className: "pf-tag", textContent: NAMES[x.platform] })),
       el("span", { className: "len", textContent: time(x.duration) }),
-      el("span", { style: "display:flex;gap:2px" }, open, remove));
+      remove);
     li.dataset.key = "x" + x.id;
     const go = () => {
       if (playable(x)) return onPlay();
