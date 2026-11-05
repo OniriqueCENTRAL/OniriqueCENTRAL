@@ -28,9 +28,9 @@ const store = { get(k) { try { return sessionStorage.getItem(k); } catch (e) { r
 /* ---------------------------------------------------------------- catalogue
    Seule source des prix : en centimes, TTC. null = « Prix à venir ».       */
 const PRODUCTS = Object.freeze({
-  "raw":   { id: "raw",   name: "RAW",   world: "abrasion", page: "raw.html",   price: null, currency: "EUR", kind: "Synthé" },
-  "raw-2": { id: "raw-2", name: "RAW 2", world: "labs",     page: "raw-2.html", price: null, currency: "EUR", kind: "Synthé" },
-  "omnis": { id: "omnis", name: "OMNIS", world: "labs",     page: "omnis.html", price: null, currency: "EUR", kind: "Mastering" },
+  "raw":   { id: "raw",   name: "RAW",   world: "abrasion", page: "/abrasion/raw",   price: null, currency: "EUR", kind: "Synthé" },
+  "raw-2": { id: "raw-2", name: "RAW 2", world: "labs",     page: "/abrasion/raw-2", price: null, currency: "EUR", kind: "Synthé" },
+  "omnis": { id: "omnis", name: "OMNIS", world: "labs",     page: "/abrasion/omnis", price: null, currency: "EUR", kind: "Mastering" },
 });
 const CGV_VERSION = "2026-11-05";
 const fmt = p => p.price == null ? "Prix à venir" : new Intl.NumberFormat("fr-FR", { style: "currency", currency: p.currency }).format(p.price / 100);
@@ -69,7 +69,7 @@ doc.addEventListener("click", e => {
   const a = e.target.closest("a[href]"); if (!a || e.defaultPrevented) return;
   if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || a.target || a.hasAttribute("download")) return;
   let url; try { url = new URL(a.href, location.href); } catch (err) { return; }
-  if (url.origin !== location.origin || !/\.html$/.test(url.pathname)) return;
+  if (url.origin !== location.origin || !/^\/abrasion\/[\w-]*$/.test(url.pathname)) return; // une page ABRASION (adresses sans .html)
   if (url.pathname === location.pathname) return;                    // même page : ancre normale
   e.preventDefault();
   if (sw && sw.contains(a)) { sw.dataset.world = a.dataset.world; $$("a", sw).forEach(o => o === a ? o.setAttribute("aria-current", "true") : o.removeAttribute("aria-current"));

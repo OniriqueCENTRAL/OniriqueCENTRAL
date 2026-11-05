@@ -109,6 +109,17 @@ p { margin: 0; }
 .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-block: 16px; }
 .nav::before { content: ""; position: absolute; inset: 0; background: linear-gradient(var(--night), rgba(11,6,7,.72)); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); z-index: -1; }
 .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 800 17px/1 var(--f-display); letter-spacing: .16em; }
+/* Passage vers ABRASION : un petit « ab » à sa manière (mono, noir et blanc), qui se déplie en « abrasion » au survol. */
+.nav-left { display: flex; align-items: center; gap: 14px; }
+.to-abrasion { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 8px; border: 1px solid rgba(255,236,238,.16); border-radius: 3px;
+  background: rgba(0,0,0,.4); color: rgba(255,236,238,.45); font: 500 11px/1 var(--f-mono); letter-spacing: .1em; text-transform: lowercase; text-decoration: none;
+  transition: color .3s, border-color .3s, box-shadow .3s; }
+.to-abrasion::before { content: ""; width: 5px; height: 5px; border: 1px solid currentColor; transition: background .3s; }
+.to-abrasion b { font-weight: inherit; display: inline-block; max-width: 0; overflow: hidden; opacity: 0; white-space: nowrap; margin-left: -6px; transition: max-width .45s cubic-bezier(.2,.8,.2,1), opacity .3s; }
+.to-abrasion:hover, .to-abrasion:focus-visible { color: #fff; border-color: rgba(255,255,255,.55); box-shadow: 0 0 16px rgba(255,255,255,.18); }
+.to-abrasion:hover::before, .to-abrasion:focus-visible::before { background: #fff; }
+.to-abrasion:hover b, .to-abrasion:focus-visible b { max-width: 6em; opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .to-abrasion, .to-abrasion b { transition: none; } }
 .brand img { width: 44px; height: auto; margin-block: -12px; filter: drop-shadow(0 0 6px rgba(226,52,68,.8)); }
 .nav-links { display: flex; gap: 28px; font-size: 14px; color: var(--haze); }
 .nav-links a { text-decoration: none; transition: color .25s; }
@@ -568,10 +579,13 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
 <a class="skip" href="#top">Aller au contenu</a>
 <header class="nav">
   <div class="wrap nav-inner">
+    <div class="nav-left">
+    <a class="to-abrasion" href="/abrasion/" title="Passer sur le site ABRASION" aria-label="Passer sur le site ABRASION"><span>ab</span><b>rasion</b></a>
     <a class="brand" href="#top" aria-label="Onirique, accueil">
       <img src="assets/logo-small.webp?v=1" alt="Logo Onirique" width="160" height="145">
       ONIRIQUE
     </a>
+    </div>
     <nav class="nav-links" aria-label="Sections">
       <a href="boutique">Boutique</a>
       <a href="carte">Carte</a>
@@ -581,7 +595,6 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
       <a href="support">Support</a>
     </nav>
     <div class="nav-actions">
-      <a class="btn btn-ghost" href="/abrasion/" title="Passer sur le site ABRASION">ABRASION</a>
       <a class="btn btn-ghost" id="nav-account" href="compte" data-account>Connexion</a>
       <a class="btn btn-primary" id="nav-buy" href="boutique">Acheter</a>
     </div>
