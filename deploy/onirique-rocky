@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Réveille ROCKY, le chatbot du site, avec l'offre gratuite de Gemini. À lancer sur le VPS, en root :
+#   onirique-rocky        demande la clé API Gemini
+#   onirique-rocky off    retire la clé (ROCKY répond « Rocky dort pour l'instant »)
+# La clé est saisie ici, sans s'afficher, et ne quitte pas le serveur.
+# La clé : sur aistudio.google.com, bouton « Get API key » (icône de clé en bas à gauche), « Create API key ».
+set -euo pipefail
+
+ENVFILE=/opt/onirique-central/server/.env
+stop() { echo "$1" >&2; exit 1; }
+
+if [ "${1:-}" != off ]; then
+  read -rsp "Clé API Gemini (rien ne s'affiche) : " KEY; echo
+  # Un collage dans le terminal ajoute parfois des caractères invisibles : seuls ceux d'une clé sont gardés.
+  KEY=$(printf '%s' "$KEY" | sed 's/\x1b\[20[01]~//g' | tr -cd 'A-Za-z0-9_-')
+  [ ${#KEY} -ge 20 ] || stop "Clé trop courte. Rien n'est changé."
+fi
+
+sed -i '/^GEMINI_API_KEY=/d' "$ENVFILE"
+[ "${1:-}" = off ] || printf "GEMINI_API_KEY='%s'\n" "$KEY" >> "$ENVFILE"
+chown central:central "$ENVFILE"; chmod 600 "$ENVFILE"
+systemctl restart onirique-central
+sleep 3
+systemctl is-active -q onirique-central || stop "Le serveur n'a pas redémarré : journalctl -u onirique-central"
+if [ "${1:-}" = off ]; then echo "ROCKY est endormi."; else echo "C'est bon : ROCKY est réveillé, écris-lui sur onirique.store."; fi

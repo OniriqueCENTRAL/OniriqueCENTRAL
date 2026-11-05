@@ -1,5 +1,5 @@
 // ROCKY, le chatbot IA du site (bulle en bas à droite, site/assets/rocky.js) : un petit ingénieur extraterrestre en pierre
-// qui parle en accords. Il répond avec Claude (clé ANTHROPIC_API_KEY dans .env) et connaît le site par llms.txt.
+// qui parle en accords. Il répond avec Gemini (GEMINI_API_KEY, gratuit) ou Claude (ANTHROPIC_API_KEY) et connaît le site par llms.txt.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -46,15 +46,24 @@ export function mountRocky(app, { wrap }) {
     rateLimit(`rocky:${req.ip}`, 40);
     const messages = cleanMessages(req.body?.messages);
     if (!messages) throw new HttpError(400, 'Écris un message à Rocky.');
-    if (!config.anthropicApiKey) throw new HttpError(503, 'Rocky dort pour l’instant. Reviens bientôt, ami.');
-    const r = await fetch(`${config.anthropicApi}/v1/messages`, {
+    const gemini = Boolean(config.geminiApiKey); // Gemini (offre gratuite de Google) d'abord, sinon Claude
+    if (!gemini && !config.anthropicApiKey) throw new HttpError(503, 'Rocky dort pour l’instant. Reviens bientôt, ami.');
+    const r = await fetch(gemini
+      ? `${config.geminiApi}/v1beta/models/${config.geminiModel}:generateContent`
+      : `${config.anthropicApi}/v1/messages`, {
       method: 'POST',
       signal: AbortSignal.timeout(30_000),
-      headers: { 'content-type': 'application/json', 'x-api-key': config.anthropicApiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: config.rockyModel, max_tokens: 400, system: PERSONA, messages }),
+      headers: gemini
+        ? { 'content-type': 'application/json', 'x-goog-api-key': config.geminiApiKey }
+        : { 'content-type': 'application/json', 'x-api-key': config.anthropicApiKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify(gemini
+        ? { systemInstruction: { parts: [{ text: PERSONA }] }, generationConfig: { maxOutputTokens: 2048 },
+          contents: messages.map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })) }
+        : { model: config.rockyModel, max_tokens: 400, system: PERSONA, messages }),
     }).catch(() => null);
     const data = r && (await r.json().catch(() => null));
-    const reply = data?.content?.filter((b) => b.type === 'text').map((b) => b.text).join('').trim();
+    const blocks = gemini ? data?.candidates?.[0]?.content?.parts?.filter((p) => !p.thought) : data?.content?.filter((b) => b.type === 'text');
+    const reply = blocks?.map((b) => b.text || '').join('').trim();
     if (!r?.ok || !reply) {
       console.error('Rocky :', r?.status, data?.error?.message);
       throw new HttpError(502, 'Rocky n’entend plus rien. Réessaie dans un moment, ami.');

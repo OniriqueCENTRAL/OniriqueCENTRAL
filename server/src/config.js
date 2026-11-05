@@ -97,6 +97,10 @@ export const config = {
   anthropicApiKey: env.ANTHROPIC_API_KEY || '',
   anthropicApi: (env.ANTHROPIC_API || 'https://api.anthropic.com').replace(/\/+$/, ''),
   rockyModel: env.ROCKY_MODEL || 'claude-haiku-5-5',
+  // Ou Gemini, l'offre gratuite de Google (clé sur aistudio.google.com, réglée par onirique-rocky) : utilisé en priorité.
+  geminiApiKey: env.GEMINI_API_KEY || '',
+  geminiApi: (env.GEMINI_API || 'https://generativelanguage.googleapis.com').replace(/\/+$/, ''),
+  geminiModel: env.GEMINI_MODEL || 'gemini-3.8-flash',
   appleTeamId: env.APPLE_TEAM_ID || '',
   appleMusicKeyId: env.APPLE_MUSIC_KEY_ID || '',
   // Activations simultanées par défaut, et marge laissée hors ligne aux abonnés.
