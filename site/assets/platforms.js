@@ -141,9 +141,18 @@
       drawPeaks(item);
       const { player, device } = await spotifyDevice();
       this.player = player;
-      const response = await fetch("https://api.spotify.com/v1/me/player/play?device_id=" + encodeURIComponent(device), { method: "PUT",
-        headers: { Authorization: "Bearer " + (await spotifyAccess()), "Content-Type": "application/json" }, body: JSON.stringify({ uris: ["spotify:track:" + item.extId] }) });
-      if (!response.ok) return false;
+      // Un lecteur qui vient de naître (page rechargée, retour d'une autre page) est « introuvable » quelques secondes
+      // pour Spotify : on réessaie au lieu de retomber sur l'extrait de 30 s.
+      let response = null;
+      for (let attempt = 0; attempt < 8; attempt++) {
+        if (attempt) await new Promise((ok) => setTimeout(ok, 700));
+        if (this.cur !== item) return false; // un autre titre a été lancé entre-temps
+        response = await fetch("https://api.spotify.com/v1/me/player/play?device_id=" + encodeURIComponent(device), { method: "PUT",
+          headers: { Authorization: "Bearer " + (await spotifyAccess()), "Content-Type": "application/json" }, body: JSON.stringify({ uris: ["spotify:track:" + item.extId] }) })
+          .catch(() => null);
+        if (response && (response.ok || ![404, 429, 502, 503].includes(response.status))) break;
+      }
+      if (!response || !response.ok) return false;
       fire("loadedmetadata");
       return true;
     },
