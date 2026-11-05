@@ -20,6 +20,7 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { margin: 0; height: 100%; overflow: hidden; background: var(--night); color: var(--mist); font: 400 15px/1.5 var(--f-body); -webkit-font-smoothing: antialiased; }
 a { color: inherit; }
 button { font: inherit; color: inherit; }
@@ -43,7 +44,8 @@ header > * { pointer-events: auto; }
 /* La scène 3D : le plan de la carte est incliné (--ax), tourné (--az) et zoomé (--z) ; la caméra le suit en douceur. */
 #scene { position: fixed; inset: 0; z-index: 1; perspective: 1400px; perspective-origin: 50% 40%; cursor: grab; touch-action: none; }
 #scene.drag { cursor: grabbing; }
-#plane { position: absolute; left: 50%; top: 54%; width: 1000px; height: 1000px; margin: -500px 0 0 -500px; transform-style: preserve-3d;
+/* Le plan est dessiné à 2,5 fois sa taille (2500 px) puis réduit d'autant : zoomé, le tracé reste net au lieu d'être agrandi en pixels. */
+#plane { position: absolute; left: 50%; top: 54%; width: 2500px; height: 2500px; margin: -1250px 0 0 -1250px; transform-style: preserve-3d;
   transform: rotateX(var(--ax)) rotateZ(var(--az)) scale(var(--z)) translate(var(--px, 0px), var(--py, 0px)); }
 @media (min-width: 861px) { #plane { left: calc(50% + 150px); top: 50%; } }
 #plane svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
@@ -67,7 +69,7 @@ header > * { pointer-events: auto; }
   /* Le point se redresse face à la caméra : un rond, pas une ellipse couchée sur le plan. */
   transform: rotateZ(calc(var(--az) * -1)) rotateX(calc(var(--ax) * -1)); }
 .city.has .dot { background: radial-gradient(circle, #fff 0 22%, var(--pink) 40%, var(--ember) 70%); box-shadow: 0 0 calc(var(--s) * 1.2) var(--ember), 0 0 calc(var(--s) * 3) rgba(229,56,74,.5); }
-.city.has .dot::after { content: ""; position: absolute; inset: -60%; border-radius: 50%; border: 1px solid rgba(255,142,154,.7); animation: ping 2.6s var(--d, 0s) ease-out infinite; }
+.city.has .dot::after { content: ""; position: absolute; inset: -60%; border-radius: 50%; border: 2.5px solid rgba(255,142,154,.7); animation: ping 2.6s var(--d, 0s) ease-out infinite; }
 @keyframes ping { from { transform: scale(.4); opacity: 1; } to { transform: scale(2.4); opacity: 0; } }
 .city.on .dot { scale: 1.6; }
 .city .dot:hover { scale: 1.3; }
@@ -117,6 +119,29 @@ header > * { pointer-events: auto; }
 #city header { position: static; padding: 0; pointer-events: auto; align-items: flex-start; }
 #city h2 { margin: 6px 0 0; font: 800 26px/1 var(--f-display); }
 #city .x { border: 1px solid var(--line); background: rgba(255,255,255,.04); width: 34px; height: 34px; border-radius: 10px; cursor: pointer; flex: none; }
+.ctabs { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: rgba(0,0,0,.3); }
+.ctabs button { flex: 1; border: 0; border-radius: 10px; padding: 8px; background: none; cursor: pointer; font: 500 10.5px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
+.ctabs button.on { color: #fff; background: linear-gradient(180deg, rgba(229,56,74,.6), rgba(122,13,28,.6)); }
+#concerts { overflow-y: auto; display: grid; gap: 12px; align-content: start; scrollbar-width: thin; }
+.venue { padding: 12px; border-radius: 16px; border: 1px solid rgba(255,235,238,.08); background: rgba(255,255,255,.03); display: grid; gap: 8px; animation: rise .5s both; animation-delay: calc(var(--i) * 50ms); }
+.venue > b { font: 800 13px var(--f-display); letter-spacing: .04em; text-transform: uppercase; display: flex; justify-content: space-between; gap: 8px; }
+.venue > b button { border: 0; background: none; color: var(--pink); font: 500 10px var(--f-mono); letter-spacing: .1em; cursor: pointer; }
+.venue > small { color: var(--haze); font-size: 12px; margin-top: -4px; }
+.gig { display: grid; grid-template-columns: 54px 1fr auto; gap: 10px; align-items: center; padding: 6px; border-radius: 12px; }
+.gig:hover { background: rgba(255,255,255,.04); }
+.gig .day { display: grid; place-items: center; height: 54px; border-radius: 10px; background: rgba(229,56,74,.14); border: 1px solid rgba(229,56,74,.35); line-height: 1; }
+.gig .day b { font: 800 18px var(--f-display); }
+.gig .day i { font: 500 9px var(--f-mono); font-style: normal; letter-spacing: .12em; text-transform: uppercase; color: var(--pink); }
+.gig span { min-width: 0; font: 600 13px/1.3 var(--f-body); }
+.gig span small { display: block; color: var(--haze); font: 500 11px var(--f-mono); }
+.gig a { padding: 8px 12px; border-radius: 999px; background: var(--mist); color: #0d0809; text-decoration: none; font: 700 12px var(--f-body); white-space: nowrap; }
+.gig a.off { background: none; color: var(--haze); border: 1px solid var(--line); }
+.credit { font: 500 10px var(--f-mono); color: var(--haze); letter-spacing: .08em; text-align: center; }
+/* Les salles de concert de la ville ouverte : un losange qui se redresse face à la caméra. */
+.hall { position: absolute; width: 0; height: 0; transform-style: preserve-3d; }
+.hall i { position: absolute; left: -11px; top: -11px; width: 22px; height: 22px; transform: rotateZ(calc(var(--az) * -1)) rotateX(calc(var(--ax) * -1)) rotate(45deg); cursor: pointer;
+  background: rgba(255,179,187,.2); border: 2px solid var(--rose); box-shadow: 0 0 16px rgba(255,142,154,.8); animation: appear .5s both; }
+.hall.on i { background: var(--rose); }
 #members { overflow-y: auto; display: grid; gap: 10px; align-content: start; scrollbar-width: thin; padding-right: 2px; }
 .cvcard { display: grid; gap: 8px; padding: 14px; border-radius: 16px; border: 1px solid rgba(255,235,238,.08); background: rgba(255,255,255,.03); text-decoration: none;
   animation: rise .5s both cubic-bezier(.2, .8, .2, 1); animation-delay: calc(var(--i) * 50ms); transition: border-color .2s, background .2s; }
@@ -124,11 +149,20 @@ header > * { pointer-events: auto; }
 .cvcard.me { border-color: var(--ember); }
 .cvcard .who { display: flex; align-items: center; gap: 12px; }
 .cvcard img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex: none; background: #2a0a0e; border: 2px solid var(--c, var(--ember)); }
-.cvcard b { font: 700 15px var(--f-body); }
+.cvcard .name { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.cvcard b { font: 700 15px/1.3 var(--f-body); }
+.cvcard .who > div { min-width: 0; }
 .cvcard small { display: block; color: var(--haze); font: 500 11px var(--f-mono); }
 .cvcard p { margin: 0; font-size: 13px; color: #d9c6c9; }
 .cvcard .chips span { border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; font: 600 11px var(--f-body); }
-.badge { font: 500 9px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; padding: 4px 7px; border-radius: 999px; color: #ffecee; border: 1px solid rgba(229,56,74,.7); background: rgba(229,56,74,.18); margin-left: 6px; vertical-align: middle; }
+.badge { display: inline-flex; align-items: center; flex: none; font: 500 9px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; padding: 4px 8px; border-radius: 999px; color: #ffecee; border: 1px solid rgba(229,56,74,.7); background: rgba(229,56,74,.18); white-space: nowrap; }
+.cvcard .links { display: flex; flex-wrap: wrap; gap: 6px; }
+.cvcard .links a { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); text-decoration: none; font: 600 12px var(--f-body); }
+.cvcard .links a:hover, .cvcard .pls a:hover { border-color: var(--ember); }
+.cvcard .pls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.cvcard .pls a { display: grid; gap: 4px; padding: 5px; border-radius: 10px; border: 1px solid transparent; text-decoration: none; background: rgba(255,255,255,.03); }
+.cvcard .pls img, .cvcard .pls .ph { width: 100%; aspect-ratio: 1; border-radius: 7px; object-fit: cover; border: 0; background: linear-gradient(135deg, #5C0008, #2A0A0E); }
+.cvcard .pls span { font: 600 11px/1.2 var(--f-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .open { font: 500 10px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: #b9f5c9; }
 .empty { color: var(--haze); font-size: 14px; }
 
@@ -197,7 +231,9 @@ header > * { pointer-events: auto; }
 <aside id="city" class="glass" aria-live="polite">
   <header><div><span class="eyebrow" id="city-country"></span><h2 id="city-name"></h2><span class="count" id="city-count"></span></div>
     <button class="x" type="button" id="city-close" aria-label="Fermer">✕</button></header>
+  <div class="ctabs" id="ctabs" hidden role="tablist"><button type="button" class="on" data-tab="members">Membres</button><button type="button" data-tab="concerts">Concerts de rap</button></div>
   <div id="members"></div>
+  <div id="concerts" hidden></div>
 </aside>
 
 <nav id="far" class="glass" aria-label="Plus loin dans la francophonie"><span class="eyebrow">Plus loin</span><div id="far-list"></div></nav>
@@ -282,14 +318,15 @@ function tick(t) {
   const s = document.documentElement.style;
   s.setProperty("--ax", (cam.ax + swayX).toFixed(3) + "deg");
   s.setProperty("--az", (cam.az + sway).toFixed(3) + "deg");
-  s.setProperty("--z", cam.z.toFixed(4));
+  s.setProperty("--z", (cam.z / K).toFixed(5)); // la taille réelle du plan : K fois plus grand, K fois moins zoomé
   $("plane").style.setProperty("--px", cam.px.toFixed(2) + "px");
   $("plane").style.setProperty("--py", cam.py.toFixed(2) + "px");
   requestAnimationFrame(tick);
 }
+const K = 2.5; // le facteur de dessin du plan (voir #plane)
 const fit = () => Math.min(1.25, Math.max(.3, Math.min(innerWidth / (innerWidth > 860 ? 1150 : 900), innerHeight / 820)));
 function home() { Object.assign(goal, { ax: 50, az: -9, z: fit(), px: 0, py: 0 }); }
-function flyTo(x, y, z = 2.4) { Object.assign(goal, { ax: 42, az: -4, z: Math.min(4, z) * fit(), px: 500 - x, py: 500 - y }); }
+function flyTo(x, y, z = 2.4) { Object.assign(goal, { ax: 42, az: -4, z: Math.min(4, z) * fit(), px: (500 - x) * K, py: (500 - y) * K }); }
 
 (function controls() {
   const scene = $("scene");
@@ -300,7 +337,7 @@ function flyTo(x, y, z = 2.4) { Object.assign(goal, { ax: 42, az: -4, z: Math.mi
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y, a = -goal.az * Math.PI / 180;
     drag = { x: e.clientX, y: e.clientY };
     // Le geste à l'écran, ramené sur le plan incliné et tourné.
-    const ux = (dx * Math.cos(a) - dy * Math.sin(a)) / goal.z, uy = (dx * Math.sin(a) + dy * Math.cos(a)) / goal.z / Math.cos(goal.ax * Math.PI / 180);
+    const zk = goal.z / K, ux = (dx * Math.cos(a) - dy * Math.sin(a)) / zk, uy = (dx * Math.sin(a) + dy * Math.cos(a)) / zk / Math.cos(goal.ax * Math.PI / 180);
     goal.px += ux; goal.py += uy; cam.px += ux; cam.py += uy;
   });
   const end = () => { drag = null; scene.classList.remove("drag"); };
@@ -326,14 +363,14 @@ function drawCities() {
     let node = cityNodes.get(c.id);
     if (!node) {
       const [x, y] = project(c.lon, c.lat);
-      node = el("div", { className: "city", style: `left:${x}px;top:${y}px;--d:${(Math.random() * 2.6).toFixed(2)}s` },
+      node = el("div", { className: "city", style: `left:${x * K}px;top:${y * K}px;--d:${(Math.random() * 2.6).toFixed(2)}s` },
         el("button", { className: "dot", type: "button", ariaLabel: c.name, onclick: () => openCity(c.id) }), el("div", { className: "tag" }, el("b", { textContent: c.name }), el("i")));
       node.dataset.x = x; node.dataset.y = y;
       cityNodes.set(c.id, node); plane.append(node);
     }
     const n = (counts.get(c.id) || []).length;
     node.classList.toggle("has", n > 0);
-    node.style.setProperty("--s", (n ? 7 + Math.sqrt(n) * 4.5 : 4) + "px");
+    node.style.setProperty("--s", (n ? 7 + Math.sqrt(n) * 4.5 : 4) * K + "px");
     node.querySelector(".tag i").textContent = n ? n + (n > 1 ? " membres" : " membre") : "";
   }
   // Le réseau : chaque ville active reliée à ses deux voisines actives les plus proches, une lueur qui y circule.
@@ -365,13 +402,23 @@ function drawCities() {
 }
 
 function card(m, i) {
-  return el("a", { className: "cvcard" + (m.handle === focusHandle ? " me" : ""), href: "profil?u=" + encodeURIComponent(m.handle), style: `--i:${i};--c:${m.color || "#e5384a"}` },
-    el("div", { className: "who" }, el("img", { src: m.avatar ? m.avatar + "?w=120" : "assets/favicon.png?v=2", alt: "", loading: "lazy" }),
-      el("div", {}, el("b", { textContent: m.name }), ROLES[m.role] ? el("span", { className: "badge", textContent: ROLES[m.role] }) : null,
+  const page = "profil?u=" + encodeURIComponent(m.handle);
+  const box = el("div", { className: "cvcard" + (m.handle === focusHandle ? " me" : ""), style: `--i:${i};--c:${m.color || "#e5384a"}` },
+    el("a", { className: "who", href: page, style: "text-decoration:none" }, el("img", { src: m.avatar ? m.avatar + "?w=120" : "assets/favicon.png?v=2", alt: "", loading: "lazy" }),
+      el("div", {}, el("div", { className: "name" }, el("b", { textContent: m.name }), ROLES[m.role] ? el("span", { className: "badge", textContent: ROLES[m.role] }) : null),
         el("small", { textContent: "@" + m.handle + " · " + m.followers + " abonné" + (m.followers > 1 ? "s" : "") }))),
     m.cv.roles.length ? el("div", { className: "chips" }, ...m.cv.roles.map((r) => el("span", { textContent: r }))) : null,
     m.cv.skills ? el("p", { textContent: m.cv.skills }) : null,
-    m.cv.open ? el("span", { className: "open", textContent: "✦ Ouvert aux collaborations" }) : null);
+    m.cv.open ? el("span", { className: "open", textContent: "✦ Ouvert aux collaborations" }) : null,
+    el("div", { className: "links" }, el("a", { href: page, textContent: "Sa page" }), m.linkPage ? el("a", { href: m.linkPage, target: "_blank", rel: "noopener", textContent: "↗ Page de liens" }) : null));
+  // Ses playlists publiques, demandées à l'ouverture de la ville (les trois plus récentes).
+  if (m.playlists) {
+    const pls = el("div", { className: "pls" });
+    box.insertBefore(pls, box.lastChild);
+    pls.append(...m.playlists.slice(0, 3).map((x) => el("a", { href: x.url, title: x.title + " · " + x.tracks + " son" + (x.tracks > 1 ? "s" : "") },
+      x.cover ? el("img", { src: x.cover + "?w=200", alt: "", loading: "lazy" }) : el("span", { className: "ph" }), el("span", { textContent: x.title }))));
+  }
+  return box;
 }
 
 function openCity(id, quiet) {
@@ -386,11 +433,55 @@ function openCity(id, quiet) {
   $("members").replaceChildren(...(list.length ? list.map(card) : [el("p", { className: "empty", textContent: "Personne n'a encore choisi " + c.name + (filters.roles.size || filters.open ? " avec ces filtres." : ". Sois le premier : ajoute ta ville sur ta page de profil.") })]));
   $("city").classList.add("open");
   document.body.classList.add("city-open");
+  if (!quiet) loadConcerts(c);
   if (!quiet && !c.far) { const [x, y] = project(c.lon, c.lat); flyTo(x, y, 2.6); }
 }
-function closeCity() { current = null; $("city").classList.remove("open"); document.body.classList.remove("city-open"); for (const node of cityNodes.values()) node.classList.remove("on"); }
+function closeCity() { current = null; clearHalls(); $("city").classList.remove("open"); document.body.classList.remove("city-open"); for (const node of cityNodes.values()) node.classList.remove("on"); }
 $("city-close").onclick = () => { closeCity(); home(); };
 addEventListener("keydown", (e) => { if (e.key === "Escape") { closeCity(); home(); } });
+
+//------------------------------------------------------------------------------ Les concerts de rap à venir autour de la ville (Ticketmaster)
+const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+function clearHalls() { document.querySelectorAll(".hall").forEach((n) => n.remove()); }
+function showTab(tab) {
+  document.querySelectorAll("#ctabs button").forEach((b) => b.classList.toggle("on", b.dataset.tab === tab));
+  $("members").hidden = tab !== "members";
+  $("concerts").hidden = tab !== "concerts";
+}
+document.querySelectorAll("#ctabs button").forEach((b) => b.onclick = () => showTab(b.dataset.tab));
+async function loadConcerts(c) {
+  clearHalls();
+  showTab("members");
+  $("ctabs").hidden = true;
+  $("concerts").replaceChildren();
+  let data;
+  try { data = await (await fetch("/api/concerts?city=" + encodeURIComponent(c.id))).json(); } catch { return; }
+  if (!data.enabled || current !== c.id) return; // sans clé Ticketmaster : pas d'onglet
+  $("ctabs").hidden = false;
+  const count = data.venues.reduce((n, v) => n + v.events.length, 0);
+  $("ctabs").querySelector('[data-tab="concerts"]').textContent = "Concerts de rap" + (count ? " · " + count : "");
+  if (!data.venues.length) { $("concerts").replaceChildren(el("p", { className: "empty", textContent: "Pas de concert de rap annoncé autour de " + c.name + " pour l'instant." })); return; }
+  const halls = new Map();
+  $("concerts").replaceChildren(...data.venues.map((v, i) => {
+    const box = el("div", { className: "venue", style: `--i:${i}` },
+      el("b", {}, v.name, v.lat ? el("button", { type: "button", textContent: "VOIR", onclick: () => { const [x, y] = project(v.lon, v.lat); flyTo(x, y, 4); halls.forEach((n, id) => n.classList.toggle("on", id === v.id)); } }) : null),
+      v.address || v.city ? el("small", { textContent: [v.address, v.city].filter(Boolean).join(", ") }) : null,
+      ...v.events.slice(0, 6).map((e) => {
+        const [yy, mm, dd] = e.date.split("-").map(Number);
+        return el("div", { className: "gig" }, el("div", { className: "day" }, el("b", { textContent: String(dd || "?") }), el("i", { textContent: MONTHS[(mm || 1) - 1] })),
+          el("span", {}, e.name, el("small", { textContent: (e.time ? e.time.replace(":", " h ") : "") + (yy && yy !== new Date().getFullYear() ? " · " + yy : "") })),
+          el("a", { href: e.url, target: "_blank", rel: "noopener", className: e.soldOut ? "off" : "", textContent: e.soldOut ? "Complet" : "Billets ↗" }));
+      }));
+    // La salle sur la carte, si Ticketmaster donne sa position.
+    if (v.lat && v.lon) {
+      const [x, y] = project(v.lon, v.lat);
+      const hall = el("div", { className: "hall", style: `left:${x * K}px;top:${y * K}px`, title: v.name }, el("i", { onclick: () => { showTab("concerts"); box.scrollIntoView({ behavior: "smooth", block: "start" }); } }));
+      halls.set(v.id, hall);
+      $("plane").append(hall);
+    }
+    return box;
+  }), el("p", { className: "credit", textContent: "Concerts et billets : Ticketmaster" }));
+}
 
 function drawFilters() {
   $("roles").replaceChildren(...DATA.roles.filter((r) => DATA.members.some((m) => m.cv.roles.includes(r))).map((r) => el("button", { type: "button", className: "chip" + (filters.roles.has(r) ? " on" : ""), textContent: r,

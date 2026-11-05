@@ -17,9 +17,9 @@ let shownTool = null, frozen = false; // frozen : une fenêtre de l'application 
 const toolContents = new Set(); // les pages de CUT et CLOUD, seules à pouvoir ouvrir la fenêtre de confirmation // l'outil à l'écran, pour le bouton « précédent » de la souris
 // ONIRIQUE_SITE : un site local, pour essayer CUT et CLOUD avant de les mettre en ligne (comme ONIRIQUE_SERVER pour l'API).
 const SITE = (process.env.ONIRIQUE_SITE || 'https://onirique.store').replace(/\/+$/, '');
-const TOOL_PAGES = { cut: 'cut.html', cloud: 'mes-sons.html' };
+const TOOL_PAGES = { cut: 'cut.html', cloud: 'mes-sons.html', carte: 'carte.html' };
 // Les pages du site qui ont leur propre écran dans l'application.
-const APP_ROUTES = { compte: 'account', boutique: 'plugins', cut: 'cut', 'mes-sons': 'cloud' };
+const APP_ROUTES = { compte: 'account', boutique: 'plugins', cut: 'cut', 'mes-sons': 'cloud', carte: 'carte' };
 const TOOL_SKIN = fs.readFileSync(path.join(__dirname, 'tool-skin.css'), 'utf8');
 // Les connexions aux plateformes (Spotify, Apple Music, et les comptes Google, Apple ou Facebook qu'elles proposent)
 // restent dans l'application : la vue y passe, ou une petite fenêtre s'ouvre (MusicKit), puis on revient au CLOUD.

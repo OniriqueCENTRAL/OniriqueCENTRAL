@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Branche les concerts de rap de la carte des membres sur Ticketmaster. À lancer sur le VPS, en root :
+#   onirique-ticketmaster        demande la clé (Consumer Key) de l'API Discovery
+#   onirique-ticketmaster off    retire la clé (la carte ne montre plus de concerts)
+# La clé : sur developer.ticketmaster.com, créer un compte, puis « My Apps » : la Consumer Key de l'application.
+# Elle est saisie ici, sans s'afficher, et ne quitte pas le serveur.
+set -euo pipefail
+
+ENVFILE=/opt/onirique-central/server/.env
+stop() { echo "$1" >&2; exit 1; }
+
+if [ "${1:-}" != off ]; then
+  read -rsp "Consumer Key Ticketmaster (rien ne s'affiche) : " KEY; echo
+  KEY=$(printf '%s' "$KEY" | sed 's/\x1b\[20[01]~//g' | tr -cd '[:graph:]' | tr -d "'\"\\\\")
+  [ ${#KEY} -ge 16 ] || stop "Clé trop courte. Rien n'est changé."
+  # Ticketmaster dit tout de suite si la clé marche, avant de l'enregistrer.
+  CODE=$(curl -s -o /dev/null -w '%{http_code}' "https://app.ticketmaster.com/discovery/v2/events.json?size=1&countryCode=FR&apikey=$KEY" || true)
+  [ "$CODE" = 200 ] || stop "Ticketmaster refuse cette clé (code $CODE). Recopie la Consumer Key depuis developer.ticketmaster.com, puis relance. Rien n'est changé."
+fi
+
+sed -i '/^TICKETMASTER_API_KEY=/d' "$ENVFILE"
+[ "${1:-}" = off ] || printf "TICKETMASTER_API_KEY='%s'\n" "$KEY" >> "$ENVFILE"
+chown central:central "$ENVFILE"; chmod 600 "$ENVFILE"
+systemctl restart onirique-central
+sleep 3
+systemctl is-active -q onirique-central || stop "Le serveur n'a pas redémarré : journalctl -u onirique-central"
+if [ "${1:-}" = off ]; then echo "Les concerts sont retirés de la carte."; else echo "C'est bon : les concerts de rap apparaissent sur onirique.store/carte."; fi

@@ -182,6 +182,8 @@ select { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px sol
         <div><label>Ce que tu fais (jusqu'à 6)</label><div class="chips" id="f-roles"></div></div>
         <label>Ce que tu sais faire, ton matériel, tes styles<input id="f-skills" maxlength="300" placeholder="Trap, drill, mix voix, Neumann U87…"></label>
         <label class="check"><input id="f-open" type="checkbox"> Ouvert aux collaborations</label>
+        <label class="check" id="f-showlinks-row"><input id="f-showlinks" type="checkbox"> Afficher ma page de liens sur mon profil et la carte</label>
+        <p class="muted" id="f-nolinks" style="margin:0;font-size:13px" hidden>Tu n'as pas encore de page de liens : <a href="mes-liens">crée-la</a> pour pouvoir l'afficher ici.</p>
       </div>
       <label class="check"><input id="f-comments" type="checkbox" checked> Autoriser les commentaires</label>
       <div id="banner-field" hidden>
@@ -270,13 +272,13 @@ function drawView() {
   $("follows-me").hidden = !p.followsMe;
   $("pl-count").textContent = p.playlists.length;
   // Chaque lien avec le petit logo de son site (la flèche reste si le site n'en a pas).
-  $("links").replaceChildren(...p.links.map((l) => {
+  $("links").replaceChildren(...(p.linkPage ? [el("a", { href: p.linkPage, target: "_blank", rel: "noopener" }, el("span", { className: "arrow", textContent: "✦" }), "Page de liens")] : []), ...p.links.map((l) => {
     const arrow = el("span", { className: "arrow", textContent: "↗" });
     const logo = el("img", { src: "/api/link-icon?host=" + encodeURIComponent(new URL(l.url).hostname), alt: "", width: 18, height: 18, loading: "lazy",
       onload: () => arrow.remove(), onerror: (e) => e.target.remove() });
     return el("a", { href: l.url, target: "_blank", rel: "noopener nofollow" }, logo, arrow, l.label);
   }));
-  $("bio-panel").hidden = !p.bio && !p.links.length;
+  $("bio-panel").hidden = !p.bio && !p.links.length && !p.linkPage;
   $("playlists").replaceChildren(...(p.playlists.length ? p.playlists.map((x) => el("a", { className: "pl", href: x.url },
     x.cover ? el("img", { src: x.cover + "?w=320", alt: "", loading: "lazy" }) : el("span", { className: "ph" }),
     el("b", { textContent: x.title }),
@@ -354,6 +356,9 @@ function openEdit() {
   });
   $("f-skills").value = m.cv?.skills || "";
   $("f-open").checked = !!m.cv?.open;
+  $("f-showlinks").checked = !!m.cv?.showLinks;
+  $("f-showlinks-row").hidden = !m.linkPage;
+  $("f-nolinks").hidden = !!m.linkPage;
   $("f-links").replaceChildren(...Array.from({ length: 6 }, (_, i) => el("div", {},
     el("input", { maxLength: 40, placeholder: "Nom (Instagram…)", value: links[i]?.label || "", ariaLabel: "Nom du lien " + (i + 1) }),
     el("input", { maxLength: 300, placeholder: "https://…", value: links[i]?.url || "", ariaLabel: "Adresse du lien " + (i + 1) }))));
@@ -378,7 +383,7 @@ $("edit-form").addEventListener("submit", async (event) => {
   try {
     const { handle } = await api("PUT", "/me/profile/page", { handle: toHandle($("f-handle").value), bio: $("f-bio").value, color: $("f-color").value, comments: $("f-comments").checked,
       links: [...$("f-links").children].map((row) => ({ label: row.children[0].value, url: row.children[1].value })).filter((l) => l.url.trim()),
-      city: $("f-city").value, cv: { roles: [...$("f-roles").querySelectorAll("input:checked")].map((i) => i.value), skills: $("f-skills").value, open: $("f-open").checked } });
+      city: $("f-city").value, cv: { roles: [...$("f-roles").querySelectorAll("input:checked")].map((i) => i.value), skills: $("f-skills").value, open: $("f-open").checked, showLinks: $("f-showlinks").checked } });
     location.href = "profil?u=" + encodeURIComponent(handle);
   } catch (e) { say("edit-notice", e.message, true); }
 });

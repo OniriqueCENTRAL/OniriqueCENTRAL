@@ -99,6 +99,9 @@ export const config = {
   rockyModel: env.ROCKY_MODEL || 'claude-haiku-5-5',
   // Ou Gemini, l'offre gratuite de Google (clé sur aistudio.google.com, réglée par onirique-rocky) : utilisé en priorité.
   geminiApiKey: env.GEMINI_API_KEY || '',
+  // Les concerts de rap sur la carte des membres (concerts.js) : clé de l'API Discovery de Ticketmaster.
+  ticketmasterKey: env.TICKETMASTER_API_KEY || '',
+  ticketmasterApi: (env.TICKETMASTER_API || 'https://app.ticketmaster.com').replace(/\/+$/, ''),
   geminiApi: (env.GEMINI_API || 'https://generativelanguage.googleapis.com').replace(/\/+$/, ''),
   geminiModel: env.GEMINI_MODEL || 'gemini-flash-lite-latest', // rapide ; le Flash complet saturait (503, 30 s et plus)
   // Les paroles des titres Spotify (platforms.js) : LRCLIB, base de paroles ouverte, synchronisées quand elle les a.

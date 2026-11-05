@@ -93,6 +93,13 @@ try {
     const map = await call('GET', '/api/members/map');
     assert.deepEqual(map.members.map((m) => [m.handle, m.city]), [['nov.music', 'lyon']]);
     assert.ok(map.cities.some((c) => c.id === 'montreal' && c.far) && map.roles.includes('Ingé son'));
+    assert.deepEqual([map.members[0].playlists, map.members[0].linkPage], [[], null]);
+    // La page de liens n'est montrée que si on le choisit.
+    run(`INSERT INTO link_pages (user_id, handle, data, updated_at) VALUES (?, 'nov', '{}', ?)`, a.id, now());
+    assert.equal((await call('GET', '/api/profiles/nov.music')).linkPage, null);
+    await call('PUT', '/api/me/profile/page', { token: a.token, body: { handle: 'nov.music', city: 'lyon', cv: { roles: ['Mix'], showLinks: true } } });
+    assert.match((await call('GET', '/api/profiles/nov.music')).linkPage, /\/l\/nov$/);
+    assert.match((await call('GET', '/api/members/map')).members[0].linkPage, /\/l\/nov$/);
   });
   await step('les playlists publiques d’une page et « Découvrir »', async () => {
     run('UPDATE users SET role = ? WHERE id IN (?, ?)', 'vip', a.id, b.id);

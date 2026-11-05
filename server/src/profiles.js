@@ -65,7 +65,9 @@ if (!column('user_profiles', 'links')) db.exec(`ALTER TABLE user_profiles ADD CO
 // La ville (carte des membres, cities.js) et le CV numérique : métiers, ce qu'on sait faire, ouvert aux collabs.
 if (!column('user_profiles', 'city')) db.exec(`ALTER TABLE user_profiles ADD COLUMN city TEXT NOT NULL DEFAULT ''`);
 if (!column('user_profiles', 'cv')) db.exec(`ALTER TABLE user_profiles ADD COLUMN cv TEXT NOT NULL DEFAULT '{}'`);
-const cvOf = (json) => { try { const c = JSON.parse(json || '{}'); return { roles: c.roles || [], skills: c.skills || '', open: !!c.open }; } catch { return { roles: [], skills: '', open: false }; } };
+const cvOf = (json) => { try { const c = JSON.parse(json || '{}'); return { roles: c.roles || [], skills: c.skills || '', open: !!c.open, showLinks: !!c.showLinks }; } catch { return { roles: [], skills: '', open: false, showLinks: false }; } };
+// Sa page de liens (mes-liens.html), affichée sur son profil et la carte s'il l'a choisi.
+const linkPageOf = (userId) => { const h = get('SELECT handle FROM link_pages WHERE user_id = ?', userId)?.handle; return h ? `${config.linksUrl}/${h}` : null; };
 if (!column('profile_comments', 'parent_id')) db.exec('ALTER TABLE profile_comments ADD COLUMN parent_id INTEGER REFERENCES profile_comments(id) ON DELETE CASCADE');
 
 export const PROFILE_HANDLE = /^[a-z0-9][a-z0-9._-]{2,29}$/;
@@ -102,7 +104,7 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
   // Ma page : la créer, la régler (adresse, bio, couleur, commentaires ouverts), ou la supprimer.
   app.get('/api/me/profile/page', requireUser, (req, res) => {
     const p = get('SELECT * FROM user_profiles WHERE user_id = ?', req.user.id);
-    res.set('Cache-Control', 'no-store').json(p ? { handle: p.handle, bio: p.bio, color: p.color, banner: media(p.banner), comments: !!p.comments, links: linksOf(p.links), city: p.city || '', cv: cvOf(p.cv) } : null);
+    res.set('Cache-Control', 'no-store').json(p ? { handle: p.handle, bio: p.bio, color: p.color, banner: media(p.banner), comments: !!p.comments, links: linksOf(p.links), city: p.city || '', cv: cvOf(p.cv), linkPage: p ? linkPageOf(req.user.id) : null } : null);
   });
   app.put('/api/me/profile/page', requireUser, (req, res) => {
     rateLimit(`profile-edit:${req.user.id}`, 60, 3600_000);
@@ -114,7 +116,7 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
     const links = JSON.stringify(cleanLinks(req.body?.links));
     const city = CITY.has(req.body?.city) ? req.body.city : '';
     const roles = Array.isArray(req.body?.cv?.roles) ? [...new Set(req.body.cv.roles.filter((r) => CV_ROLES.includes(r)))].slice(0, 6) : [];
-    const cv = JSON.stringify({ roles, skills: clean(req.body?.cv?.skills, 300), open: !!req.body?.cv?.open });
+    const cv = JSON.stringify({ roles, skills: clean(req.body?.cv?.skills, 300), open: !!req.body?.cv?.open, showLinks: !!req.body?.cv?.showLinks });
     run(`INSERT INTO user_profiles (user_id, handle, bio, color, comments, links, city, cv, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(user_id) DO UPDATE SET handle = excluded.handle, bio = excluded.bio, color = excluded.color, comments = excluded.comments, links = excluded.links,
         city = excluded.city, cv = excluded.cv`,
@@ -157,6 +159,7 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
     res.set('Cache-Control', 'no-store').json({
       handle: p.handle, name: p.name || 'Membre', avatar: media(p.avatar), bio: p.bio, color: p.color, banner: media(p.banner), commentsOpen: !!p.comments,
       links: linksOf(p.links), since: p.created_at, role: p.role || null, city: CITY.get(p.city) || null, cv: cvOf(p.cv),
+      linkPage: cvOf(p.cv).showLinks ? linkPageOf(p.user_id) : null,
       playlists: publicPlaylists(viewer?.id, { where: 'p.user_id = ?', params: [p.user_id], limit: 60 }),
       followers: count('SELECT COUNT(*) AS n FROM user_follows WHERE followed_id = ?', p.user_id),
       following: count('SELECT COUNT(*) AS n FROM user_follows WHERE follower_id = ?', p.user_id),
@@ -220,12 +223,22 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
 
   // La carte des membres : les villes, les métiers, et chaque page de profil qui a choisi sa ville.
   app.get('/api/members/map', (req, res) => {
-    const members = all(`SELECT p.handle, p.city, p.cv, p.color, u.name, u.avatar, u.role,
+    const members = all(`SELECT p.user_id, p.handle, p.city, p.cv, p.color, u.name, u.avatar, u.role, lp.handle AS link_handle,
         (SELECT COUNT(*) FROM user_follows f WHERE f.followed_id = p.user_id) AS followers
-      FROM user_profiles p JOIN users u ON u.id = p.user_id WHERE p.city != '' ORDER BY followers DESC LIMIT 5000`)
-      .filter((m) => CITY.has(m.city))
-      .map((m) => ({ handle: m.handle, name: m.name || 'Membre', avatar: media(m.avatar), role: m.role, color: m.color, city: m.city, cv: cvOf(m.cv), followers: m.followers }));
-    res.set('Cache-Control', 'public, max-age=60').json({ cities: CITIES, roles: CV_ROLES, members });
+      FROM user_profiles p JOIN users u ON u.id = p.user_id LEFT JOIN link_pages lp ON lp.user_id = p.user_id
+      WHERE p.city != '' ORDER BY followers DESC LIMIT 5000`).filter((m) => CITY.has(m.city));
+    // Les playlists publiques des membres de la carte, en une requête : les trois plus récentes de chacun.
+    const lists = new Map();
+    for (const x of publicPlaylists(0, { where: `p.user_id IN (SELECT user_id FROM user_profiles WHERE city != '')`, limit: 3000 })) {
+      if (!lists.has(x.ownerHandle)) lists.set(x.ownerHandle, []);
+      if (lists.get(x.ownerHandle).length < 3) lists.get(x.ownerHandle).push({ title: x.title, cover: x.cover, tracks: x.tracks, url: x.url });
+    }
+    const list = members.map((m) => {
+      const cv = cvOf(m.cv);
+      return { handle: m.handle, name: m.name || 'Membre', avatar: media(m.avatar), role: m.role, color: m.color, city: m.city, cv: { roles: cv.roles, skills: cv.skills, open: cv.open },
+        followers: m.followers, playlists: lists.get(m.handle) || [], linkPage: cv.showLinks && m.link_handle ? `${config.linksUrl}/${m.link_handle}` : null };
+    });
+    res.set('Cache-Control', 'public, max-age=60').json({ cities: CITIES, roles: CV_ROLES, members: list });
   });
 
   // Le petit logo d'un site, pour les boutons de liens des pages : demandé une fois par le serveur (le visiteur ne
