@@ -842,7 +842,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close('cancel')">Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
 <script src="assets/sounds-player.js?v=21"></script>
-<script src="assets/platforms.js?v=4"></script>
+<script src="assets/platforms.js?v=5"></script>
 <script src="assets/audio-kit.js?v=2"></script>
 <script src="assets/pdf-kit.js"></script>
 <script src="assets/release-steps.js"></script>
@@ -969,9 +969,9 @@ function stageMenu(anchor, t) {
 // Une playlist se joue dans son ordre, sons du CLOUD et extraits des plateformes mêlés.
 const entriesOf = (p) => (p.kind === "playlist" ? PF.mixed(p) : p.tracks.map((t) => ({ key: "t" + t.id, track: t })));
 function playProject(p, i = 0) {
-  const list = entriesOf(p);
+  const all = entriesOf(p), list = all.filter((x) => !x.item || PF.playable(x.item));
   if (!list.length) return;
-  player.play(list.map((x) => (x.track ? itemOf(p, x.track) : PF.playerItem(x.item))), i);
+  player.play(list.map((x) => (x.track ? itemOf(p, x.track) : PF.playerItem(x.item))), Math.max(0, list.indexOf(all[i])));
 }
 function playVersion(p, t, v) {
   player.play([{ key: "v" + v.id, id: v.id, trackId: t.id, title: t.title, feat: t.credits.feat, artist: p.artist || p.owner.name, subtitle: p.title + " · v" + v.n, cover: p.cover, url: v.url,

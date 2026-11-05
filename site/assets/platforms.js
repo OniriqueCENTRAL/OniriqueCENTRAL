@@ -43,6 +43,7 @@
 .pf-embed { position: fixed; right: 22px; bottom: calc(96px + env(safe-area-inset-bottom)); z-index: 40; width: min(340px, calc(100vw - 44px)); height: 80px;
   border-radius: 12px; overflow: hidden; box-shadow: 0 18px 40px rgba(0,0,0,.5); }
 .pf-embed[hidden] { display: none; }
+.trk.pf.pf-locked b, .trk.pf.pf-locked .len { opacity: .55; }
 .pf-embed iframe { display: block; border: 0; }
 `;
   document.head.append(style);
@@ -55,6 +56,7 @@
       // Un compte Apple Music déjà connecté sur cet appareil : MusicKit se prépare, sans rien demander.
       if (conf.apple && remembered("apple")) appleKit().then((m) => { appleOn = m.isAuthorized; if (!appleOn) remember("apple", false); }).catch(() => {});
     }
+    await spotifyChanged();
     try { state = await ctx.api("GET", "/me/platforms"); } catch { state = { accounts: [], items: [], positions: {} }; }
     return state;
   }
@@ -226,6 +228,7 @@
     c: null, cur: null, fire: null, base: 0, at: 0, dur: 0, paused: true, started: false, done: false, timer: null,
     async load(item, fire) {
       const uri = "spotify:track:" + item.extId;
+      drawPeaks(item);
       Object.assign(this, { cur: item, fire, base: 0, at: performance.now(), dur: item.duration || 0, paused: true, started: false, done: false });
       if (!embedFirst) embedFirst = uri;
       const c = this.c = await embedController();
@@ -256,13 +259,30 @@
     get duration() { return this.dur; },
     setVolume() {}, // le lecteur intégré de Spotify garde son propre volume
   };
+  // La forme d'onde d'un titre joué par sa plateforme : Spotify ne laisse pas lire le son entier (protégé), elle est
+  // donc calculée sur son extrait officiel, étalée sur toute la durée du titre. Gardée le temps de la page.
+  const peaksCache = new Map();
+  function drawPeaks(item) {
+    if (!item.url || (item.peaks && item.peaks.length)) return;
+    if (!peaksCache.has(item.url)) peaksCache.set(item.url, fetch(item.url).then((r) => (r.ok ? r.blob() : null))
+      .then((blob) => (blob ? window.OniriquePlayer.peaksOf(blob) : null)).then((r) => (r && r.peaks) || null).catch(() => null));
+    peaksCache.get(item.url).then((peaks) => {
+      if (!peaks) return;
+      item.peaks = peaks;
+      if (ctx.player.item && ctx.player.item.key === item.key) { ctx.player.item.peaks = peaks; ctx.player.redraw(); }
+    });
+  }
   /** Se connecter à Spotify sur cet appareil : sa vraie page de connexion, dans une petite fenêtre. */
   // Dans l'application ONIRIQUE CENTRAL, l'état de la connexion se lit (cookie de session de Spotify sur cet appareil).
   let spWeb = null;
+  /** Un titre se joue-t-il ici ? Dans l'application, Spotify demande un compte connecté sur cet appareil. */
+  const playable = (x) => !(x.platform === "spotify" && window.oniriqueApp && spWeb === false && !full("spotify"));
   async function spotifyChanged() {
     if (!window.oniriqueApp) return;
+    const was = spWeb;
     try { spWeb = await window.oniriqueApp.spotify(); } catch { spWeb = null; }
     if (dialog && dialog.open) draw();
+    if (was !== null && was !== spWeb) ctx.changed(); // les titres Spotify de la page se débloquent (ou se bloquent)
   }
   const spotifyWebLogin = () => window.open("https://accounts.spotify.com/login?continue=" + encodeURIComponent("https://open.spotify.com/"), "spotify-login", "width=520,height=720");
   if (window.OniriquePlayer) Object.assign(window.OniriquePlayer.engines, { spotify, apple, spotifyEmbed });
@@ -319,14 +339,20 @@
       el("span", { className: "len", textContent: time(x.duration) }),
       el("span", { style: "display:flex;gap:2px" }, open, remove));
     li.dataset.key = "x" + x.id;
-    li.onclick = onPlay;
-    li.onkeydown = (event) => { if (event.key === "Enter") onPlay(); };
+    const go = () => {
+      if (playable(x)) return onPlay();
+      // Pas de compte Spotify connecté : on propose de le connecter, sans jouer.
+      if (window.confirm("Connecte ton compte Spotify pour écouter « " + x.title + " » : les titres Spotify se jouent en entier dans le lecteur du CLOUD une fois ton compte connecté.")) { openAccounts(); }
+    };
+    li.onclick = go;
+    li.onkeydown = (event) => { if (event.key === "Enter") go(); };
+    if (!playable(x)) li.classList.add("pf-locked");
     return li;
   }
   const order = (p, keys) => ctx.api("PUT", "/me/sounds/projects/" + p.id + "/mixed-order", { keys }).then(load);
 
   //---------------------------------------------------------------------------- La fenêtre d'ajout
-  let dialog = null, target = null, tab = "deezer", results = [], found = null, query = "", busy = false, error = "", added = new Set(), deezerLists = null;
+  let dialog = null, target = null, tab = "spotify", results = [], found = null, query = "", busy = false, error = "", added = new Set(), deezerLists = null;
   function ensureDialog() {
     if (dialog) return dialog;
     dialog = document.createElement("dialog");
@@ -477,13 +503,13 @@
   function draw() {
     const { el, icon } = ctx;
     ensureDialog();
-    const tabs = [["deezer", "Deezer"], ["apple", "Apple Music"], ["link", "Coller un lien"], ["accounts", "Mes comptes"]];
+    const tabs = [["spotify", "Spotify"], ["deezer", "Deezer"], ["apple", "Apple Music"], ["link", "Coller un lien"], ["accounts", "Mes comptes"]];
     const tabBar = el("div", { className: "pf-tabs", role: "tablist" }, ...tabs.map(([id, label]) => el("button", { type: "button", role: "tab", ariaSelected: String(tab === id),
       onclick: () => { tab = id; results = []; error = ""; if (id === "accounts") loadDeezerLists(); draw(); } }, label)));
     let body;
     if (tab === "accounts") body = accountsPanel();
-    else if (tab === "link") {
-      const input = el("input", { type: "url", placeholder: "Lien Spotify, Deezer ou Apple Music : titre, album ou playlist", value: query, autocomplete: "off" });
+    else if (tab === "link" || tab === "spotify") {
+      const input = el("input", { type: "url", placeholder: tab === "spotify" ? "Lien Spotify : titre, album ou playlist" : "Lien Spotify, Deezer ou Apple Music : titre, album ou playlist", value: query, autocomplete: "off" });
       const all = found ? found.items.filter((x) => !added.has(x.platform + ":" + x.id)) : [];
       body = el("div", { className: "stack" },
         el("form", { onsubmit: (event) => { event.preventDefault(); query = input.value.trim(); if (query) resolve(query); } }, input,
@@ -498,7 +524,9 @@
           found.total && found.total > found.items.length ? el("p", { className: "pf-note",
             textContent: "Spotify ne montre que les " + found.items.length + " premiers titres d'une playlist (elle en compte " + found.total + "). Pour les autres, colle leur lien un par un." }) : "",
           el("ul", { className: "group pf-list" }, ...found.items.map(resultRow)))
-          : el("p", { className: "pf-note", textContent: "Un titre, un album ou une playlist publique. Ils s'ajoutent à la suite de la playlist, mêlés à tes sons du CLOUD." }));
+          : el("p", { className: "pf-note", textContent: tab === "spotify"
+            ? "Dans Spotify : « ⋯ » sur un titre, un album ou une playlist, puis « Partager » et « Copier le lien », et colle-le ici. Les titres s'ajoutent à la suite de la playlist, mêlés à tes sons du CLOUD, et se jouent en entier avec ton compte Spotify connecté."
+            : "Un titre, un album ou une playlist publique. Ils s'ajoutent à la suite de la playlist, mêlés à tes sons du CLOUD." }));
     } else {
       const input = el("input", { type: "search", placeholder: "Chercher sur " + NAMES[tab] + " : titre, artiste", value: query, autocomplete: "off" });
       body = el("div", { className: "stack" },
@@ -517,5 +545,5 @@
     if (box && document.activeElement !== box && tab !== "accounts") setTimeout(() => box.focus(), 0);
   }
 
-  window.OniriquePlatforms = { NAMES, setup, load, spotifyChanged, itemsOf, mixed, playerItem, row, order, openAdd, openAccounts };
+  window.OniriquePlatforms = { NAMES, setup, load, spotifyChanged, playable, itemsOf, mixed, playerItem, row, order, openAdd, openAccounts };
 })();
