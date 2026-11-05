@@ -406,7 +406,7 @@ function el(tag, props = {}, ...children) {
 const date = (ms) => (ms ? new Date(ms).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "—");
 const TYPES = { perpetual: "Perpétuelle", timed: "Durée limitée", trial: "Essai", nfr: "NFR" };
 // Rôles : ONIRIQUE (tous les plugins offerts), Abrasion et Relic (partenaires : ce panel, limité à leurs propres plugins), admin, fondateur.
-const ROLES = { user: "Utilisateur", vip: "ONIRIQUE", abrasion: "Abrasion", relic: "Relic", admin: "Admin", founder: "Fondateur" };
+const ROLES = { user: "Utilisateur", vip: "ONIRIQUE", beta: "Beta-Testeur", betaf: "Beta-Testeuse", abrasion: "Abrasion", relic: "Relic", admin: "Admin", founder: "Fondateur" };
 const CREATORS = { onirique: "ONIRIQUE", abrasion: "ABRASION", relic: "RELIC" };
 const CATEGORIES = [["beat", "Beatmaking"], ["mix", "Mix"], ["master", "Mastering"], ["meter", "Mesure"], ["app", "Applications"]];
 const isPartner = (user) => user.role === "abrasion" || user.role === "relic";
@@ -441,7 +441,7 @@ async function showLicenses(user, row, button) {
 async function setRole(user, role) {
   // Seul un fondateur donne ou retire le rôle admin : le serveur le revérifie.
   const question = `Donner à ${user.email} le rôle « ${ROLES[role]} » ?`
-    + ({ vip: " Tous les plugins lui sont offerts.", abrasion: " Il gérera ses propres plugins et leurs licences, ici et dans l'application.", relic: " Il gérera ses propres plugins et leurs licences, ici et dans l'application.",
+    + ({ vip: " Tous les plugins lui sont offerts.", beta: " Tous les plugins lui sont offerts.", betaf: " Tous les plugins lui sont offerts.", abrasion: " Il gérera ses propres plugins et leurs licences, ici et dans l'application.", relic: " Il gérera ses propres plugins et leurs licences, ici et dans l'application.",
       admin: " Cette personne pourra publier des versions, gérer les licences et les comptes.", founder: " Cette personne aura tous les droits, y compris sur les rôles admin." }[role] || "");
   if (!window.confirm(question)) return loadUsers();
   try {

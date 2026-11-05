@@ -512,7 +512,7 @@ export function mountBeatStore(app, { me, track, room, receiveFile, openLink, li
     return l;
   };
   // Une liste partagée par un fondateur se lit (et sert aux mails) chez tous les membres ONIRIQUE, sans se modifier.
-  const seesShared = (user) => ['vip', 'founder'].includes(user.role);
+  const seesShared = (user) => ['vip', 'beta', 'betaf', 'founder'].includes(user.role);
   const readableList = (req) => {
     const l = get('SELECT * FROM sound_mail_lists WHERE id = ? AND (user_id = ? OR (shared = 1 AND ?))', id(req.params.id), req.user.id, seesShared(req.user) ? 1 : 0);
     if (!l) throw new HttpError(404, 'Liste introuvable.');

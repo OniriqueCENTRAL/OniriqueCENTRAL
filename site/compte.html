@@ -464,7 +464,7 @@ function show(me) {
 
   $("who").textContent = me.user.name || me.user.email.split("@")[0];
   // Le rôle du compte, quand il en a un : il est le même ici et dans l'application.
-  const role = { vip: "ONIRIQUE", abrasion: "Abrasion", relic: "Relic", admin: "Admin", founder: "Fondateur" }[me.user.role];
+  const role = { vip: "ONIRIQUE", beta: "Beta-Testeur", betaf: "Beta-Testeuse", abrasion: "Abrasion", relic: "Relic", admin: "Admin", founder: "Fondateur" }[me.user.role];
   $("email-line").textContent = me.user.email + (role ? " · " + role : "");
   $("profile-name").value = me.user.name || "";
   // Ce que le compte peut ouvrir dépend des droits de son rôle (réglés par les fondateurs dans le panel admin).
@@ -480,7 +480,7 @@ function show(me) {
   $("profile-news").checked = !!me.user.newsletter;
   showReferral(me.referral);
   $("profile-email").value = me.user.email;
-  $("admin-link").hidden = !role || me.user.role === "vip";
+  $("admin-link").hidden = !role || ["vip", "beta", "betaf"].includes(me.user.role);
   $("verify-panel").hidden = me.user.emailVerified !== false;
   if (a2fStage !== "setup") showA2f(me.user.twoFactor ? "on" : "off");
   $("verify-email").textContent = me.user.email;

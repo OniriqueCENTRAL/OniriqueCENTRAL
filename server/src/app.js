@@ -1736,14 +1736,14 @@ export function createApp() {
   // Les droits des rôles (« Droits des rôles » dans le panel) : quels rôles ont ONIRIQUE CLOUD, la page de liens, etc.
   admin.get('/rights', (req, res) => {
     if (req.user.role !== 'founder') throw new HttpError(403, 'Réservé aux fondateurs.');
-    res.json({ roles: EDITABLE_ROLES, rights: Object.entries(RIGHTS).map(([id, r]) => ({ id, label: r.label, roles: rolesWith(id).filter((x) => x !== 'founder') })) });
+    res.json({ roles: EDITABLE_ROLES, rights: Object.entries(RIGHTS).map(([id, r]) => ({ id, label: r.label, roles: rolesWith(id).filter((x) => EDITABLE_ROLES.includes(x)) })) });
   });
   admin.put('/rights', (req, res) => {
     if (req.user.role !== 'founder') throw new HttpError(403, 'Réservé aux fondateurs.');
     const next = {};
     for (const id of Object.keys(RIGHTS)) {
       const roles = req.body[id];
-      next[id] = Array.isArray(roles) ? [...new Set(roles.filter((r) => EDITABLE_ROLES.includes(r)))] : rolesWith(id).filter((x) => x !== 'founder');
+      next[id] = Array.isArray(roles) ? [...new Set(roles.filter((r) => EDITABLE_ROLES.includes(r)))] : rolesWith(id).filter((x) => EDITABLE_ROLES.includes(x));
     }
     setSetting('role_rights', next);
     res.json({ ok: true });

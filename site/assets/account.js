@@ -14,7 +14,7 @@
     if (ref && /^[A-Za-z0-9]{4,12}$/.test(ref)) localStorage.setItem("onirique.ref", JSON.stringify({ code: ref.toUpperCase(), at: Date.now() }));
   } catch { /* stockage fermé : le code reste dans l'adresse de la page compte */ }
   const token = () => { try { return sessionStorage.getItem(TOKEN) || localStorage.getItem(TOKEN); } catch { return null; } };
-  const ROLES = { vip: "ONIRIQUE", abrasion: "Abrasion", relic: "Relic", admin: "Admin", founder: "Fondateur" };
+  const ROLES = { vip: "ONIRIQUE", beta: "Beta-Testeur", betaf: "Beta-Testeuse", abrasion: "Abrasion", relic: "Relic", admin: "Admin", founder: "Fondateur" };
   const el = (tag, props = {}, ...children) => {
     const node = Object.assign(document.createElement(tag), props);
     node.append(...children.filter((c) => c !== null && c !== undefined));
@@ -111,7 +111,7 @@ ${spark(1)}${spark(2)}${spark(3)}
       item("Boutique", "boutique"),
       download,
       item("Support", "support"),
-      ROLES[user.role] && user.role !== "vip" ? item("Administration", "admin") : null,
+      ROLES[user.role] && !["vip", "beta", "betaf"].includes(user.role) ? item("Administration", "admin") : null,
       // Les outils, pour les rôles qui y ont droit : ONIRIQUE CLOUD, la page de liens, les Shorts YouTube programmés.
       ...(() => {
         const rights = me.rights || [], tools = [

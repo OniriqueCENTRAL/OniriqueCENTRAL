@@ -115,7 +115,7 @@ const minutesOf = (time) => { const [h, m] = time.split(':').map(Number); return
 /** Vérifié chaque minute : le rappel part une fois par jour, dans l'heure qui suit l'heure choisie (un serveur redémarré ne le rate pas). */
 export function remindCut(at = now()) {
   const sent = [];
-  for (const r of all("SELECT r.* FROM cut_reminders r JOIN users u ON u.id = r.user_id WHERE u.role IN ('vip', 'admin', 'founder')")) {
+  for (const r of all("SELECT r.* FROM cut_reminders r JOIN users u ON u.id = r.user_id WHERE u.role IN ('vip', 'beta', 'betaf', 'admin', 'founder')")) {
     const { day, minutes } = localNow(at, r.tz), late = minutes - minutesOf(r.time);
     if (r.last_day === day || late < 0 || late >= 60) continue;
     run('UPDATE cut_reminders SET last_day = ? WHERE user_id = ?', day, r.user_id);
@@ -237,7 +237,7 @@ export function mountCut(app, { requireUser, receiveFile, wrap }) {
   const kept = new Set(all('SELECT stored_as FROM cut_videos').map((v) => v.stored_as));
   for (const name of fs.readdirSync(libDir)) if (!kept.has(name.replace(/\.jpg$/, ''))) fs.rmSync(path.join(libDir, name), { force: true });
   // Les membres ONIRIQUE et l'équipe, pas les abonnés CLOUD.
-  const onirique = (req, _res, next) => (['vip', 'admin', 'founder'].includes(req.user.role) ? next() : next(new HttpError(403, 'Le cloud CUT est réservé aux membres ONIRIQUE.')));
+  const onirique = (req, _res, next) => (['vip', 'beta', 'betaf', 'admin', 'founder'].includes(req.user.role) ? next() : next(new HttpError(403, 'Le cloud CUT est réservé aux membres ONIRIQUE.')));
   const ownVideo = (req) => {
     const v = get('SELECT * FROM cut_videos WHERE id = ? AND user_id = ?', Number(req.params.id) || 0, req.user.id);
     if (!v) throw new HttpError(404, 'Vidéo introuvable.');

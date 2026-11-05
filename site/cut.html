@@ -1094,7 +1094,7 @@ async function gate() {
   if (!response || response.status === 401) return lock("Connecte-toi pour ouvrir ONIRIQUE CUT", "Ta session a expiré.", "compte?next=cut", "Me connecter");
   const me = await response.json().catch(() => ({}));
   if (!(me.rights || []).includes("sounds")) return lock("ONIRIQUE CUT est réservé aux membres", $("locked-text").textContent, "cloud", "Voir l'abonnement");
-  isFounder = !!(me.user && ["vip", "admin", "founder"].includes(me.user.role));
+  isFounder = !!(me.user && ["vip", "beta", "betaf", "admin", "founder"].includes(me.user.role));
   $("studio").hidden = false;
   start();
 }

@@ -339,7 +339,7 @@ const signSend = document.getElementById("sign-send"), signNote = document.getEl
 let mailer = null;
 // Réservé aux comptes ONIRIQUE (et à l'équipe) : pour les autres, le cadre reste caché.
 if (!signer && Outils.token()) Outils.api("GET", "/me").then((me) => {
-  if (!["vip", "admin", "founder"].includes((me.user || me).role)) return;
+  if (!["vip", "beta", "betaf", "admin", "founder"].includes((me.user || me).role)) return;
   document.getElementById("sign-box").hidden = false;
   Outils.mailbox(document.getElementById("mailbox"), "devis", onMailbox);
 }, () => {});

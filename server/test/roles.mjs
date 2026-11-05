@@ -446,6 +446,10 @@ try {
     // Au départ : Mes sons et la page de liens et les Shorts YouTube pour les membres et les admins, rien pour un client ni un partenaire.
     const start = await call('GET', '/api/admin/rights', { token: founder.token });
     assert.deepEqual(start.rights.find((r) => r.id === 'sounds').roles, ['vip', 'admin']);
+    // Beta-Testeur et Beta-Testeuse suivent le rôle ONIRIQUE, sans réglage à part.
+    const { rolesWith, can } = await import('../src/auth.js');
+    assert.ok(['beta', 'betaf'].every((r) => rolesWith('sounds').includes(r) && rolesWith('plugins').includes(r)));
+    assert.equal(can({ role: 'betaf', id: 0 }, 'links'), true);
     assert.deepEqual((await call('GET', '/api/me', { token: member.token })).rights.sort(), ['links', 'plugins', 'sounds', 'youtube']);
     await call('GET', '/api/me/sounds', { token: relic.token, expect: 403 });
     // Un admin ne règle pas les droits.

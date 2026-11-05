@@ -36,7 +36,7 @@ const str = (value, max = 200) => (typeof value === 'string' ? value.replace(/\s
 const text = (value, max = 4000) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
 const when = (ms) => new Date(ms).toLocaleString('fr-FR', { timeZone: 'Europe/Paris', dateStyle: 'long', timeStyle: 'short' });
 // Les comptes ONIRIQUE (rôle vip) et l'équipe : seuls à pouvoir faire signer un devis en ligne.
-export const ONIRIQUE = ['vip', 'admin', 'founder'];
+export const ONIRIQUE = ['vip', 'beta', 'betaf', 'admin', 'founder']; // beta, betaf : Beta-Testeur(euse), droits du rôle ONIRIQUE
 const signLink = (token) => `${config.siteUrl}/devis?signer=${token}`;
 
 /** Le message part de la boîte mail reliée par le membre (Gmail ou autre). */

@@ -85,7 +85,9 @@ export const mustVerify = (user) => mailEnabled && !user.email_verified && !isSt
  */
 /** Les partenaires : chacun est à la fois un créateur de plugins et le rôle des comptes qui gèrent ces plugins. */
 export const PARTNERS = ['abrasion', 'relic'];
-export const ROLES = ['user', 'vip', ...PARTNERS, 'admin', 'founder'];
+/** Beta-Testeur et Beta-Testeuse : exactement les droits du rôle ONIRIQUE (vip), qui les entraîne partout. */
+export const BETA = ['beta', 'betaf'];
+export const ROLES = ['user', 'vip', ...BETA, ...PARTNERS, 'admin', 'founder'];
 // Les droits réglables par les fondateurs, rôle par rôle (panel admin, « Droits des rôles »). Les valeurs par défaut
 // sont celles d'avant le réglage. Les fondateurs ont toujours tous ces droits, sauf « plugins » : eux s'accordent leurs
 // licences par le réglage « Mes licences », comme les admins et les partenaires.
@@ -102,7 +104,8 @@ export const EDITABLE_ROLES = ['user', 'vip', 'abrasion', 'relic', 'admin'];
 /** Les rôles qui ont ce droit en ce moment. */
 export function rolesWith(right) {
   const chosen = setting('role_rights', {})[right];
-  const roles = (Array.isArray(chosen) ? chosen : RIGHTS[right].default).filter((r) => EDITABLE_ROLES.includes(r));
+  const base = (Array.isArray(chosen) ? chosen : RIGHTS[right].default).filter((r) => EDITABLE_ROLES.includes(r));
+  const roles = base.includes('vip') ? [...base, ...BETA] : base;
   return right === 'plugins' ? roles : [...roles, 'founder'];
 }
 // Les droits que l'abonnement aux outils ouvre à n'importe quel compte, en plus des rôles qui les ont.
