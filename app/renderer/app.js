@@ -171,12 +171,35 @@ function toolPage(tool) {
   return host;
 }
 
+// Dans CUT et CLOUD, le menu se replie en une colonne étroite : l'outil ouvert, sa flèche pour déplier le menu, et
+// « Réinitialiser » pour repartir de zéro (ce qui est fait dans l'outil est gardé quand on passe de l'un à l'autre).
+let menuOpen = false;
+const chevron = (up) => {
+  const box = h('span', { 'aria-hidden': 'true', style: { display: 'grid' } });
+  box.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${up ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'}"/></svg>`;
+  return box;
+};
+const TOOL_NAMES = { cut: ['CUT', 'Clips sur le beat'], cloud: ['CLOUD', 'Mes sons · projets'] };
+function compactSidebar() {
+  const name = state.route.name, [label] = TOOL_NAMES[name];
+  return h('nav', { class: 'sidebar compact' },
+    h('button', { class: 'nav-item active', title: `${label} : accueil`, 'aria-current': 'page', onclick: () => call('tool:home', name).catch(() => {}) },
+      navIcon(name), h('span', { class: 'name' }, label)),
+    h('button', { class: 'menu-toggle', type: 'button', title: 'Afficher le menu', 'aria-label': 'Afficher le menu', 'aria-expanded': 'false',
+      onclick: () => { menuOpen = true; render(); } }, chevron(false)),
+    h('div', { class: 'spacer' }),
+    h('button', { class: 'tool-reset', type: 'button', title: `Réinitialiser ${label} : la page repart de zéro`, onclick: async () => {
+      if (await attempt(() => call('tool:reset', name))) toast(`${label} est réinitialisé.`);
+    } }, '↺', h('span', null, 'Reset')));
+}
+
 function sidebar() {
+  if (TOOL_ROUTES.includes(state.route.name) && !menuOpen) return compactSidebar();
   const { me } = state.data;
   // Une rubrique : un carré de la chaîne, avec son icône, son nom, sa ligne de description et son témoin.
   const item = (name, label, sub, count) => h('button', {
     class: `nav-item${state.route.name === name ? ' active' : ''}`,
-    onclick: () => (state.route.name === name && TOOL_ROUTES.includes(name) ? call('tool:home', name).catch(() => {}) : go(name)),
+    onclick: () => (state.route.name === name && TOOL_ROUTES.includes(name) ? call('tool:home', name).catch(() => {}) : (menuOpen = false, go(name))),
     'aria-current': state.route.name === name ? 'page' : null,
   }, navIcon(name), h('span', { class: 'name' }, label), count ? h('span', { class: 'count' }, String(count)) : led(state.route.name === name),
     h('span', { class: 'sub' }, sub));
@@ -185,6 +208,8 @@ function sidebar() {
   // Le rôle du compte reste visible, à côté de l'abonnement s'il y en a un.
   const plan = [me.user.role !== 'user' ? ROLES[me.user.role] : null, subscribed].filter(Boolean).join(' · ') || 'Compte';
   return h('nav', { class: 'sidebar' },
+    TOOL_ROUTES.includes(state.route.name) ? h('button', { class: 'menu-toggle open', type: 'button', title: 'Replier le menu', 'aria-label': 'Replier le menu', 'aria-expanded': 'true',
+      onclick: () => { menuOpen = false; render(); } }, h('span', { class: 'row', style: { gap: '6px' } }, chevron(true), 'Replier le menu')) : null,
     h('div', { class: 'eyebrow nav-label' }, 'Central'),
     item('plugins', 'Plugins', 'Bibliothèque', pendingUpdates(state.data)),
     item('licenses', 'Licences', 'Clés · machines'),
@@ -275,7 +300,7 @@ export function render() {
   else if (state.data.me.user.emailVerified === false) content = h('div', { class: 'auth' }, verifyGate());
   else {
     if (!allowed(state.route.name, state.data.me.user)) state.route = { name: 'plugins', id: null };
-    content = h('div', { class: 'shell' }, sidebar(),
+    content = h('div', { class: `shell${TOOL_ROUTES.includes(state.route.name) && !menuOpen ? ' compact' : ''}` }, sidebar(),
       h('main', { class: 'main' }, h('div', { class: TOOL_ROUTES.includes(state.route.name) ? 'inner tool' : 'inner' }, verifyBanner(), VIEWS[state.route.name]())));
   }
   const scroll = document.querySelector('.main')?.scrollTop ?? 0;

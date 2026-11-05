@@ -101,6 +101,8 @@ export const config = {
   geminiApiKey: env.GEMINI_API_KEY || '',
   geminiApi: (env.GEMINI_API || 'https://generativelanguage.googleapis.com').replace(/\/+$/, ''),
   geminiModel: env.GEMINI_MODEL || 'gemini-flash-lite-latest', // rapide ; le Flash complet saturait (503, 30 s et plus)
+  // Les paroles des titres Spotify (platforms.js) : LRCLIB, base de paroles ouverte, synchronisées quand elle les a.
+  lrclibApi: (env.LRCLIB_API || 'https://lrclib.net/api').replace(/\/+$/, ''),
   appleTeamId: env.APPLE_TEAM_ID || '',
   appleMusicKeyId: env.APPLE_MUSIC_KEY_ID || '',
   // Activations simultanées par défaut, et marge laissée hors ligne aux abonnés.

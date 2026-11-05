@@ -160,3 +160,6 @@ dialog { border-radius: 30px !important; background: linear-gradient(160deg, rgb
 
 /* CLOUD : le bouton « Visiteur » (voir la page comme un auditeur) n'a pas sa place dans l'application */
 #visitor-bar, .visitor-bar { display: none !important; }
+
+/* CLOUD dans l'application : pas de bouton « Ajouter », le clic droit sur la page suffit */
+.fab { display: none !important; }

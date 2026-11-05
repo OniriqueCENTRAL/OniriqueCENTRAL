@@ -38,6 +38,9 @@ const fake = http.createServer((req, res) => {
     + `<script id="initialState" type="text/plain">${spotifyState([{ id: SP1, name: 'Premier', artist: 'Ninho' }, { id: SP2, name: 'Deuxième', artist: 'Tiakola' }])}</script>`);
   if (url.pathname === `/spotify/track/${SP3}`) return html('<meta property="og:description" content="SDM · Album · Song · 2024">');
   if (url.pathname === '/spotify/oembed') return json({ title: 'Troisième', thumbnail_url: 'https://i.scdn.co/image/t3' });
+  // Faux LRCLIB : des paroles synchronisées pour « Troisième ».
+  if (url.pathname === '/lrclib/get') return url.searchParams.get('track_name') === 'Troisième' ? json({ syncedLyrics: '[00:01.00] première ligne' }) : (res.statusCode = 404, json({}));
+  if (url.pathname === '/lrclib/search') return json([]);
   if (url.pathname === '/spotify/user/novmusic') return html('<meta property="og:title" content="Nov">');
   // Faux Spotify : la connexion PKCE (code « bon » → jetons), le renouvellement, le profil, les playlists et leurs pages.
   if (url.pathname === '/spaccounts/api/token') {
@@ -87,7 +90,7 @@ fs.writeFileSync(path.join(dataDir, 'keys', 'apple-music.p8'), apple.privateKey.
 Object.assign(process.env, { DATA_DIR: dataDir, PAYMENTS_MODE: 'demo', PORT: '0', ADMIN_EMAIL: '', ADMIN_PASSWORD: '', SMTP_HOST: 'test',
   MAIL_FROM: 'support@test.local', SITE_URL: 'https://site.test', PUBLIC_URL: 'https://site.test', FOUNDER_EMAILS: '',
   DEEZER_API: self, ITUNES_API: `${self}/itunes`, SPOTIFY_WEB: `${self}/spotify`,
-  SPOTIFY_CLIENT_ID: 'client-test', SPOTIFY_ACCOUNTS: `${self}/spaccounts`, SPOTIFY_API: `${self}/spapi`, APPLE_TEAM_ID: 'EQUIPE1234', APPLE_MUSIC_KEY_ID: 'CLE1234567' });
+  LRCLIB_API: `${self}/lrclib`, SPOTIFY_CLIENT_ID: 'client-test', SPOTIFY_ACCOUNTS: `${self}/spaccounts`, SPOTIFY_API: `${self}/spapi`, APPLE_TEAM_ID: 'EQUIPE1234', APPLE_MUSIC_KEY_ID: 'CLE1234567' });
 const { createApp } = await import('../src/app.js');
 const { db, run, get, now } = await import('../src/db.js');
 const { outbox } = await import('../src/mail.js');
@@ -185,6 +188,10 @@ try {
 
     // L'ordre mêlé : complet, sans doublon, seulement des clés de la playlist.
     const [x1, x2] = added.ids;
+    // Les paroles d'un titre Spotify : celles de LRCLIB ; un titre qui n'en a pas en renvoie de vides.
+    assert.equal((await call('GET', `/api/me/sounds/platform-items/${x2}/lyrics`, { token: member.token })).lyrics, '[00:01.00] première ligne');
+    assert.equal((await call('GET', `/api/me/sounds/platform-items/${x1}/lyrics`, { token: member.token })).lyrics, '');
+    await call('GET', `/api/me/sounds/platform-items/${x2}/lyrics`, { token: stranger.token, expect: 404 });
     await call('PUT', `/api/me/sounds/projects/${pl}/mixed-order`, { token: member.token, body: { keys: [`x${x2}`, `t${cloud}`, `x${x1}`] } });
     assert.equal(get('SELECT position FROM sound_tracks WHERE id = ?', cloud).position, 1);
     assert.equal(get('SELECT position FROM sound_platform_items WHERE id = ?', x2).position, 0);
@@ -238,6 +245,13 @@ try {
     assert.deepEqual([conf.spotify.clientId, conf.spotify.redirectUri, conf.apple], ['client-test', 'https://site.test/mes-sons', true]);
     await call('POST', '/api/me/platforms/spotify/connect', { token: member.token, body: { code: 'bon', verifier: 'court' }, expect: 400 });
     await call('POST', '/api/me/platforms/spotify/connect', { token: member.token, body: { code: 'mauvais', verifier: VERIFIER }, expect: 400 });
+    // Par le navigateur : le state porte le membre, le serveur garde le vérificateur ; un state inconnu ou déjà servi est refusé.
+    const { url: auth } = await call('POST', '/api/me/platforms/spotify/start', { token: member.token });
+    const st = new URL(auth).searchParams.get('state');
+    assert.ok(st.startsWith('b.'));
+    await call('POST', '/api/platforms/spotify/callback', { body: { code: 'bon', state: 'b.inconnu' }, expect: 400 });
+    await call('POST', '/api/platforms/spotify/callback', { body: { code: 'mauvais', state: st }, expect: 400 });
+    await call('POST', '/api/platforms/spotify/callback', { body: { code: 'bon', state: st }, expect: 400 }); // usage unique
     const c = await call('POST', '/api/me/platforms/spotify/connect', { token: member.token, body: { code: 'bon', verifier: VERIFIER } });
     assert.deepEqual([c.name, c.premium, c.connected], ['Nov', true, true]);
     // Le jeton n'est jamais renvoyé avec les comptes, et il est chiffré dans la base.

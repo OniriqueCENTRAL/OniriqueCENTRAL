@@ -6,6 +6,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('oniriqueApp', {
   spotify: () => ipcRenderer.invoke('tool:spotify'),
   spotifyLogout: () => ipcRenderer.invoke('tool:spotify-logout'),
+  // La connexion à Spotify dans le navigateur de l'ordinateur (seulement sa page d'autorisation).
+  openExternal: (url) => ipcRenderer.invoke('tool:open-external', String(url)),
 });
 contextBridge.exposeInMainWorld('oniriqueDialog', (kind, message, value) =>
   ipcRenderer.sendSync('tool:dialog', String(kind), String(message ?? ''), value == null ? '' : String(value)));

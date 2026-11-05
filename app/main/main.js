@@ -117,6 +117,10 @@ ipcMain.handle('tool:spotify', async (event) => {
   if (!toolContents.has(event.sender.id)) return false;
   return (await webSession().cookies.get({ name: 'sp_dc' })).some((c) => /(^|\.)spotify\.com$/.test(c.domain.replace(/^\./, '')));
 });
+ipcMain.handle('tool:open-external', (event, url) => {
+  if (!toolContents.has(event.sender.id) || !/^https:\/\/accounts\.spotify\.com\/authorize\?/.test(url)) return false;
+  return shell.openExternal(url).then(() => true);
+});
 ipcMain.handle('tool:spotify-logout', async (event) => {
   if (!toolContents.has(event.sender.id)) return false;
   const ses = webSession();
@@ -473,6 +477,13 @@ app.whenReady().then(async () => {
     const web = (await toolViews.get(tool)).webContents;
     if (pageOf(web.getURL()) !== TOOL_PAGES[tool].replace(/\.html$/, '')) await web.loadURL(`${SITE}/${TOOL_PAGES[tool]}`).catch(() => {});
     else web.executeJavaScript('location.hash = ""; scrollTo(0, 0)').catch(() => {});
+  });
+  // « Reset » : l'outil repart de zéro (la page rechargée, ce qui était en cours oublié).
+  handle('tool:reset', async (tool) => {
+    if (!toolViews.has(tool)) return;
+    const web = (await toolViews.get(tool)).webContents;
+    await web.executeJavaScript(`try { for (const k of Object.keys(sessionStorage)) if (k !== 'onirique.token') sessionStorage.removeItem(k); } catch {}`).catch(() => {});
+    await web.loadURL(`${SITE}/${TOOL_PAGES[tool]}`).catch(() => {});
   });
   handle('tool:hide', async () => {
     shownTool = null; for (const view of toolViews.values()) (await view).setVisible(false); });

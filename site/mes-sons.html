@@ -845,7 +845,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close('cancel')">Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
 <script src="assets/sounds-player.js?v=22"></script>
-<script src="assets/platforms.js?v=12"></script>
+<script src="assets/platforms.js?v=13"></script>
 <script src="assets/audio-kit.js?v=2"></script>
 <script src="assets/pdf-kit.js"></script>
 <script src="assets/release-steps.js"></script>
@@ -1260,7 +1260,7 @@ function setBackground(url) {
 }
 // La colonne des playlists (les miennes et celles où je collabore), la playlist ouverte en surbrillance.
 function renderLibrary() {
-  const box = $("library"), lists = data.vanish ? [] : [...data.projects.filter((x) => x.kind === "playlist"),
+  const box = $("library"), lists = data.vanish ? [] : [...data.projects.filter((x) => x.kind === "playlist" && !PF.hidden(x.id)),
     ...data.saved.filter((x) => x.kind === "playlist").map((x) => ({ ...x, received: true }))];
   box.hidden = !!data.vanish;
   document.body.classList.toggle("has-library", !box.hidden);

@@ -52,10 +52,16 @@
 
   function setup(options) { ctx = options; }
   // Pour l'instant : seulement dans l'application ONIRIQUE CENTRAL, et pour les membres ONIRIQUE (le serveur refuse les autres).
-  let on = false;
+  let on = false, hiddenLists = new Set();
+  /** Sur le site, une playlist faite seulement de titres Spotify n'apparaît pas. */
+  const hidden = (id) => hiddenLists.has(id);
   const enabled = () => on;
   async function load() {
-    if (!window.oniriqueApp) { on = false; state = { accounts: [], items: [], positions: {} }; return state; }
+    if (!window.oniriqueApp) {
+      on = false; state = { accounts: [], items: [], positions: {} };
+      try { hiddenLists = new Set(await ctx.api("GET", "/me/sounds/platform-only")); } catch { hiddenLists = new Set(); }
+      return state;
+    }
     if (!conf) {
       try { conf = await ctx.api("GET", "/platforms/config"); on = true; } catch { conf = { spotify: null, apple: false }; on = false; }
       await spotifyReturn();
@@ -270,7 +276,20 @@
   // La forme d'onde d'un titre joué par sa plateforme : Spotify ne laisse pas lire le son entier (protégé), elle est
   // donc calculée sur son extrait officiel, étalée sur toute la durée du titre. Gardée le temps de la page.
   const peaksCache = new Map();
+  // Les paroles d'un titre Spotify d'une playlist (LRCLIB, par le serveur) : le lecteur les affiche dès qu'elles arrivent.
+  const lyricsCache = new Map();
+  function loadLyrics(item) {
+    const id = /^x(\d+)$/.exec(item.key || "");
+    if (!id || item.lyrics) return;
+    if (!lyricsCache.has(id[1])) lyricsCache.set(id[1], ctx.api("GET", "/me/sounds/platform-items/" + id[1] + "/lyrics").then((r) => r.lyrics || "", () => ""));
+    lyricsCache.get(id[1]).then((lyrics) => {
+      if (!lyrics) return;
+      item.lyrics = lyrics;
+      if (ctx.player.item && ctx.player.item.key === item.key) ctx.player.item.lyrics = lyrics;
+    });
+  }
   function drawPeaks(item) {
+    loadLyrics(item);
     if (!item.url || (item.peaks && item.peaks.length)) return;
     if (!peaksCache.has(item.url)) peaksCache.set(item.url, fetch(item.url).then((r) => (r.ok ? r.blob() : null))
       .then((blob) => (blob ? window.OniriquePlayer.peaksOf(blob) : null)).then((r) => (r && r.peaks) || null).catch(() => null));
@@ -463,13 +482,15 @@
         if (platform === "spotify") { await ctx.api("DELETE", "/me/platforms/spotify").catch((e) => { error = e.message; }); spToken = null; await load(); }
         else { try { (await appleKit()).unauthorize(); } catch {} appleOn = false; remember("apple", false); }
         ownLists[platform] = null; ctx.changed(); draw();
-      } }) : el("button", { className: "btn btn-primary", type: "button", disabled: busy, textContent: "Se connecter", onclick: async () => {
+      } }) : el("div", { className: "row", style: "gap:8px" }, window.oniriqueApp && platform === "spotify" ? el("button", { className: "btn btn-ghost", type: "button", disabled: busy,
+        textContent: busy ? "En attente du navigateur…" : "Poursuivre dans le navigateur", title: "Se connecter dans ton navigateur, où tu es déjà connecté à Spotify", onclick: spotifyBrowserLogin }) : "",
+        el("button", { className: "btn btn-primary", type: "button", disabled: busy, textContent: "Se connecter", onclick: async () => {
         if (platform === "spotify") return spotifyLogin();
         busy = true; error = ""; draw();
         try { const m = await appleKit(); await m.authorize(); appleOn = m.isAuthorized; remember("apple", appleOn); if (appleOn) { ctx.changed(); loadOwnLists("apple"); } }
         catch (e) { error = "Connexion à Apple Music impossible : " + e.message; }
         busy = false; draw();
-      } }));
+      } })));
     const note = !on ? (platform === "spotify" ? "Connecte ton compte : tes titres Spotify se jouent en entier ici (abonnés Premium), et tes playlists s'importent en entier, privées comprises."
       : "Connecte ton compte : tes titres Apple Music se jouent en entier ici (abonnés Apple Music), et ta bibliothèque s'importe.")
       : platform === "spotify" && !a.premium ? "Spotify ne laisse jouer les titres en entier qu'aux comptes Premium : tu entends les extraits de 30 s. Tes playlists s'importent quand même en entier."
@@ -588,5 +609,28 @@
     if (box && document.activeElement !== box && tab === "search") setTimeout(() => box.focus(), 0);
   }
 
-  window.OniriquePlatforms = { NAMES, enabled, setup, load, spotifyChanged, playable, openSearch, itemsOf, mixed, playerItem, row, order, openAdd, openAccounts };
+  // Le retour de Spotify ouvert dans le navigateur (« Poursuivre dans le navigateur ») : pas besoin d'être connecté au site.
+  (async () => {
+    const q = new URLSearchParams(location.search);
+    if (!q.has("code") || !/^b\./.test(q.get("state") || "")) return;
+    history.replaceState(null, "", location.pathname);
+    let message;
+    try {
+      const r = await fetch("/api/platforms/spotify/callback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: q.get("code"), state: q.get("state") }) });
+      const d = await r.json().catch(() => ({}));
+      message = r.ok ? "Spotify est connecté à ONIRIQUE. Tu peux fermer cette page et revenir dans l'application." : d.error || "Spotify a refusé la connexion.";
+    } catch { message = "Spotify ne répond pas, réessaie depuis l'application."; }
+    alert(message);
+  })();
+  /** Depuis l'application : la connexion à Spotify dans le navigateur ; l'application voit le compte arriver. */
+  async function spotifyBrowserLogin() {
+    try {
+      const { url } = await ctx.api("POST", "/me/platforms/spotify/start");
+      window.oniriqueApp.openExternal(url);
+    } catch (e) { error = e.message; draw(); return; }
+    error = ""; busy = true; draw();
+    for (let i = 0; i < 100 && !spotifyAccount(); i++) { await new Promise((r) => setTimeout(r, 3000)); await load(); }
+    busy = false; ctx.changed(); draw();
+  }
+  window.OniriquePlatforms = { NAMES, enabled, hidden, setup, load, spotifyChanged, playable, openSearch, itemsOf, mixed, playerItem, row, order, openAdd, openAccounts };
 })();

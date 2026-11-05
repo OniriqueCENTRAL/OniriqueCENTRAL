@@ -457,6 +457,13 @@ export function mountPlatforms(app, { requireUser, wrap }) {
   const member = (req, _res, next) => (can(req.user, 'sounds') && ONIRIQUE.includes(req.user.role) ? next()
     : next(new HttpError(403, 'Spotify dans ONIRIQUE CLOUD est réservé aux membres ONIRIQUE.')));
   const me = [requireUser, member];
+  // Les playlists qui ne contiennent que des titres Spotify (importées dans l'application) : le site ne les montre pas.
+  // Ouvert à tout membre de CLOUD, puisque c'est le site qui demande.
+  app.get('/api/me/sounds/platform-only', requireUser, (req, res) => {
+    res.set('Cache-Control', 'no-store').json(all(`SELECT p.id FROM sound_projects p WHERE p.kind = 'playlist' AND ${ACCESS}
+      AND EXISTS (SELECT 1 FROM sound_platform_items i WHERE i.project_id = p.id) AND NOT EXISTS (SELECT 1 FROM sound_tracks t WHERE t.project_id = p.id)`,
+      req.user.id, req.user.id).map((r) => r.id));
+  });
   const playlist = (req, pid) => {
     const p = get(`SELECT p.* FROM sound_projects p WHERE p.id = ? AND ${ACCESS}`, Number(pid) || 0, req.user.id, req.user.id);
     if (!p) throw new HttpError(404, 'Playlist introuvable.');
@@ -507,11 +514,8 @@ export function mountPlatforms(app, { requireUser, wrap }) {
     apple: appleReady(),
   }));
   // Le retour de Spotify (code et vérificateur PKCE) : le compte du membre est connecté.
-  app.post('/api/me/platforms/spotify/connect', ...me, wrap(async (req, res) => {
-    if (!config.spotifyClientId) throw new HttpError(404, "Spotify n'est pas encore branché sur ONIRIQUE.");
-    rateLimit(`spotify-connect:${req.user.id}`, 20, 3600_000);
-    const code = text(req.body?.code, 1000), verifier = String(req.body?.verifier || '');
-    if (!code || !/^[A-Za-z0-9._~-]{43,128}$/.test(verifier)) throw new HttpError(400, 'Connexion Spotify illisible : recommence.');
+  /** Le code rendu par Spotify devient le compte connecté du membre. */
+  async function connectSpotify(userId, code, verifier) {
     const data = await spotifyForm({ grant_type: 'authorization_code', code, redirect_uri: spotifyRedirect(), code_verifier: verifier });
     if (!data.refresh_token) throw new HttpError(502, 'Spotify a refusé la connexion.');
     const token = { access: data.access_token, refresh: data.refresh_token, expiresAt: now() + (Number(data.expires_in) || 3600) * 1000 };
@@ -521,8 +525,36 @@ export function mountPlatforms(app, { requireUser, wrap }) {
     const name = text(profile.display_name, 80) || id, premium = profile.product === 'premium' ? 1 : 0;
     run(`INSERT INTO sound_platform_accounts (user_id, platform, url, name, ext_id, token, premium, created_at) VALUES (?, 'spotify', ?, ?, ?, ?, ?, ?)
       ON CONFLICT(user_id, platform) DO UPDATE SET url = excluded.url, name = excluded.name, ext_id = excluded.ext_id, token = excluded.token, premium = excluded.premium`,
-      req.user.id, `https://open.spotify.com/user/${id}`, name, id, seal(JSON.stringify(token)), premium, now());
-    res.json({ platform: 'spotify', name, connected: true, premium: !!premium });
+      userId, `https://open.spotify.com/user/${id}`, name, id, seal(JSON.stringify(token)), premium, now());
+    return { platform: 'spotify', name, connected: true, premium: !!premium };
+  }
+  app.post('/api/me/platforms/spotify/connect', ...me, wrap(async (req, res) => {
+    if (!config.spotifyClientId) throw new HttpError(404, "Spotify n'est pas encore branché sur ONIRIQUE.");
+    rateLimit(`spotify-connect:${req.user.id}`, 20, 3600_000);
+    const code = text(req.body?.code, 1000), verifier = String(req.body?.verifier || '');
+    if (!code || !/^[A-Za-z0-9._~-]{43,128}$/.test(verifier)) throw new HttpError(400, 'Connexion Spotify illisible : recommence.');
+    res.json(await connectSpotify(req.user.id, code, verifier));
+  }));
+  // « Poursuivre dans le navigateur » : la connexion part de l'application et s'ouvre dans le navigateur (déjà connecté
+  // à Spotify, le plus souvent). Le vérificateur PKCE reste ici, rattaché au membre par un « state » à usage unique,
+  // valable dix minutes ; le navigateur n'a pas besoin d'être connecté à ONIRIQUE.
+  const pending = new Map();
+  app.post('/api/me/platforms/spotify/start', ...me, (req, res) => {
+    if (!config.spotifyClientId) throw new HttpError(404, "Spotify n'est pas encore branché sur ONIRIQUE.");
+    rateLimit(`spotify-connect:${req.user.id}`, 20, 3600_000);
+    for (const [k, v] of pending) if (v.exp < now()) pending.delete(k);
+    const verifier = crypto.randomBytes(48).toString('base64url'), state = crypto.randomBytes(18).toString('base64url');
+    pending.set(state, { userId: req.user.id, verifier, exp: now() + 10 * 60_000 });
+    const challenge = crypto.createHash('sha256').update(verifier).digest('base64url');
+    res.json({ url: `https://accounts.spotify.com/authorize?${new URLSearchParams({ client_id: config.spotifyClientId, response_type: 'code',
+      redirect_uri: spotifyRedirect(), code_challenge_method: 'S256', code_challenge: challenge, scope: SPOTIFY_SCOPES, state: `b.${state}` })}` });
+  });
+  app.post('/api/platforms/spotify/callback', wrap(async (req, res) => {
+    rateLimit(`spotify-callback:${req.ip}`, 30, 3600_000);
+    const state = String(req.body?.state || '').replace(/^b\./, ''), p = pending.get(state), code = text(req.body?.code, 1000);
+    pending.delete(state);
+    if (!p || p.exp < now() || !code) throw new HttpError(400, 'Cette connexion à Spotify a expiré : recommence depuis l\'application.');
+    res.json(await connectSpotify(p.userId, code, p.verifier));
   }));
   // Le jeton d'accès du lecteur Spotify (une heure) : il ne quitte que vers le navigateur du membre lui-même.
   app.get('/api/me/platforms/spotify/token', ...me, wrap(async (req, res) => {
@@ -592,6 +624,28 @@ export function mountPlatforms(app, { requireUser, wrap }) {
     fs.writeFileSync(path.join(config.mediaDir, name), data);
     run('UPDATE sound_projects SET cover = ? WHERE id = ?', name, p.id);
     res.json({ cover: `/api/media/${name}` });
+  }));
+
+  // Les paroles d'un titre Spotify, synchronisées quand LRCLIB les a (sinon en texte) ; gardées le temps du serveur.
+  const lyricsCache = new Map();
+  app.get('/api/me/sounds/platform-items/:id/lyrics', ...me, wrap(async (req, res) => {
+    const r = itemOf(req, req.params.id);
+    const key = `${r.platform}:${r.ext_id}`;
+    if (!lyricsCache.has(key)) {
+      rateLimit(`platform-lyrics:${req.user.id}`, 300, 3600_000);
+      const artist = text(r.artist).split(/\s*,\s*/)[0], title = text(r.title).replace(/\s*[([](feat|ft|with)[^)\]]*[)\]]/gi, '').replace(/\s+-\s+.*remaster.*$/i, '');
+      const ask = (route) => fetch(`${config.lrclibApi}${route}`, { signal: AbortSignal.timeout(8000), headers: { 'User-Agent': 'ONIRIQUE CENTRAL (https://onirique.store)' } })
+        .then((x) => (x.ok ? x.json() : null)).catch(() => null);
+      let hit = await ask(`/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(title)}${r.duration ? `&duration=${r.duration}` : ''}`);
+      if (!hit?.plainLyrics && !hit?.syncedLyrics) {
+        const found = await ask(`/search?q=${encodeURIComponent(`${artist} ${title}`)}`);
+        hit = Array.isArray(found) ? found.find((x) => (x.syncedLyrics || x.plainLyrics) && (!r.duration || Math.abs((x.duration || 0) - r.duration) < 8)) : null;
+      }
+      const lyrics = typeof hit?.syncedLyrics === 'string' && hit.syncedLyrics.trim() ? hit.syncedLyrics : typeof hit?.plainLyrics === 'string' ? hit.plainLyrics : '';
+      if (lyricsCache.size > 5000) lyricsCache.clear();
+      lyricsCache.set(key, lyrics.slice(0, 20000));
+    }
+    res.set('Cache-Control', 'private, max-age=3600').json({ lyrics: lyricsCache.get(key) });
   }));
 
   // Ajouter des titres à la fin d'une playlist (après les sons du CLOUD et les titres déjà là).

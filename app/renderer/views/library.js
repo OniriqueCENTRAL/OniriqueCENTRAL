@@ -94,6 +94,16 @@ function demoView(product) {
 /** Les plugins possédés dont une version plus récente attend, et qui ne sont pas déjà en cours d'installation. */
 const updatable = () => state.data.catalog.products.filter((p) => { const s = status(p); return s.right && s.update && !s.busy; });
 let updatingAll = false;
+// « Installer la sélection » : les plugins cochés qui peuvent s'installer (ou se mettre à jour) sur ce PC.
+const picked = new Set();
+const installable = (p) => { const s = status(p); return !!(s.right && p.latest && !s.busy && (!s.install.version || s.update)); };
+async function installPicked() {
+  const list = state.data.catalog.products.filter((p) => picked.has(p.id) && installable(p));
+  picked.clear();
+  updatingAll = true;
+  render();
+  try { for (const product of list) await install(product); } finally { updatingAll = false; render(); }
+}
 
 /** « Tout mettre à jour » : les plugins un par un, chacun avec sa barre de progression sur sa carte. */
 async function updateAll() {
@@ -227,6 +237,9 @@ export function libraryView() {
     onkeydown: (event) => { if (event.key === 'Enter' && event.target === event.currentTarget) go('plugins', product.id); },
   },
     cover(product, badge(product)),
+    installable(product) && !updatingAll ? h('label', { class: 'pick', title: 'Ajouter à la sélection', onclick: (event) => event.stopPropagation() },
+      h('input', { type: 'checkbox', checked: picked.has(product.id), 'aria-label': `Sélectionner ${product.name}`,
+        onchange: (event) => { if (event.target.checked) picked.add(product.id); else picked.delete(product.id); render(); } })) : null,
     h('div', { class: 'card-body' },
       h('div', { class: 'creator' }, creatorOf(product)),
       productName(product.name),
@@ -245,7 +258,14 @@ export function libraryView() {
       ? `${owned} sur ${catalog.products.length} dans votre collection. Installation et mises à jour en un clic, licence activée sur ce PC au passage.`
       : 'Aucun plugin publié pour le moment.'),
     updatingAll ? h('div', { style: { 'margin-bottom': '22px' } }, button('Mises à jour en cours…', null, 'primary', { disabled: true }))
-      : updatable().length ? h('div', { style: { 'margin-bottom': '22px' } }, button(`Tout mettre à jour (${updatable().length})`, updateAll, 'primary')) : null,
+      : h('div', { class: 'row wrap', style: { 'margin-bottom': '22px', gap: '10px' } },
+        updatable().length ? button(`Tout mettre à jour (${updatable().length})`, updateAll, 'primary') : null,
+        products.some(installable) ? button(products.filter(installable).every((p) => picked.has(p.id)) ? 'Tout désélectionner' : 'Tout sélectionner', () => {
+          const all = products.filter(installable), on = all.every((p) => picked.has(p.id));
+          for (const p of all) on ? picked.delete(p.id) : picked.add(p.id);
+          render();
+        }) : null,
+        [...picked].some((id) => installable(state.data.catalog.products.find((p) => p.id === id) || {})) ? button(`Installer la sélection (${[...picked].filter((id) => installable(state.data.catalog.products.find((p) => p.id === id) || {})).length})`, installPicked, 'primary') : null),
     catalog.products.length ? filters : null,
     catalog.products.length ? categoryRow : null,
     products.length || !catalog.products.length ? h('div', { class: 'cards' }, products.map(card))
