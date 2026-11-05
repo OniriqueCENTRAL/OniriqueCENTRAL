@@ -73,12 +73,14 @@ header > * { pointer-events: auto; }
 @keyframes ping { from { transform: scale(.4); opacity: 1; } to { transform: scale(2.4); opacity: 0; } }
 .city.on .dot { scale: 1.6; }
 .city .dot:hover { scale: 1.3; }
-.city .tag { position: absolute; left: 0; top: 0; transform-origin: 0 0; white-space: nowrap; pointer-events: none;
-  transform: rotateZ(calc(var(--az) * -1)) rotateX(calc(var(--ax) * -1)) scale(calc(1 / var(--z))) translate(-50%, calc(-100% - 12px)); opacity: 0; transition: opacity .3s; }
-.city.has .tag, .city:hover .tag, .city.on .tag { opacity: 1; }
+/* Les noms des villes sont posés à plat au-dessus de la carte, à la position de leur ville à l'écran (recalculée à
+   chaque image) : dans le plan en perspective, ils seraient étirés. */
+#labels { position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
+.tag { position: absolute; left: 0; top: 0; white-space: nowrap; opacity: 0; transition: opacity .3s; will-change: transform; }
+.tag.show { opacity: 1; }
 .tag b { display: block; text-align: center; font: 800 11px/1.1 var(--f-display); letter-spacing: .08em; text-transform: uppercase; text-shadow: 0 0 10px #000, 0 0 3px #000; }
 .tag i { display: block; text-align: center; font: 500 10px var(--f-mono); font-style: normal; color: var(--pink); letter-spacing: .1em; text-shadow: 0 0 8px #000; }
-.city:not(.has) .tag b { font-size: 9px; color: var(--haze); }
+.tag.dim b { font-size: 9px; color: var(--haze); }
 
 /* Les panneaux en verre (la DA Nuit & Braise). */
 .glass { background: linear-gradient(160deg, rgba(255,255,255,.075), rgba(255,255,255,.02) 40%, rgba(255,255,255,.035)), rgba(10,6,8,.62);
@@ -206,6 +208,7 @@ header > * { pointer-events: auto; }
   <div style="display:flex;gap:8px"><a class="btn" id="my-page" href="profil">Ma page</a><a class="btn" href="messages">Messages</a></div>
 </header>
 
+<div id="labels" aria-hidden="true"></div>
 <div id="scene" aria-label="Carte des membres : glisser pour déplacer, molette pour zoomer">
   <div id="plane">
     <svg viewBox="0 0 1000 1000" id="map" aria-hidden="true">
@@ -322,6 +325,13 @@ function tick(t) {
   s.setProperty("--z", (cam.z / K).toFixed(5)); // la taille réelle du plan : K fois plus grand, K fois moins zoomé
   $("plane").style.setProperty("--px", cam.px.toFixed(2) + "px");
   $("plane").style.setProperty("--py", cam.py.toFixed(2) + "px");
+  for (const node of cityNodes.values()) {
+    const show = node.classList.contains("has") || node.classList.contains("on") || node.matches(":hover");
+    node.tag.classList.toggle("show", show);
+    if (!show) continue;
+    const r = node.getBoundingClientRect();
+    node.tag.style.transform = `translate(${r.left.toFixed(1)}px, ${r.top.toFixed(1)}px) translate(-50%, calc(-100% - 14px))`;
+  }
   requestAnimationFrame(tick);
 }
 const K = 2.5; // le facteur de dessin du plan (voir #plane)
@@ -365,14 +375,16 @@ function drawCities() {
     if (!node) {
       const [x, y] = project(c.lon, c.lat);
       node = el("div", { className: "city", style: `left:${x * K}px;top:${y * K}px;--d:${(Math.random() * 2.6).toFixed(2)}s` },
-        el("button", { className: "dot", type: "button", ariaLabel: c.name, onclick: () => openCity(c.id) }), el("div", { className: "tag" }, el("b", { textContent: c.name }), el("i")));
+        el("button", { className: "dot", type: "button", ariaLabel: c.name, onclick: () => openCity(c.id) }));
+      node.tag = el("div", { className: "tag" }, el("b", { textContent: c.name }), el("i"));
       node.dataset.x = x; node.dataset.y = y;
-      cityNodes.set(c.id, node); plane.append(node);
+      cityNodes.set(c.id, node); plane.append(node); $("labels").append(node.tag);
     }
     const n = (counts.get(c.id) || []).length;
     node.classList.toggle("has", n > 0);
     node.style.setProperty("--s", (n ? 7 + Math.sqrt(n) * 4.5 : 4) * K + "px");
-    node.querySelector(".tag i").textContent = n ? n + (n > 1 ? " membres" : " membre") : "";
+    node.tag.querySelector("i").textContent = n ? n + (n > 1 ? " membres" : " membre") : "";
+    node.tag.classList.toggle("dim", !n);
   }
   // Le réseau : chaque ville active reliée à ses deux voisines actives les plus proches, une lueur qui y circule.
   const active = DATA.cities.filter((c) => !c.far && counts.has(c.id)).map((c) => ({ c, p: project(c.lon, c.lat) }));
