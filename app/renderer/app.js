@@ -160,28 +160,34 @@ const TOOL_ROUTES = ['cut', 'cloud'];
 
 // Tant qu'une fenêtre de l'application est ouverte, l'outil affiché n'est plus qu'une image : la fenêtre passe
 // devant lui et les clics ne traversent plus jusqu'à la page.
+// L'image reste posée même si l'écran de l'outil est redessiné pendant que la fenêtre est ouverte ; main.js garde de
+// son côté l'outil caché (tool:show ne le remontre pas) jusqu'à la fermeture.
+let frozen = false, frozenShot = null;
+const paintFrozen = () => document.querySelectorAll('.tool-host').forEach((host) => {
+  host.style.background = frozen && frozenShot ? `url("${frozenShot}") center / 100% 100% no-repeat` : '';
+});
 new MutationObserver(async () => {
-  const open = document.getElementById('overlay').hasChildNodes(), host = document.querySelector('.tool-host');
-  if (!host || open === !!host.dataset.frozen) return;
+  const open = document.getElementById('overlay').hasChildNodes();
+  if (open === frozen) return;
+  frozen = open;
   if (open) {
-    host.dataset.frozen = '1';
     const shot = await call('tool:freeze').catch(() => null);
-    if (shot && host.dataset.frozen) host.style.background = `url("${shot}") center / 100% 100% no-repeat`;
+    if (frozen && shot) frozenShot = shot;
   } else {
-    delete host.dataset.frozen;
+    frozenShot = null;
     await call('tool:thaw').catch(() => {});
-    host.style.background = '';
   }
+  paintFrozen();
 }).observe(document.getElementById('overlay'), { childList: true });
 
 function toolPage(tool) {
   const host = h('div', { class: 'tool-host' }, h('div', { class: 'tool-wait' }, starKnob(0.4, 110), h('div', { class: 'eyebrow' }, 'Ouverture…')));
   // La page du site suit exactement la place de ce cadre, même quand la fenêtre change de taille.
   const sync = () => {
-    if (!host.isConnected || state.route.name !== tool || host.dataset.frozen) return;
+    if (!host.isConnected || state.route.name !== tool) return;
     const r = host.getBoundingClientRect();
     call('tool:show', tool, { x: r.left, y: r.top, width: r.width, height: r.height }, window.OniriqueI18n?.lang)
-      .then(() => host.replaceChildren(), (error) => toast(error.message, true));
+      .then(() => { host.replaceChildren(); paintFrozen(); }, (error) => toast(error.message, true));
   };
   new ResizeObserver(sync).observe(host);
   return host;

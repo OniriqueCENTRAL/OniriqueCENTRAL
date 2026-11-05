@@ -13,7 +13,7 @@ let win = null;
 
 /** CUT et CLOUD : une vue chacun, créée à la première ouverture, gardée tant que le compte ne change pas. */
 const toolViews = new Map();
-let shownTool = null;
+let shownTool = null, frozen = false; // frozen : une fenêtre de l'application (Paramètres…) est ouverte par-dessus
 const toolContents = new Set(); // les pages de CUT et CLOUD, seules à pouvoir ouvrir la fenêtre de confirmation // l'outil à l'écran, pour le bouton « précédent » de la souris
 // ONIRIQUE_SITE : un site local, pour essayer CUT et CLOUD avant de les mettre en ligne (comme ONIRIQUE_SERVER pour l'API).
 const SITE = (process.env.ONIRIQUE_SITE || 'https://onirique.store').replace(/\/+$/, '');
@@ -468,7 +468,7 @@ app.whenReady().then(async () => {
     for (const [name, other] of toolViews) if (name !== tool) (await other).setVisible(false);
     if (!win.contentView.children.includes(view)) win.contentView.addChildView(view);
     view.setBounds(Object.fromEntries(['x', 'y', 'width', 'height'].map((k) => [k, Math.max(0, Math.round(Number(bounds?.[k]) || 0))])));
-    view.setVisible(true);
+    view.setVisible(!frozen); // une fenêtre de l'application est ouverte : l'outil reste caché derrière son image
     shownTool = tool;
   });
   // Un clic sur la rubrique déjà ouverte : retour à l'accueil de l'outil (après une page d'écoute, une autre page…).
@@ -488,13 +488,17 @@ app.whenReady().then(async () => {
   // Une fenêtre de l'application (Paramètres, confirmation…) s'ouvre : la page de l'outil, posée par-dessus
   // l'interface, passerait devant et prendrait les clics. Elle est remplacée par son image le temps de la fenêtre.
   handle('tool:freeze', async () => {
+    frozen = true;
     if (!shownTool || !toolViews.has(shownTool)) return null;
     const view = await toolViews.get(shownTool);
-    const image = await view.webContents.capturePage().catch(() => null);
-    view.setVisible(false);
+    const image = view.getVisible() ? await view.webContents.capturePage().catch(() => null) : null;
+    if (frozen) view.setVisible(false);
     return image ? image.toDataURL() : null;
   });
-  handle('tool:thaw', async () => { if (shownTool && toolViews.has(shownTool)) (await toolViews.get(shownTool)).setVisible(true); });
+  handle('tool:thaw', async () => {
+    frozen = false;
+    if (shownTool && toolViews.has(shownTool)) (await toolViews.get(shownTool)).setVisible(true);
+  });
   handle('tool:hide', async () => {
     shownTool = null; for (const view of toolViews.values()) (await view).setVisible(false); });
   // Répondre à une demande de support : la messagerie de ce PC s'ouvre sur un message adressé à la personne.
