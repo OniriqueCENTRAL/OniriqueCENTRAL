@@ -11,6 +11,7 @@
   const SECTIONS = [
     ["Boutique", "boutique"], ["Carte", "carte"], ["Outils", "outils"],
     ["Crédits", at("#credits")], ["FAQ", at("#faq")], ["Support", "support"],
+    ["ABRASION", "/abrasion/"],
   ];
   const el = (tag, props = {}, ...children) => {
     const node = Object.assign(document.createElement(tag), props);

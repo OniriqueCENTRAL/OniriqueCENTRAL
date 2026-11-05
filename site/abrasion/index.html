@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>abrasion — plugins audio</title>
+<meta name="description" content="abrasion, plugins audio pour beatmakers. RAW, le synthé à interface ASCII. Et abrasion labs pour aller plus loin : OMNIS et RAW 2.">
+<meta name="theme-color" content="#000000">
+<meta property="og:type" content="website">
+<meta property="og:title" content="abrasion — plugins audio">
+<meta property="og:description" content="Plugin’s for all. RAW, OMNIS, RAW 2.">
+<meta property="og:image" content="assets/img/raw/interface.webp">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/site.css">
+<script src="assets/js/site.js" defer></script>
+<script src="assets/js/onirique.js" defer></script>
+<script src="/assets/account.js" defer></script>
+<script src="assets/js/viz.js" defer></script>
+<script src="assets/js/planet.js" defer></script>
+</head>
+<body class="w-abrasion" data-page="index" data-buddy="Salut. Je passe juste t’aider. Survole la carte RAW : il se met à jouer.|Le bouton abrasion / labs, en haut, te fait changer d’univers.|Clique sur le nom d’un plugin pour ouvrir sa fiche complète.|Le bouton ? en bas à droite me rappelle quand tu veux.">
+<a class="ab-skip" href="#main">Aller au contenu</a>
+<canvas class="ab-stars" aria-hidden="true"></canvas>
+
+<header class="ab-top">
+  <div class="ab-wrap ab-top-in">
+    <a class="ab-logo" href="index.html" aria-label="abrasion, accueil"><span class="ab-glass s">abrasion</span></a>
+    <nav class="ab-nav" aria-label="Plugins abrasion"><a href="raw.html">RAW</a></nav>
+    <nav class="ab-switch" data-world="abrasion" aria-label="Changer d’univers">
+      <a href="index.html" data-world="abrasion" aria-current="page">abrasion</a>
+      <a href="labs.html" data-world="labs">labs</a>
+      <i class="ab-sw-thumb" aria-hidden="true"></i>
+    </nav>
+    <div class="ab-oni"><a href="/" title="Revenir sur ONIRIQUE">ONIRIQUE</a><a href="/compte?next=/abrasion/" data-account>Compte</a></div>
+    <button class="ab-menu-btn" type="button" aria-expanded="false" aria-controls="ab-menu">Menu</button>
+  </div>
+  <nav class="ab-menu" id="ab-menu" aria-label="Menu" hidden>
+    <ul>
+      <li><a href="index.html">abrasion <span>accueil</span></a></li>
+      <li><a href="raw.html">RAW <span>synthé</span></a></li>
+      <li><a href="labs.html">abrasion labs <span>accueil</span></a></li>
+      <li><a href="omnis.html">OMNIS <span>mastering</span></a></li>
+      <li><a href="raw-2.html">RAW 2 <span>synthé</span></a></li>
+      <li><a href="/compte">Compte <span>ONIRIQUE</span></a></li>
+      <li><a href="/">ONIRIQUE <span>retour</span></a></li>
+      <li><a href="/cgv">CGU · CGV <span>infos</span></a></li>
+    </ul>
+  </nav>
+</header>
+
+<main id="main">
+  <!-- en-tête de page -->
+  <section class="ab-hero" data-planet aria-labelledby="h-home">
+    <canvas class="ab-pl ab-pl-back" aria-hidden="true"></canvas>
+    <canvas class="ab-pl ab-pl-gl" aria-hidden="true"></canvas>
+    <canvas class="ab-pl ab-pl-front" aria-hidden="true"></canvas>
+    <div class="ab-wrap ab-hero-grid">
+      <div>
+        <p class="ab-eyebrow"><i></i>plugins audio · <b>VST3</b></p>
+        <h1 class="ab-display ab-glass" id="h-home">abrasion</h1>
+        <p class="ab-lede mt-s"><em>Plugin’s for all.</em></p>
+        <p class="ab-lede mt-m">Des outils pour faire du son, pas pour lire des manuels. Deux ateliers : <em>abrasion</em>, là où tout a commencé, et <em>abrasion labs</em>, là où ça va plus loin.</p>
+        <div class="ab-cta">
+          <a class="ab-btn" href="raw.html">Découvrir RAW <span class="ar" aria-hidden="true">→</span></a>
+          <a class="ab-btn ghost" href="labs.html">Entrer dans abrasion labs</a>
+        </div>
+      </div>
+      <div class="ab-planet-slot" aria-hidden="true"></div>
+    </div>
+    <a class="ab-cue" href="#plugins" aria-label="Aller aux plugins">↓</a>
+  </section>
+
+  <!-- 01 · plugins -->
+  <section class="ab-sec" id="plugins" aria-labelledby="h-plugins">
+    <div class="ab-wrap">
+      <div class="ab-shead ab-rv">
+        <span class="ab-snum">01 /</span>
+        <h2 class="ab-h2" id="h-plugins">Les plugins</h2>
+        <p>Simples, directs, lisibles. Chaque réglage est à l’écran et l’interface bouge avec le son.</p>
+      </div>
+
+      <article class="ab-acard ab-rv" data-play data-tip="RAW, c’est le tout premier : deux oscillateurs, un petit automate et une interface en ASCII.">
+        <i class="ab-cn c1" aria-hidden="true">+</i><i class="ab-cn c2" aria-hidden="true">+</i><i class="ab-cn c3" aria-hidden="true">+</i><i class="ab-cn c4" aria-hidden="true">+</i>
+        <div class="ab-acard-in">
+          <div>
+            <h3><a class="nolink" href="raw.html">[ RAW ]</a></h3>
+            <p class="ver">v1 · synthé</p>
+            <p class="desc">Synthé à 2 oscillateurs, avec une interface en ASCII qui prend vie quand le son joue.</p>
+            <ul class="ab-dots">
+              <li><span>type</span><span class="d" aria-hidden="true"></span><span class="v">synthé</span></li>
+              <li><span>oscillateurs</span><span class="d" aria-hidden="true"></span><span class="v">2 wavetable</span></li>
+              <li><span>modulation</span><span class="d" aria-hidden="true"></span><span class="v">automate VIE</span></li>
+              <li><span>format</span><span class="d" aria-hidden="true"></span><span class="v">VST3</span></li>
+            </ul>
+            <div class="ab-acard-foot">
+              <span class="ab-price" data-price="raw" data-ttc>Prix à venir</span>
+              <button class="ab-btn sm" type="button" data-buy="raw">Acheter</button>
+              <a class="ab-link ascii" href="raw.html">Voir la fiche</a>
+            </div>
+          </div>
+          <div class="ab-scope" data-ascii-scope aria-hidden="true"><pre class="sc"></pre><pre class="fl"></pre></div>
+        </div>
+      </article>
+
+      <article class="ab-acard soon ab-rv mt-l">
+        <i class="ab-cn c1" aria-hidden="true">+</i><i class="ab-cn c4" aria-hidden="true">+</i>
+        <div class="ab-acard-in">
+          <div>
+            <h3>[ prochain plugin ]</h3>
+            <p class="desc m0">En préparation dans l’atelier. Il apparaîtra ici.</p>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 02 · esprit -->
+  <section class="ab-sec tight" aria-labelledby="h-esprit">
+    <div class="ab-wrap">
+      <div class="ab-shead ab-rv">
+        <span class="ab-snum">02 /</span>
+        <h2 class="ab-h2" id="h-esprit">L’esprit abrasion</h2>
+      </div>
+      <div class="ab-feats ascii">
+        <article class="ab-feat ab-up"><span class="k">01</span><h3>Lisible</h3><p>Tous les réglages sont à l’écran, écrits en clair. Pas de menus cachés, pas de manuel à lire avant de jouer.</p></article>
+        <article class="ab-feat ab-up"><span class="k">02</span><h3>Vivant</h3><p>L’interface réagit au son : tu vois ce que tu entends, en temps réel, jusque dans les caractères ASCII.</p></article>
+        <article class="ab-feat ab-up"><span class="k">03</span><h3>Pour tous</h3><p>Un prix juste, une licence pour toi sur trois appareils, et un plugin qui continue de marcher hors ligne.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- passerelle vers labs -->
+  <section class="ab-sec tight" aria-label="abrasion labs">
+    <div class="ab-wrap">
+      <a class="ab-bridge ab-up" href="labs.html">
+        <span class="k">02 · l’autre atelier</span>
+        <span class="t ab-glass">abrasion labs</span>
+        <span class="ar" aria-hidden="true">→</span>
+        <p class="p">Analyse, IA, automates cellulaires. OMNIS pour le mastering, RAW 2 pour le son.</p>
+      </a>
+    </div>
+  </section>
+</main>
+
+<footer class="ab-foot">
+  <div class="ab-wrap">
+    <div class="ab-foot-grid">
+      <div class="ab-foot-brand"><span class="ab-glass s">abrasion</span><p>Plugins audio pour beatmakers et producteurs. Deux ateliers : abrasion et abrasion labs.</p></div>
+      <div><h2>abrasion</h2><ul><li><a href="index.html">Accueil</a></li><li><a href="raw.html">RAW</a></li></ul></div>
+      <div><h2>abrasion labs</h2><ul><li><a href="labs.html">Accueil labs</a></li><li><a href="omnis.html">OMNIS</a></li><li><a href="raw-2.html">RAW 2</a></li></ul></div>
+      <div><h2>Infos</h2><ul><li><a href="/mentions-legales">Mentions légales</a></li><li><a href="/cgv">CGV et CGU</a></li><li><a href="/remboursement">Rétractation et remboursement</a></li><li><a href="/confidentialite">Confidentialité</a></li><li><a href="/cookies">Cookies</a></li><li><a href="/support">Support</a></li></ul></div>
+    </div>
+    <div class="ab-foot-bot"><span>© <span data-year>2026</span> abrasion. Tous droits réservés.</span><span>Prix TTC · plugins VST3</span></div>
+  </div>
+</footer>
+</body>
+</html>

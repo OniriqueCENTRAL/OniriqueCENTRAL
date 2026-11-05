@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAW — synthé à interface ASCII · abrasion</title>
+<meta name="description" content="RAW, le synthé d’abrasion : deux oscillateurs wavetable, un automate cellulaire qui module le son et une interface en ASCII qui prend vie quand le son joue. VST3.">
+<meta name="theme-color" content="#000000">
+<meta property="og:type" content="product">
+<meta property="og:title" content="RAW — synthé à interface ASCII">
+<meta property="og:description" content="Deux oscillateurs, un automate, une interface ASCII vivante.">
+<meta property="og:image" content="assets/img/raw/interface.webp">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/site.css">
+<script src="assets/js/site.js" defer></script>
+<script src="assets/js/onirique.js" defer></script>
+<script src="/assets/account.js" defer></script>
+<script src="assets/js/viz.js" defer></script>
+<script src="assets/js/flower.js" defer></script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"RAW","applicationCategory":"MultimediaApplication","operatingSystem":"Windows","description":"Synthé à 2 oscillateurs wavetable avec automate cellulaire et interface ASCII. Plugin VST3.","brand":{"@type":"Brand","name":"abrasion"}}</script>
+</head>
+<body class="w-abrasion p-raw" data-page="raw" data-buddy="Survole l’écran ASCII : RAW se met à jouer.|Les petits carrés sur la capture expliquent chaque zone. Clique dessus.|Le bouton Acheter ouvre une petite fenêtre de confirmation, rien n’est payé sans ton accord.|Le bouton ? me rappelle quand tu veux.">
+<a class="ab-skip" href="#main">Aller au contenu</a>
+<canvas class="ab-stars" aria-hidden="true"></canvas>
+<canvas class="ab-flower" data-open-at="#acheter" aria-hidden="true"></canvas>
+
+<header class="ab-top">
+  <div class="ab-wrap ab-top-in">
+    <a class="ab-logo" href="index.html" aria-label="abrasion, accueil"><span class="ab-glass s">abrasion</span></a>
+    <nav class="ab-nav" aria-label="Plugins abrasion"><a href="raw.html" aria-current="page">RAW</a></nav>
+    <nav class="ab-switch" data-world="abrasion" aria-label="Changer d’univers">
+      <a href="index.html" data-world="abrasion" aria-current="true">abrasion</a>
+      <a href="labs.html" data-world="labs">labs</a>
+      <i class="ab-sw-thumb" aria-hidden="true"></i>
+    </nav>
+    <div class="ab-oni"><a href="/" title="Revenir sur ONIRIQUE">ONIRIQUE</a><a href="/compte?next=/abrasion/" data-account>Compte</a></div>
+    <button class="ab-menu-btn" type="button" aria-expanded="false" aria-controls="ab-menu">Menu</button>
+  </div>
+  <nav class="ab-menu" id="ab-menu" aria-label="Menu" hidden>
+    <ul>
+      <li><a href="index.html">abrasion <span>accueil</span></a></li>
+      <li><a href="raw.html" aria-current="page">RAW <span>synthé</span></a></li>
+      <li><a href="labs.html">abrasion labs <span>accueil</span></a></li>
+      <li><a href="omnis.html">OMNIS <span>mastering</span></a></li>
+      <li><a href="raw-2.html">RAW 2 <span>synthé</span></a></li>
+      <li><a href="/compte">Compte <span>ONIRIQUE</span></a></li>
+      <li><a href="/">ONIRIQUE <span>retour</span></a></li>
+      <li><a href="/cgv">CGU · CGV <span>infos</span></a></li>
+    </ul>
+  </nav>
+</header>
+
+<main id="main">
+  <section class="ab-hero" aria-labelledby="h-raw">
+    <div class="ab-wrap ab-hero-grid">
+      <div>
+        <p class="ab-eyebrow"><i></i>abrasion · synthé · <b>v1</b></p>
+        <h1 class="ab-pname ascii" id="h-raw">RAW</h1>
+        <p class="ab-pitch">Un synthé à <b>deux oscillateurs wavetable</b>, un petit <b>automate cellulaire</b> qui module le son, et une interface en <b>ASCII</b> qui prend vie quand tu joues.</p>
+        <ul class="ab-kv">
+          <li>oscillateurs<b>2 wavetable</b></li>
+          <li>modulation<b>automate VIE</b></li>
+          <li>format<b>VST3</b></li>
+        </ul>
+        <div class="ab-cta">
+          <span class="ab-price" data-price="raw" data-ttc>Prix à venir</span>
+          <button class="ab-btn" type="button" data-buy="raw">Acheter RAW</button>
+          <a class="ab-btn ghost" href="#interface">Voir l’interface</a>
+        </div>
+      </div>
+      <article class="ab-acard ab-rv" data-play aria-label="Aperçu animé de l’oscilloscope ASCII">
+        <i class="ab-cn c1" aria-hidden="true">+</i><i class="ab-cn c2" aria-hidden="true">+</i><i class="ab-cn c3" aria-hidden="true">+</i><i class="ab-cn c4" aria-hidden="true">+</i>
+        <div class="ab-acard-in">
+          <div class="ab-scope" data-ascii-scope data-cols="40" aria-hidden="true"><pre class="sc"></pre><pre class="fl"></pre></div>
+        </div>
+      </article>
+    </div>
+    <a class="ab-cue" href="#interface" aria-label="Aller à l’interface">↓</a>
+  </section>
+
+  <!-- interface -->
+  <section class="ab-sec" id="interface" aria-labelledby="h-ui">
+    <div class="ab-wrap">
+      <div class="ab-shead ab-rv">
+        <span class="ab-snum">01 /</span>
+        <h2 class="ab-h2" id="h-ui">L’interface</h2>
+        <p>Tout tient sur un écran. Clique sur les carrés pour lire ce que fait chaque zone.</p>
+      </div>
+      <figure class="ab-shot ascii ab-up" data-hotspots>
+        <div class="ab-shot-in">
+          <img id="raw-ui" src="assets/img/raw/interface.webp" width="1130" height="1066" loading="lazy" decoding="async" alt="Interface de RAW : oscillateurs A et B en haut, automate VIE à droite, sortie et clavier en bas, en caractères ASCII violets.">
+          <button class="ab-hot" type="button" data-t="Presets et mix a/b" data-d="Parcours les presets avec les flèches et compare deux réglages avec mix a/b." data-x="72" data-y="7">1</button>
+          <button class="ab-hot" type="button" data-t="OSC A" data-d="Premier oscillateur wavetable. position parcourt les 64 formes de la table, level règle son volume." data-x="20" data-y="26">2</button>
+          <button class="ab-hot" type="button" data-t="OSC B" data-d="Deuxième oscillateur, même principe. Les deux se mélangent dans la sortie." data-x="51" data-y="26">3</button>
+          <button class="ab-hot" type="button" data-t="VIE" data-d="Un petit automate cellulaire. Sa densité module la cible de ton choix, ici la position de l’OSC B. reset le relance, freeze le fige." data-x="83" data-y="40">4</button>
+          <button class="ab-hot" type="button" data-t="Sortie et clavier" data-d="La forme d’onde de sortie en ASCII et un clavier d’une octave, jouable à la souris ou avec les touches a w s e d f t g y h u j k." data-x="50" data-y="83">5</button>
+        </div>
+        <figcaption><span>RAW · interface complète</span><span>1130 × 1066</span></figcaption>
+        <button class="ab-zoom" type="button" data-zoom="raw-ui">Agrandir</button>
+      </figure>
+    </div>
+  </section>
+
+  <!-- fonctions -->
+  <section class="ab-sec tight" aria-labelledby="h-feat">
+    <div class="ab-wrap">
+      <div class="ab-shead ab-rv">
+        <span class="ab-snum">02 /</span>
+        <h2 class="ab-h2" id="h-feat">Ce que fait RAW</h2>
+      </div>
+      <div class="ab-feats ascii">
+        <article class="ab-feat ab-up"><span class="k">OSC</span><h3>Deux oscillateurs wavetable</h3><p>Chaque oscillateur lit une table de 64 formes. Fais glisser la position pour passer d’un son rond à un son mordant.</p></article>
+        <article class="ab-feat ab-up"><span class="k">VIE</span><h3>Un automate qui module</h3><p>Des cellules vivent et meurent sur une petite grille. Leur densité pilote un réglage : le son ne joue jamais deux fois pareil.</p></article>
+        <article class="ab-feat ab-up"><span class="k">ASCII</span><h3>Une interface vivante</h3><p>Formes d’onde, barres et grille sont dessinées en caractères. Tout bouge avec le son, tu vois ce que tu entends.</p></article>
+        <article class="ab-feat ab-up"><span class="k">KEYS</span><h3>Un clavier intégré</h3><p>Joue directement dans le plugin, à la souris ou au clavier de l’ordinateur, avec oct - et oct + pour changer d’octave.</p></article>
+        <article class="ab-feat ab-up"><span class="k">A/B</span><h3>Comparer deux réglages</h3><p>mix a/b garde deux versions de ton son pour les écouter l’une après l’autre et choisir la meilleure.</p></article>
+        <article class="ab-feat ab-up"><span class="k">0</span><h3>Retour à zéro</h3><p>Un double-clic sur une barre la ramène à sa valeur d’origine. Pratique quand on s’est perdu.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- fiche technique -->
+  <section class="ab-sec tight" aria-labelledby="h-spec">
+    <div class="ab-wrap">
+      <div class="ab-shead ab-rv">
+        <span class="ab-snum">03 /</span>
+        <h2 class="ab-h2" id="h-spec">Fiche technique</h2>
+      </div>
+      <dl class="ab-spec ab-up">
+        <div><dt>Type</dt><dd>Synthé (instrument)</dd></div>
+        <div><dt>Format</dt><dd>VST3</dd></div>
+        <div><dt>Système</dt><dd>Windows 10 ou 11, 64 bits</dd></div>
+        <div><dt>Logiciel hôte</dt><dd>Tout logiciel compatible VST3 (FL Studio, Ableton Live, Reaper, Bitwig…)</dd></div>
+        <div><dt>Oscillateurs</dt><dd>2 wavetable, 64 positions</dd></div>
+        <div><dt>Modulation</dt><dd>Automate VIE : densité, quantité, cible</dd></div>
+        <div><dt>Licence</dt><dd>Personnelle, jusqu’à 3 appareils</dd></div>
+        <div><dt>Activation</dt><dd>Clé de licence ou compte, fonctionne hors ligne</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- achat -->
+  <section class="ab-sec tight" id="acheter" aria-labelledby="h-buy">
+    <div class="ab-wrap">
+      <div class="ab-band ascii ab-up">
+        <i class="ab-cn c1" aria-hidden="true">+</i><i class="ab-cn c4" aria-hidden="true">+</i>
+        <div>
+          <h2 class="ab-h2" id="h-buy">[ RAW ]</h2>
+          <p>Téléchargement immédiat, clé de licence par e-mail, licence pour toi sur trois appareils, mises à jour de la v1 incluses.</p>
+        </div>
+        <div class="ab-band-act">
+          <span class="ab-price" data-price="raw" data-ttc>Prix à venir</span>
+          <button class="ab-btn" type="button" data-buy="raw">Acheter RAW</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- questions -->
+  <section class="ab-sec tight" aria-labelledby="h-faq">
+    <div class="ab-wrap">
+      <div class="ab-shead ab-rv">
+        <span class="ab-snum">04 /</span>
+        <h2 class="ab-h2" id="h-faq">Questions</h2>
+      </div>
+      <div class="ab-faq ab-up">
+        <details><summary>Comment installer RAW ?</summary><div class="a"><p>Copie le fichier <code>RAW.vst3</code> dans <code>C:\Program Files\Common Files\VST3</code>, puis relance la recherche de plugins dans ton logiciel. RAW apparaît dans la liste des instruments.</p></div></details>
+        <details><summary>Sur combien d’ordinateurs puis-je l’utiliser ?</summary><div class="a"><p>Une licence s’active sur trois appareils à toi. Tu peux libérer un appareil depuis ton compte ou depuis le plugin, pour en activer un autre.</p></div></details>
+        <details><summary>Faut-il internet pour jouer ?</summary><div class="a"><p>Seulement pour l’activation. Ensuite RAW fonctionne hors ligne et renouvelle sa licence tout seul quand une connexion est disponible.</p></div></details>
+        <details><summary>Puis-je être remboursé ?</summary><div class="a"><p>Comme pour tout contenu numérique téléchargé immédiatement, le droit de rétractation ne s’applique plus une fois le téléchargement commencé, avec ton accord exprès au moment de l’achat. Si le plugin ne fonctionne pas comme décrit, la garantie légale de conformité s’applique : écris-nous. Tout est détaillé dans les <a href="/cgv">conditions générales de vente</a>.</p></div></details>
+        <details><summary>Quelle différence avec RAW 2 ?</summary><div class="a"><p>RAW est le premier synthé d’abrasion : simple et direct. <a href="raw-2.html">RAW 2</a>, dans abrasion labs, va beaucoup plus loin : instruments réels, matrice de modulation, 12 effets, arpège, accords et mix assisté par IA.</p></div></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="ab-sec tight" aria-label="RAW 2">
+    <div class="ab-wrap">
+      <a class="ab-bridge ab-up" href="raw-2.html">
+        <span class="k">la suite · abrasion labs</span>
+        <span class="t ab-glass">RAW 2</span>
+        <span class="ar" aria-hidden="true">→</span>
+        <p class="p">Le même ADN, en beaucoup plus grand : automate, instruments, effets et IA.</p>
+      </a>
+    </div>
+  </section>
+</main>
+
+<footer class="ab-foot">
+  <div class="ab-wrap">
+    <div class="ab-foot-grid">
+      <div class="ab-foot-brand"><span class="ab-glass s">abrasion</span><p>Plugins audio pour beatmakers et producteurs. Deux ateliers : abrasion et abrasion labs.</p></div>
+      <div><h2>abrasion</h2><ul><li><a href="index.html">Accueil</a></li><li><a href="raw.html">RAW</a></li></ul></div>
+      <div><h2>abrasion labs</h2><ul><li><a href="labs.html">Accueil labs</a></li><li><a href="omnis.html">OMNIS</a></li><li><a href="raw-2.html">RAW 2</a></li></ul></div>
+      <div><h2>Infos</h2><ul><li><a href="/mentions-legales">Mentions légales</a></li><li><a href="/cgv">CGV et CGU</a></li><li><a href="/remboursement">Rétractation et remboursement</a></li><li><a href="/confidentialite">Confidentialité</a></li><li><a href="/cookies">Cookies</a></li><li><a href="/support">Support</a></li></ul></div>
+    </div>
+    <div class="ab-foot-bot"><span>© <span data-year>2026</span> abrasion. Tous droits réservés.</span><span>Prix TTC · plugins VST3</span></div>
+  </div>
+</footer>
+</body>
+</html>

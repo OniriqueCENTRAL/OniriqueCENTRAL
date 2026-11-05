@@ -414,7 +414,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
 
 <script src="assets/cropper.js?v=3"></script>
 <script src="assets/account.js?v=11"></script>
-<script src="assets/site-nav.js?v=17"></script>
+<script src="assets/site-nav.js?v=18"></script>
 <script>
 // Le site relaie /api vers le serveur ONIRIQUE CENTRAL (même origine : pas de CORS à gérer).
 const $ = (id) => document.getElementById(id);
@@ -661,7 +661,7 @@ $("form").onsubmit = async (event) => {
     $("password").value = "";
     const me = await api("GET", "/me");
     show(me);
-    if (["mes-sons", "cloud", "cut", "mes-videos"].includes(new URLSearchParams(location.search).get("next"))) { location.href = new URLSearchParams(location.search).get("next"); return; }
+    if (["mes-sons", "cloud", "cut", "mes-videos"].includes(new URLSearchParams(location.search).get("next")) || /^/abrasion/[w.-]*$/.test(new URLSearchParams(location.search).get("next") || "")) { location.href = new URLSearchParams(location.search).get("next"); return; }
     if (new URLSearchParams(location.search).get("next") === "telecharger" && me.user.emailVerified !== false) window.OniriqueDownload?.open();
   } catch (error) {
     $("error").textContent = error.message;
@@ -1213,7 +1213,7 @@ $("logout").onclick = async () => {
   if (!saved()) { show(null); $("notice").textContent = verified && verified + (verified.startsWith("Adresse") ? " Connectez-vous." : ""); return; }
   try {
     const me = await api("GET", "/me");
-    if (["mes-sons", "cloud", "cut", "mes-videos"].includes(new URLSearchParams(location.search).get("next"))) { location.href = new URLSearchParams(location.search).get("next"); return; }
+    if (["mes-sons", "cloud", "cut", "mes-videos"].includes(new URLSearchParams(location.search).get("next")) || /^/abrasion/[w.-]*$/.test(new URLSearchParams(location.search).get("next") || "")) { location.href = new URLSearchParams(location.search).get("next"); return; }
     show(me);
     // Compte prêt (adresse validée) : le choix Windows / Mac s'ouvre tout de suite.
     if (wantsDownload && me.user.emailVerified !== false) window.OniriqueDownload?.open();

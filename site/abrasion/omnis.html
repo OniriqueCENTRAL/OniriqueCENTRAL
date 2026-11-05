@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="fr" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OMNIS — console de mastering avec IA · abrasion labs</title>
+<meta name="description" content="OMNIS, la console de mastering d’abrasion labs : sub, match EQ, inflator, imager, multiband, clipper et limiter, des écrans de mesure et une IA à qui tu décris le son voulu. VST3.">
+<meta name="theme-color" content="#000000">
+<meta property="og:type" content="product">
+<meta property="og:title" content="OMNIS — abrasion labs">
+<meta property="og:description" content="Sept modules de mastering et une IA qui comprend ce que tu veux entendre.">
+<meta property="og:image" content="assets/img/omnis/console.webp">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/site.css">
+<script src="assets/js/site.js" defer></script>
+<script src="assets/js/onirique.js" defer></script>
+<script src="/assets/account.js" defer></script>
+<script src="assets/js/viz.js" defer></script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"OMNIS","applicationCategory":"MultimediaApplication","operatingSystem":"Windows","description":"Console de mastering en sept modules avec assistant IA. Plugin VST3.","brand":{"@type":"Brand","name":"abrasion labs"}}</script>
+</head>
+<body class="w-labs p-omnis" data-page="omnis" data-buddy="Les carrés sur la console expliquent chaque zone. Clique dessus.|Plus bas, regarde l’IA traduire une phrase en réglages.|Le bouton Acheter ouvre une fenêtre de confirmation, rien n’est payé sans ton accord.|Le bouton ? me rappelle quand tu veux.">
+<a class="ab-skip" href="#main">Aller au contenu</a>
+
+<header class="ab-top">
+  <div class="ab-wrap ab-top-in">
+    <a class="ab-logo" href="labs.html" aria-label="abrasion labs, accueil"><span class="ab-glass s">abrasion</span><span class="ab-logo-sub">labs</span></a>
+    <nav class="ab-nav" aria-label="Plugins abrasion labs"><a href="omnis.html" aria-current="page">OMNIS</a><a href="raw-2.html">RAW 2</a></nav>
+    <nav class="ab-switch" data-world="labs" aria-label="Changer d’univers">
+      <a href="index.html" data-world="abrasion">abrasion</a>
+      <a href="labs.html" data-world="labs" aria-current="true">labs</a>
+      <i class="ab-sw-thumb" aria-hidden="true"></i>
+    </nav>
+    <div class="ab-oni"><a href="/" title="Revenir sur ONIRIQUE">ONIRIQUE</a><a href="/compte?next=/abrasion/" data-account>Compte</a></div>
+    <button class="ab-menu-btn" type="button" aria-expanded="false" aria-controls="ab-menu">Menu</button>
+  </div>
+  <nav class="ab-menu" id="ab-menu" aria-label="Menu" hidden>
+    <ul>
+      <li><a href="index.html">abrasion <span>accueil</span></a></li>
+      <li><a href="raw.html">RAW <span>synthé</span></a></li>
+      <li><a href="labs.html">abrasion labs <span>accueil</span></a></li>
+      <li><a href="omnis.html" aria-current="page">OMNIS <span>mastering</span></a></li>
+      <li><a href="raw-2.html">RAW 2 <span>synthé</span></a></li>
+      <li><a href="/compte">Compte <span>ONIRIQUE</span></a></li>
+      <li><a href="/">ONIRIQUE <span>retour</span></a></li>
+      <li><a href="/cgv">CGU · CGV <span>infos</span></a></li>
+    </ul>
+  </nav>
+</header>
+
+<main id="main">
+  <section class="ab-hero" aria-labelledby="h-omnis">
+    <div class="ab-wrap ab-hero-grid">
+      <div>
+        <p class="ab-eyebrow"><i></i>abrasion labs · mastering</p>
+        <h1 class="ab-pname" id="h-omnis">OMNIS</h1>
+        <p class="ab-pitch">Toute la chaîne de mastering dans un seul plugin : <b>sept modules</b>, du sub au limiteur, des <b>écrans de mesure</b> pour voir ce que tu entends, et une <b>IA</b> à qui tu décris le son que tu veux.</p>
+        <ul class="ab-kv">
+          <li>modules<b>7</b></li>
+          <li>match eq<b>mid / side</b></li>
+          <li>suréchantillonnage<b>jusqu’à 16×</b></li>
+        </ul>
+        <div class="ab-cta">
+          <span class="ab-price" data-price="omnis" data-ttc>Prix à venir</span>
+          <button class="ab-btn acc" type="button" data-buy="omnis">Acheter OMNIS</button>
+          <a class="ab-btn ghost" href="#console">Voir la console</a>
+        </div>
+      </div>
+      <div class="ab-lcard ab-trackable ab-up">
+        <i class="ab-br tl" aria-hidden="true"></i><i class="ab-br tr" aria-hidden="true"></i><i class="ab-br bl" aria-hidden="true"></i><i class="ab-br bk" aria-hidden="true"></i>
+        <div class="ab-trk" aria-hidden="true"><span class="id">1652</span><span>sortie · gonio · spectre</span></div>
+        <div class="ab-screen"><canvas data-viz="omnis" aria-hidden="true"></canvas></div>
+        <span class="ab-fol f1" data-l="" aria-hidden="true"></span><span class="ab-fol f2" aria-hidden="true"></span><span class="ab-fol f3" aria-hidden="true"></span>
+      </div>
+    </div>
+    <a class="ab-cue" href="#console" aria-label="Aller à la console">↓</a>
+  </section>
+
+  <!-- console -->
+  <section class="ab-sec" id="console" aria-labelledby="h-console">
+    <div class="ab-wrap">
+      <div class="ab-shead ab-up">
+        <span class="ab-snum">01 /</span>
+        <h2 class="ab-h2" id="h-console">La console</h2>
+        <p>Un châssis, trois étages : le rack des modules, le module ouvert en grand, et les écrans. La colonne master tient toute la hauteur.</p>
+      </div>
+      <figure class="ab-shot ab-up" data-hotspots>
+        <div class="ab-shot-in">
+          <img id="omnis-ui" src="assets/img/omnis/console.webp" width="1600" height="1000" loading="lazy" decoding="async" alt="Console OMNIS : barre de l’IA en haut, rack de sept modules, module Inflator ouvert avec sa courbe, analyseur, goniomètre et colonne master à droite.">
+          <button class="ab-hot" type="button" data-x="24" data-y="4" data-t="Transport" data-d="Lecture, chargement d’un morceau, retour à l’original et réinitialisation, pour comparer avant et après." >1</button>
+          <button class="ab-hot" type="button" data-x="30" data-y="9" data-t="IA" data-d="Écris ce que tu veux entendre, en français. OMNIS propose les réglages, tu appliques." >2</button>
+          <button class="ab-hot" type="button" data-x="78" data-y="4" data-t="Écoute" data-d="Source du signal et écoute en stéréo, mid ou side." >3</button>
+          <button class="ab-hot" type="button" data-x="50" data-y="23" data-t="Le rack" data-d="Les sept modules dans l’ordre de la chaîne, chacun avec son bouton ON, son réglage principal et son vumètre." >4</button>
+          <button class="ab-hot" type="button" data-x="24" data-y="55" data-t="Le module ouvert" data-d="Tous les réglages du module choisi. Ici l’Inflator : 808, mix, drive, sortie, courbe, warmth, séparation et suréchantillonnage." >5</button>
+          <button class="ab-hot" type="button" data-x="66" data-y="55" data-t="La courbe" data-d="La courbe du module, dessinée en direct. Le point suit le signal d’entrée." >6</button>
+          <button class="ab-hot" type="button" data-x="28" data-y="86" data-t="Analyseur" data-d="Spectre de sortie de 20 Hz à 20 kHz, avec RMS et facteur de crête." >7</button>
+          <button class="ab-hot" type="button" data-x="69" data-y="86" data-t="Goniomètre" data-d="L’image stéréo et la corrélation entre gauche et droite." >8</button>
+          <button class="ab-hot" type="button" data-x="91" data-y="34" data-t="Master" data-d="Gain d’entrée et de sortie, bargraphe, clip, crête, true peak, LUFS court terme et intégré, PLR, corrélation." >9</button>
+        </div>
+        <figcaption><span>OMNIS · console complète</span><span>1600 × 1000</span></figcaption>
+        <button class="ab-zoom" type="button" data-zoom="omnis-ui">Agrandir</button>
+      </figure>
+    </div>
+  </section>
+
+  <!-- chaîne -->
+  <section class="ab-sec tight" aria-labelledby="h-chain">
+    <div class="ab-wrap">
+      <div class="ab-shead ab-up">
+        <span class="ab-snum">02 /</span>
+        <h2 class="ab-h2" id="h-chain">La chaîne</h2>
+        <p>Sept modules, dans l’ordre où le son les traverse. Chacun se coupe d’un clic pour entendre ce qu’il apporte.</p>
+      </div>
+      <ol class="ab-chain ab-up" aria-label="Modules d’OMNIS">
+        <li class="ab-mod"><i class="led" aria-hidden="true"></i><span class="n">01</span><h3>Sub</h3><p>Garde le bas propre : mono sous la fréquence choisie et niveau du sub.</p></li>
+        <li class="ab-mod"><i class="led" aria-hidden="true"></i><span class="n">02</span><h3>Match EQ</h3><p>21 points en mid / side, à phase linéaire, plus un tilt global.</p></li>
+        <li class="ab-mod"><i class="led" aria-hidden="true"></i><span class="n">03</span><h3>Inflator</h3><p>Densité et présence : courbe, drive, warmth, et une séparation qui protège la 808.</p></li>
+        <li class="ab-mod"><i class="led" aria-hidden="true"></i><span class="n">04</span><h3>Imager</h3><p>Largeur stéréo réglable, pour ouvrir le haut sans fragiliser le bas.</p></li>
+        <li class="ab-mod"><i class="led" aria-hidden="true"></i><span class="n">05</span><h3>Multiband</h3><p>Compression en 4 bandes pour coller le mix (glue).</p></li>
+        <li class="ab-mod"><i class="led" aria-hidden="true"></i><span class="n">06</span><h3>Clipper</h3><p>Trois modes, dur, doux ou diode, avec plafond et genou.</p></li>
+        <li class="ab-mod"><i class="led" aria-hidden="true"></i><span class="n">07</span><h3>Limiter</h3><p>Le dernier mot : volume final et plafond de sortie.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- IA -->
+  <section class="ab-sec" aria-labelledby="h-ia">
+    <div class="ab-wrap ab-row">
+      <div class="ab-up">
+        <p class="ab-eyebrow"><i></i>03 / demande à l’IA</p>
+        <h2 class="ab-h2" id="h-ia">Dis-le avec tes mots</h2>
+        <p class="ab-p mt-m">Pas besoin de connaître le nom des réglages. Écris ce que tu veux entendre : OMNIS le traduit en réglages sur les bons modules. Tu écoutes, puis tu appliques… ou pas.</p>
+        <p class="ab-p mt-m">Des raccourcis sont proposés pour aller vite : un peu plus de grain, 808 protégée, plus de largeur.</p>
+      </div>
+      <div class="ab-ia ab-up" data-ia="un poil plus crispy, garde ma 808, plus large dans les aigus" aria-label="Exemple : une phrase écrite à l’IA et les réglages proposés">
+        <div class="ab-ia-bar"><b>IA</b><span></span></div>
+        <div class="ab-ia-out" aria-hidden="true">
+          <div><span>INFLATOR · warmth</span><em>proposé</em></div>
+          <div><span>INFLATOR · séparation 808</span><em>proposé</em></div>
+          <div><span>IMAGER · largeur des aigus</span><em>proposé</em></div>
+          <div><span>→ APPLIQUER</span><em>à toi de choisir</em></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- mesurer + instances -->
+  <section class="ab-sec tight" aria-labelledby="h-meas">
+    <div class="ab-wrap">
+      <div class="ab-shead ab-up"><span class="ab-snum">04 /</span><h2 class="ab-h2" id="h-meas">Mesurer, comparer, relier</h2></div>
+      <div class="ab-feats ab-up">
+        <article class="ab-feat"><span class="k">LUFS</span><h3>Loudness</h3><p>LUFS court terme et intégré, true peak, PLR, crête maximale : de quoi viser juste pour chaque plateforme.</p></article>
+        <article class="ab-feat"><span class="k">FFT</span><h3>Analyseur</h3><p>Le spectre de sortie de 20 Hz à 20 kHz, avec RMS et facteur de crête.</p></article>
+        <article class="ab-feat"><span class="k">M / S</span><h3>Stéréo</h3><p>Goniomètre, corrélation, et écoute séparée du mid et du side.</p></article>
+        <article class="ab-feat"><span class="k">A / B</span><h3>Avant, après</h3><p>Le bouton ORIGINAL fait entendre le son sans traitement, pour juger à l’oreille.</p></article>
+        <article class="ab-feat"><span class="k">16×</span><h3>Suréchantillonnage</h3><p>De 1× à 16× sur les modules qui saturent, pour des aigus sans repliement.</p></article>
+        <article class="ab-feat"><span class="k">LINK</span><h3>Instances liées</h3><p>Rôle Seul, Stem ou Master et un numéro de groupe : un OMNIS sur chaque bus et un sur le master travaillent ensemble.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="ab-sec tight" aria-labelledby="h-spec">
+    <div class="ab-wrap">
+      <div class="ab-shead ab-up"><span class="ab-snum">05 /</span><h2 class="ab-h2" id="h-spec">Fiche technique</h2></div>
+      <dl class="ab-spec ab-up">
+        <div><dt>Type</dt><dd>Effet de mastering</dd></div>
+        <div><dt>Format</dt><dd>VST3</dd></div>
+        <div><dt>Système</dt><dd>Windows 10 ou 11, 64 bits</dd></div>
+        <div><dt>Logiciel hôte</dt><dd>Tout logiciel compatible VST3</dd></div>
+        <div><dt>Modules</dt><dd>Sub, Match EQ, Inflator, Imager, Multiband, Clipper, Limiter</dd></div>
+        <div><dt>Mesures</dt><dd>Analyseur, goniomètre, LUFS, true peak, PLR, corrélation</dd></div>
+        <div><dt>Suréchantillonnage</dt><dd>1×, 2×, 4×, 8×, 16×</dd></div>
+        <div><dt>Instances</dt><dd>Seul, Stem ou Master, par groupe</dd></div>
+        <div><dt>Licence</dt><dd>Personnelle, jusqu’à 3 appareils</dd></div>
+        <div><dt>Activation</dt><dd>Clé de licence ou compte, fonctionne hors ligne</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="ab-sec tight" id="acheter" aria-labelledby="h-buy">
+    <div class="ab-wrap">
+      <div class="ab-band ab-up">
+        <div>
+          <h2 class="ab-h2" id="h-buy">OMNIS</h2>
+          <p>Téléchargement immédiat, clé de licence par e-mail, licence pour toi sur trois appareils, mises à jour de la version achetée incluses.</p>
+        </div>
+        <div class="ab-band-act">
+          <span class="ab-price" data-price="omnis" data-ttc>Prix à venir</span>
+          <button class="ab-btn acc" type="button" data-buy="omnis">Acheter OMNIS</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="ab-sec tight" aria-labelledby="h-faq">
+    <div class="ab-wrap">
+      <div class="ab-shead ab-up"><span class="ab-snum">06 /</span><h2 class="ab-h2" id="h-faq">Questions</h2></div>
+      <div class="ab-faq ab-up">
+        <details><summary>Où placer OMNIS ?</summary><div class="a"><p>En dernier sur ton bus master, en rôle Master. Pour aller plus loin, place aussi un OMNIS en rôle Stem sur chaque bus (808, voix, drums…) avec le même numéro de groupe.</p></div></details>
+        <details><summary>L’IA modifie-t-elle mon son sans me demander ?</summary><div class="a"><p>Non. Elle propose des réglages ; c’est toi qui appliques. Le bouton ORIGINAL permet toujours de comparer avec le son de départ.</p></div></details>
+        <details><summary>Comment installer OMNIS ?</summary><div class="a"><p>Copie le fichier <code>OMNIS.vst3</code> dans <code>C:\Program Files\Common Files\VST3</code>, puis relance la recherche de plugins dans ton logiciel. OMNIS apparaît dans les effets.</p></div></details>
+        <details><summary>Sur combien d’ordinateurs ?</summary><div class="a"><p>Trois appareils à toi. Tu peux en libérer un depuis ton compte ou depuis le plugin pour en activer un autre.</p></div></details>
+        <details><summary>Puis-je être remboursé ?</summary><div class="a"><p>Le droit de rétractation ne s’applique plus une fois le téléchargement commencé, avec ton accord exprès au moment de l’achat. Si le plugin ne fonctionne pas comme décrit, la garantie légale de conformité s’applique. Détails dans les <a href="/cgv">conditions générales de vente</a>.</p></div></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="ab-sec tight" aria-label="RAW 2">
+    <div class="ab-wrap">
+      <a class="ab-bridge ab-up" href="raw-2.html">
+        <span class="k">aussi au labo</span>
+        <span class="t ab-glass">RAW 2</span>
+        <span class="ar" aria-hidden="true">→</span>
+        <p class="p">Le synthé à automate cellulaire : wavetable, instruments réels, 12 effets et mix assisté par IA.</p>
+      </a>
+    </div>
+  </section>
+</main>
+
+<footer class="ab-foot">
+  <div class="ab-wrap">
+    <div class="ab-foot-grid">
+      <div class="ab-foot-brand"><span class="ab-glass s">abrasion</span><p>Plugins audio pour beatmakers et producteurs. Deux ateliers : abrasion et abrasion labs.</p></div>
+      <div><h2>abrasion</h2><ul><li><a href="index.html">Accueil</a></li><li><a href="raw.html">RAW</a></li></ul></div>
+      <div><h2>abrasion labs</h2><ul><li><a href="labs.html">Accueil labs</a></li><li><a href="omnis.html">OMNIS</a></li><li><a href="raw-2.html">RAW 2</a></li></ul></div>
+      <div><h2>Infos</h2><ul><li><a href="/mentions-legales">Mentions légales</a></li><li><a href="/cgv">CGV et CGU</a></li><li><a href="/remboursement">Rétractation et remboursement</a></li><li><a href="/confidentialite">Confidentialité</a></li><li><a href="/cookies">Cookies</a></li><li><a href="/support">Support</a></li></ul></div>
+    </div>
+    <div class="ab-foot-bot"><span>© <span data-year>2026</span> abrasion. Tous droits réservés.</span><span>Prix TTC · plugins VST3</span></div>
+  </div>
+</footer>
+</body>
+</html>
