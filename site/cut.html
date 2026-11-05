@@ -3233,9 +3233,10 @@ const upload = (url, body, type, progress) => new Promise((resolve, reject) => {
   xhr.responseType = type;
   xhr.upload.onprogress = (e) => e.lengthComputable && progress(e.loaded / e.total);
   // Le message du serveur quand il en donne un (réponse JSON) ; sinon le message habituel de l'export.
+  // status : 0 (connexion coupée) ou 502 à 504 quand le serveur redémarre (une mise en ligne) ; l'export réessaie alors.
   xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve(xhr.response)
-    : reject(new Error((type === "json" && xhr.response && xhr.response.error) || "Le serveur n'a pas pu préparer le MP4.")));
-  xhr.onerror = () => reject(new Error("Le serveur ne répond pas."));
+    : reject(Object.assign(new Error((type === "json" && xhr.response && xhr.response.error) || "Le serveur n'a pas pu préparer le MP4."), { status: xhr.status })));
+  xhr.onerror = () => reject(Object.assign(new Error("Le serveur ne répond pas."), { status: 0 }));
   xhr.send(body);
 });
 function pickMime() {
@@ -3367,7 +3368,22 @@ async function exportOne(mime, wav, progress) {
     }
 
     progress("Préparation du MP4 en haute qualité…", .72);
-    return await upload("/api/cut/mp4" + query, raw, "blob", (p) => progress("Préparation du MP4 en haute qualité…", .72 + .2 * p)).catch((error) => {
+    // Un serveur qui redémarre perd la vidéo en cours et le son envoyé : on attend qu'il revienne, on renvoie tout (3 essais).
+    const toMp4 = async (attempt = 1) => {
+      try {
+        if (attempt > 1 && audioId) {
+          audioId = (await upload("/api/cut/audio", wav, "json", () => {})).id;
+          query = query.replace(/audio=[^&]*/, "audio=" + audioId);
+        }
+        return await upload("/api/cut/mp4" + query, raw, "blob", (p) => progress("Préparation du MP4 en haute qualité…", .72 + .2 * p));
+      } catch (error) {
+        if (attempt > 3 || !(error.status === 0 || error.status === 400 || error.status >= 502)) throw error;
+        progress("Le serveur redémarre : nouvel essai dans quelques secondes…", .72);
+        await new Promise((resolve) => setTimeout(resolve, 5000 * attempt));
+        return toMp4(attempt + 1);
+      }
+    };
+    return await toMp4().catch((error) => {
       if (raw.type === "video/h264") throw error; // l'image par image n'est lisible qu'une fois passé par le serveur
       save(raw, fileName(mime.includes("mp4") ? "mp4" : "webm"));
       throw new Error(error.message + " La vidéo telle qu'enregistrée a été téléchargée à la place.");
