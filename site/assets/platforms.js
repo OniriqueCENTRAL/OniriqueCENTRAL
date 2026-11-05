@@ -134,6 +134,7 @@
     cur: null, fire: null, base: 0, at: 0, dur: 0, paused: true, done: false, timer: null, player: null,
     async load(item, fire) {
       Object.assign(this, { cur: item, fire, base: 0, at: performance.now(), dur: item.duration || 0, paused: true, done: false });
+      drawPeaks(item);
       const { player, device } = await spotifyDevice();
       this.player = player;
       const response = await fetch("https://api.spotify.com/v1/me/player/play?device_id=" + encodeURIComponent(device), { method: "PUT",
@@ -194,6 +195,7 @@
       const m = await appleKit();
       if (!m.isAuthorized) return false;
       Object.assign(this, { cur: item, fire: null, m });
+      drawPeaks(item);
       m.volume = ctx.player.audio.volume;
       await m.setQueue({ song: item.extId, startPlaying: true });
       this.fire = fire;

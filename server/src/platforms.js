@@ -634,7 +634,10 @@ export function mountPlatforms(app, { requireUser, wrap }) {
     // Les extraits de Deezer sont des adresses signées qui expirent en quelques heures : une fraîche à chaque écoute.
     let source = r.platform === 'deezer' ? previewUrl((await getJson(`${config.deezerApi}/track/${r.ext_id}`).catch(() => null))?.preview) || r.preview : r.preview;
     if (!source) {
-      source = await deezerPreviewFor(r).catch(() => null);
+      // L'API de Spotify ne donne plus d'extrait : celui de la page publique du titre, sinon celui de Deezer.
+      if (r.platform === 'spotify') source = await getHtml(`${config.spotifyWeb}/track/${r.ext_id}`)
+        .then((html) => spotifyTracks(spotifyState(html)).find((t) => t.id === r.ext_id)?.preview || null).catch(() => null);
+      source ||= await deezerPreviewFor(r).catch(() => null);
       if (!source) throw new HttpError(404, "Pas d'extrait pour ce titre : écoute-le sur sa plateforme.");
       run('UPDATE sound_platform_items SET preview = ? WHERE id = ?', source, r.id);
     }
