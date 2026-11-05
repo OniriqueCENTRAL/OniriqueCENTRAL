@@ -36,7 +36,7 @@ try {
     await call('PUT', '/api/me/profile/page', { token: b.token, body: { handle: 'nov.music' }, expect: 409 });
     await call('PUT', '/api/me/profile/page', { token: b.token, body: { handle: '  Loù ' } }); // devient « lou »
     const p = await call('GET', '/api/profiles/nov.music');
-    assert.deepEqual([p.name, p.bio, p.color, p.mine, p.followers], ['Nov', 'Beatmaker', '#3d7bff', false, 0]);
+    assert.deepEqual([p.name, p.bio, p.color, p.mine, p.followers, p.role], ['Nov', 'Beatmaker', '#3d7bff', false, 0, 'user']);
     await call('GET', '/api/profiles/personne', { expect: 404 });
   });
   await step('s’abonner, commenter, retirer un commentaire', async () => {

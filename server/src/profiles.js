@@ -67,7 +67,7 @@ export const toHandle = (v) => String(v || '').normalize('NFD').replace(/[\u0300
 const COLOR = /^#[0-9a-f]{6}$/i;
 const clean = (v, max) => (typeof v === 'string' ? v.replace(/\r/g, '').trim().slice(0, max) : '');
 const media = (name) => (name ? `/api/media/${name}` : null);
-const person = (u) => ({ id: u.id, name: u.name || 'Membre', avatar: media(u.avatar), handle: u.handle || null });
+const person = (u) => ({ id: u.id, name: u.name || 'Membre', avatar: media(u.avatar), handle: u.handle || null, role: u.role || null });
 const linksOf = (json) => { try { return JSON.parse(json || '[]'); } catch { return []; } };
 /** Jusqu'à six liens http(s), chacun avec un nom court. */
 function cleanLinks(list) {
@@ -86,7 +86,7 @@ const notify = (userId, kind, actorId, page, body = '') => {
 
 export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wrap }) {
   const pageOf = (handle) => {
-    const p = get('SELECT p.*, u.name, u.avatar FROM user_profiles p JOIN users u ON u.id = p.user_id WHERE p.handle = ?', String(handle || '').toLowerCase());
+    const p = get('SELECT p.*, u.name, u.avatar, u.role FROM user_profiles p JOIN users u ON u.id = p.user_id WHERE p.handle = ?', String(handle || '').toLowerCase());
     if (!p) throw new HttpError(404, "Cette page de profil n'existe pas.");
     return p;
   };
@@ -132,19 +132,19 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
   app.get('/api/profiles/:handle', (req, res) => {
     const p = pageOf(req.params.handle), viewer = optionalUser(req);
     const count = (sql, ...a) => get(sql, ...a).n;
-    const comments = all(`SELECT c.id, c.body, c.created_at, c.parent_id, u.id AS uid, u.name, u.avatar, pr.handle,
+    const comments = all(`SELECT c.id, c.body, c.created_at, c.parent_id, u.id AS uid, u.name, u.avatar, u.role, pr.handle,
         (SELECT COUNT(*) FROM profile_comment_likes k WHERE k.comment_id = c.id) AS likes,
         EXISTS (SELECT 1 FROM profile_comment_likes k WHERE k.comment_id = c.id AND k.user_id = ?) AS liked
       FROM profile_comments c JOIN users u ON u.id = c.author_id LEFT JOIN user_profiles pr ON pr.user_id = u.id
       WHERE c.profile_id = ? ORDER BY c.created_at DESC, c.id DESC LIMIT 400`, viewer?.id || 0, p.user_id)
       .map((c) => ({ id: c.id, parentId: c.parent_id, body: c.body, at: c.created_at, likes: c.likes, liked: !!c.liked,
-        author: person({ id: c.uid, name: c.name, avatar: c.avatar, handle: c.handle }), canDelete: !!(viewer && (viewer.id === c.uid || viewer.id === p.user_id)) }));
+        author: person({ id: c.uid, name: c.name, avatar: c.avatar, handle: c.handle, role: c.role }), canDelete: !!(viewer && (viewer.id === c.uid || viewer.id === p.user_id)) }));
     // Les réponses sous leur commentaire, de la plus ancienne à la plus récente.
     const top = comments.filter((c) => !c.parentId);
     for (const c of top) c.replies = comments.filter((r) => r.parentId === c.id).reverse();
     res.set('Cache-Control', 'no-store').json({
       handle: p.handle, name: p.name || 'Membre', avatar: media(p.avatar), bio: p.bio, color: p.color, banner: media(p.banner), commentsOpen: !!p.comments,
-      links: linksOf(p.links), since: p.created_at,
+      links: linksOf(p.links), since: p.created_at, role: p.role || null,
       playlists: publicPlaylists(viewer?.id, { where: 'p.user_id = ?', params: [p.user_id], limit: 60 }),
       followers: count('SELECT COUNT(*) AS n FROM user_follows WHERE followed_id = ?', p.user_id),
       following: count('SELECT COUNT(*) AS n FROM user_follows WHERE follower_id = ?', p.user_id),
@@ -157,7 +157,7 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
   // Les abonnés d'une page, ou ses abonnements : ?side=followers|following (avec, pour le visiteur, qui il suit déjà).
   app.get('/api/profiles/:handle/follows', (req, res) => {
     const p = pageOf(req.params.handle), viewer = optionalUser(req), followers = req.query.side !== 'following';
-    const rows = all(`SELECT u.id, u.name, u.avatar, pr.handle, pr.bio FROM user_follows f
+    const rows = all(`SELECT u.id, u.name, u.avatar, u.role, pr.handle, pr.bio FROM user_follows f
         JOIN users u ON u.id = ${followers ? 'f.follower_id' : 'f.followed_id'} LEFT JOIN user_profiles pr ON pr.user_id = u.id
       WHERE ${followers ? 'f.followed_id' : 'f.follower_id'} = ? ORDER BY f.created_at DESC LIMIT 500`, p.user_id);
     const mine = new Set(viewer ? all('SELECT followed_id FROM user_follows WHERE follower_id = ?', viewer.id).map((r) => r.followed_id) : []);

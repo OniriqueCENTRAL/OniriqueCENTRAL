@@ -53,13 +53,20 @@ input[type="checkbox"] { min-height: 0; width: 18px; height: 18px; accent-color:
 .notice.err { color: #ff8a95; }
 
 .banner { height: clamp(140px, 26vw, 230px); border-radius: 22px; border: 1px solid var(--line); background: linear-gradient(135deg, color-mix(in srgb, var(--ember) 55%, #1a080a), #1a080a) center/cover; }
-.head { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 18px; margin: -54px 22px 0; }
+/* Seule la photo chevauche la bannière ; le nom, le pseudo et les boutons commencent sous elle. */
+.head { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 18px; margin: -56px 22px 0; }
 .avatar { width: 112px; height: 112px; border-radius: 50%; object-fit: cover; border: 4px solid var(--night); background: #2a0a0e; flex: none; }
-.who { flex: 1; min-width: 200px; padding-bottom: 6px; }
+.who { flex: 1; min-width: 200px; padding-top: 66px; }
+.name-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+/* Le badge de rôle, comme dans le menu du compte. */
+.role { font: 500 11px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; padding: 6px 10px; border-radius: 999px; color: #ffecee;
+  border: 1px solid color-mix(in srgb, var(--ember) 70%, transparent); background: color-mix(in srgb, var(--ember) 18%, transparent); }
+.role.small { padding: 4px 7px; font-size: 9px; vertical-align: middle; }
 .who .handle { font: 500 13px var(--f-mono); color: var(--haze); }
 .counts { display: flex; gap: 18px; margin-top: 6px; font: 500 13px var(--f-mono); color: var(--haze); }
 .counts b { color: var(--mist); }
-.actions { display: flex; gap: 8px; padding-bottom: 8px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 70px; }
+@media (max-width: 560px) { .who, .actions { padding-top: 0; } .who { flex-basis: 100%; } }
 .bio { white-space: pre-wrap; margin: 0; }
 .comments { display: grid; gap: 12px; margin-top: 16px; }
 .comment { display: flex; gap: 12px; padding: 12px; border-radius: 14px; background: rgba(255,255,255,.03); border: 1px solid var(--line); }
@@ -123,7 +130,7 @@ dialog li small { display: block; color: var(--haze); font-size: 12px; overflow:
     <div class="head">
       <img class="avatar" id="avatar" alt="">
       <div class="who">
-        <h1 id="name"></h1>
+        <div class="name-row"><h1 id="name"></h1><span class="role" id="role" hidden></span></div>
         <div class="handle" id="handle"></div>
         <div class="counts"><button type="button" id="followers-open"><b id="followers">0</b> abonnés</button><button type="button" id="following-open"><b id="following">0</b> abonnements</button>
           <span><b id="pl-count">0</b> playlists</span><span class="tag" id="follows-me" hidden>Te suit</span></div>
@@ -192,6 +199,9 @@ const when = (t) => new Date(t).toLocaleDateString("fr-FR", { day: "numeric", mo
 const avatarOf = (src) => (src ? src + "?w=160" : "assets/favicon.png");
 
 let profile = null, mine = null;
+// Les badges de rôle : ONIRIQUE, Beta-Testeur et Beta-Testeuse ont le même, les autres rôles aussi le leur.
+const ROLES = { vip: "ONIRIQUE", beta: "Beta-Testeur", betaf: "Beta-Testeuse", abrasion: "Abrasion", relic: "Relic", admin: "Admin", founder: "Fondateur" };
+const badge = (role) => (ROLES[role] ? el("span", { className: "role small", textContent: ROLES[role] }) : null);
 
 function show(which) { $("view").hidden = which !== "view"; $("edit").hidden = which !== "edit"; $("state").hidden = true; }
 
@@ -202,6 +212,8 @@ function drawView() {
   $("banner").style.backgroundImage = p.banner ? `url("${p.banner}?w=1600")` : "";
   $("avatar").src = avatarOf(p.avatar);
   $("name").textContent = p.name;
+  $("role").textContent = ROLES[p.role] || "";
+  $("role").hidden = !ROLES[p.role];
   $("handle").textContent = "@" + p.handle;
   $("followers").textContent = p.followers;
   $("following").textContent = p.following;
@@ -240,7 +252,7 @@ function drawView() {
 function comment(c, p, reply) {
   const meta = el("div", { className: "meta" },
     c.author.handle ? el("a", { href: "profil?u=" + encodeURIComponent(c.author.handle), textContent: c.author.name }) : el("b", { textContent: c.author.name }),
-    el("span", { textContent: when(c.at) }), el("span", { className: "grow" }),
+    badge(c.author.role), el("span", { textContent: when(c.at) }), el("span", { className: "grow" }),
     token && el("button", { className: "link" + (c.liked ? " on" : ""), type: "button", textContent: (c.liked ? "♥ " : "♡ ") + (c.likes || ""), title: c.liked ? "Je n'aime plus" : "J'aime",
       onclick: async () => { try { Object.assign(c, await api("POST", "/profiles/comments/" + c.id + "/like", { like: !c.liked })); drawView(); } catch (e) { say("comment-notice", e.message, true); } } }),
     !reply && token && (p.commentsOpen || p.mine) && el("button", { className: "link", type: "button", textContent: "Répondre", onclick: () => {
@@ -273,7 +285,7 @@ async function openFollows(side) {
       const btn = token && !x.me && x.handle ? el("button", { className: "btn btn-ghost small" + (x.followed ? " on" : ""), type: "button", textContent: x.followed ? "Abonné" : "S'abonner",
         onclick: async () => { try { await api(x.followed ? "DELETE" : "POST", "/profiles/" + x.handle + "/follow"); x.followed = !x.followed; btn.textContent = x.followed ? "Abonné" : "S'abonner"; btn.classList.toggle("on", x.followed); } catch (e) { alert(e.message); } } }) : null;
       return el("li", {}, el("img", { src: avatarOf(x.avatar), alt: "" }),
-        el("span", {}, x.handle ? el("a", { href: "profil?u=" + encodeURIComponent(x.handle), textContent: x.name }) : el("b", { textContent: x.name }), el("small", { textContent: x.handle ? "@" + x.handle + (x.bio ? " · " + x.bio : "") : "Sans page de profil" })), btn);
+        el("span", {}, x.handle ? el("a", { href: "profil?u=" + encodeURIComponent(x.handle), textContent: x.name }) : el("b", { textContent: x.name }), " ", badge(x.role), el("small", { textContent: x.handle ? "@" + x.handle + (x.bio ? " · " + x.bio : "") : "Sans page de profil" })), btn);
     }) : [el("li", { className: "muted", textContent: side === "following" ? "Aucun abonnement pour l'instant." : "Aucun abonné pour l'instant." })]));
   } catch (e) { $("follows-list").replaceChildren(el("li", { className: "muted", textContent: e.message })); }
 }
