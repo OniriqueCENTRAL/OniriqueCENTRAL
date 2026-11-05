@@ -22,7 +22,11 @@ export const state = {
 
 export const call = (channel, ...args) => central.call(channel, ...args);
 
-export function go(name, id = null) {
+// Les écrans d'avant, pour « Retour » quand l'outil n'a plus de page d'avant (arrivé sur la carte depuis CLOUD…).
+const past = [];
+export function go(name, id = null, back = false) {
+  if (!back && state.route.name !== name) past.push(state.route);
+  if (past.length > 30) past.shift();
   state.route = { name, id };
   render();
   document.querySelector('.main')?.scrollTo(0, 0);
@@ -235,7 +239,12 @@ function compactSidebar() {
     h('button', { class: 'nav-item active', title: `${label} : accueil`, 'aria-current': 'page', onclick: () => call('tool:home', name).catch(() => {}) },
       navIcon(name), h('span', { class: 'name' }, label)),
     h('button', { class: 'menu-toggle tool-back', type: 'button', title: 'Revenir à la page précédente', 'aria-label': 'Revenir à la page précédente',
-      onclick: () => call('tool:back', name).catch(() => {}) }, h('span', { class: 'row', style: { gap: '6px' } }, '←', h('span', null, 'Retour'))),
+      onclick: async () => {
+        // D'abord la page d'avant dans l'outil, sinon l'écran d'avant dans l'application.
+        if (await call('tool:back', name).catch(() => false)) return;
+        const prev = past.pop();
+        if (prev) { menuOpen = false; go(prev.name, prev.id, true); }
+      } }, h('span', { class: 'row', style: { gap: '6px' } }, '←', h('span', null, 'Retour'))),
     h('button', { class: 'menu-toggle', type: 'button', title: 'Afficher le menu', 'aria-label': 'Afficher le menu', 'aria-expanded': 'false',
       onclick: () => toggleMenu(true) }, chevron(false)),
     h('div', { class: 'spacer' }),

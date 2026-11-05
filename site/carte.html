@@ -381,7 +381,7 @@ function flyTo(x, y, z = 2.4) { Object.assign(goal, { ax: 42, az: -4, z: Math.mi
   scene.addEventListener("wheel", (e) => { e.preventDefault(); goal.z = Math.min(4.5 * fit(), Math.max(.4 * fit(), goal.z * Math.exp(-e.deltaY / 600))); }, { passive: false });
   $("zoom-in").onclick = () => { goal.z = Math.min(4.5 * fit(), goal.z * 1.4); };
   $("zoom-out").onclick = () => { goal.z = Math.max(.4 * fit(), goal.z / 1.4); };
-  $("zoom-reset").onclick = () => { closeCity(); home(); };
+  $("zoom-reset").onclick = () => leaveCity();
   addEventListener("resize", () => { if (!current) home(); });
 })();
 
@@ -460,9 +460,11 @@ function card(m, i) {
   return box;
 }
 
-function openCity(id, quiet) {
+function openCity(id, quiet, fromHistory) {
   const c = DATA.cities.find((x) => x.id === id);
   if (!c) return;
+  // Une ville ouverte est une étape de l'historique : « Retour » (navigateur, souris, application) la referme.
+  if (!quiet && !fromHistory && history.state?.city !== id) history[history.state?.city ? "replaceState" : "pushState"]({ city: id }, "");
   current = id;
   const list = byCity().get(id) || [];
   for (const [cid, node] of cityNodes) node.classList.toggle("on", cid === id);
@@ -476,8 +478,10 @@ function openCity(id, quiet) {
   if (!quiet && !c.far) { const [x, y] = project(c.lon, c.lat); flyTo(x, y, 2.6); }
 }
 function closeCity() { current = null; clearHalls(); $("city").classList.remove("open"); document.body.classList.remove("city-open"); for (const node of cityNodes.values()) node.classList.remove("on"); }
-$("city-close").onclick = () => { closeCity(); home(); };
-addEventListener("keydown", (e) => { if (e.key === "Escape") { closeCity(); home(); } });
+const leaveCity = () => { if (history.state?.city) history.back(); else { closeCity(); home(); } };
+$("city-close").onclick = leaveCity;
+addEventListener("keydown", (e) => { if (e.key === "Escape") leaveCity(); });
+addEventListener("popstate", (e) => { if (e.state?.city) openCity(e.state.city, false, true); else { closeCity(); home(); } });
 
 //------------------------------------------------------------------------------ Les concerts de rap à venir autour de la ville (Ticketmaster)
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
