@@ -850,6 +850,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 
 <script src="assets/sounds-player.js?v=22"></script>
 <script src="assets/platforms.js?v=13"></script>
+<script src="assets/rocky-builder.js?v=1"></script>
 <script src="assets/ratings.js?v=2"></script>
 <script src="assets/audio-kit.js?v=2"></script>
 <script src="assets/pdf-kit.js"></script>
@@ -881,6 +882,7 @@ async function api(method, path, body) {
   }).catch(() => { throw new Error("Serveur injoignable. Réessaie dans un instant."); });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw Object.assign(new Error(data.error || "Erreur " + response.status), { status: response.status });
+  window.RockyBuild?.fromApi(method, path, body); // le mini Rocky bâtisseur, dans l'application (assets/rocky-builder.js)
   return data;
 }
 // Les fichiers passent par XMLHttpRequest, qui seul donne l'avancement de l'envoi.
@@ -888,7 +890,9 @@ async function api(method, path, body) {
 async function upload(path, file, onProgress, method = "POST") {
   for (let attempt = 1; ; attempt++) {
     try {
-      return await uploadOnce(path, file, onProgress, method);
+      const done = await uploadOnce(path, file, onProgress, method);
+      window.RockyBuild?.fromApi(method, path);
+      return done;
     } catch (error) {
       if (attempt >= 20 || (error.status && (error.status < 502 || error.status > 504))) throw error;
       onProgress(0);
