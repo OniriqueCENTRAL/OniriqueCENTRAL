@@ -3,13 +3,13 @@
 (() => {
   if (document.getElementById("rocky")) return;
   const KEY = "rocky-chat";
-  // Un petit être de pierre à cinq pattes, sans yeux : son humeur change avec la conversation (assets/rocky/*.svg).
-  const AVATAR = `<img src="/assets/rocky/rocky-idle.svg?v=3" alt="">`;
+  // Un petit caillou rond en 3D (rendu Blender), cinq pattes potelées : son humeur change avec la conversation (assets/rocky/*.webp).
+  const AVATAR = `<img src="/assets/rocky/rocky-idle.webp?v=5" alt="">`;
   let state = "idle", nap, busy = false;
   const mood = (m) => {
     if (m === state) return;
     state = m;
-    root.querySelectorAll(".rk-av img, .rk-fab img").forEach((i) => (i.src = `/assets/rocky/rocky-${m}.svg?v=3`));
+    root.querySelectorAll(".rk-av img, .rk-fab img").forEach((i) => (i.src = `/assets/rocky/rocky-${m}.webp?v=5`));
   };
   // Sans qu'on lui parle pendant 40 s, Rocky s'endort (ZZzz) ; il se réveille dès qu'on s'approche ou qu'on écrit.
   const wake = () => {
@@ -21,7 +21,7 @@
   const css = document.createElement("style");
   css.textContent = `
   #rocky{position:fixed;right:18px;bottom:18px;z-index:9999;font:400 15px/1.5 "Hanken Grotesk","Segoe UI",system-ui,sans-serif;color:#F6EEEE}
-  #rocky .rk-fab{width:62px;height:62px;border-radius:50%;border:1px solid rgba(255,210,214,.25);background:#1A080A;cursor:pointer;padding:6px;box-shadow:0 6px 24px rgba(0,0,0,.5),0 0 18px rgba(226,52,68,.35)}
+  #rocky .rk-fab{width:62px;height:62px;border-radius:50%;border:1px solid rgba(255,210,214,.25);background:#1A080A;cursor:pointer;padding:2px;box-shadow:0 6px 24px rgba(0,0,0,.5),0 0 18px rgba(226,52,68,.35)}
   #rocky .rk-fab:hover{transform:scale(1.06)}#rocky img{width:100%;height:100%;display:block}
   #rocky .rk-panel{position:absolute;right:0;bottom:76px;width:min(360px,calc(100vw - 36px));height:min(500px,calc(100vh - 120px));display:flex;flex-direction:column;background:#0D0809;border:1px solid rgba(255,210,214,.18);border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.6)}
   #rocky .rk-panel[hidden]{display:none}
@@ -88,6 +88,7 @@
   };
 
   const open = (show) => {
+    if (show) ["happy", "thinking", "sleeping"].forEach((m) => (new Image().src = `/assets/rocky/rocky-${m}.webp?v=5`)); // pas de trou au changement d'humeur
     panel.hidden = !show;
     if (show && !log.childElementCount) {
       add("assistant", "Salut, ami ! Moi Rocky. Je connais le site ONIRIQUE bien bien bien. Tu cherches quoi, question ?");
