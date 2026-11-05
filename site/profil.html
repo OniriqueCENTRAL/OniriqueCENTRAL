@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<script src="assets/i18n.js?v=2f9cddc9"></script>
+<script src="assets/ui.js?v=3"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ONIRIQUE — Page de profil</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<style>
+/* Mêmes tokens que compte.html ; --ember prend la couleur choisie par le propriétaire de la page. */
+:root {
+  --night: #0D0809; --line: rgba(255,210,214,.13); --mist: #F6EEEE; --haze: #A88F92; --ember: #E23444;
+  --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; color: var(--mist); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased; background: var(--night); }
+body::before { content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
+  background: radial-gradient(120% 60% at 50% -10%, color-mix(in srgb, var(--ember) 45%, transparent), color-mix(in srgb, var(--ember) 18%, transparent) 36%, transparent 72%); }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
+.wrap { width: 100%; max-width: 920px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 40px); }
+header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.6); backdrop-filter: blur(14px); }
+header .wrap { max-width: 1180px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 16px; }
+.brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 800 17px/1 var(--f-display); letter-spacing: .16em; }
+.brand img { width: 44px; height: auto; margin-block: -12px; filter: drop-shadow(0 0 6px rgba(226,52,68,.8)); }
+.between { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+main { padding-block: clamp(20px, 4vw, 40px) 120px; }
+h1 { font: 800 clamp(24px, 4.5vw, 34px)/1.1 var(--f-display); margin: 0; }
+.eyebrow { font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); }
+.muted { color: var(--haze); }
+.panel { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 18px; padding: clamp(18px, 3vw, 24px); margin-top: 16px; }
+.panel > .eyebrow { display: block; margin-bottom: 14px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 18px; border-radius: 999px; border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
+.btn-primary { background: var(--mist); color: var(--night); box-shadow: 0 10px 40px -10px color-mix(in srgb, var(--ember) 70%, transparent); }
+.btn-ghost { background: rgba(255,255,255,.03); color: var(--mist); border-color: var(--line); }
+.btn-ghost:hover { border-color: var(--ember); }
+.btn.on { border-color: var(--ember); color: var(--ember); }
+.btn:disabled { opacity: .5; cursor: default; }
+.small { padding: 8px 12px; font-size: 13px; }
+label { display: grid; gap: 7px; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
+label.check { display: flex; align-items: center; gap: 10px; text-transform: none; letter-spacing: 0; font: 500 15px var(--f-body); color: var(--mist); }
+input, textarea { min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px var(--f-body); letter-spacing: 0; text-transform: none; min-width: 0; }
+textarea { padding: 12px 14px; resize: vertical; min-height: 96px; line-height: 1.5; }
+input[type="color"] { padding: 4px; width: 90px; cursor: pointer; }
+input[type="checkbox"] { min-height: 0; width: 18px; height: 18px; accent-color: var(--ember); }
+.form { display: grid; gap: 16px; }
+.notice { min-height: 1.4em; font-size: 14px; color: var(--haze); }
+.notice.err { color: #ff8a95; }
+
+.banner { height: clamp(140px, 26vw, 230px); border-radius: 22px; border: 1px solid var(--line); background: linear-gradient(135deg, color-mix(in srgb, var(--ember) 55%, #1a080a), #1a080a) center/cover; }
+.head { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 18px; margin: -54px 22px 0; }
+.avatar { width: 112px; height: 112px; border-radius: 50%; object-fit: cover; border: 4px solid var(--night); background: #2a0a0e; flex: none; }
+.who { flex: 1; min-width: 200px; padding-bottom: 6px; }
+.who .handle { font: 500 13px var(--f-mono); color: var(--haze); }
+.counts { display: flex; gap: 18px; margin-top: 6px; font: 500 13px var(--f-mono); color: var(--haze); }
+.counts b { color: var(--mist); }
+.actions { display: flex; gap: 8px; padding-bottom: 8px; }
+.bio { white-space: pre-wrap; margin: 0; }
+.comments { display: grid; gap: 12px; margin-top: 16px; }
+.comment { display: flex; gap: 12px; padding: 12px; border-radius: 14px; background: rgba(255,255,255,.03); border: 1px solid var(--line); }
+.comment img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex: none; background: #2a0a0e; }
+.comment .body { flex: 1; min-width: 0; }
+.comment .meta { font: 500 12px var(--f-mono); color: var(--haze); display: flex; gap: 10px; align-items: center; }
+.comment .meta a { text-decoration: none; color: var(--mist); font-weight: 700; }
+.comment p { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.link { border: 0; background: none; color: var(--haze); font: 500 12px var(--f-mono); cursor: pointer; padding: 0; margin-left: auto; }
+.link:hover { color: var(--ember); }
+.danger { color: #ff8a95; }
+</style>
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <div class="between"><a class="btn btn-ghost" href="messages">Messages</a><a class="btn btn-ghost" href="compte">Mon compte</a></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <p class="notice" id="state" role="status">Chargement…</p>
+
+  <!-- La page vue par tout le monde. -->
+  <section id="view" hidden>
+    <div class="banner" id="banner"></div>
+    <div class="head">
+      <img class="avatar" id="avatar" alt="">
+      <div class="who">
+        <h1 id="name"></h1>
+        <div class="handle" id="handle"></div>
+        <div class="counts"><span><b id="followers">0</b> abonnés</span><span><b id="following">0</b> abonnements</span></div>
+      </div>
+      <div class="actions" id="actions"></div>
+    </div>
+    <div class="panel" id="bio-panel"><span class="eyebrow">À propos</span><p class="bio" id="bio"></p></div>
+    <div class="panel">
+      <span class="eyebrow">Commentaires</span>
+      <form class="form" id="comment-form" hidden>
+        <textarea id="comment-body" maxlength="1000" placeholder="Laisse un commentaire…" aria-label="Ton commentaire"></textarea>
+        <div class="between"><button class="btn btn-primary small" type="submit">Publier</button><span class="notice" id="comment-notice" role="status"></span></div>
+      </form>
+      <p class="muted" id="comments-closed" hidden></p>
+      <div class="comments" id="comments"></div>
+    </div>
+  </section>
+
+  <!-- Créer ou régler sa page. -->
+  <section id="edit" hidden>
+    <span class="eyebrow">Ma page de profil</span>
+    <h1 id="edit-title" style="margin-top:12px">Crée ta page</h1>
+    <p class="muted">Une page publique à ton nom : les autres membres peuvent s'y abonner, y laisser un commentaire et t'écrire en privé.</p>
+    <form class="form panel" id="edit-form">
+      <label>Adresse de la page<input id="f-handle" required minlength="3" maxlength="30" pattern="[a-z0-9][a-z0-9._\-]{2,29}" autocomplete="off" placeholder="ton-pseudo"></label>
+      <label>Bio<textarea id="f-bio" maxlength="600" placeholder="Qui tu es, ce que tu fais, tes liens…"></textarea></label>
+      <label>Couleur de la page<input id="f-color" type="color" value="#e5384a"></label>
+      <label class="check"><input id="f-comments" type="checkbox" checked> Autoriser les commentaires</label>
+      <div id="banner-field" hidden>
+        <label>Bannière</label>
+        <div class="between" style="margin-top:8px"><button class="btn btn-ghost small" id="banner-pick" type="button">Choisir une image</button>
+          <input id="banner-file" type="file" accept="image/png,image/jpeg,image/webp" aria-label="Bannière" hidden></div>
+      </div>
+      <div class="between"><button class="btn btn-primary" type="submit">Enregistrer</button><a class="btn btn-ghost" id="edit-cancel" href="#" hidden>Annuler</a>
+        <button class="link danger" id="delete" type="button" hidden>Supprimer ma page</button></div>
+      <p class="notice" id="edit-notice" role="status"></p>
+    </form>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const TOKEN = "onirique.token";
+const token = sessionStorage.getItem(TOKEN) || localStorage.getItem(TOKEN);
+const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids.filter((k) => k != null && k !== false)); return n; };
+
+async function api(method, path, body, raw) {
+  const response = await fetch("/api" + path, {
+    method,
+    headers: { ...(token ? { Authorization: "Bearer " + token } : {}), ...(raw ? { "Content-Type": raw.type } : body ? { "Content-Type": "application/json" } : {}) },
+    body: raw || (body ? JSON.stringify(body) : undefined),
+  }).catch(() => { throw new Error("Serveur injoignable. Réessaie dans un instant."); });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw Object.assign(new Error(data.error || "Erreur " + response.status), { status: response.status });
+  return data;
+}
+const say = (id, text, err) => { $(id).textContent = text; $(id).classList.toggle("err", !!err); };
+const handleOf = () => new URLSearchParams(location.search).get("u");
+const when = (t) => new Date(t).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+const avatarOf = (src) => (src ? src + "?w=160" : "assets/favicon.png");
+
+let profile = null, mine = null;
+
+function show(which) { $("view").hidden = which !== "view"; $("edit").hidden = which !== "edit"; $("state").hidden = true; }
+
+function drawView() {
+  const p = profile;
+  document.title = "ONIRIQUE — " + p.name;
+  document.documentElement.style.setProperty("--ember", p.color);
+  $("banner").style.backgroundImage = p.banner ? `url("${p.banner}?w=1600")` : "";
+  $("avatar").src = avatarOf(p.avatar);
+  $("name").textContent = p.name;
+  $("handle").textContent = "@" + p.handle;
+  $("followers").textContent = p.followers;
+  $("following").textContent = p.following;
+  $("bio").textContent = p.bio;
+  $("bio-panel").hidden = !p.bio;
+  const actions = [];
+  if (p.mine) actions.push(el("button", { className: "btn btn-ghost", type: "button", textContent: "Modifier ma page", onclick: () => openEdit() }));
+  else if (token) {
+    actions.push(el("button", { className: "btn btn-ghost" + (p.followed ? " on" : ""), type: "button", textContent: p.followed ? "Abonné" : "S'abonner",
+      onclick: async () => { try { await api(p.followed ? "DELETE" : "POST", "/profiles/" + p.handle + "/follow"); await load(); } catch (e) { say("comment-notice", e.message, true); } } }));
+    if (p.canMessage) actions.push(el("a", { className: "btn btn-primary", href: "messages?u=" + encodeURIComponent(p.handle), textContent: "Message" }));
+  } else actions.push(el("a", { className: "btn btn-primary", href: "compte", textContent: "Se connecter pour s'abonner" }));
+  $("actions").replaceChildren(...actions);
+
+  $("comment-form").hidden = !token || (!p.commentsOpen && !p.mine);
+  $("comments-closed").hidden = p.commentsOpen || p.mine;
+  $("comments-closed").textContent = "Les commentaires sont fermés sur cette page.";
+  if (!token && p.commentsOpen) { $("comments-closed").hidden = false; $("comments-closed").textContent = "Connecte-toi pour laisser un commentaire."; }
+  $("comments").replaceChildren(...(p.comments.length ? p.comments.map((c) => el("div", { className: "comment" },
+    el("img", { src: avatarOf(c.author.avatar), alt: "" }),
+    el("div", { className: "body" },
+      el("div", { className: "meta" }, c.author.handle ? el("a", { href: "profil?u=" + encodeURIComponent(c.author.handle), textContent: c.author.name }) : el("b", { textContent: c.author.name }),
+        el("span", { textContent: when(c.at) }),
+        c.canDelete && el("button", { className: "link", type: "button", textContent: "Retirer", onclick: async () => { try { await api("DELETE", "/profiles/comments/" + c.id); await load(); } catch (e) { say("comment-notice", e.message, true); } } })),
+      el("p", { textContent: c.body })))) : [el("p", { className: "muted", textContent: "Pas encore de commentaire." })]));
+  show("view");
+}
+
+function openEdit() {
+  const m = mine || { handle: "", bio: "", color: "#e5384a", comments: true };
+  $("edit-title").textContent = mine ? "Régler ma page" : "Crée ta page";
+  $("f-handle").value = m.handle; $("f-bio").value = m.bio; $("f-color").value = m.color; $("f-comments").checked = m.comments;
+  $("banner-field").hidden = $("delete").hidden = $("edit-cancel").hidden = !mine;
+  if (mine) $("edit-cancel").href = "profil?u=" + encodeURIComponent(mine.handle);
+  document.documentElement.style.setProperty("--ember", m.color);
+  show("edit");
+}
+
+$("f-color").addEventListener("input", (e) => document.documentElement.style.setProperty("--ember", e.target.value));
+$("edit-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  try {
+    const { handle } = await api("PUT", "/me/profile/page", { handle: $("f-handle").value.trim().toLowerCase(), bio: $("f-bio").value, color: $("f-color").value, comments: $("f-comments").checked });
+    location.href = "profil?u=" + encodeURIComponent(handle);
+  } catch (e) { say("edit-notice", e.message, true); }
+});
+$("banner-pick").onclick = () => $("banner-file").click();
+$("banner-file").onchange = async () => {
+  const file = $("banner-file").files[0];
+  if (!file) return;
+  say("edit-notice", "Envoi de la bannière…");
+  try { await api("PUT", "/me/profile/page/banner", null, file); say("edit-notice", "Bannière enregistrée."); mine = await api("GET", "/me/profile/page"); }
+  catch (e) { say("edit-notice", e.message, true); }
+  $("banner-file").value = "";
+};
+$("delete").onclick = async () => {
+  if (!confirm("Supprimer ta page de profil ? Ses commentaires sont supprimés avec elle.")) return;
+  try { await api("DELETE", "/me/profile/page"); location.href = "compte"; } catch (e) { say("edit-notice", e.message, true); }
+};
+$("comment-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  try { await api("POST", "/profiles/" + profile.handle + "/comments", { body: $("comment-body").value }); $("comment-body").value = ""; say("comment-notice", ""); await load(); }
+  catch (e) { say("comment-notice", e.message, true); }
+});
+
+async function load() {
+  const handle = handleOf();
+  if (token) mine = await api("GET", "/me/profile/page").catch(() => null);
+  if (!handle) {
+    if (!token) { $("state").innerHTML = 'Connecte-toi pour créer ta page de profil : <a href="compte">Mon compte</a>.'; return; }
+    if (mine) { location.replace("profil?u=" + encodeURIComponent(mine.handle)); return; }
+    return openEdit();
+  }
+  try { profile = await api("GET", "/profiles/" + encodeURIComponent(handle)); drawView(); }
+  catch (e) { say("state", e.message, true); }
+}
+load();
+</script>
+<script src="assets/site-nav.js?v=16"></script>
+</html>

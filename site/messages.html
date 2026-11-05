@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<script src="assets/i18n.js?v=2f9cddc9"></script>
+<script src="assets/ui.js?v=3"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ONIRIQUE — Messages</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<style>
+/* Mêmes tokens que compte.html et profil.html. */
+:root {
+  --night: #0D0809; --line: rgba(255,210,214,.13); --mist: #F6EEEE; --haze: #A88F92; --ember: #E23444;
+  --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; color: var(--mist); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased; background: var(--night); }
+body::before { content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
+  background: radial-gradient(120% 60% at 50% -10%, rgba(140,6,20,.8), rgba(92,0,8,.45) 36%, transparent 72%); }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
+.wrap { width: 100%; max-width: 1080px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 40px); }
+header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.6); backdrop-filter: blur(14px); }
+header .wrap { max-width: 1180px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 16px; }
+.brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 800 17px/1 var(--f-display); letter-spacing: .16em; }
+.brand img { width: 44px; height: auto; margin-block: -12px; filter: drop-shadow(0 0 6px rgba(226,52,68,.8)); }
+.between { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+main { padding-block: clamp(20px, 4vw, 40px) 80px; }
+.eyebrow { font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); }
+.muted { color: var(--haze); }
+.notice { min-height: 1.4em; font-size: 14px; color: var(--haze); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 18px; border-radius: 999px; border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
+.btn-primary { background: var(--mist); color: var(--night); box-shadow: 0 10px 40px -10px rgba(226,52,68,.6); }
+.btn-ghost { background: rgba(255,255,255,.03); color: var(--mist); border-color: var(--line); }
+.btn-ghost:hover { border-color: var(--ember); }
+textarea { border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px var(--f-body); resize: none; min-width: 0; }
+.chat { display: grid; grid-template-columns: 300px 1fr; gap: 16px; margin-top: 8px; min-height: 60vh; }
+@media (max-width: 760px) { .chat { grid-template-columns: 1fr; } }
+.list, .thread { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+.list { display: flex; flex-direction: column; }
+.conv { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--mist); text-align: left; cursor: pointer; font: inherit; }
+.conv:hover, .conv.on { background: rgba(255,255,255,.05); }
+.conv:disabled { opacity: .5; cursor: default; }
+.conv img, .thread-head img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex: none; background: #2a0a0e; }
+.conv span { flex: 1; min-width: 0; }
+.conv b { display: block; font-size: 14px; }
+.conv small { display: block; color: var(--haze); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.conv i { font-style: normal; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--ember); color: #fff; font: 700 11px/20px var(--f-mono); text-align: center; }
+.thread { display: flex; flex-direction: column; }
+.thread-head { display: flex; gap: 12px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); text-decoration: none; }
+.msgs { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; max-height: 62vh; }
+.msg { max-width: 75%; padding: 9px 13px; border-radius: 16px; background: rgba(255,255,255,.06); white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg.mine { align-self: flex-end; background: rgba(226,52,68,.55); }
+.msg time { display: block; font: 500 10px var(--f-mono); color: rgba(246,238,238,.55); margin-top: 3px; }
+.send { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line); }
+.send textarea { flex: 1; height: 44px; padding: 11px 14px; overflow: hidden; }
+.empty { padding: 24px; margin: 0; color: var(--haze); }
+</style>
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <div class="between"><a class="btn btn-ghost" href="profil">Mon profil</a><a class="btn btn-ghost" href="compte">Mon compte</a></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <span class="eyebrow">Messages privés</span>
+  <p class="notice" id="state" role="status"></p>
+  <div class="chat" id="chat" hidden>
+    <nav class="list" id="list" aria-label="Conversations"></nav>
+    <section class="thread" id="thread"><p class="empty">Choisis une conversation, ou écris à un membre depuis sa page de profil.</p></section>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const TOKEN = "onirique.token";
+const token = sessionStorage.getItem(TOKEN) || localStorage.getItem(TOKEN);
+const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids.filter((k) => k != null && k !== false)); return n; };
+async function api(method, path, body) {
+  const response = await fetch("/api" + path, { method, headers: { Authorization: "Bearer " + token, ...(body ? { "Content-Type": "application/json" } : {}) }, body: body ? JSON.stringify(body) : undefined })
+    .catch(() => { throw new Error("Serveur injoignable. Réessaie dans un instant."); });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "Erreur " + response.status);
+  return data;
+}
+const avatarOf = (src) => (src ? src + "?w=120" : "assets/favicon.png");
+const time = (t) => new Date(t).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+let current = new URLSearchParams(location.search).get("u"), shown = "";
+
+async function drawList() {
+  const list = await api("GET", "/me/messages");
+  $("list").replaceChildren(...(list.length ? list.map((c) => el("button", { type: "button", className: "conv" + (c.with.handle === current ? " on" : ""), disabled: !c.with.handle,
+    title: c.with.handle ? "" : "Ce membre n'a plus de page de profil", onclick: () => open(c.with.handle) },
+    el("img", { src: avatarOf(c.with.avatar), alt: "" }), el("span", {}, el("b", { textContent: c.with.name }), el("small", { textContent: c.last })),
+    c.unread && c.with.handle !== current ? el("i", { textContent: String(c.unread) }) : null)) : [el("p", { className: "empty", textContent: "Aucune conversation pour l'instant." })]));
+}
+
+async function drawThread(force) {
+  if (!current) return;
+  const t = await api("GET", "/me/messages/" + encodeURIComponent(current));
+  const key = t.messages.map((m) => m.id).join(",");
+  if (key === shown && !force) return;
+  shown = key;
+  if (!$("msgs")) {
+    const box = el("textarea", { id: "body", maxLength: 2000, placeholder: "Ton message…", ariaLabel: "Ton message" });
+    const form = el("form", { className: "send" }, box, el("button", { className: "btn btn-primary", type: "submit", textContent: "Envoyer" }));
+    box.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); } });
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!box.value.trim()) return;
+      try { await api("POST", "/me/messages/" + encodeURIComponent(current), { body: box.value }); box.value = ""; await drawThread(true); drawList(); }
+      catch (err) { $("state").textContent = err.message; }
+    });
+    $("thread").replaceChildren(el("a", { className: "thread-head", id: "head", href: "profil?u=" + encodeURIComponent(current) }), el("div", { className: "msgs", id: "msgs" }), form);
+  }
+  $("head").replaceChildren(el("img", { src: avatarOf(t.with.avatar), alt: "" }), el("b", { textContent: t.with.name }), el("span", { className: "muted", textContent: "@" + t.with.handle }));
+  $("msgs").replaceChildren(...(t.messages.length ? t.messages.map((m) => el("div", { className: "msg" + (m.mine ? " mine" : "") }, m.body, el("time", { textContent: time(m.at) })))
+    : [el("p", { className: "empty", textContent: "Écris le premier message." })]));
+  $("msgs").scrollTop = $("msgs").scrollHeight;
+}
+
+async function open(handle) {
+  current = handle; shown = "";
+  history.replaceState(null, "", "messages?u=" + encodeURIComponent(handle));
+  $("thread").replaceChildren();
+  try { await drawThread(true); $("body").focus(); } catch (e) { $("thread").replaceChildren(el("p", { className: "empty", textContent: e.message })); }
+  drawList().catch(() => {});
+}
+
+(async () => {
+  if (!token) { $("state").innerHTML = 'Connecte-toi pour lire tes messages : <a href="compte">Mon compte</a>.'; return; }
+  try { await drawList(); $("chat").hidden = false; if (current) await open(current); }
+  catch (e) { $("state").textContent = e.message; return; }
+  // Les nouveaux messages arrivent sans recharger la page.
+  setInterval(() => { if (!document.hidden) { drawThread(false).catch(() => {}); drawList().catch(() => {}); } }, 8000);
+})();
+</script>
+<script src="assets/site-nav.js?v=16"></script>
+</html>

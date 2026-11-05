@@ -1,0 +1,164 @@
+// Les pages de profil des membres (profil.html) : créées depuis « Mon compte » par ceux qui en veulent une, avec un
+// nom d'adresse, une bio, une couleur et une bannière ; on s'y abonne (follow), on y laisse un commentaire, et on
+// écrit en privé à son auteur (messages.html). Un compte sans page de profil ne reçoit pas de message.
+import { db, get, all, run, now, transaction } from './db.js';
+import { HttpError, rateLimit, optionalUser } from './auth.js';
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS user_profiles (
+  user_id    INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  handle     TEXT NOT NULL UNIQUE,
+  bio        TEXT NOT NULL DEFAULT '',
+  color      TEXT NOT NULL DEFAULT '#e5384a',
+  banner     TEXT,
+  comments   INTEGER NOT NULL DEFAULT 1,
+  created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS user_follows (
+  follower_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  followed_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at  INTEGER NOT NULL,
+  PRIMARY KEY (follower_id, followed_id)
+);
+CREATE TABLE IF NOT EXISTS profile_comments (
+  id         INTEGER PRIMARY KEY,
+  profile_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  author_id  INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  body       TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS user_messages (
+  id         INTEGER PRIMARY KEY,
+  from_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  to_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  body       TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  read_at    INTEGER
+);
+CREATE INDEX IF NOT EXISTS user_messages_pair ON user_messages(from_id, to_id, created_at);
+CREATE INDEX IF NOT EXISTS profile_comments_page ON profile_comments(profile_id, created_at);
+`);
+
+export const PROFILE_HANDLE = /^[a-z0-9][a-z0-9._-]{2,29}$/;
+const COLOR = /^#[0-9a-f]{6}$/i;
+const clean = (v, max) => (typeof v === 'string' ? v.replace(/\r/g, '').trim().slice(0, max) : '');
+const media = (name) => (name ? `/api/media/${name}` : null);
+const person = (u) => ({ id: u.id, name: u.name || 'Membre', avatar: media(u.avatar), handle: u.handle || null });
+
+export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wrap }) {
+  const pageOf = (handle) => {
+    const p = get('SELECT p.*, u.name, u.avatar FROM user_profiles p JOIN users u ON u.id = p.user_id WHERE p.handle = ?', String(handle || '').toLowerCase());
+    if (!p) throw new HttpError(404, "Cette page de profil n'existe pas.");
+    return p;
+  };
+
+  // Ma page : la créer, la régler (adresse, bio, couleur, commentaires ouverts), ou la supprimer.
+  app.get('/api/me/profile/page', requireUser, (req, res) => {
+    const p = get('SELECT * FROM user_profiles WHERE user_id = ?', req.user.id);
+    res.set('Cache-Control', 'no-store').json(p ? { handle: p.handle, bio: p.bio, color: p.color, banner: media(p.banner), comments: !!p.comments } : null);
+  });
+  app.put('/api/me/profile/page', requireUser, (req, res) => {
+    rateLimit(`profile-edit:${req.user.id}`, 60, 3600_000);
+    const handle = clean(req.body?.handle, 30).toLowerCase();
+    if (!PROFILE_HANDLE.test(handle)) throw new HttpError(400, "L'adresse de ta page : 3 à 30 caractères, lettres minuscules, chiffres, point, tiret ou tiret bas.");
+    const taken = get('SELECT user_id FROM user_profiles WHERE handle = ?', handle);
+    if (taken && taken.user_id !== req.user.id) throw new HttpError(409, 'Cette adresse est déjà prise.');
+    const color = COLOR.test(req.body?.color || '') ? req.body.color.toLowerCase() : '#e5384a';
+    run(`INSERT INTO user_profiles (user_id, handle, bio, color, comments, created_at) VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET handle = excluded.handle, bio = excluded.bio, color = excluded.color, comments = excluded.comments`,
+      req.user.id, handle, clean(req.body?.bio, 600), color, req.body?.comments === false ? 0 : 1, now());
+    res.json({ handle });
+  });
+  app.put('/api/me/profile/page/banner', requireUser, wrap(async (req, res) => {
+    const p = get('SELECT * FROM user_profiles WHERE user_id = ?', req.user.id);
+    if (!p) throw new HttpError(404, "Crée d'abord ta page de profil.");
+    rateLimit(`profile-banner:${req.user.id}`, 30, 3600_000);
+    const name = await receiveImage(req, 6 * 1024 * 1024);
+    run('UPDATE user_profiles SET banner = ? WHERE user_id = ?', name, req.user.id);
+    if (p.banner) removeMedia(p.banner);
+    res.json({ banner: media(name) });
+  }));
+  app.delete('/api/me/profile/page', requireUser, (req, res) => {
+    const p = get('SELECT banner FROM user_profiles WHERE user_id = ?', req.user.id);
+    transaction(() => {
+      run('DELETE FROM user_profiles WHERE user_id = ?', req.user.id);
+      run('DELETE FROM profile_comments WHERE profile_id = ?', req.user.id);
+    });
+    if (p?.banner) removeMedia(p.banner);
+    res.json({ ok: true });
+  });
+
+  // Une page, vue par tout le monde ; le visiteur connecté voit s'il est abonné.
+  app.get('/api/profiles/:handle', (req, res) => {
+    const p = pageOf(req.params.handle), viewer = optionalUser(req);
+    const count = (sql, ...a) => get(sql, ...a).n;
+    res.set('Cache-Control', 'no-store').json({
+      handle: p.handle, name: p.name || 'Membre', avatar: media(p.avatar), bio: p.bio, color: p.color, banner: media(p.banner), commentsOpen: !!p.comments,
+      followers: count('SELECT COUNT(*) AS n FROM user_follows WHERE followed_id = ?', p.user_id),
+      following: count('SELECT COUNT(*) AS n FROM user_follows WHERE follower_id = ?', p.user_id),
+      mine: viewer?.id === p.user_id, followed: !!(viewer && get('SELECT 1 FROM user_follows WHERE follower_id = ? AND followed_id = ?', viewer.id, p.user_id)),
+      canMessage: !!(viewer && viewer.id !== p.user_id),
+      comments: all(`SELECT c.id, c.body, c.created_at, u.id AS uid, u.name, u.avatar, pr.handle FROM profile_comments c JOIN users u ON u.id = c.author_id
+        LEFT JOIN user_profiles pr ON pr.user_id = u.id WHERE c.profile_id = ? ORDER BY c.created_at DESC LIMIT 200`, p.user_id)
+        .map((c) => ({ id: c.id, body: c.body, at: c.created_at, author: person({ id: c.uid, name: c.name, avatar: c.avatar, handle: c.handle }),
+          canDelete: !!(viewer && (viewer.id === c.uid || viewer.id === p.user_id)) })),
+    });
+  });
+  app.post('/api/profiles/:handle/follow', requireUser, (req, res) => {
+    const p = pageOf(req.params.handle);
+    if (p.user_id === req.user.id) throw new HttpError(400, "On ne s'abonne pas à sa propre page.");
+    run('INSERT OR IGNORE INTO user_follows (follower_id, followed_id, created_at) VALUES (?, ?, ?)', req.user.id, p.user_id, now());
+    res.json({ followed: true });
+  });
+  app.delete('/api/profiles/:handle/follow', requireUser, (req, res) => {
+    run('DELETE FROM user_follows WHERE follower_id = ? AND followed_id = ?', req.user.id, pageOf(req.params.handle).user_id);
+    res.json({ followed: false });
+  });
+  app.post('/api/profiles/:handle/comments', requireUser, (req, res) => {
+    const p = pageOf(req.params.handle);
+    if (!p.comments && p.user_id !== req.user.id) throw new HttpError(403, "Les commentaires sont fermés sur cette page.");
+    rateLimit(`profile-comment:${req.user.id}`, 30, 3600_000);
+    const body = clean(req.body?.body, 1000);
+    if (!body) throw new HttpError(400, 'Écris un commentaire.');
+    res.status(201).json({ id: run('INSERT INTO profile_comments (profile_id, author_id, body, created_at) VALUES (?, ?, ?, ?)', p.user_id, req.user.id, body, now()).lastInsertRowid });
+  });
+  app.delete('/api/profiles/comments/:id', requireUser, (req, res) => {
+    const c = get('SELECT * FROM profile_comments WHERE id = ?', Number(req.params.id) || 0);
+    if (!c) throw new HttpError(404, 'Commentaire introuvable.');
+    if (c.author_id !== req.user.id && c.profile_id !== req.user.id) throw new HttpError(403, "Seul son auteur ou le propriétaire de la page peut le retirer.");
+    run('DELETE FROM profile_comments WHERE id = ?', c.id);
+    res.json({ ok: true });
+  });
+
+  // Les messages privés : les conversations (la dernière ligne et les non lus), une conversation, et l'envoi.
+  const other = (req) => {
+    const p = pageOf(req.params.handle);
+    if (p.user_id === req.user.id) throw new HttpError(400, 'On ne s\'écrit pas à soi-même.');
+    return p;
+  };
+  app.get('/api/me/messages', requireUser, (req, res) => {
+    const u = req.user.id;
+    const rows = all(`SELECT CASE WHEN from_id = ? THEN to_id ELSE from_id END AS other, MAX(created_at) AS at,
+        SUM(CASE WHEN to_id = ? AND read_at IS NULL THEN 1 ELSE 0 END) AS unread
+      FROM user_messages WHERE from_id = ? OR to_id = ? GROUP BY other ORDER BY at DESC LIMIT 100`, u, u, u, u);
+    res.set('Cache-Control', 'no-store').json(rows.map((r) => {
+      const who = get('SELECT u.id, u.name, u.avatar, p.handle FROM users u LEFT JOIN user_profiles p ON p.user_id = u.id WHERE u.id = ?', r.other);
+      const last = get('SELECT body, from_id FROM user_messages WHERE (from_id = ? AND to_id = ?) OR (from_id = ? AND to_id = ?) ORDER BY created_at DESC LIMIT 1', u, r.other, r.other, u);
+      return who && { with: person(who), at: r.at, unread: r.unread, last: last ? (last.from_id === u ? 'Toi : ' : '') + last.body.slice(0, 120) : '' };
+    }).filter(Boolean));
+  });
+  app.get('/api/me/messages/:handle', requireUser, (req, res) => {
+    const p = other(req), u = req.user.id;
+    run('UPDATE user_messages SET read_at = ? WHERE from_id = ? AND to_id = ? AND read_at IS NULL', now(), p.user_id, u);
+    res.set('Cache-Control', 'no-store').json({ with: person({ id: p.user_id, name: p.name, avatar: p.avatar, handle: p.handle }),
+      messages: all(`SELECT id, from_id, body, created_at FROM user_messages WHERE (from_id = ? AND to_id = ?) OR (from_id = ? AND to_id = ?)
+        ORDER BY created_at DESC LIMIT 300`, u, p.user_id, p.user_id, u).reverse().map((m) => ({ id: m.id, mine: m.from_id === u, body: m.body, at: m.created_at })) });
+  });
+  app.post('/api/me/messages/:handle', requireUser, (req, res) => {
+    const p = other(req);
+    rateLimit(`messages:${req.user.id}`, 300, 3600_000);
+    const body = clean(req.body?.body, 2000);
+    if (!body) throw new HttpError(400, 'Écris un message.');
+    res.status(201).json({ id: run('INSERT INTO user_messages (from_id, to_id, body, created_at) VALUES (?, ?, ?, ?)', req.user.id, p.user_id, body, now()).lastInsertRowid });
+  });
+}

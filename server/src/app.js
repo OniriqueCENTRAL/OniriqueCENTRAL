@@ -44,6 +44,7 @@ import { mountDocs } from './docs.js';
 import { mountTierList } from './tierlist.js';
 import { mountPlatforms } from './platforms.js';
 import { mountRatings } from './ratings.js';
+import { mountProfiles } from './profiles.js';
 import { mountDownloader } from './downloader.js';
 import { mountRocky } from './rocky.js';
 
@@ -565,6 +566,8 @@ export function createApp() {
   mountRatings(app, { requireUser });
   mountCut(app, { requireUser, receiveFile, wrap });
   mountTierList(app, { requireUser, receiveImage, removeMedia, wrap });
+  // Pages de profil des membres : abonnements, commentaires, messages privés.
+  mountProfiles(app, { requireUser, receiveImage, removeMedia, wrap });
   mountPush(app, { requireUser });
 
   // La photo d'ingé d'un fondateur : celle des crédits, distincte de la photo du compte.

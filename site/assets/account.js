@@ -107,6 +107,8 @@ ${spark(1)}${spark(2)}${spark(3)}
       item("Paramètres", "compte#parametres"),
       item("Mes licences", "compte#licences"),
       item("Parrainage", "compte#parrainage"),
+      item("Ma page de profil", "profil"),
+      item("Messages", "messages"),
       el("hr"),
       item("Boutique", "boutique"),
       download,

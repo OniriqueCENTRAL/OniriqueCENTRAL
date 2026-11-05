@@ -304,6 +304,15 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
         </div>
       </div>
   
+      <!-- Pour tous les comptes : la page de profil publique (abonnés, commentaires) et les messages privés, créée seulement si on la veut -->
+      <div class="panel" id="profil-panel">
+        <div class="eyebrow">Page de profil</div>
+        <div class="between">
+          <p class="muted" style="margin:0;max-width:52ch">Ta page publique sur ONIRIQUE, à ta couleur : les autres membres peuvent s'y abonner, y laisser un commentaire et t'écrire en privé.</p>
+          <div class="between"><a class="btn btn-primary" href="profil">Créer ou modifier ma page</a><a class="btn btn-ghost" href="messages">Messages</a></div>
+        </div>
+      </div>
+
       <!-- Réservé aux membres ONIRIQUE et aux fondateurs : leur page « link in bio », éditée dans mes-liens.html -->
       <div class="panel" id="liens-panel" hidden>
         <div class="eyebrow">Page de liens</div>
@@ -404,7 +413,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
 </main>
 
 <script src="assets/cropper.js?v=2"></script>
-<script src="assets/account.js?v=8"></script>
+<script src="assets/account.js?v=9"></script>
 <script src="assets/site-nav.js?v=16"></script>
 <script>
 // Le site relaie /api vers le serveur ONIRIQUE CENTRAL (même origine : pas de CORS à gérer).

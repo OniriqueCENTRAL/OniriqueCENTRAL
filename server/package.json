@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node src/index.js",
     "seed": "node src/seed.js",
-    "test": "node test/smoke.mjs && node test/roles.mjs && node test/new-features.mjs && node test/new-features.mjs migration && node test/new-features.mjs nomail && node test/youtube.mjs && node test/social.mjs && node test/promos.mjs && node test/control.mjs && node test/reference.mjs && node test/sounds.mjs && node test/beatstore.mjs && node test/stripeconnect.mjs && node test/packmail.mjs && node test/beatscan.mjs && node test/sweep.mjs && node test/cut.mjs && node test/reels.mjs && node test/docs.mjs && node test/tierlist.mjs && node test/platforms.mjs && node test/ratings.mjs && node test/rocky.mjs && node test/rocky.mjs gemini"
+    "test": "node test/smoke.mjs && node test/roles.mjs && node test/new-features.mjs && node test/new-features.mjs migration && node test/new-features.mjs nomail && node test/youtube.mjs && node test/social.mjs && node test/promos.mjs && node test/control.mjs && node test/reference.mjs && node test/sounds.mjs && node test/beatstore.mjs && node test/stripeconnect.mjs && node test/packmail.mjs && node test/beatscan.mjs && node test/sweep.mjs && node test/cut.mjs && node test/reels.mjs && node test/docs.mjs && node test/tierlist.mjs && node test/platforms.mjs && node test/ratings.mjs && node test/profiles.mjs && node test/rocky.mjs && node test/rocky.mjs gemini"
   },
   "dependencies": {
     "express": "^4.21.2",
