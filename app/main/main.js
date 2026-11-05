@@ -17,7 +17,9 @@ let shownTool = null, frozen = false; // frozen : une fenêtre de l'application 
 const toolContents = new Set(); // les pages de CUT et CLOUD, seules à pouvoir ouvrir la fenêtre de confirmation // l'outil à l'écran, pour le bouton « précédent » de la souris
 // ONIRIQUE_SITE : un site local, pour essayer CUT et CLOUD avant de les mettre en ligne (comme ONIRIQUE_SERVER pour l'API).
 const SITE = (process.env.ONIRIQUE_SITE || 'https://onirique.store').replace(/\/+$/, '');
-const TOOL_PAGES = { cut: 'cut.html', cloud: 'mes-sons.html', carte: 'carte.html' };
+// « page » : la vue où s'ouvrent, par-dessus CLOUD, les pages qu'on y ouvre (profil, écoute, messages…) ; CLOUD reste
+// chargé dessous et son lecteur continue de jouer.
+const TOOL_PAGES = { cut: 'cut.html', cloud: 'mes-sons.html', carte: 'carte.html', page: 'robots.txt' };
 // Les pages du site qui ont leur propre écran dans l'application.
 const APP_ROUTES = { compte: 'account', boutique: 'plugins', cut: 'cut', 'mes-sons': 'cloud', carte: 'carte' };
 const TOOL_SKIN = fs.readFileSync(path.join(__dirname, 'tool-skin.css'), 'utf8');
@@ -50,15 +52,17 @@ function toolView(tool, lang) {
       if (isAuth(url)) return true;
       const inSite = url === SITE || url.startsWith(SITE + '/');
       const screen = inSite && APP_ROUTES[pageOf(url)];
+      // Depuis CLOUD, une autre page du site s'ouvre par-dessus (vue « page ») au lieu de remplacer CLOUD et son lecteur.
+      if (inSite && !screen && tool === 'cloud') { openPage(url); return false; }
+      // Depuis la vue « page », un lien vers CLOUD referme la page et revient au CLOUD resté ouvert dessous.
+      if (inSite && screen === 'cloud' && tool === 'page') { closePage(new URL(url).hash); return false; }
       if (inSite && (!screen || screen === tool)) return true;
       if (screen) win?.webContents.send('navigate', screen);
       else if (/^https:\/\//.test(url)) shell.openExternal(url);
       return false;
     };
-    // Le bouton « précédent » de la souris revient à la page d'avant, comme dans un navigateur.
-    win?.on('app-command', (_event, command) => {
-      if (command === 'browser-backward' && !web.isDestroyed() && shownTool === tool && web.navigationHistory.canGoBack()) web.navigationHistory.goBack();
-    });
+    // Un son qui démarre ailleurs (page d'écoute, CUT, la carte) met en pause celui de CLOUD : jamais deux à la fois.
+    if (tool !== 'cloud') web.on('media-started-playing', pauseCloud);
     web.setWindowOpenHandler(({ url }) => {
       // MusicKit ouvre sa connexion dans une fenêtre qui lui répond : elle s'ouvre, au-dessus de l'application.
       if (isAuth(url)) return { action: 'allow', overrideBrowserWindowOptions: { parent: win, width: 520, height: 720, autoHideMenuBar: true, backgroundColor: '#09080A' } };
@@ -95,6 +99,50 @@ function toolView(tool, lang) {
     return view;
   })());
   return toolViews.get(tool);
+}
+
+// La vue « page » par-dessus CLOUD : ouverte à la place de CLOUD (même place à l'écran), refermée par « Retour » quand
+// elle n'a plus de page d'avant, un clic sur CLOUD ou un lien vers CLOUD.
+let pageOpen = false;
+/** La vue montrée pour un outil : la page ouverte par-dessus CLOUD s'il y en a une. */
+const viewFor = (tool) => (tool === 'cloud' && pageOpen && toolViews.has('page') ? toolViews.get('page') : toolViews.get(tool));
+async function swapCloud() {
+  if (shownTool !== 'cloud' || !toolViews.has('cloud')) return;
+  const cloud = await toolViews.get('cloud'), page = toolViews.has('page') ? await toolViews.get('page') : null;
+  const [show, hide] = pageOpen ? [page, cloud] : [cloud, page];
+  if (!show) return;
+  if (!win.contentView.children.includes(show)) win.contentView.addChildView(show);
+  show.setBounds((hide || cloud).getBounds());
+  hide?.setVisible(false);
+  show.setVisible(!frozen);
+}
+async function openPage(url) {
+  pageOpen = true;
+  const web = (await toolView('page')).webContents;
+  await web.loadURL(url).catch(() => {});
+  web.navigationHistory.clear(); // « Retour » depuis la première page ouverte revient au CLOUD
+  await swapCloud();
+}
+async function closePage(hash) {
+  if (!pageOpen) return;
+  pageOpen = false;
+  await swapCloud();
+  const cloud = toolViews.has('cloud') ? (await toolViews.get('cloud')).webContents : null;
+  if (cloud && hash) cloud.executeJavaScript(`location.hash = ${JSON.stringify(hash)}`).catch(() => {});
+}
+/** « Retour » dans un outil : la page d'avant ; dans la page ouverte par-dessus CLOUD, au bout, CLOUD lui-même. */
+async function toolBack(tool) {
+  if (!toolViews.has(tool)) return false;
+  const web = (await viewFor(tool)).webContents;
+  if (web.navigationHistory.canGoBack()) { web.navigationHistory.goBack(); return true; }
+  if (tool === 'cloud' && pageOpen) { await closePage(); return true; }
+  return false;
+}
+/** Le son de CLOUD se met en pause (un autre démarre ailleurs). */
+async function pauseCloud() {
+  if (!toolViews.has('cloud')) return;
+  const web = (await toolViews.get('cloud').catch(() => null))?.webContents;
+  web?.executeJavaScript('typeof player !== "undefined" && player.playing && player.toggle()').catch(() => {});
 }
 
 // La couleur d'accent choisie dans les Paramètres : posée sur CUT, CLOUD (variables de tool-skin.css) et les fenêtres de
@@ -154,6 +202,7 @@ ipcMain.on('tool:dialog', (event, kind, message, value) => {
 async function closeTools() {
   const views = [...toolViews.values()];
   toolViews.clear();
+  pageOpen = false;
   for (const pending of views) {
     const view = await pending.catch(() => null);
     if (!view) continue;
@@ -189,6 +238,10 @@ function createWindow() {
   win.removeMenu();
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
   win.once('ready-to-show', () => { if (fits && saved.maximized) win.maximize(); win.show(); });
+  // Le bouton « précédent » de la souris : comme « Retour » dans l'outil affiché.
+  win.on('app-command', (_event, command) => { if (command === 'browser-backward' && shownTool) toolBack(shownTool).catch(() => {}); });
+  // La démo d'un plugin qui se lance dans l'application met aussi CLOUD en pause.
+  win.webContents.on('media-started-playing', pauseCloud);
   win.on('close', () => { store.windowState = { ...win.getNormalBounds(), maximized: win.isMaximized() }; });
   win.on('maximize', () => win.webContents.send('window:maximized', true));
   win.on('unmaximize', () => win.webContents.send('window:maximized', false));
@@ -465,8 +518,9 @@ app.whenReady().then(async () => {
   // principal, à l'endroit que l'interface indique, et habillée aux couleurs de l'application (tool-skin.css, ici
   // seulement : le site ne change pas).
   handle('tool:show', async (tool, bounds, lang) => {
-    const view = await toolView(tool, lang);
-    for (const [name, other] of toolViews) if (name !== tool) (await other).setVisible(false);
+    await toolView(tool, lang);
+    const view = await viewFor(tool);
+    for (const other of toolViews.values()) if ((await other) !== view) (await other).setVisible(false);
     if (!win.contentView.children.includes(view)) win.contentView.addChildView(view);
     view.setBounds(Object.fromEntries(['x', 'y', 'width', 'height'].map((k) => [k, Math.max(0, Math.round(Number(bounds?.[k]) || 0))])));
     view.setVisible(!frozen); // une fenêtre de l'application est ouverte : l'outil reste caché derrière son image
@@ -474,15 +528,10 @@ app.whenReady().then(async () => {
   });
   // Un clic sur la rubrique déjà ouverte : retour à l'accueil de l'outil (après une page d'écoute, une autre page…).
   // « Retour » : la page d'avant dans l'outil (une page de profil, d'écoute, la carte…), comme le bouton précédent de la souris.
-  handle('tool:back', async (tool) => {
-    if (!toolViews.has(tool)) return false;
-    const web = (await toolViews.get(tool)).webContents;
-    if (!web.navigationHistory.canGoBack()) return false;
-    web.navigationHistory.goBack();
-    return true;
-  });
+  handle('tool:back', (tool) => toolBack(tool));
   handle('tool:home', async (tool) => {
     if (!toolViews.has(tool)) return;
+    if (tool === 'cloud' && pageOpen) return closePage();
     const web = (await toolViews.get(tool)).webContents;
     if (pageOf(web.getURL()) !== TOOL_PAGES[tool].replace(/\.html$/, '')) await web.loadURL(`${SITE}/${TOOL_PAGES[tool]}`).catch(() => {});
     else web.executeJavaScript('location.hash = ""; scrollTo(0, 0)').catch(() => {});
@@ -490,6 +539,7 @@ app.whenReady().then(async () => {
   // « Reset » : l'outil repart de zéro (la page rechargée, ce qui était en cours oublié).
   handle('tool:reset', async (tool) => {
     if (!toolViews.has(tool)) return;
+    if (tool === 'cloud') await closePage();
     const web = (await toolViews.get(tool)).webContents;
     await web.executeJavaScript(`try { for (const k of Object.keys(sessionStorage)) if (k !== 'onirique.token') sessionStorage.removeItem(k); } catch {}`).catch(() => {});
     await web.loadURL(`${SITE}/${TOOL_PAGES[tool]}`).catch(() => {});
@@ -499,14 +549,14 @@ app.whenReady().then(async () => {
   handle('tool:freeze', async () => {
     frozen = true;
     if (!shownTool || !toolViews.has(shownTool)) return null;
-    const view = await toolViews.get(shownTool);
+    const view = await viewFor(shownTool);
     const image = view.getVisible() ? await view.webContents.capturePage().catch(() => null) : null;
     if (frozen) view.setVisible(false);
     return image ? image.toDataURL() : null;
   });
   handle('tool:thaw', async () => {
     frozen = false;
-    if (shownTool && toolViews.has(shownTool)) (await toolViews.get(shownTool)).setVisible(true);
+    if (shownTool && toolViews.has(shownTool)) (await viewFor(shownTool)).setVisible(true);
   });
   handle('tool:hide', async () => {
     shownTool = null; for (const view of toolViews.values()) (await view).setVisible(false); });
