@@ -114,11 +114,23 @@ function openSettings() {
   }, h('i'), h('span', null, name))));
   draw(start);
   custom.addEventListener('input', () => { setAccent(custom.value); draw(custom.value); });
+  // Le mini ROCKY qui construit les playlists dans CLOUD : réglé par compte (le serveur le garde, CLOUD le relit).
+  const user = state.data?.me?.user;
+  const rocky = user && h('input', { type: 'checkbox', checked: user.rocky !== false, 'aria-label': 'Animations de ROCKY' });
+  rocky?.addEventListener('change', async () => {
+    const on = rocky.checked;
+    try { await call('api', 'POST', '/api/me/profile', { rocky: on }); user.rocky = on; }
+    catch (error) { rocky.checked = !on; toast(error.message || 'Réglage non enregistré.', true); }
+  });
   modal('Paramètres', h('div', { class: 'stack' },
     eyebrow("Couleur de l'application"),
     h('p', { class: 'muted', style: { margin: 0 } }, 'Toute la CENTRAL prend cette couleur : boutons, voyants, lueurs, CUT et CLOUD compris.'),
     swatches,
-    h('label', { class: 'row accent-own' }, custom, h('span', null, 'Une autre couleur…'))),
+    h('label', { class: 'row accent-own' }, custom, h('span', null, 'Une autre couleur…')),
+    rocky && eyebrow('ROCKY'),
+    rocky && h('label', { class: 'row', style: { gap: '12px', 'align-items': 'center' } }, rocky,
+      h('span', null, h('b', null, 'Animations de ROCKY'), h('br'),
+        h('span', { class: 'muted' }, 'Le mini ROCKY qui construit tes playlists et range tes sons dans CLOUD. Réglé pour ton compte.')))),
     [{ label: 'Par défaut', kind: 'quiet', run: () => { setAccent(DEFAULT_ACCENT); custom.value = DEFAULT_ACCENT; draw(DEFAULT_ACCENT); return false; } },
       { label: 'Valider', run: () => { kept = true; } }], 'Paramètres');
   // Fermée sans « Valider » (Annuler, Échap, clic à côté) : la couleur d'avant revient.

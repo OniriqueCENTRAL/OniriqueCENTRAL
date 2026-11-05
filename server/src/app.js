@@ -766,6 +766,7 @@ export function createApp() {
       if (raw && !handle) throw new HttpError(400, 'Instagram : écrivez votre nom de compte (@nom) ou collez le lien de votre profil.');
       run('UPDATE users SET instagram = ? WHERE id = ?', handle ? `https://www.instagram.com/${handle}/` : '', req.user.id);
     }
+    if (typeof req.body.rocky === 'boolean') run('UPDATE users SET rocky = ? WHERE id = ?', req.body.rocky ? 1 : 0, req.user.id);
     res.json({ ok: true });
   });
 

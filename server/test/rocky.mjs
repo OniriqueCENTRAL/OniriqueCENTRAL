@@ -49,6 +49,22 @@ assert.match(system, /VocalBox/); // llms.txt est bien dans ce qu'il sait
 r = await ask([]);
 assert.equal(r.status, 400);
 
+// Le mini ROCKY de l'application : animé par défaut, coupé ou remis pour le compte dans les Paramètres.
+const base = `http://127.0.0.1:${server.address().port}/api`;
+const json = { 'Content-Type': 'application/json' };
+const { token } = await (await fetch(`${base}/auth/register`, { method: 'POST', headers: json,
+  body: JSON.stringify({ email: 'rocky@test.local', password: 'motdepasse1', name: 'Nov' }) })).json();
+const auth = { ...json, Authorization: `Bearer ${token}` };
+const me = async () => (await (await fetch(`${base}/me`, { headers: auth })).json()).user;
+assert.equal((await me()).rocky, true);
+await fetch(`${base}/me/profile`, { method: 'POST', headers: auth, body: JSON.stringify({ rocky: false }) });
+assert.equal((await me()).rocky, false);
+assert.equal((await me()).name, 'Nov'); // le nom n'a pas bougé
+await fetch(`${base}/me/profile`, { method: 'POST', headers: auth, body: JSON.stringify({ rocky: 'non' }) });
+assert.equal((await me()).rocky, false); // seul un vrai/faux change le réglage
+await fetch(`${base}/me/profile`, { method: 'POST', headers: auth, body: JSON.stringify({ rocky: true }) });
+assert.equal((await me()).rocky, true);
+
 console.log(`  ok  rocky${GEMINI ? ' (gemini)' : ''}`);
 server.close();
 fake.close();

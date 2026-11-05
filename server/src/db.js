@@ -448,6 +448,8 @@ db.exec(`CREATE TABLE IF NOT EXISTS link_stats (
   n       INTEGER NOT NULL,
   PRIMARY KEY (user_id, link_id, day)
 )`);
+// Le mini ROCKY bâtisseur de l'application (assets/rocky-builder.js) : 1 animé, 0 coupé dans les Paramètres de l'app.
+if (!hasColumn('users', 'rocky')) db.exec('ALTER TABLE users ADD COLUMN rocky INTEGER NOT NULL DEFAULT 1');
 for (const column of ['totp_secret TEXT', 'totp_pending TEXT', 'totp_step INTEGER', 'totp_recovery TEXT']) {
   if (!hasColumn('users', column.split(' ')[0])) db.exec(`ALTER TABLE users ADD COLUMN ${column}`);
 }

@@ -850,7 +850,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 
 <script src="assets/sounds-player.js?v=22"></script>
 <script src="assets/platforms.js?v=13"></script>
-<script src="assets/rocky-builder.js?v=1"></script>
+<script src="assets/rocky-builder.js?v=2"></script>
 <script src="assets/ratings.js?v=2"></script>
 <script src="assets/audio-kit.js?v=2"></script>
 <script src="assets/pdf-kit.js"></script>
@@ -885,6 +885,10 @@ async function api(method, path, body) {
   window.RockyBuild?.fromApi(method, path, body); // le mini Rocky bâtisseur, dans l'application (assets/rocky-builder.js)
   return data;
 }
+// Le mini Rocky de l'application suit le réglage du compte (Paramètres de l'app) : relu à l'ouverture et à chaque retour sur CLOUD.
+const rockySetting = () => window.RockyBuild?.inApp() && token && api("GET", "/me").then((me) => { RockyBuild.on = me.user.rocky !== false; }, () => {});
+rockySetting();
+document.addEventListener("visibilitychange", () => { if (!document.hidden) rockySetting(); });
 // Les fichiers passent par XMLHttpRequest, qui seul donne l'avancement de l'envoi.
 // Le serveur qui redémarre (une mise en ligne) coupe l'envoi quelques secondes : il repart tout seul, une minute au plus.
 async function upload(path, file, onProgress, method = "POST") {

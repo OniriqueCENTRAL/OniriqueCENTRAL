@@ -201,5 +201,6 @@ export function publicUser(user) {
     selfLicenses: canSelfLicense(user) ? !!user.self_licenses : null,
     newsletter: user.marketing === 1, // a accepté de recevoir les nouveautés d'ONIRIQUE par e-mail
     twoFactor: !!user.totp_secret,    // double authentification activée
+    rocky: user.rocky !== 0,           // les animations du mini ROCKY dans l'application
   };
 }

@@ -140,7 +140,9 @@
     if (/^\/me\/sounds\/(tracks\/\d+\/(add|duplicate|versions)|projects\/\d+\/(tracks|platform-items))$/.test(path)) return "add";
     return null;
   }
-  // Seulement dans l'application (son preload y pose oniriqueApp), pas sur le site.
+  // Seulement dans l'application (son preload y pose oniriqueApp), pas sur le site ; on : false quand le compte l'a coupé
+  // dans les Paramètres de l'application (mes-sons.html le relit sur le compte).
   const inApp = () => !!(window.oniriqueApp || window.oniriqueDialog);
-  window.RockyBuild = { play, kindOf, fromApi: (method, path, body) => { const k = inApp() && kindOf(method, path, body); if (k) play(k); } };
+  window.RockyBuild = { play, kindOf, inApp, on: true,
+    fromApi: (method, path, body) => { const k = inApp() && window.RockyBuild.on !== false && kindOf(method, path, body); if (k) play(k); } };
 })();
