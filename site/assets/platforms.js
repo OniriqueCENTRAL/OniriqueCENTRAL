@@ -377,6 +377,7 @@
   // Les playlists du CLOUD où l'on peut ajouter (les siennes et celles où l'on collabore), et celle choisie.
   const cloudLists = () => (ctx.playlists ? ctx.playlists() : []);
   const pickTarget = (id) => { target = cloudLists().find((x) => x.id === Number(id)) || null; added = new Set(target ? itemsOf(target.id).map((x) => x.platform + ":" + x.extId) : []); };
+  const imported = (l) => cloudLists().some((x) => x.id === l.importedId);
   /** Une playlist Spotify du compte devient une playlist du CLOUD, du même nom, avec tous ses titres. */
   async function importList(l) {
     busy = true; error = ""; draw();
@@ -387,7 +388,7 @@
       // La pochette de la playlist Spotify devient celle de la playlist du CLOUD.
       if (r.cover || l.cover) await ctx.api("POST", "/me/sounds/projects/" + id + "/platform-cover", { url: r.cover || l.cover }).catch(() => {});
       await load(); await ctx.changed(true);
-      l.imported = true;
+      l.importedId = id;
       if (ctx.open) ctx.open(id);
     } catch (e) { error = e.message; }
     busy = false; draw();
@@ -568,7 +569,8 @@
             catch (e) { error = e.message; busy = false; }
             draw();
           } }) : "",
-          el("button", { className: l.imported ? "btn btn-ghost" : "btn btn-primary", type: "button", disabled: busy || l.imported, textContent: l.imported ? "Importée" : "Importer dans le CLOUD",
+          // « Importée » tant que la playlist créée existe dans le CLOUD ; supprimée, elle se réimporte.
+          el("button", { className: imported(l) ? "btn btn-ghost" : "btn btn-primary", type: "button", disabled: busy || imported(l), textContent: imported(l) ? "Importée" : "Importer dans le CLOUD",
             title: "Une playlist du même nom dans ton CLOUD, avec tous ses titres", onclick: () => importList(l) })))))
           : el("p", { className: "pf-note", textContent: "Aucune playlist sur ton compte Spotify." });
     } else {
