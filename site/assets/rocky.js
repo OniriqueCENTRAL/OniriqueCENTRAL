@@ -3,22 +3,15 @@
 (() => {
   if (document.getElementById("rocky")) return;
   const KEY = "rocky-chat";
-  // Un petit être de pierre à cinq pattes, sans yeux : une carapace taillée en facettes, une lueur braise au centre.
-  const AVATAR = `<svg viewBox="0 0 64 64" aria-hidden="true">
-    <g stroke="#3a302c" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
-      <path d="M32 30 32 10 29 5"/><path d="M32 30 52 22 59 25"/><path d="M32 30 46 50 45 58"/>
-      <path d="M32 30 18 50 19 58"/><path d="M32 30 12 22 5 25"/></g>
-    <path d="M32 17 45 24 43 38 32 44 21 38 19 24Z" fill="#6f625a"/>
-    <path d="M32 17 45 24 32 30Z" fill="#8a7b70"/><path d="M19 24 32 30 21 38Z" fill="#5c514a"/>
-    <path d="M32 30 43 38 32 44Z" fill="#4e4540"/><path d="M32 17 19 24 32 30Z" fill="#9b8b7f"/>
-    <circle cx="32" cy="30" r="3.4" fill="#E23444"/><circle cx="32" cy="30" r="6" fill="#E23444" opacity=".25"/>
-  </svg>`;
+  // Un petit être de pierre à cinq pattes, sans yeux : son humeur change avec la conversation (assets/rocky/*.svg).
+  const AVATAR = `<img src="/assets/rocky/rocky-idle.svg" alt="">`;
+  const mood = (m) => root.querySelectorAll(".rk-av img, .rk-fab img").forEach((i) => (i.src = `/assets/rocky/rocky-${m}.svg`));
 
   const css = document.createElement("style");
   css.textContent = `
   #rocky{position:fixed;right:18px;bottom:18px;z-index:9999;font:400 15px/1.5 "Hanken Grotesk","Segoe UI",system-ui,sans-serif;color:#F6EEEE}
   #rocky .rk-fab{width:62px;height:62px;border-radius:50%;border:1px solid rgba(255,210,214,.25);background:#1A080A;cursor:pointer;padding:6px;box-shadow:0 6px 24px rgba(0,0,0,.5),0 0 18px rgba(226,52,68,.35)}
-  #rocky .rk-fab:hover{transform:scale(1.06)}#rocky svg{width:100%;height:100%;display:block}
+  #rocky .rk-fab:hover{transform:scale(1.06)}#rocky img{width:100%;height:100%;display:block}
   #rocky .rk-panel{position:absolute;right:0;bottom:76px;width:min(360px,calc(100vw - 36px));height:min(500px,calc(100vh - 120px));display:flex;flex-direction:column;background:#0D0809;border:1px solid rgba(255,210,214,.18);border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.6)}
   #rocky .rk-panel[hidden]{display:none}
   #rocky .rk-head{display:flex;align-items:center;gap:10px;padding:12px 14px;background:#1A080A;border-bottom:1px solid rgba(255,210,214,.12)}
@@ -102,16 +95,19 @@
     history.push({ role: "user", content: text });
     send.disabled = true;
     const wait = add("assistant", "…");
+    mood("thinking");
     try {
       const r = await fetch("/api/rocky", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: history }) });
       const data = await r.json().catch(() => ({}));
       wait.remove();
-      if (!r.ok) { add("assistant", data.error || "Rocky n'entend plus rien. Réessaie, ami."); history.pop(); return; }
+      if (!r.ok) { mood("sleeping"); add("assistant", data.error || "Rocky n'entend plus rien. Réessaie, ami."); history.pop(); return; }
       add("assistant", data.reply);
       history.push({ role: "assistant", content: data.reply });
       chord();
+      mood("happy"); setTimeout(() => mood("idle"), 2500);
     } catch {
       wait.remove();
+      mood("sleeping");
       add("assistant", "Pas de réseau, ami. Réessaie.");
       history.pop();
     } finally {
