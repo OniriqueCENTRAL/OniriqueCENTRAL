@@ -52,11 +52,13 @@ header > * { pointer-events: auto; }
 .coast { fill: none; stroke: rgba(255,179,187,.38); stroke-width: 1.1; stroke-linejoin: round; filter: url(#glow); stroke-dasharray: var(--len); stroke-dashoffset: var(--len);
   animation: draw 3.2s cubic-bezier(.6, .1, .2, 1) forwards; }
 .coast.other { stroke: rgba(255,179,187,.2); animation-delay: .8s; }
-/* Les reliefs (estompage de l'IGN : des ombres noires) passés en clair et teintés rose, en fondu quand on s'approche. */
-#relief { position: absolute; inset: 0; filter: invert(1) sepia(1) saturate(3) hue-rotate(-40deg); opacity: 0; transition: opacity .8s; pointer-events: none; }
-#relief.on { opacity: 1; }
-#relief img { position: absolute; opacity: 0; transition: opacity .6s; }
-#relief img.ok { opacity: 1; }
+/* Les reliefs : l'estompage de l'IGN (des ombres noires) sert de masque à un aplat rose, sans filtre de couleur (certains
+   écrans teintaient alors toute la carte). Découpés à la frontière française (clip-path posé par le script). */
+#relief { position: absolute; inset: 0; opacity: 0; transition: opacity .8s; pointer-events: none; }
+#relief.on { opacity: .9; }
+#relief div { position: absolute; background: #ffb3bb; opacity: 0; transition: opacity .6s;
+  -webkit-mask: var(--t) center / 100% 100% no-repeat; mask: var(--t) center / 100% 100% no-repeat; }
+#relief div.ok { opacity: 1; }
 #relief-credit { position: fixed; z-index: 3; left: 50%; bottom: 2px; translate: -50%; font: 500 9px var(--f-mono); color: var(--haze); letter-spacing: .08em; opacity: 0; transition: opacity .8s; pointer-events: none; }
 #relief-credit.on { opacity: .8; }
 .land { fill: rgba(229,56,74,.035); opacity: 0; animation: fade 2s 1.8s forwards; }
@@ -333,6 +335,9 @@ const cityNodes = new Map();
 //------------------------------------------------------------------------------ Les contours en constellation
 function drawShapes() {
   const lands = $("lands"), stars = $("stars");
+  // Les reliefs ne sortent pas de la France (métropole, Corse, îles) : son contour, à l'échelle du plan.
+  $("relief").style.clipPath = `path("${Object.entries(SHAPES).filter(([k]) => k.startsWith("france"))
+    .map(([, pts]) => "M" + pts.map(([lon, lat]) => project(lon, lat).map((v) => (v * K).toFixed(1)).join(",")).join("L") + "Z").join(" ")}")`;
   for (const [name, pts] of Object.entries(SHAPES)) {
     const xy = pts.map(([lon, lat]) => project(lon, lat));
     const d = "M" + xy.map((p) => p.map((v) => v.toFixed(1)).join(",")).join("L") + "Z";
@@ -377,10 +382,12 @@ function relief() {
     want.add(url);
     if (tiles.has(url)) continue;
     const [x0, y0] = project(tileLon(x, n), tileLat(y, n)), [x1, y1] = project(tileLon(x + 1, n), tileLat(y + 1, n));
-    const img = el("img", { alt: "", decoding: "async", crossOrigin: "anonymous", onload: () => img.classList.add("ok"), onerror: () => img.remove() });
+    const img = el("div"), probe = new Image();
+    probe.onload = () => { img.style.setProperty("--t", `url("${url}")`); img.classList.add("ok"); };
+    probe.onerror = () => img.remove();
     // Bord à bord exact (un chevauchement doublerait l'ombre et tracerait une ligne entre deux tuiles).
     img.style.cssText = `left:${x0 * K}px;top:${y0 * K}px;width:${(x1 - x0) * K}px;height:${(y1 - y0) * K}px`;
-    img.src = url;
+    probe.src = url;
     tiles.set(url, img); $("relief").append(img);
   }
   // Les tuiles d'avant restent le temps que les nouvelles arrivent.
