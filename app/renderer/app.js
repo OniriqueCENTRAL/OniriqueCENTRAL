@@ -214,13 +214,28 @@ const chevron = (up) => {
   return box;
 };
 const TOOL_NAMES = { cut: ['CUT', 'Clips sur le beat'], cloud: ['CLOUD', 'Mes sons · projets'] };
+// Déplier ou replier le menu de CUT et CLOUD en douceur : la colonne s'élargit ou se resserre (la page de l'outil la
+// suit image par image), et les rubriques apparaissent en fondu, l'une après l'autre.
+function toggleMenu(open) {
+  const before = document.querySelector('.shell .sidebar')?.getBoundingClientRect().width;
+  menuOpen = open;
+  render();
+  const shell = document.querySelector('.shell'), bar = shell?.querySelector('.sidebar');
+  if (!shell || !bar || !before || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const after = bar.getBoundingClientRect().width, ease = 'cubic-bezier(.2, .8, .2, 1)';
+  shell.animate({ gridTemplateColumns: [`${before}px 1fr`, `${after}px 1fr`] }, { duration: 320, easing: ease });
+  [...bar.children].forEach((node, i) => node.animate(
+    { opacity: [0, 1], transform: [`translateX(${open ? -10 : 6}px)`, 'none'] },
+    { duration: 260, delay: 60 + Math.min(i, 8) * 22, easing: ease, fill: 'backwards' }));
+}
+
 function compactSidebar() {
   const name = state.route.name, [label] = TOOL_NAMES[name];
   return h('nav', { class: 'sidebar compact' },
     h('button', { class: 'nav-item active', title: `${label} : accueil`, 'aria-current': 'page', onclick: () => call('tool:home', name).catch(() => {}) },
       navIcon(name), h('span', { class: 'name' }, label)),
     h('button', { class: 'menu-toggle', type: 'button', title: 'Afficher le menu', 'aria-label': 'Afficher le menu', 'aria-expanded': 'false',
-      onclick: () => { menuOpen = true; render(); } }, chevron(false)),
+      onclick: () => toggleMenu(true) }, chevron(false)),
     h('div', { class: 'spacer' }),
     h('button', { class: 'tool-reset', type: 'button', title: `Réinitialiser ${label} : la page repart de zéro`, onclick: async () => {
       if (await attempt(() => call('tool:reset', name))) toast(`${label} est réinitialisé.`);
@@ -243,7 +258,7 @@ function sidebar() {
   const plan = [me.user.role !== 'user' ? ROLES[me.user.role] : null, subscribed].filter(Boolean).join(' · ') || 'Compte';
   return h('nav', { class: 'sidebar' },
     TOOL_ROUTES.includes(state.route.name) ? h('button', { class: 'menu-toggle open', type: 'button', title: 'Replier le menu', 'aria-label': 'Replier le menu', 'aria-expanded': 'true',
-      onclick: () => { menuOpen = false; render(); } }, h('span', { class: 'row', style: { gap: '6px' } }, chevron(true), 'Replier le menu')) : null,
+      onclick: () => toggleMenu(false) }, h('span', { class: 'row', style: { gap: '6px' } }, chevron(true), 'Replier le menu')) : null,
     h('div', { class: 'eyebrow nav-label' }, 'Central'),
     item('plugins', 'Plugins', 'Bibliothèque', pendingUpdates(state.data)),
     item('licenses', 'Licences', 'Clés · machines'),

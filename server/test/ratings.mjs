@@ -63,6 +63,19 @@ try {
     run(`UPDATE sound_links SET password_hash = 'x' WHERE id = ?`, link);
     assert.deepEqual(await call('GET', '/api/me/sounds/top-week', { token: c.token }), []);
     run('UPDATE sound_links SET password_hash = NULL WHERE id = ?', link);
+    // Privée : plus dans le top ; seul son créateur la règle.
+    await call('POST', `/api/me/sounds/projects/${pl}/visibility`, { token: b.token, body: { public: false }, expect: 404 });
+    await call('POST', `/api/me/sounds/projects/${pl}/visibility`, { token: a.token, body: { public: false } });
+    assert.deepEqual(await call('GET', '/api/me/sounds/top-week', { token: c.token }), []);
+    await call('POST', `/api/me/sounds/projects/${pl}/visibility`, { token: a.token, body: { public: true } });
+    assert.equal((await call('GET', '/api/me/sounds/top-week', { token: c.token })).length, 1);
+  });
+
+  await step('qui a enregistré la playlist : visible par son créateur seulement', async () => {
+    run('INSERT INTO sound_saves (user_id, link_id, created_at) VALUES (?, ?, ?)', c.id, link, now());
+    assert.deepEqual((await call('GET', `/api/me/sounds/projects/${pl}/savers`, { token: a.token })).map((x) => x.name), ['inconnu']);
+    await call('GET', `/api/me/sounds/projects/${pl}/savers`, { token: b.token, expect: 404 });
+    run('DELETE FROM sound_saves WHERE user_id = ?', c.id);
   });
 
   await step('ajouter un son de la playlist d’un autre : seulement si son créateur l’autorise', async () => {

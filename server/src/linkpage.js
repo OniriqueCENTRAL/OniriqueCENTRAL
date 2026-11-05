@@ -214,7 +214,7 @@ function pageHtml(row) {
 <title>${escapeHtml(title)}</title>${meta}
 <meta name="robots" content="${data ? 'index, follow' : 'noindex'}">
 <meta name="theme-color" content="${bg}">
-<link rel="icon" type="image/png" href="/assets/favicon.png">
+<link rel="icon" type="image/png" href="/assets/favicon.png?v=2">
 <link rel="stylesheet" href="/assets/fonts.css">
 <style>
 html, body { margin: 0; min-height: 100%; background: ${bg}; }

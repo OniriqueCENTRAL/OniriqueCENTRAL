@@ -35,6 +35,20 @@ const C = {
   bone: ['#FFECEE', 'Os', 'Les textes mis en valeur, les codes, les chiffres.'],
   haze: ['#A88F92', 'Voile', 'Les textes secondaires, légendes, petites étiquettes.'],
 };
+// L'interface de l'application et des plugins (DA « Nuit & Braise », d'après VOCALBOX) : une seule couleur vive.
+const UI = {
+  night: ['#09080A', 'Nuit', 'Le fond des fenêtres, avec trois taches floues braise.'],
+  deep: ['#121012', 'Profondeur', 'Les panneaux sombres.'],
+  ember: ['#E5384A', 'Braise', "L'accent : ce qui agit (onglet choisi, module allumé, arc d'un potard)."],
+  ember2: ['#E23444', 'Braise 2', 'Les arcs des potards.'],
+  blood: ['#7A0D1C', 'Sang', 'Le bas des dégradés braise.'],
+  pink: ['#FF8E9A', 'Rose', 'Seuils, repères, valeurs.'],
+  rose: ['#FFB3BB', 'Rose clair', 'Le +, les reflets.'],
+  bone: ['#F4ECEC', 'Os', 'Les textes, ce qui est gardé.'],
+  label: ['#D9C6C9', 'Étiquette', 'Les noms des réglages.'],
+  haze: ['#A8939A', 'Voile', 'Le texte secondaire.'],
+  muted: ['#7D6A6E', 'Graduation', 'Les graduations.'],
+};
 const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(', ');
 const FONTS = [
   ['Unbounded', 'Titres, nom de marque, prix', 'Unbounded-latin.woff2', 'https://fonts.google.com/specimen/Unbounded', 800],
@@ -230,7 +244,22 @@ h3 { font: 800 15px/1.3 Unbounded; letter-spacing: .04em; margin: 0 0 6px; }
 </section>
 
 <section>
-  <div class="eyebrow">${STAR(14)}05 · Réseaux sociaux</div><h2>Les formats <span class="dream">prêts à l'emploi.</span></h2>
+  <div class="eyebrow">${STAR(14)}05 · L'interface</div><h2>L'application et les plugins : <span class="dream">Nuit &amp; Braise.</span></h2>
+  <p class="muted" style="margin-bottom:3mm;font-size:12.5px">L'application ONIRIQUE CENTRAL, CUT et CLOUD dans l'application, et les plugins suivent la DA de VOCALBOX : verre sombre, braise, potard étoile. Le site garde la charte des pages précédentes. L'icône de l'application (logo sur un carré arrondi en verre sombre) sert aussi d'icône d'onglet au site : logos/icone-application-1024.png.</p>
+  <div class="grid" style="grid-template-columns:repeat(4,1fr);gap:3mm">
+  ${Object.values(UI).map(([hex, name, use]) => `<div class="card" style="padding:0;overflow:hidden"><div style="height:8mm;background:${hex}"></div>
+    <div style="padding:2.5mm 4mm"><h3 style="font-size:13px">${name} <span style="font:500 10px 'JetBrains Mono';color:${C.bone[0]}">${hex}</span></h3><p class="muted" style="font-size:11px;line-height:1.35">${use}</p></div></div>`).join('')}
+  </div>
+  <div class="grid" style="grid-template-columns:1fr 1fr 1fr;gap:3mm;margin-top:3mm">
+    <div class="card"><h3>Une seule couleur vive</h3><p class="muted" style="font-size:11px;line-height:1.4">La braise sert à ce qui agit. Tout le reste vit dans les noirs, le verre et le blanc rosé : pas de néon, pas de deuxième couleur vive.</p></div>
+    <div class="card"><h3>Trois voix</h3><p class="muted" style="font-size:11px;line-height:1.4">Unbounded 800 pour les titres et les noms ; JetBrains Mono 500 en capitales espacées pour les libellés, onglets, boutons et valeurs ; Hanken Grotesk pour les phrases. Une famille d'éléments, une seule taille.</p></div>
+    <div class="card"><h3>Une recette de verre</h3><p class="muted" style="font-size:11px;line-height:1.4">Dégradé blanc de 7,5 % à 2 %, liseré rose à 10 %, reflet en haut, filet sombre en bas, ombre douce, flou de 22. Rayons : 28 pour un panneau, 20 pour un carré, 12 pour un bouton.</p></div>
+  </div>
+  <div class="foot"><span>couleurs/couleurs-interface.*</span><span>6</span></div>
+</section>
+
+<section>
+  <div class="eyebrow">${STAR(14)}06 · Réseaux sociaux</div><h2>Les formats <span class="dream">prêts à l'emploi.</span></h2>
   <div class="grid" style="grid-template-columns:1fr 1fr;gap:5mm">
     <div class="card"><h3>Dans le dossier reseaux/</h3><p class="muted">Un exemple garni pour chaque format, et dans reseaux/fonds-vides/ le même fond sans texte, à importer dans Canva, Photoshop ou CapCut pour y écrire.</p>
       <ul class="muted" style="margin:3mm 0 0 5mm;font-size:12.5px;line-height:1.7">${FORMATS.map(([, w, h, label]) => `<li>${label} : ${w} × ${h}</li>`).join('')}</ul></div>
@@ -240,7 +269,7 @@ h3 { font: 800 15px/1.3 Unbounded; letter-spacing: .04em; margin: 0 0 6px; }
       <div class="card"><h3>Les plugins partenaires</h3><p class="muted">ONIRIQUE × ABRASION (RAW, TAMA-VOX, MIMIC) et RELIC (BLOOM) gardent leur propre interface ; le visuel autour reste à la charte ONIRIQUE.</p></div>
     </div>
   </div>
-  <div class="foot"><span>reseaux/</span><span>6</span></div>
+  <div class="foot"><span>reseaux/</span><span>7</span></div>
 </section>
 </body></html>`;
 fs.writeFileSync(path.join(work, 'guide.html'), guide);
@@ -256,6 +285,7 @@ chrome(['--no-pdf-header-footer', `--print-to-pdf=${path.join(kit, 'ONIRIQUE-cha
 for (const [from, to] of [['logo.png', 'logo-etoile-transparent.png'], ['logo-original.png', 'logo-fond-degrade-1254.png'], ['logo-small.png', 'logo-petit-transparent.png'], ['favicon.png', 'icone-favicon.png']]) {
   fs.copyFileSync(path.join(site, 'assets', from), path.join(kit, 'logos', to));
 }
+fs.copyFileSync(path.join(repo, 'app', 'build', 'icon.png'), path.join(kit, 'logos', 'icone-application-1024.png'));
 for (const file of fs.readdirSync(path.join(site, 'assets', 'fonts'))) fs.copyFileSync(path.join(site, 'assets', 'fonts', file), path.join(kit, 'polices', file));
 fs.writeFileSync(path.join(kit, 'polices', 'LISEZ-MOI.txt'),
   'Les polices du site (fichiers .woff2, pour le web).\r\n\r\nPour les installer sur un ordinateur ou dans Canva, télécharger les versions .ttf, gratuites (licence SIL Open Font License) :\r\n\r\n'
@@ -264,11 +294,15 @@ fs.writeFileSync(path.join(kit, 'couleurs', 'couleurs.txt'),
   Object.values(C).map(([hex, name, use]) => `${name.padEnd(14)} ${hex}   RGB ${rgb(hex).padEnd(13)}  ${use}`).join('\r\n') + '\r\n');
 fs.writeFileSync(path.join(kit, 'couleurs', 'couleurs.css'),
   `:root {\n${Object.entries(C).map(([key, [hex, name]]) => `  --${key.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase())}: ${hex}; /* ${name} */`).join('\n')}\n}\n`);
+fs.writeFileSync(path.join(kit, 'couleurs', 'couleurs-interface.txt'),
+  Object.values(UI).map(([hex, name, use]) => `${name.padEnd(14)} ${hex}   RGB ${rgb(hex).padEnd(13)}  ${use}`).join('\r\n') + '\r\n');
+fs.writeFileSync(path.join(kit, 'couleurs', 'couleurs-interface.css'),
+  `:root {\n${Object.entries(UI).map(([key, [hex, name]]) => `  --${key}: ${hex}; /* ${name} */`).join('\n')}\n}\n`);
 fs.writeFileSync(path.join(kit, 'LISEZ-MOI.txt'),
   'CHARTE GRAPHIQUE ONIRIQUE\r\n\r\n'
   + '  ONIRIQUE-charte-graphique.pdf   le guide : logo, couleurs, polices, signes, ton, formats\r\n'
-  + '  logos/                          le logo (transparent, sur fond, avec le nom) et le nom seul\r\n'
-  + '  couleurs/                       la palette en image, en texte et en CSS\r\n'
+  + '  logos/                          le logo (transparent, sur fond, avec le nom), le nom seul et l\'icône de l\'application\r\n'
+  + '  couleurs/                       la palette du site, et celle de l\'application et des plugins (couleurs-interface)\r\n'
   + '  polices/                        les polices du site, et où trouver les versions à installer\r\n'
   + '  motifs/                         l\'étoile à quatre branches et le fond dégradé\r\n'
   + '  reseaux/                        un exemple pour chaque format de réseau social\r\n'

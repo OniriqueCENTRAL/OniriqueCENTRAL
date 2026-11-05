@@ -38,6 +38,7 @@ try {
     const p = await call('GET', '/api/profiles/nov.music');
     assert.deepEqual([p.name, p.bio, p.color, p.mine, p.followers, p.role], ['Nov', 'Beatmaker', '#3d7bff', false, 0, 'user']);
     await call('GET', '/api/profiles/personne', { expect: 404 });
+    await call('GET', '/api/link-icon?host=127.0.0.1', { expect: 400 }); // une adresse IP n'est jamais demandée
   });
   await step('s’abonner, commenter, retirer un commentaire', async () => {
     await call('POST', '/api/profiles/nov.music/follow', { token: b.token });

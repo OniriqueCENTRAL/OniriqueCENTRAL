@@ -458,7 +458,7 @@ function aboutOf(userId, mine) {
   if (!a ? !mine : !a.visible && !mine) return null;
   const handle = get('SELECT handle FROM link_pages WHERE user_id = ?', userId)?.handle;
   return { photo: media(a?.photo), bio: a?.bio || '', link: a?.link || '', visible: a ? !!a.visible : false,
-    linkPage: handle ? `${config.linksUrl}/${handle}` : null };
+    linkPage: handle ? `${config.linksUrl}/${handle}` : null, profile: profileHandle(userId) };
 }
 // Les fiches affichées des collaborateurs d'un projet, sous celle de l'auteur.
 const aboutsOf = (people) => people.map((u) => { const a = aboutOf(u.id, false); return a && { ...a, name: u.name || 'ONIRIQUE' }; }).filter(Boolean);
@@ -496,7 +496,9 @@ function splitsIn(list) {
   return rows;
 }
 const creditsOf = (row) => { try { return JSON.parse(row.credits || '{}'); } catch { return {}; } };
-const person = (u) => ({ id: u.id, name: u.name || 'ONIRIQUE', avatar: media(u.avatar) });
+// handle : l'adresse de sa page de profil (profiles.js), pour rendre son nom cliquable ; null s'il n'en a pas.
+const profileHandle = (userId) => get('SELECT handle FROM user_profiles WHERE user_id = ?', userId)?.handle || null;
+const person = (u) => ({ id: u.id, name: u.name || 'ONIRIQUE', avatar: media(u.avatar), handle: profileHandle(u.id) });
 const linkView = (l) => ({
   id: l.id, url: `${config.siteUrl}/ecoute?t=${l.token}`, projectId: l.project_id, trackId: l.track_id, label: l.label,
   password: !!l.password_hash, expiresAt: l.expires_at, download: !!l.download, requireAccount: !!l.require_account, createdAt: l.created_at,
@@ -797,7 +799,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       projects: projects.map((p) => ({
         id: p.id, kind: p.kind, title: p.title, artist: p.artist, cover: media(p.cover), background: media(p.background), buttonColor: p.button_color, coverBy: p.cover_by, releaseDate: p.release_date, plan: planOf(p), createdAt: p.created_at,
         // Chacun range le projet dans ses dossiers : l'auteur dans le projet, un collaborateur dans sa place de collaborateur.
-        mine: p.user_id === u, membersAdd: !!p.members_add, folderId: vanish ? null : p.user_id === u ? p.folder_id : collabFolders.get(p.id) ?? null,
+        mine: p.user_id === u, membersAdd: !!p.members_add, public: p.public !== 0, folderId: vanish ? null : p.user_id === u ? p.folder_id : collabFolders.get(p.id) ?? null,
         owner: person({ id: p.user_id, name: p.owner_name, avatar: p.owner_avatar }),
         collaborators: collabs.filter((c) => c.project_id === p.id).map(person),
         inviteUrl: p.user_id === u && p.invite_token ? `${config.siteUrl}/mes-sons#/invite/${p.invite_token}` : null,
@@ -1498,7 +1500,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     res.json({
       pass: link.password_hash ? passFor(link) : null,
       ...saveState(req, link), simulate, pay: p.kind === 'pack' ? payMethods(p.user_id) : [],
-      owner: p.artist || p.author_name || 'ONIRIQUE', ownerAvatar: media(p.author_avatar), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover), background: media(p.background), buttonColor: p.button_color, coverBy: p.cover_by, releaseDate: p.release_date,
+      owner: p.artist || p.author_name || 'ONIRIQUE', ownerAvatar: media(p.author_avatar), ownerHandle: profileHandle(p.user_id), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover), background: media(p.background), buttonColor: p.button_color, coverBy: p.cover_by, releaseDate: p.release_date,
       download, about: aboutOf(p.user_id, false), contact: p.kind === 'pack' ? p.author_instagram || null : null,
       collabAbouts: aboutsOf(all('SELECT u.id, u.name FROM sound_collabs c JOIN users u ON u.id = c.user_id WHERE c.project_id = ? ORDER BY c.created_at', p.id)),
       tracks: tracks.map((t) => ({

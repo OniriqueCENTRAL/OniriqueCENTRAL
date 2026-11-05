@@ -7,7 +7,7 @@
 <title>ONIRIQUE — Écoute privée</title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
-<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
 <style>
 /* Mêmes tokens que compte.html. */
@@ -152,6 +152,11 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1320px; }
 .about-body > b { font: 700 18px var(--f-body); }
 .about-bio { margin: 0; color: var(--haze); font-size: 14px; line-height: 1.5; white-space: pre-line; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
 .about-bio.open { -webkit-line-clamp: unset; }
+.owner-link { color: var(--mist); font-weight: 600; text-decoration: none; }
+.owner-link:hover { color: var(--ember); text-decoration: underline; text-underline-offset: 3px; }
+.about-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.about-name { color: inherit; text-decoration: none; }
+.about-name:hover b { color: var(--ember); text-decoration: underline; text-underline-offset: 3px; }
 .about-link { justify-self: start; display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line); color: var(--mist); font: 600 13px var(--f-body); text-decoration: none; }
 .about-link:hover { border-color: var(--ember); }
 .about-link svg { width: 15px; height: 15px; }
@@ -210,7 +215,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1320px; }
 <footer class="muted wrap">Partagé avec <a href="/">ONIRIQUE</a> · ONIRIQUE CLOUD</footer>
 
 <dialog id="buy"></dialog>
-<script src="assets/sounds-player.js?v=22"></script>
+<script src="assets/sounds-player.js?v=23"></script>
 <script src="assets/ratings.js?v=2"></script>
 <script>
 const $ = (id) => document.getElementById(id);
@@ -319,12 +324,16 @@ $("lyrics-more").onclick = () => { lyricsExpanded = !lyricsExpanded; layoutSide(
 // Une fiche « À propos » en lecture : photo, nom, texte, lien ; null si elle n'a rien à montrer.
 function aboutCard(a, name, box = el("section", { className: "about about-extra" })) {
   const href = a && (a.link || a.linkPage);
-  if (!(a && (a.photo || a.bio || href))) return null;
+  if (!(a && (a.photo || a.bio || href || a.profile))) return null;
   const title = el("h2", { textContent: "À propos de l'artiste" });
+  // Le nom mène à sa page de profil ONIRIQUE quand il en a une.
+  const profile = a.profile ? "profil?u=" + encodeURIComponent(a.profile) : null;
   box.replaceChildren(a.photo ? el("div", { className: "about-photo", style: `background-image:url("${a.photo}")` }, title) : title,
-    el("div", { className: "about-body" }, el("b", { textContent: name }),
+    el("div", { className: "about-body" }, profile ? el("a", { href: profile, className: "about-name", title: "Voir sa page de profil" }, el("b", { textContent: name })) : el("b", { textContent: name }),
       a.bio ? el("p", { className: "about-bio", textContent: a.bio, title: "Lire tout", onclick: (event) => event.currentTarget.classList.toggle("open") }) : null,
-      href ? el("a", { className: "about-link", href, target: "_blank", rel: "noopener" }, icon("link"), a.link ? new URL(a.link).hostname.replace(/^www\./, "") : "Page de liens") : null));
+      el("div", { className: "about-links" },
+        profile ? el("a", { className: "about-link", href: profile }, icon("user"), "Page de profil") : null,
+        href ? el("a", { className: "about-link", href, target: "_blank", rel: "noopener" }, icon("link"), a.link ? new URL(a.link).hostname.replace(/^www\./, "") : "Page de liens") : null)));
   return box;
 }
 // Les fiches des collaborateurs qui ont choisi de l'afficher, sous celle de l'auteur.
@@ -364,7 +373,9 @@ function show(data) {
   $("release").textContent = OP.releaseLabel(data.releaseDate);
   $("release").classList.toggle("planned", $("release").textContent.startsWith("Date de sortie prévue"));
   $("meta").replaceChildren(data.ownerAvatar ? el("img", { src: data.ownerAvatar, alt: "" }) : "",
-    data.owner + (data.title !== data.project ? " · " + data.project : "") + " · " + data.tracks.length + (data.tracks.length > 1 ? " titres" : " titre")
+    // Le nom de l'auteur mène à sa page de profil, s'il en a une.
+    data.ownerHandle ? el("a", { href: "profil?u=" + encodeURIComponent(data.ownerHandle), className: "owner-link", textContent: data.owner, title: "Voir sa page de profil" }) : data.owner,
+    (data.title !== data.project ? " · " + data.project : "") + " · " + data.tracks.length + (data.tracks.length > 1 ? " titres" : " titre")
     + (total ? " · " + OP.time(total) : ""));
   const ph = el("div", { className: "cover-ph", innerHTML: '<svg viewBox="0 0 24 24"><path d="M12 1.5 13.3 10.7 22.5 12 13.3 13.3 12 22.5 10.7 13.3 1.5 12 10.7 10.7Z" fill="currentColor"/></svg>' });
   $("cover").replaceChildren(data.cover ? el("img", { src: data.cover + "?w=960", alt: "" }) : ph);

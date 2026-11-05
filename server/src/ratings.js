@@ -29,6 +29,11 @@ CREATE INDEX IF NOT EXISTS sound_ups_recent ON sound_ups(kind, created_at);
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'members_add'`).get()) {
   db.exec('ALTER TABLE sound_projects ADD COLUMN members_add INTEGER NOT NULL DEFAULT 0');
 }
+// Une playlist publique (par défaut) apparaît dans « Découvrir », le top de la semaine et sur la page de profil de son
+// créateur ; privée, seuls ceux qui ont son lien la voient.
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'public'`).get()) {
+  db.exec('ALTER TABLE sound_projects ADD COLUMN public INTEGER NOT NULL DEFAULT 1');
+}
 
 const KINDS = ['playlist', 'track'];
 const today = () => new Date(now()).toISOString().slice(0, 10);
@@ -80,7 +85,7 @@ export function publicPlaylists(viewerId, { where = '1', params = [], order = 'p
       (SELECT AVG(stars) FROM sound_ratings r WHERE r.kind = 'playlist' AND r.target_id = p.id) AS avg_stars,
       (SELECT COUNT(*) FROM sound_ratings r WHERE r.kind = 'playlist' AND r.target_id = p.id) AS notes
     FROM sound_projects p JOIN users u ON u.id = p.user_id LEFT JOIN user_profiles pr ON pr.user_id = p.user_id
-    WHERE p.kind = 'playlist' AND p.trashed_at IS NULL AND ${where}) p
+    WHERE p.kind = 'playlist' AND p.trashed_at IS NULL AND p.public != 0 AND ${where}) p
     WHERE token IS NOT NULL AND tracks > 0 ORDER BY ${order} LIMIT ?`, now(), since, ...params, limit);
   const stats = statsOf(viewerId || 0, 'playlist', rows.map((r) => r.id));
   return rows.map((r) => ({ id: r.id, title: r.title, cover: r.cover ? `/api/media/${r.cover}` : null, owner: r.owner || 'Membre', ownerHandle: r.owner_handle || null,
@@ -132,7 +137,7 @@ export function mountRatings(app, { requireUser }) {
     const rows = all(`SELECT p.id, p.title, p.cover, u.name AS owner, COUNT(*) AS ups,
         (SELECT token FROM sound_links l WHERE l.project_id = p.id AND l.password_hash IS NULL AND (l.expires_at IS NULL OR l.expires_at > ?) ORDER BY l.created_at DESC LIMIT 1) AS token
       FROM sound_ups x JOIN sound_projects p ON p.id = x.target_id JOIN users u ON u.id = p.user_id
-      WHERE x.kind = 'playlist' AND x.created_at >= ? AND p.kind = 'playlist' AND p.trashed_at IS NULL
+      WHERE x.kind = 'playlist' AND x.created_at >= ? AND p.kind = 'playlist' AND p.trashed_at IS NULL AND p.public != 0
       GROUP BY p.id HAVING token IS NOT NULL ORDER BY ups DESC, p.id DESC LIMIT 3`, now(), since);
     const stats = statsOf(req.user.id, 'playlist', rows.map((r) => r.id));
     res.set('Cache-Control', 'no-store').json(rows.map((r) => ({ id: r.id, title: r.title, cover: r.cover ? `/api/media/${r.cover}` : null, owner: r.owner || 'Membre',
@@ -155,6 +160,22 @@ export function mountRatings(app, { requireUser }) {
     if (!p) throw new HttpError(404, 'Playlist introuvable.');
     run('UPDATE sound_projects SET members_add = ? WHERE id = ?', req.body?.open ? 1 : 0, p.id);
     res.json({ open: !!req.body?.open });
+  });
+  // Publique ou privée (le créateur seulement).
+  app.post('/api/me/sounds/projects/:id/visibility', ...me, (req, res) => {
+    const p = get(`SELECT id FROM sound_projects WHERE id = ? AND user_id = ? AND kind = 'playlist'`, Number(req.params.id) || 0, req.user.id);
+    if (!p) throw new HttpError(404, 'Playlist introuvable.');
+    run('UPDATE sound_projects SET public = ? WHERE id = ?', req.body?.public === false ? 0 : 1, p.id);
+    res.json({ public: req.body?.public !== false });
+  });
+  // Qui a enregistré ma playlist (ou mon projet) depuis un de ses liens : le créateur et ses collaborateurs le voient.
+  app.get('/api/me/sounds/projects/:id/savers', ...me, (req, res) => {
+    const id = Number(req.params.id) || 0;
+    if (!get(`SELECT 1 FROM sound_projects p WHERE p.id = ? AND ${MINE}`, id, req.user.id, req.user.id)) throw new HttpError(404, 'Projet introuvable.');
+    res.set('Cache-Control', 'no-store').json(all(`SELECT u.id, u.name, u.avatar, u.role, pr.handle, MIN(s.created_at) AS at
+      FROM sound_saves s JOIN sound_links l ON l.id = s.link_id JOIN users u ON u.id = s.user_id LEFT JOIN user_profiles pr ON pr.user_id = u.id
+      WHERE l.project_id = ? GROUP BY u.id ORDER BY at DESC LIMIT 500`, id)
+      .map((r) => ({ id: r.id, name: r.name || 'Membre', avatar: r.avatar ? `/api/media/${r.avatar}` : null, role: r.role, handle: r.handle || null, at: r.at })));
   });
   // Sur la page d'écoute : la playlist autorise-t-elle l'ajout de ses sons ? (sans compte : non)
   app.get('/api/sounds/share/:token/members-add', (req, res) => {

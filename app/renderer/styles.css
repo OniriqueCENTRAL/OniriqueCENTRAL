@@ -95,7 +95,7 @@ body {
 
 /* ---------- Structure ---------- */
 .shell { display: grid; grid-template-columns: 252px 1fr; min-height: 0; }
-.sidebar { display: flex; flex-direction: column; gap: 8px; padding: 22px 16px 20px 20px; min-height: 0; overflow-y: auto; }
+.sidebar { display: flex; flex-direction: column; gap: 8px; padding: 22px 16px 20px 20px; min-height: 0; min-width: 0; overflow-y: auto; overflow-x: hidden; }
 /* Le menu a son propre verre, à peine marqué, qui s'efface vers le contenu et finit sur un filet net : le passage
    au contenu (écrans de l'application, CUT, CLOUD) est voulu, jamais une marche de teinte. */
 .sidebar { background: linear-gradient(90deg, rgba(255,255,255,.028), rgba(255,255,255,.014) 75%, rgba(255,255,255,.02));

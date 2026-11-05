@@ -41,6 +41,7 @@
     queue: '<path d="M4 6h16M4 11h16M4 16h9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16 14.5v5l4-2.5Z" fill="currentColor"/>',
     volume: '<path d="M4 9.5h3l4.5-4v13L7 14.5H4Z" fill="currentColor"/><path d="M15 9a4 4 0 0 1 0 6M17.5 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
     mute: '<path d="M4 9.5h3l4.5-4v13L7 14.5H4Z" fill="currentColor"/><path d="m15.5 9.5 5 5m0-5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
+    user: '<circle cx="12" cy="8" r="3.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
     link: '<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
     more: '<circle cx="5.5" cy="12" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/><circle cx="18.5" cy="12" r="1.7" fill="currentColor"/>',
     plus: '<path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
@@ -195,13 +196,13 @@ html.op-full-open, html.op-full-open body { overflow: hidden; }
 .op-stage-bg { position: absolute; inset: -90px; z-index: -1; background: center / cover no-repeat;
   filter: blur(80px) saturate(1.5) brightness(calc(.38 + var(--op-level, 0) * .14)); transform: scale(calc(1.05 + var(--op-level, 0) * .05)); transition: transform .14s linear, filter .14s linear; }
 .op-stage-bg::after { content: ""; position: absolute; inset: 0;
-  background: radial-gradient(80% 60% at 18% 12%, color-mix(in srgb, var(--op-accent, #e23444) 38%, transparent), transparent 70%),
-    radial-gradient(70% 55% at 90% 100%, color-mix(in srgb, var(--op-accent, #e23444) 22%, transparent), transparent 70%),
+  background: radial-gradient(80% 60% at 18% 12%, color-mix(in srgb, var(--op-glow, var(--op-accent, #e23444)) 38%, transparent), transparent 70%),
+    radial-gradient(70% 55% at 90% 100%, color-mix(in srgb, var(--op-glow, var(--op-accent, #e23444)) 22%, transparent), transparent 70%),
     linear-gradient(180deg, rgba(13,8,9,.25), rgba(13,8,9,.78)); }
 .op-stage-top { flex: none; display: flex; align-items: center; gap: 14px; padding: calc(16px + env(safe-area-inset-top)) clamp(16px, 4vw, 48px) 8px; }
 .op-stage-top img { width: 52px; height: 52px; flex: none; border-radius: 12px; object-fit: cover; box-shadow: 0 10px 30px -10px rgba(0,0,0,.9), 0 0 36px -14px var(--op-accent, #e23444); }
 .op-stage-top > div { flex: 1; min-width: 0; display: grid; gap: 2px; }
-.op-stage-top small { font: 500 11px/1 var(--f-mono, monospace); letter-spacing: .18em; text-transform: uppercase; color: var(--op-accent, #e23444); }
+.op-stage-top small { font: 500 11px/1 var(--f-mono, monospace); letter-spacing: .18em; text-transform: uppercase; color: var(--op-glow, var(--op-accent, #e23444)); }
 .op-stage-top b { font: 700 17px/1.25 var(--f-display, sans-serif); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .op-stage-top span { font-size: 13px; color: rgba(246,238,238,.62); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .op-stage-top .op-btn { width: 44px; height: 44px; border-radius: 14px; background: rgba(255,236,238,.08); }
@@ -216,7 +217,7 @@ html.op-full-open, html.op-full-open body { overflow: hidden; }
 .op-stage-lyrics.synced p:hover { color: rgba(255,236,238,.6); }
 .op-stage-lyrics.synced p.past { color: rgba(255,236,238,.5); }
 .op-stage-lyrics.synced p.on { color: #fff; transform: scale(1.03);
-  text-shadow: 0 0 calc(14px + var(--op-level, 0) * 34px) color-mix(in srgb, var(--op-accent, #e23444) 75%, transparent); }
+  text-shadow: 0 0 calc(14px + var(--op-level, 0) * 34px) color-mix(in srgb, var(--op-glow, var(--op-accent, #e23444)) 75%, transparent); }
 html.op-stage-open, html.op-stage-open body { overflow: hidden; }
 @media (max-width: 720px) {
   .op-stage-lyrics { padding: 6vh 22px 42vh; }
@@ -746,6 +747,9 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
       stageTitle.textContent = t.title + (t.feat ? " (feat. " + t.feat + ")" : "");
       stageSub.textContent = t.subtitle || "";
       fullBg.style.backgroundImage = stageBg.style.backgroundImage = t.cover ? `url("${t.cover}?w=960")` : "";
+      // La lueur des paroles et le halo de l'écran prennent la couleur de la pochette du son (sinon celle du projet).
+      stage.style.removeProperty("--op-glow");
+      if (t.cover) tint(t.cover).then((c) => { if (c && item() === t) stage.style.setProperty("--op-glow", c.accent); });
       download.hidden = !t.downloadUrl;
       // Un titre d'une plateforme (Spotify) : ni commentaires, ni vitesse, ni boucle, ni paroles, ni partage, ni export.
       for (const node of [sheet, full, stage]) node.classList.toggle("op-ext", !!t.engine || /^(x|pv)/.test(t.key));
@@ -974,6 +978,7 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     return new Promise((resolve) => {
       if (!url) return resolve(null);
       const img = new Image();
+      img.crossOrigin = "anonymous"; // les pochettes Spotify (i.scdn.co) se lisent ainsi ; celles du site ne changent pas
       img.onload = () => {
         try {
           const c = document.createElement("canvas");

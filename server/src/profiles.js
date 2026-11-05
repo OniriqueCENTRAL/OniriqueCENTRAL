@@ -3,6 +3,9 @@
 // écrit en privé à son auteur (messages.html). Un compte sans page de profil ne reçoit pas de message.
 import { db, get, all, run, now, transaction } from './db.js';
 import { HttpError, rateLimit, optionalUser } from './auth.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { config } from './config.js';
 import { publicPlaylists } from './ratings.js';
 
 db.exec(`
@@ -205,6 +208,26 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
     run('DELETE FROM profile_comments WHERE id = ?', c.id);
     res.json({ ok: true });
   });
+
+  // Le petit logo d'un site, pour les boutons de liens des pages : demandé une fois par le serveur (le visiteur ne
+  // contacte aucun autre site), gardé une semaine sur le disque. 404 si le site n'en a pas.
+  const iconDir = path.join(config.dataDir, 'link-icons');
+  app.get('/api/link-icon', wrap(async (req, res) => {
+    const host = String(req.query.host || '').toLowerCase().replace(/^www\./, '');
+    if (!/^(?=.{4,120}$)([a-z0-9-]+\.)+[a-z]{2,}$/.test(host)) throw new HttpError(400, 'Adresse illisible.');
+    const file = path.join(iconDir, `${host}.png`), miss = `${file}.none`;
+    const fresh = (f) => fs.existsSync(f) && Date.now() - fs.statSync(f).mtimeMs < 7 * 86400_000;
+    if (!fresh(file) && !fresh(miss)) {
+      rateLimit('link-icon', 600, 3600_000);
+      const r = await fetch(`https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64`, { signal: AbortSignal.timeout(6000) }).catch(() => null);
+      const body = r?.ok && /^image\//.test(r.headers.get('content-type') || '') ? Buffer.from(await r.arrayBuffer()) : null;
+      fs.mkdirSync(iconDir, { recursive: true });
+      if (body && body.length < 200_000) { fs.writeFileSync(file, body); fs.rmSync(miss, { force: true }); }
+      else if (r) fs.writeFileSync(miss, ''); // pas de logo : pas de nouvelle demande avant une semaine
+    }
+    if (!fs.existsSync(file) || fresh(miss)) throw new HttpError(404, 'Pas de logo pour ce site.');
+    res.set('Cache-Control', 'public, max-age=604800').type('png').sendFile(file);
+  }));
 
   // L'activité : qui s'est abonné, a commenté ma page ou répondu à mon commentaire ; et les compteurs du menu.
   app.get('/api/me/activity', requireUser, (req, res) => {

@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Page de profil</title>
 <meta name="robots" content="noindex">
-<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
 <style>
 /* Mêmes tokens que compte.html ; --ember prend la couleur choisie par le propriétaire de la page. */
@@ -86,6 +86,7 @@ input[type="checkbox"] { min-height: 0; width: 18px; height: 18px; accent-color:
 .links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .links a { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.03); text-decoration: none; font: 600 13px var(--f-body); }
 .links a:hover { border-color: var(--ember); }
+.links img { width: 18px; height: 18px; border-radius: 4px; object-fit: contain; }
 .tabs { display: flex; gap: 6px; margin-top: 22px; border-bottom: 1px solid var(--line); }
 .tabs button { border: 0; background: none; color: var(--haze); padding: 10px 14px; font: 600 14px var(--f-body); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
 .tabs button.on { color: var(--mist); border-color: var(--ember); }
@@ -196,7 +197,7 @@ async function api(method, path, body, raw) {
 const say = (id, text, err) => { $(id).textContent = text; $(id).classList.toggle("err", !!err); };
 const handleOf = () => new URLSearchParams(location.search).get("u");
 const when = (t) => new Date(t).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
-const avatarOf = (src) => (src ? src + "?w=160" : "assets/favicon.png");
+const avatarOf = (src) => (src ? src + "?w=160" : "assets/favicon.png?v=2");
 
 let profile = null, mine = null;
 // Les badges de rôle : ONIRIQUE, Beta-Testeur et Beta-Testeuse ont le même, les autres rôles aussi le leur.
@@ -238,7 +239,13 @@ function drawView() {
 
   $("follows-me").hidden = !p.followsMe;
   $("pl-count").textContent = p.playlists.length;
-  $("links").replaceChildren(...p.links.map((l) => el("a", { href: l.url, target: "_blank", rel: "noopener nofollow", textContent: "↗ " + l.label })));
+  // Chaque lien avec le petit logo de son site (la flèche reste si le site n'en a pas).
+  $("links").replaceChildren(...p.links.map((l) => {
+    const arrow = el("span", { className: "arrow", textContent: "↗" });
+    const logo = el("img", { src: "/api/link-icon?host=" + encodeURIComponent(new URL(l.url).hostname), alt: "", width: 18, height: 18, loading: "lazy",
+      onload: () => arrow.remove(), onerror: (e) => e.target.remove() });
+    return el("a", { href: l.url, target: "_blank", rel: "noopener nofollow" }, logo, arrow, l.label);
+  }));
   $("bio-panel").hidden = !p.bio && !p.links.length;
   $("playlists").replaceChildren(...(p.playlists.length ? p.playlists.map((x) => el("a", { className: "pl", href: x.url },
     x.cover ? el("img", { src: x.cover + "?w=320", alt: "", loading: "lazy" }) : el("span", { className: "ph" }),
