@@ -42,7 +42,7 @@ header > * { pointer-events: auto; }
 .btn.primary { background: var(--mist); color: #0d0809; border-color: transparent; }
 
 /* La scène 3D : le plan de la carte est incliné (--ax), tourné (--az) et zoomé (--z) ; la caméra le suit en douceur. */
-#scene { position: fixed; inset: 0; z-index: 1; perspective: 1400px; perspective-origin: 50% 40%; cursor: grab; touch-action: none; }
+#scene { position: fixed; inset: 0; z-index: 1; perspective: 1400px; /* = PERSP dans le script */ perspective-origin: 50% 40%; cursor: grab; touch-action: none; }
 #scene.drag { cursor: grabbing; }
 /* Le plan est dessiné à 2,5 fois sa taille (2500 px) puis réduit d'autant : zoomé, le tracé reste net au lieu d'être agrandi en pixels. */
 #plane { position: absolute; left: 50%; top: 54%; width: 2500px; height: 2500px; margin: -1250px 0 0 -1250px; transform-style: preserve-3d;
@@ -52,6 +52,13 @@ header > * { pointer-events: auto; }
 .coast { fill: none; stroke: rgba(255,179,187,.38); stroke-width: 1.1; stroke-linejoin: round; filter: url(#glow); stroke-dasharray: var(--len); stroke-dashoffset: var(--len);
   animation: draw 3.2s cubic-bezier(.6, .1, .2, 1) forwards; }
 .coast.other { stroke: rgba(255,179,187,.2); animation-delay: .8s; }
+/* Les reliefs (estompage de l'IGN : des ombres noires) passés en clair et teintés rose, en fondu quand on s'approche. */
+#relief { position: absolute; inset: 0; filter: invert(1) sepia(1) saturate(3) hue-rotate(-40deg); opacity: 0; transition: opacity .8s; pointer-events: none; }
+#relief.on { opacity: 1; }
+#relief img { position: absolute; opacity: 0; transition: opacity .6s; }
+#relief img.ok { opacity: 1; }
+#relief-credit { position: fixed; z-index: 3; left: 50%; bottom: 2px; translate: -50%; font: 500 9px var(--f-mono); color: var(--haze); letter-spacing: .08em; opacity: 0; transition: opacity .8s; pointer-events: none; }
+#relief-credit.on { opacity: .8; }
 .land { fill: rgba(229,56,74,.035); opacity: 0; animation: fade 2s 1.8s forwards; }
 @keyframes draw { to { stroke-dashoffset: 0; } }
 @keyframes fade { to { opacity: 1; } }
@@ -231,8 +238,10 @@ header > * { pointer-events: auto; }
 </header>
 
 <div id="labels" aria-hidden="true"></div>
+<span id="relief-credit">Relief © IGN</span>
 <div id="scene" aria-label="Carte des membres : glisser pour déplacer, molette pour zoomer">
   <div id="plane">
+    <div id="relief" aria-hidden="true"></div>
     <svg viewBox="0 0 1000 1000" id="map" aria-hidden="true">
       <defs><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
       <g id="lands"></g><g id="webs"></g><g id="stars"></g>
@@ -309,7 +318,7 @@ const cityNodes = new Map();
   let last = 0;
   const frame = (t) => {
     if (!reduced) requestAnimationFrame(frame);
-    if (t - last < (still ? 80 : 33)) return; // le scintillement, moins souvent sur téléphone
+    if (t - last < (still ? 33 : 0)) return; // 60 images/s, 30 sur téléphone (le scintillement est lent)
     last = t;
     g.clearRect(0, 0, w, h);
     for (const s of stars) {
@@ -342,11 +351,48 @@ function drawShapes() {
   }
 }
 
+//------------------------------------------------------------------------------ Les reliefs, de près
+// Les tuiles d'estompage de l'IGN (Géoplateforme, licence ouverte, France seulement) autour du centre de la vue, à la
+// finesse qui va avec le zoom. Elles sont en projection Mercator : sur une tuile, l'écart avec la carte est invisible.
+const RELIEF = "https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW&STYLE=estompage_grayscale&TILEMATRIXSET=PM&FORMAT=image/png";
+const unproject = (x, y) => [(x - 500) / (0.687 * 88) + 2.9, 46.4 - (y - 500) / 88];
+const tileLon = (tx, n) => tx / n * 360 - 180, tileLat = (ty, n) => Math.atan(Math.sinh(Math.PI * (1 - 2 * ty / n))) * 180 / Math.PI;
+const tiles = new Map();
+let reliefKey = "";
+function relief() {
+  const on = cam.z / fit() > 3;
+  $("relief").classList.toggle("on", on); $("relief-credit").classList.toggle("on", on);
+  if (!on) return;
+  const L = Math.min(15, Math.max(6, Math.round(Math.log2(360 * 0.687 * 88 * cam.z / 300)))), n = 2 ** L;
+  const [lon, lat] = unproject(500 - cam.px / K, 500 - cam.py / K), r = Math.PI / 180 * lat;
+  const tx = Math.floor((lon + 180) / 360 * n), ty = Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * n);
+  const key = L + "/" + tx + "/" + ty;
+  if (key === reliefKey) return;
+  reliefKey = key;
+  const R = still ? 2 : 3, want = new Set();
+  for (let i = -R; i <= R; i++) for (let j = -R; j <= R; j++) {
+    const x = tx + i, y = ty + j;
+    if (y < 0 || y >= n) continue;
+    const url = `${RELIEF}&TILEMATRIX=${L}&TILECOL=${x}&TILEROW=${y}`;
+    want.add(url);
+    if (tiles.has(url)) continue;
+    const [x0, y0] = project(tileLon(x, n), tileLat(y, n)), [x1, y1] = project(tileLon(x + 1, n), tileLat(y + 1, n));
+    const img = el("img", { alt: "", decoding: "async", crossOrigin: "anonymous", onload: () => img.classList.add("ok"), onerror: () => img.remove() });
+    // Bord à bord exact (un chevauchement doublerait l'ombre et tracerait une ligne entre deux tuiles).
+    img.style.cssText = `left:${x0 * K}px;top:${y0 * K}px;width:${(x1 - x0) * K}px;height:${(y1 - y0) * K}px`;
+    img.src = url;
+    tiles.set(url, img); $("relief").append(img);
+  }
+  // Les tuiles d'avant restent le temps que les nouvelles arrivent.
+  setTimeout(() => { if (reliefKey !== key) return; for (const [url, img] of tiles) if (!want.has(url)) { img.remove(); tiles.delete(url); } }, 1200);
+}
+
 //------------------------------------------------------------------------------ La caméra : inclinaison, rotation, zoom et déplacement, en douceur
 const cam = { ax: 50, az: -9, z: 1, px: 0, py: 0 }, goal = { ...cam, ax: 50, az: -9, z: 1 };
 const start = { ax: 12, az: -30, z: .55 }; // l'arrivée : la carte se couche et se rapproche
 Object.assign(cam, start);
 let lastView = "";
+const PERSP = 1400, halls = document.getElementsByClassName("hall"); // la perspective de #scene
 function tick(t) {
   for (const k of ["ax", "az", "z", "px", "py"]) { cam[k] += (goal[k] - cam[k]) * (reduced ? 1 : .065); if (Math.abs(goal[k] - cam[k]) < 1e-3) cam[k] = goal[k]; }
   const sway = still ? 0 : Math.sin(t / 4200) * 1.4, swayX = still ? 0 : Math.sin(t / 5300) * 1.2;
@@ -354,15 +400,20 @@ function tick(t) {
   const nodes = [...cityNodes.values()], moved = view.join() !== lastView;
   if (moved) {
     lastView = view.join();
-    // Posées sur le plan (pas sur la page entière) : changer ces valeurs ne fait recalculer que la carte.
-    plane.style.setProperty("--ax", view[0] + "deg");
-    plane.style.setProperty("--az", view[1] + "deg");
-    plane.style.setProperty("--z", view[2]); // la taille réelle du plan : K fois plus grand, K fois moins zoomé
-    plane.style.setProperty("--px", view[3] + "px");
-    plane.style.setProperty("--py", view[4] + "px");
+    // La transformation posée telle quelle sur le plan : une variable héritée ferait recalculer chacune des centaines
+    // d'étoiles du tracé à chaque image ; seules les salles de concert (peu nombreuses) ont besoin des angles.
+    const tf = `rotateX(${view[0]}deg) rotateZ(${view[1]}deg) scale(${view[2]}) translate(${view[3]}px, ${view[4]}px)`; // scale : K fois plus grand, K fois moins zoomé
+    plane.style.transform = tf;
+    for (const hall of halls) { hall.style.setProperty("--ax", view[0] + "deg"); hall.style.setProperty("--az", view[1] + "deg"); }
     plane.classList.toggle("close", cam.z / fit() > 7);
-    const rects = nodes.map((node) => node.getBoundingClientRect());
-    nodes.forEach((node, i) => { node.at = `translate(${rects[i].left.toFixed(1)}px, ${rects[i].top.toFixed(1)}px)`; node.xy = [rects[i].left, rects[i].top]; node.lead = node.group = null; });
+    // Où tombe chaque ville à l'écran, calculé (même perspective que #scene) au lieu de le demander à la page.
+    const m = new DOMMatrix(tf), cx = plane.offsetLeft + 1250, cy = plane.offsetTop + 1250, ox = innerWidth / 2, oy = innerHeight * .4;
+    for (const node of nodes) {
+      const p = m.transformPoint(new DOMPoint(node.dataset.x * K - 1250, node.dataset.y * K - 1250)), f = PERSP / (PERSP - p.z);
+      node.xy = [ox + (cx + p.x - ox) * f, oy + (cy + p.y - oy) * f];
+      node.at = `translate(${node.xy[0].toFixed(1)}px, ${node.xy[1].toFixed(1)}px)`; node.lead = node.group = null;
+    }
+    relief();
     // Les villes trop proches à l'écran se regroupent sous la plus peuplée : « PARIS +2 », le total de leurs membres.
     const act = nodes.filter((n) => n.classList.contains("has")).sort((a, b) => b.n - a.n);
     for (const n of act) {
