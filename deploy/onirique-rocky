@@ -11,9 +11,12 @@ stop() { echo "$1" >&2; exit 1; }
 
 if [ "${1:-}" != off ]; then
   read -rsp "Clé API Gemini (rien ne s'affiche) : " KEY; echo
-  # Un collage dans le terminal ajoute parfois des caractères invisibles : seuls ceux d'une clé sont gardés.
-  KEY=$(printf '%s' "$KEY" | sed 's/\x1b\[20[01]~//g' | tr -cd 'A-Za-z0-9_-')
+  # Un collage dans le terminal ajoute parfois des caractères invisibles ou des espaces : ils sont retirés (et les guillemets).
+  KEY=$(printf '%s' "$KEY" | sed 's/\x1b\[20[01]~//g' | tr -cd '[:graph:]' | tr -d "'\"\\\\")
   [ ${#KEY} -ge 20 ] || stop "Clé trop courte. Rien n'est changé."
+  # Google dit tout de suite si la clé marche, avant de l'enregistrer.
+  CODE=$(curl -s -o /dev/null -w '%{http_code}' -H "x-goog-api-key: $KEY" https://generativelanguage.googleapis.com/v1beta/models || true)
+  [ "$CODE" = 200 ] || stop "Google refuse cette clé (code $CODE). Recopie-la depuis aistudio.google.com (bouton copier), puis relance. Rien n'est changé."
 fi
 
 sed -i '/^GEMINI_API_KEY=/d' "$ENVFILE"
