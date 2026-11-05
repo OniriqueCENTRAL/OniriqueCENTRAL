@@ -143,9 +143,15 @@ async function closeTools() {
 }
 
 function createWindow() {
+  // La fenêtre revient comme on l'a laissée, si elle tient encore sur un écran branché (sinon, la taille par défaut).
+  const { screen } = require('electron');
+  const saved = store.windowState;
+  const fits = saved && Number.isFinite(saved.x) && screen.getAllDisplays().some(({ workArea: a }) =>
+    saved.x < a.x + a.width - 100 && saved.x + saved.width > a.x + 100 && saved.y >= a.y - 10 && saved.y < a.y + a.height - 100);
   win = new BrowserWindow({
-    width: 1320,
-    height: 840,
+    width: fits ? saved.width : 1320,
+    height: fits ? saved.height : 840,
+    ...(fits ? { x: saved.x, y: saved.y } : {}),
     minWidth: 980,
     minHeight: 640,
     // Sur Mac, les trois boutons du système restent en place, posés sur la barre de titre de l'application.
@@ -162,7 +168,8 @@ function createWindow() {
   });
   win.removeMenu();
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
-  win.once('ready-to-show', () => win.show());
+  win.once('ready-to-show', () => { if (fits && saved.maximized) win.maximize(); win.show(); });
+  win.on('close', () => { store.windowState = { ...win.getNormalBounds(), maximized: win.isMaximized() }; });
   win.on('maximize', () => win.webContents.send('window:maximized', true));
   win.on('unmaximize', () => win.webContents.send('window:maximized', false));
 

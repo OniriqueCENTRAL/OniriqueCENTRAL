@@ -42,6 +42,10 @@ module.exports = {
   get serverUrl() { return read().serverUrl || DEFAULT_SERVER; },
   set serverUrl(url) { read().serverUrl = url; write(); },
 
+  // La taille, la place et l'état agrandi de la fenêtre à sa fermeture, rendus à l'ouverture suivante.
+  get windowState() { return read().windowState || null; },
+  set windowState(state) { read().windowState = state; write(); },
+
   get vst3Dir() { return read().vst3Dir || DEFAULT_VST3_DIR; },
   set vst3Dir(dir) { read().vst3Dir = dir; write(); },
 
