@@ -384,6 +384,8 @@
       const r = await ctx.api("POST", "/platforms/resolve", { url: l.url });
       const { id } = await ctx.api("POST", "/me/sounds/projects", { title: (r.title || l.title || "Playlist Spotify").slice(0, 120), kind: "playlist" });
       if (r.items.length) await ctx.api("POST", "/me/sounds/projects/" + id + "/platform-items", { items: r.items.slice(0, 200) });
+      // La pochette de la playlist Spotify devient celle de la playlist du CLOUD.
+      if (r.cover || l.cover) await ctx.api("POST", "/me/sounds/projects/" + id + "/platform-cover", { url: r.cover || l.cover }).catch(() => {});
       await load(); await ctx.changed(true);
       l.imported = true;
       if (ctx.open) ctx.open(id);
@@ -560,7 +562,9 @@
           el("span", { className: "grow pick-name" }, el("b", { textContent: l.title }), el("small", { textContent: l.count + " titre" + (l.count > 1 ? "s" : "") })),
           target ? el("button", { className: "btn btn-ghost", type: "button", disabled: busy, textContent: "Ajouter ici", onclick: async () => {
             busy = true; error = ""; draw();
-            try { const r = await ctx.api("POST", "/platforms/resolve", { url: l.url }); const fresh = r.items.filter((x) => !added.has(x.platform + ":" + x.id)); busy = false; if (fresh.length) await add(fresh.slice(0, 200)); }
+            try { const r = await ctx.api("POST", "/platforms/resolve", { url: l.url }); const fresh = r.items.filter((x) => !added.has(x.platform + ":" + x.id)); busy = false; if (fresh.length) await add(fresh.slice(0, 200));
+              // Une playlist du CLOUD sans pochette prend celle de la playlist Spotify.
+              if (r.cover || l.cover) { await ctx.api("POST", "/me/sounds/projects/" + target.id + "/platform-cover", { url: r.cover || l.cover }).catch(() => {}); ctx.changed(true); } }
             catch (e) { error = e.message; busy = false; }
             draw();
           } }) : "",

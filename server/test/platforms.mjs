@@ -174,6 +174,10 @@ try {
     await call('POST', `/api/me/sounds/projects/${album}/platform-items`, { token: member.token, body: { items }, expect: 400 });
     await call('POST', `/api/me/sounds/projects/${pl}/platform-items`, { token: stranger.token, body: { items }, expect: 404 });
     await call('POST', `/api/me/sounds/projects/${pl}/platform-items`, { token: member.token, body: { items: [] }, expect: 400 });
+    // La pochette ne vient que des adresses d'images de Spotify, et seulement pour une playlist.
+    await call('POST', `/api/me/sounds/projects/${pl}/platform-cover`, { token: member.token, body: { url: 'https://evil.example/c.jpg' }, expect: 400 });
+    await call('POST', `/api/me/sounds/projects/${album}/platform-cover`, { token: member.token, body: { url: 'https://i.scdn.co/image/a' }, expect: 400 });
+    await call('POST', `/api/me/sounds/projects/${pl}/platform-cover`, { token: stranger.token, body: { url: 'https://i.scdn.co/image/a' }, expect: 404 });
     const mine = await call('GET', '/api/me/platforms', { token: member.token });
     assert.equal(mine.items.length, 2);
     assert.deepEqual(mine.positions, { [cloud]: 0 });

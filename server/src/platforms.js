@@ -573,6 +573,27 @@ export function mountPlatforms(app, { requireUser, wrap }) {
     res.set({ 'Content-Type': type, 'Cache-Control': 'private, max-age=600', 'X-Content-Type-Options': 'nosniff' }).send(audio);
   }));
 
+  // La pochette d'une playlist importée : celle de la playlist Spotify, téléchargée chez Spotify (ses seules adresses
+  // d'images), vérifiée comme une image envoyée. Une playlist qui a déjà sa pochette la garde.
+  app.post('/api/me/sounds/projects/:id/platform-cover', ...me, wrap(async (req, res) => {
+    const p = playlist(req, req.params.id);
+    if (p.cover) return res.json({ cover: `/api/media/${p.cover}` });
+    const url = coverUrl(req.body?.url);
+    if (!url) throw new HttpError(400, 'Pochette introuvable.');
+    rateLimit(`platform-cover:${req.user.id}`, 60, 3600_000);
+    let r;
+    try { r = await fetch(url, { signal: AbortSignal.timeout(10000), redirect: 'error' }); } catch { throw new HttpError(502, "La pochette n'a pas pu être récupérée."); }
+    const data = Buffer.from(await r.arrayBuffer());
+    if (!r.ok || !data.length || data.length > 8 * 1024 * 1024) throw new HttpError(502, "La pochette n'a pas pu être récupérée.");
+    const ext = data.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex')) ? 'png' : data.subarray(0, 3).equals(Buffer.from('ffd8ff', 'hex')) ? 'jpg'
+      : data.toString('latin1', 0, 4) === 'RIFF' && data.toString('latin1', 8, 12) === 'WEBP' ? 'webp' : null;
+    if (!ext) throw new HttpError(502, "La pochette n'est pas une image.");
+    const name = `${crypto.randomBytes(16).toString('hex')}.${ext}`;
+    fs.writeFileSync(path.join(config.mediaDir, name), data);
+    run('UPDATE sound_projects SET cover = ? WHERE id = ?', name, p.id);
+    res.json({ cover: `/api/media/${name}` });
+  }));
+
   // Ajouter des titres à la fin d'une playlist (après les sons du CLOUD et les titres déjà là).
   app.post('/api/me/sounds/projects/:id/platform-items', ...me, (req, res) => {
     const p = playlist(req, req.params.id);
