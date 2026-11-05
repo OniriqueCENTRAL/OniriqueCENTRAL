@@ -9,7 +9,7 @@
   const at = (hash) => (home ? hash : "/" + hash);
   // L'ordre des rubriques, partout : celui de l'en-tête de la page d'accueil.
   const SECTIONS = [
-    ["Boutique", "boutique"], ["Téléchargement", at("#telechargement")], ["Outils", "outils"],
+    ["Boutique", "boutique"], ["Carte", "carte"], ["Outils", "outils"],
     ["Crédits", at("#credits")], ["FAQ", at("#faq")], ["Support", "support"],
   ];
   const el = (tag, props = {}, ...children) => {
