@@ -196,6 +196,12 @@ header > * { pointer-events: auto; }
   #far { bottom: 12px; right: 12px; left: 12px; max-width: none; }
   .hide-phone { display: none; }
 }
+/* Téléphone : pas de flou (lueur des traits, verre des panneaux) recalculé à chaque mouvement de la carte, c'est ce qui la faisait ramer. */
+@media (pointer: coarse) {
+  .coast, .web { filter: none; }
+  .glass, .btn { backdrop-filter: none; }
+  .glass { background: rgba(12,7,9,.93); }
+}
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01s !important; animation-iteration-count: 1 !important; transition: none !important; } }
 </style>
 
@@ -250,6 +256,8 @@ const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.crea
 const NS = "http://www.w3.org/2000/svg";
 const svgEl = (tag, attrs) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; };
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+// Sur téléphone, pas de balancement : la carte immobile ne coûte plus rien, on ne recalcule que quand elle bouge.
+const still = reduced || matchMedia("(pointer: coarse)").matches;
 const token = (() => { try { return sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"); } catch { return null; } })();
 const ROLES = { vip: "ONIRIQUE", beta: "Beta-Testeur", betaf: "Beta-Testeuse", abrasion: "Abrasion", relic: "Relic", admin: "Admin", founder: "Fondateur" };
 
@@ -284,7 +292,7 @@ const cityNodes = new Map();
   let last = 0;
   const frame = (t) => {
     if (!reduced) requestAnimationFrame(frame);
-    if (t - last < 33) return;
+    if (t - last < (still ? 80 : 33)) return; // le scintillement, moins souvent sur téléphone
     last = t;
     g.clearRect(0, 0, w, h);
     for (const s of stars) {
@@ -321,25 +329,31 @@ function drawShapes() {
 const cam = { ax: 50, az: -9, z: 1, px: 0, py: 0 }, goal = { ...cam, ax: 50, az: -9, z: 1 };
 const start = { ax: 12, az: -30, z: .55 }; // l'arrivée : la carte se couche et se rapproche
 Object.assign(cam, start);
+let lastView = "";
 function tick(t) {
-  for (const k of ["ax", "az", "z", "px", "py"]) cam[k] += (goal[k] - cam[k]) * (reduced ? 1 : .065);
-  const sway = reduced ? 0 : Math.sin(t / 4200) * 1.4, swayX = reduced ? 0 : Math.sin(t / 5300) * 1.2;
-  const s = document.documentElement.style;
-  s.setProperty("--ax", (cam.ax + swayX).toFixed(3) + "deg");
-  s.setProperty("--az", (cam.az + sway).toFixed(3) + "deg");
-  s.setProperty("--z", (cam.z / K).toFixed(5)); // la taille réelle du plan : K fois plus grand, K fois moins zoomé
-  $("plane").style.setProperty("--px", cam.px.toFixed(2) + "px");
-  $("plane").style.setProperty("--py", cam.py.toFixed(2) + "px");
-  const nodes = [...cityNodes.values()], rects = nodes.map((node) => node.getBoundingClientRect());
-  nodes.forEach((node, i) => {
+  for (const k of ["ax", "az", "z", "px", "py"]) { cam[k] += (goal[k] - cam[k]) * (reduced ? 1 : .065); if (Math.abs(goal[k] - cam[k]) < 1e-3) cam[k] = goal[k]; }
+  const sway = still ? 0 : Math.sin(t / 4200) * 1.4, swayX = still ? 0 : Math.sin(t / 5300) * 1.2;
+  const plane = $("plane"), view = [(cam.ax + swayX).toFixed(3), (cam.az + sway).toFixed(3), (cam.z / K).toFixed(5), cam.px.toFixed(2), cam.py.toFixed(2)];
+  const nodes = [...cityNodes.values()], moved = view.join() !== lastView;
+  if (moved) {
+    lastView = view.join();
+    // Posées sur le plan (pas sur la page entière) : changer ces valeurs ne fait recalculer que la carte.
+    plane.style.setProperty("--ax", view[0] + "deg");
+    plane.style.setProperty("--az", view[1] + "deg");
+    plane.style.setProperty("--z", view[2]); // la taille réelle du plan : K fois plus grand, K fois moins zoomé
+    plane.style.setProperty("--px", view[3] + "px");
+    plane.style.setProperty("--py", view[4] + "px");
+    const rects = nodes.map((node) => node.getBoundingClientRect());
+    nodes.forEach((node, i) => { node.at = `translate(${rects[i].left.toFixed(1)}px, ${rects[i].top.toFixed(1)}px)`; });
+  }
+  for (const node of nodes) {
     const has = node.classList.contains("has"), on = node.classList.contains("on");
     node.pin.classList.toggle("has", has); node.pin.classList.toggle("on", on);
-    const at = `translate(${rects[i].left.toFixed(1)}px, ${rects[i].top.toFixed(1)}px)`;
-    const show = has || on || node.pin.matches(":hover");
+    const show = has || on || (!still && node.pin.matches(":hover"));
     node.tag.classList.toggle("show", show);
-    if (node.at !== at) { node.at = at; node.pin.style.transform = at; }
-    if (show && node.tagAt !== at) { node.tagAt = at; node.tag.style.transform = `${at} translate(-50%, calc(-100% - 14px))`; }
-  });
+    if (node.pinAt !== node.at) { node.pinAt = node.at; node.pin.style.transform = node.at; }
+    if (show && node.tagAt !== node.at) { node.tagAt = node.at; node.tag.style.transform = `${node.at} translate(-50%, calc(-100% - 14px))`; }
+  }
   requestAnimationFrame(tick);
 }
 const K = 2.5; // le facteur de dessin du plan (voir #plane)
@@ -350,11 +364,14 @@ function flyTo(x, y, z = 2.4) { Object.assign(goal, { ax: 42, az: -4, z: Math.mi
 (function controls() {
   const scene = $("scene");
   let drag = null;
-  scene.addEventListener("pointerdown", (e) => { if (e.target.closest(".city")) return; drag = { x: e.clientX, y: e.clientY }; scene.classList.add("drag"); scene.setPointerCapture(e.pointerId); });
+  // Clic droit maintenu : la carte tourne sur elle-même au lieu de glisser.
+  scene.addEventListener("contextmenu", (e) => e.preventDefault());
+  scene.addEventListener("pointerdown", (e) => { if (e.target.closest(".city")) return; drag = { x: e.clientX, y: e.clientY, spin: e.button === 2 }; scene.classList.add("drag"); scene.setPointerCapture(e.pointerId); });
   scene.addEventListener("pointermove", (e) => {
     if (!drag) return;
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y, a = -goal.az * Math.PI / 180;
-    drag = { x: e.clientX, y: e.clientY };
+    drag = { ...drag, x: e.clientX, y: e.clientY };
+    if (drag.spin) { goal.az += dx * .35; return; }
     // Le geste à l'écran, ramené sur le plan incliné et tourné.
     const zk = goal.z / K, ux = (dx * Math.cos(a) - dy * Math.sin(a)) / zk, uy = (dx * Math.sin(a) + dy * Math.cos(a)) / zk / Math.cos(goal.ax * Math.PI / 180);
     goal.px += ux; goal.py += uy; cam.px += ux; cam.py += uy;
@@ -394,19 +411,20 @@ function drawCities() {
     node.tag.querySelector("i").textContent = n ? n + (n > 1 ? " membres" : " membre") : "";
     node.tag.classList.toggle("dim", !n);
   }
-  // Le réseau : chaque ville active reliée à ses deux voisines actives les plus proches, une lueur qui y circule.
-  const active = DATA.cities.filter((c) => !c.far && counts.has(c.id)).map((c) => ({ c, p: project(c.lon, c.lat) }));
-  const webs = $("webs"), seen = new Set();
+  lastView = ""; // de nouvelles villes à placer, même si la caméra ne bouge pas
+  // Le réseau : l'arbre le plus court qui relie toutes les villes actives (chaque ville rattachée à la plus proche déjà
+  // reliée) : les traits ne se croisent pas et ne se doublent pas. Ils s'arrêtent juste avant les points des villes.
+  const active = DATA.cities.filter((c) => !c.far && counts.has(c.id)).map((c) => project(c.lon, c.lat));
+  const webs = $("webs"), linked = active.splice(0, 1);
   webs.replaceChildren();
-  for (const a of active) {
-    for (const b of active.filter((o) => o !== a).sort((u, v) => Math.hypot(u.p[0] - a.p[0], u.p[1] - a.p[1]) - Math.hypot(v.p[0] - a.p[0], v.p[1] - a.p[1])).slice(0, 2)) {
-      const key = [a.c.id, b.c.id].sort().join("|");
-      if (seen.has(key)) continue;
-      seen.add(key);
-      const line = svgEl("line", { x1: a.p[0], y1: a.p[1], x2: b.p[0], y2: b.p[1], class: "web" });
-      webs.append(line);
-      setTimeout(() => line.classList.add("on"), 2600);
-    }
+  while (active.length) {
+    let best = null;
+    for (const a of linked) for (const b of active) { const d = Math.hypot(b[0] - a[0], b[1] - a[1]); if (!best || d < best.d) best = { a, b, d }; }
+    const { a, b, d } = best, cut = Math.min(4, d / 4) / d, dx = b[0] - a[0], dy = b[1] - a[1];
+    linked.push(...active.splice(active.indexOf(b), 1));
+    const line = svgEl("line", { x1: a[0] + dx * cut, y1: a[1] + dy * cut, x2: b[0] - dx * cut, y2: b[1] - dy * cut, class: "web" });
+    webs.append(line);
+    setTimeout(() => line.classList.add("on"), 2600);
   }
   // La bande « Plus loin ».
   $("far-list").replaceChildren(...DATA.cities.filter((c) => c.far).sort((a, b) => (counts.get(b.id)?.length || 0) - (counts.get(a.id)?.length || 0))
