@@ -122,6 +122,7 @@ ${spark(1)}${spark(2)}${spark(3)}
       item("Parrainage", "compte#parrainage"),
       profileItem,
       messagesItem,
+      item("Carte des membres", "carte"),
       el("hr"),
       item("Boutique", "boutique"),
       download,

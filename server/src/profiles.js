@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { config } from './config.js';
 import { publicPlaylists } from './ratings.js';
+import { CITIES, CITY, CV_ROLES } from './cities.js';
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS user_profiles (
@@ -61,6 +62,10 @@ CREATE INDEX IF NOT EXISTS user_notifications_user ON user_notifications(user_id
 // Les liens d'une page (Instagram, Spotify, site…) et les réponses à un commentaire.
 const column = (table, name) => db.prepare(`SELECT 1 FROM pragma_table_info('${table}') WHERE name = ?`).get(name);
 if (!column('user_profiles', 'links')) db.exec(`ALTER TABLE user_profiles ADD COLUMN links TEXT NOT NULL DEFAULT '[]'`);
+// La ville (carte des membres, cities.js) et le CV numérique : métiers, ce qu'on sait faire, ouvert aux collabs.
+if (!column('user_profiles', 'city')) db.exec(`ALTER TABLE user_profiles ADD COLUMN city TEXT NOT NULL DEFAULT ''`);
+if (!column('user_profiles', 'cv')) db.exec(`ALTER TABLE user_profiles ADD COLUMN cv TEXT NOT NULL DEFAULT '{}'`);
+const cvOf = (json) => { try { const c = JSON.parse(json || '{}'); return { roles: c.roles || [], skills: c.skills || '', open: !!c.open }; } catch { return { roles: [], skills: '', open: false }; } };
 if (!column('profile_comments', 'parent_id')) db.exec('ALTER TABLE profile_comments ADD COLUMN parent_id INTEGER REFERENCES profile_comments(id) ON DELETE CASCADE');
 
 export const PROFILE_HANDLE = /^[a-z0-9][a-z0-9._-]{2,29}$/;
@@ -97,7 +102,7 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
   // Ma page : la créer, la régler (adresse, bio, couleur, commentaires ouverts), ou la supprimer.
   app.get('/api/me/profile/page', requireUser, (req, res) => {
     const p = get('SELECT * FROM user_profiles WHERE user_id = ?', req.user.id);
-    res.set('Cache-Control', 'no-store').json(p ? { handle: p.handle, bio: p.bio, color: p.color, banner: media(p.banner), comments: !!p.comments, links: linksOf(p.links) } : null);
+    res.set('Cache-Control', 'no-store').json(p ? { handle: p.handle, bio: p.bio, color: p.color, banner: media(p.banner), comments: !!p.comments, links: linksOf(p.links), city: p.city || '', cv: cvOf(p.cv) } : null);
   });
   app.put('/api/me/profile/page', requireUser, (req, res) => {
     rateLimit(`profile-edit:${req.user.id}`, 60, 3600_000);
@@ -107,9 +112,13 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
     if (taken && taken.user_id !== req.user.id) throw new HttpError(409, 'Cette adresse est déjà prise.');
     const color = COLOR.test(req.body?.color || '') ? req.body.color.toLowerCase() : '#e5384a';
     const links = JSON.stringify(cleanLinks(req.body?.links));
-    run(`INSERT INTO user_profiles (user_id, handle, bio, color, comments, links, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(user_id) DO UPDATE SET handle = excluded.handle, bio = excluded.bio, color = excluded.color, comments = excluded.comments, links = excluded.links`,
-      req.user.id, handle, clean(req.body?.bio, 600), color, req.body?.comments === false ? 0 : 1, links, now());
+    const city = CITY.has(req.body?.city) ? req.body.city : '';
+    const roles = Array.isArray(req.body?.cv?.roles) ? [...new Set(req.body.cv.roles.filter((r) => CV_ROLES.includes(r)))].slice(0, 6) : [];
+    const cv = JSON.stringify({ roles, skills: clean(req.body?.cv?.skills, 300), open: !!req.body?.cv?.open });
+    run(`INSERT INTO user_profiles (user_id, handle, bio, color, comments, links, city, cv, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET handle = excluded.handle, bio = excluded.bio, color = excluded.color, comments = excluded.comments, links = excluded.links,
+        city = excluded.city, cv = excluded.cv`,
+      req.user.id, handle, clean(req.body?.bio, 600), color, req.body?.comments === false ? 0 : 1, links, city, cv, now());
     res.json({ handle });
   });
   app.put('/api/me/profile/page/banner', requireUser, wrap(async (req, res) => {
@@ -147,7 +156,7 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
     for (const c of top) c.replies = comments.filter((r) => r.parentId === c.id).reverse();
     res.set('Cache-Control', 'no-store').json({
       handle: p.handle, name: p.name || 'Membre', avatar: media(p.avatar), bio: p.bio, color: p.color, banner: media(p.banner), commentsOpen: !!p.comments,
-      links: linksOf(p.links), since: p.created_at, role: p.role || null,
+      links: linksOf(p.links), since: p.created_at, role: p.role || null, city: CITY.get(p.city) || null, cv: cvOf(p.cv),
       playlists: publicPlaylists(viewer?.id, { where: 'p.user_id = ?', params: [p.user_id], limit: 60 }),
       followers: count('SELECT COUNT(*) AS n FROM user_follows WHERE followed_id = ?', p.user_id),
       following: count('SELECT COUNT(*) AS n FROM user_follows WHERE follower_id = ?', p.user_id),
@@ -207,6 +216,16 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
     if (c.author_id !== req.user.id && c.profile_id !== req.user.id) throw new HttpError(403, "Seul son auteur ou le propriétaire de la page peut le retirer.");
     run('DELETE FROM profile_comments WHERE id = ?', c.id);
     res.json({ ok: true });
+  });
+
+  // La carte des membres : les villes, les métiers, et chaque page de profil qui a choisi sa ville.
+  app.get('/api/members/map', (req, res) => {
+    const members = all(`SELECT p.handle, p.city, p.cv, p.color, u.name, u.avatar, u.role,
+        (SELECT COUNT(*) FROM user_follows f WHERE f.followed_id = p.user_id) AS followers
+      FROM user_profiles p JOIN users u ON u.id = p.user_id WHERE p.city != '' ORDER BY followers DESC LIMIT 5000`)
+      .filter((m) => CITY.has(m.city))
+      .map((m) => ({ handle: m.handle, name: m.name || 'Membre', avatar: media(m.avatar), role: m.role, color: m.color, city: m.city, cv: cvOf(m.cv), followers: m.followers }));
+    res.set('Cache-Control', 'public, max-age=60').json({ cities: CITIES, roles: CV_ROLES, members });
   });
 
   // Le petit logo d'un site, pour les boutons de liens des pages : demandé une fois par le serveur (le visiteur ne

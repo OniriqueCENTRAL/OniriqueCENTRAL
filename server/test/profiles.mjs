@@ -85,6 +85,15 @@ try {
     await call('POST', '/api/me/activity/read', { token: a.token });
     assert.equal((await call('GET', '/api/me/inbox-count', { token: a.token })).notifications, 0);
   });
+  await step('ville et CV numérique, carte des membres', async () => {
+    await call('PUT', '/api/me/profile/page', { token: a.token, body: { handle: 'nov.music', city: 'lyon', cv: { roles: ['Beatmaker', 'Pirate', 'Mix'], skills: 'Trap, drill', open: true } } });
+    await call('PUT', '/api/me/profile/page', { token: b.token, body: { handle: 'lou', city: 'atlantide' } }); // ville inconnue : ignorée
+    const p = await call('GET', '/api/profiles/nov.music');
+    assert.deepEqual([p.city.name, p.cv.roles, p.cv.open], ['Lyon', ['Beatmaker', 'Mix'], true]);
+    const map = await call('GET', '/api/members/map');
+    assert.deepEqual(map.members.map((m) => [m.handle, m.city]), [['nov.music', 'lyon']]);
+    assert.ok(map.cities.some((c) => c.id === 'montreal' && c.far) && map.roles.includes('Ingé son'));
+  });
   await step('les playlists publiques d’une page et « Découvrir »', async () => {
     run('UPDATE users SET role = ? WHERE id IN (?, ?)', 'vip', a.id, b.id);
     const pl = run(`INSERT INTO sound_projects (user_id, title, kind, created_at) VALUES (?, 'Nuit', 'playlist', ?)`, a.id, now()).lastInsertRowid;

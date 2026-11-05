@@ -112,13 +112,25 @@ dialog li span { flex: 1; min-width: 0; }
 dialog li a { text-decoration: none; font-weight: 700; }
 dialog li small { display: block; color: var(--haze); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .link-rows { display: grid; gap: 8px; }
+.cv-edit { display: grid; gap: 16px; padding: 16px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.02); }
+select { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 15px var(--f-body); letter-spacing: 0; text-transform: none; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.03); font: 600 13px var(--f-body); color: var(--mist); letter-spacing: 0; text-transform: none; }
+.chip.pick { cursor: pointer; }
+.chip.pick input { display: none; }
+.chip.pick:has(input:checked) { border-color: var(--ember); background: color-mix(in srgb, var(--ember) 20%, transparent); }
+.cv #cv { display: grid; gap: 10px; }
+.cv-city { font: 700 16px var(--f-body); text-decoration: none; }
+.cv-city small { color: var(--haze); font-weight: 500; }
+.cv-city:hover { color: var(--ember); }
+.open-badge { justify-self: start; padding: 6px 12px; border-radius: 999px; font: 500 11px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: #b9f5c9; border: 1px solid rgba(120,230,150,.45); background: rgba(80,200,120,.12); }
 .link-rows div { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; }
 </style>
 
 <header>
   <div class="wrap">
     <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
-    <div class="between"><a class="btn btn-ghost" href="messages">Messages</a><a class="btn btn-ghost" href="compte">Mon compte</a></div>
+    <div class="between"><a class="btn btn-ghost" href="carte">Carte</a><a class="btn btn-ghost" href="messages">Messages</a><a class="btn btn-ghost" href="compte">Mon compte</a></div>
   </div>
 </header>
 
@@ -139,6 +151,7 @@ dialog li small { display: block; color: var(--haze); font-size: 12px; overflow:
       <div class="actions" id="actions"></div>
     </div>
     <div class="panel" id="bio-panel"><span class="eyebrow">À propos</span><p class="bio" id="bio"></p><div class="links" id="links"></div></div>
+    <div class="panel cv" id="cv-panel" hidden><span class="eyebrow">CV numérique</span><div id="cv"></div></div>
     <div class="tabs" role="tablist"><button type="button" class="on" data-tab="playlists">Playlists</button><button type="button" data-tab="comments">Commentaires <span id="c-count"></span></button></div>
     <div class="panel" id="tab-playlists">
       <div class="grid" id="playlists"></div>
@@ -164,6 +177,12 @@ dialog li small { display: block; color: var(--haze); font-size: 12px; overflow:
       <label>Bio<textarea id="f-bio" maxlength="600" placeholder="Qui tu es, ce que tu fais, tes liens…"></textarea></label>
       <label>Couleur de la page<input id="f-color" type="color" value="#e5384a"></label>
       <div><label>Liens (Instagram, Spotify, YouTube, ton site…)</label><div class="link-rows" id="f-links" style="margin-top:8px"></div></div>
+      <div class="cv-edit">
+        <label>Ta ville (sur la carte des membres)<select id="f-city"><option value="">Pas sur la carte</option></select></label>
+        <div><label>Ce que tu fais (jusqu'à 6)</label><div class="chips" id="f-roles"></div></div>
+        <label>Ce que tu sais faire, ton matériel, tes styles<input id="f-skills" maxlength="300" placeholder="Trap, drill, mix voix, Neumann U87…"></label>
+        <label class="check"><input id="f-open" type="checkbox"> Ouvert aux collaborations</label>
+      </div>
       <label class="check"><input id="f-comments" type="checkbox" checked> Autoriser les commentaires</label>
       <div id="banner-field" hidden>
         <label>Bannière</label>
@@ -200,6 +219,7 @@ const when = (t) => new Date(t).toLocaleDateString("fr-FR", { day: "numeric", mo
 const avatarOf = (src) => (src ? src + "?w=160" : "assets/favicon.png?v=2");
 
 let profile = null, mine = null;
+const meta = fetch("/api/members/map").then((r) => (r.ok ? r.json() : null)).catch(() => null);
 // Les badges de rôle : ONIRIQUE, Beta-Testeur et Beta-Testeuse ont le même, les autres rôles aussi le leur.
 const ROLES = { vip: "ONIRIQUE", beta: "Beta-Testeur", betaf: "Beta-Testeuse", abrasion: "Abrasion", relic: "Relic", admin: "Admin", founder: "Fondateur" };
 const badge = (role) => (ROLES[role] ? el("span", { className: "role small", textContent: ROLES[role] }) : null);
@@ -221,6 +241,8 @@ function drawView() {
   $("bio").textContent = p.bio;
   $("bio-panel").hidden = !p.bio;
   const actions = [];
+  // « Carte » : la carte des membres, centrée sur sa ville s'il en a choisi une.
+  actions.push(el("a", { className: "btn btn-ghost", href: "carte" + (p.city ? "?u=" + encodeURIComponent(p.handle) : ""), textContent: "Carte" }));
   if (p.mine) actions.push(el("button", { className: "btn btn-ghost", type: "button", textContent: "Modifier ma page", onclick: () => openEdit() }));
   else if (token) {
     actions.push(el("button", { className: "btn btn-ghost" + (p.followed ? " on" : ""), type: "button", textContent: p.followed ? "Abonné" : "S'abonner",
@@ -237,6 +259,14 @@ function drawView() {
   $("c-count").textContent = total ? "· " + total : "";
   $("comments").replaceChildren(...(p.comments.length ? p.comments.map((c) => comment(c, p)) : [el("p", { className: "muted", textContent: "Pas encore de commentaire." })]));
 
+  // Le CV numérique : la ville, les métiers, ce qu'il sait faire, ouvert aux collabs.
+  const cv = p.cv || { roles: [], skills: "", open: false };
+  $("cv-panel").hidden = !(p.city || cv.roles.length || cv.skills || cv.open);
+  $("cv").replaceChildren(...[
+    p.city ? el("a", { className: "cv-city", href: "carte?u=" + encodeURIComponent(p.handle), title: "Voir sur la carte" }, "✦ " + p.city.name, el("small", { textContent: " · " + p.city.country })) : null,
+    cv.roles.length ? el("div", { className: "chips" }, ...cv.roles.map((r) => el("span", { className: "chip", textContent: r }))) : null,
+    cv.skills ? el("p", { className: "bio", textContent: cv.skills }) : null,
+    cv.open ? el("span", { className: "open-badge", textContent: "Ouvert aux collaborations" }) : null].filter(Boolean));
   $("follows-me").hidden = !p.followsMe;
   $("pl-count").textContent = p.playlists.length;
   // Chaque lien avec le petit logo de son site (la flèche reste si le site n'en a pas).
@@ -310,6 +340,20 @@ function openEdit() {
   $("edit-title").textContent = mine ? "Régler ma page" : "Crée ta page";
   $("f-handle").value = m.handle; hint(); $("f-bio").value = m.bio; $("f-color").value = m.color; $("f-comments").checked = m.comments;
   const links = m.links || [];
+  // Les villes et les métiers viennent du serveur (la même liste que la carte).
+  meta.then((d) => {
+    if (!d) return;
+    if ($("f-city").options.length === 1) {
+      const groups = new Map();
+      for (const c of d.cities) { const g = c.far ? "Plus loin" : c.country; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(c); }
+      for (const [g, list] of groups) $("f-city").append(el("optgroup", { label: g }, ...list.map((c) => el("option", { value: c.id, textContent: c.name + (c.far ? " (" + c.country + ")" : "") }))));
+    }
+    $("f-city").value = m.city || "";
+    const cv = m.cv || { roles: [] };
+    $("f-roles").replaceChildren(...d.roles.map((r) => el("label", { className: "chip pick" }, el("input", { type: "checkbox", value: r, checked: cv.roles.includes(r) }), r)));
+  });
+  $("f-skills").value = m.cv?.skills || "";
+  $("f-open").checked = !!m.cv?.open;
   $("f-links").replaceChildren(...Array.from({ length: 6 }, (_, i) => el("div", {},
     el("input", { maxLength: 40, placeholder: "Nom (Instagram…)", value: links[i]?.label || "", ariaLabel: "Nom du lien " + (i + 1) }),
     el("input", { maxLength: 300, placeholder: "https://…", value: links[i]?.url || "", ariaLabel: "Adresse du lien " + (i + 1) }))));
@@ -333,7 +377,8 @@ $("edit-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   try {
     const { handle } = await api("PUT", "/me/profile/page", { handle: toHandle($("f-handle").value), bio: $("f-bio").value, color: $("f-color").value, comments: $("f-comments").checked,
-      links: [...$("f-links").children].map((row) => ({ label: row.children[0].value, url: row.children[1].value })).filter((l) => l.url.trim()) });
+      links: [...$("f-links").children].map((row) => ({ label: row.children[0].value, url: row.children[1].value })).filter((l) => l.url.trim()),
+      city: $("f-city").value, cv: { roles: [...$("f-roles").querySelectorAll("input:checked")].map((i) => i.value), skills: $("f-skills").value, open: $("f-open").checked } });
     location.href = "profil?u=" + encodeURIComponent(handle);
   } catch (e) { say("edit-notice", e.message, true); }
 });

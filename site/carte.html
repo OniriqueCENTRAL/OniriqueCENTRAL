@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<script src="assets/i18n.js?v=2f9cddc9"></script>
+<script src="assets/ui.js?v=3"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ONIRIQUE — La carte des membres</title>
+<meta name="description" content="Les artistes, beatmakers, ingés son et créatifs de la communauté ONIRIQUE, ville par ville, en France et dans la francophonie.">
+<link rel="icon" type="image/png" href="assets/favicon.png?v=2">
+<link rel="stylesheet" href="assets/fonts.css">
+<style>
+/* La carte des membres : la France, la Belgique, la Suisse et le Luxembourg dessinés en constellation sur la nuit, vus
+   d'au-dessus et un peu de côté ; chaque ville où vivent des membres s'allume, un clic ouvre leurs CV numériques. */
+:root {
+  --night: #050306; --line: rgba(255,210,214,.13); --mist: #F6EEEE; --haze: #A88F92; --ember: #E5384A; --pink: #ff8e9a; --rose: #ffb3bb;
+  --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --ax: 50deg; --az: -9deg; --z: 1;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--night); color: var(--mist); font: 400 15px/1.5 var(--f-body); -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
+
+/* Le ciel : un champ d'étoiles qui scintille, et deux halos braise très doux. */
+#sky { position: fixed; inset: 0; z-index: 0; }
+.halo { position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(60% 50% at 50% 60%, rgba(150,10,30,.22), transparent 70%), radial-gradient(40% 35% at 15% 10%, rgba(120,8,26,.25), transparent 70%),
+    radial-gradient(35% 30% at 90% 95%, rgba(255,90,110,.08), transparent 70%); }
+
+header { position: fixed; top: 0; left: 0; right: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px clamp(14px, 3vw, 28px); pointer-events: none; }
+header > * { pointer-events: auto; }
+.brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 800 16px/1 var(--f-display); letter-spacing: .16em; }
+.brand img { width: 40px; height: auto; margin-block: -10px; filter: drop-shadow(0 0 6px rgba(226,52,68,.8)); }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; border: 1px solid var(--line); background: rgba(13,8,9,.55); backdrop-filter: blur(12px);
+  font: 600 13px/1 var(--f-body); text-decoration: none; cursor: pointer; color: var(--mist); }
+.btn:hover { border-color: var(--ember); }
+.btn.primary { background: var(--mist); color: #0d0809; border-color: transparent; }
+
+/* La scène 3D : le plan de la carte est incliné (--ax), tourné (--az) et zoomé (--z) ; la caméra le suit en douceur. */
+#scene { position: fixed; inset: 0; z-index: 1; perspective: 1400px; perspective-origin: 50% 40%; cursor: grab; touch-action: none; }
+#scene.drag { cursor: grabbing; }
+#plane { position: absolute; left: 50%; top: 54%; width: 1000px; height: 1000px; margin: -500px 0 0 -500px; transform-style: preserve-3d;
+  transform: rotateX(var(--ax)) rotateZ(var(--az)) scale(var(--z)) translate(var(--px, 0px), var(--py, 0px)); }
+@media (min-width: 861px) { #plane { left: calc(50% + 150px); top: 50%; } }
+#plane svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.coast { fill: none; stroke: rgba(255,179,187,.38); stroke-width: 1.1; stroke-linejoin: round; filter: url(#glow); stroke-dasharray: var(--len); stroke-dashoffset: var(--len);
+  animation: draw 3.2s cubic-bezier(.6, .1, .2, 1) forwards; }
+.coast.other { stroke: rgba(255,179,187,.2); animation-delay: .8s; }
+.land { fill: rgba(229,56,74,.035); opacity: 0; animation: fade 2s 1.8s forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes fade { to { opacity: 1; } }
+.star { fill: #ffe9ec; opacity: 0; animation: appear .6s forwards, twinkle var(--t, 3s) var(--d, 0s) ease-in-out infinite alternate; }
+@keyframes appear { to { opacity: .8; } }
+@keyframes twinkle { from { opacity: .25; } to { opacity: 1; } }
+.web { stroke: rgba(255,142,154,.75); stroke-width: 1.2; stroke-dasharray: 4 12; filter: url(#glow); animation: flow 2.8s linear infinite; opacity: 0; }
+.web.on { opacity: 1; transition: opacity 1s; }
+@keyframes flow { to { stroke-dashoffset: -34; } }
+
+/* Les villes : un point sur le plan ; l'étiquette se redresse face à la caméra (elle annule l'inclinaison du plan). */
+.city { position: absolute; width: 0; height: 0; transform-style: preserve-3d; }
+.city .dot { position: absolute; left: 0; top: 0; width: var(--s, 5px); height: var(--s, 5px); margin: calc(var(--s, 5px) / -2) 0 0 calc(var(--s, 5px) / -2); border-radius: 50%;
+  background: rgba(255,233,236,.35); cursor: pointer; border: 0; padding: 0; transition: scale .25s;
+  /* Le point se redresse face à la caméra : un rond, pas une ellipse couchée sur le plan. */
+  transform: rotateZ(calc(var(--az) * -1)) rotateX(calc(var(--ax) * -1)); }
+.city.has .dot { background: radial-gradient(circle, #fff 0 22%, var(--pink) 40%, var(--ember) 70%); box-shadow: 0 0 calc(var(--s) * 1.2) var(--ember), 0 0 calc(var(--s) * 3) rgba(229,56,74,.5); }
+.city.has .dot::after { content: ""; position: absolute; inset: -60%; border-radius: 50%; border: 1px solid rgba(255,142,154,.7); animation: ping 2.6s var(--d, 0s) ease-out infinite; }
+@keyframes ping { from { transform: scale(.4); opacity: 1; } to { transform: scale(2.4); opacity: 0; } }
+.city.on .dot { scale: 1.6; }
+.city .dot:hover { scale: 1.3; }
+.city .tag { position: absolute; left: 0; top: 0; transform-origin: 0 0; white-space: nowrap; pointer-events: none;
+  transform: rotateZ(calc(var(--az) * -1)) rotateX(calc(var(--ax) * -1)) scale(calc(1 / var(--z))) translate(-50%, calc(-100% - 12px)); opacity: 0; transition: opacity .3s; }
+.city.has .tag, .city:hover .tag, .city.on .tag { opacity: 1; }
+.tag b { display: block; text-align: center; font: 800 11px/1.1 var(--f-display); letter-spacing: .08em; text-transform: uppercase; text-shadow: 0 0 10px #000, 0 0 3px #000; }
+.tag i { display: block; text-align: center; font: 500 10px var(--f-mono); font-style: normal; color: var(--pink); letter-spacing: .1em; text-shadow: 0 0 8px #000; }
+.city:not(.has) .tag b { font-size: 9px; color: var(--haze); }
+
+/* Les panneaux en verre (la DA Nuit & Braise). */
+.glass { background: linear-gradient(160deg, rgba(255,255,255,.075), rgba(255,255,255,.02) 40%, rgba(255,255,255,.035)), rgba(10,6,8,.62);
+  border: 1px solid rgba(255,235,238,.1); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.4), 0 18px 40px rgba(0,0,0,.45);
+  backdrop-filter: blur(22px) saturate(140%); border-radius: 22px; }
+.eyebrow { font: 500 11px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); display: flex; align-items: center; gap: 8px; }
+.eyebrow::before { content: ""; width: 11px; height: 11px; background: var(--mist); clip-path: polygon(50% 0, 56% 44%, 100% 50%, 56% 56%, 50% 100%, 44% 56%, 0 50%, 44% 44%); filter: drop-shadow(0 0 4px var(--ember)); }
+
+#filters { position: fixed; z-index: 10; left: clamp(12px, 3vw, 28px); top: 84px; width: 320px; max-height: calc(100vh - 200px); overflow-y: auto; padding: 20px; display: grid; gap: 14px;
+  animation: rise .8s .4s both cubic-bezier(.2, .8, .2, 1); scrollbar-width: thin; }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+#filters h1 { margin: 0; font: 800 22px/1.1 var(--f-display); letter-spacing: .02em; }
+#filters h1 em { font-style: normal; color: var(--ember); }
+.count { font: 500 12px var(--f-mono); color: var(--haze); letter-spacing: .06em; }
+.count b { color: var(--mist); }
+#search { width: 100%; min-height: 42px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.45); color: var(--mist); font: 500 14px var(--f-body); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: rgba(255,255,255,.03); border-radius: 999px; padding: 6px 11px; font: 600 12px var(--f-body); cursor: pointer; }
+.chip.on { border-color: var(--ember); background: rgba(229,56,74,.22); }
+.toggle { display: flex; align-items: center; gap: 10px; font: 600 13px var(--f-body); cursor: pointer; }
+.toggle input { accent-color: var(--ember); width: 17px; height: 17px; }
+.top { display: grid; gap: 2px; }
+.top button { display: flex; justify-content: space-between; gap: 10px; padding: 8px 10px; border: 0; border-radius: 10px; background: none; cursor: pointer; text-align: left; font: 600 13px var(--f-body); }
+.top button:hover { background: rgba(255,255,255,.05); }
+.top button span { font: 500 12px var(--f-mono); color: var(--pink); }
+.results { display: grid; gap: 2px; }
+.results a, .results button { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 10px; text-decoration: none; border: 0; background: none; cursor: pointer; text-align: left; width: 100%; }
+.results a:hover, .results button:hover { background: rgba(255,255,255,.05); }
+.results img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex: none; background: #2a0a0e; }
+.results small { color: var(--haze); font-size: 12px; }
+.cta { padding: 12px; border-radius: 14px; border: 1px dashed rgba(255,142,154,.45); font-size: 13px; color: var(--rose); }
+.cta a { color: var(--mist); font-weight: 700; }
+
+/* Le panneau d'une ville : ses membres, en cartes de CV. */
+#city { position: fixed; z-index: 11; right: clamp(12px, 3vw, 28px); top: 84px; bottom: 96px; width: 380px; padding: 20px; display: flex; flex-direction: column; gap: 14px;
+  transform: translateX(calc(100% + 40px)); transition: transform .55s cubic-bezier(.2, .8, .2, 1); }
+#city.open { transform: none; }
+#city header { position: static; padding: 0; pointer-events: auto; align-items: flex-start; }
+#city h2 { margin: 6px 0 0; font: 800 26px/1 var(--f-display); }
+#city .x { border: 1px solid var(--line); background: rgba(255,255,255,.04); width: 34px; height: 34px; border-radius: 10px; cursor: pointer; flex: none; }
+#members { overflow-y: auto; display: grid; gap: 10px; align-content: start; scrollbar-width: thin; padding-right: 2px; }
+.cvcard { display: grid; gap: 8px; padding: 14px; border-radius: 16px; border: 1px solid rgba(255,235,238,.08); background: rgba(255,255,255,.03); text-decoration: none;
+  animation: rise .5s both cubic-bezier(.2, .8, .2, 1); animation-delay: calc(var(--i) * 50ms); transition: border-color .2s, background .2s; }
+.cvcard:hover { border-color: rgba(229,56,74,.55); background: rgba(229,56,74,.07); }
+.cvcard.me { border-color: var(--ember); }
+.cvcard .who { display: flex; align-items: center; gap: 12px; }
+.cvcard img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex: none; background: #2a0a0e; border: 2px solid var(--c, var(--ember)); }
+.cvcard b { font: 700 15px var(--f-body); }
+.cvcard small { display: block; color: var(--haze); font: 500 11px var(--f-mono); }
+.cvcard p { margin: 0; font-size: 13px; color: #d9c6c9; }
+.cvcard .chips span { border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; font: 600 11px var(--f-body); }
+.badge { font: 500 9px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; padding: 4px 7px; border-radius: 999px; color: #ffecee; border: 1px solid rgba(229,56,74,.7); background: rgba(229,56,74,.18); margin-left: 6px; vertical-align: middle; }
+.open { font: 500 10px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: #b9f5c9; }
+.empty { color: var(--haze); font-size: 14px; }
+
+/* « Plus loin » : la francophonie hors de la carte, en bande en bas. */
+#far { position: fixed; z-index: 10; left: 50%; bottom: 18px; transform: translateX(-50%); max-width: calc(100vw - 24px); display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+  animation: rise .8s .7s both cubic-bezier(.2, .8, .2, 1); }
+#far .eyebrow { flex: none; }
+#far-list { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+#far-list button { flex: none; border: 1px solid var(--line); background: rgba(255,255,255,.03); border-radius: 999px; padding: 6px 11px; font: 600 12px var(--f-body); cursor: pointer; white-space: nowrap; }
+#far-list button.has { border-color: rgba(229,56,74,.6); }
+#far-list button span { color: var(--pink); font: 500 11px var(--f-mono); margin-left: 4px; }
+#zoom { position: fixed; z-index: 10; right: clamp(12px, 3vw, 28px); bottom: 18px; display: grid; gap: 6px; }
+#zoom button { width: 42px; height: 42px; border-radius: 12px; cursor: pointer; font: 700 18px var(--f-body); }
+#intro { position: fixed; z-index: 30; inset: 0; display: grid; place-items: center; pointer-events: none; font: 800 clamp(22px, 4vw, 40px)/1.1 var(--f-display); letter-spacing: .2em; text-align: center;
+  animation: intro 2.6s forwards; text-shadow: 0 0 30px rgba(229,56,74,.8); }
+#intro small { display: block; margin-top: 12px; font: 500 12px var(--f-mono); letter-spacing: .3em; color: var(--pink); }
+@keyframes intro { 0% { opacity: 0; transform: scale(.96); } 25%, 60% { opacity: 1; transform: none; } 100% { opacity: 0; transform: scale(1.04); visibility: hidden; } }
+
+@media (max-width: 860px) {
+  #filters { top: auto; bottom: 76px; left: 12px; right: 12px; width: auto; max-height: 34vh; padding: 14px; }
+  #filters.min > :not(.head) { display: none; }
+  #filters .head { cursor: pointer; }
+  #filters.min .head::after { content: "Filtres et recherche ▴"; font: 500 11px var(--f-mono); color: var(--pink); letter-spacing: .1em; }
+  body.city-open #filters, body.city-open #far { display: none; }
+  #plane { top: 40%; }
+  #city { left: 12px; right: 12px; top: auto; bottom: 12px; width: auto; height: 62vh; transform: translateY(calc(100% + 30px)); }
+  #zoom { display: none; }
+  #far { bottom: 12px; }
+  .hide-phone { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01s !important; animation-iteration-count: 1 !important; transition: none !important; } }
+</style>
+
+<canvas id="sky" aria-hidden="true"></canvas>
+<div class="halo" aria-hidden="true"></div>
+<div id="intro" aria-hidden="true">ONIRIQUE<small>LA CARTE DES MEMBRES</small></div>
+
+<header>
+  <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145"><span class="hide-phone">ONIRIQUE</span></a>
+  <div style="display:flex;gap:8px"><a class="btn" id="my-page" href="profil">Ma page</a><a class="btn" href="messages">Messages</a></div>
+</header>
+
+<div id="scene" aria-label="Carte des membres : glisser pour déplacer, molette pour zoomer">
+  <div id="plane">
+    <svg viewBox="0 0 1000 1000" id="map" aria-hidden="true">
+      <defs><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+      <g id="lands"></g><g id="webs"></g><g id="stars"></g>
+    </svg>
+  </div>
+</div>
+
+<aside id="filters" class="glass">
+  <div class="head" style="display:grid;gap:8px">
+    <span class="eyebrow">Communauté</span>
+    <h1>La carte des <em>membres</em></h1>
+    <span class="count" id="count">Chargement…</span>
+  </div>
+  <input id="search" type="search" placeholder="Une ville, un membre…" aria-label="Chercher une ville ou un membre" autocomplete="off">
+  <div class="results" id="results"></div>
+  <div><span class="eyebrow" style="margin-bottom:10px">Métiers</span><div class="chips" id="roles"></div></div>
+  <label class="toggle"><input type="checkbox" id="open-only"> Ouverts aux collaborations</label>
+  <div id="cta"></div>
+  <div><span class="eyebrow" style="margin-bottom:8px">Les villes les plus actives</span><div class="top" id="top"></div></div>
+</aside>
+
+<aside id="city" class="glass" aria-live="polite">
+  <header><div><span class="eyebrow" id="city-country"></span><h2 id="city-name"></h2><span class="count" id="city-count"></span></div>
+    <button class="x" type="button" id="city-close" aria-label="Fermer">✕</button></header>
+  <div id="members"></div>
+</aside>
+
+<nav id="far" class="glass" aria-label="Plus loin dans la francophonie"><span class="eyebrow">Plus loin</span><div id="far-list"></div></nav>
+<div id="zoom"><button class="glass" type="button" id="zoom-in" aria-label="Zoomer">+</button><button class="glass" type="button" id="zoom-out" aria-label="Dézoomer">−</button><button class="glass" type="button" id="zoom-reset" aria-label="Revenir à toute la carte" style="font-size:13px">⟲</button></div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids.filter((k) => k != null && k !== false)); return n; };
+const NS = "http://www.w3.org/2000/svg";
+const svgEl = (tag, attrs) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; };
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const token = (() => { try { return sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"); } catch { return null; } })();
+const ROLES = { vip: "ONIRIQUE", beta: "Beta-Testeur", betaf: "Beta-Testeuse", abrasion: "Abrasion", relic: "Relic", admin: "Admin", founder: "Fondateur" };
+
+// La projection : longitude et latitude vers le plan de 1000 × 1000 (centré sur la France, corrigé de la latitude).
+const project = (lon, lat) => [500 + (lon - 2.9) * 0.687 * 88, 500 - (lat - 46.4) * 88];
+
+// Les contours, simplifiés : la France, la Corse, puis la Belgique, le Luxembourg et la Suisse (lon, lat).
+const SHAPES = {
+  france: [[2.37,51.05],[2.6,50.95],[3.2,50.75],[3.7,50.35],[4.2,50.25],[4.8,50.15],[4.85,49.8],[5.4,49.6],[5.9,49.5],[6.4,49.45],[7.0,49.15],[7.6,49.05],[8.2,48.97],[7.8,48.5],[7.55,47.9],[7.55,47.58],[7.0,47.5],[6.95,47.25],[6.45,46.95],[6.1,46.55],[6.1,46.25],[6.8,46.15],[6.85,45.83],[7.15,45.25],[6.65,45.1],[7.0,44.85],[6.85,44.5],[7.0,44.2],[7.7,44.1],[7.5,43.78],[7.25,43.7],[6.9,43.45],[6.6,43.15],[5.95,43.1],[5.35,43.3],[4.85,43.4],[4.55,43.45],[3.95,43.55],[3.5,43.28],[3.05,42.85],[3.15,42.45],[2.65,42.35],[1.75,42.45],[1.45,42.6],[0.7,42.85],[0.0,42.7],[-0.7,42.9],[-1.4,43.05],[-1.78,43.35],[-1.5,43.55],[-1.25,44.2],[-1.2,44.65],[-1.15,45.2],[-1.05,45.6],[-1.2,46.0],[-1.8,46.5],[-2.15,46.9],[-2.5,47.3],[-3.0,47.5],[-3.5,47.75],[-4.35,47.8],[-4.7,48.05],[-4.75,48.4],[-4.6,48.6],[-3.6,48.75],[-3.0,48.8],[-2.3,48.6],[-1.6,48.65],[-1.6,49.2],[-1.9,49.7],[-1.3,49.7],[-1.1,49.4],[-0.2,49.3],[0.2,49.45],[0.7,49.85],[1.45,50.1],[1.6,50.7],[1.9,50.95],[2.37,51.05]],
+  corse: [[9.45,43.0],[9.55,42.6],[9.4,42.0],[9.25,41.4],[8.9,41.6],[8.6,41.9],[8.65,42.35],[8.8,42.65],[9.3,42.7],[9.45,43.0]],
+  belgique: [[2.55,51.1],[3.4,51.4],[4.25,51.37],[5.0,51.48],[5.85,51.15],[5.65,50.8],[6.05,50.7],[6.4,50.3],[6.1,50.1],[5.8,49.55],[5.4,49.6],[4.85,49.8],[4.8,50.15],[4.2,50.25],[3.7,50.35],[3.2,50.75],[2.6,50.95],[2.55,51.1]],
+  luxembourg: [[5.8,49.55],[6.1,50.15],[6.5,49.8],[6.35,49.45],[5.9,49.5],[5.8,49.55]],
+  suisse: [[6.1,46.25],[6.1,46.55],[6.45,46.95],[7.0,47.5],[7.6,47.6],[8.6,47.8],[9.6,47.5],[9.5,47.05],[10.45,46.9],[10.1,46.25],[9.0,45.85],[8.4,46.3],[7.85,45.95],[7.0,45.9],[6.8,46.15],[6.1,46.25]],
+};
+
+let DATA = null, filters = { roles: new Set(), open: false, q: "" }, current = null, focusHandle = new URLSearchParams(location.search).get("u");
+const cityNodes = new Map();
+
+//------------------------------------------------------------------------------ Le ciel
+(function sky() {
+  const c = $("sky"), g = c.getContext("2d");
+  let stars = [], w = 0, h = 0, mx = 0, my = 0;
+  const size = () => {
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    w = c.width = innerWidth * dpr; h = c.height = innerHeight * dpr; c.style.width = innerWidth + "px"; c.style.height = innerHeight + "px";
+    stars = Array.from({ length: Math.round(innerWidth * innerHeight / 2600) }, () => ({ x: Math.random() * w, y: Math.random() * h, r: Math.random() * 1.3 * dpr + .2, p: Math.random() * 6.28, s: .4 + Math.random() * 1.4, z: Math.random() }));
+  };
+  addEventListener("resize", size); size();
+  addEventListener("pointermove", (e) => { mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5; });
+  const frame = (t) => {
+    g.clearRect(0, 0, w, h);
+    for (const s of stars) {
+      const a = reduced ? .6 : .35 + .65 * Math.abs(Math.sin(s.p + t / 1000 * s.s));
+      g.globalAlpha = a; g.fillStyle = s.z > .92 ? "#ffb3bb" : "#fff1f3";
+      g.beginPath(); g.arc((s.x - mx * 30 * s.z + w) % w, (s.y - my * 30 * s.z + h) % h, s.r, 0, 6.29); g.fill();
+    }
+    if (!reduced) requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+})();
+
+//------------------------------------------------------------------------------ Les contours en constellation
+function drawShapes() {
+  const lands = $("lands"), stars = $("stars");
+  for (const [name, pts] of Object.entries(SHAPES)) {
+    const xy = pts.map(([lon, lat]) => project(lon, lat));
+    const d = "M" + xy.map((p) => p.map((v) => v.toFixed(1)).join(",")).join("L") + "Z";
+    lands.append(svgEl("path", { d, class: "land" }));
+    const path = svgEl("path", { d, class: "coast" + (name === "france" || name === "corse" ? "" : " other") });
+    lands.append(path);
+    const len = path.getTotalLength();
+    path.style.setProperty("--len", len);
+    // Des étoiles posées le long du contour, un peu irrégulières, qui s'allument au passage du trait.
+    for (let at = 0; at < len; at += 9 + Math.random() * 9) {
+      const p = path.getPointAtLength(at), big = Math.random() < .12;
+      const star = svgEl("circle", { cx: (p.x + (Math.random() - .5) * 2).toFixed(1), cy: (p.y + (Math.random() - .5) * 2).toFixed(1), r: big ? 2.1 : .6 + Math.random() * .9, class: "star" });
+      star.style.cssText = `animation-delay:${(at / len * 3).toFixed(2)}s,${(at / len * 3 + .6).toFixed(2)}s;--t:${(1.6 + Math.random() * 3).toFixed(2)}s`;
+      stars.append(star);
+    }
+  }
+}
+
+//------------------------------------------------------------------------------ La caméra : inclinaison, rotation, zoom et déplacement, en douceur
+const cam = { ax: 50, az: -9, z: 1, px: 0, py: 0 }, goal = { ...cam, ax: 50, az: -9, z: 1 };
+const start = { ax: 12, az: -30, z: .55 }; // l'arrivée : la carte se couche et se rapproche
+Object.assign(cam, start);
+function tick(t) {
+  for (const k of ["ax", "az", "z", "px", "py"]) cam[k] += (goal[k] - cam[k]) * (reduced ? 1 : .065);
+  const sway = reduced ? 0 : Math.sin(t / 4200) * 1.4, swayX = reduced ? 0 : Math.sin(t / 5300) * 1.2;
+  const s = document.documentElement.style;
+  s.setProperty("--ax", (cam.ax + swayX).toFixed(3) + "deg");
+  s.setProperty("--az", (cam.az + sway).toFixed(3) + "deg");
+  s.setProperty("--z", cam.z.toFixed(4));
+  $("plane").style.setProperty("--px", cam.px.toFixed(2) + "px");
+  $("plane").style.setProperty("--py", cam.py.toFixed(2) + "px");
+  requestAnimationFrame(tick);
+}
+const fit = () => Math.min(1.25, Math.max(.3, Math.min(innerWidth / (innerWidth > 860 ? 1150 : 900), innerHeight / 820)));
+function home() { Object.assign(goal, { ax: 50, az: -9, z: fit(), px: 0, py: 0 }); }
+function flyTo(x, y, z = 2.4) { Object.assign(goal, { ax: 42, az: -4, z: Math.min(4, z) * fit(), px: 500 - x, py: 500 - y }); }
+
+(function controls() {
+  const scene = $("scene");
+  let drag = null;
+  scene.addEventListener("pointerdown", (e) => { if (e.target.closest(".city")) return; drag = { x: e.clientX, y: e.clientY }; scene.classList.add("drag"); scene.setPointerCapture(e.pointerId); });
+  scene.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y, a = -goal.az * Math.PI / 180;
+    drag = { x: e.clientX, y: e.clientY };
+    // Le geste à l'écran, ramené sur le plan incliné et tourné.
+    const ux = (dx * Math.cos(a) - dy * Math.sin(a)) / goal.z, uy = (dx * Math.sin(a) + dy * Math.cos(a)) / goal.z / Math.cos(goal.ax * Math.PI / 180);
+    goal.px += ux; goal.py += uy; cam.px += ux; cam.py += uy;
+  });
+  const end = () => { drag = null; scene.classList.remove("drag"); };
+  scene.addEventListener("pointerup", end); scene.addEventListener("pointercancel", end);
+  scene.addEventListener("wheel", (e) => { e.preventDefault(); goal.z = Math.min(4.5 * fit(), Math.max(.4 * fit(), goal.z * Math.exp(-e.deltaY / 600))); }, { passive: false });
+  $("zoom-in").onclick = () => { goal.z = Math.min(4.5 * fit(), goal.z * 1.4); };
+  $("zoom-out").onclick = () => { goal.z = Math.max(.4 * fit(), goal.z / 1.4); };
+  $("zoom-reset").onclick = () => { closeCity(); home(); };
+  addEventListener("resize", () => { if (!current) home(); });
+})();
+
+//------------------------------------------------------------------------------ Les membres, les filtres, les villes
+const visible = () => DATA.members.filter((m) => (!filters.open || m.cv.open) && (!filters.roles.size || m.cv.roles.some((r) => filters.roles.has(r))));
+function byCity() {
+  const map = new Map();
+  for (const m of visible()) { if (!map.has(m.city)) map.set(m.city, []); map.get(m.city).push(m); }
+  return map;
+}
+
+function drawCities() {
+  const counts = byCity(), plane = $("plane");
+  for (const c of DATA.cities.filter((x) => !x.far)) {
+    let node = cityNodes.get(c.id);
+    if (!node) {
+      const [x, y] = project(c.lon, c.lat);
+      node = el("div", { className: "city", style: `left:${x}px;top:${y}px;--d:${(Math.random() * 2.6).toFixed(2)}s` },
+        el("button", { className: "dot", type: "button", ariaLabel: c.name, onclick: () => openCity(c.id) }), el("div", { className: "tag" }, el("b", { textContent: c.name }), el("i")));
+      node.dataset.x = x; node.dataset.y = y;
+      cityNodes.set(c.id, node); plane.append(node);
+    }
+    const n = (counts.get(c.id) || []).length;
+    node.classList.toggle("has", n > 0);
+    node.style.setProperty("--s", (n ? 7 + Math.sqrt(n) * 4.5 : 4) + "px");
+    node.querySelector(".tag i").textContent = n ? n + (n > 1 ? " membres" : " membre") : "";
+  }
+  // Le réseau : chaque ville active reliée à ses deux voisines actives les plus proches, une lueur qui y circule.
+  const active = DATA.cities.filter((c) => !c.far && counts.has(c.id)).map((c) => ({ c, p: project(c.lon, c.lat) }));
+  const webs = $("webs"), seen = new Set();
+  webs.replaceChildren();
+  for (const a of active) {
+    for (const b of active.filter((o) => o !== a).sort((u, v) => Math.hypot(u.p[0] - a.p[0], u.p[1] - a.p[1]) - Math.hypot(v.p[0] - a.p[0], v.p[1] - a.p[1])).slice(0, 2)) {
+      const key = [a.c.id, b.c.id].sort().join("|");
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const line = svgEl("line", { x1: a.p[0], y1: a.p[1], x2: b.p[0], y2: b.p[1], class: "web" });
+      webs.append(line);
+      setTimeout(() => line.classList.add("on"), 2600);
+    }
+  }
+  // La bande « Plus loin ».
+  $("far-list").replaceChildren(...DATA.cities.filter((c) => c.far).sort((a, b) => (counts.get(b.id)?.length || 0) - (counts.get(a.id)?.length || 0))
+    .map((c) => { const n = counts.get(c.id)?.length || 0; return el("button", { type: "button", className: n ? "has" : "", onclick: () => openCity(c.id), title: c.country }, c.name, n ? el("span", { textContent: n }) : null); }));
+  // Le compte et les villes les plus actives.
+  const total = visible().length;
+  $("count").innerHTML = `<b>${total}</b> membre${total > 1 ? "s" : ""} dans <b>${counts.size}</b> ville${counts.size > 1 ? "s" : ""}`;
+  $("top").replaceChildren(...[...counts.entries()].sort((a, b) => b[1].length - a[1].length).slice(0, 6).map(([id, list]) => {
+    const c = DATA.cities.find((x) => x.id === id);
+    return el("button", { type: "button", onclick: () => openCity(id) }, c.name, el("span", { textContent: list.length }));
+  }));
+  if (!counts.size) $("top").replaceChildren(el("p", { className: "empty", style: "margin:0", textContent: "Personne ici avec ces filtres." }));
+  if (current) openCity(current, true);
+}
+
+function card(m, i) {
+  return el("a", { className: "cvcard" + (m.handle === focusHandle ? " me" : ""), href: "profil?u=" + encodeURIComponent(m.handle), style: `--i:${i};--c:${m.color || "#e5384a"}` },
+    el("div", { className: "who" }, el("img", { src: m.avatar ? m.avatar + "?w=120" : "assets/favicon.png?v=2", alt: "", loading: "lazy" }),
+      el("div", {}, el("b", { textContent: m.name }), ROLES[m.role] ? el("span", { className: "badge", textContent: ROLES[m.role] }) : null,
+        el("small", { textContent: "@" + m.handle + " · " + m.followers + " abonné" + (m.followers > 1 ? "s" : "") }))),
+    m.cv.roles.length ? el("div", { className: "chips" }, ...m.cv.roles.map((r) => el("span", { textContent: r }))) : null,
+    m.cv.skills ? el("p", { textContent: m.cv.skills }) : null,
+    m.cv.open ? el("span", { className: "open", textContent: "✦ Ouvert aux collaborations" }) : null);
+}
+
+function openCity(id, quiet) {
+  const c = DATA.cities.find((x) => x.id === id);
+  if (!c) return;
+  current = id;
+  const list = byCity().get(id) || [];
+  for (const [cid, node] of cityNodes) node.classList.toggle("on", cid === id);
+  $("city-country").textContent = c.country;
+  $("city-name").textContent = c.name;
+  $("city-count").textContent = list.length ? list.length + (list.length > 1 ? " membres" : " membre") : "";
+  $("members").replaceChildren(...(list.length ? list.map(card) : [el("p", { className: "empty", textContent: "Personne n'a encore choisi " + c.name + (filters.roles.size || filters.open ? " avec ces filtres." : ". Sois le premier : ajoute ta ville sur ta page de profil.") })]));
+  $("city").classList.add("open");
+  document.body.classList.add("city-open");
+  if (!quiet && !c.far) { const [x, y] = project(c.lon, c.lat); flyTo(x, y, 2.6); }
+}
+function closeCity() { current = null; $("city").classList.remove("open"); document.body.classList.remove("city-open"); for (const node of cityNodes.values()) node.classList.remove("on"); }
+$("city-close").onclick = () => { closeCity(); home(); };
+addEventListener("keydown", (e) => { if (e.key === "Escape") { closeCity(); home(); } });
+
+function drawFilters() {
+  $("roles").replaceChildren(...DATA.roles.filter((r) => DATA.members.some((m) => m.cv.roles.includes(r))).map((r) => el("button", { type: "button", className: "chip" + (filters.roles.has(r) ? " on" : ""), textContent: r,
+    onclick: () => { filters.roles.has(r) ? filters.roles.delete(r) : filters.roles.add(r); drawFilters(); drawCities(); } })));
+  if (!$("roles").children.length) $("roles").replaceChildren(el("span", { className: "empty", style: "font-size:13px", textContent: "Les métiers apparaissent quand les membres remplissent leur CV." }));
+}
+$("open-only").onchange = (e) => { filters.open = e.target.checked; drawCities(); };
+$("search").addEventListener("input", (e) => {
+  const q = e.target.value.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const norm = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  if (!q) return $("results").replaceChildren();
+  const cities = DATA.cities.filter((c) => norm(c.name).includes(q)).slice(0, 4);
+  const people = DATA.members.filter((m) => norm(m.name).includes(q) || m.handle.includes(q)).slice(0, 5);
+  $("results").replaceChildren(
+    ...cities.map((c) => el("button", { type: "button", onclick: () => openCity(c.id) }, el("span", { textContent: "✦" }), el("span", {}, c.name, el("small", { textContent: " · " + c.country })))),
+    ...people.map((m) => el("button", { type: "button", onclick: () => { focusHandle = m.handle; openCity(m.city); } },
+      el("img", { src: m.avatar ? m.avatar + "?w=80" : "assets/favicon.png?v=2", alt: "" }), el("span", {}, m.name, el("small", { textContent: " · " + (DATA.cities.find((c) => c.id === m.city)?.name || "") })))));
+  if (!cities.length && !people.length) $("results").replaceChildren(el("p", { className: "empty", style: "margin:0", textContent: "Rien trouvé." }));
+});
+
+// L'invitation à se placer sur la carte : connecté sans ville choisie, ou sans compte.
+async function drawCta() {
+  if (!token) { $("cta").replaceChildren(el("div", { className: "cta" }, "Toi aussi, place-toi sur la carte : ", el("a", { href: "compte", textContent: "crée ton compte" }), " puis ta page de profil.")); $("my-page").hidden = true; return; }
+  const mine = await fetch("/api/me/profile/page", { headers: { Authorization: "Bearer " + token } }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  if (mine?.handle) $("my-page").href = "profil?u=" + encodeURIComponent(mine.handle);
+  if (!mine) $("cta").replaceChildren(el("div", { className: "cta" }, "Crée ta page de profil et choisis ta ville pour apparaître ici : ", el("a", { href: "profil", textContent: "ma page" }), "."));
+  else if (!mine.city) $("cta").replaceChildren(el("div", { className: "cta" }, "Tu n'es pas encore sur la carte : ", el("a", { href: "profil?u=" + encodeURIComponent(mine.handle), textContent: "ajoute ta ville" }), " dans « Modifier ma page »."));
+}
+
+(async () => {
+  // Sur téléphone, les filtres se replient sous la carte ; un appui sur leur titre les déplie.
+  if (innerWidth <= 860) $("filters").classList.add("min");
+  $("filters").querySelector(".head").onclick = () => { if (innerWidth <= 860) $("filters").classList.toggle("min"); };
+  drawShapes();
+  requestAnimationFrame(tick);
+  setTimeout(() => $("intro").remove(), reduced ? 0 : 2700); // l'animation suffit, mais un onglet en arrière-plan la fige
+  setTimeout(home, reduced ? 0 : 500);
+  try { DATA = await (await fetch("/api/members/map")).json(); }
+  catch { $("count").textContent = "La carte ne répond pas. Réessaie dans un instant."; return; }
+  drawFilters();
+  drawCities();
+  drawCta();
+  // Arrivé depuis une page de profil : la carte vole jusqu'à sa ville.
+  const who = focusHandle && DATA.members.find((m) => m.handle === focusHandle);
+  if (who) setTimeout(() => openCity(who.city), reduced ? 0 : 2200);
+})();
+</script>
+</html>
