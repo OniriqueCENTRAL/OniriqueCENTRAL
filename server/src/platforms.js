@@ -535,7 +535,16 @@ export function mountPlatforms(app, { requireUser, wrap }) {
 
   app.get('/api/platforms/search', ...me, wrap(async (req, res) => {
     rateLimit(`platform-read:${req.user.id}`, 300, 3600_000);
-    res.json((await searchPlatform(String(req.query.source || ''), req.query.q)).map(shown));
+    const source = String(req.query.source || '');
+    // Spotify : sa recherche officielle, par le compte connecté du membre.
+    if (source === 'spotify') {
+      const q = text(req.query.q, 120);
+      if (q.length < 2) throw new HttpError(400, 'Tape au moins deux lettres.');
+      const { access } = await spotifyToken(req.user.id);
+      const found = await spotifyGet(access, `/search?type=track&limit=20&market=from_token&q=${encodeURIComponent(q)}`);
+      return res.json((found.tracks?.items || []).map((t) => spotifyTrack(t)).filter(Boolean).map(shown));
+    }
+    res.json((await searchPlatform(source, req.query.q)).map(shown));
   }));
   app.post('/api/platforms/resolve', ...me, wrap(async (req, res) => {
     rateLimit(`platform-read:${req.user.id}`, 120, 3600_000);

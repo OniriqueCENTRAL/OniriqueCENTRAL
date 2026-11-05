@@ -58,6 +58,8 @@ const fake = http.createServer((req, res) => {
     if (!/^Bearer acces-[12]$/.test(req.headers.authorization || '')) { res.statusCode = 401; return json({}); }
     const route = url.pathname.slice(9);
     if (route === '/me') return json({ id: 'nov', display_name: 'Nov', product: 'premium' });
+    if (route === '/search') return json({ tracks: { items: [{ type: 'track', id: SP1, name: url.searchParams.get('q'), duration_ms: 200000, artists: [{ name: 'Ninho' }],
+      album: { images: [{ width: 300, url: 'https://i.scdn.co/image/s' }] } }] } });
     if (route === '/me/playlists') return json({ items: [{ id: 'Q'.repeat(22), name: 'Privée', tracks: { total: 3 }, images: [{ url: 'https://i.scdn.co/image/q' }] }, { id: 'piège', name: 'x' }] });
     if (route === `/playlists/${'Q'.repeat(22)}`) return json({ name: 'Privée', images: [{ url: 'https://i.scdn.co/image/q' }] });
     if (route === `/playlists/${'Q'.repeat(22)}/tracks`) {
@@ -139,7 +141,7 @@ try {
     assert.equal(dz[0].preview, 'https://cdnt-preview.dzcdn.net/api/1/1/11.mp3');
     const ap = await call('GET', '/api/platforms/search?source=apple&q=solar', { token: member.token });
     assert.deepEqual([ap[0].platform, ap[0].id, ap[0].duration, ap[0].cover], ['apple', '31', 210, 'https://is1-ssl.mzstatic.com/image/600x600bb.jpg']);
-    await call('GET', '/api/platforms/search?source=spotify&q=jefe', { token: member.token, expect: 400 });
+    await call('GET', '/api/platforms/search?source=spotify&q=jefe', { token: member.token, expect: 404 });
   });
 
   await step('un lien collé : titre Deezer, playlist Deezer, playlist Spotify, titre Apple Music', async () => {
@@ -241,6 +243,10 @@ try {
     assert.deepEqual((await call('GET', '/api/me/platforms/spotify/playlists', { token: member.token })).map((l) => [l.title, l.count]), [['Privée', 3]]);
     const full = await call('POST', '/api/platforms/resolve', { token: member.token, body: { url: `https://open.spotify.com/playlist/${'Q'.repeat(22)}` } });
     assert.deepEqual(full.items.map((x) => x.title), ['Un', 'Deux', 'Trois']);
+    // La recherche Spotify passe par le compte connecté ; sans compte, elle est refusée.
+    const found = await call('GET', '/api/platforms/search?source=spotify&q=jefe', { token: member.token });
+    assert.deepEqual(found.map((x) => [x.platform, x.id, x.title, x.artist]), [['spotify', SP1, 'jefe', 'Ninho']]);
+    await call('GET', '/api/platforms/search?source=spotify&q=jefe', { token: stranger.token, expect: 404 });
   });
 
   await step('Apple Music : jeton développeur signé ES256 avec la clé de l’équipe', async () => {

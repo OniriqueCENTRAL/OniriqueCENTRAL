@@ -734,6 +734,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
         <div class="eyebrow">Membres ONIRIQUE</div>
         <h1>Mes <em>sons</em></h1>
         <div class="muted" id="owner-name"></div>
+        <form class="pf-search" id="pf-search" role="search"><input type="search" placeholder="Chercher un son sur Spotify" aria-label="Chercher un son sur Spotify" autocomplete="off"></form>
       </div>
       <div>
         <div class="quota" id="quota"></div>
@@ -842,7 +843,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close('cancel')">Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
 <script src="assets/sounds-player.js?v=21"></script>
-<script src="assets/platforms.js?v=5"></script>
+<script src="assets/platforms.js?v=6"></script>
 <script src="assets/audio-kit.js?v=2"></script>
 <script src="assets/pdf-kit.js"></script>
 <script src="assets/release-steps.js"></script>
@@ -938,7 +939,11 @@ const player = OP.create({
 });
 // Spotify, Deezer et Apple Music dans les playlists (assets/platforms.js).
 const PF = window.OniriquePlatforms;
-PF.setup({ api, el, icon, player, changed: () => render() });
+PF.setup({ api, el, icon, player, changed: (reload) => (reload ? refresh() : render()),
+  // Les playlists du CLOUD qui peuvent recevoir des titres Spotify, et l'ouverture de l'une d'elles.
+  playlists: () => (data && !data.vanish ? data.projects.filter((x) => x.kind === "playlist") : []), open: (id) => navigate("#/p/" + id) });
+// La barre de recherche du CLOUD : les sons de Spotify, à écouter et à ajouter à une playlist.
+$("pf-search").onsubmit = (event) => { event.preventDefault(); const q = $("pf-search").querySelector("input").value.trim(); if (q.length > 1) PF.openSearch(q); };
 // Les couleurs de chaque pochette, lues une fois.
 const tints = new Map();
 const tintOf = (url) => { if (!tints.has(url)) tints.set(url, OP.tint(url)); return tints.get(url); };
@@ -1487,7 +1492,7 @@ function projectMenu(anchor, p) {
     p.mine && { label: "Collaborateurs…", icon: "plus", onclick: () => openCollab(p.id) },
     !data.vanish && { label: "Déplacer vers…", icon: "chevron", onclick: () => moveMenu(anchor, p.folderId, (folderId) => api("PATCH", "/me/sounds/projects/" + p.id, { folderId })) },
     p.mine && p.kind === "playlist" && !data.vanish && { label: "Ajouter des sons du CLOUD", icon: "plus", onclick: () => openPick(p) },
-    p.kind === "playlist" && !data.vanish && { label: "Depuis Spotify, Deezer ou Apple Music", icon: "link", onclick: () => PF.openAdd(p) },
+    p.kind === "playlist" && !data.vanish && { label: "Depuis Spotify", icon: "link", onclick: () => PF.openAdd(p) },
     p.mine && p.kind && { label: "Repasser en projet classique", icon: "repeat", onclick: () => api("PATCH", "/me/sounds/projects/" + p.id, { kind: "" }).then(refresh, fail) },
     p.mine && p.kind !== "pack" && { label: "Passer en pack de prods", icon: "repeat", onclick: () => makePack(p).catch(fail) },
     p.mine && p.kind !== "playlist" && { label: "Transformer en Playlist", icon: "queue", onclick: () => api("PATCH", "/me/sounds/projects/" + p.id, { kind: "playlist" }).then(refresh, fail) },
@@ -2018,7 +2023,7 @@ function addMenu(anchor) {
   const p = openId() && project();
   menu(anchor, [
     p && p.kind === "playlist" && { label: "Ajouter des sons du CLOUD", icon: "queue", onclick: () => openPick(p) },
-    p && p.kind === "playlist" && { label: "Depuis Spotify, Deezer ou Apple Music", icon: "link", onclick: () => PF.openAdd(p) },
+    p && p.kind === "playlist" && { label: "Depuis Spotify", icon: "link", onclick: () => PF.openAdd(p) },
     p && { label: "Ajouter des sons à ce projet", icon: "plus", onclick: () => pickFiles({ project: p }) },
     { label: "Importer des sons", icon: "download", onclick: () => pickFiles(null) },
     { label: "Nouveau projet", icon: "star", onclick: async () => {
@@ -3961,7 +3966,7 @@ async function openSettings() {
       el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Chaque lien garde ensuite ses propres réglages, à changer dans sa fenêtre de partage." }),
       el("div", { className: "sub-title", textContent: "Mes plateformes" }),
       el("ul", { className: "group" }, el("li", {}, el("button", { className: "item", type: "button", onclick: () => { dialog.close(); PF.openAccounts(); } },
-        el("span", { className: "grow" }, "Spotify, Deezer, Apple Music", el("small", { textContent: "Lier mes comptes, pour mêler leurs titres à mes sons dans mes playlists" })), icon("chevron")))),
+        el("span", { className: "grow" }, "Spotify", el("small", { textContent: "Connecter mon compte, pour mêler ses titres à mes sons dans mes playlists" })), icon("chevron")))),
       data.founder ? el("div", { className: "sub-title", textContent: "Fondateurs" }) : null,
       data.founder ? el("ul", { className: "group" }, el("li", {}, el("div", { className: "item" },
         el("span", { className: "grow" }, "VANISH", el("small", { textContent: "Voir les sons de tous les comptes, sans prévenir personne" })),

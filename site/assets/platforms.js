@@ -40,9 +40,13 @@
 .trk.pf .pf-link { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; color: var(--haze); }
 .trk.pf .pf-link:hover { color: var(--mist); background: rgba(255,255,255,.06); }
 .trk.pf .pf-cover { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; }
-.pf-embed { position: fixed; right: 22px; bottom: calc(96px + env(safe-area-inset-bottom)); z-index: 40; width: min(340px, calc(100vw - 44px)); height: 80px;
-  border-radius: 12px; overflow: hidden; box-shadow: 0 18px 40px rgba(0,0,0,.5); }
+.pf-embed { position: fixed; right: 0; bottom: 0; z-index: -1; width: 300px; height: 80px; opacity: 0; pointer-events: none; overflow: hidden; }
 .pf-embed[hidden] { display: none; }
+.pf-search { margin-top: 16px; max-width: 420px; }
+.pf-search input { width: 100%; height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.4); color: var(--mist); font: 500 15px var(--f-body); }
+.pf-search input:focus { outline: none; border-color: var(--ember); }
+#platform-add .pf-target { display: flex; align-items: center; gap: 10px; font: 500 12px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--haze); }
+#platform-add .pf-target select { flex: 1; min-width: 0; height: 40px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.4); color: var(--mist); font: 500 14px var(--f-body); text-transform: none; }
 .trk.pf.pf-locked b, .trk.pf.pf-locked .len { opacity: .55; }
 .pf-embed iframe { display: block; border: 0; }
 `;
@@ -352,7 +356,7 @@
   const order = (p, keys) => ctx.api("PUT", "/me/sounds/projects/" + p.id + "/mixed-order", { keys }).then(load);
 
   //---------------------------------------------------------------------------- La fenêtre d'ajout
-  let dialog = null, target = null, tab = "spotify", results = [], found = null, query = "", busy = false, error = "", added = new Set(), deezerLists = null;
+  let dialog = null, target = null, tab = "search", results = [], found = null, query = "", busy = false, error = "", added = new Set(), deezerLists = null;
   function ensureDialog() {
     if (dialog) return dialog;
     dialog = document.createElement("dialog");
@@ -361,8 +365,27 @@
     document.body.append(dialog);
     return dialog;
   }
-  function openAdd(p) { target = p; added = new Set(itemsOf(p.id).map((x) => x.platform + ":" + x.extId)); error = ""; draw(); if (!dialog.open) dialog.showModal(); }
-  function openAccounts() { tab = "accounts"; target = null; error = ""; draw(); if (!dialog.open) dialog.showModal(); loadDeezerLists(); }
+  function openAdd(p) { openedFromSearch = false; tab = "search"; target = p; added = new Set(itemsOf(p.id).map((x) => x.platform + ":" + x.extId)); error = ""; draw(); if (!dialog.open) dialog.showModal(); }
+  function openAccounts() { openedFromSearch = false; tab = "account"; target = null; error = ""; draw(); if (!dialog.open) dialog.showModal(); }
+  /** La recherche Spotify, depuis la barre du CLOUD : les titres trouvés s'ajoutent à une playlist au choix. */
+  let openedFromSearch = false;
+  function openSearch(q) { openedFromSearch = true; tab = "search"; target = null; error = ""; query = q || ""; results = []; draw(); if (!dialog.open) dialog.showModal(); if (query.length > 1 && conf && conf.spotify && spotifyAccount()) search("spotify", query); }
+  // Les playlists du CLOUD où l'on peut ajouter (les siennes et celles où l'on collabore), et celle choisie.
+  const cloudLists = () => (ctx.playlists ? ctx.playlists() : []);
+  const pickTarget = (id) => { target = cloudLists().find((x) => x.id === Number(id)) || null; added = new Set(target ? itemsOf(target.id).map((x) => x.platform + ":" + x.extId) : []); };
+  /** Une playlist Spotify du compte devient une playlist du CLOUD, du même nom, avec tous ses titres. */
+  async function importList(l) {
+    busy = true; error = ""; draw();
+    try {
+      const r = await ctx.api("POST", "/platforms/resolve", { url: l.url });
+      const { id } = await ctx.api("POST", "/me/sounds/projects", { title: (r.title || l.title || "Playlist Spotify").slice(0, 120), kind: "playlist" });
+      if (r.items.length) await ctx.api("POST", "/me/sounds/projects/" + id + "/platform-items", { items: r.items.slice(0, 200) });
+      await load(); await ctx.changed(true);
+      l.imported = true;
+      if (ctx.open) ctx.open(id);
+    } catch (e) { error = e.message; }
+    busy = false; draw();
+  }
 
   async function add(items) {
     if (!target) return;
@@ -457,7 +480,7 @@
 
   function accountsPanel() {
     const { el } = ctx;
-    return el("div", { className: "stack" }, ...["deezer", "spotify", "apple"].map((platform) => {
+    return el("div", { className: "stack" }, ...["spotify"].map((platform) => {
       if ((platform === "spotify" && conf && conf.spotify) || (platform === "apple" && conf && conf.apple)) return connectedBox(platform);
       if (platform === "spotify") {
         if (spWeb === null && window.oniriqueApp) setTimeout(spotifyChanged, 0);
@@ -503,47 +526,56 @@
   function draw() {
     const { el, icon } = ctx;
     ensureDialog();
-    const tabs = [["spotify", "Spotify"], ["deezer", "Deezer"], ["apple", "Apple Music"], ["link", "Coller un lien"], ["accounts", "Mes comptes"]];
+    const api = !!(conf && conf.spotify), on = !!spotifyAccount();
+    const tabs = [["search", "Rechercher"], ["lists", "Mes playlists"], ["account", "Mon compte"]];
     const tabBar = el("div", { className: "pf-tabs", role: "tablist" }, ...tabs.map(([id, label]) => el("button", { type: "button", role: "tab", ariaSelected: String(tab === id),
-      onclick: () => { tab = id; results = []; error = ""; if (id === "accounts") loadDeezerLists(); draw(); } }, label)));
+      onclick: () => { tab = id; error = ""; draw(); } }, label)));
+    // Sans compte connecté (ou tant que Spotify n'est pas branché sur ONIRIQUE), la recherche et les playlists attendent.
+    const needAccount = () => el("div", { className: "group pf-acc" },
+      el("p", { className: "pf-note", textContent: api ? "Connecte ton compte Spotify : la recherche et tes playlists apparaissent ici, et tes titres se jouent en entier dans le lecteur du CLOUD."
+        : "La recherche et tes playlists Spotify ne sont pas encore branchées sur ONIRIQUE. En attendant, tu peux te connecter à Spotify pour écouter tes titres en entier." }),
+      el("div", {}, api ? el("button", { className: "btn btn-primary", type: "button", textContent: "Connecter Spotify", onclick: spotifyLogin }) : ""));
+    // La playlist du CLOUD qui reçoit les titres : choisie ici quand la fenêtre s'ouvre depuis la barre de recherche.
+    const lists = cloudLists();
+    const pick = lists.length ? el("label", { className: "pf-target" }, "Ajouter à",
+      el("select", { onchange: (event) => { pickTarget(event.target.value); draw(); } },
+        el("option", { value: "", textContent: "Choisis une playlist du CLOUD" }),
+        ...lists.map((x) => el("option", { value: String(x.id), selected: !!(target && target.id === x.id), textContent: x.title })))) : null;
     let body;
-    if (tab === "accounts") body = accountsPanel();
-    else if (tab === "link" || tab === "spotify") {
-      const input = el("input", { type: "url", placeholder: tab === "spotify" ? "Lien Spotify : titre, album ou playlist" : "Lien Spotify, Deezer ou Apple Music : titre, album ou playlist", value: query, autocomplete: "off" });
-      const all = found ? found.items.filter((x) => !added.has(x.platform + ":" + x.id)) : [];
-      body = el("div", { className: "stack" },
-        el("form", { onsubmit: (event) => { event.preventDefault(); query = input.value.trim(); if (query) resolve(query); } }, input,
-          el("button", { className: "btn btn-primary", type: "submit", disabled: busy, textContent: "Lire" })),
-        found ? el("div", { className: "stack" },
-          el("div", { className: "item", style: "padding:0;cursor:default" },
-            found.cover ? el("img", { src: found.cover, alt: "", style: "width:48px;height:48px;border-radius:10px;object-fit:cover" }) : "",
-            el("span", { className: "grow pick-name" }, el("b", { textContent: found.title }),
-              el("small", { textContent: NAMES[found.platform] + " · " + found.items.length + " titre" + (found.items.length > 1 ? "s" : "") })),
-            target && found.items.length > 1 ? el("button", { className: "btn btn-primary", type: "button", disabled: busy || !all.length,
-              textContent: all.length ? "Tout ajouter (" + all.length + ")" : "Tout est ajouté", onclick: () => add(all) }) : ""),
-          found.total && found.total > found.items.length ? el("p", { className: "pf-note",
-            textContent: "Spotify ne montre que les " + found.items.length + " premiers titres d'une playlist (elle en compte " + found.total + "). Pour les autres, colle leur lien un par un." }) : "",
-          el("ul", { className: "group pf-list" }, ...found.items.map(resultRow)))
-          : el("p", { className: "pf-note", textContent: tab === "spotify"
-            ? "Dans Spotify : « ⋯ » sur un titre, un album ou une playlist, puis « Partager » et « Copier le lien », et colle-le ici. Les titres s'ajoutent à la suite de la playlist, mêlés à tes sons du CLOUD, et se jouent en entier avec ton compte Spotify connecté."
-            : "Un titre, un album ou une playlist publique. Ils s'ajoutent à la suite de la playlist, mêlés à tes sons du CLOUD." }));
+    if (tab === "account") body = accountsPanel();
+    else if (!api || !on) body = needAccount();
+    else if (tab === "lists") {
+      if (ownLists.spotify === null && !busy) setTimeout(() => loadOwnLists("spotify"), 0);
+      const L = ownLists.spotify;
+      body = L === null ? el("p", { className: "pf-note", textContent: "Chargement de tes playlists…" })
+        : L.length ? el("ul", { className: "group pf-list" }, ...L.map((l) => el("li", {}, el("div", { className: "item", style: "cursor:default" },
+          l.cover ? el("img", { src: l.cover, alt: "", style: "width:44px;height:44px;border-radius:8px;object-fit:cover" }) : el("span", { className: "cover-ph" }),
+          el("span", { className: "grow pick-name" }, el("b", { textContent: l.title }), el("small", { textContent: l.count + " titre" + (l.count > 1 ? "s" : "") })),
+          target ? el("button", { className: "btn btn-ghost", type: "button", disabled: busy, textContent: "Ajouter ici", onclick: async () => {
+            busy = true; error = ""; draw();
+            try { const r = await ctx.api("POST", "/platforms/resolve", { url: l.url }); const fresh = r.items.filter((x) => !added.has(x.platform + ":" + x.id)); busy = false; if (fresh.length) await add(fresh.slice(0, 200)); }
+            catch (e) { error = e.message; busy = false; }
+            draw();
+          } }) : "",
+          el("button", { className: l.imported ? "btn btn-ghost" : "btn btn-primary", type: "button", disabled: busy || l.imported, textContent: l.imported ? "Importée" : "Importer dans le CLOUD",
+            title: "Une playlist du même nom dans ton CLOUD, avec tous ses titres", onclick: () => importList(l) })))))
+          : el("p", { className: "pf-note", textContent: "Aucune playlist sur ton compte Spotify." });
     } else {
-      const input = el("input", { type: "search", placeholder: "Chercher sur " + NAMES[tab] + " : titre, artiste", value: query, autocomplete: "off" });
+      const input = el("input", { type: "search", placeholder: "Chercher sur Spotify : titre, artiste", value: query, autocomplete: "off" });
       body = el("div", { className: "stack" },
-        el("form", { onsubmit: (event) => { event.preventDefault(); query = input.value.trim(); if (query.length > 1) search(tab, query); } }, input,
+        el("form", { onsubmit: (event) => { event.preventDefault(); query = input.value.trim(); if (query.length > 1) search("spotify", query); } }, input,
           el("button", { className: "btn btn-primary", type: "submit", disabled: busy, textContent: "Chercher" })),
+        openedFromSearch ? pick : null,
         results.length ? el("ul", { className: "group pf-list" }, ...results.map(resultRow))
-          : el("p", { className: "pf-note", textContent: busy ? "Recherche…" : "Pour Spotify, colle le lien du titre ou de la playlist dans « Coller un lien » : Spotify ne se laisse pas chercher depuis ici." }));
+          : el("p", { className: "pf-note", textContent: busy ? "Recherche…" : "Cherche un titre ou un artiste : écoute-le, puis ajoute-le à une playlist du CLOUD." }));
     }
     dialog.replaceChildren(
-      el("div", { className: "dlg-head" }, el("b", { textContent: target ? "Ajouter à « " + target.title + " »" : "Spotify, Deezer et Apple Music" }),
+      el("div", { className: "dlg-head" }, el("b", { textContent: target && !openedFromSearch ? "Ajouter à « " + target.title + " »" : "Spotify" }),
         el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close"))),
-      el("div", { className: "pf-body" }, tabBar, body,
-        error ? el("p", { className: "error", textContent: error }) : "",
-        el("p", { className: "pf-note", textContent: "Les titres des plateformes s'écoutent ici en extrait de 30 s ; en entier, sur leur plateforme." })));
+      el("div", { className: "pf-body" }, tabBar, body, error ? el("p", { className: "error", textContent: error }) : ""));
     const box = dialog.querySelector("input");
-    if (box && document.activeElement !== box && tab !== "accounts") setTimeout(() => box.focus(), 0);
+    if (box && document.activeElement !== box && tab === "search") setTimeout(() => box.focus(), 0);
   }
 
-  window.OniriquePlatforms = { NAMES, setup, load, spotifyChanged, playable, itemsOf, mixed, playerItem, row, order, openAdd, openAccounts };
+  window.OniriquePlatforms = { NAMES, setup, load, spotifyChanged, playable, openSearch, itemsOf, mixed, playerItem, row, order, openAdd, openAccounts };
 })();
