@@ -151,7 +151,8 @@ dialog li small { display: block; color: var(--haze); font-size: 12px; overflow:
     <h1 id="edit-title" style="margin-top:12px">Crée ta page</h1>
     <p class="muted">Une page publique à ton nom : les autres membres peuvent s'y abonner, y laisser un commentaire et t'écrire en privé.</p>
     <form class="form panel" id="edit-form">
-      <label>Adresse de la page<input id="f-handle" required minlength="3" maxlength="30" pattern="[a-z0-9][a-z0-9._\-]{2,29}" autocomplete="off" placeholder="ton-pseudo"></label>
+      <label>Adresse de la page<input id="f-handle" required maxlength="40" autocomplete="off" placeholder="ton-pseudo"></label>
+      <p class="muted" id="f-handle-hint" style="margin:-8px 0 0;font-size:13px"></p>
       <label>Bio<textarea id="f-bio" maxlength="600" placeholder="Qui tu es, ce que tu fais, tes liens…"></textarea></label>
       <label>Couleur de la page<input id="f-color" type="color" value="#e5384a"></label>
       <div><label>Liens (Instagram, Spotify, YouTube, ton site…)</label><div class="link-rows" id="f-links" style="margin-top:8px"></div></div>
@@ -288,7 +289,7 @@ document.querySelectorAll(".tabs button").forEach((b) => b.onclick = () => {
 function openEdit() {
   const m = mine || { handle: "", bio: "", color: "#e5384a", comments: true };
   $("edit-title").textContent = mine ? "Régler ma page" : "Crée ta page";
-  $("f-handle").value = m.handle; $("f-bio").value = m.bio; $("f-color").value = m.color; $("f-comments").checked = m.comments;
+  $("f-handle").value = m.handle; hint(); $("f-bio").value = m.bio; $("f-color").value = m.color; $("f-comments").checked = m.comments;
   const links = m.links || [];
   $("f-links").replaceChildren(...Array.from({ length: 6 }, (_, i) => el("div", {},
     el("input", { maxLength: 40, placeholder: "Nom (Instagram…)", value: links[i]?.label || "", ariaLabel: "Nom du lien " + (i + 1) }),
@@ -299,11 +300,20 @@ function openEdit() {
   show("edit");
 }
 
+// L'adresse s'écrit comme on veut (« Tom Gurdian ») : la page montre tout de suite celle qu'elle aura (tom-gurdian).
+const toHandle = (v) => String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+  .replace(/[^a-z0-9._-]+/g, "-").replace(/-{2,}/g, "-").replace(/^[^a-z0-9]+|[-._]+$/g, "").slice(0, 30);
+const hint = () => {
+  const h = toHandle($("f-handle").value);
+  $("f-handle-hint").textContent = !$("f-handle").value.trim() ? "Lettres, chiffres, point, tiret : les majuscules, accents et espaces sont convertis."
+    : h.length < 3 ? "Au moins 3 lettres ou chiffres." : "Ta page : " + location.host + "/profil?u=" + h;
+};
+$("f-handle").addEventListener("input", hint);
 $("f-color").addEventListener("input", (e) => document.documentElement.style.setProperty("--ember", e.target.value));
 $("edit-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   try {
-    const { handle } = await api("PUT", "/me/profile/page", { handle: $("f-handle").value.trim().toLowerCase(), bio: $("f-bio").value, color: $("f-color").value, comments: $("f-comments").checked,
+    const { handle } = await api("PUT", "/me/profile/page", { handle: toHandle($("f-handle").value), bio: $("f-bio").value, color: $("f-color").value, comments: $("f-comments").checked,
       links: [...$("f-links").children].map((row) => ({ label: row.children[0].value, url: row.children[1].value })).filter((l) => l.url.trim()) });
     location.href = "profil?u=" + encodeURIComponent(handle);
   } catch (e) { say("edit-notice", e.message, true); }

@@ -61,6 +61,9 @@ if (!column('user_profiles', 'links')) db.exec(`ALTER TABLE user_profiles ADD CO
 if (!column('profile_comments', 'parent_id')) db.exec('ALTER TABLE profile_comments ADD COLUMN parent_id INTEGER REFERENCES profile_comments(id) ON DELETE CASCADE');
 
 export const PROFILE_HANDLE = /^[a-z0-9][a-z0-9._-]{2,29}$/;
+/** « Tom Gurdian » ou « Élodie ! » deviennent « tom-gurdian », « elodie » : sans majuscules, accents ni espaces. */
+export const toHandle = (v) => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  .replace(/[^a-z0-9._-]+/g, '-').replace(/-{2,}/g, '-').replace(/^[^a-z0-9]+|[-._]+$/g, '').slice(0, 30);
 const COLOR = /^#[0-9a-f]{6}$/i;
 const clean = (v, max) => (typeof v === 'string' ? v.replace(/\r/g, '').trim().slice(0, max) : '');
 const media = (name) => (name ? `/api/media/${name}` : null);
@@ -95,7 +98,7 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
   });
   app.put('/api/me/profile/page', requireUser, (req, res) => {
     rateLimit(`profile-edit:${req.user.id}`, 60, 3600_000);
-    const handle = clean(req.body?.handle, 30).toLowerCase();
+    const handle = toHandle(req.body?.handle);
     if (!PROFILE_HANDLE.test(handle)) throw new HttpError(400, "L'adresse de ta page : 3 à 30 caractères, lettres minuscules, chiffres, point, tiret ou tiret bas.");
     const taken = get('SELECT user_id FROM user_profiles WHERE handle = ?', handle);
     if (taken && taken.user_id !== req.user.id) throw new HttpError(409, 'Cette adresse est déjà prise.');

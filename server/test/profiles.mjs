@@ -34,7 +34,7 @@ try {
     await call('PUT', '/api/me/profile/page', { token: a.token, body: { handle: 'A!' }, expect: 400 });
     await call('PUT', '/api/me/profile/page', { token: a.token, body: { handle: 'Nov.music', bio: 'Beatmaker', color: '#3d7bff' } });
     await call('PUT', '/api/me/profile/page', { token: b.token, body: { handle: 'nov.music' }, expect: 409 });
-    await call('PUT', '/api/me/profile/page', { token: b.token, body: { handle: 'lou' } });
+    await call('PUT', '/api/me/profile/page', { token: b.token, body: { handle: '  Loù ' } }); // devient « lou »
     const p = await call('GET', '/api/profiles/nov.music');
     assert.deepEqual([p.name, p.bio, p.color, p.mine, p.followers], ['Nov', 'Beatmaker', '#3d7bff', false, 0]);
     await call('GET', '/api/profiles/personne', { expect: 404 });
