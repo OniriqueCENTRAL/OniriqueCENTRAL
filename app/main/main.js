@@ -106,15 +106,26 @@ function toolView(tool, lang) {
 let pageOpen = false;
 /** La vue montrée pour un outil : la page ouverte par-dessus CLOUD s'il y en a une. */
 const viewFor = (tool) => (tool === 'cloud' && pageOpen && toolViews.has('page') ? toolViews.get('page') : toolViews.get(tool));
+// La place de l'outil à l'écran (donnée par l'interface) : CLOUD la retrouve en revenant.
+let toolBounds = { x: 0, y: 0, width: 0, height: 0 };
+/**
+ * Cacher une vue. CLOUD, lui, n'est jamais vraiment caché : réduit à un point, il reste « visible » pour Chromium, qui
+ * sinon le met en veille et coupe le lecteur Spotify (un son du CLOUD continuerait, Spotify non).
+ */
+async function hideView(view) {
+  const cloud = toolViews.has('cloud') ? await toolViews.get('cloud').catch(() => null) : null;
+  if (view && view === cloud) { view.setBounds({ x: 0, y: 0, width: 1, height: 1 }); view.setVisible(true); }
+  else view?.setVisible(false);
+}
 async function swapCloud() {
   if (shownTool !== 'cloud' || !toolViews.has('cloud')) return;
   const cloud = await toolViews.get('cloud'), page = toolViews.has('page') ? await toolViews.get('page') : null;
   const [show, hide] = pageOpen ? [page, cloud] : [cloud, page];
   if (!show) return;
   if (!win.contentView.children.includes(show)) win.contentView.addChildView(show);
-  show.setBounds((hide || cloud).getBounds());
-  hide?.setVisible(false);
-  show.setVisible(!frozen);
+  show.setBounds(toolBounds);
+  await hideView(hide);
+  if (frozen) await hideView(show); else show.setVisible(true);
 }
 async function openPage(url) {
   pageOpen = true;
@@ -145,13 +156,66 @@ async function pauseCloud() {
   web?.executeJavaScript('typeof player !== "undefined" && player.playing && player.toggle()').catch(() => {});
 }
 
+// Le mini lecteur flottant : quand le son de CLOUD continue sous une autre page (autre écran, page ouverte par-dessus),
+// une petite fenêtre au-dessus de l'application le montre et le pilote. On la déplace où l'on veut ; elle suit la
+// fenêtre et garde sa place (décalage depuis le coin bas droit), d'une ouverture à l'autre.
+let mini = null, miniShown = false;
+const MINI = { width: 340, height: 70 };
+const cloudWeb = async () => (toolViews.has('cloud') ? (await toolViews.get('cloud').catch(() => null))?.webContents : null);
+function placeMini() {
+  if (!mini || mini.isDestroyed() || !win) return;
+  const b = win.getContentBounds(), off = store.miniOffset || { right: 24, bottom: 24 };
+  mini.setPosition(Math.round(b.x + b.width - MINI.width - off.right), Math.round(b.y + b.height - MINI.height - off.bottom));
+}
+function createMini() {
+  mini = new BrowserWindow({ parent: win, ...MINI, show: false, frame: false, transparent: true, resizable: false, skipTaskbar: true,
+    minimizable: false, maximizable: false, fullscreenable: false, backgroundColor: '#00000000',
+    webPreferences: { preload: path.join(__dirname, 'mini-preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false } });
+  mini.loadFile(path.join(__dirname, '..', 'renderer', 'mini.html'));
+  // Déplacé à la main : sa place est gardée par rapport au coin bas droit de la fenêtre.
+  mini.on('moved', () => {
+    const b = win.getContentBounds(), [x, y] = mini.getPosition();
+    store.miniOffset = { right: b.x + b.width - MINI.width - x, bottom: b.y + b.height - MINI.height - y };
+  });
+  for (const e of ['move', 'resize', 'maximize', 'unmaximize']) win.on(e, placeMini);
+  win.on('minimize', () => mini.hide());
+  placeMini();
+  setInterval(refreshMini, 1000).unref();
+}
+async function refreshMini() {
+  if (!mini || mini.isDestroyed() || !win || win.isDestroyed()) return;
+  const away = shownTool !== 'cloud' || pageOpen; // CLOUD n'est pas à l'écran
+  const web = away && !win.isMinimized() && win.isVisible() ? await cloudWeb() : null;
+  const s = web ? await web.executeJavaScript(`(() => { if (typeof player === "undefined" || !player.item) return null;
+    const v = document.querySelector(".op-vol"), i = player.item;
+    return { title: i.title || "", sub: i.subtitle || "", cover: i.cover ? new URL(i.cover + "?w=120", location.href).href : null,
+      playing: player.playing, volume: i.engine === "spotifyEmbed" || !v ? null : Number(v.value) }; })()`).catch(() => null) : null;
+  // Montré tant qu'un son est chargé (même en pause, pour pouvoir le relancer) ; caché sur CLOUD lui-même.
+  if (s) {
+    mini.webContents.send('mini:state', { ...s, accent: lastAccent });
+    if (!miniShown) { placeMini(); mini.showInactive(); miniShown = true; }
+  } else if (miniShown) { mini.hide(); miniShown = false; }
+}
+ipcMain.on('mini:control', async (event, action, value) => {
+  if (!mini || event.sender !== mini.webContents) return;
+  const web = await cloudWeb();
+  if (!web) return;
+  if (action === 'toggle') await web.executeJavaScript('typeof player !== "undefined" && player.item && player.toggle()').catch(() => {});
+  else if (action === 'volume') {
+    const v = Math.min(1, Math.max(0, Number(value) || 0));
+    await web.executeJavaScript(`(() => { const v = document.querySelector(".op-vol"); if (v) { v.value = ${v}; v.dispatchEvent(new Event("input")); } })()`).catch(() => {});
+  } else if (action === 'open') { await closePage(); win.webContents.send('navigate', 'cloud'); win.focus(); }
+  refreshMini();
+});
+
 // La couleur d'accent choisie dans les Paramètres : posée sur CUT, CLOUD (variables de tool-skin.css) et les fenêtres de
 // confirmation, à chaque page chargée et à chaque changement.
-let accentVars = '';
+let accentVars = '', lastAccent = '229, 56, 74'; // lastAccent : la couleur du mini lecteur (r, g, b)
 ipcMain.handle('theme:accent', async (event, p) => {
   if (event.sender !== win?.webContents) return false;
   const ok = (v) => typeof v === 'string' && /^\d{1,3}, \d{1,3}, \d{1,3}$/.test(v);
   if (!p || !ok(p.acc) || !ok(p.hi) || !ok(p.lo)) return false;
+  lastAccent = p.acc;
   accentVars = `--acc: ${p.acc} !important; --acc-hi: ${p.hi} !important; --acc-lo: ${p.lo} !important;`;
   for (const pending of toolViews.values()) {
     const view = await pending.catch(() => null);
@@ -520,10 +584,12 @@ app.whenReady().then(async () => {
   handle('tool:show', async (tool, bounds, lang) => {
     await toolView(tool, lang);
     const view = await viewFor(tool);
-    for (const other of toolViews.values()) if ((await other) !== view) (await other).setVisible(false);
+    for (const other of toolViews.values()) if ((await other) !== view) await hideView(await other);
     if (!win.contentView.children.includes(view)) win.contentView.addChildView(view);
-    view.setBounds(Object.fromEntries(['x', 'y', 'width', 'height'].map((k) => [k, Math.max(0, Math.round(Number(bounds?.[k]) || 0))])));
-    view.setVisible(!frozen); // une fenêtre de l'application est ouverte : l'outil reste caché derrière son image
+    toolBounds = Object.fromEntries(['x', 'y', 'width', 'height'].map((k) => [k, Math.max(0, Math.round(Number(bounds?.[k]) || 0))]));
+    view.setBounds(toolBounds);
+    // Une fenêtre de l'application est ouverte : l'outil reste caché derrière son image.
+    if (frozen) await hideView(view); else view.setVisible(true);
     shownTool = tool;
   });
   // Un clic sur la rubrique déjà ouverte : retour à l'accueil de l'outil (après une page d'écoute, une autre page…).
@@ -551,15 +617,15 @@ app.whenReady().then(async () => {
     if (!shownTool || !toolViews.has(shownTool)) return null;
     const view = await viewFor(shownTool);
     const image = view.getVisible() ? await view.webContents.capturePage().catch(() => null) : null;
-    if (frozen) view.setVisible(false);
+    if (frozen) await hideView(view);
     return image ? image.toDataURL() : null;
   });
   handle('tool:thaw', async () => {
     frozen = false;
-    if (shownTool && toolViews.has(shownTool)) (await viewFor(shownTool)).setVisible(true);
+    if (shownTool && toolViews.has(shownTool)) { const view = await viewFor(shownTool); view.setBounds(toolBounds); view.setVisible(true); }
   });
   handle('tool:hide', async () => {
-    shownTool = null; for (const view of toolViews.values()) (await view).setVisible(false); });
+    shownTool = null; for (const view of toolViews.values()) await hideView(await view); });
   // Répondre à une demande de support : la messagerie de ce PC s'ouvre sur un message adressé à la personne.
   handle('open:mail', (email, subject) => {
     if (typeof email !== 'string' || !/^[^\s@<>"'?&]+@[^\s@<>"'?&]+\.[^\s@<>"'?&]+$/.test(email)) throw new Error('Adresse e-mail invalide.');
@@ -704,6 +770,7 @@ app.whenReady().then(async () => {
   });
 
   createWindow();
+  createMini();
   startAutoUpdate();
 });
 
