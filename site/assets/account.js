@@ -131,7 +131,7 @@ ${spark(1)}${spark(2)}${spark(3)}
       // Les outils, pour les rôles qui y ont droit : ONIRIQUE CLOUD, la page de liens, les Shorts YouTube programmés.
       ...(() => {
         const rights = me.rights || [], tools = [
-          rights.includes("sounds") && item("ONIRIQUE CLOUD", "mes-sons"),
+          item(rights.includes("sounds") ? "ONIRIQUE CLOUD" : "ONIRIQUE CLOUD · gratuit", "mes-sons"), // CLOUD gratuit pour tout compte (30 sons)
           rights.includes("links") && item("Mes liens", "mes-liens"),
           rights.includes("youtube") && item("Shorts YouTube", "compte#youtube"),
         ].filter(Boolean);

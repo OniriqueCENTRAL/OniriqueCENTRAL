@@ -55,11 +55,32 @@ const shareToken = (url) => new URL(url).searchParams.get('t');
 
 let member, other, listener, projectId, trackId, v2;
 try {
-  await step('réservé aux membres ONIRIQUE et aux fondateurs', async () => {
+  await step('CLOUD gratuit pour tout compte : 30 sons au plus ; liens, packs, collabs et ZIP pour les abonnés', async () => {
     member = await account('membre', 'vip');
     other = await account('client');
     listener = await account('auditeur');
-    await call('GET', '/api/me/sounds', { token: other.token, expect: 403 });
+    const free = await call('GET', '/api/me/sounds', { token: other.token });
+    assert.deepEqual(free.free, { limit: 30, used: 0 });
+    assert.equal((await call('GET', '/api/me/sounds', { token: member.token })).free, null);
+    const pid = (await call('POST', '/api/me/sounds/projects', { token: other.token, body: { title: 'Démos' }, expect: 201 })).id;
+    await call('POST', '/api/me/sounds/projects', { token: other.token, body: { title: 'À vendre', kind: 'pack' }, expect: 402 });
+    await call('PATCH', `/api/me/sounds/projects/${pid}`, { token: other.token, body: { kind: 'pack' }, expect: 402 });
+    await call('POST', '/api/me/sounds/links', { token: other.token, body: { projectId: pid }, expect: 403 });
+    await call('POST', `/api/me/sounds/projects/${pid}/invite`, { token: other.token, expect: 403 });
+    await call('POST', `/api/me/sounds/projects/${pid}/zip`, { token: other.token, expect: 403 });
+    let last;
+    for (let i = 0; i < 30; i++) last = (await call('POST', `/api/me/sounds/projects/${pid}/tracks?filename=s${i}.wav`, { token: other.token, raw: wav(100), expect: 201 })).id;
+    await call('POST', `/api/me/sounds/projects/${pid}/tracks?filename=trop.wav`, { token: other.token, raw: wav(100), expect: 402 });
+    await call('POST', `/api/me/sounds/tracks/${last}/duplicate`, { token: other.token, expect: 402 });
+    assert.deepEqual((await call('GET', '/api/me/sounds', { token: other.token })).free, { limit: 30, used: 30 });
+    // Un son mis à la corbeille libère une place ; il n'en revient que s'il reste de la place.
+    await call('DELETE', `/api/me/sounds/tracks/${last}`, { token: other.token });
+    await call('POST', `/api/me/sounds/projects/${pid}/tracks?filename=nouveau.wav`, { token: other.token, raw: wav(100), expect: 201 });
+    await call('POST', `/api/me/sounds/trash/${last}/restore`, { token: other.token, expect: 402 });
+    await call('DELETE', `/api/me/sounds/projects/${pid}`, { token: other.token });
+    // La corbeille vidée : les fichiers de ce compte ne restent pas dans le dossier compté plus bas.
+    await call('DELETE', `/api/me/sounds/trash/projects/${pid}`, { token: other.token });
+    await call('DELETE', `/api/me/sounds/trash/${last}`, { token: other.token });
     const empty = await call('GET', '/api/me/sounds', { token: member.token });
     assert.deepEqual(empty.projects, []);
   });
@@ -82,7 +103,7 @@ try {
     assert.equal((await call('POST', '/api/tools/cancel', { token: fan.token })).subscription.cancelAtPeriodEnd, true);
     await call('GET', '/api/me/sounds', { token: fan.token });
     run('UPDATE tool_subscriptions SET current_period_end = ? WHERE user_id = ?', Date.now() - 1000, fan.id);
-    await call('GET', '/api/me/sounds', { token: fan.token, expect: 403 });
+    assert.deepEqual((await call('GET', '/api/me/sounds', { token: fan.token })).free, { limit: 30, used: 0 });
     assert.equal((await call('GET', '/api/tools', { token: fan.token })).subscription.active, false);
   });
 
@@ -146,7 +167,7 @@ try {
     const cid = data.projects[0].tracks[0].comments[0].id;
     assert.equal(data.projects[0].tracks[0].comments[0].resolved, false);
     assert.equal((await call('PATCH', `/api/me/sounds/comments/${cid}`, { token: member.token, body: { resolved: true } })).resolved, true);
-    await call('PATCH', `/api/me/sounds/comments/${cid}`, { token: listener.token, body: { resolved: false }, expect: 403 });
+    await call('PATCH', `/api/me/sounds/comments/${cid}`, { token: listener.token, body: { resolved: false }, expect: 404 });
     assert.equal((await call('GET', '/api/me/sounds', { token: member.token })).projects[0].tracks[0].comments[0].resolved, true);
     assert.equal((await call('PATCH', `/api/me/sounds/comments/${cid}`, { token: member.token, body: { resolved: false } })).resolved, false);
     // Tout le projet en .zip, par un lien signé : un fichier valide, aux bons noms ; un lien trafiqué est refusé.
@@ -568,7 +589,7 @@ try {
     await call('POST', `/api/me/sounds/projects/${pid}/tracks?filename=Nightfall_140bpm_C%23min.wav`, { token: member.token, raw: wav(), expect: 201 });
     const kept = (await call('POST', `/api/me/sounds/projects/${pid}/tracks?filename=Sans%20infos.wav`, { token: member.token, raw: wav(), expect: 201 })).id;
     await call('PATCH', `/api/me/sounds/tracks/${kept}`, { token: member.token, body: { bpm: 90 } });
-    await call('PATCH', `/api/me/sounds/projects/${pid}`, { token: other.token, body: { kind: 'pack' }, expect: 403 });
+    await call('PATCH', `/api/me/sounds/projects/${pid}`, { token: other.token, body: { kind: 'pack' }, expect: 404 });
     await call('PATCH', `/api/me/sounds/projects/${pid}`, { token: member.token, body: { kind: 'pack' } });
     let p = (await call('GET', '/api/me/sounds', { token: member.token })).projects.find((x) => x.id === pid);
     assert.equal(p.kind, 'pack');

@@ -272,6 +272,15 @@ body.has-player .fab { bottom: calc(88px + env(safe-area-inset-bottom)); }
 dialog { padding: 0; border: 1px solid rgba(255,210,214,.16); border-radius: 24px; background: #150a0c; color: var(--mist); box-shadow: 0 40px 120px -30px rgba(0,0,0,1), 0 0 60px -30px rgba(226,52,68,.6); max-width: calc(100vw - 24px);
   /* App installée sur iPhone : la page passe sous la barre d'état, la fenêtre reste dans la zone visible. */
   top: env(safe-area-inset-top, 0px); bottom: env(safe-area-inset-bottom, 0px); max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
+/* CLOUD gratuit : la barre des sons utilisés et l'invitation à l'abonnement */
+.free-bar { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; margin: 0 0 22px; padding: 16px 20px; border: 1px solid rgba(226,52,68,.35); border-radius: 18px; background: linear-gradient(120deg, rgba(226,52,68,.16), rgba(226,52,68,.04)); }
+.free-bar .free-n { font: 600 13px var(--f-mono); letter-spacing: .04em; text-transform: uppercase; }
+.free-bar .free-n i { display: block; width: 180px; height: 4px; margin-top: 8px; border-radius: 2px; background: rgba(255,255,255,.08); overflow: hidden; }
+.free-bar .free-n i b { display: block; height: 100%; background: var(--ember); }
+.free-bar p { flex: 1 1 260px; margin: 0; font-size: 14px; color: var(--haze); }
+.free-bar .btn { margin-left: auto; }
+#upsell { width: min(460px, calc(100vw - 24px)); }
+#upsell ul { margin: 6px 20px 0; padding-left: 18px; font-size: 14px; line-height: 1.7; }
 dialog::backdrop { background: rgba(5,2,3,.72); backdrop-filter: blur(4px); }
 /* La pochette en grand, avec ses actions en bas */
 #cover-view { width: min(640px, calc(100vw - 24px)); background: #111; }
@@ -760,6 +769,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
       </div>
     </div>
     <p class="error" id="disk-full"></p>
+    <div class="free-bar" id="free-bar" hidden></div>
     <div class="row vanish-accounts" id="vanish-accounts" role="group" aria-label="Comptes" hidden></div>
     <div id="rt-top"></div>
     <div class="tiles" id="tiles"></div>
@@ -849,6 +859,12 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
   <ol class="steps" id="install-steps"></ol>
   <div class="row" style="justify-content:flex-end;padding:16px 20px 20px"><button class="btn btn-primary" type="button" onclick="this.closest('dialog').close()">Compris</button></div>
 </dialog>
+<dialog id="upsell" aria-labelledby="upsell-title">
+  <div class="dlg-head"><b id="upsell-title">Réservé à l'abonnement</b><button class="x" type="button" aria-label="Fermer" onclick="this.closest('dialog').close()">✕</button></div>
+  <p class="muted" style="margin:10px 20px 6px;font-size:14px" id="upsell-why"></p>
+  <ul><li>Sons <b>illimités</b> (le CLOUD gratuit s'arrête à 30)</li><li>Liens d'écoute privés, avec qui a écouté et jusqu'où</li><li>Collaborateurs sur tes projets</li><li>Packs de prods à vendre, mails aux beatmakers et rappeurs</li><li>Fiche artiste, fond de projet, ZIP, projets des autres enregistrés</li></ul>
+  <div class="row" style="justify-content:flex-end;gap:10px;padding:18px 20px 20px"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close()">Plus tard</button><a class="btn btn-primary" href="cloud">S'abonner · 1,99 €/mois</a></div>
+</dialog>
 <dialog id="share"></dialog>
 <dialog id="settings"></dialog>
 <dialog id="trash"></dialog>
@@ -886,6 +902,13 @@ const avatar = (p) => (window.OniriqueAccount ? window.OniriqueAccount.avatar(p)
 // La pochette réduite par le serveur (WebP, 960 px suffit à la grande pochette sur écran Retina).
 const coverOf = (p, cls) => (p.cover ? el("img", { src: p.cover + "?w=960", alt: "", decoding: "async", draggable: false, className: cls || "" }) : Object.assign(el("div", { className: "cover-ph " + (cls || "") }), { innerHTML: '<svg viewBox="0 0 24 24"><path d="M12 1.5 13.3 10.7 22.5 12 13.3 13.3 12 22.5 10.7 13.3 1.5 12 10.7 10.7Z" fill="currentColor"/></svg>' }));
 
+// CLOUD gratuit : un refus « abonnement demandé » (402, ou 403 pour un compte gratuit) ouvre l'invitation à s'abonner.
+function upsold(error) {
+  if (error.status !== 402 && !(error.status === 403 && data && data.free)) return error;
+  $("upsell-why").textContent = error.message;
+  if (!$("upsell").open) $("upsell").showModal();
+  return Object.assign(error, { upsold: true });
+}
 async function api(method, path, body) {
   const response = await fetch("/api" + path, {
     method,
@@ -893,7 +916,7 @@ async function api(method, path, body) {
     body: body ? JSON.stringify(body) : undefined,
   }).catch(() => { throw new Error("Serveur injoignable. Réessaie dans un instant."); });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw Object.assign(new Error(data.error || "Erreur " + response.status), { status: response.status });
+  if (!response.ok) throw upsold(Object.assign(new Error(data.error || "Erreur " + response.status), { status: response.status }));
   window.RockyBuild?.fromApi(method, path, body); // le mini Rocky bâtisseur, dans l'application (assets/rocky-builder.js)
   return data;
 }
@@ -926,7 +949,7 @@ function uploadOnce(path, file, onProgress, method) {
     xhr.onload = () => {
       let data = {};
       try { data = JSON.parse(xhr.responseText); } catch {}
-      xhr.status < 300 ? resolve(data) : reject(Object.assign(new Error(data.error || "Erreur " + xhr.status), { status: xhr.status }));
+      xhr.status < 300 ? resolve(data) : reject(upsold(Object.assign(new Error(data.error || "Erreur " + xhr.status), { status: xhr.status })));
     };
     xhr.onerror = () => reject(new Error("L'envoi a été interrompu. Réessaie."));
     xhr.send(file);
@@ -937,7 +960,7 @@ let data = null;
 // VANISH (fondateurs) : les projets de tous les comptes, le temps de l'onglet.
 let vanish = sessionStorage.getItem("onirique.vanish") === "1";
 let vanishAccount = null; // le compte choisi dans VANISH ; null : tous
-const fail = (error) => { $("error").textContent = error.message; if ($("grid-view").hidden === false) alert(error.message); };
+const fail = (error) => { $("error").textContent = error.message; if (error.upsold) return; if ($("grid-view").hidden === false) alert(error.message); };
 const openId = () => { const m = /^#\/p\/(\d+)/.exec(location.hash); return m ? Number(m[1]) : null; };
 const folderId = () => { const m = /^#\/f\/(\d+)/.exec(location.hash); return m ? Number(m[1]) : null; };
 const folder = (id = folderId()) => data.folders.find((f) => f.id === id);
@@ -1363,6 +1386,13 @@ function renderGrid() {
   $("vanish-accounts").replaceChildren(...(data.vanish ? [chip("Tous", null), ...accounts.map((a) => chip(a.name, a.id, a))] : []));
   $("owner-name").textContent = data.vanish ? "VANISH : " + (chosen ? chosen.name : "tous les comptes") : data.owner.name;
   $("quota").replaceChildren(size(q.used) + " sur " + size(q.limit), el("i", {}, el("b", { style: "width:" + Math.min(100, q.used / q.limit * 100) + "%" })));
+  const fr = data.free;
+  $("free-bar").hidden = !fr || data.vanish;
+  if (fr) $("free-bar").replaceChildren(
+    el("div", { className: "free-n" }, "CLOUD gratuit · " + fr.used + " / " + fr.limit + " sons", el("i", {}, el("b", { style: "width:" + Math.min(100, fr.used / fr.limit * 100) + "%" }))),
+    el("p", { textContent: fr.used >= fr.limit ? "Ton CLOUD gratuit est plein. Passe à l'abonnement pour envoyer des sons sans limite, les partager en privé et voir qui les écoute."
+      : "Sons illimités, liens d'écoute privés avec stats, collaborateurs, packs à vendre : tout le CLOUD pour 1,99 € par mois." }),
+    el("a", { className: "btn btn-primary", href: "cloud" }, "Passer à l'abonnement"));
   $("disk-full").textContent = q.full ? "L'espace de stockage d'ONIRIQUE est plein pour le moment : les envois sont fermés. Tes sons restent écoutables." : "";
   // À la racine : les dossiers, puis les projets hors dossier (les miens et ceux enregistrés), du plus récent au plus ancien.
   const here = (x) => (x.folderId || null) === (f ? f.id : null);
@@ -1999,7 +2029,7 @@ async function runUploads() {
       job.row.title = error.message;
       $("error").textContent = job.file.name + " : " + error.message;
       // Plus de place (quota ou disque) : les fichiers suivants ne passeraient pas non plus.
-      if (error.status === 507 || error.status === 413) for (const rest of uploads) if (rest.state === "wait") setJob(rest, "error", "Annulé", 1);
+      if (error.status === 507 || error.status === 413 || error.status === 402) for (const rest of uploads) if (rest.state === "wait") setJob(rest, "error", "Annulé", 1);
     }
   }
   uploading = false;
@@ -4294,6 +4324,6 @@ lightClose($("settings"));
   }
 })();
 </script>
-<script src="assets/account.js?v=11"></script>
+<script src="assets/account.js?v=12"></script>
 <script src="assets/site-nav.js?v=18"></script>
 </html>

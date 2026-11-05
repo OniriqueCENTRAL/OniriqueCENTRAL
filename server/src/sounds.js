@@ -396,6 +396,7 @@ export const soundsDir = path.join(config.dataDir, 'sounds');
 fs.mkdirSync(soundsDir, { recursive: true });
 
 const MAX_FILE = 500 * 1024 * 1024;
+export const FREE_TRACKS = 30;
 const GB = 1024 ** 3;
 const str = (value, max = 200) => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, max) : '');
 const id = (value) => (Number.isInteger(Number(value)) && Number(value) > 0 ? Number(value) : 0);
@@ -706,7 +707,18 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   sweepSounds();
   const member = (req, _res, next) => (can(req.user, 'sounds') ? next()
     : next(new HttpError(403, 'ONIRIQUE CLOUD demande un abonnement : 1,99 € par mois ou 9,99 € par an, sur onirique.store/cloud.')));
-  const me = [requireUser, member];
+  // CLOUD gratuit : tout compte connecté y entre, avec FREE_TRACKS sons au plus ; le reste (liens d'écoute, packs, mails,
+  // collaborateurs, fiche artiste, fond, ZIP, projets enregistrés) demande l'abonnement (pro).
+  const me = [requireUser];
+  const pro = [requireUser, member];
+  const ownTracks = (userId) => get(`SELECT COUNT(*) AS n FROM sound_tracks t JOIN sound_projects p ON p.id = t.project_id
+    WHERE p.user_id = ? AND p.kind != 'trash' AND p.trashed_at IS NULL AND t.via_link IS NULL`, userId).n;
+  /** Refuse d'ajouter n sons dans l'espace d'un compte gratuit qui dépasserait FREE_TRACKS. */
+  function freeRoom(ownerId, n = 1) {
+    const owner = get('SELECT id, role FROM users WHERE id = ?', ownerId);
+    if (!owner || can(owner, 'sounds') || ownTracks(ownerId) + n <= FREE_TRACKS) return;
+    throw new HttpError(402, `CLOUD gratuit : ${FREE_TRACKS} sons au plus. Passe à l'abonnement ONIRIQUE CLOUD (1,99 € par mois ou 9,99 € par an) pour des sons sans limite.`);
+  }
 
   const project = (req, pid) => {
     const row = get(`SELECT p.* FROM sound_projects p WHERE p.id = ? AND ${ACCESS}`, id(pid), req.user.id, req.user.id);
@@ -789,7 +801,9 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     const d = disk();
     const scans = scansOf(u);
     res.json({
-      owner: person(req.user), founder: req.user.role === 'founder', vanish, scanReady: scanConfigured(),
+      owner: person(req.user), founder: req.user.role === 'founder',
+      // CLOUD gratuit : la page montre la limite de sons et pousse vers l'abonnement.
+      free: can(req.user, 'sounds') ? null : { limit: FREE_TRACKS, used: ownTracks(u) }, vanish, scanReady: scanConfigured(),
       // Le compte de paiement et les licences, pour les badges de vente des packs.
       store: projects.some((p) => p.kind === 'pack' && p.user_id === u) ? { seller: sellerView(u), licenses: licensesOf(u) } : null,
       quota: { used: usedBy(req.user.id), limit: quotaBytes(), full: d.used / d.total >= diskMax() },
@@ -917,6 +931,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     const title = str(req.body.title, 120);
     if (!title) throw new HttpError(400, 'Donne un nom au projet.');
     const kind = KINDS.includes(req.body.kind) ? req.body.kind : '';
+    if (kind === 'pack' && !can(req.user, 'sounds')) throw new HttpError(402, "Les packs de prods à vendre font partie de l'abonnement ONIRIQUE CLOUD.");
     res.status(201).json({ id: run('INSERT INTO sound_projects (user_id, title, kind, created_at) VALUES (?, ?, ?, ?)', req.user.id, title, kind, now()).lastInsertRowid });
   });
   app.patch('/api/me/sounds/projects/:id', ...me, (req, res) => {
@@ -931,6 +946,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     // nom du fichier de chaque son ; la page détecte ensuite sur le son ceux que le nom ne donne pas.
     if (req.body.kind !== undefined) {
       const kind = KINDS.includes(req.body.kind) ? req.body.kind : '';
+      if (kind === 'pack' && !can(req.user, 'sounds')) throw new HttpError(402, "Les packs de prods à vendre font partie de l'abonnement ONIRIQUE CLOUD.");
       if (kind === 'pack' && get('SELECT 1 FROM sound_tracks WHERE project_id = ? AND via_link IS NOT NULL', p.id)) throw new HttpError(400, "Cette playlist contient des sons d'autres membres : elle ne peut pas devenir un pack.");
       run('UPDATE sound_projects SET kind = ? WHERE id = ?', kind, ownProject(req, p.id).id);
       if (kind === 'pack') {
@@ -972,14 +988,14 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   });
   // Une image du mail d'un pack (en tête ou sous le message), importée depuis l'ordinateur : son adresse complète,
   // que le brouillon garde comme une adresse collée.
-  app.put('/api/me/sounds/projects/:id/mail/image', ...me, wrap(async (req, res) => {
+  app.put('/api/me/sounds/projects/:id/mail/image', ...pro, wrap(async (req, res) => {
     const p = ownProject(req, req.params.id);
     if (p.kind !== 'pack') throw new HttpError(400, "Seul un pack de prods a un mail.");
     rateLimit(`sounds-cover:${req.user.id}`, 30);
     res.json({ url: config.siteUrl + media(await receiveImage(req, 5 * 1024 * 1024)) });
   }));
   // L'aperçu du mail d'un pack, tel qu'il est en train d'être rempli (rien n'est enregistré ni envoyé).
-  app.post('/api/me/sounds/projects/:id/mail/preview', ...me, wrap(async (req, res) => {
+  app.post('/api/me/sounds/projects/:id/mail/preview', ...pro, wrap(async (req, res) => {
     const p = ownProject(req, req.params.id);
     rateLimit(`sounds-mail:${req.user.id}`, 600);
     const tracks = all('SELECT * FROM sound_tracks WHERE project_id = ? ORDER BY position, id', p.id);
@@ -997,7 +1013,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     res.json({ ok: true, trashDays: TRASH_DAYS });
   });
   // Le fond de la page du projet : une image (8 Mo au plus) ; DELETE le retire.
-  app.put('/api/me/sounds/projects/:id/background', ...me, wrap(async (req, res) => {
+  app.put('/api/me/sounds/projects/:id/background', ...pro, wrap(async (req, res) => {
     const p = project(req, req.params.id);
     rateLimit(`sounds-cover:${req.user.id}`, 30);
     const name = await receiveImage(req, 8 * 1024 * 1024);
@@ -1005,7 +1021,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (p.background) removeMedia(p.background);
     res.json({ background: media(name) });
   }));
-  app.delete('/api/me/sounds/projects/:id/background', ...me, (req, res) => {
+  app.delete('/api/me/sounds/projects/:id/background', ...pro, (req, res) => {
     const p = project(req, req.params.id);
     run('UPDATE sound_projects SET background = NULL WHERE id = ?', p.id);
     if (p.background) removeMedia(p.background);
@@ -1013,7 +1029,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   });
   // La fiche « À propos de l'artiste » du membre : texte, lien (http ou https) et affichage ; la photo à part.
   const ensureAbout = (userId) => run('INSERT OR IGNORE INTO sound_artists (user_id, updated_at) VALUES (?, ?)', userId, now());
-  app.patch('/api/me/sounds/about', ...me, (req, res) => {
+  app.patch('/api/me/sounds/about', ...pro, (req, res) => {
     ensureAbout(req.user.id);
     const b = req.body || {};
     if (typeof b.bio === 'string') {
@@ -1030,7 +1046,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     run('UPDATE sound_artists SET updated_at = ? WHERE user_id = ?', now(), req.user.id);
     res.json(aboutOf(req.user.id, true));
   });
-  app.put('/api/me/sounds/about/photo', ...me, wrap(async (req, res) => {
+  app.put('/api/me/sounds/about/photo', ...pro, wrap(async (req, res) => {
     rateLimit(`sounds-cover:${req.user.id}`, 30);
     const name = await receiveImage(req, 5 * 1024 * 1024);
     ensureAbout(req.user.id);
@@ -1039,7 +1055,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (before) removeMedia(before);
     res.json({ photo: media(name) });
   }));
-  app.delete('/api/me/sounds/about/photo', ...me, (req, res) => {
+  app.delete('/api/me/sounds/about/photo', ...pro, (req, res) => {
     const before = get('SELECT photo FROM sound_artists WHERE user_id = ?', req.user.id)?.photo;
     run('UPDATE sound_artists SET photo = NULL WHERE user_id = ?', req.user.id);
     if (before) removeMedia(before);
@@ -1058,6 +1074,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   app.post('/api/me/sounds/projects/:id/tracks', ...me, wrap(async (req, res) => {
     const p = project(req, req.params.id);
     rateLimit(`sounds-upload:${req.user.id}`, 200, 3600_000);
+    freeRoom(p.user_id);
     const file = await receiveAudio(req, p.user_id);
     // Dans un pack, le BPM et la clé écrits dans le nom du fichier deviennent ceux de la prod.
     const prod = p.kind === 'pack' ? prodFromFilename(file.filename) : { title: file.filename.replace(/\.[a-z0-9]{2,5}$/i, ''), bpm: 0, key: '' };
@@ -1146,6 +1163,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (t.via_link) throw new HttpError(400, "Ce son vient d'un autre membre : il ne se duplique pas.");
     rateLimit(`sounds-upload:${req.user.id}`, 200, 3600_000);
     const v = get('SELECT * FROM sound_versions WHERE id = ?', t.current_id);
+    freeRoom(t.owner_id);
     room(req, v.size, t.owner_id);
     const storedAs = crypto.randomBytes(16).toString('hex');
     fs.copyFileSync(path.join(soundsDir, v.stored_as), path.join(soundsDir, storedAs));
@@ -1165,6 +1183,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   app.post('/api/me/sounds/tracks/:id/add', ...me, (req, res) => {
     const t = track(req, req.params.id), to = project(req, req.body.projectId);
     if (to.id === t.project_id) throw new HttpError(400, 'Ce titre est déjà dans ce projet.');
+    if (!t.via_link) freeRoom(to.user_id);
     const versions = all('SELECT * FROM sound_versions WHERE track_id = ? ORDER BY id', t.id);
     // Un autre propriétaire (projet où l'on collabore) : le fichier compte dans son espace à lui.
     if (to.user_id !== t.owner_id && !t.via_link) room(req, versions.reduce((n, v) => n + v.size, 0), to.user_id);
@@ -1187,7 +1206,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   }
   // Ajouter à une de mes playlists un son d'un projet enregistré (le lien d'un autre membre) : rien n'est copié sur le
   // disque ni compté dans mon espace, et le son s'en va si l'accès est coupé.
-  app.post('/api/me/sounds/saves/:id/add', ...me, (req, res) => {
+  app.post('/api/me/sounds/saves/:id/add', ...pro, (req, res) => {
     const save = ownSave(req), to = project(req, req.body.projectId);
     if (to.kind !== 'playlist') throw new HttpError(400, "Les sons des autres ne s'ajoutent qu'à une playlist.");
     const link = get(`SELECT l.* FROM sound_links l JOIN users u ON u.id = l.user_id WHERE l.id = ? AND ${LINK_OPEN} AND ${canSql('sounds', 'u.role', 'u.id')}`, save.link_id);
@@ -1235,6 +1254,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   // Restaurer : le titre revient à la fin de son projet, ou dans « Sons restaurés » si ce projet a été supprimé entre-temps.
   app.post('/api/me/sounds/trash/:id/restore', ...me, (req, res) => {
     const t = trashed(req, req.params.id);
+    if (!t.via_link) freeRoom(req.user.id);
     const to = get(`SELECT id FROM sound_projects WHERE id = ? AND kind != 'trash' AND trashed_at IS NULL`, t.trashed_from)?.id
       ?? get(`SELECT id FROM sound_projects WHERE user_id = ? AND kind = '' AND title = 'Sons restaurés'`, req.user.id)?.id
       ?? run(`INSERT INTO sound_projects (user_id, title, kind, created_at) VALUES (?, 'Sons restaurés', '', ?)`, req.user.id, now()).lastInsertRowid;
@@ -1242,7 +1262,9 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     res.json({ ok: true, projectId: to });
   });
   app.post('/api/me/sounds/trash/projects/:id/restore', ...me, (req, res) => {
-    run('UPDATE sound_projects SET trashed_at = NULL WHERE id = ?', trashedProject(req, req.params.id).id);
+    const tp = trashedProject(req, req.params.id);
+    freeRoom(req.user.id, get('SELECT COUNT(*) AS n FROM sound_tracks WHERE project_id = ? AND via_link IS NULL', tp.id).n);
+    run('UPDATE sound_projects SET trashed_at = NULL WHERE id = ?', tp.id);
     res.json({ ok: true });
   });
   app.delete('/api/me/sounds/trash/projects/:id', ...me, (req, res) => {
@@ -1278,7 +1300,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   });
 
   // Les liens d'écoute : un projet entier ou un seul titre, créés par l'auteur ou par un collaborateur (chacun gère les siens).
-  app.post('/api/me/sounds/links', ...me, (req, res) => {
+  app.post('/api/me/sounds/links', ...pro, (req, res) => {
     rateLimit(`sounds:${req.user.id}`, 300);
     const projectId = req.body.projectId ? project(req, req.body.projectId).id : null;
     const trackId = !projectId && req.body.trackId ? track(req, req.body.trackId).id : null;
@@ -1300,7 +1322,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     return l;
   };
   // Les réglages d'un lien : téléchargement, compte exigé, mot de passe ('' le retire), date de fin (null la retire).
-  app.patch('/api/me/sounds/links/:id', ...me, (req, res) => {
+  app.patch('/api/me/sounds/links/:id', ...pro, (req, res) => {
     const l = ownLink(req);
     if (typeof req.body.password === 'string' && req.body.password && req.body.password.length < 4) throw new HttpError(400, 'Mot de passe : 4 caractères au moins.');
     const at = req.body.expiresAt ? Number(req.body.expiresAt) : null;
@@ -1312,7 +1334,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     res.json(linkView(get('SELECT * FROM sound_links WHERE id = ?', l.id)));
   });
   // Une nouvelle adresse pour le lien : l'ancienne ne s'ouvre plus, les réglages et les écoutes restent.
-  app.post('/api/me/sounds/links/:id/reset', ...me, (req, res) => {
+  app.post('/api/me/sounds/links/:id/reset', ...pro, (req, res) => {
     const l = ownLink(req);
     run('UPDATE sound_links SET token = ? WHERE id = ?', crypto.randomBytes(12).toString('base64url'), l.id);
     res.json(linkView(get('SELECT * FROM sound_links WHERE id = ?', l.id)));
@@ -1354,7 +1376,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     res.json({ ok: true });
   });
 
-  app.post('/api/me/sounds/projects/:id/invite', ...me, (req, res) => {
+  app.post('/api/me/sounds/projects/:id/invite', ...pro, (req, res) => {
     const p = ownProject(req, req.params.id);
     const token = crypto.randomBytes(12).toString('base64url');
     run('UPDATE sound_projects SET invite_token = ? WHERE id = ?', token, p.id);
@@ -1377,13 +1399,13 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (!p || !p.invite_token) throw new HttpError(404, "Cette invitation n'existe pas ou n'est plus valable.");
     return p;
   };
-  app.get('/api/sounds/invite/:token', ...me, (req, res) => {
+  app.get('/api/sounds/invite/:token', ...pro, (req, res) => {
     const p = invitation(req.params.token);
     res.json({ project: p.title, cover: media(p.cover), owner: person({ id: p.user_id, name: p.owner_name, avatar: p.owner_avatar }),
       projectId: p.id, mine: p.user_id === req.user.id,
       already: !!get('SELECT 1 FROM sound_collabs WHERE project_id = ? AND user_id = ?', p.id, req.user.id) });
   });
-  app.post('/api/sounds/invite/:token/accept', ...me, (req, res) => {
+  app.post('/api/sounds/invite/:token/accept', ...pro, (req, res) => {
     rateLimit(`sounds-invite:${req.user.id}`, 60);
     const p = invitation(req.params.token);
     if (p.user_id === req.user.id) throw new HttpError(400, "C'est ton propre projet.");
@@ -1472,7 +1494,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   const linkTitle = (link) => (link.track_id ? get('SELECT title FROM sound_tracks WHERE id = ?', link.track_id)?.title
     : get('SELECT title FROM sound_projects WHERE id = ?', link.project_id)?.title) || '';
 
-  app.post('/api/sounds/share/:token/save', ...me, (req, res) => {
+  app.post('/api/sounds/share/:token/save', ...pro, (req, res) => {
     const link = openLink(req);
     if (!saveState(req, link).canSave) throw new HttpError(400, "Ce projet est déjà dans ONIRIQUE CLOUD : c'est le tien, ou tu y collabores.");
     run('INSERT OR IGNORE INTO sound_saves (user_id, link_id, pass, created_at) VALUES (?, ?, ?, ?)',
@@ -1604,7 +1626,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
 
   // Télécharger un projet entier : un lien signé de dix minutes (un téléchargement ne porte pas la connexion), qui vérifie
   // encore l'accès au moment de l'envoi, puis le .zip, écrit au fil de l'envoi.
-  app.post('/api/me/sounds/projects/:id/zip', ...me, (req, res) => {
+  app.post('/api/me/sounds/projects/:id/zip', ...pro, (req, res) => {
     const p = project(req, req.params.id), e = now() + 10 * 60_000;
     res.json({ url: `/api/sounds/zip/${p.id}?u=${req.user.id}&e=${e}&s=${sign(`zip.${p.id}.${req.user.id}.${e}`)}` });
   });
@@ -1622,10 +1644,10 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     await writeZip(res, entries).catch((error) => { console.error(`[zip] projet ${p.id} : ${error.message}`); res.destroy(); });
   }));
 
-  mountBeatStore(app, { me, track, room, receiveFile, openLink, linkTracks, linkProject, soundsDir, audioType, wrap });
-  mountPackSend(app, { me, ownProject, sign, wrap });
-  mountBeatTube(app, { me, track, soundsDir, wrap, receiveImage, removeMedia });
-  mountBeatScan(app, { me, soundsDir });
+  mountBeatStore(app, { me: pro, track, room, receiveFile, openLink, linkTracks, linkProject, soundsDir, audioType, wrap });
+  mountPackSend(app, { me: pro, ownProject, sign, wrap });
+  mountBeatTube(app, { me: pro, track, soundsDir, wrap, receiveImage, removeMedia });
+  mountBeatScan(app, { me: pro, soundsDir });
 }
 
 // Les rappels de sortie : sept jours avant et la veille, à partir de 9 h (heure de Paris), un e-mail à l'auteur du projet et
