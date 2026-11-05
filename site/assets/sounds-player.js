@@ -222,6 +222,7 @@ html.op-stage-open, html.op-stage-open body { overflow: hidden; }
   .op-stage-lyrics { padding: 6vh 22px 42vh; }
   .op-stage-lyrics p { font-size: clamp(25px, 7.4vw, 34px); }
 }
+.op-ext .op-tools, .op-ext .op-say, .op-ext .op-comments, .op-ext .op-chip, .op-full.op-ext .op-full-bar > div > button:nth-child(2), .op-full.op-ext .op-full-bar > div + button, .op-full.op-ext .op-full-controls > button:first-child { visibility: hidden; }
 /* Choisir des lignes pour une story : les lignes touchées s'allument, la lecture ne fait plus défiler. */
 .op-stage.picking .op-stage-lyrics p { color: rgba(255,236,238,.36); cursor: pointer; transform: none; text-shadow: none; }
 .op-stage.picking .op-stage-lyrics p.picked { color: #fff; }
@@ -746,6 +747,8 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
       stageSub.textContent = t.subtitle || "";
       fullBg.style.backgroundImage = stageBg.style.backgroundImage = t.cover ? `url("${t.cover}?w=960")` : "";
       download.hidden = !t.downloadUrl;
+      // Un titre d'une plateforme (Spotify) : ni commentaires, ni vitesse, ni boucle, ni paroles, ni partage, ni export.
+      for (const node of [sheet, full, stage]) node.classList.toggle("op-ext", !!t.engine || /^(x|pv)/.test(t.key));
       if (t.downloadUrl) download.href = t.downloadUrl;
       listComments(); listQueue(); tick();
       if ("mediaSession" in navigator) navigator.mediaSession.metadata = new MediaMetadata({ title: t.title, artist: t.subtitle || "", artwork: t.cover ? [{ src: t.cover + "?w=480" }] : [] });

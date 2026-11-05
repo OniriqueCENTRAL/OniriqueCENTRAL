@@ -700,6 +700,8 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 .library-empty { margin: 0; color: var(--haze); font-size: 13px; }
 @media (min-width: 1100px) {
   body.has-library { padding-left: 280px; }
+  /* Le lecteur et ses panneaux restent dans la partie à droite de la colonne des playlists. */
+  body.has-library .op-pill, body.has-library .op-sheet, body.has-library .op-queue { left: calc(50% + 140px); width: min(1120px, calc(100vw - 304px)); }
   .library { position: fixed; top: 0; bottom: 0; left: 0; z-index: 30; width: 280px; margin: 0; padding: calc(24px + env(safe-area-inset-top)) 14px 120px; overflow-y: auto;
     border-right: 1px solid var(--line); background: rgba(13,8,9,.72); backdrop-filter: blur(14px); }
   .library-head { padding: 6px 6px 10px; border-bottom: 1px solid rgba(255,210,214,.08); }
@@ -842,7 +844,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 <dialog id="scan"></dialog>
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close('cancel')">Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
-<script src="assets/sounds-player.js?v=21"></script>
+<script src="assets/sounds-player.js?v=22"></script>
 <script src="assets/platforms.js?v=11"></script>
 <script src="assets/audio-kit.js?v=2"></script>
 <script src="assets/pdf-kit.js"></script>
@@ -2060,6 +2062,10 @@ document.addEventListener("contextmenu", (event) => {
   event.preventDefault();
   if (!data || !$("gate").hidden || event.target.closest("dialog[open]")) return;
   const row = event.target.closest(".trk");
+  // Un titre Spotify : seulement ce qui a du sens (l'écouter sur Spotify, le retirer de la playlist).
+  if (row && row.dataset.key) return menu(atPointer(event), [
+    { label: "Écouter sur Spotify", icon: "link", onclick: () => row.querySelector(".pf-link").click() },
+    { label: "Retirer de la playlist", icon: "close", onclick: () => row.querySelector(".dots").click() }]);
   if (row) return openDetails(Number(row.dataset.id));
   addMenu(atPointer(event));
 });
