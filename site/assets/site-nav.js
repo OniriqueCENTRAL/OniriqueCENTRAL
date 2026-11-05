@@ -439,5 +439,6 @@ header .sn-lang { margin-left: 8px; }
   }
 })();
 
-// ROCKY, le chatbot IA du site (assets/rocky.js), sur toutes les pages qui ont cette navigation.
-document.head.append(Object.assign(document.createElement("script"), { src: "/assets/rocky.js?v=3", defer: true }));
+// ROCKY, le chatbot IA du site (assets/rocky.js), sur toutes les pages qui ont cette navigation, sauf dans l'application
+// ONIRIQUE CENTRAL (son preload, app/main/tool-preload.js, y pose oniriqueApp).
+if (!window.oniriqueApp && !window.oniriqueDialog) document.head.append(Object.assign(document.createElement("script"), { src: "/assets/rocky.js?v=3", defer: true }));
