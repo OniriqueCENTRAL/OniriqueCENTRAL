@@ -104,13 +104,13 @@ async function activity() {
   current = null; shown = "";
   history.replaceState(null, "", "messages");
   $("thread").replaceChildren(el("p", { className: "empty", textContent: "Chargement…" }));
-  const list = await api("GET", "/me/notifications");
+  const list = await api("GET", "/me/activity");
   $("thread").replaceChildren(el("div", { className: "thread-head" }, el("b", { textContent: "Activité" })),
     el("div", { className: "msgs" }, ...(list.length ? list.map((n) => el("a", { className: "note" + (n.read ? "" : " new"), href: n.kind === "follow" && n.actor.handle ? "profil?u=" + encodeURIComponent(n.actor.handle) : "profil?u=" + encodeURIComponent(n.page || "") },
       el("img", { src: avatarOf(n.actor.avatar), alt: "" }),
       el("span", {}, el("b", { textContent: n.actor.name }), " " + SAYS[n.kind] + (n.body ? " : « " + n.body + " »" : ""), el("time", { textContent: time(n.at) }))))
       : [el("p", { className: "empty", textContent: "Rien de neuf pour l'instant. Quand quelqu'un s'abonne à ta page ou la commente, c'est ici." })])));
-  if (list.some((n) => !n.read)) await api("POST", "/me/notifications/read").catch(() => {});
+  if (list.some((n) => !n.read)) await api("POST", "/me/activity/read").catch(() => {});
   drawList().catch(() => {});
 }
 

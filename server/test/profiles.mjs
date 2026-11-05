@@ -78,10 +78,10 @@ try {
     assert.deepEqual((await call('GET', '/api/profiles/nov.music/follows', { token: a.token })).map((x) => [x.handle, x.followed]), [['lou', false]]);
     assert.deepEqual((await call('GET', '/api/profiles/lou/follows?side=following')).map((x) => x.handle), ['nov.music']);
     // Nov : deux commentaires et un seul abonnement (le réabonnement ne prévient pas deux fois) ; Lou : la réponse.
-    assert.deepEqual((await call('GET', '/api/me/notifications', { token: a.token })).map((n) => n.kind), ['comment', 'comment', 'follow']);
-    assert.deepEqual((await call('GET', '/api/me/notifications', { token: b.token })).map((n) => n.kind), ['reply']);
+    assert.deepEqual((await call('GET', '/api/me/activity', { token: a.token })).map((n) => n.kind), ['comment', 'comment', 'follow']);
+    assert.deepEqual((await call('GET', '/api/me/activity', { token: b.token })).map((n) => n.kind), ['reply']);
     assert.equal((await call('GET', '/api/me/inbox-count', { token: a.token })).notifications, 3);
-    await call('POST', '/api/me/notifications/read', { token: a.token });
+    await call('POST', '/api/me/activity/read', { token: a.token });
     assert.equal((await call('GET', '/api/me/inbox-count', { token: a.token })).notifications, 0);
   });
   await step('les playlists publiques d’une page et « Découvrir »', async () => {

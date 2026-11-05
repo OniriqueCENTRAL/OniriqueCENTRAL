@@ -204,13 +204,13 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
   });
 
   // L'activité : qui s'est abonné, a commenté ma page ou répondu à mon commentaire ; et les compteurs du menu.
-  app.get('/api/me/notifications', requireUser, (req, res) => {
+  app.get('/api/me/activity', requireUser, (req, res) => {
     const rows = all(`SELECT n.*, u.name, u.avatar, pr.handle FROM user_notifications n JOIN users u ON u.id = n.actor_id
       LEFT JOIN user_profiles pr ON pr.user_id = u.id WHERE n.user_id = ? ORDER BY n.created_at DESC, n.id DESC LIMIT 100`, req.user.id);
     res.set('Cache-Control', 'no-store').json(rows.map((n) => ({ id: n.id, kind: n.kind, page: n.page, body: n.body, at: n.created_at, read: !!n.read_at,
       actor: person({ id: n.actor_id, name: n.name, avatar: n.avatar, handle: n.handle }) })));
   });
-  app.post('/api/me/notifications/read', requireUser, (req, res) => {
+  app.post('/api/me/activity/read', requireUser, (req, res) => {
     run('UPDATE user_notifications SET read_at = ? WHERE user_id = ? AND read_at IS NULL', now(), req.user.id);
     res.json({ ok: true });
   });
