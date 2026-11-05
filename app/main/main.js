@@ -75,7 +75,7 @@ function toolView(tool, lang) {
       });
     });
     web.on('dom-ready', () => {
-      web.insertCSS(TOOL_SKIN).catch(() => {});
+      web.insertCSS(TOOL_SKIN + (accentVars ? `:root { ${accentVars} }` : '')).catch(() => {});
       // Les fenêtres « OK / Annuler » de la page : celles de l'application (voir tool:dialog), plus la boîte de Windows.
       web.executeJavaScript(`if (window.oniriqueDialog) {
         window.alert = (m) => { window.oniriqueDialog('alert', m); };
@@ -95,6 +95,21 @@ function toolView(tool, lang) {
   })());
   return toolViews.get(tool);
 }
+
+// La couleur d'accent choisie dans les Paramètres : posée sur CUT, CLOUD (variables de tool-skin.css) et les fenêtres de
+// confirmation, à chaque page chargée et à chaque changement.
+let accentVars = '';
+ipcMain.handle('theme:accent', async (event, p) => {
+  if (event.sender !== win?.webContents) return false;
+  const ok = (v) => typeof v === 'string' && /^\d{1,3}, \d{1,3}, \d{1,3}$/.test(v);
+  if (!p || !ok(p.acc) || !ok(p.hi) || !ok(p.lo)) return false;
+  accentVars = `--acc: ${p.acc} !important; --acc-hi: ${p.hi} !important; --acc-lo: ${p.lo} !important;`;
+  for (const pending of toolViews.values()) {
+    const view = await pending.catch(() => null);
+    if (view && !view.webContents.isDestroyed()) view.webContents.executeJavaScript(`document.documentElement.style.cssText += ${JSON.stringify(accentVars)}`).catch(() => {});
+  }
+  return true;
+});
 
 // Spotify connecté sur cet appareil (son cookie de session dans la session de CUT et CLOUD), et la déconnexion.
 const webSession = () => session.fromPartition('persist:onirique-web');
@@ -127,7 +142,7 @@ ipcMain.on('tool:dialog', (event, kind, message, value) => {
   ipcMain.on('dialog:answer', onAnswer);
   dialogWin.on('closed', () => reply(kind === 'prompt' ? null : kind === 'alert'));
   dialogWin.once('ready-to-show', () => dialogWin.show());
-  dialogWin.loadFile(path.join(__dirname, '..', 'renderer', 'dialog.html'), { query: { kind, message: String(message).slice(0, 2000), value: String(value).slice(0, 500) } });
+  dialogWin.loadFile(path.join(__dirname, '..', 'renderer', 'dialog.html'), { query: { kind, message: String(message).slice(0, 2000), value: String(value).slice(0, 500), accent: accentVars } });
 });
 
 /** À la connexion ou à la déconnexion, les vues de l'ancien compte disparaissent. */

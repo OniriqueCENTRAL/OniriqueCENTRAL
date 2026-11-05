@@ -1,4 +1,4 @@
-import { h, toast, eyebrow, button, attempt, led, navIcon, starKnob, ROLES, isStaff, hasPanel, defaultAvatar } from './ui.js';
+import { h, toast, eyebrow, button, attempt, led, navIcon, starKnob, ROLES, isStaff, hasPanel, defaultAvatar, modal, applyAccent, DEFAULT_ACCENT } from './ui.js';
 import { authView, offlineView } from './views/auth.js';
 import { libraryView, detailView, status } from './views/library.js';
 import { licensesView } from './views/licenses.js';
@@ -87,12 +87,53 @@ function titleStar() {
   return box;
 }
 
+//------------------------------------------------------------------------------ Paramètres : la couleur de l'application
+// La couleur choisie colore toute l'application (et CUT, CLOUD, les fenêtres de confirmation) ; gardée sur ce PC.
+const ACCENTS = [['#e5384a', 'Braise'], ['#ff6a3d', 'Corail'], ['#e8b33a', 'Or'], ['#22c28a', 'Émeraude'], ['#2bb8d6', 'Lagon'],
+  ['#3d7bff', 'Océan'], ['#8b5cf6', 'Améthyste'], ['#e64aa8', 'Fuchsia'], ['#a3a3a3', 'Acier']];
+const savedAccent = () => { try { return localStorage.getItem('onirique.accent') || DEFAULT_ACCENT; } catch { return DEFAULT_ACCENT; } };
+function setAccent(hex) {
+  const p = applyAccent(hex);
+  try { localStorage.setItem('onirique.accent', hex); } catch {}
+  call('theme:accent', p).catch(() => {});
+}
+setAccent(savedAccent());
+
+const gearIcon = () => {
+  const box = h('span', { 'aria-hidden': 'true', style: { display: 'grid' } });
+  box.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
+  return box;
+};
+function openSettings() {
+  const start = savedAccent();
+  const custom = h('input', { type: 'color', value: start, 'aria-label': 'Couleur personnalisée', class: 'accent-custom' });
+  const swatches = h('div', { class: 'accent-grid', role: 'radiogroup', 'aria-label': "Couleur de l'application" });
+  const draw = (current) => swatches.replaceChildren(...ACCENTS.map(([hex, name]) => h('button', {
+    type: 'button', role: 'radio', class: 'accent-swatch', 'aria-checked': String(current.toLowerCase() === hex), title: name,
+    style: { '--swatch': hex }, onclick: () => { setAccent(hex); custom.value = hex; draw(hex); },
+  }, h('i'), h('span', null, name))));
+  draw(start);
+  custom.addEventListener('input', () => { setAccent(custom.value); draw(custom.value); });
+  modal('Paramètres', h('div', { class: 'stack' },
+    eyebrow("Couleur de l'application"),
+    h('p', { class: 'muted', style: { margin: 0 } }, 'Toute la CENTRAL prend cette couleur : boutons, voyants, lueurs, CUT et CLOUD compris.'),
+    swatches,
+    h('label', { class: 'row accent-own' }, custom, h('span', null, 'Une autre couleur…'))),
+    [{ label: 'Par défaut', kind: 'quiet', run: () => { setAccent(DEFAULT_ACCENT); custom.value = DEFAULT_ACCENT; draw(DEFAULT_ACCENT); return false; } },
+      { label: 'Valider', run: () => { kept = true; } }], 'Paramètres');
+  // Fermée sans « Valider » (Annuler, Échap, clic à côté) : la couleur d'avant revient.
+  let kept = false;
+  const overlay = document.getElementById('overlay');
+  new MutationObserver((_m, obs) => { if (!overlay.hasChildNodes()) { obs.disconnect(); if (!kept) setAccent(start); } }).observe(overlay, { childList: true });
+}
+
 function titlebar() {
   const mac = central.platform === 'darwin'; // macOS dessine ses propres boutons, à gauche
   return h('header', { class: `titlebar${mac ? ' mac' : ''}` },
     titleStar(),
     h('div', { class: 'wordmark' }, h('b', null, 'ONIRIQUE'), h('i', null, 'Central')),
     h('div', { class: 'spacer' }),
+    h('button', { class: 'title-gear', type: 'button', title: 'Paramètres', 'aria-label': 'Paramètres', onclick: openSettings }, gearIcon()),
     langSwitch(),
     state.update ? h('button', { class: 'update-pill', title: 'Fermer et rouvrir l\'application pour installer la mise à jour', onclick: () => central.installUpdate() },
       h('span', { class: 'led on' }), `Version ${state.update} prête · Redémarrer`) : null,

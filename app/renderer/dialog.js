@@ -1,6 +1,8 @@
 // La fenêtre de confirmation : alert (OK), confirm (OK / Annuler) ou prompt (un champ). Entrée valide, Échap annule.
 const q = new URLSearchParams(location.search);
 const kind = q.get('kind');
+// La couleur choisie dans les Paramètres (des variables --acc, rien d'autre).
+if (/^[-a-z:;, !0-9]*$/.test(q.get('accent') || '')) document.documentElement.style.cssText += q.get('accent') || '';
 const box = document.getElementById('box');
 const field = document.getElementById('value');
 document.getElementById('message').textContent = q.get('message') || '';

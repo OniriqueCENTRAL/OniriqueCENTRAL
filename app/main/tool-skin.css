@@ -1,9 +1,10 @@
 /* ONIRIQUE CUT et ONIRIQUE CLOUD dans l'application : la DA « Nuit & Braise » de la CENTRAL, posée par-dessus
    les pages du site seulement quand elles s'affichent ici (main.js, insertCSS). Le site, lui, ne change pas. */
 :root {
-  --night: #09080A; --deep: #121012; --deep-2: #0f0b0d; --blood: #7a0d1c;
+  --acc: 229, 56, 74; --acc-hi: 255, 142, 154; --acc-lo: 122, 13, 28;
+  --night: #09080A; --deep: #121012; --deep-2: #0f0b0d; --blood: rgb(var(--acc-lo));
   --mist: #F4ECEC; --bone: #F4ECEC; --soft: #cdb8bb; --haze: #a8939a;
-  --ember: #E5384A; --ember-text: #ff8e9a;
+  --ember: rgb(var(--acc)); --ember-text: rgb(var(--acc-hi));
   --line: rgba(255, 235, 238, .10);
   --card: rgba(14, 10, 12, .55);
   --glow: none;
@@ -47,29 +48,29 @@ h1 em, h2 em { font: inherit !important; color: var(--ember) !important; text-sh
 .btn-ghost, .go.ghost, .fab, .mini-btn, .round { background: rgba(255,255,255,.04) !important; color: #d8c6c8 !important; border: 0 !important; box-shadow: 0 0 0 1px rgba(255,255,255,.10) inset !important; }
 .btn-ghost:hover, .go.ghost:hover, .fab:hover, .mini-btn:hover, .round:hover { color: #fff !important; background: rgba(255,255,255,.07) !important; }
 .btn-primary, .go:not(.ghost), .round.white {
-  background: linear-gradient(180deg, rgba(229,56,74,.55), rgba(120,12,28,.55)) !important; color: #fff !important; border: 0 !important;
-  box-shadow: 0 0 0 1px rgba(255,110,125,.55) inset, 0 6px 22px rgba(229,56,74,.35) !important;
+  background: linear-gradient(180deg, rgba(var(--acc),.55), rgba(var(--acc-lo),.55)) !important; color: #fff !important; border: 0 !important;
+  box-shadow: 0 0 0 1px rgba(var(--acc-hi),.55) inset, 0 6px 22px rgba(var(--acc),.35) !important;
 }
-.btn-primary:hover, .go:not(.ghost):hover { transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(255,140,150,.7) inset, 0 8px 26px rgba(229,56,74,.45) !important; }
+.btn-primary:hover, .go:not(.ghost):hover { transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(var(--acc-hi),.7) inset, 0 8px 26px rgba(var(--acc),.45) !important; }
 .fab { backdrop-filter: blur(22px) saturate(140%); }
 
 /* Onglets (les étapes de CUT) : conteneur de verre, pastille choisie en braise */
 .tabs { border-radius: 14px !important; padding: 4px !important; background: linear-gradient(160deg, rgba(255,255,255,.075), rgba(255,255,255,.02) 40%, rgba(255,255,255,.035)), rgba(14,10,12,.7) !important; border: 1px solid rgba(255,235,238,.10) !important; backdrop-filter: blur(22px); }
 .tabs button { border-radius: 10px !important; font: 500 10.5px "JetBrains Mono", monospace !important; letter-spacing: .14em !important; text-transform: uppercase; color: #bba7aa; }
-.tabs button[aria-selected="true"] { background: linear-gradient(180deg, rgba(229,56,74,.6), rgba(110,10,24,.6)) !important; box-shadow: 0 0 0 1px rgba(255,120,135,.5) inset, 0 0 18px rgba(229,56,74,.3); }
+.tabs button[aria-selected="true"] { background: linear-gradient(180deg, rgba(var(--acc),.6), rgba(var(--acc-lo),.6)) !important; box-shadow: 0 0 0 1px rgba(var(--acc-hi),.5) inset, 0 0 18px rgba(var(--acc),.3); }
 
 /* Champs */
 input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]), select, textarea {
   border-radius: 12px !important; border: 0 !important; background: rgba(0,0,0,.45) !important;
   box-shadow: 0 0 0 1px rgba(255,255,255,.10) inset, inset 0 2px 6px rgba(0,0,0,.4) !important;
 }
-input:focus, select:focus, textarea:focus { outline: none !important; box-shadow: 0 0 0 1px rgba(255,110,125,.7) inset, 0 0 18px rgba(229,56,74,.2) !important; }
+input:focus, select:focus, textarea:focus { outline: none !important; box-shadow: 0 0 0 1px rgba(var(--acc-hi),.7) inset, 0 0 18px rgba(var(--acc),.2) !important; }
 
 /* Zone de dépôt et vignettes */
 .drop { border-radius: 22px !important; border-color: rgba(255, 235, 238, .16) !important; background: rgba(0,0,0,.35) !important; }
-.drop:hover, .drop.over { border-color: rgba(255,110,125,.6) !important; background: rgba(229,56,74,.06) !important; }
+.drop:hover, .drop.over { border-color: rgba(var(--acc-hi),.6) !important; background: rgba(var(--acc),.06) !important; }
 .tile .art { border-radius: 18px !important; border-color: rgba(255,235,238,.10) !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 18px 40px rgba(0,0,0,.45); transition: transform .35s cubic-bezier(.2,.8,.2,1), border-color .35s; }
-.tile .art:hover { transform: translateY(-4px); border-color: rgba(255,140,150,.35) !important; }
+.tile .art:hover { transform: translateY(-4px); border-color: rgba(var(--acc-hi),.35) !important; }
 .tile .caption b { font-family: "Unbounded", sans-serif !important; font-weight: 800 !important; font-size: 12px !important; letter-spacing: .03em; text-transform: uppercase; }
 .tile .caption span, .crumb small { font: 500 10px "JetBrains Mono", monospace !important; letter-spacing: .12em; text-transform: uppercase; color: var(--haze) !important; }
 .frame { border-radius: 22px !important; box-shadow: 0 0 0 1px rgba(255,220,225,.10), 0 18px 40px rgba(0,0,0,.45) !important; }
@@ -103,13 +104,13 @@ input[type="checkbox"]:not(.switch input) {
   background: rgba(0,0,0,.45); box-shadow: 0 0 0 1px rgba(255,255,255,.12) inset; transition: all .3s; accent-color: auto;
 }
 input[type="checkbox"]:not(.switch input)::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 8px; background: #d9c6c9; transition: all .35s cubic-bezier(.2,.8,.2,1); }
-input[type="checkbox"]:not(.switch input):checked { background: linear-gradient(90deg, rgba(229,56,74,.75), rgba(140,16,32,.75)); }
-input[type="checkbox"]:not(.switch input):checked::after { left: 21px; background: #fff; box-shadow: 0 0 10px rgba(255,140,150,.8); }
+input[type="checkbox"]:not(.switch input):checked { background: linear-gradient(90deg, rgba(var(--acc),.75), rgba(var(--acc-lo),.75)); }
+input[type="checkbox"]:not(.switch input):checked::after { left: 21px; background: #fff; box-shadow: 0 0 10px rgba(var(--acc-hi),.8); }
 
 /* CLOUD : les boutons de l'en-tête (Réglages, SCAN) et les pastilles */
 .install { border-radius: 12px !important; border: 0 !important; background: rgba(255,255,255,.04) !important; box-shadow: 0 0 0 1px rgba(255,255,255,.10) inset;
   font: 500 11px "JetBrains Mono", monospace !important; letter-spacing: .14em; text-transform: uppercase; color: #d8c6c8 !important; }
-.install:hover, .install[aria-pressed="true"] { color: #fff !important; box-shadow: 0 0 0 1px rgba(255,110,125,.55) inset; }
+.install:hover, .install[aria-pressed="true"] { color: #fff !important; box-shadow: 0 0 0 1px rgba(var(--acc-hi),.55) inset; }
 
 /* CUT : les sept étapes toujours entières, sur deux lignes si la fenêtre est étroite ; le numéro en petit, devant */
 .tabs { flex-wrap: wrap !important; overflow: visible !important; }
@@ -121,30 +122,30 @@ input[type="checkbox"]:not(.switch input):checked::after { left: 21px; backgroun
 /* Pastilles de choix (HUD, formats…) : les onglets de l'application */
 .chips:not(.presets) { border-radius: 14px !important; border: 1px solid rgba(255,235,238,.10) !important; background: linear-gradient(160deg, rgba(255,255,255,.075), rgba(255,255,255,.02) 40%, rgba(255,255,255,.035)), rgba(14,10,12,.55); }
 .chips:not(.presets) button { border-radius: 10px !important; font-size: 10.5px !important; letter-spacing: .14em !important; color: #bba7aa; }
-.chips:not(.presets) button[aria-pressed="true"] { background: linear-gradient(180deg, rgba(229,56,74,.6), rgba(110,10,24,.6)) !important; box-shadow: 0 0 0 1px rgba(255,120,135,.5) inset, 0 0 18px rgba(229,56,74,.3); }
+.chips:not(.presets) button[aria-pressed="true"] { background: linear-gradient(180deg, rgba(var(--acc),.6), rgba(var(--acc-lo),.6)) !important; box-shadow: 0 0 0 1px rgba(var(--acc-hi),.5) inset, 0 0 18px rgba(var(--acc),.3); }
 .chips.presets button { border-radius: 16px !important; }
-.chips.presets button[aria-pressed="true"] { border-color: rgba(255,110,125,.75) !important; box-shadow: 0 0 0 1px rgba(255,110,125,.5) inset, 0 0 24px rgba(229,56,74,.25); }
+.chips.presets button[aria-pressed="true"] { border-color: rgba(var(--acc-hi),.75) !important; box-shadow: 0 0 0 1px rgba(var(--acc-hi),.5) inset, 0 0 24px rgba(var(--acc),.25); }
 /* Petits boutons (Recaler, Agrandir) */
 .mini, .frame-big { border-radius: 10px !important; border: 0 !important; background: rgba(255,255,255,.04) !important; box-shadow: 0 0 0 1px rgba(255,255,255,.10) inset;
   font: 500 10px "JetBrains Mono", monospace !important; letter-spacing: .14em !important; text-transform: uppercase; color: #d8c6c8 !important; }
 .mini:hover, .frame-big:hover { color: #fff !important; background: rgba(255,255,255,.07) !important; }
 
 /* Une seule couleur vive : la braise. Sur le site, la pochette écouté teinte la page ; dans l'application, non. */
-:root { --ember: #E5384A !important; --glow-1: rgba(229,56,74,.28) !important; --glow-2: rgba(122,13,28,.3) !important; }
+:root { --ember: rgb(var(--acc)) !important; --glow-1: rgba(var(--acc),.28) !important; --glow-2: rgba(var(--acc-lo),.3) !important; }
 .tag { border-radius: 8px !important; font: 500 9px "JetBrains Mono", monospace !important; letter-spacing: .12em; text-transform: uppercase; }
-.tag.on { background: linear-gradient(180deg, rgba(229,56,74,.45), rgba(110,10,24,.45)) !important; border-color: rgba(255,110,125,.5) !important; color: #fff !important; }
-.album .art { border-radius: 22px !important; box-shadow: 0 0 0 1px rgba(255,220,225,.10), 0 18px 40px rgba(0,0,0,.45), 0 30px 90px -30px rgba(229,56,74,.35) !important; }
+.tag.on { background: linear-gradient(180deg, rgba(var(--acc),.45), rgba(var(--acc-lo),.45)) !important; border-color: rgba(var(--acc-hi),.5) !important; color: #fff !important; }
+.album .art { border-radius: 22px !important; box-shadow: 0 0 0 1px rgba(255,220,225,.10), 0 18px 40px rgba(0,0,0,.45), 0 30px 90px -30px rgba(var(--acc),.35) !important; }
 /* Le mode « Visiteur » reste, aux couleurs de l'application */
 .visitor-toggle { border-radius: 12px !important; font: 500 10px "JetBrains Mono", monospace !important; letter-spacing: .14em !important; text-transform: uppercase; }
 .edit-toggle { border-radius: 12px !important; border: 0 !important; box-shadow: 0 0 0 1px rgba(255,255,255,.10) inset; color: #d8c6c8 !important;
   font: 500 11px "JetBrains Mono", monospace !important; letter-spacing: .14em !important; text-transform: uppercase; }
-.edit-toggle:hover, .edit-toggle[aria-pressed="true"] { color: #fff !important; box-shadow: 0 0 0 1px rgba(255,110,125,.55) inset; }
+.edit-toggle:hover, .edit-toggle[aria-pressed="true"] { color: #fff !important; box-shadow: 0 0 0 1px rgba(var(--acc-hi),.55) inset; }
 .album-head h1 { font-size: clamp(22px, 3vw, 34px) !important; }
 
 /* CLOUD : la fenêtre Spotify, Deezer, Apple Music (assets/platforms.js), aux onglets de l'application */
 #platform-add .pf-tabs { border-radius: 14px !important; background: linear-gradient(160deg, rgba(255,255,255,.075), rgba(255,255,255,.02) 40%, rgba(255,255,255,.035)), rgba(14,10,12,.55); border-color: rgba(255,235,238,.10) !important; }
 #platform-add .pf-tabs button { border-radius: 10px !important; font-size: 10.5px !important; letter-spacing: .14em !important; color: #bba7aa; }
-#platform-add .pf-tabs button[aria-selected="true"] { background: linear-gradient(180deg, rgba(229,56,74,.6), rgba(110,10,24,.6)) !important; box-shadow: 0 0 0 1px rgba(255,120,135,.5) inset, 0 0 18px rgba(229,56,74,.3); color: #fff; }
+#platform-add .pf-tabs button[aria-selected="true"] { background: linear-gradient(180deg, rgba(var(--acc),.6), rgba(var(--acc-lo),.6)) !important; box-shadow: 0 0 0 1px rgba(var(--acc-hi),.5) inset, 0 0 18px rgba(var(--acc),.3); color: #fff; }
 .pf-tag { border-radius: 8px !important; font: 500 9px "JetBrains Mono", monospace !important; letter-spacing: .12em !important; text-transform: uppercase; }
 dialog { border-radius: 30px !important; background: linear-gradient(160deg, rgba(40,26,30,.96), rgba(16,12,14,.97) 45%, rgba(20,15,17,.97)) !important; border-color: rgba(255,235,238,.14) !important; }
 

@@ -81,6 +81,39 @@ export function navIcon(name) {
   return box;
 }
 
+/**
+ * La couleur d'accent de l'application (Paramètres) : à partir de la couleur choisie, trois teintes — l'accent, son
+ * reflet clair (textes, liserés) et son fond sombre (bas des dégradés) — gardées lisibles sur le fond nuit (luminosité
+ * et saturation bornées). Renvoie les triplets « r, g, b » des variables --acc, --acc-hi et --acc-lo.
+ */
+export function accentPalette(hex) {
+  const n = parseInt(String(hex).replace('#', ''), 16);
+  if (!/^#?[0-9a-f]{6}$/i.test(String(hex)) || Number.isNaN(n)) return accentPalette(DEFAULT_ACCENT);
+  let r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, d = max - min;
+  let hue = 0, sat = 0;
+  if (d) {
+    sat = d / (1 - Math.abs(2 * l - 1));
+    hue = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    hue = (hue * 60 + 360) % 360;
+  }
+  const rgb = (H, S, L) => {
+    const c = (1 - Math.abs(2 * L - 1)) * S, x = c * (1 - Math.abs(((H / 60) % 2) - 1)), m = L - c / 2;
+    const [a, bb, cc] = H < 60 ? [c, x, 0] : H < 120 ? [x, c, 0] : H < 180 ? [0, c, x] : H < 240 ? [0, x, c] : H < 300 ? [x, 0, c] : [c, 0, x];
+    return [a, bb, cc].map((v) => Math.round((v + m) * 255)).join(', ');
+  };
+  // Un gris choisi reste un gris (sans saturation) ; une couleur garde sa teinte, assez vive pour un bouton allumé.
+  const S = sat < 0.08 ? 0 : Math.max(0.55, Math.min(0.9, sat));
+  return { acc: rgb(hue, S, Math.max(0.5, Math.min(0.62, l))), hi: rgb(hue, S ? Math.min(1, S + 0.1) : 0, 0.76), lo: rgb(hue, S, 0.26) };
+}
+export const DEFAULT_ACCENT = '#e5384a';
+/** Pose la couleur d'accent sur cette page (et la renvoie, pour la donner aux autres fenêtres). */
+export function applyAccent(hex) {
+  const p = accentPalette(hex), root = document.documentElement.style;
+  root.setProperty('--acc', p.acc); root.setProperty('--acc-hi', p.hi); root.setProperty('--acc-lo', p.lo);
+  return p;
+}
+
 export const star = () => h('span', { class: 'star' });
 export const eyebrow = (text) => h('div', { class: 'eyebrow' }, star(), text);
 export const led = (on) => h('span', { class: `led${on ? ' on' : ''}` });
