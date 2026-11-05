@@ -234,6 +234,8 @@ function compactSidebar() {
   return h('nav', { class: 'sidebar compact' },
     h('button', { class: 'nav-item active', title: `${label} : accueil`, 'aria-current': 'page', onclick: () => call('tool:home', name).catch(() => {}) },
       navIcon(name), h('span', { class: 'name' }, label)),
+    h('button', { class: 'menu-toggle tool-back', type: 'button', title: 'Revenir à la page d'avant', 'aria-label': 'Revenir à la page d'avant',
+      onclick: () => call('tool:back', name).catch(() => {}) }, h('span', { class: 'row', style: { gap: '6px' } }, '←', h('span', null, 'Retour'))),
     h('button', { class: 'menu-toggle', type: 'button', title: 'Afficher le menu', 'aria-label': 'Afficher le menu', 'aria-expanded': 'false',
       onclick: () => toggleMenu(true) }, chevron(false)),
     h('div', { class: 'spacer' }),

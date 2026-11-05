@@ -3,10 +3,20 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import http from 'node:http';
+
+// L'API des communes simulée : une commune (Ornans, 25434) et la recherche.
+const ORNANS = { nom: 'Ornans', code: '25434', centre: { type: 'Point', coordinates: [6.14, 47.1] }, departement: { code: '25', nom: 'Doubs' } };
+const geo = http.createServer((req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  if (req.url.startsWith('/communes/25434')) return res.end(JSON.stringify(ORNANS));
+  if (req.url.startsWith('/communes?')) return res.end(JSON.stringify([ORNANS, { ...ORNANS, nom: 'Lyon', code: '69123' }]));
+  res.statusCode = 404; res.end('{}');
+}).listen(0);
 
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'onirique-central-profiles-'));
 Object.assign(process.env, { DATA_DIR: dataDir, PAYMENTS_MODE: 'demo', PORT: '0', ADMIN_EMAIL: '', ADMIN_PASSWORD: '', SMTP_HOST: 'test',
-  MAIL_FROM: 'support@test.local', SITE_URL: 'https://site.test', PUBLIC_URL: 'https://site.test', FOUNDER_EMAILS: '' });
+  MAIL_FROM: 'support@test.local', SITE_URL: 'https://site.test', PUBLIC_URL: 'https://site.test', FOUNDER_EMAILS: '', GEO_API: `http://127.0.0.1:${geo.address().port}` });
 const { createApp } = await import('../src/app.js');
 const { db, get, run, now } = await import('../src/db.js');
 const { outbox } = await import('../src/mail.js');
@@ -92,7 +102,17 @@ try {
     assert.deepEqual([p.city.name, p.cv.roles, p.cv.open], ['Lyon', ['Beatmaker', 'Mix'], true]);
     const map = await call('GET', '/api/members/map');
     assert.deepEqual(map.members.map((m) => [m.handle, m.city]), [['nov.music', 'lyon']]);
-    assert.ok(map.cities.some((c) => c.id === 'montreal' && c.far) && map.roles.includes('Ingé son'));
+    // Seuls les lieux où quelqu'un est recensé : Lyon, pas Montréal.
+    assert.deepEqual(map.cities.map((c) => c.id), ['lyon']);
+    assert.ok(map.roles.includes('Ingé son'));
+    // Une commune (village) : vérifiée auprès de l'API, gardée avec son nom et sa position ; une commune inventée est refusée.
+    await call('PUT', '/api/me/profile/page', { token: b.token, body: { handle: 'lou', city: 'fr-25434' } });
+    assert.deepEqual((await call('GET', '/api/profiles/lou')).city, { id: 'fr-25434', name: 'Ornans', country: 'France', lon: 6.14, lat: 47.1, far: false, detail: 'Doubs (25)' });
+    assert.deepEqual((await call('GET', '/api/members/map')).cities.map((c) => c.id).sort(), ['fr-25434', 'lyon']);
+    await call('PUT', '/api/me/profile/page', { token: b.token, body: { handle: 'lou', city: 'fr-99999' } });
+    assert.equal((await call('GET', '/api/profiles/lou')).city, null);
+    // La recherche : la ville de la liste d'abord, la commune homonyme n'est pas proposée deux fois.
+    assert.deepEqual((await call('GET', '/api/places?q=ly')).map((c) => c.id), ['lyon', 'fr-25434']);
     assert.deepEqual([map.members[0].playlists, map.members[0].linkPage], [[], null]);
     // La page de liens n'est montrée que si on le choisit.
     run(`INSERT INTO link_pages (user_id, handle, data, updated_at) VALUES (?, 'nov', '{}', ?)`, a.id, now());
@@ -116,6 +136,7 @@ try {
   console.log(`\n${passed} étapes réussies.`);
 } finally {
   server.close();
+  geo.close();
   db.close();
   try { fs.rmSync(dataDir, { recursive: true, force: true }); } catch {}
 }

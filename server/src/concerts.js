@@ -4,6 +4,7 @@
 import { config } from './config.js';
 import { HttpError, rateLimit } from './auth.js';
 import { CITY } from './cities.js';
+import { get } from './db.js';
 
 const RAP = 'KnvZfZ7vAv1'; // Ticketmaster : Music > Hip-Hop/Rap
 const cache = new Map();
@@ -30,7 +31,9 @@ export function venuesOf(data) {
 export function mountConcerts(app, { wrap }) {
   app.get('/api/concerts', wrap(async (req, res) => {
     if (!config.ticketmasterKey) return res.json({ enabled: false, venues: [] });
-    const city = CITY.get(String(req.query.city || ''));
+    const id = String(req.query.city || '');
+    // Une ville de la liste, ou une commune où un membre s'est recensé (sa position est gardée sur sa page).
+    const city = CITY.get(id) || (() => { try { return JSON.parse(get(`SELECT place FROM user_profiles WHERE city = ? AND place != '' LIMIT 1`, id)?.place || 'null'); } catch { return null; } })();
     if (!city) throw new HttpError(404, 'Ville inconnue.');
     const hit = cache.get(city.id);
     if (hit && Date.now() - hit.at < TTL) return res.set('Cache-Control', 'public, max-age=600').json({ enabled: true, venues: hit.venues });

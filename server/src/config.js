@@ -101,6 +101,8 @@ export const config = {
   geminiApiKey: env.GEMINI_API_KEY || '',
   // Les concerts de rap sur la carte des membres (concerts.js) : clé de l'API Discovery de Ticketmaster.
   ticketmasterKey: env.TICKETMASTER_API_KEY || '',
+  // Les communes de France pour la carte des membres (cities.js) : l'API officielle, gratuite et sans clé.
+  geoApi: (env.GEO_API || 'https://geo.api.gouv.fr').replace(/\/+$/, ''),
   ticketmasterApi: (env.TICKETMASTER_API || 'https://app.ticketmaster.com').replace(/\/+$/, ''),
   geminiApi: (env.GEMINI_API || 'https://generativelanguage.googleapis.com').replace(/\/+$/, ''),
   geminiModel: env.GEMINI_MODEL || 'gemini-flash-lite-latest', // rapide ; le Flash complet saturait (503, 30 s et plus)

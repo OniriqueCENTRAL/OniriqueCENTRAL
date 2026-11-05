@@ -114,6 +114,10 @@ dialog li small { display: block; color: var(--haze); font-size: 12px; overflow:
 .link-rows { display: grid; gap: 8px; }
 .cv-edit { display: grid; gap: 16px; padding: 16px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.02); }
 select { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 15px var(--f-body); letter-spacing: 0; text-transform: none; }
+.place-results { display: grid; gap: 2px; margin-top: 6px; }
+.place-results button { display: flex; justify-content: space-between; gap: 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.03); color: var(--mist); font: 500 14px var(--f-body); cursor: pointer; text-align: left; }
+.place-results button:hover { border-color: var(--ember); }
+.place-results small { color: var(--haze); }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.03); font: 600 13px var(--f-body); color: var(--mist); letter-spacing: 0; text-transform: none; }
 .chip.pick { cursor: pointer; }
@@ -178,7 +182,9 @@ select { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px sol
       <label>Couleur de la page<input id="f-color" type="color" value="#e5384a"></label>
       <div><label>Liens (Instagram, Spotify, YouTube, ton site…)</label><div class="link-rows" id="f-links" style="margin-top:8px"></div></div>
       <div class="cv-edit">
-        <label>Ta ville (sur la carte des membres)<select id="f-city"><option value="">Pas sur la carte</option></select></label>
+        <div class="place-pick"><label>Ta ville ou ton village (sur la carte des membres)<input id="f-place" type="search" autocomplete="off" placeholder="Tape le nom de ta commune…"></label>
+          <input type="hidden" id="f-city"><div class="place-results" id="f-places" role="listbox"></div>
+          <p class="muted" id="f-place-now" style="margin:6px 0 0;font-size:13px"></p></div>
         <div><label>Ce que tu fais (jusqu'à 6)</label><div class="tags" id="f-roles"></div></div>
         <label>Ce que tu sais faire, ton matériel, tes styles<input id="f-skills" maxlength="300" placeholder="Trap, drill, mix voix, Neumann U87…"></label>
         <label class="check"><input id="f-open" type="checkbox"> Ouvert aux collaborations</label>
@@ -345,15 +351,10 @@ function openEdit() {
   // Les villes et les métiers viennent du serveur (la même liste que la carte).
   meta.then((d) => {
     if (!d) return;
-    if ($("f-city").options.length === 1) {
-      const groups = new Map();
-      for (const c of d.cities) { const g = c.far ? "Plus loin" : c.country; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(c); }
-      for (const [g, list] of groups) $("f-city").append(el("optgroup", { label: g }, ...list.map((c) => el("option", { value: c.id, textContent: c.name + (c.far ? " (" + c.country + ")" : "") }))));
-    }
-    $("f-city").value = m.city || "";
     const cv = m.cv || { roles: [] };
     $("f-roles").replaceChildren(...d.roles.map((r) => el("label", { className: "chip pick" }, el("input", { type: "checkbox", value: r, checked: cv.roles.includes(r) }), r)));
   });
+  setPlace(m.place || null);
   $("f-skills").value = m.cv?.skills || "";
   $("f-open").checked = !!m.cv?.open;
   $("f-showlinks").checked = !!m.cv?.showLinks;
@@ -377,6 +378,27 @@ const hint = () => {
     : h.length < 3 ? "Au moins 3 lettres ou chiffres." : "Ta page : " + location.host + "/profil?u=" + h;
 };
 $("f-handle").addEventListener("input", hint);
+// Le lieu : une recherche parmi toutes les communes de France et les villes de la francophonie (le serveur demande à
+// l'API officielle), puis un clic pour le choisir.
+function setPlace(c) {
+  $("f-city").value = c ? c.id : "";
+  $("f-place").value = "";
+  $("f-places").replaceChildren();
+  $("f-place-now").replaceChildren(...(c ? ["Sur la carte : ", el("b", { textContent: c.name }), " · " + (c.detail || c.country) + " ",
+    el("button", { type: "button", className: "link", textContent: "Retirer", onclick: () => setPlace(null) })] : ["Pas sur la carte."]));
+}
+let placeTimer = null;
+$("f-place").addEventListener("input", () => {
+  clearTimeout(placeTimer);
+  const q = $("f-place").value.trim();
+  if (q.length < 2) return $("f-places").replaceChildren();
+  placeTimer = setTimeout(async () => {
+    const list = await fetch("/api/places?q=" + encodeURIComponent(q)).then((r) => (r.ok ? r.json() : [])).catch(() => []);
+    if ($("f-place").value.trim() !== q) return;
+    $("f-places").replaceChildren(...(list.length ? list.map((c) => el("button", { type: "button", role: "option", onclick: () => setPlace(c) },
+      el("b", { textContent: c.name }), el("small", { textContent: c.detail || c.country }))) : [el("p", { className: "muted", style: "margin:8px 0", textContent: "Aucun lieu trouvé." })]));
+  }, 220);
+});
 $("f-color").addEventListener("input", (e) => document.documentElement.style.setProperty("--ember", e.target.value));
 $("edit-form").addEventListener("submit", async (event) => {
   event.preventDefault();

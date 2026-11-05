@@ -43,3 +43,32 @@ export const CITY = new Map(CITIES.map((c) => [c.id, c]));
 // Les métiers qu'on coche dans son CV numérique.
 export const CV_ROLES = ['Artiste', 'Chanteur·se', 'Rappeur·se', 'Beatmaker', 'Compositeur·rice', 'Ingé son', 'Mix', 'Master', 'Musicien·ne',
   'DJ', 'Topliner', 'Graphiste', 'Clippeur·se', 'Photographe', 'Monteur·se', 'Manager', 'Label', 'Studio'];
+
+// Toutes les communes de France (villes et villages), d'après l'API officielle geo.api.gouv.fr : leur identifiant est
+// « fr-<code INSEE> ». La liste ci-dessus garde la Belgique, la Suisse, le Luxembourg et la francophonie.
+const fold = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+const commune = (c) => {
+  const [lon, lat] = c.centre?.coordinates || [];
+  if (!Number.isFinite(lon) || !Number.isFinite(lat)) return null;
+  const overseas = String(c.code).startsWith('97');
+  return { id: `fr-${c.code}`, name: c.nom, country: overseas ? c.departement?.nom || 'Outre-mer' : 'France', lon, lat, far: overseas,
+    detail: c.departement ? `${c.departement.nom} (${c.departement.code})` : '' };
+};
+/** Une commune par son identifiant « fr-<INSEE> », vérifiée auprès de l'API officielle ; null si elle n'existe pas. */
+export async function communeById(id, geoApi) {
+  const code = /^fr-([0-9][0-9AB][0-9]{3})$/.exec(String(id || ''))?.[1];
+  if (!code) return null;
+  const r = await fetch(`${geoApi}/communes/${code}?fields=nom,code,centre,departement`, { signal: AbortSignal.timeout(6000) }).catch(() => null);
+  return r?.ok ? commune(await r.json()) : null;
+}
+/** La recherche d'un lieu : les villes de la liste qui correspondent, puis les communes de France (les plus peuplées d'abord). */
+export async function searchPlaces(q, geoApi) {
+  const needle = fold(q);
+  if (needle.length < 2) return [];
+  const listed = CITIES.filter((c) => fold(c.name).startsWith(needle)).slice(0, 5);
+  const r = await fetch(`${geoApi}/communes?nom=${encodeURIComponent(q)}&fields=nom,code,centre,departement&boost=population&limit=10`, { signal: AbortSignal.timeout(6000) }).catch(() => null);
+  const found = r?.ok ? (await r.json()).map(commune).filter(Boolean) : [];
+  // Une grande ville déjà dans la liste (Paris, Lyon…) n'est pas proposée deux fois.
+  const known = new Set(listed.filter((c) => c.country === 'France').map((c) => fold(c.name)));
+  return [...listed, ...found.filter((c) => !known.has(fold(c.name)))].slice(0, 12);
+}

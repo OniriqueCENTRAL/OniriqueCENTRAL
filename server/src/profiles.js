@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { config } from './config.js';
 import { publicPlaylists } from './ratings.js';
-import { CITIES, CITY, CV_ROLES } from './cities.js';
+import { CITY, CV_ROLES, communeById, searchPlaces } from './cities.js';
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS user_profiles (
@@ -65,6 +65,10 @@ if (!column('user_profiles', 'links')) db.exec(`ALTER TABLE user_profiles ADD CO
 // La ville (carte des membres, cities.js) et le CV numérique : métiers, ce qu'on sait faire, ouvert aux collabs.
 if (!column('user_profiles', 'city')) db.exec(`ALTER TABLE user_profiles ADD COLUMN city TEXT NOT NULL DEFAULT ''`);
 if (!column('user_profiles', 'cv')) db.exec(`ALTER TABLE user_profiles ADD COLUMN cv TEXT NOT NULL DEFAULT '{}'`);
+// Une commune de France (fr-<INSEE>) : son nom et sa position, gardés tels que l'API officielle les a donnés.
+if (!column('user_profiles', 'place')) db.exec(`ALTER TABLE user_profiles ADD COLUMN place TEXT NOT NULL DEFAULT ''`);
+/** Le lieu d'une page : une ville de la liste, ou la commune enregistrée ; null sans lieu. */
+export const placeOf = (p) => CITY.get(p.city) || (p.city && p.place ? (() => { try { return JSON.parse(p.place); } catch { return null; } })() : null);
 const cvOf = (json) => { try { const c = JSON.parse(json || '{}'); return { roles: c.roles || [], skills: c.skills || '', open: !!c.open, showLinks: !!c.showLinks }; } catch { return { roles: [], skills: '', open: false, showLinks: false }; } };
 // Sa page de liens (mes-liens.html), affichée sur son profil et la carte s'il l'a choisi.
 const linkPageOf = (userId) => { const h = get('SELECT handle FROM link_pages WHERE user_id = ?', userId)?.handle; return h ? `${config.linksUrl}/${h}` : null; };
@@ -104,9 +108,9 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
   // Ma page : la créer, la régler (adresse, bio, couleur, commentaires ouverts), ou la supprimer.
   app.get('/api/me/profile/page', requireUser, (req, res) => {
     const p = get('SELECT * FROM user_profiles WHERE user_id = ?', req.user.id);
-    res.set('Cache-Control', 'no-store').json(p ? { handle: p.handle, bio: p.bio, color: p.color, banner: media(p.banner), comments: !!p.comments, links: linksOf(p.links), city: p.city || '', cv: cvOf(p.cv), linkPage: p ? linkPageOf(req.user.id) : null } : null);
+    res.set('Cache-Control', 'no-store').json(p ? { handle: p.handle, bio: p.bio, color: p.color, banner: media(p.banner), comments: !!p.comments, links: linksOf(p.links), city: p.city || '', place: placeOf(p), cv: cvOf(p.cv), linkPage: p ? linkPageOf(req.user.id) : null } : null);
   });
-  app.put('/api/me/profile/page', requireUser, (req, res) => {
+  app.put('/api/me/profile/page', requireUser, wrap(async (req, res) => {
     rateLimit(`profile-edit:${req.user.id}`, 60, 3600_000);
     const handle = toHandle(req.body?.handle);
     if (!PROFILE_HANDLE.test(handle)) throw new HttpError(400, "L'adresse de ta page : 3 à 30 caractères, lettres minuscules, chiffres, point, tiret ou tiret bas.");
@@ -114,15 +118,19 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
     if (taken && taken.user_id !== req.user.id) throw new HttpError(409, 'Cette adresse est déjà prise.');
     const color = COLOR.test(req.body?.color || '') ? req.body.color.toLowerCase() : '#e5384a';
     const links = JSON.stringify(cleanLinks(req.body?.links));
-    const city = CITY.has(req.body?.city) ? req.body.city : '';
+    // Le lieu : une ville de la liste, ou une commune de France vérifiée auprès de l'API officielle (gardée si elle ne change pas).
+    const wanted = String(req.body?.city || '');
+    const before = get('SELECT city, place FROM user_profiles WHERE user_id = ?', req.user.id);
+    const place = CITY.get(wanted) || (before?.city === wanted && before.place ? JSON.parse(before.place) : await communeById(wanted, config.geoApi));
+    const city = place ? wanted : '';
     const roles = Array.isArray(req.body?.cv?.roles) ? [...new Set(req.body.cv.roles.filter((r) => CV_ROLES.includes(r)))].slice(0, 6) : [];
     const cv = JSON.stringify({ roles, skills: clean(req.body?.cv?.skills, 300), open: !!req.body?.cv?.open, showLinks: !!req.body?.cv?.showLinks });
-    run(`INSERT INTO user_profiles (user_id, handle, bio, color, comments, links, city, cv, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    run(`INSERT INTO user_profiles (user_id, handle, bio, color, comments, links, city, place, cv, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(user_id) DO UPDATE SET handle = excluded.handle, bio = excluded.bio, color = excluded.color, comments = excluded.comments, links = excluded.links,
-        city = excluded.city, cv = excluded.cv`,
-      req.user.id, handle, clean(req.body?.bio, 600), color, req.body?.comments === false ? 0 : 1, links, city, cv, now());
+        city = excluded.city, place = excluded.place, cv = excluded.cv`,
+      req.user.id, handle, clean(req.body?.bio, 600), color, req.body?.comments === false ? 0 : 1, links, city, place && !CITY.has(city) ? JSON.stringify(place) : '', cv, now());
     res.json({ handle });
-  });
+  }));
   app.put('/api/me/profile/page/banner', requireUser, wrap(async (req, res) => {
     const p = get('SELECT * FROM user_profiles WHERE user_id = ?', req.user.id);
     if (!p) throw new HttpError(404, "Crée d'abord ta page de profil.");
@@ -158,7 +166,7 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
     for (const c of top) c.replies = comments.filter((r) => r.parentId === c.id).reverse();
     res.set('Cache-Control', 'no-store').json({
       handle: p.handle, name: p.name || 'Membre', avatar: media(p.avatar), bio: p.bio, color: p.color, banner: media(p.banner), commentsOpen: !!p.comments,
-      links: linksOf(p.links), since: p.created_at, role: p.role || null, city: CITY.get(p.city) || null, cv: cvOf(p.cv),
+      links: linksOf(p.links), since: p.created_at, role: p.role || null, city: placeOf(p), cv: cvOf(p.cv),
       linkPage: cvOf(p.cv).showLinks ? linkPageOf(p.user_id) : null,
       playlists: publicPlaylists(viewer?.id, { where: 'p.user_id = ?', params: [p.user_id], limit: 60 }),
       followers: count('SELECT COUNT(*) AS n FROM user_follows WHERE followed_id = ?', p.user_id),
@@ -223,10 +231,12 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
 
   // La carte des membres : les villes, les métiers, et chaque page de profil qui a choisi sa ville.
   app.get('/api/members/map', (req, res) => {
-    const members = all(`SELECT p.user_id, p.handle, p.city, p.cv, p.color, u.name, u.avatar, u.role, lp.handle AS link_handle,
+    const members = all(`SELECT p.user_id, p.handle, p.city, p.place, p.cv, p.color, u.name, u.avatar, u.role, lp.handle AS link_handle,
         (SELECT COUNT(*) FROM user_follows f WHERE f.followed_id = p.user_id) AS followers
       FROM user_profiles p JOIN users u ON u.id = p.user_id LEFT JOIN link_pages lp ON lp.user_id = p.user_id
-      WHERE p.city != '' ORDER BY followers DESC LIMIT 5000`).filter((m) => CITY.has(m.city));
+      WHERE p.city != '' ORDER BY followers DESC LIMIT 5000`).filter((m) => placeOf(m));
+    // Seuls les lieux où quelqu'un s'est recensé apparaissent sur la carte.
+    const cities = [...new Map(members.map((m) => { const c = placeOf(m); return [c.id, c]; })).values()];
     // Les playlists publiques des membres de la carte, en une requête : les trois plus récentes de chacun.
     const lists = new Map();
     for (const x of publicPlaylists(0, { where: `p.user_id IN (SELECT user_id FROM user_profiles WHERE city != '')`, limit: 3000 })) {
@@ -238,8 +248,13 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
       return { handle: m.handle, name: m.name || 'Membre', avatar: media(m.avatar), role: m.role, color: m.color, city: m.city, cv: { roles: cv.roles, skills: cv.skills, open: cv.open },
         followers: m.followers, playlists: lists.get(m.handle) || [], linkPage: cv.showLinks && m.link_handle ? `${config.linksUrl}/${m.link_handle}` : null };
     });
-    res.set('Cache-Control', 'public, max-age=60').json({ cities: CITIES, roles: CV_ROLES, members: list });
+    res.set('Cache-Control', 'public, max-age=60').json({ cities, roles: CV_ROLES, members: list });
   });
+  // Chercher son lieu (page de profil) : les villes de la liste et toutes les communes de France.
+  app.get('/api/places', wrap(async (req, res) => {
+    rateLimit(`places:${req.ip}`, 300, 3600_000);
+    res.set('Cache-Control', 'public, max-age=3600').json(await searchPlaces(String(req.query.q || '').slice(0, 60), config.geoApi));
+  }));
 
   // Le petit logo d'un site, pour les boutons de liens des pages : demandé une fois par le serveur (le visiteur ne
   // contacte aucun autre site), gardé une semaine sur le disque. 404 si le site n'en a pas.

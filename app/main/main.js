@@ -472,6 +472,14 @@ app.whenReady().then(async () => {
     shownTool = tool;
   });
   // Un clic sur la rubrique déjà ouverte : retour à l'accueil de l'outil (après une page d'écoute, une autre page…).
+  // « Retour » : la page d'avant dans l'outil (une page de profil, d'écoute, la carte…), comme le bouton précédent de la souris.
+  handle('tool:back', async (tool) => {
+    if (!toolViews.has(tool)) return false;
+    const web = (await toolViews.get(tool)).webContents;
+    if (!web.navigationHistory.canGoBack()) return false;
+    web.navigationHistory.goBack();
+    return true;
+  });
   handle('tool:home', async (tool) => {
     if (!toolViews.has(tool)) return;
     const web = (await toolViews.get(tool)).webContents;
