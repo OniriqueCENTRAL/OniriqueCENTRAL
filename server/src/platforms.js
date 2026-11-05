@@ -391,6 +391,10 @@ async function spotifyGet(token, route) {
   if (r.status === 401) throw new HttpError(401, 'La connexion à Spotify a expiré : reconnecte ton compte.');
   if (r.status === 403) throw new HttpError(403, "Spotify refuse ce compte : il doit être ajouté aux utilisateurs de l'application ONIRIQUE sur developer.spotify.com.");
   if (r.status === 404) throw new HttpError(404, 'Introuvable sur Spotify.');
+  if (r.status === 400 || r.status === 429) {
+    const why = (await r.json().catch(() => ({})))?.error?.message;
+    throw new HttpError(r.status, r.status === 429 ? 'Spotify demande de ralentir : réessaie dans une minute.' : `Spotify refuse la demande${why ? ` : ${text(why, 120)}` : '.'}`);
+  }
   if (!r.ok) throw new HttpError(502, 'Spotify ne répond pas, réessaie dans un instant.');
   return r.json();
 }
@@ -542,7 +546,7 @@ export function mountPlatforms(app, { requireUser, wrap }) {
       const q = text(req.query.q, 120);
       if (q.length < 2) throw new HttpError(400, 'Tape au moins deux lettres.');
       const { access } = await spotifyToken(req.user.id);
-      const found = await spotifyGet(access, `/search?type=track&limit=20&market=from_token&q=${encodeURIComponent(q)}`);
+      const found = await spotifyGet(access, `/search?type=track&limit=10&market=from_token&q=${encodeURIComponent(q)}`);
       return res.json((found.tracks?.items || []).map((t) => spotifyTrack(t)).filter(Boolean).map(shown));
     }
     res.json((await searchPlatform(source, req.query.q)).map(shown));

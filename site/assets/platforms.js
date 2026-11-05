@@ -399,7 +399,10 @@
   }
   async function search(source, q) {
     busy = true; error = ""; results = []; draw();
-    try { results = await ctx.api("GET", "/platforms/search?source=" + source + "&q=" + encodeURIComponent(q)); } catch (e) { error = e.message; }
+    // Un lien Spotify collé dans la recherche : le titre, l'album ou la playlist qu'il désigne, prêts à ajouter.
+    const link = /^https:\/\/(open\.spotify\.com|spotify\.link)\//.test(q);
+    try { results = link ? (await ctx.api("POST", "/platforms/resolve", { url: q })).items : await ctx.api("GET", "/platforms/search?source=" + source + "&q=" + encodeURIComponent(q)); }
+    catch (e) { error = e.message; }
     busy = false; draw();
   }
   async function resolve(url) {
@@ -470,9 +473,9 @@
     if (on) {
       if (ownLists[platform] === null && !busy) setTimeout(() => loadOwnLists(platform), 0);
       box.append(listOf(ownLists[platform], (l) => {
+        if (platform === "spotify") { tab = "lists"; draw(); return; }
         tab = "link";
-        if (platform === "spotify") { query = l.url; resolve(l.url); }
-        else { query = ""; busy = true; found = null; draw(); appleLibraryTracks(l).then((r) => { found = r; }, (e) => { error = e.message; }).then(() => { busy = false; draw(); }); }
+        { query = ""; busy = true; found = null; draw(); appleLibraryTracks(l).then((r) => { found = r; }, (e) => { error = e.message; }).then(() => { busy = false; draw(); }); }
       }));
     }
     return box;
