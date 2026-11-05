@@ -850,7 +850,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 
 <script src="assets/sounds-player.js?v=22"></script>
 <script src="assets/platforms.js?v=13"></script>
-<script src="assets/ratings.js?v=1"></script>
+<script src="assets/ratings.js?v=2"></script>
 <script src="assets/audio-kit.js?v=2"></script>
 <script src="assets/pdf-kit.js"></script>
 <script src="assets/release-steps.js"></script>
@@ -1303,7 +1303,7 @@ let ratingsFor = null, topDrawn = false;
 function drawTop() {
   if (topDrawn || data.vanish) return;
   topDrawn = true;
-  OniriqueRatings.top().then((box) => { if (box) $("rt-top").replaceChildren(box); });
+  OniriqueRatings.discover().then((box) => { if (box) $("rt-top").replaceChildren(box); });
 }
 function renderGrid() {
   drawTop();
@@ -4244,6 +4244,6 @@ lightClose($("settings"));
   }
 })();
 </script>
-<script src="assets/account.js?v=9"></script>
+<script src="assets/account.js?v=10"></script>
 <script src="assets/site-nav.js?v=16"></script>
 </html>

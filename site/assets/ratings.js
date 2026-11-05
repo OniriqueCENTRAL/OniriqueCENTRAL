@@ -101,5 +101,56 @@
         el("span", {}, el("b", { textContent: x.title }), el("small", { textContent: x.owner + " · ▲ " + x.ups + (x.count ? " · " + x.avg.toLocaleString("fr-FR") + " ★" : "") })))))));
   }
 
-  window.OniriqueRatings = { load, visible, bar, up: (kind, id, token) => (visible(kind, id) ? upButton(kind, id, token, true) : null), top };
+  // « Découvrir » : quatre onglets de playlists publiques (top de la semaine, mieux notées, nouveautés, abonnements),
+  // en cartes qui défilent ; l'onglet choisi et l'ouverture du bloc sont gardés d'une visite à l'autre.
+  const KEY = "onirique.discover";
+  const TABS = [["week", "Top de la semaine"], ["best", "Mieux notées"], ["fresh", "Nouveautés"], ["following", "Mes abonnements"]];
+  const EMPTY = { week: "Personne n'a encore up de playlist cette semaine.", best: "Aucune playlist n'a encore deux notes.",
+    fresh: "Pas encore de playlist partagée par les autres membres.", following: "Abonne-toi à des membres depuis leur page de profil : leurs playlists arriveront ici." };
+  function card(x, rank) {
+    return el("a", { className: "dc-card", href: x.url },
+      x.cover ? el("img", { src: x.cover + "?w=320", alt: "", loading: "lazy" }) : el("span", { className: "dc-ph" }),
+      rank ? el("span", { className: "dc-rank", textContent: String(rank) }) : null,
+      el("b", { textContent: x.title }),
+      el("small", {}, x.ownerHandle ? el("span", { className: "dc-owner", textContent: x.owner, onclick: (e) => { e.preventDefault(); e.stopPropagation(); location.href = "profil?u=" + encodeURIComponent(x.ownerHandle); } }) : x.owner,
+        " · " + x.tracks + " son" + (x.tracks > 1 ? "s" : "")),
+      el("small", { className: "dc-stats", textContent: (x.count ? "★ " + x.avg.toLocaleString("fr-FR") + " (" + x.count + ")" : "☆ pas de note") + "  ·  ▲ " + x.ups }));
+  }
+  async function discover() {
+    if (!session()) return null;
+    let d;
+    try { d = await api("GET", "/me/sounds/discover"); } catch { return null; }
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch {}
+    const remember = () => { try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch {} };
+    let tab = TABS.some(([k]) => k === saved.tab) ? saved.tab : (d.week.length ? "week" : "fresh");
+    const row = el("div", { className: "dc-row" }), tabs = el("div", { className: "dc-tabs", role: "tablist" });
+    const draw = () => {
+      tabs.replaceChildren(...TABS.map(([k, label]) => el("button", { type: "button", role: "tab", className: k === tab ? "on" : "", ariaSelected: String(k === tab),
+        textContent: label + (d[k].length ? " · " + d[k].length : ""), onclick: () => { tab = k; saved.tab = k; remember(); draw(); } })));
+      row.replaceChildren(...(d[tab].length ? d[tab].map((x, i) => card(x, tab === "week" || tab === "best" ? i + 1 : 0)) : [el("p", { className: "dc-empty", textContent: EMPTY[tab] })]));
+    };
+    draw();
+    const box = el("details", { className: "rt-top dc", open: saved.open !== false }, el("summary", {}, "Découvrir"), tabs, row);
+    box.addEventListener("toggle", () => { saved.open = box.open; remember(); });
+    return box;
+  }
+  style.textContent += `
+.dc-tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 10px; }
+.dc-tabs button { border: 1px solid var(--line, rgba(255,210,214,.13)); background: rgba(255,255,255,.03); color: var(--haze, #a88f92); border-radius: 999px; padding: 7px 13px; font: 600 12px var(--f-body, sans-serif); cursor: pointer; }
+.dc-tabs button.on { color: var(--mist, #F6EEEE); border-color: var(--ember, #E23444); background: color-mix(in srgb, var(--ember, #E23444) 16%, transparent); }
+.dc-row { display: grid; grid-auto-flow: column; grid-auto-columns: 168px; gap: 12px; overflow-x: auto; padding: 4px 14px 16px; scrollbar-width: thin; }
+.rt-top .dc-card { position: relative; display: grid; align-content: start; gap: 4px; padding: 8px; border-radius: 14px; color: var(--mist, #F6EEEE); text-decoration: none; background: rgba(255,255,255,.03); border: 1px solid transparent; }
+.dc-card:hover { border-color: var(--line, rgba(255,210,214,.13)); background: rgba(255,255,255,.06); }
+.rt-top .dc-card img, .rt-top .dc-card .dc-ph { width: 100%; height: auto; aspect-ratio: 1; border-radius: 10px; object-fit: cover; background: linear-gradient(135deg, #5C0008, #2A0A0E); }
+.dc-card b { font: 700 14px/1.25 var(--f-body, sans-serif); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 4px; }
+.dc-card small { color: var(--haze, #a88f92); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dc-card .dc-stats { font: 500 11px var(--f-mono, monospace); color: var(--mist, #F6EEEE); opacity: .8; }
+.dc-owner { cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.dc-owner:hover { color: var(--ember, #E23444); }
+.dc-rank { position: absolute; top: 14px; left: 14px; min-width: 26px; height: 26px; padding: 0 7px; border-radius: 9px; background: rgba(13,8,9,.8); color: var(--ember, #E23444); font: 800 13px/26px var(--f-display, sans-serif); text-align: center; }
+.dc-empty { margin: 0; padding: 10px 4px; color: var(--haze, #a88f92); font-size: 14px; grid-column: 1 / -1; white-space: normal; }
+`;
+
+  window.OniriqueRatings = { load, visible, bar, up: (kind, id, token) => (visible(kind, id) ? upButton(kind, id, token, true) : null), top, discover };
 })();

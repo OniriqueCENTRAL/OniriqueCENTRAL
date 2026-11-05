@@ -67,6 +67,9 @@ ${spark(1)}${spark(2)}${spark(3)}
 .acct-head em { justify-self: start; font: 500 10px/1 var(--f-mono, ui-monospace, monospace); font-style: normal; letter-spacing: .12em; text-transform: uppercase; padding: 5px 8px; border-radius: 999px; color: var(--bone, #ffecee); border: 1px solid rgba(226,52,68,.6); background: rgba(226,52,68,.16); }
 .acct-menu a, .acct-menu button { display: block; width: 100%; padding: 11px 12px; border: 0; border-radius: 10px; background: none; color: var(--mist, #f6eeee); font: 500 14px/1.2 var(--f-body, system-ui, sans-serif); text-align: left; text-decoration: none; cursor: pointer; }
 .acct-menu a:hover, .acct-menu button:hover, .acct-menu a:focus-visible, .acct-menu button:focus-visible { background: rgba(226,52,68,.16); color: var(--mist, #f6eeee); outline: none; }
+.acct-count { float: right; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--ember, #e23444); color: #fff; font: 700 11px/20px var(--f-mono, ui-monospace, monospace); font-style: normal; text-align: center; }
+.acct-button { position: relative; }
+.acct-dot { position: absolute; top: 2px; left: 34px; width: 10px; height: 10px; border-radius: 50%; background: var(--ember, #e23444); border: 2px solid var(--night, #0d0809); }
 .acct-menu hr { margin: 6px 4px; border: 0; border-top: 1px solid var(--line, rgba(255,210,214,.16)); }
 .acct-menu h6 { margin: 0; padding: 8px 12px 4px; font: 500 10px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .14em; text-transform: uppercase; color: var(--haze, #a88f92); }
 .acct-menu .acct-out { color: #ff8f99; }
@@ -99,7 +102,17 @@ ${spark(1)}${spark(2)}${spark(3)}
       // Une page réservée renvoie au compte ; les autres se rechargent simplement, déconnectées.
       if (/admin/.test(location.pathname)) location.href = "compte"; else location.reload();
     };
-    const download = item("Télécharger l'application", "/#telechargement"); // le choix entre Windows et Mac
+    const download = item("Télécharger l'application", "/#telechargement");
+    // Page de profil et messages : ce qui attend (messages non lus, abonnés et commentaires nouveaux) en pastille.
+    const profileItem = item("Ma page de profil", "profil"), messagesItem = item("Messages et activité", "messages");
+    fetch("/api/me/inbox-count", { headers: { Authorization: "Bearer " + token() } }).then((r) => (r.ok ? r.json() : null)).then((n) => {
+      if (!n) return;
+      if (n.profile) profileItem.href = "profil?u=" + encodeURIComponent(n.profile);
+      const waiting = n.messages + n.notifications;
+      if (!waiting) return;
+      messagesItem.append(el("i", { className: "acct-count", textContent: String(waiting) }));
+      button.append(el("i", { className: "acct-dot", title: waiting + " nouveauté" + (waiting > 1 ? "s" : "") }));
+    }).catch(() => {}); // le choix entre Windows et Mac
     const menu = el("div", { className: "acct-menu", hidden: true },
       el("div", { className: "acct-head" }, el("img", { src: avatar(user), alt: "" }),
         el("div", {}, el("strong", { textContent: name }), el("small", { textContent: user.email }), ROLES[user.role] ? el("em", { textContent: ROLES[user.role] }) : null)),
@@ -107,8 +120,8 @@ ${spark(1)}${spark(2)}${spark(3)}
       item("Paramètres", "compte#parametres"),
       item("Mes licences", "compte#licences"),
       item("Parrainage", "compte#parrainage"),
-      item("Ma page de profil", "profil"),
-      item("Messages", "messages"),
+      profileItem,
+      messagesItem,
       el("hr"),
       item("Boutique", "boutique"),
       download,

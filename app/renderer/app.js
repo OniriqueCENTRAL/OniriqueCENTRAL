@@ -158,11 +158,27 @@ export function avatar(user, big = false) {
 /** Les outils du site, affichés dans l'application avec la session du compte (la vue est posée par main.js). */
 const TOOL_ROUTES = ['cut', 'cloud'];
 
+// Tant qu'une fenêtre de l'application est ouverte, l'outil affiché n'est plus qu'une image : la fenêtre passe
+// devant lui et les clics ne traversent plus jusqu'à la page.
+new MutationObserver(async () => {
+  const open = document.getElementById('overlay').hasChildNodes(), host = document.querySelector('.tool-host');
+  if (!host || open === !!host.dataset.frozen) return;
+  if (open) {
+    host.dataset.frozen = '1';
+    const shot = await call('tool:freeze').catch(() => null);
+    if (shot && host.dataset.frozen) host.style.background = `url("${shot}") center / 100% 100% no-repeat`;
+  } else {
+    delete host.dataset.frozen;
+    await call('tool:thaw').catch(() => {});
+    host.style.background = '';
+  }
+}).observe(document.getElementById('overlay'), { childList: true });
+
 function toolPage(tool) {
   const host = h('div', { class: 'tool-host' }, h('div', { class: 'tool-wait' }, starKnob(0.4, 110), h('div', { class: 'eyebrow' }, 'Ouverture…')));
   // La page du site suit exactement la place de ce cadre, même quand la fenêtre change de taille.
   const sync = () => {
-    if (!host.isConnected || state.route.name !== tool) return;
+    if (!host.isConnected || state.route.name !== tool || host.dataset.frozen) return;
     const r = host.getBoundingClientRect();
     call('tool:show', tool, { x: r.left, y: r.top, width: r.width, height: r.height }, window.OniriqueI18n?.lang)
       .then(() => host.replaceChildren(), (error) => toast(error.message, true));

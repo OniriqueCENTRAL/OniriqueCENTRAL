@@ -485,6 +485,16 @@ app.whenReady().then(async () => {
     await web.executeJavaScript(`try { for (const k of Object.keys(sessionStorage)) if (k !== 'onirique.token') sessionStorage.removeItem(k); } catch {}`).catch(() => {});
     await web.loadURL(`${SITE}/${TOOL_PAGES[tool]}`).catch(() => {});
   });
+  // Une fenêtre de l'application (Paramètres, confirmation…) s'ouvre : la page de l'outil, posée par-dessus
+  // l'interface, passerait devant et prendrait les clics. Elle est remplacée par son image le temps de la fenêtre.
+  handle('tool:freeze', async () => {
+    if (!shownTool || !toolViews.has(shownTool)) return null;
+    const view = await toolViews.get(shownTool);
+    const image = await view.webContents.capturePage().catch(() => null);
+    view.setVisible(false);
+    return image ? image.toDataURL() : null;
+  });
+  handle('tool:thaw', async () => { if (shownTool && toolViews.has(shownTool)) (await toolViews.get(shownTool)).setVisible(true); });
   handle('tool:hide', async () => {
     shownTool = null; for (const view of toolViews.values()) (await view).setVisible(false); });
   // Répondre à une demande de support : la messagerie de ce PC s'ouvre sur un message adressé à la personne.

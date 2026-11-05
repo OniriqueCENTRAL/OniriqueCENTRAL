@@ -59,6 +59,11 @@ textarea { border-radius: 12px; border: 1px solid var(--line); background: rgba(
 .send { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line); }
 .send textarea { flex: 1; height: 44px; padding: 11px 14px; overflow: hidden; }
 .empty { padding: 24px; margin: 0; color: var(--haze); }
+.note { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border-radius: 14px; text-decoration: none; font-size: 14px; }
+.note:hover { background: rgba(255,255,255,.04); }
+.note.new { background: rgba(226,52,68,.12); }
+.note img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex: none; background: #2a0a0e; }
+.note time { display: block; font: 500 11px var(--f-mono); color: var(--haze); margin-top: 2px; }
 </style>
 
 <header>
@@ -93,9 +98,27 @@ const avatarOf = (src) => (src ? src + "?w=120" : "assets/favicon.png");
 const time = (t) => new Date(t).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 let current = new URLSearchParams(location.search).get("u"), shown = "";
 
+// L'activité : abonnements, commentaires sur ma page, réponses à mes commentaires (lue dès qu'elle est ouverte).
+const SAYS = { follow: "s'est abonné à ta page", comment: "a commenté ta page", reply: "a répondu à un commentaire" };
+async function activity() {
+  current = null; shown = "";
+  history.replaceState(null, "", "messages");
+  $("thread").replaceChildren(el("p", { className: "empty", textContent: "Chargement…" }));
+  const list = await api("GET", "/me/notifications");
+  $("thread").replaceChildren(el("div", { className: "thread-head" }, el("b", { textContent: "Activité" })),
+    el("div", { className: "msgs" }, ...(list.length ? list.map((n) => el("a", { className: "note" + (n.read ? "" : " new"), href: n.kind === "follow" && n.actor.handle ? "profil?u=" + encodeURIComponent(n.actor.handle) : "profil?u=" + encodeURIComponent(n.page || "") },
+      el("img", { src: avatarOf(n.actor.avatar), alt: "" }),
+      el("span", {}, el("b", { textContent: n.actor.name }), " " + SAYS[n.kind] + (n.body ? " : « " + n.body + " »" : ""), el("time", { textContent: time(n.at) }))))
+      : [el("p", { className: "empty", textContent: "Rien de neuf pour l'instant. Quand quelqu'un s'abonne à ta page ou la commente, c'est ici." })])));
+  if (list.some((n) => !n.read)) await api("POST", "/me/notifications/read").catch(() => {});
+  drawList().catch(() => {});
+}
+
 async function drawList() {
-  const list = await api("GET", "/me/messages");
-  $("list").replaceChildren(...(list.length ? list.map((c) => el("button", { type: "button", className: "conv" + (c.with.handle === current ? " on" : ""), disabled: !c.with.handle,
+  const [list, count] = await Promise.all([api("GET", "/me/messages"), api("GET", "/me/inbox-count")]);
+  const head = el("button", { type: "button", className: "conv" + (current ? "" : " on"), onclick: () => activity().catch((e) => { $("state").textContent = e.message; }) },
+    el("span", {}, el("b", { textContent: "Activité" }), el("small", { textContent: "Abonnés, commentaires, réponses" })), count.notifications && current ? el("i", { textContent: String(count.notifications) }) : null);
+  $("list").replaceChildren(head, ...(list.length ? list.map((c) => el("button", { type: "button", className: "conv" + (c.with.handle === current ? " on" : ""), disabled: !c.with.handle,
     title: c.with.handle ? "" : "Ce membre n'a plus de page de profil", onclick: () => open(c.with.handle) },
     el("img", { src: avatarOf(c.with.avatar), alt: "" }), el("span", {}, el("b", { textContent: c.with.name }), el("small", { textContent: c.last })),
     c.unread && c.with.handle !== current ? el("i", { textContent: String(c.unread) }) : null)) : [el("p", { className: "empty", textContent: "Aucune conversation pour l'instant." })]));
@@ -135,7 +158,7 @@ async function open(handle) {
 
 (async () => {
   if (!token) { $("state").innerHTML = 'Connecte-toi pour lire tes messages : <a href="compte">Mon compte</a>.'; return; }
-  try { await drawList(); $("chat").hidden = false; if (current) await open(current); }
+  try { await drawList(); $("chat").hidden = false; if (current) await open(current); else await activity(); }
   catch (e) { $("state").textContent = e.message; return; }
   // Les nouveaux messages arrivent sans recharger la page.
   setInterval(() => { if (!document.hidden) { drawThread(false).catch(() => {}); drawList().catch(() => {}); } }, 8000);

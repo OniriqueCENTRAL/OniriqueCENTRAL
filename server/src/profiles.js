@@ -3,6 +3,7 @@
 // écrit en privé à son auteur (messages.html). Un compte sans page de profil ne reçoit pas de message.
 import { db, get, all, run, now, transaction } from './db.js';
 import { HttpError, rateLimit, optionalUser } from './auth.js';
+import { publicPlaylists } from './ratings.js';
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS user_profiles (
@@ -37,13 +38,48 @@ CREATE TABLE IF NOT EXISTS user_messages (
 );
 CREATE INDEX IF NOT EXISTS user_messages_pair ON user_messages(from_id, to_id, created_at);
 CREATE INDEX IF NOT EXISTS profile_comments_page ON profile_comments(profile_id, created_at);
+CREATE TABLE IF NOT EXISTS profile_comment_likes (
+  comment_id INTEGER NOT NULL REFERENCES profile_comments(id) ON DELETE CASCADE,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  PRIMARY KEY (comment_id, user_id)
+);
+CREATE TABLE IF NOT EXISTS user_notifications (
+  id         INTEGER PRIMARY KEY,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kind       TEXT NOT NULL,
+  actor_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  page       TEXT,
+  body       TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL,
+  read_at    INTEGER
+);
+CREATE INDEX IF NOT EXISTS user_notifications_user ON user_notifications(user_id, created_at);
 `);
+// Les liens d'une page (Instagram, Spotify, site…) et les réponses à un commentaire.
+const column = (table, name) => db.prepare(`SELECT 1 FROM pragma_table_info('${table}') WHERE name = ?`).get(name);
+if (!column('user_profiles', 'links')) db.exec(`ALTER TABLE user_profiles ADD COLUMN links TEXT NOT NULL DEFAULT '[]'`);
+if (!column('profile_comments', 'parent_id')) db.exec('ALTER TABLE profile_comments ADD COLUMN parent_id INTEGER REFERENCES profile_comments(id) ON DELETE CASCADE');
 
 export const PROFILE_HANDLE = /^[a-z0-9][a-z0-9._-]{2,29}$/;
 const COLOR = /^#[0-9a-f]{6}$/i;
 const clean = (v, max) => (typeof v === 'string' ? v.replace(/\r/g, '').trim().slice(0, max) : '');
 const media = (name) => (name ? `/api/media/${name}` : null);
 const person = (u) => ({ id: u.id, name: u.name || 'Membre', avatar: media(u.avatar), handle: u.handle || null });
+const linksOf = (json) => { try { return JSON.parse(json || '[]'); } catch { return []; } };
+/** Jusqu'à six liens http(s), chacun avec un nom court. */
+function cleanLinks(list) {
+  if (!Array.isArray(list)) return [];
+  return list.slice(0, 6).map((l) => ({ label: clean(l?.label, 40), url: clean(l?.url, 300) })).filter((l) => l.url).map((l) => {
+    let url;
+    try { url = new URL(/^https?:\/\//i.test(l.url) ? l.url : `https://${l.url}`); } catch { throw new HttpError(400, `Lien illisible : ${l.url}`); }
+    if (!/^https?:$/.test(url.protocol)) throw new HttpError(400, `Lien illisible : ${l.url}`);
+    return { label: l.label || url.hostname.replace(/^www\./, ''), url: url.href };
+  });
+}
+/** Prévenir quelqu'un (abonnement, commentaire, réponse) ; jamais soi-même. */
+const notify = (userId, kind, actorId, page, body = '') => {
+  if (userId !== actorId) run('INSERT INTO user_notifications (user_id, kind, actor_id, page, body, created_at) VALUES (?, ?, ?, ?, ?, ?)', userId, kind, actorId, page, body.slice(0, 140), now());
+};
 
 export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wrap }) {
   const pageOf = (handle) => {
@@ -55,7 +91,7 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
   // Ma page : la créer, la régler (adresse, bio, couleur, commentaires ouverts), ou la supprimer.
   app.get('/api/me/profile/page', requireUser, (req, res) => {
     const p = get('SELECT * FROM user_profiles WHERE user_id = ?', req.user.id);
-    res.set('Cache-Control', 'no-store').json(p ? { handle: p.handle, bio: p.bio, color: p.color, banner: media(p.banner), comments: !!p.comments } : null);
+    res.set('Cache-Control', 'no-store').json(p ? { handle: p.handle, bio: p.bio, color: p.color, banner: media(p.banner), comments: !!p.comments, links: linksOf(p.links) } : null);
   });
   app.put('/api/me/profile/page', requireUser, (req, res) => {
     rateLimit(`profile-edit:${req.user.id}`, 60, 3600_000);
@@ -64,9 +100,10 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
     const taken = get('SELECT user_id FROM user_profiles WHERE handle = ?', handle);
     if (taken && taken.user_id !== req.user.id) throw new HttpError(409, 'Cette adresse est déjà prise.');
     const color = COLOR.test(req.body?.color || '') ? req.body.color.toLowerCase() : '#e5384a';
-    run(`INSERT INTO user_profiles (user_id, handle, bio, color, comments, created_at) VALUES (?, ?, ?, ?, ?, ?)
-      ON CONFLICT(user_id) DO UPDATE SET handle = excluded.handle, bio = excluded.bio, color = excluded.color, comments = excluded.comments`,
-      req.user.id, handle, clean(req.body?.bio, 600), color, req.body?.comments === false ? 0 : 1, now());
+    const links = JSON.stringify(cleanLinks(req.body?.links));
+    run(`INSERT INTO user_profiles (user_id, handle, bio, color, comments, links, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET handle = excluded.handle, bio = excluded.bio, color = excluded.color, comments = excluded.comments, links = excluded.links`,
+      req.user.id, handle, clean(req.body?.bio, 600), color, req.body?.comments === false ? 0 : 1, links, now());
     res.json({ handle });
   });
   app.put('/api/me/profile/page/banner', requireUser, wrap(async (req, res) => {
@@ -92,22 +129,44 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
   app.get('/api/profiles/:handle', (req, res) => {
     const p = pageOf(req.params.handle), viewer = optionalUser(req);
     const count = (sql, ...a) => get(sql, ...a).n;
+    const comments = all(`SELECT c.id, c.body, c.created_at, c.parent_id, u.id AS uid, u.name, u.avatar, pr.handle,
+        (SELECT COUNT(*) FROM profile_comment_likes k WHERE k.comment_id = c.id) AS likes,
+        EXISTS (SELECT 1 FROM profile_comment_likes k WHERE k.comment_id = c.id AND k.user_id = ?) AS liked
+      FROM profile_comments c JOIN users u ON u.id = c.author_id LEFT JOIN user_profiles pr ON pr.user_id = u.id
+      WHERE c.profile_id = ? ORDER BY c.created_at DESC, c.id DESC LIMIT 400`, viewer?.id || 0, p.user_id)
+      .map((c) => ({ id: c.id, parentId: c.parent_id, body: c.body, at: c.created_at, likes: c.likes, liked: !!c.liked,
+        author: person({ id: c.uid, name: c.name, avatar: c.avatar, handle: c.handle }), canDelete: !!(viewer && (viewer.id === c.uid || viewer.id === p.user_id)) }));
+    // Les réponses sous leur commentaire, de la plus ancienne à la plus récente.
+    const top = comments.filter((c) => !c.parentId);
+    for (const c of top) c.replies = comments.filter((r) => r.parentId === c.id).reverse();
     res.set('Cache-Control', 'no-store').json({
       handle: p.handle, name: p.name || 'Membre', avatar: media(p.avatar), bio: p.bio, color: p.color, banner: media(p.banner), commentsOpen: !!p.comments,
+      links: linksOf(p.links), since: p.created_at,
+      playlists: publicPlaylists(viewer?.id, { where: 'p.user_id = ?', params: [p.user_id], limit: 60 }),
       followers: count('SELECT COUNT(*) AS n FROM user_follows WHERE followed_id = ?', p.user_id),
       following: count('SELECT COUNT(*) AS n FROM user_follows WHERE follower_id = ?', p.user_id),
       mine: viewer?.id === p.user_id, followed: !!(viewer && get('SELECT 1 FROM user_follows WHERE follower_id = ? AND followed_id = ?', viewer.id, p.user_id)),
       canMessage: !!(viewer && viewer.id !== p.user_id),
-      comments: all(`SELECT c.id, c.body, c.created_at, u.id AS uid, u.name, u.avatar, pr.handle FROM profile_comments c JOIN users u ON u.id = c.author_id
-        LEFT JOIN user_profiles pr ON pr.user_id = u.id WHERE c.profile_id = ? ORDER BY c.created_at DESC LIMIT 200`, p.user_id)
-        .map((c) => ({ id: c.id, body: c.body, at: c.created_at, author: person({ id: c.uid, name: c.name, avatar: c.avatar, handle: c.handle }),
-          canDelete: !!(viewer && (viewer.id === c.uid || viewer.id === p.user_id)) })),
+      followsMe: !!(viewer && get('SELECT 1 FROM user_follows WHERE follower_id = ? AND followed_id = ?', p.user_id, viewer.id)),
+      comments: top,
     });
+  });
+  // Les abonnés d'une page, ou ses abonnements : ?side=followers|following (avec, pour le visiteur, qui il suit déjà).
+  app.get('/api/profiles/:handle/follows', (req, res) => {
+    const p = pageOf(req.params.handle), viewer = optionalUser(req), followers = req.query.side !== 'following';
+    const rows = all(`SELECT u.id, u.name, u.avatar, pr.handle, pr.bio FROM user_follows f
+        JOIN users u ON u.id = ${followers ? 'f.follower_id' : 'f.followed_id'} LEFT JOIN user_profiles pr ON pr.user_id = u.id
+      WHERE ${followers ? 'f.followed_id' : 'f.follower_id'} = ? ORDER BY f.created_at DESC LIMIT 500`, p.user_id);
+    const mine = new Set(viewer ? all('SELECT followed_id FROM user_follows WHERE follower_id = ?', viewer.id).map((r) => r.followed_id) : []);
+    res.set('Cache-Control', 'no-store').json(rows.map((r) => ({ ...person(r), bio: (r.bio || '').slice(0, 120), followed: mine.has(r.id), me: viewer?.id === r.id })));
   });
   app.post('/api/profiles/:handle/follow', requireUser, (req, res) => {
     const p = pageOf(req.params.handle);
     if (p.user_id === req.user.id) throw new HttpError(400, "On ne s'abonne pas à sa propre page.");
-    run('INSERT OR IGNORE INTO user_follows (follower_id, followed_id, created_at) VALUES (?, ?, ?)', req.user.id, p.user_id, now());
+    rateLimit(`profile-follow:${req.user.id}`, 120, 3600_000);
+    if (run('INSERT OR IGNORE INTO user_follows (follower_id, followed_id, created_at) VALUES (?, ?, ?)', req.user.id, p.user_id, now()).changes
+      // Un seul avis par personne : se désabonner puis se réabonner ne le renvoie pas.
+      && !get(`SELECT 1 FROM user_notifications WHERE user_id = ? AND kind = 'follow' AND actor_id = ?`, p.user_id, req.user.id)) notify(p.user_id, 'follow', req.user.id, p.handle);
     res.json({ followed: true });
   });
   app.delete('/api/profiles/:handle/follow', requireUser, (req, res) => {
@@ -120,7 +179,21 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
     rateLimit(`profile-comment:${req.user.id}`, 30, 3600_000);
     const body = clean(req.body?.body, 1000);
     if (!body) throw new HttpError(400, 'Écris un commentaire.');
-    res.status(201).json({ id: run('INSERT INTO profile_comments (profile_id, author_id, body, created_at) VALUES (?, ?, ?, ?)', p.user_id, req.user.id, body, now()).lastInsertRowid });
+    // Une réponse se pose sous un commentaire de la même page (pas sous une autre réponse).
+    const parent = req.body?.parentId ? get('SELECT * FROM profile_comments WHERE id = ? AND profile_id = ? AND parent_id IS NULL', Number(req.body.parentId) || 0, p.user_id) : null;
+    if (req.body?.parentId && !parent) throw new HttpError(404, 'Ce commentaire a été retiré.');
+    const id = run('INSERT INTO profile_comments (profile_id, author_id, body, created_at, parent_id) VALUES (?, ?, ?, ?, ?)', p.user_id, req.user.id, body, now(), parent?.id ?? null).lastInsertRowid;
+    notify(p.user_id, parent ? 'reply' : 'comment', req.user.id, p.handle, body);
+    if (parent && parent.author_id !== p.user_id) notify(parent.author_id, 'reply', req.user.id, p.handle, body);
+    res.status(201).json({ id });
+  });
+  // Aimer un commentaire, ou ne plus l'aimer ({ like: false }).
+  app.post('/api/profiles/comments/:id/like', requireUser, (req, res) => {
+    const c = get('SELECT id FROM profile_comments WHERE id = ?', Number(req.params.id) || 0);
+    if (!c) throw new HttpError(404, 'Commentaire introuvable.');
+    if (req.body?.like === false) run('DELETE FROM profile_comment_likes WHERE comment_id = ? AND user_id = ?', c.id, req.user.id);
+    else run('INSERT OR IGNORE INTO profile_comment_likes (comment_id, user_id) VALUES (?, ?)', c.id, req.user.id);
+    res.json({ likes: get('SELECT COUNT(*) AS n FROM profile_comment_likes WHERE comment_id = ?', c.id).n, liked: req.body?.like !== false });
   });
   app.delete('/api/profiles/comments/:id', requireUser, (req, res) => {
     const c = get('SELECT * FROM profile_comments WHERE id = ?', Number(req.params.id) || 0);
@@ -128,6 +201,25 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
     if (c.author_id !== req.user.id && c.profile_id !== req.user.id) throw new HttpError(403, "Seul son auteur ou le propriétaire de la page peut le retirer.");
     run('DELETE FROM profile_comments WHERE id = ?', c.id);
     res.json({ ok: true });
+  });
+
+  // L'activité : qui s'est abonné, a commenté ma page ou répondu à mon commentaire ; et les compteurs du menu.
+  app.get('/api/me/notifications', requireUser, (req, res) => {
+    const rows = all(`SELECT n.*, u.name, u.avatar, pr.handle FROM user_notifications n JOIN users u ON u.id = n.actor_id
+      LEFT JOIN user_profiles pr ON pr.user_id = u.id WHERE n.user_id = ? ORDER BY n.created_at DESC, n.id DESC LIMIT 100`, req.user.id);
+    res.set('Cache-Control', 'no-store').json(rows.map((n) => ({ id: n.id, kind: n.kind, page: n.page, body: n.body, at: n.created_at, read: !!n.read_at,
+      actor: person({ id: n.actor_id, name: n.name, avatar: n.avatar, handle: n.handle }) })));
+  });
+  app.post('/api/me/notifications/read', requireUser, (req, res) => {
+    run('UPDATE user_notifications SET read_at = ? WHERE user_id = ? AND read_at IS NULL', now(), req.user.id);
+    res.json({ ok: true });
+  });
+  app.get('/api/me/inbox-count', requireUser, (req, res) => {
+    res.set('Cache-Control', 'no-store').json({
+      notifications: get('SELECT COUNT(*) AS n FROM user_notifications WHERE user_id = ? AND read_at IS NULL', req.user.id).n,
+      messages: get('SELECT COUNT(*) AS n FROM user_messages WHERE to_id = ? AND read_at IS NULL', req.user.id).n,
+      profile: get('SELECT handle FROM user_profiles WHERE user_id = ?', req.user.id)?.handle || null,
+    });
   });
 
   // Les messages privés : les conversations (la dernière ligne et les non lus), une conversation, et l'envoi.

@@ -68,6 +68,25 @@ export function statsOf(userId, kind, ids) {
   return out;
 }
 
+/**
+ * Les playlists publiques (un lien d'écoute ouvert, au moins un son, hors corbeille) : leur titre, leur créateur et sa
+ * page de profil, leurs notes et leurs ups. where / params filtrent, order trie (SQL écrit ici, jamais par l'appelant).
+ */
+export function publicPlaylists(viewerId, { where = '1', params = [], order = 'p.created_at DESC', limit = 12, since = 0 } = {}) {
+  const rows = all(`SELECT * FROM (SELECT p.id, p.title, p.cover, p.user_id, p.created_at, u.name AS owner, pr.handle AS owner_handle,
+      (SELECT token FROM sound_links l WHERE l.project_id = p.id AND l.password_hash IS NULL AND (l.expires_at IS NULL OR l.expires_at > ?) ORDER BY l.created_at DESC LIMIT 1) AS token,
+      (SELECT COUNT(*) FROM sound_tracks t WHERE t.project_id = p.id) AS tracks,
+      (SELECT COUNT(*) FROM sound_ups x WHERE x.kind = 'playlist' AND x.target_id = p.id AND x.created_at >= ?) AS ups,
+      (SELECT AVG(stars) FROM sound_ratings r WHERE r.kind = 'playlist' AND r.target_id = p.id) AS avg_stars,
+      (SELECT COUNT(*) FROM sound_ratings r WHERE r.kind = 'playlist' AND r.target_id = p.id) AS notes
+    FROM sound_projects p JOIN users u ON u.id = p.user_id LEFT JOIN user_profiles pr ON pr.user_id = p.user_id
+    WHERE p.kind = 'playlist' AND p.trashed_at IS NULL AND ${where}) p
+    WHERE token IS NOT NULL AND tracks > 0 ORDER BY ${order} LIMIT ?`, now(), since, ...params, limit);
+  const stats = statsOf(viewerId || 0, 'playlist', rows.map((r) => r.id));
+  return rows.map((r) => ({ id: r.id, title: r.title, cover: r.cover ? `/api/media/${r.cover}` : null, owner: r.owner || 'Membre', ownerHandle: r.owner_handle || null,
+    tracks: r.tracks, ups: r.ups, avg: stats[r.id].avg, count: stats[r.id].count, mine: stats[r.id].mine, at: r.created_at, url: `${config.siteUrl}/ecoute?t=${r.token}` }));
+}
+
 export function mountRatings(app, { requireUser }) {
   const member = (req, _res, next) => (can(req.user, 'sounds') ? next() : next(new HttpError(403, 'ONIRIQUE CLOUD demande un abonnement.')));
   const me = [requireUser, member];
@@ -118,6 +137,17 @@ export function mountRatings(app, { requireUser }) {
     const stats = statsOf(req.user.id, 'playlist', rows.map((r) => r.id));
     res.set('Cache-Control', 'no-store').json(rows.map((r) => ({ id: r.id, title: r.title, cover: r.cover ? `/api/media/${r.cover}` : null, owner: r.owner || 'Membre',
       ups: r.ups, avg: stats[r.id].avg, count: stats[r.id].count, url: `${config.siteUrl}/ecoute?t=${r.token}` })));
+  });
+  // « Découvrir », en haut d'ONIRIQUE CLOUD : le top de la semaine (ups des sept derniers jours), les mieux notées
+  // (au moins deux notes), les nouveautés, et les playlists des membres auxquels on est abonné.
+  app.get('/api/me/sounds/discover', ...me, (req, res) => {
+    const u = req.user.id, week = now() - 7 * 86400_000;
+    res.set('Cache-Control', 'no-store').json({
+      week: publicPlaylists(u, { since: week, where: `EXISTS (SELECT 1 FROM sound_ups x WHERE x.kind = 'playlist' AND x.target_id = p.id AND x.created_at >= ?)`, params: [week], order: 'ups DESC, id DESC', limit: 10 }),
+      best: publicPlaylists(u, { where: `(SELECT COUNT(*) FROM sound_ratings r WHERE r.kind = 'playlist' AND r.target_id = p.id) >= 2`, order: 'avg_stars DESC, notes DESC, id DESC', limit: 10 }),
+      fresh: publicPlaylists(u, { where: 'p.user_id != ?', params: [u], limit: 12 }),
+      following: publicPlaylists(u, { where: 'p.user_id IN (SELECT followed_id FROM user_follows WHERE follower_id = ?)', params: [u], limit: 20 }),
+    });
   });
   // Le créateur autorise les autres membres à ajouter les sons de sa playlist à leurs playlists (clic droit, « Ajouter à »).
   app.post('/api/me/sounds/projects/:id/members-add', ...me, (req, res) => {
