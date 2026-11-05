@@ -1,0 +1,123 @@
+// ROCKY, le chatbot IA du site : une bulle en bas à droite de chaque page (chargée par site-nav.js). Il répond par
+// /api/rocky (server/src/rocky.js) et joue un petit accord à chaque réponse : il « parle » en musique.
+(() => {
+  if (document.getElementById("rocky")) return;
+  const KEY = "rocky-chat";
+  // Un petit être de pierre à cinq pattes, sans yeux : une carapace taillée en facettes, une lueur braise au centre.
+  const AVATAR = `<svg viewBox="0 0 64 64" aria-hidden="true">
+    <g stroke="#3a302c" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path d="M32 30 32 10 29 5"/><path d="M32 30 52 22 59 25"/><path d="M32 30 46 50 45 58"/>
+      <path d="M32 30 18 50 19 58"/><path d="M32 30 12 22 5 25"/></g>
+    <path d="M32 17 45 24 43 38 32 44 21 38 19 24Z" fill="#6f625a"/>
+    <path d="M32 17 45 24 32 30Z" fill="#8a7b70"/><path d="M19 24 32 30 21 38Z" fill="#5c514a"/>
+    <path d="M32 30 43 38 32 44Z" fill="#4e4540"/><path d="M32 17 19 24 32 30Z" fill="#9b8b7f"/>
+    <circle cx="32" cy="30" r="3.4" fill="#E23444"/><circle cx="32" cy="30" r="6" fill="#E23444" opacity=".25"/>
+  </svg>`;
+
+  const css = document.createElement("style");
+  css.textContent = `
+  #rocky{position:fixed;right:18px;bottom:18px;z-index:9999;font:400 15px/1.5 "Hanken Grotesk","Segoe UI",system-ui,sans-serif;color:#F6EEEE}
+  #rocky .rk-fab{width:62px;height:62px;border-radius:50%;border:1px solid rgba(255,210,214,.25);background:#1A080A;cursor:pointer;padding:6px;box-shadow:0 6px 24px rgba(0,0,0,.5),0 0 18px rgba(226,52,68,.35)}
+  #rocky .rk-fab:hover{transform:scale(1.06)}#rocky svg{width:100%;height:100%;display:block}
+  #rocky .rk-panel{position:absolute;right:0;bottom:76px;width:min(360px,calc(100vw - 36px));height:min(500px,calc(100vh - 120px));display:flex;flex-direction:column;background:#0D0809;border:1px solid rgba(255,210,214,.18);border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.6)}
+  #rocky .rk-panel[hidden]{display:none}
+  #rocky .rk-head{display:flex;align-items:center;gap:10px;padding:12px 14px;background:#1A080A;border-bottom:1px solid rgba(255,210,214,.12)}
+  #rocky .rk-head .rk-av{width:38px;height:38px}#rocky .rk-head b{font:700 15px "Unbounded","Arial Black",sans-serif;letter-spacing:.04em}
+  #rocky .rk-head small{display:block;color:#B9A2A5;font-size:12px}
+  #rocky .rk-close{margin-left:auto;background:none;border:0;color:#B9A2A5;font-size:22px;cursor:pointer}
+  #rocky .rk-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
+  #rocky .rk-msg{max-width:85%;padding:8px 12px;border-radius:14px;white-space:pre-wrap;word-wrap:break-word}
+  #rocky .rk-bot{align-self:flex-start;background:#1A080A;border:1px solid rgba(255,210,214,.12)}
+  #rocky .rk-me{align-self:flex-end;background:#E23444;color:#fff}
+  #rocky .rk-bot a{color:#FF6B78}
+  #rocky form{display:flex;gap:8px;padding:10px;border-top:1px solid rgba(255,210,214,.12)}
+  #rocky input{flex:1;min-width:0;background:#1A080A;border:1px solid rgba(255,210,214,.18);border-radius:12px;color:#F6EEEE;padding:10px 12px;font:inherit}
+  #rocky form button{background:#E23444;color:#fff;border:0;border-radius:12px;padding:0 14px;font-weight:700;cursor:pointer}
+  #rocky form button:disabled{opacity:.5}`;
+  document.head.append(css);
+
+  const root = document.createElement("div");
+  root.id = "rocky";
+  root.innerHTML = `<div class="rk-panel" role="dialog" aria-label="Discuter avec Rocky" hidden>
+      <div class="rk-head"><span class="rk-av">${AVATAR}</span><div><b>ROCKY</b><small>Assistant IA d'ONIRIQUE</small></div>
+        <button class="rk-close" type="button" aria-label="Fermer">×</button></div>
+      <div class="rk-log" aria-live="polite"></div>
+      <form><input name="q" maxlength="1000" autocomplete="off" placeholder="Écris à Rocky…" aria-label="Message pour Rocky"><button>Envoyer</button></form>
+    </div>
+    <button class="rk-fab" type="button" aria-label="Ouvrir le chat avec Rocky">${AVATAR}</button>`;
+  document.body.append(root);
+  const [panel, fab, log, form] = ["rk-panel", "rk-fab", "rk-log"].map((c) => root.querySelector("." + c)).concat(root.querySelector("form"));
+  const input = form.q, send = form.querySelector("button");
+
+  let history = [];
+  try { history = JSON.parse(sessionStorage.getItem(KEY)) || []; } catch {}
+  const save = () => { try { sessionStorage.setItem(KEY, JSON.stringify(history.slice(-12))); } catch {} };
+
+  // Le texte reste du texte ; seuls les liens https deviennent cliquables.
+  const add = (role, text) => {
+    const div = document.createElement("div");
+    div.className = "rk-msg " + (role === "user" ? "rk-me" : "rk-bot");
+    text.split(/(https:\/\/[^\s)]+)/).forEach((part, i) => {
+      if (i % 2) { const a = document.createElement("a"); a.href = a.textContent = part.replace(/[.,!?]+$/, ""); div.append(a, part.slice(a.textContent.length)); }
+      else div.append(part);
+    });
+    log.append(div);
+    log.scrollTop = log.scrollHeight;
+    return div;
+  };
+
+  // Un accord de trois notes, doux et court : la voix de Rocky.
+  let audio;
+  const chord = () => {
+    try {
+      audio ||= new AudioContext();
+      const t = audio.currentTime, base = 220 * 2 ** (Math.floor(Math.random() * 7) / 12);
+      [1, 1.26, 1.5].forEach((ratio, i) => {
+        const o = audio.createOscillator(), g = audio.createGain();
+        o.type = "triangle"; o.frequency.value = base * ratio;
+        g.gain.setValueAtTime(0, t + i * .07); g.gain.linearRampToValueAtTime(.06, t + i * .07 + .02); g.gain.exponentialRampToValueAtTime(.0001, t + i * .07 + .5);
+        o.connect(g).connect(audio.destination); o.start(t + i * .07); o.stop(t + i * .07 + .55);
+      });
+    } catch {}
+  };
+
+  const open = (show) => {
+    panel.hidden = !show;
+    if (show && !log.childElementCount) {
+      add("assistant", "Salut, ami ! Moi Rocky. Je connais le site ONIRIQUE bien bien bien. Tu cherches quoi, question ?");
+      history.forEach((m) => add(m.role, m.content));
+    }
+    if (show) input.focus();
+  };
+  fab.addEventListener("click", () => open(panel.hidden));
+  root.querySelector(".rk-close").addEventListener("click", () => open(false));
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !panel.hidden) open(false); });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text || send.disabled) return;
+    input.value = "";
+    add("user", text);
+    history.push({ role: "user", content: text });
+    send.disabled = true;
+    const wait = add("assistant", "…");
+    try {
+      const r = await fetch("/api/rocky", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: history }) });
+      const data = await r.json().catch(() => ({}));
+      wait.remove();
+      if (!r.ok) { add("assistant", data.error || "Rocky n'entend plus rien. Réessaie, ami."); history.pop(); return; }
+      add("assistant", data.reply);
+      history.push({ role: "assistant", content: data.reply });
+      chord();
+    } catch {
+      wait.remove();
+      add("assistant", "Pas de réseau, ami. Réessaie.");
+      history.pop();
+    } finally {
+      save();
+      send.disabled = false;
+      input.focus();
+    }
+  });
+})();

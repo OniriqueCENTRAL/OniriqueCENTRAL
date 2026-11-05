@@ -438,3 +438,6 @@ header .sn-lang { margin-left: 8px; }
     if (target) window.addEventListener("load", () => goTo(target, false), { once: true });
   }
 })();
+
+// ROCKY, le chatbot IA du site (assets/rocky.js), sur toutes les pages qui ont cette navigation.
+document.head.append(Object.assign(document.createElement("script"), { src: "/assets/rocky.js?v=1", defer: true }));

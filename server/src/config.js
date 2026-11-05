@@ -93,6 +93,10 @@ export const config = {
   spotifyClientId: env.SPOTIFY_CLIENT_ID || '',
   spotifyAccounts: (env.SPOTIFY_ACCOUNTS || 'https://accounts.spotify.com').replace(/\/+$/, ''),
   spotifyApi: (env.SPOTIFY_API || 'https://api.spotify.com').replace(/\/+$/, ''),
+  // ROCKY, le chatbot du site (rocky.js) : la clé de l'API Claude (console.anthropic.com) et le modèle.
+  anthropicApiKey: env.ANTHROPIC_API_KEY || '',
+  anthropicApi: (env.ANTHROPIC_API || 'https://api.anthropic.com').replace(/\/+$/, ''),
+  rockyModel: env.ROCKY_MODEL || 'claude-haiku-5-5',
   appleTeamId: env.APPLE_TEAM_ID || '',
   appleMusicKeyId: env.APPLE_MUSIC_KEY_ID || '',
   // Activations simultanées par défaut, et marge laissée hors ligne aux abonnés.
