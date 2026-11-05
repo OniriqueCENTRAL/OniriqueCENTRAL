@@ -211,6 +211,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1320px; }
 
 <dialog id="buy"></dialog>
 <script src="assets/sounds-player.js?v=22"></script>
+<script src="assets/ratings.js?v=1"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const OP = window.OniriquePlayer, icon = OP.icon;
@@ -393,6 +394,7 @@ function show(data) {
     row.onkeydown = (event) => { if (event.key === "Enter") row.onclick(); };
     return row;
   }));
+  drawRatings(data);
   $("play-all").replaceChildren(icon("play"));
   $("play-all").onclick = () => (player.item ? player.toggle() : player.play(items, 0));
   // Un membre ONIRIQUE connecté (qui n'est pas l'auteur) peut garder le projet dans sa page ONIRIQUE CLOUD.
@@ -412,6 +414,50 @@ function show(data) {
     try { saved = (await api("/save", {}, saved ? "DELETE" : "POST")).saved; drawSave(); } catch (error) { alert(error.message); }
     $("save").disabled = false;
   };
+}
+
+// Une playlist ouverte par un membre connecté : sa note, ses ups, le up de chaque son ; et, si son créateur l'autorise,
+// le clic droit sur un son pour l'ajouter à l'une de ses propres playlists.
+async function drawRatings(data) {
+  if (!session) return;
+  let info;
+  try { info = await (await fetch("/api/sounds/share/" + encodeURIComponent(shareToken) + "/members-add", { headers: { Authorization: "Bearer " + session } })).json(); } catch { return; }
+  if (!info || !info.projectId) return;
+  if (info.playlist) {
+    await OniriqueRatings.load({ playlists: [info.projectId], tracks: data.tracks.map((t) => t.id), token: shareToken });
+    const bar = OniriqueRatings.bar(info.projectId, shareToken);
+    if (bar) $("meta").after(bar);
+    document.querySelectorAll("#tracks .trk").forEach((row) => {
+      const up = OniriqueRatings.up("track", Number(row.dataset.id), shareToken);
+      if (up) row.querySelector(".len").before(up);
+    });
+  }
+  if (!info.open) return;
+  document.querySelectorAll("#tracks .trk").forEach((row) => row.addEventListener("contextmenu", (event) => { event.preventDefault(); addTo(Number(row.dataset.id), event); }));
+}
+// « Ajouter à » : la liste de ses playlists ; le lien est d'abord enregistré dans son ONIRIQUE CLOUD s'il ne l'est pas.
+async function addTo(trackId, event) {
+  const call = async (method, path, body) => {
+    const r = await fetch("/api" + path, { method, headers: { Authorization: "Bearer " + session, ...(body ? { "Content-Type": "application/json" } : {}) }, body: body ? JSON.stringify(body) : undefined });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || "Erreur " + r.status);
+    return d;
+  };
+  try {
+    let mine = await call("GET", "/me/sounds");
+    let save = mine.saved.find((x) => x.token === shareToken);
+    if (!save) { await api("/save", {}, "POST"); mine = await call("GET", "/me/sounds"); save = mine.saved.find((x) => x.token === shareToken); }
+    const lists = mine.projects.filter((x) => x.kind === "playlist" && (x.mine || x.collaborators));
+    if (!save || !lists.length) return alert("Crée d'abord une playlist dans ONIRIQUE CLOUD.");
+    document.querySelector(".rt-menu")?.remove();
+    const menuBox = el("div", { className: "rt-menu", style: `position:fixed;left:${event.clientX}px;top:${event.clientY}px;z-index:80;display:grid;gap:2px;padding:6px;min-width:220px;border-radius:14px;border:1px solid var(--line);background:#150a0c;box-shadow:0 20px 50px rgba(0,0,0,.6)` },
+      el("small", { style: "padding:6px 10px;color:var(--haze);font:500 11px var(--f-mono);letter-spacing:.12em;text-transform:uppercase", textContent: "Ajouter à" }),
+      ...lists.map((x) => el("button", { type: "button", style: "text-align:left;padding:9px 10px;border:0;border-radius:10px;background:none;color:var(--mist);font:600 14px var(--f-body);cursor:pointer",
+        textContent: x.title, onmouseenter: (e) => { e.target.style.background = "rgba(255,255,255,.06)"; }, onmouseleave: (e) => { e.target.style.background = "none"; },
+        onclick: async () => { menuBox.remove(); try { await call("POST", "/me/sounds/saves/" + save.id + "/add", { projectId: x.id, trackId }); alert("Ajouté à « " + x.title + " »."); } catch (e) { alert(e.message); } } })));
+    document.body.append(menuBox);
+    setTimeout(() => document.addEventListener("click", () => menuBox.remove(), { once: true }), 0);
+  } catch (e) { alert(e.message); }
 }
 
 // L'achat d'une prod : le choix de la licence, puis le paiement chez le prestataire du beatmaker. Les fichiers et le

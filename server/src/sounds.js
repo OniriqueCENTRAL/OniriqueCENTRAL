@@ -797,7 +797,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       projects: projects.map((p) => ({
         id: p.id, kind: p.kind, title: p.title, artist: p.artist, cover: media(p.cover), background: media(p.background), buttonColor: p.button_color, coverBy: p.cover_by, releaseDate: p.release_date, plan: planOf(p), createdAt: p.created_at,
         // Chacun range le projet dans ses dossiers : l'auteur dans le projet, un collaborateur dans sa place de collaborateur.
-        mine: p.user_id === u, folderId: vanish ? null : p.user_id === u ? p.folder_id : collabFolders.get(p.id) ?? null,
+        mine: p.user_id === u, membersAdd: !!p.members_add, folderId: vanish ? null : p.user_id === u ? p.folder_id : collabFolders.get(p.id) ?? null,
         owner: person({ id: p.user_id, name: p.owner_name, avatar: p.owner_avatar }),
         collaborators: collabs.filter((c) => c.project_id === p.id).map(person),
         inviteUrl: p.user_id === u && p.invite_token ? `${config.siteUrl}/mes-sons#/invite/${p.invite_token}` : null,
@@ -1193,6 +1193,9 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (link.password_hash && !(save.pass && same(save.pass, passFor(link)))) throw new HttpError(403, 'Ouvre ce lien une fois avec son mot de passe pour en ajouter les sons.');
     const t = get(`SELECT * FROM sound_tracks WHERE id = ? AND ${link.track_id ? 'id' : 'project_id'} = ?`, id(req.body.trackId), link.track_id || link.project_id);
     if (!t) throw new HttpError(404, "Ce son n'est pas dans ce lien.");
+    // Une playlist d'un autre membre : seulement si son créateur autorise l'ajout de ses sons (réglage de la playlist).
+    const from = link.project_id && get('SELECT kind, members_add, user_id FROM sound_projects WHERE id = ?', link.project_id);
+    if (from && from.kind === 'playlist' && !from.members_add && from.user_id !== req.user.id) throw new HttpError(403, "Le créateur de cette playlist n'autorise pas l'ajout de ses sons.");
     const versions = all('SELECT * FROM sound_versions WHERE track_id = ? ORDER BY id', t.id);
     res.status(201).json({ id: copyTrack(t, versions, to.id, link.id, t.id) });
   });

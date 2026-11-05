@@ -747,6 +747,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
     </div>
     <p class="error" id="disk-full"></p>
     <div class="row vanish-accounts" id="vanish-accounts" role="group" aria-label="Comptes" hidden></div>
+    <div id="rt-top"></div>
     <div class="tiles" id="tiles"></div>
     <div class="empty" id="empty" hidden>
       <div class="star" id="empty-star"></div>
@@ -774,6 +775,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
           <div>
             <h1 id="project-title" title="Renommer"></h1>
             <div class="album-meta" id="project-meta"></div>
+            <div id="rt-bar"></div>
             <div class="release" id="release"></div>
           </div>
           <button class="round white" id="play-all" type="button" aria-label="Écouter le projet"></button>
@@ -846,6 +848,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 
 <script src="assets/sounds-player.js?v=22"></script>
 <script src="assets/platforms.js?v=13"></script>
+<script src="assets/ratings.js?v=1"></script>
 <script src="assets/audio-kit.js?v=2"></script>
 <script src="assets/pdf-kit.js"></script>
 <script src="assets/release-steps.js"></script>
@@ -1293,7 +1296,15 @@ async function createPlaylist() {
     await refresh(); navigate("#/p/" + id); openPick(project(id));
   } catch (error) { fail(error); }
 }
+// Le top 3 de la semaine, en haut de la page (une fois par visite).
+let ratingsFor = null, topDrawn = false;
+function drawTop() {
+  if (topDrawn || data.vanish) return;
+  topDrawn = true;
+  OniriqueRatings.top().then((box) => { if (box) $("rt-top").replaceChildren(box); });
+}
 function renderGrid() {
+  drawTop();
   theme(null);
   setBackground(null);
   const q = data.quota, f = folderId() && folder();
@@ -1498,6 +1509,9 @@ function projectMenu(anchor, p) {
     p.kind === "playlist" && !data.vanish && PF.enabled() && { label: "Depuis Spotify", icon: "link", onclick: () => PF.openAdd(p) },
     p.mine && p.kind && { label: "Repasser en projet classique", icon: "repeat", onclick: () => api("PATCH", "/me/sounds/projects/" + p.id, { kind: "" }).then(refresh, fail) },
     p.mine && p.kind !== "pack" && { label: "Passer en pack de prods", icon: "repeat", onclick: () => makePack(p).catch(fail) },
+    // Le créateur d'une playlist décide si les autres membres peuvent en ajouter les sons à leurs playlists.
+    p.mine && p.kind === "playlist" && !data.vanish && { label: p.membersAdd ? "Ne plus autoriser l'ajout de ses sons" : "Autoriser les autres à ajouter ses sons", icon: "plus",
+      onclick: () => api("POST", "/me/sounds/projects/" + p.id + "/members-add", { open: !p.membersAdd }).then(refresh, fail) },
     p.mine && p.kind !== "playlist" && { label: "Transformer en Playlist", icon: "queue", onclick: () => api("PATCH", "/me/sounds/projects/" + p.id, { kind: "playlist" }).then(refresh, fail) },
     "-",
     { label: "Renommer", icon: "more", onclick: async () => {
@@ -1654,6 +1668,12 @@ function renderProject(p) {
   $("play-all").disabled = !entriesOf(p).length;
   $("add-tracks").disabled = data.quota.full;
   $("tracklist").replaceChildren(...entriesOf(p).map((x, i) => (x.track ? trackRow(p, x.track, i) : platformRow(p, x.item, i))));
+  // Les notes et ups d'une playlist et de ses sons : chargés une fois par ouverture, puis la page se redessine.
+  $("rt-bar").replaceChildren();
+  if (p.kind === "playlist" && !data.vanish) {
+    if (ratingsFor !== p.id) { ratingsFor = p.id; OniriqueRatings.load({ playlists: [p.id], tracks: p.tracks.map((t) => t.id) }).then(() => { if (openId() === p.id) render(); }); }
+    else { const b = OniriqueRatings.bar(p.id); if (b) $("rt-bar").append(b); }
+  }
 }
 
 // La date d'un titre (création ou autre) : badge « 06/05/2026 », choisie dans un calendrier ouvert sous le badge.
@@ -1789,7 +1809,7 @@ function trackRow(p, t, i) {
     el("div", {}, el("div", { className: "tline" }, el("b", { textContent: t.title }), ...prod.tempo, featButton(t), stolen), el("small", { textContent: [day(v.createdAt), "v" + v.n + (t.versions.length > 1 ? " sur " + t.versions.length : ""),
       toFix(t) ? toFix(t) + " retour" + (toFix(t) > 1 ? "s" : "") + " à régler" : t.comments.length ? t.comments.length + " commentaire" + (t.comments.length > 1 ? "s" : "") : null,
       t.plays ? t.plays + " écoute" + (t.plays > 1 ? "s" : "") : null, scanNote(scan)].filter(Boolean).join(" · ") })),
-    el("span", { className: "badges" }, ...(p.kind === "pack" ? [prod.sale] : [dateButton(t), stageButton(t, editing)])), el("span", { className: "len", textContent: v.duration ? OP.time(v.duration) : "" }), more);
+    el("span", { className: "badges" }, ...(p.kind === "pack" ? [prod.sale] : [dateButton(t), stageButton(t, editing)]), p.kind === "playlist" ? OniriqueRatings.up("track", t.id) : null), el("span", { className: "len", textContent: v.duration ? OP.time(v.duration) : "" }), more);
   row.dataset.id = t.id;
   row.draggable = editing;
   row.title = editing ? "Écouter (glisser pour réordonner)" : "Écouter";
