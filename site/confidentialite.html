@@ -26,7 +26,7 @@
 <main class="wrap" id="contenu">
   <p class="eyebrow">Informations légales</p>
   <h1>Politique de confidentialité</h1>
-  <p class="updated">Dernière mise à jour : 2 novembre 2026</p>
+  <p class="updated">Dernière mise à jour : 6 novembre 2026</p>
   <p class="intro">Onirique collecte le strict nécessaire pour gérer votre compte et vos licences. Aucune publicité, aucun outil de mesure d'audience, aucun profilage, aucune revente de données.</p>
 
   <h2>Responsable du traitement</h2>
@@ -77,6 +77,19 @@
   </table></div>
   <p>Aucune adresse IP n'est conservée pour les écoutes. Un auditeur qui veut faire effacer un commentaire peut écrire à <a href="mailto:support@onirique.store">support@onirique.store</a>.</p>
 
+  <h2 id="vocalbox">Apprentissage de VOCALBOX (CRÉER LE MIX)</h2>
+  <p>Le plugin VOCALBOX propose, dans son menu ⋯, une option <strong>LEARNING</strong> (« HELP VOCALBOX LEARN »), <strong>désactivée au départ</strong>. Tant que vous ne l'allumez pas, CRÉER LE MIX fonctionne entièrement sur votre ordinateur et le plugin n'envoie rien. Si vous l'allumez, il envoie au serveur d'Onirique de quoi améliorer CRÉER LE MIX pour tous les utilisateurs. <strong>Aucun son n'est jamais envoyé</strong> : ni votre voix, ni la prod, ni le morceau de référence.</p>
+  <div class="table"><table>
+    <thead><tr><th>Données</th><th>Pourquoi</th><th>Base légale</th><th>Durée de conservation</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Recherche d'artiste</strong> : le nom d'artiste ou le mot que VOCALBOX ne connaît pas dans votre demande</td><td>Trouver comment cet artiste fait mixer sa voix ; la fiche obtenue est gardée et resservie à tous</td><td>Consentement (option LEARNING)</td><td>La fiche de l'artiste est gardée tant qu'elle sert ; un nom introuvable est oublié après une semaine</td></tr>
+      <tr><td><strong>Retour sur un mix</strong> : le texte de votre demande, des mesures de la voix (niveau, équilibre des fréquences, dynamique), la chaîne d'effets et les réglages choisis par CRÉER LE MIX, les réglages que vous avez modifiés ensuite, votre note (OUI ou BOF), la version du plugin, et un identifiant d'installation tiré au hasard</td><td>Corriger et améliorer les choix de CRÉER LE MIX, livrés dans les mises à jour suivantes</td><td>Consentement (option LEARNING)</td><td>3 ans au plus, puis suppression automatique</td></tr>
+    </tbody>
+  </table></div>
+  <p>Ces retours ne sont liés ni à votre compte, ni à votre adresse e-mail, ni à votre licence : l'identifiant d'installation est un nombre tiré au hasard sur votre ordinateur, qui sert seulement à regrouper les retours d'une même installation. L'adresse IP n'est pas enregistrée avec eux ; elle est seulement gardée en mémoire une heure pour limiter les abus. Évitez d'écrire dans la demande des informations personnelles.</p>
+  <p>Pour retrouver la fiche d'un artiste inconnu, le serveur d'Onirique peut poser la question au service d'intelligence artificielle Gemini de Google, avec le seul nom de l'artiste : ni votre adresse IP ni aucune autre donnée vous concernant ne lui sont transmises.</p>
+  <p><strong>Arrêter</strong> : décochez LEARNING dans le menu ⋯ de VOCALBOX ; plus rien n'est envoyé. Comme ces retours ne permettent pas de vous identifier, nous ne pouvons pas retrouver ceux d'une personne précise ; si vous souhaitez malgré tout leur effacement, écrivez à <a href="mailto:support@onirique.store">support@onirique.store</a> avec l'identifiant d'installation, inscrit dans le fichier <code>install-id.txt</code> du dossier Onirique/VocalBox de vos données d'application.</p>
+
   <h2 id="google">Comptes Google des membres (Gmail et YouTube)</h2>
   <p>Un membre ONIRIQUE peut, s'il le choisit, connecter son propre compte Google avec le bouton « Se connecter avec Google », pour deux usages, chacun connecté séparément :</p>
   <ul>
@@ -110,13 +123,14 @@
     <li><strong>Meta</strong> (Instagram), pour les réponses automatiques aux commentaires décrites ci-dessus : les réponses et les messages privés passent par l'API officielle d'Instagram, qui traite vos données sous sa propre responsabilité, selon sa politique de confidentialité.</li>
     <li><strong>Pinterest</strong>, pour les membres qui connectent leur compte : la liste de leurs tableaux et de leurs épingles est lue chez Pinterest, sous sa propre responsabilité, selon sa politique de confidentialité.</li>
     <li><strong>Google</strong> (Gmail et YouTube), pour les membres qui connectent leur compte Google : les mails de leurs packs passent par Gmail et leurs Shorts sont publiés sur YouTube, que Google traite sous sa propre responsabilité, selon sa politique de confidentialité.</li>
+    <li><strong>Google</strong> (Gemini), pour l'<a href="#vocalbox">apprentissage de VOCALBOX</a> : seul le nom d'un artiste inconnu lui est envoyé par le serveur d'Onirique, jamais une donnée vous concernant.</li>
     <li><strong>YouTube</strong> (Google) et <strong>TikTok</strong>, pour le <a href="cgv#downloader">Downloader</a> : c'est le serveur d'Onirique, et non votre navigateur, qui demande la vidéo à YouTube ou à TikTok ; votre adresse IP ne leur est pas transmise. Si vous cliquez sur « Aperçu » pour un lien YouTube, votre navigateur contacte directement YouTube pour afficher le titre et le lecteur (voir la <a href="cookies#youtube">politique relative aux cookies</a>).</li>
     <li><strong>Stripe</strong> et son service <strong>Link</strong>, vendeur officiel et prestataire de paiement, pour vos achats : Onirique lui transmet votre adresse e-mail et la désignation de ce que vous achetez ; vous lui communiquez vous-même, sur sa page de paiement, vos informations de paiement et de facturation. Stripe les traite sous sa propre responsabilité, selon sa politique de confidentialité.</li>
   </ul>
   <p>Vos données ne sont ni vendues, ni louées, ni utilisées à des fins publicitaires.</p>
 
   <h2>Transferts hors de l'Union européenne</h2>
-  <p>Le site, le serveur et la messagerie sont hébergés par IONOS dans l'Union européenne. Seuls le paiement, Instagram et Google font exception : Google peut traiter hors de l'Union européenne les mails et les vidéos envoyés par les membres qui ont connecté leur compte, Meta peut traiter les données des réponses automatiques hors de l'Union européenne, et Stripe peut traiter les données d'une commande hors de l'Union européenne, avec les garanties décrites dans sa politique de confidentialité. N'indiquez dans un message de support aucune information sensible qui ne soit pas utile à votre demande.</p>
+  <p>Le site, le serveur et la messagerie sont hébergés par IONOS dans l'Union européenne. Seuls le paiement, Instagram et Google font exception (dont Gemini, qui ne reçoit que des noms d'artistes) : Google peut traiter hors de l'Union européenne les mails et les vidéos envoyés par les membres qui ont connecté leur compte, Meta peut traiter les données des réponses automatiques hors de l'Union européenne, et Stripe peut traiter les données d'une commande hors de l'Union européenne, avec les garanties décrites dans sa politique de confidentialité. N'indiquez dans un message de support aucune information sensible qui ne soit pas utile à votre demande.</p>
 
   <h2>Vos droits</h2>
   <p>Vous pouvez à tout moment demander l'accès à vos données, leur rectification, leur effacement, la limitation de leur traitement, leur portabilité, ou vous opposer à un traitement fondé sur l'intérêt légitime. Vous pouvez aussi définir des directives sur le sort de vos données après votre décès.</p>

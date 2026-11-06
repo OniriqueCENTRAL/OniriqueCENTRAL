@@ -38,6 +38,11 @@ db.exec(`CREATE TABLE IF NOT EXISTS vocalbox_feedback (
   created_at INTEGER NOT NULL
 )`);
 
+// les retours d'apprentissage sont gardés trois ans au plus (voir la politique de confidentialité)
+const purgeFeedback = () => run('DELETE FROM vocalbox_feedback WHERE created_at < ?', now() - 3 * 365 * 24 * 3600_000);
+purgeFeedback();
+setInterval(purgeFeedback, 24 * 3600_000).unref();
+
 /** Minuscules, sans accents ni ponctuation : la clé d'un artiste. */
 export const normArtist = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
   .replace(/[^a-z0-9 &$]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
