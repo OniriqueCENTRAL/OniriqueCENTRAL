@@ -35,7 +35,7 @@ const page = ({ file, title, description, intro, body }) => `<!doctype html>
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="stylesheet" href="assets/fonts.css">
 <link rel="stylesheet" href="assets/pages.css?v=2">
-<link rel="stylesheet" href="/assets/da.css?v=6">
+<link rel="stylesheet" href="/assets/da.css?v=7">
 <script src="/assets/accent.js?v=1"></script>
 
 <a class="skip" href="#contenu">Aller au contenu</a>

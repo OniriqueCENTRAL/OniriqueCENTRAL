@@ -106,6 +106,11 @@ header .tools-menu a:hover, header .sn-social-drop a:hover { color: #fff; backgr
 .round.white, .round:is(#play, #adv-play, #adv-play2, #stem-play), .play-all { background: var(--lit); color: #fff; box-shadow: var(--lit-shadow); transition: transform .25s var(--ease), box-shadow .25s; }
 .round.white:not(:disabled):hover, .round:is(#play, #adv-play, #adv-play2, #stem-play):not(:disabled):hover, .play-all:hover { transform: scale(1.06); box-shadow: 0 0 0 1px rgba(var(--acc-hi),.7) inset, 0 8px 26px rgba(var(--acc),.45); }
 button.act, a.act { border-radius: 10px; }
+/* Le raccourci ONIRIQUE CLOUD de l'accueil : sa flèche (.go) n'est pas un bouton, c'est une bulle qui glisse au survol */
+.sons-shortcut .go { display: grid; place-items: center; flex: none; width: 34px; height: 34px; margin-left: auto; padding: 0; border-radius: 50%;
+  background: rgba(255,255,255,.05); box-shadow: 0 0 0 1px rgba(255,255,255,.1) inset; color: rgb(var(--acc-hi)); font: 400 17px/1 var(--f-body); letter-spacing: 0; text-transform: none;
+  transition: translate .35s var(--ease), background .25s, color .25s, box-shadow .25s; }
+.sons-shortcut:hover .go, .sons-shortcut:focus-visible .go { translate: 4px 0; transform: none; color: #fff; background: var(--lit); box-shadow: var(--lit-shadow); }
 
 /* Verre : cartes et panneaux */
 /* (pas les cartes des fausses interfaces de plugin de l'accueil, .ui .card, dessinées à leur échelle) */
