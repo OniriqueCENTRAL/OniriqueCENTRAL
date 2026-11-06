@@ -102,8 +102,8 @@
     // Sans HM en cours : celui que j'ai créé et qui est encore ouvert (page rechargée, application relancée), sinon un nouveau.
     chip.onclick = button.onclick = () => (state ? draw(true) : api("GET", "/hm/mine").then((r) => (r.code ? join(r.code) : start()), () => start()));
 
-    let code = null, state = null, offset = 0, stream = null, syncing = false, hold = false, lastSeek = 0;
-    let settle = null, loadedAt = 0, lastData = 0, hinted = null;
+    let code = null, state = null, offset = 0, stream = null, syncing = false, hold = false, lastSeek = 0; // offset : heure du serveur − la nôtre
+    let settle = null, loadedAt = 0, lastData = 0, hinted = null, triedPlay = 0;
     let friendsOpen = false, friendList = null;
     const mine = () => state && state.you;
     const can = (perm) => !!(state && state.you.can[perm]);
@@ -116,22 +116,41 @@
     const audio = player.audio, origPlay = player.play.bind(player), origEnqueue = player.enqueue.bind(player);
     const aPlay = audio.play.bind(audio), aPause = audio.pause.bind(audio);
     const timeDesc = Object.getOwnPropertyDescriptor(audio, "currentTime");
+    // Ce que fait celui qui a la main s'applique tout de suite chez lui (sans attendre l'aller-retour du serveur) ;
+    // le serveur le renvoie ensuite à tous, avec son heure, sur laquelle chacun se cale.
+    const local = (n, patch) => { Object.assign(n, { pos: expected(n), at: serverNow() }, patch); };
     audio.play = () => {
       if (!state || syncing) return aPlay();
       hold = false;
       const n = state.now;
-      if (n && !n.playing && can("control")) send("play");
-      return n && !n.playing ? Promise.resolve() : aPlay(); // reprendre pour soi un HM qui joue : toujours permis
+      if (n && !n.playing) {
+        if (!can("control")) { toast("Le HM est en pause : seul celui qui a la main peut le relancer."); return Promise.resolve(); }
+        local(n, { playing: true });
+        send("play", { pos: n.pos });
+      }
+      return aPlay(); // reprendre pour soi un HM qui joue : toujours permis
     };
     audio.pause = () => {
       // Un son lancé dans une autre vue de l'application (window.oniriqueLocalPause, app/main/main.js) ne coupe que ce lecteur.
-      if (state && !syncing && state.now) { if (can("control") && !window.oniriqueLocalPause) send("pause", { pos: audio.currentTime }); else hold = true; }
+      const n = state && !syncing && state.now;
+      if (n) {
+        if (can("control") && !window.oniriqueLocalPause) { local(n, { playing: false, pos: audio.currentTime }); send("pause", { pos: n.pos }); }
+        else hold = true;
+      }
       return aPause();
     };
+    // Glisser sur la forme d'onde avance aussitôt chez soi ; le HM ne reçoit que la position où l'on s'arrête.
+    let seekTimer = null;
     Object.defineProperty(audio, "currentTime", {
       configurable: true, get: timeDesc.get,
       set(value) {
-        if (state && !syncing) { if (!can("control") || !state.now) return; send("seek", { pos: value }); }
+        if (state && !syncing) {
+          const n = state.now;
+          if (!can("control") || !n) return;
+          local(n, { pos: value });
+          clearTimeout(seekTimer);
+          seekTimer = setTimeout(() => state && state.now && send("seek", { pos: expected(state.now) }), 200);
+        }
         lastSeek = Date.now();
         timeDesc.set.call(audio, value);
       },
@@ -161,16 +180,25 @@
       if (it.engine && PF) it.engine = PF.playerItem({ platform: it.engine === "spotifyEmbed" ? "spotify" : it.engine }).engine || undefined;
       return it;
     };
+    // Le recalage. Le moteur d'un titre de plateforme (Spotify) ne change pas de vitesse et répond en quelques centaines de
+    // millisecondes : il est replacé (un peu en avance) au-delà de 1,2 s d'écart. Un son du CLOUD (<audio>) est rattrapé en
+    // douceur en accélérant ou ralentissant de 6 % au plus (inaudible), et replacé d'un coup au-delà de 1 s.
+    const engineOn = () => !!(player.item && player.item.engine);
+    function place(target) {
+      lastSeek = Date.now();
+      audio.playbackRate = 1;
+      quiet(() => timeDesc.set.call(audio, Math.max(0, target + (engineOn() ? 0.35 : 0.05))));
+    }
     // Une fois le son vraiment parti (Spotify met quelques secondes à charger), il se cale tout de suite sur le HM.
     audio.addEventListener("playing", () => {
       const n = state && state.now;
       if (!n || !settle || settle !== keyOf(n) || !player.item || player.item.key !== settle) return;
       settle = null;
-      if (expected(n) > 1.5) { lastSeek = Date.now(); quiet(() => timeDesc.set.call(audio, expected(n))); }
+      if (Math.abs(audio.currentTime - expected(n)) > 0.3) place(expected(n));
     });
 
-    // Toutes les secondes : le bon son, à la bonne place, en lecture ou en pause comme le HM.
-    setInterval(() => {
+    // À chaque état reçu, au retour sur la page et 4 fois par seconde : le bon son, à la bonne place, en lecture ou en pause.
+    function sync() {
       const n = state && state.now;
       if (!state) return;
       if (!n) { if (player.item && /^hm/.test(player.item.key) && player.playing) quiet(aPause); return; }
@@ -179,10 +207,12 @@
       quiet(() => {
         if (!player.item || player.item.key !== keyOf(n)) {
           settle = keyOf(n); loadedAt = Date.now();
+          audio.playbackRate = 1;
           origPlay([localItem(n)], 0, want);
           lastSeek = 0;
           return;
         }
+        if (!want && player.playing) aPause();
         // Pendant le chargement (jusqu'à 6 s), on ne relance ni ne recale : le moteur n'a pas encore le titre.
         if (settle && Date.now() - loadedAt < 6000) return;
         settle = null;
@@ -191,18 +221,44 @@
         if (n.item.lyrics && cur.lyrics !== n.item.lyrics) cur.lyrics = n.item.lyrics;
         if (n.item.peaks && n.item.peaks.length && !(cur.peaks && cur.peaks.length)) { cur.peaks = n.item.peaks; player.redraw(); }
         if (want && !player.playing) {
+          if (Date.now() - triedPlay < 1500) return; // un essai à la fois : Spotify met un moment à démarrer
+          triedPlay = Date.now();
           aPlay().catch(() => {});
           // Le navigateur (téléphone surtout) refuse de lancer le son tout seul : il faut un toucher.
           if (hinted !== n.qid) { hinted = n.qid; setTimeout(() => { if (state && state.now && state.now.qid === n.qid && state.now.playing && !player.playing && !hold) toast("Touche ▶ dans le lecteur pour écouter le HM"); }, 1500); }
         }
-        if (!want && player.playing) aPause();
-        const d = audio.duration;
-        if ((Number.isFinite(d) && d > 0 || n.item.engine) && Math.abs(audio.currentTime - expected(n)) > 2 && Date.now() - lastSeek > 3000) {
-          lastSeek = Date.now();
-          timeDesc.set.call(audio, Math.max(0, expected(n)));
+        if (!want) { if (player.playing) aPause(); if (!hold && Math.abs(audio.currentTime - n.pos) > 0.5 && Date.now() - lastSeek > 1000) place(n.pos - (engineOn() ? 0.35 : 0.05)); return; }
+        if (!player.playing) return;
+        const target = expected(n), drift = audio.currentTime - target, d = audio.duration;
+        if (engineOn()) {
+          if (Math.abs(drift) > 1.2 && Date.now() - lastSeek > 4000) place(target);
+        } else if (Number.isFinite(d) && d > 0) {
+          if (Math.abs(drift) > 1) { if (Date.now() - lastSeek > 1500) place(target); }
+          else audio.playbackRate = Math.abs(drift) < 0.04 ? 1 : 1 - Math.max(-0.06, Math.min(0.06, drift * 0.25));
         }
       });
-    }, 1000);
+    }
+    setInterval(sync, 250);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) { syncClock(); sync(); } });
+
+    // L'horloge du serveur : plusieurs allers-retours, le plus court gardé ; l'heure du serveur au milieu de l'aller-retour.
+    // Sans elle, chacun se calerait sur l'heure d'arrivée des messages, en retard de leur temps de trajet.
+    let clockAt = 0;
+    const serverNow = () => Date.now() + offset;
+    async function syncClock() {
+      if (Date.now() - clockAt < 20_000) return;
+      clockAt = Date.now();
+      let best = null;
+      for (let i = 0; i < 5; i++) {
+        const sent = Date.now(), t0 = performance.now();
+        const r = await fetch("/api/hm/clock", { cache: "no-store" }).then((x) => (x.ok ? x.json() : null), () => null);
+        const rtt = performance.now() - t0;
+        if (r && typeof r.t === "number" && (!best || rtt < best.rtt)) best = { rtt, offset: r.t - (sent + rtt / 2) };
+      }
+      if (best) offset = best.offset;
+      else clockAt = 0; // réessayé au prochain état
+    }
+    setInterval(() => { if (state) { clockAt = 0; syncClock(); } }, 120_000);
 
     // ——— Le flux en direct ———
     async function listen(c) {
@@ -238,8 +294,10 @@
     setInterval(() => { if (stream && code && Date.now() - lastData > 70_000) stream.cancel().catch(() => {}); }, 10_000);
     function receive(s) {
       const first = !state;
-      offset = s.t - Date.now();
+      if (!clockAt) offset = s.t - Date.now(); // en attendant la mesure de l'horloge
       state = s;
+      syncClock();
+      sync();
       player.control = control;
       if (first) draw(true); else if (dlg.open) draw();
       drawChip();
@@ -258,6 +316,7 @@
     }
     function leave(pause = true) {
       code = null; state = null; hold = false;
+      audio.playbackRate = 1;
       player.control = null;
       if (stream) stream.cancel().catch(() => {});
       stream = null;

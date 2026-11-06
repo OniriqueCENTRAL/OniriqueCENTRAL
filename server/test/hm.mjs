@@ -87,6 +87,37 @@ await step('lecture : pause, reprise et avance par ceux qui contrôlent', () => 
   assert.deepEqual([r.now.pos, r.now.playing, r.now.at], [42, true, 30_000]);
 });
 
+await step('cas limites de la file et de la lecture : file pleine, bornes, actions inconnues, droits retirés', () => {
+  const r = newRoom({ id: 1, name: 'Kay' });
+  for (let i = 0; i < 201; i++) act(r, { id: 1 }, 'add', { item: spotify('S' + i) }, 0); // 1 en cours + 200 en file
+  throws(() => act(r, { id: 1 }, 'add', { item: spotify('trop') }, 0), 400);
+  const last = r.queue.at(-1).qid;
+  act(r, { id: 1 }, 'move', { qid: last, to: -5 });
+  assert.equal(r.queue[0].qid, last);
+  act(r, { id: 1 }, 'move', { qid: last, to: 9999 });
+  assert.equal(r.queue.at(-1).qid, last);
+  throws(() => act(r, { id: 1 }, 'move', { qid: 'absent', to: 0 }), 404);
+  throws(() => act(r, { id: 1 }, 'nimporte', {}), 404);
+  act(r, { id: 1 }, 'seek', { pos: 99999 }, 0);
+  assert.equal(r.now.pos, 180); // pas au-delà de la durée
+  act(r, { id: 1 }, 'seek', { pos: -3 }, 0);
+  assert.equal(r.now.pos, 0);
+  // Celui qui a ajouté un son perd le droit d'ajouter : il ne peut plus le retirer sans le droit de passer.
+  const t = newRoom({ id: 1, name: 'Kay' });
+  act(t, { id: 1 }, 'add', { item: spotify('A') }, 0);
+  const mine = act(t, { id: 2, name: 'Lou' }, 'add', { item: spotify('B') }, 0);
+  act(t, { id: 1 }, 'perms', { perms: { add: 'host', skip: 'host' } });
+  throws(() => act(t, { id: 2 }, 'remove', { qid: mine }), 403);
+  // Un son sans durée connue : sa fin signalée est acceptée tout de suite ; la file vide arrête le HM.
+  const u = newRoom({ id: 1, name: 'Kay' });
+  const a = act(u, { id: 1 }, 'add', { item: { ...spotify('X'), duration: 0 } }, 0);
+  act(u, { id: 2 }, 'ended', { qid: a }, 1000);
+  assert.equal(u.now, null);
+  act(u, { id: 1 }, 'play', {}, 2000); // rien à jouer : sans erreur
+  act(u, { id: 1 }, 'skip', {}, 2000);
+  assert.equal(u.now, null);
+});
+
 const server = createApp().listen(0);
 const base = `http://127.0.0.1:${server.address().port}`;
 async function call(method, route, { token, body, expect = 200 } = {}) {
@@ -174,6 +205,34 @@ try {
     assert.deepEqual(invites.map((i) => [i.code, i.from.name]), [[code, 'kay']]);
     await call('POST', `/api/hm/invites/${invites[0].id}/seen`, { token: max.token });
     assert.equal((await call('GET', '/api/hm/invites', { token: max.token })).length, 0);
+  });
+
+  await step('en direct : horloge, latence, un départ sans pause, fin de son par le serveur, deux onglets', async () => {
+    const before = Date.now(), { t } = await call('GET', '/api/hm/clock');
+    assert.ok(t >= before - 5 && t <= Date.now() + 5);
+    const zoe = await account('zoe'), ian = await account('ian');
+    const { code: c } = await call('POST', '/api/hm', { token: zoe.token, expect: 201 });
+    const z1 = await live(c, zoe.token), z2 = await live(c, zoe.token), i = await live(c, ian.token);
+    const two = await z1.until((m) => m.members?.length === 2); // deux onglets du même compte : une seule personne
+    assert.deepEqual(two.members.map((m) => m.id).sort(), [zoe.id, ian.id].sort());
+    // Un son d'une seconde : le serveur passe au suivant tout seul à la fin.
+    await call('POST', `/api/hm/${c}/add`, { token: ian.token, body: { item: { ...spotify('court'), duration: 1 } } });
+    const second = (await call('POST', `/api/hm/${c}/add`, { token: ian.token, body: { item: spotify('suivant') } })).qid;
+    const advanced = await i.until((m) => m.now?.qid === second);
+    assert.equal(advanced.now.playing, true);
+    // La pause du créateur arrive chez les autres en quelques millisecondes.
+    const sent = Date.now();
+    await call('POST', `/api/hm/${c}/pause`, { token: zoe.token });
+    await i.until((m) => m.now && !m.now.playing);
+    assert.ok(Date.now() - sent < 300, `pause reçue en ${Date.now() - sent} ms`);
+    await call('POST', `/api/hm/${c}/play`, { token: zoe.token });
+    await i.until((m) => m.now?.playing);
+    // Un des deux onglets fermé, puis Ian parti : Zoé reste, le HM ne se met pas en pause.
+    z2.close(); i.close();
+    await z1.until((m) => m.members?.length === 1);
+    assert.equal((await call('GET', `/api/hm/${c}`, { token: zoe.token })).now.playing, true);
+    z1.close();
+    await call('DELETE', `/api/hm/${c}`, { token: zoe.token });
   });
 
   await step('un nouveau HM ferme le précédent ; seul le créateur ferme le sien', async () => {

@@ -227,12 +227,12 @@ export function mountHm(app, { requireUser }) {
   const send = (s, payload) => s.res.write(`data: ${JSON.stringify(payload)}\n\n`);
   // Après chaque changement : enregistrée, renvoyée à tous (chacun avec ses droits), les expulsés coupés.
   function changed(r) {
-    save(r);
     arm(r);
     for (const s of streams.get(r.code) || []) {
       if (r.kicked.includes(s.user.id)) { send(s, { kicked: true }); s.res.end(); continue; }
       send(s, view(r, s.user));
     }
+    save(r); // après l'envoi : l'écriture en base ne retarde pas les présents
   }
 
   // Inviter ses amis (ceux qu'on suit et qui nous suivent) : l'invitation arrive dans l'Activité (Messages), en
@@ -241,6 +241,9 @@ export function mountHm(app, { requireUser }) {
     JOIN user_follows b ON b.follower_id = a.followed_id AND b.followed_id = a.follower_id
     JOIN users u ON u.id = a.followed_id WHERE a.follower_id = ? ORDER BY u.name COLLATE NOCASE LIMIT 500`, uid);
   const invitedTo = (code) => new Set(all("SELECT user_id FROM user_notifications WHERE kind = 'hm' AND page = ?", code).map((x) => x.user_id));
+  // L'heure du serveur, pour que chaque lecteur mesure l'écart de son horloge (aller-retour le plus court).
+  app.get('/api/hm/clock', (_req, res) => res.set('Cache-Control', 'no-store').json({ t: now() }));
+
   app.get('/api/hm/invites', requireUser, (req, res) => {
     const rows = all(`SELECT n.id, n.page, n.body, u.name, u.avatar FROM user_notifications n JOIN users u ON u.id = n.actor_id
       WHERE n.user_id = ? AND n.kind = 'hm' AND n.read_at IS NULL AND n.created_at > ? ORDER BY n.id DESC LIMIT 5`, req.user.id, now() - 6 * 3600_000);
@@ -294,6 +297,7 @@ export function mountHm(app, { requireUser }) {
     const set = streams.get(r.code) || new Set();
     if (!members(r).some((m) => m.id === req.user.id) && members(r).length >= MAX_MEMBERS) throw new HttpError(403, 'Ce HM est complet.');
     res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no', Connection: 'keep-alive' });
+    req.socket.setNoDelay(true); // chaque état part aussitôt, sans attendre d'être groupé avec le suivant
     res.flushHeaders();
     const s = { user: req.user, res };
     streams.set(r.code, set.add(s));
