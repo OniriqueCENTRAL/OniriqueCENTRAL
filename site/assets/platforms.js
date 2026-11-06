@@ -116,8 +116,18 @@
     if (!spToken || spToken.expiresAt < Date.now() + 60_000) spToken = await ctx.api("GET", "/me/platforms/spotify/token");
     return spToken.accessToken;
   }
-  // Le lecteur Spotify de cet appareil (« ONIRIQUE CLOUD » dans les appareils Spotify), prêt une fois pour toutes.
-  const spotifyDevice = once(async () => {
+  // Le lecteur Spotify de cet appareil (« ONIRIQUE CLOUD » dans les appareils Spotify). Spotify peut le débrancher (une
+  // autre page ou un autre appareil reprend la lecture, la connexion tombe) : il est alors recréé au titre suivant, au
+  // lieu de viser un appareil disparu jusqu'à retomber sur l'extrait de 30 s.
+  let devicePending = null;
+  const spotifyDevice = () => (devicePending ||= newSpotifyDevice().catch((error) => { devicePending = null; throw error; }));
+  function dropSpotifyDevice(stale) {
+    if (stale && devicePending !== stale) return;
+    const old = devicePending;
+    devicePending = null;
+    if (old) old.then(({ player }) => player.disconnect(), () => {});
+  }
+  async function newSpotifyDevice() {
     if (!window.Spotify) {
       const ready = new Promise((ok) => { window.onSpotifyWebPlaybackSDKReady = ok; });
       await loadScript("https://sdk.scdn.co/spotify-player.js");
@@ -132,52 +142,63 @@
       setTimeout(() => ko(new Error("Spotify ne répond pas.")), 15000);
     });
     player.addListener("player_state_changed", (st) => spotify.changed(st));
+    const self = devicePending;
+    player.addListener("not_ready", () => dropSpotifyDevice(self)); // débranché par Spotify : recréé au prochain titre
     return { player, device };
-  });
+  }
   const spotify = {
-    cur: null, fire: null, base: 0, at: 0, dur: 0, paused: true, done: false, timer: null, player: null,
+    cur: null, fire: null, base: 0, at: 0, dur: 0, sp: true, done: false, timer: null, player: null, via: null,
     async load(item, fire) {
-      Object.assign(this, { cur: item, fire, base: 0, at: performance.now(), dur: item.duration || 0, paused: true, done: false });
+      if (this.via) { this.via.stop(); this.via = null; }
+      Object.assign(this, { cur: item, fire, base: 0, at: performance.now(), dur: item.duration || 0, sp: true, done: false });
       drawPeaks(item);
-      const { player, device } = await spotifyDevice();
-      this.player = player;
       // Un lecteur qui vient de naître (page rechargée, retour d'une autre page) est « introuvable » quelques secondes
-      // pour Spotify : on réessaie au lieu de retomber sur l'extrait de 30 s.
+      // pour Spotify : on réessaie. S'il reste introuvable, il a été débranché : on le recrée une fois.
       let response = null;
-      for (let attempt = 0; attempt < 8; attempt++) {
+      for (let attempt = 0; attempt < 10; attempt++) {
         if (attempt) await new Promise((ok) => setTimeout(ok, 700));
-        if (this.cur !== item) return false; // un autre titre a été lancé entre-temps
+        if (this.cur !== item) return true; // un autre titre a été lancé entre-temps : c'est lui qui joue
+        if (attempt === 4 && response && response.status === 404) dropSpotifyDevice();
+        const { player, device } = await spotifyDevice().catch(() => ({}));
+        if (!device) { response = null; continue; }
+        this.player = player;
         response = await fetch("https://api.spotify.com/v1/me/player/play?device_id=" + encodeURIComponent(device), { method: "PUT",
           headers: { Authorization: "Bearer " + (await spotifyAccess()), "Content-Type": "application/json" }, body: JSON.stringify({ uris: ["spotify:track:" + item.extId] }) })
           .catch(() => null);
         if (response && (response.ok || ![404, 429, 502, 503].includes(response.status))) break;
       }
-      if (!response || !response.ok) return false;
+      if (this.cur !== item) return true;
+      if (!response || !response.ok) {
+        // Le lecteur officiel intégré de Spotify (titre entier pour qui y est connecté) plutôt que l'extrait de 30 s.
+        this.via = spotifyEmbed;
+        return spotifyEmbed.load(item, fire).catch(() => { this.via = null; return false; });
+      }
       fire("loadedmetadata");
       return true;
     },
     changed(st) {
-      if (!st || !this.cur) return;
+      if (!st || !this.cur || this.via) return;
       const t = st.track_window && st.track_window.current_track;
       const id = t && ((t.linked_from && t.linked_from.id) || t.id);
       // La fin du titre : Spotify s'arrête au début, le titre passé dans « précédents ».
       if (st.paused && st.position === 0 && (st.track_window.previous_tracks || []).some((x) => ((x.linked_from && x.linked_from.id) || x.id) === this.cur.extId)) {
-        if (!this.done) { this.done = true; this.paused = true; this.tick(false); this.fire("ended"); }
+        if (!this.done) { this.done = true; this.sp = true; this.tick(false); this.fire("ended"); }
         return;
       }
       if (id !== this.cur.extId) return;
-      const was = this.paused;
-      Object.assign(this, { base: st.position / 1000, at: performance.now(), dur: st.duration / 1000 || this.dur, paused: st.paused });
+      const was = this.sp;
+      Object.assign(this, { base: st.position / 1000, at: performance.now(), dur: st.duration / 1000 || this.dur, sp: st.paused });
       if (was !== st.paused) { this.fire(st.paused ? "pause" : "play"); if (!st.paused) this.fire("playing"); }
       this.tick(!st.paused);
     },
     tick(on) { clearInterval(this.timer); this.timer = on ? setInterval(() => this.fire && this.fire("timeupdate"), 250) : null; },
-    play() { return this.player && this.player.resume(); },
-    pause() { if (this.player) this.player.pause(); },
-    stop() { this.tick(false); if (this.player && !this.paused) this.player.pause(); this.cur = null; },
-    seek(s) { if (this.player) this.player.seek(Math.round(s * 1000)); this.base = s; this.at = performance.now(); },
-    get currentTime() { return this.paused ? this.base : this.base + (performance.now() - this.at) / 1000; },
-    get duration() { return this.dur; },
+    play() { if (this.via) return this.via.play(); return this.player && this.player.resume(); },
+    pause() { if (this.via) return this.via.pause(); if (this.player) this.player.pause(); },
+    stop() { if (this.via) { this.via.stop(); this.via = null; } this.tick(false); if (this.player && !this.sp) this.player.pause(); this.cur = null; },
+    seek(s) { if (this.via) return this.via.seek(s); if (this.player) this.player.seek(Math.round(s * 1000)); this.base = s; this.at = performance.now(); },
+    get currentTime() { if (this.via) return this.via.currentTime; return this.sp ? this.base : this.base + (performance.now() - this.at) / 1000; },
+    get duration() { return this.via ? this.via.duration : this.dur; },
+    get paused() { return this.via ? this.via.paused : this.sp; },
     setVolume(v) { if (this.player) this.player.setVolume(v); },
   };
 
@@ -244,25 +265,46 @@
     document.body.append(embedBox);
     return new Promise((ok) => api.createController(slot, { width: "100%", height: 80, uri: embedFirst }, (c) => {
       c.addListener("playback_update", (e) => spotifyEmbed.update(e.data));
+      c.addListener("ready", () => { const go = embedReady; embedReady = null; if (go) go(); });
       ok(c);
     }));
   });
+  // Le lecteur intégré prévient quand un titre est chargé : lancé avant, il joue encore l'ancien titre, ou l'extrait.
+  let embedReady = null;
+  const embedLoad = (c, uri) => new Promise((ok) => { embedReady = ok; c.loadUri(uri); setTimeout(ok, 3000); });
   const spotifyEmbed = {
     c: null, cur: null, fire: null, base: 0, at: 0, dur: 0, paused: true, started: false, done: false, timer: null,
     async load(item, fire) {
       const uri = "spotify:track:" + item.extId;
       drawPeaks(item);
-      Object.assign(this, { cur: item, fire, base: 0, at: performance.now(), dur: item.duration || 0, paused: true, started: false, done: false });
+      Object.assign(this, { cur: item, fire, base: 0, at: performance.now(), dur: item.duration || 0, paused: true, started: false, done: false, retries: 0, retrying: false });
       if (!embedFirst) embedFirst = uri;
       const c = this.c = await embedController();
       embedBox.hidden = false;
-      c.loadUri(uri);
+      await embedLoad(c, uri);
+      if (this.cur !== item) return true;
       c.play();
       fire("loadedmetadata");
       return true;
     },
+    /** Spotify a servi l'extrait (30 s) d'un titre plus long : sa session n'était pas encore prête, on recharge le titre. */
+    async retryFull(item, at) {
+      this.retries++; this.retrying = true;
+      await new Promise((ok) => setTimeout(ok, 1200));
+      if (this.cur !== item) { this.retrying = false; return; }
+      await embedLoad(this.c, "spotify:track:" + item.extId);
+      if (this.cur !== item) { this.retrying = false; return; }
+      if (at > 1) this.c.seek(at);
+      this.c.play();
+      this.retrying = false;
+    },
     update(d) {
       if (!this.cur || !d) return;
+      if (d.duration && Math.abs(d.duration - 30000) < 1500 && (this.cur.duration || 0) > 40 && this.retries < 2 && !this.retrying) {
+        if (this.c) this.c.pause(); // on n'entend pas l'extrait le temps de recharger le titre
+        this.retryFull(this.cur, (d.position || 0) / 1000);
+        return;
+      }
       const was = this.paused;
       Object.assign(this, { base: (d.position || 0) / 1000, at: performance.now(), dur: (d.duration || 0) / 1000 || this.dur, paused: !!d.isPaused });
       if (!d.isPaused && d.position > 0) this.started = true;
