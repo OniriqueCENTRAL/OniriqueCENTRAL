@@ -1,4 +1,4 @@
-<script src="assets/i18n.js?v=f055a3d8"></script>
+<script src="assets/i18n.js?v=cede88a9"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=2"></script>
 <script src="/api/announce.js"></script>
@@ -650,18 +650,6 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
 .uni-card:hover .u-go::after { translate: 5px 0; }
 .uni-card:not(.live), .uni-card:not(.live) * { animation-play-state: paused !important; }
 
-/* plugins : quatre potards étoile qui se règlent seuls */
-.u-knobs { display: flex; gap: 18px; margin-top: 8px; }
-.u-knobs i { position: relative; width: 54px; height: 54px; border-radius: 50%;
-  background: radial-gradient(circle at 32% 30%, #36161a, #160a0c 60%, #080405); box-shadow: 0 0 0 3px rgba(255,236,238,.08), 0 3px 8px rgba(0,0,0,.7); }
-.u-knobs i::before { content: ""; position: absolute; inset: -6px; border-radius: 50%;
-  background: conic-gradient(from 225deg, rgb(var(--acc)) 0 var(--v, 40%), transparent 0 75%, transparent 0);
-  -webkit-mask: radial-gradient(circle, transparent 29px, #000 30px, #000 32px, transparent 33px); mask: radial-gradient(circle, transparent 29px, #000 30px, #000 32px, transparent 33px);
-  filter: drop-shadow(0 0 4px rgba(var(--acc),.9)); }
-.u-knobs i::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: linear-gradient(#FFECEE, #FFECEE) 50% 6px / 2px 32% no-repeat;
-  filter: drop-shadow(0 0 4px rgba(255,236,238,.85)); rotate: -40deg; animation: knob-turn 5s var(--ease) infinite alternate; animation-delay: var(--d, 0s); }
-@keyframes knob-turn { 0%, 15% { rotate: -110deg; } 85%, 100% { rotate: 90deg; } }
-.u-knobs i:nth-child(1) { --v: 55%; --d: -1s; } .u-knobs i:nth-child(2) { --v: 30%; --d: -2.6s; } .u-knobs i:nth-child(3) { --v: 68%; --d: -.4s; } .u-knobs i:nth-child(4) { --v: 42%; --d: -3.8s; }
 /* CLOUD : les versions d'un titre, la dernière allumée */
 .u-versions { display: flex; margin-top: 6px; }
 .u-versions i { display: grid; place-items: center; width: 64px; height: 44px; margin-right: -14px; border-radius: 12px; font: 500 11px/1 var(--f-mono); font-style: normal; letter-spacing: .12em; color: var(--haze);
@@ -712,10 +700,63 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
 @media (max-width: 640px) {
   .uni-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
   .uni-card, .uni-card.u-plugins { grid-column: auto; min-height: 0; border-radius: 22px; }
-  .u-knobs { gap: 12px; } .u-knobs i { width: 46px; height: 46px; }
-  .u-knobs i::before { -webkit-mask: radial-gradient(circle, transparent 25px, #000 26px, #000 28px, transparent 29px); mask: radial-gradient(circle, transparent 25px, #000 26px, #000 28px, transparent 29px); }
   .u-app .u-tag::after { width: 140px; height: 140px; right: -24px; bottom: -24px; opacity: .55; }
 }
+
+/* plugins : le potard ONIRIQUE en 360° (assets/potards.js), à droite de la carte */
+.u-plugins { padding-right: clamp(26px, 30%, 280px); }
+.u-potard { position: absolute; right: clamp(18px, 5%, 56px); top: 50%; width: 190px; height: 190px; translate: 0 -50%; pointer-events: none; }
+@media (max-width: 640px) {
+  .u-plugins { padding-right: clamp(22px, 2.4vw, 30px); }
+  .u-potard { position: relative; right: auto; top: auto; translate: none; width: 150px; height: 150px; align-self: center; margin: 4px 0 -6px; }
+}
+
+/* la collection : six plugins (trois sur téléphone), puis « Voir tous les plugins » */
+.plugin-grid:not(.all) > :nth-child(n+7) { display: none; }
+@media (max-width: 700px) { .plugin-grid:not(.all) > :nth-child(n+4) { display: none; } }
+.plugin-grid.all > .plugin-card { animation: da-rise .6s var(--ease) backwards; }
+.plugin-more { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 30px; }
+
+/* le parcours : quatre étapes reliées par un fil qui s'allume en descendant la page */
+.flow-head { display: grid; gap: 18px; max-width: 760px; }
+.flow-head h2 { font-size: clamp(32px, 4.4vw, 62px); }
+.flow-steps { --line: rgba(255,235,238,.12); position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; margin: clamp(40px, 5vw, 64px) 0 0; padding: 0; list-style: none; }
+.flow-steps::before, .flow-steps::after { content: ""; position: absolute; z-index: 2; left: 30px; right: 30px; top: 30px; height: 2px; border-radius: 2px; background: var(--line); pointer-events: none; }
+.flow-steps::after { background: linear-gradient(90deg, rgb(var(--acc-hi)), rgb(var(--acc))); box-shadow: 0 0 12px rgba(var(--acc),.8); transform-origin: left; }
+.flow-step { position: relative; display: flex; flex-direction: column; gap: 12px; padding: 76px 24px 24px; border-radius: 22px;
+  background: linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.015) 40%, rgba(255,255,255,.03)), rgba(14,10,12,.5);
+  border: 1px solid rgba(255,235,238,.09); box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 18px 40px rgba(0,0,0,.4); transition: border-color .35s, transform .35s var(--ease); }
+.flow-step:hover { border-color: rgba(var(--acc-hi),.3); transform: translateY(-3px); }
+/* le point du fil, et le numéro en creux */
+.flow-step::before { content: ""; position: absolute; left: 24px; top: 23px; width: 16px; height: 16px; border-radius: 50%; background: #120d0f; border: 2px solid rgb(var(--acc-hi));
+  box-shadow: 0 0 0 5px rgba(9,8,10,.9), 0 0 16px rgba(var(--acc),.8); z-index: 3; }
+.flow-n { position: absolute; right: 20px; top: 12px; font: 800 52px/1 var(--f-display); color: transparent; -webkit-text-stroke: 1px rgba(255,236,238,.16); letter-spacing: .02em; }
+.flow-step h3 { font: 800 clamp(17px, 1.6vw, 21px)/1.2 var(--f-display); letter-spacing: .02em; }
+.flow-step p { color: var(--haze); font-size: 14.5px; line-height: 1.55; }
+.flow-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 8px; }
+.flow-links a { padding: 7px 10px; border-radius: 10px; font: 500 10px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: #d8c6c8; text-decoration: none;
+  background: rgba(255,255,255,.04); box-shadow: 0 0 0 1px rgba(255,255,255,.09) inset; transition: color .2s, box-shadow .2s, background .2s; }
+.flow-links a:hover { color: #fff; background: rgba(255,255,255,.07); box-shadow: 0 0 0 1px rgba(var(--acc-hi),.5) inset; }
+/* Au défilement (navigateurs qui le savent) : le fil se remplit, chaque étape monte et son point s'allume à son tour */
+@supports (animation-timeline: view()) {
+  .flow-steps::after { animation: flow-fill linear both; animation-timeline: view(); animation-range: entry 40% cover 55%; }
+  @keyframes flow-fill { from { transform: scaleX(0); } }
+  .flow-step { animation: flow-in linear both; animation-timeline: view(); animation-range: entry 10% cover 30%; }
+  @keyframes flow-in { from { opacity: 0; translate: 0 30px; } }
+  .flow-step::before { animation: flow-dot linear both; animation-timeline: view(); animation-range: entry 30% cover 40%; }
+  @keyframes flow-dot { from { border-color: rgba(255,236,238,.25); box-shadow: 0 0 0 5px rgba(9,8,10,.9); } }
+}
+@media (max-width: 1000px) {
+  .flow-steps { grid-template-columns: minmax(0, 1fr); gap: 16px; padding-left: 34px; }
+  .flow-steps::before, .flow-steps::after { left: 9px; right: auto; top: 30px; bottom: 30px; width: 2px; height: auto; }
+  .flow-steps::after { transform-origin: top; }
+  @supports (animation-timeline: view()) { @keyframes flow-fill { from { transform: scaleY(0); } } }
+  .flow-step { padding: 22px 22px 22px; }
+  .flow-step::before { left: -33px; top: 26px; }
+  .flow-n { font-size: 40px; top: 14px; }
+  .flow-step .u-tag { padding-right: 70px; }
+}
+@media (prefers-reduced-motion: reduce) { .flow-steps::after, .flow-step, .flow-step::before { animation: none !important; } }
 </style>
 <link rel="stylesheet" href="/assets/da.css?v=5">
 <script src="/assets/accent.js?v=1"></script>
@@ -812,7 +853,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
           <span class="u-tag"><i class="led"></i>Plugins</span>
           <h3>Le son de ta voix</h3>
           <p><span id="heroCount">15</span> plugins, de <span id="heroMin">15 €</span> à <span id="heroMax">149,99 €</span> : correction de hauteur, chaîne vocale, de-esser, doubleur. 7 jours d'essai sur chacun, payés une fois.</p>
-          <span class="u-knobs" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <span class="u-potard" data-potard aria-hidden="true"></span>
           <span class="u-go">Voir la boutique</span>
         </a>
         <a class="uni-card u-cloud" href="cloud">
@@ -865,6 +906,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
       <span class="eyebrow">La collection</span>
       <h2 style="margin-top:18px;font-size:clamp(34px,4.8vw,68px)">Nos <em class="dream">plugins.</em></h2>
       <div class="plugin-grid" id="pluginGrid"></div>
+      <div class="plugin-more"><button class="btn btn-ghost" id="pluginMore" type="button" hidden>Voir tous les plugins</button><a class="btn btn-ghost" href="boutique">Toute la boutique</a></div>
     </div>
   </section>
 
@@ -891,7 +933,8 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
     </div>
   </section>
 
-  <section class="block" id="fonctions" style="padding-top: 0">
+  <!-- Fonctions et Écouter : plus montrées (le parcours les remplace). shortcut: le script de la page les utilise encore (démo sonore, écrans, rubans) ; à supprimer avec ce code. -->
+  <section class="block" id="fonctions" style="padding-top: 0" hidden>
     <div class="wrap">
       <div class="head reveal">
         <div>
@@ -947,7 +990,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
     </div>
   </section>
 
-  <section class="block listen" id="ecouter">
+  <section class="block listen" id="ecouter" hidden>
     <div class="wrap">
       <div class="head reveal">
         <div>
@@ -997,6 +1040,46 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
         </div>
       </div>
       <p class="note">Le traitement est fait en direct dans ton navigateur avec Web Audio, pour illustrer le rôle des réglages : EQ, EQ paramétrique, 1176 / LA-2A, de-esser et saturation. Resonance, Multiband et Plosives ne sont pas simulés ici. Le plugin utilise ses propres algorithmes, bien plus fins. Un fichier importé n'est jamais envoyé sur internet.</p>
+    </div>
+  </section>
+
+  <section class="block flow" id="parcours">
+    <div class="wrap">
+      <div class="flow-head reveal">
+        <span class="eyebrow">Le parcours</span>
+        <h2>De la première prise <em class="dream">au jour de la sortie.</em></h2>
+        <p class="lede">Quatre étapes, et à chacune ce qu'ONIRIQUE te donne pour la passer.</p>
+      </div>
+      <ol class="flow-steps">
+        <li class="flow-step">
+          <span class="flow-n" aria-hidden="true">01</span>
+          <span class="u-tag"><i class="led"></i>Enregistrer et mixer</span>
+          <h3>Ta voix, propre et prête</h3>
+          <p>Chaîne vocale complète, correction de hauteur, de-esser, doubleur : tu essaies chaque plugin 7 jours dans ton DAW avant de le payer.</p>
+          <div class="flow-links"><a href="boutique">Les plugins</a><a href="bpm-tonalite">BPM et tonalité</a><a href="accordeur">Accordeur</a></div>
+        </li>
+        <li class="flow-step">
+          <span class="flow-n" aria-hidden="true">02</span>
+          <span class="u-tag"><i class="led"></i>Ranger</span>
+          <h3>Chaque version à sa place</h3>
+          <p>Tes projets et leurs versions dans le CLOUD, comparées en A/B. Tes collabs y ajoutent leurs sons, et tu sépares la voix de l'instru en un clic.</p>
+          <div class="flow-links"><a href="cloud">ONIRIQUE CLOUD</a><a href="split">IA SPLIT</a><a href="comparer-mix">Comparer à une référence</a></div>
+        </li>
+        <li class="flow-step">
+          <span class="flow-n" aria-hidden="true">03</span>
+          <span class="u-tag"><i class="led"></i>Faire écouter</span>
+          <h3>Un lien, et tu sais qui écoute</h3>
+          <p>Un lien privé, avec mot de passe et date de fin, et les écoutes de chaque personne. Ou tout le monde au même moment, dans un HM ou une WATCHPARTY.</p>
+          <div class="flow-links"><a href="cloud">Liens d'écoute</a><a href="mes-sons">HM</a><a href="watchparty">WATCHPARTY</a></div>
+        </li>
+        <li class="flow-step">
+          <span class="flow-n" aria-hidden="true">04</span>
+          <span class="u-tag"><i class="led"></i>Sortir</span>
+          <h3>Le clip, la page, la checklist</h3>
+          <p>Le clip 9:16 coupé sur le beat, ta page de liens pour la bio, la checklist avec ses rappels, et le volume vérifié avant d'envoyer.</p>
+          <div class="flow-links"><a href="cut">CUT</a><a href="mes-liens">Page de liens</a><a href="checklist-sortie">Checklist de sortie</a><a href="volume-lufs">Volume avant sortie</a></div>
+        </li>
+      </ol>
     </div>
   </section>
 
@@ -2138,6 +2221,13 @@ catalogReady.then(catalog => {
       <div><h3>${esc(p.name)}</h3><p>${esc(p.tagline)}</p><small>${esc(terms(p))} →</small></div>
     </a>`).join("");
   $("#plugins").hidden = false;
+  // Six plugins (trois sur téléphone), puis tous d'un clic.
+  const more = $("#pluginMore"), grid = $("#pluginGrid");
+  if (shown.length > 3) {
+    more.hidden = false;
+    more.textContent = "Voir les " + shown.length + " plugins";
+    more.onclick = () => { const all = grid.classList.toggle("all"); more.textContent = all ? "Voir moins" : "Voir les " + shown.length + " plugins"; if (!all) $("#plugins").scrollIntoView({ block: "start" }); };
+  }
 }).catch(() => { $("#heroShot")?.remove(); });
 
 // Interface : la démo interactive de chaque plugin, la même que dans la boutique et l'application, une à la fois.
@@ -2158,7 +2248,6 @@ function showcase(list) {
     $("#fnVocalbox").hidden = !vocalbox;
     // la section « Écouter » est la démo sonore de VocalBox : visible seulement quand VocalBox est choisi
     if (!vocalbox && typeof stop === "function") stop();
-    $("#ecouter").hidden = !vocalbox;
     $("#fnDesc").hidden = vocalbox;
     $("#fnTitle").innerHTML = vocalbox ? original.title : `${esc(p.name.replace(/^ONIRIQUE\s+/i, ""))}, <em class="dream">en détail.</em>`;
     $("#fnLede").textContent = vocalbox ? original.lede : p.tagline;
@@ -2243,6 +2332,7 @@ $$("[data-buy]").forEach(a => {
   });
 })();
 </script>
+<script src="assets/potards.js?v=1" defer></script>
 <script src="assets/tools-menu.js?v=14" defer></script>
 <script>
 // ONIRIQUE CLOUD : le raccourci n'apparaît qu'aux comptes qui y ont droit, une fois leur compte lu.
