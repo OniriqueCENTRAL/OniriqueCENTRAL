@@ -72,7 +72,8 @@
       "icon": "build/icon-mac.png",
       "category": "public.app-category.music",
       "target": "dir",
-      "identity": null
+      "identity": null,
+      "extendInfo": { "NSMicrophoneUsageDescription": "ONIRIQUE CENTRAL utilise le micro pour enregistrer les vocaux de la messagerie." }
     }
   },
   "dependencies": {

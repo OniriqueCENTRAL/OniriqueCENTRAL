@@ -118,6 +118,30 @@ const gearIcon = () => {
   box.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
   return box;
 };
+// Le micro des vocaux (messagerie) et la sortie du son : gardés par leur nom, '' pour ceux de l'ordinateur.
+function audioPicker(kind, key, fallback) {
+  const select = h('select', { 'aria-label': kind === 'audioinput' ? 'Micro' : 'Sortie du son' });
+  const draw = (devices) => {
+    const names = [...new Set(devices.filter((d) => d.kind === kind && d.label && !/^(default|communications)$/.test(d.deviceId)).map((d) => d.label))];
+    const saved = prefs[key] || '';
+    if (saved && !names.includes(saved)) names.push(saved);
+    select.replaceChildren(h('option', { value: '' }, fallback), ...names.map((n) => h('option', { value: n, selected: n === saved },
+      n + (devices.some((d) => d.label === n) ? '' : ' (débranché)'))));
+  };
+  // Sans autorisation du micro, les appareils n'ont pas de nom : on la demande une fois, sans rien enregistrer.
+  (async () => {
+    let devices = await navigator.mediaDevices.enumerateDevices();
+    if (!devices.some((d) => d.label)) {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => null);
+      stream?.getTracks().forEach((t) => t.stop());
+      devices = await navigator.mediaDevices.enumerateDevices();
+    }
+    draw(devices);
+  })().catch(() => draw([]));
+  select.addEventListener('change', () => { prefs[key] = select.value; central.setPref(key, select.value).catch(() => {}); });
+  return select;
+}
+
 function openSettings() {
   const start = savedAccent();
   const custom = h('input', { type: 'color', value: start, 'aria-label': 'Couleur personnalisée', class: 'accent-custom' });
@@ -147,6 +171,10 @@ function openSettings() {
     eyebrow('Image de fond'),
     h('p', { class: 'muted', style: { margin: 0 } }, "Une image de ce PC derrière toute la CENTRAL, voilée pour garder les textes lisibles. Elle reste sur ce PC."),
     h('div', { class: 'row', style: { gap: '10px' } }, bgButton('Choisir une image…', 'pick'), bgButton("Retirer l'image", 'remove')),
+    eyebrow('Micro et casque'),
+    h('p', { class: 'muted', style: { margin: 0 } }, 'Le micro qui enregistre tes vocaux dans les messages, et où part le son de CLOUD, des messages et des pages d’écoute.'),
+    h('label', { class: 'stack', style: { gap: '6px' } }, h('span', null, 'Micro'), audioPicker('audioinput', 'mic', 'Celui de l’ordinateur')),
+    h('label', { class: 'stack', style: { gap: '6px' } }, h('span', null, 'Casque ou haut-parleurs'), audioPicker('audiooutput', 'speaker', 'Ceux de l’ordinateur')),
     rocky && eyebrow('ROCKY'),
     rocky && h('label', { class: 'row', style: { gap: '12px', 'align-items': 'center' } }, rocky,
       h('span', null, h('b', null, 'Animations de ROCKY'), h('br'),

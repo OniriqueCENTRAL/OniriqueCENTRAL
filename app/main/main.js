@@ -15,6 +15,28 @@ let win = null;
 // dans celle-ci (second-instance), au lieu d'en lancer une deuxième.
 if (!app.requestSingleInstanceLock()) app.exit(0);
 
+/**
+ * Le micro et la sortie choisis dans les Paramètres, pour les pages du site dans l'application : la messagerie enregistre
+ * ses vocaux avec ce micro (window.__oniriqueAudio.mic), et tout son joué par un lecteur <audio> part vers cette sortie.
+ * Retrouvés par leur nom ; un appareil débranché laisse la place à celui de l'ordinateur.
+ */
+function setAudioDevices(web) {
+  const devices = { mic: store.prefs.mic || '', speaker: store.prefs.speaker || '' };
+  web.executeJavaScript(`(() => {
+    window.__oniriqueAudio = ${JSON.stringify(devices)};
+    const proto = HTMLMediaElement.prototype;
+    if (proto.__oniriquePlay || !proto.setSinkId) return;
+    const play = proto.__oniriquePlay = proto.play;
+    const sinkOf = async (name) => name ? (await navigator.mediaDevices.enumerateDevices()).find((d) => d.kind === "audiooutput" && d.label === name)?.deviceId || "" : "";
+    proto.play = function () {
+      const media = this, name = window.__oniriqueAudio.speaker;
+      if ((media.__oniriqueSink ?? "") === name) return play.call(media);
+      media.__oniriqueSink = name;
+      return sinkOf(name).then((id) => media.sinkId === id ? null : media.setSinkId(id)).catch(() => {}).then(() => play.call(media));
+    };
+  })()`).catch(() => {});
+}
+
 /** CUT et CLOUD : une vue chacun, créée à la première ouverture, gardée tant que le compte ne change pas. */
 const toolViews = new Map();
 let shownTool = null, frozen = false; // frozen : une fenêtre de l'application (Paramètres…) est ouverte par-dessus
@@ -85,6 +107,7 @@ function toolView(tool, lang) {
       });
     });
     web.on('dom-ready', () => {
+      setAudioDevices(web);
       web.insertCSS(TOOL_SKIN + (accentVars ? `:root { ${accentVars} }` : '')).catch(() => {});
       // Les fenêtres « OK / Annuler » de la page : celles de l'application (voir tool:dialog), plus la boîte de Windows.
       web.executeJavaScript(`if (window.oniriqueDialog) {
@@ -940,11 +963,14 @@ ipcMain.on('update:install', () => {
 });
 
 // Les réglages de l'interface, lus avant son premier script (preload) et écrits un par un.
-const PREFS = { accent: (v) => /^#[0-9a-f]{6}$/i.test(v), lang: (v) => v === 'fr' || v === 'en' };
+// mic et speaker : le nom de l'appareil choisi (les identifiants changent d'une session à l'autre), '' pour celui de Windows ou macOS.
+const deviceName = (v) => typeof v === 'string' && v.length <= 200;
+const PREFS = { accent: (v) => /^#[0-9a-f]{6}$/i.test(v), lang: (v) => v === 'fr' || v === 'en', mic: deviceName, speaker: deviceName };
 ipcMain.on('prefs:get', (event) => { event.returnValue = event.sender === win?.webContents ? store.prefs : {}; });
 ipcMain.handle('prefs:set', (event, key, value) => {
   if (event.sender !== win?.webContents || !PREFS[key]?.(value)) return false;
   store.setPref(key, value);
+  if (key === 'mic' || key === 'speaker') for (const v of toolViews.values()) v.then((view) => setAudioDevices(view.webContents), () => {});
   return true;
 });
 
