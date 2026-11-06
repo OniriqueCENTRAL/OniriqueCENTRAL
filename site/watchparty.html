@@ -108,11 +108,16 @@ select { padding: 7px 10px; font-size: 13px; background: #140d0f; }
 @media (prefers-reduced-motion: reduce) { .wp-float { animation-duration: 1.4s; } }
 .wp-overchat { position: absolute; left: 14px; bottom: 70px; z-index: 4; display: none; flex-direction: column; gap: 4px; max-width: min(420px, 60%); pointer-events: none; }
 .stage:fullscreen .wp-overchat { display: flex; }
-.wp-fschat { position: absolute; left: 14px; bottom: 62px; z-index: 5; display: none; gap: 6px; width: min(420px, 60%); }
+.wp-chatbox { position: absolute; left: 14px; bottom: 62px; z-index: 5; display: none; flex-direction: column; gap: 6px; width: min(420px, 60%); }
+.stage:fullscreen .wp-chatbox { display: flex; }
+.stage.chat-off .wp-chatbox { display: none !important; }
+.wp-chatbox .wp-overchat { position: static; max-width: none; }
+.wp-fschat { display: none; gap: 6px; }
 .stage:fullscreen .wp-fschat { display: flex; opacity: 0; transition: opacity .25s; }
+.stage:fullscreen.chat-nobg .wp-fschat { opacity: 0; }
 .stage:fullscreen.show .wp-fschat, .stage:fullscreen.paused .wp-fschat, .stage:fullscreen .wp-fschat:focus-within { opacity: 1; }
 .wp-fschat input { flex: 1; min-width: 0; background: rgba(9,8,10,.78); border-color: rgba(255,255,255,.18); }
-.stage:fullscreen .wp-overchat { bottom: 110px; }
+
 .wp-fstop { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 5; display: none; align-items: center; gap: 10px; max-width: calc(100% - 340px);
   padding: 6px 12px; border-radius: 14px; background: rgba(9,8,10,.72); backdrop-filter: blur(8px); box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset; white-space: nowrap; pointer-events: none; }
 .stage:fullscreen .wp-fstop { display: flex; }
@@ -122,8 +127,18 @@ select { padding: 7px 10px; font-size: 13px; background: #140d0f; }
 .wp-fstop .kc-mini img { width: 28px; height: 28px; object-fit: contain; filter: drop-shadow(0 0 8px rgba(0,132,255,.8)); }
 .stage:fullscreen:not(.show):not(.paused) { cursor: none; }
 .stage.native .wp-hit, .stage.tw-click .wp-hit { display: none; }
-.wp-overchat div { padding: 5px 10px; border-radius: 10px; background: rgba(9,8,10,.72); font-size: 14px; color: #fff; animation: wp-fade 9s forwards; overflow-wrap: anywhere; }
+.wp-overchat div { padding: 5px 10px; border-radius: 10px; background: rgba(9,8,10,.72); font-size: 14px; color: #fff; animation: wp-fade 20s forwards; overflow-wrap: anywhere; }
 .wp-overchat b { color: var(--pink); margin-right: 6px; }
+/* Le chat sans fond : le texte seul sur la vidéo, lisible grâce à une ombre */
+.stage.chat-nobg .wp-overchat div { background: none; padding: 2px 4px; font-weight: 600; text-shadow: 0 1px 2px #000, 0 0 6px rgba(0,0,0,.9), 0 0 14px rgba(0,0,0,.6); }
+.stage.chat-nobg .wp-fschat input { background: rgba(9,8,10,.35); }
+/* HUD déverrouillé : les éléments s'entourent et s'attrapent ; le champ et la vidéo ne prennent plus les clics */
+.stage.hud-edit .hud { outline: 2px dashed rgba(var(--acc-hi), .85); outline-offset: 4px; cursor: move; pointer-events: auto; opacity: 1 !important; }
+.stage.hud-edit .hud * { pointer-events: none; }
+.stage.hud-edit .wp-fschat { display: flex !important; opacity: 1 !important; }
+.stage.hud-edit .wp-overchat:empty::before { content: "Le chat s'affiche ici"; padding: 5px 10px; border-radius: 10px; background: rgba(9,8,10,.72); font-size: 13px; color: var(--haze); }
+.stage.hud-edit::after { content: "HUD déverrouillé : glisse le score et le chat, puis verrouille-le dans ⚙"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 4;
+  padding: 8px 14px; border-radius: 12px; background: rgba(9,8,10,.8); font: 500 11px var(--mono); letter-spacing: .1em; color: #fff; pointer-events: none; }
 @keyframes wp-fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
 .wp-reacts { display: flex; flex-wrap: wrap; gap: 2px; }
 .wp-reacts button { all: unset; box-sizing: border-box; cursor: pointer; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px;
@@ -518,6 +533,7 @@ function drawPeople() {
 }
 
 function drawChat() {
+  if (!overSeen) overSeen = new Set(state.chat.map((c) => c.id)); // ce qui était déjà là en entrant (affiché en passant en plein écran)
   const key = state.chat.map((c) => c.id).join();
   if (key === drawnChat) return;
   drawnChat = key;
@@ -527,27 +543,61 @@ function drawChat() {
     : [el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Dis bonjour : le chat est vu de tous les présents." })]));
   if (atEnd) box.scrollTop = box.scrollHeight;
   // En plein écran : les nouveaux messages passent sur la vidéo, puis s'effacent.
-  const over = overChat(), last = state.chat.slice(-1)[0];
-  if (last && last.id !== lastOver) {
-    if (lastOver) over.append(el("div", {}, el("b", { textContent: last.name }), last.text));
-    lastOver = last.id;
-    while (over.children.length > 5) over.firstChild.remove();
+  const over = overChat();
+  for (const c of state.chat) {
+    if (overSeen.has(c.id)) continue;
+    overSeen.add(c.id);
+    over.append(el("div", {}, el("b", { textContent: c.name }), c.text));
   }
+  while (over.children.length > 6) over.firstChild.remove();
 }
-let lastOver = "";
+let overSeen = null;
 const overChat = () => {
   const st = $("stage");
-  if (!st.querySelector(".wp-fschat")) {
+  if (!st.querySelector(".wp-chatbox")) {
     // Écrire dans le chat sans quitter le plein écran.
     const input = el("input", { maxLength: 500, placeholder: "Écrire dans le chat…", ariaLabel: "Message", autocomplete: "off" });
     const form = el("form", { className: "wp-fschat", onsubmit: (e) => { e.preventDefault(); const t = input.value.trim(); if (t) { input.value = ""; send("chat", { text: t }); } } },
       input, el("button", { className: "btn btn-primary small", type: "submit", textContent: "Envoyer" }));
     input.addEventListener("keydown", (e) => e.stopPropagation()); // les raccourcis du lecteur (espace, f, m) ne partent pas en écrivant
-    st.appendChild(form);
+    const box = el("div", { className: "wp-chatbox hud" }, el("div", { className: "wp-overchat" }), form);
+    box.dataset.hud = "chat";
+    st.appendChild(box);
   }
-  if (!st.querySelector(".wp-fstop")) st.appendChild(el("div", { className: "wp-fstop", id: "fstop" }));
-  return st.querySelector(".wp-overchat") || st.appendChild(el("div", { className: "wp-overchat" }));
+  if (!st.querySelector(".wp-fstop")) { const top = el("div", { className: "wp-fstop hud", id: "fstop" }); top.dataset.hud = "top"; st.appendChild(top); }
+  placeHud();
+  return st.querySelector(".wp-overchat");
 };
+// Les réglages du HUD (menu ⚙) : verrouillé ou à déplacer, positions, chat affiché ou non, avec ou sans fond.
+let hud = { locked: true, chat: true, bg: true, pos: {} };
+try { hud = { ...hud, ...JSON.parse(localStorage.getItem("onirique.wp.hud") || "{}"), locked: true }; } catch { /* stockage fermé */ }
+const saveHud = () => { try { localStorage.setItem("onirique.wp.hud", JSON.stringify(hud)); } catch { /* stockage fermé */ } };
+function placeHud() {
+  const st = $("stage");
+  st.classList.toggle("hud-edit", !hud.locked);
+  st.classList.toggle("chat-off", !hud.chat);
+  st.classList.toggle("chat-nobg", !hud.bg);
+  for (const n of st.querySelectorAll(".hud")) {
+    const p = hud.pos[n.dataset.hud];
+    if (p) Object.assign(n.style, { left: p.x * 100 + "%", top: p.y * 100 + "%", right: "auto", bottom: "auto", transform: "none" });
+    else Object.assign(n.style, { left: "", top: "", right: "", bottom: "", transform: "" });
+  }
+}
+// HUD déverrouillé : on attrape un élément et on le pose où l'on veut ; sa place est gardée (en proportion de l'écran).
+$("stage").addEventListener("pointerdown", (e) => {
+  const n = !hud.locked && e.target.closest && e.target.closest(".hud");
+  if (!n) return;
+  e.preventDefault();
+  const st = $("stage").getBoundingClientRect(), box = n.getBoundingClientRect(), dx = e.clientX - box.left, dy = e.clientY - box.top;
+  const move = (m) => {
+    const x = Math.max(0, Math.min(st.width - box.width, m.clientX - st.left - dx)), y = Math.max(0, Math.min(st.height - box.height, m.clientY - st.top - dy));
+    hud.pos[n.dataset.hud] = { x: x / st.width, y: y / st.height };
+    placeHud();
+  };
+  const up = () => { removeEventListener("pointermove", move); removeEventListener("pointerup", up); saveHud(); };
+  addEventListener("pointermove", move);
+  addEventListener("pointerup", up);
+});
 // Le haut du plein écran : le nom de la salle, les présents, et en mode Karmine Corp le score de la série.
 function drawFsTop() {
   const box = $("fstop");
@@ -559,9 +609,10 @@ function drawFsTop() {
 }
 // En entrant en plein écran, les derniers messages du chat s'affichent sur la vidéo.
 document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement && !hud.locked) { hud.locked = true; placeHud(); }
   if (document.fullscreenElement !== $("stage") || !state) return;
   const over = overChat();
-  over.replaceChildren(...state.chat.slice(-4).map((c) => el("div", {}, el("b", { textContent: c.name }), c.text)));
+  over.replaceChildren(...state.chat.slice(-5).map((c) => el("div", {}, el("b", { textContent: c.name }), c.text)));
   drawFsTop();
 });
 
@@ -603,7 +654,7 @@ let bar = null, statsOn = false, blocked = false, hideAt = 0, endedKey = "";
 
 function clearStage() {
   try { player && player.destroy && player.destroy(); } catch { /* déjà détruit */ }
-  player = null; mediaKey = ""; bar = null; captionsOn = false;
+  player = null; mediaKey = ""; bar = null; captionsOn = false; overSeen = null;
   $("stage").replaceChildren();
   $("stage").classList.remove("native", "tw-click");
 }
@@ -789,6 +840,11 @@ function toggleMenu(force) {
   items.push(el("p", { className: "wp-menu-h", textContent: "Affichage" }));
   if (p.captions) items.push(row("Sous-titres", captionsOn ? "Oui" : "Non", () => { captionsOn = !captionsOn; p.captions(captionsOn); toggleMenu(false); toggleMenu(); }, captionsOn));
   items.push(row("Infos de lecture", statsOn ? "Oui" : "Non", () => { statsOn = !statsOn; toggleMenu(false); toggleMenu(); }, statsOn));
+  items.push(el("p", { className: "wp-menu-h", textContent: "HUD du plein écran" }));
+  items.push(row("Position du HUD", hud.locked ? "Verrouillée" : "À déplacer", () => { hud.locked = !hud.locked; placeHud(); toggleMenu(false); if (!hud.locked && !document.fullscreenElement) fullscreen(); }, !hud.locked));
+  if (Object.keys(hud.pos).length) items.push(row("Remettre le HUD en place", "", () => { hud.pos = {}; saveHud(); placeHud(); toggleMenu(false); }));
+  items.push(row("Chat sur la vidéo", hud.chat ? "Oui" : "Non", () => { hud.chat = !hud.chat; saveHud(); placeHud(); toggleMenu(false); toggleMenu(); }, hud.chat));
+  items.push(row("Fond des messages", hud.bg ? "Oui" : "Sans fond", () => { hud.bg = !hud.bg; saveHud(); placeHud(); toggleMenu(false); toggleMenu(); }, hud.bg));
   if (p.box) {
     const native = st.classList.contains("native");
     items.push(row("Commandes de " + (p.platformName || "la plateforme"), native ? "Oui" : "Non", () => { setNative(!native); toggleMenu(false); }, native));
