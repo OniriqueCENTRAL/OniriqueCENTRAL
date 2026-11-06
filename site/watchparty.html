@@ -115,6 +115,9 @@ select { padding: 7px 10px; font-size: 13px; background: #140d0f; }
 .stage.tw:fullscreen .wp-overchat div { animation-duration: 120s; }
 .stage.tw:fullscreen .kc-wave, .stage.tw:fullscreen .kc-confetti, .stage.tw:fullscreen .kc-flash { left: auto; right: 0; width: 360px; }
 .stage.tw:fullscreen .kc-wave b, .stage.tw:fullscreen .kc-confetti b { font-size: 26px; }
+/* Sans la colonne du chat : la vidéo prend tout l'écran, la barre dessous */
+.stage.tw.chat-off:fullscreen { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; grid-template-areas: "video" "bar"; }
+.stage.tw.chat-off:fullscreen .wp-fstop { display: none; }
 .stage.tw:fullscreen .wp-stats { top: auto; bottom: 80px; right: 14px; }
 #kc, .glass.chat { position: relative; overflow: hidden; }
 .wp-menu { position: absolute; right: 14px; bottom: 62px; z-index: 6; width: 250px; max-height: calc(100% - 80px); overflow-y: auto; padding: 8px; border-radius: 14px;
@@ -647,6 +650,8 @@ function drawFsTop() {
 // En entrant en plein écran, les derniers messages du chat s'affichent sur la vidéo.
 document.addEventListener("fullscreenchange", () => {
   if (!document.fullscreenElement && !hud.locked) { hud.locked = true; placeHud(); }
+  // Twitch se met parfois en pause pendant le changement de taille : on relance, sauf si l'on avait mis pause soi-même.
+  if (player && player.resume) setTimeout(() => player && player.resume && player.resume(), 1200);
   if (document.fullscreenElement !== $("stage") || !state) return;
   const over = overChat();
   over.replaceChildren(...state.chat.slice(-5).map((c) => el("div", {}, el("b", { textContent: c.name }), c.text)));
@@ -815,6 +820,7 @@ const twitchSettings = (tw) => ({
 const twitchLive = (tw, box) => {
   const p = { kind: "live", box, platformName: "Twitch", ...twitchSettings(tw), online: true, userPaused: false, paused: () => tw.isPaused(),
     toggle: () => { blocked = false; if (tw.isPaused()) { p.userPaused = false; tw.play(); } else { p.userPaused = true; tw.pause(); } },
+    resume: () => { if (!p.userPaused && tw.isPaused()) tw.play(); },
     volume: (l, mu) => { tw.setVolume(l); tw.setMuted(mu); } };
   tw.addEventListener(Twitch.Player.OFFLINE, () => { p.online = false; });
   tw.addEventListener(Twitch.Player.ONLINE, () => { p.online = true; if (!p.userPaused) tw.play(); });
@@ -904,7 +910,7 @@ function toggleMenu(force) {
   if (st.classList.contains("tw")) items.push(el("p", { className: "wp-menu-note", textContent: "Sur Twitch, le score et le chat se rangent à côté de l'image : Twitch met la vidéo en pause si on la recouvre." }));
   else items.push(row("Position du HUD", hud.locked ? "Verrouillée" : "À déplacer", () => { hud.locked = !hud.locked; placeHud(); toggleMenu(false); if (!hud.locked && !document.fullscreenElement) fullscreen(); }, !hud.locked));
   if (Object.keys(hud.pos).length) items.push(row("Remettre le HUD en place", "", () => { hud.pos = {}; saveHud(); placeHud(); toggleMenu(false); }));
-  items.push(row("Chat sur la vidéo", hud.chat ? "Oui" : "Non", () => { hud.chat = !hud.chat; saveHud(); placeHud(); toggleMenu(false); toggleMenu(); }, hud.chat));
+  items.push(row(st.classList.contains("tw") ? "Colonne du chat" : "Chat sur la vidéo", hud.chat ? "Oui" : "Non", () => { hud.chat = !hud.chat; saveHud(); placeHud(); toggleMenu(false); toggleMenu(); }, hud.chat));
   items.push(row("Fond des messages", hud.bg ? "Oui" : "Sans fond", () => { hud.bg = !hud.bg; saveHud(); placeHud(); toggleMenu(false); toggleMenu(); }, hud.bg));
   if (p.box) {
     const native = st.classList.contains("native");
@@ -1396,7 +1402,8 @@ $("chat-reacts").append(...reactButtons().children);
 // du plein écran, le bandeau de la Karmine Corp ou le chat.
 function overlayHost() {
   const st = $("stage");
-  if (!st.classList.contains("tw") || document.fullscreenElement === st) return st;
+  if (!st.classList.contains("tw")) return st;
+  if (document.fullscreenElement === st) return st.classList.contains("chat-off") ? document.createElement("div") : st; // plein écran sans colonne : rien sur l'image
   return kcOn() ? $("kc") : document.querySelector(".glass.chat") || st;
 }
 function floatReaction({ emoji, name }) {
@@ -1708,7 +1715,10 @@ function enter(c) {
 }
 async function home() {
   $("home").hidden = false;
-  const { code: own } = await api("GET", "/watchparty/mine");
+  const { code: own, canCreate } = await api("GET", "/watchparty/mine");
+  // Ouvrir une salle : membres ONIRIQUE, beta-testeurs et équipe ; les autres comptes rejoignent par un lien d'invitation.
+  $("create").hidden = !canCreate;
+  if (!canCreate) say("Ouvrir une WATCHPARTY est réservé aux membres ONIRIQUE. Tu peux en rejoindre une avec le lien d'invitation d'un ami.");
   $("resume").hidden = !own;
   $("resume").onclick = () => enter(own);
 }

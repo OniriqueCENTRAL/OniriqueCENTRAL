@@ -276,7 +276,7 @@ export function mountWatchparty(app) {
   const rooms = new Map();    // code → salle
   const streams = new Map();  // code → Set de { user, res, peer }
   const member = (req, res, next) => requireUser(req, res, (error) => next(error
-    || (isMember(req.user) ? undefined : new HttpError(403, 'La WATCHPARTY est réservée pour l’instant aux membres ONIRIQUE, aux beta-testeurs et à l’équipe.'))));
+    || (isMember(req.user) ? undefined : new HttpError(403, 'Ouvrir une WATCHPARTY est réservé aux membres ONIRIQUE, aux beta-testeurs et à l’équipe ; tout compte peut en rejoindre une par son lien.'))));
 
   const load = (c) => {
     if (rooms.has(c)) return rooms.get(c);
@@ -340,7 +340,7 @@ export function mountWatchparty(app) {
   // Les serveurs qui aident la connexion directe : STUN (chacun apprend son adresse vue d'internet), et notre relais TURN,
   // en secours seulement, pour les réseaux qui bloquent le direct. Ses identifiants sont signés ici, valables 12 h
   // (coturn, use-auth-secret : TURN_SECRET dans .env, le même que static-auth-secret).
-  app.get('/api/watchparty/ice', member, (req, res) => {
+  app.get('/api/watchparty/ice', requireUser, (req, res) => {
     const servers = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun.cloudflare.com:3478'] }];
     const secret = process.env.TURN_SECRET, host = process.env.TURN_HOST || new URL(config.siteUrl).hostname;
     if (secret) {
@@ -352,20 +352,20 @@ export function mountWatchparty(app) {
   });
 
   // La WATCHPARTY ouverte par ce compte, s'il en a une : la page la propose au lieu d'en ouvrir une autre.
-  app.get('/api/watchparty/mine', member, (req, res) => {
+  app.get('/api/watchparty/mine', requireUser, (req, res) => {
     const row = get('SELECT code FROM watchparty_rooms WHERE owner_id = ? AND updated_at > ?', req.user.id, now() - IDLE_DAYS * 86400_000);
-    res.set('Cache-Control', 'no-store').json({ code: row?.code || null });
+    res.set('Cache-Control', 'no-store').json({ code: row?.code || null, canCreate: isMember(req.user) });
   });
 
-  // Inviter ses amis, comme dans le HM ; seuls ceux qui ont accès à la WATCHPARTY sont proposés.
-  mountInvites(app, { base: '/api/watchparty', kind: 'watchparty', guard: member, load, room, members, eligible: isMember,
+  // Inviter ses amis, comme dans le HM : tout compte peut regarder.
+  mountInvites(app, { base: '/api/watchparty', kind: 'watchparty', guard: requireUser, load, room, members,
     removed: 'Cette personne a été retirée de la WATCHPARTY.',
     notice: (from, r) => ({ title: 'Invitation à la WATCHPARTY', body: `${from.name || 'Un ami'} t'invite à regarder « ${r.name} »`, url: `/watchparty#${r.code}` }) });
 
-  app.get('/api/watchparty/:code', member, (req, res) => res.set('Cache-Control', 'no-store').json(view(room(req), req.user, null)));
+  app.get('/api/watchparty/:code', requireUser, (req, res) => res.set('Cache-Control', 'no-store').json(view(room(req), req.user, null)));
 
   // Le flux en direct : être connecté, c'est être présent. Chaque flux a son identifiant (peer) pour le WebRTC.
-  app.get('/api/watchparty/:code/live', member, (req, res) => {
+  app.get('/api/watchparty/:code/live', requireUser, (req, res) => {
     const r = room(req);
     const set = streams.get(r.code) || new Set();
     if (!members(r).some((m) => m.id === req.user.id) && members(r).length >= MAX_MEMBERS) throw new HttpError(403, 'Cette WATCHPARTY est complète.');
@@ -386,7 +386,7 @@ export function mountWatchparty(app) {
   });
 
   // La négociation WebRTC (offre, réponse, candidats) d'un flux à un autre de la même salle. L'image ne passe pas ici.
-  app.post('/api/watchparty/:code/signal', member, (req, res) => {
+  app.post('/api/watchparty/:code/signal', requireUser, (req, res) => {
     rateLimit(`watchparty-signal:${req.user.id}`, 1200, 60_000);
     const r = room(req), set = streams.get(r.code) || new Set();
     const { from, to, data } = req.body || {};
@@ -399,7 +399,7 @@ export function mountWatchparty(app) {
     res.json({ ok: true });
   });
 
-  app.post('/api/watchparty/:code/:action', member, (req, res) => {
+  app.post('/api/watchparty/:code/:action', requireUser, (req, res) => {
     rateLimit(`watchparty:${req.user.id}`, 240, 60_000);
     const r = room(req), body = req.body && typeof req.body === 'object' ? req.body : {};
     const peer = [...(streams.get(r.code) || [])].find((s) => s.peer === body.peer && s.user.id === req.user.id)?.peer || null;
@@ -426,7 +426,7 @@ export function mountWatchparty(app) {
     rooms.delete(c);
     run('DELETE FROM watchparty_rooms WHERE code = ?', c);
   }
-  app.delete('/api/watchparty/:code', member, (req, res) => {
+  app.delete('/api/watchparty/:code', requireUser, (req, res) => {
     const r = room(req);
     if (r.owner !== req.user.id) throw new HttpError(403, 'Seul le créateur peut fermer la WATCHPARTY.');
     end(r.code);

@@ -187,7 +187,7 @@ try {
     const { code } = created;
     assert.equal(created.url, `https://site.test/watchparty#${code}`);
     assert.deepEqual([created.media.kind, created.media.id, created.playing], ['youtube', 'dQw4w9WgXcQ', false]);
-    await call('GET', `/api/watchparty/${code}`, { token: max.token, expect: 403 });
+    assert.equal((await call('GET', `/api/watchparty/${code}`, { token: max.token })).name, 'Ciné du soir'); // tout compte peut regarder
     const k = await live(code, kay.token);
     const kState = await k.until((m) => m.members?.length === 1);
     const l = await live(code, lou.token);
@@ -219,7 +219,8 @@ try {
     // Celui qui partageait est parti : le partage s'arrête pour tous.
     await new Promise((resolve) => setTimeout(resolve, 100));
     assert.equal((await call('GET', `/api/watchparty/${code}`, { token: kay.token })).media, null);
-    assert.deepEqual(await call('GET', '/api/watchparty/mine', { token: kay.token }), { code });
+    assert.deepEqual(await call('GET', '/api/watchparty/mine', { token: kay.token }), { code, canCreate: true });
+    assert.deepEqual(await call('GET', '/api/watchparty/mine', { token: max.token }), { code: null, canCreate: false });
     await call('POST', `/api/watchparty/${code}/react`, { token: kay.token, body: { emoji: '<script>' }, expect: 400 });
     await call('DELETE', `/api/watchparty/${code}`, { token: kay.token });
     await call('GET', `/api/watchparty/${code}`, { token: kay.token, expect: 404 });
@@ -227,15 +228,15 @@ try {
   await step('inviter ses amis (abonnements réciproques, ayant accès) : une fois, dans l’Activité et en pop-up', async () => {
     const zoe = await account('zoe', 'betaf');
     const { code } = await call('POST', '/api/watchparty', { token: kay.token, expect: 201 });
-    // zoe et max suivent kay en retour ; lou est suivie sans réciprocité ; max n'a pas accès à la WATCHPARTY.
+    // zoe et max suivent kay en retour (max sans rôle : il peut regarder) ; lou est suivie sans réciprocité.
     run('INSERT INTO user_follows (follower_id, followed_id, created_at) VALUES (?, ?, 0), (?, ?, 0), (?, ?, 0), (?, ?, 0), (?, ?, 0)',
       kay.id, zoe.id, zoe.id, kay.id, kay.id, max.id, max.id, kay.id, kay.id, lou.id);
-    assert.deepEqual((await call('GET', `/api/watchparty/${code}/friends`, { token: kay.token })).map((f) => [f.id, f.invited]), [[zoe.id, false]]);
-    await call('POST', `/api/watchparty/${code}/invite`, { token: kay.token, body: { userId: max.id }, expect: 403 });
+    assert.deepEqual((await call('GET', `/api/watchparty/${code}/friends`, { token: kay.token })).map((f) => [f.id, f.invited]).sort(), [[zoe.id, false], [max.id, false]].sort());
+    await call('POST', `/api/watchparty/${code}/invite`, { token: kay.token, body: { userId: max.id } });
     await call('POST', `/api/watchparty/${code}/invite`, { token: kay.token, body: { userId: lou.id }, expect: 403 });
     await call('POST', `/api/watchparty/${code}/invite`, { token: kay.token, body: { userId: zoe.id } });
     await call('POST', `/api/watchparty/${code}/invite`, { token: kay.token, body: { userId: zoe.id } });
-    assert.equal((await call('GET', `/api/watchparty/${code}/friends`, { token: kay.token }))[0].invited, true);
+    assert.ok((await call('GET', `/api/watchparty/${code}/friends`, { token: kay.token })).every((f) => f.invited));
     const activity = await call('GET', '/api/me/activity', { token: zoe.token });
     assert.deepEqual(activity.filter((n) => n.kind === 'watchparty').map((n) => n.page), [code]);
     // Le HM et la WATCHPARTY ont chacun leurs invitations.
@@ -244,12 +245,12 @@ try {
     assert.deepEqual(invites.map((i) => [i.code, i.from.name]), [[code, 'kay']]);
     await call('POST', `/api/watchparty/invites/${invites[0].id}/seen`, { token: zoe.token });
     assert.equal((await call('GET', '/api/watchparty/invites', { token: zoe.token })).length, 0);
-    await call('GET', '/api/watchparty/invites', { token: max.token, expect: 403 });
+    assert.equal((await call('GET', '/api/watchparty/invites', { token: max.token })).length, 1);
   });
   await step('relais TURN : identifiants signés et datés pour les membres, STUN seul sans secret', async () => {
     const crypto = await import('node:crypto');
     assert.equal((await call('GET', '/api/watchparty/ice', { token: kay.token })).length, 1);
-    await call('GET', '/api/watchparty/ice', { token: max.token, expect: 403 });
+    assert.equal((await call('GET', '/api/watchparty/ice', { token: max.token })).length, 1); // les spectateurs reçoivent aussi les partages
     process.env.TURN_SECRET = 'secret-de-test';
     const [, turn] = await call('GET', '/api/watchparty/ice', { token: kay.token });
     delete process.env.TURN_SECRET;
