@@ -11,7 +11,7 @@ Object.assign(process.env, { DATA_DIR: dataDir, PAYMENTS_MODE: 'demo', PORT: '0'
 const { createApp } = await import('../src/app.js');
 const { get, run } = await import('../src/db.js');
 const { outbox } = await import('../src/mail.js');
-const { act, newRoom, youtubeId, cleanSource, positionOf, isMember } = await import('../src/watchparty.js');
+const { act, newRoom, youtubeId, cleanSource, positionOf, isMember, mediaKey } = await import('../src/watchparty.js');
 
 let passed = 0;
 async function step(name, fn) { await fn(); passed++; console.log(`  ok  ${name}`); }
@@ -67,6 +67,51 @@ await step('synchronisation : pause, avance et reprise donnent la même position
   assert.equal(positionOf(r, 25_000), 125);
   act(r, { id: 2 }, 'seek', { pos: -5 }, 25_000);
   assert.equal(r.pos, 0);
+});
+
+await step('file : chacun propose et vote, la plus votée passe ensuite, à la vraie fin de la vidéo, une seule fois', () => {
+  const r = newRoom({ id: 1, name: 'Kay' });
+  act(r, { id: 1 }, 'source', { source: 'dQw4w9WgXcQ' }, 0);
+  const a = act(r, { id: 2, name: 'Lou' }, 'queue', { source: 'https://youtu.be/aqz-KE-bpKQ' }, 0);
+  const b = act(r, { id: 3, name: 'Bob' }, 'queue', { source: 'https://www.twitch.tv/videos/123' }, 0);
+  act(r, { id: 1 }, 'vote', { qid: b }); act(r, { id: 2 }, 'vote', { qid: b }); // b : 3 voix, a : 1
+  act(r, { id: 2 }, 'vote', { qid: b }); act(r, { id: 2 }, 'vote', { qid: b }); // un vote se retire et se remet
+  assert.deepEqual(r.queue.map((x) => [x.qid, x.votes.length]), [[a, 1], [b, 3]]);
+  throws(() => act(r, { id: 2 }, 'unqueue', { qid: b }), 403); // la proposition d'un autre
+  throws(() => act(r, { id: 2 }, 'next'), 403);
+  const key = mediaKey(r.media);
+  act(r, { id: 2 }, 'ended', { key, duration: 200 }, 100_000); // trop tôt : 100 s sur 200
+  assert.equal(r.media.id, 'dQw4w9WgXcQ');
+  act(r, { id: 2 }, 'ended', { key, duration: 200 }, 198_000);
+  act(r, { id: 3 }, 'ended', { key, duration: 200 }, 198_000); // deux lecteurs signalent la fin : un seul saut
+  assert.deepEqual([r.media.kind, r.media.video, r.queue.length], ['twitch', '123', 1]);
+  act(r, { id: 2 }, 'unqueue', { qid: a });
+  throws(() => act(r, { id: 1 }, 'next'), 400);
+  act(r, { id: 1 }, 'perms', { perms: { queue: 'host' } });
+  throws(() => act(r, { id: 2 }, 'queue', { source: 'dQw4w9WgXcQ' }), 403);
+});
+
+await step('« Prêt ? » : la salle attend, puis part 3 s après que tous les présents sont prêts', () => {
+  const r = newRoom({ id: 1, name: 'Kay' });
+  act(r, { id: 1 }, 'source', { source: 'dQw4w9WgXcQ' }, 0);
+  act(r, { id: 1 }, 'perms', { perms: { control: 'host' } });
+  throws(() => act(r, { id: 2 }, 'ready-check', {}, 0, null, [1, 2]), 403);
+  act(r, { id: 1 }, 'ready-check', {}, 10_000, null, [1, 2]);
+  assert.deepEqual([r.playing, r.pos, r.ready.ids], [false, 10, [1]]);
+  act(r, { id: 2 }, 'ready', { on: true }, 15_000, null, [1, 2]);
+  assert.deepEqual([r.ready, r.playing, r.at, r.pos], [null, true, 18_000, 10]);
+  assert.equal(positionOf(r, 18_000), 10); // la lecture part à l'heure dite, de la même seconde
+});
+
+await step('caméras : depuis un flux ouvert, quatre au plus, retirées avec leur compte', () => {
+  const r = newRoom({ id: 1, name: 'Kay' });
+  throws(() => act(r, { id: 2, name: 'Lou' }, 'cam', { on: true }), 400);
+  for (let i = 1; i <= 4; i++) act(r, { id: i, name: 'U' + i }, 'cam', { on: true }, 0, 'p' + i);
+  throws(() => act(r, { id: 5 }, 'cam', { on: true }, 0, 'p5'), 400);
+  act(r, { id: 1 }, 'kick', { userId: 3 });
+  assert.deepEqual(r.cams.map((c) => c.peer), ['p1', 'p2', 'p4']);
+  act(r, { id: 2 }, 'cam', { on: false }, 0, 'p2');
+  assert.deepEqual(r.cams.map((c) => c.peer), ['p1', 'p4']);
 });
 
 await step('partage : seulement depuis un flux ouvert, et seul celui qui partage (ou le créateur) l’arrête', () => {
@@ -160,6 +205,7 @@ try {
     await new Promise((resolve) => setTimeout(resolve, 100));
     assert.equal((await call('GET', `/api/watchparty/${code}`, { token: kay.token })).media, null);
     assert.deepEqual(await call('GET', '/api/watchparty/mine', { token: kay.token }), { code });
+    await call('POST', `/api/watchparty/${code}/react`, { token: kay.token, body: { emoji: '<script>' }, expect: 400 });
     await call('DELETE', `/api/watchparty/${code}`, { token: kay.token });
     await call('GET', `/api/watchparty/${code}`, { token: kay.token, expect: 404 });
   });
@@ -184,6 +230,19 @@ try {
     await call('POST', `/api/watchparty/invites/${invites[0].id}/seen`, { token: zoe.token });
     assert.equal((await call('GET', '/api/watchparty/invites', { token: zoe.token })).length, 0);
     await call('GET', '/api/watchparty/invites', { token: max.token, expect: 403 });
+  });
+  await step('relais TURN : identifiants signés et datés pour les membres, STUN seul sans secret', async () => {
+    const crypto = await import('node:crypto');
+    assert.equal((await call('GET', '/api/watchparty/ice', { token: kay.token })).length, 1);
+    await call('GET', '/api/watchparty/ice', { token: max.token, expect: 403 });
+    process.env.TURN_SECRET = 'secret-de-test';
+    const [, turn] = await call('GET', '/api/watchparty/ice', { token: kay.token });
+    delete process.env.TURN_SECRET;
+    const [exp, uid] = turn.username.split(':').map(Number);
+    assert.equal(uid, kay.id);
+    assert.ok(exp * 1000 > Date.now() + 11 * 3600_000);
+    assert.equal(turn.credential, crypto.createHmac('sha1', 'secret-de-test').update(turn.username).digest('base64'));
+    assert.deepEqual(turn.urls, ['turn:site.test:3478?transport=udp', 'turn:site.test:3478?transport=tcp']);
   });
   console.log(`watchparty : ${passed} étapes ok`);
 } finally {

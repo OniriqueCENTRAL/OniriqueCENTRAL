@@ -85,7 +85,40 @@ select { padding: 7px 10px; font-size: 13px; background: #140d0f; }
 .wp-live { display: inline-flex; align-items: center; gap: 6px; font: 500 10px var(--mono); letter-spacing: .12em; color: #fff; }
 .wp-live i { width: 8px; height: 8px; border-radius: 50%; background: rgb(var(--acc)); box-shadow: 0 0 8px rgb(var(--acc)); }
 .wp-stats { position: absolute; right: 12px; top: 12px; z-index: 3; padding: 8px 10px; border-radius: 10px; background: rgba(9,8,10,.82); font: 500 10px/1.6 var(--mono); color: var(--label); white-space: pre; pointer-events: none; }
+@media (max-width: 720px) { .wp-bar .wp-reacts { display: none; } }
 @media (max-width: 560px) { .wp-vol, .wp-time.dur { display: none; } .wp-bar { gap: 4px; padding-inline: 8px; } }
+/* Les réactions qui montent sur la vidéo, le chat posé dessus en plein écran, « Prêt ? » et le compte à rebours */
+.wp-float { position: absolute; bottom: 70px; z-index: 4; font-size: 34px; pointer-events: none; animation: wp-rise 2.6s ease-out forwards; text-align: center; }
+.wp-float small { display: block; font: 500 9px var(--mono); letter-spacing: .08em; color: #fff; text-shadow: 0 1px 4px #000; }
+@keyframes wp-rise { 0% { transform: translateY(0) scale(.6); opacity: 0; } 12% { transform: translateY(-20px) scale(1.1); opacity: 1; } 100% { transform: translateY(-240px) scale(1); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .wp-float { animation-duration: 1.4s; } }
+.wp-overchat { position: absolute; left: 14px; bottom: 70px; z-index: 4; display: none; flex-direction: column; gap: 4px; max-width: min(420px, 60%); pointer-events: none; }
+.stage:fullscreen .wp-overchat { display: flex; }
+.wp-overchat div { padding: 5px 10px; border-radius: 10px; background: rgba(9,8,10,.72); font-size: 14px; color: #fff; animation: wp-fade 9s forwards; overflow-wrap: anywhere; }
+.wp-overchat b { color: var(--pink); margin-right: 6px; }
+@keyframes wp-fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
+.wp-reacts { display: flex; gap: 2px; }
+.wp-reacts button { width: 30px; height: 30px; font-size: 16px; }
+.wp-over { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: rgba(9,8,10,.6); backdrop-filter: blur(4px); text-align: center; }
+.wp-over .glass { padding: 22px 26px; display: grid; gap: 12px; justify-items: center; }
+.wp-count { font: 800 96px/1 var(--display); color: #fff; text-shadow: 0 0 40px rgba(var(--acc),.9); }
+/* Les caméras des présents, en vignettes sous la vidéo */
+.cams { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.cams:empty { display: none; }
+.cam { position: relative; width: 168px; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: #000; border: 1px solid var(--line); }
+.cam video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cam span { position: absolute; left: 6px; bottom: 5px; padding: 2px 7px; border-radius: 999px; background: rgba(9,8,10,.75); font: 500 9px var(--mono); letter-spacing: .08em; color: #fff; }
+@media (max-width: 560px) { .cam { width: calc(50% - 5px); } }
+/* La file d'attente */
+.queue { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.queue li { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 12px; background: rgba(255,255,255,.03); }
+.queue img { width: 64px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; flex: none; background: #1a1214; }
+.queue .grow { flex: 1; min-width: 0; }
+.queue b, .queue small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.queue b { font-size: 13px; font-weight: 600; }
+.queue small { color: var(--haze); font-size: 11px; }
+.vote { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 999px; font: 500 11px var(--mono); color: var(--label); box-shadow: 0 0 0 1px var(--line) inset; }
+.vote.on { color: #fff; background: var(--lit); box-shadow: var(--lit-shadow); }
 .adv { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px 14px; margin-top: 12px; font-size: 13px; }
 .adv label { display: grid; gap: 4px; color: var(--label); }
 .adv select { width: 100%; }
@@ -166,6 +199,7 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
     <div class="room">
       <div>
         <div class="stage" id="stage"></div>
+        <div class="cams" id="cams" aria-label="Caméras des présents"></div>
         <div class="glass controls" id="controls">
           <form class="row" id="source"><input id="s-url" placeholder="YouTube, Twitch, Vimeo, Kick ou vidéo en https (.mp4…)" aria-label="Vidéo à regarder"><button class="btn btn-primary" type="submit">Regarder</button></form>
           <div class="row" id="shares">
@@ -174,6 +208,10 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
             <button class="btn" type="button" id="sh-file">Un fichier vidéo</button>
             <button class="btn btn-primary" type="button" id="sh-stop" hidden>Arrêter le partage</button>
             <input type="file" id="file" accept="video/*,audio/*" hidden>
+          </div>
+          <div class="row" id="room-actions">
+            <button class="btn" type="button" id="cam-btn">Ma vignette caméra</button>
+            <button class="btn" type="button" id="ready-btn">Prêt ?</button>
           </div>
           <details id="adv-box" hidden><summary>Réglages avancés du partage</summary>
             <div class="adv">
@@ -198,7 +236,13 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
           <details id="friends" style="margin-top:12px"><summary>Inviter mes amis</summary><ul class="people" id="friend-list" style="margin-top:10px"></ul></details>
           <details id="perms-box" hidden style="margin-top:12px"><summary>Droits</summary><div class="perms" id="perms"></div></details>
         </div>
+        <div class="glass"><div class="row" style="justify-content:space-between"><h2 id="q-title" style="margin:0">File d'attente</h2><button class="btn small" type="button" id="q-next" hidden>Lancer la suite</button></div>
+          <form class="row" id="q-add" style="margin-top:10px"><input id="q-url" placeholder="Proposer une vidéo (lien)" aria-label="Proposer une vidéo"><button class="btn small" type="submit">Proposer</button></form>
+          <ul class="queue" id="queue" style="margin-top:10px"></ul>
+          <p class="muted" style="margin:8px 0 0;font-size:12px">La plus votée passe à la fin de la vidéo en cours.</p>
+        </div>
         <div class="glass chat"><h2>Chat</h2><div class="msgs" id="msgs" aria-live="polite"></div>
+          <div class="wp-reacts" id="chat-reacts" style="padding:0 10px" aria-label="Réactions"></div>
           <form id="say"><input id="say-text" maxlength="500" placeholder="Écrire…" aria-label="Message" autocomplete="off"><button class="btn btn-primary" type="submit">Envoyer</button></form>
         </div>
       </aside>
@@ -234,14 +278,17 @@ async function api(method, path, body) {
 }
 const say = (text) => { $("state").textContent = text || ""; };
 // Pair à pair : les serveurs STUN publics donnent à chacun son adresse vue d'internet. Pas de relais (TURN) : l'image ne passe jamais par nos serveurs.
-const ICE = [{ urls: ["stun:stun.l.google.com:19302", "stun:stun.cloudflare.com:3478"] }];
+let ICE = [{ urls: ["stun:stun.l.google.com:19302", "stun:stun.cloudflare.com:3478"] }];
+// Notre relais TURN n'est pris qu'en dernier recours : WebRTC essaie d'abord la connexion directe.
+const loadIce = () => api("GET", "/watchparty/ice").then((list) => { if (Array.isArray(list) && list.length) ICE = list; }, () => {});
 
 let code = location.hash.slice(1), state = null, offset = 0, reader = null;
 let player = null, mediaKey = "", hold = false, quietUntil = 0, lastSeek = 0, drawnChat = "";
 let local = null, fileVideo = null, shareGrace = 0; // ce que je partage
 const pcs = new Map(), tries = new Map(), pendingIce = new Map();
 const can = (perm) => !!(state && state.you.can[perm]);
-const expected = () => state.pos + (state.playing ? (Date.now() + offset - state.at) / 1000 : 0);
+const expected = () => state.pos + (state.playing ? Math.max(0, Date.now() + offset - state.at) / 1000 : 0);
+const counting = () => !!(state && state.playing && state.at > Date.now() + offset); // « Prêt ? » : 3, 2, 1…
 const send = (action, body) => api("POST", "/watchparty/" + code + "/" + action, body || {}).catch((e) => say(e.message));
 const quiet = (fn) => { quietUntil = Date.now() + 1200; fn(); };
 
@@ -267,7 +314,9 @@ async function listen(c) {
       const m = JSON.parse(b.slice(6));
       if (m.kicked) return leave("Le créateur t'a retiré de la WATCHPARTY.");
       if (m.ended) return leave("Le créateur a fermé la WATCHPARTY.");
-      if (m.signal) onSignal(m.signal).catch(() => {}); else receive(m);
+      if (m.signal) (m.signal.data.cam ? onCamSignal(m.signal) : onSignal(m.signal)).catch(() => {});
+      else if (m.reaction) floatReaction(m.reaction);
+      else receive(m);
     }
   }
   if (code === c && reader === r) setTimeout(() => code === c && listen(c), 2000); // coupé (mise en ligne du serveur) : on revient
@@ -305,9 +354,13 @@ function draw() {
   if (can("control")) hold = false;
   $("hint").textContent = can("control") ? "Lecture, pause et avance partent chez tout le monde." : "Le créateur garde la main sur la lecture : ta pause ne vaut que pour toi.";
   drawStage();
+  keepOnStage();
   drawAdfree();
   drawPeople();
   drawChat();
+  drawQueue();
+  drawReady();
+  syncCams();
   if ((!sharing || s.media.peer !== s.you.peer) && Date.now() > shareGrace) stopLocal(); // shareGrace : le temps que la salle apprenne mon partage
   if (!sharing) closePeers();
 }
@@ -351,7 +404,7 @@ function drawPeople() {
       onclick: () => confirm("Retirer " + m.name + " de la WATCHPARTY ?") && send("kick", { userId: m.id }) }) : null)));
   $("perms-box").hidden = !s.you.host;
   if (s.you.host && !$("perms-box").open) {
-    const LABELS = { source: "Changer la vidéo, partager", control: "Lecture, pause, avancer", kick: "Retirer quelqu'un" };
+    const LABELS = { source: "Changer la vidéo, partager", control: "Lecture, pause, avancer", queue: "Proposer dans la file", kick: "Retirer quelqu'un" };
     const LEVELS = { all: "Tout le monde", cohosts: "Co-hôtes", host: "Moi seul" };
     $("perms").replaceChildren(...Object.entries(LABELS).flatMap(([p, label]) => [el("label", { textContent: label, htmlFor: "perm-" + p }),
       el("select", { id: "perm-" + p, onchange: (e) => send("perms", { perms: { [p]: e.target.value } }) },
@@ -368,7 +421,16 @@ function drawChat() {
     el("time", { textContent: new Date(c.at - offset).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) })))
     : [el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Dis bonjour : le chat est vu de tous les présents." })]));
   if (atEnd) box.scrollTop = box.scrollHeight;
+  // En plein écran : les nouveaux messages passent sur la vidéo, puis s'effacent.
+  const over = overChat(), last = state.chat.slice(-1)[0];
+  if (last && last.id !== lastOver) {
+    if (lastOver) over.append(el("div", {}, el("b", { textContent: last.name }), last.text));
+    lastOver = last.id;
+    while (over.children.length > 5) over.firstChild.remove();
+  }
 }
+let lastOver = "";
+const overChat = () => $("stage").querySelector(".wp-overchat") || $("stage").appendChild(el("div", { className: "wp-overchat" }));
 
 // ——— L'horloge du serveur (comme le HM) : plusieurs allers-retours, le plus court gardé ———
 // Sans elle, chacun se calerait sur l'heure d'arrivée des messages, en retard de leur temps de trajet.
@@ -403,13 +465,15 @@ const svg = (name) => { const b = el("span"); b.innerHTML = `<svg viewBox="0 0 2
 const fmt = (t) => { t = Math.max(0, Math.floor(t || 0)); const h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, x = String(t % 60).padStart(2, "0"); return h ? h + ":" + String(m).padStart(2, "0") + ":" + x : m + ":" + x; };
 let vol = { level: 1, muted: false };
 try { vol = { ...vol, ...JSON.parse(localStorage.getItem("onirique.wp.volume") || "{}") }; } catch { /* stockage fermé */ }
-let bar = null, statsOn = false, blocked = false, hideAt = 0;
+let bar = null, statsOn = false, blocked = false, hideAt = 0, endedKey = "";
 
 function clearStage() {
   try { player && player.destroy && player.destroy(); } catch { /* déjà détruit */ }
   player = null; mediaKey = ""; bar = null;
   $("stage").replaceChildren();
 }
+// Ce qui reste posé sur la scène quel que soit le lecteur : le chat du plein écran, « Prêt ? ».
+const keepOnStage = () => { overChat(); drawReady(); };
 
 function drawStage() {
   const m = state.media;
@@ -537,10 +601,11 @@ function makeBar(live) {
   b.vol = el("input", { type: "range", className: "wp-vol", min: 0, max: 1, step: 0.02, value: vol.level, ariaLabel: "Volume" });
   b.vol.oninput = () => { vol.level = Number(b.vol.value); vol.muted = vol.level === 0; applyVolume(); };
   b.note = el("span", { className: "wp-note" });
+  b.reacts = reactButtons();
   b.info = el("button", { type: "button", ariaLabel: "Infos de lecture", title: "Infos de lecture (débit, images/s)", onclick: () => { statsOn = !statsOn; } }, svg("info"));
   b.full = el("button", { type: "button", ariaLabel: "Plein écran", onclick: () => fullscreen() }, svg("full"));
   b.el = el("div", { className: "wp-bar" }, ...(live ? [el("span", { className: "wp-live" }, el("i"), "EN DIRECT"), el("span", { style: "flex:1" })]
-    : [b.play, b.time, b.seek]), b.note, b.mute, b.vol, b.info, b.full);
+    : [b.play, b.time, b.seek]), b.note, b.reacts, b.mute, b.vol, b.info, b.full);
   bar = b;
   return b.el;
 }
@@ -578,7 +643,10 @@ function tick() {
   syncPeers();
   drawBar();
   if (!player || !player.time || !state.media || state.media.kind === "share" || state.media.live || state.media.nosync) return;
-  const want = state.playing && !hold, exp = expected(), d = player.time() - exp, yt = player.kind === "yt";
+  const want = state.playing && !hold && !counting(), exp = expected(), d = player.time() - exp, yt = player.kind === "yt";
+  // La fin de la vidéo : on le dit au serveur, qui lance la suite de la file (une fois, s'il y en a une).
+  const dur = player.duration ? player.duration() : 0;
+  if (want && dur > 10 && exp > dur - 1 && endedKey !== mediaKey) { endedKey = mediaKey; send("ended", { key: mediaKey, duration: dur }); }
   if (want && !player.playing() && !blocked) player.play();
   if (!want && player.playing()) player.pause();
   if (!want) { if (player.rate) player.rate(1); if (!hold && Math.abs(d) > 0.4 && Date.now() - lastSeek > 800) { lastSeek = Date.now(); player.seek(exp); } return; }
@@ -903,6 +971,155 @@ $("file").onchange = async () => {
 };
 $("sh-stop").onclick = () => { stopLocal(); send("unshare"); };
 
+// ——— Réactions : un emoji monte sur la vidéo, chez tous ———
+const REACTIONS = ["😂", "😮", "🔥", "❤️", "👏", "😢", "💀", "🎉"];
+const reactButtons = () => el("div", { className: "wp-reacts" }, ...REACTIONS.map((emoji) =>
+  el("button", { type: "button", textContent: emoji, ariaLabel: "Réagir " + emoji, onclick: () => send("react", { emoji }) })));
+$("chat-reacts").append(...reactButtons().children);
+function floatReaction({ emoji, name }) {
+  const stage = $("stage");
+  if (!stage.isConnected || $("room").hidden) return;
+  const f = el("div", { className: "wp-float", style: `left:${10 + Math.random() * 75}%` }, emoji, el("small", { textContent: name }));
+  stage.append(f);
+  setTimeout(() => f.remove(), 2700);
+}
+
+// ——— La file d'attente : proposer, voter ; la plus votée passe ensuite ———
+const thumbOf = (it) => (it.kind === "youtube" ? `https://i.ytimg.com/vi/${it.id}/mqdefault.jpg` : "assets/favicon.png?v=2");
+const nameOf = (it) => it.title || (it.kind === "twitch" ? (it.channel ? "Twitch · " + it.channel : it.clip ? "Clip Twitch" : "Rediffusion Twitch " + it.video)
+  : it.kind === "kick" ? "Kick · " + it.channel : it.kind === "vimeo" ? "Vimeo " + it.id : it.kind === "youtube" ? "YouTube " + it.id : (it.url || "").split("/").pop().slice(0, 80));
+function drawQueue() {
+  const s = state, q = s.queue || [];
+  $("q-title").textContent = "File d'attente" + (q.length ? " · " + q.length : "");
+  $("q-next").hidden = !q.length || !can("source");
+  $("q-add").hidden = !can("queue");
+  const sorted = [...q].sort((a, b) => b.votes - a.votes);
+  $("queue").replaceChildren(...(sorted.length ? sorted.map((x) => el("li", {},
+    el("img", { src: thumbOf(x.item), alt: "", loading: "lazy" }),
+    el("div", { className: "grow" }, el("b", { textContent: nameOf(x.item) }), el("small", { textContent: "par " + x.by.name })),
+    el("button", { className: "vote" + (x.voted ? " on" : ""), type: "button", title: x.voted ? "Retirer mon vote" : "Voter pour la voir ensuite",
+      onclick: () => send("vote", { qid: x.qid }) }, "▲ " + x.votes),
+    x.by.id === s.you.id || can("source") ? el("button", { className: "btn small", type: "button", textContent: "×", title: "Retirer de la file",
+      onclick: () => send("unqueue", { qid: x.qid }) }) : null))
+    : [el("li", { className: "muted", style: "background:none;font-size:13px", textContent: "Rien pour l'instant : propose la prochaine vidéo." })]));
+}
+$("q-add").onsubmit = (e) => { e.preventDefault(); const u = $("q-url").value.trim(); if (u) send("queue", { source: u }).then(() => { $("q-url").value = ""; }); };
+$("q-next").onclick = () => send("next");
+
+// ——— « Prêt ? » : chacun confirme, puis 3, 2, 1, et la lecture part au même instant chez tous ———
+$("ready-btn").onclick = () => send("ready-check");
+function drawReady() {
+  const s = state, stage = $("stage");
+  if (!s) return;
+  $("ready-btn").hidden = !can("control") || !s.media || s.media.kind === "share" || !!s.media.live || !!s.media.nosync;
+  let ov = stage.querySelector(".wp-over");
+  if (s.ready) {
+    const n = s.members.length, ok = s.ready.ids.filter((id) => s.members.some((m) => m.id === id)).length, me = s.ready.ids.includes(s.you.id);
+    const waiting = s.members.filter((m) => !s.ready.ids.includes(m.id)).map((m) => m.name);
+    const box = el("div", { className: "glass" }, el("p", { className: "eyebrow", style: "margin:0", textContent: "Prêt ?" }),
+      el("h2", { style: "margin:0;font-size:22px", textContent: ok + " / " + n + " prêts" }),
+      waiting.length ? el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "On attend : " + waiting.join(", ") }) : null,
+      el("div", { className: "row" }, el("button", { className: "btn " + (me ? "" : "btn-primary"), type: "button", textContent: me ? "Finalement, pas prêt" : "Je suis prêt",
+        onclick: () => send("ready", { on: !me }) }),
+        can("control") ? el("button", { className: "btn", type: "button", textContent: "Annuler", onclick: () => send("ready-cancel") }) : null));
+    if (!ov) ov = stage.appendChild(el("div", { className: "wp-over" }));
+    ov.replaceChildren(box);
+  } else if (!counting()) ov && ov.remove();
+}
+// Le compte à rebours, dessiné quatre fois par seconde par-dessus la vidéo.
+setInterval(() => {
+  if (!state) return;
+  const stage = $("stage");
+  let ov = stage.querySelector(".wp-over");
+  if (counting()) {
+    if (!ov) ov = stage.appendChild(el("div", { className: "wp-over" }));
+    const n = String(Math.ceil((state.at - Date.now() - offset) / 1000));
+    if (ov.textContent !== n) ov.replaceChildren(el("div", { className: "wp-count", textContent: n }));
+  } else if (ov && !state.ready) ov.remove();
+}, 250);
+
+// ——— Les caméras des présents : chacun envoie sa vignette à chacun (pair à pair, quatre au plus) ———
+let myCam = null, camGrace = 0;
+const camPcs = new Map(), camIce = new Map();
+$("cam-btn").onclick = async () => {
+  if (myCam) { stopCam(); return send("cam", { on: false, peer: state.you.peer }); }
+  try {
+    myCam = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 20 } },
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+  } catch (e) { return say("Caméra indisponible : " + e.message); }
+  camGrace = Date.now() + 5000; // le temps que la salle apprenne ma caméra
+  await send("cam", { on: true, peer: state.you.peer });
+  drawCamBtn();
+};
+const drawCamBtn = () => { $("cam-btn").textContent = myCam ? "Couper ma vignette" : "Ma vignette caméra"; };
+function stopCam() {
+  if (myCam) myCam.getTracks().forEach((t) => t.stop());
+  myCam = null;
+  for (const pc of camPcs.values()) pc.close();
+  camPcs.clear();
+  drawCamBtn();
+}
+const camTile = (peer, name) => {
+  let t = $("cams").querySelector(`[data-peer="${peer}"]`);
+  if (!t) { t = el("div", { className: "cam" }, el("video", { autoplay: true, playsInline: true }), el("span", { textContent: name })); t.dataset.peer = peer; $("cams").append(t); }
+  return t.querySelector("video");
+};
+const camSignal = (to, data) => { signalChain.p = signalChain.p.then(() => api("POST", "/watchparty/" + code + "/signal", { from: state.you.peer, to, data: { ...data, cam: true } }).catch(() => {})); };
+function camPc(key, peer) {
+  const pc = new RTCPeerConnection({ iceServers: ICE });
+  // dir : la connexion d'en face à laquelle ce candidat est destiné (ma sortie est son entrée, et l'inverse).
+  pc.onicecandidate = (e) => e.candidate && camSignal(peer, { ice: e.candidate, dir: key.startsWith("out:") ? "in" : "out" });
+  pc.onconnectionstatechange = () => { if (pc.connectionState === "failed") { pc.close(); camPcs.delete(key); } };
+  camPcs.set(key, pc);
+  return pc;
+}
+// Une vignette part de chaque caméra allumée vers chaque présent : une connexion par sens (« out:pair », « in:pair »).
+function syncCams() {
+  const s = state;
+  const cams = s.cams || [], camPeers = new Set(cams.map((c) => c.peer));
+  if (myCam && !camPeers.has(s.you.peer) && Date.now() > camGrace) stopCam();
+  for (const t of [...$("cams").children]) if (!camPeers.has(t.dataset.peer)) t.remove();
+  for (const [key, pc] of camPcs) {
+    const peer = key.slice(key.indexOf(":") + 1), present = s.members.some((m) => m.peers.includes(peer));
+    if (!present || (key.startsWith("in:") && !camPeers.has(peer))) { pc.close(); camPcs.delete(key); }
+  }
+  if (myCam) {
+    const v = camTile(s.you.peer, "Toi");
+    v.muted = true;
+    if (v.srcObject !== myCam) v.srcObject = myCam;
+    for (const peer of s.members.flatMap((m) => m.peers).filter((p) => p !== s.you.peer)) {
+      if (camPcs.has("out:" + peer)) continue;
+      const pc = camPc("out:" + peer, peer);
+      for (const t of myCam.getTracks()) pc.addTransceiver(t, { direction: "sendonly", streams: [myCam], sendEncodings: [{ maxBitrate: t.kind === "video" ? 350_000 : 48_000 }] });
+      pc.createOffer().then((o) => pc.setLocalDescription(o)).then(() => camSignal(peer, { sdp: pc.localDescription })).catch(() => {});
+    }
+  }
+}
+async function onCamSignal({ from, data }) {
+  const cam = (state.cams || []).find((c) => c.peer === from);
+  if (data.sdp && data.sdp.type === "offer") {
+    if (!cam) return;
+    if (camPcs.has("in:" + from)) camPcs.get("in:" + from).close();
+    const pc = camPc("in:" + from, from);
+    pc.ontrack = (e) => { const v = camTile(from, cam.name); if (v.srcObject !== e.streams[0]) { v.srcObject = e.streams[0]; v.play().catch(() => {}); } };
+    await pc.setRemoteDescription(data.sdp);
+    for (const c of camIce.get("in:" + from) || []) await pc.addIceCandidate(c).catch(() => {});
+    camIce.delete("in:" + from);
+    await pc.setLocalDescription(await pc.createAnswer());
+    camSignal(from, { sdp: pc.localDescription });
+  } else if (data.sdp) {
+    const pc = camPcs.get("out:" + from);
+    if (!pc) return;
+    await pc.setRemoteDescription(data.sdp);
+    for (const c of camIce.get("out:" + from) || []) await pc.addIceCandidate(c).catch(() => {});
+    camIce.delete("out:" + from);
+  } else if (data.ice) {
+    const key = (data.dir === "out" ? "out:" : "in:") + from, pc = camPcs.get(key);
+    if (pc && pc.remoteDescription) await pc.addIceCandidate(data.ice).catch(() => {});
+    else camIce.set(key, [...(camIce.get(key) || []), data.ice]);
+  }
+}
+
 // ——— Le reste de la salle ———
 $("source").onsubmit = (e) => { e.preventDefault(); const u = $("s-url").value.trim(); if (u) send("source", { source: u }).then(() => { $("s-url").value = ""; }); };
 $("say").onsubmit = (e) => { e.preventDefault(); const t = $("say-text").value.trim(); if (t) { $("say-text").value = ""; send("chat", { text: t }); } };
@@ -911,6 +1128,8 @@ $("close").onclick = () => confirm("Fermer la WATCHPARTY pour tout le monde ?") 
 
 function enter(c) {
   code = c;
+  loadIce();
+  setInterval(loadIce, 6 * 3600_000); // les identifiants du relais valent 12 h
   history.replaceState(null, "", "watchparty#" + c);
   $("home").hidden = true;
   say("");
