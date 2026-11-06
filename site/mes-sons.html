@@ -764,6 +764,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
         <button class="install" id="install" type="button" hidden><img src="assets/app-icon-180.png" alt="">Ajouter à l'écran d'accueil</button>
         <a class="install" href="profil" style="text-decoration:none">Mon profil</a>
         <a class="install" href="messages" style="text-decoration:none">Messages</a>
+        <button class="install" id="hm-open" type="button" aria-pressed="false" title="HM : écouter à plusieurs, en même temps, avec une file partagée">HM</button>
         <button class="install" id="settings-open" type="button">Réglages</button>
         <button class="install" id="scan-open" type="button" hidden title="Chercher si tes prods ont été volées et sorties sur les plateformes">SCAN</button>
       </div>
@@ -876,7 +877,8 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 <dialog id="scan"></dialog>
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close('cancel')">Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
-<script src="assets/sounds-player.js?v=23"></script>
+<script src="assets/sounds-player.js?v=24"></script>
+<script src="assets/hm.js?v=1"></script>
 <script src="assets/platforms.js?v=14"></script>
 <script src="assets/rocky-builder.js?v=3"></script>
 <script src="assets/ratings.js?v=2"></script>
@@ -993,6 +995,8 @@ PF.setup({ api, el, icon, player, changed: (reload) => (reload ? refresh() : ren
   // Les playlists du CLOUD qui peuvent recevoir des titres Spotify, et l'ouverture de l'une d'elles.
   playlists: () => (data && !data.vanish ? data.projects.filter((x) => x.kind === "playlist") : []), open: (id) => navigate("#/p/" + id) });
 // La barre de recherche du CLOUD : les sons de Spotify, à écouter et à ajouter à une playlist.
+// HM : l'écoute partagée, façon Spotify Jam (assets/hm.js).
+OniriqueHM.setup({ api, token, el, icon, player, avatar, button: $("hm-open") });
 $("pf-search").onsubmit = (event) => { event.preventDefault(); const q = $("pf-search").querySelector("input").value.trim(); if (q.length > 1) PF.openSearch(q); };
 // Les couleurs de chaque pochette, lues une fois.
 const tints = new Map();

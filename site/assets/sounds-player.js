@@ -766,7 +766,10 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
       if (autoplay) Promise.resolve(loading).then(() => audio.play()).catch(() => {});
     }
     // La suite : la file d'abord, puis la liste (au hasard si demandé), puis du début si la répétition est mise.
+    // Le HM (assets/hm.js) prend la main : suivant, précédent et fin de son passent par lui.
+    let control = null;
     function advance(manual) {
+      if (control) return control(manual ? "next" : "ended");
       if (repeat === "one" && !manual) { audio.currentTime = 0; audio.play(); return; }
       if (upNext.length) return insertNext(upNext.shift());
       if (shuffle && list.length > 1) { let j; do j = Math.floor(Math.random() * list.length); while (j === index); return go(j); }
@@ -788,7 +791,7 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     audio.addEventListener("playing", () => { const t = item(); if (onPlay && t && counted !== t.key) { counted = t.key; onPlay(t); } });
     audio.addEventListener("error", () => { if (item()) sub.textContent = "Lecture impossible : recharge la page."; });
     play.onclick = () => (audio.paused ? audio.play() : audio.pause());
-    prev.onclick = () => (audio.currentTime > 3 || index === 0 ? (audio.currentTime = 0) : go(index - 1));
+    prev.onclick = () => control ? control("prev") : (audio.currentTime > 3 || index === 0 ? (audio.currentTime = 0) : go(index - 1));
     next.onclick = () => advance(true);
     shuffleBtn.onclick = () => { shuffle = !shuffle; shuffleBtn.classList.toggle("on", shuffle); };
     repeatBtn.onclick = () => {
@@ -942,6 +945,7 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
         go(i, autoplay);
       },
       toggle() { play.onclick(); },
+      set control(fn) { control = fn; },
       enqueue(t) { upNext.push(t); if (index < 0) { list = []; insertNext(upNext.shift()); } listQueue(); },
       openDetails() { if (phone()) { openFull(); panel("comments"); } else if (sheet.hidden) toggleSheet(); },
       setAccent(color) {

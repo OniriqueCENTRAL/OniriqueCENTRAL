@@ -443,6 +443,16 @@ function audioUrl(versionId, download = false, linkId = 0, r = '') {
   const e = now() + 6 * 3600_000, d = download ? 1 : 0, l = download ? linkId : 0, rr = l ? r : '';
   return `/api/sounds/audio/${versionId}?e=${e}&d=${d}${l ? `&l=${l}` : ''}${rr ? `&r=${rr}` : ''}&s=${sign(`${versionId}.${e}.${d}${l ? `.${l}` : ''}${rr ? `.r${rr}` : ''}`)}`;
 }
+// Le HM (hm.js) : un son du CLOUD y entre par l'adresse signée que son auteur écoute (elle prouve son accès), puis chaque
+// participant en reçoit une adresse fraîche.
+export function signedVersion(url) {
+  const m = /^\/api\/sounds\/audio\/(\d+)\?e=(\d+)&d=0&s=([\w-]+)$/.exec(String(url));
+  return m && Number(m[2]) > now() && same(m[3], sign(`${m[1]}.${m[2]}.0`)) ? Number(m[1]) : null;
+}
+export function versionAudio(vid) {
+  const v = get('SELECT id, duration, peaks FROM sound_versions WHERE id = ?', vid);
+  return v && { url: audioUrl(v.id), duration: v.duration, peaks: JSON.parse(v.peaks || '[]') };
+}
 // Le laissez-passer d'un lien protégé, rendu une fois le mot de passe donné.
 const passFor = (link) => sign(`link.${link.id}.${link.password_hash}`);
 
