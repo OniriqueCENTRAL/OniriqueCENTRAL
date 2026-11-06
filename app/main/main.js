@@ -801,8 +801,8 @@ app.whenReady().then(async () => {
 
 // Les liens onirique:// : onirique://hm/CODE ouvre CLOUD sur ce HM (le site le propose avant de le rejoindre dans le
 // navigateur). L'application, déjà lancée ou non, vient au premier plan.
-if (process.defaultApp) app.setAsDefaultProtocolClient('onirique', process.execPath, [path.resolve(process.argv[1] || '.')]);
-else app.setAsDefaultProtocolClient('onirique');
+// Seule l'application installée s'inscrit : une version de développement (npm start) ne doit pas lui prendre les liens.
+if (app.isPackaged) app.setAsDefaultProtocolClient('onirique');
 app.on('second-instance', (_event, argv) => {
   if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); }
   openLink(argv.find((a) => /^onirique:\/\//i.test(a)));

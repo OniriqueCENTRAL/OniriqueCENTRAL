@@ -36,11 +36,13 @@
   border: 1px solid var(--ember); background: #150a0c; color: var(--mist); font: 700 13px var(--f-body); cursor: pointer; box-shadow: 0 10px 40px -10px rgba(226,52,68,.8); }
 .hm-chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 8px var(--ember); animation: hm-pulse 1.6s ease-in-out infinite; }
 @keyframes hm-pulse { 50% { opacity: .35; } }
-/* Posé sur le bord haut du lecteur, au milieu, comme un onglet. */
-.op-pill > .hm-chip { position: absolute; top: 0; left: 50%; right: auto; bottom: auto; transform: translate(-50%, -55%); padding: 4px 12px 4px 10px; gap: 7px;
-  font: 700 11px var(--f-body); letter-spacing: .06em; text-transform: uppercase; box-shadow: 0 6px 22px -8px rgba(226,52,68,.9); }
+/* Dans la rangée du lecteur, juste avant « précédent », à la hauteur de ses boutons. */
+.op-pill > .hm-chip { position: static; flex: none; height: 30px; padding: 0 11px 0 9px; gap: 6px; box-shadow: none; background: rgba(226,52,68,.12);
+  border-color: rgba(226,52,68,.6); font: 700 11px/1 var(--f-body); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
 .op-pill > .hm-chip i { width: 6px; height: 6px; }
-.op-pill > .hm-chip:hover { background: #22100f; }
+.op-pill > .hm-chip:hover { background: rgba(226,52,68,.22); border-color: var(--ember); }
+/* Sur téléphone, le lecteur n'a pas la place : le bouton « HM · N » du haut de la page suffit. */
+@media (max-width: 720px) { .op-pill > .hm-chip { display: none; } }
 #hm-dlg .hm-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 #hm-dlg .hm-head h3 { margin: 0; }
 .hm-invite { position: fixed; right: 16px; bottom: 110px; z-index: 90; width: min(360px, calc(100vw - 32px)); display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px;
@@ -244,8 +246,11 @@
 
     async function join(c) {
       if (code === c) return draw(true);
+      // Le nouveau HM d'abord : un lien mort ou expulsé ne fait pas quitter celui où l'on est.
+      let next;
+      try { next = await api("GET", "/hm/" + c); } catch (error) { if (!code) try { sessionStorage.removeItem(KEY); } catch {} return alert(error.message); }
       if (code) leave(false);
-      try { receive(await api("GET", "/hm/" + c)); } catch (error) { try { sessionStorage.removeItem(KEY); } catch {} return alert(error.message); }
+      receive(next);
       code = c;
       try { sessionStorage.setItem(KEY, c); } catch {}
       connect();
@@ -275,11 +280,11 @@
     function drawChip() {
       // Sur le bord du lecteur quand il est là ; sinon le bouton « HM » de la page suffit.
       const pill = document.querySelector(".op-pill");
-      if (pill && chip.parentNode !== pill) pill.append(chip);
+      if (pill && chip.parentNode !== pill) pill.insertBefore(chip, pill.querySelector(".op-btn"));
       chip.hidden = !state;
       button.textContent = state ? "HM · " + state.members.length : "HM";
       button.setAttribute("aria-pressed", String(!!state));
-      if (state) { chip.replaceChildren(el("i"), "HM · " + state.members.length); chip.title = chip.ariaLabel = "HM en cours : " + state.members.length + " en écoute"; }
+      if (state) { chip.replaceChildren(el("i"), "HM", el("span", { textContent: "· " + state.members.length })); chip.title = chip.ariaLabel = "HM en cours : " + state.members.length + " en écoute"; }
     }
     function song(x, extra) {
       return el("li", { className: "hm-song" + (extra ? " hm-now" : "") },
