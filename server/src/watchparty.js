@@ -32,7 +32,10 @@ const LEVELS = ['all', 'cohosts', 'host'];
 const DEFAULT_PERMS = { source: 'host', control: 'all', kick: 'host', queue: 'all' };
 const MAX_QUEUE = 50;
 const MAX_CAMS = 4; // chaque caméra part vers chacun : au-delà de quatre, les connexions ne suivent plus
-export const REACTIONS = ['😂', '😮', '🔥', '❤️', '👏', '😢', '💀', '🎉'];
+export const REACTIONS = ['😂', '😮', '🔥', '❤️', '👏', '😢', '💀', '🎉', '💙', '🔵', '🐐', '👑', '😱', 'BLUEWALL'];
+// Le mode Karmine Corp : une WATCHPARTY sur la chaîne Twitch de Kameto (kamet0). Score de la série, pronostics.
+export const isKc = (m) => !!m && m.kind === 'twitch' && m.channel === 'kamet0';
+const clamp = (v, max) => Math.max(0, Math.min(max, Math.trunc(Number(v)) || 0));
 const COUNTDOWN = 3000; // « Prêt ? » : tout le monde est prêt, la vidéo part 3 s plus tard, au même instant chez tous
 const MAX_MEMBERS = 30; // un partage d'écran part vers chacun : au-delà, l'envoi de celui qui partage ne suit plus
 const MAX_CHAT = 150;
@@ -177,6 +180,25 @@ export function act(room, user, action, body = {}, t = now(), peer = null, prese
       need(room, uid, 'control');
       room.ready = null;
       return;
+    case 'kc': {
+      // Le score de la série (Bo5 : 3 manches gagnantes) et le nom de l'adversaire, réglés par ceux qui contrôlent la lecture.
+      need(room, uid, 'control');
+      if (!isKc(room.media)) throw new HttpError(400, 'Le mode Karmine Corp ne vaut que sur la chaîne de Kameto.');
+      const kc = room.kc || { kc: 0, opp: 0, oppName: 'T1', votes: {} };
+      if (body.kc !== undefined) kc.kc = clamp(body.kc, 3);
+      if (body.opp !== undefined) kc.opp = clamp(body.opp, 3);
+      if (clean(body.oppName, 24)) kc.oppName = clean(body.oppName, 24);
+      room.kc = kc;
+      return;
+    }
+    case 'kc-vote': {
+      // Le pronostic : qui gagne la série ? Chacun une voix, qu'il peut changer.
+      if (!isKc(room.media)) throw new HttpError(400, 'Le mode Karmine Corp ne vaut que sur la chaîne de Kameto.');
+      if (!['kc', 'opp'].includes(body.team)) throw new HttpError(400, 'Choisis une équipe.');
+      room.kc ||= { kc: 0, opp: 0, oppName: 'T1', votes: {} };
+      room.kc.votes[uid] = body.team;
+      return;
+    }
     case 'cam': {
       // Sa caméra dans les vignettes : depuis ce flux-là, quatre au plus.
       if (!peer) throw new HttpError(400, 'Ouvre la WATCHPARTY avant d\'allumer ta caméra.');
@@ -290,6 +312,8 @@ export function mountWatchparty(app) {
     perms: r.perms, cohosts: r.cohosts, members: members(r), media: r.media, pos: r.pos, playing: r.playing, at: r.at, chat: r.chat,
     queue: (r.queue || []).map((x) => ({ qid: x.qid, item: x.item, by: { id: x.by, name: x.byName }, votes: x.votes.length, voted: x.votes.includes(user.id) })),
     ready: r.ready || null, cams: r.cams || [],
+    kc: isKc(r.media) ? (({ kc, opp, oppName, votes }) => ({ kc, opp, oppName,
+      votes: { kc: Object.values(votes).filter((v) => v === 'kc').length, opp: Object.values(votes).filter((v) => v === 'opp').length }, mine: votes[user.id] || null }))(r.kc || { kc: 0, opp: 0, oppName: 'T1', votes: {} }) : null,
     you: { id: user.id, peer, host: user.id === r.owner, can: Object.fromEntries(PERMS.map((p) => [p, allowed(r, user.id, p)])) },
   });
   const send = (s, payload) => s.res.write(`data: ${JSON.stringify(payload)}\n\n`);

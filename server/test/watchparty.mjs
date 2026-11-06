@@ -114,6 +114,21 @@ await step('caméras : depuis un flux ouvert, quatre au plus, retirées avec leu
   assert.deepEqual(r.cams.map((c) => c.peer), ['p1', 'p4']);
 });
 
+await step('mode Karmine Corp : seulement sur la chaîne de Kameto ; score borné au Bo5, un pronostic par personne', () => {
+  const r = newRoom({ id: 1, name: 'Kay' });
+  act(r, { id: 1 }, 'source', { source: 'https://www.twitch.tv/zerator' }, 0);
+  throws(() => act(r, { id: 1 }, 'kc', { kc: 1 }), 400);
+  throws(() => act(r, { id: 2 }, 'kc-vote', { team: 'kc' }), 400);
+  act(r, { id: 1 }, 'source', { source: 'https://www.twitch.tv/Kamet0' }, 0);
+  act(r, { id: 1 }, 'perms', { perms: { control: 'host' } });
+  throws(() => act(r, { id: 2 }, 'kc', { kc: 1 }), 403);
+  act(r, { id: 1 }, 'kc', { kc: 9, opp: -2, oppName: '  T1   Faker ' });
+  assert.deepEqual([r.kc.kc, r.kc.opp, r.kc.oppName], [3, 0, 'T1 Faker']);
+  act(r, { id: 2 }, 'kc-vote', { team: 'opp' }); act(r, { id: 2 }, 'kc-vote', { team: 'kc' }); act(r, { id: 3 }, 'kc-vote', { team: 'kc' });
+  throws(() => act(r, { id: 3 }, 'kc-vote', { team: 'g2' }), 400);
+  assert.deepEqual(r.kc.votes, { 2: 'kc', 3: 'kc' });
+});
+
 await step('partage : seulement depuis un flux ouvert, et seul celui qui partage (ou le créateur) l’arrête', () => {
   const r = newRoom({ id: 1, name: 'Kay' });
   act(r, { id: 1 }, 'perms', { perms: { source: 'all' } });
