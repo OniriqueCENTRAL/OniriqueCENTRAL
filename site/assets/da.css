@@ -53,6 +53,17 @@ body > header:not(.nav) { background: linear-gradient(180deg, rgba(9,8,10,.78), 
   -webkit-backdrop-filter: blur(22px) saturate(140%); backdrop-filter: blur(22px) saturate(140%); }
 .brand { letter-spacing: .16em; }
 
+/* Liens de l'en-tête (rubriques, Outils, Nos réseaux) et du pied de page : des libellés JetBrains Mono en capitales,
+   comme les onglets de la charte ; au survol, un filet de l'accent glisse sous le lien. */
+.nav-links, footer nav, .foot-row nav { font-family: var(--f-mono); font-weight: 500; font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; }
+footer nav, .foot-row nav { font-size: 10.5px; }
+.nav-links button, footer nav button, .foot-row nav button { font: inherit; letter-spacing: inherit; text-transform: inherit; }
+.nav-links a, .nav-links button { position: relative; color: var(--haze); text-decoration: none; transition: color .25s; }
+.nav-links a:hover, .nav-links button:hover, .nav-links button[aria-expanded="true"], .nav-links a[aria-current="page"] { color: #fff; }
+.nav-links > a::after { content: ""; position: absolute; left: 0; right: .12em; bottom: -7px; height: 1px; background: rgb(var(--acc)); box-shadow: 0 0 8px rgb(var(--acc));
+  transform: scaleX(0); transform-origin: left; transition: transform .35s var(--ease); }
+.nav-links > a:hover::after, .nav-links > a[aria-current="page"]::after { transform: scaleX(1); }
+
 /* Boutons : JetBrains Mono en majuscules, rayon 12 ; le principal s'allume à l'accent, avec une lueur douce */
 .btn {
   border-radius: 12px; font-family: var(--f-mono); font-weight: 500; font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
