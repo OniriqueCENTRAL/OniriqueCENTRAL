@@ -63,6 +63,11 @@ body > header:not(.nav) { background: linear-gradient(180deg, rgba(9,8,10,.78), 
 .btn-primary { background: var(--lit); color: #fff; border-color: transparent; box-shadow: var(--lit-shadow); }
 .btn-primary:hover { color: #fff; transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(var(--acc-hi),.7) inset, 0 8px 26px rgba(var(--acc),.45); }
 .btn.danger { color: rgb(var(--acc-hi)); }
+.btn { white-space: nowrap; }
+/* Téléphone : les majuscules espacées sont plus larges ; l'en-tête doit tenir sur une ligne avec le bouton menu */
+@media (max-width: 560px) { header .btn { letter-spacing: .06em !important; padding-inline: 11px !important; font-size: 11px !important; } }
+@media (max-width: 420px) { body > header .brand { letter-spacing: .08em; gap: 8px; } }
+@media (max-width: 380px) { header .btn { letter-spacing: .02em !important; padding-inline: 9px !important; white-space: normal; } }
 
 /* Verre : cartes et panneaux */
 .card, .panel {
