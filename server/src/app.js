@@ -43,6 +43,7 @@ import { mountPush } from './push.js';
 import { mountDocs } from './docs.js';
 import { mountTierList } from './tierlist.js';
 import { mountHm } from './hm.js';
+import { mountWatchparty } from './watchparty.js';
 import { mountPlatforms } from './platforms.js';
 import { mountRatings } from './ratings.js';
 import { mountProfiles } from './profiles.js';
@@ -569,6 +570,7 @@ export function createApp() {
   mountCut(app, { requireUser, receiveFile, wrap });
   mountTierList(app, { requireUser, receiveImage, removeMedia, wrap });
   mountHm(app, { requireUser });
+  mountWatchparty(app);
   // Pages de profil des membres : abonnements, commentaires, messages privés.
   mountProfiles(app, { requireUser, receiveImage, removeMedia, wrap });
   mountConcerts(app, { wrap });
