@@ -406,7 +406,7 @@ button.key.copy:hover { color: var(--pink); }
 .sidebar.compact .nav-item .ico { grid-row: auto; }
 .sidebar.compact .nav-item .name { font-size: 10px; }
 /* Un nom long (WATCHPARTY) tient dans la colonne étroite au lieu d'être coupé. */
-.sidebar.compact .nav-item .name.long { font-size: 7px; letter-spacing: .02em; max-width: 100%; overflow-wrap: anywhere; text-align: center; }
+.sidebar.compact .nav-item .name.long { font-size: 6.4px; letter-spacing: 0; max-width: 100%; white-space: nowrap; text-align: center; }
 .menu-toggle { all: unset; cursor: pointer; display: grid; place-items: center; height: 30px; border-radius: 10px; color: var(--haze);
   font: 500 10px var(--mono); letter-spacing: .12em; text-transform: uppercase; background: rgba(255,255,255,.04); box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset; transition: color .25s, background .25s; }
 .menu-toggle:hover { color: #fff; background: rgba(255,255,255,.07); }
@@ -416,6 +416,11 @@ button.key.copy:hover { color: var(--pink); }
 .tool-actions { display: grid; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.06); }
 .menu-toggle.tool-action { height: auto; min-height: 30px; padding: 6px 4px; text-align: center; font: 500 9px/1.25 var(--mono); letter-spacing: .1em; text-transform: uppercase; overflow-wrap: anywhere; }
 .menu-toggle.tool-action.on { color: #fff; box-shadow: 0 0 0 1px rgba(var(--acc-hi), .55) inset; }
+/* Twitch et YouTube reliés (WATCHPARTY) : discrets, une petite coche quand c'est fait */
+.menu-toggle.tool-action.account { opacity: .75; }
+.menu-toggle.tool-action.account.on { opacity: 1; box-shadow: 0 0 0 1px rgba(var(--acc-hi), .3) inset; }
+.menu-toggle.tool-action.account .check { display: inline-grid; place-items: center; width: 12px; height: 12px; margin-right: 4px; border-radius: 50%;
+  background: rgb(var(--acc)); color: #fff; font: 700 8px/1 system-ui, sans-serif; vertical-align: 1px; }
 .tool-reset { all: unset; cursor: pointer; display: grid; justify-items: center; gap: 4px; padding: 10px 4px; border-radius: 12px; color: var(--haze);
   font: 500 16px var(--mono); background: rgba(255,255,255,.03); box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset; transition: color .25s, box-shadow .25s; }
 .tool-reset span { font-size: 9px; letter-spacing: .12em; text-transform: uppercase; }

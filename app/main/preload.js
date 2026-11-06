@@ -5,7 +5,7 @@ const CHANNELS = [
   'auth:login', 'auth:register', 'auth:logout', 'auth:password', 'me:avatar', 'me:instagramAvatar',
   'plugin:install', 'plugin:uninstall', 'plugin:reveal', 'plugin:open',
   'license:activate', 'license:deactivate',
-  'admin:previewMail', 'admin:pick', 'admin:uploadVersion', 'admin:uploadImage', 'admin:refreshDemo', 'open:webmail', 'open:mail', 'open:site', 'tool:show', 'tool:hide', 'tool:freeze', 'tool:thaw', 'tool:home', 'tool:back', 'tool:cloud-buttons', 'tool:cloud-press', 'tool:reset', 'theme:accent',
+  'admin:previewMail', 'admin:pick', 'admin:uploadVersion', 'admin:uploadImage', 'admin:refreshDemo', 'open:webmail', 'open:mail', 'open:site', 'tool:show', 'tool:hide', 'accounts:state', 'accounts:login', 'accounts:logout', 'tool:freeze', 'tool:thaw', 'tool:home', 'tool:back', 'tool:cloud-buttons', 'tool:cloud-press', 'tool:reset', 'theme:accent',
   'settings:server', 'settings:vst3Dir', 'settings:background',
 ];
 

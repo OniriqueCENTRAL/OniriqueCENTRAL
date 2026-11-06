@@ -143,6 +143,21 @@ function audioPicker(kind, key, fallback) {
   return select;
 }
 
+// Twitch et YouTube connectés dans l'application : leurs lecteurs, dans la WATCHPARTY, reconnaissent le compte et ses
+// avantages (abonné à la chaîne ou Turbo, YouTube Premium : sans pub). Chacun selon son propre compte.
+function accountsBox() {
+  const box = h('div', { class: 'stack', style: { gap: '8px' } });
+  const SITES = [['twitch', 'Twitch', 'abonné à la chaîne ou Turbo'], ['youtube', 'YouTube', 'YouTube Premium']];
+  const draw = (st) => box.replaceChildren(...SITES.map(([name, label, perk]) => h('div', { class: 'row', style: { gap: '12px', 'align-items': 'center', 'justify-content': 'space-between' } },
+    h('span', null, h('b', null, label), h('br'), h('span', { class: 'muted' }, st[name] ? `Connecté : sans pub si tu es ${perk}.` : `Pas connecté (sans pub si ${perk}).`)),
+    button(st[name] ? 'Déconnecter' : 'Connecter', async () => {
+      try { draw(await call(st[name] ? 'accounts:logout' : 'accounts:login', name)); } catch (error) { toast(error.message, true); }
+    }, 'small quiet'))));
+  draw({});
+  call('accounts:state').then(draw, () => {});
+  return box;
+}
+
 function openSettings() {
   const start = savedAccent();
   const custom = h('input', { type: 'color', value: start, 'aria-label': 'Couleur personnalisée', class: 'accent-custom' });
@@ -177,6 +192,9 @@ function openSettings() {
     h('label', { class: 'stack', style: { gap: '6px' } }, h('span', null, 'Micro'), audioPicker('audioinput', 'mic', 'Celui de l’ordinateur')),
     h('label', { class: 'stack', style: { gap: '6px' } }, h('span', null, 'Casque ou haut-parleurs'), audioPicker('audiooutput', 'speaker', 'Ceux de l’ordinateur')),
     h('label', { class: 'stack', style: { gap: '6px' } }, h('span', null, 'Caméra'), audioPicker('videoinput', 'camera', 'Celle de l’ordinateur')),
+    eyebrow('WATCHPARTY sans pub'),
+    h('p', { class: 'muted', style: { margin: 0 } }, 'Connecte tes comptes : les vidéos Twitch et YouTube de la WATCHPARTY appliquent tes avantages. Les autres voient selon leur propre compte.'),
+    accountsBox(),
     rocky && eyebrow('ROCKY'),
     rocky && h('label', { class: 'row', style: { gap: '12px', 'align-items': 'center' } }, rocky,
       h('span', null, h('b', null, 'Animations de ROCKY'), h('br'),
@@ -304,6 +322,25 @@ function cloudActions() {
   return box;
 }
 
+// Dans la WATCHPARTY, la colonne repliée relie Twitch et YouTube (sans pub selon son compte) : une coche quand c'est fait.
+let watchAccounts = {};
+function watchActions() {
+  const box = h('div', { class: 'tool-actions', title: 'Regarder sans pub : relie tes comptes' });
+  const SITES = [['twitch', 'Twitch'], ['youtube', 'YouTube']];
+  const draw = () => box.replaceChildren(...SITES.map(([name, label]) => h('button', {
+    class: `menu-toggle tool-action account${watchAccounts[name] ? ' on' : ''}`, type: 'button', 'aria-pressed': watchAccounts[name] ? 'true' : 'false',
+    title: watchAccounts[name] ? `${label} relié : sans pub si ton compte y a droit. Cliquer pour le délier.` : `Relier ${label} pour regarder sans pub (abonnement, Turbo, Premium)`,
+    onclick: async () => {
+      if (!watchAccounts[name]) { watchAccounts = await call('accounts:login', name).catch((e) => (toast(e.message, true), watchAccounts)); return draw(); }
+      modal(`Délier ${label}`, h('p', { class: 'muted', style: { margin: 0 } }, `Les vidéos ${label} de la WATCHPARTY ne reconnaîtront plus ton compte.`),
+        [{ label: 'Délier', run: async () => { watchAccounts = await call('accounts:logout', name).catch(() => watchAccounts); draw(); } }], `Délier ${label}`);
+    },
+  }, watchAccounts[name] ? h('span', { class: 'check', 'aria-hidden': 'true' }, '✓') : null, label)));
+  draw();
+  call('accounts:state').then((st) => { watchAccounts = st; if (box.isConnected) draw(); }, () => {});
+  return box;
+}
+
 function compactSidebar() {
   const name = state.route.name, [label] = TOOL_NAMES[name];
   return h('nav', { class: 'sidebar compact' },
@@ -318,7 +355,7 @@ function compactSidebar() {
       } }, h('span', { class: 'row', style: { gap: '6px' } }, '←', h('span', null, 'Retour'))),
     h('button', { class: 'menu-toggle', type: 'button', title: 'Afficher le menu', 'aria-label': 'Afficher le menu', 'aria-expanded': 'false',
       onclick: () => toggleMenu(true) }, chevron(false)),
-    name === 'cloud' ? cloudActions() : null,
+    name === 'cloud' ? cloudActions() : name === 'watchparty' ? watchActions() : null,
     h('div', { class: 'spacer' }),
     h('button', { class: 'tool-reset', type: 'button', title: `Réinitialiser ${label} : la page repart de zéro`, onclick: async () => {
       if (await attempt(() => call('tool:reset', name))) toast(`${label} est réinitialisé.`);

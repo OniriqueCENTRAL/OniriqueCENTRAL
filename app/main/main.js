@@ -430,20 +430,31 @@ ipcMain.handle('tool:open-external', (event, url) => {
 // Twitch et YouTube connectés dans l'application (leurs cookies dans la session des pages du site) : les lecteurs
 // intégrés de la WATCHPARTY reconnaissent alors le compte, et ses avantages (abonnement, Turbo, Premium : sans pub).
 const ACCOUNT_SITES = { twitch: { cookie: 'auth-token', hosts: /(^|\.)twitch\.tv$/ }, youtube: { cookie: 'SAPISID', hosts: /(^|\.)(youtube|google)\.com$/ } };
-ipcMain.handle('tool:accounts', async (event) => {
-  if (!toolContents.has(event.sender.id)) return {};
+const ACCOUNT_LOGIN = { twitch: 'https://www.twitch.tv/login', youtube: 'https://accounts.google.com/ServiceLogin?service=youtube&continue=https%3A%2F%2Fwww.youtube.com%2F' };
+async function accountsState() {
   const cookies = await webSession().cookies.get({});
   return Object.fromEntries(Object.entries(ACCOUNT_SITES).map(([name, site]) => [name,
     cookies.some((c) => c.name === site.cookie && site.hosts.test(c.domain.replace(/^\./, '')) && (name !== 'youtube' || /youtube\.com$/.test(c.domain)))]));
-});
-ipcMain.handle('tool:account-logout', async (event, name) => {
-  const site = ACCOUNT_SITES[name];
-  if (!toolContents.has(event.sender.id) || !site) return false;
-  const ses = webSession();
+}
+async function accountLogout(name) {
+  const site = ACCOUNT_SITES[name], ses = webSession();
   for (const c of await ses.cookies.get({})) {
     const host = c.domain.replace(/^\./, '');
     if (site.hosts.test(host)) await ses.cookies.remove(`https://${host}${c.path}`, c.name).catch(() => {});
   }
+  accountsChanged();
+}
+// Un compte vient d'être connecté ou déconnecté : la WATCHPARTY recharge son lecteur pour le reconnaître.
+async function accountsChanged() {
+  for (const pending of toolViews.values()) {
+    const view = await pending.catch(() => null);
+    if (view && !view.webContents.isDestroyed()) view.webContents.executeJavaScript('window.onOniriqueAccounts && window.onOniriqueAccounts()').catch(() => {});
+  }
+}
+ipcMain.handle('tool:accounts', (event) => (toolContents.has(event.sender.id) ? accountsState() : {}));
+ipcMain.handle('tool:account-logout', async (event, name) => {
+  if (!toolContents.has(event.sender.id) || !ACCOUNT_SITES[name]) return false;
+  await accountLogout(name);
   return true;
 });
 ipcMain.handle('tool:spotify-logout', async (event) => {
@@ -885,6 +896,19 @@ app.whenReady().then(async () => {
     frozen = false;
     if (shownTool && toolViews.has(shownTool)) { const view = await viewFor(shownTool); view.setBounds(toolBounds); await showView(view); }
   });
+  // Les comptes Twitch et YouTube de la WATCHPARTY, depuis les Paramètres : l'état, la connexion (sa page dans une petite
+  // fenêtre, dans la session des pages du site), la déconnexion.
+  handle('accounts:state', () => accountsState());
+  handle('accounts:login', (name) => new Promise((resolve, reject) => {
+    if (!ACCOUNT_LOGIN[name]) return reject(new Error('Compte inconnu.'));
+    const w = new BrowserWindow({ parent: win, modal: true, width: 520, height: 760, autoHideMenuBar: true, backgroundColor: '#09080A',
+      webPreferences: { session: webSession(), contextIsolation: true, sandbox: true, nodeIntegration: false } });
+    w.loadURL(ACCOUNT_LOGIN[name]).catch(() => {});
+    // Connecté : la fenêtre se ferme d'elle-même (le cookie du compte vient d'arriver).
+    const check = setInterval(async () => { if (!w.isDestroyed() && (await accountsState())[name]) w.close(); }, 1500);
+    w.on('closed', async () => { clearInterval(check); accountsChanged(); resolve(await accountsState()); });
+  }));
+  handle('accounts:logout', async (name) => { if (!ACCOUNT_SITES[name]) throw new Error('Compte inconnu.'); await accountLogout(name); return accountsState(); });
   handle('tool:hide', async () => {
     shownTool = null; for (const view of toolViews.values()) await hideView(await view); });
   // Répondre à une demande de support : la messagerie de ce PC s'ouvre sur un message adressé à la personne.
