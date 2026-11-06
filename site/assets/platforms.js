@@ -339,10 +339,30 @@
       if (ctx.player.item && ctx.player.item.key === item.key) ctx.player.item.lyrics = lyrics;
     });
   }
+  // Le BPM et la tonalité d'un titre Spotify (l'API de Spotify ne les donne plus) : calculés sur son extrait de 30 s,
+  // comme l'outil « BPM et tonalité » (detectProd de la page). Gardés le temps de la page.
+  const tagsCache = new Map(), blobCache = new Map();
+  /** L'extrait de 30 s d'un titre, téléchargé une seule fois pour la forme d'onde et l'analyse. */
+  const previewBlob = (url) => (blobCache.has(url) ? blobCache.get(url)
+    : blobCache.set(url, fetch(url).then((r) => (r.ok ? r.blob() : null)).catch(() => null)).get(url));
+  function loadTags(item) {
+    if (!item.url || typeof detectProd !== "function" || item.bpm || item.musicKey) return;
+    if (!tagsCache.has(item.url)) tagsCache.set(item.url, previewBlob(item.url)
+      .then((blob) => (blob ? detectProd(new File([blob], "extrait")) : {})).then((found) => ({
+        bpm: found.tempo && found.tempo.bpm >= 40 && found.tempo.bpm <= 300 ? Math.round(found.tempo.bpm) : 0,
+        musicKey: found.key ? KEY_NAMES[found.key.tonic] + (found.key.mode === "major" ? " maj" : " min") : "",
+      }), () => ({})));
+    tagsCache.get(item.url).then((tags) => {
+      if (!tags.bpm && !tags.musicKey) return;
+      Object.assign(item, tags);
+      if (ctx.player.item && ctx.player.item.key === item.key) { Object.assign(ctx.player.item, tags); ctx.player.redraw(); }
+    });
+  }
   function drawPeaks(item) {
     loadLyrics(item);
+    loadTags(item);
     if (!item.url || (item.peaks && item.peaks.length)) return;
-    if (!peaksCache.has(item.url)) peaksCache.set(item.url, fetch(item.url).then((r) => (r.ok ? r.blob() : null))
+    if (!peaksCache.has(item.url)) peaksCache.set(item.url, previewBlob(item.url)
       .then((blob) => (blob ? window.OniriquePlayer.peaksOf(blob) : null)).then((r) => (r && r.peaks) || null).catch(() => null));
     peaksCache.get(item.url).then((peaks) => {
       if (!peaks) return;

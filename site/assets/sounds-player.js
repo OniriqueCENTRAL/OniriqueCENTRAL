@@ -735,12 +735,19 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     // Pendant la lecture, la forme d'onde suit l'image (timeupdate ne tombe que ~4 fois par seconde).
     let frame = 0;
     const animate = () => { tick(); frame = audio.paused ? 0 : requestAnimationFrame(animate); };
+    /** Le BPM et la tonalité à côté du titre, dans le menu déroulé (ceux d'un titre Spotify arrivent après son analyse). */
+    function showTags(t) {
+      sheetTitle.querySelector(".op-bpmkey")?.remove();
+      const text = [t.bpm ? t.bpm + " BPM" : "", t.musicKey || ""].filter(Boolean).join(" · ");
+      if (text) sheetTitle.append(el("span", { className: "op-feat op-bpmkey", textContent: text }));
+    }
     function show() {
       const t = item();
       pill.hidden = false;
       document.body.style.paddingBottom = "110px";
       // Le titre, avec son « feat. » en badge s'il y en a un.
       for (const node of [title, sheetTitle, fullTitle]) node.replaceChildren(t.title, t.feat ? el("span", { className: "op-feat", textContent: "feat. " + t.feat }) : "");
+      showTags(t);
       sub.textContent = fullSub.textContent = t.subtitle || "";
       for (const img of [cover, disc, stageCover]) if (t.cover) img.src = t.cover + (img === disc ? "?w=960" : "?w=160"); else img.removeAttribute("src");
       stageCover.hidden = !t.cover;
@@ -953,7 +960,7 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
         for (const node of [pill, sheet, queue, stage]) node.style.setProperty("--op-accent", accent);
         draw();
       },
-      redraw() { if (item()) { listComments(); draw(); } },
+      redraw() { if (item()) { listComments(); draw(); showTags(item()); } },
     };
   }
 

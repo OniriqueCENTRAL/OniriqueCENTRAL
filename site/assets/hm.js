@@ -44,7 +44,7 @@
 #hm-dlg .hm-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 #hm-dlg .hm-head h3 { margin: 0; }
 #hm-dlg details.hm-friends { margin-top: 10px; border: 1px solid var(--line); border-radius: 14px; }
-#hm-dlg details.hm-friends summary { list-style: none; cursor: pointer; padding: 10px 12px; font: 600 14px var(--f-body); display: flex; align-items: center; gap: 8px; }
+#hm-dlg details.hm-friends summary { list-style: none; cursor: pointer; padding: 10px 12px; font: 600 14px var(--f-body); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 #hm-dlg details.hm-friends summary::-webkit-details-marker { display: none; }
 #hm-dlg details.hm-friends summary svg { width: 16px; height: 16px; margin-left: auto; transition: transform .2s; }
 #hm-dlg details.hm-friends[open] summary svg { transform: rotate(180deg); }
@@ -66,7 +66,18 @@
 @media (prefers-reduced-motion: reduce) { .hm-chip i { animation: none; } }
 `;
 
-  function setup({ api, token, el, icon, player, avatar, button, library = () => [] }) {
+  // Mes sons du CLOUD (mes-sons.html : data, itemOf, OniriquePlatforms), groupés par projet, prêts pour le lecteur.
+  function cloudLibrary() {
+    /* global data, itemOf */
+    if (typeof data === "undefined" || !data || data.vanish || typeof itemOf !== "function") return [];
+    const PF = window.OniriquePlatforms;
+    return data.projects.map((p) => ({ title: p.title, cover: p.cover,
+      items: (p.kind === "playlist" && PF ? PF.mixed(p) : p.tracks.map((t) => ({ track: t })))
+        .filter((x) => x.track || (PF && PF.playable(x.item)))
+        .map((x) => (x.track ? itemOf(p, x.track) : PF.playerItem(x.item))) })).filter((g) => g.items.length);
+  }
+
+  function setup({ api, token, el, icon, player, avatar, button, library = cloudLibrary }) {
     document.head.append(el("style", { textContent: css }));
     const dlg = el("dialog", { id: "hm-dlg" }), pick = el("dialog", { id: "hm-pick" });
     const chip = el("button", { className: "hm-chip", type: "button", hidden: true });
@@ -74,6 +85,7 @@
     chip.onclick = button.onclick = () => (state ? draw(true) : start());
 
     let code = null, state = null, offset = 0, stream = null, syncing = false, hold = false, lastSeek = 0;
+    let friendsOpen = false, friendList = null;
     const mine = () => state && state.you;
     const can = (perm) => !!(state && state.you.can[perm]);
     const keyOf = (n) => "hm" + n.qid;
@@ -106,12 +118,12 @@
     });
     // Lancer ou mettre dans la file un son, pendant un HM : il part dans la file du HM.
     const toHm = (item, next) => {
-      if (!can("add")) return alert("Le créateur du HM ne t'a pas donné le droit d'ajouter des sons.");
+      if (!can("add")) { alert("Le créateur du HM ne t'a pas donné le droit d'ajouter des sons."); return Promise.reject(new Error("refusé")); }
       const { key, id, trackId, comments, downloadUrl, ...rest } = item; // les paroles et la forme d'onde partent avec le son
       return api("POST", "/hm/" + code + "/add", { item: rest, next }).then(() => toast("Ajouté à la file du HM : " + item.title), (error) => { alert(error.message); throw error; });
     };
-    player.play = (items, i = 0, autoplay = true) => (state && !syncing ? items[i] && toHm(items[i]) : origPlay(items, i, autoplay));
-    player.enqueue = (item) => (state && !syncing ? toHm(item) : origEnqueue(item));
+    player.play = (items, i = 0, autoplay = true) => (state && !syncing ? items[i] && void toHm(items[i]).catch(() => {}) : origPlay(items, i, autoplay));
+    player.enqueue = (item) => (state && !syncing ? void toHm(item).catch(() => {}) : origEnqueue(item));
     player.control = null;
     const control = (what) => {
       const n = state && state.now;
@@ -245,6 +257,21 @@
       const ctl = n ? el("div", { className: "hm-ctl" },
         you.can.control ? mini(n.playing ? "Pause" : "Lecture", () => send(n.playing ? "pause" : "play", n.playing ? { pos: audio.currentTime } : {})) : null,
         you.can.skip ? mini("Passer", () => send("skip", { qid: n.qid })) : null) : null;
+      // Inviter mes amis : un menu déroulant, chargé à l'ouverture.
+      const friends = el("details", { className: "hm-friends", open: friendsOpen },
+        el("summary", {}, "Inviter mes amis", icon("down")),
+        friendList === null ? el("p", { className: "muted", style: "padding:0 12px 12px", textContent: "Chargement…" })
+          : friendList.length ? el("ul", {}, ...friendList.map((f) => el("li", {},
+            el("img", { src: avatar(f), alt: "" }), el("div", { className: "grow" }, el("b", { textContent: f.name })),
+            f.here ? el("span", { className: "hm-tag", textContent: "Déjà là" })
+              : f.invited ? el("button", { className: "hm-mini on", type: "button", disabled: true, textContent: "Invité" })
+              : mini("Inviter", () => api("POST", "/hm/" + code + "/invite", { userId: f.id }).then(() => { f.invited = true; toast(f.name + " est invité"); draw(); }, (e) => alert(e.message))))))
+          : el("p", { className: "muted", style: "padding:0 12px 12px", textContent: "Pas encore d'amis ici : tes amis sont les membres que tu suis et qui te suivent (pages de profil)." }));
+      friends.ontoggle = () => {
+        friendsOpen = friends.open;
+        if (friends.open) api("GET", "/hm/" + code + "/friends").then((list) => { friendList = list; if (friendsOpen) draw(); }, () => {});
+      };
+      const host = you.host || s.cohosts.includes(you.id);
       const queue = s.queue.map((x, i) => song(x, [
         you.can.skip && i > 0 ? mini("Monter", () => send("move", { qid: x.qid, to: i - 1 }), "expand") : null,
         you.can.skip || (x.by.id === you.id && you.can.add) ? mini("Retirer de la file", () => send("remove", { qid: x.qid }), "close") : null]));
@@ -253,21 +280,70 @@
           ...Object.entries(LEVEL_LABELS).map(([v, l]) => el("option", { value: v, textContent: l, selected: s.perms[p] === v })));
         return [el("span", { textContent: label }), select];
       })) : el("p", { className: "muted", textContent: "Tes droits : " + (Object.entries(PERM_LABELS).filter(([p]) => you.can[p]).map(([, l]) => l.toLowerCase()).join(", ") || "écouter") + "." });
+      const top = (dlg.querySelector(".hm-body") || {}).scrollTop || 0; // le nouvel état ne fait pas remonter la fenêtre
       dlg.replaceChildren(
         el("div", { className: "dlg-head" }, el("b", { textContent: s.name }), el("button", { className: "round", type: "button", ariaLabel: "Fermer", onclick: () => dlg.close() }, icon("close"))),
         el("div", { className: "hm-body" },
           el("section", {}, el("h3", { textContent: "Inviter" }), el("div", { className: "hm-link" }, link, copy),
-            el("p", { className: "muted", style: "margin-top:8px", textContent: "Ceux qui ouvrent ce lien avec leur compte ONIRIQUE rejoignent le HM et écoutent la même chose que toi." })),
+            el("p", { className: "muted", style: "margin-top:8px", textContent: "Ceux qui ouvrent ce lien avec leur compte ONIRIQUE rejoignent le HM et écoutent la même chose que toi." }), friends),
           el("section", {}, el("h3", { textContent: "En écoute · " + s.members.length }), el("ul", {}, ...members)),
           el("section", {}, el("h3", { textContent: "En cours" }), n ? el("ul", {}, song(n, [ctl])) : el("p", { className: "muted", textContent: "Rien pour l'instant : lance un son du CLOUD ou de Spotify, il part dans la file du HM." })),
-          el("section", {}, el("h3", { textContent: "À suivre · " + s.queue.length }), s.queue.length ? el("ul", {}, ...queue) : el("p", { className: "muted", textContent: you.can.add ? "Pendant le HM, tout ce que tu lances ou mets dans la file s'ajoute ici." : "La file est vide." })),
+          el("section", {}, el("div", { className: "hm-head" }, el("h3", { textContent: "À suivre · " + s.queue.length }),
+            host && you.can.add ? el("button", { className: "hm-mini", type: "button", onclick: openPick, title: "Ajouter un son de mon CLOUD", ariaLabel: "Ajouter un son de mon CLOUD" }, icon("plus"), " Ajouter") : null),
+            s.queue.length ? el("ul", {}, ...queue) : el("p", { className: "muted", textContent: you.can.add ? "Pendant le HM, tout ce que tu lances ou mets dans la file s'ajoute ici." : "La file est vide." })),
           el("section", {}, el("h3", { textContent: "Droits" }), perms)),
         el("div", { className: "share-foot" },
           you.host ? el("button", { className: "btn btn-ghost", type: "button", textContent: "Fermer le HM pour tout le monde", onclick: () => confirm("Fermer le HM pour tout le monde ?") && api("DELETE", "/hm/" + code).then(() => leave(), (e) => alert(e.message)) })
             : el("button", { className: "btn btn-ghost", type: "button", textContent: "Quitter le HM", onclick: () => leave() })));
+      dlg.querySelector(".hm-body").scrollTop = top;
       if (show && !dlg.open) dlg.showModal();
     }
     dlg.addEventListener("click", (event) => { if (event.target === dlg) dlg.close(); });
+    pick.addEventListener("click", (event) => { if (event.target === pick) pick.close(); });
+
+    // « + » (créateur et co-hôtes) : mes sons du CLOUD, à chercher et ajouter un par un à la file du HM.
+    function openPick() {
+      const results = el("div", { style: "display:grid;gap:14px" });
+      const input = el("input", { type: "search", placeholder: "Chercher dans mon CLOUD", ariaLabel: "Chercher dans mon CLOUD", autocomplete: "off" });
+      const list = () => {
+        const q = input.value.trim().toLowerCase();
+        const groups = library().map((g) => ({ ...g, items: g.items.filter((it) => !q || [it.title, it.artist, it.feat, g.title].join(" ").toLowerCase().includes(q)) })).filter((g) => g.items.length);
+        results.replaceChildren(...(groups.length ? groups.map((g) => el("section", {}, el("h3", { textContent: g.title }), el("ul", {}, ...g.items.map((it) => {
+          const add = el("button", { className: "hm-mini", type: "button", title: "Ajouter à la file du HM", ariaLabel: "Ajouter " + it.title + " à la file du HM" }, icon("plus"));
+          add.onclick = () => { add.disabled = true; toHm(it).then(() => add.replaceChildren("Ajouté"), () => { add.disabled = false; }); };
+          const cover = it.cover || g.cover;
+          return el("li", {}, el("img", { src: cover ? cover + (cover.startsWith("/api/") ? "?w=160" : "") : "assets/favicon.png?v=2", alt: "" }),
+            el("div", { className: "grow" }, el("b", { textContent: it.title + (it.feat ? " (feat. " + it.feat + ")" : "") }), el("small", { textContent: it.artist || it.subtitle || "" })), add);
+        })))) : [el("p", { className: "muted", textContent: q ? "Aucun son ne correspond." : "Ton CLOUD n'a pas encore de son à ajouter." })]));
+      };
+      input.oninput = list;
+      pick.replaceChildren(
+        el("div", { className: "dlg-head" }, el("b", { textContent: "Ajouter au HM" }), el("button", { className: "round", type: "button", ariaLabel: "Fermer", onclick: () => pick.close() }, icon("close"))),
+        el("div", { className: "hm-body" }, input, results));
+      list();
+      pick.showModal();
+      input.focus();
+    }
+
+    // Une invitation d'un ami, vue depuis CLOUD : « Rejoindre » ou « Plus tard » (elle reste dans l'Activité de Messages).
+    const shownInvites = new Set();
+    async function checkInvites() {
+      if (!token || state || dlg.open || pick.open || document.hidden) return;
+      const list = await api("GET", "/hm/invites").catch(() => []);
+      const x = list.find((i) => !shownInvites.has(i.id));
+      if (!x || state || dlg.open) return;
+      shownInvites.add(x.id);
+      const seen = () => api("POST", "/hm/invites/" + x.id + "/seen").catch(() => {});
+      dlg.replaceChildren(
+        el("div", { className: "dlg-head" }, el("b", { textContent: "Invitation au HM" })),
+        el("div", { className: "hm-body" }, el("ul", {}, el("li", {}, el("img", { src: avatar(x.from), alt: "" }),
+          el("div", { className: "grow" }, el("b", { textContent: x.from.name + " t'invite à écouter" }), el("small", { textContent: "« " + x.name + " »" }))))),
+        el("div", { className: "share-foot", style: "grid-template-columns:1fr 1fr" },
+          el("button", { className: "btn btn-ghost", type: "button", textContent: "Plus tard", onclick: () => { seen(); dlg.close(); } }),
+          el("button", { className: "btn btn-primary", type: "button", textContent: "Rejoindre", onclick: () => { seen(); dlg.close(); join(x.code); } })));
+      dlg.showModal();
+    }
+    if (token) { setTimeout(checkInvites, 3000); setInterval(checkInvites, 30000); }
 
     // Le lien d'un HM (#/hm/CODE), même ouvert avant de se connecter, et le HM en cours après un rechargement.
     const fromHash = () => {
