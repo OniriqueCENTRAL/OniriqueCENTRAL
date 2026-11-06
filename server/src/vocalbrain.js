@@ -39,6 +39,28 @@ db.exec(`CREATE TABLE IF NOT EXISTS vocalbox_feedback (
   created_at INTEGER NOT NULL
 )`);
 
+// LA FICHE DE VOCALBOX (site et application : le même catalogue), refaite pour la version modulaire, CRÉER LE MIX et
+// ONR Neural Learning. Posée une seule fois (réglage vocalbox_fiche) : une retouche faite ensuite dans l'admin reste.
+const FICHE = {
+  tagline: 'Toute ta chaîne vocale, montée pour ta voix.',
+  description: `Toute la chaîne vocale dans un seul plugin : des modules que tu ajoutes et ranges dans l'ordre que tu veux, jusqu'à trois exemplaires du même.
+
+CRÉER LE MIX : décris le mix que tu veux (« voix de SCH », « voix chantée aérienne », « façon SZA ») ou glisse un morceau de référence, puis joue ta prise. VOCALBOX écoute ta voix (boue, résonances, sifflantes, dynamique, chant ou rap) et monte la chaîne réglée pour elle, avec le compte rendu de chaque décision. Il connaît la façon de mixer la voix de plus de 50 artistes, du rap US à la nouvelle scène française.
+
+NETTOYAGE : noise gate, noise suppressor, plosives, résonances, de-esser.
+TON : EQ paramétrique 8 bandes (mode dynamique, écoute), EQ analog (LOW, MUD, HI, AIR), Saturation Lab (lampe, analog, bande, transformateur).
+DYNAMIQUE : 1176 FET, LA-2A opto, multiband optique 4 bandes, compression parallèle.
+EFFETS : réverbe (room, plates, hall, shimmer), delay au tempo avec ducking, doubleur, chorus, flanger, phone.
+
+ONR Neural Learning (facultatif, désactivé au départ) : si tu l'allumes, VOCALBOX apprend de tes notes et de tes retouches, de façon anonyme et sans jamais envoyer de son, pour mieux mixer à chaque mise à jour.
+
+Presets d'usine et presets utilisateur, comparaison A/B, suréchantillonnage 2x, couleur de l'interface au choix. VST3 et version autonome, pour Windows 64 bits.`,
+};
+if (!get("SELECT 1 FROM settings WHERE key = 'vocalbox_fiche'")) {
+  run('UPDATE products SET tagline = ?, description = ? WHERE slug = ?', FICHE.tagline, FICHE.description, 'vocalbox');
+  run("INSERT INTO settings (key, value) VALUES ('vocalbox_fiche', '2')");
+}
+
 // les retours d'apprentissage sont gardés trois ans au plus (voir la politique de confidentialité)
 const purgeFeedback = () => run('DELETE FROM vocalbox_feedback WHERE created_at < ?', now() - 3 * 365 * 24 * 3600_000);
 purgeFeedback();
