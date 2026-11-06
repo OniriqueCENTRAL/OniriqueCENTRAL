@@ -63,7 +63,9 @@ select { padding: 7px 10px; font-size: 13px; background: #140d0f; }
 .top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .stage { position: relative; aspect-ratio: 16 / 9; border-radius: 20px; overflow: hidden; background: #000; border: 1px solid var(--line); box-shadow: 0 30px 80px -30px rgba(var(--acc),.45); }
 .stage > .media { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
-.stage .media iframe, .stage .media video { width: 100%; height: 100%; border: 0; display: block; background: #000; }
+.stage:not(.tw) .media iframe, .stage .media video { width: 100%; height: 100%; border: 0; display: block; background: #000; }
+/* Twitch : son iframe sans style (étirée ou sur fond noir, Twitch refuse de démarrer) ; sa taille suit le cadre, en pixels. */
+.stage.tw .media iframe { border: 0; display: block; }
 /* Le lecteur maison : la vidéo (YouTube ou fichier) ne reçoit aucun clic, tout passe par la barre et la zone de clic. */
 .stage .media.locked { pointer-events: none; }
 .stage:fullscreen { border-radius: 0; aspect-ratio: auto; }
@@ -71,6 +73,11 @@ select { padding: 7px 10px; font-size: 13px; background: #140d0f; }
 .wp-bar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; display: flex; align-items: center; gap: 10px; padding: 26px 14px 12px;
   background: linear-gradient(180deg, transparent, rgba(9,8,10,.92)); opacity: 0; transform: translateY(6px); transition: opacity .25s, transform .25s; }
 .stage.show .wp-bar, .stage:focus-within .wp-bar, .stage.paused .wp-bar { opacity: 1; transform: none; }
+.wp-bar { pointer-events: none; }
+.wp-bar > * { pointer-events: auto; }
+.stage:not(.show):not(.paused):not(:focus-within) .wp-bar > * { pointer-events: none; }
+.wp-chatbox { pointer-events: none; }
+.wp-chatbox .wp-fschat { pointer-events: auto; }
 .wp-bar button { all: unset; cursor: pointer; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; color: #fff; flex: none; }
 .wp-bar button:hover, .wp-bar button:focus-visible { background: rgba(255,255,255,.1); }
 .wp-bar button:disabled { opacity: .4; cursor: default; }
@@ -84,6 +91,31 @@ select { padding: 7px 10px; font-size: 13px; background: #140d0f; }
 .wp-note { font: 500 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--pink); white-space: nowrap; }
 .wp-live { display: inline-flex; align-items: center; gap: 6px; font: 500 10px var(--mono); letter-spacing: .12em; color: #fff; }
 .wp-live i { width: 8px; height: 8px; border-radius: 50%; background: rgb(var(--acc)); box-shadow: 0 0 8px rgb(var(--acc)); }
+/* Twitch : la vidéo seule en haut, la barre dessous ; en plein écran, une colonne à droite pour le score, le chat et les réactions */
+.stage.tw { aspect-ratio: auto; overflow: visible; display: flex; flex-direction: column; background: transparent; border: 0; box-shadow: none; }
+/* Angles droits, rien de rogné : Twitch compte un coin arrondi (qui cache un bout de son image) comme un recouvrement. */
+.stage.tw > .media { position: relative; inset: auto; aspect-ratio: 16 / 9; height: auto; border-radius: 0; overflow: visible; box-shadow: 0 30px 80px -30px rgba(var(--acc),.45); }
+.stage.tw > .wp-bar { position: relative; opacity: 1; transform: none; padding: 10px 14px; background: rgba(9,8,10,.92); border: 1px solid var(--line); border-top: 0; border-radius: 0 0 16px 16px; }
+.stage.tw > .wp-bar > * { pointer-events: auto !important; }
+.stage.tw .wp-react-wrap .wp-reacts { bottom: auto; top: 44px; }
+.stage.tw:not(:fullscreen) .wp-menu { bottom: auto; top: calc(100% + 6px); }
+.stage.tw:not(:fullscreen) .wp-stats { top: calc(100% + 8px); right: auto; left: 0; }
+.stage.tw .wp-chatbox .wp-reacts { display: none; }
+.stage.tw:fullscreen { display: grid; grid-template-columns: minmax(0, 1fr) 360px; grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "video top" "video chat" "bar chat";
+  background: #050608; border-radius: 0; }
+.stage.tw:fullscreen > .media { grid-area: video; width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; border: 0; box-shadow: none; }
+.stage.tw:fullscreen > .wp-bar { grid-area: bar; border-radius: 0; border: 0; }
+.stage.tw:fullscreen .wp-react-wrap { display: none; }
+.stage.tw:fullscreen .wp-fstop { grid-area: top; display: flex; position: relative; left: auto !important; top: auto !important; transform: none !important; margin: 12px; max-width: none; justify-self: stretch; flex-wrap: wrap; }
+.stage.tw:fullscreen .wp-chatbox { grid-area: chat; display: flex; position: relative; left: auto !important; top: auto !important; bottom: auto !important; width: auto; margin: 0 12px 12px;
+  justify-content: flex-end; pointer-events: auto; }
+.stage.tw:fullscreen .wp-chatbox .wp-reacts { display: flex; flex-wrap: wrap; }
+.stage.tw:fullscreen .wp-fschat { opacity: 1 !important; }
+.stage.tw:fullscreen .wp-overchat div { animation-duration: 120s; }
+.stage.tw:fullscreen .kc-wave, .stage.tw:fullscreen .kc-confetti, .stage.tw:fullscreen .kc-flash { left: auto; right: 0; width: 360px; }
+.stage.tw:fullscreen .kc-wave b, .stage.tw:fullscreen .kc-confetti b { font-size: 26px; }
+.stage.tw:fullscreen .wp-stats { top: auto; bottom: 80px; right: 14px; }
+.kc, .glass.chat { position: relative; overflow: hidden; }
 .wp-menu { position: absolute; right: 14px; bottom: 62px; z-index: 6; width: 250px; max-height: calc(100% - 80px); overflow-y: auto; padding: 8px; border-radius: 14px;
   background: rgba(14,10,12,.94); box-shadow: 0 0 0 1px rgba(255,255,255,.1) inset, 0 18px 40px rgba(0,0,0,.6); backdrop-filter: blur(12px); }
 .wp-menu-h { margin: 8px 8px 4px; font: 500 9px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
@@ -183,6 +215,10 @@ body.kc::after { content: "KARMINE CORP · BLUE WALL · KARMINE CORP · BLUE WAL
   font: 800 16vw/1 var(--display); color: transparent; -webkit-text-stroke: 1px rgba(95,195,255,.13); animation: kc-marquee 60s linear infinite; }
 @keyframes kc-marquee { to { transform: translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { body.kc::before, body.kc::after { animation: none; } }
+/* Twitch met son lecteur en pause (« cliquer pour lancer ») s'il le croit recouvert : une ombre portée voisine sur son image,
+   avec un fond qui bouge, suffit. Dans une salle Twitch, le fond KC reste fixe et les panneaux gardent leurs ombres internes seules. */
+body:has(.stage.tw)::before, body:has(.stage.tw)::after, body:has(.stage.tw) #kc-logo-bg { animation: none !important; }
+body:has(.stage.tw) .glass { box-shadow: 0 1px 0 rgba(255,255,255,.12) inset !important; }
 .kc { margin: 0 0 14px; padding: 16px 18px; border-radius: 20px; display: grid; gap: 12px; background: linear-gradient(135deg, rgba(4,22,70,.85), rgba(2,8,26,.9));
   box-shadow: 0 0 0 1px rgba(95,195,255,.28) inset, 0 20px 60px -20px rgba(0,110,255,.6); }
 .kc-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
@@ -560,7 +596,7 @@ const overChat = () => {
     const form = el("form", { className: "wp-fschat", onsubmit: (e) => { e.preventDefault(); const t = input.value.trim(); if (t) { input.value = ""; send("chat", { text: t }); } } },
       input, el("button", { className: "btn btn-primary small", type: "submit", textContent: "Envoyer" }));
     input.addEventListener("keydown", (e) => e.stopPropagation()); // les raccourcis du lecteur (espace, f, m) ne partent pas en écrivant
-    const box = el("div", { className: "wp-chatbox hud" }, el("div", { className: "wp-overchat" }), form);
+    const box = el("div", { className: "wp-chatbox hud" }, el("div", { className: "wp-overchat" }), reactButtons(), form);
     box.dataset.hud = "chat";
     st.appendChild(box);
   }
@@ -656,7 +692,7 @@ function clearStage() {
   try { player && player.destroy && player.destroy(); } catch { /* déjà détruit */ }
   player = null; mediaKey = ""; bar = null; captionsOn = false; overSeen = null;
   $("stage").replaceChildren();
-  $("stage").classList.remove("native", "tw-click");
+  $("stage").classList.remove("native", "tw-click", "tw");
 }
 // Ce qui reste posé sur la scène quel que soit le lecteur : le chat du plein écran, « Prêt ? ».
 const keepOnStage = () => { overChat(); drawReady(); };
@@ -684,12 +720,17 @@ function drawStage() {
   // Un direct (chaîne Twitch, Kick) ou un clip : le lecteur de la plateforme, avec ses commandes ; chacun au plus près du direct.
   const badge = (text) => el("span", { className: "badge", textContent: text });
   if (m.kind === "twitch" && m.channel) {
-    const slot = el("div", { id: "tw-" + Date.now(), style: "width:100%;height:100%" }), box = el("div", { className: "media locked" }, slot);
-    stage.replaceChildren(box, hit(), badge("Twitch · " + m.channel + " · en direct, chacun au plus près du direct"), makeBar(true, true));
+    // Twitch met en pause (et passe en 144p) dès qu'un élément recouvre son lecteur : rien ne passe sur l'image.
+    const slot = el("div", { id: "tw-" + Date.now(), style: "width:100%;height:100%" }), box = el("div", { className: "media" }, slot);
+    stage.classList.add("tw");
+    stage.replaceChildren(box, makeBar(true, true));
     loadScript("https://player.twitch.tv/js/embed/v1.js", "Twitch").then(() => {
       if (mediaKey !== key) return;
-      const tw = new Twitch.Player(slot.id, { channel: m.channel, parent: [location.hostname], autoplay: true, muted: false, controls: false, width: "100%", height: "100%" });
-      tw.addEventListener(Twitch.Player.READY, () => { if (mediaKey === key) { player = twitchLive(tw, box); applyVolume(); } });
+      // Twitch ne lance seul un direct que son coupé (sinon il attend un clic sur son propre ▶) : on démarre muet,
+      // puis le volume choisi revient dès que la vidéo joue.
+      const tw = new Twitch.Player(slot.id, { channel: m.channel, parent: [location.hostname], autoplay: true, muted: true, controls: twNative, ...twSize(box) });
+      tw.addEventListener(Twitch.Player.READY, () => { if (mediaKey === key) { player = twitchLive(tw, box); twFollow(box); } });
+      tw.addEventListener(Twitch.Player.PLAYING, () => { if (mediaKey === key && player) applyVolume(); });
       tw.addEventListener(Twitch.Player.PLAYBACK_BLOCKED, () => { blocked = true; });
       tw.addEventListener(Twitch.Player.PLAYING, () => { blocked = false; });
     });
@@ -704,12 +745,14 @@ function drawStage() {
     return;
   }
   if (m.kind === "twitch") {
-    const slot = el("div", { id: "tw-" + Date.now(), style: "width:100%;height:100%" }), box = el("div", { className: "media locked" }, slot);
-    stage.replaceChildren(box, hit(), makeBar(false));
+    const slot = el("div", { id: "tw-" + Date.now(), style: "width:100%;height:100%" }), box = el("div", { className: "media" }, slot);
+    stage.classList.add("tw");
+    stage.replaceChildren(box, makeBar(false));
     loadScript("https://player.twitch.tv/js/embed/v1.js", "Twitch").then(() => {
       if (mediaKey !== key) return;
-      const tw = new Twitch.Player(slot.id, { video: "v" + m.video, parent: [location.hostname], autoplay: false, controls: false, width: "100%", height: "100%" });
-      tw.addEventListener(Twitch.Player.READY, () => { if (mediaKey === key) { player = twitchPlayer(tw, box); applyVolume(); tick(); } });
+      const tw = new Twitch.Player(slot.id, { video: "v" + m.video, parent: [location.hostname], autoplay: false, muted: true, controls: twNative, ...twSize(box) });
+      tw.addEventListener(Twitch.Player.READY, () => { if (mediaKey === key) { player = twitchPlayer(tw, box); twFollow(box); tick(); } });
+      tw.addEventListener(Twitch.Player.PLAYING, () => { if (mediaKey === key && player) applyVolume(); });
       tw.addEventListener(Twitch.Player.PLAYBACK_BLOCKED, () => { blocked = true; });
       tw.addEventListener(Twitch.Player.PLAYING, () => { blocked = false; });
     });
@@ -759,12 +802,23 @@ const loadScript = (src, global) => scripts.get(src) || scripts.set(src, window[
   document.head.append(el("script", { src, onload: resolve, onerror: () => { scripts.delete(src); reject(); } }));
 })).get(src);
 // Un direct Twitch : lecture, pause et volume pour soi ; ses propres commandes (qualité, contenu réservé, pub) à la demande.
+// La taille du lecteur Twitch en pixels (Twitch exige au moins 400 × 300 et lit mal « 100% ») ; la page l'étire ensuite.
+const twSize = (box) => ({ width: Math.max(400, Math.round(box.clientWidth || 960)), height: Math.max(300, Math.round(box.clientHeight || 540)) });
+// Le cadre change de taille (fenêtre, plein écran) : l'iframe de Twitch suit, par ses attributs.
+const twFollow = (box) => new ResizeObserver(() => { const f = box.querySelector("iframe"); if (!f) return; const z = twSize(box); f.width = z.width; f.height = z.height; }).observe(box);
 const twitchSettings = (tw) => ({
   qualities: () => { const q = (tw.getQualities() || []).map((x) => ({ id: x.group, label: x.group === "auto" ? "Auto" : x.name })); return q.some((x) => x.id === "auto") ? q : q.length ? [{ id: "auto", label: "Auto" }, ...q] : []; },
   quality: () => tw.getQuality(), setQuality: (id) => tw.setQuality(id),
   captions: (on) => (on ? tw.enableCaptions() : tw.disableCaptions()), stats: () => tw.getPlaybackStats() });
-const twitchLive = (tw, box) => ({ kind: "live", box, platformName: "Twitch", ...twitchSettings(tw), paused: () => tw.isPaused(),
-  toggle: () => { blocked = false; if (tw.isPaused()) tw.play(); else tw.pause(); }, volume: (l, mu) => { tw.setVolume(l); tw.setMuted(mu); } });
+// online : la chaîne diffuse ; userPaused : c'est nous qui avons mis en pause (sinon un retour du direct relance la lecture).
+const twitchLive = (tw, box) => {
+  const p = { kind: "live", box, platformName: "Twitch", ...twitchSettings(tw), online: true, userPaused: false, paused: () => tw.isPaused(),
+    toggle: () => { blocked = false; if (tw.isPaused()) { p.userPaused = false; tw.play(); } else { p.userPaused = true; tw.pause(); } },
+    volume: (l, mu) => { tw.setVolume(l); tw.setMuted(mu); } };
+  tw.addEventListener(Twitch.Player.OFFLINE, () => { p.online = false; });
+  tw.addEventListener(Twitch.Player.ONLINE, () => { p.online = true; if (!p.userPaused) tw.play(); });
+  return p;
+};
 // Twitch (rediffusion) : ni vitesse ni réglage fin ; on se replace au-delà d'une seconde d'écart.
 const twitchPlayer = (tw, box) => ({ kind: "twitch", box, platformName: "Twitch", ...twitchSettings(tw), time: () => tw.getCurrentTime() || 0, duration: () => tw.getDuration() || 0, playing: () => !tw.isPaused(),
   play: () => tw.play(), pause: () => tw.pause(), seek: (t) => tw.seek(t), volume: (l, mu) => { tw.setVolume(l); tw.setMuted(mu); } });
@@ -821,7 +875,11 @@ function makeBar(live, platform = false) {
 }
 // ——— Le menu ⚙ du lecteur : ce que le lecteur en cours sait régler ———
 let captionsOn = false;
-const setNative = (on) => { if (player && player.box) { player.box.classList.toggle("locked", !on); $("stage").classList.toggle("native", on); } };
+let twNative = false; // le lecteur de Twitch avec ses propres commandes (recréé à la demande)
+const setNative = (on) => {
+  if ($("stage").classList.contains("tw")) { twNative = on; reloadStage(); $("stage").classList.toggle("native", on); return; }
+  if (player && player.box) { player.box.classList.toggle("locked", !on); $("stage").classList.toggle("native", on); }
+};
 function toggleMenu(force) {
   const st = $("stage"), old = st.querySelector(".wp-menu");
   if (old || force === false) { if (old) old.remove(); return; }
@@ -840,8 +898,10 @@ function toggleMenu(force) {
   items.push(el("p", { className: "wp-menu-h", textContent: "Affichage" }));
   if (p.captions) items.push(row("Sous-titres", captionsOn ? "Oui" : "Non", () => { captionsOn = !captionsOn; p.captions(captionsOn); toggleMenu(false); toggleMenu(); }, captionsOn));
   items.push(row("Infos de lecture", statsOn ? "Oui" : "Non", () => { statsOn = !statsOn; toggleMenu(false); toggleMenu(); }, statsOn));
+  if (state && state.media && state.media.kind !== "share") items.push(row("Recharger la vidéo", "↻", () => { toggleMenu(false); reloadStage(); }));
   items.push(el("p", { className: "wp-menu-h", textContent: "HUD du plein écran" }));
-  items.push(row("Position du HUD", hud.locked ? "Verrouillée" : "À déplacer", () => { hud.locked = !hud.locked; placeHud(); toggleMenu(false); if (!hud.locked && !document.fullscreenElement) fullscreen(); }, !hud.locked));
+  if (st.classList.contains("tw")) items.push(el("p", { className: "wp-menu-note", textContent: "Sur Twitch, le score et le chat se rangent à côté de l'image : Twitch met la vidéo en pause si on la recouvre." }));
+  else items.push(row("Position du HUD", hud.locked ? "Verrouillée" : "À déplacer", () => { hud.locked = !hud.locked; placeHud(); toggleMenu(false); if (!hud.locked && !document.fullscreenElement) fullscreen(); }, !hud.locked));
   if (Object.keys(hud.pos).length) items.push(row("Remettre le HUD en place", "", () => { hud.pos = {}; saveHud(); placeHud(); toggleMenu(false); }));
   items.push(row("Chat sur la vidéo", hud.chat ? "Oui" : "Non", () => { hud.chat = !hud.chat; saveHud(); placeHud(); toggleMenu(false); toggleMenu(); }, hud.chat));
   items.push(row("Fond des messages", hud.bg ? "Oui" : "Sans fond", () => { hud.bg = !hud.bg; saveHud(); placeHud(); toggleMenu(false); toggleMenu(); }, hud.bg));
@@ -933,15 +993,19 @@ function drawBar() {
     const st = $("stage"), native = st.classList.contains("native");
     // Twitch en pause (au démarrage, ou le navigateur bloque le son) : seul un vrai clic dans son lecteur le relance.
     // Tant qu'il est en pause, le clic passe donc à Twitch ; dès qu'il joue, le lecteur ONIRIQUE reprend la main.
-    const paused = !!(bar.platform && player && player.paused && player.paused());
-    if (bar.platform && player && player.box) { player.box.classList.toggle("locked", !paused && !native); st.classList.toggle("tw-click", paused && !native); }
+    const paused = !!(bar.platform && player && player.paused && player.paused()), offline = !!(player && player.online === false);
+    // Seul un vrai blocage du navigateur laisse passer le clic à Twitch : une pause, une pub ou un direct hors ligne
+    // restent sous le lecteur ONIRIQUE (un clic sur la pub de Twitch ouvrirait son lien et couperait la lecture).
+    const passThrough = blocked && !offline && !native;
+    if (bar.platform && player && player.box && !st.classList.contains("tw")) { player.box.classList.toggle("locked", !passThrough && !native); st.classList.toggle("tw-click", passThrough); }
     if (bar.platform) { bar.play.replaceChildren(svg(paused ? "play" : "pause")); st.classList.toggle("paused", paused); }
-    bar.note.textContent = native ? "Commandes de Twitch" : paused ? "Touche la vidéo pour lancer" : blocked ? "Touche l'image pour le son" : "";
+    bar.note.textContent = native ? "Commandes de Twitch" : offline ? "Hors ligne · reprend tout seul au retour du direct" : passThrough && !st.classList.contains("tw") ? "Touche la vidéo pour le son"
+      : paused && player && player.userPaused ? "En pause · ▶ pour reprendre" : paused ? "Chargement du direct…" : "";
     return;
   }
   if (!player || !player.time) return;
   // Une rediffusion Twitch bloquée par le navigateur : le clic passe à Twitch, le seul à pouvoir la lancer avec le son.
-  if (player.box) { const st = $("stage"), native = st.classList.contains("native"); player.box.classList.toggle("locked", !blocked && !native); st.classList.toggle("tw-click", blocked && !native); }
+  if (player.box && !$("stage").classList.contains("tw")) { const st = $("stage"), native = st.classList.contains("native"); player.box.classList.toggle("locked", !blocked && !native); st.classList.toggle("tw-click", blocked && !native); }
   const dur = player.duration(), now = Math.min(dur || Infinity, hold ? player.time() : expected());
   bar.play.replaceChildren(svg(paused ? "play" : "pause"));
   bar.play.ariaLabel = paused ? "Lecture" : "Pause";
@@ -1327,12 +1391,20 @@ function react(emoji) {
 const reactButtons = () => el("div", { className: "wp-reacts" }, ...REACTIONS.map((emoji) =>
   el("button", { type: "button", textContent: emoji, ariaLabel: "Réagir " + emoji, title: "Réagir " + emoji, onclick: () => react(emoji) })));
 $("chat-reacts").append(...reactButtons().children);
+// Où poser ce qui s'anime : sur la vidéo, sauf pour Twitch (qui se met en pause si on le recouvre) : alors dans la colonne
+// du plein écran, le bandeau de la Karmine Corp ou le chat.
+function overlayHost() {
+  const st = $("stage");
+  if (!st.classList.contains("tw") || document.fullscreenElement === st) return st;
+  return kcOn() ? $("kc") : document.querySelector(".glass.chat") || st;
+}
 function floatReaction({ emoji, name }) {
   const stage = $("stage");
   if (!stage.isConnected || $("room").hidden) return;
   if (emoji === "BLUEWALL") return kcWave(name);
-  const f = el("div", { className: "wp-float", style: `left:${10 + Math.random() * 75}%` }, emoji, el("small", { textContent: name }));
-  stage.append(f);
+  const side = stage.classList.contains("tw") && document.fullscreenElement === stage;
+  const f = el("div", { className: "wp-float", style: side ? `left:auto;right:${20 + Math.random() * 280}px` : `left:${10 + Math.random() * 75}%` }, emoji, el("small", { textContent: name }));
+  overlayHost().append(f);
   setTimeout(() => f.remove(), 2700);
 }
 
@@ -1413,20 +1485,20 @@ function setReactionSet(on) {
   const fill = (box) => box && box.replaceChildren(...set.map((emoji) => el("button", { type: "button", textContent: emoji, ariaLabel: "Réagir " + emoji, title: "Réagir " + emoji, onclick: () => react(emoji) })),
     ...(on ? [el("button", { type: "button", textContent: "🌊", ariaLabel: "Vague du Blue Wall", title: "Lancer la vague du Blue Wall", onclick: () => react("BLUEWALL") })] : []));
   fill($("chat-reacts"));
-  for (const b of document.querySelectorAll("#stage .wp-bar .wp-reacts")) fill(b);
+  for (const b of document.querySelectorAll("#stage .wp-reacts")) fill(b);
 }
 
 // La vague du Blue Wall : elle traverse la vidéo chez tous, et la tribune du fond s'illumine.
 function kcWave(name) {
   const stage = $("stage");
   const w = el("div", { className: "kc-wave" }, el("b", { textContent: "BLUE WALL" }), el("small", { textContent: "vague lancée par " + name }));
-  stage.append(w);
+  overlayHost().append(w);
   wallBoost = Date.now() + 3500;
   setTimeout(() => w.remove(), 3200);
 }
 function kcBanner(text) {
   const b = el("div", { className: "kc-flash" }, text);
-  $("stage").append(b);
+  overlayHost().append(b);
   setTimeout(() => b.remove(), 4000);
 }
 // Une manche gagnée : confettis bleus et blancs, et le nom de la game.
@@ -1437,7 +1509,7 @@ function kcCelebrate(text, big) {
     box.append(el("i", { style: `left:${Math.random() * 100}%;background:${["#0a84ff", "#5fc3ff", "#ffffff", "#003cc7"][i % 4]};animation-delay:${Math.random() * 0.8}s;animation-duration:${2 + Math.random() * 1.6}s;transform:rotate(${Math.random() * 360}deg)` }));
   }
   box.append(el("b", { textContent: text }));
-  stage.append(box);
+  overlayHost().append(box);
   wallBoost = Date.now() + 5000;
   setTimeout(() => box.remove(), big ? 7000 : 4500);
 }

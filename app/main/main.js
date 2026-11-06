@@ -73,6 +73,10 @@ function toolView(tool, lang) {
     if (!ses.oniriqueReady) {
       ses.oniriqueReady = true;
       ses.webRequest.onBeforeRequest({ urls: [`${SITE}/api/announce.js*`] }, (_details, callback) => callback({ cancel: true }));
+      // Twitch connecté : ses cookies sont marqués « SameSite=None », sinon ils ne parviennent pas à son lecteur intégré
+      // dans une page du site (un autre site pour lui) ; le lecteur reconnaît alors le compte et l'abonnement (sans pub).
+      shareTwitchCookies(ses);
+      ses.cookies.on('changed', (_event, cookie, _cause, removed) => { if (!removed && isTwitchCookie(cookie) && cookie.sameSite !== 'no_restriction') shareTwitchCookie(ses, cookie); });
       // Le partage d'écran de la WATCHPARTY : l'écran ou la fenêtre choisis dans la page (tool:screens, tool:screen-pick),
       // avec le son de l'ordinateur sous Windows. Sans choix fait juste avant, rien n'est partagé.
       ses.setDisplayMediaRequestHandler(async (request, callback) => {
@@ -455,6 +459,15 @@ ipcMain.handle('tool:open-external', (event, url) => {
 // Twitch et YouTube connectés dans l'application (leurs cookies dans la session des pages du site) : les lecteurs
 // intégrés de la WATCHPARTY reconnaissent alors le compte, et ses avantages (abonnement, Turbo, Premium : sans pub).
 const ACCOUNT_SITES = { twitch: { cookie: 'auth-token', hosts: /(^|\.)twitch\.tv$/ }, youtube: { cookie: 'SAPISID', hosts: /(^|\.)(youtube|google)\.com$/ } };
+const isTwitchCookie = (c) => /(^|\.)twitch\.tv$/.test(c.domain.replace(/^\./, '')) && c.secure;
+function shareTwitchCookie(ses, c) {
+  const host = c.domain.replace(/^\./, '');
+  ses.cookies.set({ url: `https://${host}${c.path || '/'}`, name: c.name, value: c.value, domain: c.hostOnly ? undefined : c.domain, path: c.path, secure: true,
+    httpOnly: c.httpOnly, sameSite: 'no_restriction', ...(c.session ? {} : { expirationDate: c.expirationDate }) }).catch(() => {});
+}
+async function shareTwitchCookies(ses) {
+  for (const c of await ses.cookies.get({}).catch(() => [])) if (isTwitchCookie(c) && c.sameSite !== 'no_restriction') shareTwitchCookie(ses, c);
+}
 const ACCOUNT_LOGIN = { twitch: 'https://www.twitch.tv/login', youtube: 'https://accounts.google.com/ServiceLogin?service=youtube&continue=https%3A%2F%2Fwww.youtube.com%2F' };
 async function accountsState() {
   const cookies = await webSession().cookies.get({});
