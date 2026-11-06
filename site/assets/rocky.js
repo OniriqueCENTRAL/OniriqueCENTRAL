@@ -3,13 +3,18 @@
 (() => {
   if (document.getElementById("rocky")) return;
   const KEY = "rocky-chat";
-  // Un petit caillou rond en 3D (rendu Blender), cinq pattes potelées : son humeur change avec la conversation (assets/rocky/*.webp).
-  const AVATAR = `<img src="/assets/rocky/rocky-idle.webp?v=5" alt="">`;
-  let state = "idle", nap, busy = false;
-  const mood = (m) => {
+  // Un caillou à carapace de roche en 3D (rendu Blender, tools/rocky), cinq pattes à trois doigts, braise dans les
+  // sillons : son humeur change avec la conversation (assets/rocky/rocky-<humeur>.webp).
+  const MOODS = ["idle", "wave", "thinking", "talk", "happy", "sad", "sleeping"];
+  const src = (m) => `/assets/rocky/rocky-${m}.webp?v=7`;
+  const AVATAR = `<img src="${src("idle")}" alt="">`;
+  let state = "idle", nap, back, busy = false;
+  const mood = (m, then, ms) => {
+    clearTimeout(back);
+    if (then) back = setTimeout(() => mood(...then), ms);
     if (m === state) return;
     state = m;
-    root.querySelectorAll(".rk-av img, .rk-fab img").forEach((i) => (i.src = `/assets/rocky/rocky-${m}.webp?v=5`));
+    root.querySelectorAll(".rk-av img, .rk-fab img, .rk-hello").forEach((i) => (i.src = src(m)));
   };
   // Sans qu'on lui parle pendant 40 s, Rocky s'endort (ZZzz) ; il se réveille dès qu'on s'approche ou qu'on écrit.
   const wake = () => {
@@ -30,6 +35,7 @@
   #rocky .rk-head small{display:block;color:#B9A2A5;font-size:12px}
   #rocky .rk-close{margin-left:auto;background:none;border:0;color:#B9A2A5;font-size:22px;cursor:pointer}
   #rocky .rk-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
+  #rocky .rk-hello{width:120px;height:120px;align-self:center;margin:-4px 0 -6px;flex:none}
   #rocky .rk-msg{max-width:85%;padding:8px 12px;border-radius:14px;white-space:pre-wrap;word-wrap:break-word}
   #rocky .rk-bot{align-self:flex-start;background:#1A080A;border:1px solid rgba(255,210,214,.12)}
   #rocky .rk-me{align-self:flex-end;background:rgb(var(--acc, 229,56,74));color:#fff}
@@ -88,15 +94,19 @@
   };
 
   const open = (show) => {
-    if (show) ["happy", "thinking", "sleeping"].forEach((m) => (new Image().src = `/assets/rocky/rocky-${m}.webp?v=5`)); // pas de trou au changement d'humeur
+    if (show) MOODS.forEach((m) => (new Image().src = src(m))); // pas de trou au changement d'humeur
     panel.hidden = !show;
+    if (show && !busy) mood("wave", ["idle"], 2400); // il salue quand on ouvre
     if (show && !log.childElementCount) {
+      log.append(Object.assign(document.createElement("img"), { className: "rk-hello", src: src(state), alt: "" }));
       add("assistant", "Salut, ami ! Moi Rocky. Je connais le site ONIRIQUE bien bien bien. Tu cherches quoi, question ?");
       history.forEach((m) => add(m.role, m.content));
     }
     if (show) input.focus();
   };
   fab.addEventListener("click", () => open(panel.hidden));
+  // Les boutons « Demande à ROCKY » des pages (data-rocky-open) ouvrent la discussion.
+  document.addEventListener("click", (e) => { if (e.target.closest("[data-rocky-open]")) { e.preventDefault(); open(true); } });
   root.querySelector(".rk-close").addEventListener("click", () => open(false));
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !panel.hidden) open(false); });
 
@@ -115,14 +125,14 @@
       const r = await fetch("/api/rocky", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: history }) });
       const data = await r.json().catch(() => ({}));
       wait.remove();
-      if (!r.ok) { mood("sleeping"); add("assistant", data.error || "Rocky n'entend plus rien. Réessaie, ami."); history.pop(); return; }
+      if (!r.ok) { mood("sad", ["idle"], 4000); add("assistant", data.error || "Rocky n'entend plus rien. Réessaie, ami."); history.pop(); return; }
       add("assistant", data.reply);
       history.push({ role: "assistant", content: data.reply });
       chord();
-      mood("happy"); setTimeout(() => state === "happy" && mood("idle"), 2500);
+      mood("talk", ["happy", ["idle"], 1600], 2000); // il dit sa réponse, puis il est content
     } catch {
       wait.remove();
-      mood("sleeping");
+      mood("sad", ["idle"], 4000);
       add("assistant", "Pas de réseau, ami. Réessaie.");
       history.pop();
     } finally {

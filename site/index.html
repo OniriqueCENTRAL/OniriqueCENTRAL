@@ -342,6 +342,10 @@ input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border: 0; bord
 .faq-group + details { border-top: 1px solid var(--line); }
 details p a { color: var(--bone); }
 @media (max-width: 860px) { .faq > .reveal:first-child { position: static; } }
+.rocky-card { display: flex; align-items: center; gap: 18px; margin-top: 34px; }
+.rocky-card img { width: 150px; height: auto; flex: none; filter: drop-shadow(0 18px 30px rgba(0,0,0,.55)); }
+.rocky-card p { margin: 0 0 14px; color: var(--haze); max-width: 260px; }
+.rocky-card p b { color: var(--mist); font-weight: 600; }
 details { border-bottom: 1px solid var(--line); }
 details:first-child { border-top: 1px solid var(--line); }
 summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 24px 0; font: 600 18px/1.35 var(--f-body); }
@@ -1133,6 +1137,11 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
       <div class="reveal">
         <span class="eyebrow">Questions</span>
         <h2 style="margin-top:18px">Avant de <em class="dream">rêver.</em></h2>
+        <div class="rocky-card">
+          <img src="assets/rocky/rocky-portrait.webp?v=7" alt="ROCKY, l'assistant d'ONIRIQUE : un petit caillou à cinq pattes" width="720" height="626" loading="lazy">
+          <div><p><b>Pas trouvé ta réponse ?</b> ROCKY connaît tout le site et répond tout de suite.</p>
+          <button class="btn btn-ghost" type="button" data-rocky-open>Demander à ROCKY</button></div>
+        </div>
       </div>
       <div class="reveal faq-list">
         <h3 class="faq-group">Plugins et licences</h3>
@@ -2344,7 +2353,7 @@ document.addEventListener("onirique:account", (event) => {
 });
 </script>
 <script src="assets/account.js?v=15" defer></script>
-<script src="assets/site-nav.js?v=20" defer></script>
+<script src="assets/site-nav.js?v=21" defer></script>
 <script src="assets/catalog-watch.js?v=1" defer></script>
 
 </html>
