@@ -1,7 +1,7 @@
 {
   "name": "onirique-central",
   "productName": "ONIRIQUE CENTRAL",
-  "version": "1.0.79",
+  "version": "1.0.80",
   "private": true,
   "description": "Installez, mettez à jour et activez les plugins ONIRIQUE.",
   "author": "Onirique",
@@ -73,7 +73,9 @@
       "category": "public.app-category.music",
       "target": "dir",
       "identity": null,
-      "extendInfo": { "NSMicrophoneUsageDescription": "ONIRIQUE CENTRAL utilise le micro pour enregistrer les vocaux de la messagerie." }
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "ONIRIQUE CENTRAL utilise le micro pour enregistrer les vocaux de la messagerie."
+      }
     }
   },
   "dependencies": {
