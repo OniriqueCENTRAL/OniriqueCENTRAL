@@ -74,7 +74,9 @@ textarea, input[type=search] { border-radius: 12px; border: 1px solid var(--line
 .msg.gone { font-style: italic; color: var(--haze); background: none; border: 1px dashed var(--line); cursor: default; }
 .msg time { display: block; font: 500 10px var(--f-mono); color: rgba(246,238,238,.55); margin-top: 3px; }
 .quote { display: block; margin: -2px -4px 6px; padding: 5px 9px; border-left: 3px solid var(--pink); border-radius: 8px; background: rgba(0,0,0,.25); font-size: 13px; color: var(--haze); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
-.msg img.photo { display: block; max-width: min(320px, 100%); max-height: 360px; min-height: 60px; border-radius: 12px; margin: -4px -8px 4px; cursor: zoom-in; }
+.msg:has(> img.photo) { padding: 6px 6px 8px; }
+.msg:has(> img.photo) time { padding-inline: 6px; }
+.msg img.photo { display: block; width: auto; max-width: min(320px, 100%); max-height: 360px; min-height: 60px; border-radius: 13px; margin-bottom: 4px; cursor: zoom-in; }
 .msg audio { display: block; width: 260px; max-width: 100%; height: 40px; }
 .sounds { min-width: 220px; white-space: normal; }
 .sounds b { display: block; font: 700 13px var(--f-display); letter-spacing: .02em; margin-bottom: 6px; }
@@ -98,7 +100,8 @@ textarea, input[type=search] { border-radius: 12px; border: 1px solid var(--line
 .bar span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bar button { border: 0; background: none; color: var(--mist); cursor: pointer; font-size: 16px; }
 .send { display: flex; gap: 8px; align-items: flex-end; padding: 12px; border-top: 1px solid var(--line); }
-.send textarea { flex: 1; height: 44px; max-height: 140px; padding: 11px 14px; }
+.send textarea { flex: 1; height: 44px; max-height: 140px; padding: 11px 14px; overflow-y: hidden; }
+.send .go-sm { display: none; }
 .empty { padding: 24px; margin: 0; color: var(--haze); }
 .note { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border-radius: 14px; text-decoration: none; font-size: 14px; }
 .note:hover { background: rgba(255,255,255,.04); }
@@ -119,11 +122,14 @@ dialog.zoom { width: auto; max-width: 96vw; background: none; border: 0; }
   .chat.reading .list { display: none; }
   .chat:not(.reading) .thread { display: none; }
   .back { display: grid; width: 36px; height: 36px; font-size: 16px; }
-  .msgs { max-height: calc(100dvh - 330px); min-height: 45vh; padding: 12px; }
+  /* Le champ reste au-dessus de la bulle du menu du site (site-nav.js), fixée en bas à droite. */
+  .msgs { max-height: max(260px, calc(100dvh - 475px)); min-height: 0; padding: 12px; }
   .row { max-width: 88%; }
   .send { gap: 6px; padding: 10px; }
   .send .ico { width: 40px; height: 40px; }
-  .send .btn { padding: 11px 14px; }
+  .send .btn { width: 40px; height: 40px; padding: 0; border-radius: 50%; }
+  .send .go { display: none; }
+  .send .go-sm { display: inline; }
 }
 </style>
 
@@ -321,10 +327,10 @@ function build() {
   const form = el("form", { className: "send" },
     el("button", { className: "ico", type: "button", ariaLabel: "Envoyer une photo", title: "Photo", textContent: "📷", onclick: () => $("pick").click() }),
     el("button", { className: "ico", type: "button", ariaLabel: "Partager un son du CLOUD", title: "Son ou playlist du CLOUD", textContent: "🎵", onclick: () => pickSounds().catch(fail) }),
-    box, mic, el("button", { className: "btn btn-primary", type: "submit", textContent: "Envoyer" }));
+    box, mic, el("button", { className: "btn btn-primary", type: "submit", ariaLabel: "Envoyer" }, el("span", { className: "go", textContent: "Envoyer" }), el("span", { className: "go-sm", textContent: "➤" })));
   box.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && !coarse()) { e.preventDefault(); form.requestSubmit(); } });
   box.addEventListener("input", () => {
-    box.style.height = "44px"; box.style.height = Math.min(140, box.scrollHeight + 2) + "px";
+    box.style.height = "44px"; box.style.height = Math.min(140, box.scrollHeight + 2) + "px"; box.style.overflowY = box.scrollHeight > 140 ? "auto" : "hidden";
     if (box.value && !editing && Date.now() - typedAt > 3000) { typedAt = Date.now(); api("POST", "/me/messages/" + encodeURIComponent(current) + "/typing").catch(() => {}); }
   });
   form.addEventListener("submit", async (e) => {
