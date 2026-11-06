@@ -180,6 +180,9 @@ body.kc::after { content: "KARMINE CORP · BLUE WALL · KARMINE CORP · BLUE WAL
 .kc-team:not(.home) { flex-direction: row-reverse; text-align: right; }
 .kc-team b { display: block; font: 800 14px var(--display); letter-spacing: .04em; }
 .kc-mark img { width: 50px; height: 50px; object-fit: contain; display: block; filter: drop-shadow(0 0 10px rgba(0,204,255,.6)); }
+.kc-opp-mark.logo { width: 74px; background: none; }
+.kc-opp-mark.logo img { width: 74px; height: 46px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(226,1,45,.45)); }
+.wp-fstop .kc-mini img[alt="T1"] { width: 46px; height: 22px; }
 .kc-opp-mark { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 12px; background: rgba(255,255,255,.06); font: 800 13px var(--display); color: #e9e2e3; }
 .kc-opp { width: 140px; padding: 3px 6px; font: 800 14px var(--display); letter-spacing: .04em; text-align: right; color: #fff; background: transparent !important; border: 1px solid transparent !important; box-shadow: none !important; border-radius: 8px; }
 .kc-opp:hover, .kc-opp:focus { background: rgba(255,255,255,.05) !important; border-color: rgba(95,195,255,.35) !important; outline: none; }
@@ -550,7 +553,7 @@ function drawFsTop() {
   const box = $("fstop");
   if (!box || !state) return;
   const k = state.kc;
-  box.replaceChildren(...(k ? [el("span", { className: "kc-mini", innerHTML: KC_MARK + `<span>${k.kc} – ${k.opp} ${String(k.oppName || "T1").replace(/[<>&]/g, "")}</span>` }),
+  box.replaceChildren(...(k ? [el("span", { className: "kc-mini", innerHTML: KC_MARK + `<span>${k.kc} – ${k.opp}</span>` + (oppLogo(k.oppName || "T1") || `<span>${String(k.oppName || "T1").replace(/[<>&]/g, "")}</span>`) }),
     el("span", { textContent: k.kc >= 3 || k.opp >= 3 ? "Série terminée" : "Game " + Math.min(5, k.kc + k.opp + 1) + " · Bo5" })]
     : [el("b", { textContent: state.name })]), el("span", { textContent: "👥 " + state.members.length }));
 }
@@ -1287,6 +1290,8 @@ const kcOn = () => !!(state && state.kc);
 let kcPrev = null, kcVoting = false;
 // Le logo de la Karmine Corp, dans son bleu (assets/kc-logo.svg).
 const KC_MARK = '<img src="assets/kc-logo.svg?v=1" alt="" draggable="false">';
+// Le logo de l'adversaire, quand on l'a : T1 (assets/t1-logo.webp) ; sinon ses initiales.
+const oppLogo = (name) => ((String(name).trim().toUpperCase().split(" ")[0] === "T1") ? '<img src="assets/t1-logo.webp?v=1" alt="T1" draggable="false">' : "");
 
 function drawKc() {
   const k = state && state.kc, on = !!k;
@@ -1305,7 +1310,7 @@ function drawKc() {
   const dots = (n) => el("span", { className: "kc-dots", ariaLabel: n + " manche(s) gagnée(s)" }, ...[0, 1, 2].map((i) => el("i", { className: i < n ? "on" : "" })));
   const votes = k.votes.kc + k.votes.opp, pct = (n) => (votes ? Math.round((100 * n) / votes) : 50);
   const team = (key, name) => el("div", { className: "kc-team" + (key === "kc" ? " home" : "") },
-    key === "kc" ? el("span", { className: "kc-mark", innerHTML: KC_MARK }) : el("span", { className: "kc-opp-mark", textContent: name.slice(0, 3).toUpperCase() }),
+    key === "kc" ? el("span", { className: "kc-mark", innerHTML: KC_MARK }) : (oppLogo(name) ? el("span", { className: "kc-opp-mark logo", innerHTML: oppLogo(name) }) : el("span", { className: "kc-opp-mark", textContent: name.slice(0, 3).toUpperCase() })),
     el("div", {}, key === "kc" ? el("b", { textContent: "KARMINE CORP" })
       : ctl ? el("input", { className: "kc-opp", value: name, maxLength: 24, ariaLabel: "Nom de l'adversaire", onchange: (e) => send("kc", { oppName: e.target.value }) })
       : el("b", { textContent: name }), dots(k[key])),
