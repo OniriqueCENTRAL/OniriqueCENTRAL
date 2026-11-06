@@ -582,3 +582,6 @@ body.leaving{ pointer-events:none; }
 .ab-oni .acct-menu .acct-out{ color:var(--orange); }
 .ab-oni .acct-menu .acct-out:hover{ background:var(--orange); color:#000; }
 @media (prefers-reduced-motion:reduce){ .ab-oni .acct-menu{ animation:none; } }
+
+/* Un plugin pas encore en vente : bouton éteint (« Bientôt disponible ») */
+.ab-btn:disabled { opacity: .45; cursor: default; pointer-events: none; }

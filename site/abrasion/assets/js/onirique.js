@@ -6,6 +6,15 @@
   const login = () => { location.href = "/compte?next=" + encodeURIComponent(location.pathname); };
   const short = (name) => name.toUpperCase().replace(/^ONIRIQUE\s*[X×]\s*/, "").replace(/^ABRASION\s*(LABS\s*)?/, "").trim();
   const sold = {}; // id du plugin ABRASION → son produit ONIRIQUE, quand il s'achète
+  // Le lien Compte ramène sur la page où l'on était (pas seulement à l'accueil d'ABRASION).
+  for (const a of document.querySelectorAll('a[href="/compte"], a[href^="/compte?next="]')) a.href = "/compte?next=" + encodeURIComponent(location.pathname);
+  // Un plugin qui n'est pas encore en vente : son bouton le dit, au lieu d'ouvrir une fenêtre d'achat qui ne mène à rien.
+  const markUnsold = () => {
+    for (const b of document.querySelectorAll("[data-buy]")) {
+      if (sold[b.dataset.buy] || b.dataset.unsold) continue;
+      b.dataset.unsold = "1"; b.disabled = true; b.setAttribute("aria-disabled", "true"); b.textContent = "Bientôt disponible";
+    }
+  };
 
   fetch("/api/catalog").then((r) => (r.ok ? r.json() : null)).then((catalog) => {
     if (!catalog) return;
@@ -18,6 +27,7 @@
       if (open || !p.priceCents) sold[a.id] = p; // comme la boutique : un plugin gratuit se prend même vente fermée
     }
     A.fillPrices();
+    markUnsold();
   }).catch(() => { /* catalogue injoignable : « Prix à venir » reste affiché */ });
 
   document.addEventListener("abrasion:buy", async (e) => {

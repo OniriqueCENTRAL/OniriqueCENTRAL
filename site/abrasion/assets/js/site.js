@@ -2,7 +2,7 @@
    abrasion / abrasion labs — script commun à toutes les pages
    Aucune dépendance, aucune requête réseau, aucun cookie.
    --------------------------------------------------------------------------
-   ACHAT (à brancher par le site hôte) — voir README-INTEGRATION.md
+   ACHAT : branché par assets/js/onirique.js (catalogue, comptes et paiement ONIRIQUE)
    Chaque bouton [data-buy="<id>"] ouvre la fenêtre de confirmation. Quand
    l'acheteur a coché les deux cases et confirme, la page émet :
 
@@ -113,12 +113,12 @@ function buildDialog() {
       <button type="button" class="ab-dlg-x" value="close" aria-label="Fermer">×</button></div>
     <h2 class="ab-dlg-t" id="ab-dlg-t"><span data-f="name"></span><span class="ab-price" data-f="price"></span></h2>
     <ul class="ab-incl">
-      <li>Licence personnelle, jusqu’à 3 appareils</li>
-      <li>Téléchargement immédiat et clé de licence</li>
-      <li>Mises à jour de la version achetée incluses</li>
+      <li>Licence personnelle, sur deux ordinateurs (on en désactive un pour en changer)</li>
+      <li>Installation et activation tout de suite dans ONIRIQUE CENTRAL</li>
+      <li>Mises à jour correctives de la version achetée incluses</li>
     </ul>
     <div class="ab-consent">
-      <label class="ab-check"><input type="checkbox" name="cgv"><span>J’ai lu et j’accepte les <a href="/cgv">conditions générales de vente</a> et la <a href="/cgv">licence d’utilisation</a>.</span></label>
+      <label class="ab-check"><input type="checkbox" name="cgv"><span>J’ai lu et j’accepte les <a href="/cgv">conditions générales de vente</a> et la <a href="/cgv#licence">licence d’utilisation</a>.</span></label>
       <label class="ab-check"><input type="checkbox" name="waiver"><span>Je demande l’accès immédiat au plugin et je reconnais perdre mon droit de rétractation dès le début du téléchargement (article L221-28 13° du Code de la consommation).</span></label>
     </div>
     <p class="ab-buymsg" role="status" aria-live="polite"></p>
