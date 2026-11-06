@@ -8,9 +8,11 @@
 // où il doit être et s'y recale. Le serveur passe lui-même au son suivant à la fin de celui en cours.
 import crypto from 'node:crypto';
 import { config } from './config.js';
-import { db, get, run, now } from './db.js';
+import { db, get, all, run, now } from './db.js';
 import { HttpError, rateLimit } from './auth.js';
 import { signedVersion, versionAudio } from './sounds.js';
+import { lyricsFor } from './platforms.js';
+import { push } from './push.js';
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS hm_rooms (
@@ -31,6 +33,7 @@ const IDLE_DAYS = 2; // un HM où rien ne s'est passé depuis deux jours se ferm
 
 const clean = (v, max) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, max) : '');
 const imageUrl = (v) => (typeof v === 'string' && v.length <= 600 && /^(\/api\/media\/|https:\/\/)/.test(v) ? v : null);
+const PREVIEW = /^\/api\/(sounds\/platform-items\/\d+\/preview|platforms\/preview)\?[\w%.=&-]+$/;
 const qid = () => crypto.randomBytes(6).toString('base64url');
 
 export function newRoom(owner, name = '') {
@@ -55,11 +58,17 @@ const need = (room, userId, perm) => {
 export function cleanItem(raw) {
   if (!raw || typeof raw !== 'object') throw new HttpError(400, 'Son illisible.');
   const base = { title: clean(raw.title, 200) || 'Sans titre', feat: clean(raw.feat, 120), artist: clean(raw.artist, 120), subtitle: clean(raw.subtitle, 200),
-    cover: imageUrl(raw.cover), duration: Math.max(0, Math.min(36000, Number(raw.duration) || 0)) };
+    cover: imageUrl(raw.cover), duration: Math.max(0, Math.min(36000, Number(raw.duration) || 0)),
+    // Les paroles (LRC ou texte) et la forme d'onde que le lecteur de celui qui l'ajoute connaît déjà.
+    lyrics: typeof raw.lyrics === 'string' ? raw.lyrics.slice(0, 20000) : '',
+    peaks: Array.isArray(raw.peaks) && raw.peaks.length <= 2000 && raw.peaks.every((p) => typeof p === 'number' && p >= 0 && p <= 1)
+      ? raw.peaks.map((p) => Math.round(p * 1000) / 1000) : [] };
   if (['spotify', 'deezer', 'apple'].includes(raw.engine)) {
     const extId = String(raw.extId || '');
     if (!/^[\w.-]{1,64}$/.test(extId)) throw new HttpError(400, 'Titre de plateforme illisible.');
-    const url = typeof raw.url === 'string' && raw.url.length <= 1000 && raw.url.startsWith('https://') ? raw.url : null;
+    // L'extrait (secours, et source de la forme d'onde) : une adresse publique, ou celle, signée, du serveur.
+    // shortcut: l'adresse signée expire au bout de 6 h ; un HM plus long perd l'extrait de ses plus vieux sons.
+    const url = typeof raw.url === 'string' && raw.url.length <= 1000 && (raw.url.startsWith('https://') || PREVIEW.test(raw.url)) ? raw.url : null;
     return { ...base, engine: raw.engine, extId, url };
   }
   // L'extrait d'une plateforme sans lecteur intégré : son adresse publique.
@@ -224,6 +233,39 @@ export function mountHm(app, { requireUser }) {
     }
   }
 
+  // Inviter ses amis (ceux qu'on suit et qui nous suivent) : l'invitation arrive dans l'Activité (Messages), en
+  // notification sur ses appareils, et en fenêtre « Rejoindre » sur CLOUD s'il est ouvert.
+  const friendsOf = (uid) => all(`SELECT u.id, u.name, u.avatar FROM user_follows a
+    JOIN user_follows b ON b.follower_id = a.followed_id AND b.followed_id = a.follower_id
+    JOIN users u ON u.id = a.followed_id WHERE a.follower_id = ? ORDER BY u.name COLLATE NOCASE LIMIT 500`, uid);
+  const invitedTo = (code) => new Set(all("SELECT user_id FROM user_notifications WHERE kind = 'hm' AND page = ?", code).map((x) => x.user_id));
+  app.get('/api/hm/invites', requireUser, (req, res) => {
+    const rows = all(`SELECT n.id, n.page, n.body, u.name, u.avatar FROM user_notifications n JOIN users u ON u.id = n.actor_id
+      WHERE n.user_id = ? AND n.kind = 'hm' AND n.read_at IS NULL AND n.created_at > ? ORDER BY n.id DESC LIMIT 5`, req.user.id, now() - 6 * 3600_000);
+    res.set('Cache-Control', 'no-store').json(rows.filter((x) => load(x.page)).map((x) => ({ id: x.id, code: x.page, name: x.body,
+      from: { name: x.name || 'Membre', avatar: x.avatar ? `/api/media/${x.avatar}` : null } })));
+  });
+  app.post('/api/hm/invites/:id/seen', requireUser, (req, res) => {
+    run("UPDATE user_notifications SET read_at = ? WHERE id = ? AND user_id = ? AND kind = 'hm'", now(), Number(req.params.id) || 0, req.user.id);
+    res.json({ ok: true });
+  });
+  app.get('/api/hm/:code/friends', requireUser, (req, res) => {
+    const r = room(req), here = new Set(members(r).map((m) => m.id)), invited = invitedTo(r.code);
+    res.set('Cache-Control', 'no-store').json(friendsOf(req.user.id).filter((f) => !r.kicked.includes(f.id)).map((f) => ({ id: f.id, name: f.name || 'Membre',
+      avatar: f.avatar ? `/api/media/${f.avatar}` : null, here: here.has(f.id), invited: invited.has(f.id) })));
+  });
+  app.post('/api/hm/:code/invite', requireUser, (req, res) => {
+    const r = room(req), target = Number(req.body?.userId);
+    if (!friendsOf(req.user.id).some((f) => f.id === target)) throw new HttpError(403, "Tu ne peux inviter que tes amis : ceux que tu suis et qui te suivent.");
+    if (r.kicked.includes(target)) throw new HttpError(403, 'Cette personne a été retirée du HM.');
+    rateLimit(`hm-invite:${req.user.id}`, 60, 3600_000);
+    if (!invitedTo(r.code).has(target)) {
+      run("INSERT INTO user_notifications (user_id, kind, actor_id, page, body, created_at) VALUES (?, 'hm', ?, ?, ?, ?)", target, req.user.id, r.code, r.name.slice(0, 140), now());
+      push(target, { title: 'HM', body: `${req.user.name || 'Un ami'} t'invite à écouter « ${r.name} »`, url: `/mes-sons#/hm/${r.code}` });
+    }
+    res.json({ ok: true });
+  });
+
   // Ouvrir un HM : celui que le compte avait déjà se ferme (un seul à la fois, comme sur Spotify).
   app.post('/api/hm', requireUser, (req, res) => {
     rateLimit(`hm-create:${req.user.id}`, 20, 3600_000);
@@ -262,6 +304,12 @@ export function mountHm(app, { requireUser }) {
     const result = act(r, req.user, req.params.action, req.body && typeof req.body === 'object' ? req.body : {});
     changed(r);
     res.json({ ok: true, qid: result });
+    // Un titre Spotify ajouté sans ses paroles : le serveur les cherche (LRCLIB), puis les envoie à tous.
+    const x = req.params.action === 'add' && [r.now, ...r.queue].find((e) => e?.qid === result);
+    if (x && x.item.engine && !x.item.lyrics) {
+      lyricsFor({ platform: x.item.engine, extId: x.item.extId, artist: x.item.artist, title: x.item.title, duration: Math.round(x.item.duration) })
+        .then((lyrics) => { if (lyrics && rooms.get(r.code) === r) { x.item.lyrics = lyrics; changed(r); } }, () => {});
+    }
   });
 
   function end(code) {

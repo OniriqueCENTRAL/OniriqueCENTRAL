@@ -9,9 +9,9 @@ Object.assign(process.env, { DATA_DIR: dataDir, PAYMENTS_MODE: 'demo', PORT: '0'
   SMTP_HOST: 'test', MAIL_FROM: 'support@test.local', SITE_URL: 'https://site.test', PUBLIC_URL: 'https://site.test' });
 
 const { createApp } = await import('../src/app.js');
-const { get } = await import('../src/db.js');
+const { get, run } = await import('../src/db.js');
 const { outbox } = await import('../src/mail.js');
-const { act, allowed, newRoom } = await import('../src/hm.js');
+const { act, allowed, newRoom, cleanItem } = await import('../src/hm.js');
 
 let passed = 0;
 async function step(name, fn) { await fn(); passed++; console.log(`  ok  ${name}`); }
@@ -65,6 +65,13 @@ await step('file : le premier son part tout de suite, les suivants attendent ; r
   act(r, { id: 1 }, 'skip', { qid: b }, 200_000); // deux clics : un seul saut
   assert.equal(r.now.qid, d);
   assert.equal(r.queue.length, 0);
+});
+
+await step('un titre garde ses paroles, sa forme d’onde et son extrait signé ; le reste est refusé', () => {
+  const x = cleanItem({ ...spotify('A'), lyrics: '[00:01.00] salut', peaks: [0, 0.5, 1], url: '/api/sounds/platform-items/3/preview?e=1&s=abc' });
+  assert.deepEqual([x.lyrics, x.peaks, x.url], ['[00:01.00] salut', [0, 0.5, 1], '/api/sounds/platform-items/3/preview?e=1&s=abc']);
+  const y = cleanItem({ ...spotify('B'), peaks: [2], url: '/api/autre?x=1' });
+  assert.deepEqual([y.peaks, y.url], [[], null]);
 });
 
 await step('lecture : pause, reprise et avance par ceux qui contrôlent', () => {
@@ -141,6 +148,20 @@ try {
     await call('GET', `/api/hm/${code}`, { token: lou.token, expect: 403 });
     await k.until((m) => m.members?.length === 1);
     k.close();
+  });
+
+  await step('inviter ses amis (abonnements réciproques) : seulement eux, une fois, et ils le voient', async () => {
+    const max = await account('max');
+    run('INSERT INTO user_follows (follower_id, followed_id, created_at) VALUES (?, ?, 0), (?, ?, 0), (?, ?, 0)', kay.id, max.id, max.id, kay.id, kay.id, lou.id);
+    assert.deepEqual((await call('GET', `/api/hm/${code}/friends`, { token: kay.token })).map((f) => [f.id, f.invited]), [[max.id, false]]);
+    await call('POST', `/api/hm/${code}/invite`, { token: kay.token, body: { userId: lou.id }, expect: 403 });
+    await call('POST', `/api/hm/${code}/invite`, { token: kay.token, body: { userId: max.id } });
+    await call('POST', `/api/hm/${code}/invite`, { token: kay.token, body: { userId: max.id } });
+    assert.equal((await call('GET', `/api/hm/${code}/friends`, { token: kay.token }))[0].invited, true);
+    const invites = await call('GET', '/api/hm/invites', { token: max.token });
+    assert.deepEqual(invites.map((i) => [i.code, i.from.name]), [[code, 'kay']]);
+    await call('POST', `/api/hm/invites/${invites[0].id}/seen`, { token: max.token });
+    assert.equal((await call('GET', '/api/hm/invites', { token: max.token })).length, 0);
   });
 
   await step('un nouveau HM ferme le précédent ; seul le créateur ferme le sien', async () => {

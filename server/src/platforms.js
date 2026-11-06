@@ -452,6 +452,26 @@ const ACCESS = `(p.kind != 'trash' AND p.trashed_at IS NULL AND (p.user_id = ? O
 const view = (r) => ({ id: r.id, projectId: r.project_id, position: r.position, platform: r.platform, extId: r.ext_id, title: r.title, artist: r.artist,
   cover: r.cover, duration: r.duration, url: r.url, listen: itemListenUrl(r.id) });
 
+const lyricsCache = new Map();
+/** Les paroles d'un titre d'une plateforme (LRCLIB), synchronisées si elles existent ; '' sinon. Gardées en mémoire. */
+export async function lyricsFor({ platform, extId, artist, title, duration }) {
+  const key = `${platform}:${extId}`;
+  if (!lyricsCache.has(key)) {
+    const who = text(artist).split(/\s*,\s*/)[0], what = text(title).replace(/\s*[([](feat|ft|with)[^)\]]*[)\]]/gi, '').replace(/\s+-\s+.*remaster.*$/i, '');
+    const ask = (route) => fetch(`${config.lrclibApi}${route}`, { signal: AbortSignal.timeout(8000), headers: { 'User-Agent': 'ONIRIQUE CENTRAL (https://onirique.store)' } })
+      .then((x) => (x.ok ? x.json() : null)).catch(() => null);
+    let hit = await ask(`/get?artist_name=${encodeURIComponent(who)}&track_name=${encodeURIComponent(what)}${duration ? `&duration=${duration}` : ''}`);
+    if (!hit?.plainLyrics && !hit?.syncedLyrics) {
+      const found = await ask(`/search?q=${encodeURIComponent(`${who} ${what}`)}`);
+      hit = Array.isArray(found) ? found.find((x) => (x.syncedLyrics || x.plainLyrics) && (!duration || Math.abs((x.duration || 0) - duration) < 8)) : null;
+    }
+    const lyrics = typeof hit?.syncedLyrics === 'string' && hit.syncedLyrics.trim() ? hit.syncedLyrics : typeof hit?.plainLyrics === 'string' ? hit.plainLyrics : '';
+    if (lyricsCache.size > 5000) lyricsCache.clear();
+    lyricsCache.set(key, lyrics.slice(0, 20000));
+  }
+  return lyricsCache.get(key);
+}
+
 export function mountPlatforms(app, { requireUser, wrap }) {
   // Réservé pour l'instant aux membres ONIRIQUE (et à l'équipe), dans l'application ONIRIQUE CENTRAL.
   const member = (req, _res, next) => (can(req.user, 'sounds') && ONIRIQUE.includes(req.user.role) ? next()
@@ -627,25 +647,11 @@ export function mountPlatforms(app, { requireUser, wrap }) {
   }));
 
   // Les paroles d'un titre Spotify, synchronisées quand LRCLIB les a (sinon en texte) ; gardées le temps du serveur.
-  const lyricsCache = new Map();
   app.get('/api/me/sounds/platform-items/:id/lyrics', ...me, wrap(async (req, res) => {
     const r = itemOf(req, req.params.id);
-    const key = `${r.platform}:${r.ext_id}`;
-    if (!lyricsCache.has(key)) {
-      rateLimit(`platform-lyrics:${req.user.id}`, 300, 3600_000);
-      const artist = text(r.artist).split(/\s*,\s*/)[0], title = text(r.title).replace(/\s*[([](feat|ft|with)[^)\]]*[)\]]/gi, '').replace(/\s+-\s+.*remaster.*$/i, '');
-      const ask = (route) => fetch(`${config.lrclibApi}${route}`, { signal: AbortSignal.timeout(8000), headers: { 'User-Agent': 'ONIRIQUE CENTRAL (https://onirique.store)' } })
-        .then((x) => (x.ok ? x.json() : null)).catch(() => null);
-      let hit = await ask(`/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(title)}${r.duration ? `&duration=${r.duration}` : ''}`);
-      if (!hit?.plainLyrics && !hit?.syncedLyrics) {
-        const found = await ask(`/search?q=${encodeURIComponent(`${artist} ${title}`)}`);
-        hit = Array.isArray(found) ? found.find((x) => (x.syncedLyrics || x.plainLyrics) && (!r.duration || Math.abs((x.duration || 0) - r.duration) < 8)) : null;
-      }
-      const lyrics = typeof hit?.syncedLyrics === 'string' && hit.syncedLyrics.trim() ? hit.syncedLyrics : typeof hit?.plainLyrics === 'string' ? hit.plainLyrics : '';
-      if (lyricsCache.size > 5000) lyricsCache.clear();
-      lyricsCache.set(key, lyrics.slice(0, 20000));
-    }
-    res.set('Cache-Control', 'private, max-age=3600').json({ lyrics: lyricsCache.get(key) });
+    if (!lyricsCache.has(`${r.platform}:${r.ext_id}`)) rateLimit(`platform-lyrics:${req.user.id}`, 300, 3600_000);
+    const lyrics = await lyricsFor({ platform: r.platform, extId: r.ext_id, artist: r.artist, title: r.title, duration: r.duration });
+    res.set('Cache-Control', 'private, max-age=3600').json({ lyrics });
   }));
 
   // Ajouter des titres à la fin d'une playlist (après les sons du CLOUD et les titres déjà là).

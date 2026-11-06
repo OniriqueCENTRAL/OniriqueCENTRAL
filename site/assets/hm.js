@@ -1,6 +1,7 @@
 // HM (« Hail Mary ») : l'écoute partagée du CLOUD, façon Spotify Jam. Le serveur est server/src/hm.js.
 //
-//   OniriqueHM.setup({ api, token, el, icon, player, avatar, button })   button : le bouton « HM » de la page
+//   OniriqueHM.setup({ api, token, el, icon, player, avatar, button, library })
+//     button : le bouton « HM » de la page ; library() → [{ title, cover, items }] les sons de mon CLOUD (items : ceux du lecteur)
 //
 // Pendant un HM, le lecteur du CLOUD joue ce que joue le HM, recalé sur l'heure du serveur. Ce qu'on lance ou met
 // dans la file (un son du CLOUD, un titre Spotify) part dans la file du HM. Lecture, pause, avance, suivant : envoyés
@@ -35,14 +36,41 @@
   border: 1px solid var(--ember); background: #150a0c; color: var(--mist); font: 700 13px var(--f-body); cursor: pointer; box-shadow: 0 10px 40px -10px rgba(226,52,68,.8); }
 .hm-chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 8px var(--ember); animation: hm-pulse 1.6s ease-in-out infinite; }
 @keyframes hm-pulse { 50% { opacity: .35; } }
+/* Posé sur le bord haut du lecteur, au milieu, comme un onglet. */
+.op-pill > .hm-chip { position: absolute; top: 0; left: 50%; right: auto; bottom: auto; transform: translate(-50%, -55%); padding: 4px 12px 4px 10px; gap: 7px;
+  font: 700 11px var(--f-body); letter-spacing: .06em; text-transform: uppercase; box-shadow: 0 6px 22px -8px rgba(226,52,68,.9); }
+.op-pill > .hm-chip i { width: 6px; height: 6px; }
+.op-pill > .hm-chip:hover { background: #22100f; }
+#hm-dlg .hm-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+#hm-dlg .hm-head h3 { margin: 0; }
+#hm-dlg details.hm-friends { margin-top: 10px; border: 1px solid var(--line); border-radius: 14px; }
+#hm-dlg details.hm-friends summary { list-style: none; cursor: pointer; padding: 10px 12px; font: 600 14px var(--f-body); display: flex; align-items: center; gap: 8px; }
+#hm-dlg details.hm-friends summary::-webkit-details-marker { display: none; }
+#hm-dlg details.hm-friends summary svg { width: 16px; height: 16px; margin-left: auto; transition: transform .2s; }
+#hm-dlg details.hm-friends[open] summary svg { transform: rotate(180deg); }
+#hm-dlg details.hm-friends ul { padding: 0 8px 8px; max-height: 240px; overflow-y: auto; }
+#hm-pick { width: min(520px, calc(100vw - 24px)); }
+#hm-pick .hm-body { padding: 14px 18px 18px; display: grid; gap: 14px; max-height: min(70vh, 640px); overflow-y: auto; }
+#hm-pick input[type=search] { width: 100%; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); font: 500 14px var(--f-body); }
+#hm-pick h3 { margin: 0 0 6px; font: 700 12px var(--f-body); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
+#hm-pick ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+#hm-pick li { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 10px; background: rgba(255,255,255,.03); }
+#hm-pick li img { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; flex: none; }
+#hm-pick li .grow { flex: 1; min-width: 0; }
+#hm-pick li .grow b, #hm-pick li .grow small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#hm-pick li small { color: var(--haze); font-size: 12px; }
+#hm-pick .hm-mini, #hm-dlg .hm-mini.on { border-color: var(--ember); }
+#hm-pick .hm-mini { flex: none; background: none; color: var(--mist); border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; font: 600 12px var(--f-body); cursor: pointer; }
+#hm-pick .hm-mini svg { width: 14px; height: 14px; vertical-align: -2px; }
+#hm-pick .hm-mini:disabled { opacity: .5; cursor: default; }
 @media (prefers-reduced-motion: reduce) { .hm-chip i { animation: none; } }
 `;
 
-  function setup({ api, token, el, icon, player, avatar, button }) {
+  function setup({ api, token, el, icon, player, avatar, button, library = () => [] }) {
     document.head.append(el("style", { textContent: css }));
-    const dlg = el("dialog", { id: "hm-dlg" });
+    const dlg = el("dialog", { id: "hm-dlg" }), pick = el("dialog", { id: "hm-pick" });
     const chip = el("button", { className: "hm-chip", type: "button", hidden: true });
-    document.body.append(dlg, chip);
+    document.body.append(dlg, pick, chip);
     chip.onclick = button.onclick = () => (state ? draw(true) : start());
 
     let code = null, state = null, offset = 0, stream = null, syncing = false, hold = false, lastSeek = 0;
@@ -79,8 +107,8 @@
     // Lancer ou mettre dans la file un son, pendant un HM : il part dans la file du HM.
     const toHm = (item, next) => {
       if (!can("add")) return alert("Le créateur du HM ne t'a pas donné le droit d'ajouter des sons.");
-      const { key, id, trackId, comments, lyrics, peaks, downloadUrl, ...rest } = item;
-      api("POST", "/hm/" + code + "/add", { item: rest, next }).then(() => toast("Ajouté à la file du HM : " + item.title), (error) => alert(error.message));
+      const { key, id, trackId, comments, downloadUrl, ...rest } = item; // les paroles et la forme d'onde partent avec le son
+      return api("POST", "/hm/" + code + "/add", { item: rest, next }).then(() => toast("Ajouté à la file du HM : " + item.title), (error) => { alert(error.message); throw error; });
     };
     player.play = (items, i = 0, autoplay = true) => (state && !syncing ? items[i] && toHm(items[i]) : origPlay(items, i, autoplay));
     player.enqueue = (item) => (state && !syncing ? toHm(item) : origEnqueue(item));
@@ -102,10 +130,14 @@
       const want = n.playing && !hold;
       quiet(() => {
         if (!player.item || player.item.key !== keyOf(n)) {
-          origPlay([{ ...n.item, key: keyOf(n), id: null, trackId: null, comments: [], lyrics: "", peaks: n.item.peaks || [] }], 0, want);
+          origPlay([{ ...n.item, key: keyOf(n), id: null, trackId: null, comments: [], lyrics: n.item.lyrics || "", peaks: n.item.peaks || [] }], 0, want);
           lastSeek = 0;
           return;
         }
+        // Les paroles (cherchées par le serveur) et la forme d'onde arrivent parfois après le son : le lecteur les reprend.
+        const cur = player.item;
+        if (n.item.lyrics && cur.lyrics !== n.item.lyrics) cur.lyrics = n.item.lyrics;
+        if (n.item.peaks && n.item.peaks.length && !(cur.peaks && cur.peaks.length)) { cur.peaks = n.item.peaks; player.redraw(); }
         if (want && !player.playing) aPlay().catch(() => {});
         if (!want && player.playing) aPause();
         const d = audio.duration;
@@ -184,10 +216,13 @@
     };
     const mini = (label, onclick, iconName) => el("button", { className: "hm-mini", type: "button", onclick, title: label, ariaLabel: label }, iconName ? icon(iconName) : label);
     function drawChip() {
+      // Sur le bord du lecteur quand il est là ; sinon le bouton « HM » de la page suffit.
+      const pill = document.querySelector(".op-pill");
+      if (pill && chip.parentNode !== pill) pill.append(chip);
       chip.hidden = !state;
       button.textContent = state ? "HM · " + state.members.length : "HM";
       button.setAttribute("aria-pressed", String(!!state));
-      if (state) chip.replaceChildren(el("i"), "HM · " + state.members.length + " en écoute");
+      if (state) { chip.replaceChildren(el("i"), "HM · " + state.members.length); chip.title = chip.ariaLabel = "HM en cours : " + state.members.length + " en écoute"; }
     }
     function song(x, extra) {
       return el("li", { className: "hm-song" + (extra ? " hm-now" : "") },
