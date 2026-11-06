@@ -23,7 +23,8 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 8px; }
 [hidden] { display: none !important; }
-header { border-bottom: 1px solid var(--line); background: rgba(9,8,10,.6); backdrop-filter: blur(14px); }
+/* Son propre calque, au-dessus de la salle : les menus Outils et Compte passent devant la vidéo. */
+header { position: relative; z-index: 40; border-bottom: 1px solid var(--line); background: rgba(9,8,10,.6); backdrop-filter: blur(14px); }
 header .wrap { max-width: 1320px; margin: 0 auto; display: flex; align-items: center; gap: 10px; padding: 14px clamp(16px, 3vw, 32px); }
 /* La marque à gauche ; à droite, dans l'ordre : les liens, le compte, la langue et le menu (ajoutés par site-nav.js). */
 header .brand { margin-right: auto; }
@@ -61,7 +62,34 @@ select { padding: 7px 10px; font-size: 13px; background: #140d0f; }
 @media (max-width: 980px) { .room { grid-template-columns: 1fr; } }
 .top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .stage { position: relative; aspect-ratio: 16 / 9; border-radius: 20px; overflow: hidden; background: #000; border: 1px solid var(--line); box-shadow: 0 30px 80px -30px rgba(var(--acc),.45); }
-.stage > *:not(.empty) { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
+.stage > .media { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
+.stage .media iframe, .stage .media video { width: 100%; height: 100%; border: 0; display: block; background: #000; }
+/* Le lecteur maison : la vidéo (YouTube ou fichier) ne reçoit aucun clic, tout passe par la barre et la zone de clic. */
+.stage .media.locked { pointer-events: none; }
+.stage:fullscreen { border-radius: 0; aspect-ratio: auto; }
+.wp-hit { position: absolute; inset: 0; z-index: 1; cursor: pointer; }
+.wp-bar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; display: flex; align-items: center; gap: 10px; padding: 26px 14px 12px;
+  background: linear-gradient(180deg, transparent, rgba(9,8,10,.92)); opacity: 0; transform: translateY(6px); transition: opacity .25s, transform .25s; }
+.stage.show .wp-bar, .stage:focus-within .wp-bar, .stage.paused .wp-bar { opacity: 1; transform: none; }
+.wp-bar button { all: unset; cursor: pointer; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; color: #fff; flex: none; }
+.wp-bar button:hover, .wp-bar button:focus-visible { background: rgba(255,255,255,.1); }
+.wp-bar button:disabled { opacity: .4; cursor: default; }
+.wp-bar svg { width: 18px; height: 18px; }
+.wp-bar input[type=range] { -webkit-appearance: none; appearance: none; height: 4px; padding: 0; border: 0; border-radius: 4px; background: rgba(255,255,255,.22); accent-color: rgb(var(--acc)); cursor: pointer; }
+.wp-bar input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: #fff; box-shadow: 0 0 10px rgba(var(--acc),.9); }
+.wp-bar input[type=range]:disabled { cursor: not-allowed; opacity: .55; }
+.wp-seek { flex: 1; min-width: 60px; }
+.wp-vol { width: 80px; }
+.wp-time { font: 500 11px var(--mono); color: var(--label); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.wp-note { font: 500 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--pink); white-space: nowrap; }
+.wp-live { display: inline-flex; align-items: center; gap: 6px; font: 500 10px var(--mono); letter-spacing: .12em; color: #fff; }
+.wp-live i { width: 8px; height: 8px; border-radius: 50%; background: rgb(var(--acc)); box-shadow: 0 0 8px rgb(var(--acc)); }
+.wp-stats { position: absolute; right: 12px; top: 12px; z-index: 3; padding: 8px 10px; border-radius: 10px; background: rgba(9,8,10,.82); font: 500 10px/1.6 var(--mono); color: var(--label); white-space: pre; pointer-events: none; }
+@media (max-width: 560px) { .wp-vol, .wp-time.dur { display: none; } .wp-bar { gap: 4px; padding-inline: 8px; } }
+.adv { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px 14px; margin-top: 12px; font-size: 13px; }
+.adv label { display: grid; gap: 4px; color: var(--label); }
+.adv select { width: 100%; }
+.adv-stats { margin: 10px 0 0; font: 500 11px/1.7 var(--mono); color: var(--label); white-space: pre-wrap; }
 .stage .empty { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 24px; color: var(--haze);
   background: radial-gradient(120% 120% at 15% 0%, #1d1013 0%, #0e0a0c 55%, #070506 100%); }
 .stage .badge { position: absolute; left: 12px; top: 12px; inset: 12px auto auto 12px; width: auto; height: auto; padding: 5px 10px; border-radius: 999px; background: rgba(9,8,10,.75);
@@ -147,6 +175,20 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
             <button class="btn btn-primary" type="button" id="sh-stop" hidden>Arrêter le partage</button>
             <input type="file" id="file" accept="video/*,audio/*" hidden>
           </div>
+          <details id="adv-box" hidden><summary>Réglages avancés du partage</summary>
+            <div class="adv">
+              <label>Ton débit montant<select id="adv-total"><option value="3">3 Mbit/s (4G faible, ADSL)</option><option value="5">5 Mbit/s</option><option value="10">10 Mbit/s</option><option value="20">20 Mbit/s</option><option value="50">50 Mbit/s (fibre)</option><option value="100">100 Mbit/s et plus</option></select></label>
+              <label>Débit max par spectateur<select id="adv-max"><option value="auto">Auto (partagé entre tous)</option><option value="2">2 Mbit/s</option><option value="4">4 Mbit/s</option><option value="6">6 Mbit/s</option><option value="8">8 Mbit/s</option><option value="12">12 Mbit/s</option><option value="20">20 Mbit/s</option></select></label>
+              <label>Définition<select id="adv-height"><option value="source">Celle de la source</option><option value="1440">1440p</option><option value="1080">1080p</option><option value="720">720p</option><option value="480">480p</option></select></label>
+              <label>Images par seconde<select id="adv-fps"><option value="60">60</option><option value="30">30</option><option value="24">24 (cinéma)</option><option value="15">15</option></select></label>
+              <label>Si le réseau faiblit<select id="adv-pref"><option value="motion">Garder la fluidité (films, jeux)</option><option value="detail">Garder la netteté (texte, code)</option><option value="balanced">Équilibrer</option></select></label>
+              <label>Codec vidéo<select id="adv-codec"><option value="auto">Automatique</option><option value="video/vp9">VP9 (texte net)</option><option value="video/h264">H.264 (léger, matériel)</option><option value="video/av1">AV1 (le plus efficace)</option></select></label>
+              <label>Son partagé<select id="adv-audio"><option value="system">Tout le son de l'ordinateur</option><option value="none">Aucun son</option><option value="pick">Une entrée audio (câble virtuel…)</option></select></label>
+              <label>Qualité du son<select id="adv-abr"><option value="128">128 kbit/s</option><option value="192">192 kbit/s</option><option value="256">256 kbit/s</option><option value="320">320 kbit/s</option></select></label>
+            </div>
+            <p class="muted" id="adv-audio-hint" style="margin:10px 0 0;font-size:12px"></p>
+            <p class="adv-stats" id="adv-stats"></p>
+          </details>
           <p class="muted" id="hint" style="margin:0;font-size:13px"></p>
         </div>
       </div>
@@ -172,7 +214,7 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
   <div class="srcs" id="pk-list"></div>
   <div class="row" style="justify-content:space-between">
     <div class="segs" role="group" aria-label="Priorité de l'image"><button class="seg" type="button" data-q="motion" aria-pressed="true" title="60 images par seconde : films, jeux, vidéos">Fluidité</button><button class="seg" type="button" data-q="detail" aria-pressed="false" title="Pleine définition : texte, code, logiciels">Netteté</button></div>
-    <label class="row" id="pk-audio-row" style="gap:6px;font-size:14px"><input type="checkbox" id="pk-audio" checked> Le son de l'ordinateur</label>
+    <label class="row" id="pk-audio-row" style="gap:6px;font-size:14px">Son <select id="pk-audio"><option value="system">Tout l'ordinateur</option><option value="none">Aucun</option><option value="pick">Une entrée audio…</option></select></label>
     <button class="btn btn-primary" type="button" id="pk-go" disabled>Partager</button>
   </div>
 </div></dialog>
@@ -232,6 +274,7 @@ async function listen(c) {
 function leave(text) {
   stopLocal();
   closePeers();
+  clearStage(); // sinon YouTube (ou la vidéo) continue de jouer, cachée
   code = ""; state = null; reader = null;
   history.replaceState(null, "", "watchparty");
   $("room").hidden = true;
@@ -239,7 +282,8 @@ function leave(text) {
 }
 function receive(s) {
   if (state && state.you.peer !== s.you.peer) closePeers(); // nouveau flux (reconnexion) : on renégocie
-  offset = s.t - Date.now();
+  if (!clocked) offset = s.t - Date.now(); // en attendant la mesure de l'horloge
+  syncClock();
   state = s;
   draw();
 }
@@ -256,6 +300,8 @@ function draw() {
   for (const id of ["sh-screen", "sh-camera", "sh-file"]) $(id).hidden = !can("source") || !navigator.mediaDevices;
   if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) $("sh-screen").hidden = true;
   $("sh-stop").hidden = !(sharing && (s.media.by === s.you.id || can("source")));
+  $("adv-box").hidden = !can("source");
+  if (can("control")) hold = false;
   $("hint").textContent = can("control") ? "Lecture, pause et avance partent chez tout le monde." : "Le créateur garde la main sur la lecture : ta pause ne vaut que pour toi.";
   drawStage();
   drawPeople();
@@ -297,87 +343,297 @@ function drawChat() {
   if (atEnd) box.scrollTop = box.scrollHeight;
 }
 
-// ——— La scène : YouTube, une vidéo en ligne, ou un partage ———
+// ——— L'horloge du serveur (comme le HM) : plusieurs allers-retours, le plus court gardé ———
+// Sans elle, chacun se calerait sur l'heure d'arrivée des messages, en retard de leur temps de trajet.
+let clockAt = 0, clocked = false;
+const serverNow = () => Date.now() + offset;
+async function syncClock() {
+  if (Date.now() - clockAt < 20_000) return;
+  clockAt = Date.now();
+  let best = null;
+  for (let i = 0; i < 5; i++) {
+    const sent = Date.now(), t0 = performance.now();
+    const r = await fetch("/api/hm/clock", { cache: "no-store" }).then((x) => (x.ok ? x.json() : null), () => null);
+    const rtt = performance.now() - t0;
+    if (r && typeof r.t === "number" && (!best || rtt < best.rtt)) best = { rtt, offset: r.t - (sent + rtt / 2) };
+  }
+  if (best) { offset = best.offset; clocked = true; } else clockAt = 0;
+}
+setInterval(() => { if (state) { clockAt = 0; syncClock(); } }, 120_000);
+
+// ——— La scène et le lecteur maison : YouTube, une vidéo en ligne, ou un partage en direct ———
+// Ni les commandes de YouTube ni celles du navigateur : une seule barre, la nôtre, qui respecte les droits de la salle.
 let ytReady = null;
 const loadYT = () => ytReady || (ytReady = new Promise((resolve) => {
   window.onYouTubeIframeAPIReady = resolve;
   document.head.append(el("script", { src: "https://www.youtube.com/iframe_api" }));
 }));
+const ICONS = {
+  play: "M8 5v14l11-7z", pause: "M7 5h4v14H7zM13 5h4v14h-4z", vol: "M4 9v6h4l5 4V5L8 9zM16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12",
+  mute: "M4 9v6h4l5 4V5L8 9zM17 9l5 6M22 9l-5 6", full: "M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5", info: "M12 8h.01M11 12h1v5h1M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z",
+};
+const svg = (name) => { const b = el("span"); b.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${ICONS[name]}"/></svg>`; return b.firstChild; };
+const fmt = (t) => { t = Math.max(0, Math.floor(t || 0)); const h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, x = String(t % 60).padStart(2, "0"); return h ? h + ":" + String(m).padStart(2, "0") + ":" + x : m + ":" + x; };
+let vol = { level: 1, muted: false };
+try { vol = { ...vol, ...JSON.parse(localStorage.getItem("onirique.wp.volume") || "{}") }; } catch { /* stockage fermé */ }
+let bar = null, statsOn = false, blocked = false, hideAt = 0;
+
+function clearStage() {
+  try { player && player.destroy && player.destroy(); } catch { /* déjà détruit */ }
+  player = null; mediaKey = ""; bar = null;
+  $("stage").replaceChildren();
+}
 
 function drawStage() {
   const m = state.media;
   const key = !m ? "" : m.kind === "youtube" ? "yt:" + m.id : m.kind === "url" ? "url:" + m.url : "share:" + m.peer + ":" + (m.peer === state.you.peer ? "me" : "");
   if (key === mediaKey) return;
+  clearStage();
   mediaKey = key;
-  hold = false;
-  player = null;
+  hold = false; blocked = false;
   const stage = $("stage");
   if (!m) return stage.replaceChildren(el("div", { className: "empty" }, can("source") ? "Colle une vidéo ou partage ton écran pour commencer." : "En attente de la vidéo du créateur…"));
   if (m.kind === "youtube") {
-    const slot = el("div");
-    stage.replaceChildren(slot);
+    const slot = el("div"), box = el("div", { className: "media locked" }, slot);
+    stage.replaceChildren(box, hit(), makeBar(false));
     loadYT().then(() => {
       if (mediaKey !== key) return;
-      const yt = new YT.Player(slot, { videoId: m.id, width: "100%", height: "100%", playerVars: { playsinline: 1, rel: 0, modestbranding: 1 },
-        events: { onReady: () => { if (mediaKey === key) player = ytPlayer(yt); },
-          onStateChange: (e) => { if (e.data === 1) mine("play"); else if (e.data === 2) mine("pause"); } } });
+      const yt = new YT.Player(slot, { videoId: m.id, width: "100%", height: "100%",
+        playerVars: { controls: 0, disablekb: 1, fs: 0, rel: 0, modestbranding: 1, playsinline: 1, iv_load_policy: 3, cc_load_policy: 0 },
+        events: { onReady: () => { if (mediaKey !== key) return yt.destroy(); player = ytPlayer(yt); applyVolume(); tick(); } } });
     });
     return;
   }
   if (m.kind === "url") {
-    const v = el("video", { src: m.url, controls: true, playsInline: true, preload: "auto" });
-    v.onplay = () => mine("play"); v.onpause = () => mine("pause"); v.onseeked = () => mine("seek");
-    v.onerror = () => say("Cette vidéo ne se lit pas dans le navigateur (format ou adresse refusés).");
-    stage.replaceChildren(v);
+    const v = el("video", { src: m.url, playsInline: true, preload: "auto" });
+    v.onerror = () => say("Cette adresse ne mène pas à un fichier vidéo lisible (.mp4, .webm…). Pour une page de site (Netflix, Twitch…), partage plutôt ton écran.");
+    stage.replaceChildren(el("div", { className: "media locked" }, v), hit(), makeBar(false));
     player = videoPlayer(v);
+    applyVolume();
     return;
   }
   // Un partage : celui qui partage voit son aperçu (ou son fichier, avec ses commandes) ; les autres reçoivent l'image en direct.
   const label = el("span", { className: "badge", textContent: { screen: "Écran", camera: "Caméra", file: "Fichier" }[m.what] + " · " + (m.byName || "") });
   if (m.peer === state.you.peer && local) {
     const v = fileVideo || el("video", { srcObject: local, autoplay: true, muted: true, playsInline: true });
-    stage.replaceChildren(v, label);
+    stage.replaceChildren(el("div", { className: "media" }, v), label);
   } else {
-    const v = el("video", { id: "remote", autoplay: true, playsInline: true, controls: true });
-    stage.replaceChildren(v, label, el("div", { className: "empty", id: "waiting", style: "z-index:1" }, "Connexion à " + (m.byName || "l'hôte") + "…"));
+    const v = el("video", { id: "remote", autoplay: true, playsInline: true });
+    stage.replaceChildren(el("div", { className: "media locked" }, v), hit(), label, el("div", { className: "empty", id: "waiting", style: "z-index:2" }, "Connexion à " + (m.byName || "l'hôte") + "…"), makeBar(true));
+    player = { kind: "live", volume: (l, mu) => { v.volume = l; v.muted = mu; } };
+    applyVolume();
   }
 }
-const ytPlayer = (yt) => ({ time: () => yt.getCurrentTime() || 0, playing: () => yt.getPlayerState() === 1 || yt.getPlayerState() === 3,
-  play: () => yt.playVideo(), pause: () => yt.pauseVideo(), seek: (t) => yt.seekTo(t, true) });
-const videoPlayer = (v) => ({ time: () => v.currentTime, playing: () => !v.paused, play: () => v.play().catch(() => {}), pause: () => v.pause(), seek: (t) => { v.currentTime = t; } });
+const ytPlayer = (yt) => ({ kind: "yt", time: () => yt.getCurrentTime() || 0, duration: () => yt.getDuration() || 0,
+  playing: () => [1, 3].includes(yt.getPlayerState()), play: () => yt.playVideo(), pause: () => yt.pauseVideo(), seek: (t) => yt.seekTo(t, true),
+  rate: (x) => { if (yt.getPlaybackRate() !== x) yt.setPlaybackRate(x); },
+  volume: (l, mu) => { yt.setVolume(Math.round(l * 100)); if (mu) yt.mute(); else yt.unMute(); }, destroy: () => yt.destroy() });
+const videoPlayer = (v) => ({ kind: "video", time: () => v.currentTime, duration: () => (Number.isFinite(v.duration) ? v.duration : 0), playing: () => !v.paused,
+  play: () => v.play().then(() => { blocked = false; }, () => { blocked = true; }), pause: () => v.pause(), seek: (t) => { v.currentTime = t; },
+  rate: (x) => { if (Math.abs(v.playbackRate - x) > 0.005) v.playbackRate = x; }, volume: (l, mu) => { v.volume = l; v.muted = mu; },
+  destroy: () => { v.pause(); v.removeAttribute("src"); v.load(); } });
+function applyVolume() {
+  if (player && player.volume) player.volume(vol.level, vol.muted);
+  try { localStorage.setItem("onirique.wp.volume", JSON.stringify(vol)); } catch { /* stockage fermé */ }
+}
 
-// Ce que je fais sur le lecteur : envoyé à tous si j'en ai le droit, sinon gardé pour moi.
-function mine(kind) {
-  if (!state || !player || Date.now() < quietUntil) return;
-  const pos = player.time();
-  if (!can("control")) { if (kind === "pause") hold = true; if (kind === "play") hold = false; return; }
-  hold = false;
-  // Déjà l'état de la salle (fin d'un chargement, par exemple) : rien à envoyer.
-  if (kind === "play" && state.playing && Math.abs(pos - expected()) < 2) return;
-  if (kind === "pause" && !state.playing && Math.abs(pos - state.pos) < 1) return;
-  Object.assign(state, { pos, at: Date.now() + offset, playing: kind === "seek" ? state.playing : kind === "play" });
+// La zone de clic sur la vidéo : un clic met en lecture ou en pause, un double clic passe en plein écran.
+function hit() {
+  const z = el("div", { className: "wp-hit", onclick: () => togglePlay(), ondblclick: () => fullscreen() });
+  return z;
+}
+function makeBar(live) {
+  const b = { live };
+  b.play = el("button", { type: "button", ariaLabel: "Lecture", onclick: () => togglePlay() }, svg("play"));
+  b.time = el("span", { className: "wp-time" });
+  b.seek = el("input", { type: "range", className: "wp-seek", min: 0, max: 1, step: 0.1, value: 0, ariaLabel: "Position dans la vidéo" });
+  b.seek.oninput = () => { b.dragging = true; b.time.textContent = fmt(b.seek.value) + " / " + fmt(player && player.duration ? player.duration() : 0); };
+  b.seek.onchange = () => { b.dragging = false; if (can("control")) act("seek", Number(b.seek.value)); };
+  b.mute = el("button", { type: "button", ariaLabel: "Couper le son", onclick: () => { vol.muted = !vol.muted; applyVolume(); } }, svg(vol.muted ? "mute" : "vol"));
+  b.vol = el("input", { type: "range", className: "wp-vol", min: 0, max: 1, step: 0.02, value: vol.level, ariaLabel: "Volume" });
+  b.vol.oninput = () => { vol.level = Number(b.vol.value); vol.muted = vol.level === 0; applyVolume(); };
+  b.note = el("span", { className: "wp-note" });
+  b.info = el("button", { type: "button", ariaLabel: "Infos de lecture", title: "Infos de lecture (débit, images/s)", onclick: () => { statsOn = !statsOn; } }, svg("info"));
+  b.full = el("button", { type: "button", ariaLabel: "Plein écran", onclick: () => fullscreen() }, svg("full"));
+  b.el = el("div", { className: "wp-bar" }, ...(live ? [el("span", { className: "wp-live" }, el("i"), "EN DIRECT"), el("span", { style: "flex:1" })]
+    : [b.play, b.time, b.seek]), b.note, b.mute, b.vol, b.info, b.full);
+  bar = b;
+  return b.el;
+}
+const fullscreen = () => { const st = $("stage"); if (document.fullscreenElement) document.exitFullscreen(); else st.requestFullscreen && st.requestFullscreen().catch(() => {}); };
+// La barre se montre au mouvement de la souris, et reste quand la vidéo est en pause.
+$("stage").addEventListener("pointermove", () => { hideAt = Date.now() + 2500; $("stage").classList.add("show"); });
+$("stage").tabIndex = 0;
+$("stage").addEventListener("keydown", (e) => {
+  if (!state || !state.media || e.target.tagName === "INPUT") return;
+  if (e.key === " " || e.key === "k") { e.preventDefault(); togglePlay(); }
+  else if (e.key === "f") fullscreen();
+  else if (e.key === "m") { vol.muted = !vol.muted; applyVolume(); }
+  else if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && player && player.time && can("control")) { e.preventDefault(); act("seek", Math.max(0, expected() + (e.key === "ArrowLeft" ? -5 : 5))); }
+});
+
+// Lecture / pause : pour tout le monde si l'on a le droit ; sinon pour soi seulement, et reprendre recale aussitôt sur la salle.
+function togglePlay() {
+  if (player && player.kind === "live") { const v = $("remote"); if (v) v.play().then(() => { blocked = false; }, () => {}); return; }
+  if (!player || !player.time || !state.media) return;
+  if (blocked) { blocked = false; lastSeek = 0; return tick(); } // le navigateur attendait un geste pour lancer le son
+  if (!can("control")) { hold = !hold && state.playing; lastSeek = 0; return tick(); }
+  if (state.playing) act("pause", player.time()); else act("play", state.pos);
+}
+function act(kind, pos) {
+  Object.assign(state, { pos, at: serverNow(), playing: kind === "seek" ? state.playing : kind === "play" });
+  hold = false; lastSeek = 0;
+  tick();
   send(kind, { pos });
 }
 
-// Deux fois par seconde : chacun à la bonne place, en lecture ou en pause comme la salle.
-setInterval(() => {
+// Quatre fois par seconde : chacun à la bonne seconde. Petit écart : la vitesse rattrape en douceur (±6 % pour une vidéo ;
+// 1,25× ou 0,75× quelques instants pour YouTube, qui n'a que ces paliers) ; grand écart : on se replace.
+function tick() {
   if (!state) return;
   syncPeers();
-  if (!player || !state.media || state.media.kind === "share") return;
-  const want = state.playing && !hold, exp = expected(), drift = Math.abs(player.time() - exp);
-  if (drift > 1.5 && Date.now() - lastSeek > 2500) { lastSeek = Date.now(); quiet(() => player.seek(exp)); }
-  if (want && !player.playing()) quiet(() => player.play());
-  if (!want && player.playing()) quiet(() => player.pause());
-}, 500);
+  drawBar();
+  if (!player || !player.time || !state.media || state.media.kind === "share") return;
+  const want = state.playing && !hold, exp = expected(), d = player.time() - exp, yt = player.kind === "yt";
+  if (want && !player.playing() && !blocked) player.play();
+  if (!want && player.playing()) player.pause();
+  if (!want) { if (player.rate) player.rate(1); if (!hold && Math.abs(d) > 0.4 && Date.now() - lastSeek > 800) { lastSeek = Date.now(); player.seek(exp); } return; }
+  if (Math.abs(d) > (yt ? 2 : 0.6)) {
+    if (Date.now() - lastSeek > 1500) { lastSeek = Date.now(); if (player.rate) player.rate(1); player.seek(exp + (yt ? 0.4 : 0)); }
+    return;
+  }
+  if (yt) { if (Math.abs(d) > 0.12) player.rate(d < 0 ? 1.25 : 0.75); else if (Math.abs(d) < 0.04) player.rate(1); return; }
+  if (player.rate) player.rate(Math.abs(d) < 0.04 ? 1 : 1 - Math.max(-0.06, Math.min(0.06, d * 0.5)));
+}
+setInterval(tick, 250);
+
+function drawBar() {
+  const st = $("stage");
+  const paused = !!(state && state.media && state.media.kind !== "share" && (!state.playing || hold || blocked));
+  st.classList.toggle("paused", paused);
+  if (Date.now() > hideAt) st.classList.remove("show");
+  if (!bar) return;
+  bar.mute.replaceChildren(svg(vol.muted || vol.level === 0 ? "mute" : "vol"));
+  if (!bar.dragging) bar.vol.value = vol.muted ? 0 : vol.level;
+  if (bar.live) { bar.note.textContent = blocked ? "Touche l'image pour le son" : ""; return; }
+  if (!player || !player.time) return;
+  const dur = player.duration(), now = Math.min(dur || Infinity, hold ? player.time() : expected());
+  bar.play.replaceChildren(svg(paused ? "play" : "pause"));
+  bar.play.ariaLabel = paused ? "Lecture" : "Pause";
+  bar.seek.max = dur || 1;
+  bar.seek.disabled = !can("control");
+  bar.seek.title = can("control") ? "" : "Le créateur garde la main sur la lecture : tu ne peux pas te déplacer dans la vidéo.";
+  if (!bar.dragging) { bar.seek.value = now; bar.time.textContent = fmt(now) + " / " + fmt(dur); }
+  bar.note.textContent = blocked ? "Touche ▶ pour le son" : hold ? "En pause pour toi · ▶ te recale" : !state.playing && !can("control") ? "En pause par l'hôte" : "";
+}
+
+// Les infos de lecture (bouton ⓘ) : ce qui arrive vraiment, pour comprendre une image floue ou saccadée.
+let lastIn = null;
+setInterval(async () => {
+  const box = $("stage").querySelector(".wp-stats");
+  if (!statsOn || !state || !state.media) { if (box) box.remove(); return; }
+  let text = "";
+  if (state.media.kind === "share") {
+    const pc = pcs.get(state.media.peer);
+    if (pc) {
+      (await pc.getStats()).forEach((x) => {
+        if (x.type !== "inbound-rtp" || x.kind !== "video") return;
+        const mbps = lastIn ? ((x.bytesReceived - lastIn.b) * 8) / ((x.timestamp - lastIn.t) * 1000) : 0;
+        lastIn = { b: x.bytesReceived, t: x.timestamp };
+        const lost = x.packetsReceived ? (100 * (x.packetsLost || 0)) / (x.packetsReceived + (x.packetsLost || 0)) : 0;
+        text = `${x.frameWidth || "?"}×${x.frameHeight || "?"} · ${Math.round(x.framesPerSecond || 0)} i/s\n${mbps.toFixed(1)} Mbit/s · pertes ${lost.toFixed(1)} %`;
+      });
+    }
+  } else if (player && player.time) {
+    text = `écart avec la salle : ${((player.time() - expected()) * 1000).toFixed(0)} ms\nhorloge ${clocked ? "mesurée" : "estimée"}`;
+  }
+  const b = box || $("stage").appendChild(el("div", { className: "wp-stats" }));
+  b.textContent = text || "…";
+}, 1000);
 
 // ——— Le partage en WebRTC, de pair à pair ———
 const signalChain = { p: Promise.resolve() };
 const signal = (to, data) => { signalChain.p = signalChain.p.then(() => api("POST", "/watchparty/" + code + "/signal", { from: state.you.peer, to, data }).catch(() => {})); };
+
+// Les réglages avancés du partage, gardés sur cet appareil. Dans l'application, 60 i/s par défaut.
+const app = window.oniriqueApp && window.oniriqueApp.screens ? window.oniriqueApp : null;
+const ADV_DEFAULT = { total: "10", max: "auto", height: "1080", fps: app ? "60" : "30", pref: "motion", codec: "auto", audio: "system", abr: "256" };
+let adv = { ...ADV_DEFAULT };
+try { adv = { ...adv, ...JSON.parse(localStorage.getItem("onirique.wp.adv") || "{}") }; } catch { /* stockage fermé */ }
+const ADV_IDS = ["total", "max", "height", "fps", "pref", "codec", "audio", "abr"];
+let audioDevice = "";
+function drawAdv() {
+  const a = $("adv-audio");
+  if (adv.audio.startsWith("dev:") && ![...a.options].some((o) => o.value === adv.audio)) a.append(el("option", { value: adv.audio, textContent: "L'entrée audio choisie" }));
+  for (const k of ADV_IDS) $("adv-" + k).value = adv[k];
+  $("adv-audio-hint").textContent = adv.audio === "system"
+    ? "« Tout le son de l'ordinateur » envoie aussi Discord et les notifications. Pour n'envoyer que le film : partage un onglet du navigateur (son de l'onglet), un fichier vidéo, ou envoie le son du lecteur dans un câble virtuel (VB-CABLE…) et choisis « Une entrée audio »."
+    : adv.audio === "none" ? "Le partage part sans son." : "Seule cette entrée audio est envoyée : Discord n'y est pas, tant qu'il ne joue pas dedans.";
+}
+async function fillAudioInputs(select) {
+  // Les noms des entrées n'apparaissent qu'une fois l'accès au micro accordé.
+  let list = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "audioinput");
+  if (list.length && !list[0].label) {
+    try { (await navigator.mediaDevices.getUserMedia({ audio: true })).getTracks().forEach((t) => t.stop()); } catch { /* refusé */ }
+    list = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "audioinput");
+  }
+  for (const o of [...select.options]) if (o.value.startsWith("dev:")) o.remove();
+  for (const d of list) select.append(el("option", { value: "dev:" + d.deviceId, textContent: "Entrée : " + (d.label || "audio " + d.deviceId.slice(0, 6)) }));
+}
+for (const k of ADV_IDS) $("adv-" + k).onchange = async (e) => {
+  let v = e.target.value;
+  if (k === "audio" && v === "pick") { await fillAudioInputs(e.target); const dev = [...e.target.options].find((o) => o.value.startsWith("dev:")); v = dev ? dev.value : "system"; e.target.value = v; }
+  adv[k] = v;
+  try { localStorage.setItem("onirique.wp.adv", JSON.stringify(adv)); } catch { /* stockage fermé */ }
+  drawAdv();
+  if (k === "codec") { closePeers(); return; } // un autre codec : on renégocie avec chacun
+  if (["height", "fps"].includes(k) && local) local.getVideoTracks().forEach((t) => t.applyConstraints(captureConstraints()).catch(() => {}));
+  if (k === "audio" && local && localWhat !== "file") await swapAudio();
+  applyQuality();
+};
+drawAdv();
+const captureConstraints = () => ({ frameRate: { ideal: Number(adv.fps) }, ...(adv.height === "source" ? {} : { height: { ideal: Number(adv.height) } }) });
+const viewers = () => Math.max(1, state ? state.members.flatMap((x) => x.peers).filter((p) => p !== state.you.peer).length : 1);
+// Le débit de chaque spectateur : sa part du débit montant (90 %, le reste pour le son et le chat), sans dépasser le maximum choisi.
+const perViewer = () => Math.round(Math.min(adv.max === "auto" ? Infinity : Number(adv.max), (Number(adv.total) * 0.9) / viewers()) * 1_000_000);
+const PREF = { motion: "maintain-framerate", detail: "maintain-resolution", balanced: "balanced" };
+function applyQuality() {
+  if (!local) return;
+  const v = local.getVideoTracks()[0];
+  if (v) v.contentHint = adv.pref === "detail" ? "detail" : "motion";
+  for (const t of local.getAudioTracks()) t.contentHint = "music"; // ni réduction de bruit ni réglage de voix
+  const h = v && v.getSettings().height;
+  for (const pc of pcs.values()) for (const s of pc.getSenders()) {
+    if (!s.track) continue;
+    const p = s.getParameters();
+    if (!p.encodings || !p.encodings.length) continue;
+    if (s.track.kind === "video") {
+      Object.assign(p.encodings[0], { maxBitrate: perViewer(), maxFramerate: Number(adv.fps),
+        scaleResolutionDownBy: adv.height === "source" || !h ? 1 : Math.max(1, h / Number(adv.height)) });
+      p.degradationPreference = PREF[adv.pref];
+    } else p.encodings[0].maxBitrate = Number(adv.abr) * 1000;
+    s.setParameters(p).catch(() => {});
+  }
+}
+// Le son en stéréo et au débit choisi (Opus parle « voix » par défaut, en mono).
+function hifi(sdp) {
+  const pt = (/a=rtpmap:(\d+) opus\/48000\/2/.exec(sdp) || [])[1];
+  if (!pt) return sdp;
+  return sdp.replace(new RegExp(`a=fmtp:${pt} ([^\\r\\n]*)`), (_m, f) => `a=fmtp:${pt} ${f.split(";").filter((x) => !/^(stereo|sprop-stereo|maxaveragebitrate|usedtx)=/.test(x)).concat(["stereo=1", "sprop-stereo=1", "maxaveragebitrate=" + Number(adv.abr) * 1000, "usedtx=0"]).join(";")}`);
+}
+const prefer = (tr) => {
+  const caps = window.RTCRtpSender && RTCRtpSender.getCapabilities && RTCRtpSender.getCapabilities("video");
+  if (adv.codec === "auto" || !caps || !tr.setCodecPreferences) return;
+  const first = caps.codecs.filter((c) => c.mimeType.toLowerCase() === adv.codec);
+  if (first.length) try { tr.setCodecPreferences([...first, ...caps.codecs.filter((c) => !first.includes(c))]); } catch { /* l'ordre du navigateur */ }
+};
+
 function newPc(peer, sharer) {
   const pc = new RTCPeerConnection({ iceServers: ICE });
   pc.onicecandidate = (e) => e.candidate && signal(peer, { ice: e.candidate });
   pc.onconnectionstatechange = () => {
     if (pc.connectionState === "connected" && $("waiting")) $("waiting").remove();
+    if (pc.connectionState === "connected" && sharer) applyQuality();
     if (pc.connectionState !== "failed") return;
     pc.close();
     if (pcs.get(peer) === pc) pcs.delete(peer);
@@ -385,11 +641,11 @@ function newPc(peer, sharer) {
   };
   if (sharer) {
     for (const t of local.getTracks()) {
-      if (t.kind === "video") prefer(pc.addTransceiver(t, { direction: "sendonly", streams: [local], sendEncodings: [{ maxBitrate: quality.bitrate, maxFramerate: quality.fps }] }), quality.codecs);
-      else pc.addTrack(t, local);
+      if (t.kind === "video") prefer(pc.addTransceiver(t, { direction: "sendonly", streams: [local], sendEncodings: [{ maxBitrate: perViewer(), maxFramerate: Number(adv.fps) }] }));
+      else pc.addTransceiver(t, { direction: "sendonly", streams: [local], sendEncodings: [{ maxBitrate: Number(adv.abr) * 1000 }] });
     }
   } else {
-    pc.ontrack = (e) => { const v = $("remote"); if (v && v.srcObject !== e.streams[0]) { v.srcObject = e.streams[0]; v.play().catch(() => {}); } };
+    pc.ontrack = (e) => { const v = $("remote"); if (v && v.srcObject !== e.streams[0]) { v.srcObject = e.streams[0]; v.play().catch(() => { blocked = true; }); } };
   }
   pcs.set(peer, pc);
   return pc;
@@ -404,7 +660,8 @@ async function onSignal({ from, data }) {
     pc = newPc(from, false);
     await pc.setRemoteDescription(data.sdp);
     await flushIce(from, pc);
-    await pc.setLocalDescription(await pc.createAnswer());
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription({ type: "answer", sdp: hifi(answer.sdp) });
     signal(from, { sdp: pc.localDescription });
   } else if (data.sdp && pc) {
     await pc.setRemoteDescription(data.sdp);
@@ -415,6 +672,8 @@ async function onSignal({ from, data }) {
   }
 }
 // Celui qui partage ouvre une connexion vers chaque présent (et la referme quand il part) ; trois essais par présent.
+// Quand le nombre de spectateurs change, la part de débit de chacun est recalculée.
+let lastViewers = 0;
 function syncPeers() {
   const m = state.media;
   if (!m || m.kind !== "share" || m.peer !== state.you.peer || !local) return;
@@ -424,53 +683,95 @@ function syncPeers() {
     if (pcs.has(p) || (tries.get(p) || 0) >= 3) continue;
     tries.set(p, (tries.get(p) || 0) + 1);
     const pc = newPc(p, true);
-    pc.createOffer().then((o) => pc.setLocalDescription(o)).then(() => { tune(pc); signal(p, { sdp: pc.localDescription }); }).catch(() => {});
+    pc.createOffer().then((o) => pc.setLocalDescription({ type: "offer", sdp: hifi(o.sdp) })).then(() => signal(p, { sdp: pc.localDescription })).catch(() => {});
   }
+  if (peers.length !== lastViewers) { lastViewers = peers.length; applyQuality(); }
 }
-// Le codec essayé d'abord (VP9 garde le texte net) ; l'autre pair choisit parmi ceux qu'il connaît.
-const prefer = (tr, mimes) => {
-  const caps = window.RTCRtpSender && RTCRtpSender.getCapabilities && RTCRtpSender.getCapabilities("video");
-  if (!mimes || !caps || !tr.setCodecPreferences) return;
-  const rank = (c) => { const i = mimes.indexOf(c.mimeType.toLowerCase()); return i < 0 ? mimes.length : i; };
-  try { tr.setCodecPreferences([...caps.codecs].sort((x, y) => rank(x) - rank(y))); } catch { /* l'ordre du navigateur */ }
-};
-// Garder la fluidité (l'image baisse en définition si le réseau faiblit) ou la netteté (elle baisse en images par seconde).
-const tune = (pc) => { for (const s of pc.getSenders()) if (s.track && s.track.kind === "video") { const p = s.getParameters(); p.degradationPreference = quality.pref; s.setParameters(p).catch(() => {}); } };
-function closePeers() { for (const pc of pcs.values()) pc.close(); pcs.clear(); tries.clear(); pendingIce.clear(); }
+function closePeers() { for (const pc of pcs.values()) pc.close(); pcs.clear(); tries.clear(); pendingIce.clear(); lastIn = null; sent.clear(); }
+
+// Ce que reçoit chacun, pour celui qui partage (sous les réglages avancés).
+const sent = new Map();
+setInterval(async () => {
+  const box = $("adv-stats");
+  if (!local || !state || !pcs.size) { box.textContent = ""; return; }
+  const names = new Map(state.members.flatMap((m) => m.peers.map((p) => [p, m.name])));
+  const rows = [];
+  for (const [peer, pc] of pcs) {
+    let row = null;
+    (await pc.getStats()).forEach((x) => {
+      if (x.type !== "outbound-rtp" || x.kind !== "video") return;
+      const prev = sent.get(peer), mbps = prev ? ((x.bytesSent - prev.b) * 8) / ((x.timestamp - prev.t) * 1000) : 0;
+      sent.set(peer, { b: x.bytesSent, t: x.timestamp, since: prev ? prev.since : Date.now() });
+      // Les 15 premières secondes, WebRTC monte en débit petit à petit : pas d'alerte avant.
+      const settled = Date.now() - sent.get(peer).since > 15_000;
+      const why = settled ? { bandwidth: "limité par le débit", cpu: "limité par le processeur", other: "limité" }[x.qualityLimitationReason] || "ok" : "démarrage…";
+      row = `${names.get(peer) || "…"} : ${x.frameWidth || "?"}×${x.frameHeight || "?"} · ${Math.round(x.framesPerSecond || 0)} i/s · ${mbps.toFixed(1)} Mbit/s · ${why}`;
+    });
+    rows.push(row || `${names.get(peer) || "…"} : connexion…`);
+  }
+  const limited = rows.some((x) => /débit/.test(x));
+  box.textContent = `Part de chacun : ${(perViewer() / 1e6).toFixed(1)} Mbit/s\n` + rows.join("\n")
+    + (limited ? "\nTa connexion ne suit pas : baisse la définition ou les images/s, ou indique un débit montant plus bas." : "");
+}, 2000);
+
 function stopLocal() {
   if (!local) return;
   for (const t of local.getTracks()) t.stop();
   if (fileVideo) { fileVideo.pause(); URL.revokeObjectURL(fileVideo.src); }
-  local = null; fileVideo = null;
+  local = null; fileVideo = null; localWhat = "";
 }
-// Les réglages d'envoi : sur le site, 30 i/s ; dans l'application, 60 i/s (fluidité) ou la pleine définition (netteté).
-const QUALITY = { site: { hint: "motion", bitrate: 6_000_000, fps: 30, pref: "maintain-framerate" },
-  motion: { hint: "motion", bitrate: 12_000_000, fps: 60, pref: "maintain-framerate" },
-  detail: { hint: "detail", bitrate: 8_000_000, fps: 30, pref: "maintain-resolution", codecs: ["video/vp9"] } };
-let quality = QUALITY.site;
-async function share(what, stream, video = null, q = QUALITY.site) {
+let localWhat = "";
+// Le son du partage selon le réglage : celui de la capture, aucun, ou une entrée audio (câble virtuel, mixage stéréo…).
+async function audioFor(stream) {
+  if (adv.audio === "system") return stream;
+  for (const t of stream.getAudioTracks()) { stream.removeTrack(t); t.stop(); }
+  if (adv.audio.startsWith("dev:")) {
+    try {
+      const mic = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: adv.audio.slice(4) }, echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 2 } });
+      for (const t of mic.getAudioTracks()) stream.addTrack(t);
+    } catch (e) { say("Entrée audio indisponible : " + e.message); }
+  }
+  return stream;
+}
+// Changer de son en plein partage : la nouvelle piste remplace l'ancienne chez chacun, sans renégocier.
+async function swapAudio() {
+  const old = local.getAudioTracks()[0] || null;
+  let track = null;
+  if (adv.audio.startsWith("dev:")) track = (await audioFor(new MediaStream())).getAudioTracks()[0] || null;
+  else if (adv.audio === "system") return say("Pour reprendre le son de l'ordinateur, relance le partage.");
+  if (old) { local.removeTrack(old); old.stop(); }
+  if (track) { track.contentHint = "music"; local.addTrack(track); }
+  closePeers(); // chacun est renégocié avec le nouveau son (une seconde de coupure)
+}
+async function share(what, stream, video = null) {
   stopLocal();
   closePeers();
-  local = stream; fileVideo = video; shareGrace = Date.now() + 5000; quality = q;
-  const v = local.getVideoTracks()[0];
-  if (v) v.contentHint = q.hint; // motion : on partage surtout des films ; detail : du texte, gardé net
-  for (const t of local.getTracks()) t.onended = () => { if (local === stream && what !== "file") { stopLocal(); send("unshare"); } };
+  local = what === "file" ? stream : await audioFor(stream); fileVideo = video; localWhat = what; shareGrace = Date.now() + 5000;
+  applyQuality();
+  for (const t of local.getVideoTracks()) t.onended = () => { if (local === stream && what !== "file") { stopLocal(); send("unshare"); } };
   mediaKey = "";
   await send("share", { what, peer: state.you.peer });
 }
-// Dans l'application ONIRIQUE CENTRAL : son propre choix d'écran ou de fenêtre (avec le son de l'ordinateur), en 1080p 60 i/s.
-const app = window.oniriqueApp && window.oniriqueApp.screens ? window.oniriqueApp : null;
-let pick = null, pickQ = "motion";
+
+// Dans l'application ONIRIQUE CENTRAL : son propre choix d'écran ou de fenêtre (avec le son de l'ordinateur).
+let pick = null, pickQ = adv.pref === "detail" ? "detail" : "motion";
 async function appShare() {
   const res = await app.screens().catch(() => null);
   if (!res || !res.sources.length) return say("Aucun écran à partager : l'application n'a pas l'autorisation d'enregistrer l'écran.");
   pick = null; $("pk-go").disabled = true;
-  $("pk-audio-row").hidden = !res.audio;
+  const sel = $("pk-audio");
+  sel.querySelector('option[value="system"]').hidden = !res.audio;
+  sel.value = adv.audio.startsWith("dev:") ? "pick" : res.audio ? adv.audio : "none";
+  if (sel.value === "pick") { await fillAudioInputs(sel); sel.value = adv.audio; }
   $("pk-list").replaceChildren(...res.sources.map((x) => el("button", { className: "src", type: "button", title: x.name,
     onclick: (e) => { pick = x.id; $("pk-go").disabled = false; for (const b of $("pk-list").children) b.classList.toggle("on", b === e.currentTarget); },
     ondblclick: () => $("pk-go").click() }, el("img", { src: x.thumb, alt: "" }), el("span", { textContent: (x.kind === "screen" ? "Écran · " : "") + x.name }))));
+  for (const o of document.querySelectorAll("#picker .seg")) o.setAttribute("aria-pressed", String(o.dataset.q === pickQ));
   $("picker").showModal();
 }
+$("pk-audio").onchange = async (e) => {
+  if (e.target.value === "pick") { await fillAudioInputs(e.target); const dev = [...e.target.options].find((o) => o.value.startsWith("dev:")); e.target.value = dev ? dev.value : "none"; }
+};
 for (const b of document.querySelectorAll("#picker .seg")) b.onclick = () => {
   pickQ = b.dataset.q;
   for (const o of document.querySelectorAll("#picker .seg")) o.setAttribute("aria-pressed", String(o === b));
@@ -478,16 +779,20 @@ for (const b of document.querySelectorAll("#picker .seg")) b.onclick = () => {
 $("pk-close").onclick = () => $("picker").close();
 $("pk-go").onclick = async () => {
   if (!pick) return;
-  const audio = !$("pk-audio-row").hidden && $("pk-audio").checked, q = QUALITY[pickQ];
+  // Fluidité : 1080p à 60 i/s ; Netteté : la définition de l'écran, 30 i/s. Les réglages avancés restent modifiables ensuite.
+  Object.assign(adv, pickQ === "motion" ? { pref: "motion", fps: "60", height: "1080" } : { pref: "detail", fps: "30", height: "source" }, { audio: $("pk-audio").value });
+  try { localStorage.setItem("onirique.wp.adv", JSON.stringify(adv)); } catch { /* stockage fermé */ }
+  drawAdv();
   $("picker").close();
-  await app.pickScreen(pick, audio);
-  const size = pickQ === "motion" ? { width: { ideal: 1920 }, height: { ideal: 1080 } } : { width: { ideal: 2560 }, height: { ideal: 1440 } };
-  navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: q.fps }, ...size }, audio })
-    .then((s) => share("screen", s, null, q), (e) => say("Partage d'écran impossible : " + e.message));
+  await app.pickScreen(pick, adv.audio === "system");
+  navigator.mediaDevices.getDisplayMedia({ video: captureConstraints(), audio: adv.audio === "system" })
+    .then((s) => share("screen", s), (e) => say("Partage d'écran impossible : " + e.message));
 };
-$("sh-screen").onclick = () => app ? appShare() : navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: true })
+$("sh-screen").onclick = () => app ? appShare() : navigator.mediaDevices.getDisplayMedia({ video: captureConstraints(), audio: adv.audio === "system",
+  // Chrome : l'onglet partagé n'envoie que son propre son (pas Discord) ; le son du système reste proposé.
+  systemAudio: "include", selfBrowserSurface: "exclude", surfaceSwitching: "include" })
   .then((s) => share("screen", s), (e) => e.name !== "NotAllowedError" && say("Partage d'écran impossible : " + e.message));
-$("sh-camera").onclick = () => navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: true })
+$("sh-camera").onclick = () => navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } }, audio: true })
   .then((s) => share("camera", s), (e) => say("Caméra indisponible : " + e.message));
 $("sh-file").onclick = () => $("file").click();
 // Un fichier de l'ordinateur : lu ici, et son image envoyée en direct aux autres (rien n'est envoyé sur nos serveurs).

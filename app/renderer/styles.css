@@ -405,6 +405,8 @@ button.key.copy:hover { color: var(--pink); }
 .sidebar.compact .nav-item { grid-template-columns: 1fr; justify-items: center; gap: 6px; padding: 12px 6px; }
 .sidebar.compact .nav-item .ico { grid-row: auto; }
 .sidebar.compact .nav-item .name { font-size: 10px; }
+/* Un nom long (WATCHPARTY) tient dans la colonne étroite au lieu d'être coupé. */
+.sidebar.compact .nav-item .name.long { font-size: 7px; letter-spacing: .02em; max-width: 100%; overflow-wrap: anywhere; text-align: center; }
 .menu-toggle { all: unset; cursor: pointer; display: grid; place-items: center; height: 30px; border-radius: 10px; color: var(--haze);
   font: 500 10px var(--mono); letter-spacing: .12em; text-transform: uppercase; background: rgba(255,255,255,.04); box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset; transition: color .25s, background .25s; }
 .menu-toggle:hover { color: #fff; background: rgba(255,255,255,.07); }

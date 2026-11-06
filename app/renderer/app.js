@@ -306,7 +306,7 @@ function compactSidebar() {
   const name = state.route.name, [label] = TOOL_NAMES[name];
   return h('nav', { class: 'sidebar compact' },
     h('button', { class: 'nav-item active', title: `${label} : accueil`, 'aria-current': 'page', onclick: () => call('tool:home', name).catch(() => {}) },
-      navIcon(name), h('span', { class: 'name' }, label)),
+      navIcon(name), h('span', { class: `name${label.length > 6 ? ' long' : ''}` }, label)),
     h('button', { class: 'menu-toggle tool-back', type: 'button', title: 'Revenir à la page précédente', 'aria-label': 'Revenir à la page précédente',
       onclick: async () => {
         // D'abord la page d'avant dans l'outil, sinon l'écran d'avant dans l'application.
