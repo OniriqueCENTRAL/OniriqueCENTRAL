@@ -5,66 +5,66 @@
 <meta name="robots" content="noindex">
 <title>ONR Neural Learning</title>
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
+<script src="assets/i18n.js?v=cede88a9"></script>
+<script src="assets/ui.js?v=4"></script>
 <link rel="stylesheet" href="assets/fonts.css">
 <style>
 /* ONR NEURAL LEARNING, la page des fondateurs : le cerveau de CRÉER LE MIX (VOCALBOX) en constellation, comme le graphe d'un
    coffre Obsidian, et à côté, en texte simple, ce qu'il sait et ce que les utilisateurs lui apprennent. */
 :root {
-  --night: #07040f; --panel: rgba(16,10,30,.86); --line: rgba(190,160,255,.16); --mist: #EEE8FA; --haze: #9C90B8;
-  --violet: #a98bff; --pink: #ff7ac8; --cyan: #6fe3ff; --gold: #ffd27a; --yes: #7dffb0; --no: #ff6b7a;
-  --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
-  --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
-  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
-  color-scheme: dark;
+  /* les tokens viennent de da.css (DA « Nuit & Braise », accent du compte) ; ici, seulement les rôles du graphe */
+  --n-artist: rgb(var(--acc)); --n-est: #ffb3bb; --n-found: #F4ECEC; --n-genre: #d9c6c9; --n-hint: rgb(var(--acc-hi));
+  --n-param: #9c878b; --n-yes: #F4ECEC; --n-no: rgb(var(--acc-lo)); --n-none: #5a4b4f;
+  --panel: rgba(18,12,14,.72);
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-html, body { margin: 0; height: 100%; background: var(--night); color: var(--mist); font: 400 14px/1.55 var(--f-body); -webkit-font-smoothing: antialiased; }
+html, body { margin: 0; height: 100%; color: var(--mist); font: 400 14px/1.55 var(--f-body); -webkit-font-smoothing: antialiased; }
 body { display: grid; grid-template-columns: 1fr 400px; grid-template-rows: 100%; overflow: hidden; }
-a { color: var(--violet); }
+a { color: rgb(var(--acc-hi)); }
 button, input { font: inherit; color: inherit; }
-#stage { position: relative; min-width: 0; overflow: hidden;
-  background: radial-gradient(1200px 800px at 55% 45%, rgba(110,70,200,.22), transparent 60%), radial-gradient(900px 700px at 90% 100%, rgba(255,90,170,.08), transparent 60%), var(--night); }
+#stage { position: relative; min-width: 0; overflow: hidden; background: transparent; }
 #graph { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: none; }
 #graph.drag { cursor: grabbing; }
 .top { position: absolute; left: 16px; top: 14px; right: 16px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; pointer-events: none; }
 .top > * { pointer-events: auto; }
 .crumb { font: 600 12px var(--f-body); color: var(--haze); letter-spacing: .02em; margin-right: 8px; }
 .crumb b { color: var(--mist); }
-.chip { border: 1px solid var(--line); background: rgba(16,10,30,.7); border-radius: 999px; padding: 5px 11px; font-size: 12px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.chip { border: 1px solid var(--line); background: var(--glass); box-shadow: var(--glass-shadow); backdrop-filter: blur(10px); border-radius: 999px; padding: 5px 11px; font-size: 12px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; transition: background .2s var(--ease), box-shadow .2s var(--ease); }
+.chip[aria-pressed="true"] { background: var(--lit); box-shadow: var(--lit-shadow); }
 .chip[aria-pressed="false"] { opacity: .45; }
 .chip i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-#find { border: 1px solid var(--line); background: rgba(16,10,30,.7); border-radius: 999px; padding: 5px 12px; width: 190px; font-size: 12px; outline: none; }
-#find:focus { border-color: var(--violet); }
+#find { border: 1px solid var(--line); background: var(--glass); box-shadow: var(--glass-shadow); backdrop-filter: blur(10px); border-radius: 999px; padding: 5px 12px; width: 190px; font-size: 12px; outline: none; }
+#find:focus { border-color: rgb(var(--acc-hi)); }
 .legend { position: absolute; left: 16px; bottom: 14px; font-size: 11px; color: var(--haze); display: flex; gap: 12px; flex-wrap: wrap; pointer-events: none; }
 .legend span { display: inline-flex; align-items: center; gap: 5px; }
 .legend i { width: 8px; height: 8px; border-radius: 50%; }
 #tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 5px 9px; font-size: 12px; white-space: nowrap; transform: translate(12px, 12px); }
 
-aside { background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto; padding: 22px 22px 40px; backdrop-filter: blur(12px); }
+aside { background: var(--glass), var(--panel); box-shadow: var(--glass-shadow); border-left: 1px solid var(--line); overflow-y: auto; padding: 22px 22px 40px; backdrop-filter: blur(12px); }
 h1 { font: 700 20px/1.2 var(--f-display); margin: 0 0 4px; letter-spacing: .02em; }
-h1 span { color: var(--violet); }
+h1 span { color: rgb(var(--acc-hi)); text-shadow: var(--glow); }
 h2 { font: 700 11px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); margin: 26px 0 10px; }
 .lead { color: var(--haze); margin: 0 0 6px; }
 p { margin: 0 0 10px; }
 .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.stat { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: rgba(255,255,255,.02); }
+.stat { border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; background: var(--glass); box-shadow: var(--glass-shadow); }
 .stat b { display: block; font: 700 20px var(--f-display); }
 .stat small { color: var(--haze); font-size: 11.5px; }
 .bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,.07); overflow: hidden; margin-top: 4px; }
-.bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--violet), var(--pink)); }
-.row { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(190,160,255,.08); }
+.bar > i { display: block; height: 100%; background: linear-gradient(90deg, rgb(var(--acc-lo)), rgb(var(--acc)), rgb(var(--acc-hi))); }
+.row { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
 .row span:last-child { color: var(--haze); text-align: right; font-variant-numeric: tabular-nums; }
 .row.click { cursor: pointer; }
-.row.click:hover span:first-child { color: var(--violet); }
-.tag { display: inline-block; font: 600 10.5px var(--f-mono); letter-spacing: .06em; border-radius: 6px; padding: 2px 6px; margin: 0 4px 4px 0; background: rgba(169,139,255,.14); color: var(--violet); }
-.tag.yes { background: rgba(125,255,176,.12); color: var(--yes); } .tag.no { background: rgba(255,107,122,.12); color: var(--no); }
-.tag.found { background: rgba(111,227,255,.12); color: var(--cyan); } .tag.est { background: rgba(255,122,200,.12); color: var(--pink); }
-.quote { border-left: 2px solid var(--violet); padding: 4px 10px; color: var(--mist); margin: 0 0 10px; font-style: italic; }
+.row.click:hover span:first-child { color: rgb(var(--acc-hi)); }
+.tag { display: inline-block; font: 600 10.5px var(--f-mono); letter-spacing: .06em; border-radius: 6px; padding: 2px 6px; margin: 0 4px 4px 0; background: rgba(var(--acc),.16); color: rgb(var(--acc-hi)); }
+.tag.yes { background: rgba(244,236,236,.12); color: var(--n-yes); } .tag.no { background: rgba(var(--acc-lo),.35); color: #ff9aa6; }
+.tag.found { background: rgba(244,236,236,.1); color: var(--n-found); } .tag.est { background: rgba(255,179,187,.12); color: var(--n-est); }
+.quote { border-left: 2px solid rgb(var(--acc)); padding: 4px 10px; color: var(--mist); margin: 0 0 10px; font-style: italic; }
 .muted { color: var(--haze); }
 .kv { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; font-size: 13px; }
 .kv dt { color: var(--haze); } .kv dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
-#gate { position: fixed; inset: 0; display: grid; place-items: center; text-align: center; background: var(--night); z-index: 5; padding: 24px; }
+#gate { position: fixed; inset: 0; display: grid; place-items: center; text-align: center; background: rgba(9,8,10,.6); backdrop-filter: blur(6px); z-index: 5; padding: 24px; }
 #gate h1 { font-size: 22px; }
 .close { float: right; border: 0; background: none; color: var(--haze); cursor: pointer; font-size: 18px; line-height: 1; }
 
@@ -76,10 +76,12 @@ p { margin: 0 0 10px; }
   #find { width: 140px; }
 }
 </style>
+<link rel="stylesheet" href="/assets/da.css?v=7">
+<script src="/assets/accent.js?v=1"></script>
 
 <div id="gate">
   <div>
-    <h1>ONR <span style="color:var(--violet)">Neural Learning</span></h1>
+    <h1>ONR <span style="color:rgb(var(--acc-hi))">Neural Learning</span></h1>
     <p class="muted" id="gateMsg">Chargement…</p>
   </div>
 </div>
@@ -89,18 +91,18 @@ p { margin: 0 0 10px; }
   <div class="top">
     <span class="crumb">VOCALBOX → <b>Vue graphique</b></span>
     <input id="find" type="search" placeholder="Chercher un artiste, un réglage…" aria-label="Chercher dans le cerveau">
-    <button class="chip" data-kind="feedback" aria-pressed="true"><i style="background:var(--yes)"></i>Retours</button>
-    <button class="chip" data-kind="hint" aria-pressed="true"><i style="background:var(--gold)"></i>Couleurs</button>
-    <button class="chip" data-kind="param" aria-pressed="true"><i style="background:var(--pink)"></i>Retouches</button>
-    <button class="chip" data-kind="miss" aria-pressed="false"><i style="background:#666"></i>Introuvables</button>
+    <button class="chip" data-kind="feedback" aria-pressed="true"><i style="background:var(--n-yes)"></i>Retours</button>
+    <button class="chip" data-kind="hint" aria-pressed="true"><i style="background:var(--n-hint)"></i>Couleurs</button>
+    <button class="chip" data-kind="param" aria-pressed="true"><i style="background:var(--n-param)"></i>Retouches</button>
+    <button class="chip" data-kind="miss" aria-pressed="false"><i style="background:var(--n-none)"></i>Introuvables</button>
   </div>
   <div class="legend">
     <span><i style="background:#fff"></i>cerveau</span>
-    <span><i style="background:var(--violet)"></i>artiste livré</span>
-    <span><i style="background:var(--pink)"></i>artiste estimé</span>
-    <span><i style="background:var(--cyan)"></i>trouvé par le serveur</span>
-    <span><i style="background:var(--yes)"></i>OUI</span>
-    <span><i style="background:var(--no)"></i>BOF</span>
+    <span><i style="background:var(--n-artist)"></i>artiste livré</span>
+    <span><i style="background:var(--n-est)"></i>artiste estimé</span>
+    <span><i style="background:var(--n-found)"></i>trouvé par le serveur</span>
+    <span><i style="background:var(--n-yes)"></i>OUI</span>
+    <span><i style="background:var(--n-no)"></i>BOF</span>
   </div>
   <div id="tip" hidden></div>
 </main>
@@ -120,6 +122,7 @@ const fill = (node, ...kids) => node.append(...kids.flat(3).filter((k) => k != n
 const token = (() => { try { return sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"); } catch { return null; } })();
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const rgbOfAcc = (v) => `rgb(${css(v)})`;
 
 const HINTS = { bright: "brillance", air: "air", warm: "chaleur", dark: "sombre", comp: "compression", reverb: "réverbe", reverbSize: "taille de réverbe",
   delay: "delay", sat: "saturation", doubler: "doubleur", chorus: "chorus", controlled: "voix maîtrisée", parallel: "compression parallèle", dreamy: "aérienne / rêveuse" };
@@ -167,7 +170,8 @@ function link(a, b, w = 1) {
 }
 function build() {
   nodes = []; links = []; byId = new Map(); adj = new Map();
-  const C = { violet: css("--violet"), pink: css("--pink"), cyan: css("--cyan"), gold: css("--gold"), yes: css("--yes"), no: css("--no") };
+  const rgbOf = (v) => (/^\d/.test(v) ? `rgb(${v})` : v);
+  const C = { violet: rgbOf(css("--acc")), pink: css("--n-est"), cyan: css("--n-found"), gold: rgbOf(css("--acc-hi")), yes: css("--n-yes"), no: rgbOf(css("--acc-lo")), param: css("--n-param"), genre: css("--n-genre") };
   add("brain", "brain", "ONR", 16, "#ffffff", null).fx = 0;
   byId.get("brain").fy = 0;
   if (shown.hint) for (const k in HINTS) add("h:" + k, "hint", HINTS[k], 6, C.gold, { key: k });
@@ -176,7 +180,7 @@ function build() {
     const key = norm(a.name); if (!key || artists.has(key)) return;
     artists.set(key, a);
     const genre = (a.genre || "autre").toLowerCase();
-    add("g:" + genre, "genre", genre, 9, "#d9ccff", { genre }); link("brain", "g:" + genre, 2);
+    add("g:" + genre, "genre", genre, 9, C.genre, { genre }); link("brain", "g:" + genre, 2);
     const color = src === "found" ? C.cyan : a.estimate ? C.pink : C.violet;
     add("a:" + key, "artist", a.name, 5, color, { ...a, src }); link("g:" + genre, "a:" + key, 1.4);
     if (shown.hint) for (const [k, v] of Object.entries(a.hints || {})) if (HINTS[k] && (v === true || (typeof v === "number" && Math.abs(v) >= 0.45))) link("a:" + key, "h:" + k, .5);
@@ -184,12 +188,12 @@ function build() {
   for (const a of D.shipped.artists || []) addArtist(a, "shipped");
   for (const a of D.found || []) addArtist(a, "found");
   if (shown.feedback) for (const f of D.feedback.slice(0, 700)) {
-    const color = f.rating > 0 ? C.yes : f.rating < 0 ? C.no : "#8f86a8";
+    const color = f.rating > 0 ? C.yes : f.rating < 0 ? C.no : "#5a4b4f";
     add("f:" + f.id, "feedback", (f.request || "(sans demande)").slice(0, 60), 2.6, color, f);
     let any = false;
     for (const name of f.artists || []) { const k = norm(String(name).replace(/^fa[cç]on /i, "")); if (byId.has("a:" + k)) { link("f:" + f.id, "a:" + k, .8); any = true; } }
     if (!any) link("f:" + f.id, "brain", .25);
-    if (shown.param) for (const id of Object.keys(f.final || {})) { add("p:" + id, "param", paramName(id), 4, C.pink, { id }); link("f:" + f.id, "p:" + id, .5); }
+    if (shown.param) for (const id of Object.keys(f.final || {})) { add("p:" + id, "param", paramName(id), 4, C.param, { id }); link("f:" + f.id, "p:" + id, .5); }
   }
   if (shown.miss) for (const m of D.misses) { add("m:" + m.query, "miss", m.query, 2.4, "#666", m); link("m:" + m.query, "brain", .2); }
   for (const n of nodes) if (n.kind === "param" || n.kind === "genre" || n.kind === "hint") n.r += Math.min(6, Math.sqrt(n.deg) * .8);
@@ -238,22 +242,23 @@ const toScreen = (n) => [W / 2 + (n.x + view.x) * view.k, H / 2 + (n.y + view.y)
 const toWorld = (sx, sy) => [(sx - W / 2) / view.k - view.x, (sy - H / 2) / view.k - view.y];
 
 function draw(t) {
+  const A = css("--acc"), AH = `rgb(${css("--acc-hi")})`;   // l'accent du compte, lu une fois par image
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.clearRect(0, 0, W, H);
-  for (const s of stars) { g.globalAlpha = .25 + .5 * Math.abs(Math.sin(s.p + t / 1600)); g.fillStyle = "#cfc4ff"; g.fillRect(s.x, s.y, s.r, s.r); }
+  for (const s of stars) { g.globalAlpha = .25 + .5 * Math.abs(Math.sin(s.p + t / 1600)); g.fillStyle = "#f4dfe2"; g.fillRect(s.x, s.y, s.r, s.r); }
   // la lune
   g.globalAlpha = 1;
   const mx = W * .16, my = H * .2, mr = Math.min(W, H) * .07;
-  const glow = g.createRadialGradient(mx, my, mr * .5, mx, my, mr * 2.4); glow.addColorStop(0, "rgba(190,160,255,.25)"); glow.addColorStop(1, "rgba(190,160,255,0)");
+  const glow = g.createRadialGradient(mx, my, mr * .5, mx, my, mr * 2.4); glow.addColorStop(0, `rgba(${A},.28)`); glow.addColorStop(1, `rgba(${A},0)`);
   g.fillStyle = glow; g.beginPath(); g.arc(mx, my, mr * 2.4, 0, 6.283); g.fill();
-  g.fillStyle = "#e6dcff"; g.beginPath(); g.arc(mx, my, mr, 0, 6.283); g.fill();
+  g.fillStyle = "#f4ecec"; g.beginPath(); g.arc(mx, my, mr, 0, 6.283); g.fill();
   g.save(); g.globalCompositeOperation = "destination-out"; g.beginPath(); g.arc(mx + mr * .5, my - mr * .28, mr * .86, 0, 6.283); g.fill(); g.restore();
 
   const focus = picked || hover, near = focus ? adj.get(focus.id) || new Set() : null;
   g.lineWidth = 1;
   for (const l of links) {
     const on = focus && (l.a === focus || l.b === focus);
-    g.strokeStyle = on ? "rgba(230,215,255,.75)" : focus ? "rgba(169,139,255,.05)" : `rgba(169,139,255,${.1 + .08 * Math.min(2, l.w)})`;
+    g.strokeStyle = on ? "rgba(255,236,238,.8)" : focus ? `rgba(${A},.05)` : `rgba(${A},${.1 + .08 * Math.min(2, l.w)})`;
     const [x1, y1] = toScreen(l.a), [x2, y2] = toScreen(l.b);
     g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
   }
@@ -269,7 +274,7 @@ function draw(t) {
     const label = n.kind === "brain" || n.kind === "genre" || n.kind === "hint" || (n.kind === "artist" && view.k > .75) || (n.kind === "param" && view.k > .9) || n === focus || (near && near.has(n.id) && n.kind !== "feedback");
     if (label && !dim) {
       g.font = (n.kind === "brain" ? "700 13px " : n.kind === "genre" ? "600 12px " : "500 11px ") + css("--f-body");
-      g.fillStyle = n.kind === "hint" ? "#ffe3a8" : "rgba(238,232,250,.9)"; g.textAlign = "center";
+      g.fillStyle = n.kind === "hint" ? AH : "rgba(244,236,236,.9)"; g.textAlign = "center";
       g.fillText(n.label, x, y + r + 12);
     }
   }
