@@ -15,10 +15,6 @@
   const asked = new URLSearchParams(location.search).get("lang");
   let saved = null;
   try { saved = localStorage.getItem(KEY); } catch { /* stockage fermé : français, ou ?lang=en */ }
-  // Dans l'application, la langue est gardée par main.js (le localStorage peut perdre ses dernières écritures).
-  const app = window.central && window.central.setPref;
-  if (app && window.central.prefs.lang) saved = window.central.prefs.lang;
-  else if (app && saved) window.central.setPref("lang", saved);
   if (asked === "en" || asked === "fr") { saved = asked; try { localStorage.setItem(KEY, asked); } catch {} }
   const lang = saved === "en" ? "en" : "fr";
   const base = (document.currentScript && document.currentScript.src) ? document.currentScript.src.replace(/i18n\.js(\?.*)?$/, "") : "assets/";
@@ -27,7 +23,6 @@
     lang,
     set(next) {
       try { localStorage.setItem(KEY, next === "en" ? "en" : "fr"); } catch {}
-      if (app) window.central.setPref("lang", next === "en" ? "en" : "fr");
       document.dispatchEvent(new CustomEvent("onirique:lang", { detail: next }));
       // L'application (qui refuse les navigations de sa page) se recharge elle-même.
       if (window.central && window.central.window) { window.central.window("reload"); return; }

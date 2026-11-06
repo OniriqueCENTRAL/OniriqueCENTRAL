@@ -25,7 +25,7 @@ const NAV = [
 const page = ({ file, title, description, intro, body }) => `<!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=bce13d40"></script>
+<script src="assets/i18n.js?v=f055a3d8"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=2"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -35,7 +35,7 @@ const page = ({ file, title, description, intro, body }) => `<!doctype html>
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="stylesheet" href="assets/fonts.css">
 <link rel="stylesheet" href="assets/pages.css?v=2">
-<link rel="stylesheet" href="/assets/da.css?v=4">
+<link rel="stylesheet" href="/assets/da.css?v=5">
 <script src="/assets/accent.js?v=1"></script>
 
 <a class="skip" href="#contenu">Aller au contenu</a>

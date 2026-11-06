@@ -90,10 +90,11 @@ header .tools-menu a:hover, header .sn-social-drop a:hover { color: #fff; backgr
 @media (max-width: 380px) { header .btn { letter-spacing: .02em !important; padding-inline: 9px !important; white-space: normal; } }
 
 /* Verre : cartes et panneaux */
-.card, .panel {
+/* (pas les cartes des fausses interfaces de plugin de l'accueil, .ui .card, dessinées à leur échelle) */
+.card:not(.ui *), .panel {
   background: var(--glass), rgba(14,10,12,.55); border-color: var(--line); border-radius: 22px; box-shadow: var(--glass-shadow);
 }
-.card .head, .card .dim { background: rgba(0,0,0,.28); }
+.card:not(.ui *) .head, .card:not(.ui *) .dim { background: rgba(0,0,0,.28); }
 
 /* Champs : creusés dans le verre ; au focus, liseré et lueur de l'accent */
 input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]), select, textarea {
