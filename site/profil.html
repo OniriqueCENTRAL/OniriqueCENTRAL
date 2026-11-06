@@ -11,7 +11,7 @@
 <style>
 /* Mêmes tokens que compte.html ; --ember prend la couleur choisie par le propriétaire de la page. */
 :root {
-  --night: #0D0809; --line: rgba(255,210,214,.13); --mist: #F6EEEE; --haze: #A88F92; --ember: #E23444;
+  --night: #0D0809; --line: rgba(255,210,214,.13); --mist: #F6EEEE; --haze: #A88F92; --ember: rgb(var(--acc));
   --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
   --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
   --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
@@ -27,7 +27,7 @@ a { color: inherit; }
 header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.6); backdrop-filter: blur(14px); }
 header .wrap { max-width: 1180px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 16px; }
 .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 800 17px/1 var(--f-display); letter-spacing: .16em; }
-.brand img { width: 44px; height: auto; margin-block: -12px; filter: drop-shadow(0 0 6px rgba(226,52,68,.8)); }
+.brand img { width: 44px; height: auto; margin-block: -12px; filter: drop-shadow(0 0 6px rgba(var(--acc),.8)); }
 .between { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 main { padding-block: clamp(20px, 4vw, 40px) 120px; }
 h1 { font: 800 clamp(24px, 4.5vw, 34px)/1.1 var(--f-display); margin: 0; }
@@ -130,6 +130,8 @@ select { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px sol
 .open-badge { justify-self: start; padding: 6px 12px; border-radius: 999px; font: 500 11px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: #b9f5c9; border: 1px solid rgba(120,230,150,.45); background: rgba(80,200,120,.12); }
 .link-rows div { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; }
 </style>
+<link rel="stylesheet" href="/assets/da.css?v=1">
+<script src="/assets/accent.js?v=1"></script>
 
 <header>
   <div class="wrap">
@@ -452,5 +454,5 @@ async function load() {
 load();
 </script>
 <script src="assets/cropper.js?v=3"></script>
-<script src="assets/site-nav.js?v=18"></script>
+<script src="assets/site-nav.js?v=19"></script>
 </html>

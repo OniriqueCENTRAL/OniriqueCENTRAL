@@ -11,14 +11,16 @@
 <link rel="canonical" href="https://onirique.store/delais">
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
-<link rel="stylesheet" href="assets/pages.css">
-<link rel="stylesheet" href="assets/tools.css">
+<link rel="stylesheet" href="assets/pages.css?v=2">
+<link rel="stylesheet" href="assets/tools.css?v=2">
 <style>
 .bpm { display: grid; grid-template-columns: minmax(0, 220px) auto; gap: 14px; align-items: end; justify-content: center; }
 .bpm input { font: 800 28px/1.2 var(--f-display) !important; text-align: center; }
 .card h2 { margin: 0 0 14px; font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); }
-.copied { position: fixed; left: 50%; bottom: 24px; translate: -50% 0; padding: 12px 18px; border-radius: 999px; background: var(--mist); color: var(--night); font: 600 14px/1 var(--f-body); box-shadow: 0 10px 40px -10px rgba(226,52,68,.8); }
+.copied { position: fixed; left: 50%; bottom: 24px; translate: -50% 0; padding: 12px 18px; border-radius: 999px; background: var(--mist); color: var(--night); font: 600 14px/1 var(--f-body); box-shadow: 0 10px 40px -10px rgba(var(--acc),.8); }
 </style>
+<link rel="stylesheet" href="/assets/da.css?v=1">
+<script src="/assets/accent.js?v=1"></script>
 
 <a class="skip" href="#contenu">Aller au contenu</a>
 <header>
@@ -134,6 +136,6 @@ $("bpm").oninput = draw;
 draw();
 </script>
 <script src="assets/tools-menu.js?v=13"></script>
-<script src="assets/account.js?v=12"></script>
-<script src="assets/site-nav.js?v=18"></script>
+<script src="assets/account.js?v=13"></script>
+<script src="assets/site-nav.js?v=19"></script>
 </html>

@@ -17,7 +17,7 @@
 /* L'appweb ONIRIQUE CUT : les vidéos gardées par les fondateurs dans le cloud CUT, sur téléphone, prêtes pour TikTok.
    Mêmes tokens que mes-sons.html. */
 :root {
-  --night: #0D0809; --line: rgba(255,210,214,.13); --mist: #F6EEEE; --haze: #A88F92; --ember: #E23444;
+  --night: #0D0809; --line: rgba(255,210,214,.13); --mist: #F6EEEE; --haze: #A88F92; --ember: rgb(var(--acc));
   --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
   --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
   --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
@@ -27,7 +27,7 @@
 [hidden] { display: none !important; }
 body { margin: 0; min-height: 100vh; color: var(--mist); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased; background: var(--night); }
 body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  background: radial-gradient(120% 60% at 50% 110%, rgba(140,6,20,.7), rgba(92,0,8,.35) 36%, transparent 72%); }
+  background: radial-gradient(120% 60% at 50% 110%, rgba(var(--acc-lo),.7), rgba(var(--acc-lo),.35) 36%, transparent 72%); }
 a { color: inherit; }
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
@@ -35,7 +35,7 @@ button { font: inherit; color: inherit; }
 header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.6); backdrop-filter: blur(14px); padding-top: env(safe-area-inset-top); position: sticky; top: 0; z-index: 2; }
 header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 14px; }
 .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font: 800 15px/1 var(--f-display); letter-spacing: .16em; }
-.brand img { width: 38px; height: auto; margin-block: -10px; filter: drop-shadow(0 0 6px rgba(226,52,68,.8)); }
+.brand img { width: 38px; height: auto; margin-block: -10px; filter: drop-shadow(0 0 6px rgba(var(--acc),.8)); }
 .brand span { color: var(--ember); }
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 main { padding-block: 22px calc(60px + env(safe-area-inset-bottom)); }
@@ -44,7 +44,7 @@ h1 { font: 800 clamp(26px, 7vw, 38px)/1.1 var(--f-display); margin: 8px 0 6px; }
 .muted { color: var(--haze); }
 .lead { margin: 0 0 14px; font-size: 15px; max-width: 60ch; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 18px; border-radius: 999px; border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
-.btn-primary { background: var(--mist); color: var(--night); box-shadow: 0 10px 40px -10px rgba(226,52,68,.6); }
+.btn-primary { background: var(--mist); color: var(--night); box-shadow: 0 10px 40px -10px rgba(var(--acc),.6); }
 .btn-ghost { background: rgba(255,255,255,.03); color: var(--mist); border-color: var(--line); }
 .btn-ghost:hover { border-color: var(--ember); }
 .btn.danger { color: #FF7A85; }
@@ -73,7 +73,7 @@ h1 { font: 800 clamp(26px, 7vw, 38px)/1.1 var(--f-display); margin: 8px 0 6px; }
 .card b { font: 700 14px/1.3 var(--f-body); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
 .card small { color: var(--haze); font-size: 12px; line-height: 1.3; }
 /* La vidéo ouverte : en grand, avec ses actions. Sur téléphone, toute la hauteur de l'écran. */
-dialog { padding: 0; border: 1px solid rgba(255,210,214,.16); border-radius: 24px; background: #150a0c; color: var(--mist); box-shadow: 0 40px 120px -30px #000, 0 0 60px -30px rgba(226,52,68,.6); max-width: calc(100vw - 24px);
+dialog { padding: 0; border: 1px solid rgba(255,210,214,.16); border-radius: 24px; background: #150a0c; color: var(--mist); box-shadow: 0 40px 120px -30px #000, 0 0 60px -30px rgba(var(--acc),.6); max-width: calc(100vw - 24px);
   top: env(safe-area-inset-top, 0px); bottom: env(safe-area-inset-bottom, 0px); max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
 dialog::backdrop { background: rgba(5,2,3,.8); backdrop-filter: blur(4px); }
 .dlg-head { display: flex; align-items: center; gap: 12px; padding: 16px 16px 0; }
@@ -102,6 +102,8 @@ dialog::backdrop { background: rgba(5,2,3,.8); backdrop-filter: blur(4px); }
 #install-help .steps li::before { counter-increment: step; content: counter(step); flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--ember); color: var(--night); font: 700 13px var(--f-body); }
 #install-help .share { display: inline-block; vertical-align: -4px; width: 18px; height: 18px; }
 </style>
+<link rel="stylesheet" href="/assets/da.css?v=1">
+<script src="/assets/accent.js?v=1"></script>
 <body>
 <header>
   <div class="wrap">

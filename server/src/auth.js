@@ -202,5 +202,6 @@ export function publicUser(user) {
     newsletter: user.marketing === 1, // a accepté de recevoir les nouveautés d'ONIRIQUE par e-mail
     twoFactor: !!user.totp_secret,    // double authentification activée
     rocky: user.rocky !== 0,           // les animations du mini ROCKY dans l'application
+    accent: user.accent || '',         // la couleur du site choisie par le compte (« #rrggbb »), vide : la braise
   };
 }

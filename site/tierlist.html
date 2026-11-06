@@ -8,7 +8,7 @@
 <meta name="robots" content="noindex">
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
-<link rel="stylesheet" href="assets/pages.css">
+<link rel="stylesheet" href="assets/pages.css?v=2">
 <style>
 .tl { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #111; }
 .tl-row { position: relative; display: grid; grid-template-columns: 110px 1fr; min-height: 92px; border-top: 1px solid #000; }
@@ -17,10 +17,10 @@
 .tl-label.long { font: 500 13px/1.3 var(--f-body); }
 .tl-label:focus { box-shadow: inset 0 0 0 2px #111; }
 .tl-drop { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 4px; padding: 4px; min-height: 84px; }
-.tl-drop.over, .tl-drop.target { background: rgba(226, 52, 68, .18); cursor: pointer; }
+.tl-drop.over, .tl-drop.target { background: rgba(var(--acc), .18); cursor: pointer; }
 .pool { margin-top: 18px; border: 1px dashed var(--line); border-radius: 12px; }
 .it { display: flex; flex-direction: column; width: 80px; border-radius: 6px; background: none; cursor: grab; touch-action: manipulation; border: 2px solid transparent; padding: 0; }
-.it.sel { border-color: var(--ember, #e23444); }
+.it.sel { border-color: var(--ember, rgb(var(--acc))); }
 .it .pic { position: relative; aspect-ratio: 1; border-radius: 4px; overflow: hidden; background: #2a0a0e; }
 .it .cap { padding: 2px 1px 0; color: var(--mist, #f6eeee); font: 11px/1.25 var(--f-body); text-align: center; overflow-wrap: anywhere; }
 .it img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
@@ -31,6 +31,8 @@
 .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 0 0 14px; }
 @media (max-width: 560px) { .tl-row { grid-template-columns: 76px 1fr; } .it { width: 64px; } }
 </style>
+<link rel="stylesheet" href="/assets/da.css?v=1">
+<script src="/assets/accent.js?v=1"></script>
 
 <a class="skip" href="#contenu">Aller au contenu</a>
 <header>

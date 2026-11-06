@@ -11,15 +11,17 @@
 <link rel="canonical" href="https://onirique.store/tap-tempo">
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
-<link rel="stylesheet" href="assets/pages.css">
-<link rel="stylesheet" href="assets/tools.css">
+<link rel="stylesheet" href="assets/pages.css?v=2">
+<link rel="stylesheet" href="assets/tools.css?v=2">
 <style>
 .pad { display: grid; place-items: center; gap: 6px; width: 100%; margin-top: 30px; padding: clamp(30px, 7vw, 60px) 20px; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(180deg, var(--deep-2), var(--deep)); color: var(--mist); font: inherit; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-tap-highlight-color: transparent; transition: border-color .12s, box-shadow .12s; }
-.pad.hit { border-color: var(--ember); box-shadow: 0 0 0 6px rgba(226,52,68,.18), 0 0 60px -10px rgba(226,52,68,.9); }
+.pad.hit { border-color: var(--ember); box-shadow: 0 0 0 6px rgba(var(--acc),.18), 0 0 60px -10px rgba(var(--acc),.9); }
 .pad .big { margin: 0; }
 .pad span { color: var(--haze); font-size: 15px; }
 .under { justify-content: center; margin-top: 18px; }
 </style>
+<link rel="stylesheet" href="/assets/da.css?v=1">
+<script src="/assets/accent.js?v=1"></script>
 
 <a class="skip" href="#contenu">Aller au contenu</a>
 <header>
@@ -99,6 +101,6 @@ addEventListener("keydown", (event) => {
 $("reset").onclick = () => { taps = []; show(); };
 </script>
 <script src="assets/tools-menu.js?v=13"></script>
-<script src="assets/account.js?v=12"></script>
-<script src="assets/site-nav.js?v=18"></script>
+<script src="assets/account.js?v=13"></script>
+<script src="assets/site-nav.js?v=19"></script>
 </html>

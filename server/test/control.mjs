@@ -148,6 +148,11 @@ try {
     await call('POST', '/api/me/profile', { token: founder.token, body: { instagram: 'https://www.instagram.com/onirique.ingé' }, expect: 400 });
     await call('POST', '/api/me/profile', { token: founder.token, body: { instagram: '@onirique.inge' } });
     assert.equal((await call('GET', '/api/me', { token: founder.token })).user.instagram, 'https://www.instagram.com/onirique.inge/');
+    await call('POST', '/api/me/profile', { token: founder.token, body: { accent: 'red' }, expect: 400 });
+    await call('POST', '/api/me/profile', { token: founder.token, body: { accent: '#3D7BFF' } });
+    assert.equal((await call('GET', '/api/me', { token: founder.token })).user.accent, '#3d7bff');
+    await call('POST', '/api/me/profile', { token: founder.token, body: { accent: '' } });
+    assert.equal((await call('GET', '/api/me', { token: founder.token })).user.accent, '');
     const founders = await call('GET', '/api/admin/founders', { token: admin.token });
     assert.deepEqual(founders.map((f) => f.id), [founder.id]);
     await call('POST', '/api/admin/credits', { token: admin.token, body: { spotifyUrl: 'https://open.spotify.com/track/0123456789abcdefghijkl', artist: 'Novi', title: 'Cinéma', engineerId: alice.id }, expect: 400 });

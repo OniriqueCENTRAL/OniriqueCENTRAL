@@ -1,0 +1,113 @@
+/* DA ONIRIQUE « Nuit & Braise » (charte d'après VOCALBOX : server/src/da-vocalbox.html), commune à tout le site.
+   Chargée après les styles de chaque page : elle fixe les couleurs, le fond, le verre, les boutons, les champs et les
+   mouvements ; la mise en page reste celle de la page. Une seule couleur vive, l'accent du compte (accent.js) :
+   --acc, --acc-hi (reflet clair) et --acc-lo (bas des dégradés), en « r, g, b ». La braise par défaut. */
+:root {
+  --acc: 229, 56, 74; --acc-hi: 255, 142, 154; --acc-lo: 122, 13, 28;
+  --night: #09080A; --deep: #121012; --deep-2: #0f0b0d; --blood: rgb(var(--acc-lo));
+  --mist: #F4ECEC; --bone: #F4ECEC; --soft: #cdb8bb; --haze: #a8939a; --label: #d9c6c9; --muted: #7d6a6e;
+  --ember: rgb(var(--acc)); --ember-text: rgb(var(--acc-hi)); --pink: rgb(var(--acc-hi)); --rose: #ffb3bb;
+  --line: rgba(255, 235, 238, .10);
+  --glass: linear-gradient(160deg, rgba(255,255,255,.075), rgba(255,255,255,.02) 40%, rgba(255,255,255,.035));
+  --glass-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.4), 0 18px 40px rgba(0,0,0,.45);
+  --lit: linear-gradient(180deg, rgba(var(--acc),.55), rgba(var(--acc-lo),.55));
+  --lit-shadow: 0 0 0 1px rgba(var(--acc-hi),.55) inset, 0 6px 22px rgba(var(--acc),.35);
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --glow: 0 0 18px rgba(var(--acc),.45);
+  --f-display: "Unbounded", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Hanken Grotesk", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --f-dream: var(--f-display);
+  color-scheme: dark;
+}
+
+/* Fond : la nuit et trois taches floues (en haut à gauche, en bas à droite, au centre) qui dérivent lentement.
+   --glow-1 / --glow-2 : la pochette écoutée peut teinter la page (CLOUD, écoute privée). */
+html { background: var(--night); }
+body { background: transparent; color: var(--mist); font-family: var(--f-body); }
+body::before {
+  content: ""; position: fixed; inset: -12vmax; z-index: -2; pointer-events: none;
+  background:
+    radial-gradient(42vmax 36vmax at 18% 14%, var(--glow-1, rgba(var(--acc-lo), .62)), transparent 70%),
+    radial-gradient(40vmax 34vmax at 86% 92%, var(--glow-2, rgba(var(--acc-lo), .48)), transparent 70%),
+    radial-gradient(30vmax 24vmax at 50% 50%, rgba(var(--acc-hi), .07), transparent 70%);
+  animation: da-drift 38s ease-in-out infinite alternate;
+}
+@keyframes da-drift { to { translate: 3vmax -2vmax; scale: 1.06; } }
+
+::selection { background: rgba(var(--acc), .85); color: #fff; }
+:focus-visible { outline: 2px solid rgb(var(--acc-hi)); outline-offset: 3px; }
+html { scrollbar-color: rgba(255,235,238,.16) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: rgba(255,235,238,.14); border-radius: 10px; border: 3px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* Titres : Unbounded 800, le mot mis en avant prend l'accent (plus de gothique ni de halo) */
+h1 { font-family: var(--f-display); font-weight: 800; letter-spacing: .02em; }
+h1 em, h2 em, em.dream { font: inherit; font-style: normal; color: rgb(var(--acc)); text-shadow: none; }
+.eyebrow { font-family: var(--f-mono); font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
+.eyebrow::before { filter: drop-shadow(0 0 5px rgb(var(--acc))) !important; }
+
+/* En-tête : une bande de verre sombre */
+body > header:not(.nav) { background: linear-gradient(180deg, rgba(9,8,10,.78), rgba(9,8,10,.5)); border-bottom-color: var(--line);
+  -webkit-backdrop-filter: blur(22px) saturate(140%); backdrop-filter: blur(22px) saturate(140%); }
+.brand { letter-spacing: .16em; }
+
+/* Boutons : JetBrains Mono en majuscules, rayon 12 ; le principal s'allume à l'accent, avec une lueur douce */
+.btn {
+  border-radius: 12px; font-family: var(--f-mono); font-weight: 500; font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+  transition: transform .25s var(--ease), box-shadow .25s var(--ease), background .25s, color .25s, border-color .25s;
+}
+.btn:not(.btn-primary) { background: rgba(255,255,255,.04); color: #d8c6c8; border-color: transparent; box-shadow: 0 0 0 1px rgba(255,255,255,.10) inset; }
+.btn:not(.btn-primary):hover { color: #fff; background: rgba(255,255,255,.07); border-color: transparent; transform: translateY(-1px); }
+.btn-primary { background: var(--lit); color: #fff; border-color: transparent; box-shadow: var(--lit-shadow); }
+.btn-primary:hover { color: #fff; transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(var(--acc-hi),.7) inset, 0 8px 26px rgba(var(--acc),.45); }
+.btn.danger { color: rgb(var(--acc-hi)); }
+
+/* Verre : cartes et panneaux */
+.card, .panel {
+  background: var(--glass), rgba(14,10,12,.55); border-color: var(--line); border-radius: 22px; box-shadow: var(--glass-shadow);
+}
+.card .head, .card .dim { background: rgba(0,0,0,.28); }
+
+/* Champs : creusés dans le verre ; au focus, liseré et lueur de l'accent */
+input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]), select, textarea {
+  border-radius: 12px; border-color: rgba(255,255,255,.10); background-color: rgba(0,0,0,.42);
+  transition: border-color .25s, box-shadow .25s;
+}
+input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]):focus, select:focus, textarea:focus {
+  outline: none; border-color: rgba(var(--acc-hi),.7); box-shadow: 0 0 18px rgba(var(--acc),.22);
+}
+input[type="range"], input[type="checkbox"], input[type="radio"], progress { accent-color: rgb(var(--acc)); }
+select option { background: var(--deep); color: var(--mist); }
+
+/* Zone de dépôt */
+.drop { border-radius: 22px; border-color: rgba(255,235,238,.16); background: rgba(0,0,0,.35); transition: border-color .3s, background .3s, transform .35s var(--ease); }
+.drop:hover, .drop.over { border-color: rgba(var(--acc-hi),.6); background: rgba(var(--acc),.06); }
+.drop svg { stroke: rgb(var(--acc-hi)); filter: drop-shadow(0 0 10px rgba(var(--acc),.7)); }
+
+/* Fenêtres par-dessus */
+dialog { border-radius: 30px; border-color: rgba(255,235,238,.14); background: linear-gradient(160deg, rgba(40,26,30,.96), rgba(16,12,14,.97) 45%, rgba(20,15,17,.97)); box-shadow: var(--glass-shadow), 0 30px 90px rgba(0,0,0,.6); }
+dialog::backdrop { background: rgba(5,4,5,.6); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+dialog[open] { animation: da-pop .45s var(--ease); }
+@keyframes da-pop { from { opacity: 0; translate: 0 14px; scale: .98; } }
+
+/* Arrivée de la page : chaque bloc monte de 18 et sort du flou, l'un après l'autre (charte : .55 s) */
+main > *:not(dialog):not(.reveal), .da-rise { animation: da-rise .6s var(--ease) backwards; }
+main > *:nth-child(2) { animation-delay: .06s; }
+main > *:nth-child(3) { animation-delay: .12s; }
+main > *:nth-child(4) { animation-delay: .18s; }
+main > *:nth-child(n+5) { animation-delay: .24s; }
+@keyframes da-rise { from { opacity: 0; translate: 0 18px; filter: blur(6px); } }
+
+/* Pied de page */
+footer { border-top-color: var(--line); }
+
+/* Mouvement réduit : tout arrive d'un coup, rien ne dérive */
+@media (prefers-reduced-motion: reduce) {
+  body::before, main > *, .da-rise, dialog[open] { animation: none !important; }
+  .btn, .drop { transition: none; }
+  .btn:hover, .btn-primary:hover { transform: none; }
+}
+/* Impression (devis, presskit, outils) : pas de fond */
+@media print { body::before { display: none; } html { background: #fff; } }

@@ -775,6 +775,11 @@ export function createApp() {
       run('UPDATE users SET instagram = ? WHERE id = ?', handle ? `https://www.instagram.com/${handle}/` : '', req.user.id);
     }
     if (typeof req.body.rocky === 'boolean') run('UPDATE users SET rocky = ? WHERE id = ?', req.body.rocky ? 1 : 0, req.user.id);
+    if (req.body.accent !== undefined) {
+      const accent = String(req.body.accent).toLowerCase();
+      if (accent && !/^#[0-9a-f]{6}$/.test(accent)) throw new HttpError(400, 'Couleur invalide.');
+      run('UPDATE users SET accent = ? WHERE id = ?', accent, req.user.id);
+    }
     res.json({ ok: true });
   });
 

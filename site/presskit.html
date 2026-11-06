@@ -11,12 +11,12 @@
 <link rel="canonical" href="https://onirique.store/presskit">
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
-<link rel="stylesheet" href="assets/pages.css">
-<link rel="stylesheet" href="assets/tools.css">
+<link rel="stylesheet" href="assets/pages.css?v=2">
+<link rel="stylesheet" href="assets/tools.css?v=2">
 <link rel="stylesheet" href="assets/outils-doc.css?v=2">
 <style>
 @page { size: A4; margin: 0; }
-.pk { --a: #E23444; --bg: #0D0809; --fg: #F6EEEE; --soft: rgba(246,238,238,.65); --rule: rgba(246,238,238,.15); --ft: var(--f-display);
+.pk { --a: rgb(var(--acc)); --bg: #0D0809; --fg: #F6EEEE; --soft: rgba(246,238,238,.65); --rule: rgba(246,238,238,.15); --ft: var(--f-display);
   background: var(--bg); color: var(--fg); font-family: var(--f-body); }
 .pk.light { --bg: #FAF9F5; --fg: #111; --soft: #5B5850; --rule: rgba(0,0,0,.12); }
 .pk-hero { position: relative; aspect-ratio: 16 / 10; background: linear-gradient(135deg, var(--a), var(--bg)); display: flex; align-items: flex-end; }
@@ -44,6 +44,8 @@
 .pk-contact strong { font: 700 15px var(--ft); }
 @media print { body:has(.pk:not(.light)) { background: #0D0809; } }
 </style>
+<link rel="stylesheet" href="/assets/da.css?v=1">
+<script src="/assets/accent.js?v=1"></script>
 
 <a class="skip" href="#contenu">Aller au contenu</a>
 <header>

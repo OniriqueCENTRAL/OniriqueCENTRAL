@@ -10,7 +10,7 @@
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
-<link rel="stylesheet" href="assets/pages.css">
+<link rel="stylesheet" href="assets/pages.css?v=2">
 <style>
 /* Page d'administration : la mise en page des pages de texte, en plus large, avec ses tuiles et ses actions. */
 .wrap { max-width: 1120px; }
@@ -25,9 +25,9 @@
 .disk-head b { font: 800 18px/1.2 var(--f-display); }
 .disk-head small { color: var(--haze); font-size: 13px; }
 .disk-bar { height: 12px; margin: 12px 0 10px; border-radius: 999px; background: rgba(0,0,0,.45); border: 1px solid var(--line); overflow: hidden; }
-.disk-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #8c0614, #e23444); transition: width .4s; }
+.disk-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #8c0614, rgb(var(--acc))); transition: width .4s; }
 .disk.warn .disk-bar i { background: linear-gradient(90deg, #b5651d, #f0a050); }
-.disk.full .disk-bar i { background: linear-gradient(90deg, #e23444, #ff5a68); box-shadow: 0 0 12px rgba(255,90,104,.7); }
+.disk.full .disk-bar i { background: linear-gradient(90deg, rgb(var(--acc)), #ff5a68); box-shadow: 0 0 12px rgba(255,90,104,.7); }
 .disk .alert { margin: 8px 0 0; font-size: 13px; color: #f0a050; }
 .disk.full .alert { color: #ff7a85; }
 .bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 30px 0 12px; }
@@ -42,10 +42,10 @@ td.actions button, td.actions select { margin: 2px 0 2px 6px; }
 select.act { appearance: none; -webkit-appearance: none; padding: 7px 30px 7px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--mist); font: 600 13px/1 var(--f-body); cursor: pointer;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23ff6b78' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") right 12px center / 10px no-repeat; }
 select.act:hover, select.act:focus-visible { border-color: var(--ember); outline: none; }
-select.act:focus-visible { box-shadow: 0 0 0 3px rgba(226,52,68,.3); }
+select.act:focus-visible { box-shadow: 0 0 0 3px rgba(var(--acc),.3); }
 select.act option { background: var(--deep); color: var(--mist); }
 .pill { display: inline-block; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line); font: 500 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--haze); white-space: nowrap; }
-.pill.on { color: var(--bone); border-color: rgba(226,52,68,.7); background: rgba(226,52,68,.18); }
+.pill.on { color: var(--bone); border-color: rgba(var(--acc),.7); background: rgba(var(--acc),.18); }
 .sub { color: var(--haze); font-size: 13px; }
 /* Abonnements : nom et prix se changent dans le tableau */
 #plans input:not([type="checkbox"]) { width: 100%; min-width: 90px; height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.4); color: var(--mist); font: 500 14px var(--f-body); }
@@ -82,8 +82,8 @@ td .thumb { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; ve
 .product input[type="text"], .product textarea { width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.4); color: var(--mist); font: 500 14px var(--f-body); }
 .product textarea { min-height: 42px; resize: vertical; }
 .product input[type="file"] { font: 500 13px var(--f-body); color: var(--haze); max-width: 100%; }
-.product input[type="file"]::file-selector-button { margin-right: 12px; padding: 9px 16px; border-radius: 999px; border: 1px solid rgba(226,52,68,.6); background: rgba(226,52,68,.14); color: var(--mist); font: 600 13px/1 var(--f-body); cursor: pointer; }
-.product input[type="file"]::file-selector-button:hover { background: rgba(226,52,68,.3); border-color: var(--ember); }
+.product input[type="file"]::file-selector-button { margin-right: 12px; padding: 9px 16px; border-radius: 999px; border: 1px solid rgba(var(--acc),.6); background: rgba(var(--acc),.14); color: var(--mist); font: 600 13px/1 var(--f-body); cursor: pointer; }
+.product input[type="file"]::file-selector-button:hover { background: rgba(var(--acc),.3); border-color: var(--ember); }
 button.act[type="submit"] { background: var(--mist); color: var(--night); border-color: transparent; padding: 10px 18px; }
 .product .row { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 progress { width: 180px; height: 8px; accent-color: var(--ember); }
@@ -123,7 +123,7 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
 .mail { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 14px; margin-top: 14px; }
 .mail-list { border: 1px solid var(--line); border-radius: 14px; background: var(--deep); max-height: 720px; overflow-y: auto; }
 .mail-item { display: block; width: 100%; padding: 12px 14px; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--haze); text-align: left; cursor: pointer; font: 400 13px/1.35 var(--f-body); }
-.mail-item:hover, .mail-item[aria-current="true"] { background: rgba(226,52,68,.12); }
+.mail-item:hover, .mail-item[aria-current="true"] { background: rgba(var(--acc),.12); }
 .mail-item.unread { color: var(--mist); }
 .mail-item.unread strong::before { content: "\25CF  "; color: var(--ember); }
 .mail-item strong { display: block; color: var(--mist); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -140,8 +140,8 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
 .tabs { position: sticky; top: 0; z-index: 30; display: flex; gap: 4px; overflow-x: auto; margin: 26px -4px 8px; padding: 10px 4px; background: linear-gradient(180deg, var(--night) 75%, transparent); scrollbar-width: none; }
 .tabs::-webkit-scrollbar { display: none; }
 .tabs button { flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 11px 16px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.02); color: var(--haze); font: 600 12px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; transition: color .2s, border-color .2s, background .2s; }
-.tabs button:hover { color: var(--mist); border-color: rgba(226,52,68,.5); }
-.tabs button[aria-selected="true"] { color: var(--bone); border-color: var(--ember); background: rgba(226,52,68,.16); }
+.tabs button:hover { color: var(--mist); border-color: rgba(var(--acc),.5); }
+.tabs button[aria-selected="true"] { color: var(--bone); border-color: var(--ember); background: rgba(var(--acc),.16); }
 .tabs button b { min-width: 18px; padding: 3px 6px; border-radius: 999px; background: var(--ember); color: #fff; font: 700 10px/1 var(--f-mono); letter-spacing: 0; }
 .tab > .bar:first-child, .tab > .tiles:first-child { margin-top: 10px; }
 .knobs { display: block; width: 100%; height: 1600px; border: 0; margin-top: 10px; }
@@ -166,7 +166,7 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
 .offer .row { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chips label { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 999px; font: 500 13px/1 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--mist); cursor: pointer; }
-.chips label:has(input:checked) { border-color: var(--ember); background: rgba(226,52,68,.14); }
+.chips label:has(input:checked) { border-color: var(--ember); background: rgba(var(--acc),.14); }
 .chips input { width: 15px; height: 15px; accent-color: var(--ember); }
 .offer .tag { justify-self: start; }
 /* Annonce et maintenance */
@@ -175,13 +175,15 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
 .box .switch input[type="checkbox"]::after { content: ""; position: absolute; left: 3px; top: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--haze); transition: transform .2s, background .2s; }
 .box .switch input[type="checkbox"]:checked { background: var(--ember); border-color: var(--ember); }
 .box .switch input[type="checkbox"]:checked::after { transform: translateX(22px); background: #fff; }
-.box .switch input[type="checkbox"]:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(226,52,68,.35); }
+.box .switch input[type="checkbox"]:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--acc),.35); }
 .live-preview { margin-top: 4px; padding: 11px 16px; border-radius: 12px; font: 600 14px/1.4 var(--f-body); text-align: center; }
 .maint-state { display: inline-flex; align-items: center; gap: 8px; font: 600 12px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; }
 .maint-state i { width: 9px; height: 9px; border-radius: 50%; background: #5bd38c; box-shadow: 0 0 10px #5bd38c; }
 .maint-state.on i { background: #ffb347; box-shadow: 0 0 10px #ffb347; }
 [hidden] { display: none !important; }
 </style>
+<link rel="stylesheet" href="/assets/da.css?v=1">
+<script src="/assets/accent.js?v=1"></script>
 
 <a class="skip" href="#contenu">Aller au contenu</a>
 <header>
@@ -384,8 +386,8 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
 </main>
 
 <script src="assets/cropper.js"></script>
-<script src="assets/account.js?v=12"></script>
-<script src="assets/site-nav.js?v=18"></script>
+<script src="assets/account.js?v=13"></script>
+<script src="assets/site-nav.js?v=19"></script>
 <script>
 // Tout passe par l'API du CENTRAL, qui revérifie le rôle admin à chaque appel : cette page n'ouvre aucun droit par elle-même.
 const $ = (id) => document.getElementById(id);

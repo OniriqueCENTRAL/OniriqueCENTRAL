@@ -13,9 +13,9 @@
 <style>
 /* Mêmes tokens que onirique.html : la page compte doit se lire comme une page du site. */
 :root {
-  --night: #0D0809; --blood: #5C0008; --deep: #1A080A; --deep-2: #2A0A0E; --line: rgba(255,210,214,.13);
-  --mist: #F6EEEE; --haze: #A88F92; --ember: #E23444; --bone: #FFECEE;
-  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(226,52,68,.55);
+  --night: #0D0809; --blood: rgb(var(--acc-lo)); --deep: #1A080A; --deep-2: #2A0A0E; --line: rgba(255,210,214,.13);
+  --mist: #F6EEEE; --haze: #A88F92; --ember: rgb(var(--acc)); --bone: #FFECEE;
+  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(var(--acc),.55);
   --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
   --f-dream: "Grenze Gotisch", Georgia, serif;
   --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
@@ -29,14 +29,14 @@ body {
 }
 /* Le halo sur un calque fixe : background-attachment: fixed ferait repeindre toute la page à chaque défilement. */
 body::before { content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
-  background: radial-gradient(120% 60% at 50% -10%, rgba(140,6,20,.8), rgba(92,0,8,.45) 36%, transparent 72%); }
+  background: radial-gradient(120% 60% at 50% -10%, rgba(var(--acc-lo),.8), rgba(var(--acc-lo),.45) 36%, transparent 72%); }
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
 .wrap { width: 100%; max-width: 1280px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 40px); }
 header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.6); backdrop-filter: blur(14px); }
 header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 16px; }
 .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 800 17px/1 var(--f-display); letter-spacing: .16em; }
-.brand img { width: 44px; height: auto; margin-block: -12px; filter: drop-shadow(0 0 6px rgba(226,52,68,.8)); }
+.brand img { width: 44px; height: auto; margin-block: -12px; filter: drop-shadow(0 0 6px rgba(var(--acc),.8)); }
 main { padding-block: clamp(32px, 7vw, 72px); }
 h1 { font: 800 clamp(26px, 5vw, 38px)/1.1 var(--f-display); margin: 12px 0 8px; }
 h1 em { font: 600 1.3em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
@@ -47,7 +47,7 @@ h2 { font: 800 15px/1.3 var(--f-display); letter-spacing: .04em; margin: 0; }
 .panel { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 18px; padding: clamp(18px, 3vw, 26px); margin-top: 18px; }
 .panel > .eyebrow { margin-bottom: 16px; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 20px; border-radius: 999px; border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
-.btn-primary { background: var(--mist); color: var(--night); box-shadow: 0 10px 40px -10px rgba(226,52,68,.6); }
+.btn-primary { background: var(--mist); color: var(--night); box-shadow: 0 10px 40px -10px rgba(var(--acc),.6); }
 .btn-ghost { background: rgba(255,255,255,.03); color: var(--mist); border-color: var(--line); }
 .btn-ghost:hover { border-color: var(--ember); }
 .btn:disabled { opacity: .5; cursor: default; }
@@ -78,12 +78,19 @@ label.check input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; padd
 .row:first-child { border-top: 0; padding-top: 0; }
 .key { font: 500 13px/1.4 var(--f-mono); letter-spacing: .05em; color: var(--bone); word-break: break-all; }
 .pill { font: 500 11px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--haze); white-space: nowrap; }
-.pill.on { color: var(--bone); border-color: rgba(226,52,68,.6); background: rgba(226,52,68,.16); }
+.pill.on { color: var(--bone); border-color: rgba(var(--acc),.6); background: rgba(var(--acc),.16); }
 /* Photo de profil */
 .photo { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-bottom: 26px; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
-.photo img { flex: none; width: 84px; height: 84px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); box-shadow: 0 0 0 4px rgba(226,52,68,.14), 0 12px 34px -12px rgba(226,52,68,.7); }
+.photo img { flex: none; width: 84px; height: 84px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); box-shadow: 0 0 0 4px rgba(var(--acc),.14), 0 12px 34px -12px rgba(var(--acc),.7); }
 .photo p { margin: 8px 0 0; font-size: 13px; }
 .panel { scroll-margin-top: 20px; }
+.accent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+.accent-grid button { display: grid; justify-items: center; gap: 8px; padding: 12px 6px 10px; border: 0; border-radius: 16px; background: rgba(255,255,255,.03); box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset; color: var(--haze); font: 500 10px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; transition: transform .35s var(--ease, ease), box-shadow .35s, color .25s; }
+.accent-grid button i { width: 26px; height: 26px; border-radius: 50%; background: var(--swatch); box-shadow: 0 0 14px var(--swatch); }
+.accent-grid button:hover { transform: translateY(-3px); color: #fff; }
+.accent-grid button[aria-checked="true"] { color: #fff; box-shadow: 0 0 0 1px rgba(var(--acc-hi),.75) inset, 0 0 26px rgba(var(--acc),.3); }
+.accent-own { display: inline-flex; flex-direction: row; align-items: center; gap: 10px; cursor: pointer; }
+.accent-own input { width: 38px; height: 30px; padding: 0; border: 0; border-radius: 10px; background: none; cursor: pointer; }
 /* Compte : les infos à gauche, les plugins et services à droite ; une seule colonne sur téléphone */
 #auth { max-width: 780px; margin-inline: auto; }
 .cols { display: grid; gap: 18px; margin-top: 18px; align-items: start; }
@@ -143,12 +150,14 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
 .stats { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 14px; color: var(--haze); }
 .stats strong { color: var(--mist); font: 700 17px var(--f-mono); margin-right: 6px; }
 .meter { height: 8px; border-radius: 999px; background: rgba(255,255,255,.06); overflow: hidden; }
-.meter i { display: block; height: 100%; background: linear-gradient(90deg, #5c0008, var(--ember)); border-radius: 999px; }
+.meter i { display: block; height: 100%; background: linear-gradient(90deg, rgb(var(--acc-lo)), var(--ember)); border-radius: 999px; }
 .gift { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 12px 0; border-top: 1px solid var(--line); }
 .gift .key { font-size: 15px; }
-.welcome { padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(226,52,68,.6); background: rgba(226,52,68,.12); color: var(--bone); font-size: 14px; }
+.welcome { padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(var(--acc),.6); background: rgba(var(--acc),.12); color: var(--bone); font-size: 14px; }
 [hidden] { display: none !important; }
 </style>
+<link rel="stylesheet" href="/assets/da.css?v=1">
+<script src="/assets/accent.js?v=1"></script>
 
 <header>
   <div class="wrap">
@@ -244,6 +253,17 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
         </div>
       </div>
   
+      <div class="panel" id="couleur">
+        <div class="eyebrow">Couleur du site</div>
+        <p class="muted" style="margin-top:0;max-width:62ch">Boutons, voyants, lueurs et fond du site prennent cette couleur, sur tous vos appareils une fois connecté.</p>
+        <div class="accent-grid" id="accent-grid" role="radiogroup" aria-label="Couleur du site"></div>
+        <div class="between" style="justify-content:flex-start;margin-top:14px">
+          <label class="accent-own"><input type="color" id="accent-custom" aria-label="Une autre couleur"><span>Une autre couleur…</span></label>
+          <button class="btn btn-ghost small" id="accent-reset" type="button">Par défaut</button>
+        </div>
+        <div class="notice" id="accent-notice" role="status"></div>
+      </div>
+
       <div class="panel" id="a2f">
         <div class="eyebrow">Double authentification (A2F)</div>
         <p class="muted" id="a2f-text" style="margin-top:0;max-width:62ch"></p>
@@ -413,8 +433,8 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
 </main>
 
 <script src="assets/cropper.js?v=3"></script>
-<script src="assets/account.js?v=12"></script>
-<script src="assets/site-nav.js?v=18"></script>
+<script src="assets/account.js?v=13"></script>
+<script src="assets/site-nav.js?v=19"></script>
 <script>
 // Le site relaie /api vers le serveur ONIRIQUE CENTRAL (même origine : pas de CORS à gérer).
 const $ = (id) => document.getElementById(id);
@@ -487,6 +507,7 @@ function show(me) {
   $("eng-remove").hidden = !me.user.engineerAvatar;
   $("profile-instagram").value = me.user.instagram ? "@" + me.user.instagram.replace(/^https:\/\/www\.instagram\.com\//, "").replace(/\/$/, "") : "";
   $("profile-news").checked = !!me.user.newsletter;
+  drawAccent(me.user.accent || "");
   showReferral(me.referral);
   $("profile-email").value = me.user.email;
   $("admin-link").hidden = !role || ["vip", "beta", "betaf"].includes(me.user.role);
@@ -756,6 +777,36 @@ $("avatar-remove").onclick = async () => {
     say("avatar-notice", error.message, true);
   }
 };
+
+// Couleur du site : posée tout de suite, enregistrée sur le compte (les autres appareils la reprennent).
+function drawAccent(current) {
+  current = (current || OniriqueAccent.DEFAULT).toLowerCase();
+  $("accent-custom").value = current;
+  $("accent-grid").replaceChildren(...OniriqueAccent.CHOICES.map(([hex, name]) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.setAttribute("role", "radio"); b.setAttribute("aria-checked", String(hex === current)); b.title = name;
+    b.style.setProperty("--swatch", hex);
+    b.append(document.createElement("i"), name);
+    b.onclick = () => saveAccent(hex);
+    return b;
+  }));
+}
+let accentSave = 0;
+async function saveAccent(hex) {
+  hex = hex.toLowerCase() === OniriqueAccent.DEFAULT ? "" : hex.toLowerCase();
+  OniriqueAccent.set(hex);
+  drawAccent(hex);
+  const mine = ++accentSave;
+  try {
+    await api("POST", "/me/profile", { accent: hex });
+    if (mine === accentSave) say("accent-notice", "Couleur enregistrée.");
+  } catch (error) {
+    say("accent-notice", error.message, true);
+  }
+}
+$("accent-custom").addEventListener("input", (event) => { OniriqueAccent.set(event.target.value); });
+$("accent-custom").addEventListener("change", (event) => saveAccent(event.target.value));
+$("accent-reset").onclick = () => saveAccent("");
 
 $("profile-form").onsubmit = async (event) => {
   event.preventDefault();

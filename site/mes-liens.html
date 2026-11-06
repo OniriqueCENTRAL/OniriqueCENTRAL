@@ -13,9 +13,9 @@
 <style>
 /* Mêmes tokens que compte.html. */
 :root {
-  --night: #0D0809; --blood: #5C0008; --deep: #1A080A; --deep-2: #2A0A0E; --line: rgba(255,210,214,.13);
-  --mist: #F6EEEE; --haze: #A88F92; --ember: #E23444; --bone: #FFECEE;
-  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(226,52,68,.55);
+  --night: #0D0809; --blood: rgb(var(--acc-lo)); --deep: #1A080A; --deep-2: #2A0A0E; --line: rgba(255,210,214,.13);
+  --mist: #F6EEEE; --haze: #A88F92; --ember: rgb(var(--acc)); --bone: #FFECEE;
+  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(var(--acc),.55);
   --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
   --f-dream: "Grenze Gotisch", Georgia, serif;
   --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
@@ -29,14 +29,14 @@ body {
 }
 /* Le halo sur un calque fixe : background-attachment: fixed ferait repeindre toute la page à chaque défilement. */
 body::before { content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
-  background: radial-gradient(120% 60% at 50% -10%, rgba(140,6,20,.8), rgba(92,0,8,.45) 36%, transparent 72%); }
+  background: radial-gradient(120% 60% at 50% -10%, rgba(var(--acc-lo),.8), rgba(var(--acc-lo),.45) 36%, transparent 72%); }
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
 .wrap { width: 100%; max-width: 1180px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 40px); }
 header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.6); backdrop-filter: blur(14px); }
 header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 16px; }
 .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 800 17px/1 var(--f-display); letter-spacing: .16em; }
-.brand img { width: 44px; height: auto; margin-block: -12px; filter: drop-shadow(0 0 6px rgba(226,52,68,.8)); }
+.brand img { width: 44px; height: auto; margin-block: -12px; filter: drop-shadow(0 0 6px rgba(var(--acc),.8)); }
 .between { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 main { padding-block: clamp(28px, 6vw, 56px) 120px; }
 h1 { font: 800 clamp(26px, 5vw, 38px)/1.1 var(--f-display); margin: 12px 0 8px; }
@@ -47,7 +47,7 @@ h1 em { font: 600 1.3em/.8 var(--f-dream); font-style: normal; text-shadow: var(
 .panel { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 18px; padding: clamp(18px, 3vw, 24px); margin-top: 16px; }
 .panel > .eyebrow { margin-bottom: 16px; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 18px; border-radius: 999px; border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
-.btn-primary { background: var(--mist); color: var(--night); box-shadow: 0 10px 40px -10px rgba(226,52,68,.6); }
+.btn-primary { background: var(--mist); color: var(--night); box-shadow: 0 10px 40px -10px rgba(var(--acc),.6); }
 .btn-ghost { background: rgba(255,255,255,.03); color: var(--mist); border-color: var(--line); }
 .btn-ghost:hover { border-color: var(--ember); }
 .btn:disabled { opacity: .5; cursor: default; }
@@ -67,14 +67,14 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-
 
 /* L'éditeur à gauche, l'aperçu (un téléphone) à droite ; l'un sous l'autre sur un petit écran. */
 .studio { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 28px; align-items: start; margin-top: 20px; }
-.phone { position: sticky; top: 20px; height: min(780px, calc(100vh - 40px)); border-radius: 40px; border: 10px solid #000; box-shadow: 0 0 0 1px var(--line), 0 30px 80px -30px rgba(226,52,68,.5); overflow: auto; background: #000; }
+.phone { position: sticky; top: 20px; height: min(780px, calc(100vh - 40px)); border-radius: 40px; border: 10px solid #000; box-shadow: 0 0 0 1px var(--line), 0 30px 80px -30px rgba(var(--acc),.5); overflow: auto; background: #000; }
 .phone > .lp { min-height: 100%; }
 /* Barre de défilement de l'aperçu : fine, braise, sans flèches, décollée des coins arrondis */
 .phone::-webkit-scrollbar { width: 6px; }
 .phone::-webkit-scrollbar-track { background: transparent; margin-block: 28px; }
-.phone::-webkit-scrollbar-thumb { background: rgba(226,52,68,.55); border-radius: 999px; }
+.phone::-webkit-scrollbar-thumb { background: rgba(var(--acc),.55); border-radius: 999px; }
 .phone::-webkit-scrollbar-thumb:hover { background: var(--ember); }
-@supports not selector(::-webkit-scrollbar) { .phone { scrollbar-width: thin; scrollbar-color: rgba(226,52,68,.55) transparent; } }
+@supports not selector(::-webkit-scrollbar) { .phone { scrollbar-width: thin; scrollbar-color: rgba(var(--acc),.55) transparent; } }
 /* La colonne fait toute la hauteur de l'éditeur : le téléphone a de la place pour suivre le défilement. */
 .preview-col { align-self: stretch; }
 @media (max-width: 960px) {
@@ -135,6 +135,8 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-
 .st-links .bar i { display: block; height: 100%; background: var(--ember); }
 .st-links b { font: 600 14px var(--f-mono); }
 </style>
+<link rel="stylesheet" href="/assets/da.css?v=1">
+<script src="/assets/accent.js?v=1"></script>
 
 <header>
   <div class="wrap">
@@ -607,6 +609,6 @@ $("copy").onclick = async () => {
   }
 })();
 </script>
-<script src="assets/account.js?v=12"></script>
-<script src="assets/site-nav.js?v=18"></script>
+<script src="assets/account.js?v=13"></script>
+<script src="assets/site-nav.js?v=19"></script>
 </html>

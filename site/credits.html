@@ -11,13 +11,13 @@
 <link rel="canonical" href="https://onirique.store/credits">
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
-<link rel="stylesheet" href="assets/pages.css">
-<link rel="stylesheet" href="assets/credits.css?v=3">
+<link rel="stylesheet" href="assets/pages.css?v=2">
+<link rel="stylesheet" href="assets/credits.css?v=4">
 <style>
 /* Les crédits : la base des pages de texte, élargie, avec les cartes de l'accueil. */
-:root { --blood: #5C0008; --deep-2: #2A0A0E; --ease: cubic-bezier(.2, .7, .2, 1); --f-dream: "Grenze Gotisch", Georgia, serif;
-  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(226,52,68,.55); }
-body { background: radial-gradient(120% 50% at 50% -10%, rgba(140,6,20,.75), rgba(92,0,8,.4) 38%, transparent 72%) fixed, var(--night); }
+:root { --blood: rgb(var(--acc-lo)); --deep-2: #2A0A0E; --ease: cubic-bezier(.2, .7, .2, 1); --f-dream: "Grenze Gotisch", Georgia, serif;
+  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(var(--acc),.55); }
+body { background: radial-gradient(120% 50% at 50% -10%, rgba(var(--acc-lo),.75), rgba(var(--acc-lo),.4) 38%, transparent 72%) fixed, var(--night); }
 .wrap { max-width: 1180px; }
 h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
 .tools-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; margin: 26px 0 22px; }
@@ -26,6 +26,8 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 .count { font: 500 12px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
 .empty { padding: 40px 0; color: var(--haze); text-align: center; }
 </style>
+<link rel="stylesheet" href="/assets/da.css?v=1">
+<script src="/assets/accent.js?v=1"></script>
 
 <a class="skip" href="#contenu">Aller au contenu</a>
 <header>
@@ -54,8 +56,8 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 
 <script src="assets/credits.js?v=5"></script>
 <script src="assets/tools-menu.js?v=13"></script>
-<script src="assets/account.js?v=12"></script>
-<script src="assets/site-nav.js?v=18"></script>
+<script src="assets/account.js?v=13"></script>
+<script src="assets/site-nav.js?v=19"></script>
 <script>
 // Tous les crédits, rangés par le serveur du plus connu au moins connu ; la recherche filtre sans recharger.
 let all = [];
