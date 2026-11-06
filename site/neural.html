@@ -67,6 +67,16 @@ p { margin: 0 0 10px; }
 #gate { position: fixed; inset: 0; display: grid; place-items: center; text-align: center; background: rgba(9,8,10,.6); backdrop-filter: blur(6px); z-index: 5; padding: 24px; }
 #gate h1 { font-size: 22px; }
 .close { float: right; border: 0; background: none; color: var(--haze); cursor: pointer; font-size: 18px; line-height: 1; }
+.bell { border: 1px solid rgba(var(--acc-hi),.6); background: var(--lit); box-shadow: var(--lit-shadow); border-radius: 999px; padding: 5px 12px; font: 600 12px var(--f-body); cursor: pointer; animation: bell 2.4s var(--ease) infinite; }
+@keyframes bell { 50% { box-shadow: var(--lit-shadow), 0 0 26px rgba(var(--acc),.75); } }
+.prop { border: 1px solid rgba(var(--acc-hi),.35); border-radius: 14px; padding: 12px 14px; margin: 0 0 10px; background: var(--glass); box-shadow: var(--glass-shadow); }
+.prop b { display: block; font: 700 14px var(--f-display); margin-bottom: 4px; }
+.prop .why { color: var(--haze); font-size: 12.5px; margin: 6px 0 10px; }
+.prop .acts { display: flex; gap: 8px; }
+.prop button { border: 1px solid var(--line); border-radius: 10px; padding: 6px 14px; cursor: pointer; background: var(--glass); font-weight: 600; }
+.prop button.ok { background: var(--lit); box-shadow: var(--lit-shadow); }
+.prop button:disabled { opacity: .5; cursor: default; }
+.done { font-size: 12.5px; color: var(--haze); padding: 5px 0; border-bottom: 1px solid var(--line); }
 
 @media (max-width: 860px) {
   html, body { height: auto; overflow: auto; }
@@ -90,6 +100,7 @@ p { margin: 0 0 10px; }
   <canvas id="graph" aria-label="Le cerveau d'ONR Neural Learning en constellation"></canvas>
   <div class="top">
     <span class="crumb">VOCALBOX → <b>Vue graphique</b></span>
+    <button class="bell" id="bell" type="button" hidden></button>
     <input id="find" type="search" placeholder="Chercher un artiste, un réglage…" aria-label="Chercher dans le cerveau">
     <button class="chip" data-kind="feedback" aria-pressed="true"><i style="background:var(--n-yes)"></i>Retours</button>
     <button class="chip" data-kind="hint" aria-pressed="true"><i style="background:var(--n-hint)"></i>Couleurs</button>
@@ -140,7 +151,7 @@ let D = null, nodes = [], links = [], byId = new Map(), adj = new Map();
 const shown = { feedback: true, hint: true, param: true, miss: false };
 
 //------------------------------------------------------------------------------ Les données
-async function load() {
+async function load(again) {
   if (!token) return gate("Connecte-toi avec ton compte fondateur pour ouvrir cette page.", true);
   let r;
   try { r = await fetch("/api/vocalbox/founders", { headers: { Authorization: "Bearer " + token } }); } catch { return gate("Le serveur ne répond pas."); }
@@ -148,6 +159,7 @@ async function load() {
   if (r.status === 403) return gate("Cette page est réservée aux fondateurs.");
   if (!r.ok) return gate("Erreur du serveur (" + r.status + ").");
   D = await r.json();
+  if (again) { summary(); return; }
   $("gate").hidden = true;
   build(); summary(); start();
 }
@@ -431,6 +443,43 @@ function paramDelta(f, id) {
   return null;
 }
 
+//------------------------------------------------------------------------------ Les propositions : les fondateurs décident
+const KIND = { tune: "Ajuster un artiste", global: "Toutes les demandes", add: "Ajouter un artiste" };
+async function decide(p, decision, box) {
+  for (const b of box.querySelectorAll("button")) b.disabled = true;
+  const r = await fetch("/api/vocalbox/proposals/" + p.id, { method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify({ decision }) }).catch(() => null);
+  if (!r || !r.ok) { for (const b of box.querySelectorAll("button")) b.disabled = false; box.append(el("p", { className: "why", textContent: "Le serveur a refusé : réessaie." })); return; }
+  await load(true);
+}
+function proposalsBlock() {
+  const pending = (D.proposals || []).filter((p) => p.status === "pending");
+  const decided = (D.proposals || []).filter((p) => p.status === "approved" || p.status === "refused").slice(0, 8);
+  const bell = $("bell");
+  bell.hidden = !pending.length;
+  bell.textContent = pending.length + (pending.length > 1 ? " demandes à valider" : " demande à valider");
+  bell.onclick = () => $("props")?.scrollIntoView({ behavior: "smooth" });
+  const card = (p) => {
+    const sp = p.support || {};
+    const title = p.kind === "tune" ? p.name : p.kind === "add" ? "Ajouter " + p.name : "Toutes les demandes";
+    const what = p.kind === "add" ? "Le serveur a trouvé sa fiche et " + sp.hits + " demandes l'ont cherché : il rejoindrait le cerveau de tout le monde."
+      : "Les utilisateurs corrigent : " + p.text + ".";
+    const rated = (sp.yes || 0) + (sp.no || 0);
+    const why = p.kind === "add" ? "" : `${sp.mixes} mix · ${sp.installs} postes différents · ${rated ? Math.round(100 * sp.yes / rated) + " % OUI" : "sans note"}`
+      + Object.entries(sp.detail || {}).map(([k, d]) => ` · ${HINTS[k] || k} : ${Math.round(d.agree * 100)} % dans le même sens`).join("");
+    const box = el("div", { className: "prop" }, el("span", { className: "tag", textContent: KIND[p.kind] }), el("b", { textContent: title }), el("p", { textContent: what }),
+      why ? el("p", { className: "why", textContent: why }) : null);
+    box.append(el("div", { className: "acts" }, el("button", { className: "ok", type: "button", textContent: "Valider", onclick: () => decide(p, "approve", box) }),
+      el("button", { type: "button", textContent: "Refuser", onclick: () => decide(p, "refuse", box) })));
+    return box;
+  };
+  return [el("h2", { id: "props", textContent: pending.length ? `À valider (${pending.length})` : "À valider" }),
+    pending.length ? pending.map(card) : el("p", { className: "muted", textContent: "Rien à valider. Une proposition n'apparaît que quand la demande est forte : au moins 8 mix venant de 5 postes différents pour un artiste (20 mix et 10 postes pour toutes les demandes), corrigés à 70 % dans le même sens, ou un artiste inconnu cherché 5 fois." }),
+    decided.length ? [el("p", { className: "muted", textContent: "Décisions récentes" }), decided.map((p) => el("div", { className: "done", textContent: `${p.status === "approved" ? "✓ validé" : "✕ refusé"} · ${p.kind === "add" ? "ajout de " + p.name : (p.name || "toutes les demandes") + " : " + p.text} · ${p.decided_by || ""} · ${date(p.decided_at)}` }))] : null,
+    el("h2", { textContent: "Ce que le cerveau a appris" }),
+    (D.shipped.learned || []).length ? D.shipped.learned.map((l) => el("div", { className: "done", textContent: `v${D.shipped.version}.${l.revision} · ${l.text} · ${l.by || ""} · ${date(l.at)}` }))
+      : el("p", { className: "muted", textContent: "Rien encore : le cerveau en service est celui livré avec VOCALBOX." })];
+}
+
 //------------------------------------------------------------------------------ Le texte : le résumé
 function summary() {
   const fb = D.feedback, yes = fb.filter((f) => f.rating > 0).length, no = fb.filter((f) => f.rating < 0).length;
@@ -455,11 +504,12 @@ function summary() {
   const wk = [...weeks.entries()].sort((a, b) => a[0] - b[0]).slice(-8);
 
   const s = $("summary"); s.replaceChildren(); fill(s, 
+    proposalsBlock(),
     el("h2", { textContent: "En bref" }),
     el("p", { textContent: "Quand un utilisateur tape une demande dans CRÉER LE MIX (« voix de Travis Scott », « voix chantée aérienne »…), VOCALBOX écoute sa prise, la compare à la voix visée, et monte la chaîne. Le cerveau, c'est ce qu'il sait des artistes : comment leur voix est mixée (couleur, compression, espace, effets)." }),
     el("p", { textContent: "Il progresse de deux façons, uniquement chez les utilisateurs qui ont allumé ONR Neural Learning : quand un artiste lui est inconnu, le serveur cherche sa fiche une fois pour tous ; et après chaque mix, la note OUI / BOF et les réglages retouchés montrent ce qu'il faut corriger. Jamais d'audio." }),
     el("div", { className: "stats" },
-      stat("v" + (D.shipped.version || 0), "cerveau livré" + (D.published.version ? ` · v${D.published.version} publié` : "")),
+      stat("v" + (D.shipped.version || 0) + "." + (D.shipped.revision || 0), "cerveau en service (" + (D.shipped.revision || 0) + " validation" + ((D.shipped.revision || 0) > 1 ? "s" : "") + " des fondateurs)"),
       stat(shipped.length + D.found.length, `artistes (${shipped.length} livrés dont ${est} estimés, ${D.found.length} trouvés)`),
       stat(fb.length, "mix reçus"), stat(D.installs, "installations"),
       stat(rated ? Math.round(100 * yes / rated) + " %" : "—", `de OUI (${yes} OUI · ${no} BOF)`),

@@ -67,18 +67,21 @@ try {
   throw error;
 }
 // ONR Neural Learning : le cerveau livré avec cette version de VOCALBOX (brain.json, envoyé par la CI avec le plugin) devient
-// le cerveau publié (réglage vocalbox_brain) : la page des fondateurs et GET /api/vocalbox/brain le suivent tout seuls.
+// le cerveau de base (vocalbox_brain_base) ; le cerveau publié (vocalbox_brain, téléchargé par les plugins et montré aux
+// fondateurs) = cette base + la surcouche que les fondateurs ont validée (vocalbox_overlay).
 const brainFile = path.join(incoming, 'brain.json');
 if (slug === 'vocalbox' && fs.existsSync(brainFile) && fs.statSync(brainFile).size < 4_000_000) {
   try {
     const brain = JSON.parse(fs.readFileSync(brainFile, 'utf8'));
     if (!brain || !Array.isArray(brain.artists) || !Number.isInteger(brain.version)) throw new Error('cerveau illisible');
-    const row = db.prepare("SELECT value FROM settings WHERE key = 'vocalbox_brain'").get();
-    const current = row ? JSON.parse(row.value) : null;
-    const was = (typeof current === 'string' ? JSON.parse(current) : current)?.version ?? 0;
-    if (brain.version >= was) {
-      db.prepare("INSERT INTO settings (key, value) VALUES ('vocalbox_brain', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(JSON.stringify(brain));
-      console.log(`Cerveau de VOCALBOX v${brain.version} publié (${brain.artists.length} artistes).`);
+    const read = (key) => { const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key); return row ? JSON.parse(row.value) : null; };
+    const save = (key, value) => db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').run(key, JSON.stringify(value));
+    if (brain.version >= (read('vocalbox_brain_base')?.version ?? 0)) {
+      const { publishedBrain } = await import(pathToFileURL(path.resolve('src/brainlearn.js')));
+      save('vocalbox_brain_base', brain);
+      const published = publishedBrain(brain, read('vocalbox_overlay') || { revision: 0 });
+      save('vocalbox_brain', published);
+      console.log(`Cerveau de VOCALBOX v${brain.version}.${published.revision} publié (${published.artists.length} artistes).`);
     }
   } catch (error) { console.error('Cerveau de VOCALBOX non publié :', error.message); }   // le plugin, lui, est publié
 }

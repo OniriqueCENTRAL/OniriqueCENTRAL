@@ -6,10 +6,13 @@
 //                                  recherche (Gemini + Google Search), faite une fois et gardée pour tout le monde.
 //   POST /api/vocalbox/feedback    après CRÉER LE MIX : la demande, le portrait de la voix (des mesures), la chaîne décidée,
 //                                  les retouches faites ensuite, la note 👍 / 👎. Ils serviront à corriger le cerveau.
-//   GET  /api/vocalbox/brain       le dernier cerveau publié (setting vocalbox_brain), pour les mises à jour.
+//   GET  /api/vocalbox/brain       le cerveau publié (dépôt + validations des fondateurs), lu par les plugins une fois par jour.
+//   GET  /api/vocalbox/founders    (fondateurs) tout : cerveau, propositions, retours. POST /api/vocalbox/proposals/:id : valider
+//                                  ou refuser une proposition.
 import fs from 'node:fs';
 import { config } from './config.js';
-import { db, get, all, run, now, setting } from './db.js';
+import { db, get, all, run, now, setting, setSetting } from './db.js';
+import { propose, approve, publishedBrain, describe } from './brainlearn.js';
 import { HttpError, rateLimit } from './auth.js';
 
 db.exec(`CREATE TABLE IF NOT EXISTS vocalbox_artists (
@@ -60,6 +63,58 @@ if (!get("SELECT 1 FROM settings WHERE key = 'vocalbox_fiche'")) {
   run('UPDATE products SET tagline = ?, description = ? WHERE slug = ?', FICHE.tagline, FICHE.description, 'vocalbox');
   run("INSERT INTO settings (key, value) VALUES ('vocalbox_fiche', '2')");
 }
+
+// ---- ONR NEURAL LEARNING, sous le contrôle des fondateurs (voir brainlearn.js) : les retours deviennent des propositions,
+//      seulement quand la demande est forte ; un fondateur les valide ou les refuse sur la page Neural. Le cerveau publié
+//      (vocalbox_brain, téléchargé par les plugins) = le cerveau du dépôt (vocalbox_brain_base) + la surcouche validée.
+db.exec(`CREATE TABLE IF NOT EXISTS vocalbox_proposals (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind TEXT NOT NULL,
+  target TEXT NOT NULL,
+  name TEXT NOT NULL DEFAULT '',
+  changes TEXT NOT NULL,
+  support TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  decided_at INTEGER,
+  decided_by TEXT
+)`);
+
+const baseBrain = () => {
+  const stored = setting('vocalbox_brain_base', null);
+  if (stored && Array.isArray(stored.artists)) return stored;
+  try { return JSON.parse(fs.readFileSync(new URL('./vocalbox-brain.json', import.meta.url), 'utf8')); } catch { return { version: 0, artists: [] }; }
+};
+const overlayNow = () => setting('vocalbox_overlay', null) || { revision: 0 };
+/** Le cerveau publié, recalculé (après une validation, ou quand une version de VOCALBOX apporte un nouveau cerveau). */
+export function republishBrain() {
+  const brain = publishedBrain(baseBrain(), overlayNow());
+  setSetting('vocalbox_brain', brain);
+  return brain;
+}
+
+/** Les propositions : recalculées depuis tous les retours (une proposition en attente est mise à jour, pas dupliquée). */
+export function refreshProposals() {
+  const refused = new Set(all("SELECT kind || '|' || target AS k FROM vocalbox_proposals WHERE status = 'refused' AND decided_at > ?",
+    now() - 30 * 24 * 3600_000).map((r) => r.k));
+  const list = propose(baseBrain(), overlayNow(), all('SELECT * FROM vocalbox_feedback'), all('SELECT name, data, hits FROM vocalbox_artists'), refused);
+  const t = now();
+  const live = new Set();
+  for (const p of list) {
+    const pending = get("SELECT id FROM vocalbox_proposals WHERE kind = ? AND target = ? AND status = 'pending'", p.kind, p.target);
+    if (pending) run('UPDATE vocalbox_proposals SET name = ?, changes = ?, support = ?, updated_at = ? WHERE id = ?', p.name, JSON.stringify(p.changes), JSON.stringify(p.support), t, pending.id);
+    else run('INSERT INTO vocalbox_proposals (kind, target, name, changes, support, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      p.kind, p.target, p.name, JSON.stringify(p.changes), JSON.stringify(p.support), t, t);
+    live.add(`${p.kind}|${p.target}`);
+  }
+  // une demande retombée (de nouveaux retours l'ont contredite) : sa proposition disparaît
+  for (const r of all("SELECT id, kind, target FROM vocalbox_proposals WHERE status = 'pending'"))
+    if (!live.has(`${r.kind}|${r.target}`)) run("UPDATE vocalbox_proposals SET status = 'expired', decided_at = ? WHERE id = ?", t, r.id);
+}
+try { refreshProposals(); } catch (error) { console.error('ONR Neural Learning :', error.message); }
+setInterval(() => { try { refreshProposals(); } catch (error) { console.error('ONR Neural Learning :', error.message); } }, 3 * 3600_000).unref();
+if (!setting('vocalbox_brain', null)) republishBrain();
 
 // les retours d'apprentissage sont gardés trois ans au plus (voir la politique de confidentialité)
 const purgeFeedback = () => run('DELETE FROM vocalbox_feedback WHERE created_at < ?', now() - 3 * 365 * 24 * 3600_000);
@@ -187,8 +242,7 @@ export function mountVocalBrain(app, { wrap, requireUser }) {
   app.get('/api/vocalbox/founders', requireUser, wrap(async (req, res) => {
     if (req.user.role !== 'founder') throw new HttpError(403, 'Réservé aux fondateurs.');
     res.set('Cache-Control', 'no-store');
-    let shipped = { version: 0, artists: [] };
-    try { shipped = JSON.parse(fs.readFileSync(new URL('./vocalbox-brain.json', import.meta.url), 'utf8')); } catch { /* absent */ }
+    const shipped = setting('vocalbox_brain', null) || republishBrain();   // le cerveau publié : dépôt + ce que les fondateurs ont validé
     const parse = (s, d) => { try { return JSON.parse(s); } catch { return d; } };
     const feedback = all('SELECT * FROM vocalbox_feedback ORDER BY id DESC LIMIT 2000').map((r) => ({
       id: r.id, install: r.install, version: r.version, request: r.request, artists: parse(r.artists, []), hints: parse(r.hints, {}),
@@ -197,16 +251,25 @@ export function mountVocalBrain(app, { wrap, requireUser }) {
     const found = all('SELECT name, data, source, hits, created_at FROM vocalbox_artists ORDER BY hits DESC')
       .map((r) => ({ ...parse(r.data, {}), source: r.source, hits: r.hits, at: r.created_at }));
     const misses = all('SELECT query_norm AS query, tries, last_at AS at FROM vocalbox_misses ORDER BY last_at DESC LIMIT 300');
-    const pub = setting('vocalbox_brain', null);
-    const published = (typeof pub === 'string' ? parse(pub, {}) : pub) || {};
-    // le cerveau publié avec la dernière version de VOCALBOX (CI → publish-plugin.mjs) remplace la copie du dépôt dès qu'il est
-    // au moins aussi récent : la page suit le plugin toute seule
-    if (Array.isArray(published.artists) && (published.version || 0) >= (shipped.version || 0)) shipped = published;
-    res.json({ shipped, published: { version: published.version || 0 }, found, misses, feedback,
+    const proposals = all("SELECT * FROM vocalbox_proposals WHERE status = 'pending' OR decided_at > ? ORDER BY status = 'pending' DESC, updated_at DESC LIMIT 100",
+      now() - 60 * 24 * 3600_000).map((p) => ({ ...p, changes: parse(p.changes, {}), support: parse(p.support, {}), text: p.kind === 'add' ? '' : describe(parse(p.changes, {})) }));
+    res.json({ shipped, base: { version: baseBrain().version || 0 }, proposals, found, misses, feedback,
       installs: get('SELECT COUNT(DISTINCT install) AS n FROM vocalbox_feedback').n });
   }));
-}
 
-/** Pour l'outil qui prépare le prochain cerveau (tools/vocalbox-brain.mjs) : les retours et les artistes trouvés. */
-export const feedbackRows = (since = 0) => all('SELECT * FROM vocalbox_feedback WHERE created_at >= ? ORDER BY id', since);
-export const foundArtists = () => all('SELECT name, data, hits FROM vocalbox_artists ORDER BY hits DESC');
+  // un fondateur valide ou refuse une proposition ; validée, elle rejoint le cerveau publié (téléchargé par les plugins)
+  app.post('/api/vocalbox/proposals/:id', requireUser, wrap(async (req, res) => {
+    if (req.user.role !== 'founder') throw new HttpError(403, 'Réservé aux fondateurs.');
+    const decision = req.body?.decision;
+    if (!['approve', 'refuse'].includes(decision)) throw new HttpError(400, 'Valider ou refuser ?');
+    const row = get("SELECT * FROM vocalbox_proposals WHERE id = ? AND status = 'pending'", Number(req.params.id));
+    if (!row) throw new HttpError(404, 'Proposition introuvable ou déjà traitée.');
+    const by = req.user.name || req.user.email;
+    if (decision === 'approve') {
+      setSetting('vocalbox_overlay', approve(overlayNow(), { ...row, changes: JSON.parse(row.changes) }, by, now()));
+      republishBrain();
+    }
+    run('UPDATE vocalbox_proposals SET status = ?, decided_at = ?, decided_by = ? WHERE id = ?', decision === 'approve' ? 'approved' : 'refused', now(), by, row.id);
+    res.json({ ok: true, revision: overlayNow().revision || 0 });
+  }));
+}
