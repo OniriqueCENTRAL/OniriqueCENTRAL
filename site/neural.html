@@ -473,7 +473,7 @@ function proposalsBlock() {
     return box;
   };
   return [el("h2", { id: "props", textContent: pending.length ? `À valider (${pending.length})` : "À valider" }),
-    pending.length ? pending.map(card) : el("p", { className: "muted", textContent: "Rien à valider. Une proposition n'apparaît que quand la demande est forte : au moins 8 mix venant de 5 postes différents pour un artiste (20 mix et 10 postes pour toutes les demandes), corrigés à 70 % dans le même sens, ou un artiste inconnu cherché 5 fois." }),
+    pending.length ? pending.map(card) : el("p", { className: "muted", textContent: "Rien à valider. Une proposition n'apparaît que quand la demande est forte : au moins 3 mix venant de 2 postes différents pour un artiste (6 mix et 3 postes pour toutes les demandes), corrigés aux deux tiers dans le même sens, ou un artiste inconnu cherché 2 fois." }),
     decided.length ? [el("p", { className: "muted", textContent: "Décisions récentes" }), decided.map((p) => el("div", { className: "done", textContent: `${p.status === "approved" ? "✓ validé" : "✕ refusé"} · ${p.kind === "add" ? "ajout de " + p.name : (p.name || "toutes les demandes") + " : " + p.text} · ${p.decided_by || ""} · ${date(p.decided_at)}` }))] : null,
     el("h2", { textContent: "Ce que le cerveau a appris" }),
     (D.shipped.learned || []).length ? D.shipped.learned.map((l) => el("div", { className: "done", textContent: `v${D.shipped.version}.${l.revision} · ${l.text} · ${l.by || ""} · ${date(l.at)}` }))

@@ -21,9 +21,10 @@ const DEFAULT_HINT = { reverb: 0.26 };          // une couleur absente de la fic
 
 // Une demande « vraiment forte »
 export const STRONG = {
-  artist: { mixes: 8, installs: 5, agree: 0.7, min: 0.05 },
-  global: { mixes: 20, installs: 10, agree: 0.7, min: 0.04 },
-  found: { hits: 5 },
+  // seuils bas tant qu'il y a peu d'utilisateurs : un fondateur valide chaque proposition (07/11/2026)
+  artist: { mixes: 3, installs: 2, agree: 0.66, min: 0.04 },
+  global: { mixes: 6, installs: 3, agree: 0.66, min: 0.04 },
+  found: { hits: 2 },
 };
 const STEP = 0.25;    // une proposition bouge une couleur de 0,25 au plus
 const TOTAL = 0.4;    // et la surcouche, en tout, de 0,4 au plus par couleur
