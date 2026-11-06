@@ -459,7 +459,7 @@ export function shareItems(projectId, viewerId) {
   return all('SELECT * FROM sound_platform_items WHERE project_id = ? ORDER BY position, id', projectId).map((r) => {
     const playable = linked.has(r.platform);
     return { id: r.id, position: r.position, platform: r.platform, title: r.title, artist: r.artist, cover: r.cover, duration: r.duration, url: r.url,
-      playable, listen: playable ? itemListenUrl(r.id) : null };
+      playable, listen: playable ? itemListenUrl(r.id) : null, extId: playable ? r.ext_id : null };
   });
 }
 
@@ -488,6 +488,9 @@ export function mountPlatforms(app, { requireUser, wrap }) {
   const member = (req, _res, next) => (can(req.user, 'sounds') && ONIRIQUE.includes(req.user.role) ? next()
     : next(new HttpError(403, 'Spotify dans ONIRIQUE CLOUD est réservé aux membres ONIRIQUE.')));
   const me = [requireUser, member];
+  // Lire les titres des plateformes de ses playlists et lier son profil : tout compte du CLOUD (gratuit compris), sur le site aussi. Sans
+  // compte Spotify lié, les titres Spotify restent grisés et ne se lisent pas.
+  const cloud = [requireUser]; // CLOUD gratuit : tout compte connecté y entre
   // Les playlists qui ne contiennent que des titres Spotify (importées dans l'application) : le site ne les montre pas.
   // Ouvert à tout membre de CLOUD, puisque c'est le site qui demande.
   app.get('/api/me/sounds/platform-only', requireUser, (req, res) => {
@@ -508,7 +511,7 @@ export function mountPlatforms(app, { requireUser, wrap }) {
   };
 
   // Les comptes liés, et les titres de plateformes de toutes les playlists qu'on voit, en une fois.
-  app.get('/api/me/platforms', ...me, (req, res) => {
+  app.get('/api/me/platforms', ...cloud, (req, res) => {
     const accounts = all('SELECT platform, url, name, token IS NOT NULL AS connected, premium FROM sound_platform_accounts WHERE user_id = ? ORDER BY created_at', req.user.id)
       .map((a) => ({ platform: a.platform, url: a.url, name: a.name, connected: !!a.connected, premium: !!a.premium }));
     const items = all(`SELECT i.* FROM sound_platform_items i JOIN sound_projects p ON p.id = i.project_id WHERE ${ACCESS} ORDER BY i.project_id, i.position, i.id`,
@@ -518,14 +521,14 @@ export function mountPlatforms(app, { requireUser, wrap }) {
       WHERE p.kind = 'playlist' AND ${ACCESS}`, req.user.id, req.user.id).map((r) => [r.id, r.position]));
     res.set('Cache-Control', 'no-store').json({ accounts, items, positions });
   });
-  app.put('/api/me/platforms/:platform', ...me, wrap(async (req, res) => {
+  app.put('/api/me/platforms/:platform', ...cloud, wrap(async (req, res) => {
     rateLimit(`platform-link:${req.user.id}`, 30, 3600_000);
     const p = await profileOf(req.params.platform, req.body?.url);
     run(`INSERT INTO sound_platform_accounts (user_id, platform, url, name, ext_id, created_at) VALUES (?, ?, ?, ?, ?, ?)
       ON CONFLICT(user_id, platform) DO UPDATE SET url = excluded.url, name = excluded.name, ext_id = excluded.ext_id`, req.user.id, req.params.platform, p.url, p.name, p.extId, now());
     res.json({ platform: req.params.platform, url: p.url, name: p.name });
   }));
-  app.delete('/api/me/platforms/:platform', ...me, (req, res) => {
+  app.delete('/api/me/platforms/:platform', ...cloud, (req, res) => {
     run('DELETE FROM sound_platform_accounts WHERE user_id = ? AND platform = ?', req.user.id, req.params.platform);
     res.json({ ok: true });
   });

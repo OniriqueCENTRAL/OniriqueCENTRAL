@@ -138,10 +138,10 @@ try {
     member = await account('membre', 'vip');
     stranger = await account('autre', 'vip');
     client = await account('client');
-    await call('GET', '/api/me/platforms', { token: client.token, expect: 403 });
-    // Un partenaire qui a ONIRIQUE CLOUD, mais n'est pas membre ONIRIQUE : pas de Spotify pour l'instant.
+    // Lire les titres Spotify de ses playlists : tout compte du CLOUD ; chercher et ajouter : les membres ONIRIQUE seulement.
+    assert.deepEqual(await call('GET', '/api/me/platforms', { token: client.token }), { accounts: [], items: [], positions: {} });
     const partner = await account('partenaire', 'abrasion');
-    await call('GET', '/api/me/platforms', { token: partner.token, expect: 403 });
+    await call('GET', '/api/platforms/search?source=deezer&q=jefe', { token: partner.token, expect: 403 });
     await call('GET', '/api/platforms/search?source=deezer&q=jefe', { token: client.token, expect: 403 });
   });
 
@@ -307,6 +307,30 @@ try {
     assert.equal(get('SELECT COUNT(*) AS n FROM sound_plays').n, 0);
     const mine = await call('GET', '/api/me/sounds', { token: member.token });
     assert.equal(mine.links.find((l) => l.projectId === only).plays, 0);
+    run('DELETE FROM sound_projects WHERE id = ?', only);
+  });
+
+  await step('une playlist de titres Spotify se voit partout (Découvrir, site) ; ses titres ne se lisent qu’avec Spotify lié', async () => {
+    const only = project(member.id, 'playlist');
+    await call('POST', `/api/me/sounds/projects/${only}/platform-items`, { token: member.token, body: { items: [{ platform: 'spotify', id: SP3, title: 'Troisième' }] }, expect: 201 });
+    const { url } = await call('POST', '/api/me/sounds/links', { token: member.token, body: { projectId: only, requireAccount: false }, expect: 201 });
+    const share = `/api/sounds/share/${new URL(url).searchParams.get('t')}`;
+    // Découvrir la montre (avec son titre Spotify compté), comme une playlist de sons du CLOUD.
+    const found = (await call('GET', '/api/me/sounds/discover', { token: stranger.token })).fresh.find((x) => x.id === only);
+    assert.equal(found?.tracks, 1);
+    // Un compte du CLOUD gratuit (pas membre ONIRIQUE) lit les titres de ses playlists sur le site, sans Spotify lié.
+    const before = await call('GET', '/api/me/platforms', { token: client.token });
+    assert.deepEqual(before.accounts, []);
+    const locked = await call('POST', share, { token: client.token, body: {} });
+    assert.deepEqual(locked.items.map((x) => [x.playable, x.listen, x.extId]), [[false, null, null]]);
+    // Son profil Spotify lié : le titre se lit en entier par le lecteur intégré (son identifiant Spotify est donné).
+    await call('PUT', '/api/me/platforms/spotify', { token: client.token, body: { url: 'https://open.spotify.com/user/client' } });
+    assert.equal((await call('GET', '/api/me/platforms', { token: client.token })).accounts[0].platform, 'spotify');
+    const open = await call('POST', share, { token: client.token, body: {} });
+    assert.deepEqual(open.items.map((x) => [x.playable, x.extId]), [[true, SP3]]);
+    // Ajouter des titres Spotify reste réservé aux membres ONIRIQUE.
+    await call('POST', `/api/me/sounds/projects/${only}/platform-items`, { token: client.token, body: { items: [{ platform: 'spotify', id: SP1, title: 'x' }] }, expect: 403 });
+    await call('DELETE', '/api/me/platforms/spotify', { token: client.token });
     run('DELETE FROM sound_projects WHERE id = ?', only);
   });
 

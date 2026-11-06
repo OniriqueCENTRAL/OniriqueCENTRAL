@@ -52,14 +52,16 @@
 
   function setup(options) { ctx = options; }
   // Pour l'instant : seulement dans l'application ONIRIQUE CENTRAL, et pour les membres ONIRIQUE (le serveur refuse les autres).
-  let on = false, hiddenLists = new Set();
-  /** Sur le site, une playlist faite seulement de titres Spotify n'apparaît pas. */
-  const hidden = (id) => hiddenLists.has(id);
+  let on = false;
+  // Les playlists faites de titres Spotify se voient partout, sur le site aussi : sans compte Spotify lié, leurs titres
+  // sont grisés et ne se lisent pas (gardé pour les pages qui l'appellent encore).
+  const hidden = () => false;
   const enabled = () => on;
   async function load() {
     if (!window.oniriqueApp) {
-      on = false; state = { accounts: [], items: [], positions: {} };
-      try { hiddenLists = new Set(await ctx.api("GET", "/me/sounds/platform-only")); } catch { hiddenLists = new Set(); }
+      // Sur le site : les titres à leur place, lus par le lecteur intégré de Spotify ; ni recherche ni ajout (application).
+      on = false;
+      try { state = await ctx.api("GET", "/me/platforms"); } catch { state = { accounts: [], items: [], positions: {} }; }
       return state;
     }
     if (!conf) {
@@ -373,8 +375,10 @@
   /** Se connecter à Spotify sur cet appareil : sa vraie page de connexion, dans une petite fenêtre. */
   // Dans l'application ONIRIQUE CENTRAL, l'état de la connexion se lit (cookie de session de Spotify sur cet appareil).
   let spWeb = null;
-  /** Un titre se joue-t-il ici ? Dans l'application, Spotify demande un compte connecté sur cet appareil. */
-  const playable = (x) => !(x.platform === "spotify" && window.oniriqueApp && spWeb === false && !full("spotify"));
+  /** Un compte de la plateforme lié à ONIRIQUE (connecté, ou son profil collé). */
+  const linked = (platform) => state.accounts.some((a) => a.platform === platform);
+  /** Un titre se joue-t-il ici ? Sur le site, il faut un compte Spotify lié ; dans l'application, connecté sur cet appareil. */
+  const playable = (x) => x.platform !== "spotify" || (window.oniriqueApp ? !(spWeb === false && !full("spotify")) : linked("spotify"));
   async function spotifyChanged() {
     if (!window.oniriqueApp) return;
     const was = spWeb;
@@ -430,13 +434,14 @@
       // La pochette du titre, là où un son du CLOUD a son numéro : on voit d'un coup d'œil ce qui vient d'une plateforme.
       x.cover ? el("img", { className: "pf-cover", src: x.cover, alt: "", loading: "lazy" }) : el("span", { className: "num", textContent: String(i + 1) }),
       el("div", {}, el("div", { className: "tline" }, el("b", { textContent: x.title })),
-        el("small", { textContent: [x.artist, engineFor(x.platform) ? "" : "extrait 30 s"].filter(Boolean).join(" · ") })),
+        el("small", { textContent: [x.artist, !playable(x) ? "indisponible" : engineFor(x.platform) ? "" : "extrait 30 s"].filter(Boolean).join(" · ") })),
       el("span", { className: "badges" }, el("span", { className: "pf-tag", textContent: NAMES[x.platform] })),
       el("span", { className: "len", textContent: time(x.duration) }),
-      remove);
+      on ? remove : el("span"));
     li.dataset.key = "x" + x.id;
     const go = () => {
       if (playable(x)) return onPlay();
+      if (!window.oniriqueApp) return alert("Lie ton compte Spotify à ONIRIQUE pour écouter « " + x.title + " » : sans compte lié, les titres Spotify restent grisés.");
       // Pas de compte Spotify connecté : on propose de le connecter, sans jouer.
       if (window.confirm("Connecte ton compte Spotify pour écouter « " + x.title + " » : les titres Spotify se jouent en entier dans le lecteur du CLOUD une fois ton compte connecté.")) { openAccounts(); }
     };

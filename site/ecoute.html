@@ -221,6 +221,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1320px; }
 
 <dialog id="buy"></dialog>
 <script src="assets/sounds-player.js?v=25"></script>
+<script src="assets/platforms.js?v=18"></script>
 <script src="assets/ratings.js?v=2"></script>
 <script>
 const $ = (id) => document.getElementById(id);
@@ -279,6 +280,10 @@ const player = OP.create({
   },
   onChange: (t) => { document.querySelectorAll(".trk").forEach((row) => row.classList.toggle("now", Number(row.dataset.id) === t.trackId)); renderLyrics(); },
 });
+// Les titres Spotify d'une playlist, en entier par le lecteur intégré de Spotify, pour qui a lié son compte Spotify.
+window.OniriquePlatforms?.setup({ el, icon, player, changed() {},
+  api: (method, path) => fetch("/api" + path, { method, headers: session ? { Authorization: "Bearer " + session } : {} })
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error("Erreur " + r.status)))) });
 
 // Les paroles du titre en cours ; synchronisées, la ligne chantée s'allume et reste au milieu de la boîte.
 let lyricsShown = null, lyricsExpanded = false;
@@ -395,7 +400,8 @@ function show(data) {
     url: t.version.url, downloadUrl: t.version.downloadUrl, duration: t.version.duration, peaks: t.version.peaks, comments: t.comments, credits: t.credits || {}, lyrics: t.lyrics || "", bpm: t.bpm, musicKey: t.key, offers: t.offers || [] }));
   // Une playlist : ses titres Spotify à leur place. Sans compte de la plateforme lié, ils sont grisés et ne se lisent pas.
   const platformItems = (data.items || []).map((x) => ({ position: x.position, key: "x" + x.id, title: x.title, artist: x.artist, subtitle: x.artist, cover: x.cover,
-    url: x.listen, duration: x.duration, peaks: null, comments: [], credits: {}, lyrics: "", offers: [], platform: x.platform, locked: !x.playable }));
+    url: x.listen, duration: x.duration, peaks: null, comments: [], credits: {}, lyrics: "", offers: [], platform: x.platform, locked: !x.playable,
+    engine: x.playable && x.platform === "spotify" && x.extId && OP.engines.spotifyEmbed ? "spotifyEmbed" : null, extId: x.extId }));
   const rows = [...cloudItems, ...platformItems].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   items = rows.filter((it) => !it.locked);
   renderAbout(data.about, data.owner, data.collabAbouts);
