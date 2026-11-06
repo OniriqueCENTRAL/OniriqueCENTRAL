@@ -97,7 +97,9 @@ ${spark(1)}${spark(2)}${spark(3)}
     button.setAttribute("aria-haspopup", "menu");
     button.setAttribute("aria-expanded", "false");
 
-    const item = (text, href, props = {}) => { const a = el("a", { href, textContent: text, ...props }); a.setAttribute("role", "menuitem"); return a; };
+    // Les pages du site depuis la racine : le menu sert aussi sous /abrasion/, où « compte » deviendrait /abrasion/compte.
+    const page = (href) => (/^(\/|https?:|#)/.test(href) ? href : "/" + href);
+    const item = (text, href, props = {}) => { const a = el("a", { href: page(href), textContent: text, ...props }); a.setAttribute("role", "menuitem"); return a; };
     const out = el("button", { className: "acct-out", type: "button", textContent: "Se déconnecter" });
     out.setAttribute("role", "menuitem");
     out.onclick = async () => {
@@ -105,14 +107,14 @@ ${spark(1)}${spark(2)}${spark(3)}
       try { sessionStorage.removeItem(TOKEN); localStorage.removeItem(TOKEN); } catch {}
       if (window.OniriqueAccent) window.OniriqueAccent.set(""); // déconnecté : la braise
       // Une page réservée renvoie au compte ; les autres se rechargent simplement, déconnectées.
-      if (/admin/.test(location.pathname)) location.href = "compte"; else location.reload();
+      if (/admin/.test(location.pathname)) location.href = "/compte"; else location.reload();
     };
     const download = item("Télécharger l'application", "/#telechargement");
     // Page de profil et messages : ce qui attend (messages non lus, abonnés et commentaires nouveaux) en pastille.
     const profileItem = item("Ma page de profil", "profil"), messagesItem = item("Messages et activité", "messages");
     fetch("/api/me/inbox-count", { headers: { Authorization: "Bearer " + token() } }).then((r) => (r.ok ? r.json() : null)).then((n) => {
       if (!n) return;
-      if (n.profile) profileItem.href = "profil?u=" + encodeURIComponent(n.profile);
+      if (n.profile) profileItem.href = "/profil?u=" + encodeURIComponent(n.profile);
       const waiting = n.messages + n.notifications;
       if (!waiting) return;
       messagesItem.append(el("i", { className: "acct-count", textContent: String(waiting) }));
