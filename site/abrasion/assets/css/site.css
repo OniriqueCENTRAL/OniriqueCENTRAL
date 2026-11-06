@@ -585,3 +585,43 @@ body.leaving{ pointer-events:none; }
 
 /* Un plugin pas encore en vente : bouton éteint (« Bientôt disponible ») */
 .ab-btn:disabled { opacity: .45; cursor: default; pointer-events: none; }
+
+/* 11. Pages de service : catalogue, compte, support ------------------------- */
+.ab-page{ padding-top:calc(var(--top) + clamp(3rem,8vh,5.5rem)); }
+.ab-narrow{ max-width:760px; }
+.ab-grid3{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:2.4rem 1.6rem; }
+@media (max-width:1040px){ .ab-grid3{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:680px){ .ab-grid3{ grid-template-columns:minmax(0,1fr); } }
+.ab-grid3 .ab-screen img{ width:100%; height:100%; object-fit:cover; }
+.ab-note{ padding:1.1rem 1.2rem; border:1px dashed var(--line-2); }
+.ab-note a, .ab-panel a:not(.ab-btn), .ab-form a{ color:#fff; }
+.ab-panel{ position:relative; padding:clamp(1.2rem,3vw,1.8rem); border:1px solid var(--line); background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.008)); }
+.ab-panel::before{ content:""; position:absolute; top:-1px; left:-1px; width:14px; height:14px; border-top:1px solid #fff; border-left:1px solid #fff; }
+.ab-seg{ display:grid; grid-template-columns:1fr 1fr; margin:0 0 1.4rem; border:1px solid var(--line-2); }
+.ab-seg button{ all:unset; cursor:pointer; padding:.85rem .6rem; text-align:center; font:400 .74rem/1 var(--mono); letter-spacing:.16em; text-transform:uppercase; color:var(--ink-2); }
+.ab-seg button[aria-selected="true"]{ background:#fff; color:#000; }
+.ab-seg button:focus-visible{ outline:1px solid #fff; outline-offset:2px; }
+.ab-form{ display:grid; gap:1.05rem; }
+.ab-field{ display:grid; gap:.45rem; }
+.ab-field > span{ font:400 .7rem/1.3 var(--mono); letter-spacing:.18em; text-transform:uppercase; color:var(--dim); }
+.ab-field > span i{ font-style:normal; letter-spacing:.08em; text-transform:none; color:var(--mute); }
+.ab-field input, .ab-field select, .ab-field textarea{ width:100%; min-height:46px; padding:.75rem .85rem; border:1px solid var(--line-2); border-radius:0; background:rgba(0,0,0,.55);
+  color:#fff; font:400 .95rem/1.4 var(--sans); transition:border-color .2s; -webkit-appearance:none; appearance:none; }
+.ab-field select{ background-image:linear-gradient(45deg,transparent 50%,#fff 50%),linear-gradient(135deg,#fff 50%,transparent 50%); background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;
+  background-size:5px 5px; background-repeat:no-repeat; padding-right:2.4rem; }
+.ab-field select option{ background:#07080c; color:#fff; }
+.ab-field textarea{ min-height:9rem; resize:vertical; }
+.ab-field input:focus, .ab-field select:focus, .ab-field textarea:focus{ outline:none; border-color:#fff; }
+.ab-formerr{ margin:0; min-height:0; font:400 .8rem/1.5 var(--mono); color:#ff6b6b; }
+.ab-formerr:empty, .ab-formnote:empty{ display:none; }
+.ab-formnote{ margin:0; padding:.7rem .85rem; border-left:1px solid #fff; font-size:.88rem; color:var(--ink-2); }
+.ab-form .ab-link{ justify-self:start; background:none; border:0; padding:0; cursor:pointer; }
+.ab-hp{ position:absolute !important; left:-9999px; width:1px; height:1px; overflow:hidden; }
+.ab-warn{ color:#ffd27a; }
+.ab-keys{ list-style:none; margin:.8rem 0 0; padding:0; border-top:1px solid var(--line); }
+.ab-keys li{ display:grid; grid-template-columns:6.5rem minmax(0,1fr) auto; gap:.9rem; align-items:center; padding:.8rem 0; border-bottom:1px dashed var(--line-2); }
+.ab-keys .k{ font:700 .9rem/1 var(--mono); color:#fff; }
+.ab-keys code{ font:400 .8rem/1.3 var(--mono); color:var(--ink-2); overflow-wrap:anywhere; }
+.ab-keys .st{ font:400 .68rem/1 var(--mono); letter-spacing:.16em; text-transform:uppercase; color:var(--dim); }
+.ab-keys .st.on{ color:#fff; }
+@media (max-width:520px){ .ab-keys li{ grid-template-columns:minmax(0,1fr) auto; } .ab-keys code{ grid-column:1 / -1; grid-row:2; } }

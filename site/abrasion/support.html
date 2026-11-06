@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support · abrasion</title>
+<meta name="description" content="Écrire au support d'abrasion (le support d'ONIRIQUE) : licences, installation, remboursement.">
+<meta name="theme-color" content="#000000">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Support · abrasion">
+<meta property="og:description" content="Écrire au support d'abrasion (le support d'ONIRIQUE) : licences, installation, remboursement.">
+<meta property="og:image" content="https://onirique.store/abrasion/assets/img/raw/interface.webp">
+<link rel="icon" href="/abrasion/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/abrasion/assets/css/site.css?v=4">
+<script src="/abrasion/assets/js/site.js" defer></script>
+<script src="/abrasion/assets/js/onirique.js" defer></script>
+<script src="/assets/account.js?v=15" defer></script>
+<script src="/abrasion/assets/js/viz.js" defer></script>
+<script src="/abrasion/assets/js/pages.js?v=1" defer></script>
+</head>
+<body class="w-abrasion" data-page="support">
+<a class="ab-skip" href="#main">Aller au contenu</a>
+<canvas class="ab-stars" aria-hidden="true"></canvas>
+
+<header class="ab-top">
+  <div class="ab-wrap ab-top-in">
+    <a class="ab-logo" href="/abrasion/" aria-label="abrasion, accueil"><span class="ab-glass s">abrasion</span></a>
+    <nav class="ab-nav" aria-label="Plugins abrasion"><a href="/abrasion/plugins">Plugins</a><a href="/abrasion/raw">RAW</a></nav>
+    <nav class="ab-switch" data-world="abrasion" aria-label="Changer d’univers">
+      <a href="/abrasion/" data-world="abrasion">abrasion</a>
+      <a href="/abrasion/labs" data-world="labs">labs</a>
+      <i class="ab-sw-thumb" aria-hidden="true"></i>
+    </nav>
+    <div class="ab-oni"><a href="/" title="Revenir sur ONIRIQUE">ONIRIQUE</a><a href="/abrasion/compte" data-account>Compte</a></div>
+    <button class="ab-menu-btn" type="button" aria-expanded="false" aria-controls="ab-menu">Menu</button>
+  </div>
+  <nav class="ab-menu" id="ab-menu" aria-label="Menu" hidden>
+    <ul>
+      <li><a href="/abrasion/">abrasion <span>accueil</span></a></li>
+      <li><a href="/abrasion/raw">RAW <span>synthé</span></a></li>
+      <li><a href="/abrasion/labs">abrasion labs <span>accueil</span></a></li>
+      <li><a href="/abrasion/omnis">OMNIS <span>mastering</span></a></li>
+      <li><a href="/abrasion/raw-2">RAW 2 <span>synthé</span></a></li>
+      <li><a href="/abrasion/plugins">Tous les plugins <span>catalogue</span></a></li>
+      <li><a href="/abrasion/compte">Mon compte <span>licences</span></a></li>
+      <li><a href="/abrasion/support">Support <span>aide</span></a></li>
+      <li><a href="/">ONIRIQUE <span>retour</span></a></li>
+      <li><a href="/abrasion/cgv">CGU · CGV <span>infos</span></a></li>
+    </ul>
+  </nav>
+</header>
+
+<main id="main">
+  <section class="ab-sec ab-page" aria-labelledby="h-support">
+    <div class="ab-wrap ab-narrow">
+      <p class="ab-eyebrow"><i></i>support</p>
+      <h1 class="ab-h2" id="h-support">Une question, un souci ?</h1>
+      <p class="ab-lede mt-s">Écris-nous : la réponse arrive par e-mail, en général sous 48 heures ouvrées. Le support d’abrasion est celui d’ONIRIQUE.</p>
+      <form id="ab-support" class="ab-form ab-panel mt-l" novalidate>
+        <div id="f-identity">
+          <label class="ab-field"><span>E-mail</span><input name="email" type="email" autocomplete="email" required></label>
+        </div>
+        <p class="ab-p" id="f-as" hidden></p>
+        <label class="ab-field"><span>Nom ou pseudo <i>facultatif</i></span><input name="name" autocomplete="nickname" maxlength="80"></label>
+        <label class="ab-field"><span>Plugin concerné</span><select name="product"><option value="">Aucun en particulier</option></select></label>
+        <label class="ab-field"><span>Sujet</span><input name="subject" required maxlength="120"></label>
+        <label class="ab-field"><span>Message</span><textarea name="message" rows="7" required maxlength="5000"></textarea></label>
+        <label class="ab-hp" aria-hidden="true">Ne pas remplir<input name="website" tabindex="-1" autocomplete="off"></label>
+        <p class="ab-formerr" role="alert"></p>
+        <button class="ab-btn wide" type="submit">Envoyer</button>
+      </form>
+      <div id="ab-sent" class="ab-panel mt-l" hidden>
+        <h2 class="ab-h3" tabindex="-1">Message envoyé</h2>
+        <p class="ab-p">On te répond à <b id="ab-sent-email"></b>. Pense à regarder dans les indésirables.</p>
+        <a class="ab-btn ghost sm mt-m" href="/abrasion/">Retour à abrasion</a>
+      </div>
+      <div class="ab-faq mt-l">
+        <details><summary>Où trouver ma licence ?</summary><div class="a"><p>Dans <a href="/abrasion/compte">ton compte</a>, et dans ONIRIQUE CENTRAL, connecté avec le même compte.</p></div></details>
+        <details><summary>Sur combien d’ordinateurs ?</summary><div class="a"><p>Deux. Tu peux en désactiver un depuis ONIRIQUE CENTRAL pour en activer un autre.</p></div></details>
+        <details><summary>Remboursement</summary><div class="a"><p>Tout est expliqué sur la page <a href="/abrasion/remboursement">rétractation et remboursement</a>.</p></div></details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="ab-foot">
+  <div class="ab-wrap">
+    <div class="ab-foot-grid">
+      <div class="ab-foot-brand"><span class="ab-glass s">abrasion</span><p>Plugins audio pour beatmakers et producteurs. Deux ateliers : abrasion et abrasion labs.</p></div>
+      <div><h2>abrasion</h2><ul><li><a href="/abrasion/">Accueil</a></li><li><a href="/abrasion/raw">RAW</a></li></ul></div>
+      <div><h2>abrasion labs</h2><ul><li><a href="/abrasion/labs">Accueil labs</a></li><li><a href="/abrasion/omnis">OMNIS</a></li><li><a href="/abrasion/raw-2">RAW 2</a></li></ul></div>
+      <div><h2>Compte</h2><ul><li><a href="/abrasion/plugins">Tous les plugins</a></li><li><a href="/abrasion/compte">Mon compte</a></li><li><a href="/abrasion/support">Support</a></li><li><a href="/">ONIRIQUE</a></li></ul></div><div><h2>Infos</h2><ul><li><a href="/abrasion/mentions-legales">Mentions légales</a></li><li><a href="/abrasion/cgv">CGV et CGU</a></li><li><a href="/abrasion/remboursement">Rétractation et remboursement</a></li><li><a href="/abrasion/confidentialite">Confidentialité</a></li><li><a href="/abrasion/cookies">Cookies</a></li></ul></div>
+    </div>
+    <div class="ab-foot-bot"><span>© <span data-year>2026</span> abrasion. Tous droits réservés.</span><span>Prix TTC · plugins VST3</span></div>
+  </div>
+</footer>
+</body>
+</html>
