@@ -51,6 +51,7 @@ import { mountMessages } from './messages.js';
 import { mountConcerts } from './concerts.js';
 import { mountDownloader } from './downloader.js';
 import { mountRocky } from './rocky.js';
+import { mountVocalBrain } from './vocalbrain.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
@@ -633,6 +634,7 @@ export function createApp() {
     || (can(req.user, right) ? undefined : new HttpError(403, "Cette fonction n'est pas ouverte à ce compte."))));
   mountDownloader(app, { optionalUser, wrap });
   mountRocky(app, { wrap });
+  mountVocalBrain(app, { wrap });   // le cerveau de VOCALBOX (apprentissage accepté par l'utilisateur)
   const team = allowed('youtube');
   // Brancher sa chaîne : pour les Shorts, ou pour publier ses prods depuis ONIRIQUE CLOUD.
   const channel = (req, res, next) => requireUser(req, res, (error) => next(error
