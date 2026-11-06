@@ -129,6 +129,8 @@ ${spark(1)}${spark(2)}${spark(3)}
       messagesItem,
       item("Carte des membres", "carte"),
       item("Tierlist", "tierlist"), // ouverte à tout compte connecté (server/src/tierlist.js)
+      // Réservée aux membres ONIRIQUE, beta-testeurs, équipe et fondateurs (ONIRIQUE dans server/src/docs.js).
+      ["vip", "beta", "betaf", "admin", "founder"].includes(user.role) ? item("WATCHPARTY", "watchparty") : null,
       el("hr"),
       item("Boutique", "boutique"),
       download,
