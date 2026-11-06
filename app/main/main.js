@@ -39,6 +39,12 @@ function setAudioDevices(web) {
 
 /** CUT et CLOUD : une vue chacun, créée à la première ouverture, gardée tant que le compte ne change pas. */
 const toolViews = new Map();
+let fullView = null; // la vue en plein écran (vidéo de la WATCHPARTY), qui couvre alors toute la fenêtre
+function coverWindow() {
+  if (!fullView || !win) return;
+  const [width, height] = win.getContentSize();
+  fullView.view.setBounds({ x: 0, y: 0, width, height });
+}
 let shownTool = null, frozen = false; // frozen : une fenêtre de l'application (Paramètres…) est ouverte par-dessus
 const toolContents = new Set(); // les pages de CUT et CLOUD, seules à pouvoir ouvrir la fenêtre de confirmation // l'outil à l'écran, pour le bouton « précédent » de la souris
 // ONIRIQUE_SITE : un site local, pour essayer CUT et CLOUD avant de les mettre en ligne (comme ONIRIQUE_SERVER pour l'API).
@@ -134,6 +140,23 @@ function toolView(tool, lang) {
       }`).catch(() => {});
     });
     web.on('zoom-changed', () => web.setZoomLevel(0));
+    // Le plein écran d'une page (la vidéo de la WATCHPARTY) prend tout l'écran : la fenêtre passe en plein écran et la
+    // vue la couvre entièrement ; en sortant, tout reprend sa place.
+    web.on('enter-html-full-screen', () => {
+      if (!win) return;
+      fullView = { view, wasFull: win.isFullScreen() };
+      win.setFullScreen(true);
+      coverWindow();
+      mini?.hide(); inviteWin?.hide();
+    });
+    web.on('leave-html-full-screen', () => {
+      if (!win || fullView?.view !== view) return;
+      const { wasFull } = fullView;
+      fullView = null;
+      if (!wasFull) win.setFullScreen(false);
+      view.setBounds(toolBounds);
+      if (invite && win.isVisible()) inviteWin?.showInactive();
+    });
     web.setVisualZoomLevelLimits(1, 1).catch(() => {});
     // La session du compte et la langue de l'application passent par le stockage de la vue, jamais par l'adresse.
     await web.loadURL(SITE + '/robots.txt');
@@ -303,12 +326,14 @@ function createMini() {
     if (parked && toolViews.has('cloud')) toolViews.get('cloud').then(parkCloud, () => {}); // CLOUD suit, toujours dessous
   });
   for (const e of ['move', 'resize', 'maximize', 'unmaximize']) win.on(e, placeMini);
+  for (const e of ['resize', 'enter-full-screen']) win.on(e, coverWindow); // la vidéo en plein écran suit la fenêtre
   win.on('minimize', () => mini.hide());
   placeMini();
   setInterval(refreshMini, 1000).unref();
 }
 async function refreshMini() {
   if (!mini || mini.isDestroyed() || !win || win.isDestroyed()) return;
+  if (fullView) return mini.hide(); // une vidéo en plein écran : rien par-dessus
   const away = shownTool !== 'cloud' || pageOpen; // CLOUD n'est pas à l'écran
   const web = away && !win.isMinimized() && win.isVisible() ? await cloudWeb() : null;
   const s = web ? await web.executeJavaScript(`(() => { if (typeof player === "undefined" || !player.item) return null;
@@ -843,7 +868,7 @@ app.whenReady().then(async () => {
     for (const other of toolViews.values()) if ((await other) !== view) await hideView(await other);
     if (!win.contentView.children.includes(view)) win.contentView.addChildView(view);
     toolBounds = Object.fromEntries(['x', 'y', 'width', 'height'].map((k) => [k, Math.max(0, Math.round(Number(bounds?.[k]) || 0))]));
-    view.setBounds(toolBounds);
+    if (fullView?.view === view) coverWindow(); else view.setBounds(toolBounds);
     // Une fenêtre de l'application est ouverte : l'outil reste caché derrière son image.
     if (frozen) await hideView(view); else await showView(view);
     shownTool = tool;

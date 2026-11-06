@@ -93,7 +93,13 @@ select { padding: 7px 10px; font-size: 13px; background: #140d0f; }
 .wp-row.on b { color: rgb(var(--acc-hi)); }
 .wp-row b { font: 500 11px var(--mono); }
 .wp-stats { position: absolute; right: 12px; top: 12px; z-index: 3; padding: 8px 10px; border-radius: 10px; background: rgba(9,8,10,.82); font: 500 10px/1.6 var(--mono); color: var(--label); white-space: pre; pointer-events: none; }
-@media (max-width: 720px) { .wp-bar .wp-reacts { display: none; } }
+.wp-live, .wp-time { white-space: nowrap; }
+.wp-note { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.wp-react-wrap { position: relative; flex: none; }
+.wp-react-wrap > button { font: 18px/1 "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif !important; }
+.wp-react-wrap .wp-reacts { position: absolute; right: -6px; bottom: 44px; display: none; flex-wrap: nowrap; padding: 6px; border-radius: 14px; z-index: 6;
+  background: rgba(14,10,12,.94); box-shadow: 0 0 0 1px rgba(255,255,255,.1) inset, 0 14px 30px rgba(0,0,0,.6); }
+.wp-react-wrap.open .wp-reacts { display: flex; }
 @media (max-width: 560px) { .wp-vol, .wp-time.dur { display: none; } .wp-bar { gap: 4px; padding-inline: 8px; } }
 /* Les réactions qui montent sur la vidéo, le chat posé dessus en plein écran, « Prêt ? » et le compte à rebours */
 .wp-float { position: absolute; bottom: 70px; z-index: 4; font: 38px/1 "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif; pointer-events: none; animation: wp-rise 2.6s ease-out forwards; text-align: center; }
@@ -107,6 +113,13 @@ select { padding: 7px 10px; font-size: 13px; background: #140d0f; }
 .stage:fullscreen.show .wp-fschat, .stage:fullscreen.paused .wp-fschat, .stage:fullscreen .wp-fschat:focus-within { opacity: 1; }
 .wp-fschat input { flex: 1; min-width: 0; background: rgba(9,8,10,.78); border-color: rgba(255,255,255,.18); }
 .stage:fullscreen .wp-overchat { bottom: 110px; }
+.wp-fstop { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 5; display: none; align-items: center; gap: 10px; max-width: calc(100% - 340px);
+  padding: 6px 12px; border-radius: 14px; background: rgba(9,8,10,.72); backdrop-filter: blur(8px); box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset; white-space: nowrap; pointer-events: none; }
+.stage:fullscreen .wp-fstop { display: flex; }
+.wp-fstop b { font: 800 13px var(--display); overflow: hidden; text-overflow: ellipsis; }
+.wp-fstop span { font: 500 10px var(--mono); letter-spacing: .1em; color: var(--label); text-transform: uppercase; }
+.wp-fstop .kc-mini { display: inline-flex; align-items: center; gap: 8px; font: 800 15px var(--display); color: #fff; }
+.wp-fstop .kc-mini svg { width: 26px; height: 30px; filter: drop-shadow(0 0 8px rgba(0,132,255,.8)); }
 .stage:fullscreen:not(.show):not(.paused) { cursor: none; }
 .stage.native .wp-hit, .stage.tw-click .wp-hit { display: none; }
 .wp-overchat div { padding: 5px 10px; border-radius: 10px; background: rgba(9,8,10,.72); font-size: 14px; color: #fff; animation: wp-fade 9s forwards; overflow-wrap: anywhere; }
@@ -143,6 +156,13 @@ body.kc { --acc: 0, 132, 255; --acc-hi: 140, 205, 255; --acc-lo: 4, 26, 84; --pi
 body.kc::before { background: radial-gradient(90% 60% at 20% -10%, rgba(0,90,255,.55), transparent 65%), radial-gradient(70% 50% at 100% 10%, rgba(0,180,255,.25), transparent 70%) !important;
   animation: kc-drift 18s ease-in-out infinite alternate; }
 @keyframes kc-drift { to { transform: translate3d(-3%, 2%, 0) scale(1.05); } }
+.r-title { display: flex; align-items: center; gap: 14px; }
+.kc-title-mark svg { width: 58px; height: 66px; display: block; filter: drop-shadow(0 0 14px rgba(0,132,255,.8)); }
+/* Le grand monogramme du fond : à peine visible, il respire lentement (un filigrane, pas une image). */
+#kc-logo-bg { position: fixed; z-index: -1; left: 50%; top: 52%; width: 86vmin; height: 97vmin; transform: translate(-50%, -50%); pointer-events: none; opacity: .045; animation: kc-glow 7s ease-in-out infinite alternate; }
+#kc-logo-bg svg { width: 100%; height: 100%; }
+@keyframes kc-glow { to { opacity: .08; } }
+@media (prefers-reduced-motion: reduce) { #kc-logo-bg { animation: none; } }
 #kc-wall { position: fixed; left: 0; right: 0; bottom: 0; z-index: -1; pointer-events: none; width: 100%; }
 body.kc::after { content: "KARMINE CORP · BLUE WALL · KARMINE CORP · BLUE WALL · "; position: fixed; z-index: -1; top: 34%; left: 0; white-space: nowrap; pointer-events: none;
   font: 800 16vw/1 var(--display); color: transparent; -webkit-text-stroke: 1px rgba(95,195,255,.13); animation: kc-marquee 60s linear infinite; }
@@ -161,7 +181,8 @@ body.kc::after { content: "KARMINE CORP · BLUE WALL · KARMINE CORP · BLUE WAL
 .kc-team b { display: block; font: 800 14px var(--display); letter-spacing: .04em; }
 .kc-mark svg { width: 46px; height: 52px; display: block; filter: drop-shadow(0 0 10px rgba(0,132,255,.7)); }
 .kc-opp-mark { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 12px; background: rgba(255,255,255,.06); font: 800 13px var(--display); color: #e9e2e3; }
-.kc-opp { width: 130px; padding: 4px 8px; font: 800 13px var(--display); text-align: right; background: rgba(255,255,255,.05); border-color: rgba(95,195,255,.25); }
+.kc-opp { width: 140px; padding: 3px 6px; font: 800 14px var(--display); letter-spacing: .04em; text-align: right; color: #fff; background: transparent; border: 1px solid transparent; border-radius: 8px; }
+.kc-opp:hover, .kc-opp:focus { background: rgba(255,255,255,.05); border-color: rgba(95,195,255,.35); outline: none; }
 .kc-dots { display: inline-flex; gap: 4px; margin-top: 6px; }
 .kc-dots i { width: 18px; height: 6px; border-radius: 3px; background: rgba(255,255,255,.15); }
 .kc-dots i.on { background: linear-gradient(90deg, #0a84ff, #5fc3ff); box-shadow: 0 0 8px rgba(0,132,255,.9); }
@@ -265,7 +286,7 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
 
   <section id="room" hidden>
     <div class="top">
-      <div><p class="eyebrow">WATCHPARTY</p><h1 id="r-name"></h1></div>
+      <div class="r-title"><span id="kc-title-mark" class="kc-title-mark" hidden></span><div><p class="eyebrow" id="r-eyebrow">WATCHPARTY</p><h1 id="r-name"></h1></div></div>
       <div class="row"><button class="btn" type="button" id="copy">Copier le lien d'invitation</button><button class="btn" type="button" id="close" hidden>Fermer la salle</button></div>
     </div>
     <section class="kc" id="kc" hidden aria-label="Karmine Corp : le match"></section>
@@ -329,6 +350,7 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
   <button class="btn" type="button" id="in-app" hidden>Ouvrir dans l'application ONIRIQUE CENTRAL</button></div></div>
 
 <canvas id="kc-wall" hidden aria-hidden="true"></canvas>
+<div id="kc-logo-bg" hidden aria-hidden="true"></div>
 <dialog id="picker" aria-labelledby="pk-title"><div class="glass">
   <div class="row" style="justify-content:space-between"><h2 id="pk-title" style="margin:0">Que partager ?</h2><button class="btn small" type="button" id="pk-close">Fermer</button></div>
   <div class="srcs" id="pk-list"></div>
@@ -402,6 +424,7 @@ function leave(text) {
   closePeers();
   clearStage(); // sinon YouTube (ou la vidéo) continue de jouer, cachée
   document.body.classList.remove("kc"); $("kc").hidden = true; kcWall(false); setReactionSet(false);
+  $("kc-title-mark").hidden = true; $("kc-logo-bg").hidden = true; $("r-eyebrow").textContent = "WATCHPARTY";
   code = ""; state = null; reader = null;
   history.replaceState(null, "", "watchparty");
   $("room").hidden = true;
@@ -439,6 +462,7 @@ function draw() {
   drawReady();
   syncCams();
   drawKc();
+  drawFsTop();
   if ((!sharing || s.media.peer !== s.you.peer) && Date.now() > shareGrace) stopLocal(); // shareGrace : le temps que la salle apprenne mon partage
   if (!sharing) closePeers();
 }
@@ -518,8 +542,25 @@ const overChat = () => {
     input.addEventListener("keydown", (e) => e.stopPropagation()); // les raccourcis du lecteur (espace, f, m) ne partent pas en écrivant
     st.appendChild(form);
   }
+  if (!st.querySelector(".wp-fstop")) st.appendChild(el("div", { className: "wp-fstop", id: "fstop" }));
   return st.querySelector(".wp-overchat") || st.appendChild(el("div", { className: "wp-overchat" }));
 };
+// Le haut du plein écran : le nom de la salle, les présents, et en mode Karmine Corp le score de la série.
+function drawFsTop() {
+  const box = $("fstop");
+  if (!box || !state) return;
+  const k = state.kc;
+  box.replaceChildren(...(k ? [el("span", { className: "kc-mini", innerHTML: KC_MARK + `<span>${k.kc} – ${k.opp} ${String(k.oppName || "T1").replace(/[<>&]/g, "")}</span>` }),
+    el("span", { textContent: k.kc >= 3 || k.opp >= 3 ? "Série terminée" : "Game " + Math.min(5, k.kc + k.opp + 1) + " · Bo5" })]
+    : [el("b", { textContent: state.name })]), el("span", { textContent: "👥 " + state.members.length }));
+}
+// En entrant en plein écran, les derniers messages du chat s'affichent sur la vidéo.
+document.addEventListener("fullscreenchange", () => {
+  if (document.fullscreenElement !== $("stage") || !state) return;
+  const over = overChat();
+  over.replaceChildren(...state.chat.slice(-4).map((c) => el("div", {}, el("b", { textContent: c.name }), c.text)));
+  drawFsTop();
+});
 
 // ——— L'horloge du serveur (comme le HM) : plusieurs allers-retours, le plus court gardé ———
 // Sans elle, chacun se calerait sur l'heure d'arrivée des messages, en retard de leur temps de trajet.
@@ -712,7 +753,10 @@ function makeBar(live, platform = false) {
   b.vol = el("input", { type: "range", className: "wp-vol", min: 0, max: 1, step: 0.02, value: vol.level, ariaLabel: "Volume" });
   b.vol.oninput = () => { vol.level = Number(b.vol.value); vol.muted = vol.level === 0; applyVolume(); };
   b.note = el("span", { className: "wp-note" });
-  b.reacts = reactButtons();
+  // Les réactions dans un plateau au-dessus de la barre : il reste ouvert pour enchaîner, se ferme d'un clic ailleurs.
+  b.reacts = el("div", { className: "wp-react-wrap" }, el("button", { type: "button", textContent: "😄", ariaLabel: "Réagir", title: "Réagir (emoji sur la vidéo, chez tous)",
+    onclick: (e) => { e.stopPropagation(); e.currentTarget.parentNode.classList.toggle("open"); } }), reactButtons());
+  b.reacts.addEventListener("click", (e) => e.stopPropagation());
   setTimeout(() => { setReactionSet.cur = ""; setReactionSet(kcOn()); }, 0);
   b.gear = el("button", { type: "button", ariaLabel: "Réglages du lecteur", title: "Réglages du lecteur", onclick: (e) => { e.stopPropagation(); toggleMenu(); } }, svg("gear"));
   b.full = el("button", { type: "button", ariaLabel: "Plein écran", onclick: () => fullscreen() }, svg("full"));
@@ -749,7 +793,10 @@ function toggleMenu(force) {
   }
   st.append(el("div", { className: "wp-menu", role: "menu", onclick: (e) => e.stopPropagation() }, ...items));
 }
-document.addEventListener("click", (e) => { if (!e.target.closest || !e.target.closest(".wp-menu")) toggleMenu(false); });
+document.addEventListener("click", (e) => {
+  if (!e.target.closest || !e.target.closest(".wp-menu")) toggleMenu(false);
+  if (!e.target.closest || !e.target.closest(".wp-react-wrap")) document.querySelectorAll(".wp-react-wrap.open").forEach((x) => x.classList.remove("open"));
+});
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") toggleMenu(false); });
 const fullscreen = () => { const st = $("stage"); if (document.fullscreenElement) document.exitFullscreen(); else st.requestFullscreen && st.requestFullscreen().catch(() => {}); };
 // La barre se montre au mouvement de la souris, et reste quand la vidéo est en pause.
@@ -1247,6 +1294,9 @@ function drawKc() {
   const k = state && state.kc, on = !!k;
   document.body.classList.toggle("kc", on);
   $("kc").hidden = !on;
+  // Le monogramme KC : devant le titre de la salle, et en grand dans le fond.
+  for (const [id, show] of [["kc-title-mark", on], ["kc-logo-bg", on]]) { const n = $(id); n.hidden = !show; if (show && !n.firstChild) n.innerHTML = KC_MARK; }
+  $("r-eyebrow").textContent = on ? "WATCHPARTY · KARMINE CORP · BLUE WALL" : "WATCHPARTY";
   kcWall(on);
   setReactionSet(on);
   if (!on) { kcPrev = null; return; }
