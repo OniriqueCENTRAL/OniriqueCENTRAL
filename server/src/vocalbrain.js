@@ -177,6 +177,9 @@ export function mountVocalBrain(app, { wrap, requireUser }) {
     const misses = all('SELECT query_norm AS query, tries, last_at AS at FROM vocalbox_misses ORDER BY last_at DESC LIMIT 300');
     const pub = setting('vocalbox_brain', null);
     const published = (typeof pub === 'string' ? parse(pub, {}) : pub) || {};
+    // le cerveau publié avec la dernière version de VOCALBOX (CI → publish-plugin.mjs) remplace la copie du dépôt dès qu'il est
+    // au moins aussi récent : la page suit le plugin toute seule
+    if (Array.isArray(published.artists) && (published.version || 0) >= (shipped.version || 0)) shipped = published;
     res.json({ shipped, published: { version: published.version || 0 }, found, misses, feedback,
       installs: get('SELECT COUNT(DISTINCT install) AS n FROM vocalbox_feedback').n });
   }));
