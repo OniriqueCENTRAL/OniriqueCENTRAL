@@ -54,6 +54,14 @@
       ],
       "multiLanguageInstaller": true
     },
+    "protocols": [
+      {
+        "name": "ONIRIQUE CENTRAL",
+        "schemes": [
+          "onirique"
+        ]
+      }
+    ],
     "publish": [
       {
         "provider": "generic",

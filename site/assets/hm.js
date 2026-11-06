@@ -241,10 +241,42 @@
       history.replaceState(null, "", location.pathname + location.search);
       return m[1];
     };
-    addEventListener("hashchange", () => { const c = fromHash(); if (c) join(c); });
-    let pending = fromHash();
-    try { pending = pending || sessionStorage.getItem(KEY); if (pending && !token) sessionStorage.setItem(KEY, pending); } catch {}
-    if (pending && token) join(pending);
+    const enter = (c) => { if (token) join(c); else try { sessionStorage.setItem(KEY, c); } catch {} };
+    // Dans un navigateur d'ordinateur, le lien essaie d'abord l'application ONIRIQUE CENTRAL (onirique://hm/CODE).
+    // Si la page perd la main dans les deux secondes, l'application (ou la question du navigateur) s'est ouverte ;
+    // sinon elle n'est pas installée et le HM se rejoint ici.
+    const inApp = !!(window.oniriqueApp || window.oniriqueDialog);
+    const phone = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const launch = (c) => {
+      const url = "onirique://hm/" + c;
+      // Firefox affiche une page d'erreur pour un protocole inconnu : chez lui, l'essai passe par un cadre invisible.
+      if (/Chrome|Edg/.test(navigator.userAgent)) location.href = url;
+      else { const f = el("iframe", { src: url, hidden: true }); document.body.append(f); setTimeout(() => f.remove(), 3000); }
+    };
+    function arrive(c) {
+      if (inApp || phone) return enter(c);
+      let away = false;
+      const left = () => { away = true; };
+      addEventListener("blur", left);
+      const msg = el("p", { className: "muted", textContent: "Ouverture du HM dans l'application ONIRIQUE CENTRAL…" });
+      dlg.replaceChildren(
+        el("div", { className: "dlg-head" }, el("b", { textContent: "HM" })),
+        el("div", { className: "hm-body" }, msg),
+        el("div", { className: "share-foot", style: "grid-template-columns:1fr 1fr" },
+          el("button", { className: "btn btn-ghost", type: "button", textContent: "Ouvrir dans l'application", onclick: () => launch(c) }),
+          el("button", { className: "btn btn-primary", type: "button", textContent: "Rejoindre ici", onclick: () => { dlg.close(); enter(c); } })));
+      dlg.showModal();
+      launch(c);
+      setTimeout(() => {
+        removeEventListener("blur", left);
+        if (!away && !document.hidden) { dlg.close(); enter(c); }
+        else msg.textContent = "Le HM s'est ouvert dans l'application ONIRIQUE CENTRAL. Tu ne l'as pas ? Rejoins-le ici, dans le navigateur.";
+      }, 2000);
+    }
+    addEventListener("hashchange", () => { const c = fromHash(); if (c) arrive(c); });
+    const linked = fromHash();
+    if (linked) arrive(linked);
+    else { let saved = null; try { saved = sessionStorage.getItem(KEY); } catch {} if (saved && token) join(saved); }
   }
 
   window.OniriqueHM = { setup };

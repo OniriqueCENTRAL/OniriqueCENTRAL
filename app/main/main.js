@@ -11,6 +11,10 @@ const store = require('./store');
 
 let win = null;
 
+// Une seule application ouverte à la fois : un lien onirique:// (un HM partagé) ouvert alors qu'elle tourne déjà arrive
+// dans celle-ci (second-instance), au lieu d'en lancer une deuxième.
+if (!app.requestSingleInstanceLock()) app.exit(0);
+
 /** CUT et CLOUD : une vue chacun, créée à la première ouverture, gardée tant que le compte ne change pas. */
 const toolViews = new Map();
 let shownTool = null, frozen = false; // frozen : une fenêtre de l'application (Paramètres…) est ouverte par-dessus
@@ -790,9 +794,37 @@ app.whenReady().then(async () => {
   });
 
   createWindow();
+  win.webContents.once('did-finish-load', () => openLink(earlyLink || process.argv.find((a) => /^onirique:\/\//i.test(a))));
   createMini();
   startAutoUpdate();
 });
+
+// Les liens onirique:// : onirique://hm/CODE ouvre CLOUD sur ce HM (le site le propose avant de le rejoindre dans le
+// navigateur). L'application, déjà lancée ou non, vient au premier plan.
+if (process.defaultApp) app.setAsDefaultProtocolClient('onirique', process.execPath, [path.resolve(process.argv[1] || '.')]);
+else app.setAsDefaultProtocolClient('onirique');
+app.on('second-instance', (_event, argv) => {
+  if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); }
+  openLink(argv.find((a) => /^onirique:\/\//i.test(a)));
+});
+// Mac : le lien arrive par open-url, parfois avant la fenêtre.
+let earlyLink = null;
+app.on('open-url', (event, url) => { event.preventDefault(); if (win) openLink(url); else earlyLink = url; });
+let linkSeq = 0;
+async function openLink(url) {
+  const m = /^onirique:\/\/hm\/([\w-]{1,32})\/?$/i.exec(String(url || ''));
+  if (!m || !win || win.webContents.isLoading()) return;
+  const seq = ++linkSeq;
+  if (win.isMinimized()) win.restore();
+  win.show(); win.focus();
+  win.webContents.send('navigate', 'cloud');
+  // CLOUD se crée quand l'interface l'affiche (après la connexion au compte, s'il le faut) : on l'attend 5 minutes au plus.
+  for (let i = 0; i < 600 && !toolViews.has('cloud'); i++) await new Promise((r) => setTimeout(r, 500));
+  const web = toolViews.has('cloud') ? (await toolViews.get('cloud').catch(() => null))?.webContents : null;
+  if (!web || seq !== linkSeq) return;
+  if (pageOpen) await closePage();
+  web.executeJavaScript(`location.hash = ${JSON.stringify('#/hm/' + m[1])}`).catch(() => {});
+}
 
 /**
  * Mise à jour automatique : à chaque lancement (puis toutes les deux heures), l'application regarde sur le site
