@@ -165,6 +165,48 @@ export function act(room, user, action, body = {}, t = now()) {
   }
 }
 
+/** Les amis d'un compte : ceux qu'il suit et qui le suivent. */
+const friendsOf = (uid) => all(`SELECT u.id, u.name, u.avatar, u.role FROM user_follows a
+  JOIN user_follows b ON b.follower_id = a.followed_id AND b.followed_id = a.follower_id
+  JOIN users u ON u.id = a.followed_id WHERE a.follower_id = ? ORDER BY u.name COLLATE NOCASE LIMIT 500`, uid);
+
+/**
+ * Inviter ses amis dans une salle en direct (le HM, la WATCHPARTY) : l'invitation arrive dans l'Activité (Messages), en
+ * notification sur ses appareils (notice), et en petit pop-up « Refuser / Rejoindre » (site/assets/invites.js).
+ * base : le début des routes ; kind : le genre de la notification ; load(code), room(req), members(r) : ceux de la salle ;
+ * eligible(ami) : qui peut la rejoindre (par défaut, tout ami).
+ */
+export function mountInvites(app, { base, kind, guard, load, room, members, removed, notice, eligible = () => true }) {
+  const invitedTo = (code) => new Set(all('SELECT user_id FROM user_notifications WHERE kind = ? AND page = ?', kind, code).map((x) => x.user_id));
+  const friends = (uid) => friendsOf(uid).filter(eligible);
+  app.get(`${base}/invites`, guard, (req, res) => {
+    const rows = all(`SELECT n.id, n.page, n.body, u.name, u.avatar FROM user_notifications n JOIN users u ON u.id = n.actor_id
+      WHERE n.user_id = ? AND n.kind = ? AND n.read_at IS NULL AND n.created_at > ? ORDER BY n.id DESC LIMIT 5`, req.user.id, kind, now() - 6 * 3600_000);
+    res.set('Cache-Control', 'no-store').json(rows.filter((x) => load(x.page)).map((x) => ({ id: x.id, code: x.page, name: x.body,
+      from: { name: x.name || 'Membre', avatar: x.avatar ? `/api/media/${x.avatar}` : null } })));
+  });
+  app.post(`${base}/invites/:id/seen`, guard, (req, res) => {
+    run('UPDATE user_notifications SET read_at = ? WHERE id = ? AND user_id = ? AND kind = ?', now(), Number(req.params.id) || 0, req.user.id, kind);
+    res.json({ ok: true });
+  });
+  app.get(`${base}/:code/friends`, guard, (req, res) => {
+    const r = room(req), here = new Set(members(r).map((m) => m.id)), invited = invitedTo(r.code);
+    res.set('Cache-Control', 'no-store').json(friends(req.user.id).filter((f) => !r.kicked.includes(f.id)).map((f) => ({ id: f.id, name: f.name || 'Membre',
+      avatar: f.avatar ? `/api/media/${f.avatar}` : null, here: here.has(f.id), invited: invited.has(f.id) })));
+  });
+  app.post(`${base}/:code/invite`, guard, (req, res) => {
+    const r = room(req), target = Number(req.body?.userId);
+    if (!friends(req.user.id).some((f) => f.id === target)) throw new HttpError(403, "Tu ne peux inviter que tes amis : ceux que tu suis et qui te suivent.");
+    if (r.kicked.includes(target)) throw new HttpError(403, removed);
+    rateLimit(`${kind}-invite:${req.user.id}`, 60, 3600_000);
+    if (!invitedTo(r.code).has(target)) {
+      run('INSERT INTO user_notifications (user_id, kind, actor_id, page, body, created_at) VALUES (?, ?, ?, ?, ?, ?)', target, kind, req.user.id, r.code, r.name.slice(0, 140), now());
+      push(target, notice(req.user, r));
+    }
+    res.json({ ok: true });
+  });
+}
+
 export function mountHm(app, { requireUser }) {
   const rooms = new Map();    // code → salle (lue en base une fois)
   const streams = new Map();  // code → Set de { user, res }
@@ -235,41 +277,11 @@ export function mountHm(app, { requireUser }) {
     save(r); // après l'envoi : l'écriture en base ne retarde pas les présents
   }
 
-  // Inviter ses amis (ceux qu'on suit et qui nous suivent) : l'invitation arrive dans l'Activité (Messages), en
-  // notification sur ses appareils, et en fenêtre « Rejoindre » sur CLOUD s'il est ouvert.
-  const friendsOf = (uid) => all(`SELECT u.id, u.name, u.avatar FROM user_follows a
-    JOIN user_follows b ON b.follower_id = a.followed_id AND b.followed_id = a.follower_id
-    JOIN users u ON u.id = a.followed_id WHERE a.follower_id = ? ORDER BY u.name COLLATE NOCASE LIMIT 500`, uid);
-  const invitedTo = (code) => new Set(all("SELECT user_id FROM user_notifications WHERE kind = 'hm' AND page = ?", code).map((x) => x.user_id));
   // L'heure du serveur, pour que chaque lecteur mesure l'écart de son horloge (aller-retour le plus court).
   app.get('/api/hm/clock', (_req, res) => res.set('Cache-Control', 'no-store').json({ t: now() }));
 
-  app.get('/api/hm/invites', requireUser, (req, res) => {
-    const rows = all(`SELECT n.id, n.page, n.body, u.name, u.avatar FROM user_notifications n JOIN users u ON u.id = n.actor_id
-      WHERE n.user_id = ? AND n.kind = 'hm' AND n.read_at IS NULL AND n.created_at > ? ORDER BY n.id DESC LIMIT 5`, req.user.id, now() - 6 * 3600_000);
-    res.set('Cache-Control', 'no-store').json(rows.filter((x) => load(x.page)).map((x) => ({ id: x.id, code: x.page, name: x.body,
-      from: { name: x.name || 'Membre', avatar: x.avatar ? `/api/media/${x.avatar}` : null } })));
-  });
-  app.post('/api/hm/invites/:id/seen', requireUser, (req, res) => {
-    run("UPDATE user_notifications SET read_at = ? WHERE id = ? AND user_id = ? AND kind = 'hm'", now(), Number(req.params.id) || 0, req.user.id);
-    res.json({ ok: true });
-  });
-  app.get('/api/hm/:code/friends', requireUser, (req, res) => {
-    const r = room(req), here = new Set(members(r).map((m) => m.id)), invited = invitedTo(r.code);
-    res.set('Cache-Control', 'no-store').json(friendsOf(req.user.id).filter((f) => !r.kicked.includes(f.id)).map((f) => ({ id: f.id, name: f.name || 'Membre',
-      avatar: f.avatar ? `/api/media/${f.avatar}` : null, here: here.has(f.id), invited: invited.has(f.id) })));
-  });
-  app.post('/api/hm/:code/invite', requireUser, (req, res) => {
-    const r = room(req), target = Number(req.body?.userId);
-    if (!friendsOf(req.user.id).some((f) => f.id === target)) throw new HttpError(403, "Tu ne peux inviter que tes amis : ceux que tu suis et qui te suivent.");
-    if (r.kicked.includes(target)) throw new HttpError(403, 'Cette personne a été retirée du HM.');
-    rateLimit(`hm-invite:${req.user.id}`, 60, 3600_000);
-    if (!invitedTo(r.code).has(target)) {
-      run("INSERT INTO user_notifications (user_id, kind, actor_id, page, body, created_at) VALUES (?, 'hm', ?, ?, ?, ?)", target, req.user.id, r.code, r.name.slice(0, 140), now());
-      push(target, { title: 'Invitation au HM', body: `${req.user.name || 'Un ami'} t'invite à écouter « ${r.name} »`, url: `/mes-sons#/hm/${r.code}` });
-    }
-    res.json({ ok: true });
-  });
+  mountInvites(app, { base: '/api/hm', kind: 'hm', guard: requireUser, load, room, members, removed: 'Cette personne a été retirée du HM.',
+    notice: (from, r) => ({ title: 'Invitation au HM', body: `${from.name || 'Un ami'} t'invite à écouter « ${r.name} »`, url: `/mes-sons#/hm/${r.code}` }) });
 
   // Ouvrir un HM : celui que le compte avait déjà se ferme (un seul à la fois, comme sur Spotify).
   app.post('/api/hm', requireUser, (req, res) => {

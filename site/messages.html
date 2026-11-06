@@ -186,7 +186,7 @@ const REACTIONS = ["❤️", "🔥", "😂", "😮", "😢", "👍"];
 let current = new URLSearchParams(location.search).get("u"), peer = null, shown = "", selected = 0, replying = null, editing = null, lastThread = null;
 
 // ——— L'activité : abonnements, commentaires sur ma page, réponses à mes commentaires (lue dès qu'elle est ouverte) ———
-const SAYS = { follow: "s'est abonné à ta page", comment: "a commenté ta page", reply: "a répondu à un commentaire", hm: "t'invite à son HM" };
+const SAYS = { follow: "s'est abonné à ta page", comment: "a commenté ta page", reply: "a répondu à un commentaire", hm: "t'invite à son HM", watchparty: "t'invite à sa WATCHPARTY" };
 async function activity() {
   current = null; peer = null; shown = "";
   history.replaceState(null, "", "messages");
@@ -194,7 +194,7 @@ async function activity() {
   $("thread").replaceChildren(el("p", { className: "empty", textContent: "Chargement…" }));
   const list = await api("GET", "/me/activity");
   $("thread").replaceChildren(el("div", { className: "thread-head" }, backBtn(), el("b", { textContent: "Activité" })),
-    el("div", { className: "msgs" }, ...(list.length ? list.map((n) => el("a", { className: "note" + (n.read ? "" : " new"), href: n.kind === "hm" ? "mes-sons#/hm/" + encodeURIComponent(n.page || "") : n.kind === "follow" && n.actor.handle ? "profil?u=" + encodeURIComponent(n.actor.handle) : "profil?u=" + encodeURIComponent(n.page || "") },
+    el("div", { className: "msgs" }, ...(list.length ? list.map((n) => el("a", { className: "note" + (n.read ? "" : " new"), href: n.kind === "hm" ? "mes-sons#/hm/" + encodeURIComponent(n.page || "") : n.kind === "watchparty" ? "watchparty#" + encodeURIComponent(n.page || "") : n.kind === "follow" && n.actor.handle ? "profil?u=" + encodeURIComponent(n.actor.handle) : "profil?u=" + encodeURIComponent(n.page || "") },
       el("img", { src: avatarOf(n.actor.avatar), alt: "" }),
       el("span", {}, el("b", { textContent: n.actor.name }), " " + SAYS[n.kind] + (n.body ? " : « " + n.body + " »" : ""), el("time", { textContent: time(n.at) }))))
       : [el("p", { className: "empty", textContent: "Rien de neuf pour l'instant. Quand quelqu'un s'abonne à ta page ou la commente, c'est ici." })])));

@@ -7,8 +7,8 @@ self.addEventListener("push", (event) => {
     icon: "/assets/app-icon-192.png",
     badge: "/assets/app-icon-192.png",
     data: { url: data.url || "/mes-sons" },
-    // Une invitation au HM se rejoint ou se refuse depuis la notification.
-    ...(/#\/hm\//.test(data.url || "") ? { tag: data.url, actions: [{ action: "join", title: "Rejoindre" }, { action: "no", title: "Refuser" }] } : {}),
+    // Une invitation au HM ou à la WATCHPARTY se rejoint ou se refuse depuis la notification.
+    ...(/#\/hm\/|\/watchparty#/.test(data.url || "") ? { tag: data.url, actions: [{ action: "join", title: "Rejoindre" }, { action: "no", title: "Refuser" }] } : {}),
   }));
 });
 

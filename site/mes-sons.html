@@ -889,7 +889,8 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close('cancel')">Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
 <script src="assets/sounds-player.js?v=25"></script>
-<script src="assets/hm.js?v=10"></script>
+<script src="assets/invites.js?v=1"></script>
+<script src="assets/hm.js?v=11"></script>
 <script src="assets/platforms.js?v=17"></script>
 <script src="assets/rocky-builder.js?v=3"></script>
 <script src="assets/ratings.js?v=2"></script>
@@ -1013,6 +1014,9 @@ PF.setup({ api, el, icon, player, changed: (reload) => (reload ? refresh() : ren
 // La barre de recherche du CLOUD : les sons de Spotify, à écouter et à ajouter à une playlist.
 // HM : l'écoute partagée, façon Spotify Jam (assets/hm.js).
 OniriqueHM.setup({ api, token, el, icon, player, avatar, button: $("hm-open") });
+// Les invitations à une WATCHPARTY arrivent aussi ici (dans l'application, CLOUD est l'écran le plus ouvert).
+OniriqueInvites.watch({ base: "/watchparty", title: "Invitation à la WATCHPARTY", says: (x) => x.from.name + " t'invite à sa WATCHPARTY",
+  join: (c) => { location.href = "watchparty#" + c; }, avatar });
 $("pf-search").onsubmit = (event) => { event.preventDefault(); const q = $("pf-search").querySelector("input").value.trim(); if (q.length > 1) PF.openSearch(q); };
 // Les couleurs de chaque pochette, lues une fois.
 const tints = new Map();

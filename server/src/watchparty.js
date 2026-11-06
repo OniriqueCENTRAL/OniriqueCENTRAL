@@ -13,7 +13,7 @@ import crypto from 'node:crypto';
 import { config } from './config.js';
 import { db, get, run, now } from './db.js';
 import { HttpError, rateLimit, requireUser } from './auth.js';
-import { allowed } from './hm.js';
+import { allowed, mountInvites } from './hm.js';
 import { ONIRIQUE } from './docs.js';
 
 db.exec(`
@@ -198,6 +198,11 @@ export function mountWatchparty(app) {
     const row = get('SELECT code FROM watchparty_rooms WHERE owner_id = ? AND updated_at > ?', req.user.id, now() - IDLE_DAYS * 86400_000);
     res.set('Cache-Control', 'no-store').json({ code: row?.code || null });
   });
+
+  // Inviter ses amis, comme dans le HM ; seuls ceux qui ont accès à la WATCHPARTY sont proposés.
+  mountInvites(app, { base: '/api/watchparty', kind: 'watchparty', guard: member, load, room, members, eligible: isMember,
+    removed: 'Cette personne a été retirée de la WATCHPARTY.',
+    notice: (from, r) => ({ title: 'Invitation à la WATCHPARTY', body: `${from.name || 'Un ami'} t'invite à regarder « ${r.name} »`, url: `/watchparty#${r.code}` }) });
 
   app.get('/api/watchparty/:code', member, (req, res) => res.set('Cache-Control', 'no-store').json(view(room(req), req.user, null)));
 

@@ -45,21 +45,6 @@
 @media (max-width: 720px) { .op-pill > .hm-chip { display: none; } }
 #hm-dlg .hm-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 #hm-dlg .hm-head h3 { margin: 0; }
-.hm-invite { position: fixed; right: 16px; bottom: 110px; z-index: 90; width: min(360px, calc(100vw - 32px)); display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px;
-  padding: 12px 14px; border-radius: 18px; border: 1px solid rgba(var(--acc, 229,56,74),.55); background: #150a0c; color: var(--mist);
-  box-shadow: 0 20px 60px -20px rgba(0,0,0,.9), 0 0 40px -16px rgba(var(--acc, 229,56,74),.7); animation: hm-in .3s cubic-bezier(.2, .8, .2, 1); }
-.hm-invite.out { opacity: 0; transform: translateY(10px); transition: opacity .25s, transform .25s; }
-.hm-invite img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex: none; }
-.hm-invite .grow { flex: 1; min-width: 0; }
-.hm-invite b, .hm-invite small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hm-invite b { font: 700 14px var(--f-body); }
-.hm-invite small { color: var(--haze); font-size: 12px; margin-top: 2px; }
-.hm-invite-ctl { display: flex; gap: 8px; width: 100%; justify-content: flex-end; }
-.hm-invite .hm-mini { border: 1px solid var(--line); background: none; color: var(--mist); border-radius: 999px; padding: 7px 14px; font: 600 13px var(--f-body); cursor: pointer; }
-.hm-invite .hm-mini:hover { border-color: var(--ember); }
-.hm-invite .hm-mini.yes { background: var(--mist); color: var(--night); border-color: var(--mist); }
-@keyframes hm-in { from { opacity: 0; transform: translateY(14px); } }
-@media (prefers-reduced-motion: reduce) { .hm-invite { animation: none; } }
 #hm-dlg details.hm-friends { margin-top: 10px; border: 1px solid var(--line); border-radius: 14px; }
 #hm-dlg details.hm-friends summary { list-style: none; cursor: pointer; padding: 10px 12px; font: 600 14px var(--f-body); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 #hm-dlg details.hm-friends summary::-webkit-details-marker { display: none; }
@@ -437,44 +422,9 @@
       input.focus();
     }
 
-    // L'invitation d'un ami : un petit pop-up en bas de l'écran, « Refuser » ou « Rejoindre », même pendant un autre HM.
-    // Si la fenêtre n'est pas au premier plan (autre onglet, autre écran de l'application), une notification de
-    // l'ordinateur prévient aussi, sans jamais demander l'autorisation d'elle-même.
-    const shownInvites = new Set();
-    let invitePop = null;
-    function showInvite(x) {
-      const seen = () => api("POST", "/hm/invites/" + x.id + "/seen").catch(() => {});
-      const close = () => { if (invitePop === box) invitePop = null; box.classList.add("out"); setTimeout(() => box.remove(), 250); };
-      if (invitePop) invitePop.remove();
-      const box = invitePop = el("div", { className: "hm-invite", role: "alertdialog", ariaLabel: "Invitation au HM" },
-        el("img", { src: avatar(x.from), alt: "" }),
-        el("div", { className: "grow" }, el("b", { textContent: x.from.name + " t'invite au HM" }), el("small", { textContent: "« " + x.name + " »" })),
-        el("div", { className: "hm-invite-ctl" },
-          el("button", { className: "hm-mini", type: "button", textContent: "Refuser", onclick: () => { seen(); close(); } }),
-          el("button", { className: "hm-mini yes", type: "button", textContent: "Rejoindre", onclick: () => { seen(); close(); join(x.code); } })));
-      document.body.append(box);
-      if (!document.hasFocus() && "Notification" in window && Notification.permission === "granted") {
-        try {
-          const n = new Notification("Invitation au HM", { body: x.from.name + " t'invite à écouter « " + x.name + " »", icon: "assets/app-icon-192.png", tag: "hm-" + x.id });
-          n.onclick = () => { window.focus(); n.close(); };
-        } catch { /* le navigateur ne montre les notifications que par sw.js : le pop-up suffit */ }
-      }
-    }
-    async function checkInvites() {
-      if (!token || document.visibilityState === "hidden" && !window.oniriqueApp) return;
-      const list = await api("GET", "/hm/invites").catch(() => []);
-      for (const x of list.reverse()) {
-        if (shownInvites.has(x.id)) continue;
-        shownInvites.add(x.id);
-        if (x.code === code) { api("POST", "/hm/invites/" + x.id + "/seen").catch(() => {}); continue; } // déjà dedans
-        showInvite(x);
-      }
-    }
-    if (token) {
-      setTimeout(checkInvites, 2000);
-      setInterval(checkInvites, 15000);
-      document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checkInvites(); });
-    }
+    // L'invitation d'un ami : le pop-up « Refuser / Rejoindre » commun au HM et à la WATCHPARTY (assets/invites.js).
+    if (token && window.OniriqueInvites) OniriqueInvites.watch({ base: "/hm", title: "Invitation au HM", says: (x) => x.from.name + " t'invite au HM",
+      join: (c) => join(c), current: () => code, avatar });
 
     // Le lien d'un HM (#/hm/CODE), même ouvert avant de se connecter, et le HM en cours après un rechargement.
     const fromHash = () => {

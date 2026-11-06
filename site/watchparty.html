@@ -149,6 +149,7 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
       </div>
       <aside class="side">
         <div class="glass"><h2 id="p-title">Présents</h2><ul class="people" id="people"></ul>
+          <details id="friends" style="margin-top:12px"><summary>Inviter mes amis</summary><ul class="people" id="friend-list" style="margin-top:10px"></ul></details>
           <details id="perms-box" hidden style="margin-top:12px"><summary>Droits</summary><div class="perms" id="perms"></div></details>
         </div>
         <div class="glass chat"><h2>Chat</h2><div class="msgs" id="msgs" aria-live="polite"></div>
@@ -525,6 +526,27 @@ $("create").onsubmit = async (e) => {
     enter(r.code);
   } catch (err) { say(err.message); }
 };
+// Inviter mes amis (ceux que je suis et qui me suivent, avec accès à la WATCHPARTY) : la liste chargée à l'ouverture.
+const avatarOf = (p) => (p.avatar ? p.avatar + "?w=80" : "assets/favicon.png?v=2");
+async function drawFriends() {
+  const box = $("friend-list");
+  box.replaceChildren(el("li", { className: "muted", textContent: "Chargement…" }));
+  const list = await api("GET", "/watchparty/" + code + "/friends").catch((e) => { box.replaceChildren(el("li", { className: "muted", textContent: e.message })); return null; });
+  if (!list) return;
+  box.replaceChildren(...(list.length ? list.map((f) => el("li", {}, el("img", { src: avatarOf(f), alt: "" }), el("span", { className: "grow", textContent: f.name }),
+    f.here ? el("span", { className: "tag", textContent: "Déjà là" })
+      : el("button", { className: "btn small", type: "button", textContent: f.invited ? "Invité" : "Inviter", disabled: f.invited,
+        onclick: (e) => api("POST", "/watchparty/" + code + "/invite", { userId: f.id }).then(() => { e.target.textContent = "Invité"; e.target.disabled = true; }, (err) => say(err.message)) })))
+    : [el("li", { className: "muted", style: "background:none;font-size:13px", textContent: "Pas encore d'amis à inviter : tes amis sont les membres que tu suis et qui te suivent (pages de profil), avec accès à la WATCHPARTY." })]));
+}
+$("friends").ontoggle = () => { if ($("friends").open && code) drawFriends(); };
+// Les invitations reçues : une autre WATCHPARTY, ou un HM (dans CLOUD).
+if (window.OniriqueInvites) {
+  OniriqueInvites.watch({ base: "/watchparty", title: "Invitation à la WATCHPARTY", says: (x) => x.from.name + " t'invite à sa WATCHPARTY",
+    current: () => code, avatar: avatarOf, join: (c) => { if (c !== code) { location.hash = c; location.reload(); } } });
+  OniriqueInvites.watch({ base: "/hm", title: "Invitation au HM", says: (x) => x.from.name + " t'invite au HM", avatar: avatarOf,
+    join: (c) => { location.href = "mes-sons#/hm/" + c; } });
+}
 window.addEventListener("hashchange", () => { if (location.hash.slice(1) && location.hash.slice(1) !== code) location.reload(); });
 
 (async () => {
@@ -543,6 +565,7 @@ window.addEventListener("hashchange", () => { if (location.hash.slice(1) && loca
   } catch (e) { say(e.message); if (/réservée/.test(e.message)) return; if (code) { code = ""; history.replaceState(null, "", "watchparty"); home().catch(() => {}); } }
 })();
 </script>
+<script src="assets/invites.js?v=1"></script>
 <script src="assets/tools-menu.js?v=14"></script>
 <script src="assets/account.js?v=14"></script>
 <script src="assets/site-nav.js?v=20"></script>

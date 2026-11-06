@@ -154,6 +154,28 @@ try {
     await call('DELETE', `/api/watchparty/${code}`, { token: kay.token });
     await call('GET', `/api/watchparty/${code}`, { token: kay.token, expect: 404 });
   });
+  await step('inviter ses amis (abonnements réciproques, ayant accès) : une fois, dans l’Activité et en pop-up', async () => {
+    const zoe = await account('zoe', 'betaf');
+    const { code } = await call('POST', '/api/watchparty', { token: kay.token, expect: 201 });
+    // zoe et max suivent kay en retour ; lou est suivie sans réciprocité ; max n'a pas accès à la WATCHPARTY.
+    run('INSERT INTO user_follows (follower_id, followed_id, created_at) VALUES (?, ?, 0), (?, ?, 0), (?, ?, 0), (?, ?, 0), (?, ?, 0)',
+      kay.id, zoe.id, zoe.id, kay.id, kay.id, max.id, max.id, kay.id, kay.id, lou.id);
+    assert.deepEqual((await call('GET', `/api/watchparty/${code}/friends`, { token: kay.token })).map((f) => [f.id, f.invited]), [[zoe.id, false]]);
+    await call('POST', `/api/watchparty/${code}/invite`, { token: kay.token, body: { userId: max.id }, expect: 403 });
+    await call('POST', `/api/watchparty/${code}/invite`, { token: kay.token, body: { userId: lou.id }, expect: 403 });
+    await call('POST', `/api/watchparty/${code}/invite`, { token: kay.token, body: { userId: zoe.id } });
+    await call('POST', `/api/watchparty/${code}/invite`, { token: kay.token, body: { userId: zoe.id } });
+    assert.equal((await call('GET', `/api/watchparty/${code}/friends`, { token: kay.token }))[0].invited, true);
+    const activity = await call('GET', '/api/me/activity', { token: zoe.token });
+    assert.deepEqual(activity.filter((n) => n.kind === 'watchparty').map((n) => n.page), [code]);
+    // Le HM et la WATCHPARTY ont chacun leurs invitations.
+    assert.equal((await call('GET', '/api/hm/invites', { token: zoe.token })).length, 0);
+    const invites = await call('GET', '/api/watchparty/invites', { token: zoe.token });
+    assert.deepEqual(invites.map((i) => [i.code, i.from.name]), [[code, 'kay']]);
+    await call('POST', `/api/watchparty/invites/${invites[0].id}/seen`, { token: zoe.token });
+    assert.equal((await call('GET', '/api/watchparty/invites', { token: zoe.token })).length, 0);
+    await call('GET', '/api/watchparty/invites', { token: max.token, expect: 403 });
+  });
   console.log(`watchparty : ${passed} étapes ok`);
 } finally {
   server.closeAllConnections?.();

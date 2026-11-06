@@ -95,6 +95,10 @@ function toolView(tool, lang) {
       // Depuis la vue « page », un lien vers CLOUD referme la page et revient au CLOUD resté ouvert dessous.
       if (inSite && screen === 'cloud' && tool === 'page') { closePage(new URL(url).hash); return false; }
       if (inSite && (!screen || screen === tool)) return true;
+      // Rejoindre une WATCHPARTY depuis CLOUD, ou un HM depuis la WATCHPARTY : l'autre écran s'ouvre sur cette salle.
+      const hash = inSite ? new URL(url).hash : '';
+      if (screen === 'watchparty' && /^#[\w-]{1,32}$/.test(hash)) { openLink(`onirique://watchparty/${hash.slice(1)}`); return false; }
+      if (screen === 'cloud' && /^#\/hm\/[\w-]{1,32}$/.test(hash)) { openLink(`onirique://hm/${hash.slice(5)}`); return false; }
       if (screen) win?.webContents.send('navigate', screen);
       else if (/^https:\/\//.test(url)) shell.openExternal(url);
       return false;
