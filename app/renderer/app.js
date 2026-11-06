@@ -95,13 +95,23 @@ function titleStar() {
 // La couleur choisie colore toute l'application (et CUT, CLOUD, les fenêtres de confirmation) ; gardée sur ce PC.
 const ACCENTS = [['#e5384a', 'Braise'], ['#ff6a3d', 'Corail'], ['#e8b33a', 'Or'], ['#22c28a', 'Émeraude'], ['#2bb8d6', 'Lagon'],
   ['#3d7bff', 'Océan'], ['#8b5cf6', 'Améthyste'], ['#e64aa8', 'Fuchsia'], ['#a3a3a3', 'Acier']];
-const savedAccent = () => { try { return localStorage.getItem('onirique.accent') || DEFAULT_ACCENT; } catch { return DEFAULT_ACCENT; } };
-function setAccent(hex) {
+// Gardée par main.js (store.js) ; une couleur choisie avant, restée dans le localStorage, y est reprise une fois.
+const prefs = { ...central.prefs }; // copie : l'objet venu du preload est gelé
+if (!prefs.accent) { try { prefs.accent = localStorage.getItem('onirique.accent') || undefined; } catch {} }
+const savedAccent = () => prefs.accent || DEFAULT_ACCENT;
+function setAccent(hex, keep = true) {
   const p = applyAccent(hex);
-  try { localStorage.setItem('onirique.accent', hex); } catch {}
+  if (keep) { prefs.accent = hex; central.setPref('accent', hex).catch(() => {}); }
   call('theme:accent', p).catch(() => {});
 }
-setAccent(savedAccent());
+setAccent(savedAccent(), !central.prefs?.accent && !!prefs.accent);
+
+// L'image de fond choisie dans les Paramètres (gardée sur ce PC), sous un voile qui garde les textes lisibles.
+function setBackground(src) {
+  const box = document.querySelector('.backdrop');
+  box.style.background = src ? `linear-gradient(rgba(13, 8, 9, .68), rgba(13, 8, 9, .68)), url("${src}") center / cover no-repeat, var(--night)` : '';
+}
+call('settings:background').then(setBackground, () => {});
 
 const gearIcon = () => {
   const box = h('span', { 'aria-hidden': 'true', style: { display: 'grid' } });
@@ -126,11 +136,17 @@ function openSettings() {
     try { await call('api', 'POST', '/api/me/profile', { rocky: on }); user.rocky = on; }
     catch (error) { rocky.checked = !on; toast(error.message || 'Réglage non enregistré.', true); }
   });
+  const bgButton = (label, action) => button(label, async () => {
+    try { setBackground(await call('settings:background', action)); } catch (error) { toast(error.message, true); }
+  }, 'small quiet');
   modal('Paramètres', h('div', { class: 'stack' },
     eyebrow("Couleur de l'application"),
     h('p', { class: 'muted', style: { margin: 0 } }, 'Toute la CENTRAL prend cette couleur : boutons, voyants, lueurs, CUT et CLOUD compris.'),
     swatches,
     h('label', { class: 'row accent-own' }, custom, h('span', null, 'Une autre couleur…')),
+    eyebrow('Image de fond'),
+    h('p', { class: 'muted', style: { margin: 0 } }, "Une image de ce PC derrière toute la CENTRAL, voilée pour garder les textes lisibles. Elle reste sur ce PC."),
+    h('div', { class: 'row', style: { gap: '10px' } }, bgButton('Choisir une image…', 'pick'), bgButton("Retirer l'image", 'remove')),
     rocky && eyebrow('ROCKY'),
     rocky && h('label', { class: 'row', style: { gap: '12px', 'align-items': 'center' } }, rocky,
       h('span', null, h('b', null, 'Animations de ROCKY'), h('br'),

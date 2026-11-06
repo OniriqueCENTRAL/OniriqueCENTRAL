@@ -71,6 +71,15 @@ module.exports = {
     write();
   },
 
+  // Les réglages de l'interface (couleur, langue, image de fond) : ici plutôt que dans le localStorage de la page, dont
+  // Chromium retarde l'écriture sur le disque (perdue quand l'application est coupée, par une mise à jour notamment).
+  get prefs() { return read().prefs || {}; },
+  setPref(key, value) { read().prefs = { ...read().prefs, [key]: value ?? undefined }; write(); },
+
+  // L'icône près de l'horloge a déjà été expliquée (une seule fois, à la première fermeture).
+  get trayHint() { return !!read().trayHint; },
+  set trayHint(v) { read().trayHint = v; write(); },
+
   get installed() { return read().installed; },
 
   // Sur Mac : la version de Central qui a déjà remis en état les plugins installés (voir installer.repairMac).

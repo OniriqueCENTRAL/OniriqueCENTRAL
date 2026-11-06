@@ -1,4 +1,4 @@
-const { app, BrowserWindow, WebContentsView, clipboard, components, dialog, ipcMain, session, shell } = require('electron');
+const { app, BrowserWindow, Menu, Tray, WebContentsView, clipboard, components, dialog, ipcMain, nativeImage, session, shell } = require('electron');
 const { spawn } = require('node:child_process');
 const { autoUpdater } = require('electron-updater');
 const macUpdate = require('./mac-update');
@@ -44,8 +44,10 @@ function toolView(tool, lang) {
       ses.oniriqueReady = true;
       ses.webRequest.onBeforeRequest({ urls: [`${SITE}/api/announce.js*`] }, (_details, callback) => callback({ cancel: true }));
     }
+    // backgroundThrottling : la fenêtre cachée (icône près de l'horloge) ou réduite, la page reste « visible » pour Chromium,
+    // et le lecteur Spotify de CLOUD continue de jouer.
     const view = new WebContentsView({ webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, session: ses,
-      preload: path.join(__dirname, 'tool-preload.js') } });
+      backgroundThrottling: false, preload: path.join(__dirname, 'tool-preload.js') } });
     toolContents.add(view.webContents.id);
     view.setBackgroundColor('#00000000'); // transparente : le fond de l'application (nuit et braise) continue sous la page
     view.setVisible(false);
@@ -330,7 +332,18 @@ function createWindow() {
   win.on('app-command', (_event, command) => { if (command === 'browser-backward' && shownTool) toolBack(shownTool).catch(() => {}); });
   // La démo d'un plugin qui se lance dans l'application met aussi CLOUD en pause.
   win.webContents.on('media-started-playing', pauseCloud);
-  win.on('close', () => { store.windowState = { ...win.getNormalBounds(), maximized: win.isMaximized() }; });
+  // Fermer la fenêtre la cache : l'application reste ouverte (icône près de l'horloge, ou dans le Dock sur Mac) et le son
+  // de CLOUD continue. « Quitter » (menu de l'icône, Cmd+Q, mise à jour) la ferme pour de bon.
+  win.on('close', (event) => {
+    store.windowState = { ...win.getNormalBounds(), maximized: win.isMaximized() };
+    if (quitting) return;
+    event.preventDefault();
+    win.hide();
+    if (tray && process.platform === 'win32' && !store.trayHint) {
+      store.trayHint = true;
+      tray.displayBalloon({ iconType: 'info', title: 'ONIRIQUE CENTRAL reste ouvert', content: "Il continue ici, près de l'horloge. Clic droit sur l'icône, puis « Quitter », pour le fermer." });
+    }
+  });
   win.on('maximize', () => win.webContents.send('window:maximized', true));
   win.on('unmaximize', () => win.webContents.send('window:maximized', false));
 
@@ -338,6 +351,28 @@ function createWindow() {
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', (event) => event.preventDefault());
 }
+
+let quitting = false, tray = null;
+app.on('before-quit', () => { quitting = true; });
+function showWindow() {
+  if (!win) return;
+  if (win.isMinimized()) win.restore();
+  win.show(); win.focus();
+}
+function createTray() {
+  const mac = process.platform === 'darwin';
+  const icon = nativeImage.createFromPath(path.join(__dirname, '..', 'renderer', 'assets', 'logo.png')).resize({ width: mac ? 18 : 32 });
+  tray = new Tray(icon);
+  tray.setToolTip('ONIRIQUE CENTRAL');
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: 'Ouvrir ONIRIQUE CENTRAL', click: showWindow },
+    { type: 'separator' },
+    { label: 'Quitter', click: () => app.quit() },
+  ]));
+  tray.on('click', showWindow); // Windows : clic gauche ; sur Mac, le clic ouvre le menu
+}
+// Mac : un clic sur l'icône du Dock rouvre la fenêtre cachée.
+app.on('activate', showWindow);
 
 /** Les erreurs remontent à l'interface sous forme de données, avec leur message d'origine. */
 function handle(channel, fn) {
@@ -770,6 +805,22 @@ app.whenReady().then(async () => {
       media.clear();
     }
   });
+  // L'image de fond choisie : réduite et copiée dans le dossier de l'application, sur ce PC seulement (jamais envoyée).
+  const backgroundFile = () => path.join(app.getPath('userData'), 'fond.jpg');
+  const backgroundData = () => (store.prefs.background && fs.existsSync(backgroundFile())
+    ? `data:image/jpeg;base64,${fs.readFileSync(backgroundFile()).toString('base64')}` : null);
+  handle('settings:background', async (action) => {
+    if (action === 'remove') { fs.rmSync(backgroundFile(), { force: true }); store.setPref('background', null); return null; }
+    if (action !== 'pick') return backgroundData();
+    const result = await dialog.showOpenDialog(win, { properties: ['openFile'], filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg'] }] });
+    if (result.canceled) return backgroundData();
+    let image = nativeImage.createFromPath(result.filePaths[0]);
+    if (image.isEmpty()) throw new Error('Image illisible : choisissez un PNG ou un JPEG.');
+    if (image.getSize().width > 2560) image = image.resize({ width: 2560, quality: 'best' });
+    fs.writeFileSync(backgroundFile(), image.toJPEG(88));
+    store.setPref('background', true);
+    return backgroundData();
+  });
   handle('settings:vst3Dir', async (reset) => {
     if (reset) return void (store.vst3Dir = store.DEFAULT_VST3_DIR);
     const result = await dialog.showOpenDialog(win, { properties: ['openDirectory'], defaultPath: store.vst3Dir });
@@ -794,6 +845,7 @@ app.whenReady().then(async () => {
   });
 
   createWindow();
+  createTray();
   win.webContents.once('did-finish-load', () => openLink(earlyLink || process.argv.find((a) => /^onirique:\/\//i.test(a))));
   createMini();
   startAutoUpdate();
@@ -804,7 +856,7 @@ app.whenReady().then(async () => {
 // Seule l'application installée s'inscrit : une version de développement (npm start) ne doit pas lui prendre les liens.
 if (app.isPackaged) app.setAsDefaultProtocolClient('onirique');
 app.on('second-instance', (_event, argv) => {
-  if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); }
+  showWindow();
   openLink(argv.find((a) => /^onirique:\/\//i.test(a)));
 });
 // Mac : le lien arrive par open-url, parfois avant la fenêtre.
@@ -870,4 +922,14 @@ ipcMain.on('update:install', () => {
   else autoUpdater.quitAndInstall(true, true);
 });
 
+// Les réglages de l'interface, lus avant son premier script (preload) et écrits un par un.
+const PREFS = { accent: (v) => /^#[0-9a-f]{6}$/i.test(v), lang: (v) => v === 'fr' || v === 'en' };
+ipcMain.on('prefs:get', (event) => { event.returnValue = event.sender === win?.webContents ? store.prefs : {}; });
+ipcMain.handle('prefs:set', (event, key, value) => {
+  if (event.sender !== win?.webContents || !PREFS[key]?.(value)) return false;
+  store.setPref(key, value);
+  return true;
+});
+
+// La fenêtre ne se ferme que pour quitter (voir win.on('close')).
 app.on('window-all-closed', () => app.quit());

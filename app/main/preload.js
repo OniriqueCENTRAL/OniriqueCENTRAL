@@ -6,7 +6,7 @@ const CHANNELS = [
   'plugin:install', 'plugin:uninstall', 'plugin:reveal', 'plugin:open',
   'license:activate', 'license:deactivate',
   'admin:previewMail', 'admin:pick', 'admin:uploadVersion', 'admin:uploadImage', 'admin:refreshDemo', 'open:webmail', 'open:mail', 'open:site', 'tool:show', 'tool:hide', 'tool:freeze', 'tool:thaw', 'tool:home', 'tool:back', 'tool:reset', 'theme:accent',
-  'settings:server', 'settings:vst3Dir',
+  'settings:server', 'settings:vst3Dir', 'settings:background',
 ];
 
 contextBridge.exposeInMainWorld('central', {
@@ -18,6 +18,9 @@ contextBridge.exposeInMainWorld('central', {
     if (!result.ok) throw Object.assign(new Error(result.error), { status: result.status });
     return result.data;
   },
+  // Les réglages de l'interface (couleur, langue…), gardés par main.js dans le dossier de l'application.
+  prefs: ipcRenderer.sendSync('prefs:get'),
+  setPref: (key, value) => ipcRenderer.invoke('prefs:set', key, value),
   window: (action) => ipcRenderer.send('window', action),
   onProgress: (listener) => ipcRenderer.on('progress', (_event, data) => listener(data)),
   onMaximized: (listener) => ipcRenderer.on('window:maximized', (_event, value) => listener(value)),
