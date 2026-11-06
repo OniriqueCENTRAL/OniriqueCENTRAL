@@ -52,15 +52,19 @@ const fake = http.createServer((req, res) => {
       if (f.get('grant_type') === 'authorization_code' && f.get('code') === 'bon' && f.get('code_verifier') === VERIFIER && f.get('redirect_uri') === 'https://site.test/mes-sons') {
         return json({ access_token: 'acces-1', refresh_token: 'renouvelle-1', expires_in: 1 });
       }
+      // Un compte hors des 5 invités : Spotify le connecte, puis refuse l'API (403).
+      if (f.get('grant_type') === 'authorization_code' && f.get('code') === 'horsliste') return json({ access_token: 'acces-3', refresh_token: 'renouvelle-3', expires_in: 3600 });
       if (f.get('grant_type') === 'refresh_token' && f.get('refresh_token') === 'renouvelle-1') return json({ access_token: 'acces-2', expires_in: 3600 });
       res.statusCode = 400;
       json({ error: 'invalid_grant' });
     });
   }
   if (url.pathname.startsWith('/spapi/v1/')) {
-    if (!/^Bearer acces-[12]$/.test(req.headers.authorization || '')) { res.statusCode = 401; return json({}); }
+    if (!/^Bearer acces-[123]$/.test(req.headers.authorization || '')) { res.statusCode = 401; return json({}); }
+    if (req.headers.authorization === 'Bearer acces-3') { res.statusCode = 403; return json({ error: { status: 403 } }); }
     const route = url.pathname.slice(9);
-    if (route === '/me') return json({ id: 'nov', display_name: 'Nov', product: 'premium' });
+    // Depuis 2026, /me ne dit plus « product » : le compte est tenté en Premium.
+    if (route === '/me') return json({ id: 'nov', display_name: 'Nov' });
     if (route === '/search') return json({ tracks: { items: [{ type: 'track', id: SP1, name: url.searchParams.get('q'), duration_ms: 200000, artists: [{ name: 'Ninho' }],
       album: { images: [{ width: 300, url: 'https://i.scdn.co/image/s' }] } }] } });
     if (route === '/me/playlists') return json({ items: [{ id: 'Q'.repeat(22), name: 'Privée', items: { total: 3 }, images: [{ url: 'https://i.scdn.co/image/q' }] }, { id: 'piège', name: 'x' }] });
@@ -252,6 +256,8 @@ try {
     await call('POST', '/api/platforms/spotify/callback', { body: { code: 'bon', state: 'b.inconnu' }, expect: 400 });
     await call('POST', '/api/platforms/spotify/callback', { body: { code: 'mauvais', state: st }, expect: 400 });
     await call('POST', '/api/platforms/spotify/callback', { body: { code: 'bon', state: st }, expect: 400 }); // usage unique
+    const refused = await call('POST', '/api/me/platforms/spotify/connect', { token: member.token, body: { code: 'horsliste', verifier: VERIFIER }, expect: 403 });
+    assert.match(refused.error, /5 comptes invités/);
     const c = await call('POST', '/api/me/platforms/spotify/connect', { token: member.token, body: { code: 'bon', verifier: VERIFIER } });
     assert.deepEqual([c.name, c.premium, c.connected], ['Nov', true, true]);
     // Le jeton n'est jamais renvoyé avec les comptes, et il est chiffré dans la base.

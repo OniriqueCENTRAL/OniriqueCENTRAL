@@ -547,7 +547,7 @@
     const { el } = ctx;
     const a = state.accounts.find((x) => x.platform === platform);
     const on = platform === "spotify" ? !!(a && a.connected) : appleOn;
-    const head = el("div", { className: "pf-acc-head" }, el("b", { textContent: NAMES[platform] }),
+    const head = el("div", { className: "pf-acc-head" }, el("b", { textContent: platform === "spotify" ? "Spotify · accès complet" : NAMES[platform] }),
       on ? el("span", { className: "pf-tag", textContent: platform === "spotify" ? (a.premium ? "Premium · " + a.name : "Gratuit · " + a.name) : "Connecté" }) : "",
       on ? el("button", { className: "btn btn-ghost", type: "button", textContent: "Déconnecter", onclick: async () => {
         if (platform === "spotify") { await ctx.api("DELETE", "/me/platforms/spotify").catch((e) => { error = e.message; }); spToken = null; await load(); }
@@ -562,7 +562,7 @@
         catch (e) { error = "Connexion à Apple Music impossible : " + e.message; }
         busy = false; draw();
       } })));
-    const note = !on ? (platform === "spotify" ? "Connecte ton compte : tes titres Spotify se jouent en entier ici (abonnés Premium), et tes playlists s'importent en entier, privées comprises."
+    const note = !on ? (platform === "spotify" ? "Pour les comptes invités seulement : Spotify n'en laisse inviter que 5 par ONIRIQUE. L'accès complet ajoute la recherche par nom, la liste de tes playlists et leur import en entier, privées comprises. Sans invitation, la connexion ci-dessus suffit pour écouter en entier."
       : "Connecte ton compte : tes titres Apple Music se jouent en entier ici (abonnés Apple Music), et ta bibliothèque s'importe.")
       : platform === "spotify" && !a.premium ? "Spotify ne laisse jouer les titres en entier qu'aux comptes Premium : tu entends les extraits de 30 s. Tes playlists s'importent quand même en entier."
         : "Tes titres " + NAMES[platform] + " se jouent en entier ici, mêlés à tes sons du CLOUD.";
@@ -581,17 +581,20 @@
   function accountsPanel() {
     const { el } = ctx;
     return el("div", { className: "stack" }, ...["spotify"].map((platform) => {
-      if ((platform === "spotify" && conf && conf.spotify) || (platform === "apple" && conf && conf.apple)) return connectedBox(platform);
+      if (platform === "apple" && conf && conf.apple) return connectedBox(platform);
+      // Spotify : la connexion sur l'appareil pour tout le monde (sans liste d'invités), et l'accès complet en plus pour
+      // les 5 comptes que Spotify laisse inviter.
       if (platform === "spotify") {
         if (spWeb === null && window.oniriqueApp) setTimeout(spotifyChanged, 0);
-        return el("div", { className: "group pf-acc" },
+        return el("div", { className: "stack" }, el("div", { className: "group pf-acc" },
           el("div", { className: "pf-acc-head" }, el("b", { textContent: "Spotify" }),
             spWeb ? el("span", { className: "pf-tag", textContent: "Connecté" }) : "",
             spWeb ? el("button", { className: "btn btn-ghost", type: "button", textContent: "Se déconnecter", onclick: async () => { await window.oniriqueApp.spotifyLogout().catch(() => {}); spotifyChanged(); } })
               : el("button", { className: "btn btn-primary", type: "button", textContent: "Se connecter à Spotify", onclick: spotifyWebLogin })),
           el("p", { className: "pf-note", textContent: spWeb
-            ? "Ton compte Spotify est connecté sur cet appareil : tes titres Spotify se jouent en entier dans le lecteur du CLOUD, mêlés à tes sons. Pour importer une playlist, colle son lien dans « Coller un lien »."
-            : "Connecte-toi une fois à ton compte Spotify sur cet appareil : tes titres Spotify se jouent en entier dans le lecteur du CLOUD, mêlés à tes sons (sinon, leur extrait). Pour importer une playlist, colle son lien dans « Coller un lien »." }));
+            ? "Ton compte Spotify est connecté sur cet appareil : tes titres Spotify se jouent en entier dans le lecteur du CLOUD, mêlés à tes sons. Pour importer une playlist, colle son lien dans « Rechercher »."
+            : "Connecte-toi une fois à ton compte Spotify sur cet appareil : tes titres Spotify se jouent en entier dans le lecteur du CLOUD, mêlés à tes sons (sinon, leur extrait). Pour importer une playlist, colle son lien dans « Rechercher »." })),
+          conf && conf.spotify ? connectedBox(platform) : "");
       }
       const a = state.accounts.find((x) => x.platform === platform);
       const input = el("input", { type: "url", placeholder: NAMES[platform] + " : lien de ton profil", autocomplete: "off" });
@@ -632,9 +635,8 @@
       onclick: () => { tab = id; error = ""; draw(); } }, label)));
     // Sans compte connecté (ou tant que Spotify n'est pas branché sur ONIRIQUE), la recherche et les playlists attendent.
     const needAccount = () => el("div", { className: "group pf-acc" },
-      el("p", { className: "pf-note", textContent: api ? "Connecte ton compte Spotify : la recherche et tes playlists apparaissent ici, et tes titres se jouent en entier dans le lecteur du CLOUD."
-        : "La recherche et tes playlists Spotify ne sont pas encore branchées sur ONIRIQUE. En attendant, tu peux te connecter à Spotify pour écouter tes titres en entier." }),
-      el("div", {}, api ? el("button", { className: "btn btn-primary", type: "button", textContent: "Connecter Spotify", onclick: spotifyLogin }) : ""));
+      el("p", { className: "pf-note", textContent: "La liste de tes playlists demande l'accès complet, que Spotify réserve à 5 comptes invités. Sans lui, colle le lien d'une playlist dans « Rechercher » pour l'importer (publique ou partagée par lien)." }),
+      el("div", {}, api ? el("button", { className: "btn btn-ghost", type: "button", textContent: "J'ai un compte invité", onclick: spotifyLogin }) : ""));
     // La playlist du CLOUD qui reçoit les titres : choisie ici quand la fenêtre s'ouvre depuis la barre de recherche.
     const lists = cloudLists();
     const pick = lists.length ? el("label", { className: "pf-target" }, "Ajouter à",
@@ -643,7 +645,7 @@
         ...lists.map((x) => el("option", { value: String(x.id), selected: !!(target && target.id === x.id), textContent: x.title })))) : null;
     let body;
     if (tab === "account") body = accountsPanel();
-    else if (!api || !on) body = needAccount();
+    else if (tab === "lists" && (!api || !on)) body = needAccount();
     else if (tab === "lists") {
       if (ownLists.spotify === null && !busy) setTimeout(() => loadOwnLists("spotify"), 0);
       const L = ownLists.spotify;
@@ -664,13 +666,23 @@
             title: "Une playlist du même nom dans ton CLOUD, avec tous ses titres", onclick: () => importList(l) })))))
           : el("p", { className: "pf-note", textContent: "Aucune playlist sur ton compte Spotify." });
     } else {
-      const input = el("input", { type: "search", placeholder: "Chercher sur Spotify : titre, artiste", value: query, autocomplete: "off" });
+      // Sans l'accès complet (5 comptes invités au plus), Spotify ne se cherche pas par nom : on colle un lien.
+      const byName = api && on, isLink = (q) => /^https:\/\/(open\.spotify\.com|spotify\.link)\//.test(q);
+      const input = el("input", { type: "search", placeholder: byName ? "Chercher sur Spotify : titre, artiste, ou un lien" : "Colle le lien Spotify d'un titre, d'un album ou d'une playlist", value: query, autocomplete: "off" });
       body = el("div", { className: "stack" },
-        el("form", { onsubmit: (event) => { event.preventDefault(); query = input.value.trim(); if (query.length > 1) search("spotify", query); } }, input,
-          el("button", { className: "btn btn-primary", type: "submit", disabled: busy, textContent: "Chercher" })),
+        el("form", { onsubmit: (event) => {
+          event.preventDefault(); query = input.value.trim();
+          if (!byName && !isLink(query)) { error = "Colle un lien open.spotify.com : la recherche par nom demande l'accès complet (comptes invités)."; draw(); return; }
+          if (query.length > 1) search("spotify", query);
+        } }, input,
+          el("button", { className: "btn btn-primary", type: "submit", disabled: busy, textContent: byName ? "Chercher" : "Ouvrir" })),
         openedFromSearch ? pick : null,
+        // Une playlist ou un album collé : il s'importe en entier, comme une playlist du compte.
+        results.length && isLink(query) && /\/(playlist|album)\//.test(query) ? el("div", {}, el("button", { className: "btn btn-primary", type: "button", disabled: busy,
+          textContent: "Importer dans le CLOUD", title: "Une playlist du même nom dans ton CLOUD, avec tous ses titres", onclick: () => importList({ url: query, title: "" }) })) : null,
         results.length ? el("ul", { className: "group pf-list" }, ...results.map(resultRow))
-          : el("p", { className: "pf-note", textContent: busy ? "Recherche…" : "Cherche un titre ou un artiste : écoute-le, puis ajoute-le à une playlist du CLOUD." }));
+          : el("p", { className: "pf-note", textContent: busy ? "Recherche…" : byName ? "Cherche un titre ou un artiste : écoute-le, puis ajoute-le à une playlist du CLOUD."
+            : "Colle le lien d'un titre, d'un album ou d'une playlist Spotify (publique ou partagée par lien) : écoute-le, ajoute-le à une playlist du CLOUD, ou importe la playlist entière." }));
     }
     dialog.replaceChildren(
       el("div", { className: "dlg-head" }, el("b", { textContent: target && !openedFromSearch ? "Ajouter à « " + target.title + " »" : "Spotify" }),

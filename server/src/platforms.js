@@ -390,7 +390,7 @@ async function spotifyGet(token, route) {
     throw new HttpError(502, 'Spotify ne répond pas, réessaie dans un instant.');
   }
   if (r.status === 401) throw new HttpError(401, 'La connexion à Spotify a expiré : reconnecte ton compte.');
-  if (r.status === 403) throw new HttpError(403, "Spotify refuse ce compte : il doit être ajouté aux utilisateurs de l'application ONIRIQUE sur developer.spotify.com.");
+  if (r.status === 403) throw new HttpError(403, 'Spotify refuse cette demande à ce compte.');
   if (r.status === 404) throw new HttpError(404, 'Introuvable sur Spotify.');
   if (r.status === 400 || r.status === 429) {
     const why = (await r.json().catch(() => ({})))?.error?.message;
@@ -539,10 +539,16 @@ export function mountPlatforms(app, { requireUser, wrap }) {
     const data = await spotifyForm({ grant_type: 'authorization_code', code, redirect_uri: spotifyRedirect(), code_verifier: verifier });
     if (!data.refresh_token) throw new HttpError(502, 'Spotify a refusé la connexion.');
     const token = { access: data.access_token, refresh: data.refresh_token, expiresAt: now() + (Number(data.expires_in) || 3600) * 1000 };
-    const profile = await spotifyGet(token.access, '/me');
+    // 403 : le compte n'est pas parmi les 5 que Spotify laisse inviter en mode développement (liste tenue à la main).
+    const profile = await spotifyGet(token.access, '/me').catch((error) => {
+      throw error.status === 403 ? new HttpError(403, "Ce compte Spotify n'a pas l'accès complet : Spotify le réserve à 5 comptes invités par ONIRIQUE. "
+        + "Tu n'en as pas besoin : connecte-toi à Spotify dans « Mon compte » pour écouter en entier, et colle le lien d'une playlist dans « Rechercher » pour l'importer.") : error;
+    });
     const id = String(profile.id || '');
     if (!/^[A-Za-z0-9._-]{1,64}$/.test(id)) throw new HttpError(502, 'Réponse illisible de Spotify.');
-    const name = text(profile.display_name, 80) || id, premium = profile.product === 'premium' ? 1 : 0;
+    // Depuis 2026, /me ne dit plus si le compte est Premium : inconnu, on tente le lecteur Spotify (un compte gratuit le
+    // voit refuser et passe au lecteur intégré).
+    const name = text(profile.display_name, 80) || id, premium = profile.product === 'free' ? 0 : 1;
     run(`INSERT INTO sound_platform_accounts (user_id, platform, url, name, ext_id, token, premium, created_at) VALUES (?, 'spotify', ?, ?, ?, ?, ?, ?)
       ON CONFLICT(user_id, platform) DO UPDATE SET url = excluded.url, name = excluded.name, ext_id = excluded.ext_id, token = excluded.token, premium = excluded.premium`,
       userId, `https://open.spotify.com/user/${id}`, name, id, seal(JSON.stringify(token)), premium, now());
