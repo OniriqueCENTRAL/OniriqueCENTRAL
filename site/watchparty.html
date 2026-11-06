@@ -219,9 +219,8 @@ body.kc::after { content: "KARMINE CORP · BLUE WALL · KARMINE CORP · BLUE WAL
   font: 800 16vw/1 var(--display); color: transparent; -webkit-text-stroke: 1px rgba(95,195,255,.13); animation: kc-marquee 60s linear infinite; }
 @keyframes kc-marquee { to { transform: translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { body.kc::before, body.kc::after { animation: none; } }
-/* Twitch met son lecteur en pause (« cliquer pour lancer ») s'il le croit recouvert : une ombre portée voisine sur son image,
-   avec un fond qui bouge, suffit. Dans une salle Twitch, le fond KC reste fixe et les panneaux gardent leurs ombres internes seules. */
-body:has(.stage.tw)::before, body:has(.stage.tw)::after, body:has(.stage.tw) #kc-logo-bg { animation: none !important; }
+/* Twitch met son lecteur en pause (« cliquer pour lancer ») s'il le croit recouvert : l'ombre portée des panneaux voisins
+   débordait sur son image. Dans une salle Twitch, les panneaux gardent leurs ombres internes seules (le fond KC peut bouger). */
 body:has(.stage.tw) .glass { box-shadow: 0 1px 0 rgba(255,255,255,.12) inset !important; }
 .kc { margin: 0 0 14px; padding: 16px 18px; border-radius: 20px; display: grid; gap: 12px; background: linear-gradient(135deg, rgba(4,22,70,.85), rgba(2,8,26,.9));
   box-shadow: 0 0 0 1px rgba(95,195,255,.28) inset, 0 20px 60px -20px rgba(0,110,255,.6); }
@@ -1622,8 +1621,8 @@ async function camConstraints(video, audio) {
 $("cam-btn").onclick = async () => {
   if (myCam) { stopCam(); return send("cam", { on: false, peer: state.you.peer }); }
   try {
-    myCam = await navigator.mediaDevices.getUserMedia(await camConstraints({ width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 20 } },
-      { echoCancellation: true, noiseSuppression: true, autoGainControl: true }));
+    // La vignette : l'image seule, jamais le micro.
+    myCam = await navigator.mediaDevices.getUserMedia(await camConstraints({ width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 20 } }, false));
   } catch (e) { return say("Caméra indisponible : " + e.message); }
   camGrace = Date.now() + 5000; // le temps que la salle apprenne ma caméra
   await send("cam", { on: true, peer: state.you.peer });
