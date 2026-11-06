@@ -97,9 +97,11 @@
     const dlg = el("dialog", { id: "hm-dlg" }), pick = el("dialog", { id: "hm-pick" });
     const chip = el("button", { className: "hm-chip", type: "button", hidden: true });
     document.body.append(dlg, pick, chip);
-    chip.onclick = button.onclick = () => (state ? draw(true) : start());
+    // Sans HM en cours : celui que j'ai créé et qui est encore ouvert (page rechargée, application relancée), sinon un nouveau.
+    chip.onclick = button.onclick = () => (state ? draw(true) : api("GET", "/hm/mine").then((r) => (r.code ? join(r.code) : start()), () => start()));
 
     let code = null, state = null, offset = 0, stream = null, syncing = false, hold = false, lastSeek = 0;
+    let settle = null, loadedAt = 0, lastData = 0, hinted = null;
     let friendsOpen = false, friendList = null;
     const mine = () => state && state.you;
     const can = (perm) => !!(state && state.you.can[perm]);
@@ -148,6 +150,22 @@
       if (what === "prev") audio.currentTime = 0;
     };
 
+    // Le son tel que le joue ce lecteur-ci. Un titre Spotify passe par le moteur de chacun : le lecteur complet pour un
+    // compte Premium connecté, sinon le lecteur intégré de Spotify ; sans moteur (Apple Music non connecté), son extrait.
+    const localItem = (n) => {
+      const it = { ...n.item, key: keyOf(n), id: null, trackId: null, comments: [], lyrics: n.item.lyrics || "", peaks: n.item.peaks || [] };
+      const PF = window.OniriquePlatforms;
+      if (it.engine && PF) it.engine = PF.playerItem({ platform: it.engine === "spotifyEmbed" ? "spotify" : it.engine }).engine || undefined;
+      return it;
+    };
+    // Une fois le son vraiment parti (Spotify met quelques secondes à charger), il se cale tout de suite sur le HM.
+    audio.addEventListener("playing", () => {
+      const n = state && state.now;
+      if (!n || !settle || settle !== keyOf(n) || !player.item || player.item.key !== settle) return;
+      settle = null;
+      if (expected(n) > 1.5) { lastSeek = Date.now(); quiet(() => timeDesc.set.call(audio, expected(n))); }
+    });
+
     // Toutes les secondes : le bon son, à la bonne place, en lecture ou en pause comme le HM.
     setInterval(() => {
       const n = state && state.now;
@@ -157,15 +175,23 @@
       const want = n.playing && !hold;
       quiet(() => {
         if (!player.item || player.item.key !== keyOf(n)) {
-          origPlay([{ ...n.item, key: keyOf(n), id: null, trackId: null, comments: [], lyrics: n.item.lyrics || "", peaks: n.item.peaks || [] }], 0, want);
+          settle = keyOf(n); loadedAt = Date.now();
+          origPlay([localItem(n)], 0, want);
           lastSeek = 0;
           return;
         }
+        // Pendant le chargement (jusqu'à 6 s), on ne relance ni ne recale : le moteur n'a pas encore le titre.
+        if (settle && Date.now() - loadedAt < 6000) return;
+        settle = null;
         // Les paroles (cherchées par le serveur) et la forme d'onde arrivent parfois après le son : le lecteur les reprend.
         const cur = player.item;
         if (n.item.lyrics && cur.lyrics !== n.item.lyrics) cur.lyrics = n.item.lyrics;
         if (n.item.peaks && n.item.peaks.length && !(cur.peaks && cur.peaks.length)) { cur.peaks = n.item.peaks; player.redraw(); }
-        if (want && !player.playing) aPlay().catch(() => {});
+        if (want && !player.playing) {
+          aPlay().catch(() => {});
+          // Le navigateur (téléphone surtout) refuse de lancer le son tout seul : il faut un toucher.
+          if (hinted !== n.qid) { hinted = n.qid; setTimeout(() => { if (state && state.now && state.now.qid === n.qid && state.now.playing && !player.playing && !hold) toast("Touche ▶ dans le lecteur pour écouter le HM"); }, 1500); }
+        }
         if (!want && player.playing) aPause();
         const d = audio.duration;
         if ((Number.isFinite(d) && d > 0 || n.item.engine) && Math.abs(audio.currentTime - expected(n)) > 2 && Date.now() - lastSeek > 3000) {
@@ -185,10 +211,12 @@
       }
       const reader = response.body.getReader(), decoder = new TextDecoder();
       stream = reader;
+      lastData = Date.now();
       let buffer = "";
       for (;;) {
         const { value, done } = await reader.read().catch(() => ({ done: true }));
         if (done) break;
+        lastData = Date.now();
         buffer += decoder.decode(value, { stream: true });
         const blocks = buffer.split("\n\n");
         buffer = blocks.pop();
@@ -203,6 +231,8 @@
       if (code === c && stream === reader) setTimeout(() => code === c && connect(), 2000); // coupé (mise en ligne du serveur) : on revient
     }
     const connect = () => listen(code);
+    // Une connexion figée (réseau perdu sans fermeture) : plus rien depuis 70 s, alors que le serveur parle toutes les 25 s.
+    setInterval(() => { if (stream && code && Date.now() - lastData > 70_000) stream.cancel().catch(() => {}); }, 10_000);
     function receive(s) {
       const first = !state;
       offset = s.t - Date.now();

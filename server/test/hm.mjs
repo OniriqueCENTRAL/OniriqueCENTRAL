@@ -70,6 +70,7 @@ await step('file : le premier son part tout de suite, les suivants attendent ; r
 await step('un titre garde ses paroles, sa forme d’onde et son extrait signé ; le reste est refusé', () => {
   const x = cleanItem({ ...spotify('A'), lyrics: '[00:01.00] salut', peaks: [0, 0.5, 1], url: '/api/sounds/platform-items/3/preview?e=1&s=abc' });
   assert.deepEqual([x.lyrics, x.peaks, x.url], ['[00:01.00] salut', [0, 0.5, 1], '/api/sounds/platform-items/3/preview?e=1&s=abc']);
+  assert.equal(cleanItem({ ...spotify('E'), engine: 'spotifyEmbed' }).engine, 'spotify'); // chacun choisit son lecteur Spotify
   const y = cleanItem({ ...spotify('B'), peaks: [2], url: '/api/autre?x=1' });
   assert.deepEqual([y.peaks, y.url], [[], null]);
 });
@@ -148,6 +149,17 @@ try {
     await call('GET', `/api/hm/${code}`, { token: lou.token, expect: 403 });
     await k.until((m) => m.members?.length === 1);
     k.close();
+    // Tout le monde parti : en pause là où il en était ; le premier revenu le relance.
+    for (let i = 0; i < 50 && (await call('GET', `/api/hm/${code}`, { token: kay.token })).now.playing; i++) await new Promise((ok) => setTimeout(ok, 20));
+    const paused = await call('GET', `/api/hm/${code}`, { token: kay.token });
+    assert.equal(paused.now.playing, false);
+    assert.equal((await call('GET', '/api/hm/mine', { token: kay.token })).code, code);
+    assert.equal((await call('GET', '/api/hm/mine', { token: lou.token })).code, null);
+    const back = await live(code, kay.token);
+    const resumed = await back.until((m) => m.now);
+    assert.equal(resumed.now.playing, true);
+    assert.ok(Math.abs(resumed.now.pos - paused.now.pos) < 0.5);
+    back.close();
   });
 
   await step('inviter ses amis (abonnements réciproques) : seulement eux, une fois, et ils le voient', async () => {

@@ -63,13 +63,15 @@ export function cleanItem(raw) {
     lyrics: typeof raw.lyrics === 'string' ? raw.lyrics.slice(0, 20000) : '',
     peaks: Array.isArray(raw.peaks) && raw.peaks.length <= 2000 && raw.peaks.every((p) => typeof p === 'number' && p >= 0 && p <= 1)
       ? raw.peaks.map((p) => Math.round(p * 1000) / 1000) : [] };
-  if (['spotify', 'deezer', 'apple'].includes(raw.engine)) {
+  // Un titre de plateforme : le moteur (lecteur complet ou lecteur intégré de Spotify) se choisit chez chaque auditeur,
+  // selon son compte ; seule la plateforme est gardée.
+  if (['spotify', 'spotifyEmbed', 'deezer', 'apple'].includes(raw.engine)) {
     const extId = String(raw.extId || '');
     if (!/^[\w.-]{1,64}$/.test(extId)) throw new HttpError(400, 'Titre de plateforme illisible.');
     // L'extrait (secours, et source de la forme d'onde) : une adresse publique, ou celle, signée, du serveur.
     // shortcut: l'adresse signée expire au bout de 6 h ; un HM plus long perd l'extrait de ses plus vieux sons.
     const url = typeof raw.url === 'string' && raw.url.length <= 1000 && (raw.url.startsWith('https://') || PREVIEW.test(raw.url)) ? raw.url : null;
-    return { ...base, engine: raw.engine, extId, url };
+    return { ...base, engine: raw.engine === 'spotifyEmbed' ? 'spotify' : raw.engine, extId, url };
   }
   // L'extrait d'une plateforme sans lecteur intégré : son adresse publique.
   if (typeof raw.url === 'string' && raw.url.length <= 1000 && raw.url.startsWith('https://')) return { ...base, url: raw.url };
@@ -278,6 +280,12 @@ export function mountHm(app, { requireUser }) {
     res.status(201).json(view(r, req.user));
   });
 
+  // Mon HM encore ouvert (après un rechargement ou une relance de l'application) : le bouton HM le reprend.
+  app.get('/api/hm/mine', requireUser, (req, res) => {
+    const row = get('SELECT code FROM hm_rooms WHERE owner_id = ?', req.user.id);
+    res.set('Cache-Control', 'no-store').json({ code: row && load(row.code) ? row.code : null });
+  });
+
   app.get('/api/hm/:code', requireUser, (req, res) => res.set('Cache-Control', 'no-store').json(view(room(req), req.user)));
 
   // Le flux en direct : être connecté à ce flux, c'est être présent dans le HM.
@@ -293,9 +301,21 @@ export function mountHm(app, { requireUser }) {
     req.on('close', () => {
       clearInterval(ping);
       set.delete(s);
-      if (rooms.get(r.code) === r) for (const o of set) send(o, view(r, o.user));
+      if (rooms.get(r.code) !== r) return;
+      // Le dernier parti : le HM se met en pause là où il en est (la file ne défile pas dans le vide), et repart au retour du premier.
+      if (!set.size && r.now?.playing) {
+        Object.assign(r.now, { pos: positionOf(r.now, now()), playing: false, at: now() });
+        r.idle = true;
+        changed(r);
+        return;
+      }
+      for (const o of set) send(o, view(r, o.user));
     });
-    for (const o of set) send(o, view(r, o.user)); // le nouveau venu reçoit l'état, les autres le voient arriver
+    if (r.idle) {
+      r.idle = false;
+      if (r.now) Object.assign(r.now, { playing: true, at: now() });
+      changed(r);
+    } else for (const o of set) send(o, view(r, o.user)); // le nouveau venu reçoit l'état, les autres le voient arriver
   });
 
   app.post('/api/hm/:code/:action', requireUser, (req, res) => {
