@@ -558,3 +558,27 @@ body.leaving{ pointer-events:none; }
 .ab-oni > a{ display:inline-flex; align-items:center; height:36px; padding:0 .85rem; border:1px solid var(--line-2); font:700 .72rem/1 var(--mono); letter-spacing:.16em; text-transform:uppercase; text-decoration:none; color:var(--ink-2); }
 .ab-oni > a:hover{ background:rgba(255,255,255,.08); color:#fff; }
 @media (max-width:760px){ .ab-oni{ display:none; } }
+
+/* Menu du compte ONIRIQUE (/assets/account.js) aux couleurs d'abrasion : noir, angles droits, Space Mono, filets pointillés,
+   lueur blanche ; l'entrée survolée s'inverse comme le bouton abrasion / labs. (--acc est ici une couleur, pas « r, g, b ».) */
+.ab-oni .acct-button{ gap:.55rem; max-width:200px; padding:3px .8rem 3px 3px; border:1px solid var(--line-2); border-radius:0; background:rgba(0,0,0,.5); box-shadow:none;
+  color:var(--ink-2); font:700 .72rem/1 var(--mono); letter-spacing:.14em; text-transform:uppercase; transition:color .2s, background .2s, box-shadow .3s; }
+.ab-oni .acct-button:hover, .ab-oni .acct-button[aria-expanded="true"]{ color:#fff; background:rgba(255,255,255,.08); box-shadow:0 0 18px rgba(255,255,255,.18); }
+.ab-oni .acct-button img{ width:28px; height:28px; border-radius:0; background:#000; }
+.ab-oni .acct-dot{ top:1px; left:25px; border-radius:0; background:#fff; border-color:#000; box-shadow:0 0 8px rgba(255,255,255,.8); }
+.ab-oni .acct-menu{ padding:.4rem; border:1px solid var(--line-2); border-radius:0; background:rgba(0,0,0,.94); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
+  box-shadow:0 0 0 1px rgba(255,255,255,.04), 0 24px 60px rgba(0,0,0,.8), 0 0 40px rgba(var(--glow),.12); animation:ab-acct .28s var(--ease); }
+@keyframes ab-acct{ from{ opacity:0; transform:translateY(-6px); } }
+.ab-oni .acct-head{ border-bottom:1px dashed var(--line); }
+.ab-oni .acct-head img{ border-radius:0; }
+.ab-oni .acct-head strong{ font:700 .85rem/1.2 var(--mono); letter-spacing:.08em; text-transform:uppercase; color:#fff; }
+.ab-oni .acct-head small{ font:400 .7rem/1.2 var(--mono); color:var(--dim); }
+.ab-oni .acct-head em{ border-radius:0; padding:4px 7px; background:#fff; color:#000; box-shadow:0 0 14px rgba(255,255,255,.35); font:700 .6rem/1 var(--mono); letter-spacing:.16em; }
+.ab-oni .acct-menu a, .ab-oni .acct-menu button{ border-radius:0; padding:.6rem .7rem; color:var(--ink-2); font:400 .78rem/1.2 var(--mono); letter-spacing:.1em; text-transform:uppercase; transition:background .15s, color .15s; }
+.ab-oni .acct-menu a:hover, .ab-oni .acct-menu button:hover, .ab-oni .acct-menu a:focus-visible, .ab-oni .acct-menu button:focus-visible{ background:#fff; color:#000; box-shadow:0 0 18px rgba(255,255,255,.3); }
+.ab-oni .acct-menu hr{ border-top:1px dashed var(--line); }
+.ab-oni .acct-menu h6{ font:400 .62rem/1 var(--mono); letter-spacing:.28em; color:var(--mute); }
+.ab-oni .acct-count{ border-radius:0; background:#fff; color:#000; box-shadow:none; font:700 .65rem/20px var(--mono); }
+.ab-oni .acct-menu .acct-out{ color:var(--orange); }
+.ab-oni .acct-menu .acct-out:hover{ background:var(--orange); color:#000; }
+@media (prefers-reduced-motion:reduce){ .ab-oni .acct-menu{ animation:none; } }
