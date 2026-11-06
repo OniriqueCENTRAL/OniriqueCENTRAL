@@ -89,6 +89,24 @@ header .tools-menu a:hover, header .sn-social-drop a:hover { color: #fff; backgr
 @media (max-width: 420px) { body > header .brand { letter-spacing: .08em; gap: 8px; } }
 @media (max-width: 380px) { header .btn { letter-spacing: .02em !important; padding-inline: 9px !important; white-space: normal; } }
 
+/* Les autres boutons du site (outils : .go, boutique : .buy, support : .send, administration, CUT, écoute privée) :
+   les mêmes que .btn — capitales JetBrains Mono, rayon 12, le principal allumé à l'accent, le secondaire en verre. */
+.go, button.buy, .send, button.act[type="submit"] {
+  border: 0; border-radius: 12px; background: var(--lit); color: #fff; box-shadow: var(--lit-shadow);
+  font: 500 12px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase;
+  transition: transform .25s var(--ease), box-shadow .25s var(--ease), background .25s, color .25s;
+}
+.go:not(.ghost):hover, button.buy:not(.ghost):not(:disabled):hover, .send:not(:disabled):hover, button.act[type="submit"]:hover {
+  color: #fff; transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(var(--acc-hi),.7) inset, 0 8px 26px rgba(var(--acc),.45);
+}
+.go.ghost, button.buy.ghost, button.buy:disabled { background: rgba(255,255,255,.04); color: #d8c6c8; border: 0; box-shadow: 0 0 0 1px rgba(255,255,255,.10) inset; }
+.go.ghost:hover, button.buy.ghost:hover { color: #fff; background: rgba(255,255,255,.07); box-shadow: 0 0 0 1px rgba(255,255,255,.14) inset; }
+.go.ghost[aria-pressed="true"] { background: var(--lit); color: #fff; box-shadow: var(--lit-shadow); }
+.go:disabled, .send:disabled { transform: none; }
+.round.white, .round:is(#play, #adv-play, #adv-play2, #stem-play), .play-all { background: var(--lit); color: #fff; box-shadow: var(--lit-shadow); transition: transform .25s var(--ease), box-shadow .25s; }
+.round.white:not(:disabled):hover, .round:is(#play, #adv-play, #adv-play2, #stem-play):not(:disabled):hover, .play-all:hover { transform: scale(1.06); box-shadow: 0 0 0 1px rgba(var(--acc-hi),.7) inset, 0 8px 26px rgba(var(--acc),.45); }
+button.act, a.act { border-radius: 10px; }
+
 /* Verre : cartes et panneaux */
 /* (pas les cartes des fausses interfaces de plugin de l'accueil, .ui .card, dessinées à leur échelle) */
 .card:not(.ui *), .panel {
@@ -132,8 +150,8 @@ footer { border-top-color: var(--line); }
 /* Mouvement réduit : tout arrive d'un coup, rien ne dérive */
 @media (prefers-reduced-motion: reduce) {
   body::before, main > *, .da-rise, dialog[open] { animation: none !important; }
-  .btn, .drop { transition: none; }
-  .btn:hover, .btn-primary:hover { transform: none; }
+  .btn, .drop, .go, button.buy, .send, .round.white, .play-all { transition: none; }
+  .btn:hover, .btn-primary:hover, .go:hover, button.buy:hover, .send:hover, .round.white:hover, .play-all:hover { transform: none; }
 }
 /* Impression (devis, presskit, outils) : pas de fond */
 @media print { body::before { display: none; } html { background: #fff; } }
