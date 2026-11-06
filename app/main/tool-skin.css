@@ -172,3 +172,5 @@ dialog { border-radius: 30px !important; background: linear-gradient(160deg, rgb
 .onirique-parked, .onirique-parked * { opacity: 0 !important; pointer-events: none !important; cursor: default !important; }
 html.onirique-parked, html.onirique-parked body { overflow: hidden !important; scrollbar-width: none !important; }
 html.onirique-parked::-webkit-scrollbar { display: none !important; }
+/* CLOUD : Mon profil, Messages, HM, Réglages et SCAN sont dans le menu de gauche de l'application */
+a.install[href="profil"], a.install[href="messages"], #hm-open, #settings-open, #scan-open { display: none !important; }

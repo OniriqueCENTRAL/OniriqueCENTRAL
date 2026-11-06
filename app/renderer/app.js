@@ -249,6 +249,31 @@ function toggleMenu(open) {
     { duration: 260, delay: 60 + Math.min(i, 8) * 22, easing: ease, fill: 'backwards' }));
 }
 
+// Les boutons du haut de CLOUD, rangés dans la colonne de gauche : leur état (« HM · 3 », SCAN caché…) est relu dans
+// CLOUD chaque seconde tant qu'il est ouvert, et la colonne n'est redessinée que s'il change.
+let cloudButtons = [], cloudPoll = null;
+function drawCloudActions(box) {
+  box.replaceChildren(...cloudButtons.map((b, i) => b.hidden ? null : h('button', {
+    class: `menu-toggle tool-action${b.pressed ? ' on' : ''}`, type: 'button', title: b.title || b.label, 'aria-pressed': b.pressed ? 'true' : null,
+    onclick: () => call('tool:cloud-press', i).catch(() => {}),
+  }, b.label)).filter(Boolean));
+}
+function cloudActions() {
+  const box = h('div', { class: 'tool-actions' });
+  drawCloudActions(box);
+  clearInterval(cloudPoll);
+  const poll = async () => {
+    if (!box.isConnected) { clearInterval(cloudPoll); cloudPoll = null; return; }
+    const next = await call('tool:cloud-buttons').catch(() => null);
+    if (!next || JSON.stringify(next) === JSON.stringify(cloudButtons)) return;
+    cloudButtons = next;
+    drawCloudActions(box);
+  };
+  cloudPoll = setInterval(poll, 1000);
+  poll();
+  return box;
+}
+
 function compactSidebar() {
   const name = state.route.name, [label] = TOOL_NAMES[name];
   return h('nav', { class: 'sidebar compact' },
@@ -263,6 +288,7 @@ function compactSidebar() {
       } }, h('span', { class: 'row', style: { gap: '6px' } }, '←', h('span', null, 'Retour'))),
     h('button', { class: 'menu-toggle', type: 'button', title: 'Afficher le menu', 'aria-label': 'Afficher le menu', 'aria-expanded': 'false',
       onclick: () => toggleMenu(true) }, chevron(false)),
+    name === 'cloud' ? cloudActions() : null,
     h('div', { class: 'spacer' }),
     h('button', { class: 'tool-reset', type: 'button', title: `Réinitialiser ${label} : la page repart de zéro`, onclick: async () => {
       if (await attempt(() => call('tool:reset', name))) toast(`${label} est réinitialisé.`);

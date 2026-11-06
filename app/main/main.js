@@ -655,6 +655,22 @@ app.whenReady().then(async () => {
   // Un clic sur la rubrique déjà ouverte : retour à l'accueil de l'outil (après une page d'écoute, une autre page…).
   // « Retour » : la page d'avant dans l'outil (une page de profil, d'écoute, la carte…), comme le bouton précédent de la souris.
   handle('tool:back', (tool) => toolBack(tool));
+  // Les boutons du haut de CLOUD (Mon profil, Messages, HM, Réglages, SCAN) : dans l'application, ils sont rangés dans
+  // le menu de gauche (tool-skin.css les cache sur la page). L'interface lit leur état et les « clique » dans CLOUD.
+  const CLOUD_BUTTONS = 'a.install[href="profil"], a.install[href="messages"], #hm-open, #settings-open, #scan-open';
+  handle('tool:cloud-buttons', async () => {
+    const web = await cloudWeb();
+    if (!web) return [];
+    return web.executeJavaScript(`[...document.querySelectorAll(${JSON.stringify(CLOUD_BUTTONS)})].map((b) => ({
+      label: b.textContent.trim(), hidden: b.hidden, pressed: b.getAttribute("aria-pressed") === "true", title: b.title || "" }))`).catch(() => []);
+  });
+  handle('tool:cloud-press', async (index) => {
+    const web = await cloudWeb();
+    if (!web || !Number.isInteger(index) || index < 0 || index > 10) return;
+    // Une fenêtre de CLOUD (HM, Réglages, SCAN) s'ouvre sur CLOUD : la page ouverte par-dessus se referme d'abord.
+    await closePage();
+    await web.executeJavaScript(`document.querySelectorAll(${JSON.stringify(CLOUD_BUTTONS)})[${index}]?.click()`).catch(() => {});
+  });
   handle('tool:home', async (tool) => {
     if (!toolViews.has(tool)) return;
     if (tool === 'cloud' && pageOpen) return closePage();

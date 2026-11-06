@@ -411,6 +411,9 @@ button.key.copy:hover { color: var(--pink); }
 .menu-toggle.open { margin-bottom: 4px; }
 .menu-toggle.tool-back { font: 500 9px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; }
 .menu-toggle.tool-back span span { font-size: 9px; }
+.tool-actions { display: grid; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.06); }
+.menu-toggle.tool-action { height: auto; min-height: 30px; padding: 6px 4px; text-align: center; font: 500 9px/1.25 var(--mono); letter-spacing: .1em; text-transform: uppercase; overflow-wrap: anywhere; }
+.menu-toggle.tool-action.on { color: #fff; box-shadow: 0 0 0 1px rgba(var(--acc-hi), .55) inset; }
 .tool-reset { all: unset; cursor: pointer; display: grid; justify-items: center; gap: 4px; padding: 10px 4px; border-radius: 12px; color: var(--haze);
   font: 500 16px var(--mono); background: rgba(255,255,255,.03); box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset; transition: color .25s, box-shadow .25s; }
 .tool-reset span { font-size: 9px; letter-spacing: .12em; text-transform: uppercase; }
