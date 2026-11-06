@@ -119,7 +119,7 @@ select { padding: 7px 10px; font-size: 13px; background: #140d0f; }
 .wp-fstop b { font: 800 13px var(--display); overflow: hidden; text-overflow: ellipsis; }
 .wp-fstop span { font: 500 10px var(--mono); letter-spacing: .1em; color: var(--label); text-transform: uppercase; }
 .wp-fstop .kc-mini { display: inline-flex; align-items: center; gap: 8px; font: 800 15px var(--display); color: #fff; }
-.wp-fstop .kc-mini svg { width: 26px; height: 30px; filter: drop-shadow(0 0 8px rgba(0,132,255,.8)); }
+.wp-fstop .kc-mini img { width: 28px; height: 28px; object-fit: contain; filter: drop-shadow(0 0 8px rgba(0,132,255,.8)); }
 .stage:fullscreen:not(.show):not(.paused) { cursor: none; }
 .stage.native .wp-hit, .stage.tw-click .wp-hit { display: none; }
 .wp-overchat div { padding: 5px 10px; border-radius: 10px; background: rgba(9,8,10,.72); font-size: 14px; color: #fff; animation: wp-fade 9s forwards; overflow-wrap: anywhere; }
@@ -157,11 +157,11 @@ body.kc::before { background: radial-gradient(90% 60% at 20% -10%, rgba(0,90,255
   animation: kc-drift 18s ease-in-out infinite alternate; }
 @keyframes kc-drift { to { transform: translate3d(-3%, 2%, 0) scale(1.05); } }
 .r-title { display: flex; align-items: center; gap: 14px; }
-.kc-title-mark svg { width: 58px; height: 66px; display: block; filter: drop-shadow(0 0 14px rgba(0,132,255,.8)); }
+.kc-title-mark img { width: 64px; height: 64px; object-fit: contain; display: block; filter: drop-shadow(0 0 14px rgba(0,132,255,.8)); }
 /* Le grand monogramme du fond : à peine visible, il respire lentement (un filigrane, pas une image). */
-#kc-logo-bg { position: fixed; z-index: -1; left: 50%; top: 52%; width: 86vmin; height: 97vmin; transform: translate(-50%, -50%); pointer-events: none; opacity: .045; animation: kc-glow 7s ease-in-out infinite alternate; }
-#kc-logo-bg svg { width: 100%; height: 100%; }
-@keyframes kc-glow { to { opacity: .08; } }
+#kc-logo-bg { position: fixed; z-index: -1; left: 50%; top: 52%; width: 88vmin; height: 88vmin; transform: translate(-50%, -50%); pointer-events: none; opacity: .07; animation: kc-glow 7s ease-in-out infinite alternate; }
+#kc-logo-bg img { width: 100%; height: 100%; object-fit: contain; }
+@keyframes kc-glow { to { opacity: .12; } }
 @media (prefers-reduced-motion: reduce) { #kc-logo-bg { animation: none; } }
 #kc-wall { position: fixed; left: 0; right: 0; bottom: 0; z-index: -1; pointer-events: none; width: 100%; }
 body.kc::after { content: "KARMINE CORP · BLUE WALL · KARMINE CORP · BLUE WALL · "; position: fixed; z-index: -1; top: 34%; left: 0; white-space: nowrap; pointer-events: none;
@@ -179,10 +179,10 @@ body.kc::after { content: "KARMINE CORP · BLUE WALL · KARMINE CORP · BLUE WAL
 .kc-team { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .kc-team:not(.home) { flex-direction: row-reverse; text-align: right; }
 .kc-team b { display: block; font: 800 14px var(--display); letter-spacing: .04em; }
-.kc-mark svg { width: 46px; height: 52px; display: block; filter: drop-shadow(0 0 10px rgba(0,132,255,.7)); }
+.kc-mark img { width: 50px; height: 50px; object-fit: contain; display: block; filter: drop-shadow(0 0 10px rgba(0,204,255,.6)); }
 .kc-opp-mark { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 12px; background: rgba(255,255,255,.06); font: 800 13px var(--display); color: #e9e2e3; }
-.kc-opp { width: 140px; padding: 3px 6px; font: 800 14px var(--display); letter-spacing: .04em; text-align: right; color: #fff; background: transparent; border: 1px solid transparent; border-radius: 8px; }
-.kc-opp:hover, .kc-opp:focus { background: rgba(255,255,255,.05); border-color: rgba(95,195,255,.35); outline: none; }
+.kc-opp { width: 140px; padding: 3px 6px; font: 800 14px var(--display); letter-spacing: .04em; text-align: right; color: #fff; background: transparent !important; border: 1px solid transparent !important; box-shadow: none !important; border-radius: 8px; }
+.kc-opp:hover, .kc-opp:focus { background: rgba(255,255,255,.05) !important; border-color: rgba(95,195,255,.35) !important; outline: none; }
 .kc-dots { display: inline-flex; gap: 4px; margin-top: 6px; }
 .kc-dots i { width: 18px; height: 6px; border-radius: 3px; background: rgba(255,255,255,.15); }
 .kc-dots i.on { background: linear-gradient(90deg, #0a84ff, #5fc3ff); box-shadow: 0 0 8px rgba(0,132,255,.9); }
@@ -201,7 +201,7 @@ body.kc::after { content: "KARMINE CORP · BLUE WALL · KARMINE CORP · BLUE WAL
 .kc-bar span { position: relative; }
 .kc-next { margin: 0; font-size: 12px; }
 .kc-wall-btn { margin-left: auto; }
-@media (max-width: 640px) { .kc-score b { font-size: 32px; } .kc-team b { font-size: 11px; } .kc-mark svg { width: 34px; height: 38px; } .kc-opp-mark { width: 34px; height: 34px; } .kc-wall-btn { margin-left: 0; } }
+@media (max-width: 640px) { .kc-score b { font-size: 32px; } .kc-team b { font-size: 11px; } .kc-mark img { width: 36px; height: 36px; } .kc-opp-mark { width: 34px; height: 34px; } .kc-wall-btn { margin-left: 0; } }
 .kc-wave { position: absolute; inset: 0; z-index: 4; pointer-events: none; display: grid; place-items: center; align-content: center;
   background: linear-gradient(100deg, transparent 0%, rgba(0,132,255,.0) 30%, rgba(0,132,255,.55) 50%, rgba(95,195,255,.0) 70%, transparent 100%); background-size: 300% 100%; animation: kc-sweep 3s ease-out forwards; }
 .kc-wave b { font: 800 clamp(28px, 5.5vw, 72px)/1 var(--display); color: #fff; letter-spacing: .06em; text-shadow: 0 0 30px rgba(0,132,255,1); animation: kc-pop 3s ease-out forwards; }
@@ -1281,14 +1281,12 @@ function floatReaction({ emoji, name }) {
 // Le fond passe aux couleurs de la KC (bleu nuit et bleu électrique) avec le Blue Wall : une tribune de lumières qui fait
 // la vague. Au-dessus de la vidéo : le match (Worlds 2026, quart de finale, Bo5 contre T1 ce soir à 23 h, heure de
 // Paris), le score de la série réglé par ceux qui contrôlent la lecture, le pronostic de chacun, et les célébrations.
-// Le monogramme « KC » est dessiné ici (ce n'est pas le logo officiel du club).
 const KC_MATCH = { label: "Worlds 2026 · Quart de finale · Bo5", start: Date.parse("2026-11-06T22:00:00Z"), next: "Le vainqueur affronte Bilibili Gaming dimanche, en demi-finale." };
 const KC_REACTIONS = ["💙", "🔵", "🐐", "👑", "🔥", "😱", "💀", "🎉"];
 const kcOn = () => !!(state && state.kc);
 let kcPrev = null, kcVoting = false;
-const KC_MARK = '<svg viewBox="0 0 64 72" aria-hidden="true"><defs><linearGradient id="kcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5fc3ff"/><stop offset="1" stop-color="#0057ff"/></linearGradient></defs>'
-  + '<path d="M32 2 60 12v24c0 17-12 29-28 34C16 65 4 53 4 36V12z" fill="#04102e" stroke="url(#kcg)" stroke-width="3"/>'
-  + '<text x="32" y="46" text-anchor="middle" font-family="Unbounded, Arial Black, sans-serif" font-weight="800" font-size="24" fill="#fff" letter-spacing="-1">KC</text></svg>';
+// Le logo de la Karmine Corp, dans son bleu (assets/kc-logo.svg).
+const KC_MARK = '<img src="assets/kc-logo.svg?v=1" alt="" draggable="false">';
 
 function drawKc() {
   const k = state && state.kc, on = !!k;
