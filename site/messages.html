@@ -77,7 +77,15 @@ textarea, input[type=search] { border-radius: 12px; border: 1px solid var(--line
 .msg:has(> img.photo) { padding: 6px 6px 8px; }
 .msg:has(> img.photo) time { padding-inline: 6px; }
 .msg img.photo { display: block; width: auto; max-width: min(320px, 100%); max-height: 360px; min-height: 60px; border-radius: 13px; margin-bottom: 4px; cursor: zoom-in; }
-.msg audio { display: block; width: 260px; max-width: 100%; height: 40px; }
+.voice { display: flex; align-items: center; gap: 10px; width: 270px; max-width: 100%; padding: 2px 0; }
+.voice .vplay { flex: none; width: 38px; height: 38px; border-radius: 50%; border: 0; background: var(--mist); color: var(--night); display: grid; place-items: center; cursor: pointer; }
+.voice .vplay:hover { box-shadow: 0 0 0 4px rgba(255,142,154,.25); }
+.voice .vbars { flex: 1; min-width: 0; height: 30px; display: flex; align-items: center; gap: 2px; cursor: pointer; }
+.voice .vbars i { flex: 1; min-width: 2px; border-radius: 2px; background: rgba(246,238,238,.35); }
+.voice .vbars i.on { background: var(--mist); }
+.voice small { flex: none; width: 34px; font: 500 11px var(--f-mono); color: rgba(246,238,238,.75); text-align: right; }
+.voice .vspeed { flex: none; padding: 3px 7px; border-radius: 999px; border: 1px solid rgba(246,238,238,.3); background: rgba(0,0,0,.2); color: var(--mist); font: 600 11px var(--f-mono); cursor: pointer; }
+.voice .vspeed:hover { border-color: var(--mist); }
 .sounds { min-width: 220px; white-space: normal; }
 .sounds b { display: block; font: 700 13px var(--f-display); letter-spacing: .02em; margin-bottom: 6px; }
 .sound { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px; border: 0; border-radius: 10px; background: rgba(0,0,0,.22); color: var(--mist); font: 500 13px var(--f-body); text-align: left; cursor: pointer; margin-top: 4px; }
@@ -228,14 +236,66 @@ $("q").addEventListener("input", () => {
 const files = new Map();
 function fileNode(m) {
   if (files.has(m.id)) return files.get(m.id);
-  const node = m.attach.type === "image" ? el("img", { className: "photo", alt: "Photo" }) : el("audio", { controls: true, preload: "metadata" });
+  const voice = m.attach.type === "voice" ? voicePlayer(m.attach.duration) : null;
+  const node = voice ? voice.node : el("img", { className: "photo", alt: "Photo" });
   fetch(m.attach.url, { headers: { Authorization: "Bearer " + token } }).then((r) => (r.ok ? r.blob() : null)).then((b) => {
     if (!b) return;
+    if (voice) return voice.load(b);
     node.src = URL.createObjectURL(b);
-    if (node.tagName === "IMG") { node.onload = stick; node.onclick = (e) => { e.stopPropagation(); zoom(node.src); }; }
+    node.onload = stick;
+    node.onclick = (e) => { e.stopPropagation(); zoom(node.src); };
   }).catch(() => {});
   files.set(m.id, node);
   return node;
+}
+
+// Un vocal : lecture, forme d'onde (cliquer pour y aller), durée, vitesse ×1, ×1,5, ×2. Un seul joue à la fois.
+let playingVoice = null;
+const SPEEDS = [1, 1.5, 2];
+function voicePlayer(known) {
+  const audio = new Audio();
+  const BARS = 34;
+  const bars = el("div", { className: "vbars", role: "slider", ariaLabel: "Position dans le vocal", tabIndex: 0 }, ...Array.from({ length: BARS }, () => el("i", { style: "height:30%" })));
+  const play = el("button", { className: "vplay", type: "button", ariaLabel: "Écouter le vocal" }, OniriquePlayer.icon("play"));
+  const clock = el("small", { textContent: OniriquePlayer.time(known) });
+  const speed = el("button", { className: "vspeed", type: "button", ariaLabel: "Vitesse de lecture", textContent: "×1" });
+  let duration = known;
+  const draw = () => {
+    const at = duration ? audio.currentTime / duration : 0;
+    [...bars.children].forEach((b, i) => b.classList.toggle("on", (i + 0.5) / BARS <= at));
+    clock.textContent = OniriquePlayer.time(audio.currentTime > 0 && !audio.ended ? audio.currentTime : duration);
+    bars.ariaValueText = OniriquePlayer.time(audio.currentTime) + " sur " + OniriquePlayer.time(duration);
+  };
+  const setIcon = () => { play.replaceChildren(OniriquePlayer.icon(audio.paused ? "play" : "pause")); play.ariaLabel = audio.paused ? "Écouter le vocal" : "Mettre en pause"; };
+  audio.addEventListener("play", () => { if (playingVoice && playingVoice !== audio) playingVoice.pause(); playingVoice = audio; setIcon(); });
+  audio.addEventListener("pause", setIcon);
+  audio.addEventListener("ended", () => { audio.currentTime = 0; setIcon(); draw(); });
+  audio.addEventListener("timeupdate", draw);
+  play.onclick = (e) => { e.stopPropagation(); if (audio.src) audio.paused ? audio.play().catch(() => {}) : audio.pause(); };
+  speed.onclick = (e) => {
+    e.stopPropagation();
+    const next = SPEEDS[(SPEEDS.indexOf(audio.playbackRate) + 1) % SPEEDS.length];
+    audio.playbackRate = next;
+    speed.textContent = "×" + String(next).replace(".", ",");
+  };
+  const seek = (fraction) => { if (duration && audio.src) { audio.currentTime = Math.max(0, Math.min(1, fraction)) * duration; draw(); } };
+  bars.onclick = (e) => { e.stopPropagation(); const r = bars.getBoundingClientRect(); seek((e.clientX - r.left) / r.width); };
+  bars.onkeydown = (e) => { if (e.key === "ArrowRight" || e.key === "ArrowLeft") { e.preventDefault(); seek((audio.currentTime + (e.key === "ArrowRight" ? 5 : -5)) / duration); } };
+  return {
+    node: el("div", { className: "voice", onclick: (e) => e.stopPropagation() }, play, bars, clock, speed),
+    async load(blob) {
+      audio.src = URL.createObjectURL(blob);
+      // La vraie forme d'onde et la vraie durée (celle d'un WebM enregistré par Chrome est inconnue du lecteur).
+      const wave = await OniriquePlayer.peaksOf(blob);
+      if (!wave) return;
+      duration = wave.duration || duration;
+      [...bars.children].forEach((b, i) => {
+        const part = wave.peaks.slice(Math.floor(i * wave.peaks.length / BARS), Math.floor((i + 1) * wave.peaks.length / BARS));
+        b.style.height = Math.max(12, Math.round(Math.max(0, ...part) * 100)) + "%";
+      });
+      draw();
+    },
+  };
 }
 function zoom(src) {
   const d = $("dlg");
@@ -386,7 +446,11 @@ async function record() {
   const mic = $("mic");
   if (recorder) return recorder.stop();
   if (!window.MediaRecorder || !navigator.mediaDevices) throw new Error("Ce navigateur n'enregistre pas de vocal.");
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => { throw new Error("Micro refusé : autorise-le pour onirique.store."); });
+  // Sur le site, le micro choisi par le navigateur ; dans l'application, celui des Paramètres (retrouvé par son nom).
+  const wanted = window.__oniriqueAudio?.mic;
+  const chosen = wanted && (await navigator.mediaDevices.enumerateDevices()).find((d) => d.kind === "audioinput" && d.label === wanted);
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: chosen ? { deviceId: { exact: chosen.deviceId } } : true })
+    .catch(() => { throw new Error("Micro refusé ou introuvable : autorise-le pour onirique.store, ou choisis-en un autre."); });
   // MP4 d'abord : c'est le format que lisent tous les téléphones, iPhone compris.
   const mimeType = ["audio/mp4", "audio/webm;codecs=opus", "audio/ogg;codecs=opus"].find((t) => MediaRecorder.isTypeSupported(t));
   const rec = recorder = new MediaRecorder(stream, mimeType ? { mimeType, audioBitsPerSecond: 64000 } : {});
