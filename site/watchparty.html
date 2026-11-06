@@ -259,7 +259,8 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
   <div class="srcs" id="pk-list"></div>
   <div class="row" style="justify-content:space-between">
     <div class="segs" role="group" aria-label="Priorité de l'image"><button class="seg" type="button" data-q="motion" aria-pressed="true" title="60 images par seconde : films, jeux, vidéos">Fluidité</button><button class="seg" type="button" data-q="detail" aria-pressed="false" title="Pleine définition : texte, code, logiciels">Netteté</button></div>
-    <label class="row" id="pk-audio-row" style="gap:6px;font-size:14px">Son <select id="pk-audio"><option value="system">Tout l'ordinateur</option><option value="none">Aucun</option><option value="pick">Une entrée audio…</option></select></label>
+    <label class="row" id="pk-audio-row" style="gap:6px;font-size:14px">Son <select id="pk-audio"><option value="system">Tout l'ordinateur</option><option value="except" hidden>Tout sauf une appli (Discord…)</option><option value="only" hidden>Une seule appli</option><option value="none">Aucun</option><option value="pick">Une entrée audio…</option></select>
+      <select id="pk-app" hidden aria-label="L'application"></select></label>
     <button class="btn btn-primary" type="button" id="pk-go" disabled>Partager</button>
   </div>
 </div></dialog>
@@ -879,6 +880,7 @@ setInterval(async () => {
 
 function stopLocal() {
   if (!local) return;
+  if (app && app.loopStop) app.loopStop().catch(() => {});
   for (const t of local.getTracks()) t.stop();
   if (fileVideo) { fileVideo.pause(); URL.revokeObjectURL(fileVideo.src); }
   local = null; fileVideo = null; localWhat = "";
@@ -886,7 +888,7 @@ function stopLocal() {
 let localWhat = "";
 // Le son du partage selon le réglage : celui de la capture, aucun, ou une entrée audio (câble virtuel, mixage stéréo…).
 async function audioFor(stream) {
-  if (adv.audio === "system") return stream;
+  if (adv.audio === "system" || adv.audio === "tap") return stream;
   for (const t of stream.getAudioTracks()) { stream.removeTrack(t); t.stop(); }
   if (adv.audio.startsWith("dev:")) {
     try {
@@ -924,6 +926,8 @@ async function appShare() {
   pick = null; $("pk-go").disabled = true;
   const sel = $("pk-audio");
   sel.querySelector('option[value="system"]').hidden = !res.audio;
+  tapApps = app.apps ? await app.apps().catch(() => []) : [];
+  for (const v of ["except", "only"]) sel.querySelector(`option[value="${v}"]`).hidden = !tapApps.length;
   sel.value = adv.audio.startsWith("dev:") ? "pick" : res.audio ? adv.audio : "none";
   if (sel.value === "pick") { await fillAudioInputs(sel); sel.value = adv.audio; }
   $("pk-list").replaceChildren(...res.sources.map((x) => el("button", { className: "src", type: "button", title: x.name,
@@ -932,6 +936,18 @@ async function appShare() {
   for (const o of document.querySelectorAll("#picker .seg")) o.setAttribute("aria-pressed", String(o.dataset.q === pickQ));
   $("picker").showModal();
 }
+// Le son d'une seule appli, ou de tout sauf une (Windows 11) : la liste des applis ouvertes, Discord proposé d'abord.
+let tapApps = [];
+async function drawTapApps() {
+  const mode = $("pk-audio").value, sel = $("pk-app");
+  sel.hidden = !["except", "only"].includes(mode);
+  if (sel.hidden) return;
+  if (!tapApps.length) tapApps = await app.apps().catch(() => []);
+  const discord = tapApps.find((a) => /discord/i.test(a.name));
+  sel.replaceChildren(...tapApps.map((a) => el("option", { value: a.pid, textContent: a.name + (a.title && a.title !== a.name ? " · " + a.title.slice(0, 40) : "") })));
+  if (mode === "except" && discord) sel.value = discord.pid;
+}
+$("pk-audio").addEventListener("change", drawTapApps);
 $("pk-audio").onchange = async (e) => {
   if (e.target.value === "pick") { await fillAudioInputs(e.target); const dev = [...e.target.options].find((o) => o.value.startsWith("dev:")); e.target.value = dev ? dev.value : "none"; }
 };
@@ -943,14 +959,50 @@ $("pk-close").onclick = () => $("picker").close();
 $("pk-go").onclick = async () => {
   if (!pick) return;
   // Fluidité : 1080p à 60 i/s ; Netteté : la définition de l'écran, 30 i/s. Les réglages avancés restent modifiables ensuite.
-  Object.assign(adv, pickQ === "motion" ? { pref: "motion", fps: "60", height: "1080" } : { pref: "detail", fps: "30", height: "source" }, { audio: $("pk-audio").value });
+  const audioMode = $("pk-audio").value, tapPid = Number($("pk-app").value);
+  Object.assign(adv, pickQ === "motion" ? { pref: "motion", fps: "60", height: "1080" } : { pref: "detail", fps: "30", height: "source" },
+    { audio: ["except", "only"].includes(audioMode) ? "tap" : audioMode });
   try { localStorage.setItem("onirique.wp.adv", JSON.stringify(adv)); } catch { /* stockage fermé */ }
   drawAdv();
   $("picker").close();
   await app.pickScreen(pick, adv.audio === "system");
   navigator.mediaDevices.getDisplayMedia({ video: captureConstraints(), audio: adv.audio === "system" })
-    .then((s) => share("screen", s), (e) => say("Partage d'écran impossible : " + e.message));
+    .then(async (s) => {
+      if (adv.audio === "tap") {
+        try { s.addTrack(await tapTrack(audioMode === "only" ? "include" : "exclude", tapPid)); }
+        catch (e) { say("Le son de l'appli n'a pas pu être capté (" + e.message + ") : le partage part sans son."); }
+      }
+      share("screen", s);
+    }, (e) => say("Partage d'écran impossible : " + e.message));
 };
+// Le son capté par l'application (PCM 48 kHz stéréo) devient une piste audio, par un petit processeur audio.
+const WORKLET = `class P extends AudioWorkletProcessor {
+  constructor() { super(); this.q = []; this.off = 0; this.size = 0;
+    this.port.onmessage = (e) => { const b = new Int16Array(e.data); this.q.push(b); this.size += b.length;
+      while (this.size > 48000 * 2 * 0.25 && this.q.length > 1) { this.size -= this.q.shift().length; this.off = 0; } }; } // 250 ms au plus : la latence ne s'accumule pas
+  process(_inputs, outputs) { const [l, r] = outputs[0];
+    for (let i = 0; i < l.length; i++) { const b = this.q[0]; if (!b) { l[i] = r[i] = 0; continue; }
+      l[i] = b[this.off] / 32768; r[i] = b[this.off + 1] / 32768; this.off += 2;
+      if (this.off >= b.length) { this.size -= b.length; this.q.shift(); this.off = 0; } }
+    return true; } }
+registerProcessor("onirique-pcm", P);`;
+let tapCtx = null, tapNode = null;
+async function tapTrack(mode, pid) {
+  if (!pid) throw new Error("aucune appli choisie");
+  if (!tapCtx) {
+    tapCtx = new AudioContext({ sampleRate: 48000 });
+    await tapCtx.audioWorklet.addModule(URL.createObjectURL(new Blob([WORKLET], { type: "application/javascript" })));
+    tapNode = new AudioWorkletNode(tapCtx, "onirique-pcm", { outputChannelCount: [2] });
+    app.onLoopPcm((u8) => { const b = u8.buffer.slice(u8.byteOffset, u8.byteOffset + u8.byteLength); tapNode.port.postMessage(b, [b]); });
+    app.onLoopEnd((codeOut, error) => { if (codeOut && local) say("Le son de l'appli s'est coupé : " + (error || "erreur " + codeOut)); });
+  }
+  await tapCtx.resume();
+  const dest = tapCtx.createMediaStreamDestination(); // une piste neuve à chaque partage (l'ancienne a été arrêtée)
+  tapNode.disconnect();
+  tapNode.connect(dest);
+  if (!(await app.loopStart(mode, pid))) throw new Error("capture refusée");
+  return dest.stream.getAudioTracks()[0];
+}
 $("sh-screen").onclick = () => app ? appShare() : navigator.mediaDevices.getDisplayMedia({ video: captureConstraints(), audio: adv.audio === "system",
   // Chrome : l'onglet partagé n'envoie que son propre son (pas Discord) ; le son du système reste proposé.
   systemAudio: "include", selfBrowserSurface: "exclude", surfaceSwitching: "include" })

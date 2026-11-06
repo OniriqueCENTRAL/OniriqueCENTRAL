@@ -37,6 +37,10 @@
         {
           "from": "../tools/probe/build/OniriqueProbe_artefacts/Release/OniriqueProbe.exe",
           "to": "onirique-probe.exe"
+        },
+        {
+          "from": "../tools/audiotap/bin/audiotap.exe",
+          "to": "audiotap.exe"
         }
       ]
     },

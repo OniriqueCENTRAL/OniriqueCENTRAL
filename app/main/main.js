@@ -1,5 +1,5 @@
 const { app, BrowserWindow, Menu, Tray, WebContentsView, clipboard, components, desktopCapturer, dialog, ipcMain, nativeImage, session, shell } = require('electron');
-const { spawn } = require('node:child_process');
+const { spawn, execFile } = require('node:child_process');
 const { autoUpdater } = require('electron-updater');
 const macUpdate = require('./mac-update');
 const fs = require('node:fs');
@@ -310,6 +310,54 @@ ipcMain.handle('tool:screen-pick', (event, id, audio) => {
   screenPick = { id, audio: !!audio, at: Date.now() };
   return true;
 });
+// Le son d'une seule application, ou de tout l'ordinateur sauf une (Discord…), pour le partage de la WATCHPARTY :
+// tools/audiotap (API « process loopback » de Windows 11 / build 20348 et plus). Le son arrive en PCM 48 kHz stéréo
+// 16 bits et part vers la page qui l'a demandé (tool:loop-pcm), qui en fait une piste audio.
+const AUDIOTAP = app.isPackaged ? path.join(process.resourcesPath, 'audiotap.exe') : path.join(__dirname, '..', '..', 'tools', 'audiotap', 'bin', 'audiotap.exe');
+const tapSupported = () => process.platform === 'win32' && Number(os.release().split('.')[2]) >= 20348 && fs.existsSync(AUDIOTAP);
+let tap = null;
+function stopTap() {
+  if (!tap) return;
+  const { child } = tap;
+  tap = null;
+  try { child.stdin.end(); } catch { /* déjà fermé */ }
+  setTimeout(() => { if (child.exitCode === null) child.kill(); }, 1000);
+}
+// Les applications ouvertes (avec une fenêtre), chacune par son processus racine : son arbre contient aussi les
+// processus qui jouent le son (Discord, les navigateurs en ont plusieurs).
+ipcMain.handle('tool:apps', async (event) => {
+  if (!toolContents.has(event.sender.id) || !tapSupported()) return [];
+  const script = "$w = Get-Process | Where-Object { $_.MainWindowTitle } | Select-Object Id, ProcessName, MainWindowTitle; "
+    + "$p = Get-CimInstance Win32_Process | Select-Object ProcessId, ParentProcessId, Name; @{ w = @($w); p = @($p) } | ConvertTo-Json -Compress -Depth 3";
+  const out = await new Promise((resolve) => execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], { windowsHide: true, maxBuffer: 16e6, timeout: 15000 },
+    (error, stdout) => resolve(error ? '' : stdout)));
+  let data;
+  try { data = JSON.parse(out); } catch { return []; }
+  const procs = new Map(data.p.map((x) => [x.ProcessId, x]));
+  const apps = new Map();
+  for (const w of data.w) {
+    let cur = procs.get(w.Id);
+    while (cur && procs.get(cur.ParentProcessId)?.Name === cur.Name) cur = procs.get(cur.ParentProcessId);
+    const pid = cur ? cur.ProcessId : w.Id;
+    if (pid === process.pid || apps.has(w.ProcessName.toLowerCase())) continue;
+    apps.set(w.ProcessName.toLowerCase(), { pid, name: w.ProcessName, title: String(w.MainWindowTitle).slice(0, 80) });
+  }
+  return [...apps.values()].sort((a, b) => a.name.localeCompare(b.name));
+});
+ipcMain.handle('tool:loop-start', (event, mode, pid) => {
+  if (!toolContents.has(event.sender.id) || !tapSupported() || !['include', 'exclude'].includes(mode) || !Number.isInteger(pid) || pid <= 0) return false;
+  stopTap();
+  const web = event.sender, child = spawn(AUDIOTAP, [mode, String(pid)], { windowsHide: true });
+  tap = { child };
+  let err = '';
+  child.stdout.on('data', (chunk) => { if (!web.isDestroyed()) web.send('tool:loop-pcm', chunk); });
+  child.stderr.on('data', (d) => { err += d; });
+  child.on('error', (e) => { err += e.message; });
+  child.on('exit', (codeOut) => { if (tap?.child === child) tap = null; if (!web.isDestroyed()) web.send('tool:loop-end', codeOut, err.trim().slice(0, 300)); });
+  web.once('destroyed', () => { if (tap?.child === child) stopTap(); });
+  return true;
+});
+ipcMain.handle('tool:loop-stop', (event) => { if (toolContents.has(event.sender.id)) stopTap(); });
 ipcMain.handle('tool:open-external', (event, url) => {
   if (!toolContents.has(event.sender.id) || !/^https:\/\/accounts\.spotify\.com\/authorize\?/.test(url)) return false;
   return shell.openExternal(url).then(() => true);

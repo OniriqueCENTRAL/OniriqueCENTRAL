@@ -13,6 +13,12 @@ contextBridge.exposeInMainWorld('oniriqueApp', {
   pickScreen: (id, audio) => ipcRenderer.invoke('tool:screen-pick', String(id), !!audio),
   // Twitch et YouTube connectés dans l'application (pour regarder sans pub dans la WATCHPARTY), et la déconnexion.
   accounts: () => ipcRenderer.invoke('tool:accounts'),
+  // Le son d'une seule appli, ou de tout sauf une (Discord…) : la liste des applis, puis le son en direct (PCM).
+  apps: () => ipcRenderer.invoke('tool:apps'),
+  loopStart: (mode, pid) => ipcRenderer.invoke('tool:loop-start', String(mode), Number(pid)),
+  loopStop: () => ipcRenderer.invoke('tool:loop-stop'),
+  onLoopPcm: (listener) => { ipcRenderer.on('tool:loop-pcm', (_event, chunk) => listener(chunk)); },
+  onLoopEnd: (listener) => { ipcRenderer.on('tool:loop-end', (_event, codeOut, error) => listener(codeOut, error)); },
   accountLogout: (name) => ipcRenderer.invoke('tool:account-logout', String(name)),
 });
 contextBridge.exposeInMainWorld('oniriqueDialog', (kind, message, value) =>
