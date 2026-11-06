@@ -19,12 +19,15 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; min-height: 100vh; background: var(--night); color: var(--bone); font: 400 15px/1.55 var(--body); -webkit-font-smoothing: antialiased; }
-body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(110% 55% at 50% -10%, rgba(122,13,28,.75), transparent 70%); }
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(110% 55% at 50% -10%, rgba(var(--acc-lo),.75), transparent 70%); }
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 8px; }
 [hidden] { display: none !important; }
 header { border-bottom: 1px solid var(--line); background: rgba(9,8,10,.6); backdrop-filter: blur(14px); }
-header .in { max-width: 1320px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px clamp(16px, 3vw, 32px); }
+header .wrap { max-width: 1320px; margin: 0 auto; display: flex; align-items: center; gap: 10px; padding: 14px clamp(16px, 3vw, 32px); }
+/* La marque à gauche ; à droite, dans l'ordre : les liens, le compte, la langue et le menu (ajoutés par site-nav.js). */
+header .brand { margin-right: auto; }
+header nav { display: flex; align-items: center; gap: 8px; }
 .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 800 16px/1 var(--display); letter-spacing: .16em; }
 .brand img { width: 40px; height: auto; margin-block: -10px; filter: drop-shadow(0 0 6px rgba(var(--acc),.8)); }
 main { max-width: 1320px; margin: 0 auto; padding: clamp(18px, 3vw, 32px) clamp(16px, 3vw, 32px) 60px; }
@@ -40,14 +43,14 @@ h2 { font: 800 13px var(--display); letter-spacing: .06em; margin: 0 0 10px; }
   transition: all .25s cubic-bezier(.2,.8,.2,1); white-space: nowrap; }
 .btn:hover { color: #fff; background: rgba(255,255,255,.08); transform: translateY(-1px); }
 .btn:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
-.btn.lit { color: #fff; background: linear-gradient(180deg, rgba(var(--acc),.55), rgba(120,12,28,.55)); box-shadow: 0 0 0 1px rgba(255,110,125,.55) inset, 0 6px 22px rgba(var(--acc),.35); }
+.btn.btn-primary { color: #fff; background: var(--lit); box-shadow: var(--lit-shadow); }
 .btn.small { height: 30px; padding: 0 10px; font-size: 10px; }
 .btn:disabled { opacity: .45; cursor: default; transform: none; }
 input, select { font: 500 14px var(--body); color: var(--bone); background: rgba(0,0,0,.45); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; min-width: 0; }
 select { padding: 7px 10px; font-size: 13px; background: #140d0f; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .row > input { flex: 1 1 220px; }
-.notice { min-height: 1.4em; color: var(--rose); font-size: 14px; margin: 8px 0 0; }
+.notice { min-height: 1.4em; color: var(--pink); font-size: 14px; margin: 8px 0 0; }
 
 /* Accueil */
 .intro { max-width: 760px; display: grid; gap: 18px; }
@@ -76,7 +79,7 @@ select { padding: 7px 10px; font-size: 13px; background: #140d0f; }
 .chat h2 { padding: 16px 16px 0; }
 .msgs { flex: 1; overflow-y: auto; padding: 4px 16px 10px; display: flex; flex-direction: column; gap: 8px; }
 .msg { overflow-wrap: anywhere; font-size: 14px; }
-.msg b { font-weight: 600; color: var(--rose); margin-right: 6px; }
+.msg b { font-weight: 600; color: var(--pink); margin-right: 6px; }
 .msg time { font: 500 9px var(--mono); color: var(--haze); margin-left: 6px; }
 .chat form { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--line); }
 .chat input { flex: 1; }
@@ -89,9 +92,9 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
 <script src="/assets/accent.js?v=1"></script>
 
 <header>
-  <div class="in">
+  <div class="wrap">
     <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
-    <a class="btn" href="compte">Mon compte</a>
+    <nav aria-label="Navigation"><a class="btn" href="outils" data-tools>Outils</a><a class="btn" href="compte" data-account>Compte</a></nav>
   </div>
 </header>
 
@@ -106,7 +109,7 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
       <h2>Ouvrir une WATCHPARTY</h2>
       <input id="c-name" maxlength="60" placeholder="Nom de la salle (facultatif)" aria-label="Nom de la salle">
       <input id="c-source" placeholder="Adresse YouTube ou vidéo en https (facultatif)" aria-label="Vidéo à regarder">
-      <div class="row"><button class="btn lit" type="submit">Ouvrir la salle</button><button class="btn" type="button" id="resume" hidden>Reprendre ma salle</button></div>
+      <div class="row"><button class="btn btn-primary" type="submit">Ouvrir la salle</button><button class="btn" type="button" id="resume" hidden>Reprendre ma salle</button></div>
     </form>
   </section>
   <p class="notice" id="state" role="status"></p>
@@ -120,12 +123,12 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
       <div>
         <div class="stage" id="stage"></div>
         <div class="glass controls" id="controls">
-          <form class="row" id="source"><input id="s-url" placeholder="Adresse YouTube ou vidéo en https (.mp4, .webm…)" aria-label="Vidéo à regarder"><button class="btn lit" type="submit">Regarder</button></form>
+          <form class="row" id="source"><input id="s-url" placeholder="Adresse YouTube ou vidéo en https (.mp4, .webm…)" aria-label="Vidéo à regarder"><button class="btn btn-primary" type="submit">Regarder</button></form>
           <div class="row" id="shares">
             <button class="btn" type="button" id="sh-screen">Partager mon écran</button>
             <button class="btn" type="button" id="sh-camera">Ma caméra</button>
             <button class="btn" type="button" id="sh-file">Un fichier vidéo</button>
-            <button class="btn lit" type="button" id="sh-stop" hidden>Arrêter le partage</button>
+            <button class="btn btn-primary" type="button" id="sh-stop" hidden>Arrêter le partage</button>
             <input type="file" id="file" accept="video/*,audio/*" hidden>
           </div>
           <p class="muted" id="hint" style="margin:0;font-size:13px"></p>
@@ -136,7 +139,7 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
           <details id="perms-box" hidden style="margin-top:12px"><summary>Droits</summary><div class="perms" id="perms"></div></details>
         </div>
         <div class="glass chat"><h2>Chat</h2><div class="msgs" id="msgs" aria-live="polite"></div>
-          <form id="say"><input id="say-text" maxlength="500" placeholder="Écrire…" aria-label="Message" autocomplete="off"><button class="btn lit" type="submit">Envoyer</button></form>
+          <form id="say"><input id="say-text" maxlength="500" placeholder="Écrire…" aria-label="Message" autocomplete="off"><button class="btn btn-primary" type="submit">Envoyer</button></form>
         </div>
       </aside>
     </div>
@@ -144,7 +147,7 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
 </main>
 
 <div class="gate" id="gate" hidden><div class="glass"><p class="eyebrow">Invitation</p><h2 id="g-name" style="font-size:18px">WATCHPARTY</h2>
-  <p class="muted" style="margin:0">La vidéo démarre au même moment pour tout le monde.</p><button class="btn lit" type="button" id="enter">Entrer dans la salle</button></div></div>
+  <p class="muted" style="margin:0">La vidéo démarre au même moment pour tout le monde.</p><button class="btn btn-primary" type="button" id="enter">Entrer dans la salle</button></div></div>
 
 <script>
 const $ = (id) => document.getElementById(id);
@@ -472,5 +475,7 @@ window.addEventListener("hashchange", () => { if (location.hash.slice(1) && loca
   } catch (e) { say(e.message); if (/réservée/.test(e.message)) return; if (code) { code = ""; history.replaceState(null, "", "watchparty"); home().catch(() => {}); } }
 })();
 </script>
+<script src="assets/tools-menu.js?v=14"></script>
+<script src="assets/account.js?v=14"></script>
 <script src="assets/site-nav.js?v=20"></script>
 </html>
