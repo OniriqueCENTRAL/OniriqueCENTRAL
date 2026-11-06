@@ -174,7 +174,7 @@ const friendsOf = (uid) => all(`SELECT u.id, u.name, u.avatar, u.role FROM user_
  * Inviter ses amis dans une salle en direct (le HM, la WATCHPARTY) : l'invitation arrive dans l'Activité (Messages), en
  * notification sur ses appareils (notice), et en petit pop-up « Refuser / Rejoindre » (site/assets/invites.js).
  * base : le début des routes ; kind : le genre de la notification ; load(code), room(req), members(r) : ceux de la salle ;
- * eligible(ami) : qui peut la rejoindre (par défaut, tout ami).
+ * eligible(ami) : qui peut la rejoindre (par défaut, tout ami) ; notice(de, salle) : la notification des appareils, ou rien.
  */
 export function mountInvites(app, { base, kind, guard, load, room, members, removed, notice, eligible = () => true }) {
   const invitedTo = (code) => new Set(all('SELECT user_id FROM user_notifications WHERE kind = ? AND page = ?', kind, code).map((x) => x.user_id));
@@ -201,7 +201,7 @@ export function mountInvites(app, { base, kind, guard, load, room, members, remo
     rateLimit(`${kind}-invite:${req.user.id}`, 60, 3600_000);
     if (!invitedTo(r.code).has(target)) {
       run('INSERT INTO user_notifications (user_id, kind, actor_id, page, body, created_at) VALUES (?, ?, ?, ?, ?, ?)', target, kind, req.user.id, r.code, r.name.slice(0, 140), now());
-      push(target, notice(req.user, r));
+      if (notice) push(target, notice(req.user, r)); // sans notice : pas de notification sur les appareils
     }
     res.json({ ok: true });
   });
@@ -280,8 +280,9 @@ export function mountHm(app, { requireUser }) {
   // L'heure du serveur, pour que chaque lecteur mesure l'écart de son horloge (aller-retour le plus court).
   app.get('/api/hm/clock', (_req, res) => res.set('Cache-Control', 'no-store').json({ t: now() }));
 
-  mountInvites(app, { base: '/api/hm', kind: 'hm', guard: requireUser, load, room, members, removed: 'Cette personne a été retirée du HM.',
-    notice: (from, r) => ({ title: 'Invitation au HM', body: `${from.name || 'Un ami'} t'invite à écouter « ${r.name} »`, url: `/mes-sons#/hm/${r.code}` }) });
+  // Pas de notification sur le téléphone pour le HM (le téléphone l'affichait sous « ONIRIQUE CUT », l'application qui
+  // porte les notifications du site) : l'invitation reste dans l'Activité et en pop-up sur CLOUD.
+  mountInvites(app, { base: '/api/hm', kind: 'hm', guard: requireUser, load, room, members, removed: 'Cette personne a été retirée du HM.' });
 
   // Ouvrir un HM : celui que le compte avait déjà se ferme (un seul à la fois, comme sur Spotify).
   app.post('/api/hm', requireUser, (req, res) => {
