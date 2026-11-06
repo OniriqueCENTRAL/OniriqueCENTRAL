@@ -124,7 +124,8 @@
       return n && !n.playing ? Promise.resolve() : aPlay(); // reprendre pour soi un HM qui joue : toujours permis
     };
     audio.pause = () => {
-      if (state && !syncing && state.now) { if (can("control")) send("pause", { pos: audio.currentTime }); else hold = true; }
+      // Un son lancé dans une autre vue de l'application (window.oniriqueLocalPause, app/main/main.js) ne coupe que ce lecteur.
+      if (state && !syncing && state.now) { if (can("control") && !window.oniriqueLocalPause) send("pause", { pos: audio.currentTime }); else hold = true; }
       return aPause();
     };
     Object.defineProperty(audio, "currentTime", {

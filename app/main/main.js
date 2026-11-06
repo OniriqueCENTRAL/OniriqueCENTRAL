@@ -177,7 +177,8 @@ async function toolBack(tool) {
 async function pauseCloud() {
   if (!toolViews.has('cloud')) return;
   const web = (await toolViews.get('cloud').catch(() => null))?.webContents;
-  web?.executeJavaScript('typeof player !== "undefined" && player.playing && player.toggle()').catch(() => {});
+  // oniriqueLocalPause : pendant un HM, cette pause ne vaut que pour ce lecteur (site/assets/hm.js).
+  web?.executeJavaScript('typeof player !== "undefined" && player.playing && (window.oniriqueLocalPause = true, player.toggle(), window.oniriqueLocalPause = false)').catch(() => {});
 }
 
 // Le mini lecteur flottant : quand le son de CLOUD continue sous une autre page (autre écran, page ouverte par-dessus),
