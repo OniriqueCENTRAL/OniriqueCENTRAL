@@ -1,0 +1,17 @@
+#!/bin/bash
+# Mise en ligne automatique depuis GitHub Actions (.github/workflows/deploy.yml, à chaque push sur main).
+# La clé « github-deploy » de root est attachée à ce script dans /root/.ssh/authorized_keys (restrict,command=…) : elle ne
+# peut que livrer la branche main du dépôt, reçue sur l'entrée sous forme de git bundle, puis lancer onirique-deploy (tests,
+# installation, retour en arrière si le serveur ne répond pas). Avance rapide seulement : un historique réécrit est refusé.
+set -euo pipefail
+
+repo=/srv/git/onirique-central.git
+tmp=$(mktemp -d -p /var/tmp)
+trap 'rm -rf "$tmp"' EXIT
+
+# 200 Mo au plus : au-delà, ce n'est pas notre dépôt.
+head -c 209715200 > "$tmp/main.bundle"
+git --git-dir="$repo" bundle verify -q "$tmp/main.bundle"
+git --git-dir="$repo" fetch -q "$tmp/main.bundle" main:refs/heads/main
+
+exec /usr/local/bin/onirique-deploy "GitHub"

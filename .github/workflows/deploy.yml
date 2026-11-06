@@ -1,0 +1,30 @@
+name: Mise en ligne
+
+# À chaque push sur main : le serveur reçoit la branche et la met en ligne (deploy/onirique-deploy-ci, puis
+# onirique-deploy : tests du serveur, installation, retour en arrière si besoin). Plus besoin de lancer deploy.sh.
+# Sans le secret ONIRIQUE_DEPLOY_KEY (voir deploy/setup-ci-deploy.sh), rien n'est mis en ligne.
+on:
+  push:
+    branches: [main]
+    paths: ['server/**', 'site/**', 'deploy/**', '.github/workflows/deploy.yml']
+  workflow_dispatch:
+
+concurrency: { group: mise-en-ligne, cancel-in-progress: false }
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Mettre en ligne
+        env:
+          CLE: ${{ secrets.ONIRIQUE_DEPLOY_KEY }}
+        run: |
+          if [ -z "$CLE" ]; then echo "Secret ONIRIQUE_DEPLOY_KEY absent : rien n'est mis en ligne."; exit 0; fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "$CLE" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
+          # clé du serveur épinglée (SHA256:XHg9Jni6CwZWjPlV3eIzyIm819tA6hwPEZOehfJuVB0)
+          echo "212.227.165.177 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFH55mUNdFgsIuK9wr6/8ioQ22idbndalUSARaSFDaa1" >> ~/.ssh/known_hosts
+          git bundle create main.bundle main
+          ssh -i ~/.ssh/deploy -o IdentitiesOnly=yes -o BatchMode=yes root@212.227.165.177 < main.bundle
