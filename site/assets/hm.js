@@ -268,6 +268,8 @@
               : mini("Inviter", () => api("POST", "/hm/" + code + "/invite", { userId: f.id }).then(() => { f.invited = true; toast(f.name + " est invité"); draw(); }, (e) => alert(e.message))))))
           : el("p", { className: "muted", style: "padding:0 12px 12px", textContent: "Pas encore d'amis ici : tes amis sont les membres que tu suis et qui te suivent (pages de profil)." }));
       friends.ontoggle = () => {
+        // Le menu recréé déjà ouvert (à chaque nouvel état) se signale aussi : sans ce garde-fou, la fenêtre se redessine sans fin.
+        if (friends.open === friendsOpen) return;
         friendsOpen = friends.open;
         if (friends.open) api("GET", "/hm/" + code + "/friends").then((list) => { friendList = list; if (friendsOpen) draw(); }, () => {});
       };
