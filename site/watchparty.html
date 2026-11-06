@@ -100,7 +100,7 @@ select { padding: 7px 10px; font-size: 13px; background: #140d0f; }
 .wp-fschat input { flex: 1; min-width: 0; background: rgba(9,8,10,.78); border-color: rgba(255,255,255,.18); }
 .stage:fullscreen .wp-overchat { bottom: 110px; }
 .stage:fullscreen:not(.show):not(.paused) { cursor: none; }
-.stage.native .wp-hit { display: none; }
+.stage.native .wp-hit, .stage.tw-click .wp-hit { display: none; }
 .wp-overchat div { padding: 5px 10px; border-radius: 10px; background: rgba(9,8,10,.72); font-size: 14px; color: #fff; animation: wp-fade 9s forwards; overflow-wrap: anywhere; }
 .wp-overchat b { color: var(--pink); margin-right: 6px; }
 @keyframes wp-fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
@@ -721,9 +721,13 @@ function drawBar() {
   bar.mute.replaceChildren(svg(vol.muted || vol.level === 0 ? "mute" : "vol"));
   if (!bar.dragging) bar.vol.value = vol.muted ? 0 : vol.level;
   if (bar.live) {
-    const native = $("stage").classList.contains("native");
-    bar.note.textContent = native ? "Commandes de Twitch" : blocked ? "Touche ▶ pour le son" : "";
-    if (bar.platform && player && player.paused) { const paused = player.paused(); bar.play.replaceChildren(svg(paused ? "play" : "pause")); $("stage").classList.toggle("paused", paused); }
+    const st = $("stage"), native = st.classList.contains("native");
+    // Twitch en pause (au démarrage, ou le navigateur bloque le son) : seul un vrai clic dans son lecteur le relance.
+    // Tant qu'il est en pause, le clic passe donc à Twitch ; dès qu'il joue, le lecteur ONIRIQUE reprend la main.
+    const paused = !!(bar.platform && player && player.paused && player.paused());
+    if (bar.platform && player && player.box) { player.box.classList.toggle("locked", !paused && !native); st.classList.toggle("tw-click", paused && !native); }
+    if (bar.platform) { bar.play.replaceChildren(svg(paused ? "play" : "pause")); st.classList.toggle("paused", paused); }
+    bar.note.textContent = native ? "Commandes de Twitch" : paused ? "Touche la vidéo pour lancer" : blocked ? "Touche l'image pour le son" : "";
     return;
   }
   if (!player || !player.time) return;
