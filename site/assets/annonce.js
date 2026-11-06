@@ -13,7 +13,7 @@
 .sn-announce span { letter-spacing: .02em; }
 .sn-announce a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
 .sn-announce-x { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border: 0; border-radius: 999px; background: rgba(0,0,0,.18); color: inherit; font: 400 20px/1 var(--f-body, system-ui); cursor: pointer; }
-.sn-announce.tone-ember { background: linear-gradient(90deg, #8c0614, #e23444 60%, #8c0614); color: #fff; }
+.sn-announce.tone-ember { background: linear-gradient(90deg, rgb(var(--acc-lo, 122,13,28)), rgb(var(--acc, 229,56,74)) 60%, rgb(var(--acc-lo, 122,13,28))); color: #fff; }
 .sn-announce.tone-gold { background: linear-gradient(90deg, #b8862b, #f2c46d 55%, #b8862b); color: #1a0d02; }
 .sn-announce.tone-calm { background: var(--deep-2, #2a0a0e); color: var(--mist, #f6eeee); border-bottom: 1px solid var(--line, rgba(255,210,214,.16)); }`;
   document.head.append(style);

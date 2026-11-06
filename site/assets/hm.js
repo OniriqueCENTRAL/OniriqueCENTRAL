@@ -27,27 +27,27 @@
 #hm-dlg .hm-mini { flex: none; border: 1px solid var(--line); background: none; color: var(--mist); border-radius: 999px; padding: 5px 10px; font: 600 12px var(--f-body); cursor: pointer; }
 #hm-dlg .hm-mini:hover { border-color: var(--ember); }
 #hm-dlg .hm-mini svg { width: 14px; height: 14px; vertical-align: -2px; }
-#hm-dlg .hm-now { border: 1px solid rgba(226,52,68,.45); background: rgba(226,52,68,.08); }
+#hm-dlg .hm-now { border: 1px solid rgba(var(--acc, 229,56,74),.45); background: rgba(var(--acc, 229,56,74),.08); }
 #hm-dlg .hm-ctl { display: flex; gap: 8px; }
 #hm-dlg .hm-perms { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: center; font-size: 14px; }
 #hm-dlg select { padding: 7px 10px; border-radius: 10px; border: 1px solid var(--line); background: #1d0f12; color: var(--mist); font: 500 13px var(--f-body); }
 #hm-dlg .muted { color: var(--haze); font-size: 13px; margin: 0; }
 .hm-chip { position: fixed; right: 16px; bottom: 120px; z-index: 60; display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: 999px;
-  border: 1px solid var(--ember); background: #150a0c; color: var(--mist); font: 700 13px var(--f-body); cursor: pointer; box-shadow: 0 10px 40px -10px rgba(226,52,68,.8); }
+  border: 1px solid var(--ember); background: #150a0c; color: var(--mist); font: 700 13px var(--f-body); cursor: pointer; box-shadow: 0 10px 40px -10px rgba(var(--acc, 229,56,74),.8); }
 .hm-chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 8px var(--ember); animation: hm-pulse 1.6s ease-in-out infinite; }
 @keyframes hm-pulse { 50% { opacity: .35; } }
 /* Dans la rangée du lecteur, juste avant « précédent », à la hauteur de ses boutons. */
-.op-pill > .hm-chip { position: static; flex: none; height: 30px; padding: 0 11px 0 9px; gap: 6px; box-shadow: none; background: rgba(226,52,68,.12);
-  border-color: rgba(226,52,68,.6); font: 700 11px/1 var(--f-body); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+.op-pill > .hm-chip { position: static; flex: none; height: 30px; padding: 0 11px 0 9px; gap: 6px; box-shadow: none; background: rgba(var(--acc, 229,56,74),.12);
+  border-color: rgba(var(--acc, 229,56,74),.6); font: 700 11px/1 var(--f-body); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
 .op-pill > .hm-chip i { width: 6px; height: 6px; }
-.op-pill > .hm-chip:hover { background: rgba(226,52,68,.22); border-color: var(--ember); }
+.op-pill > .hm-chip:hover { background: rgba(var(--acc, 229,56,74),.22); border-color: var(--ember); }
 /* Sur téléphone, le lecteur n'a pas la place : le bouton « HM · N » du haut de la page suffit. */
 @media (max-width: 720px) { .op-pill > .hm-chip { display: none; } }
 #hm-dlg .hm-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 #hm-dlg .hm-head h3 { margin: 0; }
 .hm-invite { position: fixed; right: 16px; bottom: 110px; z-index: 90; width: min(360px, calc(100vw - 32px)); display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px;
-  padding: 12px 14px; border-radius: 18px; border: 1px solid rgba(226,52,68,.55); background: #150a0c; color: var(--mist);
-  box-shadow: 0 20px 60px -20px rgba(0,0,0,.9), 0 0 40px -16px rgba(226,52,68,.7); animation: hm-in .3s cubic-bezier(.2, .8, .2, 1); }
+  padding: 12px 14px; border-radius: 18px; border: 1px solid rgba(var(--acc, 229,56,74),.55); background: #150a0c; color: var(--mist);
+  box-shadow: 0 20px 60px -20px rgba(0,0,0,.9), 0 0 40px -16px rgba(var(--acc, 229,56,74),.7); animation: hm-in .3s cubic-bezier(.2, .8, .2, 1); }
 .hm-invite.out { opacity: 0; transform: translateY(10px); transition: opacity .25s, transform .25s; }
 .hm-invite img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex: none; }
 .hm-invite .grow { flex: 1; min-width: 0; }

@@ -26,8 +26,8 @@ const page = ({ file, title, description, intro, body }) => `<!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
 <script src="assets/i18n.js?v=bce13d40"></script>
-<script src="assets/ui.js?v=3"></script>
-<script src="assets/annonce.js?v=1"></script>
+<script src="assets/ui.js?v=4"></script>
+<script src="assets/annonce.js?v=2"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${title} — ONIRIQUE</title>
 <meta name="description" content="${description}">
@@ -61,7 +61,7 @@ ${body}
     <a href="compte.html">Compte</a>
   </nav>
 </footer>
-<script src="assets/site-nav.js?v=12"></script>
+<script src="assets/site-nav.js?v=20"></script>
 </html>
 `;
 

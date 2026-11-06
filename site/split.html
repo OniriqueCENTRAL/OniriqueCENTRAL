@@ -2,8 +2,8 @@
 <html lang="fr">
 <meta charset="utf-8">
 <script src="assets/i18n.js?v=bce13d40"></script>
-<script src="assets/ui.js?v=3"></script>
-<script src="assets/annonce.js?v=1"></script>
+<script src="assets/ui.js?v=4"></script>
+<script src="assets/annonce.js?v=2"></script>
 <script src="/api/announce.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>IA SPLIT : séparer la voix, l'instru, les drums et la basse — ONIRIQUE</title>
@@ -237,7 +237,7 @@ A.dropZone($("drop"), $("file"), open);
 caches.open("onirique-demucs").then((c) => c.keys()).then((k) => { if (k.length) $("hint").textContent = "Sans compte. La séparation se fait dans ton navigateur : ton fichier n'est envoyé nulle part. L'IA est déjà installée sur cet appareil."; }).catch(() => {});
 A.fromLink(open, (error) => { $("error").textContent = error.message; });
 </script>
-<script src="assets/tools-menu.js?v=13"></script>
+<script src="assets/tools-menu.js?v=14"></script>
 <script src="assets/account.js?v=13"></script>
-<script src="assets/site-nav.js?v=19"></script>
+<script src="assets/site-nav.js?v=20"></script>
 </html>

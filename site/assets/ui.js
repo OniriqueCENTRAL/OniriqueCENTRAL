@@ -42,8 +42,8 @@ html.lite *, html.lite *::before, html.lite *::after { animation: none !importan
 .ui-opt { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 9px; cursor: pointer; white-space: nowrap; }
 .ui-opt::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; }
 .ui-opt[aria-selected="true"] { color: #FFECEE; font-weight: 700; }
-.ui-opt[aria-selected="true"]::before { background: #E23444; box-shadow: 0 0 8px #E23444; }
-.ui-opt.on { background: rgba(226,52,68,.16); }
+.ui-opt[aria-selected="true"]::before { background: rgb(var(--acc, 229,56,74)); box-shadow: 0 0 8px rgb(var(--acc, 229,56,74)); }
+.ui-opt.on { background: rgba(var(--acc, 229,56,74),.16); }
 .ui-opt[aria-disabled="true"] { opacity: .4; cursor: default; }
 .ui-group { padding: 10px 12px 4px; font: 600 10.5px/1 "JetBrains Mono", monospace; letter-spacing: .14em; text-transform: uppercase; color: #B9A2A5; }
 .ui-color { width: 248px; padding: 12px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
@@ -56,12 +56,12 @@ html.lite *, html.lite *::before, html.lite *::after { animation: none !importan
 .ui-row { display: flex; align-items: center; gap: 8px; }
 .ui-swatch { flex: none; width: 34px; height: 34px; border-radius: 10px; border: 1px solid rgba(255,210,214,.18); }
 .ui-pop input.ui-hex { flex: 1; min-width: 0; height: 34px; padding: 0 10px; border-radius: 10px; border: 1px solid rgba(255,210,214,.18); background: rgba(0,0,0,.4); color: #F6EEEE; font: 500 13px "JetBrains Mono", monospace; text-transform: uppercase; }
-.ui-hex:focus { outline: none; border-color: #E23444; }
+.ui-hex:focus { outline: none; border-color: rgb(var(--acc, 229,56,74)); }
 .ui-pop button.ui-eye { flex: none; width: 34px; height: 34px; padding: 0; display: grid; place-items: center; border-radius: 10px; border: 1px solid rgba(255,210,214,.18); background: none; color: #F6EEEE; cursor: pointer; }
-.ui-eye:hover { border-color: #E23444; }
+.ui-eye:hover { border-color: rgb(var(--acc, 229,56,74)); }
 .ui-presets { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
 .ui-presets button { aspect-ratio: 1; border-radius: 7px; border: 1px solid rgba(255,210,214,.18); cursor: pointer; padding: 0; }
-.ui-presets button:hover { outline: 2px solid #E23444; outline-offset: 1px; }
+.ui-presets button:hover { outline: 2px solid rgb(var(--acc, 229,56,74)); outline-offset: 1px; }
 `;
   const style = document.createElement("style");
   style.textContent = css;

@@ -21,7 +21,7 @@
   const css = document.createElement("style");
   css.textContent = `
   #rocky{position:fixed;right:18px;bottom:18px;z-index:9999;font:400 15px/1.5 "Hanken Grotesk","Segoe UI",system-ui,sans-serif;color:#F6EEEE}
-  #rocky .rk-fab{width:62px;height:62px;border-radius:50%;border:1px solid rgba(255,210,214,.25);background:#1A080A;cursor:pointer;padding:2px;box-shadow:0 6px 24px rgba(0,0,0,.5),0 0 18px rgba(226,52,68,.35)}
+  #rocky .rk-fab{width:62px;height:62px;border-radius:50%;border:1px solid rgba(255,210,214,.25);background:#1A080A;cursor:pointer;padding:2px;box-shadow:0 6px 24px rgba(0,0,0,.5),0 0 18px rgba(var(--acc, 229,56,74),.35)}
   #rocky .rk-fab:hover{transform:scale(1.06)}#rocky img{width:100%;height:100%;display:block}
   #rocky .rk-panel{position:absolute;right:0;bottom:76px;width:min(360px,calc(100vw - 36px));height:min(500px,calc(100vh - 120px));display:flex;flex-direction:column;background:#0D0809;border:1px solid rgba(255,210,214,.18);border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.6)}
   #rocky .rk-panel[hidden]{display:none}
@@ -32,11 +32,11 @@
   #rocky .rk-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
   #rocky .rk-msg{max-width:85%;padding:8px 12px;border-radius:14px;white-space:pre-wrap;word-wrap:break-word}
   #rocky .rk-bot{align-self:flex-start;background:#1A080A;border:1px solid rgba(255,210,214,.12)}
-  #rocky .rk-me{align-self:flex-end;background:#E23444;color:#fff}
-  #rocky .rk-bot a{color:#FF6B78}
+  #rocky .rk-me{align-self:flex-end;background:rgb(var(--acc, 229,56,74));color:#fff}
+  #rocky .rk-bot a{color:rgb(var(--acc-hi, 255,142,154))}
   #rocky form{display:flex;gap:8px;padding:10px;border-top:1px solid rgba(255,210,214,.12)}
   #rocky input{flex:1;min-width:0;background:#1A080A;border:1px solid rgba(255,210,214,.18);border-radius:12px;color:#F6EEEE;padding:10px 12px;font:inherit}
-  #rocky form button{background:#E23444;color:#fff;border:0;border-radius:12px;padding:0 14px;font-weight:700;cursor:pointer}
+  #rocky form button{background:rgb(var(--acc, 229,56,74));color:#fff;border:0;border-radius:12px;padding:0 14px;font-weight:700;cursor:pointer}
   #rocky form button:disabled{opacity:.5}`;
   document.head.append(css);
 

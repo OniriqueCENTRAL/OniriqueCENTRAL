@@ -72,7 +72,7 @@ document.addEventListener("onirique:account", (event) => {
 .tools-group { break-inside: avoid; margin: 0 0 12px; }
 .tools-group h3 { margin: 0 0 4px; padding: 0 12px; font: 500 10px/1.6 var(--f-mono, ui-monospace, monospace); letter-spacing: .16em; text-transform: uppercase; color: var(--haze, #b9a2a5); }
 .tools-menu a { display: block; white-space: normal; padding: 9px 12px; border-radius: 10px; color: var(--mist, #f6eeee); font: 500 14px/1.25 var(--f-body, system-ui, sans-serif); text-decoration: none; }
-.tools-menu a:hover, .tools-menu a:focus-visible, .tools-menu a[aria-current="page"] { background: rgba(226,52,68,.16); color: var(--mist, #f6eeee); outline: none; }
+.tools-menu a:hover, .tools-menu a:focus-visible, .tools-menu a[aria-current="page"] { background: rgba(var(--acc, 229,56,74),.16); color: var(--mist, #f6eeee); outline: none; }
 .tools-menu .tools-all { margin-top: 2px; padding-block: 12px; border-top: 1px solid var(--line, rgba(255,210,214,.16)); border-radius: 0 0 10px 10px; color: var(--ember-text, #ff6b78); font: 500 12px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .1em; text-transform: uppercase; }
 ` }));
 

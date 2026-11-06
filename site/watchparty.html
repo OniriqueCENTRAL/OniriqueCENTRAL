@@ -2,7 +2,7 @@
 <html lang="fr">
 <meta charset="utf-8">
 <script src="assets/i18n.js?v=bce13d40"></script>
-<script src="assets/ui.js?v=3"></script>
+<script src="assets/ui.js?v=4"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — WATCHPARTY</title>
 <meta name="description" content="Regarder une vidéo ensemble, en même temps : YouTube, une vidéo en ligne, un écran ou une caméra partagés, avec le chat.">
@@ -472,5 +472,5 @@ window.addEventListener("hashchange", () => { if (location.hash.slice(1) && loca
   } catch (e) { say(e.message); if (/réservée/.test(e.message)) return; if (code) { code = ""; history.replaceState(null, "", "watchparty"); home().catch(() => {}); } }
 })();
 </script>
-<script src="assets/site-nav.js?v=19"></script>
+<script src="assets/site-nav.js?v=20"></script>
 </html>
