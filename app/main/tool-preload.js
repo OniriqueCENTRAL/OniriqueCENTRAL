@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('oniriqueApp', {
   pickScreen: (id, audio) => ipcRenderer.invoke('tool:screen-pick', String(id), !!audio),
   // Twitch et YouTube connectés dans l'application (pour regarder sans pub dans la WATCHPARTY), et la déconnexion.
   accounts: () => ipcRenderer.invoke('tool:accounts'),
+  nativeInvites: true, // les invitations (HM, WATCHPARTY) sont montrées par l'application elle-même, sur tous ses écrans
   // Le son d'une seule appli, ou de tout sauf une (Discord…) : la liste des applis, puis le son en direct (PCM).
   apps: () => ipcRenderer.invoke('tool:apps'),
   loopStart: (mode, pid) => ipcRenderer.invoke('tool:loop-start', String(mode), Number(pid)),

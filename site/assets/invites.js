@@ -33,6 +33,7 @@
 
   function watch({ base, title, says, join, current = () => null, avatar = (p) => p.avatar || "assets/favicon.png?v=2" }) {
     if (!token()) return;
+    if (window.oniriqueApp && window.oniriqueApp.nativeInvites) return; // l'application ONIRIQUE CENTRAL les montre elle-même, partout
     if (!styled) { styled = true; document.head.append(el("style", { textContent: css })); }
     const shown = new Set();
     let off = false; // le compte n'y a pas accès (403) : plus de demandes

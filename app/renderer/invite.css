@@ -1,0 +1,20 @@
+/* Le pop-up d'invitation, aux couleurs de l'application (l'accent arrive avec l'invitation : --acc en « r, g, b »). */
+html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+body { display: flex; align-items: flex-end; padding: 6px; box-sizing: border-box; }
+.invite { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 18px;
+  border: 1px solid rgba(var(--acc, 229, 56, 74), .6); background: linear-gradient(160deg, rgba(40, 26, 30, .97), rgba(16, 12, 14, .98));
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .4), 0 0 30px -10px rgba(var(--acc, 229, 56, 74), .8); color: #f4ecec;
+  font: 400 13px/1.35 "Hanken Grotesk", system-ui, sans-serif; animation: in .3s cubic-bezier(.2, .8, .2, 1); }
+@keyframes in { from { opacity: 0; transform: translateY(12px); } }
+@media (prefers-reduced-motion: reduce) { .invite { animation: none; } }
+.invite img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex: none; background: #2a0a0e; }
+.grow { flex: 1; min-width: 0; }
+.grow b, .grow small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.grow b { font-weight: 700; font-size: 14px; }
+.grow small { color: #a8939a; font-size: 12px; margin-top: 2px; }
+.ctl { display: flex; gap: 8px; width: 100%; justify-content: flex-end; }
+.ctl button { cursor: pointer; border: 1px solid rgba(255, 235, 238, .14); background: rgba(255, 255, 255, .04); color: #f4ecec; border-radius: 10px; padding: 7px 14px;
+  font: 500 11px "JetBrains Mono", ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; }
+.ctl button:hover, .ctl button:focus-visible { border-color: rgba(var(--acc, 229, 56, 74), .8); outline: none; }
+.ctl .yes { color: #fff; border-color: transparent; background: linear-gradient(180deg, rgba(var(--acc, 229, 56, 74), .6), rgba(var(--acc-lo, 122, 13, 28), .6));
+  box-shadow: 0 0 0 1px rgba(var(--acc-hi, 255, 142, 154), .55) inset; }

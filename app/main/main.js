@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, Tray, WebContentsView, clipboard, components, desktopCapturer, dialog, ipcMain, nativeImage, session, shell } = require('electron');
+const { app, BrowserWindow, Menu, Notification, Tray, WebContentsView, clipboard, components, desktopCapturer, dialog, ipcMain, nativeImage, session, shell } = require('electron');
 const { spawn, execFile } = require('node:child_process');
 const { autoUpdater } = require('electron-updater');
 const macUpdate = require('./mac-update');
@@ -233,6 +233,64 @@ function placeMini() {
   mini.setPosition(Math.round(b.x + b.width - MINI.width - off.right), Math.round(b.y + b.height - MINI.height - off.bottom));
   if (parked && toolViews.has('cloud')) toolViews.get('cloud').then(parkCloud, () => {}); // la fenêtre change de taille : CLOUD reste dessous
 }
+// Les invitations d'un ami (HM, WATCHPARTY), où que l'on soit dans l'application : demandées au serveur toutes les 15 s,
+// montrées dans un petit pop-up posé sur la fenêtre (« Refuser » / « Rejoindre »), et en notification de Windows quand
+// la fenêtre n'est pas au premier plan (réduite, cachée près de l'horloge, autre application devant).
+const INVITE = { width: 380, height: 120 };
+const INVITE_KINDS = { hm: { base: '/api/hm', says: (n) => `${n} t'invite au HM`, title: 'Invitation au HM' },
+  watchparty: { base: '/api/watchparty', says: (n) => `${n} t'invite à sa WATCHPARTY`, title: 'Invitation à la WATCHPARTY' } };
+let inviteWin = null, invite = null;
+const invitesShown = new Set();
+function placeInvite() {
+  if (!inviteWin || inviteWin.isDestroyed() || !win) return;
+  const b = win.getContentBounds();
+  inviteWin.setPosition(Math.round(b.x + b.width - INVITE.width - 20), Math.round(b.y + b.height - INVITE.height - MINI.height - 40));
+}
+function inviteWindow() {
+  if (inviteWin && !inviteWin.isDestroyed()) return inviteWin;
+  inviteWin = new BrowserWindow({ parent: win, ...INVITE, show: false, frame: false, transparent: true, resizable: false, skipTaskbar: true,
+    minimizable: false, maximizable: false, fullscreenable: false, focusable: true, backgroundColor: '#00000000',
+    webPreferences: { preload: path.join(__dirname, 'invite-preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false } });
+  inviteWin.loadFile(path.join(__dirname, '..', 'renderer', 'invite.html'));
+  for (const e of ['move', 'resize', 'maximize', 'unmaximize']) win.on(e, placeInvite);
+  win.on('minimize', () => inviteWin?.hide());
+  win.on('restore', () => { if (invite) inviteWin?.showInactive(); });
+  return inviteWin;
+}
+async function showInvite(x) {
+  invite = x;
+  const w = inviteWindow(), kind = INVITE_KINDS[x.kind], says = kind.says(x.from.name || 'Un ami');
+  if (w.webContents.isLoading()) await new Promise((r) => w.webContents.once('did-finish-load', r));
+  w.webContents.send('invite:show', { says, name: x.name, avatar: x.from.avatar ? `${SITE}${x.from.avatar}?w=120` : null, accent: { '--acc': lastAccent } });
+  placeInvite();
+  if (win.isVisible() && !win.isMinimized()) w.showInactive();
+  // La fenêtre n'est pas sous les yeux : Windows prévient aussi ; un clic ramène l'application et son pop-up.
+  if (!win.isVisible() || win.isMinimized() || !win.isFocused()) {
+    const n = new Notification({ title: kind.title, body: `${says} : « ${x.name} »`, icon: path.join(__dirname, '..', 'renderer', 'assets', 'logo.png') });
+    n.on('click', () => { showWindow(); if (invite === x) inviteWindow().showInactive(); });
+    n.show();
+  }
+}
+ipcMain.on('invite:answer', (event, join) => {
+  if (!inviteWin || event.sender !== inviteWin.webContents || !invite) return;
+  const x = invite;
+  invite = null;
+  inviteWin.hide();
+  api.request('POST', `${INVITE_KINDS[x.kind].base}/invites/${x.id}/seen`).catch(() => {});
+  if (join) { showWindow(); openLink(`onirique://${x.kind}/${x.code}`); }
+});
+async function checkInvites() {
+  if (!store.token || !win || win.isDestroyed()) return;
+  for (const kind of Object.keys(INVITE_KINDS)) {
+    const list = await api.request('GET', `${INVITE_KINDS[kind].base}/invites`).catch(() => []); // sans accès (403) : rien
+    for (const x of [...list].reverse()) {
+      if (invitesShown.has(kind + x.id)) continue;
+      invitesShown.add(kind + x.id);
+      showInvite({ ...x, kind });
+    }
+  }
+}
+
 function createMini() {
   mini = new BrowserWindow({ parent: win, ...MINI, show: false, frame: false, transparent: true, resizable: false, skipTaskbar: true,
     minimizable: false, maximizable: false, fullscreenable: false, backgroundColor: '#00000000',
@@ -985,6 +1043,8 @@ app.whenReady().then(async () => {
   createTray();
   win.webContents.once('did-finish-load', () => openLink(earlyLink || process.argv.find((a) => /^onirique:\/\//i.test(a))));
   createMini();
+  setTimeout(checkInvites, 4000);
+  setInterval(checkInvites, 15_000).unref();
   startAutoUpdate();
 });
 

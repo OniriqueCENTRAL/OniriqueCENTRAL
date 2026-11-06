@@ -1239,7 +1239,7 @@ window.addEventListener("hashchange", () => { if (location.hash.slice(1) && loca
   } catch (e) { say(e.message); if (/réservée/.test(e.message)) return; if (code) { code = ""; history.replaceState(null, "", "watchparty"); home().catch(() => {}); } }
 })();
 </script>
-<script src="assets/invites.js?v=1"></script>
+<script src="assets/invites.js?v=2"></script>
 <script src="assets/tools-menu.js?v=14"></script>
 <script src="assets/account.js?v=15"></script>
 <script src="assets/site-nav.js?v=20"></script>

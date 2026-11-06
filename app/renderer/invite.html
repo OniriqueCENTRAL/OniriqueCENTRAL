@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' https: http:">
+  <title>Invitation</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="invite.css">
+</head>
+<body>
+  <!-- L'invitation d'un ami (HM, WATCHPARTY) : posée sur l'application, « Refuser » ou « Rejoindre ». -->
+  <div class="invite" role="alertdialog" aria-labelledby="who" aria-describedby="what">
+    <img id="avatar" alt="" src="assets/sigil.png">
+    <div class="grow"><b id="who"></b><small id="what"></small></div>
+    <div class="ctl">
+      <button type="button" id="no">Refuser</button>
+      <button type="button" id="yes" class="yes">Rejoindre</button>
+    </div>
+  </div>
+  <script src="invite.js"></script>
+</body>
+</html>
