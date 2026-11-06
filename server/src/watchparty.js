@@ -382,8 +382,8 @@ export function mountWatchparty(app) {
     // Une réaction : passagère, envoyée à tous, jamais gardée.
     if (req.params.action === 'react') {
       if (!REACTIONS.includes(body.emoji)) throw new HttpError(400, 'Réaction inconnue.');
-      rateLimit(`watchparty-react:${req.user.id}`, 40, 10_000);
-      for (const s of streams.get(r.code) || []) send(s, { reaction: { emoji: body.emoji, name: req.user.name || 'Membre', id: code() } });
+      rateLimit(`watchparty-react:${req.user.id}`, 60, 10_000);
+      for (const s of streams.get(r.code) || []) send(s, { reaction: { emoji: body.emoji, name: req.user.name || 'Membre', by: req.user.id, id: code() } });
       return res.json({ ok: true });
     }
     const before = mediaKey(r.media);

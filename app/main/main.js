@@ -21,7 +21,7 @@ if (!app.requestSingleInstanceLock()) app.exit(0);
  * Retrouvés par leur nom ; un appareil débranché laisse la place à celui de l'ordinateur.
  */
 function setAudioDevices(web) {
-  const devices = { mic: store.prefs.mic || '', speaker: store.prefs.speaker || '' };
+  const devices = { mic: store.prefs.mic || '', speaker: store.prefs.speaker || '', camera: store.prefs.camera || '' };
   web.executeJavaScript(`(() => {
     window.__oniriqueAudio = ${JSON.stringify(devices)};
     const proto = HTMLMediaElement.prototype;
@@ -360,7 +360,7 @@ let screenPick = null;
 ipcMain.handle('tool:screens', async (event) => {
   if (!toolContents.has(event.sender.id)) return null;
   const sources = await desktopCapturer.getSources({ types: ['screen', 'window'], thumbnailSize: { width: 320, height: 180 } });
-  return { audio: process.platform === 'win32', sources: sources.filter((s) => !s.thumbnail.isEmpty()).map((s) => ({ id: s.id, name: s.name,
+  return { audio: process.platform === 'win32', tap: tapSupported(), sources: sources.filter((s) => !s.thumbnail.isEmpty()).map((s) => ({ id: s.id, name: s.name,
     kind: s.id.startsWith('screen:') ? 'screen' : 'window', thumb: s.thumbnail.toDataURL() })) };
 });
 ipcMain.handle('tool:screen-pick', (event, id, audio) => {
@@ -383,8 +383,15 @@ function stopTap() {
 }
 // Les applications ouvertes (avec une fenêtre), chacune par son processus racine : son arbre contient aussi les
 // processus qui jouent le son (Discord, les navigateurs en ont plusieurs).
+let appsCache = null; // la liste des applis, gardée 20 s (PowerShell met une à deux secondes à la dresser)
 ipcMain.handle('tool:apps', async (event) => {
   if (!toolContents.has(event.sender.id) || !tapSupported()) return [];
+  if (appsCache && Date.now() - appsCache.at < 20_000) return appsCache.list;
+  const list = await listApps();
+  appsCache = { at: Date.now(), list };
+  return list;
+});
+async function listApps() {
   const script = "$w = Get-Process | Where-Object { $_.MainWindowTitle } | Select-Object Id, ProcessName, MainWindowTitle; "
     + "$p = Get-CimInstance Win32_Process | Select-Object ProcessId, ParentProcessId, Name; @{ w = @($w); p = @($p) } | ConvertTo-Json -Compress -Depth 3";
   const out = await new Promise((resolve) => execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], { windowsHide: true, maxBuffer: 16e6, timeout: 15000 },
@@ -401,7 +408,7 @@ ipcMain.handle('tool:apps', async (event) => {
     apps.set(w.ProcessName.toLowerCase(), { pid, name: w.ProcessName, title: String(w.MainWindowTitle).slice(0, 80) });
   }
   return [...apps.values()].sort((a, b) => a.name.localeCompare(b.name));
-});
+}
 ipcMain.handle('tool:loop-start', (event, mode, pid) => {
   if (!toolContents.has(event.sender.id) || !tapSupported() || !['include', 'exclude'].includes(mode) || !Number.isInteger(pid) || pid <= 0) return false;
   stopTap();
@@ -1129,12 +1136,12 @@ ipcMain.on('update:install', () => {
 // Les réglages de l'interface, lus avant son premier script (preload) et écrits un par un.
 // mic et speaker : le nom de l'appareil choisi (les identifiants changent d'une session à l'autre), '' pour celui de Windows ou macOS.
 const deviceName = (v) => typeof v === 'string' && v.length <= 200;
-const PREFS = { accent: (v) => /^#[0-9a-f]{6}$/i.test(v), lang: (v) => v === 'fr' || v === 'en', mic: deviceName, speaker: deviceName };
+const PREFS = { accent: (v) => /^#[0-9a-f]{6}$/i.test(v), lang: (v) => v === 'fr' || v === 'en', mic: deviceName, speaker: deviceName, camera: deviceName };
 ipcMain.on('prefs:get', (event) => { event.returnValue = event.sender === win?.webContents ? store.prefs : {}; });
 ipcMain.handle('prefs:set', (event, key, value) => {
   if (event.sender !== win?.webContents || !PREFS[key]?.(value)) return false;
   store.setPref(key, value);
-  if (key === 'mic' || key === 'speaker') for (const v of toolViews.values()) v.then((view) => setAudioDevices(view.webContents), () => {});
+  if (key === 'mic' || key === 'speaker' || key === 'camera') for (const v of toolViews.values()) v.then((view) => setAudioDevices(view.webContents), () => {});
   return true;
 });
 

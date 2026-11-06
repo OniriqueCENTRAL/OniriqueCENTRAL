@@ -88,7 +88,7 @@ select { padding: 7px 10px; font-size: 13px; background: #140d0f; }
 @media (max-width: 720px) { .wp-bar .wp-reacts { display: none; } }
 @media (max-width: 560px) { .wp-vol, .wp-time.dur { display: none; } .wp-bar { gap: 4px; padding-inline: 8px; } }
 /* Les réactions qui montent sur la vidéo, le chat posé dessus en plein écran, « Prêt ? » et le compte à rebours */
-.wp-float { position: absolute; bottom: 70px; z-index: 4; font-size: 34px; pointer-events: none; animation: wp-rise 2.6s ease-out forwards; text-align: center; }
+.wp-float { position: absolute; bottom: 70px; z-index: 4; font: 38px/1 "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif; pointer-events: none; animation: wp-rise 2.6s ease-out forwards; text-align: center; }
 .wp-float small { display: block; font: 500 9px var(--mono); letter-spacing: .08em; color: #fff; text-shadow: 0 1px 4px #000; }
 @keyframes wp-rise { 0% { transform: translateY(0) scale(.6); opacity: 0; } 12% { transform: translateY(-20px) scale(1.1); opacity: 1; } 100% { transform: translateY(-240px) scale(1); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .wp-float { animation-duration: 1.4s; } }
@@ -97,8 +97,12 @@ select { padding: 7px 10px; font-size: 13px; background: #140d0f; }
 .wp-overchat div { padding: 5px 10px; border-radius: 10px; background: rgba(9,8,10,.72); font-size: 14px; color: #fff; animation: wp-fade 9s forwards; overflow-wrap: anywhere; }
 .wp-overchat b { color: var(--pink); margin-right: 6px; }
 @keyframes wp-fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
-.wp-reacts { display: flex; gap: 2px; }
-.wp-reacts button { width: 30px; height: 30px; font-size: 16px; }
+.wp-reacts { display: flex; flex-wrap: wrap; gap: 2px; }
+.wp-reacts button { all: unset; box-sizing: border-box; cursor: pointer; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px;
+  font: 20px/1 "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif; transition: transform .15s, background .15s; }
+.wp-reacts button:hover, .wp-reacts button:focus-visible { background: rgba(255,255,255,.1); transform: scale(1.18); }
+.wp-reacts button:active { transform: scale(.92); }
+#chat-reacts { padding: 4px 10px 0; }
 .wp-over { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: rgba(9,8,10,.6); backdrop-filter: blur(4px); text-align: center; }
 .wp-over .glass { padding: 22px 26px; display: grid; gap: 12px; justify-items: center; }
 .wp-count { font: 800 96px/1 var(--display); color: #fff; text-shadow: 0 0 40px rgba(var(--acc),.9); }
@@ -161,9 +165,7 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
 .src.on { box-shadow: 0 0 0 2px rgb(var(--acc)) inset, 0 0 24px rgba(var(--acc),.35); }
 .src img { width: 100%; aspect-ratio: 16 / 9; object-fit: contain; background: #000; border-radius: 8px; }
 .src span { font-size: 12px; color: var(--label); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.segs { display: inline-flex; gap: 4px; padding: 4px; border-radius: 14px; background: rgba(0,0,0,.35); }
-.seg { all: unset; cursor: pointer; height: 32px; line-height: 32px; padding: 0 14px; border-radius: 10px; font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--btn); }
-.seg[aria-pressed="true"] { color: #fff; background: var(--lit); box-shadow: var(--lit-shadow); }
+.adv-preset { display: grid; gap: 4px; margin-top: 12px; max-width: 320px; font-size: 13px; color: var(--label); }
 </style>
 <link rel="stylesheet" href="/assets/da.css?v=7">
 <script src="/assets/accent.js?v=1"></script>
@@ -214,6 +216,7 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
             <button class="btn" type="button" id="ready-btn">Prêt ?</button>
           </div>
           <details id="adv-box" hidden><summary>Réglages avancés du partage</summary>
+            <label class="adv-preset">Préréglage<select id="adv-preset"></select></label>
             <div class="adv">
               <label>Ton débit montant<select id="adv-total"><option value="3">3 Mbit/s (4G faible, ADSL)</option><option value="5">5 Mbit/s</option><option value="10">10 Mbit/s</option><option value="20">20 Mbit/s</option><option value="50">50 Mbit/s (fibre)</option><option value="100">100 Mbit/s et plus</option></select></label>
               <label>Débit max par spectateur<select id="adv-max"><option value="auto">Auto (partagé entre tous)</option><option value="2">2 Mbit/s</option><option value="4">4 Mbit/s</option><option value="6">6 Mbit/s</option><option value="8">8 Mbit/s</option><option value="12">12 Mbit/s</option><option value="20">20 Mbit/s</option></select></label>
@@ -242,7 +245,7 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
           <p class="muted" style="margin:8px 0 0;font-size:12px">La plus votée passe à la fin de la vidéo en cours.</p>
         </div>
         <div class="glass chat"><h2>Chat</h2><div class="msgs" id="msgs" aria-live="polite"></div>
-          <div class="wp-reacts" id="chat-reacts" style="padding:0 10px" aria-label="Réactions"></div>
+          <div class="wp-reacts" id="chat-reacts" aria-label="Réactions"></div>
           <form id="say"><input id="say-text" maxlength="500" placeholder="Écrire…" aria-label="Message" autocomplete="off"><button class="btn btn-primary" type="submit">Envoyer</button></form>
         </div>
       </aside>
@@ -258,7 +261,7 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
   <div class="row" style="justify-content:space-between"><h2 id="pk-title" style="margin:0">Que partager ?</h2><button class="btn small" type="button" id="pk-close">Fermer</button></div>
   <div class="srcs" id="pk-list"></div>
   <div class="row" style="justify-content:space-between">
-    <div class="segs" role="group" aria-label="Priorité de l'image"><button class="seg" type="button" data-q="motion" aria-pressed="true" title="60 images par seconde : films, jeux, vidéos">Fluidité</button><button class="seg" type="button" data-q="detail" aria-pressed="false" title="Pleine définition : texte, code, logiciels">Netteté</button></div>
+    <label class="row" style="gap:6px;font-size:14px">Qualité <select id="pk-preset" aria-label="Préréglage du partage"></select></label>
     <label class="row" id="pk-audio-row" style="gap:6px;font-size:14px">Son <select id="pk-audio"><option value="system">Tout l'ordinateur</option><option value="except" hidden>Tout sauf une appli (Discord…)</option><option value="only" hidden>Une seule appli</option><option value="none">Aucun</option><option value="pick">Une entrée audio…</option></select>
       <select id="pk-app" hidden aria-label="L'application"></select></label>
     <button class="btn btn-primary" type="button" id="pk-go" disabled>Partager</button>
@@ -316,7 +319,7 @@ async function listen(c) {
       if (m.kicked) return leave("Le créateur t'a retiré de la WATCHPARTY.");
       if (m.ended) return leave("Le créateur a fermé la WATCHPARTY.");
       if (m.signal) (m.signal.data.cam ? onCamSignal(m.signal) : onSignal(m.signal)).catch(() => {});
-      else if (m.reaction) floatReaction(m.reaction);
+      else if (m.reaction) { if (!state || m.reaction.by !== state.you.id) floatReaction(m.reaction); }
       else receive(m);
     }
   }
@@ -725,11 +728,36 @@ const ADV_DEFAULT = { total: "10", max: "auto", height: "1080", fps: app ? "60" 
 let adv = { ...ADV_DEFAULT };
 try { adv = { ...adv, ...JSON.parse(localStorage.getItem("onirique.wp.adv") || "{}") }; } catch { /* stockage fermé */ }
 const ADV_IDS = ["total", "max", "height", "fps", "pref", "codec", "audio", "abr"];
+// Les préréglages : ce qui compte pour l'image et le débit (le son partagé reste celui choisi).
+const PRESETS = {
+  auto: ["Recommandé", { total: "10", max: "auto", height: "1080", fps: app ? "60" : "30", pref: "motion", codec: "auto", abr: "256" }],
+  low: ["Connexion faible (4G, ADSL)", { total: "3", max: "2", height: "720", fps: "30", pref: "motion", codec: "video/h264", abr: "128" }],
+  film: ["Film, série", { total: "20", max: "8", height: "1080", fps: "30", pref: "motion", codec: "auto", abr: "256" }],
+  game: ["Jeu, sport (60 i/s)", { total: "30", max: "12", height: "1080", fps: "60", pref: "motion", codec: "auto", abr: "192" }],
+  text: ["Texte, code, logiciel (netteté)", { total: "10", max: "6", height: "source", fps: "30", pref: "detail", codec: "video/vp9", abr: "128" }],
+  max: ["Fibre : qualité maximale", { total: "100", max: "20", height: "1440", fps: "60", pref: "balanced", codec: "auto", abr: "320" }],
+};
+const presetOf = () => Object.keys(PRESETS).find((k) => Object.entries(PRESETS[k][1]).every(([f, v]) => adv[f] === v)) || "custom";
+for (const sel of [$("adv-preset"), $("pk-preset")]) sel.replaceChildren(...Object.entries(PRESETS).map(([k, [label]]) => el("option", { value: k, textContent: label })),
+  el("option", { value: "custom", textContent: "Personnalisé", hidden: true }));
+async function usePreset(k) {
+  if (!PRESETS[k]) return;
+  const codecBefore = adv.codec;
+  Object.assign(adv, PRESETS[k][1]);
+  try { localStorage.setItem("onirique.wp.adv", JSON.stringify(adv)); } catch { /* stockage fermé */ }
+  drawAdv();
+  if (adv.codec !== codecBefore) closePeers(); // un autre codec : on renégocie avec chacun
+  if (local) local.getVideoTracks().forEach((t) => t.applyConstraints(captureConstraints()).catch(() => {}));
+  applyQuality();
+}
+$("adv-preset").onchange = (e) => usePreset(e.target.value);
 let audioDevice = "";
 function drawAdv() {
   const a = $("adv-audio");
   if (adv.audio.startsWith("dev:") && ![...a.options].some((o) => o.value === adv.audio)) a.append(el("option", { value: adv.audio, textContent: "L'entrée audio choisie" }));
   for (const k of ADV_IDS) $("adv-" + k).value = adv[k];
+  const p = presetOf();
+  for (const sel of [$("adv-preset"), $("pk-preset")]) { sel.querySelector('option[value="custom"]').hidden = p !== "custom"; sel.value = p; }
   $("adv-audio-hint").textContent = adv.audio === "system"
     ? "« Tout le son de l'ordinateur » envoie aussi Discord et les notifications. Pour n'envoyer que le film : partage un onglet du navigateur (son de l'onglet), un fichier vidéo, ou envoie le son du lecteur dans un câble virtuel (VB-CABLE…) et choisis « Une entrée audio »."
     : adv.audio === "none" ? "Le partage part sans son." : "Seule cette entrée audio est envoyée : Discord n'y est pas, tant qu'il ne joue pas dedans.";
@@ -919,22 +947,23 @@ async function share(what, stream, video = null) {
 }
 
 // Dans l'application ONIRIQUE CENTRAL : son propre choix d'écran ou de fenêtre (avec le son de l'ordinateur).
-let pick = null, pickQ = adv.pref === "detail" ? "detail" : "motion";
+let pick = null;
 async function appShare() {
-  const res = await app.screens().catch(() => null);
-  if (!res || !res.sources.length) return say("Aucun écran à partager : l'application n'a pas l'autorisation d'enregistrer l'écran.");
   pick = null; $("pk-go").disabled = true;
+  $("pk-list").replaceChildren(el("p", { className: "muted", style: "margin:0;grid-column:1/-1", textContent: "Recherche des écrans et des fenêtres…" }));
   const sel = $("pk-audio");
+  sel.value = adv.audio === "tap" ? "except" : adv.audio.startsWith("dev:") ? "none" : adv.audio;
+  drawAdv();
+  $("picker").showModal();
+  if (sel.value === "except") drawTapApps();
+  const res = await app.screens().catch(() => null);
+  if (!res || !res.sources.length) { $("picker").close(); return say("Aucun écran à partager : l'application n'a pas l'autorisation d'enregistrer l'écran."); }
   sel.querySelector('option[value="system"]').hidden = !res.audio;
-  tapApps = app.apps ? await app.apps().catch(() => []) : [];
-  for (const v of ["except", "only"]) sel.querySelector(`option[value="${v}"]`).hidden = !tapApps.length;
-  sel.value = adv.audio.startsWith("dev:") ? "pick" : res.audio ? adv.audio : "none";
-  if (sel.value === "pick") { await fillAudioInputs(sel); sel.value = adv.audio; }
+  for (const v of ["except", "only"]) sel.querySelector(`option[value="${v}"]`).hidden = !res.tap;
+  if (!res.audio && sel.value === "system") sel.value = "none";
   $("pk-list").replaceChildren(...res.sources.map((x) => el("button", { className: "src", type: "button", title: x.name,
     onclick: (e) => { pick = x.id; $("pk-go").disabled = false; for (const b of $("pk-list").children) b.classList.toggle("on", b === e.currentTarget); },
     ondblclick: () => $("pk-go").click() }, el("img", { src: x.thumb, alt: "" }), el("span", { textContent: (x.kind === "screen" ? "Écran · " : "") + x.name }))));
-  for (const o of document.querySelectorAll("#picker .seg")) o.setAttribute("aria-pressed", String(o.dataset.q === pickQ));
-  $("picker").showModal();
 }
 // Le son d'une seule appli, ou de tout sauf une (Windows 11) : la liste des applis ouvertes, Discord proposé d'abord.
 let tapApps = [];
@@ -942,7 +971,11 @@ async function drawTapApps() {
   const mode = $("pk-audio").value, sel = $("pk-app");
   sel.hidden = !["except", "only"].includes(mode);
   if (sel.hidden) return;
-  if (!tapApps.length) tapApps = await app.apps().catch(() => []);
+  if (!tapApps.length) {
+    sel.replaceChildren(el("option", { value: "", textContent: "Recherche des applis ouvertes…" }));
+    tapApps = await app.apps().catch(() => []);
+    if (!tapApps.length) return sel.replaceChildren(el("option", { value: "", textContent: "Aucune appli trouvée" }));
+  }
   const discord = tapApps.find((a) => /discord/i.test(a.name));
   sel.replaceChildren(...tapApps.map((a) => el("option", { value: a.pid, textContent: a.name + (a.title && a.title !== a.name ? " · " + a.title.slice(0, 40) : "") })));
   if (mode === "except" && discord) sel.value = discord.pid;
@@ -951,17 +984,14 @@ $("pk-audio").addEventListener("change", drawTapApps);
 $("pk-audio").onchange = async (e) => {
   if (e.target.value === "pick") { await fillAudioInputs(e.target); const dev = [...e.target.options].find((o) => o.value.startsWith("dev:")); e.target.value = dev ? dev.value : "none"; }
 };
-for (const b of document.querySelectorAll("#picker .seg")) b.onclick = () => {
-  pickQ = b.dataset.q;
-  for (const o of document.querySelectorAll("#picker .seg")) o.setAttribute("aria-pressed", String(o === b));
-};
+$("pk-preset").onchange = (e) => usePreset(e.target.value);
 $("pk-close").onclick = () => $("picker").close();
 $("pk-go").onclick = async () => {
   if (!pick) return;
-  // Fluidité : 1080p à 60 i/s ; Netteté : la définition de l'écran, 30 i/s. Les réglages avancés restent modifiables ensuite.
+  // Le préréglage est déjà appliqué (pk-preset) ; les réglages avancés restent modifiables pendant le partage.
   const audioMode = $("pk-audio").value, tapPid = Number($("pk-app").value);
-  Object.assign(adv, pickQ === "motion" ? { pref: "motion", fps: "60", height: "1080" } : { pref: "detail", fps: "30", height: "source" },
-    { audio: ["except", "only"].includes(audioMode) ? "tap" : audioMode });
+  if (["except", "only"].includes(audioMode) && !tapPid) return say("Choisis l'appli dans la liste.");
+  adv.audio = ["except", "only"].includes(audioMode) ? "tap" : audioMode;
   try { localStorage.setItem("onirique.wp.adv", JSON.stringify(adv)); } catch { /* stockage fermé */ }
   drawAdv();
   $("picker").close();
@@ -1007,7 +1037,7 @@ $("sh-screen").onclick = () => app ? appShare() : navigator.mediaDevices.getDisp
   // Chrome : l'onglet partagé n'envoie que son propre son (pas Discord) ; le son du système reste proposé.
   systemAudio: "include", selfBrowserSurface: "exclude", surfaceSwitching: "include" })
   .then((s) => share("screen", s), (e) => e.name !== "NotAllowedError" && say("Partage d'écran impossible : " + e.message));
-$("sh-camera").onclick = () => navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } }, audio: true })
+$("sh-camera").onclick = async () => navigator.mediaDevices.getUserMedia(await camConstraints({ width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } }, {}))
   .then((s) => share("camera", s), (e) => say("Caméra indisponible : " + e.message));
 $("sh-file").onclick = () => $("file").click();
 // Un fichier de l'ordinateur : lu ici, et son image envoyée en direct aux autres (rien n'est envoyé sur nos serveurs).
@@ -1025,8 +1055,16 @@ $("sh-stop").onclick = () => { stopLocal(); send("unshare"); };
 
 // ——— Réactions : un emoji monte sur la vidéo, chez tous ———
 const REACTIONS = ["😂", "😮", "🔥", "❤️", "👏", "😢", "💀", "🎉"];
+// La réaction monte tout de suite chez soi ; le serveur la renvoie aux autres (pas à soi : by).
+let reactAt = 0;
+function react(emoji) {
+  if (!state || Date.now() - reactAt < 150) return;
+  reactAt = Date.now();
+  floatReaction({ emoji, name: "toi" });
+  api("POST", "/watchparty/" + code + "/react", { emoji }).catch(() => {}); // trop de clics d'affilée : celle-ci n'est montrée qu'ici
+}
 const reactButtons = () => el("div", { className: "wp-reacts" }, ...REACTIONS.map((emoji) =>
-  el("button", { type: "button", textContent: emoji, ariaLabel: "Réagir " + emoji, onclick: () => send("react", { emoji }) })));
+  el("button", { type: "button", textContent: emoji, ariaLabel: "Réagir " + emoji, title: "Réagir " + emoji, onclick: () => react(emoji) })));
 $("chat-reacts").append(...reactButtons().children);
 function floatReaction({ emoji, name }) {
   const stage = $("stage");
@@ -1093,11 +1131,22 @@ setInterval(() => {
 // ——— Les caméras des présents : chacun envoie sa vignette à chacun (pair à pair, quatre au plus) ———
 let myCam = null, camGrace = 0;
 const camPcs = new Map(), camIce = new Map();
+// L'appareil choisi dans les Paramètres de l'application (par son nom ; window.__oniriqueAudio, posé par l'application).
+async function deviceId(kind, name) {
+  if (!name) return null;
+  const d = (await navigator.mediaDevices.enumerateDevices()).find((x) => x.kind === kind && x.label === name);
+  return d ? { exact: d.deviceId } : null;
+}
+const chosen = () => window.__oniriqueAudio || {};
+async function camConstraints(video, audio) {
+  const [cam, mic] = await Promise.all([deviceId("videoinput", chosen().camera), deviceId("audioinput", chosen().mic)]);
+  return { video: { ...video, ...(cam ? { deviceId: cam } : {}) }, audio: audio && { ...audio, ...(mic ? { deviceId: mic } : {}) } };
+}
 $("cam-btn").onclick = async () => {
   if (myCam) { stopCam(); return send("cam", { on: false, peer: state.you.peer }); }
   try {
-    myCam = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 20 } },
-      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+    myCam = await navigator.mediaDevices.getUserMedia(await camConstraints({ width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 20 } },
+      { echoCancellation: true, noiseSuppression: true, autoGainControl: true }));
   } catch (e) { return say("Caméra indisponible : " + e.message); }
   camGrace = Date.now() + 5000; // le temps que la salle apprenne ma caméra
   await send("cam", { on: true, peer: state.you.peer });
@@ -1221,6 +1270,17 @@ if (window.OniriqueInvites) {
   OniriqueInvites.watch({ base: "/hm", title: "Invitation au HM", says: (x) => x.from.name + " t'invite au HM", avatar: avatarOf,
     join: (c) => { location.href = "mes-sons#/hm/" + c; } });
 }
+// Pendant une séance, les menus du site (Outils, Compte…) s'ouvrent dans un nouvel onglet : quitter la page couperait
+// la vidéo, le partage d'écran et les caméras. Et le navigateur demande avant de fermer une page qui partage.
+document.addEventListener("click", (e) => {
+  const a = e.target.closest && e.target.closest("a[href]");
+  if (!state || !a || a.target === "_blank" || e.ctrlKey || e.metaKey || e.shiftKey) return;
+  const url = new URL(a.href, location.href);
+  if (url.pathname === location.pathname || !/^https?:$/.test(url.protocol)) return;
+  e.preventDefault();
+  window.open(url.href, "_blank", "noopener");
+}, true);
+if (!window.oniriqueApp) window.addEventListener("beforeunload", (e) => { if (local || myCam) { e.preventDefault(); e.returnValue = ""; } });
 window.addEventListener("hashchange", () => { if (location.hash.slice(1) && location.hash.slice(1) !== code) location.reload(); });
 
 (async () => {
