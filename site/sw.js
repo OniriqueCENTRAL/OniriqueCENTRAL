@@ -7,11 +7,14 @@ self.addEventListener("push", (event) => {
     icon: "/assets/app-icon-192.png",
     badge: "/assets/app-icon-192.png",
     data: { url: data.url || "/mes-sons" },
+    // Une invitation au HM se rejoint ou se refuse depuis la notification.
+    ...(/#\/hm\//.test(data.url || "") ? { tag: data.url, actions: [{ action: "join", title: "Rejoindre" }, { action: "no", title: "Refuser" }] } : {}),
   }));
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+  if (event.action === "no") return;
   const url = new URL(event.notification.data.url, self.location.origin).href;
   event.waitUntil(clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
     const open = list.find((c) => c.url.startsWith(url));

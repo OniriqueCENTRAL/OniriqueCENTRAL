@@ -261,7 +261,7 @@ export function mountHm(app, { requireUser }) {
     rateLimit(`hm-invite:${req.user.id}`, 60, 3600_000);
     if (!invitedTo(r.code).has(target)) {
       run("INSERT INTO user_notifications (user_id, kind, actor_id, page, body, created_at) VALUES (?, 'hm', ?, ?, ?, ?)", target, req.user.id, r.code, r.name.slice(0, 140), now());
-      push(target, { title: 'HM', body: `${req.user.name || 'Un ami'} t'invite à écouter « ${r.name} »`, url: `/mes-sons#/hm/${r.code}` });
+      push(target, { title: 'Invitation au HM', body: `${req.user.name || 'Un ami'} t'invite à écouter « ${r.name} »`, url: `/mes-sons#/hm/${r.code}` });
     }
     res.json({ ok: true });
   });
