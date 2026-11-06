@@ -52,7 +52,9 @@ const TOOL_SKIN = fs.readFileSync(path.join(__dirname, 'tool-skin.css'), 'utf8')
 // Les connexions aux plateformes (Spotify, Apple Music, et les comptes Google, Apple ou Facebook qu'elles proposent)
 // restent dans l'application : la vue y passe, ou une petite fenêtre s'ouvre (MusicKit), puis on revient au CLOUD.
 const AUTH_HOSTS = /^(accounts\.spotify\.com|challenge\.spotify\.com|[a-z0-9-]+\.apple\.com|accounts\.google\.com|(www|m)\.facebook\.com)$/;
-const isAuth = (url) => { try { const u = new URL(url); return u.protocol === 'https:' && AUTH_HOSTS.test(u.hostname); } catch { return false; } };
+// La connexion à Twitch (WATCHPARTY : un abonné ou un compte Turbo regarde sans pub) : sa page de connexion seulement.
+const isAuth = (url) => { try { const u = new URL(url); return u.protocol === 'https:' && (AUTH_HOSTS.test(u.hostname)
+  || /^(id|passport)\.twitch\.tv$/.test(u.hostname) || (u.hostname === 'www.twitch.tv' && u.pathname.startsWith('/login'))); } catch { return false; } };
 const pageOf = (url) => new URL(url).pathname.replace(/^\/+/, '').replace(/\.html$/, '').split('/')[0];
 
 function toolView(tool, lang) {
@@ -115,6 +117,7 @@ function toolView(tool, lang) {
     // La fenêtre de connexion à Spotify se ferme d'elle-même une fois le compte connecté (son cookie de session posé) ;
     // à sa fermeture, la page relit l'état de la connexion.
     web.on('did-create-window', (child) => {
+      child.on('closed', () => { if (!web.isDestroyed()) web.executeJavaScript('window.onOniriqueAccounts && window.onOniriqueAccounts()').catch(() => {}); });
       child.on('closed', () => { if (!web.isDestroyed()) web.executeJavaScript('window.OniriquePlatforms && window.OniriquePlatforms.spotifyChanged && window.OniriquePlatforms.spotifyChanged()').catch(() => {}); });
       child.webContents.on('did-navigate', async (_event, url) => {
         if (/^https:\/\/open\.spotify\.com\//.test(url) && (await ses.cookies.get({ name: 'sp_dc' }).catch(() => [])).length && !child.isDestroyed()) child.close();
@@ -310,6 +313,25 @@ ipcMain.handle('tool:screen-pick', (event, id, audio) => {
 ipcMain.handle('tool:open-external', (event, url) => {
   if (!toolContents.has(event.sender.id) || !/^https:\/\/accounts\.spotify\.com\/authorize\?/.test(url)) return false;
   return shell.openExternal(url).then(() => true);
+});
+// Twitch et YouTube connectés dans l'application (leurs cookies dans la session des pages du site) : les lecteurs
+// intégrés de la WATCHPARTY reconnaissent alors le compte, et ses avantages (abonnement, Turbo, Premium : sans pub).
+const ACCOUNT_SITES = { twitch: { cookie: 'auth-token', hosts: /(^|\.)twitch\.tv$/ }, youtube: { cookie: 'SAPISID', hosts: /(^|\.)(youtube|google)\.com$/ } };
+ipcMain.handle('tool:accounts', async (event) => {
+  if (!toolContents.has(event.sender.id)) return {};
+  const cookies = await webSession().cookies.get({});
+  return Object.fromEntries(Object.entries(ACCOUNT_SITES).map(([name, site]) => [name,
+    cookies.some((c) => c.name === site.cookie && site.hosts.test(c.domain.replace(/^\./, '')) && (name !== 'youtube' || /youtube\.com$/.test(c.domain)))]));
+});
+ipcMain.handle('tool:account-logout', async (event, name) => {
+  const site = ACCOUNT_SITES[name];
+  if (!toolContents.has(event.sender.id) || !site) return false;
+  const ses = webSession();
+  for (const c of await ses.cookies.get({})) {
+    const host = c.domain.replace(/^\./, '');
+    if (site.hosts.test(host)) await ses.cookies.remove(`https://${host}${c.path}`, c.name).catch(() => {});
+  }
+  return true;
 });
 ipcMain.handle('tool:spotify-logout', async (event) => {
   if (!toolContents.has(event.sender.id)) return false;

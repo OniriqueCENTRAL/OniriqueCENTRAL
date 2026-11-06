@@ -11,6 +11,9 @@ contextBridge.exposeInMainWorld('oniriqueApp', {
   // Le partage d'écran de la WATCHPARTY : les écrans et fenêtres à choisir, puis le choix (avec ou sans le son de l'ordinateur).
   screens: () => ipcRenderer.invoke('tool:screens'),
   pickScreen: (id, audio) => ipcRenderer.invoke('tool:screen-pick', String(id), !!audio),
+  // Twitch et YouTube connectés dans l'application (pour regarder sans pub dans la WATCHPARTY), et la déconnexion.
+  accounts: () => ipcRenderer.invoke('tool:accounts'),
+  accountLogout: (name) => ipcRenderer.invoke('tool:account-logout', String(name)),
 });
 contextBridge.exposeInMainWorld('oniriqueDialog', (kind, message, value) =>
   ipcRenderer.sendSync('tool:dialog', String(kind), String(message ?? ''), value == null ? '' : String(value)));

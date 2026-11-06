@@ -167,7 +167,7 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
       <div>
         <div class="stage" id="stage"></div>
         <div class="glass controls" id="controls">
-          <form class="row" id="source"><input id="s-url" placeholder="Adresse YouTube ou vidéo en https (.mp4, .webm…)" aria-label="Vidéo à regarder"><button class="btn btn-primary" type="submit">Regarder</button></form>
+          <form class="row" id="source"><input id="s-url" placeholder="YouTube, Twitch, Vimeo, Kick ou vidéo en https (.mp4…)" aria-label="Vidéo à regarder"><button class="btn btn-primary" type="submit">Regarder</button></form>
           <div class="row" id="shares">
             <button class="btn" type="button" id="sh-screen">Partager mon écran</button>
             <button class="btn" type="button" id="sh-camera">Ma caméra</button>
@@ -190,6 +190,7 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
             <p class="adv-stats" id="adv-stats"></p>
           </details>
           <p class="muted" id="hint" style="margin:0;font-size:13px"></p>
+          <div class="row" id="adfree" style="font-size:13px" hidden></div>
         </div>
       </div>
       <aside class="side">
@@ -304,12 +305,38 @@ function draw() {
   if (can("control")) hold = false;
   $("hint").textContent = can("control") ? "Lecture, pause et avance partent chez tout le monde." : "Le créateur garde la main sur la lecture : ta pause ne vaut que pour toi.";
   drawStage();
+  drawAdfree();
   drawPeople();
   drawChat();
   if ((!sharing || s.media.peer !== s.you.peer) && Date.now() > shareGrace) stopLocal(); // shareGrace : le temps que la salle apprenne mon partage
   if (!sharing) closePeers();
 }
 
+// Sans pub : les lecteurs de Twitch et YouTube reconnaissent le compte ouvert sur cet appareil (abonné à la chaîne ou Turbo,
+// YouTube Premium) et en appliquent les avantages. Rien ne passe par ONIRIQUE : chacun se connecte de son côté.
+let adfreeFor = "", accounts = null;
+async function drawAdfree() {
+  const m = state.media, which = m && (m.kind === "twitch" ? "twitch" : m.kind === "youtube" ? "youtube" : "");
+  const box = $("adfree");
+  box.hidden = !which;
+  if (!which) return;
+  const name = which === "twitch" ? "Twitch" : "YouTube", perk = which === "twitch" ? "abonné à la chaîne ou Turbo" : "YouTube Premium";
+  if (app && app.accounts) {
+    if (adfreeFor !== which || !accounts) { adfreeFor = which; accounts = await app.accounts().catch(() => ({})); }
+    const on = !!accounts[which];
+    box.replaceChildren(el("span", { className: "muted", textContent: on ? `Connecté à ${name} dans l'application : sans pub si tu es ${perk}.` : `Sans pub : connecte ton compte ${name} (${perk}).` }),
+      el("button", { className: "btn small", type: "button", textContent: on ? "Déconnecter" : "Connecter " + name, onclick: async () => {
+        if (on) { await app.accountLogout(which); accounts = null; reloadStage(); } else window.open(which === "twitch" ? "https://www.twitch.tv/login" : "https://accounts.google.com/ServiceLogin?service=youtube&continue=" + encodeURIComponent("https://www.youtube.com/"), "_blank");
+        drawAdfree();
+      } }));
+  } else {
+    box.replaceChildren(el("span", { className: "muted", textContent: `Sans pub : connecte-toi à ${name} dans ce navigateur (${perk}), puis recharge la page. Chacun voit selon son propre compte.` }),
+      el("a", { className: "btn small", href: which === "twitch" ? "https://www.twitch.tv/login" : "https://www.youtube.com/", target: "_blank", rel: "noopener", textContent: "Ouvrir " + name }));
+  }
+}
+// Le compte vient d'être connecté (fenêtre refermée) : le lecteur est rechargé pour le reconnaître.
+const reloadStage = () => { if (state) { clearStage(); drawStage(); } };
+window.onOniriqueAccounts = () => { accounts = null; reloadStage(); if (state) drawAdfree(); };
 function drawPeople() {
   const s = state;
   $("p-title").textContent = "Présents · " + s.members.length;
@@ -386,7 +413,7 @@ function clearStage() {
 
 function drawStage() {
   const m = state.media;
-  const key = !m ? "" : m.kind === "youtube" ? "yt:" + m.id : m.kind === "url" ? "url:" + m.url : "share:" + m.peer + ":" + (m.peer === state.you.peer ? "me" : "");
+  const key = !m ? "" : m.kind === "share" ? "share:" + m.peer + ":" + (m.peer === state.you.peer ? "me" : "") : m.kind + ":" + (m.url || m.id || m.video || m.channel || m.clip);
   if (key === mediaKey) return;
   clearStage();
   mediaKey = key;
@@ -401,6 +428,37 @@ function drawStage() {
       const yt = new YT.Player(slot, { videoId: m.id, width: "100%", height: "100%",
         playerVars: { controls: 0, disablekb: 1, fs: 0, rel: 0, modestbranding: 1, playsinline: 1, iv_load_policy: 3, cc_load_policy: 0 },
         events: { onReady: () => { if (mediaKey !== key) return yt.destroy(); player = ytPlayer(yt); applyVolume(); tick(); } } });
+    });
+    return;
+  }
+  // Un direct (chaîne Twitch, Kick) ou un clip : le lecteur de la plateforme, avec ses commandes ; chacun au plus près du direct.
+  const badge = (text) => el("span", { className: "badge", textContent: text });
+  if (m.live || m.nosync) {
+    const src = m.kind === "kick" ? `https://player.kick.com/${encodeURIComponent(m.channel)}?autoplay=true`
+      : m.clip ? `https://clips.twitch.tv/embed?clip=${encodeURIComponent(m.clip)}&parent=${location.hostname}&autoplay=true`
+      : `https://player.twitch.tv/?channel=${encodeURIComponent(m.channel)}&parent=${location.hostname}&autoplay=true`;
+    stage.replaceChildren(el("div", { className: "media" }, el("iframe", { src, allowFullscreen: true, allow: "autoplay; fullscreen; encrypted-media; picture-in-picture" })),
+      badge((m.clip ? "Clip Twitch" : (m.kind === "kick" ? "Kick" : "Twitch") + " · en direct, chacun au plus près du direct")));
+    return;
+  }
+  if (m.kind === "twitch") {
+    const slot = el("div", { id: "tw-" + Date.now(), style: "width:100%;height:100%" }), box = el("div", { className: "media locked" }, slot);
+    stage.replaceChildren(box, hit(), makeBar(false));
+    loadScript("https://player.twitch.tv/js/embed/v1.js", "Twitch").then(() => {
+      if (mediaKey !== key) return;
+      const tw = new Twitch.Player(slot.id, { video: "v" + m.video, parent: [location.hostname], autoplay: false, width: "100%", height: "100%" });
+      tw.addEventListener(Twitch.Player.READY, () => { if (mediaKey === key) { player = twitchPlayer(tw); applyVolume(); tick(); } });
+      tw.addEventListener(Twitch.Player.PLAYBACK_BLOCKED, () => { blocked = true; });
+    });
+    return;
+  }
+  if (m.kind === "vimeo") {
+    const slot = el("div", { style: "width:100%;height:100%" }), box = el("div", { className: "media locked" }, slot);
+    stage.replaceChildren(box, hit(), makeBar(false));
+    loadScript("https://player.vimeo.com/api/player.js", "Vimeo").then(() => {
+      if (mediaKey !== key) return;
+      const vp = new Vimeo.Player(slot, { url: `https://vimeo.com/${m.id}${m.hash ? "/" + m.hash : ""}`, controls: false, autopause: false, playsinline: true, dnt: true });
+      vp.ready().then(() => { if (mediaKey !== key) return vp.destroy(); player = vimeoPlayer(vp); applyVolume(); tick(); }, () => say("Cette vidéo Vimeo ne peut pas être intégrée (réglage de confidentialité de son auteur)."));
     });
     return;
   }
@@ -427,11 +485,37 @@ function drawStage() {
 const ytPlayer = (yt) => ({ kind: "yt", time: () => yt.getCurrentTime() || 0, duration: () => yt.getDuration() || 0,
   playing: () => [1, 3].includes(yt.getPlayerState()), play: () => yt.playVideo(), pause: () => yt.pauseVideo(), seek: (t) => yt.seekTo(t, true),
   rate: (x) => { if (yt.getPlaybackRate() !== x) yt.setPlaybackRate(x); },
+  live: () => !!(yt.getVideoData && yt.getVideoData().isLive),
   volume: (l, mu) => { yt.setVolume(Math.round(l * 100)); if (mu) yt.mute(); else yt.unMute(); }, destroy: () => yt.destroy() });
 const videoPlayer = (v) => ({ kind: "video", time: () => v.currentTime, duration: () => (Number.isFinite(v.duration) ? v.duration : 0), playing: () => !v.paused,
   play: () => v.play().then(() => { blocked = false; }, () => { blocked = true; }), pause: () => v.pause(), seek: (t) => { v.currentTime = t; },
   rate: (x) => { if (Math.abs(v.playbackRate - x) > 0.005) v.playbackRate = x; }, volume: (l, mu) => { v.volume = l; v.muted = mu; },
   destroy: () => { v.pause(); v.removeAttribute("src"); v.load(); } });
+const scripts = new Map();
+const loadScript = (src, global) => scripts.get(src) || scripts.set(src, window[global] ? Promise.resolve() : new Promise((resolve, reject) => {
+  document.head.append(el("script", { src, onload: resolve, onerror: () => { scripts.delete(src); reject(); } }));
+})).get(src);
+// Twitch (rediffusion) : ni vitesse ni réglage fin ; on se replace au-delà d'une seconde d'écart.
+const twitchPlayer = (tw) => ({ kind: "twitch", time: () => tw.getCurrentTime() || 0, duration: () => tw.getDuration() || 0, playing: () => !tw.isPaused(),
+  play: () => tw.play(), pause: () => tw.pause(), seek: (t) => tw.seek(t), volume: (l, mu) => { tw.setVolume(l); tw.setMuted(mu); } });
+// Vimeo répond en différé : sa position est gardée à chaque « timeupdate » et prolongée entre deux, une demi-seconde au
+// plus (au-delà, le lecteur charge ou est bloqué : sa vraie position compte).
+function vimeoPlayer(vp) {
+  const c = { t: 0, at: Date.now(), playing: false, dur: 0, rate: 1, canRate: true };
+  vp.on("timeupdate", (e) => Object.assign(c, { t: e.seconds, dur: e.duration, at: Date.now() }));
+  vp.on("play", () => { c.playing = true; c.at = Date.now(); });
+  vp.on("pause", () => { c.playing = false; });
+  vp.on("seeked", (e) => Object.assign(c, { t: e.seconds, at: Date.now() }));
+  vp.on("bufferstart", () => { c.buffering = true; });
+  vp.on("bufferend", () => { c.buffering = false; c.at = Date.now(); });
+  return { kind: "vimeo", time: () => c.t + (c.playing && !c.buffering ? Math.min(0.5, (Date.now() - c.at) / 1000) * c.rate : 0), duration: () => c.dur, playing: () => c.playing,
+    play: () => { c.playing = true; vp.play().catch(() => { c.playing = false; blocked = true; }); }, pause: () => { c.playing = false; vp.pause().catch(() => {}); },
+    seek: (t) => { vp.setCurrentTime(t).then(() => (c.playing ? vp.play() : null)).catch(() => {}); },
+    // La vitesse n'est permise que sur les vidéos des comptes payants : sinon, on se replace comme pour Twitch.
+    rate: (x) => { if (!c.canRate || c.rate === x) return; c.rate = x; vp.setPlaybackRate(x).catch(() => { c.canRate = false; c.rate = 1; }); },
+    noRate: () => !c.canRate,
+    volume: (l, mu) => { vp.setVolume(mu ? 0 : l).catch(() => {}); }, destroy: () => vp.destroy().catch(() => {}) };
+}
 function applyVolume() {
   if (player && player.volume) player.volume(vol.level, vol.muted);
   try { localStorage.setItem("onirique.wp.volume", JSON.stringify(vol)); } catch { /* stockage fermé */ }
@@ -493,15 +577,26 @@ function tick() {
   if (!state) return;
   syncPeers();
   drawBar();
-  if (!player || !player.time || !state.media || state.media.kind === "share") return;
+  if (!player || !player.time || !state.media || state.media.kind === "share" || state.media.live || state.media.nosync) return;
   const want = state.playing && !hold, exp = expected(), d = player.time() - exp, yt = player.kind === "yt";
   if (want && !player.playing() && !blocked) player.play();
   if (!want && player.playing()) player.pause();
   if (!want) { if (player.rate) player.rate(1); if (!hold && Math.abs(d) > 0.4 && Date.now() - lastSeek > 800) { lastSeek = Date.now(); player.seek(exp); } return; }
-  if (Math.abs(d) > (yt ? 2 : 0.6)) {
-    if (Date.now() - lastSeek > 1500) { lastSeek = Date.now(); if (player.rate) player.rate(1); player.seek(exp + (yt ? 0.4 : 0)); }
+  if (yt && player.live && player.live()) return; // un direct YouTube : chacun au plus près du direct
+  // Sans réglage de vitesse (Twitch, Vimeo gratuit) : on se replace, en avance du temps que le lecteur met à repartir,
+  // appris à chaque saut (lead).
+  const coarse = !player.rate || (player.noRate && player.noRate());
+  if (coarse && player.checkAt && Date.now() > player.checkAt) { player.lead = Math.max(0, Math.min(2, (player.lead || 0) - d)); player.checkAt = 0; }
+  if (Math.abs(d) > (yt ? 2 : coarse ? 0.35 : 0.6)) {
+    if (Date.now() - lastSeek > (coarse ? 3000 : 1500)) {
+      lastSeek = Date.now();
+      if (player.rate) player.rate(1);
+      player.seek(exp + (yt ? 0.4 : coarse ? player.lead || 0 : 0));
+      if (coarse) player.checkAt = Date.now() + 2000;
+    }
     return;
   }
+  if (coarse) return;
   if (yt) { if (Math.abs(d) > 0.12) player.rate(d < 0 ? 1.25 : 0.75); else if (Math.abs(d) < 0.04) player.rate(1); return; }
   if (player.rate) player.rate(Math.abs(d) < 0.04 ? 1 : 1 - Math.max(-0.06, Math.min(0.06, d * 0.5)));
 }

@@ -27,6 +27,15 @@ await step('sources : YouTube sous toutes ses formes, vidéo en https ; le reste
     assert.equal(youtubeId(u), 'dQw4w9WgXcQ', u);
   assert.equal(youtubeId('https://evil.test/watch?v=dQw4w9WgXcQ'), null);
   assert.deepEqual(cleanSource('https://cdn.test/films/mon%20film.mp4'), { kind: 'url', url: 'https://cdn.test/films/mon%20film.mp4', title: 'mon film.mp4' });
+  const src = (u) => { const { title, ...x } = cleanSource(u); return x; };
+  assert.deepEqual(src('https://www.twitch.tv/Kameto'), { kind: 'twitch', channel: 'kameto', live: true });
+  assert.deepEqual(src('https://www.twitch.tv/videos/2290876543'), { kind: 'twitch', video: '2290876543' });
+  assert.deepEqual(src('https://www.twitch.tv/kameto/clip/FunnyClipSlug-abc'), { kind: 'twitch', clip: 'FunnyClipSlug-abc', nosync: true });
+  assert.deepEqual(src('https://clips.twitch.tv/FunnyClipSlug'), { kind: 'twitch', clip: 'FunnyClipSlug', nosync: true });
+  assert.equal(src('https://www.twitch.tv/directory').kind, 'url'); // une page de Twitch, pas une chaîne
+  assert.deepEqual(src('https://vimeo.com/76979871'), { kind: 'vimeo', id: '76979871' });
+  assert.deepEqual(src('https://vimeo.com/76979871/abc123def0'), { kind: 'vimeo', id: '76979871', hash: 'abc123def0' });
+  assert.deepEqual(src('https://kick.com/xqc'), { kind: 'kick', channel: 'xqc', live: true });
   throws(() => cleanSource('http://cdn.test/a.mp4'), 400);
   throws(() => cleanSource('javascript:alert(1)'), 400);
 });

@@ -48,16 +48,43 @@ export function youtubeId(text) {
   return /^[\w-]{11}$/.test(id || '') ? id : null;
 }
 
-/** Ce qu'on regarde, vérifié : YouTube ou une adresse https. Le partage passe par l'action share. */
+// Les pages de Twitch qui ne sont pas des chaînes.
+const TWITCH_PAGES = new Set(['directory', 'videos', 'settings', 'search', 'downloads', 'jobs', 'turbo', 'p', 'subscriptions', 'wallet', 'inventory', 'drops', 'friends', 'login', 'signup']);
+/**
+ * Les lecteurs officiels des plateformes : Twitch (une chaîne en direct, une rediffusion, un clip), Vimeo et Kick.
+ * live : un direct, que chacun regarde au plus près du direct (pas de position commune) ; nosync : un clip, sans commande.
+ */
+export function platformSource(text) {
+  let u;
+  try { u = new URL(String(text || '').trim()); } catch { return null; }
+  if (u.protocol !== 'https:') return null;
+  const host = u.hostname.replace(/^(www|m)\./, ''), parts = u.pathname.split('/').filter(Boolean);
+  if (host === 'twitch.tv') {
+    if (parts[0] === 'videos' && /^\d{1,15}$/.test(parts[1] || '')) return { kind: 'twitch', video: parts[1] };
+    if (parts[1] === 'clip' && /^[\w-]{1,100}$/.test(parts[2] || '')) return { kind: 'twitch', clip: parts[2], nosync: true };
+    if (parts.length === 1 && /^\w{3,25}$/.test(parts[0]) && !TWITCH_PAGES.has(parts[0].toLowerCase())) return { kind: 'twitch', channel: parts[0].toLowerCase(), live: true };
+  }
+  if (host === 'clips.twitch.tv' && /^[\w-]{1,100}$/.test(parts[0] || '') && parts[0] !== 'embed') return { kind: 'twitch', clip: parts[0], nosync: true };
+  if (host === 'vimeo.com' || host === 'player.vimeo.com') {
+    const [id, hash] = host === 'vimeo.com' ? parts : parts.slice(1);
+    if (/^\d{1,12}$/.test(id || '')) return { kind: 'vimeo', id, ...(/^[\da-f]{6,20}$/.test(hash || u.searchParams.get('h') || '') ? { hash: hash || u.searchParams.get('h') } : {}) };
+  }
+  if (host === 'kick.com' && parts.length === 1 && /^[\w-]{3,25}$/.test(parts[0])) return { kind: 'kick', channel: parts[0].toLowerCase(), live: true };
+  return null;
+}
+
+/** Ce qu'on regarde, vérifié : YouTube, Twitch, Vimeo, Kick ou un fichier vidéo en https. Le partage passe par l'action share. */
 export function cleanSource(raw) {
   const text = typeof raw === 'string' ? raw : raw?.url;
   const yt = youtubeId(text);
   if (yt) return { kind: 'youtube', id: yt, title: clean(raw?.title, 200) };
+  const pf = platformSource(text);
+  if (pf) return { ...pf, title: clean(raw?.title, 200) };
   const url = String(text || '').trim();
   if (url.length <= 2000 && /^https:\/\/[^\s]+$/.test(url)) {
     try { new URL(url); return { kind: 'url', url, title: clean(raw?.title, 200) || decodeURIComponent(url.split('/').pop().split('?')[0]).slice(0, 200) }; } catch { /* plus bas */ }
   }
-  throw new HttpError(400, "Colle une adresse YouTube, ou celle d'une vidéo en https (.mp4, .webm…).");
+  throw new HttpError(400, "Colle une adresse YouTube, Twitch, Vimeo ou Kick, ou celle d'une vidéo en https (.mp4, .webm…).");
 }
 
 export function newRoom(owner, name = '') {
