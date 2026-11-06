@@ -9,16 +9,17 @@
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
 <style>
-/* Mêmes tokens que compte.html et profil.html. */
+/* Mêmes tokens que compte.html et profil.html ; les nouveaux éléments suivent la charte de Nov (da-vocalbox). */
 :root {
-  --night: #0D0809; --line: rgba(255,210,214,.13); --mist: #F6EEEE; --haze: #A88F92; --ember: #E23444;
+  --night: #0D0809; --line: rgba(255,210,214,.13); --mist: #F6EEEE; --haze: #A88F92; --ember: #E23444; --pink: #ff8e9a;
   --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
   --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
   --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
-body { margin: 0; min-height: 100vh; color: var(--mist); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased; background: var(--night); }
+[hidden] { display: none !important; }
+body { margin: 0; min-height: 100vh; color: var(--mist); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased; background: var(--night); padding-bottom: 90px; }
 body::before { content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
   background: radial-gradient(120% 60% at 50% -10%, rgba(140,6,20,.8), rgba(92,0,8,.45) 36%, transparent 72%); }
 a { color: inherit; }
@@ -29,20 +30,28 @@ header .wrap { max-width: 1180px; display: flex; align-items: center; justify-co
 .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 800 17px/1 var(--f-display); letter-spacing: .16em; }
 .brand img { width: 44px; height: auto; margin-block: -12px; filter: drop-shadow(0 0 6px rgba(226,52,68,.8)); }
 .between { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-main { padding-block: clamp(20px, 4vw, 40px) 80px; }
+main { padding-block: clamp(20px, 4vw, 40px) 40px; }
 .eyebrow { font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .muted { color: var(--haze); }
 .notice { min-height: 1.4em; font-size: 14px; color: var(--haze); }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 18px; border-radius: 999px; border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
 .btn-primary { background: var(--mist); color: var(--night); box-shadow: 0 10px 40px -10px rgba(226,52,68,.6); }
 .btn-ghost { background: rgba(255,255,255,.03); color: var(--mist); border-color: var(--line); }
 .btn-ghost:hover { border-color: var(--ember); }
-textarea { border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px var(--f-body); resize: none; min-width: 0; }
+.btn-sm { padding: 8px 13px; font-size: 13px; }
+.ico { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); display: grid; place-items: center; cursor: pointer; font: 500 17px var(--f-body); padding: 0; }
+.ico:hover { border-color: var(--ember); }
+.ico.rec { background: var(--ember); border-color: var(--ember); font: 600 12px var(--f-mono); animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 8px rgba(226,52,68,.18); } }
+@media (prefers-reduced-motion: reduce) { .ico.rec { animation: none; } }
+textarea, input[type=search] { border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px var(--f-body); resize: none; min-width: 0; }
 .chat { display: grid; grid-template-columns: 300px 1fr; gap: 16px; margin-top: 8px; min-height: 60vh; }
-@media (max-width: 760px) { .chat { grid-template-columns: 1fr; } }
 .list, .thread { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
 .list { display: flex; flex-direction: column; }
-.conv { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--mist); text-align: left; cursor: pointer; font: inherit; }
+.search { padding: 10px; border-bottom: 1px solid var(--line); }
+.search input { width: 100%; padding: 10px 14px; font-size: 16px; }
+.conv { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--mist); text-align: left; cursor: pointer; font: inherit; width: 100%; }
 .conv:hover, .conv.on { background: rgba(255,255,255,.05); }
 .conv:disabled { opacity: .5; cursor: default; }
 .conv img, .thread-head img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex: none; background: #2a0a0e; }
@@ -50,20 +59,72 @@ textarea { border-radius: 12px; border: 1px solid var(--line); background: rgba(
 .conv b { display: block; font-size: 14px; }
 .conv small { display: block; color: var(--haze); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .conv i { font-style: normal; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--ember); color: #fff; font: 700 11px/20px var(--f-mono); text-align: center; }
-.thread { display: flex; flex-direction: column; }
-.thread-head { display: flex; gap: 12px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); text-decoration: none; }
-.msgs { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; max-height: 62vh; }
-.msg { max-width: 75%; padding: 9px 13px; border-radius: 16px; background: rgba(255,255,255,.06); white-space: pre-wrap; overflow-wrap: anywhere; }
-.msg.mine { align-self: flex-end; background: rgba(226,52,68,.55); }
+.thread { display: flex; flex-direction: column; min-width: 0; }
+.thread-head { display: flex; gap: 12px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.thread-head a { display: flex; gap: 12px; align-items: center; text-decoration: none; min-width: 0; }
+.thread-head .who b { display: block; line-height: 1.2; }
+.thread-head .who small { display: block; font: 500 11px var(--f-mono); color: var(--haze); }
+.thread-head .who small.typing { color: var(--pink); }
+.back { display: none; }
+.msgs { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 6px; max-height: 62vh; min-height: 40vh; }
+.row { display: flex; flex-direction: column; align-items: flex-start; max-width: 78%; }
+.row.mine { align-self: flex-end; align-items: flex-end; }
+.msg { position: relative; padding: 9px 13px; border-radius: 18px; background: rgba(255,255,255,.06); white-space: pre-wrap; overflow-wrap: anywhere; cursor: pointer; max-width: 100%; }
+.mine .msg { background: rgba(226,52,68,.55); }
+.msg.gone { font-style: italic; color: var(--haze); background: none; border: 1px dashed var(--line); cursor: default; }
 .msg time { display: block; font: 500 10px var(--f-mono); color: rgba(246,238,238,.55); margin-top: 3px; }
-.send { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line); }
-.send textarea { flex: 1; height: 44px; padding: 11px 14px; overflow: hidden; }
+.quote { display: block; margin: -2px -4px 6px; padding: 5px 9px; border-left: 3px solid var(--pink); border-radius: 8px; background: rgba(0,0,0,.25); font-size: 13px; color: var(--haze); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.msg img.photo { display: block; max-width: min(320px, 100%); max-height: 360px; min-height: 60px; border-radius: 12px; margin: -4px -8px 4px; cursor: zoom-in; }
+.msg audio { display: block; width: 260px; max-width: 100%; height: 40px; }
+.sounds { min-width: 220px; white-space: normal; }
+.sounds b { display: block; font: 700 13px var(--f-display); letter-spacing: .02em; margin-bottom: 6px; }
+.sound { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px; border: 0; border-radius: 10px; background: rgba(0,0,0,.22); color: var(--mist); font: 500 13px var(--f-body); text-align: left; cursor: pointer; margin-top: 4px; }
+.sound:hover { background: rgba(0,0,0,.4); }
+.sound:disabled { opacity: .5; cursor: default; }
+.sound img, .sound .ph { width: 32px; height: 32px; border-radius: 6px; object-fit: cover; flex: none; background: linear-gradient(135deg, #5C0008, #2A0A0E); }
+.sound span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sound small { color: var(--haze); font: 500 11px var(--f-mono); }
+.reacts { display: flex; gap: 4px; margin-top: -6px; z-index: 1; }
+.reacts button { padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line); background: #1d1214; color: var(--mist); font: 500 12px var(--f-body); cursor: pointer; }
+.reacts button.on { border-color: var(--ember); }
+.seen { font: 500 10px var(--f-mono); color: var(--haze); margin-top: 2px; }
+.tools { display: none; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+.mine .tools { justify-content: flex-end; }
+.row.sel .tools { display: flex; }
+.tools button { padding: 5px 9px; border-radius: 999px; border: 1px solid var(--line); background: #1d1214; color: var(--mist); font: 500 13px var(--f-body); cursor: pointer; }
+.tools button:hover { border-color: var(--ember); }
+.flash .msg { box-shadow: 0 0 0 2px var(--pink); }
+.bar { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-top: 1px solid var(--line); font-size: 13px; color: var(--haze); }
+.bar span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar button { border: 0; background: none; color: var(--mist); cursor: pointer; font-size: 16px; }
+.send { display: flex; gap: 8px; align-items: flex-end; padding: 12px; border-top: 1px solid var(--line); }
+.send textarea { flex: 1; height: 44px; max-height: 140px; padding: 11px 14px; }
 .empty { padding: 24px; margin: 0; color: var(--haze); }
 .note { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border-radius: 14px; text-decoration: none; font-size: 14px; }
 .note:hover { background: rgba(255,255,255,.04); }
 .note.new { background: rgba(226,52,68,.12); }
 .note img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex: none; background: #2a0a0e; }
 .note time { display: block; font: 500 11px var(--f-mono); color: var(--haze); margin-top: 2px; }
+dialog { width: min(520px, calc(100vw - 32px)); max-height: 80vh; padding: 0; border: 1px solid var(--line); border-radius: 18px; background: #140b0d; color: var(--mist); }
+dialog::backdrop { background: rgba(0,0,0,.7); }
+.dlg-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: #140b0d; z-index: 1; }
+.dlg-body { padding: 12px 16px 16px; display: grid; gap: 8px; }
+.proj { border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+.proj > div:first-child { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.proj > div:first-child span { flex: 1; min-width: 140px; font-weight: 700; }
+dialog.zoom { width: auto; max-width: 96vw; background: none; border: 0; }
+.zoom img { max-width: 94vw; max-height: 88vh; border-radius: 12px; display: block; }
+@media (max-width: 760px) {
+  .chat { grid-template-columns: 1fr; }
+  .chat.reading .list { display: none; }
+  .chat:not(.reading) .thread { display: none; }
+  .back { display: grid; width: 36px; height: 36px; font-size: 16px; }
+  .msgs { max-height: calc(100dvh - 330px); min-height: 45vh; padding: 12px; }
+  .row { max-width: 88%; }
+  .send { gap: 6px; padding: 10px; }
+  .send .ico { width: 40px; height: 40px; }
+  .send .btn { padding: 11px 14px; }
+}
 </style>
 
 <header>
@@ -74,38 +135,49 @@ textarea { border-radius: 12px; border: 1px solid var(--line); background: rgba(
 </header>
 
 <main class="wrap">
-  <span class="eyebrow">Messages privés</span>
+  <div class="top"><span class="eyebrow">Messages privés</span><button class="btn btn-ghost btn-sm" id="bell" type="button" hidden>Notifications</button></div>
   <p class="notice" id="state" role="status"></p>
   <div class="chat" id="chat" hidden>
-    <nav class="list" id="list" aria-label="Conversations"></nav>
+    <nav class="list" aria-label="Conversations">
+      <div class="search"><input type="search" id="q" placeholder="Chercher dans mes messages" aria-label="Chercher dans mes messages"></div>
+      <div id="list"></div>
+    </nav>
     <section class="thread" id="thread"><p class="empty">Choisis une conversation, ou écris à un membre depuis sa page de profil.</p></section>
   </div>
 </main>
+<dialog id="dlg"></dialog>
+<input type="file" id="pick" accept="image/*" hidden>
 
+<script src="assets/sounds-player.js?v=25"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const TOKEN = "onirique.token";
 const token = sessionStorage.getItem(TOKEN) || localStorage.getItem(TOKEN);
 const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids.filter((k) => k != null && k !== false)); return n; };
-async function api(method, path, body) {
-  const response = await fetch("/api" + path, { method, headers: { Authorization: "Bearer " + token, ...(body ? { "Content-Type": "application/json" } : {}) }, body: body ? JSON.stringify(body) : undefined })
+async function api(method, path, body, raw) {
+  const headers = { Authorization: "Bearer " + token, ...(body ? { "Content-Type": "application/json" } : raw ? { "Content-Type": raw.type || "application/octet-stream" } : {}) };
+  const response = await fetch("/api" + path, { method, headers, body: body ? JSON.stringify(body) : raw })
     .catch(() => { throw new Error("Serveur injoignable. Réessaie dans un instant."); });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Erreur " + response.status);
+  if (!response.ok) throw new Error(response.status === 413 ? "Fichier trop lourd : 6 Mo au plus." : data.error || "Erreur " + response.status);
   return data;
 }
+const fail = (e) => { $("state").textContent = e.message; };
 const avatarOf = (src) => (src ? src + "?w=120" : "assets/favicon.png?v=2");
 const time = (t) => new Date(t).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-let current = new URLSearchParams(location.search).get("u"), shown = "";
+const coarse = () => matchMedia("(pointer: coarse)").matches;
+const REACTIONS = ["❤️", "🔥", "😂", "😮", "😢", "👍"];
+let current = new URLSearchParams(location.search).get("u"), peer = null, shown = "", selected = 0, replying = null, editing = null, lastThread = null;
 
-// L'activité : abonnements, commentaires sur ma page, réponses à mes commentaires (lue dès qu'elle est ouverte).
+// ——— L'activité : abonnements, commentaires sur ma page, réponses à mes commentaires (lue dès qu'elle est ouverte) ———
 const SAYS = { follow: "s'est abonné à ta page", comment: "a commenté ta page", reply: "a répondu à un commentaire", hm: "t'invite à son HM" };
 async function activity() {
-  current = null; shown = "";
+  current = null; peer = null; shown = "";
   history.replaceState(null, "", "messages");
+  $("chat").classList.add("reading");
   $("thread").replaceChildren(el("p", { className: "empty", textContent: "Chargement…" }));
   const list = await api("GET", "/me/activity");
-  $("thread").replaceChildren(el("div", { className: "thread-head" }, el("b", { textContent: "Activité" })),
+  $("thread").replaceChildren(el("div", { className: "thread-head" }, backBtn(), el("b", { textContent: "Activité" })),
     el("div", { className: "msgs" }, ...(list.length ? list.map((n) => el("a", { className: "note" + (n.read ? "" : " new"), href: n.kind === "hm" ? "mes-sons#/hm/" + encodeURIComponent(n.page || "") : n.kind === "follow" && n.actor.handle ? "profil?u=" + encodeURIComponent(n.actor.handle) : "profil?u=" + encodeURIComponent(n.page || "") },
       el("img", { src: avatarOf(n.actor.avatar), alt: "" }),
       el("span", {}, el("b", { textContent: n.actor.name }), " " + SAYS[n.kind] + (n.body ? " : « " + n.body + " »" : ""), el("time", { textContent: time(n.at) }))))
@@ -113,55 +185,338 @@ async function activity() {
   if (list.some((n) => !n.read)) await api("POST", "/me/activity/read").catch(() => {});
   drawList().catch(() => {});
 }
+// Sur téléphone, la liste et la conversation se montrent l'une après l'autre.
+const backBtn = () => el("button", { className: "ico back", type: "button", ariaLabel: "Retour aux conversations", textContent: "←",
+  onclick: () => { $("chat").classList.remove("reading"); current = null; peer = null; history.replaceState(null, "", "messages"); drawList().catch(() => {}); } });
 
+// ——— La liste des conversations, ou les résultats de la recherche ———
 async function drawList() {
+  if ($("q").value.trim().length >= 2) return;
   const [list, count] = await Promise.all([api("GET", "/me/messages"), api("GET", "/me/inbox-count")]);
-  const head = el("button", { type: "button", className: "conv" + (current ? "" : " on"), onclick: () => activity().catch((e) => { $("state").textContent = e.message; }) },
+  const head = el("button", { type: "button", className: "conv" + (current ? "" : " on"), onclick: () => activity().catch(fail) },
     el("span", {}, el("b", { textContent: "Activité" }), el("small", { textContent: "Abonnés, commentaires, réponses" })), count.notifications && current ? el("i", { textContent: String(count.notifications) }) : null);
   $("list").replaceChildren(head, ...(list.length ? list.map((c) => el("button", { type: "button", className: "conv" + (c.with.handle === current ? " on" : ""), disabled: !c.with.handle,
     title: c.with.handle ? "" : "Ce membre n'a plus de page de profil", onclick: () => open(c.with.handle) },
     el("img", { src: avatarOf(c.with.avatar), alt: "" }), el("span", {}, el("b", { textContent: c.with.name }), el("small", { textContent: c.last })),
     c.unread && c.with.handle !== current ? el("i", { textContent: String(c.unread) }) : null)) : [el("p", { className: "empty", textContent: "Aucune conversation pour l'instant." })]));
 }
+let searchTimer;
+$("q").addEventListener("input", () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(async () => {
+    const q = $("q").value.trim();
+    if (q.length < 2) return drawList().catch(fail);
+    try {
+      const found = await api("GET", "/me/messages-search?q=" + encodeURIComponent(q));
+      $("list").replaceChildren(...(found.length ? found.map((r) => el("button", { type: "button", className: "conv", disabled: !r.with.handle,
+        onclick: () => open(r.with.handle, r.id) },
+        el("img", { src: avatarOf(r.with.avatar), alt: "" }), el("span", {}, el("b", { textContent: r.with.name }), el("small", { textContent: (r.mine ? "Toi : " : "") + r.text + " · " + time(r.at) }))))
+        : [el("p", { className: "empty", textContent: "Aucun message ne contient « " + q + " »." })]));
+    } catch (e) { fail(e); }
+  }, 250);
+});
+
+// ——— Les photos et vocaux : lus avec le jeton, gardés pour ne pas couper un vocal à chaque mise à jour ———
+const files = new Map();
+function fileNode(m) {
+  if (files.has(m.id)) return files.get(m.id);
+  const node = m.attach.type === "image" ? el("img", { className: "photo", alt: "Photo" }) : el("audio", { controls: true, preload: "metadata" });
+  fetch(m.attach.url, { headers: { Authorization: "Bearer " + token } }).then((r) => (r.ok ? r.blob() : null)).then((b) => {
+    if (!b) return;
+    node.src = URL.createObjectURL(b);
+    if (node.tagName === "IMG") { node.onload = stick; node.onclick = (e) => { e.stopPropagation(); zoom(node.src); }; }
+  }).catch(() => {});
+  files.set(m.id, node);
+  return node;
+}
+function zoom(src) {
+  const d = $("dlg");
+  d.className = "zoom";
+  d.replaceChildren(el("img", { src, alt: "Photo" }));
+  d.onclick = () => d.close();
+  d.showModal();
+}
+
+// ——— Les sons du CLOUD partagés : joués par le lecteur de « Mes sons » ———
+let player = null;
+function playSounds(m, i) {
+  player ||= OniriquePlayer.create({});
+  const items = m.attach.items.filter((x) => x.url).map((x, k) => ({ ...x, key: m.id + ":" + k }));
+  if (items.length) player.play(items, m.attach.items.slice(0, i).filter((x) => x.url).length);
+}
+function soundsCard(m) {
+  const a = m.attach;
+  return el("div", { className: "sounds" }, el("b", { textContent: "🎵 " + a.title }),
+    ...a.items.slice(0, 8).map((x, i) => el("button", { type: "button", className: "sound", disabled: !x.url, title: x.url ? "Écouter" : "Ce son n'est plus disponible",
+      onclick: (e) => { e.stopPropagation(); playSounds(m, i); } },
+      x.cover ? el("img", { src: x.cover + (x.cover.startsWith("/api/media/") ? "?w=120" : ""), alt: "" }) : el("span", { className: "ph" }),
+      el("span", { textContent: x.title + (x.artist ? " · " + x.artist : "") }), el("small", { textContent: x.url ? (x.duration ? OniriquePlayer.time(x.duration) : "▶") : "retiré" }))),
+    a.items.length > 8 ? el("button", { type: "button", className: "sound", onclick: (e) => { e.stopPropagation(); playSounds(m, 0); } }, el("span", { textContent: "Tout écouter (" + a.items.length + " sons)" })) : null);
+}
+
+// ——— Une conversation ———
+const stick = () => { const box = $("msgs"); if (box && box.dataset.bottom !== "0") box.scrollTop = box.scrollHeight; };
+const row = (m, ...kids) => { const r = el("div", { className: "row" + (m.mine ? " mine" : "") + (selected === m.id ? " sel" : "") }, ...kids); r.dataset.id = m.id; return r; };
+function bubble(m, lastMine) {
+  if (m.deleted) return row(m, el("div", { className: "msg gone", textContent: "Message supprimé" }));
+  const msg = el("div", { className: "msg", tabIndex: 0, title: coarse() ? "" : "Répondre, réagir, modifier…" },
+    m.reply ? el("span", { className: "quote", textContent: (m.reply.mine ? "Toi" : peer.name) + " : " + m.reply.text, onclick: (e) => { e.stopPropagation(); jump(m.reply.id); } }) : null,
+    m.attach?.type === "sounds" ? soundsCard(m) : m.attach ? fileNode(m) : null,
+    m.body || null,
+    el("time", { textContent: time(m.at) + (m.edited ? " · modifié" : "") }));
+  msg.onclick = () => { selected = selected === m.id ? 0 : m.id; draw(lastThread); };
+  msg.onkeydown = (e) => { if (e.key === "Enter" && e.target === msg) msg.onclick(); };
+  const tools = el("div", { className: "tools" },
+    ...REACTIONS.map((r) => el("button", { type: "button", textContent: r, ariaLabel: "Réagir " + r, onclick: () => react(m, r) })),
+    el("button", { type: "button", textContent: "↩ Répondre", onclick: () => { replying = m; editing = null; selected = 0; draw(lastThread); composer(); $("body").focus(); } }),
+    m.canEdit && m.body ? el("button", { type: "button", textContent: "✎ Modifier", onclick: () => { editing = m; replying = null; selected = 0; $("body").value = m.body; draw(lastThread); composer(); $("body").focus(); } }) : null,
+    m.mine ? el("button", { type: "button", textContent: "🗑 Supprimer", onclick: () => confirm("Supprimer ce message pour vous deux ?") && api("DELETE", "/me/message/" + m.id).then(refresh, fail) }) : null);
+  return row(m, msg,
+    m.reactions.length ? el("div", { className: "reacts" }, ...m.reactions.map((r) => el("button", { type: "button", className: r.mine ? "on" : "", textContent: r.emoji + (r.count > 1 ? " " + r.count : ""),
+      ariaLabel: r.mine ? "Retirer ma réaction" : "Réagir " + r.emoji, onclick: () => react(m, r.emoji) }))) : null,
+    tools,
+    m === lastMine && m.read ? el("div", { className: "seen", textContent: "Vu" }) : null);
+}
+const react = (m, emoji) => { selected = 0; api("POST", "/me/message/" + m.id + "/react", { emoji }).then(refresh, fail); };
+function jump(id) {
+  const r = document.querySelector('.row[data-id="' + id + '"]');
+  if (!r) return;
+  $("msgs").dataset.bottom = "0";
+  r.scrollIntoView({ block: "center", behavior: "smooth" });
+  r.classList.add("flash");
+  setTimeout(() => r.classList.remove("flash"), 1500);
+}
+function draw(t) {
+  lastThread = t;
+  const lastMine = t.messages.filter((m) => m.mine && !m.deleted).at(-1);
+  $("msgs").replaceChildren(...(t.messages.length ? t.messages.map((m) => bubble(m, lastMine)) : [el("p", { className: "empty", textContent: "Écris le premier message." })]));
+  stick();
+}
+
+// La barre au-dessus du champ : « Réponse à … » ou « Modification ».
+function composer() {
+  const bar = $("bar");
+  const label = editing ? "Modification du message" : replying ? "Réponse à " + (replying.mine ? "toi" : peer.name) + " : " + (replying.body || (replying.attach ? "pièce jointe" : "")) : "";
+  bar.hidden = !label;
+  bar.replaceChildren(el("span", { textContent: label }), el("button", { type: "button", ariaLabel: "Annuler", textContent: "✕",
+    onclick: () => { if (editing) $("body").value = ""; editing = replying = null; composer(); } }));
+}
 
 async function drawThread(force) {
   if (!current) return;
   const t = await api("GET", "/me/messages/" + encodeURIComponent(current));
-  const key = t.messages.map((m) => m.id).join(",");
-  if (key === shown && !force) return;
+  peer = t.with;
+  const key = JSON.stringify(t.messages.map((m) => [m.id, m.body, m.read, m.edited, m.deleted, m.reactions, m.canEdit]));
+  if (key === shown && !force && $("msgs")) return;
   shown = key;
-  if (!$("msgs")) {
-    const box = el("textarea", { id: "body", maxLength: 2000, placeholder: "Ton message…", ariaLabel: "Ton message" });
-    const form = el("form", { className: "send" }, box, el("button", { className: "btn btn-primary", type: "submit", textContent: "Envoyer" }));
-    box.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); } });
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      if (!box.value.trim()) return;
-      try { await api("POST", "/me/messages/" + encodeURIComponent(current), { body: box.value }); box.value = ""; await drawThread(true); drawList(); }
-      catch (err) { $("state").textContent = err.message; }
-    });
-    $("thread").replaceChildren(el("a", { className: "thread-head", id: "head", href: "profil?u=" + encodeURIComponent(current) }), el("div", { className: "msgs", id: "msgs" }), form);
-  }
-  $("head").replaceChildren(el("img", { src: avatarOf(t.with.avatar), alt: "" }), el("b", { textContent: t.with.name }), el("span", { className: "muted", textContent: "@" + t.with.handle }));
-  $("msgs").replaceChildren(...(t.messages.length ? t.messages.map((m) => el("div", { className: "msg" + (m.mine ? " mine" : "") }, m.body, el("time", { textContent: time(m.at) })))
-    : [el("p", { className: "empty", textContent: "Écris le premier message." })]));
-  $("msgs").scrollTop = $("msgs").scrollHeight;
+  if (!$("msgs")) build();
+  $("who").replaceChildren(el("img", { src: avatarOf(t.with.avatar), alt: "" }), el("span", { className: "who" }, el("b", { textContent: t.with.name }), el("small", { id: "status", textContent: "@" + t.with.handle })));
+  draw(t);
 }
 
-async function open(handle) {
-  current = handle; shown = "";
+let typedAt = 0;
+function build() {
+  const box = el("textarea", { id: "body", maxLength: 2000, placeholder: "Ton message…", ariaLabel: "Ton message" });
+  const mic = el("button", { className: "ico", type: "button", id: "mic", ariaLabel: "Enregistrer un vocal", title: "Vocal", textContent: "🎤" });
+  const form = el("form", { className: "send" },
+    el("button", { className: "ico", type: "button", ariaLabel: "Envoyer une photo", title: "Photo", textContent: "📷", onclick: () => $("pick").click() }),
+    el("button", { className: "ico", type: "button", ariaLabel: "Partager un son du CLOUD", title: "Son ou playlist du CLOUD", textContent: "🎵", onclick: () => pickSounds().catch(fail) }),
+    box, mic, el("button", { className: "btn btn-primary", type: "submit", textContent: "Envoyer" }));
+  box.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && !coarse()) { e.preventDefault(); form.requestSubmit(); } });
+  box.addEventListener("input", () => {
+    box.style.height = "44px"; box.style.height = Math.min(140, box.scrollHeight + 2) + "px";
+    if (box.value && !editing && Date.now() - typedAt > 3000) { typedAt = Date.now(); api("POST", "/me/messages/" + encodeURIComponent(current) + "/typing").catch(() => {}); }
+  });
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = box.value.trim();
+    if (!text) return;
+    try {
+      if (editing) await api("PUT", "/me/message/" + editing.id, { body: text });
+      else await api("POST", "/me/messages/" + encodeURIComponent(current), { body: text, replyTo: replying?.id });
+      box.value = ""; box.style.height = "44px"; editing = replying = null; composer();
+      $("msgs").dataset.bottom = "1";
+      await refresh();
+    } catch (err) { fail(err); }
+  });
+  mic.onclick = () => record().catch(fail);
+  const msgs = el("div", { className: "msgs", id: "msgs" });
+  msgs.addEventListener("scroll", () => { msgs.dataset.bottom = msgs.scrollHeight - msgs.scrollTop - msgs.clientHeight < 80 ? "1" : "0"; });
+  $("thread").replaceChildren(el("div", { className: "thread-head" }, backBtn(), el("a", { id: "who", href: "profil?u=" + encodeURIComponent(current) })),
+    msgs, el("div", { className: "bar", id: "bar", hidden: true }), form);
+}
+const refresh = () => Promise.all([drawThread(true), drawList()]);
+
+// ——— Envoyer une photo (réduite à 1600 px dans le navigateur) ou un vocal ———
+async function sendFile(blob, extra = "") {
+  $("state").textContent = "Envoi…";
+  await api("POST", "/me/messages/" + encodeURIComponent(current) + "/file?" + (replying ? "replyTo=" + replying.id + "&" : "") + extra, null, blob);
+  $("state").textContent = "";
+  replying = null; composer();
+  $("msgs").dataset.bottom = "1";
+  await refresh();
+}
+$("pick").addEventListener("change", async () => {
+  const file = $("pick").files[0];
+  $("pick").value = "";
+  if (!file) return;
+  try {
+    let blob = file;
+    try {
+      const img = await createImageBitmap(file);
+      const k = Math.min(1, 1600 / Math.max(img.width, img.height));
+      const canvas = el("canvas", { width: Math.round(img.width * k), height: Math.round(img.height * k) });
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      blob = await new Promise((ok) => canvas.toBlob(ok, "image/jpeg", 0.85)) || file;
+    } catch { /* image que le navigateur ne lit pas : envoyée telle quelle, le serveur dira si elle passe */ }
+    await sendFile(blob);
+  } catch (e) { fail(e); }
+});
+
+let recorder = null;
+async function record() {
+  const mic = $("mic");
+  if (recorder) return recorder.stop();
+  if (!window.MediaRecorder || !navigator.mediaDevices) throw new Error("Ce navigateur n'enregistre pas de vocal.");
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => { throw new Error("Micro refusé : autorise-le pour onirique.store."); });
+  // MP4 d'abord : c'est le format que lisent tous les téléphones, iPhone compris.
+  const mimeType = ["audio/mp4", "audio/webm;codecs=opus", "audio/ogg;codecs=opus"].find((t) => MediaRecorder.isTypeSupported(t));
+  const rec = recorder = new MediaRecorder(stream, mimeType ? { mimeType, audioBitsPerSecond: 64000 } : {});
+  const chunks = [], start = Date.now();
+  rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+  const tick = setInterval(() => { mic.textContent = OniriquePlayer.time((Date.now() - start) / 1000); if (Date.now() - start > 5 * 60_000 && rec.state === "recording") rec.stop(); }, 250);
+  mic.classList.add("rec"); mic.ariaLabel = "Arrêter et envoyer le vocal"; mic.textContent = "0:00";
+  const cancel = el("button", { className: "ico", type: "button", ariaLabel: "Annuler le vocal", textContent: "✕", onclick: () => { rec.cancelled = true; rec.stop(); } });
+  mic.before(cancel);
+  rec.onstop = () => {
+    clearInterval(tick); stream.getTracks().forEach((t) => t.stop());
+    recorder = null; cancel.remove(); mic.classList.remove("rec"); mic.textContent = "🎤"; mic.ariaLabel = "Enregistrer un vocal";
+    const seconds = (Date.now() - start) / 1000;
+    if (rec.cancelled || seconds < 1) return;
+    sendFile(new Blob(chunks, { type: (rec.mimeType || "audio/webm").split(";")[0] }), "duration=" + seconds.toFixed(1)).catch(fail);
+  };
+  rec.start(1000);
+}
+
+// ——— Partager un son ou toute une playlist (un projet) de son ONIRIQUE CLOUD ———
+async function pickSounds() {
+  const d = $("dlg");
+  d.className = ""; d.onclick = null;
+  d.replaceChildren(el("p", { className: "empty", textContent: "Chargement de ton CLOUD…" }));
+  d.showModal();
+  const data = await api("GET", "/me/sounds");
+  const itemOf = (p, t) => {
+    const v = t.versions.find((x) => x.id === t.currentId) || t.versions.at(-1);
+    return v && { title: t.title, artist: p.artist || "", cover: p.cover, duration: v.duration, url: v.url };
+  };
+  const share = async (title, items) => {
+    try {
+      await api("POST", "/me/messages/" + encodeURIComponent(current), { sounds: { title, items }, replyTo: replying?.id });
+      d.close(); replying = null; composer(); $("msgs").dataset.bottom = "1"; await refresh();
+    } catch (e) { alert(e.message); }
+  };
+  const projects = data.projects.filter((p) => p.kind !== "trash").map((p) => ({ p, items: p.tracks.map((t) => [t, itemOf(p, t)]).filter(([, x]) => x) })).filter((x) => x.items.length);
+  d.replaceChildren(
+    el("div", { className: "dlg-head" }, el("b", { textContent: "Partager un son du CLOUD" }), el("button", { className: "ico", type: "button", ariaLabel: "Fermer", textContent: "✕", onclick: () => d.close() })),
+    el("div", { className: "dlg-body" }, ...(projects.length ? projects.map(({ p, items }) => {
+      const tracks = el("div", { hidden: true }, ...items.map(([t, x]) => el("button", { type: "button", className: "sound", onclick: () => share(t.title, [x]) },
+        el("span", { textContent: t.title }), el("small", { textContent: OniriquePlayer.time(x.duration) }))));
+      return el("div", { className: "proj" },
+        el("div", {}, el("span", { textContent: p.title + " · " + items.length + " son" + (items.length > 1 ? "s" : "") }),
+          items.length > 1 ? el("button", { className: "btn btn-ghost btn-sm", type: "button", textContent: "Choisir un son", onclick: () => { tracks.hidden = !tracks.hidden; } }) : null,
+          el("button", { className: "btn btn-primary btn-sm", type: "button", textContent: items.length > 1 ? "Tout partager" : "Partager", onclick: () => share(p.title, items.slice(0, 50).map(([, x]) => x)) })),
+        tracks);
+    }) : [el("p", { className: "muted", textContent: "Ton ONIRIQUE CLOUD est vide : ajoute des sons dans « Mes sons » pour les partager ici." })])));
+}
+
+// ——— Ouvrir une conversation (et y retrouver un message cherché) ———
+async function open(handle, findId) {
+  current = handle; shown = ""; selected = 0; replying = editing = null;
   history.replaceState(null, "", "messages?u=" + encodeURIComponent(handle));
+  $("chat").classList.add("reading");
   $("thread").replaceChildren();
-  try { await drawThread(true); $("body").focus(); } catch (e) { $("thread").replaceChildren(el("p", { className: "empty", textContent: e.message })); }
+  try { await drawThread(true); if (findId) jump(findId); else if (!coarse()) $("body").focus(); }
+  catch (e) { $("thread").replaceChildren(backBtn(), el("p", { className: "empty", textContent: e.message })); }
   drawList().catch(() => {});
+}
+
+// ——— Le direct : nouveaux messages, « écrit… », « Vu » ; ouvert seulement quand la page est à l'écran ———
+let stream = null, typingTimer;
+async function listen() {
+  if (stream || document.hidden) return;
+  const ctrl = stream = new AbortController();
+  const response = await fetch("/api/me/messages-live", { headers: { Authorization: "Bearer " + token }, signal: ctrl.signal }).catch(() => null);
+  if (!response || !response.ok) { if (stream === ctrl) { stream = null; setTimeout(listen, 5000); } return; }
+  const reader = response.body.getReader(), decoder = new TextDecoder();
+  let buffer = "";
+  for (;;) {
+    const { value, done } = await reader.read().catch(() => ({ done: true }));
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const blocks = buffer.split("\n\n");
+    buffer = blocks.pop();
+    for (const b of blocks) if (b.startsWith("data: ")) receive(JSON.parse(b.slice(6)));
+  }
+  if (stream === ctrl) { stream = null; setTimeout(listen, 2000); } // coupé (mise en ligne du serveur) : on revient
+}
+function receive(e) {
+  const here = peer && current && e.with === peer.id;
+  if (e.type === "typing") {
+    if (!here || !$("status")) return;
+    $("status").textContent = "écrit…"; $("status").className = "typing";
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(() => { if ($("status")) { $("status").textContent = "@" + peer.handle; $("status").className = ""; } }, 4500);
+    return;
+  }
+  if (here) drawThread(false).catch(() => {});
+  if (e.type !== "read") drawList().catch(() => {});
+}
+document.addEventListener("visibilitychange", () => {
+  if (!token) return;
+  if (document.hidden) { stream?.abort(); stream = null; }
+  else { listen(); drawThread(false).catch(() => {}); drawList().catch(() => {}); }
+});
+
+// ——— Les notifications de nouveaux messages sur cet appareil (sw.js, comme ONIRIQUE CLOUD) ———
+const canPush = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+const keyBytes = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+const ios = /iPhone|iPad|iPod/.test(navigator.userAgent), standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+async function drawBell() {
+  const bell = $("bell");
+  const prefs = await api("GET", "/me/notifications");
+  const sub = canPush && Notification.permission === "granted" ? await navigator.serviceWorker.register("/sw.js").then((r) => r.pushManager.getSubscription()) : null;
+  if (sub) api("POST", "/me/push", sub.toJSON()).catch(() => {}); // l'appareil le redit au serveur, qui a pu l'oublier
+  const on = !!sub && prefs.push.message;
+  bell.hidden = false;
+  bell.textContent = on ? "🔔 Notifications activées" : "🔕 Activer les notifications";
+  bell.title = on ? "Cliquer pour ne plus être prévenu des nouveaux messages" : "Être prévenu sur cet appareil quand on t'écrit";
+  bell.onclick = async () => {
+    try {
+      if (on) { await api("PUT", "/me/notifications", { push: { message: false } }); return drawBell(); }
+      if (ios && !standalone) throw new Error("Sur iPhone, ajoute d'abord ONIRIQUE à l'écran d'accueil (Partager → Sur l'écran d'accueil), puis active les notifications depuis l'icône.");
+      if (!canPush) throw new Error("Ce navigateur ne reçoit pas les notifications.");
+      if (await Notification.requestPermission() !== "granted") throw new Error("Notifications refusées : autorise-les pour onirique.store dans les réglages du navigateur.");
+      const r = await navigator.serviceWorker.register("/sw.js");
+      const { key } = await api("GET", "/push/key");
+      const s = (await r.pushManager.getSubscription()) || await r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(key) });
+      await api("POST", "/me/push", s.toJSON());
+      await api("PUT", "/me/notifications", { push: { message: true } });
+      drawBell();
+    } catch (e) { alert(e.message); }
+  };
 }
 
 (async () => {
   if (!token) { $("state").innerHTML = 'Connecte-toi pour lire tes messages : <a href="compte">Mon compte</a>.'; return; }
-  try { await drawList(); $("chat").hidden = false; if (current) await open(current); else await activity(); }
-  catch (e) { $("state").textContent = e.message; return; }
-  // Les nouveaux messages arrivent sans recharger la page.
-  setInterval(() => { if (!document.hidden) { drawThread(false).catch(() => {}); drawList().catch(() => {}); } }, 8000);
+  try {
+    await drawList(); $("chat").hidden = false;
+    if (current) await open(current);
+    else { await activity(); if (matchMedia("(max-width: 760px)").matches) $("chat").classList.remove("reading"); }
+  } catch (e) { fail(e); return; }
+  listen();
+  drawBell().catch(() => {});
+  // Filet de sécurité si le direct est coupé par un proxy.
+  setInterval(() => { if (!document.hidden) { drawThread(false).catch(() => {}); drawList().catch(() => {}); } }, 30000);
 })();
 </script>
 <script src="assets/site-nav.js?v=18"></script>
