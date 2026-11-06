@@ -1742,6 +1742,13 @@ export function createApp() {
     res.sendFile(fileURLToPath(new URL('potards.html', import.meta.url)));
   });
 
+  // La charte de la nouvelle interface (onglet DA du panel), d'après VOCALBOX : réservée aux fondateurs, comme les potards.
+  admin.get('/da', (req, res, next) => {
+    if (req.user.role !== 'founder') return next(new HttpError(403, 'Réservé aux fondateurs.'));
+    res.set('Cache-Control', 'no-store');
+    res.sendFile(fileURLToPath(new URL('da-vocalbox.html', import.meta.url)));
+  });
+
   // Les droits des rôles (« Droits des rôles » dans le panel) : quels rôles ont ONIRIQUE CLOUD, la page de liens, etc.
   admin.get('/rights', (req, res) => {
     if (req.user.role !== 'founder') throw new HttpError(403, 'Réservé aux fondateurs.');
