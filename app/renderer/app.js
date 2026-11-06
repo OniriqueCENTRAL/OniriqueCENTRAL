@@ -298,7 +298,7 @@ function cloudActions() {
     drawCloudActions(box);
   };
   cloudPoll = setInterval(poll, 1000);
-  poll();
+  setTimeout(poll, 0); // une fois la colonne posée dans la page : avant, la boîte n'y est pas encore et le relevé s'arrêterait
   return box;
 }
 
