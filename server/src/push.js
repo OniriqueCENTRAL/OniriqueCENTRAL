@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS notify_prefs (
 // Ce qui peut prévenir (écoute, téléchargement, commentaire, ajout à son ONIRIQUE CLOUD), et par défaut : tout, l'e-mail n'étant envoyé que si l'on sait qui c'est (un téléchargement ne le dit pas).
 const DEFAULTS = {
   mail: { play: true, comment: true, save: true },
-  push: { play: true, download: true, comment: true, save: true },
+  push: { play: true, download: true, comment: true, save: true, message: true },
   // Ce que montre la cloche d'ONIRIQUE CLOUD : les mêmes gestes, et ce que font les collaborateurs d'un projet.
   inbox: { play: true, download: true, comment: true, save: true, add: true, version: true, rename: true, join: true },
   // Et comment s'ouvrent les nouveaux liens d'écoute.

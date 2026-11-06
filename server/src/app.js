@@ -47,6 +47,7 @@ import { mountWatchparty } from './watchparty.js';
 import { mountPlatforms } from './platforms.js';
 import { mountRatings } from './ratings.js';
 import { mountProfiles } from './profiles.js';
+import { mountMessages } from './messages.js';
 import { mountConcerts } from './concerts.js';
 import { mountDownloader } from './downloader.js';
 import { mountRocky } from './rocky.js';
@@ -573,6 +574,7 @@ export function createApp() {
   mountWatchparty(app);
   // Pages de profil des membres : abonnements, commentaires, messages privés.
   mountProfiles(app, { requireUser, receiveImage, removeMedia, wrap });
+  mountMessages(app, { requireUser, receiveFile, wrap });
   mountConcerts(app, { wrap });
   mountPush(app, { requireUser });
 

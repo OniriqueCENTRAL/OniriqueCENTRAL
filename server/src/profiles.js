@@ -301,35 +301,5 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
     });
   });
 
-  // Les messages privés : les conversations (la dernière ligne et les non lus), une conversation, et l'envoi.
-  const other = (req) => {
-    const p = pageOf(req.params.handle);
-    if (p.user_id === req.user.id) throw new HttpError(400, 'On ne s\'écrit pas à soi-même.');
-    return p;
-  };
-  app.get('/api/me/messages', requireUser, (req, res) => {
-    const u = req.user.id;
-    const rows = all(`SELECT CASE WHEN from_id = ? THEN to_id ELSE from_id END AS other, MAX(created_at) AS at,
-        SUM(CASE WHEN to_id = ? AND read_at IS NULL THEN 1 ELSE 0 END) AS unread
-      FROM user_messages WHERE from_id = ? OR to_id = ? GROUP BY other ORDER BY at DESC LIMIT 100`, u, u, u, u);
-    res.set('Cache-Control', 'no-store').json(rows.map((r) => {
-      const who = get('SELECT u.id, u.name, u.avatar, p.handle FROM users u LEFT JOIN user_profiles p ON p.user_id = u.id WHERE u.id = ?', r.other);
-      const last = get('SELECT body, from_id FROM user_messages WHERE (from_id = ? AND to_id = ?) OR (from_id = ? AND to_id = ?) ORDER BY created_at DESC LIMIT 1', u, r.other, r.other, u);
-      return who && { with: person(who), at: r.at, unread: r.unread, last: last ? (last.from_id === u ? 'Toi : ' : '') + last.body.slice(0, 120) : '' };
-    }).filter(Boolean));
-  });
-  app.get('/api/me/messages/:handle', requireUser, (req, res) => {
-    const p = other(req), u = req.user.id;
-    run('UPDATE user_messages SET read_at = ? WHERE from_id = ? AND to_id = ? AND read_at IS NULL', now(), p.user_id, u);
-    res.set('Cache-Control', 'no-store').json({ with: person({ id: p.user_id, name: p.name, avatar: p.avatar, handle: p.handle }),
-      messages: all(`SELECT id, from_id, body, created_at FROM user_messages WHERE (from_id = ? AND to_id = ?) OR (from_id = ? AND to_id = ?)
-        ORDER BY created_at DESC LIMIT 300`, u, p.user_id, p.user_id, u).reverse().map((m) => ({ id: m.id, mine: m.from_id === u, body: m.body, at: m.created_at })) });
-  });
-  app.post('/api/me/messages/:handle', requireUser, (req, res) => {
-    const p = other(req);
-    rateLimit(`messages:${req.user.id}`, 300, 3600_000);
-    const body = clean(req.body?.body, 2000);
-    if (!body) throw new HttpError(400, 'Écris un message.');
-    res.status(201).json({ id: run('INSERT INTO user_messages (from_id, to_id, body, created_at) VALUES (?, ?, ?, ?)', req.user.id, p.user_id, body, now()).lastInsertRowid });
-  });
+  // Les messages privés : messages.js.
 }
