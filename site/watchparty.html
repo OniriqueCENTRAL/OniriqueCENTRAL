@@ -86,7 +86,10 @@ select { padding: 7px 10px; font-size: 13px; background: #140d0f; }
 details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--btn); }
 .perms { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: center; margin-top: 12px; font-size: 14px; }
 .gate { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgba(9,8,10,.85); backdrop-filter: blur(10px); padding: 16px; }
-.gate .glass { padding: 28px; max-width: 420px; display: grid; gap: 14px; text-align: center; }
+.gate .glass { padding: 28px; width: min(420px, 100%); display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; text-align: center; }
+/* Les boutons tiennent dans la carte, à la marge du texte ; un long libellé passe à la ligne (téléphone). */
+.gate .btn { width: 100%; height: auto; min-height: 40px; padding: 10px 14px; white-space: normal; line-height: 1.35; text-align: center; }
+@media (max-width: 420px) { .gate .glass { padding: 22px 18px; } }
 /* Le choix de l'écran ou de la fenêtre, dans l'application ONIRIQUE CENTRAL */
 #picker { width: min(760px, calc(100vw - 24px)); padding: 0; border: 0; background: none; color: var(--bone); }
 #picker::backdrop { background: rgba(9,8,10,.8); backdrop-filter: blur(8px); }
