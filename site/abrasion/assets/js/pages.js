@@ -47,6 +47,8 @@ async function legal() {
     if (!src) throw new Error("vide");
     $$("script, style, form, button, .eyebrow", src).forEach((n) => n.remove());
     keepInside(src);
+    // Un tableau large défile dans sa boîte, au lieu d'élargir la page sur téléphone.
+    $$("table", src).forEach((t) => { const box = el("div", { className: "ab-tablewrap" }); t.replaceWith(box); box.append(t); });
     // Le haut (titre, date, introduction), puis une section par titre de niveau 2.
     const head = el("section"), sections = [head];
     for (const node of Array.from(src.children)) {
