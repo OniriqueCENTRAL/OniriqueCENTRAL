@@ -273,12 +273,21 @@ dialog { padding: 0; border: 1px solid rgba(255,210,214,.16); border-radius: 24p
   /* App installée sur iPhone : la page passe sous la barre d'état, la fenêtre reste dans la zone visible. */
   top: env(safe-area-inset-top, 0px); bottom: env(safe-area-inset-bottom, 0px); max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
 /* CLOUD gratuit : la barre des sons utilisés et l'invitation à l'abonnement */
-.free-bar { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; margin: 0 0 22px; padding: 16px 20px; border: 1px solid rgba(226,52,68,.35); border-radius: 18px; background: linear-gradient(120deg, rgba(226,52,68,.16), rgba(226,52,68,.04)); }
-.free-bar .free-n { font: 600 13px var(--f-mono); letter-spacing: .04em; text-transform: uppercase; }
-.free-bar .free-n i { display: block; width: 180px; height: 4px; margin-top: 8px; border-radius: 2px; background: rgba(255,255,255,.08); overflow: hidden; }
+/* Sous le titre, collée à rien : un bandeau fin au-dessus de la grille, qui ne flotte jamais sur la liste ni sur le lecteur. */
+.free-bar { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; margin: 26px 0 0; padding: 12px 14px 12px 18px; border: 1px solid rgba(226,52,68,.35); border-radius: 16px; background: linear-gradient(120deg, rgba(226,52,68,.16), rgba(226,52,68,.04)); }
+.free-bar .free-n { flex: none; font: 600 12px var(--f-mono); letter-spacing: .04em; text-transform: uppercase; }
+.free-bar .free-n i { display: block; width: 160px; height: 4px; margin-top: 7px; border-radius: 2px; background: rgba(255,255,255,.08); overflow: hidden; }
 .free-bar .free-n i b { display: block; height: 100%; background: var(--ember); }
-.free-bar p { flex: 1 1 260px; margin: 0; font-size: 14px; color: var(--haze); }
-.free-bar .btn { margin-left: auto; }
+.free-bar p { flex: 1 1 240px; min-width: 0; margin: 0; font-size: 13px; line-height: 1.45; color: var(--haze); }
+.free-bar .btn { flex: none; margin-left: auto; min-height: 40px; padding-block: 0; }
+@media (max-width: 640px) {
+  .free-bar { margin-top: 18px; padding: 12px 14px; }
+  .free-bar .free-n { flex: 1 1 100%; }
+  .free-bar .free-n i { width: auto; }
+  .free-bar p { flex-basis: 100%; font-size: 12.5px; }
+  .free-bar:not(.full) p { display: none; }
+  .free-bar .btn { flex: 1 1 100%; margin: 0; }
+}
 #upsell { width: min(460px, calc(100vw - 24px)); }
 #upsell ul { margin: 6px 20px 0; padding-left: 18px; font-size: 14px; line-height: 1.7; }
 dialog::backdrop { background: rgba(5,2,3,.72); backdrop-filter: blur(4px); }
@@ -904,11 +913,16 @@ const avatar = (p) => (window.OniriqueAccount ? window.OniriqueAccount.avatar(p)
 // La pochette réduite par le serveur (WebP, 960 px suffit à la grande pochette sur écran Retina).
 const coverOf = (p, cls) => (p.cover ? el("img", { src: p.cover + "?w=960", alt: "", decoding: "async", draggable: false, className: cls || "" }) : Object.assign(el("div", { className: "cover-ph " + (cls || "") }), { innerHTML: '<svg viewBox="0 0 24 24"><path d="M12 1.5 13.3 10.7 22.5 12 13.3 13.3 12 22.5 10.7 13.3 1.5 12 10.7 10.7Z" fill="currentColor"/></svg>' }));
 
-// CLOUD gratuit : un refus « abonnement demandé » (402, ou 403 pour un compte gratuit) ouvre l'invitation à s'abonner.
+// CLOUD gratuit : l'invitation à s'abonner ne s'ouvre qu'une fois par ouverture du CLOUD (onglet ou fenêtre de l'application).
+function upsell(why) {
+  try { if (sessionStorage.getItem("oc-upsell")) return; sessionStorage.setItem("oc-upsell", "1"); } catch {}
+  $("upsell-why").textContent = why;
+  if (!$("upsell").open) $("upsell").showModal();
+}
+// Un refus « abonnement demandé » (402, ou 403 pour un compte gratuit) : le message s'affiche, sans alerte en plus.
 function upsold(error) {
   if (error.status !== 402 && !(error.status === 403 && data && data.free)) return error;
-  $("upsell-why").textContent = error.message;
-  if (!$("upsell").open) $("upsell").showModal();
+  upsell(error.message);
   return Object.assign(error, { upsold: true });
 }
 async function api(method, path, body) {
@@ -962,7 +976,7 @@ let data = null;
 // VANISH (fondateurs) : les projets de tous les comptes, le temps de l'onglet.
 let vanish = sessionStorage.getItem("onirique.vanish") === "1";
 let vanishAccount = null; // le compte choisi dans VANISH ; null : tous
-const fail = (error) => { $("error").textContent = error.message; if (error.upsold) return; if ($("grid-view").hidden === false) alert(error.message); };
+const fail = (error) => { $("error").textContent = error.message; if (error.upsold && $("upsell").open) return; if ($("grid-view").hidden === false) alert(error.message); };
 const openId = () => { const m = /^#\/p\/(\d+)/.exec(location.hash); return m ? Number(m[1]) : null; };
 const folderId = () => { const m = /^#\/f\/(\d+)/.exec(location.hash); return m ? Number(m[1]) : null; };
 const folder = (id = folderId()) => data.folders.find((f) => f.id === id);
@@ -1392,6 +1406,7 @@ function renderGrid() {
   $("quota").replaceChildren(size(q.used) + " sur " + size(q.limit), el("i", {}, el("b", { style: "width:" + Math.min(100, q.used / q.limit * 100) + "%" })));
   const fr = data.free;
   $("free-bar").hidden = !fr || data.vanish;
+  $("free-bar").classList.toggle("full", !!fr && fr.used >= fr.limit);
   if (fr) $("free-bar").replaceChildren(
     el("div", { className: "free-n" }, "CLOUD gratuit · " + fr.used + " / " + fr.limit + " sons", el("i", {}, el("b", { style: "width:" + Math.min(100, fr.used / fr.limit * 100) + "%" }))),
     el("p", { textContent: fr.used >= fr.limit ? "Ton CLOUD gratuit est plein. Passe à l'abonnement pour envoyer des sons sans limite, les partager en privé et voir qui les écoute."
@@ -4317,6 +4332,7 @@ lightClose($("settings"));
   if (!token) return gate('<p>Connecte-toi d\'abord à ton compte.</p><a class="btn btn-primary" href="compte?next=mes-sons">Se connecter</a>');
   try {
     await refresh();
+    if (data.free && !data.vanish) upsell("Ton CLOUD gratuit garde jusqu'à " + data.free.limit + " sons. L'abonnement ouvre tout le reste.");
     checkInvite();
     $("bell").hidden = false;
     loadNotices();

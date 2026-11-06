@@ -19,7 +19,7 @@ import { mountPackSend, recipientFor, trackRecipient, coverPalette } from './pac
 import { writeZip, zipName, zipSize } from './zipstream.js';
 import { mountBeatTube } from './beattube.js';
 import { mountBeatScan, queueScan, scansOf, scanConfigured } from './beatscan.js';
-import { nextPosition } from './platforms.js'; // la fin d'une playlist compte aussi ses titres Spotify, Deezer, Apple Music
+import { nextPosition, shareItems } from './platforms.js'; // la fin d'une playlist compte aussi ses titres Spotify, Deezer, Apple Music
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS sound_projects (
@@ -1535,8 +1535,10 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       owner: p.artist || p.author_name || 'ONIRIQUE', ownerAvatar: media(p.author_avatar), ownerHandle: profileHandle(p.user_id), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover), background: media(p.background), buttonColor: p.button_color, coverBy: p.cover_by, releaseDate: p.release_date,
       download, about: aboutOf(p.user_id, false), contact: p.kind === 'pack' ? p.author_instagram || null : null,
       collabAbouts: aboutsOf(all('SELECT u.id, u.name FROM sound_collabs c JOIN users u ON u.id = c.user_id WHERE c.project_id = ? ORDER BY c.created_at', p.id)),
+      // Une playlist : ses titres Spotify (ou Deezer, Apple Music) aussi, à leur place parmi les sons du CLOUD.
+      items: p.kind === 'playlist' && !link.track_id ? shareItems(p.id, optionalUser(req)?.id) : [],
       tracks: tracks.map((t) => ({
-        id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), lyrics: t.lyrics, bpm: t.bpm, key: t.music_key,
+        id: t.id, position: t.position, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), lyrics: t.lyrics, bpm: t.bpm, key: t.music_key,
         offers: p.kind === 'pack' ? offersOf(t, p.user_id, simulate) : [], sold: !!t.sold,
         version: { id: t.vid, filename: t.filename, duration: t.duration, peaks: JSON.parse(t.peaks), url: audioUrl(t.vid), downloadUrl: download && !t.via_link ? audioUrl(t.vid, true, link.id, contact?.token) : null },
         comments: comments.filter((c) => c.track_id === t.id).map(commentView),

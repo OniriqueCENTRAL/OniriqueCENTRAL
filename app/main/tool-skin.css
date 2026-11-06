@@ -66,6 +66,11 @@ input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="
 }
 input:focus, select:focus, textarea:focus { outline: none !important; box-shadow: 0 0 0 1px rgba(var(--acc-hi),.7) inset, 0 0 18px rgba(var(--acc),.2) !important; }
 
+/* CLOUD gratuit : la barre « X / 30 sons » en verre, comme les cartes, avec un fil de braise */
+.free-bar { border: 0 !important; border-radius: 18px !important; background: linear-gradient(120deg, rgba(var(--acc),.14), rgba(255,255,255,.02) 55%), rgba(14,10,12,.55) !important;
+  box-shadow: 0 0 0 1px rgba(var(--acc-hi),.22) inset, inset 0 1px 0 rgba(255,255,255,.08) !important; }
+.free-bar .free-n { font: 500 10.5px "JetBrains Mono", monospace !important; letter-spacing: .14em !important; color: var(--mist); }
+
 /* Zone de dépôt et vignettes */
 .drop { border-radius: 22px !important; border-color: rgba(255, 235, 238, .16) !important; background: rgba(0,0,0,.35) !important; }
 .drop:hover, .drop.over { border-color: rgba(var(--acc-hi),.6) !important; background: rgba(var(--acc),.06) !important; }

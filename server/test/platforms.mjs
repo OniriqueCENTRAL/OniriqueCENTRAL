@@ -286,6 +286,30 @@ try {
     await call('GET', '/api/platforms/apple/token', { token: client.token, expect: 403 });
   });
 
+  await step('une playlist faite seulement de titres Spotify : ouverte par son lien, grisée sans Spotify lié, jamais comptée', async () => {
+    const only = project(member.id, 'playlist');
+    const { ids } = await call('POST', `/api/me/sounds/projects/${only}/platform-items`, { token: member.token,
+      body: { items: [{ platform: 'spotify', id: SP1, title: 'Premier' }, { platform: 'spotify', id: SP2, title: 'Deuxième' }] }, expect: 201 });
+    const { url } = await call('POST', '/api/me/sounds/links', { token: member.token, body: { projectId: only, requireAccount: false }, expect: 201 });
+    const share = `/api/sounds/share/${new URL(url).searchParams.get('t')}`;
+    // Sans compte, ou avec un compte sans Spotify lié : les titres sont là, grisés, sans adresse d'écoute.
+    for (const token of [undefined, stranger.token]) {
+      const seen = await call('POST', share, { token, body: {} });
+      assert.deepEqual(seen.tracks, []);
+      assert.deepEqual(seen.items.map((x) => [x.id, x.title, x.playable, x.listen]), [[ids[0], 'Premier', false, null], [ids[1], 'Deuxième', false, null]]);
+    }
+    // Spotify lié : les titres se lisent.
+    await call('PUT', '/api/me/platforms/spotify', { token: stranger.token, body: { url: 'https://open.spotify.com/user/novmusic' } });
+    const linked = await call('POST', share, { token: stranger.token, body: {} });
+    assert.ok(linked.items.every((x) => x.playable && x.listen.startsWith(`/api/sounds/platform-items/${x.id}/preview?`)));
+    // Une « écoute » d'un titre Spotify n'est pas comptée : ni écoute, ni statistique de la playlist.
+    for (const token of [undefined, stranger.token]) await call('POST', `${share}/play`, { token, body: { trackId: ids[0], listener: 'nav-1' }, expect: 404 });
+    assert.equal(get('SELECT COUNT(*) AS n FROM sound_plays').n, 0);
+    const mine = await call('GET', '/api/me/sounds', { token: member.token });
+    assert.equal(mine.links.find((l) => l.projectId === only).plays, 0);
+    run('DELETE FROM sound_projects WHERE id = ?', only);
+  });
+
   await step('une playlist supprimée emporte ses titres de plateformes', async () => {
     run('DELETE FROM sound_projects WHERE id = ?', pl);
     assert.equal(get('SELECT COUNT(*) AS n FROM sound_platform_items').n, 0);

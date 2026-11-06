@@ -452,6 +452,17 @@ const ACCESS = `(p.kind != 'trash' AND p.trashed_at IS NULL AND (p.user_id = ? O
 const view = (r) => ({ id: r.id, projectId: r.project_id, position: r.position, platform: r.platform, extId: r.ext_id, title: r.title, artist: r.artist,
   cover: r.cover, duration: r.duration, url: r.url, listen: itemListenUrl(r.id) });
 
+/** Les titres de plateformes d'une playlist ouverte par son lien d'écoute. Sans compte de la plateforme lié, le titre est
+ *  grisé et ne se lit pas (comme un titre retiré de Spotify). Ils ne sont jamais comptés : seuls les sons du CLOUD le sont. */
+export function shareItems(projectId, viewerId) {
+  const linked = new Set(viewerId ? all('SELECT platform FROM sound_platform_accounts WHERE user_id = ?', viewerId).map((r) => r.platform) : []);
+  return all('SELECT * FROM sound_platform_items WHERE project_id = ? ORDER BY position, id', projectId).map((r) => {
+    const playable = linked.has(r.platform);
+    return { id: r.id, position: r.position, platform: r.platform, title: r.title, artist: r.artist, cover: r.cover, duration: r.duration, url: r.url,
+      playable, listen: playable ? itemListenUrl(r.id) : null };
+  });
+}
+
 const lyricsCache = new Map();
 /** Les paroles d'un titre d'une plateforme (LRCLIB), synchronisées si elles existent ; '' sinon. Gardées en mémoire. */
 export async function lyricsFor({ platform, extId, artist, title, duration }) {

@@ -106,6 +106,9 @@ button.buy { border: 0; cursor: pointer; }
 .stage.version { border-color: var(--ember); color: var(--ember); }
 .stage.final { border-color: var(--ember); background: var(--ember); color: var(--night); }
 @media (max-width: 520px) { .trk .len { display: none; } }
+.trk.gone { cursor: default; opacity: .45; filter: grayscale(1); }
+.trk.gone:hover { background: none; }
+.trk .pf-cover { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; }
 .trk .num { text-align: center; font: 500 13px var(--f-mono); color: var(--haze); }
 .trk.now .num { color: var(--ember); }
 .trk b { display: block; font: 700 15px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -264,7 +267,8 @@ const sendListen = (force, leaving = false) => {
 };
 const player = OP.create({
   askName: !session,
-  onPlay: (t) => api("/play", { trackId: t.trackId, listener }).then((r) => { listen = r.play ? { play: r.play, key: t.key, reached: 0, sent: 0 } : null; }, () => {}),
+  // Un titre Spotify ne compte pas dans les écoutes : seuls les sons du CLOUD le sont.
+  onPlay: (t) => (!t.trackId ? (listen = null) : api("/play", { trackId: t.trackId, listener }).then((r) => { listen = r.play ? { play: r.play, key: t.key, reached: 0, sent: 0 } : null; }, () => {})),
   onComment: (t, at, body, name) => api("/comments", { trackId: t.trackId, at, body, name }),
   // Partager depuis le lecteur plein écran : la feuille de partage du téléphone, sinon le lien copié.
   onShare: async () => {
@@ -375,7 +379,7 @@ function show(data) {
   $("meta").replaceChildren(data.ownerAvatar ? el("img", { src: data.ownerAvatar, alt: "" }) : "",
     // Le nom de l'auteur mène à sa page de profil, s'il en a une.
     data.ownerHandle ? el("a", { href: "profil?u=" + encodeURIComponent(data.ownerHandle), className: "owner-link", textContent: data.owner, title: "Voir sa page de profil" }) : data.owner,
-    (data.title !== data.project ? " · " + data.project : "") + " · " + data.tracks.length + (data.tracks.length > 1 ? " titres" : " titre")
+    (data.title !== data.project ? " · " + data.project : "") + " · " + (data.tracks.length + (data.items || []).length) + (data.tracks.length + (data.items || []).length > 1 ? " titres" : " titre")
     + (total ? " · " + OP.time(total) : ""));
   const ph = el("div", { className: "cover-ph", innerHTML: '<svg viewBox="0 0 24 24"><path d="M12 1.5 13.3 10.7 22.5 12 13.3 13.3 12 22.5 10.7 13.3 1.5 12 10.7 10.7Z" fill="currentColor"/></svg>' });
   $("cover").replaceChildren(data.cover ? el("img", { src: data.cover + "?w=960", alt: "" }) : ph);
@@ -384,11 +388,27 @@ function show(data) {
   if (data.background) { $("page-bg").style.backgroundImage = 'url("' + data.background + '?w=1920")'; $("page-bg").classList.add("on"); }
   $("cover-by").hidden = !data.coverBy;
   $("cover-by").replaceChildren("Pochette : ", el("b", { textContent: data.coverBy || "" }));
-  items = data.tracks.map((t) => ({ key: "v" + t.version.id, id: t.version.id, trackId: t.id, title: t.title, feat: (t.credits || {}).feat, artist: data.owner, stage: t.stage, day: t.day,
+  const cloudItems = data.tracks.map((t) => ({ position: t.position, key: "v" + t.version.id, id: t.version.id, trackId: t.id, title: t.title, feat: (t.credits || {}).feat, artist: data.owner, stage: t.stage, day: t.day,
     subtitle: [data.owner, OP.stageLabel(t.stage)].filter(Boolean).join(" · "), cover: data.cover,
     url: t.version.url, downloadUrl: t.version.downloadUrl, duration: t.version.duration, peaks: t.version.peaks, comments: t.comments, credits: t.credits || {}, lyrics: t.lyrics || "", bpm: t.bpm, musicKey: t.key, offers: t.offers || [] }));
+  // Une playlist : ses titres Spotify à leur place. Sans compte de la plateforme lié, ils sont grisés et ne se lisent pas.
+  const platformItems = (data.items || []).map((x) => ({ position: x.position, key: "x" + x.id, title: x.title, artist: x.artist, subtitle: x.artist, cover: x.cover,
+    url: x.listen, duration: x.duration, peaks: null, comments: [], credits: {}, lyrics: "", offers: [], platform: x.platform, locked: !x.playable }));
+  const rows = [...cloudItems, ...platformItems].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  items = rows.filter((it) => !it.locked);
   renderAbout(data.about, data.owner, data.collabAbouts);
-  $("tracks").replaceChildren(...items.map((it, i) => {
+  const PLATFORM = { spotify: "Spotify", deezer: "Deezer", apple: "Apple Music" };
+  $("tracks").replaceChildren(...rows.map((it, i) => it.platform ? platformRow(it, i, PLATFORM[it.platform]) : cloudRow(it, i)));
+  function platformRow(it, i, name) {
+    const row = el("li", { className: "trk" + (it.locked ? " gone" : ""), tabIndex: it.locked ? -1 : 0, title: it.locked ? "Lie ton compte " + name + " à ONIRIQUE pour écouter ce titre" : "" },
+      it.cover ? el("img", { className: "pf-cover", src: it.cover, alt: "", loading: "lazy" }) : el("span", { className: "num", textContent: String(i + 1) }),
+      el("div", {}, el("div", { className: "tline" }, el("b", { textContent: it.title })), el("small", { textContent: [it.artist, it.locked ? "indisponible" : ""].filter(Boolean).join(" · ") })),
+      el("span", { className: "stage", textContent: name }),
+      el("span", { className: "len", textContent: it.duration ? OP.time(it.duration) : "" }), el("span"));
+    if (!it.locked) { row.onclick = () => player.play(items, items.indexOf(it)); row.onkeydown = (event) => { if (event.key === "Enter") row.onclick(); }; }
+    return row;
+  }
+  function cloudRow(it, i) {
     const row = el("li", { className: "trk", tabIndex: 0 },
       el("span", { className: "num", textContent: String(i + 1) }),
       el("div", {}, el("div", { className: "tline" }, el("b", { textContent: it.title }), it.bpm ? el("span", { className: "stage prod", textContent: it.bpm + " BPM" }) : "",
@@ -401,13 +421,13 @@ function show(data) {
       el("span", { className: "len", textContent: it.duration ? OP.time(it.duration) : "" }),
       it.downloadUrl ? el("a", { className: "dl", href: it.downloadUrl, title: "Télécharger", ariaLabel: "Télécharger " + it.title, onclick: (event) => event.stopPropagation() }, icon("download")) : el("span"));
     row.dataset.id = it.trackId;
-    row.onclick = () => player.play(items, i);
+    row.onclick = () => player.play(items, items.indexOf(it));
     row.onkeydown = (event) => { if (event.key === "Enter") row.onclick(); };
     return row;
-  }));
+  }
   drawRatings(data);
   $("play-all").replaceChildren(icon("play"));
-  $("play-all").onclick = () => (player.item ? player.toggle() : player.play(items, 0));
+  $("play-all").onclick = () => (player.item ? player.toggle() : items.length && player.play(items, 0));
   // Un membre ONIRIQUE connecté (qui n'est pas l'auteur) peut garder le projet dans sa page ONIRIQUE CLOUD.
   let saved = data.saved;
   const drawSave = () => {
