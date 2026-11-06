@@ -75,6 +75,7 @@ const ICONS = {
   cloud: 'M7 18a4.5 4.5 0 0 1-.6-9a6 6 0 0 1 11.4 1.5A3.8 3.8 0 0 1 17.5 18z',
   carte: 'M12 21s-6.5-5.8-6.5-10.5a6.5 6.5 0 0 1 13 0C18.5 15.2 12 21 12 21zM12 7.2l.9 2.4 2.4.9-2.4.9-.9 2.4-.9-2.4-2.4-.9 2.4-.9z',
   self: 'M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0',
+  watchparty: 'M3 5h18v12H3zM8 21h8M10.5 8.5v5l4-2.5z',
 };
 export function navIcon(name) {
   const box = h('span', { class: 'ico', 'aria-hidden': 'true' });

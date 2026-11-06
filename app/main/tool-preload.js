@@ -8,6 +8,9 @@ contextBridge.exposeInMainWorld('oniriqueApp', {
   spotifyLogout: () => ipcRenderer.invoke('tool:spotify-logout'),
   // La connexion à Spotify dans le navigateur de l'ordinateur (seulement sa page d'autorisation).
   openExternal: (url) => ipcRenderer.invoke('tool:open-external', String(url)),
+  // Le partage d'écran de la WATCHPARTY : les écrans et fenêtres à choisir, puis le choix (avec ou sans le son de l'ordinateur).
+  screens: () => ipcRenderer.invoke('tool:screens'),
+  pickScreen: (id, audio) => ipcRenderer.invoke('tool:screen-pick', String(id), !!audio),
 });
 contextBridge.exposeInMainWorld('oniriqueDialog', (kind, message, value) =>
   ipcRenderer.sendSync('tool:dialog', String(kind), String(message ?? ''), value == null ? '' : String(value)));

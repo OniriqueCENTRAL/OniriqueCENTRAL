@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, Tray, WebContentsView, clipboard, components, dialog, ipcMain, nativeImage, session, shell } = require('electron');
+const { app, BrowserWindow, Menu, Tray, WebContentsView, clipboard, components, desktopCapturer, dialog, ipcMain, nativeImage, session, shell } = require('electron');
 const { spawn } = require('node:child_process');
 const { autoUpdater } = require('electron-updater');
 const macUpdate = require('./mac-update');
@@ -45,9 +45,9 @@ const toolContents = new Set(); // les pages de CUT et CLOUD, seules à pouvoir 
 const SITE = (process.env.ONIRIQUE_SITE || 'https://onirique.store').replace(/\/+$/, '');
 // « page » : la vue où s'ouvrent, par-dessus CLOUD, les pages qu'on y ouvre (profil, écoute, messages…) ; CLOUD reste
 // chargé dessous et son lecteur continue de jouer.
-const TOOL_PAGES = { cut: 'cut.html', cloud: 'mes-sons.html', carte: 'carte.html', page: 'robots.txt' };
+const TOOL_PAGES = { cut: 'cut.html', cloud: 'mes-sons.html', carte: 'carte.html', watchparty: 'watchparty.html', page: 'robots.txt' };
 // Les pages du site qui ont leur propre écran dans l'application.
-const APP_ROUTES = { compte: 'account', boutique: 'plugins', cut: 'cut', 'mes-sons': 'cloud', carte: 'carte' };
+const APP_ROUTES = { compte: 'account', boutique: 'plugins', cut: 'cut', 'mes-sons': 'cloud', carte: 'carte', watchparty: 'watchparty' };
 const TOOL_SKIN = fs.readFileSync(path.join(__dirname, 'tool-skin.css'), 'utf8');
 // Les connexions aux plateformes (Spotify, Apple Music, et les comptes Google, Apple ou Facebook qu'elles proposent)
 // restent dans l'application : la vue y passe, ou une petite fenêtre s'ouvre (MusicKit), puis on revient au CLOUD.
@@ -65,6 +65,16 @@ function toolView(tool, lang) {
     if (!ses.oniriqueReady) {
       ses.oniriqueReady = true;
       ses.webRequest.onBeforeRequest({ urls: [`${SITE}/api/announce.js*`] }, (_details, callback) => callback({ cancel: true }));
+      // Le partage d'écran de la WATCHPARTY : l'écran ou la fenêtre choisis dans la page (tool:screens, tool:screen-pick),
+      // avec le son de l'ordinateur sous Windows. Sans choix fait juste avant, rien n'est partagé.
+      ses.setDisplayMediaRequestHandler(async (request, callback) => {
+        const pick = screenPick && Date.now() - screenPick.at < 15_000 ? screenPick : null;
+        screenPick = null;
+        const fromSite = (() => { try { return new URL(request.securityOrigin || request.frame?.url || '').origin === new URL(SITE).origin; } catch { return false; } })();
+        const source = pick && fromSite && (await desktopCapturer.getSources({ types: ['screen', 'window'] }).catch(() => [])).find((s) => s.id === pick.id);
+        if (!source) return callback({});
+        callback({ video: source, ...(pick.audio && process.platform === 'win32' ? { audio: 'loopback' } : {}) });
+      });
     }
     // backgroundThrottling : la fenêtre cachée (icône près de l'horloge) ou réduite, la page reste « visible » pour Chromium,
     // et le lecteur Spotify de CLOUD continue de jouer.
@@ -279,6 +289,19 @@ const webSession = () => session.fromPartition('persist:onirique-web');
 ipcMain.handle('tool:spotify', async (event) => {
   if (!toolContents.has(event.sender.id)) return false;
   return (await webSession().cookies.get({ name: 'sp_dc' })).some((c) => /(^|\.)spotify\.com$/.test(c.domain.replace(/^\./, '')));
+});
+// Les écrans et fenêtres de l'ordinateur, avec leur aperçu, pour le choix du partage de la WATCHPARTY ; puis le choix fait.
+let screenPick = null;
+ipcMain.handle('tool:screens', async (event) => {
+  if (!toolContents.has(event.sender.id)) return null;
+  const sources = await desktopCapturer.getSources({ types: ['screen', 'window'], thumbnailSize: { width: 320, height: 180 } });
+  return { audio: process.platform === 'win32', sources: sources.filter((s) => !s.thumbnail.isEmpty()).map((s) => ({ id: s.id, name: s.name,
+    kind: s.id.startsWith('screen:') ? 'screen' : 'window', thumb: s.thumbnail.toDataURL() })) };
+});
+ipcMain.handle('tool:screen-pick', (event, id, audio) => {
+  if (!toolContents.has(event.sender.id) || typeof id !== 'string') return false;
+  screenPick = { id, audio: !!audio, at: Date.now() };
+  return true;
 });
 ipcMain.handle('tool:open-external', (event, url) => {
   if (!toolContents.has(event.sender.id) || !/^https:\/\/accounts\.spotify\.com\/authorize\?/.test(url)) return false;
@@ -891,7 +914,7 @@ app.whenReady().then(async () => {
   startAutoUpdate();
 });
 
-// Les liens onirique:// : onirique://hm/CODE ouvre CLOUD sur ce HM (le site le propose avant de le rejoindre dans le
+// Les liens onirique:// : onirique://hm/CODE ouvre CLOUD sur ce HM, onirique://watchparty/CODE ouvre cette WATCHPARTY (le site le propose avant de le rejoindre dans le
 // navigateur). L'application, déjà lancée ou non, vient au premier plan.
 // Seule l'application installée s'inscrit : une version de développement (npm start) ne doit pas lui prendre les liens.
 if (app.isPackaged) app.setAsDefaultProtocolClient('onirique');
@@ -904,18 +927,25 @@ let earlyLink = null;
 app.on('open-url', (event, url) => { event.preventDefault(); if (win) openLink(url); else earlyLink = url; });
 let linkSeq = 0;
 async function openLink(url) {
-  const m = /^onirique:\/\/hm\/([\w-]{1,32})\/?$/i.exec(String(url || ''));
+  const m = /^onirique:\/\/(hm|watchparty)\/([\w-]{1,32})\/?$/i.exec(String(url || ''));
   if (!m || !win || win.webContents.isLoading()) return;
   const seq = ++linkSeq;
   if (win.isMinimized()) win.restore();
   win.show(); win.focus();
+  if (m[1].toLowerCase() === 'watchparty') {
+    win.webContents.send('navigate', 'watchparty');
+    for (let i = 0; i < 600 && !toolViews.has('watchparty'); i++) await new Promise((r) => setTimeout(r, 500));
+    const view = toolViews.has('watchparty') ? await toolViews.get('watchparty').catch(() => null) : null;
+    if (view && seq === linkSeq) view.webContents.loadURL(`${SITE}/watchparty#${m[2]}`).catch(() => {});
+    return;
+  }
   win.webContents.send('navigate', 'cloud');
   // CLOUD se crée quand l'interface l'affiche (après la connexion au compte, s'il le faut) : on l'attend 5 minutes au plus.
   for (let i = 0; i < 600 && !toolViews.has('cloud'); i++) await new Promise((r) => setTimeout(r, 500));
   const web = toolViews.has('cloud') ? (await toolViews.get('cloud').catch(() => null))?.webContents : null;
   if (!web || seq !== linkSeq) return;
   if (pageOpen) await closePage();
-  web.executeJavaScript(`location.hash = ${JSON.stringify('#/hm/' + m[1])}`).catch(() => {});
+  web.executeJavaScript(`location.hash = ${JSON.stringify('#/hm/' + m[2])}`).catch(() => {});
 }
 
 /**
