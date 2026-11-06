@@ -1470,6 +1470,7 @@ function showDisk(disk) {
   try {
     me = (await api("GET", "/me")).user;
     if (!isStaff(me) && !isPartner(me)) return gate("Cette page est réservée aux administrateurs.", "Retour au compte");
+    if (me.role === "founder") $("contenu").querySelector(".updated").after(el("p", { className: "updated" }, "Fondateurs : ", el("a", { href: "neural", textContent: "ONR Neural Learning" }), ", le cerveau de VOCALBOX et ce que les utilisateurs lui apprennent."));
     if (!isStaff(me)) {
       // Partenaire : ses plugins seulement. Les licences de ses plugins se gèrent dans l'application, Panel admin.
       document.querySelectorAll("[data-staff]").forEach((node) => { node.hidden = true; });

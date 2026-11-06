@@ -634,7 +634,7 @@ export function createApp() {
     || (can(req.user, right) ? undefined : new HttpError(403, "Cette fonction n'est pas ouverte à ce compte."))));
   mountDownloader(app, { optionalUser, wrap });
   mountRocky(app, { wrap });
-  mountVocalBrain(app, { wrap });   // le cerveau de VOCALBOX (apprentissage accepté par l'utilisateur)
+  mountVocalBrain(app, { wrap, requireUser });   // le cerveau de VOCALBOX (apprentissage accepté par l'utilisateur)
   const team = allowed('youtube');
   // Brancher sa chaîne : pour les Shorts, ou pour publier ses prods depuis ONIRIQUE CLOUD.
   const channel = (req, res, next) => requireUser(req, res, (error) => next(error

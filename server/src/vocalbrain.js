@@ -7,6 +7,7 @@
 //   POST /api/vocalbox/feedback    après CRÉER LE MIX : la demande, le portrait de la voix (des mesures), la chaîne décidée,
 //                                  les retouches faites ensuite, la note 👍 / 👎. Ils serviront à corriger le cerveau.
 //   GET  /api/vocalbox/brain       le dernier cerveau publié (setting vocalbox_brain), pour les mises à jour.
+import fs from 'node:fs';
 import { config } from './config.js';
 import { db, get, all, run, now, setting } from './db.js';
 import { HttpError, rateLimit } from './auth.js';
@@ -109,7 +110,7 @@ async function research(q) {
 
 const pending = new Map();   // une seule recherche à la fois par artiste
 
-export function mountVocalBrain(app, { wrap }) {
+export function mountVocalBrain(app, { wrap, requireUser }) {
   app.get('/api/vocalbox/artist', wrap(async (req, res) => {
     rateLimit(`vbartist:${req.ip}`, 30, 60 * 60_000);
     const q = normArtist(req.query.q);
@@ -156,6 +157,28 @@ export function mountVocalBrain(app, { wrap }) {
     res.set('Cache-Control', 'public, max-age=3600');
     if (!brain) return res.json({ version: 0 });
     res.type('application/json').send(brain);
+  }));
+
+  // LA PAGE DES FONDATEURS (site/neural.html) : tout ce qu'ONR Neural Learning a appris, en entier. Le cerveau livré dans le
+  // plugin (copie de OniriqueVocalBox/Resources/vocalbox-brain.json), les artistes trouvés par le serveur, les noms introuvables,
+  // et les retours des utilisateurs qui ont allumé l'option (anonymes : un identifiant d'installation tiré au hasard).
+  app.get('/api/vocalbox/founders', requireUser, wrap(async (req, res) => {
+    if (req.user.role !== 'founder') throw new HttpError(403, 'Réservé aux fondateurs.');
+    res.set('Cache-Control', 'no-store');
+    let shipped = { version: 0, artists: [] };
+    try { shipped = JSON.parse(fs.readFileSync(new URL('./vocalbox-brain.json', import.meta.url), 'utf8')); } catch { /* absent */ }
+    const parse = (s, d) => { try { return JSON.parse(s); } catch { return d; } };
+    const feedback = all('SELECT * FROM vocalbox_feedback ORDER BY id DESC LIMIT 2000').map((r) => ({
+      id: r.id, install: r.install, version: r.version, request: r.request, artists: parse(r.artists, []), hints: parse(r.hints, {}),
+      profile: parse(r.profile, {}), plan: parse(r.plan, {}), final: parse(r.final, {}), rating: r.rating, at: r.created_at,
+    }));
+    const found = all('SELECT name, data, source, hits, created_at FROM vocalbox_artists ORDER BY hits DESC')
+      .map((r) => ({ ...parse(r.data, {}), source: r.source, hits: r.hits, at: r.created_at }));
+    const misses = all('SELECT query_norm AS query, tries, last_at AS at FROM vocalbox_misses ORDER BY last_at DESC LIMIT 300');
+    const pub = setting('vocalbox_brain', null);
+    const published = (typeof pub === 'string' ? parse(pub, {}) : pub) || {};
+    res.json({ shipped, published: { version: published.version || 0 }, found, misses, feedback,
+      installs: get('SELECT COUNT(DISTINCT install) AS n FROM vocalbox_feedback').n });
   }));
 }
 
