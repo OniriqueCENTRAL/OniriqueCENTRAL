@@ -527,6 +527,9 @@
     return el("li", {}, el("div", { className: "item" }, listen,
       el("span", { className: "grow pick-name" }, el("b", { className: "tline", textContent: x.title }), el("small", { textContent: [x.artist, time(x.duration)].filter(Boolean).join(" · ") })),
       el("span", { className: "pf-tag", textContent: NAMES[x.platform] }),
+      // Pendant un HM (assets/hm.js) : le titre part directement dans sa file.
+      window.OniriqueHM?.active?.() ? el("button", { className: "btn btn-ghost", type: "button", textContent: "+ HM", title: "Ajouter à la file du HM", ariaLabel: "Ajouter " + x.title + " à la file du HM",
+        onclick: (e) => { const b = e.currentTarget; b.disabled = true; window.OniriqueHM.add({ ...playerItem({ ...x, id: x.id }), engine: engineFor(x.platform), extId: x.id }).then(() => { b.textContent = "Dans le HM"; }, () => { b.disabled = false; }); } }) : "",
       target ? el("button", { className: inside ? "btn btn-ghost" : "btn btn-primary", type: "button", disabled: inside || busy, textContent: inside ? "Ajouté" : "Ajouter",
         onclick: () => add([x]) }) : ""));
   }

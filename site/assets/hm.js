@@ -210,6 +210,8 @@
     player.play = (items, i = 0, autoplay = true) => (state && !syncing ? items[i] && void toHm(items[i]).catch(() => {}) : origPlay(items, i, autoplay));
     player.enqueue = (item) => (state && !syncing ? void toHm(item).catch(() => {}) : origEnqueue(item));
     player.control = null;
+    // Pour les autres menus de la page (recherche Spotify, platforms.js) : suis-je dans un HM où j'ai le droit d'ajouter ?
+    Object.assign(window.OniriqueHM, { active: () => !!state && can("add"), add: (item) => toHm(item) });
     const control = (what) => {
       const n = state && state.now;
       if (!n) return;
