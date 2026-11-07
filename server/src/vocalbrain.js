@@ -1,10 +1,10 @@
-// LE CERVEAU DE VOCALBOX (CRÉER LE MIX) côté serveur. Seuls les plugins dont l'utilisateur a allumé l'apprentissage
+// LE CERVEAU DE VOCALBOX (AUTO MIX) côté serveur. Seuls les plugins dont l'utilisateur a allumé l'apprentissage
 // (menu ⋯ → LEARNING, désactivé au départ) appellent ces routes. Rien n'identifie la personne : pas de compte, pas d'adresse IP
 // gardée, jamais d'audio ; un identifiant d'installation tiré au hasard regroupe les retours d'un même poste.
 //
 //   GET  /api/vocalbox/artist?q=…  la fiche d'un artiste que le cerveau livré ne connaît pas : d'abord la base ; sinon une
 //                                  recherche (Gemini + Google Search), faite une fois et gardée pour tout le monde.
-//   POST /api/vocalbox/feedback    après CRÉER LE MIX : la demande, le portrait de la voix (des mesures), la chaîne décidée,
+//   POST /api/vocalbox/feedback    après AUTO MIX : la demande, le portrait de la voix (des mesures), la chaîne décidée,
 //                                  les retouches faites ensuite, la note 👍 / 👎. Ils serviront à corriger le cerveau.
 //   GET  /api/vocalbox/brain       le cerveau publié (dépôt + validations des fondateurs), lu par les plugins une fois par jour.
 //   GET  /api/vocalbox/founders    (fondateurs) tout : cerveau, propositions, retours. POST /api/vocalbox/proposals/:id : valider
@@ -42,26 +42,33 @@ db.exec(`CREATE TABLE IF NOT EXISTS vocalbox_feedback (
   created_at INTEGER NOT NULL
 )`);
 
-// LA FICHE DE VOCALBOX (site et application : le même catalogue), refaite pour la version modulaire, CRÉER LE MIX et
+// LA FICHE DE VOCALBOX (site et application : le même catalogue), refaite pour la version modulaire, AUTO MIX et
 // ONR Neural Learning. Posée une seule fois (réglage vocalbox_fiche) : une retouche faite ensuite dans l'admin reste.
 const FICHE = {
-  tagline: 'Toute ta chaîne vocale, montée pour ta voix.',
-  description: `Toute la chaîne vocale dans un seul plugin : des modules que tu ajoutes et ranges dans l'ordre que tu veux, jusqu'à trois exemplaires du même.
+  tagline: 'Ta voix, mixée comme sur un vrai disque.',
+  description: `Tu poses ta voix, VOCALBOX s'occupe du reste.
 
-CRÉER LE MIX : décris le mix que tu veux (« voix de SCH », « voix chantée aérienne », « façon SZA ») ou glisse un morceau de référence, puis joue ta prise. VOCALBOX écoute ta voix (boue, résonances, sifflantes, dynamique, chant ou rap) et monte la chaîne réglée pour elle, avec le compte rendu de chaque décision. Il connaît la façon de mixer la voix de plus de 50 artistes, du rap US à la nouvelle scène française.
+Dis-lui simplement ce que tu veux entendre : « voix de SCH », « R&B doux façon SZA », « aérée et sombre ». Ou glisse sur la sphère un morceau dont tu aimes la voix. Il écoute ta prise pendant dix secondes, puis il monte toute la chaîne pour toi : le nettoyage, la justesse, l'EQ, la compression, l'espace. Et il t'explique chacun de ses choix, comme le ferait un ingé à côté de toi.
 
-NETTOYAGE : noise gate, noise suppressor, plosives, résonances, de-esser.
-TON : EQ paramétrique 8 bandes (mode dynamique, écoute), EQ analog (LOW, MUD, HI, AIR), Saturation Lab (lampe, analog, bande, transformateur).
-DYNAMIQUE : 1176 FET, LA-2A opto, multiband optique 4 bandes, compression parallèle.
-EFFETS : réverbe (room, plates, hall, shimmer), delay au tempo avec ducking, doubleur, chorus, flanger, phone.
+Un clic de bouche, une respiration trop forte, une chambre qui résonne ? Il l'entend et le corrige, sans toucher au reste. Tu chantes un peu à côté ? L'ONIRIQUE TUNER te remet sur la note, tout en douceur, ou pousse l'effet robot si c'est ton style. Il connaît la façon de mixer la voix de plus de 50 artistes, du rap US à la nouvelle scène française.
 
-ONR Neural Learning (facultatif, désactivé au départ) : si tu l'allumes, VOCALBOX apprend de tes notes et de tes retouches, de façon anonyme et sans jamais envoyer de son, pour mieux mixer à chaque mise à jour.
+Ensuite, tu affines comme tu parlerais à ton ingé : « un peu moins de réverbe », « plus en avant », « plus sombre ». Ou tu prends les quatre gros potards : PRÉSENCE, CHALEUR, TENUE, ESPACE.
 
-Presets d'usine et presets utilisateur, comparaison A/B, suréchantillonnage 2x, couleur de l'interface au choix. VST3 et version autonome, pour Windows 64 bits.`,
+Lead, backs, adlibs ou doubles : dis-lui quelle voix tu mixes et il lui trouve sa place. Tes VOCALBOX d'un même projet se reconnaissent entre elles et restent dans la tonalité du lead.
+
+Et si tu veux mettre les mains dedans, tout est là, dans l'ordre que tu veux :
+• Nettoyage : de-click, de-breath, de-reverb, noise gate, débruiteur, plosives, résonances, de-esser
+• Ton : ONIRIQUE TUNER, préampli N73, EQ paramétrique 8 bandes, EQ analog, Saturation Lab
+• Dynamique : 1176, CL1B à lampe, LA-2A, multiband, compression parallèle
+• Effets : réverbe, delay au tempo, doubleur, chorus, flanger, téléphone
+
+VOCALBOX progresse à chaque mise à jour grâce à ONR Neural Learning. C'est facultatif et anonyme, et aucun son n'est jamais envoyé.
+
+VST3 et version autonome, Windows 64 bits.`,
 };
-if (!get("SELECT 1 FROM settings WHERE key = 'vocalbox_fiche'")) {
+if (get("SELECT value FROM settings WHERE key = 'vocalbox_fiche'")?.value !== '5') {   // v5 : réécrite d'un ton plus humain
   run('UPDATE products SET tagline = ?, description = ? WHERE slug = ?', FICHE.tagline, FICHE.description, 'vocalbox');
-  run("INSERT INTO settings (key, value) VALUES ('vocalbox_fiche', '2')");
+  run("INSERT INTO settings (key, value) VALUES ('vocalbox_fiche', '5') ON CONFLICT(key) DO UPDATE SET value = excluded.value");
 }
 
 // ---- ONR NEURAL LEARNING, sous le contrôle des fondateurs (voir brainlearn.js) : les retours deviennent des propositions,
@@ -126,7 +133,7 @@ export const normArtist = (s) => String(s || '').normalize('NFD').replace(/[̀-�
   .replace(/[^a-z0-9 &$]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
 
 const NUMBERS = { bright: [0, 1], air: [0, 1], warm: [0, 1], dark: [0, 1], comp: [-1, 1], reverb: [0, 1], reverbSize: [0, 1],
-  delay: [0, 1], sat: [0, 1], doubler: [0, 1], chorus: [0, 1], flanger: [0, 1], phone: [0, 1] };
+  delay: [0, 1], sat: [0, 1], doubler: [0, 1], chorus: [0, 1], flanger: [0, 1], phone: [0, 1], tune: [0, 1] };
 const BOOLS = ['controlled', 'parallel', 'dreamy'];
 
 /** Une fiche propre : les seuls champs du cerveau, bornés (rien d'autre de la réponse de l'IA n'arrive au plugin). */
@@ -155,9 +162,10 @@ Sinon réponds UNIQUEMENT par un objet JSON, sans texte autour :
 {"name": "Nom officiel", "genre": "rap|rnb|pop|rap fr|drill|afro|latin|rock|electro", "aliases": ["surnoms courants"],
  "hints": {"bright":0..1, "air":0..1, "warm":0..1, "dark":0..1, "comp":-1..1, "reverb":0..1, "reverbSize":0..1, "delay":0..1,
  "sat":0..1, "satType":0 lampe|1 analog|2 bande|3 transformateur, "doubler":0..1, "chorus":0..1, "controlled":true|false,
- "parallel":true|false, "dreamy":true|false}}
+ "parallel":true|false, "dreamy":true|false, "tune":0..1}}
 Échelles : 0 = absent, 1 = très marqué ; comp -1 très naturel, 1 très compressé et en avant ; reverb = quantité d'espace ;
-reverbSize 0 pièce, 1 grand espace ; controlled = voix très maîtrisée (multiband) ; parallel = compression parallèle épaisse.
+reverbSize 0 pièce, 1 grand espace ; controlled = voix très maîtrisée (multiband) ; parallel = compression parallèle épaisse ;
+tune = l'autotune entendu sur sa voix (0 aucun, 0.3 justesse discrète, 0.7 autotune moderne marqué, 1 effet robot).
 N'inclus que les champs dont tu es raisonnablement sûr.`;
 
 /** La recherche : Gemini avec Google Search ; si la recherche web n'est pas ouverte à la clé (offre gratuite : quota nul),

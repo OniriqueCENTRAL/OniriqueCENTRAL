@@ -52,6 +52,7 @@ import { mountConcerts } from './concerts.js';
 import { mountDownloader } from './downloader.js';
 import { mountRocky } from './rocky.js';
 import { mountVocalBrain } from './vocalbrain.js';
+import { applyPluginFiches } from './fiches.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
@@ -634,6 +635,7 @@ export function createApp() {
     || (can(req.user, right) ? undefined : new HttpError(403, "Cette fonction n'est pas ouverte à ce compte."))));
   mountDownloader(app, { optionalUser, wrap });
   mountRocky(app, { wrap });
+  try { applyPluginFiches(); } catch (e) { console.error('fiches des plugins :', e.message); }   // les fiches réécrites (une seule fois)
   mountVocalBrain(app, { wrap, requireUser });   // le cerveau de VOCALBOX (apprentissage accepté par l'utilisateur)
   const team = allowed('youtube');
   // Brancher sa chaîne : pour les Shorts, ou pour publier ses prods depuis ONIRIQUE CLOUD.
