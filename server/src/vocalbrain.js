@@ -45,23 +45,30 @@ db.exec(`CREATE TABLE IF NOT EXISTS vocalbox_feedback (
 // LA FICHE DE VOCALBOX (site et application : le même catalogue), refaite pour la version modulaire, AUTO MIX et
 // ONR Neural Learning. Posée une seule fois (réglage vocalbox_fiche) : une retouche faite ensuite dans l'admin reste.
 const FICHE = {
-  tagline: 'Toute ta chaîne vocale, montée pour ta voix.',
-  description: `Toute la chaîne vocale dans un seul plugin : des modules que tu ajoutes et ranges dans l'ordre que tu veux, jusqu'à trois exemplaires du même.
+  tagline: 'Ta voix, mixée comme sur un vrai disque.',
+  description: `Tu poses ta voix, VOCALBOX s'occupe du reste.
 
-AUTO MIX : choisis le rôle de la voix (LEAD, BACKS, ADLIBS, DOUBLES), décris le mix que tu veux (« voix de SCH », « voix chantée aérienne », « façon SZA ») ou glisse un morceau de référence, puis joue ta prise. VOCALBOX écoute ta voix (boue, résonances, sifflantes, dynamique, chant ou rap, justesse et tonalité, clics de bouche, respirations, pièce) et monte la chaîne réglée pour elle (préampli en tête pour les artistes qui en ont un, 1176 ou CL1B selon la voix, compression rapide sur le rap moderne), avec le compte rendu de chaque décision. Ensuite, affine en mots (« un peu moins de réverbe », « plus en avant ») ou avec 4 macros : PRÉSENCE, CHALEUR, TENUE, ESPACE. Les VOCALBOX d'un même projet se reconnaissent et partagent la tonalité du lead. Il connaît la façon de mixer la voix de plus de 50 artistes, du rap US à la nouvelle scène française.
+Dis-lui simplement ce que tu veux entendre : « voix de SCH », « R&B doux façon SZA », « aérée et sombre ». Ou glisse sur la sphère un morceau dont tu aimes la voix. Il écoute ta prise pendant dix secondes, puis il monte toute la chaîne pour toi : le nettoyage, la justesse, l'EQ, la compression, l'espace. Et il t'explique chacun de ses choix, comme le ferait un ingé à côté de toi.
 
-NETTOYAGE : de-click (bruits de bouche), de-breath (respirations), de-reverb (la pièce), noise gate, noise suppressor, plosives, résonances, de-esser.
-TON : ONIRIQUE TUNER (justesse naturelle ou effet robot, 15 gammes), préampli N73 (MIC ou LINE), EQ paramétrique 8 bandes (mode dynamique, écoute), EQ analog (LOW, MUD, HI, AIR), Saturation Lab (lampe, analog, bande, transformateur).
-DYNAMIQUE : 1176 FET, CL1B optique à lampe, LA-2A opto, multiband optique 4 bandes, compression parallèle.
-EFFETS : réverbe (room, plates, hall, shimmer), delay au tempo avec ducking, doubleur, chorus, flanger, phone.
+Un clic de bouche, une respiration trop forte, une chambre qui résonne ? Il l'entend et le corrige, sans toucher au reste. Tu chantes un peu à côté ? L'ONIRIQUE TUNER te remet sur la note, tout en douceur, ou pousse l'effet robot si c'est ton style. Il connaît la façon de mixer la voix de plus de 50 artistes, du rap US à la nouvelle scène française.
 
-ONR Neural Learning (facultatif, désactivé au départ) : si tu l'allumes, VOCALBOX apprend de tes notes et de tes retouches, de façon anonyme et sans jamais envoyer de son, pour mieux mixer à chaque mise à jour.
+Ensuite, tu affines comme tu parlerais à ton ingé : « un peu moins de réverbe », « plus en avant », « plus sombre ». Ou tu prends les quatre gros potards : PRÉSENCE, CHALEUR, TENUE, ESPACE.
 
-Presets d'usine et presets utilisateur, comparaison A/B, suréchantillonnage 2x, couleur de l'interface au choix. VST3 et version autonome, pour Windows 64 bits.`,
+Lead, backs, adlibs ou doubles : dis-lui quelle voix tu mixes et il lui trouve sa place. Tes VOCALBOX d'un même projet se reconnaissent entre elles et restent dans la tonalité du lead.
+
+Et si tu veux mettre les mains dedans, tout est là, dans l'ordre que tu veux :
+• Nettoyage : de-click, de-breath, de-reverb, noise gate, débruiteur, plosives, résonances, de-esser
+• Ton : ONIRIQUE TUNER, préampli N73, EQ paramétrique 8 bandes, EQ analog, Saturation Lab
+• Dynamique : 1176, CL1B à lampe, LA-2A, multiband, compression parallèle
+• Effets : réverbe, delay au tempo, doubleur, chorus, flanger, téléphone
+
+VOCALBOX progresse à chaque mise à jour grâce à ONR Neural Learning. C'est facultatif et anonyme, et aucun son n'est jamais envoyé.
+
+VST3 et version autonome, Windows 64 bits.`,
 };
-if (get("SELECT value FROM settings WHERE key = 'vocalbox_fiche'")?.value !== '4') {   // v4 : TUNER, DE-CLICK, DE-BREATH, DE-REVERB, macros, rôles
+if (get("SELECT value FROM settings WHERE key = 'vocalbox_fiche'")?.value !== '5') {   // v5 : réécrite d'un ton plus humain
   run('UPDATE products SET tagline = ?, description = ? WHERE slug = ?', FICHE.tagline, FICHE.description, 'vocalbox');
-  run("INSERT INTO settings (key, value) VALUES ('vocalbox_fiche', '4') ON CONFLICT(key) DO UPDATE SET value = excluded.value");
+  run("INSERT INTO settings (key, value) VALUES ('vocalbox_fiche', '5') ON CONFLICT(key) DO UPDATE SET value = excluded.value");
 }
 
 // ---- ONR NEURAL LEARNING, sous le contrôle des fondateurs (voir brainlearn.js) : les retours deviennent des propositions,
