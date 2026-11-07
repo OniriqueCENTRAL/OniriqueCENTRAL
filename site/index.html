@@ -2146,8 +2146,19 @@ function confirmNotice(user, token) {
   document.body.append(bar);
 }
 
+// Connecté : le haut de page n'invite plus à créer un compte, il ouvre le CLOUD. Fait tout de suite s'il y a une session
+// (pas de « Créer mon compte » qui clignote), puis confirmé quand le compte est lu.
+const heroSignedIn = () => {
+  const join = document.getElementById("heroJoin");
+  if (!join || join.dataset.signedIn) return;
+  join.dataset.signedIn = "1";
+  join.textContent = OniriqueI18n.t("Ouvrir ONIRIQUE CLOUD");
+  join.href = "mes-sons";
+};
+try { if (sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token")) heroSignedIn(); } catch {}
 // Déjà connecté : assets/account.js remplace « Connexion » par le menu du compte, puis annonce le compte ici.
 document.addEventListener("onirique:account", ({ detail: me }) => {
+  heroSignedIn();
   // À côté du compte, le bouton ne propose plus d'acheter mais de télécharger ONIRIQUE CENTRAL : il mène au choix
   // entre Windows et Mac, plutôt que de lancer un téléchargement deviné d'après le navigateur.
   const get = document.getElementById("nav-buy");
