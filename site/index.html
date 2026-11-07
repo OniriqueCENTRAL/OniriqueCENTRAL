@@ -2,7 +2,7 @@
 <html lang="fr">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<script src="assets/i18n.js?v=cede88a9"></script>
+<script src="assets/i18n.js?v=4361e452"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=2"></script>
 <script src="/api/announce.js"></script>
@@ -1132,6 +1132,32 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
     </div>
   </section>
 
+  <section class="block" id="navigateur" style="padding-top:0">
+    <div class="wrap offer">
+      <div class="reveal">
+        <span class="eyebrow">Navigateur</span>
+        <h2 style="margin-top:18px">Onirique <em class="dream">Navigateur.</em></h2>
+        <p class="lede" style="margin-top:26px">Un navigateur web aux couleurs d'ONIRIQUE, qui laisse de la place à ton DAW. Les sites s'affichent comme dans Chrome, mais les onglets que tu ne regardes pas s'endorment.</p>
+      </div>
+      <div class="card reveal">
+        <span class="tag">Onirique Navigateur</span>
+        <div class="amount">Gratuit</div>
+        <p style="color:var(--haze);font-size:14px">Windows 10 ou 11, 64 bits · 49 Mo</p>
+        <ul>
+          <li><svg><use href="#check"/></svg>Environ 20 % de mémoire en moins que Chrome sur les mêmes sites</li>
+          <li><svg><use href="#check"/></svg>Onglets cachés en veille après 30 secondes, libérés après 10 minutes</li>
+          <li><svg><use href="#check"/></svg>Traqueurs publicitaires bloqués</li>
+          <li><svg><use href="#check"/></svg>Le moteur Chromium : tes sites marchent comme d'habitude</li>
+        </ul>
+        <div class="os-row">
+          <a class="btn btn-primary" href="telechargement/ONIRIQUE-Navigateur.exe" download>Windows</a>
+        </div>
+        <div class="secure">Rien à installer : lance le fichier, le navigateur s'ouvre.</div>
+        <div class="secure">Si « Windows a protégé votre ordinateur » s'affiche : Informations complémentaires, puis Exécuter quand même. Le navigateur n'est pas encore signé, d'où cet avertissement.</div>
+      </div>
+    </div>
+  </section>
+
   <section class="block" id="faq" style="padding-top:0">
     <div class="wrap faq">
       <div class="reveal">
@@ -2146,19 +2172,8 @@ function confirmNotice(user, token) {
   document.body.append(bar);
 }
 
-// Connecté : le haut de page n'invite plus à créer un compte, il ouvre le CLOUD. Fait tout de suite s'il y a une session
-// (pas de « Créer mon compte » qui clignote), puis confirmé quand le compte est lu.
-const heroSignedIn = () => {
-  const join = document.getElementById("heroJoin");
-  if (!join || join.dataset.signedIn) return;
-  join.dataset.signedIn = "1";
-  join.textContent = OniriqueI18n.t("Ouvrir ONIRIQUE CLOUD");
-  join.href = "mes-sons";
-};
-try { if (sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token")) heroSignedIn(); } catch {}
 // Déjà connecté : assets/account.js remplace « Connexion » par le menu du compte, puis annonce le compte ici.
 document.addEventListener("onirique:account", ({ detail: me }) => {
-  heroSignedIn();
   // À côté du compte, le bouton ne propose plus d'acheter mais de télécharger ONIRIQUE CENTRAL : il mène au choix
   // entre Windows et Mac, plutôt que de lancer un téléchargement deviné d'après le navigateur.
   const get = document.getElementById("nav-buy");

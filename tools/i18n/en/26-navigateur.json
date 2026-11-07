@@ -1,0 +1,12 @@
+{
+  "Navigateur": "Browser",
+  "Un navigateur web aux couleurs d'ONIRIQUE, qui laisse de la place à ton DAW. Les sites s'affichent comme dans Chrome, mais les onglets que tu ne regardes pas s'endorment.": "A web browser in ONIRIQUE colours that leaves room for your DAW. Sites look just like in Chrome, but the tabs you're not looking at go to sleep.",
+  "Onirique Navigateur": "Onirique Browser",
+  "Windows 10 ou 11, 64 bits · 49 Mo": "Windows 10 or 11, 64-bit · 49 MB",
+  "Environ 20 % de mémoire en moins que Chrome sur les mêmes sites": "About 20 % less memory than Chrome on the same sites",
+  "Onglets cachés en veille après 30 secondes, libérés après 10 minutes": "Hidden tabs sleep after 30 seconds and are freed after 10 minutes",
+  "Traqueurs publicitaires bloqués": "Ad trackers blocked",
+  "Le moteur Chromium : tes sites marchent comme d'habitude": "The Chromium engine: your sites work as usual",
+  "Rien à installer : lance le fichier, le navigateur s'ouvre.": "Nothing to install: run the file and the browser opens.",
+  "Si « Windows a protégé votre ordinateur » s'affiche : Informations complémentaires, puis Exécuter quand même. Le navigateur n'est pas encore signé, d'où cet avertissement.": "If “Windows protected your PC” appears: More info, then Run anyway. The browser isn't signed yet, hence the warning."
+}
