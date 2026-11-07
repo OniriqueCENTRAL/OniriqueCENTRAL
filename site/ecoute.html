@@ -222,6 +222,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1320px; }
 <dialog id="buy"></dialog>
 <script src="assets/sounds-player.js?v=25"></script>
 <script src="assets/platforms.js?v=18"></script>
+<script src="assets/hm.js?v=12"></script>
 <script src="assets/ratings.js?v=2"></script>
 <script>
 const $ = (id) => document.getElementById(id);
@@ -284,6 +285,9 @@ const player = OP.create({
 window.OniriquePlatforms?.setup({ el, icon, player, changed() {},
   api: (method, path) => fetch("/api" + path, { method, headers: session ? { Authorization: "Bearer " + session } : {} })
     .then((r) => (r.ok ? r.json() : Promise.reject(new Error("Erreur " + r.status)))) });
+
+// Pendant un HM (CLOUD ouvert dans l'application ou un autre onglet), ce qu'on lance ici part dans sa file.
+window.OniriqueHM?.forward({ player, token: session, el });
 
 // Les paroles du titre en cours ; synchronisées, la ligne chantée s'allume et reste au milieu de la boîte.
 let lyricsShown = null, lyricsExpanded = false;

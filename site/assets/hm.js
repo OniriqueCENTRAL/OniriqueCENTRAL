@@ -8,6 +8,13 @@
 // au HM si le créateur en a donné le droit ; sans ce droit, la pause ne vaut que pour soi.
 (() => {
   const KEY = "onirique.hm";
+  // Le HM où l'on est, pour les autres pages du site (page d'écoute d'une playlist, messages) et pour l'application,
+  // qui recrée CLOUD (connexion, relance) : localStorage, effacé en quittant le HM.
+  const ACTIVE = "onirique.hm.active";
+  const remember = (c) => { try { if (c) localStorage.setItem(ACTIVE, c); else localStorage.removeItem(ACTIVE); } catch {} };
+  const remembered = () => { try { return localStorage.getItem(ACTIVE); } catch { return null; } };
+  // Ce qui part dans la file : le son tel que le lecteur le connaît, sans ce qui ne sert qu'à celui qui l'ajoute.
+  const forHm = ({ key, id, trackId, comments, downloadUrl, offers, credits, locked, position, ...rest }) => rest;
   const PERM_LABELS = { add: "Ajouter des sons", skip: "Passer, retirer, réordonner", control: "Lecture, pause, avancer", kick: "Expulser" };
   const LEVEL_LABELS = { all: "Tout le monde", cohosts: "Co-hôtes", host: "Moi seul" };
   const css = `
@@ -73,10 +80,62 @@
     /* global data, itemOf */
     if (typeof data === "undefined" || !data || data.vanish || typeof itemOf !== "function") return [];
     const PF = window.OniriquePlatforms;
-    return data.projects.map((p) => ({ title: p.title, cover: p.cover,
+    const mine = data.projects.map((p) => ({ title: p.title, cover: p.cover,
       items: (p.kind === "playlist" && PF ? PF.mixed(p) : p.tracks.map((t) => ({ track: t })))
         .filter((x) => x.track || (PF && PF.playable(x.item)))
         .map((x) => (x.track ? itemOf(p, x.track) : PF.playerItem(x.item))) })).filter((g) => g.items.length);
+    const theirs = (data.saved || []).filter((x) => x.available !== false).map((x) => ({ title: x.title, cover: x.cover, by: x.owner, load: () => shareItems(x) }));
+    return [...mine, ...theirs];
+  }
+  // Les sons d'un projet ou d'une playlist d'un autre, par son lien d'écoute (comme sa page d'écoute) : ceux du CLOUD et
+  // les titres Spotify qui se lisent ici, dans l'ordre de la playlist.
+  async function shareItems(x) {
+    /* global token */
+    const response = await fetch("/api/sounds/share/" + encodeURIComponent(x.token), {
+      method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify({ pass: x.pass }) });
+    if (!response.ok) throw new Error("Cette playlist n'est plus partagée.");
+    return shareToItems(await response.json());
+  }
+  function shareToItems(share) {
+    const cloud = (share.tracks || []).map((t) => ({ position: t.position, title: t.title, feat: (t.credits || {}).feat, artist: share.owner, subtitle: share.title,
+      cover: share.cover, url: t.version.url, duration: t.version.duration, peaks: t.version.peaks, lyrics: t.lyrics || "" }));
+    const platform = (share.items || []).filter((x) => x.playable && x.platform === "spotify" && x.extId).map((x) => ({ position: x.position, title: x.title,
+      artist: x.artist, subtitle: x.artist, cover: x.cover, url: x.listen, duration: x.duration, engine: "spotifyEmbed", extId: x.extId }));
+    return [...cloud, ...platform].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  }
+
+  /**
+   * Une autre page du site (page d'écoute d'une playlist, messages) pendant un HM : ce qu'on y lance part dans la file du
+   * HM au lieu de jouer dans le lecteur de la page. Seulement si l'on est vraiment dans ce HM (CLOUD ouvert et connecté,
+   * dans l'application ou un autre onglet) ; un bandeau le dit, et « Écouter ici » rend la main au lecteur de la page.
+   */
+  function forward({ player, token: session, el }) {
+    const c = remembered();
+    if (!c || !session || !player) return;
+    const call = (method, path, body) => fetch("/api" + path, { method, headers: { Authorization: "Bearer " + session, ...(body ? { "Content-Type": "application/json" } : {}) },
+      body: body ? JSON.stringify(body) : undefined }).then(async (r) => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || "Erreur " + r.status); return d; });
+    let st = null, bar = null;
+    const say = (text) => {
+      const t = el("div", { textContent: text, style: "position:fixed;left:50%;bottom:130px;transform:translateX(-50%);z-index:80;padding:10px 16px;border-radius:999px;background:#150a0c;border:1px solid var(--ember,#E23444);color:#f6eeee;font:600 13px system-ui,sans-serif;max-width:calc(100vw - 32px)" });
+      document.body.append(t);
+      setTimeout(() => t.remove(), 2600);
+    };
+    const add = (item) => {
+      if (!st.you.can.add) return alert("Le créateur du HM ne t'a pas donné le droit d'ajouter des sons.");
+      call("POST", "/hm/" + c + "/add", { item: forHm(item) }).then(() => say("Ajouté à la file du HM : " + item.title), (e) => alert(e.message));
+    };
+    const play = player.play.bind(player), enqueue = player.enqueue.bind(player);
+    player.play = (items, i = 0, autoplay = true) => (st ? items[i] && add(items[i]) : play(items, i, autoplay));
+    player.enqueue = (item) => (st ? add(item) : enqueue(item));
+    call("GET", "/hm/" + c).then((s) => {
+      if (!s.members.some((m) => m.id === s.you.id)) return; // plus dans ce HM (CLOUD fermé) : la page joue elle-même
+      st = s;
+      bar = el("div", { role: "status", style: "position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:90;display:flex;gap:10px;align-items:center;padding:8px 10px 8px 14px;border-radius:999px;background:#150a0c;border:1px solid var(--ember,#E23444);color:#f6eeee;font:600 13px system-ui,sans-serif;max-width:calc(100vw - 24px);box-shadow:0 10px 30px -10px rgba(0,0,0,.8)" },
+        el("span", { textContent: "HM « " + s.name + " » : ce que tu lances ici part dans sa file" }),
+        el("button", { type: "button", textContent: "Écouter ici", style: "flex:none;border:1px solid rgba(255,210,214,.3);background:none;color:inherit;border-radius:999px;padding:5px 10px;font:inherit;cursor:pointer",
+          onclick: () => { st = null; bar.remove(); } }));
+      document.body.append(bar);
+    }, () => {});
   }
 
   function setup({ api, token, el, icon, player, avatar, button, library = cloudLibrary }) {
@@ -107,7 +166,10 @@
     audio.play = () => {
       if (!state || syncing) return aPlay();
       hold = false;
-      const n = state.now;
+      const n = state.now, it = player.item;
+      // Un son resté de l'écoute d'avant (ou lancé par le lecteur lui-même) : il part dans la file au lieu de jouer ici seul.
+      if (it && !/^hm/.test(it.key)) { void toHm(it).catch(() => {}); return Promise.resolve(); }
+      if (!n) { toast("La file du HM est vide : ajoute un son avec « + » ou lance-en un."); return Promise.resolve(); }
       if (n && !n.playing) {
         if (!can("control")) { toast("Le HM est en pause : seul celui qui a la main peut le relancer."); return Promise.resolve(); }
         local(n, { playing: true });
@@ -143,8 +205,7 @@
     // Lancer ou mettre dans la file un son, pendant un HM : il part dans la file du HM.
     const toHm = (item, next) => {
       if (!can("add")) { alert("Le créateur du HM ne t'a pas donné le droit d'ajouter des sons."); return Promise.reject(new Error("refusé")); }
-      const { key, id, trackId, comments, downloadUrl, ...rest } = item; // les paroles et la forme d'onde partent avec le son
-      return api("POST", "/hm/" + code + "/add", { item: rest, next }).then(() => toast("Ajouté à la file du HM : " + item.title), (error) => { alert(error.message); throw error; });
+      return api("POST", "/hm/" + code + "/add", { item: forHm(item), next }) // les paroles et la forme d'onde partent avec le son.then(() => toast("Ajouté à la file du HM : " + item.title), (error) => { alert(error.message); throw error; });
     };
     player.play = (items, i = 0, autoplay = true) => (state && !syncing ? items[i] && void toHm(items[i]).catch(() => {}) : origPlay(items, i, autoplay));
     player.enqueue = (item) => (state && !syncing ? void toHm(item).catch(() => {}) : origEnqueue(item));
@@ -186,7 +247,7 @@
     function sync() {
       const n = state && state.now;
       if (!state) return;
-      if (!n) { if (player.item && /^hm/.test(player.item.key) && player.playing) quiet(aPause); return; }
+      if (!n) { if (player.playing) quiet(aPause); return; } // file vide : rien ne joue, pas même un son d'avant le HM
       if (!n.item.url && !n.item.engine) return;
       const want = n.playing && !hold;
       quiet(() => {
@@ -297,6 +358,7 @@
       receive(next);
       code = c;
       try { sessionStorage.setItem(KEY, c); } catch {}
+      remember(c);
       connect();
     }
     function leave(pause = true) {
@@ -306,6 +368,7 @@
       if (stream) stream.cancel().catch(() => {});
       stream = null;
       try { sessionStorage.removeItem(KEY); } catch {}
+      remember(null);
       if (pause && player.item && /^hm/.test(player.item.key)) aPause();
       if (dlg.open) dlg.close();
       drawChip();
@@ -402,10 +465,24 @@
     function openPick() {
       const results = el("div", { style: "display:grid;gap:14px" });
       const input = el("input", { type: "search", placeholder: "Chercher dans mon CLOUD", ariaLabel: "Chercher dans mon CLOUD", autocomplete: "off" });
+      const lib = library(), loaded = new Map();
+      const addAll = (items, btn) => { btn.disabled = true; items.reduce((p, it) => p.then(() => toHm(it)), Promise.resolve()).then(() => btn.replaceChildren("Tout ajouté"), () => { btn.disabled = false; }); };
       const list = () => {
         const q = input.value.trim().toLowerCase();
-        const groups = library().map((g) => ({ ...g, items: g.items.filter((it) => !q || [it.title, it.artist, it.feat, g.title].join(" ").toLowerCase().includes(q)) })).filter((g) => g.items.length);
-        results.replaceChildren(...(groups.length ? groups.map((g) => el("section", {}, el("h3", { textContent: g.title }), el("ul", {}, ...g.items.map((it) => {
+        const groups = lib.map((g) => {
+          const items = g.load ? loaded.get(g) : g.items;
+          if (!items) return !q || [g.title, g.by].join(" ").toLowerCase().includes(q) ? { ...g, items: null } : null;
+          const hit = items.filter((it) => !q || [it.title, it.artist, it.feat, g.title].join(" ").toLowerCase().includes(q));
+          return hit.length ? { ...g, items: hit } : null;
+        }).filter(Boolean);
+        results.replaceChildren(...(groups.length ? groups.map((g) => el("section", {},
+          el("div", { className: "hm-head" }, el("h3", { textContent: g.title + (g.by ? " · " + g.by : "") }),
+            g.items ? el("button", { className: "hm-mini", type: "button", textContent: "Tout ajouter", onclick: (e) => addAll(g.items, e.currentTarget) })
+              : el("button", { className: "hm-mini", type: "button", textContent: "Voir les sons", onclick: (e) => {
+                e.currentTarget.disabled = true;
+                g.load().then((items) => { loaded.set(lib.find((x) => x.load === g.load), items); list(); }, (err) => { alert(err.message); e.currentTarget.disabled = false; });
+              } })),
+          !g.items ? null : el("ul", {}, ...g.items.map((it) => {
           const add = el("button", { className: "hm-mini", type: "button", title: "Ajouter à la file du HM", ariaLabel: "Ajouter " + it.title + " à la file du HM" }, icon("plus"));
           add.onclick = () => { add.disabled = true; toHm(it).then(() => add.replaceChildren("Ajouté"), () => { add.disabled = false; }); };
           const cover = it.cover || g.cover;
@@ -468,8 +545,13 @@
     addEventListener("hashchange", () => { const c = fromHash(); if (c) arrive(c); });
     const linked = fromHash();
     if (linked) arrive(linked);
-    else { let saved = null; try { saved = sessionStorage.getItem(KEY); } catch {} if (saved && token) join(saved); }
+    else {
+      // Le HM d'avant : celui de cet onglet ; dans l'application (un seul CLOUD), celui qu'elle avait avant d'être recréée.
+      let saved = null; try { saved = sessionStorage.getItem(KEY); } catch {}
+      if (!saved && window.oniriqueApp) saved = remembered();
+      if (saved && token) join(saved);
+    }
   }
 
-  window.OniriqueHM = { setup };
+  window.OniriqueHM = { setup, forward, shareToItems };
 })();

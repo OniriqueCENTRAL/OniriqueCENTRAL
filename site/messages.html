@@ -165,6 +165,7 @@ dialog.zoom { width: auto; max-width: 96vw; background: none; border: 0; }
 <input type="file" id="pick" accept="image/*" hidden>
 
 <script src="assets/sounds-player.js?v=25"></script>
+<script src="assets/hm.js?v=12"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const TOKEN = "onirique.token";
@@ -308,7 +309,7 @@ function zoom(src) {
 // ——— Les sons du CLOUD partagés : joués par le lecteur de « Mes sons » ———
 let player = null;
 function playSounds(m, i) {
-  player ||= OniriquePlayer.create({});
+  if (!player) { player = OniriquePlayer.create({}); window.OniriqueHM?.forward({ player, token, el }); } // pendant un HM, ces sons partent dans sa file
   const items = m.attach.items.filter((x) => x.url).map((x, k) => ({ ...x, key: m.id + ":" + k }));
   if (items.length) player.play(items, m.attach.items.slice(0, i).filter((x) => x.url).length);
 }

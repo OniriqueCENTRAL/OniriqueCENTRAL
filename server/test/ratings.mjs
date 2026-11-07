@@ -69,6 +69,11 @@ try {
     assert.deepEqual(await call('GET', '/api/me/sounds/top-week', { token: c.token }), []);
     await call('POST', `/api/me/sounds/projects/${pl}/visibility`, { token: a.token, body: { public: true } });
     assert.equal((await call('GET', '/api/me/sounds/top-week', { token: c.token })).length, 1);
+    // Une playlist créée est privée ; un projet, lui, n'est pas concerné.
+    const fresh = (await call('POST', '/api/me/sounds/projects', { token: a.token, body: { title: 'Nouvelle', kind: 'playlist' }, expect: 201 })).id;
+    const album = (await call('POST', '/api/me/sounds/projects', { token: a.token, body: { title: 'Album' }, expect: 201 })).id;
+    const mine = (await call('GET', '/api/me/sounds', { token: a.token })).projects;
+    assert.deepEqual([mine.find((x) => x.id === fresh).public, mine.find((x) => x.id === album).public], [false, true]);
   });
 
   await step('qui a enregistré la playlist : visible par son créateur seulement', async () => {

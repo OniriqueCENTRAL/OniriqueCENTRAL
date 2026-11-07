@@ -73,9 +73,11 @@ export function cleanItem(raw) {
     const url = typeof raw.url === 'string' && raw.url.length <= 1000 && (raw.url.startsWith('https://') || PREVIEW.test(raw.url)) ? raw.url : null;
     return { ...base, engine: raw.engine === 'spotifyEmbed' ? 'spotify' : raw.engine, extId, url };
   }
-  // L'extrait d'une plateforme sans lecteur intégré : son adresse publique.
-  if (typeof raw.url === 'string' && raw.url.length <= 1000 && raw.url.startsWith('https://')) return { ...base, url: raw.url };
-  const version = signedVersion(raw.url);
+  // L'extrait d'une plateforme sans lecteur ici (Apple Music non connecté…) : son adresse publique, ou celle, signée, du serveur.
+  if (typeof raw.url === 'string' && raw.url.length <= 1000 && (raw.url.startsWith('https://') || PREVIEW.test(raw.url))) return { ...base, url: raw.url };
+  // Un son du CLOUD : l'adresse que le lecteur de celui qui l'ajoute a reçue, signée par le serveur ; acceptée jusqu'à
+  // 30 jours après son expiration, la page de CLOUD restant ouverte des heures dans l'application.
+  const version = signedVersion(raw.url, 30 * 86400_000);
   if (!version) throw new HttpError(400, "Ce son n'est plus disponible : recharge la page.");
   return { ...base, version };
 }

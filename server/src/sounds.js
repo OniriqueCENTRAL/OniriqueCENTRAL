@@ -445,9 +445,10 @@ function audioUrl(versionId, download = false, linkId = 0, r = '') {
 }
 // Le HM (hm.js) : un son du CLOUD y entre par l'adresse signée que son auteur écoute (elle prouve son accès), puis chaque
 // participant en reçoit une adresse fraîche.
-export function signedVersion(url) {
+// grace : une adresse expirée depuis moins que ça est encore acceptée (CLOUD resté ouvert des heures dans l'application).
+export function signedVersion(url, grace = 0) {
   const m = /^\/api\/sounds\/audio\/(\d+)\?e=(\d+)&d=0&s=([\w-]+)$/.exec(String(url));
-  return m && Number(m[2]) > now() && same(m[3], sign(`${m[1]}.${m[2]}.0`)) ? Number(m[1]) : null;
+  return m && Number(m[2]) > now() - grace && same(m[3], sign(`${m[1]}.${m[2]}.0`)) ? Number(m[1]) : null;
 }
 export function versionAudio(vid) {
   const v = get('SELECT id, duration, peaks FROM sound_versions WHERE id = ?', vid);
@@ -942,7 +943,8 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (!title) throw new HttpError(400, 'Donne un nom au projet.');
     const kind = KINDS.includes(req.body.kind) ? req.body.kind : '';
     if (kind === 'pack' && !can(req.user, 'sounds')) throw new HttpError(402, "Les packs de prods à vendre font partie de l'abonnement ONIRIQUE CLOUD.");
-    res.status(201).json({ id: run('INSERT INTO sound_projects (user_id, title, kind, created_at) VALUES (?, ?, ?, ?)', req.user.id, title, kind, now()).lastInsertRowid });
+    // Une nouvelle playlist est privée : son créateur la rend publique quand il le veut (bouton public / privé).
+    res.status(201).json({ id: run('INSERT INTO sound_projects (user_id, title, kind, public, created_at) VALUES (?, ?, ?, ?, ?)', req.user.id, title, kind, kind === 'playlist' ? 0 : 1, now()).lastInsertRowid });
   });
   app.patch('/api/me/sounds/projects/:id', ...me, (req, res) => {
     const p = project(req, req.params.id);
