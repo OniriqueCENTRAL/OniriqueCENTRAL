@@ -48,10 +48,10 @@ const FICHE = {
   tagline: 'Toute ta chaîne vocale, montée pour ta voix.',
   description: `Toute la chaîne vocale dans un seul plugin : des modules que tu ajoutes et ranges dans l'ordre que tu veux, jusqu'à trois exemplaires du même.
 
-AUTO MIX : décris le mix que tu veux (« voix de SCH », « voix chantée aérienne », « façon SZA ») ou glisse un morceau de référence, puis joue ta prise. VOCALBOX écoute ta voix (boue, résonances, sifflantes, dynamique, chant ou rap) et monte la chaîne réglée pour elle (préampli en tête pour les artistes qui en ont un, 1176 ou CL1B selon la voix, compression rapide sur le rap moderne), avec le compte rendu de chaque décision. Il connaît la façon de mixer la voix de plus de 50 artistes, du rap US à la nouvelle scène française.
+AUTO MIX : choisis le rôle de la voix (LEAD, BACKS, ADLIBS, DOUBLES), décris le mix que tu veux (« voix de SCH », « voix chantée aérienne », « façon SZA ») ou glisse un morceau de référence, puis joue ta prise. VOCALBOX écoute ta voix (boue, résonances, sifflantes, dynamique, chant ou rap, justesse et tonalité, clics de bouche, respirations, pièce) et monte la chaîne réglée pour elle (préampli en tête pour les artistes qui en ont un, 1176 ou CL1B selon la voix, compression rapide sur le rap moderne), avec le compte rendu de chaque décision. Ensuite, affine en mots (« un peu moins de réverbe », « plus en avant ») ou avec 4 macros : PRÉSENCE, CHALEUR, TENUE, ESPACE. Les VOCALBOX d'un même projet se reconnaissent et partagent la tonalité du lead. Il connaît la façon de mixer la voix de plus de 50 artistes, du rap US à la nouvelle scène française.
 
-NETTOYAGE : noise gate, noise suppressor, plosives, résonances, de-esser.
-TON : préampli N73 (MIC ou LINE), EQ paramétrique 8 bandes (mode dynamique, écoute), EQ analog (LOW, MUD, HI, AIR), Saturation Lab (lampe, analog, bande, transformateur).
+NETTOYAGE : de-click (bruits de bouche), de-breath (respirations), de-reverb (la pièce), noise gate, noise suppressor, plosives, résonances, de-esser.
+TON : ONIRIQUE TUNER (justesse naturelle ou effet robot, 15 gammes), préampli N73 (MIC ou LINE), EQ paramétrique 8 bandes (mode dynamique, écoute), EQ analog (LOW, MUD, HI, AIR), Saturation Lab (lampe, analog, bande, transformateur).
 DYNAMIQUE : 1176 FET, CL1B optique à lampe, LA-2A opto, multiband optique 4 bandes, compression parallèle.
 EFFETS : réverbe (room, plates, hall, shimmer), delay au tempo avec ducking, doubleur, chorus, flanger, phone.
 
@@ -59,9 +59,9 @@ ONR Neural Learning (facultatif, désactivé au départ) : si tu l'allumes, VOCA
 
 Presets d'usine et presets utilisateur, comparaison A/B, suréchantillonnage 2x, couleur de l'interface au choix. VST3 et version autonome, pour Windows 64 bits.`,
 };
-if (get("SELECT value FROM settings WHERE key = 'vocalbox_fiche'")?.value !== '3') {   // v3 : AUTO MIX, PREAMP, CL1B
+if (get("SELECT value FROM settings WHERE key = 'vocalbox_fiche'")?.value !== '4') {   // v4 : TUNER, DE-CLICK, DE-BREATH, DE-REVERB, macros, rôles
   run('UPDATE products SET tagline = ?, description = ? WHERE slug = ?', FICHE.tagline, FICHE.description, 'vocalbox');
-  run("INSERT INTO settings (key, value) VALUES ('vocalbox_fiche', '3') ON CONFLICT(key) DO UPDATE SET value = excluded.value");
+  run("INSERT INTO settings (key, value) VALUES ('vocalbox_fiche', '4') ON CONFLICT(key) DO UPDATE SET value = excluded.value");
 }
 
 // ---- ONR NEURAL LEARNING, sous le contrôle des fondateurs (voir brainlearn.js) : les retours deviennent des propositions,
@@ -126,7 +126,7 @@ export const normArtist = (s) => String(s || '').normalize('NFD').replace(/[̀-�
   .replace(/[^a-z0-9 &$]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
 
 const NUMBERS = { bright: [0, 1], air: [0, 1], warm: [0, 1], dark: [0, 1], comp: [-1, 1], reverb: [0, 1], reverbSize: [0, 1],
-  delay: [0, 1], sat: [0, 1], doubler: [0, 1], chorus: [0, 1], flanger: [0, 1], phone: [0, 1] };
+  delay: [0, 1], sat: [0, 1], doubler: [0, 1], chorus: [0, 1], flanger: [0, 1], phone: [0, 1], tune: [0, 1] };
 const BOOLS = ['controlled', 'parallel', 'dreamy'];
 
 /** Une fiche propre : les seuls champs du cerveau, bornés (rien d'autre de la réponse de l'IA n'arrive au plugin). */
@@ -155,9 +155,10 @@ Sinon réponds UNIQUEMENT par un objet JSON, sans texte autour :
 {"name": "Nom officiel", "genre": "rap|rnb|pop|rap fr|drill|afro|latin|rock|electro", "aliases": ["surnoms courants"],
  "hints": {"bright":0..1, "air":0..1, "warm":0..1, "dark":0..1, "comp":-1..1, "reverb":0..1, "reverbSize":0..1, "delay":0..1,
  "sat":0..1, "satType":0 lampe|1 analog|2 bande|3 transformateur, "doubler":0..1, "chorus":0..1, "controlled":true|false,
- "parallel":true|false, "dreamy":true|false}}
+ "parallel":true|false, "dreamy":true|false, "tune":0..1}}
 Échelles : 0 = absent, 1 = très marqué ; comp -1 très naturel, 1 très compressé et en avant ; reverb = quantité d'espace ;
-reverbSize 0 pièce, 1 grand espace ; controlled = voix très maîtrisée (multiband) ; parallel = compression parallèle épaisse.
+reverbSize 0 pièce, 1 grand espace ; controlled = voix très maîtrisée (multiband) ; parallel = compression parallèle épaisse ;
+tune = l'autotune entendu sur sa voix (0 aucun, 0.3 justesse discrète, 0.7 autotune moderne marqué, 1 effet robot).
 N'inclus que les champs dont tu es raisonnablement sûr.`;
 
 /** La recherche : Gemini avec Google Search ; si la recherche web n'est pas ouverte à la clé (offre gratuite : quota nul),
