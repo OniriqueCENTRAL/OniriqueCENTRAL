@@ -9,7 +9,7 @@
 <script src="assets/ui.js?v=4"></script>
 <link rel="stylesheet" href="assets/fonts.css">
 <style>
-/* ONR NEURAL LEARNING, la page des fondateurs : le cerveau de CRÉER LE MIX (VOCALBOX) en constellation, comme le graphe d'un
+/* ONR NEURAL LEARNING, la page des fondateurs : le cerveau d’AUTO MIX (VOCALBOX) en constellation, comme le graphe d'un
    coffre Obsidian, et à côté, en texte simple, ce qu'il sait et ce que les utilisateurs lui apprennent. */
 :root {
   /* les tokens viennent de da.css (DA « Nuit & Braise », accent du compte) ; ici, seulement les rôles du graphe */
@@ -120,7 +120,7 @@ p { margin: 0 0 10px; }
 
 <aside id="side">
   <h1>ONR <span>Neural Learning</span></h1>
-  <p class="lead">Le cerveau de CRÉER LE MIX, et ce que les utilisateurs lui apprennent.</p>
+  <p class="lead">Le cerveau d’AUTO MIX, et ce que les utilisateurs lui apprennent.</p>
   <div id="pick"></div>
   <div id="summary"></div>
 </aside>
@@ -416,7 +416,7 @@ function select(n) {
     const avg = deltas.length ? deltas.reduce((s, v) => s + v, 0) / deltas.length : null;
     fill(box, close, H2("Retouche"), el("h1", { textContent: n.label, style: "font-size:17px" }),
       el("p", { textContent: `Changé par les utilisateurs dans ${list.length} mix.` }),
-      avg != null ? el("p", { textContent: `En moyenne ${avg > 0 ? "monté" : "baissé"} de ${fmt(Math.abs(avg))} par rapport à ce que CRÉER LE MIX avait décidé : c'est une correction à apprendre.` }) : null,
+      avg != null ? el("p", { textContent: `En moyenne ${avg > 0 ? "monté" : "baissé"} de ${fmt(Math.abs(avg))} par rapport à ce que AUTO MIX avait décidé : c'est une correction à apprendre.` }) : null,
       ratingLine(list));
   } else if (n.kind === "hint") {
     const arts = [...adj.get(n.id)].filter((i) => i.startsWith("a:")).map((i) => byId.get(i));
@@ -431,7 +431,7 @@ function select(n) {
     fill(box, close, H2("Nom introuvable"), el("h1", { textContent: n.label, style: "font-size:17px" }),
       el("p", { textContent: `Demandé ${n.data.tries} fois, sans fiche trouvée. Dernière demande : ${date(n.data.at)}. Nouvelle recherche possible une semaine après.` }));
   } else {
-    fill(box, close, H2("Le cerveau"), el("p", { textContent: "Le centre : CRÉER LE MIX. Autour, les genres, puis les artistes dont il connaît la façon de mixer la voix ; les points de couleur sont les mix des utilisateurs, reliés aux artistes demandés et aux réglages qu'ils ont retouchés." }));
+    fill(box, close, H2("Le cerveau"), el("p", { textContent: "Le centre : AUTO MIX. Autour, les genres, puis les artistes dont il connaît la façon de mixer la voix ; les points de couleur sont les mix des utilisateurs, reliés aux artistes demandés et aux réglages qu'ils ont retouchés." }));
   }
   fill(box, el("hr", { style: "border:0;border-top:1px solid var(--line);margin:22px 0 0" }));
 }
@@ -506,7 +506,7 @@ function summary() {
   const s = $("summary"); s.replaceChildren(); fill(s, 
     proposalsBlock(),
     el("h2", { textContent: "En bref" }),
-    el("p", { textContent: "Quand un utilisateur tape une demande dans CRÉER LE MIX (« voix de Travis Scott », « voix chantée aérienne »…), VOCALBOX écoute sa prise, la compare à la voix visée, et monte la chaîne. Le cerveau, c'est ce qu'il sait des artistes : comment leur voix est mixée (couleur, compression, espace, effets)." }),
+    el("p", { textContent: "Quand un utilisateur tape une demande dans AUTO MIX (« voix de Travis Scott », « voix chantée aérienne »…), VOCALBOX écoute sa prise, la compare à la voix visée, et monte la chaîne. Le cerveau, c'est ce qu'il sait des artistes : comment leur voix est mixée (couleur, compression, espace, effets)." }),
     el("p", { textContent: "Il progresse de deux façons, uniquement chez les utilisateurs qui ont allumé ONR Neural Learning : quand un artiste lui est inconnu, le serveur cherche sa fiche une fois pour tous ; et après chaque mix, la note OUI / BOF et les réglages retouchés montrent ce qu'il faut corriger. Jamais d'audio." }),
     el("div", { className: "stats" },
       stat("v" + (D.shipped.version || 0) + "." + (D.shipped.revision || 0), "cerveau en service (" + (D.shipped.revision || 0) + " validation" + ((D.shipped.revision || 0) > 1 ? "s" : "") + " des fondateurs)"),

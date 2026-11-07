@@ -1,10 +1,10 @@
-// LE CERVEAU DE VOCALBOX (CRÉER LE MIX) côté serveur. Seuls les plugins dont l'utilisateur a allumé l'apprentissage
+// LE CERVEAU DE VOCALBOX (AUTO MIX) côté serveur. Seuls les plugins dont l'utilisateur a allumé l'apprentissage
 // (menu ⋯ → LEARNING, désactivé au départ) appellent ces routes. Rien n'identifie la personne : pas de compte, pas d'adresse IP
 // gardée, jamais d'audio ; un identifiant d'installation tiré au hasard regroupe les retours d'un même poste.
 //
 //   GET  /api/vocalbox/artist?q=…  la fiche d'un artiste que le cerveau livré ne connaît pas : d'abord la base ; sinon une
 //                                  recherche (Gemini + Google Search), faite une fois et gardée pour tout le monde.
-//   POST /api/vocalbox/feedback    après CRÉER LE MIX : la demande, le portrait de la voix (des mesures), la chaîne décidée,
+//   POST /api/vocalbox/feedback    après AUTO MIX : la demande, le portrait de la voix (des mesures), la chaîne décidée,
 //                                  les retouches faites ensuite, la note 👍 / 👎. Ils serviront à corriger le cerveau.
 //   GET  /api/vocalbox/brain       le cerveau publié (dépôt + validations des fondateurs), lu par les plugins une fois par jour.
 //   GET  /api/vocalbox/founders    (fondateurs) tout : cerveau, propositions, retours. POST /api/vocalbox/proposals/:id : valider
@@ -42,26 +42,26 @@ db.exec(`CREATE TABLE IF NOT EXISTS vocalbox_feedback (
   created_at INTEGER NOT NULL
 )`);
 
-// LA FICHE DE VOCALBOX (site et application : le même catalogue), refaite pour la version modulaire, CRÉER LE MIX et
+// LA FICHE DE VOCALBOX (site et application : le même catalogue), refaite pour la version modulaire, AUTO MIX et
 // ONR Neural Learning. Posée une seule fois (réglage vocalbox_fiche) : une retouche faite ensuite dans l'admin reste.
 const FICHE = {
   tagline: 'Toute ta chaîne vocale, montée pour ta voix.',
   description: `Toute la chaîne vocale dans un seul plugin : des modules que tu ajoutes et ranges dans l'ordre que tu veux, jusqu'à trois exemplaires du même.
 
-CRÉER LE MIX : décris le mix que tu veux (« voix de SCH », « voix chantée aérienne », « façon SZA ») ou glisse un morceau de référence, puis joue ta prise. VOCALBOX écoute ta voix (boue, résonances, sifflantes, dynamique, chant ou rap) et monte la chaîne réglée pour elle, avec le compte rendu de chaque décision. Il connaît la façon de mixer la voix de plus de 50 artistes, du rap US à la nouvelle scène française.
+AUTO MIX : décris le mix que tu veux (« voix de SCH », « voix chantée aérienne », « façon SZA ») ou glisse un morceau de référence, puis joue ta prise. VOCALBOX écoute ta voix (boue, résonances, sifflantes, dynamique, chant ou rap) et monte la chaîne réglée pour elle (préampli en tête pour les artistes qui en ont un, 1176 ou CL1B selon la voix, compression rapide sur le rap moderne), avec le compte rendu de chaque décision. Il connaît la façon de mixer la voix de plus de 50 artistes, du rap US à la nouvelle scène française.
 
 NETTOYAGE : noise gate, noise suppressor, plosives, résonances, de-esser.
-TON : EQ paramétrique 8 bandes (mode dynamique, écoute), EQ analog (LOW, MUD, HI, AIR), Saturation Lab (lampe, analog, bande, transformateur).
-DYNAMIQUE : 1176 FET, LA-2A opto, multiband optique 4 bandes, compression parallèle.
+TON : préampli N73 (MIC ou LINE), EQ paramétrique 8 bandes (mode dynamique, écoute), EQ analog (LOW, MUD, HI, AIR), Saturation Lab (lampe, analog, bande, transformateur).
+DYNAMIQUE : 1176 FET, CL1B optique à lampe, LA-2A opto, multiband optique 4 bandes, compression parallèle.
 EFFETS : réverbe (room, plates, hall, shimmer), delay au tempo avec ducking, doubleur, chorus, flanger, phone.
 
 ONR Neural Learning (facultatif, désactivé au départ) : si tu l'allumes, VOCALBOX apprend de tes notes et de tes retouches, de façon anonyme et sans jamais envoyer de son, pour mieux mixer à chaque mise à jour.
 
 Presets d'usine et presets utilisateur, comparaison A/B, suréchantillonnage 2x, couleur de l'interface au choix. VST3 et version autonome, pour Windows 64 bits.`,
 };
-if (!get("SELECT 1 FROM settings WHERE key = 'vocalbox_fiche'")) {
+if (get("SELECT value FROM settings WHERE key = 'vocalbox_fiche'")?.value !== '3') {   // v3 : AUTO MIX, PREAMP, CL1B
   run('UPDATE products SET tagline = ?, description = ? WHERE slug = ?', FICHE.tagline, FICHE.description, 'vocalbox');
-  run("INSERT INTO settings (key, value) VALUES ('vocalbox_fiche', '2')");
+  run("INSERT INTO settings (key, value) VALUES ('vocalbox_fiche', '3') ON CONFLICT(key) DO UPDATE SET value = excluded.value");
 }
 
 // ---- ONR NEURAL LEARNING, sous le contrôle des fondateurs (voir brainlearn.js) : les retours deviennent des propositions,

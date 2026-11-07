@@ -6,7 +6,7 @@
 // forte (assez de mix, assez de postes différents, et presque tous dans le même sens) ; une proposition validée rejoint la
 // SURCOUCHE (overlay), qui s'ajoute au cerveau du dépôt. Le cerveau publié = cerveau du dépôt + surcouche.
 
-// Les réglages retouchés après CRÉER LE MIX, ramenés aux « couleurs » du cerveau : combien de couleur pour une unité du réglage
+// Les réglages retouchés après AUTO MIX, ramenés aux « couleurs » du cerveau : combien de couleur pour une unité du réglage
 // (l'inverse de ce que fait buildPlan : réverbe envoi = 70 × reverb, delay envoi = 10 + 18 × delay, AIR = 2 + 3 × air…).
 export const PARAM_TO_HINT = {
   fxReverbMix: ['reverb', 1 / 70],
@@ -17,7 +17,7 @@ export const PARAM_TO_HINT = {
   satWarmth: ['warm', 1 / 30],
 };
 export const HINT_RANGE = { comp: [-1, 1] };   // les autres : 0 .. 1
-const DEFAULT_HINT = { reverb: 0.26 };          // une couleur absente de la fiche : ce que CRÉER LE MIX prend par défaut
+const DEFAULT_HINT = { reverb: 0.26 };          // une couleur absente de la fiche : ce que AUTO MIX prend par défaut
 
 // Une demande « vraiment forte »
 export const STRONG = {
@@ -34,7 +34,7 @@ const round = (v) => Math.round(v * 100) / 100;
 const clampHint = (k, v) => { const [lo, hi] = HINT_RANGE[k] || [0, 1]; return Math.min(hi, Math.max(lo, v)); };
 const parse = (s, d) => { if (s && typeof s === 'object') return s; try { return JSON.parse(s); } catch { return d; } };
 
-/** Ce qu'un utilisateur a changé après CRÉER LE MIX, en couleurs : { reverb: -0.1, ... } (exemplaire 1 de chaque module). */
+/** Ce qu'un utilisateur a changé après AUTO MIX, en couleurs : { reverb: -0.1, ... } (exemplaire 1 de chaque module). */
 export function hintDeltas(row) {
   const plan = parse(row.plan, {}), final = parse(row.final, {});
   const planned = {};
