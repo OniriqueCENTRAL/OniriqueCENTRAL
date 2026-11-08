@@ -101,6 +101,10 @@ db.exec(`CREATE TABLE IF NOT EXISTS vocalbox_chains (
   modules TEXT NOT NULL DEFAULT '[]',
   created_at INTEGER NOT NULL
 )`);
+// d'où vient la chaîne (partagée, ou construite à la main) et ses mots de style
+for (const col of ["source TEXT NOT NULL DEFAULT 'shared'", "styles TEXT NOT NULL DEFAULT '[]'", "name TEXT NOT NULL DEFAULT ''",
+                   'uses INTEGER NOT NULL DEFAULT 0', 'hidden INTEGER NOT NULL DEFAULT 0', 'official INTEGER NOT NULL DEFAULT 0'])
+  try { db.exec('ALTER TABLE vocalbox_chains ADD COLUMN ' + col); } catch { /* déjà là */ }
 
 const baseBrain = () => {
   const stored = setting('vocalbox_brain_base', null);
@@ -120,7 +124,7 @@ export function refreshProposals() {
   const refused = new Set(all("SELECT kind || '|' || target AS k FROM vocalbox_proposals WHERE status = 'refused' AND decided_at > ?",
     now() - 30 * 24 * 3600_000).map((r) => r.k));
   const list = propose(baseBrain(), overlayNow(), all('SELECT * FROM vocalbox_feedback'), all('SELECT name, data, hits FROM vocalbox_artists'), refused,
-    all('SELECT install, artists, modules FROM vocalbox_chains'));
+    all('SELECT install, artists, modules, role, source, styles FROM vocalbox_chains'));
   const t = now();
   const live = new Set();
   for (const p of list) {
@@ -145,6 +149,12 @@ const purgeFeedback = () => {
 };
 purgeFeedback();
 setInterval(purgeFeedback, 24 * 3600_000).unref();
+
+/** Le nom public d'une chaîne partagée : sans lien, adresse e-mail, @pseudo ni numéro de téléphone ; 40 caractères au plus. */
+export function publicName(s) {
+  return String(s || '').replace(/https?:\/\/\S+|www\.\S+/gi, '').replace(/\S+@\S+/g, '').replace(/@\w+/g, '')
+    .replace(/\+?\d[\d .-]{6,}\d/g, '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 40);
+}
 
 /** Minuscules, sans accents ni ponctuation : la clé d'un artiste. */
 export const normArtist = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -276,9 +286,45 @@ export function mountVocalBrain(app, { wrap, requireUser }) {
       params: Object.fromEntries(Object.entries(m?.params || {}).slice(0, 80).filter(([, v]) => Number.isFinite(Number(v))).map(([k, v]) => [String(k).slice(0, 40), Number(v)])),
     })).filter((m) => m.type);
     const artists = (Array.isArray(b.artists) ? b.artists : []).slice(0, 5).map((a) => String(a).slice(0, 60));
-    run('INSERT INTO vocalbox_chains (install, version, request, artists, role, modules, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      install, String(b.version || '').slice(0, 20), String(b.request || '').slice(0, 300), JSON.stringify(artists),
-      Math.max(0, Math.min(3, Number(b.role) || 0)), JSON.stringify(modules), now());
+    const styles = (Array.isArray(b.styles) ? b.styles : []).slice(0, 12).map((s) => String(s).slice(0, 40));
+    const source = b.source === 'manual' ? 'manual' : 'shared';
+    // le nom donné à une chaîne partagée est PUBLIC (bibliothèque de la communauté) : sans lien, ni adresse, ni @pseudo, ni numéro
+    const name = source === 'manual' ? '' : publicName(b.name || b.request);
+    run('INSERT INTO vocalbox_chains (install, version, request, artists, role, modules, source, styles, name, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      install, String(b.version || '').slice(0, 20), source === 'manual' ? '' : String(b.request || '').slice(0, 300), JSON.stringify(artists),
+      Math.max(0, Math.min(3, Number(b.role) || 0)), JSON.stringify(modules), source, JSON.stringify(styles), name, now());
+    res.json({ ok: true });
+  }));
+
+  // LA BIBLIOTHÈQUE DE LA COMMUNAUTÉ (pour tous, comme la lecture du cerveau) : les chaînes partagées avec un nom, cherchées par
+  // mots (« damso », « drill sombre ») ; les plus utilisées d'abord. Rien n'identifie qui l'a partagée.
+  app.get('/api/vocalbox/chains', wrap(async (req, res) => {
+    rateLimit(`vbsearch:${req.ip}`, 240, 60 * 60_000);
+    res.set('Cache-Control', 'no-store');
+    const words = normArtist(req.query.q).split(' ').filter((w) => w.length >= 2);
+    const rows = all("SELECT id, name, artists, role, modules, uses, official, created_at FROM vocalbox_chains WHERE source = 'shared' AND hidden = 0 AND name != '' ORDER BY id DESC LIMIT 3000");
+    const hits = rows.map((c) => ({ ...c, hay: normArtist(c.name + ' ' + JSON.parse(c.artists || '[]').join(' ')) }))
+      .filter((c) => words.every((w) => c.hay.includes(w)))
+      .sort((a, b) => b.official - a.official || b.uses - a.uses || b.created_at - a.created_at).slice(0, 40)
+      .map((c) => ({ id: c.id, name: c.name, artists: JSON.parse(c.artists || '[]'), role: c.role, modules: JSON.parse(c.modules || '[]'), uses: c.uses, official: !!c.official, at: c.created_at }));
+    res.json({ chains: hits });
+  }));
+  // une chaîne de la bibliothèque chargée dans un plugin : elle remonte dans la liste
+  app.post('/api/vocalbox/chains/:id/use', wrap(async (req, res) => {
+    rateLimit(`vbuse:${req.ip}`, 120, 60 * 60_000);
+    run("UPDATE vocalbox_chains SET uses = uses + 1 WHERE id = ? AND source = 'shared' AND hidden = 0", Number(req.params.id));
+    res.json({ ok: true });
+  }));
+  // un fondateur retire (ou remet) une chaîne de la bibliothèque
+  app.post('/api/vocalbox/chains/:id/hide', requireUser, wrap(async (req, res) => {
+    if (req.user.role !== 'founder') throw new HttpError(403, 'Réservé aux fondateurs.');
+    run('UPDATE vocalbox_chains SET hidden = ? WHERE id = ?', req.body?.hidden === false ? 0 : 1, Number(req.params.id));
+    res.json({ ok: true });
+  }));
+  // un fondateur marque une chaîne OFFICIELLE (tag braise dans la bibliothèque, en tête des résultats), ou la remet UTILISATEUR
+  app.post('/api/vocalbox/chains/:id/official', requireUser, wrap(async (req, res) => {
+    if (req.user.role !== 'founder') throw new HttpError(403, 'Réservé aux fondateurs.');
+    run("UPDATE vocalbox_chains SET official = ? WHERE id = ? AND source = 'shared'", req.body?.official === false ? 0 : 1, Number(req.params.id));
     res.json({ ok: true });
   }));
 
@@ -304,10 +350,12 @@ export function mountVocalBrain(app, { wrap, requireUser }) {
     }));
     const chains = all('SELECT * FROM vocalbox_chains ORDER BY id DESC LIMIT 1000').map((c) => ({
       id: c.id, install: c.install, version: c.version, request: c.request, artists: parse(c.artists, []), role: c.role, modules: parse(c.modules, []), at: c.created_at,
+      source: c.source, styles: parse(c.styles, []), name: c.name, uses: c.uses, hidden: !!c.hidden, official: !!c.official,
     }));
     const textOf = (p, ch) => p.kind === 'add' ? '' : p.kind === 'voice' ? `voix mesurée : ${ch.voice?.source || ''}`
       : p.kind === 'model' ? `modèle appris sur ${ch.model?.samples || 0} mix de ${ch.model?.installs || 0} postes`
-      : p.kind === 'chain' ? (ch.chain?.modules || []).map((m) => m.type).join(' → ') : describe(ch);
+      : p.kind === 'chain' ? (ch.chain?.modules || []).map((m) => m.type).join(' → ')
+      : p.kind === 'style' ? (ch.style?.modules || []).map((m) => m.type).join(' → ') : describe(ch);
     const found = all('SELECT name, data, source, hits, created_at FROM vocalbox_artists ORDER BY hits DESC')
       .map((r) => ({ ...parse(r.data, {}), source: r.source, hits: r.hits, at: r.created_at }));
     const misses = all('SELECT query_norm AS query, tries, last_at AS at FROM vocalbox_misses ORDER BY last_at DESC LIMIT 300');
@@ -326,7 +374,11 @@ export function mountVocalBrain(app, { wrap, requireUser }) {
     if (!row) throw new HttpError(404, 'Proposition introuvable ou déjà traitée.');
     const by = req.user.name || req.user.email;
     if (decision === 'approve') {
-      setSetting('vocalbox_overlay', approve(overlayNow(), { ...row, changes: JSON.parse(row.changes) }, by, now()));
+      // un style de mixage reçoit son nom du fondateur (obligatoire quand il vient des chaînes construites à la main)
+      const changes = JSON.parse(row.changes);
+      const styleName = row.kind === 'style' ? String(req.body?.name || changes.style?.name || '').trim().slice(0, 40) : '';
+      if (row.kind === 'style' && !styleName) throw new HttpError(400, 'Donne un nom à ce style.');
+      setSetting('vocalbox_overlay', approve(overlayNow(), { ...row, changes, styleName: req.body?.name ? styleName : '' }, by, now()));
       republishBrain();
     }
     run('UPDATE vocalbox_proposals SET status = ?, decided_at = ?, decided_by = ? WHERE id = ?', decision === 'approve' ? 'approved' : 'refused', now(), by, row.id);

@@ -140,6 +140,9 @@ const date = (t) => new Date(t).toLocaleDateString("fr-FR", { day: "numeric", mo
 const pct = (a, b) => (b ? Math.round((100 * a) / b) + " %" : "—");
 const num = (v, d = 1) => (Math.round(v * 10 ** d) / 10 ** d).toLocaleString("fr-FR");
 const signed = (v, d = 1) => (v > 0 ? "+" : v < 0 ? "−" : "") + num(Math.abs(v), d);
+// « de » devant une voyelle : « plus d'air », « moins d'écho » ; et le pluriel : « 1 poste », « 2 postes »
+const de = (w) => (/^[aeiouyhàâéèêëîïôûù]/i.test(w) ? "d'" : "de ") + w;
+const postes = (n) => `${n} poste${Number(n) > 1 ? "s" : ""}`;
 
 const HINTS = { reverb: "réverbe", delay: "delay", air: "air", bright: "brillance", comp: "compression", warm: "chaleur" };
 // les réglages retouchés, ramenés aux couleurs du cerveau (comme le serveur, brainlearn.js)
@@ -233,10 +236,10 @@ function compute() {
 }
 
 //------------------------------------------------------------------------------ L'affichage
-const TABS = [["apercu", "Aperçu"], ["valider", "À valider"], ["modules", "Modules"], ["artistes", "Artistes"], ["chaines", "Chaînes partagées"], ["retours", "Retours"], ["cerveau", "Le cerveau"]];
+const TABS = [["apercu", "Aperçu"], ["valider", "À valider"], ["modules", "Modules"], ["artistes", "Artistes"], ["chaines", "Chaînes"], ["retours", "Retours"], ["cerveau", "Le cerveau"]];
 function render() {
   const sh = D.shipped || {};
-  $("ver").textContent = `Cerveau v${sh.version || 0}.${sh.revision || 0} · ${D.installs || 0} postes`;
+  $("ver").textContent = `Cerveau v${sh.version || 0}.${sh.revision || 0} · ${postes(D.installs || 0)}`;
   const nav = $("tabs"); nav.replaceChildren();
   for (const [id, label] of TABS) {
     const b = el("button", { role: "tab", type: "button", textContent: label, onclick: () => { tab = id; render(); scrollTo({ top: 0 }); } });
@@ -259,10 +262,10 @@ const mini = (share) => el("span", { className: "mini" }, el("i", { style: `widt
 function apercu(v) {
   const fb = S.fb, rated = S.yes + S.no;
   v.append(el("div", { className: "grid kpis" },
-    kpi(fb.length, "mix reçus", `${D.installs || 0} postes différents`),
+    kpi(fb.length, "mix reçus", `${postes(D.installs || 0)} différent${(D.installs || 0) > 1 ? "s" : ""}`),
     kpi(pct(S.yes, rated), "de mix notés OUI", `${S.yes} OUI · ${S.no} BOF · ${fb.length - rated} sans note`),
     kpi(pct(S.kept, S.judged), "gardés tels quels", S.judged ? `${S.rebuilt} chaînes démontées sur ${S.judged}` : "arrive avec la nouvelle version"),
-    kpi(D.chains.length, "chaînes partagées", "à la communauté"),
+    kpi(D.chains.filter((c) => c.source !== "manual" && c.name && !c.hidden).length, "chaînes dans la bibliothèque", `${D.chains.filter((c) => c.source === "manual").length} construites à la main`),
     kpi(S.pending.length, "à valider", S.pending.length ? "voir l'onglet À valider" : "rien en attente")));
 
   // ce qu'il faut retenir, en phrases
@@ -293,22 +296,29 @@ function apercu(v) {
 }
 
 //------------------------------------------------------------------------------ À valider
-const KIND = { tune: "Ajuster un artiste", global: "Toutes les demandes", add: "Ajouter un artiste", voice: "Voix mesurée", model: "Modèle appris", chain: "Chaîne de la communauté" };
+const KIND = { tune: "Ajuster un artiste", global: "Toutes les demandes", add: "Ajouter un artiste", voice: "Voix mesurée", model: "Modèle appris", chain: "Chaîne de la communauté", style: "Style de mixage" };
 function explain(p) {
   const sp = p.support || {}, ch = p.changes || {};
   if (p.kind === "add") return [`Le serveur a trouvé sa fiche, et ${sp.hits} demandes l'ont cherché. Il rejoindrait le cerveau de tout le monde.`, ""];
-  if (p.kind === "voice") return [`${sp.refs} morceaux de référence de ${p.name}, glissés par ${sp.installs} postes, donnent sa voix mesurée (timbre, tenue, espace). Elle ne s'applique qu'aux artistes qui n'en ont pas : celles mesurées par Nov ne bougent pas.`, ch.voice?.source || ""];
-  if (p.kind === "model") return [`Un petit modèle appris sur ${sp.mixes} mix de ${sp.installs} postes : d'après les mesures de la voix, il corrige un peu les couleurs (±0,15 au plus), après le cerveau.`, Object.keys(ch.model?.outputs || {}).map((k) => HINTS[k] || k).join(", ")];
-  if (p.kind === "chain") return [`${sp.chains} chaînes partagées pour ${p.name}, par ${sp.installs} postes. AUTO MIX la proposerait après un mix de cet artiste (l'utilisateur choisit de l'essayer).`, ""];
+  if (p.kind === "voice") return [`${sp.refs} morceaux de référence de ${p.name}, glissés par ${postes(sp.installs)}, donnent sa voix mesurée (timbre, tenue, espace). Elle ne s'applique qu'aux artistes qui n'en ont pas : celles mesurées par Nov ne bougent pas.`, ch.voice?.source || ""];
+  if (p.kind === "model") return [`Un petit modèle appris sur ${sp.mixes} mix de ${postes(sp.installs)} : d'après les mesures de la voix, il corrige un peu les couleurs (±0,15 au plus), après le cerveau.`, Object.keys(ch.model?.outputs || {}).map((k) => HINTS[k] || k).join(", ")];
+  if (p.kind === "chain") return [`${sp.chains} chaînes partagées pour ${p.name}, par ${postes(sp.installs)}. AUTO MIX la proposerait après un mix de cet artiste (l'utilisateur choisit de l'essayer).`, ""];
+  if (p.kind === "style") return [ch.style?.from === "main"
+      ? `${sp.chains} chaînes ${ROLES[ch.style?.role] || "LEAD"} construites à la main par ${postes(sp.installs)}, avec les mêmes modules. Donne un nom à ce style : AUTO MIX le proposera quand ce nom sera dans une demande.`
+      : `${sp.chains} chaînes partagées par ${postes(sp.installs)} pour le même style (${(ch.style?.words || []).join(", ")}). AUTO MIX le proposera quand ces mots seront dans une demande.`, ""];
   const rated = (sp.yes || 0) + (sp.no || 0);
-  const what = Object.entries(ch).map(([k, v]) => `${v > 0 ? "plus" : "moins"} de ${HINTS[k] || k} (${signed(v, 2)})`).join(", ");
+  const what = Object.entries(ch).map(([k, v]) => `${v > 0 ? "plus" : "moins"} ${de(HINTS[k] || k)} (${signed(v, 2)})`).join(", ");
   return [`Les utilisateurs ${p.kind === "global" ? "" : "qui demandent " + p.name + " "}corrigent souvent dans le même sens : ${what}.`,
-    `${sp.mixes} mix · ${sp.installs} postes · ${rated ? pct(sp.yes, rated) + " de OUI" : "sans note"}` + (sp.kept ? ` · ${sp.kept} gardés tels quels` : "") + (sp.rebuilt ? ` · ${sp.rebuilt} démontés` : "")
+    `${sp.mixes} mix · ${postes(sp.installs)} · ${rated ? pct(sp.yes, rated) + " de OUI" : "sans note"}` + (sp.kept ? ` · ${sp.kept} gardés tels quels` : "") + (sp.rebuilt ? ` · ${sp.rebuilt} démontés` : "")
       + Object.entries(sp.detail || {}).map(([k, d]) => ` · ${HINTS[k] || k} : ${Math.round(d.agree * 100)} % d'accord`).join("")];
 }
 async function decide(p, decision, box) {
+  // un style de mixage : son nom (obligatoire s'il vient des chaînes construites à la main)
+  const nameInput = box.querySelector("input.style-name");
+  const name = nameInput ? nameInput.value.trim() : "";
+  if (decision === "approve" && p.kind === "style" && !name && !p.changes.style?.name) { nameInput?.focus(); box.append(el("p", { className: "why", textContent: "Donne un nom à ce style avant de le valider." })); return; }
   for (const b of box.querySelectorAll("button")) b.disabled = true;
-  const r = await fetch("/api/vocalbox/proposals/" + p.id, { method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify({ decision }) }).catch(() => null);
+  const r = await fetch("/api/vocalbox/proposals/" + p.id, { method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify(name ? { decision, name } : { decision }) }).catch(() => null);
   if (!r || !r.ok) { for (const b of box.querySelectorAll("button")) b.disabled = false; box.append(el("p", { className: "why", textContent: "Le serveur a refusé : réessaie." })); return; }
   await load();
 }
@@ -319,6 +329,8 @@ function valider(v) {
     const box = el("div", { className: "card prop", style: "margin-bottom:12px" }, el("div", { className: "kind", textContent: KIND[p.kind] || p.kind }),
       el("h3", { textContent: p.kind === "global" ? "Toutes les demandes" : p.kind === "model" ? "Le modèle appris" : p.name }), el("p", { textContent: what }),
       p.kind === "chain" ? el("div", { className: "chain", style: "margin:8px 0" }, chainTags(p.changes.chain?.modules || [])) : null,
+      p.kind === "style" ? el("div", { className: "chain", style: "margin:8px 0" }, chainTags(p.changes.style?.modules || [])) : null,
+      p.kind === "style" ? el("input", { className: "search style-name", type: "text", maxLength: 40, value: p.changes.style?.name || "", placeholder: "Nom du style : Drill sombre, Backs R&B aérés…" }) : null,
       why ? el("p", { className: "why", textContent: why }) : null);
     box.append(el("div", { className: "acts" }, el("button", { className: "btn ok", type: "button", textContent: "Valider", onclick: () => decide(p, "approve", box) }),
       el("button", { className: "btn", type: "button", textContent: "Refuser", onclick: () => decide(p, "refuse", box) })));
@@ -369,9 +381,9 @@ function artistes(v) {
     for (const a of S.art) {
       const b = brain.get(norm(a.name));
       const corr = Object.entries(a.hints).filter(([, xs]) => xs.length >= 2).map(([k, xs]) => [k, xs.reduce((s, x) => s + x, 0) / xs.length]).filter(([, m]) => Math.abs(m) >= 0.03)
-        .map(([k, m]) => el("span", { className: "tag plain", textContent: `${m > 0 ? "plus" : "moins"} de ${HINTS[k] || k}` }));
+        .map(([k, m]) => el("span", { className: "tag plain", textContent: `${m > 0 ? "plus" : "moins"} ${de(HINTS[k] || k)}` }));
       body.append(el("tr", {},
-        el("td", {}, el("b", { textContent: a.name })), el("td", { className: "num", textContent: `${a.n} · ${a.installs.size} postes` }),
+        el("td", {}, el("b", { textContent: a.name })), el("td", { className: "num", textContent: `${a.n} · ${postes(a.installs.size)}` }),
         el("td", { className: "num", textContent: pct(a.yes, a.yes + a.no) }), el("td", { className: "num", textContent: pct(a.kept, a.judged) }),
         el("td", {}, corr.length ? corr : el("span", { className: "muted", textContent: "—" })),
         el("td", {}, !b ? el("span", { className: "tag bad", textContent: "inconnu" }) : [b.voice ? el("span", { className: "tag good", textContent: "voix mesurée" }) : null,
@@ -387,18 +399,66 @@ function artistes(v) {
 
 //------------------------------------------------------------------------------ Chaînes partagées
 const chainTags = (mods) => mods.flatMap((m, i) => [i ? el("span", { className: "arrow", textContent: "→" }) : null, el("span", { className: "tag", textContent: m.type })]);
+// un fondateur marque une chaîne officielle, ou la retire de la bibliothèque (et inversement)
+async function chainAction(c, what, value, box) {
+  for (const b of box.querySelectorAll("button")) b.disabled = true;
+  const r = await fetch(`/api/vocalbox/chains/${c.id}/${what}`, { method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify({ [what === "official" ? "official" : "hidden"]: value }) }).catch(() => null);
+  if (!r || !r.ok) { for (const b of box.querySelectorAll("button")) b.disabled = false; box.append(el("p", { className: "why", textContent: "Le serveur a refusé : réessaie." })); return; }
+  await load();
+}
+let chainFilter = "bibliotheque", chainQuery = "";
 function chaines(v) {
-  v.append(el("p", { className: "muted", textContent: "Les chaînes que les gens partagent à la communauté depuis la page AUTO MIX. Avec assez de chaînes pour un artiste, une chaîne type est proposée dans À valider." }));
-  if (!D.chains.length) return v.append(empty("Aucune chaîne partagée pour l'instant."));
-  const by = new Map();
-  for (const c of D.chains) { const k = c.artists?.[0] || "Sans artiste"; if (!by.has(k)) by.set(k, []); by.get(k).push(c); }
-  v.append(el("div", { className: "card", style: "margin-bottom:14px" }, el("h3", { textContent: "Par artiste" }), bars([...by.entries()].sort((a, b) => b[1].length - a[1].length).slice(0, 12).map(([k, l]) => [k, l.length]))));
-  for (const c of D.chains.slice(0, 80))
-    v.append(el("div", { className: "card fb", style: "margin-bottom:10px" },
-      el("div", { className: "meta" }, el("span", { className: "tag", textContent: c.artists?.[0] || "sans artiste" }), el("span", { className: "tag plain", textContent: ROLES[c.role] || "LEAD" }),
-        el("span", { className: "tag plain", textContent: date(c.at) }), el("span", { className: "tag plain", textContent: "poste " + String(c.install).slice(0, 6) })),
-      c.request ? el("div", { className: "q", textContent: "« " + c.request + " »" }) : null,
-      el("div", { className: "chain" }, chainTags((c.modules || []).filter((m) => m.on !== false)))));
+  const shared = D.chains.filter((c) => c.source !== "manual"), manual = D.chains.filter((c) => c.source === "manual");
+  const library = shared.filter((c) => c.name && !c.hidden);
+  const styles = Object.values(D.shipped?.corrections?.styles || {});
+  v.append(el("div", { className: "grid kpis" },
+    kpi(library.length, "dans la bibliothèque", `${library.filter((c) => c.official).length} officielles · ${library.filter((c) => !c.official).length} utilisateurs`),
+    kpi(library.reduce((s, c) => s + (c.uses || 0), 0), "chargements", "chaînes chargées depuis CHAÎNES"),
+    kpi(manual.length, "construites à la main", "envoyées par ONR Neural Learning"),
+    kpi(styles.length, "styles de mixage", "validés, reconnus par AUTO MIX")));
+  v.append(el("p", { className: "muted", style: "margin-top:14px", textContent: "La bibliothèque : les chaînes que les gens partagent avec un nom (bouton CHAÎNES du plugin). Marque officielles celles d'ONIRIQUE : elles passent en tête avec un tag braise. Les chaînes construites à la main ne sont pas publiques : elles servent à créer des styles de mixage (À valider)." }));
+
+  // les filtres : bibliothèque, à la main, retirées ; et une recherche
+  const filters = [["bibliotheque", "Bibliothèque"], ["officielles", "Officielles"], ["main", "Construites à la main"], ["retirees", "Retirées"]];
+  const bar = el("div", { className: "meta", style: "margin:6px 0 12px" }, filters.map(([id, label]) => {
+    const b = el("button", { className: "btn" + (chainFilter === id ? " ok" : ""), type: "button", textContent: label, onclick: () => { chainFilter = id; render(); } });
+    return b;
+  }));
+  const input = el("input", { className: "search", type: "search", placeholder: "Chercher une chaîne : damso, drill…", value: chainQuery });
+  const list = el("div");
+  const draw = () => {
+    chainQuery = input.value;
+    const q = norm(chainQuery);
+    const pool = chainFilter === "main" ? manual : chainFilter === "retirees" ? shared.filter((c) => c.hidden)
+      : chainFilter === "officielles" ? library.filter((c) => c.official) : library;
+    const rows = pool.filter((c) => !q || norm([c.name, c.request, ...(c.artists || []), ...(c.styles || [])].join(" ")).includes(q))
+      .sort((a, b) => (b.official ? 1 : 0) - (a.official ? 1 : 0) || (b.uses || 0) - (a.uses || 0) || b.at - a.at).slice(0, 80);
+    list.replaceChildren();
+    if (!rows.length) list.append(empty(chainFilter === "main" ? "Aucune chaîne construite à la main reçue pour l'instant." : "Aucune chaîne ici pour l'instant."));
+    for (const c of rows) {
+      const box = el("div", { className: "card fb", style: "margin-bottom:10px" });
+      box.append(
+        el("div", { className: "meta" },
+          c.source === "manual" ? el("span", { className: "tag plain", textContent: "CONSTRUITE À LA MAIN" })
+            : c.official ? el("span", { className: "tag", style: "background:rgb(var(--acc));color:#fff", textContent: "★ OFFICIELLE" }) : el("span", { className: "tag plain", textContent: "UTILISATEUR" }),
+          c.hidden ? el("span", { className: "tag bad", textContent: "RETIRÉE" }) : null,
+          (c.artists || []).map((a) => el("span", { className: "tag", textContent: a })),
+          (c.styles || []).map((s) => el("span", { className: "tag plain", textContent: s })),
+          el("span", { className: "tag plain", textContent: ROLES[c.role] || "LEAD" }),
+          c.source !== "manual" ? el("span", { className: "tag plain", textContent: `${c.uses || 0} chargement${(c.uses || 0) > 1 ? "s" : ""}` }) : null,
+          el("span", { className: "tag plain", textContent: date(c.at) })),
+        c.name ? el("h3", { textContent: c.name }) : c.request ? el("div", { className: "q", textContent: "« " + c.request + " »" }) : null,
+        el("div", { className: "chain" }, chainTags((c.modules || []).filter((m) => m.on !== false))));
+      if (c.source !== "manual")
+        box.append(el("div", { className: "acts" },
+          el("button", { className: "btn" + (c.official ? "" : " ok"), type: "button", textContent: c.official ? "Retirer le tag officiel" : "★ Marquer officielle", onclick: () => chainAction(c, "official", !c.official, box) }),
+          el("button", { className: "btn", type: "button", textContent: c.hidden ? "Remettre dans la bibliothèque" : "Retirer de la bibliothèque", onclick: () => chainAction(c, "hide", !c.hidden, box) })));
+      list.append(box);
+    }
+  };
+  input.oninput = draw;
+  v.append(bar, input, list);
+  draw();
 }
 
 //------------------------------------------------------------------------------ Retours
@@ -444,8 +504,9 @@ function cerveau(v) {
     kpi(`v${sh.version || 0}.${sh.revision || 0}`, "cerveau en service", `${sh.revision || 0} validation(s) des fondateurs`),
     kpi(arts.length, "artistes connus", `${arts.filter((a) => a.estimate).length} estimés · ${(D.found || []).length} trouvés par le serveur`),
     kpi(arts.filter((a) => a.voice).length, "voix mesurées", "timbre, tenue et espace"),
-    kpi(model ? model.samples : "—", "modèle appris", model ? `${model.installs} postes · validé` : "pas encore (200 bons mix)"),
-    kpi(Object.keys(chains).length, "chaînes de la communauté", "validées")));
+    kpi(model ? model.samples : "—", "modèle appris", model ? `${postes(model.installs)} · validé` : "pas encore (200 bons mix)"),
+    kpi(Object.keys(chains).length, "chaînes de la communauté", "validées, par artiste"),
+    kpi((sh.corrections?.styles || []).length, "styles de mixage", "validés et nommés")));
   v.append(el("h2", { textContent: "Ce qu'il a appris (validé par les fondateurs)" }), el("div", { className: "card" },
     (sh.learned || []).length ? el("ul", { className: "facts" }, sh.learned.map((l) => el("li", {}, el("b", { textContent: `v${sh.version}.${l.revision}` }), ` · ${l.text} · ${l.by || ""} · ${date(l.at)}`)))
       : empty("Rien encore : le cerveau en service est celui livré avec VOCALBOX.")));
@@ -454,7 +515,9 @@ function cerveau(v) {
     el("li", {}, el("b", { textContent: "Les gestes silencieux. " }), "Une chaîne gardée telle quelle compte comme un oui ; une chaîne démontée comme un non. COMPARER rend une retouche plus sûre."),
     el("li", {}, el("b", { textContent: "Les morceaux de référence. " }), "Leurs mesures (jamais le son) donnent la voix mesurée d'un artiste qui n'en a pas encore."),
     el("li", {}, el("b", { textContent: "Le modèle appris. " }), "Après 200 bons mix, un petit modèle corrige légèrement les couleurs d'après la voix entendue."),
-    el("li", {}, el("b", { textContent: "Les chaînes partagées. " }), "Avec assez de chaînes pour un artiste, une chaîne type est proposée aux utilisateurs."),
+    el("li", {}, el("b", { textContent: "Les chaînes partagées. " }), "Avec un nom, elles rejoignent la bibliothèque (bouton CHAÎNES du plugin) ; avec assez de chaînes pour un artiste, une chaîne type est proposée par AUTO MIX."),
+    el("li", {}, el("b", { textContent: "Les chaînes construites à la main. " }), "Quand beaucoup de gens montent les mêmes modules pour un même rôle, elles deviennent un style de mixage, que tu nommes en le validant."),
+    el("li", {}, el("b", { textContent: "Officielles et utilisateurs. " }), "Dans la bibliothèque, les chaînes marquées officielles ici portent un tag braise et passent en tête."),
     el("li", {}, el("b", { textContent: "Toujours sous contrôle. " }), "Rien n'entre dans le cerveau sans un « Valider » ici, et les voix mesurées par Nov ne sont jamais remplacées."))));
 }
 

@@ -27,6 +27,7 @@ export const STRONG = {
   found: { hits: 2 },
   voice: { refs: 4, installs: 2 },     // une voix mesurée : 4 références au moins, de 2 postes
   chain: { chains: 5, installs: 3 },   // une chaîne de la communauté : 5 chaînes partagées, de 3 postes
+  style: { chains: 6, installs: 3 },   // un style de mixage : 6 chaînes, de 3 postes
 };
 const STEP = 0.25;    // une proposition bouge une couleur de 0,25 au plus
 const TOTAL = 0.4;    // et la surcouche, en tout, de 0,4 au plus par couleur
@@ -145,6 +146,7 @@ export function propose(base, overlay, rows, found, refused = new Set(), chains 
   //    plus de 60 % d'entre elles, à leur place moyenne, réglages médians)
   const chainGroups = new Map();
   for (const c of chains) {
+    if (c.source === 'manual') continue;   // les chaînes construites à la main n'ont pas d'artiste : elles font des styles (6.)
     const artists = parse(c.artists, []);
     const mods = parse(c.modules, []);
     if (!artists.length || !Array.isArray(mods) || mods.length < 2) continue;
@@ -163,8 +165,46 @@ export function propose(base, overlay, rows, found, refused = new Set(), chains 
     out.push({ kind: 'chain', target: key, name: artist.name,
       changes: { chain: { artist: artist.name, installs, chains: list.length, modules: chain } }, support: { chains: list.length, installs } });
   }
+
+  // 6. LES STYLES DE MIXAGE : les chaînes que beaucoup de gens montent eux-mêmes. Deux sources :
+  //    - les chaînes partagées sans artiste mais avec des mots de style (« rap », « sombre », « en avant ») : regroupées par
+  //      ces mots, le style porte déjà son nom ;
+  //    - les chaînes construites à la main (ONR Neural Learning) : regroupées par rôle et par modules ; un fondateur leur
+  //      donne un nom en les validant (« Drill sombre »), et AUTO MIX les propose quand ce nom est dans la demande.
+  const styleGroups = new Map();
+  for (const c of chains) {
+    const mods = parse(c.modules, []).filter((m) => m && m.on !== false);
+    if (!Array.isArray(mods) || mods.length < 2) continue;
+    let key, words = [];
+    if (c.source === 'manual') key = `main:${Number(c.role) || 0}:${[...new Set(mods.map((m) => String(m.type)))].sort().join('+')}`;
+    else {
+      if (parse(c.artists, []).length) continue;
+      words = [...new Set(parse(c.styles, []).map(norm).filter(Boolean))].sort();
+      if (!words.length) continue;
+      key = `mots:${words.join('+')}`;
+    }
+    if (!styleGroups.has(key)) styleGroups.set(key, { words, role: Number(c.role) || 0, list: [] });
+    styleGroups.get(key).list.push({ mods, install: c.install });
+  }
+  for (const [key, g] of styleGroups) {
+    if (refused.has(`style|${key}`)) continue;
+    const installs = new Set(g.list.map((x) => x.install)).size;
+    if (g.list.length < STRONG.style.chains || installs < STRONG.style.installs) continue;
+    if (overlay.styles?.[key] && g.list.length < 1.5 * (overlay.styles[key].chains || 0)) continue;
+    const modules = communityChainOf(g.list);
+    if (modules.length < 2) continue;
+    const name = g.words.join(' · ');
+    out.push({ kind: 'style', target: key, name: name || `Style ${['LEAD', 'BACKS', 'ADLIBS', 'DOUBLES'][g.role] || 'LEAD'} construit à la main`,
+      changes: { style: { name, words: g.words, role: g.role, from: key.startsWith('main:') ? 'main' : 'partage', installs, chains: g.list.length, modules } },
+      support: { chains: g.list.length, installs } });
+  }
   return out;
 }
+
+const STOP = new Set(['de', 'la', 'le', 'les', 'du', 'des', 'et', 'en', 'un', 'une', 'a', 'au', 'aux', 'style', 'voix', 'facon']);
+/** Les mots qui font reconnaître un style dans une demande : ceux de son nom (sans les petits mots), sans accents. */
+export const styleWordsOf = (name) => [...new Set(String(name || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  .split(/[^a-z0-9&]+/).filter((w) => w.length >= 2 && !STOP.has(w)))];
 
 // les tiers d'octave du plugin (MixAnalysis.h, kCentres) : les mesures des voix arrivent dans cet ordre
 const CENTRES = [20, 25, 31.5, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000,
@@ -272,6 +312,13 @@ export function approve(overlay, p, by, at = Date.now()) {
   } else if (p.kind === 'model') {
     overlay.model = p.changes.model;
     text = `Modèle appris sur ${p.changes.model?.samples || 0} mix de ${p.changes.model?.installs || 0} postes`;
+  } else if (p.kind === 'style') {
+    // le nom donné par le fondateur (obligatoire pour un style construit à la main) ; ses mots le font reconnaître dans les demandes
+    const s = { ...p.changes.style };
+    s.name = String(p.styleName || s.name || '').trim().slice(0, 40);
+    s.words = s.words?.length && !p.styleName ? [...new Set(s.words.flatMap(styleWordsOf))] : styleWordsOf(s.name);
+    (overlay.styles ||= {})[p.target] = s;
+    text = `Style de mixage « ${s.name} » (${(s.modules || []).map((m) => m.type).join(' → ')})`;
   } else if (p.kind === 'chain') {
     (overlay.chains ||= {})[p.target] = p.changes.chain;
     text = `${p.name} : chaîne de la communauté (${(p.changes.chain?.modules || []).map((m) => m.type).join(' → ')})`;
@@ -308,6 +355,9 @@ export function publishedBrain(base, overlay) {
   brain.corrections = { ...(brain.corrections || {}), global: { ...(overlay?.global || {}) } };
   if (overlay?.model) brain.corrections.model = overlay.model;
   if (overlay?.chains && Object.keys(overlay.chains).length) brain.corrections.chains = overlay.chains;
+  // les styles de mixage validés (et nommés) : AUTO MIX les propose quand leurs mots sont dans la demande
+  const styles = Object.values(overlay?.styles || {}).filter((s) => s.name && s.words?.length);
+  if (styles.length) brain.corrections.styles = styles;
   brain.learned = overlay?.log || [];
   return brain;
 }
