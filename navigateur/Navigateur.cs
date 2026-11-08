@@ -421,7 +421,14 @@ sealed partial class Navigateur : Form
             await Task.Delay(1500);
             if (o.Vue?.CoreWebView2 == c && c.Source == url && !EstInterne(url) && !Prive) Historique.Ajouter(url, c.DocumentTitle);
         };
-        c.IsDocumentPlayingAudioChanged += (_, _) => { o.Son = c.IsDocumentPlayingAudio; bandeau.Invalidate(); };
+        c.IsDocumentPlayingAudioChanged += async (_, _) =>
+        {
+            o.Son = c.IsDocumentPlayingAudio;
+            bandeau.Invalidate();
+            if (!o.Son) return;
+            await Task.Delay(800); // la session audio de Windows naît juste après le premier son
+            NommerSon();
+        };
         c.WindowCloseRequested += (_, _) => Fermer(o);
         c.ContainsFullScreenElementChanged += (_, _) => PleinEcran(c.ContainsFullScreenElement);
         c.FaviconChanged += async (_, _) =>
@@ -821,8 +828,17 @@ sealed partial class Navigateur : Form
         try { EntretienSur(); } catch (Exception e) { Program.Noter(e); }
     }
 
+    /// <summary>Dans le mélangeur de volume de Windows, le son du navigateur porte son nom et son logo.</summary>
+    void NommerSon()
+    {
+        if (env == null) return;
+        var pids = env.GetProcessInfos().Select(p => p.ProcessId).ToList();
+        _ = Task.Run(() => Melangeur.Nommer(pids, Installation.CheminIcone));
+    }
+
     void EntretienSur()
     {
+        if (Onglets.Any(o => o.Son)) NommerSon();
         var maintenant = DateTime.Now;
         foreach (var o in Onglets.ToArray())
         {

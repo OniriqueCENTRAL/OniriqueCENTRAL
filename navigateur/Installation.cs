@@ -47,13 +47,15 @@ static class Installation
     [System.Runtime.InteropServices.DllImport("shell32.dll")]
     static extern int SHGetPropertyStoreForWindow(IntPtr fenetre, ref Guid iid, [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Interface)] out IPropertyStore magasin);
 
+    public static string CheminIcone => Path.Combine(EstInstallee ? Dossier : Parametres.Dossier, $"icone-{Version}.ico");
+
     public static void IconeDeBarreDesTaches(IntPtr fenetre)
     {
         try
         {
             var dossier = EstInstallee ? Dossier : Parametres.Dossier;
             Directory.CreateDirectory(dossier);
-            var ico = Path.Combine(dossier, $"icone-{Version}.ico");
+            var ico = CheminIcone;
             if (!File.Exists(ico))
             {
                 using (var flux = typeof(Installation).Assembly.GetManifestResourceStream("icone.ico")!)
