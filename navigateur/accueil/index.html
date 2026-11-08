@@ -41,6 +41,7 @@ body.anime { background-image: none; }
 @keyframes derive { 0% { transform: translate(-6%, -4%) rotate(0deg); } 50% { transform: translate(5%, 3%) rotate(8deg); } 100% { transform: translate(-3%, 6%) rotate(-6deg); } }
 /* Comme sur Chrome : Gmail, Images, les applis et le compte Google en haut à droite, quand on y est connecté. */
 .google { position: fixed; top: 14px; right: 18px; z-index: 5; display: flex; align-items: center; gap: 4px; animation: fondu .4s ease both; }
+.google[hidden] { display: none; }
 .google > a:not(.compte) { padding: 6px 10px; border-radius: 8px; color: var(--bone); text-decoration: none; font-size: 14px; }
 .google > a:not(.compte):hover, .google > a:not(.compte):focus-visible { background: rgba(255, 255, 255, .08); outline: none; }
 .applis { width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 50%; background: none; color: var(--label); cursor: pointer; }
@@ -51,6 +52,7 @@ body.anime { background-image: none; }
 .compte img:not([src]) { visibility: hidden; }
 .grille-applis { position: absolute; top: 48px; right: 0; width: 300px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 12px;
   border-radius: 16px; background: var(--deep); border: 1px solid var(--line); box-shadow: 0 20px 50px rgba(0, 0, 0, .55); animation: deplie .16s var(--ease) both; transform-origin: top right; }
+.grille-applis[hidden] { display: none; }
 .grille-applis a { padding: 12px 6px; border-radius: 10px; color: var(--label); text-decoration: none; font-size: 13px; text-align: center; }
 .grille-applis a:hover, .grille-applis a:focus-visible { background: var(--deep-2); color: var(--bone); outline: none; }
 main { width: min(760px, 100% - 32px); text-align: center; padding: 15vh 0 60px; }
