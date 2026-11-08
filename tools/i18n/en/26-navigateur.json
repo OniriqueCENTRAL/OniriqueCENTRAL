@@ -6,7 +6,8 @@
   "Environ 20 % de mémoire en moins que Chrome sur les mêmes sites": "About 20 % less memory than Chrome on the same sites",
   "Onglets cachés en veille après 30 secondes, libérés après 10 minutes": "Hidden tabs sleep after 30 seconds and are freed after 10 minutes",
   "Traqueurs publicitaires bloqués": "Ad trackers blocked",
-  "Le moteur Chromium : tes sites marchent comme d'habitude": "The Chromium engine: your sites work as usual",
   "Rien à installer : lance le fichier, le navigateur s'ouvre.": "Nothing to install: run the file and the browser opens.",
-  "Si « Windows a protégé votre ordinateur » s'affiche : Informations complémentaires, puis Exécuter quand même. Le navigateur n'est pas encore signé, d'où cet avertissement.": "If “Windows protected your PC” appears: More info, then Run anyway. The browser isn't signed yet, hence the warning."
+  "Si « Windows a protégé votre ordinateur » s'affiche : Informations complémentaires, puis Exécuter quand même. Le navigateur n'est pas encore signé, d'où cet avertissement.": "If “Windows protected your PC” appears: More info, then Run anyway. The browser isn't signed yet, hence the warning.",
+  "Tes sites marchent comme d'habitude": "Your sites work as usual",
+  "Construit sur Chromium, le moteur libre de Chrome et d'Edge, par l'intermédiaire de Microsoft Edge WebView2, déjà présent dans Windows.": "Built on Chromium, the open-source engine behind Chrome and Edge, through Microsoft Edge WebView2, already part of Windows."
 }
