@@ -187,6 +187,13 @@ dialog[open]::backdrop { animation: op-fade .22s ease-out; }
 .op-full-bar > button.op-settings { gap: 10px; padding: 0 22px 0 18px; color: var(--mist, #f6eeee); font: 500 17px var(--f-body); cursor: pointer; }
 .op-full-bar .op-btn.on, .op-full-bar > button.on { color: var(--op-accent, var(--ember)); }
 html.op-full-open, html.op-full-open body { overflow: hidden; }
+/* Le bouton de ROCKY ne passe pas devant les commandes du lecteur plein écran. */
+html.op-full-open #rocky { display: none; }
+/* Avec une souris (petite fenêtre, panneau latéral d'un navigateur), le plein écran garde un réglage du volume ; un téléphone a ses boutons. */
+.op-full-vol { display: none; align-items: center; gap: 10px; width: 100%; }
+.op-full-vol .op-btn { width: 40px; height: 40px; flex: none; }
+.op-full-vol .op-vol { display: block; flex: 1; width: auto; }
+@media (pointer: fine) { .op-full-vol { display: flex; } }
 /* Les paroles en grand, sur toute la page : la pochette floutée en fond, teintée de sa couleur, qui respire avec le son
    (--op-level, de 0 à 1) ; la ligne chantée s'allume, les suivantes attendent en retrait. La barre du lecteur reste dessus. */
 .op-stage { position: fixed; inset: 0; z-index: 38; display: flex; flex-direction: column; overflow: hidden; isolation: isolate;
@@ -370,10 +377,14 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     const fullNext = btn("next", "Suivant"), fullRepeat = btn("repeat", "Répéter");
     const fullQueue = btn("queue", "File d'attente"), fullComments = btn("comment", "Commentaires"), fullLyricsBtn = btn("lyrics", "Paroles");
     const fullSettings = el("button", { className: "op-settings", type: "button", ariaLabel: "Vitesse, boucle et téléchargement" }, icon("sliders"), "Réglages");
+    const fullMute = btn("volume", "Couper le son");
+    const fullVol = el("input", { className: "op-vol", type: "range", min: 0, max: 1, step: 0.01, value: volume, ariaLabel: "Volume" });
+    fullVol.style.setProperty("--p", volume * 100 + "%");
     const full = el("div", { className: "op-full", hidden: true, role: "dialog", ariaLabel: "Lecteur" }, fullBg,
       el("div", { className: "op-full-top" }, fullClose),
       el("div", { className: "op-card" }, el("div", { className: "op-card-title" }, fullTitle, fullSub), disc, scrub, fullClock,
-        el("div", { className: "op-full-controls" }, onShare ? fullShare : el("span", { style: "width:52px" }), fullPrev, fullPlay, fullNext, fullRepeat)),
+        el("div", { className: "op-full-controls" }, onShare ? fullShare : el("span", { style: "width:52px" }), fullPrev, fullPlay, fullNext, fullRepeat),
+        el("div", { className: "op-full-vol" }, fullMute, fullVol)),
       el("div", { className: "op-full-bar" }, el("div", {}, fullQueue, fullComments, fullLyricsBtn), fullSettings));
     // Les paroles en grand : toute la page, la barre du lecteur par-dessus (sur téléphone aussi, depuis le plein écran).
     const stageBg = el("div", { className: "op-stage-bg" }), stageCover = el("img", { alt: "" });
@@ -811,12 +822,16 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     };
     const setVolume = (v) => {
       audio.volume = v; vol.value = v; vol.style.setProperty("--p", v * 100 + "%");
+      fullVol.value = v; fullVol.style.setProperty("--p", v * 100 + "%");
       setIcon(volBtn, v ? "volume" : "mute");
+      setIcon(fullMute, v ? "volume" : "mute");
       try { localStorage.setItem("onirique.volume", String(v)); } catch {}
     };
     let before = volume || 1;
     vol.oninput = () => setVolume(Number(vol.value));
     volBtn.onclick = () => { if (audio.volume) { before = audio.volume; setVolume(0); } else setVolume(before); };
+    fullVol.oninput = () => setVolume(Number(fullVol.value));
+    fullMute.onclick = volBtn.onclick;
     // Les boutons du bas du plein écran s'allument avec le panneau qu'ils ouvrent.
     const marks = () => {
       fullQueue.classList.toggle("on", !queue.hidden);
