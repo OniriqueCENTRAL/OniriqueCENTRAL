@@ -28,6 +28,58 @@ static class Installation
 
     [System.Runtime.InteropServices.DllImport("shell32.dll")] static extern void SHChangeNotify(int evenement, uint options, IntPtr a, IntPtr b);
 
+    // La barre des tâches prend l'icône du fichier .exe dans un cache que Windows ne relit pas après une mise à jour.
+    // La fenêtre lui donne donc la sienne : un fichier .ico qui porte le numéro de version, jamais en cache.
+    [System.Runtime.InteropServices.ComImport, System.Runtime.InteropServices.Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"),
+     System.Runtime.InteropServices.InterfaceType(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
+    interface IPropertyStore
+    {
+        void GetCount(out uint n);
+        void GetAt(uint i, out ClePropriete cle);
+        void GetValue(ref ClePropriete cle, out Valeur v);
+        void SetValue(ref ClePropriete cle, ref Valeur v);
+        void Commit();
+    }
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 4)]
+    struct ClePropriete { public Guid Format; public uint Id; }
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    struct Valeur { public ushort Type; ushort a, b, c; public IntPtr Texte; IntPtr d; }
+    [System.Runtime.InteropServices.DllImport("shell32.dll")]
+    static extern int SHGetPropertyStoreForWindow(IntPtr fenetre, ref Guid iid, [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Interface)] out IPropertyStore magasin);
+
+    public static void IconeDeBarreDesTaches(IntPtr fenetre)
+    {
+        try
+        {
+            var dossier = EstInstallee ? Dossier : Parametres.Dossier;
+            Directory.CreateDirectory(dossier);
+            var ico = Path.Combine(dossier, $"icone-{Version}.ico");
+            if (!File.Exists(ico))
+            {
+                using (var flux = typeof(Installation).Assembly.GetManifestResourceStream("icone.ico")!)
+                using (var fichier = File.Create(ico)) flux.CopyTo(fichier);
+                foreach (var ancienne in Directory.GetFiles(dossier, "icone-*.ico")) if (ancienne != ico) try { File.Delete(ancienne); } catch { }
+            }
+            var iid = new Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99");
+            if (SHGetPropertyStoreForWindow(fenetre, ref iid, out var magasin) != 0) return;
+            var format = new Guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3");
+            void Poser(uint id, string texte)
+            {
+                var cle = new ClePropriete { Format = format, Id = id };
+                var v = new Valeur { Type = 31, Texte = System.Runtime.InteropServices.Marshal.StringToCoTaskMemUni(texte) }; // VT_LPWSTR
+                try { magasin.SetValue(ref cle, ref v); }
+                finally { System.Runtime.InteropServices.Marshal.FreeCoTaskMem(v.Texte); }
+            }
+            Poser(5, "ONIRIQUE.Navigateur");                       // AppUserModel.ID
+            Poser(2, $"\"{Environment.ProcessPath}\"");             // RelaunchCommand
+            Poser(4, Nom);                                          // RelaunchDisplayNameResource
+            Poser(3, ico + ",0");                                   // RelaunchIconResource
+            magasin.Commit();
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(magasin);
+        }
+        catch { }
+    }
+
     /// <summary>Après une nouvelle version : raccourcis réécrits et cache d'icônes de Windows prévenu, pour que le nouveau logo s'affiche partout.</summary>
     public static void RafraichirIcones()
     {

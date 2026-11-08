@@ -34,10 +34,8 @@ sealed partial class Navigateur
 
     static readonly (string Id, string Nom, string Url, string Glyphe)[] Services =
     {
-        ("cloud", "ONIRIQUE CLOUD", "https://onirique.store/cloud", ""),
+        ("cloud", "ONIRIQUE CLOUD", "https://onirique.store/mes-sons", ""),
         ("messages", "Messages ONIRIQUE", "https://onirique.store/messages", ""),
-        ("spotify", "Spotify", "https://open.spotify.com/", ""),
-        ("ytmusic", "YouTube Music", "https://music.youtube.com/", ""),
         ("discord", "Discord", "https://discord.com/app", ""),
     };
 
@@ -95,8 +93,12 @@ sealed partial class Navigateur
         Controls.SetChildIndex(bandeau, 3);
         Controls.SetChildIndex(laterale, 4);
         laterale.Visible = Reglages.BarreLaterale;
+        // L'ancienne liste par défaut, jamais modifiée : elle laisse place à la nouvelle (le dossier ONIRIQUE).
+        if (Reglages.Raccourcis == AncienneListe) { Reglages.Raccourcis = null; Reglages.Enregistrer(); }
         derniereEmpreinte = ProfilSynchro().ToJsonString();
     }
+
+    const string AncienneListe = "[{\"type\":\"site\",\"nom\":\"ONIRIQUE\",\"url\":\"https://onirique.store/\"},{\"type\":\"site\",\"nom\":\"CLOUD\",\"url\":\"https://onirique.store/cloud\"},{\"type\":\"site\",\"nom\":\"Boutique\",\"url\":\"https://onirique.store/boutique\"},{\"type\":\"dossier\",\"nom\":\"Musique\",\"elements\":[{\"type\":\"site\",\"nom\":\"YouTube\",\"url\":\"https://www.youtube.com/\"},{\"type\":\"site\",\"nom\":\"Spotify\",\"url\":\"https://open.spotify.com/\"},{\"type\":\"site\",\"nom\":\"SoundCloud\",\"url\":\"https://soundcloud.com/\"}]},{\"type\":\"site\",\"nom\":\"Outils\",\"url\":\"https://onirique.store/outils\"}]";
 
     void EchelleAjouts()
     {

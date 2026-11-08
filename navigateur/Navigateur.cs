@@ -194,6 +194,7 @@ sealed partial class Navigateur : Form
     {
         base.OnHandleCreated(e);
         DA.BarreSombre(Handle);
+        Installation.IconeDeBarreDesTaches(Handle);
     }
 
     protected override async void OnLoad(EventArgs e)
