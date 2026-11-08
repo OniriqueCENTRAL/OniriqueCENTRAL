@@ -1,0 +1,65 @@
+# Construit ONIRIQUE Navigateur pour Mac (Apple Silicon et Intel dans la même application), sur un Mac prêté par GitHub.
+# À lancer depuis l'onglet « Actions » (bouton « Run workflow »), ou en poussant une étiquette « navmac-… ».
+# Le .dmg se télécharge en bas de la page de l'exécution (« Artifacts ») ; le .dmg et le .zip de mise à jour sont aussi
+# déposés sur le serveur, puis deploy/publish-navigateur-mac.sh les met en ligne.
+name: Navigateur Mac
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['navmac-*']
+
+jobs:
+  mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Construire le navigateur
+        run: bash navigateur/mac/build.sh
+
+      # La mise à jour automatique remplace l'application par le contenu du .zip : le remplacement est essayé ici.
+      - name: Essayer la mise à jour automatique
+        working-directory: navigateur/mac/dist
+        run: |
+          set -e
+          mkdir -p essai/Applications essai/nouveau
+          cp -R "ONIRIQUE Navigateur.app" essai/Applications/
+          touch "essai/Applications/ONIRIQUE Navigateur.app/Contents/ancienne-version"
+          ditto -x -k ONIRIQUE-Navigateur-mac.zip essai/nouveau
+          codesign --verify --deep --strict "essai/nouveau/ONIRIQUE Navigateur.app"
+          SCRIPT=$(sed -n '/let script = """/,/^        """/p' ../Sources/Application.swift | sed '1d;$d' | sed 's/^        //')
+          sh -c 'exit 0' & FINI=$!; wait $FINI
+          sh -c "$SCRIPT" sh $FINI "$PWD/essai/Applications/ONIRIQUE Navigateur.app" "$PWD/essai/nouveau/ONIRIQUE Navigateur.app" "$PWD/essai/nouveau" 0
+          test ! -e "essai/Applications/ONIRIQUE Navigateur.app/Contents/ancienne-version"
+          codesign --verify --deep --strict "essai/Applications/ONIRIQUE Navigateur.app"
+          test ! -e essai/nouveau
+          rm -rf essai
+
+      # L'application doit démarrer et tenir quelques secondes (sans écran, elle ne fait que s'ouvrir).
+      - name: Lancer le navigateur
+        working-directory: navigateur/mac/dist
+        run: |
+          "ONIRIQUE Navigateur.app/Contents/MacOS/ONIRIQUE Navigateur" & PID=$!
+          sleep 8
+          kill -0 $PID || { echo "Le navigateur s'est arrêté au lancement."; exit 1; }
+          kill $PID
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ONIRIQUE-Navigateur-mac
+          path: navigateur/mac/dist/ONIRIQUE-Navigateur.dmg
+          if-no-files-found: error
+
+      - name: Livrer sur le serveur
+        env:
+          LIVRAISON_KEY: ${{ secrets.LIVRAISON_KEY }}
+        run: |
+          if [ -z "$LIVRAISON_KEY" ]; then echo "Secret LIVRAISON_KEY absent : fichier à télécharger depuis Artifacts."; exit 0; fi
+          mkdir -p ~/.ssh
+          CORPS=$(printf '%s' "$LIVRAISON_KEY" | sed -e 's/-----BEGIN OPENSSH PRIVATE KEY-----//' -e 's/-----END OPENSSH PRIVATE KEY-----//' | tr -d ' \r\n\t')
+          { echo "-----BEGIN OPENSSH PRIVATE KEY-----"; printf '%s\n' "$CORPS" | fold -w 70; echo "-----END OPENSSH PRIVATE KEY-----"; } > ~/.ssh/livraison
+          chmod 600 ~/.ssh/livraison
+          echo "212.227.165.177 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFH55mUNdFgsIuK9wr6/8ioQ22idbndalUSARaSFDaa1" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/livraison -o IdentitiesOnly=yes -o BatchMode=yes livraison@212.227.165.177 navigateur-dmg < navigateur/mac/dist/ONIRIQUE-Navigateur.dmg
+          ssh -i ~/.ssh/livraison -o IdentitiesOnly=yes -o BatchMode=yes livraison@212.227.165.177 navigateur-mac-zip < navigateur/mac/dist/ONIRIQUE-Navigateur-mac.zip

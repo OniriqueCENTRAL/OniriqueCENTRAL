@@ -16,6 +16,7 @@
   --ease: cubic-bezier(.2, .8, .2, 1);
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { margin: 0; min-height: 100%; }
 body {
   background: var(--night); color: var(--bone);
@@ -402,6 +403,12 @@ function afficher(m) {
   const libre = document.querySelector(".pastille.libre");
   libre.setAttribute("aria-checked", String(!m.accents.some((a) => a.hex === choisie)));
   document.getElementById("couleur-libre").value = choisie;
+  // Sur Mac, les réglages propres au moteur de Windows disparaissent (WebKit s'en charge lui-même).
+  if (m.plateforme === "mac") {
+    for (const cle of ["PlafondMemoire", "Memoire", "Traqueurs", "VeilleSecondes"]) document.querySelector(`[data-cle="${cle}"]`)?.closest(".carte")?.setAttribute("hidden", "");
+    document.querySelector('[data-cle="BarreLaterale"]')?.closest(".ligne")?.setAttribute("hidden", "");
+    document.getElementById("defaut").textContent = "Choisir";
+  }
   const a = m.ajouts || {};
   document.getElementById("synchro-statut").textContent = r.Synchro ? (a.synchro || "") : "";
   document.getElementById("studio-statut").textContent = a.studio ? `Actif : ${a.studio} est ouvert.` : "";
