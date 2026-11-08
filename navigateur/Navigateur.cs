@@ -195,6 +195,41 @@ sealed partial class Navigateur : Form
         base.OnHandleCreated(e);
         DA.BarreSombre(Handle);
         Installation.IconeDeBarreDesTaches(Handle);
+        SetWindowPos(Handle, IntPtr.Zero, 0, 0, 0, 0, 0x0037); // SWP_FRAMECHANGED : Windows recalcule le cadre sans barre de titre
+    }
+
+    [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr h, IntPtr apres, int x, int y, int l, int ht, uint options);
+    [DllImport("user32.dll")] static extern int GetSystemMetricsForDpi(int indice, uint dpi);
+    [StructLayout(LayoutKind.Sequential)] struct Cadre { public int G, H, D, B; }
+
+    // Comme Chrome : pas de barre de titre. Le cadre de Windows reste (bords, ombre, ancrage), seule la légende part ;
+    // la fenêtre se déplace par l'espace vide de la barre d'onglets et s'agrandit d'un double-clic dessus.
+    protected override void WndProc(ref Message m)
+    {
+        if (m.Msg == 0x0083 && m.WParam != IntPtr.Zero && FormBorderStyle != FormBorderStyle.None) // WM_NCCALCSIZE
+        {
+            var avant = Marshal.PtrToStructure<Cadre>(m.LParam);
+            base.WndProc(ref m);
+            var apres = Marshal.PtrToStructure<Cadre>(m.LParam);
+            // Agrandie, la fenêtre déborde de l'écran de l'épaisseur de son cadre : le haut est rentré d'autant.
+            apres.H = avant.H + (WindowState == FormWindowState.Maximized
+                ? GetSystemMetricsForDpi(33, (uint)DeviceDpi) + GetSystemMetricsForDpi(92, (uint)DeviceDpi) : 0);
+            Marshal.StructureToPtr(apres, m.LParam, false);
+            m.Result = IntPtr.Zero;
+            return;
+        }
+        if (m.Msg == 0x0084) // WM_NCHITTEST
+        {
+            base.WndProc(ref m);
+            if ((int)m.Result != 1) return; // pas dans la zone cliente
+            long lp = m.LParam.ToInt64();
+            var p = PointToClient(new Point((short)(lp & 0xFFFF), (short)((lp >> 16) & 0xFFFF)));
+            if (WindowState == FormWindowState.Normal && p.Y < this.S(5))
+                m.Result = p.X < this.S(10) ? 13 : p.X > ClientSize.Width - this.S(10) ? 14 : 12; // HTTOPLEFT, HTTOPRIGHT, HTTOP
+            else if (p.Y < bandeau.Bottom && bandeau.Visible) m.Result = 2; // HTCAPTION
+            return;
+        }
+        base.WndProc(ref m);
     }
 
     protected override async void OnLoad(EventArgs e)
@@ -248,7 +283,7 @@ sealed partial class Navigateur : Form
 
     void Echelle()
     {
-        bandeau.Height = this.S(40);
+        bandeau.Height = this.S(44);
         barre.Height = this.S(46);
         Font = new Font("Segoe UI Variable Text", this.S(12), GraphicsUnit.Pixel);
         champ.Saisie.Font = new Font("Segoe UI Variable Text", this.S(14), GraphicsUnit.Pixel);
@@ -1030,15 +1065,17 @@ sealed class Bandeau : Control
         AccessibleName = "Onglets";
     }
 
-    int Largeur => nav.Onglets.Count == 0 ? 0 : Math.Clamp((Width - this.S(56)) / nav.Onglets.Count, this.S(44), this.S(232));
+    int Largeur => nav.Onglets.Count == 0 ? 0 : Math.Clamp((Width - this.S(56) - 3 * this.S(46) - this.S(16)) / nav.Onglets.Count, this.S(44), this.S(232));
+    Rectangle Commande(int k) => new(Width - (3 - k) * this.S(46), 0, this.S(46), this.S(34)); // 0 réduire, 1 agrandir, 2 fermer
+    int CommandeSous(Point p) { for (int k = 0; k < 3; k++) if (Commande(k).Contains(p)) return k; return -1; }
     float CibleX(int i) => this.S(8) + i * Largeur;
     Rectangle Zone(int i)
     {
         var o = nav.Onglets[i];
-        return new Rectangle((int)o.X, this.S(6), Math.Max(1, (int)o.W), Height - this.S(6));
+        return new Rectangle((int)o.X, this.S(8), Math.Max(1, (int)o.W), Height - this.S(8));
     }
     Rectangle Croix(Rectangle r) => new(r.Right - this.S(28), r.Y + (r.Height - this.S(20)) / 2, this.S(20), this.S(20));
-    Rectangle Plus => new((int)plusX + this.S(6), this.S(9), this.S(28), this.S(28));
+    Rectangle Plus => new((int)plusX + this.S(6), this.S(11), this.S(28), this.S(28));
     bool CroixVisible(int i) => (nav.Onglets[i] == nav.Actif || i == survol) && Zone(i).Width > this.S(80);
 
     /// <summary>Fait glisser les onglets vers leur place ; renvoie vrai tant qu'il reste du mouvement.</summary>
@@ -1165,7 +1202,7 @@ sealed class Bandeau : Control
         if (nav.Actif != null && temoinX >= 0 && temoinW > 0)
         {
             using var temoin = new SolidBrush(DA.Braise);
-            g.FillRectangle(temoin, temoinX, this.S(6), temoinW, this.S(2));
+            g.FillRectangle(temoin, temoinX, this.S(8), temoinW, this.S(2));
         }
 
         if (survol == -2)
@@ -1174,6 +1211,18 @@ sealed class Bandeau : Control
             using var chemin = DA.Arrondi(Plus, this.S(8));
             g.FillPath(fond, chemin);
         }
+        // Réduire, agrandir (ou restaurer), fermer : dessinés comme ceux de Windows 11, fermer rougit au survol.
+        for (int k = 0; k < 3; k++)
+        {
+            var r = Commande(k);
+            if (survol == -3 - k)
+            {
+                using var fondCommande = new SolidBrush(k == 2 ? Color.FromArgb(196, 43, 28) : DA.Survol);
+                g.FillRectangle(fondCommande, r);
+            }
+            string glyphe = k == 0 ? "\uE921" : k == 1 ? (nav.WindowState == FormWindowState.Maximized ? "\uE923" : "\uE922") : "\uE8BB";
+            TextRenderer.DrawText(g, glyphe, Icones, r, survol == -5 && k == 2 ? Color.White : DA.Brume, flags);
+        }
         if (plusX >= 0) TextRenderer.DrawText(g, "", Icones, Plus, DA.Brume, flags);
     }
 
@@ -1181,6 +1230,7 @@ sealed class Bandeau : Control
     {
         int i = Index(e.Location);
         if (i < 0 && Plus.Contains(e.Location)) i = -2;
+        if (i < 0 && CommandeSous(e.Location) is var k and >= 0) i = -3 - k;
         bool croix = i >= 0 && Croix(Zone(i)).Contains(e.Location);
         if (i != survol || croix != surCroix) { survol = i; surCroix = croix; Invalidate(); }
         base.OnMouseMove(e);
@@ -1205,9 +1255,28 @@ sealed class Bandeau : Control
         else if (Plus.Contains(e.Location)) nav.NouvelOnglet();
     }
 
-    protected override void OnMouseDoubleClick(MouseEventArgs e)
+    protected override void OnMouseUp(MouseEventArgs e)
     {
-        base.OnMouseDoubleClick(e);
-        if (e.Button == MouseButtons.Left && Index(e.Location) < 0 && !Plus.Contains(e.Location)) nav.NouvelOnglet();
+        base.OnMouseUp(e);
+        if (e.Button != MouseButtons.Left) return;
+        switch (CommandeSous(e.Location))
+        {
+            case 0: nav.WindowState = FormWindowState.Minimized; break;
+            case 1: nav.WindowState = nav.WindowState == FormWindowState.Maximized ? FormWindowState.Normal : FormWindowState.Maximized; break;
+            case 2: nav.Close(); break;
+        }
+        survol = -1;
+        Invalidate();
+    }
+
+    // Le vide de la barre d'onglets laisse passer la souris vers la fenêtre, qui s'en sert pour se déplacer et s'agrandir.
+    protected override void WndProc(ref Message m)
+    {
+        base.WndProc(ref m);
+        if (m.Msg != 0x0084) return; // WM_NCHITTEST
+        long lp = m.LParam.ToInt64();
+        var p = PointToClient(new Point((short)(lp & 0xFFFF), (short)((lp >> 16) & 0xFFFF)));
+        bool bordDuHaut = nav.WindowState == FormWindowState.Normal && p.Y < this.S(5);
+        if (bordDuHaut || (Index(p) < 0 && !Plus.Contains(p) && CommandeSous(p) < 0)) m.Result = (IntPtr)(-1); // HTTRANSPARENT
     }
 }
