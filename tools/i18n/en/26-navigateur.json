@@ -15,5 +15,11 @@
   "Raccourcis et dossiers sur l'accueil, historique, couleurs au choix": "Shortcuts and folders on the home page, history, your choice of colours",
   "Logo d'ONIRIQUE Navigateur": "ONIRIQUE Browser logo",
   "Mode Studio : ton DAW ouvert, les onglets cachés lui laissent la machine": "Studio Mode: with your DAW open, hidden tabs leave it the whole machine",
-  "Bloqueur de pubs, barre latérale (CLOUD, messages, Discord), mini-lecteur": "Ad blocker, sidebar (CLOUD, messages, Discord), mini player"
+  "Bloqueur de pubs, barre latérale (CLOUD, messages, Discord), mini-lecteur": "Ad blocker, sidebar (CLOUD, messages, Discord), mini player",
+  "Windows 10 ou 11, 64 bits · 49 Mo — macOS 13 ou plus récent · 2 Mo": "Windows 10 or 11, 64-bit · 49 MB — macOS 13 or later · 2 MB",
+  "Sur Windows, construit sur Chromium, le moteur libre de Chrome et d'Edge, par l'intermédiaire de Microsoft Edge WebView2, déjà présent dans Windows. Sur Mac, construit sur WebKit, le moteur de Safari, déjà présent dans macOS.": "On Windows, built on Chromium, the open-source engine behind Chrome and Edge, through Microsoft Edge WebView2, already part of Windows. On Mac, built on WebKit, Safari's engine, already part of macOS.",
+  "Groupes d'onglets et écran divisé, deux pages côte à côte": "Tab groups and split view, two pages side by side",
+  "Tu viens de Chrome, Edge, Brave ou Opera : tes favoris arrivent en un clic, ton compte Google aussi": "Coming from Chrome, Edge, Brave or Opera: your bookmarks come over in one click, and your Google account too",
+  "Extensions Chrome, barre de favoris, navigation privée, raccourcis clavier de Chrome": "Chrome extensions, bookmarks bar, private browsing, Chrome keyboard shortcuts",
+  "Sur Mac, à la première ouverture : clic droit sur l'application, puis Ouvrir. Le VPN y demande macOS 14 Sonoma ; la barre latérale, le mini-lecteur, les groupes d'onglets, l'écran divisé, les extensions et la barre de favoris sont pour l'instant sur Windows seulement.": "On Mac, the first time: right-click the app, then Open. The VPN needs macOS 14 Sonoma there; the sidebar, mini player, tab groups, split view, extensions and bookmarks bar are Windows-only for now."
 }

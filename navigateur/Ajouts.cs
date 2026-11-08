@@ -18,6 +18,7 @@ sealed partial class Navigateur
     static readonly string DossierFichiers = Path.Combine(Parametres.Dossier, "fichiers");
 
     readonly Suggestions suggestions = new();
+    BarreFavoris favoris = null!;
     readonly Bouton lecteur = new("", "Ce qui joue") { Visible = false };
     readonly Bouton studio = new("", "Mode Studio") { Visible = false, Temoin = true };
     Lecteur panneauLecteur = null!;
@@ -42,6 +43,7 @@ sealed partial class Navigateur
     void InitAjouts()
     {
         Controls.Add(suggestions);
+        favoris = new BarreFavoris(this) { Dock = DockStyle.Top };
         panneauLecteur = new Lecteur(this);
         Controls.Add(panneauLecteur);
         barre.Controls.Add(lecteur);
@@ -69,6 +71,25 @@ sealed partial class Navigateur
         teteDePanneau.Controls.AddRange(new Control[] { titreDePanneau, ouvrirEnOnglet, fermerPanneau });
         teteDePanneau.Paint += (_, e) => { using var p = new Pen(DA.Filet); e.Graphics.DrawLine(p, 0, teteDePanneau.Height - 1, teteDePanneau.Width, teteDePanneau.Height - 1); };
         panneau.Controls.Add(teteDePanneau);
+        // Le bord droit du panneau se tire pour l'élargir ou le rétrécir ; la largeur choisie est retenue.
+        var bord = new Panel { Dock = DockStyle.Right, Width = this.S(6), Cursor = Cursors.SizeWE, BackColor = DA.Filet };
+        int tirage = -1;
+        bord.MouseDown += (_, e) => { if (e.Button == MouseButtons.Left) tirage = e.X; };
+        bord.MouseMove += (_, e) =>
+        {
+            if (tirage < 0 || e.Button != MouseButtons.Left) return;
+            int largeur = Math.Clamp(panneau.Width + e.X - tirage, this.S(320), Math.Max(this.S(320), ClientSize.Width - this.S(420)));
+            panneau.Width = largeur;
+            panneauLargeur = largeur;
+        };
+        bord.MouseUp += (_, _) =>
+        {
+            if (tirage < 0) return;
+            tirage = -1;
+            Reglages.PanneauLargeur = (int)Math.Round(panneau.Width * 96.0 / DeviceDpi);
+            Reglages.Enregistrer();
+        };
+        panneau.Controls.Add(bord);
         teteDePanneau.Resize += (_, _) => PlacerAjouts();
         panneau.Paint += (_, e) => { using var p = new Pen(DA.Filet); e.Graphics.DrawLine(p, panneau.Width - 1, 0, panneau.Width - 1, panneau.Height); };
         laterale.Paint += (_, e) => { using var p = new Pen(DA.Filet); e.Graphics.DrawLine(p, laterale.Width - 1, 0, laterale.Width - 1, laterale.Height); };
@@ -87,12 +108,15 @@ sealed partial class Navigateur
         }
         Controls.Add(panneau);
         Controls.Add(laterale);
+        Controls.Add(favoris);
         Controls.SetChildIndex(contenu, 0);
         Controls.SetChildIndex(panneau, 1);
-        Controls.SetChildIndex(barre, 2);
-        Controls.SetChildIndex(bandeau, 3);
-        Controls.SetChildIndex(laterale, 4);
+        Controls.SetChildIndex(favoris, 2);
+        Controls.SetChildIndex(barre, 3);
+        Controls.SetChildIndex(bandeau, 4);
+        Controls.SetChildIndex(laterale, 5);
         laterale.Visible = Reglages.BarreLaterale;
+        favoris.Visible = Reglages.BarreFavoris;
         // L'ancienne liste par défaut, jamais modifiée : elle laisse place à la nouvelle (le dossier ONIRIQUE).
         if (Reglages.Raccourcis == AncienneListe) { Reglages.Raccourcis = null; Reglages.Enregistrer(); }
         derniereEmpreinte = ProfilSynchro().ToJsonString();
@@ -102,6 +126,9 @@ sealed partial class Navigateur
 
     void EchelleAjouts()
     {
+        favoris.Height = this.S(32);
+        favoris.Font = Font;
+        favoris.Glyphes = new Font("Segoe Fluent Icons", this.S(13), GraphicsUnit.Pixel);
         laterale.Width = this.S(48);
         teteDePanneau.Height = this.S(38);
         titreDePanneau.Font = new Font("Segoe UI Variable Text", this.S(13), FontStyle.Bold, GraphicsUnit.Pixel);
@@ -158,7 +185,7 @@ sealed partial class Navigateur
 
     bool AnimerAjouts()
     {
-        float cible = panneauOuvert == null ? 0 : this.S(420);
+        float cible = panneauOuvert == null ? 0 : this.S(Reglages.PanneauLargeur > 0 ? Reglages.PanneauLargeur : 460);
         if (Math.Abs(panneauLargeur - cible) < 0.5f) return false;
         panneauLargeur = Reglages.Animations ? panneauLargeur + (cible - panneauLargeur) * 0.3f : cible;
         if (Math.Abs(panneauLargeur - cible) < 1f) panneauLargeur = cible;
@@ -170,7 +197,8 @@ sealed partial class Navigateur
     {
         if (++tour % 2 == 0) SurveillerStudio();
         Limiter();
-        if (source != null && (source.Vue.IsSuspended || !Vues().Concat(vuesDePanneau.Values.Select(v => v.CoreWebView2).OfType<CoreWebView2>()).Contains(source.Vue))) { source = null; MajLecteur(); }
+        // Une page fermée (onglet, fenêtre de connexion…) ne peut plus être interrogée : on vérifie qu'elle vit encore avant tout.
+        if (source != null && (!Vues().Concat(vuesDePanneau.Values.Select(v => v.CoreWebView2).OfType<CoreWebView2>()).Contains(source.Vue) || source.Vue.IsSuspended)) { source = null; MajLecteur(); }
         // Les panneaux fermés s'endorment comme des onglets cachés, sauf s'ils jouent de la musique.
         foreach (var (id, v) in vuesDePanneau)
             if (id != panneauOuvert && v.CoreWebView2 is { } c && !c.IsDocumentPlayingAudio && !c.IsSuspended) _ = Suspendre(c);
@@ -200,6 +228,15 @@ sealed partial class Navigateur
             case "Bloqueur": Reglages.Bloqueur = B(); break;
             case "PlafondMemoire": Reglages.PlafondMemoire = Math.Clamp(N(), 0, 65536); break;
             case "PlafondCpu": Reglages.PlafondCpu = Math.Clamp(N(), 0, 100); break;
+            case "Extensions":
+                // Le moteur ne prend les extensions qu'au démarrage : il est relancé, les onglets se rechargent.
+                Reglages.Extensions = extensionsActives = B();
+                Reglages.Enregistrer();
+                await Relancer(relaisMoteur);
+                await MajExtensions();
+                EnvoyerEtatAuxPagesInternes();
+                return false;
+            case "BarreFavoris": Reglages.BarreFavoris = favoris.Visible = B(); break;
             case "BarreLaterale":
                 Reglages.BarreLaterale = laterale.Visible = B();
                 if (!B()) BasculerPanneau(null);
@@ -253,14 +290,15 @@ sealed partial class Navigateur
         champ.Etoile.Teinte = favori ? DA.BraiseClaire : DA.Cendre;
         champ.Etoile.Aide = favori ? "Retirer de l'accueil" : "Ajouter à l'accueil";
         champ.PerformLayout();
+        favoris.Invalidate();
     }
 
-    void BasculerFavori()
+    void BasculerFavori() { if (Actif is { } o) BasculerFavori(o.Url, o.Titre); }
+
+    void BasculerFavori(string url, string titre)
     {
-        var o = Actif;
-        if (o == null) return;
         var liste = Raccourcis();
-        var cle = Cle(o.Url);
+        var cle = Cle(url);
         bool retire = false;
         for (int i = liste.Count - 1; i >= 0; i--)
         {
@@ -276,9 +314,9 @@ sealed partial class Navigateur
         }
         if (!retire)
         {
-            var nom = o.Titre.Trim();
-            if (nom.Length == 0 || nom.Length > 28) nom = Uri.TryCreate(o.Url, UriKind.Absolute, out var u) ? u.Host.Replace("www.", "") : o.Url;
-            liste.Add(new JsonObject { ["type"] = "site", ["nom"] = nom, ["url"] = o.Url });
+            var nom = titre.Trim();
+            if (nom.Length == 0 || nom.Length > 28) nom = Uri.TryCreate(url, UriKind.Absolute, out var u) ? u.Host.Replace("www.", "") : url;
+            liste.Add(new JsonObject { ["type"] = "site", ["nom"] = nom, ["url"] = url });
         }
         Reglages.Raccourcis = liste.ToJsonString();
         Reglages.Enregistrer();
@@ -353,7 +391,7 @@ sealed partial class Navigateur
         Disposer();
         if (StudioActif)
             foreach (var o in Onglets)
-                if (o != Actif && !o.Son && o.Vue?.CoreWebView2 is { } c) { c.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low; if (!c.IsSuspended) _ = Suspendre(c); }
+                if (!EstAffiche(o) && !o.Son && o.Vue?.CoreWebView2 is { } c) { c.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low; if (!c.IsSuspended) _ = Suspendre(c); }
         EnvoyerEtatAuxPagesInternes();
     }
 
@@ -377,7 +415,7 @@ sealed partial class Navigateur
 
     void Limiter()
     {
-        var caches = Onglets.Where(o => o != Actif && !o.Son && o.Vue?.CoreWebView2 != null).OrderBy(o => o.CacheDepuis).ToList();
+        var caches = Onglets.Where(o => !EstAffiche(o) && !o.Son && o.Vue?.CoreWebView2 != null).OrderBy(o => o.CacheDepuis).ToList();
         // Au-dessus du plafond de mémoire : le plus ancien onglet caché est libéré, un par passage, jusqu'à repasser dessous.
         if (Reglages.PlafondMemoire > 0 && memoireMo > Reglages.PlafondMemoire && caches.Count > 0) Decharger(caches[0]);
         // Au-dessus du plafond de processeur : tous les onglets cachés s'endorment.
@@ -403,7 +441,7 @@ sealed partial class Navigateur
     void MajLecteur()
     {
         lecteur.Visible = source != null;
-        lecteur.Temoin = source?.Vue.IsDocumentPlayingAudio == true;
+        try { lecteur.Temoin = source?.Vue.IsDocumentPlayingAudio == true; } catch { source = null; lecteur.Temoin = false; }
         if (source == null) panneauLecteur.Visible = false;
         Disposer();
         panneauLecteur.Invalidate();
@@ -709,7 +747,8 @@ sealed class Lecteur : Control
         g.DrawPath(filet, chemin);
         var src = nav.source;
         if (src == null) return;
-        bool joue = src.Vue.IsDocumentPlayingAudio;
+        bool joue;
+        try { joue = src.Vue.IsDocumentPlayingAudio; } catch { return; }
         string titre;
         try { titre = src.Titre(); } catch { titre = ""; }
         TextRenderer.DrawText(g, joue ? "EN LECTURE" : "EN PAUSE", new Font("Cascadia Mono", this.S(10), GraphicsUnit.Pixel), new Point(this.S(18), this.S(14)), joue ? DA.BraiseClaire : DA.Eteint, TextFormatFlags.NoPadding);

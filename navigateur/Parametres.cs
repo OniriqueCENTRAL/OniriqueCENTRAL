@@ -6,6 +6,15 @@ sealed class OngletSauve
 {
     public string Url { get; set; } = "";
     public string Titre { get; set; } = "";
+    public int Groupe { get; set; } = -1;
+    public bool Divise { get; set; }   // partage l'écran avec l'onglet suivant
+}
+
+sealed class GroupeSauve
+{
+    public string Nom { get; set; } = "";
+    public string Couleur { get; set; } = "#e5384a";
+    public bool Replie { get; set; }
 }
 
 sealed class Parametres
@@ -24,11 +33,18 @@ sealed class Parametres
     public bool MisesAJour { get; set; } = true;
     public string Accent { get; set; } = DA.AccentParDefaut;
     public string? DerniereVersion { get; set; }
+    public bool ImportPropose { get; set; }
+    public string? GoogleAvatar { get; set; }
+    public bool Extensions { get; set; }
+    public int[]? Fenetre { get; set; }   // x, y, largeur, hauteur de la fenêtre, hors agrandissement
+    public bool Agrandie { get; set; }
     public bool ModeStudio { get; set; } = true;
     public bool Bloqueur { get; set; } = true;
     public int PlafondMemoire { get; set; }      // Mo, 0 : aucun
     public int PlafondCpu { get; set; }          // %, 0 : aucun
     public bool BarreLaterale { get; set; } = true;
+    public bool BarreFavoris { get; set; } = true;
+    public int PanneauLargeur { get; set; }    // px à 96 ppp, 0 : par défaut
     public string Fond { get; set; } = "nuit";   // nuit, anime, image
     public string? FondFichier { get; set; }
     public long FondVersion { get; set; }
@@ -36,9 +52,12 @@ sealed class Parametres
     public long SynchroDate { get; set; }
     public string? Raccourcis { get; set; }   // l'écran d'accueil (sites et dossiers), en JSON, géré par accueil/index.html
     public List<OngletSauve> Session { get; set; } = new();
+    public List<GroupeSauve> Groupes { get; set; } = new();
     public int SessionActif { get; set; }
 
-    public static readonly string Dossier = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ONIRIQUE", "Navigateur");
+    // ONIRIQUE_NAVIGATEUR_DOSSIER : un autre dossier de profil (essais), pour ne jamais toucher au vrai.
+    public static readonly string Dossier = Environment.GetEnvironmentVariable("ONIRIQUE_NAVIGATEUR_DOSSIER") is { Length: > 0 } autre
+        ? autre : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ONIRIQUE", "Navigateur");
     static string Fichier => Path.Combine(Dossier, "parametres.json");
 
     public static readonly (string Id, string Nom, string Url)[] Moteurs =
