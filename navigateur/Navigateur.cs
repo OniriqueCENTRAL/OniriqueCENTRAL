@@ -150,6 +150,14 @@ sealed partial class Navigateur : Form
         MinimumSize = new Size(560, 360);
         Size = new Size(1280, 820);
         StartPosition = FormStartPosition.CenterScreen;
+        // La fenêtre revient où on l'avait laissée, à la même taille, si cet endroit est encore sur un écran.
+        if (Reglages.Fenetre is [var fx, var fy, var fl, var fh] && fl >= MinimumSize.Width && fh >= MinimumSize.Height
+            && Screen.AllScreens.Any(e => Rectangle.Intersect(e.WorkingArea, new Rectangle(fx, fy, fl, fh)) is { Width: > 150, Height: > 100 }))
+        {
+            StartPosition = FormStartPosition.Manual;
+            Bounds = new Rectangle(fx, fy, fl, fh);
+        }
+        if (Reglages.Agrandie) WindowState = FormWindowState.Maximized;
         try { scriptGoogle = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "accueil", "google.js")); } catch { scriptGoogle = ""; }
 
         bandeau = new Bandeau(this) { Dock = DockStyle.Top };
@@ -280,6 +288,12 @@ sealed partial class Navigateur : Form
         if (Secondaire) { base.OnFormClosing(e); return; }
         var web = Onglets.Where(o => !EstInterne(o.Url) && o.Url.Length > 0).ToList();
         SauverGroupes(web);
+        if (!PleinEcranFenetre && FormBorderStyle != FormBorderStyle.None)
+        {
+            var r = WindowState == FormWindowState.Normal ? Bounds : RestoreBounds;
+            Reglages.Fenetre = new[] { r.X, r.Y, r.Width, r.Height };
+            Reglages.Agrandie = WindowState == FormWindowState.Maximized;
+        }
         Reglages.SessionActif = Actif == null ? 0 : Math.Max(0, web.IndexOf(Actif));
         Reglages.Enregistrer();
         base.OnFormClosing(e);

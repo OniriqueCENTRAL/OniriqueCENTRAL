@@ -36,6 +36,8 @@ sealed class Parametres
     public bool ImportPropose { get; set; }
     public string? GoogleAvatar { get; set; }
     public bool Extensions { get; set; }
+    public int[]? Fenetre { get; set; }   // x, y, largeur, hauteur de la fenêtre, hors agrandissement
+    public bool Agrandie { get; set; }
     public bool ModeStudio { get; set; } = true;
     public bool Bloqueur { get; set; } = true;
     public int PlafondMemoire { get; set; }      // Mo, 0 : aucun
