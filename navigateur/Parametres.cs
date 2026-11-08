@@ -34,11 +34,15 @@ sealed class Parametres
     public string Accent { get; set; } = DA.AccentParDefaut;
     public string? DerniereVersion { get; set; }
     public bool ImportPropose { get; set; }
+    public string? GoogleAvatar { get; set; }
+    public bool Extensions { get; set; }
     public bool ModeStudio { get; set; } = true;
     public bool Bloqueur { get; set; } = true;
     public int PlafondMemoire { get; set; }      // Mo, 0 : aucun
     public int PlafondCpu { get; set; }          // %, 0 : aucun
     public bool BarreLaterale { get; set; } = true;
+    public bool BarreFavoris { get; set; } = true;
+    public int PanneauLargeur { get; set; }    // px à 96 ppp, 0 : par défaut
     public string Fond { get; set; } = "nuit";   // nuit, anime, image
     public string? FondFichier { get; set; }
     public long FondVersion { get; set; }

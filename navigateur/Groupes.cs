@@ -100,6 +100,28 @@ sealed partial class Navigateur
         t.SelectAll();
     }
 
+    /// <summary>
+    /// Range un onglet glissé (avec l'autre moitié de son écran divisé) à ce rang parmi les autres onglets. Posé entre deux
+    /// onglets d'un même groupe, il y entre ; posé au bord de son groupe, il y reste ; ailleurs, il en sort.
+    /// </summary>
+    internal void Deplacer(Onglet o, int rang)
+    {
+        var bloc = Onglets.Where(x => x == o || x == o.Partenaire).ToList();
+        var reste = Onglets.Except(bloc).ToList();
+        rang = Math.Clamp(rang, 0, reste.Count);
+        var gauche = rang > 0 ? reste[rang - 1] : null;
+        var droite = rang < reste.Count ? reste[rang] : null;
+        var gr = gauche?.Groupe != null && gauche.Groupe == droite?.Groupe ? gauche.Groupe
+            : o.Groupe != null && (gauche?.Groupe == o.Groupe || droite?.Groupe == o.Groupe) ? o.Groupe : null;
+        reste.InsertRange(rang, bloc);
+        if (reste.SequenceEqual(Onglets) && bloc.All(x => x.Groupe == gr)) return;
+        Onglets.Clear();
+        Onglets.AddRange(reste);
+        foreach (var x in bloc) x.Groupe = gr;
+        PlacerVues();
+        Animer();
+    }
+
     // ——— Écran divisé ———
 
     async void Diviser(Onglet o, Onglet autre)

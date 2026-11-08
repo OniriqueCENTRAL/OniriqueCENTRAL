@@ -106,6 +106,36 @@ sealed partial class Navigateur
         catch { googleConnecte = false; }
     }
 
+    bool avatarEnCours;
+
+    /// <summary>La photo du compte Google, lue une fois sur google.com dans une page cachée, puis gardée.</summary>
+    async Task LireAvatar()
+    {
+        if (!googleConnecte) { if (Reglages.GoogleAvatar != null) { Reglages.GoogleAvatar = null; Reglages.Enregistrer(); } return; }
+        if (Reglages.GoogleAvatar != null || avatarEnCours || env == null) return;
+        avatarEnCours = true;
+        var vue = new Microsoft.Web.WebView2.WinForms.WebView2 { Visible = false, Size = new Size(1, 1) };
+        contenu.Controls.Add(vue);
+        _ = vue.Handle;
+        try
+        {
+            await vue.EnsureCoreWebView2Async(env);
+            var charge = new TaskCompletionSource<bool>();
+            vue.CoreWebView2.NavigationCompleted += (_, e) => charge.TrySetResult(e.IsSuccess);
+            vue.CoreWebView2.Navigate("https://www.google.com/?hl=fr");
+            if (await Task.WhenAny(charge.Task, Task.Delay(10000)) == charge.Task && charge.Task.Result)
+            {
+                await Task.Delay(800);
+                var brut = await vue.CoreWebView2.ExecuteScriptAsync(
+                    "(document.querySelector('a[href*=\"SignOutOptions\"] img') || document.querySelector('img.gbii'))?.src || ''");
+                var src = System.Text.Json.JsonSerializer.Deserialize<string>(brut) ?? "";
+                if (src.StartsWith("https://", StringComparison.Ordinal)) { Reglages.GoogleAvatar = src; Reglages.Enregistrer(); EnvoyerEtatAuxPagesInternes(); }
+            }
+        }
+        catch { }
+        finally { vue.Dispose(); avatarEnCours = false; }
+    }
+
     /// <summary>Premier lancement : si un autre navigateur est là, on propose d'en reprendre les favoris.</summary>
     void ProposerImport()
     {

@@ -141,6 +141,8 @@ sealed partial class Navigateur : Form
     public Navigateur(string[] adresses)
     {
         adressesDeDepart = adresses;
+        extensionsActives = Reglages.Extensions;
+        boutonExtensions.Visible = extensionsActives;
         DA.Accent(Reglages.Accent);
         Text = "ONIRIQUE";
         Icon = Installation.Icone();
@@ -152,7 +154,7 @@ sealed partial class Navigateur : Form
 
         bandeau = new Bandeau(this) { Dock = DockStyle.Top };
         bulle = new Bulle(this);
-        barre.Controls.AddRange(new Control[] { retour, avance, recharger, champ, vpn, historique, reglages, memoire });
+        barre.Controls.AddRange(new Control[] { retour, avance, recharger, champ, vpn, boutonExtensions, historique, reglages, memoire });
         barre.Paint += (_, e) => { using var p = new Pen(DA.Filet); e.Graphics.DrawLine(p, 0, barre.Height - 1, barre.Width, barre.Height - 1); };
         barre.Resize += (_, _) => Disposer();
         contenu.Controls.Add(bulle);
@@ -174,9 +176,13 @@ sealed partial class Navigateur : Form
         vpn.Click += async (_, _) => await BasculerVpn(vpnEtat == "eteint");
         reglages.Click += (_, _) => OuvrirInterne(PageParametres);
         historique.Click += (_, _) => OuvrirInterne(PageHistorique);
+        boutonExtensions.Click += (_, _) => MenuExtensions();
         champ.Saisie.KeyDown += (_, e) =>
         {
-            if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; Aller(suggestions.Selection ?? champ.Saisie.Text); }
+            // Ctrl+Entrée, comme dans Chrome : « onirique » devient www.onirique.com.
+            if (e.KeyCode == Keys.Enter && e.Control && !champ.Saisie.Text.Contains('.') && !champ.Saisie.Text.Trim().Contains(' ') && champ.Saisie.Text.Trim().Length > 0)
+            { e.SuppressKeyPress = true; Aller("https://www." + champ.Saisie.Text.Trim() + ".com"); }
+            else if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; Aller(suggestions.Selection ?? champ.Saisie.Text); }
             else if (e.KeyCode == Keys.Escape) { e.SuppressKeyPress = true; Actif?.Vue?.Focus(); Afficher(); }
         };
         champ.Saisie.LostFocus += (_, _) => Afficher();
@@ -251,7 +257,9 @@ sealed partial class Navigateur : Form
         // Le VPN se rallume avant d'ouvrir la moindre page : rien ne part en direct par erreur.
         if (Reglages.Vpn) await AllumerVpn(relancer: false);
 
+        if (Prive) { Text = "ONIRIQUE — navigation privée"; bulle.Montrer("Navigation privée : ni historique, ni cookies, ni mots de passe ne sont gardés après la fermeture."); }
         if (adressesDeDepart.Length > 0) foreach (var a in adressesDeDepart) await Ouvrir(Resoudre(a));
+        else if (Secondaire) await Ouvrir(Accueil);
         else if (Reglages.ReprendreSession && Reglages.Session.Count > 0)
         {
             // Les onglets de la dernière fois reviennent endormis : seul celui qu'on regarde se charge.
@@ -268,6 +276,8 @@ sealed partial class Navigateur : Form
 
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
+        // Une autre fenêtre ne remplace ni la session ni les réglages de la fenêtre principale.
+        if (Secondaire) { base.OnFormClosing(e); return; }
         var web = Onglets.Where(o => !EstInterne(o.Url) && o.Url.Length > 0).ToList();
         SauverGroupes(web);
         Reglages.SessionActif = Actif == null ? 0 : Math.Max(0, web.IndexOf(Actif));
@@ -275,9 +285,13 @@ sealed partial class Navigateur : Form
         base.OnFormClosing(e);
     }
 
+    bool extensionsActives;
+    string? relaisMoteur;
+
     async Task<CoreWebView2Environment> Moteur(string? relais)
     {
-        var options = new CoreWebView2EnvironmentOptions { Language = "fr-FR" };
+        relaisMoteur = relais;
+        var options = new CoreWebView2EnvironmentOptions { Language = "fr-FR", AreBrowserExtensionsEnabled = extensionsActives };
         if (relais != null) options.AdditionalBrowserArguments = Vpn.Arguments(relais);
         return await CoreWebView2Environment.CreateAsync(null, Parametres.Dossier, options);
     }
@@ -296,7 +310,7 @@ sealed partial class Navigateur : Form
         champ.Saisie.Font = new Font("Segoe UI Variable Text", this.S(14), GraphicsUnit.Pixel);
         bandeau.Icones = new Font("Segoe Fluent Icons", this.S(10), GraphicsUnit.Pixel);
         var icones = new Font("Segoe Fluent Icons", this.S(14), GraphicsUnit.Pixel);
-        foreach (var b in new[] { retour, avance, recharger, vpn, historique, reglages, lecteur, studio }) b.Font = icones;
+        foreach (var b in new[] { retour, avance, recharger, vpn, historique, reglages, lecteur, studio, boutonExtensions }) b.Font = icones;
         EchelleAjouts();
         memoire.Font = new Font("Cascadia Mono", this.S(11), GraphicsUnit.Pixel);
         bulle.Font = new Font("Segoe UI Variable Text", this.S(13), GraphicsUnit.Pixel);
@@ -309,7 +323,7 @@ sealed partial class Navigateur : Form
         foreach (var b in new Control[] { retour, avance, recharger }) { b.SetBounds(x, y, this.S(36), h); x += pas; }
         int droite = barre.Width - this.S(10);
         if (memoire.Visible) { int m = this.S(76); droite -= m; memoire.SetBounds(droite, y, m, h); droite -= this.S(4); }
-        foreach (var b in new Control[] { reglages, historique, vpn, lecteur, studio }) { if (!b.Visible) continue; droite -= this.S(36); b.SetBounds(droite, y, this.S(36), h); droite -= this.S(2); }
+        foreach (var b in new Control[] { reglages, historique, boutonExtensions, vpn, lecteur, studio }) { if (!b.Visible) continue; droite -= this.S(36); b.SetBounds(droite, y, this.S(36), h); droite -= this.S(2); }
         champ.SetBounds(x + this.S(6), y, Math.Max(0, droite - x - this.S(14)), h);
         bulle.Placer();
         PlacerAjouts();
@@ -358,7 +372,16 @@ sealed partial class Navigateur : Form
         o.Vue = v;
         contenu.Controls.Add(v);
         _ = v.Handle;
-        try { await v.EnsureCoreWebView2Async(env); }
+        try
+        {
+            if (Prive)
+            {
+                var options = env!.CreateCoreWebView2ControllerOptions();
+                options.IsInPrivateModeEnabled = true;
+                await v.EnsureCoreWebView2Async(env, options);
+            }
+            else await v.EnsureCoreWebView2Async(env);
+        }
         catch when (o.Vue != v) { return; }
         if (o.Vue != v) return;
 
@@ -382,7 +405,7 @@ sealed partial class Navigateur : Form
             // Le titre arrive souvent juste après la page : l'historique attend un instant avant de l'écrire.
             var url = c.Source;
             await Task.Delay(1500);
-            if (o.Vue?.CoreWebView2 == c && c.Source == url && !EstInterne(url)) Historique.Ajouter(url, c.DocumentTitle);
+            if (o.Vue?.CoreWebView2 == c && c.Source == url && !EstInterne(url) && !Prive) Historique.Ajouter(url, c.DocumentTitle);
         };
         c.IsDocumentPlayingAudioChanged += (_, _) => { o.Son = c.IsDocumentPlayingAudio; bandeau.Invalidate(); };
         c.WindowCloseRequested += (_, _) => Fermer(o);
@@ -474,6 +497,7 @@ sealed partial class Navigateur : Form
         int i = Onglets.IndexOf(o);
         if (i < 0) return;
         Onglets.RemoveAt(i);
+        NoterFermeture(o, i);
         var p = o.Partenaire;
         if (p != null) { p.Partenaire = null; o.Partenaire = null; }
         var vue = o.Vue;
@@ -574,8 +598,13 @@ sealed partial class Navigateur : Form
             case "google":
                 _ = Ouvrir((string?)m["page"] == "motsdepasse" ? "https://passwords.google.com/" : "https://accounts.google.com/ServiceLogin?continue=https%3A%2F%2Fmyaccount.google.com%2F");
                 return;
+            case "extStore" or "extReprendre" or "extActiver" or "extRetirer":
+                await CommandeExtension(source, m);
+                return;
             case "lire":
                 await VerifierGoogle(source);
+                await MajExtensions();
+                _ = LireAvatar();
                 break;
             case "defaut":
                 Process.Start(new ProcessStartInfo("ms-settings:defaultapps?registeredAppUser=" + Uri.EscapeDataString(Installation.Nom)) { UseShellExecute = true });
@@ -605,7 +634,10 @@ sealed partial class Navigateur : Form
             ["accents"] = new JsonArray(DA.Accents.Select(x => (JsonNode)new JsonObject { ["hex"] = x.Hex, ["nom"] = x.Nom }).ToArray()),
             ["ajouts"] = EtatAjouts(),
             ["imports"] = EtatImports(),
+            ["extensions"] = extensions.DeepClone(),
+            ["ailleurs"] = ExtensionsAilleurs().Count,
             ["google"] = googleConnecte,
+            ["googleAvatar"] = googleConnecte ? Reglages.GoogleAvatar : null,
             ["moteurs"] = new JsonArray(Parametres.Moteurs.Select(x => (JsonNode)new JsonObject { ["id"] = x.Id, ["nom"] = x.Nom }).ToArray()),
         };
     }
@@ -771,6 +803,12 @@ sealed partial class Navigateur : Form
 
     void Entretien()
     {
+        // L'entretien tourne toutes les 5 secondes : une erreur d'une page ne doit jamais arrêter le navigateur.
+        try { EntretienSur(); } catch (Exception e) { Program.Noter(e); }
+    }
+
+    void EntretienSur()
+    {
         var maintenant = DateTime.Now;
         foreach (var o in Onglets.ToArray())
         {
@@ -862,6 +900,7 @@ sealed partial class Navigateur : Form
 
     protected override bool ProcessCmdKey(ref Message msg, Keys touches)
     {
+        if (RaccourciChrome(touches)) return true;
         var c = Actif?.Vue?.CoreWebView2;
         switch (touches)
         {
@@ -1096,6 +1135,10 @@ sealed class Bandeau : Control
     readonly Navigateur nav;
     int survol = -1;
     bool surCroix;
+    Onglet? tire;          // l'onglet qu'on fait glisser
+    float prise;           // où on l'a attrapé, depuis son bord gauche
+    int departX;
+    bool glisse;
     float temoinX = -1, temoinW, plusX = -1;
     public Font Icones = SystemFonts.DefaultFont;
 
@@ -1170,6 +1213,7 @@ sealed class Bandeau : Control
         float fin = Placer((o, x, w) =>
         {
             if (o.X < 0) { o.X = x; o.W = fluide ? 0 : w; }
+            if (o == tire && glisse) { o.W = Vers(o.W, w); return; } // il suit la souris
             o.X = Vers(o.X, x);
             o.W = Vers(o.W, w);
         }, (gr, x, w) =>
@@ -1325,6 +1369,17 @@ sealed class Bandeau : Control
 
     protected override void OnMouseMove(MouseEventArgs e)
     {
+        // Glisser un onglet : il suit la souris, les autres s'écartent ; lâché entre deux onglets d'un groupe, il y entre.
+        if (tire != null && (glisse || Math.Abs(e.X - departX) > this.S(6)))
+        {
+            glisse = true;
+            tire.X = Math.Clamp(e.X - prise, 0, Math.Max(0, Width - 3 * this.S(46) - tire.W));
+            float centre = tire.X + tire.W / 2;
+            int rang = nav.Onglets.Count(o => o != tire && o != tire.Partenaire && o.X + o.W / 2 < centre);
+            nav.Deplacer(tire, rang);
+            Invalidate();
+            return;
+        }
         int i = Index(e.Location);
         if (i < 0 && Plus.Contains(e.Location)) i = -2;
         if (i < 0 && CommandeSous(e.Location) is var k and >= 0) i = -3 - k;
@@ -1356,7 +1411,14 @@ sealed class Bandeau : Control
         if (e.Button == MouseButtons.Middle && i >= 0) nav.Fermer(nav.Onglets[i]);
         else if (e.Button != MouseButtons.Left) return;
         else if (i >= 0 && CroixVisible(i) && Croix(Zone(i)).Contains(e.Location)) nav.Fermer(nav.Onglets[i]);
-        else if (i >= 0) nav.Activer(nav.Onglets[i]);
+        else if (i >= 0)
+        {
+            tire = nav.Onglets[i];
+            Capture = true; // le glissé continue même si la souris sort du bandeau
+            prise = e.X - tire.X;
+            departX = e.X;
+            nav.Activer(tire);
+        }
         else if (Plus.Contains(e.Location)) nav.NouvelOnglet();
     }
 
@@ -1364,6 +1426,11 @@ sealed class Bandeau : Control
     {
         base.OnMouseUp(e);
         if (e.Button != MouseButtons.Left) return;
+        bool finDeGlisse = glisse;
+        Capture = false;
+        tire = null;
+        glisse = false;
+        if (finDeGlisse) { nav.Animer(); return; }
         switch (CommandeSous(e.Location))
         {
             case 0: nav.WindowState = FormWindowState.Minimized; break;
