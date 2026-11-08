@@ -5,6 +5,7 @@ import { pollComments } from './social.js';
 import { remindReleases, purgeTrash } from './sounds.js';
 import { sweepMedia } from './sweep.js';
 import { remindCut, publishDueReels } from './cut.js';
+import { demarrerRelais } from './vpn.js';
 
 createApp().listen(config.port, () => {
   console.log(`ONIRIQUE CENTRAL — API sur ${config.publicUrl} (paiements : ${config.paymentsMode})`);
@@ -12,6 +13,9 @@ createApp().listen(config.port, () => {
     console.warn('Mode démo : les achats sont accordés sans paiement. À ne pas exposer au public.');
   }
 });
+
+// Le relais du VPN d'ONIRIQUE Navigateur.
+demarrerRelais();
 
 // Les Shorts YouTube programmés partent à leur heure, à la minute près.
 setInterval(() => publishDue().catch(console.error), 60_000);

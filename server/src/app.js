@@ -53,6 +53,7 @@ import { mountDownloader } from './downloader.js';
 import { mountRocky } from './rocky.js';
 import { mountVocalBrain } from './vocalbrain.js';
 import { applyPluginFiches } from './fiches.js';
+import { autoriser as autoriserVpn, VPN_RELAIS } from './vpn.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
@@ -893,6 +894,12 @@ export function createApp() {
 
   // Essai gratuit : une seule fois par compte et par plugin, 7 jours. La licence créée est de type "trial" :
   // le plugin la lit comme les autres, mais passe en mode démo (bruit blanc à l'export) tant qu'elle court.
+  // VPN d'ONIRIQUE Navigateur : l'adresse d'où vient l'annonce peut passer par le relais pendant 12 heures (vpn.js).
+  app.post('/api/vpn', requireVerified, (req, res) => {
+    rateLimit(`vpn:${req.user.id}`, 30);
+    res.json({ relais: VPN_RELAIS, expire: autoriserVpn(req.ip, req.user.id) });
+  });
+
   app.post('/api/licenses/trial', requireVerified, (req, res) => {
     rateLimit(`trial:${req.user.id}`, 10);
     const product = findProduct(req.body.productId);
