@@ -29,6 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="icone.ico" LogicalName="icone.ico" />
     <Content Include="accueil\**" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\site\assets\fonts\Unbounded-latin.woff2;..\site\assets\fonts\HankenGrotesk-latin.woff2;..\site\assets\fonts\JetBrainsMono-latin.woff2"
              Link="accueil\fonts\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />

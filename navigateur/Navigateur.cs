@@ -141,7 +141,7 @@ sealed class Navigateur : Form
         adressesDeDepart = adresses;
         DA.Accent(Reglages.Accent);
         Text = "ONIRIQUE";
-        Icon = Icon.ExtractAssociatedIcon(Environment.ProcessPath!);
+        Icon = Installation.Icone();
         BackColor = DA.Nuit;
         MinimumSize = new Size(560, 360);
         Size = new Size(1280, 820);

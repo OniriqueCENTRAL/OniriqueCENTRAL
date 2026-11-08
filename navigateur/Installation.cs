@@ -22,6 +22,24 @@ static class Installation
     static string RaccourciBureau => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), Nom + ".lnk");
 
     public static string Version => typeof(Installation).Assembly.GetName().Version!.ToString(3);
+
+    // L'icône vient du programme lui-même : celle du fichier passe par le cache de Windows, qui garde l'ancienne après une mise à jour.
+    public static Icon Icone(int taille = 32) => new(typeof(Installation).Assembly.GetManifestResourceStream("icone.ico")!, taille, taille);
+
+    [System.Runtime.InteropServices.DllImport("shell32.dll")] static extern void SHChangeNotify(int evenement, uint options, IntPtr a, IntPtr b);
+
+    /// <summary>Après une nouvelle version : raccourcis réécrits et cache d'icônes de Windows prévenu, pour que le nouveau logo s'affiche partout.</summary>
+    public static void RafraichirIcones()
+    {
+        try
+        {
+            if (File.Exists(RaccourciMenu)) Raccourci(RaccourciMenu);
+            if (File.Exists(RaccourciBureau)) Raccourci(RaccourciBureau);
+            using (var k = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(CleDesinstallation, true)) k?.SetValue("DisplayVersion", Version);
+            SHChangeNotify(0x08000000, 0, IntPtr.Zero, IntPtr.Zero); // SHCNE_ASSOCCHANGED : Windows relit les icônes
+        }
+        catch { }
+    }
     public static bool EstInstallee => string.Equals(Path.GetFullPath(Environment.ProcessPath!), Path.GetFullPath(Exe), StringComparison.OrdinalIgnoreCase);
 
     public static void Installer(bool bureau)
@@ -38,6 +56,7 @@ static class Installation
         Raccourci(RaccourciMenu);
         if (bureau) Raccourci(RaccourciBureau);
         Inscrire();
+        SHChangeNotify(0x08000000, 0, IntPtr.Zero, IntPtr.Zero);
     }
 
     static void Raccourci(string chemin)
@@ -165,9 +184,8 @@ sealed class FenetreInstallation : Form
     public FenetreInstallation()
     {
         Text = "Installer " + Installation.Nom;
-        Icon = Icon.ExtractAssociatedIcon(Environment.ProcessPath!);
-        logo = Icon?.ToBitmap();
-        try { logo = new Icon(Icon!, 256, 256).ToBitmap(); } catch { }
+        Icon = Installation.Icone();
+        logo = Installation.Icone(256).ToBitmap();
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
