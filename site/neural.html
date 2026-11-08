@@ -8,150 +8,156 @@
 <script src="assets/i18n.js?v=aae73ebb"></script>
 <script src="assets/ui.js?v=4"></script>
 <link rel="stylesheet" href="assets/fonts.css">
-<style>
-/* ONR NEURAL LEARNING, la page des fondateurs : le cerveau d’AUTO MIX (VOCALBOX) en constellation, comme le graphe d'un
-   coffre Obsidian, et à côté, en texte simple, ce qu'il sait et ce que les utilisateurs lui apprennent. */
-:root {
-  /* les tokens viennent de da.css (DA « Nuit & Braise », accent du compte) ; ici, seulement les rôles du graphe */
-  --n-artist: rgb(var(--acc)); --n-est: #ffb3bb; --n-found: #F4ECEC; --n-genre: #d9c6c9; --n-hint: rgb(var(--acc-hi));
-  --n-param: #9c878b; --n-yes: #F4ECEC; --n-no: rgb(var(--acc-lo)); --n-none: #5a4b4f;
-  --panel: rgba(18,12,14,.72);
-}
-* { box-sizing: border-box; }
-[hidden] { display: none !important; }
-html, body { margin: 0; height: 100%; color: var(--mist); font: 400 14px/1.55 var(--f-body); -webkit-font-smoothing: antialiased; }
-body { display: grid; grid-template-columns: 1fr 400px; grid-template-rows: 100%; overflow: hidden; }
-a { color: rgb(var(--acc-hi)); }
-button, input { font: inherit; color: inherit; }
-#stage { position: relative; min-width: 0; overflow: hidden; background: transparent; }
-#graph { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: none; }
-#graph.drag { cursor: grabbing; }
-.top { position: absolute; left: 16px; top: 14px; right: 16px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; pointer-events: none; }
-.top > * { pointer-events: auto; }
-.crumb { font: 600 12px var(--f-body); color: var(--haze); letter-spacing: .02em; margin-right: 8px; }
-.crumb b { color: var(--mist); }
-.chip { border: 1px solid var(--line); background: var(--glass); box-shadow: var(--glass-shadow); backdrop-filter: blur(10px); border-radius: 999px; padding: 5px 11px; font-size: 12px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; transition: background .2s var(--ease), box-shadow .2s var(--ease); }
-.chip[aria-pressed="true"] { background: var(--lit); box-shadow: var(--lit-shadow); }
-.chip[aria-pressed="false"] { opacity: .45; }
-.chip i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-#find { border: 1px solid var(--line); background: var(--glass); box-shadow: var(--glass-shadow); backdrop-filter: blur(10px); border-radius: 999px; padding: 5px 12px; width: 190px; font-size: 12px; outline: none; }
-#find:focus { border-color: rgb(var(--acc-hi)); }
-.legend { position: absolute; left: 16px; bottom: 14px; font-size: 11px; color: var(--haze); display: flex; gap: 12px; flex-wrap: wrap; pointer-events: none; }
-.legend span { display: inline-flex; align-items: center; gap: 5px; }
-.legend i { width: 8px; height: 8px; border-radius: 50%; }
-#tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 5px 9px; font-size: 12px; white-space: nowrap; transform: translate(12px, 12px); }
-
-aside { background: var(--glass), var(--panel); box-shadow: var(--glass-shadow); border-left: 1px solid var(--line); overflow-y: auto; padding: 22px 22px 40px; backdrop-filter: blur(12px); }
-h1 { font: 700 20px/1.2 var(--f-display); margin: 0 0 4px; letter-spacing: .02em; }
-h1 span { color: rgb(var(--acc-hi)); text-shadow: var(--glow); }
-h2 { font: 700 11px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); margin: 26px 0 10px; }
-.lead { color: var(--haze); margin: 0 0 6px; }
-p { margin: 0 0 10px; }
-.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.stat { border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; background: var(--glass); box-shadow: var(--glass-shadow); }
-.stat b { display: block; font: 700 20px var(--f-display); }
-.stat small { color: var(--haze); font-size: 11.5px; }
-.bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,.07); overflow: hidden; margin-top: 4px; }
-.bar > i { display: block; height: 100%; background: linear-gradient(90deg, rgb(var(--acc-lo)), rgb(var(--acc)), rgb(var(--acc-hi))); }
-.row { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
-.row span:last-child { color: var(--haze); text-align: right; font-variant-numeric: tabular-nums; }
-.row.click { cursor: pointer; }
-.row.click:hover span:first-child { color: rgb(var(--acc-hi)); }
-.tag { display: inline-block; font: 600 10.5px var(--f-mono); letter-spacing: .06em; border-radius: 6px; padding: 2px 6px; margin: 0 4px 4px 0; background: rgba(var(--acc),.16); color: rgb(var(--acc-hi)); }
-.tag.yes { background: rgba(244,236,236,.12); color: var(--n-yes); } .tag.no { background: rgba(var(--acc-lo),.35); color: #ff9aa6; }
-.tag.found { background: rgba(244,236,236,.1); color: var(--n-found); } .tag.est { background: rgba(255,179,187,.12); color: var(--n-est); }
-.quote { border-left: 2px solid rgb(var(--acc)); padding: 4px 10px; color: var(--mist); margin: 0 0 10px; font-style: italic; }
-.muted { color: var(--haze); }
-.kv { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; font-size: 13px; }
-.kv dt { color: var(--haze); } .kv dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
-#gate { position: fixed; inset: 0; display: grid; place-items: center; text-align: center; background: rgba(9,8,10,.6); backdrop-filter: blur(6px); z-index: 5; padding: 24px; }
-#gate h1 { font-size: 22px; }
-.close { float: right; border: 0; background: none; color: var(--haze); cursor: pointer; font-size: 18px; line-height: 1; }
-.bell { border: 1px solid rgba(var(--acc-hi),.6); background: var(--lit); box-shadow: var(--lit-shadow); border-radius: 999px; padding: 5px 12px; font: 600 12px var(--f-body); cursor: pointer; animation: bell 2.4s var(--ease) infinite; }
-@keyframes bell { 50% { box-shadow: var(--lit-shadow), 0 0 26px rgba(var(--acc),.75); } }
-.prop { border: 1px solid rgba(var(--acc-hi),.35); border-radius: 14px; padding: 12px 14px; margin: 0 0 10px; background: var(--glass); box-shadow: var(--glass-shadow); }
-.prop b { display: block; font: 700 14px var(--f-display); margin-bottom: 4px; }
-.prop .why { color: var(--haze); font-size: 12.5px; margin: 6px 0 10px; }
-.prop .acts { display: flex; gap: 8px; }
-.prop button { border: 1px solid var(--line); border-radius: 10px; padding: 6px 14px; cursor: pointer; background: var(--glass); font-weight: 600; }
-.prop button.ok { background: var(--lit); box-shadow: var(--lit-shadow); }
-.prop button:disabled { opacity: .5; cursor: default; }
-.done { font-size: 12.5px; color: var(--haze); padding: 5px 0; border-bottom: 1px solid var(--line); }
-
-@media (max-width: 860px) {
-  html, body { height: auto; overflow: auto; }
-  body { display: block; }
-  #stage { height: 62vh; }
-  aside { border-left: 0; border-top: 1px solid var(--line); padding: 18px 16px 40px; }
-  #find { width: 140px; }
-}
-</style>
 <link rel="stylesheet" href="/assets/da.css?v=7">
 <script src="/assets/accent.js?v=1"></script>
+<style>
+/* ONR NEURAL LEARNING, la page des fondateurs : ce que VOCALBOX apprend, en clair. Un tableau de bord par onglets (aperçu,
+   à valider, modules, artistes, chaînes partagées, retours, cerveau), à lire en une minute. Tokens : da.css (Nuit & Braise). */
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { background: var(--night); }
+body { margin: 0; min-height: 100vh; color: var(--mist); font: 400 14.5px/1.55 var(--f-body); -webkit-font-smoothing: antialiased;
+  background: radial-gradient(1200px 600px at 85% -10%, rgba(var(--acc-lo), .35), transparent 60%), radial-gradient(900px 500px at -10% 110%, rgba(var(--acc-lo), .22), transparent 60%), var(--night); }
+a { color: var(--ember-text); }
+button, input { font: inherit; color: inherit; }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 28px 24px 80px; }
+header.top { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+header.top h1 { font: 800 26px/1.1 var(--f-display); margin: 0; letter-spacing: .02em; }
+header.top h1 span { color: var(--ember-text); text-shadow: var(--glow); }
+header.top p { margin: 6px 0 0; color: var(--haze); max-width: 640px; }
+.ver { font: 500 11px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; background: var(--glass); }
+
+nav.tabs { position: sticky; top: 0; z-index: 3; display: flex; gap: 6px; overflow-x: auto; padding: 10px 0; margin-bottom: 18px;
+  background: linear-gradient(var(--night) 70%, transparent); scrollbar-width: none; }
+nav.tabs button { flex: none; border: 1px solid var(--line); background: var(--glass); box-shadow: var(--glass-shadow); border-radius: 999px; padding: 8px 15px;
+  font: 500 11.5px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--label); cursor: pointer; transition: background .2s var(--ease), color .2s; }
+nav.tabs button:hover { color: var(--mist); }
+nav.tabs button[aria-selected="true"] { background: var(--lit); box-shadow: var(--lit-shadow); color: #fff; }
+nav.tabs .n { display: inline-block; min-width: 18px; margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: rgb(var(--acc)); color: #fff; font-size: 10.5px; }
+
+.card { border: 1px solid var(--line); border-radius: 18px; background: var(--glass), rgba(18,12,14,.6); box-shadow: var(--glass-shadow); padding: 18px 20px; }
+.grid { display: grid; gap: 14px; }
+.kpis { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.kpi b { display: block; font: 700 30px/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
+.kpi span { color: var(--haze); font-size: 12.5px; }
+.kpi small { display: block; color: var(--muted); font-size: 11.5px; margin-top: 4px; }
+h2 { font: 500 11.5px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); margin: 28px 0 12px; }
+h3 { font: 700 15px var(--f-display); margin: 0 0 6px; letter-spacing: .01em; }
+p { margin: 0 0 10px; }
+.muted { color: var(--haze); }
+.two { grid-template-columns: 1.3fr 1fr; }
+@media (max-width: 900px) { .two { grid-template-columns: 1fr; } }
+
+ul.facts { list-style: none; margin: 0; padding: 0; }
+ul.facts li { position: relative; padding: 9px 0 9px 22px; border-bottom: 1px solid var(--line); }
+ul.facts li:last-child { border-bottom: 0; }
+ul.facts li::before { content: ""; position: absolute; left: 4px; top: 17px; width: 7px; height: 7px; border-radius: 50%; background: rgb(var(--acc)); box-shadow: var(--glow); }
+ul.facts b { color: #fff; font-weight: 600; }
+
+/* les barres : une seule série, braise, extrémité arrondie, valeur en texte à côté */
+.bars { display: grid; gap: 8px; }
+.bar-row { display: grid; grid-template-columns: minmax(110px, 180px) 1fr auto; gap: 12px; align-items: center; font-size: 13.5px; }
+.bar-row .lab { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.track { height: 10px; border-radius: 0 5px 5px 0; background: rgba(255,255,255,.05); overflow: hidden; }
+.track i { display: block; height: 100%; border-radius: 0 4px 4px 0; background: linear-gradient(90deg, rgb(var(--acc-lo)), rgb(var(--acc))); min-width: 2px; }
+.bar-row .val { color: var(--label); font-variant-numeric: tabular-nums; font-size: 12.5px; }
+.week { display: flex; align-items: flex-end; gap: 8px; height: 140px; padding-top: 10px; }
+.week div { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; cursor: default; }
+.week div i { width: 100%; max-width: 44px; border-radius: 4px 4px 0 0; background: linear-gradient(180deg, rgb(var(--acc)), rgb(var(--acc-lo))); min-height: 2px; transition: filter .15s; }
+.week div:hover i { filter: brightness(1.3); }
+.week small { color: var(--muted); font-size: 10.5px; font-family: var(--f-mono); }
+
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th { text-align: left; font: 500 10.5px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); padding: 10px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 11px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+tr.click { cursor: pointer; }
+tr.click:hover td { background: rgba(255,255,255,.03); }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mini { display: inline-block; width: 70px; height: 6px; border-radius: 3px; background: rgba(255,255,255,.06); vertical-align: middle; margin-right: 8px; overflow: hidden; }
+.mini i { display: block; height: 100%; background: rgb(var(--acc)); border-radius: 3px; }
+tr.detail td { background: rgba(0,0,0,.18); color: var(--label); font-size: 13px; }
+.scroll { overflow-x: auto; }
+
+.tag { display: inline-block; font: 500 10.5px var(--f-mono); letter-spacing: .06em; border-radius: 7px; padding: 3px 8px; margin: 0 5px 5px 0; background: rgba(var(--acc), .16); color: var(--ember-text); white-space: nowrap; }
+.tag.plain { background: rgba(255,255,255,.06); color: var(--label); }
+.tag.good { background: rgba(244,236,236,.12); color: #fff; }
+.tag.bad { background: rgba(var(--acc-lo), .45); color: #ffb3bb; }
+.chain { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chain .tag { margin: 0; }
+.chain .arrow { color: var(--muted); font-size: 12px; }
+
+.prop { border: 1px solid rgba(var(--acc-hi), .35); }
+.prop .kind { font: 500 10.5px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ember-text); }
+.prop .why { color: var(--haze); font-size: 12.5px; }
+.acts { display: flex; gap: 8px; margin-top: 12px; }
+.btn { border: 1px solid var(--line); border-radius: 11px; padding: 8px 16px; cursor: pointer; background: var(--glass); font-weight: 600; }
+.btn.ok { background: var(--lit); box-shadow: var(--lit-shadow); color: #fff; }
+.btn:disabled { opacity: .5; cursor: default; }
+
+.fb { display: grid; gap: 8px; }
+.fb .q { font-style: italic; color: #fff; }
+.fb .meta { display: flex; flex-wrap: wrap; gap: 4px; }
+.fb .tw { font-size: 13px; color: var(--label); }
+input.search { width: 100%; max-width: 420px; border: 1px solid var(--line); background: var(--glass); border-radius: 999px; padding: 9px 16px; outline: none; margin-bottom: 14px; }
+input.search:focus { border-color: var(--ember-text); }
+.empty { color: var(--haze); padding: 18px; border: 1px dashed var(--line); border-radius: 14px; }
+
+#gate { position: fixed; inset: 0; display: grid; place-items: center; text-align: center; background: rgba(9,8,10,.75); backdrop-filter: blur(6px); z-index: 9; padding: 24px; }
+#gate h1 { font: 800 24px var(--f-display); }
+@media (max-width: 640px) {
+  .wrap { padding: 18px 16px 60px; }
+  .bar-row { grid-template-columns: 100px 1fr auto; }
+  header.top h1 { font-size: 21px; }
+}
+</style>
 
 <div id="gate">
   <div>
-    <h1>ONR <span style="color:rgb(var(--acc-hi))">Neural Learning</span></h1>
+    <h1>ONR <span style="color:var(--ember-text)">Neural Learning</span></h1>
     <p class="muted" id="gateMsg">Chargement…</p>
   </div>
 </div>
 
-<main id="stage">
-  <canvas id="graph" aria-label="Le cerveau d'ONR Neural Learning en constellation"></canvas>
-  <div class="top">
-    <span class="crumb">VOCALBOX → <b>Vue graphique</b></span>
-    <button class="bell" id="bell" type="button" hidden></button>
-    <input id="find" type="search" placeholder="Chercher un artiste, un réglage…" aria-label="Chercher dans le cerveau">
-    <button class="chip" data-kind="feedback" aria-pressed="true"><i style="background:var(--n-yes)"></i>Retours</button>
-    <button class="chip" data-kind="hint" aria-pressed="true"><i style="background:var(--n-hint)"></i>Couleurs</button>
-    <button class="chip" data-kind="param" aria-pressed="true"><i style="background:var(--n-param)"></i>Retouches</button>
-    <button class="chip" data-kind="miss" aria-pressed="false"><i style="background:var(--n-none)"></i>Introuvables</button>
-  </div>
-  <div class="legend">
-    <span><i style="background:#fff"></i>cerveau</span>
-    <span><i style="background:var(--n-artist)"></i>artiste livré</span>
-    <span><i style="background:var(--n-est)"></i>artiste estimé</span>
-    <span><i style="background:var(--n-found)"></i>trouvé par le serveur</span>
-    <span><i style="background:var(--n-yes)"></i>OUI</span>
-    <span><i style="background:var(--n-no)"></i>BOF</span>
-  </div>
-  <div id="tip" hidden></div>
-</main>
-
-<aside id="side">
-  <h1>ONR <span>Neural Learning</span></h1>
-  <p class="lead">Le cerveau d’AUTO MIX, et ce que les utilisateurs lui apprennent.</p>
-  <div id="pick"></div>
-  <div id="summary"></div>
-</aside>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>ONR <span>Neural Learning</span></h1>
+      <p>Ce que VOCALBOX apprend des gens qui ont allumé l'option : leurs mix, ce qu'ils gardent, ce qu'ils retouchent, les chaînes qu'ils partagent. Anonyme, jamais de son.</p>
+    </div>
+    <span class="ver" id="ver"></span>
+  </header>
+  <nav class="tabs" id="tabs" role="tablist"></nav>
+  <main id="view"></main>
+</div>
 
 <script>
 "use strict";
 const $ = (id) => document.getElementById(id);
-const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids.flat().filter((k) => k != null && k !== false)); return n; };
-const fill = (node, ...kids) => node.append(...kids.flat(3).filter((k) => k != null && k !== false));
+const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids.flat(3).filter((k) => k != null && k !== false)); return n; };
 const token = (() => { try { return sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"); } catch { return null; } })();
-const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-const rgbOfAcc = (v) => `rgb(${css(v)})`;
+const norm = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/^facon /, "").trim();
+const date = (t) => new Date(t).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+const pct = (a, b) => (b ? Math.round((100 * a) / b) + " %" : "—");
+const num = (v, d = 1) => (Math.round(v * 10 ** d) / 10 ** d).toLocaleString("fr-FR");
+const signed = (v, d = 1) => (v > 0 ? "+" : v < 0 ? "−" : "") + num(Math.abs(v), d);
 
-const HINTS = { bright: "brillance", air: "air", warm: "chaleur", dark: "sombre", comp: "compression", reverb: "réverbe", reverbSize: "taille de réverbe",
-  delay: "delay", sat: "saturation", doubler: "doubleur", chorus: "chorus", controlled: "voix maîtrisée", parallel: "compression parallèle", dreamy: "aérienne / rêveuse" };
-const PARAMS = { fetAttack: "1176 attaque", fetRelease: "1176 release", fetIn: "1176 entrée", fetOut: "1176 sortie", laPeak: "LA-2A peak", laGain: "LA-2A gain",
-  mud: "DeMud", high: "HI", air: "AIR", fxReverbMix: "réverbe envoi", fxReverbDecay: "réverbe durée", fxReverbDucking: "réverbe ducking",
-  fxDelayMix: "delay envoi", fxDelayFeedback: "delay feedback", fxDelayDucking: "delay ducking", mbAttack: "multiband attaque", mbRelease: "multiband release",
-  parallelAmount: "parallèle quantité", input: "niveau d'entrée", deessAmount: "de-esser", nsAmount: "noise suppressor", drive: "préampli drive" };
-const paramName = (id) => { const base = id.replace(/_\d+$/, ""); const m = base.match(/^peq(\d)(Gain|Freq|Q|On)$/);
-  return PARAMS[base] || (m ? `EQ bande ${m[1]} ${({ Gain: "gain", Freq: "fréquence", Q: "Q", On: "allumée" })[m[2]]}` : base) + (id !== base ? " (" + id.slice(base.length + 1) + ")" : ""); };
-const fmt = (v) => (typeof v === "number" ? (Math.abs(v) >= 100 ? Math.round(v) : Math.round(v * 100) / 100) : String(v));
-const date = (t) => new Date(t).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
-const norm = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+const HINTS = { reverb: "réverbe", delay: "delay", air: "air", bright: "brillance", comp: "compression", warm: "chaleur" };
+// les réglages retouchés, ramenés aux couleurs du cerveau (comme le serveur, brainlearn.js)
+const PARAM_TO_HINT = { fxReverbMix: ["reverb", 1 / 70], fxDelayMix: ["delay", 1 / 18], air: ["air", 1 / 3], high: ["bright", 1 / 1.5], parallelAmount: ["comp", 1 / 25], satWarmth: ["warm", 1 / 30] };
+const PARAMS = { fetAttack: "attaque", fetRelease: "release", fetIn: "entrée", fetOut: "sortie", laPeak: "peak", laGain: "gain", mud: "DeMud", high: "HI", air: "AIR",
+  fxReverbMix: "envoi", fxReverbDecay: "durée", fxDelayMix: "envoi", fxDelayFeedback: "feedback", parallelAmount: "quantité", deessAmt: "quantité", deessFreq: "fréquence",
+  nsAmount: "quantité", drive: "drive", tuneRetune: "vitesse (retune)", tuneHumanize: "humanize", dbrReduction: "réduction", dclkAmount: "quantité", drvAmount: "quantité",
+  cl1bThreshold: "seuil", cl1bGain: "gain", preampGain: "gain", gateThr: "seuil", plosive: "quantité", input: "niveau d'entrée",
+  macroPresence: "PRÉSENCE", macroWarmth: "CHALEUR", macroHold: "TENUE", macroSpace: "ESPACE" };
+const paramLabel = (id) => { const m = id.match(/^peq(\d)(Gain|Freq|Q|On)$/); return PARAMS[id] || (m ? `bande ${m[1]} ${({ Gain: "gain", Freq: "fréquence", Q: "Q", On: "on" })[m[2]]}` : id); };
+const ROLES = ["LEAD", "BACKS", "ADLIBS", "DOUBLES"];
+const RESULT = { kept: ["gardée telle quelle", "good"], tweaked: ["retouchée", "plain"], rebuilt: ["démontée", "bad"] };
+const ENDED = { newmix: "nouveau mix demandé", remix: "autre voix essayée", community: "chaîne de la communauté essayée", usual: "chaîne habituelle montée" };
 
-let D = null, nodes = [], links = [], byId = new Map(), adj = new Map();
-const shown = { feedback: true, hint: true, param: true, miss: false };
+let D = null, tab = "apercu";
 
 //------------------------------------------------------------------------------ Les données
-async function load(again) {
+async function load() {
   if (!token) return gate("Connecte-toi avec ton compte fondateur pour ouvrir cette page.", true);
   let r;
   try { r = await fetch("/api/vocalbox/founders", { headers: { Authorization: "Bearer " + token } }); } catch { return gate("Le serveur ne répond pas."); }
@@ -159,384 +165,298 @@ async function load(again) {
   if (r.status === 403) return gate("Cette page est réservée aux fondateurs.");
   if (!r.ok) return gate("Erreur du serveur (" + r.status + ").");
   D = await r.json();
-  if (again) { summary(); return; }
+  D.chains ||= [];
   $("gate").hidden = true;
-  build(); summary(); start();
+  compute();
+  render();
 }
 function gate(msg, login) {
   const m = $("gateMsg"); m.textContent = msg;
   if (login) m.append(" ", el("a", { href: "compte", textContent: "Se connecter" }));
 }
 
-//------------------------------------------------------------------------------ Le graphe
-function add(id, kind, label, r, color, data) {
-  if (byId.has(id)) return byId.get(id);
-  const a = Math.random() * 6.283, d = 60 + Math.random() * 380;
-  const n = { id, kind, label, r, color, data, x: Math.cos(a) * d, y: Math.sin(a) * d, vx: 0, vy: 0, deg: 0 };
-  nodes.push(n); byId.set(id, n); adj.set(id, new Set()); return n;
-}
-function link(a, b, w = 1) {
-  if (!byId.has(a) || !byId.has(b) || a === b) return;
-  links.push({ a: byId.get(a), b: byId.get(b), w }); adj.get(a).add(b); adj.get(b).add(a);
-  byId.get(a).deg++; byId.get(b).deg++;
-}
-function build() {
-  nodes = []; links = []; byId = new Map(); adj = new Map();
-  const rgbOf = (v) => (/^\d/.test(v) ? `rgb(${v})` : v);
-  const C = { violet: rgbOf(css("--acc")), pink: css("--n-est"), cyan: css("--n-found"), gold: rgbOf(css("--acc-hi")), yes: css("--n-yes"), no: rgbOf(css("--acc-lo")), param: css("--n-param"), genre: css("--n-genre") };
-  add("brain", "brain", "ONR", 16, "#ffffff", null).fx = 0;
-  byId.get("brain").fy = 0;
-  if (shown.hint) for (const k in HINTS) add("h:" + k, "hint", HINTS[k], 6, C.gold, { key: k });
-  const artists = new Map();
-  const addArtist = (a, src) => {
-    const key = norm(a.name); if (!key || artists.has(key)) return;
-    artists.set(key, a);
-    const genre = (a.genre || "autre").toLowerCase();
-    add("g:" + genre, "genre", genre, 9, C.genre, { genre }); link("brain", "g:" + genre, 2);
-    const color = src === "found" ? C.cyan : a.estimate ? C.pink : C.violet;
-    add("a:" + key, "artist", a.name, 5, color, { ...a, src }); link("g:" + genre, "a:" + key, 1.4);
-    if (shown.hint) for (const [k, v] of Object.entries(a.hints || {})) if (HINTS[k] && (v === true || (typeof v === "number" && Math.abs(v) >= 0.45))) link("a:" + key, "h:" + k, .5);
-  };
-  for (const a of D.shipped.artists || []) addArtist(a, "shipped");
-  for (const a of D.found || []) addArtist(a, "found");
-  if (shown.feedback) for (const f of D.feedback.slice(0, 700)) {
-    const color = f.rating > 0 ? C.yes : f.rating < 0 ? C.no : "#5a4b4f";
-    add("f:" + f.id, "feedback", (f.request || "(sans demande)").slice(0, 60), 2.6, color, f);
-    let any = false;
-    for (const name of f.artists || []) { const k = norm(String(name).replace(/^fa[cç]on /i, "")); if (byId.has("a:" + k)) { link("f:" + f.id, "a:" + k, .8); any = true; } }
-    if (!any) link("f:" + f.id, "brain", .25);
-    if (shown.param) for (const id of Object.keys(f.final || {})) { add("p:" + id, "param", paramName(id), 4, C.param, { id }); link("f:" + f.id, "p:" + id, .5); }
-  }
-  if (shown.miss) for (const m of D.misses) { add("m:" + m.query, "miss", m.query, 2.4, "#666", m); link("m:" + m.query, "brain", .2); }
-  for (const n of nodes) if (n.kind === "param" || n.kind === "genre" || n.kind === "hint") n.r += Math.min(6, Math.sqrt(n.deg) * .8);
-  for (const n of nodes) if (n.kind === "hint" && n.deg === 0) byId.delete(n.id);
-  nodes = nodes.filter((n) => byId.has(n.id));
-  alpha = 1;
-}
-
-let alpha = 1;
-function tick() {
-  const N = nodes.length;
-  // répulsion (toutes les paires : quelques centaines de points), ressorts des liens, rappel vers le centre
-  for (let i = 0; i < N; i++) {
-    const a = nodes[i];
-    for (let j = i + 1; j < N; j++) {
-      const b = nodes[j]; let dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy + .01;
-      if (d2 > 250000) continue;
-      const f = (900 * alpha) / d2, d = Math.sqrt(d2); dx /= d; dy /= d;
-      a.vx -= dx * f * d * .05; a.vy -= dy * f * d * .05; b.vx += dx * f * d * .05; b.vy += dy * f * d * .05;
-    }
-  }
-  for (const l of links) {
-    const dx = l.b.x - l.a.x, dy = l.b.y - l.a.y, d = Math.sqrt(dx * dx + dy * dy) + .01;
-    const rest = l.a.kind === "brain" || l.b.kind === "brain" ? 150 : l.w > 1 ? 70 : 46;
-    const k = .02 * Math.min(2, l.w) * alpha * (d - rest) / d;
-    l.a.vx += dx * k; l.a.vy += dy * k; l.b.vx -= dx * k; l.b.vy -= dy * k;
-  }
-  for (const n of nodes) {
-    n.vx -= n.x * .0016 * alpha; n.vy -= n.y * .0016 * alpha;
-    if (n.fx != null) { n.x = n.fx; n.y = n.fy; n.vx = n.vy = 0; continue; }
-    n.vx *= .82; n.vy *= .82; n.x += n.vx; n.y += n.vy;
-  }
-  alpha = Math.max(.02, alpha * .993);
-}
-
-//------------------------------------------------------------------------------ Le dessin
-const cv = $("graph"), g = cv.getContext("2d");
-let W = 0, H = 0, dpr = 1, view = { x: 0, y: 0, k: .9 }, hover = null, picked = null, stars = [];
-function size() {
-  dpr = Math.min(2, devicePixelRatio || 1);
-  W = cv.clientWidth; H = cv.clientHeight; cv.width = W * dpr; cv.height = H * dpr;
-  stars = Array.from({ length: Math.round(W * H / 3000) }, () => ({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.1 + .2, p: Math.random() * 6.28 }));
-}
-addEventListener("resize", size);
-const toScreen = (n) => [W / 2 + (n.x + view.x) * view.k, H / 2 + (n.y + view.y) * view.k];
-const toWorld = (sx, sy) => [(sx - W / 2) / view.k - view.x, (sy - H / 2) / view.k - view.y];
-
-function draw(t) {
-  const A = css("--acc"), AH = `rgb(${css("--acc-hi")})`;   // l'accent du compte, lu une fois par image
-  g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  g.clearRect(0, 0, W, H);
-  for (const s of stars) { g.globalAlpha = .25 + .5 * Math.abs(Math.sin(s.p + t / 1600)); g.fillStyle = "#f4dfe2"; g.fillRect(s.x, s.y, s.r, s.r); }
-  // la lune
-  g.globalAlpha = 1;
-  const mx = W * .16, my = H * .2, mr = Math.min(W, H) * .07;
-  const glow = g.createRadialGradient(mx, my, mr * .5, mx, my, mr * 2.4); glow.addColorStop(0, `rgba(${A},.28)`); glow.addColorStop(1, `rgba(${A},0)`);
-  g.fillStyle = glow; g.beginPath(); g.arc(mx, my, mr * 2.4, 0, 6.283); g.fill();
-  g.fillStyle = "#f4ecec"; g.beginPath(); g.arc(mx, my, mr, 0, 6.283); g.fill();
-  g.save(); g.globalCompositeOperation = "destination-out"; g.beginPath(); g.arc(mx + mr * .5, my - mr * .28, mr * .86, 0, 6.283); g.fill(); g.restore();
-
-  const focus = picked || hover, near = focus ? adj.get(focus.id) || new Set() : null;
-  g.lineWidth = 1;
-  for (const l of links) {
-    const on = focus && (l.a === focus || l.b === focus);
-    g.strokeStyle = on ? "rgba(255,236,238,.8)" : focus ? `rgba(${A},.05)` : `rgba(${A},${.1 + .08 * Math.min(2, l.w)})`;
-    const [x1, y1] = toScreen(l.a), [x2, y2] = toScreen(l.b);
-    g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
-  }
-  for (const n of nodes) {
-    const [x, y] = toScreen(n); const r = Math.max(1.4, n.r * Math.sqrt(view.k));
-    if (x < -40 || y < -40 || x > W + 40 || y > H + 40) continue;
-    const dim = focus && n !== focus && !near.has(n.id);
-    g.globalAlpha = dim ? .18 : 1;
-    if (n.kind !== "feedback" && n.kind !== "miss") { g.shadowColor = n.color; g.shadowBlur = n.kind === "brain" ? 30 : 10; }
-    g.fillStyle = n.color; g.beginPath(); g.arc(x, y, r, 0, 6.283); g.fill();
-    g.shadowBlur = 0;
-    if (n === focus) { g.strokeStyle = "#fff"; g.lineWidth = 1.5; g.beginPath(); g.arc(x, y, r + 4, 0, 6.283); g.stroke(); g.lineWidth = 1; }
-    const label = n.kind === "brain" || n.kind === "genre" || n.kind === "hint" || (n.kind === "artist" && view.k > .75) || (n.kind === "param" && view.k > .9) || n === focus || (near && near.has(n.id) && n.kind !== "feedback");
-    if (label && !dim) {
-      g.font = (n.kind === "brain" ? "700 13px " : n.kind === "genre" ? "600 12px " : "500 11px ") + css("--f-body");
-      g.fillStyle = n.kind === "hint" ? AH : "rgba(244,236,236,.9)"; g.textAlign = "center";
-      g.fillText(n.label, x, y + r + 12);
-    }
-  }
-  g.globalAlpha = 1;
-}
-let touched = false, fitted = false;
-function fit() {
-  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-  for (const n of nodes) { x0 = Math.min(x0, n.x); y0 = Math.min(y0, n.y); x1 = Math.max(x1, n.x); y1 = Math.max(y1, n.y); }
-  if (x1 <= x0) return;
-  view.k = Math.min(1.6, Math.max(.2, Math.min(W / (x1 - x0 + 80), H / (y1 - y0 + 120)) * .92));
-  view.x = -(x0 + x1) / 2; view.y = -(y0 + y1) / 2;
-}
-function loop(t) {
-  if (alpha > .021) { tick(); if (alpha > .5) tick(); }
-  if (!touched && (!fitted || alpha > .05)) { fit(); fitted = alpha < .1; }
-  draw(t);
-  requestAnimationFrame(loop);
-}
-function start() { size(); if (reduced) for (let i = 0; i < 400; i++) tick(); requestAnimationFrame(loop); }
-
-//------------------------------------------------------------------------------ Les gestes
-function hit(sx, sy) {
-  const [wx, wy] = toWorld(sx, sy); let best = null, bd = 1e9;
-  for (const n of nodes) { const d = Math.hypot(n.x - wx, n.y - wy), lim = (n.r + 6) / Math.sqrt(view.k); if (d < lim && d < bd) { bd = d; best = n; } }
-  return best;
-}
-let drag = null;
-cv.addEventListener("pointerdown", (e) => {
-  touched = true;
-  cv.setPointerCapture(e.pointerId);
-  const n = hit(e.offsetX, e.offsetY);
-  drag = { n, sx: e.offsetX, sy: e.offsetY, vx: view.x, vy: view.y, moved: false };
-  cv.classList.add("drag");
-});
-cv.addEventListener("pointermove", (e) => {
-  if (drag) {
-    const dx = e.offsetX - drag.sx, dy = e.offsetY - drag.sy;
-    if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
-    if (drag.n && drag.n.kind !== "brain") { const [wx, wy] = toWorld(e.offsetX, e.offsetY); drag.n.fx = wx; drag.n.fy = wy; alpha = Math.max(alpha, .3); }
-    else if (!drag.n || drag.n.kind === "brain") { view.x = drag.vx + dx / view.k; view.y = drag.vy + dy / view.k; }
-    return;
-  }
-  const n = hit(e.offsetX, e.offsetY);
-  hover = n;
-  const tip = $("tip");
-  if (n) { tip.hidden = false; tip.textContent = n.label; tip.style.left = e.offsetX + "px"; tip.style.top = e.offsetY + "px"; } else tip.hidden = true;
-});
-cv.addEventListener("pointerup", () => {
-  if (drag) {
-    if (drag.n && drag.n.kind !== "brain") { drag.n.fx = drag.n.fy = null; }
-    if (!drag.moved) select(drag.n);
-  }
-  drag = null; cv.classList.remove("drag");
-});
-cv.addEventListener("pointerleave", () => { hover = null; $("tip").hidden = true; });
-cv.addEventListener("wheel", (e) => {
-  touched = true;
-  e.preventDefault();
-  const [wx, wy] = toWorld(e.offsetX, e.offsetY);
-  view.k = Math.min(4, Math.max(.2, view.k * Math.exp(-e.deltaY * .0012)));
-  const [nx, ny] = toWorld(e.offsetX, e.offsetY); view.x += nx - wx; view.y += ny - wy;
-}, { passive: false });
-for (const b of document.querySelectorAll(".chip")) b.addEventListener("click", () => {
-  const k = b.dataset.kind; shown[k] = !shown[k]; b.setAttribute("aria-pressed", String(shown[k]));
-  const keep = picked && picked.id; build(); picked = keep ? byId.get(keep) || null : null;
-});
-$("find").addEventListener("input", (e) => {
-  const q = norm(e.target.value); if (q.length < 2) return;
-  const n = nodes.find((m) => m.kind !== "feedback" && norm(m.label).includes(q)) || nodes.find((m) => norm(m.label).includes(q));
-  if (n) { touched = true; select(n); view.x = -n.x; view.y = -n.y; view.k = Math.max(view.k, 1.1); }
-});
-
-//------------------------------------------------------------------------------ Le texte : la sélection
-function feedbackOf(n) {
-  const ids = [...adj.get(n.id)].filter((i) => i.startsWith("f:")).map((i) => byId.get(i).data);
-  if (n.kind === "artist" && !shown.feedback) return D.feedback.filter((f) => (f.artists || []).some((a) => norm(String(a).replace(/^fa[cç]on /i, "")) === norm(n.data.name)));
-  return ids;
-}
-function ratingLine(list) {
-  const yes = list.filter((f) => f.rating > 0).length, no = list.filter((f) => f.rating < 0).length;
-  return el("p", {}, el("span", { className: "tag yes", textContent: yes + " OUI" }), el("span", { className: "tag no", textContent: no + " BOF" }),
-    el("span", { className: "tag", textContent: (list.length - yes - no) + " sans note" }));
-}
-function hintBars(h) {
-  return Object.entries(h || {}).filter(([k]) => HINTS[k]).map(([k, v]) =>
-    el("div", { className: "row" }, el("span", { textContent: HINTS[k] }),
-      typeof v === "number" ? el("span", { style: "width:46%" }, el("div", { className: "bar" }, el("i", { style: `width:${Math.round(Math.min(1, Math.abs(v)) * 100)}%` })))
-                            : el("span", { textContent: v ? "oui" : "non" })));
-}
-function select(n) {
-  picked = n || null;
-  const box = $("pick"); box.replaceChildren();
-  if (!n) return;
-  const close = el("button", { className: "close", textContent: "×", title: "Fermer", onclick: () => select(null) });
-  const H2 = (t) => el("h2", { textContent: t });
-  if (n.kind === "artist") {
-    const a = n.data, list = feedbackOf(n);
-    fill(box, close, H2("Artiste"), el("h1", { textContent: a.name, style: "font-size:17px" }),
-      el("p", {}, el("span", { className: "tag", textContent: a.genre || "?" }),
-        a.src === "found" ? el("span", { className: "tag found", textContent: "trouvé par le serveur · " + (a.hits || 0) + " demandes" })
-          : a.estimate ? el("span", { className: "tag est", textContent: "estimé (style)" }) : el("span", { className: "tag", textContent: "livré dans le plugin" })),
-      el("p", { className: "muted", textContent: "Se reconnaît à : " + (a.aliases || []).join(", ") }),
-      H2("Sa façon de mixer la voix"), hintBars(a.hints), H2("Les mix faits avec cet artiste (" + list.length + ")"), ratingLine(list));
-  } else if (n.kind === "feedback") {
-    const f = n.data;
-    const planned = {};
-    for (const m of f.plan?.modules || []) for (const [k, v] of Object.entries(m.params || {})) planned[m.instance ? `${k}_${m.instance + 1}` : k] = v;
-    if (f.plan?.inputDb != null) planned.input = f.plan.inputDb;
-    fill(box, close, H2("Un mix · " + date(f.at)),
-      el("p", {}, f.rating > 0 ? el("span", { className: "tag yes", textContent: "OUI" }) : f.rating < 0 ? el("span", { className: "tag no", textContent: "BOF" }) : el("span", { className: "tag", textContent: "pas de note" }),
-        el("span", { className: "tag", textContent: "v" + (f.version || "?") }), el("span", { className: "tag", textContent: "poste " + String(f.install).slice(0, 6) })),
-      el("div", { className: "quote", textContent: f.request || "(aucune demande écrite)" }),
-      (f.artists || []).length ? el("p", { className: "muted", textContent: "Compris : " + f.artists.join(", ") }) : null,
-      H2("La voix reçue"),
-      el("dl", { className: "kv" }, ...[["durée", (f.profile.seconds || 0).toFixed(0) + " s"], ["chantée", Math.round((f.profile.sung || 0) * 100) + " %"],
-        ["niveau fort", fmt(f.profile.loudDb ?? 0) + " dB"], ["dynamique", fmt(f.profile.dynRange ?? 0) + " dB"], ["sifflantes", fmt(f.profile.sibilance ?? 0) + " dB @ " + fmt(f.profile.sibFreq ?? 0) + " Hz"],
-        ["plosives / min", fmt(f.profile.plosivesPerMin ?? 0)], ["réverbe de la pièce", fmt(f.profile.rt60 ?? 0) + " s"]].flatMap(([k, v]) => [el("dt", { textContent: k }), el("dd", { textContent: v })])),
-      H2("La chaîne décidée"), el("p", {}, (f.plan?.modules || []).map((m) => el("span", { className: "tag", textContent: m.type + (m.instance ? " " + (m.instance + 1) : "") }))),
-      H2("Ce que l'utilisateur a retouché ensuite"),
-      Object.keys(f.final || {}).length ? Object.entries(f.final).map(([k, v]) => el("div", { className: "row" }, el("span", { textContent: paramName(k) }),
-        el("span", { textContent: (planned[k] != null ? fmt(planned[k]) + " → " : "") + fmt(v) }))) : el("p", { className: "muted", textContent: "Rien : la chaîne a été gardée telle quelle." }),
-      f.minutes != null ? el("p", { className: "muted", textContent: f.minutes + " min avant l'envoi" }) : null);
-  } else if (n.kind === "param") {
-    const list = feedbackOf(n), deltas = [];
-    for (const f of list) { const p = paramDelta(f, n.data.id); if (p != null) deltas.push(p); }
-    const avg = deltas.length ? deltas.reduce((s, v) => s + v, 0) / deltas.length : null;
-    fill(box, close, H2("Retouche"), el("h1", { textContent: n.label, style: "font-size:17px" }),
-      el("p", { textContent: `Changé par les utilisateurs dans ${list.length} mix.` }),
-      avg != null ? el("p", { textContent: `En moyenne ${avg > 0 ? "monté" : "baissé"} de ${fmt(Math.abs(avg))} par rapport à ce que AUTO MIX avait décidé : c'est une correction à apprendre.` }) : null,
-      ratingLine(list));
-  } else if (n.kind === "hint") {
-    const arts = [...adj.get(n.id)].filter((i) => i.startsWith("a:")).map((i) => byId.get(i));
-    fill(box, close, H2("Couleur de voix"), el("h1", { textContent: n.label, style: "font-size:17px" }),
-      el("p", { textContent: `${arts.length} artistes ont cette couleur marquée.` }),
-      arts.map((a) => el("div", { className: "row click", onclick: () => select(a) }, el("span", { textContent: a.label }), el("span", { textContent: fmt(a.data.hints[n.data.key]) }))));
-  } else if (n.kind === "genre") {
-    const arts = [...adj.get(n.id)].filter((i) => i.startsWith("a:")).map((i) => byId.get(i));
-    fill(box, close, H2("Genre"), el("h1", { textContent: n.label, style: "font-size:17px" }),
-      arts.map((a) => el("div", { className: "row click", onclick: () => select(a) }, el("span", { textContent: a.label }), el("span", { textContent: a.data.src === "found" ? "serveur" : a.data.estimate ? "estimé" : "livré" }))));
-  } else if (n.kind === "miss") {
-    fill(box, close, H2("Nom introuvable"), el("h1", { textContent: n.label, style: "font-size:17px" }),
-      el("p", { textContent: `Demandé ${n.data.tries} fois, sans fiche trouvée. Dernière demande : ${date(n.data.at)}. Nouvelle recherche possible une semaine après.` }));
-  } else {
-    fill(box, close, H2("Le cerveau"), el("p", { textContent: "Le centre : AUTO MIX. Autour, les genres, puis les artistes dont il connaît la façon de mixer la voix ; les points de couleur sont les mix des utilisateurs, reliés aux artistes demandés et aux réglages qu'ils ont retouchés." }));
-  }
-  fill(box, el("hr", { style: "border:0;border-top:1px solid var(--line);margin:22px 0 0" }));
-}
-function paramDelta(f, id) {
-  if (f.final?.[id] == null) return null;
+//------------------------------------------------------------------------------ Les calculs (une fois)
+let S = {};
+function moduleOfParam(f, id) {
+  // un réglage retouché → le module de la chaîne d'AUTO MIX qui le porte (exemplaire 1 : l'identifiant tel quel ; sinon _2, _3)
   const base = id.replace(/_\d+$/, ""), inst = id === base ? 0 : Number(id.slice(base.length + 1)) - 1;
-  if (base === "input") return f.plan?.inputDb != null ? f.final[id] - f.plan.inputDb : null;
-  for (const m of f.plan?.modules || []) if ((m.instance || 0) === inst && m.params?.[base] != null) return f.final[id] - m.params[base];
+  for (const m of f.plan?.modules || []) if ((m.instance || 0) === inst && m.params && base in m.params) return { m, base, before: m.params[base] };
   return null;
 }
+function compute() {
+  const fb = D.feedback || [];
+  const mod = new Map();
+  const M = (t) => { if (!mod.has(t)) mod.set(t, { type: t, placed: 0, judged: 0, removed: 0, tweakedMixes: 0, addedAfter: 0, inChains: 0, params: new Map() }); return mod.get(t); };
+  const art = new Map();
+  const A = (name) => { const k = norm(name); if (!art.has(k)) art.set(k, { name: String(name).replace(/^fa[cç]on /i, ""), n: 0, yes: 0, no: 0, judged: 0, kept: 0, rebuilt: 0, hints: {}, refs: 0, installs: new Set() }); return art.get(k); };
+  const tweaks = new Map(), words = new Map(), weeks = new Map();
+  let judged = 0, kept = 0, rebuilt = 0, yes = 0, no = 0, compares = 0;
+  for (const f of fb) {
+    const out = f.extra?.outcome;
+    if (f.rating > 0) yes++; else if (f.rating < 0) no++;
+    if (out) { judged++; if (out.result === "kept") kept++; if (out.result === "rebuilt") rebuilt++; if ((out.compares || 0) >= 1) compares++; }
+    const removed = new Set(out?.removedModules || []);
+    for (const m of f.plan?.modules || []) { const s = M(m.type); s.placed++; if (out) { s.judged++; if (removed.has(m.type)) s.removed++; } }
+    for (const t of out?.addedModules || []) M(t).addedAfter++;
+    const touched = new Set();
+    for (const [id, v] of Object.entries(f.final || {})) {
+      const hit = moduleOfParam(f, id);
+      const label = hit ? hit.m.type + " · " + paramLabel(hit.base) : paramLabel(id.replace(/_\d+$/, ""));
+      const d = hit && Number.isFinite(Number(hit.before)) ? Number(v) - Number(hit.before) : null;
+      const t = tweaks.get(label) || { n: 0, sum: 0, k: 0 }; t.n++; if (d != null) { t.sum += d; t.k++; } tweaks.set(label, t);
+      if (hit) {
+        touched.add(hit.m.type);
+        const p = M(hit.m.type).params; const q = p.get(hit.base) || { n: 0, sum: 0 }; q.n++; if (d != null) q.sum += d; p.set(hit.base, q);
+      }
+    }
+    for (const t of touched) M(t).tweakedMixes++;
+    for (const w of f.extra?.refine || []) { const k = String(w).toLowerCase().trim(); if (k) words.set(k, (words.get(k) || 0) + 1); }
+    // les artistes : notes, gestes, et la correction moyenne en couleurs
+    const planned = {};
+    for (const m of f.plan?.modules || []) if (!m.instance) Object.assign(planned, m.params || {});
+    const deltas = {};
+    for (const [id, v] of Object.entries(f.final || {})) { const map = PARAM_TO_HINT[id]; if (map && planned[id] != null) deltas[map[0]] = (deltas[map[0]] || 0) + (Number(v) - Number(planned[id])) * map[1]; }
+    for (const a of f.artists || []) {
+      const s = A(a); s.n++; s.installs.add(f.install);
+      if (f.rating > 0) s.yes++; else if (f.rating < 0) s.no++;
+      if (out) { s.judged++; if (out.result === "kept") s.kept++; if (out.result === "rebuilt") s.rebuilt++; }
+      if (f.extra?.refProfile) s.refs++;
+      for (const [k, d] of Object.entries(deltas)) { s.hints[k] ||= []; s.hints[k].push(d); }
+    }
+    const w = Math.floor(f.at / (7 * 864e5)); const x = weeks.get(w) || { n: 0, yes: 0, rated: 0 }; x.n++; if (f.rating) { x.rated++; if (f.rating > 0) x.yes++; } weeks.set(w, x);
+  }
+  for (const c of D.chains) { const seen = new Set(); for (const m of c.modules || []) if (!seen.has(m.type)) { seen.add(m.type); M(m.type).inChains++; } }
+  S = { fb, mod: [...mod.values()].sort((a, b) => b.placed + b.inChains - (a.placed + a.inChains)), art: [...art.values()].sort((a, b) => b.n - a.n),
+    tweaks: [...tweaks.entries()].sort((a, b) => b[1].n - a[1].n), words: [...words.entries()].sort((a, b) => b[1] - a[1]),
+    weeks: [...weeks.entries()].sort((a, b) => a[0] - b[0]).slice(-10), judged, kept, rebuilt, yes, no, compares,
+    pending: (D.proposals || []).filter((p) => p.status === "pending") };
+}
 
-//------------------------------------------------------------------------------ Les propositions : les fondateurs décident
-const KIND = { tune: "Ajuster un artiste", global: "Toutes les demandes", add: "Ajouter un artiste" };
+//------------------------------------------------------------------------------ L'affichage
+const TABS = [["apercu", "Aperçu"], ["valider", "À valider"], ["modules", "Modules"], ["artistes", "Artistes"], ["chaines", "Chaînes partagées"], ["retours", "Retours"], ["cerveau", "Le cerveau"]];
+function render() {
+  const sh = D.shipped || {};
+  $("ver").textContent = `Cerveau v${sh.version || 0}.${sh.revision || 0} · ${D.installs || 0} postes`;
+  const nav = $("tabs"); nav.replaceChildren();
+  for (const [id, label] of TABS) {
+    const b = el("button", { role: "tab", type: "button", textContent: label, onclick: () => { tab = id; render(); scrollTo({ top: 0 }); } });
+    b.setAttribute("aria-selected", String(tab === id));
+    if (id === "valider" && S.pending.length) b.append(el("span", { className: "n", textContent: S.pending.length }));
+    nav.append(b);
+  }
+  const v = $("view"); v.replaceChildren();
+  ({ apercu, valider, modules, artistes, chaines, retours, cerveau })[tab](v);
+}
+const bars = (rows, fmt = (x) => x) => {
+  const max = Math.max(1, ...rows.map((r) => r[1]));
+  return el("div", { className: "bars" }, rows.map(([lab, n, title]) => el("div", { className: "bar-row", title: title || `${lab} : ${fmt(n)}` },
+    el("span", { className: "lab", textContent: lab }), el("div", { className: "track" }, el("i", { style: `width:${(100 * n) / max}%` })), el("span", { className: "val", textContent: fmt(n) }))));
+};
+const kpi = (value, label, note) => el("div", { className: "card kpi" }, el("b", { textContent: value }), el("span", { textContent: label }), note ? el("small", { textContent: note }) : null);
+const empty = (t) => el("p", { className: "empty", textContent: t });
+const mini = (share) => el("span", { className: "mini" }, el("i", { style: `width:${Math.round(share * 100)}%` }));
+
+function apercu(v) {
+  const fb = S.fb, rated = S.yes + S.no;
+  v.append(el("div", { className: "grid kpis" },
+    kpi(fb.length, "mix reçus", `${D.installs || 0} postes différents`),
+    kpi(pct(S.yes, rated), "de mix notés OUI", `${S.yes} OUI · ${S.no} BOF · ${fb.length - rated} sans note`),
+    kpi(pct(S.kept, S.judged), "gardés tels quels", S.judged ? `${S.rebuilt} chaînes démontées sur ${S.judged}` : "arrive avec la nouvelle version"),
+    kpi(D.chains.length, "chaînes partagées", "à la communauté"),
+    kpi(S.pending.length, "à valider", S.pending.length ? "voir l'onglet À valider" : "rien en attente")));
+
+  // ce qu'il faut retenir, en phrases
+  const facts = [];
+  const topArt = S.art[0];
+  if (topArt) facts.push(el("li", {}, "L'artiste le plus demandé : ", el("b", { textContent: topArt.name }), ` (${topArt.n} mix, ${pct(topArt.yes, topArt.yes + topArt.no)} de OUI).`));
+  const removedMost = S.mod.filter((m) => m.judged >= 5).sort((a, b) => b.removed / b.judged - a.removed / a.judged)[0];
+  if (removedMost && removedMost.removed) facts.push(el("li", {}, "Le module le plus retiré après AUTO MIX : ", el("b", { textContent: removedMost.type }), ` (${pct(removedMost.removed, removedMost.judged)} des fois où il est mis).`));
+  const tw = S.tweaks.find(([, t]) => t.k >= 3);
+  if (tw) facts.push(el("li", {}, "Le réglage le plus retouché : ", el("b", { textContent: tw[0] }), ` (${tw[1].n} mix), en général ${tw[1].sum / tw[1].k > 0 ? "monté" : "baissé"} de ${num(Math.abs(tw[1].sum / tw[1].k))}.`));
+  if (S.words[0]) facts.push(el("li", {}, "Ce que les gens demandent le plus en mots : ", el("b", { textContent: "« " + S.words[0][0] + " »" }), ` (${S.words[0][1]} fois).`));
+  const addedMost = [...S.mod].sort((a, b) => b.addedAfter + b.inChains - (a.addedAfter + a.inChains))[0];
+  if (addedMost && addedMost.addedAfter + addedMost.inChains) facts.push(el("li", {}, "Le module que les gens ajoutent le plus eux-mêmes : ", el("b", { textContent: addedMost.type }), "."));
+  if (S.judged) facts.push(el("li", {}, el("b", { textContent: pct(S.compares, S.judged) }), " des mix sont comparés avant / après avec COMPARER."));
+
+  v.append(el("div", { className: "grid two", style: "margin-top:14px" },
+    el("div", { className: "card" }, el("h3", { textContent: "À retenir" }), facts.length ? el("ul", { className: "facts" }, facts) : empty("Pas encore assez de retours. Ils arrivent dès que des utilisateurs allument ONR Neural Learning et font un mix.")),
+    el("div", { className: "card" }, el("h3", { textContent: "Mix par semaine" }), el("p", { className: "muted", textContent: "Survole une barre pour la part de OUI." }),
+      S.weeks.length ? (() => { const max = Math.max(1, ...S.weeks.map(([, x]) => x.n));
+        return el("div", { className: "week" }, S.weeks.map(([w, x]) => el("div", { title: `Semaine du ${date(w * 7 * 864e5)} : ${x.n} mix · ${x.rated ? pct(x.yes, x.rated) + " de OUI" : "pas de note"}` },
+          el("small", { textContent: x.n }), el("i", { style: `height:${(100 * x.n) / max}%` }), el("small", { textContent: date(w * 7 * 864e5) })))); })() : empty("Rien encore."))));
+
+  v.append(el("div", { className: "grid two", style: "margin-top:14px" },
+    el("div", { className: "card" }, el("h3", { textContent: "Modules les plus utilisés" }), el("p", { className: "muted", textContent: "Mis par AUTO MIX + présents dans les chaînes partagées." }),
+      S.mod.length ? bars(S.mod.slice(0, 10).map((m) => [m.type, m.placed + m.inChains, `${m.type} : ${m.placed} fois par AUTO MIX, ${m.inChains} chaînes partagées`])) : empty("Rien encore.")),
+    el("div", { className: "card" }, el("h3", { textContent: "Artistes les plus demandés" }),
+      S.art.length ? bars(S.art.slice(0, 10).map((a) => [a.name, a.n])) : empty("Rien encore."))));
+}
+
+//------------------------------------------------------------------------------ À valider
+const KIND = { tune: "Ajuster un artiste", global: "Toutes les demandes", add: "Ajouter un artiste", voice: "Voix mesurée", model: "Modèle appris", chain: "Chaîne de la communauté" };
+function explain(p) {
+  const sp = p.support || {}, ch = p.changes || {};
+  if (p.kind === "add") return [`Le serveur a trouvé sa fiche, et ${sp.hits} demandes l'ont cherché. Il rejoindrait le cerveau de tout le monde.`, ""];
+  if (p.kind === "voice") return [`${sp.refs} morceaux de référence de ${p.name}, glissés par ${sp.installs} postes, donnent sa voix mesurée (timbre, tenue, espace). Elle ne s'applique qu'aux artistes qui n'en ont pas : celles mesurées par Nov ne bougent pas.`, ch.voice?.source || ""];
+  if (p.kind === "model") return [`Un petit modèle appris sur ${sp.mixes} mix de ${sp.installs} postes : d'après les mesures de la voix, il corrige un peu les couleurs (±0,15 au plus), après le cerveau.`, Object.keys(ch.model?.outputs || {}).map((k) => HINTS[k] || k).join(", ")];
+  if (p.kind === "chain") return [`${sp.chains} chaînes partagées pour ${p.name}, par ${sp.installs} postes. AUTO MIX la proposerait après un mix de cet artiste (l'utilisateur choisit de l'essayer).`, ""];
+  const rated = (sp.yes || 0) + (sp.no || 0);
+  const what = Object.entries(ch).map(([k, v]) => `${v > 0 ? "plus" : "moins"} de ${HINTS[k] || k} (${signed(v, 2)})`).join(", ");
+  return [`Les utilisateurs ${p.kind === "global" ? "" : "qui demandent " + p.name + " "}corrigent souvent dans le même sens : ${what}.`,
+    `${sp.mixes} mix · ${sp.installs} postes · ${rated ? pct(sp.yes, rated) + " de OUI" : "sans note"}` + (sp.kept ? ` · ${sp.kept} gardés tels quels` : "") + (sp.rebuilt ? ` · ${sp.rebuilt} démontés` : "")
+      + Object.entries(sp.detail || {}).map(([k, d]) => ` · ${HINTS[k] || k} : ${Math.round(d.agree * 100)} % d'accord`).join("")];
+}
 async function decide(p, decision, box) {
   for (const b of box.querySelectorAll("button")) b.disabled = true;
   const r = await fetch("/api/vocalbox/proposals/" + p.id, { method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify({ decision }) }).catch(() => null);
   if (!r || !r.ok) { for (const b of box.querySelectorAll("button")) b.disabled = false; box.append(el("p", { className: "why", textContent: "Le serveur a refusé : réessaie." })); return; }
-  await load(true);
+  await load();
 }
-function proposalsBlock() {
-  const pending = (D.proposals || []).filter((p) => p.status === "pending");
-  const decided = (D.proposals || []).filter((p) => p.status === "approved" || p.status === "refused").slice(0, 8);
-  const bell = $("bell");
-  bell.hidden = !pending.length;
-  bell.textContent = pending.length + (pending.length > 1 ? " demandes à valider" : " demande à valider");
-  bell.onclick = () => $("props")?.scrollIntoView({ behavior: "smooth" });
-  const card = (p) => {
-    const sp = p.support || {};
-    const title = p.kind === "tune" ? p.name : p.kind === "add" ? "Ajouter " + p.name : "Toutes les demandes";
-    const what = p.kind === "add" ? "Le serveur a trouvé sa fiche et " + sp.hits + " demandes l'ont cherché : il rejoindrait le cerveau de tout le monde."
-      : "Les utilisateurs corrigent : " + p.text + ".";
-    const rated = (sp.yes || 0) + (sp.no || 0);
-    const why = p.kind === "add" ? "" : `${sp.mixes} mix · ${sp.installs} postes différents · ${rated ? Math.round(100 * sp.yes / rated) + " % OUI" : "sans note"}`
-      + Object.entries(sp.detail || {}).map(([k, d]) => ` · ${HINTS[k] || k} : ${Math.round(d.agree * 100)} % dans le même sens`).join("");
-    const box = el("div", { className: "prop" }, el("span", { className: "tag", textContent: KIND[p.kind] }), el("b", { textContent: title }), el("p", { textContent: what }),
+function valider(v) {
+  if (!S.pending.length) v.append(empty("Rien à valider. Une proposition n'apparaît que quand la demande est forte : assez de mix, de postes différents, et presque tous dans le même sens."));
+  for (const p of S.pending) {
+    const [what, why] = explain(p);
+    const box = el("div", { className: "card prop", style: "margin-bottom:12px" }, el("div", { className: "kind", textContent: KIND[p.kind] || p.kind }),
+      el("h3", { textContent: p.kind === "global" ? "Toutes les demandes" : p.kind === "model" ? "Le modèle appris" : p.name }), el("p", { textContent: what }),
+      p.kind === "chain" ? el("div", { className: "chain", style: "margin:8px 0" }, chainTags(p.changes.chain?.modules || [])) : null,
       why ? el("p", { className: "why", textContent: why }) : null);
-    box.append(el("div", { className: "acts" }, el("button", { className: "ok", type: "button", textContent: "Valider", onclick: () => decide(p, "approve", box) }),
-      el("button", { type: "button", textContent: "Refuser", onclick: () => decide(p, "refuse", box) })));
-    return box;
-  };
-  return [el("h2", { id: "props", textContent: pending.length ? `À valider (${pending.length})` : "À valider" }),
-    pending.length ? pending.map(card) : el("p", { className: "muted", textContent: "Rien à valider. Une proposition n'apparaît que quand la demande est forte : au moins 3 mix venant de 2 postes différents pour un artiste (6 mix et 3 postes pour toutes les demandes), corrigés aux deux tiers dans le même sens, ou un artiste inconnu cherché 2 fois." }),
-    decided.length ? [el("p", { className: "muted", textContent: "Décisions récentes" }), decided.map((p) => el("div", { className: "done", textContent: `${p.status === "approved" ? "✓ validé" : "✕ refusé"} · ${p.kind === "add" ? "ajout de " + p.name : (p.name || "toutes les demandes") + " : " + p.text} · ${p.decided_by || ""} · ${date(p.decided_at)}` }))] : null,
-    el("h2", { textContent: "Ce que le cerveau a appris" }),
-    (D.shipped.learned || []).length ? D.shipped.learned.map((l) => el("div", { className: "done", textContent: `v${D.shipped.version}.${l.revision} · ${l.text} · ${l.by || ""} · ${date(l.at)}` }))
-      : el("p", { className: "muted", textContent: "Rien encore : le cerveau en service est celui livré avec VOCALBOX." })];
+    box.append(el("div", { className: "acts" }, el("button", { className: "btn ok", type: "button", textContent: "Valider", onclick: () => decide(p, "approve", box) }),
+      el("button", { className: "btn", type: "button", textContent: "Refuser", onclick: () => decide(p, "refuse", box) })));
+    v.append(box);
+  }
+  const decided = (D.proposals || []).filter((p) => p.status === "approved" || p.status === "refused").slice(0, 12);
+  if (decided.length) v.append(el("h2", { textContent: "Décisions récentes" }), el("div", { className: "card" }, el("ul", { className: "facts" },
+    decided.map((p) => el("li", {}, el("b", { textContent: p.status === "approved" ? "Validé" : "Refusé" }), ` · ${KIND[p.kind] || p.kind} · ${p.name || "toutes les demandes"}${p.text ? " : " + p.text : ""} · ${p.decided_by || ""} · ${date(p.decided_at)}`)))));
 }
 
-//------------------------------------------------------------------------------ Le texte : le résumé
-function summary() {
-  const fb = D.feedback, yes = fb.filter((f) => f.rating > 0).length, no = fb.filter((f) => f.rating < 0).length;
-  const rated = yes + no, shipped = D.shipped.artists || [];
-  const est = shipped.filter((a) => a.estimate).length;
-  const stat = (v, l) => el("div", { className: "stat" }, el("b", { textContent: v }), el("small", { textContent: l }));
-  // les réglages les plus retouchés, et dans quel sens
-  const tw = new Map();
-  for (const f of fb) for (const id of Object.keys(f.final || {})) {
-    const t = tw.get(id) || { n: 0, sum: 0, k: 0 }; t.n++;
-    const d = paramDelta(f, id); if (d != null) { t.sum += d; t.k++; }
-    tw.set(id, t);
+//------------------------------------------------------------------------------ Modules
+function modules(v) {
+  v.append(el("p", { className: "muted", textContent: "Chaque module : combien de fois AUTO MIX l'a mis, ce que les gens en font ensuite (gardé, retiré, retouché), et combien l'ajoutent eux-mêmes. Clique une ligne pour ses réglages." }));
+  if (!S.mod.length) return v.append(empty("Pas encore de retours."));
+  const table = el("table", {}, el("thead", {}, el("tr", {}, ["Module", "Mis par AUTO MIX", "Gardé", "Retouché", "Ajouté à la main", "Dans les chaînes partagées"].map((h) => el("th", { textContent: h })))));
+  const body = el("tbody");
+  const maxPlaced = Math.max(1, ...S.mod.map((m) => m.placed));
+  for (const m of S.mod) {
+    const keptShare = m.judged ? 1 - m.removed / m.judged : null;
+    const row = el("tr", { className: "click" },
+      el("td", {}, el("b", { textContent: m.type })),
+      el("td", { className: "num" }, mini(m.placed / maxPlaced), String(m.placed)),
+      el("td", { className: "num", textContent: keptShare == null ? "—" : Math.round(keptShare * 100) + " %", title: m.judged ? `${m.removed} retiré(s) sur ${m.judged}` : "" }),
+      el("td", { className: "num", textContent: m.placed ? pct(m.tweakedMixes, m.placed) : "—" }),
+      el("td", { className: "num", textContent: m.addedAfter || "—" }),
+      el("td", { className: "num", textContent: m.inChains ? `${m.inChains} (${pct(m.inChains, D.chains.length)})` : "—" }));
+    const detail = el("tr", { className: "detail", hidden: true }, el("td", { colSpan: 6 },
+      m.params.size ? [...m.params.entries()].sort((a, b) => b[1].n - a[1].n).map(([id, q]) =>
+        el("span", { className: "tag plain", textContent: `${paramLabel(id)} : retouché ${q.n} fois${q.n ? ", en moyenne " + signed(q.sum / q.n) : ""}` }))
+        : "Aucun réglage retouché pour l'instant."));
+    row.onclick = () => { detail.hidden = !detail.hidden; };
+    body.append(row, detail);
   }
-  const tweaks = [...tw.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, 12);
-  // les artistes les plus demandés
-  const asked = new Map();
-  for (const f of fb) for (const a of f.artists || []) { const k = String(a).replace(/^fa[cç]on /i, ""); asked.set(k, (asked.get(k) || 0) + 1); }
-  const top = [...asked.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
-  // par semaine : combien de mix, et la part de OUI
-  const weeks = new Map();
-  for (const f of fb) { const w = Math.floor(f.at / (7 * 864e5)); const x = weeks.get(w) || { n: 0, yes: 0, rated: 0 }; x.n++; if (f.rating) { x.rated++; if (f.rating > 0) x.yes++; } weeks.set(w, x); }
-  const wk = [...weeks.entries()].sort((a, b) => a[0] - b[0]).slice(-8);
+  table.append(body);
+  v.append(el("div", { className: "card scroll" }, table));
+  v.append(el("h2", { textContent: "Les réglages les plus retouchés" }), el("div", { className: "card" },
+    S.tweaks.length ? bars(S.tweaks.slice(0, 15).map(([lab, t]) => [lab, t.n, `${lab} : ${t.n} mix${t.k ? ", en moyenne " + signed(t.sum / t.k) : ""}`]), (n) => n + " mix") : empty("Rien encore.")));
+}
 
-  const s = $("summary"); s.replaceChildren(); fill(s, 
-    proposalsBlock(),
-    el("h2", { textContent: "En bref" }),
-    el("p", { textContent: "Quand un utilisateur tape une demande dans AUTO MIX (« voix de Travis Scott », « voix chantée aérienne »…), VOCALBOX écoute sa prise, la compare à la voix visée, et monte la chaîne. Le cerveau, c'est ce qu'il sait des artistes : comment leur voix est mixée (couleur, compression, espace, effets)." }),
-    el("p", { textContent: "Il progresse de deux façons, uniquement chez les utilisateurs qui ont allumé ONR Neural Learning : quand un artiste lui est inconnu, le serveur cherche sa fiche une fois pour tous ; et après chaque mix, la note OUI / BOF et les réglages retouchés montrent ce qu'il faut corriger. Jamais d'audio." }),
-    el("div", { className: "stats" },
-      stat("v" + (D.shipped.version || 0) + "." + (D.shipped.revision || 0), "cerveau en service (" + (D.shipped.revision || 0) + " validation" + ((D.shipped.revision || 0) > 1 ? "s" : "") + " des fondateurs)"),
-      stat(shipped.length + D.found.length, `artistes (${shipped.length} livrés dont ${est} estimés, ${D.found.length} trouvés)`),
-      stat(fb.length, "mix reçus"), stat(D.installs, "installations"),
-      stat(rated ? Math.round(100 * yes / rated) + " %" : "—", `de OUI (${yes} OUI · ${no} BOF)`),
-      stat(D.misses.length, "noms introuvables")),
-    el("h2", { textContent: "Comment il évolue (8 dernières semaines)" }),
-    wk.length ? wk.map(([w, x]) => el("div", { className: "row" }, el("span", { textContent: "semaine du " + date(w * 7 * 864e5) }),
-      el("span", { textContent: `${x.n} mix · ${x.rated ? Math.round(100 * x.yes / x.rated) + " % OUI" : "pas de note"}` })))
-      : el("p", { className: "muted", textContent: "Pas encore de retours : ils arrivent dès que des utilisateurs allument l'option et font un mix." }),
-    el("h2", { textContent: "Ce que les utilisateurs corrigent le plus" }),
-    tweaks.length ? [el("p", { className: "muted", textContent: "Un réglage souvent retouché dans le même sens est une règle à revoir dans le prochain cerveau." }),
-      ...tweaks.map(([id, t]) => el("div", { className: "row click", onclick: () => { const n = byId.get("p:" + id); if (n) select(n); } },
-        el("span", { textContent: paramName(id) }),
-        el("span", { textContent: `${t.n}× ${t.k ? (t.sum / t.k > 0 ? "↑ +" : "↓ ") + fmt(t.sum / t.k) : ""}` })))]
-      : el("p", { className: "muted", textContent: "Aucune retouche pour l'instant." }),
-    el("h2", { textContent: "Les artistes les plus demandés" }),
-    top.length ? top.map(([a, n]) => el("div", { className: "row click", onclick: () => { const x = byId.get("a:" + norm(a)); if (x) select(x); } }, el("span", { textContent: a }), el("span", { textContent: n + " mix" })))
-      : el("p", { className: "muted", textContent: "Aucun pour l'instant." }),
-    el("h2", { textContent: "Trouvés par le serveur" }),
-    D.found.length ? D.found.slice(0, 15).map((a) => el("div", { className: "row click", onclick: () => { const x = byId.get("a:" + norm(a.name)); if (x) select(x); } }, el("span", { textContent: a.name }), el("span", { textContent: (a.hits || 0) + " demandes" })))
-      : el("p", { className: "muted", textContent: "Aucun pour l'instant." }),
-    el("h2", { textContent: "Les derniers mix" }),
-    fb.slice(0, 15).map((f) => el("div", { className: "row click", onclick: () => { const x = byId.get("f:" + f.id); if (x) select(x); else select({ kind: "feedback", id: "f:" + f.id, data: f }); } },
-      el("span", { textContent: (f.request || "(sans demande)").slice(0, 42) }), el("span", { textContent: (f.rating > 0 ? "OUI · " : f.rating < 0 ? "BOF · " : "") + date(f.at) }))),
-    el("h2", { textContent: "Lire le graphe" }),
-    el("p", { className: "muted", textContent: "Molette : zoomer. Glisser le fond : se déplacer. Glisser un point : le déplacer. Clic : le détail ici. Les boutons en haut affichent ou masquent les retours, les couleurs de voix, les retouches et les noms introuvables." }));
+//------------------------------------------------------------------------------ Artistes
+function artistes(v) {
+  const brain = new Map((D.shipped?.artists || []).map((a) => [norm(a.name), a]));
+  v.append(el("p", { className: "muted", textContent: "Les artistes demandés dans AUTO MIX : les notes, ce que les gens gardent, et dans quel sens ils corrigent le cerveau." }));
+  if (!S.art.length) v.append(empty("Pas encore de demandes."));
+  else {
+    const table = el("table", {}, el("thead", {}, el("tr", {}, ["Artiste", "Mix", "OUI", "Gardés tels quels", "Ce que les gens corrigent", "Le cerveau"].map((h) => el("th", { textContent: h })))));
+    const body = el("tbody");
+    for (const a of S.art) {
+      const b = brain.get(norm(a.name));
+      const corr = Object.entries(a.hints).filter(([, xs]) => xs.length >= 2).map(([k, xs]) => [k, xs.reduce((s, x) => s + x, 0) / xs.length]).filter(([, m]) => Math.abs(m) >= 0.03)
+        .map(([k, m]) => el("span", { className: "tag plain", textContent: `${m > 0 ? "plus" : "moins"} de ${HINTS[k] || k}` }));
+      body.append(el("tr", {},
+        el("td", {}, el("b", { textContent: a.name })), el("td", { className: "num", textContent: `${a.n} · ${a.installs.size} postes` }),
+        el("td", { className: "num", textContent: pct(a.yes, a.yes + a.no) }), el("td", { className: "num", textContent: pct(a.kept, a.judged) }),
+        el("td", {}, corr.length ? corr : el("span", { className: "muted", textContent: "—" })),
+        el("td", {}, !b ? el("span", { className: "tag bad", textContent: "inconnu" }) : [b.voice ? el("span", { className: "tag good", textContent: "voix mesurée" }) : null,
+          b.estimate ? el("span", { className: "tag plain", textContent: "estimé" }) : null, b.found ? el("span", { className: "tag plain", textContent: "trouvé par le serveur" }) : null,
+          b.learned ? el("span", { className: "tag", textContent: "appris" }) : null, a.refs ? el("span", { className: "tag plain", textContent: a.refs + " références" }) : null])));
+    }
+    table.append(body);
+    v.append(el("div", { className: "card scroll" }, table));
+  }
+  if ((D.misses || []).length) v.append(el("h2", { textContent: "Noms introuvables" }), el("div", { className: "card" },
+    D.misses.slice(0, 40).map((m) => el("span", { className: "tag plain", textContent: `${m.query} · ${m.tries}×` }))));
+}
+
+//------------------------------------------------------------------------------ Chaînes partagées
+const chainTags = (mods) => mods.flatMap((m, i) => [i ? el("span", { className: "arrow", textContent: "→" }) : null, el("span", { className: "tag", textContent: m.type })]);
+function chaines(v) {
+  v.append(el("p", { className: "muted", textContent: "Les chaînes que les gens partagent à la communauté depuis la page AUTO MIX. Avec assez de chaînes pour un artiste, une chaîne type est proposée dans À valider." }));
+  if (!D.chains.length) return v.append(empty("Aucune chaîne partagée pour l'instant."));
+  const by = new Map();
+  for (const c of D.chains) { const k = c.artists?.[0] || "Sans artiste"; if (!by.has(k)) by.set(k, []); by.get(k).push(c); }
+  v.append(el("div", { className: "card", style: "margin-bottom:14px" }, el("h3", { textContent: "Par artiste" }), bars([...by.entries()].sort((a, b) => b[1].length - a[1].length).slice(0, 12).map(([k, l]) => [k, l.length]))));
+  for (const c of D.chains.slice(0, 80))
+    v.append(el("div", { className: "card fb", style: "margin-bottom:10px" },
+      el("div", { className: "meta" }, el("span", { className: "tag", textContent: c.artists?.[0] || "sans artiste" }), el("span", { className: "tag plain", textContent: ROLES[c.role] || "LEAD" }),
+        el("span", { className: "tag plain", textContent: date(c.at) }), el("span", { className: "tag plain", textContent: "poste " + String(c.install).slice(0, 6) })),
+      c.request ? el("div", { className: "q", textContent: "« " + c.request + " »" }) : null,
+      el("div", { className: "chain" }, chainTags((c.modules || []).filter((m) => m.on !== false)))));
+}
+
+//------------------------------------------------------------------------------ Retours
+function retours(v) {
+  const input = el("input", { className: "search", type: "search", placeholder: "Chercher un artiste, un mot, un module…" });
+  const list = el("div");
+  const draw = () => {
+    const q = norm(input.value);
+    list.replaceChildren();
+    const rows = S.fb.filter((f) => !q || norm([f.request, ...(f.artists || []), ...(f.plan?.modules || []).map((m) => m.type), ...(f.extra?.refine || [])].join(" ")).includes(q)).slice(0, 80);
+    if (!rows.length) list.append(empty("Aucun retour."));
+    for (const f of rows) {
+      const out = f.extra?.outcome, res = out && RESULT[out.result];
+      const tw = Object.entries(f.final || {}).slice(0, 8).map(([id, val]) => { const h = moduleOfParam(f, id);
+        return (h ? h.m.type + " " + paramLabel(h.base) : paramLabel(id.replace(/_\d+$/, ""))) + " " + (h && h.before != null ? num(Number(h.before)) + " → " : "") + num(Number(val)); });
+      list.append(el("div", { className: "card fb", style: "margin-bottom:10px" },
+        el("div", { className: "meta" },
+          f.rating > 0 ? el("span", { className: "tag good", textContent: "OUI" }) : f.rating < 0 ? el("span", { className: "tag bad", textContent: "BOF" }) : el("span", { className: "tag plain", textContent: "pas de note" }),
+          res ? el("span", { className: "tag " + res[1], textContent: res[0] }) : null,
+          f.hints?.role != null ? el("span", { className: "tag plain", textContent: ROLES[f.hints.role] || "LEAD" }) : null,
+          out?.compares ? el("span", { className: "tag plain", textContent: `COMPARER ×${out.compares}` }) : null,
+          f.extra?.minutes != null ? el("span", { className: "tag plain", textContent: f.extra.minutes + " min" }) : null,
+          f.extra?.ended ? el("span", { className: "tag plain", textContent: ENDED[f.extra.ended] || f.extra.ended }) : null,
+          el("span", { className: "tag plain", textContent: date(f.at) + " · v" + (f.version || "?") })),
+        el("div", { className: "q", textContent: f.request ? "« " + f.request + " »" : "(pas de demande écrite)" }),
+        el("div", { className: "chain" }, chainTags(f.plan?.modules || [])),
+        out?.removedModules?.length ? el("div", { className: "tw", textContent: "Retirés ensuite : " + out.removedModules.join(", ") }) : null,
+        out?.addedModules?.length ? el("div", { className: "tw", textContent: "Ajoutés ensuite : " + out.addedModules.join(", ") }) : null,
+        tw.length ? el("div", { className: "tw", textContent: "Retouché : " + tw.join(" · ") }) : null,
+        (f.extra?.refine || []).length ? el("div", { className: "tw", textContent: "A dit : " + f.extra.refine.map((w) => "« " + w + " »").join(", ") }) : null));
+    }
+  };
+  input.oninput = draw;
+  v.append(input, list);
+  draw();
+}
+
+//------------------------------------------------------------------------------ Le cerveau
+function cerveau(v) {
+  const sh = D.shipped || {}, arts = sh.artists || [];
+  const model = sh.corrections?.model, chains = sh.corrections?.chains || {};
+  v.append(el("div", { className: "grid kpis" },
+    kpi(`v${sh.version || 0}.${sh.revision || 0}`, "cerveau en service", `${sh.revision || 0} validation(s) des fondateurs`),
+    kpi(arts.length, "artistes connus", `${arts.filter((a) => a.estimate).length} estimés · ${(D.found || []).length} trouvés par le serveur`),
+    kpi(arts.filter((a) => a.voice).length, "voix mesurées", "timbre, tenue et espace"),
+    kpi(model ? model.samples : "—", "modèle appris", model ? `${model.installs} postes · validé` : "pas encore (200 bons mix)"),
+    kpi(Object.keys(chains).length, "chaînes de la communauté", "validées")));
+  v.append(el("h2", { textContent: "Ce qu'il a appris (validé par les fondateurs)" }), el("div", { className: "card" },
+    (sh.learned || []).length ? el("ul", { className: "facts" }, sh.learned.map((l) => el("li", {}, el("b", { textContent: `v${sh.version}.${l.revision}` }), ` · ${l.text} · ${l.by || ""} · ${date(l.at)}`)))
+      : empty("Rien encore : le cerveau en service est celui livré avec VOCALBOX.")));
+  v.append(el("h2", { textContent: "Comment il apprend" }), el("div", { className: "card" }, el("ul", { className: "facts" },
+    el("li", {}, el("b", { textContent: "Les retouches et les notes. " }), "Après AUTO MIX, ce que les gens changent et leur OUI / BOF. Une correction n'est proposée que si beaucoup de mix vont dans le même sens."),
+    el("li", {}, el("b", { textContent: "Les gestes silencieux. " }), "Une chaîne gardée telle quelle compte comme un oui ; une chaîne démontée comme un non. COMPARER rend une retouche plus sûre."),
+    el("li", {}, el("b", { textContent: "Les morceaux de référence. " }), "Leurs mesures (jamais le son) donnent la voix mesurée d'un artiste qui n'en a pas encore."),
+    el("li", {}, el("b", { textContent: "Le modèle appris. " }), "Après 200 bons mix, un petit modèle corrige légèrement les couleurs d'après la voix entendue."),
+    el("li", {}, el("b", { textContent: "Les chaînes partagées. " }), "Avec assez de chaînes pour un artiste, une chaîne type est proposée aux utilisateurs."),
+    el("li", {}, el("b", { textContent: "Toujours sous contrôle. " }), "Rien n'entre dans le cerveau sans un « Valider » ici, et les voix mesurées par Nov ne sont jamais remplacées."))));
 }
 
 load();
 </script>
-</html>

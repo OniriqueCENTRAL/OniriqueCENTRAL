@@ -88,6 +88,20 @@ db.exec(`CREATE TABLE IF NOT EXISTS vocalbox_proposals (
   decided_by TEXT
 )`);
 
+// les compléments du plugin 08/11 : les gestes sur la chaîne (outcome), la voix des références (refProfile), les retouches en
+// mots, la façon dont le mix s'est terminé ; et les chaînes partagées à la communauté
+try { db.exec("ALTER TABLE vocalbox_feedback ADD COLUMN extra TEXT NOT NULL DEFAULT '{}'"); } catch { /* déjà là */ }
+db.exec(`CREATE TABLE IF NOT EXISTS vocalbox_chains (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  install TEXT NOT NULL,
+  version TEXT NOT NULL DEFAULT '',
+  request TEXT NOT NULL DEFAULT '',
+  artists TEXT NOT NULL DEFAULT '[]',
+  role INTEGER NOT NULL DEFAULT 0,
+  modules TEXT NOT NULL DEFAULT '[]',
+  created_at INTEGER NOT NULL
+)`);
+
 const baseBrain = () => {
   const stored = setting('vocalbox_brain_base', null);
   if (stored && Array.isArray(stored.artists)) return stored;
@@ -105,7 +119,8 @@ export function republishBrain() {
 export function refreshProposals() {
   const refused = new Set(all("SELECT kind || '|' || target AS k FROM vocalbox_proposals WHERE status = 'refused' AND decided_at > ?",
     now() - 30 * 24 * 3600_000).map((r) => r.k));
-  const list = propose(baseBrain(), overlayNow(), all('SELECT * FROM vocalbox_feedback'), all('SELECT name, data, hits FROM vocalbox_artists'), refused);
+  const list = propose(baseBrain(), overlayNow(), all('SELECT * FROM vocalbox_feedback'), all('SELECT name, data, hits FROM vocalbox_artists'), refused,
+    all('SELECT install, artists, modules FROM vocalbox_chains'));
   const t = now();
   const live = new Set();
   for (const p of list) {
@@ -124,7 +139,10 @@ setInterval(() => { try { refreshProposals(); } catch (error) { console.error('O
 if (!setting('vocalbox_brain', null)) republishBrain();
 
 // les retours d'apprentissage sont gardés trois ans au plus (voir la politique de confidentialité)
-const purgeFeedback = () => run('DELETE FROM vocalbox_feedback WHERE created_at < ?', now() - 3 * 365 * 24 * 3600_000);
+const purgeFeedback = () => {
+  run('DELETE FROM vocalbox_feedback WHERE created_at < ?', now() - 3 * 365 * 24 * 3600_000);
+  run('DELETE FROM vocalbox_chains WHERE created_at < ?', now() - 3 * 365 * 24 * 3600_000);
+};
 purgeFeedback();
 setInterval(purgeFeedback, 24 * 3600_000).unref();
 
@@ -230,10 +248,37 @@ export function mountVocalBrain(app, { wrap, requireUser }) {
     if (install.length < 16) throw new HttpError(400, 'Installation ?');
     const json = (v, max) => { const s = JSON.stringify(v ?? {}); if (s.length > max) throw new HttpError(413, 'Trop gros.'); return s; };
     const rating = [-1, 0, 1].includes(Number(b.rating)) ? Number(b.rating) : 0;
-    run(`INSERT INTO vocalbox_feedback (install, version, request, artists, hints, profile, plan, final, rating, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    // les compléments (plugin 08/11) : ce que l'utilisateur a fait de la chaîne, la voix de la référence (mesures), ses
+    // retouches en mots, la durée et la fin du mix
+    const extra = {};
+    if (b.outcome && typeof b.outcome === 'object') extra.outcome = b.outcome;
+    if (b.refProfile && typeof b.refProfile === 'object') extra.refProfile = b.refProfile;
+    if (Array.isArray(b.refine)) extra.refine = b.refine.slice(0, 12).map((s) => String(s).slice(0, 200));
+    if (Number.isFinite(Number(b.minutes))) extra.minutes = Number(b.minutes);
+    if (b.ended) extra.ended = String(b.ended).slice(0, 20);
+    run(`INSERT INTO vocalbox_feedback (install, version, request, artists, hints, profile, plan, final, rating, extra, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       install, String(b.version || '').slice(0, 20), String(b.request || '').slice(0, 300), json(b.artists || [], 2000),
-      json(b.hints, 4000), json(b.profile, 8000), json(b.plan, 20000), json(b.final, 20000), rating, now());
+      json(b.hints, 4000), json(b.profile, 8000), json(b.plan, 20000), json(b.final, 20000), rating, json(extra, 12000), now());
+    res.json({ ok: true });
+  }));
+
+  // PARTAGER À LA COMMUNAUTÉ (plugin, apprentissage allumé) : une chaîne entière, anonyme ; avec d'autres pour le même artiste,
+  // elle devient une proposition pour les fondateurs (brainlearn.js, chaîne de la communauté)
+  app.post('/api/vocalbox/chains', wrap(async (req, res) => {
+    rateLimit(`vbchain:${req.ip}`, 20, 60 * 60_000);
+    const b = req.body || {};
+    const install = String(b.install || '').replace(/[^A-Za-z0-9-]/g, '').slice(0, 64);
+    if (install.length < 16) throw new HttpError(400, 'Installation ?');
+    if (!Array.isArray(b.modules) || b.modules.length < 1 || b.modules.length > 16) throw new HttpError(400, 'Chaîne ?');
+    const modules = b.modules.map((m) => ({
+      type: String(m?.type || '').slice(0, 40), instance: Math.max(0, Math.min(2, Number(m?.instance) || 0)), on: m?.on !== false,
+      params: Object.fromEntries(Object.entries(m?.params || {}).slice(0, 80).filter(([, v]) => Number.isFinite(Number(v))).map(([k, v]) => [String(k).slice(0, 40), Number(v)])),
+    })).filter((m) => m.type);
+    const artists = (Array.isArray(b.artists) ? b.artists : []).slice(0, 5).map((a) => String(a).slice(0, 60));
+    run('INSERT INTO vocalbox_chains (install, version, request, artists, role, modules, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      install, String(b.version || '').slice(0, 20), String(b.request || '').slice(0, 300), JSON.stringify(artists),
+      Math.max(0, Math.min(3, Number(b.role) || 0)), JSON.stringify(modules), now());
     res.json({ ok: true });
   }));
 
@@ -255,13 +300,20 @@ export function mountVocalBrain(app, { wrap, requireUser }) {
     const feedback = all('SELECT * FROM vocalbox_feedback ORDER BY id DESC LIMIT 2000').map((r) => ({
       id: r.id, install: r.install, version: r.version, request: r.request, artists: parse(r.artists, []), hints: parse(r.hints, {}),
       profile: parse(r.profile, {}), plan: parse(r.plan, {}), final: parse(r.final, {}), rating: r.rating, at: r.created_at,
+      extra: parse(r.extra, {}),
     }));
+    const chains = all('SELECT * FROM vocalbox_chains ORDER BY id DESC LIMIT 1000').map((c) => ({
+      id: c.id, install: c.install, version: c.version, request: c.request, artists: parse(c.artists, []), role: c.role, modules: parse(c.modules, []), at: c.created_at,
+    }));
+    const textOf = (p, ch) => p.kind === 'add' ? '' : p.kind === 'voice' ? `voix mesurée : ${ch.voice?.source || ''}`
+      : p.kind === 'model' ? `modèle appris sur ${ch.model?.samples || 0} mix de ${ch.model?.installs || 0} postes`
+      : p.kind === 'chain' ? (ch.chain?.modules || []).map((m) => m.type).join(' → ') : describe(ch);
     const found = all('SELECT name, data, source, hits, created_at FROM vocalbox_artists ORDER BY hits DESC')
       .map((r) => ({ ...parse(r.data, {}), source: r.source, hits: r.hits, at: r.created_at }));
     const misses = all('SELECT query_norm AS query, tries, last_at AS at FROM vocalbox_misses ORDER BY last_at DESC LIMIT 300');
     const proposals = all("SELECT * FROM vocalbox_proposals WHERE status = 'pending' OR decided_at > ? ORDER BY status = 'pending' DESC, updated_at DESC LIMIT 100",
-      now() - 60 * 24 * 3600_000).map((p) => ({ ...p, changes: parse(p.changes, {}), support: parse(p.support, {}), text: p.kind === 'add' ? '' : describe(parse(p.changes, {})) }));
-    res.json({ shipped, base: { version: baseBrain().version || 0 }, proposals, found, misses, feedback,
+      now() - 60 * 24 * 3600_000).map((p) => ({ ...p, changes: parse(p.changes, {}), support: parse(p.support, {}), text: textOf(p, parse(p.changes, {})) }));
+    res.json({ shipped, base: { version: baseBrain().version || 0 }, proposals, found, misses, feedback, chains,
       installs: get('SELECT COUNT(DISTINCT install) AS n FROM vocalbox_feedback').n });
   }));
 
