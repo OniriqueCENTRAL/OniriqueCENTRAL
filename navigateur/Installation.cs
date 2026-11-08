@@ -202,7 +202,7 @@ sealed class FenetreInstallation : Form
         using (var halo = new GraphicsPath())
         {
             halo.AddEllipse(-this.S(160), -this.S(200), this.S(520), this.S(440));
-            using var b = new PathGradientBrush(halo) { CenterColor = Color.FromArgb(120, 122, 13, 28), SurroundColors = new[] { Color.FromArgb(0, DA.Nuit) } };
+            using var b = new PathGradientBrush(halo) { CenterColor = Color.FromArgb(120, DA.Sang), SurroundColors = new[] { Color.FromArgb(0, DA.Nuit) } };
             g.FillPath(b, halo);
         }
         if (logo != null) g.DrawImage(logo, this.S(36), this.S(34), this.S(84), this.S(84));
@@ -231,7 +231,7 @@ sealed class FenetreInstallation : Form
         using var forme = DA.Arrondi(b2, this.S(12));
         if (!enCours)
         {
-            using var fond = new LinearGradientBrush(b2, Color.FromArgb(229, 56, 74), Color.FromArgb(122, 13, 28), LinearGradientMode.Vertical);
+            using var fond = new LinearGradientBrush(b2, DA.Braise, DA.Sang, LinearGradientMode.Vertical);
             g.FillPath(fond, forme);
             TextRenderer.DrawText(g, "INSTALLER", new Font("Cascadia Mono", this.S(13), FontStyle.Bold, GraphicsUnit.Pixel), b2, Color.White,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
@@ -242,7 +242,7 @@ sealed class FenetreInstallation : Form
             g.FillPath(fond, forme);
             var plein = new Rectangle(b2.X, b2.Y, Math.Max(this.S(24), (int)(b2.Width * affichee)), b2.Height);
             using var remplissage = DA.Arrondi(plein, this.S(12));
-            using var braise = new LinearGradientBrush(b2, Color.FromArgb(229, 56, 74), Color.FromArgb(122, 13, 28), LinearGradientMode.Vertical);
+            using var braise = new LinearGradientBrush(b2, DA.Braise, DA.Sang, LinearGradientMode.Vertical);
             g.FillPath(braise, remplissage);
             TextRenderer.DrawText(g, etat, Font, b2, Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
         }

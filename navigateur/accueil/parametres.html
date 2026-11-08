@@ -4,12 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Paramètres</title>
+<script src="commun.js"></script>
 <style>
 @font-face { font-family: "Unbounded"; font-weight: 200 900; src: url(fonts/Unbounded-latin.woff2) format("woff2"); }
 @font-face { font-family: "Hanken Grotesk"; font-weight: 100 900; src: url(fonts/HankenGrotesk-latin.woff2) format("woff2"); }
 @font-face { font-family: "JetBrains Mono"; font-weight: 100 800; src: url(fonts/JetBrainsMono-latin.woff2) format("woff2"); }
 :root {
-  --night: #09080A; --deep: #121012; --deep-2: #1a1416; --ember: #E5384A; --blood: #7A0D1C; --pink: #FF8E9A;
+  --night: #09080A; --deep: #121012; --deep-2: #1a1416; --acc: 229, 56, 74; --acc-hi: 255, 142, 154; --acc-lo: 122, 13, 28;
+  --ember: rgb(var(--acc)); --blood: rgb(var(--acc-lo)); --pink: rgb(var(--acc-hi));
   --bone: #F4ECEC; --label: #D9C6C9; --haze: #A8939A; --muted: #7D6A6E; --line: rgba(255, 210, 214, .13);
   --ease: cubic-bezier(.2, .8, .2, 1);
 }
@@ -19,9 +21,9 @@ body {
   background: var(--night); color: var(--bone);
   font: 15px/1.5 "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
   background-image:
-    radial-gradient(40vmax 30vmax at 0% 0%, rgba(122, 13, 28, .42), transparent 70%),
-    radial-gradient(34vmax 28vmax at 100% 100%, rgba(122, 13, 28, .30), transparent 70%),
-    radial-gradient(22vmax 18vmax at 85% 10%, rgba(229, 56, 74, .07), transparent 70%);
+    radial-gradient(40vmax 30vmax at 0% 0%, rgba(var(--acc-lo), .42), transparent 70%),
+    radial-gradient(34vmax 28vmax at 100% 100%, rgba(var(--acc-lo), .30), transparent 70%),
+    radial-gradient(22vmax 18vmax at 85% 10%, rgba(var(--acc), .07), transparent 70%);
   background-attachment: fixed;
 }
 .cadre { display: grid; grid-template-columns: 230px 1fr; gap: 40px; max-width: 1060px; margin: 0 auto; padding: 48px 32px 80px; }
@@ -71,10 +73,10 @@ section.visible .carte:nth-of-type(4) { animation-delay: .15s; }
   background: linear-gradient(#3a3134, #241d20); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
   transition: transform .35s var(--ease), background .3s var(--ease), box-shadow .3s var(--ease);
 }
-.interrupteur input:checked + span { border-color: rgba(229, 56, 74, .55); background: #170a0d; }
+.interrupteur input:checked + span { border-color: rgba(var(--acc), .55); background: rgba(var(--acc-lo), .28); }
 .interrupteur input:checked + span::after {
-  transform: translateX(20px); background: radial-gradient(circle at 50% 40%, #ff8e9a, #e5384a 60%, #7a0d1c);
-  box-shadow: 0 0 10px rgba(229, 56, 74, .65);
+  transform: translateX(20px); background: radial-gradient(circle at 50% 40%, rgb(var(--acc-hi)), rgb(var(--acc)) 60%, rgb(var(--acc-lo)));
+  box-shadow: 0 0 10px rgba(var(--acc), .65);
 }
 
 /* Choix : boutons côte à côte, le témoin braise glisse sous le choix actif. */
@@ -95,9 +97,9 @@ section.visible .carte:nth-of-type(4) { animation-delay: .15s; }
   font: 600 12px "JetBrains Mono", Consolas, monospace; letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
   transition: border-color .25s var(--ease), background .25s var(--ease), transform .15s var(--ease);
 }
-.bouton:hover { border-color: rgba(255, 142, 154, .5); }
+.bouton:hover { border-color: rgba(var(--acc-hi), .5); }
 .bouton:active { transform: scale(.97); }
-.bouton.principal { background: linear-gradient(#e5384a, #7a0d1c); border-color: transparent; }
+.bouton.principal { background: linear-gradient(rgb(var(--acc)), rgb(var(--acc-lo))); border-color: transparent; }
 .bouton[disabled] { opacity: .5; cursor: default; }
 .cases { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 0 20px 16px; }
 .cases label { display: flex; align-items: center; gap: 8px; color: var(--label); font-size: 14px; cursor: pointer; }
@@ -107,17 +109,27 @@ section.visible .carte:nth-of-type(4) { animation-delay: .15s; }
 .vpn { display: flex; align-items: center; gap: 22px; padding: 24px 20px; }
 .lampe { position: relative; flex: none; width: 54px; height: 54px; border-radius: 50%; background: #0b090a; border: 1px solid var(--line); display: grid; place-items: center; }
 .lampe::after { content: ""; width: 16px; height: 16px; border-radius: 50%; background: #2a2225; transition: background .4s var(--ease), box-shadow .4s var(--ease); }
-.vpn[data-etat="actif"] .lampe::after { background: radial-gradient(circle at 50% 40%, #ffb3bb, #e5384a 60%); box-shadow: 0 0 18px rgba(229, 56, 74, .8), 0 0 40px rgba(229, 56, 74, .35); }
-.vpn[data-etat="connexion"] .lampe::after { background: #e5384a; animation: respire 1s ease-in-out infinite; }
+.vpn[data-etat="actif"] .lampe::after { background: radial-gradient(circle at 50% 40%, rgb(var(--acc-hi)), rgb(var(--acc)) 60%); box-shadow: 0 0 18px rgba(var(--acc), .8), 0 0 40px rgba(var(--acc), .35); }
+.vpn[data-etat="connexion"] .lampe::after { background: rgb(var(--acc)); animation: respire 1s ease-in-out infinite; }
 .vpn .texte { flex: 1; }
 .vpn b { font: 700 18px "Unbounded", sans-serif; }
 .pays { display: inline-flex; gap: 8px; align-items: center; margin-top: 8px; color: var(--label); font-size: 13px; }
 
+/* Pastilles de couleur : la choisie porte un anneau. */
+.pastilles { display: flex; flex-wrap: wrap; gap: 10px; }
+.pastille { position: relative; width: 32px; height: 32px; border-radius: 50%; border: 0; padding: 0; cursor: pointer; background: var(--c); box-shadow: inset 0 -3px 6px rgba(0, 0, 0, .3); transition: transform .25s var(--ease); }
+.pastille:hover { transform: scale(1.1); }
+.pastille::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 2px solid var(--c); opacity: 0; transform: scale(.8); transition: opacity .25s var(--ease), transform .25s var(--ease); }
+.pastille[aria-checked="true"]::after { opacity: 1; transform: none; }
+.pastille:focus-visible { outline: 2px solid var(--bone); outline-offset: 6px; }
+.pastille.libre { --c: conic-gradient(#e5384a, #e8b33a, #22c28a, #2bb8d6, #3d7bff, #8b5cf6, #e64aa8, #e5384a); margin-left: 12px; }
+.pastille.libre input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.pastille.libre span { position: absolute; inset: 0; border-radius: 50%; background: var(--c); }
 .note { color: var(--muted); font-size: 12.5px; padding: 0 20px 16px; margin: 0; }
 .statut { color: var(--pink); font-size: 13px; min-height: 1.4em; transition: opacity .3s; }
 
 @keyframes entree { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-@keyframes respire { 50% { opacity: .35; box-shadow: 0 0 22px rgba(229, 56, 74, .8); } }
+@keyframes respire { 50% { opacity: .35; box-shadow: 0 0 22px rgba(var(--acc), .8); } }
 body.sans-animations *, body.sans-animations *::before, body.sans-animations *::after { animation: none !important; transition: none !important; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 @media (max-width: 760px) { .cadre { grid-template-columns: 1fr; padding: 28px 16px 60px; } nav { position: static; grid-auto-flow: column; overflow-x: auto; } }
@@ -223,12 +235,19 @@ body.sans-animations *, body.sans-animations *::before, body.sans-animations *::
       <h2>Apparence</h2>
       <p class="intro">Le web, la nuit.</p>
       <div class="carte">
+        <div class="ligne"><div class="texte"><b>Couleur du navigateur</b><small>Les mêmes teintes que l'application ONIRIQUE CENTRAL. Tout suit : onglets, témoins, pages, Google.</small></div></div>
+        <div class="ligne" style="padding-top:0;border:0">
+          <div class="pastilles" id="pastilles" role="radiogroup" aria-label="Couleur du navigateur"></div>
+          <label class="pastille libre" title="Une autre couleur"><input type="color" id="couleur-libre" aria-label="Une autre couleur"><span></span></label>
+        </div>
+      </div>
+      <div class="carte">
         <div class="ligne">
           <div class="texte"><b>Sites en thème sombre</b><small>Les sites qui ont un thème sombre l'affichent d'office (Google, YouTube, GitHub…).</small></div>
           <label class="interrupteur"><input type="checkbox" data-cle="SitesSombres" aria-label="Sites en thème sombre"><span></span></label>
         </div>
         <div class="ligne">
-          <div class="texte"><b>Google aux couleurs ONIRIQUE</b><small>Les recherches Google prennent la nuit et la braise d'ONIRIQUE.</small></div>
+          <div class="texte"><b>Google aux couleurs ONIRIQUE</b><small>Les recherches Google prennent la nuit d'ONIRIQUE et ta couleur.</small></div>
           <label class="interrupteur"><input type="checkbox" data-cle="GoogleOnirique" aria-label="Google aux couleurs ONIRIQUE"><span></span></label>
         </div>
         <div class="ligne">
@@ -289,6 +308,12 @@ document.addEventListener("click", (e) => {
 });
 document.querySelectorAll("input[data-cle]").forEach((i) => i.addEventListener("change", () => envoyer({ type: "changer", cle: i.dataset.cle, valeur: i.checked })));
 
+document.getElementById("pastilles").addEventListener("click", (e) => {
+  const p = e.target.closest(".pastille");
+  if (p) envoyer({ type: "changer", cle: "Accent", valeur: p.dataset.hex });
+});
+document.getElementById("couleur-libre").addEventListener("change", (e) => envoyer({ type: "changer", cle: "Accent", valeur: e.target.value }));
+
 document.getElementById("defaut").onclick = () => envoyer({ type: "defaut" });
 document.getElementById("majs").onclick = () => envoyer({ type: "majs" });
 document.getElementById("effacer").onclick = () => {
@@ -315,6 +340,15 @@ function afficher(m) {
   vpn.disabled = m.vpn === "connexion";
   document.getElementById("vpn-etat").dataset.etat = m.vpn;
   document.getElementById("vpn-titre").textContent = { actif: "Actif", connexion: "Connexion…", eteint: "Éteint" }[m.vpn];
+  const pastilles = document.getElementById("pastilles");
+  if (!pastilles.children.length) {
+    pastilles.innerHTML = m.accents.map((a) => `<button class="pastille" role="radio" data-hex="${a.hex}" style="--c:${a.hex}" title="${a.nom}" aria-label="${a.nom}"></button>`).join("");
+  }
+  const choisie = (r.Accent || "#e5384a").toLowerCase();
+  pastilles.querySelectorAll(".pastille").forEach((p) => p.setAttribute("aria-checked", String(p.dataset.hex === choisie)));
+  const libre = document.querySelector(".pastille.libre");
+  libre.setAttribute("aria-checked", String(!m.accents.some((a) => a.hex === choisie)));
+  document.getElementById("couleur-libre").value = choisie;
   document.getElementById("version").textContent = m.version;
   const maj = document.getElementById("maj-statut");
   if (m.majPrete) maj.textContent = `La version ${m.majPrete} est prête : elle s'ouvrira au prochain lancement.`;

@@ -4,53 +4,122 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Nouvel onglet</title>
+<script src="commun.js"></script>
 <style>
 @font-face { font-family: "Unbounded"; font-weight: 200 900; src: url(fonts/Unbounded-latin.woff2) format("woff2"); }
 @font-face { font-family: "Hanken Grotesk"; font-weight: 100 900; src: url(fonts/HankenGrotesk-latin.woff2) format("woff2"); }
 @font-face { font-family: "JetBrains Mono"; font-weight: 100 800; src: url(fonts/JetBrainsMono-latin.woff2) format("woff2"); }
 :root {
-  --night: #09080A; --deep: #121012; --ember: #E5384A; --blood: #7A0D1C; --pink: #FF8E9A;
+  --night: #09080A; --deep: #121012; --deep-2: #1a1416; --acc: 229, 56, 74; --acc-hi: 255, 142, 154; --acc-lo: 122, 13, 28;
+  --ember: rgb(var(--acc)); --blood: rgb(var(--acc-lo)); --pink: rgb(var(--acc-hi));
   --bone: #F4ECEC; --label: #D9C6C9; --haze: #A8939A; --muted: #7D6A6E; --line: rgba(255, 210, 214, .13);
+  --ease: cubic-bezier(.2, .8, .2, 1);
 }
 * { box-sizing: border-box; }
-html, body { height: 100%; margin: 0; }
+html, body { min-height: 100%; margin: 0; }
 body {
-  display: grid; place-items: center; overflow: hidden;
+  display: grid; place-items: start center;
   background: var(--night); color: var(--bone);
   font: 16px/1.5 "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
-  /* La nuit, avec trois taches floues braise. */
+  /* La nuit, avec trois taches floues de l'accent. */
   background-image:
-    radial-gradient(42vmax 36vmax at 14% 12%, rgba(122, 13, 28, .55), transparent 70%),
-    radial-gradient(38vmax 32vmax at 88% 90%, rgba(122, 13, 28, .42), transparent 70%),
-    radial-gradient(26vmax 22vmax at 70% 18%, rgba(229, 56, 74, .10), transparent 70%);
+    radial-gradient(42vmax 36vmax at 14% 12%, rgba(var(--acc-lo), .55), transparent 70%),
+    radial-gradient(38vmax 32vmax at 88% 90%, rgba(var(--acc-lo), .42), transparent 70%),
+    radial-gradient(26vmax 22vmax at 70% 18%, rgba(var(--acc), .10), transparent 70%);
+  background-attachment: fixed;
 }
-main { width: min(620px, 100% - 32px); text-align: center; margin-top: -6vh; }
-img { width: 84px; height: auto; display: block; margin: 0 auto 18px; }
+main { width: min(760px, 100% - 32px); text-align: center; padding: 15vh 0 60px; }
+main > img { width: 84px; height: auto; display: block; margin: 0 auto 18px; }
 h1 { margin: 0 0 36px; font: 800 clamp(34px, 7vw, 64px)/1 "Unbounded", "Arial Black", sans-serif; letter-spacing: .02em; }
-form { margin: 0; }
-input {
+form { margin: 0 auto; max-width: 620px; }
+#q {
   width: 100%; height: 54px; padding: 0 20px;
   border: 1px solid var(--line); border-radius: 12px;
   background: rgba(0, 0, 0, .5); color: var(--bone);
   font: 17px "Hanken Grotesk", "Segoe UI", sans-serif; outline: none;
+  transition: border-color .3s, box-shadow .3s;
 }
-input::placeholder { color: var(--muted); }
-input:focus { border-color: rgba(255, 142, 154, .7); }
-nav { margin-top: 26px; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 28px; }
-nav a { position: relative; padding-bottom: 6px; color: var(--haze); text-decoration: none; font-size: 14px; }
-nav a::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--ember); transform: scaleX(0); transition: transform .2s; }
-nav a:hover, nav a:focus-visible { color: var(--bone); outline: none; }
-nav a:hover::after, nav a:focus-visible::after { transform: scaleX(1); }
-main > * { animation: monte .6s cubic-bezier(.2, .8, .2, 1) both; }
+#q::placeholder { color: var(--muted); }
+#q:focus { border-color: rgba(var(--acc-hi), .7); box-shadow: 0 0 0 4px rgba(var(--acc), .12); }
+
+/* Raccourcis et dossiers */
+.grille { display: flex; flex-wrap: wrap; justify-content: center; gap: 22px 18px; margin-top: 44px; }
+.tuile {
+  position: relative; width: 96px; display: grid; justify-items: center; gap: 8px; padding: 0; border: 0; background: none;
+  color: var(--label); font: 500 13px "Hanken Grotesk", sans-serif; text-decoration: none; cursor: pointer;
+  animation: monte .5s var(--ease) both; animation-delay: calc(.2s + var(--i, 0) * .03s);
+}
+.tuile .carre {
+  width: 76px; height: 76px; border-radius: 18px; display: grid; place-items: center;
+  background: var(--deep); border: 1px solid var(--line); overflow: hidden;
+  transition: transform .25s var(--ease), border-color .25s var(--ease), background .25s var(--ease), box-shadow .25s var(--ease);
+}
+.tuile:hover .carre, .tuile:focus-visible .carre { transform: translateY(-3px); border-color: rgba(var(--acc-hi), .45); background: var(--deep-2); }
+.tuile:focus-visible { outline: none; }
+.tuile:focus-visible .carre { box-shadow: 0 0 0 2px rgb(var(--acc-hi)); }
+.tuile .nom { max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.icone { width: 34px; height: 34px; border-radius: 8px; object-fit: contain; }
+.lettre { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; font: 800 17px "Unbounded", sans-serif; color: #fff; background: linear-gradient(rgb(var(--acc)), rgb(var(--acc-lo))); }
+.dossier .carre { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 6px; padding: 12px; place-items: center; }
+.dossier .carre .icone, .dossier .carre .lettre { width: 22px; height: 22px; border-radius: 6px; font-size: 10px; }
+.ajout .carre { border-style: dashed; color: var(--haze); font-size: 28px; font-weight: 300; background: transparent; }
+.ajout .nom { color: var(--muted); }
+
+/* Glisser-déposer : le dossier aspire, les voisins s'écartent. */
+.tuile.glisse { opacity: .35; }
+.tuile.cible .carre { transform: scale(1.12); border-color: rgb(var(--acc)); box-shadow: 0 0 0 4px rgba(var(--acc), .18); }
+.tuile.avant::before, .tuile.apres::after {
+  content: ""; position: absolute; top: 6px; height: 64px; width: 3px; border-radius: 2px; background: rgb(var(--acc));
+}
+.tuile.avant::before { left: -11px; }
+.tuile.apres::after { right: -11px; }
+
+/* Dossier ouvert */
+dialog { border: 0; padding: 0; background: transparent; color: var(--bone); max-width: none; }
+dialog::backdrop { background: rgba(5, 4, 5, .62); backdrop-filter: blur(6px); animation: fondu .25s var(--ease); }
+.panneau {
+  width: min(560px, calc(100vw - 32px)); padding: 26px 26px 30px; border-radius: 22px;
+  background: rgba(18, 16, 18, .96); border: 1px solid var(--line); box-shadow: 0 30px 80px rgba(0, 0, 0, .6);
+  animation: ouvre .35s var(--ease) both; transform-origin: var(--ox, 50%) var(--oy, 50%);
+}
+dialog[open].ferme .panneau { animation: ferme .2s ease-in both; }
+.panneau input.titre {
+  display: block; width: 100%; margin: 0 0 20px; padding: 6px 8px; border: 1px solid transparent; border-radius: 10px;
+  background: transparent; color: var(--bone); font: 700 20px "Unbounded", sans-serif; text-align: center; outline: none;
+}
+.panneau input.titre:hover { border-color: var(--line); }
+.panneau input.titre:focus { border-color: rgba(var(--acc-hi), .6); }
+.panneau .grille { margin-top: 0; }
+
+/* Menu et formulaire */
+.menu {
+  position: fixed; z-index: 10; min-width: 200px; padding: 6px; border-radius: 12px;
+  background: var(--deep); border: 1px solid var(--line); box-shadow: 0 16px 40px rgba(0, 0, 0, .55);
+  animation: deplie .16s var(--ease) both; transform-origin: top left;
+}
+.menu button { display: block; width: 100%; text-align: left; padding: 8px 12px; border: 0; border-radius: 8px; background: none; color: var(--label); font: 14px "Hanken Grotesk", sans-serif; cursor: pointer; }
+.menu button:hover, .menu button:focus-visible { background: var(--deep-2); color: var(--bone); outline: none; }
+.menu button.danger { color: rgb(var(--acc-hi)); }
+.formulaire { display: grid; gap: 12px; text-align: left; }
+.formulaire h2 { margin: 0 0 6px; font: 700 18px "Unbounded", sans-serif; }
+.formulaire label { display: grid; gap: 6px; color: var(--haze); font-size: 13px; }
+.formulaire input { height: 42px; padding: 0 14px; border: 1px solid var(--line); border-radius: 10px; background: rgba(0, 0, 0, .45); color: var(--bone); font: 15px "Hanken Grotesk", sans-serif; outline: none; }
+.formulaire input:focus { border-color: rgba(var(--acc-hi), .6); }
+.boutons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+.bouton { border: 1px solid var(--line); background: #0b090a; color: var(--bone); padding: 9px 16px; border-radius: 10px; font: 600 12px "JetBrains Mono", Consolas, monospace; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
+.bouton.principal { background: linear-gradient(rgb(var(--acc)), rgb(var(--acc-lo))); border-color: transparent; }
+
+main > img, h1, form { animation: monte .6s var(--ease) both; }
 main > img { animation-name: eclot; }
-main > h1 { animation-delay: .06s; }
-main > form { animation-delay: .12s; }
-main > nav { animation-delay: .18s; }
-input { transition: border-color .3s, box-shadow .3s; }
-input:focus { box-shadow: 0 0 0 4px rgba(229, 56, 74, .12); }
+h1 { animation-delay: .06s; }
+form { animation-delay: .12s; }
 @keyframes monte { from { opacity: 0; transform: translateY(12px); } }
 @keyframes eclot { from { opacity: 0; transform: scale(.85); filter: blur(4px); } }
-@media (prefers-reduced-motion: reduce) { nav a::after { transition: none; } main > * { animation: none; } }
+@keyframes fondu { from { opacity: 0; } }
+@keyframes ouvre { from { opacity: 0; transform: scale(.6); } }
+@keyframes ferme { to { opacity: 0; transform: scale(.85); } }
+@keyframes deplie { from { opacity: 0; transform: scale(.94); } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
@@ -60,19 +129,224 @@ input:focus { box-shadow: 0 0 0 4px rgba(229, 56, 74, .12); }
   <form id="recherche">
     <input id="q" autofocus autocomplete="off" spellcheck="false" placeholder="Rechercher sur le web ou saisir une adresse" aria-label="Rechercher sur le web ou saisir une adresse">
   </form>
-  <nav>
-    <a href="https://onirique.store/">ONIRIQUE</a>
-    <a href="https://onirique.store/cloud">CLOUD</a>
-    <a href="https://onirique.store/boutique">Boutique</a>
-    <a href="https://onirique.store/outils">Outils</a>
-  </nav>
+  <div class="grille" id="grille" aria-label="Raccourcis"></div>
 </main>
+<dialog id="dossier"><div class="panneau"><input class="titre" id="titre-dossier" aria-label="Nom du dossier" maxlength="40"><div class="grille" id="grille-dossier"></div></div></dialog>
+<dialog id="edition"><form class="panneau formulaire" id="form-edition" method="dialog">
+  <h2 id="edition-titre">Ajouter un raccourci</h2>
+  <label>Nom<input id="edition-nom" maxlength="40" required></label>
+  <label id="edition-ligne-url">Adresse<input id="edition-url" required spellcheck="false" placeholder="exemple.com"></label>
+  <div class="boutons"><button class="bouton" type="button" id="edition-annuler">Annuler</button><button class="bouton principal" type="submit">Enregistrer</button></div>
+</form></dialog>
 <script>
-document.getElementById("recherche").addEventListener("submit", e => {
+document.getElementById("recherche").addEventListener("submit", (e) => {
   e.preventDefault();
   const s = document.getElementById("q").value.trim();
-  if (s) window.chrome.webview.postMessage(s);
+  if (s) onirique.envoyer(s);
 });
+
+const PAR_DEFAUT = [
+  { type: "site", nom: "ONIRIQUE", url: "https://onirique.store/" },
+  { type: "site", nom: "CLOUD", url: "https://onirique.store/cloud" },
+  { type: "site", nom: "Boutique", url: "https://onirique.store/boutique" },
+  { type: "dossier", nom: "Musique", elements: [
+    { type: "site", nom: "YouTube", url: "https://www.youtube.com/" },
+    { type: "site", nom: "Spotify", url: "https://open.spotify.com/" },
+    { type: "site", nom: "SoundCloud", url: "https://soundcloud.com/" },
+  ] },
+  { type: "site", nom: "Outils", url: "https://onirique.store/outils" },
+];
+let liste = null;
+let ouvert = null; // le dossier affiché
+try { liste = JSON.parse(localStorage.getItem("onirique.raccourcis")); } catch { liste = null; }
+
+const hote = (url) => { try { return new URL(url).hostname; } catch { return ""; } };
+function icone(site) {
+  const h = hote(site.url);
+  if (/(^|\.)onirique\.store$/.test(h)) { const i = new Image(); i.src = "logo.png"; i.className = "icone"; i.alt = ""; return i; }
+  const lettre = Object.assign(document.createElement("span"), { className: "lettre", textContent: (site.nom || h || "?").trim().charAt(0).toUpperCase() });
+  if (!h) return lettre;
+  // L'icône vient du site lui-même (aucun service tiers ne voit tes raccourcis) ; sinon, une lettre.
+  const i = new Image();
+  i.className = "icone"; i.alt = ""; i.referrerPolicy = "no-referrer";
+  i.onerror = () => i.replaceWith(lettre);
+  i.src = `https://${h}/favicon.ico`;
+  return i;
+}
+
+function enregistrer() {
+  try { localStorage.setItem("onirique.raccourcis", JSON.stringify(liste)); } catch { /* le navigateur garde la liste */ }
+  onirique.envoyer({ type: "raccourcis", liste });
+}
+
+// Rendu d'une grille (l'accueil ou un dossier ouvert)
+function dessiner(conteneur, elements, dansDossier) {
+  conteneur.innerHTML = "";
+  elements.forEach((el, index) => {
+    const t = document.createElement(el.type === "dossier" ? "button" : "a");
+    t.className = "tuile" + (el.type === "dossier" ? " dossier" : "");
+    t.style.setProperty("--i", index);
+    t.draggable = true;
+    const carre = Object.assign(document.createElement("span"), { className: "carre" });
+    if (el.type === "dossier") el.elements.slice(0, 4).forEach((s) => carre.append(icone(s)));
+    else { t.href = el.url; carre.append(icone(el)); }
+    t.append(carre, Object.assign(document.createElement("span"), { className: "nom", textContent: el.nom }));
+    t.title = el.type === "dossier" ? `${el.nom} (${el.elements.length})` : el.url;
+    if (el.type === "dossier") t.addEventListener("click", () => ouvrirDossier(el, t));
+    t.addEventListener("contextmenu", (e) => { e.preventDefault(); menu(e, el, elements, dansDossier); });
+    brancherGlisser(t, el, elements, dansDossier);
+    conteneur.append(t);
+  });
+  const plus = document.createElement("button");
+  plus.className = "tuile ajout";
+  plus.style.setProperty("--i", elements.length);
+  plus.innerHTML = '<span class="carre">+</span><span class="nom">Ajouter</span>';
+  plus.addEventListener("click", () => editer(null, elements));
+  conteneur.append(plus);
+}
+
+function tout() {
+  dessiner(document.getElementById("grille"), liste, false);
+  if (ouvert) {
+    if (!liste.includes(ouvert)) return fermerDossier();
+    document.getElementById("titre-dossier").value = ouvert.nom;
+    dessiner(document.getElementById("grille-dossier"), ouvert.elements, true);
+  }
+}
+
+// Un dossier qui n'a plus qu'un site redevient ce site ; vide, il disparaît.
+function ranger() {
+  liste = liste.flatMap((el) => (el.type !== "dossier" ? [el] : el.elements.length > 1 ? [el] : el.elements));
+}
+
+// Glisser-déposer : au centre d'un raccourci, on fait un dossier ; sur ses bords, on le range avant ou après.
+let glisse = null;
+function brancherGlisser(t, el, elements, dansDossier) {
+  t.addEventListener("dragstart", (e) => { glisse = { el, de: elements }; t.classList.add("glisse"); e.dataTransfer.effectAllowed = "move"; });
+  t.addEventListener("dragend", () => { glisse = null; document.querySelectorAll(".tuile").forEach((x) => x.classList.remove("glisse", "cible", "avant", "apres")); });
+  const zone = (e) => {
+    const r = t.getBoundingClientRect(), x = (e.clientX - r.left) / r.width;
+    return x < 0.25 ? "avant" : x > 0.75 ? "apres" : "cible";
+  };
+  t.addEventListener("dragover", (e) => {
+    if (!glisse || glisse.el === el) return;
+    if (zone(e) === "cible" && (glisse.el.type === "dossier" || dansDossier)) return; // pas de dossier dans un dossier
+    e.preventDefault();
+    t.classList.remove("cible", "avant", "apres");
+    t.classList.add(zone(e) === "cible" && glisse.el.type === "dossier" ? "avant" : zone(e));
+  });
+  t.addEventListener("dragleave", () => t.classList.remove("cible", "avant", "apres"));
+  t.addEventListener("drop", (e) => {
+    e.preventDefault();
+    if (!glisse || glisse.el === el) return;
+    const z = zone(e), bouge = glisse.el;
+    glisse.de.splice(glisse.de.indexOf(bouge), 1);
+    if (z === "cible" && bouge.type !== "dossier" && !dansDossier) {
+      if (el.type === "dossier") el.elements.push(bouge);
+      else elements.splice(elements.indexOf(el), 1, { type: "dossier", nom: "Dossier", elements: [el, bouge] });
+    } else {
+      elements.splice(elements.indexOf(el) + (z === "apres" ? 1 : 0), 0, bouge);
+    }
+    ranger(); enregistrer(); tout();
+  });
+}
+// Lâché hors du dossier ouvert : le raccourci en sort.
+document.getElementById("dossier").addEventListener("dragover", (e) => { if (glisse && e.target.id === "dossier") e.preventDefault(); });
+document.getElementById("dossier").addEventListener("drop", (e) => {
+  if (!glisse || e.target.id !== "dossier") return;
+  e.preventDefault();
+  glisse.de.splice(glisse.de.indexOf(glisse.el), 1);
+  liste.push(glisse.el);
+  ranger(); enregistrer(); tout();
+});
+
+function ouvrirDossier(dossier, tuile) {
+  ouvert = dossier;
+  const d = document.getElementById("dossier"), r = tuile.getBoundingClientRect();
+  const p = d.querySelector(".panneau");
+  d.classList.remove("ferme");
+  d.showModal();
+  const rp = p.getBoundingClientRect();
+  p.style.setProperty("--ox", `${r.left + r.width / 2 - rp.left}px`);
+  p.style.setProperty("--oy", `${r.top + r.height / 2 - rp.top}px`);
+  tout();
+}
+function fermerDossier() {
+  const d = document.getElementById("dossier");
+  if (!d.open) { ouvert = null; return; }
+  d.classList.add("ferme");
+  setTimeout(() => { d.close(); d.classList.remove("ferme"); ouvert = null; }, matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 190);
+}
+document.getElementById("dossier").addEventListener("click", (e) => { if (e.target.id === "dossier") fermerDossier(); });
+document.getElementById("dossier").addEventListener("cancel", (e) => { e.preventDefault(); fermerDossier(); });
+document.getElementById("titre-dossier").addEventListener("change", (e) => {
+  if (!ouvert) return;
+  ouvert.nom = e.target.value.trim() || "Dossier";
+  enregistrer(); dessiner(document.getElementById("grille"), liste, false);
+});
+
+// Menu du clic droit
+function menu(e, el, elements, dansDossier) {
+  document.querySelector(".menu")?.remove();
+  const m = Object.assign(document.createElement("div"), { className: "menu", role: "menu" });
+  const actions = [];
+  if (el.type === "site") {
+    actions.push(["Ouvrir dans un nouvel onglet", () => window.open(el.url)]);
+    actions.push(["Modifier", () => editer(el, elements)]);
+    if (dansDossier) actions.push(["Sortir du dossier", () => { elements.splice(elements.indexOf(el), 1); liste.push(el); }]);
+  } else {
+    actions.push(["Ouvrir", () => ouvrirDossier(el, e.target.closest(".tuile"))]);
+    actions.push(["Renommer", () => editer(el, elements)]);
+    actions.push(["Défaire le dossier", () => elements.splice(elements.indexOf(el), 1, ...el.elements)]);
+  }
+  actions.push(["Supprimer", () => elements.splice(elements.indexOf(el), 1), true]);
+  for (const [texte, faire, danger] of actions) {
+    const b = Object.assign(document.createElement("button"), { textContent: texte, role: "menuitem" });
+    if (danger) b.className = "danger";
+    b.addEventListener("click", () => { m.remove(); const avant = JSON.stringify(liste); faire(); if (JSON.stringify(liste) !== avant) { ranger(); enregistrer(); tout(); } });
+    m.append(b);
+  }
+  (dansDossier ? document.getElementById("dossier") : document.body).append(m);
+  m.style.left = Math.min(e.clientX, innerWidth - 220) + "px";
+  m.style.top = Math.min(e.clientY, innerHeight - m.offsetHeight - 8) + "px";
+  m.querySelector("button").focus();
+}
+addEventListener("pointerdown", (e) => { if (!e.target.closest(".menu")) document.querySelector(".menu")?.remove(); });
+addEventListener("keydown", (e) => { if (e.key === "Escape") document.querySelector(".menu")?.remove(); });
+
+// Ajouter ou modifier un raccourci (ou renommer un dossier)
+let edite = null;
+function editer(el, elements) {
+  edite = { el, elements };
+  const dossier = el?.type === "dossier";
+  document.getElementById("edition-titre").textContent = !el ? "Ajouter un raccourci" : dossier ? "Renommer le dossier" : "Modifier le raccourci";
+  document.getElementById("edition-nom").value = el?.nom || "";
+  document.getElementById("edition-url").value = el?.url || "";
+  document.getElementById("edition-ligne-url").hidden = dossier;
+  document.getElementById("edition-url").required = !dossier;
+  document.getElementById("edition").showModal();
+}
+document.getElementById("edition-annuler").addEventListener("click", () => document.getElementById("edition").close());
+document.getElementById("form-edition").addEventListener("submit", () => {
+  const nom = document.getElementById("edition-nom").value.trim();
+  let url = document.getElementById("edition-url").value.trim();
+  if (url && !/^[a-z][a-z0-9+.-]*:\/\//i.test(url)) url = "https://" + url;
+  if (!edite) return;
+  if (!edite.el) edite.elements.push({ type: "site", nom: nom || hote(url), url });
+  else { edite.el.nom = nom || edite.el.nom; if (edite.el.type === "site") edite.el.url = url; }
+  edite = null;
+  enregistrer(); tout();
+});
+
+onirique.surMessage((m) => {
+  if (m?.type !== "etat") return;
+  const recue = Array.isArray(m.raccourcis) ? m.raccourcis : null;
+  if (recue && JSON.stringify(recue) !== JSON.stringify(liste)) { liste = recue; tout(); }
+  else if (!liste) { liste = structuredClone(PAR_DEFAUT); tout(); }
+});
+if (!liste && !window.chrome?.webview) liste = structuredClone(PAR_DEFAUT); // ouverte hors du navigateur
+if (liste) tout();
+onirique.envoyer({ type: "lire" });
 </script>
 </body>
 </html>

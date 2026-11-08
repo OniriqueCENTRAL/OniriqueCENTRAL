@@ -22,6 +22,8 @@ sealed class Parametres
     public bool Memoire { get; set; } = true;
     public bool Animations { get; set; } = true;
     public bool MisesAJour { get; set; } = true;
+    public string Accent { get; set; } = DA.AccentParDefaut;
+    public string? Raccourcis { get; set; }   // l'écran d'accueil (sites et dossiers), en JSON, géré par accueil/index.html
     public List<OngletSauve> Session { get; set; } = new();
     public int SessionActif { get; set; }
 

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Historique</title>
+<script src="commun.js"></script>
+<style>
+@font-face { font-family: "Unbounded"; font-weight: 200 900; src: url(fonts/Unbounded-latin.woff2) format("woff2"); }
+@font-face { font-family: "Hanken Grotesk"; font-weight: 100 900; src: url(fonts/HankenGrotesk-latin.woff2) format("woff2"); }
+@font-face { font-family: "JetBrains Mono"; font-weight: 100 800; src: url(fonts/JetBrainsMono-latin.woff2) format("woff2"); }
+:root {
+  --night: #09080A; --deep: #121012; --deep-2: #1a1416; --acc: 229, 56, 74; --acc-hi: 255, 142, 154; --acc-lo: 122, 13, 28;
+  --bone: #F4ECEC; --label: #D9C6C9; --haze: #A8939A; --muted: #7D6A6E; --line: rgba(255, 210, 214, .13);
+  --ease: cubic-bezier(.2, .8, .2, 1);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background: var(--night); color: var(--bone); font: 15px/1.5 "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+  background-image: radial-gradient(40vmax 30vmax at 0% 0%, rgba(var(--acc-lo), .42), transparent 70%),
+    radial-gradient(34vmax 28vmax at 100% 100%, rgba(var(--acc-lo), .30), transparent 70%);
+  background-attachment: fixed;
+}
+.cadre { max-width: 860px; margin: 0 auto; padding: 48px 24px 80px; }
+.tete { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 26px; }
+h1 { flex: 1; margin: 0; font: 800 30px/1.1 "Unbounded", "Arial Black", sans-serif; }
+#q {
+  width: min(360px, 100%); height: 42px; padding: 0 14px; border: 1px solid var(--line); border-radius: 10px;
+  background: rgba(0, 0, 0, .45); color: var(--bone); font: 15px "Hanken Grotesk", sans-serif; outline: none; transition: border-color .25s;
+}
+#q:focus { border-color: rgba(var(--acc-hi), .6); }
+.bouton {
+  border: 1px solid var(--line); background: #0b090a; color: var(--bone); padding: 10px 14px; border-radius: 10px;
+  font: 600 12px "JetBrains Mono", Consolas, monospace; letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+  transition: border-color .25s var(--ease);
+}
+.bouton:hover { border-color: rgba(var(--acc-hi), .5); }
+.bouton:focus-visible, .entree:focus-visible, .oublier:focus-visible { outline: 2px solid rgb(var(--acc-hi)); outline-offset: 2px; }
+h2 { margin: 30px 0 10px; font: 500 11px "JetBrains Mono", Consolas, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.jour { background: var(--deep); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; animation: entree .4s var(--ease) both; }
+.ligne { display: flex; align-items: center; gap: 4px; padding-right: 8px; transition: background .2s var(--ease); }
+.ligne + .ligne { border-top: 1px solid var(--line); }
+.ligne:hover { background: var(--deep-2); }
+.entree { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; padding: 11px 16px; color: inherit; text-decoration: none; }
+.heure { flex: none; width: 44px; font: 12px "JetBrains Mono", Consolas, monospace; color: var(--muted); }
+.lettre { flex: none; width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; font: 800 12px "Unbounded", sans-serif; color: #fff; background: linear-gradient(rgb(var(--acc)), rgb(var(--acc-lo))); }
+.titre { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.site { flex: none; max-width: 34%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--haze); font-size: 13px; }
+.oublier { flex: none; width: 30px; height: 30px; border: 0; border-radius: 8px; background: none; color: var(--muted); font-size: 18px; cursor: pointer; opacity: 0; transition: opacity .2s, color .2s, background .2s; }
+.ligne:hover .oublier, .oublier:focus-visible { opacity: 1; }
+.oublier:hover { color: rgb(var(--acc-hi)); background: rgba(var(--acc), .12); }
+.ligne.part { animation: part .25s ease-in both; }
+.vide { margin-top: 60px; text-align: center; color: var(--haze); }
+@keyframes entree { from { opacity: 0; transform: translateY(8px); } }
+@keyframes part { to { opacity: 0; transform: translateX(20px); } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="cadre">
+  <div class="tete">
+    <h1>Historique</h1>
+    <input id="q" type="search" placeholder="Rechercher dans l'historique" aria-label="Rechercher dans l'historique" autocomplete="off">
+    <button class="bouton" id="tout">Tout effacer</button>
+  </div>
+  <div id="liste" aria-live="polite"></div>
+</div>
+<script>
+const liste = document.getElementById("liste");
+const hote = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return u; } };
+const jour = (d) => {
+  const auj = new Date(); auj.setHours(0, 0, 0, 0);
+  const j = new Date(d); j.setHours(0, 0, 0, 0);
+  const ecart = Math.round((auj - j) / 86400000);
+  if (ecart === 0) return "Aujourd'hui";
+  if (ecart === 1) return "Hier";
+  return j.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: j.getFullYear() === auj.getFullYear() ? undefined : "numeric" });
+};
+
+function afficher(entrees) {
+  liste.innerHTML = "";
+  if (!entrees.length) {
+    liste.innerHTML = `<p class="vide">${document.getElementById("q").value ? "Rien ne correspond à ta recherche." : "L'historique est vide."}</p>`;
+    return;
+  }
+  let groupe = null, titre = null;
+  for (const e of entrees) {
+    const j = jour(e.t);
+    if (j !== titre) {
+      titre = j;
+      liste.append(Object.assign(document.createElement("h2"), { textContent: j }));
+      groupe = Object.assign(document.createElement("div"), { className: "jour" });
+      liste.append(groupe);
+    }
+    const ligne = Object.assign(document.createElement("div"), { className: "ligne" });
+    const a = Object.assign(document.createElement("a"), { className: "entree", href: e.u, title: e.u });
+    a.append(
+      Object.assign(document.createElement("span"), { className: "heure", textContent: new Date(e.t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) }),
+      Object.assign(document.createElement("span"), { className: "lettre", textContent: hote(e.u).charAt(0).toUpperCase() }),
+      Object.assign(document.createElement("span"), { className: "titre", textContent: e.ti || hote(e.u) }),
+      Object.assign(document.createElement("span"), { className: "site", textContent: hote(e.u) }),
+    );
+    const x = Object.assign(document.createElement("button"), { className: "oublier", textContent: "×", title: "Retirer de l'historique" });
+    x.setAttribute("aria-label", `Retirer ${e.ti || hote(e.u)} de l'historique`);
+    x.addEventListener("click", () => {
+      onirique.envoyer({ type: "oublier", t: e.t, u: e.u });
+      ligne.classList.add("part");
+      setTimeout(() => { const g = ligne.parentElement; ligne.remove(); if (g && !g.children.length) { g.previousElementSibling?.remove(); g.remove(); } }, 240);
+    });
+    ligne.append(a, x);
+    groupe.append(ligne);
+  }
+}
+
+let attente;
+document.getElementById("q").addEventListener("input", (e) => {
+  clearTimeout(attente);
+  attente = setTimeout(() => onirique.envoyer({ type: "historique", q: e.target.value }), 150);
+});
+document.getElementById("tout").addEventListener("click", () => {
+  if (!confirm("Effacer tout l'historique ?")) return;
+  onirique.envoyer({ type: "oublierTout" });
+  afficher([]);
+});
+onirique.surMessage((m) => { if (m?.type === "historique") afficher(m.entrees); });
+onirique.envoyer({ type: "lire" });
+onirique.envoyer({ type: "historique", q: "" });
+</script>
+</body>
+</html>

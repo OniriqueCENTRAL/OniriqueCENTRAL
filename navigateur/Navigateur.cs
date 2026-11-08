@@ -15,8 +15,45 @@ static class DA
     public static readonly Color Fond = Color.FromArgb(18, 16, 18);       // Profondeur
     public static readonly Color Survol = Color.FromArgb(30, 24, 27);
     public static readonly Color Filet = Color.FromArgb(41, 34, 37);
-    public static readonly Color Braise = Color.FromArgb(229, 56, 74);
-    public static readonly Color BraiseClaire = Color.FromArgb(255, 142, 154); // Rose
+    // L'accent (la braise par défaut) suit la couleur choisie dans les Paramètres, comme dans l'application CENTRAL.
+    public static Color Braise { get; private set; } = Color.FromArgb(229, 56, 74);
+    public static Color BraiseClaire { get; private set; } = Color.FromArgb(255, 142, 154); // Rose
+    public static Color Sang { get; private set; } = Color.FromArgb(122, 13, 28);
+    public const string AccentParDefaut = "#e5384a";
+    public static readonly (string Hex, string Nom)[] Accents =
+    {
+        ("#e5384a", "Braise"), ("#ff6a3d", "Corail"), ("#e8b33a", "Or"), ("#22c28a", "Émeraude"), ("#2bb8d6", "Lagon"),
+        ("#3d7bff", "Océan"), ("#8b5cf6", "Améthyste"), ("#e64aa8", "Fuchsia"), ("#a3a3a3", "Acier"),
+    };
+
+    /// <summary>Les trois teintes de l'accent ; même calcul que le site et l'application (accent.js, accentPalette).</summary>
+    public static (Color Acc, Color Hi, Color Lo) Palette(string hex)
+    {
+        if (!System.Text.RegularExpressions.Regex.IsMatch(hex ?? "", "^#[0-9a-fA-F]{6}$") || hex!.Equals(AccentParDefaut, StringComparison.OrdinalIgnoreCase))
+            return (Color.FromArgb(229, 56, 74), Color.FromArgb(255, 142, 154), Color.FromArgb(122, 13, 28));
+        int n = Convert.ToInt32(hex[1..], 16);
+        double r = (n >> 16) / 255.0, g = ((n >> 8) & 255) / 255.0, b = (n & 255) / 255.0;
+        double max = Math.Max(r, Math.Max(g, b)), min = Math.Min(r, Math.Min(g, b)), l = (max + min) / 2, d = max - min, teinte = 0, sat = 0;
+        if (d > 0)
+        {
+            sat = d / (1 - Math.Abs(2 * l - 1));
+            teinte = max == r ? ((g - b) / d) % 6 : max == g ? (b - r) / d + 2 : (r - g) / d + 4;
+            teinte = (teinte * 60 + 360) % 360;
+        }
+        static Color Rgb(double H, double S, double L)
+        {
+            double c = (1 - Math.Abs(2 * L - 1)) * S, x = c * (1 - Math.Abs((H / 60) % 2 - 1)), m = L - c / 2;
+            var (a, bb, cc) = H < 60 ? (c, x, 0.0) : H < 120 ? (x, c, 0.0) : H < 180 ? (0.0, c, x) : H < 240 ? (0.0, x, c) : H < 300 ? (x, 0.0, c) : (c, 0.0, x);
+            int V(double v) => (int)Math.Round((v + m) * 255);
+            return Color.FromArgb(V(a), V(bb), V(cc));
+        }
+        double s = sat < 0.08 ? 0 : Math.Max(0.55, Math.Min(0.9, sat));
+        return (Rgb(teinte, s, Math.Max(0.5, Math.Min(0.62, l))), Rgb(teinte, s > 0 ? Math.Min(1, s + 0.1) : 0, 0.76), Rgb(teinte, s, 0.26));
+    }
+
+    public static void Accent(string hex) => (Braise, BraiseClaire, Sang) = Palette(hex);
+    public static string Triplet(Color c) => $"{c.R}, {c.G}, {c.B}";
+
     public static readonly Color Brume = Color.FromArgb(244, 236, 236);   // Os
     public static readonly Color Etiquette = Color.FromArgb(217, 198, 201);
     public static readonly Color Cendre = Color.FromArgb(168, 147, 154);  // Voile
@@ -70,6 +107,7 @@ sealed class Navigateur : Form
     const string Hote = "accueil.onirique";
     const string Accueil = "https://" + Hote + "/index.html";
     const string PageParametres = "https://" + Hote + "/parametres.html";
+    const string PageHistorique = "https://" + Hote + "/historique.html";
 
     internal readonly List<Onglet> Onglets = new();
     internal Onglet? Actif;
@@ -82,6 +120,7 @@ sealed class Navigateur : Form
     readonly Bouton avance = new("", "Page suivante (Alt+Droite)");
     readonly Bouton recharger = new("", "Actualiser (F5)");
     readonly Bouton vpn = new("", "VPN ONIRIQUE : éteint");
+    readonly Bouton historique = new("\uE81C", "Historique (Ctrl+H)");
     readonly Bouton reglages = new("", "Paramètres");
     readonly Champ champ = new();
     readonly Label memoire = new() { ForeColor = DA.Cendre, BackColor = DA.Fond, TextAlign = ContentAlignment.MiddleRight, AccessibleName = "Mémoire utilisée" };
@@ -100,6 +139,7 @@ sealed class Navigateur : Form
     public Navigateur(string[] adresses)
     {
         adressesDeDepart = adresses;
+        DA.Accent(Reglages.Accent);
         Text = "ONIRIQUE";
         Icon = Icon.ExtractAssociatedIcon(Environment.ProcessPath!);
         BackColor = DA.Nuit;
@@ -110,7 +150,7 @@ sealed class Navigateur : Form
 
         bandeau = new Bandeau(this) { Dock = DockStyle.Top };
         bulle = new Bulle(this);
-        barre.Controls.AddRange(new Control[] { retour, avance, recharger, champ, vpn, reglages, memoire });
+        barre.Controls.AddRange(new Control[] { retour, avance, recharger, champ, vpn, historique, reglages, memoire });
         barre.Paint += (_, e) => { using var p = new Pen(DA.Filet); e.Graphics.DrawLine(p, 0, barre.Height - 1, barre.Width, barre.Height - 1); };
         barre.Resize += (_, _) => Disposer();
         contenu.Controls.Add(bulle);
@@ -128,7 +168,8 @@ sealed class Navigateur : Form
             if (Actif.Charge) c.Stop(); else c.Reload();
         };
         vpn.Click += async (_, _) => await BasculerVpn(vpnEtat == "eteint");
-        reglages.Click += (_, _) => OuvrirParametres();
+        reglages.Click += (_, _) => OuvrirInterne(PageParametres);
+        historique.Click += (_, _) => OuvrirInterne(PageHistorique);
         champ.Saisie.KeyDown += (_, e) =>
         {
             if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; Aller(champ.Saisie.Text); }
@@ -209,7 +250,7 @@ sealed class Navigateur : Form
         champ.Saisie.Font = new Font("Segoe UI Variable Text", this.S(14), GraphicsUnit.Pixel);
         bandeau.Icones = new Font("Segoe Fluent Icons", this.S(10), GraphicsUnit.Pixel);
         var icones = new Font("Segoe Fluent Icons", this.S(14), GraphicsUnit.Pixel);
-        foreach (var b in new[] { retour, avance, recharger, vpn, reglages }) b.Font = icones;
+        foreach (var b in new[] { retour, avance, recharger, vpn, historique, reglages }) b.Font = icones;
         memoire.Font = new Font("Cascadia Mono", this.S(11), GraphicsUnit.Pixel);
         bulle.Font = new Font("Segoe UI Variable Text", this.S(13), GraphicsUnit.Pixel);
         Disposer();
@@ -221,7 +262,7 @@ sealed class Navigateur : Form
         foreach (var b in new Control[] { retour, avance, recharger }) { b.SetBounds(x, y, this.S(36), h); x += pas; }
         int droite = barre.Width - this.S(10);
         if (memoire.Visible) { int m = this.S(76); droite -= m; memoire.SetBounds(droite, y, m, h); droite -= this.S(4); }
-        foreach (var b in new Control[] { reglages, vpn }) { droite -= this.S(36); b.SetBounds(droite, y, this.S(36), h); droite -= this.S(2); }
+        foreach (var b in new Control[] { reglages, historique, vpn }) { droite -= this.S(36); b.SetBounds(droite, y, this.S(36), h); droite -= this.S(2); }
         champ.SetBounds(x + this.S(6), y, Math.Max(0, droite - x - this.S(14)), h);
         bulle.Placer();
     }
@@ -230,11 +271,11 @@ sealed class Navigateur : Form
 
     internal void NouvelOnglet() => _ = Ouvrir(Accueil);
 
-    void OuvrirParametres()
+    void OuvrirInterne(string page)
     {
-        var existant = Onglets.FirstOrDefault(o => o.Url.StartsWith(PageParametres, StringComparison.OrdinalIgnoreCase));
+        var existant = Onglets.FirstOrDefault(o => o.Url.StartsWith(page, StringComparison.OrdinalIgnoreCase));
         if (existant != null) Activer(existant);
-        else _ = Ouvrir(PageParametres, Actif == null ? -1 : Onglets.IndexOf(Actif) + 1);
+        else _ = Ouvrir(page, Actif == null ? -1 : Onglets.IndexOf(Actif) + 1);
     }
 
     async Task<Onglet> Ouvrir(string? url, int position = -1)
@@ -273,12 +314,22 @@ sealed class Navigateur : Form
         var c = v.CoreWebView2;
         AppliquerProfil(c);
         c.SetVirtualHostNameToFolderMapping(Hote, Path.Combine(AppContext.BaseDirectory, "accueil"), CoreWebView2HostResourceAccessKind.Deny);
-        if (Reglages.GoogleOnirique && scriptGoogle.Length > 0) o.ScriptGoogle = await c.AddScriptToExecuteOnDocumentCreatedAsync(scriptGoogle);
+        if (Reglages.GoogleOnirique && scriptGoogle.Length > 0) o.ScriptGoogle = await c.AddScriptToExecuteOnDocumentCreatedAsync(ScriptGoogle());
         c.DocumentTitleChanged += (_, _) => { o.Titre = c.DocumentTitle; bandeau.Invalidate(); if (o == Actif) Afficher(); };
         c.SourceChanged += (_, _) => { o.Url = c.Source; if (o == Actif) Afficher(); };
         c.HistoryChanged += (_, _) => { if (o == Actif) Afficher(); };
         c.NavigationStarting += (_, _) => { o.Charge = true; Animer(); if (o == Actif) Afficher(); };
-        c.NavigationCompleted += (_, _) => { o.Charge = false; bandeau.Invalidate(); if (o == Actif) Afficher(); };
+        c.NavigationCompleted += async (_, e) =>
+        {
+            o.Charge = false;
+            bandeau.Invalidate();
+            if (o == Actif) Afficher();
+            if (!e.IsSuccess) return;
+            // Le titre arrive souvent juste après la page : l'historique attend un instant avant de l'écrire.
+            var url = c.Source;
+            await Task.Delay(1500);
+            if (o.Vue?.CoreWebView2 == c && c.Source == url && !EstInterne(url)) Historique.Ajouter(url, c.DocumentTitle);
+        };
         c.IsDocumentPlayingAudioChanged += (_, _) => { o.Son = c.IsDocumentPlayingAudio; bandeau.Invalidate(); };
         c.WindowCloseRequested += (_, _) => Fermer(o);
         c.ContainsFullScreenElementChanged += (_, _) => PleinEcran(c.ContainsFullScreenElement);
@@ -414,6 +465,7 @@ sealed class Navigateur : Form
             case "effacer":
                 var quoi = m["quoi"]?.AsArray().Select(x => (string?)x).ToHashSet() ?? new HashSet<string?>();
                 CoreWebView2BrowsingDataKinds genres = 0;
+                if (quoi.Contains("historique")) Historique.Effacer();
                 if (quoi.Contains("historique")) genres |= CoreWebView2BrowsingDataKinds.BrowsingHistory | CoreWebView2BrowsingDataKinds.DownloadHistory;
                 if (quoi.Contains("cookies")) genres |= CoreWebView2BrowsingDataKinds.Cookies | CoreWebView2BrowsingDataKinds.AllDomStorage;
                 if (quoi.Contains("cache")) genres |= CoreWebView2BrowsingDataKinds.DiskCache | CoreWebView2BrowsingDataKinds.CacheStorage;
@@ -426,6 +478,19 @@ sealed class Navigateur : Form
                 var resultat = await ChercherMiseAJour(silencieux: false);
                 Envoyer(source, new JsonObject { ["type"] = "maj", ["etat"] = resultat });
                 return;
+            case "historique":
+                Envoyer(source, new JsonObject { ["type"] = "historique", ["entrees"] = Historique.Chercher((string?)m["q"]) });
+                return;
+            case "oublier":
+                Historique.Oublier(m["t"]?.GetValue<long>() ?? 0, (string?)m["u"] ?? "");
+                return;
+            case "oublierTout":
+                Historique.Effacer();
+                return;
+            case "raccourcis":
+                // L'écran d'accueil envoie toute sa liste (sites et dossiers) ; elle est gardée si c'est une liste raisonnable.
+                if (m["liste"] is JsonArray liste && liste.ToJsonString().Length < 200_000) { Reglages.Raccourcis = liste.ToJsonString(); Reglages.Enregistrer(); }
+                return;
             case "defaut":
                 Process.Start(new ProcessStartInfo("ms-settings:defaultapps?registeredAppUser=" + Uri.EscapeDataString(Installation.Nom)) { UseShellExecute = true });
                 return;
@@ -437,6 +502,9 @@ sealed class Navigateur : Form
     {
         var valeurs = JsonSerializer.SerializeToNode(Reglages)!.AsObject();
         valeurs.Remove("Session");
+        valeurs.Remove("Raccourcis");
+        JsonNode? raccourcis = null;
+        try { if (Reglages.Raccourcis != null) raccourcis = JsonNode.Parse(Reglages.Raccourcis); } catch { }
         return new JsonObject
         {
             ["type"] = "etat",
@@ -445,6 +513,9 @@ sealed class Navigateur : Form
             ["version"] = Installation.Version,
             ["installe"] = Installation.EstInstallee,
             ["majPrete"] = majPrete,
+            ["raccourcis"] = raccourcis,
+            ["couleurs"] = new JsonObject { ["acc"] = DA.Triplet(DA.Braise), ["hi"] = DA.Triplet(DA.BraiseClaire), ["lo"] = DA.Triplet(DA.Sang) },
+            ["accents"] = new JsonArray(DA.Accents.Select(x => (JsonNode)new JsonObject { ["hex"] = x.Hex, ["nom"] = x.Nom }).ToArray()),
             ["moteurs"] = new JsonArray(Parametres.Moteurs.Select(x => (JsonNode)new JsonObject { ["id"] = x.Id, ["nom"] = x.Nom }).ToArray()),
         };
     }
@@ -454,10 +525,10 @@ sealed class Navigateur : Form
         try { c.PostWebMessageAsJson(message.ToJsonString()); } catch { }
     }
 
-    void EnvoyerEtatAuxParametres()
+    void EnvoyerEtatAuxPagesInternes()
     {
         foreach (var o in Onglets)
-            if (o.Vue?.CoreWebView2 is { } c && o.Url.StartsWith(PageParametres, StringComparison.OrdinalIgnoreCase)) Envoyer(c, Etat());
+            if (o.Vue?.CoreWebView2 is { } c && EstInterne(o.Url)) Envoyer(c, Etat());
     }
 
     async Task Changer(string cle, JsonNode? valeur)
@@ -479,19 +550,40 @@ sealed class Navigateur : Form
                 break;
             case "GoogleOnirique":
                 Reglages.GoogleOnirique = B();
-                foreach (var o in Onglets)
-                {
-                    if (o.Vue?.CoreWebView2 is not { } c) continue;
-                    if (o.ScriptGoogle != null) { c.RemoveScriptToExecuteOnDocumentCreated(o.ScriptGoogle); o.ScriptGoogle = null; }
-                    if (Reglages.GoogleOnirique && scriptGoogle.Length > 0) o.ScriptGoogle = await c.AddScriptToExecuteOnDocumentCreatedAsync(scriptGoogle);
-                }
+                await RemettreScriptsGoogle();
                 break;
             case "Vpn": await BasculerVpn(B()); return;
             case "Memoire": Reglages.Memoire = memoire.Visible = B(); Disposer(); break;
             case "Animations": Reglages.Animations = B(); break;
             case "MisesAJour": Reglages.MisesAJour = B(); break;
+            case "Accent":
+                if (valeur is JsonValue v && v.TryGetValue<string>(out var hex) && System.Text.RegularExpressions.Regex.IsMatch(hex, "^#[0-9a-fA-F]{6}$"))
+                {
+                    Reglages.Accent = hex.ToLowerInvariant();
+                    DA.Accent(Reglages.Accent);
+                    Invalidate(true);
+                    await RemettreScriptsGoogle();
+                    Reglages.Enregistrer();
+                    EnvoyerEtatAuxPagesInternes();
+                    return;
+                }
+                break;
         }
         Reglages.Enregistrer();
+    }
+
+    // Le script Google porte l'accent choisi : il est remis dans chaque onglet quand l'un ou l'autre change.
+    string ScriptGoogle() =>
+        $"window.__ONIRIQUE_ACCENT={{acc:\"{DA.Triplet(DA.Braise)}\",hi:\"{DA.Triplet(DA.BraiseClaire)}\",lo:\"{DA.Triplet(DA.Sang)}\"}};\n" + scriptGoogle;
+
+    async Task RemettreScriptsGoogle()
+    {
+        foreach (var o in Onglets)
+        {
+            if (o.Vue?.CoreWebView2 is not { } c) continue;
+            if (o.ScriptGoogle != null) { c.RemoveScriptToExecuteOnDocumentCreated(o.ScriptGoogle); o.ScriptGoogle = null; }
+            if (Reglages.GoogleOnirique && scriptGoogle.Length > 0) o.ScriptGoogle = await c.AddScriptToExecuteOnDocumentCreatedAsync(ScriptGoogle());
+        }
     }
 
     IEnumerable<CoreWebView2> Vues() => Onglets.Select(o => o.Vue?.CoreWebView2).OfType<CoreWebView2>();
@@ -509,7 +601,7 @@ sealed class Navigateur : Form
             _ => "VPN ONIRIQUE : éteint",
         };
         if (vpn.Clignote) Animer();
-        EnvoyerEtatAuxParametres();
+        EnvoyerEtatAuxPagesInternes();
     }
 
     async Task BasculerVpn(bool allumer)
@@ -643,7 +735,7 @@ sealed class Navigateur : Form
             majPrete = await Installation.MettreAJour();
             if (majPrete == null) return "a-jour";
             bulle.Montrer($"La version {majPrete} est prête : elle s'ouvrira au prochain lancement.", "Redémarrer", Redemarrer);
-            EnvoyerEtatAuxParametres();
+            EnvoyerEtatAuxPagesInternes();
             return "prete";
         }
         catch
@@ -696,7 +788,8 @@ sealed class Navigateur : Form
             case Keys.Control | Keys.R: c?.Reload(); return true;
             case Keys.Alt | Keys.Left: if (c?.CanGoBack == true) c.GoBack(); return true;
             case Keys.Alt | Keys.Right: if (c?.CanGoForward == true) c.GoForward(); return true;
-            case Keys.Control | Keys.Oemcomma: OuvrirParametres(); return true;
+            case Keys.Control | Keys.Oemcomma: OuvrirInterne(PageParametres); return true;
+            case Keys.Control | Keys.H: OuvrirInterne(PageHistorique); return true;
         }
         return base.ProcessCmdKey(ref msg, touches);
     }
@@ -1022,7 +1115,7 @@ sealed class Bandeau : Control
                 g.FillEllipse(coeur, icone.X + this.S(5), icone.Y + this.S(5), this.S(6), this.S(6));
             }
             else if (o.Icone != null) g.DrawImage(o.Icone, icone);
-            else TextRenderer.DrawText(g, o.Url.Contains("/parametres.html") ? "" : "", Icones, icone, DA.Cendre, flags);
+            else TextRenderer.DrawText(g, o.Url.Contains("/parametres.html") ? "" : o.Url.Contains("/historique.html") ? "" : "", Icones, icone, DA.Cendre, flags);
 
             int droite = r.Right - this.S(CroixVisible(i) ? 32 : 10);
             if (o.Son)

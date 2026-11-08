@@ -9,6 +9,7 @@ static class Program
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
 
+        DA.Accent(Parametres.Lire().Accent);
         if (args.Contains("--desinstaller")) { Installation.Desinstaller(); return; }
         // Lancé depuis le fichier téléchargé : c'est l'installateur (sauf --portable, pour l'essayer sans l'installer).
         if (!Installation.EstInstallee && !args.Contains("--portable")) { Application.Run(new FenetreInstallation()); return; }
