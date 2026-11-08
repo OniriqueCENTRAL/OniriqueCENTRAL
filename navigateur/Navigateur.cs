@@ -263,6 +263,7 @@ sealed partial class Navigateur : Form
 
         if (Installation.EstInstallee && Reglages.MisesAJour) _ = ChercherMiseAJour(silencieux: true);
         _ = DemarrerAjouts();
+        ProposerImport();
     }
 
     protected override void OnFormClosing(FormClosingEventArgs e)
@@ -339,6 +340,9 @@ sealed partial class Navigateur : Form
 
     void AppliquerProfil(CoreWebView2 c)
     {
+        // Comme un navigateur ordinaire : les mots de passe et les formulaires sont retenus (et proposés à la saisie).
+        c.Settings.IsPasswordAutosaveEnabled = true;
+        c.Settings.IsGeneralAutofillEnabled = true;
         c.Profile.PreferredTrackingPreventionLevel = Reglages.Traqueurs switch
         {
             "aucun" => CoreWebView2TrackingPreventionLevel.None,
@@ -559,6 +563,20 @@ sealed partial class Navigateur : Form
             case "fond":
                 await RecevoirFond(m);
                 break;
+            case "importer":
+                if (Sources().FirstOrDefault(x => x.Id == (string?)m["id"]) is { } src)
+                {
+                    int n = ImporterFavoris(src);
+                    bulle.Montrer(n == 0 ? $"Rien de nouveau dans les favoris de {src.Nom}." : $"{n} favoris de {src.Nom} ajoutés à ton accueil.");
+                }
+                EnvoyerEtatAuxPagesInternes();
+                return;
+            case "google":
+                _ = Ouvrir((string?)m["page"] == "motsdepasse" ? "https://passwords.google.com/" : "https://accounts.google.com/ServiceLogin?continue=https%3A%2F%2Fmyaccount.google.com%2F");
+                return;
+            case "lire":
+                await VerifierGoogle(source);
+                break;
             case "defaut":
                 Process.Start(new ProcessStartInfo("ms-settings:defaultapps?registeredAppUser=" + Uri.EscapeDataString(Installation.Nom)) { UseShellExecute = true });
                 return;
@@ -586,6 +604,8 @@ sealed partial class Navigateur : Form
             ["couleurs"] = new JsonObject { ["acc"] = DA.Triplet(DA.Braise), ["hi"] = DA.Triplet(DA.BraiseClaire), ["lo"] = DA.Triplet(DA.Sang) },
             ["accents"] = new JsonArray(DA.Accents.Select(x => (JsonNode)new JsonObject { ["hex"] = x.Hex, ["nom"] = x.Nom }).ToArray()),
             ["ajouts"] = EtatAjouts(),
+            ["imports"] = EtatImports(),
+            ["google"] = googleConnecte,
             ["moteurs"] = new JsonArray(Parametres.Moteurs.Select(x => (JsonNode)new JsonObject { ["id"] = x.Id, ["nom"] = x.Nom }).ToArray()),
         };
     }

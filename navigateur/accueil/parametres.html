@@ -127,6 +127,7 @@ section.visible .carte:nth-of-type(4) { animation-delay: .15s; }
 .pastille.libre { --c: conic-gradient(#e5384a, #e8b33a, #22c28a, #2bb8d6, #3d7bff, #8b5cf6, #e64aa8, #e5384a); margin-left: 12px; }
 .pastille.libre input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .pastille.libre span { position: absolute; inset: 0; border-radius: 50%; background: var(--c); }
+.sources { display: flex; flex-wrap: wrap; gap: 8px; }
 .note { color: var(--muted); font-size: 12.5px; padding: 0 20px 16px; margin: 0; }
 .statut { color: var(--pink); font-size: 13px; min-height: 1.4em; transition: opacity .3s; }
 
@@ -169,6 +170,20 @@ body.sans-animations *, body.sans-animations *::before, body.sans-animations *::
           <div class="texte"><b>Navigateur par défaut</b><small>Les liens ouverts depuis tes autres applications arrivent ici.</small></div>
           <button class="bouton" id="defaut">Choisir dans Windows</button>
         </div>
+      </div>
+      <div class="carte" id="carte-google">
+        <div class="ligne">
+          <div class="texte"><b>Compte Google</b><small id="google-statut">Connecte ton compte Google : Gmail, YouTube, Drive et ta recherche te reconnaissent tout de suite.</small></div>
+          <button class="bouton principal" id="google">Connecter</button>
+        </div>
+        <div class="ligne">
+          <div class="texte"><b>Tes mots de passe Chrome</b><small>Ceux que Chrome a enregistrés sont dans ton compte Google. Le navigateur retient aussi ceux que tu saisis ici.</small></div>
+          <button class="bouton" id="motsdepasse">Les voir</button>
+        </div>
+      </div>
+      <div class="carte" id="carte-import" hidden>
+        <div class="ligne"><div class="texte"><b>Venir d'un autre navigateur</b><small>Ses favoris arrivent sur ton accueil, dans un dossier à son nom.</small></div></div>
+        <div class="ligne" style="padding-top:0;border:0"><div class="sources" id="sources"></div></div>
       </div>
       <div class="carte">
         <div class="ligne">
@@ -368,6 +383,8 @@ document.getElementById("fichier-fond").addEventListener("change", (e) => {
 // Les mesures (mémoire, processeur, pubs bloquées) se rafraîchissent tant que la page est ouverte.
 setInterval(() => { if (!document.hidden) envoyer({ type: "lire" }); }, 5000);
 
+document.getElementById("google").onclick = () => envoyer({ type: "google" });
+document.getElementById("motsdepasse").onclick = () => envoyer({ type: "google", page: "motsdepasse" });
 document.getElementById("defaut").onclick = () => envoyer({ type: "defaut" });
 document.getElementById("majs").onclick = () => envoyer({ type: "majs" });
 document.getElementById("effacer").onclick = () => {
@@ -408,6 +425,22 @@ function afficher(m) {
     for (const cle of ["PlafondMemoire", "Memoire", "Traqueurs", "VeilleSecondes"]) document.querySelector(`[data-cle="${cle}"]`)?.closest(".carte")?.setAttribute("hidden", "");
     document.querySelector('[data-cle="BarreLaterale"]')?.closest(".ligne")?.setAttribute("hidden", "");
     document.getElementById("defaut").textContent = "Choisir";
+    document.getElementById("carte-google").hidden = true;
+  }
+  document.getElementById("google-statut").textContent = m.google
+    ? "Connecté : Gmail, YouTube, Drive et ta recherche te reconnaissent."
+    : "Connecte ton compte Google : Gmail, YouTube, Drive et ta recherche te reconnaissent tout de suite.";
+  document.getElementById("google").textContent = m.google ? "Gérer" : "Connecter";
+  const sources = document.getElementById("sources");
+  const liste = m.imports || [];
+  document.getElementById("carte-import").hidden = !liste.length;
+  if (sources.dataset.vu !== JSON.stringify(liste)) {
+    sources.dataset.vu = JSON.stringify(liste);
+    sources.replaceChildren(...liste.map((x) => {
+      const b = Object.assign(document.createElement("button"), { className: "bouton", textContent: `Favoris ${x.nom}` });
+      b.addEventListener("click", () => envoyer({ type: "importer", id: x.id }));
+      return b;
+    }));
   }
   const a = m.ajouts || {};
   document.getElementById("synchro-statut").textContent = r.Synchro ? (a.synchro || "") : "";

@@ -33,6 +33,7 @@ sealed class Parametres
     public bool MisesAJour { get; set; } = true;
     public string Accent { get; set; } = DA.AccentParDefaut;
     public string? DerniereVersion { get; set; }
+    public bool ImportPropose { get; set; }
     public bool ModeStudio { get; set; } = true;
     public bool Bloqueur { get; set; } = true;
     public int PlafondMemoire { get; set; }      // Mo, 0 : aucun
