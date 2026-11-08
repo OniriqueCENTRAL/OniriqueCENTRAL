@@ -728,6 +728,15 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 .pl b { font: 700 14px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pl small { color: var(--haze); font-size: 12px; }
 .library-empty { margin: 0; color: var(--haze); font-size: 13px; }
+.library-head .row { display: flex; gap: 6px; }
+/* Colonne repliée : il ne reste que le bouton pour la rouvrir. */
+.library-folded .library-list, .library-folded .library-empty, .library-folded .library-head > span, .library-folded .library-head .round:not(.fold) { display: none; }
+@media (min-width: 1100px) {
+  body.has-library.library-folded { padding-left: 56px; }
+  body.has-library.library-folded .op-pill, body.has-library.library-folded .op-sheet, body.has-library.library-folded .op-queue { left: calc(50% + 28px); width: min(1120px, calc(100vw - 80px)); }
+  .library-folded .library { width: 56px; padding-left: 10px; padding-right: 10px; overflow: hidden; }
+  .library-folded .library-head { border-bottom: 0; padding: 6px 0; justify-content: center; }
+}
 @media (min-width: 1100px) {
   body.has-library { padding-left: 280px; }
   /* Le lecteur et ses panneaux restent dans la partie à droite de la colonne des playlists. */
@@ -1334,6 +1343,7 @@ function setBackground(url) {
   if (url) $("page-bg").style.backgroundImage = 'url("' + url + '?w=1920")';
   $("page-bg").classList.toggle("on", !!url);
 }
+try { if (localStorage.getItem("cloud-library-folded")) document.body.classList.add("library-folded"); } catch {}
 // La colonne des playlists (les miennes et celles où je collabore), la playlist ouverte en surbrillance.
 function renderLibrary() {
   const box = $("library"), lists = data.vanish ? [] : [...data.projects.filter((x) => x.kind === "playlist" && !PF.hidden(x.id)),
@@ -1342,7 +1352,14 @@ function renderLibrary() {
   document.body.classList.toggle("has-library", !box.hidden);
   if (box.hidden) return;
   const add = el("button", { className: "round", type: "button", ariaLabel: "Créer une playlist", title: "Créer une playlist", onclick: createPlaylist }, icon("plus"));
-  box.replaceChildren(el("div", { className: "library-head" }, el("span", { textContent: "Playlists" }), add),
+  const folded = document.body.classList.contains("library-folded");
+  const fold = el("button", { className: "round fold", type: "button", ariaExpanded: String(!folded), ariaLabel: folded ? "Afficher les playlists" : "Cacher les playlists",
+    title: folded ? "Afficher les playlists" : "Cacher les playlists", onclick: () => {
+      const now = document.body.classList.toggle("library-folded");
+      try { localStorage.setItem("cloud-library-folded", now ? "1" : ""); } catch {}
+      renderLibrary();
+    } }, icon(folded ? "chevron" : "back"));
+  box.replaceChildren(el("div", { className: "library-head" }, el("span", { textContent: "Playlists" }), el("div", { className: "row" }, add, fold)),
     lists.length ? el("div", { className: "library-list" }, ...lists.sort((a, b) => b.createdAt - a.createdAt).map((x) => {
       // Une playlist envoyée par quelqu'un (enregistrée depuis son lien) s'ouvre sur sa page d'écoute.
       if (x.received) {
