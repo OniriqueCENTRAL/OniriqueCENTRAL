@@ -41,7 +41,16 @@ nav a { position: relative; padding-bottom: 6px; color: var(--haze); text-decora
 nav a::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--ember); transform: scaleX(0); transition: transform .2s; }
 nav a:hover, nav a:focus-visible { color: var(--bone); outline: none; }
 nav a:hover::after, nav a:focus-visible::after { transform: scaleX(1); }
-@media (prefers-reduced-motion: reduce) { nav a::after { transition: none; } }
+main > * { animation: monte .6s cubic-bezier(.2, .8, .2, 1) both; }
+main > img { animation-name: eclot; }
+main > h1 { animation-delay: .06s; }
+main > form { animation-delay: .12s; }
+main > nav { animation-delay: .18s; }
+input { transition: border-color .3s, box-shadow .3s; }
+input:focus { box-shadow: 0 0 0 4px rgba(229, 56, 74, .12); }
+@keyframes monte { from { opacity: 0; transform: translateY(12px); } }
+@keyframes eclot { from { opacity: 0; transform: scale(.85); filter: blur(4px); } }
+@media (prefers-reduced-motion: reduce) { nav a::after { transition: none; } main > * { animation: none; } }
 </style>
 </head>
 <body>

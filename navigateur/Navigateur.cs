@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 
@@ -16,6 +18,7 @@ static class DA
     public static readonly Color Braise = Color.FromArgb(229, 56, 74);
     public static readonly Color BraiseClaire = Color.FromArgb(255, 142, 154); // Rose
     public static readonly Color Brume = Color.FromArgb(244, 236, 236);   // Os
+    public static readonly Color Etiquette = Color.FromArgb(217, 198, 201);
     public static readonly Color Cendre = Color.FromArgb(168, 147, 154);  // Voile
     public static readonly Color Eteint = Color.FromArgb(125, 106, 110);  // Graduation
 
@@ -23,11 +26,11 @@ static class DA
 
     public static GraphicsPath Arrondi(Rectangle r, int rayon, bool basCarre = false)
     {
-        int d = rayon * 2;
+        int d = Math.Max(1, Math.Min(rayon * 2, Math.Min(r.Width, r.Height)));
         var p = new GraphicsPath();
         p.AddArc(r.X, r.Y, d, d, 180, 90);
         p.AddArc(r.Right - d, r.Y, d, d, 270, 90);
-        if (basCarre) { p.AddLine(r.Right, r.Bottom, r.X, r.Bottom); }
+        if (basCarre) p.AddLine(r.Right, r.Bottom, r.X, r.Bottom);
         else
         {
             p.AddArc(r.Right - d, r.Bottom - d, d, d, 0, 90);
@@ -35,6 +38,18 @@ static class DA
         }
         p.CloseFigure();
         return p;
+    }
+
+    [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int valeur, int taille);
+
+    /// <summary>Barre de titre Windows aux couleurs de la nuit (couleurs en 0x00BBGGRR).</summary>
+    public static void BarreSombre(IntPtr fenetre)
+    {
+        int oui = 1, legende = 0x0A0809, texte = 0xECECF4, bord = 0x252229;
+        DwmSetWindowAttribute(fenetre, 20, ref oui, 4);
+        DwmSetWindowAttribute(fenetre, 35, ref legende, 4);
+        DwmSetWindowAttribute(fenetre, 36, ref texte, 4);
+        DwmSetWindowAttribute(fenetre, 34, ref bord, 4);
     }
 }
 
@@ -46,17 +61,19 @@ sealed class Onglet
     public Image? Icone;
     public bool Charge, Son, Decharge;
     public DateTime CacheDepuis = DateTime.MaxValue;
+    public string? ScriptGoogle;
+    public float X = -1, W;  // position affichée dans le bandeau (animée)
 }
 
 sealed class Navigateur : Form
 {
     const string Hote = "accueil.onirique";
     const string Accueil = "https://" + Hote + "/index.html";
-    // Un onglet caché cesse de tourner après 30 s ; après 10 min, son moteur est fermé et il se recharge quand on y revient.
-    static readonly TimeSpan Veille = TimeSpan.FromSeconds(30), Dechargement = TimeSpan.FromMinutes(10);
+    const string PageParametres = "https://" + Hote + "/parametres.html";
 
     internal readonly List<Onglet> Onglets = new();
     internal Onglet? Actif;
+    internal readonly Parametres Reglages = Parametres.Lire();
 
     readonly Panel contenu = new() { Dock = DockStyle.Fill, BackColor = DA.Nuit };
     readonly Panel barre = new() { Dock = DockStyle.Top, BackColor = DA.Fond };
@@ -64,31 +81,44 @@ sealed class Navigateur : Form
     readonly Bouton retour = new("", "Page précédente (Alt+Gauche)");
     readonly Bouton avance = new("", "Page suivante (Alt+Droite)");
     readonly Bouton recharger = new("", "Actualiser (F5)");
+    readonly Bouton vpn = new("", "VPN ONIRIQUE : éteint");
+    readonly Bouton reglages = new("", "Paramètres");
     readonly Champ champ = new();
     readonly Label memoire = new() { ForeColor = DA.Cendre, BackColor = DA.Fond, TextAlign = ContentAlignment.MiddleRight, AccessibleName = "Mémoire utilisée" };
+    readonly Bulle bulle;
     readonly System.Windows.Forms.Timer minuteur = new() { Interval = 5000 };
+    readonly System.Windows.Forms.Timer animation = new() { Interval = 15 };
     readonly string[] adressesDeDepart;
+    readonly string scriptGoogle;
     CoreWebView2Environment? env;
     FormWindowState etatAvantPleinEcran;
+    string vpnEtat = "eteint";   // eteint, connexion, actif
+    string? vpnRelais;
+    DateTime vpnAnnonce, misesAJourVues;
+    string? majPrete;
 
     public Navigateur(string[] adresses)
     {
         adressesDeDepart = adresses;
         Text = "ONIRIQUE";
-        Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+        Icon = Icon.ExtractAssociatedIcon(Environment.ProcessPath!);
         BackColor = DA.Nuit;
-        MinimumSize = new Size(520, 360);
+        MinimumSize = new Size(560, 360);
         Size = new Size(1280, 820);
         StartPosition = FormStartPosition.CenterScreen;
+        try { scriptGoogle = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "accueil", "google.js")); } catch { scriptGoogle = ""; }
 
         bandeau = new Bandeau(this) { Dock = DockStyle.Top };
-        barre.Controls.AddRange(new Control[] { retour, avance, recharger, champ, memoire });
+        bulle = new Bulle(this);
+        barre.Controls.AddRange(new Control[] { retour, avance, recharger, champ, vpn, reglages, memoire });
         barre.Paint += (_, e) => { using var p = new Pen(DA.Filet); e.Graphics.DrawLine(p, 0, barre.Height - 1, barre.Width, barre.Height - 1); };
         barre.Resize += (_, _) => Disposer();
+        contenu.Controls.Add(bulle);
         Controls.Add(contenu);
         Controls.Add(barre);
         Controls.Add(bandeau);
         new ToolTip().SetToolTip(memoire, "Mémoire utilisée par le navigateur et ses onglets");
+        memoire.Visible = Reglages.Memoire;
 
         retour.Click += (_, _) => Actif?.Vue?.CoreWebView2?.GoBack();
         avance.Click += (_, _) => Actif?.Vue?.CoreWebView2?.GoForward();
@@ -97,6 +127,8 @@ sealed class Navigateur : Form
             if (Actif?.Vue?.CoreWebView2 is not { } c) return;
             if (Actif.Charge) c.Stop(); else c.Reload();
         };
+        vpn.Click += async (_, _) => await BasculerVpn(vpnEtat == "eteint");
+        reglages.Click += (_, _) => OuvrirParametres();
         champ.Saisie.KeyDown += (_, e) =>
         {
             if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; Aller(champ.Saisie.Text); }
@@ -104,30 +136,27 @@ sealed class Navigateur : Form
         };
         champ.Saisie.LostFocus += (_, _) => Afficher();
         minuteur.Tick += (_, _) => Entretien();
+        animation.Tick += (_, _) =>
+        {
+            bool encore = bandeau.Animer(Reglages.Animations) | bulle.Animer(Reglages.Animations);
+            if (vpn.Clignote) { vpn.Invalidate(); encore = true; }
+            if (!encore) animation.Stop();
+        };
         Echelle();
     }
 
-    [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int valeur, int taille);
+    internal void Animer() { if (!animation.Enabled) animation.Start(); }
 
     protected override void OnHandleCreated(EventArgs e)
     {
         base.OnHandleCreated(e);
-        // Barre de titre Windows aux couleurs de la nuit (couleurs en 0x00BBGGRR).
-        int oui = 1, legende = 0x0A0809, texte = 0xECECF4, bord = 0x252229;
-        DwmSetWindowAttribute(Handle, 20, ref oui, 4);
-        DwmSetWindowAttribute(Handle, 35, ref legende, 4);
-        DwmSetWindowAttribute(Handle, 36, ref texte, 4);
-        DwmSetWindowAttribute(Handle, 34, ref bord, 4);
+        DA.BarreSombre(Handle);
     }
 
     protected override async void OnLoad(EventArgs e)
     {
         base.OnLoad(e);
-        var dossier = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ONIRIQUE", "Navigateur");
-        try
-        {
-            env = await CoreWebView2Environment.CreateAsync(null, dossier, new CoreWebView2EnvironmentOptions { Language = "fr-FR" });
-        }
+        try { env = await Moteur(Reglages.Vpn ? Reglages.VpnRelais : null); }
         catch (WebView2RuntimeNotFoundException)
         {
             MessageBox.Show(this, "Le moteur Microsoft Edge WebView2 n'est pas installé sur ce PC.\nInstallez-le depuis https://go.microsoft.com/fwlink/p/?LinkId=2124703 puis relancez ONIRIQUE.",
@@ -136,8 +165,34 @@ sealed class Navigateur : Form
             return;
         }
         minuteur.Start();
-        if (adressesDeDepart.Length == 0) await Ouvrir(Accueil);
-        foreach (var a in adressesDeDepart) await Ouvrir(Resoudre(a));
+        // Le VPN se rallume avant d'ouvrir la moindre page : rien ne part en direct par erreur.
+        if (Reglages.Vpn) await AllumerVpn(relancer: false);
+
+        if (adressesDeDepart.Length > 0) foreach (var a in adressesDeDepart) await Ouvrir(Resoudre(a));
+        else if (Reglages.ReprendreSession && Reglages.Session.Count > 0)
+        {
+            // Les onglets de la dernière fois reviennent endormis : seul celui qu'on regarde se charge.
+            foreach (var s in Reglages.Session) Onglets.Add(new Onglet { Url = s.Url, Titre = s.Titre, Decharge = true });
+            Activer(Onglets[Math.Clamp(Reglages.SessionActif, 0, Onglets.Count - 1)]);
+        }
+        else await Ouvrir(Accueil);
+
+        if (Installation.EstInstallee && Reglages.MisesAJour) _ = ChercherMiseAJour(silencieux: true);
+    }
+
+    protected override void OnFormClosing(FormClosingEventArgs e)
+    {
+        Reglages.Session = Onglets.Where(o => !EstInterne(o.Url) && o.Url.Length > 0).Select(o => new OngletSauve { Url = o.Url, Titre = o.Titre }).ToList();
+        Reglages.SessionActif = Actif == null ? 0 : Math.Max(0, Onglets.Where(o => !EstInterne(o.Url) && o.Url.Length > 0).ToList().IndexOf(Actif));
+        Reglages.Enregistrer();
+        base.OnFormClosing(e);
+    }
+
+    async Task<CoreWebView2Environment> Moteur(string? relais)
+    {
+        var options = new CoreWebView2EnvironmentOptions { Language = "fr-FR" };
+        if (relais != null) options.AdditionalBrowserArguments = Vpn.Arguments(relais);
+        return await CoreWebView2Environment.CreateAsync(null, Parametres.Dossier, options);
     }
 
     protected override void OnDpiChanged(DpiChangedEventArgs e)
@@ -154,31 +209,55 @@ sealed class Navigateur : Form
         champ.Saisie.Font = new Font("Segoe UI Variable Text", this.S(14), GraphicsUnit.Pixel);
         bandeau.Icones = new Font("Segoe Fluent Icons", this.S(10), GraphicsUnit.Pixel);
         var icones = new Font("Segoe Fluent Icons", this.S(14), GraphicsUnit.Pixel);
-        foreach (var b in new[] { retour, avance, recharger }) b.Font = icones;
+        foreach (var b in new[] { retour, avance, recharger, vpn, reglages }) b.Font = icones;
         memoire.Font = new Font("Cascadia Mono", this.S(11), GraphicsUnit.Pixel);
+        bulle.Font = new Font("Segoe UI Variable Text", this.S(13), GraphicsUnit.Pixel);
         Disposer();
     }
 
     void Disposer()
     {
-        int h = this.S(32), y = (barre.Height - h) / 2, x = this.S(8);
-        foreach (var b in new Control[] { retour, avance, recharger }) { b.SetBounds(x, y, this.S(36), h); x += this.S(38); }
-        int m = this.S(84);
-        memoire.SetBounds(barre.Width - m - this.S(10), y, m, h);
-        champ.SetBounds(x + this.S(6), y, Math.Max(0, memoire.Left - x - this.S(16)), h);
+        int h = this.S(32), y = (barre.Height - h) / 2, x = this.S(8), pas = this.S(38);
+        foreach (var b in new Control[] { retour, avance, recharger }) { b.SetBounds(x, y, this.S(36), h); x += pas; }
+        int droite = barre.Width - this.S(10);
+        if (memoire.Visible) { int m = this.S(76); droite -= m; memoire.SetBounds(droite, y, m, h); droite -= this.S(4); }
+        foreach (var b in new Control[] { reglages, vpn }) { droite -= this.S(36); b.SetBounds(droite, y, this.S(36), h); droite -= this.S(2); }
+        champ.SetBounds(x + this.S(6), y, Math.Max(0, droite - x - this.S(14)), h);
+        bulle.Placer();
     }
 
+    static bool EstInterne(string url) => url.StartsWith("https://" + Hote + "/", StringComparison.OrdinalIgnoreCase);
+
     internal void NouvelOnglet() => _ = Ouvrir(Accueil);
+
+    void OuvrirParametres()
+    {
+        var existant = Onglets.FirstOrDefault(o => o.Url.StartsWith(PageParametres, StringComparison.OrdinalIgnoreCase));
+        if (existant != null) Activer(existant);
+        else _ = Ouvrir(PageParametres, Actif == null ? -1 : Onglets.IndexOf(Actif) + 1);
+    }
 
     async Task<Onglet> Ouvrir(string? url, int position = -1)
     {
         var o = new Onglet { Url = url ?? "" };
         Onglets.Insert(position < 0 || position > Onglets.Count ? Onglets.Count : position, o);
         bandeau.Invalidate();
+        Animer();
         await Creer(o);
         if (url != null && o.Vue?.CoreWebView2 is { } c) c.Navigate(url);
         Activer(o);
         return o;
+    }
+
+    void AppliquerProfil(CoreWebView2 c)
+    {
+        c.Profile.PreferredTrackingPreventionLevel = Reglages.Traqueurs switch
+        {
+            "aucun" => CoreWebView2TrackingPreventionLevel.None,
+            "equilibre" => CoreWebView2TrackingPreventionLevel.Balanced,
+            _ => CoreWebView2TrackingPreventionLevel.Strict,
+        };
+        c.Profile.PreferredColorScheme = Reglages.SitesSombres ? CoreWebView2PreferredColorScheme.Dark : CoreWebView2PreferredColorScheme.Auto;
     }
 
     async Task Creer(Onglet o)
@@ -192,12 +271,13 @@ sealed class Navigateur : Form
         if (o.Vue != v) return;
 
         var c = v.CoreWebView2;
-        c.Profile.PreferredTrackingPreventionLevel = CoreWebView2TrackingPreventionLevel.Strict;
+        AppliquerProfil(c);
         c.SetVirtualHostNameToFolderMapping(Hote, Path.Combine(AppContext.BaseDirectory, "accueil"), CoreWebView2HostResourceAccessKind.Deny);
+        if (Reglages.GoogleOnirique && scriptGoogle.Length > 0) o.ScriptGoogle = await c.AddScriptToExecuteOnDocumentCreatedAsync(scriptGoogle);
         c.DocumentTitleChanged += (_, _) => { o.Titre = c.DocumentTitle; bandeau.Invalidate(); if (o == Actif) Afficher(); };
         c.SourceChanged += (_, _) => { o.Url = c.Source; if (o == Actif) Afficher(); };
         c.HistoryChanged += (_, _) => { if (o == Actif) Afficher(); };
-        c.NavigationStarting += (_, _) => { o.Charge = true; bandeau.Invalidate(); if (o == Actif) Afficher(); };
+        c.NavigationStarting += (_, _) => { o.Charge = true; Animer(); if (o == Actif) Afficher(); };
         c.NavigationCompleted += (_, _) => { o.Charge = false; bandeau.Invalidate(); if (o == Actif) Afficher(); };
         c.IsDocumentPlayingAudioChanged += (_, _) => { o.Son = c.IsDocumentPlayingAudio; bandeau.Invalidate(); };
         c.WindowCloseRequested += (_, _) => Fermer(o);
@@ -227,11 +307,17 @@ sealed class Navigateur : Form
             }
             finally { report.Complete(); }
         };
-        // La page d'accueil envoie ce qu'on tape dans son champ ; seule elle est écoutée.
+        // Les pages internes (accueil, paramètres) parlent au navigateur ; aucune autre n'est écoutée.
         c.WebMessageReceived += (_, e) =>
         {
-            if (Uri.TryCreate(e.Source, UriKind.Absolute, out var u) && u.Host == Hote && e.TryGetWebMessageAsString() is { Length: > 0 } s)
-                c.Navigate(Resoudre(s));
+            if (!Uri.TryCreate(e.Source, UriKind.Absolute, out var u) || u.Host != Hote) return;
+            try
+            {
+                var message = JsonNode.Parse(e.WebMessageAsJson);
+                if (message is JsonValue texte && texte.TryGetValue<string>(out var recherche)) { if (recherche.Trim().Length > 0) c.Navigate(Resoudre(recherche)); }
+                else if (message is JsonObject commande) _ = Commande(c, commande);
+            }
+            catch { }
         };
     }
 
@@ -251,18 +337,19 @@ sealed class Navigateur : Form
         }
         o.CacheDepuis = DateTime.MaxValue;
         Afficher();
-        bandeau.Invalidate();
+        Animer();
 
         if (o.Vue == null)
         {
             o.Decharge = false;
             await Creer(o);
-            if (o.Vue?.CoreWebView2 is { } nc) nc.Navigate(o.Url);
+            if (o.Vue?.CoreWebView2 is { } nc) nc.Navigate(o.Url.Length > 0 ? o.Url : Accueil);
         }
         if (Actif != o || o.Vue?.CoreWebView2 is not { } c) return;
         c.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Normal;
         o.Vue.Visible = true;
         o.Vue.BringToFront();
+        bulle.BringToFront();
         if (!champ.Saisie.Focused) o.Vue.Focus();
     }
 
@@ -276,7 +363,7 @@ sealed class Navigateur : Form
         vue?.Dispose();
         if (Onglets.Count == 0) { Close(); return; }
         if (Actif == o) { Actif = null; Activer(Onglets[Math.Min(i, Onglets.Count - 1)]); }
-        bandeau.Invalidate();
+        Animer();
     }
 
     void Decaler(int sens)
@@ -293,9 +380,10 @@ sealed class Navigateur : Form
         retour.Actif = c?.CanGoBack == true;
         avance.Actif = c?.CanGoForward == true;
         recharger.Glyphe = o?.Charge == true ? "" : "";
-        bool accueil = o == null || o.Url.Length == 0 || o.Url.StartsWith("https://" + Hote + "/");
-        if (!champ.Saisie.Focused) champ.Saisie.Text = accueil ? "" : o!.Url;
-        Text = accueil ? "ONIRIQUE" : o!.Titre + " — ONIRIQUE";
+        bool interne = o == null || o.Url.Length == 0 || EstInterne(o.Url);
+        if (!champ.Saisie.Focused) champ.Saisie.Text = interne ? "" : o!.Url;
+        Text = interne ? "ONIRIQUE" : o!.Titre + " — ONIRIQUE";
+        bandeau.Invalidate();
     }
 
     void Aller(string saisie)
@@ -305,14 +393,193 @@ sealed class Navigateur : Form
         Actif.Vue.Focus();
     }
 
-    internal static string Resoudre(string s)
+    internal string Resoudre(string s)
     {
         s = s.Trim();
         if (Uri.TryCreate(s, UriKind.Absolute, out var u) && u.Scheme is "http" or "https" or "file") return u.AbsoluteUri;
         if (!s.Contains(' ') && Uri.TryCreate("http://" + s, UriKind.Absolute, out u) && (u.Host == "localhost" || u.Host.Contains('.')))
             return (u.Host == "localhost" ? "http://" : "https://") + s;
-        return "https://www.google.com/search?q=" + Uri.EscapeDataString(s);
+        return Reglages.Recherche(s);
     }
+
+    // ——— Réglages (page parametres.html) ———
+
+    async Task Commande(CoreWebView2 source, JsonObject m)
+    {
+        switch ((string?)m["type"])
+        {
+            case "changer":
+                await Changer((string?)m["cle"] ?? "", m["valeur"]);
+                break;
+            case "effacer":
+                var quoi = m["quoi"]?.AsArray().Select(x => (string?)x).ToHashSet() ?? new HashSet<string?>();
+                CoreWebView2BrowsingDataKinds genres = 0;
+                if (quoi.Contains("historique")) genres |= CoreWebView2BrowsingDataKinds.BrowsingHistory | CoreWebView2BrowsingDataKinds.DownloadHistory;
+                if (quoi.Contains("cookies")) genres |= CoreWebView2BrowsingDataKinds.Cookies | CoreWebView2BrowsingDataKinds.AllDomStorage;
+                if (quoi.Contains("cache")) genres |= CoreWebView2BrowsingDataKinds.DiskCache | CoreWebView2BrowsingDataKinds.CacheStorage;
+                if (quoi.Contains("motsdepasse")) genres |= CoreWebView2BrowsingDataKinds.PasswordAutosave | CoreWebView2BrowsingDataKinds.GeneralAutofill;
+                if (genres != 0) await source.Profile.ClearBrowsingDataAsync(genres);
+                Envoyer(source, new JsonObject { ["type"] = "efface" });
+                return;
+            case "majs":
+                Envoyer(source, new JsonObject { ["type"] = "maj", ["etat"] = "recherche" });
+                var resultat = await ChercherMiseAJour(silencieux: false);
+                Envoyer(source, new JsonObject { ["type"] = "maj", ["etat"] = resultat });
+                return;
+            case "defaut":
+                Process.Start(new ProcessStartInfo("ms-settings:defaultapps?registeredAppUser=" + Uri.EscapeDataString(Installation.Nom)) { UseShellExecute = true });
+                return;
+        }
+        Envoyer(source, Etat());
+    }
+
+    JsonObject Etat()
+    {
+        var valeurs = JsonSerializer.SerializeToNode(Reglages)!.AsObject();
+        valeurs.Remove("Session");
+        return new JsonObject
+        {
+            ["type"] = "etat",
+            ["reglages"] = valeurs,
+            ["vpn"] = vpnEtat,
+            ["version"] = Installation.Version,
+            ["installe"] = Installation.EstInstallee,
+            ["majPrete"] = majPrete,
+            ["moteurs"] = new JsonArray(Parametres.Moteurs.Select(x => (JsonNode)new JsonObject { ["id"] = x.Id, ["nom"] = x.Nom }).ToArray()),
+        };
+    }
+
+    void Envoyer(CoreWebView2 c, JsonObject message)
+    {
+        try { c.PostWebMessageAsJson(message.ToJsonString()); } catch { }
+    }
+
+    void EnvoyerEtatAuxParametres()
+    {
+        foreach (var o in Onglets)
+            if (o.Vue?.CoreWebView2 is { } c && o.Url.StartsWith(PageParametres, StringComparison.OrdinalIgnoreCase)) Envoyer(c, Etat());
+    }
+
+    async Task Changer(string cle, JsonNode? valeur)
+    {
+        bool B() => valeur?.GetValue<bool>() == true;
+        switch (cle)
+        {
+            case "Moteur": if (Parametres.Moteurs.Any(x => x.Id == (string?)valeur)) Reglages.Moteur = (string)valeur!; break;
+            case "ReprendreSession": Reglages.ReprendreSession = B(); break;
+            case "VeilleSecondes": Reglages.VeilleSecondes = Math.Clamp(valeur?.GetValue<int>() ?? 30, 0, 86400); break;
+            case "DechargementMinutes": Reglages.DechargementMinutes = Math.Clamp(valeur?.GetValue<int>() ?? 10, 0, 1440); break;
+            case "Traqueurs":
+                if ((string?)valeur is "strict" or "equilibre" or "aucun") Reglages.Traqueurs = (string)valeur!;
+                foreach (var c in Vues()) AppliquerProfil(c);
+                break;
+            case "SitesSombres":
+                Reglages.SitesSombres = B();
+                foreach (var c in Vues()) AppliquerProfil(c);
+                break;
+            case "GoogleOnirique":
+                Reglages.GoogleOnirique = B();
+                foreach (var o in Onglets)
+                {
+                    if (o.Vue?.CoreWebView2 is not { } c) continue;
+                    if (o.ScriptGoogle != null) { c.RemoveScriptToExecuteOnDocumentCreated(o.ScriptGoogle); o.ScriptGoogle = null; }
+                    if (Reglages.GoogleOnirique && scriptGoogle.Length > 0) o.ScriptGoogle = await c.AddScriptToExecuteOnDocumentCreatedAsync(scriptGoogle);
+                }
+                break;
+            case "Vpn": await BasculerVpn(B()); return;
+            case "Memoire": Reglages.Memoire = memoire.Visible = B(); Disposer(); break;
+            case "Animations": Reglages.Animations = B(); break;
+            case "MisesAJour": Reglages.MisesAJour = B(); break;
+        }
+        Reglages.Enregistrer();
+    }
+
+    IEnumerable<CoreWebView2> Vues() => Onglets.Select(o => o.Vue?.CoreWebView2).OfType<CoreWebView2>();
+
+    // ——— VPN ———
+
+    void MontrerVpn()
+    {
+        vpn.Temoin = vpnEtat == "actif";
+        vpn.Clignote = vpnEtat == "connexion";
+        vpn.Aide = vpnEtat switch
+        {
+            "actif" => "VPN ONIRIQUE : actif — les sites te voient en Allemagne",
+            "connexion" => "VPN ONIRIQUE : connexion…",
+            _ => "VPN ONIRIQUE : éteint",
+        };
+        if (vpn.Clignote) Animer();
+        EnvoyerEtatAuxParametres();
+    }
+
+    async Task BasculerVpn(bool allumer)
+    {
+        if (vpnEtat == "connexion") return;
+        if (allumer) { await AllumerVpn(relancer: true); return; }
+        vpnRelais = null;
+        vpnEtat = "eteint";
+        Reglages.Vpn = false;
+        Reglages.Enregistrer();
+        MontrerVpn();
+        await Relancer(null);
+        bulle.Montrer("VPN éteint : tu navigues avec ta propre connexion.");
+    }
+
+    async Task AllumerVpn(bool relancer)
+    {
+        if (env == null) return;
+        vpnEtat = "connexion";
+        MontrerVpn();
+        var r = await Vpn.Annoncer(env, contenu);
+        if (!r.Ok)
+        {
+            vpnEtat = "eteint";
+            bool relancerSansVpn = vpnRelais != null || (!relancer && Reglages.Vpn);
+            vpnRelais = null;
+            Reglages.Vpn = false;
+            Reglages.Enregistrer();
+            MontrerVpn();
+            if (relancerSansVpn) await Relancer(null);
+            bulle.Montrer(r.Message, "Me connecter", () => _ = Ouvrir("https://onirique.store/compte"));
+            return;
+        }
+        vpnRelais = r.Relais ?? Reglages.VpnRelais;
+        vpnAnnonce = DateTime.Now;
+        Reglages.Vpn = true;
+        Reglages.VpnRelais = vpnRelais;
+        Reglages.Enregistrer();
+        if (relancer) await Relancer(vpnRelais);
+        vpnEtat = "actif";
+        MontrerVpn();
+        bulle.Montrer("VPN actif : les sites te voient en Allemagne, par le serveur ONIRIQUE.");
+    }
+
+    /// <summary>Le moteur ne change de connexion qu'en redémarrant : les onglets se rechargent, celui qu'on regarde d'abord.</summary>
+    async Task Relancer(string? relais)
+    {
+        var ancien = env;
+        env = null;
+        if (ancien != null)
+        {
+            var ferme = new TaskCompletionSource();
+            ancien.BrowserProcessExited += (_, _) => ferme.TrySetResult();
+            foreach (var o in Onglets)
+            {
+                var vue = o.Vue;
+                o.Vue = null;
+                o.ScriptGoogle = null;
+                o.Decharge = true;
+                vue?.Dispose();
+            }
+            await Task.WhenAny(ferme.Task, Task.Delay(5000));
+        }
+        env = await Moteur(relais);
+        var actif = Actif;
+        Actif = null;
+        if (actif != null) Activer(actif);
+    }
+
+    // ——— Entretien : veille, déchargement, mémoire, VPN, mises à jour ———
 
     void Entretien()
     {
@@ -321,17 +588,32 @@ sealed class Navigateur : Form
         {
             if (o == Actif || o.Son || o.Vue?.CoreWebView2 is not { } c) continue;
             var cache = maintenant - o.CacheDepuis;
-            if (cache > Dechargement)
+            if (Reglages.DechargementMinutes > 0 && cache > TimeSpan.FromMinutes(Reglages.DechargementMinutes))
             {
                 var vue = o.Vue;
                 o.Vue = null;
+                o.ScriptGoogle = null;
                 o.Decharge = true;
                 vue.Dispose();
                 bandeau.Invalidate();
             }
-            else if (cache > Veille && !c.IsSuspended) _ = Suspendre(c);
+            else if (Reglages.VeilleSecondes > 0 && cache > TimeSpan.FromSeconds(Reglages.VeilleSecondes) && !c.IsSuspended) _ = Suspendre(c);
         }
-        MesurerMemoire();
+        if (Reglages.Memoire) MesurerMemoire();
+        // Le serveur oublie une adresse au bout de 12 heures, ou à son redémarrage : le navigateur se réannonce.
+        if (vpnEtat == "actif" && maintenant - vpnAnnonce > TimeSpan.FromMinutes(10) && env != null)
+        {
+            vpnAnnonce = maintenant;
+            _ = Reannoncer();
+        }
+        if (Installation.EstInstallee && Reglages.MisesAJour && majPrete == null && maintenant - misesAJourVues > TimeSpan.FromHours(6))
+            _ = ChercherMiseAJour(silencieux: true);
+    }
+
+    async Task Reannoncer()
+    {
+        var r = await Vpn.Annoncer(env!, contenu);
+        if (!r.Ok && vpnEtat == "actif") { await BasculerVpn(false); bulle.Montrer(r.Message, "Me connecter", () => _ = Ouvrir("https://onirique.store/compte")); }
     }
 
     static async Task Suspendre(CoreWebView2 c)
@@ -349,6 +631,33 @@ sealed class Navigateur : Form
             try { using var p = Process.GetProcessById(info.ProcessId); total += p.PrivateMemorySize64; } catch { }
         }
         memoire.Text = $"{total / 1048576} Mo";
+    }
+
+    async Task<string> ChercherMiseAJour(bool silencieux)
+    {
+        misesAJourVues = DateTime.Now;
+        if (majPrete != null) return "prete";
+        if (!Installation.EstInstallee) return "portable";
+        try
+        {
+            majPrete = await Installation.MettreAJour();
+            if (majPrete == null) return "a-jour";
+            bulle.Montrer($"La version {majPrete} est prête : elle s'ouvrira au prochain lancement.", "Redémarrer", Redemarrer);
+            EnvoyerEtatAuxParametres();
+            return "prete";
+        }
+        catch
+        {
+            if (!silencieux) bulle.Montrer("Impossible de vérifier les mises à jour pour l'instant.");
+            return "erreur";
+        }
+    }
+
+    void Redemarrer()
+    {
+        OnFormClosing(new FormClosingEventArgs(CloseReason.UserClosing, false));
+        Process.Start(new ProcessStartInfo(Installation.Exe) { UseShellExecute = true, WorkingDirectory = Installation.Dossier });
+        Environment.Exit(0);
     }
 
     void PleinEcran(bool oui)
@@ -387,6 +696,7 @@ sealed class Navigateur : Form
             case Keys.Control | Keys.R: c?.Reload(); return true;
             case Keys.Alt | Keys.Left: if (c?.CanGoBack == true) c.GoBack(); return true;
             case Keys.Alt | Keys.Right: if (c?.CanGoForward == true) c.GoForward(); return true;
+            case Keys.Control | Keys.Oemcomma: OuvrirParametres(); return true;
         }
         return base.ProcessCmdKey(ref msg, touches);
     }
@@ -394,25 +704,32 @@ sealed class Navigateur : Form
 
 sealed class Bouton : Control
 {
-    static readonly ToolTip Aide = new();
-    string glyphe;
-    bool actif = true, survol;
+    static readonly ToolTip Infobulle = new();
+    string glyphe, aide;
+    bool actif = true, survol, temoin;
 
     public Bouton(string glyphe, string aide)
     {
         this.glyphe = glyphe;
+        this.aide = aide;
         DoubleBuffered = true;
         BackColor = DA.Fond;
         Cursor = Cursors.Hand;
         AccessibleName = aide;
         AccessibleRole = AccessibleRole.PushButton;
-        Aide.SetToolTip(this, aide);
+        Infobulle.SetToolTip(this, aide);
     }
 
     [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
     public string Glyphe { get => glyphe; set { if (glyphe != value) { glyphe = value; Invalidate(); } } }
     [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
     public bool Actif { get => actif; set { if (actif != value) { actif = value; Invalidate(); } } }
+    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+    public bool Temoin { get => temoin; set { if (temoin != value) { temoin = value; Invalidate(); } } }
+    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+    public bool Clignote { get; set; }
+    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+    public string Aide { get => aide; set { aide = value; AccessibleName = value; Infobulle.SetToolTip(this, value); } }
 
     protected override void OnMouseEnter(EventArgs e) { survol = true; Invalidate(); base.OnMouseEnter(e); }
     protected override void OnMouseLeave(EventArgs e) { survol = false; Invalidate(); base.OnMouseLeave(e); }
@@ -428,8 +745,19 @@ sealed class Bouton : Control
             using var b = new SolidBrush(DA.Survol);
             g.FillPath(b, chemin);
         }
-        TextRenderer.DrawText(g, glyphe, Font, ClientRectangle, actif ? DA.Brume : DA.Eteint,
+        var couleur = !actif ? DA.Eteint : temoin ? DA.BraiseClaire : DA.Brume;
+        TextRenderer.DrawText(g, glyphe, Font, ClientRectangle, couleur,
             TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+        if (temoin || Clignote)
+        {
+            // Témoin allumé : une petite braise, qui respire pendant la connexion.
+            int alpha = Clignote ? (int)(130 + 120 * Math.Sin(Environment.TickCount64 / 160.0)) : 255;
+            int d = this.S(5), x = Width - this.S(9), y = this.S(6);
+            using var halo = new SolidBrush(Color.FromArgb(alpha / 3, DA.Braise));
+            using var coeur = new SolidBrush(Color.FromArgb(Math.Clamp(alpha, 0, 255), DA.Braise));
+            g.FillEllipse(halo, x - d / 2, y - d / 2, d * 2, d * 2);
+            g.FillEllipse(coeur, x, y, d, d);
+        }
     }
 }
 
@@ -475,12 +803,109 @@ sealed class Champ : Panel
     }
 }
 
+/// <summary>Petit message qui glisse depuis le haut de la page, avec une action éventuelle.</summary>
+sealed class Bulle : Control
+{
+    readonly Navigateur nav;
+    string texte = "", action = "";
+    Action? surAction;
+    float y, cible;
+    DateTime cacherA = DateTime.MaxValue;
+
+    public Bulle(Navigateur nav)
+    {
+        this.nav = nav;
+        DoubleBuffered = true;
+        Visible = false;
+        BackColor = DA.Nuit;
+        Cursor = Cursors.Default;
+    }
+
+    Rectangle ZoneAction => action.Length == 0 ? Rectangle.Empty : new(Width - this.S(14) - Mesure(action).Width - this.S(20), this.S(10), Mesure(action).Width + this.S(20), Height - this.S(20));
+    Size Mesure(string t) => TextRenderer.MeasureText(t, Font, Size.Empty, TextFormatFlags.NoPadding);
+
+    public void Montrer(string message, string libelleAction = "", Action? quandAction = null)
+    {
+        texte = message;
+        action = libelleAction;
+        surAction = quandAction;
+        int largeur = Math.Min(Parent!.Width - this.S(32), Mesure(texte).Width + (action.Length > 0 ? Mesure(action).Width + this.S(40) : 0) + this.S(40));
+        Size = new Size(largeur, this.S(48));
+        y = -Height;
+        cible = this.S(14);
+        cacherA = DateTime.Now.AddSeconds(action.Length > 0 ? 9 : 5);
+        Placer();
+        Visible = true;
+        BringToFront();
+        Invalidate();
+        nav.Animer();
+    }
+
+    public void Placer()
+    {
+        if (Parent == null) return;
+        Location = new Point(Parent.Width - Width - this.S(16), (int)y);
+    }
+
+    public bool Animer(bool fluide)
+    {
+        if (!Visible) return false;
+        if (DateTime.Now > cacherA) cible = -Height - this.S(4);
+        float avant = y;
+        y = fluide ? y + (cible - y) * 0.2f : cible;
+        if (Math.Abs(cible - y) < 0.6f) y = cible;
+        Placer();
+        if (y <= -Height && cible < 0) { Visible = false; return false; }
+        return y != avant || cacherA != DateTime.MaxValue;
+    }
+
+    protected override void OnMouseMove(MouseEventArgs e)
+    {
+        base.OnMouseMove(e);
+        Cursor = ZoneAction.Contains(e.Location) ? Cursors.Hand : Cursors.Default;
+    }
+
+    protected override void OnMouseClick(MouseEventArgs e)
+    {
+        base.OnMouseClick(e);
+        if (ZoneAction.Contains(e.Location)) surAction?.Invoke();
+        cacherA = DateTime.Now;
+        nav.Animer();
+    }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        var g = e.Graphics;
+        g.SmoothingMode = SmoothingMode.AntiAlias;
+        g.Clear(DA.Nuit);
+        var r = new Rectangle(0, 0, Width - 1, Height - 1);
+        using var chemin = DA.Arrondi(r, this.S(12));
+        using var fond = new SolidBrush(DA.Fond);
+        g.FillPath(fond, chemin);
+        using var trait = new Pen(DA.Filet);
+        g.DrawPath(trait, chemin);
+        using var temoin = new SolidBrush(DA.Braise);
+        g.FillEllipse(temoin, this.S(16), Height / 2 - this.S(3), this.S(6), this.S(6));
+        var zone = ZoneAction;
+        TextRenderer.DrawText(g, texte, Font, new Rectangle(this.S(32), 0, (zone.IsEmpty ? Width : zone.X) - this.S(40), Height), DA.Brume,
+            TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+        if (!zone.IsEmpty)
+        {
+            using var bouton = DA.Arrondi(zone, this.S(8));
+            using var braise = new SolidBrush(Color.FromArgb(60, DA.Braise));
+            g.FillPath(braise, bouton);
+            TextRenderer.DrawText(g, action, Font, zone, DA.BraiseClaire, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+        }
+    }
+}
+
 // shortcut: onglets dessinés à la main, invisibles pour les lecteurs d'écran (clavier : Ctrl+Tab, Ctrl+T, Ctrl+W) ; leur donner des objets d'accessibilité si un utilisateur en a besoin.
 sealed class Bandeau : Control
 {
     readonly Navigateur nav;
     int survol = -1;
     bool surCroix;
+    float temoinX = -1, temoinW, plusX = -1;
     public Font Icones = SystemFonts.DefaultFont;
 
     public Bandeau(Navigateur nav)
@@ -493,15 +918,58 @@ sealed class Bandeau : Control
     }
 
     int Largeur => nav.Onglets.Count == 0 ? 0 : Math.Clamp((Width - this.S(56)) / nav.Onglets.Count, this.S(44), this.S(232));
-    Rectangle Zone(int i) => new(this.S(8) + i * Largeur, this.S(6), Largeur, Height - this.S(6));
+    float CibleX(int i) => this.S(8) + i * Largeur;
+    Rectangle Zone(int i)
+    {
+        var o = nav.Onglets[i];
+        return new Rectangle((int)o.X, this.S(6), Math.Max(1, (int)o.W), Height - this.S(6));
+    }
     Rectangle Croix(Rectangle r) => new(r.Right - this.S(28), r.Y + (r.Height - this.S(20)) / 2, this.S(20), this.S(20));
-    Rectangle Plus => new(this.S(8) + nav.Onglets.Count * Largeur + this.S(6), this.S(9), this.S(28), this.S(28));
-    bool CroixVisible(int i) => (nav.Onglets[i] == nav.Actif || i == survol) && Largeur > this.S(80);
+    Rectangle Plus => new((int)plusX + this.S(6), this.S(9), this.S(28), this.S(28));
+    bool CroixVisible(int i) => (nav.Onglets[i] == nav.Actif || i == survol) && Zone(i).Width > this.S(80);
+
+    /// <summary>Fait glisser les onglets vers leur place ; renvoie vrai tant qu'il reste du mouvement.</summary>
+    public bool Animer(bool fluide)
+    {
+        bool bouge = false;
+        float Vers(float v, float c)
+        {
+            if (!fluide || v < 0) return c;
+            float n = v + (c - v) * 0.28f;
+            if (Math.Abs(c - n) < 0.5f) return c;
+            bouge = true;
+            return n;
+        }
+        var liste = nav.Onglets;
+        for (int i = 0; i < liste.Count; i++)
+        {
+            var o = liste[i];
+            if (o.X < 0) { o.X = CibleX(i); o.W = fluide ? 0 : Largeur; }
+            o.X = Vers(o.X, CibleX(i));
+            o.W = Vers(o.W, Largeur);
+        }
+        plusX = Vers(plusX, CibleX(liste.Count));
+        int a = nav.Actif == null ? -1 : liste.IndexOf(nav.Actif);
+        if (a >= 0)
+        {
+            temoinX = Vers(temoinX, liste[a].X + this.S(12));
+            temoinW = Vers(temoinW, Math.Max(0, liste[a].W - this.S(26)));
+        }
+        bool charge = liste.Any(o => o.Charge);
+        Invalidate();
+        return bouge || charge;
+    }
 
     int Index(Point p)
     {
         for (int i = 0; i < nav.Onglets.Count; i++) if (Zone(i).Contains(p)) return i;
         return -1;
+    }
+
+    protected override void OnResize(EventArgs e)
+    {
+        base.OnResize(e);
+        Animer(false);
     }
 
     protected override void OnPaint(PaintEventArgs e)
@@ -511,34 +979,33 @@ sealed class Bandeau : Control
         using var filet = new Pen(DA.Filet);
         g.DrawLine(filet, 0, Height - 1, Width, Height - 1);
         var liste = nav.Onglets;
+        var flags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding;
 
         for (int i = 0; i < liste.Count; i++)
         {
             var o = liste[i];
+            if (o.X < 0) continue;
             var r = Zone(i);
             bool actif = o == nav.Actif;
+            var etat = g.Save();
+            g.SetClip(r);
             if (actif)
             {
                 using var chemin = DA.Arrondi(new Rectangle(r.X, r.Y, r.Width - this.S(2), r.Height), this.S(8), basCarre: true);
                 using var fond = new SolidBrush(DA.Fond);
                 g.FillPath(fond, chemin);
                 g.DrawPath(filet, chemin);
-                using var temoin = new SolidBrush(DA.Braise);
-                g.FillRectangle(temoin, r.X + this.S(12), r.Y, r.Width - this.S(26), this.S(2));
             }
-            else
+            else if (i == survol)
             {
-                if (i == survol)
-                {
-                    using var chemin = DA.Arrondi(new Rectangle(r.X + this.S(2), r.Y + this.S(3), r.Width - this.S(6), r.Height - this.S(8)), this.S(7));
-                    using var fond = new SolidBrush(DA.Survol);
-                    g.FillPath(fond, chemin);
-                }
-                else if (i + 1 < liste.Count && liste[i + 1] != nav.Actif && i + 1 != survol)
-                {
-                    int m = r.Y + r.Height / 2;
-                    g.DrawLine(filet, r.Right - 1, m - this.S(8), r.Right - 1, m + this.S(8));
-                }
+                using var chemin = DA.Arrondi(new Rectangle(r.X + this.S(2), r.Y + this.S(3), r.Width - this.S(6), r.Height - this.S(8)), this.S(7));
+                using var fond = new SolidBrush(DA.Survol);
+                g.FillPath(fond, chemin);
+            }
+            else if (i + 1 < liste.Count && liste[i + 1] != nav.Actif && i + 1 != survol)
+            {
+                int m = r.Y + r.Height / 2;
+                g.DrawLine(filet, r.Right - 1, m - this.S(8), r.Right - 1, m + this.S(8));
             }
 
             int milieu = r.Y + r.Height / 2;
@@ -546,20 +1013,22 @@ sealed class Bandeau : Control
             var icone = new Rectangle(x, milieu - this.S(8), this.S(16), this.S(16));
             if (o.Charge)
             {
-                // Témoin de chargement : une braise allumée.
-                using var halo = new SolidBrush(Color.FromArgb(70, DA.Braise));
+                // Témoin de chargement : une braise qui respire.
+                double t = Environment.TickCount64 / 220.0;
+                int alpha = (int)(55 + 45 * Math.Sin(t));
+                using var halo = new SolidBrush(Color.FromArgb(alpha, DA.Braise));
                 using var coeur = new SolidBrush(DA.BraiseClaire);
-                g.FillEllipse(halo, icone.X + this.S(2), icone.Y + this.S(2), this.S(12), this.S(12));
+                g.FillEllipse(halo, icone.X + this.S(1), icone.Y + this.S(1), this.S(14), this.S(14));
                 g.FillEllipse(coeur, icone.X + this.S(5), icone.Y + this.S(5), this.S(6), this.S(6));
             }
             else if (o.Icone != null) g.DrawImage(o.Icone, icone);
-            else TextRenderer.DrawText(g, "", Icones, icone, DA.Cendre, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+            else TextRenderer.DrawText(g, o.Url.Contains("/parametres.html") ? "" : "", Icones, icone, DA.Cendre, flags);
 
             int droite = r.Right - this.S(CroixVisible(i) ? 32 : 10);
             if (o.Son)
             {
                 droite -= this.S(18);
-                TextRenderer.DrawText(g, "", Icones, new Rectangle(droite, r.Y, this.S(18), r.Height), DA.BraiseClaire, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+                TextRenderer.DrawText(g, "", Icones, new Rectangle(droite, r.Y, this.S(18), r.Height), DA.BraiseClaire, flags);
             }
             var texte = new Rectangle(x + this.S(24), r.Y, Math.Max(0, droite - x - this.S(26)), r.Height);
             var couleur = actif ? DA.Brume : o.Decharge ? DA.Eteint : DA.Cendre;
@@ -574,8 +1043,16 @@ sealed class Bandeau : Control
                     using var fond = new SolidBrush(DA.Filet);
                     g.FillEllipse(fond, cr);
                 }
-                TextRenderer.DrawText(g, "", Icones, cr, actif || surCroix ? DA.Brume : DA.Cendre, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+                TextRenderer.DrawText(g, "", Icones, cr, actif || surCroix ? DA.Brume : DA.Cendre, flags);
             }
+            g.Restore(etat);
+        }
+
+        // Le témoin braise de l'onglet actif glisse d'un onglet à l'autre.
+        if (nav.Actif != null && temoinX >= 0 && temoinW > 0)
+        {
+            using var temoin = new SolidBrush(DA.Braise);
+            g.FillRectangle(temoin, temoinX, this.S(6), temoinW, this.S(2));
         }
 
         if (survol == -2)
@@ -584,7 +1061,7 @@ sealed class Bandeau : Control
             using var chemin = DA.Arrondi(Plus, this.S(8));
             g.FillPath(fond, chemin);
         }
-        TextRenderer.DrawText(g, "", Icones, Plus, DA.Brume, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+        if (plusX >= 0) TextRenderer.DrawText(g, "", Icones, Plus, DA.Brume, flags);
     }
 
     protected override void OnMouseMove(MouseEventArgs e)

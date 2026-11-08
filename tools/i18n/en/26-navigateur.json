@@ -5,9 +5,11 @@
   "Windows 10 ou 11, 64 bits · 49 Mo": "Windows 10 or 11, 64-bit · 49 MB",
   "Environ 20 % de mémoire en moins que Chrome sur les mêmes sites": "About 20 % less memory than Chrome on the same sites",
   "Onglets cachés en veille après 30 secondes, libérés après 10 minutes": "Hidden tabs sleep after 30 seconds and are freed after 10 minutes",
-  "Traqueurs publicitaires bloqués": "Ad trackers blocked",
-  "Rien à installer : lance le fichier, le navigateur s'ouvre.": "Nothing to install: run the file and the browser opens.",
   "Si « Windows a protégé votre ordinateur » s'affiche : Informations complémentaires, puis Exécuter quand même. Le navigateur n'est pas encore signé, d'où cet avertissement.": "If “Windows protected your PC” appears: More info, then Run anyway. The browser isn't signed yet, hence the warning.",
   "Tes sites marchent comme d'habitude": "Your sites work as usual",
-  "Construit sur Chromium, le moteur libre de Chrome et d'Edge, par l'intermédiaire de Microsoft Edge WebView2, déjà présent dans Windows.": "Built on Chromium, the open-source engine behind Chrome and Edge, through Microsoft Edge WebView2, already part of Windows."
+  "Construit sur Chromium, le moteur libre de Chrome et d'Edge, par l'intermédiaire de Microsoft Edge WebView2, déjà présent dans Windows.": "Built on Chromium, the open-source engine behind Chrome and Edge, through Microsoft Edge WebView2, already part of Windows.",
+  "VPN gratuit intégré pour les membres ONIRIQUE": "Free built-in VPN for ONIRIQUE members",
+  "Google et les sites en thème sombre, aux couleurs d'ONIRIQUE": "Google and sites in dark mode, in ONIRIQUE colours",
+  "Traqueurs publicitaires bloqués, mises à jour automatiques": "Ad trackers blocked, automatic updates",
+  "Installation en un clic, sans droits administrateur. Il se désinstalle depuis les Paramètres de Windows.": "One-click install, no administrator rights needed. Uninstall it from Windows Settings."
 }

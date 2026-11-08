@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paramètres</title>
+<style>
+@font-face { font-family: "Unbounded"; font-weight: 200 900; src: url(fonts/Unbounded-latin.woff2) format("woff2"); }
+@font-face { font-family: "Hanken Grotesk"; font-weight: 100 900; src: url(fonts/HankenGrotesk-latin.woff2) format("woff2"); }
+@font-face { font-family: "JetBrains Mono"; font-weight: 100 800; src: url(fonts/JetBrainsMono-latin.woff2) format("woff2"); }
+:root {
+  --night: #09080A; --deep: #121012; --deep-2: #1a1416; --ember: #E5384A; --blood: #7A0D1C; --pink: #FF8E9A;
+  --bone: #F4ECEC; --label: #D9C6C9; --haze: #A8939A; --muted: #7D6A6E; --line: rgba(255, 210, 214, .13);
+  --ease: cubic-bezier(.2, .8, .2, 1);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background: var(--night); color: var(--bone);
+  font: 15px/1.5 "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+  background-image:
+    radial-gradient(40vmax 30vmax at 0% 0%, rgba(122, 13, 28, .42), transparent 70%),
+    radial-gradient(34vmax 28vmax at 100% 100%, rgba(122, 13, 28, .30), transparent 70%),
+    radial-gradient(22vmax 18vmax at 85% 10%, rgba(229, 56, 74, .07), transparent 70%);
+  background-attachment: fixed;
+}
+.cadre { display: grid; grid-template-columns: 230px 1fr; gap: 40px; max-width: 1060px; margin: 0 auto; padding: 48px 32px 80px; }
+h1 { font: 800 30px/1.1 "Unbounded", "Arial Black", sans-serif; margin: 0 0 28px; letter-spacing: .01em; }
+nav { position: sticky; top: 32px; align-self: start; display: grid; gap: 2px; }
+nav button {
+  position: relative; text-align: left; padding: 10px 14px 10px 18px; border: 0; border-radius: 10px;
+  background: transparent; color: var(--haze); font: 500 14px "Hanken Grotesk", sans-serif; cursor: pointer;
+  transition: background .25s var(--ease), color .25s var(--ease);
+}
+nav button:hover { background: rgba(255, 255, 255, .04); color: var(--bone); }
+nav button[aria-current="true"] { color: var(--bone); background: var(--deep); }
+nav button::before {
+  content: ""; position: absolute; left: 6px; top: 50%; width: 3px; height: 0; border-radius: 2px; background: var(--ember);
+  transform: translateY(-50%); transition: height .3s var(--ease);
+}
+nav button[aria-current="true"]::before { height: 18px; }
+nav button:focus-visible, .choix button:focus-visible, .bouton:focus-visible, select:focus-visible, .interrupteur input:focus-visible + span { outline: 2px solid var(--pink); outline-offset: 2px; }
+
+section { display: none; }
+section.visible { display: block; animation: entree .45s var(--ease) both; }
+section h2 { font: 700 20px/1.2 "Unbounded", sans-serif; margin: 6px 0 6px; }
+section > p.intro { color: var(--haze); margin: 0 0 22px; max-width: 60ch; }
+.carte {
+  background: var(--deep); border: 1px solid var(--line); border-radius: 14px; margin-bottom: 14px; overflow: hidden;
+  animation: entree .5s var(--ease) both;
+}
+section.visible .carte:nth-of-type(2) { animation-delay: .05s; }
+section.visible .carte:nth-of-type(3) { animation-delay: .1s; }
+section.visible .carte:nth-of-type(4) { animation-delay: .15s; }
+.ligne { display: flex; align-items: center; gap: 18px; padding: 16px 20px; }
+.ligne + .ligne { border-top: 1px solid var(--line); }
+.ligne .texte { flex: 1; min-width: 0; }
+.ligne b { display: block; font-weight: 600; color: var(--bone); }
+.ligne small { display: block; color: var(--haze); font-size: 13px; margin-top: 2px; }
+.etiquette { font: 500 11px "JetBrains Mono", Consolas, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+
+/* Interrupteur : une glissière usinée, la braise s'allume quand c'est actif. */
+.interrupteur { position: relative; flex: none; width: 46px; height: 26px; }
+.interrupteur input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+.interrupteur span {
+  position: absolute; inset: 0; border-radius: 13px; background: #0b090a; border: 1px solid var(--line);
+  transition: border-color .3s var(--ease), background .3s var(--ease);
+}
+.interrupteur span::after {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%;
+  background: linear-gradient(#3a3134, #241d20); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
+  transition: transform .35s var(--ease), background .3s var(--ease), box-shadow .3s var(--ease);
+}
+.interrupteur input:checked + span { border-color: rgba(229, 56, 74, .55); background: #170a0d; }
+.interrupteur input:checked + span::after {
+  transform: translateX(20px); background: radial-gradient(circle at 50% 40%, #ff8e9a, #e5384a 60%, #7a0d1c);
+  box-shadow: 0 0 10px rgba(229, 56, 74, .65);
+}
+
+/* Choix : boutons côte à côte, le témoin braise glisse sous le choix actif. */
+.choix { position: relative; display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 11px; background: #0b090a; border: 1px solid var(--line); }
+.choix button {
+  position: relative; z-index: 1; border: 0; background: transparent; color: var(--haze); padding: 7px 12px; border-radius: 8px;
+  font: 500 13px "Hanken Grotesk", sans-serif; cursor: pointer; transition: color .25s var(--ease);
+}
+.choix button:hover { color: var(--bone); }
+.choix button[aria-pressed="true"] { color: var(--bone); }
+.choix .curseur {
+  position: absolute; z-index: 0; top: 3px; bottom: 3px; border-radius: 8px; background: var(--deep-2);
+  box-shadow: inset 0 -2px 0 var(--ember); transition: left .35s var(--ease), width .35s var(--ease);
+}
+
+.bouton {
+  border: 1px solid var(--line); background: #0b090a; color: var(--bone); padding: 9px 16px; border-radius: 10px;
+  font: 600 12px "JetBrains Mono", Consolas, monospace; letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+  transition: border-color .25s var(--ease), background .25s var(--ease), transform .15s var(--ease);
+}
+.bouton:hover { border-color: rgba(255, 142, 154, .5); }
+.bouton:active { transform: scale(.97); }
+.bouton.principal { background: linear-gradient(#e5384a, #7a0d1c); border-color: transparent; }
+.bouton[disabled] { opacity: .5; cursor: default; }
+.cases { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 0 20px 16px; }
+.cases label { display: flex; align-items: center; gap: 8px; color: var(--label); font-size: 14px; cursor: pointer; }
+.cases input { accent-color: var(--ember); width: 16px; height: 16px; }
+
+/* VPN : le grand témoin. */
+.vpn { display: flex; align-items: center; gap: 22px; padding: 24px 20px; }
+.lampe { position: relative; flex: none; width: 54px; height: 54px; border-radius: 50%; background: #0b090a; border: 1px solid var(--line); display: grid; place-items: center; }
+.lampe::after { content: ""; width: 16px; height: 16px; border-radius: 50%; background: #2a2225; transition: background .4s var(--ease), box-shadow .4s var(--ease); }
+.vpn[data-etat="actif"] .lampe::after { background: radial-gradient(circle at 50% 40%, #ffb3bb, #e5384a 60%); box-shadow: 0 0 18px rgba(229, 56, 74, .8), 0 0 40px rgba(229, 56, 74, .35); }
+.vpn[data-etat="connexion"] .lampe::after { background: #e5384a; animation: respire 1s ease-in-out infinite; }
+.vpn .texte { flex: 1; }
+.vpn b { font: 700 18px "Unbounded", sans-serif; }
+.pays { display: inline-flex; gap: 8px; align-items: center; margin-top: 8px; color: var(--label); font-size: 13px; }
+
+.note { color: var(--muted); font-size: 12.5px; padding: 0 20px 16px; margin: 0; }
+.statut { color: var(--pink); font-size: 13px; min-height: 1.4em; transition: opacity .3s; }
+
+@keyframes entree { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes respire { 50% { opacity: .35; box-shadow: 0 0 22px rgba(229, 56, 74, .8); } }
+body.sans-animations *, body.sans-animations *::before, body.sans-animations *::after { animation: none !important; transition: none !important; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+@media (max-width: 760px) { .cadre { grid-template-columns: 1fr; padding: 28px 16px 60px; } nav { position: static; grid-auto-flow: column; overflow-x: auto; } }
+</style>
+</head>
+<body>
+<div class="cadre">
+  <div>
+    <h1>Paramètres</h1>
+    <nav aria-label="Rubriques">
+      <button data-rubrique="general" aria-current="true">Général</button>
+      <button data-rubrique="vpn">VPN</button>
+      <button data-rubrique="performances">Performances</button>
+      <button data-rubrique="confidentialite">Confidentialité</button>
+      <button data-rubrique="apparence">Apparence</button>
+      <button data-rubrique="apropos">À propos</button>
+    </nav>
+  </div>
+  <main>
+    <section id="general" class="visible">
+      <h2>Général</h2>
+      <p class="intro">Ce qui se passe quand tu cherches quelque chose et quand tu ouvres le navigateur.</p>
+      <div class="carte">
+        <div class="ligne"><div class="texte"><b>Moteur de recherche</b><small>Utilisé par la barre d'adresse et la page d'accueil.</small></div></div>
+        <div class="ligne" style="padding-top:0;border:0"><div class="choix" data-cle="Moteur" id="moteurs"></div></div>
+      </div>
+      <div class="carte">
+        <div class="ligne">
+          <div class="texte"><b>Reprendre là où j'en étais</b><small>Rouvre les onglets de la dernière fois. Ils reviennent endormis : seul celui que tu regardes se charge.</small></div>
+          <label class="interrupteur"><input type="checkbox" data-cle="ReprendreSession" aria-label="Reprendre là où j'en étais"><span></span></label>
+        </div>
+      </div>
+      <div class="carte">
+        <div class="ligne">
+          <div class="texte"><b>Navigateur par défaut</b><small>Les liens ouverts depuis tes autres applications arrivent ici.</small></div>
+          <button class="bouton" id="defaut">Choisir dans Windows</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="vpn">
+      <h2>VPN</h2>
+      <p class="intro">Le VPN fait passer tes pages par le serveur ONIRIQUE : les sites voient son adresse, pas la tienne. Gratuit, réservé aux membres connectés.</p>
+      <div class="carte">
+        <div class="vpn" id="vpn-etat" data-etat="eteint">
+          <div class="lampe" aria-hidden="true"></div>
+          <div class="texte">
+            <b id="vpn-titre">Éteint</b>
+            <div class="pays"><span class="etiquette">Sortie</span> Allemagne · Francfort</div>
+          </div>
+          <label class="interrupteur"><input type="checkbox" data-cle="Vpn" aria-label="VPN"><span></span></label>
+        </div>
+        <p class="note">Le VPN ne concerne que ce navigateur. onirique.store reste en accès direct. Pour l'allumer, connecte-toi à ton compte ONIRIQUE avec « Rester connecté ».</p>
+      </div>
+    </section>
+
+    <section id="performances">
+      <h2>Performances</h2>
+      <p class="intro">Les onglets que tu ne regardes pas laissent la place à ton DAW.</p>
+      <div class="carte">
+        <div class="ligne"><div class="texte"><b>Mettre en veille un onglet caché</b><small>Il arrête de travailler, mais reste prêt à l'instant. Jamais s'il joue du son.</small></div></div>
+        <div class="ligne" style="padding-top:0;border:0"><div class="choix" data-cle="VeilleSecondes" data-nombre>
+          <button data-valeur="30">30 s</button><button data-valeur="120">2 min</button><button data-valeur="600">10 min</button><button data-valeur="0">Jamais</button>
+        </div></div>
+      </div>
+      <div class="carte">
+        <div class="ligne"><div class="texte"><b>Libérer un onglet caché</b><small>Sa mémoire est rendue ; il se recharge quand tu reviens dessus.</small></div></div>
+        <div class="ligne" style="padding-top:0;border:0"><div class="choix" data-cle="DechargementMinutes" data-nombre>
+          <button data-valeur="10">10 min</button><button data-valeur="30">30 min</button><button data-valeur="60">1 h</button><button data-valeur="0">Jamais</button>
+        </div></div>
+      </div>
+      <div class="carte">
+        <div class="ligne">
+          <div class="texte"><b>Afficher la mémoire utilisée</b><small>Dans la barre, à droite.</small></div>
+          <label class="interrupteur"><input type="checkbox" data-cle="Memoire" aria-label="Afficher la mémoire utilisée"><span></span></label>
+        </div>
+      </div>
+    </section>
+
+    <section id="confidentialite">
+      <h2>Confidentialité</h2>
+      <p class="intro">Moins de traqueurs, c'est aussi moins de scripts qui tournent.</p>
+      <div class="carte">
+        <div class="ligne"><div class="texte"><b>Blocage des traqueurs</b><small>Strict bloque le plus ; si un site marche mal, passe en équilibré.</small></div></div>
+        <div class="ligne" style="padding-top:0;border:0"><div class="choix" data-cle="Traqueurs">
+          <button data-valeur="strict">Strict</button><button data-valeur="equilibre">Équilibré</button><button data-valeur="aucun">Désactivé</button>
+        </div></div>
+      </div>
+      <div class="carte">
+        <div class="ligne"><div class="texte"><b>Effacer les données de navigation</b><small>Sur tous les sites, depuis toujours.</small></div>
+          <button class="bouton" id="effacer">Effacer</button></div>
+        <div class="cases">
+          <label><input type="checkbox" value="historique" checked> Historique</label>
+          <label><input type="checkbox" value="cookies"> Cookies et données des sites</label>
+          <label><input type="checkbox" value="cache" checked> Fichiers en cache</label>
+          <label><input type="checkbox" value="motsdepasse"> Mots de passe et saisies enregistrés</label>
+        </div>
+        <p class="note statut" id="efface-statut" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section id="apparence">
+      <h2>Apparence</h2>
+      <p class="intro">Le web, la nuit.</p>
+      <div class="carte">
+        <div class="ligne">
+          <div class="texte"><b>Sites en thème sombre</b><small>Les sites qui ont un thème sombre l'affichent d'office (Google, YouTube, GitHub…).</small></div>
+          <label class="interrupteur"><input type="checkbox" data-cle="SitesSombres" aria-label="Sites en thème sombre"><span></span></label>
+        </div>
+        <div class="ligne">
+          <div class="texte"><b>Google aux couleurs ONIRIQUE</b><small>Les recherches Google prennent la nuit et la braise d'ONIRIQUE.</small></div>
+          <label class="interrupteur"><input type="checkbox" data-cle="GoogleOnirique" aria-label="Google aux couleurs ONIRIQUE"><span></span></label>
+        </div>
+        <div class="ligne">
+          <div class="texte"><b>Animations</b><small>Les onglets qui glissent, les messages qui apparaissent.</small></div>
+          <label class="interrupteur"><input type="checkbox" data-cle="Animations" aria-label="Animations"><span></span></label>
+        </div>
+      </div>
+    </section>
+
+    <section id="apropos">
+      <h2>À propos</h2>
+      <p class="intro">ONIRIQUE Navigateur, version <span id="version">—</span>.</p>
+      <div class="carte">
+        <div class="ligne">
+          <div class="texte"><b>Mises à jour automatiques</b><small>Les nouvelles versions se téléchargent seules et s'ouvrent au lancement suivant.</small></div>
+          <label class="interrupteur"><input type="checkbox" data-cle="MisesAJour" aria-label="Mises à jour automatiques"><span></span></label>
+        </div>
+        <div class="ligne">
+          <div class="texte"><b>Rechercher une mise à jour</b><small class="statut" id="maj-statut" aria-live="polite"></small></div>
+          <button class="bouton" id="majs">Rechercher</button>
+        </div>
+      </div>
+      <p class="note">Construit sur Chromium, le moteur libre de Chrome et d'Edge, par l'intermédiaire de Microsoft Edge WebView2.</p>
+    </section>
+  </main>
+</div>
+<script>
+const envoyer = (m) => window.chrome?.webview?.postMessage(m);
+let etat = null;
+
+// Rubriques
+document.querySelectorAll("nav button").forEach((b) => b.addEventListener("click", () => {
+  document.querySelectorAll("nav button").forEach((x) => x.setAttribute("aria-current", String(x === b)));
+  document.querySelectorAll("section").forEach((s) => s.classList.toggle("visible", s.id === b.dataset.rubrique));
+  document.querySelectorAll("section.visible .choix").forEach(placerCurseur);
+  history.replaceState(null, "", "#" + b.dataset.rubrique);
+}));
+const rubrique = document.querySelector(`nav button[data-rubrique="${location.hash.slice(1)}"]`);
+if (rubrique) rubrique.click();
+
+// Choix à témoin glissant
+function placerCurseur(choix) {
+  let c = choix.querySelector(".curseur");
+  if (!c) { c = document.createElement("span"); c.className = "curseur"; choix.prepend(c); }
+  const actif = choix.querySelector('button[aria-pressed="true"]');
+  if (!actif) { c.style.width = "0"; return; }
+  c.style.left = actif.offsetLeft + "px";
+  c.style.width = actif.offsetWidth + "px";
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest(".choix button");
+  if (!b) return;
+  const choix = b.closest(".choix");
+  const valeur = "nombre" in choix.dataset ? Number(b.dataset.valeur) : b.dataset.valeur;
+  choix.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  placerCurseur(choix);
+  envoyer({ type: "changer", cle: choix.dataset.cle, valeur });
+});
+document.querySelectorAll("input[data-cle]").forEach((i) => i.addEventListener("change", () => envoyer({ type: "changer", cle: i.dataset.cle, valeur: i.checked })));
+
+document.getElementById("defaut").onclick = () => envoyer({ type: "defaut" });
+document.getElementById("majs").onclick = () => envoyer({ type: "majs" });
+document.getElementById("effacer").onclick = () => {
+  const quoi = [...document.querySelectorAll(".cases input:checked")].map((i) => i.value);
+  if (!quoi.length) return;
+  document.getElementById("efface-statut").textContent = "Effacement…";
+  envoyer({ type: "effacer", quoi });
+};
+
+function afficher(m) {
+  etat = m;
+  const r = m.reglages;
+  document.body.classList.toggle("sans-animations", !r.Animations);
+  const moteurs = document.getElementById("moteurs");
+  if (!moteurs.querySelector("button")) moteurs.innerHTML = m.moteurs.map((x) => `<button data-valeur="${x.id}">${x.nom}</button>`).join("");
+  document.querySelectorAll(".choix").forEach((choix) => {
+    const v = String(r[choix.dataset.cle]);
+    choix.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.valeur === v)));
+    placerCurseur(choix);
+  });
+  document.querySelectorAll("input[data-cle]").forEach((i) => { if (i.dataset.cle !== "Vpn") i.checked = !!r[i.dataset.cle]; });
+  const vpn = document.querySelector('input[data-cle="Vpn"]');
+  vpn.checked = m.vpn !== "eteint";
+  vpn.disabled = m.vpn === "connexion";
+  document.getElementById("vpn-etat").dataset.etat = m.vpn;
+  document.getElementById("vpn-titre").textContent = { actif: "Actif", connexion: "Connexion…", eteint: "Éteint" }[m.vpn];
+  document.getElementById("version").textContent = m.version;
+  const maj = document.getElementById("maj-statut");
+  if (m.majPrete) maj.textContent = `La version ${m.majPrete} est prête : elle s'ouvrira au prochain lancement.`;
+  else if (!m.installe) maj.textContent = "Version d'essai sans installation : les mises à jour arrivent une fois le navigateur installé.";
+}
+
+window.chrome?.webview?.addEventListener("message", (e) => {
+  const m = e.data;
+  if (m.type === "etat") afficher(m);
+  if (m.type === "efface") document.getElementById("efface-statut").textContent = "C'est effacé.";
+  if (m.type === "maj") {
+    const s = document.getElementById("maj-statut");
+    s.textContent = { recherche: "Recherche…", "a-jour": "Tu as la dernière version.", prete: "Une nouvelle version est prête : elle s'ouvrira au prochain lancement.",
+      portable: "Version d'essai sans installation : installe le navigateur pour recevoir les mises à jour.", erreur: "Impossible de vérifier pour l'instant." }[m.etat] || "";
+  }
+});
+envoyer({ type: "lire" });
+addEventListener("resize", () => document.querySelectorAll("section.visible .choix").forEach(placerCurseur));
+</script>
+</body>
+</html>
