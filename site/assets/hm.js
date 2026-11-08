@@ -311,6 +311,7 @@
     // ——— Le flux en direct ———
     async function listen(c) {
       const response = await fetch("/api/hm/" + c + "/live", { headers: { Authorization: "Bearer " + token } }).catch(() => null);
+      if (code !== c) return void (response && response.body && response.body.cancel().catch(() => {}));
       if (!response || !response.ok) {
         const data = response ? await response.json().catch(() => ({})) : {};
         if (response && response.status >= 400 && response.status < 500) return stop(data.error || "Ce HM n'est plus disponible.");
@@ -328,6 +329,7 @@
         const blocks = buffer.split("\n\n");
         buffer = blocks.pop();
         for (const b of blocks) {
+          if (code !== c) return void reader.cancel().catch(() => {}); // un flux d'un HM quitté entre-temps
           if (!b.startsWith("data: ")) continue;
           const m = JSON.parse(b.slice(6));
           if (m.kicked) return stop("Le créateur du HM t'a retiré de la séance.");
@@ -361,11 +363,12 @@
         return alert(error.message);
       }
       if (code) leave(false);
-      receive(next);
+      // Le code avant l'affichage : une erreur en dessinant ne laisse plus un HM affiché sans code (envois vers /hm/null).
       code = c;
       try { sessionStorage.setItem(KEY, c); } catch {}
       remember(c);
       connect();
+      receive(next);
     }
     function leave(pause = true) {
       code = null; state = null; hold = false;
@@ -459,7 +462,7 @@
             s.queue.length ? el("ul", {}, ...queue) : el("p", { className: "muted", textContent: you.can.add ? "Pendant le HM, tout ce que tu lances ou mets dans la file s'ajoute ici." : "La file est vide." })),
           el("section", {}, el("h3", { textContent: "Droits" }), perms)),
         el("div", { className: "share-foot" },
-          you.host ? el("button", { className: "btn btn-ghost", type: "button", textContent: "Fermer le HM pour tout le monde", onclick: () => confirm("Fermer le HM pour tout le monde ?") && api("DELETE", "/hm/" + code).then(() => leave(), (e) => alert(e.message)) })
+          you.host ? el("button", { className: "btn btn-ghost", type: "button", textContent: "Fermer le HM pour tout le monde", onclick: () => confirm("Fermer le HM pour tout le monde ?") && api("DELETE", "/hm/" + s.code).then(() => leave(), (e) => alert(e.message)) })
             : el("button", { className: "btn btn-ghost", type: "button", textContent: "Quitter le HM", onclick: () => leave() })));
       dlg.querySelector(".hm-body").scrollTop = top;
       if (show && !dlg.open) dlg.showModal();
