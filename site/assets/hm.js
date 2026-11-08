@@ -355,7 +355,11 @@
       if (code === c) return draw(true);
       // Le nouveau HM d'abord : un lien mort ou expulsé ne fait pas quitter celui où l'on est.
       let next;
-      try { next = await api("GET", "/hm/" + c); } catch (error) { if (!code) try { sessionStorage.removeItem(KEY); } catch {} return alert(error.message); }
+      try { next = await api("GET", "/hm/" + c); } catch (error) {
+        // Un HM fermé ou dont on a été retiré : on l'oublie, sinon l'application le redemande à chaque ouverture de CLOUD.
+        if (!code) { try { sessionStorage.removeItem(KEY); } catch {} remember(null); }
+        return alert(error.message);
+      }
       if (code) leave(false);
       receive(next);
       code = c;
