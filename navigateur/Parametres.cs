@@ -6,6 +6,15 @@ sealed class OngletSauve
 {
     public string Url { get; set; } = "";
     public string Titre { get; set; } = "";
+    public int Groupe { get; set; } = -1;
+    public bool Divise { get; set; }   // partage l'écran avec l'onglet suivant
+}
+
+sealed class GroupeSauve
+{
+    public string Nom { get; set; } = "";
+    public string Couleur { get; set; } = "#e5384a";
+    public bool Replie { get; set; }
 }
 
 sealed class Parametres
@@ -36,6 +45,7 @@ sealed class Parametres
     public long SynchroDate { get; set; }
     public string? Raccourcis { get; set; }   // l'écran d'accueil (sites et dossiers), en JSON, géré par accueil/index.html
     public List<OngletSauve> Session { get; set; } = new();
+    public List<GroupeSauve> Groupes { get; set; } = new();
     public int SessionActif { get; set; }
 
     public static readonly string Dossier = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ONIRIQUE", "Navigateur");

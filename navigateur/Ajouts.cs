@@ -353,7 +353,7 @@ sealed partial class Navigateur
         Disposer();
         if (StudioActif)
             foreach (var o in Onglets)
-                if (o != Actif && !o.Son && o.Vue?.CoreWebView2 is { } c) { c.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low; if (!c.IsSuspended) _ = Suspendre(c); }
+                if (!EstAffiche(o) && !o.Son && o.Vue?.CoreWebView2 is { } c) { c.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low; if (!c.IsSuspended) _ = Suspendre(c); }
         EnvoyerEtatAuxPagesInternes();
     }
 
@@ -377,7 +377,7 @@ sealed partial class Navigateur
 
     void Limiter()
     {
-        var caches = Onglets.Where(o => o != Actif && !o.Son && o.Vue?.CoreWebView2 != null).OrderBy(o => o.CacheDepuis).ToList();
+        var caches = Onglets.Where(o => !EstAffiche(o) && !o.Son && o.Vue?.CoreWebView2 != null).OrderBy(o => o.CacheDepuis).ToList();
         // Au-dessus du plafond de mémoire : le plus ancien onglet caché est libéré, un par passage, jusqu'à repasser dessous.
         if (Reglages.PlafondMemoire > 0 && memoireMo > Reglages.PlafondMemoire && caches.Count > 0) Decharger(caches[0]);
         // Au-dessus du plafond de processeur : tous les onglets cachés s'endorment.

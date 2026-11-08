@@ -100,6 +100,8 @@ sealed class Onglet
     public DateTime CacheDepuis = DateTime.MaxValue;
     public string? ScriptGoogle;
     public float X = -1, W;  // position affichée dans le bandeau (animée)
+    public Groupe? Groupe;
+    public Onglet? Partenaire;  // l'autre moitié d'un écran divisé
 }
 
 sealed partial class Navigateur : Form
@@ -154,6 +156,8 @@ sealed partial class Navigateur : Form
         barre.Paint += (_, e) => { using var p = new Pen(DA.Filet); e.Graphics.DrawLine(p, 0, barre.Height - 1, barre.Width, barre.Height - 1); };
         barre.Resize += (_, _) => Disposer();
         contenu.Controls.Add(bulle);
+        contenu.Resize += (_, _) => PlacerVues();
+        contenu.Paint += (_, e) => DessinerDivision(e);
         Controls.Add(contenu);
         Controls.Add(barre);
         Controls.Add(bandeau);
@@ -252,6 +256,7 @@ sealed partial class Navigateur : Form
         {
             // Les onglets de la dernière fois reviennent endormis : seul celui qu'on regarde se charge.
             foreach (var s in Reglages.Session) Onglets.Add(new Onglet { Url = s.Url, Titre = s.Titre, Decharge = true });
+            RestaurerGroupes();
             Activer(Onglets[Math.Clamp(Reglages.SessionActif, 0, Onglets.Count - 1)]);
         }
         else await Ouvrir(Accueil);
@@ -262,8 +267,9 @@ sealed partial class Navigateur : Form
 
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
-        Reglages.Session = Onglets.Where(o => !EstInterne(o.Url) && o.Url.Length > 0).Select(o => new OngletSauve { Url = o.Url, Titre = o.Titre }).ToList();
-        Reglages.SessionActif = Actif == null ? 0 : Math.Max(0, Onglets.Where(o => !EstInterne(o.Url) && o.Url.Length > 0).ToList().IndexOf(Actif));
+        var web = Onglets.Where(o => !EstInterne(o.Url) && o.Url.Length > 0).ToList();
+        SauverGroupes(web);
+        Reglages.SessionActif = Actif == null ? 0 : Math.Max(0, web.IndexOf(Actif));
         Reglages.Enregistrer();
         base.OnFormClosing(e);
     }
@@ -344,7 +350,7 @@ sealed partial class Navigateur : Form
 
     async Task Creer(Onglet o)
     {
-        var v = new WebView2 { Dock = DockStyle.Fill, DefaultBackgroundColor = DA.Nuit, Visible = false };
+        var v = new WebView2 { Bounds = contenu.ClientRectangle, DefaultBackgroundColor = DA.Nuit, Visible = false };
         o.Vue = v;
         contenu.Controls.Add(v);
         _ = v.Handle;
@@ -353,6 +359,8 @@ sealed partial class Navigateur : Form
         if (o.Vue != v) return;
 
         var c = v.CoreWebView2;
+        // En écran divisé, cliquer dans une moitié en fait l'onglet actif (barre d'adresse, témoin).
+        v.GotFocus += (_, _) => { if (o != Actif && o == Actif?.Partenaire) { Actif = o; Afficher(); Animer(); contenu.Invalidate(); } };
         AppliquerProfil(c);
         BrancherAjouts(o, c);
         c.SetVirtualHostNameToFolderMapping(Hote, Path.Combine(AppContext.BaseDirectory, "accueil"), CoreWebView2HostResourceAccessKind.Deny);
@@ -395,6 +403,7 @@ sealed partial class Navigateur : Form
             try
             {
                 var n = await Ouvrir(null, Onglets.IndexOf(o) + 1);
+                if (o.Groupe != null) { n.Groupe = o.Groupe; Animer(); }
                 if (n.Vue?.CoreWebView2 is { } nc) e.NewWindow = nc;
                 e.Handled = true;
             }
@@ -419,31 +428,41 @@ sealed partial class Navigateur : Form
         if (Actif == o && o.Vue?.Visible == true) return;
         var ancien = Actif;
         Actif = o;
-        if (ancien != null && ancien != o)
-        {
-            ancien.CacheDepuis = DateTime.Now;
-            if (ancien.Vue?.CoreWebView2 is { } ac)
-            {
-                ancien.Vue.Visible = false;
-                ac.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
-            }
-        }
-        o.CacheDepuis = DateTime.MaxValue;
+        foreach (var x in new[] { ancien, ancien?.Partenaire })
+            if (x != null && x != o && x != o.Partenaire) Cacher(x);
+        if (o.Groupe is { Replie: true } gr) gr.Replie = false; // l'onglet qu'on regarde ne reste pas dans un groupe replié
         Afficher();
         Animer();
 
-        if (o.Vue == null)
-        {
-            o.Decharge = false;
-            await Creer(o);
-            if (o.Vue?.CoreWebView2 is { } nc) nc.Navigate(o.Url.Length > 0 ? o.Url : Accueil);
-        }
-        if (Actif != o || o.Vue?.CoreWebView2 is not { } c) return;
-        c.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Normal;
-        o.Vue.Visible = true;
-        o.Vue.BringToFront();
+        await Montrer(o);
+        if (Actif == o && o.Partenaire is { } p) await Montrer(p);
+        if (Actif != o || o.Vue == null) return;
+        PlacerVues();
         bulle.BringToFront();
         if (!champ.Saisie.Focused) o.Vue.Focus();
+    }
+
+    void Cacher(Onglet x)
+    {
+        x.CacheDepuis = DateTime.Now;
+        if (x.Vue?.CoreWebView2 is not { } c) return;
+        x.Vue.Visible = false;
+        c.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
+    }
+
+    async Task Montrer(Onglet x)
+    {
+        x.CacheDepuis = DateTime.MaxValue;
+        if (x.Vue == null)
+        {
+            x.Decharge = false;
+            await Creer(x);
+            if (x.Vue?.CoreWebView2 is { } nc) nc.Navigate(x.Url.Length > 0 ? x.Url : Accueil);
+        }
+        if (!EstAffiche(x) || x.Vue?.CoreWebView2 is not { } c) return;
+        c.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Normal;
+        x.Vue.Visible = true;
+        x.Vue.BringToFront();
     }
 
     internal void Fermer(Onglet o)
@@ -451,11 +470,14 @@ sealed partial class Navigateur : Form
         int i = Onglets.IndexOf(o);
         if (i < 0) return;
         Onglets.RemoveAt(i);
+        var p = o.Partenaire;
+        if (p != null) { p.Partenaire = null; o.Partenaire = null; }
         var vue = o.Vue;
         o.Vue = null;
         vue?.Dispose();
         if (Onglets.Count == 0) { Close(); return; }
-        if (Actif == o) { Actif = null; Activer(Onglets[Math.Min(i, Onglets.Count - 1)]); }
+        if (Actif == o) { Actif = null; Activer(p ?? Onglets[Math.Min(i, Onglets.Count - 1)]); }
+        else PlacerVues();
         Animer();
     }
 
@@ -548,6 +570,7 @@ sealed partial class Navigateur : Form
     {
         var valeurs = JsonSerializer.SerializeToNode(Reglages)!.AsObject();
         valeurs.Remove("Session");
+        valeurs.Remove("Groupes");
         valeurs.Remove("Raccourcis");
         JsonNode? raccourcis = null;
         raccourcis = Raccourcis();
@@ -731,7 +754,7 @@ sealed partial class Navigateur : Form
         var maintenant = DateTime.Now;
         foreach (var o in Onglets.ToArray())
         {
-            if (o == Actif || o.Son || o.Vue?.CoreWebView2 is not { } c) continue;
+            if (EstAffiche(o) || o.Son || o.Vue?.CoreWebView2 is not { } c) continue;
             var cache = maintenant - o.CacheDepuis;
             if (DechargementEffectif > 0 && cache > TimeSpan.FromMinutes(DechargementEffectif)) Decharger(o);
             else if (VeilleEffective > 0 && cache > TimeSpan.FromSeconds(VeilleEffective) && !c.IsSuspended) _ = Suspendre(c);
@@ -1065,10 +1088,43 @@ sealed class Bandeau : Control
         AccessibleName = "Onglets";
     }
 
-    int Largeur => nav.Onglets.Count == 0 ? 0 : Math.Clamp((Width - this.S(56) - 3 * this.S(46) - this.S(16)) / nav.Onglets.Count, this.S(44), this.S(232));
+    IEnumerable<Groupe> Groupes => nav.Onglets.Select(o => o.Groupe).OfType<Groupe>().Distinct();
+    static bool Montre(Onglet o) => o.Groupe is not { Replie: true };
+    string Libelle(Groupe gr) => gr.Replie ? $"{gr.Nom} {nav.Onglets.Count(o => o.Groupe == gr)}".Trim() : gr.Nom;
+    int LargeurPastille(Groupe gr)
+    {
+        var texte = Libelle(gr);
+        if (texte.Length == 0) return this.S(20);
+        using var gras = new Font(Font, FontStyle.Bold);
+        return Math.Min(this.S(150), TextRenderer.MeasureText(texte, gras).Width + this.S(18));
+    }
+    internal Rectangle Pastille(Groupe gr) => new((int)gr.X, this.S(14), Math.Max(1, (int)gr.W), this.S(22));
+    Groupe? GroupeSous(Point p) => Groupes.FirstOrDefault(gr => gr.X >= 0 && Pastille(gr).Contains(p));
+
+    /// <summary>Les places cibles : la pastille de chaque groupe devant ses onglets ; ceux d'un groupe replié n'ont plus de largeur.</summary>
+    float Placer(Action<Onglet, float, float> onglet, Action<Groupe, float, float> pastille)
+    {
+        var liste = nav.Onglets;
+        int n = liste.Count(Montre), pastilles = Groupes.Sum(gr => LargeurPastille(gr) + this.S(6));
+        int largeur = n == 0 ? 0 : Math.Clamp((Width - this.S(56) - 3 * this.S(46) - this.S(16) - pastilles) / n, this.S(44), this.S(232));
+        float x = this.S(8);
+        Groupe? avant = null;
+        foreach (var o in liste)
+        {
+            if (o.Groupe != null && o.Groupe != avant)
+            {
+                int w = LargeurPastille(o.Groupe);
+                pastille(o.Groupe, x + this.S(2), w);
+                x += w + this.S(6);
+            }
+            avant = o.Groupe;
+            onglet(o, x, Montre(o) ? largeur : 0);
+            if (Montre(o)) x += largeur;
+        }
+        return x;
+    }
     Rectangle Commande(int k) => new(Width - (3 - k) * this.S(46), 0, this.S(46), this.S(34)); // 0 réduire, 1 agrandir, 2 fermer
     int CommandeSous(Point p) { for (int k = 0; k < 3; k++) if (Commande(k).Contains(p)) return k; return -1; }
-    float CibleX(int i) => this.S(8) + i * Largeur;
     Rectangle Zone(int i)
     {
         var o = nav.Onglets[i];
@@ -1091,14 +1147,18 @@ sealed class Bandeau : Control
             return n;
         }
         var liste = nav.Onglets;
-        for (int i = 0; i < liste.Count; i++)
+        float fin = Placer((o, x, w) =>
         {
-            var o = liste[i];
-            if (o.X < 0) { o.X = CibleX(i); o.W = fluide ? 0 : Largeur; }
-            o.X = Vers(o.X, CibleX(i));
-            o.W = Vers(o.W, Largeur);
-        }
-        plusX = Vers(plusX, CibleX(liste.Count));
+            if (o.X < 0) { o.X = x; o.W = fluide ? 0 : w; }
+            o.X = Vers(o.X, x);
+            o.W = Vers(o.W, w);
+        }, (gr, x, w) =>
+        {
+            if (gr.X < 0) { gr.X = x; gr.W = fluide ? 0 : w; }
+            gr.X = Vers(gr.X, x);
+            gr.W = Vers(gr.W, w);
+        });
+        plusX = Vers(plusX, fin);
         int a = nav.Actif == null ? -1 : liste.IndexOf(nav.Actif);
         if (a >= 0)
         {
@@ -1112,7 +1172,7 @@ sealed class Bandeau : Control
 
     int Index(Point p)
     {
-        for (int i = 0; i < nav.Onglets.Count; i++) if (Zone(i).Contains(p)) return i;
+        for (int i = 0; i < nav.Onglets.Count; i++) if (nav.Onglets[i].W > this.S(12) && Zone(i).Contains(p)) return i;
         return -1;
     }
 
@@ -1134,12 +1194,12 @@ sealed class Bandeau : Control
         for (int i = 0; i < liste.Count; i++)
         {
             var o = liste[i];
-            if (o.X < 0) continue;
+            if (o.X < 0 || o.W < 2) continue;
             var r = Zone(i);
-            bool actif = o == nav.Actif;
+            bool actif = o == nav.Actif, moitie = !actif && nav.EstAffiche(o);
             var etat = g.Save();
             g.SetClip(r);
-            if (actif)
+            if (actif || moitie)
             {
                 using var chemin = DA.Arrondi(new Rectangle(r.X, r.Y, r.Width - this.S(2), r.Height), this.S(8), basCarre: true);
                 using var fond = new SolidBrush(DA.Fond);
@@ -1181,7 +1241,7 @@ sealed class Bandeau : Control
                 TextRenderer.DrawText(g, "", Icones, new Rectangle(droite, r.Y, this.S(18), r.Height), DA.BraiseClaire, flags);
             }
             var texte = new Rectangle(x + this.S(24), r.Y, Math.Max(0, droite - x - this.S(26)), r.Height);
-            var couleur = actif ? DA.Brume : o.Decharge ? DA.Eteint : DA.Cendre;
+            var couleur = actif ? DA.Brume : moitie ? DA.Etiquette : o.Decharge ? DA.Eteint : DA.Cendre;
             TextRenderer.DrawText(g, o.Titre, Font, texte, couleur,
                 TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix);
 
@@ -1197,6 +1257,23 @@ sealed class Bandeau : Control
             }
             g.Restore(etat);
         }
+
+        // Les groupes : leur pastille de couleur, et un trait de la même couleur sous leurs onglets.
+        using (var gras = new Font(Font, FontStyle.Bold))
+            foreach (var gr in Groupes)
+            {
+                if (gr.X < 0 || gr.W < 2) continue;
+                var p = Pastille(gr);
+                using (var chemin = DA.Arrondi(p, this.S(8)))
+                using (var pinceau = new SolidBrush(gr.Couleur))
+                    g.FillPath(pinceau, chemin);
+                TextRenderer.DrawText(g, Libelle(gr), gras, p, DA.Nuit, flags | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
+                var membres = liste.Where(o => o.Groupe == gr && o.W >= 2).ToList();
+                if (membres.Count == 0) continue;
+                using var trait = new SolidBrush(gr.Couleur);
+                float debut = gr.X, finTrait = membres.Max(o => o.X + o.W) - this.S(2);
+                g.FillRectangle(trait, debut, Height - this.S(3), finTrait - debut, this.S(2));
+            }
 
         // Le témoin braise de l'onglet actif glisse d'un onglet à l'autre.
         if (nav.Actif != null && temoinX >= 0 && temoinW > 0)
@@ -1248,6 +1325,14 @@ sealed class Bandeau : Control
     {
         base.OnMouseDown(e);
         int i = Index(e.Location);
+        var gr = i < 0 ? GroupeSous(e.Location) : null;
+        if (e.Button == MouseButtons.Right)
+        {
+            if (i >= 0) nav.MenuOnglet(nav.Onglets[i], PointToScreen(e.Location));
+            else if (gr != null) nav.MenuGroupe(gr, PointToScreen(e.Location));
+            return;
+        }
+        if (e.Button == MouseButtons.Left && gr != null) { nav.BasculerGroupe(gr); return; }
         if (e.Button == MouseButtons.Middle && i >= 0) nav.Fermer(nav.Onglets[i]);
         else if (e.Button != MouseButtons.Left) return;
         else if (i >= 0 && CroixVisible(i) && Croix(Zone(i)).Contains(e.Location)) nav.Fermer(nav.Onglets[i]);
@@ -1277,6 +1362,6 @@ sealed class Bandeau : Control
         long lp = m.LParam.ToInt64();
         var p = PointToClient(new Point((short)(lp & 0xFFFF), (short)((lp >> 16) & 0xFFFF)));
         bool bordDuHaut = nav.WindowState == FormWindowState.Normal && p.Y < this.S(5);
-        if (bordDuHaut || (Index(p) < 0 && !Plus.Contains(p) && CommandeSous(p) < 0)) m.Result = (IntPtr)(-1); // HTTRANSPARENT
+        if (bordDuHaut || (Index(p) < 0 && GroupeSous(p) == null && !Plus.Contains(p) && CommandeSous(p) < 0)) m.Result = (IntPtr)(-1); // HTTRANSPARENT
     }
 }
