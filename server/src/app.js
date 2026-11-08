@@ -54,6 +54,7 @@ import { mountRocky } from './rocky.js';
 import { mountVocalBrain } from './vocalbrain.js';
 import { applyPluginFiches } from './fiches.js';
 import { autoriser as autoriserVpn, VPN_RELAIS } from './vpn.js';
+import { mountNavigateur } from './navigateur.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
@@ -899,6 +900,8 @@ export function createApp() {
     rateLimit(`vpn:${req.user.id}`, 30);
     res.json({ relais: VPN_RELAIS, expire: autoriserVpn(req.ip, req.user.id) });
   });
+
+  mountNavigateur(app, { requireUser });
 
   app.post('/api/licenses/trial', requireVerified, (req, res) => {
     rateLimit(`trial:${req.user.id}`, 10);
