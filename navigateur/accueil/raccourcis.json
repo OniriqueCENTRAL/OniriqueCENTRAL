@@ -1,0 +1,11 @@
+[
+  { "type": "site", "nom": "ONIRIQUE", "url": "https://onirique.store/" },
+  { "type": "site", "nom": "CLOUD", "url": "https://onirique.store/cloud" },
+  { "type": "site", "nom": "Boutique", "url": "https://onirique.store/boutique" },
+  { "type": "dossier", "nom": "Musique", "elements": [
+    { "type": "site", "nom": "YouTube", "url": "https://www.youtube.com/" },
+    { "type": "site", "nom": "Spotify", "url": "https://open.spotify.com/" },
+    { "type": "site", "nom": "SoundCloud", "url": "https://soundcloud.com/" }
+  ] },
+  { "type": "site", "nom": "Outils", "url": "https://onirique.store/outils" }
+]

@@ -101,6 +101,7 @@ section.visible .carte:nth-of-type(4) { animation-delay: .15s; }
 .bouton:active { transform: scale(.97); }
 .bouton.principal { background: linear-gradient(rgb(var(--acc)), rgb(var(--acc-lo))); border-color: transparent; }
 .bouton[disabled] { opacity: .5; cursor: default; }
+.choix button:disabled { opacity: .35; cursor: default; }
 .cases { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 0 20px 16px; }
 .cases label { display: flex; align-items: center; gap: 8px; color: var(--label); font-size: 14px; cursor: pointer; }
 .cases input { accent-color: var(--ember); width: 16px; height: 16px; }
@@ -168,6 +169,12 @@ body.sans-animations *, body.sans-animations *::before, body.sans-animations *::
           <button class="bouton" id="defaut">Choisir dans Windows</button>
         </div>
       </div>
+      <div class="carte">
+        <div class="ligne">
+          <div class="texte"><b>Synchroniser avec mon compte ONIRIQUE</b><small>Tes raccourcis, tes dossiers, ta couleur et ton moteur de recherche te suivent sur chaque PC.</small><small class="statut" id="synchro-statut"></small></div>
+          <label class="interrupteur"><input type="checkbox" data-cle="Synchro" aria-label="Synchroniser avec mon compte ONIRIQUE"><span></span></label>
+        </div>
+      </div>
     </section>
 
     <section id="vpn">
@@ -188,7 +195,23 @@ body.sans-animations *, body.sans-animations *::before, body.sans-animations *::
 
     <section id="performances">
       <h2>Performances</h2>
-      <p class="intro">Les onglets que tu ne regardes pas laissent la place à ton DAW.</p>
+      <p class="intro">Les onglets que tu ne regardes pas laissent la place à ton DAW. <span id="ressources"></span></p>
+      <div class="carte">
+        <div class="ligne">
+          <div class="texte"><b>Mode Studio</b><small>Quand FL Studio, Ableton, REAPER, Cubase, Studio One ou Bitwig est ouvert, les onglets cachés s'endorment tout de suite et se libèrent au bout de 2 minutes. Celui qui joue du son continue.</small><small class="statut" id="studio-statut"></small></div>
+          <label class="interrupteur"><input type="checkbox" data-cle="ModeStudio" aria-label="Mode Studio"><span></span></label>
+        </div>
+      </div>
+      <div class="carte">
+        <div class="ligne"><div class="texte"><b>Plafond de mémoire</b><small>Au-delà, les onglets cachés les plus anciens sont libérés un à un.</small></div></div>
+        <div class="ligne" style="padding-top:0;border:0"><div class="choix" data-cle="PlafondMemoire" data-nombre>
+          <button data-valeur="0">Aucun</button><button data-valeur="1024">1 Go</button><button data-valeur="2048">2 Go</button><button data-valeur="4096">4 Go</button>
+        </div></div>
+        <div class="ligne"><div class="texte"><b>Plafond de processeur</b><small>Au-delà, tous les onglets cachés s'endorment.</small></div></div>
+        <div class="ligne" style="padding-top:0;border:0"><div class="choix" data-cle="PlafondCpu" data-nombre>
+          <button data-valeur="0">Aucun</button><button data-valeur="25">25 %</button><button data-valeur="50">50 %</button><button data-valeur="75">75 %</button>
+        </div></div>
+      </div>
       <div class="carte">
         <div class="ligne"><div class="texte"><b>Mettre en veille un onglet caché</b><small>Il arrête de travailler, mais reste prêt à l'instant. Jamais s'il joue du son.</small></div></div>
         <div class="ligne" style="padding-top:0;border:0"><div class="choix" data-cle="VeilleSecondes" data-nombre>
@@ -212,6 +235,12 @@ body.sans-animations *, body.sans-animations *::before, body.sans-animations *::
     <section id="confidentialite">
       <h2>Confidentialité</h2>
       <p class="intro">Moins de traqueurs, c'est aussi moins de scripts qui tournent.</p>
+      <div class="carte">
+        <div class="ligne">
+          <div class="texte"><b>Bloqueur de pubs</b><small>Les régies publicitaires et les outils de pistage ne se chargent plus. Les publicités intégrées aux vidéos YouTube ne sont pas concernées.</small><small class="statut" id="pubs-statut"></small></div>
+          <label class="interrupteur"><input type="checkbox" data-cle="Bloqueur" aria-label="Bloqueur de pubs"><span></span></label>
+        </div>
+      </div>
       <div class="carte">
         <div class="ligne"><div class="texte"><b>Blocage des traqueurs</b><small>Strict bloque le plus ; si un site marche mal, passe en équilibré.</small></div></div>
         <div class="ligne" style="padding-top:0;border:0"><div class="choix" data-cle="Traqueurs">
@@ -242,6 +271,13 @@ body.sans-animations *, body.sans-animations *::before, body.sans-animations *::
         </div>
       </div>
       <div class="carte">
+        <div class="ligne"><div class="texte"><b>Fond de l'accueil</b><small>La nuit, la nuit qui bouge lentement, ou ton image.</small></div>
+          <label class="bouton" id="choisir-fond">Choisir une image…<input type="file" id="fichier-fond" accept="image/png,image/jpeg,image/webp,image/gif" hidden></label></div>
+        <div class="ligne" style="padding-top:0;border:0"><div class="choix" data-cle="Fond">
+          <button data-valeur="nuit">Nuit</button><button data-valeur="anime">Animé</button><button data-valeur="image" id="choix-image">Image</button>
+        </div></div>
+      </div>
+      <div class="carte">
         <div class="ligne">
           <div class="texte"><b>Sites en thème sombre</b><small>Les sites qui ont un thème sombre l'affichent d'office (Google, YouTube, GitHub…).</small></div>
           <label class="interrupteur"><input type="checkbox" data-cle="SitesSombres" aria-label="Sites en thème sombre"><span></span></label>
@@ -249,6 +285,10 @@ body.sans-animations *, body.sans-animations *::before, body.sans-animations *::
         <div class="ligne">
           <div class="texte"><b>Google aux couleurs ONIRIQUE</b><small>Les recherches Google prennent la nuit d'ONIRIQUE et ta couleur.</small></div>
           <label class="interrupteur"><input type="checkbox" data-cle="GoogleOnirique" aria-label="Google aux couleurs ONIRIQUE"><span></span></label>
+        </div>
+        <div class="ligne">
+          <div class="texte"><b>Barre latérale</b><small>CLOUD, messages ONIRIQUE, Spotify, YouTube Music et Discord à portée de clic, à gauche.</small></div>
+          <label class="interrupteur"><input type="checkbox" data-cle="BarreLaterale" aria-label="Barre latérale"><span></span></label>
         </div>
         <div class="ligne">
           <div class="texte"><b>Animations</b><small>Les onglets qui glissent, les messages qui apparaissent.</small></div>
@@ -287,6 +327,7 @@ document.querySelectorAll("nav button").forEach((b) => b.addEventListener("click
 }));
 const rubrique = document.querySelector(`nav button[data-rubrique="${location.hash.slice(1)}"]`);
 if (rubrique) rubrique.click();
+scrollTo(0, 0); // l'ancre de la rubrique ne doit pas faire défiler la page
 
 // Choix à témoin glissant
 function placerCurseur(choix) {
@@ -313,6 +354,18 @@ document.getElementById("pastilles").addEventListener("click", (e) => {
   if (p) envoyer({ type: "changer", cle: "Accent", valeur: p.dataset.hex });
 });
 document.getElementById("couleur-libre").addEventListener("change", (e) => envoyer({ type: "changer", cle: "Accent", valeur: e.target.value }));
+
+document.getElementById("fichier-fond").addEventListener("change", (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  if (f.size > 15 * 1048576) { alert("Image trop lourde : 15 Mo au plus."); return; }
+  const lecteur = new FileReader();
+  lecteur.onload = () => envoyer({ type: "fond", image: lecteur.result });
+  lecteur.readAsDataURL(f);
+  e.target.value = "";
+});
+// Les mesures (mémoire, processeur, pubs bloquées) se rafraîchissent tant que la page est ouverte.
+setInterval(() => { if (!document.hidden) envoyer({ type: "lire" }); }, 5000);
 
 document.getElementById("defaut").onclick = () => envoyer({ type: "defaut" });
 document.getElementById("majs").onclick = () => envoyer({ type: "majs" });
@@ -349,6 +402,12 @@ function afficher(m) {
   const libre = document.querySelector(".pastille.libre");
   libre.setAttribute("aria-checked", String(!m.accents.some((a) => a.hex === choisie)));
   document.getElementById("couleur-libre").value = choisie;
+  const a = m.ajouts || {};
+  document.getElementById("synchro-statut").textContent = r.Synchro ? (a.synchro || "") : "";
+  document.getElementById("studio-statut").textContent = a.studio ? `Actif : ${a.studio} est ouvert.` : "";
+  document.getElementById("pubs-statut").textContent = r.Bloqueur && a.pubs ? `${a.pubs.toLocaleString("fr-FR")} pubs et traqueurs bloqués depuis l'ouverture.` : "";
+  document.getElementById("ressources").textContent = a.memoire ? `En ce moment : ${a.memoire.toLocaleString("fr-FR")} Mo, ${a.cpu} % du processeur.` : "";
+  document.getElementById("choix-image").disabled = !a.fond;
   document.getElementById("version").textContent = m.version;
   const maj = document.getElementById("maj-statut");
   if (m.majPrete) maj.textContent = `La version ${m.majPrete} est prête : elle s'ouvrira au prochain lancement.`;

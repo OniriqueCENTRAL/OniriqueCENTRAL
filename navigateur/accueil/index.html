@@ -28,6 +28,17 @@ body {
     radial-gradient(26vmax 22vmax at 70% 18%, rgba(var(--acc), .10), transparent 70%);
   background-attachment: fixed;
 }
+body.image { background-size: cover; background-position: center; }
+body.anime::before {
+  content: ""; position: fixed; inset: -20%; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(30vmax 26vmax at 30% 30%, rgba(var(--acc-lo), .55), transparent 70%),
+    radial-gradient(26vmax 22vmax at 70% 70%, rgba(var(--acc), .22), transparent 70%),
+    radial-gradient(22vmax 18vmax at 75% 25%, rgba(var(--acc-hi), .10), transparent 70%);
+  animation: derive 28s ease-in-out infinite alternate;
+}
+body.anime { background-image: none; }
+@keyframes derive { 0% { transform: translate(-6%, -4%) rotate(0deg); } 50% { transform: translate(5%, 3%) rotate(8deg); } 100% { transform: translate(-3%, 6%) rotate(-6deg); } }
 main { width: min(760px, 100% - 32px); text-align: center; padding: 15vh 0 60px; }
 main > img { width: 84px; height: auto; display: block; margin: 0 auto 18px; }
 h1 { margin: 0 0 36px; font: 800 clamp(34px, 7vw, 64px)/1 "Unbounded", "Arial Black", sans-serif; letter-spacing: .02em; }
@@ -145,17 +156,6 @@ document.getElementById("recherche").addEventListener("submit", (e) => {
   if (s) onirique.envoyer(s);
 });
 
-const PAR_DEFAUT = [
-  { type: "site", nom: "ONIRIQUE", url: "https://onirique.store/" },
-  { type: "site", nom: "CLOUD", url: "https://onirique.store/cloud" },
-  { type: "site", nom: "Boutique", url: "https://onirique.store/boutique" },
-  { type: "dossier", nom: "Musique", elements: [
-    { type: "site", nom: "YouTube", url: "https://www.youtube.com/" },
-    { type: "site", nom: "Spotify", url: "https://open.spotify.com/" },
-    { type: "site", nom: "SoundCloud", url: "https://soundcloud.com/" },
-  ] },
-  { type: "site", nom: "Outils", url: "https://onirique.store/outils" },
-];
 let liste = null;
 let ouvert = null; // le dossier affiché
 try { liste = JSON.parse(localStorage.getItem("onirique.raccourcis")); } catch { liste = null; }
@@ -342,9 +342,15 @@ onirique.surMessage((m) => {
   if (m?.type !== "etat") return;
   const recue = Array.isArray(m.raccourcis) ? m.raccourcis : null;
   if (recue && JSON.stringify(recue) !== JSON.stringify(liste)) { liste = recue; tout(); }
-  else if (!liste) { liste = structuredClone(PAR_DEFAUT); tout(); }
+  // Le fond choisi dans les Paramètres : la nuit, la nuit qui bouge, ou une image.
+  const fond = m.reglages?.Fond;
+  document.body.classList.toggle("anime", fond === "anime");
+  document.body.style.backgroundImage = fond === "image" && m.ajouts?.fond
+    ? `linear-gradient(rgba(9, 8, 10, .45), rgba(9, 8, 10, .8)), url("${m.ajouts.fond}")` : "";
+  document.body.classList.toggle("image", fond === "image" && !!m.ajouts?.fond);
 });
-if (!liste && !window.chrome?.webview) liste = structuredClone(PAR_DEFAUT); // ouverte hors du navigateur
+// Ouverte hors du navigateur : la liste par défaut, celle que le navigateur utilise aussi.
+if (!liste && !window.chrome?.webview) fetch("raccourcis.json").then((r) => r.json()).then((l) => { liste = l; tout(); });
 if (liste) tout();
 onirique.envoyer({ type: "lire" });
 </script>

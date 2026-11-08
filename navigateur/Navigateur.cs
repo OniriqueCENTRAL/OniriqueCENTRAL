@@ -102,7 +102,7 @@ sealed class Onglet
     public float X = -1, W;  // position affichée dans le bandeau (animée)
 }
 
-sealed class Navigateur : Form
+sealed partial class Navigateur : Form
 {
     const string Hote = "accueil.onirique";
     const string Accueil = "https://" + Hote + "/index.html";
@@ -172,7 +172,7 @@ sealed class Navigateur : Form
         historique.Click += (_, _) => OuvrirInterne(PageHistorique);
         champ.Saisie.KeyDown += (_, e) =>
         {
-            if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; Aller(champ.Saisie.Text); }
+            if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; Aller(suggestions.Selection ?? champ.Saisie.Text); }
             else if (e.KeyCode == Keys.Escape) { e.SuppressKeyPress = true; Actif?.Vue?.Focus(); Afficher(); }
         };
         champ.Saisie.LostFocus += (_, _) => Afficher();
@@ -181,8 +181,10 @@ sealed class Navigateur : Form
         {
             bool encore = bandeau.Animer(Reglages.Animations) | bulle.Animer(Reglages.Animations);
             if (vpn.Clignote) { vpn.Invalidate(); encore = true; }
+            encore |= AnimerAjouts();
             if (!encore) animation.Stop();
         };
+        InitAjouts();
         Echelle();
     }
 
@@ -219,6 +221,7 @@ sealed class Navigateur : Form
         else await Ouvrir(Accueil);
 
         if (Installation.EstInstallee && Reglages.MisesAJour) _ = ChercherMiseAJour(silencieux: true);
+        _ = DemarrerAjouts();
     }
 
     protected override void OnFormClosing(FormClosingEventArgs e)
@@ -250,7 +253,8 @@ sealed class Navigateur : Form
         champ.Saisie.Font = new Font("Segoe UI Variable Text", this.S(14), GraphicsUnit.Pixel);
         bandeau.Icones = new Font("Segoe Fluent Icons", this.S(10), GraphicsUnit.Pixel);
         var icones = new Font("Segoe Fluent Icons", this.S(14), GraphicsUnit.Pixel);
-        foreach (var b in new[] { retour, avance, recharger, vpn, historique, reglages }) b.Font = icones;
+        foreach (var b in new[] { retour, avance, recharger, vpn, historique, reglages, lecteur, studio }) b.Font = icones;
+        EchelleAjouts();
         memoire.Font = new Font("Cascadia Mono", this.S(11), GraphicsUnit.Pixel);
         bulle.Font = new Font("Segoe UI Variable Text", this.S(13), GraphicsUnit.Pixel);
         Disposer();
@@ -262,9 +266,10 @@ sealed class Navigateur : Form
         foreach (var b in new Control[] { retour, avance, recharger }) { b.SetBounds(x, y, this.S(36), h); x += pas; }
         int droite = barre.Width - this.S(10);
         if (memoire.Visible) { int m = this.S(76); droite -= m; memoire.SetBounds(droite, y, m, h); droite -= this.S(4); }
-        foreach (var b in new Control[] { reglages, historique, vpn }) { droite -= this.S(36); b.SetBounds(droite, y, this.S(36), h); droite -= this.S(2); }
+        foreach (var b in new Control[] { reglages, historique, vpn, lecteur, studio }) { if (!b.Visible) continue; droite -= this.S(36); b.SetBounds(droite, y, this.S(36), h); droite -= this.S(2); }
         champ.SetBounds(x + this.S(6), y, Math.Max(0, droite - x - this.S(14)), h);
         bulle.Placer();
+        PlacerAjouts();
     }
 
     static bool EstInterne(string url) => url.StartsWith("https://" + Hote + "/", StringComparison.OrdinalIgnoreCase);
@@ -313,6 +318,7 @@ sealed class Navigateur : Form
 
         var c = v.CoreWebView2;
         AppliquerProfil(c);
+        BrancherAjouts(o, c);
         c.SetVirtualHostNameToFolderMapping(Hote, Path.Combine(AppContext.BaseDirectory, "accueil"), CoreWebView2HostResourceAccessKind.Deny);
         if (Reglages.GoogleOnirique && scriptGoogle.Length > 0) o.ScriptGoogle = await c.AddScriptToExecuteOnDocumentCreatedAsync(ScriptGoogle());
         c.DocumentTitleChanged += (_, _) => { o.Titre = c.DocumentTitle; bandeau.Invalidate(); if (o == Actif) Afficher(); };
@@ -435,6 +441,7 @@ sealed class Navigateur : Form
         if (!champ.Saisie.Focused) champ.Saisie.Text = interne ? "" : o!.Url;
         Text = interne ? "ONIRIQUE" : o!.Titre + " — ONIRIQUE";
         bandeau.Invalidate();
+        MajEtoile();
     }
 
     void Aller(string saisie)
@@ -489,8 +496,11 @@ sealed class Navigateur : Form
                 return;
             case "raccourcis":
                 // L'écran d'accueil envoie toute sa liste (sites et dossiers) ; elle est gardée si c'est une liste raisonnable.
-                if (m["liste"] is JsonArray liste && liste.ToJsonString().Length < 200_000) { Reglages.Raccourcis = liste.ToJsonString(); Reglages.Enregistrer(); }
+                if (m["liste"] is JsonArray liste && liste.ToJsonString().Length < 200_000) { Reglages.Raccourcis = liste.ToJsonString(); Reglages.Enregistrer(); MajEtoile(); ProfilChange(); }
                 return;
+            case "fond":
+                await RecevoirFond(m);
+                break;
             case "defaut":
                 Process.Start(new ProcessStartInfo("ms-settings:defaultapps?registeredAppUser=" + Uri.EscapeDataString(Installation.Nom)) { UseShellExecute = true });
                 return;
@@ -504,7 +514,7 @@ sealed class Navigateur : Form
         valeurs.Remove("Session");
         valeurs.Remove("Raccourcis");
         JsonNode? raccourcis = null;
-        try { if (Reglages.Raccourcis != null) raccourcis = JsonNode.Parse(Reglages.Raccourcis); } catch { }
+        raccourcis = Raccourcis();
         return new JsonObject
         {
             ["type"] = "etat",
@@ -516,6 +526,7 @@ sealed class Navigateur : Form
             ["raccourcis"] = raccourcis,
             ["couleurs"] = new JsonObject { ["acc"] = DA.Triplet(DA.Braise), ["hi"] = DA.Triplet(DA.BraiseClaire), ["lo"] = DA.Triplet(DA.Sang) },
             ["accents"] = new JsonArray(DA.Accents.Select(x => (JsonNode)new JsonObject { ["hex"] = x.Hex, ["nom"] = x.Nom }).ToArray()),
+            ["ajouts"] = EtatAjouts(),
             ["moteurs"] = new JsonArray(Parametres.Moteurs.Select(x => (JsonNode)new JsonObject { ["id"] = x.Id, ["nom"] = x.Nom }).ToArray()),
         };
     }
@@ -556,6 +567,9 @@ sealed class Navigateur : Form
             case "Memoire": Reglages.Memoire = memoire.Visible = B(); Disposer(); break;
             case "Animations": Reglages.Animations = B(); break;
             case "MisesAJour": Reglages.MisesAJour = B(); break;
+            default:
+                if (!await ChangerAjout(cle, valeur)) return;
+                break;
             case "Accent":
                 if (valeur is JsonValue v && v.TryGetValue<string>(out var hex) && System.Text.RegularExpressions.Regex.IsMatch(hex, "^#[0-9a-fA-F]{6}$"))
                 {
@@ -565,11 +579,13 @@ sealed class Navigateur : Form
                     await RemettreScriptsGoogle();
                     Reglages.Enregistrer();
                     EnvoyerEtatAuxPagesInternes();
+                    ProfilChange();
                     return;
                 }
                 break;
         }
         Reglages.Enregistrer();
+        ProfilChange();
     }
 
     // Le script Google porte l'accent choisi : il est remis dans chaque onglet quand l'un ou l'autre change.
@@ -663,6 +679,7 @@ sealed class Navigateur : Form
                 o.Decharge = true;
                 vue?.Dispose();
             }
+            FermerPanneaux();
             await Task.WhenAny(ferme.Task, Task.Delay(5000));
         }
         env = await Moteur(relais);
@@ -680,18 +697,11 @@ sealed class Navigateur : Form
         {
             if (o == Actif || o.Son || o.Vue?.CoreWebView2 is not { } c) continue;
             var cache = maintenant - o.CacheDepuis;
-            if (Reglages.DechargementMinutes > 0 && cache > TimeSpan.FromMinutes(Reglages.DechargementMinutes))
-            {
-                var vue = o.Vue;
-                o.Vue = null;
-                o.ScriptGoogle = null;
-                o.Decharge = true;
-                vue.Dispose();
-                bandeau.Invalidate();
-            }
-            else if (Reglages.VeilleSecondes > 0 && cache > TimeSpan.FromSeconds(Reglages.VeilleSecondes) && !c.IsSuspended) _ = Suspendre(c);
+            if (DechargementEffectif > 0 && cache > TimeSpan.FromMinutes(DechargementEffectif)) Decharger(o);
+            else if (VeilleEffective > 0 && cache > TimeSpan.FromSeconds(VeilleEffective) && !c.IsSuspended) _ = Suspendre(c);
         }
-        if (Reglages.Memoire) MesurerMemoire();
+        MesurerMemoire();
+        EntretienAjouts();
         // Le serveur oublie une adresse au bout de 12 heures, ou à son redémarrage : le navigateur se réannonce.
         if (vpnEtat == "actif" && maintenant - vpnAnnonce > TimeSpan.FromMinutes(10) && env != null)
         {
@@ -716,13 +726,15 @@ sealed class Navigateur : Form
     void MesurerMemoire()
     {
         if (env == null) return;
-        using var moi = Process.GetCurrentProcess();
-        long total = moi.PrivateMemorySize64;
+        long total;
+        TimeSpan cpu;
+        using (var moi = Process.GetCurrentProcess()) { total = moi.PrivateMemorySize64; cpu = moi.TotalProcessorTime; }
         foreach (var info in env.GetProcessInfos())
         {
-            try { using var p = Process.GetProcessById(info.ProcessId); total += p.PrivateMemorySize64; } catch { }
+            try { using var p = Process.GetProcessById(info.ProcessId); total += p.PrivateMemorySize64; cpu += p.TotalProcessorTime; } catch { }
         }
-        memoire.Text = $"{total / 1048576} Mo";
+        CompterRessources(total, cpu);
+        if (memoire.Visible) memoire.Text = $"{total / 1048576} Mo";
     }
 
     async Task<string> ChercherMiseAJour(bool silencieux)
@@ -822,6 +834,9 @@ sealed class Bouton : Control
     [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
     public bool Clignote { get; set; }
     [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+    public Color? Teinte { get => teinte; set { teinte = value; Invalidate(); } }
+    Color? teinte;
+    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
     public string Aide { get => aide; set { aide = value; AccessibleName = value; Infobulle.SetToolTip(this, value); } }
 
     protected override void OnMouseEnter(EventArgs e) { survol = true; Invalidate(); base.OnMouseEnter(e); }
@@ -838,7 +853,7 @@ sealed class Bouton : Control
             using var b = new SolidBrush(DA.Survol);
             g.FillPath(b, chemin);
         }
-        var couleur = !actif ? DA.Eteint : temoin ? DA.BraiseClaire : DA.Brume;
+        var couleur = !actif ? DA.Eteint : teinte ?? (temoin ? DA.BraiseClaire : DA.Brume);
         TextRenderer.DrawText(g, glyphe, Font, ClientRectangle, couleur,
             TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
         if (temoin || Clignote)
@@ -865,12 +880,15 @@ sealed class Champ : Panel
         AccessibleName = "Barre d'adresse",
     };
 
+    public readonly Bouton Etoile = new("", "Ajouter à l'accueil") { BackColor = DA.Nuit, Visible = false };
+
     public Champ()
     {
         DoubleBuffered = true;
         BackColor = DA.Fond;
         Cursor = Cursors.IBeam;
         Controls.Add(Saisie);
+        Controls.Add(Etoile);
         Saisie.GotFocus += (_, _) => { Invalidate(); BeginInvoke(Saisie.SelectAll); };
         Saisie.LostFocus += (_, _) => Invalidate();
     }
@@ -878,8 +896,9 @@ sealed class Champ : Panel
     protected override void OnLayout(LayoutEventArgs e)
     {
         base.OnLayout(e);
-        int marge = this.S(14);
-        Saisie.SetBounds(marge, (Height - Saisie.Height) / 2, Math.Max(0, Width - 2 * marge), Saisie.Height);
+        int marge = this.S(14), etoile = Etoile.Visible ? this.S(30) : 0;
+        Etoile.SetBounds(Width - this.S(34), (Height - this.S(28)) / 2, this.S(28), this.S(28));
+        Saisie.SetBounds(marge, (Height - Saisie.Height) / 2, Math.Max(0, Width - 2 * marge - etoile), Saisie.Height);
     }
 
     protected override void OnMouseDown(MouseEventArgs e) { Saisie.Focus(); base.OnMouseDown(e); }
@@ -922,7 +941,7 @@ sealed class Bulle : Control
         texte = message;
         action = libelleAction;
         surAction = quandAction;
-        int largeur = Math.Min(Parent!.Width - this.S(32), Mesure(texte).Width + (action.Length > 0 ? Mesure(action).Width + this.S(40) : 0) + this.S(40));
+        int largeur = Math.Min(Parent!.Width - this.S(32), Mesure(texte).Width + (action.Length > 0 ? Mesure(action).Width + this.S(44) : 0) + this.S(76));
         Size = new Size(largeur, this.S(48));
         y = -Height;
         cible = this.S(14);

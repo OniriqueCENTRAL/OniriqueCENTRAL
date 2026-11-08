@@ -55,6 +55,24 @@ static class Historique
         return resultat;
     }
 
+    /// <summary>Les pages de l'historique qui correspondent à ce qu'on tape : le début de l'adresse d'abord, puis les plus visitées.</summary>
+    public static List<Entree> Suggerer(string texte, int nombre)
+    {
+        var mots = texte.Trim().ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (mots.Length == 0) return new();
+        var vues = new Dictionary<string, (Entree Derniere, int Fois)>();
+        foreach (var e in Tout())
+        {
+            var t = (e.ti + " " + e.u).ToLowerInvariant();
+            if (!mots.All(t.Contains)) continue;
+            vues[e.u] = vues.TryGetValue(e.u, out var v) ? (e, v.Fois + 1) : (e, 1);
+        }
+        static string Hote(string u) => Uri.TryCreate(u, UriKind.Absolute, out var x) ? x.Host.Replace("www.", "") : u;
+        return vues.Values
+            .OrderByDescending(v => (Hote(v.Derniere.u).StartsWith(mots[0]) ? 1000 : 0) + Math.Min(v.Fois, 50) * 10 + v.Derniere.t / 1e11)
+            .Take(nombre).Select(v => v.Derniere).ToList();
+    }
+
     public static void Oublier(long t, string url)
     {
         if (Tout().RemoveAll(e => e.t == t && e.u == url) > 0) Reecrire();

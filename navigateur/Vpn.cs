@@ -67,7 +67,7 @@ static class Vpn
     }
 
     // Le jeton du compte est celui que le site garde dans le navigateur (onirique.token) : on le lit sur une page cachée.
-    static async Task<string?> LireJeton(CoreWebView2Environment env, Control hote)
+    internal static async Task<string?> LireJeton(CoreWebView2Environment env, Control hote)
     {
         var vue = new WebView2 { Visible = false, Size = new Size(1, 1) };
         hote.Controls.Add(vue);
