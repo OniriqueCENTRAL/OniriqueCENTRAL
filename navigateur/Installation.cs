@@ -49,19 +49,24 @@ static class Installation
 
     public static string CheminIcone => Path.Combine(EstInstallee ? Dossier : Parametres.Dossier, $"icone-{Version}.ico");
 
+    static string EcrireIcone(string dossier)
+    {
+        Directory.CreateDirectory(dossier);
+        var ico = Path.Combine(dossier, $"icone-{Version}.ico");
+        if (!File.Exists(ico))
+        {
+            using (var flux = typeof(Installation).Assembly.GetManifestResourceStream("icone.ico")!)
+            using (var fichier = File.Create(ico)) flux.CopyTo(fichier);
+            foreach (var ancienne in Directory.GetFiles(dossier, "icone-*.ico")) if (ancienne != ico) try { File.Delete(ancienne); } catch { }
+        }
+        return ico;
+    }
+
     public static void IconeDeBarreDesTaches(IntPtr fenetre)
     {
         try
         {
-            var dossier = EstInstallee ? Dossier : Parametres.Dossier;
-            Directory.CreateDirectory(dossier);
-            var ico = CheminIcone;
-            if (!File.Exists(ico))
-            {
-                using (var flux = typeof(Installation).Assembly.GetManifestResourceStream("icone.ico")!)
-                using (var fichier = File.Create(ico)) flux.CopyTo(fichier);
-                foreach (var ancienne in Directory.GetFiles(dossier, "icone-*.ico")) if (ancienne != ico) try { File.Delete(ancienne); } catch { }
-            }
+            var ico = EcrireIcone(EstInstallee ? Dossier : Parametres.Dossier);
             var iid = new Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99");
             if (SHGetPropertyStoreForWindow(fenetre, ref iid, out var magasin) != 0) return;
             var format = new Guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3");
@@ -119,7 +124,8 @@ static class Installation
         dynamic lien = shell.CreateShortcut(chemin);
         lien.TargetPath = Exe;
         lien.WorkingDirectory = Dossier;
-        lien.IconLocation = Exe + ",0";
+        // Le .ico change de nom à chaque version : Windows ne peut pas resservir une icône vide gardée en cache pour le .exe.
+        lien.IconLocation = EcrireIcone(Dossier) + ",0";
         lien.Description = Nom;
         lien.Save();
     }
