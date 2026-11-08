@@ -55,7 +55,9 @@ sealed class Parametres
     public List<GroupeSauve> Groupes { get; set; } = new();
     public int SessionActif { get; set; }
 
-    public static readonly string Dossier = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ONIRIQUE", "Navigateur");
+    // ONIRIQUE_NAVIGATEUR_DOSSIER : un autre dossier de profil (essais), pour ne jamais toucher au vrai.
+    public static readonly string Dossier = Environment.GetEnvironmentVariable("ONIRIQUE_NAVIGATEUR_DOSSIER") is { Length: > 0 } autre
+        ? autre : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ONIRIQUE", "Navigateur");
     static string Fichier => Path.Combine(Dossier, "parametres.json");
 
     public static readonly (string Id, string Nom, string Url)[] Moteurs =

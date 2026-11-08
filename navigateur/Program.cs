@@ -33,10 +33,20 @@ static class Program
                 reglages.Enregistrer();
             }
         }
-        Application.Run(new Navigateur(args.Where(a => !a.StartsWith("--")).ToArray())
+        var adresses = args.Where(a => !a.StartsWith("--")).ToArray();
+        bool secondaire = args.Contains("--prive") || args.Contains("--nouvelle-fenetre");
+        // Déjà ouvert : le lien part dans la fenêtre existante, rien d'autre ne se lance.
+        if (!secondaire && Instance.Transmettre(adresses)) return;
+        var nav = new Navigateur(adresses) { Prive = args.Contains("--prive"), Secondaire = secondaire };
+        Instance.Ecouter(nav, principale: !secondaire);
+        // Un onglet détaché ouvre sa fenêtre là où on l'a lâché.
+        if (args.FirstOrDefault(a => a.StartsWith("--position=")) is { } pos && pos[11..].Split(',') is [var px, var py]
+            && int.TryParse(px, out var x) && int.TryParse(py, out var y))
         {
-            Prive = args.Contains("--prive"),
-            Secondaire = args.Contains("--prive") || args.Contains("--nouvelle-fenetre"),
-        });
+            nav.StartPosition = FormStartPosition.Manual;
+            nav.WindowState = FormWindowState.Normal;
+            nav.Location = new Point(x, y);
+        }
+        Application.Run(nav);
     }
 }

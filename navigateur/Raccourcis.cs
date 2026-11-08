@@ -24,12 +24,41 @@ sealed partial class Navigateur
     }
 
     /// <summary>Une nouvelle fenêtre (ou une fenêtre privée) : un second lancement du navigateur, qui partage son moteur.</summary>
-    static void NouvelleFenetre(bool prive)
+    static void NouvelleFenetre(bool prive, string? adresse = null, Point? position = null)
     {
         var info = new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = false };
         info.ArgumentList.Add(prive ? "--prive" : "--nouvelle-fenetre");
         if (!Installation.EstInstallee) info.ArgumentList.Add("--portable");
+        if (position is { } p) info.ArgumentList.Add($"--position={p.X},{p.Y}");
+        if (adresse != null) info.ArgumentList.Add(adresse);
         Process.Start(info);
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern IntPtr WindowFromPoint(Point p);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern IntPtr GetAncestor(IntPtr h, uint quoi);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out int processus);
+
+    /// <summary>
+    /// Un onglet lâché hors de la barre d'onglets : sur une autre fenêtre ONIRIQUE, il la rejoint ; ailleurs, il ouvre
+    /// sa propre fenêtre à cet endroit. Il voyage par son adresse : la page se recharge à l'arrivée.
+    /// </summary>
+    internal void Detacher(Onglet o, Point ecran)
+    {
+        if (Prive || o.Url.Length == 0) return;
+        var adresse = EstInterne(o.Url) ? Accueil : o.Url;
+        GetWindowThreadProcessId(GetAncestor(WindowFromPoint(ecran), 2 /* GA_ROOT */), out int pid);
+        if (pid != 0 && pid != Environment.ProcessId)
+        {
+            try
+            {
+                using var p = Process.GetProcessById(pid);
+                if (p.ProcessName == Process.GetCurrentProcess().ProcessName && Instance.Envoyer(pid, adresse)) { Fermer(o); return; }
+            }
+            catch { }
+        }
+        if (Onglets.Count < 2) return; // le seul onglet d'une fenêtre : c'est la fenêtre qu'on déplace
+        NouvelleFenetre(false, adresse, new Point(ecran.X - this.S(120), ecran.Y - this.S(16)));
+        Fermer(o);
     }
 
     void AllerAuRang(int n)

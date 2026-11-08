@@ -1457,10 +1457,18 @@ sealed class Bandeau : Control
         base.OnMouseUp(e);
         if (e.Button != MouseButtons.Left) return;
         bool finDeGlisse = glisse;
+        var detache = tire;
         Capture = false;
         tire = null;
         glisse = false;
-        if (finDeGlisse) { nav.Animer(); return; }
+        if (finDeGlisse)
+        {
+            // Lâché nettement au-dessus ou en dessous de la barre d'onglets (ou hors de la fenêtre) : l'onglet sort.
+            if (detache != null && (e.Y < -this.S(40) || e.Y > Height + this.S(50) || e.X < -this.S(40) || e.X > Width + this.S(40)))
+                nav.Detacher(detache, PointToScreen(e.Location));
+            nav.Animer();
+            return;
+        }
         switch (CommandeSous(e.Location))
         {
             case 0: nav.WindowState = FormWindowState.Minimized; break;
