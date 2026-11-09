@@ -1645,17 +1645,26 @@ export function createApp() {
   });
 
   // Utilisateurs et formules
+  // Triés (?sort=), par pages (?limit=&offset=) : le panel en montre quelques-uns et charge la suite à la demande.
+  const USER_SORTS = {
+    recent: 'u.created_at DESC', oldest: 'u.created_at ASC', spent: 'spent DESC, u.created_at DESC', licenses: 'licenses DESC, u.created_at DESC',
+    name: "LOWER(COALESCE(NULLIF(u.name, ''), u.email)) ASC",
+    role: `CASE u.role ${ROLES.map((r, i) => `WHEN '${r}' THEN ${i}`).join(' ')} ELSE -1 END DESC, u.created_at DESC`, // fondateurs d'abord
+  };
   admin.get('/users', (req, res) => {
     const q = `%${str(req.query.q, 80)}%`;
+    const order = USER_SORTS[req.query.sort] || USER_SORTS.recent;
+    const limit = Math.min(Math.max(int(req.query.limit, 500) || 500, 1), 500), offset = Math.max(int(req.query.offset, 0) || 0, 0);
     res.json(all(
       `SELECT u.id, u.email, u.name, u.role, u.created_at AS createdAt, u.email_verified AS emailVerified, u.totp_secret IS NOT NULL AS twoFactor,
          CASE WHEN u.avatar IS NULL THEN NULL ELSE '/api/media/' || u.avatar END AS avatar,
          (SELECT COUNT(*) FROM licenses l WHERE l.user_id = u.id AND l.status = 'active') AS licenses,
+         (SELECT COALESCE(SUM(o.amount_cents), 0) FROM orders o WHERE o.user_id = u.id AND o.provider != 'demo') AS spent,
          (SELECT COUNT(*) FROM licenses l WHERE l.user_id = u.id AND l.source = 'trial') AS trials,
          EXISTS (SELECT 1 FROM subscriptions s WHERE s.user_id = u.id AND s.status = 'active' AND s.current_period_end > ?) AS subscribed,
          (SELECT ? || '/' || p.handle FROM link_pages p WHERE p.user_id = u.id) AS linkPage,
          (SELECT ts.current_period_end FROM tool_subscriptions ts WHERE ts.user_id = u.id AND ts.status = 'active' AND ts.current_period_end > ?) AS toolsUntil
-       FROM users u WHERE u.email LIKE ? OR u.name LIKE ? ORDER BY u.created_at DESC LIMIT 500`, now(), config.linksUrl, now(), q, q));
+       FROM users u WHERE u.email LIKE ? OR u.name LIKE ? ORDER BY ${order} LIMIT ? OFFSET ?`, now(), config.linksUrl, now(), q, q, limit, offset));
   });
 
   // Offre 7 jours d'outils (ONIRIQUE CLOUD, CUT, page de liens…) : un abonnement aux outils sans Stripe, qui s'arrête seul.

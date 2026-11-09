@@ -286,6 +286,18 @@ try {
     // Remise à zéro par un admin : l'essai disparaît et peut être relancé.
     const account = (await call('GET', '/api/admin/users?q=essai@test.local', { token: admin }))[0];
     assert.equal(account.trials, 1);
+    // Liste des comptes triée et par pages ; dépenses hors achats de démonstration.
+    const all = await call('GET', '/api/admin/users?sort=oldest', { token: admin });
+    assert.ok(all.length >= 2 && all.every((u, i) => !i || all[i - 1].createdAt <= u.createdAt));
+    assert.equal(all[0].email, 'admin@test.local');
+    const [first, second] = [await call('GET', '/api/admin/users?sort=oldest&limit=1', { token: admin }), await call('GET', '/api/admin/users?sort=oldest&limit=1&offset=1', { token: admin })];
+    assert.deepEqual([first.length, first[0].id, second[0].id], [1, all[0].id, all[1].id]);
+    assert.equal((await call('GET', '/api/admin/users?sort=role', { token: admin }))[0].role, 'admin');
+    run(`INSERT INTO orders (user_id, kind, ref_id, amount_cents, provider, created_at) VALUES (?, 'product', 1, 4999, 'stripe', ?), (?, 'product', 1, 9999, 'demo', ?)`, account.id, now(), account.id, now());
+    const top = (await call('GET', '/api/admin/users?sort=spent', { token: admin }))[0];
+    assert.deepEqual([top.id, top.spent], [account.id, 4999]);
+    run(`DELETE FROM orders WHERE user_id = ? AND ref_id = 1 AND amount_cents IN (4999, 9999)`, account.id);
+    assert.equal((await call('GET', '/api/admin/users?limit=-5', { token: admin })).length, 1); // jamais de liste sans limite
     await call('POST', `/api/admin/users/${account.id}/reset-trials`, { token: tester, expect: 403 });
     assert.equal((await call('POST', `/api/admin/users/${account.id}/reset-trials`, { token: admin })).removed, 1);
     assert.deepEqual((await call('GET', '/api/me', { token: tester })).trialsUsed, []);

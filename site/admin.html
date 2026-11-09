@@ -219,14 +219,20 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
 
     <div class="bar">
       <h2>Comptes</h2>
-      <input type="search" id="search" placeholder="Chercher un e-mail ou un nom" aria-label="Chercher un compte">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <select class="act" id="users-sort" aria-label="Trier les comptes">
+          <option value="recent">Plus récents</option><option value="oldest">Plus anciens</option><option value="role">Par rôle</option>
+          <option value="spent">Plus grosses dépenses</option><option value="licenses">Plus de licences</option><option value="name">Par nom</option>
+        </select>
+        <input type="search" id="search" placeholder="Chercher un e-mail ou un nom" aria-label="Chercher un compte">
+      </div>
     </div>
     <p class="error" id="error" role="alert"></p>
     <div class="table"><table>
-      <thead><tr><th>Compte</th><th>Rôle</th><th>Licences</th><th>Abonnement</th><th>Inscrit le</th><th><span class="sub">Actions</span></th></tr></thead>
+      <thead><tr><th>Compte</th><th>Rôle</th><th>Licences</th><th>Dépenses</th><th>Abonnement</th><th>Inscrit le</th><th><span class="sub">Actions</span></th></tr></thead>
       <tbody id="users"></tbody>
     </table></div>
-    <p class="sub" id="count"></p>
+    <div class="row" style="margin-top:12px;align-items:center"><button class="act" id="users-more" type="button" hidden>En voir plus</button><span class="sub" id="count"></span></div>
     </section>
 
     <section class="tab" id="tab-shop" data-label="Boutique">
@@ -430,7 +436,7 @@ async function showLicenses(user, row, button) {
   button.disabled = true;
   try {
     const licenses = (await api("GET", "/admin/licenses?q=" + encodeURIComponent(user.email))).filter((l) => l.userId === user.id);
-    const cell = el("td", { colSpan: 6 });
+    const cell = el("td", { colSpan: 7 });
     if (!licenses.length) cell.append(el("span", { className: "sub", textContent: "Aucune licence sur ce compte." }));
     for (const l of licenses) {
       const expired = l.expiresAt && l.expiresAt < Date.now();
@@ -523,14 +529,23 @@ function askErase(user, row) {
       go.disabled = false;
     }
   };
-  const detail = el("tr", { className: "detail" }, el("td", { colSpan: 6 }, el("div", { className: "erase" }, note, word, go, cancel)));
+  const detail = el("tr", { className: "detail" }, el("td", { colSpan: 7 }, el("div", { className: "erase" }, note, word, go, cancel)));
   row.after(detail);
   word.focus();
 }
 
-async function loadUsers() {
+// Les comptes, 25 à la fois (« En voir plus » charge la suite), dans l'ordre choisi. Après une action, la liste
+// revient avec autant de comptes qu'avant.
+const USERS_PAGE = 25;
+let usersShown = 0;
+async function loadUsers(more = false) {
   $("error").textContent = "";
-  const users = await api("GET", "/admin/users?q=" + encodeURIComponent($("search").value.trim()));
+  const want = more ? usersShown + USERS_PAGE : Math.max(usersShown, USERS_PAGE);
+  const users = await api("GET", "/admin/users?" + new URLSearchParams({ q: $("search").value.trim(), sort: $("users-sort").value, limit: want + 1 }));
+  const extra = users.length > want;
+  if (extra) users.pop();
+  usersShown = users.length;
+  $("users-more").hidden = !extra;
   $("users").replaceChildren(...users.map((u) => {
     const row = el("tr");
     const view = el("button", { className: "act", type: "button", textContent: "Licences" });
@@ -559,12 +574,13 @@ async function loadUsers() {
         u.emailVerified ? null : el("div", { className: "sub", textContent: "Adresse e-mail non validée" })))),
       el("td", {}, el("span", { className: "pill" + (isStaff(u) ? " on" : ""), textContent: ROLES[u.role] || u.role })),
       el("td", { textContent: String(u.licenses) }),
+      el("td", { textContent: u.spent ? euros(u.spent) : "—" }),
       el("td", { textContent: u.subscribed ? "Abonné" : "—" }),
       el("td", { textContent: date(u.createdAt) }),
       el("td", { className: "actions" }, view, u.linkPage ? el("a", { className: "act", href: u.linkPage, target: "_blank", rel: "noopener", textContent: "Page de liens" }) : null, trials, tools, verify, a2f, role, erase));
     return row;
   }));
-  $("count").textContent = users.length === 500 ? "500 premiers comptes affichés : affinez la recherche." : `${users.length} compte(s).`;
+  $("count").textContent = users.length + (users.length > 1 ? " comptes affichés" : " compte affiché") + (extra ? ", d'autres à voir." : ".");
 }
 
 //------------------------------------------------------------------------------ Support
@@ -1451,7 +1467,9 @@ function setupTabs() {
 }
 
 let timer;
-$("search").oninput = () => { clearTimeout(timer); timer = setTimeout(() => loadUsers().catch((e) => { $("error").textContent = e.message; }), 250); };
+$("search").oninput = () => { clearTimeout(timer); timer = setTimeout(() => { usersShown = 0; loadUsers().catch((e) => { $("error").textContent = e.message; }); }, 250); };
+$("users-sort").onchange = () => { usersShown = 0; loadUsers().catch((e) => { $("error").textContent = e.message; }); };
+$("users-more").onclick = () => loadUsers(true).catch((e) => { $("error").textContent = e.message; });
 
 // Espace disque du serveur (base, plugins, médias, vidéos) : jauge, et la date où il sera plein au rythme actuel.
 function showDisk(disk) {
