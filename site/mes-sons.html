@@ -600,7 +600,9 @@ button.tag.on { background: var(--ember); color: var(--night); }
 .yt-preview .yt-desc { margin: 0; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.05); color: var(--mist); font: 500 13px/1.5 var(--f-body); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 220px; overflow-y: auto; }
 .yt-prod { cursor: pointer; border-radius: 12px; padding: 4px; margin: -4px; }
 .yt-prod.shown { background: rgba(255,255,255,.05); }
-@media (max-width: 900px) { .yt-layout { grid-template-columns: minmax(0, 1fr); } .yt-preview { position: static; order: -1; } }
+/* Une colonne selon la largeur de la fenêtre YouTube elle-même (dans l'application, elle peut être étroite sur un grand écran). */
+#youtube { container-type: inline-size; }
+@container (max-width: 880px) { .yt-layout { grid-template-columns: minmax(0, 1fr); } .yt-preview { position: static; order: -1; } }
 #pinterest { width: 720px; }
 .yt-prods { gap: 10px; }
 .yt-prod { display: flex; align-items: center; gap: 10px; }
