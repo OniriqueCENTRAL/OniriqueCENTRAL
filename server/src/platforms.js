@@ -51,6 +51,9 @@ export const PLATFORMS = ['spotify', 'deezer', 'apple'];
 /** La place après le dernier titre d'un projet, sons du CLOUD et titres des plateformes confondus. */
 export const nextPosition = (projectId) => get(`SELECT COALESCE(MAX(n), -1) + 1 AS n FROM (SELECT MAX(position) AS n FROM sound_tracks WHERE project_id = ?
   UNION ALL SELECT MAX(position) FROM sound_platform_items WHERE project_id = ?)`, projectId, projectId).n;
+/** La place avant le premier titre d'un projet (un son qu'on vient d'importer se range en haut). */
+export const firstPosition = (projectId) => get(`SELECT COALESCE(MIN(n), 1) - 1 AS n FROM (SELECT MIN(position) AS n FROM sound_tracks WHERE project_id = ?
+  UNION ALL SELECT MIN(position) FROM sound_platform_items WHERE project_id = ?)`, projectId, projectId).n;
 const MAX_ITEMS = 1000;       // titres de plateformes par playlist
 const MAX_IMPORT = 200;       // titres lus dans une playlist collée
 const PREVIEW_BYTES = 3 * 1024 * 1024;

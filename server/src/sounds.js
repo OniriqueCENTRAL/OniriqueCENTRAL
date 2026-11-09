@@ -19,7 +19,7 @@ import { mountPackSend, recipientFor, trackRecipient, coverPalette } from './pac
 import { writeZip, zipName, zipSize } from './zipstream.js';
 import { mountBeatTube } from './beattube.js';
 import { mountBeatScan, queueScan, scansOf, scanConfigured } from './beatscan.js';
-import { nextPosition, shareItems } from './platforms.js'; // la fin d'une playlist compte aussi ses titres Spotify, Deezer, Apple Music
+import { nextPosition, firstPosition, shareItems } from './platforms.js'; // la fin d'une playlist compte aussi ses titres Spotify, Deezer, Apple Music
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS sound_projects (
@@ -1092,7 +1092,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     const prod = p.kind === 'pack' ? prodFromFilename(file.filename) : { title: file.filename.replace(/\.[a-z0-9]{2,5}$/i, ''), bpm: 0, key: '' };
     const title = str(req.query.title, 120) || str(prod.title, 120);
     const trackId = transaction(() => {
-      const position = nextPosition(p.id);
+      const position = firstPosition(p.id);
       const tid = run('INSERT INTO sound_tracks (project_id, title, position, bpm, music_key, created_at) VALUES (?, ?, ?, ?, ?, ?)',
         p.id, title, position, prod.bpm, prod.key || '', now()).lastInsertRowid;
       run('UPDATE sound_tracks SET current_id = ? WHERE id = ?', addVersion(tid, file, ''), tid);

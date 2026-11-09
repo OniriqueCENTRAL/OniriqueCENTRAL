@@ -2003,7 +2003,9 @@ function sendFiles(files, p, toTrack) {
   files = [...files].filter(isAudio);
   if (!files.length) return;
   $("error").textContent = "";
-  for (const file of files) addJob(file, { projectId: p && p.id, trackId: toTrack && toTrack.id });
+  // Chaque nouveau son se range en haut : envoyés du dernier au premier, ils gardent l'ordre du dépôt.
+  if (!toTrack) files.reverse();
+  for (const file of files) addJob(file,{ projectId: p && p.id, trackId: toTrack && toTrack.id });
   drawUploads();
   runUploads();
 }

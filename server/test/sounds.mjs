@@ -594,10 +594,10 @@ try {
     let p = (await call('GET', '/api/me/sounds', { token: member.token })).projects.find((x) => x.id === pid);
     assert.equal(p.kind, 'pack');
     assert.ok(p.mail);
-    assert.deepEqual(p.tracks.map((t) => [t.title, t.bpm, t.key]), [['Nightfall', 140, 'C# min'], ['Sans infos', 90, '']]);
+    assert.deepEqual(p.tracks.map((t) => [t.title, t.bpm, t.key]), [['Sans infos', 90, ''], ['Nightfall', 140, 'C# min']]);
     await call('PATCH', `/api/me/sounds/projects/${pid}`, { token: member.token, body: { kind: '' } });
     p = (await call('GET', '/api/me/sounds', { token: member.token })).projects.find((x) => x.id === pid);
-    assert.deepEqual([p.kind, p.mail, p.tracks[0].bpm], ['', null, 140]);
+    assert.deepEqual([p.kind, p.mail, p.tracks[1].bpm], ['', null, 140]);
   });
 
   await step("corbeille : un titre supprimé disparaît (liens compris), se restaure, puis s'efface après 30 jours", async () => {
