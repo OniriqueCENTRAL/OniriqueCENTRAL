@@ -368,6 +368,10 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'v
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_orders') WHERE name = 'connect_account'`).get()) {
   db.exec(`ALTER TABLE sound_orders ADD COLUMN connect_account TEXT NOT NULL DEFAULT ''`);
 }
+// Le jour où l'auteur a publié son pack (ses abonnés ont été prévenus).
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'published_at'`).get()) {
+  db.exec(`ALTER TABLE sound_projects ADD COLUMN published_at INTEGER`);
+}
 // Les sommes reversées par ONIRIQUE aux beatmakers dont elle a encaissé les ventes, et leurs demandes de versement.
 db.exec(`CREATE TABLE IF NOT EXISTS sound_payouts (
   id         INTEGER PRIMARY KEY,
@@ -833,7 +837,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       trash: get(`SELECT (SELECT COUNT(*) FROM sound_tracks t JOIN sound_projects p ON p.id = t.project_id WHERE p.kind = 'trash' AND p.user_id = ?)
         + (SELECT COUNT(*) FROM sound_projects WHERE user_id = ? AND trashed_at IS NOT NULL) AS n`, u, u).n,
       projects: projects.map((p) => ({
-        id: p.id, kind: p.kind, title: p.title, artist: p.artist, cover: media(p.cover), background: media(p.background), buttonColor: p.button_color, coverBy: p.cover_by, releaseDate: p.release_date, plan: planOf(p), createdAt: p.created_at,
+        id: p.id, kind: p.kind, publishedAt: p.published_at || null, title: p.title, artist: p.artist, cover: media(p.cover), background: media(p.background), buttonColor: p.button_color, coverBy: p.cover_by, releaseDate: p.release_date, plan: planOf(p), createdAt: p.created_at,
         // Chacun range le projet dans ses dossiers : l'auteur dans le projet, un collaborateur dans sa place de collaborateur.
         mine: p.user_id === u, membersAdd: !!p.members_add, public: p.public !== 0, folderId: vanish ? null : p.user_id === u ? p.folder_id : collabFolders.get(p.id) ?? null,
         owner: person({ id: p.user_id, name: p.owner_name, avatar: p.owner_avatar }),
@@ -1338,6 +1342,29 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, token, req.user.id, projectId, trackId, str(req.body.label, 80), password ? hashPassword(password) : null,
     expiresAt, (req.body.download ?? defaults.download) ? 1 : 0, (req.body.requireAccount ?? defaults.requireAccount) ? 1 : 0, now()).lastInsertRowid;
     res.status(201).json(linkView(get('SELECT * FROM sound_links WHERE id = ?', lid)));
+  });
+  // Publier un pack : un lien d'écoute ouvert à tous (le premier déjà fait, sinon un nouveau), et les abonnés de la page
+  // du beatmaker prévenus (activité et notification), une seule fois par pack.
+  app.post('/api/me/sounds/projects/:id/publish', ...pro, (req, res) => {
+    const p = project(req, req.params.id);
+    if (p.kind !== 'pack' || p.user_id !== req.user.id) throw new HttpError(400, "Seul l'auteur d'un pack de prods le publie.");
+    if (p.published_at) throw new HttpError(409, 'Ce pack est déjà publié.');
+    if (!get('SELECT 1 FROM sound_tracks WHERE project_id = ?', p.id)) throw new HttpError(400, "Ajoute d'abord des prods au pack.");
+    rateLimit(`sounds-publish:${req.user.id}`, 10, 86400_000);
+    let link = get(`SELECT * FROM sound_links WHERE project_id = ? AND user_id = ? AND password_hash IS NULL AND require_account = 0
+      AND (expires_at IS NULL OR expires_at > ?) ORDER BY id LIMIT 1`, p.id, req.user.id, now());
+    if (!link) {
+      const lid = run(`INSERT INTO sound_links (token, user_id, project_id, label, download, created_at) VALUES (?, ?, ?, 'Publication', 1, ?)`,
+        crypto.randomBytes(12).toString('base64url'), req.user.id, p.id, now()).lastInsertRowid;
+      link = get('SELECT * FROM sound_links WHERE id = ?', lid);
+    }
+    run('UPDATE sound_projects SET published_at = ? WHERE id = ?', now(), p.id);
+    const fans = all('SELECT follower_id AS id FROM user_follows WHERE followed_id = ?', req.user.id).map((r) => r.id).filter((x) => x !== req.user.id);
+    for (const fan of fans) {
+      run(`INSERT INTO user_notifications (user_id, kind, actor_id, page, body, created_at) VALUES (?, 'pack', ?, ?, ?, ?)`, fan, req.user.id, link.token, p.title.slice(0, 140), now());
+      push(fan, { title: 'Nouveau pack de prods', body: `${req.user.name || 'Un beatmaker'} a publié « ${p.title} »`, url: `/ecoute?t=${link.token}` });
+    }
+    res.json({ publishedAt: now(), url: linkView(link).url, notified: fans.length });
   });
   const ownLink = (req) => {
     const l = get('SELECT * FROM sound_links WHERE id = ? AND user_id = ?', id(req.params.id), req.user.id);

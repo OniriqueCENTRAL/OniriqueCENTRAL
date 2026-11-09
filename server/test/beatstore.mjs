@@ -338,6 +338,21 @@ try {
     run(`DELETE FROM stripe_accounts WHERE creator = 'onirique'`);
   });
 
+  await step('publier un pack : lien d\'écoute ouvert, abonnés de la page prévenus une seule fois', async () => {
+    await call('PUT', '/api/me/profile/page', { token: beatmaker.token, body: { handle: 'kay.beats' } });
+    await call('POST', '/api/profiles/kay.beats/follow', { token: other.token });
+    await call('POST', `/api/me/sounds/projects/${pack}/publish`, { token: other.token, expect: 404 });
+    const empty = (await call('POST', '/api/me/sounds/projects', { token: beatmaker.token, body: { title: 'Vide', kind: 'pack' }, expect: 201 })).id;
+    await call('POST', `/api/me/sounds/projects/${empty}/publish`, { token: beatmaker.token, expect: 400 });
+    const r = await call('POST', `/api/me/sounds/projects/${pack}/publish`, { token: beatmaker.token });
+    assert.equal(r.notified, 1);
+    const note = (await call('GET', '/api/me/activity', { token: other.token })).find((n) => n.kind === 'pack');
+    assert.deepEqual([note.body, note.actor.id, r.url.endsWith(note.page)], ['Pack', beatmaker.id, true]);
+    assert.equal((await call('POST', `/api/sounds/share/${note.page}`, { body: {} })).tracks[0].id, tid);
+    await call('POST', `/api/me/sounds/projects/${pack}/publish`, { token: beatmaker.token, expect: 409 });
+    assert.ok((await call('GET', '/api/me/sounds', { token: beatmaker.token })).projects.find((p) => p.id === pack).publishedAt);
+  });
+
   await step('YouTube, options : le modèle et le rendu des vidéos enregistrés sur le compte, et le filtre ffmpeg qui en sort', async () => {
     const { videoFilter } = await import('../src/beattube.js');
     let yt = await call('GET', '/api/me/sounds/youtube', { token: beatmaker.token });

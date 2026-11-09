@@ -218,7 +218,7 @@ body.visitor .visitor-toggle b { color: var(--night); }
 .pack-contact:hover { border-color: var(--ember); }
 body:not(.visitor) .pack-contact { display: none; }
 body.is-playlist :is(#project-more, #bg-change, #bg-remove) { display: none !important; }
-body.visitor :is(#project-meta .tag, #edit-toggle, #share-project, #project-more, #pack-store, #pack-mail, #pack-youtube, #fab, #cover-swap, .plan-chip, .trk .dots, .trk small) { display: none !important; }
+body.visitor :is(#project-meta .tag, #edit-toggle, #share-project, #project-more, #pack-publish, #pack-store, #pack-mail, #pack-youtube, #fab, #cover-swap, .plan-chip, .trk .dots, .trk small) { display: none !important; }
 body.editing #edit-toggle { background: var(--mist); color: var(--night); border-color: var(--mist); }
 /* Préparer la sortie : le compte à rebours et les tâches faites, à côté de la date */
 .release .plan-chip { border-color: rgba(255,210,214,.16); background: rgba(255,255,255,.06); }
@@ -805,7 +805,8 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
     <div class="crumb">
       <button class="round" id="back" type="button" aria-label="Retour aux projets"></button>
       <div><b style="font:700 15px var(--f-display)">Projets</b><small id="crumb-owner"></small></div>
-      <button class="edit-toggle" id="pack-store" type="button" style="margin-left:auto" hidden>Ventes</button>
+      <button class="edit-toggle" id="pack-publish" type="button" style="margin-left:auto" hidden>Publier</button>
+      <button class="edit-toggle" id="pack-store" type="button" hidden>Ventes</button>
       <button class="edit-toggle" id="pack-mail" type="button" hidden>Mails</button>
       <button class="edit-toggle" id="pack-youtube" type="button" hidden>YouTube</button>
     </div>
@@ -1758,6 +1759,10 @@ function renderProject(p) {
   $("crumb-owner").textContent = data.owner.name;
   $("pack-mail").hidden = !p.mail;
   $("pack-store").hidden = !p.mail;
+  $("pack-publish").hidden = !p.mail;
+  $("pack-publish").disabled = !!p.publishedAt;
+  $("pack-publish").textContent = p.publishedAt ? "Publié" : "Publier";
+  $("pack-publish").title = p.publishedAt ? "Publié le " + day(p.publishedAt) + " : tes abonnés ont été prévenus" : "Prévenir tes abonnés que ce pack est sorti";
   $("pack-youtube").hidden = !p.mail;
   if ($("sale").open) renderSale();
   if ($("plan").open) renderPlan();
@@ -2982,6 +2987,16 @@ function renderSale() {
 }
 lightClose($("sale"));
 $("pack-store").onclick = () => openStore().catch(fail);
+// Publier le pack : un lien d'écoute ouvert à tous, et les abonnés de ta page prévenus (une seule fois).
+$("pack-publish").onclick = async () => {
+  const p = project();
+  if (!p || !confirm("Publier « " + p.title + " » ? Les abonnés de ta page reçoivent une notification avec le lien d'écoute. Ça ne se fait qu'une fois par pack.")) return;
+  try {
+    const r = await api("POST", "/me/sounds/projects/" + p.id + "/publish");
+    alert(r.notified ? "Pack publié : " + count(r.notified, "abonné prévenu", "abonnés prévenus") + "." : "Pack publié. Personne n'est encore abonné à ta page : le lien d'écoute est prêt à partager.");
+    await refresh();
+  } catch (e) { fail(e); }
+};
 
 // ——— Publier ses prods sur YouTube ———
 // Une vidéo par prod (la pochette du pack et le son), titre et description tirés d'un modèle, publiées sur la chaîne du
