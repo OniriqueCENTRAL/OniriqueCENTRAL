@@ -22,7 +22,7 @@ import {
   publicKeyPem, publicKeyRaw, userActivations,
 } from './licensing.js';
 import {
-  cancelSubscription, cancelToolsSubscription, cancelMonthly, TOOLS, toolsSubscription, checkout, connectStripe, disconnectStripe, handleLemonEvent, handleStripeEvent, paymentsMode, sellers,
+  cancelSubscription, cancelToolsSubscription, cancelMonthly, TOOLS, toolsSubscription, setToolsSubscription, checkout, connectStripe, disconnectStripe, handleLemonEvent, handleStripeEvent, paymentsMode, sellers,
   stripeAccount, stripeAccountView, verifyLemonSignature, verifyStripeSignature,
 } from './payments.js';
 import {
@@ -1653,8 +1653,20 @@ export function createApp() {
          (SELECT COUNT(*) FROM licenses l WHERE l.user_id = u.id AND l.status = 'active') AS licenses,
          (SELECT COUNT(*) FROM licenses l WHERE l.user_id = u.id AND l.source = 'trial') AS trials,
          EXISTS (SELECT 1 FROM subscriptions s WHERE s.user_id = u.id AND s.status = 'active' AND s.current_period_end > ?) AS subscribed,
-         (SELECT ? || '/' || p.handle FROM link_pages p WHERE p.user_id = u.id) AS linkPage
-       FROM users u WHERE u.email LIKE ? OR u.name LIKE ? ORDER BY u.created_at DESC LIMIT 500`, now(), config.linksUrl, q, q));
+         (SELECT ? || '/' || p.handle FROM link_pages p WHERE p.user_id = u.id) AS linkPage,
+         (SELECT ts.current_period_end FROM tool_subscriptions ts WHERE ts.user_id = u.id AND ts.status = 'active' AND ts.current_period_end > ?) AS toolsUntil
+       FROM users u WHERE u.email LIKE ? OR u.name LIKE ? ORDER BY u.created_at DESC LIMIT 500`, now(), config.linksUrl, now(), q, q));
+  });
+
+  // Offre 7 jours d'outils (ONIRIQUE CLOUD, page de liens) : un abonnement aux outils sans Stripe, qui s'arrête seul.
+  admin.post('/users/:id/tools-week', (req, res) => {
+    const user = get('SELECT * FROM users WHERE id = ?', int(req.params.id, 0));
+    if (!user) throw new HttpError(404, 'Compte introuvable.');
+    const paid = get(`SELECT 1 FROM tool_subscriptions WHERE user_id = ? AND status = 'active' AND stripe_subscription IS NOT NULL AND current_period_end > ?`, user.id, now());
+    if (paid) throw new HttpError(409, 'Ce compte a déjà un abonnement payé aux outils.');
+    const until = now() + 7 * 86400_000;
+    setToolsSubscription(user.id, { interval: 'month', status: 'active', periodEnd: until, cancelAtPeriodEnd: 1 });
+    res.json({ ok: true, until });
   });
 
   admin.patch('/users/:id', (req, res) => {

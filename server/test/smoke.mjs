@@ -290,6 +290,13 @@ try {
     assert.equal((await call('POST', `/api/admin/users/${account.id}/reset-trials`, { token: admin })).removed, 1);
     assert.deepEqual((await call('GET', '/api/me', { token: tester })).trialsUsed, []);
     await call('POST', '/api/licenses/trial', { token: tester, body: { productId: product.id, machineId: machine(tester) }, expect: 201 });
+
+    // 7 jours d'outils offerts par un admin : CLOUD et page de liens s'ouvrent.
+    await call('POST', `/api/admin/users/${account.id}/tools-week`, { token: tester, expect: 403 });
+    const { until } = await call('POST', `/api/admin/users/${account.id}/tools-week`, { token: admin });
+    assert.ok(Math.abs(until - Date.now() - 7 * 86400_000) < 60_000);
+    const rights = (await call('GET', '/api/me', { token: tester })).rights;
+    assert.ok(rights.includes('sounds') && rights.includes('links'));
   });
 
   await step('paiement Stripe (événements simulés) : licence définitive, e-mail de confirmation, rien en double', async () => {
