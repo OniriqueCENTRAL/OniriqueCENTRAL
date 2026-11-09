@@ -11,7 +11,8 @@ import { config } from './config.js';
 import { get, all, run, now, transaction } from './db.js';
 import { HttpError, rateLimit, optionalUser } from './auth.js';
 import { sendMail } from './mail.js';
-import { seal, unseal, verifyStripeSignature } from './payments.js';
+import { seal, unseal, verifyStripeSignature, stripeAccount } from './payments.js';
+import { push } from './push.js';
 import { contactsOf, listContacts } from './packsend.js';
 
 export const FILE_KINDS = { mp3: 'MP3', wav: 'WAV', stems: 'Track stems (ZIP)' };
@@ -52,10 +53,21 @@ export function sellerView(userId) {
     stripe: stripe ? { sandbox: !!s.sandbox, account: s.account, connect: !!s.connect_account, webhook: !!(s.webhook_secret || s.connect_account) } : null,
     paypal: paypal ? { sandbox: !!s.paypal_sandbox, clientId: s.paypal_client_id } : null };
 }
-/** Les moyens de paiement qu'un acheteur peut choisir chez ce beatmaker, Stripe (carte) d'abord. */
+// Le compte Stripe d'ONIRIQUE (celui des plugins) : il encaisse pour un beatmaker qui n'a rien branché, puis le lui reverse.
+const platformStripe = () => { const a = stripeAccount('onirique'); return a?.key ? a : null; };
+/** Les moyens de paiement qu'un acheteur peut choisir chez ce beatmaker, Stripe (carte) d'abord ; sinon ONIRIQUE encaisse. */
 export function payMethods(userId) {
   const v = sellerView(userId);
-  return [v.stripe && 'stripe', v.paypal && 'paypal'].filter(Boolean);
+  const own = [v.stripe && 'stripe', v.paypal && 'paypal'].filter(Boolean);
+  return own.length ? own : platformStripe() ? ['onirique'] : [];
+}
+/** Ce qu'un beatmaker a vendu (vraies ventes payées), et ce qu'ONIRIQUE, qui a encaissé pour lui, lui doit encore. */
+export function balanceOf(userId) {
+  const sold = get(`SELECT COUNT(*) AS n, COALESCE(SUM(amount), 0) AS total FROM sound_orders WHERE seller_id = ? AND status = 'paid' AND sandbox = 0 AND provider != 'simulation'`, userId);
+  const held = get(`SELECT COALESCE(SUM(amount), 0) AS total FROM sound_orders WHERE seller_id = ? AND status = 'paid' AND sandbox = 0 AND provider = 'onirique'`, userId).total;
+  const paidOut = get('SELECT COALESCE(SUM(amount), 0) AS total FROM sound_payouts WHERE seller_id = ?', userId).total;
+  return { sales: sold.n, sold: sold.total, held, paidOut, due: held - paidOut, askedAt: sellerRow(userId)?.payout_asked_at || null,
+    payouts: all('SELECT amount, created_at AS at FROM sound_payouts WHERE seller_id = ? ORDER BY created_at DESC LIMIT 50', userId) };
 }
 
 // account : un compte branché par « Se connecter avec Stripe », au nom duquel la plateforme ONIRIQUE parle (Stripe Connect).
@@ -92,6 +104,7 @@ async function dropHook(userId) {
 }
 // Le compte d'un beatmaker avec sa clé en clair, pour parler au prestataire ; null s'il n'est pas branché.
 function sellerKeys(userId, provider) {
+  if (provider === 'onirique') { const a = platformStripe(); return a ? { provider, secret: a.key, sandbox: !!a.test } : null; }
   const s = sellerRow(userId);
   if (provider === 'paypal') return s?.paypal_secret ? { provider, clientId: s.paypal_client_id, secret: unseal(s.paypal_secret), sandbox: !!s.paypal_sandbox } : null;
   if (s?.connect_account && s.provider === 'stripe') return connectUsable(s) ? { provider: 'stripe', secret: config.stripeConnectSecretKey, account: s.connect_account, sandbox: !!s.sandbox } : null;
@@ -222,6 +235,18 @@ const sellerOrderView = (o) => ({ id: o.id, status: o.status, trackTitle: o.trac
  */
 export async function verifyOrder(order) {
   if (order.status !== 'pending' || !order.provider_ref) return order;
+  if (order.provider === 'onirique') {
+    // Encaissée par ONIRIQUE : la session est relue chez Stripe avec la clé de la plateforme (pas de webhook à elle).
+    const k = sellerKeys(order.seller_id, 'onirique');
+    if (!k) return order;
+    try {
+      const session = await stripeCall(k.secret, 'GET', `/checkout/sessions/${encodeURIComponent(order.provider_ref)}`);
+      if (session.payment_status === 'paid' && session.amount_total === order.amount && session.currency === order.currency) {
+        return markPaid(order, session.customer_details?.email || '', session.customer_details?.name || '');
+      }
+    } catch (error) { console.error(`[ventes] commande ${order.id} : ${error.message}`); }
+    return order;
+  }
   if (order.provider === 'stripe') {
     // Un compte branché par Stripe Connect : la plateforme relit la session chez Stripe, le webhook n'est qu'un raccourci.
     const k = sellerKeys(order.seller_id, 'stripe');
@@ -271,13 +296,14 @@ function deliver(o) {
   const seller = o.provider !== 'simulation' && get('SELECT email FROM users WHERE id = ?', o.seller_id);
   if (seller) sendMail(seller.email, `Vente : « ${o.track_title} » en ${l.name}`, [
     'Bonjour,', '', `« ${o.track_title} » vient d'être achetée en licence ${l.name} pour ${price}${o.buyer_email ? ` par ${o.buyer_email}` : ''}.`,
-    l.exclusive ? 'C\'était l\'exclusivité : la prod est retirée de la vente.' : '', '', 'Le détail est dans le panneau Ventes de ton pack, sur ONIRIQUE CLOUD.',
+    l.exclusive ? 'C\'était l\'exclusivité : la prod est retirée de la vente.' : '',
+    o.provider === 'onirique' ? 'Le paiement a été encaissé par ONIRIQUE : il s\'ajoute à ton solde, dans le panneau Ventes, d\'où tu demandes le versement.' : '', '', 'Le détail est dans le panneau Ventes de ton pack, sur ONIRIQUE CLOUD.',
   ].filter((line, i, a) => line || a[i - 1]).join('\n')).catch(() => {});
 }
 // Les paiements laissés en route (acheteur parti avant le retour sur la page d'achat) : vérifiés toutes les cinq minutes
 // pendant deux jours.
 setInterval(() => {
-  for (const o of all(`SELECT * FROM sound_orders WHERE status = 'pending' AND provider IN ('paypal', 'stripe') AND provider_ref != '' AND created_at > ? ORDER BY created_at DESC LIMIT 30`, now() - 2 * 86400_000)) verifyOrder(o);
+  for (const o of all(`SELECT * FROM sound_orders WHERE status = 'pending' AND provider IN ('paypal', 'stripe', 'onirique') AND provider_ref != '' AND created_at > ? ORDER BY created_at DESC LIMIT 30`, now() - 2 * 86400_000)) verifyOrder(o);
 }, 5 * 60_000).unref();
 
 // Les connexions à Stripe en cours (state → beatmaker), et le retrait de l'accès quand il débranche son compte.
@@ -337,8 +363,45 @@ export function mountBeatStore(app, { me, track, room, receiveFile, openLink, li
     await Promise.all(pending.map(verifyOrder));
     res.json({ seller: sellerView(req.user.id), licenses, kinds: FILE_KINDS, contract: contractTemplate(req.user.id),
       instagram: get('SELECT instagram FROM users WHERE id = ?', req.user.id).instagram,
-      orders: all('SELECT * FROM sound_orders WHERE seller_id = ? ORDER BY created_at DESC LIMIT 200', req.user.id).map(sellerOrderView) });
+      orders: all('SELECT * FROM sound_orders WHERE seller_id = ? ORDER BY created_at DESC LIMIT 200', req.user.id).map(sellerOrderView),
+      balance: balanceOf(req.user.id), platform: !!platformStripe() });
   }));
+  // Le beatmaker demande le versement de son solde : les fondateurs sont prévenus (notification et e-mail).
+  app.post('/api/me/sounds/store/payout-request', ...me, (req, res) => {
+    const b = balanceOf(req.user.id);
+    if (b.due <= 0) throw new HttpError(400, 'Rien à verser pour l\'instant.');
+    rateLimit(`sounds-payout:${req.user.id}`, 5, 86400_000);
+    licensesOf(req.user.id); // la ligne sound_sellers existe
+    run('UPDATE sound_sellers SET payout_asked_at = ? WHERE user_id = ?', now(), req.user.id);
+    const who = get('SELECT name, email FROM users WHERE id = ?', req.user.id), name = who.name || who.email, amount = eurosFr(b.due);
+    for (const f of all(`SELECT id, email FROM users WHERE role = 'founder'`)) {
+      push(f.id, { title: 'Demande de versement', body: `${name} demande ${amount} (ventes de prods encaissées par ONIRIQUE).`, url: `${config.siteUrl}/mes-sons` });
+      sendMail(f.email, `Demande de versement : ${amount} pour ${name}`, [
+        'Bonjour,', '', `${name} (${who.email}) demande le versement de ${amount} : ses ventes de prods encaissées par ONIRIQUE.`, '',
+        'Une fois le virement fait, note-le dans ONIRIQUE CLOUD : panneau Ventes d\'un pack, partie « Versements aux beatmakers ».',
+      ].join('\n')).catch(() => {});
+    }
+    res.json(balanceOf(req.user.id));
+  });
+  // Les fondateurs : ce qu'ONIRIQUE doit à chaque beatmaker, et le versement fait (tout le solde dû, ou une partie).
+  const founderOnly = (req) => { if (req.user.role !== 'founder') throw new HttpError(403, 'Réservé aux fondateurs.'); };
+  const duesView = () => all(`SELECT DISTINCT o.seller_id, u.name, u.email FROM sound_orders o JOIN users u ON u.id = o.seller_id
+      WHERE o.provider = 'onirique' AND o.status = 'paid' AND o.sandbox = 0`)
+    .map((r) => ({ sellerId: r.seller_id, name: r.name || r.email, email: r.email, ...balanceOf(r.seller_id) })).filter((x) => x.due > 0)
+    .sort((a, b) => (b.askedAt || 0) - (a.askedAt || 0) || b.due - a.due);
+  app.get('/api/me/sounds/store/payouts', ...me, (req, res) => { founderOnly(req); res.json(duesView()); });
+  app.post('/api/me/sounds/store/payouts', ...me, (req, res) => {
+    founderOnly(req);
+    const sellerId = id(req.body.sellerId), due = balanceOf(sellerId).due;
+    const amount = req.body.amount === undefined ? due : Math.round(Number(req.body.amount));
+    if (!(amount > 0 && amount <= due)) throw new HttpError(400, 'Montant invalide : au plus ce qui est dû.');
+    run('INSERT INTO sound_payouts (seller_id, amount, founder_id, created_at) VALUES (?, ?, ?, ?)', sellerId, amount, req.user.id, now());
+    if (amount === due) run('UPDATE sound_sellers SET payout_asked_at = NULL WHERE user_id = ?', sellerId);
+    const seller = get('SELECT email FROM users WHERE id = ?', sellerId);
+    if (seller) sendMail(seller.email, `Versement de ${eurosFr(amount)} par ONIRIQUE`, ['Bonjour,', '', `ONIRIQUE t'a versé ${eurosFr(amount)} pour tes ventes de prods.`, '',
+      'Le détail est dans le panneau Ventes de ton pack, sur ONIRIQUE CLOUD.'].join('\n')).catch(() => {});
+    res.json(duesView());
+  });
   // Brancher son compte : la clé est essayée chez le prestataire avant d'être gardée (chiffrée).
   app.put('/api/me/sounds/store/seller', ...me, wrap(async (req, res) => {
     rateLimit(`sounds-seller:${req.user.id}`, 20);
@@ -600,7 +663,7 @@ export function mountBeatStore(app, { me, track, room, receiveFile, openLink, li
     const label = `${t.title} — licence ${l.name}`.slice(0, 120);
     try {
       let url, ref;
-      if (s.provider === 'stripe') {
+      if (s.provider === 'stripe' || s.provider === 'onirique') {
         const session = await stripeCall(s.secret, 'POST', '/checkout/sessions', {
           mode: 'payment', success_url: done, cancel_url: back, locale: 'fr', client_reference_id: String(oid), 'metadata[onirique_order]': String(oid),
           'line_items[0][quantity]': '1', 'line_items[0][price_data][currency]': 'eur', 'line_items[0][price_data][unit_amount]': String(l.price),

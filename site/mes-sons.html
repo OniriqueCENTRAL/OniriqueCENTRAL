@@ -1878,14 +1878,14 @@ function prodBadge(label, empty, title, onclick, cls = "") {
 }
 // Les licences qu'un acheteur peut prendre pour une prod : celles du beatmaker dont les fichiers sont déposés, au prix
 // réglé pour cette prod (le même calcul que le serveur).
-const offersFor = (t) => (!data.store || !data.store.seller.connected || !t.forSale || t.sold ? [] : data.store.licenses
+const offersFor = (t) => (!data.store || !data.store.seller.sellable || !t.forSale || t.sold ? [] : data.store.licenses
   .filter((l) => (t.licensePrices || {})[l.id] !== 0 && l.files.every((k) => (t.files || {})[k]))
   .map((l) => ({ ...l, price: (t.licensePrices || {})[l.id] || l.price })));
 const lowest = (offers) => Math.min(...offers.map((o) => o.price));
 // Ce qui empêche une prod en vente d'être achetable : compte de paiement, licence proposée, fichiers à déposer.
 function saleMissing(t) {
   const store = data.store, files = t.files || {}, out = [];
-  if (!store || !store.seller.connected) out.push("un compte de paiement (Stripe ou PayPal), à brancher dans « Ventes »");
+  if (!store || !store.seller.sellable) out.push("un compte de paiement (Stripe ou PayPal), à brancher dans « Ventes »");
   const licenses = (store ? store.licenses : []).filter((l) => (t.licensePrices || {})[l.id] !== 0);
   if (!licenses.length) out.push("une licence proposée pour cette prod");
   else if (!licenses.some((l) => l.files.every((k) => files[k]))) {
@@ -2724,6 +2724,7 @@ function renderStore() {
       return form;
     })();
   const account = el("div", { className: "stack" },
+    !seller.connected && store.platform ? el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Rien à brancher pour vendre : tant que tu n'as pas de compte de paiement, ONIRIQUE encaisse tes ventes et te les reverse (voir ton solde plus bas). Si tu branches ton propre compte, l'argent y arrive directement." }) : "",
     el("b", { textContent: "Carte bancaire (Stripe)", style: "font-size:14px" }), stripeBox,
     el("b", { textContent: "PayPal", style: "font-size:14px;margin-top:6px" }), paypalBox);
 
@@ -2797,6 +2798,29 @@ function renderStore() {
       el("small", { textContent: [o.provider === "simulation" ? "Simulée" : status[o.status] || o.status, day(o.paidAt || o.createdAt), o.buyerEmail, o.sandbox && o.provider !== "simulation" ? "test" : ""].filter(Boolean).join(" · ") })), check);
   })) : el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: "Aucune commande pour l'instant." });
 
+  // Le solde : ce qui a été vendu, et ce qu'ONIRIQUE, qui a encaissé pour le beatmaker, doit encore lui verser.
+  const b = store.balance;
+  const ask = el("button", { className: "btn btn-primary", type: "button", textContent: b.askedAt ? "Versement demandé le " + day(b.askedAt) : "Demande de versement", disabled: b.due <= 0 || !!b.askedAt });
+  ask.onclick = () => confirm("Demander le versement de " + euros(b.due) + " ? Les fondateurs d'ONIRIQUE sont prévenus et font le virement.")
+    && busy(ask, async () => reload({ balance: await api("POST", "/me/sounds/store/payout-request") }));
+  const balanceBox = el("ul", { className: "group" },
+    el("li", { className: "item" }, el("div", { className: "grow" }, "Vendu : " + euros(b.sold), el("small", { textContent: b.sales + (b.sales > 1 ? " ventes payées" : " vente payée") + " (hors tests et simulations)" }))),
+    b.held ? el("li", { className: "item" }, el("div", { className: "grow" }, "À te verser : " + euros(b.due),
+      el("small", { textContent: "Encaissé par ONIRIQUE : " + euros(b.held) + " · déjà versé : " + euros(b.paidOut) + (b.payouts.length ? " (dernier le " + day(b.payouts[0].at) + ")" : "") })), ask) : "");
+
+  // Les fondateurs : ce qu'ONIRIQUE doit à chaque beatmaker, et le virement fait à noter.
+  const payoutsBox = data.founder ? el("div", { className: "stack" }, el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: "Chargement…" })) : "";
+  if (payoutsBox) {
+    const draw = (dues) => payoutsBox.replaceChildren(dues.length ? el("ul", { className: "group" }, ...dues.map((x) => {
+      const done = el("button", { className: "btn btn-ghost", type: "button", textContent: "Versement fait" });
+      done.onclick = () => confirm("Noter le versement de " + euros(x.due) + " à " + x.name + " ? Fais d'abord le virement : il reçoit un e-mail.")
+        && busy(done, async () => draw(await api("POST", "/me/sounds/store/payouts", { sellerId: x.sellerId })));
+      return el("li", { className: "item" }, el("div", { className: "grow" }, x.name + " · " + euros(x.due),
+        el("small", { textContent: [x.email, x.askedAt ? "demandé le " + day(x.askedAt) : "pas encore demandé", "vendu en tout " + euros(x.sold)].join(" · ") })), done);
+    })) : el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: "Aucun versement à faire." }));
+    api("GET", "/me/sounds/store/payouts").then(draw, (e) => payoutsBox.replaceChildren(el("p", { className: "error", textContent: e.message })));
+  }
+
   // Le bouton « Contacter le vendeur » des pages d'écoute des packs mène à l'Instagram du beatmaker.
   const insta = el("input", { value: store.instagram || "", maxLength: 200, placeholder: "@ton_compte ou https://instagram.com/ton_compte" });
   const instaBtn = el("button", { className: "btn btn-primary", type: "submit", textContent: "Enregistrer" });
@@ -2810,13 +2834,15 @@ function renderStore() {
     el("div", { className: "dlg-head" }, el("b", { textContent: "Ventes" }),
       el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close"))),
     el("div", { className: "stack" },
+      el("div", { className: "sub-title", textContent: "Solde" }), balanceBox,
       el("div", { className: "sub-title", textContent: "Comptes de paiement" }), account,
       el("div", { className: "sub-title", textContent: "Contact" }), contactForm,
       el("div", { className: "sub-title", textContent: "Licences" }),
       el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Proposées sur la page d'écoute de chaque prod en vente dont les fichiers sont déposés. Le prix peut changer d'une prod à l'autre." }),
       licenseList,
       el("div", { className: "sub-title", textContent: "Contrat de licence (PDF)" }), contractForm,
-      el("div", { className: "sub-title", textContent: "Commandes" }), orderList));
+      el("div", { className: "sub-title", textContent: "Commandes" }), orderList,
+      payoutsBox ? el("div", { className: "sub-title", textContent: "Versements aux beatmakers (fondateurs)" }) : "", payoutsBox));
 }
 lightClose($("store"));
 // Retour de Stripe après « Se connecter avec Stripe » : le panneau Ventes se rouvre, ou l'erreur s'affiche.
@@ -2943,7 +2969,7 @@ function renderSale() {
     el("div", { className: "dlg-head" }, coverOf(p), el("b", { textContent: "Vente · " + t.title }),
       el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close"))),
     el("div", { className: "stack" },
-      !seller.connected ? el("p", { className: "muted", style: "margin:0;font-size:14px" }, "Aucun compte de paiement branché : les acheteurs ne verront pas cette prod en vente. ",
+      !seller.sellable ? el("p", { className: "muted", style: "margin:0;font-size:14px" }, "Aucun compte de paiement branché : les acheteurs ne verront pas cette prod en vente. ",
         el("button", { className: "btn btn-ghost", type: "button", textContent: "Brancher un compte", onclick: () => openStore().catch(fail) })) : "",
       el("ul", { className: "group" }, el("li", { className: "item" }, el("div", { className: "grow" }, t.sold ? "Vendue en exclusivité" : "En vente",
         el("small", { textContent: t.sold ? "Elle n'est plus proposée à personne." : "Proposée sur la page d'écoute, avec le choix de la licence." })),

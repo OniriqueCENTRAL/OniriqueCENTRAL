@@ -368,6 +368,17 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'v
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_orders') WHERE name = 'connect_account'`).get()) {
   db.exec(`ALTER TABLE sound_orders ADD COLUMN connect_account TEXT NOT NULL DEFAULT ''`);
 }
+// Les sommes reversées par ONIRIQUE aux beatmakers dont elle a encaissé les ventes, et leurs demandes de versement.
+db.exec(`CREATE TABLE IF NOT EXISTS sound_payouts (
+  id         INTEGER PRIMARY KEY,
+  seller_id  INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  amount     INTEGER NOT NULL,
+  founder_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  created_at INTEGER NOT NULL
+)`);
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_sellers') WHERE name = 'payout_asked_at'`).get()) {
+  db.exec(`ALTER TABLE sound_sellers ADD COLUMN payout_asked_at INTEGER`);
+}
 /** « c#m », « Bb minor », « F majeur »… → « C# min », « Bb min », « F maj » ; null si ce n'est pas une tonalité. */
 export function musicKey(value) {
   const m = /^([a-g])\s*(#|♯|b|♭)?\s*(m|min|minor|mineur|maj|major|majeur)?$/i.exec(String(value || '').trim());
@@ -816,7 +827,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       // CLOUD gratuit : la page montre la limite de sons et pousse vers l'abonnement.
       free: can(req.user, 'sounds') ? null : { limit: FREE_TRACKS, used: ownTracks(u) }, vanish, scanReady: scanConfigured(),
       // Le compte de paiement et les licences, pour les badges de vente des packs.
-      store: projects.some((p) => p.kind === 'pack' && p.user_id === u) ? { seller: sellerView(u), licenses: licensesOf(u) } : null,
+      store: projects.some((p) => p.kind === 'pack' && p.user_id === u) ? { seller: { ...sellerView(u), sellable: payMethods(u).length > 0 }, licenses: licensesOf(u) } : null,
       quota: { used: usedBy(req.user.id), limit: quotaBytes(), full: d.used / d.total >= diskMax() },
       // Ce qui attend dans la corbeille (titres et projets), pour la tuile « Corbeille ».
       trash: get(`SELECT (SELECT COUNT(*) FROM sound_tracks t JOIN sound_projects p ON p.id = t.project_id WHERE p.kind = 'trash' AND p.user_id = ?)

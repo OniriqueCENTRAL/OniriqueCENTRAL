@@ -78,6 +78,11 @@ globalThis.fetch = async (url, init = {}) => {
   if (route === '/account') return reply({ settings: { dashboard: { display_name: 'Studio Test' } } });
   if (route === '/webhook_endpoints' && init.method === 'POST') { stripe.hooks.push(body); return reply({ id: 'we_1', secret: HOOK_SECRET }); }
   if (route.startsWith('/webhook_endpoints/')) return reply({ deleted: true });
+  if (route.startsWith('/checkout/sessions/')) {
+    const s = stripe.sessions.find((x) => x.id === route.split('/')[3]);
+    return s ? reply({ id: s.id, payment_status: s.paid ? 'paid' : 'unpaid', amount_total: Number(s['line_items[0][price_data][unit_amount]']), currency: 'eur',
+      customer_details: { email: 'acheteur-onirique@test.fr', name: 'Client' } }) : new Response('{}', { status: 404 });
+  }
   if (route === '/checkout/sessions') {
     const session = { id: `cs_test_${stripe.sessions.length + 1}`, ...body };
     stripe.sessions.push(session);
@@ -298,6 +303,39 @@ try {
     assert.deepEqual((await call('POST', `/api/sounds/share/${share}`, { body: {} })).pay, ['stripe']);
     await call('DELETE', '/api/me/sounds/store/seller', { token: beatmaker.token });
     assert.deepEqual((await call('POST', `/api/sounds/share/${share}`, { body: {} })).tracks[0].offers, []);
+  });
+
+  await step('sans compte branché, ONIRIQUE encaisse : solde du beatmaker, demande de versement aux fondateurs, versement noté', async () => {
+    const { saveStripeAccount } = await import('../src/payments.js');
+    saveStripeAccount('onirique', { secretKey: 'sk_live_' + 'p'.repeat(24), webhookSecret: HOOK_SECRET });
+    const page = await call('POST', `/api/sounds/share/${share}`, { body: {} });
+    assert.deepEqual(page.pay, ['onirique']);
+    assert.equal((await call('GET', '/api/me/sounds', { token: beatmaker.token })).store.seller.sellable, true);
+    const mp3Offer = page.tracks[0].offers.find((o) => o.name === 'MP3');
+    const { url } = await call('POST', `/api/sounds/share/${share}/buy`, { body: { trackId: tid, licenseId: mp3Offer.id } });
+    const session = stripe.sessions.find((s) => url.endsWith(s.id));
+    const o = get('SELECT * FROM sound_orders WHERE provider_ref = ?', session.id);
+    assert.deepEqual([o.provider, o.sandbox], ['onirique', 0]);
+    assert.equal((await call('GET', `/api/sounds/orders/${o.token}`)).status, 'pending');
+    await call('POST', '/api/me/sounds/store/payout-request', { token: beatmaker.token, expect: 400 });
+    session.paid = true;
+    assert.equal((await call('GET', `/api/sounds/orders/${o.token}`)).status, 'paid');
+    assert.ok(outbox.filter((m) => m.to === 'beatmaker@test.local').at(-1).text.includes('encaissé par ONIRIQUE'));
+    let store = await call('GET', '/api/me/sounds/store', { token: beatmaker.token });
+    assert.deepEqual([store.platform, store.balance.held, store.balance.due, store.balance.askedAt], [true, 2999, 2999, null]);
+    assert.ok(store.balance.sold >= 2999);
+    const asked = await call('POST', '/api/me/sounds/store/payout-request', { token: beatmaker.token });
+    assert.ok(asked.askedAt);
+    assert.ok(outbox.some((m) => m.to === 'fondateur@test.local' && m.subject.startsWith('Demande de versement')));
+    await call('GET', '/api/me/sounds/store/payouts', { token: beatmaker.token, expect: 403 });
+    const boss = { token: (await call('POST', '/api/auth/login', { body: { email: 'fondateur@test.local', password: 'motdepasse1' } })).token };
+    const dues = await call('GET', '/api/me/sounds/store/payouts', { token: boss.token });
+    assert.deepEqual(dues.map((x) => [x.sellerId, x.due, !!x.askedAt]), [[beatmaker.id, 2999, true]]);
+    await call('POST', '/api/me/sounds/store/payouts', { token: boss.token, body: { sellerId: beatmaker.id, amount: 5000 }, expect: 400 });
+    assert.deepEqual(await call('POST', '/api/me/sounds/store/payouts', { token: boss.token, body: { sellerId: beatmaker.id } }), []);
+    store = await call('GET', '/api/me/sounds/store', { token: beatmaker.token });
+    assert.deepEqual([store.balance.due, store.balance.paidOut, store.balance.askedAt], [0, 2999, null]);
+    run(`DELETE FROM stripe_accounts WHERE creator = 'onirique'`);
   });
 
   await step('YouTube, options : le modèle et le rendu des vidéos enregistrés sur le compte, et le filtre ffmpeg qui en sort', async () => {
