@@ -583,7 +583,7 @@ button.tag.on { background: var(--ember); color: var(--night); }
 #youtube { width: 680px; }
 /* Chaîne connectée : le formulaire, et à côté l'aperçu de la vidéo telle que le serveur la fabrique */
 #youtube.wide { width: 1100px; }
-.yt-layout { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 24px; align-items: start; }
+.yt-layout { display: grid; grid-template-columns: minmax(320px, 1fr) minmax(0, 420px); gap: 24px; align-items: start; } /* l'aperçu rétrécit avant le formulaire */
 .yt-preview { position: sticky; top: 0; display: grid; gap: 10px; }
 .yt-frame { position: relative; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 12px; background: var(--yt-color, #0D0809); container-type: inline-size; }
 .yt-frame img { position: absolute; display: block; }
