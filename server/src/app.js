@@ -1658,7 +1658,7 @@ export function createApp() {
        FROM users u WHERE u.email LIKE ? OR u.name LIKE ? ORDER BY u.created_at DESC LIMIT 500`, now(), config.linksUrl, now(), q, q));
   });
 
-  // Offre 7 jours d'outils (ONIRIQUE CLOUD, page de liens) : un abonnement aux outils sans Stripe, qui s'arrête seul.
+  // Offre 7 jours d'outils (ONIRIQUE CLOUD, CUT, page de liens…) : un abonnement aux outils sans Stripe, qui s'arrête seul.
   admin.post('/users/:id/tools-week', (req, res) => {
     const user = get('SELECT * FROM users WHERE id = ?', int(req.params.id, 0));
     if (!user) throw new HttpError(404, 'Compte introuvable.');

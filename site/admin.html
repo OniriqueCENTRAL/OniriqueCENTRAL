@@ -471,9 +471,9 @@ async function resetTrials(user) {
   }
 }
 
-// 7 jours d'ONIRIQUE CLOUD et de page de liens, qui s'arrêtent seuls.
+// Les avantages de l'abonnement aux outils pendant 7 jours, qui s'arrêtent seuls.
 async function toolsWeek(user) {
-  if (!window.confirm(`Offrir 7 jours d'outils à ${user.email} ? ONIRIQUE CLOUD, la page de liens, etc. s'ouvrent à partir de maintenant, puis se ferment tout seuls.`)) return;
+  if (!window.confirm(`Offrir 7 jours d'outils à ${user.email} ? Tous les avantages de l'abonnement (ONIRIQUE CLOUD, CUT, page de liens, packs de prods) s'ouvrent à partir de maintenant, puis se ferment tout seuls.`)) return;
   try {
     await api("POST", `/admin/users/${user.id}/tools-week`);
     await loadUsers();

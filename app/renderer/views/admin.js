@@ -443,9 +443,9 @@ function usersTab() {
       u.trials ? button(`Réinitialiser les essais (${u.trials})`, () => confirm('Réinitialiser les essais gratuits ?',
         `Les ${u.trials} essai(s) de ${u.email}, en cours ou terminés, sont effacés : il pourra relancer un essai de 7 jours pour chaque plugin. Un essai en cours s'arrête tout de suite.`,
         'Réinitialiser', () => changed(() => api('POST', `/users/${u.id}/reset-trials`), 'Essais réinitialisés.')), 'small quiet') : null,
-      // 7 jours d'ONIRIQUE CLOUD et de page de liens, qui s'arrêtent seuls.
+      // Les avantages de l'abonnement aux outils pendant 7 jours, qui s'arrêtent seuls.
       button(u.toolsUntil ? `Outils jusqu'au ${date(u.toolsUntil)}` : 'Outils 7 jours', () => confirm('Offrir 7 jours d\'outils ?',
-        `${u.email} a accès à ONIRIQUE CLOUD, à la page de liens, etc. pendant 7 jours à partir de maintenant, puis l'accès se ferme tout seul.`,
+        `${u.email} a tous les avantages de l'abonnement aux outils (ONIRIQUE CLOUD, CUT, page de liens, packs de prods) pendant 7 jours à partir de maintenant, puis l'accès se ferme tout seul.`,
         'Offrir', () => changed(() => api('POST', `/users/${u.id}/tools-week`), 'Outils ouverts pour 7 jours.')), 'small quiet'),
       u.emailVerified ? null : button('Valider l\'e-mail', () => confirm('Valider cette adresse à la main ?',
         `À faire seulement si vous êtes sûr que ${u.email} est bien l'adresse de la personne : elle n'aura plus à ouvrir le lien reçu.`,
