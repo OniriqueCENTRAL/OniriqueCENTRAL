@@ -133,6 +133,7 @@ function toolView(tool, lang) {
         if (/^https:\/\/open\.spotify\.com\//.test(url) && (await ses.cookies.get({ name: 'sp_dc' }).catch(() => [])).length && !child.isDestroyed()) child.close();
       });
     });
+    web.on('did-finish-load', () => { pageTag(web.getURL()).then((tag) => loadedTags.set(web.id, tag)); });
     web.on('dom-ready', () => {
       setAudioDevices(web);
       web.insertCSS(TOOL_SKIN + (accentVars ? `:root { ${accentVars} }` : '')).catch(() => {});
@@ -254,6 +255,34 @@ async function pauseCloud() {
 let mini = null, miniShown = false;
 const MINI = { width: 340, height: 70 };
 const cloudWeb = async () => (toolViews.has('cloud') ? (await toolViews.get('cloud').catch(() => null))?.webContents : null);
+
+// Les pages des outils restent chargées toute la session : une mise en ligne du site ne leur arriverait qu'au
+// redémarrage. Toutes les cinq minutes, la version de chaque page (ETag) est relue ; une page dépassée est rechargée
+// dès qu'elle est au repos (pas de son, de fenêtre ouverte, de saisie ni d'envoi) et que personne ne la regarde.
+const loadedTags = new Map(); // webContents.id → version de la page chargée
+async function pageTag(url) {
+  try {
+    if (!url.startsWith(SITE + '/')) return '';
+    const response = await fetch(url.split('#')[0], { method: 'HEAD', cache: 'no-store' });
+    return response.ok ? response.headers.get('etag') || response.headers.get('last-modified') || '' : '';
+  } catch { return ''; }
+}
+const IDLE_PAGE = `(() => !document.querySelector("dialog[open]") && !(typeof player !== "undefined" && player && player.playing)
+  && !(document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName))
+  && !document.querySelector("#uploads:not([hidden])") && ![...document.querySelectorAll("audio, video")].some((m) => !m.paused))()`;
+setInterval(async () => {
+  if (!win || win.isDestroyed()) return;
+  const shown = shownTool && toolViews.has(shownTool) ? await viewFor(shownTool).catch(() => null) : null;
+  const watched = win.isVisible() && !win.isMinimized() && win.isFocused();
+  for (const pending of toolViews.values()) {
+    const view = await pending.catch(() => null), web = view?.webContents;
+    if (!web || web.isDestroyed() || web.isLoading() || !loadedTags.get(web.id)) continue;
+    if (view === shown && watched) continue;
+    const tag = await pageTag(web.getURL());
+    if (!tag || tag === loadedTags.get(web.id)) continue;
+    if (await web.executeJavaScript(IDLE_PAGE).catch(() => false)) web.reload(); // l'adresse, avec le projet ouvert (#…), est gardée
+  }
+}, 5 * 60_000).unref();
 function placeMini() {
   if (!mini || mini.isDestroyed() || !win) return;
   const b = win.getContentBounds(), off = store.miniOffset || { right: 24, bottom: 24 };
