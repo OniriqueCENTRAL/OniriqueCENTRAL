@@ -741,7 +741,8 @@ function mailingsTab() {
         h('td', null, x.subject, x.author ? h('div', { class: 'muted', style: { 'font-size': '12px' } }, `par ${x.author}`) : null),
         h('td', { class: 'muted' }, x.audienceLabel),
         h('td', null, `${x.sent} / ${x.total}${x.failed ? ` · ${x.failed} non remis` : ''} · ${state[x.status] ?? x.status}`,
-          h('div', { class: 'progress', style: { 'margin-top': '6px' } }, h('i', { style: { width: `${x.total ? Math.round((x.sent + x.failed) / x.total * 100) : 0}%` } }))),
+          h('div', { class: 'progress', style: { 'margin-top': '6px' } }, h('i', { style: { width: `${x.total ? Math.round((x.sent + x.failed) / x.total * 100) : 0}%` } })),
+          x.sent ? h('div', { class: 'muted', style: { 'font-size': '12px', 'margin-top': '6px' } }, `${x.opened ?? 0} ouvert(s) · ${Math.round((x.opened ?? 0) / x.sent * 100)} % — ${x.clicked ?? 0} ont cliqué · ${Math.round((x.clicked ?? 0) / x.sent * 100)} % (${x.clicks ?? 0} clic(s))`) : null),
         h('td', { class: 'actions' }, x.status === 'sending' ? button('Arrêter', () => changed(() => api('POST', `/mailings/${x.id}/cancel`), 'Envoi arrêté.'), 'small quiet danger') : null))),
       'Aucun envoi pour le moment.')),
   ];

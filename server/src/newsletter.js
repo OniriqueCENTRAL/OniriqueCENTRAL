@@ -6,6 +6,7 @@ import { all, db, get, run, now, transaction } from './db.js';
 import { HttpError, isStaff, requireUser } from './auth.js';
 import { mailEnabled, sendMail } from './mail.js';
 import { escapeHtml, renderEmail } from './mailtemplate.js';
+import { realOpen } from './packsend.js';
 
 //==============================================================================
 //  Les e-mails d'ONIRIQUE aux inscrits : consentement, désinscription, envois depuis le panel admin
@@ -36,6 +37,12 @@ CREATE TABLE IF NOT EXISTS mailing_recipients (
 );
 CREATE INDEX IF NOT EXISTS mailing_pending ON mailing_recipients(mailing_id, sent_at);
 `);
+// Le suivi : première ouverture (image invisible) et premier clic de chaque destinataire, nombre de clics.
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('mailing_recipients') WHERE name = 'opened_at'`).get()) {
+  db.exec('ALTER TABLE mailing_recipients ADD COLUMN opened_at INTEGER');
+  db.exec('ALTER TABLE mailing_recipients ADD COLUMN clicked_at INTEGER');
+  db.exec('ALTER TABLE mailing_recipients ADD COLUMN clicks INTEGER NOT NULL DEFAULT 0');
+}
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('users') WHERE name = 'marketing'`).get()) {
   db.exec('ALTER TABLE users ADD COLUMN marketing INTEGER NOT NULL DEFAULT 0');
   db.exec('ALTER TABLE users ADD COLUMN marketing_at INTEGER');
@@ -47,6 +54,23 @@ if (!fs.existsSync(keyPath)) fs.writeFileSync(keyPath, crypto.randomBytes(32), {
 const mailKey = fs.readFileSync(keyPath);
 const signature = (userId) => crypto.createHmac('sha256', mailKey).update(`unsubscribe:${userId}`).digest('base64url').slice(0, 24);
 export const unsubscribeUrl = (userId) => `${config.publicUrl}/api/newsletter/unsubscribe?u=${userId}&t=${signature(userId)}`;
+
+// Les liens suivis sont signés aussi : personne ne peut s'en servir pour rediriger vers un autre site.
+const sign = (what) => crypto.createHmac('sha256', mailKey).update(what).digest('base64url').slice(0, 16);
+const sameSig = (given, expected) => typeof given === 'string' && given.length === expected.length && crypto.timingSafeEqual(Buffer.from(given), Buffer.from(expected));
+const openUrl = (rid) => `${config.publicUrl}/api/newsletter/o/${rid}/${sign(`open:${rid}`)}.gif`;
+const clickUrl = (rid, url) => `${config.publicUrl}/api/newsletter/c/${rid}/${sign(`click:${rid}:${url}`)}?u=${encodeURIComponent(url)}`;
+const unescapeAttr = (s) => s.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+
+/** Le message d'un destinataire, suivi : chaque lien passe par le serveur (sauf la désinscription), une image invisible compte l'ouverture. */
+export function tracked(html, rid) {
+  return html
+    .replace(/<a href="(https?:[^"]+)"/g, (m, href) => {
+      const url = unescapeAttr(href);
+      return url.includes('/api/newsletter/unsubscribe') ? m : `<a href="${escapeHtml(clickUrl(rid, url))}"`;
+    })
+    .replace(/<\/body>/i, `<img src="${openUrl(rid)}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0">$&`);
+}
 
 export function setMarketing(userId, on) {
   run('UPDATE users SET marketing = ?, marketing_at = ? WHERE id = ?', on ? 1 : -1, now(), userId);
@@ -131,7 +155,7 @@ async function sendNext() {
     if (!user || (!service && user.marketing === -1)) throw new Error('désinscrit');
     const m = personal(JSON.parse(next.content), user, service);
     await sendMail(user.email, m.subject, m.text, config.supportEmail || undefined, {
-      html: m.html,
+      html: tracked(m.html, next.id),
       headers: service ? undefined : { 'List-Unsubscribe': `<${unsubscribeUrl(user.id)}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
     });
     transaction(() => {
@@ -149,7 +173,7 @@ async function sendNext() {
 setInterval(() => sendNext().catch((error) => console.error('Envoi groupé :', error.message)), Number(process.env.MAILING_INTERVAL_MS || 3000)).unref();
 
 const mailingView = (m) => ({ id: m.id, subject: m.subject, audience: m.audience, audienceLabel: AUDIENCES[m.audience]?.label ?? m.audience,
-  status: m.status, total: m.total, sent: m.sent, failed: m.failed, createdAt: m.created_at, doneAt: m.done_at, author: m.author ?? null });
+  status: m.status, total: m.total, sent: m.sent, failed: m.failed, opened: m.opened ?? 0, clicked: m.clicked ?? 0, clicks: m.clicks ?? 0, createdAt: m.created_at, doneAt: m.done_at, author: m.author ?? null });
 
 //------------------------------------------------------------------------------ Les routes
 const unsubscribedPage = (title, text) => `<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -177,6 +201,26 @@ export function mountNewsletter(app, admin) {
   app.get('/api/newsletter/unsubscribe', unsubscribe);
   app.post('/api/newsletter/unsubscribe', unsubscribe);
 
+  // Ouverture : l'image invisible. Un clic compte aussi comme ouverture (messageries qui bloquent les images).
+  const GIF = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+  app.get('/api/newsletter/o/:rid/:sig.gif', (req, res) => {
+    const rid = Number(req.params.rid);
+    const r = rid && sameSig(req.params.sig, sign(`open:${rid}`)) ? get('SELECT sent_at FROM mailing_recipients WHERE id = ?', rid) : null;
+    if (r && realOpen(r, req.headers['user-agent'])) run('UPDATE mailing_recipients SET opened_at = ? WHERE id = ? AND opened_at IS NULL', now(), rid);
+    res.set('Cache-Control', 'no-store').type('gif').send(GIF);
+  });
+  app.get('/api/newsletter/c/:rid/:sig', (req, res) => {
+    const rid = Number(req.params.rid);
+    const url = String(req.query.u || '');
+    if (!rid || !/^https?:\/\//.test(url) || !sameSig(req.params.sig, sign(`click:${rid}:${url}`))) return res.redirect(302, config.siteUrl);
+    const r = get('SELECT sent_at FROM mailing_recipients WHERE id = ?', rid);
+    // Les antivirus des messageries ouvrent les liens juste après la réception : ce ne sont pas des clics.
+    if (!r || !realOpen(r, req.headers['user-agent'])) return res.redirect(302, url);
+    const t = now();
+    run('UPDATE mailing_recipients SET clicks = clicks + 1, clicked_at = COALESCE(clicked_at, ?), opened_at = COALESCE(opened_at, ?) WHERE id = ?', t, t, rid);
+    res.redirect(302, url);
+  });
+
   app.post('/api/me/newsletter', requireUser, (req, res) => {
     setMarketing(req.user.id, req.body.enabled === true);
     res.json({ ok: true, newsletter: req.body.enabled === true });
@@ -189,7 +233,11 @@ export function mountNewsletter(app, admin) {
     res.json({
       mailEnabled, from: config.mailFrom,
       audiences: Object.entries(AUDIENCES).map(([id, a]) => ({ id, label: a.label, service: !!a.service, count: recipients(id).length })),
-      mailings: all(`SELECT m.*, u.email AS author FROM mailings m LEFT JOIN users u ON u.id = m.created_by ORDER BY m.created_at DESC LIMIT 50`).map(mailingView),
+      mailings: all(`SELECT m.*, u.email AS author,
+          (SELECT COUNT(*) FROM mailing_recipients r WHERE r.mailing_id = m.id AND r.opened_at IS NOT NULL) AS opened,
+          (SELECT COUNT(*) FROM mailing_recipients r WHERE r.mailing_id = m.id AND r.clicked_at IS NOT NULL) AS clicked,
+          (SELECT COALESCE(SUM(r.clicks), 0) FROM mailing_recipients r WHERE r.mailing_id = m.id) AS clicks
+        FROM mailings m LEFT JOIN users u ON u.id = m.created_by ORDER BY m.created_at DESC LIMIT 50`).map(mailingView),
     });
   });
   admin.post('/mailings/preview', (req, res) => {

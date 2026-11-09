@@ -1396,7 +1396,8 @@ async function loadMailings(first = false) {
     return el("tr", {}, el("td", { className: "sub", textContent: new Date(m.createdAt).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) }),
       el("td", {}, m.subject, m.author ? el("div", { className: "sub", textContent: "par " + m.author }) : null),
       el("td", { className: "sub", textContent: m.audienceLabel }),
-      el("td", {}, `${m.sent} / ${m.total} envoyés${m.failed ? ` · ${m.failed} non remis` : ""} · ${state}`, bar),
+      el("td", {}, `${m.sent} / ${m.total} envoyés${m.failed ? ` · ${m.failed} non remis` : ""} · ${state}`, bar,
+        m.sent ? el("div", { className: "sub", textContent: `${m.opened} ouvert(s) · ${Math.round(m.opened / m.sent * 100)} % — ${m.clicked} ont cliqué · ${Math.round(m.clicked / m.sent * 100)} % (${m.clicks} clic(s))` }) : null),
       el("td", { className: "actions" }, cancel));
   }) : [el("tr", {}, el("td", { colSpan: 5, className: "sub", textContent: "Aucun envoi pour le moment." }))]));
   // Un envoi en cours : la liste se rafraîchit toute seule.

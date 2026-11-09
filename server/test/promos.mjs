@@ -202,6 +202,22 @@ try {
     const sent = outbox.find((m) => m.subject === 'Nouveau : bob, découvre METER');
     assert.ok(sent, 'le message groupé est parti');
     assert.ok(sent.headers['List-Unsubscribe']);
+    // Le suivi : liens réécrits et signés, image d'ouverture, robots et ouvertures immédiates écartés.
+    for (let i = 0; i < 50 && !get('SELECT sent_at FROM mailing_recipients').sent_at; i++) await sleep(20);
+    const open = sent.html.match(/src="https:\/\/api\.test(\/api\/newsletter\/o\/[^"]+)"/)[1];
+    const click = sent.html.match(/href="https:\/\/api\.test(\/api\/newsletter\/c\/[^"]+)"/)[1].replace(/&amp;/g, '&');
+    assert.equal(decodeURIComponent(click.split('?u=')[1]), 'https://site.test');
+    await call('GET', open);
+    let stats = (await call('GET', '/api/admin/mailings', { token: admin.token })).mailings[0];
+    assert.equal(stats.opened, 0, 'une ouverture dans les 30 s après l\'envoi est un antivirus');
+    run('UPDATE mailing_recipients SET sent_at = sent_at - 60000');
+    await call('GET', open);
+    await call('GET', open.replace(/\/[\w-]+\.gif$/, '/faux.gif'));
+    await call('GET', click, { expect: 302 });
+    await call('GET', click, { expect: 302 });
+    assert.equal((await fetch(base + click.replace(/u=[^&]+/, 'u=' + encodeURIComponent('https://pirate.test')), { redirect: 'manual' })).headers.get('location'), 'https://site.test');
+    stats = (await call('GET', '/api/admin/mailings', { token: admin.token })).mailings[0];
+    assert.deepEqual([stats.sent, stats.opened, stats.clicked, stats.clicks], [1, 1, 1, 2]);
     const link = sent.html.match(/href="(https:\/\/api\.test\/api\/newsletter\/unsubscribe[^"]+)"/)[1].replace(/&amp;/g, '&');
     await call('GET', link.replace('https://api.test', '').replace(/t=[^&]+/, 't=faux'), { expect: 400 });
     await call('GET', link.replace('https://api.test', ''));
