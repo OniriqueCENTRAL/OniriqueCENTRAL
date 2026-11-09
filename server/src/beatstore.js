@@ -55,11 +55,11 @@ export function sellerView(userId) {
 }
 // Le compte Stripe d'ONIRIQUE (celui des plugins) : il encaisse pour un beatmaker qui n'a rien branché, puis le lui reverse.
 const platformStripe = () => { const a = stripeAccount('onirique'); return a?.key ? a : null; };
-/** Les moyens de paiement qu'un acheteur peut choisir chez ce beatmaker, Stripe (carte) d'abord ; sinon ONIRIQUE encaisse. */
+/** Le moyen de paiement des acheteurs : ONIRIQUE encaisse toutes les ventes ; les comptes propres d'avant ne servent que sans elle. */
 export function payMethods(userId) {
+  if (platformStripe()) return ['onirique'];
   const v = sellerView(userId);
-  const own = [v.stripe && 'stripe', v.paypal && 'paypal'].filter(Boolean);
-  return own.length ? own : platformStripe() ? ['onirique'] : [];
+  return [v.stripe && 'stripe', v.paypal && 'paypal'].filter(Boolean);
 }
 /** Ce qu'un beatmaker a vendu (vraies ventes payées), et ce qu'ONIRIQUE, qui a encaissé pour lui, lui doit encore. */
 export function balanceOf(userId) {
@@ -404,6 +404,7 @@ export function mountBeatStore(app, { me, track, room, receiveFile, openLink, li
   });
   // Brancher son compte : la clé est essayée chez le prestataire avant d'être gardée (chiffrée).
   app.put('/api/me/sounds/store/seller', ...me, wrap(async (req, res) => {
+    if (platformStripe()) throw new HttpError(409, 'ONIRIQUE encaisse les ventes pour toi : demande le versement de ton solde dans Ventes.');
     rateLimit(`sounds-seller:${req.user.id}`, 20);
     licensesOf(req.user.id);
     const b = req.body || {};
@@ -436,6 +437,7 @@ export function mountBeatStore(app, { me, track, room, receiveFile, openLink, li
   // « Se connecter avec Stripe » (Stripe Connect, comptes Standard) : le beatmaker se connecte à son propre compte Stripe
   // (ou en crée un), autorise ONIRIQUE, et revient sur son pack ; aucune clé à copier. L'argent va sur son compte.
   app.post('/api/me/sounds/store/stripe-connect', ...me, (req, res) => {
+    if (platformStripe()) throw new HttpError(409, 'ONIRIQUE encaisse les ventes pour toi : demande le versement de ton solde dans Ventes.');
     if (!connectAvailable()) throw new HttpError(503, "« Se connecter avec Stripe » n'est pas encore réglé sur le serveur.");
     licensesOf(req.user.id);
     for (const [k, v] of connecting) if (v.expires < now()) connecting.delete(k);

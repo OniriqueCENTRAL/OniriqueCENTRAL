@@ -2728,8 +2728,8 @@ function renderStore() {
       };
       return form;
     })();
-  const account = el("div", { className: "stack" },
-    !seller.connected && store.platform ? el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Rien à brancher pour vendre : tant que tu n'as pas de compte de paiement, ONIRIQUE encaisse tes ventes et te les reverse (voir ton solde plus bas). Si tu branches ton propre compte, l'argent y arrive directement." }) : "",
+  // ONIRIQUE encaisse toutes les ventes et les reverse : plus de compte de paiement à brancher.
+  const account = store.platform ? el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Rien à brancher : ONIRIQUE encaisse tes ventes (carte bancaire) et te les reverse. Ton solde s'affiche ci-dessus ; clique sur « Demander versement » pour le récupérer." }) : el("div", { className: "stack" },
     el("b", { textContent: "Carte bancaire (Stripe)", style: "font-size:14px" }), stripeBox,
     el("b", { textContent: "PayPal", style: "font-size:14px;margin-top:6px" }), paypalBox);
 
@@ -2805,12 +2805,12 @@ function renderStore() {
 
   // Le solde : ce qui a été vendu, et ce qu'ONIRIQUE, qui a encaissé pour le beatmaker, doit encore lui verser.
   const b = store.balance;
-  const ask = el("button", { className: "btn btn-primary", type: "button", textContent: b.askedAt ? "Versement demandé le " + day(b.askedAt) : "Demande de versement", disabled: b.due <= 0 || !!b.askedAt });
+  const ask = el("button", { className: "btn btn-primary", type: "button", textContent: b.askedAt ? "Versement demandé le " + day(b.askedAt) : "Demander versement", disabled: b.due <= 0 || !!b.askedAt });
   ask.onclick = () => confirm("Demander le versement de " + euros(b.due) + " ? Les fondateurs d'ONIRIQUE sont prévenus et font le virement.")
     && busy(ask, async () => reload({ balance: await api("POST", "/me/sounds/store/payout-request") }));
   const balanceBox = el("ul", { className: "group" },
     el("li", { className: "item" }, el("div", { className: "grow" }, "Vendu : " + euros(b.sold), el("small", { textContent: b.sales + (b.sales > 1 ? " ventes payées" : " vente payée") + " (hors tests et simulations)" }))),
-    b.held ? el("li", { className: "item" }, el("div", { className: "grow" }, "À te verser : " + euros(b.due),
+    b.held || store.platform ? el("li", { className: "item" }, el("div", { className: "grow" }, "À te verser : " + euros(b.due),
       el("small", { textContent: "Encaissé par ONIRIQUE : " + euros(b.held) + " · déjà versé : " + euros(b.paidOut) + (b.payouts.length ? " (dernier le " + day(b.payouts[0].at) + ")" : "") })), ask) : "");
 
   // Les fondateurs : ce qu'ONIRIQUE doit à chaque beatmaker, et le virement fait à noter.
@@ -2840,7 +2840,7 @@ function renderStore() {
       el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close"))),
     el("div", { className: "stack" },
       el("div", { className: "sub-title", textContent: "Solde" }), balanceBox,
-      el("div", { className: "sub-title", textContent: "Comptes de paiement" }), account,
+      el("div", { className: "sub-title", textContent: store.platform ? "Paiements" : "Comptes de paiement" }), account,
       el("div", { className: "sub-title", textContent: "Contact" }), contactForm,
       el("div", { className: "sub-title", textContent: "Licences" }),
       el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Proposées sur la page d'écoute de chaque prod en vente dont les fichiers sont déposés. Le prix peut changer d'une prod à l'autre." }),

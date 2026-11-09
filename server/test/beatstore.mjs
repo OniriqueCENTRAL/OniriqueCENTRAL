@@ -310,6 +310,7 @@ try {
     saveStripeAccount('onirique', { secretKey: 'sk_live_' + 'p'.repeat(24), webhookSecret: HOOK_SECRET });
     const page = await call('POST', `/api/sounds/share/${share}`, { body: {} });
     assert.deepEqual(page.pay, ['onirique']);
+    await call('PUT', '/api/me/sounds/store/seller', { token: beatmaker.token, body: { provider: 'stripe', secret: 'sk_test_' + 'x'.repeat(24) }, expect: 409 });
     assert.equal((await call('GET', '/api/me/sounds', { token: beatmaker.token })).store.seller.sellable, true);
     const mp3Offer = page.tracks[0].offers.find((o) => o.name === 'MP3');
     const { url } = await call('POST', `/api/sounds/share/${share}/buy`, { body: { trackId: tid, licenseId: mp3Offer.id } });
