@@ -1537,24 +1537,14 @@ function showDisk(disk) {
       $("tab-da").hidden = false;
     }
     setupTabs();
-    await loadUsers();
-    await loadSupport();
-    await loadOrders();
-    await loadPlans();
-    await loadPacks();
-    await loadLive();
-    await loadProducts();
-    await loadPromos();
-    await loadMailbox();
-    await loadBrandKit();
-    await loadSounds();
-    await loadRights();
-    await loadSocials();
-    await loadReferral();
-    await loadMailings(true);
-    await loadCredits();
     $("gate").hidden = true;
     $("panel").hidden = false;
+    // Chaque partie se charge de son côté : une lente (boîte mail, réseaux) ne retient plus toute la page.
+    const parts = [loadUsers, loadSupport, loadOrders, loadPlans, loadPacks, loadLive, loadProducts, loadPromos, loadMailbox, loadBrandKit,
+      loadSounds, loadRights, loadSocials, loadReferral, () => loadMailings(true), loadCredits];
+    const failed = (await Promise.allSettled(parts.map((load) => load()))).filter((r) => r.status === "rejected");
+    if (failed.some((r) => r.reason && r.reason.status === 401)) return gate("Session expirée.", "Se reconnecter");
+    if (failed.length) $("error").textContent = failed.length + (failed.length > 1 ? " parties n'ont" : " partie n'a") + " pas pu être chargée(s) : " + failed[0].reason.message;
   } catch (error) {
     gate(error.status === 401 ? "Session expirée." : error.message, error.status === 401 ? "Se reconnecter" : null);
   }
