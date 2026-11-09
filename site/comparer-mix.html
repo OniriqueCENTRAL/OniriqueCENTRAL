@@ -479,9 +479,10 @@ for (const kind of ["mix", "ref"]) $("ab-" + kind).onclick = () => {
 $("seek").oninput = () => {
   const t = tracks[current];
   if (!t) return;
-  const was = playing;
+  // Lue avant stop() : son refresh() remet le curseur à l'ancienne position quand il n'a pas le focus (Mac, Safari).
+  const at = $("seek").value / 1000 * t.buffer.duration, was = playing;
   stop();
-  offsetSec = $("seek").value / 1000 * t.buffer.duration;
+  offsetSec = at;
   if (was) start();
   refresh();
 };
