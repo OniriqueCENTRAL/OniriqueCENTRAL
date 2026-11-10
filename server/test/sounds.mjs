@@ -231,10 +231,13 @@ try {
     const a = (await call('POST', '/api/me/sounds/projects', { token: member.token, body: { title: 'A' }, expect: 201 })).id;
     const b = (await call('POST', '/api/me/sounds/projects', { token: member.token, body: { title: 'B' }, expect: 201 })).id;
     const t = (await call('POST', `/api/me/sounds/projects/${a}/tracks?filename=Son.wav`, { token: member.token, raw: wav(), expect: 201 })).id;
+    await call('PATCH', `/api/me/sounds/tracks/${t}`, { token: member.token, body: { stage: 'v3', lyrics: 'Un couplet', credits: { feat: 'Nyx' } } });
     const copy = (await call('POST', `/api/me/sounds/tracks/${t}/duplicate`, { token: member.token, expect: 201 })).id;
     await call('PATCH', `/api/me/sounds/tracks/${copy}`, { token: member.token, body: { projectId: b } });
     let data = await call('GET', '/api/me/sounds', { token: member.token });
     assert.equal(data.projects.find((p) => p.id === b).tracks[0].title, 'Son (copie)');
+    const kept = data.projects.find((p) => p.id === b).tracks[0];
+    assert.deepEqual([kept.stage, kept.lyrics, kept.credits.feat], ['v3', 'Un couplet', 'Nyx'], 'la copie garde étape, paroles et feat');
     assert.equal(fs.readdirSync(soundsDir).length, 2, 'le fichier est copié');
     // Ajouter à un autre projet : un titre de plus, le même fichier ; il reste tant qu'un titre s'en sert.
     const used = (await call('GET', '/api/me/sounds', { token: member.token })).quota.used;

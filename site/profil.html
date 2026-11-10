@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=d022252a"></script>
+<script src="assets/i18n.js?v=2fe575f3"></script>
 <script src="assets/ui.js?v=4"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Page de profil</title>
@@ -158,7 +158,8 @@ select { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px sol
     </div>
     <div class="panel" id="bio-panel"><span class="eyebrow">À propos</span><p class="bio" id="bio"></p><div class="links" id="links"></div></div>
     <div class="panel cv" id="cv-panel" hidden><span class="eyebrow">CV numérique</span><div id="cv"></div></div>
-    <div class="tabs" role="tablist"><button type="button" class="on" data-tab="playlists">Playlists</button><button type="button" data-tab="comments">Commentaires <span id="c-count"></span></button></div>
+    <div class="tabs" role="tablist"><button type="button" class="on" data-tab="playlists">Playlists</button><button type="button" data-tab="packs" id="packs-tab" hidden>Packs <span id="pk-count"></span></button><button type="button" data-tab="comments">Commentaires <span id="c-count"></span></button></div>
+    <div class="panel" id="tab-packs" hidden><div class="grid" id="packs"></div></div>
     <div class="panel" id="tab-playlists">
       <div class="grid" id="playlists"></div>
     </div>
@@ -295,6 +296,16 @@ function drawView() {
     el("b", { textContent: x.title }),
     el("small", { textContent: x.tracks + " son" + (x.tracks > 1 ? "s" : "") + " · ▲ " + x.ups + (x.count ? " · ★ " + x.avg.toLocaleString("fr-FR") + " (" + x.count + ")" : "") })))
     : [el("p", { className: "muted", style: "margin:0", textContent: p.mine ? "Tes playlists d'ONIRIQUE CLOUD qui ont un lien d'écoute ouvert apparaissent ici." : "Pas encore de playlist partagée." })]));
+  // Les packs de prods dont le lien d'écoute est ouvert ; l'onglet n'existe que s'il y en a (ou sur sa propre page).
+  $("packs-tab").hidden = !p.packs.length && !p.mine;
+  $("pk-count").textContent = p.packs.length || "";
+  $("packs").replaceChildren(...(p.packs.length ? p.packs.map((x) => el("a", { className: "pl", href: x.url },
+    x.cover ? el("img", { src: x.cover + "?w=320", alt: "", loading: "lazy" }) : el("span", { className: "ph" }),
+    el("b", { textContent: x.title }),
+    el("small", { textContent: x.tracks + " prod" + (x.tracks > 1 ? "s" : "") })))
+    : [el("p", { className: "muted", style: "margin:0", textContent: "Tes packs d'ONIRIQUE CLOUD qui ont un lien d'écoute ouvert apparaissent ici." })]));
+  // Un beatmaker sans playlist : sa page s'ouvre sur ses packs.
+  if (p.packs.length && !p.playlists.length && document.querySelector(".tabs .on").dataset.tab === "playlists") $("packs-tab").click();
   show("view");
 }
 
@@ -345,6 +356,7 @@ $("follows").addEventListener("close", () => load());
 document.querySelectorAll(".tabs button").forEach((b) => b.onclick = () => {
   document.querySelectorAll(".tabs button").forEach((x) => x.classList.toggle("on", x === b));
   $("tab-playlists").hidden = b.dataset.tab !== "playlists";
+  $("tab-packs").hidden = b.dataset.tab !== "packs";
   $("tab-comments").hidden = b.dataset.tab !== "comments";
 });
 

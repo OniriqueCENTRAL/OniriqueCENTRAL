@@ -368,6 +368,15 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'v
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_orders') WHERE name = 'connect_account'`).get()) {
   db.exec(`ALTER TABLE sound_orders ADD COLUMN connect_account TEXT NOT NULL DEFAULT ''`);
 }
+// Le tag du producteur : un son court, un par beatmaker, proposé sur tous ses packs à qui veut collaborer.
+db.exec(`CREATE TABLE IF NOT EXISTS sound_tags (
+  user_id    INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  filename   TEXT NOT NULL,
+  stored_as  TEXT NOT NULL,
+  mime       TEXT NOT NULL,
+  size       INTEGER NOT NULL,
+  created_at INTEGER NOT NULL
+)`);
 // Le jour où l'auteur a publié son pack (ses abonnés ont été prévenus).
 if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_projects') WHERE name = 'published_at'`).get()) {
   db.exec(`ALTER TABLE sound_projects ADD COLUMN published_at INTEGER`);
@@ -478,6 +487,12 @@ const versionView = (v, i, download) => ({
 });
 const commentView = (c) => ({ id: c.id, trackId: c.track_id, versionId: c.version_id, author: c.author, at: c.at, body: c.body, createdAt: c.created_at, resolved: !!c.resolved_at });
 const media = (name) => (name ? `/api/media/${name}` : null);
+const MAX_TAG = 10 * 1024 * 1024;
+/** Le tag d'un producteur : son nom et un lien signé de six heures (lecture et téléchargement) ; null s'il n'en a pas. */
+function tagOf(userId) {
+  const g = get('SELECT filename FROM sound_tags WHERE user_id = ?', userId), e = now() + 6 * 3600_000;
+  return g ? { filename: g.filename, url: `/api/sounds/tag/${userId}?e=${e}&s=${sign(`tag.${userId}.${e}`)}` } : null;
+}
 // La fiche artiste d'un membre ; sans lien choisi, sa page de liens ONIRIQUE s'il en a une. Une fiche masquée n'est
 // montrée qu'à son auteur (pour la modifier).
 function aboutOf(userId, mine) {
@@ -602,7 +617,7 @@ export function purgeTrash() {
 }
 /** Les fichiers qui ne correspondent plus à aucune version (compte supprimé, envoi interrompu) sont effacés au démarrage. */
 export function sweepSounds() {
-  const kept = new Set(all('SELECT stored_as FROM sound_versions UNION SELECT stored_as FROM sound_deliverables').map((r) => r.stored_as));
+  const kept = new Set(all('SELECT stored_as FROM sound_versions UNION SELECT stored_as FROM sound_deliverables UNION SELECT stored_as FROM sound_tags').map((r) => r.stored_as));
   for (const name of fs.readdirSync(soundsDir)) if (!kept.has(name)) fs.rmSync(path.join(soundsDir, name), { force: true });
 }
 
@@ -832,6 +847,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       free: can(req.user, 'sounds') ? null : { limit: FREE_TRACKS, used: ownTracks(u) }, vanish, scanReady: scanConfigured(),
       // Le compte de paiement et les licences, pour les badges de vente des packs.
       store: projects.some((p) => p.kind === 'pack' && p.user_id === u) ? { seller: { ...sellerView(u), sellable: payMethods(u).length > 0 }, licenses: licensesOf(u) } : null,
+      tag: tagOf(u),
       quota: { used: usedBy(req.user.id), limit: quotaBytes(), full: d.used / d.total >= diskMax() },
       // Ce qui attend dans la corbeille (titres et projets), pour la tuile « Corbeille ».
       trash: get(`SELECT (SELECT COUNT(*) FROM sound_tracks t JOIN sound_projects p ON p.id = t.project_id WHERE p.kind = 'trash' AND p.user_id = ?)
@@ -1196,8 +1212,10 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     fs.copyFileSync(path.join(soundsDir, v.stored_as), path.join(soundsDir, storedAs));
     const tid = transaction(() => {
       run('UPDATE sound_tracks SET position = position + 1 WHERE project_id = ? AND position > ?', t.project_id, t.position);
-      const created = run('INSERT INTO sound_tracks (project_id, title, position, bpm, music_key, price, buy_url, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        t.project_id, str(`${t.title} (copie)`, 120), t.position + 1, t.bpm, t.music_key, t.price, t.buy_url, now()).lastInsertRowid;
+      // La copie garde tout ce qui décrit le son (étape, feat et crédits, partages, paroles, date) ; elle repart non vendue.
+      const created = run(`INSERT INTO sound_tracks (project_id, title, position, stage, credits, splits, lyrics, day, bpm, music_key, price, buy_url, license_prices, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        t.project_id, str(`${t.title} (copie)`, 120), t.position + 1, t.stage, t.credits, t.splits, t.lyrics, t.day, t.bpm, t.music_key, t.price, t.buy_url, t.license_prices, now()).lastInsertRowid;
       const vid = run(`INSERT INTO sound_versions (track_id, filename, stored_as, mime, size, duration, peaks, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         created, v.filename, storedAs, v.mime, v.size, v.duration, v.peaks, v.note, now()).lastInsertRowid;
       run('UPDATE sound_tracks SET current_id = ? WHERE id = ?', vid, created);
@@ -1574,6 +1592,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       ...saveState(req, link), simulate, pay: p.kind === 'pack' ? payMethods(p.user_id) : [],
       owner: p.artist || p.author_name || 'ONIRIQUE', ownerAvatar: media(p.author_avatar), ownerHandle: profileHandle(p.user_id), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover), background: media(p.background), buttonColor: p.button_color, coverBy: p.cover_by, releaseDate: p.release_date,
       download, about: aboutOf(p.user_id, false), contact: p.kind === 'pack' ? p.author_instagram || null : null,
+      tag: p.kind === 'pack' ? tagOf(p.user_id) : null,
       collabAbouts: aboutsOf(all('SELECT u.id, u.name FROM sound_collabs c JOIN users u ON u.id = c.user_id WHERE c.project_id = ? ORDER BY c.created_at', p.id)),
       // Une playlist : ses titres Spotify (ou Deezer, Apple Music) aussi, à leur place parmi les sons du CLOUD.
       items: p.kind === 'playlist' && !link.track_id ? shareItems(p.id, optionalUser(req)?.id) : [],
@@ -1695,6 +1714,31 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     // Une coupure en cours d'envoi (fichier disparu, connexion fermée) arrête l'archive : le navigateur la voit incomplète.
     await writeZip(res, entries).catch((error) => { console.error(`[zip] projet ${p.id} : ${error.message}`); res.destroy(); });
   }));
+
+  // Le tag du producteur : le fichier en corps brut (10 Mo au plus), son nom dans ?filename= ; le nouveau remplace l'ancien.
+  const dropTag = (userId) => {
+    const old = get('SELECT stored_as FROM sound_tags WHERE user_id = ?', userId);
+    run('DELETE FROM sound_tags WHERE user_id = ?', userId);
+    if (old) fs.rmSync(path.join(soundsDir, old.stored_as), { force: true });
+  };
+  app.put('/api/me/sounds/tag', ...pro, wrap(async (req, res) => {
+    rateLimit(`sounds-upload:${req.user.id}`, 200, 3600_000);
+    if (Number(req.headers['content-length']) > MAX_TAG) throw new HttpError(413, 'Tag trop lourd : 10 Mo au plus.');
+    const file = await receiveAudio(req);
+    dropTag(req.user.id);
+    run('INSERT INTO sound_tags (user_id, filename, stored_as, mime, size, created_at) VALUES (?, ?, ?, ?, ?, ?)', req.user.id, file.filename, file.storedAs, file.mime, file.size, now());
+    res.status(201).json({ tag: tagOf(req.user.id) });
+  }));
+  app.delete('/api/me/sounds/tag', ...me, (req, res) => { dropTag(req.user.id); res.json({ tag: null }); });
+  app.get('/api/sounds/tag/:id', (req, res) => {
+    const uid = id(req.params.id), e = Number(req.query.e);
+    if (!(e > now()) || !same(String(req.query.s || ''), sign(`tag.${uid}.${e}`))) throw new HttpError(403, 'Ce lien a expiré : recharge la page.');
+    const g = get('SELECT * FROM sound_tags WHERE user_id = ?', uid);
+    if (!g) throw new HttpError(404, 'Tag introuvable.');
+    res.set({ 'Content-Type': g.mime, 'Cache-Control': 'private, max-age=3600', 'X-Content-Type-Options': 'nosniff' });
+    if (req.query.d === '1') res.attachment(g.filename);
+    res.sendFile(path.join(soundsDir, g.stored_as));
+  });
 
   mountBeatStore(app, { me: pro, track, room, receiveFile, openLink, linkTracks, linkProject, soundsDir, audioType, wrap });
   mountPackSend(app, { me: pro, ownProject, sign, wrap });

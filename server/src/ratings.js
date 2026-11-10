@@ -77,7 +77,7 @@ export function statsOf(userId, kind, ids) {
  * Les playlists publiques (un lien d'écoute ouvert, au moins un son, hors corbeille) : leur titre, leur créateur et sa
  * page de profil, leurs notes et leurs ups. where / params filtrent, order trie (SQL écrit ici, jamais par l'appelant).
  */
-export function publicPlaylists(viewerId, { where = '1', params = [], order = 'p.created_at DESC', limit = 12, since = 0 } = {}) {
+export function publicPlaylists(viewerId, { where = '1', params = [], order = 'p.created_at DESC', limit = 12, since = 0, kind = 'playlist' } = {}) {
   const rows = all(`SELECT * FROM (SELECT p.id, p.title, p.cover, p.user_id, p.created_at, u.name AS owner, pr.handle AS owner_handle,
       (SELECT token FROM sound_links l WHERE l.project_id = p.id AND l.password_hash IS NULL AND (l.expires_at IS NULL OR l.expires_at > ?) ORDER BY l.created_at DESC LIMIT 1) AS token,
       (SELECT COUNT(*) FROM sound_tracks t WHERE t.project_id = p.id) + (SELECT COUNT(*) FROM sound_platform_items i WHERE i.project_id = p.id) AS tracks,
@@ -85,8 +85,8 @@ export function publicPlaylists(viewerId, { where = '1', params = [], order = 'p
       (SELECT AVG(stars) FROM sound_ratings r WHERE r.kind = 'playlist' AND r.target_id = p.id) AS avg_stars,
       (SELECT COUNT(*) FROM sound_ratings r WHERE r.kind = 'playlist' AND r.target_id = p.id) AS notes
     FROM sound_projects p JOIN users u ON u.id = p.user_id LEFT JOIN user_profiles pr ON pr.user_id = p.user_id
-    WHERE p.kind = 'playlist' AND p.trashed_at IS NULL AND p.public != 0 AND ${where}) p
-    WHERE token IS NOT NULL AND tracks > 0 ORDER BY ${order} LIMIT ?`, now(), since, ...params, limit);
+    WHERE p.kind = ? AND p.trashed_at IS NULL AND p.public != 0 AND ${where}) p
+    WHERE token IS NOT NULL AND tracks > 0 ORDER BY ${order} LIMIT ?`, now(), since, kind === 'pack' ? 'pack' : 'playlist', ...params, limit);
   const stats = statsOf(viewerId || 0, 'playlist', rows.map((r) => r.id));
   return rows.map((r) => ({ id: r.id, title: r.title, cover: r.cover ? `/api/media/${r.cover}` : null, owner: r.owner || 'Membre', ownerHandle: r.owner_handle || null,
     tracks: r.tracks, ups: r.ups, avg: stats[r.id].avg, count: stats[r.id].count, mine: stats[r.id].mine, at: r.created_at, url: `${config.siteUrl}/ecoute?t=${r.token}` }));

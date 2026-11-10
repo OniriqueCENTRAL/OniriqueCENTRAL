@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=d022252a"></script>
+<script src="assets/i18n.js?v=2fe575f3"></script>
 <script src="assets/ui.js?v=4"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Écoute privée</title>
@@ -196,6 +196,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1320px; }
       <div class="art" id="cover"></div>
       <div class="cover-by" id="cover-by" hidden></div>
       <a class="save contact" id="contact" target="_blank" rel="noopener" hidden>Contacter le vendeur</a>
+      <a class="save contact" id="producer-tag" title="Le tag à poser sur ta prod si tu collabores avec ce beatmaker" hidden>Tag du producteur</a>
     </div>
     <div>
       <div class="head">
@@ -446,6 +447,8 @@ function show(data) {
     $("save").hidden = !data.canSave;
     // Un pack : l'acheteur écrit au beatmaker sur son Instagram, s'il l'a renseigné.
     $("contact").hidden = !data.contact;
+    $("producer-tag").hidden = !data.tag;
+    if (data.tag) $("producer-tag").href = data.tag.url + "&d=1";
     if (data.contact) $("contact").href = data.contact;
     $("save").classList.toggle("on", saved);
     $("save").textContent = saved ? "✓ Dans ONIRIQUE CLOUD" : "+ Enregistrer dans ONIRIQUE CLOUD";

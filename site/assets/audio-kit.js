@@ -7,6 +7,7 @@
 //   OniriqueAudio.wav(channels, sampleRate, bits)   →  Blob (16 et 24 bits entiers, 32 bits flottants)
 //   OniriqueAudio.mp3(channels, sampleRate, kbps, onProgress)   →  Promise d'un Blob (encodé dans assets/mp3-worker.js)
 //   OniriqueAudio.download(blob, name), .clock(seconds), .decimal(n, digits), .baseName(file)
+//   OniriqueAudio.cloudPick(host, label, onFile, onError)   connecté : un bouton qui liste ses titres du CLOUD et rend la version en avant du titre choisi
 //   OniriqueAudio.fromLink(onFile, onError)   le son de « ONIRIQUE CLOUD » passé dans l'adresse (?src=/api/sounds/audio/…&name=…)
 window.OniriqueAudio = (() => {
   const decimal = (n, digits = 1) => n.toFixed(digits).replace(".", ",");
@@ -143,5 +144,44 @@ window.OniriqueAudio = (() => {
       .catch((error) => onError(error));
   }
 
-  return { decimal, clock, baseName, sourceRate, decode, render, channelsOf, wav, mp3, download, dropZone, busy, fromLink };
+  /** Connecté : le bouton devient la liste de ses titres, rangés par projet. */
+  function cloudPick(host, label, onFile, onError) {
+    let token = null;
+    try { token = sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"); } catch { /* stockage fermé : pas de bouton */ }
+    if (!token) return;
+    const button = Object.assign(document.createElement("button"), { type: "button", className: "go ghost", textContent: label });
+    host.append(button);
+    host.hidden = false;
+    button.onclick = async () => {
+      button.disabled = true;
+      try {
+        const response = await fetch("/api/me/sounds", { headers: { Authorization: "Bearer " + token } });
+        if (!response.ok) throw new Error("Ton CLOUD n'a pas pu être lu : reconnecte-toi à ton compte.");
+        const select = Object.assign(document.createElement("select"), { className: "cloud-pick", ariaLabel: label });
+        select.append(new Option(label + "…", ""));
+        for (const p of (await response.json()).projects) {
+          const options = p.tracks.map((t) => [t, t.versions.find((v) => v.id === t.currentId)]).filter(([, v]) => v && v.url)
+            .map(([t, v]) => Object.assign(new Option(t.title, v.url), { title: v.filename }));
+          if (!options.length) continue;
+          const group = Object.assign(document.createElement("optgroup"), { label: p.title });
+          group.append(...options);
+          select.append(group);
+        }
+        if (select.options.length < 2) throw new Error("Ton CLOUD ne contient pas encore de son.");
+        select.onchange = () => {
+          const chosen = select.selectedOptions[0];
+          if (!chosen.value) return;
+          fetch(chosen.value)
+            .then((r) => { if (!r.ok) throw new Error("Le son n'a pas pu être lu : recharge la page."); return r.blob(); })
+            .then((blob) => onFile(new File([blob], chosen.title || chosen.text, { type: blob.type })))
+            .catch(onError);
+          select.value = "";
+        };
+        button.replaceWith(select);
+        select.focus();
+      } catch (error) { onError(error); button.disabled = false; }
+    };
+  }
+
+  return { decimal, clock, baseName, sourceRate, decode, render, channelsOf, wav, mp3, download, dropZone, busy, fromLink, cloudPick };
 })();

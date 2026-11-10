@@ -170,6 +170,7 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
       links: linksOf(p.links), since: p.created_at, role: p.role || null, city: placeOf(p), cv: cvOf(p.cv),
       linkPage: cvOf(p.cv).showLinks ? linkPageOf(p.user_id) : null,
       playlists: publicPlaylists(viewer?.id, { where: 'p.user_id = ?', params: [p.user_id], limit: 60 }),
+      packs: publicPlaylists(viewer?.id, { kind: 'pack', where: 'p.user_id = ?', params: [p.user_id], limit: 60 }),
       followers: count('SELECT COUNT(*) AS n FROM user_follows WHERE followed_id = ?', p.user_id),
       following: count('SELECT COUNT(*) AS n FROM user_follows WHERE follower_id = ?', p.user_id),
       mine: viewer?.id === p.user_id, followed: !!(viewer && get('SELECT 1 FROM user_follows WHERE follower_id = ? AND followed_id = ?', viewer.id, p.user_id)),

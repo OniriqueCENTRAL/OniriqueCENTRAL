@@ -352,6 +352,19 @@ try {
     assert.equal((await call('POST', `/api/sounds/share/${note.page}`, { body: {} })).tracks[0].id, tid);
     await call('POST', `/api/me/sounds/projects/${pack}/publish`, { token: beatmaker.token, expect: 409 });
     assert.ok((await call('GET', '/api/me/sounds', { token: beatmaker.token })).projects.find((p) => p.id === pack).publishedAt);
+
+    // Le tag du producteur : absent, puis envoyé (un son seulement), proposé sur la page du pack, lien signé, retiré.
+    assert.equal((await call('POST', `/api/sounds/share/${note.page}`, { body: {} })).tag, null);
+    await call('PUT', '/api/me/sounds/tag?filename=tag.txt', { token: beatmaker.token, raw: Buffer.from('pas un son'), expect: 400 });
+    await call('PUT', '/api/me/sounds/tag?filename=Kay%20tag.wav', { token: beatmaker.token, raw: wav('tag'), expect: 201 });
+    await call('PUT', '/api/me/sounds/tag?filename=Kay%20tag.wav', { token: beatmaker.token, raw: wav('tag-2'), expect: 201 });
+    assert.equal((await call('GET', '/api/me/sounds', { token: beatmaker.token })).tag.filename, 'Kay tag.wav');
+    const tag = (await call('POST', `/api/sounds/share/${note.page}`, { body: {} })).tag;
+    assert.ok(Buffer.isBuffer(await call('GET', tag.url + '&d=1')));
+    await call('GET', tag.url.replace(/s=.*/, 's=faux'), { expect: 403 });
+    await call('DELETE', '/api/me/sounds/tag', { token: beatmaker.token });
+    assert.equal((await call('POST', `/api/sounds/share/${note.page}`, { body: {} })).tag, null);
+    await call('GET', tag.url, { expect: 404 });
   });
 
   await step('YouTube, options : le modèle et le rendu des vidéos enregistrés sur le compte, et le filtre ffmpeg qui en sort', async () => {

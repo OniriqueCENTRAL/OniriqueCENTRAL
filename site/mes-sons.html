@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=d022252a"></script>
+<script src="assets/i18n.js?v=2fe575f3"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=2"></script>
 <script src="/api/announce.js"></script>
@@ -218,7 +218,7 @@ body.visitor .visitor-toggle b { color: var(--night); }
 .pack-contact:hover { border-color: var(--ember); }
 body:not(.visitor) .pack-contact { display: none; }
 body.is-playlist :is(#project-more, #bg-change, #bg-remove) { display: none !important; }
-body.visitor :is(#project-meta .tag, #edit-toggle, #share-project, #project-more, #pack-publish, #pack-store, #pack-mail, #pack-youtube, #fab, #cover-swap, .plan-chip, .trk .dots, .trk small) { display: none !important; }
+body.visitor :is(#project-meta .tag, #edit-toggle, #share-project, #project-more, #pack-publish, #pack-store, #pack-mail, #pack-youtube, #pack-tag, #fab, #cover-swap, .plan-chip, .trk .dots, .trk small) { display: none !important; }
 body.editing #edit-toggle { background: var(--mist); color: var(--night); border-color: var(--mist); }
 /* Préparer la sortie : le compte à rebours et les tâches faites, à côté de la date */
 .release .plan-chip { border-color: rgba(255,210,214,.16); background: rgba(255,255,255,.06); }
@@ -811,6 +811,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
       <button class="edit-toggle" id="pack-store" type="button" hidden>Ventes</button>
       <button class="edit-toggle" id="pack-mail" type="button" hidden>Mails</button>
       <button class="edit-toggle" id="pack-youtube" type="button" hidden>YouTube</button>
+      <button class="edit-toggle" id="pack-tag" type="button" title="Ton tag de producteur, proposé sur tous tes packs" hidden>Tag</button>
     </div>
     <div class="album">
       <div>
@@ -1541,8 +1542,27 @@ function trashTile() {
   const art = el("div", { className: "art", role: "button", tabIndex: 0, ariaLabel: "Ouvrir la corbeille" }, inner);
   art.onclick = openTrash;
   art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
-  return el("div", { className: "tile" }, art, caption("CORBEILLE",
+  const tile = el("div", { className: "tile" }, art, caption("CORBEILLE",
     el("span", { textContent: data.trash ? count(data.trash, "élément", "éléments") + " · 30 jours" : "Vide" })));
+  dropTarget(tile, (kind, id) => trashDropped(kind, id).then(refresh, fail));
+  return tile;
+}
+// Ce qu'on lâche sur la corbeille : un projet y part tout de suite (il se restaure 30 jours) ; un dossier y envoie ses projets, puis disparaît.
+async function trashDropped(kind, id) {
+  if (kind === "saved") {
+    const x = data.saved.find((s) => s.id === id);
+    if (x && confirm("Retirer « " + x.title + " » de ONIRIQUE CLOUD ? Le projet reste chez " + x.owner + ".")) await api("DELETE", "/me/sounds/saves/" + id);
+  } else if (kind === "project") {
+    const p = data.projects.find((x) => x.id === id);
+    if (p && !p.mine) throw new Error("« " + p.title + " » n'est pas à toi : seul son auteur peut le mettre à la corbeille.");
+    await api("DELETE", "/me/sounds/projects/" + id);
+  } else {
+    const f = folder(id), ids = [id, ...below(id)];
+    const mine = data.projects.filter((x) => x.mine && ids.includes(x.folderId));
+    if (!confirm("Supprimer le dossier « " + f.title + " »" + (mine.length ? " et mettre " + (mine.length > 1 ? "ses " + mine.length + " projets" : "son projet") + " à la corbeille ? Tu pourras les restaurer pendant 30 jours." : " ?"))) return;
+    for (const p of mine) await api("DELETE", "/me/sounds/projects/" + p.id);
+    for (const fid of ids) await api("DELETE", "/me/sounds/folders/" + fid);
+  }
 }
 const savedSource = (tile, x) => { dragSource(tile, "saved:" + x.id); return tile; };
 function savedTile(x) {
@@ -1766,6 +1786,8 @@ function renderProject(p) {
   $("pack-publish").textContent = p.publishedAt ? "Publié" : "Publier";
   $("pack-publish").title = p.publishedAt ? "Publié le " + day(p.publishedAt) + " : tes abonnés ont été prévenus" : "Prévenir tes abonnés que ce pack est sorti";
   $("pack-youtube").hidden = !p.mail;
+  $("pack-tag").hidden = !p.mail;
+  $("pack-tag").textContent = data.tag ? "Tag ✓" : "Tag";
   if ($("sale").open) renderSale();
   if ($("plan").open) renderPlan();
   if ($("mailer").open && mailerId === p.id) drawMailerProds(p);
@@ -3314,6 +3336,27 @@ if (pinterestBackParam) {
   }, 100);
 }
 $("pack-youtube").onclick = () => openYoutube(project()).catch(fail);
+// Le tag du producteur : un seul par beatmaker ; sur la page d'écoute de ses packs, un bouton le donne à qui veut collaborer.
+$("pack-tag").onclick = () => {
+  const send = () => {
+    const input = el("input", { type: "file", accept: "audio/*,.mp3,.wav,.flac,.m4a,.aif,.aiff,.ogg" });
+    input.onchange = async () => {
+      const file = input.files[0];
+      if (!file) return;
+      if (file.size > 10 * 1024 * 1024) return alert("Tag trop lourd : 10 Mo au plus.");
+      const response = await fetch("/api/me/sounds/tag?filename=" + encodeURIComponent(file.name), { method: "PUT", headers: { Authorization: "Bearer " + token }, body: file }).catch(() => null);
+      const body = response ? await response.json().catch(() => ({})) : {};
+      if (!response || !response.ok) return alert(body.error || "Le tag n'a pas pu être envoyé.");
+      refresh();
+    };
+    input.click();
+  };
+  menu($("pack-tag"), [
+    data.tag && { label: "Écouter « " + data.tag.filename + " »", icon: "play", onclick: () => new Audio(data.tag.url).play() },
+    { label: data.tag ? "Remplacer le tag…" : "Envoyer mon tag…", icon: "plus", onclick: send },
+    data.tag && { label: "Retirer le tag", danger: true, onclick: () => api("DELETE", "/me/sounds/tag").then(refresh, fail) },
+  ]);
+};
 // Retour de Google après « Connecter ma chaîne YouTube » : la fenêtre se rouvre sur le pack, ou l'erreur s'affiche.
 const youtubeBack = new URLSearchParams(location.search).get("youtube");
 if (youtubeBack) {
