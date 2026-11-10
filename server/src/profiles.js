@@ -3,6 +3,7 @@
 // écrit en privé à son auteur (messages.html). Un compte sans page de profil ne reçoit pas de message.
 import { db, get, all, run, now, transaction } from './db.js';
 import { HttpError, rateLimit, optionalUser } from './auth.js';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { config } from './config.js';
@@ -135,7 +136,7 @@ export function mountProfiles(app, { requireUser, receiveImage, receiveFile, rem
   // Ma page : la créer, la régler (adresse, bio, couleur, commentaires ouverts), ou la supprimer.
   app.get('/api/me/profile/page', requireUser, (req, res) => {
     const p = get('SELECT * FROM user_profiles WHERE user_id = ?', req.user.id);
-    res.set('Cache-Control', 'no-store').json(p ? { handle: p.handle, bio: p.bio, color: p.color, banner: media(p.banner), comments: !!p.comments, links: linksOf(p.links), city: p.city || '', place: placeOf(p), cv: cvOf(p.cv), look: lookOf(p.look), linkPage: p ? linkPageOf(req.user.id) : null,
+    res.set('Cache-Control', 'no-store').json(p ? { handle: p.handle, bio: p.bio, color: p.color, banner: media(p.banner), comments: !!p.comments, links: linksOf(p.links), city: p.city || '', place: placeOf(p), cv: cvOf(p.cv), look: lookOf(p.look), gifSearch: !!config.klipyKey, linkPage: p ? linkPageOf(req.user.id) : null,
       // Ses packs qui ont un lien d'écoute ouvert, et ceux qu'il a choisi de montrer.
       packs: publicPlaylists(req.user.id, { kind: 'pack', where: 'p.user_id = ?', params: [req.user.id], limit: 60 }).map((x) => ({ id: x.id, title: x.title, shown: !!get('SELECT on_profile FROM sound_projects WHERE id = ?', x.id).on_profile })) } : null);
   });
@@ -190,17 +191,67 @@ export function mountProfiles(app, { requireUser, receiveImage, receiveFile, rem
     if (!BG_TYPES[req.headers['content-type']]) throw new HttpError(400, 'Fond attendu : image PNG, JPEG, WebP, GIF, ou vidéo MP4 ou WebM.');
     rateLimit(`profile-banner:${req.user.id}`, 30, 3600_000);
     const file = await receiveFile(req, config.mediaDir, 30 * 1024 * 1024);
-    const stored = path.join(config.mediaDir, file.storedAs), head = Buffer.alloc(12), fd = fs.openSync(stored, 'r');
+    res.json({ look: keepBackground(req.user.id, p, file.storedAs) });
+  }));
+  /** Le fichier reçu (dans media/) devient le fond, s'il est bien une image ou une vidéo ; l'ancien fond est effacé. */
+  function keepBackground(userId, p, storedAs) {
+    const stored = path.join(config.mediaDir, storedAs), head = Buffer.alloc(12), fd = fs.openSync(stored, 'r');
     fs.readSync(fd, head, 0, 12, 0);
     fs.closeSync(fd);
     const ext = bgKind(head);
     if (!ext) { fs.rmSync(stored, { force: true }); throw new HttpError(400, "Ce fichier n'est ni une image ni une vidéo lisible."); }
-    const name = `${file.storedAs}.${ext}`;
+    const name = `${storedAs}.${ext}`;
     fs.renameSync(stored, path.join(config.mediaDir, name));
     const look = JSON.parse(p.look || '{}');
     if (look.bg) removeMedia(look.bg);
-    run('UPDATE user_profiles SET look = ? WHERE user_id = ?', JSON.stringify({ ...look, bg: name }), req.user.id);
-    res.json({ look: lookOf(JSON.stringify({ ...look, bg: name })) });
+    run('UPDATE user_profiles SET look = ? WHERE user_id = ?', JSON.stringify({ ...look, bg: name }), userId);
+    return lookOf(JSON.stringify({ ...look, bg: name }));
+  }
+
+  // Chercher un GIF de fond, comme dans Discord : KLIPY, interrogé par le serveur (la clé reste ici). Sans mot, les
+  // tendances. Chaque résultat garde un aperçu léger et le fichier à prendre (vidéo MP4 de préférence : bien plus légère).
+  const KLIPY_FILES = /^https:\/\/([a-z0-9-]+\.)*klipy\.com\//;
+  const pickFile = (f, kinds) => {
+    for (const size of ['hd', 'md', 'sm', 'xs']) for (const kind of kinds) {
+      const url = f?.[size]?.[kind]?.url;
+      if (typeof url === 'string' && KLIPY_FILES.test(url)) return url;
+    }
+    return null;
+  };
+  app.get('/api/me/profile/gifs', requireUser, wrap(async (req, res) => {
+    if (!config.klipyKey) throw new HttpError(404, "La recherche de GIF n'est pas encore branchée.");
+    rateLimit(`profile-gifs:${req.user.id}`, 120, 3600_000);
+    const q = clean(req.query.q, 80), page = Math.max(1, Math.min(20, Number(req.query.page) || 1));
+    const url = `${config.klipyApi}/api/v1/${encodeURIComponent(config.klipyKey)}/gifs/${q ? 'search' : 'trending'}?per_page=24&page=${page}`
+      + `&customer_id=u${req.user.id}&locale=fr${q ? `&q=${encodeURIComponent(q)}` : ''}`;
+    const r = await fetch(url, { signal: AbortSignal.timeout(9000) }).catch(() => null);
+    if (!r || !r.ok) throw new HttpError(502, 'La recherche de GIF ne répond pas : réessaie dans un instant.');
+    const body = await r.json().catch(() => ({}));
+    const items = body?.data?.data || body?.data || body?.results || [];
+    res.json({ gifs: (Array.isArray(items) ? items : []).map((g) => ({ id: String(g.id ?? g.slug ?? ''), title: clean(g.title, 120),
+      preview: pickFile(g.file, ['webp', 'gif']) || pickFile(g.file, ['mp4']),
+      file: pickFile(g.file, ['mp4', 'webm', 'gif']) })).filter((g) => g.preview && g.file) });
+  }));
+  // Le GIF choisi est copié chez nous (30 Mo au plus) : la page ne dépend plus de KLIPY ensuite.
+  app.put('/api/me/profile/page/background-gif', requireUser, wrap(async (req, res) => {
+    const p = get('SELECT look FROM user_profiles WHERE user_id = ?', req.user.id);
+    if (!p) throw new HttpError(404, "Crée d'abord ta page de profil.");
+    const url = String(req.body?.url || '');
+    if (!KLIPY_FILES.test(url)) throw new HttpError(400, 'Choisis un GIF dans la recherche.');
+    rateLimit(`profile-banner:${req.user.id}`, 30, 3600_000);
+    // Un renvoi vers son réseau de diffusion est suivi, mais seulement s'il reste chez KLIPY.
+    const r = await fetch(url, { signal: AbortSignal.timeout(20000) }).catch(() => null);
+    if (!r || !r.ok || !KLIPY_FILES.test(r.url || url)) throw new HttpError(502, "Ce GIF n'a pas pu être récupéré.");
+    const chunks = [];
+    let size = 0;
+    for await (const chunk of r.body) {
+      size += chunk.length;
+      if (size > 30 * 1024 * 1024) throw new HttpError(413, 'Ce GIF est trop lourd (30 Mo au plus).');
+      chunks.push(chunk);
+    }
+    const storedAs = crypto.randomBytes(16).toString('hex');
+    fs.writeFileSync(path.join(config.mediaDir, storedAs), Buffer.concat(chunks));
+    res.json({ look: keepBackground(req.user.id, p, storedAs) });
   }));
   app.delete('/api/me/profile/page/background', requireUser, (req, res) => {
     const p = get('SELECT look FROM user_profiles WHERE user_id = ?', req.user.id);

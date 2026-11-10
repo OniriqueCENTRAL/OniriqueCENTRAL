@@ -20,5 +20,11 @@
   "Fond enregistré.": "Background saved.",
   "Fond retiré.": "Background removed.",
   "Envoi du fond…": "Uploading the background…",
-  "Fond trop lourd : 30 Mo au plus.": "Background too large: 30 MB max."
+  "Fond trop lourd : 30 Mo au plus.": "Background too large: 30 MB max.",
+  "Chercher un GIF": "Search a GIF",
+  "Rechercher sur KLIPY": "Search on KLIPY",
+  "GIF fournis par KLIPY": "GIFs by KLIPY",
+  "Mise en place du GIF…": "Setting the GIF…",
+  "GIF mis en fond.": "GIF set as background.",
+  "Aucun GIF trouvé.": "No GIF found."
 }

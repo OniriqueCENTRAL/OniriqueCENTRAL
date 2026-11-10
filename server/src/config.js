@@ -93,6 +93,10 @@ export const config = {
   // déclarée sur developer.spotify.com (son Client ID, sans secret : connexion PKCE) et la clé MusicKit d'Apple
   // (identifiant d'équipe, identifiant de clé, et la clé elle-même dans keys/apple-music.p8).
   spotifyClientId: env.SPOTIFY_CLIENT_ID || '',
+  // KLIPY (la recherche de GIF qui a remplacé Tenor chez Discord) : clé gratuite sur partner.klipy.com. Sans elle, pas
+  // de bouton « Chercher un GIF » sur la page de profil.
+  klipyKey: env.KLIPY_API_KEY || '',
+  klipyApi: (env.KLIPY_API || 'https://api.klipy.com').replace(/\/+$/, ''),
   spotifyAccounts: (env.SPOTIFY_ACCOUNTS || 'https://accounts.spotify.com').replace(/\/+$/, ''),
   spotifyApi: (env.SPOTIFY_API || 'https://api.spotify.com').replace(/\/+$/, ''),
   // ROCKY, le chatbot du site (rocky.js) : la clé de l'API Claude (console.anthropic.com) et le modèle.

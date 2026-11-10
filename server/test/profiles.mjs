@@ -17,6 +17,24 @@ const geo = http.createServer((req, res) => {
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'onirique-central-profiles-'));
 Object.assign(process.env, { DATA_DIR: dataDir, PAYMENTS_MODE: 'demo', PORT: '0', ADMIN_EMAIL: '', ADMIN_PASSWORD: '', SMTP_HOST: 'test',
   MAIL_FROM: 'support@test.local', SITE_URL: 'https://site.test', PUBLIC_URL: 'https://site.test', FOUNDER_EMAILS: '', GEO_API: `http://127.0.0.1:${geo.address().port}` });
+// KLIPY simulé (recherche de GIF) : la recherche, et le fichier d'un GIF sur son hôte de fichiers.
+process.env.KLIPY_API_KEY = 'cle-klipy';
+process.env.KLIPY_API = 'https://api.klipy.com';
+const MP4 = Buffer.concat([Buffer.from([0, 0, 0, 24]), Buffer.from('ftypisom'), Buffer.alloc(100)]);
+const realFetch = globalThis.fetch;
+globalThis.fetch = async (url, init) => {
+  const u = String(url);
+  if (u.startsWith('https://api.klipy.com/api/v1/cle-klipy/gifs/')) {
+    klipyCalls.push(u);
+    return new Response(JSON.stringify({ result: true, data: { data: [
+      { id: 7, title: 'Nuit', file: { hd: { mp4: { url: 'https://static.klipy.com/g/7.mp4' } }, sm: { webp: { url: 'https://static.klipy.com/g/7.webp' } } } },
+      { id: 8, title: 'Ailleurs', file: { hd: { mp4: { url: 'https://evil.test/8.mp4' } } } },
+    ] } }), { headers: { 'Content-Type': 'application/json' } });
+  }
+  if (u === 'https://static.klipy.com/g/7.mp4') return new Response(MP4);
+  return realFetch(url, init);
+};
+const klipyCalls = [];
 const { createApp } = await import('../src/app.js');
 const { db, get, run, now } = await import('../src/db.js');
 const { outbox } = await import('../src/mail.js');
@@ -138,6 +156,17 @@ try {
     assert.equal((await call('GET', '/api/profiles/nov.music')).look.bg, r.look.bg);
     await call('DELETE', '/api/me/profile/page/background', { token: a.token });
     assert.equal((await fetch(base + r.look.bg)).status, 404);
+  });
+  await step('fond : un GIF cherché sur KLIPY, copié chez nous ; seuls les fichiers de KLIPY sont acceptés', async () => {
+    assert.equal((await call('GET', '/api/me/profile/page', { token: a.token })).gifSearch, true);
+    const { gifs } = await call('GET', '/api/me/profile/gifs?q=nuit', { token: a.token });
+    assert.deepEqual(gifs, [{ id: '7', title: 'Nuit', preview: 'https://static.klipy.com/g/7.webp', file: 'https://static.klipy.com/g/7.mp4' }]);
+    assert.match(klipyCalls.at(-1), /\/gifs\/search\?.*customer_id=u\d+.*&q=nuit/);
+    await call('GET', '/api/me/profile/gifs', { token: a.token });
+    assert.match(klipyCalls.at(-1), /\/gifs\/trending\?/);
+    await call('PUT', '/api/me/profile/page/background-gif', { token: a.token, body: { url: 'https://evil.test/8.mp4' }, expect: 400 });
+    const r = await call('PUT', '/api/me/profile/page/background-gif', { token: a.token, body: { url: gifs[0].file } });
+    assert.deepEqual([r.look.bgType, (await fetch(base + r.look.bg)).status], ['video', 200]);
   });
   await step('les playlists publiques d’une page et « Découvrir »', async () => {
     run('UPDATE users SET role = ? WHERE id IN (?, ?)', 'vip', a.id, b.id);
