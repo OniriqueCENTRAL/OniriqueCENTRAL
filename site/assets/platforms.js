@@ -79,6 +79,7 @@
   // Spotify (abonnés Premium) et Apple Music (abonnés Apple Music) jouent les titres en entier dans le lecteur du CLOUD,
   // sous son interface (OniriquePlayer.engines). Sans compte, ou si la plateforme refuse, c'est l'extrait de 30 s.
   let conf = null, appleOn = false, spToken = null;
+  let spIssue = ""; // pourquoi le lecteur Spotify complet n'a pas joué, montré dans la fenêtre Spotify (compte)
   const remembered = (name) => { try { return localStorage.getItem("onirique." + name) === "1"; } catch { return false; } };
   const remember = (name, on) => { try { on ? localStorage.setItem("onirique." + name, "1") : localStorage.removeItem("onirique." + name); } catch {} };
   const loadScript = (src) => new Promise((ok, ko) => {
@@ -161,7 +162,7 @@
         if (attempt) await new Promise((ok) => setTimeout(ok, 700));
         if (this.cur !== item) return true; // un autre titre a été lancé entre-temps : c'est lui qui joue
         if (attempt === 4 && response && response.status === 404) dropSpotifyDevice();
-        const { player, device } = await spotifyDevice().catch(() => ({}));
+        const { player, device } = await spotifyDevice().catch((error) => { spIssue = error.message; return {}; });
         if (!device) { response = null; continue; }
         this.player = player;
         response = await fetch("https://api.spotify.com/v1/me/player/play?device_id=" + encodeURIComponent(device), { method: "PUT",
@@ -170,7 +171,13 @@
         if (response && (response.ok || ![404, 429, 502, 503].includes(response.status))) break;
       }
       if (this.cur !== item) return true;
+      if (response && response.ok) spIssue = "";
+      else if (response) {
+        const why = (await response.json().catch(() => null))?.error?.message;
+        spIssue = "Spotify a répondu " + response.status + (why ? " : " + why : "");
+      }
       if (!response || !response.ok) {
+        console.warn("Lecteur Spotify :", spIssue);
         // Le lecteur officiel intégré de Spotify (titre entier pour qui y est connecté) plutôt que l'extrait de 30 s.
         this.via = spotifyEmbed;
         return spotifyEmbed.load(item, fire).catch(() => { this.via = null; return false; });
@@ -576,7 +583,8 @@
       : "Connecte ton compte : tes titres Apple Music se jouent en entier ici (abonnés Apple Music), et ta bibliothèque s'importe.")
       : platform === "spotify" && !a.premium ? "Spotify ne laisse jouer les titres en entier qu'aux comptes Premium : tu entends les extraits de 30 s. Tes playlists s'importent quand même en entier."
         : "Tes titres " + NAMES[platform] + " se jouent en entier ici, mêlés à tes sons du CLOUD.";
-    const box = el("div", { className: "group pf-acc" }, head, el("p", { className: "pf-note", textContent: note }));
+    const box = el("div", { className: "group pf-acc" }, head, el("p", { className: "pf-note", textContent: note }),
+      on && platform === "spotify" && spIssue ? el("p", { className: "pf-note", textContent: "Dernier essai du lecteur Spotify (« Lecture sur ONIRIQUE CLOUD ») : " + spIssue + ". Le lecteur intégré a pris le relais." }) : "");
     if (on) {
       if (ownLists[platform] === null && !busy) setTimeout(() => loadOwnLists(platform), 0);
       box.append(listOf(ownLists[platform], (l) => {
