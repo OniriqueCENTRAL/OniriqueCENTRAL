@@ -8,7 +8,7 @@
 # passent un par un : si quelqu'un d'autre est en train d'envoyer, le vôtre attend son tour (deploy/onirique-deploy).
 set -euo pipefail
 
-HOST=root@212.227.165.177
+HOST=$(git -C "$(dirname "$0")" remote get-url origin); HOST=${HOST%%:*}   # root@… ou abrasion@…
 cd "$(dirname "$0")/.."
 stop() { echo "$1" >&2; exit 1; }
 
@@ -26,4 +26,7 @@ if [ "$mine" != "$theirs" ]; then
   fi
 fi
 
-ssh -o BatchMode=yes "$HOST" onirique-deploy "$(printf '%q' "$(git config user.name || echo inconnu)")"
+case $HOST in
+  abrasion@*) ssh -o BatchMode=yes "$HOST" deploy ;;   # compte limité à site/abrasion/ (deploy/install-abrasion.sh)
+  *) ssh -o BatchMode=yes "$HOST" onirique-deploy "$(printf '%q' "$(git config user.name || echo inconnu)")" ;;
+esac
