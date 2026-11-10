@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Téléchargements</title>
+<script src="commun.js"></script>
+<style>
+@font-face { font-family: "Unbounded"; font-weight: 200 900; src: url(fonts/Unbounded-latin.woff2) format("woff2"); }
+@font-face { font-family: "Hanken Grotesk"; font-weight: 100 900; src: url(fonts/HankenGrotesk-latin.woff2) format("woff2"); }
+@font-face { font-family: "JetBrains Mono"; font-weight: 100 800; src: url(fonts/JetBrainsMono-latin.woff2) format("woff2"); }
+:root {
+  --night: #09080A; --deep: #121012; --deep-2: #1a1416; --acc: 229, 56, 74; --acc-hi: 255, 142, 154; --acc-lo: 122, 13, 28;
+  --bone: #F4ECEC; --label: #D9C6C9; --haze: #A8939A; --muted: #7D6A6E; --line: rgba(255, 210, 214, .13);
+  --ease: cubic-bezier(.2, .8, .2, 1);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background: var(--night); color: var(--bone); font: 15px/1.5 "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+  background-image: radial-gradient(40vmax 30vmax at 0% 0%, rgba(var(--acc-lo), .42), transparent 70%),
+    radial-gradient(34vmax 28vmax at 100% 100%, rgba(var(--acc-lo), .30), transparent 70%);
+  background-attachment: fixed;
+}
+.cadre { max-width: 860px; margin: 0 auto; padding: 48px 24px 80px; }
+.tete { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 26px; }
+h1 { flex: 1; margin: 0; font: 800 30px/1.1 "Unbounded", "Arial Black", sans-serif; }
+#q {
+  width: min(360px, 100%); height: 42px; padding: 0 14px; border: 1px solid var(--line); border-radius: 10px;
+  background: rgba(0, 0, 0, .45); color: var(--bone); font: 15px "Hanken Grotesk", sans-serif; outline: none; transition: border-color .25s;
+}
+#q:focus { border-color: rgba(var(--acc-hi), .6); }
+.bouton {
+  border: 1px solid var(--line); background: #0b090a; color: var(--bone); padding: 10px 14px; border-radius: 10px;
+  font: 600 12px "JetBrains Mono", Consolas, monospace; letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+  transition: border-color .25s var(--ease);
+}
+.bouton:hover { border-color: rgba(var(--acc-hi), .5); }
+.bouton:focus-visible, .entree:focus-visible, .oublier:focus-visible { outline: 2px solid rgb(var(--acc-hi)); outline-offset: 2px; }
+h2 { margin: 30px 0 10px; font: 500 11px "JetBrains Mono", Consolas, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.liste { display: grid; gap: 10px; }
+.dl { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 14px 16px; background: var(--deep); border: 1px solid var(--line); border-radius: 14px; animation: entree .4s var(--ease) both; }
+.dl.efface { opacity: .55; }
+.ext { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; font: 700 10px "JetBrains Mono", monospace; color: #fff; background: linear-gradient(rgb(var(--acc)), rgb(var(--acc-lo))); text-transform: uppercase; }
+.nom { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+button.nom { border: 0; background: none; color: inherit; font: inherit; font-weight: 600; padding: 0; cursor: pointer; text-align: left; max-width: 100%; }
+button.nom:hover { color: rgb(var(--acc-hi)); }
+.info { display: block; font: 12px "JetBrains Mono", Consolas, monospace; color: var(--haze); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.barre { height: 4px; margin-top: 8px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; }
+.barre i { display: block; height: 100%; border-radius: 999px; background: rgb(var(--acc)); transition: width .25s linear; }
+.barre.attente i { width: 30% !important; animation: va 1.2s ease-in-out infinite alternate; }
+.actions { display: flex; gap: 6px; }
+.actions .bouton { padding: 8px 10px; font-size: 11px; }
+.vide { margin-top: 60px; text-align: center; color: var(--haze); }
+@keyframes entree { from { opacity: 0; transform: translateY(8px); } }
+@keyframes va { from { margin-left: 0; } to { margin-left: 70%; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="cadre">
+  <div class="tete">
+    <h1>Téléchargements</h1>
+    <button class="bouton" id="dossier">Ouvrir le dossier</button>
+    <button class="bouton" id="vider">Vider la liste</button>
+  </div>
+  <div class="liste" id="liste" aria-live="polite"></div>
+</div>
+<script>
+const liste = document.getElementById("liste");
+const taille = (n) => !n ? "" : n < 1024 * 1024 ? Math.max(1, Math.round(n / 1024)) + " Ko" : n < 1024 ** 3 ? (n / 1024 / 1024).toFixed(1).replace(".", ",") + " Mo" : (n / 1024 ** 3).toFixed(2).replace(".", ",") + " Go";
+const hote = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return ""; } };
+const quand = (t) => new Date(t).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids.filter(Boolean)); return n; };
+const bouton = (texte, type, id) => el("button", { className: "bouton", textContent: texte, onclick: () => onirique.envoyer({ type, id }) });
+let vitesses = {};
+function afficher(dls) {
+  if (!dls.length) { liste.replaceChildren(el("p", { className: "vide", textContent: "Aucun téléchargement pour l'instant." })); return; }
+  liste.replaceChildren(...dls.map((d) => {
+    const enCours = d.etat === "encours" || d.etat === "pause";
+    const ext = (d.nom.split(".").pop() || "").slice(0, 4);
+    // La vitesse : l'écart depuis le dernier passage.
+    const avant = vitesses[d.id], maintenant = Date.now();
+    let debit = "";
+    if (d.etat === "encours" && avant && maintenant > avant.t) debit = taille(Math.max(0, (d.recu - avant.recu) / ((maintenant - avant.t) / 1000))) + "/s";
+    vitesses[d.id] = { t: maintenant, recu: d.recu };
+    const info = d.etat === "fini" ? [taille(d.total || d.recu), hote(d.url), quand(d.debut), d.existe ? "" : "fichier supprimé ou déplacé"]
+      : d.etat === "annule" ? ["Annulé", hote(d.url)] : d.etat === "interrompu" ? ["Interrompu", hote(d.url)]
+      : [taille(d.recu) + (d.total ? " sur " + taille(d.total) : ""), d.etat === "pause" ? "en pause" : debit, hote(d.url)];
+    const nom = d.etat === "fini" && d.existe ? el("button", { className: "nom", textContent: d.nom, title: "Ouvrir " + d.nom, onclick: () => onirique.envoyer({ type: "dlOuvrir", id: d.id }) }) : el("span", { className: "nom", textContent: d.nom });
+    const barre = enCours ? el("div", { className: "barre" + (d.total ? "" : " attente") }, el("i", { style: "width:" + (d.total ? Math.round(d.recu / d.total * 100) : 0) + "%" })) : null;
+    const actions = enCours ? [d.etat === "pause" ? bouton("Reprendre", "dlReprendre", d.id) : bouton("Pause", "dlPause", d.id), bouton("Annuler", "dlAnnuler", d.id)]
+      : [d.existe ? bouton("Afficher", "dlDossier", d.id) : null, bouton("×", "dlRetirer", d.id)];
+    actions.at(-1)?.setAttribute("aria-label", enCours ? "Annuler " + d.nom : "Retirer " + d.nom + " de la liste");
+    return el("div", { className: "dl" + (d.etat === "fini" && !d.existe || d.etat === "annule" || d.etat === "interrompu" ? " efface" : "") },
+      el("span", { className: "ext", textContent: ext }), el("div", { style: "min-width:0" }, nom, el("span", { className: "info", textContent: info.filter(Boolean).join(" · ") }), barre),
+      el("div", { className: "actions" }, ...actions.filter(Boolean)));
+  }));
+}
+document.getElementById("dossier").onclick = () => onirique.envoyer({ type: "dlDossier", id: 0 });
+document.getElementById("vider").onclick = () => onirique.envoyer({ type: "dlVider" });
+onirique.surMessage((m) => { if (m?.type === "telechargements") afficher(m.liste); });
+onirique.envoyer({ type: "lire" });
+onirique.envoyer({ type: "telechargements" });
+</script>
+</body>
+</html>

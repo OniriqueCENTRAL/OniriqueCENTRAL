@@ -110,6 +110,7 @@ sealed partial class Navigateur : Form
     const string Accueil = "https://" + Hote + "/index.html";
     const string PageParametres = "https://" + Hote + "/parametres.html";
     const string PageHistorique = "https://" + Hote + "/historique.html";
+    const string PageTelechargements = "https://" + Hote + "/telechargements.html";
 
     internal readonly List<Onglet> Onglets = new();
     internal Onglet? Actif;
@@ -123,6 +124,7 @@ sealed partial class Navigateur : Form
     readonly Bouton recharger = new("", "Actualiser (F5)");
     readonly Bouton vpn = new("", "VPN ONIRIQUE : éteint");
     readonly Bouton historique = new("\uE81C", "Historique (Ctrl+H)");
+    readonly Bouton boutonTelechargements = new("\uE896", "T\u00E9l\u00E9chargements (Ctrl+J)");
     readonly Bouton reglages = new("", "Paramètres");
     readonly Champ champ = new();
     readonly Label memoire = new() { ForeColor = DA.Cendre, BackColor = DA.Fond, TextAlign = ContentAlignment.MiddleRight, AccessibleName = "Mémoire utilisée" };
@@ -132,7 +134,6 @@ sealed partial class Navigateur : Form
     readonly string[] adressesDeDepart;
     readonly string scriptGoogle;
     CoreWebView2Environment? env;
-    FormWindowState etatAvantPleinEcran;
     string vpnEtat = "eteint";   // eteint, connexion, actif
     string? vpnRelais;
     DateTime vpnAnnonce, misesAJourVues;
@@ -162,7 +163,7 @@ sealed partial class Navigateur : Form
 
         bandeau = new Bandeau(this) { Dock = DockStyle.Top };
         bulle = new Bulle(this);
-        barre.Controls.AddRange(new Control[] { retour, avance, recharger, champ, vpn, boutonExtensions, historique, reglages, memoire });
+        barre.Controls.AddRange(new Control[] { retour, avance, recharger, champ, vpn, boutonExtensions, historique, boutonTelechargements, reglages, memoire });
         barre.Paint += (_, e) => { using var p = new Pen(DA.Filet); e.Graphics.DrawLine(p, 0, barre.Height - 1, barre.Width, barre.Height - 1); };
         barre.Resize += (_, _) => Disposer();
         contenu.Controls.Add(bulle);
@@ -184,6 +185,7 @@ sealed partial class Navigateur : Form
         vpn.Click += async (_, _) => await BasculerVpn(vpnEtat == "eteint");
         reglages.Click += (_, _) => OuvrirInterne(PageParametres);
         historique.Click += (_, _) => OuvrirInterne(PageHistorique);
+        boutonTelechargements.Click += (_, _) => OuvrirInterne(PageTelechargements);
         boutonExtensions.Click += (_, _) => MenuExtensions();
         champ.Saisie.KeyDown += (_, e) =>
         {
@@ -324,7 +326,7 @@ sealed partial class Navigateur : Form
         champ.Saisie.Font = new Font("Segoe UI Variable Text", this.S(14), GraphicsUnit.Pixel);
         bandeau.Icones = new Font("Segoe Fluent Icons", this.S(10), GraphicsUnit.Pixel);
         var icones = new Font("Segoe Fluent Icons", this.S(14), GraphicsUnit.Pixel);
-        foreach (var b in new[] { retour, avance, recharger, vpn, historique, reglages, lecteur, studio, boutonExtensions }) b.Font = icones;
+        foreach (var b in new[] { retour, avance, recharger, vpn, historique, boutonTelechargements, reglages, lecteur, studio, boutonExtensions }) b.Font = icones;
         EchelleAjouts();
         memoire.Font = new Font("Cascadia Mono", this.S(11), GraphicsUnit.Pixel);
         bulle.Font = new Font("Segoe UI Variable Text", this.S(13), GraphicsUnit.Pixel);
@@ -337,7 +339,7 @@ sealed partial class Navigateur : Form
         foreach (var b in new Control[] { retour, avance, recharger }) { b.SetBounds(x, y, this.S(36), h); x += pas; }
         int droite = barre.Width - this.S(10);
         if (memoire.Visible) { int m = this.S(76); droite -= m; memoire.SetBounds(droite, y, m, h); droite -= this.S(4); }
-        foreach (var b in new Control[] { reglages, historique, boutonExtensions, vpn, lecteur, studio }) { if (!b.Visible) continue; droite -= this.S(36); b.SetBounds(droite, y, this.S(36), h); droite -= this.S(2); }
+        foreach (var b in new Control[] { reglages, historique, boutonTelechargements, boutonExtensions, vpn, lecteur, studio }) { if (!b.Visible) continue; droite -= this.S(36); b.SetBounds(droite, y, this.S(36), h); droite -= this.S(2); }
         champ.SetBounds(x + this.S(6), y, Math.Max(0, droite - x - this.S(14)), h);
         bulle.Placer();
         PlacerAjouts();
@@ -431,6 +433,7 @@ sealed partial class Navigateur : Form
         };
         c.WindowCloseRequested += (_, _) => Fermer(o);
         c.ContainsFullScreenElementChanged += (_, _) => PleinEcran(c.ContainsFullScreenElement);
+        c.DownloadStarting += (_, e) => SuivreTelechargement(e);
         c.FaviconChanged += async (_, _) =>
         {
             Image? icone = null;
@@ -591,6 +594,16 @@ sealed partial class Navigateur : Form
                 Envoyer(source, new JsonObject { ["type"] = "maj", ["etat"] = "recherche" });
                 var resultat = await ChercherMiseAJour(silencieux: false);
                 Envoyer(source, new JsonObject { ["type"] = "maj", ["etat"] = resultat });
+                return;
+            case "telechargements":
+            case "dlOuvrir":
+            case "dlDossier":
+            case "dlAnnuler":
+            case "dlPause":
+            case "dlReprendre":
+            case "dlRetirer":
+            case "dlVider":
+                CommandeTelechargement(source, m);
                 return;
             case "historique":
                 Envoyer(source, new JsonObject { ["type"] = "historique", ["entrees"] = Historique.Chercher((string?)m["q"]) });
@@ -911,22 +924,7 @@ sealed partial class Navigateur : Form
         Environment.Exit(0);
     }
 
-    void PleinEcran(bool oui)
-    {
-        bandeau.Visible = barre.Visible = !oui;
-        if (oui)
-        {
-            etatAvantPleinEcran = WindowState;
-            FormBorderStyle = FormBorderStyle.None;
-            WindowState = FormWindowState.Normal;
-            WindowState = FormWindowState.Maximized;
-        }
-        else
-        {
-            FormBorderStyle = FormBorderStyle.Sizable;
-            WindowState = etatAvantPleinEcran;
-        }
-    }
+    void PleinEcran(bool oui) { pleinEcranPage = oui; RegarderPleinEcran(); }
 
     protected override bool ProcessCmdKey(ref Message msg, Keys touches)
     {
@@ -1326,7 +1324,7 @@ sealed class Bandeau : Control
                 g.FillEllipse(coeur, icone.X + this.S(5), icone.Y + this.S(5), this.S(6), this.S(6));
             }
             else if (o.Icone != null) g.DrawImage(o.Icone, icone);
-            else TextRenderer.DrawText(g, o.Url.Contains("/parametres.html") ? "" : o.Url.Contains("/historique.html") ? "" : "", Icones, icone, DA.Cendre, flags);
+            else TextRenderer.DrawText(g, o.Url.Contains("/parametres.html") ? "" : o.Url.Contains("/historique.html") ? "" : o.Url.Contains("/telechargements.html") ? "" : "", Icones, icone, DA.Cendre, flags);
 
             int droite = r.Right - this.S(CroixVisible(i) ? 32 : 10);
             if (o.Son)

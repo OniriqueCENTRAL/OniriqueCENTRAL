@@ -76,25 +76,46 @@ sealed partial class Navigateur
     }
 
     bool PleinEcranFenetre;
-    FormWindowState etatAvantF11;
-    void BasculerPleinEcranFenetre()
+    void BasculerPleinEcranFenetre() { PleinEcranFenetre = !PleinEcranFenetre; RegarderPleinEcran(); }
+
+    // Le vrai plein écran (F11, ou une vidéo passée en plein écran) : la page seule, sur tout l'écran, barre des
+    // tâches comprise ; ni onglets, ni barre d'adresse, ni favoris, ni barre latérale. Échap ou F11 en sortent.
+    bool pleinEcranPage, pleinEcranActif;
+    FormWindowState etatAvantPleinEcran;
+    Rectangle cadreAvantPleinEcran;
+    void RegarderPleinEcran()
     {
-        PleinEcranFenetre = !PleinEcranFenetre;
-        bandeau.Visible = barre.Visible = !PleinEcranFenetre;
-        favoris.Visible = !PleinEcranFenetre && Reglages.BarreFavoris;
-        if (PleinEcranFenetre)
+        bool oui = PleinEcranFenetre || pleinEcranPage;
+        if (oui == pleinEcranActif) return;
+        pleinEcranActif = oui;
+        SuspendLayout();
+        bandeau.Visible = barre.Visible = !oui;
+        favoris.Visible = !oui && Reglages.BarreFavoris;
+        laterale.Visible = !oui && Reglages.BarreLaterale;
+        panneau.Visible = !oui;
+        if (oui)
         {
-            etatAvantF11 = WindowState;
+            etatAvantPleinEcran = WindowState;
+            cadreAvantPleinEcran = WindowState == FormWindowState.Normal ? Bounds : RestoreBounds;
+            var ecran = Screen.FromControl(this).Bounds;
             FormBorderStyle = FormBorderStyle.None;
             WindowState = FormWindowState.Normal;
-            WindowState = FormWindowState.Maximized;
+            Bounds = ecran;
+            TopMost = true;
         }
         else
         {
+            TopMost = false;
             FormBorderStyle = FormBorderStyle.Sizable;
-            WindowState = etatAvantF11;
+            Bounds = cadreAvantPleinEcran;
+            WindowState = etatAvantPleinEcran;
         }
+        ResumeLayout();
+        Actif?.Vue?.Focus();
     }
+    // Hors du navigateur (Alt+Tab, autre fenêtre), il ne reste pas au-dessus de tout.
+    protected override void OnDeactivate(EventArgs e) { base.OnDeactivate(e); if (pleinEcranActif) TopMost = false; }
+    protected override void OnActivated(EventArgs e) { base.OnActivated(e); if (pleinEcranActif) TopMost = true; }
 
     /// <summary>Les raccourcis de Chrome ; vrai si la touche a été prise ici.</summary>
     bool RaccourciChrome(Keys touches)
@@ -120,7 +141,7 @@ sealed partial class Navigateur
                 Reglages.Enregistrer();
                 return true;
             case Keys.Control | Keys.Shift | Keys.O: OuvrirInterne(Accueil); return true;
-            case Keys.Control | Keys.J: c?.OpenDefaultDownloadDialog(); return true;
+            case Keys.Control | Keys.J: OuvrirInterne(PageTelechargements); return true;
             case Keys.Control | Keys.Shift | Keys.Delete: OuvrirInterne(PageParametres + "#confidentialite"); return true;
             case Keys.Control | Keys.F5:
             case Keys.Shift | Keys.F5:
@@ -130,6 +151,7 @@ sealed partial class Navigateur
                 return true;
             case Keys.Alt | Keys.Home: c?.Navigate(Accueil); return true;
             case Keys.F11: BasculerPleinEcranFenetre(); return true;
+            case Keys.Escape when PleinEcranFenetre: BasculerPleinEcranFenetre(); return true;
             case Keys.Escape when Actif?.Charge == true && !champ.Saisie.Focused: c?.Stop(); return true;
             case Keys.Control | Keys.U: if (c != null && !EstInterne(c.Source)) _ = Ouvrir("view-source:" + c.Source, Onglets.IndexOf(Actif!) + 1); return true;
             case Keys.Control | Keys.Shift | Keys.PageUp: DeplacerActif(-1); return true;
