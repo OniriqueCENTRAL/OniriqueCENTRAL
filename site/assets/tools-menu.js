@@ -13,6 +13,7 @@ window.OniriqueTools = [
     ["Comparer à une référence", "comparer-mix", "Ton mix face à un titre de référence : volume, fréquences, stéréo, et l'écoute A/B à volume égal."],
     ["IA SPLIT", "split", "Sépare un morceau par IA : voix seule, instru sans voix, mélodie, drums et basse, en WAV."],
     ["Stems et packs de prods", "stems", "Stems contrôlés, reconnus et renommés ; prods renommées avec leur BPM et leur tonalité, en un pack."],
+    ["Transfert de playlist", "transfert-playlist", "Une playlist de Spotify, Deezer, Apple Music, Tidal ou YouTube Music retrouvée titre par titre sur une autre."],
     ["Popularité", "popularite", "Le score de popularité Spotify d'un artiste ou d'un titre."],
   ]],
   ["Tempo et notes", [

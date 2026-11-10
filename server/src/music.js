@@ -107,6 +107,18 @@ async function appleExact(item) {
   return url ? url.replace(/[?&]uo=\d+/, '').replace(/\?$/, '') : null;
 }
 
+/** Le même titre sur une autre plateforme : { url, exact }. Deezer et Apple Music par leur recherche publique (lien
+ *  exact quand artiste et titre concordent) ; Spotify, Tidal et YouTube Music ne se cherchent pas sans compte : le lien
+ *  ouvre leur recherche sur ce titre. */
+export async function findOn(item, platform) {
+  const it = { type: 'track', title: item.title, artist: item.artist }, q = encodeURIComponent(query(it));
+  const exact = platform === 'deezer' ? await deezerExact(it).catch(() => null) : platform === 'apple' ? await appleExact(it).catch(() => null) : null;
+  if (exact) return { url: exact, exact: true };
+  const search = { spotify: `https://open.spotify.com/search/${q}`, deezer: `https://www.deezer.com/search/${q}`, apple: `https://music.apple.com/fr/search?term=${q}`,
+    tidal: `https://listen.tidal.com/search?q=${q}`, youtubemusic: `https://music.youtube.com/search?q=${q}` };
+  return { url: search[platform], exact: false };
+}
+
 /** Les plateformes d'un lien de musique : { type, title, artist, cover, platforms: [{ id, url, exact }] }, ou null. */
 export async function alternatives(link) {
   const item = await identify(link).catch(() => null);

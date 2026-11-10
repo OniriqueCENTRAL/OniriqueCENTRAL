@@ -45,6 +45,7 @@ import { mountTierList } from './tierlist.js';
 import { mountHm } from './hm.js';
 import { mountWatchparty } from './watchparty.js';
 import { mountPlatforms } from './platforms.js';
+import { mountTransfer } from './transfer.js';
 import { mountRatings } from './ratings.js';
 import { mountProfiles } from './profiles.js';
 import { mountMessages } from './messages.js';
@@ -570,6 +571,7 @@ export function createApp() {
   mountSounds(app, { requireUser, receiveFile, receiveImage, removeMedia, wrap });
   // Spotify, Deezer et Apple Music dans les playlists d'ONIRIQUE CLOUD (comptes liés, titres mêlés aux sons du CLOUD).
   mountPlatforms(app, { requireUser, wrap });
+  mountTransfer(app, { wrap });
   // Notes, ups et top 3 de la semaine des playlists d'ONIRIQUE CLOUD.
   mountRatings(app, { requireUser });
   mountCut(app, { requireUser, receiveFile, wrap });
