@@ -172,23 +172,46 @@ static class Installation
             k.SetValue(Nom, CleClient + @"\Capabilities");
     }
 
+    /// <summary>Depuis « Programmes et fonctionnalités » (--desinstaller) : deux questions, puis la désinstallation.</summary>
     public static void Desinstaller()
     {
         if (MessageBox.Show($"Désinstaller {Nom} ?", Nom, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
-        bool donnees = MessageBox.Show("Effacer aussi tes données de navigation (historique, cookies, mots de passe enregistrés, réglages) ?",
+        bool donnees = MessageBox.Show("Effacer aussi tes données de navigation (historique, cookies, mots de passe enregistrés, favoris, réglages) ?",
             Nom, MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) == DialogResult.Yes;
+        Desinstaller(donnees, depuisLeNavigateur: false);
+    }
 
+    /// <summary>
+    /// Retire tout ce que l'installation a posé : raccourcis, entrées de Windows (programme, navigateur par défaut, liens et
+    /// fichiers), puis le dossier du programme et, si demandé, celui des données. Les dossiers partent après la fermeture de
+    /// toutes les fenêtres du navigateur et de leurs moteurs WebView2 (un fichier ouvert ne s'efface pas) ; une fenêtre
+    /// encore ouverte au bout de 15 s est fermée de force.
+    /// </summary>
+    public static void Desinstaller(bool donnees, bool depuisLeNavigateur)
+    {
         foreach (var lien in new[] { RaccourciMenu, RaccourciBureau }) try { File.Delete(lien); } catch { }
-        Registry.CurrentUser.DeleteSubKeyTree(CleDesinstallation, false);
-        Registry.CurrentUser.DeleteSubKeyTree(CleClient, false);
-        Registry.CurrentUser.DeleteSubKeyTree($@"Software\Classes\{ProgId}", false);
-        using (var k = Registry.CurrentUser.OpenSubKey(@"Software\RegisteredApplications", true)) k?.DeleteValue(Nom, false);
+        try { Registry.CurrentUser.DeleteSubKeyTree(CleDesinstallation, false); } catch { }
+        try { Registry.CurrentUser.DeleteSubKeyTree(CleClient, false); } catch { }
+        try { Registry.CurrentUser.DeleteSubKeyTree($@"Software\Classes\{ProgId}", false); } catch { }
+        try { using var k = Registry.CurrentUser.OpenSubKey(@"Software\RegisteredApplications", true); k?.DeleteValue(Nom, false); } catch { }
 
-        // Le fichier en cours d'exécution ne peut pas s'effacer lui-même : le dossier part juste après sa fermeture.
-        var commande = $"/c timeout /t 3 /nobreak >nul & rmdir /s /q \"{Dossier}\"";
-        if (donnees) commande += $" & rmdir /s /q \"{Parametres.Dossier}\"";
-        Process.Start(new ProcessStartInfo("cmd.exe", commande) { CreateNoWindow = true, UseShellExecute = false });
-        MessageBox.Show($"{Nom} est désinstallé.", Nom, MessageBoxButtons.OK, MessageBoxIcon.Information);
+        string q(string s) => "'" + s.Replace("'", "''") + "'";
+        var script = $$"""
+            $exe = {{q(Exe)}}; $dossiers = @({{q(Dossier)}}{{(donnees ? ", " + q(Parametres.Dossier) : "")}})
+            $fin = (Get-Date).AddSeconds(15)
+            while ((Get-Process | Where-Object { $_.Path -eq $exe }) -and (Get-Date) -lt $fin) { Start-Sleep -Milliseconds 400 }
+            Get-Process | Where-Object { $_.Path -eq $exe } | Stop-Process -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds 2
+            foreach ($d in $dossiers) { for ($i = 0; $i -lt 20 -and (Test-Path -LiteralPath $d); $i++) { Remove-Item -LiteralPath $d -Recurse -Force -ErrorAction SilentlyContinue; if (Test-Path -LiteralPath $d) { Start-Sleep -Milliseconds 500 } } }
+            Add-Type -AssemblyName System.Windows.Forms
+            $reste = @($dossiers | Where-Object { Test-Path -LiteralPath $_ })
+            if ($reste.Count) { [System.Windows.Forms.MessageBox]::Show("ONIRIQUE Navigateur est désinstallé, mais ce dossier n'a pas pu être effacé : " + ($reste -join ', '), 'ONIRIQUE Navigateur') | Out-Null }
+            elseif ({{(depuisLeNavigateur ? "$true" : "$false")}}) { [System.Windows.Forms.MessageBox]::Show('ONIRIQUE Navigateur est désinstallé.', 'ONIRIQUE Navigateur') | Out-Null }
+            """;
+        var code = Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(script));
+        Process.Start(new ProcessStartInfo("powershell.exe", $"-NoProfile -WindowStyle Hidden -EncodedCommand {code}")
+        { CreateNoWindow = true, UseShellExecute = false, WorkingDirectory = Path.GetTempPath() });
+        if (!depuisLeNavigateur) MessageBox.Show($"{Nom} est désinstallé.", Nom, MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
     /// <summary>Efface la version remplacée par la dernière mise à jour.</summary>

@@ -590,6 +590,11 @@ sealed partial class Navigateur : Form
                 if (genres != 0) await source.Profile.ClearBrowsingDataAsync(genres);
                 Envoyer(source, new JsonObject { ["type"] = "efface" });
                 return;
+            case "desinstaller":
+                if (!Installation.EstInstallee) return;
+                Installation.Desinstaller((bool?)m["donnees"] ?? true, depuisLeNavigateur: true);
+                Application.Exit();
+                return;
             case "majs":
                 Envoyer(source, new JsonObject { ["type"] = "maj", ["etat"] = "recherche" });
                 var resultat = await ChercherMiseAJour(silencieux: false);

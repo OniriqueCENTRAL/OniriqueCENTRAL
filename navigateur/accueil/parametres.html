@@ -101,6 +101,14 @@ section.visible .carte:nth-of-type(4) { animation-delay: .15s; }
 .bouton:hover { border-color: rgba(var(--acc-hi), .5); }
 .bouton:active { transform: scale(.97); }
 .bouton.principal { background: linear-gradient(rgb(var(--acc)), rgb(var(--acc-lo))); border-color: transparent; }
+.bouton.danger { color: #ff8a95; border-color: rgba(255, 90, 104, .35); }
+.bouton.danger:hover { border-color: #ff5a68; background: rgba(255, 90, 104, .1); }
+dialog.confirmer { width: min(460px, calc(100vw - 32px)); padding: 22px; border: 1px solid var(--line); border-radius: 16px; background: #121012; color: var(--bone); }
+dialog.confirmer::backdrop { background: rgba(0, 0, 0, .6); backdrop-filter: blur(4px); }
+dialog.confirmer h3 { margin: 0 0 8px; font: 800 18px "Unbounded", sans-serif; }
+dialog.confirmer p { margin: 0 0 14px; color: var(--haze); }
+dialog.confirmer label { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 18px; cursor: pointer; }
+dialog.confirmer .boutons { display: flex; justify-content: flex-end; gap: 8px; }
 .bouton[disabled] { opacity: .5; cursor: default; }
 .choix button:disabled { opacity: .35; cursor: default; }
 .cases { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 0 20px 16px; }
@@ -357,11 +365,21 @@ body.sans-animations *, body.sans-animations *::before, body.sans-animations *::
           <div class="texte"><b>Rechercher une mise à jour</b><small class="statut" id="maj-statut" aria-live="polite"></small></div>
           <button class="bouton" id="majs">Rechercher</button>
         </div>
+        <div class="ligne" id="desinstaller-ligne" hidden>
+          <div class="texte"><b>Désinstaller ONIRIQUE Navigateur</b><small>Retire le navigateur de ce PC : le programme, ses raccourcis et ce qu'il a inscrit dans Windows.</small></div>
+          <button class="bouton danger" id="desinstaller">Désinstaller</button>
+        </div>
       </div>
       <p class="note">Construit sur Chromium, le moteur libre de Chrome et d'Edge, par l'intermédiaire de Microsoft Edge WebView2.</p>
     </section>
   </main>
 </div>
+<dialog class="confirmer" id="desinstaller-fenetre" aria-labelledby="desinstaller-titre">
+  <h3 id="desinstaller-titre">Désinstaller ONIRIQUE Navigateur ?</h3>
+  <p>Toutes les fenêtres du navigateur vont se fermer, puis il sera retiré de ce PC.</p>
+  <label><input type="checkbox" id="desinstaller-donnees" checked> Effacer aussi mes données : historique, cookies, mots de passe enregistrés, favoris, téléchargements listés et réglages. Les fichiers téléchargés restent dans ton dossier Téléchargements.</label>
+  <div class="boutons"><button class="bouton" id="desinstaller-non">Annuler</button><button class="bouton danger" id="desinstaller-oui">Désinstaller</button></div>
+</dialog>
 <script>
 const envoyer = (m) => window.chrome?.webview?.postMessage(m);
 let etat = null;
@@ -426,6 +444,14 @@ document.getElementById("google").onclick = () => envoyer({ type: "google" });
 document.getElementById("motsdepasse").onclick = () => envoyer({ type: "google", page: "motsdepasse" });
 document.getElementById("defaut").onclick = () => envoyer({ type: "defaut" });
 document.getElementById("majs").onclick = () => envoyer({ type: "majs" });
+// Désinstaller : une confirmation ici, puis le navigateur ferme ses fenêtres et s'efface.
+const fenetreDesinstaller = document.getElementById("desinstaller-fenetre");
+document.getElementById("desinstaller").onclick = () => fenetreDesinstaller.showModal();
+document.getElementById("desinstaller-non").onclick = () => fenetreDesinstaller.close();
+document.getElementById("desinstaller-oui").onclick = () => {
+  envoyer({ type: "desinstaller", donnees: document.getElementById("desinstaller-donnees").checked });
+  fenetreDesinstaller.close();
+};
 document.getElementById("effacer").onclick = () => {
   const quoi = [...document.querySelectorAll(".cases input:checked")].map((i) => i.value);
   if (!quoi.length) return;
@@ -518,6 +544,7 @@ function afficher(m) {
   document.getElementById("choix-image").disabled = !a.fond;
   document.getElementById("ext-ajouter").disabled = false;
   document.getElementById("version").textContent = m.version;
+  document.getElementById("desinstaller-ligne").hidden = !m.installe;
   const maj = document.getElementById("maj-statut");
   if (m.majPrete) maj.textContent = `La version ${m.majPrete} est prête : elle s'ouvrira au prochain lancement.`;
   else if (!m.installe) maj.textContent = "Version d'essai sans installation : les mises à jour arrivent une fois le navigateur installé.";
