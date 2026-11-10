@@ -139,12 +139,13 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
 /* Rubriques : une barre d'onglets collée en haut, une rubrique visible à la fois */
 .tabs { position: sticky; top: 0; z-index: 30; display: flex; gap: 4px; overflow-x: auto; margin: 26px -4px 8px; padding: 10px 4px; background: linear-gradient(180deg, var(--night) 75%, transparent); scrollbar-width: none; }
 .tabs::-webkit-scrollbar { display: none; }
-.tabs button { flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 11px 16px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.02); color: var(--haze); font: 600 12px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; transition: color .2s, border-color .2s, background .2s; }
-.tabs button:hover { color: var(--mist); border-color: rgba(var(--acc),.5); }
-.tabs button[aria-selected="true"] { color: var(--bone); border-color: var(--ember); background: rgba(var(--acc),.16); }
+.tabs button { flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 11px 16px; border: 0; border-radius: 999px; background: rgba(255,255,255,.04); color: var(--haze); font: 600 12px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; transition: color .2s, border-color .2s, background .2s; }
+.tabs button:hover { color: var(--mist); background: rgba(255,255,255,.08); }
+.tabs button[aria-selected="true"] { color: #fff; background: rgb(var(--acc)); }
 .tabs button:focus { outline: none; }
-.tabs button:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--acc),.35); }
+.tabs button:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--night), 0 0 0 4px rgba(var(--acc),.6); }
 .tabs button b { min-width: 18px; padding: 3px 6px; border-radius: 999px; background: var(--ember); color: #fff; font: 700 10px/1 var(--f-mono); letter-spacing: 0; }
+.tabs button[aria-selected="true"] b { background: #fff; color: rgb(var(--acc)); }
 .tab > .bar:first-child, .tab > .tiles:first-child { margin-top: 10px; }
 .knobs { display: block; width: 100%; height: 1600px; border: 0; margin-top: 10px; }
 /* Comptes : la photo à côté de l'adresse ; la suppression demande de taper SUPPRIME */
