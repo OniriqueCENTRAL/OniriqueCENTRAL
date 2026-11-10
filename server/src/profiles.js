@@ -211,8 +211,8 @@ export function mountProfiles(app, { requireUser, receiveImage, receiveFile, rem
   // Chercher un GIF de fond, comme dans Discord : KLIPY, interrogé par le serveur (la clé reste ici). Sans mot, les
   // tendances. Chaque résultat garde un aperçu léger et le fichier à prendre (vidéo MP4 de préférence : bien plus légère).
   const KLIPY_FILES = /^https:\/\/([a-z0-9-]+\.)*klipy\.com\//;
-  const pickFile = (f, kinds) => {
-    for (const size of ['hd', 'md', 'sm', 'xs']) for (const kind of kinds) {
+  const pickFile = (f, kinds, sizes = ['hd', 'md', 'sm', 'xs']) => {
+    for (const size of sizes) for (const kind of kinds) {
       const url = f?.[size]?.[kind]?.url;
       if (typeof url === 'string' && KLIPY_FILES.test(url)) return url;
     }
@@ -229,7 +229,7 @@ export function mountProfiles(app, { requireUser, receiveImage, receiveFile, rem
     const body = await r.json().catch(() => ({}));
     const items = body?.data?.data || body?.data || body?.results || [];
     res.json({ gifs: (Array.isArray(items) ? items : []).map((g) => ({ id: String(g.id ?? g.slug ?? ''), title: clean(g.title, 120),
-      preview: pickFile(g.file, ['webp', 'gif']) || pickFile(g.file, ['mp4']),
+      preview: pickFile(g.file, ['webp', 'gif'], ['sm', 'xs', 'md', 'hd']),
       file: pickFile(g.file, ['mp4', 'webm', 'gif']) })).filter((g) => g.preview && g.file) });
   }));
   // Le GIF choisi est copié chez nous (30 Mo au plus) : la page ne dépend plus de KLIPY ensuite.
