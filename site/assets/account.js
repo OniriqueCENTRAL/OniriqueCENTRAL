@@ -73,6 +73,7 @@ ${spark(1)}${spark(2)}${spark(3)}
 .acct-button { position: relative; }
 .acct-dot { position: absolute; top: 2px; left: 30px; width: 10px; height: 10px; border-radius: 50%; background: rgb(var(--acc, 229,56,74)); border: 2px solid var(--night, #09080a); box-shadow: 0 0 10px rgb(var(--acc, 229,56,74)); }
 .acct-menu hr { margin: 6px 4px; border: 0; border-top: 1px solid rgba(255,235,238,.08); }
+.acct-head + hr { display: none; }
 .acct-menu h6 { margin: 0; padding: 8px 12px 4px; font: 500 10px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .12em; text-transform: uppercase; color: var(--haze, #a8939a); }
 .acct-menu .acct-out { color: rgb(var(--acc-hi, 255,142,154)); }
 /* Téléphone : le menu prend la largeur de l'écran sous l'en-tête, au lieu de déborder à gauche du bouton. */
@@ -123,29 +124,22 @@ ${spark(1)}${spark(2)}${spark(3)}
     const menu = el("div", { className: "acct-menu", hidden: true },
       el("div", { className: "acct-head" }, el("img", { src: avatar(user), alt: "" }),
         el("div", {}, el("strong", { textContent: name }), el("small", { textContent: user.email }), ROLES[user.role] ? el("em", { textContent: ROLES[user.role] }) : null)),
-      item("Mon compte", "compte"),
-      item("Paramètres", "compte#parametres"),
-      item("Mes licences", "compte#licences"),
-      item("Parrainage", "compte#parrainage"),
-      profileItem,
-      messagesItem,
-      item("Carte des membres", "carte"),
-      item("Tierlist", "tierlist"), // ouverte à tout compte connecté (server/src/tierlist.js)
-      // Réservée aux membres ONIRIQUE, beta-testeurs, équipe et fondateurs (ONIRIQUE dans server/src/docs.js).
-      ["vip", "beta", "betaf", "admin", "founder"].includes(user.role) ? item("WATCHPARTY", "watchparty") : null,
-      el("hr"),
-      item("Boutique", "boutique"),
-      download,
-      item("Support", "support"),
-      ROLES[user.role] && !["vip", "beta", "betaf"].includes(user.role) ? item("Administration", "admin") : null,
-      // Les outils, pour les rôles qui y ont droit : ONIRIQUE CLOUD, la page de liens, les Shorts YouTube programmés.
+      // Rangé par usage : le compte, la communauté, ses outils, ONIRIQUE, puis l'administration à part.
       ...(() => {
-        const rights = me.rights || [], tools = [
-          item(rights.includes("sounds") ? "ONIRIQUE CLOUD" : "ONIRIQUE CLOUD · gratuit", "mes-sons"), // CLOUD gratuit pour tout compte (30 sons)
-          rights.includes("links") && item("Mes liens", "mes-liens"),
-          rights.includes("youtube") && item("Shorts YouTube", "compte#youtube"),
-        ].filter(Boolean);
-        return tools.length ? [el("hr"), el("h6", { textContent: "Outils" }), ...tools] : [];
+        const rights = me.rights || [];
+        const group = (title, items) => { const list = items.filter(Boolean); return list.length ? [el("hr"), el("h6", { textContent: title }), ...list] : []; };
+        return [
+          ...group("Mon compte", [item("Mon compte", "compte"), item("Paramètres", "compte#parametres"), item("Mes licences", "compte#licences"), item("Parrainage", "compte#parrainage")]),
+          ...group("Communauté", [messagesItem, profileItem, item("Carte des membres", "carte"),
+            item("Tierlist", "tierlist"), // ouverte à tout compte connecté (server/src/tierlist.js)
+            // Réservée aux membres ONIRIQUE, beta-testeurs, équipe et fondateurs (ONIRIQUE dans server/src/docs.js).
+            ["vip", "beta", "betaf", "admin", "founder"].includes(user.role) ? item("WATCHPARTY", "watchparty") : null]),
+          ...group("Outils", [item(rights.includes("sounds") ? "ONIRIQUE CLOUD" : "ONIRIQUE CLOUD · gratuit", "mes-sons"), // CLOUD gratuit pour tout compte (30 sons)
+            rights.includes("links") && item("Mes liens", "mes-liens"),
+            rights.includes("youtube") && item("Shorts YouTube", "compte#youtube")]),
+          ...group("ONIRIQUE", [item("Boutique", "boutique"), download, item("Support", "support")]),
+          ...(ROLES[user.role] && !["vip", "beta", "betaf"].includes(user.role) ? [el("hr"), item("Administration", "admin")] : []),
+        ];
       })(),
       el("hr"),
       out);

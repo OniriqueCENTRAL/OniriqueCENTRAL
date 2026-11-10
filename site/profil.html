@@ -253,6 +253,9 @@ input[type="range"] { min-height: 0; padding: 0; accent-color: var(--ember); }
         <label class="check"><input id="f-glass" type="checkbox"> Blocs en verre (effet liquid glass)</label>
         <label class="check"><input id="f-center" type="checkbox"> Nom et photo centrés</label>
         <div><label>Ordre des blocs</label><ul class="order-list" id="f-order"></ul></div>
+        <div id="f-packs-field"><label>Packs montrés dans l'onglet Packs</label>
+          <p class="muted" style="margin:6px 0 0;font-size:13px">Seuls les packs cochés s'affichent sur ta page. Un pack doit avoir un lien d'écoute ouvert pour apparaître ici.</p>
+          <div class="tags" id="f-packs"></div></div>
       </div>
       <div class="between"><button class="btn btn-primary" type="submit">Enregistrer</button><a class="btn btn-ghost" id="edit-cancel" href="#" hidden>Annuler</a>
         <button class="link danger" id="delete" type="button" hidden>Supprimer ma page</button></div>
@@ -382,7 +385,7 @@ function drawView() {
     x.cover ? el("img", { src: x.cover + "?w=320", alt: "", loading: "lazy" }) : el("span", { className: "ph" }),
     el("b", { textContent: x.title }),
     el("small", { textContent: x.tracks + " prod" + (x.tracks > 1 ? "s" : "") })))
-    : [el("p", { className: "muted", style: "margin:0", textContent: "Tes packs d'ONIRIQUE CLOUD qui ont un lien d'écoute ouvert apparaissent ici." })]));
+    : [el("p", { className: "muted", style: "margin:0", textContent: "Choisis les packs à montrer ici dans « Modifier ma page »." })]));
   // Un beatmaker sans playlist : sa page s'ouvre sur ses packs.
   if (p.packs.length && !p.playlists.length && document.querySelector(".tabs .on").dataset.tab === "playlists") $("packs-tab").click();
   show("view");
@@ -463,6 +466,8 @@ function openEdit() {
     el("input", { maxLength: 300, placeholder: "https://…", value: links[i]?.url || "", ariaLabel: "Adresse du lien " + (i + 1) }))));
   $("banner-field").hidden = $("delete").hidden = $("edit-cancel").hidden = $("look-field").hidden = !mine;
   if (mine) drawLookEdit(mine.look);
+  $("f-packs").replaceChildren(...((mine && mine.packs) || []).map((x) => el("label", { className: "chip pick" }, el("input", { type: "checkbox", value: x.id, checked: x.shown }), x.title)));
+  if (mine && !(mine.packs || []).length) $("f-packs").replaceChildren(el("span", { className: "muted", style: "font-size:13px", textContent: "Aucun pack avec un lien d'écoute ouvert." }));
   if (mine) $("edit-cancel").href = "profil?u=" + encodeURIComponent(mine.handle);
   document.documentElement.style.setProperty("--ember", m.color);
   show("edit");
@@ -538,7 +543,7 @@ $("edit-form").addEventListener("submit", async (event) => {
   try {
     const { handle } = await api("PUT", "/me/profile/page", { handle: toHandle($("f-handle").value), bio: $("f-bio").value, color: $("f-color").value, comments: $("f-comments").checked,
       links: [...$("f-links").children].map((row) => ({ label: row.children[0].value, url: row.children[1].value })).filter((l) => l.url.trim()),
-      city: $("f-city").value, cv: { roles: [...$("f-roles").querySelectorAll("input:checked")].map((i) => i.value), skills: $("f-skills").value, open: $("f-open").checked, showLinks: $("f-showlinks").checked }, ...(mine ? { look: lookForm() } : {}) });
+      city: $("f-city").value, cv: { roles: [...$("f-roles").querySelectorAll("input:checked")].map((i) => i.value), skills: $("f-skills").value, open: $("f-open").checked, showLinks: $("f-showlinks").checked }, ...(mine ? { look: lookForm(), packIds: [...$("f-packs").querySelectorAll("input:checked")].map((i) => Number(i.value)) } : {}) });
     location.href = "profil?u=" + encodeURIComponent(handle);
   } catch (e) { say("edit-notice", e.message, true); }
 });

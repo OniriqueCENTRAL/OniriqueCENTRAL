@@ -73,6 +73,8 @@ const cvOf = (json) => { try { const c = JSON.parse(json || '{}'); return { role
 // Sa page de liens (mes-liens.html), affichée sur son profil et la carte s'il l'a choisi.
 const linkPageOf = (userId) => { const h = get('SELECT handle FROM link_pages WHERE user_id = ?', userId)?.handle; return h ? `${config.linksUrl}/${h}` : null; };
 // L'habillage de la page, choisi par son propriétaire : fond (image, GIF ou vidéo), police, verre, ordre des blocs.
+// Les packs montrés sur la page de profil : seulement ceux que le beatmaker a choisis (rien par défaut).
+if (!column('sound_projects', 'on_profile')) db.exec('ALTER TABLE sound_projects ADD COLUMN on_profile INTEGER NOT NULL DEFAULT 0');
 if (!column('user_profiles', 'look')) db.exec(`ALTER TABLE user_profiles ADD COLUMN look TEXT NOT NULL DEFAULT '{}'`);
 export const LOOK_FONTS = ['Hanken Grotesk', 'Unbounded', 'JetBrains Mono', 'Grenze Gotisch', 'Anton', 'Bebas Neue', 'Permanent Marker', 'Press Start 2P', 'Silkscreen', 'VT323'];
 export const LOOK_BLOCKS = ['bio', 'cv', 'tabs'];
@@ -133,7 +135,9 @@ export function mountProfiles(app, { requireUser, receiveImage, receiveFile, rem
   // Ma page : la créer, la régler (adresse, bio, couleur, commentaires ouverts), ou la supprimer.
   app.get('/api/me/profile/page', requireUser, (req, res) => {
     const p = get('SELECT * FROM user_profiles WHERE user_id = ?', req.user.id);
-    res.set('Cache-Control', 'no-store').json(p ? { handle: p.handle, bio: p.bio, color: p.color, banner: media(p.banner), comments: !!p.comments, links: linksOf(p.links), city: p.city || '', place: placeOf(p), cv: cvOf(p.cv), look: lookOf(p.look), linkPage: p ? linkPageOf(req.user.id) : null } : null);
+    res.set('Cache-Control', 'no-store').json(p ? { handle: p.handle, bio: p.bio, color: p.color, banner: media(p.banner), comments: !!p.comments, links: linksOf(p.links), city: p.city || '', place: placeOf(p), cv: cvOf(p.cv), look: lookOf(p.look), linkPage: p ? linkPageOf(req.user.id) : null,
+      // Ses packs qui ont un lien d'écoute ouvert, et ceux qu'il a choisi de montrer.
+      packs: publicPlaylists(req.user.id, { kind: 'pack', where: 'p.user_id = ?', params: [req.user.id], limit: 60 }).map((x) => ({ id: x.id, title: x.title, shown: !!get('SELECT on_profile FROM sound_projects WHERE id = ?', x.id).on_profile })) } : null);
   });
   app.put('/api/me/profile/page', requireUser, wrap(async (req, res) => {
     rateLimit(`profile-edit:${req.user.id}`, 60, 3600_000);
@@ -159,6 +163,13 @@ export function mountProfiles(app, { requireUser, receiveImage, receiveFile, rem
       const l = req.body.look, kept = JSON.parse(get('SELECT look FROM user_profiles WHERE user_id = ?', req.user.id).look || '{}');
       run('UPDATE user_profiles SET look = ? WHERE user_id = ?', JSON.stringify({ ...kept, font: l.font, title: l.title, glass: l.glass !== false, dim: num(l.dim, 0, 90, 45),
         blur: num(l.blur, 0, 40, 18), align: l.align === 'center' ? 'center' : 'left', order: Array.isArray(l.order) ? l.order.filter((b) => LOOK_BLOCKS.includes(b)) : [] }), req.user.id);
+    }
+    if (Array.isArray(req.body?.packIds)) {
+      const ids = req.body.packIds.map(Number).filter(Number.isInteger);
+      transaction(() => {
+        run(`UPDATE sound_projects SET on_profile = 0 WHERE user_id = ? AND kind = 'pack'`, req.user.id);
+        for (const id of ids) run(`UPDATE sound_projects SET on_profile = 1 WHERE id = ? AND user_id = ? AND kind = 'pack'`, id, req.user.id);
+      });
     }
     mapCache = null;
     res.json({ handle });
@@ -230,7 +241,7 @@ export function mountProfiles(app, { requireUser, receiveImage, receiveFile, rem
       links: linksOf(p.links), since: p.created_at, role: p.role || null, city: placeOf(p), cv: cvOf(p.cv), look: lookOf(p.look),
       linkPage: cvOf(p.cv).showLinks ? linkPageOf(p.user_id) : null,
       playlists: publicPlaylists(viewer?.id, { where: 'p.user_id = ?', params: [p.user_id], limit: 60 }),
-      packs: publicPlaylists(viewer?.id, { kind: 'pack', where: 'p.user_id = ?', params: [p.user_id], limit: 60 }),
+      packs: publicPlaylists(viewer?.id, { kind: 'pack', where: 'p.user_id = ? AND p.on_profile = 1', params: [p.user_id], limit: 60 }),
       followers: count('SELECT COUNT(*) AS n FROM user_follows WHERE followed_id = ?', p.user_id),
       following: count('SELECT COUNT(*) AS n FROM user_follows WHERE follower_id = ?', p.user_id),
       mine: viewer?.id === p.user_id, followed: !!(viewer && get('SELECT 1 FROM user_follows WHERE follower_id = ? AND followed_id = ?', viewer.id, p.user_id)),

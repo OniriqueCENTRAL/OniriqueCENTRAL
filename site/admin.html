@@ -142,6 +142,8 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
 .tabs button { flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 11px 16px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.02); color: var(--haze); font: 600 12px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; transition: color .2s, border-color .2s, background .2s; }
 .tabs button:hover { color: var(--mist); border-color: rgba(var(--acc),.5); }
 .tabs button[aria-selected="true"] { color: var(--bone); border-color: var(--ember); background: rgba(var(--acc),.16); }
+.tabs button:focus { outline: none; }
+.tabs button:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(var(--acc),.35); }
 .tabs button b { min-width: 18px; padding: 3px 6px; border-radius: 999px; background: var(--ember); color: #fff; font: 700 10px/1 var(--f-mono); letter-spacing: 0; }
 .tab > .bar:first-child, .tab > .tiles:first-child { margin-top: 10px; }
 .knobs { display: block; width: 100%; height: 1600px; border: 0; margin-top: 10px; }
@@ -392,7 +394,7 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
 </main>
 
 <script src="assets/cropper.js"></script>
-<script src="assets/account.js?v=15"></script>
+<script src="assets/account.js?v=16"></script>
 <script src="assets/site-nav.js?v=21"></script>
 <script>
 // Tout passe par l'API du CENTRAL, qui revérifie le rôle admin à chaque appel : cette page n'ouvre aucun droit par elle-même.

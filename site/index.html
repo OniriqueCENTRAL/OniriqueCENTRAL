@@ -1245,7 +1245,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
 </footer>
 
 <script src="assets/demo-player.js?v=4" defer></script>
-<script src="assets/credits.js?v=5" defer></script>
+<script src="assets/credits.js?v=6" defer></script>
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 "use strict";
@@ -2218,7 +2218,7 @@ function heroFacts(products, shown, euros, terms) {
   let at = 0;
   const paint = () => {
     const p = order[at];
-    shot.href = "boutique?p=" + encodeURIComponent(p.slug);
+    shot.href = "/boutique/" + encodeURIComponent(p.slug);
     const picture = $("img", shot);
     picture.sizes = "(max-width: 700px) 92vw, 520px";
     picture.srcset = srcsetOf(p.image, [640, 1280]);
@@ -2270,7 +2270,7 @@ catalogReady.then(catalog => {
   if (catalog && catalog.paymentsMode !== "off") $("#heroBuy").textContent = "Acheter un plugin"; // la vente est ouverte
   if (!shown.length) return;
   $("#pluginGrid").innerHTML = shown.map(p => `
-    <a class="plugin-card" href="boutique?p=${encodeURIComponent(p.slug)}">
+    <a class="plugin-card" href="/boutique/${encodeURIComponent(p.slug)}">
       <img src="${esc(sized(p.image, 960))}" srcset="${esc(srcsetOf(p.image, [480, 640, 960, 1280]))}" sizes="(max-width: 700px) 92vw, 380px" alt="Interface du plugin ${esc(p.name)}" loading="lazy">
       <div><h3>${esc(p.name)}</h3><p>${esc(p.tagline)}</p><small>${esc(terms(p))} →</small></div>
     </a>`).join("");
@@ -2296,7 +2296,7 @@ function showcase(list) {
     $("#showName").textContent = p.name;
     $("#showCreator").textContent = p.creator && p.creator !== "onirique" ? "ONIRIQUE × " + p.creator.toUpperCase() : "ONIRIQUE";
     $("#showCount").textContent = `${at + 1} / ${list.length}`;
-    $("#showLink").href = "boutique?p=" + encodeURIComponent(p.slug);
+    $("#showLink").href = "/boutique/" + encodeURIComponent(p.slug);
 
     // VocalBox garde son détail module par module ; les autres plugins, la description de leur fiche.
     $("#fnVocalbox").hidden = !vocalbox;
@@ -2394,7 +2394,7 @@ document.addEventListener("onirique:account", (event) => {
   document.getElementById("sonsShortcut").hidden = !((event.detail && event.detail.rights) || []).includes("sounds");
 });
 </script>
-<script src="assets/account.js?v=15" defer></script>
+<script src="assets/account.js?v=16" defer></script>
 <script src="assets/site-nav.js?v=21" defer></script>
 <script src="assets/catalog-watch.js?v=1" defer></script>
 
