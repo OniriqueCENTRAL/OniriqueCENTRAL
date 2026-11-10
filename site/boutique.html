@@ -343,7 +343,7 @@ function card(p, categories = []) {
     ? el("img", { className: p.imageManual ? "cover framed" : "cover", src: sized(p.image, 960), srcset: srcsetOf(p.image, [640, 960, 1280]),
                   sizes: "(max-width: 700px) 92vw, 380px", alt: "Interface du plugin " + p.name, loading: "lazy" })
     : el("img", { className: "mark", src: "assets/logo.png", alt: "" }));
-  return el("a", { className: "card", href: p.href || "/boutique/" + encodeURIComponent(p.slug) }, shot,
+  return el("a", { className: "card", href: p.href || "boutique?p=" + encodeURIComponent(p.slug) }, shot,
     el("div", { className: "body" }, el("span", { className: "creator", textContent: CREATORS[p.creator] || CREATORS.onirique }),
       el("h2", { textContent: p.name }), el("p", { textContent: p.tagline }),
       tags.length ? el("div", { className: "tags" }, ...tags.map((c) => el("span", { textContent: c.label }))) : null,
