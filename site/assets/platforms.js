@@ -285,6 +285,7 @@
       embedBox.hidden = false;
       await embedLoad(c, uri);
       if (this.cur !== item) return true;
+      this.setVolume(ctx.player.audio.volume);
       c.play();
       fire("loadedmetadata");
       return true;
@@ -324,7 +325,8 @@
     seek(s) { if (this.c) this.c.seek(s); this.base = s; this.at = performance.now(); },
     get currentTime() { return this.paused ? this.base : Math.min(this.dur || Infinity, this.base + (performance.now() - this.at) / 1000); },
     get duration() { return this.dur; },
-    setVolume() {}, // le lecteur intégré de Spotify garde son propre volume
+    // Le lecteur intégré n'a pas de volume : dans l'application, il est posé sur le son de son cadre.
+    setVolume(v) { if (window.oniriqueApp && window.oniriqueApp.frameVolume) window.oniriqueApp.frameVolume(v); },
   };
   // La forme d'onde d'un titre joué par sa plateforme : Spotify ne laisse pas lire le son entier (protégé), elle est
   // donc calculée sur son extrait officiel, étalée sur toute la durée du titre. Gardée le temps de la page.

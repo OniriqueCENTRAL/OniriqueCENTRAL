@@ -6,6 +6,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('oniriqueApp', {
   spotify: () => ipcRenderer.invoke('tool:spotify'),
   spotifyLogout: () => ipcRenderer.invoke('tool:spotify-logout'),
+  // Le volume du lecteur intégré de Spotify, qui n'en a pas : posé sur le son de son cadre.
+  frameVolume: (v) => ipcRenderer.send('tool:frame-volume', Number(v)),
   // La connexion à Spotify dans le navigateur de l'ordinateur (seulement sa page d'autorisation).
   openExternal: (url) => ipcRenderer.invoke('tool:open-external', String(url)),
   // Le partage d'écran de la WATCHPARTY : les écrans et fenêtres à choisir, puis le choix (avec ou sans le son de l'ordinateur).

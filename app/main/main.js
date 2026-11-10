@@ -37,6 +37,8 @@ function setAudioDevices(web) {
     const sinkOf = async (name) => name ? (await navigator.mediaDevices.enumerateDevices()).find((d) => d.kind === "audiooutput" && d.label === name)?.deviceId || "" : "";
     proto.play = function () {
       const media = this, name = window.__oniriqueAudio.speaker;
+      (window.__oniriqueMedia ||= new Set()).add(media); // pour tool:frame-volume
+      if (window.__oniriqueVolume != null) media.volume = window.__oniriqueVolume;
       if ((media.__oniriqueSink ?? "") === name) return play.call(media);
       media.__oniriqueSink = name;
       return sinkOf(name).then((id) => media.sinkId === id ? null : media.setSinkId(id)).catch(() => {}).then(() => play.call(media));
@@ -429,6 +431,13 @@ const webSession = () => session.fromPartition('persist:onirique-web');
 ipcMain.handle('tool:spotify', async (event) => {
   if (!toolContents.has(event.sender.id)) return false;
   return (await webSession().cookies.get({ name: 'sp_dc' })).some((c) => /(^|\.)spotify\.com$/.test(c.domain.replace(/^\./, '')));
+});
+ipcMain.on('tool:frame-volume', (event, v) => {
+  if (!toolContents.has(event.sender.id)) return;
+  const volume = Math.min(1, Math.max(0, Number(v) || 0));
+  for (const frame of event.sender.mainFrame.framesInSubtree) if (frame !== event.sender.mainFrame) {
+    frame.executeJavaScript(`window.__oniriqueVolume = ${volume}; for (const m of window.__oniriqueMedia || []) m.volume = ${volume};`).catch(() => {});
+  }
 });
 // Les écrans et fenêtres de l'ordinateur, avec leur aperçu, pour le choix du partage de la WATCHPARTY ; puis le choix fait.
 let screenPick = null;
