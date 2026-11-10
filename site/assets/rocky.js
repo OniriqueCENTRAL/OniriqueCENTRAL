@@ -7,7 +7,8 @@
   // sillons : son humeur change avec la conversation (assets/rocky/rocky-<humeur>.webp).
   const MOODS = ["idle", "wave", "thinking", "talk", "happy", "sad", "sleeping"];
   const src = (m) => `/assets/rocky/rocky-${m}.webp?v=7`;
-  const AVATAR = `<img src="${src("idle")}" alt="">`;
+  // Au chargement, une image fixe de 5 Ko : l'animation (150 Ko) ne vient qu'une fois la page affichée.
+  const AVATAR = `<img src="/assets/rocky/rocky-idle-still.webp?v=1" alt="">`;
   let state = "idle", nap, back, busy = false;
   const mood = (m, then, ms) => {
     clearTimeout(back);
@@ -58,6 +59,8 @@
   document.body.append(root);
   ["pointerenter", "input", "focusin"].forEach((e) => root.addEventListener(e, wake));
   wake();
+  const animate = () => setTimeout(() => root.querySelectorAll(".rk-av img, .rk-fab img").forEach((i) => { if (!i.src.includes("rocky-" + state + ".webp")) i.src = src(state); }), 1500);
+  if (document.readyState === "complete") animate(); else addEventListener("load", animate, { once: true });
   const [panel, fab, log, form] = ["rk-panel", "rk-fab", "rk-log"].map((c) => root.querySelector("." + c)).concat(root.querySelector("form"));
   const input = form.q, send = form.querySelector("button");
 
