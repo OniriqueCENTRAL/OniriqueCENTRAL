@@ -400,12 +400,20 @@ const $ = (id) => document.getElementById(id);
 const token = (sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"));
 let me = null;
 
-async function api(method, path, body) {
+async function api(method, path, body, tries = 0) {
   const response = await fetch("/api" + path, {
     method,
     headers: { Authorization: "Bearer " + token, ...(body ? { "Content-Type": "application/json" } : {}) },
     body: body ? JSON.stringify(body) : undefined,
-  });
+  }).catch(() => null);
+  // Le serveur redémarre quelques secondes à chaque mise en ligne (502, 503, 504, ou pas de réponse) : une lecture
+  // réessaie pendant une trentaine de secondes au lieu de laisser sa partie vide. Une écriture ne se rejoue jamais.
+  if ((!response || [502, 503, 504].includes(response.status)) && method === "GET" && tries < 10) {
+    await new Promise((ok) => setTimeout(ok, 3000));
+    return api(method, path, body, tries + 1);
+  }
+  if (!response) throw new Error("Serveur injoignable. Réessayez dans un instant.");
+  if ([502, 503, 504].includes(response.status)) throw Object.assign(new Error("Le serveur redémarre (mise en ligne en cours) : réessayez dans quelques secondes."), { status: response.status });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw Object.assign(new Error(data.error || "Erreur " + response.status), { status: response.status });
   return data;
