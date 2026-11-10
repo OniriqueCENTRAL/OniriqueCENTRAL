@@ -23,8 +23,6 @@ export const config = {
   port: Number(env.PORT || 4850),
   publicUrl: (env.PUBLIC_URL || `http://localhost:${env.PORT || 4850}`).replace(/\/+$/, ''),
   dataDir,
-  // Les pages du site (servies par nginx) : le serveur en reprend quelques-unes, comme la fiche d'un plugin.
-  siteDir: env.SITE_DIR || (fs.existsSync('/var/www/site') ? '/var/www/site' : path.resolve(root, '../site')),
   filesDir: path.join(dataDir, 'files'),
   mediaDir: path.join(dataDir, 'media'),
   keysDir: path.join(dataDir, 'keys'),

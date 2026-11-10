@@ -54,7 +54,7 @@ ${b.detail ? `<div style="font:400 14px/1.5 ${FONT};color:${C.haze};padding-top:
   }
   if (b.product) {
     const p = b.product;
-    const url = `${config.siteUrl}/boutique/${encodeURIComponent(p.slug)}`;
+    const url = `${config.siteUrl}/boutique?p=${encodeURIComponent(p.slug)}`;
     return pad(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${C.line};border-radius:16px;background:${C.deep};overflow:hidden">
 ${p.image ? `<tr><td><a href="${url}"><img src="${safeUrl(absolute(p.image))}" alt="Interface de ${escapeHtml(p.name)}" width="520" style="display:block;width:100%;height:auto;border-radius:16px 16px 0 0"></a></td></tr>` : ''}
 <tr><td style="padding:20px 22px 22px">

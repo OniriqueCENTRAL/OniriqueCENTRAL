@@ -56,7 +56,6 @@ import { mountVocalBrain } from './vocalbrain.js';
 import { applyPluginFiches } from './fiches.js';
 import { autoriser as autoriserVpn, VPN_RELAIS } from './vpn.js';
 import { mountNavigateur } from './navigateur.js';
-import { mountShopPages } from './shoppages.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
@@ -573,7 +572,6 @@ export function createApp() {
   // Spotify, Deezer et Apple Music dans les playlists d'ONIRIQUE CLOUD (comptes liés, titres mêlés aux sons du CLOUD).
   mountPlatforms(app, { requireUser, wrap });
   mountTransfer(app, { wrap });
-  mountShopPages(app, { wrap });
   // Notes, ups et top 3 de la semaine des playlists d'ONIRIQUE CLOUD.
   mountRatings(app, { requireUser });
   mountCut(app, { requireUser, receiveFile, wrap });
