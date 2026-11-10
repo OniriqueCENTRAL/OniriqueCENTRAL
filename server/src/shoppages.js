@@ -29,8 +29,10 @@ export function productPage(p, html = readSite('boutique.html')) {
       { '@type': 'ListItem', position: 2, name: 'Boutique', item: `${config.siteUrl}/boutique` },
       { '@type': 'ListItem', position: 3, name: p.name, item: url }] },
   ] };
-  const head = `<base href="/">\n<title>${esc(title)}</title>`;
+  const head = `<title>${esc(title)}</title>`;
   return html
+    // Avant tout script ou feuille de style : les adresses relatives (assets/…) partent de la racine.
+    .replace('<meta charset="utf-8">', '<meta charset="utf-8">\n<base href="/">')
     .replace(/<title>[^<]*<\/title>/, head)
     .replace(/(<meta name="description" content=")[^"]*"/, `$1${esc(desc)}"`)
     .replace(/(<link rel="canonical" href=")[^"]*"/, `$1${esc(url)}"`)

@@ -27,7 +27,7 @@ window.OniriqueCredits = {
           ${c.duration ? `<div><dt>Durée</dt><dd>${esc(c.duration)}</dd></div>` : ""}
           <div><dt>Format</dt><dd>${esc(c.kind)}</dd></div>
         </dl>
-        <div class="plugins-used">${(c.plugins && c.plugins.length ? c.plugins : c.plugin ? [c.plugin] : [{ name: "Onirique VocalBox" }]).map((p, i) => `<a class="plugin-used" href="${p.slug ? "boutique?p=" + encodeURIComponent(p.slug) : "#vocalbox"}"><img src="assets/logo-small.webp?v=1" alt="" width="160" height="145"><span><b>${esc(p.name)}</b>${i === 0 && c.usedOn ? `<small>Utilisé sur : ${esc(c.usedOn)}</small>` : ""}</span></a>`).join("")}</div>
+        <div class="plugins-used">${(c.plugins && c.plugins.length ? c.plugins : c.plugin ? [c.plugin] : [{ name: "Onirique VocalBox" }]).map((p, i) => `<a class="plugin-used" href="${p.slug ? "/boutique/" + encodeURIComponent(p.slug) : "#vocalbox"}"><img src="assets/logo-small.webp?v=1" alt="" width="160" height="145"><span><b>${esc(p.name)}</b>${i === 0 && c.usedOn ? `<small>Utilisé sur : ${esc(c.usedOn)}</small>` : ""}</span></a>`).join("")}</div>
         ${engineers(c).length ? `<p class="credit-engineer">Par ${engineers(c).map(person).join('<span class="credit-and">&amp;</span>')}</p>` : ""}
       </div>
       <div class="credit-player">

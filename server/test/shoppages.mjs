@@ -20,7 +20,7 @@ try {
   const r = await fetch(`${base}/boutique/verb`);
   assert.equal(r.status, 200);
   const html = await r.text();
-  assert.match(html, /<base href="\/">/);
+  assert.ok(html.includes('<base href="/">') && html.indexOf('<base href="/">') < html.indexOf('<script'), 'base avant les scripts');
   assert.match(html, /<title>NOM verb &lt;b&gt; — plugin audio · ONIRIQUE<\/title>/);
   assert.match(html, /<link rel="canonical" href="https:\/\/site.test\/boutique\/verb">/);
   assert.match(html, /"price":"49.99"/);
