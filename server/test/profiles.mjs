@@ -121,6 +121,24 @@ try {
     assert.match((await call('GET', '/api/profiles/nov.music')).linkPage, /\/l\/nov$/);
     assert.match((await call('GET', '/api/members/map')).members[0].linkPage, /\/l\/nov$/);
   });
+  await step('habillage : polices, verre, ordre des blocs, fond image ou vidéo vérifié à son contenu', async () => {
+    assert.deepEqual((await call('GET', '/api/profiles/nov.music')).look.order, ['bio', 'cv', 'tabs']);
+    await call('PUT', '/api/me/profile/page', { token: a.token, body: { handle: 'nov.music', look: { font: 'VT323', title: 'Comic Sans', glass: false, dim: 500, order: ['tabs', 'x'] } } });
+    const look = (await call('GET', '/api/profiles/nov.music')).look;
+    assert.deepEqual([look.font, look.title, look.glass, look.dim, look.order], ['VT323', 'Unbounded', false, 90, ['tabs', 'bio', 'cv']]);
+    const send = (type, bytes) => fetch(`${base}/api/me/profile/page/background`, { method: 'PUT', headers: { Authorization: `Bearer ${a.token}`, 'Content-Type': type }, body: bytes });
+    assert.equal((await send('video/mp4', Buffer.from('pas une video'))).status, 400);
+    assert.equal((await send('text/html', Buffer.from('<p>'))).status, 400);
+    const mp4 = Buffer.concat([Buffer.from([0, 0, 0, 24]), Buffer.from('ftypisom'), Buffer.alloc(100)]);
+    const r = await (await send('video/mp4', mp4)).json();
+    assert.deepEqual([r.look.bgType, /\.mp4$/.test(r.look.bg)], ['video', true]);
+    assert.equal((await fetch(base + r.look.bg)).status, 200);
+    // Régler la page garde le fond ; le retirer efface le fichier.
+    await call('PUT', '/api/me/profile/page', { token: a.token, body: { handle: 'nov.music', look: { font: 'Anton' } } });
+    assert.equal((await call('GET', '/api/profiles/nov.music')).look.bg, r.look.bg);
+    await call('DELETE', '/api/me/profile/page/background', { token: a.token });
+    assert.equal((await fetch(base + r.look.bg)).status, 404);
+  });
   await step('les playlists publiques d’une page et « Découvrir »', async () => {
     run('UPDATE users SET role = ? WHERE id IN (?, ?)', 'vip', a.id, b.id);
     const pl = run(`INSERT INTO sound_projects (user_id, title, kind, created_at) VALUES (?, 'Nuit', 'playlist', ?)`, a.id, now()).lastInsertRowid;

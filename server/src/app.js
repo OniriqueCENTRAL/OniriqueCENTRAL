@@ -390,13 +390,13 @@ export function createApp() {
   // media/reduites/. Les captures d'interface pèsent jusqu'à 700 Ko en PNG pour être affichées en petit.
   const MEDIA_WIDTHS = new Set([160, 320, 480, 640, 960, 1280, 1920]);
   app.get('/api/media/:file', wrap(async (req, res, next) => {
-    const match = /^([a-f0-9]{32})\.(png|jpg|webp|json)$/.exec(req.params.file);
+    const match = /^([a-f0-9]{32})\.(png|jpg|webp|json|gif|mp4|webm)$/.exec(req.params.file);
     if (!match) return next(new HttpError(404, 'Introuvable.'));
     res.set('X-Content-Type-Options', 'nosniff'); // des images viennent des utilisateurs : le type annoncé fait foi
     const original = path.join(config.mediaDir, req.params.file);
     const send = (file) => res.sendFile(file, { maxAge: '365d', immutable: true }, (error) => error && next(new HttpError(404, 'Introuvable.')));
     const width = Number(req.query.w);
-    if (!MEDIA_WIDTHS.has(width) || match[2] === 'json' || !fs.existsSync(original)) return send(original);
+    if (!MEDIA_WIDTHS.has(width) || ['json', 'gif', 'mp4', 'webm'].includes(match[2]) || !fs.existsSync(original)) return send(original);
 
     const reduced = path.join(config.mediaDir, 'reduites', `${match[1]}-${width}.webp`);
     if (!fs.existsSync(reduced)) {
@@ -579,7 +579,7 @@ export function createApp() {
   mountHm(app, { requireUser });
   mountWatchparty(app);
   // Pages de profil des membres : abonnements, commentaires, messages privés.
-  mountProfiles(app, { requireUser, receiveImage, removeMedia, wrap });
+  mountProfiles(app, { requireUser, receiveImage, receiveFile, removeMedia, wrap });
   mountMessages(app, { requireUser, receiveFile, wrap });
   mountConcerts(app, { wrap });
   mountPush(app, { requireUser });

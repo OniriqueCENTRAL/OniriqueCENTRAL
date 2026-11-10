@@ -1,13 +1,14 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=2fe575f3"></script>
+<script src="assets/i18n.js?v=e4998e1a"></script>
 <script src="assets/ui.js?v=4"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Page de profil</title>
 <meta name="robots" content="noindex">
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/fonts-cut.css">
 <style>
 /* Mêmes tokens que compte.html ; --ember prend la couleur choisie par le propriétaire de la page. */
 :root {
@@ -129,6 +130,36 @@ select { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px sol
 .cv-city:hover { color: var(--ember); }
 .open-badge { justify-self: start; padding: 6px 12px; border-radius: 999px; font: 500 11px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: #b9f5c9; border: 1px solid rgba(120,230,150,.45); background: rgba(80,200,120,.12); }
 .link-rows div { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; }
+
+/* L'habillage choisi par le propriétaire : fond (image, GIF ou vidéo) assombri, polices, blocs en verre, ordre. */
+.page-bg { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.page-bg img, .page-bg video { width: 100%; height: 100%; object-fit: cover; }
+.page-bg::after { content: ""; position: absolute; inset: 0; background: rgba(8,4,5,var(--dim, .45)); }
+#view { font-family: var(--f-text, var(--f-body)); }
+#view h1, #view .tabs button, #view .pl b, #view .panel > .eyebrow { font-family: var(--f-title, var(--f-display)); }
+body.glass #view .panel, body.glass #view .head, body.glass #view .tabs { position: relative; border: 1px solid rgba(255,255,255,.16); border-radius: 22px;
+  background: linear-gradient(135deg, rgba(255,255,255,.12), rgba(255,255,255,.03) 45%, rgba(255,255,255,.07));
+  -webkit-backdrop-filter: blur(var(--blur, 18px)) saturate(160%); backdrop-filter: blur(var(--blur, 18px)) saturate(160%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.28), inset 0 -1px 0 rgba(255,255,255,.06), 0 24px 60px -24px rgba(0,0,0,.7); }
+body.glass #view .head { margin: -56px 0 0; padding: 0 22px 18px; }
+body.glass #view .tabs { padding: 4px; gap: 4px; }
+body.glass #view .tabs button { border-radius: 16px; border-bottom: 0; margin: 0; }
+body.glass #view .tabs button.on { background: rgba(255,255,255,.14); }
+body.glass #view .avatar { border-color: rgba(255,255,255,.35); }
+body.centered #view .head { flex-direction: column; align-items: center; text-align: center; }
+body.centered #view .who, body.centered #view .actions { padding-top: 0; }
+body.centered #view .name-row, body.centered #view .counts, body.centered #view .actions, body.centered #view .links { justify-content: center; }
+/* L'arrivée sur la page : les blocs montent l'un après l'autre. */
+#view.enter > * { animation: rise .6s cubic-bezier(.2,.7,.2,1) both; }
+#view.enter > :nth-child(2) { animation-delay: .08s; } #view.enter > :nth-child(3) { animation-delay: .16s; } #view.enter > :nth-child(n+4) { animation-delay: .24s; }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+@media (prefers-reduced-motion: reduce) { #view.enter > * { animation: none; } }
+.look-edit { display: grid; gap: 14px; padding: 16px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.02); }
+.look-edit .row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.order-list { display: grid; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; }
+.order-list li { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.03); }
+.order-list li span { flex: 1; font-weight: 600; }
+input[type="range"] { min-height: 0; padding: 0; accent-color: var(--ember); }
 </style>
 <link rel="stylesheet" href="/assets/da.css?v=7">
 <script src="/assets/accent.js?v=1"></script>
@@ -140,6 +171,7 @@ select { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px sol
   </div>
 </header>
 
+<div class="page-bg" id="page-bg" hidden></div>
 <main class="wrap">
   <p class="notice" id="state" role="status">Chargement…</p>
 
@@ -156,8 +188,9 @@ select { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px sol
       </div>
       <div class="actions" id="actions"></div>
     </div>
-    <div class="panel" id="bio-panel"><span class="eyebrow">À propos</span><p class="bio" id="bio"></p><div class="links" id="links"></div></div>
-    <div class="panel cv" id="cv-panel" hidden><span class="eyebrow">CV numérique</span><div id="cv"></div></div>
+    <div class="block" data-block="bio"><div class="panel" id="bio-panel"><span class="eyebrow">À propos</span><p class="bio" id="bio"></p><div class="links" id="links"></div></div></div>
+    <div class="block" data-block="cv"><div class="panel cv" id="cv-panel" hidden><span class="eyebrow">CV numérique</span><div id="cv"></div></div></div>
+    <div class="block" data-block="tabs">
     <div class="tabs" role="tablist"><button type="button" class="on" data-tab="playlists">Playlists</button><button type="button" data-tab="packs" id="packs-tab" hidden>Packs <span id="pk-count"></span></button><button type="button" data-tab="comments">Commentaires <span id="c-count"></span></button></div>
     <div class="panel" id="tab-packs" hidden><div class="grid" id="packs"></div></div>
     <div class="panel" id="tab-playlists">
@@ -170,6 +203,7 @@ select { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px sol
       </form>
       <p class="muted" id="comments-closed" hidden></p>
       <div class="comments" id="comments"></div>
+    </div>
     </div>
   </section>
 
@@ -200,6 +234,25 @@ select { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px sol
         <p class="muted" style="margin:6px 0 0;font-size:13px">Format large : 1600 × 460 pixels conseillés (PNG, JPEG ou WebP). Tu la recadres juste après l'avoir choisie.</p>
         <div class="between" style="margin-top:8px"><button class="btn btn-ghost small" id="banner-pick" type="button">Choisir une image</button>
           <input id="banner-file" type="file" accept="image/png,image/jpeg,image/webp" aria-label="Bannière" hidden></div>
+      </div>
+      <div class="look-edit" id="look-field" hidden>
+        <span class="eyebrow">Habillage de ta page</span>
+        <div><label>Fond de la page</label>
+          <p class="muted" style="margin:6px 0 0;font-size:13px">Une image, un GIF ou une courte vidéo en boucle (MP4 ou WebM, 30 Mo au plus), derrière toute ta page.</p>
+          <div class="between" style="margin-top:8px"><button class="btn btn-ghost small" id="bg-pick" type="button">Choisir un fond</button>
+            <button class="link danger" id="bg-remove" type="button" hidden>Retirer le fond</button><span class="muted" id="bg-now" style="font-size:13px"></span>
+            <input id="bg-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm" aria-label="Fond de la page" hidden></div></div>
+        <div class="row2">
+          <label>Police des titres<select id="f-title-font"></select></label>
+          <label>Police du texte<select id="f-font"></select></label>
+        </div>
+        <div class="row2">
+          <label>Assombrir le fond<input id="f-dim" type="range" min="0" max="90" step="5"></label>
+          <label>Flou du verre<input id="f-blur" type="range" min="0" max="40" step="2"></label>
+        </div>
+        <label class="check"><input id="f-glass" type="checkbox"> Blocs en verre (effet liquid glass)</label>
+        <label class="check"><input id="f-center" type="checkbox"> Nom et photo centrés</label>
+        <div><label>Ordre des blocs</label><ul class="order-list" id="f-order"></ul></div>
       </div>
       <div class="between"><button class="btn btn-primary" type="submit">Enregistrer</button><a class="btn btn-ghost" id="edit-cancel" href="#" hidden>Annuler</a>
         <button class="link danger" id="delete" type="button" hidden>Supprimer ma page</button></div>
@@ -240,10 +293,36 @@ const badge = (role) => (ROLES[role] ? el("span", { className: "role small", tex
 
 function show(which) { $("view").hidden = which !== "view"; $("edit").hidden = which !== "edit"; $("state").hidden = true; }
 
+// L'habillage : polices, verre, fond, alignement et ordre des blocs (bio, CV, onglets).
+const FONTS = ["Hanken Grotesk", "Unbounded", "JetBrains Mono", "Grenze Gotisch", "Anton", "Bebas Neue", "Permanent Marker", "Press Start 2P", "Silkscreen", "VT323"];
+const BLOCKS = { bio: "À propos", cv: "CV numérique", tabs: "Playlists, packs et commentaires" };
+const fontStack = (f) => '"' + f + '", system-ui, sans-serif';
+function applyLook(l) {
+  if (!l) return;
+  const root = document.documentElement.style;
+  root.setProperty("--f-title", fontStack(l.title));
+  root.setProperty("--f-text", fontStack(l.font));
+  root.setProperty("--dim", l.dim / 100);
+  root.setProperty("--blur", l.blur + "px");
+  document.body.classList.toggle("glass", l.glass);
+  document.body.classList.toggle("centered", l.align === "center");
+  const bg = $("page-bg");
+  if (bg.dataset.src !== (l.bg || "")) {
+    bg.dataset.src = l.bg || "";
+    bg.replaceChildren(...(!l.bg ? [] : l.bgType === "video"
+      ? [el("video", { src: l.bg, autoplay: true, muted: true, defaultMuted: true, loop: true, playsInline: true })]
+      : [el("img", { src: l.bg, alt: "" })]));
+  }
+  bg.hidden = !l.bg;
+  const view = $("view");
+  for (const b of l.order) { const node = view.querySelector('[data-block="' + b + '"]'); if (node) view.append(node); }
+}
+
 function drawView() {
   const p = profile;
   document.title = "ONIRIQUE — " + p.name;
   document.documentElement.style.setProperty("--ember", p.color);
+  applyLook(p.look);
   $("banner").style.backgroundImage = p.banner ? `url("${p.banner}?w=1600")` : "";
   $("avatar").src = avatarOf(p.avatar);
   $("name").textContent = p.name;
@@ -307,6 +386,8 @@ function drawView() {
   // Un beatmaker sans playlist : sa page s'ouvre sur ses packs.
   if (p.packs.length && !p.playlists.length && document.querySelector(".tabs .on").dataset.tab === "playlists") $("packs-tab").click();
   show("view");
+  // Le visiteur est accueilli : les blocs entrent une fois, à l'ouverture.
+  if (!drawView.done) { drawView.done = true; $("view").classList.add("enter"); }
 }
 
 // Un commentaire : son auteur, « J'aime », « Répondre » (sous un commentaire seulement), « Retirer », et ses réponses.
@@ -380,11 +461,46 @@ function openEdit() {
   $("f-links").replaceChildren(...Array.from({ length: 6 }, (_, i) => el("div", {},
     el("input", { maxLength: 40, placeholder: "Nom (Instagram…)", value: links[i]?.label || "", ariaLabel: "Nom du lien " + (i + 1) }),
     el("input", { maxLength: 300, placeholder: "https://…", value: links[i]?.url || "", ariaLabel: "Adresse du lien " + (i + 1) }))));
-  $("banner-field").hidden = $("delete").hidden = $("edit-cancel").hidden = !mine;
+  $("banner-field").hidden = $("delete").hidden = $("edit-cancel").hidden = $("look-field").hidden = !mine;
+  if (mine) drawLookEdit(mine.look);
   if (mine) $("edit-cancel").href = "profil?u=" + encodeURIComponent(mine.handle);
   document.documentElement.style.setProperty("--ember", m.color);
   show("edit");
 }
+
+let order = [];
+function drawLookEdit(l) {
+  const fill = (select, value) => select.replaceChildren(...FONTS.map((f) => el("option", { value: f, textContent: f, selected: f === value, style: "font-family:" + fontStack(f) })));
+  fill($("f-title-font"), l.title);
+  fill($("f-font"), l.font);
+  $("f-dim").value = l.dim; $("f-blur").value = l.blur; $("f-glass").checked = l.glass; $("f-center").checked = l.align === "center";
+  $("bg-remove").hidden = !l.bg;
+  $("bg-now").textContent = l.bg ? (l.bgType === "video" ? "Une vidéo en fond." : "Une image en fond.") : "Pas de fond : la couleur de la page.";
+  order = [...l.order];
+  drawOrder();
+}
+function drawOrder() {
+  const move = (i, d) => { [order[i], order[i + d]] = [order[i + d], order[i]]; drawOrder(); };
+  $("f-order").replaceChildren(...order.map((b, i) => el("li", {}, el("span", { textContent: BLOCKS[b] }),
+    el("button", { type: "button", className: "btn btn-ghost small", textContent: "↑", ariaLabel: "Monter " + BLOCKS[b], disabled: !i, onclick: () => move(i, -1) }),
+    el("button", { type: "button", className: "btn btn-ghost small", textContent: "↓", ariaLabel: "Descendre " + BLOCKS[b], disabled: i === order.length - 1, onclick: () => move(i, 1) }))));
+}
+const lookForm = () => ({ font: $("f-font").value, title: $("f-title-font").value, glass: $("f-glass").checked, dim: Number($("f-dim").value), blur: Number($("f-blur").value),
+  align: $("f-center").checked ? "center" : "left", order });
+$("bg-pick").onclick = () => $("bg-file").click();
+$("bg-file").onchange = async () => {
+  const file = $("bg-file").files[0];
+  $("bg-file").value = "";
+  if (!file) return;
+  if (file.size > 30 * 1024 * 1024) return say("edit-notice", "Fond trop lourd : 30 Mo au plus.", true);
+  say("edit-notice", "Envoi du fond…");
+  try { const { look } = await api("PUT", "/me/profile/page/background", null, file); mine.look = look; drawLookEdit({ ...lookForm(), bg: look.bg, bgType: look.bgType }); say("edit-notice", "Fond enregistré."); }
+  catch (e) { say("edit-notice", e.message, true); }
+};
+$("bg-remove").onclick = async () => {
+  try { const { look } = await api("DELETE", "/me/profile/page/background"); mine.look = look; drawLookEdit({ ...lookForm(), bg: null, bgType: null }); say("edit-notice", "Fond retiré."); }
+  catch (e) { say("edit-notice", e.message, true); }
+};
 
 // L'adresse s'écrit comme on veut (« Tom Gurdian ») : la page montre tout de suite celle qu'elle aura (tom-gurdian).
 const toHandle = (v) => String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
@@ -422,7 +538,7 @@ $("edit-form").addEventListener("submit", async (event) => {
   try {
     const { handle } = await api("PUT", "/me/profile/page", { handle: toHandle($("f-handle").value), bio: $("f-bio").value, color: $("f-color").value, comments: $("f-comments").checked,
       links: [...$("f-links").children].map((row) => ({ label: row.children[0].value, url: row.children[1].value })).filter((l) => l.url.trim()),
-      city: $("f-city").value, cv: { roles: [...$("f-roles").querySelectorAll("input:checked")].map((i) => i.value), skills: $("f-skills").value, open: $("f-open").checked, showLinks: $("f-showlinks").checked } });
+      city: $("f-city").value, cv: { roles: [...$("f-roles").querySelectorAll("input:checked")].map((i) => i.value), skills: $("f-skills").value, open: $("f-open").checked, showLinks: $("f-showlinks").checked }, ...(mine ? { look: lookForm() } : {}) });
     location.href = "profil?u=" + encodeURIComponent(handle);
   } catch (e) { say("edit-notice", e.message, true); }
 });

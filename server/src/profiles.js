@@ -72,6 +72,31 @@ export const placeOf = (p) => CITY.get(p.city) || (p.city && p.place ? (() => { 
 const cvOf = (json) => { try { const c = JSON.parse(json || '{}'); return { roles: c.roles || [], skills: c.skills || '', open: !!c.open, showLinks: !!c.showLinks }; } catch { return { roles: [], skills: '', open: false, showLinks: false }; } };
 // Sa page de liens (mes-liens.html), affichée sur son profil et la carte s'il l'a choisi.
 const linkPageOf = (userId) => { const h = get('SELECT handle FROM link_pages WHERE user_id = ?', userId)?.handle; return h ? `${config.linksUrl}/${h}` : null; };
+// L'habillage de la page, choisi par son propriétaire : fond (image, GIF ou vidéo), police, verre, ordre des blocs.
+if (!column('user_profiles', 'look')) db.exec(`ALTER TABLE user_profiles ADD COLUMN look TEXT NOT NULL DEFAULT '{}'`);
+export const LOOK_FONTS = ['Hanken Grotesk', 'Unbounded', 'JetBrains Mono', 'Grenze Gotisch', 'Anton', 'Bebas Neue', 'Permanent Marker', 'Press Start 2P', 'Silkscreen', 'VT323'];
+export const LOOK_BLOCKS = ['bio', 'cv', 'tabs'];
+const BG_TYPES = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif', 'video/mp4': 'mp4', 'video/webm': 'webm' };
+const num = (v, min, max, d) => (Number.isFinite(Number(v)) ? Math.min(max, Math.max(min, Math.round(Number(v)))) : d);
+/** L'habillage gardé : ce que la page reçoit (le fond en adresse). */
+function lookOf(json) {
+  let l = {};
+  try { l = JSON.parse(json || '{}'); } catch { /* habillage illisible : celui par défaut */ }
+  const order = Array.isArray(l.order) ? l.order.filter((b) => LOOK_BLOCKS.includes(b)) : [];
+  return { font: LOOK_FONTS.includes(l.font) ? l.font : LOOK_FONTS[0], title: LOOK_FONTS.includes(l.title) ? l.title : LOOK_FONTS[1], glass: l.glass !== false,
+    dim: num(l.dim, 0, 90, 45), blur: num(l.blur, 0, 40, 18), align: l.align === 'center' ? 'center' : 'left',
+    order: [...new Set([...order, ...LOOK_BLOCKS])], bg: l.bg ? `/api/media/${l.bg}` : null, bgType: l.bg ? (/\.(mp4|webm)$/.test(l.bg) ? 'video' : 'image') : null };
+}
+/** Le fichier de fond reconnu à son contenu (pas au type annoncé). */
+function bgKind(head) {
+  if (head.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'))) return 'png';
+  if (head.subarray(0, 3).equals(Buffer.from('ffd8ff', 'hex'))) return 'jpg';
+  if (head.toString('latin1', 0, 4) === 'RIFF' && head.toString('latin1', 8, 12) === 'WEBP') return 'webp';
+  if (head.toString('latin1', 0, 4) === 'GIF8') return 'gif';
+  if (head.toString('latin1', 4, 8) === 'ftyp') return 'mp4';
+  if (head.subarray(0, 4).equals(Buffer.from('1a45dfa3', 'hex'))) return 'webm';
+  return null;
+}
 if (!column('profile_comments', 'parent_id')) db.exec('ALTER TABLE profile_comments ADD COLUMN parent_id INTEGER REFERENCES profile_comments(id) ON DELETE CASCADE');
 
 export const PROFILE_HANDLE = /^[a-z0-9][a-z0-9._-]{2,29}$/;
@@ -98,7 +123,7 @@ const notify = (userId, kind, actorId, page, body = '') => {
   if (userId !== actorId) run('INSERT INTO user_notifications (user_id, kind, actor_id, page, body, created_at) VALUES (?, ?, ?, ?, ?, ?)', userId, kind, actorId, page, body.slice(0, 140), now());
 };
 
-export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wrap }) {
+export function mountProfiles(app, { requireUser, receiveImage, receiveFile, removeMedia, wrap }) {
   const pageOf = (handle) => {
     const p = get('SELECT p.*, u.name, u.avatar, u.role FROM user_profiles p JOIN users u ON u.id = p.user_id WHERE p.handle = ?', String(handle || '').toLowerCase());
     if (!p) throw new HttpError(404, "Cette page de profil n'existe pas.");
@@ -108,7 +133,7 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
   // Ma page : la créer, la régler (adresse, bio, couleur, commentaires ouverts), ou la supprimer.
   app.get('/api/me/profile/page', requireUser, (req, res) => {
     const p = get('SELECT * FROM user_profiles WHERE user_id = ?', req.user.id);
-    res.set('Cache-Control', 'no-store').json(p ? { handle: p.handle, bio: p.bio, color: p.color, banner: media(p.banner), comments: !!p.comments, links: linksOf(p.links), city: p.city || '', place: placeOf(p), cv: cvOf(p.cv), linkPage: p ? linkPageOf(req.user.id) : null } : null);
+    res.set('Cache-Control', 'no-store').json(p ? { handle: p.handle, bio: p.bio, color: p.color, banner: media(p.banner), comments: !!p.comments, links: linksOf(p.links), city: p.city || '', place: placeOf(p), cv: cvOf(p.cv), look: lookOf(p.look), linkPage: p ? linkPageOf(req.user.id) : null } : null);
   });
   app.put('/api/me/profile/page', requireUser, wrap(async (req, res) => {
     rateLimit(`profile-edit:${req.user.id}`, 60, 3600_000);
@@ -129,6 +154,12 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
       ON CONFLICT(user_id) DO UPDATE SET handle = excluded.handle, bio = excluded.bio, color = excluded.color, comments = excluded.comments, links = excluded.links,
         city = excluded.city, place = excluded.place, cv = excluded.cv`,
       req.user.id, handle, clean(req.body?.bio, 600), color, req.body?.comments === false ? 0 : 1, links, city, place && !CITY.has(city) ? JSON.stringify(place) : '', cv, now());
+    // L'habillage : le fond se change par sa propre route, le reste ici.
+    if (req.body?.look && typeof req.body.look === 'object') {
+      const l = req.body.look, kept = JSON.parse(get('SELECT look FROM user_profiles WHERE user_id = ?', req.user.id).look || '{}');
+      run('UPDATE user_profiles SET look = ? WHERE user_id = ?', JSON.stringify({ ...kept, font: l.font, title: l.title, glass: l.glass !== false, dim: num(l.dim, 0, 90, 45),
+        blur: num(l.blur, 0, 40, 18), align: l.align === 'center' ? 'center' : 'left', order: Array.isArray(l.order) ? l.order.filter((b) => LOOK_BLOCKS.includes(b)) : [] }), req.user.id);
+    }
     mapCache = null;
     res.json({ handle });
   }));
@@ -141,8 +172,37 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
     if (p.banner) removeMedia(p.banner);
     res.json({ banner: media(name) });
   }));
+  // Le fond de la page : une image, un GIF ou une courte vidéo (MP4 ou WebM, 30 Mo au plus), qui remplace le précédent.
+  app.put('/api/me/profile/page/background', requireUser, wrap(async (req, res) => {
+    const p = get('SELECT look FROM user_profiles WHERE user_id = ?', req.user.id);
+    if (!p) throw new HttpError(404, "Crée d'abord ta page de profil.");
+    if (!BG_TYPES[req.headers['content-type']]) throw new HttpError(400, 'Fond attendu : image PNG, JPEG, WebP, GIF, ou vidéo MP4 ou WebM.');
+    rateLimit(`profile-banner:${req.user.id}`, 30, 3600_000);
+    const file = await receiveFile(req, config.mediaDir, 30 * 1024 * 1024);
+    const stored = path.join(config.mediaDir, file.storedAs), head = Buffer.alloc(12), fd = fs.openSync(stored, 'r');
+    fs.readSync(fd, head, 0, 12, 0);
+    fs.closeSync(fd);
+    const ext = bgKind(head);
+    if (!ext) { fs.rmSync(stored, { force: true }); throw new HttpError(400, "Ce fichier n'est ni une image ni une vidéo lisible."); }
+    const name = `${file.storedAs}.${ext}`;
+    fs.renameSync(stored, path.join(config.mediaDir, name));
+    const look = JSON.parse(p.look || '{}');
+    if (look.bg) removeMedia(look.bg);
+    run('UPDATE user_profiles SET look = ? WHERE user_id = ?', JSON.stringify({ ...look, bg: name }), req.user.id);
+    res.json({ look: lookOf(JSON.stringify({ ...look, bg: name })) });
+  }));
+  app.delete('/api/me/profile/page/background', requireUser, (req, res) => {
+    const p = get('SELECT look FROM user_profiles WHERE user_id = ?', req.user.id);
+    const look = JSON.parse(p?.look || '{}');
+    if (look.bg) removeMedia(look.bg);
+    delete look.bg;
+    if (p) run('UPDATE user_profiles SET look = ? WHERE user_id = ?', JSON.stringify(look), req.user.id);
+    res.json({ look: lookOf(JSON.stringify(look)) });
+  });
   app.delete('/api/me/profile/page', requireUser, (req, res) => {
-    const p = get('SELECT banner FROM user_profiles WHERE user_id = ?', req.user.id);
+    const p = get('SELECT banner, look FROM user_profiles WHERE user_id = ?', req.user.id);
+    const bg = JSON.parse(p?.look || '{}').bg;
+    if (bg) removeMedia(bg);
     transaction(() => {
       run('DELETE FROM user_profiles WHERE user_id = ?', req.user.id);
       run('DELETE FROM profile_comments WHERE profile_id = ?', req.user.id);
@@ -167,7 +227,7 @@ export function mountProfiles(app, { requireUser, receiveImage, removeMedia, wra
     for (const c of top) c.replies = comments.filter((r) => r.parentId === c.id).reverse();
     res.set('Cache-Control', 'no-store').json({
       handle: p.handle, name: p.name || 'Membre', avatar: media(p.avatar), bio: p.bio, color: p.color, banner: media(p.banner), commentsOpen: !!p.comments,
-      links: linksOf(p.links), since: p.created_at, role: p.role || null, city: placeOf(p), cv: cvOf(p.cv),
+      links: linksOf(p.links), since: p.created_at, role: p.role || null, city: placeOf(p), cv: cvOf(p.cv), look: lookOf(p.look),
       linkPage: cvOf(p.cv).showLinks ? linkPageOf(p.user_id) : null,
       playlists: publicPlaylists(viewer?.id, { where: 'p.user_id = ?', params: [p.user_id], limit: 60 }),
       packs: publicPlaylists(viewer?.id, { kind: 'pack', where: 'p.user_id = ?', params: [p.user_id], limit: 60 }),
