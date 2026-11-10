@@ -17,7 +17,8 @@
   try { saved = localStorage.getItem(KEY); } catch { /* stockage fermé : français, ou ?lang=en */ }
   if (asked === "en" || asked === "fr") { saved = asked; try { localStorage.setItem(KEY, asked); } catch {} }
   const lang = saved === "en" ? "en" : "fr";
-  const base = (document.currentScript && document.currentScript.src) ? document.currentScript.src.replace(/i18n\.js(\?.*)?$/, "") : "assets/";
+  const self = (document.currentScript && (document.currentScript.src || document.currentScript.dataset.src)) || "";
+  const base = self ? new URL(self, location.origin + "/").href.replace(/i18n\.js(\?.*)?$/, "") : "assets/";
 
   const api = {
     lang,
@@ -38,7 +39,7 @@
   if (lang !== "en") return;
 
   // Le dictionnaire, chargé tout de suite (avant que la page ne s'affiche en français).
-  const version = ((document.currentScript && document.currentScript.src) || "").match(/[?&]v=([\w]+)/);
+  const version = self.match(/[?&]v=([\w]+)/);
   if (!window.ONIRIQUE_EN) document.write(`<script src="${base}i18n-en.js?v=${version ? version[1] : 1}"><\/script>`);
 
   // Dates et nombres : les formats français demandés par le code deviennent anglais.
