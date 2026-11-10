@@ -80,6 +80,8 @@ fi
 # Le site : la copie précédente est gardée à côté. Le dossier des téléchargements ne vit que sur le serveur.
 rsync -a --delete --exclude telechargement "$site/" /var/www/site.prev/
 rsync -a --exclude build.ps1 --exclude pages.mjs "$work/site/" "$site/"
+# Les petits fichiers lus avant le premier affichage sont recopiés dans chaque page (deploy/inline-head.mjs).
+node "$work/deploy/inline-head.mjs" "$site" || echo "ATTENTION : en-têtes non intégrés, les pages gardent leurs liens vers assets/."
 
 # Les outils du serveur qui viennent du dépôt (livraison, publication des plugins, ce script).
 for tool in "$work"/deploy/onirique-*; do install -m 755 "$tool" /usr/local/bin/; done
