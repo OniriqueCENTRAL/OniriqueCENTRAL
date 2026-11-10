@@ -22,10 +22,17 @@ if (!app.requestSingleInstanceLock()) app.exit(0);
  */
 function setAudioDevices(web) {
   const devices = { mic: store.prefs.mic || '', speaker: store.prefs.speaker || '', camera: store.prefs.camera || '' };
-  web.executeJavaScript(`(() => {
+  // Dans chaque cadre de la page : les lecteurs Spotify (et YouTube, Twitch…) jouent dans le leur, qui ne voit les sorties
+  // audio par leur nom qu'avec « microphone » dans son attribut allow (le micro reste refusé hors du site, voir toolView).
+  const code = `(() => {
     window.__oniriqueAudio = ${JSON.stringify(devices)};
     const proto = HTMLMediaElement.prototype;
     if (proto.__oniriquePlay || !proto.setSinkId) return;
+    const allow = (v) => /(^|;)\\s*microphone\\b/.test(v) ? v : (v ? v + "; " : "") + "microphone";
+    const desc = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, "allow");
+    Object.defineProperty(HTMLIFrameElement.prototype, "allow", { ...desc, set(v) { desc.set.call(this, allow(String(v))); } });
+    const setAttr = Element.prototype.setAttribute;
+    Element.prototype.setAttribute = function (n, v) { return setAttr.call(this, n, this instanceof HTMLIFrameElement && String(n).toLowerCase() === "allow" ? allow(String(v)) : v); };
     const play = proto.__oniriquePlay = proto.play;
     const sinkOf = async (name) => name ? (await navigator.mediaDevices.enumerateDevices()).find((d) => d.kind === "audiooutput" && d.label === name)?.deviceId || "" : "";
     proto.play = function () {
@@ -34,7 +41,8 @@ function setAudioDevices(web) {
       media.__oniriqueSink = name;
       return sinkOf(name).then((id) => media.sinkId === id ? null : media.setSinkId(id)).catch(() => {}).then(() => play.call(media));
     };
-  })()`).catch(() => {});
+  })()`;
+  for (const frame of web.mainFrame.framesInSubtree) frame.executeJavaScript(code).catch(() => {});
 }
 
 /** CUT et CLOUD : une vue chacun, créée à la première ouverture, gardée tant que le compte ne change pas. */
@@ -72,6 +80,14 @@ function toolView(tool, lang) {
     // Pas de bandeau d'annonce du site dans l'application : il n'est même pas demandé.
     if (!ses.oniriqueReady) {
       ses.oniriqueReady = true;
+      // Le micro et la caméra pour les pages du site seulement : les cadres d'autres sites reçoivent « microphone »
+      // (setAudioDevices) pour voir la sortie choisie, pas pour écouter.
+      const site = new URL(SITE).origin;
+      ses.setPermissionRequestHandler((_web, permission, callback, details) => {
+        let origin = '';
+        try { origin = new URL(details.requestingUrl).origin; } catch {}
+        callback(permission !== 'media' || origin === site);
+      });
       ses.webRequest.onBeforeRequest({ urls: [`${SITE}/api/announce.js*`] }, (_details, callback) => callback({ cancel: true }));
       // Twitch connecté : ses cookies sont marqués « SameSite=None », sinon ils ne parviennent pas à son lecteur intégré
       // dans une page du site (un autre site pour lui) ; le lecteur reconnaît alors le compte et l'abonnement (sans pub).
@@ -134,6 +150,7 @@ function toolView(tool, lang) {
       });
     });
     web.on('did-finish-load', () => { pageTag(web.getURL()).then((tag) => loadedTags.set(web.id, tag)); });
+    web.on('did-frame-finish-load', (_event, isMain) => { if (!isMain) setAudioDevices(web); });
     web.on('dom-ready', () => {
       setAudioDevices(web);
       web.insertCSS(TOOL_SKIN + (accentVars ? `:root { ${accentVars} }` : '')).catch(() => {});
