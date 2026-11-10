@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=e4998e1a"></script>
+<script src="assets/i18n.js?v=fc34702f"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=2"></script>
 <script src="/api/announce.js"></script>
@@ -343,7 +343,7 @@ function card(p, categories = []) {
     ? el("img", { className: p.imageManual ? "cover framed" : "cover", src: sized(p.image, 960), srcset: srcsetOf(p.image, [640, 960, 1280]),
                   sizes: "(max-width: 700px) 92vw, 380px", alt: "Interface du plugin " + p.name, loading: "lazy" })
     : el("img", { className: "mark", src: "assets/logo.png", alt: "" }));
-  return el("a", { className: "card", href: p.href || "boutique?p=" + encodeURIComponent(p.slug) }, shot,
+  return el("a", { className: "card", href: p.href || "/boutique/" + encodeURIComponent(p.slug) }, shot,
     el("div", { className: "body" }, el("span", { className: "creator", textContent: CREATORS[p.creator] || CREATORS.onirique }),
       el("h2", { textContent: p.name }), el("p", { textContent: p.tagline }),
       tags.length ? el("div", { className: "tags" }, ...tags.map((c) => el("span", { textContent: c.label }))) : null,
@@ -615,7 +615,7 @@ async function buy(product, catalog) {
   }
   $("state").hidden = true;
 
-  const slug = new URLSearchParams(location.search).get("p");
+  const slug = decodeURIComponent(location.pathname.split("/")[2] || "") || new URLSearchParams(location.search).get("p");
   const product = slug && catalog.products.find((p) => p.slug === slug);
   if (!product) {
     if (catalog.products.length) setupList(catalog.products, catalog.categories);

@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=e4998e1a"></script>
+<script src="assets/i18n.js?v=fc34702f"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=2"></script>
 <script src="/api/announce.js"></script>
@@ -19,6 +19,7 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json" data-seo>{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Transférer une playlist Spotify, Deezer, Apple Music","url":"https://onirique.store/transfert-playlist","description":"Colle le lien d'une playlist Spotify, Deezer, Apple Music, Tidal ou YouTube Music : chaque titre est retrouvé sur la plateforme de ton choix. Gratuit, sans compte.","applicationCategory":"MultimediaApplication","operatingSystem":"Navigateur web","isAccessibleForFree":true,"inLanguage":"fr","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://onirique.store/"},{"@type":"ListItem","position":2,"name":"Outils gratuits","item":"https://onirique.store/outils"},{"@type":"ListItem","position":3,"name":"Transférer une playlist Spotify, Deezer, Apple Music","item":"https://onirique.store/transfert-playlist"}]}]}</script>
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
 <link rel="stylesheet" href="assets/pages.css?v=2">
@@ -73,6 +74,24 @@
       <header><h2 id="r-title"></h2><button class="go ghost" id="copy" type="button">Copier la liste</button></header>
       <ol id="r-list"></ol>
     </article>
+  </section>
+
+  <section class="text">
+    <h2>Comment transférer une playlist</h2>
+    <p>Ouvre ta playlist sur Spotify, Deezer, Apple Music, Tidal ou YouTube Music et copie son lien de partage. Colle-le ici, choisis la plateforme d'arrivée et lance le transfert : la liste des titres s'affiche, chacun avec son lien sur la nouvelle plateforme. Tu peux copier toute la liste d'un clic pour la garder ou l'envoyer.</p>
+    <p>Pas besoin de connecter ton compte : l'outil lit la playlist publique, sans accès à tes données. C'est aussi pratique pour envoyer une sélection à quelqu'un qui n'utilise pas la même application que toi.</p>
+  </section>
+
+  <section class="text">
+    <h2>Questions fréquentes</h2>
+    <details><summary>Faut-il un compte Spotify, Deezer ou Apple Music ?</summary>
+      <p>Non, ni chez nous ni sur les plateformes. La playlist doit simplement être publique pour que son contenu puisse être lu.</p></details>
+    <details><summary>Pourquoi certains liens ouvrent une recherche ?</summary>
+      <p>Deezer et Apple Music reçoivent le lien exact de chaque titre. Sur Spotify, Tidal et YouTube Music, le lien ouvre la recherche du titre et de l'artiste : le bon morceau arrive en tête dans la quasi-totalité des cas.</p></details>
+    <details><summary>Un titre manque à l'arrivée, pourquoi ?</summary>
+      <p>Un morceau peut ne pas exister sur la plateforme d'arrivée, ou être grisé dans la playlist d'origine (indisponible dans ton pays, retiré par l'artiste). Il est alors laissé de côté.</p></details>
+    <details><summary>C'est gratuit ?</summary>
+      <p>Oui, sans limite et sans inscription, comme tous les <a href="outils">outils gratuits d'Onirique</a>.</p></details>
   </section>
 </main>
 

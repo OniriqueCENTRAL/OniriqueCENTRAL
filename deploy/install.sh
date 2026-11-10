@@ -85,6 +85,14 @@ map $args $onirique_asset_cache {
 }
 EOF
 
+# En-têtes de sécurité des pages du site (repris dans chaque location qui pose ses propres en-têtes).
+cat > /etc/nginx/snippets/onirique-securite.conf <<'EOF'
+add_header Strict-Transport-Security "max-age=31536000" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+add_header X-Frame-Options "SAMEORIGIN" always;
+EOF
+
 # Écrit une seule fois : certbot y ajoute ensuite le HTTPS, qu'une relance ne doit pas effacer.
 [ -f /etc/nginx/sites-available/onirique ] || cat > /etc/nginx/sites-available/onirique <<EOF
 server {
@@ -102,8 +110,21 @@ server {
     charset_types text/plain text/css application/xml text/xml;
     index index.html;
     # Les pages sont toujours revérifiées : une mise en ligne se voit tout de suite.
-    location / { add_header Cache-Control "no-cache"; try_files \$uri \$uri.html \$uri/ =404; }
-    location /assets/ { add_header Cache-Control \$onirique_asset_cache; }
+    # Une seule adresse pour le site : www renvoie vers $SITE.
+    if (\$host = www.$SITE) { return 301 https://$SITE\$request_uri; }
+    location / { include snippets/onirique-securite.conf; add_header Cache-Control "no-cache"; try_files \$uri \$uri.html \$uri/ =404; }
+    location /assets/ { include snippets/onirique-securite.conf; add_header Cache-Control \$onirique_asset_cache; }
+    location = /favicon.ico { include snippets/onirique-securite.conf; add_header Cache-Control \$onirique_asset_cache; try_files /assets/favicon.png =404; }
+    # Fiche d'un plugin (/boutique/<slug>) et sitemap : servis par le CENTRAL, qui connaît les plugins en vente.
+    # L'ancienne adresse boutique?p=<slug> renvoie vers la nouvelle.
+    location = /boutique { if (\$arg_p) { return 301 /boutique/\$arg_p; } include snippets/onirique-securite.conf; add_header Cache-Control "no-cache"; try_files /boutique.html =404; }
+    location ~ ^/(boutique/[^/]+|sitemap\.xml)$ {
+        include snippets/onirique-securite.conf;
+        proxy_pass http://127.0.0.1:4850;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Forwarded-For \$remote_addr;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
     # Pages de liens des fondateurs : onirique.store/l/<pseudo>, servies par le CENTRAL avec leur titre et leur image d'aperçu.
     location /l/ {
         proxy_pass http://127.0.0.1:4850;
