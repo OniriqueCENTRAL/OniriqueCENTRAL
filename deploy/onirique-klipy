@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Branche la recherche de GIF du fond des pages de profil (KLIPY, qui a remplacé Tenor). À lancer sur le VPS, en root :
+#   onirique-klipy        demande la clé de l'application KLIPY
+#   onirique-klipy off    retire la clé (le bouton « Chercher un GIF » disparaît)
+#
+# À faire avant, sur partner.klipy.com : créer un compte, puis une application ; sa page donne la clé (API key).
+set -euo pipefail
+
+ENVFILE=/opt/onirique-central/server/.env
+stop() { echo "$1" >&2; exit 1; }
+
+if [ "${1:-}" != off ]; then
+  KEY=''
+  while :; do
+    read -r -s -p "Clé KLIPY (rien ne s'affiche) : " KEY; echo >&2
+    KEY=${KEY//[[:space:]]/}
+    [[ $KEY =~ ^[A-Za-z0-9_-]{16,}$ ]] && break
+    [ -z "$KEY" ] || echo "Ça ne ressemble pas à une clé KLIPY, recolle-la." >&2
+  done
+  # La clé est essayée avant d'être gardée.
+  code=$(curl -s -o /dev/null -w '%{http_code}' "https://api.klipy.com/api/v1/$KEY/gifs/trending?per_page=1&customer_id=essai")
+  [ "$code" = 200 ] || stop "KLIPY refuse cette clé (réponse $code) : vérifie-la sur partner.klipy.com."
+fi
+
+sed -i '/^KLIPY_API_KEY=/d' "$ENVFILE"
+[ "${1:-}" = off ] || printf "KLIPY_API_KEY='%s'\n" "$KEY" >> "$ENVFILE"
+chown central:central "$ENVFILE"; chmod 600 "$ENVFILE"
+systemctl restart onirique-central
+sleep 3
+systemctl is-active -q onirique-central || stop "Le serveur n'a pas redémarré : journalctl -u onirique-central"
+if [ "${1:-}" = off ]; then echo "Recherche de GIF retirée."; else echo "C'est bon : « Chercher un GIF » apparaît dans « Modifier ma page »."; fi
