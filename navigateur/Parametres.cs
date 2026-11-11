@@ -8,6 +8,7 @@ sealed class OngletSauve
     public string Titre { get; set; } = "";
     public int Groupe { get; set; } = -1;
     public bool Divise { get; set; }   // partage l'écran avec l'onglet suivant
+    public bool Epingle { get; set; }
 }
 
 sealed class GroupeSauve
@@ -44,6 +45,7 @@ sealed class Parametres
     public int PlafondCpu { get; set; }          // %, 0 : aucun
     public bool BarreLaterale { get; set; } = true;
     public bool BarreFavoris { get; set; } = true;
+    public bool OngletsVerticaux { get; set; }   // onglets en colonne à gauche (Colonne.cs)
     public int PanneauLargeur { get; set; }    // px à 96 ppp, 0 : par défaut
     public string Fond { get; set; } = "nuit";   // nuit, anime, image
     public string? FondFichier { get; set; }

@@ -72,7 +72,8 @@ sealed partial class Navigateur
     async void Renommer(Groupe gr)
     {
         await Task.Delay(Reglages.Animations ? 280 : 0);
-        var r = bandeau.Pastille(gr);
+        Control hote = Verticale ? colonne : bandeau;
+        var r = Verticale ? colonne.Entete(gr) : bandeau.Pastille(gr);
         var t = new TextBox
         {
             Text = gr.Nom, BorderStyle = BorderStyle.FixedSingle, BackColor = DA.Fond, ForeColor = DA.Brume,
@@ -85,7 +86,7 @@ sealed partial class Navigateur
             if (fini) return;
             fini = true;
             if (garder) gr.Nom = t.Text.Trim();
-            bandeau.Controls.Remove(t);
+            hote.Controls.Remove(t);
             BeginInvoke(t.Dispose);
             Animer();
         }
@@ -95,7 +96,8 @@ sealed partial class Navigateur
             else if (e.KeyCode == Keys.Escape) { e.SuppressKeyPress = true; Finir(false); }
         };
         t.LostFocus += (_, _) => Finir(true);
-        bandeau.Controls.Add(t);
+        hote.Controls.Add(t);
+        t.BringToFront();
         t.Focus();
         t.SelectAll();
     }
@@ -165,18 +167,32 @@ sealed partial class Navigateur
         var a = Actif;
         if (a == null) return;
         var r = contenu.ClientRectangle;
-        if (a.Partenaire is not { } p) { a.Vue?.SetBounds(0, 0, r.Width, r.Height); contenu.Invalidate(); return; }
+        // En colonne, la page tient dans un cadre arrondi, détaché des bords (à gauche, la colonne a déjà sa marge).
+        if (Verticale) r = new Rectangle(0, this.S(8), r.Width - this.S(8), r.Height - this.S(16));
+        if (a.Partenaire is not { } p) { a.Vue?.SetBounds(r.X, r.Y, r.Width, r.Height); Arrondir(a.Vue); contenu.Invalidate(); return; }
         var (gauche, droite) = Onglets.IndexOf(a) < Onglets.IndexOf(p) ? (a, p) : (p, a);
         int m = this.S(6), demi = (r.Width - 3 * m) / 2;
-        gauche.Vue?.SetBounds(m, m, demi, r.Height - 2 * m);
-        droite.Vue?.SetBounds(2 * m + demi, m, r.Width - 3 * m - demi, r.Height - 2 * m);
+        gauche.Vue?.SetBounds(r.X + m, r.Y + m, demi, r.Height - 2 * m);
+        droite.Vue?.SetBounds(r.X + 2 * m + demi, r.Y + m, r.Width - 3 * m - demi, r.Height - 2 * m);
+        Arrondir(gauche.Vue);
+        Arrondir(droite.Vue);
         contenu.Invalidate();
     }
 
     void DessinerDivision(PaintEventArgs e)
     {
-        if (Actif?.Partenaire is not { } p) return;
         e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+        if (Actif?.Partenaire is not { } p)
+        {
+            // Le cadre de la page, en colonne : un filet adoucit le bord découpé de la vue.
+            if (Verticale && Actif?.Vue is { Visible: true } seule)
+            {
+                using var cadre = DA.Arrondi(Rectangle.Inflate(seule.Bounds, 1, 1), this.S(10) + 1);
+                using var filet = new Pen(DA.Filet);
+                e.Graphics.DrawPath(filet, cadre);
+            }
+            return;
+        }
         foreach (var x in new[] { Actif, p })
         {
             if (x.Vue is not { Visible: true } v) continue;
@@ -219,6 +235,7 @@ sealed partial class Navigateur
     {
         var m = NouveauMenu();
         int i = Onglets.IndexOf(o);
+        if (Verticale) m.Items.Add(Element(o.Epingle ? "Retirer des épinglés" : "Épingler en haut", () => { o.Epingle = !o.Epingle; Redessiner(); }));
         m.Items.Add(Element("Nouvel onglet à droite", async () => { var n = await Ouvrir(Accueil, i + 1); if (o.Groupe != null) { n.Groupe = o.Groupe; Animer(); } }));
         m.Items.Add(new ToolStripSeparator());
         m.Items.Add(Element("Ajouter à un nouveau groupe", () => NouveauGroupe(o)));
@@ -252,7 +269,7 @@ sealed partial class Navigateur
         foreach (var (hex, nom) in DA.Accents)
         {
             var c = ColorTranslator.FromHtml(hex);
-            var el = Element(nom, () => { gr.Couleur = c; bandeau.Invalidate(); }, image: Pastille(c));
+            var el = Element(nom, () => { gr.Couleur = c; Redessiner(); }, image: Pastille(c));
             el.Checked = c.ToArgb() == gr.Couleur.ToArgb();
             couleurs.DropDownItems.Add(el);
         }
@@ -283,6 +300,7 @@ sealed partial class Navigateur
             Titre = o.Titre,
             Groupe = o.Groupe == null ? -1 : groupes.IndexOf(o.Groupe),
             Divise = o.Partenaire != null && i + 1 < web.Count && web[i + 1] == o.Partenaire,
+            Epingle = o.Epingle,
         }).ToList();
     }
 
@@ -297,6 +315,7 @@ sealed partial class Navigateur
         for (int i = 0; i < Reglages.Session.Count && i < Onglets.Count; i++)
         {
             var s = Reglages.Session[i];
+            Onglets[i].Epingle = s.Epingle;
             if (s.Groupe >= 0 && s.Groupe < groupes.Count) Onglets[i].Groupe = groupes[s.Groupe];
             if (s.Divise && i + 1 < Onglets.Count && Onglets[i].Partenaire == null)
             {

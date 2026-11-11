@@ -343,6 +343,10 @@ body.sans-animations *, body.sans-animations *::before, body.sans-animations *::
           <label class="interrupteur"><input type="checkbox" data-cle="BarreFavoris" aria-label="Barre de favoris"><span></span></label>
         </div>
         <div class="ligne">
+          <div class="texte"><b>Onglets sur le côté</b><small>Les onglets en colonne à gauche, la barre d'adresse au-dessus, la page dans un cadre. Clic droit sur un onglet pour l'épingler en haut.</small></div>
+          <label class="interrupteur"><input type="checkbox" data-cle="OngletsVerticaux" aria-label="Onglets sur le côté"><span></span></label>
+        </div>
+        <div class="ligne">
           <div class="texte"><b>Barre latérale</b><small>Ton CLOUD, tes messages ONIRIQUE et Discord à portée de clic, à gauche.</small></div>
           <label class="interrupteur"><input type="checkbox" data-cle="BarreLaterale" aria-label="Barre latérale"><span></span></label>
         </div>
@@ -490,6 +494,7 @@ function afficher(m) {
     for (const cle of ["PlafondMemoire", "Memoire", "Traqueurs", "VeilleSecondes"]) document.querySelector(`[data-cle="${cle}"]`)?.closest(".carte")?.setAttribute("hidden", "");
     document.querySelector('[data-cle="BarreLaterale"]')?.closest(".ligne")?.setAttribute("hidden", "");
     document.querySelector('[data-cle="BarreFavoris"]')?.closest(".ligne")?.setAttribute("hidden", "");
+    document.querySelector('[data-cle="OngletsVerticaux"]')?.closest(".ligne")?.setAttribute("hidden", "");
     document.getElementById("defaut").textContent = "Choisir";
     document.getElementById("carte-google").hidden = true;
     document.querySelector('nav button[data-rubrique="extensions"]').hidden = true;

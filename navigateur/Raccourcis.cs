@@ -89,7 +89,9 @@ sealed partial class Navigateur
         if (oui == pleinEcranActif) return;
         pleinEcranActif = oui;
         SuspendLayout();
-        bandeau.Visible = barre.Visible = !oui;
+        bandeau.Visible = !oui && !Verticale;
+        colonne.Visible = !oui && Verticale;
+        barre.Visible = !oui;
         favoris.Visible = !oui && Reglages.BarreFavoris;
         laterale.Visible = !oui && Reglages.BarreLaterale;
         panneau.Visible = !oui;

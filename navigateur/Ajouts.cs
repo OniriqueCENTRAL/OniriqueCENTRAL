@@ -215,7 +215,7 @@ sealed partial class Navigateur
         o.ScriptGoogle = null;
         o.Decharge = true;
         vue.Dispose();
-        bandeau.Invalidate();
+        Redessiner();
     }
 
     async Task<bool> ChangerAjout(string cle, JsonNode? valeur)
@@ -237,6 +237,7 @@ sealed partial class Navigateur
                 EnvoyerEtatAuxPagesInternes();
                 return false;
             case "BarreFavoris": Reglages.BarreFavoris = favoris.Visible = B(); break;
+            case "OngletsVerticaux": Reglages.OngletsVerticaux = B(); AppliquerDisposition(); break;
             case "BarreLaterale":
                 Reglages.BarreLaterale = laterale.Visible = B();
                 if (!B()) BasculerPanneau(null);

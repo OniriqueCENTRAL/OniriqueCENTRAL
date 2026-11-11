@@ -102,6 +102,7 @@ sealed class Onglet
     public float X = -1, W;  // position affichée dans le bandeau (animée)
     public Groupe? Groupe;
     public Onglet? Partenaire;  // l'autre moitié d'un écran divisé
+    public bool Epingle;        // en petite icône en haut de la colonne d'onglets
 }
 
 sealed partial class Navigateur : Form
@@ -200,12 +201,14 @@ sealed partial class Navigateur : Form
         animation.Tick += (_, _) =>
         {
             bool encore = bandeau.Animer(Reglages.Animations) | bulle.Animer(Reglages.Animations);
+            if (colonne.Visible) colonne.Invalidate();
             if (vpn.Clignote) { vpn.Invalidate(); encore = true; }
             encore |= AnimerAjouts();
             if (!encore) animation.Stop();
         };
         InitAjouts();
-        Echelle();
+        InitColonne();
+        AppliquerDisposition();
     }
 
     internal void Animer() { if (!animation.Enabled) animation.Start(); }
@@ -247,6 +250,7 @@ sealed partial class Navigateur : Form
             if (WindowState == FormWindowState.Normal && p.Y < this.S(5))
                 m.Result = p.X < this.S(10) ? 13 : p.X > ClientSize.Width - this.S(10) ? 14 : 12; // HTTOPLEFT, HTTOPRIGHT, HTTOP
             else if (p.Y < bandeau.Bottom && bandeau.Visible) m.Result = 2; // HTCAPTION
+            else if (colonne.Visible && colonne.Bounds.Contains(p) && p.Y < colonne.Top + colonne.Padding.Top) m.Result = 2;
             return;
         }
         base.WndProc(ref m);
@@ -321,7 +325,8 @@ sealed partial class Navigateur : Form
     void Echelle()
     {
         bandeau.Height = this.S(44);
-        barre.Height = this.S(46);
+        barre.Height = this.S(Verticale ? 80 : 46);
+        colonne.Echelle();
         Font = new Font("Segoe UI Variable Text", this.S(12), GraphicsUnit.Pixel);
         champ.Saisie.Font = new Font("Segoe UI Variable Text", this.S(14), GraphicsUnit.Pixel);
         bandeau.Icones = new Font("Segoe Fluent Icons", this.S(10), GraphicsUnit.Pixel);
@@ -336,6 +341,7 @@ sealed partial class Navigateur : Form
     void Disposer()
     {
         int h = this.S(32), y = (barre.Height - h) / 2, x = this.S(8), pas = this.S(38);
+        if (Verticale) { DisposerEnColonne(h, x); return; }
         foreach (var b in new Control[] { retour, avance, recharger }) { b.SetBounds(x, y, this.S(36), h); x += pas; }
         int droite = barre.Width - this.S(10);
         if (memoire.Visible) { int m = this.S(76); droite -= m; memoire.SetBounds(droite, y, m, h); droite -= this.S(4); }
@@ -360,7 +366,7 @@ sealed partial class Navigateur : Form
     {
         var o = new Onglet { Url = url ?? "" };
         Onglets.Insert(position < 0 || position > Onglets.Count ? Onglets.Count : position, o);
-        bandeau.Invalidate();
+        Redessiner();
         Animer();
         await Creer(o);
         if (url != null && o.Vue?.CoreWebView2 is { } c) c.Navigate(url);
@@ -408,14 +414,14 @@ sealed partial class Navigateur : Form
         BrancherAjouts(o, c);
         c.SetVirtualHostNameToFolderMapping(Hote, Path.Combine(AppContext.BaseDirectory, "accueil"), CoreWebView2HostResourceAccessKind.Deny);
         if (Reglages.GoogleOnirique && scriptGoogle.Length > 0) o.ScriptGoogle = await c.AddScriptToExecuteOnDocumentCreatedAsync(ScriptGoogle());
-        c.DocumentTitleChanged += (_, _) => { o.Titre = c.DocumentTitle; bandeau.Invalidate(); if (o == Actif) Afficher(); };
+        c.DocumentTitleChanged += (_, _) => { o.Titre = c.DocumentTitle; Redessiner(); if (o == Actif) Afficher(); };
         c.SourceChanged += (_, _) => { o.Url = c.Source; if (o == Actif) Afficher(); };
         c.HistoryChanged += (_, _) => { if (o == Actif) Afficher(); };
         c.NavigationStarting += (_, _) => { o.Charge = true; Animer(); if (o == Actif) Afficher(); };
         c.NavigationCompleted += async (_, e) =>
         {
             o.Charge = false;
-            bandeau.Invalidate();
+            Redessiner();
             if (o == Actif) Afficher();
             if (!e.IsSuccess) return;
             // Le titre arrive souvent juste après la page : l'historique attend un instant avant de l'écrire.
@@ -426,7 +432,7 @@ sealed partial class Navigateur : Form
         c.IsDocumentPlayingAudioChanged += async (_, _) =>
         {
             o.Son = c.IsDocumentPlayingAudio;
-            bandeau.Invalidate();
+            Redessiner();
             if (!o.Son) return;
             await Task.Delay(800); // la session audio de Windows naît juste après le premier son
             NommerSon();
@@ -446,7 +452,7 @@ sealed partial class Navigateur : Form
             catch { }
             o.Icone?.Dispose();
             o.Icone = icone;
-            bandeau.Invalidate();
+            Redessiner();
         };
         c.NewWindowRequested += async (_, e) =>
         {
@@ -550,7 +556,7 @@ sealed partial class Navigateur : Form
         bool interne = o == null || o.Url.Length == 0 || EstInterne(o.Url);
         if (!champ.Saisie.Focused) champ.Saisie.Text = interne ? "" : o!.Url;
         Text = interne ? "ONIRIQUE" : o!.Titre + " — ONIRIQUE";
-        bandeau.Invalidate();
+        Redessiner();
         MajEtoile();
     }
 
