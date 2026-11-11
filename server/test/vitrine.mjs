@@ -81,6 +81,13 @@ try {
     await call('POST', `/api/vitrine/${visual.id}/buy`, { expect: 503 });
     saveStripeAccount('onirique', { secretKey: 'sk_live_' + 'p'.repeat(24), webhookSecret: 'whsec_' + 'k'.repeat(32) });
     assert.equal((await call('GET', `/api/vitrine/${visual.id}`)).forSale, true);
+    // La marketplace : le visuel en vente, sa copie filigranée seulement ; pas un visuel sans prix.
+    const free = await call('POST', '/api/me/vitrine?title=Offert', { token: artist.token, raw: cover, type: 'image/png', expect: 201 });
+    const market = await call('GET', '/api/marketplace');
+    assert.deepEqual(market.map((x) => [x.type, x.id, x.price, x.seller.handle]), [['visual', visual.id, 4999, 'dias7am']]);
+    assert.ok(market[0].image.startsWith(`/api/vitrine/${visual.id}/image`));
+    assert.equal(JSON.stringify(market).includes(get('SELECT original FROM vitrine_visuals WHERE id = ?', visual.id).original), false);
+    await call('DELETE', `/api/me/vitrine/${free.id}`, { token: artist.token });
     const { url } = await call('POST', `/api/vitrine/${visual.id}/buy`, { token: visitor.token });
     const session = sessions.find((s) => url.endsWith(s.id)), o = get('SELECT * FROM sound_orders WHERE provider_ref = ?', session.id);
     assert.deepEqual([o.visual_id, o.amount, o.provider, session['line_items[0][price_data][unit_amount]']], [visual.id, 4999, 'onirique', '4999']);

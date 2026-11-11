@@ -9,7 +9,8 @@ import sharp from 'sharp';
 import { config } from './config.js';
 import { db, get, all, run, now } from './db.js';
 import { HttpError, rateLimit, optionalUser } from './auth.js';
-import { platformStripe, stripeCall, markPaid, balanceOf, askPayout, verifyOrder } from './beatstore.js';
+import { platformStripe, stripeCall, markPaid, balanceOf, askPayout, verifyOrder, offersOf } from './beatstore.js';
+import { publicPlaylists } from './ratings.js';
 
 db.exec(`CREATE TABLE IF NOT EXISTS vitrine_visuals (
   id          INTEGER PRIMARY KEY,
@@ -86,6 +87,22 @@ export function mountVitrine(app, { requireUser, receiveFile, wrap }) {
   app.get('/api/vitrine/:id', (req, res) => {
     const v = publicVisual(req.params.id);
     res.set('Cache-Control', 'no-store').json({ ...view(v), simulate: optionalUser(req)?.role === 'founder' && v.price > 0 && !v.sold });
+  });
+  // La marketplace : tout ce qui s'achète, réuni. Les visuels en vente (copie filigranée seulement) et les packs de prods
+  // publics dont au moins une prod a une licence achetable, au prix le plus bas (« dès »).
+  app.get('/api/marketplace', (_req, res) => {
+    const visuals = all(`${PUBLIC} AND v.price > 0 AND v.sold = 0 ORDER BY v.created_at DESC LIMIT 200`).filter(canBuy).map((v) => ({
+      type: 'visual', id: v.id, title: v.title, image: view(v).image, price: v.price, from: false, at: v.created_at,
+      seller: { name: v.name || 'Membre', handle: v.handle }, url: `/vitrine?u=${encodeURIComponent(v.handle)}&v=${v.id}` }));
+    // shortcut: les 200 derniers packs publics, relus à chaque visite ; à mettre en cache si la liste grossit.
+    const packs = publicPlaylists(0, { kind: 'pack', limit: 200 }).map((p) => {
+      const owner = get('SELECT user_id FROM sound_projects WHERE id = ?', p.id).user_id;
+      const prices = all('SELECT * FROM sound_tracks WHERE project_id = ? AND private = 0 AND for_sale = 1 AND sold = 0', p.id)
+        .flatMap((t) => offersOf(t, owner).map((o) => o.price));
+      return prices.length && { type: 'pack', id: p.id, title: p.title, image: p.cover ? `${p.cover}?w=480` : null, price: Math.min(...prices), from: true, at: p.at,
+        tracks: p.tracks, seller: { name: p.owner, handle: p.ownerHandle }, url: p.url };
+    }).filter(Boolean);
+    res.set('Cache-Control', 'no-store').json([...visuals, ...packs].sort((a, b) => b.at - a.at));
   });
   // Seule la copie filigranée est servie au public.
   app.get('/api/vitrine/:id/image', (req, res, next) => {

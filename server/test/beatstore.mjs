@@ -177,6 +177,9 @@ try {
     share = new URL(url).searchParams.get('t');
     const page = await call('POST', `/api/sounds/share/${share}`, { body: {} });
     assert.deepEqual(page.tracks[0].offers.map((o) => [o.name, o.price]), [['MP3', 2999], ['WAV', 3500], ['Track stems', 9999]]);
+    // La marketplace montre le pack, au prix de sa licence la moins chère.
+    const market = (await call('GET', '/api/marketplace')).filter((x) => x.type === 'pack');
+    assert.deepEqual(market.map((x) => [x.id, x.title, x.price, x.from, x.url.includes(share)]), [[pack, 'Pack', 2999, true, true]]);
     // « Contacter le vendeur » : l'Instagram du beatmaker, réglé depuis Ventes.
     assert.equal(page.contact, null);
     await call('POST', '/api/me/profile', { token: beatmaker.token, body: { instagram: '@kay.beats' } });
