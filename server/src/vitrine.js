@@ -61,7 +61,7 @@ const sellerName = (userId) => { const u = get('SELECT name, email FROM users WH
 const canBuy = (v) => v.price > 0 && !v.sold && !!platformStripe();
 function view(v) {
   return { id: v.id, title: v.title, description: v.description, price: v.price, unique: !!v.unique_sale, sold: !!v.sold, forSale: canBuy(v),
-    width: v.width, height: v.height, image: `/api/vitrine/${v.id}/image?v=${v.preview.slice(0, 8)}`, createdAt: v.created_at,
+    width: v.width, height: v.height, format: v.format === 'jpeg' ? 'JPEG' : v.format.toUpperCase(), image: `/api/vitrine/${v.id}/image?v=${v.preview.slice(0, 8)}`, createdAt: v.created_at,
     author: { handle: v.handle, name: v.name || 'Membre', avatar: v.avatar ? `/api/media/${v.avatar}` : null } };
 }
 const PUBLIC = `SELECT v.*, p.handle, u.name, u.avatar FROM vitrine_visuals v JOIN users u ON u.id = v.user_id JOIN user_profiles p ON p.user_id = v.user_id
@@ -73,6 +73,18 @@ const publicVisual = (vid) => {
 };
 function removeFiles(v) {
   for (const f of [v.original, v.preview]) fs.rmSync(path.join(vitrineDir, f), { force: true });
+}
+
+// Un pack public en vente, tel que la marketplace le montre : ses prods achetables et le prix le plus bas (« dès »).
+// full : les prods une par une (titre, BPM, tonalité, prix), pour sa fiche.
+function packItem(p, full = false) {
+  const owner = get('SELECT u.id, u.avatar FROM sound_projects s JOIN users u ON u.id = s.user_id WHERE s.id = ?', p.id);
+  const tracks = all('SELECT * FROM sound_tracks WHERE project_id = ? AND private = 0 AND for_sale = 1 AND sold = 0 ORDER BY position, id', p.id)
+    .map((t) => ({ t, prices: offersOf(t, owner.id).map((o) => o.price) })).filter((x) => x.prices.length);
+  if (!tracks.length) return null;
+  return { type: 'pack', id: p.id, title: p.title, image: p.cover ? `${p.cover}?w=960` : null, price: Math.min(...tracks.flatMap((x) => x.prices)), from: true, at: p.at,
+    tracks: p.tracks, forSale: tracks.length, page: `/article?p=${p.id}`, seller: { name: p.owner, handle: p.ownerHandle, avatar: owner.avatar ? `/api/media/${owner.avatar}` : null }, url: p.url,
+    ...(full ? { list: tracks.map(({ t, prices }) => ({ title: t.title, bpm: t.bpm || null, key: t.music_key || null, from: Math.min(...prices) })) } : {}) };
 }
 
 export function mountVitrine(app, { requireUser, receiveFile, wrap }) {
@@ -93,16 +105,17 @@ export function mountVitrine(app, { requireUser, receiveFile, wrap }) {
   app.get('/api/marketplace', (_req, res) => {
     const visuals = all(`${PUBLIC} AND v.price > 0 AND v.sold = 0 ORDER BY v.created_at DESC LIMIT 200`).filter(canBuy).map((v) => ({
       type: 'visual', id: v.id, title: v.title, image: view(v).image, price: v.price, from: false, at: v.created_at,
-      seller: { name: v.name || 'Membre', handle: v.handle }, url: `/vitrine?u=${encodeURIComponent(v.handle)}&v=${v.id}` }));
+      unique: !!v.unique_sale, seller: view(v).author, url: `/vitrine?u=${encodeURIComponent(v.handle)}&v=${v.id}`, page: `/article?v=${v.id}` }));
     // shortcut: les 200 derniers packs publics, relus à chaque visite ; à mettre en cache si la liste grossit.
-    const packs = publicPlaylists(0, { kind: 'pack', limit: 200 }).map((p) => {
-      const owner = get('SELECT user_id FROM sound_projects WHERE id = ?', p.id).user_id;
-      const prices = all('SELECT * FROM sound_tracks WHERE project_id = ? AND private = 0 AND for_sale = 1 AND sold = 0', p.id)
-        .flatMap((t) => offersOf(t, owner).map((o) => o.price));
-      return prices.length && { type: 'pack', id: p.id, title: p.title, image: p.cover ? `${p.cover}?w=480` : null, price: Math.min(...prices), from: true, at: p.at,
-        tracks: p.tracks, seller: { name: p.owner, handle: p.ownerHandle }, url: p.url };
-    }).filter(Boolean);
+    const packs = publicPlaylists(0, { kind: 'pack', limit: 200 }).map((p) => packItem(p)).filter(Boolean);
     res.set('Cache-Control', 'no-store').json([...visuals, ...packs].sort((a, b) => b.at - a.at));
+  });
+  // La fiche d'un pack de la marketplace : seulement un pack public, à lien ouvert, qui a une prod en vente.
+  app.get('/api/marketplace/packs/:id', (req, res) => {
+    const p = publicPlaylists(0, { kind: 'pack', where: 'p.id = ?', params: [id(req.params.id)], limit: 1 })[0];
+    const item = p && packItem(p, true);
+    if (!item) throw new HttpError(404, 'Pack introuvable ou plus en vente.');
+    res.set('Cache-Control', 'no-store').json(item);
   });
   // Seule la copie filigranée est servie au public.
   app.get('/api/vitrine/:id/image', (req, res, next) => {

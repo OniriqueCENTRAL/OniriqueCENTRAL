@@ -180,6 +180,9 @@ try {
     // La marketplace montre le pack, au prix de sa licence la moins chère.
     const market = (await call('GET', '/api/marketplace')).filter((x) => x.type === 'pack');
     assert.deepEqual(market.map((x) => [x.id, x.title, x.price, x.from, x.url.includes(share)]), [[pack, 'Pack', 2999, true, true]]);
+    const fiche = await call('GET', `/api/marketplace/packs/${pack}`);
+    assert.deepEqual([fiche.page, fiche.forSale, fiche.list.map((t) => [t.title, t.from])], [`/article?p=${pack}`, 1, [['Ghost', 2999]]]);
+    await call('GET', `/api/marketplace/packs/${pack + 999}`, { expect: 404 });
     // « Contacter le vendeur » : l'Instagram du beatmaker, réglé depuis Ventes.
     assert.equal(page.contact, null);
     await call('POST', '/api/me/profile', { token: beatmaker.token, body: { instagram: '@kay.beats' } });

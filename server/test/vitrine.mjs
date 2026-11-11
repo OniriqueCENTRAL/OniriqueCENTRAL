@@ -86,6 +86,7 @@ try {
     const market = await call('GET', '/api/marketplace');
     assert.deepEqual(market.map((x) => [x.type, x.id, x.price, x.seller.handle]), [['visual', visual.id, 4999, 'dias7am']]);
     assert.ok(market[0].image.startsWith(`/api/vitrine/${visual.id}/image`));
+    assert.deepEqual([market[0].page, market[0].unique], [`/article?v=${visual.id}`, true]);
     assert.equal(JSON.stringify(market).includes(get('SELECT original FROM vitrine_visuals WHERE id = ?', visual.id).original), false);
     await call('DELETE', `/api/me/vitrine/${free.id}`, { token: artist.token });
     const { url } = await call('POST', `/api/vitrine/${visual.id}/buy`, { token: visitor.token });
