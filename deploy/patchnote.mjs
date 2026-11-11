@@ -18,24 +18,36 @@ if (process.argv[2] === '--last') {
 const file = process.argv[2];
 if (!file) { console.error('Usage : node deploy/patchnote.mjs notes.md'); process.exit(1); }
 
-// Une rubrique devient un encadré ; Discord en prend dix par message, 4096 caractères chacun, 6000 en tout.
+// Une rubrique devient un encadré, avec la vignette de sa catégorie (tools/patchnotes, servies par le site) ; la bannière
+// ouvre la note. Discord prend dix encadrés par message, 4096 caractères chacun, 6000 en tout.
+const IMG = 'https://onirique.store/assets/patchnotes', V = '?v=1', COLOR = 0xE23444;
+// Les rubriques « des packs » ont leur propre image : mails et YouTube passent avant packs.
+const KINDS = [['mail', 'mails'], ['youtube', 'youtube'], ['cloud', 'cloud'], ['pack', 'packs'], ['plugin', 'plugins'], ['navigateur', 'navigateur'],
+  ['discord', 'discord'], ['bot', 'discord'], ['appli', 'application'], ['site', 'site'], ['boutique', 'site'], ['correctif', 'correctifs']];
+const kindOf = (head) => (KINDS.find(([word]) => head.toLowerCase().includes(word)) || [, 'autre'])[1];
+
 const text = fs.readFileSync(file, 'utf8').replace(/\r\n?/g, '\n');
 const title = (text.match(/^# (.+)$/m) || [])[1]?.trim() || 'Patch notes';
 const embeds = text.split(/^## /m).slice(1).map((block) => {
   const [head, ...lines] = block.split('\n');
-  return { title: head.trim().slice(0, 256), description: lines.join('\n').trim().slice(0, 4096), color: 0xE23444 };
+  return { title: head.trim().slice(0, 256), description: lines.join('\n').trim().slice(0, 4096), color: COLOR, thumbnail: { url: `${IMG}/${kindOf(head)}.png${V}` } };
 }).filter((e) => e.description);
 if (!embeds.length) { console.error('Aucune rubrique « ## … » dans la note.'); process.exit(1); }
+embeds.unshift({ author: { name: 'ONIRIQUE · Patch notes', icon_url: 'https://onirique.store/assets/logo-small.png', url: 'https://onirique.store' },
+  title: title.slice(0, 256), color: COLOR, image: { url: `${IMG}/banner.png${V}` } });
+Object.assign(embeds.at(-1), { footer: { text: 'onirique.store', icon_url: 'https://onirique.store/assets/logo-small.png' }, timestamp: new Date().toISOString() });
 const messages = [];
 for (const embed of embeds) {
-  const size = embed.title.length + embed.description.length, last = messages.at(-1);
+  const size = embed.title.length + (embed.description?.length || 0) + 60, last = messages.at(-1);
   if (last && last.embeds.length < 10 && last.size + size <= 5800) { last.embeds.push(embed); last.size += size; }
-  else messages.push({ embeds: [embed], size: size + title.length });
+  else messages.push({ embeds: [embed], size });
 }
-messages.forEach((m, i) => {
-  const body = JSON.stringify({ username: 'ONIRIQUE', content: i ? undefined : `**${title}**`, embeds: m.embeds, allowed_mentions: { parse: [] } });
-  ssh('curl -sS -f -o /dev/null -H "Content-Type: application/json" --data-binary @- "$(cat /etc/onirique/discord-webhook)"', body);
-});
+// Envoyée par le bot ONIRIQUE dans le salon du webhook ; sans bot (onirique-discord off), par le webhook lui-même.
+const SEND = `if [ -f /etc/onirique/discord-bot.env ]; then . /etc/onirique/discord-bot.env;
+  ch=$(curl -sf "$(cat /etc/onirique/discord-webhook)" | jq -r .channel_id);
+  curl -sS -f -o /dev/null -H "Authorization: Bot $DISCORD_BOT_TOKEN" -H "Content-Type: application/json" --data-binary @- "https://discord.com/api/v10/channels/$ch/messages";
+else curl -sS -f -o /dev/null -H "Content-Type: application/json" --data-binary @- "$(cat /etc/onirique/discord-webhook)"; fi`;
+for (const m of messages) ssh(SEND, JSON.stringify({ embeds: m.embeds, allowed_mentions: { parse: [] } }));
 // Le dernier commit annoncé, pour savoir ce qui reste à annoncer la prochaine fois.
 const head = execFileSync('git', ['rev-parse', 'origin/main'], { encoding: 'utf8' }).trim();
 ssh(`printf %s ${head} > ${LAST}`);
