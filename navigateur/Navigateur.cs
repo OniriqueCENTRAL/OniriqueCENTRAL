@@ -103,6 +103,8 @@ sealed class Onglet
     public Groupe? Groupe;
     public Onglet? Partenaire;  // l'autre moitié d'un écran divisé
     public bool Epingle;        // en petite icône en haut de la colonne d'onglets
+    public bool SansGpu;        // dans le moteur sans accélération matérielle (Outils.cs)
+    public IReadOnlyList<CoreWebView2Cookie>? CookiesAPorter;
 }
 
 sealed partial class Navigateur : Form
@@ -164,7 +166,7 @@ sealed partial class Navigateur : Form
 
         bandeau = new Bandeau(this) { Dock = DockStyle.Top };
         bulle = new Bulle(this);
-        barre.Controls.AddRange(new Control[] { retour, avance, recharger, champ, vpn, boutonPip, boutonExtensions, historique, boutonTelechargements, reglages, memoire });
+        barre.Controls.AddRange(new Control[] { retour, avance, recharger, champ, vpn, boutonOutils, boutonPip, boutonExtensions, historique, boutonTelechargements, reglages, memoire });
         barre.Paint += (_, e) => { using var p = new Pen(DA.Filet); e.Graphics.DrawLine(p, 0, barre.Height - 1, barre.Width, barre.Height - 1); };
         barre.Resize += (_, _) => Disposer();
         contenu.Controls.Add(bulle);
@@ -189,6 +191,7 @@ sealed partial class Navigateur : Form
         boutonTelechargements.Click += (_, _) => OuvrirInterne(PageTelechargements);
         boutonExtensions.Click += (_, _) => MenuExtensions();
         boutonPip.Click += (_, _) => _ = BasculerPip(Actif?.Vue?.CoreWebView2);
+        boutonOutils.Click += (_, _) => MenuOutils();
         champ.Saisie.KeyDown += (_, e) =>
         {
             // Ctrl+Entrée, comme dans Chrome : « onirique » devient www.onirique.com.
@@ -309,12 +312,13 @@ sealed partial class Navigateur : Form
     bool extensionsActives;
     string? relaisMoteur;
 
-    async Task<CoreWebView2Environment> Moteur(string? relais)
+    async Task<CoreWebView2Environment> Moteur(string? relais, bool sansGpu = false)
     {
-        relaisMoteur = relais;
+        if (!sansGpu) relaisMoteur = relais;
         var options = new CoreWebView2EnvironmentOptions { Language = "fr-FR", AreBrowserExtensionsEnabled = extensionsActives };
-        if (relais != null) options.AdditionalBrowserArguments = Vpn.Arguments(relais);
-        return await CoreWebView2Environment.CreateAsync(null, Parametres.Dossier, options);
+        var arguments = string.Join(" ", new[] { relais != null ? Vpn.Arguments(relais) : null, sansGpu ? "--disable-gpu" : null }.OfType<string>());
+        if (arguments.Length > 0) options.AdditionalBrowserArguments = arguments;
+        return await CoreWebView2Environment.CreateAsync(null, sansGpu ? Path.Combine(Parametres.Dossier, "SansGPU") : Parametres.Dossier, options);
     }
 
     protected override void OnDpiChanged(DpiChangedEventArgs e)
@@ -332,7 +336,7 @@ sealed partial class Navigateur : Form
         champ.Saisie.Font = new Font("Segoe UI Variable Text", this.S(14), GraphicsUnit.Pixel);
         bandeau.Icones = new Font("Segoe Fluent Icons", this.S(10), GraphicsUnit.Pixel);
         var icones = new Font("Segoe Fluent Icons", this.S(14), GraphicsUnit.Pixel);
-        foreach (var b in new[] { retour, avance, recharger, vpn, boutonPip, historique, boutonTelechargements, reglages, lecteur, studio, boutonExtensions }) b.Font = icones;
+        foreach (var b in new[] { retour, avance, recharger, vpn, boutonOutils, boutonPip, historique, boutonTelechargements, reglages, lecteur, studio, boutonExtensions }) b.Font = icones;
         EchelleAjouts();
         memoire.Font = new Font("Cascadia Mono", this.S(11), GraphicsUnit.Pixel);
         bulle.Font = new Font("Segoe UI Variable Text", this.S(13), GraphicsUnit.Pixel);
@@ -346,7 +350,7 @@ sealed partial class Navigateur : Form
         foreach (var b in new Control[] { retour, avance, recharger }) { b.SetBounds(x, y, this.S(36), h); x += pas; }
         int droite = barre.Width - this.S(10);
         if (memoire.Visible) { int m = this.S(76); droite -= m; memoire.SetBounds(droite, y, m, h); droite -= this.S(4); }
-        foreach (var b in new Control[] { reglages, historique, boutonTelechargements, boutonExtensions, boutonPip, vpn, lecteur, studio }) { if (!b.Visible) continue; droite -= this.S(36); b.SetBounds(droite, y, this.S(36), h); droite -= this.S(2); }
+        foreach (var b in new Control[] { reglages, historique, boutonTelechargements, boutonExtensions, boutonPip, boutonOutils, vpn, lecteur, studio }) { if (!b.Visible) continue; droite -= this.S(36); b.SetBounds(droite, y, this.S(36), h); droite -= this.S(2); }
         champ.SetBounds(x + this.S(6), y, Math.Max(0, droite - x - this.S(14)), h);
         bulle.Placer();
         PlacerAjouts();
@@ -397,13 +401,14 @@ sealed partial class Navigateur : Form
         _ = v.Handle;
         try
         {
+            var moteur = await MoteurDe(o);
             if (Prive)
             {
-                var options = env!.CreateCoreWebView2ControllerOptions();
+                var options = moteur.CreateCoreWebView2ControllerOptions();
                 options.IsInPrivateModeEnabled = true;
-                await v.EnsureCoreWebView2Async(env, options);
+                await v.EnsureCoreWebView2Async(moteur, options);
             }
-            else await v.EnsureCoreWebView2Async(env);
+            else await v.EnsureCoreWebView2Async(moteur);
         }
         catch when (o.Vue != v) { return; }
         if (o.Vue != v) return;
@@ -412,6 +417,7 @@ sealed partial class Navigateur : Form
         // En écran divisé, cliquer dans une moitié en fait l'onglet actif (barre d'adresse, témoin).
         v.GotFocus += (_, _) => { if (o != Actif && o == Actif?.Partenaire) { Actif = o; Afficher(); Animer(); contenu.Invalidate(); } };
         AppliquerProfil(c);
+        PoserCookies(o, c);
         BrancherAjouts(o, c);
         c.SetVirtualHostNameToFolderMapping(Hote, Path.Combine(AppContext.BaseDirectory, "accueil"), CoreWebView2HostResourceAccessKind.Deny);
         if (Reglages.GoogleOnirique && scriptGoogle.Length > 0) o.ScriptGoogle = await c.AddScriptToExecuteOnDocumentCreatedAsync(ScriptGoogle());
@@ -560,6 +566,7 @@ sealed partial class Navigateur : Form
         Redessiner();
         MajEtoile();
         MajPip();
+        boutonOutils.Temoin = o?.SansGpu == true;
     }
 
     void Aller(string saisie)
@@ -829,6 +836,11 @@ sealed partial class Navigateur : Form
         {
             var ferme = new TaskCompletionSource();
             ancien.BrowserProcessExited += (_, _) => ferme.TrySetResult();
+            // Le moteur sans accélération change de connexion avec l'autre ; il renaîtra au premier onglet qui le demande.
+            var sansGpu = envSansGpu;
+            envSansGpu = null;
+            var fermeSansGpu = new TaskCompletionSource();
+            if (sansGpu != null) sansGpu.BrowserProcessExited += (_, _) => fermeSansGpu.TrySetResult(); else fermeSansGpu.TrySetResult();
             foreach (var o in Onglets)
             {
                 var vue = o.Vue;
@@ -838,7 +850,7 @@ sealed partial class Navigateur : Form
                 vue?.Dispose();
             }
             FermerPanneaux();
-            await Task.WhenAny(ferme.Task, Task.Delay(5000));
+            await Task.WhenAny(Task.WhenAll(ferme.Task, fermeSansGpu.Task), Task.Delay(5000));
         }
         env = await Moteur(relais);
         var actif = Actif;
@@ -858,7 +870,7 @@ sealed partial class Navigateur : Form
     void NommerSon()
     {
         if (env == null) return;
-        var pids = env.GetProcessInfos().Select(p => p.ProcessId).ToList();
+        var pids = Processus().ToList();
         _ = Task.Run(() => Melangeur.Nommer(pids, Installation.CheminIcone));
     }
 
@@ -903,9 +915,9 @@ sealed partial class Navigateur : Form
         long total;
         TimeSpan cpu;
         using (var moi = Process.GetCurrentProcess()) { total = moi.PrivateMemorySize64; cpu = moi.TotalProcessorTime; }
-        foreach (var info in env.GetProcessInfos())
+        foreach (var pid in Processus())
         {
-            try { using var p = Process.GetProcessById(info.ProcessId); total += p.PrivateMemorySize64; cpu += p.TotalProcessorTime; } catch { }
+            try { using var p = Process.GetProcessById(pid); total += p.PrivateMemorySize64; cpu += p.TotalProcessorTime; } catch { }
         }
         CompterRessources(total, cpu);
         if (memoire.Visible) memoire.Text = $"{total / 1048576} Mo";
