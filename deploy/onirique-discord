@@ -59,7 +59,33 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 UNIT
+# Les nouvelles sorties Spotify des artistes (server/discord-bot/releases.js) : chaque jeudi à 23 h 59, heure de
+# Paris, le bot vérifie chaque minute jusqu'à 00 h 06 et annonce dans #annonces ce qui vient de sortir.
+cat > /etc/systemd/system/onirique-releases.service <<'UNIT'
+[Unit]
+Description=ONIRIQUE annonce des nouvelles sorties Spotify
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=central
+WorkingDirectory=/opt/onirique-discord-bot
+EnvironmentFile=/etc/onirique/discord-bot.env
+StateDirectory=onirique-discord-bot
+ExecStart=/usr/bin/env node releases.js watch
+UNIT
+cat > /etc/systemd/system/onirique-releases.timer <<'UNIT'
+[Unit]
+Description=ONIRIQUE nouvelles sorties, chaque jeudi 23 h 59 (Paris)
+
+[Timer]
+OnCalendar=Thu *-*-* 23:59:00 Europe/Paris
+
+[Install]
+WantedBy=timers.target
+UNIT
 systemctl daemon-reload
+systemctl enable -q --now onirique-releases.timer
 systemctl enable -q onirique-discord-bot
 systemctl restart onirique-discord-bot
 sleep 5

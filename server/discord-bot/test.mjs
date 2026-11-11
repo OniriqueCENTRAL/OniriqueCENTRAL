@@ -35,4 +35,21 @@ await assert.rejects(tracksOf('   ', API), /nom d’un son/);
 await assert.rejects(tracksOf('file:///etc/passwd', API), /https/);
 await assert.rejects(tracksOf('https://onirique.store/ecoute?t=abcdefgh1234', API, { fetch: reply(401, { error: 'Ce lien est protégé par un mot de passe.' }) }), /mot de passe/);
 await assert.rejects(tracksOf('https://onirique.store/ecoute?t=abcdefgh1234', API, { fetch: reply(200, { tracks: [] }) }), /Aucun titre/);
+// Les sorties Spotify : lecture des pages publiques et message d'annonce.
+const { releaseFrom, announcement, duration, albumIdsOf } = await import('./releases.js');
+const albumHtml = `<meta property="og:description" content="euhZ · single · 2026 · 1 songs"/><meta property="og:image" content="https://i.scdn.co/image/abc"/>
+<meta name="music:musician" content="https://open.spotify.com/artist/ART"/><meta name="music:release_date" content="2026-10-16"/>`;
+const embedHtml = `<script id="__NEXT_DATA__" type="application/json">${JSON.stringify({ props: { pageProps: { state: { data: { entity: {
+  name: 'PARTISANS', subtitle: 'euhZ', trackList: [{ title: 'PARTISANS', subtitle: 'euhZ, BES', duration: 103259 }] } } } } } })}</script>`;
+const single = releaseFrom('ALB', 'ART', albumHtml, embedHtml);
+assert.deepEqual([single.title, single.type, single.date, single.cover], ['PARTISANS', 'Single', '2026-10-16', 'https://i.scdn.co/image/abc']);
+assert.equal(releaseFrom('ALB', 'AUTRE', albumHtml, embedHtml), null); // simple invité : pas annoncé
+const msg = announcement(single, { id: 'ART', name: 'euhZ' });
+assert.equal(msg.embeds[0].fields.find((f) => f.name === 'Durée').value, '1:43');
+assert.equal(msg.embeds[0].fields.find((f) => f.name === 'Sortie').value, '16 octobre 2026');
+assert.equal(msg.embeds[0].fields.find((f) => f.name === 'Avec').value, 'euhZ, BES');
+assert.equal(msg.components[0].components[0].url, 'https://open.spotify.com/album/ALB');
+assert.equal(duration(3_725_000), '1 h 02');
+assert.deepEqual(albumIdsOf('<a href="/album/2QFhpFWnxp6hIMHowmb8VG">x</a><a href="/album/2QFhpFWnxp6hIMHowmb8VG">'), ['2QFhpFWnxp6hIMHowmb8VG']);
+
 console.log('discord-bot : ok');
