@@ -1085,5 +1085,16 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     node.style.setProperty("--buy", hex);
     node.style.setProperty("--buy-ink", light > 150 ? "#0D0809" : "#F6EEEE");
   };
-  window.OniriquePlayer = { create, engines, peaksOf, time, icon, tint, stageLabel, releaseLabel, parseLyrics, gluePunct, buttonColor };
+  // Le fond d'un projet : une image (réduite à 1920 px), un GIF, ou une courte vidéo MP4 / WebM jouée en boucle, sans le son.
+  const pageBackground = (node, url) => {
+    const video = /\.(mp4|webm)$/.test(url || "");
+    if (node.dataset.src !== (url || "")) {
+      node.dataset.src = url || "";
+      node.style.backgroundImage = url && !video ? 'url("' + url + (/\.gif$/.test(url) ? "" : "?w=1920") + '")' : "";
+      const v = video ? Object.assign(document.createElement("video"), { src: url, autoplay: true, muted: true, defaultMuted: true, loop: true, playsInline: true }) : null;
+      node.replaceChildren(...(v ? [v] : []));
+    }
+    node.classList.toggle("on", !!url);
+  };
+  window.OniriquePlayer = { create, engines, peaksOf, time, icon, tint, stageLabel, releaseLabel, parseLyrics, gluePunct, buttonColor, pageBackground };
 })();

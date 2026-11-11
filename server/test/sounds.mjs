@@ -706,6 +706,21 @@ try {
     assert.ok(owner.tracks.find((x) => x.id === ids[1]).private);
   });
 
+  await step('fond d\'un projet : GIF ou courte vidéo MP4 / WebM acceptés, faux fichier refusé', async () => {
+    const pid = (await call('POST', '/api/me/sounds/projects', { token: member.token, body: { title: 'Fond animé' }, expect: 201 })).id;
+    const send = (type, body) => fetch(`${base}/api/me/sounds/projects/${pid}/background`, { method: 'PUT', headers: { Authorization: `Bearer ${member.token}`, 'Content-Type': type }, body });
+    const gif = await send('image/gif', Buffer.concat([Buffer.from('GIF89a'), Buffer.alloc(200)]));
+    assert.equal(gif.status, 200);
+    assert.match((await gif.json()).background, /\.gif$/);
+    const mp4 = await send('video/mp4', Buffer.concat([Buffer.from([0, 0, 0, 24]), Buffer.from('ftypisom'), Buffer.alloc(200)]));
+    assert.match((await mp4.json()).background, /\.mp4$/);
+    const video = await fetch(base + get('SELECT background FROM sound_projects WHERE id = ?', pid).background.replace(/^/, '/api/media/'));
+    assert.equal(video.headers.get('content-type'), 'video/mp4');
+    assert.equal((await send('video/mp4', Buffer.from('pas une vidéo du tout'))).status, 400);
+    // La pochette, elle, reste une image fixe.
+    assert.equal((await fetch(`${base}/api/me/sounds/projects/${pid}/cover`, { method: 'PUT', headers: { Authorization: `Bearer ${member.token}`, 'Content-Type': 'image/gif' }, body: Buffer.from('GIF89a') })).status, 400);
+  });
+
   console.log(`\n${passed} étapes réussies.`);
 } finally {
   server.close();

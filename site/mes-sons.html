@@ -204,6 +204,7 @@ body:not(.editing) .edit-only { display: none !important; }
 #page-bg { position: fixed; inset: 0; z-index: -1; background: center / cover no-repeat; opacity: 0; transition: opacity .5s ease; pointer-events: none; }
 #page-bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(13,8,9,.55), rgba(13,8,9,.82) 55%, rgba(13,8,9,.95)); }
 #page-bg.on { opacity: 1; }
+#page-bg video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 
 /* Mode visiteur : la page telle que la voient ceux qui écoutent le lien, sans rien de l'édition */
 /* Tout en haut à gauche, sous la barre du site ; dans le fil de la page quand l'écran est trop étroit pour la marge */
@@ -855,7 +856,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 <button class="fab" id="fab" type="button" hidden></button>
 <input type="file" id="files" accept="audio/*,.wav,.aif,.aiff,.flac,.mp3,.ogg,.m4a" multiple hidden>
 <input type="file" id="cover-file" accept="image/png,image/jpeg,image/webp" hidden>
-<input type="file" id="bg-file" accept="image/png,image/jpeg,image/webp" hidden>
+<input type="file" id="bg-file" accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm" hidden>
 <div class="drop-zone" id="drop-zone" hidden>Dépose tes sons ou une pochette ici</div>
 <section class="uploads" id="uploads" hidden aria-label="Envois en cours">
   <div class="uploads-head"><b>Envois en cours</b><span id="uploads-count" role="status"></span><button class="x" id="uploads-close" type="button" aria-label="Fermer" hidden></button></div>
@@ -902,7 +903,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 <dialog id="scan"></dialog>
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close('cancel')">Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
-<script src="assets/sounds-player.js?v=26"></script>
+<script src="assets/sounds-player.js?v=27"></script>
 <script src="assets/invites.js?v=2"></script>
 <script src="assets/hm.js?v=16"></script>
 <script src="assets/platforms.js?v=22"></script>
@@ -1345,8 +1346,7 @@ function navigate(hash) {
 
 // Le fond de la page : l'image du projet ouvert (en WebP à 1920 px), rien sur la grille.
 function setBackground(url) {
-  if (url) $("page-bg").style.backgroundImage = 'url("' + url + '?w=1920")';
-  $("page-bg").classList.toggle("on", !!url);
+  OP.pageBackground($("page-bg"), url);
 }
 try { if (localStorage.getItem("cloud-library-folded")) document.body.classList.add("library-folded"); } catch {}
 // La colonne des playlists (les miennes et celles où je collabore), la playlist ouverte en surbrillance.
@@ -2165,7 +2165,7 @@ $("buy-color-reset").onclick = () => api("PATCH", "/me/sounds/projects/" + proje
 $("bg-file").onchange = () => {
   const f = $("bg-file").files[0], p = project();
   $("bg-file").value = "";
-  if (f && p) sendImage(f, "/me/sounds/projects/" + p.id + "/background", 8 * 1024 * 1024, "Le fond doit faire 8 Mo au plus.");
+  if (f && p) sendImage(f, "/me/sounds/projects/" + p.id + "/background", 30 * 1024 * 1024, "Le fond doit faire 30 Mo au plus.");
 };
 $("bg-remove").onclick = () => api("DELETE", "/me/sounds/projects/" + project().id + "/background").then(refresh, fail);
 $("cover-file").onchange = () => {

@@ -54,6 +54,7 @@ form.pw input { flex: 1 1 200px; }
 #page-bg { position: fixed; inset: 0; z-index: -1; background: center / cover no-repeat; opacity: 0; transition: opacity .5s ease; pointer-events: none; }
 #page-bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(13,8,9,.55), rgba(13,8,9,.82) 55%, rgba(13,8,9,.95)); }
 #page-bg.on { opacity: 1; }
+#page-bg video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .back { display: inline-flex; align-items: center; gap: 10px; padding: 0 16px 0 10px; height: 42px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); font: 600 14px var(--f-body); cursor: pointer; }
 .back:hover { border-color: var(--ember); }
 .album { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: clamp(24px, 4vw, 52px); align-items: start; margin-top: 20px; }
@@ -221,7 +222,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1320px; }
 <footer class="muted wrap">Partagé avec <a href="/">ONIRIQUE</a> · ONIRIQUE CLOUD</footer>
 
 <dialog id="buy"></dialog>
-<script src="assets/sounds-player.js?v=26"></script>
+<script src="assets/sounds-player.js?v=27"></script>
 <script src="assets/platforms.js?v=22"></script>
 <script src="assets/hm.js?v=16"></script>
 <script src="assets/ratings.js?v=2"></script>
@@ -400,7 +401,7 @@ function show(data) {
   $("cover").replaceChildren(data.cover ? el("img", { src: data.cover + "?w=960", alt: "" }) : ph);
   OP.tint(data.cover).then((t) => { theme(t); player.setAccent(t && t.accent); });
   // L'image de fond choisie par l'auteur du projet.
-  if (data.background) { $("page-bg").style.backgroundImage = 'url("' + data.background + '?w=1920")'; $("page-bg").classList.add("on"); }
+  OP.pageBackground($("page-bg"), data.background);
   $("cover-by").hidden = !data.coverBy;
   $("cover-by").replaceChildren("Pochette : ", el("b", { textContent: data.coverBy || "" }));
   const cloudItems = data.tracks.map((t) => ({ position: t.position, key: "v" + t.version.id, id: t.version.id, trackId: t.id, title: t.title, feat: (t.credits || {}).feat, artist: data.owner, stage: t.stage, day: t.day,

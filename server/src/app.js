@@ -547,9 +547,11 @@ export function createApp() {
 
   // Photo de profil : une image PNG, JPEG ou WebP de 2 Mo au plus, en corps brut de la requête.
   /** Reçoit une image PNG, JPEG ou WebP (2 Mo par défaut), vérifiée sur son contenu ; rend le nom du fichier gardé. */
-  async function receiveImage(req, maxBytes = 2 * 1024 * 1024) {
-    const ext = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' }[req.headers['content-type']];
-    if (!ext) throw new HttpError(400, 'Image attendue : PNG, JPEG ou WebP.');
+  // motion : un fond animé est aussi accepté (GIF, ou courte vidéo MP4 ou WebM).
+  async function receiveImage(req, maxBytes = 2 * 1024 * 1024, { motion = false } = {}) {
+    const ext = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp',
+      ...(motion ? { 'image/gif': 'gif', 'video/mp4': 'mp4', 'video/webm': 'webm' } : {}) }[req.headers['content-type']];
+    if (!ext) throw new HttpError(400, motion ? 'Fond attendu : image PNG, JPEG, WebP ou GIF, ou vidéo MP4 ou WebM.' : 'Image attendue : PNG, JPEG ou WebP.');
     const file = await receiveFile(req, config.mediaDir, maxBytes);
     const stored = path.join(config.mediaDir, file.storedAs);
     const head = Buffer.alloc(12);
@@ -558,10 +560,14 @@ export function createApp() {
     fs.closeSync(fd);
     const real = head.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex')) ? 'png'
       : head.subarray(0, 3).equals(Buffer.from('ffd8ff', 'hex')) ? 'jpg'
-        : head.toString('latin1', 0, 4) === 'RIFF' && head.toString('latin1', 8, 12) === 'WEBP' ? 'webp' : null;
+        : head.toString('latin1', 0, 4) === 'RIFF' && head.toString('latin1', 8, 12) === 'WEBP' ? 'webp'
+          : !motion ? null
+            : head.toString('latin1', 0, 4) === 'GIF8' ? 'gif'
+              : head.toString('latin1', 4, 8) === 'ftyp' ? 'mp4'
+                : head.subarray(0, 4).equals(Buffer.from('1a45dfa3', 'hex')) ? 'webm' : null;
     if (real !== ext) {
       fs.rmSync(stored, { force: true });
-      throw new HttpError(400, "Ce fichier n'est pas une image PNG, JPEG ou WebP valide.");
+      throw new HttpError(400, motion ? "Ce fichier n'est ni une image ni une vidéo lisible." : "Ce fichier n'est pas une image PNG, JPEG ou WebP valide.");
     }
     const name = `${file.storedAs}.${ext}`;
     fs.renameSync(stored, path.join(config.mediaDir, name));

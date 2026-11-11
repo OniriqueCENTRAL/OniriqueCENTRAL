@@ -1073,7 +1073,8 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   app.put('/api/me/sounds/projects/:id/background', ...pro, wrap(async (req, res) => {
     const p = project(req, req.params.id);
     rateLimit(`sounds-cover:${req.user.id}`, 30);
-    const name = await receiveImage(req, 8 * 1024 * 1024);
+    // Une image, un GIF ou une courte vidéo MP4 / WebM (30 Mo au plus, comme le fond d'une page de profil).
+    const name = await receiveImage(req, 30 * 1024 * 1024, { motion: true });
     run('UPDATE sound_projects SET background = ? WHERE id = ?', name, p.id);
     if (p.background) removeMedia(p.background);
     res.json({ background: media(name) });
