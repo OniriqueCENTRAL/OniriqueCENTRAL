@@ -593,6 +593,22 @@ button.tag.on { background: var(--ember); color: var(--night); }
 #mailer summary::-webkit-details-marker { display: none; }
 /* Les ventes d'un pack : le panneau Ventes et la vente d'une prod. */
 #store, #sale, #scan { width: 620px; }
+/* POCHETTES : les packs de pochettes. */
+#covers { width: 680px; }
+#covers[open] { display: flex; flex-direction: column; overflow: hidden; max-height: calc(100dvh - 24px); }
+#covers .dlg-head { flex: none; padding-bottom: 14px; border-bottom: 1px solid rgba(255,210,214,.08); }
+#covers .dlg-head .grow { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#covers > .stack { min-height: 0; align-content: start; grid-auto-rows: max-content; overflow-y: auto; overscroll-behavior: contain; padding: 16px 18px 20px; grid-template-columns: minmax(0, 1fr); }
+#covers .field { display: grid; gap: 6px; font-size: 13px; color: var(--haze); }
+#covers form.row input { flex: 1 1 220px; min-width: 0; }
+.cover-picks { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+.cover-pick { position: relative; display: grid; gap: 4px; padding: 6px; border-radius: 12px; border: 1px solid rgba(255,210,214,.1); background: rgba(255,255,255,.03); cursor: pointer; font-size: 12px; color: var(--haze); min-width: 0; }
+.cover-pick img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; }
+.cover-pick span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cover-pick input { position: absolute; top: 12px; left: 12px; min-height: 0; width: 18px; height: 18px; accent-color: var(--ember); }
+.cover-pick:has(input:checked) { border-color: var(--ember); background: rgba(var(--acc),.14); color: var(--mist); }
+.cover-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+@media (max-width: 560px) { .cover-form { grid-template-columns: minmax(0, 1fr); } }
 #youtube { width: 680px; }
 /* Chaîne connectée : le formulaire, et à côté l'aperçu de la vidéo telle que le serveur la fabrique */
 #youtube.wide { width: 1100px; }
@@ -801,6 +817,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
         <a class="install" href="messages" style="text-decoration:none">Messages</a>
         <button class="install" id="hm-open" type="button" aria-pressed="false" title="HM : écouter à plusieurs, en même temps, avec une file partagée">HM</button>
         <button class="install" id="settings-open" type="button">Réglages</button>
+        <button class="install" id="covers-open" type="button" title="Packs de pochettes : envoie tes visuels à des artistes">POCHETTES</button>
         <button class="install" id="scan-open" type="button" hidden title="Chercher si tes prods ont été volées et sorties sur les plateformes">SCAN</button>
       </div>
     </div>
@@ -918,6 +935,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 <dialog id="store"></dialog>
 <dialog id="sale"></dialog>
 <dialog id="scan"></dialog>
+<dialog id="covers"></dialog>
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close('cancel')">Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
 <script src="assets/sounds-player.js?v=28"></script>
@@ -4502,6 +4520,112 @@ lightClose($("settings"));
     if (error.status !== 403 && error.status !== 401) $("gate").firstChild.textContent = error.message;
   }
 })();
+// POCHETTES : les packs de pochettes. Des visuels de sa vitrine réunis dans un pack, ouvert par un lien (page /pochettes,
+// copies filigranées) et envoyé par e-mail depuis sa boîte mail, à des adresses collées ou à une liste de contacts.
+let covers = null, coverOpen = null, coverPoll = 0;
+const coverWhen = (t) => new Date(t).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+async function loadCovers() {
+  try { covers = await api("GET", "/me/cover-packs"); drawCovers(); } catch (error) { fail(error); }
+  clearTimeout(coverPoll);
+  // Un envoi en cours : la liste des destinataires se met à jour toute seule.
+  if ($("covers").open && covers && covers.packs.some((p) => p.mails.some((m) => m.status === "wait"))) coverPoll = setTimeout(loadCovers, 5000);
+}
+$("covers-open").onclick = () => { coverOpen = null; covers = null; drawCovers(); $("covers").showModal(); loadCovers(); };
+lightClose($("covers"));
+function drawCovers() {
+  const dialog = $("covers"), p = covers && covers.packs.find((x) => x.id === coverOpen);
+  const head = el("div", { className: "dlg-head" },
+    p ? el("button", { className: "x", type: "button", ariaLabel: "Retour aux packs", onclick: () => { coverOpen = null; drawCovers(); } }, icon("back")) : null,
+    el("b", { className: "grow", textContent: p ? p.title : "Packs de pochettes" }),
+    el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close")));
+  const stack = el("div", { className: "stack" }), put = (...xs) => stack.append(...xs.filter(Boolean));
+  dialog.replaceChildren(head, stack);
+  if (!covers) return put(el("p", { className: "muted", style: "margin:0", textContent: "Chargement…" }));
+  const say = el("p", { className: "muted", style: "margin:0;font-size:13px;min-height:1.2em", role: "status" });
+  const oops = (error) => { say.textContent = error.message; say.style.color = "#ff8a95"; };
+  if (!covers.handle) return put(el("p", { style: "margin:0", textContent: "Les pochettes d'un pack viennent de ta vitrine, qui demande une page de profil : c'est par elle qu'on te contacte." }),
+    el("div", { className: "row" }, el("a", { className: "btn btn-primary", href: "profil", textContent: "Créer ma page de profil" })));
+  if (!p) {
+    const name = el("input", { maxLength: 100, placeholder: "Nom du pack (ex. Covers drill · novembre)" });
+    const create = el("button", { className: "btn btn-primary", type: "submit", textContent: "Créer le pack" });
+    const form = el("form", { className: "row" }, name, create);
+    form.onsubmit = async (event) => {
+      event.preventDefault(); create.disabled = true;
+      try { const made = await api("POST", "/me/cover-packs", { title: name.value }); coverOpen = made.id; await loadCovers(); } catch (error) { oops(error); create.disabled = false; }
+    };
+    const sentOf = (x) => x.mails.filter((m) => m.status === "sent").length;
+    put(el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: "Réunis tes pochettes dans un pack, puis envoie-le à des artistes : ils reçoivent un mail avec les visuels et un lien vers une page où les voir en grand (avec ton filigrane), les acheter ou t'écrire." }),
+      form, say,
+      !covers.visuals.length ? el("p", { style: "margin:0;font-size:14px" }, "Tu n'as encore aucun visuel : ", el("a", { href: "vitrine", textContent: "publie tes pochettes dans ta vitrine" }), ", puis reviens ici.") : null,
+      covers.packs.length ? el("ul", { className: "group" }, ...covers.packs.map((x) => el("li", {}, el("button", { className: "item", type: "button", onclick: () => { coverOpen = x.id; drawCovers(); } },
+        el("div", { className: "grow" }, x.title, el("small", { textContent: x.visualIds.length + " visuel" + (x.visualIds.length > 1 ? "s" : "") + " · " + sentOf(x) + " envoyé" + (sentOf(x) > 1 ? "s" : "") })),
+        icon("chevron"))))) : null);
+    return;
+  }
+  const save = (body) => api("PATCH", "/me/cover-packs/" + p.id, body).then((made) => { Object.assign(p, made); say.textContent = "Enregistré"; say.style.color = ""; }, oops);
+  const title = el("input", { value: p.title, maxLength: 100, onchange: () => save({ title: title.value }).then(() => { head.querySelector("b").textContent = p.title; }) });
+  const message = el("textarea", { value: p.message, maxLength: 2000, placeholder: "Le texte du mail. {nom} est remplacé par le nom du contact : « Salut {nom}, voici mes dernières covers… »", style: "min-height:90px", onchange: () => save({ message: message.value }) });
+  // Les visuels du pack, dans l'ordre où on les coche.
+  const picks = el("div", { className: "cover-picks" }, ...covers.visuals.map((v) => {
+    const box = el("input", { type: "checkbox", checked: p.visualIds.includes(v.id), ariaLabel: v.title });
+    box.onchange = () => save({ visualIds: box.checked ? [...p.visualIds, v.id] : p.visualIds.filter((x) => x !== v.id) });
+    return el("label", { className: "cover-pick", title: v.title }, box, el("img", { src: v.image, alt: "", loading: "lazy" }), el("span", { textContent: v.title }));
+  }));
+  const copy = el("button", { className: "btn btn-ghost", type: "button" }, icon("link"), "Copier le lien");
+  copy.onclick = async () => { try { await navigator.clipboard.writeText(p.url); copy.replaceChildren(icon("link"), "Lien copié"); } catch { prompt("Copie ce lien :", p.url); } };
+  put(el("label", { className: "field" }, el("span", { textContent: "Nom du pack (l'objet du mail)" }), title),
+    el("label", { className: "field" }, el("span", { textContent: "Message" }), message),
+    el("div", { className: "sub-title", textContent: "Pochettes du pack" }),
+    covers.visuals.length ? picks : el("p", { style: "margin:0;font-size:14px" }, "Aucun visuel : ", el("a", { href: "vitrine", textContent: "publie tes pochettes dans ta vitrine" }), "."),
+    el("div", { className: "row" }, copy, el("a", { className: "btn btn-ghost", href: p.url, target: "_blank", rel: "noopener", textContent: "Voir la page" })),
+    el("div", { className: "sub-title", textContent: "Envoyer par e-mail" }), coverSend(p, oops), say);
+  if (p.mails.length) put(el("div", { className: "sub-title", textContent: "Destinataires" }), el("ul", { className: "group" }, ...p.mails.map((m) => el("li", { className: "item", style: "cursor:default" },
+    el("div", { className: "grow" }, m.name ? m.name + " · " + m.email : m.email,
+      el("small", { textContent: m.status === "wait" ? "En attente d'envoi" : m.status === "error" ? "Échec : " + m.error : "Envoyé le " + coverWhen(m.sentAt) + (m.clickedAt ? " · a ouvert le lien le " + coverWhen(m.clickedAt) : " · lien pas encore ouvert") }))))));
+  put(el("div", { className: "row" }, el("button", { className: "btn btn-ghost", type: "button", textContent: "Supprimer le pack",
+    onclick: () => confirm("Supprimer le pack « " + p.title + " » ? Son lien ne s'ouvrira plus.") && api("DELETE", "/me/cover-packs/" + p.id).then(() => { coverOpen = null; return loadCovers(); }, oops) })));
+}
+// L'envoi : la boîte mail du membre d'abord (Google, ou une autre boîte par son serveur d'envoi), puis les destinataires.
+function coverSend(p, oops) {
+  const box = el("div", { className: "stack", style: "padding:0;overflow:visible" }), m = covers.mailer;
+  const field = (label, input) => el("label", { className: "field" }, el("span", { textContent: label }), input);
+  if (!m.connected) {
+    const PRESETS = { outlook: ["Outlook / Hotmail", "smtp-mail.outlook.com", 587], ionos: ["IONOS", "smtp.ionos.fr", 465], gmail: ["Gmail (mot de passe d'application)", "smtp.gmail.com", 465], other: ["Autre", "", 465] };
+    const preset = el("select", {}, ...Object.entries(PRESETS).map(([k, [label]]) => el("option", { value: k, textContent: label })));
+    const host = el("input", { value: PRESETS.outlook[1], autocomplete: "off" }), port = el("input", { value: String(PRESETS.outlook[2]), inputMode: "numeric" });
+    const login = el("input", { type: "email", placeholder: "ton.adresse@mail.fr", autocomplete: "off" }), password = el("input", { type: "password", placeholder: "Mot de passe d'application", autocomplete: "new-password" });
+    const fromName = el("input", { value: data.owner.name || "", maxLength: 80 });
+    preset.onchange = () => { const [, h, n] = PRESETS[preset.value]; host.value = h; port.value = n; };
+    const go = el("button", { className: "btn btn-primary", type: "button", textContent: "Connecter ma boîte mail" });
+    go.onclick = async () => {
+      go.disabled = true;
+      try { covers.mailer = await api("PUT", "/me/sounds/mailer", { host: host.value, port: Number(port.value), login: login.value, password: password.value, fromName: fromName.value }); drawCovers(); }
+      catch (error) { oops(error); go.disabled = false; }
+    };
+    const google = el("button", { className: "btn btn-ghost", type: "button", textContent: "Se connecter avec Google (Gmail)", disabled: !m.googleReady });
+    google.onclick = async () => { google.disabled = true; try { location.href = (await api("POST", "/me/sounds/mailer/google", { fromName: data.owner.name })).url; } catch (error) { oops(error); google.disabled = false; } };
+    box.append(el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Les mails partent de ta propre adresse : connecte ta boîte mail." }), el("div", { className: "row" }, google),
+      el("details", { className: "other-box" }, el("summary", { textContent: "Une autre boîte mail (Outlook, IONOS…)" }),
+        el("p", { className: "muted", style: "margin:10px 0;font-size:13px", textContent: "Avec le mot de passe d'application de la boîte (dans les réglages de sécurité de ton compte), pas ton mot de passe habituel." }),
+        el("div", { className: "cover-form" }, field("Boîte mail", preset), field("Nom de l'expéditeur", fromName), field("Adresse", login), field("Mot de passe", password), field("Serveur d'envoi (SMTP)", host), field("Port", port)),
+        el("div", { className: "row", style: "margin-top:10px" }, go)));
+    return box;
+  }
+  const list = el("select", {}, el("option", { value: "", textContent: "Aucune liste" }), ...covers.lists.map((l) => el("option", { value: l.id, textContent: l.name + " (" + l.count + ")" + (l.shared ? " · partagée" : "") })));
+  const emails = el("textarea", { maxLength: 150000, placeholder: "Colle des adresses (une par ligne, ou « Nom <adresse> »)", style: "min-height:70px" });
+  const send = el("button", { className: "btn btn-primary", type: "button", textContent: "Envoyer le pack" });
+  send.onclick = async () => {
+    send.disabled = true;
+    try {
+      const r = await api("POST", "/me/cover-packs/" + p.id + "/send", { emails: emails.value, listId: list.value ? Number(list.value) : null });
+      emails.value = ""; await loadCovers();
+      alert(r.total + " mail" + (r.total > 1 ? "s partent" : " part") + " depuis ta boîte, un toutes les 15 à 30 secondes.");
+    } catch (error) { oops(error); send.disabled = false; }
+  };
+  box.append(el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Envoi depuis " + (m.fromName ? m.fromName + " <" + m.fromEmail + ">" : m.fromEmail) + ". Ceux qui ont déjà reçu ce pack ou se sont désinscrits sont retirés." }),
+    field("Liste de contacts", list), field("Adresses", emails), el("div", { className: "row" }, send));
+  return box;
+}
 </script>
 <script src="assets/account.js?v=16"></script>
 <script src="assets/site-nav.js?v=22"></script>
