@@ -137,7 +137,7 @@ progress { width: 180px; height: 8px; accent-color: var(--ember); }
 @media (max-width: 900px) { .mail { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 700px) { .product, .product form { grid-template-columns: minmax(0, 1fr); } }
 /* Rubriques : une barre d'onglets collée en haut, une rubrique visible à la fois */
-.tabs { position: sticky; top: 0; z-index: 30; display: flex; gap: 4px; overflow-x: auto; margin: 26px -4px 8px; padding: 10px 4px; background: linear-gradient(180deg, var(--night) 75%, transparent); scrollbar-width: none; }
+.tabs { position: sticky; top: 0; z-index: 30; display: flex; gap: 4px; overflow-x: auto; margin: 26px -4px 8px; padding: 10px 4px; background: transparent; -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); scrollbar-width: none; }
 .tabs::-webkit-scrollbar { display: none; }
 .tabs button { flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 11px 16px; border: 0; border-radius: 999px; background: rgba(255,255,255,.04); color: var(--haze); font: 600 12px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; transition: color .2s, border-color .2s, background .2s; }
 .tabs button:hover { color: var(--mist); background: rgba(255,255,255,.08); }
