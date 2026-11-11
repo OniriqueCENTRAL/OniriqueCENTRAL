@@ -257,25 +257,30 @@ export function mountHm(app, { requireUser }) {
     const a = versionAudio(x.item.version);
     return a ? { ...x.item, ...a, duration: x.item.duration || a.duration } : { ...x.item, url: null };
   };
-  const view = (r, user) => {
+  // Ce que tous voient, calculé une fois par changement. La file n'emporte ni paroles, ni forme d'onde, ni adresse :
+  // la fenêtre du HM n'en montre que titre, pochette et auteur ; le son en cours, lui, part complet.
+  const shared = (r) => {
     const owner = get('SELECT id, name, avatar FROM users WHERE id = ?', r.owner);
     return {
       code: r.code, name: r.name, url: `${config.siteUrl}/mes-sons#/hm/${r.code}`, t: now(),
       owner: { id: r.owner, name: owner?.name || 'Membre', avatar: owner?.avatar ? `/api/media/${owner.avatar}` : null },
       perms: r.perms, cohosts: r.cohosts, members: members(r),
-      queue: r.queue.map((x) => ({ qid: x.qid, by: { id: x.by, name: x.byName }, item: audioOf(x) })),
+      queue: r.queue.map(({ qid, by, byName, item: { title, feat, artist, subtitle, cover, duration, engine } }) =>
+        ({ qid, by: { id: by, name: byName }, item: { title, feat, artist, subtitle, cover, duration, engine } })),
       now: r.now && { qid: r.now.qid, by: { id: r.now.by, name: r.now.byName }, item: audioOf(r.now), pos: r.now.pos, playing: r.now.playing, at: r.now.at },
-      you: { id: user.id, host: user.id === r.owner, can: Object.fromEntries(PERMS.map((p) => [p, allowed(r, user.id, p)])) },
     };
   };
-  const send = (s, payload) => s.res.write(`data: ${JSON.stringify(payload)}\n\n`);
+  const view = (r, user, base = shared(r)) => ({ ...base,
+    you: { id: user.id, host: user.id === r.owner, can: Object.fromEntries(PERMS.map((p) => [p, allowed(r, user.id, p)])) } });
+  // Un flux déjà fermé (expulsé, parti) n'est plus écrit : une écriture après la fin ferait tomber le serveur.
+  const send = (s, payload) => { if (!s.res.writableEnded && !s.res.destroyed) s.res.write(`data: ${JSON.stringify(payload)}\n\n`); };
+  const sendAll = (r) => { const base = shared(r); for (const o of streams.get(r.code) || []) send(o, view(r, o.user, base)); };
   // Après chaque changement : enregistrée, renvoyée à tous (chacun avec ses droits), les expulsés coupés.
   function changed(r) {
     arm(r);
-    for (const s of streams.get(r.code) || []) {
-      if (r.kicked.includes(s.user.id)) { send(s, { kicked: true }); s.res.end(); continue; }
-      send(s, view(r, s.user));
-    }
+    const set = streams.get(r.code) || new Set();
+    for (const s of set) if (r.kicked.includes(s.user.id)) { send(s, { kicked: true }); s.res.end(); set.delete(s); }
+    sendAll(r);
     save(r); // après l'envoi : l'écriture en base ne retarde pas les présents
   }
 
@@ -316,7 +321,7 @@ export function mountHm(app, { requireUser }) {
     res.flushHeaders();
     const s = { user: req.user, res };
     streams.set(r.code, set.add(s));
-    const ping = setInterval(() => res.write(': ping\n\n'), 25_000);
+    const ping = setInterval(() => { if (!res.writableEnded) res.write(': ping\n\n'); }, 25_000);
     req.on('close', () => {
       clearInterval(ping);
       set.delete(s);
@@ -328,13 +333,14 @@ export function mountHm(app, { requireUser }) {
         changed(r);
         return;
       }
-      for (const o of set) send(o, view(r, o.user));
+      if (!set.size) { streams.delete(r.code); return; }
+      sendAll(r);
     });
     if (r.idle) {
       r.idle = false;
       if (r.now) Object.assign(r.now, { playing: true, at: now() });
       changed(r);
-    } else for (const o of set) send(o, view(r, o.user)); // le nouveau venu reçoit l'état, les autres le voient arriver
+    } else sendAll(r); // le nouveau venu reçoit l'état, les autres le voient arriver
   });
 
   app.post('/api/hm/:code/:action', requireUser, (req, res) => {

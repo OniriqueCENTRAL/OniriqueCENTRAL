@@ -205,7 +205,8 @@
     // Lancer ou mettre dans la file un son, pendant un HM : il part dans la file du HM.
     const toHm = (item, next) => {
       if (!can("add")) { alert("Le créateur du HM ne t'a pas donné le droit d'ajouter des sons."); return Promise.reject(new Error("refusé")); }
-      return api("POST", "/hm/" + code + "/add", { item: forHm(item), next }) // les paroles et la forme d'onde partent avec le son.then(() => toast("Ajouté à la file du HM : " + item.title), (error) => { alert(error.message); throw error; });
+      // Les paroles et la forme d'onde partent avec le son.
+      return api("POST", "/hm/" + code + "/add", { item: forHm(item), next }).then(() => toast("Ajouté à la file du HM : " + item.title), (error) => { alert(error.message); throw error; });
     };
     player.play = (items, i = 0, autoplay = true) => (state && !syncing ? items[i] && void toHm(items[i]).catch(() => {}) : origPlay(items, i, autoplay));
     player.enqueue = (item) => (state && !syncing ? void toHm(item).catch(() => {}) : origEnqueue(item));
@@ -331,10 +332,13 @@
         for (const b of blocks) {
           if (code !== c) return void reader.cancel().catch(() => {}); // un flux d'un HM quitté entre-temps
           if (!b.startsWith("data: ")) continue;
-          const m = JSON.parse(b.slice(6));
+          let m;
+          try { m = JSON.parse(b.slice(6)); } catch { continue; } // un message abîmé est sauté, le flux continue
+          try {
           if (m.kicked) return stop("Le créateur du HM t'a retiré de la séance.");
           if (m.ended) return stop("Le créateur a fermé le HM.");
           receive(m);
+          } catch (error) { console.error("HM", error); } // une erreur d'affichage ne coupe plus le direct
         }
       }
       if (code === c && stream === reader) setTimeout(() => code === c && connect(), 2000); // coupé (mise en ligne du serveur) : on revient
