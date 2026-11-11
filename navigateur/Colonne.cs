@@ -53,7 +53,7 @@ sealed partial class Navigateur
         // Deux rangées : l'adresse sur toute la largeur, puis les boutons (ils se resserrent s'ils sont nombreux).
         int y1 = this.S(4), y2 = this.S(42), largeur = barre.Width - 2 * x;
         champ.SetBounds(x, y1, Math.Max(0, largeur), h);
-        var droite = new Control[] { reglages, historique, boutonTelechargements, boutonExtensions, vpn, lecteur, studio }.Where(b => b.Visible).ToList();
+        var droite = new Control[] { reglages, historique, boutonTelechargements, boutonExtensions, boutonPip, vpn, lecteur, studio }.Where(b => b.Visible).ToList();
         int pas = Math.Min(this.S(34), largeur / Math.Max(1, 3 + droite.Count)), l = pas - this.S(2);
         int gx = x;
         foreach (var b in new Control[] { retour, avance, recharger }) { b.SetBounds(gx, y2, l, h); gx += pas; }

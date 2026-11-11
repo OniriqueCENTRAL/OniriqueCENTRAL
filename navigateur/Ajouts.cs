@@ -201,7 +201,7 @@ sealed partial class Navigateur
         if (source != null && (!Vues().Concat(vuesDePanneau.Values.Select(v => v.CoreWebView2).OfType<CoreWebView2>()).Contains(source.Vue) || source.Vue.IsSuspended)) { source = null; MajLecteur(); }
         // Les panneaux fermés s'endorment comme des onglets cachés, sauf s'ils jouent de la musique.
         foreach (var (id, v) in vuesDePanneau)
-            if (id != panneauOuvert && v.CoreWebView2 is { } c && !c.IsDocumentPlayingAudio && !c.IsSuspended) _ = Suspendre(c);
+            if (id != panneauOuvert && v.CoreWebView2 is { } c && !c.IsDocumentPlayingAudio && !enPip.Contains(c) && !c.IsSuspended) _ = Suspendre(c);
         if (synchroAEnvoyer is { } quand && DateTime.Now > quand) { synchroAEnvoyer = null; _ = EnvoyerProfil(); }
         if (DateTime.Now - synchroVue > TimeSpan.FromMinutes(10)) _ = Synchroniser();
     }
@@ -392,7 +392,7 @@ sealed partial class Navigateur
         Disposer();
         if (StudioActif)
             foreach (var o in Onglets)
-                if (!EstAffiche(o) && !o.Son && o.Vue?.CoreWebView2 is { } c) { c.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low; if (!c.IsSuspended) _ = Suspendre(c); }
+                if (!EstAffiche(o) && !o.Son && !EnPip(o) && o.Vue?.CoreWebView2 is { } c) { c.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low; if (!c.IsSuspended) _ = Suspendre(c); }
         EnvoyerEtatAuxPagesInternes();
     }
 
@@ -416,7 +416,7 @@ sealed partial class Navigateur
 
     void Limiter()
     {
-        var caches = Onglets.Where(o => !EstAffiche(o) && !o.Son && o.Vue?.CoreWebView2 != null).OrderBy(o => o.CacheDepuis).ToList();
+        var caches = Onglets.Where(o => !EstAffiche(o) && !o.Son && !EnPip(o) && o.Vue?.CoreWebView2 != null).OrderBy(o => o.CacheDepuis).ToList();
         // Au-dessus du plafond de mémoire : le plus ancien onglet caché est libéré, un par passage, jusqu'à repasser dessous.
         if (Reglages.PlafondMemoire > 0 && memoireMo > Reglages.PlafondMemoire && caches.Count > 0) Decharger(caches[0]);
         // Au-dessus du plafond de processeur : tous les onglets cachés s'endorment.
@@ -721,7 +721,7 @@ sealed class Lecteur : Control
     protected override void OnMouseMove(MouseEventArgs e)
     {
         base.OnMouseMove(e);
-        int s = Enumerable.Range(0, 3).FirstOrDefault(i => Bouton(i).Contains(e.Location), -1);
+        int s = Enumerable.Range(0, 4).FirstOrDefault(i => Bouton(i).Contains(e.Location), -1);
         if (s != survol) { survol = s; Cursor = s >= 0 ? Cursors.Hand : Cursors.Default; Invalidate(); }
     }
 
@@ -733,6 +733,7 @@ sealed class Lecteur : Control
         if (Bouton(0).Contains(e.Location)) await nav.LectureOuPause();
         else if (Bouton(1).Contains(e.Location)) src.Vue.IsMuted = !src.Vue.IsMuted;
         else if (Bouton(2).Contains(e.Location)) { src.Aller(); Visible = false; }
+        else if (Bouton(3).Contains(e.Location)) await nav.BasculerPip(src.Vue);
         Invalidate();
     }
 
@@ -756,8 +757,8 @@ sealed class Lecteur : Control
         TextRenderer.DrawText(g, titre, Font, new Rectangle(this.S(18), this.S(30), Width - this.S(36), this.S(22)), DA.Brume,
             TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix);
         using var icones = new Font("Segoe Fluent Icons", this.S(16), GraphicsUnit.Pixel);
-        string[] glyphes = { joue ? "" : "", src.Vue.IsMuted ? "" : "", "" };
-        for (int i = 0; i < 3; i++)
+        string[] glyphes = { joue ? "" : "", src.Vue.IsMuted ? "" : "", "" , "" };
+        for (int i = 0; i < 4; i++)
         {
             var r = Bouton(i);
             using var forme = DA.Arrondi(r, this.S(10));

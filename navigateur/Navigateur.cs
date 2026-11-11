@@ -164,7 +164,7 @@ sealed partial class Navigateur : Form
 
         bandeau = new Bandeau(this) { Dock = DockStyle.Top };
         bulle = new Bulle(this);
-        barre.Controls.AddRange(new Control[] { retour, avance, recharger, champ, vpn, boutonExtensions, historique, boutonTelechargements, reglages, memoire });
+        barre.Controls.AddRange(new Control[] { retour, avance, recharger, champ, vpn, boutonPip, boutonExtensions, historique, boutonTelechargements, reglages, memoire });
         barre.Paint += (_, e) => { using var p = new Pen(DA.Filet); e.Graphics.DrawLine(p, 0, barre.Height - 1, barre.Width, barre.Height - 1); };
         barre.Resize += (_, _) => Disposer();
         contenu.Controls.Add(bulle);
@@ -188,6 +188,7 @@ sealed partial class Navigateur : Form
         historique.Click += (_, _) => OuvrirInterne(PageHistorique);
         boutonTelechargements.Click += (_, _) => OuvrirInterne(PageTelechargements);
         boutonExtensions.Click += (_, _) => MenuExtensions();
+        boutonPip.Click += (_, _) => _ = BasculerPip(Actif?.Vue?.CoreWebView2);
         champ.Saisie.KeyDown += (_, e) =>
         {
             // Ctrl+Entrée, comme dans Chrome : « onirique » devient www.onirique.com.
@@ -331,7 +332,7 @@ sealed partial class Navigateur : Form
         champ.Saisie.Font = new Font("Segoe UI Variable Text", this.S(14), GraphicsUnit.Pixel);
         bandeau.Icones = new Font("Segoe Fluent Icons", this.S(10), GraphicsUnit.Pixel);
         var icones = new Font("Segoe Fluent Icons", this.S(14), GraphicsUnit.Pixel);
-        foreach (var b in new[] { retour, avance, recharger, vpn, historique, boutonTelechargements, reglages, lecteur, studio, boutonExtensions }) b.Font = icones;
+        foreach (var b in new[] { retour, avance, recharger, vpn, boutonPip, historique, boutonTelechargements, reglages, lecteur, studio, boutonExtensions }) b.Font = icones;
         EchelleAjouts();
         memoire.Font = new Font("Cascadia Mono", this.S(11), GraphicsUnit.Pixel);
         bulle.Font = new Font("Segoe UI Variable Text", this.S(13), GraphicsUnit.Pixel);
@@ -345,7 +346,7 @@ sealed partial class Navigateur : Form
         foreach (var b in new Control[] { retour, avance, recharger }) { b.SetBounds(x, y, this.S(36), h); x += pas; }
         int droite = barre.Width - this.S(10);
         if (memoire.Visible) { int m = this.S(76); droite -= m; memoire.SetBounds(droite, y, m, h); droite -= this.S(4); }
-        foreach (var b in new Control[] { reglages, historique, boutonTelechargements, boutonExtensions, vpn, lecteur, studio }) { if (!b.Visible) continue; droite -= this.S(36); b.SetBounds(droite, y, this.S(36), h); droite -= this.S(2); }
+        foreach (var b in new Control[] { reglages, historique, boutonTelechargements, boutonExtensions, boutonPip, vpn, lecteur, studio }) { if (!b.Visible) continue; droite -= this.S(36); b.SetBounds(droite, y, this.S(36), h); droite -= this.S(2); }
         champ.SetBounds(x + this.S(6), y, Math.Max(0, droite - x - this.S(14)), h);
         bulle.Placer();
         PlacerAjouts();
@@ -558,6 +559,7 @@ sealed partial class Navigateur : Form
         Text = interne ? "ONIRIQUE" : o!.Titre + " — ONIRIQUE";
         Redessiner();
         MajEtoile();
+        MajPip();
     }
 
     void Aller(string saisie)
@@ -866,13 +868,14 @@ sealed partial class Navigateur : Form
         var maintenant = DateTime.Now;
         foreach (var o in Onglets.ToArray())
         {
-            if (EstAffiche(o) || o.Son || o.Vue?.CoreWebView2 is not { } c) continue;
+            if (EstAffiche(o) || o.Son || EnPip(o) || o.Vue?.CoreWebView2 is not { } c) continue;
             var cache = maintenant - o.CacheDepuis;
             if (DechargementEffectif > 0 && cache > TimeSpan.FromMinutes(DechargementEffectif)) Decharger(o);
             else if (VeilleEffective > 0 && cache > TimeSpan.FromSeconds(VeilleEffective) && !c.IsSuspended) _ = Suspendre(c);
         }
         MesurerMemoire();
         EntretienAjouts();
+        if (enPip.Count > 0) _ = EntretienPip();
         // Le serveur oublie une adresse au bout de 12 heures, ou à son redémarrage : le navigateur se réannonce.
         if (vpnEtat == "actif" && maintenant - vpnAnnonce > TimeSpan.FromMinutes(10) && env != null)
         {
@@ -959,6 +962,7 @@ sealed partial class Navigateur : Form
             case Keys.Alt | Keys.Right: if (c?.CanGoForward == true) c.GoForward(); return true;
             case Keys.Control | Keys.Oemcomma: OuvrirInterne(PageParametres); return true;
             case Keys.Control | Keys.H: OuvrirInterne(PageHistorique); return true;
+            case Keys.Alt | Keys.P: _ = BasculerPip(c); return true;
         }
         return base.ProcessCmdKey(ref msg, touches);
     }
