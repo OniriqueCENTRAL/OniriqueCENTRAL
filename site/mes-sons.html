@@ -205,6 +205,8 @@ body:not(.editing) .edit-only { display: none !important; }
 #page-bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(13,8,9,.55), rgba(13,8,9,.82) 55%, rgba(13,8,9,.95)); }
 #page-bg.on { opacity: 1; }
 #page-bg video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* L'application ONIRIQUE CENTRAL cache les fonds du site (#page-bg) : celui choisi pour le projet reste affiché. */
+html body #page-bg.on { display: block !important; }
 
 /* Mode visiteur : la page telle que la voient ceux qui écoutent le lien, sans rien de l'édition */
 /* Tout en haut à gauche, sous la barre du site ; dans le fil de la page quand l'écran est trop étroit pour la marge */

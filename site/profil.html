@@ -135,6 +135,8 @@ select { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px sol
 .page-bg { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
 .page-bg img, .page-bg video { width: 100%; height: 100%; object-fit: cover; }
 .page-bg::after { content: ""; position: absolute; inset: 0; background: rgba(8,4,5,var(--dim, .45)); }
+/* L'application ONIRIQUE CENTRAL cache les fonds du site (#page-bg) : celui choisi pour la page reste affiché. */
+html body #page-bg:not([hidden]) { display: block !important; }
 #view { font-family: var(--f-text, var(--f-body)); }
 #view h1, #view .tabs button, #view .pl b, #view .panel > .eyebrow { font-family: var(--f-title, var(--f-display)); }
 body.glass #view .panel, body.glass #view .head, body.glass #view .tabs { position: relative; border: 1px solid rgba(255,255,255,.16); border-radius: 22px;
