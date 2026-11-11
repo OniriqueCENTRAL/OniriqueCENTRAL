@@ -859,6 +859,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       // Le compte de paiement et les licences, pour les badges de vente des packs.
       store: projects.some((p) => p.kind === 'pack' && p.user_id === u) ? { seller: { ...sellerView(u), sellable: payMethods(u).length > 0 }, licenses: licensesOf(u) } : null,
       tag: tagOf(u),
+      gifSearch: !!config.klipyKey,
       quota: { used: usedBy(req.user.id), limit: quotaBytes(), full: d.used / d.total >= diskMax() },
       // Ce qui attend dans la corbeille (titres et projets), pour la tuile « Corbeille ».
       trash: get(`SELECT (SELECT COUNT(*) FROM sound_tracks t JOIN sound_projects p ON p.id = t.project_id WHERE p.kind = 'trash' AND p.user_id = ?)
@@ -1075,6 +1076,17 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     rateLimit(`sounds-cover:${req.user.id}`, 30);
     // Une image, un GIF ou une courte vidéo MP4 / WebM (30 Mo au plus, comme le fond d'une page de profil).
     const name = await receiveImage(req, 30 * 1024 * 1024, { motion: true });
+    run('UPDATE sound_projects SET background = ? WHERE id = ?', name, p.id);
+    if (p.background) removeMedia(p.background);
+    res.json({ background: media(name) });
+  }));
+  // Un GIF choisi dans la recherche (KLIPY, comme pour la page de profil), copié chez nous.
+  app.put('/api/me/sounds/projects/:id/background-gif', ...pro, wrap(async (req, res) => {
+    const p = project(req, req.params.id);
+    rateLimit(`sounds-cover:${req.user.id}`, 30);
+    // profiles.js s'importe ici : chargé au démarrage, il passerait avant la création des tables du CLOUD.
+    const { copyKlipyGif } = await import('./profiles.js');
+    const name = await copyKlipyGif(req.body?.url);
     run('UPDATE sound_projects SET background = ? WHERE id = ?', name, p.id);
     if (p.background) removeMedia(p.background);
     res.json({ background: media(name) });

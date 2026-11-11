@@ -717,6 +717,14 @@ try {
     const video = await fetch(base + get('SELECT background FROM sound_projects WHERE id = ?', pid).background.replace(/^/, '/api/media/'));
     assert.equal(video.headers.get('content-type'), 'video/mp4');
     assert.equal((await send('video/mp4', Buffer.from('pas une vidéo du tout'))).status, 400);
+    // Un GIF choisi dans la recherche (KLIPY, simulé ici) : copié chez nous ; une adresse d'ailleurs est refusée.
+    const real = globalThis.fetch;
+    globalThis.fetch = (url, init) => (String(url) === 'https://static.klipy.com/g/7.gif' ? Promise.resolve(new Response(Buffer.concat([Buffer.from('GIF89a'), Buffer.alloc(100)]))) : real(url, init));
+    try {
+      const chosen = await call('PUT', `/api/me/sounds/projects/${pid}/background-gif`, { token: member.token, body: { url: 'https://static.klipy.com/g/7.gif' } });
+      assert.match(chosen.background, /^\/api\/media\/[a-f0-9]{32}\.gif$/);
+      await call('PUT', `/api/me/sounds/projects/${pid}/background-gif`, { token: member.token, body: { url: 'https://exemple.test/x.gif' }, expect: 400 });
+    } finally { globalThis.fetch = real; }
     // La pochette, elle, reste une image fixe.
     assert.equal((await fetch(`${base}/api/me/sounds/projects/${pid}/cover`, { method: 'PUT', headers: { Authorization: `Bearer ${member.token}`, 'Content-Type': 'image/gif' }, body: Buffer.from('GIF89a') })).status, 400);
   });

@@ -219,7 +219,7 @@ body.visitor .visitor-toggle b { color: var(--night); }
 .pack-contact { display: flex; justify-content: center; margin-top: 14px; padding: 11px 16px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); font: 600 14px var(--f-body); text-decoration: none; }
 .pack-contact:hover { border-color: var(--ember); }
 body:not(.visitor) .pack-contact { display: none; }
-body.is-playlist :is(#project-more, #bg-change, #bg-remove) { display: none !important; }
+body.is-playlist :is(#project-more, #bg-change, #bg-gif, #bg-remove) { display: none !important; }
 body.visitor :is(#project-meta .tag, #edit-toggle, #share-project, #project-more, #pack-publish, #pack-store, #pack-mail, #pack-youtube, #pack-tag, #fab, #cover-swap, .plan-chip, .trk .dots, .trk small) { display: none !important; }
 body.editing #edit-toggle { background: var(--mist); color: var(--night); border-color: var(--mist); }
 /* Préparer la sortie : le compte à rebours et les tâches faites, à côté de la date */
@@ -291,6 +291,15 @@ dialog { padding: 0; border: 1px solid rgba(255,210,214,.16); border-radius: 24p
   .free-bar .btn { flex: 1 1 100%; margin: 0; }
 }
 #upsell { width: min(460px, calc(100vw - 24px)); }
+/* Chercher un GIF de fond (KLIPY), comme sur la page de profil */
+#gifs { width: min(720px, calc(100vw - 24px)); }
+#gifs .gif-body { display: grid; gap: 12px; padding: 12px 20px 16px; }
+#gifs .gif-grid { columns: 3 160px; column-gap: 8px; max-height: 60vh; overflow-y: auto; }
+#gifs .gif-grid button { display: block; width: 100%; margin: 0 0 8px; padding: 0; border: 2px solid transparent; border-radius: 10px; overflow: hidden; background: #1a0d10; cursor: pointer; break-inside: avoid; }
+#gifs .gif-grid button:hover, #gifs .gif-grid button:focus-visible { border-color: var(--ember); outline: none; }
+#gifs .gif-grid img { display: block; width: 100%; height: auto; }
+#gifs .gif-grid button:disabled { opacity: .5; cursor: progress; }
+#gifs .gif-credit { margin: 0; font-size: 12px; text-align: right; }
 #upsell ul { margin: 6px 20px 0; padding-left: 18px; font-size: 14px; line-height: 1.7; }
 dialog::backdrop { background: rgba(5,2,3,.72); backdrop-filter: blur(4px); }
 /* La pochette en grand, avec ses actions en bas */
@@ -835,6 +844,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
           <button class="round" id="share-project" type="button" aria-label="Partager le projet" title="Partager le projet"></button>
           <button class="edit-toggle" id="edit-toggle" type="button" aria-pressed="false">Modifier</button>
           <button class="edit-toggle edit-only" id="bg-change" type="button">Changer le fond</button>
+          <button class="edit-toggle edit-only" id="bg-gif" type="button" hidden>Choisir un GIF</button>
           <button class="edit-toggle edit-only" id="bg-remove" type="button" hidden>Retirer le fond</button>
           <label class="edit-toggle edit-only" id="buy-color" title="La couleur des prix et des boutons « Acheter » du pack" hidden><i></i>Couleur des prix<input type="color" aria-label="Couleur des prix"></label>
           <button class="edit-toggle edit-only" id="buy-color-reset" type="button" hidden>Couleur de la pochette</button>
@@ -891,6 +901,11 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
   <p class="muted" style="margin:10px 20px 6px;font-size:14px" id="upsell-why"></p>
   <ul><li>Sons <b>illimités</b> (le CLOUD gratuit s'arrête à 30)</li><li>Liens d'écoute privés, avec qui a écouté et jusqu'où</li><li>Collaborateurs sur tes projets</li><li>Packs de prods à vendre, mails aux beatmakers et rappeurs</li><li>Fiche artiste, fond de projet, ZIP, projets des autres enregistrés</li></ul>
   <div class="row" style="justify-content:flex-end;gap:10px;padding:18px 20px 20px"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close()">Plus tard</button><a class="btn btn-primary" href="cloud">S'abonner · 1,99 €/mois</a></div>
+</dialog>
+<dialog id="gifs" aria-labelledby="gifs-title">
+  <div class="dlg-head"><b id="gifs-title">Choisir un GIF</b><button class="x" type="button" aria-label="Fermer" onclick="this.closest('dialog').close()">✕</button></div>
+  <div class="gif-body"><input id="gif-q" type="search" placeholder="Rechercher sur KLIPY" aria-label="Rechercher un GIF" autocomplete="off">
+    <div class="gif-grid" id="gif-grid"></div><p class="muted gif-credit">GIF fournis par KLIPY</p></div>
 </dialog>
 <dialog id="share"></dialog>
 <dialog id="settings"></dialog>
@@ -1772,6 +1787,7 @@ function renderProject(p) {
   setBackground(p.background);
   renderAbout(p);
   $("bg-remove").hidden = !p.background;
+  $("bg-gif").hidden = !data.gifSearch;
   OP.buttonColor(document.body, p.kind === "pack" && p.buttonColor);
   $("buy-color").hidden = p.kind !== "pack";
   $("pack-contact").hidden = !p.contact;
@@ -2167,6 +2183,27 @@ $("bg-file").onchange = () => {
   $("bg-file").value = "";
   if (f && p) sendImage(f, "/me/sounds/projects/" + p.id + "/background", 30 * 1024 * 1024, "Le fond doit faire 30 Mo au plus.");
 };
+// Choisir un GIF de fond (KLIPY, par le serveur) : les tendances d'abord, puis ce qu'on tape ; un clic le met en fond.
+let gifTimer = null;
+async function searchGifs() {
+  const q = $("gif-q").value.trim();
+  try {
+    const { gifs } = await api("GET", "/me/profile/gifs?q=" + encodeURIComponent(q));
+    if ($("gif-q").value.trim() !== q) return;
+    $("gif-grid").replaceChildren(...(gifs.length ? gifs.map((g) => {
+      const b = el("button", { type: "button", title: g.title || "GIF", ariaLabel: "Mettre en fond : " + (g.title || "GIF") }, el("img", { src: g.preview, alt: "", loading: "lazy" }));
+      b.onclick = async () => {
+        $("gif-grid").querySelectorAll("button").forEach((x) => (x.disabled = true));
+        try { await api("PUT", "/me/sounds/projects/" + project().id + "/background-gif", { url: g.file }); $("gifs").close(); await refresh(); }
+        catch (e) { alert(e.message); }
+        $("gif-grid").querySelectorAll("button").forEach((x) => (x.disabled = false));
+      };
+      return b;
+    }) : [el("p", { className: "muted", textContent: "Aucun GIF trouvé." })]));
+  } catch (e) { $("gif-grid").replaceChildren(el("p", { className: "muted", textContent: e.message })); }
+}
+$("bg-gif").onclick = () => { $("gifs").showModal(); $("gif-q").focus(); if (!$("gif-grid").children.length) searchGifs(); };
+$("gif-q").addEventListener("input", () => { clearTimeout(gifTimer); gifTimer = setTimeout(searchGifs, 300); });
 $("bg-remove").onclick = () => api("DELETE", "/me/sounds/projects/" + project().id + "/background").then(refresh, fail);
 $("cover-file").onchange = () => {
   const f = $("cover-file").files[0];

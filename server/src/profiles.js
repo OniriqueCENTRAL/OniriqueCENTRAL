@@ -100,6 +100,36 @@ function bgKind(head) {
   if (head.subarray(0, 4).equals(Buffer.from('1a45dfa3', 'hex'))) return 'webm';
   return null;
 }
+/** Le fichier reçu dans media/, renommé avec son extension s'il est bien une image ou une vidéo (effacé sinon). */
+function typedMedia(storedAs) {
+  const stored = path.join(config.mediaDir, storedAs), head = Buffer.alloc(12), fd = fs.openSync(stored, 'r');
+  fs.readSync(fd, head, 0, 12, 0);
+  fs.closeSync(fd);
+  const ext = bgKind(head);
+  if (!ext) { fs.rmSync(stored, { force: true }); throw new HttpError(400, "Ce fichier n'est ni une image ni une vidéo lisible."); }
+  fs.renameSync(stored, path.join(config.mediaDir, `${storedAs}.${ext}`));
+  return `${storedAs}.${ext}`;
+}
+// Les fichiers des GIF de KLIPY (la recherche de GIF, voir /api/me/profile/gifs).
+const KLIPY_FILES = /^https:\/\/([a-z0-9-]+\.)*klipy\.com\//;
+/** Le GIF choisi dans la recherche, copié dans media/ (30 Mo au plus) : la page ne dépend plus de KLIPY ensuite. Rend son nom. */
+export async function copyKlipyGif(value) {
+  const url = String(value || '');
+  if (!KLIPY_FILES.test(url)) throw new HttpError(400, 'Choisis un GIF dans la recherche.');
+  // Un renvoi vers son réseau de diffusion est suivi, mais seulement s'il reste chez KLIPY.
+  const r = await fetch(url, { signal: AbortSignal.timeout(20000) }).catch(() => null);
+  if (!r || !r.ok || !KLIPY_FILES.test(r.url || url)) throw new HttpError(502, "Ce GIF n'a pas pu être récupéré.");
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of r.body) {
+    size += chunk.length;
+    if (size > 30 * 1024 * 1024) throw new HttpError(413, 'Ce GIF est trop lourd (30 Mo au plus).');
+    chunks.push(chunk);
+  }
+  const storedAs = crypto.randomBytes(16).toString('hex');
+  fs.writeFileSync(path.join(config.mediaDir, storedAs), Buffer.concat(chunks));
+  return typedMedia(storedAs);
+}
 if (!column('profile_comments', 'parent_id')) db.exec('ALTER TABLE profile_comments ADD COLUMN parent_id INTEGER REFERENCES profile_comments(id) ON DELETE CASCADE');
 
 export const PROFILE_HANDLE = /^[a-z0-9][a-z0-9._-]{2,29}$/;
@@ -191,17 +221,10 @@ export function mountProfiles(app, { requireUser, receiveImage, receiveFile, rem
     if (!BG_TYPES[req.headers['content-type']]) throw new HttpError(400, 'Fond attendu : image PNG, JPEG, WebP, GIF, ou vidéo MP4 ou WebM.');
     rateLimit(`profile-banner:${req.user.id}`, 30, 3600_000);
     const file = await receiveFile(req, config.mediaDir, 30 * 1024 * 1024);
-    res.json({ look: keepBackground(req.user.id, p, file.storedAs) });
+    res.json({ look: keepBackground(req.user.id, p, typedMedia(file.storedAs)) });
   }));
-  /** Le fichier reçu (dans media/) devient le fond, s'il est bien une image ou une vidéo ; l'ancien fond est effacé. */
-  function keepBackground(userId, p, storedAs) {
-    const stored = path.join(config.mediaDir, storedAs), head = Buffer.alloc(12), fd = fs.openSync(stored, 'r');
-    fs.readSync(fd, head, 0, 12, 0);
-    fs.closeSync(fd);
-    const ext = bgKind(head);
-    if (!ext) { fs.rmSync(stored, { force: true }); throw new HttpError(400, "Ce fichier n'est ni une image ni une vidéo lisible."); }
-    const name = `${storedAs}.${ext}`;
-    fs.renameSync(stored, path.join(config.mediaDir, name));
+  /** Le fichier reçu (dans media/, reconnu par typedMedia) devient le fond ; l'ancien fond est effacé. */
+  function keepBackground(userId, p, name) {
     const look = JSON.parse(p.look || '{}');
     if (look.bg) removeMedia(look.bg);
     run('UPDATE user_profiles SET look = ? WHERE user_id = ?', JSON.stringify({ ...look, bg: name }), userId);
@@ -210,7 +233,6 @@ export function mountProfiles(app, { requireUser, receiveImage, receiveFile, rem
 
   // Chercher un GIF de fond, comme dans Discord : KLIPY, interrogé par le serveur (la clé reste ici). Sans mot, les
   // tendances. Chaque résultat garde un aperçu léger et le fichier à prendre (vidéo MP4 de préférence : bien plus légère).
-  const KLIPY_FILES = /^https:\/\/([a-z0-9-]+\.)*klipy\.com\//;
   const pickFile = (f, kinds, sizes = ['hd', 'md', 'sm', 'xs']) => {
     for (const size of sizes) for (const kind of kinds) {
       const url = f?.[size]?.[kind]?.url;
@@ -236,22 +258,8 @@ export function mountProfiles(app, { requireUser, receiveImage, receiveFile, rem
   app.put('/api/me/profile/page/background-gif', requireUser, wrap(async (req, res) => {
     const p = get('SELECT look FROM user_profiles WHERE user_id = ?', req.user.id);
     if (!p) throw new HttpError(404, "Crée d'abord ta page de profil.");
-    const url = String(req.body?.url || '');
-    if (!KLIPY_FILES.test(url)) throw new HttpError(400, 'Choisis un GIF dans la recherche.');
     rateLimit(`profile-banner:${req.user.id}`, 30, 3600_000);
-    // Un renvoi vers son réseau de diffusion est suivi, mais seulement s'il reste chez KLIPY.
-    const r = await fetch(url, { signal: AbortSignal.timeout(20000) }).catch(() => null);
-    if (!r || !r.ok || !KLIPY_FILES.test(r.url || url)) throw new HttpError(502, "Ce GIF n'a pas pu être récupéré.");
-    const chunks = [];
-    let size = 0;
-    for await (const chunk of r.body) {
-      size += chunk.length;
-      if (size > 30 * 1024 * 1024) throw new HttpError(413, 'Ce GIF est trop lourd (30 Mo au plus).');
-      chunks.push(chunk);
-    }
-    const storedAs = crypto.randomBytes(16).toString('hex');
-    fs.writeFileSync(path.join(config.mediaDir, storedAs), Buffer.concat(chunks));
-    res.json({ look: keepBackground(req.user.id, p, storedAs) });
+    res.json({ look: keepBackground(req.user.id, p, await copyKlipyGif(req.body?.url)) });
   }));
   app.delete('/api/me/profile/page/background', requireUser, (req, res) => {
     const p = get('SELECT look FROM user_profiles WHERE user_id = ?', req.user.id);
