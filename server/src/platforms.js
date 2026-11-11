@@ -605,6 +605,12 @@ export function mountPlatforms(app, { requireUser, wrap }) {
     const t = await spotifyToken(req.user.id);
     res.set('Cache-Control', 'no-store').json({ accessToken: t.access, expiresAt: t.expiresAt });
   }));
+  // Pourquoi le lecteur Spotify complet n'a pas joué chez ce membre (message de Spotify), écrit dans le journal du service.
+  app.post('/api/me/platforms/spotify/issue', ...me, (req, res) => {
+    rateLimit(`spotify-issue:${req.user.id}`, 20, 3600_000);
+    console.warn(`Lecteur Spotify, compte ${req.user.id} : ${text(req.body?.message, 300)}`);
+    res.status(204).end();
+  });
   // Les playlists du compte Spotify connecté (privées comprises).
   app.get('/api/me/platforms/spotify/playlists', ...me, wrap(async (req, res) => {
     rateLimit(`platform-read:${req.user.id}`, 120, 3600_000);

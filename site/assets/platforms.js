@@ -178,6 +178,7 @@
       }
       if (!response || !response.ok) {
         console.warn("Lecteur Spotify :", spIssue);
+        ctx.api("POST", "/me/platforms/spotify/issue", { message: spIssue || "aucune réponse de Spotify" }).catch(() => {});
         // Le lecteur officiel intégré de Spotify (titre entier pour qui y est connecté) plutôt que l'extrait de 30 s.
         this.via = spotifyEmbed;
         return spotifyEmbed.load(item, fire).catch(() => { this.via = null; return false; });
