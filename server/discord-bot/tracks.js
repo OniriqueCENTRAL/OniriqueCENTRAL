@@ -1,12 +1,14 @@
 // Ce que /play reçoit, en liste de titres { title, artist, cover, url, yt } :
 //  - un lien d'écoute ONIRIQUE (…/ecoute?t=<jeton>) passe par l'API, qui rend des adresses audio signées (6 h) ;
-//  - un lien YouTube (vidéo ou playlist) ou un nom de son (cherché sur YouTube) passe par yt-dlp ; yt: true, le son
+//  - un lien YouTube ou SoundCloud (titre ou playlist) ou un nom de son (cherché sur YouTube) passe par yt-dlp ; yt: true, le son
 //    est tiré au moment de le jouer (les adresses de YouTube expirent) ;
 //  - une autre adresse http(s) est prise telle quelle, comme un fichier audio.
 import { execFile } from 'node:child_process';
 
 export const YTDLP = process.env.YTDLP || '/opt/yt-dlp/bin/yt-dlp';
-const YOUTUBE = /^(www\.|m\.|music\.)?(youtube\.com|youtu\.be)$/;
+const YTDLP_SITES = /^(www\.|m\.|music\.|on\.)?(youtube\.com|youtu\.be|soundcloud\.com)$/;
+// Ces plateformes ne donnent pas leur son : on demande le nom, cherché ensuite sur YouTube.
+const CLOSED = /(^|\.)(spotify\.com|deezer\.com|deezer\.page\.link|music\.apple\.com|tidal\.com|music\.amazon\.[a-z.]+)$/;
 
 // Une ligne JSON par vidéo ; --flat-playlist : la liste seule, sans ouvrir chaque vidéo (rapide).
 function ytdlpList(target) {
@@ -26,11 +28,13 @@ export async function tracksOf(input, api, { fetch: fetchFn = fetch, site = 'htt
   try { url = new URL(text); } catch { /* un nom de son */ }
   if (url && !/^https?:$/.test(url.protocol)) throw new Error('Seules les adresses https:// sont acceptées.');
 
-  if (!url || YOUTUBE.test(url.hostname)) {
+  if (url && CLOSED.test(url.hostname)) throw new Error('Ce site ne laisse pas jouer ses sons : tape plutôt le nom du son et de l’artiste.');
+  if (!url || YTDLP_SITES.test(url.hostname)) {
     const found = await ytdlp(url ? url.href : `ytsearch1:${text.slice(0, 200)}`);
-    const tracks = found.filter((v) => v.id && v.title && !/^\[(Private|Deleted) video\]$/.test(v.title)).map((v) => ({
-      title: v.title, artist: v.channel || v.uploader || '', cover: `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`,
-      url: v.webpage_url || `https://www.youtube.com/watch?v=${v.id}`, yt: true,
+    const youtube = !url || !/soundcloud/.test(url.hostname);
+    const tracks = found.filter((v) => v.id && v.title && (v.webpage_url || v.url || youtube) && !/^\[(Private|Deleted) video\]$/.test(v.title)).map((v) => ({
+      title: v.title, artist: v.channel || v.uploader || '', cover: youtube ? `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg` : null,
+      url: v.webpage_url || v.url || `https://www.youtube.com/watch?v=${v.id}`, yt: true,
     }));
     if (!tracks.length) throw new Error(url ? 'Rien à jouer dans ce lien YouTube.' : `Aucun son trouvé pour « ${text.slice(0, 80)} ».`);
     return tracks;

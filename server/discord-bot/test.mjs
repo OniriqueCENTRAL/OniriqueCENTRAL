@@ -26,6 +26,9 @@ assert.equal(asked, 'ytsearch1:ninho jefe');
 assert.deepEqual(search, [{ title: 'Jefe', artist: 'Ninho', cover: 'https://i.ytimg.com/vi/abc/hqdefault.jpg', url: 'https://www.youtube.com/watch?v=abc', yt: true }]);
 await tracksOf('https://youtu.be/abc', API, { ytdlp: yt });
 assert.equal(asked, 'https://youtu.be/abc');
+await tracksOf('https://soundcloud.com/artiste/son', API, { ytdlp: yt });
+assert.equal(asked, 'https://soundcloud.com/artiste/son');
+await assert.rejects(tracksOf('https://open.spotify.com/track/xyz', API, { ytdlp: noYt }), /nom du son/);
 await assert.rejects(tracksOf('introuvable', API, { ytdlp: async () => [] }), /Aucun son trouvé/);
 
 await assert.rejects(tracksOf('   ', API), /nom d’un son/);
