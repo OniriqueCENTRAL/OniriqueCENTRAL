@@ -1,0 +1,102 @@
+/* La marketplace et ses fiches (marketplace.html, article.html) : charte Nuit & Braise, tokens du site. */
+:root {
+  --night: #09080A; --deep: #121012; --line: rgba(255,235,238,.10); --mist: #F4ECEC; --haze: #a8939a; --ember: rgb(var(--acc));
+  --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; min-height: 100vh; color: var(--mist); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased; background: var(--night); overflow-x: hidden; }
+body::before { content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
+  background: radial-gradient(120% 55% at 50% -12%, rgba(var(--acc-lo),.75), rgba(var(--acc-lo),.3) 38%, transparent 72%); }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
+.wrap { width: 100%; max-width: 1180px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 40px); }
+header.top { border-bottom: 1px solid var(--line); background: rgba(9,8,10,.6); backdrop-filter: blur(14px); position: sticky; top: 0; z-index: 5; }
+header.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 14px; }
+.brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 800 17px/1 var(--f-display); letter-spacing: .16em; }
+.brand img { width: 44px; height: auto; margin-block: -12px; filter: drop-shadow(0 0 6px rgba(var(--acc),.8)); }
+.nav { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 560px) { .nav .opt { display: none; } }
+main { padding-block: clamp(20px, 4vw, 36px) 120px; }
+h1 { font: 800 clamp(26px, 5vw, 42px)/1.08 var(--f-display); margin: 8px 0; letter-spacing: .01em; text-wrap: balance; overflow-wrap: anywhere; }
+h2 { font: 800 clamp(17px, 2.4vw, 21px)/1.2 var(--f-display); letter-spacing: .04em; margin: 0; }
+.eyebrow { font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
+.muted { color: var(--haze); }
+.glass { background: linear-gradient(160deg, rgba(255,255,255,.075), rgba(255,255,255,.02) 40%, rgba(255,255,255,.035)); border: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 18px 40px rgba(0,0,0,.45); border-radius: 20px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 20px; border-radius: 999px; border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
+.btn-primary { background: var(--ember); color: #fff; box-shadow: 0 10px 34px -10px rgba(var(--acc),.9); }
+.btn-primary:hover { filter: brightness(1.08); }
+.btn-ghost { background: rgba(255,255,255,.03); color: var(--mist); border-color: var(--line); }
+.btn-ghost:hover { border-color: var(--ember); }
+.btn:disabled { opacity: .5; cursor: default; }
+.small { min-height: 36px; padding: 0 14px; font-size: 13px; }
+.price { color: var(--ember); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Les cartes : même hauteur partout, image carrée, titre, vendeur, puis le prix en bas. */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; }
+.cards.row { grid-auto-flow: column; grid-auto-columns: max(190px, calc((100% - 64px) / 5)); justify-content: start; grid-template-columns: none; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; }
+.cards.row > * { scroll-snap-align: start; }
+@media (max-width: 560px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .cards.row { grid-auto-columns: 44%; grid-template-columns: none; } }
+.card { position: relative; display: flex; flex-direction: column; gap: 3px; height: 100%; padding: 8px 8px 12px; border-radius: 16px; text-decoration: none;
+  background: rgba(255,255,255,.03); border: 1px solid var(--line); transition: border-color .15s, transform .15s; min-width: 0; }
+.card:hover { border-color: rgba(var(--acc),.55); transform: translateY(-2px); }
+@media (prefers-reduced-motion: reduce) { .card, .card:hover { transition: none; transform: none; } }
+.card .pic { position: relative; aspect-ratio: 1; border-radius: 11px; overflow: hidden; margin-bottom: 6px;
+  background: linear-gradient(135deg, rgba(var(--acc),.45), #1a080a); }
+.card .pic img { width: 100%; height: 100%; object-fit: cover; display: block; -webkit-user-drag: none; }
+.card .kind { position: absolute; top: 8px; left: 8px; padding: 4px 8px; border-radius: 999px; background: rgba(9,8,10,.72); font: 500 10px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; }
+.card b { font-size: 14px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-inline: 2px; }
+.card small { font: 500 11px var(--f-mono); color: var(--haze); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-inline: 2px; }
+.card .price { margin-top: auto; padding: 6px 2px 0; font-size: 15px; }
+
+/* Les rayons de la marketplace. */
+.shelf { margin-top: 38px; display: grid; gap: 14px; }
+.shelf > header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.shelf > header button { border: 0; background: none; color: var(--ember); font: 600 14px var(--f-body); cursor: pointer; padding: 4px 0; }
+.shelf > header button:hover { text-decoration: underline; }
+.bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 10px; margin-top: 22px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button { min-height: 38px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.03); color: var(--mist); font: 600 13px var(--f-body); cursor: pointer; }
+.chips button[aria-pressed="true"] { border-color: var(--ember); background: rgba(var(--acc),.2); }
+.bar input, .bar select { min-height: 40px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 15px var(--f-body); min-width: 0; }
+.bar input { flex: 1 1 220px; }
+@media (max-width: 560px) { .bar select { flex: 1 1 100%; } }
+
+/* La une : un article mis en avant, grande image à gauche. */
+.hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: clamp(16px, 3vw, 32px); padding: clamp(14px, 2.4vw, 22px); margin-top: 22px; text-decoration: none; align-items: center; }
+.hero .pic { aspect-ratio: 16 / 10; border-radius: 14px; overflow: hidden; background: linear-gradient(135deg, rgba(var(--acc),.45), #1a080a); }
+.hero .pic img { width: 100%; height: 100%; object-fit: cover; display: block; -webkit-user-drag: none; }
+.hero h2 { font-size: clamp(20px, 3vw, 30px); margin: 10px 0 6px; overflow-wrap: anywhere; }
+@media (max-width: 700px) { .hero { grid-template-columns: 1fr; } }
+
+/* La fiche d'un article : l'image à gauche, le texte et l'achat à droite ; l'image passe au-dessus sur téléphone. */
+.crumbs { font: 500 12px var(--f-mono); color: var(--haze); display: flex; flex-wrap: wrap; gap: 8px; }
+.crumbs a { text-decoration: none; } .crumbs a:hover { color: var(--mist); }
+.item { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: clamp(20px, 4vw, 44px); margin-top: 18px; align-items: start; }
+.item .shot { position: sticky; top: 90px; border-radius: 20px; overflow: hidden; background: #0b0607; border: 1px solid var(--line); }
+.item .shot img { display: block; width: 100%; height: auto; -webkit-user-drag: none; user-select: none; }
+.item .shot .ph { aspect-ratio: 1; background: linear-gradient(135deg, rgba(var(--acc),.45), #1a080a); }
+.item .info { display: grid; gap: 16px; padding: clamp(18px, 3vw, 26px); min-width: 0; }
+.seller { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+.seller img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: #2a0a0e; flex: none; }
+.seller b { display: block; } .seller span { font: 500 12px var(--f-mono); color: var(--haze); }
+.seller:hover b { color: var(--ember); }
+.big-price { font: 800 clamp(26px, 4vw, 34px)/1 var(--f-display); color: var(--mist); }
+.big-price small { font: 500 12px var(--f-mono); color: var(--haze); letter-spacing: .1em; text-transform: uppercase; margin-right: 6px; }
+.actions { display: grid; gap: 10px; }
+.actions .btn { width: 100%; }
+.details { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 16px; margin: 0; font-size: 14px; }
+.details dt { font: 500 11px/1.9 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
+.details dd { margin: 0; }
+.desc { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; color: #d9c6c9; }
+.prods { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.prods li { display: flex; justify-content: space-between; gap: 10px; padding: 9px 12px; border-radius: 12px; background: rgba(255,255,255,.03); border: 1px solid var(--line); font-size: 14px; }
+.prods li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prods li small { font: 500 11px var(--f-mono); color: var(--haze); white-space: nowrap; }
+.note { font-size: 13px; color: var(--haze); margin: 0; }
+.notice { min-height: 1.2em; font-size: 14px; color: #ff8a95; margin: 0; }
+@media (max-width: 760px) { .item { grid-template-columns: 1fr; } .item .shot { position: static; } }

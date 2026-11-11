@@ -9,109 +9,98 @@
 <link rel="canonical" href="https://onirique.store/marketplace">
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
-<style>
-/* Mêmes tokens que vitrine.html. */
-:root {
-  --night: #0D0809; --line: rgba(255,210,214,.13); --mist: #F6EEEE; --haze: #A88F92; --ember: rgb(var(--acc));
-  --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
-  --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
-  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
-  color-scheme: dark;
-}
-* { box-sizing: border-box; }
-[hidden] { display: none !important; }
-body { margin: 0; min-height: 100vh; color: var(--mist); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased; background: var(--night); }
-body::before { content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
-  background: radial-gradient(120% 60% at 50% -10%, rgba(var(--acc-lo),.8), rgba(var(--acc-lo),.4) 36%, transparent 72%); }
-a { color: inherit; }
-:focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
-.wrap { width: 100%; max-width: 1180px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 40px); }
-header { border-bottom: 1px solid var(--line); background: rgba(13,8,9,.6); backdrop-filter: blur(14px); }
-header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 16px; }
-.brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 800 17px/1 var(--f-display); letter-spacing: .16em; }
-.brand img { width: 44px; height: auto; margin-block: -12px; filter: drop-shadow(0 0 6px rgba(var(--acc),.8)); }
-.between { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-main { padding-block: clamp(20px, 4vw, 40px) 120px; }
-h1 { font: 800 clamp(26px, 5vw, 40px)/1.1 var(--f-display); margin: 8px 0; }
-.eyebrow { font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); }
-.muted { color: var(--haze); }
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 18px; border-radius: 999px; border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
-.btn-ghost { background: rgba(255,255,255,.03); color: var(--mist); border-color: var(--line); }
-.btn-ghost:hover { border-color: var(--ember); }
-.tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 22px; }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chips button { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.03); color: var(--mist); font: 600 13px var(--f-body); cursor: pointer; }
-.chips button[aria-pressed="true"] { border-color: var(--ember); background: color-mix(in srgb, var(--ember) 20%, transparent); }
-input, select { min-height: 42px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 15px var(--f-body); min-width: 0; }
-input[type="search"] { flex: 1 1 220px; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 20px; }
-.card { position: relative; display: grid; gap: 4px; padding: 8px; border-radius: 14px; background: rgba(255,255,255,.03); border: 1px solid transparent; text-decoration: none; }
-.card:hover { border-color: var(--line); background: rgba(255,255,255,.06); }
-.card img, .card .ph { width: 100%; aspect-ratio: 1; border-radius: 10px; object-fit: cover; background: linear-gradient(135deg, color-mix(in srgb, var(--ember) 50%, #1a080a), #2a0a0e); -webkit-user-drag: none; }
-.card .kind { position: absolute; top: 14px; left: 14px; padding: 4px 8px; border-radius: 999px; background: rgba(0,0,0,.65); font: 500 10px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; }
-.card b { margin-top: 4px; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.card small { font: 500 11px var(--f-mono); color: var(--haze); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.price { color: var(--ember); font-weight: 700; }
-</style>
+<link rel="stylesheet" href="assets/marketplace.css?v=1">
 <link rel="stylesheet" href="/assets/da.css?v=7">
 <script src="/assets/accent.js?v=1"></script>
 <body>
-<header>
+<header class="top">
   <div class="wrap">
     <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
-    <div class="between"><a class="btn btn-ghost" href="vitrine">Vitrine</a><a class="btn btn-ghost" href="carte">Carte</a><a class="btn btn-ghost" href="compte">Mon compte</a></div>
+    <nav class="nav"><a class="btn btn-ghost small" href="vitrine">Vendre un visuel</a><a class="btn btn-ghost small opt" href="cloud">Vendre des prods</a><a class="btn btn-ghost small opt" href="compte">Mon compte</a></nav>
   </div>
 </header>
 <main class="wrap">
   <span class="eyebrow">Acheter aux membres</span>
   <h1>Marketplace</h1>
-  <p class="muted" style="margin:0;max-width:640px">Pochettes d'album et visuels des graphistes, packs de prods des beatmakers : tout ce qui est en vente sur ONIRIQUE. Chaque fiche mène au vendeur et au paiement.</p>
-  <div class="tools">
-    <div class="chips" id="kinds" role="group" aria-label="Type">
+  <p class="muted" style="margin:0;max-width:640px">Pochettes d'album et visuels des graphistes, packs de prods des beatmakers : tout ce qui est en vente sur ONIRIQUE, payé par carte et livré tout de suite.</p>
+
+  <div class="bar glass" role="search">
+    <div class="chips" id="kinds" role="group" aria-label="Rayon">
       <button type="button" data-kind="" aria-pressed="true">Tout</button>
       <button type="button" data-kind="visual" aria-pressed="false">Pochettes et visuels</button>
-      <button type="button" data-kind="pack" aria-pressed="false">Prods</button>
+      <button type="button" data-kind="pack" aria-pressed="false">Packs de prods</button>
     </div>
-    <input type="search" id="q" placeholder="Rechercher un titre ou un vendeur" aria-label="Rechercher">
+    <input type="search" id="q" placeholder="Titre ou vendeur" aria-label="Rechercher un titre ou un vendeur">
     <select id="sort" aria-label="Trier">
       <option value="recent">Plus récents</option>
       <option value="cheap">Prix croissant</option>
       <option value="dear">Prix décroissant</option>
     </select>
   </div>
-  <div class="grid" id="grid" aria-live="polite"><p class="muted">Chargement…</p></div>
+
+  <!-- Sans filtre : la une, puis un rayon par type. -->
+  <div id="home">
+    <a class="hero glass" id="hero" hidden></a>
+    <section class="shelf" data-shelf="visual"><header><h2>Pochettes et visuels</h2><button type="button" data-all="visual">Voir tout</button></header><div class="cards row"></div></section>
+    <section class="shelf" data-shelf="pack"><header><h2>Packs de prods</h2><button type="button" data-all="pack">Voir tout</button></header><div class="cards row"></div></section>
+  </div>
+  <!-- Avec un rayon choisi ou une recherche : tous les résultats. -->
+  <section class="shelf" id="results" hidden><header><h2 id="results-title"></h2><span class="muted" id="results-count"></span></header><div class="cards" id="grid"></div></section>
+  <p class="muted" id="state" role="status">Chargement…</p>
 </main>
+<script src="assets/marketplace.js?v=1"></script>
 <script>
 // La marketplace : les visuels en vente de la vitrine (copies filigranées) et les packs de prods achetables, réunis par
-// /api/marketplace ; filtres, recherche et tri se font ici. Le type choisi et la recherche restent dans l'adresse.
+// /api/marketplace. Chaque carte mène à la fiche de l'article (article.html). Rayon, recherche et tri restent dans l'adresse.
+const { el, card, list, KIND, noSave, priceText, sellerText } = Market;
 const $ = (id) => document.getElementById(id);
-const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids.filter((k) => k != null && k !== false)); return n; };
-const euros = (cents) => (cents / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: cents % 100 ? 2 : 0 });
-const KIND = { visual: "Visuel", pack: "Prods" };
+const RAYON = { visual: "Pochettes et visuels", pack: "Packs de prods" };
 const params = new URLSearchParams(location.search);
-let items = null, kind = ["visual", "pack"].includes(params.get("type")) ? params.get("type") : "";
+let items = null, kind = RAYON[params.get("type")] ? params.get("type") : "";
 $("q").value = params.get("q") || "";
 if (["cheap", "dear"].includes(params.get("tri"))) $("sort").value = params.get("tri");
 
+const sorted = (xs) => { const s = $("sort").value; return [...xs].sort((a, b) => (s === "cheap" ? a.price - b.price : s === "dear" ? b.price - a.price : b.at - a.at)); };
 function draw() {
   if (!items) return;
   document.querySelectorAll("#kinds button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.kind === kind)));
   const q = $("q").value.trim().toLowerCase(), sort = $("sort").value;
-  const list = items.filter((x) => (!kind || x.type === kind) && (!q || (x.title + " " + x.seller.name + " " + (x.seller.handle || "")).toLowerCase().includes(q)))
-    .sort((a, b) => (sort === "cheap" ? a.price - b.price : sort === "dear" ? b.price - a.price : b.at - a.at));
-  history.replaceState(null, "", "marketplace" + (new URLSearchParams({ ...(kind ? { type: kind } : {}), ...(q ? { q } : {}), ...(sort !== "recent" ? { tri: sort } : {}) }).toString().replace(/^./, "?$&")));
-  $("grid").replaceChildren(...(list.length ? list.map((x) => el("a", { className: "card", href: x.url },
-    x.image ? el("img", { src: x.image, alt: x.title, loading: "lazy", draggable: false, oncontextmenu: (e) => e.preventDefault() }) : el("span", { className: "ph" }),
-    el("span", { className: "kind", textContent: KIND[x.type] }),
-    el("b", { textContent: x.title }),
-    el("small", { textContent: (x.seller.handle ? "@" + x.seller.handle : x.seller.name) + (x.type === "pack" ? " · " + x.tracks + " prod" + (x.tracks > 1 ? "s" : "") : "") }),
-    el("span", { className: "price", textContent: (x.from ? "dès " : "") + euros(x.price) })))
-    : [el("p", { className: "muted", textContent: q ? "Rien ne correspond à ta recherche." : "Rien en vente ici pour l'instant." })]));
+  const query = new URLSearchParams({ ...(kind ? { type: kind } : {}), ...(q ? { q } : {}), ...(sort !== "recent" ? { tri: sort } : {}) }).toString();
+  history.replaceState(null, "", "marketplace" + (query ? "?" + query : ""));
+  $("state").hidden = !!items.length;
+  $("state").textContent = "Rien en vente pour l'instant.";
+  const filtering = !!(kind || q);
+  $("home").hidden = filtering || !items.length;
+  $("results").hidden = !filtering;
+  if (filtering) {
+    const found = sorted(items.filter((x) => (!kind || x.type === kind) && (!q || (x.title + " " + x.seller.name + " " + (x.seller.handle || "")).toLowerCase().includes(q))));
+    $("results-title").textContent = q ? "Résultats" + (kind ? " · " + RAYON[kind] : "") : RAYON[kind];
+    $("results-count").textContent = found.length + " article" + (found.length > 1 ? "s" : "");
+    $("grid").replaceChildren(...(found.length ? found.map(card) : [el("p", { className: "muted", textContent: q ? "Rien ne correspond à ta recherche." : "Rien dans ce rayon pour l'instant." })]));
+    return;
+  }
+  // La une : le dernier article publié qui a une image.
+  const top = items.find((x) => x.image);
+  $("hero").hidden = !top;
+  if (top) {
+    $("hero").href = top.page;
+    $("hero").replaceChildren(el("span", { className: "pic" }, noSave(el("img", { src: top.image, alt: top.title }))),
+      el("div", {}, el("span", { className: "eyebrow", textContent: "À la une · " + KIND[top.type] }), el("h2", { textContent: top.title }),
+        el("p", { className: "muted", style: "margin:0 0 14px", textContent: sellerText(top) }),
+        el("div", { className: "between", style: "display:flex;align-items:center;gap:14px;flex-wrap:wrap" },
+          el("span", { className: "price", style: "font-size:22px", textContent: priceText(top) }), el("span", { className: "btn btn-primary small", textContent: "Voir l'article" }))));
+  }
+  for (const shelf of document.querySelectorAll("[data-shelf]")) {
+    const xs = sorted(items.filter((x) => x.type === shelf.dataset.shelf)).slice(0, 12);
+    shelf.hidden = !xs.length;
+    shelf.querySelector(".cards").replaceChildren(...xs.map(card));
+  }
 }
-document.querySelectorAll("#kinds button").forEach((b) => b.onclick = () => { kind = b.dataset.kind; draw(); });
+const pick = (k) => { kind = k; draw(); scrollTo({ top: 0, behavior: "smooth" }); };
+document.querySelectorAll("#kinds button").forEach((b) => b.onclick = () => pick(b.dataset.kind));
+document.querySelectorAll("[data-all]").forEach((b) => b.onclick = () => pick(b.dataset.all));
 $("q").oninput = draw;
 $("sort").onchange = draw;
-fetch("/api/marketplace").then((r) => (r.ok ? r.json() : Promise.reject())).then((list) => { items = list; draw(); })
-  .catch(() => $("grid").replaceChildren(el("p", { className: "muted", textContent: "Serveur injoignable. Réessaie dans un instant." })));
+list().then((xs) => { items = xs; draw(); }).catch(() => { $("state").textContent = "Serveur injoignable. Réessaie dans un instant."; });
 </script>
 </html>
