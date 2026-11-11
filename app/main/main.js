@@ -15,6 +15,25 @@ let win = null;
 // dans celle-ci (second-instance), au lieu d'en lancer une deuxième.
 if (!app.requestSingleInstanceLock()) app.exit(0);
 
+// Une erreur imprévue est notée dans erreurs.log (dossier de l'application) au lieu d'ouvrir la boîte d'erreur de Windows.
+function logError(...parts) {
+  const line = `${new Date().toISOString()} ${parts.map((p) => (p instanceof Error ? p.stack : String(p))).join(' ')}\n`;
+  console.error(line.trim());
+  try { fs.appendFileSync(path.join(app.getPath('userData'), 'erreurs.log'), line); } catch {}
+}
+process.on('uncaughtException', (error) => logError('uncaughtException', error));
+process.on('unhandledRejection', (error) => logError('unhandledRejection', error));
+// Une page qui plante (mémoire, pilote graphique…) se recharge au lieu de rester blanche ; une fois par 10 s au plus.
+function revive(web) {
+  let last = 0;
+  web.on('render-process-gone', (_event, { reason }) => {
+    logError('render-process-gone', reason, web.getURL());
+    if (reason === 'clean-exit' || Date.now() - last < 10_000) return;
+    last = Date.now();
+    setTimeout(() => { if (!web.isDestroyed()) web.reload(); }, 500);
+  });
+}
+
 /**
  * Le micro et la sortie choisis dans les Paramètres, pour les pages du site dans l'application : la messagerie enregistre
  * ses vocaux avec ce micro (window.__oniriqueAudio.mic), et tout son joué par un lecteur <audio> part vers cette sortie.
@@ -114,6 +133,7 @@ function toolView(tool, lang) {
     view.setBackgroundColor('#00000000'); // transparente : le fond de l'application (nuit et braise) continue sous la page
     view.setVisible(false);
     const web = view.webContents;
+    revive(web);
     // Tout ce qui commence dans l'application y reste : une page du site s'ouvre dans la vue (sauf celles qui ont leur
     // propre écran : compte, boutique, l'autre outil). Seul ce qui sort du site (paiement, réseaux) part au navigateur.
     const route = (url) => {
@@ -191,7 +211,10 @@ function toolView(tool, lang) {
     web.navigationHistory.clear(); // sinon « Retour » ramène sur robots.txt, la page qui a servi à poser la session
     return view;
   })());
-  return toolViews.get(tool);
+  // Hors ligne au premier essai : l'échec n'est pas gardé, l'outil se réessaie à la prochaine ouverture.
+  const pending = toolViews.get(tool);
+  if (!pending.watched) pending.watched = pending.catch((error) => { logError('toolView', tool, error); if (toolViews.get(tool) === pending) toolViews.delete(tool); });
+  return pending;
 }
 
 // La vue « page » par-dessus CLOUD : ouverte à la place de CLOUD (même place à l'écran), refermée par « Retour » quand
@@ -326,6 +349,7 @@ function inviteWindow() {
   inviteWin = new BrowserWindow({ parent: win, ...INVITE, show: false, frame: false, transparent: true, resizable: false, skipTaskbar: true,
     minimizable: false, maximizable: false, fullscreenable: false, focusable: true, backgroundColor: '#00000000',
     webPreferences: { preload: path.join(__dirname, 'invite-preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false } });
+  revive(inviteWin.webContents);
   inviteWin.loadFile(path.join(__dirname, '..', 'renderer', 'invite.html'));
   for (const e of ['move', 'resize', 'maximize', 'unmaximize']) win.on(e, placeInvite);
   win.on('minimize', () => inviteWin?.hide());
@@ -370,6 +394,7 @@ function createMini() {
   mini = new BrowserWindow({ parent: win, ...MINI, show: false, frame: false, transparent: true, resizable: false, skipTaskbar: true,
     minimizable: false, maximizable: false, fullscreenable: false, backgroundColor: '#00000000',
     webPreferences: { preload: path.join(__dirname, 'mini-preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false } });
+  revive(mini.webContents);
   mini.loadFile(path.join(__dirname, '..', 'renderer', 'mini.html'));
   // Déplacé à la main : sa place est gardée par rapport au coin bas droit de la fenêtre.
   mini.on('moved', () => {
@@ -616,6 +641,7 @@ function createWindow() {
     },
   });
   win.removeMenu();
+  revive(win.webContents);
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
   win.once('ready-to-show', () => { if (fits && saved.maximized) win.maximize(); win.show(); });
   // Le bouton « précédent » de la souris : comme « Retour » dans l'outil affiché.

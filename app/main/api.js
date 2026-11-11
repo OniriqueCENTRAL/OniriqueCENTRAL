@@ -35,6 +35,8 @@ async function send(method, route, init = {}) {
 }
 
 async function request(method, route, body) {
+  // Une lecture sans réponse au bout de 30 s abandonne au lieu de laisser l'écran attendre pour toujours.
+  if (method === 'GET') return (await send(method, route, { signal: AbortSignal.timeout(30_000) })).json();
   const response = await send(method, route, body === undefined ? {} : {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
