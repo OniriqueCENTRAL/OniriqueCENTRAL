@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Le bot musique ONIRIQUE sur Discord (server/discord-bot), en service toujours allumé. Sur le VPS, en root :
-#   onirique-discord        demande le jeton du bot, puis l'allume (il redémarre tout seul, et au démarrage du VPS)
+#   ssh -t root@… onirique-discord   demande le jeton du bot, puis l'allume (il redémarre tout seul, et au démarrage du VPS)
 #   onirique-discord off    l'éteint et retire le jeton
 #   journalctl -u onirique-discord-bot -f     ce qu'il raconte
 #
@@ -23,7 +23,7 @@ fi
 [ -f /opt/onirique-discord-bot/bot.js ] || stop "Le bot n'est pas encore sur le VPS : lancez d'abord une mise en ligne (deploy.sh)."
 TOKEN=''
 while :; do
-  read -r -s -p "Jeton du bot Discord (rien ne s'affiche) : " TOKEN; echo >&2
+  printf "Jeton du bot Discord (rien ne s'affiche) : " >&2; read -r -s TOKEN; echo >&2
   TOKEN=${TOKEN//[[:space:]]/}
   [[ $TOKEN =~ ^[A-Za-z0-9_.-]{50,}$ ]] && break
   [ -z "$TOKEN" ] || echo "Ça ne ressemble pas à un jeton de bot, recolle-le." >&2
