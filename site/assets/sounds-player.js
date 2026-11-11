@@ -1096,5 +1096,16 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     }
     node.classList.toggle("on", !!url);
   };
-  window.OniriquePlayer = { create, engines, peaksOf, time, icon, tint, stageLabel, releaseLabel, parseLyrics, gluePunct, buttonColor, pageBackground };
+  // Les boutons (lecture, « Ajouter »…) aux couleurs de la pochette du projet ouvert : les teintes --acc de da.css,
+  // posées au-dessus de la couleur du compte tant que le projet est ouvert (null : la couleur du compte revient).
+  const projectAccent = (t) => {
+    let style = document.getElementById("project-accent");
+    if (!t || !window.OniriqueAccent) { if (style) style.remove(); return; }
+    const g = document.createElement("canvas").getContext("2d");
+    g.fillStyle = t.accent; // « hsl(…) » relu en « #rrggbb »
+    const p = window.OniriqueAccent.palette(g.fillStyle);
+    if (!style) style = document.head.appendChild(Object.assign(document.createElement("style"), { id: "project-accent" }));
+    style.textContent = `:root { --acc: ${p.acc} !important; --acc-hi: ${p.hi} !important; --acc-lo: ${p.lo} !important; }`;
+  };
+  window.OniriquePlayer = { create, engines, peaksOf, time, icon, tint, stageLabel, releaseLabel, parseLyrics, gluePunct, buttonColor, pageBackground, projectAccent };
 })();

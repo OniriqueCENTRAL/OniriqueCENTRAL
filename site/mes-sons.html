@@ -261,7 +261,7 @@ body.editing #edit-toggle { background: var(--mist); color: var(--night); border
 .drop-zone { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(13,8,9,.82); border: 2px dashed var(--ember); font: 700 20px var(--f-display); pointer-events: none; }
 
 /* Le bouton + et son menu */
-.fab { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 35; display: inline-flex; align-items: center; gap: 8px; padding: 14px 26px; border-radius: 999px; border: 1px solid rgba(255,210,214,.18); background: rgba(26,8,10,.95); color: var(--mist); font: 700 15px var(--f-body); cursor: pointer; box-shadow: 0 16px 50px -14px rgba(0,0,0,.9), 0 0 36px -16px var(--ember); }
+.fab { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 35; display: inline-flex; align-items: center; gap: 8px; padding: 14px 26px; border-radius: 999px; border: 1px solid rgba(var(--acc-hi),.3); background: color-mix(in srgb, rgb(var(--acc-lo)) 35%, rgba(13,8,9,.95)); color: var(--mist); font: 700 15px var(--f-body); cursor: pointer; box-shadow: 0 16px 50px -14px rgba(0,0,0,.9), 0 0 36px -16px var(--ember); }
 .fab:hover { border-color: var(--ember); }
 body.has-player .fab { bottom: calc(88px + env(safe-area-inset-bottom)); }
 .menu { position: fixed; z-index: 70; min-width: 220px; overflow-y: auto; overscroll-behavior: contain; padding: 6px; border-radius: 16px; border: 1px solid rgba(255,210,214,.16); background: rgba(26,8,10,.98); box-shadow: 0 20px 60px -20px rgba(0,0,0,.95); }
@@ -918,7 +918,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 <dialog id="scan"></dialog>
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close('cancel')">Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
-<script src="assets/sounds-player.js?v=27"></script>
+<script src="assets/sounds-player.js?v=28"></script>
 <script src="assets/invites.js?v=2"></script>
 <script src="assets/hm.js?v=16"></script>
 <script src="assets/platforms.js?v=22"></script>
@@ -1052,6 +1052,7 @@ $("pf-search").onsubmit = (event) => { event.preventDefault(); const q = $("pf-s
 const tints = new Map();
 const tintOf = (url) => { if (!tints.has(url)) tints.set(url, OP.tint(url)); return tints.get(url); };
 function theme(t) {
+  OP.projectAccent(t);
   const root = document.documentElement.style;
   for (const [k, v] of [["--ember", t && t.accent], ["--glow-1", t && t.glow], ["--glow-2", t && t.deep]]) v ? root.setProperty(k, v) : root.removeProperty(k);
 }

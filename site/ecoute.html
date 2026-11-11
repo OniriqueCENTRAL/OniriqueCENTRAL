@@ -222,7 +222,7 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1320px; }
 <footer class="muted wrap">Partagé avec <a href="/">ONIRIQUE</a> · ONIRIQUE CLOUD</footer>
 
 <dialog id="buy"></dialog>
-<script src="assets/sounds-player.js?v=27"></script>
+<script src="assets/sounds-player.js?v=28"></script>
 <script src="assets/platforms.js?v=22"></script>
 <script src="assets/hm.js?v=16"></script>
 <script src="assets/ratings.js?v=2"></script>
@@ -399,7 +399,7 @@ function show(data) {
     + (total ? " · " + OP.time(total) : ""));
   const ph = el("div", { className: "cover-ph", innerHTML: '<svg viewBox="0 0 24 24"><path d="M12 1.5 13.3 10.7 22.5 12 13.3 13.3 12 22.5 10.7 13.3 1.5 12 10.7 10.7Z" fill="currentColor"/></svg>' });
   $("cover").replaceChildren(data.cover ? el("img", { src: data.cover + "?w=960", alt: "" }) : ph);
-  OP.tint(data.cover).then((t) => { theme(t); player.setAccent(t && t.accent); });
+  OP.tint(data.cover).then((t) => { theme(t); OP.projectAccent(t); player.setAccent(t && t.accent); });
   // L'image de fond choisie par l'auteur du projet.
   OP.pageBackground($("page-bg"), data.background);
   $("cover-by").hidden = !data.coverBy;
