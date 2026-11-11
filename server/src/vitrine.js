@@ -59,12 +59,12 @@ export async function watermark(source, handle) {
 
 const sellerName = (userId) => { const u = get('SELECT name, email FROM users WHERE id = ?', userId); return u?.name || 'Graphiste'; };
 const canBuy = (v) => v.price > 0 && !v.sold && !!platformStripe();
-function view(v) {
+export function view(v) {
   return { id: v.id, title: v.title, description: v.description, price: v.price, unique: !!v.unique_sale, sold: !!v.sold, forSale: canBuy(v),
     width: v.width, height: v.height, format: v.format === 'jpeg' ? 'JPEG' : v.format.toUpperCase(), image: `/api/vitrine/${v.id}/image?v=${v.preview.slice(0, 8)}`, createdAt: v.created_at,
     author: { handle: v.handle, name: v.name || 'Membre', avatar: v.avatar ? `/api/media/${v.avatar}` : null } };
 }
-const PUBLIC = `SELECT v.*, p.handle, u.name, u.avatar FROM vitrine_visuals v JOIN users u ON u.id = v.user_id JOIN user_profiles p ON p.user_id = v.user_id
+export const PUBLIC = `SELECT v.*, p.handle, u.name, u.avatar FROM vitrine_visuals v JOIN users u ON u.id = v.user_id JOIN user_profiles p ON p.user_id = v.user_id
   WHERE v.hidden = 0`;
 const publicVisual = (vid) => {
   const v = get(`${PUBLIC} AND v.id = ?`, id(vid));
