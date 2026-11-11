@@ -45,6 +45,8 @@ static class Installation
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
     struct Valeur { public ushort Type; ushort a, b, c; public IntPtr Texte; IntPtr d; }
     [System.Runtime.InteropServices.DllImport("shell32.dll")]
+    static extern int SHGetPropertyStoreFromParsingName([System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPWStr)] string chemin, IntPtr contexte, int mode, ref Guid iid, [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Interface)] out IPropertyStore magasin);
+    [System.Runtime.InteropServices.DllImport("shell32.dll")]
     static extern int SHGetPropertyStoreForWindow(IntPtr fenetre, ref Guid iid, [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Interface)] out IPropertyStore magasin);
 
     public static string CheminIcone => Path.Combine(EstInstallee ? Dossier : Parametres.Dossier, $"icone-{Version}.ico");
@@ -94,6 +96,9 @@ static class Installation
         {
             if (File.Exists(RaccourciMenu)) Raccourci(RaccourciMenu);
             if (File.Exists(RaccourciBureau)) Raccourci(RaccourciBureau);
+            // Épinglé à la barre des tâches ou au menu Démarrer : ce raccourci-là pointait encore vers l'icône de la
+            // version d'avant, effacée, et Windows montrait une icône blanche.
+            foreach (var lien in Epingles()) try { Raccourci(lien); } catch { }
             using (var k = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(CleDesinstallation, true)) k?.SetValue("DisplayVersion", Version);
             SHChangeNotify(0x08000000, 0, IntPtr.Zero, IntPtr.Zero); // SHCNE_ASSOCCHANGED : Windows relit les icônes
         }
@@ -118,6 +123,20 @@ static class Installation
         SHChangeNotify(0x08000000, 0, IntPtr.Zero, IntPtr.Zero);
     }
 
+    /// <summary>Les raccourcis épinglés (barre des tâches, menu Démarrer) qui ouvrent ce navigateur.</summary>
+    static IEnumerable<string> Epingles()
+    {
+        var racine = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"Microsoft\Internet Explorer\Quick Launch\User Pinned");
+        if (!Directory.Exists(racine)) yield break;
+        dynamic shell = Activator.CreateInstance(Type.GetTypeFromProgID("WScript.Shell")!)!;
+        foreach (var lien in Directory.EnumerateFiles(racine, "*.lnk", SearchOption.AllDirectories))
+        {
+            string cible = "";
+            try { cible = (string)shell.CreateShortcut(lien).TargetPath; } catch { }
+            if (string.Equals(cible, Exe, StringComparison.OrdinalIgnoreCase)) yield return lien;
+        }
+    }
+
     static void Raccourci(string chemin)
     {
         dynamic shell = Activator.CreateInstance(Type.GetTypeFromProgID("WScript.Shell")!)!;
@@ -128,6 +147,17 @@ static class Installation
         lien.IconLocation = EcrireIcone(Dossier) + ",0";
         lien.Description = Nom;
         lien.Save();
+        // Le même identifiant que la fenêtre : l'épingle et le navigateur ouvert ne font qu'un bouton dans la barre des tâches.
+        try
+        {
+            var iid = new Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99");
+            if (SHGetPropertyStoreFromParsingName(chemin, IntPtr.Zero, 2 /* GPS_READWRITE */, ref iid, out var magasin) != 0) return;
+            var cle = new ClePropriete { Format = new Guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"), Id = 5 }; // AppUserModel.ID
+            var v = new Valeur { Type = 31, Texte = System.Runtime.InteropServices.Marshal.StringToCoTaskMemUni("ONIRIQUE.Navigateur") };
+            try { magasin.SetValue(ref cle, ref v); magasin.Commit(); }
+            finally { System.Runtime.InteropServices.Marshal.FreeCoTaskMem(v.Texte); System.Runtime.InteropServices.Marshal.ReleaseComObject(magasin); }
+        }
+        catch { }
     }
 
     static void Inscrire()
@@ -189,7 +219,7 @@ static class Installation
     /// </summary>
     public static void Desinstaller(bool donnees, bool depuisLeNavigateur)
     {
-        foreach (var lien in new[] { RaccourciMenu, RaccourciBureau }) try { File.Delete(lien); } catch { }
+        foreach (var lien in new[] { RaccourciMenu, RaccourciBureau }.Concat(Epingles().ToList())) try { File.Delete(lien); } catch { }
         try { Registry.CurrentUser.DeleteSubKeyTree(CleDesinstallation, false); } catch { }
         try { Registry.CurrentUser.DeleteSubKeyTree(CleClient, false); } catch { }
         try { Registry.CurrentUser.DeleteSubKeyTree($@"Software\Classes\{ProgId}", false); } catch { }
