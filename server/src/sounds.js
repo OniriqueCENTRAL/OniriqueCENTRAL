@@ -257,6 +257,16 @@ if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'v
   db.exec(`ALTER TABLE sound_tracks ADD COLUMN via_link INTEGER REFERENCES sound_links(id) ON DELETE CASCADE;
     ALTER TABLE sound_tracks ADD COLUMN via_track INTEGER REFERENCES sound_tracks(id) ON DELETE CASCADE;`);
 }
+// Un son privé : seuls les membres de son projet (auteur et collaborateurs) l'écoutent ; les autres le voient, grisé.
+if (!db.prepare(`SELECT 1 FROM pragma_table_info('sound_tracks') WHERE name = 'private'`).get()) {
+  db.exec('ALTER TABLE sound_tracks ADD COLUMN private INTEGER NOT NULL DEFAULT 0');
+}
+/** Le son t (une ligne de sound_tracks) est-il fermé au compte uid ? Une copie dans une playlist suit aussi le son d'origine. */
+function lockedFor(t, uid) {
+  if (t.private && !(uid && membersOf(t.project_id).includes(uid))) return true;
+  const src = t.via_track && get('SELECT project_id, private FROM sound_tracks WHERE id = ?', t.via_track);
+  return !!(src && src.private && !(uid && membersOf(src.project_id).includes(uid)));
+}
 // Ce qu'un membre peut faire d'un projet : un projet classique (''), un pack de prods, ou une playlist (des sons déjà
 // dans ONIRIQUE CLOUD, ajoutés par « Ajouter à… » sans être renvoyés).
 const KINDS = ['', 'pack', 'playlist'];
@@ -639,7 +649,8 @@ function previewOf(token) {
   if (l.password_hash || l.require_account) return { link: l, locked: true };
   const t = l.track_id ? get('SELECT * FROM sound_tracks WHERE id = ?', l.track_id) : null;
   const p = linkProject(l);
-  const tracks = l.track_id ? [t] : all('SELECT * FROM sound_tracks WHERE project_id = ? ORDER BY position, id', p.id);
+  // Les sons privés ne comptent ni dans le nombre de titres ni dans la durée.
+  const tracks = l.track_id ? [t] : all('SELECT * FROM sound_tracks WHERE project_id = ? AND private = 0 ORDER BY position, id', p.id);
   const seconds = tracks.reduce((sum, x) => sum + (get('SELECT duration FROM sound_versions WHERE id = ?', x.current_id)?.duration || 0), 0);
   return { link: l, locked: false, owner: p.artist || p.author_name || 'ONIRIQUE', title: t ? t.title : p.title, project: p.title, cover: p.cover,
     count: tracks.length, seconds, release: p.release_date, stage: t ? t.stage : '' };
@@ -866,12 +877,15 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
         mail: p.kind === 'pack' && p.user_id === u ? mailDraft(JSON.parse(p.mail || '{}')) : null,
         tracks: tracks.filter((t) => t.project_id === p.id).map((t) => {
           const mine = plays.filter((r) => r.track_id === t.id);
+          // locked : un son privé d'un autre (copie dans une playlist, ou VANISH) : ni adresse, ni paroles.
+          const locked = lockedFor(t, vanish ? null : u);
           return {
-            id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), splits: splitsOf(t), lyrics: t.lyrics, currentId: t.current_id, createdAt: t.created_at,
+            id: t.id, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), splits: splitsOf(t), lyrics: locked ? '' : t.lyrics, currentId: t.current_id, createdAt: t.created_at,
+            private: !!t.private, locked,
             bpm: t.bpm, key: t.music_key, forSale: !!t.for_sale, sold: !!t.sold,
             ...(p.kind === 'pack' ? { files: filesOf(t.id), licensePrices: JSON.parse(t.license_prices || '{}'), videoTitle: t.video_title, videoCover: media(t.video_cover) } : {}),
             ...(p.kind === 'pack' && p.user_id === u ? { scan: scans.get(t.id) || null } : {}),
-            versions: versions.filter((v) => v.track_id === t.id).map((v, i) => versionView(v, i, !t.via_link)), foreign: !!t.via_link,
+            versions: versions.filter((v) => v.track_id === t.id).map((v, i) => (locked ? { ...versionView(v, i, false), url: null } : versionView(v, i, !t.via_link))), foreign: !!t.via_link,
             comments: comments.filter((c) => c.track_id === t.id).map(commentView),
             plays: mine.length, lastPlay: mine[0]?.created_at ?? null, listeners: listeners(mine), stats: listenStats(mine),
           };
@@ -886,7 +900,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       // Les projets des autres, enregistrés : encore ouverts si le lien vit et que son auteur est toujours membre.
       saved: all(`SELECT s.id, s.folder_id, s.pass, s.created_at, l.id AS link_id, l.token, l.track_id, l.expires_at, l.password_hash,
           a.name AS owner_name, a.avatar AS owner_avatar, u.role AS owner_role, l.user_id AS owner_id, p.title AS project_title, p.cover, p.artist, p.kind, t.title AS track_title,
-          (SELECT COUNT(*) FROM sound_tracks WHERE project_id = p.id) AS tracks, ${LINK_OPEN} AS open
+          (SELECT COUNT(*) FROM sound_tracks WHERE project_id = p.id AND private = 0) AS tracks, ${LINK_OPEN} AS open
         FROM sound_saves s JOIN sound_links l ON l.id = s.link_id JOIN users u ON u.id = l.user_id
         LEFT JOIN sound_tracks t ON t.id = l.track_id JOIN sound_projects p ON p.id = COALESCE(l.project_id, t.project_id) JOIN users a ON a.id = p.user_id
         WHERE s.user_id = ? ORDER BY s.created_at DESC`, req.user.id).map((r) => ({
@@ -1173,6 +1187,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       if (key === null) throw new HttpError(400, 'Clé inconnue : écris par exemple « C# min » ou « F maj ».');
       run('UPDATE sound_tracks SET music_key = ? WHERE id = ?', key, t.id);
     }
+    if (req.body.private !== undefined) run('UPDATE sound_tracks SET private = ? WHERE id = ?', req.body.private ? 1 : 0, t.id);
     if (req.body.forSale !== undefined) run('UPDATE sound_tracks SET for_sale = ? WHERE id = ? AND sold = 0', req.body.forSale ? 1 : 0, t.id);
     if (req.body.licensePrices !== undefined) run('UPDATE sound_tracks SET license_prices = ? WHERE id = ?', licensePricesOf(req.body.licensePrices, t.owner_id), t.id);
     if (req.body.stage !== undefined) {
@@ -1258,7 +1273,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     if (!link || (link.expires_at && link.expires_at < now())) throw new HttpError(404, "Ce lien d'écoute n'est plus valable.");
     if (link.password_hash && !(save.pass && same(save.pass, passFor(link)))) throw new HttpError(403, 'Ouvre ce lien une fois avec son mot de passe pour en ajouter les sons.');
     const t = get(`SELECT * FROM sound_tracks WHERE id = ? AND ${link.track_id ? 'id' : 'project_id'} = ?`, id(req.body.trackId), link.track_id || link.project_id);
-    if (!t) throw new HttpError(404, "Ce son n'est pas dans ce lien.");
+    if (!t || lockedFor(t, req.user.id)) throw new HttpError(404, "Ce son n'est pas dans ce lien.");
     // Une playlist d'un autre membre : seulement si son créateur autorise l'ajout de ses sons (réglage de la playlist).
     const from = link.project_id && get('SELECT kind, members_add, user_id FROM sound_projects WHERE id = ?', link.project_id);
     if (from && from.kind === 'playlist' && !from.members_add && from.user_id !== req.user.id) throw new HttpError(403, "Le créateur de cette playlist n'autorise pas l'ajout de ses sons.");
@@ -1579,7 +1594,8 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     rateLimit(`sounds-share:${req.ip}`, 300);
     const link = openLink(req);
     const p = linkProject(link);
-    const tracks = linkTracks(link);
+    const viewerId = optionalUser(req)?.id;
+    const tracks = linkTracks(link).filter((t) => !lockedFor(t, viewerId));
     const comments = all(`SELECT * FROM sound_comments WHERE link_id = ? ORDER BY at`, link.id);
     // Un fondateur peut simuler l'achat d'une prod en vente, même sans compte de paiement branché, pour voir les licences.
     const simulate = p.kind === 'pack' && optionalUser(req)?.role === 'founder';
@@ -1590,7 +1606,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     res.json({
       pass: link.password_hash ? passFor(link) : null,
       ...saveState(req, link), simulate, pay: p.kind === 'pack' ? payMethods(p.user_id) : [],
-      owner: p.artist || p.author_name || 'ONIRIQUE', ownerAvatar: media(p.author_avatar), ownerHandle: profileHandle(p.user_id), title: link.track_id ? tracks[0]?.title : p.title, project: p.title, cover: media(p.cover), background: media(p.background), buttonColor: p.button_color, coverBy: p.cover_by, releaseDate: p.release_date,
+      owner: p.artist || p.author_name || 'ONIRIQUE', ownerAvatar: media(p.author_avatar), ownerHandle: profileHandle(p.user_id), title: link.track_id ? get('SELECT title FROM sound_tracks WHERE id = ?', link.track_id)?.title : p.title, project: p.title, cover: media(p.cover), background: media(p.background), buttonColor: p.button_color, coverBy: p.cover_by, releaseDate: p.release_date,
       download, about: aboutOf(p.user_id, false), contact: p.kind === 'pack' ? p.author_instagram || null : null,
       tag: p.kind === 'pack' ? tagOf(p.user_id) : null,
       collabAbouts: aboutsOf(all('SELECT u.id, u.name FROM sound_collabs c JOIN users u ON u.id = c.user_id WHERE c.project_id = ? ORDER BY c.created_at', p.id)),
@@ -1600,8 +1616,10 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
         id: t.id, position: t.position, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), lyrics: t.lyrics, bpm: t.bpm, key: t.music_key,
         offers: p.kind === 'pack' ? offersOf(t, p.user_id, simulate) : [], sold: !!t.sold,
         version: { id: t.vid, filename: t.filename, duration: t.duration, peaks: JSON.parse(t.peaks), url: audioUrl(t.vid), downloadUrl: download && !t.via_link ? audioUrl(t.vid, true, link.id, contact?.token) : null },
-        comments: comments.filter((c) => c.track_id === t.id).map(commentView),
+        comments: comments.filter((c) => c.track_id === t.id).map(commentView), private: !!t.private,
       })),
+      // Les sons privés, pour qui n'en est pas membre : leur place et leur nom, rien pour les écouter.
+      hidden: linkTracks(link).filter((t) => lockedFor(t, viewerId)).map((t) => ({ id: t.id, position: t.position, title: t.title })),
     });
   });
 
@@ -1609,9 +1627,9 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   app.post('/api/sounds/share/:token/play', (req, res) => {
     rateLimit(`sounds-play:${req.ip}`, 200);
     const link = openLink(req);
-    const t = linkTracks(link).find((row) => row.id === id(req.body.trackId));
-    if (!t) throw new HttpError(404, 'Titre introuvable.');
     const listener = optionalUser(req);
+    const t = linkTracks(link).find((row) => row.id === id(req.body.trackId) && !lockedFor(row, listener?.id));
+    if (!t) throw new HttpError(404, 'Titre introuvable.');
     const listenerId = listener && listener.id !== link.user_id ? listener.id : null;
     // L'auditeur : son compte s'il est connecté, sinon l'identifiant que son navigateur garde (pour compter les personnes).
     const who = listener ? `u${listener.id}` : str(req.body.listener, 40).replace(/[^\w-]/g, '');
@@ -1634,9 +1652,9 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   app.post('/api/sounds/share/:token/comments', (req, res) => {
     rateLimit(`sounds-comment:${req.ip}`, 30);
     const link = openLink(req);
-    const t = linkTracks(link).find((row) => row.id === id(req.body.trackId));
-    if (!t) throw new HttpError(404, 'Titre introuvable.');
     const listener = optionalUser(req);
+    const t = linkTracks(link).find((row) => row.id === id(req.body.trackId) && !lockedFor(row, listener?.id));
+    if (!t) throw new HttpError(404, 'Titre introuvable.');
     const author = str(listener?.name, 60) || str(req.body.name, 60);
     const body = str(req.body.body, 1000);
     if (!author) throw new HttpError(400, 'Indique ton nom.');
@@ -1740,7 +1758,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     res.sendFile(path.join(soundsDir, g.stored_as));
   });
 
-  mountBeatStore(app, { me: pro, track, room, receiveFile, openLink, linkTracks, linkProject, soundsDir, audioType, wrap });
+  mountBeatStore(app, { me: pro, track, room, receiveFile, openLink, linkTracks: (link) => linkTracks(link).filter((t) => !t.private), linkProject, soundsDir, audioType, wrap });
   mountPackSend(app, { me: pro, ownProject, sign, wrap });
   mountBeatTube(app, { me: pro, track, soundsDir, wrap, receiveImage, removeMedia });
   mountBeatScan(app, { me: pro, soundsDir });

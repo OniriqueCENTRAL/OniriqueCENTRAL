@@ -179,6 +179,7 @@ body.has-player .uploads { bottom: calc(92px + env(safe-area-inset-bottom)); }
 .trk:hover { background: rgba(255,255,255,.04); }
 .trk.now { background: color-mix(in srgb, var(--ember) 13%, transparent); }
 .trk .num { text-align: center; font: 500 13px var(--f-mono); color: var(--haze); }
+.trk.gone { cursor: default; opacity: .45; filter: grayscale(1); }
 .trk.now .num { color: var(--ember); }
 .trk b { display: block; font: 700 15px var(--f-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* Le titre garde sa place ; s'il manque de largeur, les badges (BPM, clé, invités) passent à la ligne au lieu de l'écraser. */
@@ -1061,7 +1062,7 @@ function stageMenu(anchor, t) {
 // Une playlist se joue dans son ordre, sons du CLOUD et extraits des plateformes mêlés.
 const entriesOf = (p) => (p.kind === "playlist" ? PF.mixed(p) : p.tracks.map((t) => ({ key: "t" + t.id, track: t })));
 function playProject(p, i = 0) {
-  const all = entriesOf(p), list = all.filter((x) => !x.item || PF.playable(x.item));
+  const all = entriesOf(p), list = all.filter((x) => (x.track ? !x.track.locked : PF.playable(x.item)));
   if (!list.length) return;
   player.play(list.map((x) => (x.track ? itemOf(p, x.track) : PF.playerItem(x.item))), Math.max(0, list.indexOf(all[i])));
 }
@@ -1637,7 +1638,7 @@ function projectMenu(anchor, p) {
   menu(anchor, [
     { label: "Ouvrir", icon: "chevron", onclick: () => navigate("#/p/" + p.id) },
     p.tracks.length && { label: "Écouter", icon: "play", onclick: () => playProject(p) },
-    p.tracks.length && { label: "Ajouter à la file", icon: "queue", onclick: () => p.tracks.forEach((t) => player.enqueue(itemOf(p, t))) },
+    p.tracks.length && { label: "Ajouter à la file", icon: "queue", onclick: () => p.tracks.filter((t) => !t.locked).forEach((t) => player.enqueue(itemOf(p, t))) },
     { label: "Partager", icon: "link", onclick: () => openShare("project", p.id) },
     p.tracks.length && { label: "Statistiques", icon: "queue", onclick: () => openProjectStats(p) },
     !p.kind && { label: "Préparer la sortie", icon: "star", onclick: () => openPlan(p) },
@@ -1820,7 +1821,9 @@ function renderProject(p) {
       " · avec ", ...p.collaborators.slice(0, 4).map((u) => el("img", { src: avatar(u), alt: u.name }))) : "");
   $("play-all").disabled = !entriesOf(p).length;
   $("add-tracks").disabled = data.quota.full;
-  $("tracklist").replaceChildren(...entriesOf(p).map((x, i) => (x.track ? trackRow(p, x.track, i) : platformRow(p, x.item, i))));
+  // La numérotation saute les sons privés.
+  let n = 0;
+  $("tracklist").replaceChildren(...entriesOf(p).map((x, i) => (x.track ? trackRow(p, x.track, i, x.track.private || x.track.locked ? null : ++n) : (n++, platformRow(p, x.item, i)))));
   // Les notes et ups d'une playlist et de ses sons : chargés une fois par ouverture, puis la page se redessine.
   $("rt-bar").replaceChildren();
   if (p.kind === "playlist" && !data.vanish) {
@@ -1950,7 +1953,7 @@ const toFix = (t) => t.comments.filter((c) => !c.resolved).length;
 // Le scan d'une prod de mes packs : un badge si elle a été retrouvée dans un titre sorti, sinon une mention discrète.
 const scanned = (p, t) => (p.mine && !visitor && t.scan ? t.scan : null);
 const scanNote = (s) => (!s ? null : s.status === "wait" ? "scan en cours" : s.matches.length ? null : s.status === "error" ? "scan en échec" : "aucune copie trouvée");
-function trackRow(p, t, i) {
+function trackRow(p, t, i, n) {
   const v = live(t), prod = prodBadges(p, t), scan = scanned(p, t);
   const stolen = scan && scan.matches.length ? el("button", { className: "stage prod stolen", type: "button", textContent: "Volée ?",
     title: "Retrouvée dans " + scan.matches.length + " titre" + (scan.matches.length > 1 ? "s sortis" : " sorti"), onclick: (event) => { event.stopPropagation(); openScan(t.id); } }) : "";
@@ -1958,8 +1961,9 @@ function trackRow(p, t, i) {
   more.onclick = (event) => { event.stopPropagation(); openDetails(t.id); };
   const row = el("li", { className: "trk", draggable: true, tabIndex: 0, title: "Écouter (glisser pour réordonner)", style: "--i:" + (i + 3) },
     // Dans une playlist, la pochette à la place du numéro, comme les titres Spotify qui y sont mêlés.
-    p.kind === "playlist" && p.cover ? el("img", { className: "pf-cover", src: p.cover + "?w=160", alt: "", loading: "lazy" }) : el("span", { className: "num", textContent: String(i + 1) }),
-    el("div", {}, el("div", { className: "tline" }, el("b", { textContent: t.title }), ...prod.tempo, featButton(t), stolen), el("small", { textContent: [day(v.createdAt), "v" + v.n + (t.versions.length > 1 ? " sur " + t.versions.length : ""),
+    p.kind === "playlist" && p.cover ? el("img", { className: "pf-cover", src: p.cover + "?w=160", alt: "", loading: "lazy" }) : el("span", { className: "num", textContent: n ? String(n) : "—" }),
+    el("div", {}, el("div", { className: "tline" }, el("b", { textContent: t.title }), ...prod.tempo, featButton(t), stolen,
+      t.private || t.locked ? el("span", { className: "stage", textContent: "Privé", title: t.locked ? "Son privé : seul son propriétaire peut l'écouter" : "Seuls toi et tes collaborateurs l'écoutez ; les autres le voient grisé" }) : ""), el("small", { textContent: [day(v.createdAt), "v" + v.n + (t.versions.length > 1 ? " sur " + t.versions.length : ""),
       toFix(t) ? toFix(t) + " retour" + (toFix(t) > 1 ? "s" : "") + " à régler" : t.comments.length ? t.comments.length + " commentaire" + (t.comments.length > 1 ? "s" : "") : null,
       t.plays ? t.plays + " écoute" + (t.plays > 1 ? "s" : "") : null, scanNote(scan)].filter(Boolean).join(" · ") })),
     el("span", { className: "badges" }, ...(p.kind === "pack" ? [prod.sale] : [dateButton(t), stageButton(t, editing)]), p.kind === "playlist" ? OniriqueRatings.up("track", t.id) : null), el("span", { className: "len", textContent: v.duration ? OP.time(v.duration) : "" }), more);
@@ -1967,6 +1971,7 @@ function trackRow(p, t, i) {
   row.draggable = editing;
   row.title = editing ? "Écouter (glisser pour réordonner)" : "Écouter";
   row.onclick = () => playProject(p, i);
+  if (t.locked) { row.classList.add("gone"); row.title = "Son privé : seul son propriétaire peut l'écouter"; row.onclick = () => {}; }
   row.onkeydown = (event) => { if (event.key === "Enter") row.onclick(); };
   // Réordonner en glissant les titres.
   row.ondragstart = (event) => { if (event.dataTransfer.types.includes("Files")) return; event.dataTransfer.setData("text/x-track", String(t.id)); row.classList.add("dragging"); };
@@ -3636,7 +3641,7 @@ function renderDetails() {
   const canvas = el("canvas");
   drawPeaks(canvas, v.peaks);
   const left = el("div", { className: "details-left" }, close,
-    el("h2", {}, el("span", { className: "n", textContent: (i + 1) + ". " }), titleEditor(t), featButton(t, true)), el("span", { className: "badges" }, stageButton(t), dateButton(t, true)),
+    el("h2", {}, el("span", { className: "n", textContent: t.private || t.locked ? "" : p.tracks.slice(0, i).filter((x) => !x.private && !x.locked).length + 1 + ". " }), titleEditor(t), featButton(t, true)), el("span", { className: "badges" }, stageButton(t), dateButton(t, true)),
     el("div", { className: "facts", textContent: [v.duration ? length(v.duration) : null, "v" + v.n + " sur " + t.versions.length, size(v.size)].filter(Boolean).join(" · ") }),
     canvas, el("div", { className: "file", textContent: v.filename }), creditsList(t.credits),
     el("button", { className: "btn btn-ghost", type: "button", style: "margin-top:10px", onclick: () => { playVersion(p, t, v); } }, icon("play"), "Écouter"));
@@ -3646,7 +3651,10 @@ function renderDetails() {
   if (detailsView === "main") {
     right = [el("h3", { textContent: "Détails" }),
       group(item("link", "Partager", { state: link ? "Activé" : "Désactivé", chevron: true, onclick: () => openShare("track", t.id) }),
-        item("star", "Étape", { state: OP.stageLabel(t.stage) || "Non précisée", chevron: true, onclick: (event) => stageMenu(event.currentTarget, t) })),
+        item("star", "Étape", { state: OP.stageLabel(t.stage) || "Non précisée", chevron: true, onclick: (event) => stageMenu(event.currentTarget, t) }),
+        // Privé : sur un lien partagé, les autres voient le son grisé, sans pouvoir l'écouter ; il sort de la numérotation.
+        !data.vanish && item("share", "Privé", { hint: "Seuls toi et tes collaborateurs l'écoutez ; les autres le voient grisé", state: t.private ? "Activé" : "Désactivé",
+          onclick: () => api("PATCH", "/me/sounds/tracks/" + t.id, { private: !t.private }).then(refresh, fail) })),
       group(
         item("volume", "Volume avant sortie", { hint: "LUFS, pics, et ce que chaque plateforme fera du titre", chevron: true, onclick: () => { detailsView = "tool-lufs"; renderDetails(); } }),
         item("repeat", "Comparer à une référence", { hint: "Ton titre face à un son de référence, volumes égalisés", chevron: true, onclick: () => { detailsView = "tool-ref"; renderDetails(); } }),

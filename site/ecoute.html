@@ -386,13 +386,15 @@ function show(data) {
   // Les artistes invités : ceux du titre partagé, ou de tous les titres du projet, chacun une fois.
   const soloFeat = [...new Set(data.tracks.flatMap((t) => ((t.credits || {}).feat || "").split(",").map((n) => n.trim()).filter(Boolean)))].join(", ");
   $("title").replaceChildren(data.title, soloFeat ? el("span", { className: "feat", style: "margin-left:12px;vertical-align:middle;font-size:14px", textContent: "feat. " + soloFeat }) : "");
-  const total = data.tracks.reduce((s, t) => s + (t.version.duration || 0), 0);
+  // Les sons privés ne comptent ni dans le nombre de titres ni dans la durée.
+  const counted = data.tracks.filter((t) => !t.private);
+  const total = counted.reduce((s, t) => s + (t.version.duration || 0), 0);
   $("release").textContent = OP.releaseLabel(data.releaseDate);
   $("release").classList.toggle("planned", $("release").textContent.startsWith("Date de sortie prévue"));
   $("meta").replaceChildren(data.ownerAvatar ? el("img", { src: data.ownerAvatar, alt: "" }) : "",
     // Le nom de l'auteur mène à sa page de profil, s'il en a une.
     data.ownerHandle ? el("a", { href: "profil?u=" + encodeURIComponent(data.ownerHandle), className: "owner-link", textContent: data.owner, title: "Voir sa page de profil" }) : data.owner,
-    (data.title !== data.project ? " · " + data.project : "") + " · " + (data.tracks.length + (data.items || []).length) + (data.tracks.length + (data.items || []).length > 1 ? " titres" : " titre")
+    (data.title !== data.project ? " · " + data.project : "") + " · " + (counted.length + (data.items || []).length) + (counted.length + (data.items || []).length > 1 ? " titres" : " titre")
     + (total ? " · " + OP.time(total) : ""));
   const ph = el("div", { className: "cover-ph", innerHTML: '<svg viewBox="0 0 24 24"><path d="M12 1.5 13.3 10.7 22.5 12 13.3 13.3 12 22.5 10.7 13.3 1.5 12 10.7 10.7Z" fill="currentColor"/></svg>' });
   $("cover").replaceChildren(data.cover ? el("img", { src: data.cover + "?w=960", alt: "" }) : ph);
@@ -403,16 +405,27 @@ function show(data) {
   $("cover-by").replaceChildren("Pochette : ", el("b", { textContent: data.coverBy || "" }));
   const cloudItems = data.tracks.map((t) => ({ position: t.position, key: "v" + t.version.id, id: t.version.id, trackId: t.id, title: t.title, feat: (t.credits || {}).feat, artist: data.owner, stage: t.stage, day: t.day,
     subtitle: [data.owner, OP.stageLabel(t.stage)].filter(Boolean).join(" · "), cover: data.cover,
-    url: t.version.url, downloadUrl: t.version.downloadUrl, duration: t.version.duration, peaks: t.version.peaks, comments: t.comments, credits: t.credits || {}, lyrics: t.lyrics || "", bpm: t.bpm, musicKey: t.key, offers: t.offers || [] }));
+    url: t.version.url, downloadUrl: t.version.downloadUrl, duration: t.version.duration, peaks: t.version.peaks, comments: t.comments, credits: t.credits || {}, lyrics: t.lyrics || "", bpm: t.bpm, musicKey: t.key, offers: t.offers || [], private: !!t.private }));
+  // Les sons privés d'un autre : visibles à leur place, grisés, sans rien pour les écouter.
+  const hiddenItems = (data.hidden || []).map((t) => ({ position: t.position, key: "h" + t.id, title: t.title, hidden: true, locked: true }));
   // Une playlist : ses titres Spotify à leur place. Sans compte de la plateforme lié, ils sont grisés et ne se lisent pas.
   const platformItems = (data.items || []).map((x) => ({ position: x.position, key: "x" + x.id, title: x.title, artist: x.artist, subtitle: x.artist, cover: x.cover,
     url: x.listen, duration: x.duration, peaks: null, comments: [], credits: {}, lyrics: "", offers: [], platform: x.platform, locked: !x.playable,
     engine: x.playable && x.platform === "spotify" && x.extId && OP.engines.spotifyEmbed ? window.OniriquePlatforms.playerItem({ platform: "spotify" }).engine : null, extId: x.extId }));
-  const rows = [...cloudItems, ...platformItems].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  const rows = [...cloudItems, ...platformItems, ...hiddenItems].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   items = rows.filter((it) => !it.locked);
   renderAbout(data.about, data.owner, data.collabAbouts);
   const PLATFORM = { spotify: "Spotify", deezer: "Deezer", apple: "Apple Music" };
-  $("tracks").replaceChildren(...rows.map((it, i) => it.platform ? platformRow(it, i, PLATFORM[it.platform]) : cloudRow(it, i)));
+  // La numérotation saute les sons privés : les autres sont numérotés 1, 2, 3… sans eux.
+  let n = 0;
+  rows.forEach((it) => { it.n = it.private || it.hidden ? null : ++n; });
+  $("tracks").replaceChildren(...rows.map((it) => it.hidden ? hiddenRow(it) : it.platform ? platformRow(it, it.n - 1, PLATFORM[it.platform]) : cloudRow(it, it.n - 1)));
+  function hiddenRow(it) {
+    return el("li", { className: "trk gone hidden-row", tabIndex: -1, title: "Son privé : seul son propriétaire peut l'écouter" },
+      el("span", { className: "num", textContent: "—" }),
+      el("div", {}, el("div", { className: "tline" }, el("b", { textContent: it.title })), el("small", { textContent: "privé" })),
+      el("span", { className: "stage", textContent: "Privé" }), el("span", { className: "len" }), el("span"));
+  }
   function platformRow(it, i, name) {
     const row = el("li", { className: "trk" + (it.locked ? " gone" : ""), tabIndex: it.locked ? -1 : 0, title: it.locked ? "Lie ton compte " + name + " à ONIRIQUE pour écouter ce titre" : "" },
       it.cover ? el("img", { className: "pf-cover", src: it.cover, alt: "", loading: "lazy" }) : el("span", { className: "num", textContent: String(i + 1) }),
@@ -424,11 +437,11 @@ function show(data) {
   }
   function cloudRow(it, i) {
     const row = el("li", { className: "trk", tabIndex: 0 },
-      el("span", { className: "num", textContent: String(i + 1) }),
+      el("span", { className: "num", textContent: it.private ? "—" : String(i + 1) }),
       el("div", {}, el("div", { className: "tline" }, el("b", { textContent: it.title }), it.bpm ? el("span", { className: "stage prod", textContent: it.bpm + " BPM" }) : "",
         it.musicKey ? el("span", { className: "stage prod", textContent: it.musicKey }) : "", it.credits.feat ? el("span", { className: "feat", textContent: "feat. " + it.credits.feat }) : ""), creditsLine(it.credits),
         it.comments.length ? el("small", { textContent: it.comments.length + " commentaire" + (it.comments.length > 1 ? "s" : "") }) : null),
-      el("span", { style: "display:inline-flex;gap:6px;align-items:center" }, it.offers.length ? el("button", { className: "buy", type: "button",
+      el("span", { style: "display:inline-flex;gap:6px;align-items:center" }, it.private ? el("span", { className: "stage", textContent: "Privé", title: "Seuls toi et tes collaborateurs l'écoutez ; les autres le voient grisé" }) : "", it.offers.length ? el("button", { className: "buy", type: "button",
           ariaLabel: "Acheter " + it.title, onclick: (event) => { event.stopPropagation(); chooseLicense(it); } }, "Acheter · dès " + euros(Math.min(...it.offers.map((o) => o.price)))) : "",
         it.day ? el("span", { className: "stage", textContent: it.day.split("-").reverse().join("/") }) : "",
         el("span", { className: "stage " + (it.stage === "maquette" || it.stage === "final" ? it.stage : it.stage ? "version" : ""), textContent: OP.stageLabel(it.stage), title: OP.stageLabel(it.stage) })),
@@ -474,13 +487,13 @@ async function drawRatings(data) {
     await OniriqueRatings.load({ playlists: [info.projectId], tracks: data.tracks.map((t) => t.id), token: shareToken });
     const bar = OniriqueRatings.bar(info.projectId, shareToken);
     if (bar) $("meta").after(bar);
-    document.querySelectorAll("#tracks .trk").forEach((row) => {
+    document.querySelectorAll("#tracks .trk:not(.hidden-row)").forEach((row) => {
       const up = OniriqueRatings.up("track", Number(row.dataset.id), shareToken);
       if (up) row.querySelector(".len").before(up);
     });
   }
   if (!info.open) return;
-  document.querySelectorAll("#tracks .trk").forEach((row) => row.addEventListener("contextmenu", (event) => { event.preventDefault(); addTo(Number(row.dataset.id), event); }));
+  document.querySelectorAll("#tracks .trk:not(.hidden-row)").forEach((row) => row.addEventListener("contextmenu", (event) => { event.preventDefault(); addTo(Number(row.dataset.id), event); }));
 }
 // « Ajouter à » : la liste de ses playlists ; le lien est d'abord enregistré dans son ONIRIQUE CLOUD s'il ne l'est pas.
 async function addTo(trackId, event) {

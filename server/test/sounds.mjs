@@ -683,6 +683,29 @@ try {
     await call('PATCH', `/api/me/sounds/projects/${theirs.id}`, { token: boss.token, body: { title: 'x' }, expect: 404 });
   });
 
+  await step('son privé : visible mais illisible pour un autre compte, ni compté ni numéroté', async () => {
+    const pid = (await call('POST', '/api/me/sounds/projects', { token: member.token, body: { title: 'Tracklist' }, expect: 201 })).id;
+    const ids = [];
+    for (const name of ['un', 'pas-sur', 'deux']) ids.push((await call('POST', `/api/me/sounds/projects/${pid}/tracks?filename=${name}.wav`, { token: member.token, raw: wav(), expect: 201 })).id);
+    await call('PATCH', `/api/me/sounds/tracks/${ids[1]}`, { token: member.token, body: { private: true, lyrics: 'secret' } });
+    const { url } = await call('POST', '/api/me/sounds/links', { token: member.token, body: { projectId: pid }, expect: 201 });
+    const t = shareToken(url);
+    const seen = await call('POST', `/api/sounds/share/${t}`, { token: listener.token, body: {} });
+    assert.deepEqual(seen.tracks.map((x) => x.id).sort(), [ids[0], ids[2]].sort());
+    assert.deepEqual(seen.hidden.map((x) => x.id), [ids[1]]);
+    assert.ok(!JSON.stringify(seen).includes('secret'));
+    const vid = get('SELECT current_id FROM sound_tracks WHERE id = ?', ids[1]).current_id;
+    assert.ok(!JSON.stringify(seen).includes(`/api/sounds/audio/${vid}?`));
+    await call('POST', `/api/sounds/share/${t}/play`, { token: listener.token, body: { trackId: ids[1] }, expect: 404 });
+    await call('POST', `/api/sounds/share/${t}/comments`, { token: listener.token, body: { trackId: ids[1], body: 'hop' }, expect: 404 });
+    assert.match((await call('GET', `/ecoute?t=${t}`)).toString(), /2 titres/);
+    // L'auteur, lui, l'écoute toujours.
+    const owner = await call('POST', `/api/sounds/share/${t}`, { token: member.token, body: {} });
+    assert.equal(owner.tracks.length, 3);
+    assert.equal(owner.hidden.length, 0);
+    assert.ok(owner.tracks.find((x) => x.id === ids[1]).private);
+  });
+
   console.log(`\n${passed} étapes réussies.`);
 } finally {
   server.close();

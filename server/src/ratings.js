@@ -80,7 +80,7 @@ export function statsOf(userId, kind, ids) {
 export function publicPlaylists(viewerId, { where = '1', params = [], order = 'p.created_at DESC', limit = 12, since = 0, kind = 'playlist' } = {}) {
   const rows = all(`SELECT * FROM (SELECT p.id, p.title, p.cover, p.user_id, p.created_at, u.name AS owner, pr.handle AS owner_handle,
       (SELECT token FROM sound_links l WHERE l.project_id = p.id AND l.password_hash IS NULL AND (l.expires_at IS NULL OR l.expires_at > ?) ORDER BY l.created_at DESC LIMIT 1) AS token,
-      (SELECT COUNT(*) FROM sound_tracks t WHERE t.project_id = p.id) + (SELECT COUNT(*) FROM sound_platform_items i WHERE i.project_id = p.id) AS tracks,
+      (SELECT COUNT(*) FROM sound_tracks t WHERE t.project_id = p.id AND t.private = 0) + (SELECT COUNT(*) FROM sound_platform_items i WHERE i.project_id = p.id) AS tracks,
       (SELECT COUNT(*) FROM sound_ups x WHERE x.kind = 'playlist' AND x.target_id = p.id AND x.created_at >= ?) AS ups,
       (SELECT AVG(stars) FROM sound_ratings r WHERE r.kind = 'playlist' AND r.target_id = p.id) AS avg_stars,
       (SELECT COUNT(*) FROM sound_ratings r WHERE r.kind = 'playlist' AND r.target_id = p.id) AS notes

@@ -434,7 +434,7 @@ export function openListenLink(p, label = 'Mails') {
 }
 async function launch(sid, m, p, d) {
   const link = openListenLink(p);
-  const tracks = all('SELECT * FROM sound_tracks WHERE project_id = ? ORDER BY position, id', p.id);
+  const tracks = all('SELECT * FROM sound_tracks WHERE project_id = ? AND private = 0 ORDER BY position, id', p.id);
   const palette = d.coverColors ? await coverPalette(p.cover) : null;
   const job = deliver({ sid, m, d: palette ? { ...d, colors: palette } : d, p, link, tracks, sign: signLinks });
   if (testing) await job; else job.catch((error) => console.error(`[mails] envoi ${sid} : ${error.message}`));
