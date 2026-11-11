@@ -59,6 +59,11 @@ function next(guildId) {
 async function play(i) {
   const voice = i.member?.voice?.channel;
   if (!voice) return i.reply({ content: "Rejoins d'abord un salon vocal.", flags: MessageFlags.Ephemeral });
+  // Salon plein (limite de places) ou sans droit Se connecter : Discord ignore la demande sans rien répondre.
+  if (!queues.has(i.guildId) && !voice.joinable) {
+    const why = voice.full ? `**${voice.name}** est plein (${voice.userLimit} places) : agrandis la limite, ou donne au bot la permission « Déplacer des membres ».` : `Le bot n'a pas le droit de se connecter à **${voice.name}**.`;
+    return i.reply({ content: why, flags: MessageFlags.Ephemeral });
+  }
   await i.deferReply();
   let tracks;
   try {
