@@ -194,6 +194,15 @@ $("yt-download").onclick = async () => {
   button.textContent = label;
   button.disabled = false;
 };
+// Ouvert par le bouton Outils d'ONIRIQUE Navigateur (?url=…&format=mp3:320&prod=1) : le téléchargement part tout seul.
+const asked = new URLSearchParams(location.search);
+if (asked.get("url")) {
+  $("url").value = asked.get("url");
+  if ([...$("yt-format").options].some((o) => o.value === asked.get("format"))) $("yt-format").value = asked.get("format");
+  $("yt-format").dispatchEvent(new Event("change"));
+  $("prod").checked = asked.get("prod") === "1" && !$("prod").disabled;
+  $("yt-download").click();
+}
 </script>
 <script src="assets/tools-menu.js?v=15"></script>
 <script src="assets/account.js?v=16"></script>
