@@ -1,5 +1,6 @@
-// Le bot musique ONIRIQUE sur Discord : /play joue un lien d'écoute ONIRIQUE (un titre, un projet ou un pack entier)
-// ou l'adresse d'un fichier audio dans le salon vocal de la personne. Une file par serveur Discord.
+// Le bot musique ONIRIQUE sur Discord : /play joue un son cherché par son nom ou un lien YouTube (yt-dlp), un lien
+// d'écoute ONIRIQUE (un titre, un projet ou un pack entier) ou l'adresse d'un fichier audio, dans le salon vocal de la
+// personne. Une file par serveur Discord.
 // Tourne sur le VPS à côté de l'API (service onirique-discord-bot, réglé par deploy/onirique-discord).
 import { spawn } from 'node:child_process';
 import { Client, GatewayIntentBits, EmbedBuilder, MessageFlags } from 'discord.js';
@@ -7,26 +8,35 @@ import {
   joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, StreamType,
   VoiceConnectionStatus, entersState, getVoiceConnection,
 } from '@discordjs/voice';
-import { tracksOf } from './tracks.js';
+import { tracksOf, YTDLP } from './tracks.js';
 
 const API = (process.env.ONIRIQUE_API || 'http://127.0.0.1:4850').replace(/\/+$/, '');
 const COLOR = 0xE23444;
 const queues = new Map(); // id du serveur Discord → { player, tracks, current, channel }
 
 const COMMANDS = [
-  { name: 'play', description: "Joue un lien d'écoute ONIRIQUE ou un fichier audio", options: [{ name: 'lien', description: 'onirique.store/ecoute?t=… ou adresse d’un fichier audio', type: 3, required: true }] },
+  { name: 'play', description: 'Joue un son : son nom, un lien YouTube ou un lien d’écoute ONIRIQUE', options: [{ name: 'son', description: 'Nom du son (« ninho jefe »), lien YouTube ou onirique.store/ecoute?t=…', type: 3, required: true }] },
   { name: 'skip', description: 'Passe au titre suivant' },
   { name: 'pause', description: 'Met en pause ou reprend la lecture' },
   { name: 'stop', description: 'Arrête la musique et quitte le salon' },
   { name: 'file', description: "Montre le titre en cours et ce qui suit" },
 ];
 
-// ffmpeg sort de l'Ogg Opus : rien à encoder côté Node.
+// ffmpeg sort de l'Ogg Opus : rien à encoder côté Node. Un son YouTube arrive par yt-dlp, au moment de le jouer.
+const OUT = ['-vn', '-c:a', 'libopus', '-b:a', '128k', '-ar', '48000', '-ac', '2', '-f', 'ogg', '-loglevel', 'error', 'pipe:1'];
 const resourceOf = (track) => {
-  // L'adresse vient d'un membre Discord : ffmpeg ne suit que du http(s), jamais un fichier du VPS (playlist piégée).
-  const ff = spawn('ffmpeg', ['-protocol_whitelist', 'http,https,tcp,tls', '-reconnect', '1', '-reconnect_streamed', '1', '-reconnect_delay_max', '5', '-i', track.url,
-    '-vn', '-c:a', 'libopus', '-b:a', '128k', '-ar', '48000', '-ac', '2', '-f', 'ogg', '-loglevel', 'error', 'pipe:1'],
-  { stdio: ['ignore', 'pipe', 'inherit'] });
+  let ff;
+  if (track.yt) {
+    const yt = spawn(YTDLP, ['--js-runtimes', 'node', '-f', 'bestaudio/best', '--no-playlist', '--no-warnings', '-q', '-o', '-', track.url], { stdio: ['ignore', 'pipe', 'inherit'] });
+    ff = spawn('ffmpeg', ['-i', 'pipe:0', ...OUT], { stdio: ['pipe', 'pipe', 'inherit'] });
+    yt.stdout.pipe(ff.stdin);
+    ff.stdin.on('error', () => {}); // ffmpeg arrêté (titre passé) : yt-dlp écrit dans le vide
+    ff.on('close', () => yt.kill());
+  } else {
+    // L'adresse vient d'un membre Discord : ffmpeg ne suit que du http(s), jamais un fichier du VPS (playlist piégée).
+    ff = spawn('ffmpeg', ['-protocol_whitelist', 'http,https,tcp,tls', '-reconnect', '1', '-reconnect_streamed', '1', '-reconnect_delay_max', '5', '-i', track.url, ...OUT],
+      { stdio: ['ignore', 'pipe', 'inherit'] });
+  }
   return createAudioResource(ff.stdout, { inputType: StreamType.OggOpus, metadata: track });
 };
 
@@ -52,7 +62,7 @@ async function play(i) {
   await i.deferReply();
   let tracks;
   try {
-    tracks = await tracksOf(i.options.getString('lien', true), API);
+    tracks = await tracksOf(i.options.getString('son', true), API);
   } catch (e) {
     return i.editReply(e.message || "Impossible de lire ce lien.");
   }

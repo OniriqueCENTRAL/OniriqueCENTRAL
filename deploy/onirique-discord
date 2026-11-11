@@ -32,6 +32,13 @@ done
 code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bot $TOKEN" https://discord.com/api/v10/users/@me)
 [ "$code" = 200 ] || stop "Discord refuse ce jeton (réponse $code) : refais Reset Token dans l'onglet Bot."
 
+# yt-dlp (recherche et lecture YouTube) : la version d'apt est vite trop vieille, YouTube change souvent ; celle-ci
+# se met à jour chaque nuit.
+[ -x /opt/yt-dlp/bin/yt-dlp ] || { apt-get install -y -q python3-venv > /dev/null; python3 -m venv /opt/yt-dlp; }
+/opt/yt-dlp/bin/pip install -q -U "yt-dlp[default]"
+printf '#!/bin/sh\n/opt/yt-dlp/bin/pip install -q -U "yt-dlp[default]" && systemctl try-restart onirique-discord-bot\n' > /etc/cron.daily/onirique-yt-dlp
+chmod 755 /etc/cron.daily/onirique-yt-dlp
+
 mkdir -p /etc/onirique
 printf "DISCORD_BOT_TOKEN='%s'\n" "$TOKEN" > "$ENVFILE"
 chown root:central "$ENVFILE"; chmod 640 "$ENVFILE"
