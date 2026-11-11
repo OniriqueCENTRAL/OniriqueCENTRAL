@@ -42,10 +42,10 @@ for (const embed of embeds) {
   if (last && last.embeds.length < 10 && last.size + size <= 5800) { last.embeds.push(embed); last.size += size; }
   else messages.push({ embeds: [embed], size });
 }
-// Envoyée par le bot ONIRIQUE dans le salon du webhook ; sans bot (onirique-discord off), par le webhook lui-même.
-const SEND = `if [ -f /etc/onirique/discord-bot.env ]; then . /etc/onirique/discord-bot.env;
-  ch=$(curl -sf "$(cat /etc/onirique/discord-webhook)" | jq -r .channel_id);
-  curl -sS -f -o /dev/null -H "Authorization: Bot $DISCORD_BOT_TOKEN" -H "Content-Type: application/json" --data-binary @- "https://discord.com/api/v10/channels/$ch/messages";
+// Envoyée par le bot ONIRIQUE dans le salon des patch notes (/etc/onirique/patchnote-channel : celui du webhook) ;
+// sans bot (onirique-discord off), par le webhook lui-même.
+const SEND = `if [ -f /etc/onirique/discord-bot.env ] && [ -s /etc/onirique/patchnote-channel ]; then . /etc/onirique/discord-bot.env;
+  curl -sS -f -o /dev/null -H "Authorization: Bot $DISCORD_BOT_TOKEN" -H "Content-Type: application/json" --data-binary @- "https://discord.com/api/v10/channels/$(cat /etc/onirique/patchnote-channel)/messages";
 else curl -sS -f -o /dev/null -H "Content-Type: application/json" --data-binary @- "$(cat /etc/onirique/discord-webhook)"; fi`;
 for (const m of messages) ssh(SEND, JSON.stringify({ embeds: m.embeds, allowed_mentions: { parse: [] } }));
 // Le dernier commit annoncé, pour savoir ce qui reste à annoncer la prochaine fois.
