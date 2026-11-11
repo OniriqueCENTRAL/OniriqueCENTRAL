@@ -89,12 +89,14 @@ bot=/opt/onirique-discord-bot
 if [ -d "$work/server/discord-bot" ]; then
   mkdir -p "$bot"
   bot_deps=1; cmp -s "$work/server/discord-bot/package-lock.json" "$bot/package-lock.json" && bot_deps=0
-  rsync -a --delete --exclude node_modules --chown=central:central "$work/server/discord-bot/" "$bot/"
+  # Relancé seulement si son code change : un redémarrage coupe la musique en cours.
+  bot_changed=$(rsync -ai --delete --exclude node_modules --chown=central:central "$work/server/discord-bot/" "$bot/" | grep -v '^\.d' || true)
   chown central:central "$bot"
   if [ "$bot_deps" = 1 ] || [ ! -d "$bot/node_modules" ]; then
+    bot_changed=1
     (cd "$bot" && sudo -u central env HOME=/tmp npm ci --omit=dev > /dev/null) || echo "ATTENTION : dépendances du bot Discord non installées."
   fi
-  if systemctl is-enabled -q onirique-discord-bot 2>/dev/null; then systemctl restart onirique-discord-bot; fi
+  if [ -n "$bot_changed" ] && systemctl is-enabled -q onirique-discord-bot 2>/dev/null; then systemctl restart onirique-discord-bot; fi
 fi
 
 # Les outils du serveur qui viennent du dépôt (livraison, publication des plugins, ce script).

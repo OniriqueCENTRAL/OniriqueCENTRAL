@@ -1,5 +1,6 @@
 // Le son d'un titre pour le salon vocal : ffmpeg (et yt-dlp pour YouTube / SoundCloud) en Ogg Opus.
 import { spawn } from 'node:child_process';
+import { PassThrough } from 'node:stream';
 import { createAudioResource, StreamType } from '@discordjs/voice';
 import { YTDLP } from './tracks.js';
 
@@ -27,6 +28,10 @@ export function resourceOf(track) {
       ['ignore', 'pipe', 'inherit']);
   }
   ff.stdout.on('error', () => {});
-  const kill = () => { for (const p of [ff, yt]) if (p && p.exitCode === null) p.kill('SIGKILL'); };
-  return createAudioResource(ff.stdout, { inputType: StreamType.OggOpus, metadata: { track, kill } });
+  // Le titre est converti d'un coup dans une réserve (1 Mo par minute, 64 Mo au plus) au lieu de suivre la lecture :
+  // une connexion à YouTube laissée en attente plusieurs minutes est fermée par YouTube, et le son se coupait au milieu.
+  const buffer = new PassThrough({ highWaterMark: 64 << 20 });
+  ff.stdout.pipe(buffer);
+  const kill = () => { buffer.destroy(); for (const p of [ff, yt]) if (p && p.exitCode === null) p.kill('SIGKILL'); };
+  return createAudioResource(buffer, { inputType: StreamType.OggOpus, metadata: { track, kill } });
 }
