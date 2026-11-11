@@ -738,6 +738,12 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
               <button class="mini" type="button" id="isync-clear">Retirer les repères de temps</button>
             </div>
             <p class="muted" id="isync-ai-status" hidden></p>
+            <label class="check"><input type="checkbox" id="introVoices"> Deux personnes parlent : une couleur de texte par voix</label>
+            <div class="stack" id="voices-box" style="padding:0" hidden>
+              <div class="row"><label>Voix 1<input type="color" id="voice1"></label><label>Voix 2<input type="color" id="voice2"></label></div>
+              <p class="muted">Touche une phrase pour la passer à l'autre voix.</p>
+              <div class="strong-words" id="voice-lines"></div>
+            </div>
             <label class="check"><input type="checkbox" id="introGaps"> Effacer le texte pendant les blancs entre deux phrases</label>
             <div class="stack sub" id="isync" hidden style="padding-left:0;padding-right:0">
               <div class="row" style="gap:6px"><span class="muted">Vitesse</span><button class="mini" type="button" data-rate="0.25">0,25</button><button class="mini" type="button" data-rate="0.5">0,50</button><button class="mini" type="button" data-rate="1">1,00</button><button class="mini" type="button" data-rate="1.25">1,25</button></div>
@@ -755,7 +761,10 @@ kbd { padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; font:
             </label>
             <label class="check"><input type="checkbox" id="introType"> Effet écriture : le texte s'écrit lettre par lettre, calé sur la synchro (affichage Empilé)</label>
             <p class="muted">En « Empilé », fais glisser le texte sur l'aperçu pour le placer où il ne cache rien, et tire le rond blanc de son coin (ou la molette de la souris dessus) pour le grandir ou le réduire.</p>
-            <label class="grow">Taille du texte empilé<input type="range" id="stackSize" min="15" max="200" step="5"></label>
+            <div class="row">
+              <label class="grow">Taille du texte empilé<input type="range" id="stackSize" min="15" max="200" step="5"></label>
+              <label>Mots par bloc (Empilé)<select id="stackMax"><option value="0">Toute la phrase</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>8</option><option>10</option></select></label>
+            </div>
             <label class="check"><input type="checkbox" id="iOwn"> Style de texte propre à la réplique</label>
             <div class="stack" id="ilook" style="padding:0">
               <div class="fields">
@@ -1057,7 +1066,8 @@ const FX = { bw: false, shake: false, shakeAmt: 100, rgbSplit: false, rgbAmt: 10
 // Les options de films : réplique d'ouverture, volumes, ralenti.
 // Le style du texte de la réplique (quand « Style de texte propre à la réplique » est coché).
 const ILOOK = { iOwn: false, iFont: "Hanken Grotesk", iPlace: "bottom", iColor: "#ffffff", iSize: 100, iStroke: 0, iStrokeColor: "#000000", iGlow: 0, iGlowColor: "#ffffff",
-  iShadowColor: "#000000", iShadowBlur: 0, iShadowOffset: 0, iCaps: false, iBox: true, iBoxColor: "#000000", iBoxAlpha: 62 };
+  iShadowColor: "#000000", iShadowBlur: 0, iShadowOffset: 0, iCaps: false, iBox: true, iBoxColor: "#000000", iBoxAlpha: 62,
+  introVoices: false, voice1: "#ffffff", voice2: "#ffd23f", stackMax: "0" };
 const FILM = { ...ILOOK, trackFades: {}, introOn: false, introClip: 0, introIn: 0, introLen: 4, filmVol: 100, introLyrics: "", introSubMode: "sub", introType: false, stackX: .5, stackY: .4, stackSize: 70, introGaps: true, introFade: false, transition: "flash", transAmt: 100,
   dropGap: false, underPart: "none", underVol: 70, filmContinue: false, afterClip: -1, afterIn: 0, afterLen: 0, musicVol: 100, clipVol: 0, slowmo: "100" };
 let prefs = { previewVol: 80, ...FILM, duration: 15, order: "seq", cadence: "2", nicheTag: "#undergroundmusic #rapfr", hud: "none", ytAuto: false, ytTime: "18:00", igAuto: false, igTime: "18:30", igTrial: "", seriesCount: "5", seriesStyles: ["classic", "pixel", "red", "card"], bestMoments: true, zoom: false, zoomAmt: 100, flash: false, flashAmt: 100, place: "none", artist: "", snap: false, loop: false, batch: "one", lyricsPlace: "bottom", ...FX,
@@ -2320,6 +2330,10 @@ function build() {
   }
 }
 
+// « {2} » en tête de phrase (après son repère de temps) : la phrase est dite par la deuxième voix.
+const VOICE2 = /^\s*\{2\}\s*/;
+const isVoice2 = (l) => VOICE2.test(l.replace(/^\s*\[[^\]]*\]\s*/, ""));
+const voiceTag = (l) => (isVoice2(l) ? "{2} " : "");
 // La ponctuation reste avec son mot : « ? », « , », « . », « ! », « » » vont avec le mot d'avant ; « « », « ( », « ¿ » avec le mot d'après.
 // ti : le mot principal du groupe (celui qu'on marque FORT), parts : tous les morceaux d'origine.
 const PUNCT_ONLY = /^[\p{P}\p{S}]+$/u, OPENS = /^[«“‘(\[{¿¡]+$/u;
@@ -2345,12 +2359,14 @@ function parseLrc(text) {
   String(text || "").split("\n").forEach((raw, row) => {
     const m = /^\s*\[(\d+):(\d+(?:[.,]\d+)?)\]\s*(.*)$/.exec(raw);
     if (!m) return;
+    const voice = VOICE2.test(m[3]) ? 2 : 1;
+    m[3] = m[3].replace(VOICE2, "");
     if (!m[3].trim()) { blanks.push(Number(m[1]) * 60 + Number(m[2].replace(",", "."))); return; }
     // Synchronisées mot par mot dans CLOUD : « <mm:ss.cc>mot » devant chaque mot.
     const words = gluePunct([...m[3].matchAll(/<(\d+):(\d+(?:[.,]\d+)?)>\s*([^<]*)/g)].map((w) => ({ at: Number(w[1]) * 60 + Number(w[2].replace(",", ".")), text: w[3].trim() }))
       .filter((w) => w.text).map((w, ti) => strongOf({ ...w, ti })));
     const plain = words.length ? null : gluePunct(m[3].trim().split(/\s+/).map((text, ti) => strongOf({ text, ti })));
-    out.push({ row, at: Number(m[1]) * 60 + Number(m[2].replace(",", ".")), words: words.length ? words : null, plain, text: (words.length ? words : plain).map((w) => w.text).join(" ") });
+    out.push({ row, voice, at: Number(m[1]) * 60 + Number(m[2].replace(",", ".")), words: words.length ? words : null, plain, text: (words.length ? words : plain).map((w) => w.text).join(" ") });
   });
   out.sort((a, b) => a.at - b.at);
   out.forEach((l, k) => { const end = blanks.find((b) => b > l.at && !(out[k + 1] && b > out[k + 1].at)); if (end !== undefined) l.end = end; });
@@ -2366,7 +2382,7 @@ function readLyrics() { lyrics = parseLrc($("lyrics").value); renderStrong(); }
 // Les paroles de la réplique, lues une fois par texte.
 let introParsed = { text: null, lines: [] };
 const introLines = () => (introParsed.text === prefs.introLyrics ? introParsed.lines : (introParsed = { text: prefs.introLyrics, lines: parseLrc(prefs.introLyrics) }).lines);
-const bareLine = (l) => l.replace(/^\s*\[[^\]]*\]\s*/, "").replace(/<[^>]*>\s*/g, "").trim();
+const bareLine = (l) => l.replace(/^\s*\[[^\]]*\]\s*/, "").replace(VOICE2, "").replace(/<[^>]*>\s*/g, "").trim();
 /** Les mots du passage, à toucher pour les mettre en FORT (ou les remettre normaux). */
 function renderStrong() {
   const box = $("strong-words");
@@ -2609,6 +2625,7 @@ function bigWord(word, cy, maxW, now, look = null) {
   const [family, weight] = fontOf(look ? look.font : prefs.lyricFont); g.font = `${weight} 100px "${family}"`;
   const scale = look ? look.scale : textScale();
   const o = { ...textLook(), ...(look || {}), size: 150 * scale * Math.min(1.15, ref / g.measureText("DADAIS").width), maxW, wrap: false };
+  if (word.color) o.color = word.color;
   if (word.strong) {
     const d = Math.max(0, now - word.at), fx = prefs.strongFx;
     const grow = fx === "pop" ? 1 + .22 * Math.exp(-d * 14) : fx === "zoom" ? 1 - .45 * Math.exp(-d * 12) : 1;
@@ -2660,14 +2677,14 @@ function styledSubtitle(text, r, look) {
   }
   paint(lines, cy, { ...look, size, maxW: Math.min(r.w * .9, SAFE_W), wrap: false, caps: false });
 }
-function subtitle(text, r) {
+function subtitle(text, r, color) {
   const look = introLook();
-  if (look) return styledSubtitle(text, r, look);
+  if (look) return styledSubtitle(text, r, color ? { ...look, color } : look);
   g.font = `500 46px "Hanken Grotesk"`;
   const lines = wrapText(text, Math.min(r.w * .82, SAFE_W)), lh = 58, boxH = lines.length * lh + 24, boxW = Math.max(...lines.map((l) => g.measureText(l).width)) + 40;
   const by = r.y + r.h - (r.y ? 36 : 260) - boxH;
   g.fillStyle = "rgba(0,0,0,.62)"; g.fillRect((W - boxW) / 2, by, boxW, boxH);
-  g.fillStyle = "#fff"; g.textAlign = "center"; g.textBaseline = "middle";
+  g.fillStyle = color || "#fff"; g.textAlign = "center"; g.textBaseline = "middle";
   lines.forEach((l, k) => g.fillText(l, W / 2, by + 12 + lh / 2 + k * lh));
 }
 // ——— La réplique « empilée » : des lignes de tailles différentes, décalées, comme les édits de films (le bloc se déplace sur l'aperçu) ———
@@ -2682,9 +2699,16 @@ function timedWords(line, list) {
   let at = line.at;
   return line.plain.map((w, i) => { const from = at; at += weights[i] / total * length; return { ...w, at: from }; });
 }
+/** Les mots coupés en blocs de « Mots par bloc » au plus (0 : toute la phrase). */
+function stackBlocks(words) {
+  const n = Number(prefs.stackMax) || words.length || 1, out = [];
+  for (let i = 0; i < words.length; i += n) out.push(words.slice(i, i + n));
+  return out;
+}
 /** La phrase en bloc empilé ; avec l'effet écriture, chaque mot s'écrit lettre par lettre à son moment. */
-function stackedLine(words, t, typing) {
-  const look = introLook() || { font: "Bebas Neue", color: "#ff2525", stroke: 0, strokeColor: "#000000", glow: 0, glowColor: "#ffffff", shadowColor: "#000000", shadowBlur: 34, shadowOffset: 3, caps: true, scale: 1 };
+function stackedLine(words, t, typing, color) {
+  let look = introLook() || { font: "Bebas Neue", color: "#ff2525", stroke: 0, strokeColor: "#000000", glow: 0, glowColor: "#ffffff", shadowColor: "#000000", shadowBlur: 34, shadowOffset: 3, caps: true, scale: 1 };
+  if (color) look = { ...look, color };
   const [family, weight] = fontOf(look.font), big = 240 * look.scale * prefs.stackSize / 100, up = (s) => (look.caps ? s.toUpperCase() : s);
   const small = (w) => !w.strong && SMALL_WORDS.has(w.text.toLowerCase().replace(/[^\p{L}']/gu, ""));
   // Un petit mot (« ça », « le »…) en petit, les autres en grand ; deux mots courts de même taille partagent une ligne.
@@ -2699,6 +2723,9 @@ function stackedLine(words, t, typing) {
     row.w = g.measureText(up(row.words.map((w) => w.text).join(" "))).width;
     if (row.w > W - 80) { row.size *= (W - 80) / row.w; row.w = W - 80; }
   }
+  // Trop de lignes pour la hauteur de l'image : tout le bloc rapetisse au lieu de déborder.
+  const fit = Math.min(1, (H - 60) / rows.reduce((n, r) => n + r.size * .92, 0));
+  rows.forEach((r) => { r.size *= fit; r.w *= fit; });
   const bw = Math.max(...rows.map((r) => r.w)), bh = rows.reduce((n, r) => n + r.size * .92, 0);
   const left = Math.min(W - 30 - bw, Math.max(30, prefs.stackX * W - bw / 2)), top = Math.min(H - 30 - bh, Math.max(30, prefs.stackY * H - bh / 2));
   stackBox = { x: left, y: top, w: bw, h: bh };
@@ -2737,21 +2764,30 @@ function drawIntro(t, playing) {
   drawEffects(r, 0);
   const hook = prefs.hookOn && $("hook").value.trim();
   if (hook) text([hook], r.y ? Math.max(70, r.y - 60) : H * .1, 44, "600", "Hanken Grotesk");
-  const lines = introLines();
+  const lines = introLines(), now = lines.filter((l) => l.at <= t).at(-1);
+  const tint = now && prefs.introVoices ? prefs[now.voice === 2 ? "voice2" : "voice1"] : null;
   if (lines.length && prefs.introSubMode === "word") {
     const look = introLook(), place = look ? prefs.iPlace : prefs.lyricsPlace;
     const word = wordAt(t, lines), y = { top: r.y + r.h * .24, middle: r.y + r.h / 2, bottom: r.y + r.h * .78 }[place] ?? r.y + r.h / 2;
-    if (word) bigWord(word, y, Math.min(r.w * .86, SAFE_W), t, look);
+    if (word) bigWord(tint ? { ...word, color: tint } : word, y, Math.min(r.w * .86, SAFE_W), t, look);
   } else if (lines.length && prefs.introSubMode === "stack") {
     const line = lines.filter((l) => l.at <= t).at(-1);
-    if (line && t < (prefs.introGaps ? lineEnd(line, lines) : line.at + 6)) stackedLine(timedWords(line, lines), t, prefs.introType);
+    if (line && t < (prefs.introGaps ? lineEnd(line, lines) : line.at + 6)) {
+      // Au plus « Mots par bloc » mots à la fois : le bloc où en est la phrase.
+      const blocks = stackBlocks(timedWords(line, lines));
+      stackedLine(blocks.findLast((b) => b[0].at <= t) || blocks[0], t, prefs.introType, tint);
+    }
   } else if (lines.length) {
     const line = lines.filter((l) => l.at <= t).at(-1);
-    if (line && t < (prefs.introGaps ? lineEnd(line, lines) : line.at + 6)) subtitle(line.text, r);
+    if (line && t < (prefs.introGaps ? lineEnd(line, lines) : line.at + 6)) subtitle(line.text, r, tint);
   } else {
     // Pas encore synchronisées : tout le texte, du début à la fin de la réplique.
     const all = prefs.introLyrics.split("\n").map(bareLine).filter(Boolean).join(" ");
-    if (all && prefs.introSubMode === "stack") stackedLine(all.replace(/\*\*/g, "").split(/\s+/).map((text) => ({ text })), t, false);
+    if (all && prefs.introSubMode === "stack") {
+      // Sans synchro, les blocs se partagent la réplique à parts égales.
+      const blocks = stackBlocks(all.replace(/\*\*/g, "").split(/\s+/).map((text) => ({ text })));
+      stackedLine(blocks[Math.min(blocks.length - 1, Math.floor(t / (introLen() || 1) * blocks.length))], t, false);
+    }
     else if (all) subtitle(all, r);
   }
 }
@@ -4079,11 +4115,11 @@ isyncPlayer.preservesPitch = true;
 let isync = null; // { mode, lines, items: [{ text, line, at }], i, rate }
 const lrcStamp = (x) => { const cs = Math.round(x * 100); return String(Math.floor(cs / 6000)).padStart(2, "0") + ":" + ((cs % 6000) / 100).toFixed(2).padStart(5, "0"); };
 function startIsync(mode) {
-  const c = introClip(), lines = prefs.introLyrics.split("\n").map(bareLine).filter(Boolean);
+  const raw = prefs.introLyrics.split("\n").filter((l) => bareLine(l)), c = introClip(), lines = raw.map(bareLine), tags = raw.map(voiceTag);
   if (!c || !lines.length) { alert(!c ? "Choisis d'abord le clip de la réplique." : "Écris d'abord ce qui est dit dans l'extrait, une phrase par ligne."); return; }
   const items = mode === "line" ? lines.map((text, line) => ({ text, line, at: null }))
     : lines.flatMap((l, line) => gluePunct(l.split(/\s+/).map((text, ti) => ({ text, ti }))).map((w) => ({ text: w.text, line, at: null })));
-  isync = { mode, lines, items, i: 0, rate: isync ? isync.rate : .5 };
+  isync = { mode, lines, tags, items, i: 0, rate: isync ? isync.rate : .5 };
   stop();
   isyncPlayer.src = c.url; isyncPlayer.currentTime = prefs.introIn; isyncPlayer.playbackRate = isync.rate;
   $("isync").hidden = false; renderIsync();
@@ -4139,7 +4175,7 @@ async function aiIsync(write = false) {
     const written = write ? "" : prefs.introLyrics.split("\n").map(bareLine).filter(Boolean).join("\n");
     const out = await aiWork(() => ai.transcribe(part, status, { written, ends: true, film: true }));
     if (!out.words) return status(written ? "L'IA n'a pas réussi à caler ce texte sur la réplique." : "L'IA n'a pas entendu de paroles dans la réplique.");
-    prefs.introLyrics = $("introLyrics").value = out.lrc; savePrefs(); restyle();
+    prefs.introLyrics = $("introLyrics").value = out.lrc; savePrefs(); restyle(); renderVoices();
     status(out.words + (out.aligned ? " mots calés par l'IA, ton texte est gardé." : " mots écrits et calés par l'IA : relis-les, corrige un mot directement dans le texte."));
   } catch (error) { status("L'IA n'a pas marché : " + error.message); } finally { $("isync-ai").disabled = $("isync-write").disabled = false; }
 }
@@ -4149,16 +4185,31 @@ function finishIsync() {
   isyncPlayer.pause();
   prefs.introLyrics = s.lines.map((l, k) => {
     const its = s.items.filter((x) => x.line === k);
-    if (!its.length || its.some((x) => x.at === null)) return l;
+    if (!its.length || its.some((x) => x.at === null)) return s.tags[k] + l;
     const end = its.at(-1).end;
-    return "[" + lrcStamp(its[0].at) + "] " + (s.mode === "line" ? l : its.map((x) => "<" + lrcStamp(x.at) + ">" + x.text).join(" ")) + (end != null ? "\n[" + lrcStamp(end) + "]" : "");
+    return "[" + lrcStamp(its[0].at) + "] " + s.tags[k] + (s.mode === "line" ? l : its.map((x) => "<" + lrcStamp(x.at) + ">" + x.text).join(" ")) + (end != null ? "\n[" + lrcStamp(end) + "]" : "");
   }).join("\n");
-  $("introLyrics").value = prefs.introLyrics; savePrefs();
+  $("introLyrics").value = prefs.introLyrics; savePrefs(); renderVoices();
   isync = null; $("isync").hidden = true;
   if (prefs.introSubMode === "sub" && s.mode === "word") { prefs.introSubMode = "word"; savePrefs(); marks.forEach((m) => m()); }
   restyle();
 }
 
+/** Deux voix : chaque phrase de la réplique, à toucher pour la passer d'une voix à l'autre (« {2} » dans le texte). */
+function renderVoices() {
+  $("voices-box").hidden = !prefs.introVoices;
+  const rows = prefs.introLyrics.split("\n");
+  $("voice-lines").replaceChildren(...rows.map((l, k) => [l, k]).filter(([l]) => bareLine(l)).map(([l, k]) => {
+    const two = isVoice2(l), b = Object.assign(document.createElement("button"), { type: "button", textContent: (two ? "2 · " : "1 · ") + bareLine(l).replace(/\*\*/g, ""), title: "Voix " + (two ? 2 : 1) });
+    b.style.color = prefs[two ? "voice2" : "voice1"];
+    b.onclick = () => {
+      const m = /^(\s*\[[^\]]*\]\s*)?(.*)$/.exec(l);
+      rows[k] = (m[1] || "") + (two ? m[2].replace(VOICE2, "") : "{2} " + m[2]);
+      prefs.introLyrics = $("introLyrics").value = rows.join("\n"); savePrefs(); restyle(); renderVoices();
+    };
+    return b;
+  }));
+}
 /** Le menu OPTIONS DE FILMS à jour : la liste des clips vidéo, les champs, la forme d'onde. */
 function filmUi() {
   const videos = clips.map((c, i) => [c, i]).filter(([c]) => c.kind === "video");
@@ -4178,6 +4229,7 @@ function filmUi() {
   for (const id of ["introFade", "introGaps", "introType", "dropGap", "filmContinue"]) $(id).checked = !!prefs[id];
   $("underVol").value = prefs.underVol;
   if (document.activeElement !== $("introLyrics")) $("introLyrics").value = prefs.introLyrics;
+  renderVoices();
   $("ilook").hidden = !prefs.iOwn;
   if (document.activeElement !== $("introIn")) $("introIn").value = String(prefs.introIn).replace(".", ",");
   if (document.activeElement !== $("introLen")) $("introLen").value = (introLen() || prefs.introLen).toFixed(2).replace(".", ",");
@@ -4352,11 +4404,12 @@ function start() {
   // Pendant le glissé, seule l'heure bouge ; au lâcher, l'écoute en cours saute au nouvel endroit.
   $("stem-pos").oninput = () => { stemSeeking = true; stemClock(); };
   $("stem-pos").onchange = () => { stemSeeking = false; if (stemHear) hearStem(Number($("stem-pos").value)); };
-  $("introLyrics").addEventListener("input", () => { prefs.introLyrics = $("introLyrics").value; prefs.introFor = introKey(); savePrefs(); restyle(); });
+  $("introLyrics").addEventListener("input", () => { prefs.introLyrics = $("introLyrics").value; prefs.introFor = introKey(); savePrefs(); restyle(); renderVoices(); });
   // Le texte seul, sans les [00:00.32] et <00:00.62> : la synchro est perdue, d'où la question.
   $("isync-clear").onclick = () => {
     if (!/[[<]\d+:\d+/.test(prefs.introLyrics) || !confirm("Retirer les repères de temps ? Le texte reste, mais il faudra le resynchroniser.")) return;
-    prefs.introLyrics = $("introLyrics").value = prefs.introLyrics.split("\n").map(bareLine).filter(Boolean).join("\n");
+    prefs.introLyrics = $("introLyrics").value = prefs.introLyrics.split("\n").filter((l) => bareLine(l)).map((l) => voiceTag(l) + bareLine(l)).join("\n");
+    renderVoices();
     savePrefs(); restyle();
   };
   $("isync-line").onclick = () => startIsync("line");
@@ -4514,6 +4567,7 @@ function start() {
       savePrefs(); restyle();
     });
   }
+  for (const id of ["introVoices", "voice1", "voice2"]) $(id).addEventListener("input", renderVoices); // après les STYLE_INPUTS : prefs est déjà à jour
   chips("textStyle", "textStyle", () => { Object.assign(prefs, TEXT_STYLES[prefs.textStyle]); savePrefs(); loadFont(prefs.lyricFont); syncControls(); restyle(); });
   chips("preset", "preset", () => {
     Object.assign(prefs, PRESETS[prefs.preset], TEXT_STYLES[PRESETS[prefs.preset].textStyle]); savePrefs();
