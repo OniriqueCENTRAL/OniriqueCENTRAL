@@ -284,8 +284,9 @@ const player = OP.create({
 });
 // Les titres Spotify d'une playlist, en entier par le lecteur intégré de Spotify, pour qui a lié son compte Spotify.
 window.OniriquePlatforms?.setup({ el, icon, player, changed() {},
-  api: (method, path) => fetch("/api" + path, { method, headers: session ? { Authorization: "Bearer " + session } : {} })
-    .then((r) => (r.ok ? r.json() : Promise.reject(new Error("Erreur " + r.status)))) });
+  api: (method, path, body) => fetch("/api" + path, { method, body: body ? JSON.stringify(body) : undefined,
+    headers: { ...(session ? { Authorization: "Bearer " + session } : {}), ...(body ? { "Content-Type": "application/json" } : {}) } })
+    .then((r) => (!r.ok ? Promise.reject(new Error("Erreur " + r.status)) : r.status === 204 ? null : r.json())) });
 
 // Pendant un HM (CLOUD ouvert dans l'application ou un autre onglet), ce qu'on lance ici part dans sa file.
 window.OniriqueHM?.forward({ player, token: session, el });
@@ -406,7 +407,7 @@ function show(data) {
   // Une playlist : ses titres Spotify à leur place. Sans compte de la plateforme lié, ils sont grisés et ne se lisent pas.
   const platformItems = (data.items || []).map((x) => ({ position: x.position, key: "x" + x.id, title: x.title, artist: x.artist, subtitle: x.artist, cover: x.cover,
     url: x.listen, duration: x.duration, peaks: null, comments: [], credits: {}, lyrics: "", offers: [], platform: x.platform, locked: !x.playable,
-    engine: x.playable && x.platform === "spotify" && x.extId && OP.engines.spotifyEmbed ? "spotifyEmbed" : null, extId: x.extId }));
+    engine: x.playable && x.platform === "spotify" && x.extId && OP.engines.spotifyEmbed ? window.OniriquePlatforms.playerItem({ platform: "spotify" }).engine : null, extId: x.extId }));
   const rows = [...cloudItems, ...platformItems].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   items = rows.filter((it) => !it.locked);
   renderAbout(data.about, data.owner, data.collabAbouts);
@@ -542,7 +543,10 @@ $("buy").addEventListener("click", (event) => { if (event.target === $("buy")) $
 
 async function open(password) {
   try {
-    show(await api("", password ? { password } : {}));
+    const data = await api("", password ? { password } : {});
+    // Dans l'application, le compte Spotify de l'auditeur (accès complet) : ses titres passent par le lecteur Spotify complet.
+    if (window.oniriqueApp && session && (data.items || []).some((x) => x.platform === "spotify")) await window.OniriquePlatforms?.load().catch(() => {});
+    show(data);
   } catch (error) {
     if (error.account) {
       // La page compte ne ramène pas ici après la connexion : il faut rouvrir le lien.
