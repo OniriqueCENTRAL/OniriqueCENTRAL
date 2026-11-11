@@ -88,7 +88,7 @@ h2 { font: 800 clamp(17px, 2.4vw, 21px)/1.2 var(--f-display); letter-spacing: .0
 .big-price { font: 800 clamp(26px, 4vw, 34px)/1 var(--f-display); color: var(--mist); }
 .big-price small { font: 500 12px var(--f-mono); color: var(--haze); letter-spacing: .1em; text-transform: uppercase; margin-right: 6px; }
 .actions { display: grid; gap: 10px; }
-.actions .btn { width: 100%; }
+.actions .btn { width: 100%; min-width: 0; white-space: normal; text-align: center; line-height: 1.35; padding-block: 10px; }
 .details { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 16px; margin: 0; font-size: 14px; }
 .details dt { font: 500 11px/1.9 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
 .details dd { margin: 0; }
