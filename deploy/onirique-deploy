@@ -83,6 +83,20 @@ rsync -a --exclude build.ps1 --exclude pages.mjs "$work/site/" "$site/"
 # Les petits fichiers lus avant le premier affichage sont recopiés dans chaque page (deploy/inline-head.mjs).
 node "$work/deploy/inline-head.mjs" "$site" || echo "ATTENTION : en-têtes non intégrés, les pages gardent leurs liens vers assets/."
 
+# Le bot musique Discord (server/discord-bot) : son code à jour, ses dépendances si elles changent, et relancé s'il
+# est allumé (onirique-discord). Une panne du bot n'empêche pas la mise en ligne.
+bot=/opt/onirique-discord-bot
+if [ -d "$work/server/discord-bot" ]; then
+  mkdir -p "$bot"
+  bot_deps=1; cmp -s "$work/server/discord-bot/package-lock.json" "$bot/package-lock.json" && bot_deps=0
+  rsync -a --delete --exclude node_modules --chown=central:central "$work/server/discord-bot/" "$bot/"
+  chown central:central "$bot"
+  if [ "$bot_deps" = 1 ] || [ ! -d "$bot/node_modules" ]; then
+    (cd "$bot" && sudo -u central env HOME=/tmp npm ci --omit=dev > /dev/null) || echo "ATTENTION : dépendances du bot Discord non installées."
+  fi
+  if systemctl is-enabled -q onirique-discord-bot 2>/dev/null; then systemctl restart onirique-discord-bot; fi
+fi
+
 # Les outils du serveur qui viennent du dépôt (livraison, publication des plugins, ce script).
 for tool in "$work"/deploy/onirique-*; do install -m 755 "$tool" /usr/local/bin/; done
 install -m 644 "$work/deploy/publish-plugin.mjs" /usr/local/lib/onirique/publish-plugin.mjs

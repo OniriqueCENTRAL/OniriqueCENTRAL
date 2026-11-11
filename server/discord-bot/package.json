@@ -1,0 +1,15 @@
+{
+  "name": "onirique-discord-bot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Bot musique ONIRIQUE pour Discord : joue les liens d'écoute ONIRIQUE et les fichiers audio dans un salon vocal.",
+  "scripts": {
+    "start": "node bot.js",
+    "test": "node test.mjs"
+  },
+  "dependencies": {
+    "@discordjs/voice": "^0.19.2",
+    "discord.js": "^14.28.1"
+  }
+}

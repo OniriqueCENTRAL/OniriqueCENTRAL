@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# Le bot musique ONIRIQUE sur Discord (server/discord-bot), en service toujours allumé. Sur le VPS, en root :
+#   onirique-discord        demande le jeton du bot, puis l'allume (il redémarre tout seul, et au démarrage du VPS)
+#   onirique-discord off    l'éteint et retire le jeton
+#   journalctl -u onirique-discord-bot -f     ce qu'il raconte
+#
+# À faire avant, sur discord.com/developers/applications : New Application « ONIRIQUE » ; Bot > Reset Token (le jeton) ;
+# puis OAuth2 > URL Generator : scopes « bot » et « applications.commands », permissions « Connect » et « Speak » ;
+# ouvrir l'adresse générée pour inviter le bot sur le serveur Discord.
+set -euo pipefail
+
+ENVFILE=/etc/onirique/discord-bot.env
+UNIT=/etc/systemd/system/onirique-discord-bot.service
+stop() { echo "$1" >&2; exit 1; }
+
+if [ "${1:-}" = off ]; then
+  systemctl disable --now onirique-discord-bot 2>/dev/null || true
+  rm -f "$ENVFILE"
+  echo "Bot musique éteint."
+  exit 0
+fi
+
+[ -f /opt/onirique-discord-bot/bot.js ] || stop "Le bot n'est pas encore sur le VPS : lancez d'abord une mise en ligne (deploy.sh)."
+TOKEN=''
+while :; do
+  read -r -s -p "Jeton du bot Discord (rien ne s'affiche) : " TOKEN; echo >&2
+  TOKEN=${TOKEN//[[:space:]]/}
+  [[ $TOKEN =~ ^[A-Za-z0-9_.-]{50,}$ ]] && break
+  [ -z "$TOKEN" ] || echo "Ça ne ressemble pas à un jeton de bot, recolle-le." >&2
+done
+# Le jeton est essayé avant d'être gardé.
+code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bot $TOKEN" https://discord.com/api/v10/users/@me)
+[ "$code" = 200 ] || stop "Discord refuse ce jeton (réponse $code) : refais Reset Token dans l'onglet Bot."
+
+mkdir -p /etc/onirique
+printf "DISCORD_BOT_TOKEN='%s'\n" "$TOKEN" > "$ENVFILE"
+chown root:central "$ENVFILE"; chmod 640 "$ENVFILE"
+cat > "$UNIT" <<'UNIT'
+[Unit]
+Description=ONIRIQUE bot musique Discord
+After=network-online.target onirique-central.service
+Wants=network-online.target
+
+[Service]
+User=central
+WorkingDirectory=/opt/onirique-discord-bot
+EnvironmentFile=/etc/onirique/discord-bot.env
+ExecStart=/usr/bin/env node bot.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+systemctl daemon-reload
+systemctl enable -q onirique-discord-bot
+systemctl restart onirique-discord-bot
+sleep 5
+systemctl is-active -q onirique-discord-bot || stop "Le bot ne démarre pas : journalctl -u onirique-discord-bot"
+journalctl -u onirique-discord-bot -n 3 --no-pager -o cat
+echo "C'est bon : le bot est en ligne. Sur Discord, dans un salon vocal : /play <lien d'écoute ONIRIQUE>."
