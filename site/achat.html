@@ -97,17 +97,17 @@ async function load() {
   $("order").replaceChildren(
     el("div", { className: "eyebrow", textContent: "Commande n° " + o.number + (o.simulated ? " · paiement simulé" : o.sandbox ? " · paiement de test" : "") }),
     el("h1", { textContent: o.trackTitle }),
-    el("p", { className: "muted", style: "margin:0 0 12px", textContent: o.artist + " · licence " + o.license.name + " · " + euros(o.amount) }),
+    el("p", { className: "muted", style: "margin:0 0 12px", textContent: o.artist + (o.visual ? "" : " · licence " + o.license.name) + " · " + euros(o.amount) }),
     el("span", { className: "status" + (paid ? " paid" : ""), textContent: o.simulated ? "Paiement simulé (aucun argent encaissé)" : paid ? "Paiement confirmé" : "Paiement en cours de confirmation…" }),
     paid ? el("ul", { className: "files" }, ...o.files.map((f) => el("li", {}, f.available
       ? el("a", { href: f.url, download: "", textContent: f.label })
-      : el("span", { className: "muted", textContent: f.label + " : plus disponible, écris au beatmaker" }))),
-      el("li", {}, el("button", { type: "button", textContent: "Contrat de licence", onclick: () => OniriqueLicencePdf(o.contract).download("Licence " + o.license.name + " - " + o.trackTitle + ".pdf") })),
-      el("li", {}, el("a", { href: o.contractUrl, download: "", textContent: "Contrat de licence (texte)" })))
+      : el("span", { className: "muted", textContent: f.label + " : plus disponible, écris au " + (o.visual ? "graphiste" : "beatmaker") }))),
+      o.contract ? el("li", {}, el("button", { type: "button", textContent: "Contrat de licence", onclick: () => OniriqueLicencePdf(o.contract).download("Licence " + o.license.name + " - " + o.trackTitle + ".pdf") })) : "",
+      o.contractUrl ? el("li", {}, el("a", { href: o.contractUrl, download: "", textContent: "Contrat de licence (texte)" })) : "")
       : el("p", { className: "muted", textContent: tries > 40 ? "La confirmation prend plus de temps que prévu. Tu recevras un e-mail dès qu'elle arrive ; tu peux garder cette page ouverte."
         : "Dès que le paiement est confirmé, tes fichiers apparaissent ici et un e-mail t'est envoyé." }),
     paid && o.buyerEmail ? el("p", { className: "muted", style: "font-size:14px", textContent: "Le lien de cette page a aussi été envoyé à " + o.buyerEmail + ". Garde-le : il reste valable." }) : "",
-    paid ? contractView(o.contract) : "");
+    paid && o.contract ? contractView(o.contract) : "");
   if (!paid && tries++ < 200) setTimeout(load, 3000);
 }
 load();

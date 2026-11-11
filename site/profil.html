@@ -201,8 +201,9 @@ dialog.gifs { width: min(720px, calc(100vw - 24px)); max-height: 86vh; }
     <div class="block" data-block="bio"><div class="panel" id="bio-panel"><span class="eyebrow">À propos</span><p class="bio" id="bio"></p><div class="links" id="links"></div></div></div>
     <div class="block" data-block="cv"><div class="panel cv" id="cv-panel" hidden><span class="eyebrow">CV numérique</span><div id="cv"></div></div></div>
     <div class="block" data-block="tabs">
-    <div class="tabs" role="tablist"><button type="button" class="on" data-tab="playlists">Playlists</button><button type="button" data-tab="packs" id="packs-tab" hidden>Packs <span id="pk-count"></span></button><button type="button" data-tab="comments">Commentaires <span id="c-count"></span></button></div>
+    <div class="tabs" role="tablist"><button type="button" class="on" data-tab="playlists">Playlists</button><button type="button" data-tab="packs" id="packs-tab" hidden>Packs <span id="pk-count"></span></button><button type="button" data-tab="vitrine" id="vitrine-tab" hidden>Vitrine <span id="vt-count"></span></button><button type="button" data-tab="comments">Commentaires <span id="c-count"></span></button></div>
     <div class="panel" id="tab-packs" hidden><div class="grid" id="packs"></div></div>
+    <div class="panel" id="tab-vitrine" hidden><div class="grid" id="vitrine"></div></div>
     <div class="panel" id="tab-playlists">
       <div class="grid" id="playlists"></div>
     </div>
@@ -314,7 +315,7 @@ function show(which) { $("view").hidden = which !== "view"; $("edit").hidden = w
 
 // L'habillage : polices, verre, fond, alignement et ordre des blocs (bio, CV, onglets).
 const FONTS = ["Hanken Grotesk", "Unbounded", "JetBrains Mono", "Grenze Gotisch", "Anton", "Bebas Neue", "Permanent Marker", "Press Start 2P", "Silkscreen", "VT323"];
-const BLOCKS = { bio: "À propos", cv: "CV numérique", tabs: "Playlists, packs et commentaires" };
+const BLOCKS = { bio: "À propos", cv: "CV numérique", tabs: "Playlists, packs, vitrine et commentaires" };
 const fontStack = (f) => '"' + f + '", system-ui, sans-serif';
 function applyLook(l) {
   if (!l) return;
@@ -335,6 +336,20 @@ function applyLook(l) {
   bg.hidden = !l.bg;
   const view = $("view");
   for (const b of l.order) { const node = view.querySelector('[data-block="' + b + '"]'); if (node) view.append(node); }
+}
+
+// La vitrine du graphiste (covers, visuels), filigranée : l'onglet n'existe que s'il y en a (ou sur sa propre page).
+async function drawVitrine(p) {
+  const list = await fetch("/api/vitrine?u=" + encodeURIComponent(p.handle)).then((r) => (r.ok ? r.json() : [])).catch(() => []);
+  $("vitrine-tab").hidden = !list.length && !p.mine;
+  $("vt-count").textContent = list.length || "";
+  $("vitrine").replaceChildren(...(list.length ? list.map((v) => el("a", { className: "pl", href: "vitrine?u=" + encodeURIComponent(p.handle) + "&v=" + v.id },
+    el("img", { src: v.image, alt: v.title, loading: "lazy", draggable: false, oncontextmenu: (e) => e.preventDefault() }),
+    el("b", { textContent: v.title }),
+    el("small", { textContent: v.sold ? "Vendu" : v.price ? (v.price / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR" }) : "Sur demande" })))
+    : [el("p", { className: "muted", style: "margin:0" }, "Publie tes covers et visuels dans la ", el("a", { href: "vitrine", textContent: "Vitrine" }), " : ils s'affichent ici avec ton filigrane.")]));
+  // Un graphiste sans playlist ni pack : sa page s'ouvre sur sa vitrine.
+  if (list.length && !p.playlists.length && !p.packs.length && document.querySelector(".tabs .on").dataset.tab === "playlists") $("vitrine-tab").click();
 }
 
 function drawView() {
@@ -404,6 +419,7 @@ function drawView() {
     : [el("p", { className: "muted", style: "margin:0", textContent: "Choisis les packs à montrer ici dans « Modifier ma page »." })]));
   // Un beatmaker sans playlist : sa page s'ouvre sur ses packs.
   if (p.packs.length && !p.playlists.length && document.querySelector(".tabs .on").dataset.tab === "playlists") $("packs-tab").click();
+  drawVitrine(p);
   show("view");
   // Le visiteur est accueilli : les blocs entrent une fois, à l'ouverture.
   if (!drawView.done) { drawView.done = true; $("view").classList.add("enter"); }
@@ -457,6 +473,7 @@ document.querySelectorAll(".tabs button").forEach((b) => b.onclick = () => {
   document.querySelectorAll(".tabs button").forEach((x) => x.classList.toggle("on", x === b));
   $("tab-playlists").hidden = b.dataset.tab !== "playlists";
   $("tab-packs").hidden = b.dataset.tab !== "packs";
+  $("tab-vitrine").hidden = b.dataset.tab !== "vitrine";
   $("tab-comments").hidden = b.dataset.tab !== "comments";
 });
 

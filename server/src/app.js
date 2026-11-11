@@ -49,6 +49,7 @@ import { mountTransfer } from './transfer.js';
 import { mountRatings } from './ratings.js';
 import { mountProfiles } from './profiles.js';
 import { mountMessages } from './messages.js';
+import { mountVitrine } from './vitrine.js';
 import { mountConcerts } from './concerts.js';
 import { mountDownloader } from './downloader.js';
 import { mountRocky } from './rocky.js';
@@ -589,6 +590,8 @@ export function createApp() {
   // Pages de profil des membres : abonnements, commentaires, messages privés.
   mountProfiles(app, { requireUser, receiveImage, receiveFile, removeMedia, wrap });
   mountMessages(app, { requireUser, receiveFile, wrap });
+  // La vitrine des graphistes : visuels filigranés en public, original livré à l'achat.
+  mountVitrine(app, { requireUser, receiveFile, wrap });
   mountConcerts(app, { wrap });
   mountPush(app, { requireUser });
 
