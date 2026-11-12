@@ -69,7 +69,10 @@
     "publish": [
       {
         "provider": "generic",
-        "url": "https://onirique.store/telechargement/"
+        "url": "https://onirique.store/telechargement/",
+        "publisherName": [
+          "ONIRIQUE"
+        ]
       }
     ],
     "mac": {

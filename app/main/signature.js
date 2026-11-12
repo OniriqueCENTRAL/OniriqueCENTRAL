@@ -4,7 +4,7 @@
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 
-const CLE_PUBLIQUE = 'CLE_PUBLIQUE_A_POSER';
+const CLE_PUBLIQUE = 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEYI0XKb7RVXy2pMznMYxvMYF4KWSlPZYAWx9iuRBgayhDyRTWkjo6d0RbcKKbAv+Y9zH8uKNNpUOKd2jmBF8HkQ==';
 
 /** null si la signature de la mise à jour est bonne ; sinon la raison du refus (le format attendu par electron-updater). */
 async function verifierMaj(produit, info, fichier, cle = CLE_PUBLIQUE) {

@@ -250,7 +250,24 @@ static class Installation
         try { File.Delete(Exe + ".ancien"); } catch { }
     }
 
-    sealed record Annonce(string version, string url, string sha256);
+    sealed record Annonce(string version, string url, string sha256, string? signature = null);
+
+    // Les mises à jour sont signées sur le VPS par une clé que seul root lit (deploy/onirique-signer) : un serveur piraté
+    // ne peut pas faire installer un autre programme, même en changeant l'annonce et son empreinte.
+    const string ClePublique = "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEYI0XKb7RVXy2pMznMYxvMYF4KWSlPZYAWx9iuRBgayhDyRTWkjo6d0RbcKKbAv+Y9zH8uKNNpUOKd2jmBF8HkQ==";
+
+    static bool Signee(Annonce a)
+    {
+        if (string.IsNullOrEmpty(a.signature)) return false;
+        try
+        {
+            using var cle = ECDsa.Create();
+            cle.ImportSubjectPublicKeyInfo(Convert.FromBase64String(ClePublique), out _);
+            var message = System.Text.Encoding.UTF8.GetBytes($"ONIRIQUE Navigateur\n{a.version}\n{a.sha256.ToLowerInvariant()}");
+            return cle.VerifyData(message, Convert.FromBase64String(a.signature), HashAlgorithmName.SHA256);
+        }
+        catch { return false; }
+    }
 
     /// <summary>Télécharge et met en place une version plus récente ; elle s'ouvre au prochain lancement.</summary>
     public static async Task<string?> MettreAJour()
@@ -261,6 +278,7 @@ static class Installation
         var annonce = JsonSerializer.Deserialize<Annonce>(await http.GetStringAsync(Manifeste));
         if (annonce is null || !System.Version.TryParse(annonce.version, out var nouvelle) || nouvelle <= System.Version.Parse(Version)) return null;
         if (!annonce.url.StartsWith("https://onirique.store/telechargement/", StringComparison.Ordinal)) return null;
+        if (!Signee(annonce)) throw new InvalidDataException("Mise à jour sans signature valable : refusée.");
 
         var provisoire = Exe + ".maj";
         try

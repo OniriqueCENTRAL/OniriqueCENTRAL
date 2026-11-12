@@ -18,6 +18,41 @@ static class Vpn
 
     public sealed record Resultat(bool Ok, string Message, string? Relais = null);
 
+    // Le jeton du relais, reçu à chaque annonce (valable 3 jours) : le moteur le présente quand le relais le demande (407).
+    // Au lancement, les onglets peuvent joindre le relais avant la fin de l'annonce : ils l'attendent.
+    static string? jeton;
+    static TaskCompletionSource<string?> annonce = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    public static void Oublier()
+    {
+        jeton = null;
+        if (annonce.Task.IsCompleted) annonce = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    }
+
+    /// <summary>Répond à la demande d'identification du relais, et à elle seule : un site qui demande un mot de passe
+    /// ne reçoit jamais le jeton.</summary>
+    public static async void Repondre(object? _, CoreWebView2BasicAuthenticationRequestedEventArgs e)
+    {
+        var demande = e.Uri.Contains("://") ? e.Uri : "https://" + e.Uri;
+        if (!Uri.TryCreate(demande, UriKind.Absolute, out var u) || !u.Host.Equals("onirique.store", StringComparison.OrdinalIgnoreCase)) return;
+        if (u.Port != 3129 && !e.Challenge.Contains("ONIRIQUE VPN", StringComparison.Ordinal)) return;
+        var reporte = e.GetDeferral();
+        try
+        {
+            var j = jeton;
+            if (j is null)
+            {
+                var attendue = annonce.Task;
+                j = await Task.WhenAny(attendue, Task.Delay(15000)) == attendue ? attendue.Result : null;
+            }
+            // Sans jeton (VPN éteint, compte déconnecté) : la page échoue, sans fenêtre de mot de passe.
+            if (j is null) e.Cancel = true;
+            else { e.Response.UserName = "onirique"; e.Response.Password = j; }
+        }
+        catch { }
+        finally { reporte.Complete(); }
+    }
+
     public static async Task<Resultat> Annoncer(CoreWebView2Environment env, Control hote)
     {
         var jeton = await LireJeton(env, hote);
@@ -26,7 +61,7 @@ static class Vpn
         try
         {
             using var http = new HttpClient(new SocketsHttpHandler { ConnectCallback = Ipv4 }) { Timeout = TimeSpan.FromSeconds(15) };
-            using var requete = new HttpRequestMessage(HttpMethod.Post, Api) { Content = new StringContent("{}", null, "application/json") };
+            using var requete = new HttpRequestMessage(HttpMethod.Post, Api) { Content = new StringContent("{\"jeton\":true}", null, "application/json") };
             requete.Headers.Authorization = new AuthenticationHeaderValue("Bearer", jeton);
             using var reponse = await http.SendAsync(requete);
             using var json = JsonDocument.Parse(await reponse.Content.ReadAsStringAsync());
@@ -38,6 +73,8 @@ static class Vpn
             // Un relais injoignable bloquerait toutes les pages : on vérifie qu'il répond avant d'y passer.
             if (relais is null || !Uri.TryCreate(relais, UriKind.Absolute, out var adresse) || !await Joignable(adresse))
                 return new(false, "Le VPN est en maintenance pour l'instant. Réessaie un peu plus tard.");
+            jeton = json.RootElement.TryGetProperty("jeton", out var j) ? j.GetString() : null;
+            annonce.TrySetResult(jeton);
             return new(true, "", relais);
         }
         catch (Exception)

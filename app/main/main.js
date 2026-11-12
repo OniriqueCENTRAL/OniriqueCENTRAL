@@ -2,6 +2,7 @@ const { app, BrowserWindow, Menu, Notification, Tray, WebContentsView, clipboard
 const { spawn, execFile } = require('node:child_process');
 const { autoUpdater } = require('electron-updater');
 const macUpdate = require('./mac-update');
+const { verifierMaj } = require('./signature');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -1255,8 +1256,16 @@ function startAutoUpdate() {
 
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
+  // La mise à jour téléchargée n'est installée que si sa signature (latest.yml, champ signature) est bonne. electron-updater
+  // n'appelle cette vérification que si app-update.yml porte un publisherName (package.json, build.publish).
+  let annonce = null;
+  autoUpdater.verifyUpdateCodeSignature = async (_noms, fichier) => {
+    const refus = await verifierMaj('ONIRIQUE CENTRAL', annonce, fichier);
+    if (refus) log(refus);
+    return refus;
+  };
   autoUpdater.on('checking-for-update', () => log(`vérification (version installée ${app.getVersion()})`));
-  autoUpdater.on('update-available', (info) => log(`version ${info.version} disponible, téléchargement`));
+  autoUpdater.on('update-available', (info) => { annonce = info; log(`version ${info.version} disponible, téléchargement`); });
   autoUpdater.on('update-not-available', () => log('à jour'));
   autoUpdater.on('error', (error) => log(`erreur : ${error.message}`));
   autoUpdater.on('update-downloaded', (info) => {

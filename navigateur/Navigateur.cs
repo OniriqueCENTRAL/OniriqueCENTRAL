@@ -381,6 +381,8 @@ sealed partial class Navigateur : Form
 
     void AppliquerProfil(CoreWebView2 c)
     {
+        // Le relais du VPN demande son jeton (407) : seul Vpn.Repondre le donne, et seulement à lui.
+        c.BasicAuthenticationRequested += Vpn.Repondre;
         // Comme un navigateur ordinaire : les mots de passe et les formulaires sont retenus (et proposés à la saisie).
         c.Settings.IsPasswordAutosaveEnabled = true;
         c.Settings.IsGeneralAutofillEnabled = true;
@@ -790,6 +792,7 @@ sealed partial class Navigateur : Form
         if (vpnEtat == "connexion") return;
         if (allumer) { await AllumerVpn(relancer: true); return; }
         vpnRelais = null;
+        Vpn.Oublier();
         vpnEtat = "eteint";
         Reglages.Vpn = false;
         Reglages.Enregistrer();
@@ -809,6 +812,7 @@ sealed partial class Navigateur : Form
             vpnEtat = "eteint";
             bool relancerSansVpn = vpnRelais != null || (!relancer && Reglages.Vpn);
             vpnRelais = null;
+            Vpn.Oublier();
             Reglages.Vpn = false;
             Reglages.Enregistrer();
             MontrerVpn();
