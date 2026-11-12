@@ -4,7 +4,7 @@
 #   - SSH : root par clé seulement, pas de X11 ;
 #   - fail2ban sur SSH (5 échecs en 10 min : 1 h de blocage) ;
 #   - 4 Go de swap (un ffmpeg ou une séparation de pistes ne fait plus tomber le serveur faute de mémoire) ;
-#   - nginx : en-tête Content-Security-Policy de base et page 404 du site (site/404.html).
+#   - nginx : en-tête Content-Security-Policy de base et page 404 du site (site/404.html), liens /covers des packs de covers.
 set -euo pipefail
 IP=212.227.165.177
 
@@ -49,6 +49,8 @@ cp -a "$securite" "$copie.securite"
 csp="add_header Content-Security-Policy \"base-uri 'self'; object-src 'none'; frame-ancestors 'self'\" always;"
 grep -qF 'Content-Security-Policy' "$securite" || echo "$csp" >> "$securite"
 grep -q 'error_page 404 /404.html;' "$site" || sed -i '0,/^    index index.html;$/s//    index index.html;\n    error_page 404 \/404.html;/' "$site"
+# Les liens des packs de covers (/covers?t=…) sont servis par le CENTRAL, comme /ecoute.
+grep -q '(ecoute|covers)' "$site" || sed -i 's#~ ^/ecoute(#~ ^/(ecoute|covers)(#' "$site"
 if ! nginx -t 2> /dev/null; then
   cp -a "$copie.site" "$site"
   cp -a "$copie.securite" "$securite"

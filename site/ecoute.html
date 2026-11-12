@@ -443,7 +443,7 @@ function show(data) {
     : "Musique en cours, partagée avec toi seulement : merci de ne pas la diffuser. Ouvre les détails du lecteur pour laisser un commentaire à un moment précis du titre.";
   if (covered) {
     const euros = (c) => (c / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: c % 100 ? 2 : 0 });
-    $("covers").replaceChildren(...(data.visuals.length ? data.visuals.map((v) => el("a", { className: "cover-card", href: "article?v=" + v.id + "&retour=" + encodeURIComponent("ecoute" + location.search) },
+    $("covers").replaceChildren(...(data.visuals.length ? data.visuals.map((v) => el("a", { className: "cover-card", href: "article?v=" + v.id + "&retour=" + encodeURIComponent(location.pathname.slice(1) + location.search) },
       el("img", { src: v.image, alt: v.title, loading: "lazy", draggable: false, oncontextmenu: (e) => e.preventDefault() }), el("b", { textContent: v.title }),
       el("small", { textContent: v.unique ? "Pièce unique" : v.width + " × " + v.height + " px" }),
       el("span", { textContent: v.sold ? "Vendu" : v.price ? euros(v.price) : "Sur demande" })))

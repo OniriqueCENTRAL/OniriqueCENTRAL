@@ -132,8 +132,8 @@ server {
         proxy_set_header X-Forwarded-For \$remote_addr;
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
-    # Page d'écoute d'un lien de Mes sons : servie par le CENTRAL avec le titre et l'image d'aperçu de ce lien.
-    location ~ ^/ecoute(\.html)?\$ {
+    # Page d'écoute d'un lien de Mes sons (/covers pour un pack de covers) : servie par le CENTRAL avec le titre et l'image d'aperçu de ce lien.
+    location ~ ^/(ecoute|covers)(\.html)?\$ {
         proxy_pass http://127.0.0.1:4850;
         proxy_set_header Host \$host;
         proxy_set_header X-Forwarded-For \$remote_addr;

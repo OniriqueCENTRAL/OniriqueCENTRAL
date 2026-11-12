@@ -577,8 +577,10 @@ const creditsOf = (row) => { try { return JSON.parse(row.credits || '{}'); } cat
 // handle : l'adresse de sa page de profil (profiles.js), pour rendre son nom cliquable ; null s'il n'en a pas.
 const profileHandle = (userId) => get('SELECT handle FROM user_profiles WHERE user_id = ?', userId)?.handle || null;
 const person = (u) => ({ id: u.id, name: u.name || 'ONIRIQUE', avatar: media(u.avatar), handle: profileHandle(u.id) });
+// Un lien vers tout un pack de covers s'ouvre sur /covers ; les autres sur /ecoute (les deux mènent à la même page).
+const sharePath = (l) => (!l.track_id && get('SELECT kind FROM sound_projects WHERE id = ?', l.project_id)?.kind === 'covers' ? 'covers' : 'ecoute');
 const linkView = (l) => ({
-  id: l.id, url: `${config.siteUrl}/ecoute?t=${l.token}`, projectId: l.project_id, trackId: l.track_id, label: l.label,
+  id: l.id, url: `${config.siteUrl}/${sharePath(l)}?t=${l.token}`, projectId: l.project_id, trackId: l.track_id, label: l.label,
   password: !!l.password_hash, expiresAt: l.expires_at, download: !!l.download, requireAccount: !!l.require_account, createdAt: l.created_at,
 });
 
@@ -781,7 +783,7 @@ function listeningHtml(v, token) {
 <meta property="og:site_name" content="ONIRIQUE">
 <meta property="og:title" content="${escapeHtml(title)}">
 <meta property="og:description" content="${escapeHtml(description)}">
-<meta property="og:url" content="${escapeHtml(`${site}/ecoute?t=${encodeURIComponent(token)}`)}">
+<meta property="og:url" content="${escapeHtml(`${site}/${v && v.covers ? 'covers' : 'ecoute'}?t=${encodeURIComponent(token)}`)}">
 <meta property="og:image" content="${escapeHtml(image)}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -1728,8 +1730,8 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     res.status(201).json(commentView(get('SELECT * FROM sound_comments WHERE id = ?', cid)));
   });
 
-  // La page d'écoute, servie avec l'aperçu de son lien (nginx envoie /ecoute ici).
-  app.get(['/ecoute', '/ecoute.html'], wrap(async (req, res) => {
+  // La page d'écoute, servie avec l'aperçu de son lien (nginx envoie /ecoute et /covers ici).
+  app.get(['/ecoute', '/ecoute.html', '/covers', '/covers.html'], wrap(async (req, res) => {
     const token = String(req.query.t || '');
     const v = previewOf(token);
     // La couleur de l'aperçu Discord (theme-color) vient de la pochette ; calculée avec l'image, puis gardée.

@@ -206,7 +206,7 @@ export function mountCoverPacks(app, { requireUser, wrap }) {
     const r = byToken(req), p = get(`SELECT * FROM sound_projects WHERE id = ? AND trashed_at IS NULL`, r.project_id);
     if (!p) throw new HttpError(404, 'Ce pack n\'existe plus.');
     run('UPDATE cover_mails SET clicked_at = COALESCE(clicked_at, ?) WHERE id = ?', now(), r.id);
-    res.redirect(`${config.siteUrl}/ecoute?t=${openListenLink(p).token}`);
+    res.redirect(`${config.siteUrl}/covers?t=${openListenLink(p).token}`);
   });
   // Se désinscrire des mails de ce graphiste (la même liste que pour les mails des packs de prods).
   const page = (title, text, form = '') => `<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title>
