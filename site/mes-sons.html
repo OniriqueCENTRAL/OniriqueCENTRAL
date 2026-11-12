@@ -2100,12 +2100,28 @@ function sendFiles(files, p, toTrack) {
   drawUploads();
   runUploads();
 }
-function sendImage(file, path, max, tooBig) {
-  if (file.size > max) return fail(new Error(tooBig));
+async function sendImage(file, path, max, tooBig) {
+  // Trop lourde : on la réduit dans le navigateur (JPEG, 3000 px au plus) plutôt que de la refuser.
+  if (file.size > max) file = await shrinkImage(file, max).catch(() => null);
+  if (!file) return fail(new Error(tooBig));
   $("error").textContent = "";
   addJob(file, { image: path });
   drawUploads();
   runUploads();
+}
+async function shrinkImage(file, max) {
+  const img = await createImageBitmap(file);
+  for (const [side, quality] of [[3000, 0.9], [3000, 0.8], [2000, 0.85], [1500, 0.8]]) {
+    const scale = Math.min(1, side / Math.max(img.width, img.height));
+    const canvas = el("canvas", { width: Math.round(img.width * scale), height: Math.round(img.height * scale) });
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#fff"; // la transparence d'un PNG devient du blanc en JPEG
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+    if (blob && blob.size <= max) return new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
+  }
+  return null;
 }
 function addJob(file, target) {
   const bar = el("i"), state = el("span", { textContent: "En attente" });
