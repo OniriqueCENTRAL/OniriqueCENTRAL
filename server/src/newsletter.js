@@ -7,6 +7,7 @@ import { HttpError, isStaff, requireUser } from './auth.js';
 import { mailEnabled, sendMail } from './mail.js';
 import { escapeHtml, renderEmail } from './mailtemplate.js';
 import { realOpen } from './packsend.js';
+import { entitlement } from './licensing.js';
 
 //==============================================================================
 //  Les e-mails d'ONIRIQUE aux inscrits : consentement, désinscription, envois depuis le panel admin
@@ -172,7 +173,48 @@ async function sendNext() {
 }
 setInterval(() => sendNext().catch((error) => console.error('Envoi groupé :', error.message)), Number(process.env.MAILING_INTERVAL_MS || 3000)).unref();
 
-const mailingView = (m) => ({ id: m.id, subject: m.subject, audience: m.audience, audienceLabel: AUDIENCES[m.audience]?.label ?? m.audience,
+//------------------------------------------------------------------------------ Les nouvelles versions des plugins
+// Une version publiée (panel, publish-plugin.mjs ou add-version.mjs : tous écrivent dans versions) part, une seule fois
+// par numéro, aux clients du plugin (licence achetée ou abonnement qui le couvre), sauf aux désinscrits. Le délai laisse
+// arriver la version de l'autre système et corriger la note. Les versions d'avant ce mail ne sont jamais annoncées.
+const UPDATE_AUDIENCE = 'clients-plugin';
+const UPDATE_DELAY = 30 * 60_000;
+const firstRun = !get(`SELECT 1 AS yes FROM sqlite_master WHERE type = 'table' AND name = 'version_mailings'`);
+db.exec('CREATE TABLE IF NOT EXISTS version_mailings (product_id INTEGER NOT NULL, version TEXT NOT NULL, mailing_id INTEGER, PRIMARY KEY (product_id, version))');
+if (firstRun) db.exec('INSERT OR IGNORE INTO version_mailings (product_id, version) SELECT DISTINCT product_id, version FROM versions');
+
+export function announceVersions(at = now()) {
+  const fresh = all(`SELECT v.product_id, v.version, MAX(v.created_at) AS last FROM versions v
+                     WHERE NOT EXISTS (SELECT 1 FROM version_mailings m WHERE m.product_id = v.product_id AND m.version = v.version)
+                     GROUP BY v.product_id, v.version HAVING MAX(v.created_at) <= ?`, at - UPDATE_DELAY);
+  for (const { product_id: productId, version } of fresh) {
+    const p = get('SELECT * FROM products WHERE id = ?', productId);
+    const users = !p || !p.published || p.founders_only ? [] : all(
+      `SELECT u.id, u.email FROM users u WHERE u.email_verified != 0 AND u.marketing != -1
+         AND (EXISTS (SELECT 1 FROM licenses l WHERE l.user_id = u.id AND l.product_id = ? AND l.type != 'trial' AND l.status = 'active')
+              OR EXISTS (SELECT 1 FROM subscriptions s WHERE s.user_id = u.id))`, productId)
+      .filter((u) => ['license', 'subscription'].includes(entitlement(u.id, productId)?.via) && entitlement(u.id, productId).type !== 'trial');
+    transaction(() => {
+      let mailingId = null;
+      if (users.length) {
+        const notes = get(`SELECT notes FROM versions WHERE product_id = ? AND version = ? AND notes != '' ORDER BY platform = 'win' DESC LIMIT 1`, productId, version)?.notes || '';
+        const content = {
+          subject: `${p.name} ${version} est disponible`, preheader: notes.split('\n')[0].slice(0, 160), eyebrow: 'Mise à jour',
+          title: `${p.name} ${version}`, text: `Bonjour {prenom},\n\nUne nouvelle version de ${p.name} est sortie. ONIRIQUE CENTRAL l'installe en un clic, depuis votre bibliothèque.${notes ? `\n\n# Nouveautés\n\n${notes}` : ''}`,
+          buttonLabel: 'Voir le plugin', buttonUrl: `${config.siteUrl}/boutique/${encodeURIComponent(p.slug)}`, image: '', productIds: [], promoCode: '', promoText: '',
+        };
+        mailingId = run('INSERT INTO mailings (subject, content, audience, total, created_at) VALUES (?, ?, ?, ?, ?)',
+          content.subject, JSON.stringify(content), UPDATE_AUDIENCE, users.length, now()).lastInsertRowid;
+        for (const u of users) run('INSERT INTO mailing_recipients (mailing_id, user_id, email) VALUES (?, ?, ?)', mailingId, u.id, u.email);
+      }
+      run('INSERT INTO version_mailings (product_id, version, mailing_id) VALUES (?, ?, ?)', productId, version, mailingId);
+    });
+  }
+}
+setInterval(() => { try { announceVersions(); } catch (error) { console.error('Mail des nouvelles versions :', error.message); } }, 10 * 60_000).unref();
+
+const mailingView = (m) => ({ id: m.id, subject: m.subject, audience: m.audience,
+  audienceLabel: AUDIENCES[m.audience]?.label ?? (m.audience === UPDATE_AUDIENCE ? 'Clients du plugin (nouvelle version)' : m.audience),
   status: m.status, total: m.total, sent: m.sent, failed: m.failed, opened: m.opened ?? 0, clicked: m.clicked ?? 0, clicks: m.clicks ?? 0, createdAt: m.created_at, doneAt: m.done_at, author: m.author ?? null });
 
 //------------------------------------------------------------------------------ Les routes
