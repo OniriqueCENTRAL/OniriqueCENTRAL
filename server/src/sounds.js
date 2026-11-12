@@ -643,6 +643,11 @@ const listeningPage = () => {
   return dir ? fs.readFileSync(path.join(dir, 'ecoute.html'), 'utf8') : null;
 };
 
+let coverPacks = null; // coverpacks.js, chargé au montage des routes (mountSounds)
+const euroText = (cents) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: cents % 100 ? 2 : 0 }).format(cents / 100).replace(/\u202f/g, ' ');
+// Un pack de covers : « 12 covers · prix entre 25 € et 49,99 € ».
+const coversText = (v) => [`${v.count} cover${v.count > 1 ? 's' : ''}`,
+  v.min ? (v.min === v.max ? `prix : ${euroText(v.min)}` : `prix entre ${euroText(v.min)} et ${euroText(v.max)}`) : ''].filter(Boolean).join(' · ');
 /** Le lien et ce que son aperçu peut montrer ; null si le lien n'existe pas, n'est plus valable ou que l'auteur n'est plus membre. */
 function previewOf(token) {
   const l = get(`SELECT l.*, u.name AS owner_name, u.role AS owner_role FROM sound_links l JOIN users u ON u.id = l.user_id WHERE l.token = ? AND ${LINK_OPEN}`, String(token || '').slice(0, 40));
@@ -650,6 +655,12 @@ function previewOf(token) {
   if (l.password_hash || l.require_account) return { link: l, locked: true };
   const t = l.track_id ? get('SELECT * FROM sound_tracks WHERE id = ?', l.track_id) : null;
   const p = linkProject(l);
+  // Un pack de covers : ses covers et leurs prix au lieu des titres ; sa première cover s'il n'a pas de pochette.
+  if (p.kind === 'covers' && !l.track_id && coverPacks) {
+    const c = coverPacks.coverSummary(p.id);
+    return { link: l, locked: false, covers: true, owner: p.artist || p.author_name || 'ONIRIQUE', title: p.title, project: p.title, cover: p.cover,
+      coverFile: p.cover ? null : c.firstFile, count: c.count, min: c.min, max: c.max, seconds: 0, release: '', stage: '' };
+  }
   // Les sons privés ne comptent ni dans le nombre de titres ni dans la durée.
   const tracks = l.track_id ? [t] : all('SELECT * FROM sound_tracks WHERE project_id = ? AND private = 0 ORDER BY position, id', p.id);
   const seconds = tracks.reduce((sum, x) => sum + (get('SELECT duration FROM sound_versions WHERE id = ?', x.current_id)?.duration || 0), 0);
@@ -679,7 +690,7 @@ async function accentOf(file, sharp) {
 async function previewImage(v) {
   const sharp = (await import('sharp')).default;
   const W = 1200, H = 630, layers = [];
-  const cover = v && !v.locked && v.cover ? path.join(config.mediaDir, path.basename(v.cover)) : null;
+  const cover = v && !v.locked && v.cover ? path.join(config.mediaDir, path.basename(v.cover)) : v && !v.locked && v.coverFile ? v.coverFile : null;
   const hasCover = cover && fs.existsSync(cover);
   const accent = hasCover ? await accentOf(cover, sharp) : '#e23444';
   // Le fond : la pochette floutée et assombrie, sinon le dégradé sang et nuit d'ONIRIQUE.
@@ -708,11 +719,12 @@ async function previewImage(v) {
   const width = W - left - 70;
   const title = !v ? 'Lien introuvable' : v.locked ? "Lien d'écoute protégé" : v.title;
   const lines = [];
-  lines.push({ img: await textImage(v && v.locked ? 'ÉCOUTE PRIVÉE · PROTÉGÉE' : 'ÉCOUTE PRIVÉE', 'JetBrains Mono', 'JetBrainsMono500.ttf', 20, accent, width), gap: 22 });
+  lines.push({ img: await textImage(v && v.locked ? 'ÉCOUTE PRIVÉE · PROTÉGÉE' : v && v.covers ? 'PACK DE COVERS' : 'ÉCOUTE PRIVÉE', 'JetBrains Mono', 'JetBrainsMono500.ttf', 20, accent, width), gap: 22 });
   const big = await textImage(title, 'Unbounded', 'Unbounded800.ttf', title.length > 34 ? 40 : title.length > 18 ? 50 : 62, '#f6eeee', width);
   lines.push({ img: big.height > 260 ? { ...big, data: await sharp(big.data).extract({ left: 0, top: 0, width: big.width, height: 260 }).png().toBuffer(), height: 260 } : big, gap: 24 });
   const meta = !v ? "Ce lien n'existe pas, ou n'est plus valable."
     : v.locked ? `Partagé par ${v.link.owner_name || 'un membre'} · ${v.link.password_hash ? 'mot de passe demandé' : 'compte ONIRIQUE demandé'}`
+      : v.covers ? [`par ${v.owner}`, coversText(v)].join(' · ')
       : [`par ${v.owner}`, v.title !== v.project ? `extrait de ${v.project}` : `${v.count} titre${v.count > 1 ? 's' : ''}`, v.seconds ? clock(v.seconds) : ''].filter(Boolean).join(' · ');
   lines.push({ img: await textImage(meta, 'Hanken Grotesk', 'HankenGrotesk600.ttf', 26, '#dccfd1', width), gap: 18 });
   const release = v && !v.locked ? releaseText(v.release) : '';
@@ -733,12 +745,13 @@ function listeningHtml(v, token) {
   const title = !v ? 'Écoute privée · ONIRIQUE' : v.locked ? `${v.link.owner_name || 'ONIRIQUE'} — Écoute privée` : `${v.owner} — ${v.title}`;
   const description = !v ? "Ce lien d'écoute n'existe pas, ou n'est plus valable."
     : v.locked ? `Lien d'écoute protégé, partagé sur ONIRIQUE${v.link.password_hash ? ' : mot de passe demandé' : ' : compte ONIRIQUE demandé'}.`
+      : v.covers ? [coversText(v), 'Pack de covers sur ONIRIQUE'].join(' · ')
       : [v.title !== v.project ? `Un titre extrait de ${v.project}` : `${v.count} titre${v.count > 1 ? 's' : ''}${v.seconds ? ` · ${clock(v.seconds)}` : ''}`,
         releaseText(v.release), 'Écoute privée sur ONIRIQUE'].filter(Boolean).join(' · ');
   const image = `${site}/api/sounds/share/${encodeURIComponent(token)}/apercu.png?v=${previewKey(v)}`;
   const tags = `<title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(description)}">
-<meta property="og:type" content="music.album">
+<meta property="og:type" content="${v && v.covers ? 'website' : 'music.album'}">
 <meta property="og:site_name" content="ONIRIQUE">
 <meta property="og:title" content="${escapeHtml(title)}">
 <meta property="og:description" content="${escapeHtml(description)}">
@@ -757,7 +770,6 @@ function listeningHtml(v, token) {
 
 export function mountSounds(app, { requireUser, receiveFile, receiveImage, removeMedia, wrap }) {
   // Les pochettes des packs de pochettes, chargées après coup : coverpacks.js dépend de la vitrine, montée après ce fichier.
-  let coverPacks = null;
   import('./coverpacks.js').then((m) => { coverPacks = m; });
   const visualsOf = (p) => (p.kind === 'covers' && coverPacks ? coverPacks.projectVisuals(p.id) : []);
   purgeTrash();

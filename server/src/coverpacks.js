@@ -3,13 +3,14 @@
 // auteur au lieu de sons. Sa page de partage (ecoute) montre les copies filigranées ; il s'envoie par e-mail depuis la
 // boîte mail du membre, comme les mails des packs de prods : un mail toutes les 15 à 30 secondes, désinscription, suivi.
 import crypto from 'node:crypto';
+import path from 'node:path';
 import { config } from './config.js';
 import { db, get, all, run, now } from './db.js';
 import { HttpError, rateLimit, can } from './auth.js';
 import { testing, outbox } from './mail.js';
 import { escapeHtml } from './mailtemplate.js';
 import { mailerRow, mailerView, transportOf, contactsOf, listContacts, GAP, openListenLink } from './packsend.js';
-import { view, PUBLIC } from './vitrine.js';
+import { view, PUBLIC, vitrineDir } from './vitrine.js';
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS sound_project_visuals (
@@ -43,6 +44,15 @@ const messageOf = (p) => String(parse(p.mail).message || '');
 /** Les visuels d'un pack de pochettes encore dans la vitrine, dans l'ordre choisi (copies filigranées). */
 export const projectVisuals = (projectId) => all(`${PUBLIC} AND v.id IN (SELECT visual_id FROM sound_project_visuals WHERE project_id = ?)
   ORDER BY (SELECT position FROM sound_project_visuals WHERE project_id = ? AND visual_id = v.id)`, projectId, projectId).map(view);
+
+/** Pour l'aperçu d'un lien : le nombre de covers, leurs prix (les moins et plus chers en vente) et l'image de la première. */
+export function coverSummary(projectId) {
+  const rows = all(`${PUBLIC} AND v.id IN (SELECT visual_id FROM sound_project_visuals WHERE project_id = ?)
+    ORDER BY (SELECT position FROM sound_project_visuals WHERE project_id = ? AND visual_id = v.id)`, projectId, projectId);
+  const prices = rows.filter((v) => v.price > 0 && !v.sold).map((v) => v.price);
+  return { count: rows.length, min: prices.length ? Math.min(...prices) : 0, max: prices.length ? Math.max(...prices) : 0,
+    firstFile: rows[0] ? path.join(vitrineDir, rows[0].preview) : null };
+}
 
 // Les packs de pochettes de la première version (table cover_packs) deviennent des projets CLOUD, avec leurs visuels et
 // leurs envois ; la table est vidée au fur et à mesure.

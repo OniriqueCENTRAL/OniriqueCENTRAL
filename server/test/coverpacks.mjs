@@ -77,6 +77,15 @@ try {
     const page = await call('POST', `/api/sounds/share/${new URL(link.url).searchParams.get('t')}`, { body: {} });
     assert.deepEqual([page.kind, page.tracks.length, page.visuals.map((v) => v.id)], ['covers', 0, [v2.id, v1.id]]);
     for (const v of [v1, v2]) assert.equal(JSON.stringify(page).includes(get('SELECT original FROM vitrine_visuals WHERE id = ?', v.id).original), false);
+    // L'aperçu du lien (Discord, messageries) : un pack de covers, son nombre de covers et ses prix, pas « 0 titre ».
+    const token = new URL(link.url).searchParams.get('t');
+    const html = (await (await fetch(`${base}/ecoute?t=${token}`)).text()).replace(/\s/g, ' ');
+    assert.ok(html.includes('2 covers · prix : 49,99 € · Pack de covers sur ONIRIQUE'), html.match(/og:description" content="([^"]*)"/)?.[1]);
+    assert.ok(!html.includes('0 titre'));
+    const image = await fetch(`${base}/api/sounds/share/${token}/apercu.png`);
+    assert.equal(image.status, 200);
+    fs.writeFileSync(path.join(dataDir, 'apercu.png'), Buffer.from(await image.arrayBuffer()));
+    console.log(`     aperçu : ${path.join(dataDir, 'apercu.png')}`);
   });
 
   await step('envoyer : abonnement et boîte mail exigés, liste et adresses collées, doublons et désinscrits retirés', async () => {

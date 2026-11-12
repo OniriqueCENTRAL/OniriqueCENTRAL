@@ -438,8 +438,8 @@ function show(data) {
   const covered = data.kind === "covers";
   $("tracks").hidden = $("play-all").hidden = covered;
   $("covers").hidden = !covered;
-  $("kind-label").textContent = covered ? "Pack de pochettes" : "Écoute privée";
-  $("note").textContent = covered ? "Les images sont des copies réduites avec le filigrane du graphiste. Touche une pochette pour la voir en grand, l'acheter (l'original, sans filigrane, est livré tout de suite) ou écrire au graphiste."
+  $("kind-label").textContent = document.querySelector("header .eyebrow").textContent = covered ? "Pack de covers" : "Écoute privée";
+  $("note").textContent = covered ? "Les images sont des copies réduites avec le filigrane du graphiste. Touche une cover pour la voir en grand, l'acheter (l'original, sans filigrane, est livré tout de suite) ou écrire au graphiste."
     : "Musique en cours, partagée avec toi seulement : merci de ne pas la diffuser. Ouvre les détails du lecteur pour laisser un commentaire à un moment précis du titre.";
   if (covered) {
     const euros = (c) => (c / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: c % 100 ? 2 : 0 });
@@ -450,7 +450,11 @@ function show(data) {
       : [el("p", { className: "muted", style: "grid-column:1/-1;margin:0", textContent: "Ce pack est vide pour l'instant." })]));
     $("meta").replaceChildren(data.ownerAvatar ? el("img", { src: data.ownerAvatar, alt: "" }) : "",
       data.ownerHandle ? el("a", { href: "profil?u=" + encodeURIComponent(data.ownerHandle), className: "owner-link", textContent: data.owner, title: "Voir sa page de profil" }) : data.owner,
-      " · " + data.visuals.length + (data.visuals.length > 1 ? " pochettes" : " pochette"));
+      " · " + data.visuals.length + (data.visuals.length > 1 ? " covers" : " cover"), ...(() => {
+        // La fourchette de prix des covers en vente : « prix entre 25 € et 49,99 € ».
+        const prices = data.visuals.filter((v) => v.price && !v.sold).map((v) => v.price), lo = Math.min(...prices), hi = Math.max(...prices);
+        return prices.length ? [" · " + (lo === hi ? "prix : " + euros(lo) : "prix entre " + euros(lo) + " et " + euros(hi))] : [];
+      })());
     if (!data.cover && data.visuals.length) $("cover").replaceChildren(el("img", { src: data.visuals[0].image, alt: "" }));
   }
   function hiddenRow(it) {
