@@ -131,6 +131,15 @@ try {
     assert.equal((await call('GET', '/api/profiles/lou')).city, null);
     // La recherche : la ville de la liste d'abord, la commune homonyme n'est pas proposée deux fois.
     assert.deepEqual((await call('GET', '/api/places?q=ly')).map((c) => c.id), ['lyon', 'fr-25434']);
+    // La Belgique : toutes ses localités, sans appel à l'API française ; Liège n'est proposée qu'une fois.
+    const wavre = (await call('GET', '/api/places?q=wavre')).map((c) => c.id);
+    assert.equal(wavre[0], 'be-1300-23'); // le nom exact passe devant les communes de France
+    assert.ok(wavre.includes('be-5580-1374'));
+    assert.deepEqual((await call('GET', '/api/places?q=liege')).filter((c) => c.country === 'Belgique').map((c) => c.id), ['liege']);
+    await call('PUT', '/api/me/profile/page', { token: b.token, body: { handle: 'lou', city: 'be-1300-23' } });
+    assert.deepEqual((await call('GET', '/api/profiles/lou')).city, { id: 'be-1300-23', name: 'Wavre', country: 'Belgique', lon: 4.6077, lat: 50.7164, far: false, detail: 'Belgique (1300)' });
+    await call('PUT', '/api/me/profile/page', { token: b.token, body: { handle: 'lou', city: 'be-1300-99999' } });
+    assert.equal((await call('GET', '/api/profiles/lou')).city, null);
     assert.deepEqual([map.members[0].playlists, map.members[0].linkPage], [[], null]);
     // La page de liens n'est montrée que si on le choisit.
     run(`INSERT INTO link_pages (user_id, handle, data, updated_at) VALUES (?, 'nov', '{}', ?)`, a.id, now());

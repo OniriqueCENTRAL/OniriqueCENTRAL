@@ -178,7 +178,7 @@ export function mountProfiles(app, { requireUser, receiveImage, receiveFile, rem
     if (taken && taken.user_id !== req.user.id) throw new HttpError(409, 'Cette adresse est déjà prise.');
     const color = COLOR.test(req.body?.color || '') ? req.body.color.toLowerCase() : '#e5384a';
     const links = JSON.stringify(cleanLinks(req.body?.links));
-    // Le lieu : une ville de la liste, ou une commune de France vérifiée auprès de l'API officielle (gardée si elle ne change pas).
+    // Le lieu : une ville de la liste, une localité de Belgique ou une commune de France vérifiée auprès de l'API officielle (gardée si elle ne change pas).
     const wanted = String(req.body?.city || '');
     const before = get('SELECT city, place FROM user_profiles WHERE user_id = ?', req.user.id);
     const place = CITY.get(wanted) || (before?.city === wanted && before.place ? JSON.parse(before.place) : await communeById(wanted, config.geoApi));

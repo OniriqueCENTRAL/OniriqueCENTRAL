@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 // Les villes de la carte des membres (site/carte.html) : France, Belgique, Suisse et Luxembourg sur la carte (far: false),
 // le reste de la francophonie dans la bande « Plus loin » (far: true). [id, nom, pays, longitude, latitude, far]
 const LIST = [
@@ -54,8 +56,15 @@ const commune = (c) => {
   return { id: `fr-${c.code}`, name: c.nom, country: overseas ? c.departement?.nom || 'Outre-mer' : 'France', lon, lat, far: overseas,
     detail: c.departement ? `${c.departement.nom} (${c.departement.code})` : '' };
 };
-/** Une commune par son identifiant « fr-<INSEE> », vérifiée auprès de l'API officielle ; null si elle n'existe pas. */
+// Toutes les localités de Belgique (une par nom, avec son code postal), d'après zipcode-belgium (jief, GitHub) :
+// leur identifiant est « be-<code postal>-<rang> ». [code postal, nom, longitude, latitude]
+const BE = JSON.parse(readFileSync(new URL('./belgique.json', import.meta.url), 'utf8'))
+  .map(([zip, name, lon, lat], i) => ({ id: `be-${zip}-${i}`, name, country: 'Belgique', lon, lat, far: false, detail: `Belgique (${zip})` }));
+const BE_BY_ID = new Map(BE.map((c) => [c.id, c]));
+
+/** Une commune par son identifiant « fr-<INSEE> », vérifiée auprès de l'API officielle (ou « be-… », dans la liste belge) ; null si elle n'existe pas. */
 export async function communeById(id, geoApi) {
+  if (String(id).startsWith('be-')) return BE_BY_ID.get(id) || null;
   const code = /^fr-([0-9][0-9AB][0-9]{3})$/.exec(String(id || ''))?.[1];
   if (!code) return null;
   const r = await fetch(`${geoApi}/communes/${code}?fields=nom,code,centre,departement`, { signal: AbortSignal.timeout(6000) }).catch(() => null);
@@ -68,7 +77,11 @@ export async function searchPlaces(q, geoApi) {
   const listed = CITIES.filter((c) => fold(c.name).startsWith(needle)).slice(0, 5);
   const r = await fetch(`${geoApi}/communes?nom=${encodeURIComponent(q)}&fields=nom,code,centre,departement&boost=population&limit=10`, { signal: AbortSignal.timeout(6000) }).catch(() => null);
   const found = r?.ok ? (await r.json()).map(commune).filter(Boolean) : [];
-  // Une grande ville déjà dans la liste (Paris, Lyon…) n'est pas proposée deux fois.
-  const known = new Set(listed.filter((c) => c.country === 'France').map((c) => fold(c.name)));
-  return [...listed, ...found.filter((c) => !known.has(fold(c.name)))].slice(0, 12);
+  const belgian = BE.filter((c) => fold(c.name).startsWith(needle)).slice(0, 10);
+  // Une grande ville déjà dans la liste (Paris, Liège…) n'est pas proposée deux fois.
+  const known = new Set(listed.filter((c) => c.country === 'France' || c.country === 'Belgique').map((c) => c.country + fold(c.name)));
+  const others = [...found, ...belgian].filter((c) => !known.has(c.country + fold(c.name)));
+  // Les communes de France d'abord, sauf si le nom tapé est exactement celui d'une localité belge (Wavre, Arlon…).
+  others.sort((a, b) => (fold(b.name) === needle) - (fold(a.name) === needle));
+  return [...listed, ...others].slice(0, 12);
 }

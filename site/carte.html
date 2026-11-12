@@ -450,7 +450,7 @@ function tick(t) {
   requestAnimationFrame(tick);
 }
 const K = 2.5; // le facteur de dessin du plan (voir #plane)
-const fit = () => Math.min(1.25, Math.max(.3, Math.min(innerWidth / (innerWidth > 860 ? 1150 : 900), innerHeight / 820)));
+const fit = () => Math.min(1.5, Math.max(.3, Math.min(innerWidth / (innerWidth > 860 ? 950 : 760), innerHeight / 680)));
 function home() { Object.assign(goal, { ax: 50, az: -9, z: fit(), px: 0, py: 0 }); }
 const ZMAX = 40; // assez près pour séparer deux villes voisines (Paris et Ivry-sur-Seine)
 // Le zoom qui écarte d'au moins 80 px à l'écran deux points distants de d (en unités du plan).
