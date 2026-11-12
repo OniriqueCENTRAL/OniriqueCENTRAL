@@ -8,7 +8,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const racine = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const { verifierMaj } = createRequire(import.meta.url)(path.join(racine, 'app/main/signature.js'));
+const verificateur = path.join(racine, 'app/main/signature.js');
+if (!fs.existsSync(verificateur)) { // la mise en ligne n'extrait que server, site et deploy
+  console.log('Signature des mises à jour : sautée (app/ absent)');
+  process.exit(0);
+}
+const { verifierMaj } = createRequire(import.meta.url)(verificateur);
 const dossier = fs.mkdtempSync(path.join(os.tmpdir(), 'onirique-signature-'));
 const env = { ...process.env, ONIRIQUE_CLE_SIGNATURE: path.join(dossier, 'cle.pem') };
 const signer = (...args) => execFileSync(process.execPath, [path.join(racine, 'deploy/onirique-signer'), ...args], { env, encoding: 'utf8' }).trim();
