@@ -19,6 +19,7 @@
   </div>
 </header>
 <main class="wrap">
+  <a class="btn btn-ghost small" id="back" hidden style="margin-bottom:14px">← Retour au pack</a>
   <nav class="crumbs" aria-label="Fil d'Ariane"><a href="marketplace">Marketplace</a><span>/</span><a id="crumb-kind" href="marketplace"></a></nav>
   <p class="muted" id="state" role="status">Chargement…</p>
   <section class="item" id="item" hidden>
@@ -39,6 +40,9 @@ const token = sessionStorage.getItem(TOKEN) || localStorage.getItem(TOKEN);
 const params = new URLSearchParams(location.search);
 const type = params.get("p") ? "pack" : "visual", itemId = Number(params.get("p") || params.get("v"));
 const RAYON = { visual: "Pochettes et visuels", pack: "Packs de prods" };
+// Ouverte depuis un pack de pochettes (CLOUD ou sa page de partage) : « Retour au pack » y ramène. Seules ces deux pages du site.
+const back = params.get("retour") || "";
+if (/^(mes-sons#\/p\/\d+|ecoute\?t=[\w-]+)$/.test(back)) { $("back").href = back; $("back").hidden = false; }
 
 async function api(method, path) {
   const response = await fetch("/api" + path, { method, headers: token ? { Authorization: "Bearer " + token } : {} })

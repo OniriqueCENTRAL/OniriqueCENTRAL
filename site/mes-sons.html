@@ -4570,7 +4570,7 @@ $("covers").addEventListener("close", () => { clearTimeout(coverPoll); refresh()
 // La grille des pochettes dans la page du pack : chacune mène à sa fiche (prix, achat).
 function renderCoverGrid(p) {
   const visuals = p.visuals || [];
-  $("cover-grid").replaceChildren(...(visuals.length ? visuals.map((v) => el("a", { className: "cover-card", href: "article?v=" + v.id, target: "_blank", rel: "noopener" },
+  $("cover-grid").replaceChildren(...(visuals.length ? visuals.map((v) => el("a", { className: "cover-card", href: "article?v=" + v.id + "&retour=" + encodeURIComponent("mes-sons#/p/" + p.id) },
     el("img", { src: v.image, alt: v.title, loading: "lazy", draggable: false }), el("b", { textContent: v.title }),
     el("span", { textContent: v.sold ? "Vendu" : v.price ? (v.price / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: v.price % 100 ? 2 : 0 }) : "Sur demande" })))
     : [el("p", { className: "muted", style: "grid-column:1/-1;margin:0", textContent: p.mine ? "Aucune pochette pour l'instant : touche « Pochettes » pour choisir celles de ta vitrine." : "Aucune pochette pour l'instant." })]));
