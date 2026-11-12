@@ -35,6 +35,12 @@
 - VPN : `server/src/vpn.js`, port 3129 ; `deploy/install-vpn.sh` à lancer par une personne sur le VPS. Le navigateur
   présente un jeton au relais (réponse 407) ; l'ancien mode par adresse IP s'arrête le 31 déc. 2026 (`MODE_IP_JUSQUA`).
 
+## ONIRIQUE FONDATEURS (`fondateurs/`)
+- Boutons pour les gestes courants : récupérer, enregistrer les fichiers cochés, mettre en ligne (copie propre si
+  d'autres fichiers sont en cours), publier l'application ou le navigateur, état, journal et erreurs du serveur, panel
+  admin. Lancement : `fondateurs/ONIRIQUE FONDATEURS.cmd` (utilise l'Electron de `app/`, donc `cd app && npm install`
+  une fois). Rien de secret dedans : il passe par la clé SSH du PC et les scripts de `deploy/`.
+
 ## Pièges
 - Essais du navigateur : toujours avec `ONIRIQUE_NAVIGATEUR_DOSSIER` vers un dossier temporaire ; ne jamais copier
   ni restaurer le `parametres.json` d'un utilisateur (une restauration a déjà écrasé ses réglages).
