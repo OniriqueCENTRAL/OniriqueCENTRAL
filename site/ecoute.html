@@ -83,6 +83,16 @@ a.save { text-decoration: none; }
 .play-all { width: 54px; height: 54px; flex: none; display: grid; place-items: center; border-radius: 50%; border: 0; background: var(--mist); color: var(--night); cursor: pointer; box-shadow: 0 10px 40px -10px var(--ember); }
 .note { margin: 18px 0 0; padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,210,214,.07); font-size: 13.5px; color: var(--haze); }
 .tracklist { list-style: none; margin: 14px 0 0; padding: 0; }
+/* Un pack de pochettes : ses pochettes (copies filigranées) en grille, chacune vers sa fiche. */
+.cover-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin-top: 16px; }
+.cover-card { display: flex; flex-direction: column; gap: 3px; padding: 8px 8px 10px; border-radius: 16px; border: 1px solid var(--line); background: rgba(255,255,255,.03); text-decoration: none; color: var(--mist); min-width: 0; transition: border-color .15s, transform .15s; }
+.cover-card:hover { border-color: rgba(var(--acc),.55); transform: translateY(-2px); }
+.cover-card img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 11px; margin-bottom: 5px; -webkit-user-drag: none; }
+.cover-card b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cover-card small { font-size: 12px; color: var(--haze); }
+.cover-card span { margin-top: auto; padding-top: 4px; color: var(--ember); font-weight: 700; }
+@media (max-width: 560px) { .cover-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
+@media (prefers-reduced-motion: reduce) { .cover-card, .cover-card:hover { transition: none; transform: none; } }
 .trk { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto auto auto; align-items: center; gap: 10px; padding: 11px 8px 11px 4px; border-radius: 12px; cursor: pointer; }
 .trk:hover { background: rgba(255,255,255,.04); }
 .trk.now { background: color-mix(in srgb, var(--ember) 13%, transparent); }
@@ -204,15 +214,16 @@ main.wrap:has(.album > .side > :not([hidden])) { max-width: 1320px; }
     <div>
       <div class="head">
         <div>
-          <div class="eyebrow">Écoute privée</div>
+          <div class="eyebrow" id="kind-label">Écoute privée</div>
           <h1 class="title" id="title"></h1>
           <div class="meta" id="meta"></div>
           <div class="release" id="release"></div><button class="save" id="save" type="button" hidden></button>
         </div>
         <button class="play-all" id="play-all" type="button" aria-label="Tout écouter"></button>
       </div>
-      <p class="note">Musique en cours, partagée avec toi seulement : merci de ne pas la diffuser. Ouvre les détails du lecteur pour laisser un commentaire à un moment précis du titre.</p>
+      <p class="note" id="note">Musique en cours, partagée avec toi seulement : merci de ne pas la diffuser. Ouvre les détails du lecteur pour laisser un commentaire à un moment précis du titre.</p>
       <ol class="tracklist" id="tracks"></ol>
+      <div class="cover-grid" id="covers" hidden></div>
     </div>
     <div class="side">
       <div class="lyrics" id="lyrics" hidden></div>
@@ -423,6 +434,25 @@ function show(data) {
   let n = 0;
   rows.forEach((it) => { it.n = it.private || it.hidden ? null : ++n; });
   $("tracks").replaceChildren(...rows.map((it) => it.hidden ? hiddenRow(it) : it.platform ? platformRow(it, it.n - 1, PLATFORM[it.platform]) : cloudRow(it, it.n - 1)));
+  // Un pack de pochettes : ses pochettes à la place des sons, chacune vers sa fiche (prix, achat, contact).
+  const covered = data.kind === "covers";
+  $("tracks").hidden = $("play-all").hidden = covered;
+  $("covers").hidden = !covered;
+  $("kind-label").textContent = covered ? "Pack de pochettes" : "Écoute privée";
+  $("note").textContent = covered ? "Les images sont des copies réduites avec le filigrane du graphiste. Touche une pochette pour la voir en grand, l'acheter (l'original, sans filigrane, est livré tout de suite) ou écrire au graphiste."
+    : "Musique en cours, partagée avec toi seulement : merci de ne pas la diffuser. Ouvre les détails du lecteur pour laisser un commentaire à un moment précis du titre.";
+  if (covered) {
+    const euros = (c) => (c / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: c % 100 ? 2 : 0 });
+    $("covers").replaceChildren(...(data.visuals.length ? data.visuals.map((v) => el("a", { className: "cover-card", href: "article?v=" + v.id },
+      el("img", { src: v.image, alt: v.title, loading: "lazy", draggable: false, oncontextmenu: (e) => e.preventDefault() }), el("b", { textContent: v.title }),
+      el("small", { textContent: v.unique ? "Pièce unique" : v.width + " × " + v.height + " px" }),
+      el("span", { textContent: v.sold ? "Vendu" : v.price ? euros(v.price) : "Sur demande" })))
+      : [el("p", { className: "muted", style: "grid-column:1/-1;margin:0", textContent: "Ce pack est vide pour l'instant." })]));
+    $("meta").replaceChildren(data.ownerAvatar ? el("img", { src: data.ownerAvatar, alt: "" }) : "",
+      data.ownerHandle ? el("a", { href: "profil?u=" + encodeURIComponent(data.ownerHandle), className: "owner-link", textContent: data.owner, title: "Voir sa page de profil" }) : data.owner,
+      " · " + data.visuals.length + (data.visuals.length > 1 ? " pochettes" : " pochette"));
+    if (!data.cover && data.visuals.length) $("cover").replaceChildren(el("img", { src: data.visuals[0].image, alt: "" }));
+  }
   function hiddenRow(it) {
     return el("li", { className: "trk gone hidden-row", tabIndex: -1, title: "Son privé : seul son propriétaire peut l'écouter" },
       el("span", { className: "num", textContent: "—" }),

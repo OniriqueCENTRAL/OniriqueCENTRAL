@@ -102,10 +102,15 @@ textarea { padding: 12px 14px; min-height: 110px; resize: vertical; line-height:
 .tile .art img, .tile .art .cover-ph { width: 100%; height: 100%; object-fit: cover; transition: transform .4s; }
 .tile .art:hover img { transform: scale(1.04); }
 .tile .art .cover-ph svg { width: 38%; height: 38%; }
-.cover-mosaic { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; width: 100%; height: 100%; gap: 2px; background: #0b0607; }
-.cover-mosaic.one { grid-template-columns: 1fr; grid-template-rows: 1fr; }
-.cover-mosaic img { width: 100%; height: 100%; object-fit: cover; min-width: 0; min-height: 0; }
-.cover-mosaic img:first-child:nth-last-child(3) { grid-row: span 2; }
+/* La page d'un pack de pochettes : ses pochettes en grille, à la place des sons. */
+.cover-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin-top: 18px; }
+.cover-card { display: flex; flex-direction: column; gap: 3px; padding: 8px 8px 10px; border-radius: 16px; border: 1px solid var(--line); background: rgba(255,255,255,.03); text-decoration: none; color: var(--mist); min-width: 0; transition: border-color .15s, transform .15s; }
+.cover-card:hover { border-color: rgba(var(--acc),.55); transform: translateY(-2px); }
+.cover-card img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 11px; margin-bottom: 5px; -webkit-user-drag: none; }
+.cover-card b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cover-card span { margin-top: auto; color: var(--ember); font: 700 14px var(--f-body); }
+@media (max-width: 560px) { .cover-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
+@media (prefers-reduced-motion: reduce) { .cover-card, .cover-card:hover { transition: none; transform: none; } }
 .tile .fab-play { position: absolute; right: 10px; bottom: 10px; width: 42px; height: 42px; border-radius: 50%; border: 0; display: grid; place-items: center; background: rgba(13,8,9,.88); color: var(--mist); cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,.5); }
 .tile .fab-play:hover { background: var(--ember); }
 .tile .caption { display: flex; gap: 6px; align-items: flex-start; margin-top: 10px; }
@@ -822,7 +827,6 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
         <a class="install" href="messages" style="text-decoration:none">Messages</a>
         <button class="install" id="hm-open" type="button" aria-pressed="false" title="HM : écouter à plusieurs, en même temps, avec une file partagée">HM</button>
         <button class="install" id="settings-open" type="button">Réglages</button>
-        <button class="install" id="covers-open" type="button" title="Packs de pochettes : envoie tes visuels à des artistes">POCHETTES</button>
         <button class="install" id="scan-open" type="button" hidden title="Chercher si tes prods ont été volées et sorties sur les plateformes">SCAN</button>
       </div>
     </div>
@@ -847,6 +851,8 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
       <button class="edit-toggle" id="pack-mail" type="button" hidden>Mails</button>
       <button class="edit-toggle" id="pack-youtube" type="button" hidden>YouTube</button>
       <button class="edit-toggle" id="pack-tag" type="button" title="Ton tag de producteur, proposé sur tous tes packs" hidden>Tag</button>
+      <button class="edit-toggle" id="covers-pick" type="button" style="margin-left:auto" title="Choisir les pochettes de ta vitrine dans ce pack" hidden>Pochettes</button>
+      <button class="edit-toggle" id="covers-mail" type="button" title="Envoyer ce pack par e-mail depuis ta boîte mail" hidden>Mails</button>
     </div>
     <div class="album">
       <div>
@@ -877,6 +883,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
         <button class="add-bar" id="add-tracks" type="button"></button>
         <p class="error" id="error" role="alert"></p>
         <ol class="tracklist" id="tracklist"></ol>
+        <div class="cover-grid" id="cover-grid" hidden></div>
       </div>
       <div class="side" id="side">
         <div class="lyrics" id="lyrics" hidden></div>
@@ -969,7 +976,8 @@ const longDay = (ms) => new Date(ms).toLocaleDateString("fr-FR", { day: "numeric
 const length = (s) => { s = Math.round(s || 0); return s >= 60 ? Math.floor(s / 60) + " min " + String(s % 60).padStart(2, "0") + " s" : s + " s"; };
 const avatar = (p) => (window.OniriqueAccount ? window.OniriqueAccount.avatar(p) : p.avatar || "assets/favicon.png?v=2");
 // La pochette réduite par le serveur (WebP, 960 px suffit à la grande pochette sur écran Retina).
-const coverOf = (p, cls) => (p.cover ? el("img", { src: p.cover + "?w=960", alt: "", decoding: "async", draggable: false, className: cls || "" }) : Object.assign(el("div", { className: "cover-ph " + (cls || "") }), { innerHTML: '<svg viewBox="0 0 24 24"><path d="M12 1.5 13.3 10.7 22.5 12 13.3 13.3 12 22.5 10.7 13.3 1.5 12 10.7 10.7Z" fill="currentColor"/></svg>' }));
+const coverOf = (p, cls) => (p.cover ? el("img", { src: p.cover + "?w=960", alt: "", decoding: "async", draggable: false, className: cls || "" })
+  : p.visuals && p.visuals.length ? el("img", { src: p.visuals[0].image, alt: "", decoding: "async", draggable: false, className: cls || "" }) : Object.assign(el("div", { className: "cover-ph " + (cls || "") }), { innerHTML: '<svg viewBox="0 0 24 24"><path d="M12 1.5 13.3 10.7 22.5 12 13.3 13.3 12 22.5 10.7 13.3 1.5 12 10.7 10.7Z" fill="currentColor"/></svg>' }));
 
 // CLOUD gratuit : l'invitation à s'abonner ne s'ouvre qu'une fois par ouverture du CLOUD (onglet ou fenêtre de l'application).
 function upsell(why) {
@@ -1486,11 +1494,10 @@ function renderGrid() {
   // À la racine : les dossiers, puis les projets hors dossier (les miens et ceux enregistrés), du plus récent au plus ancien.
   const here = (x) => (x.folderId || null) === (f ? f.id : null);
   const items = (data.vanish ? data.projects.filter((x) => !chosen || x.owner.id === chosen.id).map((x) => ({ kind: "project", x }))
-    : [...data.projects.filter((x) => here(x) && x.kind !== "playlist").map((x) => ({ kind: "project", x })), ...data.saved.filter((x) => here(x) && x.kind !== "playlist").map((x) => ({ kind: "saved", x })),
-      ...(!f && covers ? covers.packs.map((x) => ({ kind: "covers", x })) : [])])
+    : [...data.projects.filter((x) => here(x) && x.kind !== "playlist").map((x) => ({ kind: "project", x })), ...data.saved.filter((x) => here(x) && x.kind !== "playlist").map((x) => ({ kind: "saved", x }))])
     .sort((a, b) => b.x.createdAt - a.x.createdAt);
   const folders = data.vanish ? [] : subfolders(f ? f.id : null);
-  const tiles = [...folders.map(folderTile), ...items.map(({ kind, x }) => (kind === "project" ? projectTile(x) : kind === "covers" ? coverPackTile(x) : savedTile(x))), ...(f || data.vanish ? [] : [trashTile()])];
+  const tiles = [...folders.map(folderTile), ...items.map(({ kind, x }) => (kind === "project" ? projectTile(x) : savedTile(x))), ...(f || data.vanish ? [] : [trashTile()])];
   tiles.forEach((tile, i) => {
     tile.style.setProperty("--i", i);
     tile.oncontextmenu = (event) => { const dots = tile.querySelector(".dots"); if (dots) { event.preventDefault(); event.stopPropagation(); dots.openAt(atPointer(event)); } };
@@ -1545,7 +1552,7 @@ function projectTile(p) {
   art.onclick = () => navigate("#/p/" + p.id);
   art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
   const tile = el("div", { className: "tile" }, art, caption(p.title,
-    el("span", { textContent: (p.kind === "pack" ? "Pack · " + count(p.tracks.length, "prod", "prods") : (p.kind === "playlist" ? "Playlist · " : "") + count(entriesOf(p).length, "titre", "titres"))
+    el("span", { textContent: (p.kind === "covers" ? "Pochettes · " + count((p.visuals || []).length, "pochette", "pochettes") : p.kind === "pack" ? "Pack · " + count(p.tracks.length, "prod", "prods") : (p.kind === "playlist" ? "Playlist · " : "") + count(entriesOf(p).length, "titre", "titres"))
       + (p.mine ? "" : " · de " + (p.artist || p.owner.name)) + (linkFor("project", p.id) ? " · partagé" : "") + (p.mine && p.collaborators.length ? " · en collab" : "") }),
     dotsFor(p.title, (b) => projectMenu(b, p)), projectFeat(p)));
   tile.dataset.id = p.id;
@@ -1580,18 +1587,6 @@ const TRASH_SVG = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" st
   + '<path class="teeth" d="M12 14.5l2 3.2 2-3.2 2 3.2 2-3.2 2 3.2 2-3.2 2 3.2 2-3.2 2 3.2 2-3.2 2 3.2 2-3.2"/>'
   + '<path d="M11.5 14.5l2.6 26a2.4 2.4 0 0 0 2.4 2.1h15a2.4 2.4 0 0 0 2.4-2.1l2.6-26"/>'
   + '<path class="glow" d="M20 23.5v12M28 23.5v12M24 22.5v14"/></svg>';
-// Un pack de pochettes dans la grille : ses quatre premières pochettes en mosaïque ; il s'ouvre dans le panneau POCHETTES.
-function coverPackTile(x) {
-  const images = x.visualIds.map((vid) => covers.visuals.find((v) => v.id === vid)).filter(Boolean).slice(0, 4);
-  const mosaic = images.length ? el("div", { className: "cover-mosaic" + (images.length === 1 ? " one" : "") }, ...images.map((v) => el("img", { src: v.image, alt: "", decoding: "async", draggable: false })))
-    : coverOf({});
-  const art = el("div", { className: "art", role: "link", tabIndex: 0, ariaLabel: "Ouvrir " + x.title }, mosaic);
-  art.onclick = () => openCoverPack(x.id);
-  art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
-  const sent = x.mails.filter((m) => m.status === "sent").length;
-  return el("div", { className: "tile" }, art, caption(x.title,
-    el("span", { textContent: "Pochettes · " + count(x.visualIds.length, "visuel", "visuels") + (sent ? " · envoyé à " + sent : "") })));
-}
 function trashTile() {
   const inner = el("div", { className: "trash-art" + (data.trash ? " full" : "") });
   inner.innerHTML = TRASH_SVG;
@@ -1702,15 +1697,15 @@ function projectMenu(anchor, p) {
     !data.vanish && { label: "Déplacer vers…", icon: "chevron", onclick: () => moveMenu(anchor, p.folderId, (folderId) => api("PATCH", "/me/sounds/projects/" + p.id, { folderId })) },
     p.mine && p.kind === "playlist" && !data.vanish && { label: "Ajouter des sons du CLOUD", icon: "plus", onclick: () => openPick(p) },
     p.kind === "playlist" && !data.vanish && PF.enabled() && { label: "Depuis Spotify", icon: "link", onclick: () => PF.openAdd(p) },
-    p.mine && p.kind && { label: "Repasser en projet classique", icon: "repeat", onclick: () => api("PATCH", "/me/sounds/projects/" + p.id, { kind: "" }).then(refresh, fail) },
-    p.mine && p.kind !== "pack" && { label: "Passer en pack de prods", icon: "repeat", onclick: () => makePack(p).catch(fail) },
+    p.mine && p.kind && p.kind !== "covers" && { label: "Repasser en projet classique", icon: "repeat", onclick: () => api("PATCH", "/me/sounds/projects/" + p.id, { kind: "" }).then(refresh, fail) },
+    p.mine && p.kind !== "pack" && p.kind !== "covers" && { label: "Passer en pack de prods", icon: "repeat", onclick: () => makePack(p).catch(fail) },
     // Le créateur d'une playlist décide si les autres membres peuvent en ajouter les sons à leurs playlists.
     p.mine && p.kind === "playlist" && !data.vanish && { label: p.public ? "Rendre la playlist privée" : "Rendre la playlist publique", icon: "share",
       onclick: () => api("POST", "/me/sounds/projects/" + p.id + "/visibility", { public: !p.public }).then(refresh, fail) },
     p.mine && !data.vanish && { label: p.kind === "playlist" ? "Qui l'a enregistrée" : "Qui l'a enregistré", icon: "user", onclick: () => showSavers(p) },
     p.mine && p.kind === "playlist" && !data.vanish && { label: p.membersAdd ? "Ne plus autoriser l'ajout de ses sons" : "Autoriser les autres à ajouter ses sons", icon: "plus",
       onclick: () => api("POST", "/me/sounds/projects/" + p.id + "/members-add", { open: !p.membersAdd }).then(refresh, fail) },
-    p.mine && p.kind !== "playlist" && { label: "Transformer en Playlist", icon: "queue", onclick: () => api("PATCH", "/me/sounds/projects/" + p.id, { kind: "playlist" }).then(refresh, fail) },
+    p.mine && p.kind !== "playlist" && p.kind !== "covers" && { label: "Transformer en Playlist", icon: "queue", onclick: () => api("PATCH", "/me/sounds/projects/" + p.id, { kind: "playlist" }).then(refresh, fail) },
     "-",
     { label: "Renommer", icon: "more", onclick: async () => {
       const title = await ask("Nom du projet", p.title);
@@ -1855,8 +1850,9 @@ function renderProject(p) {
   $("visitor-toggle").lastChild.textContent = visitor ? "On" : "Off";
   $("edit-toggle").textContent = editing ? "Terminé" : "Modifier";
   $("edit-toggle").ariaPressed = String(editing);
-  if ($("cover").dataset.src !== (p.cover || "-")) {
-    $("cover").dataset.src = p.cover || "-";
+  const coverKey = p.cover || (p.visuals && p.visuals.length ? p.visuals[0].image : "-");
+  if ($("cover").dataset.src !== coverKey) {
+    $("cover").dataset.src = coverKey;
     $("cover").replaceChildren(coverOf(p), el("span", { className: "change", textContent: "Changer la pochette" }));
   }
   const feat = projectFeat(p);
@@ -1867,7 +1863,7 @@ function renderProject(p) {
     editing ? inlineEdit(p.artist || p.owner.name, p.owner.name, 120, (artist) => api("PATCH", "/me/sounds/projects/" + p.id, { artist: artist === p.owner.name ? "" : artist }).then(refresh), true)
       : p.owner.handle ? el("a", { href: "profil?u=" + encodeURIComponent(p.owner.handle), className: "owner-link", textContent: p.artist || p.owner.name, title: "Voir sa page de profil" })
       : el("span", { textContent: p.artist || p.owner.name }),
-    " · " + (p.kind === "pack" ? "Pack de " + count(p.tracks.length, "prod", "prods") : (p.kind === "playlist" ? "Playlist de " : "") + count(entriesOf(p).length, "titre", "titres")) + (p.tracks.length ? " · " + length(projectLength(p)) : ""),
+    " · " + (p.kind === "covers" ? "Pack de " + count((p.visuals || []).length, "pochette", "pochettes") : p.kind === "pack" ? "Pack de " + count(p.tracks.length, "prod", "prods") : (p.kind === "playlist" ? "Playlist de " : "") + count(entriesOf(p).length, "titre", "titres")) + (p.tracks.length ? " · " + length(projectLength(p)) : ""),
     linkFor("project", p.id) ? el("span", { className: "tag on", textContent: "Partagé" }) : "",
     // Une playlist privée n'apparaît ni dans « Découvrir » ni sur la page de profil (clic : la rendre publique).
     p.mine && p.kind === "playlist" && !data.vanish ? el("button", { type: "button", className: "tag" + (p.public ? "" : " on"), textContent: p.public ? "Publique" : "Privée",
@@ -1877,6 +1873,11 @@ function renderProject(p) {
       " · avec ", ...p.collaborators.slice(0, 4).map((u) => el("img", { src: avatar(u), alt: u.name }))) : "");
   $("play-all").disabled = !entriesOf(p).length;
   $("add-tracks").disabled = data.quota.full;
+  const covered = p.kind === "covers";
+  $("play-all").hidden = $("add-tracks").hidden = $("tracklist").hidden = covered;
+  $("cover-grid").hidden = !covered;
+  $("covers-pick").hidden = $("covers-mail").hidden = !covered || !p.mine || !!data.vanish;
+  if (covered) renderCoverGrid(p);
   // La numérotation saute les sons privés.
   let n = 0;
   $("tracklist").replaceChildren(...entriesOf(p).map((x, i) => (x.track ? trackRow(p, x.track, i, x.track.private || x.track.locked ? null : ++n) : (n++, platformRow(p, x.item, i)))));
@@ -2285,7 +2286,8 @@ function addMenu(anchor) {
   menu(anchor, [
     p && p.kind === "playlist" && { label: "Ajouter des sons du CLOUD", icon: "queue", onclick: () => openPick(p) },
     p && p.kind === "playlist" && PF.enabled() && { label: "Depuis Spotify", icon: "link", onclick: () => PF.openAdd(p) },
-    p && { label: "Ajouter des sons à ce projet", icon: "plus", onclick: () => pickFiles({ project: p }) },
+    p && p.kind !== "covers" && { label: "Ajouter des sons à ce projet", icon: "plus", onclick: () => pickFiles({ project: p }) },
+    p && p.kind === "covers" && p.mine && { label: "Choisir les pochettes du pack", icon: "plus", onclick: () => openCovers("pick") },
     { label: "Importer des sons", icon: "download", onclick: () => pickFiles(null) },
     { label: "Nouveau projet", icon: "star", onclick: async () => {
       const title = await ask("Nom du nouveau projet");
@@ -2303,6 +2305,15 @@ function addMenu(anchor) {
         const { id } = await api("POST", "/me/sounds/projects", { title, kind: "pack" });
         if (folderId()) await api("PATCH", "/me/sounds/projects/" + id, { folderId: folderId() });
         await refresh(); location.hash = "#/p/" + id;
+      } catch (error) { fail(error); }
+    } },
+    { label: "Créer un pack de pochettes", icon: "star", onclick: async () => {
+      const title = await ask("Nom du pack de pochettes");
+      if (!title) return;
+      try {
+        const { id } = await api("POST", "/me/sounds/projects", { title, kind: "covers" });
+        if (folderId()) await api("PATCH", "/me/sounds/projects/" + id, { folderId: folderId() });
+        await refresh(); location.hash = "#/p/" + id; openCovers("pick");
       } catch (error) { fail(error); }
     } },
     { label: "Créer une playlist", icon: "queue", onclick: createPlaylist },
@@ -4539,73 +4550,66 @@ lightClose($("settings"));
     if (error.status !== 403 && error.status !== 401) $("gate").firstChild.textContent = error.message;
   }
 })();
-// POCHETTES : les packs de pochettes. Des visuels de sa vitrine réunis dans un pack, ouvert par un lien (page /pochettes,
-// copies filigranées) et envoyé par e-mail depuis sa boîte mail, à des adresses collées ou à une liste de contacts.
-var covers = null, coverOpen = null, coverPoll = 0, coverFromTile = false;
+// Les packs de pochettes : des projets comme les autres (pochette, fond, partage…), faits de visuels de la vitrine de
+// leur auteur. Dans la page du pack, « Pochettes » choisit les visuels, « Mails » envoie le pack depuis sa boîte mail.
+var covers = null, coverMode = "pick", coverPoll = 0;
 const coverWhen = (t) => new Date(t).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+const coverInfo = (p) => (covers && covers.packs[p.id]) || { message: "", visualIds: (p.visuals || []).map((v) => v.id), mails: [] };
 async function loadCovers() {
-  try { covers = await api("GET", "/me/cover-packs"); drawCovers(); } catch (error) { fail(error); }
+  try { covers = await api("GET", "/me/cover-packs"); if ($("covers").open) drawCovers(); } catch (error) { fail(error); }
   clearTimeout(coverPoll);
   // Un envoi en cours : la liste des destinataires se met à jour toute seule.
-  if ($("covers").open && covers && covers.packs.some((p) => p.mails.some((m) => m.status === "wait"))) coverPoll = setTimeout(loadCovers, 5000);
+  const p = project();
+  if ($("covers").open && p && coverInfo(p).mails.some((m) => m.status === "wait")) coverPoll = setTimeout(loadCovers, 5000);
 }
-$("covers-open").onclick = () => { coverOpen = null; coverFromTile = false; drawCovers(); $("covers").showModal(); loadCovers(); };
-function openCoverPack(packId) { coverOpen = packId; coverFromTile = true; drawCovers(); $("covers").showModal(); loadCovers(); }
-$("covers").addEventListener("close", () => { if (data) render(); });
+function openCovers(mode) { coverMode = mode; drawCovers(); $("covers").showModal(); loadCovers(); }
+$("covers-pick").onclick = () => openCovers("pick");
+$("covers-mail").onclick = () => openCovers("mail");
 lightClose($("covers"));
+$("covers").addEventListener("close", () => { clearTimeout(coverPoll); refresh().catch(fail); });
+// La grille des pochettes dans la page du pack : chacune mène à sa fiche (prix, achat).
+function renderCoverGrid(p) {
+  const visuals = p.visuals || [];
+  $("cover-grid").replaceChildren(...(visuals.length ? visuals.map((v) => el("a", { className: "cover-card", href: "article?v=" + v.id, target: "_blank", rel: "noopener" },
+    el("img", { src: v.image, alt: v.title, loading: "lazy", draggable: false }), el("b", { textContent: v.title }),
+    el("span", { textContent: v.sold ? "Vendu" : v.price ? (v.price / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: v.price % 100 ? 2 : 0 }) : "Sur demande" })))
+    : [el("p", { className: "muted", style: "grid-column:1/-1;margin:0", textContent: p.mine ? "Aucune pochette pour l'instant : touche « Pochettes » pour choisir celles de ta vitrine." : "Aucune pochette pour l'instant." })]));
+}
 function drawCovers() {
-  const dialog = $("covers"), p = covers && covers.packs.find((x) => x.id === coverOpen);
+  const dialog = $("covers"), p = project();
+  if (!p || p.kind !== "covers") return dialog.close();
   const head = el("div", { className: "dlg-head" },
-    p ? el("button", { className: "btn btn-ghost back-btn", type: "button", onclick: () => { if (coverFromTile) dialog.close(); else { coverOpen = null; drawCovers(); } } },
-      icon("back"), coverFromTile ? "Retour" : "Tous les packs") : null,
-    el("b", { className: "grow", textContent: p ? p.title : "Packs de pochettes" }),
+    el("button", { className: "btn btn-ghost back-btn", type: "button", onclick: () => dialog.close() }, icon("back"), "Retour"),
+    el("b", { className: "grow", textContent: coverMode === "mail" ? "Envoyer « " + p.title + " »" : "Pochettes du pack" }),
     el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close")));
   const stack = el("div", { className: "stack" }), put = (...xs) => stack.append(...xs.filter(Boolean));
   dialog.replaceChildren(head, stack);
   if (!covers) return put(el("p", { className: "muted", style: "margin:0", textContent: "Chargement…" }));
   const say = el("p", { className: "muted", style: "margin:0;font-size:13px;min-height:1.2em", role: "status" });
   const oops = (error) => { say.textContent = error.message; say.style.color = "#ff8a95"; };
-  if (!covers.handle) return put(el("p", { style: "margin:0", textContent: "Les pochettes d'un pack viennent de ta vitrine, qui demande une page de profil : c'est par elle qu'on te contacte." }),
-    el("div", { className: "row" }, el("a", { className: "btn btn-primary", href: "profil", textContent: "Créer ma page de profil" })));
-  if (!p) {
-    const name = el("input", { maxLength: 100, placeholder: "Nom du pack (ex. Covers drill · novembre)" });
-    const create = el("button", { className: "btn btn-primary", type: "submit", textContent: "Créer le pack" });
-    const form = el("form", { className: "row" }, name, create);
-    form.onsubmit = async (event) => {
-      event.preventDefault(); create.disabled = true;
-      try { const made = await api("POST", "/me/cover-packs", { title: name.value }); coverOpen = made.id; await loadCovers(); } catch (error) { oops(error); create.disabled = false; }
-    };
-    const sentOf = (x) => x.mails.filter((m) => m.status === "sent").length;
-    put(el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: "Réunis tes pochettes dans un pack, puis envoie-le à des artistes : ils reçoivent un mail avec les visuels et un lien vers une page où les voir en grand (avec ton filigrane), les acheter ou t'écrire." }),
-      form, say,
-      !covers.visuals.length ? el("p", { style: "margin:0;font-size:14px" }, "Tu n'as encore aucun visuel : ", el("a", { href: "vitrine", textContent: "publie tes pochettes dans ta vitrine" }), ", puis reviens ici.") : null,
-      covers.packs.length ? el("ul", { className: "group" }, ...covers.packs.map((x) => el("li", {}, el("button", { className: "item", type: "button", onclick: () => { coverOpen = x.id; drawCovers(); } },
-        el("div", { className: "grow" }, x.title, el("small", { textContent: x.visualIds.length + " visuel" + (x.visualIds.length > 1 ? "s" : "") + " · " + sentOf(x) + " envoyé" + (sentOf(x) > 1 ? "s" : "") })),
-        icon("chevron"))))) : null);
-    return;
+  const info = coverInfo(p);
+  const save = (body) => api("PATCH", "/me/sounds/projects/" + p.id + "/covers", body).then((made) => { Object.assign(info, made); covers.packs[p.id] = info; say.textContent = "Enregistré"; say.style.color = ""; }, oops);
+  if (coverMode === "pick") {
+    if (!covers.handle) return put(el("p", { style: "margin:0", textContent: "Les pochettes d'un pack viennent de ta vitrine, qui demande une page de profil : c'est par elle qu'on te contacte." }),
+      el("div", { className: "row" }, el("a", { className: "btn btn-primary", href: "profil", textContent: "Créer ma page de profil" })));
+    if (!covers.visuals.length) return put(el("p", { style: "margin:0;font-size:14px" }, "Tu n'as encore aucun visuel : ", el("a", { href: "vitrine", textContent: "publie tes pochettes dans ta vitrine" }), ", puis reviens ici."));
+    // Coche les visuels de ta vitrine : ils entrent dans le pack dans l'ordre où tu les coches.
+    const picks = el("div", { className: "cover-picks" }, ...covers.visuals.map((v) => {
+      const box = el("input", { type: "checkbox", checked: info.visualIds.includes(v.id), ariaLabel: v.title });
+      box.onchange = () => save({ visualIds: box.checked ? [...info.visualIds, v.id] : info.visualIds.filter((x) => x !== v.id) });
+      return el("label", { className: "cover-pick", title: v.title }, box, el("img", { src: v.image, alt: "", loading: "lazy" }), el("span", { textContent: v.title }));
+    }));
+    return put(el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: "Coche les pochettes de ta vitrine à mettre dans ce pack, dans l'ordre voulu. Les visiteurs voient des copies avec ton filigrane ; l'original part à l'achat." }),
+      picks, say, el("p", { style: "margin:0;font-size:13px" }, el("a", { href: "vitrine", textContent: "Publier d'autres pochettes dans ma vitrine" })));
   }
-  const save = (body) => api("PATCH", "/me/cover-packs/" + p.id, body).then((made) => { Object.assign(p, made); say.textContent = "Enregistré"; say.style.color = ""; }, oops);
-  const title = el("input", { value: p.title, maxLength: 100, onchange: () => save({ title: title.value }).then(() => { head.querySelector("b").textContent = p.title; }) });
-  const message = el("textarea", { value: p.message, maxLength: 2000, placeholder: "Le texte du mail. {nom} est remplacé par le nom du contact : « Salut {nom}, voici mes dernières covers… »", style: "min-height:90px", onchange: () => save({ message: message.value }) });
-  // Les visuels du pack, dans l'ordre où on les coche.
-  const picks = el("div", { className: "cover-picks" }, ...covers.visuals.map((v) => {
-    const box = el("input", { type: "checkbox", checked: p.visualIds.includes(v.id), ariaLabel: v.title });
-    box.onchange = () => save({ visualIds: box.checked ? [...p.visualIds, v.id] : p.visualIds.filter((x) => x !== v.id) });
-    return el("label", { className: "cover-pick", title: v.title }, box, el("img", { src: v.image, alt: "", loading: "lazy" }), el("span", { textContent: v.title }));
-  }));
-  const copy = el("button", { className: "btn btn-ghost", type: "button" }, icon("link"), "Copier le lien");
-  copy.onclick = async () => { try { await navigator.clipboard.writeText(p.url); copy.replaceChildren(icon("link"), "Lien copié"); } catch { prompt("Copie ce lien :", p.url); } };
-  put(el("label", { className: "field" }, el("span", { textContent: "Nom du pack (l'objet du mail)" }), title),
+  const message = el("textarea", { value: info.message, maxLength: 2000, placeholder: "Le texte du mail. {nom} est remplacé par le nom du contact : « Salut {nom}, voici mes dernières covers… »", style: "min-height:90px", onchange: () => save({ message: message.value }) });
+  put(el("p", { className: "muted", style: "margin:0;font-size:14px", textContent: "Le mail montre la pochette du pack, ses premières pochettes et un bouton vers sa page de partage. L'objet du mail est le nom du pack." }),
     el("label", { className: "field" }, el("span", { textContent: "Message" }), message),
-    el("div", { className: "sub-title", textContent: "Pochettes du pack" }),
-    covers.visuals.length ? picks : el("p", { style: "margin:0;font-size:14px" }, "Aucun visuel : ", el("a", { href: "vitrine", textContent: "publie tes pochettes dans ta vitrine" }), "."),
-    el("div", { className: "row" }, copy, el("a", { className: "btn btn-ghost", href: p.url, target: "_blank", rel: "noopener", textContent: "Voir la page" })),
-    el("div", { className: "sub-title", textContent: "Envoyer par e-mail" }), coverSend(p, oops), say);
-  if (p.mails.length) put(el("div", { className: "sub-title", textContent: "Destinataires" }), el("ul", { className: "group" }, ...p.mails.map((m) => el("li", { className: "item", style: "cursor:default" },
+    !covers.subscribed ? el("p", { style: "margin:0;font-size:14px" }, "Les liens et les mails des packs font partie de l'abonnement ONIRIQUE CLOUD. ", el("a", { href: "cloud", textContent: "Passer à l'abonnement" })) : coverSend(p, oops),
+    say);
+  if (info.mails.length) put(el("div", { className: "sub-title", textContent: "Destinataires" }), el("ul", { className: "group" }, ...info.mails.map((m) => el("li", { className: "item", style: "cursor:default" },
     el("div", { className: "grow" }, m.name ? m.name + " · " + m.email : m.email,
       el("small", { textContent: m.status === "wait" ? "En attente d'envoi" : m.status === "error" ? "Échec : " + m.error : "Envoyé le " + coverWhen(m.sentAt) + (m.clickedAt ? " · a ouvert le lien le " + coverWhen(m.clickedAt) : " · lien pas encore ouvert") }))))));
-  put(el("div", { className: "row" }, el("button", { className: "btn btn-ghost", type: "button", textContent: "Supprimer le pack",
-    onclick: () => confirm("Supprimer le pack « " + p.title + " » ? Son lien ne s'ouvrira plus.") && api("DELETE", "/me/cover-packs/" + p.id).then(() => { coverOpen = null; return loadCovers(); }, oops) })));
 }
 // L'envoi : la boîte mail du membre d'abord (Google, ou une autre boîte par son serveur d'envoi), puis les destinataires.
 function coverSend(p, oops) {
@@ -4616,7 +4620,7 @@ function coverSend(p, oops) {
     const preset = el("select", {}, ...Object.entries(PRESETS).map(([k, [label]]) => el("option", { value: k, textContent: label })));
     const host = el("input", { value: PRESETS.outlook[1], autocomplete: "off" }), port = el("input", { value: String(PRESETS.outlook[2]), inputMode: "numeric" });
     const login = el("input", { type: "email", placeholder: "ton.adresse@mail.fr", autocomplete: "off" }), password = el("input", { type: "password", placeholder: "Mot de passe d'application", autocomplete: "new-password" });
-    const fromName = el("input", { value: data.owner.name || "", maxLength: 80 });
+    const fromName = el("input", { value: p.artist || data.owner.name || "", maxLength: 80 });
     preset.onchange = () => { const [, h, n] = PRESETS[preset.value]; host.value = h; port.value = n; };
     const go = el("button", { className: "btn btn-primary", type: "button", textContent: "Connecter ma boîte mail" });
     go.onclick = async () => {
@@ -4625,7 +4629,7 @@ function coverSend(p, oops) {
       catch (error) { oops(error); go.disabled = false; }
     };
     const google = el("button", { className: "btn btn-ghost", type: "button", textContent: "Se connecter avec Google (Gmail)", disabled: !m.googleReady });
-    google.onclick = async () => { google.disabled = true; try { location.href = (await api("POST", "/me/sounds/mailer/google", { fromName: data.owner.name })).url; } catch (error) { oops(error); google.disabled = false; } };
+    google.onclick = async () => { google.disabled = true; try { location.href = (await api("POST", "/me/sounds/mailer/google", { projectId: p.id, fromName: p.artist || data.owner.name })).url; } catch (error) { oops(error); google.disabled = false; } };
     box.append(el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Les mails partent de ta propre adresse : connecte ta boîte mail." }), el("div", { className: "row" }, google),
       el("details", { className: "other-box" }, el("summary", { textContent: "Une autre boîte mail (Outlook, IONOS…)" }),
         el("p", { className: "muted", style: "margin:10px 0;font-size:13px", textContent: "Avec le mot de passe d'application de la boîte (dans les réglages de sécurité de ton compte), pas ton mot de passe habituel." }),
@@ -4639,7 +4643,7 @@ function coverSend(p, oops) {
   send.onclick = async () => {
     send.disabled = true;
     try {
-      const r = await api("POST", "/me/cover-packs/" + p.id + "/send", { emails: emails.value, listId: list.value ? Number(list.value) : null });
+      const r = await api("POST", "/me/sounds/projects/" + p.id + "/covers/send", { emails: emails.value, listId: list.value ? Number(list.value) : null });
       emails.value = ""; await loadCovers();
       alert(r.total + " mail" + (r.total > 1 ? "s partent" : " part") + " depuis ta boîte, un toutes les 15 à 30 secondes.");
     } catch (error) { oops(error); send.disabled = false; }
