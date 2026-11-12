@@ -269,7 +269,8 @@ function lockedFor(t, uid) {
 }
 // Ce qu'un membre peut faire d'un projet : un projet classique (''), un pack de prods, ou une playlist (des sons déjà
 // dans ONIRIQUE CLOUD, ajoutés par « Ajouter à… » sans être renvoyés).
-const KINDS = ['', 'pack', 'playlist'];
+// covers : un pack de pochettes (coverpacks.js), fait de visuels de la vitrine au lieu de sons.
+const KINDS = ['', 'pack', 'playlist', 'covers'];
 // La vente des prods, façon BeatStars : les licences de chaque beatmaker (MP3, WAV, Track Stems, Exclusive…), les
 // fichiers livrés avec chaque prod, son compte de paiement (Stripe ou PayPal, clés chiffrées), les commandes, et ses
 // listes d'adresses pour les mails (importées d'un CSV).
@@ -755,6 +756,10 @@ function listeningHtml(v, token) {
 }
 
 export function mountSounds(app, { requireUser, receiveFile, receiveImage, removeMedia, wrap }) {
+  // Les pochettes des packs de pochettes, chargées après coup : coverpacks.js dépend de la vitrine, montée après ce fichier.
+  let coverPacks = null;
+  import('./coverpacks.js').then((m) => { coverPacks = m; });
+  const visualsOf = (p) => (p.kind === 'covers' && coverPacks ? coverPacks.projectVisuals(p.id) : []);
   purgeTrash();
   sweepSounds();
   const member = (req, _res, next) => (can(req.user, 'sounds') ? next()
@@ -876,6 +881,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
         // « Contacter le vendeur », comme sur la page d'écoute (montré en mode visiteur).
         contact: p.kind === 'pack' ? p.owner_instagram || null : null,
         mail: p.kind === 'pack' && p.user_id === u ? mailDraft(JSON.parse(p.mail || '{}')) : null,
+        ...(p.kind === 'covers' ? { visuals: visualsOf(p) } : {}),
         tracks: tracks.filter((t) => t.project_id === p.id).map((t) => {
           const mine = plays.filter((r) => r.track_id === t.id);
           // locked : un son privé d'un autre (copie dans une playlist, ou VANISH) : ni adresse, ni paroles.
@@ -1004,6 +1010,8 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
     // nom du fichier de chaque son ; la page détecte ensuite sur le son ceux que le nom ne donne pas.
     if (req.body.kind !== undefined) {
       const kind = KINDS.includes(req.body.kind) ? req.body.kind : '';
+      // Un pack de pochettes le reste, et un projet de sons ne le devient pas : leurs contenus n'ont rien en commun.
+      if ((kind === 'covers') !== (p.kind === 'covers')) throw new HttpError(400, "Un pack de pochettes ne change pas de type.");
       if (kind === 'pack' && !can(req.user, 'sounds')) throw new HttpError(402, "Les packs de prods à vendre font partie de l'abonnement ONIRIQUE CLOUD.");
       if (kind === 'pack' && get('SELECT 1 FROM sound_tracks WHERE project_id = ? AND via_link IS NOT NULL', p.id)) throw new HttpError(400, "Cette playlist contient des sons d'autres membres : elle ne peut pas devenir un pack.");
       run('UPDATE sound_projects SET kind = ? WHERE id = ?', kind, ownProject(req, p.id).id);
@@ -1143,6 +1151,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   // Un nouveau titre : le fichier en corps brut, son nom dans ?filename= ; il devient sa version 1.
   app.post('/api/me/sounds/projects/:id/tracks', ...me, wrap(async (req, res) => {
     const p = project(req, req.params.id);
+    if (p.kind === 'covers') throw new HttpError(400, "Un pack de pochettes contient des visuels de ta vitrine, pas des sons.");
     rateLimit(`sounds-upload:${req.user.id}`, 200, 3600_000);
     freeRoom(p.user_id);
     const file = await receiveAudio(req, p.user_id);
@@ -1625,6 +1634,8 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       collabAbouts: aboutsOf(all('SELECT u.id, u.name FROM sound_collabs c JOIN users u ON u.id = c.user_id WHERE c.project_id = ? ORDER BY c.created_at', p.id)),
       // Une playlist : ses titres Spotify (ou Deezer, Apple Music) aussi, à leur place parmi les sons du CLOUD.
       items: p.kind === 'playlist' && !link.track_id ? shareItems(p.id, optionalUser(req)?.id) : [],
+      // Un pack de pochettes : ses visuels (copies filigranées) au lieu de sons.
+      kind: p.kind, visuals: link.track_id ? [] : visualsOf(p),
       tracks: tracks.map((t) => ({
         id: t.id, position: t.position, title: t.title, stage: t.stage, day: t.day, credits: creditsOf(t), lyrics: t.lyrics, bpm: t.bpm, key: t.music_key,
         offers: p.kind === 'pack' ? offersOf(t, p.user_id, simulate) : [], sold: !!t.sold,
