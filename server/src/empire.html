@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>ONIRIQUE — L'empire anto ment</title>
+<link rel="icon" type="image/png" href="/assets/favicon.png?v=2">
+<link rel="stylesheet" href="/assets/fonts.css">
+<style>
+/* L'empire anto ment : la carte des fondateurs, dans le style de la carte des membres (constellation sur la nuit, plan
+   incliné) ; les grands monuments de l'empire sont des « stops » qu'on fait tourner pour gagner du butin. */
+:root {
+  --night: #050306; --line: rgba(255,210,214,.13); --mist: #F6EEEE; --haze: #A88F92; --ember: rgb(var(--acc)); --pink: rgb(var(--acc-hi)); --rose: #ffb3bb;
+  --used: #a98bff;
+  --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--night); color: var(--mist); font: 400 15px/1.5 var(--f-body); -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
+#sky { position: fixed; inset: 0; z-index: 0; }
+.halo { position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(60% 50% at 50% 60%, rgba(150,10,30,.22), transparent 70%), radial-gradient(40% 35% at 15% 10%, rgba(120,8,26,.25), transparent 70%); }
+header { position: fixed; top: 0; left: 0; right: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px clamp(14px, 3vw, 28px); pointer-events: none; }
+header > * { pointer-events: auto; }
+.brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 800 16px/1 var(--f-display); letter-spacing: .16em; }
+.brand img { width: 40px; height: auto; margin-block: -10px; filter: drop-shadow(0 0 6px rgba(var(--acc),.8)); }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; border: 1px solid var(--line); background: rgba(13,8,9,.55); backdrop-filter: blur(12px);
+  font: 600 13px/1 var(--f-body); text-decoration: none; cursor: pointer; color: var(--mist); }
+.btn:hover { border-color: var(--ember); }
+
+#scene { position: fixed; inset: 0; z-index: 1; perspective: 1400px; perspective-origin: 50% 40%; cursor: grab; touch-action: none; user-select: none; }
+#scene.drag { cursor: grabbing; }
+#plane { position: absolute; left: 50%; top: 54%; width: 2500px; height: 2500px; margin: -1250px 0 0 -1250px; transform-style: preserve-3d; }
+@media (min-width: 861px) { #plane { left: calc(50% + 150px); top: 50%; } }
+#plane svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.coast { fill: none; stroke: rgba(255,179,187,.42); stroke-width: 1.1; stroke-linejoin: round; filter: url(#glow); stroke-dasharray: var(--len); stroke-dashoffset: var(--len);
+  animation: draw 3.2s cubic-bezier(.6, .1, .2, 1) forwards; }
+.coast.sea { stroke: rgba(150,190,255,.28); animation-delay: .8s; }
+.land { fill: rgba(var(--acc),.06); opacity: 0; animation: fade 2s 1.8s forwards; }
+.land.sea { fill: rgba(5,3,6,.92); }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes fade { to { opacity: 1; } }
+.star { fill: #ffe9ec; opacity: 0; animation: appear .6s forwards; }
+@keyframes appear { to { opacity: var(--o, .8); } }
+.sealabel { font: 500 9px var(--f-mono); letter-spacing: .3em; fill: rgba(150,190,255,.4); text-anchor: middle; text-transform: uppercase; opacity: 0; animation: fade 2s 2.4s forwards; }
+
+/* Les stops : posés à plat au-dessus de la carte (#labels), à la position de leur monument à l'écran. */
+#labels { position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
+.stop { position: absolute; left: 0; top: 0; width: 0; height: 0; will-change: transform; }
+.stop button { position: absolute; left: -16px; top: -46px; width: 32px; height: 50px; border: 0; padding: 0; background: none; cursor: pointer; pointer-events: auto; }
+/* Le pilier, le socle qui pulse et le cube qui tourne au sommet. */
+.stop .pole { position: absolute; left: 15px; top: 20px; width: 2px; height: 26px; background: linear-gradient(var(--rose), transparent); }
+.stop .base { position: absolute; left: 6px; top: 40px; width: 20px; height: 8px; border-radius: 50%; border: 2px solid var(--pink); opacity: .8; }
+.stop .base::after { content: ""; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid var(--pink); animation: ping 2.4s var(--d, 0s) ease-out infinite; }
+@keyframes ping { from { transform: scale(.6); opacity: 1; } to { transform: scale(2.6); opacity: 0; } }
+.stop .gem { position: absolute; left: 6px; top: 2px; width: 20px; height: 20px; border-radius: 5px; transform-style: preserve-3d;
+  background: radial-gradient(circle at 35% 30%, #fff 0 12%, var(--pink) 35%, var(--ember) 75%); box-shadow: 0 0 14px var(--ember), 0 0 30px rgba(var(--acc),.5);
+  animation: gem 3.2s var(--d, 0s) linear infinite; }
+@keyframes gem { from { transform: rotateX(55deg) rotateZ(0); } to { transform: rotateX(55deg) rotateZ(360deg); } }
+.stop.used .gem { background: radial-gradient(circle at 35% 30%, #fff 0 12%, #cdbbff 35%, var(--used) 75%); box-shadow: 0 0 12px var(--used); }
+.stop.used .base, .stop.used .base::after { border-color: var(--used); }
+.stop.on button { scale: 1.3; }
+.stop button:hover { scale: 1.15; }
+.tag { position: absolute; left: 0; top: 0; white-space: nowrap; opacity: 0; transition: opacity .3s; will-change: transform; }
+.tag.show { opacity: 1; }
+.tag b { display: block; text-align: center; font: 800 10.5px/1.1 var(--f-display); letter-spacing: .08em; text-transform: uppercase; text-shadow: 0 0 10px #000, 0 0 3px #000; }
+.tag i { display: block; text-align: center; font: 500 9.5px var(--f-mono); font-style: normal; color: var(--pink); letter-spacing: .1em; text-shadow: 0 0 8px #000; }
+
+.glass { background: linear-gradient(160deg, rgba(255,255,255,.075), rgba(255,255,255,.02) 40%, rgba(255,255,255,.035)), rgba(10,6,8,.62);
+  border: 1px solid rgba(255,235,238,.1); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.4), 0 18px 40px rgba(0,0,0,.45);
+  backdrop-filter: blur(22px) saturate(140%); border-radius: 22px; }
+.eyebrow { font: 500 11px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); display: flex; align-items: center; gap: 8px; }
+.eyebrow::before { content: ""; width: 11px; height: 11px; background: var(--mist); clip-path: polygon(50% 0, 56% 44%, 100% 50%, 56% 56%, 50% 100%, 44% 56%, 0 50%, 44% 44%); filter: drop-shadow(0 0 4px var(--ember)); }
+#side { position: fixed; z-index: 10; left: clamp(12px, 3vw, 28px); top: 84px; width: 320px; max-height: calc(100vh - 120px); overflow-y: auto; padding: 20px; display: grid; gap: 14px; align-content: start;
+  animation: rise .8s .4s both cubic-bezier(.2, .8, .2, 1); scrollbar-width: thin; }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+#side h1 { margin: 0; font: 800 22px/1.1 var(--f-display); }
+#side h1 em { font-style: normal; color: var(--ember); }
+.count { font: 500 12px var(--f-mono); color: var(--haze); letter-spacing: .06em; }
+.count b { color: var(--mist); }
+.bag { display: flex; flex-wrap: wrap; gap: 6px; }
+.bag span { border: 1px solid var(--line); background: rgba(255,255,255,.03); border-radius: 999px; padding: 5px 10px; font: 600 12px var(--f-body); }
+.bag span b { color: var(--pink); font: 500 11px var(--f-mono); margin-left: 4px; }
+.list { display: grid; gap: 2px; }
+.list button { display: flex; justify-content: space-between; gap: 10px; padding: 7px 10px; border: 0; border-radius: 10px; background: none; cursor: pointer; text-align: left; font: 600 13px var(--f-body); }
+.list button:hover { background: rgba(255,255,255,.05); }
+.list button small { font: 500 11px var(--f-mono); color: var(--haze); white-space: nowrap; }
+.list button.used small { color: var(--used); }
+.empty { color: var(--haze); font-size: 13px; margin: 0; }
+.hint { font: 500 10.5px/1.5 var(--f-mono); color: var(--haze); letter-spacing: .04em; }
+
+/* Le panneau d'un stop : le disque à faire tourner, l'histoire du monument, le butin. */
+#stop { position: fixed; z-index: 11; right: clamp(12px, 3vw, 28px); top: 84px; width: 360px; max-height: calc(100vh - 110px); overflow-y: auto; padding: 22px; display: grid; gap: 14px; justify-items: center; text-align: center;
+  transform: translateX(calc(100% + 40px)); transition: transform .55s cubic-bezier(.2, .8, .2, 1); }
+#stop.open { transform: none; }
+#stop .x { justify-self: end; margin-bottom: -40px; border: 1px solid var(--line); background: rgba(255,255,255,.04); width: 34px; height: 34px; border-radius: 10px; cursor: pointer; }
+#stop h2 { margin: 0; font: 800 22px/1.15 var(--f-display); }
+#stop p { margin: 0; font-size: 14px; color: #d9c6c9; text-align: left; }
+.disc { width: 190px; height: 190px; border-radius: 50%; display: grid; place-items: center; font-size: 74px; cursor: pointer; border: 6px solid var(--ember); touch-action: none;
+  background: radial-gradient(circle at 50% 40%, rgba(255,179,187,.25), transparent 60%), conic-gradient(from 0deg, #2a0a0e, #4a0f18, #2a0a0e, #4a0f18, #2a0a0e);
+  box-shadow: 0 0 0 6px rgba(255,255,255,.06), 0 0 40px rgba(var(--acc),.6), inset 0 0 30px rgba(0,0,0,.6); transition: border-color .4s, box-shadow .4s; }
+.disc.spin { animation: spin 1.1s cubic-bezier(.2, .7, .3, 1); }
+@keyframes spin { to { transform: rotate(1080deg); } }
+.disc.used { border-color: var(--used); box-shadow: 0 0 0 6px rgba(255,255,255,.06), 0 0 30px rgba(169,139,255,.5), inset 0 0 30px rgba(0,0,0,.6); cursor: default; }
+.go { padding: 12px 22px; border-radius: 999px; border: 0; background: var(--mist); color: #0d0809; font: 700 14px var(--f-body); cursor: pointer; }
+.go:disabled { background: rgba(255,255,255,.08); color: var(--haze); cursor: default; }
+.loot { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; min-height: 10px; }
+.loot span { padding: 8px 12px; border-radius: 14px; border: 1px solid rgba(var(--acc),.6); background: rgba(var(--acc),.15); font: 700 13px var(--f-body); animation: pop .6s both cubic-bezier(.2, 1.6, .4, 1); animation-delay: calc(var(--i) * 120ms); }
+.loot span.rare { border-color: #ffd36b; background: rgba(255,211,107,.15); }
+@keyframes pop { from { opacity: 0; transform: translateY(30px) scale(.4); } }
+#zoom { position: fixed; z-index: 10; right: clamp(12px, 3vw, 28px); bottom: 18px; display: grid; gap: 6px; }
+#zoom button { width: 42px; height: 42px; border-radius: 12px; cursor: pointer; font: 700 18px var(--f-body); }
+#intro { position: fixed; z-index: 30; inset: 0; display: grid; place-items: center; pointer-events: none; font: 800 clamp(22px, 4vw, 40px)/1.1 var(--f-display); letter-spacing: .2em; text-align: center;
+  animation: intro 2.6s forwards; text-shadow: 0 0 30px rgba(var(--acc),.8); }
+#intro small { display: block; margin-top: 12px; font: 500 12px var(--f-mono); letter-spacing: .3em; color: var(--pink); }
+@keyframes intro { 0% { opacity: 0; transform: scale(.96); } 25%, 60% { opacity: 1; transform: none; } 100% { opacity: 0; transform: scale(1.04); visibility: hidden; } }
+@media (max-width: 860px) {
+  #side { top: auto; bottom: 12px; left: 12px; right: 12px; width: auto; max-height: 30vh; padding: 14px; }
+  body.stop-open #side { display: none; }
+  #plane { top: 40%; }
+  #stop { left: 12px; right: 12px; top: auto; bottom: 12px; width: auto; max-height: 70vh; transform: translateY(calc(100% + 30px)); }
+  #zoom { top: 76px; bottom: auto; right: 12px; }
+  body.stop-open #zoom { display: none; }
+  .hide-phone { display: none; }
+}
+@media (pointer: coarse) { .coast { filter: none; } .glass, .btn { backdrop-filter: none; } .glass { background: rgba(12,7,9,.93); } .list button { min-height: 44px; align-items: center; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01s !important; animation-iteration-count: 1 !important; transition: none !important; } }
+</style>
+<link rel="stylesheet" href="/assets/da.css?v=7">
+<script src="/assets/accent.js?v=1"></script>
+
+<canvas id="sky" aria-hidden="true"></canvas>
+<div class="halo" aria-hidden="true"></div>
+<div id="intro" aria-hidden="true">L'EMPIRE ANTO MENT<small>CARTE PRIVÉE · FONDATEURS</small></div>
+<header>
+  <a class="brand" href="/"><img src="/assets/logo-small.png" alt="Logo Onirique" width="160" height="145"><span class="hide-phone">ONIRIQUE</span></a>
+  <a class="btn" href="/carte">Carte des membres</a>
+</header>
+
+<div id="labels"></div>
+<div id="scene" aria-label="Carte de l'empire : glisser pour déplacer, molette pour zoomer">
+  <div id="plane">
+    <svg viewBox="0 0 1000 1000" aria-hidden="true">
+      <defs><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+      <g id="lands"></g><g id="stars"></g><g id="seas"></g>
+    </svg>
+  </div>
+</div>
+
+<aside id="side" class="glass">
+  <span class="eyebrow">Privé · fondateurs</span>
+  <h1>L'empire <em>anto ment</em></h1>
+  <span class="count" id="count"></span>
+  <span class="hint">Glisser : déplacer · Molette : zoomer · Clic droit maintenu : tourner et incliner. Clique un stop, fais tourner son disque.</span>
+  <div><span class="eyebrow" style="margin-bottom:10px">Ton butin</span><div class="bag" id="bag"></div></div>
+  <div><span class="eyebrow" style="margin-bottom:8px">Les stops</span><div class="list" id="list"></div></div>
+</aside>
+
+<aside id="stop" class="glass" aria-live="polite">
+  <button class="x" type="button" id="stop-close" aria-label="Fermer">✕</button>
+  <span class="eyebrow" id="stop-city"></span>
+  <h2 id="stop-name"></h2>
+  <div class="disc" id="disc" role="button" tabindex="0" aria-label="Faire tourner le disque"></div>
+  <button class="go" type="button" id="spin">Faire tourner</button>
+  <div class="loot" id="loot"></div>
+  <p id="stop-text"></p>
+</aside>
+
+<div id="zoom"><button class="glass" type="button" id="zoom-in" aria-label="Zoomer">+</button><button class="glass" type="button" id="zoom-out" aria-label="Dézoomer">−</button><button class="glass" type="button" id="view-flat" title="Vue de dessus ou inclinée" style="font-size:11px">3D</button><button class="glass" type="button" id="zoom-reset" title="Revenir à tout l'empire" style="font-size:13px">⟲</button></div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids.filter((k) => k != null && k !== false)); return n; };
+const NS = "http://www.w3.org/2000/svg";
+const svgEl = (tag, attrs) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; };
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const still = reduced || matchMedia("(pointer: coarse)").matches;
+
+// La projection : de l'Algérie à la Caspienne, du Danube au Soudan, sur le plan de 1000 × 1000 (corrigé de la latitude).
+const project = (lon, lat) => [500 + (lon - 23.2) * 0.83 * 22, 500 - (lat - 32.3) * 22];
+
+// L'empire vers 1683, à son étendue la plus grande (États vassaux compris : Moldavie, Valachie, Transylvanie, Crimée),
+// tracé à la main et simplifié pour la constellation (lon, lat). Les mers sont posées par-dessus, en creux.
+const EMPIRE = {
+  empire: [[15.6,43.9],[15.8,44.7],[16.3,45.4],[17.2,45.9],[17.3,46.5],[17.9,47.2],[18.2,47.7],[18.2,48.1],[19.4,48.2],[20.4,48.2],[21.5,48],[22.2,47.6],[22.9,47.9],[24,47.9],[25,47.8],[26.2,48.3],[26.5,48.8],[27.6,49.3],[28.8,49],[29.6,48.3],[30.6,47.8],[31.8,47.6],[33.5,47.3],[35,47.4],[36.8,47.2],[38.2,47.2],[39.3,47.1],[38.6,46.3],[39,45.2],[38.5,44.6],[39.5,43.9],[40.5,43.2],[41.6,42.6],[42.8,42.4],[43.8,41.8],[44.2,41.2],[43.6,40.6],[44.2,39.6],[44.5,38.6],[44.9,37.4],[45.8,35.8],[46.1,35],[45.6,33.9],[46.6,32.9],[47.6,31.6],[48.3,30.4],[48.6,29.9],[47.8,29.4],[46.5,29.1],[44.5,30.4],[42,31.2],[39.5,30.5],[38.6,29.2],[38.6,26.5],[40,24.2],[41,22.4],[41,21],[40.3,20],[39.6,15.4],[38.9,15.3],[37,17.2],[36.6,18.6],[33.4,21.8],[31.4,21.9],[25,22],[24.9,29],[20.5,29.5],[16.5,29],[13,30],[9.4,30.2],[8,31.5],[5.5,32.5],[2.5,33.2],[-1,33.5],[-1.8,34.8],[-2.2,35.1],[-1,35.7],[0.1,35.9],[1.5,36.5],[3,36.8],[5.1,36.8],[6.6,37.1],[7.8,36.9],[8.6,36.9],[9.9,37.3],[10.3,36.8],[11,37.1],[10.6,36.4],[10.9,35.8],[11.1,35.2],[10.1,34.2],[11.2,33.2],[12.4,32.8],[13.2,32.9],[15.1,32.4],[15.8,31.4],[17.5,30.8],[19,30.3],[20.1,31.3],[20.1,32.1],[21.5,32.8],[23,32.6],[24,32],[25.2,31.6],[27.2,31.4],[29.9,31.2],[31,31.6],[32.3,31.3],[34.2,31.3],[34.8,32.4],[35.1,33.1],[35.5,33.9],[35.8,34.8],[35.9,35.5],[36.2,36.6],[35.6,36.6],[34.6,36.8],[33.6,36.2],[31.8,36.6],[30.7,36.9],[30.5,36.3],[29.3,36.3],[28.2,36.7],[27.4,37],[27.2,37.6],[26.4,38.3],[26.8,38.7],[26.6,39.3],[26.1,39.5],[26.2,40.1],[26.6,40.4],[26,40.7],[25,40.9],[24,40.8],[23,40.3],[22.9,40.6],[22.6,40.1],[22.9,39.4],[22.9,38.9],[23.6,38.4],[24,38],[23.1,37.9],[23.2,37.3],[22.8,36.7],[22.5,36.4],[21.9,36.8],[21.6,37.3],[21.3,37.8],[21.8,38.3],[21,38.9],[20.7,39.2],[20,39.7],[19.4,40.3],[19.5,41],[19.4,41.8],[18.5,42.5],[17.6,42.9],[17,43.4],[16.2,43.6],[15.6,43.9]],
+  crete: [[23.5,35.3],[24.3,35.4],[25,35.4],[25.8,35.3],[26.3,35.2],[25.8,35],[24.7,34.95],[23.7,35.2],[23.5,35.3]],
+  chypre: [[32.3,35.1],[33,35.4],[34,35.5],[34.6,35.7],[33.9,35.1],[33,34.6],[32.4,34.7],[32.3,35.1]],
+  rhodes: [[27.7,36.2],[28.2,36.45],[28.2,36.1],[27.8,35.9],[27.7,36.2]],
+};
+const SEAS = {
+  "Mer Noire": { at: [34, 43.4], pts: [[29.1,41.2],[28,41.6],[27.6,42.5],[28,43.2],[28.6,43.8],[28.8,44.5],[29.6,45.2],[30.2,45.8],[30.7,46.4],[31.6,46.6],[32.6,46.1],[33.5,45.9],[32.5,45.4],[33.4,44.6],[34.4,44.5],[35.4,45],[36.4,45.3],[37.2,45.2],[37.4,44.8],[38,44.4],[39.7,43.6],[41,42.6],[41.7,41.6],[40.5,41],[39.7,41],[38.4,40.9],[37,41.2],[36.3,41.6],[35.2,42],[34,42],[33,41.9],[31.6,41.3],[30,41.2],[29.1,41.2]] },
+  "Mer Rouge": { at: [37.3, 22.4], pts: [[32.6,29.9],[34.3,27.2],[35.6,24],[37.3,20.5],[38.6,18],[39.6,15.5],[40.3,15.8],[40,19.8],[39.1,21.6],[38,24.1],[36.6,26],[35,28.1],[34.4,28],[33.5,28.3],[32.6,29.9]] },
+};
+
+// Les stops : les grands monuments de l'empire (ou qu'il a gardés), avec un mot d'histoire.
+const STOPS = [
+  { id: "sophie", name: "Sainte-Sophie", city: "Constantinople", lon: 28.98, lat: 41.008, icon: "🕌", major: true, text: "Basilique byzantine de 537, devenue mosquée au lendemain de la prise de la ville par Mehmed II en 1453. Ses minarets sont ottomans." },
+  { id: "topkapi", name: "Palais de Topkapı", city: "Constantinople", lon: 28.984, lat: 41.013, icon: "👑", text: "La résidence des sultans pendant près de quatre siècles, avec son harem, ses cuisines géantes et la salle du trésor." },
+  { id: "selimiye", name: "Mosquée Selimiye", city: "Edirne", lon: 26.559, lat: 41.678, icon: "🕌", major: true, text: "Le chef-d'œuvre de l'architecte Sinan (1575), que lui-même tenait pour son plus beau : une coupole immense posée sur huit piliers." },
+  { id: "bursa", name: "Grande Mosquée", city: "Bursa", lon: 29.062, lat: 40.184, icon: "🕌", text: "Première capitale de l'empire. Sa grande mosquée aux vingt coupoles date de 1399, offerte par Bayezid Ier après la victoire de Nicopolis." },
+  { id: "mevlana", name: "Mausolée de Mevlana", city: "Konya", lon: 32.505, lat: 37.871, icon: "🌀", text: "Le tombeau du poète Rûmî, sous son cône de faïence verte, cœur de l'ordre des derviches tourneurs." },
+  { id: "ephese", name: "Bibliothèque de Celse", city: "Éphèse", lon: 27.34, lat: 37.939, icon: "🏛️", text: "Ruine romaine du IIe siècle, sur les terres de l'empire. Elle gardait autrefois 12 000 rouleaux." },
+  { id: "trebizonde", name: "Sainte-Sophie de Trébizonde", city: "Trébizonde", lon: 39.69, lat: 41.004, icon: "⛪", text: "Église byzantine du XIIIe siècle aux fresques célèbres, sur la côte de la mer Noire, prise par les Ottomans en 1461." },
+  { id: "rhodes", name: "Palais des Grands Maîtres", city: "Rhodes", lon: 28.226, lat: 36.446, icon: "🏰", text: "La forteresse des chevaliers de Saint-Jean, rendue à Soliman le Magnifique en 1522 après six mois de siège." },
+  { id: "athenes", name: "Parthénon", city: "Athènes", lon: 23.726, lat: 37.971, icon: "🏛️", major: true, text: "Sous les Ottomans, une petite mosquée s'élevait à l'intérieur. Il explose en 1687, quand un boulet vénitien touche la poudre qu'on y gardait." },
+  { id: "thessalonique", name: "Tour Blanche", city: "Thessalonique", lon: 22.948, lat: 40.626, icon: "🗼", text: "Tour ottomane du XVe siècle sur le port, longtemps une prison, aujourd'hui le symbole de la ville." },
+  { id: "mostar", name: "Stari Most", city: "Mostar", lon: 17.815, lat: 43.337, icon: "🌉", major: true, text: "Le Vieux Pont de 1566, une arche unique au-dessus de la Neretva. Détruit en 1993, reconstruit pierre par pierre." },
+  { id: "visegrad", name: "Pont Mehmed Pacha Sokolović", city: "Višegrad", lon: 19.288, lat: 43.782, icon: "🌉", text: "Onze arches sur la Drina, dessinées par Sinan pour le grand vizir (1577). C'est « le pont sur la Drina » du roman d'Ivo Andrić." },
+  { id: "sarajevo", name: "Mosquée Gazi Husrev-Beg", city: "Sarajevo", lon: 18.431, lat: 43.859, icon: "🕌", text: "La plus grande mosquée ottomane des Balkans (1531), au cœur du vieux bazar de Baščaršija." },
+  { id: "belgrade", name: "Forteresse de Kalemegdan", city: "Belgrade", lon: 20.45, lat: 44.823, icon: "🏰", text: "Au confluent de la Save et du Danube, prise par Soliman en 1521 : la porte de l'empire vers la Hongrie." },
+  { id: "budapest", name: "Tombeau de Gül Baba", city: "Buda", lon: 19.034, lat: 47.514, icon: "🌷", text: "Le derviche « père des roses », mort en 1541, et les bains turcs de la ville : Buda reste ottomane jusqu'en 1686." },
+  { id: "kamianets", name: "Forteresse de Kamianets", city: "Podolie", lon: 26.565, lat: 48.673, icon: "🏰", text: "Prise en 1672, elle marque le point le plus au nord de l'empire jusqu'en 1699." },
+  { id: "bakhtchy", name: "Palais des Khans", city: "Bakhtchyssaraï", lon: 33.881, lat: 44.749, icon: "⛲", text: "Le palais des khans de Crimée, vassaux du sultan, avec sa « fontaine des larmes » chantée par Pouchkine." },
+  { id: "alep", name: "Citadelle d'Alep", city: "Alep", lon: 37.163, lat: 36.199, icon: "🏰", text: "Une des plus vieilles forteresses du monde, sur sa butte au milieu de la ville. Alep était le grand marché de la soie de l'empire." },
+  { id: "damas", name: "Mosquée des Omeyyades", city: "Damas", lon: 36.306, lat: 33.511, icon: "🕌", major: true, text: "Bâtie en 715 ; Damas était sous les Ottomans le point de départ de la grande caravane vers La Mecque." },
+  { id: "baalbek", name: "Temples de Baalbek", city: "Baalbek", lon: 36.204, lat: 34.006, icon: "🏛️", text: "Les plus grands temples romains jamais construits, et leurs blocs de pierre de plus de 800 tonnes." },
+  { id: "jerusalem", name: "Dôme du Rocher", city: "Jérusalem", lon: 35.235, lat: 31.778, icon: "🕌", major: true, text: "Soliman le Magnifique lui donne ses faïences bleues et rebâtit les remparts de la vieille ville (1537-1541), toujours debout." },
+  { id: "petra", name: "Pétra", city: "Arabie Pétrée", lon: 35.444, lat: 30.328, icon: "🏜️", text: "La cité nabatéenne taillée dans le grès rose, oubliée de l'Europe jusqu'en 1812." },
+  { id: "bagdad", name: "Mosquée al-Kadhimiya", city: "Bagdad", lon: 44.338, lat: 33.38, icon: "🕌", text: "Ses coupoles d'or dominent Bagdad, reprise aux Perses par Mourad IV en 1638." },
+  { id: "medine", name: "Mosquée du Prophète", city: "Médine", lon: 39.611, lat: 24.467, icon: "🕌", text: "Mahmoud II fait peindre sa coupole en vert en 1837. Gardien des lieux saints, il porte le titre de « serviteur des deux saintes mosquées »." },
+  { id: "mecque", name: "Masjid al-Haram", city: "La Mecque", lon: 39.826, lat: 21.422, icon: "🕋", major: true, text: "Sinan et ses élèves remplacent au XVIe siècle son toit plat par des centaines de petites coupoles, restées jusqu'au XXe siècle." },
+  { id: "caire", name: "Citadelle du Caire", city: "Le Caire", lon: 31.26, lat: 30.03, icon: "🏰", text: "La citadelle de Saladin, siège des pachas d'Égypte après la conquête de Sélim Ier en 1517." },
+  { id: "gizeh", name: "Pyramides de Gizeh", city: "Gizeh", lon: 31.134, lat: 29.979, icon: "🔺", major: true, text: "Déjà vieilles de quatre mille ans quand l'Égypte devient ottomane. La seule des sept merveilles encore debout." },
+  { id: "tripoli", name: "Château rouge", city: "Tripoli", lon: 13.18, lat: 32.896, icon: "🏰", text: "La forteresse des pachas de Tripoli, au bord du port des corsaires barbaresques." },
+  { id: "tunis", name: "Médina de Tunis", city: "Tunis", lon: 10.17, lat: 36.8, icon: "🕌", text: "Ses souks et la mosquée Youssef Dey (1616), la première de Tunis au minaret octogonal à l'ottomane." },
+  { id: "alger", name: "Casbah d'Alger", city: "Alger", lon: 3.06, lat: 36.785, icon: "🏯", major: true, text: "La citadelle des deys, au sommet de la ville blanche, au bout ouest de l'empire depuis les frères Barberousse." },
+];
+
+// Le butin : un objet tiré au hasard à chaque tour (les rares un peu moins souvent).
+const LOOT = [["Loukoum", 18], ["Café turc", 16], ["Simit", 14], ["Baklava", 12], ["Tulipe", 10], ["Akçe", 10], ["Babouche", 8], ["Œil nazar", 6], ["Firman du sultan", 3, true], ["Tapis volant", 1.5, true], ["Turban de vizir", 1.5, true]];
+const COOLDOWN = 5 * 60 * 1000; // un stop se recharge en 5 minutes
+const STORE = "onirique.empire";
+const load = () => { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch { return {}; } };
+const save = () => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch { /* stockage fermé : le butin dure le temps de la page */ } };
+const state = Object.assign({ bag: {}, spun: {} }, load());
+const usedNow = (id) => Date.now() - (state.spun[id] || 0) < COOLDOWN;
+function draw() {
+  const total = Object.values(state.bag).reduce((t, n) => t + n, 0);
+  $("count").innerHTML = `<b>${STOPS.length}</b> stops · <b>${Object.keys(state.spun).length}</b> visités · <b>${total}</b> objets`;
+  const bag = Object.entries(state.bag).sort((a, b) => b[1] - a[1]);
+  $("bag").replaceChildren(...(bag.length ? bag.map(([k, n]) => el("span", {}, k, el("b", { textContent: "×" + n }))) : [el("p", { className: "empty", textContent: "Rien encore : fais tourner un stop." })]));
+  $("list").replaceChildren(...STOPS.map((s) => el("button", { type: "button", className: usedNow(s.id) ? "used" : "", onclick: () => openStop(s.id) }, s.name, el("small", { textContent: s.city }))));
+  for (const s of STOPS) s.node?.classList.toggle("used", usedNow(s.id));
+}
+
+//------------------------------------------------------------------------------ Le ciel (comme la carte des membres)
+(function sky() {
+  const c = $("sky"), g = c.getContext("2d");
+  let stars = [], w = 0, h = 0;
+  const size = () => {
+    const dpr = Math.min(1.5, devicePixelRatio || 1);
+    w = c.width = innerWidth * dpr; h = c.height = innerHeight * dpr; c.style.width = innerWidth + "px"; c.style.height = innerHeight + "px";
+    stars = Array.from({ length: Math.round(innerWidth * innerHeight / 2600) }, () => ({ x: Math.random() * w, y: Math.random() * h, r: Math.random() * 1.3 * dpr + .2, p: Math.random() * 6.28, s: .4 + Math.random() * 1.4, z: Math.random() }));
+  };
+  addEventListener("resize", size); size();
+  let last = 0;
+  const frame = (t) => {
+    if (!reduced) requestAnimationFrame(frame);
+    if (t - last < (still ? 33 : 0)) return;
+    last = t;
+    g.clearRect(0, 0, w, h);
+    for (const s of stars) {
+      g.globalAlpha = reduced ? .6 : .35 + .65 * Math.abs(Math.sin(s.p + t / 1000 * s.s)); g.fillStyle = s.z > .92 ? "#ffb3bb" : "#fff1f3";
+      g.beginPath(); g.arc(s.x, s.y, s.r, 0, 6.29); g.fill();
+    }
+  };
+  requestAnimationFrame(frame);
+})();
+
+//------------------------------------------------------------------------------ Les contours en constellation
+const pathOf = (pts) => "M" + pts.map(([lon, lat]) => project(lon, lat).map((v) => v.toFixed(1)).join(",")).join("L") + "Z";
+function trace(group, pts, cls, starry) {
+  const d = pathOf(pts);
+  group.append(svgEl("path", { d, class: "land" + cls }));
+  const path = svgEl("path", { d, class: "coast" + cls });
+  group.append(path);
+  const len = path.getTotalLength();
+  path.style.setProperty("--len", len);
+  if (starry) for (let at = 0; at < len; at += 9 + Math.random() * 9) {
+    const p = path.getPointAtLength(at);
+    const star = svgEl("circle", { cx: (p.x + (Math.random() - .5) * 2).toFixed(1), cy: (p.y + (Math.random() - .5) * 2).toFixed(1), r: Math.random() < .12 ? 2.1 : .6 + Math.random() * .9, class: "star" });
+    star.style.cssText = `animation-delay:${(at / len * 3).toFixed(2)}s;--o:${(.35 + Math.random() * .6).toFixed(2)}`;
+    $("stars").append(star);
+  }
+}
+function drawShapes() {
+  for (const pts of Object.values(EMPIRE)) trace($("lands"), pts, "", true);
+  for (const [name, sea] of Object.entries(SEAS)) {
+    trace($("seas"), sea.pts, " sea", false);
+    const [x, y] = project(...sea.at), t = svgEl("text", { x, y, class: "sealabel" });
+    t.textContent = name; $("seas").append(t);
+  }
+}
+
+//------------------------------------------------------------------------------ La caméra (reprise de la carte des membres)
+const K = 2.5, PERSP = 1400;
+const cam = { ax: 12, az: -30, z: .55, px: 0, py: 0 }, goal = { ...cam };
+const fit = () => Math.min(1.5, Math.max(.3, Math.min(innerWidth / (innerWidth > 860 ? 1050 : 820), innerHeight / 760)));
+const ZMAX = 40;
+function home() { Object.assign(goal, { ax: 45, az: -6, z: fit(), px: 0, py: 0 }); }
+function flyTo(x, y, z = 3) { Object.assign(goal, { ax: 42, az: -4, z: Math.min(ZMAX, z) * fit(), px: (500 - x) * K, py: (500 - y) * K }); }
+let lastView = "", current = null;
+function tick(t) {
+  for (const k of ["ax", "az", "z", "px", "py"]) { cam[k] += (goal[k] - cam[k]) * (reduced ? 1 : .065); if (Math.abs(goal[k] - cam[k]) < 1e-3) cam[k] = goal[k]; }
+  const sway = still ? 0 : Math.sin(t / 4200) * 1.4, swayX = still ? 0 : Math.sin(t / 5300) * 1.2;
+  const plane = $("plane"), view = [(cam.ax + swayX).toFixed(3), (cam.az + sway).toFixed(3), (cam.z / K).toFixed(5), cam.px.toFixed(2), cam.py.toFixed(2)];
+  if (view.join() !== lastView) {
+    lastView = view.join();
+    const tf = `rotateX(${view[0]}deg) rotateZ(${view[1]}deg) scale(${view[2]}) translate(${view[3]}px, ${view[4]}px)`;
+    plane.style.transform = tf;
+    const m = new DOMMatrix(tf), cx = plane.offsetLeft + 1250, cy = plane.offsetTop + 1250, ox = innerWidth / 2, oy = innerHeight * .4;
+    const near = cam.z / fit() > 2.2; // de près, tous les noms ; de loin, les plus grands monuments
+    for (const s of STOPS) {
+      const p = m.transformPoint(new DOMPoint(s.x * K - 1250, s.y * K - 1250)), f = PERSP / (PERSP - p.z);
+      const at = `translate(${(ox + (cx + p.x - ox) * f).toFixed(1)}px, ${(oy + (cy + p.y - oy) * f).toFixed(1)}px)`;
+      s.node.style.transform = at;
+      s.tag.style.transform = `${at} translate(-50%, calc(-100% - 52px))`;
+      s.tag.classList.toggle("show", near || s.major || current === s.id);
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+(function controls() {
+  const scene = $("scene"), pts = new Map();
+  let spin = false, pinch = null;
+  const tilt = (d) => { goal.ax = Math.min(72, Math.max(0, goal.ax + d)); };
+  const zoomBy = (f) => { goal.z = Math.min(ZMAX * fit(), Math.max(.4 * fit(), goal.z * f)); };
+  const pair = () => { const [p, q] = [...pts.values()]; return { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2, d: Math.hypot(q.x - p.x, q.y - p.y), a: Math.atan2(q.y - p.y, q.x - p.x) }; };
+  for (const layer of [scene, $("labels")]) layer.addEventListener("contextmenu", (e) => e.preventDefault());
+  scene.addEventListener("dragstart", (e) => e.preventDefault());
+  const down = (e) => {
+    if (e.pointerType === "mouse") e.preventDefault();
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size === 1) spin = e.button === 2;
+    pinch = pts.size === 2 ? pair() : null;
+    scene.classList.add("drag"); scene.setPointerCapture(e.pointerId);
+  };
+  scene.addEventListener("pointerdown", down);
+  $("labels").addEventListener("pointerdown", (e) => { if (e.button === 2) down(e); });
+  scene.addEventListener("pointermove", (e) => {
+    const was = pts.get(e.pointerId);
+    if (!was) return;
+    const dx = e.clientX - was.x, dy = e.clientY - was.y;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size >= 2) {
+      if (!pinch || pts.size > 2) return;
+      const now = pair();
+      if (pinch.d > 0) zoomBy(now.d / pinch.d);
+      let da = (now.a - pinch.a) * 180 / Math.PI;
+      if (da > 180) da -= 360; else if (da < -180) da += 360;
+      goal.az += da; tilt(-(now.y - pinch.y) * .25); pinch = now;
+      return;
+    }
+    if (spin) { goal.az += dx * .35; tilt(-dy * .25); return; }
+    const a = -goal.az * Math.PI / 180, zk = goal.z / K, ux = (dx * Math.cos(a) - dy * Math.sin(a)) / zk, uy = (dx * Math.sin(a) + dy * Math.cos(a)) / zk / Math.max(.3, Math.cos(goal.ax * Math.PI / 180));
+    goal.px += ux; goal.py += uy; cam.px += ux; cam.py += uy;
+  });
+  const end = (e) => { pts.delete(e.pointerId); pinch = pts.size === 2 ? pair() : null; if (!pts.size) scene.classList.remove("drag"); };
+  scene.addEventListener("pointerup", end); scene.addEventListener("pointercancel", end);
+  scene.addEventListener("wheel", (e) => { e.preventDefault(); zoomBy(Math.exp(-e.deltaY / 600)); }, { passive: false });
+  $("zoom-in").onclick = () => zoomBy(1.4);
+  $("zoom-out").onclick = () => zoomBy(1 / 1.4);
+  $("view-flat").onclick = () => { goal.ax = goal.ax > 20 ? 0 : 45; };
+  $("zoom-reset").onclick = () => { closeStop(); home(); };
+  addEventListener("resize", () => { if (!current) home(); });
+})();
+
+//------------------------------------------------------------------------------ Les stops
+function drawStops() {
+  STOPS.forEach((s, i) => {
+    [s.x, s.y] = project(s.lon, s.lat);
+    s.node = el("div", { className: "stop", style: `--d:${(i * .37 % 2.4).toFixed(2)}s` },
+      el("button", { type: "button", ariaLabel: s.name + ", " + s.city, onclick: () => openStop(s.id) }, el("span", { className: "pole" }), el("span", { className: "base" }), el("span", { className: "gem" })));
+    s.tag = el("div", { className: "tag" }, el("b", { textContent: s.name }), el("i", { textContent: s.city }));
+    $("labels").append(s.node, s.tag);
+  });
+}
+function openStop(id) {
+  const s = STOPS.find((x) => x.id === id);
+  current = id; lastView = "";
+  for (const o of STOPS) o.node.classList.toggle("on", o.id === id);
+  $("stop-city").textContent = s.city;
+  $("stop-name").textContent = s.name;
+  $("disc").textContent = s.icon;
+  $("stop-text").textContent = s.text;
+  $("loot").replaceChildren();
+  refreshSpin();
+  $("stop").classList.add("open"); document.body.classList.add("stop-open");
+  flyTo(s.x, s.y, 4);
+}
+function refreshSpin() {
+  if (!current) return;
+  const used = usedNow(current), left = Math.ceil((COOLDOWN - (Date.now() - (state.spun[current] || 0))) / 60000);
+  $("disc").classList.toggle("used", used);
+  $("spin").disabled = used;
+  $("spin").textContent = used ? `Recharge… encore ${left} min` : "Faire tourner";
+}
+function spinStop() {
+  if (!current || usedNow(current)) return;
+  const disc = $("disc");
+  disc.classList.remove("spin"); void disc.offsetWidth; disc.classList.add("spin");
+  const total = LOOT.reduce((t, l) => t + l[1], 0), got = [];
+  for (let i = 0; i < 3 + Math.floor(Math.random() * 3); i++) {
+    let r = Math.random() * total;
+    got.push(LOOT.find((l) => (r -= l[1]) < 0) || LOOT[0]);
+  }
+  for (const [name] of got) state.bag[name] = (state.bag[name] || 0) + 1;
+  state.spun[current] = Date.now();
+  save();
+  setTimeout(() => {
+    $("loot").replaceChildren(...got.map(([name, , rare], i) => el("span", { className: rare ? "rare" : "", style: `--i:${i}`, textContent: "+1 " + name })));
+    refreshSpin(); draw();
+  }, reduced ? 0 : 900);
+}
+function closeStop() { current = null; lastView = ""; $("stop").classList.remove("open"); document.body.classList.remove("stop-open"); for (const o of STOPS) o.node.classList.remove("on"); }
+$("spin").onclick = spinStop;
+$("disc").onclick = spinStop;
+$("disc").onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); spinStop(); } };
+$("stop-close").onclick = () => { closeStop(); home(); };
+addEventListener("keydown", (e) => { if (e.key === "Escape") { closeStop(); home(); } });
+setInterval(() => { refreshSpin(); draw(); }, 30000); // les stops se rechargent
+
+drawShapes();
+drawStops();
+draw();
+requestAnimationFrame(tick);
+setTimeout(() => $("intro").remove(), reduced ? 0 : 2700);
+setTimeout(home, reduced ? 0 : 500);
+</script>
+</html>

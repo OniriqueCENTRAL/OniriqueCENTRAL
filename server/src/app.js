@@ -1828,6 +1828,13 @@ export function createApp() {
     res.sendFile(fileURLToPath(new URL('da-vocalbox.html', import.meta.url)));
   });
 
+  // L'empire anto ment (menu du compte, page /empire) : la carte privée des fondateurs, hors du site public.
+  admin.get('/empire', (req, res, next) => {
+    if (req.user.role !== 'founder') return next(new HttpError(403, 'Réservé aux fondateurs.'));
+    res.set('Cache-Control', 'no-store');
+    res.sendFile(fileURLToPath(new URL('empire.html', import.meta.url)));
+  });
+
   // Les droits des rôles (« Droits des rôles » dans le panel) : quels rôles ont ONIRIQUE CLOUD, la page de liens, etc.
   admin.get('/rights', (req, res) => {
     if (req.user.role !== 'founder') throw new HttpError(403, 'Réservé aux fondateurs.');
