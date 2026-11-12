@@ -37,8 +37,10 @@
 
 ## ONIRIQUE FONDATEURS (`fondateurs/`)
 - Boutons pour les gestes courants : récupérer, enregistrer les fichiers cochés, mettre en ligne (copie propre si
-  d'autres fichiers sont en cours), publier l'application ou le navigateur, état, journal et erreurs du serveur, panel
-  admin. Lancement : `fondateurs/ONIRIQUE FONDATEURS.cmd` (utilise l'Electron de `app/`, donc `cd app && npm install`
+  d'autres fichiers sont en cours), publier l'application ou le navigateur, annuler un commit (`git revert` puis mise en
+  ligne), état, journal (aussi en direct) et erreurs du serveur, sauvegarde, panel admin ; chiffres et support lus en
+  lecture seule dans la base par SSH ; maintenance et annonce par l'API avec la session du panel admin ; patch note par
+  `deploy/patchnote.mjs` ; notification Windows si le site ou l'API ne répond plus. Lancement : `fondateurs/ONIRIQUE FONDATEURS.cmd` (utilise l'Electron de `app/`, donc `cd app && npm install`
   une fois), ou `fondateurs/lanceur/dist/ONIRIQUE-FONDATEURS.exe` (`cd fondateurs/lanceur && npm run dist`) : le .exe
   retrouve le dossier du dépôt (demandé au premier lancement) et y lance l'app, qui suit donc `git pull`. Rien de secret dedans : il passe par la clé SSH du PC et les scripts de `deploy/`.
 
