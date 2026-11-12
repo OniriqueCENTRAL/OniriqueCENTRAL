@@ -220,7 +220,7 @@ ipcMain.handle('open', (_e, what) => {
 app.whenReady().then(() => {
   win = new BrowserWindow({
     width: 1240, height: 860, minWidth: 900, minHeight: 640, backgroundColor: '#09080A', autoHideMenuBar: true,
-    title: 'ONIRIQUE FONDATEURS', icon: path.join(REPO, 'app', 'build', 'icon.png'),
+    title: 'ONIRIQUE FONDATEURS', icon: path.join(__dirname, 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), backgroundThrottling: false },
   });
   win.loadFile(path.join(__dirname, 'index.html'));

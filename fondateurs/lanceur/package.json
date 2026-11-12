@@ -16,7 +16,7 @@
     "electronVersion": "44.10.1",
     "files": ["lanceur.js"],
     "directories": { "output": "dist" },
-    "win": { "icon": "../../app/build/icon.png", "target": "portable" },
+    "win": { "icon": "../icon.png", "target": "portable" },
     "portable": { "artifactName": "ONIRIQUE-FONDATEURS.exe" }
   }
 }
