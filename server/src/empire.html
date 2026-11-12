@@ -116,13 +116,41 @@ header > * { pointer-events: auto; }
 #stop .x { justify-self: end; margin-bottom: -40px; border: 1px solid var(--line); background: rgba(255,255,255,.04); width: 34px; height: 34px; border-radius: 10px; cursor: pointer; }
 #stop h2 { margin: 0; font: 800 22px/1.15 var(--f-display); }
 #stop p { margin: 0; font-size: 14px; color: #cfcfcf; text-align: left; }
-.disc { width: 190px; height: 190px; border-radius: 50%; display: grid; place-items: center; font-size: 74px; cursor: pointer; border: 6px solid var(--ember); touch-action: none;
+.disc { width: 110px; height: 110px; border-radius: 50%; display: grid; place-items: center; font-size: 44px; border: 6px solid var(--ember); touch-action: none;
   background: radial-gradient(circle at 50% 40%, rgba(255,255,255,.25), transparent 60%), conic-gradient(from 0deg, #111, #2a2a2a, #111, #2a2a2a, #111);
   box-shadow: 0 0 0 6px rgba(255,255,255,.06), 0 0 40px rgba(255,255,255,.6), inset 0 0 30px rgba(0,0,0,.6); transition: border-color .4s, box-shadow .4s; }
 .disc { filter: grayscale(1); }
 .disc.spin { animation: spin 1.1s cubic-bezier(.2, .7, .3, 1); }
 @keyframes spin { to { transform: rotate(1080deg); } }
 .disc.used { border-color: var(--used); box-shadow: 0 0 0 6px rgba(255,255,255,.06), 0 0 30px rgba(255,255,255,.15), inset 0 0 30px rgba(0,0,0,.6); cursor: default; }
+/* Les mini-jeux, dans le panneau du stop. */
+.gtitle { font: 800 15px var(--f-display); letter-spacing: .04em; }
+.grule { font-size: 13px; color: var(--haze); margin-top: -8px; }
+.game { width: 100%; display: grid; gap: 10px; justify-items: center; }
+.game:empty { display: none; }
+.gmsg { margin: 0 !important; text-align: center !important; font: 500 12px var(--f-mono) !important; letter-spacing: .08em; color: var(--pink) !important; }
+.garena { position: relative; width: 100%; border-radius: 16px; border: 1px solid var(--line); background: rgba(255,255,255,.03); overflow: hidden; }
+.cups { height: 96px; }
+.gcard { position: absolute; top: 10px; width: calc(33.333% - 8px); height: 76px; border-radius: 12px; border: 1px solid rgba(255,255,255,.3); background: linear-gradient(160deg, #2a2a2a, #111);
+  font: 800 30px var(--f-display); cursor: pointer; transition: left .3s cubic-bezier(.5, 0, .3, 1); }
+.gcard:disabled { cursor: default; }
+.gorder { margin: 0; padding-left: 22px; text-align: left; font: 600 14px/1.8 var(--f-body); }
+.gbtns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%; }
+.gbtn { padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.05); font: 600 13px var(--f-body); cursor: pointer; }
+.gbtn:hover:not(:disabled) { border-color: var(--ember); }
+.gbtn.ok { background: rgba(255,255,255,.85); color: #0a0a0a; }
+.gbtn.bad { border-color: #fff; text-decoration: line-through; }
+.range { height: 190px; cursor: crosshair; background: repeating-linear-gradient(0deg, transparent 0 23px, rgba(255,255,255,.04) 23px 24px), repeating-linear-gradient(90deg, transparent 0 23px, rgba(255,255,255,.04) 23px 24px), #0a0a0a; }
+.gtarget { position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; border: 0; padding: 0; cursor: crosshair; transition: left .18s, top .18s;
+  background: radial-gradient(circle, #fff 0 18%, #111 19% 34%, #fff 35% 52%, #111 53% 70%, #fff 71%); box-shadow: 0 0 14px rgba(255,255,255,.5); }
+.gtarget.hit { animation: hit .3s; }
+@keyframes hit { 50% { transform: scale(1.5); opacity: .4; } }
+.grow { display: flex; gap: 8px; width: 100%; }
+.ginput { flex: 1; min-width: 0; min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.45); color: var(--mist); font: 700 18px var(--f-mono); letter-spacing: .2em; text-align: center; }
+.glog { display: grid; gap: 2px; font: 500 14px var(--f-mono); letter-spacing: .12em; max-height: 120px; overflow-y: auto; }
+.gq { text-align: center !important; font-weight: 600; }
+.gpad { width: 100%; height: 130px; border-radius: 16px; border: 1px solid var(--line); background: #1a1a1a; font: 800 16px var(--f-display); letter-spacing: .08em; cursor: pointer; transition: background .05s; }
+.gpad.lit { background: #fff; color: #0a0a0a; }
 .go { padding: 12px 22px; border-radius: 999px; border: 0; background: var(--mist); color: #0a0a0a; font: 700 14px var(--f-body); cursor: pointer; }
 .go:disabled { background: rgba(255,255,255,.08); color: var(--haze); cursor: default; }
 .loot { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; min-height: 10px; }
@@ -175,7 +203,7 @@ header > * { pointer-events: auto; }
   <span class="eyebrow">Privé · fondateurs</span>
   <h1>L'empire <em>anto ment</em></h1>
   <span class="count" id="count"></span>
-  <span class="hint">Glisser : déplacer · Molette : zoomer · Clic droit maintenu : tourner et incliner. Chaque stop est un mensonge d'Anto : clique-le, fais tourner son disque.</span>
+  <span class="hint">Glisser : déplacer · Molette : zoomer · Clic droit maintenu : tourner et incliner. Chaque stop est un mensonge d'Anto : clique-le et gagne son mini-jeu pour le butin.</span>
   <div><span class="eyebrow" style="margin-bottom:10px">Ton butin</span><div class="bag" id="bag"></div></div>
   <div><span class="eyebrow" style="margin-bottom:8px">Les stops</span><div class="list" id="list"></div></div>
 </aside>
@@ -184,8 +212,11 @@ header > * { pointer-events: auto; }
   <button class="x" type="button" id="stop-close" aria-label="Fermer">✕</button>
   <span class="eyebrow" id="stop-city"></span>
   <h2 id="stop-name"></h2>
-  <div class="disc" id="disc" role="button" tabindex="0" aria-label="Faire tourner le disque"></div>
-  <button class="go" type="button" id="spin">Faire tourner</button>
+  <div class="disc" id="disc" aria-hidden="true"></div>
+  <b class="gtitle" id="game-title"></b>
+  <span class="grule" id="game-rule"></span>
+  <div class="game" id="game"></div>
+  <button class="go" type="button" id="spin">Jouer</button>
   <div class="loot" id="loot"></div>
   <p id="stop-text"></p>
 </aside>
@@ -380,6 +411,10 @@ function openStop(id) {
   $("stop-text").textContent = s.text || "";
   $("stop-text").hidden = !s.text;
   $("loot").replaceChildren();
+  $("game").replaceChildren();
+  $("game-title").textContent = GAMES[id].title;
+  $("game-rule").textContent = GAMES[id].rule;
+  $("spin").hidden = false;
   refreshSpin();
   $("stop").classList.add("open"); document.body.classList.add("stop-open");
   flyTo(s.x, s.y, 4);
@@ -389,7 +424,21 @@ function refreshSpin() {
   const used = usedNow(current), left = Math.ceil((COOLDOWN - (Date.now() - (state.spun[current] || 0))) / 60000);
   $("disc").classList.toggle("used", used);
   $("spin").disabled = used;
-  $("spin").textContent = used ? `Recharge… encore ${left} min` : "Faire tourner";
+  $("spin").textContent = used ? `Recharge… encore ${left} min` : $("game").childElementCount ? "Rejouer" : "Jouer";
+}
+// Lancer le jeu du stop ouvert ; gagné, il donne le butin et le stop se recharge, perdu, on peut rejouer tout de suite.
+function play() {
+  const id = current;
+  if (!id || usedNow(id)) return;
+  const box = $("game");
+  box.replaceChildren(); $("loot").replaceChildren();
+  $("spin").hidden = true;
+  GAMES[id].play(box, (win) => {
+    if (current !== id) return; // le panneau a changé de stop entre-temps
+    if (win) { say(box, "Gagné !"); spinStop(); }
+    else { say(box, (box.querySelector(".gmsg")?.textContent.startsWith("Raté") ? box.querySelector(".gmsg").textContent : "Raté !") + " Rejoue quand tu veux."); }
+    $("spin").hidden = false; refreshSpin();
+  });
 }
 function spinStop() {
   if (!current || usedNow(current)) return;
@@ -409,12 +458,115 @@ function spinStop() {
   }, reduced ? 0 : 900);
 }
 function closeStop() { current = null; lastView = ""; $("stop").classList.remove("open"); document.body.classList.remove("stop-open"); for (const o of STOPS) o.node.classList.remove("on"); }
-$("spin").onclick = spinStop;
-$("disc").onclick = spinStop;
-$("disc").onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); spinStop(); } };
+$("spin").onclick = play;
 $("stop-close").onclick = () => { closeStop(); home(); };
 addEventListener("keydown", (e) => { if (e.key === "Escape") { closeStop(); home(); } });
 setInterval(() => { refreshSpin(); draw(); }, 30000); // les stops se rechargent
+
+//------------------------------------------------------------------------------ Les mini-jeux : un par mensonge, gagné = le butin
+// Chaque jeu se dessine dans #game et appelle done(true) s'il est gagné, done(false) sinon.
+const say = (box, text) => { let m = box.querySelector(".gmsg"); if (!m) box.append(m = el("p", { className: "gmsg" })); m.textContent = text; };
+const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const GAMES = {
+  // Le bonneteau du mail : le vrai mail est sous une carte, les cartes se mélangent, retrouve-le.
+  "nouvelle-ecole": { title: "Le bonneteau du mail", rule: "Le mail se cache sous une des trois cartes. Suis-le des yeux.", play(box, done) {
+    const arena = el("div", { className: "garena cups" }), slots = [0, 1, 2];
+    const cards = slots.map((i) => el("button", { type: "button", className: "gcard", textContent: "?", disabled: true }));
+    const mail = cards[Math.floor(Math.random() * 3)];
+    const place = () => cards.forEach((c, i) => { c.style.left = `calc(${slots[i]} * 33.333% + 4px)`; });
+    arena.append(...cards); box.append(arena); place();
+    mail.textContent = "✉"; say(box, "Regarde bien…");
+    let n = 0;
+    setTimeout(function swap() {
+      if (n === 0) mail.textContent = "?";
+      if (n++ < 10) { const a = Math.floor(Math.random() * 3), b = (a + 1 + Math.floor(Math.random() * 2)) % 3; [slots[a], slots[b]] = [slots[b], slots[a]]; place(); return setTimeout(swap, 380); }
+      say(box, "Où est le mail ?");
+      cards.forEach((c) => { c.disabled = false; c.onclick = () => { cards.forEach((x) => { x.disabled = true; }); mail.textContent = "✉"; done(c === mail); }; });
+    }, 1100);
+  } },
+  // Le montage du PC : l'ordre s'affiche quelques secondes, puis il faut monter les pièces de mémoire.
+  pc: { title: "Monte le PC", rule: "Retiens l'ordre de montage, puis clique les pièces dans cet ordre.", play(box, done) {
+    const order = shuffle(["Boîtier", "Carte mère", "Processeur", "RAM", "Carte graphique", "Alimentation"]);
+    const list = el("ol", { className: "gorder" }, ...order.map((p) => el("li", { textContent: p })));
+    box.append(list); say(box, "Retiens bien l'ordre…");
+    setTimeout(() => {
+      list.remove();
+      let at = 0;
+      const grid = el("div", { className: "gbtns" }, ...shuffle([...order]).map((p) => el("button", { type: "button", className: "gbtn", textContent: p, onclick: (e) => {
+        if (p !== order[at]) { e.target.classList.add("bad"); grid.querySelectorAll("button").forEach((b) => { b.disabled = true; }); return done(false); }
+        e.target.disabled = true; e.target.classList.add("ok"); if (++at === order.length) done(true); else say(box, `Pièce ${at + 1} sur ${order.length}`);
+      } })));
+      box.append(grid); say(box, "Pièce 1 sur " + order.length);
+    }, 3500);
+  } },
+  // Le jeu de tir : la cible bouge, il faut la toucher 5 fois en 10 secondes.
+  "dragon-lore": { title: "Tir au Dragon Lore", rule: "Touche la cible 5 fois en 10 secondes. Elle ne reste pas en place.", play(box, done) {
+    const arena = el("div", { className: "garena range" }), target = el("button", { type: "button", className: "gtarget", ariaLabel: "Cible" });
+    arena.append(target); box.append(arena);
+    let hits = 0, over = false;
+    const move = () => { target.style.left = 8 + Math.random() * 78 + "%"; target.style.top = 8 + Math.random() * 70 + "%"; };
+    const timer = setInterval(move, 750); move();
+    const end = (win) => { if (over) return; over = true; clearInterval(timer); clearTimeout(limit); target.disabled = true; done(win); };
+    const limit = setTimeout(() => end(false), 10000);
+    target.onclick = (e) => { e.stopPropagation(); hits++; target.classList.remove("hit"); void target.offsetWidth; target.classList.add("hit"); move(); say(box, `Touché ${hits} / 5`); if (hits >= 5) end(true); };
+    say(box, "Touché 0 / 5");
+  } },
+  // Le cadenas de la SACEM : trouver le code à 3 chiffres en 6 essais, avec ↑ ↓ pour chaque chiffre.
+  sacem: { title: "Débloque l'argent", rule: "Trouve le code du cadenas (3 chiffres) en 6 essais. ↑ : plus grand, ↓ : plus petit.", play(box, done) {
+    const code = Array.from({ length: 3 }, () => Math.floor(Math.random() * 10));
+    let tries = 0;
+    const input = el("input", { className: "ginput", inputMode: "numeric", maxLength: 3, placeholder: "000", ariaLabel: "Code à 3 chiffres" });
+    const log = el("div", { className: "glog" });
+    const go = el("button", { type: "button", className: "gbtn", textContent: "Essayer" });
+    const tryCode = () => {
+      if (!/^\d{3}$/.test(input.value)) return say(box, "Trois chiffres, de 000 à 999.");
+      const guess = [...input.value].map(Number); tries++;
+      log.prepend(el("div", {}, el("b", { textContent: input.value }), " ", guess.map((g, i) => (g === code[i] ? "✓" : g < code[i] ? "↑" : "↓")).join(" ")));
+      input.value = "";
+      if (guess.every((g, i) => g === code[i])) { go.disabled = input.disabled = true; return done(true); }
+      if (tries >= 6) { go.disabled = input.disabled = true; say(box, "Le code était " + code.join("")); return done(false); }
+      say(box, `Encore ${6 - tries} essai${6 - tries > 1 ? "s" : ""}`);
+    };
+    go.onclick = tryCode; input.onkeydown = (e) => { if (e.key === "Enter") tryCode(); };
+    box.append(el("div", { className: "grow" }, input, go), log); say(box, "6 essais"); input.focus();
+  } },
+  // Les réflexes du rang : cliquer dès que le bouton s'allume ; 300 ms ou moins, c'est Immortel.
+  immortal: { title: "Le test du rang", rule: "Clique dès que le bouton devient blanc. 300 ms ou moins : Immortel.", play(box, done) {
+    const pad = el("button", { type: "button", className: "gpad", textContent: "Attends…" });
+    box.append(pad);
+    let lit = 0;
+    const wait = setTimeout(() => { lit = performance.now(); pad.classList.add("lit"); pad.textContent = "MAINTENANT"; }, 1500 + Math.random() * 2500);
+    pad.onclick = () => {
+      pad.disabled = true;
+      if (!lit) { clearTimeout(wait); pad.textContent = "Trop tôt"; return done(false); }
+      const ms = Math.round(performance.now() - lit);
+      const rank = [[220, "Radieux"], [300, "Immortel"], [360, "Diamant"], [420, "Platine"], [500, "Or"], [650, "Argent"], [Infinity, "Fer"]].find(([t]) => ms <= t)[1];
+      pad.textContent = `${ms} ms · ${rank}`;
+      done(ms <= 300);
+    };
+  } },
+  // Les comptes : trois questions, l'argent perçu moins les dépenses ; une erreur et c'est perdu.
+  argent: { title: "Fais les comptes", rule: "Combien il reste ? Trois comptes justes d'affilée.", play(box, done) {
+    let round = 0;
+    const q = el("p", { className: "gq" }), input = el("input", { className: "ginput", inputMode: "numeric", placeholder: "€", ariaLabel: "Ce qu'il reste, en euros" });
+    const go = el("button", { type: "button", className: "gbtn", textContent: "Valider" });
+    let answer = 0;
+    const next = () => {
+      const got = 100 + Math.floor(Math.random() * 40) * 10, spent = [10 + Math.floor(Math.random() * 15) * 5, 5 + Math.floor(Math.random() * 12) * 5];
+      answer = got - spent[0] - spent[1];
+      q.textContent = `Perçu : ${got} € · Dépenses : ${spent[0]} € et ${spent[1]} €`;
+      input.value = ""; input.focus(); say(box, `Compte ${round + 1} sur 3`);
+    };
+    const check = () => {
+      if (input.value.trim() === "") return;
+      if (Number(input.value.replace(",", ".")) !== answer) { go.disabled = input.disabled = true; say(box, `Raté : il restait ${answer} €`); return done(false); }
+      if (++round === 3) { go.disabled = input.disabled = true; return done(true); }
+      next();
+    };
+    go.onclick = check; input.onkeydown = (e) => { if (e.key === "Enter") check(); };
+    box.append(q, el("div", { className: "grow" }, input, go)); next();
+  } },
+};
 
 drawShapes();
 drawStops();
