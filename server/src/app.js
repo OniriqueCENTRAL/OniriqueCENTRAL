@@ -253,6 +253,11 @@ async function receiveFile(req, directory, maxBytes) {
   return { storedAs, size, sha256: hash.digest('hex') };
 }
 
+// Les invités de l'empire anto ment, par l'adresse de leur page de profil (onirique.store/u/…), unique sur le site.
+// shortcut: l'accès suit l'adresse ; si l'invitée la change, une autre personne pourrait la reprendre : passer à l'id du compte si la liste grandit.
+const EMPIRE_GUESTS = new Set(['usermorgane']);
+const empireAllowed = (user) => user.role === 'founder' || EMPIRE_GUESTS.has(get('SELECT handle FROM user_profiles WHERE user_id = ?', user.id)?.handle);
+
 export function createApp() {
   const app = express();
   app.disable('x-powered-by');
@@ -534,7 +539,15 @@ export function createApp() {
       trialsUsed: all(`SELECT DISTINCT product_id AS id FROM licenses WHERE user_id = ? AND source = 'trial'`, req.user.id).map((r) => r.id),
       referral: referralView(req.user),
       rights: rightsOf(req.user), // ce que ce compte peut ouvrir : ONIRIQUE CLOUD, page de liens, profil d'ingé…
+      empire: empireAllowed(req.user), // le lien « L'empire anto ment » du menu du compte
     });
+  });
+
+  // L'empire anto ment (menu du compte, page /empire) : la carte privée des fondateurs et de leurs invités, hors du site public.
+  app.get('/api/empire', requireUser, (req, res, next) => {
+    if (!empireAllowed(req.user)) return next(new HttpError(403, 'Page réservée.'));
+    res.set('Cache-Control', 'no-store');
+    res.sendFile(fileURLToPath(new URL('empire.html', import.meta.url)));
   });
 
   // Parrainage choisi après l'inscription : avant le premier achat, dans les 30 jours.
@@ -1826,13 +1839,6 @@ export function createApp() {
     if (req.user.role !== 'founder') return next(new HttpError(403, 'Réservé aux fondateurs.'));
     res.set('Cache-Control', 'no-store');
     res.sendFile(fileURLToPath(new URL('da-vocalbox.html', import.meta.url)));
-  });
-
-  // L'empire anto ment (menu du compte, page /empire) : la carte privée des fondateurs, hors du site public.
-  admin.get('/empire', (req, res, next) => {
-    if (req.user.role !== 'founder') return next(new HttpError(403, 'Réservé aux fondateurs.'));
-    res.set('Cache-Control', 'no-store');
-    res.sendFile(fileURLToPath(new URL('empire.html', import.meta.url)));
   });
 
   // Les droits des rôles (« Droits des rôles » dans le panel) : quels rôles ont ONIRIQUE CLOUD, la page de liens, etc.

@@ -12,12 +12,12 @@ main { min-height: 100vh; display: grid; place-content: center; gap: 14px; paddi
 h1 { margin: 0; font: 800 22px/1.2 "Unbounded", system-ui, sans-serif; }
 a { color: #ffb3bb; }
 </style>
-<!-- Coquille publique : la carte elle-même n'est envoyée par l'API qu'à un compte fondateur (server/src/empire.html). -->
+<!-- Coquille publique : la carte elle-même n'est envoyée par l'API qu'aux fondateurs et à leurs invités (server/src/empire.html). -->
 <main><h1 id="msg">Un instant…</h1><p id="sub"></p></main>
 <script>
 (async () => {
   const token = (() => { try { return sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"); } catch { return null; } })();
-  const r = token ? await fetch("/api/admin/empire", { headers: { Authorization: "Bearer " + token } }).catch(() => null) : null;
+  const r = token ? await fetch("/api/empire", { headers: { Authorization: "Bearer " + token } }).catch(() => null) : null;
   if (r && r.ok) { const html = await r.text(); document.open(); document.write(html); document.close(); return; }
   document.getElementById("msg").textContent = "Page réservée.";
   document.getElementById("sub").innerHTML = token ? 'Cette page est privée. <a href="/">Retour à l\'accueil</a>' : 'Connecte-toi d\'abord : <a href="/compte">mon compte</a>';

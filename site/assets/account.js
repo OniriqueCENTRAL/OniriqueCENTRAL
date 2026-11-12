@@ -131,7 +131,7 @@ ${spark(1)}${spark(2)}${spark(3)}
         return [
           ...group("Mon compte", [item("Mon compte", "compte"), item("Paramètres", "compte#parametres"), item("Mes licences", "compte#licences"), item("Parrainage", "compte#parrainage")]),
           ...group("Communauté", [messagesItem, profileItem, item("Carte des membres", "carte"),
-            user.role === "founder" ? item("L'empire anto ment", "empire") : null, // privée : la page vient de l'API (server/src/empire.html)
+            me.empire ? item("L'empire anto ment", "empire") : null, // fondateurs et invités : la page vient de l'API (server/src/empire.html)
             item("Tierlist", "tierlist"), // ouverte à tout compte connecté (server/src/tierlist.js)
             // Réservée aux membres ONIRIQUE, beta-testeurs, équipe et fondateurs (ONIRIQUE dans server/src/docs.js).
             ["vip", "beta", "betaf", "admin", "founder"].includes(user.role) ? item("WATCHPARTY", "watchparty") : null]),

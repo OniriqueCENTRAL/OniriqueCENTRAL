@@ -189,6 +189,18 @@ try {
     assert.deepEqual([d.week[0].id, d.week[0].ups, d.fresh[0].ownerHandle, d.following[0].id, d.best.length], [pl, 1, 'nov.music', pl, 0]);
     assert.deepEqual((await call('GET', '/api/me/sounds/discover', { token: a.token })).fresh, []); // ses propres playlists n'y sont pas
   });
+  await step("l'empire anto ment : fondateurs et invités nommés seulement", async () => {
+    const m = await account('Morgane');
+    await call('PUT', '/api/me/profile/page', { token: m.token, body: { handle: 'usermorgane' } });
+    assert.equal((await call('GET', '/api/me', { token: m.token })).empire, true);
+    assert.match(await (await fetch(base + '/api/empire', { headers: { Authorization: `Bearer ${m.token}` } })).text(), /L'EMPIRE ANTO MENT/);
+    assert.equal((await call('GET', '/api/me', { token: b.token })).empire, false);
+    await call('GET', '/api/empire', { token: b.token, expect: 403 });
+    await call('GET', '/api/empire', { expect: 401 });
+    run(`UPDATE users SET role = 'founder' WHERE id = ?`, b.id);
+    assert.equal((await call('GET', '/api/me', { token: b.token })).empire, true);
+    run(`UPDATE users SET role = 'user' WHERE id = ?`, b.id);
+  });
   console.log(`\n${passed} étapes réussies.`);
 } finally {
   server.close();
