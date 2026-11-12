@@ -62,6 +62,13 @@ header > * { pointer-events: auto; }
   background: radial-gradient(circle at 35% 30%, #fff 0 12%, var(--pink) 35%, var(--ember) 75%); box-shadow: 0 0 14px var(--ember), 0 0 30px rgba(255,255,255,.5);
   animation: gem 3.2s var(--d, 0s) linear infinite; }
 @keyframes gem { from { transform: rotateX(55deg) rotateZ(0); } to { transform: rotateX(55deg) rotateZ(360deg); } }
+/* Un stop peut porter son propre objet à la place du cube : il flotte et tourne sur lui-même au-dessus du pilier. */
+.stop .model { position: absolute; left: -54px; top: -16px; width: 140px; height: 35px; animation: model 4s var(--d, 0s) linear infinite, float 2.4s ease-in-out infinite alternate;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,.55)); }
+.stop .model svg { display: block; width: 100%; height: 100%; overflow: visible; }
+@keyframes model { from { transform: perspective(300px) rotateY(0); } to { transform: perspective(300px) rotateY(360deg); } }
+@keyframes float { to { translate: 0 -4px; } }
+.stop.used .model { opacity: .45; }
 .stop.used .gem { background: radial-gradient(circle at 35% 30%, #fff 0 12%, #9a9a9a 35%, var(--used) 75%); box-shadow: 0 0 12px var(--used); }
 .stop.used .base, .stop.used .base::after { border-color: var(--used); }
 .stop.on button { scale: 1.3; }
@@ -203,10 +210,11 @@ const SEAS = {
 };
 
 // Les stops : les mensonges d'Anto, un par grande ville de l'empire (titres donnés par les fondateurs).
+const RIFLE = `<svg viewBox="0 0 120 30" aria-hidden="true"><g fill="#ececec" stroke="#0a0a0a" stroke-width=".6" stroke-linejoin="round"><path d="M2 14 22 12h8v8l-6 2-12 4H2z"/><path d="M30 11h34v7H30z"/><path d="m40 18h6l-3 8h-5z"/><path d="M50 18h6v6h-6z"/><path d="M64 13h48v3H64z"/><path d="M111 11.5h6v6h-6z"/><path d="M42 9h2v2h-2zM54 9h2v2h-2z"/><rect x="36" y="4" width="26" height="5" rx="2"/><rect x="33.5" y="2.8" width="3.5" height="7.4" rx="1"/><rect x="61" y="2.8" width="3.5" height="7.4" rx="1"/></g><g fill="none" stroke="#3a3a3a" stroke-width=".9" stroke-linecap="round"><path d="M5 22q3-3 6 0t6 0 6 0 6 0"/><path d="M8 17q3-3 6 0t6 0 6 0"/><path d="M33 14.5q3-3 6 0t6 0 6 0 6 0"/></g><path d="M66 14.5c4-3 7 2 11-1s6 1 9-1" fill="none" stroke="#3a3a3a" stroke-width=".8"/><path d="M14 19c2-4 7-5 10-2l2-2-1 4 3 1-4 1c-3 2-7 1-10-2z" fill="#3a3a3a"/><circle cx="24.5" cy="17" r=".7" fill="#ececec"/></svg>`;
 const STOPS = [
   { id: "nouvelle-ecole", name: "Mail de Nouvelle école", city: "Constantinople", lon: 28.98, lat: 41.008, icon: "📧" },
   { id: "pc", name: "Achat de son PC", city: "Le Caire", lon: 31.26, lat: 30.03, icon: "💻" },
-  { id: "dragon-lore", name: "Dragon Lore", city: "Buda", lon: 19.034, lat: 47.514, icon: "🐉" },
+  { id: "dragon-lore", name: "Dragon Lore", city: "Buda", lon: 19.034, lat: 47.514, icon: "🐉", model: RIFLE },
   { id: "sacem", name: "Argent bloqué SACEM", city: "Alger", lon: 3.06, lat: 36.785, icon: "🔒" },
   { id: "immortal", name: "Rank IMMORTAL Valorant", city: "Bagdad", lon: 44.338, lat: 33.38, icon: "🎮" },
   { id: "argent", name: "Argent perçu / dépenses", city: "Damas", lon: 36.306, lat: 33.511, icon: "💸" },
@@ -274,7 +282,7 @@ function tick(t) {
       const p = m.transformPoint(new DOMPoint(s.x * K - 1250, s.y * K - 1250)), f = PERSP / (PERSP - p.z);
       const at = `translate(${(ox + (cx + p.x - ox) * f).toFixed(1)}px, ${(oy + (cy + p.y - oy) * f).toFixed(1)}px)`;
       s.node.style.transform = at;
-      s.tag.style.transform = `${at} translate(-50%, calc(-100% - 52px))`;
+      s.tag.style.transform = `${at} translate(-50%, calc(-100% - ${s.model ? 66 : 52}px))`;
       s.tag.classList.toggle("show", near || s.major || current === s.id);
     }
   }
@@ -331,7 +339,7 @@ function drawStops() {
   STOPS.forEach((s, i) => {
     [s.x, s.y] = project(s.lon, s.lat);
     s.node = el("div", { className: "stop", style: `--d:${(i * .37 % 2.4).toFixed(2)}s` },
-      el("button", { type: "button", ariaLabel: s.name + ", " + s.city, onclick: () => openStop(s.id) }, el("span", { className: "pole" }), el("span", { className: "base" }), el("span", { className: "gem" })));
+      el("button", { type: "button", ariaLabel: s.name + ", " + s.city, onclick: () => openStop(s.id) }, el("span", { className: "pole" }), el("span", { className: "base" }), (s.model ? el("span", { className: "model", innerHTML: s.model }) : el("span", { className: "gem" }))));
     s.tag = el("div", { className: "tag" }, el("b", { textContent: s.name }), el("i", { textContent: s.city }));
     $("labels").append(s.node, s.tag);
   });
