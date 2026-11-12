@@ -102,6 +102,10 @@ textarea { padding: 12px 14px; min-height: 110px; resize: vertical; line-height:
 .tile .art img, .tile .art .cover-ph { width: 100%; height: 100%; object-fit: cover; transition: transform .4s; }
 .tile .art:hover img { transform: scale(1.04); }
 .tile .art .cover-ph svg { width: 38%; height: 38%; }
+.cover-mosaic { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; width: 100%; height: 100%; gap: 2px; background: #0b0607; }
+.cover-mosaic.one { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+.cover-mosaic img { width: 100%; height: 100%; object-fit: cover; min-width: 0; min-height: 0; }
+.cover-mosaic img:first-child:nth-last-child(3) { grid-row: span 2; }
 .tile .fab-play { position: absolute; right: 10px; bottom: 10px; width: 42px; height: 42px; border-radius: 50%; border: 0; display: grid; place-items: center; background: rgba(13,8,9,.88); color: var(--mist); cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,.5); }
 .tile .fab-play:hover { background: var(--ember); }
 .tile .caption { display: flex; gap: 6px; align-items: flex-start; margin-top: 10px; }
@@ -597,6 +601,7 @@ button.tag.on { background: var(--ember); color: var(--night); }
 #covers { width: 680px; }
 #covers[open] { display: flex; flex-direction: column; overflow: hidden; max-height: calc(100dvh - 24px); }
 #covers .dlg-head { flex: none; padding-bottom: 14px; border-bottom: 1px solid rgba(255,210,214,.08); }
+#covers .back-btn { flex: none; gap: 6px; padding: 8px 14px 8px 10px; }
 #covers .dlg-head .grow { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #covers > .stack { min-height: 0; align-content: start; grid-auto-rows: max-content; overflow-y: auto; overscroll-behavior: contain; padding: 16px 18px 20px; grid-template-columns: minmax(0, 1fr); }
 #covers .field { display: grid; gap: 6px; font-size: 13px; color: var(--haze); }
@@ -1320,7 +1325,8 @@ lightClose($("details")); lightClose($("stats")); lightClose($("share")); lightC
 // ——— Données et vues ———
 let scanTimer = null;
 async function refresh() {
-  [data] = await Promise.all([api("GET", "/me/sounds" + (vanish ? "?vanish=1" : "")), PF.load()]);
+  [data, , covers] = await Promise.all([api("GET", "/me/sounds" + (vanish ? "?vanish=1" : "")), PF.load(),
+    api("GET", "/me/cover-packs").catch(() => covers)]);
   render();
   // Des prods en cours de scan : la page se met à jour toute seule jusqu'au résultat.
   clearTimeout(scanTimer);
@@ -1480,10 +1486,11 @@ function renderGrid() {
   // À la racine : les dossiers, puis les projets hors dossier (les miens et ceux enregistrés), du plus récent au plus ancien.
   const here = (x) => (x.folderId || null) === (f ? f.id : null);
   const items = (data.vanish ? data.projects.filter((x) => !chosen || x.owner.id === chosen.id).map((x) => ({ kind: "project", x }))
-    : [...data.projects.filter((x) => here(x) && x.kind !== "playlist").map((x) => ({ kind: "project", x })), ...data.saved.filter((x) => here(x) && x.kind !== "playlist").map((x) => ({ kind: "saved", x }))])
+    : [...data.projects.filter((x) => here(x) && x.kind !== "playlist").map((x) => ({ kind: "project", x })), ...data.saved.filter((x) => here(x) && x.kind !== "playlist").map((x) => ({ kind: "saved", x })),
+      ...(!f && covers ? covers.packs.map((x) => ({ kind: "covers", x })) : [])])
     .sort((a, b) => b.x.createdAt - a.x.createdAt);
   const folders = data.vanish ? [] : subfolders(f ? f.id : null);
-  const tiles = [...folders.map(folderTile), ...items.map(({ kind, x }) => (kind === "project" ? projectTile(x) : savedTile(x))), ...(f || data.vanish ? [] : [trashTile()])];
+  const tiles = [...folders.map(folderTile), ...items.map(({ kind, x }) => (kind === "project" ? projectTile(x) : kind === "covers" ? coverPackTile(x) : savedTile(x))), ...(f || data.vanish ? [] : [trashTile()])];
   tiles.forEach((tile, i) => {
     tile.style.setProperty("--i", i);
     tile.oncontextmenu = (event) => { const dots = tile.querySelector(".dots"); if (dots) { event.preventDefault(); event.stopPropagation(); dots.openAt(atPointer(event)); } };
@@ -1573,6 +1580,18 @@ const TRASH_SVG = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" st
   + '<path class="teeth" d="M12 14.5l2 3.2 2-3.2 2 3.2 2-3.2 2 3.2 2-3.2 2 3.2 2-3.2 2 3.2 2-3.2 2 3.2 2-3.2"/>'
   + '<path d="M11.5 14.5l2.6 26a2.4 2.4 0 0 0 2.4 2.1h15a2.4 2.4 0 0 0 2.4-2.1l2.6-26"/>'
   + '<path class="glow" d="M20 23.5v12M28 23.5v12M24 22.5v14"/></svg>';
+// Un pack de pochettes dans la grille : ses quatre premières pochettes en mosaïque ; il s'ouvre dans le panneau POCHETTES.
+function coverPackTile(x) {
+  const images = x.visualIds.map((vid) => covers.visuals.find((v) => v.id === vid)).filter(Boolean).slice(0, 4);
+  const mosaic = images.length ? el("div", { className: "cover-mosaic" + (images.length === 1 ? " one" : "") }, ...images.map((v) => el("img", { src: v.image, alt: "", decoding: "async", draggable: false })))
+    : coverOf({});
+  const art = el("div", { className: "art", role: "link", tabIndex: 0, ariaLabel: "Ouvrir " + x.title }, mosaic);
+  art.onclick = () => openCoverPack(x.id);
+  art.onkeydown = (event) => { if (event.key === "Enter") art.onclick(); };
+  const sent = x.mails.filter((m) => m.status === "sent").length;
+  return el("div", { className: "tile" }, art, caption(x.title,
+    el("span", { textContent: "Pochettes · " + count(x.visualIds.length, "visuel", "visuels") + (sent ? " · envoyé à " + sent : "") })));
+}
 function trashTile() {
   const inner = el("div", { className: "trash-art" + (data.trash ? " full" : "") });
   inner.innerHTML = TRASH_SVG;
@@ -4522,7 +4541,7 @@ lightClose($("settings"));
 })();
 // POCHETTES : les packs de pochettes. Des visuels de sa vitrine réunis dans un pack, ouvert par un lien (page /pochettes,
 // copies filigranées) et envoyé par e-mail depuis sa boîte mail, à des adresses collées ou à une liste de contacts.
-let covers = null, coverOpen = null, coverPoll = 0;
+var covers = null, coverOpen = null, coverPoll = 0, coverFromTile = false;
 const coverWhen = (t) => new Date(t).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 async function loadCovers() {
   try { covers = await api("GET", "/me/cover-packs"); drawCovers(); } catch (error) { fail(error); }
@@ -4530,12 +4549,15 @@ async function loadCovers() {
   // Un envoi en cours : la liste des destinataires se met à jour toute seule.
   if ($("covers").open && covers && covers.packs.some((p) => p.mails.some((m) => m.status === "wait"))) coverPoll = setTimeout(loadCovers, 5000);
 }
-$("covers-open").onclick = () => { coverOpen = null; covers = null; drawCovers(); $("covers").showModal(); loadCovers(); };
+$("covers-open").onclick = () => { coverOpen = null; coverFromTile = false; drawCovers(); $("covers").showModal(); loadCovers(); };
+function openCoverPack(packId) { coverOpen = packId; coverFromTile = true; drawCovers(); $("covers").showModal(); loadCovers(); }
+$("covers").addEventListener("close", () => { if (data) render(); });
 lightClose($("covers"));
 function drawCovers() {
   const dialog = $("covers"), p = covers && covers.packs.find((x) => x.id === coverOpen);
   const head = el("div", { className: "dlg-head" },
-    p ? el("button", { className: "x", type: "button", ariaLabel: "Retour aux packs", onclick: () => { coverOpen = null; drawCovers(); } }, icon("back")) : null,
+    p ? el("button", { className: "btn btn-ghost back-btn", type: "button", onclick: () => { if (coverFromTile) dialog.close(); else { coverOpen = null; drawCovers(); } } },
+      icon("back"), coverFromTile ? "Retour" : "Tous les packs") : null,
     el("b", { className: "grow", textContent: p ? p.title : "Packs de pochettes" }),
     el("button", { className: "x", type: "button", ariaLabel: "Fermer", onclick: () => dialog.close() }, icon("close")));
   const stack = el("div", { className: "stack" }), put = (...xs) => stack.append(...xs.filter(Boolean));
