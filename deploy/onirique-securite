@@ -1,0 +1,61 @@
+#!/bin/bash
+# Durcissement du VPS. À lancer en root, plusieurs fois sans risque : onirique-securite
+#   - relais TURN de la WATCHPARTY : jamais vers le serveur lui-même (l'API, le VPN), pas de relais TCP ;
+#   - SSH : root par clé seulement, pas de X11 ;
+#   - fail2ban sur SSH (5 échecs en 10 min : 1 h de blocage) ;
+#   - 4 Go de swap (un ffmpeg ou une séparation de pistes ne fait plus tomber le serveur faute de mémoire) ;
+#   - nginx : en-tête Content-Security-Policy de base et page 404 du site (site/404.html).
+set -euo pipefail
+IP=212.227.165.177
+
+echo "TURN"
+conf=/etc/turnserver.conf
+if [ -f "$conf" ]; then
+  avant=$(md5sum "$conf")
+  grep -qx "denied-peer-ip=$IP" "$conf" || echo "denied-peer-ip=$IP" >> "$conf"
+  grep -qx "no-tcp-relay" "$conf" || echo "no-tcp-relay" >> "$conf"
+  [ "$avant" = "$(md5sum "$conf")" ] || systemctl restart coturn
+fi
+
+echo "SSH"
+printf 'PermitRootLogin prohibit-password\nX11Forwarding no\n' > /etc/ssh/sshd_config.d/00-onirique.conf
+sshd -t
+systemctl reload ssh
+
+echo "fail2ban"
+command -v fail2ban-client > /dev/null || DEBIAN_FRONTEND=noninteractive apt-get install -y -q fail2ban > /dev/null
+printf '[sshd]\nenabled = true\nbackend = systemd\nmaxretry = 5\nfindtime = 10m\nbantime = 1h\n' > /etc/fail2ban/jail.d/onirique.local
+systemctl enable -q fail2ban
+systemctl restart fail2ban
+
+echo "Swap"
+if ! swapon --show | grep -q .; then
+  [ -f /swapfile ] || fallocate -l 4G /swapfile
+  chmod 600 /swapfile
+  mkswap /swapfile > /dev/null
+  swapon /swapfile
+fi
+grep -q '^/swapfile ' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+echo 'vm.swappiness=10' > /etc/sysctl.d/99-onirique.conf
+sysctl -q -p /etc/sysctl.d/99-onirique.conf
+
+echo "nginx"
+# La configuration active est le fichier sites-enabled/onirique (pas un lien vers sites-available).
+site=/etc/nginx/sites-enabled/onirique
+securite=/etc/nginx/snippets/onirique-securite.conf
+copie=/root/nginx-onirique.$(date +%F-%H%M%S)
+cp -a "$site" "$copie.site"
+cp -a "$securite" "$copie.securite"
+csp="add_header Content-Security-Policy \"base-uri 'self'; object-src 'none'; frame-ancestors 'self'\" always;"
+grep -qF 'Content-Security-Policy' "$securite" || echo "$csp" >> "$securite"
+grep -q 'error_page 404 /404.html;' "$site" || sed -i '0,/^    index index.html;$/s//    index index.html;\n    error_page 404 \/404.html;/' "$site"
+if ! nginx -t 2> /dev/null; then
+  cp -a "$copie.site" "$site"
+  cp -a "$copie.securite" "$securite"
+  echo "nginx refuse la nouvelle configuration : l'ancienne est remise."
+  nginx -t
+  exit 1
+fi
+systemctl reload nginx
+
+echo "Fait. Reste à faire à la main si le noyau a été mis à jour : apt-get upgrade, puis reboot."

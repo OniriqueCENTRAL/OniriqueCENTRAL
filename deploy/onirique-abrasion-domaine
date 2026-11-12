@@ -1,0 +1,35 @@
+#!/bin/bash
+# Met le site d'ABRASION sur abrasion.onirique.store, une origine à part : un script de ses pages ne peut plus lire la
+# session d'un visiteur d'onirique.store (fondateurs compris). onirique.store/abrasion/… renvoie ensuite vers le
+# sous-domaine. À lancer en root, une fois l'enregistrement DNS posé chez IONOS (A, abrasion → 212.227.165.177) :
+#   onirique-abrasion-domaine
+set -euo pipefail
+NOM=abrasion.onirique.store
+IP=212.227.165.177
+DEPOT=/srv/git/onirique-central.git
+
+vu=$(getent ahostsv4 "$NOM" | awk 'NR == 1 { print $1 }' || true)
+if [ "$vu" != "$IP" ]; then
+  echo "$NOM ne pointe pas encore vers $IP (vu : ${vu:-rien})."
+  echo "Chez IONOS : Domaines et SSL, onirique.store, DNS, ajouter un enregistrement A « abrasion » vers $IP ; relancer dans quelques minutes."
+  exit 1
+fi
+
+[ -f "/etc/letsencrypt/live/$NOM/fullchain.pem" ] || certbot certonly --nginx -d "$NOM" --non-interactive --keep-until-expiring
+
+site=/etc/nginx/sites-enabled/onirique
+copie=/root/nginx-onirique.$(date +%F-%H%M%S).site
+cp -a "$site" "$copie"
+git --git-dir="$DEPOT" show main:deploy/nginx-abrasion.conf > /etc/nginx/sites-available/abrasion
+ln -sf /etc/nginx/sites-available/abrasion /etc/nginx/sites-enabled/abrasion
+sed -i 's|^    location /abrasion/ {.*}$|    location /abrasion/ { return 301 https://abrasion.onirique.store$request_uri; }|' "$site"
+if ! nginx -t 2> /dev/null; then
+  cp -a "$copie" "$site"
+  rm -f /etc/nginx/sites-enabled/abrasion
+  echo "nginx refuse la nouvelle configuration : l'ancienne est remise."
+  nginx -t
+  exit 1
+fi
+systemctl reload nginx
+curl -fsS -o /dev/null -w "https://$NOM/abrasion/ : %{http_code}\n" "https://$NOM/abrasion/"
+curl -sS -o /dev/null -w "https://onirique.store/abrasion/ : %{http_code} vers %{redirect_url}\n" https://onirique.store/abrasion/

@@ -18,6 +18,9 @@ export function hashPassword(password) {
   return `scrypt$${salt.toString('base64')}$${hash.toString('base64')}`;
 }
 
+// Une adresse inconnue est vérifiée contre ce faux mot de passe : la réponse prend le même temps qu'avec un vrai compte.
+export const DECOY_HASH = hashPassword(crypto.randomBytes(18).toString('base64'));
+
 export function verifyPassword(password, stored) {
   const [scheme, salt, hash] = String(stored).split('$');
   if (scheme !== 'scrypt' || !salt || !hash) return false;
@@ -122,6 +125,15 @@ export const isStaff = (user) => user.role === 'admin' || user.role === 'founder
 export const partnerOf = (user) => (PARTNERS.includes(user.role) ? user.role : null);
 /** L'équipe et les partenaires peuvent s'accorder eux-mêmes tous les plugins (réglage self_licenses du compte). */
 export const canSelfLicense = (user) => isStaff(user) || PARTNERS.includes(user.role);
+/**
+ * L'équipe et les partenaires n'agissent qu'avec la double authentification activée (le panel admin, les versements).
+ * En production seulement : les essais (npm test) et le serveur local s'en passent.
+ */
+export function requireTwoFactor(user) {
+  if (process.env.NODE_ENV === 'production' && (isStaff(user) || PARTNERS.includes(user.role)) && !user.totp_secret) {
+    throw new HttpError(403, "La double authentification est obligatoire pour l'équipe et les partenaires : activez-la sur la page Compte du site (onirique.store/compte), puis revenez.");
+  }
+}
 
 function bearer(req) {
   const header = req.headers.authorization || '';
@@ -164,6 +176,7 @@ export function requireAdmin(req, res, next) {
     if (error) return next(error);
     req.creator = isStaff(req.user) ? null : partnerOf(req.user);
     if (!isStaff(req.user) && !req.creator) return next(new HttpError(403, 'Réservé aux administrateurs.'));
+    try { requireTwoFactor(req.user); } catch (e) { return next(e); }
     next();
   });
 }

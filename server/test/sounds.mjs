@@ -729,6 +729,21 @@ try {
     assert.equal((await fetch(`${base}/api/me/sounds/projects/${pid}/cover`, { method: 'PUT', headers: { Authorization: `Bearer ${member.token}`, 'Content-Type': 'image/gif' }, body: Buffer.from('GIF89a') })).status, 400);
   });
 
+  // Le tag posé par le serveur sur une prod de pack téléchargée (ffmpeg ; sauté sur un poste qui ne l'a pas).
+  const { execFileSync } = await import('node:child_process');
+  let ffmpeg = true;
+  try { execFileSync('ffmpeg', ['-version'], { stdio: 'ignore' }); } catch { ffmpeg = false; }
+  if (ffmpeg) await step('pack : la prod téléchargée porte le tag du producteur', async () => {
+    const { taggedFile } = await import('../src/sounds.js');
+    const beat = path.join(dataDir, 'beat.wav'), tag = path.join(dataDir, 'tag.mp3');
+    execFileSync('ffmpeg', ['-loglevel', 'error', '-f', 'lavfi', '-i', 'sine=frequency=220:duration=40', '-ac', '2', beat]);
+    execFileSync('ffmpeg', ['-loglevel', 'error', '-f', 'lavfi', '-i', 'sine=frequency=1000:duration=1', '-ac', '1', tag]);
+    const out = await taggedFile(beat, tag, 'essai');
+    const seconds = Number(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', out]));
+    assert.ok(Math.abs(seconds - 40) < 0.2, `durée ${seconds}`);
+    assert.equal(await taggedFile(beat, tag, 'essai'), out, 'la copie taguée est gardée');
+  });
+
   console.log(`\n${passed} étapes réussies.`);
 } finally {
   server.close();

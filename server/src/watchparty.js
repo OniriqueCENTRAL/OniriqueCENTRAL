@@ -12,7 +12,7 @@
 import crypto from 'node:crypto';
 import { config } from './config.js';
 import { db, get, run, now } from './db.js';
-import { HttpError, rateLimit, requireUser } from './auth.js';
+import { HttpError, rateLimit, requireUser, requireVerified } from './auth.js';
 import { allowed, mountInvites } from './hm.js';
 import { ONIRIQUE } from './docs.js';
 
@@ -340,7 +340,7 @@ export function mountWatchparty(app) {
   // Les serveurs qui aident la connexion directe : STUN (chacun apprend son adresse vue d'internet), et notre relais TURN,
   // en secours seulement, pour les réseaux qui bloquent le direct. Ses identifiants sont signés ici, valables 12 h
   // (coturn, use-auth-secret : TURN_SECRET dans .env, le même que static-auth-secret).
-  app.get('/api/watchparty/ice', requireUser, (req, res) => {
+  app.get('/api/watchparty/ice', requireVerified, (req, res) => {
     const servers = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun.cloudflare.com:3478'] }];
     const secret = process.env.TURN_SECRET, host = process.env.TURN_HOST || new URL(config.siteUrl).hostname;
     if (secret) {

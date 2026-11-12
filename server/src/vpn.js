@@ -1,21 +1,56 @@
 // VPN d'ONIRIQUE Navigateur : un relais (proxy) que seul le navigateur emprunte, comme celui d'Opera GX.
 //
-// Le navigateur s'annonce avec le compte connecté (POST /api/vpn) ; l'adresse IP d'où vient l'annonce peut ensuite
-// passer par le relais pendant 12 heures (il se réannonce tant que le VPN reste allumé). Le relais écoute en TLS sur
-// le port 3129 avec le certificat du site : entre l'ordinateur et le serveur, rien ne circule en clair.
+// Le navigateur s'annonce avec le compte connecté (POST /api/vpn) et reçoit un jeton signé, valable 3 jours, qu'il
+// présente au relais (Proxy-Authorization en Basic, demandé par une réponse 407) ; il se réannonce toutes les 10 minutes
+// tant que le VPN reste allumé. Une adresse IP partagée (4G, wifi d'école) ne suffit donc plus pour emprunter le relais.
+// Le relais écoute en TLS sur le port 3129 avec le certificat du site : entre l'ordinateur et le serveur, rien ne
+// circule en clair, jeton compris.
 //
 // Garde-fous : seuls les ports 80 et 443 sont joignables (pas d'envoi de courrier ni d'autre service), jamais une
 // adresse privée ni le serveur lui-même (rien d'interne ne s'ouvre au public), 64 connexions à la fois par adresse.
+import crypto from 'node:crypto';
 import dns from 'node:dns/promises';
 import fs from 'node:fs';
 import http from 'node:http';
 import https from 'node:https';
 import net from 'node:net';
 import os from 'node:os';
+import path from 'node:path';
+import { config } from './config.js';
 
 export const VPN_PORT = Number(process.env.VPN_PORT || 3129);
 export const VPN_RELAIS = `https://onirique.store:${VPN_PORT}`;
 const DUREE = 12 * 3600_000;
+const DUREE_JETON = 3 * 86400_000; // le moteur garde le jeton tant qu'il marche : un jeton plus court l'interromprait
+// Les navigateurs d'avant le jeton n'ont que leur adresse IP : ils l'annoncent encore jusqu'à cette date, le temps de se
+// mettre à jour. Après, seule l'annonce avec jeton est acceptée.
+export const MODE_IP_JUSQUA = Date.UTC(2026, 11, 31);
+
+let cle;
+const cleVpn = () => {
+  if (cle) return cle;
+  const fichier = path.join(config.keysDir, 'vpn.key');
+  if (!fs.existsSync(fichier)) fs.writeFileSync(fichier, crypto.randomBytes(32), { mode: 0o600 });
+  return (cle = fs.readFileSync(fichier));
+};
+const signer = (texte) => crypto.createHmac('sha256', cleVpn()).update(`vpn:${texte}`).digest('base64url');
+
+/** Le jeton d'un compte : « id.expiration.signature », envoyé par le navigateur comme mot de passe du relais. */
+export function jetonVpn(userId, maintenant = Date.now()) {
+  const expire = maintenant + DUREE_JETON;
+  return { jeton: `${userId}.${expire}.${signer(`${userId}.${expire}`)}`, expire };
+}
+
+/** Vrai si l'en-tête Proxy-Authorization porte un jeton valable (le nom d'utilisateur est ignoré). */
+export function jetonValide(entete, maintenant = Date.now()) {
+  const m = /^Basic\s+([A-Za-z0-9+/=]+)$/i.exec(String(entete || '').trim());
+  if (!m) return false;
+  const mot = Buffer.from(m[1], 'base64').toString('utf8');
+  const [id, expire, signature = ''] = mot.slice(mot.indexOf(':') + 1).split('.');
+  if (!/^\d+$/.test(id || '') || !(Number(expire) > maintenant)) return false;
+  const attendue = signer(`${id}.${expire}`);
+  return signature.length === attendue.length && crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(attendue));
+}
 const MAX_TUNNELS = 64;
 const INACTIVITE = 5 * 60_000;
 
@@ -25,7 +60,9 @@ const ouverts = new Map(); // adresse IP → connexions en cours
 
 export const normaliserIp = (ip) => String(ip || '').replace(/^::ffff:/, '');
 
+/** L'ancien mode, par adresse IP ; null une fois MODE_IP_JUSQUA passé. */
 export function autoriser(ip, userId, maintenant = Date.now()) {
+  if (maintenant >= MODE_IP_JUSQUA) return null;
   const expire = maintenant + DUREE;
   autorises.set(normaliserIp(ip), { userId, expire });
   return expire;
@@ -59,20 +96,22 @@ function compter(ip, n) {
   if (v > 0) ouverts.set(ip, v); else ouverts.delete(ip);
 }
 
+const DEFI = 'Basic realm="ONIRIQUE VPN"';
 function refuser(socket, code, texte) {
-  if (!socket.destroyed) socket.end(`HTTP/1.1 ${code} ${texte}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
+  const defi = code === 407 ? `Proxy-Authenticate: ${DEFI}\r\n` : '';
+  if (!socket.destroyed) socket.end(`HTTP/1.1 ${code} ${texte}\r\n${defi}Connection: close\r\nContent-Length: 0\r\n\r\n`);
 }
 
-function entree(socket) {
-  const ip = normaliserIp(socket.remoteAddress);
-  if (!estAutorise(ip)) return { ip, refus: [403, 'Forbidden'] };
+function entree(req) {
+  const ip = normaliserIp(req.socket.remoteAddress);
+  if (!jetonValide(req.headers['proxy-authorization']) && !estAutorise(ip)) return { ip, refus: [407, 'Proxy Authentication Required'] };
   if ((ouverts.get(ip) || 0) >= MAX_TUNNELS) return { ip, refus: [429, 'Too Many Requests'] };
   return { ip };
 }
 
 async function tunnel(req, client, tete, verifier) {
   client.on('error', () => {});
-  const { ip, refus } = entree(client);
+  const { ip, refus } = entree(req);
   if (refus) return refuser(client, ...refus);
   const m = /^\[?([^\]]+?)\]?:(\d+)$/.exec(req.url || '');
   let cible;
@@ -95,8 +134,8 @@ async function tunnel(req, client, tete, verifier) {
 }
 
 async function transmettre(req, res, verifier) {
-  const { ip, refus } = entree(req.socket);
-  if (refus) { res.writeHead(refus[0]).end(); return; }
+  const { ip, refus } = entree(req);
+  if (refus) { res.writeHead(refus[0], refus[0] === 407 ? { 'Proxy-Authenticate': DEFI } : {}).end(); return; }
   let url, cible;
   try {
     url = new URL(req.url);

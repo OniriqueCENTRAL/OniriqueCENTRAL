@@ -10,7 +10,7 @@ import {
   HttpError, hashPassword, verifyPassword, createSession, destroySession,
   requireUser, requireVerified, requireAdmin, optionalUser, rateLimit, validEmail, publicUser, createResetToken, consumeResetToken,
   ROLES, PARTNERS, isStaff, partnerOf, canSelfLicense, RIGHTS, EDITABLE_ROLES, rolesWith, can, rightsOf,
-  createVerifyToken, consumeVerifyToken, mustVerify, shouldConfirm,
+  createVerifyToken, consumeVerifyToken, mustVerify, shouldConfirm, requireTwoFactor, DECOY_HASH,
 } from './auth.js';
 import { mailEnabled, sendMail } from './mail.js';
 import { embedsLicenseKey, MISSING_LICENSE } from './plugincheck.js';
@@ -56,7 +56,7 @@ import { mountDownloader } from './downloader.js';
 import { mountRocky } from './rocky.js';
 import { mountVocalBrain } from './vocalbrain.js';
 import { applyPluginFiches } from './fiches.js';
-import { autoriser as autoriserVpn, VPN_RELAIS } from './vpn.js';
+import { autoriser as autoriserVpn, jetonVpn, VPN_RELAIS } from './vpn.js';
 import { mountNavigateur } from './navigateur.js';
 import { mountShopPages } from './shoppages.js';
 
@@ -298,6 +298,11 @@ export function createApp() {
   mountDocs(app, { requireUser, wrap });
 
   app.use('/api', express.json({ limit: '200kb' }));
+  // La double authentification de l'équipe vaut pour tout /api/admin, y compris les routes montées hors du routeur admin.
+  app.use('/api/admin', (req, _res, next) => {
+    const user = optionalUser(req);
+    try { if (user) requireTwoFactor(user); next(); } catch (error) { next(error); }
+  });
 
   //============================================================================
   //  Public
@@ -475,9 +480,14 @@ export function createApp() {
 
   app.post('/api/auth/login', (req, res) => {
     const email = str(req.body.email, 254).toLowerCase();
+    // Par adresse IP et compte ; puis toutes adresses confondues pour une IP (un compte après l'autre) et pour un
+    // compte (essayé depuis beaucoup d'IP).
     rateLimit(`login:${req.ip}:${email}`);
+    rateLimit(`login-ip:${req.ip}`, 50);
+    rateLimit(`login-account:${email}`, 30);
     const user = get('SELECT * FROM users WHERE email = ?', email);
-    if (!user || !verifyPassword(String(req.body.password ?? ''), user.password_hash)) {
+    const valid = verifyPassword(String(req.body.password ?? ''), user?.password_hash ?? DECOY_HASH);
+    if (!user || !valid) {
       throw new HttpError(401, 'E-mail ou mot de passe incorrect.');
     }
     // A2F : le code n'est demandé qu'une fois le mot de passe juste. Les essais de code sont comptés par compte,
@@ -911,10 +921,14 @@ export function createApp() {
 
   // Essai gratuit : une seule fois par compte et par plugin, 7 jours. La licence créée est de type "trial" :
   // le plugin la lit comme les autres, mais passe en mode démo (bruit blanc à l'export) tant qu'elle court.
-  // VPN d'ONIRIQUE Navigateur : l'adresse d'où vient l'annonce peut passer par le relais pendant 12 heures (vpn.js).
+  // VPN d'ONIRIQUE Navigateur : le navigateur reçoit le jeton qu'il présentera au relais (vpn.js). Une version d'avant le
+  // jeton (annonce sans « jeton: true ») fait encore ouvrir son adresse IP 12 heures, jusqu'à MODE_IP_JUSQUA.
   app.post('/api/vpn', requireVerified, (req, res) => {
     rateLimit(`vpn:${req.user.id}`, 30);
-    res.json({ relais: VPN_RELAIS, expire: autoriserVpn(req.ip, req.user.id) });
+    if (req.body?.jeton === true) return res.json({ relais: VPN_RELAIS, ...jetonVpn(req.user.id) });
+    const expire = autoriserVpn(req.ip, req.user.id);
+    if (!expire) throw new HttpError(426, "Mets à jour ONIRIQUE Navigateur pour utiliser le VPN : relance-le, il se met à jour tout seul.");
+    res.json({ relais: VPN_RELAIS, expire });
   });
 
   mountNavigateur(app, { requireUser });

@@ -7,7 +7,8 @@ import { sweepMedia } from './sweep.js';
 import { remindCut, publishDueReels } from './cut.js';
 import { demarrerRelais } from './vpn.js';
 
-createApp().listen(config.port, () => {
+// En local seulement : le public passe par nginx (sinon, joint directement, l'API croirait l'adresse IP qu'on lui annonce).
+createApp().listen(config.port, '127.0.0.1', () => {
   console.log(`ONIRIQUE CENTRAL — API sur ${config.publicUrl} (paiements : ${config.paymentsMode})`);
   if (config.paymentsMode === 'demo') {
     console.warn('Mode démo : les achats sont accordés sans paiement. À ne pas exposer au public.');

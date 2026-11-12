@@ -48,6 +48,10 @@ if [ -n "$ONLINE" ] && [ "$(echo "$ONLINE"; echo "$VERSION")" != "$( (echo "$ONL
 fi
 scp -q -o BatchMode=yes "dist/$EXE" "dist/$EXE.blockmap" "$HOST:$REMOTE/"
 ssh -o BatchMode=yes "$HOST" "cd $REMOTE && cp -f '$EXE' ONIRIQUE-CENTRAL-Setup.exe && chmod a+r ./*"
+# La signature (deploy/onirique-signer, clé de root sur le VPS) va dans l'annonce : sans elle, les applications
+# installées refusent la mise à jour.
+SIG=$(ssh -o BatchMode=yes "$HOST" "onirique-signer 'ONIRIQUE CENTRAL' '$VERSION' '$REMOTE/$EXE'") || stop "Signature impossible : la version $VERSION n'est pas annoncée."
+printf "signature: '%s'\n" "$SIG" >> dist/latest.yml
 scp -q -o BatchMode=yes dist/latest.yml "$HOST:$REMOTE/latest.yml"
 # Les trois dernières versions sont gardées (une application en cours de téléchargement ne doit pas perdre son fichier).
 ssh -o BatchMode=yes "$HOST" "cd $REMOTE && ls -t ONIRIQUE-CENTRAL-Setup-*.exe | tail -n +4 | while read -r f; do rm -f \"\$f\" \"\$f.blockmap\"; done; chmod a+r latest.yml"

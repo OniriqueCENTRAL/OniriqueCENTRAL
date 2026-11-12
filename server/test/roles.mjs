@@ -516,6 +516,22 @@ try {
     await call('GET', `/api/download/${version.id}`, { token: admin.token });
   });
 
+  await step('en production, l\'équipe sans double authentification n\'ouvre pas le panel admin', async () => {
+    process.env.NODE_ENV = 'production';
+    try {
+      const refus = await call('GET', '/api/admin/products', { token: founder.token, expect: 403 });
+      assert.match(refus.error, /double authentification est obligatoire/);
+      await call('GET', '/api/admin/sounds', { token: founder.token, expect: 403 }); // monté hors du routeur admin
+      await call('GET', '/api/me/sounds/store/payouts', { token: founder.token, expect: 403 });
+      await call('GET', '/api/me', { token: founder.token }); // le reste du compte reste ouvert, pour activer l'A2F
+      run('UPDATE users SET totp_secret = ? WHERE id = ?', 'JBSWY3DPEHPK3PXP', founder.id);
+      await call('GET', '/api/admin/products', { token: founder.token });
+    } finally {
+      delete process.env.NODE_ENV;
+      run('UPDATE users SET totp_secret = NULL WHERE id = ?', founder.id);
+    }
+  });
+
   console.log(`\n${passed} étapes réussies.`);
 } finally {
   server.close();

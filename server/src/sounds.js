@@ -2,6 +2,7 @@
 // Des projets, des titres et leurs versions successives, des liens d'écoute privés (mot de passe, date de fin,
 // téléchargement au choix), les écoutes comptées et des commentaires placés à un moment du titre.
 // Les fichiers vont dans data/sounds/ ; chaque membre a un quota, et plus rien n'entre quand le disque est plein à 80 %.
+import { execFile } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -504,6 +505,30 @@ function tagOf(userId) {
   const g = get('SELECT filename FROM sound_tags WHERE user_id = ?', userId), e = now() + 6 * 3600_000;
   return g ? { filename: g.filename, url: `/api/sounds/tag/${userId}?e=${e}&s=${sign(`tag.${userId}.${e}`)}` } : null;
 }
+/** Le tag du producteur d'une prod de pack (sound_tags) ; null hors pack ou sans tag. */
+const packTag = (v) => get(`SELECT g.* FROM sound_tracks t JOIN sound_projects p ON p.id = t.project_id
+  JOIN sound_tags g ON g.user_id = p.user_id WHERE t.id = ? AND p.kind = 'pack'`, v.track_id) || null;
+// Le tag revient au début puis toutes les 30 secondes, sur toute la prod ; le résultat est un MP3 320 kbit/s gardé
+// jusqu'au prochain démarrage (sweepSounds). Le fichier propre ne se récupère qu'en achetant une licence.
+const taggedDir = path.join(config.dataDir, 'sounds-tagues');
+export const TAG_FILTER = '[0:a]aresample=44100,aformat=channel_layouts=stereo[b];'
+  + '[1:a]aresample=44100,aformat=channel_layouts=stereo,apad=whole_dur=30,aloop=loop=-1:size=1323000[t];'
+  + '[b][t]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.95[m]';
+export async function taggedFile(beat, tag, name) {
+  const out = path.join(taggedDir, `${name}.mp3`);
+  if (fs.existsSync(out)) return out;
+  fs.mkdirSync(taggedDir, { recursive: true });
+  const temporary = `${out}.${crypto.randomBytes(6).toString('hex')}.mp3`; // deux demandes à la fois : jamais de fichier à moitié écrit
+  await new Promise((resolve, reject) => execFile('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-i', beat, '-i', tag,
+    '-filter_complex', TAG_FILTER, '-map', '[m]', '-c:a', 'libmp3lame', '-b:a', '320k', temporary], { timeout: 5 * 60_000 },
+  (error, _out, stderr) => {
+    if (!error) return resolve();
+    fs.rmSync(temporary, { force: true });
+    reject(new Error(String(stderr || error.message).trim().slice(-300)));
+  }));
+  fs.renameSync(temporary, out);
+  return out;
+}
 // La fiche artiste d'un membre ; sans lien choisi, sa page de liens ONIRIQUE s'il en a une. Une fiche masquée n'est
 // montrée qu'à son auteur (pour la modifier).
 function aboutOf(userId, mine) {
@@ -628,6 +653,7 @@ export function purgeTrash() {
 }
 /** Les fichiers qui ne correspondent plus à aucune version (compte supprimé, envoi interrompu) sont effacés au démarrage. */
 export function sweepSounds() {
+  fs.rmSync(taggedDir, { recursive: true, force: true }); // les copies taguées se refont à la demande
   const kept = new Set(all('SELECT stored_as FROM sound_versions UNION SELECT stored_as FROM sound_deliverables UNION SELECT stored_as FROM sound_tags').map((r) => r.stored_as));
   for (const name of fs.readdirSync(soundsDir)) if (!kept.has(name)) fs.rmSync(path.join(soundsDir, name), { force: true });
 }
@@ -1731,14 +1757,23 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   }));
 
   // Le fichier audio, par une adresse signée ; la lecture peut sauter n'importe où (Range, géré par sendFile).
-  app.get('/api/sounds/audio/:id', (req, res) => {
+  app.get('/api/sounds/audio/:id', wrap(async (req, res) => {
     const e = Number(req.query.e), d = req.query.d === '1' ? 1 : 0, l = d ? id(req.query.l) : 0, s = String(req.query.s || '');
     const rr = l ? str(req.query.r, 64) : '';
     if (!(e > now()) || !same(s, sign(`${id(req.params.id)}.${e}.${d}${l ? `.${l}` : ''}${rr ? `.r${rr}` : ''}`))) throw new HttpError(403, "Ce lien d'écoute a expiré : recharge la page.");
     const v = get('SELECT * FROM sound_versions WHERE id = ?', id(req.params.id));
     if (!v) throw new HttpError(404, 'Son introuvable.');
-    res.set({ 'Content-Type': v.mime, 'Cache-Control': 'private, max-age=3600', 'X-Content-Type-Options': 'nosniff' });
-    if (d) res.attachment(v.filename);
+    // Une prod de pack téléchargée depuis un lien part avec le tag de son producteur (s'il en a un).
+    const tag = l && packTag(v);
+    let file = path.join(soundsDir, v.stored_as);
+    if (tag) {
+      try { file = await taggedFile(file, path.join(soundsDir, tag.stored_as), `${v.id}-${path.parse(tag.stored_as).name}`); } catch (error) {
+        console.error(`[tag] version ${v.id} : ${error.message}`);
+        throw new HttpError(503, 'Téléchargement indisponible pour le moment : réessaie dans un instant.');
+      }
+    }
+    res.set({ 'Content-Type': tag ? 'audio/mpeg' : v.mime, 'Cache-Control': 'private, max-age=3600', 'X-Content-Type-Options': 'nosniff' });
+    if (d) res.attachment(tag ? `${path.parse(v.filename).name}.mp3` : v.filename);
     const link = l && get('SELECT l.*, u.email AS owner_email FROM sound_links l JOIN users u ON u.id = l.user_id WHERE l.id = ?', l);
     if (link) {
       const title = get('SELECT title FROM sound_tracks WHERE id = ?', v.track_id)?.title || v.filename, contact = recipientFor(link.user_id, rr);
@@ -1746,8 +1781,8 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
       if (!req.headers.range || /^bytes=0-/.test(req.headers.range)) trackRecipient(contact, 'download', title);
       tell(link, 'download', { who: contactName(contact), title, key: `${v.id}:${contact?.id || req.ip}` });
     }
-    res.sendFile(path.join(soundsDir, v.stored_as));
-  });
+    res.sendFile(file);
+  }));
 
   // Télécharger un projet entier : un lien signé de dix minutes (un téléchargement ne porte pas la connexion), qui vérifie
   // encore l'accès au moment de l'envoi, puis le .zip, écrit au fil de l'envoi.

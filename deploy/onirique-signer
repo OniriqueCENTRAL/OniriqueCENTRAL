@@ -1,0 +1,41 @@
+#!/usr/bin/env node
+// Signe les mises à jour de l'application ONIRIQUE CENTRAL et d'ONIRIQUE Navigateur. À lancer en root sur le VPS
+// (release-app.sh et release-navigateur.sh l'appellent eux-mêmes après l'envoi du fichier).
+//
+// La clé privée (ECDSA P-256) vit dans /etc/onirique, lisible par root seul : le service de l'API (compte central) ne
+// peut pas s'en servir, même piraté. L'application et le navigateur installés refusent une mise à jour dont la signature
+// ne correspond pas à leur clé publique (app/main/signature.js, navigateur/Installation.cs).
+//
+//   onirique-signer --cle-publique                     crée la clé si besoin et affiche la clé publique
+//   onirique-signer <produit> <version> <fichier>      affiche la signature de « produit, version, empreinte du fichier »
+//
+// La clé ne se recopie nulle part : si elle est perdue, en créer une et publier une version avec la nouvelle clé publique
+// (les programmes installés devront alors être réinstallés depuis le site).
+'use strict';
+const crypto = require('node:crypto');
+const fs = require('node:fs');
+
+const CLE = process.env.ONIRIQUE_CLE_SIGNATURE || '/etc/onirique/signature-maj.pem';
+const PRODUITS = ['ONIRIQUE CENTRAL', 'ONIRIQUE Navigateur'];
+const stop = (texte) => { console.error(texte); process.exit(1); };
+
+function clePrivee(creer) {
+  if (!fs.existsSync(CLE)) {
+    if (!creer) stop(`Clé absente (${CLE}) : lancez d'abord « onirique-signer --cle-publique ».`);
+    const { privateKey } = crypto.generateKeyPairSync('ec', { namedCurve: 'P-256' });
+    fs.writeFileSync(CLE, privateKey.export({ type: 'pkcs8', format: 'pem' }), { mode: 0o600, flag: 'wx' });
+  }
+  return crypto.createPrivateKey(fs.readFileSync(CLE));
+}
+
+const [premier, version, fichier] = process.argv.slice(2);
+if (premier === '--cle-publique') {
+  console.log(crypto.createPublicKey(clePrivee(true)).export({ type: 'spki', format: 'der' }).toString('base64'));
+} else {
+  if (!PRODUITS.includes(premier) || !/^\d+\.\d+\.\d+$/.test(version || '') || !fichier || !fs.existsSync(fichier)) {
+    stop(`Usage : onirique-signer "${PRODUITS.join('" | "')}" <version x.y.z> <fichier>`);
+  }
+  const empreinte = crypto.createHash('sha256').update(fs.readFileSync(fichier)).digest('hex');
+  const message = Buffer.from(`${premier}\n${version}\n${empreinte}`);
+  console.log(crypto.sign('sha256', message, { key: clePrivee(false), dsaEncoding: 'ieee-p1363' }).toString('base64'));
+}

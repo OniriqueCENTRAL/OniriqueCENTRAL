@@ -9,7 +9,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { config } from './config.js';
 import { get, all, run, now, transaction } from './db.js';
-import { HttpError, rateLimit, optionalUser } from './auth.js';
+import { HttpError, rateLimit, optionalUser, requireTwoFactor } from './auth.js';
 import { sendMail } from './mail.js';
 import { seal, unseal, verifyStripeSignature, stripeAccount } from './payments.js';
 import { push } from './push.js';
@@ -406,7 +406,7 @@ export function mountBeatStore(app, { me, track, room, receiveFile, openLink, li
   // Le beatmaker demande le versement de son solde : les fondateurs sont prévenus (notification et e-mail).
   app.post('/api/me/sounds/store/payout-request', ...me, (req, res) => res.json(askPayout(req.user)));
   // Les fondateurs : ce qu'ONIRIQUE doit à chaque beatmaker, et le versement fait (tout le solde dû, ou une partie).
-  const founderOnly = (req) => { if (req.user.role !== 'founder') throw new HttpError(403, 'Réservé aux fondateurs.'); };
+  const founderOnly = (req) => { if (req.user.role !== 'founder') throw new HttpError(403, 'Réservé aux fondateurs.'); requireTwoFactor(req.user); };
   const duesView = () => all(`SELECT DISTINCT o.seller_id, u.name, u.email FROM sound_orders o JOIN users u ON u.id = o.seller_id
       WHERE o.provider = 'onirique' AND o.status = 'paid' AND o.sandbox = 0`)
     .map((r) => ({ sellerId: r.seller_id, name: r.name || r.email, email: r.email, ...balanceOf(r.seller_id) })).filter((x) => x.due > 0)

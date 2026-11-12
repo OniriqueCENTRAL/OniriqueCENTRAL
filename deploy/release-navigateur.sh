@@ -44,7 +44,9 @@ NOM="ONIRIQUE-Navigateur-Setup-$VERSION.exe"
 # version dont le fichier manque, et un téléchargement en cours n'est jamais coupé.
 scp -q -o BatchMode=yes "$EXE" "$HOST:$REMOTE/.$NOM.part"
 ssh -o BatchMode=yes "$HOST" "cd $REMOTE && mv -f '.$NOM.part' '$NOM' && cp -f '$NOM' ONIRIQUE-Navigateur-Setup.exe && cp -f '$NOM' ONIRIQUE-Navigateur.exe && chmod a+r ./*"
-printf '{"version":"%s","url":"https://onirique.store/telechargement/%s","sha256":"%s"}\n' "$VERSION" "$NOM" "$SHA" > bin/navigateur.json
+# La signature (deploy/onirique-signer, clé de root sur le VPS) : sans elle, les navigateurs installés refusent la mise à jour.
+SIG=$(ssh -o BatchMode=yes "$HOST" "onirique-signer 'ONIRIQUE Navigateur' '$VERSION' '$REMOTE/$NOM'") || stop "Signature impossible : la version $VERSION n'est pas annoncée."
+printf '{"version":"%s","url":"https://onirique.store/telechargement/%s","sha256":"%s","signature":"%s"}\n' "$VERSION" "$NOM" "$SHA" "$SIG" > bin/navigateur.json
 scp -q -o BatchMode=yes bin/navigateur.json "$HOST:$REMOTE/.navigateur.json.part"
 ssh -o BatchMode=yes "$HOST" "cd $REMOTE && mv -f .navigateur.json.part navigateur.json && chmod a+r navigateur.json && ls -t ONIRIQUE-Navigateur-Setup-*.exe | tail -n +4 | xargs -r rm -f"
 
