@@ -268,7 +268,7 @@ const STOPS = [
 
 // Le butin : un objet tiré au hasard à chaque tour (les rares un peu moins souvent).
 const LOOT = [["Loukoum", 18], ["Café turc", 16], ["Simit", 14], ["Baklava", 12], ["Tulipe", 10], ["Akçe", 10], ["Babouche", 8], ["Œil nazar", 6], ["Firman du sultan", 3, true], ["Tapis volant", 1.5, true], ["Turban de vizir", 1.5, true]];
-const COOLDOWN = 5 * 60 * 1000; // un stop se recharge en 5 minutes
+const COOLDOWN = 0; // pas de recharge : on rejoue un stop autant qu'on veut
 const STORE = "onirique.empire";
 const load = () => { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch { return {}; } };
 const save = () => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch { /* stockage fermé : le butin dure le temps de la page */ } };
@@ -426,7 +426,7 @@ function refreshSpin() {
   $("spin").disabled = used;
   $("spin").textContent = used ? `Recharge… encore ${left} min` : $("game").childElementCount ? "Rejouer" : "Jouer";
 }
-// Lancer le jeu du stop ouvert ; gagné, il donne le butin et le stop se recharge, perdu, on peut rejouer tout de suite.
+// Lancer le jeu du stop ouvert ; gagné, il donne le butin. Gagné ou perdu, on rejoue tout de suite.
 function play() {
   const id = current;
   if (!id || usedNow(id)) return;
@@ -461,7 +461,6 @@ function closeStop() { current = null; lastView = ""; $("stop").classList.remove
 $("spin").onclick = play;
 $("stop-close").onclick = () => { closeStop(); home(); };
 addEventListener("keydown", (e) => { if (e.key === "Escape") { closeStop(); home(); } });
-setInterval(() => { refreshSpin(); draw(); }, 30000); // les stops se rechargent
 
 //------------------------------------------------------------------------------ Les mini-jeux : un par mensonge, gagné = le butin
 // Chaque jeu se dessine dans #game et appelle done(true) s'il est gagné, done(false) sinon.
