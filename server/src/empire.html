@@ -7,7 +7,7 @@
 <link rel="icon" type="image/png" href="/assets/favicon.png?v=2">
 <link rel="stylesheet" href="/assets/fonts.css">
 <style>
-/* L'empire anto ment : la carte des fondateurs, dans le style de la carte des membres (plan incliné, noir et blanc) ; les grands monuments de l'empire sont des « stops » qu'on fait tourner pour gagner du butin. */
+/* L'empire anto ment : la carte des fondateurs, dans le style de la carte des membres (plan incliné, noir et blanc) ; les mensonges d'Anto sont des « stops » qu'on fait tourner pour gagner du butin. */
 :root {
   --night: #040404; --line: rgba(255,255,255,.13); --mist: #F4F4F4; --haze: #9A9A9A; --ember: #ffffff; --pink: #d6d6d6; --rose: #e8e8e8;
   --used: #6b6b6b;
@@ -160,7 +160,7 @@ header > * { pointer-events: auto; }
   <span class="eyebrow">Privé · fondateurs</span>
   <h1>L'empire <em>anto ment</em></h1>
   <span class="count" id="count"></span>
-  <span class="hint">Glisser : déplacer · Molette : zoomer · Clic droit maintenu : tourner et incliner. Clique un stop, fais tourner son disque.</span>
+  <span class="hint">Glisser : déplacer · Molette : zoomer · Clic droit maintenu : tourner et incliner. Chaque stop est un mensonge d'Anto : clique-le, fais tourner son disque.</span>
   <div><span class="eyebrow" style="margin-bottom:10px">Ton butin</span><div class="bag" id="bag"></div></div>
   <div><span class="eyebrow" style="margin-bottom:8px">Les stops</span><div class="list" id="list"></div></div>
 </aside>
@@ -202,39 +202,15 @@ const SEAS = {
   "Mer Rouge": { at: [37.3, 22.4], pts: [[32.6,29.9],[34.3,27.2],[35.6,24],[37.3,20.5],[38.6,18],[39.6,15.5],[40.3,15.8],[40,19.8],[39.1,21.6],[38,24.1],[36.6,26],[35,28.1],[34.4,28],[33.5,28.3],[32.6,29.9]] },
 };
 
-// Les stops : les grands monuments de l'empire (ou qu'il a gardés), avec un mot d'histoire.
+// Les stops : les mensonges d'Anto, un par grande ville de l'empire (titres donnés par les fondateurs).
 const STOPS = [
-  { id: "sophie", name: "Sainte-Sophie", city: "Constantinople", lon: 28.98, lat: 41.008, icon: "🕌", major: true, text: "Basilique byzantine de 537, devenue mosquée au lendemain de la prise de la ville par Mehmed II en 1453. Ses minarets sont ottomans." },
-  { id: "topkapi", name: "Palais de Topkapı", city: "Constantinople", lon: 28.984, lat: 41.013, icon: "👑", text: "La résidence des sultans pendant près de quatre siècles, avec son harem, ses cuisines géantes et la salle du trésor." },
-  { id: "selimiye", name: "Mosquée Selimiye", city: "Edirne", lon: 26.559, lat: 41.678, icon: "🕌", major: true, text: "Le chef-d'œuvre de l'architecte Sinan (1575), que lui-même tenait pour son plus beau : une coupole immense posée sur huit piliers." },
-  { id: "bursa", name: "Grande Mosquée", city: "Bursa", lon: 29.062, lat: 40.184, icon: "🕌", text: "Première capitale de l'empire. Sa grande mosquée aux vingt coupoles date de 1399, offerte par Bayezid Ier après la victoire de Nicopolis." },
-  { id: "mevlana", name: "Mausolée de Mevlana", city: "Konya", lon: 32.505, lat: 37.871, icon: "🌀", text: "Le tombeau du poète Rûmî, sous son cône de faïence verte, cœur de l'ordre des derviches tourneurs." },
-  { id: "ephese", name: "Bibliothèque de Celse", city: "Éphèse", lon: 27.34, lat: 37.939, icon: "🏛️", text: "Ruine romaine du IIe siècle, sur les terres de l'empire. Elle gardait autrefois 12 000 rouleaux." },
-  { id: "trebizonde", name: "Sainte-Sophie de Trébizonde", city: "Trébizonde", lon: 39.69, lat: 41.004, icon: "⛪", text: "Église byzantine du XIIIe siècle aux fresques célèbres, sur la côte de la mer Noire, prise par les Ottomans en 1461." },
-  { id: "rhodes", name: "Palais des Grands Maîtres", city: "Rhodes", lon: 28.226, lat: 36.446, icon: "🏰", text: "La forteresse des chevaliers de Saint-Jean, rendue à Soliman le Magnifique en 1522 après six mois de siège." },
-  { id: "athenes", name: "Parthénon", city: "Athènes", lon: 23.726, lat: 37.971, icon: "🏛️", major: true, text: "Sous les Ottomans, une petite mosquée s'élevait à l'intérieur. Il explose en 1687, quand un boulet vénitien touche la poudre qu'on y gardait." },
-  { id: "thessalonique", name: "Tour Blanche", city: "Thessalonique", lon: 22.948, lat: 40.626, icon: "🗼", text: "Tour ottomane du XVe siècle sur le port, longtemps une prison, aujourd'hui le symbole de la ville." },
-  { id: "mostar", name: "Stari Most", city: "Mostar", lon: 17.815, lat: 43.337, icon: "🌉", major: true, text: "Le Vieux Pont de 1566, une arche unique au-dessus de la Neretva. Détruit en 1993, reconstruit pierre par pierre." },
-  { id: "visegrad", name: "Pont Mehmed Pacha Sokolović", city: "Višegrad", lon: 19.288, lat: 43.782, icon: "🌉", text: "Onze arches sur la Drina, dessinées par Sinan pour le grand vizir (1577). C'est « le pont sur la Drina » du roman d'Ivo Andrić." },
-  { id: "sarajevo", name: "Mosquée Gazi Husrev-Beg", city: "Sarajevo", lon: 18.431, lat: 43.859, icon: "🕌", text: "La plus grande mosquée ottomane des Balkans (1531), au cœur du vieux bazar de Baščaršija." },
-  { id: "belgrade", name: "Forteresse de Kalemegdan", city: "Belgrade", lon: 20.45, lat: 44.823, icon: "🏰", text: "Au confluent de la Save et du Danube, prise par Soliman en 1521 : la porte de l'empire vers la Hongrie." },
-  { id: "budapest", name: "Tombeau de Gül Baba", city: "Buda", lon: 19.034, lat: 47.514, icon: "🌷", text: "Le derviche « père des roses », mort en 1541, et les bains turcs de la ville : Buda reste ottomane jusqu'en 1686." },
-  { id: "kamianets", name: "Forteresse de Kamianets", city: "Podolie", lon: 26.565, lat: 48.673, icon: "🏰", text: "Prise en 1672, elle marque le point le plus au nord de l'empire jusqu'en 1699." },
-  { id: "bakhtchy", name: "Palais des Khans", city: "Bakhtchyssaraï", lon: 33.881, lat: 44.749, icon: "⛲", text: "Le palais des khans de Crimée, vassaux du sultan, avec sa « fontaine des larmes » chantée par Pouchkine." },
-  { id: "alep", name: "Citadelle d'Alep", city: "Alep", lon: 37.163, lat: 36.199, icon: "🏰", text: "Une des plus vieilles forteresses du monde, sur sa butte au milieu de la ville. Alep était le grand marché de la soie de l'empire." },
-  { id: "damas", name: "Mosquée des Omeyyades", city: "Damas", lon: 36.306, lat: 33.511, icon: "🕌", major: true, text: "Bâtie en 715 ; Damas était sous les Ottomans le point de départ de la grande caravane vers La Mecque." },
-  { id: "baalbek", name: "Temples de Baalbek", city: "Baalbek", lon: 36.204, lat: 34.006, icon: "🏛️", text: "Les plus grands temples romains jamais construits, et leurs blocs de pierre de plus de 800 tonnes." },
-  { id: "jerusalem", name: "Dôme du Rocher", city: "Jérusalem", lon: 35.235, lat: 31.778, icon: "🕌", major: true, text: "Soliman le Magnifique lui donne ses faïences bleues et rebâtit les remparts de la vieille ville (1537-1541), toujours debout." },
-  { id: "petra", name: "Pétra", city: "Arabie Pétrée", lon: 35.444, lat: 30.328, icon: "🏜️", text: "La cité nabatéenne taillée dans le grès rose, oubliée de l'Europe jusqu'en 1812." },
-  { id: "bagdad", name: "Mosquée al-Kadhimiya", city: "Bagdad", lon: 44.338, lat: 33.38, icon: "🕌", text: "Ses coupoles d'or dominent Bagdad, reprise aux Perses par Mourad IV en 1638." },
-  { id: "medine", name: "Mosquée du Prophète", city: "Médine", lon: 39.611, lat: 24.467, icon: "🕌", text: "Mahmoud II fait peindre sa coupole en vert en 1837. Gardien des lieux saints, il porte le titre de « serviteur des deux saintes mosquées »." },
-  { id: "mecque", name: "Masjid al-Haram", city: "La Mecque", lon: 39.826, lat: 21.422, icon: "🕋", major: true, text: "Sinan et ses élèves remplacent au XVIe siècle son toit plat par des centaines de petites coupoles, restées jusqu'au XXe siècle." },
-  { id: "caire", name: "Citadelle du Caire", city: "Le Caire", lon: 31.26, lat: 30.03, icon: "🏰", text: "La citadelle de Saladin, siège des pachas d'Égypte après la conquête de Sélim Ier en 1517." },
-  { id: "gizeh", name: "Pyramides de Gizeh", city: "Gizeh", lon: 31.134, lat: 29.979, icon: "🔺", major: true, text: "Déjà vieilles de quatre mille ans quand l'Égypte devient ottomane. La seule des sept merveilles encore debout." },
-  { id: "tripoli", name: "Château rouge", city: "Tripoli", lon: 13.18, lat: 32.896, icon: "🏰", text: "La forteresse des pachas de Tripoli, au bord du port des corsaires barbaresques." },
-  { id: "tunis", name: "Médina de Tunis", city: "Tunis", lon: 10.17, lat: 36.8, icon: "🕌", text: "Ses souks et la mosquée Youssef Dey (1616), la première de Tunis au minaret octogonal à l'ottomane." },
-  { id: "alger", name: "Casbah d'Alger", city: "Alger", lon: 3.06, lat: 36.785, icon: "🏯", major: true, text: "La citadelle des deys, au sommet de la ville blanche, au bout ouest de l'empire depuis les frères Barberousse." },
-];
+  { id: "nouvelle-ecole", name: "Mail de Nouvelle école", city: "Constantinople", lon: 28.98, lat: 41.008, icon: "📧" },
+  { id: "pc", name: "Achat de son PC", city: "Le Caire", lon: 31.26, lat: 30.03, icon: "💻" },
+  { id: "dragon-lore", name: "Dragon Lore", city: "Buda", lon: 19.034, lat: 47.514, icon: "🐉" },
+  { id: "sacem", name: "Argent bloqué SACEM", city: "Alger", lon: 3.06, lat: 36.785, icon: "🔒" },
+  { id: "immortal", name: "Rank IMMORTAL Valorant", city: "Bagdad", lon: 44.338, lat: 33.38, icon: "🎮" },
+  { id: "argent", name: "Argent perçu / dépenses", city: "Damas", lon: 36.306, lat: 33.511, icon: "💸" },
+].map((s) => ({ ...s, major: true }));
 
 // Le butin : un objet tiré au hasard à chaque tour (les rares un peu moins souvent).
 const LOOT = [["Loukoum", 18], ["Café turc", 16], ["Simit", 14], ["Baklava", 12], ["Tulipe", 10], ["Akçe", 10], ["Babouche", 8], ["Œil nazar", 6], ["Firman du sultan", 3, true], ["Tapis volant", 1.5, true], ["Turban de vizir", 1.5, true]];
@@ -246,7 +222,7 @@ const state = Object.assign({ bag: {}, spun: {} }, load());
 const usedNow = (id) => Date.now() - (state.spun[id] || 0) < COOLDOWN;
 function draw() {
   const total = Object.values(state.bag).reduce((t, n) => t + n, 0);
-  $("count").innerHTML = `<b>${STOPS.length}</b> stops · <b>${Object.keys(state.spun).length}</b> visités · <b>${total}</b> objets`;
+  $("count").innerHTML = `<b>${STOPS.length}</b> mensonges · <b>${STOPS.filter((x) => state.spun[x.id]).length}</b> visités · <b>${total}</b> objets`;
   const bag = Object.entries(state.bag).sort((a, b) => b[1] - a[1]);
   $("bag").replaceChildren(...(bag.length ? bag.map(([k, n]) => el("span", {}, k, el("b", { textContent: "×" + n }))) : [el("p", { className: "empty", textContent: "Rien encore : fais tourner un stop." })]));
   $("list").replaceChildren(...STOPS.map((s) => el("button", { type: "button", className: usedNow(s.id) ? "used" : "", onclick: () => openStop(s.id) }, s.name, el("small", { textContent: s.city }))));
@@ -367,7 +343,8 @@ function openStop(id) {
   $("stop-city").textContent = s.city;
   $("stop-name").textContent = s.name;
   $("disc").textContent = s.icon;
-  $("stop-text").textContent = s.text;
+  $("stop-text").textContent = s.text || "";
+  $("stop-text").hidden = !s.text;
   $("loot").replaceChildren();
   refreshSpin();
   $("stop").classList.add("open"); document.body.classList.add("stop-open");
