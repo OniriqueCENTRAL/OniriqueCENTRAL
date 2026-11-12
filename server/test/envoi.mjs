@@ -27,7 +27,23 @@ const verify = outbox.filter((m) => m.to === email).at(-1).text.match(/\?verify=
 await api('/api/auth/verify', { json: { token: verify } });
 
 try {
-  assert.equal((await api('/api/envois', { json: {} })).status, 401, 'sans compte, pas d\'envoi');
+  assert.equal((await api('/api/envois', { json: {} })).status, 401, 'ni compte ni adresse confirmée, pas d\'envoi');
+
+  // Sans compte : l'adresse confirmée par code, puis la clé d'expéditeur pour les fichiers.
+  const guest = 'invite@test.local';
+  assert.equal((await api('/api/envois/code', { json: { email: guest } })).status, 200);
+  const code = outbox.filter((m) => m.to === guest).at(-1).text.match(/ENVOI : (\d{6})/)[1];
+  assert.equal((await api('/api/envois', { json: { email: guest, code: code === '000000' ? '111111' : '000000' } })).status, 403, 'mauvais code');
+  const g = await (await api('/api/envois', { json: { email: guest, code, title: 'Clip' } })).json();
+  assert.ok(g.id && g.key);
+  assert.equal((await api('/api/envois', { json: { email: guest, code } })).status, 401, 'un code ne sert qu\'une fois');
+  assert.equal((await api(`/api/envois/${g.id}/files?name=a.mp4`, { body: 'v' })).status, 404, 'sans la clé, pas d\'ajout');
+  const withKey = (method, url, body) => fetch(base + url, { method, body, headers: { 'X-Envoi-Cle': g.key, 'Content-Type': 'application/octet-stream' } });
+  assert.equal((await withKey('POST', `/api/envois/${g.id}/files?name=a.mp4`, 'v')).status, 201);
+  assert.equal((await withKey('POST', `/api/envois/${g.id}/ready`)).status, 200);
+  assert.equal((await (await api(`/api/envois/${g.id}`)).json()).sender, guest);
+  assert.ok(outbox.filter((m) => m.to === guest).at(-1).text.includes(`/envoi?id=${g.id}`), 'le lien part à l\'expéditeur');
+  assert.equal((await withKey('DELETE', `/api/envois/${g.id}`)).status, 200);
 
   // Envoi sans mot de passe : deux fichiers au même nom, puis le lien.
   const { id } = await (await api('/api/envois', { token, json: { title: 'Stems', message: 'Bonne écoute', days: 1 } })).json();
