@@ -19,3 +19,21 @@ for part in keys files media; do
   fi
 done
 find "$ROOT" -mindepth 1 -maxdepth 1 -type d -mtime +14 -exec rm -rf {} +
+
+# Copie chiffrée hors du VPS (restic), une fois réglée par onirique-sauvegarde-distante. Son échec ne touche pas la copie
+# locale ; le résultat est écrit dans $DIST/etat. Chemins fixes (pas le dossier du jour) pour que restic ne relise que
+# ce qui a changé. Hors de $ROOT : FONDATEURS lit le dernier nom de ce dossier comme date de sauvegarde.
+DIST=/var/backups/onirique-distante
+if [ -f /etc/onirique/sauvegarde-distante.env ]; then
+  mkdir -p "$DIST"
+  ln -f "$D/central.db" "$DIST/central.db"
+  [ ! -f "$DIST/journal" ] || { tail -n 2000 "$DIST/journal" > "$DIST/journal.tmp"; mv "$DIST/journal.tmp" "$DIST/journal"; }
+  echo "=== $(date '+%F %T')" >> "$DIST/journal"
+  if /usr/local/bin/onirique-sauvegarde-distante envoi >> "$DIST/journal" 2>&1; then
+    echo "$(date '+%F %T') ok" > "$DIST/etat"
+  else
+    echo "$(date '+%F %T') ÉCHEC (journal : $DIST/journal)" > "$DIST/etat"
+    echo "Copie hors du VPS en échec : voir $DIST/journal" >&2
+    exit 1
+  fi
+fi

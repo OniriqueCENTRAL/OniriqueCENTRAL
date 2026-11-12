@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+# Copie chiffrée de la sauvegarde de la nuit hors du VPS (restic, vers Backblaze B2 ou un stockage compatible S3).
+# À lancer sur le VPS, en root :
+#   onirique-sauvegarde-distante         règle la destination, fait un premier envoi, puis un essai de restauration
+#   onirique-sauvegarde-distante essai   restaure le dernier envoi dans un dossier temporaire et le contrôle
+#   onirique-sauvegarde-distante liste   les envois gardés
+#   onirique-sauvegarde-distante off     arrête les envois (ce qui est déjà envoyé reste chez l'hébergeur)
+# Appelé chaque nuit par onirique-backup avec « envoi ». Résultat du dernier envoi : /var/backups/onirique-distante/etat.
+#
+# À faire avant, chez l'hébergeur choisi :
+#   Backblaze B2 : créer un bucket privé, puis une clé d'application limitée à ce bucket (keyID et applicationKey).
+#   S3 (Scaleway, OVH, Wasabi…) : créer un bucket privé et une clé d'accès (Access Key et Secret Key), noter l'adresse
+#   du point d'accès (ex. https://s3.fr-par.scw.cloud).
+# La phrase de chiffrement est choisie ici. Sans elle, rien n'est récupérable : la garder AUSSI hors du VPS
+# (gestionnaire de mots de passe de deux fondateurs), sinon la perte du VPS rend la copie illisible.
+set -euo pipefail
+
+ENVFILE=/etc/onirique/sauvegarde-distante.env
+DATA=/var/lib/onirique-central
+DIST=/var/backups/onirique-distante
+stop() { echo "$1" >&2; exit 1; }
+
+load() {
+  [ -f "$ENVFILE" ] || stop "Copie hors du VPS non réglée : lancer onirique-sauvegarde-distante"
+  set -a; . "$ENVFILE"; set +a
+}
+
+case "${1:-}" in
+  envoi)
+    load
+    [ -f "$DIST/central.db" ] || stop "Pas de base à envoyer : lancer onirique-backup"
+    restic backup --host onirique "$DIST/central.db" "$DATA/keys" "$DATA/files" "$DATA/media"
+    # Le dimanche seulement : le ménage et le contrôle relisent des données chez l'hébergeur.
+    if [ "$(date +%u)" = 7 ]; then
+      restic forget --host onirique --keep-daily 14 --keep-weekly 8 --keep-monthly 12 --prune
+      restic check --read-data-subset=5%
+    fi
+    exit 0 ;;
+  liste) load; restic snapshots; exit 0 ;;
+  off) rm -f "$ENVFILE"; echo "Envois arrêtés. Les copies déjà envoyées restent dans le bucket."; exit 0 ;;
+  essai)
+    load
+    T=$(mktemp -d /var/tmp/onirique-essai.XXXXXX)
+    trap 'rm -rf "$T"' EXIT
+    echo "Restauration du dernier envoi dans $T…"
+    restic restore latest --host onirique --target "$T" >/dev/null
+    DB="$T$DIST/central.db"
+    [ -f "$DB" ] || stop "ÉCHEC : la base n'est pas dans la copie."
+    [ "$(sqlite3 "$DB" 'pragma integrity_check')" = ok ] || stop "ÉCHEC : la base restaurée est abîmée."
+    for part in keys files media; do
+      a=$(find "$DATA/$part" -type f | wc -l); b=$(find "$T$DATA/$part" -type f 2>/dev/null | wc -l)
+      echo "  $part : $b fichiers restaurés (aujourd'hui sur le VPS : $a)"
+      [ "$b" -gt 0 ] || [ "$a" = 0 ] || stop "ÉCHEC : $part est vide dans la copie."
+    done
+    echo "  base : $(sqlite3 "$DB" 'select count(*) from users') comptes, intègre"
+    echo "Essai réussi : la copie hors du VPS se restaure."
+    exit 0 ;;
+  '') ;;
+  *) stop "Usage : onirique-sauvegarde-distante [essai|liste|off]" ;;
+esac
+
+# Réglage
+command -v restic >/dev/null || { apt-get update -qq && apt-get install -y -qq restic; }
+command -v sqlite3 >/dev/null || apt-get install -y -qq sqlite3
+
+# Redemande tant que la valeur n'a pas la forme attendue (un collage peut finir par un retour à la ligne).
+ask() {
+  local v=''
+  while :; do
+    read -r ${3:-} -p "$1" v; [ -z "${3:-}" ] || echo >&2
+    v=${v//[[:space:]]/}
+    [[ $v =~ $2 ]] && break
+    [ -z "$v" ] || echo "Ça ne ressemble pas à la bonne valeur, recolle-la." >&2
+  done
+  printf '%s' "$v"
+}
+
+echo "Destination : 1) Backblaze B2   2) stockage compatible S3 (Scaleway, OVH, Wasabi…)"
+KIND=$(ask "Choix (1 ou 2) : " '^[12]$')
+BUCKET=$(ask "Nom du bucket : " '^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$')
+if [ "$KIND" = 1 ]; then
+  REPO="b2:$BUCKET:onirique-central"
+  ID=$(ask "keyID : " '^[A-Za-z0-9]{10,40}$')
+  KEY=$(ask "applicationKey (rien ne s'affiche) : " '^[A-Za-z0-9+/=]{20,}$' -s)
+  CREDS=$(printf "B2_ACCOUNT_ID='%s'\nB2_ACCOUNT_KEY='%s'" "$ID" "$KEY")
+else
+  END=$(ask "Point d'accès (ex. https://s3.fr-par.scw.cloud) : " '^https://[A-Za-z0-9.-]+$')
+  REPO="s3:$END/$BUCKET/onirique-central"
+  ID=$(ask "Access Key : " '^[A-Za-z0-9]{10,40}$')
+  KEY=$(ask "Secret Key (rien ne s'affiche) : " '^[A-Za-z0-9+/=]{20,}$' -s)
+  CREDS=$(printf "AWS_ACCESS_KEY_ID='%s'\nAWS_SECRET_ACCESS_KEY='%s'" "$ID" "$KEY")
+fi
+
+while :; do
+  read -r -s -p "Phrase de chiffrement (16 caractères au moins, sans apostrophe droite, rien ne s'affiche) : " P1; echo
+  read -r -s -p "La même, encore : " P2; echo
+  [ "$P1" = "$P2" ] || { echo "Les deux ne sont pas pareilles." >&2; continue; }
+  [ ${#P1} -ge 16 ] || { echo "Trop courte." >&2; continue; }
+  [[ $P1 != *"'"* ]] || { echo "Pas d'apostrophe droite." >&2; continue; }
+  break
+done
+
+mkdir -p /etc/onirique
+umask 077
+printf "RESTIC_REPOSITORY='%s'\nRESTIC_PASSWORD='%s'\n%s\n" "$REPO" "$P1" "$CREDS" > "$ENVFILE.tmp"
+chmod 600 "$ENVFILE.tmp"
+(set -a; . "$ENVFILE.tmp"; set +a
+ if restic cat config >/dev/null 2>&1; then echo "Dépôt déjà présent, phrase acceptée."
+ else restic init || { rm -f "$ENVFILE.tmp"; stop "Refusé : vérifier le nom du bucket, la clé et ses droits ; si le dépôt existe déjà, la phrase est fausse."; }
+ fi) || { rm -f "$ENVFILE.tmp"; stop "Réglage abandonné."; }
+mv "$ENVFILE.tmp" "$ENVFILE"
+
+echo "Premier envoi (le plus long : tout part une fois, ensuite seulement ce qui change)…"
+/usr/local/bin/onirique-backup || stop "Le premier envoi a échoué : voir $DIST/journal"
+"$0" essai
+echo
+echo "C'est bon : chaque nuit, la sauvegarde part aussi vers $REPO."
+echo "Rappel : la phrase de chiffrement doit être gardée hors du VPS, sinon la copie ne sert à rien."

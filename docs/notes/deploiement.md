@@ -17,6 +17,10 @@
 - L'API n'écoute que sur 127.0.0.1:4850 : tout passe par nginx.
 - Durcissement (TURN, SSH, fail2ban, swap, CSP, page 404) : `onirique-securite`, en root, plusieurs fois sans risque.
 - Double authentification obligatoire en production pour fondateurs, admins et partenaires (panel admin, versements).
+- Sauvegarde : chaque nuit `onirique-backup` (14 jours dans `/var/backups/onirique-central`), puis copie chiffrée
+  hors du VPS par restic une fois réglée par `onirique-sauvegarde-distante` (B2 ou S3, phrase de chiffrement gardée
+  hors du VPS par les fondateurs). État du dernier envoi : `/var/backups/onirique-distante/etat` ; contrôle de
+  restauration : `onirique-sauvegarde-distante essai` (à refaire de temps en temps).
 
 ## Application Windows (Electron, `app/`)
 - `bash deploy/release-app.sh` (copie propre et à jour exigée ; pousse lui-même le commit « Application X »).
