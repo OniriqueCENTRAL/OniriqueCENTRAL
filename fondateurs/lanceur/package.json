@@ -1,0 +1,22 @@
+{
+  "name": "onirique-fondateurs",
+  "productName": "ONIRIQUE FONDATEURS",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Gestion du site et de l'application ONIRIQUE pour les fondateurs.",
+  "author": "Onirique",
+  "main": "lanceur.js",
+  "scripts": {
+    "dist": "node ../../app/node_modules/electron-builder/cli.js --win portable"
+  },
+  "build": {
+    "appId": "com.onirique.fondateurs",
+    "productName": "ONIRIQUE FONDATEURS",
+    "electronDist": "../../app/node_modules/electron/dist",
+    "electronVersion": "44.10.1",
+    "files": ["lanceur.js"],
+    "directories": { "output": "dist" },
+    "win": { "icon": "../../app/build/icon.png", "target": "portable" },
+    "portable": { "artifactName": "ONIRIQUE-FONDATEURS.exe" }
+  }
+}
