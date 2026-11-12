@@ -99,6 +99,16 @@ if [ -d "$work/server/discord-bot" ]; then
   if [ -n "$bot_changed" ] && systemctl is-enabled -q onirique-discord-bot 2>/dev/null; then systemctl restart onirique-discord-bot; fi
 fi
 
+# Réseau, pour l'envoi de fichiers : des tampons TCP plus grands (un envoi lointain remplit mieux la ligne) et BBR,
+# qui accélère les téléchargements. Fichier à part de celui d'onirique-securite ; un échec n'empêche pas la mise en ligne.
+reseau=/etc/sysctl.d/98-onirique-reseau.conf
+printf 'net.core.rmem_max=67108864\nnet.core.wmem_max=67108864\nnet.ipv4.tcp_rmem=4096 131072 67108864\nnet.ipv4.tcp_wmem=4096 65536 67108864\n' > "$reseau"
+if modprobe tcp_bbr 2>/dev/null && grep -qw bbr /proc/sys/net/ipv4/tcp_available_congestion_control; then
+  printf 'net.core.default_qdisc=fq\nnet.ipv4.tcp_congestion_control=bbr\n' >> "$reseau"
+  grep -qx tcp_bbr /etc/modules-load.d/onirique.conf 2>/dev/null || echo tcp_bbr >> /etc/modules-load.d/onirique.conf
+fi
+sysctl -q -p "$reseau" || echo "ATTENTION : réglages réseau (TCP) non appliqués."
+
 # Les outils du serveur qui viennent du dépôt (livraison, publication des plugins, ce script).
 for tool in "$work"/deploy/onirique-*; do install -m 755 "$tool" /usr/local/bin/; done
 install -m 644 "$work/deploy/publish-plugin.mjs" /usr/local/lib/onirique/publish-plugin.mjs
