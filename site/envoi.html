@@ -97,7 +97,7 @@
 /* Envoi en cours : anneau et chiffres */
 .live { display: grid; grid-template-columns: auto 1fr; gap: 24px; align-items: center; }
 .ring { position: relative; width: 132px; height: 132px; }
-.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; } /* sinon la lueur est coupée au bord du dessin */
 .ring circle { fill: none; stroke-width: 9; }
 .ring .track { stroke: rgba(255,255,255,.07); }
 .ring .arc { stroke: rgb(var(--acc)); stroke-linecap: round; stroke-dasharray: 339.3; stroke-dashoffset: 339.3; filter: drop-shadow(0 0 8px rgba(var(--acc),.9)); transition: stroke-dashoffset .3s linear; }
