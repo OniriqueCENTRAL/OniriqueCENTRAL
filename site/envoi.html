@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<script src="assets/i18n.js?v=25e3ff48"></script>
+<script src="assets/ui.js?v=4"></script>
+<script src="assets/annonce.js?v=2"></script>
+<script src="/api/announce.js" async></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ONIRIQUE ENVOI : envoyer des fichiers lourds par un lien — ONIRIQUE</title>
+<meta name="description" content="Envoie stems, sessions et clips jusqu'à 4 Go par un lien qui expire, avec mot de passe si tu veux. Le destinataire télécharge sans compte, fichier par fichier ou en .zip.">
+<link rel="canonical" href="https://onirique.store/envoi">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ONIRIQUE">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:title" content="ONIRIQUE ENVOI : envoyer des fichiers lourds par un lien">
+<meta property="og:description" content="Stems, sessions et clips jusqu'à 4 Go, par un lien qui expire. Le destinataire télécharge sans compte.">
+<meta property="og:url" content="https://onirique.store/envoi">
+<meta property="og:image" content="https://onirique.store/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="assets/favicon.png?v=2">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css?v=2">
+<link rel="stylesheet" href="assets/tools.css?v=2">
+<style>
+.wrap { max-width: 900px; }
+.hero { text-align: center; }
+.list { margin: 0; padding: 0 !important; list-style: none; }
+.list li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 12px clamp(18px, 4vw, 34px); border-top: 1px solid rgba(255,210,214,.08); }
+.list li:first-child { border-top: 0; }
+.list li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list small { font: 500 12px var(--f-mono); color: var(--haze); white-space: nowrap; }
+.list button, .list a.dl { border: 0; background: none; color: var(--ember-text); font: 500 12px var(--f-mono); cursor: pointer; text-decoration: none; white-space: nowrap; }
+.card textarea { width: 100%; min-height: 80px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px/1.4 var(--f-body); resize: vertical; }
+.card input[type="password"] { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px/1.4 var(--f-body); }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+progress { width: 100%; height: 8px; accent-color: var(--ember); }
+.link { font: 500 15px var(--f-mono); overflow-wrap: anywhere; color: var(--mist) !important; }
+.message { white-space: pre-wrap; }
+[hidden] { display: none !important; }
+</style>
+<link rel="stylesheet" href="/assets/da.css?v=7">
+<script src="/assets/accent.js?v=1"></script>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="boutique">Boutique</a><a class="btn" href="outils" data-tools>Outils</a><a class="btn" href="compte" data-account>Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <!-- Destinataire : onirique.store/envoi?id=… -->
+  <section class="hero" id="receive" hidden>
+    <p class="eyebrow">ONIRIQUE ENVOI</p>
+    <h1 id="r-title">Des fichiers <em>pour toi</em></h1>
+    <p class="lede" id="r-from"></p>
+    <form class="card" id="r-lock" hidden>
+      <label>Mot de passe de l'envoi<input id="r-password" type="password" required autocomplete="off"></label>
+      <div class="actions"><button class="go" type="submit">Ouvrir</button></div>
+    </form>
+    <div class="card" id="r-card" hidden>
+      <p class="head"><b id="r-count"></b><span id="r-expires"></span></p>
+      <p class="message" id="r-message" hidden></p>
+      <ul class="list" id="r-files"></ul>
+      <div class="actions dim"><a class="go" id="r-zip" href="#">Tout télécharger (.zip)</a></div>
+    </div>
+    <p class="error" id="r-error" role="alert"></p>
+  </section>
+
+  <!-- Expéditeur -->
+  <section class="hero" id="send" hidden>
+    <p class="eyebrow">ONIRIQUE ENVOI</p>
+    <h1>Tes fichiers lourds, <em>par un lien</em></h1>
+    <p class="lede">Stems, sessions, clips : jusqu'à 4 Go par envoi. Le lien expire quand tu veux, et ton destinataire télécharge sans compte.</p>
+    <p class="hint" id="s-login" hidden>Pour envoyer, <a href="compte">connecte-toi à ton compte ONIRIQUE</a> (gratuit). Recevoir ne demande pas de compte.</p>
+    <div id="s-form" hidden>
+      <button class="drop" id="drop" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>
+        <strong>Dépose tes fichiers ici</strong>
+        <span>ou clique pour les choisir · 2 Go par fichier, 4 Go par envoi</span>
+      </button>
+      <input id="file" type="file" multiple hidden>
+      <form class="card" id="s-card" hidden>
+        <ul class="list" id="s-files"></ul>
+        <div class="fields">
+          <label>Titre<input id="s-title" type="text" maxlength="120" placeholder="Stems de « Nuit »"></label>
+          <label>Le lien expire après<select id="s-days"><option value="1">1 jour</option><option value="7" selected>7 jours</option><option value="14">14 jours</option><option value="30">30 jours</option></select></label>
+          <label>Mot de passe (facultatif)<input id="s-password" type="password" autocomplete="new-password"></label>
+        </div>
+        <label>Message<textarea id="s-message" maxlength="2000"></textarea></label>
+        <div class="actions"><button class="go" id="s-go" type="submit">Envoyer</button><small class="muted" id="s-total"></small></div>
+        <progress id="s-progress" max="1" value="0" hidden></progress>
+      </form>
+      <div class="card" id="s-done" hidden>
+        <p class="eyebrow">Lien prêt</p>
+        <p class="link" id="s-link"></p>
+        <div class="actions"><button class="go" id="s-copy" type="button">Copier le lien</button><a class="go ghost" id="s-mail" href="#">Envoyer par e-mail</a><button class="go ghost" id="s-again" type="button">Nouvel envoi</button></div>
+      </div>
+      <p class="error" id="s-error" role="alert"></p>
+      <div class="card" id="mine" hidden>
+        <p class="head"><b>Mes envois en cours</b></p>
+        <ul class="list" id="mine-list"></ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="mentions-legales">Mentions légales</a><a href="cgv">CGV et CGU</a><a href="confidentialite">Confidentialité</a><a href="cookies">Cookies</a><a href="support">Support</a>
+  </nav>
+</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
+const token = (() => { try { return sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token"); } catch { return null; } })();
+const auth = token ? { Authorization: "Bearer " + token } : {};
+const size = (b) => b >= 1e9 ? (b / 1e9).toFixed(2) + " Go" : b >= 1e6 ? (b / 1e6).toFixed(1) + " Mo" : Math.max(1, Math.round(b / 1e3)) + " Ko";
+const day = (t) => new Date(t).toLocaleDateString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+async function api(url, options = {}) {
+  const r = await fetch(url, { ...options, headers: { ...auth, ...(options.json ? { "Content-Type": "application/json" } : {}) }, body: options.json ? JSON.stringify(options.json) : options.body });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(data.error || "Le serveur ne répond pas. Réessaie dans un instant."), { data, status: r.status });
+  return data;
+}
+const fail = (box) => (error) => { $(box).textContent = error.message === "Failed to fetch" ? "Serveur injoignable. Réessaie dans un instant." : error.message; };
+const id = new URLSearchParams(location.search).get("id");
+
+// ——— Destinataire ———
+async function receive(key = "") {
+  $("r-error").textContent = "";
+  const q = key ? "?k=" + encodeURIComponent(key) : "";
+  try {
+    const e = await api("/api/envois/" + encodeURIComponent(id) + q);
+    $("r-lock").hidden = true;
+    if (e.title) $("r-title").textContent = e.title;
+    $("r-from").textContent = e.sender + " t'envoie " + e.files.length + (e.files.length > 1 ? " fichiers." : " fichier.");
+    $("r-count").textContent = e.files.length + (e.files.length > 1 ? " fichiers · " : " fichier · ") + size(e.size);
+    $("r-expires").textContent = "Disponible jusqu'au " + day(e.expiresAt);
+    $("r-message").hidden = !e.message;
+    $("r-message").textContent = e.message;
+    const base = "/api/envois/" + encodeURIComponent(id);
+    $("r-files").replaceChildren(...e.files.map((f) => el("li", {}, el("span", { textContent: f.name }), el("small", { textContent: size(f.size) }),
+      el("a", { className: "dl", href: base + "/files/" + f.id + q, textContent: "Télécharger" }))));
+    $("r-zip").href = base + "/zip" + q;
+    $("r-card").hidden = false;
+  } catch (error) {
+    if (error.data?.locked) { $("r-lock").hidden = false; $("r-from").textContent = "Cet envoi est protégé par un mot de passe."; return; }
+    $("r-from").textContent = "";
+    fail("r-error")(error);
+  }
+}
+$("r-lock").onsubmit = async (event) => {
+  event.preventDefault();
+  try { receive((await api("/api/envois/" + encodeURIComponent(id) + "/unlock", { method: "POST", json: { password: $("r-password").value } })).key); }
+  catch (error) { fail("r-error")(error); }
+};
+
+// ——— Expéditeur ———
+let files = [];
+function drawFiles() {
+  $("s-card").hidden = !files.length;
+  $("s-files").replaceChildren(...files.map((f, i) => el("li", {}, el("span", { textContent: f.name }), el("small", { textContent: size(f.size) }),
+    el("button", { type: "button", textContent: "Retirer", onclick: () => { files.splice(i, 1); drawFiles(); } }))));
+  const total = files.reduce((s, f) => s + f.size, 0);
+  $("s-total").textContent = files.length ? size(total) + (total > 4e9 ? " : c'est plus que 4 Go" : "") : "";
+  $("s-go").disabled = !files.length || total > 4e9 || files.some((f) => f.size > 2 * 1024 ** 3);
+}
+const add = (list) => { files.push(...[...list].filter((f) => f.size > 0)); drawFiles(); };
+$("drop").onclick = () => $("file").click();
+$("file").onchange = () => { add($("file").files); $("file").value = ""; };
+$("drop").ondragover = (e) => { e.preventDefault(); $("drop").classList.add("over"); };
+$("drop").ondragleave = () => $("drop").classList.remove("over");
+$("drop").ondrop = (e) => { e.preventDefault(); $("drop").classList.remove("over"); add(e.dataTransfer.files); };
+
+// Un fichier à la fois, par XHR pour suivre la progression.
+const upload = (envoi, file, done, total) => new Promise((resolve, reject) => {
+  const x = new XMLHttpRequest();
+  x.open("POST", "/api/envois/" + envoi + "/files?name=" + encodeURIComponent(file.name));
+  x.setRequestHeader("Authorization", "Bearer " + token);
+  x.setRequestHeader("Content-Type", "application/octet-stream");
+  x.upload.onprogress = (e) => { $("s-progress").value = (done + e.loaded) / total; };
+  x.onload = () => (x.status < 300 ? resolve() : reject(new Error((() => { try { return JSON.parse(x.responseText).error; } catch { return "Envoi de « " + file.name + " » interrompu."; } })())));
+  x.onerror = () => reject(new Error("Connexion perdue pendant l'envoi de « " + file.name + " »."));
+  x.send(file);
+});
+$("s-card").onsubmit = async (event) => {
+  event.preventDefault();
+  $("s-error").textContent = "";
+  $("s-go").disabled = true;
+  $("s-progress").hidden = false;
+  const total = files.reduce((s, f) => s + f.size, 0);
+  let envoi;
+  try {
+    envoi = (await api("/api/envois", { method: "POST", json: { title: $("s-title").value, message: $("s-message").value, days: Number($("s-days").value), password: $("s-password").value } })).id;
+    let done = 0;
+    for (const f of files) { $("s-go").textContent = "Envoi de « " + f.name + " »…"; await upload(envoi, f, done, total); done += f.size; }
+    await api("/api/envois/" + envoi + "/ready", { method: "POST" });
+    const link = location.origin + "/envoi?id=" + envoi;
+    $("s-link").textContent = link;
+    $("s-mail").href = "mailto:?subject=" + encodeURIComponent($("s-title").value || "Des fichiers pour toi") + "&body=" + encodeURIComponent(($("s-message").value ? $("s-message").value + "\n\n" : "") + link);
+    $("s-card").hidden = true;
+    $("drop").hidden = true;
+    $("s-done").hidden = false;
+    mine();
+  } catch (error) {
+    if (envoi) api("/api/envois/" + envoi, { method: "DELETE" }).catch(() => {});
+    fail("s-error")(error);
+    $("s-go").disabled = false;
+  }
+  $("s-go").textContent = "Envoyer";
+  $("s-progress").hidden = true;
+};
+$("s-copy").onclick = async () => {
+  try { await navigator.clipboard.writeText($("s-link").textContent); $("s-copy").textContent = "Lien copié"; } catch { prompt("Copie le lien :", $("s-link").textContent); }
+  setTimeout(() => ($("s-copy").textContent = "Copier le lien"), 1800);
+};
+$("s-again").onclick = () => { files = []; drawFiles(); $("s-done").hidden = true; $("drop").hidden = false; $("s-card").reset(); };
+
+async function mine() {
+  const list = await api("/api/envois").catch(() => []);
+  $("mine").hidden = !list.length;
+  $("mine-list").replaceChildren(...list.map((e) => el("li", {},
+    el("span", {}, el("a", { href: "/envoi?id=" + e.id, textContent: e.title || e.files.length + (e.files.length > 1 ? " fichiers" : " fichier") })),
+    el("small", { textContent: size(e.size) + " · " + e.downloads + " téléch. · jusqu'au " + day(e.expiresAt) + (e.locked ? " · 🔒" : "") }),
+    el("button", { type: "button", textContent: "Supprimer", onclick: async () => { if (confirm("Supprimer cet envoi ? Le lien ne marchera plus.")) { await api("/api/envois/" + e.id, { method: "DELETE" }).catch(fail("s-error")); mine(); } } }))));
+}
+
+if (id) { $("receive").hidden = false; receive(); }
+else {
+  $("send").hidden = false;
+  $("s-login").hidden = !!token;
+  $("s-form").hidden = !token;
+  if (token) mine();
+}
+</script>
+<script src="assets/tools-menu.js?v=15"></script>
+<script src="assets/account.js?v=16"></script>
+<script src="assets/site-nav.js?v=22"></script>
+</html>

@@ -46,6 +46,7 @@ import { mountHm } from './hm.js';
 import { mountWatchparty } from './watchparty.js';
 import { mountPlatforms } from './platforms.js';
 import { mountTransfer } from './transfer.js';
+import { mountEnvoi } from './envoi.js';
 import { mountRatings } from './ratings.js';
 import { mountProfiles } from './profiles.js';
 import { mountMessages } from './messages.js';
@@ -595,6 +596,8 @@ export function createApp() {
   // Notes, ups et top 3 de la semaine des playlists d'ONIRIQUE CLOUD.
   mountRatings(app, { requireUser });
   mountCut(app, { requireUser, receiveFile, wrap });
+  // ONIRIQUE ENVOI : des fichiers lourds partagés par un lien qui expire.
+  mountEnvoi(app, { requireVerified, receiveFile, wrap });
   mountTierList(app, { requireUser, receiveImage, removeMedia, wrap });
   mountHm(app, { requireUser });
   mountWatchparty(app);
