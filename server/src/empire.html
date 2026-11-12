@@ -7,11 +7,10 @@
 <link rel="icon" type="image/png" href="/assets/favicon.png?v=2">
 <link rel="stylesheet" href="/assets/fonts.css">
 <style>
-/* L'empire anto ment : la carte des fondateurs, dans le style de la carte des membres (constellation sur la nuit, plan
-   incliné) ; les grands monuments de l'empire sont des « stops » qu'on fait tourner pour gagner du butin. */
+/* L'empire anto ment : la carte des fondateurs, dans le style de la carte des membres (plan incliné, noir et blanc) ; les grands monuments de l'empire sont des « stops » qu'on fait tourner pour gagner du butin. */
 :root {
-  --night: #050306; --line: rgba(255,210,214,.13); --mist: #F6EEEE; --haze: #A88F92; --ember: rgb(var(--acc)); --pink: rgb(var(--acc-hi)); --rose: #ffb3bb;
-  --used: #a98bff;
+  --night: #040404; --line: rgba(255,255,255,.13); --mist: #F4F4F4; --haze: #9A9A9A; --ember: #ffffff; --pink: #d6d6d6; --rose: #e8e8e8;
+  --used: #6b6b6b;
   --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
   --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
   --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
@@ -23,14 +22,13 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--night)
 a { color: inherit; }
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
-#sky { position: fixed; inset: 0; z-index: 0; }
 .halo { position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background: radial-gradient(60% 50% at 50% 60%, rgba(150,10,30,.22), transparent 70%), radial-gradient(40% 35% at 15% 10%, rgba(120,8,26,.25), transparent 70%); }
+  background: radial-gradient(60% 50% at 50% 60%, rgba(255,255,255,.05), transparent 70%), radial-gradient(40% 35% at 15% 10%, rgba(255,255,255,.04), transparent 70%); }
 header { position: fixed; top: 0; left: 0; right: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px clamp(14px, 3vw, 28px); pointer-events: none; }
 header > * { pointer-events: auto; }
 .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 800 16px/1 var(--f-display); letter-spacing: .16em; }
-.brand img { width: 40px; height: auto; margin-block: -10px; filter: drop-shadow(0 0 6px rgba(var(--acc),.8)); }
-.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; border: 1px solid var(--line); background: rgba(13,8,9,.55); backdrop-filter: blur(12px);
+.brand img { width: 40px; height: auto; margin-block: -10px; filter: grayscale(1) drop-shadow(0 0 6px rgba(255,255,255,.6)); }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; border: 1px solid var(--line); background: rgba(10,10,10,.55); backdrop-filter: blur(12px);
   font: 600 13px/1 var(--f-body); text-decoration: none; cursor: pointer; color: var(--mist); }
 .btn:hover { border-color: var(--ember); }
 
@@ -39,16 +37,17 @@ header > * { pointer-events: auto; }
 #plane { position: absolute; left: 50%; top: 54%; width: 2500px; height: 2500px; margin: -1250px 0 0 -1250px; transform-style: preserve-3d; }
 @media (min-width: 861px) { #plane { left: calc(50% + 150px); top: 50%; } }
 #plane svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.coast { fill: none; stroke: rgba(255,179,187,.42); stroke-width: 1.1; stroke-linejoin: round; filter: url(#glow); stroke-dasharray: var(--len); stroke-dashoffset: var(--len);
+.coast { fill: none; stroke: rgba(255,255,255,.85); stroke-width: 1.6; stroke-linejoin: round; stroke-dasharray: var(--len); stroke-dashoffset: var(--len);
   animation: draw 3.2s cubic-bezier(.6, .1, .2, 1) forwards; }
-.coast.sea { stroke: rgba(150,190,255,.28); animation-delay: .8s; }
-.land { fill: rgba(var(--acc),.06); opacity: 0; animation: fade 2s 1.8s forwards; }
-.land.sea { fill: rgba(5,3,6,.92); }
+.coast.sea { stroke: rgba(255,255,255,.35); stroke-width: 1; animation-delay: .8s; }
+.land { fill: rgba(255,255,255,.1); opacity: 0; animation: fade 2s 1.8s forwards; }
+.land.sea { fill: rgba(4,4,4,.92); }
+.grid { stroke: rgba(255,255,255,.07); stroke-width: .6; fill: none; }
+.gridlabel { font: 500 7px var(--f-mono); fill: rgba(255,255,255,.25); }
 @keyframes draw { to { stroke-dashoffset: 0; } }
 @keyframes fade { to { opacity: 1; } }
-.star { fill: #ffe9ec; opacity: 0; animation: appear .6s forwards; }
 @keyframes appear { to { opacity: var(--o, .8); } }
-.sealabel { font: 500 9px var(--f-mono); letter-spacing: .3em; fill: rgba(150,190,255,.4); text-anchor: middle; text-transform: uppercase; opacity: 0; animation: fade 2s 2.4s forwards; }
+.sealabel { font: 500 9px var(--f-mono); letter-spacing: .3em; fill: rgba(255,255,255,.4); text-anchor: middle; text-transform: uppercase; opacity: 0; animation: fade 2s 2.4s forwards; }
 
 /* Les stops : posés à plat au-dessus de la carte (#labels), à la position de leur monument à l'écran. */
 #labels { position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
@@ -60,10 +59,10 @@ header > * { pointer-events: auto; }
 .stop .base::after { content: ""; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid var(--pink); animation: ping 2.4s var(--d, 0s) ease-out infinite; }
 @keyframes ping { from { transform: scale(.6); opacity: 1; } to { transform: scale(2.6); opacity: 0; } }
 .stop .gem { position: absolute; left: 6px; top: 2px; width: 20px; height: 20px; border-radius: 5px; transform-style: preserve-3d;
-  background: radial-gradient(circle at 35% 30%, #fff 0 12%, var(--pink) 35%, var(--ember) 75%); box-shadow: 0 0 14px var(--ember), 0 0 30px rgba(var(--acc),.5);
+  background: radial-gradient(circle at 35% 30%, #fff 0 12%, var(--pink) 35%, var(--ember) 75%); box-shadow: 0 0 14px var(--ember), 0 0 30px rgba(255,255,255,.5);
   animation: gem 3.2s var(--d, 0s) linear infinite; }
 @keyframes gem { from { transform: rotateX(55deg) rotateZ(0); } to { transform: rotateX(55deg) rotateZ(360deg); } }
-.stop.used .gem { background: radial-gradient(circle at 35% 30%, #fff 0 12%, #cdbbff 35%, var(--used) 75%); box-shadow: 0 0 12px var(--used); }
+.stop.used .gem { background: radial-gradient(circle at 35% 30%, #fff 0 12%, #9a9a9a 35%, var(--used) 75%); box-shadow: 0 0 12px var(--used); }
 .stop.used .base, .stop.used .base::after { border-color: var(--used); }
 .stop.on button { scale: 1.3; }
 .stop button:hover { scale: 1.15; }
@@ -72,8 +71,8 @@ header > * { pointer-events: auto; }
 .tag b { display: block; text-align: center; font: 800 10.5px/1.1 var(--f-display); letter-spacing: .08em; text-transform: uppercase; text-shadow: 0 0 10px #000, 0 0 3px #000; }
 .tag i { display: block; text-align: center; font: 500 9.5px var(--f-mono); font-style: normal; color: var(--pink); letter-spacing: .1em; text-shadow: 0 0 8px #000; }
 
-.glass { background: linear-gradient(160deg, rgba(255,255,255,.075), rgba(255,255,255,.02) 40%, rgba(255,255,255,.035)), rgba(10,6,8,.62);
-  border: 1px solid rgba(255,235,238,.1); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.4), 0 18px 40px rgba(0,0,0,.45);
+.glass { background: linear-gradient(160deg, rgba(255,255,255,.075), rgba(255,255,255,.02) 40%, rgba(255,255,255,.035)), rgba(8,8,8,.62);
+  border: 1px solid rgba(255,255,255,.1); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.4), 0 18px 40px rgba(0,0,0,.45);
   backdrop-filter: blur(22px) saturate(140%); border-radius: 22px; }
 .eyebrow { font: 500 11px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); display: flex; align-items: center; gap: 8px; }
 .eyebrow::before { content: ""; width: 11px; height: 11px; background: var(--mist); clip-path: polygon(50% 0, 56% 44%, 100% 50%, 56% 56%, 50% 100%, 44% 56%, 0 50%, 44% 44%); filter: drop-shadow(0 0 4px var(--ember)); }
@@ -101,23 +100,24 @@ header > * { pointer-events: auto; }
 #stop.open { transform: none; }
 #stop .x { justify-self: end; margin-bottom: -40px; border: 1px solid var(--line); background: rgba(255,255,255,.04); width: 34px; height: 34px; border-radius: 10px; cursor: pointer; }
 #stop h2 { margin: 0; font: 800 22px/1.15 var(--f-display); }
-#stop p { margin: 0; font-size: 14px; color: #d9c6c9; text-align: left; }
+#stop p { margin: 0; font-size: 14px; color: #cfcfcf; text-align: left; }
 .disc { width: 190px; height: 190px; border-radius: 50%; display: grid; place-items: center; font-size: 74px; cursor: pointer; border: 6px solid var(--ember); touch-action: none;
-  background: radial-gradient(circle at 50% 40%, rgba(255,179,187,.25), transparent 60%), conic-gradient(from 0deg, #2a0a0e, #4a0f18, #2a0a0e, #4a0f18, #2a0a0e);
-  box-shadow: 0 0 0 6px rgba(255,255,255,.06), 0 0 40px rgba(var(--acc),.6), inset 0 0 30px rgba(0,0,0,.6); transition: border-color .4s, box-shadow .4s; }
+  background: radial-gradient(circle at 50% 40%, rgba(255,255,255,.25), transparent 60%), conic-gradient(from 0deg, #111, #2a2a2a, #111, #2a2a2a, #111);
+  box-shadow: 0 0 0 6px rgba(255,255,255,.06), 0 0 40px rgba(255,255,255,.6), inset 0 0 30px rgba(0,0,0,.6); transition: border-color .4s, box-shadow .4s; }
+.disc { filter: grayscale(1); }
 .disc.spin { animation: spin 1.1s cubic-bezier(.2, .7, .3, 1); }
 @keyframes spin { to { transform: rotate(1080deg); } }
-.disc.used { border-color: var(--used); box-shadow: 0 0 0 6px rgba(255,255,255,.06), 0 0 30px rgba(169,139,255,.5), inset 0 0 30px rgba(0,0,0,.6); cursor: default; }
-.go { padding: 12px 22px; border-radius: 999px; border: 0; background: var(--mist); color: #0d0809; font: 700 14px var(--f-body); cursor: pointer; }
+.disc.used { border-color: var(--used); box-shadow: 0 0 0 6px rgba(255,255,255,.06), 0 0 30px rgba(255,255,255,.15), inset 0 0 30px rgba(0,0,0,.6); cursor: default; }
+.go { padding: 12px 22px; border-radius: 999px; border: 0; background: var(--mist); color: #0a0a0a; font: 700 14px var(--f-body); cursor: pointer; }
 .go:disabled { background: rgba(255,255,255,.08); color: var(--haze); cursor: default; }
 .loot { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; min-height: 10px; }
-.loot span { padding: 8px 12px; border-radius: 14px; border: 1px solid rgba(var(--acc),.6); background: rgba(var(--acc),.15); font: 700 13px var(--f-body); animation: pop .6s both cubic-bezier(.2, 1.6, .4, 1); animation-delay: calc(var(--i) * 120ms); }
-.loot span.rare { border-color: #ffd36b; background: rgba(255,211,107,.15); }
+.loot span { padding: 8px 12px; border-radius: 14px; border: 1px solid rgba(255,255,255,.6); background: rgba(255,255,255,.15); font: 700 13px var(--f-body); animation: pop .6s both cubic-bezier(.2, 1.6, .4, 1); animation-delay: calc(var(--i) * 120ms); }
+.loot span.rare { border-color: #ffffff; background: rgba(255,255,255,.22); }
 @keyframes pop { from { opacity: 0; transform: translateY(30px) scale(.4); } }
 #zoom { position: fixed; z-index: 10; right: clamp(12px, 3vw, 28px); bottom: 18px; display: grid; gap: 6px; }
 #zoom button { width: 42px; height: 42px; border-radius: 12px; cursor: pointer; font: 700 18px var(--f-body); }
 #intro { position: fixed; z-index: 30; inset: 0; display: grid; place-items: center; pointer-events: none; font: 800 clamp(22px, 4vw, 40px)/1.1 var(--f-display); letter-spacing: .2em; text-align: center;
-  animation: intro 2.6s forwards; text-shadow: 0 0 30px rgba(var(--acc),.8); }
+  animation: intro 2.6s forwards; text-shadow: 0 0 30px rgba(255,255,255,.8); }
 #intro small { display: block; margin-top: 12px; font: 500 12px var(--f-mono); letter-spacing: .3em; color: var(--pink); }
 @keyframes intro { 0% { opacity: 0; transform: scale(.96); } 25%, 60% { opacity: 1; transform: none; } 100% { opacity: 0; transform: scale(1.04); visibility: hidden; } }
 @media (max-width: 860px) {
@@ -129,13 +129,17 @@ header > * { pointer-events: auto; }
   body.stop-open #zoom { display: none; }
   .hide-phone { display: none; }
 }
-@media (pointer: coarse) { .coast { filter: none; } .glass, .btn { backdrop-filter: none; } .glass { background: rgba(12,7,9,.93); } .list button { min-height: 44px; align-items: center; } }
+@media (pointer: coarse) { .coast { filter: none; } .glass, .btn { backdrop-filter: none; } .glass { background: rgba(10,10,10,.93); } .list button { min-height: 44px; align-items: center; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01s !important; animation-iteration-count: 1 !important; transition: none !important; } }
 </style>
 <link rel="stylesheet" href="/assets/da.css?v=7">
-<script src="/assets/accent.js?v=1"></script>
+<style>
+/* Noir et blanc : l'accent de la DA commune (da.css, chargée juste avant) passe en blanc et gris, sans braise. */
+:root { --acc: 255, 255, 255; --acc-hi: 214, 214, 214; --acc-lo: 40, 40, 40; --blood: #1a1a1a; --night: #040404; --deep: #0c0c0c; --deep-2: #0a0a0a;
+  --mist: #F4F4F4; --bone: #F4F4F4; --soft: #c4c4c4; --haze: #9A9A9A; --label: #cfcfcf; --muted: #707070; --ember: #fff; --ember-text: #d6d6d6; --pink: #d6d6d6; --rose: #e8e8e8;
+  --line: rgba(255,255,255,.13); }
+</style>
 
-<canvas id="sky" aria-hidden="true"></canvas>
 <div class="halo" aria-hidden="true"></div>
 <div id="intro" aria-hidden="true">L'EMPIRE ANTO MENT<small>CARTE PRIVÉE · FONDATEURS</small></div>
 <header>
@@ -147,8 +151,7 @@ header > * { pointer-events: auto; }
 <div id="scene" aria-label="Carte de l'empire : glisser pour déplacer, molette pour zoomer">
   <div id="plane">
     <svg viewBox="0 0 1000 1000" aria-hidden="true">
-      <defs><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
-      <g id="lands"></g><g id="stars"></g><g id="seas"></g>
+      <g id="grid"></g><g id="lands"></g><g id="seas"></g>
     </svg>
   </div>
 </div>
@@ -187,7 +190,7 @@ const still = reduced || matchMedia("(pointer: coarse)").matches;
 const project = (lon, lat) => [500 + (lon - 23.2) * 0.83 * 22, 500 - (lat - 32.3) * 22];
 
 // L'empire vers 1683, à son étendue la plus grande (États vassaux compris : Moldavie, Valachie, Transylvanie, Crimée),
-// tracé à la main et simplifié pour la constellation (lon, lat). Les mers sont posées par-dessus, en creux.
+// tracé à la main et simplifié (lon, lat). Les mers sont posées par-dessus, en creux.
 const EMPIRE = {
   empire: [[15.6,43.9],[15.8,44.7],[16.3,45.4],[17.2,45.9],[17.3,46.5],[17.9,47.2],[18.2,47.7],[18.2,48.1],[19.4,48.2],[20.4,48.2],[21.5,48],[22.2,47.6],[22.9,47.9],[24,47.9],[25,47.8],[26.2,48.3],[26.5,48.8],[27.6,49.3],[28.8,49],[29.6,48.3],[30.6,47.8],[31.8,47.6],[33.5,47.3],[35,47.4],[36.8,47.2],[38.2,47.2],[39.3,47.1],[38.6,46.3],[39,45.2],[38.5,44.6],[39.5,43.9],[40.5,43.2],[41.6,42.6],[42.8,42.4],[43.8,41.8],[44.2,41.2],[43.6,40.6],[44.2,39.6],[44.5,38.6],[44.9,37.4],[45.8,35.8],[46.1,35],[45.6,33.9],[46.6,32.9],[47.6,31.6],[48.3,30.4],[48.6,29.9],[47.8,29.4],[46.5,29.1],[44.5,30.4],[42,31.2],[39.5,30.5],[38.6,29.2],[38.6,26.5],[40,24.2],[41,22.4],[41,21],[40.3,20],[39.6,15.4],[38.9,15.3],[37,17.2],[36.6,18.6],[33.4,21.8],[31.4,21.9],[25,22],[24.9,29],[20.5,29.5],[16.5,29],[13,30],[9.4,30.2],[8,31.5],[5.5,32.5],[2.5,33.2],[-1,33.5],[-1.8,34.8],[-2.2,35.1],[-1,35.7],[0.1,35.9],[1.5,36.5],[3,36.8],[5.1,36.8],[6.6,37.1],[7.8,36.9],[8.6,36.9],[9.9,37.3],[10.3,36.8],[11,37.1],[10.6,36.4],[10.9,35.8],[11.1,35.2],[10.1,34.2],[11.2,33.2],[12.4,32.8],[13.2,32.9],[15.1,32.4],[15.8,31.4],[17.5,30.8],[19,30.3],[20.1,31.3],[20.1,32.1],[21.5,32.8],[23,32.6],[24,32],[25.2,31.6],[27.2,31.4],[29.9,31.2],[31,31.6],[32.3,31.3],[34.2,31.3],[34.8,32.4],[35.1,33.1],[35.5,33.9],[35.8,34.8],[35.9,35.5],[36.2,36.6],[35.6,36.6],[34.6,36.8],[33.6,36.2],[31.8,36.6],[30.7,36.9],[30.5,36.3],[29.3,36.3],[28.2,36.7],[27.4,37],[27.2,37.6],[26.4,38.3],[26.8,38.7],[26.6,39.3],[26.1,39.5],[26.2,40.1],[26.6,40.4],[26,40.7],[25,40.9],[24,40.8],[23,40.3],[22.9,40.6],[22.6,40.1],[22.9,39.4],[22.9,38.9],[23.6,38.4],[24,38],[23.1,37.9],[23.2,37.3],[22.8,36.7],[22.5,36.4],[21.9,36.8],[21.6,37.3],[21.3,37.8],[21.8,38.3],[21,38.9],[20.7,39.2],[20,39.7],[19.4,40.3],[19.5,41],[19.4,41.8],[18.5,42.5],[17.6,42.9],[17,43.4],[16.2,43.6],[15.6,43.9]],
   crete: [[23.5,35.3],[24.3,35.4],[25,35.4],[25.8,35.3],[26.3,35.2],[25.8,35],[24.7,34.95],[23.7,35.2],[23.5,35.3]],
@@ -250,50 +253,24 @@ function draw() {
   for (const s of STOPS) s.node?.classList.toggle("used", usedNow(s.id));
 }
 
-//------------------------------------------------------------------------------ Le ciel (comme la carte des membres)
-(function sky() {
-  const c = $("sky"), g = c.getContext("2d");
-  let stars = [], w = 0, h = 0;
-  const size = () => {
-    const dpr = Math.min(1.5, devicePixelRatio || 1);
-    w = c.width = innerWidth * dpr; h = c.height = innerHeight * dpr; c.style.width = innerWidth + "px"; c.style.height = innerHeight + "px";
-    stars = Array.from({ length: Math.round(innerWidth * innerHeight / 2600) }, () => ({ x: Math.random() * w, y: Math.random() * h, r: Math.random() * 1.3 * dpr + .2, p: Math.random() * 6.28, s: .4 + Math.random() * 1.4, z: Math.random() }));
-  };
-  addEventListener("resize", size); size();
-  let last = 0;
-  const frame = (t) => {
-    if (!reduced) requestAnimationFrame(frame);
-    if (t - last < (still ? 33 : 0)) return;
-    last = t;
-    g.clearRect(0, 0, w, h);
-    for (const s of stars) {
-      g.globalAlpha = reduced ? .6 : .35 + .65 * Math.abs(Math.sin(s.p + t / 1000 * s.s)); g.fillStyle = s.z > .92 ? "#ffb3bb" : "#fff1f3";
-      g.beginPath(); g.arc(s.x, s.y, s.r, 0, 6.29); g.fill();
-    }
-  };
-  requestAnimationFrame(frame);
-})();
 
 //------------------------------------------------------------------------------ Les contours en constellation
 const pathOf = (pts) => "M" + pts.map(([lon, lat]) => project(lon, lat).map((v) => v.toFixed(1)).join(",")).join("L") + "Z";
-function trace(group, pts, cls, starry) {
+function trace(group, pts, cls) {
   const d = pathOf(pts);
   group.append(svgEl("path", { d, class: "land" + cls }));
   const path = svgEl("path", { d, class: "coast" + cls });
   group.append(path);
   const len = path.getTotalLength();
   path.style.setProperty("--len", len);
-  if (starry) for (let at = 0; at < len; at += 9 + Math.random() * 9) {
-    const p = path.getPointAtLength(at);
-    const star = svgEl("circle", { cx: (p.x + (Math.random() - .5) * 2).toFixed(1), cy: (p.y + (Math.random() - .5) * 2).toFixed(1), r: Math.random() < .12 ? 2.1 : .6 + Math.random() * .9, class: "star" });
-    star.style.cssText = `animation-delay:${(at / len * 3).toFixed(2)}s;--o:${(.35 + Math.random() * .6).toFixed(2)}`;
-    $("stars").append(star);
-  }
 }
 function drawShapes() {
-  for (const pts of Object.values(EMPIRE)) trace($("lands"), pts, "", true);
+  // Le quadrillage des méridiens et des parallèles, tous les 5 degrés, comme sur une carte ancienne.
+  for (let lon = 0; lon <= 50; lon += 5) { const [x1, y1] = project(lon, 52), [x2, y2] = project(lon, 12); $("grid").append(svgEl("line", { x1, y1, x2, y2, class: "grid" })); const t = svgEl("text", { x: x1 + 3, y: project(lon, 13)[1], class: "gridlabel" }); t.textContent = lon + "°E"; $("grid").append(t); }
+  for (let lat = 15; lat <= 50; lat += 5) { const [x1, y1] = project(-4, lat), [x2, y2] = project(52, lat); $("grid").append(svgEl("line", { x1, y1, x2, y2, class: "grid" })); const t = svgEl("text", { x: project(-3.5, lat)[0], y: y1 - 3, class: "gridlabel" }); t.textContent = lat + "°N"; $("grid").append(t); }
+  for (const pts of Object.values(EMPIRE)) trace($("lands"), pts, "");
   for (const [name, sea] of Object.entries(SEAS)) {
-    trace($("seas"), sea.pts, " sea", false);
+    trace($("seas"), sea.pts, " sea");
     const [x, y] = project(...sea.at), t = svgEl("text", { x, y, class: "sealabel" });
     t.textContent = name; $("seas").append(t);
   }
