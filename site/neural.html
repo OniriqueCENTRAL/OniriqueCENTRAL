@@ -169,6 +169,10 @@ async function load() {
   if (!r.ok) return gate("Erreur du serveur (" + r.status + ").");
   D = await r.json();
   D.chains ||= [];
+  // CREATIVE FX séparé (12/11) : les anciens mix et chaînes montrent DOUBLER, CHORUS, FLANGER, PHONE à part, avec leurs réglages
+  for (const f of D.feedback || []) if (f.plan?.modules) f.plan.modules = splitCreative (f.plan.modules);
+  for (const c of D.chains) c.modules = splitCreative (c.modules);
+  for (const p of D.proposals || []) for (const k of ["chain", "style"]) if (p.changes?.[k]?.modules) p.changes[k].modules = splitCreative (p.changes[k].modules);
   $("gate").hidden = true;
   compute();
   render();
@@ -185,6 +189,22 @@ function moduleOfParam(f, id) {
   const base = id.replace(/_\d+$/, ""), inst = id === base ? 0 : Number(id.slice(base.length + 1)) - 1;
   for (const m of f.plan?.modules || []) if ((m.instance || 0) === inst && m.params && base in m.params) return { m, base, before: m.params[base] };
   return null;
+}
+// la même réécriture que le serveur (brainlearn.js, splitCreativeModules) : les effets que CREATIVE FX faisait vraiment tourner
+const CREATIVE_PARTS = [["DOUBLER", "fxDoublerOn", ["fxDoublerAmount"]], ["CHORUS", "fxChorusOn", ["fxChorusRate", "fxChorusDepth", "fxChorusMix"]],
+  ["FLANGER", "fxFlangerOn", ["fxFlangerRate", "fxFlangerDepth", "fxFlangerFeedback", "fxFlangerMix"]], ["PHONE", "fxPhoneOn", ["fxPhoneAmount"]]];
+function splitCreative (mods) {
+  if (!Array.isArray(mods) || !mods.some((m) => /^CREATIVE/i.test(String(m?.type || "")))) return mods;
+  const out = [];
+  for (const m of mods) {
+    if (!/^CREATIVE/i.test(String(m?.type || ""))) { out.push(m); continue; }
+    const p = m.params || {};
+    for (const [type, onId, ids] of CREATIVE_PARTS) {
+      if (!(Number(p[onId] ?? 0) > 0.5) || out.some((x) => x.type === type)) continue;
+      out.push({ type, instance: m.instance || 0, on: m.on !== false, params: Object.fromEntries(ids.filter((id) => p[id] != null).map((id) => [id, p[id]])) });
+    }
+  }
+  return out;
 }
 function compute() {
   const fb = D.feedback || [];

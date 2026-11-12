@@ -361,3 +361,31 @@ export function publishedBrain(base, overlay) {
   brain.learned = overlay?.log || [];
   return brain;
 }
+
+// CREATIVE FX SÉPARÉ (VOCALBOX, 12/11/2026) : DOUBLER, CHORUS, FLANGER et PHONE sont de nouveau des modules à part. Une chaîne qui
+// a encore un CREATIVE FX est réécrite avec les effets qu'il faisait vraiment tourner (ceux dont l'interrupteur est allumé), dans
+// le même ordre et avec leurs réglages : le même son, comme le fait le plugin à l'ouverture d'un ancien preset.
+const CREATIVE_PARTS = [
+  ['DOUBLER', 'fxDoublerOn', ['fxDoublerAmount']],
+  ['CHORUS', 'fxChorusOn', ['fxChorusRate', 'fxChorusDepth', 'fxChorusMix']],
+  ['FLANGER', 'fxFlangerOn', ['fxFlangerRate', 'fxFlangerDepth', 'fxFlangerFeedback', 'fxFlangerMix']],
+  ['PHONE', 'fxPhoneOn', ['fxPhoneAmount']],
+];
+export function splitCreativeModules(modules) {
+  if (!Array.isArray(modules) || !modules.some((m) => /^CREATIVE/i.test(String(m?.type || '')))) return modules;
+  const out = [];
+  for (const m of modules) {
+    if (!/^CREATIVE/i.test(String(m?.type || ''))) { out.push(m); continue; }
+    const p = m.params || {};
+    const on = m.on !== false && Number(p.fxCreativeOn ?? 1) > 0.5;
+    for (const [type, onId, ids] of CREATIVE_PARTS) {
+      if (!(Number(p[onId] ?? 0) > 0.5)) continue;
+      const params = {};
+      for (const id of ids) if (p[id] != null) params[id] = p[id];
+      const existing = out.find((x) => x.type === type && (x.instance || 0) === (m.instance || 0));
+      if (existing) continue;   // déjà seul dans la chaîne : on n'en met pas deux
+      out.push({ type, instance: m.instance || 0, on, params });
+    }
+  }
+  return out;
+}

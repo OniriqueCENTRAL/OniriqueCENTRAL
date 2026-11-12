@@ -12,7 +12,7 @@
 import fs from 'node:fs';
 import { config } from './config.js';
 import { db, get, all, run, now, setting, setSetting } from './db.js';
-import { propose, approve, publishedBrain, describe } from './brainlearn.js';
+import { propose, approve, publishedBrain, describe, splitCreativeModules } from './brainlearn.js';
 import { HttpError, rateLimit } from './auth.js';
 
 db.exec(`CREATE TABLE IF NOT EXISTS vocalbox_artists (
@@ -138,6 +138,27 @@ export function refreshProposals() {
   for (const r of all("SELECT id, kind, target FROM vocalbox_proposals WHERE status = 'pending'"))
     if (!live.has(`${r.kind}|${r.target}`)) run("UPDATE vocalbox_proposals SET status = 'expired', decided_at = ? WHERE id = ?", t, r.id);
 }
+// CREATIVE FX séparé (VOCALBOX, 12/11/2026), une fois : les chaînes partagées, et celles et les styles déjà validés, sont
+// réécrits avec DOUBLER, CHORUS, FLANGER et PHONE à part (mêmes réglages, même son)
+try {
+  for (const row of all("SELECT id, modules FROM vocalbox_chains WHERE modules LIKE '%CREATIVE%'")) {
+    const mods = JSON.parse(row.modules || '[]');
+    run('UPDATE vocalbox_chains SET modules = ? WHERE id = ?', JSON.stringify(splitCreativeModules(mods)), row.id);
+  }
+  const ov = setting('vocalbox_overlay', null);
+  if (ov && JSON.stringify(ov).includes('CREATIVE')) {
+    for (const slot of [...Object.values(ov.chains || {}), ...Object.values(ov.styles || {})])
+      if (Array.isArray(slot.modules)) slot.modules = splitCreativeModules(slot.modules);
+    setSetting('vocalbox_overlay', ov);
+    republishBrain();
+  }
+  for (const p of all("SELECT id, changes FROM vocalbox_proposals WHERE status = 'pending' AND changes LIKE '%CREATIVE%'")) {
+    const ch = JSON.parse(p.changes || '{}');
+    for (const k of ['chain', 'style']) if (ch[k]?.modules) ch[k].modules = splitCreativeModules(ch[k].modules);
+    run('UPDATE vocalbox_proposals SET changes = ? WHERE id = ?', JSON.stringify(ch), p.id);
+  }
+} catch (error) { console.error('CREATIVE FX séparé :', error.message); }
+
 try { refreshProposals(); } catch (error) { console.error('ONR Neural Learning :', error.message); }
 setInterval(() => { try { refreshProposals(); } catch (error) { console.error('ONR Neural Learning :', error.message); } }, 3 * 3600_000).unref();
 if (!setting('vocalbox_brain', null)) republishBrain();
@@ -285,6 +306,7 @@ export function mountVocalBrain(app, { wrap, requireUser }) {
       type: String(m?.type || '').slice(0, 40), instance: Math.max(0, Math.min(2, Number(m?.instance) || 0)), on: m?.on !== false,
       params: Object.fromEntries(Object.entries(m?.params || {}).slice(0, 80).filter(([, v]) => Number.isFinite(Number(v))).map(([k, v]) => [String(k).slice(0, 40), Number(v)])),
     })).filter((m) => m.type);
+    const modulesSplit = splitCreativeModules(modules);   // CREATIVE FX : ses effets, séparés
     const artists = (Array.isArray(b.artists) ? b.artists : []).slice(0, 5).map((a) => String(a).slice(0, 60));
     const styles = (Array.isArray(b.styles) ? b.styles : []).slice(0, 12).map((s) => String(s).slice(0, 40));
     const source = b.source === 'manual' ? 'manual' : 'shared';
@@ -292,7 +314,7 @@ export function mountVocalBrain(app, { wrap, requireUser }) {
     const name = source === 'manual' ? '' : publicName(b.name || b.request);
     run('INSERT INTO vocalbox_chains (install, version, request, artists, role, modules, source, styles, name, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       install, String(b.version || '').slice(0, 20), source === 'manual' ? '' : String(b.request || '').slice(0, 300), JSON.stringify(artists),
-      Math.max(0, Math.min(3, Number(b.role) || 0)), JSON.stringify(modules), source, JSON.stringify(styles), name, now());
+      Math.max(0, Math.min(3, Number(b.role) || 0)), JSON.stringify(modulesSplit), source, JSON.stringify(styles), name, now());
     res.json({ ok: true });
   }));
 
