@@ -29,7 +29,7 @@ window.OniriqueTools = [
     ["Convertisseur", "convertisseur", "WAV ou MP3, avec le choix de la fréquence et de la résolution ; JPG, PNG ou WEBP pour les images."],
     ["Découpe et fondu", "decoupe", "Garder un passage, ajouter un fondu, exporter."],
     ["Transposer", "transposition", "Changer la hauteur ou le tempo d'un morceau, l'un sans l'autre."],
-    ["ONIRIQUE ENVOI", "envoi", "Des fichiers lourds (stems, sessions, clips) envoyés par un lien qui expire, jusqu’à 4 Go, avec mot de passe si tu veux."],
+    ["Envoi de fichiers", "envoi", "Des fichiers lourds (stems, sessions, clips) envoyés par un lien qui expire, jusqu’à 4 Go, avec mot de passe si tu veux."],
     ["Downloader", "downloader", "Un lien YouTube ou TikTok en MP3, en WAV ou en vidéo MP4 HD, au nom de la vidéo ; option PROD avec BPM et tonalité."],
   ]],
   ["Sortie", [

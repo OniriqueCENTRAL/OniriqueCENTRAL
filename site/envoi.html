@@ -6,13 +6,13 @@
 <script src="assets/annonce.js?v=2"></script>
 <script src="/api/announce.js" async></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ONIRIQUE ENVOI : envoyer des fichiers lourds par un lien — ONIRIQUE</title>
+<title>Envoi de fichiers lourds par un lien — ONIRIQUE</title>
 <meta name="description" content="Envoie stems, sessions et clips jusqu'à 4 Go par un lien qui expire, avec mot de passe si tu veux. Avec ton compte ou ta seule adresse e-mail ; le destinataire télécharge sans compte.">
 <link rel="canonical" href="https://onirique.store/envoi">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ONIRIQUE">
 <meta property="og:locale" content="fr_FR">
-<meta property="og:title" content="ONIRIQUE ENVOI : envoyer des fichiers lourds par un lien">
+<meta property="og:title" content="Envoi de fichiers lourds par un lien — ONIRIQUE">
 <meta property="og:description" content="Stems, sessions et clips jusqu'à 4 Go, par un lien qui expire. Le destinataire télécharge sans compte.">
 <meta property="og:url" content="https://onirique.store/envoi">
 <meta property="og:image" content="https://onirique.store/assets/og-image.png">
@@ -144,7 +144,7 @@
 <main class="wrap" id="contenu">
   <!-- Destinataire : onirique.store/envoi?id=… -->
   <section class="hero" id="receive" hidden>
-    <p class="eyebrow rise">ONIRIQUE ENVOI</p>
+    <p class="eyebrow rise">Envoi de fichiers</p>
     <h1 class="rise" id="r-title">Des fichiers <em>pour toi</em></h1>
     <p class="lede rise" id="r-from"></p>
     <form class="card rise" id="r-lock" hidden>
@@ -162,7 +162,7 @@
 
   <!-- Expéditeur -->
   <section class="hero" id="send" hidden>
-    <p class="eyebrow rise">ONIRIQUE ENVOI</p>
+    <p class="eyebrow rise">Envoi de fichiers</p>
     <h1 class="rise">Tes fichiers lourds, <em>par un lien</em></h1>
     <p class="lede rise">Stems, sessions, clips : jusqu'à 4 Go par envoi. Le lien expire quand tu veux, et ton destinataire télécharge sans compte.</p>
     <div class="rise">
@@ -170,7 +170,7 @@
         <span class="orb" style="top:-60px;left:0"></span><span class="orb" style="bottom:-80px;left:10%"></span>
         <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>
         <strong>Dépose tes fichiers ici</strong>
-        <span>ou clique pour les choisir · 2 Go par fichier, 4 Go par envoi</span>
+        <span>ou clique pour les choisir · jusqu’à 4 Go par envoi</span>
       </button>
       <input id="file" type="file" multiple hidden>
 
@@ -300,10 +300,10 @@ function fileRow(f, { removable } = {}) {
 function drawFiles() {
   $("s-card").hidden = !files.length;
   $("s-files").replaceChildren(...files.map((f) => fileRow(f, { removable: true })));
-  const t = total(), big = files.find((f) => f.size > 2 * 1024 ** 3);
+  const t = total();
   $("s-total").textContent = !files.length ? "" : files.length + (files.length > 1 ? " fichiers · " : " fichier · ") + size(t)
-    + (t > 4e9 ? " : plus que 4 Go" : big ? " : « " + big.name + " » dépasse 2 Go" : "");
-  $("s-go").disabled = !files.length || t > 4e9 || !!big;
+    + (t > 4e9 ? " : plus que 4 Go" : "");
+  $("s-go").disabled = !files.length || t > 4e9;
 }
 const add = (list) => { files.push(...[...list].filter((f) => f.size > 0)); drawFiles(); };
 $("drop").onclick = () => $("file").click();
@@ -329,17 +329,28 @@ $("s-sendcode").onclick = async () => {
   } catch (error) { fail("s-error")(error); $("s-sendcode").disabled = false; }
 };
 
-// Un fichier à la fois, par XHR pour suivre la progression.
-const upload = (envoi, key, file, onProgress) => new Promise((resolve, reject) => {
+// L'envoi : chaque fichier en morceaux de 32 Mo (un petit fichier d'un bloc), 4 requêtes à la fois pour remplir la
+// ligne ; un morceau raté est renvoyé jusqu'à 3 fois. XHR pour suivre la progression octet par octet.
+const CHUNK = 32 * 1024 ** 2, PARALLEL = 4;
+const send = (method, url, key, body, onProgress) => new Promise((resolve, reject) => {
   const x = new XMLHttpRequest();
-  x.open("POST", "/api/envois/" + envoi + "/files?name=" + encodeURIComponent(file.name));
+  x.open(method, url);
   x.setRequestHeader("X-Envoi-Cle", key);
   x.setRequestHeader("Content-Type", "application/octet-stream");
   x.upload.onprogress = (e) => onProgress(e.loaded);
-  x.onload = () => (x.status < 300 ? resolve() : reject(new Error((() => { try { return JSON.parse(x.responseText).error; } catch { return "Envoi de « " + file.name + " » interrompu."; } })())));
-  x.onerror = () => reject(new Error("Connexion perdue pendant l'envoi de « " + file.name + " »."));
-  x.send(file);
+  x.onload = () => (x.status < 300 ? resolve() : reject(Object.assign(new Error((() => { try { return JSON.parse(x.responseText).error; } catch { return "Envoi interrompu."; } })()), { status: x.status })));
+  x.onerror = () => reject(new Error("Connexion perdue pendant l'envoi."));
+  x.send(body);
 });
+async function retry(task) {
+  for (let i = 1; ; i++) {
+    try { return await task(); } catch (error) {
+      // Une erreur de la demande elle-même (4xx) ne se règle pas en renvoyant.
+      if (i >= 3 || (error.status >= 400 && error.status < 500)) throw error;
+      await new Promise((r) => setTimeout(r, 1000 * i));
+    }
+  }
+}
 const clock = (s) => s < 60 ? Math.ceil(s) + " s" : Math.floor(s / 60) + " min " + String(Math.ceil(s % 60)).padStart(2, "0");
 $("s-card").onsubmit = async (event) => {
   event.preventDefault();
@@ -355,32 +366,63 @@ $("s-card").onsubmit = async (event) => {
     $("s-card").hidden = true;
     $("drop").hidden = true;
     $("s-live").hidden = false;
+    const base = "/api/envois/" + envoi + "/files";
     const rows = files.map((f) => fileRow(f));
     $("live-files").replaceChildren(...rows);
-    let done = 0, t0 = performance.now(), last = { t: t0, b: 0 }, speed = 0;
-    const show = (sent) => {
-      const p = sum ? (done + sent) / sum : 1;
+    let last = { t: performance.now(), b: 0 }, speed = 0;
+    const sentOf = (f) => f.parts.reduce((s, p) => s + p, 0);
+    const show = () => {
+      const sent = files.reduce((s, f) => s + sentOf(f), 0), p = sum ? sent / sum : 1;
       $("ring").style.strokeDashoffset = 339.3 * (1 - p);
       $("pct").textContent = Math.floor(p * 100) + " %";
       const now = performance.now();
-      if (now - last.t > 400) { speed = speed ? speed * .6 + .4 * ((done + sent - last.b) / ((now - last.t) / 1000)) : (done + sent - last.b) / ((now - last.t) / 1000); last = { t: now, b: done + sent }; }
-      $("st-bytes").textContent = size(done + sent) + " sur " + size(sum);
-      if (speed > 0) $("st-speed").textContent = size(speed) + "/s · encore " + clock((sum - done - sent) / speed);
+      if (now - last.t > 400) { const v = (sent - last.b) / ((now - last.t) / 1000); speed = speed ? speed * .6 + .4 * v : v; last = { t: now, b: sent }; }
+      $("st-bytes").textContent = size(sent) + " sur " + size(sum);
+      if (speed > 0) $("st-speed").textContent = size(speed) + "/s · encore " + clock((sum - sent) / speed);
     };
-    for (const [i, f] of files.entries()) {
-      const row = rows[i];
-      row.classList.remove("wait");
-      row.scrollIntoView({ block: "nearest", behavior: "smooth" });
-      $("st-file").textContent = "« " + f.name + " »";
-      try {
-        await upload(envoi, key, f, (sent) => { row.bar.style.width = (sent / f.size * 100) + "%"; row.meta.textContent = size(sent) + " / " + size(f.size); show(sent); });
-      } catch (error) { row.classList.add("fail"); row.meta.textContent = "Échec"; throw error; }
-      done += f.size;
-      row.bar.style.width = "100%";
-      row.classList.add("done");
-      row.meta.textContent = size(f.size) + " · bien reçu";
-      row.side.append(tickSvg());
-      show(0);
+    // Les tâches dans l'ordre des fichiers : les 4 connexions avancent ensemble sur un même gros fichier.
+    const tasks = [];
+    files.forEach((f, i) => {
+      const row = rows[i], count = Math.max(1, Math.ceil(f.size / CHUNK));
+      f.parts = new Array(count).fill(0);
+      let left = count, id = null;
+      const progress = (n, loaded) => {
+        f.parts[n] = loaded;
+        if (row.classList.contains("wait")) { row.classList.remove("wait"); $("st-file").textContent = "« " + f.name + " »"; row.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+        row.bar.style.width = (sentOf(f) / f.size * 100) + "%";
+        row.meta.textContent = size(sentOf(f)) + " / " + size(f.size) + (count > 1 ? " · " + PARALLEL + " connexions" : "");
+        show();
+      };
+      const finished = () => {
+        if (--left) return;
+        row.bar.style.width = "100%";
+        row.classList.add("done");
+        row.meta.textContent = size(f.size) + " · bien reçu";
+        row.side.append(tickSvg());
+      };
+      if (count === 1) {
+        tasks.push(() => retry(() => send("POST", base + "?name=" + encodeURIComponent(f.name), key, f, (l) => progress(0, l))).then(finished));
+        return;
+      }
+      // La place du fichier est réservée au premier morceau ; les autres l'attendent.
+      let reserved = null;
+      const reserve = () => (reserved ||= api(base + "/new", { method: "POST", headers: { "X-Envoi-Cle": key }, json: { name: f.name, size: f.size } }).then((r) => (id = r.id)));
+      for (let n = 0; n < count; n++) {
+        tasks.push(async () => {
+          await reserve();
+          const start = n * CHUNK;
+          await retry(() => { progress(n, 0); return send("PUT", base + "/" + id + "?offset=" + start, key, f.slice(start, start + CHUNK), (l) => progress(n, l)); });
+          finished();
+        });
+      }
+    });
+    let next = 0;
+    const worker = async () => { while (next < tasks.length) await tasks[next++](); };
+    try { await Promise.all(Array.from({ length: PARALLEL }, worker)); }
+    catch (error) {
+      next = tasks.length; // les autres connexions s'arrêtent après leur morceau en cours
+      rows.filter((r) => !r.classList.contains("done") && !r.classList.contains("wait")).forEach((r) => { r.classList.add("fail"); r.meta.textContent = "Échec"; });
+      throw error;
     }
     $("st-file").textContent = "Finalisation…";
     await api("/api/envois/" + envoi + "/ready", { method: "POST", headers: { "X-Envoi-Cle": key } });
@@ -450,7 +492,7 @@ else {
   }).catch(() => {});
 }
 </script>
-<script src="assets/tools-menu.js?v=16"></script>
+<script src="assets/tools-menu.js?v=17"></script>
 <script src="assets/account.js?v=16"></script>
 <script src="assets/site-nav.js?v=22"></script>
 </html>

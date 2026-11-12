@@ -1,4 +1,4 @@
-// ONIRIQUE ENVOI (site/envoi) : des fichiers lourds (stems, sessions, clips) envoyés par un lien, comme un transfert de
+// Envoi de fichiers (site/envoi) : des fichiers lourds (stems, sessions, clips) envoyés par un lien, comme un transfert de
 // fichiers classique. Pour envoyer : un compte ONIRIQUE validé, ou, sans compte, une adresse e-mail confirmée par un
 // code à 6 chiffres reçu par e-mail. Le destinataire, lui, télécharge sans compte, fichier par fichier ou tout en .zip.
 // À la création, la page reçoit une clé d'expéditeur (X-Envoi-Cle) qui seule permet d'ajouter les fichiers ou d'effacer
@@ -8,6 +8,7 @@
 // Les fichiers vivent dans data/envois, hors de la sauvegarde de la nuit (seuls keys, files et media y partent).
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import { pipeline } from 'node:stream/promises';
 import path from 'node:path';
 import { config } from './config.js';
 import { db, get, all, run, now, setting } from './db.js';
@@ -61,8 +62,13 @@ COMMIT;`);
   db.exec('PRAGMA foreign_keys = ON');
 }
 
-// Par envoi : l'archive .zip (sans ZIP64) tient sous 4 Go ; un fichier seul est limité à 2 Go par nginx.
+// Fichiers envoyés en morceaux par la page (avant : un fichier par requête, donc missing = 0 par défaut).
+if (!all('PRAGMA table_info(envoi_files)').some((c) => c.name === 'missing')) db.exec('ALTER TABLE envoi_files ADD COLUMN missing INTEGER NOT NULL DEFAULT 0');
+
+// Par envoi : l'archive .zip (sans ZIP64) tient sous 4 Go. Un fichier envoyé d'un bloc est limité à 2 Go par nginx ;
+// en morceaux (CHUNK au plus chacun), il peut faire jusqu'à 4 Go.
 export const ENVOI_MAX = 4e9;
+export const CHUNK = 32 * 1024 ** 2;
 export const ENVOI_FILES = 100;
 export const ENVOI_DAYS = [1, 7, 14, 30];
 const DAY = 86400_000;
@@ -98,7 +104,16 @@ export function mountEnvoi(app, { requireVerified, receiveFile, wrap }) {
     if (!e || !(key ? sha(key) === e.owner_hash : user && user.id === e.user_id)) throw new HttpError(404, 'Envoi introuvable.');
     return e;
   };
-  const filesOf = (id) => all('SELECT id, name, size, stored_as FROM envoi_files WHERE envoi_id = ? ORDER BY id', id);
+  const filesOf = (id) => all('SELECT id, name, size, stored_as, missing FROM envoi_files WHERE envoi_id = ? ORDER BY id', id);
+  // La place pour un fichier de plus : nombre de fichiers, 4 Go par envoi, disque du serveur. Rend la place déjà prise.
+  const room = (e, length) => {
+    const files = filesOf(e.id), used = files.reduce((s, f) => s + f.size, 0);
+    if (files.length >= ENVOI_FILES) throw new HttpError(413, `${ENVOI_FILES} fichiers au plus par envoi.`);
+    if (used + length > ENVOI_MAX) throw new HttpError(413, 'Un envoi fait 4 Go au plus.');
+    const disk = fs.statfsSync(config.dataDir), total = disk.blocks * disk.bsize, taken = total - disk.bavail * disk.bsize;
+    if ((taken + length) / total > setting('sounds_disk_max', 0.8)) throw new HttpError(507, "Le disque du serveur est presque plein : réessaie plus tard.");
+    return used;
+  };
   const summary = (e) => {
     const files = filesOf(e.id);
     return { id: e.id, title: e.title, message: e.message, locked: !!e.password_hash, ready: !!e.ready, downloads: e.downloads,
@@ -122,9 +137,9 @@ export function mountEnvoi(app, { requireVerified, receiveFile, wrap }) {
     rateLimit(`envoi-code:${email}`, 5, 3600_000);
     const code = String(crypto.randomInt(0, 1e6)).padStart(6, '0');
     run('INSERT OR REPLACE INTO envoi_codes (email, code_hash, tries, expires_at) VALUES (?, ?, 0, ?)', email, sha(`${email}:${code}`), now() + 15 * 60_000);
-    await sendMail(email, `${code} : ton code ONIRIQUE ENVOI — ONIRIQUE`,
-      `Bonjour,\n\nVoici ton code pour envoyer des fichiers avec ONIRIQUE ENVOI : ${code}\n\nIl est valable 15 minutes. `
-      + "Si tu n'as rien demandé, ignore ce message.\n\nONIRIQUE", undefined, { eyebrow: 'ONIRIQUE ENVOI' });
+    await sendMail(email, `${code} : ton code pour l'envoi de fichiers — ONIRIQUE`,
+      `Bonjour,\n\nVoici ton code pour envoyer tes fichiers : ${code}\n\nIl est valable 15 minutes. `
+      + "Si tu n'as rien demandé, ignore ce message.\n\nONIRIQUE", undefined, { eyebrow: 'Envoi de fichiers' });
     res.json({ ok: true });
   }));
 
@@ -156,28 +171,65 @@ export function mountEnvoi(app, { requireVerified, receiveFile, wrap }) {
     if (e.ready) throw new HttpError(409, 'Cet envoi est déjà parti : crée-en un nouveau.');
     const length = Number(req.headers['content-length']);
     if (!Number.isFinite(length) || length <= 0) throw new HttpError(411, 'Taille du fichier inconnue.');
-    const files = filesOf(e.id), used = files.reduce((s, f) => s + f.size, 0);
-    if (files.length >= ENVOI_FILES) throw new HttpError(413, `${ENVOI_FILES} fichiers au plus par envoi.`);
-    if (used + length > ENVOI_MAX) throw new HttpError(413, 'Un envoi fait 4 Go au plus.');
-    const disk = fs.statfsSync(config.dataDir), total = disk.blocks * disk.bsize, taken = total - disk.bavail * disk.bsize;
-    if ((taken + length) / total > setting('sounds_disk_max', 0.8)) throw new HttpError(507, "Le disque du serveur est presque plein : réessaie plus tard.");
+    const used = room(e, length);
     const stored = await receiveFile(req, dir, ENVOI_MAX - used);
     const name = zipName(clean(String(req.query.name || ''), 200) || 'fichier');
     const { lastInsertRowid } = run('INSERT INTO envoi_files (envoi_id, name, stored_as, size) VALUES (?, ?, ?, ?)', e.id, name, stored.storedAs, stored.size);
     res.status(201).json({ id: Number(lastInsertRowid), name, size: stored.size });
   }));
 
+  // Un gros fichier arrive en morceaux envoyés en parallèle (plusieurs connexions remplissent mieux la ligne) :
+  // sa place est réservée à sa taille, chaque morceau s'écrit à son endroit, et « missing » compte ce qui manque.
+  app.post('/api/envois/:id/files/new', wrap(async (req, res) => {
+    const e = own(req);
+    if (e.ready) throw new HttpError(409, 'Cet envoi est déjà parti : crée-en un nouveau.');
+    const size = Number(req.body?.size);
+    if (!Number.isSafeInteger(size) || size <= 0) throw new HttpError(400, 'Taille du fichier inconnue.');
+    room(e, size);
+    const storedAs = crypto.randomBytes(16).toString('hex'), file = path.join(dir, storedAs);
+    fs.writeFileSync(file, '');
+    fs.truncateSync(file, size);
+    const name = zipName(clean(String(req.body?.name || ''), 200) || 'fichier');
+    const { lastInsertRowid } = run('INSERT INTO envoi_files (envoi_id, name, stored_as, size, missing) VALUES (?, ?, ?, ?, ?)', e.id, name, storedAs, size, size);
+    res.status(201).json({ id: Number(lastInsertRowid), chunk: CHUNK });
+  }));
+
+  app.put('/api/envois/:id/files/:file', wrap(async (req, res) => {
+    const e = own(req);
+    if (e.ready) throw new HttpError(409, 'Cet envoi est déjà parti.');
+    const f = get('SELECT * FROM envoi_files WHERE id = ? AND envoi_id = ?', Number(req.params.file) || 0, e.id);
+    if (!f) throw new HttpError(404, 'Fichier introuvable.');
+    const offset = Number(req.query.offset), length = Number(req.headers['content-length']);
+    if (!Number.isSafeInteger(offset) || offset < 0 || !Number.isSafeInteger(length) || length <= 0 || length > CHUNK || offset + length > f.size) {
+      throw new HttpError(400, 'Morceau hors du fichier.');
+    }
+    let got = 0;
+    await pipeline(req, async function* (source) {
+      for await (const chunk of source) {
+        got += chunk.length;
+        if (got > length) throw new HttpError(400, 'Morceau plus long que prévu.');
+        yield chunk;
+      }
+    }, fs.createWriteStream(path.join(dir, f.stored_as), { flags: 'r+', start: offset }));
+    if (got !== length) throw new HttpError(400, 'Morceau incomplet : il sera renvoyé.');
+    run('UPDATE envoi_files SET missing = max(0, missing - ?) WHERE id = ?', length, f.id);
+    res.json({ ok: true });
+  }));
+
   app.post('/api/envois/:id/ready', wrap(async (req, res) => {
     const e = own(req);
     if (e.ready) throw new HttpError(409, 'Cet envoi est déjà parti.');
-    if (!filesOf(e.id).length) throw new HttpError(400, 'Ajoute au moins un fichier.');
+    const files = filesOf(e.id);
+    if (!files.length) throw new HttpError(400, 'Ajoute au moins un fichier.');
+    const partial = files.find((f) => f.missing > 0);
+    if (partial) throw new HttpError(409, `« ${partial.name} » n'est pas arrivé en entier : renvoie-le.`);
     run('UPDATE envois SET ready = 1 WHERE id = ?', e.id);
     // Sans compte, l'expéditeur garde une trace : son lien arrive dans sa boîte.
     if (e.sender_email) {
       sendMail(e.sender_email, `Ton envoi est prêt${e.title ? ` : ${e.title}` : ''} — ONIRIQUE`,
         `Bonjour,\n\nTes fichiers sont en ligne. Voici le lien à partager :\n\n${config.siteUrl}/envoi?id=${e.id}\n\n`
         + `Il marche jusqu'au ${new Date(e.expires_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' })}, puis les fichiers sont effacés.\n\nONIRIQUE`,
-        undefined, { eyebrow: 'ONIRIQUE ENVOI', buttonLabel: "Ouvrir l'envoi" }).catch((error) => console.error("Mail d'envoi prêt :", error.message));
+        undefined, { eyebrow: 'Envoi de fichiers', buttonLabel: "Ouvrir l'envoi" }).catch((error) => console.error("Mail d'envoi prêt :", error.message));
     }
     res.json(summary({ ...e, ready: 1 }));
   }));
@@ -230,7 +282,7 @@ export function mountEnvoi(app, { requireVerified, receiveFile, wrap }) {
       return { name: n > 1 ? f.name.replace(/(\.[^.]*)?$/, ` (${n})$1`) : f.name, path: path.join(dir, f.stored_as) };
     });
     run('UPDATE envois SET downloads = downloads + 1 WHERE id = ?', e.id);
-    const title = zipName(e.title || `ONIRIQUE ENVOI ${e.id}`);
+    const title = zipName(e.title || `Envoi ${e.id}`);
     res.writeHead(200, { 'Content-Type': 'application/zip', 'Cache-Control': 'private, no-store',
       'Content-Disposition': `attachment; filename="envoi.zip"; filename*=UTF-8''${encodeURIComponent(title)}.zip` });
     await writeZip(res, entries).catch((error) => res.destroy(error));

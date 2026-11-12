@@ -596,7 +596,7 @@ export function createApp() {
   // Notes, ups et top 3 de la semaine des playlists d'ONIRIQUE CLOUD.
   mountRatings(app, { requireUser });
   mountCut(app, { requireUser, receiveFile, wrap });
-  // ONIRIQUE ENVOI : des fichiers lourds partagés par un lien qui expire.
+  // Envoi de fichiers : des fichiers lourds partagés par un lien qui expire.
   mountEnvoi(app, { requireVerified, receiveFile, wrap });
   mountTierList(app, { requireUser, receiveImage, removeMedia, wrap });
   mountHm(app, { requireUser });

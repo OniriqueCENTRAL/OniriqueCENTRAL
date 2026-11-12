@@ -1,4 +1,4 @@
-// ONIRIQUE ENVOI : envoi de fichiers, lien, mot de passe, .zip et expiration, sur une base jetable : node test/envoi.mjs
+// Envoi de fichiers : envoi de fichiers, lien, mot de passe, .zip et expiration, sur une base jetable : node test/envoi.mjs
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -32,7 +32,7 @@ try {
   // Sans compte : l'adresse confirmée par code, puis la clé d'expéditeur pour les fichiers.
   const guest = 'invite@test.local';
   assert.equal((await api('/api/envois/code', { json: { email: guest } })).status, 200);
-  const code = outbox.filter((m) => m.to === guest).at(-1).text.match(/ENVOI : (\d{6})/)[1];
+  const code = outbox.filter((m) => m.to === guest).at(-1).text.match(/tes fichiers : (\d{6})/)[1];
   assert.equal((await api('/api/envois', { json: { email: guest, code: code === '000000' ? '111111' : '000000' } })).status, 403, 'mauvais code');
   const g = await (await api('/api/envois', { json: { email: guest, code, title: 'Clip' } })).json();
   assert.ok(g.id && g.key);
@@ -75,6 +75,20 @@ try {
   const open = await (await api(`/api/envois/${locked}?k=${key}`)).json();
   assert.equal(await (await api(`/api/envois/${locked}/files/${open.files[0].id}?k=${key}`)).text(), 'a');
   assert.equal((await api(`/api/envois/${locked}/zip`)).status, 401);
+
+  // En morceaux : réservés à la taille, reçus dans le désordre, l'envoi n'est prêt qu'une fois tout arrivé.
+  const parts = (await (await api('/api/envois', { token, json: {} })).json()).id;
+  const big = await (await api(`/api/envois/${parts}/files/new`, { token, json: { name: 'session.zip', size: 10 } })).json();
+  const put = (offset, body) => fetch(`${base}/api/envois/${parts}/files/${big.id}?offset=${offset}`, { method: 'PUT', body,
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/octet-stream' } });
+  assert.equal((await put(8, 'xyz')).status, 400, 'pas au-delà de la taille');
+  assert.equal((await put(6, 'GHIJ')).status, 200);
+  assert.equal((await api(`/api/envois/${parts}/ready`, { token, method: 'POST' })).status, 409, 'fichier incomplet');
+  assert.equal((await put(0, 'ABCDEF')).status, 200);
+  assert.equal((await api(`/api/envois/${parts}/ready`, { token, method: 'POST' })).status, 200);
+  assert.equal(await (await api(`/api/envois/${parts}/files/${big.id}`)).text(), 'ABCDEFGHIJ');
+  assert.equal((await api(`/api/envois/${parts}/files/new`, { token, json: { name: 'x', size: 5e9 } })).status, 409, 'plus d\'ajout après le départ');
+  assert.equal((await api(`/api/envois/${parts}`, { token, method: 'DELETE' })).status, 200);
 
   // Expiration : la ligne et les fichiers partent.
   const stored = get('SELECT stored_as FROM envoi_files WHERE envoi_id = ? LIMIT 1', id).stored_as;
