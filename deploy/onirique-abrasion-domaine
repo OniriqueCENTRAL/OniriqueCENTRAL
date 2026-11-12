@@ -31,5 +31,6 @@ if ! nginx -t 2> /dev/null; then
   exit 1
 fi
 systemctl reload nginx
+sleep 2   # le rechargement se termine après la commande : les essais attendent
 curl -fsS -o /dev/null -w "https://$NOM/abrasion/ : %{http_code}\n" "https://$NOM/abrasion/"
 curl -sS -o /dev/null -w "https://onirique.store/abrasion/ : %{http_code} vers %{redirect_url}\n" https://onirique.store/abrasion/
