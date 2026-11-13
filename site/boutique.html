@@ -562,6 +562,8 @@ function setupMonthly(product, catalog) {
     $("formula-month").ariaPressed = String(month);
     $("promo").hidden = month || !product.priceCents;
     $("price-note").textContent = month ? "TTC, par mois, sans engagement" : "TTC, paiement unique";
+    // le plugin offert ne vient qu'avec l'achat à vie
+    if (product.gift) $("gift").hidden = $("gift-note").hidden = month;
     if (month) {
       life = [[...$("price").childNodes], lifeLabel(), $("buy").disabled];
       $("price").replaceChildren(euros(product.monthlyCents) + " / mois");
