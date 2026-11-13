@@ -23,6 +23,27 @@ export function announcementView() {
   return { id: a.id, text: a.text, link: a.link || null, linkLabel: a.linkLabel || null, tone: a.tone, endsAt: a.endsAt || null };
 }
 
+/** La fenêtre « nouveauté » : affichée une fois à l'ouverture du site chez chaque visiteur, quand l'équipe l'active
+    (nouveau plugin, mise à jour…). Un plugin choisi donne son image et le lien vers sa fiche. null s'il n'y en a pas. */
+export const POPUP_KINDS = { plugin: 'NOUVEAU PLUGIN DISPONIBLE', update: 'NOUVELLE MISE À JOUR', news: 'NOUVEAUTÉ' };
+export function popupView() {
+  const p = setting('popup', null);
+  if (!p?.active || (p.endsAt && p.endsAt < now())) return null;
+  const product = p.slug ? get('SELECT slug, name, tagline, image, published FROM products WHERE slug = ?', p.slug) : null;
+  const shown = product && product.published ? product : null;
+  const title = p.title || shown?.name || '';
+  if (!title) return null;
+  return {
+    id: p.id,
+    kicker: p.kind === 'custom' ? p.kicker || '' : POPUP_KINDS[p.kind] || POPUP_KINDS.news,
+    title,
+    text: p.text || shown?.tagline || '',
+    image: shown?.image ? `/api/media/${shown.image}` : null,
+    link: p.link || (shown ? `/boutique/${shown.slug}` : null),
+    linkLabel: p.linkLabel || (shown ? 'Découvrir' : 'Voir'),
+  };
+}
+
 /** Le mode maintenance : le site public est remplacé par une page d'attente, l'équipe garde l'accès. */
 export function maintenanceView() {
   const m = setting('maintenance', null);
@@ -80,7 +101,29 @@ export function mountControl(admin) {
 
   admin.get('/live', (req, res) => {
     staff(req);
-    res.json({ announcement: setting('announcement', null), maintenance: setting('maintenance', { on: false, message: '' }) });
+    res.json({ announcement: setting('announcement', null), maintenance: setting('maintenance', { on: false, message: '' }), popup: setting('popup', null) });
+  });
+
+  admin.put('/live/popup', (req, res) => {
+    staff(req);
+    const b = req.body || {};
+    const kind = [...Object.keys(POPUP_KINDS), 'custom'].includes(b.kind) ? b.kind : 'plugin';
+    const slug = str(b.slug, 60);
+    if (slug && !get('SELECT id FROM products WHERE slug = ?', slug)) throw new HttpError(400, 'Plugin inconnu.');
+    const content = { kind, kicker: str(b.kicker, 60), slug, title: str(b.title, 80), text: str(b.text, 400) };
+    if (b.active && !content.title && !slug) throw new HttpError(400, 'Choisissez un plugin ou écrivez un titre.');
+    if (b.active && kind === 'custom' && !content.kicker) throw new HttpError(400, 'Écrivez le titre du haut (par exemple « NOUVEAU PACK »).');
+    const endsAt = b.endsAt ? Date.parse(b.endsAt) : null;
+    if (b.endsAt && !Number.isFinite(endsAt)) throw new HttpError(400, 'Date de fin invalide.');
+    const before = setting('popup', null);
+    const same = before && ['kind', 'kicker', 'slug', 'title', 'text'].every((k) => (before[k] || '') === content[k]);
+    const next = {
+      // Un nouveau contenu (ou « la remontrer ») reçoit un nouveau numéro : la fenêtre réapparaît chez tout le monde.
+      id: same && !b.again ? before.id : crypto.randomBytes(4).toString('hex'),
+      active: !!b.active, ...content, link: siteLink(b.link), linkLabel: str(b.linkLabel, 40), endsAt,
+    };
+    setSetting('popup', next);
+    res.json(next);
   });
 
   admin.put('/live/announcement', (req, res) => {

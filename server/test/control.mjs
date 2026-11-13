@@ -88,6 +88,29 @@ try {
     assert.equal((await call('GET', '/api/site')).announcement, null, 'passée la date de fin, plus rien');
   });
 
+  await step('fenêtre nouveauté : un plugin donne titre, accroche et lien ; nouveau contenu = nouveau numéro', async () => {
+    assert.equal((await call('GET', '/api/site')).popup, null);
+    const product = await call('POST', '/api/admin/products', { token: admin.token, body: { name: 'POPUP NEUF', slug: 'popup-neuf', tagline: 'Une accroche.', priceCents: 0, published: true } });
+    await call('PUT', '/api/admin/live/popup', { token: alice.token, body: { active: true, kind: 'plugin', slug: 'popup-neuf' }, expect: 403 });
+    await call('PUT', '/api/admin/live/popup', { token: admin.token, body: { active: true, kind: 'plugin', slug: 'inconnu' }, expect: 400 });
+    await call('PUT', '/api/admin/live/popup', { token: admin.token, body: { active: true, kind: 'plugin' }, expect: 400 });
+    const set = await call('PUT', '/api/admin/live/popup', { token: admin.token, body: { active: true, kind: 'plugin', slug: product.slug } });
+    assert.deepEqual((await call('GET', '/api/site')).popup,
+      { id: set.id, kicker: 'NOUVEAU PLUGIN DISPONIBLE', title: 'POPUP NEUF', text: 'Une accroche.', image: null, link: '/boutique/popup-neuf', linkLabel: 'Découvrir' });
+    const script = await call('GET', '/api/announce.js');
+    assert.match(script, /window\.OniriquePopup&&OniriquePopup\(\{.*NOUVEAU PLUGIN DISPONIBLE/);
+    // même contenu : même numéro (ceux qui l'ont vue ne la revoient pas) ; « la remontrer » ou un autre type : nouveau numéro
+    const same = await call('PUT', '/api/admin/live/popup', { token: admin.token, body: { active: true, kind: 'plugin', slug: product.slug } });
+    assert.equal(same.id, set.id);
+    const again = await call('PUT', '/api/admin/live/popup', { token: admin.token, body: { active: true, kind: 'plugin', slug: product.slug, again: true } });
+    assert.notEqual(again.id, set.id);
+    const update = await call('PUT', '/api/admin/live/popup', { token: admin.token, body: { active: true, kind: 'update', slug: product.slug } });
+    assert.notEqual(update.id, again.id);
+    assert.equal((await call('GET', '/api/site')).popup.kicker, 'NOUVELLE MISE À JOUR');
+    await call('PUT', '/api/admin/live/popup', { token: admin.token, body: { active: false, kind: 'update', slug: product.slug } });
+    assert.equal((await call('GET', '/api/site')).popup, null, 'éteinte, plus rien');
+  });
+
   await step('maintenance : activée et coupée depuis le panel', async () => {
     await call('PUT', '/api/admin/live/maintenance', { token: admin.token, body: { on: true, message: 'Retour à 18 h.' } });
     assert.deepEqual((await call('GET', '/api/site')).maintenance, { on: true, message: 'Retour à 18 h.' });

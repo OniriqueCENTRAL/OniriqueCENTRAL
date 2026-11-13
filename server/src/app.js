@@ -32,7 +32,7 @@ import { mountNewsletter, setMarketing } from './newsletter.js';
 import * as mailbox from './mailbox.js';
 import { connectBack, connectUrl, disconnect, finishConnect, videoFile, videoView, youtubeConfigured, youtubeState } from './youtube.js';
 import * as social from './social.js';
-import { announcementView, deleteAccount, maintenanceView, mountControl, packView, paidSubscription, planView } from './control.js';
+import { announcementView, deleteAccount, maintenanceView, mountControl, packView, paidSubscription, planView, popupView } from './control.js';
 import { enrollment, matchStep, newRecoveryCodes, newSecret, recoveryHash } from './totp.js';
 import { mountLinkPages } from './linkpage.js';
 import { mountSounds } from './sounds.js';
@@ -361,6 +361,7 @@ export function createApp() {
     res.json({
       socials: SOCIALS.map(([id, label]) => ({ id, label, url: setting('socials', {})[id] || '' })).filter((s) => s.url),
       announcement: announcementView(),
+      popup: popupView(),
       maintenance: maintenanceView(),
     });
   });
@@ -369,7 +370,8 @@ export function createApp() {
   // premier affichage même chez un nouveau visiteur, au lieu de faire descendre la page quand /api/site répond.
   app.get('/api/announce.js', (_req, res) => {
     res.set({ 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=60' });
-    res.send(`window.OniriqueAnnounce&&OniriqueAnnounce(${JSON.stringify(announcementView()).replace(/</g, '\\u003c')});`);
+    const js = (value) => JSON.stringify(value).replace(/</g, '\\u003c');
+    res.send(`window.OniriqueAnnounce&&OniriqueAnnounce(${js(announcementView())});window.OniriquePopup&&OniriquePopup(${js(popupView())});`);
   });
 
   app.get('/api/public-key', (_req, res) => res.json({ pem: publicKeyPem, raw: publicKeyRaw }));

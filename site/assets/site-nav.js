@@ -351,6 +351,7 @@ header .sn-lang { margin-left: 8px; }
   // Nos réseaux, l'annonce et la maintenance : chargés une fois.
   fetch("/api/site", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((site) => {
     if (window.OniriqueAnnounce) window.OniriqueAnnounce(site && site.announcement);   // voir annonce.js
+    if (window.OniriquePopup) window.OniriquePopup(site && site.popup);
     showMaintenance(site && site.maintenance);
     const socials = (site && site.socials) || [];
     if (!socials.length) return;

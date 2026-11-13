@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <script src="assets/i18n.js?v=25e3ff48"></script>
 <script src="assets/ui.js?v=4"></script>
-<script src="assets/annonce.js?v=2"></script>
+<script src="assets/annonce.js?v=3"></script>
 <script src="/api/announce.js" async></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Administration</title>
@@ -355,6 +355,11 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
     <div class="box" id="live-announcement"></div>
     <p class="error" id="announcement-error" role="alert"></p>
 
+    <div class="bar"><h2>Fenêtre nouveauté</h2></div>
+    <p class="sub">Une fenêtre au milieu de l'écran, une seule fois par visiteur, à l'ouverture du site : « NOUVEAU PLUGIN DISPONIBLE », « NOUVELLE MISE À JOUR »… Choisissez le plugin : son image, son accroche et le lien vers sa fiche viennent tout seuls.</p>
+    <div class="box" id="live-popup"></div>
+    <p class="error" id="popup-error" role="alert"></p>
+
     <div class="bar"><h2>Maintenance</h2></div>
     <p class="sub">Le site public affiche une page d'attente à la place des pages, le temps d'une intervention. L'équipe, connectée, continue de voir le site normalement. L'application ONIRIQUE CENTRAL n'est pas touchée.</p>
     <div class="box" id="live-maintenance"></div>
@@ -396,7 +401,7 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
 
 <script src="assets/cropper.js"></script>
 <script src="assets/account.js?v=17"></script>
-<script src="assets/site-nav.js?v=22"></script>
+<script src="assets/site-nav.js?v=23"></script>
 <script>
 // Tout passe par l'API du CENTRAL, qui revérifie le rôle admin à chaque appel : cette page n'ouvre aucun droit par elle-même.
 const $ = (id) => document.getElementById(id);
@@ -898,9 +903,71 @@ async function loadPacks() {
   }) : [el("p", { className: "sub", textContent: "Aucun pack pour le moment." })]));
 }
 
+//------------------------------------------------------------------------------ Fenêtre « nouveauté »
+// Affichée une fois par visiteur à l'ouverture du site ; un plugin choisi donne l'image, l'accroche et le lien.
+async function loadPopup(p) {
+  p = p || {};
+  const KINDS = { plugin: "NOUVEAU PLUGIN DISPONIBLE", update: "NOUVELLE MISE À JOUR", news: "NOUVEAUTÉ", custom: "Titre libre…" };
+  let products = [];
+  try { products = ((await fetch("/api/catalog", { cache: "no-store" }).then((r) => r.json())).products || []); } catch { /* sans liste : titre libre */ }
+  const on = el("input", { type: "checkbox", checked: !!p.active });
+  const kind = el("select", {}, ...Object.entries(KINDS).map(([id, name]) => el("option", { value: id, textContent: name })));
+  kind.value = p.kind || "plugin";
+  const kicker = el("input", { type: "text", maxLength: 60, value: p.kicker || "", placeholder: "NOUVEAU PACK" });
+  const slug = el("select", {}, el("option", { value: "", textContent: "— aucun —" }), ...products.map((x) => el("option", { value: x.slug, textContent: x.name })));
+  slug.value = p.slug || "";
+  const title = el("input", { type: "text", maxLength: 80, value: p.title || "", placeholder: "le nom du plugin (facultatif)" });
+  const text = el("textarea", { maxLength: 400, value: p.text || "", placeholder: "l'accroche du plugin (facultatif)" });
+  const link = el("input", { type: "text", maxLength: 300, value: p.link || "", placeholder: "sa fiche (facultatif)" });
+  const label = el("input", { type: "text", maxLength: 40, value: p.linkLabel || "", placeholder: "Découvrir" });
+  const ends = el("input", { type: "datetime-local", value: p.endsAt ? new Date(p.endsAt - new Date(p.endsAt).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : "" });
+  ends.style.cssText = "width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.4);color:var(--mist);font:500 14px var(--f-body);color-scheme:dark";
+  const again = el("input", { type: "checkbox" });
+  const kickerRow = el("label", {}, "Titre du haut", kicker);
+  const preview = el("div", { className: "live-preview", style: "background:#120a0c;border:1px solid var(--line);color:var(--mist);display:grid;gap:8px;justify-items:center;padding:18px" });
+  const paint = () => {
+    kickerRow.hidden = kind.value !== "custom";
+    const product = products.find((x) => x.slug === slug.value);
+    const top = kind.value === "custom" ? kicker.value.trim() : KINDS[kind.value];
+    const head = title.value.trim() || (product ? product.name : "Titre");
+    const body = text.value.trim() || (product ? product.tagline || "" : "");
+    preview.replaceChildren(
+      product && product.image ? el("img", { src: product.image, alt: "", style: "width:100%;max-width:280px;border-radius:12px" }) : "",
+      el("span", { className: "tag", textContent: top || "…" }),
+      el("strong", { textContent: head, style: "font:800 20px/1.1 var(--f-display)" }),
+      body ? el("span", { className: "sub", textContent: body }) : "",
+      (link.value.trim() || product) ? el("span", { textContent: (label.value.trim() || (product ? "Découvrir" : "Voir")) + " →", style: "font-weight:700" }) : "");
+    preview.style.opacity = on.checked ? "1" : ".45";
+  };
+  [on, kind, kicker, slug, title, text, link, label].forEach((input) => input.addEventListener("input", paint));
+  const submit = el("button", { className: "act", type: "submit", textContent: "Publier" });
+  const saved = el("span", { className: "sub", role: "status" });
+  const form = el("form", {},
+    el("label", { className: "wide switch" }, on, "Afficher la fenêtre à l'ouverture du site"),
+    el("label", {}, "Type", kind), kickerRow, el("label", {}, "Plugin", slug), el("label", {}, "Titre (facultatif)", title),
+    el("label", { className: "wide" }, "Texte (facultatif)", text), el("label", {}, "Lien (facultatif)", link), el("label", {}, "Texte du bouton", label),
+    el("label", {}, "Fin (facultatif)", ends),
+    el("label", { className: "wide switch" }, again, "La remontrer à tout le monde, même à ceux qui l'ont déjà vue"),
+    el("div", { className: "wide" }, preview), el("div", { className: "wide row", style: "display:flex;gap:12px;align-items:center" }, submit, saved));
+  form.onsubmit = async (event) => {
+    event.preventDefault();
+    $("popup-error").textContent = saved.textContent = "";
+    submit.disabled = true;
+    try {
+      await api("PUT", "/admin/live/popup", { active: on.checked, kind: kind.value, kicker: kicker.value.trim(), slug: slug.value, title: title.value.trim(),
+        text: text.value.trim(), link: link.value.trim(), linkLabel: label.value.trim(), endsAt: ends.value || null, again: again.checked });
+      again.checked = false;
+      saved.textContent = on.checked ? "En ligne : chaque visiteur la voit une fois en ouvrant le site." : "Fenêtre retirée du site.";
+    } catch (error) { $("popup-error").textContent = error.message; }
+    submit.disabled = false;
+  };
+  paint();
+  $("live-popup").replaceChildren(form);
+}
+
 //------------------------------------------------------------------------------ Annonce et maintenance
 async function loadLive() {
-  const { announcement, maintenance } = await api("GET", "/admin/live");
+  const { announcement, maintenance, popup } = await api("GET", "/admin/live");
   const a = announcement || {};
   const TONES = { ember: ["Rouge ONIRIQUE", "linear-gradient(90deg,#8c0614,#e23444)", "#fff"], gold: ["Or (promo)", "linear-gradient(90deg,#b8862b,#f2c46d)", "#1a0d02"], calm: ["Sobre", "#1f0c0f", "#f6eeee"] };
   const on = el("input", { type: "checkbox", checked: !!a.active });
@@ -939,6 +1006,7 @@ async function loadLive() {
   };
   paint();
   $("live-announcement").replaceChildren(form);
+  await loadPopup(popup);
 
   const m = maintenance || {};
   const mOn = el("input", { type: "checkbox", checked: !!m.on });
