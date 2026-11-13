@@ -657,6 +657,12 @@ sealed partial class Navigateur : Form
             case "extStore" or "extReprendre" or "extActiver" or "extRetirer":
                 await CommandeExtension(source, m);
                 return;
+            case "taper":
+                var suite = (champ.Saisie.Focused ? champ.Saisie.Text : "") + (string?)m["texte"];
+                champ.Saisie.Focus();
+                // Après le SelectAll que pose la prise de focus : sinon la lettre suivante remplacerait la première.
+                champ.BeginInvoke(() => { champ.Saisie.Text = suite; champ.Saisie.SelectionStart = suite.Length; });
+                return;
             case "lire":
                 await VerifierGoogle(source);
                 await MajExtensions();
