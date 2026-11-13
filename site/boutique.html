@@ -240,6 +240,8 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
         </div>
         <div class="price" id="price"></div>
         <p class="note" style="margin:0" id="price-note">TTC, paiement unique</p>
+        <p class="deal" id="gift" hidden></p>
+        <p class="note" id="gift-note" hidden></p>
         <ul>
           <li id="kind">Plugin VST3</li>
           <li id="os">Windows 10 et 11, 64 bits</li>
@@ -638,6 +640,18 @@ async function buy(product, catalog) {
   $("desc").replaceChildren(...(product.description || product.tagline).split(/\n{2,}/).map((text) => el("p", { textContent: text })));
   $("buy").textContent = product.priceCents ? "Acheter · " + euros(product.priceCents) : "Obtenir";
   $("buy").onclick = () => buy(product, catalog);
+  // Plugin offert : VOCALBOX offre VOCAL MINI ; sur la page de VOCAL MINI, on le dit, et ses acheteurs ont VOCALBOX à -50 %
+  if (product.gift) {
+    $("gift").textContent = `${product.gift.name} offert avec ton achat`;
+    $("gift-note").textContent = `Achète ${product.name} à vie : ${product.gift.name} arrive sur ton compte en même temps, offert. Si tu l'as déjà, ${product.name} est à moitié prix pour toi.`;
+    $("gift").hidden = $("gift-note").hidden = false;
+  } else if (product.giftedWith?.length) {
+    const w = product.giftedWith[0];
+    $("gift").textContent = `Offert avec ${w.name}`;
+    $("gift-note").replaceChildren(`Achète `, el("a", { href: "/boutique/" + encodeURIComponent(w.slug), textContent: w.name }),
+      ` et ${product.name} t'est offert. Tu as déjà ${product.name} ? ${w.name} est à moitié prix pour toi.`);
+    $("gift").hidden = $("gift-note").hidden = false;
+  }
   setupTrial(product).then(() => { if (!$("buy").disabled) setupPromo(product); setupMonthly(product, catalog); });
   $("detail").hidden = false;
 

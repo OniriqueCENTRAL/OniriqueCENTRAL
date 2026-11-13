@@ -260,6 +260,18 @@ try {
     assert.match(q.note, /VOCAL MINI/);
     q = await call('POST', '/api/promo/quote', { token: buyer.token, body: { productId: mini.id } });
     assert.equal(q.discountCents, 0, 'la remise ne vaut que pour VOCALBOX');
+
+    // acheter VOCALBOX offre VOCAL MINI (licence définitive), sauf à qui l'a déjà
+    const catalog = await call('GET', '/api/catalog');
+    assert.deepEqual(catalog.products.find((p) => p.id === box.id).gift, { slug: 'onirique-vocal-mini', name: 'ONIRIQUE VOCAL MINI' });
+    assert.deepEqual(catalog.products.find((p) => p.id === mini.id).giftedWith, [{ slug: 'vocalbox', name: 'VOCALBOX' }]);
+    const fresh = await account('acheteur-box');
+    assert.equal((await call('POST', '/api/checkout', { token: fresh.token, body: { kind: 'product', id: box.id } })).granted, true);
+    const gift = get('SELECT * FROM licenses WHERE user_id = ? AND product_id = ?', fresh.id, mini.id);
+    assert.deepEqual([gift.type, gift.status, gift.bundle, gift.note], ['perpetual', 'active', `gift:${box.id}`, 'Offert avec VOCALBOX']);
+    assert.equal((await call('POST', '/api/checkout', { token: buyer.token, body: { kind: 'product', id: box.id } })).granted, true);
+    assert.equal(get('SELECT COUNT(*) AS n FROM licenses WHERE user_id = ? AND product_id = ? AND type = \'perpetual\'', buyer.id, mini.id).n, 1,
+      'qui a déjà VOCAL MINI ne le reçoit pas une deuxième fois');
   });
 
   console.log(`\n${passed} étapes réussies.`);

@@ -23,7 +23,7 @@ import {
 } from './licensing.js';
 import {
   cancelSubscription, cancelToolsSubscription, cancelMonthly, TOOLS, toolsSubscription, setToolsSubscription, checkout, connectStripe, disconnectStripe, handleLemonEvent, handleStripeEvent, paymentsMode, sellers,
-  stripeAccount, stripeAccountView, verifyLemonSignature, verifyStripeSignature,
+  stripeAccount, stripeAccountView, verifyLemonSignature, verifyStripeSignature, GIFTS, giftOf,
 } from './payments.js';
 import {
   attachReferrer, normalizeCode, referralSettings, promoFields, promoView, quote, referralStats, referralView, saveReferralSettings,
@@ -146,6 +146,9 @@ function productView(p, platform) {
     latest: versionView(versions.find((v) => v.platform === wanted)) || null,
     platforms: [...new Set(versions.map((v) => v.platform))], // les systèmes pour lesquels le plugin existe
     versions: versions.map(versionView),
+    // plugin offert : gift = celui qu'on reçoit en achetant ce plugin ; giftedWith = les plugins qui offrent celui-ci
+    gift: (() => { const g = giftOf(p); return g ? { slug: g.slug, name: g.name } : null; })(),
+    giftedWith: GIFTS.filter((g) => g.gives === p.slug).map((g) => get('SELECT slug, name FROM products WHERE slug = ?', g.with)).filter(Boolean),
   };
 }
 

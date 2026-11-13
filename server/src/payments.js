@@ -30,9 +30,15 @@ function revokePurchase(userId, productId, source) {
   transaction(() => {
     run(`UPDATE licenses SET status = 'revoked' WHERE id = (SELECT id FROM licenses WHERE user_id = ? AND product_id = ?
            AND source = ? AND status = 'active' ORDER BY created_at DESC LIMIT 1)`, userId, productId, source);
-    const still = get(`SELECT id FROM licenses WHERE user_id = ? AND product_id = ? AND status = 'active'
-                        AND (expires_at IS NULL OR expires_at > ?)`, userId, productId, now());
-    if (!still) run('DELETE FROM activations WHERE user_id = ? AND product_id = ?', userId, productId);
+    // le plugin offert avec cet achat (VOCAL MINI avec VOCALBOX) part avec lui
+    const gift = get(`SELECT id, product_id FROM licenses WHERE user_id = ? AND bundle = ? AND source = ? AND status = 'active'
+                       ORDER BY created_at DESC LIMIT 1`, userId, `gift:${productId}`, source);
+    if (gift) run(`UPDATE licenses SET status = 'revoked' WHERE id = ?`, gift.id);
+    for (const id of gift ? [productId, gift.product_id] : [productId]) {
+      const still = get(`SELECT id FROM licenses WHERE user_id = ? AND product_id = ? AND status = 'active'
+                          AND (expires_at IS NULL OR expires_at > ?)`, userId, id, now());
+      if (!still) run('DELETE FROM activations WHERE user_id = ? AND product_id = ?', userId, id);
+    }
   });
 }
 
@@ -60,12 +66,38 @@ function confirmOrder(userId, what, amountCents, renewal = '', provider = 'strip
     .catch((error) => console.error('Confirmation de commande :', error.message));
 }
 
-/** amount : ce qui a été réellement payé (après un code promo), le prix du plugin sinon. */
+//==============================================================================
+//  Plugins offerts : acheter un plugin en offre un autre (licence définitive, liée à l'achat)
+//==============================================================================
+// Acheter VOCALBOX offre VOCAL MINI, sauf à qui l'a déjà (licence définitive active, pas un essai). La licence offerte
+// porte bundle « gift:<id du plugin acheté> » : un remboursement de VOCALBOX la retire avec lui.
+export const GIFTS = [
+  { with: 'vocalbox', gives: 'onirique-vocal-mini' },
+];
+const ownsForGood = (userId, productId) => get(`SELECT 1 AS yes FROM licenses WHERE user_id = ? AND product_id = ? AND type = 'perpetual'
+                                                 AND status = 'active' AND source != 'trial' LIMIT 1`, userId, productId);
+/** Le plugin offert avec ce plugin (la ligne de la table products), ou null. */
+export function giftOf(product) {
+  const gift = GIFTS.find((g) => g.with === product.slug);
+  return gift ? get('SELECT * FROM products WHERE slug = ?', gift.gives) ?? null : null;
+}
+function grantGift(userId, product, provider) {
+  const gift = giftOf(product);
+  if (!gift || ownsForGood(userId, gift.id)) return null;
+  createLicense({ productId: gift.id, userId, source: provider, note: `Offert avec ${product.name}`, bundle: `gift:${product.id}` });
+  return gift;
+}
+/** Ce que dit la confirmation de commande d'un plugin (et du plugin offert avec lui, s'il vient d'être accordé). */
+const productLine = (product, granted) => `${product.name} — licence définitive`
+  + (granted?.gift ? `\n  ${granted.gift.name} — offert avec ${product.name}, licence définitive` : '');
+
+/** amount : ce qui a été réellement payé (après un code promo), le prix du plugin sinon. Rend false si la commande était
+ *  déjà enregistrée, sinon { gift } (le plugin offert accordé avec, ou null). */
 export function grantProduct(userId, product, provider, providerRef = null, amount = product.price_cents) {
   return transaction(() => {
     if (!recordOrder(userId, 'product', product.id, amount, provider, providerRef)) return false;
     createLicense({ productId: product.id, userId, source: provider, note: 'Achat' });
-    return true;
+    return { gift: grantGift(userId, product, provider) };
   });
 }
 
@@ -371,9 +403,10 @@ export async function handleStripeEvent(event, account) {
     } else if (object.mode === 'payment' && object.payment_status === 'paid') {
       const product = get('SELECT * FROM products WHERE id = ? AND creator = ?', Number(object.metadata.ref_id), account.creator);
       const paid = object.amount_total ?? product?.price_cents ?? 0;
-      if (product && grantProduct(userId, product, 'stripe', object.id, paid)) {
+      const granted = product && grantProduct(userId, product, 'stripe', object.id, paid);
+      if (granted) {
         afterPurchase(userId, product.id, { ...discountFrom(object.metadata), orderRef: object.id, paidCents: paid });
-        confirmOrder(userId, `${product.name} — licence définitive`, paid, '', stripeProvider(account), object.currency || 'eur');
+        confirmOrder(userId, productLine(product, granted), paid, '', stripeProvider(account), object.currency || 'eur');
       }
     } else if (object.mode === 'subscription' && object.subscription && object.metadata?.kind === 'monthly') {
       const product = applyStripeMonthly(await stripe('GET', `/subscriptions/${object.subscription}`, undefined, account.key), account);
@@ -484,9 +517,10 @@ export function handleLemonEvent(event) {
     } else if (custom.kind === 'product') {
       const product = get('SELECT * FROM products WHERE id = ?', refId);
       const paid = attributes.total ?? product?.price_cents ?? 0;
-      if (product && grantProduct(userId, product, 'lemon', orderRef, paid)) {
+      const granted = product && grantProduct(userId, product, 'lemon', orderRef, paid);
+      if (granted) {
         afterPurchase(userId, product.id, { ...discountFrom(custom), orderRef, paidCents: paid });
-        confirmOrder(userId, `${product.name} — licence définitive`, paid, '', 'lemon');
+        confirmOrder(userId, productLine(product, granted), paid, '', 'lemon');
       }
     } else if (custom.kind === 'plan') {
       // La première échéance d'un abonnement : l'accès lui-même arrive par l'événement subscription_created.
