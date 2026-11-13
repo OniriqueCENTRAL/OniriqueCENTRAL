@@ -241,7 +241,10 @@ export function libraryView() {
       h('input', { type: 'checkbox', checked: picked.has(product.id), 'aria-label': `Sélectionner ${product.name}`,
         onchange: (event) => { if (event.target.checked) picked.add(product.id); else picked.delete(product.id); render(); } })) : null,
     h('div', { class: 'card-body' },
-      h('div', { class: 'creator' }, creatorOf(product)),
+      h('div', { class: 'row', style: { gap: '8px', 'align-items': 'center' } },
+        h('div', { class: 'creator' }, creatorOf(product)),
+        // le plugin de la fenêtre « nouveauté » : marqué NOUVEAU (il est aussi mis en tête de la liste depuis le panel)
+        state.data.popup?.slug === product.slug ? pill('Nouveau', 'hot') : null),
       productName(product.name),
       h('div', { class: 'muted' }, product.tagline),
       h('div', { class: 'card-foot' },

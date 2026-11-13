@@ -43,6 +43,24 @@ export async function refresh() {
   lastLoad = Date.now();
   render();
   fillMissingDemos();
+  showNews();
+}
+
+/** La fenêtre « nouveauté » (réglée dans le panel, la même que sur le site) : une fois par nouveauté, à l'ouverture,
+    une fois connecté. Le bouton ouvre la fiche du plugin dans l'application. */
+function showNews() {
+  const p = state.data?.popup;
+  if (!p || !p.id || !state.data.me || document.getElementById('overlay').hasChildNodes()) return;
+  try {
+    if (localStorage.getItem('onirique.popup.seen') === p.id) return;
+    localStorage.setItem('onirique.popup.seen', p.id);
+  } catch { return; }
+  const product = p.slug ? state.data.catalog.products.find((x) => x.slug === p.slug) : null;
+  const picture = h('div', { class: 'news-shot' });
+  if (p.image) call('media', p.image).then((src) => picture.replaceChildren(h('img', { src, alt: p.title }))).catch(() => picture.remove());
+  else picture.remove();
+  modal(p.title, h('div', { class: 'news' }, picture, p.text ? h('p', { class: 'muted' }, p.text) : null),
+    product ? [{ label: p.linkLabel || 'Découvrir', run: () => go('plugins', product.id) }] : [], p.kicker || 'Nouveauté');
 }
 
 //------------------------------------------------------------------------------
@@ -513,11 +531,12 @@ setInterval(async () => {
   if (!state.data || !idle || typing || ADMIN_ROUTES.includes(state.route.name)) return;
   try {
     const data = await call('load');
-    if (JSON.stringify(data.catalog) === JSON.stringify(state.data.catalog)) return;
+    if (JSON.stringify(data.catalog) === JSON.stringify(state.data.catalog) && data.popup?.id === state.data.popup?.id) return;
     state.data = data;
     state.offline = null;
     lastLoad = Date.now();
     render();
+    showNews();   // une nouveauté publiée pendant que l'application est ouverte
   } catch { /* hors ligne : le prochain passage réessaiera */ }
 }, 60_000);
 window.addEventListener('unhandledrejection', (event) => toast(event.reason?.message || 'Erreur inattendue.', true));

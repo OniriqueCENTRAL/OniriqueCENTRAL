@@ -761,8 +761,11 @@ async function load() {
     // Les activations qui viennent d'être faites doivent se voir tout de suite dans l'interface.
     if (activated) me = await api.request('GET', '/api/me');
   }
+  // La fenêtre « nouveauté » réglée dans le panel (nouveau plugin, mise à jour…), la même que sur le site.
+  let popup = null;
+  try { popup = (await api.request('GET', '/api/site')).popup ?? null; } catch { /* sans elle, l'application s'ouvre quand même */ }
   return {
-    catalog, me, machineId,
+    catalog, me, machineId, popup,
     machineName: os.hostname(),
     installs,
     settings: { serverUrl: store.serverUrl, vst3Dir: store.vst3Dir, licenseDir: installer.LICENSE_DIR, appVersion: app.getVersion() },

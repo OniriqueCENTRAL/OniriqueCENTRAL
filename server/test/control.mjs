@@ -96,7 +96,7 @@ try {
     await call('PUT', '/api/admin/live/popup', { token: admin.token, body: { active: true, kind: 'plugin' }, expect: 400 });
     const set = await call('PUT', '/api/admin/live/popup', { token: admin.token, body: { active: true, kind: 'plugin', slug: product.slug } });
     assert.deepEqual((await call('GET', '/api/site')).popup,
-      { id: set.id, kicker: 'NOUVEAU PLUGIN DISPONIBLE', title: 'POPUP NEUF', text: 'Une accroche.', image: null, link: '/boutique/popup-neuf', linkLabel: 'Découvrir' });
+      { id: set.id, kicker: 'NOUVEAU PLUGIN DISPONIBLE', title: 'POPUP NEUF', text: 'Une accroche.', image: null, link: '/boutique/popup-neuf', linkLabel: 'Découvrir', slug: 'popup-neuf' });
     const script = await call('GET', '/api/announce.js');
     assert.match(script, /window\.OniriquePopup&&OniriquePopup\(\{.*NOUVEAU PLUGIN DISPONIBLE/);
     // même contenu : même numéro (ceux qui l'ont vue ne la revoient pas) ; « la remontrer » ou un autre type : nouveau numéro

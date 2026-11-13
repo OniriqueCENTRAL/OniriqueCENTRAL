@@ -449,3 +449,7 @@ button.key.copy:hover { color: var(--pink); }
 .card .pick input[type='checkbox']::after { content: none; }
 .card .pick input[type='checkbox']:checked { background: rgb(var(--acc)); box-shadow: 0 0 0 1px rgba(var(--acc-hi), .8) inset, 0 0 10px rgba(var(--acc), .6); }
 .card .pick input[type='checkbox']:checked::before { content: '✓'; display: grid; place-items: center; height: 100%; color: #fff; font: 700 11px/16px var(--body); }
+
+/* Fenêtre « nouveauté » (app.js, showNews) */
+.news { display: grid; gap: 14px; }
+.news-shot img { display: block; width: 100%; max-width: 520px; border-radius: 14px; border: 1px solid var(--line, rgba(255,210,214,.14)); box-shadow: 0 18px 50px rgba(0,0,0,.5); }

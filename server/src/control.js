@@ -41,6 +41,7 @@ export function popupView() {
     image: shown?.image ? `/api/media/${shown.image}` : null,
     link: p.link || (shown ? `/boutique/${shown.slug}` : null),
     linkLabel: p.linkLabel || (shown ? 'Découvrir' : 'Voir'),
+    slug: shown?.slug || null,   // l'application ouvre la fiche du plugin et le marque NOUVEAU dans sa liste
   };
 }
 
