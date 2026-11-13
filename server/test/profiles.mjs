@@ -199,6 +199,14 @@ try {
     await call('GET', '/api/empire', { expect: 401 });
     run(`UPDATE users SET role = 'founder' WHERE id = ?`, b.id);
     assert.equal((await call('GET', '/api/me', { token: b.token })).empire, true);
+    // Un fondateur donne et retire l'accès depuis la page ; un invité ne le peut pas.
+    await call('GET', '/api/empire/guests', { token: m.token, expect: 403 });
+    await call('POST', '/api/empire/guests', { token: b.token, body: { handle: 'personne-ici' }, expect: 404 });
+    await call('PUT', '/api/me/profile/page', { token: a.token, body: { handle: 'invitee-a' } });
+    assert.deepEqual((await call('POST', '/api/empire/guests', { token: b.token, body: { handle: 'onirique.store/u/Invitee-A' } })).guests, ['usermorgane', 'invitee-a']);
+    assert.equal((await call('GET', '/api/me', { token: a.token })).empire, true);
+    await call('DELETE', '/api/empire/guests/invitee-a', { token: b.token });
+    assert.equal((await call('GET', '/api/me', { token: a.token })).empire, false);
     run(`UPDATE users SET role = 'user' WHERE id = ?`, b.id);
   });
   console.log(`\n${passed} étapes réussies.`);

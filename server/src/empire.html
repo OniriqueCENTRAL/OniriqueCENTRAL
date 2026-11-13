@@ -210,6 +210,7 @@ header > * { pointer-events: auto; }
   <span class="hint">Glisser : déplacer · Molette : zoomer · Clic droit maintenu : tourner et incliner. Chaque stop est un mensonge d'Anto : clique-le et gagne son mini-jeu pour le butin.</span>
   <div><span class="eyebrow" style="margin-bottom:10px">Ton butin</span><div class="bag" id="bag"></div></div>
   <div><span class="eyebrow" style="margin-bottom:8px">Les stops</span><div class="list" id="list"></div></div>
+  <div id="access" hidden><span class="eyebrow" style="margin-bottom:8px">Qui a accès</span><div class="list" id="guests"></div><button class="go" type="button" id="give" style="margin-top:8px">Donner l'accès</button></div>
 </aside>
 
 <aside id="stop" class="glass" aria-live="polite">
@@ -577,5 +578,20 @@ draw();
 requestAnimationFrame(tick);
 setTimeout(() => $("intro").remove(), reduced ? 0 : 2700);
 setTimeout(home, reduced ? 0 : 500);
+
+// Les accès (fondateurs seulement : l'API refuse les invités, et la rubrique reste cachée).
+const AUTH = { Authorization: "Bearer " + (sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token")) };
+async function guestsApi(method, path = "", body) {
+  const r = await fetch("/api/empire/guests" + path, { method, headers: body ? { ...AUTH, "Content-Type": "application/json" } : AUTH, body: body && JSON.stringify(body) }).catch(() => null);
+  const data = r ? await r.json().catch(() => ({})) : {};
+  if (r && r.ok) return showGuests(data.guests);
+  if (method !== "GET") alert(data.error || "Le serveur ne répond pas.");
+}
+function showGuests(guests) {
+  $("access").hidden = false;
+  $("guests").replaceChildren(...guests.map((h) => el("button", { type: "button", title: "Retirer l'accès", onclick: () => confirm(`Retirer l'accès de « ${h} » ?`) && guestsApi("DELETE", "/" + encodeURIComponent(h)) }, h, el("small", { textContent: "retirer ✕" }))));
+}
+$("give").onclick = () => { const h = prompt("Adresse de sa page de profil (onirique.store/u/…) :"); if (h && h.trim()) guestsApi("POST", "", { handle: h }); };
+guestsApi("GET");
 </script>
 </html>
