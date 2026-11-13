@@ -51,6 +51,9 @@ h1 em, h2 em, em.dream { font: inherit; font-style: normal; color: rgb(var(--acc
 /* En-tête : une bande de verre sombre */
 body > header:not(.nav) { background: linear-gradient(180deg, rgba(9,8,10,.78), rgba(9,8,10,.5)); border-bottom-color: var(--line);
   -webkit-backdrop-filter: blur(22px) saturate(140%); backdrop-filter: blur(22px) saturate(140%); }
+/* Le flou fait de l'en-tête un calque à part : il passe devant la page (titres animés), sinon ses menus passent dessous.
+   :where() laisse gagner les pages qui fixent déjà leur en-tête (carte, boutique). */
+:where(body > header:not(.nav)) { position: relative; z-index: 60; }
 .brand { letter-spacing: .16em; }
 
 /* Liens de l'en-tête (rubriques, Outils, Nos réseaux) et du pied de page : des libellés JetBrains Mono en capitales,
