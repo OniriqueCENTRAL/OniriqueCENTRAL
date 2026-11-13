@@ -90,7 +90,7 @@ try {
 
   await step('fenêtre nouveauté : un plugin donne titre, accroche et lien ; nouveau contenu = nouveau numéro', async () => {
     assert.equal((await call('GET', '/api/site')).popup, null);
-    const product = await call('POST', '/api/admin/products', { token: admin.token, body: { name: 'POPUP NEUF', slug: 'popup-neuf', tagline: 'Une accroche.', priceCents: 0, published: true } });
+    const product = await call('POST', '/api/admin/products', { token: admin.token, body: { name: 'POPUP NEUF', slug: 'popup-neuf', tagline: 'Une accroche.', priceCents: 0, published: true }, expect: 201 });
     await call('PUT', '/api/admin/live/popup', { token: alice.token, body: { active: true, kind: 'plugin', slug: 'popup-neuf' }, expect: 403 });
     await call('PUT', '/api/admin/live/popup', { token: admin.token, body: { active: true, kind: 'plugin', slug: 'inconnu' }, expect: 400 });
     await call('PUT', '/api/admin/live/popup', { token: admin.token, body: { active: true, kind: 'plugin' }, expect: 400 });
