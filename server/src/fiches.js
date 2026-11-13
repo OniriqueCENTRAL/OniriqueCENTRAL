@@ -45,7 +45,7 @@ const FICHES = [
       "tagline" : "EQ paramétrique 8 bandes : zéro latence, phase naturelle ou phase linéaire."
    },
    {
-      "description" : "Vocal Pocket : un EQ dynamique 20 bandes piloté par ta voix en sidechain. Il ne creuse l'instrumental que là où la voix est masquée, et seulement pendant qu'elle chante. La poche suit les phrases, pas les syllabes : pas de pompage. Sans sidechain, le mode STATIC applique une poche fixe en forme de voix.\n\nSpace règle la largeur stéréo, ramène les graves au centre et fait briller les côtés. Restore redonne du punch au kick et de l'énergie au médium. L'Auto Gain garde le volume perçu constant pour que tu compares le son, pas le niveau.\n\nAucune latence. Presets d'usine et presets utilisateur. VST3 et version autonome pour Windows, VST3 et Audio Unit pour Mac.",
+      "description" : "Vocal Pocket : un EQ dynamique 20 bandes piloté par ta voix en sidechain. Il ne creuse l'instrumental que là où la voix est masquée, et seulement pendant qu'elle chante. La poche suit les phrases, pas les syllabes : pas de pompage. Sans sidechain, le mode STATIC applique une poche fixe en forme de voix.\n\nSpace règle la largeur stéréo, ramène les graves au centre et fait briller les côtés. Restore redonne du punch au kick et de l'énergie au médium. L'Auto Gain garde le volume perçu constant pour que tu compares le son, pas le niveau.\n\nAucune latence. Presets d'usine et presets utilisateur. VST3 pour Windows, VST3 et Audio Unit pour Mac.",
       "slug" : "onirique-vocal-spacer",
       "tagline" : "Fait de la place à la voix dans un instrumental terminé."
    },

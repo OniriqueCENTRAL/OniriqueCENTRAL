@@ -64,7 +64,7 @@ Et si tu veux mettre les mains dedans, tout est là, dans l'ordre que tu veux :
 
 VOCALBOX progresse à chaque mise à jour grâce à ONR Neural Learning. C'est facultatif et anonyme, et aucun son n'est jamais envoyé.
 
-VST3 et version autonome, Windows 64 bits.`,
+VST3 pour Windows, VST3 et Audio Unit pour Mac.`,
 };
 if (get("SELECT value FROM settings WHERE key = 'vocalbox_fiche'")?.value !== '5') {   // v5 : réécrite d'un ton plus humain
   run('UPDATE products SET tagline = ?, description = ? WHERE slug = ?', FICHE.tagline, FICHE.description, 'vocalbox');
