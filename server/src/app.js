@@ -550,11 +550,12 @@ export function createApp() {
     res.sendFile(fileURLToPath(new URL('empire.html', import.meta.url)));
   });
 
-  // Les accès à l'empire : un fondateur les donne ou les retire depuis la page, par l'adresse de profil (onirique.store/u/…).
+  // Les accès à l'empire : un fondateur les donne ou les retire depuis la page, par l'adresse de profil (onirique.store/profil?u=…).
   const requireFounder = (req, _res, next) => next(req.user.role === 'founder' ? undefined : new HttpError(403, 'Réservé aux fondateurs.'));
   app.get('/api/empire/guests', requireUser, requireFounder, (_req, res) => res.json({ guests: empireGuests() }));
   app.post('/api/empire/guests', requireUser, requireFounder, (req, res) => {
-    const handle = String(req.body?.handle || '').trim().toLowerCase().replace(/\/+$/, '').split('/').pop().replace(/^@/, '');
+    const raw = String(req.body?.handle || '').trim().toLowerCase(); // pseudo, @pseudo ou lien onirique.store/profil?u=pseudo
+    const handle = (raw.match(/[?&]u=([^&#]+)/)?.[1] || raw.replace(/\/+$/, '').split('/').pop()).replace(/^@/, '');
     if (!get('SELECT 1 FROM user_profiles WHERE handle = ?', handle)) throw new HttpError(404, `Aucune page de profil à l'adresse « ${handle} ».`);
     setSetting('empire_guests', [...new Set([...empireGuests(), handle])]);
     res.json({ guests: empireGuests() });

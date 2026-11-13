@@ -203,7 +203,7 @@ try {
     await call('GET', '/api/empire/guests', { token: m.token, expect: 403 });
     await call('POST', '/api/empire/guests', { token: b.token, body: { handle: 'personne-ici' }, expect: 404 });
     await call('PUT', '/api/me/profile/page', { token: a.token, body: { handle: 'invitee-a' } });
-    assert.deepEqual((await call('POST', '/api/empire/guests', { token: b.token, body: { handle: 'onirique.store/u/Invitee-A' } })).guests, ['usermorgane', 'invitee-a']);
+    assert.deepEqual((await call('POST', '/api/empire/guests', { token: b.token, body: { handle: 'https://onirique.store/profil?u=Invitee-A' } })).guests, ['usermorgane', 'invitee-a']);
     assert.equal((await call('GET', '/api/me', { token: a.token })).empire, true);
     await call('DELETE', '/api/empire/guests/invitee-a', { token: b.token });
     assert.equal((await call('GET', '/api/me', { token: a.token })).empire, false);
