@@ -7,19 +7,19 @@
 <script src="/api/announce.js" async></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Vérificateur de stems — ONIRIQUE</title>
-<meta name="description" content="Dépose toutes les pistes d'un projet : durée, fréquence, résolution, saturation et pistes vides sont contrôlées d'un coup, avant l'envoi au mix ou au mastering. Gratuit.">
+<meta name="description" content="Dépose toutes les pistes d’un projet : durée, fréquence, résolution, saturation et pistes vides sont contrôlées d’un coup, avant l’envoi au mix ou au mastering. Gratuit.">
 <link rel="canonical" href="https://onirique.store/stems">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ONIRIQUE">
 <meta property="og:locale" content="fr_FR">
 <meta property="og:title" content="Vérificateur de stems — ONIRIQUE">
-<meta property="og:description" content="Dépose toutes les pistes d'un projet : durée, fréquence, résolution, saturation et pistes vides sont contrôlées d'un coup, avant l'envoi au mix ou au mastering. Gratuit.">
+<meta property="og:description" content="Dépose toutes les pistes d’un projet : durée, fréquence, résolution, saturation et pistes vides sont contrôlées d’un coup, avant l’envoi au mix ou au mastering. Gratuit.">
 <meta property="og:url" content="https://onirique.store/stems">
 <meta property="og:image" content="https://onirique.store/assets/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json" data-seo>{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Vérificateur de stems","url":"https://onirique.store/stems","description":"Dépose toutes les pistes d'un projet : durée, fréquence, résolution, saturation et pistes vides sont contrôlées d'un coup, avant l'envoi au mix ou au mastering. Gratuit.","applicationCategory":"MultimediaApplication","operatingSystem":"Navigateur web","isAccessibleForFree":true,"inLanguage":"fr","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://onirique.store/"},{"@type":"ListItem","position":2,"name":"Outils gratuits","item":"https://onirique.store/outils"},{"@type":"ListItem","position":3,"name":"Vérificateur de stems","item":"https://onirique.store/stems"}]}]}</script>
+<script type="application/ld+json" data-seo>{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Vérificateur de stems","url":"https://onirique.store/stems","description":"Dépose toutes les pistes d’un projet : durée, fréquence, résolution, saturation et pistes vides sont contrôlées d’un coup, avant l’envoi au mix ou au mastering. Gratuit.","applicationCategory":"MultimediaApplication","operatingSystem":"Navigateur web","isAccessibleForFree":true,"inLanguage":"fr","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://onirique.store/"},{"@type":"ListItem","position":2,"name":"Outils gratuits","item":"https://onirique.store/outils"},{"@type":"ListItem","position":3,"name":"Vérificateur de stems","item":"https://onirique.store/stems"}]}]}</script>
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
 <link rel="stylesheet" href="assets/pages.css?v=3">
@@ -28,16 +28,15 @@
 .values td:first-child { max-width: 320px; overflow-wrap: anywhere; }
 .values td.bad { color: var(--ember-text); font-weight: 600; }
 .issues { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
-.issues li { margin: 0; color: var(--soft); font-size: 15px; }
-.issues li::before { content: "✦ "; color: var(--ember-text); }
-.values td select { width: auto; min-width: 118px; padding: 7px 10px; border-radius: 9px; font-size: 14px; }
+.issues li { position: relative; margin: 0; padding-left: 16px; color: var(--soft); font-size: 15px; }
+.issues li::before { content: ""; position: absolute; left: 0; top: calc(.8em - 3px); width: 6px; height: 6px; border-radius: 50%; background: var(--ember); }
+.values td select { width: auto; min-width: 118px; padding: 8px 12px; border-radius: var(--r-ctl); font-size: 14px; }
 .values td.new { font: 500 13px/1.35 var(--f-mono); color: var(--mist); }
 .values td.old { color: var(--haze); }
 .pack { display: grid; gap: 16px; }
 .pack .tick { display: flex; align-items: center; gap: 10px; text-transform: none; letter-spacing: 0; font: 500 15px/1.4 var(--f-body); color: var(--soft); }
-.modes { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 18px; }
-.modes .go[aria-pressed="false"] { background: transparent; color: var(--mist); border: 1px solid var(--line); box-shadow: none; }
-.values td input.bpm { width: 84px; padding: 7px 10px; border-radius: 9px; font-size: 14px; }
+.modes { margin-top: 24px; }
+.values td input.bpm { width: 84px; padding: 8px 12px; border-radius: var(--r-ctl); font-size: 14px; }
 .pack .zip { margin: 0; font: 500 14px/1.4 var(--f-mono); color: var(--mist); overflow-wrap: anywhere; }
 </style>
 <link rel="stylesheet" href="/assets/da.css?v=9">
@@ -55,11 +54,11 @@
   <section class="hero">
     <p class="eyebrow">Outil gratuit</p>
     <h1>Des stems <em>sans surprise</em></h1>
-    <p class="lede" id="lede">Avant d'envoyer tes pistes à un ingé son ou à un autre beatmaker, dépose-les toutes ici : la page signale celles qui n'ont pas la même durée, le même format, qui saturent ou qui sont vides.</p>
+    <p class="lede" id="lede">Avant d’envoyer tes pistes à un ingé son ou à un autre beatmaker, dépose-les toutes ici : la page signale celles qui n’ont pas la même durée, le même format, qui saturent ou qui sont vides.</p>
 
-    <div class="modes" role="group" aria-label="Ce que tu déposes">
-      <button class="go" id="m-stems" type="button" aria-pressed="true">Les stems d'un titre</button>
-      <button class="go" id="m-beats" type="button" aria-pressed="false">Un pack de prods</button>
+    <div class="chips modes" role="group" aria-label="Ce que tu déposes">
+      <button id="m-stems" type="button" aria-pressed="true">Les stems d’un titre</button>
+      <button id="m-beats" type="button" aria-pressed="false">Un pack de prods</button>
     </div>
 
     <button class="drop" id="drop" type="button">
@@ -68,7 +67,7 @@
       <span>ou clique pour les choisir · plusieurs fichiers à la fois</span>
     </button>
     <input id="file" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" hidden>
-    <p class="hint">Sans compte. Les pistes sont lues dans ton navigateur : rien n'est envoyé.</p>
+    <p class="hint">Sans compte. Les pistes sont lues dans ton navigateur : rien n’est envoyé.</p>
     <p class="error" id="error" role="alert"></p>
   </section>
 
@@ -77,7 +76,7 @@
     <div class="dim"><p class="eyebrow">Bilan</p><ul class="issues" id="r-issues"></ul><p class="ok" id="r-clean" hidden>Rien à signaler : toutes les pistes ont la même durée et le même format, aucune ne sature.</p></div>
     <div class="dim pack">
       <div><p class="eyebrow">Loop pack</p>
-      <p class="muted">Chaque piste est reconnue, renommée et rangée par type. Corrige un type dans le tableau s'il est faux, puis télécharge le pack : un .zip où tout est déjà trié et renommé, à déposer tel quel dans ton dossier de samples.</p></div>
+      <p class="muted">Chaque piste est reconnue, renommée et rangée par type. Corrige un type dans le tableau s’il est faux, puis télécharge le pack : un .zip où tout est déjà trié et renommé, à déposer tel quel dans ton dossier de samples.</p></div>
       <div class="fields">
         <label>Nom du pack<input id="p-name" type="text" maxlength="60" placeholder="Loop pack"></label>
         <label>BPM<input id="p-bpm" type="text" inputmode="decimal" maxlength="6" placeholder="—"></label>
@@ -89,7 +88,7 @@
       <div><button class="go" id="p-go" type="button">Télécharger le loop pack (.zip)</button></div>
     </div>
     <div><div class="scroll"><table class="values" style="min-width:980px">
-      <thead><tr><th>Type</th><th>Nouveau nom</th><th>Piste d'origine</th><th>Durée</th><th>Format</th><th>Voies</th><th>Pic</th><th>Blanc au début</th></tr></thead>
+      <thead><tr><th>Type</th><th>Nouveau nom</th><th>Piste d’origine</th><th>Durée</th><th>Format</th><th>Voies</th><th>Pic</th><th>Blanc au début</th></tr></thead>
       <tbody id="r-rows"></tbody>
     </table></div></div>
   </article>
@@ -107,22 +106,22 @@
       <div><button class="go" id="b-go" type="button">Télécharger le pack de prods (.zip)</button></div>
     </div>
     <div><div class="scroll"><table class="values" style="min-width:860px">
-      <thead><tr><th>Nouveau nom</th><th>BPM</th><th>Tonalité</th><th>Fichier d'origine</th><th>Durée</th></tr></thead>
+      <thead><tr><th>Nouveau nom</th><th>BPM</th><th>Tonalité</th><th>Fichier d’origine</th><th>Durée</th></tr></thead>
       <tbody id="b-rows"></tbody>
     </table></div></div>
   </article>
 
   <section class="text">
     <h2>Un pack de prods</h2>
-    <p>Choisis « Un pack de prods » et dépose tes instrus, quinze d'un coup si tu veux. Chacune est analysée séparément, comme dans l'outil <a href="bpm-tonalite">BPM et tonalité</a>, puis renommée avec son propre tempo et sa propre tonalité : « Nuit blanche - 140 BPM - F minor.wav ». Le pack se télécharge en un .zip. Un tempo peut se lire deux fois plus vite ou deux fois plus lentement (70 ou 140) : les boutons ÷2 et ×2 du tableau le remettent comme tu le comptes. Les fichiers ne sont pas réencodés.</p>
+    <p>Choisis « Un pack de prods » et dépose tes instrus, quinze d’un coup si tu veux. Chacune est analysée séparément, comme dans l’outil <a href="bpm-tonalite">BPM et tonalité</a>, puis renommée avec son propre tempo et sa propre tonalité : « Nuit blanche - 140 BPM - F minor.wav ». Le pack se télécharge en un .zip. Un tempo peut se lire deux fois plus vite ou deux fois plus lentement (70 ou 140) : les boutons ÷2 et ×2 du tableau le remettent comme tu le comptes. Les fichiers ne sont pas réencodés.</p>
     <h2>Comment les pistes sont reconnues</h2>
-    <p>Le nom du fichier passe d'abord : « Kick », « 808 », « Hat », « Vox », « Gtr » et une centaine d'autres mots, en français et en anglais, disent ce qu'il y a dedans. Quand le nom ne dit rien (« Audio 07 »), c'est le son qui décide : où se trouve son énergie, du grave à l'aigu, et s'il est frappé ou tenu. Un son grave et bref est un kick, un son grave qui s'éteint lentement une 808, un son aigu et bref un hi-hat, un bruit bref une snare, du grave et de l'aigu frappés ensemble une batterie.</p>
-    <p>Le son seul ne distingue pas une voix d'un piano ou d'une guitare : ces pistes-là sont rangées dans « Melodie » tant que leur nom n'en dit pas plus. Le type se corrige d'un clic dans le tableau, et le pack suit.</p>
-    <p>Le BPM et la tonalité sont mesurés sur toutes les pistes jouées ensemble, comme dans l'outil <a href="bpm-tonalite">BPM et tonalité</a> ; tu peux les corriger avant de télécharger. Les fichiers du pack sont tes fichiers d'origine, renommés : rien n'est réencodé.</p>
+    <p>Le nom du fichier passe d’abord : « Kick », « 808 », « Hat », « Vox », « Gtr » et une centaine d’autres mots, en français et en anglais, disent ce qu’il y a dedans. Quand le nom ne dit rien (« Audio 07 »), c’est le son qui décide : où se trouve son énergie, du grave à l’aigu, et s’il est frappé ou tenu. Un son grave et bref est un kick, un son grave qui s’éteint lentement une 808, un son aigu et bref un hi-hat, un bruit bref une snare, du grave et de l’aigu frappés ensemble une batterie.</p>
+    <p>Le son seul ne distingue pas une voix d’un piano ou d’une guitare : ces pistes-là sont rangées dans « Melodie » tant que leur nom n’en dit pas plus. Le type se corrige d’un clic dans le tableau, et le pack suit.</p>
+    <p>Le BPM et la tonalité sont mesurés sur toutes les pistes jouées ensemble, comme dans l’outil <a href="bpm-tonalite">BPM et tonalité</a> ; tu peux les corriger avant de télécharger. Les fichiers du pack sont tes fichiers d’origine, renommés : rien n’est réencodé.</p>
     <h2>Ce qui est contrôlé</h2>
-    <p><strong>Durée</strong> : des stems exportés depuis le même point de départ ont tous la même longueur, à l'échantillon près. Une piste plus courte ou plus longue ne se recalera pas toute seule dans le projet de l'autre.</p>
-    <p><strong>Format</strong> : la fréquence d'échantillonnage et la résolution doivent être les mêmes partout, en général 44,1 ou 48 kHz en 24 bits. <strong>Saturation</strong> : un pic à 0 dBFS tenu sur plusieurs échantillons est une piste écrêtée à l'export ; baisse son niveau et exporte à nouveau. <strong>Pistes vides</strong> : un export fait avec la piste en sourdine.</p>
-    <p>Un MP3 n'a pas de résolution en bits et commence par un court blanc : préfère le WAV pour des stems.</p>
+    <p><strong>Durée</strong> : des stems exportés depuis le même point de départ ont tous la même longueur, à l’échantillon près. Une piste plus courte ou plus longue ne se recalera pas toute seule dans le projet de l’autre.</p>
+    <p><strong>Format</strong> : la fréquence d’échantillonnage et la résolution doivent être les mêmes partout, en général 44,1 ou 48 kHz en 24 bits. <strong>Saturation</strong> : un pic à 0 dBFS tenu sur plusieurs échantillons est une piste écrêtée à l’export ; baisse son niveau et exporte à nouveau. <strong>Pistes vides</strong> : un export fait avec la piste en sourdine.</p>
+    <p>Un MP3 n’a pas de résolution en bits et commence par un court blanc : préfère le WAV pour des stems.</p>
   </section>
 </main>
 
@@ -139,14 +138,14 @@ const $ = (id) => document.getElementById(id);
 const A = OniriqueAudio;
 const S = OniriqueStems;
 const MAX_FILES = 60;
-const RATE = 22050;          // ce qu'il faut pour reconnaître une piste et mesurer le tempo
+const RATE = 22050;          // ce qu’il faut pour reconnaître une piste et mesurer le tempo
 const MIX_SECONDS = 240;     // le tempo et la tonalité se mesurent sur les quatre premières minutes
 const EN = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
 const keyName = (k) => EN[k.tonic] + (k.mode === "major" ? " major" : " minor");
 const bpmText = (bpm) => (Math.abs(bpm - Math.round(bpm)) < 0.2 ? String(Math.round(bpm)) : bpm.toFixed(1).replace(".", ","));
 const db = (v) => (v > 0 ? 20 * Math.log10(v) : -Infinity);
 
-/** Résolution écrite dans l'en-tête d'un WAV (16, 24, 32 bits) ; 0 pour les autres formats. */
+/** Résolution écrite dans l’en-tête d’un WAV (16, 24, 32 bits) ; 0 pour les autres formats. */
 function wavBits(v) {
   const tag = (o, t) => o + 4 <= v.byteLength && [...t].every((c, i) => v.getUint8(o + i) === c.charCodeAt(0));
   if (!tag(0, "RIFF") || !tag(8, "WAVE")) return 0;
@@ -183,7 +182,7 @@ async function inspect(file, mix) {
     channels: audio.numberOfChannels, dualMono: same, peak: db(peak), clipped, lead: first === audio.length ? null : first / audio.sampleRate, silent: peak < 0.0005 };
 }
 
-/** La valeur la plus fréquente d'une liste. */
+/** La valeur la plus fréquente d’une liste. */
 function common(values) {
   const count = new Map();
   values.forEach((v) => count.set(v, (count.get(v) || 0) + 1));
@@ -193,7 +192,7 @@ function common(values) {
 function show(stems, failed) {
   const issues = [], n = (list) => list.length + " piste" + (list.length > 1 ? "s" : "");
   const names = (list) => list.map((s) => "« " + s.name + " »").join(", ");
-  // La durée se compare en temps, pas en nombre d'échantillons : deux pistes de fréquences différentes peuvent durer autant.
+  // La durée se compare en temps, pas en nombre d’échantillons : deux pistes de fréquences différentes peuvent durer autant.
   const rate = common(stems.map((s) => s.rate)), length = common(stems.map((s) => Math.round(s.seconds * 1000))) / 1000;
   const withBits = stems.filter((s) => s.bits), bits = withBits.length ? common(withBits.map((s) => s.bits)) : 0;
   const wrong = {
@@ -203,21 +202,21 @@ function show(stems, failed) {
     clip: stems.filter((s) => s.clipped),
     silent: stems.filter((s) => s.silent),
   };
-  if (wrong.length.length) issues.push(n(wrong.length) + " d'une autre durée que les autres (" + A.clock(length) + ") : " + names(wrong.length) + ".");
+  if (wrong.length.length) issues.push(n(wrong.length) + " d’une autre durée que les autres (" + A.clock(length) + ") : " + names(wrong.length) + ".");
   if (wrong.rate.length) issues.push(n(wrong.rate) + " à une autre fréquence que les autres (" + rate / 1000 + " kHz) : " + names(wrong.rate) + ".");
   if (wrong.bits.length) issues.push(n(wrong.bits) + " dans une autre résolution que les autres (" + bits + " bits) : " + names(wrong.bits) + ".");
   if (wrong.clip.length) issues.push(n(wrong.clip) + " qui sature" + (wrong.clip.length > 1 ? "nt" : "") + " : " + names(wrong.clip) + ".");
   if (wrong.silent.length) issues.push(n(wrong.silent) + " vide" + (wrong.silent.length > 1 ? "s" : "") + " : " + names(wrong.silent) + ".");
   const dual = stems.filter((s) => s.dualMono && !s.silent);
   if (dual.length) issues.push(n(dual) + " en stéréo dont les deux voies sont identiques (du mono exporté en stéréo, deux fois plus lourd pour rien) : " + names(dual) + ".");
-  failed.forEach((name) => issues.push("« " + name + " » n'a pas pu être lu."));
+  failed.forEach((name) => issues.push("« " + name + " » n’a pas pu être lu."));
 
   $("r-count").textContent = stems.length + " piste" + (stems.length > 1 ? "s" : "") + " lue" + (stems.length > 1 ? "s" : "");
   $("r-state").textContent = issues.length ? issues.length + " point" + (issues.length > 1 ? "s" : "") + " à vérifier" : "Tout est cohérent";
   $("r-issues").replaceChildren(...issues.map((text) => Object.assign(document.createElement("li"), { textContent: text })));
   $("r-issues").hidden = !issues.length;
   $("r-clean").hidden = !!issues.length;
-  // Dans l'ordre du pack, chaque piste sous son nouveau nom.
+  // Dans l’ordre du pack, chaque piste sous son nouveau nom.
   const plan = S.names(stems, packOptions()), renamed = new Map(plan.map(({ stem, name }) => [stem, name]));
   const folder = packName();
   $("p-zip").textContent = folder + ".zip  ·  " + plan.length + " piste" + (plan.length > 1 ? "s" : "") + " dans le dossier « " + folder + " »";
@@ -244,7 +243,7 @@ function show(stems, failed) {
 
 //----------------------------------------------------------------------------------------------------------------------
 // Le loop pack.
-let shown = null; // { stems, failed } : ce qui est à l'écran
+let shown = null; // { stems, failed } : ce qui est à l’écran
 
 const packOptions = () => ({ bpm: $("p-bpm").value.trim(), key: $("p-key").value, tagFiles: $("p-tag").checked });
 const packName = () => [S.safe($("p-name").value) || "Loop pack", S.tag(packOptions())].filter(Boolean).join(" - ");
@@ -280,7 +279,7 @@ $("p-go").onclick = async () => {
     const blob = await S.zip(entries, (ratio) => { button.textContent = "Préparation du pack " + Math.round(ratio * 100) + " %"; });
     A.download(blob, folder + ".zip");
   } catch (error) {
-    $("error").textContent = error.message || "Le pack n'a pas pu être préparé.";
+    $("error").textContent = error.message || "Le pack n’a pas pu être préparé.";
   } finally {
     button.disabled = false;
     button.textContent = label;
@@ -292,10 +291,10 @@ $("p-go").onclick = async () => {
 let mode = "stems", beats = null;
 
 const MODES = {
-  stems: { title: "Dépose toutes tes pistes ici", again: "Vérifier d'autres pistes",
-    lede: "Avant d'envoyer tes pistes à un ingé son ou à un autre beatmaker, dépose-les toutes ici : la page signale celles qui n'ont pas la même durée, le même format, qui saturent ou qui sont vides." },
+  stems: { title: "Dépose toutes tes pistes ici", again: "Vérifier d’autres pistes",
+    lede: "Avant d’envoyer tes pistes à un ingé son ou à un autre beatmaker, dépose-les toutes ici : la page signale celles qui n’ont pas la même durée, le même format, qui saturent ou qui sont vides." },
   beats: { title: "Dépose toutes tes prods ici", again: "Préparer un autre pack",
-    lede: "Dépose tes prods, quinze d'un coup si tu veux : chacune est renommée avec son tempo et sa tonalité, et le tout se télécharge en un pack prêt à envoyer." },
+    lede: "Dépose tes prods, quinze d’un coup si tu veux : chacune est renommée avec son tempo et sa tonalité, et le tout se télécharge en un pack prêt à envoyer." },
 };
 
 function setMode(next) {
@@ -311,10 +310,10 @@ function setMode(next) {
 $("m-stems").onclick = () => setMode("stems");
 $("m-beats").onclick = () => setMode("beats");
 
-/** Le nom d'une prod sans le tempo qu'elle portait déjà (« Nuit 140bpm » → « Nuit »), pour ne pas l'écrire deux fois. */
+/** Le nom d’une prod sans le tempo qu’elle portait déjà (« Nuit 140bpm » → « Nuit »), pour ne pas l’écrire deux fois. */
 const beatTitle = (name) => S.safe(name.replace(/\.[^.]+$/, "").replace(/[\s_\-–([]*\b\d{2,3}([.,]\d)?\s*bpm\b[)\]]*/gi, " ").replace(/[\s_\-–]+$/, "")) || "Prod";
 
-/** Le nouveau nom de chaque prod, dans l'ordre du tableau. */
+/** Le nouveau nom de chaque prod, dans l’ordre du tableau. */
 function beatNames() {
   const digits = Math.max(2, String(beats.length).length), numbered = $("b-number").checked, used = new Map();
   return beats.map((beat, index) => {
@@ -376,7 +375,7 @@ async function openBeats(files) {
     A.busy($("drop"), true, "Analyse " + (i + 1) + " sur " + files.length + "…");
     try {
       const audio = await A.decode(file);
-      // Le milieu du morceau, quatre minutes au plus : c'est là que le tempo et la tonalité sont installés.
+      // Le milieu du morceau, quatre minutes au plus : c’est là que le tempo et la tonalité sont installés.
       const length = Math.min(audio.duration, MIX_SECONDS), from = (audio.duration - length) / 2;
       const mono = (await A.render(audio, { rate: RATE, channels: 1, from, to: from + length })).getChannelData(0);
       const found = await analyse(mono);
@@ -385,7 +384,7 @@ async function openBeats(files) {
     } catch { failed.push(file.name); }
   }
   A.busy($("drop"), false, list.length ? MODES.beats.again : undefined);
-  if (!list.length) { $("beats").hidden = true; $("error").textContent = "Aucune de ces prods n'a pu être lue. Essaie en WAV ou en MP3."; return; }
+  if (!list.length) { $("beats").hidden = true; $("error").textContent = "Aucune de ces prods n’a pu être lue. Essaie en WAV ou en MP3."; return; }
   list.sort((a, b) => a.name.localeCompare(b.name, "fr", { numeric: true }));
   beats = list;
   showBeats(failed);
@@ -403,7 +402,7 @@ $("b-go").onclick = async () => {
     const blob = await S.zip(beats.map((beat, i) => ({ name: folder + "/" + names[i], file: beat.file })), (ratio) => { button.textContent = "Préparation du pack " + Math.round(ratio * 100) + " %"; });
     A.download(blob, folder + ".zip");
   } catch (error) {
-    $("error").textContent = error.message || "Le pack n'a pas pu être préparé.";
+    $("error").textContent = error.message || "Le pack n’a pas pu être préparé.";
   } finally {
     button.disabled = false;
     button.textContent = label;
@@ -423,19 +422,19 @@ async function open(files) {
     A.busy($("drop"), true, "Lecture " + (i + 1) + " sur " + files.length + "…");
     try { stems.push(await inspect(file, mix)); } catch { failed.push(file.name); }
   }
-  A.busy($("drop"), false, stems.length ? "Vérifier d'autres pistes" : undefined);
-  if (!stems.length) { $("result").hidden = true; $("error").textContent = "Aucune de ces pistes n'a pu être lue. Essaie en WAV ou en MP3."; return; }
-  // Le tempo et la tonalité de l'ensemble : toutes les pistes jouées en même temps.
+  A.busy($("drop"), false, stems.length ? "Vérifier d’autres pistes" : undefined);
+  if (!stems.length) { $("result").hidden = true; $("error").textContent = "Aucune de ces pistes n’a pu être lue. Essaie en WAV ou en MP3."; return; }
+  // Le tempo et la tonalité de l’ensemble : toutes les pistes jouées en même temps.
   A.busy($("drop"), true, "Tempo et tonalité…");
   const longest = Math.min(MIX_SECONDS, Math.max(...stems.map((s) => s.seconds)));
   const found = stems.some((s) => !s.silent) ? await analyse(mix.slice(0, Math.max(1, Math.round(longest * RATE)))) : {};
-  A.busy($("drop"), false, "Vérifier d'autres pistes");
+  A.busy($("drop"), false, "Vérifier d’autres pistes");
   $("p-bpm").value = found.tempo ? bpmText(found.tempo.bpm) : "";
   $("p-key").value = found.key ? keyName(found.key) : "";
   $("p-name").value = commonName(files);
   $("p-found").textContent = found.tempo || found.key
-    ? "Mesuré sur l'ensemble des pistes : " + [found.tempo && bpmText(found.tempo.bpm) + " BPM", found.key && keyName(found.key)].filter(Boolean).join(", ") + ". À corriger ici si tu connais les vraies valeurs."
-    : "Le tempo et la tonalité n'ont pas pu être mesurés sur ces pistes : écris-les si tu les connais.";
+    ? "Mesuré sur l’ensemble des pistes : " + [found.tempo && bpmText(found.tempo.bpm) + " BPM", found.key && keyName(found.key)].filter(Boolean).join(", ") + ". À corriger ici si tu connais les vraies valeurs."
+    : "Le tempo et la tonalité n’ont pas pu être mesurés sur ces pistes : écris-les si tu les connais.";
   shown = { stems, failed };
   show(stems, failed);
 }

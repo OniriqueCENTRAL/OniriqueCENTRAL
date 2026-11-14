@@ -23,77 +23,22 @@
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
 <link rel="stylesheet" href="assets/pages.css?v=3">
+<link rel="stylesheet" href="assets/tools.css?v=3">
 <style>
-/* BPM et tonalité : la base des pages de texte, avec le fond de la boutique, la zone de dépôt et la carte du résultat. */
-:root { --blood: rgb(var(--acc-lo)); --deep-2: #2A0A0E; --f-dream: "Grenze Gotisch", Georgia, serif;
-  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(var(--acc),.55); }
-body { background: radial-gradient(120% 50% at 50% -10%, rgba(var(--acc-lo),.75), rgba(var(--acc-lo),.4) 38%, transparent 72%) fixed, var(--night); }
-.wrap { max-width: 980px; }
-header nav { display: flex; align-items: center; gap: 10px; }
-.hero { text-align: center; }
-h1 { font-size: clamp(28px, 6vw, 52px); }
-h1 em, h2 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
-.lede { margin-inline: auto; max-width: 58ch; color: var(--haze); }
-
-.drop { display: grid; justify-items: center; gap: 10px; width: 100%; margin-top: 30px; padding: clamp(28px, 6vw, 54px) 20px; border: 1.5px dashed rgba(255,210,214,.3); border-radius: 22px; background: rgba(0,0,0,.42); color: var(--mist); font: inherit; cursor: pointer; transition: border-color .2s, background .2s; }
-.drop:hover, .drop.over { border-color: var(--ember); background: rgba(var(--acc),.1); }
-.drop svg { width: 44px; height: 44px; stroke: var(--ember-text); filter: drop-shadow(0 0 10px rgba(var(--acc),.7)); }
-.drop strong { font: 700 clamp(16px, 2.6vw, 20px)/1.3 var(--f-display); }
-.drop span { color: var(--haze); font-size: 15px; }
-.drop:disabled { cursor: progress; }
-.drop.busy svg { animation: pulse 1.1s ease-in-out infinite; }
-@keyframes pulse { 50% { opacity: .35; } }
-.hint { margin: 12px 0 0; font-size: 14px; color: var(--haze); }
-.error { margin: 16px 0 0; color: #FF7A85; font-size: 15px; }
-.error:empty { display: none; }
-
-.result { margin-top: 34px; border: 1px solid var(--line); border-radius: 22px; overflow: hidden; background: linear-gradient(180deg, var(--deep-2), var(--deep)); text-align: left; }
-.file { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin: 0; padding: 16px clamp(20px, 4vw, 34px); border-bottom: 1px solid var(--line); background: rgba(0,0,0,.28); font: 500 13px/1.4 var(--f-mono); color: var(--haze); }
-.file b { color: var(--mist); font-weight: 500; overflow-wrap: anywhere; }
-.tiles { display: grid; grid-template-columns: 1fr 1fr; }
-.tile { padding: clamp(22px, 4vw, 36px) clamp(20px, 4vw, 34px); min-width: 0; }
-.tile + .tile { border-left: 1px solid var(--line); }
-.tile .big { margin: 14px 0 10px; font: 800 clamp(54px, 11vw, 96px)/.95 var(--f-display); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+/* BPM et tonalité : la base des outils, avec la tonalité en plus petit et l'histogramme des notes. */
 .tile .big.key { font-size: clamp(30px, 5.6vw, 52px); line-height: 1.12; letter-spacing: -.01em; overflow-wrap: anywhere; }
 .tile .big.long { font-size: clamp(44px, 8vw, 72px); line-height: 1.26; }
-.tile .big small { font: 500 .22em/1 var(--f-mono); letter-spacing: .14em; color: var(--haze); text-shadow: none; }
-.tile p { margin: 0; color: #D9C6C8; font-size: 15px; }
-.tile p + p { margin-top: 4px; color: var(--haze); font-size: 14px; }
-.tile p.detuned { margin-top: 10px; color: var(--ember-text); font-weight: 600; }
-.trim { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px 24px; align-items: center; padding: 22px clamp(20px, 4vw, 34px); border-top: 1px solid var(--line); background: rgba(0,0,0,.28); }
-.trim p { margin: 0; color: #D9C6C8; font-size: 15px; }
-.trim .eyebrow { margin-bottom: 10px; color: var(--haze); }
-.trim .go { margin: 0; border: 0; cursor: pointer; white-space: nowrap; }
-.trim .go:disabled { opacity: .5; cursor: progress; box-shadow: none; }
-.notes { padding: 6px clamp(20px, 4vw, 34px) 26px; border-top: 1px solid var(--line); }
-.notes .eyebrow { padding: 18px 0 14px; }
+.tile p + p { color: var(--haze); font-size: 14px; }
+.tile p.detuned { margin-top: 8px; color: var(--ember-text); font-weight: 600; }
+#r-trim:disabled { cursor: progress; }
 .bars { display: grid; grid-template-columns: repeat(12, 1fr); gap: clamp(4px, 1.2vw, 12px); align-items: end; height: 120px; }
 .bars div { position: relative; height: 100%; display: flex; align-items: flex-end; }
 .bars i { display: block; width: 100%; min-height: 3px; border-radius: 6px 6px 2px 2px; background: rgba(var(--acc),.4); }
 .bars .in i { background: var(--ember); }
 .bars .tonic i { box-shadow: 0 0 18px rgba(var(--acc),.8); background: var(--ember-text); }
-.labels { display: grid; grid-template-columns: repeat(12, 1fr); gap: clamp(4px, 1.2vw, 12px); margin-top: 8px; font: 500 clamp(9px, 1.7vw, 12px)/1 var(--f-mono); color: var(--haze); text-align: center; }
+.labels { display: grid; grid-template-columns: repeat(12, 1fr); gap: clamp(4px, 1.2vw, 12px); margin-top: 8px; font: 500 clamp(11px, 1.7vw, 12px)/1 var(--f-mono); color: var(--haze); text-align: center; }
 .labels .tonic { color: var(--mist); }
-.legend { margin: 14px 0 0; font-size: 14px; color: var(--haze); }
-
-.text { max-width: 70ch; }
-.text p { color: #D9C6C8; }
-details { border-top: 1px solid var(--line); }
-details:last-of-type { border-bottom: 1px solid var(--line); }
-summary { padding: 16px 0; cursor: pointer; font-weight: 600; }
-details p { color: #D9C6C8; }
-.cta { margin-top: 56px; padding: clamp(24px, 5vw, 44px); border: 1px solid rgba(var(--acc),.5); border-radius: 22px; background: linear-gradient(180deg, var(--deep-2), var(--deep)); text-align: center; }
-.cta h2 { margin-top: 0; }
-.cta p { margin-inline: auto; max-width: 52ch; color: var(--haze); }
-.go { display: inline-block; margin-top: 10px; padding: 14px 24px; border-radius: 999px; background: var(--mist); color: var(--night); font: 600 15px/1 var(--f-body); text-decoration: none; box-shadow: 0 10px 40px -10px rgba(var(--acc),.6); }
-.go:hover { color: var(--night); box-shadow: 0 0 0 6px rgba(var(--acc),.18), 0 18px 50px -12px rgba(var(--acc),.8); }
-
-@media (max-width: 620px) {
-  .brand { font-size: 0; gap: 0; } header .btn { padding: 10px 12px; font-size: 13px; }
-  .tiles { grid-template-columns: 1fr; } .trim { grid-template-columns: minmax(0, 1fr); } .tile + .tile { border-left: 0; border-top: 1px solid var(--line); }
-}
-@media (prefers-reduced-motion: reduce) { .drop.busy svg { animation: none; } }
-[hidden] { display: none !important; }
+.card .legend { margin-top: 12px; font-size: 14px; color: var(--haze); }
 </style>
 <link rel="stylesheet" href="/assets/da.css?v=9">
 <script src="/assets/accent.js?v=1"></script>
@@ -110,7 +55,7 @@ details p { color: #D9C6C8; }
   <section class="hero">
     <p class="eyebrow">Outil gratuit</p>
     <h1>Le <em>tempo</em> et la <em>tonalité</em> de ton morceau</h1>
-    <p class="lede">Dépose une instru, une prod ou un titre fini : son BPM et sa tonalité s'affichent en quelques secondes, et le blanc qui décale les MP3 dans un DAW se retire en un clic.</p>
+    <p class="lede">Dépose une instru, une prod ou un titre fini : son BPM et sa tonalité s’affichent en quelques secondes, et le blanc qui décale les MP3 dans un DAW se retire en un clic.</p>
 
     <button class="drop" id="drop" type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>
@@ -118,15 +63,15 @@ details p { color: #D9C6C8; }
       <span id="drop-text">ou clique pour le choisir · MP3, WAV, FLAC, M4A, OGG</span>
     </button>
     <input id="file" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" hidden>
-    <p class="hint">Sans compte. L'analyse se fait dans ton navigateur : ton fichier n'est envoyé nulle part.</p>
+    <p class="hint">Sans compte. L’analyse se fait dans ton navigateur : ton fichier n’est envoyé nulle part.</p>
     <p class="error" id="error" role="alert"></p>
 
-    <article class="result" id="result" aria-live="polite" hidden>
-      <p class="file"><b id="r-file"></b><span id="r-length"></span></p>
+    <article class="card" id="result" aria-live="polite" hidden>
+      <p class="head"><b id="r-file"></b><span id="r-length"></span></p>
       <div class="tiles">
         <div class="tile">
           <p class="eyebrow">Tempo</p>
-          <div class="big"><span id="r-bpm"></span> <small>BPM</small></div>
+          <div class="big xl"><span id="r-bpm"></span> <small>BPM</small></div>
           <p id="r-bpm-exact"></p>
           <p id="r-bpm-other"></p>
         </div>
@@ -139,14 +84,14 @@ details p { color: #D9C6C8; }
           <p><a id="r-scale" href="gammes">Voir les notes de cette gamme</a></p>
         </div>
       </div>
-      <div class="trim">
+      <div class="split dim">
         <div>
           <p class="eyebrow">Début du fichier</p>
           <p id="r-lead"></p>
         </div>
         <button class="go" id="r-trim" type="button">Télécharger</button>
       </div>
-      <div class="notes" id="r-notes">
+      <div id="r-notes">
         <p class="eyebrow">Les notes du morceau</p>
         <div class="bars" id="r-bars" role="img"></div>
         <div class="labels" id="r-labels" aria-hidden="true"></div>
@@ -157,46 +102,46 @@ details p { color: #D9C6C8; }
 
   <section class="text">
     <h2>Comment lire le résultat</h2>
-    <p><strong>Le tempo</strong> est le nombre de temps par minute. Un même morceau peut se compter deux fois plus vite ou deux fois plus lentement : 70 et 140 BPM décrivent le même battement, senti à la noire ou à la croche. L'outil affiche la lecture la plus probable et rappelle l'autre en dessous.</p>
-    <p><strong>La tonalité</strong> est écrite comme elle se règle dans un correcteur de hauteur ou un DAW : la note (Key) puis la gamme (Scale). Pour « A minor », choisis Key : A et Scale : Minor. Une touche noire a deux noms selon le logiciel (F# ou Gb) : les deux sont indiqués. Si le morceau n'est pas accordé sur le la à 440 Hz, l'écart est indiqué en cents sous « Detune » : c'est la valeur à reporter dans le réglage du même nom, sans quoi la correction sonne faux. En dessous viennent le nom français (La mineur) et le code Camelot (8A, celui des DJ pour enchaîner deux titres). Une tonalité majeure et sa relative mineure partagent les mêmes notes : C major et A minor, par exemple. Si l'oreille te dit l'autre, la seconde proposition est sans doute la bonne.</p>
+    <p><strong>Le tempo</strong> est le nombre de temps par minute. Un même morceau peut se compter deux fois plus vite ou deux fois plus lentement : 70 et 140 BPM décrivent le même battement, senti à la noire ou à la croche. L’outil affiche la lecture la plus probable et rappelle l’autre en dessous.</p>
+    <p><strong>La tonalité</strong> est écrite comme elle se règle dans un correcteur de hauteur ou un DAW : la note (Key) puis la gamme (Scale). Pour « A minor », choisis Key : A et Scale : Minor. Une touche noire a deux noms selon le logiciel (F# ou Gb) : les deux sont indiqués. Si le morceau n’est pas accordé sur le la à 440 Hz, l’écart est indiqué en cents sous « Detune » : c’est la valeur à reporter dans le réglage du même nom, sans quoi la correction sonne faux. En dessous viennent le nom français (La mineur) et le code Camelot (8A, celui des DJ pour enchaîner deux titres). Une tonalité majeure et sa relative mineure partagent les mêmes notes : C major et A minor, par exemple. Si l’oreille te dit l’autre, la seconde proposition est sans doute la bonne.</p>
   </section>
 
   <section class="text">
     <h2>Questions fréquentes</h2>
     <details><summary>Mon fichier est-il envoyé sur un serveur ?</summary>
-      <p>Non. Le fichier est lu et analysé par ton navigateur, sur ton appareil. Rien n'est envoyé ni conservé : tu peux déposer un morceau qui n'est pas encore sorti.</p></details>
+      <p>Non. Le fichier est lu et analysé par ton navigateur, sur ton appareil. Rien n’est envoyé ni conservé : tu peux déposer un morceau qui n’est pas encore sorti.</p></details>
     <details><summary>Pourquoi mon MP3 est-il décalé dans mon DAW ?</summary>
-      <p>Le format MP3 ajoute un court blanc au début du fichier, de quelques dizaines de millisecondes : la musique ne démarre donc pas à zéro, et tout le morceau glisse hors de la grille une fois importé. L'outil mesure ce blanc et te donne un fichier WAV qui commence exactement sur le premier son, avec le BPM et la tonalité dans son nom. Ce WAV est en 24 bits et en 48 kHz au moins (ou à la fréquence du fichier d'origine si elle est plus haute) : c'est la meilleure qualité que le fichier déposé permet, mais un MP3 converti en WAV ne retrouve pas ce que la compression lui a retiré. Importe ce WAV à la place du MP3 : il tombe sur les temps.</p></details>
+      <p>Le format MP3 ajoute un court blanc au début du fichier, de quelques dizaines de millisecondes : la musique ne démarre donc pas à zéro, et tout le morceau glisse hors de la grille une fois importé. L’outil mesure ce blanc et te donne un fichier WAV qui commence exactement sur le premier son, avec le BPM et la tonalité dans son nom. Ce WAV est en 24 bits et en 48 kHz au moins (ou à la fréquence du fichier d’origine si elle est plus haute) : c’est la meilleure qualité que le fichier déposé permet, mais un MP3 converti en WAV ne retrouve pas ce que la compression lui a retiré. Importe ce WAV à la place du MP3 : il tombe sur les temps.</p></details>
     <details><summary>Quels fichiers sont acceptés ?</summary>
       <p>Tout ce que ton navigateur sait lire : MP3, WAV, FLAC, M4A, AAC et OGG dans la plupart des cas. Pour un morceau très long, seules les quatre minutes du milieu sont analysées.</p></details>
     <details><summary>Le résultat est-il toujours juste ?</summary>
-      <p>Le tempo est fiable sur une rythmique régulière, au centième de BPM près sur un morceau entier. Il l'est moins sur un morceau sans batterie, joué librement ou qui change de tempo. La tonalité est une estimation à partir des notes les plus présentes : un morceau qui module, très dissonant ou réduit à une ligne de basse peut tromper l'analyse.</p></details>
+      <p>Le tempo est fiable sur une rythmique régulière, au centième de BPM près sur un morceau entier. Il l’est moins sur un morceau sans batterie, joué librement ou qui change de tempo. La tonalité est une estimation à partir des notes les plus présentes : un morceau qui module, très dissonant ou réduit à une ligne de basse peut tromper l’analyse.</p></details>
     <details><summary>À quoi servent le BPM et la tonalité ?</summary>
-      <p>À caler un projet sur une instru, régler un délai ou une correction de hauteur dans la bonne gamme, préparer un remix, ou enchaîner deux titres qui s'accordent.</p></details>
+      <p>À caler un projet sur une instru, régler un délai ou une correction de hauteur dans la bonne gamme, préparer un remix, ou enchaîner deux titres qui s’accordent.</p></details>
   </section>
 
   <section class="cta">
     <h2>La bonne gamme, <em>dès la prise</em></h2>
-    <p>Une fois la tonalité connue, il reste à y accorder la voix. Les plugins Onirique s'essaient dans ton navigateur.</p>
+    <p>Une fois la tonalité connue, il reste à y accorder la voix. Les plugins Onirique s’essaient dans ton navigateur.</p>
     <a class="go" href="boutique">Voir les plugins</a>
   </section>
 </main>
 
 <footer>
   <nav class="wrap" aria-label="Pages légales">
-    <a href="mentions-legales">Mentions légales</a><a href="cgv">CGV et CGU</a><a href="remboursement">Rétractation et remboursement</a><a href="confidentialite">Confidentialité</a><a href="cookies">Cookies</a><a href="support">Support</a>
+    <a href="outils">Tous les outils</a><a href="mentions-legales">Mentions légales</a><a href="cgv">CGV et CGU</a><a href="confidentialite">Confidentialité</a><a href="cookies">Cookies</a><a href="support">Support</a>
   </nav>
 </footer>
 
 <script>
 const $ = (id) => document.getElementById(id);
-const RATE = 22050;        // l'analyse n'a pas besoin de plus
+const RATE = 22050;        // l’analyse n’a pas besoin de plus
 const MAX_SECONDS = 240;   // au-delà, seul le milieu du morceau est analysé
 const MAX_BYTES = 400e6;
 const FR = ["Do", "Do♯", "Ré", "Mi♭", "Mi", "Fa", "Fa♯", "Sol", "La♭", "La", "Si♭", "Si"];
-// La notation des logiciels de musique, telle qu'elle se choisit dans un correcteur de hauteur (Key et Scale).
+// La notation des logiciels de musique, telle qu’elle se choisit dans un correcteur de hauteur (Key et Scale).
 const EN = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
-const EN_OTHER = { 1: "Db", 3: "D#", 6: "Gb", 8: "G#", 10: "A#" }; // l'autre nom des touches noires, selon le logiciel
+const EN_OTHER = { 1: "Db", 3: "D#", 6: "Gb", 8: "G#", 10: "A#" }; // l’autre nom des touches noires, selon le logiciel
 const SCALES = { major: [0, 2, 4, 5, 7, 9, 11], minor: [0, 2, 3, 5, 7, 8, 10] };
 const el = (tag, props = {}) => Object.assign(document.createElement(tag), props);
 
@@ -204,7 +149,7 @@ const keyName = (k, names = EN) => names[k.tonic] + (k.mode === "major" ? " majo
 const keyFrench = (k) => FR[k.tonic] + (k.mode === "major" ? " majeur" : " mineur");
 /** Code Camelot : la roue des quintes numérotée de 1 à 12, B pour majeur, A pour mineur. */
 const camelot = (k) => ((((k.mode === "major" ? k.tonic : k.tonic + 3) * 7) % 12 + 7) % 12 + 1) + (k.mode === "major" ? "B" : "A");
-/** Un tempo entier s'écrit rond ; un tempo qui tombe entre deux (93,5) garde sa décimale. */
+/** Un tempo entier s’écrit rond ; un tempo qui tombe entre deux (93,5) garde sa décimale. */
 const bpmText = (bpm) => (Math.abs(bpm - Math.round(bpm)) < 0.2 ? String(Math.round(bpm)) : bpm.toFixed(1).replace(".", ","));
 const decimal = (n) => n.toFixed(1).replace(".", ",");
 const clock = (s) => Math.floor(s / 60) + ":" + String(Math.round(s % 60)).padStart(2, "0");
@@ -216,7 +161,7 @@ function busy(on, title) {
   $("drop-text").hidden = on;
 }
 
-/** Fréquence d'échantillonnage écrite dans un fichier WAV, FLAC ou MP3 ; 0 si elle ne se lit pas. */
+/** Fréquence d’échantillonnage écrite dans un fichier WAV, FLAC ou MP3 ; 0 si elle ne se lit pas. */
 function sourceRate(v) {
   const tag = (o, text) => o + text.length <= v.byteLength && [...text].every((c, i) => v.getUint8(o + i) === c.charCodeAt(0));
   const valid = (rate) => (rate >= 8000 && rate <= 192000 ? rate : 0);
@@ -229,7 +174,7 @@ function sourceRate(v) {
     return 0;
   }
   if (tag(0, "fLaC") && v.byteLength > 22) return valid((v.getUint8(18) << 12) | (v.getUint8(19) << 4) | (v.getUint8(20) >> 4));
-  let o = 0; // MP3 : la première trame, après l'étiquette ID3 s'il y en a une
+  let o = 0; // MP3 : la première trame, après l’étiquette ID3 s’il y en a une
   if (tag(0, "ID3") && v.byteLength > 10) o = 10 + (((v.getUint8(6) & 127) << 21) | ((v.getUint8(7) & 127) << 14) | ((v.getUint8(8) & 127) << 7) | (v.getUint8(9) & 127));
   for (const end = Math.min(v.byteLength - 4, o + 65536); o < end; o++) {
     if (v.getUint8(o) !== 0xFF || (v.getUint8(o + 1) & 0xE0) !== 0xE0) continue;
@@ -240,11 +185,11 @@ function sourceRate(v) {
   return 0;
 }
 
-/** Le son du fichier : entier, à sa fréquence d'origine ou à 48 kHz si elle est plus basse (audio), et en mono à 22 050 Hz pour l'analyse (au plus les quatre minutes du milieu). */
+/** Le son du fichier : entier, à sa fréquence d’origine ou à 48 kHz si elle est plus basse (audio), et en mono à 22 050 Hz pour l’analyse (au plus les quatre minutes du milieu). */
 async function decode(file) {
   const Context = window.AudioContext || window.webkitAudioContext;
   const bytes = await file.arrayBuffer();
-  // Décodé à la fréquence du fichier, et jamais en dessous de 48 kHz : c'est la fréquence du WAV rendu.
+  // Décodé à la fréquence du fichier, et jamais en dessous de 48 kHz : c’est la fréquence du WAV rendu.
   const rate = Math.max(48000, sourceRate(new DataView(bytes)));
   let context;
   try { context = new Context({ sampleRate: rate }); } catch { context = new Context(); }
@@ -261,7 +206,7 @@ async function decode(file) {
   return { samples: (await offline.startRendering()).getChannelData(0), duration: audio.duration, analysed: length, audio };
 }
 
-/** Nombre d'échantillons de blanc avant le premier son (au-dessus de -60 dB), toutes voies confondues. */
+/** Nombre d’échantillons de blanc avant le premier son (au-dessus de -60 dB), toutes voies confondues. */
 function leadIn(audio) {
   let first = audio.length;
   for (let c = 0; c < audio.numberOfChannels; c++) {
@@ -271,7 +216,7 @@ function leadIn(audio) {
   return first === audio.length ? 0 : first;
 }
 
-/** Le son à partir de l'échantillon donné, en fichier WAV 24 bits. */
+/** Le son à partir de l’échantillon donné, en fichier WAV 24 bits. */
 function wav(audio, from) {
   const channels = audio.numberOfChannels, frames = audio.length - from, size = frames * channels * 3;
   const v = new DataView(new ArrayBuffer(44 + size));
@@ -293,7 +238,7 @@ function wav(audio, from) {
 const analyse = (samples) => new Promise((resolve, reject) => {
   const worker = new Worker("assets/bpm-key-worker.js");
   worker.onmessage = (event) => { worker.terminate(); resolve(event.data); };
-  worker.onerror = () => { worker.terminate(); reject(new Error("L'analyse a échoué sur ce fichier.")); };
+  worker.onerror = () => { worker.terminate(); reject(new Error("L’analyse a échoué sur ce fichier.")); };
   worker.postMessage({ samples, sampleRate: RATE }, [samples.buffer]);
 });
 
@@ -303,14 +248,14 @@ function show(file, sound, r) {
 
   const audio = sound.audio, lead = leadIn(audio), ms = lead / audio.sampleRate * 1000;
   $("r-lead").textContent = (ms >= 1
-    ? "Ce fichier commence par " + decimal(ms) + " ms de blanc avant le premier son : c'est ce qui le décale de la grille dans un DAW. "
+    ? "Ce fichier commence par " + decimal(ms) + " ms de blanc avant le premier son : c’est ce qui le décale de la grille dans un DAW. "
     : "Aucun blanc mesuré au début de ce fichier. ")
     + "Le WAV démarre exactement sur le premier son" + (/\.wav$/i.test(file.name) ? "." : " : importe-le dans ton DAW à la place de ce fichier.")
     + " Format : WAV 24 bits, " + String(audio.sampleRate / 1000).replace(".", ",") + " kHz" + (audio.numberOfChannels === 1 ? ", mono." : audio.numberOfChannels === 2 ? ", stéréo." : ".");
   $("r-trim").onclick = () => {
     if (audio.length * audio.numberOfChannels * 3 > 1.5e9) { $("error").textContent = "Ce fichier est trop long pour être rendu en WAV ici."; return; }
     $("r-trim").disabled = true;
-    // Laissé au prochain tour d'affichage : le bouton a le temps de se griser avant l'écriture du fichier.
+    // Laissé au prochain tour d’affichage : le bouton a le temps de se griser avant l’écriture du fichier.
     setTimeout(() => {
       const url = URL.createObjectURL(wav(audio, lead));
       const name = [file.name.replace(/\.[^.]+$/, ""), r.tempo && bpmText(r.tempo.bpm) + " BPM", r.key && keyName(r.key)].filter(Boolean).join(" - ");
@@ -340,7 +285,7 @@ function show(file, sound, r) {
     $("r-scale").hidden = false;
     $("r-key-codes").textContent = (EN_OTHER[r.key.tonic] ? "Aussi notée " + keyName(r.key, EN_OTHER) + " · " : "") + keyFrench(r.key) + " · Camelot " + camelot(r.key);
     $("r-key-other").textContent = "Seconde proposition : " + keyName(r.second) + " (" + camelot(r.second) + ").";
-    // Detune : l'écart entre l'accordage du morceau et le la à 440 Hz, en centièmes de demi-ton.
+    // Detune : l’écart entre l’accordage du morceau et le la à 440 Hz, en centièmes de demi-ton.
     const cents = Math.round(1200 * Math.log2(r.tuning / 440)), detuned = Math.abs(cents) >= 10;
     $("r-detune").textContent = detuned
       ? "Detune : " + (cents > 0 ? "+" : "−") + Math.abs(cents) + " cents (la = " + decimal(r.tuning) + " Hz). Le morceau est accordé " + (cents > 0 ? "plus haut" : "plus bas") + " que la normale : règle le même écart dans ton correcteur."
@@ -388,7 +333,7 @@ async function open(file) {
 
 $("drop").onclick = () => $("file").click();
 $("file").onchange = () => { open($("file").files[0]); $("file").value = ""; };
-// Le dépôt est accepté n'importe où sur la page : un fichier lâché à côté de la zone n'ouvre pas un nouvel onglet.
+// Le dépôt est accepté n’importe où sur la page : un fichier lâché à côté de la zone n’ouvre pas un nouvel onglet.
 // Seuls les glissers qui portent un fichier sont pris ; « depth » compte les entrées et sorties des éléments survolés.
 const carriesFile = (event) => [...(event.dataTransfer?.types || [])].includes("Files");
 let depth = 0;

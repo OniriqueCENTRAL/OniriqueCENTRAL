@@ -7,22 +7,18 @@
 <script src="/api/announce.js" async></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Crédits — ONIRIQUE</title>
-<meta name="description" content="Les titres et albums réalisés avec les plugins Onirique, du plus connu au moins connu : écoute un extrait, découvre l'ingé et les plugins utilisés.">
+<meta name="description" content="Les titres et albums réalisés avec les plugins Onirique, du plus connu au moins connu : écoute un extrait, découvre l’ingé et les plugins utilisés.">
 <link rel="canonical" href="https://onirique.store/credits">
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
 <link rel="stylesheet" href="assets/pages.css?v=3">
-<link rel="stylesheet" href="assets/credits.css?v=4">
+<link rel="stylesheet" href="assets/tools.css?v=3">
+<link rel="stylesheet" href="assets/credits.css?v=5">
 <style>
-/* Les crédits : la base des pages de texte, élargie, avec les cartes de l'accueil. */
-:root { --blood: rgb(var(--acc-lo)); --deep-2: #2A0A0E; --ease: cubic-bezier(.2, .7, .2, 1); --f-dream: "Grenze Gotisch", Georgia, serif;
-  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(var(--acc),.55); }
-body { background: radial-gradient(120% 50% at 50% -10%, rgba(var(--acc-lo),.75), rgba(var(--acc-lo),.4) 38%, transparent 72%) fixed, var(--night); }
+/* Les crédits : la base des outils, élargie, avec les cartes de l'accueil. */
 .wrap { max-width: 1180px; }
-h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
-.tools-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; margin: 26px 0 22px; }
-.tools-row input { width: min(100%, 340px); height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: rgba(0,0,0,.4); color: var(--mist); font: 500 15px var(--f-body); }
-.tools-row input:focus { outline: none; border-color: var(--ember); }
+.tools-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; margin: 24px 0; }
+.tools-row input { width: min(100%, 340px); height: 44px; padding: 0 16px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: rgba(0,0,0,.4); color: var(--mist); font: 500 15px var(--f-body); }
 .count { font: 500 12px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
 .empty { padding: 40px 0; color: var(--haze); text-align: center; }
 </style>
@@ -33,14 +29,16 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 <header>
   <div class="wrap">
     <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
-    <nav aria-label="Navigation"><a class="btn" href="/">Accueil</a><a class="btn" href="boutique">Boutique</a><a class="btn" href="support">Support</a><a class="btn" href="compte" data-account>Compte</a></nav>
+    <nav aria-label="Navigation"><a class="btn" href="boutique">Boutique</a><a class="btn" href="outils" data-tools>Outils</a><a class="btn" href="compte" data-account>Compte</a></nav>
   </div>
 </header>
 
 <main class="wrap" id="contenu">
-  <p class="eyebrow">Crédits</p>
-  <h1>Déjà mixé avec <em>Onirique.</em></h1>
-  <p class="lede">Tous les titres et albums sortis avec les plugins Onirique sur la chaîne de mix, du plus connu au moins connu. Écoute un extrait, découvre l'ingé et les plugins utilisés.</p>
+  <section class="hero">
+    <p class="eyebrow">Outil gratuit</p>
+    <h1>Déjà mixé avec <em>Onirique</em></h1>
+    <p class="lede">Tous les titres et albums sortis avec les plugins Onirique sur la chaîne de mix, du plus connu au moins connu. Écoute un extrait, découvre l’ingé et les plugins utilisés.</p>
+  </section>
   <div class="tools-row">
     <input type="search" id="find" placeholder="Chercher un titre, un artiste, un plugin" aria-label="Chercher dans les crédits">
     <span class="count" id="count"></span>
@@ -50,7 +48,7 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 
 <footer>
   <nav class="wrap" aria-label="Pages légales">
-    <a href="mentions-legales">Mentions légales</a><a href="cgv">CGV et CGU</a><a href="remboursement">Rétractation et remboursement</a><a href="confidentialite">Confidentialité</a><a href="cookies">Cookies</a>
+    <a href="outils">Tous les outils</a><a href="mentions-legales">Mentions légales</a><a href="cgv">CGV et CGU</a><a href="confidentialite">Confidentialité</a><a href="cookies">Cookies</a><a href="support">Support</a>
   </nav>
 </footer>
 

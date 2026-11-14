@@ -25,7 +25,7 @@
 <link rel="stylesheet" href="assets/pages.css?v=3">
 <link rel="stylesheet" href="assets/tools.css?v=3">
 <style>
-.values input { width: 150px !important; padding: 9px 12px !important; text-align: right; }
+.values input { width: 150px !important; padding: 8px 12px !important; text-align: right; }
 .values td.rate { color: var(--haze); font: 500 13px/1.3 var(--f-mono); white-space: nowrap; }
 .total { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; }
 .total .big { margin: 0; }
@@ -46,7 +46,7 @@
   <section class="hero">
     <p class="eyebrow">Outil gratuit</p>
     <h1>Ce que rapportent <em>tes écoutes</em></h1>
-    <p class="lede">Entre un nombre d'écoutes par plateforme : tu obtiens une fourchette de revenus, puis ce qui te revient une fois les parts déduites.</p>
+    <p class="lede">Entre un nombre d’écoutes par plateforme : tu obtiens une fourchette de revenus, puis ce qui te revient une fois les parts déduites.</p>
   </section>
 
   <div class="card">
@@ -75,13 +75,13 @@
 
   <section class="text">
     <h2>Pourquoi une fourchette</h2>
-    <p>Aucune plateforme ne paie un tarif fixe par écoute. Chacune répartit chaque mois une part de ses recettes entre les ayants droit : le montant dépend du pays de l'auditeur, de son abonnement (gratuit ou payant) et du total des écoutes du mois. Les taux utilisés ici sont des moyennes publiées par des observateurs du secteur, pas des tarifs officiels : prends le résultat comme un ordre de grandeur.</p>
-    <p>Ces moyennes sont publiées en dollars. Les montants sont convertis dans la devise que tu choisis, au taux affiché sous le tableau : tu peux le remplacer par le cours du jour. Ils correspondent à ce que la plateforme verse pour l'enregistrement ; les droits d'auteur (collectés par la SACEM en France) s'y ajoutent et suivent un autre circuit.</p>
+    <p>Aucune plateforme ne paie un tarif fixe par écoute. Chacune répartit chaque mois une part de ses recettes entre les ayants droit : le montant dépend du pays de l’auditeur, de son abonnement (gratuit ou payant) et du total des écoutes du mois. Les taux utilisés ici sont des moyennes publiées par des observateurs du secteur, pas des tarifs officiels : prends le résultat comme un ordre de grandeur.</p>
+    <p>Ces moyennes sont publiées en dollars. Les montants sont convertis dans la devise que tu choisis, au taux affiché sous le tableau : tu peux le remplacer par le cours du jour. Ils correspondent à ce que la plateforme verse pour l’enregistrement ; les droits d’auteur (collectés par la SACEM en France) s’y ajoutent et suivent un autre circuit.</p>
     <h2>Questions fréquentes</h2>
-    <details><summary>Qu'est-ce que « ma part » ?</summary>
+    <details><summary>Qu’est-ce que « ma part » ?</summary>
       <p>Ce qui te revient après partage avec un label, un coproducteur ou les autres artistes du titre. En autoproduction et seul sur le titre, laisse 100 %. Pour préparer ce partage, utilise la <a href="partage">feuille de partage des droits</a>.</p></details>
     <details><summary>Et la commission du distributeur ?</summary>
-      <p>Certains distributeurs prennent un pourcentage des revenus, d'autres un abonnement annuel fixe. Dans le second cas, laisse 0 %.</p></details>
+      <p>Certains distributeurs prennent un pourcentage des revenus, d’autres un abonnement annuel fixe. Dans le second cas, laisse 0 %.</p></details>
     <details><summary>Une écoute compte à partir de quand ?</summary>
       <p>Sur la plupart des plateformes, une écoute est comptée après 30 secondes. Sur Spotify, un titre doit en outre dépasser 1 000 écoutes sur douze mois pour générer des revenus.</p></details>
   </section>
@@ -118,7 +118,7 @@ $("rows").innerHTML = PLATFORMS.map(([name, low, high], i) =>
   `<tr><td>${name}</td><td><input id="n${i}" type="text" inputmode="numeric" placeholder="0" aria-label="Écoutes sur ${name}"></td>`
   + `<td class="rate" id="r${i}"></td><td id="e${i}">—</td></tr>`).join("");
 
-// Changer de devise remet son taux de référence ; le dollar n'en a pas besoin.
+// Changer de devise remet son taux de référence ; le dollar n’en a pas besoin.
 function pickCurrency(resetRate) {
   const code = currency();
   $("rate-field").hidden = $("rate-note").hidden = code === "USD";
@@ -138,11 +138,11 @@ function draw() {
   });
   const keep = Math.min(100, number($("share").value)) / 100 * (1 - Math.min(100, number($("fee").value)) / 100);
   $("total").textContent = range(low * keep, high * keep);
-  $("detail").textContent = streams ? new Intl.NumberFormat("fr-FR").format(streams) + " écoutes · " + range(low, high) + " versés au total par les plateformes" : "Entre un nombre d'écoutes pour voir l'estimation.";
+  $("detail").textContent = streams ? new Intl.NumberFormat("fr-FR").format(streams) + " écoutes · " + range(low, high) + " versés au total par les plateformes" : "Entre un nombre d’écoutes pour voir l’estimation.";
   try {
     localStorage.setItem("onirique.revenus", JSON.stringify([...document.querySelectorAll(".card input")].map((input) => input.value)));
     localStorage.setItem("onirique.revenus.devise", currency());
-  } catch { /* stockage indisponible : rien n'est mémorisé */ }
+  } catch { /* stockage indisponible : rien n’est mémorisé */ }
 }
 
 // Les nombres saisis sont gardés sur cet appareil pour la prochaine visite.

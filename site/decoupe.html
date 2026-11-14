@@ -7,19 +7,19 @@
 <script src="/api/announce.js" async></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Découper un audio et ajouter un fondu — ONIRIQUE</title>
-<meta name="description" content="Garde un passage d'un morceau, ajoute un fondu d'entrée et de sortie, écoute, puis exporte en WAV ou en MP3. Pour un extrait Instagram ou TikTok. Gratuit, dans ton navigateur.">
+<meta name="description" content="Garde un passage d’un morceau, ajoute un fondu d’entrée et de sortie, écoute, puis exporte en WAV ou en MP3. Pour un extrait Instagram ou TikTok. Gratuit, dans ton navigateur.">
 <link rel="canonical" href="https://onirique.store/decoupe">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ONIRIQUE">
 <meta property="og:locale" content="fr_FR">
 <meta property="og:title" content="Découper un audio et ajouter un fondu — ONIRIQUE">
-<meta property="og:description" content="Garde un passage d'un morceau, ajoute un fondu d'entrée et de sortie, écoute, puis exporte en WAV ou en MP3. Pour un extrait Instagram ou TikTok. Gratuit, dans ton navigateur.">
+<meta property="og:description" content="Garde un passage d’un morceau, ajoute un fondu d’entrée et de sortie, écoute, puis exporte en WAV ou en MP3. Pour un extrait Instagram ou TikTok. Gratuit, dans ton navigateur.">
 <meta property="og:url" content="https://onirique.store/decoupe">
 <meta property="og:image" content="https://onirique.store/assets/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json" data-seo>{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Découper un audio et ajouter un fondu","url":"https://onirique.store/decoupe","description":"Garde un passage d'un morceau, ajoute un fondu d'entrée et de sortie, écoute, puis exporte en WAV ou en MP3. Pour un extrait Instagram ou TikTok. Gratuit, dans ton navigateur.","applicationCategory":"MultimediaApplication","operatingSystem":"Navigateur web","isAccessibleForFree":true,"inLanguage":"fr","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://onirique.store/"},{"@type":"ListItem","position":2,"name":"Outils gratuits","item":"https://onirique.store/outils"},{"@type":"ListItem","position":3,"name":"Découper un audio et ajouter un fondu","item":"https://onirique.store/decoupe"}]}]}</script>
+<script type="application/ld+json" data-seo>{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Découper un audio et ajouter un fondu","url":"https://onirique.store/decoupe","description":"Garde un passage d’un morceau, ajoute un fondu d’entrée et de sortie, écoute, puis exporte en WAV ou en MP3. Pour un extrait Instagram ou TikTok. Gratuit, dans ton navigateur.","applicationCategory":"MultimediaApplication","operatingSystem":"Navigateur web","isAccessibleForFree":true,"inLanguage":"fr","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://onirique.store/"},{"@type":"ListItem","position":2,"name":"Outils gratuits","item":"https://onirique.store/outils"},{"@type":"ListItem","position":3,"name":"Découper un audio et ajouter un fondu","item":"https://onirique.store/decoupe"}]}]}</script>
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
 <link rel="stylesheet" href="assets/pages.css?v=3">
@@ -45,7 +45,7 @@
   <section class="hero">
     <p class="eyebrow">Outil gratuit</p>
     <h1>Découper, <em>fondre</em>, exporter</h1>
-    <p class="lede">Dépose un morceau, fais glisser les deux bords pour garder le passage voulu, ajoute un fondu et télécharge l'extrait. Pour une story, un extrait de sortie ou une boucle à envoyer.</p>
+    <p class="lede">Dépose un morceau, fais glisser les deux bords pour garder le passage voulu, ajoute un fondu et télécharge l’extrait. Pour une story, un extrait de sortie ou une boucle à envoyer.</p>
 
     <button class="drop" id="drop" type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.5 7.5 20 18M8.5 16.5 20 6"/></svg>
@@ -53,20 +53,20 @@
       <span>ou clique pour le choisir · MP3, WAV, FLAC, M4A, OGG</span>
     </button>
     <input id="file" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" hidden>
-    <p class="hint">Sans compte. Tout se fait dans ton navigateur : ton fichier n'est envoyé nulle part.</p>
+    <p class="hint">Sans compte. Tout se fait dans ton navigateur : ton fichier n’est envoyé nulle part.</p>
     <p class="error" id="error" role="alert"></p>
   </section>
 
   <article class="card" id="panel" hidden>
     <p class="head"><b id="r-file"></b><span id="r-info"></span></p>
-    <div class="wave" id="wave"><canvas id="canvas" aria-label="Forme d'onde : fais glisser les bords pour choisir le passage"></canvas></div>
+    <div class="wave" id="wave"><canvas id="canvas" aria-label="Forme d’onde : fais glisser les bords pour choisir le passage"></canvas></div>
     <div class="times">
       <label>Début (secondes)<input id="start" type="number" min="0" step="0.01" inputmode="decimal"></label>
       <label>Fin (secondes)<input id="end" type="number" min="0" step="0.01" inputmode="decimal"></label>
-      <div><span class="label" style="margin-bottom:7px">Durée fixe depuis le début</span><div class="chips"><button type="button" data-len="15">15 s</button><button type="button" data-len="30">30 s</button><button type="button" data-len="60">60 s</button></div></div>
+      <div><span class="label" style="margin-bottom:8px">Durée fixe depuis le début</span><div class="chips"><button type="button" data-len="15">15 s</button><button type="button" data-len="30">30 s</button><button type="button" data-len="60">60 s</button></div></div>
     </div>
     <div class="fields">
-      <label class="fade">Fondu d'entrée <output id="in-text"></output><input id="fade-in" type="range" min="0" max="10" step="0.1" value="0"></label>
+      <label class="fade">Fondu d’entrée <output id="in-text"></output><input id="fade-in" type="range" min="0" max="10" step="0.1" value="0"></label>
       <label class="fade">Fondu de sortie <output id="out-text"></output><input id="fade-out" type="range" min="0" max="10" step="0.1" value="1"></label>
     </div>
     <div class="dim split">
@@ -76,15 +76,15 @@
       </div>
       <div class="actions">
         <button class="go ghost" id="play" type="button">Écouter</button>
-        <button class="go" id="go" type="button">Télécharger l'extrait</button>
+        <button class="go" id="go" type="button">Télécharger l’extrait</button>
       </div>
     </div>
   </article>
 
   <section class="text">
     <h2>Quelques repères</h2>
-    <p>Les réseaux sociaux lisent des extraits de 15 à 60 secondes : choisis le passage le plus fort du titre, souvent l'entrée du refrain, et fais démarrer l'extrait une mesure avant. Un fondu de sortie d'une à deux secondes évite la coupure sèche ; un fondu d'entrée très court (0,1 seconde) suffit à supprimer le clic d'une coupe faite au milieu d'un son.</p>
-    <p>L'export WAV garde la fréquence et les voies du fichier d'origine. Pour changer de format sans découper, utilise le <a href="convertisseur">convertisseur</a>.</p>
+    <p>Les réseaux sociaux lisent des extraits de 15 à 60 secondes : choisis le passage le plus fort du titre, souvent l’entrée du refrain, et fais démarrer l’extrait une mesure avant. Un fondu de sortie d’une à deux secondes évite la coupure sèche ; un fondu d’entrée très court (0,1 seconde) suffit à supprimer le clic d’une coupe faite au milieu d’un son.</p>
+    <p>L’export WAV garde la fréquence et les voies du fichier d’origine. Pour changer de format sans découper, utilise le <a href="convertisseur">convertisseur</a>.</p>
   </section>
 </main>
 
@@ -100,17 +100,17 @@ const $ = (id) => document.getElementById(id);
 const A = OniriqueAudio;
 const MAX_BYTES = 400e6, MAX_SECONDS = 1200;
 let file = null, audio = null, peaks = null, start = 0, end = 0, format = "wav";
-let player = null; // { context, source, startedAt } pendant l'écoute
+let player = null; // { context, source, startedAt } pendant l’écoute
 
 const seconds = (s) => A.decimal(s, s < 10 ? 2 : 1) + " s";
 const fades = () => {
   const length = end - start;
   return { in: Math.min(+$("fade-in").value, length / 2), out: Math.min(+$("fade-out").value, length / 2) };
 };
-/** Courbe d'un fondu, de 0 à 1 : douce au départ et à l'arrivée. */
+/** Courbe d’un fondu, de 0 à 1 : douce au départ et à l’arrivée. */
 const curve = (t) => 0.5 - 0.5 * Math.cos(Math.PI * Math.max(0, Math.min(1, t)));
 
-/** Le minimum et le maximum du son pour chaque colonne de l'image. */
+/** Le minimum et le maximum du son pour chaque colonne de l’image. */
 function measure(width) {
   const data = A.channelsOf(audio), step = audio.length / width, out = new Float32Array(width * 2);
   for (let x = 0; x < width; x++) {
@@ -128,14 +128,16 @@ function draw() {
   if (!width) return;
   if (canvas.width !== width || canvas.height !== height || !peaks) { canvas.width = width; canvas.height = height; peaks = measure(width); }
   const g = canvas.getContext("2d"), mid = height / 2, x0 = start / audio.duration * width, x1 = end / audio.duration * width, f = fades();
+  // L’accent du compte (« r, g, b »), lu au moment de dessiner.
+  const acc = getComputedStyle(document.documentElement).getPropertyValue("--acc").trim() || "229, 56, 74";
   g.clearRect(0, 0, width, height);
-  g.fillStyle = "rgba(226,52,68,.13)";
+  g.fillStyle = "rgba(" + acc + ", .13)";
   g.fillRect(x0, 0, x1 - x0, height);
   for (let x = 0; x < width; x++) {
     const inside = x >= x0 && x <= x1, t = x / width * audio.duration;
-    // À l'intérieur du passage, la forme d'onde suit les fondus : on voit ce qu'on va entendre.
+    // À l’intérieur du passage, la forme d’onde suit les fondus : on voit ce qu’on va entendre.
     const gain = !inside ? 1 : (f.in ? curve((t - start) / f.in) : 1) * (f.out ? curve((end - t) / f.out) : 1);
-    g.fillStyle = inside ? "#E23444" : "rgba(185,162,165,.35)";
+    g.fillStyle = inside ? "rgb(" + acc + ")" : "rgba(185,162,165,.35)";
     const top = mid - peaks[x * 2 + 1] * gain * mid * 0.92, bottom = mid - peaks[x * 2] * gain * mid * 0.92;
     g.fillRect(x, top, 1, Math.max(1, bottom - top));
   }
@@ -162,7 +164,7 @@ function refresh(from) {
   draw();
 }
 
-// Glisser sur la forme d'onde déplace le bord le plus proche.
+// Glisser sur la forme d’onde déplace le bord le plus proche.
 let dragging = null;
 const timeAt = (event) => { const box = $("canvas").getBoundingClientRect(); return Math.max(0, Math.min(1, (event.clientX - box.left) / box.width)) * audio.duration; };
 $("wave").addEventListener("pointerdown", (event) => {
@@ -240,7 +242,7 @@ $("go").onclick = async () => {
   try {
     let channels = extract(), rate = audio.sampleRate, blob;
     if (format === "mp3") {
-      // Le MP3 se limite à 44,1 ou 48 kHz et à deux voies : l'extrait y est ramené si besoin.
+      // Le MP3 se limite à 44,1 ou 48 kHz et à deux voies : l’extrait y est ramené si besoin.
       const wanted = rate === 48000 || rate === 96000 ? 48000 : 44100;
       if (rate !== wanted || channels.length > 2) {
         const buffer = new AudioBuffer({ length: channels[0].length, numberOfChannels: channels.length, sampleRate: rate });
@@ -251,7 +253,7 @@ $("go").onclick = async () => {
       blob = await A.mp3(channels, rate, 320, (p) => { $("go").textContent = "Encodage " + Math.round(p * 100) + " %"; });
     } else blob = A.wav(channels, rate, 24);
     A.download(blob, A.baseName(file) + " (extrait)." + format);
-  } catch (error) { $("error").textContent = error.message || "L'export a échoué."; }
+  } catch (error) { $("error").textContent = error.message || "L’export a échoué."; }
   $("go").textContent = label;
   $("go").disabled = false;
 };

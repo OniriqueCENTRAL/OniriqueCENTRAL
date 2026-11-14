@@ -26,7 +26,7 @@
 <link rel="stylesheet" href="assets/tools.css?v=3">
 <style>
 .fade output { float: right; color: var(--mist); letter-spacing: 0; }
-audio { width: 100%; margin-top: 14px; }
+audio { width: 100%; margin-top: 16px; }
 </style>
 <link rel="stylesheet" href="/assets/da.css?v=9">
 <script src="/assets/accent.js?v=1"></script>
@@ -43,7 +43,7 @@ audio { width: 100%; margin-top: 14px; }
   <section class="hero">
     <p class="eyebrow">Outil gratuit</p>
     <h1>Changer la <em>hauteur</em> ou le <em>tempo</em></h1>
-    <p class="lede">Une instru trop haute pour ta voix, un beat à essayer dix BPM plus vite : dépose le fichier, règle, écoute, télécharge. La hauteur et le tempo se changent l'un sans l'autre.</p>
+    <p class="lede">Une instru trop haute pour ta voix, un beat à essayer dix BPM plus vite : dépose le fichier, règle, écoute, télécharge. La hauteur et le tempo se changent l’un sans l’autre.</p>
 
     <button class="drop" id="drop" type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 20V4M7 4 3.5 7.5M7 4l3.5 3.5M17 4v16M17 20l-3.5-3.5M17 20l3.5-3.5"/></svg>
@@ -51,7 +51,7 @@ audio { width: 100%; margin-top: 14px; }
       <span>ou clique pour le choisir · MP3, WAV, FLAC, M4A, OGG</span>
     </button>
     <input id="file" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" hidden>
-    <p class="hint">Sans compte. Le traitement se fait dans ton navigateur : ton fichier n'est envoyé nulle part.</p>
+    <p class="hint">Sans compte. Le traitement se fait dans ton navigateur : ton fichier n’est envoyé nulle part.</p>
     <p class="error" id="error" role="alert"></p>
   </section>
 
@@ -59,7 +59,7 @@ audio { width: 100%; margin-top: 14px; }
     <p class="head"><b id="r-file"></b><span id="r-info"></span></p>
     <div class="fields">
       <label class="fade">Hauteur <output id="pitch-text"></output><input id="pitch" type="range" min="-12" max="12" step="1" value="0"></label>
-      <label>Tempo d'origine (BPM)<input id="from" type="number" min="30" max="300" step="0.01" inputmode="decimal"></label>
+      <label>Tempo d’origine (BPM)<input id="from" type="number" min="30" max="300" step="0.01" inputmode="decimal"></label>
       <label>Nouveau tempo (BPM)<input id="to" type="number" min="30" max="300" step="0.01" inputmode="decimal"></label>
     </div>
     <div class="dim split">
@@ -70,14 +70,14 @@ audio { width: 100%; margin-top: 14px; }
       <p class="eyebrow">Résultat</p>
       <p id="done-text"></p>
       <audio id="player" controls></audio>
-      <div class="actions" style="margin-top:14px"><button class="go" id="save" type="button">Télécharger en WAV</button></div>
+      <div class="actions" style="margin-top:16px"><button class="go" id="save" type="button">Télécharger en WAV</button></div>
     </div>
   </article>
 
   <section class="text">
-    <h2>Bien s'en servir</h2>
-    <p>Le résultat reste propre dans une plage raisonnable : jusqu'à trois ou quatre demi-tons, ou quinze pour cent de tempo. Au-delà, le son s'altère : c'est utile pour essayer une idée, moins pour un fichier final. Pour une version définitive, demande au beatmaker un export dans la bonne tonalité.</p>
-    <p>Le tempo et la tonalité d'origine sont détectés à l'ouverture du fichier, et la nouvelle tonalité est indiquée : c'est elle qu'il faudra régler dans ton correcteur de hauteur. Corrige le tempo d'origine s'il est mal détecté ; seul le rapport entre les deux tempos compte.</p>
+    <h2>Bien s’en servir</h2>
+    <p>Le résultat reste propre dans une plage raisonnable : jusqu’à trois ou quatre demi-tons, ou quinze pour cent de tempo. Au-delà, le son s’altère : c’est utile pour essayer une idée, moins pour un fichier final. Pour une version définitive, demande au beatmaker un export dans la bonne tonalité.</p>
+    <p>Le tempo et la tonalité d’origine sont détectés à l’ouverture du fichier, et la nouvelle tonalité est indiquée : c’est elle qu’il faudra régler dans ton correcteur de hauteur. Corrige le tempo d’origine s’il est mal détecté ; seul le rapport entre les deux tempos compte.</p>
     <p>Tu ne sais pas de combien transposer ? Mesure ta <a href="tessiture">tessiture</a> : elle indique la note la plus haute que tu tiens confortablement.</p>
   </section>
 </main>
@@ -122,7 +122,7 @@ function describe() {
   const parts = [];
   if (s.semitones) parts.push((s.semitones > 0 ? "Monté" : "Descendu") + " de " + Math.abs(s.semitones) + " demi-ton" + (Math.abs(s.semitones) > 1 ? "s" : "") + (key ? " : " + keyName(key) + " devient " + keyName(key, s.semitones) : ""));
   if (Math.abs(s.speed - 1) > 0.0005) parts.push("tempo de " + bpmText(s.from) + " à " + bpmText(s.to) + " BPM (" + (s.speed > 1 ? "+" : "−") + A.decimal(Math.abs(s.speed - 1) * 100) + " %), durée " + A.clock(audio.duration / s.speed));
-  $("r-out").textContent = parts.length ? parts.join(" ; ") + "." : "Aucun changement pour l'instant : déplace le curseur de hauteur ou change le nouveau tempo.";
+  $("r-out").textContent = parts.length ? parts.join(" ; ") + "." : "Aucun changement pour l’instant : déplace le curseur de hauteur ou change le nouveau tempo.";
   const far = Math.abs(s.semitones) > 4 || Math.abs(s.speed - 1) > 0.15;
   $("r-note").textContent = far ? "Réglage important : le son sera audiblement altéré." : "";
   $("go").disabled = !parts.length;
@@ -159,7 +159,7 @@ $("go").onclick = async () => {
   $("go").disabled = true;
   $("done").hidden = true;
   try {
-    // Changer la hauteur sans le tempo : on allonge le son d'autant, puis on le relit plus vite (ou l'inverse).
+    // Changer la hauteur sans le tempo : on allonge le son d’autant, puis on le relit plus vite (ou l’inverse).
     // Le changement de tempo se glisse dans le même allongement.
     const ratio = pitch / s.speed;
     let channels = A.channelsOf(audio);
@@ -167,7 +167,7 @@ $("go").onclick = async () => {
     if (s.semitones) { $("go").textContent = "Finition…"; channels = await replay(channels, audio.sampleRate, pitch); }
     result = { channels, name: [A.baseName(file), Math.abs(s.speed - 1) > 0.0005 || s.from ? bpmText(s.speed === 1 ? s.from : s.to) + " BPM" : "", key ? keyName(key, s.semitones) : (s.semitones ? (s.semitones > 0 ? "+" : "-") + Math.abs(s.semitones) + " st" : "")].filter(Boolean).join(" - ") };
     if (url) URL.revokeObjectURL(url);
-    url = URL.createObjectURL(A.wav(channels, audio.sampleRate, 16)); // l'écoute se contente du 16 bits ; le téléchargement est en 24
+    url = URL.createObjectURL(A.wav(channels, audio.sampleRate, 16)); // l’écoute se contente du 16 bits ; le téléchargement est en 24
     $("player").src = url;
     $("done-text").textContent = $("r-out").textContent;
     $("done").hidden = false;
