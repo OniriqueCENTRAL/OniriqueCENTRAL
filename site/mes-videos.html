@@ -5,7 +5,7 @@
 <title>Mes vidéos CUT — ONIRIQUE</title>
 <meta name="robots" content="noindex">
 <link rel="manifest" href="assets/mes-videos.json">
-<meta name="theme-color" content="#0D0809">
+<meta name="theme-color" content="#09080A">
 <link rel="apple-touch-icon" href="assets/cut-icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -15,14 +15,7 @@
 <link rel="stylesheet" href="assets/fonts.css">
 <style>
 /* L'appweb ONIRIQUE CUT : les vidéos gardées par les fondateurs dans le cloud CUT, sur téléphone, prêtes pour TikTok.
-   Mêmes tokens que mes-sons.html. */
-:root {
-  --night: #0D0809; --line: rgba(255,210,214,.13); --mist: #F6EEEE; --haze: #A88F92; --ember: rgb(var(--acc));
-  --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
-  --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
-  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
-  color-scheme: dark;
-}
+   Les couleurs, polices et rayons viennent de da.css (chargée après). */
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 body { margin: 0; min-height: 100vh; color: var(--mist); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased; background: var(--night); }
@@ -38,68 +31,70 @@ header .wrap { display: flex; align-items: center; justify-content: space-betwee
 .brand img { width: 38px; height: auto; margin-block: -10px; filter: drop-shadow(0 0 6px rgba(var(--acc),.8)); }
 .brand span { color: var(--ember); }
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-main { padding-block: 22px calc(60px + env(safe-area-inset-bottom)); }
+main { padding-block: 24px calc(60px + env(safe-area-inset-bottom)); }
 h1 { font: 800 clamp(26px, 7vw, 38px)/1.1 var(--f-display); margin: 8px 0 6px; }
 .eyebrow { margin: 0; font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); }
 .muted { color: var(--haze); }
-.lead { margin: 0 0 14px; font-size: 15px; max-width: 60ch; }
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 18px; border-radius: 999px; border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
+.lead { margin: 0 0 16px; font-size: 15px; max-width: 60ch; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; border-radius: var(--r-ctl); border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
 .btn-primary { background: var(--mist); color: var(--night); box-shadow: 0 10px 40px -10px rgba(var(--acc),.6); }
 .btn-ghost { background: rgba(255,255,255,.03); color: var(--mist); border-color: var(--line); }
 .btn-ghost:hover { border-color: var(--ember); }
-.btn.danger { color: #FF7A85; }
+.btn.btn-ghost.danger { color: var(--danger); }
 .btn:disabled { opacity: .55; cursor: default; }
-.round { width: 42px; height: 42px; flex: none; display: grid; place-items: center; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); cursor: pointer; }
+.round { width: 42px; height: 42px; flex: none; display: grid; place-items: center; border-radius: var(--r-ctl); border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); cursor: pointer; }
 .round svg { width: 20px; height: 20px; }
-.install { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 16px; padding: 9px 14px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); font: 600 13px var(--f-body); cursor: pointer; }
-.install img { width: 22px; height: 22px; border-radius: 6px; }
+/* Un bouton secondaire de la charte, avec l'icône de l'appli */
+.install { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 16px; padding: 8px 16px 8px 8px; border: 0; border-radius: var(--r-ctl); background: rgba(255,255,255,.04); box-shadow: 0 0 0 1px rgba(255,255,255,.10) inset; color: var(--label); font: 500 12px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; cursor: pointer; transition: color .25s, background .25s; }
+.install:hover { color: #fff; background: rgba(255,255,255,.07); }
+.install img { width: 24px; height: 24px; border-radius: 6px; }
 .bulk { margin: 0 0 16px; }
 .bulk .muted { font-size: 13px; }
-.panel { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 18px; padding: 22px; margin-top: 8px; text-align: center; }
+.panel { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: var(--r-card); padding: 24px; margin-top: 8px; text-align: center; }
 .panel p { margin: 0 0 14px; }
-.remind { text-align: left; margin: 0 0 16px; padding: 14px 18px; }
+.remind { text-align: left; margin: 0 0 16px; padding: 12px 16px; }
 .remind summary { cursor: pointer; font: 700 15px var(--f-body); }
 .remind p { margin: 8px 0; font-size: 14px; }
 .remind input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--ember); }
-.remind input[type="time"] { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); font: 600 15px var(--f-body); }
+.remind input[type="time"] { padding: 8px 12px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); font: 600 15px var(--f-body); }
 /* La grille des vidéos : deux colonnes sur téléphone, plus sur un grand écran. */
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
 .vid { display: grid; gap: 6px; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; min-width: 0; }
-.thumb { position: relative; display: block; aspect-ratio: 9 / 16; border-radius: 14px; overflow: hidden; background: #000; border: 1px solid var(--line); }
+.thumb { position: relative; display: block; aspect-ratio: 9 / 16; border-radius: var(--r-ctl); overflow: hidden; background: #000; border: 1px solid var(--line); }
 .thumb img, .thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .vid:hover .thumb { border-color: var(--ember); }
-.here { position: absolute; left: 8px; top: 8px; padding: 4px 8px; border-radius: 8px; background: rgba(0,0,0,.72); font: 600 11px/1 var(--f-body); }
-.dur { position: absolute; right: 8px; bottom: 8px; padding: 3px 7px; border-radius: 8px; background: rgba(0,0,0,.7); font: 600 12px/1 var(--f-mono); }
+.here { position: absolute; left: 8px; top: 8px; display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 4px; background: rgba(0,0,0,.72); font: 500 11px/1 var(--f-mono); }
+.here .ic { width: 12px; height: 12px; color: var(--ok); }
+.dur { position: absolute; right: 8px; bottom: 8px; padding: 4px 8px; border-radius: 4px; background: rgba(0,0,0,.7); font: 600 12px/1 var(--f-mono); }
 .vid b { font: 700 14px/1.3 var(--f-body); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
 .vid small { color: var(--haze); font-size: 12px; line-height: 1.3; }
 /* La vidéo ouverte : en grand, avec ses actions. Sur téléphone, toute la hauteur de l'écran. */
-dialog { padding: 0; border: 1px solid rgba(255,210,214,.16); border-radius: 24px; background: #150a0c; color: var(--mist); box-shadow: 0 40px 120px -30px #000, 0 0 60px -30px rgba(var(--acc),.6); max-width: calc(100vw - 24px);
+dialog { padding: 0; border: 1px solid var(--line); color: var(--mist); max-width: calc(100vw - 24px);
   top: env(safe-area-inset-top, 0px); bottom: env(safe-area-inset-bottom, 0px); max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
-dialog::backdrop { background: rgba(5,2,3,.8); backdrop-filter: blur(4px); }
 .dlg-head { display: flex; align-items: center; gap: 12px; padding: 16px 16px 0; }
 .dlg-head b { flex: 1; min-width: 0; font: 700 16px var(--f-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.x { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 10px; border: 0; background: rgba(255,255,255,.06); color: var(--mist); cursor: pointer; }
+.x { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: var(--r-ctl); border: 0; background: rgba(255,255,255,.06); color: var(--mist); cursor: pointer; }
 #viewer { width: 460px; }
 #viewer[open] { display: flex; flex-direction: column; }
 #player { display: block; width: calc(100% - 32px); margin: 12px 16px 0; min-height: 0; flex: 1 1 auto; max-height: 62dvh; aspect-ratio: 9 / 16; border-radius: 14px; background: #000; object-fit: contain; }
 #viewer .meta { margin: 8px 16px 0; font-size: 13px; }
 #viewer .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 16px 0; }
-#viewer .actions #v-share { grid-column: 1 / -1; padding-block: 15px; font-size: 15px; }
+#viewer .actions #v-share { grid-column: 1 / -1; padding-block: 16px; font-size: 15px; }
 #viewer .extra { display: grid; gap: 10px; padding: 12px 16px 0; }
 .field { display: grid; gap: 6px; font: 500 11px/1.2 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
-.field input, .field textarea { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist);
+.field input, .field textarea { width: 100%; padding: 10px 12px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist);
   font: 500 15px/1.4 var(--f-body); letter-spacing: 0; text-transform: none; resize: vertical; color-scheme: dark; }
-.day { position: absolute; left: 8px; bottom: 8px; padding: 3px 7px; border-radius: 8px; background: rgba(0,0,0,.72); font: 600 11px/1 var(--f-body); }
+.day { position: absolute; left: 8px; bottom: 8px; padding: 4px 8px; border-radius: 4px; background: rgba(0,0,0,.72); font: 500 11px/1 var(--f-mono); }
 .day.today { background: var(--ember); color: #fff; }
-#viewer .hint { margin: 10px 16px calc(16px + env(safe-area-inset-bottom)); font-size: 13px; }
+#viewer .hint { margin: 12px 16px calc(16px + env(safe-area-inset-bottom)); font-size: 13px; }
 @media (max-width: 640px) {
   #viewer { width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; margin: 0; top: 0; bottom: 0; border-radius: 0; border: 0; padding-top: env(safe-area-inset-top); }
   #player { max-height: none; aspect-ratio: auto; }
 }
 #install-help { width: 400px; }
-#install-help .steps { margin: 0; padding: 0 20px 6px; display: grid; gap: 14px; counter-reset: step; list-style: none; }
+#install-help .steps { margin: 0; padding: 0 20px 8px; display: grid; gap: 14px; counter-reset: step; list-style: none; }
 #install-help .steps li { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; }
-#install-help .steps li::before { counter-increment: step; content: counter(step); flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--ember); color: var(--night); font: 700 13px var(--f-body); }
+#install-help .steps li::before { counter-increment: step; content: counter(step); flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--lit); box-shadow: var(--lit-shadow); color: #fff; font: 500 12px var(--f-mono); }
 #install-help .share { display: inline-block; vertical-align: -4px; width: 18px; height: 18px; }
 </style>
 <link rel="stylesheet" href="/assets/da.css?v=9">
@@ -117,8 +112,8 @@ dialog::backdrop { background: rgba(5,2,3,.8); backdrop-filter: blur(4px); }
 <main class="wrap">
   <p class="eyebrow">Cloud CUT · fondateurs</p>
   <h1>Mes vidéos</h1>
-  <p class="lead muted">Les vidéos gardées depuis ONIRIQUE CUT. Touche-en une pour l'envoyer vers TikTok ou l'enregistrer sur ton téléphone : elle ne se télécharge qu'une fois, puis reste dans l'appli.</p>
-  <button class="install" id="install" type="button" hidden><img src="assets/cut-icon-180.png" alt="">Ajouter à l'écran d'accueil</button>
+  <p class="lead muted">Les vidéos gardées depuis ONIRIQUE CUT. Touche-en une pour l’envoyer vers TikTok ou l’enregistrer sur ton téléphone : elle ne se télécharge qu’une fois, puis reste dans l’appli.</p>
+  <button class="install" id="install" type="button" hidden><img src="assets/cut-icon-180.png" alt="">Ajouter à l’écran d’accueil</button>
   <details class="panel remind" id="remind" hidden>
     <summary>Rappel TikTok</summary>
     <p class="muted">Une notification chaque jour, à ton heure, pour penser à poster.</p>
@@ -133,7 +128,7 @@ dialog::backdrop { background: rgba(5,2,3,.8); backdrop-filter: blur(4px); }
 </main>
 
 <dialog id="viewer" aria-labelledby="v-name">
-  <div class="dlg-head"><b id="v-name"></b><button class="x" type="button" aria-label="Fermer" onclick="this.closest('dialog').close()">✕</button></div>
+  <div class="dlg-head"><b id="v-name"></b><button class="x" type="button" aria-label="Fermer" onclick="this.closest('dialog').close()"><svg class="ic" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
   <video id="player" controls playsinline preload="metadata"></video>
   <p class="meta muted" id="v-meta"></p>
   <div class="actions">
@@ -150,8 +145,8 @@ dialog::backdrop { background: rgba(5,2,3,.8); backdrop-filter: blur(4px); }
   <p class="muted hint" id="v-hint"></p>
 </dialog>
 <dialog id="install-help">
-  <div class="dlg-head"><b>Sur l'écran d'accueil</b><button class="x" type="button" aria-label="Fermer" onclick="this.closest('dialog').close()">✕</button></div>
-  <p class="muted" style="margin:10px 20px 14px;font-size:14px">Une icône ONIRIQUE CUT, qui s'ouvre en plein écran comme une application, avec tes vidéos prêtes pour TikTok.</p>
+  <div class="dlg-head"><b>Sur l’écran d’accueil</b><button class="x" type="button" aria-label="Fermer" onclick="this.closest('dialog').close()"><svg class="ic" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
+  <p class="muted" style="margin:12px 20px;font-size:14px">Une icône ONIRIQUE CUT, qui s’ouvre en plein écran comme une application, avec tes vidéos prêtes pour TikTok.</p>
   <ol class="steps" id="install-steps"></ol>
   <div class="row" style="justify-content:flex-end;padding:16px 20px 20px"><button class="btn btn-primary" type="button" onclick="this.closest('dialog').close()">Compris</button></div>
 </dialog>
@@ -179,19 +174,19 @@ const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform 
 const canShareFiles = (() => { try { return !!navigator.canShare && navigator.canShare({ files: [new File([""], "video.mp4", { type: "video/mp4" })] }); } catch { return false; } })();
 $("open-cut").hidden = phone; // le montage se fait sur ordinateur
 
-// ——— Les vidéos déjà venues sur ce téléphone : gardées dans l'appli (Cache Storage), elles ne se téléchargent qu'une fois ———
-const STORE = "onirique-cut-videos", ROOM = 3e9; // au plus 3 Go de vidéos, et 80 % de la place que le téléphone donne à l'appli
+// ——— Les vidéos déjà venues sur ce téléphone : gardées dans l’appli (Cache Storage), elles ne se téléchargent qu’une fois ———
+const STORE = "onirique-cut-videos", ROOM = 3e9; // au plus 3 Go de vidéos, et 80 % de la place que le téléphone donne à l’appli
 const keyOf = (id) => "/cut-video/" + id; // une clé fixe (le lien de la vidéo, lui, change à chaque visite)
 const idOf = (request) => Number(new URL(request.url).pathname.split("/").pop());
 const stored = new Set(); // les vidéos gardées sur ce téléphone
 let videosNow = []; // la liste affichée
-/** Relit les vidéos gardées sur ce téléphone ; celles qui ne sont plus dans le cloud partent aussi d'ici. */
+/** Relit les vidéos gardées sur ce téléphone ; celles qui ne sont plus dans le cloud partent aussi d’ici. */
 async function syncStore(videos) {
   stored.clear();
   try {
     const cache = await caches.open(STORE), alive = new Set(videos.map((v) => v.id));
     for (const request of await cache.keys()) { if (alive.has(idOf(request))) stored.add(idOf(request)); else await cache.delete(request); }
-  } catch { /* pas de stockage : rien n'est gardé */ }
+  } catch { /* pas de stockage : rien n’est gardé */ }
 }
 /** Assez de place sur le téléphone pour une vidéo de plus ? */
 async function roomFor(bytes) {
@@ -204,7 +199,7 @@ async function fromStore(v) {
     return hit ? new File([await hit.blob()], fileName(v), { type: "video/mp4" }) : null;
   } catch { return null; }
 }
-/** Garde la vidéo sur le téléphone ; false s'il n'y a plus de place (elle resservira alors le temps de cette visite). */
+/** Garde la vidéo sur le téléphone ; false s’il n’y a plus de place (elle resservira alors le temps de cette visite). */
 async function toStore(v, file) {
   try {
     if (!(await roomFor(file.size))) return false;
@@ -216,7 +211,7 @@ async function toStore(v, file) {
 }
 async function forget(id) { stored.delete(id); try { await (await caches.open(STORE)).delete(keyOf(id)); } catch { /* rien de gardé */ } }
 /** Télécharge une vidéo et la garde sur le téléphone. La fenêtre de la vidéo et « Tout télécharger » se partagent le même
- *  téléchargement : une vidéo n'est jamais tirée deux fois. onProgress(0 à 1). */
+ *  téléchargement : une vidéo n’est jamais tirée deux fois. onProgress(0 à 1). */
 const inflight = new Map();
 function fetchVideo(v, onProgress) {
   let entry = inflight.get(v.id);
@@ -241,7 +236,7 @@ function fetchVideo(v, onProgress) {
   if (onProgress) entry.listeners.add(onProgress);
   return entry.promise;
 }
-const hereBadge = () => el("span", { className: "here", textContent: "✓ Sur le téléphone" });
+const hereBadge = () => el("span", { className: "here", innerHTML: "<svg class=\"ic\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3.5 8.5l3 3 6-7\"/></svg>" }, "Sur le téléphone");
 function markHere(id) { const thumb = document.querySelector('.vid[data-id="' + id + '"] .thumb'); if (thumb && !thumb.querySelector(".here")) thumb.append(hereBadge()); }
 
 // ——— La liste ———
@@ -256,28 +251,28 @@ async function load() {
     await syncStore(videos);
     $("gate").hidden = true; $("reload").hidden = false;
     loadReminder();
-    $("status").textContent = videos.length ? "" : "Aucune vidéo pour l'instant. Dans ONIRIQUE CUT, sur ton ordinateur, coche « Garder aussi dans mon cloud CUT » avant d'exporter : la vidéo arrivera ici.";
+    $("status").textContent = videos.length ? "" : "Aucune vidéo pour l’instant. Dans ONIRIQUE CUT, sur ton ordinateur, coche « Garder aussi dans mon cloud CUT » avant d’exporter : la vidéo arrivera ici.";
     $("list").replaceChildren(...videos.map((v) => card(v, stored.has(v.id))));
     allButton();
     const wanted = Number(new URLSearchParams(location.search).get("v")), open = wanted && videos.find((v) => v.id === wanted);
     if (open) { history.replaceState(null, "", location.pathname); openVideo(open); }
   } catch (error) {
     if (error.status === 401) gate('<p>Ta session a expiré.</p><a class="btn btn-primary" href="compte?next=mes-videos">Se reconnecter</a>');
-    else if (error.status === 403) gate("<p>Mes vidéos CUT est réservé aux fondateurs d'ONIRIQUE.</p><a class=\"btn btn-ghost\" href=\"/\">Retour au site</a>");
+    else if (error.status === 403) gate("<p>Mes vidéos CUT est réservé aux fondateurs d’ONIRIQUE.</p><a class=\"btn btn-ghost\" href=\"/\">Retour au site</a>");
     else { gate('<p></p><button class="btn btn-primary" type="button">Réessayer</button>'); $("gate").firstChild.textContent = error.message; $("gate").querySelector("button").onclick = load; }
   } finally { $("reload").disabled = false; }
 }
-// ——— Le planning : le jour où chaque vidéo doit partir ; le rappel du jour la nomme et l'ouvre ———
+// ——— Le planning : le jour où chaque vidéo doit partir ; le rappel du jour la nomme et l’ouvre ———
 const ymd = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-const dayText = (day) => (day === ymd(new Date()) ? "Aujourd'hui" : new Date(day + "T12:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" }));
-const dayBadge = (v) => (v.scheduledDay ? el("span", { className: "day" + (v.scheduledDay === ymd(new Date()) ? " today" : ""), textContent: "📅 " + dayText(v.scheduledDay) }) : null);
+const dayText = (day) => (day === ymd(new Date()) ? "Aujourd’hui" : new Date(day + "T12:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" }));
+const dayBadge = (v) => (v.scheduledDay ? el("span", { className: "day" + (v.scheduledDay === ymd(new Date()) ? " today" : ""), textContent: dayText(v.scheduledDay) }) : null);
 async function planDay(v, day) {
   const saved = await api("PATCH", "/cut/library/" + v.id, { day: day || null });
   v.scheduledDay = saved.scheduledDay;
   const old = document.querySelector('.vid[data-id="' + v.id + '"]');
   if (old) old.replaceWith(card(v, stored.has(v.id)));
 }
-/** Les vidéos sans jour prennent chacune le prochain jour libre, à partir d'aujourd'hui (les plus anciennes d'abord). */
+/** Les vidéos sans jour prennent chacune le prochain jour libre, à partir d’aujourd’hui (les plus anciennes d’abord). */
 $("plan").onclick = async () => {
   const taken = new Set(videosNow.map((v) => v.scheduledDay).filter(Boolean)), todo = videosNow.filter((v) => !v.scheduledDay).reverse();
   if (!todo.length) return alert("Toutes tes vidéos ont déjà un jour.");
@@ -292,7 +287,7 @@ $("plan").onclick = async () => {
   } catch (error) { alert(error.message); } finally { $("plan").disabled = false; }
 };
 
-// ——— La légende TikTok : le titre, l'artiste et tes hashtags, prête à copier ———
+// ——— La légende TikTok : le titre, l’artiste et tes hashtags, prête à copier ———
 const TAGS = "onirique.cut.tags", CAPTIONS = "onirique.cut.captions";
 const readJson = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } };
 const writeJson = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* stockage indisponible */ } };
@@ -300,7 +295,7 @@ const tagOf = (text) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").re
 function captionOf(v) {
   const saved = readJson(CAPTIONS, {})[v.id];
   if (saved) return saved;
-  if (v.caption) return v.caption; // la description proposée par CUT à l'export
+  if (v.caption) return v.caption; // la description proposée par CUT à l’export
   const title = v.name.split(" - ONIRIQUE CUT")[0].trim(), artist = (readJson("onirique.cut", {}).artist || "").trim();
   const tags = (localStorage.getItem(TAGS) || "#rap #rapfr #nouveauson #musique").trim();
   return [title + (artist ? " — " + artist : ""), "", [tags, artist && "#" + tagOf(artist), title && "#" + tagOf(title)].filter(Boolean).join(" ")].join("\n");
@@ -319,7 +314,7 @@ $("v-day").onchange = () => { if (job) planDay(job.v, $("v-day").value).catch((e
 
 function card(v, here) {
   const thumb = el("img", { src: v.poster, alt: "", loading: "lazy", decoding: "async" });
-  // Pas d'aperçu : la vidéo elle-même montre une de ses images.
+  // Pas d’aperçu : la vidéo elle-même montre une de ses images.
   thumb.onerror = () => thumb.replaceWith(el("video", { src: v.url + "#t=1", muted: true, playsInline: true, preload: "metadata" }));
   const button = el("button", { type: "button", className: "vid", onclick: () => openVideo(v) },
     el("span", { className: "thumb" }, thumb, here ? hereBadge() : null, el("span", { className: "dur", textContent: clock(v.duration) }), dayBadge(v)),
@@ -329,14 +324,14 @@ function card(v, here) {
 }
 $("reload").onclick = load;
 
-// ——— « Tout télécharger » : toutes les vidéos sur le téléphone d'un coup (une à la fois), sans les ouvrir une par une ———
+// ——— « Tout télécharger » : toutes les vidéos sur le téléphone d’un coup (une à la fois), sans les ouvrir une par une ———
 let bulkRunning = false;
 function allButton() {
   if (bulkRunning) return;
   const missing = videosNow.filter((v) => !stored.has(v.id)).length;
   $("bulk").hidden = !videosNow.length;
   $("all").disabled = canShareFiles && !missing;
-  $("all").textContent = !canShareFiles ? "Tout télécharger (" + videosNow.length + ")" : missing ? "Tout télécharger (" + missing + ")" : "✓ Toutes sur le téléphone";
+  $("all").textContent = !canShareFiles ? "Tout télécharger (" + videosNow.length + ")" : missing ? "Tout télécharger (" + missing + ")" : "Toutes sur le téléphone";
 }
 $("all").onclick = async () => {
   // Sur ordinateur : chaque fichier part dans le dossier des téléchargements.
@@ -357,20 +352,20 @@ $("all").onclick = async () => {
       const label = (part) => { $("all").textContent = "Téléchargement " + (n + 1) + " / " + todo.length + " · " + Math.round(part * 100) + " %"; };
       label(0);
       if (await roomFor(v.size)) await fetchVideo(v, label);
-      if (!stored.has(v.id)) { $("all-note").textContent = "Plus assez de place sur ce téléphone : supprime des vidéos du cloud pour en garder d'autres."; break; }
+      if (!stored.has(v.id)) { $("all-note").textContent = "Plus assez de place sur ce téléphone : supprime des vidéos du cloud pour en garder d’autres."; break; }
     }
   } catch {
-    $("all-note").textContent = "Le téléchargement s'est arrêté : touche « Tout télécharger » pour reprendre.";
+    $("all-note").textContent = "Le téléchargement s’est arrêté : touche « Tout télécharger » pour reprendre.";
   } finally {
     bulkRunning = false; allButton();
   }
 };
-// De retour sur l'appli (une vidéo vient peut-être d'être exportée sur l'ordinateur) : la liste se met à jour.
+// De retour sur l’appli (une vidéo vient peut-être d’être exportée sur l’ordinateur) : la liste se met à jour.
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && token && loadedAt && Date.now() - loadedAt > 60_000 && !$("viewer").open) load(); });
 
 // ——— Une vidéo : lecture, envoi vers TikTok, téléchargement, suppression ———
 // La vidéo finie est gardée telle quelle sur le serveur. Le téléphone la télécharge une seule fois (le menu Partager doit
-// avoir le fichier sous la main pour s'ouvrir aussitôt le bouton touché), puis la garde : les fois suivantes, tout est immédiat.
+// avoir le fichier sous la main pour s’ouvrir aussitôt le bouton touché), puis la garde : les fois suivantes, tout est immédiat.
 let job = null;
 function openVideo(v) {
   const mine = job = { v, file: null, local: null };
@@ -381,7 +376,7 @@ function openVideo(v) {
   $("v-download").href = v.downloadUrl; $("v-download").download = "";
   $("v-share").hidden = !canShareFiles;
   $("v-hint").replaceChildren(canShareFiles
-    ? "Dans le menu qui s'ouvre, choisis TikTok : la vidéo arrive dans TikTok, prête à publier." + (ios ? " « Enregistrer la vidéo » la range dans tes Photos." : "")
+    ? "Dans le menu qui s’ouvre, choisis TikTok : la vidéo arrive dans TikTok, prête à publier." + (ios ? " « Enregistrer la vidéo » la range dans tes Photos." : "")
     : "Télécharge la vidéo, puis dans TikTok touche + et choisis-la dans ta galerie.");
   if (!phone) $("v-hint").append(" Depuis un ordinateur : télécharge-la, puis ", el("a", { href: "https://www.tiktok.com/upload", target: "_blank", rel: "noopener", textContent: "tiktok.com/upload" }), ".");
   $("v-day").value = v.scheduledDay || ""; $("v-caption").value = captionOf(v); $("v-copied").textContent = "";
@@ -419,7 +414,7 @@ $("v-share").onclick = async () => {
   if (!mine.file) return prepare(mine);
   await navigator.clipboard.writeText($("v-caption").value).then(() => { $("v-copied").textContent = "Légende copiée : colle-la dans TikTok."; }, () => {});
   try { await navigator.share({ files: [mine.file] }); }
-  catch (error) { if (error.name !== "AbortError") $("v-hint").textContent = "Le partage n'a pas marché : télécharge la vidéo, puis choisis-la dans TikTok."; }
+  catch (error) { if (error.name !== "AbortError") $("v-hint").textContent = "Le partage n’a pas marché : télécharge la vidéo, puis choisis-la dans TikTok."; }
 };
 $("v-delete").onclick = async () => {
   const v = job && job.v;
@@ -430,7 +425,7 @@ $("v-delete").onclick = async () => {
 $("viewer").addEventListener("close", () => {
   const player = $("player"); player.pause(); player.removeAttribute("src"); player.load();
   if (job && job.local) URL.revokeObjectURL(job.local);
-  job = null; // le fichier en mémoire est libéré (il reste gardé dans l'appli)
+  job = null; // le fichier en mémoire est libéré (il reste gardé dans l’appli)
 });
 // Toucher à côté de la fenêtre la ferme.
 for (const dialog of [$("viewer"), $("install-help")]) {
@@ -439,12 +434,12 @@ for (const dialog of [$("viewer"), $("install-help")]) {
   dialog.addEventListener("click", (event) => { if (event.target === dialog && fromBackdrop) dialog.close(); fromBackdrop = false; });
 }
 
-// ——— Le rappel quotidien « poste ton TikTok » : une notification sur ce téléphone, à l'heure choisie ———
-// Les notifications passent par sw.js, comme celles d'ONIRIQUE CLOUD ; sur iPhone, seulement depuis l'icône de l'écran d'accueil.
+// ——— Le rappel quotidien « poste ton TikTok » : une notification sur ce téléphone, à l’heure choisie ———
+// Les notifications passent par sw.js, comme celles d’ONIRIQUE CLOUD ; sur iPhone, seulement depuis l’icône de l’écran d’accueil.
 const canPush = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
 const keyBytes = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
 async function enablePush() {
-  if (!canPush) throw new Error(ios && !standalone ? "Sur iPhone, ajoute d'abord ONIRIQUE CUT à l'écran d'accueil, puis active le rappel depuis l'icône." : "Ce navigateur ne peut pas recevoir de notifications.");
+  if (!canPush) throw new Error(ios && !standalone ? "Sur iPhone, ajoute d’abord ONIRIQUE CUT à l’écran d’accueil, puis active le rappel depuis l’icône." : "Ce navigateur ne peut pas recevoir de notifications.");
   if (await Notification.requestPermission() !== "granted") throw new Error("Notifications refusées : autorise-les pour ONIRIQUE dans les réglages du téléphone ou du navigateur.");
   const r = await navigator.serviceWorker.register("/sw.js");
   const { key } = await api("GET", "/push/key");
@@ -461,7 +456,7 @@ async function loadReminder() {
     $("r-on").checked = r.on; $("r-time").value = r.time;
     if (r.on) $("r-note").textContent = "Rappel chaque jour à " + hourText(r.time) + ".";
   } catch { /* le réglage reste à faire */ }
-  // Un téléphone déjà abonné le redit au serveur à chaque ouverture (il a pu l'oublier).
+  // Un téléphone déjà abonné le redit au serveur à chaque ouverture (il a pu l’oublier).
   if (canPush && Notification.permission === "granted") navigator.serviceWorker.register("/sw.js").then((r) => r.pushManager.getSubscription())
     .then((sub) => sub && api("POST", "/me/push", sub.toJSON())).catch(() => {});
 }
@@ -481,7 +476,7 @@ $("r-test").onclick = async () => {
   catch (error) { $("r-note").textContent = error.message; }
 };
 
-// ——— Ajouter ONIRIQUE CUT à l'écran d'accueil (comme ONIRIQUE CLOUD) : sur téléphone, tant que la page n'est pas ouverte depuis l'icône ———
+// ——— Ajouter ONIRIQUE CUT à l’écran d’accueil (comme ONIRIQUE CLOUD) : sur téléphone, tant que la page n’est pas ouverte depuis l’icône ———
 let installEvent = null;
 $("install").hidden = standalone || !phone;
 addEventListener("beforeinstallprompt", (event) => { event.preventDefault(); installEvent = event; });
@@ -496,8 +491,8 @@ $("install").onclick = async () => {
   }
   const share = '<svg class="share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Partager"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"/></svg>';
   $("install-steps").innerHTML = ios
-    ? "<li><span>Dans Safari, touche le bouton Partager " + share + " en bas de l'écran.</span></li><li><span>Fais défiler et touche « Sur l'écran d'accueil ».</span></li><li><span>Touche « Ajouter ». À la première ouverture, connecte-toi une fois.</span></li>"
-    : "<li><span>Ouvre le menu du navigateur (⋮ en haut à droite).</span></li><li><span>Touche « Ajouter à l'écran d'accueil » ou « Installer l'application ».</span></li><li><span>Confirme : l'icône ONIRIQUE CUT apparaît sur ton écran d'accueil.</span></li>";
+    ? "<li><span>Dans Safari, touche le bouton Partager " + share + " en bas de l’écran.</span></li><li><span>Fais défiler et touche « Sur l’écran d’accueil ».</span></li><li><span>Touche « Ajouter ». À la première ouverture, connecte-toi une fois.</span></li>"
+    : "<li><span>Ouvre le menu du navigateur (⋮ en haut à droite).</span></li><li><span>Touche « Ajouter à l’écran d’accueil » ou « Installer l’application ».</span></li><li><span>Confirme : l’icône ONIRIQUE CUT apparaît sur ton écran d’accueil.</span></li>";
   $("install-help").showModal();
 };
 

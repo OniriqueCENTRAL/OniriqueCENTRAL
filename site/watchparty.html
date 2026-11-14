@@ -11,11 +11,10 @@
 <link rel="stylesheet" href="assets/fonts.css">
 <style>
 /* Charte de Nov (server/src/da-vocalbox.html) : nuit, braise, verre ; Unbounded pour les titres, JetBrains Mono pour les boutons. */
+/* Couleurs et rayons : da.css (chargée après) ; ici, seulement ce qu'elle ne définit pas. */
 :root {
-  --night: #09080A; --deep: #121012; --ember: rgb(var(--acc)); --rose: #ffb3bb; --bone: #F4ECEC; --haze: #a8939a; --label: #d9c6c9; --btn: #d8c6c8;
-  --line: rgba(255,235,238,.10);
-  --display: "Unbounded", "Segoe UI", sans-serif; --body: "Hanken Grotesk", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
-  color-scheme: dark;
+  --btn: #d8c6c8;
+  --display: var(--f-display); --body: var(--f-body); --mono: var(--f-mono);
 }
 * { box-sizing: border-box; }
 body { margin: 0; min-height: 100vh; background: var(--night); color: var(--bone); font: 400 15px/1.55 var(--body); -webkit-font-smoothing: antialiased; }
@@ -35,33 +34,32 @@ main { max-width: 1320px; margin: 0 auto; padding: clamp(18px, 3vw, 32px) clamp(
 h1 { font: 800 clamp(24px, 4vw, 34px)/1.15 var(--display); letter-spacing: .04em; margin: 0; text-wrap: balance; }
 h1 span { color: var(--ember); }
 h2 { font: 800 13px var(--display); letter-spacing: .06em; margin: 0 0 10px; }
-.eyebrow { font: 500 10px var(--mono); letter-spacing: .14em; color: var(--haze); text-transform: uppercase; }
+.eyebrow { font: 500 11px var(--mono); letter-spacing: .14em; color: var(--haze); text-transform: uppercase; }
 .muted { color: var(--haze); }
-.glass { background: linear-gradient(160deg, rgba(255,255,255,.075), rgba(255,255,255,.02) 40%, rgba(255,255,255,.035)); border: 1px solid var(--line);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.4), 0 18px 40px rgba(0,0,0,.45); border-radius: 22px; }
+.glass { background: var(--glass); border: 1px solid var(--line); box-shadow: var(--glass-shadow); border-radius: var(--r-card); }
 .btn { all: unset; box-sizing: border-box; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 12px; height: 38px; padding: 0 14px;
   font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--btn); background: rgba(255,255,255,.04); box-shadow: 0 0 0 1px var(--line) inset;
-  transition: all .25s cubic-bezier(.2,.8,.2,1); white-space: nowrap; }
+  transition: transform .25s var(--ease), box-shadow .25s var(--ease), background .25s, color .25s; white-space: nowrap; }
 .btn:hover { color: #fff; background: rgba(255,255,255,.08); transform: translateY(-1px); }
 .btn:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
 .btn.btn-primary { color: #fff; background: var(--lit); box-shadow: var(--lit-shadow); }
-.btn.small { height: 30px; padding: 0 10px; font-size: 10px; }
+.btn.small { height: 32px; padding: 0 12px; font-size: 11px; }
 .btn:disabled { opacity: .45; cursor: default; transform: none; }
 input, select { font: 500 14px var(--body); color: var(--bone); background: rgba(0,0,0,.45); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; min-width: 0; }
-select { padding: 7px 10px; font-size: 13px; background: #140d0f; }
+select { padding: 8px 12px; font-size: 13px; background: var(--deep); }
 .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .row > input { flex: 1 1 220px; }
 .notice { min-height: 1.4em; color: var(--pink); font-size: 14px; margin: 8px 0 0; }
 
 /* Accueil */
-.intro { max-width: 760px; display: grid; gap: 18px; }
-.intro .card { padding: 22px; display: grid; gap: 14px; }
+.intro { max-width: 760px; display: grid; gap: 16px; }
+.intro .card { padding: 24px; display: grid; gap: 14px; }
 
 /* Salle */
-.room { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
+.room { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
 @media (max-width: 980px) { .room { grid-template-columns: 1fr; } }
 .top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
-.stage { position: relative; aspect-ratio: 16 / 9; border-radius: 20px; overflow: hidden; background: #000; border: 1px solid var(--line); box-shadow: 0 30px 80px -30px rgba(var(--acc),.45); }
+.stage { position: relative; aspect-ratio: 16 / 9; border-radius: var(--r-card); overflow: hidden; background: #000; border: 1px solid var(--line); box-shadow: 0 18px 40px rgba(0,0,0,.45); }
 .stage > .media { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
 .stage:not(.tw) .media iframe, .stage .media video { width: 100%; height: 100%; border: 0; display: block; background: #000; }
 /* Twitch : son iframe sans style (étirée ou sur fond noir, Twitch refuse de démarrer) ; sa taille suit le cadre, en pixels. */
@@ -71,7 +69,7 @@ select { padding: 7px 10px; font-size: 13px; background: #140d0f; }
 .stage .media.locked { pointer-events: none; }
 .stage:fullscreen { border-radius: 0; aspect-ratio: auto; }
 .wp-hit { position: absolute; inset: 0; z-index: 1; cursor: pointer; }
-.wp-bar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; display: flex; align-items: center; gap: 10px; padding: 26px 14px 12px;
+.wp-bar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; display: flex; align-items: center; gap: 10px; padding: 24px 12px 12px;
   background: linear-gradient(180deg, transparent, rgba(9,8,10,.92)); opacity: 0; transform: translateY(6px); transition: opacity .25s, transform .25s; }
 .stage.show .wp-bar, .stage:focus-within .wp-bar, .stage.paused .wp-bar { opacity: 1; transform: none; }
 .wp-bar { pointer-events: none; }
@@ -89,13 +87,13 @@ select { padding: 7px 10px; font-size: 13px; background: #140d0f; }
 .wp-seek { flex: 1; min-width: 60px; }
 .wp-vol { width: 80px; }
 .wp-time { font: 500 11px var(--mono); color: var(--label); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.wp-note { font: 500 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--pink); white-space: nowrap; }
-.wp-live { display: inline-flex; align-items: center; gap: 6px; font: 500 10px var(--mono); letter-spacing: .12em; color: #fff; }
+.wp-note { font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--pink); white-space: nowrap; }
+.wp-live { display: inline-flex; align-items: center; gap: 6px; font: 500 11px var(--mono); letter-spacing: .12em; color: #fff; }
 .wp-live i { width: 8px; height: 8px; border-radius: 50%; background: rgb(var(--acc)); box-shadow: 0 0 8px rgb(var(--acc)); }
 /* Twitch : la vidéo seule en haut, la barre dessous ; en plein écran, une colonne à droite pour le score, le chat et les réactions */
 .stage.tw { aspect-ratio: auto; overflow: visible; display: flex; flex-direction: column; background: transparent; border: 0; box-shadow: none; }
 /* Angles droits, rien de rogné : Twitch compte un coin arrondi (qui cache un bout de son image) comme un recouvrement. */
-.stage.tw > .media { position: relative; inset: auto; aspect-ratio: 16 / 9; height: auto; border-radius: 0; overflow: visible; box-shadow: 0 30px 80px -30px rgba(var(--acc),.45); }
+.stage.tw > .media { position: relative; inset: auto; aspect-ratio: 16 / 9; height: auto; border-radius: 0; overflow: visible; box-shadow: 0 18px 40px rgba(0,0,0,.45); }
 .stage.tw > .wp-bar { position: relative; opacity: 1; transform: none; padding: 10px 14px; background: rgba(9,8,10,.92); border: 1px solid var(--line); border-top: 0; border-radius: 0 0 16px 16px; }
 .stage.tw > .wp-bar > * { pointer-events: auto !important; }
 .stage.tw .wp-react-wrap .wp-reacts { bottom: auto; top: 44px; }
@@ -120,26 +118,25 @@ select { padding: 7px 10px; font-size: 13px; background: #140d0f; }
 .stage.tw.chat-off:fullscreen .wp-fstop { display: none; }
 .stage.tw:fullscreen .wp-stats { top: auto; bottom: 80px; right: 14px; }
 #kc, .glass.chat { position: relative; overflow: hidden; }
-.wp-menu { position: absolute; right: 14px; bottom: 62px; z-index: 6; width: 250px; max-height: calc(100% - 80px); overflow-y: auto; padding: 8px; border-radius: 14px;
-  background: rgba(14,10,12,.94); box-shadow: 0 0 0 1px rgba(255,255,255,.1) inset, 0 18px 40px rgba(0,0,0,.6); backdrop-filter: blur(12px); }
-.wp-menu-h { margin: 8px 8px 4px; font: 500 9px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
+.wp-menu { position: absolute; right: 14px; bottom: 62px; z-index: 6; width: 250px; max-height: calc(100% - 80px); overflow-y: auto; padding: 8px; border-radius: 16px;
+  background: var(--glass-deep); box-shadow: 0 0 0 1px rgba(255,255,255,.1) inset, 0 18px 40px rgba(0,0,0,.6); backdrop-filter: blur(12px); }
+.wp-menu-h { margin: 8px 8px 4px; font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
 .wp-menu-note { margin: 2px 8px 6px; font-size: 11px; color: var(--haze); }
-.wp-row { all: unset; box-sizing: border-box; cursor: pointer; display: flex; width: 100%; justify-content: space-between; gap: 10px; padding: 7px 10px; border-radius: 9px; font-size: 13px; color: var(--bone); }
+.wp-row { all: unset; box-sizing: border-box; cursor: pointer; display: flex; width: 100%; justify-content: space-between; gap: 12px; padding: 8px 12px; border-radius: 8px; font-size: 13px; color: var(--bone); }
 .wp-row:hover, .wp-row:focus-visible { background: rgba(255,255,255,.07); }
 .wp-row.on b { color: rgb(var(--acc-hi)); }
-.wp-row b { font: 500 11px var(--mono); }
-.wp-stats { position: absolute; right: 12px; top: 12px; z-index: 3; padding: 8px 10px; border-radius: 10px; background: rgba(9,8,10,.82); font: 500 10px/1.6 var(--mono); color: var(--label); white-space: pre; pointer-events: none; }
+.wp-row b { display: inline-flex; align-items: center; font: 500 11px var(--mono); }
+.wp-stats { position: absolute; right: 12px; top: 12px; z-index: 3; padding: 8px 12px; border-radius: 10px; background: rgba(9,8,10,.82); font: 500 11px/1.6 var(--mono); color: var(--label); white-space: pre; pointer-events: none; }
 .wp-live, .wp-time { white-space: nowrap; }
 .wp-note { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .wp-react-wrap { position: relative; flex: none; }
-.wp-react-wrap > button { font: 18px/1 "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif !important; }
-.wp-react-wrap .wp-reacts { position: absolute; right: -6px; bottom: 44px; display: none; flex-wrap: nowrap; padding: 6px; border-radius: 14px; z-index: 6;
-  background: rgba(14,10,12,.94); box-shadow: 0 0 0 1px rgba(255,255,255,.1) inset, 0 14px 30px rgba(0,0,0,.6); }
+.wp-react-wrap .wp-reacts { position: absolute; right: -6px; bottom: 44px; display: none; flex-wrap: nowrap; padding: 6px; border-radius: 16px; z-index: 6;
+  background: var(--glass-deep); box-shadow: 0 0 0 1px rgba(255,255,255,.1) inset, 0 14px 30px rgba(0,0,0,.6); }
 .wp-react-wrap.open .wp-reacts { display: flex; }
 @media (max-width: 560px) { .wp-vol, .wp-time.dur { display: none; } .wp-bar { gap: 4px; padding-inline: 8px; } }
 /* Les réactions qui montent sur la vidéo, le chat posé dessus en plein écran, « Prêt ? » et le compte à rebours */
 .wp-float { position: absolute; bottom: 70px; z-index: 4; font: 38px/1 "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif; pointer-events: none; animation: wp-rise 2.6s ease-out forwards; text-align: center; }
-.wp-float small { display: block; font: 500 9px var(--mono); letter-spacing: .08em; color: #fff; text-shadow: 0 1px 4px #000; }
+.wp-float small { display: block; font: 500 11px var(--mono); letter-spacing: .08em; color: #fff; text-shadow: 0 1px 4px #000; }
 @keyframes wp-rise { 0% { transform: translateY(0) scale(.6); opacity: 0; } 12% { transform: translateY(-20px) scale(1.1); opacity: 1; } 100% { transform: translateY(-240px) scale(1); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .wp-float { animation-duration: 1.4s; } }
 .wp-overchat { position: absolute; left: 14px; bottom: 70px; z-index: 4; display: none; flex-direction: column; gap: 4px; max-width: min(420px, 60%); pointer-events: none; }
@@ -158,7 +155,7 @@ select { padding: 7px 10px; font-size: 13px; background: #140d0f; }
   padding: 6px 12px; border-radius: 14px; background: rgba(9,8,10,.72); backdrop-filter: blur(8px); box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset; white-space: nowrap; pointer-events: none; }
 .stage:fullscreen .wp-fstop { display: flex; }
 .wp-fstop b { font: 800 13px var(--display); overflow: hidden; text-overflow: ellipsis; }
-.wp-fstop span { font: 500 10px var(--mono); letter-spacing: .1em; color: var(--label); text-transform: uppercase; }
+.wp-fstop span { display: inline-flex; align-items: center; gap: 6px; font: 500 11px var(--mono); letter-spacing: .1em; color: var(--label); text-transform: uppercase; }
 .wp-fstop .kc-mini { display: inline-flex; align-items: center; gap: 8px; font: 800 15px var(--display); color: #fff; }
 .wp-fstop .kc-mini img { width: 28px; height: 28px; object-fit: contain; filter: drop-shadow(0 0 8px rgba(0,132,255,.8)); }
 .stage:fullscreen:not(.show):not(.paused) { cursor: none; }
@@ -173,34 +170,34 @@ select { padding: 7px 10px; font-size: 13px; background: #140d0f; }
 .stage.hud-edit .hud * { pointer-events: none; }
 .stage.hud-edit .wp-fschat { display: flex !important; opacity: 1 !important; }
 .stage.hud-edit .wp-overchat:empty::before { content: "Le chat s'affiche ici"; padding: 5px 10px; border-radius: 10px; background: rgba(9,8,10,.72); font-size: 13px; color: var(--haze); }
-.stage.hud-edit::after { content: "HUD déverrouillé : glisse le score et le chat, puis verrouille-le dans ⚙"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 4;
+.stage.hud-edit::after { content: "HUD déverrouillé : glisse le score et le chat, puis verrouille-le dans les réglages du lecteur"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 4;
   padding: 8px 14px; border-radius: 12px; background: rgba(9,8,10,.8); font: 500 11px var(--mono); letter-spacing: .1em; color: #fff; pointer-events: none; }
 @keyframes wp-fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
 .wp-reacts { display: flex; flex-wrap: wrap; gap: 2px; }
 .wp-reacts button { all: unset; box-sizing: border-box; cursor: pointer; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px;
   font: 20px/1 "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif; transition: transform .15s, background .15s; }
-.wp-reacts button:hover, .wp-reacts button:focus-visible { background: rgba(255,255,255,.1); transform: scale(1.18); }
+.wp-reacts button:hover, .wp-reacts button:focus-visible { background: rgba(255,255,255,.1); }
 .wp-reacts button:active { transform: scale(.92); }
 #chat-reacts { padding: 4px 10px 0; }
 .wp-over { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: rgba(9,8,10,.6); backdrop-filter: blur(4px); text-align: center; }
-.wp-over .glass { padding: 22px 26px; display: grid; gap: 12px; justify-items: center; }
-.wp-count { font: 800 96px/1 var(--display); color: #fff; text-shadow: 0 0 40px rgba(var(--acc),.9); }
+.wp-over .glass { padding: 24px 28px; display: grid; gap: 12px; justify-items: center; }
+.wp-count { font: 800 96px/1 var(--display); color: #fff; }
 /* Les caméras des présents, en vignettes sous la vidéo */
 .cams { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
 .cams:empty { display: none; }
-.cam { position: relative; width: 168px; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: #000; border: 1px solid var(--line); }
+.cam { position: relative; width: 168px; aspect-ratio: 16 / 9; border-radius: var(--r-ctl); overflow: hidden; background: #000; border: 1px solid var(--line); }
 .cam video { width: 100%; height: 100%; object-fit: cover; display: block; }
-.cam span { position: absolute; left: 6px; bottom: 5px; padding: 2px 7px; border-radius: 999px; background: rgba(9,8,10,.75); font: 500 9px var(--mono); letter-spacing: .08em; color: #fff; }
+.cam span { position: absolute; left: 6px; bottom: 6px; padding: 2px 8px; border-radius: 999px; background: rgba(9,8,10,.75); font: 500 11px var(--mono); letter-spacing: .08em; color: #fff; }
 @media (max-width: 560px) { .cam { width: calc(50% - 5px); } }
 /* La file d'attente */
 .queue { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .queue li { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 12px; background: rgba(255,255,255,.03); }
-.queue img { width: 64px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; flex: none; background: #1a1214; }
+.queue img { width: 64px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; flex: none; background: var(--deep); }
 .queue .grow { flex: 1; min-width: 0; }
 .queue b, .queue small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .queue b { font-size: 13px; font-weight: 600; }
 .queue small { color: var(--haze); font-size: 11px; }
-.vote { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 999px; font: 500 11px var(--mono); color: var(--label); box-shadow: 0 0 0 1px var(--line) inset; }
+.vote { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: var(--r-seg); font: 500 11px var(--mono); color: var(--label); box-shadow: 0 0 0 1px var(--line) inset; }
 .vote.on { color: #fff; background: var(--lit); box-shadow: var(--lit-shadow); }
 /* ——— Mode Karmine Corp (chaîne de Kameto) : bleu nuit, bleu électrique, le Blue Wall ——— */
 body.kc { --acc: 0, 132, 255; --acc-hi: 140, 205, 255; --acc-lo: 4, 26, 84; --pink: #8fd0ff; background: #020716; }
@@ -276,24 +273,24 @@ section.kc { margin: 0 0 14px; padding: 16px 18px; border-radius: 20px; display:
 .adv select { width: 100%; }
 .adv-stats { margin: 10px 0 0; font: 500 11px/1.7 var(--mono); color: var(--label); white-space: pre-wrap; }
 .stage .empty { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 24px; color: var(--haze);
-  background: radial-gradient(120% 120% at 15% 0%, #1d1013 0%, #0e0a0c 55%, #070506 100%); }
-.stage .badge { position: absolute; left: 12px; top: 12px; inset: 12px auto auto 12px; width: auto; height: auto; padding: 5px 10px; border-radius: 999px; background: rgba(9,8,10,.75);
-  font: 500 10px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--label); z-index: 2; pointer-events: none; }
+  background: radial-gradient(120% 120% at 15% 0%, var(--deep) 0%, var(--deep-2) 55%, var(--night) 100%); }
+.stage .badge { position: absolute; left: 12px; top: 12px; inset: 12px auto auto 12px; width: auto; height: auto; padding: 4px 10px; border-radius: 999px; background: rgba(9,8,10,.75);
+  font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--label); z-index: 2; pointer-events: none; }
 .controls { margin-top: 14px; padding: 16px; display: grid; gap: 12px; }
 .side { display: grid; gap: 14px; }
 .side .glass { padding: 16px; }
 .people { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .people li { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 12px; background: rgba(255,255,255,.03); }
-.people img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: #2a0a0e; flex: none; }
+.people img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: var(--deep-2); flex: none; }
 .people .grow { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tag { font: 500 9px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ember); border: 1px solid rgba(var(--acc),.6); border-radius: 999px; padding: 2px 7px; }
+.tag { font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: rgb(var(--acc-hi)); border: 1px solid rgba(var(--acc),.6); border-radius: 999px; padding: 2px 8px; }
 .led { width: 8px; height: 8px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 10px var(--ember); flex: none; }
 .chat { display: flex; flex-direction: column; height: min(52vh, 460px); padding: 0 !important; overflow: hidden; }
 .chat h2 { padding: 16px 16px 0; }
 .msgs { flex: 1; overflow-y: auto; padding: 4px 16px 10px; display: flex; flex-direction: column; gap: 8px; }
 .msg { overflow-wrap: anywhere; font-size: 14px; }
 .msg b { font-weight: 600; color: var(--pink); margin-right: 6px; }
-.msg time { font: 500 9px var(--mono); color: var(--haze); margin-left: 6px; }
+.msg time { font: 500 11px var(--mono); color: var(--haze); margin-left: 6px; }
 .chat form { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--line); }
 .chat input { flex: 1; }
 details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--btn); }
@@ -302,15 +299,15 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
 .gate .glass { padding: 28px; width: min(420px, 100%); display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; text-align: center; }
 /* Les boutons tiennent dans la carte, à la marge du texte ; un long libellé passe à la ligne (téléphone). */
 .gate .btn { width: 100%; height: auto; min-height: 40px; padding: 10px 14px; white-space: normal; line-height: 1.35; text-align: center; }
-@media (max-width: 420px) { .gate .glass { padding: 22px 18px; } }
+@media (max-width: 420px) { .gate .glass { padding: 24px 16px; } }
 /* Le choix de l'écran ou de la fenêtre, dans l'application ONIRIQUE CENTRAL */
 #picker { width: min(760px, calc(100vw - 24px)); padding: 0; border: 0; background: none; color: var(--bone); }
 #picker::backdrop { background: rgba(9,8,10,.8); backdrop-filter: blur(8px); }
-#picker .glass { padding: 20px; display: grid; gap: 14px; background-color: #120d0f; }
+#picker .glass { padding: 20px; display: grid; gap: 14px; background-color: var(--deep); }
 .srcs { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; max-height: 52vh; overflow-y: auto; padding: 2px; }
-.src { all: unset; box-sizing: border-box; cursor: pointer; display: grid; gap: 6px; padding: 8px; border-radius: 14px; background: rgba(255,255,255,.03); box-shadow: 0 0 0 1px var(--line) inset; transition: all .2s ease; }
+.src { all: unset; box-sizing: border-box; cursor: pointer; display: grid; gap: 6px; padding: 8px; border-radius: 16px; background: rgba(255,255,255,.03); box-shadow: 0 0 0 1px var(--line) inset; transition: box-shadow .2s, transform .2s; }
 .src:hover, .src:focus-visible { box-shadow: 0 0 0 1px rgba(var(--acc-hi),.5) inset; transform: translateY(-2px); }
-.src.on { box-shadow: 0 0 0 2px rgb(var(--acc)) inset, 0 0 24px rgba(var(--acc),.35); }
+.src.on { box-shadow: 0 0 0 2px rgb(var(--acc)) inset; }
 .src img { width: 100%; aspect-ratio: 16 / 9; object-fit: contain; background: #000; border-radius: 8px; }
 .src span { font-size: 12px; color: var(--label); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .adv-preset { display: grid; gap: 4px; margin-top: 12px; max-width: 320px; font-size: 13px; color: var(--label); }
@@ -331,7 +328,7 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
       <p class="eyebrow">Regarder ensemble</p>
       <h1>WATCH<span>PARTY</span></h1>
     </div>
-    <p class="muted">Une vidéo, plusieurs écrans, la même seconde. Colle une vidéo YouTube ou l'adresse d'une vidéo en ligne, ou partage ton écran, ta caméra ou un fichier de ton ordinateur ; envoie le lien, et chacun regarde au même moment, avec le chat à côté. Lecture, pause et avance sont synchronisées pour tous.</p>
+    <p class="muted">Une vidéo, plusieurs écrans, la même seconde. Colle une vidéo YouTube ou l’adresse d’une vidéo en ligne, ou partage ton écran, ta caméra ou un fichier de ton ordinateur ; envoie le lien, et chacun regarde au même moment, avec le chat à côté. Lecture, pause et avance sont synchronisées pour tous.</p>
     <form class="glass card" id="create">
       <h2>Ouvrir une WATCHPARTY</h2>
       <input id="c-name" maxlength="60" placeholder="Nom de la salle (facultatif)" aria-label="Nom de la salle">
@@ -344,7 +341,7 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
   <section id="room" hidden>
     <div class="top">
       <div class="r-title"><span id="kc-title-mark" class="kc-title-mark" hidden></span><div><p class="eyebrow" id="r-eyebrow">WATCHPARTY</p><h1 id="r-name"></h1></div></div>
-      <div class="row"><button class="btn" type="button" id="copy">Copier le lien d'invitation</button><button class="btn" type="button" id="close" hidden>Fermer la salle</button></div>
+      <div class="row"><button class="btn" type="button" id="copy">Copier le lien d’invitation</button><button class="btn" type="button" id="close" hidden>Fermer la salle</button></div>
     </div>
     <section class="kc" id="kc" hidden aria-label="Karmine Corp : le match"></section>
     <div class="room">
@@ -373,7 +370,7 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
               <label>Images par seconde<select id="adv-fps"><option value="60">60</option><option value="30">30</option><option value="24">24 (cinéma)</option><option value="15">15</option></select></label>
               <label>Si le réseau faiblit<select id="adv-pref"><option value="motion">Garder la fluidité (films, jeux)</option><option value="detail">Garder la netteté (texte, code)</option><option value="balanced">Équilibrer</option></select></label>
               <label>Codec vidéo<select id="adv-codec"><option value="auto">Automatique</option><option value="video/vp9">VP9 (texte net)</option><option value="video/h264">H.264 (léger, matériel)</option><option value="video/av1">AV1 (le plus efficace)</option></select></label>
-              <label>Son partagé<select id="adv-audio"><option value="system">Tout le son de l'ordinateur</option><option value="none">Aucun son</option><option value="pick">Une entrée audio (câble virtuel…)</option></select></label>
+              <label>Son partagé<select id="adv-audio"><option value="system">Tout le son de l’ordinateur</option><option value="none">Aucun son</option><option value="pick">Une entrée audio (câble virtuel…)</option></select></label>
               <label>Qualité du son<select id="adv-abr"><option value="128">128 kbit/s</option><option value="192">192 kbit/s</option><option value="256">256 kbit/s</option><option value="320">320 kbit/s</option></select></label>
             </div>
             <p class="muted" id="adv-audio-hint" style="margin:10px 0 0;font-size:12px"></p>
@@ -388,7 +385,7 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
           <details id="friends" style="margin-top:12px"><summary>Inviter mes amis</summary><ul class="people" id="friend-list" style="margin-top:10px"></ul></details>
           <details id="perms-box" hidden style="margin-top:12px"><summary>Droits</summary><div class="perms" id="perms"></div></details>
         </div>
-        <div class="glass"><div class="row" style="justify-content:space-between"><h2 id="q-title" style="margin:0">File d'attente</h2><button class="btn small" type="button" id="q-next" hidden>Lancer la suite</button></div>
+        <div class="glass"><div class="row" style="justify-content:space-between"><h2 id="q-title" style="margin:0">File d’attente</h2><button class="btn small" type="button" id="q-next" hidden>Lancer la suite</button></div>
           <form class="row" id="q-add" style="margin-top:10px"><input id="q-url" placeholder="Proposer une vidéo (lien)" aria-label="Proposer une vidéo"><button class="btn small" type="submit">Proposer</button></form>
           <ul class="queue" id="queue" style="margin-top:10px"></ul>
           <p class="muted" style="margin:8px 0 0;font-size:12px">La plus votée passe à la fin de la vidéo en cours.</p>
@@ -404,7 +401,7 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
 
 <div class="gate" id="gate" hidden><div class="glass"><p class="eyebrow">Invitation</p><h2 id="g-name" style="font-size:18px">WATCHPARTY</h2>
   <p class="muted" style="margin:0">La vidéo démarre au même moment pour tout le monde.</p><button class="btn btn-primary" type="button" id="enter">Entrer dans la salle</button>
-  <button class="btn" type="button" id="in-app" hidden>Ouvrir dans l'application ONIRIQUE CENTRAL</button></div></div>
+  <button class="btn" type="button" id="in-app" hidden>Ouvrir dans l’application ONIRIQUE CENTRAL</button></div></div>
 
 <canvas id="kc-wall" hidden aria-hidden="true"></canvas>
 <div id="kc-logo-bg" hidden aria-hidden="true"></div>
@@ -413,8 +410,8 @@ details summary { cursor: pointer; font: 500 11px var(--mono); letter-spacing: .
   <div class="srcs" id="pk-list"></div>
   <div class="row" style="justify-content:space-between">
     <label class="row" style="gap:6px;font-size:14px">Qualité <select id="pk-preset" aria-label="Préréglage du partage"></select></label>
-    <label class="row" id="pk-audio-row" style="gap:6px;font-size:14px">Son <select id="pk-audio"><option value="system">Tout l'ordinateur</option><option value="except" hidden>Tout sauf une appli (Discord…)</option><option value="only" hidden>Une seule appli</option><option value="none">Aucun</option><option value="pick">Une entrée audio…</option></select>
-      <select id="pk-app" hidden aria-label="L'application"></select></label>
+    <label class="row" id="pk-audio-row" style="gap:6px;font-size:14px">Son <select id="pk-audio"><option value="system">Tout l’ordinateur</option><option value="except" hidden>Tout sauf une appli (Discord…)</option><option value="only" hidden>Une seule appli</option><option value="none">Aucun</option><option value="pick">Une entrée audio…</option></select>
+      <select id="pk-app" hidden aria-label="L’application"></select></label>
     <button class="btn btn-primary" type="button" id="pk-go" disabled>Partager</button>
   </div>
 </div></dialog>
@@ -432,9 +429,9 @@ async function api(method, path, body) {
   return data;
 }
 const say = (text) => { $("state").textContent = text || ""; };
-// Pair à pair : les serveurs STUN publics donnent à chacun son adresse vue d'internet. Pas de relais (TURN) : l'image ne passe jamais par nos serveurs.
+// Pair à pair : les serveurs STUN publics donnent à chacun son adresse vue d’internet. Pas de relais (TURN) : l’image ne passe jamais par nos serveurs.
 let ICE = [{ urls: ["stun:stun.l.google.com:19302", "stun:stun.cloudflare.com:3478"] }];
-// Notre relais TURN n'est pris qu'en dernier recours : WebRTC essaie d'abord la connexion directe.
+// Notre relais TURN n’est pris qu’en dernier recours : WebRTC essaie d’abord la connexion directe.
 const loadIce = () => api("GET", "/watchparty/ice").then((list) => { if (Array.isArray(list) && list.length) ICE = list; }, () => {});
 
 let code = location.hash.slice(1), state = null, offset = 0, reader = null;
@@ -452,7 +449,7 @@ async function listen(c) {
   const response = await fetch("/api/watchparty/" + c + "/live", { headers: { Authorization: "Bearer " + token } }).catch(() => null);
   if (!response || !response.ok) {
     const data = response ? await response.json().catch(() => ({})) : {};
-    if (response && response.status >= 400 && response.status < 500) return leave(data.error || "Cette WATCHPARTY n'est plus disponible.");
+    if (response && response.status >= 400 && response.status < 500) return leave(data.error || "Cette WATCHPARTY n’est plus disponible.");
     return void setTimeout(() => code === c && listen(c), 3000);
   }
   const r = response.body.getReader(), decoder = new TextDecoder();
@@ -467,7 +464,7 @@ async function listen(c) {
     for (const b of blocks) {
       if (!b.startsWith("data: ")) continue;
       const m = JSON.parse(b.slice(6));
-      if (m.kicked) return leave("Le créateur t'a retiré de la WATCHPARTY.");
+      if (m.kicked) return leave("Le créateur t’a retiré de la WATCHPARTY.");
       if (m.ended) return leave("Le créateur a fermé la WATCHPARTY.");
       if (m.signal) (m.signal.data.cam ? onCamSignal(m.signal) : onSignal(m.signal)).catch(() => {});
       else if (m.reaction) { if (!state || m.reaction.by !== state.you.id) floatReaction(m.reaction); }
@@ -489,13 +486,13 @@ function leave(text) {
 }
 function receive(s) {
   if (state && state.you.peer !== s.you.peer) closePeers(); // nouveau flux (reconnexion) : on renégocie
-  if (!clocked) offset = s.t - Date.now(); // en attendant la mesure de l'horloge
+  if (!clocked) offset = s.t - Date.now(); // en attendant la mesure de l’horloge
   syncClock();
   state = s;
   draw();
 }
 
-// ——— L'affichage ———
+// ——— L’affichage ———
 function draw() {
   const s = state, sharing = s.media && s.media.kind === "share";
   $("room").hidden = false;
@@ -536,7 +533,7 @@ async function drawAdfree() {
   if (app && app.accounts) {
     if (adfreeFor !== which || !accounts) { adfreeFor = which; accounts = await app.accounts().catch(() => ({})); }
     const on = !!accounts[which];
-    box.replaceChildren(el("span", { className: "muted", textContent: on ? `Connecté à ${name} dans l'application : sans pub si tu es ${perk}.` : `Sans pub : connecte ton compte ${name} (${perk}).` }),
+    box.replaceChildren(el("span", { className: "muted", textContent: on ? `Connecté à ${name} dans l’application : sans pub si tu es ${perk}.` : `Sans pub : connecte ton compte ${name} (${perk}).` }),
       el("button", { className: "btn small", type: "button", textContent: on ? "Déconnecter" : "Connecter " + name, onclick: async () => {
         if (on) { await app.accountLogout(which); accounts = null; reloadStage(); } else window.open(which === "twitch" ? "https://www.twitch.tv/login" : "https://accounts.google.com/ServiceLogin?service=youtube&continue=" + encodeURIComponent("https://www.youtube.com/"), "_blank");
         drawAdfree();
@@ -546,7 +543,7 @@ async function drawAdfree() {
       el("a", { className: "btn small", href: which === "twitch" ? "https://www.twitch.tv/login" : "https://www.youtube.com/", target: "_blank", rel: "noopener", textContent: "Ouvrir " + name }));
   }
 }
-// Le compte vient d'être connecté (fenêtre refermée) : le lecteur est rechargé pour le reconnaître.
+// Le compte vient d’être connecté (fenêtre refermée) : le lecteur est rechargé pour le reconnaître.
 const reloadStage = () => { if (state) { clearStage(); drawStage(); } };
 window.onOniriqueAccounts = () => { accounts = null; reloadStage(); if (state) drawAdfree(); };
 function drawPeople() {
@@ -563,7 +560,7 @@ function drawPeople() {
       onclick: () => confirm("Retirer " + m.name + " de la WATCHPARTY ?") && send("kick", { userId: m.id }) }) : null)));
   $("perms-box").hidden = !s.you.host;
   if (s.you.host && !$("perms-box").open) {
-    const LABELS = { source: "Changer la vidéo, partager", control: "Lecture, pause, avancer", queue: "Proposer dans la file", kick: "Retirer quelqu'un" };
+    const LABELS = { source: "Changer la vidéo, partager", control: "Lecture, pause, avancer", queue: "Proposer dans la file", kick: "Retirer quelqu’un" };
     const LEVELS = { all: "Tout le monde", cohosts: "Co-hôtes", host: "Moi seul" };
     $("perms").replaceChildren(...Object.entries(LABELS).flatMap(([p, label]) => [el("label", { textContent: label, htmlFor: "perm-" + p }),
       el("select", { id: "perm-" + p, onchange: (e) => send("perms", { perms: { [p]: e.target.value } }) },
@@ -581,7 +578,7 @@ function drawChat() {
     el("time", { textContent: new Date(c.at - offset).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) })))
     : [el("p", { className: "muted", style: "margin:0;font-size:13px", textContent: "Dis bonjour : le chat est vu de tous les présents." })]));
   if (atEnd) box.scrollTop = box.scrollHeight;
-  // En plein écran : les nouveaux messages passent sur la vidéo, puis s'effacent.
+  // En plein écran : les nouveaux messages passent sur la vidéo, puis s’effacent.
   const over = overChat();
   for (const c of state.chat) {
     if (overSeen.has(c.id)) continue;
@@ -622,7 +619,7 @@ function placeHud() {
     else Object.assign(n.style, { left: "", top: "", right: "", bottom: "", transform: "" });
   }
 }
-// HUD déverrouillé : on attrape un élément et on le pose où l'on veut ; sa place est gardée (en proportion de l'écran).
+// HUD déverrouillé : on attrape un élément et on le pose où l’on veut ; sa place est gardée (en proportion de l’écran).
 $("stage").addEventListener("pointerdown", (e) => {
   const n = !hud.locked && e.target.closest && e.target.closest(".hud");
   if (!n) return;
@@ -644,12 +641,12 @@ function drawFsTop() {
   const k = state.kc;
   box.replaceChildren(...(k ? [el("span", { className: "kc-mini", innerHTML: KC_MARK + `<span>${k.kc} – ${k.opp}</span>` + (oppLogo(k.oppName || "T1") || `<span>${String(k.oppName || "T1").replace(/[<>&]/g, "")}</span>`) }),
     el("span", { textContent: k.kc >= 3 || k.opp >= 3 ? "Série terminée" : "Game " + Math.min(5, k.kc + k.opp + 1) + " · Bo5" })]
-    : [el("b", { textContent: state.name })]), el("span", { textContent: "👥 " + state.members.length }));
+    : [el("b", { textContent: state.name })]), el("span", { title: "Présents" }, svg("users"), String(state.members.length)));
 }
-// En entrant en plein écran, les derniers messages du chat s'affichent sur la vidéo.
+// En entrant en plein écran, les derniers messages du chat s’affichent sur la vidéo.
 document.addEventListener("fullscreenchange", () => {
   if (!document.fullscreenElement && !hud.locked) { hud.locked = true; placeHud(); }
-  // Twitch se met parfois en pause pendant le changement de taille : on relance, sauf si l'on avait mis pause soi-même.
+  // Twitch se met parfois en pause pendant le changement de taille : on relance, sauf si l’on avait mis pause soi-même.
   if (player && player.resume) setTimeout(() => player && player.resume && player.resume(), 1200);
   if (document.fullscreenElement !== $("stage") || !state) return;
   const over = overChat();
@@ -657,8 +654,8 @@ document.addEventListener("fullscreenchange", () => {
   drawFsTop();
 });
 
-// ——— L'horloge du serveur (comme le HM) : plusieurs allers-retours, le plus court gardé ———
-// Sans elle, chacun se calerait sur l'heure d'arrivée des messages, en retard de leur temps de trajet.
+// ——— L’horloge du serveur (comme le HM) : plusieurs allers-retours, le plus court gardé ———
+// Sans elle, chacun se calerait sur l’heure d’arrivée des messages, en retard de leur temps de trajet.
 let clockAt = 0, clocked = false;
 const serverNow = () => Date.now() + offset;
 async function syncClock() {
@@ -685,9 +682,12 @@ const loadYT = () => ytReady || (ytReady = new Promise((resolve) => {
 const ICONS = {
   play: "M8 5v14l11-7z", pause: "M7 5h4v14H7zM13 5h4v14h-4z", vol: "M4 9v6h4l5 4V5L8 9zM16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12",
   mute: "M4 9v6h4l5 4V5L8 9zM17 9l5 6M22 9l-5 6",
+  users: "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M16 3.5a4 4 0 0 1 0 7M18 14a7 7 0 0 1 4 7",
+  smile: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM8 14a5 5 0 0 0 8 0M9 9.5h.01M15 9.5h.01",
+  check: "M5 12.5l4.5 4.5L19 7", reload: "M20 12a8 8 0 1 1-2.34-5.66M20 4v4h-4", up: "M6 15l6-6 6 6", close: "M6 6l12 12M18 6L6 18",
   gear: "M12 15a3 3 0 1 0 0-6a3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3a1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5a1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8a1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1a1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5a1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z", full: "M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5", info: "M12 8h.01M11 12h1v5h1M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z",
 };
-const svg = (name) => { const b = el("span"); b.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${ICONS[name]}"/></svg>`; return b.firstChild; };
+const svg = (name) => { const b = el("span"); b.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${ICONS[name]}"/></svg>`; return b.firstChild; };
 const fmt = (t) => { t = Math.max(0, Math.floor(t || 0)); const h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, x = String(t % 60).padStart(2, "0"); return h ? h + ":" + String(m).padStart(2, "0") + ":" + x : m + ":" + x; };
 let vol = { level: 1, muted: false };
 try { vol = { ...vol, ...JSON.parse(localStorage.getItem("onirique.wp.volume") || "{}") }; } catch { /* stockage fermé */ }
@@ -725,7 +725,7 @@ function drawStage() {
   // Un direct (chaîne Twitch, Kick) ou un clip : le lecteur de la plateforme, avec ses commandes ; chacun au plus près du direct.
   const badge = (text) => el("span", { className: "badge", textContent: text });
   if (m.kind === "twitch" && m.channel) {
-    // Twitch met en pause (et passe en 144p) dès qu'un élément recouvre son lecteur : rien ne passe sur l'image.
+    // Twitch met en pause (et passe en 144p) dès qu’un élément recouvre son lecteur : rien ne passe sur l’image.
     const slot = el("div", { id: "tw-" + Date.now(), style: "width:100%;height:100%" }), box = el("div", { className: "media" }, slot);
     stage.classList.add("tw");
     stage.replaceChildren(box, makeBar(true, true));
@@ -781,14 +781,14 @@ function drawStage() {
     applyVolume();
     return;
   }
-  // Un partage : celui qui partage voit son aperçu (ou son fichier, avec ses commandes) ; les autres reçoivent l'image en direct.
+  // Un partage : celui qui partage voit son aperçu (ou son fichier, avec ses commandes) ; les autres reçoivent l’image en direct.
   const label = el("span", { className: "badge", textContent: { screen: "Écran", camera: "Caméra", file: "Fichier" }[m.what] + " · " + (m.byName || "") });
   if (m.peer === state.you.peer && local) {
     const v = fileVideo || el("video", { srcObject: local, autoplay: true, muted: true, playsInline: true });
     stage.replaceChildren(el("div", { className: "media" }, v), label);
   } else {
     const v = el("video", { id: "remote", autoplay: true, playsInline: true });
-    stage.replaceChildren(el("div", { className: "media locked" }, v), hit(), label, el("div", { className: "empty", id: "waiting", style: "z-index:2" }, "Connexion à " + (m.byName || "l'hôte") + "…"), makeBar(true));
+    stage.replaceChildren(el("div", { className: "media locked" }, v), hit(), label, el("div", { className: "empty", id: "waiting", style: "z-index:2" }, "Connexion à " + (m.byName || "l’hôte") + "…"), makeBar(true));
     player = { kind: "live", volume: (l, mu) => { v.volume = l; v.muted = mu; } };
     applyVolume();
   }
@@ -807,15 +807,15 @@ const loadScript = (src, global) => scripts.get(src) || scripts.set(src, window[
   document.head.append(el("script", { src, onload: resolve, onerror: () => { scripts.delete(src); reject(); } }));
 })).get(src);
 // Un direct Twitch : lecture, pause et volume pour soi ; ses propres commandes (qualité, contenu réservé, pub) à la demande.
-// La taille du lecteur Twitch en pixels (Twitch exige au moins 400 × 300 et lit mal « 100% ») ; la page l'étire ensuite.
+// La taille du lecteur Twitch en pixels (Twitch exige au moins 400 × 300 et lit mal « 100% ») ; la page l’étire ensuite.
 const twSize = (box) => ({ width: Math.max(400, Math.round(box.clientWidth || 960)), height: Math.max(300, Math.round(box.clientHeight || 540)) });
-// Le cadre change de taille (fenêtre, plein écran) : l'iframe de Twitch suit, par ses attributs.
+// Le cadre change de taille (fenêtre, plein écran) : l’iframe de Twitch suit, par ses attributs.
 const twFollow = (box) => new ResizeObserver(() => { const f = box.querySelector("iframe"); if (!f) return; const z = twSize(box); f.width = z.width; f.height = z.height; }).observe(box);
 const twitchSettings = (tw) => ({
   qualities: () => { const q = (tw.getQualities() || []).map((x) => ({ id: x.group, label: x.group === "auto" ? "Auto" : x.name })); return q.some((x) => x.id === "auto") ? q : q.length ? [{ id: "auto", label: "Auto" }, ...q] : []; },
   quality: () => tw.getQuality(), setQuality: (id) => tw.setQuality(id),
   captions: (on) => (on ? tw.enableCaptions() : tw.disableCaptions()), stats: () => tw.getPlaybackStats() });
-// online : la chaîne diffuse ; userPaused : c'est nous qui avons mis en pause (sinon un retour du direct relance la lecture).
+// online : la chaîne diffuse ; userPaused : c’est nous qui avons mis en pause (sinon un retour du direct relance la lecture).
 const twitchLive = (tw, box) => {
   const p = { kind: "live", box, platformName: "Twitch", ...twitchSettings(tw), online: true, userPaused: false, paused: () => tw.isPaused(),
     toggle: () => { blocked = false; if (tw.isPaused()) { p.userPaused = false; tw.play(); } else { p.userPaused = true; tw.pause(); } },
@@ -825,7 +825,7 @@ const twitchLive = (tw, box) => {
   tw.addEventListener(Twitch.Player.ONLINE, () => { p.online = true; if (!p.userPaused) tw.play(); });
   return p;
 };
-// Twitch (rediffusion) : ni vitesse ni réglage fin ; on se replace au-delà d'une seconde d'écart.
+// Twitch (rediffusion) : ni vitesse ni réglage fin ; on se replace au-delà d’une seconde d’écart.
 const twitchPlayer = (tw, box) => ({ kind: "twitch", box, platformName: "Twitch", ...twitchSettings(tw), time: () => tw.getCurrentTime() || 0, duration: () => tw.getDuration() || 0, playing: () => !tw.isPaused(),
   play: () => tw.play(), pause: () => tw.pause(), seek: (t) => tw.seek(t), volume: (l, mu) => { tw.setVolume(l); tw.setMuted(mu); } });
 // Vimeo répond en différé : sa position est gardée à chaque « timeupdate » et prolongée entre deux, une demi-seconde au
@@ -841,7 +841,7 @@ function vimeoPlayer(vp) {
   return { kind: "vimeo", time: () => c.t + (c.playing && !c.buffering ? Math.min(0.5, (Date.now() - c.at) / 1000) * c.rate : 0), duration: () => c.dur, playing: () => c.playing,
     play: () => { c.playing = true; vp.play().catch(() => { c.playing = false; blocked = true; }); }, pause: () => { c.playing = false; vp.pause().catch(() => {}); },
     seek: (t) => { vp.setCurrentTime(t).then(() => (c.playing ? vp.play() : null)).catch(() => {}); },
-    // La vitesse n'est permise que sur les vidéos des comptes payants : sinon, on se replace comme pour Twitch.
+    // La vitesse n’est permise que sur les vidéos des comptes payants : sinon, on se replace comme pour Twitch.
     rate: (x) => { if (!c.canRate || c.rate === x) return; c.rate = x; vp.setPlaybackRate(x).catch(() => { c.canRate = false; c.rate = 1; }); },
     noRate: () => !c.canRate,
     volume: (l, mu) => { vp.setVolume(mu ? 0 : l).catch(() => {}); }, destroy: () => vp.destroy().catch(() => {}) };
@@ -867,9 +867,9 @@ function makeBar(live, platform = false) {
   b.vol = el("input", { type: "range", className: "wp-vol", min: 0, max: 1, step: 0.02, value: vol.level, ariaLabel: "Volume" });
   b.vol.oninput = () => { vol.level = Number(b.vol.value); vol.muted = vol.level === 0; applyVolume(); };
   b.note = el("span", { className: "wp-note" });
-  // Les réactions dans un plateau au-dessus de la barre : il reste ouvert pour enchaîner, se ferme d'un clic ailleurs.
-  b.reacts = el("div", { className: "wp-react-wrap" }, el("button", { type: "button", textContent: "😄", ariaLabel: "Réagir", title: "Réagir (emoji sur la vidéo, chez tous)",
-    onclick: (e) => { e.stopPropagation(); e.currentTarget.parentNode.classList.toggle("open"); } }), reactButtons());
+  // Les réactions dans un plateau au-dessus de la barre : il reste ouvert pour enchaîner, se ferme d’un clic ailleurs.
+  b.reacts = el("div", { className: "wp-react-wrap" }, el("button", { type: "button", ariaLabel: "Réagir", title: "Réagir (emoji sur la vidéo, chez tous)",
+    onclick: (e) => { e.stopPropagation(); e.currentTarget.parentNode.classList.toggle("open"); } }, svg("smile")), reactButtons());
   b.reacts.addEventListener("click", (e) => e.stopPropagation());
   setTimeout(() => { setReactionSet.cur = ""; setReactionSet(kcOn()); }, 0);
   b.gear = el("button", { type: "button", ariaLabel: "Réglages du lecteur", title: "Réglages du lecteur", onclick: (e) => { e.stopPropagation(); toggleMenu(); } }, svg("gear"));
@@ -890,23 +890,23 @@ function toggleMenu(force) {
   const st = $("stage"), old = st.querySelector(".wp-menu");
   if (old || force === false) { if (old) old.remove(); return; }
   const row = (label, value, onclick, on) => el("button", { type: "button", className: "wp-row" + (on ? " on" : ""), onclick: (e) => { e.stopPropagation(); onclick(); } },
-    el("span", { textContent: label }), value ? el("b", { textContent: value }) : null);
+    el("span", { textContent: label }), value ? el("b", {}, value) : null);
   const items = [];
   const p = player || {};
   if (p.qualities) {
     const list = p.qualities(), cur = p.quality ? p.quality() : "";
     items.push(el("p", { className: "wp-menu-h", textContent: "Qualité" }));
     if (!list.length) items.push(el("p", { className: "wp-menu-note", textContent: "Disponible une fois la vidéo lancée." }));
-    for (const q of list) items.push(row(q.label, q.id === cur ? "✓" : "", () => { p.setQuality(q.id); toggleMenu(false); }, q.id === cur));
+    for (const q of list) items.push(row(q.label, q.id === cur ? svg("check") : "", () => { p.setQuality(q.id); toggleMenu(false); }, q.id === cur));
   } else if (p.kind === "yt") {
-    items.push(el("p", { className: "wp-menu-h", textContent: "Qualité" }), el("p", { className: "wp-menu-note", textContent: "Automatique : YouTube l'adapte à ta connexion." }));
+    items.push(el("p", { className: "wp-menu-h", textContent: "Qualité" }), el("p", { className: "wp-menu-note", textContent: "Automatique : YouTube l’adapte à ta connexion." }));
   }
   items.push(el("p", { className: "wp-menu-h", textContent: "Affichage" }));
   if (p.captions) items.push(row("Sous-titres", captionsOn ? "Oui" : "Non", () => { captionsOn = !captionsOn; p.captions(captionsOn); toggleMenu(false); toggleMenu(); }, captionsOn));
   items.push(row("Infos de lecture", statsOn ? "Oui" : "Non", () => { statsOn = !statsOn; toggleMenu(false); toggleMenu(); }, statsOn));
-  if (state && state.media && state.media.kind !== "share") items.push(row("Recharger la vidéo", "↻", () => { toggleMenu(false); reloadStage(); }));
+  if (state && state.media && state.media.kind !== "share") items.push(row("Recharger la vidéo", svg("reload"), () => { toggleMenu(false); reloadStage(); }));
   items.push(el("p", { className: "wp-menu-h", textContent: "HUD du plein écran" }));
-  if (st.classList.contains("tw")) items.push(el("p", { className: "wp-menu-note", textContent: "Sur Twitch, le score et le chat se rangent à côté de l'image : Twitch met la vidéo en pause si on la recouvre." }));
+  if (st.classList.contains("tw")) items.push(el("p", { className: "wp-menu-note", textContent: "Sur Twitch, le score et le chat se rangent à côté de l’image : Twitch met la vidéo en pause si on la recouvre." }));
   else items.push(row("Position du HUD", hud.locked ? "Verrouillée" : "À déplacer", () => { hud.locked = !hud.locked; placeHud(); toggleMenu(false); if (!hud.locked && !document.fullscreenElement) fullscreen(); }, !hud.locked));
   if (Object.keys(hud.pos).length) items.push(row("Remettre le HUD en place", "", () => { hud.pos = {}; saveHud(); placeHud(); toggleMenu(false); }));
   items.push(row(st.classList.contains("tw") ? "Colonne du chat" : "Chat sur la vidéo", hud.chat ? "Oui" : "Non", () => { hud.chat = !hud.chat; saveHud(); placeHud(); toggleMenu(false); toggleMenu(); }, hud.chat));
@@ -935,7 +935,7 @@ $("stage").addEventListener("keydown", (e) => {
   else if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && player && player.time && can("control")) { e.preventDefault(); act("seek", Math.max(0, expected() + (e.key === "ArrowLeft" ? -5 : 5))); }
 });
 
-// Lecture / pause : pour tout le monde si l'on a le droit ; sinon pour soi seulement, et reprendre recale aussitôt sur la salle.
+// Lecture / pause : pour tout le monde si l’on a le droit ; sinon pour soi seulement, et reprendre recale aussitôt sur la salle.
 function togglePlay() {
   if (player && player.kind === "live") {
     if (player.toggle) return player.toggle();
@@ -954,14 +954,14 @@ function act(kind, pos) {
 }
 
 // Quatre fois par seconde : chacun à la bonne seconde. Petit écart : la vitesse rattrape en douceur (±6 % pour une vidéo ;
-// 1,25× ou 0,75× quelques instants pour YouTube, qui n'a que ces paliers) ; grand écart : on se replace.
+// 1,25× ou 0,75× quelques instants pour YouTube, qui n’a que ces paliers) ; grand écart : on se replace.
 function tick() {
   if (!state) return;
   syncPeers();
   drawBar();
   if (!player || !player.time || !state.media || state.media.kind === "share" || state.media.live || state.media.nosync) return;
   const want = state.playing && !hold && !counting(), exp = expected(), d = player.time() - exp, yt = player.kind === "yt";
-  // La fin de la vidéo : on le dit au serveur, qui lance la suite de la file (une fois, s'il y en a une).
+  // La fin de la vidéo : on le dit au serveur, qui lance la suite de la file (une fois, s’il y en a une).
   const dur = player.duration ? player.duration() : 0;
   if (want && dur > 10 && exp > dur - 1 && endedKey !== mediaKey) { endedKey = mediaKey; send("ended", { key: mediaKey, duration: dur }); }
   if (want && !player.playing() && !blocked) player.play();
@@ -998,7 +998,7 @@ function drawBar() {
   if (bar.live) {
     const st = $("stage"), native = st.classList.contains("native");
     // Twitch en pause (au démarrage, ou le navigateur bloque le son) : seul un vrai clic dans son lecteur le relance.
-    // Tant qu'il est en pause, le clic passe donc à Twitch ; dès qu'il joue, le lecteur ONIRIQUE reprend la main.
+    // Tant qu’il est en pause, le clic passe donc à Twitch ; dès qu’il joue, le lecteur ONIRIQUE reprend la main.
     const paused = !!(bar.platform && player && player.paused && player.paused()), offline = !!(player && player.online === false);
     // Seul un vrai blocage du navigateur laisse passer le clic à Twitch : une pause, une pub ou un direct hors ligne
     // restent sous le lecteur ONIRIQUE (un clic sur la pub de Twitch ouvrirait son lien et couperait la lecture).
@@ -1019,7 +1019,7 @@ function drawBar() {
   bar.seek.disabled = !can("control");
   bar.seek.title = can("control") ? "" : "Le créateur garde la main sur la lecture : tu ne peux pas te déplacer dans la vidéo.";
   if (!bar.dragging) { bar.seek.value = now; bar.time.textContent = fmt(now) + " / " + fmt(dur); }
-  bar.note.textContent = blocked ? "Touche ▶ pour le son" : hold ? "En pause pour toi · ▶ te recale" : !state.playing && !can("control") ? "En pause par l'hôte" : "";
+  bar.note.textContent = blocked ? "Touche ▶ pour le son" : hold ? "En pause pour toi · ▶ te recale" : !state.playing && !can("control") ? "En pause par l’hôte" : "";
 }
 
 // Les infos de lecture (bouton ⓘ) : ce qui arrive vraiment, pour comprendre une image floue ou saccadée.
@@ -1053,13 +1053,13 @@ setInterval(async () => {
 const signalChain = { p: Promise.resolve() };
 const signal = (to, data) => { signalChain.p = signalChain.p.then(() => api("POST", "/watchparty/" + code + "/signal", { from: state.you.peer, to, data }).catch(() => {})); };
 
-// Les réglages avancés du partage, gardés sur cet appareil. Dans l'application, 60 i/s par défaut.
+// Les réglages avancés du partage, gardés sur cet appareil. Dans l’application, 60 i/s par défaut.
 const app = window.oniriqueApp && window.oniriqueApp.screens ? window.oniriqueApp : null;
 const ADV_DEFAULT = { total: "10", max: "auto", height: "1080", fps: app ? "60" : "30", pref: "motion", codec: "auto", audio: "system", abr: "256" };
 let adv = { ...ADV_DEFAULT };
 try { adv = { ...adv, ...JSON.parse(localStorage.getItem("onirique.wp.adv") || "{}") }; } catch { /* stockage fermé */ }
 const ADV_IDS = ["total", "max", "height", "fps", "pref", "codec", "audio", "abr"];
-// Les préréglages : ce qui compte pour l'image et le débit (le son partagé reste celui choisi).
+// Les préréglages : ce qui compte pour l’image et le débit (le son partagé reste celui choisi).
 const PRESETS = {
   auto: ["Recommandé", { total: "10", max: "auto", height: "1080", fps: app ? "60" : "30", pref: "motion", codec: "auto", abr: "256" }],
   low: ["Connexion faible (4G, ADSL)", { total: "3", max: "2", height: "720", fps: "30", pref: "motion", codec: "video/h264", abr: "128" }],
@@ -1085,16 +1085,16 @@ $("adv-preset").onchange = (e) => usePreset(e.target.value);
 let audioDevice = "";
 function drawAdv() {
   const a = $("adv-audio");
-  if (adv.audio.startsWith("dev:") && ![...a.options].some((o) => o.value === adv.audio)) a.append(el("option", { value: adv.audio, textContent: "L'entrée audio choisie" }));
+  if (adv.audio.startsWith("dev:") && ![...a.options].some((o) => o.value === adv.audio)) a.append(el("option", { value: adv.audio, textContent: "L’entrée audio choisie" }));
   for (const k of ADV_IDS) $("adv-" + k).value = adv[k];
   const p = presetOf();
   for (const sel of [$("adv-preset"), $("pk-preset")]) { sel.querySelector('option[value="custom"]').hidden = p !== "custom"; sel.value = p; }
   $("adv-audio-hint").textContent = adv.audio === "system"
-    ? "« Tout le son de l'ordinateur » envoie aussi Discord et les notifications. Pour n'envoyer que le film : partage un onglet du navigateur (son de l'onglet), un fichier vidéo, ou envoie le son du lecteur dans un câble virtuel (VB-CABLE…) et choisis « Une entrée audio »."
-    : adv.audio === "none" ? "Le partage part sans son." : "Seule cette entrée audio est envoyée : Discord n'y est pas, tant qu'il ne joue pas dedans.";
+    ? "« Tout le son de l’ordinateur » envoie aussi Discord et les notifications. Pour n’envoyer que le film : partage un onglet du navigateur (son de l’onglet), un fichier vidéo, ou envoie le son du lecteur dans un câble virtuel (VB-CABLE…) et choisis « Une entrée audio »."
+    : adv.audio === "none" ? "Le partage part sans son." : "Seule cette entrée audio est envoyée : Discord n’y est pas, tant qu’il ne joue pas dedans.";
 }
 async function fillAudioInputs(select) {
-  // Les noms des entrées n'apparaissent qu'une fois l'accès au micro accordé.
+  // Les noms des entrées n’apparaissent qu’une fois l’accès au micro accordé.
   let list = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "audioinput");
   if (list.length && !list[0].label) {
     try { (await navigator.mediaDevices.getUserMedia({ audio: true })).getTracks().forEach((t) => t.stop()); } catch { /* refusé */ }
@@ -1148,7 +1148,7 @@ const prefer = (tr) => {
   const caps = window.RTCRtpSender && RTCRtpSender.getCapabilities && RTCRtpSender.getCapabilities("video");
   if (adv.codec === "auto" || !caps || !tr.setCodecPreferences) return;
   const first = caps.codecs.filter((c) => c.mimeType.toLowerCase() === adv.codec);
-  if (first.length) try { tr.setCodecPreferences([...first, ...caps.codecs.filter((c) => !first.includes(c))]); } catch { /* l'ordre du navigateur */ }
+  if (first.length) try { tr.setCodecPreferences([...first, ...caps.codecs.filter((c) => !first.includes(c))]); } catch { /* l’ordre du navigateur */ }
 };
 
 function newPc(peer, sharer) {
@@ -1160,7 +1160,7 @@ function newPc(peer, sharer) {
     if (pc.connectionState !== "failed") return;
     pc.close();
     if (pcs.get(peer) === pc) pcs.delete(peer);
-    if (!sharer && $("waiting")) $("waiting").textContent = "La connexion directe n'a pas pu s'établir (réseau trop fermé : pare-feu d'entreprise, partage de connexion…). Essaie un autre réseau.";
+    if (!sharer && $("waiting")) $("waiting").textContent = "La connexion directe n’a pas pu s’établir (réseau trop fermé : pare-feu d’entreprise, partage de connexion…). Essaie un autre réseau.";
   };
   if (sharer) {
     for (const t of local.getTracks()) {
@@ -1225,7 +1225,7 @@ setInterval(async () => {
       if (x.type !== "outbound-rtp" || x.kind !== "video") return;
       const prev = sent.get(peer), mbps = prev ? ((x.bytesSent - prev.b) * 8) / ((x.timestamp - prev.t) * 1000) : 0;
       sent.set(peer, { b: x.bytesSent, t: x.timestamp, since: prev ? prev.since : Date.now() });
-      // Les 15 premières secondes, WebRTC monte en débit petit à petit : pas d'alerte avant.
+      // Les 15 premières secondes, WebRTC monte en débit petit à petit : pas d’alerte avant.
       const settled = Date.now() - sent.get(peer).since > 15_000;
       const why = settled ? { bandwidth: "limité par le débit", cpu: "limité par le processeur", other: "limité" }[x.qualityLimitationReason] || "ok" : "démarrage…";
       row = `${names.get(peer) || "…"} : ${x.frameWidth || "?"}×${x.frameHeight || "?"} · ${Math.round(x.framesPerSecond || 0)} i/s · ${mbps.toFixed(1)} Mbit/s · ${why}`;
@@ -1257,12 +1257,12 @@ async function audioFor(stream) {
   }
   return stream;
 }
-// Changer de son en plein partage : la nouvelle piste remplace l'ancienne chez chacun, sans renégocier.
+// Changer de son en plein partage : la nouvelle piste remplace l’ancienne chez chacun, sans renégocier.
 async function swapAudio() {
   const old = local.getAudioTracks()[0] || null;
   let track = null;
   if (adv.audio.startsWith("dev:")) track = (await audioFor(new MediaStream())).getAudioTracks()[0] || null;
-  else if (adv.audio === "system") return say("Pour reprendre le son de l'ordinateur, relance le partage.");
+  else if (adv.audio === "system") return say("Pour reprendre le son de l’ordinateur, relance le partage.");
   if (old) { local.removeTrack(old); old.stop(); }
   if (track) { track.contentHint = "music"; local.addTrack(track); }
   closePeers(); // chacun est renégocié avec le nouveau son (une seconde de coupure)
@@ -1277,7 +1277,7 @@ async function share(what, stream, video = null) {
   await send("share", { what, peer: state.you.peer });
 }
 
-// Dans l'application ONIRIQUE CENTRAL : son propre choix d'écran ou de fenêtre (avec le son de l'ordinateur).
+// Dans l’application ONIRIQUE CENTRAL : son propre choix d’écran ou de fenêtre (avec le son de l’ordinateur).
 let pick = null;
 async function appShare() {
   pick = null; $("pk-go").disabled = true;
@@ -1288,7 +1288,7 @@ async function appShare() {
   $("picker").showModal();
   if (sel.value === "except") drawTapApps();
   const res = await app.screens().catch(() => null);
-  if (!res || !res.sources.length) { $("picker").close(); return say("Aucun écran à partager : l'application n'a pas l'autorisation d'enregistrer l'écran."); }
+  if (!res || !res.sources.length) { $("picker").close(); return say("Aucun écran à partager : l’application n’a pas l’autorisation d’enregistrer l’écran."); }
   sel.querySelector('option[value="system"]').hidden = !res.audio;
   for (const v of ["except", "only"]) sel.querySelector(`option[value="${v}"]`).hidden = !res.tap;
   if (!res.audio && sel.value === "system") sel.value = "none";
@@ -1296,7 +1296,7 @@ async function appShare() {
     onclick: (e) => { pick = x.id; $("pk-go").disabled = false; for (const b of $("pk-list").children) b.classList.toggle("on", b === e.currentTarget); },
     ondblclick: () => $("pk-go").click() }, el("img", { src: x.thumb, alt: "" }), el("span", { textContent: (x.kind === "screen" ? "Écran · " : "") + x.name }))));
 }
-// Le son d'une seule appli, ou de tout sauf une (Windows 11) : la liste des applis ouvertes, Discord proposé d'abord.
+// Le son d’une seule appli, ou de tout sauf une (Windows 11) : la liste des applis ouvertes, Discord proposé d’abord.
 let tapApps = [];
 async function drawTapApps() {
   const mode = $("pk-audio").value, sel = $("pk-app");
@@ -1321,7 +1321,7 @@ $("pk-go").onclick = async () => {
   if (!pick) return;
   // Le préréglage est déjà appliqué (pk-preset) ; les réglages avancés restent modifiables pendant le partage.
   const audioMode = $("pk-audio").value, tapPid = Number($("pk-app").value);
-  if (["except", "only"].includes(audioMode) && !tapPid) return say("Choisis l'appli dans la liste.");
+  if (["except", "only"].includes(audioMode) && !tapPid) return say("Choisis l’appli dans la liste.");
   adv.audio = ["except", "only"].includes(audioMode) ? "tap" : audioMode;
   try { localStorage.setItem("onirique.wp.adv", JSON.stringify(adv)); } catch { /* stockage fermé */ }
   drawAdv();
@@ -1331,16 +1331,16 @@ $("pk-go").onclick = async () => {
     .then(async (s) => {
       if (adv.audio === "tap") {
         try { s.addTrack(await tapTrack(audioMode === "only" ? "include" : "exclude", tapPid)); }
-        catch (e) { say("Le son de l'appli n'a pas pu être capté (" + e.message + ") : le partage part sans son."); }
+        catch (e) { say("Le son de l’appli n’a pas pu être capté (" + e.message + ") : le partage part sans son."); }
       }
       share("screen", s);
-    }, (e) => say("Partage d'écran impossible : " + e.message));
+    }, (e) => say("Partage d’écran impossible : " + e.message));
 };
-// Le son capté par l'application (PCM 48 kHz stéréo) devient une piste audio, par un petit processeur audio.
+// Le son capté par l’application (PCM 48 kHz stéréo) devient une piste audio, par un petit processeur audio.
 const WORKLET = `class P extends AudioWorkletProcessor {
   constructor() { super(); this.q = []; this.off = 0; this.size = 0;
     this.port.onmessage = (e) => { const b = new Int16Array(e.data); this.q.push(b); this.size += b.length;
-      while (this.size > 48000 * 2 * 0.25 && this.q.length > 1) { this.size -= this.q.shift().length; this.off = 0; } }; } // 250 ms au plus : la latence ne s'accumule pas
+      while (this.size > 48000 * 2 * 0.25 && this.q.length > 1) { this.size -= this.q.shift().length; this.off = 0; } }; } // 250 ms au plus : la latence ne s’accumule pas
   process(_inputs, outputs) { const [l, r] = outputs[0];
     for (let i = 0; i < l.length; i++) { const b = this.q[0]; if (!b) { l[i] = r[i] = 0; continue; }
       l[i] = b[this.off] / 32768; r[i] = b[this.off + 1] / 32768; this.off += 2;
@@ -1355,23 +1355,23 @@ async function tapTrack(mode, pid) {
     await tapCtx.audioWorklet.addModule(URL.createObjectURL(new Blob([WORKLET], { type: "application/javascript" })));
     tapNode = new AudioWorkletNode(tapCtx, "onirique-pcm", { outputChannelCount: [2] });
     app.onLoopPcm((u8) => { const b = u8.buffer.slice(u8.byteOffset, u8.byteOffset + u8.byteLength); tapNode.port.postMessage(b, [b]); });
-    app.onLoopEnd((codeOut, error) => { if (codeOut && local) say("Le son de l'appli s'est coupé : " + (error || "erreur " + codeOut)); });
+    app.onLoopEnd((codeOut, error) => { if (codeOut && local) say("Le son de l’appli s’est coupé : " + (error || "erreur " + codeOut)); });
   }
   await tapCtx.resume();
-  const dest = tapCtx.createMediaStreamDestination(); // une piste neuve à chaque partage (l'ancienne a été arrêtée)
+  const dest = tapCtx.createMediaStreamDestination(); // une piste neuve à chaque partage (l’ancienne a été arrêtée)
   tapNode.disconnect();
   tapNode.connect(dest);
   if (!(await app.loopStart(mode, pid))) throw new Error("capture refusée");
   return dest.stream.getAudioTracks()[0];
 }
 $("sh-screen").onclick = () => app ? appShare() : navigator.mediaDevices.getDisplayMedia({ video: captureConstraints(), audio: adv.audio === "system",
-  // Chrome : l'onglet partagé n'envoie que son propre son (pas Discord) ; le son du système reste proposé.
+  // Chrome : l’onglet partagé n’envoie que son propre son (pas Discord) ; le son du système reste proposé.
   systemAudio: "include", selfBrowserSurface: "exclude", surfaceSwitching: "include" })
-  .then((s) => share("screen", s), (e) => e.name !== "NotAllowedError" && say("Partage d'écran impossible : " + e.message));
+  .then((s) => share("screen", s), (e) => e.name !== "NotAllowedError" && say("Partage d’écran impossible : " + e.message));
 $("sh-camera").onclick = async () => navigator.mediaDevices.getUserMedia(await camConstraints({ width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } }, {}))
   .then((s) => share("camera", s), (e) => say("Caméra indisponible : " + e.message));
 $("sh-file").onclick = () => $("file").click();
-// Un fichier de l'ordinateur : lu ici, et son image envoyée en direct aux autres (rien n'est envoyé sur nos serveurs).
+// Un fichier de l’ordinateur : lu ici, et son image envoyée en direct aux autres (rien n’est envoyé sur nos serveurs).
 $("file").onchange = async () => {
   const f = $("file").files[0];
   $("file").value = "";
@@ -1392,17 +1392,17 @@ function react(emoji) {
   if (!state || Date.now() - reactAt < 150) return;
   reactAt = Date.now();
   floatReaction({ emoji, name: "toi" });
-  api("POST", "/watchparty/" + code + "/react", { emoji }).catch(() => {}); // trop de clics d'affilée : celle-ci n'est montrée qu'ici
+  api("POST", "/watchparty/" + code + "/react", { emoji }).catch(() => {}); // trop de clics d’affilée : celle-ci n’est montrée qu’ici
 }
 const reactButtons = () => el("div", { className: "wp-reacts" }, ...REACTIONS.map((emoji) =>
   el("button", { type: "button", textContent: emoji, ariaLabel: "Réagir " + emoji, title: "Réagir " + emoji, onclick: () => react(emoji) })));
 $("chat-reacts").append(...reactButtons().children);
-// Où poser ce qui s'anime : sur la vidéo, sauf pour Twitch (qui se met en pause si on le recouvre) : alors dans la colonne
+// Où poser ce qui s’anime : sur la vidéo, sauf pour Twitch (qui se met en pause si on le recouvre) : alors dans la colonne
 // du plein écran, le bandeau de la Karmine Corp ou le chat.
 function overlayHost() {
   const st = $("stage");
   if (!st.classList.contains("tw")) return st;
-  if (document.fullscreenElement === st) return st.classList.contains("chat-off") ? document.createElement("div") : st; // plein écran sans colonne : rien sur l'image
+  if (document.fullscreenElement === st) return st.classList.contains("chat-off") ? document.createElement("div") : st; // plein écran sans colonne : rien sur l’image
   return kcOn() ? $("kc") : document.querySelector(".glass.chat") || st;
 }
 function floatReaction({ emoji, name }) {
@@ -1425,7 +1425,7 @@ const kcOn = () => !!(state && state.kc);
 let kcPrev = null, kcVoting = false;
 // Le logo de la Karmine Corp, dans son bleu (assets/kc-logo.svg).
 const KC_MARK = '<img src="assets/kc-logo.svg?v=1" alt="" draggable="false">';
-// Le logo de l'adversaire, quand on l'a : T1 (assets/t1-logo.webp) ; sinon ses initiales.
+// Le logo de l’adversaire, quand on l’a : T1 (assets/t1-logo.webp) ; sinon ses initiales.
 const oppLogo = (name) => ((String(name).trim().toUpperCase().split(" ")[0] === "T1") ? '<img src="assets/t1-logo.webp?v=1" alt="T1" draggable="false">' : "");
 
 function drawKc() {
@@ -1438,7 +1438,7 @@ function drawKc() {
   kcWall(on);
   setReactionSet(on);
   if (!on) { kcPrev = null; return; }
-  if ($("kc").contains(document.activeElement) && document.activeElement.tagName === "INPUT") return; // on tape le nom de l'adversaire
+  if ($("kc").contains(document.activeElement) && document.activeElement.tagName === "INPUT") return; // on tape le nom de l’adversaire
   const opp = k.oppName || "T1", total = k.kc + k.opp, done = k.kc >= 3 || k.opp >= 3, ctl = can("control");
   const step = (key, d) => el("button", { className: "kc-step", type: "button", textContent: d > 0 ? "+" : "−", ariaLabel: (d > 0 ? "Ajouter" : "Retirer") + " une manche",
     onclick: () => send("kc", { [key]: Math.max(0, Math.min(3, k[key] + d)) }) });
@@ -1447,7 +1447,7 @@ function drawKc() {
   const team = (key, name) => el("div", { className: "kc-team" + (key === "kc" ? " home" : "") },
     key === "kc" ? el("span", { className: "kc-mark", innerHTML: KC_MARK }) : (oppLogo(name) ? el("span", { className: "kc-opp-mark logo", innerHTML: oppLogo(name) }) : el("span", { className: "kc-opp-mark", textContent: name.slice(0, 3).toUpperCase() })),
     el("div", {}, key === "kc" ? el("b", { textContent: "KARMINE CORP" })
-      : ctl ? el("input", { className: "kc-opp", value: name, maxLength: 24, ariaLabel: "Nom de l'adversaire", onchange: (e) => send("kc", { oppName: e.target.value }) })
+      : ctl ? el("input", { className: "kc-opp", value: name, maxLength: 24, ariaLabel: "Nom de l’adversaire", onchange: (e) => send("kc", { oppName: e.target.value }) })
       : el("b", { textContent: name }), dots(k[key])),
     ctl && !done ? el("div", { className: "kc-steps" }, step(key, 1), step(key, -1)) : ctl ? el("div", { className: "kc-steps" }, step(key, -1)) : null);
   const point = !done && (k.kc === 2 || k.opp === 2) ? el("span", { className: "kc-point", textContent: k.kc === 2 && k.opp === 2 ? "Game décisive" : "Balle de match " + (k.kc === 2 ? "KC" : opp) }) : null;
@@ -1466,20 +1466,20 @@ function drawKc() {
   drawKcWhen();
   // Une manche de plus : tout le monde le voit au même moment.
   if (kcPrev) {
-    if (k.kc > kcPrev.kc) kcCelebrate(k.kc >= 3 ? "KARMINE CORP GAGNE LA SÉRIE !" : "KC PREND LA GAME " + (k.kc + k.opp) + " !", k.kc >= 3);
+    if (k.kc > kcPrev.kc) kcCelebrate(k.kc >= 3 ? "KARMINE CORP GAGNE LA SÉRIE" : "KC PREND LA GAME " + (k.kc + k.opp) + " !", k.kc >= 3);
     else if (k.opp > kcPrev.opp) kcBanner(opp + " prend la game " + (k.kc + k.opp) + ". On y croit 💙");
   }
   kcPrev = { kc: k.kc, opp: k.opp };
 }
-// Le coup d'envoi, puis « en direct », toutes les secondes.
+// Le coup d’envoi, puis « en direct », toutes les secondes.
 function drawKcWhen() {
   const box = $("kc-when");
   if (!box || !kcOn()) return;
   const left = KC_MATCH.start - Date.now();
   if (left > 0) {
     const h = Math.floor(left / 3600_000), m = Math.floor(left / 60_000) % 60, s = Math.floor(left / 1000) % 60;
-    box.textContent = "Coup d'envoi dans " + (h ? h + " h " : "") + String(m).padStart(h ? 2 : 1, "0") + " min " + (h ? "" : String(s).padStart(2, "0") + " s") + " · 23 h (Paris)";
-  } else box.textContent = left > -8 * 3600_000 ? "● EN DIRECT d'Allen (Texas)" : "";
+    box.textContent = "Coup d’envoi dans " + (h ? h + " h " : "") + String(m).padStart(h ? 2 : 1, "0") + " min " + (h ? "" : String(s).padStart(2, "0") + " s") + " · 23 h (Paris)";
+  } else box.textContent = left > -8 * 3600_000 ? "● EN DIRECT d’Allen (Texas)" : "";
 }
 setInterval(drawKcWhen, 1000);
 
@@ -1495,7 +1495,7 @@ function setReactionSet(on) {
   for (const b of document.querySelectorAll("#stage .wp-reacts")) fill(b);
 }
 
-// La vague du Blue Wall : elle traverse la vidéo chez tous, et la tribune du fond s'illumine.
+// La vague du Blue Wall : elle traverse la vidéo chez tous, et la tribune du fond s’illumine.
 function kcWave(name) {
   const stage = $("stage");
   const w = el("div", { className: "kc-wave" }, el("b", { textContent: "BLUE WALL" }), el("small", { textContent: "vague lancée par " + name }));
@@ -1550,13 +1550,13 @@ function kcWall(on) {
   wallRaf = requestAnimationFrame(frame);
 }
 
-// ——— La file d'attente : proposer, voter ; la plus votée passe ensuite ———
+// ——— La file d’attente : proposer, voter ; la plus votée passe ensuite ———
 const thumbOf = (it) => (it.kind === "youtube" ? `https://i.ytimg.com/vi/${it.id}/mqdefault.jpg` : "assets/favicon.png?v=2");
 const nameOf = (it) => it.title || (it.kind === "twitch" ? (it.channel ? "Twitch · " + it.channel : it.clip ? "Clip Twitch" : "Rediffusion Twitch " + it.video)
   : it.kind === "kick" ? "Kick · " + it.channel : it.kind === "vimeo" ? "Vimeo " + it.id : it.kind === "youtube" ? "YouTube " + it.id : (it.url || "").split("/").pop().slice(0, 80));
 function drawQueue() {
   const s = state, q = s.queue || [];
-  $("q-title").textContent = "File d'attente" + (q.length ? " · " + q.length : "");
+  $("q-title").textContent = "File d’attente" + (q.length ? " · " + q.length : "");
   $("q-next").hidden = !q.length || !can("source");
   $("q-add").hidden = !can("queue");
   const sorted = [...q].sort((a, b) => b.votes - a.votes);
@@ -1564,10 +1564,10 @@ function drawQueue() {
     el("img", { src: thumbOf(x.item), alt: "", loading: "lazy" }),
     el("div", { className: "grow" }, el("b", { textContent: nameOf(x.item) }), el("small", { textContent: "par " + x.by.name })),
     el("button", { className: "vote" + (x.voted ? " on" : ""), type: "button", title: x.voted ? "Retirer mon vote" : "Voter pour la voir ensuite",
-      onclick: () => send("vote", { qid: x.qid }) }, "▲ " + x.votes),
-    x.by.id === s.you.id || can("source") ? el("button", { className: "btn small", type: "button", textContent: "×", title: "Retirer de la file",
-      onclick: () => send("unqueue", { qid: x.qid }) }) : null))
-    : [el("li", { className: "muted", style: "background:none;font-size:13px", textContent: "Rien pour l'instant : propose la prochaine vidéo." })]));
+      onclick: () => send("vote", { qid: x.qid }) }, svg("up"), String(x.votes)),
+    x.by.id === s.you.id || can("source") ? el("button", { className: "btn small", type: "button", title: "Retirer de la file", ariaLabel: "Retirer de la file",
+      onclick: () => send("unqueue", { qid: x.qid }) }, svg("close")) : null))
+    : [el("li", { className: "muted", style: "background:none;font-size:13px", textContent: "Rien pour l’instant : propose la prochaine vidéo." })]));
 }
 $("q-add").onsubmit = (e) => { e.preventDefault(); const u = $("q-url").value.trim(); if (u) send("queue", { source: u }).then(() => { $("q-url").value = ""; }); };
 $("q-next").onclick = () => send("next");
@@ -1607,7 +1607,7 @@ setInterval(() => {
 // ——— Les caméras des présents : chacun envoie sa vignette à chacun (pair à pair, quatre au plus) ———
 let myCam = null, camGrace = 0;
 const camPcs = new Map(), camIce = new Map();
-// L'appareil choisi dans les Paramètres de l'application (par son nom ; window.__oniriqueAudio, posé par l'application).
+// L’appareil choisi dans les Paramètres de l’application (par son nom ; window.__oniriqueAudio, posé par l’application).
 async function deviceId(kind, name) {
   if (!name) return null;
   const d = (await navigator.mediaDevices.enumerateDevices()).find((x) => x.kind === kind && x.label === name);
@@ -1621,7 +1621,7 @@ async function camConstraints(video, audio) {
 $("cam-btn").onclick = async () => {
   if (myCam) { stopCam(); return send("cam", { on: false, peer: state.you.peer }); }
   try {
-    // La vignette : l'image seule, jamais le micro.
+    // La vignette : l’image seule, jamais le micro.
     myCam = await navigator.mediaDevices.getUserMedia(await camConstraints({ width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 20 } }, false));
   } catch (e) { return say("Caméra indisponible : " + e.message); }
   camGrace = Date.now() + 5000; // le temps que la salle apprenne ma caméra
@@ -1644,7 +1644,7 @@ const camTile = (peer, name) => {
 const camSignal = (to, data) => { signalChain.p = signalChain.p.then(() => api("POST", "/watchparty/" + code + "/signal", { from: state.you.peer, to, data: { ...data, cam: true } }).catch(() => {})); };
 function camPc(key, peer) {
   const pc = new RTCPeerConnection({ iceServers: ICE });
-  // dir : la connexion d'en face à laquelle ce candidat est destiné (ma sortie est son entrée, et l'inverse).
+  // dir : la connexion d’en face à laquelle ce candidat est destiné (ma sortie est son entrée, et l’inverse).
   pc.onicecandidate = (e) => e.candidate && camSignal(peer, { ice: e.candidate, dir: key.startsWith("out:") ? "in" : "out" });
   pc.onconnectionstatechange = () => { if (pc.connectionState === "failed") { pc.close(); camPcs.delete(key); } };
   camPcs.set(key, pc);
@@ -1700,7 +1700,7 @@ async function onCamSignal({ from, data }) {
 // ——— Le reste de la salle ———
 $("source").onsubmit = (e) => { e.preventDefault(); const u = $("s-url").value.trim(); if (u) send("source", { source: u }).then(() => { $("s-url").value = ""; }); };
 $("say").onsubmit = (e) => { e.preventDefault(); const t = $("say-text").value.trim(); if (t) { $("say-text").value = ""; send("chat", { text: t }); } };
-$("copy").onclick = () => navigator.clipboard.writeText(state.url).then(() => { $("copy").textContent = "Lien copié"; setTimeout(() => { $("copy").textContent = "Copier le lien d'invitation"; }, 2000); }, () => prompt("Le lien d'invitation :", state.url));
+$("copy").onclick = () => navigator.clipboard.writeText(state.url).then(() => { $("copy").textContent = "Lien copié"; setTimeout(() => { $("copy").textContent = "Copier le lien d’invitation"; }, 2000); }, () => prompt("Le lien d’invitation :", state.url));
 $("close").onclick = () => confirm("Fermer la WATCHPARTY pour tout le monde ?") && api("DELETE", "/watchparty/" + code).catch((e) => say(e.message));
 
 function enter(c) {
@@ -1715,9 +1715,9 @@ function enter(c) {
 async function home() {
   $("home").hidden = false;
   const { code: own, canCreate } = await api("GET", "/watchparty/mine");
-  // Ouvrir une salle : membres ONIRIQUE, beta-testeurs et équipe ; les autres comptes rejoignent par un lien d'invitation.
+  // Ouvrir une salle : membres ONIRIQUE, beta-testeurs et équipe ; les autres comptes rejoignent par un lien d’invitation.
   $("create").hidden = !canCreate;
-  if (!canCreate) say("Ouvrir une WATCHPARTY est réservé aux membres ONIRIQUE. Tu peux en rejoindre une avec le lien d'invitation d'un ami.");
+  if (!canCreate) say("Ouvrir une WATCHPARTY est réservé aux membres ONIRIQUE. Tu peux en rejoindre une avec le lien d’invitation d’un ami.");
   $("resume").hidden = !own;
   $("resume").onclick = () => enter(own);
 }
@@ -1728,7 +1728,7 @@ $("create").onsubmit = async (e) => {
     enter(r.code);
   } catch (err) { say(err.message); }
 };
-// Inviter mes amis (ceux que je suis et qui me suivent, avec accès à la WATCHPARTY) : la liste chargée à l'ouverture.
+// Inviter mes amis (ceux que je suis et qui me suivent, avec accès à la WATCHPARTY) : la liste chargée à l’ouverture.
 const avatarOf = (p) => (p.avatar ? p.avatar + "?w=80" : "assets/favicon.png?v=2");
 async function drawFriends() {
   const box = $("friend-list");
@@ -1739,18 +1739,18 @@ async function drawFriends() {
     f.here ? el("span", { className: "tag", textContent: "Déjà là" })
       : el("button", { className: "btn small", type: "button", textContent: f.invited ? "Invité" : "Inviter", disabled: f.invited,
         onclick: (e) => api("POST", "/watchparty/" + code + "/invite", { userId: f.id }).then(() => { e.target.textContent = "Invité"; e.target.disabled = true; }, (err) => say(err.message)) })))
-    : [el("li", { className: "muted", style: "background:none;font-size:13px", textContent: "Pas encore d'amis à inviter : tes amis sont les membres que tu suis et qui te suivent (pages de profil), avec accès à la WATCHPARTY." })]));
+    : [el("li", { className: "muted", style: "background:none;font-size:13px", textContent: "Pas encore d’amis à inviter : tes amis sont les membres que tu suis et qui te suivent (pages de profil), avec accès à la WATCHPARTY." })]));
 }
 $("friends").ontoggle = () => { if ($("friends").open && code) drawFriends(); };
 // Les invitations reçues : une autre WATCHPARTY, ou un HM (dans CLOUD).
 if (window.OniriqueInvites) {
-  OniriqueInvites.watch({ base: "/watchparty", title: "Invitation à la WATCHPARTY", says: (x) => x.from.name + " t'invite à sa WATCHPARTY",
+  OniriqueInvites.watch({ base: "/watchparty", title: "Invitation à la WATCHPARTY", says: (x) => x.from.name + " t’invite à sa WATCHPARTY",
     current: () => code, avatar: avatarOf, join: (c) => { if (c !== code) { location.hash = c; location.reload(); } } });
-  OniriqueInvites.watch({ base: "/hm", title: "Invitation au HM", says: (x) => x.from.name + " t'invite au HM", avatar: avatarOf,
+  OniriqueInvites.watch({ base: "/hm", title: "Invitation au HM", says: (x) => x.from.name + " t’invite au HM", avatar: avatarOf,
     join: (c) => { location.href = "mes-sons#/hm/" + c; } });
 }
-// Pendant une séance, les menus du site (Outils, Compte…) s'ouvrent dans un nouvel onglet : quitter la page couperait
-// la vidéo, le partage d'écran et les caméras. Et le navigateur demande avant de fermer une page qui partage.
+// Pendant une séance, les menus du site (Outils, Compte…) s’ouvrent dans un nouvel onglet : quitter la page couperait
+// la vidéo, le partage d’écran et les caméras. Et le navigateur demande avant de fermer une page qui partage.
 document.addEventListener("click", (e) => {
   const a = e.target.closest && e.target.closest("a[href]");
   if (!state || !a || a.target === "_blank" || e.ctrlKey || e.metaKey || e.shiftKey) return;
@@ -1766,12 +1766,12 @@ window.addEventListener("hashchange", () => { if (location.hash.slice(1) && loca
   if (!token) { $("state").innerHTML = 'Connecte-toi avec ton compte ONIRIQUE pour ouvrir ou rejoindre une WATCHPARTY : <a href="compte">Mon compte</a>.'; return; }
   try {
     if (!code) return await home();
-    // Par un lien d'invitation : un clic avant d'entrer, pour que le navigateur laisse la vidéo démarrer avec le son.
+    // Par un lien d’invitation : un clic avant d’entrer, pour que le navigateur laisse la vidéo démarrer avec le son.
     const r = await api("GET", "/watchparty/" + code);
     $("g-name").textContent = r.name;
     $("gate").hidden = false;
     $("enter").onclick = () => { $("gate").hidden = true; enter(code); };
-    // Sur un ordinateur, hors de l'application : la rejoindre dans ONIRIQUE CENTRAL, pour un partage d'écran plus fluide.
+    // Sur un ordinateur, hors de l’application : la rejoindre dans ONIRIQUE CENTRAL, pour un partage d’écran plus fluide.
     $("in-app").hidden = !!window.oniriqueApp || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     $("in-app").onclick = () => { location.href = "onirique://watchparty/" + code; };
     $("enter").focus();

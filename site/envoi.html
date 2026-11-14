@@ -7,13 +7,13 @@
 <script src="/api/announce.js" async></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Envoi de fichiers lourds par un lien — ONIRIQUE</title>
-<meta name="description" content="Envoie stems, sessions et clips jusqu'à 4 Go par un lien qui expire, avec mot de passe si tu veux. Avec ton compte ou ta seule adresse e-mail ; le destinataire télécharge sans compte.">
+<meta name="description" content="Envoie stems, sessions et clips jusqu’à 4 Go par un lien qui expire, avec mot de passe si tu veux. Avec ton compte ou ta seule adresse e-mail ; le destinataire télécharge sans compte.">
 <link rel="canonical" href="https://onirique.store/envoi">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ONIRIQUE">
 <meta property="og:locale" content="fr_FR">
 <meta property="og:title" content="Envoi de fichiers lourds par un lien — ONIRIQUE">
-<meta property="og:description" content="Stems, sessions et clips jusqu'à 4 Go, par un lien qui expire. Le destinataire télécharge sans compte.">
+<meta property="og:description" content="Stems, sessions et clips jusqu’à 4 Go, par un lien qui expire. Le destinataire télécharge sans compte.">
 <meta property="og:url" content="https://onirique.store/envoi">
 <meta property="og:image" content="https://onirique.store/assets/og-image.png">
 <meta property="og:image:width" content="1200">
@@ -33,100 +33,83 @@
 .rise:nth-child(2) { animation-delay: .08s; } .rise:nth-child(3) { animation-delay: .16s; } .rise:nth-child(4) { animation-delay: .24s; }
 @keyframes rise { from { opacity: 0; transform: translateY(18px); } }
 
-/* Zone de dépôt vivante */
-.drop { position: relative; overflow: hidden; isolation: isolate; border-style: solid; border-color: transparent; transition: transform .25s, border-color .2s, background .2s; }
-.drop::before { content: ""; position: absolute; inset: -1.5px; z-index: -2; border-radius: inherit; padding: 1.5px;
-  background: conic-gradient(from var(--turn, 0deg), transparent 0 60%, rgba(var(--acc),.9) 75%, transparent 90%);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: turn 6s linear infinite; }
-.drop::after { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; border: 1.5px dashed rgba(255,210,214,.18); }
-@property --turn { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
-@keyframes turn { to { --turn: 360deg; } }
-.drop svg { animation: float 2.6s ease-in-out infinite; }
-@keyframes float { 50% { transform: translateY(-7px); } }
-.drop.over { transform: scale(1.02); background: rgba(var(--acc),.14); }
-.drop.over svg { animation-duration: .7s; }
-.drop .orb { position: absolute; z-index: -1; width: 220px; height: 220px; border-radius: 50%; background: radial-gradient(circle, rgba(var(--acc),.28), transparent 70%); filter: blur(10px); animation: orb 9s ease-in-out infinite; pointer-events: none; }
-.drop .orb + .orb { animation-delay: -4.5s; animation-duration: 11s; }
-@keyframes orb { 0%,100% { transform: translate(-30%, 10%); } 50% { transform: translate(260%, -40%); } }
-.veil { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgba(8,4,6,.78); backdrop-filter: blur(8px); font: 800 clamp(26px, 5vw, 48px) var(--f-display); color: var(--mist); pointer-events: none; opacity: 0; transition: opacity .2s; }
+/* Zone de dépôt */
+.drop.over { background: rgba(var(--acc),.14); }
+.veil { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgba(9,8,10,.78); backdrop-filter: blur(8px); font: 800 clamp(26px, 5vw, 48px) var(--f-display); color: var(--mist); pointer-events: none; opacity: 0; transition: opacity .2s; }
 .veil.on { opacity: 1; }
-.veil span { padding: 40px 60px; border: 2px dashed rgba(var(--acc),.8); border-radius: 30px; animation: float 1.4s ease-in-out infinite; }
+.veil span { padding: 40px 60px; border: 2px dashed rgba(var(--acc),.8); border-radius: var(--r-dlg); }
 
 /* Fichiers : chacun sa carte et sa barre */
-.files { display: grid; gap: 8px; margin: 0; padding: 16px clamp(14px, 3vw, 24px) !important; list-style: none; }
-.file { position: relative; display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; gap: 4px 14px; align-items: center; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: rgba(0,0,0,.32); overflow: hidden; animation: slide .45s cubic-bezier(.2,.8,.2,1) both; }
+.files { display: grid; gap: 8px; margin: 0; padding: 16px clamp(16px, 3vw, 24px) !important; list-style: none; }
+.file { position: relative; display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 12px 16px 12px 12px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: rgba(0,0,0,.32); overflow: hidden; animation: slide .45s cubic-bezier(.2,.8,.2,1) both; }
 @keyframes slide { from { opacity: 0; transform: translateX(-16px) scale(.98); } }
 .file.out { animation: leave .3s ease forwards; }
 @keyframes leave { to { opacity: 0; transform: translateX(16px); height: 0; padding-block: 0; margin-block: -4px; } }
-.badge { grid-row: span 2; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 12px; background: linear-gradient(140deg, rgba(var(--acc),.35), rgba(var(--acc),.08)); font: 700 10px var(--f-mono); letter-spacing: .06em; color: var(--mist); }
+.badge { grid-row: span 2; display: grid; place-items: center; width: 48px; height: 48px; border-radius: 8px; background: rgba(var(--acc),.18); box-shadow: 0 0 0 1px rgba(var(--acc-hi),.2) inset; font: 600 11px var(--f-mono); letter-spacing: .12em; color: var(--mist); }
 .file .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--mist); font-weight: 600; }
 .file .meta { grid-column: 2; font: 500 12px var(--f-mono); color: var(--haze); }
-.file .side { grid-row: span 2; display: flex; align-items: center; gap: 10px; }
-.file button.x { width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 50%; background: none; color: var(--haze); font-size: 16px; line-height: 1; cursor: pointer; transition: color .2s, border-color .2s, transform .2s; }
-.file button.x:hover { color: var(--mist); border-color: var(--ember); transform: rotate(90deg); }
-.bar { grid-column: 2 / -1; height: 6px; border-radius: 99px; background: rgba(255,255,255,.07); overflow: hidden; }
-.bar i { display: block; height: 100%; width: var(--p, 0%); border-radius: inherit; background: linear-gradient(90deg, rgb(var(--acc-lo, 140,20,40)), rgb(var(--acc))); box-shadow: 0 0 14px rgba(var(--acc),.8); transition: width .25s linear; position: relative; overflow: hidden; }
+.file .side { grid-row: span 2; display: flex; align-items: center; gap: 12px; }
+.file button.x { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: var(--r-seg); background: none; color: var(--haze); cursor: pointer; transition: color .2s, border-color .2s; }
+.file button.x:hover { color: var(--mist); border-color: rgba(var(--acc-hi),.6); }
+.file button.x svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+.bar { grid-column: 2 / -1; height: 6px; border-radius: 999px; background: rgba(255,255,255,.07); overflow: hidden; }
+.bar i { display: block; height: 100%; width: var(--p, 0%); border-radius: inherit; background: linear-gradient(90deg, rgb(var(--acc-lo)), rgb(var(--acc))); transition: width .25s linear; position: relative; overflow: hidden; }
+/* Le reflet ne passe que pendant l'envoi du fichier */
 .bar i::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent); transform: translateX(-100%); animation: shine 1.1s linear infinite; }
 @keyframes shine { to { transform: translateX(100%); } }
 .file.wait .bar { opacity: .4; }
-.file.wait .bar i::after, .file.done .bar i::after { animation: none; }
-.file.done { border-color: rgba(155,227,176,.35); }
-.file.done .bar i { background: #9BE3B0; box-shadow: 0 0 12px rgba(155,227,176,.6); }
-.file.fail { border-color: rgba(255,122,133,.5); }
-.file.fail .bar i { background: #FF7A85; }
-.tick { width: 26px; height: 26px; }
-.tick circle { fill: none; stroke: #9BE3B0; stroke-width: 2; stroke-dasharray: 76; stroke-dashoffset: 76; animation: draw .5s ease forwards; }
-.tick path { fill: none; stroke: #9BE3B0; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 20; stroke-dashoffset: 20; animation: draw .35s .35s ease forwards; }
+.file.wait .bar i::after, .file.done .bar i::after, .file.fail .bar i::after { animation: none; }
+.file.done { border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+.file.done .bar i { background: var(--ok); }
+.file.fail { border-color: color-mix(in srgb, var(--danger) 50%, transparent); }
+.file.fail .bar i { background: var(--danger); }
+.tick { width: 24px; height: 24px; }
+.tick circle { fill: none; stroke: var(--ok); stroke-width: 1.5; stroke-dasharray: 76; stroke-dashoffset: 76; animation: draw .5s ease forwards; }
+.tick path { fill: none; stroke: var(--ok); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 20; stroke-dashoffset: 20; animation: draw .35s .35s ease forwards; }
 @keyframes draw { to { stroke-dashoffset: 0; } }
-.file.done .badge { animation: pop .5s ease; }
-@keyframes pop { 40% { transform: scale(1.18); } }
 
 /* Formulaire */
-.card textarea, .card input[type="password"], .card input[type="email"] { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px/1.4 var(--f-body); }
+.card textarea, .card input[type="password"], .card input[type="email"] { width: 100%; padding: 12px 14px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px/1.4 var(--f-body); }
 .card textarea { min-height: 80px; resize: vertical; }
-.card textarea:focus, .card input:focus { outline: none; border-color: var(--ember); box-shadow: 0 0 0 4px rgba(var(--acc),.14); }
-.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-.who { display: grid; gap: 14px; }
-.who .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.who { display: grid; gap: 16px; }
+.who .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
 .who .row label { flex: 1 1 220px; }
 .code { letter-spacing: .5em; font-family: var(--f-mono) !important; text-align: center; max-width: 220px; }
-.me { display: flex; align-items: center; gap: 10px; color: var(--soft); }
-.me::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: #9BE3B0; box-shadow: 0 0 10px #9BE3B0; }
+.me { display: flex; align-items: center; gap: 8px; color: var(--soft); }
+.me::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
 .or { color: var(--haze); font-size: 14px; }
 
 /* Envoi en cours : anneau et chiffres */
 .live { display: grid; grid-template-columns: auto 1fr; gap: 24px; align-items: center; }
 .ring { position: relative; width: 132px; height: 132px; }
-.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; } /* sinon la lueur est coupée au bord du dessin */
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 .ring circle { fill: none; stroke-width: 9; }
 .ring .track { stroke: rgba(255,255,255,.07); }
-.ring .arc { stroke: rgb(var(--acc)); stroke-linecap: round; stroke-dasharray: 339.3; stroke-dashoffset: 339.3; filter: drop-shadow(0 0 8px rgba(var(--acc),.9)); transition: stroke-dashoffset .3s linear; }
+.ring .arc { stroke: rgb(var(--acc)); stroke-linecap: round; stroke-dasharray: 339.3; stroke-dashoffset: 339.3; transition: stroke-dashoffset .3s linear; }
 .ring b { position: absolute; inset: 0; display: grid; place-items: center; font: 800 30px var(--f-display); font-variant-numeric: tabular-nums; color: var(--mist); }
-.stats { display: grid; gap: 6px; font: 500 13px var(--f-mono); color: var(--haze); }
+.stats { display: grid; gap: 8px; font: 500 13px var(--f-mono); color: var(--haze); }
 .stats strong { color: var(--mist); font: 700 18px var(--f-body); }
 
 /* Réussite */
 .done-box { position: relative; text-align: center; overflow: hidden; }
-.done-box .big-tick { width: 92px; height: 92px; margin: 6px auto 10px; display: block; }
+.done-box .big-tick { width: 92px; height: 92px; margin: 8px auto 12px; display: block; }
 .done-box .big-tick circle { stroke-dasharray: 280; stroke-dashoffset: 280; stroke-width: 3; }
 .done-box .big-tick path { stroke-dasharray: 60; stroke-dashoffset: 60; stroke-width: 4; }
-.done-box h2 { margin: 0 0 6px; }
-.link { margin: 14px auto !important; padding: 14px 18px; max-width: 560px; border-radius: 14px; border: 1px solid rgba(var(--acc),.5); background: rgba(0,0,0,.4); font: 500 15px var(--f-mono); overflow-wrap: anywhere; color: var(--mist) !important; box-shadow: 0 0 30px -8px rgba(var(--acc),.7); }
+.done-box h2 { margin: 0 0 8px; }
+.link { margin: 16px auto !important; padding: 12px 16px; max-width: 560px; border-radius: var(--r-ctl); border: 1px solid rgba(var(--acc),.5); background: rgba(0,0,0,.4); font: 500 15px var(--f-mono); overflow-wrap: anywhere; color: var(--mist) !important; }
 .done-box .actions { justify-content: center; }
-.spark { position: absolute; left: 50%; top: 70px; width: 7px; height: 7px; border-radius: 50%; background: rgb(var(--acc)); box-shadow: 0 0 10px rgb(var(--acc)); pointer-events: none; animation: burst 1.1s cubic-bezier(.1,.7,.3,1) forwards; }
-@keyframes burst { to { transform: translate(var(--x), var(--y)) scale(.2); opacity: 0; } }
 
 /* Mes envois et destinataire */
 .list { margin: 0; padding: 0 !important; list-style: none; }
-.list li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 12px clamp(18px, 4vw, 34px); border-top: 1px solid rgba(255,210,214,.08); }
+.list li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 12px clamp(16px, 4vw, 32px); border-top: 1px solid var(--line); }
 .list li:first-child { border-top: 0; }
 .list li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .list small { font: 500 12px var(--f-mono); color: var(--haze); white-space: nowrap; }
-.list button, a.dl { border: 0; background: none; color: var(--ember-text); font: 500 12px var(--f-mono); cursor: pointer; text-decoration: none; white-space: nowrap; }
-.file a.dl { padding: 8px 12px; border: 1px solid var(--line); border-radius: 99px; transition: border-color .2s, background .2s; }
-.file a.dl:hover { border-color: var(--ember); background: rgba(var(--acc),.12); }
+.list button, a.dl { border: 0; background: none; color: var(--ember-text); font: 500 12px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; cursor: pointer; text-decoration: none; white-space: nowrap; }
+.file a.dl { padding: 12px 16px; border-radius: var(--r-ctl); background: rgba(255,255,255,.04); box-shadow: 0 0 0 1px rgba(255,255,255,.10) inset; color: var(--label); transition: color .25s, background .25s, box-shadow .25s; }
+.file a.dl:hover { color: #fff; background: rgba(255,255,255,.07); box-shadow: 0 0 0 1px rgba(255,255,255,.14) inset; }
 .message { white-space: pre-wrap; }
-.expire { display: inline-flex; gap: 8px; align-items: center; margin-top: 10px; padding: 7px 14px; border: 1px solid var(--line); border-radius: 99px; font: 500 12px var(--f-mono); color: var(--haze); }
 @media (max-width: 560px) { .live { grid-template-columns: 1fr; justify-items: center; text-align: center; } .file { grid-template-columns: 40px minmax(0, 1fr) auto; } .badge { width: 40px; height: 40px; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
@@ -148,7 +131,7 @@
     <h1 class="rise" id="r-title">Des fichiers <em>pour toi</em></h1>
     <p class="lede rise" id="r-from"></p>
     <form class="card rise" id="r-lock" hidden>
-      <label>Mot de passe de l'envoi<input id="r-password" type="password" required autocomplete="off"></label>
+      <label>Mot de passe de l’envoi<input id="r-password" type="password" required autocomplete="off"></label>
       <div class="actions"><button class="go" type="submit">Ouvrir</button></div>
     </form>
     <div class="card rise" id="r-card" hidden>
@@ -164,10 +147,9 @@
   <section class="hero" id="send" hidden>
     <p class="eyebrow rise">Envoi de fichiers</p>
     <h1 class="rise">Tes fichiers lourds, <em>par un lien</em></h1>
-    <p class="lede rise">Stems, sessions, clips : jusqu'à 4 Go par envoi. Le lien expire quand tu veux, et ton destinataire télécharge sans compte.</p>
+    <p class="lede rise">Stems, sessions, clips : jusqu’à 4 Go par envoi. Le lien expire quand tu veux, et ton destinataire télécharge sans compte.</p>
     <div class="rise">
       <button class="drop" id="drop" type="button">
-        <span class="orb" style="top:-60px;left:0"></span><span class="orb" style="bottom:-80px;left:10%"></span>
         <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>
         <strong>Dépose tes fichiers ici</strong>
         <span>ou clique pour les choisir · jusqu’à 4 Go par envoi</span>
@@ -210,7 +192,7 @@
       <div class="card done-box" id="s-done" hidden>
         <div>
           <svg class="tick big-tick" viewBox="0 0 100 100"><circle cx="50" cy="50" r="44"/><path d="M30 52l13 13 27-29"/></svg>
-          <h2>C'est en ligne !</h2>
+          <h2>C’est en ligne</h2>
           <p class="muted" id="s-done-text"></p>
           <p class="link" id="s-link"></p>
           <div class="actions"><button class="go" id="s-copy" type="button">Copier le lien</button><a class="go ghost" id="s-mail" href="#">Envoyer par e-mail</a><button class="go ghost" id="s-again" type="button">Nouvel envoi</button></div>
@@ -258,9 +240,9 @@ async function receive(key = "") {
     const e = await api("/api/envois/" + encodeURIComponent(id) + q);
     $("r-lock").hidden = true;
     if (e.title) $("r-title").textContent = e.title;
-    $("r-from").textContent = e.sender + " t'envoie " + e.files.length + (e.files.length > 1 ? " fichiers." : " fichier.");
+    $("r-from").textContent = e.sender + " t’envoie " + e.files.length + (e.files.length > 1 ? " fichiers." : " fichier.");
     $("r-count").textContent = e.files.length + (e.files.length > 1 ? " fichiers · " : " fichier · ") + size(e.size);
-    $("r-expires").textContent = "Disponible jusqu'au " + day(e.expiresAt);
+    $("r-expires").textContent = "Disponible jusqu’au " + day(e.expiresAt);
     $("r-message").hidden = !e.message;
     $("r-message").textContent = e.message;
     const base = "/api/envois/" + encodeURIComponent(id);
@@ -290,7 +272,7 @@ function fileRow(f, { removable } = {}) {
   const meta = el("span", { className: "meta", textContent: size(f.size) });
   const side = el("span", { className: "side" });
   const li = el("li", { className: "file" + (removable ? "" : " wait") }, el("span", { className: "badge", textContent: ext(f.name) }), el("span", { className: "name", textContent: f.name }), side, meta);
-  if (removable) side.append(el("button", { className: "x", type: "button", title: "Retirer", ariaLabel: "Retirer " + f.name, textContent: "×", onclick: () => {
+  if (removable) side.append(el("button", { className: "x", type: "button", title: "Retirer", ariaLabel: "Retirer " + f.name, innerHTML: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>', onclick: () => {
     li.classList.add("out");
     setTimeout(() => { files.splice(files.indexOf(f), 1); drawFiles(); }, 280);
   } }));
@@ -308,7 +290,7 @@ function drawFiles() {
 const add = (list) => { files.push(...[...list].filter((f) => f.size > 0)); drawFiles(); };
 $("drop").onclick = () => $("file").click();
 $("file").onchange = () => { add($("file").files); $("file").value = ""; };
-// Glisser n'importe où sur la page : un voile l'annonce.
+// Glisser n’importe où sur la page : un voile l’annonce.
 let depth = 0;
 const sending = () => $("send").hidden || !$("s-live").hidden || !$("s-done").hidden;
 addEventListener("dragenter", (e) => { if (sending() || !e.dataTransfer?.types.includes("Files")) return; depth++; $("veil").classList.add("on"); $("drop").classList.add("over"); });
@@ -324,13 +306,13 @@ $("s-sendcode").onclick = async () => {
     await api("/api/envois/code", { method: "POST", json: { email: $("s-email").value.trim() } });
     $("code-row").hidden = false;
     $("s-code").focus();
-    $("s-sendcode").textContent = "Code envoyé ✓";
+    $("s-sendcode").textContent = "Code envoyé";
     setTimeout(() => { $("s-sendcode").textContent = "Renvoyer un code"; $("s-sendcode").disabled = false; }, 30000);
   } catch (error) { fail("s-error")(error); $("s-sendcode").disabled = false; }
 };
 
-// L'envoi : chaque fichier en morceaux de 32 Mo (un petit fichier d'un bloc), 4 requêtes à la fois pour remplir la
-// ligne ; un morceau raté est renvoyé jusqu'à 3 fois. XHR pour suivre la progression octet par octet.
+// L’envoi : chaque fichier en morceaux de 32 Mo (un petit fichier d’un bloc), 4 requêtes à la fois pour remplir la
+// ligne ; un morceau raté est renvoyé jusqu’à 3 fois. XHR pour suivre la progression octet par octet.
 const CHUNK = 32 * 1024 ** 2, PARALLEL = 4;
 const send = (method, url, key, body, onProgress) => new Promise((resolve, reject) => {
   const x = new XMLHttpRequest();
@@ -339,7 +321,7 @@ const send = (method, url, key, body, onProgress) => new Promise((resolve, rejec
   x.setRequestHeader("Content-Type", "application/octet-stream");
   x.upload.onprogress = (e) => onProgress(e.loaded);
   x.onload = () => (x.status < 300 ? resolve() : reject(Object.assign(new Error((() => { try { return JSON.parse(x.responseText).error; } catch { return "Envoi interrompu."; } })()), { status: x.status })));
-  x.onerror = () => reject(new Error("Connexion perdue pendant l'envoi."));
+  x.onerror = () => reject(new Error("Connexion perdue pendant l’envoi."));
   x.send(body);
 });
 async function retry(task) {
@@ -362,7 +344,7 @@ $("s-card").onsubmit = async (event) => {
   try {
     ({ id: envoi, key } = await api("/api/envois", { method: "POST", json: { title: $("s-title").value, message: $("s-message").value, days: Number($("s-days").value),
       password: $("s-password").value, ...(me ? {} : { email: $("s-email").value.trim(), code: $("s-code").value.trim() }) } }));
-    // L'écran d'envoi : l'anneau global et une barre par fichier.
+    // L’écran d’envoi : l’anneau global et une barre par fichier.
     $("s-card").hidden = true;
     $("drop").hidden = true;
     $("s-live").hidden = false;
@@ -380,7 +362,7 @@ $("s-card").onsubmit = async (event) => {
       $("st-bytes").textContent = size(sent) + " sur " + size(sum);
       if (speed > 0) $("st-speed").textContent = size(speed) + "/s · encore " + clock((sum - sent) / speed);
     };
-    // Les tâches dans l'ordre des fichiers : les 4 connexions avancent ensemble sur un même gros fichier.
+    // Les tâches dans l’ordre des fichiers : les 4 connexions avancent ensemble sur un même gros fichier.
     const tasks = [];
     files.forEach((f, i) => {
       const row = rows[i], count = Math.max(1, Math.ceil(f.size / CHUNK));
@@ -404,7 +386,7 @@ $("s-card").onsubmit = async (event) => {
         tasks.push(() => retry(() => send("POST", base + "?name=" + encodeURIComponent(f.name), key, f, (l) => progress(0, l))).then(finished));
         return;
       }
-      // La place du fichier est réservée au premier morceau ; les autres l'attendent.
+      // La place du fichier est réservée au premier morceau ; les autres l’attendent.
       let reserved = null;
       const reserve = () => (reserved ||= api(base + "/new", { method: "POST", headers: { "X-Envoi-Cle": key }, json: { name: f.name, size: f.size } }).then((r) => (id = r.id)));
       for (let n = 0; n < count; n++) {
@@ -420,7 +402,7 @@ $("s-card").onsubmit = async (event) => {
     const worker = async () => { while (next < tasks.length) await tasks[next++](); };
     try { await Promise.all(Array.from({ length: PARALLEL }, worker)); }
     catch (error) {
-      next = tasks.length; // les autres connexions s'arrêtent après leur morceau en cours
+      next = tasks.length; // les autres connexions s’arrêtent après leur morceau en cours
       rows.filter((r) => !r.classList.contains("done") && !r.classList.contains("wait")).forEach((r) => { r.classList.add("fail"); r.meta.textContent = "Échec"; });
       throw error;
     }
@@ -430,11 +412,10 @@ $("s-card").onsubmit = async (event) => {
     const link = location.origin + "/envoi?id=" + envoi;
     $("s-link").textContent = link;
     $("s-done-text").textContent = files.length + (files.length > 1 ? " fichiers" : " fichier") + " · " + size(sum) + " · le lien expire dans " + $("s-days").selectedOptions[0].textContent
-      + (me ? "" : ". Le lien t'a aussi été envoyé par e-mail.");
+      + (me ? "" : ". Le lien t’a aussi été envoyé par e-mail.");
     $("s-mail").href = "mailto:?subject=" + encodeURIComponent($("s-title").value || "Des fichiers pour toi") + "&body=" + encodeURIComponent(($("s-message").value ? $("s-message").value + "\n\n" : "") + link);
     $("s-live").hidden = true;
     $("s-done").hidden = false;
-    burst();
     if (me) mine();
   } catch (error) {
     if (envoi) api("/api/envois/" + envoi, { method: "DELETE", headers: { "X-Envoi-Cle": key } }).catch(() => {});
@@ -445,20 +426,8 @@ $("s-card").onsubmit = async (event) => {
     $("s-go").disabled = false;
   }
 };
-// Une gerbe d'étincelles autour de la coche.
-function burst() {
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  const box = $("s-done");
-  for (let i = 0; i < 28; i++) {
-    const a = Math.random() * Math.PI * 2, r = 80 + Math.random() * 160;
-    const s = el("span", { className: "spark" });
-    s.style.cssText = `--x:${Math.cos(a) * r}px;--y:${Math.sin(a) * r}px;animation-delay:${Math.random() * 120}ms`;
-    box.append(s);
-    setTimeout(() => s.remove(), 1400);
-  }
-}
 $("s-copy").onclick = async () => {
-  try { await navigator.clipboard.writeText($("s-link").textContent); $("s-copy").textContent = "Lien copié ✓"; } catch { prompt("Copie le lien :", $("s-link").textContent); }
+  try { await navigator.clipboard.writeText($("s-link").textContent); $("s-copy").textContent = "Lien copié"; } catch { prompt("Copie le lien :", $("s-link").textContent); }
   setTimeout(() => ($("s-copy").textContent = "Copier le lien"), 1800);
 };
 $("s-again").onclick = () => {
@@ -472,7 +441,7 @@ async function mine() {
   $("mine").hidden = !list.length;
   $("mine-list").replaceChildren(...list.map((e) => el("li", {},
     el("span", {}, el("a", { href: "/envoi?id=" + e.id, textContent: e.title || e.files.length + (e.files.length > 1 ? " fichiers" : " fichier") })),
-    el("small", { textContent: size(e.size) + " · " + e.downloads + " téléch. · jusqu'au " + day(e.expiresAt) + (e.locked ? " · 🔒" : "") }),
+    el("small", { textContent: size(e.size) + " · " + e.downloads + (e.downloads > 1 ? " téléchargements" : " téléchargement") + " · jusqu’au " + day(e.expiresAt) + (e.locked ? " · mot de passe" : "") }),
     el("button", { type: "button", textContent: "Supprimer", onclick: async () => { if (confirm("Supprimer cet envoi ? Le lien ne marchera plus.")) { await api("/api/envois/" + e.id, { method: "DELETE" }).catch(fail("s-error")); mine(); } } }))));
 }
 

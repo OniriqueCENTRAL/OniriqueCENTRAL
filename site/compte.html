@@ -11,17 +11,7 @@
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
 <style>
-/* Mêmes tokens que onirique.html : la page compte doit se lire comme une page du site. */
-:root {
-  --night: #0D0809; --blood: rgb(var(--acc-lo)); --deep: #1A080A; --deep-2: #2A0A0E; --line: rgba(255,210,214,.13);
-  --mist: #F6EEEE; --haze: #A88F92; --ember: rgb(var(--acc)); --bone: #FFECEE;
-  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(var(--acc),.55);
-  --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
-  --f-dream: "Grenze Gotisch", Georgia, serif;
-  --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
-  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
-  color-scheme: dark;
-}
+/* Les couleurs, polices et rayons viennent de da.css (chargée après). */
 * { box-sizing: border-box; }
 body {
   margin: 0; min-height: 100vh; color: var(--mist); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased;
@@ -39,34 +29,35 @@ header .wrap { display: flex; align-items: center; justify-content: space-betwee
 .brand img { width: 44px; height: auto; margin-block: -12px; filter: drop-shadow(0 0 6px rgba(var(--acc),.8)); }
 main { padding-block: clamp(32px, 7vw, 72px); }
 h1 { font: 800 clamp(26px, 5vw, 38px)/1.1 var(--f-display); margin: 12px 0 8px; }
-h1 em { font: 600 1.3em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
 h2 { font: 800 15px/1.3 var(--f-display); letter-spacing: .04em; margin: 0; }
 .eyebrow { font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); display: flex; align-items: center; gap: 10px; }
-.eyebrow::before { content: ""; flex: none; width: 13px; height: 13px; background: var(--mist); clip-path: polygon(50% 0, 56% 44%, 100% 50%, 56% 56%, 50% 100%, 44% 56%, 0 50%, 44% 44%); filter: drop-shadow(0 0 4px var(--ember)); }
+.eyebrow::before { content: ""; flex: none; width: 12px; height: 12px; background: var(--mist); clip-path: polygon(50% 0, 56% 44%, 100% 50%, 56% 56%, 50% 100%, 44% 56%, 0 50%, 44% 44%); filter: drop-shadow(0 0 4px var(--ember)); }
 .muted { color: var(--haze); }
-.panel { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 18px; padding: clamp(18px, 3vw, 26px); margin-top: 18px; }
+.panel { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: var(--r-card); padding: clamp(16px, 3vw, 24px); margin-top: 16px; }
 .panel > .eyebrow { margin-bottom: 16px; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 20px; border-radius: 999px; border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
 .btn-primary { background: var(--mist); color: var(--night); box-shadow: 0 10px 40px -10px rgba(var(--acc),.6); }
 .btn-ghost { background: rgba(255,255,255,.03); color: var(--mist); border-color: var(--line); }
 .btn-ghost:hover { border-color: var(--ember); }
 .btn:disabled { opacity: .5; cursor: default; }
-.tabs { display: inline-flex; padding: 4px; gap: 2px; border-radius: 999px; background: rgba(0,0,0,.35); border: 1px solid var(--line); }
-.tabs button { padding: 9px 18px; border: 0; border-radius: 999px; background: none; color: var(--haze); cursor: pointer; font: 500 12px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; }
-.tabs button[aria-selected="true"] { background: #D12A3A; color: #fff; } /* braise assombrie : blanc lisible en 12 px (5,1:1) */
+/* Onglets « seg » de la charte, les mêmes que ceux du profil et de la carte */
+.tabs { display: inline-flex; flex-wrap: wrap; padding: 4px; gap: 4px; border-radius: 14px; background: rgba(0,0,0,.35); border: 1px solid var(--line); }
+.tabs button { padding: 8px 16px; border: 0; border-radius: var(--r-seg); background: none; color: var(--haze); cursor: pointer; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; transition: color .25s, background .25s, box-shadow .25s; }
+.tabs button:hover { color: #fff; }
+.tabs button[aria-selected="true"] { background: var(--lit); color: #fff; box-shadow: var(--lit-shadow); }
 form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; max-width: 420px; }
-label { display: grid; gap: 7px; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
+label { display: grid; gap: 8px; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
 input { height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px var(--f-body); }
 label.check { display: flex; align-items: flex-start; gap: 10px; font: 400 14px/1.5 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--mist); }
 label .hint { font: 400 12px/1.4 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--haze); }
 label.check input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; padding: 0; accent-color: var(--ember); }
-.error { color: #FF7A85; font-size: 14px; }
-/* Vos informations : le profil et le mot de passe, côte à côte quand la place le permet */
+.error { color: var(--danger); font-size: 14px; }
+/* Tes informations : le profil et le mot de passe, côte à côte quand la place le permet */
 .settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 28px 40px; align-items: start; }
 .settings input:disabled { opacity: .6; }
 .a2f-qr svg { display: block; width: 184px; height: 184px; border-radius: 12px; }
-.a2f-codes { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px 16px; margin: 0; padding: 14px 18px; list-style: none; border: 1px dashed var(--line); border-radius: 14px; font: 500 15px/1.4 var(--f-mono); user-select: all; }
-.legal { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 14px; }
+.a2f-codes { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px 16px; margin: 0; padding: 12px 16px; list-style: none; border: 1px dashed var(--line); border-radius: var(--r-ctl); font: 500 15px/1.4 var(--f-mono); user-select: all; }
+.legal { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 14px; }
 .legal a { color: var(--haze); text-decoration: none; }
 .legal a:hover { color: var(--mist); }
 .notice { color: var(--bone); font-size: 14px; }
@@ -74,28 +65,28 @@ label.check input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; padd
 .link { background: none; border: 0; padding: 0; color: var(--haze); font: 500 14px var(--f-body); text-decoration: underline; cursor: pointer; }
 .link:hover { color: var(--mist); }
 .rows { display: grid; }
-.row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 18px; padding: 14px 0; border-top: 1px solid var(--line); }
+.row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 12px 0; border-top: 1px solid var(--line); }
 .row:first-child { border-top: 0; padding-top: 0; }
 .key { font: 500 13px/1.4 var(--f-mono); letter-spacing: .05em; color: var(--bone); word-break: break-all; }
 .pill { font: 500 11px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--haze); white-space: nowrap; }
 .pill.on { color: var(--bone); border-color: rgba(var(--acc),.6); background: rgba(var(--acc),.16); }
 /* Photo de profil */
-.photo { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-bottom: 26px; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+.photo { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
 .photo img { flex: none; width: 84px; height: 84px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); box-shadow: 0 0 0 4px rgba(var(--acc),.14), 0 12px 34px -12px rgba(var(--acc),.7); }
 .photo p { margin: 8px 0 0; font-size: 13px; }
 .panel { scroll-margin-top: 20px; }
 .accent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
-.accent-grid button { display: grid; justify-items: center; gap: 8px; padding: 12px 6px 10px; border: 0; border-radius: 16px; background: rgba(255,255,255,.03); box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset; color: var(--haze); font: 500 10px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; transition: transform .35s var(--ease, ease), box-shadow .35s, color .25s; }
-.accent-grid button i { width: 26px; height: 26px; border-radius: 50%; background: var(--swatch); box-shadow: 0 0 14px var(--swatch); }
+.accent-grid button { display: grid; justify-items: center; gap: 8px; padding: 12px 8px; border: 0; border-radius: var(--r-ctl); background: rgba(255,255,255,.03); box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset; color: var(--haze); font: 500 11px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; transition: transform .35s var(--ease, ease), box-shadow .35s, color .25s; }
+.accent-grid button i { width: 24px; height: 24px; border-radius: 50%; background: var(--swatch); box-shadow: 0 0 14px var(--swatch); }
 .accent-grid button:hover { transform: translateY(-3px); color: #fff; }
 .accent-grid button[aria-checked="true"] { color: #fff; box-shadow: 0 0 0 1px rgba(var(--acc-hi),.75) inset, 0 0 26px rgba(var(--acc),.3); }
 .accent-own { display: inline-flex; flex-direction: row; align-items: center; gap: 10px; cursor: pointer; }
 .accent-own input { width: 38px; height: 30px; padding: 0; border: 0; border-radius: 10px; background: none; cursor: pointer; }
 /* Compte : les infos à gauche, les plugins et services à droite ; une seule colonne sur téléphone */
 #auth { max-width: 780px; margin-inline: auto; }
-.cols { display: grid; gap: 18px; margin-top: 18px; align-items: start; }
+.cols { display: grid; gap: 16px; margin-top: 16px; align-items: start; }
 /* minmax(0, 1fr) : un contenu long (une description en bulle…) se coupe au lieu d'élargir la colonne et toute la page. */
-.col { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; min-width: 0; }
+.col { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; min-width: 0; }
 .col > .panel { margin-top: 0; }
 @media (min-width: 980px) { .cols { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 24px; } }.between { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; }
 /* Shorts YouTube programmés : une carte par vidéo */
@@ -104,33 +95,34 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
 .shorts { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; margin-top: 20px; }
 .shorts:empty { display: none; }
 /* La liste des Shorts, repliée : un clic sur sa ligne la déroule. */
-.yt-list { margin-top: 18px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.02); }
-.yt-list > summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; list-style: none; font: 600 14px/1.3 var(--f-body); color: var(--mist); }
+.yt-list { margin-top: 16px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: rgba(255,255,255,.02); }
+.yt-list > summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px; cursor: pointer; list-style: none; font: 600 14px/1.3 var(--f-body); color: var(--mist); }
 .yt-list > summary::-webkit-details-marker { display: none; }
-.yt-list > summary::after { content: ""; flex: none; width: 9px; height: 9px; margin-right: 4px; border-right: 2px solid var(--haze); border-bottom: 2px solid var(--haze); transform: rotate(45deg) translateY(-3px); transition: transform .2s; }
+.yt-list > summary::after { content: ""; flex: none; width: 8px; height: 8px; margin-right: 4px; border-right: 2px solid var(--haze); border-bottom: 2px solid var(--haze); transform: rotate(45deg) translateY(-3px); transition: transform .2s; }
 .yt-list[open] > summary::after { transform: rotate(-135deg) translateY(-3px); }
 .yt-list > summary:hover { color: #fff; }
-.yt-list > .shorts { margin: 0; padding: 0 14px 14px; }
-.short { max-width: none; padding: 18px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.025); }
-.short.failed { border-color: rgba(255,122,133,.55); }
+.yt-list > .shorts { margin: 0; padding: 0 12px 12px; }
+.short { max-width: none; padding: 16px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: rgba(255,255,255,.025); }
+.short.failed { border-color: color-mix(in srgb, var(--danger) 55%, transparent); }
 .short h2 { word-break: break-word; }
 .short .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 14px; }
 .short .wide { grid-column: 1 / -1; }
 .chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; }
-.chip { max-width: 34ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: none; color: var(--haze); font: 400 13px/1.2 var(--f-body); cursor: pointer; }
+/* Une suggestion de texte : une phrase, donc Hanken, au rayon des contrôles */
+.chip { max-width: 34ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 8px 12px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: none; color: var(--haze); font: 400 13px/1.2 var(--f-body); cursor: pointer; }
 .chip:hover { border-color: var(--ember); color: var(--mist); }
 /* Réponses automatiques : les comptes reliés, le choix de la publication, une carte par automation */
 .accounts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px; }
-.account { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 14px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.025); }
+.account { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 12px 16px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: rgba(255,255,255,.025); }
 .account b { display: block; font: 700 15px var(--f-body); color: var(--mist); }
-.account small { display: block; margin-top: 3px; font-size: 13px; color: var(--haze); }
-.account small.error { color: #FF7A85; }
-#so-form { display: grid; gap: 18px; }
+.account small { display: block; margin-top: 4px; font-size: 13px; color: var(--haze); }
+.account small.error { color: var(--danger); }
+#so-form { display: grid; gap: 16px; }
 .posts { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; max-height: 360px; overflow-y: auto; padding: 2px; }
 .post { position: relative; aspect-ratio: 9 / 13; padding: 0; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42) center / cover no-repeat; color: var(--haze); cursor: pointer; overflow: hidden; text-align: left; }
-.post span { position: absolute; inset: auto 0 0; padding: 22px 8px 7px; font: 400 11px/1.3 var(--f-body); color: var(--mist); background: linear-gradient(transparent, rgba(0,0,0,.85)); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.post span { position: absolute; inset: auto 0 0; padding: 24px 8px 8px; font: 400 11px/1.3 var(--f-body); color: var(--mist); background: linear-gradient(transparent, rgba(0,0,0,.85)); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .post:hover { border-color: var(--ember); }
-.post[aria-pressed="true"] { border-color: var(--ember); box-shadow: 0 0 0 2px var(--ember), 0 0 22px -4px var(--ember); }
+.post[aria-pressed="true"] { border-color: var(--ember); box-shadow: 0 0 0 2px var(--ember); }
 .auto { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 16px; }
 .auto.paused { opacity: .62; }
 .auto .thumb { width: 72px; aspect-ratio: 9 / 13; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.42) center / cover no-repeat; }
@@ -138,22 +130,24 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
 .auto p { margin: 8px 0 0; font-size: 14px; color: var(--haze); white-space: pre-line; word-break: break-word; }
 .auto p b { color: var(--mist); font-weight: 600; }
 .auto .log { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13px; color: var(--haze); }
-.auto .log li.failed { color: #FF7A85; }
+.auto .log li.failed { color: var(--danger); }
 /* Parrainage */
-.refer { display: grid; gap: 18px; }
+.refer { display: grid; gap: 16px; }
 .refer-link { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .refer-link input { flex: 1 1 260px; min-width: 0; font: 500 14px var(--f-mono); color: var(--bone); }
 .perks { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 12px; }
-.perk { padding: 16px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.025); }
+.perk { padding: 16px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: rgba(255,255,255,.025); }
 .perk b { display: block; font: 800 22px/1.15 var(--f-display); color: var(--mist); }
 .perk span { display: block; margin-top: 6px; font-size: 14px; color: var(--haze); }
-.stats { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 14px; color: var(--haze); }
+.stats { display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 14px; color: var(--haze); }
 .stats strong { color: var(--mist); font: 700 17px var(--f-mono); margin-right: 6px; }
 .meter { height: 8px; border-radius: 999px; background: rgba(255,255,255,.06); overflow: hidden; }
 .meter i { display: block; height: 100%; background: linear-gradient(90deg, rgb(var(--acc-lo)), var(--ember)); border-radius: 999px; }
 .gift { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 12px 0; border-top: 1px solid var(--line); }
 .gift .key { font-size: 15px; }
-.welcome { padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(var(--acc),.6); background: rgba(var(--acc),.12); color: var(--bone); font-size: 14px; }
+.welcome { padding: 12px 16px; border-radius: var(--r-ctl); border: 1px solid rgba(var(--acc),.6); background: rgba(var(--acc),.12); color: var(--bone); font-size: 14px; }
+/* La suppression du compte : le seul bouton rouge de la page (l'id passe devant le bouton secondaire de da.css) */
+#delete-form .btn { color: var(--danger); box-shadow: 0 0 0 1px color-mix(in srgb, var(--danger) 50%, transparent) inset; }
 [hidden] { display: none !important; }
 </style>
 <link rel="stylesheet" href="/assets/da.css?v=9">
@@ -170,8 +164,8 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
   <!-- Déconnecté -->
   <section id="auth" hidden>
     <div class="eyebrow">Compte</div>
-    <h1>Votre <em>compte</em></h1>
-    <p class="muted">Le même compte que dans l'application ONIRIQUE CENTRAL.</p>
+    <h1>Ton <em>compte</em></h1>
+    <p class="muted">Le même compte que dans l’application ONIRIQUE CENTRAL.</p>
     <div class="panel">
       <div class="tabs" role="tablist" style="margin-bottom:20px">
         <button type="button" role="tab" id="tab-login" aria-selected="true">Connexion</button>
@@ -182,11 +176,11 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
         <label id="name-field" hidden>Nom<input id="name" maxlength="80" autocomplete="name"></label>
         <label>E-mail<input id="email" type="email" required autocomplete="username"></label>
         <label id="password-field"><span id="password-label">Mot de passe</span><input id="password" type="password" required autocomplete="current-password"></label>
-        <label id="code-field" hidden>Code de l'application d'authentification<input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="11" spellcheck="false" style="font-family:var(--f-mono);letter-spacing:.12em"></label>
+        <label id="code-field" hidden>Code de l’application d’authentification<input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="11" spellcheck="false" style="font-family:var(--f-mono);letter-spacing:.12em"></label>
         <label class="check" id="remember-field"><input type="checkbox" id="remember" checked><span>Se souvenir de moi sur cet appareil</span></label>
         <label id="ref-field" hidden>Code de parrainage (facultatif)<input id="ref" maxlength="12" autocomplete="off" spellcheck="false" style="text-transform:uppercase;font-family:var(--f-mono)"></label>
-        <label class="check" id="news-field" hidden><input type="checkbox" id="news"><span>J'accepte de recevoir par e-mail les nouveautés, offres et codes promo d'ONIRIQUE. Désinscription en un clic dans chaque message.</span></label>
-        <label class="check" id="terms-field" hidden><input type="checkbox" id="terms"><span>J'accepte les <a href="cgv" target="_blank" rel="noopener">conditions générales</a> et j'ai lu la <a href="confidentialite" target="_blank" rel="noopener">politique de confidentialité</a>.</span></label>
+        <label class="check" id="news-field" hidden><input type="checkbox" id="news"><span>J’accepte de recevoir par e-mail les nouveautés, offres et codes promo d’ONIRIQUE. Désinscription en un clic dans chaque message.</span></label>
+        <label class="check" id="terms-field" hidden><input type="checkbox" id="terms"><span>J’accepte les <a href="cgv" target="_blank" rel="noopener">conditions générales</a> et j’ai lu la <a href="confidentialite" target="_blank" rel="noopener">politique de confidentialité</a>.</span></label>
         <div class="error" id="error" role="alert"></div>
         <div class="notice" id="notice" role="status"></div>
         <div class="between">
@@ -214,7 +208,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
     <div class="panel" id="verify-panel" hidden>
       <div class="eyebrow">Adresse e-mail à valider</div>
       <div class="between">
-        <p class="muted" style="margin:0;max-width:52ch">Un lien de validation a été envoyé à <strong id="verify-email"></strong>. Ouvrez-le pour activer votre compte : tant que l'adresse n'est pas validée, les essais gratuits, les achats et l'activation des plugins restent fermés. Pensez à regarder dans les indésirables.</p>
+        <p class="muted" style="margin:0;max-width:52ch">Un lien de validation a été envoyé à <strong id="verify-email"></strong>. Ouvre-le pour activer ton compte : tant que l’adresse n’est pas validée, les essais gratuits, les achats et l’activation des plugins restent fermés. Pense à regarder dans les indésirables.</p>
         <button class="btn btn-ghost" id="resend" type="button">Renvoyer le lien</button>
       </div>
       <div class="notice" id="verify-notice" role="status" style="margin-top:12px"></div>
@@ -223,16 +217,16 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
     <div class="cols">
       <div class="col" aria-label="Informations du compte" role="region">
       <div class="panel" id="parametres">
-        <div class="eyebrow">Vos informations</div>
+        <div class="eyebrow">Tes informations</div>
         <div class="photo">
-          <img id="avatar" alt="Votre photo de profil" width="84" height="84">
+          <img id="avatar" alt="Ta photo de profil" width="84" height="84">
           <div>
             <div class="between" style="justify-content:flex-start">
               <button class="btn btn-ghost" id="avatar-pick" type="button">Changer la photo</button>
               <input id="avatar-file" type="file" accept="image/png,image/jpeg,image/webp" aria-label="Photo de profil" hidden>
               <button class="link" id="avatar-remove" type="button" hidden>Retirer la photo</button>
             </div>
-            <p class="muted">Elle s'affiche à côté de votre nom, sur le site et dans l'application. Image carrée, 512 × 512 pixels conseillés (PNG, JPEG ou WebP) : tu la recadres juste après l'avoir choisie.</p>
+            <p class="muted">Elle s’affiche à côté de ton nom, sur le site et dans l’application. Image carrée, 512 × 512 pixels conseillés (PNG, JPEG ou WebP) : tu la recadres juste après l’avoir choisie.</p>
             <div class="notice" id="avatar-notice" role="status"></div>
           </div>
         </div>
@@ -240,7 +234,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
           <form id="profile-form">
             <label>Nom affiché<input id="profile-name" maxlength="80" autocomplete="name"></label>
             <label>E-mail<input id="profile-email" type="email" disabled></label>
-            <label class="check"><input type="checkbox" id="profile-news"><span>Recevoir par e-mail les nouveautés, offres et codes promo d'ONIRIQUE</span></label>
+            <label class="check"><input type="checkbox" id="profile-news"><span>Recevoir par e-mail les nouveautés, offres et codes promo d’ONIRIQUE</span></label>
             <div class="notice" id="profile-notice" role="status"></div>
             <div><button class="btn btn-ghost" type="submit">Enregistrer</button></div>
           </form>
@@ -255,7 +249,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
   
       <div class="panel" id="couleur">
         <div class="eyebrow">Couleur du site</div>
-        <p class="muted" style="margin-top:0;max-width:62ch">Boutons, voyants, lueurs et fond du site prennent cette couleur, sur tous vos appareils une fois connecté.</p>
+        <p class="muted" style="margin-top:0;max-width:62ch">Boutons, voyants, lueurs et fond du site prennent cette couleur, sur tous tes appareils une fois connecté.</p>
         <div class="accent-grid" id="accent-grid" role="radiogroup" aria-label="Couleur du site"></div>
         <div class="between" style="justify-content:flex-start;margin-top:14px">
           <label class="accent-own"><input type="color" id="accent-custom" aria-label="Une autre couleur"><span>Une autre couleur…</span></label>
@@ -270,7 +264,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
         <form id="a2f-form" class="settings" style="grid-template-columns:minmax(0,1fr)">
           <div id="a2f-setup" class="photo" hidden>
             <div class="a2f-qr" id="a2f-qr"></div>
-            <p class="muted" style="margin:0">Pas de scan possible ? Dans l'application, choisissez « Saisir une clé de configuration », puis entrez cette clé :<br><code id="a2f-secret" style="font:500 15px/1.6 var(--f-mono);word-break:break-all;user-select:all"></code></p>
+            <p class="muted" style="margin:0">Pas de scan possible ? Dans l’application, choisis « Saisir une clé de configuration », puis entre cette clé :<br><code id="a2f-secret" style="font:500 15px/1.6 var(--f-mono);word-break:break-all;user-select:all"></code></p>
           </div>
           <label id="a2f-password-field">Mot de passe<input id="a2f-password" type="password" autocomplete="current-password"></label>
           <label id="a2f-code-field" hidden><span id="a2f-code-label"></span><input id="a2f-code" inputmode="numeric" autocomplete="one-time-code" maxlength="11" spellcheck="false" style="font-family:var(--f-mono);letter-spacing:.12em"></label>
@@ -280,43 +274,43 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
         </form>
       </div>
   
-      <!-- Réservé aux fondateurs : ce qui s'affiche sous les crédits qu'ils ont réalisés (mix, master…), à la place du compte -->
+      <!-- Réservé aux fondateurs : ce qui s’affiche sous les crédits qu’ils ont réalisés (mix, master…), à la place du compte -->
       <div class="panel" id="inge" hidden>
-        <div class="eyebrow">Profil d'ingé</div>
-        <p class="muted" style="margin-top:0">Sous les crédits du site, c'est ce profil qui s'affiche, jamais ton nom de compte ni ta photo de profil. Un clic sur ton pseudo ouvre ton Instagram.</p>
+        <div class="eyebrow">Profil d’ingé</div>
+        <p class="muted" style="margin-top:0">Sous les crédits du site, c’est ce profil qui s’affiche, jamais ton nom de compte ni ta photo de profil. Un clic sur ton pseudo ouvre ton Instagram.</p>
         <div class="photo">
-          <img id="eng-avatar" alt="Ta photo d'ingé" width="84" height="84">
+          <img id="eng-avatar" alt="Ta photo d’ingé" width="84" height="84">
           <div>
             <div class="between" style="justify-content:flex-start">
               <button class="link" id="eng-remove" type="button" hidden>Retirer la photo</button>
             </div>
-            <p class="muted">Ta photo d'ingé est celle de ton Instagram. Instagram ne la donne qu'à un vrai navigateur : renseigne ton Instagram dans ONIRIQUE CENTRAL (onglet Compte), il reprend la photo tout seul, et la met à jour chaque fois que tu enregistres.</p>
+            <p class="muted">Ta photo d’ingé est celle de ton Instagram. Instagram ne la donne qu’à un vrai navigateur : renseigne ton Instagram dans ONIRIQUE CENTRAL (onglet Compte), il reprend la photo tout seul, et la met à jour chaque fois que tu enregistres.</p>
             <div class="notice" id="eng-photo-notice" role="status"></div>
           </div>
         </div>
         <form id="eng-form" class="settings" style="grid-template-columns:minmax(0,1fr)">
-          <label>Pseudo d'ingé<input id="eng-name" maxlength="40" placeholder="Ton nom d'artiste" autocomplete="off"></label>
+          <label>Pseudo d’ingé<input id="eng-name" maxlength="40" placeholder="Ton nom d’artiste" autocomplete="off"></label>
           <label>Instagram <span class="hint">facultatif · ton pseudo devient un lien vers ce profil</span><input id="profile-instagram" maxlength="200" placeholder="@toncompte ou lien de ton profil" autocomplete="off" spellcheck="false"></label>
           <div class="notice" id="eng-notice" role="status"></div>
-          <div><button class="btn btn-ghost" type="submit">Enregistrer le profil d'ingé</button></div>
+          <div><button class="btn btn-ghost" type="submit">Enregistrer le profil d’ingé</button></div>
         </form>
       </div>
   
       <div class="panel" id="suppression">
         <div class="eyebrow">Supprimer le compte</div>
-        <p class="muted" style="margin-top:0;max-width:62ch">Le compte, ses licences, ses essais et ses ordinateurs activés sont effacés définitivement : les plugins cessent de s'activer et une clé de licence ne pourra pas servir sur un autre compte. Seules vos commandes restent archivées, comme la loi l'impose pour la comptabilité.</p>
+        <p class="muted" style="margin-top:0;max-width:62ch">Le compte, ses licences, ses essais et ses ordinateurs activés sont effacés définitivement : les plugins cessent de s’activer et une clé de licence ne pourra pas servir sur un autre compte. Seules tes commandes restent archivées, comme la loi l’impose pour la comptabilité.</p>
         <form id="delete-form" class="settings" style="grid-template-columns:minmax(0,1fr)">
           <label>Mot de passe, pour confirmer<input id="delete-password" type="password" required autocomplete="current-password"></label>
           <div class="error" id="delete-notice" role="status"></div>
-          <div><button class="btn btn-ghost" type="submit" style="border-color:rgba(226,52,68,.6);color:#ff8a94">Supprimer définitivement mon compte</button></div>
+          <div><button class="btn btn-ghost" type="submit">Supprimer définitivement mon compte</button></div>
         </form>
       </div>
       </div>
       <div class="col" aria-label="Plugins et services" role="region">
       <div class="panel">
-        <div class="eyebrow">L'application</div>
+        <div class="eyebrow">L’application</div>
         <div class="between">
-          <p class="muted" style="margin:0;max-width:46ch">ONIRIQUE CENTRAL installe vos plugins, les met à jour et active vos licences sur votre ordinateur. Windows 10 ou 11 (64 bits), ou Mac (Intel et Apple Silicon). Sous Windows, si « Windows a protégé votre ordinateur » s'affiche : Informations complémentaires, puis Exécuter quand même. Sur Mac, à la première ouverture : clic droit sur l'application, puis Ouvrir.</p>
+          <p class="muted" style="margin:0;max-width:46ch">ONIRIQUE CENTRAL installe tes plugins, les met à jour et active tes licences sur ton ordinateur. Windows 10 ou 11 (64 bits), ou Mac (Intel et Apple Silicon). Sous Windows, si « Windows a protégé votre ordinateur » s’affiche : Informations complémentaires, puis Exécuter quand même. Sur Mac, à la première ouverture : clic droit sur l’application, puis Ouvrir.</p>
           <div class="between">
             <a class="btn btn-primary" href="telechargement/ONIRIQUE-CENTRAL-Setup.exe" download>Télécharger pour Windows</a>
             <a class="btn btn-ghost" href="telechargement/ONIRIQUE-CENTRAL.dmg" download>Télécharger pour Mac</a>
@@ -328,7 +322,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
       <div class="panel" id="profil-panel">
         <div class="eyebrow">Page de profil</div>
         <div class="between">
-          <p class="muted" style="margin:0;max-width:52ch">Ta page publique sur ONIRIQUE, à ta couleur : les autres membres peuvent s'y abonner, y laisser un commentaire et t'écrire en privé.</p>
+          <p class="muted" style="margin:0;max-width:52ch">Ta page publique sur ONIRIQUE, à ta couleur : les autres membres peuvent s’y abonner, y laisser un commentaire et t’écrire en privé.</p>
           <div class="between"><a class="btn btn-primary" href="profil">Créer ou modifier ma page</a><a class="btn btn-ghost" href="messages">Messages</a></div>
         </div>
       </div>
@@ -352,7 +346,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
       </div>
   
       <div class="panel" id="licences">
-        <div class="eyebrow">Vos licences</div>
+        <div class="eyebrow">Tes licences</div>
         <div class="rows" id="licenses"></div>
       </div>
   
@@ -360,12 +354,12 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
         <div class="eyebrow">Parrainage</div>
         <div class="refer">
           <div>
-            <h2 style="font-size:20px">Invite tes amis, <em style="font:600 1.3em/.8 var(--f-dream);font-style:normal;text-shadow:var(--glow)">gagne des plugins</em></h2>
+            <h2 style="font-size:20px">Invite tes amis, <em>gagne des plugins</em></h2>
             <p class="muted" style="margin:8px 0 0;max-width:60ch" id="ref-intro"></p>
           </div>
           <div class="perks" id="ref-perks"></div>
           <div class="refer-link">
-            <input id="ref-link" readonly aria-label="Votre lien de parrainage">
+            <input id="ref-link" readonly aria-label="Ton lien de parrainage">
             <button class="btn btn-primary" id="ref-copy" type="button">Copier le lien</button>
             <button class="btn btn-ghost" id="ref-share" type="button" hidden>Partager</button>
           </div>
@@ -374,8 +368,8 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
           <div id="ref-gifts"></div>
           <div class="welcome" id="ref-welcome" hidden></div>
           <form id="ref-attach" hidden style="max-width:none">
-            <p class="muted" style="margin:0">Un ami vous a invité ? Entrez son code avant votre premier achat : vous aurez votre remise, lui sa récompense.</p>
-            <div class="refer-link"><input id="ref-attach-code" maxlength="12" placeholder="CODE DE L'AMI" aria-label="Code de parrainage de votre ami" style="text-transform:uppercase;font-family:var(--f-mono)"><button class="btn btn-ghost" type="submit">Valider</button></div>
+            <p class="muted" style="margin:0">Un ami t’a invité ? Entre son code avant ton premier achat : tu auras ta remise, lui sa récompense.</p>
+            <div class="refer-link"><input id="ref-attach-code" maxlength="12" placeholder="CODE DE L’AMI" aria-label="Code de parrainage de ton ami" style="text-transform:uppercase;font-family:var(--f-mono)"><button class="btn btn-ghost" type="submit">Valider</button></div>
           </form>
           <div class="notice" id="ref-notice" role="status"></div>
         </div>
@@ -387,7 +381,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
           <p class="muted" id="yt-text" style="margin:0;max-width:50ch"></p>
           <div class="between">
             <span class="pill on" id="yt-channel" hidden></span>
-            <button class="btn btn-primary" id="yt-connect" type="button" hidden><svg viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" rx="4" fill="#D12A3A"/><path d="M8 4l5 3-5 3z" fill="#fff"/></svg>Se connecter avec YouTube</button>
+            <button class="btn btn-primary" id="yt-connect" type="button" hidden><svg viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" rx="4" style="fill:rgb(var(--acc-lo))"/><path d="M8 4l5 3-5 3z" fill="#fff"/></svg>Se connecter avec YouTube</button>
             <button class="btn btn-primary" id="yt-add" type="button" hidden>Ajouter des vidéos</button>
             <input id="yt-files" type="file" accept="video/mp4,video/quicktime,video/webm" multiple aria-label="Vidéos à programmer" hidden>
             <button class="link" id="yt-disconnect" type="button" hidden>Déconnecter</button>
@@ -399,7 +393,7 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
   
       <div class="panel" id="social" hidden>
         <div class="eyebrow">Réponses automatiques</div>
-        <p class="muted" style="margin-top:0;max-width:64ch">Choisissez une publication et un mot : chaque personne qui commente ce mot reçoit de votre compte Instagram, une seule fois, une réponse sous son commentaire puis votre message en privé.</p>
+        <p class="muted" style="margin-top:0;max-width:64ch">Choisis une publication et un mot : chaque personne qui commente ce mot reçoit de ton compte Instagram, une seule fois, une réponse sous son commentaire puis ton message en privé.</p>
         <div class="accounts" id="so-accounts"></div>
         <div class="notice" id="so-notice" role="status" style="margin-top:12px"></div>
         <div style="margin-top:18px"><button class="btn btn-primary" id="so-new" type="button" hidden>Nouvelle automation</button></div>
@@ -411,13 +405,13 @@ textarea { min-height: 96px; padding: 12px 14px; border-radius: 12px; border: 1p
           </div>
           <div class="fields">
             <label class="wide">Mots déclencheurs<input id="so-keywords" maxlength="300" placeholder="LIEN, PRESET"><span class="hint">Séparés par des virgules, sans souci des majuscules ni des accents. Vide : tous les commentaires.</span></label>
-            <label class="wide">Réponse sous le commentaire<textarea id="so-reply" maxlength="2000" placeholder="Je t'envoie ça en DM {pseudo} 🔥"></textarea><span class="hint">Plusieurs réponses, une par ligne : chacune est tirée au hasard, pour ne pas répéter la même. {pseudo} devient le @ de la personne.</span></label>
-            <label class="wide">Message privé (DM)<textarea id="so-dm" maxlength="1000" placeholder="Salut {pseudo} ! Voici le lien promis : https://onirique.store"></textarea><span class="hint">Envoyé une fois à chaque personne, juste après la réponse. Instagram l'accepte dans les 7 jours qui suivent le commentaire. Une personne à qui vous avez déjà écrit en privé depuis la sortie de la publication (à la main ou non) ne reçoit rien.</span></label>
+            <label class="wide">Réponse sous le commentaire<textarea id="so-reply" maxlength="2000" placeholder="Je t’envoie ça en DM {pseudo}"></textarea><span class="hint">Plusieurs réponses, une par ligne : chacune est tirée au hasard, pour ne pas répéter la même. {pseudo} devient le @ de la personne.</span></label>
+            <label class="wide">Message privé (DM)<textarea id="so-dm" maxlength="1000" placeholder="Salut {pseudo}, voici le lien promis : https://onirique.store"></textarea><span class="hint">Envoyé une fois à chaque personne, juste après la réponse. Instagram l’accepte dans les 7 jours qui suivent le commentaire. Une personne à qui tu as déjà écrit en privé depuis la sortie de la publication (à la main ou non) ne reçoit rien.</span></label>
             <label class="check wide" id="so-earlier-field"><input type="checkbox" id="so-earlier">Répondre aussi aux commentaires déjà postés (7 derniers jours)</label>
           </div>
           <div class="error" id="so-form-notice" role="status"></div>
           <div class="between" style="justify-content:flex-start">
-            <button class="btn btn-primary" type="submit" id="so-save">Lancer l'automation</button>
+            <button class="btn btn-primary" type="submit" id="so-save">Lancer l’automation</button>
             <button class="link" type="button" id="so-cancel">Annuler</button>
           </div>
         </form>
@@ -445,10 +439,10 @@ const forget = () => { sessionStorage.removeItem(TOKEN); localStorage.removeItem
 let mode = "login"; // login | register | forgot | reset
 const resetToken = new URLSearchParams(location.search).get("reset");
 const verifyToken = new URLSearchParams(location.search).get("verify");
-// Retour de Google après « Se connecter avec YouTube » : "ok", ou la raison du refus. La page s'ouvre sur ce bloc.
+// Retour de Google après « Se connecter avec YouTube » : "ok", ou la raison du refus. La page s’ouvre sur ce bloc.
 const youtubeResult = new URLSearchParams(location.search).get("youtube");
 if (youtubeResult) history.replaceState(null, "", location.pathname + "#youtube");
-// Retour d'Instagram : "ok", ou la raison du refus. La page s'ouvre sur ce bloc.
+// Retour d’Instagram : "ok", ou la raison du refus. La page s’ouvre sur ce bloc.
 const socialResult = new URLSearchParams(location.search).get("social");
 if (socialResult) history.replaceState(null, "", location.pathname + "#social");
 
@@ -462,7 +456,7 @@ async function api(method, path, body) {
       body: body ? JSON.stringify(body) : undefined,
     });
   } catch {
-    throw new Error("Serveur injoignable. Réessayez dans un instant.");
+    throw new Error("Serveur injoignable. Réessaie dans un instant.");
   }
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw Object.assign(new Error(data.error || "Erreur " + response.status), { status: response.status, data });
@@ -483,21 +477,21 @@ function show(me) {
   $("loading").hidden = true;
   $("auth").hidden = !!me;
   $("account").hidden = !me;
-  OniriqueAccount.show(me); // le menu du compte, dans l'en-tête
+  OniriqueAccount.show(me); // le menu du compte, dans l’en-tête
   if (!me) { a2fStage = ""; return; } // un autre compte peut se connecter ensuite
   $("avatar").src = OniriqueAccount.avatar(me.user);
   $("avatar-remove").hidden = !me.user.avatar;
-  // Arrivé par « Paramètres » ou « Mes licences » du menu : la page s'ouvre sur ce bloc.
+  // Arrivé par « Paramètres » ou « Mes licences » du menu : la page s’ouvre sur ce bloc.
   if (location.hash && !show.opened) setTimeout(() => document.getElementById(location.hash.slice(1))?.scrollIntoView(), 0);
   show.opened = true;
 
   $("who").textContent = me.user.name || me.user.email.split("@")[0];
-  // Le rôle du compte, quand il en a un : il est le même ici et dans l'application.
+  // Le rôle du compte, quand il en a un : il est le même ici et dans l’application.
   const role = { vip: "ONIRIQUE", beta: "Beta-Testeur", betaf: "Beta-Testeuse", abrasion: "Abrasion", relic: "Relic", admin: "Admin", founder: "Fondateur" }[me.user.role];
   $("email-line").textContent = me.user.email + (role ? " · " + role : "");
   $("profile-name").value = me.user.name || "";
   // Ce que le compte peut ouvrir dépend des droits de son rôle (réglés par les fondateurs dans le panel admin).
-  // Profil d'ingé : sans photo d'ingé, une silhouette (jamais la photo du compte).
+  // Profil d’ingé : sans photo d’ingé, une silhouette (jamais la photo du compte).
   const rights = me.rights || [];
   $("inge").hidden = !rights.includes("engineer");
   $("liens-panel").hidden = !rights.includes("links");
@@ -536,7 +530,7 @@ function show(me) {
     const row = el("div", "row");
     const left = el("div");
     const included = me.subscription.productIds ? me.subscription.productIds.length + " plugin(s) inclus" : "Tous les plugins inclus";
-    left.append(el("h2", "", me.subscription.planName), el("div", "muted", included + " jusqu'au " + date(me.subscription.currentPeriodEnd)));
+    left.append(el("h2", "", me.subscription.planName), el("div", "muted", included + " jusqu’au " + date(me.subscription.currentPeriodEnd)));
     row.append(left, el("span", "pill on", me.subscription.cancelAtPeriodEnd ? "Se termine" : "Abonnement actif"));
     rows.push(row);
   }
@@ -550,13 +544,13 @@ function show(me) {
     const state = license.status !== "active" ? "Révoquée" : expired ? "Expirée"
       // La licence au mois court trois jours de plus que le mois payé, le temps que le paiement suivant passe.
       : byMonth ? (cancelled ? "Se termine le " + date(license.expiresAt) : "Au mois · renouvelé le " + date(license.expiresAt - 3 * 86400000))
-      : license.expiresAt ? "Jusqu'au " + date(license.expiresAt) : TYPES[license.type] || license.type;
+      : license.expiresAt ? "Jusqu’au " + date(license.expiresAt) : TYPES[license.type] || license.type;
     row.append(left, el("span", "pill" + (active ? " on" : ""), state));
     if (byMonth && active && !cancelled) {
       const stop = el("button", "btn btn-ghost", "Résilier");
       stop.type = "button";
       stop.onclick = async () => {
-        if (!confirm("Résilier l'abonnement à " + license.productName + " ? Plus de prélèvement ; le plugin reste utilisable jusqu'à la fin du mois payé.")) return;
+        if (!confirm("Résilier l’abonnement à " + license.productName + " ? Plus de prélèvement ; le plugin reste utilisable jusqu’à la fin du mois payé.")) return;
         stop.disabled = true;
         try { await api("POST", "/licenses/" + license.id + "/cancel"); stop.replaceWith(el("span", "muted", "Résilié")); }
         catch (error) { stop.disabled = false; alert(error.message); }
@@ -565,7 +559,7 @@ function show(me) {
     }
     rows.push(row);
   }
-  if (!rows.length) rows.push(el("p", "muted", "Aucune licence pour le moment. Une clé reçue s'ajoute dans l'application, onglet Licences."));
+  if (!rows.length) rows.push(el("p", "muted", "Aucune licence pour le moment. Une clé reçue s’ajoute dans l’application, onglet Licences."));
   $("licenses").replaceChildren(...rows);
 }
 
@@ -573,7 +567,7 @@ function show(me) {
 function showReferral(r) {
   $("parrainage").hidden = !r || !r.enabled;
   if (!r || !r.enabled) return;
-  $("ref-intro").textContent = `Partage ton lien. Ton ami a ${r.friendPercent} % de remise sur son premier plugin ONIRIQUE ; toi, tu reçois un code de -${r.rewardPercent} % dès qu'il fait son premier achat`
+  $("ref-intro").textContent = `Partage ton lien. Ton ami a ${r.friendPercent} % de remise sur son premier plugin ONIRIQUE ; toi, tu reçois un code de -${r.rewardPercent} % dès qu’il fait son premier achat`
     + (r.milestone ? `, et un plugin ONIRIQUE offert tous les ${r.milestone} amis acheteurs.` : ".");
   $("ref-perks").replaceChildren(
     ...[[`-${r.friendPercent} %`, "pour ton ami, sur son premier plugin ONIRIQUE"], [`-${r.rewardPercent} %`, "pour toi, à chaque ami qui achète"],
@@ -593,25 +587,25 @@ function showReferral(r) {
   }
   $("ref-gifts").replaceChildren(...r.rewards.map((g) => {
     const row = el("div", "gift"), left = el("div");
-    left.append(el("div", "key", g.code), el("div", "muted", g.label + (g.expiresAt ? " · jusqu'au " + date(g.expiresAt) : "")));
+    left.append(el("div", "key", g.code), el("div", "muted", g.label + (g.expiresAt ? " · jusqu’au " + date(g.expiresAt) : "")));
     row.append(left, el("span", "pill" + (!g.used && !g.expired ? " on" : ""), g.used ? "Utilisé" : g.expired ? "Expiré" : "À utiliser"));
     return row;
   }));
   $("ref-welcome").hidden = !r.welcomePercent;
-  if (r.welcomePercent) $("ref-welcome").textContent = `Invité par ${r.sponsor} : ${r.welcomePercent} % de remise sur ton premier plugin ONIRIQUE, appliqués tout seuls au moment d'acheter.`;
+  if (r.welcomePercent) $("ref-welcome").textContent = `Invité par ${r.sponsor} : ${r.welcomePercent} % de remise sur ton premier plugin ONIRIQUE, appliqués tout seuls au moment d’acheter.`;
   $("ref-attach").hidden = !r.canAttach;
 }
 $("ref-copy").onclick = async () => {
   try { await navigator.clipboard.writeText($("ref-link").value); } catch { $("ref-link").select(); document.execCommand("copy"); }
   say("ref-notice", "Lien copié. Envoie-le à tes amis.");
 };
-$("ref-share").onclick = () => navigator.share({ title: "ONIRIQUE", text: "Des plugins audio que j'utilise : une remise sur ton premier plugin avec mon lien.", url: $("ref-link").value }).catch(() => {});
+$("ref-share").onclick = () => navigator.share({ title: "ONIRIQUE", text: "Des plugins audio que j’utilise : une remise sur ton premier plugin avec mon lien.", url: $("ref-link").value }).catch(() => {});
 $("ref-attach").onsubmit = async (event) => {
   event.preventDefault();
   try {
     const result = await api("POST", "/me/referrer", { code: $("ref-attach-code").value.trim() });
     show(await api("GET", "/me"));
-    say("ref-notice", `C'est noté : parrainé par ${result.sponsor}.`);
+    say("ref-notice", `C’est noté : parrainé par ${result.sponsor}.`);
   } catch (error) {
     say("ref-notice", error.message, true);
   }
@@ -631,7 +625,7 @@ function setMode(next, notice = "") {
   $("ref-banner").hidden = mode !== "register" || !$("ref").value;
   if ($("ref").value) $("ref-banner").textContent = setMode.percent
     ? `Invité par un ami : ${setMode.percent} % de remise sur ton premier plugin ONIRIQUE, une fois ton compte créé.`
-    : "Invité par un ami : ta remise de bienvenue s'appliquera à ton premier plugin ONIRIQUE.";
+    : "Invité par un ami : ta remise de bienvenue s’appliquera à ton premier plugin ONIRIQUE.";
   $("remember-field").hidden = mode === "forgot" || mode === "reset";
   $("terms").required = mode === "register";
   $("email").closest("label").hidden = mode === "reset";
@@ -649,7 +643,7 @@ function setMode(next, notice = "") {
   $("error").textContent = "";
   $("notice").textContent = notice;
 }
-$("forgot").onclick = () => setMode("forgot", "Indiquez l'e-mail de votre compte : nous vous envoyons un lien pour choisir un nouveau mot de passe.");
+$("forgot").onclick = () => setMode("forgot", "Indique l’e-mail de ton compte : on t’envoie un lien pour choisir un nouveau mot de passe.");
 $("tab-login").onclick = () => setMode("login");
 $("tab-register").onclick = () => setMode("register");
 
@@ -663,15 +657,15 @@ $("form").onsubmit = async (event) => {
       ...(!$("code-field").hidden ? { code: $("code").value.trim() } : {}) };
     if (mode === "forgot") {
       await api("POST", "/auth/forgot", { email: body.email });
-      setMode("login", "Si un compte existe avec cette adresse, un lien vient d'être envoyé. Il est valable une heure.");
+      setMode("login", "Si un compte existe avec cette adresse, un lien vient d’être envoyé. Il est valable une heure.");
       $("submit").disabled = false;
       return;
     }
     if (mode === "reset") {
       await api("POST", "/auth/reset", { token: resetToken, password: body.password });
-      history.replaceState(null, "", location.pathname); // le lien ne sert qu'une fois : on le retire de l'adresse
+      history.replaceState(null, "", location.pathname); // le lien ne sert qu’une fois : on le retire de l’adresse
       $("password").value = "";
-      setMode("login", "Mot de passe changé. Connectez-vous avec le nouveau.");
+      setMode("login", "Mot de passe changé. Connecte-toi avec le nouveau.");
       $("submit").disabled = false;
       return;
     }
@@ -720,18 +714,18 @@ $("resend").onclick = async () => {
   }
 };
 
-// Vos informations : le résultat s'affiche sous le formulaire concerné.
+// Tes informations : le résultat s’affiche sous le formulaire concerné.
 function say(id, text, failed = false) {
   $(id).className = failed ? "error" : "notice";
   $(id).textContent = text;
 }
 
-// Profil d'ingé : sa photo, son pseudo, son Instagram.
+// Profil d’ingé : sa photo, son pseudo, son Instagram.
 $("eng-remove").onclick = async () => {
   try {
     await api("DELETE", "/me/engineer-avatar");
     show(await api("GET", "/me"));
-    say("eng-photo-notice", "Photo d'ingé retirée.");
+    say("eng-photo-notice", "Photo d’ingé retirée.");
   } catch (error) {
     say("eng-photo-notice", error.message, true);
   }
@@ -741,13 +735,13 @@ $("eng-form").onsubmit = async (event) => {
   try {
     await api("POST", "/me/profile", { engineerName: $("eng-name").value.trim(), instagram: $("profile-instagram").value.trim() });
     show(await api("GET", "/me"));
-    say("eng-notice", "Profil d'ingé enregistré.");
+    say("eng-notice", "Profil d’ingé enregistré.");
   } catch (error) {
     say("eng-notice", error.message, true);
   }
 };
 
-// Photo de profil : cadrée par le membre (déplacer, zoomer, dans un rond), en carré de 512 px, dans le navigateur avant l'envoi.
+// Photo de profil : cadrée par le membre (déplacer, zoomer, dans un rond), en carré de 512 px, dans le navigateur avant l’envoi.
 $("avatar-pick").onclick = () => $("avatar-file").click();
 $("avatar-file").onchange = async (event) => {
   const file = event.target.files[0];
@@ -756,12 +750,12 @@ $("avatar-file").onchange = async (event) => {
   say("avatar-notice", "");
   try {
     const url = URL.createObjectURL(file);
-    const cut = await OniriqueCropper.open(url, { avatar: true }).catch(() => { throw new Error("Ce fichier n'est pas une image lisible."); })
+    const cut = await OniriqueCropper.open(url, { avatar: true }).catch(() => { throw new Error("Ce fichier n’est pas une image lisible."); })
       .finally(() => URL.revokeObjectURL(url));
     if (!cut) return;
     const blob = cut.blob;
     const response = await fetch("/api/me/avatar", { method: "PUT", headers: { Authorization: "Bearer " + saved(), "Content-Type": "image/jpeg" }, body: blob });
-    if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "La photo n'a pas pu être envoyée.");
+    if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "La photo n’a pas pu être envoyée.");
     show(await api("GET", "/me"));
     say("avatar-notice", "Photo enregistrée.");
   } catch (error) {
@@ -826,19 +820,19 @@ $("password-form").onsubmit = async (event) => {
   say("password-notice", "");
   try {
     const { token } = await api("POST", "/me/password", { current: $("password-current").value, next: $("password-next").value });
-    // Changer de mot de passe ferme toutes les sessions : la nouvelle prend la place de l'ancienne, au même endroit.
+    // Changer de mot de passe ferme toutes les sessions : la nouvelle prend la place de l’ancienne, au même endroit.
     (localStorage.getItem(TOKEN) ? localStorage : sessionStorage).setItem(TOKEN, token);
     $("password-current").value = $("password-next").value = "";
-    say("password-notice", "Mot de passe changé. Vos autres appareils sont déconnectés.");
+    say("password-notice", "Mot de passe changé. Tes autres appareils sont déconnectés.");
   } catch (error) {
     say("password-notice", error.message, true);
   }
 };
 
-// Shorts YouTube programmés. Les vidéos attendent sur le serveur ; chacune sort au jour et à l'heure de sa carte.
+// Shorts YouTube programmés. Les vidéos attendent sur le serveur ; chacune sort au jour et à l’heure de sa carte.
 const STATES = { draft: "À programmer", scheduled: "Programmée", uploading: "Publication en cours", published: "Publiée", failed: "Échec" };
 const moment = (ms) => new Date(ms).toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
-const localInput = (ms) => new Date(ms - new Date(ms).getTimezoneOffset() * 60000).toISOString().slice(0, 16); // la valeur d'un champ date et heure
+const localInput = (ms) => new Date(ms - new Date(ms).getTimezoneOffset() * 60000).toISOString().slice(0, 16); // la valeur d’un champ date et heure
 let suggestions = []; // les descriptions déjà utilisées, proposées sous chaque carte
 let slot = 0;
 // La date proposée à une vidéo sans date : le lendemain de la dernière programmée, à 18 h. Elle se change librement.
@@ -938,9 +932,9 @@ async function loadYoutube() {
   try {
     const state = await api("GET", "/youtube");
     const on = !!state.channel;
-    $("yt-text").textContent = !state.configured ? "La connexion à YouTube n'est pas encore réglée sur le serveur."
-      : on ? "Ajoutez vos vidéos : elles sont gardées ici, et chacune sort sur votre chaîne au jour et à l'heure que vous lui donnez."
-        : "Reliez votre chaîne pour programmer vos Shorts : vous déposez les vidéos ici, et chacune sort au jour et à l'heure choisis.";
+    $("yt-text").textContent = !state.configured ? "La connexion à YouTube n’est pas encore réglée sur le serveur."
+      : on ? "Ajoute tes vidéos : elles sont gardées ici, et chacune sort sur ta chaîne au jour et à l’heure que tu lui donnes."
+        : "Relie ta chaîne pour programmer tes Shorts : tu déposes les vidéos ici, et chacune sort au jour et à l’heure choisis.";
     $("yt-connect").hidden = on || !state.configured;
     $("yt-add").hidden = $("yt-disconnect").hidden = $("yt-channel").hidden = !on;
     $("yt-channel").textContent = state.channel || "";
@@ -953,7 +947,7 @@ async function loadYoutube() {
   }
 }
 
-// Le titre du menu déroulant des Shorts : combien il y en a, et dans quel état ; il s'ouvre seul quand une vidéo a échoué.
+// Le titre du menu déroulant des Shorts : combien il y en a, et dans quel état ; il s’ouvre seul quand une vidéo a échoué.
 new MutationObserver(() => {
   const cards = [...$("yt-videos").children], count = (s) => cards.filter((c) => c.dataset.status === s).length;
   const plural = (n, word) => n + " " + word + (n > 1 ? "s" : "");
@@ -970,7 +964,7 @@ $("yt-connect").onclick = async () => {
   }
 };
 $("yt-disconnect").onclick = async () => {
-  if (!confirm("Déconnecter la chaîne ? Les vidéos programmées ne sortiront plus tant qu'elle n'est pas reliée de nouveau.")) return;
+  if (!confirm("Déconnecter la chaîne ? Les vidéos programmées ne sortiront plus tant qu’elle n’est pas reliée de nouveau.")) return;
   await api("DELETE", "/youtube/account").catch(() => {});
   loadYoutube();
 };
@@ -991,24 +985,24 @@ $("yt-files").onchange = async (event) => {
         request.setRequestHeader("Authorization", "Bearer " + saved());
         request.setRequestHeader("Content-Type", file.type || "application/octet-stream");
         request.upload.onprogress = (progress) => say("yt-notice", "Envoi de " + label + " : " + Math.round(progress.loaded / progress.total * 100) + " %");
-        request.onerror = () => reject(new Error("envoi interrompu, réessayez."));
+        request.onerror = () => reject(new Error("envoi interrompu, réessaie."));
         request.onload = () => {
           let data = {};
-          try { data = JSON.parse(request.responseText); } catch { /* réponse qui n'est pas du serveur */ }
+          try { data = JSON.parse(request.responseText); } catch { /* réponse qui n’est pas du serveur */ }
           if (request.status === 201) resolve(data);
           else reject(new Error(data.error || (request.status === 413 ? "fichier trop volumineux." : "erreur " + request.status)));
         };
         request.send(file);
       });
       $("yt-videos").prepend(shortCard(video));
-      $("yt-list").open = true; // la vidéo ajoutée est à régler : la liste s'ouvre
+      $("yt-list").open = true; // la vidéo ajoutée est à régler : la liste s’ouvre
       done++;
     } catch (error) {
       say("yt-notice", file.name + " : " + error.message, true);
       break;
     }
   }
-  if (done === files.length) say("yt-notice", done > 1 ? done + " vidéos ajoutées. Donnez à chacune son titre, sa description et son heure." : "Vidéo ajoutée. Donnez-lui son titre, sa description et son heure.");
+  if (done === files.length) say("yt-notice", done > 1 ? done + " vidéos ajoutées. Donne à chacune son titre, sa description et son heure." : "Vidéo ajoutée. Donne-lui son titre, sa description et son heure.");
   $("yt-add").disabled = false;
 };
 
@@ -1030,7 +1024,7 @@ function accountCard(account) {
   button.onclick = async () => {
     try {
       if (!account.connected) { location.href = (await api("POST", "/social/instagram/connect")).url; return; }
-      if (!confirm("Déconnecter Instagram ? Les automations s'arrêtent jusqu'à ce qu'il soit relié de nouveau.")) return;
+      if (!confirm("Déconnecter Instagram ? Les automations s’arrêtent jusqu’à ce qu’il soit relié de nouveau.")) return;
       await api("DELETE", "/social/instagram/account");
       loadSocial();
     } catch (error) {
@@ -1063,7 +1057,7 @@ function automationCard(auto) {
   if (auto.recent.length) {
     const log = el("ul", "log");
     for (const r of auto.recent) {
-      const line = el("li", r.status === "failed" ? "failed" : "", (r.name ? "@" + r.name : "Quelqu'un") + " : « " + r.text.slice(0, 60) + " » · " + STATUS[r.status]
+      const line = el("li", r.status === "failed" ? "failed" : "", (r.name ? "@" + r.name : "Quelqu’un") + " : « " + r.text.slice(0, 60) + " » · " + STATUS[r.status]
         + (r.error ? " (" + r.error + ")" : "") + " · " + new Date(r.at).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }));
       log.append(line);
     }
@@ -1106,8 +1100,8 @@ async function openDraft(editing = null) {
   const current = draft = { post: null, editing };
   $("so-form").hidden = false;
   $("so-new").hidden = true;
-  $("so-form-title").textContent = editing ? "Modifier l'automation" : "Nouvelle automation";
-  $("so-save").textContent = editing ? "Enregistrer" : "Lancer l'automation";
+  $("so-form-title").textContent = editing ? "Modifier l’automation" : "Nouvelle automation";
+  $("so-save").textContent = editing ? "Enregistrer" : "Lancer l’automation";
   $("so-keywords").value = editing ? editing.keywords : "";
   $("so-reply").value = editing ? editing.replyText : "";
   $("so-dm").value = editing ? editing.dmText : "";
@@ -1116,7 +1110,7 @@ async function openDraft(editing = null) {
   say("so-form-notice", "");
   $("so-form").scrollIntoView({ behavior: "smooth", block: "start" });
   if (editing) return;
-  $("so-posts").replaceChildren(el("p", "muted", "Chargement de vos publications…"));
+  $("so-posts").replaceChildren(el("p", "muted", "Chargement de tes publications…"));
   try {
     const posts = await api("GET", "/social/instagram/posts");
     if (draft !== current) return; // formulaire fermé entre-temps
@@ -1152,7 +1146,7 @@ $("so-form").onsubmit = async (event) => {
     if (draft.editing) {
       await api("PATCH", "/social/automations/" + draft.editing.id, fields);
     } else {
-      if (!draft.post) throw new Error("Choisissez la publication visée.");
+      if (!draft.post) throw new Error("Choisis la publication visée.");
       await api("POST", "/social/automations", { ...fields, earlier: $("so-earlier").checked,
         postId: draft.post.id, postCaption: draft.post.caption, postThumb: draft.post.thumb, postUrl: draft.post.url, postAt: draft.post.at });
     }
@@ -1164,12 +1158,12 @@ $("so-form").onsubmit = async (event) => {
   }
 };
 
-// A2F : off (proposer de l'activer), setup (QR code à scanner, puis un premier code), on (activée : la désactiver).
+// A2F : off (proposer de l’activer), setup (QR code à scanner, puis un premier code), on (activée : la désactiver).
 let a2fStage = "";
 const A2F = {
-  off: ["Facultative. À chaque connexion, en plus du mot de passe, un code à 6 chiffres vous est demandé : celui que donne Google Authenticator sur votre téléphone (ou une application semblable : Microsoft Authenticator, 2FAS, 1Password…). Quelqu'un qui connaîtrait votre mot de passe ne pourrait pas entrer sans votre téléphone.", "", "Activer l'A2F"],
-  setup: ["Dans Google Authenticator, touchez +, puis « Scanner un code QR » et visez ce code. Entrez ensuite le code à 6 chiffres qui s'affiche, pour confirmer.", "Code à 6 chiffres", "Confirmer et activer"],
-  on: ["Activée : à chaque connexion, le code de votre application d'authentification est demandé. Téléphone perdu ? Un de vos codes de secours le remplace. Pour désactiver l'A2F : votre mot de passe et un code.", "Code de l'application, ou code de secours", "Désactiver l'A2F"],
+  off: ["Facultative. À chaque connexion, en plus du mot de passe, un code à 6 chiffres t’est demandé : celui que donne Google Authenticator sur ton téléphone (ou une application semblable : Microsoft Authenticator, 2FAS, 1Password…). Quelqu’un qui connaîtrait ton mot de passe ne pourrait pas entrer sans ton téléphone.", "", "Activer l’A2F"],
+  setup: ["Dans Google Authenticator, touche +, puis « Scanner un code QR » et vise ce code. Entre ensuite le code à 6 chiffres qui s’affiche, pour confirmer.", "Code à 6 chiffres", "Confirmer et activer"],
+  on: ["Activée : à chaque connexion, le code de ton application d’authentification est demandé. Téléphone perdu ? Un de tes codes de secours le remplace. Pour désactiver l’A2F : ton mot de passe et un code.", "Code de l’application, ou code de secours", "Désactiver l’A2F"],
 };
 function showA2f(stage) {
   a2fStage = stage;
@@ -1199,7 +1193,7 @@ $("a2f-form").onsubmit = async (event) => {
       $("a2f-recovery").replaceChildren(...recoveryCodes.map((code) => el("li", "", code)));
       $("a2f-recovery").hidden = false;
       showA2f("on");
-      say("a2f-notice", "A2F activée. Notez ces 8 codes de secours et gardez-les en lieu sûr : chacun remplace une fois le code de l'application, si vous perdez votre téléphone. Ils ne seront plus affichés.");
+      say("a2f-notice", "A2F activée. Note ces 8 codes de secours et garde-les en lieu sûr : chacun remplace une fois le code de l’application, si tu perds ton téléphone. Ils ne seront plus affichés.");
     } else {
       await api("POST", "/me/2fa/disable", { password: $("a2f-password").value, code: $("a2f-code").value.trim() });
       $("a2f-recovery").hidden = true;
@@ -1215,13 +1209,13 @@ $("a2f-form").onsubmit = async (event) => {
 $("delete-form").onsubmit = async (event) => {
   event.preventDefault();
   $("delete-notice").textContent = "";
-  if (!confirm("Supprimer définitivement votre compte ONIRIQUE ? Vos licences seront perdues. Cette action ne peut pas être annulée.")) return;
+  if (!confirm("Supprimer définitivement ton compte ONIRIQUE ? Tes licences seront perdues. Cette action ne peut pas être annulée.")) return;
   try {
     await api("POST", "/me/delete", { password: $("delete-password").value });
     $("delete-password").value = "";
     forget();
     show(null);
-    alert("Votre compte a été supprimé.");
+    alert("Ton compte a été supprimé.");
   } catch (error) {
     $("delete-notice").textContent = error.message;
   }
@@ -1234,22 +1228,22 @@ $("logout").onclick = async () => {
 };
 
 (async () => {
-  // Lien de validation reçu par e-mail : il ne sert qu'une fois, on le retire de l'adresse aussitôt.
+  // Lien de validation reçu par e-mail : il ne sert qu’une fois, on le retire de l’adresse aussitôt.
   let verified = "";
   if (verifyToken) {
     history.replaceState(null, "", location.pathname);
     try {
       await api("POST", "/auth/verify", { token: verifyToken });
-      verified = "Adresse e-mail validée. Votre compte est actif.";
+      verified = "Adresse e-mail validée. Ton compte est actif.";
     } catch (error) {
       verified = error.message;
     }
   }
   if (resetToken) {
     show(null);
-    return setMode("reset", "Choisissez votre nouveau mot de passe.");
+    return setMode("reset", "Choisis ton nouveau mot de passe.");
   }
-  // Arrivé par le lien d'un ami (ici ou sur une autre page du site, retenu 30 jours) : la page s'ouvre sur l'inscription.
+  // Arrivé par le lien d’un ami (ici ou sur une autre page du site, retenu 30 jours) : la page s’ouvre sur l’inscription.
   let ref = new URLSearchParams(location.search).get("ref") || "";
   try { const kept = JSON.parse(localStorage.getItem("onirique.ref")); if (!ref && kept && Date.now() - kept.at < 30 * 86400000) ref = kept.code; } catch {}
   if (ref && !saved()) {
@@ -1258,15 +1252,15 @@ $("logout").onclick = async () => {
     show(null);
     return setMode("register");
   }
-  // Venu du bouton « Télécharger » sans compte : la page s'ouvre sur l'inscription.
+  // Venu du bouton « Télécharger » sans compte : la page s’ouvre sur l’inscription.
   const wantsDownload = new URLSearchParams(location.search).get("next") === "telecharger";
   if (!saved() && new URLSearchParams(location.search).has("inscription")) { show(null); return setMode("register"); }
-  if (!saved()) { show(null); $("notice").textContent = verified && verified + (verified.startsWith("Adresse") ? " Connectez-vous." : ""); return; }
+  if (!saved()) { show(null); $("notice").textContent = verified && verified + (verified.startsWith("Adresse") ? " Connecte-toi." : ""); return; }
   try {
     const me = await api("GET", "/me");
     if (["mes-sons", "cloud", "cut", "mes-videos"].includes(new URLSearchParams(location.search).get("next")) || /^\/abrasion\/[\w.-]*$/.test(new URLSearchParams(location.search).get("next") || "")) { location.href = new URLSearchParams(location.search).get("next"); return; }
     show(me);
-    // Compte prêt (adresse validée) : le choix Windows / Mac s'ouvre tout de suite.
+    // Compte prêt (adresse validée) : le choix Windows / Mac s’ouvre tout de suite.
     if (wantsDownload && me.user.emailVerified !== false) window.OniriqueDownload?.open();
     $("verify-notice").textContent = verified.startsWith("Adresse") ? "" : verified;
   } catch (error) {

@@ -6,34 +6,36 @@
 <script src="assets/annonce.js?v=3"></script>
 <script src="/api/announce.js" async></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Partage des droits d'un titre — ONIRIQUE</title>
-<meta name="description" content="Répartis les parts d'un titre entre beatmaker, auteur, topliner et interprète, vérifie que le total fait 100 %, puis télécharge en PDF une feuille à signer. Gratuit, sans compte.">
+<title>Partage des droits d’un titre — ONIRIQUE</title>
+<meta name="description" content="Répartis les parts d’un titre entre beatmaker, auteur, topliner et interprète, vérifie que le total fait 100 %, puis télécharge en PDF une feuille à signer. Gratuit, sans compte.">
 <link rel="canonical" href="https://onirique.store/partage">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ONIRIQUE">
 <meta property="og:locale" content="fr_FR">
-<meta property="og:title" content="Partage des droits d'un titre — ONIRIQUE">
-<meta property="og:description" content="Répartis les parts d'un titre entre beatmaker, auteur, topliner et interprète, vérifie que le total fait 100 %, puis télécharge en PDF une feuille à signer. Gratuit, sans compte.">
+<meta property="og:title" content="Partage des droits d’un titre — ONIRIQUE">
+<meta property="og:description" content="Répartis les parts d’un titre entre beatmaker, auteur, topliner et interprète, vérifie que le total fait 100 %, puis télécharge en PDF une feuille à signer. Gratuit, sans compte.">
 <meta property="og:url" content="https://onirique.store/partage">
 <meta property="og:image" content="https://onirique.store/assets/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json" data-seo>{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Partage des droits d'un titre","url":"https://onirique.store/partage","description":"Répartis les parts d'un titre entre beatmaker, auteur, topliner et interprète, vérifie que le total fait 100 %, puis télécharge en PDF une feuille à signer. Gratuit, sans compte.","applicationCategory":"MultimediaApplication","operatingSystem":"Navigateur web","isAccessibleForFree":true,"inLanguage":"fr","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://onirique.store/"},{"@type":"ListItem","position":2,"name":"Outils gratuits","item":"https://onirique.store/outils"},{"@type":"ListItem","position":3,"name":"Partage des droits d'un titre","item":"https://onirique.store/partage"}]}]}</script>
+<script type="application/ld+json" data-seo>{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Partage des droits d’un titre","url":"https://onirique.store/partage","description":"Répartis les parts d’un titre entre beatmaker, auteur, topliner et interprète, vérifie que le total fait 100 %, puis télécharge en PDF une feuille à signer. Gratuit, sans compte.","applicationCategory":"MultimediaApplication","operatingSystem":"Navigateur web","isAccessibleForFree":true,"inLanguage":"fr","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://onirique.store/"},{"@type":"ListItem","position":2,"name":"Outils gratuits","item":"https://onirique.store/outils"},{"@type":"ListItem","position":3,"name":"Partage des droits d’un titre","item":"https://onirique.store/partage"}]}]}</script>
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
 <link rel="stylesheet" href="assets/pages.css?v=3">
 <link rel="stylesheet" href="assets/tools.css?v=3">
 <style>
-.people { display: grid; gap: 10px; }
-.person { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 96px 44px; gap: 10px; align-items: center; }
-.person button { height: 46px; border: 1px solid var(--line); border-radius: 12px; background: transparent; color: var(--haze); font-size: 20px; line-height: 1; cursor: pointer; }
-.person button:hover { border-color: var(--ember); color: var(--mist); }
+.people { display: grid; gap: 12px; }
+.person { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 96px 48px; gap: 12px; align-items: center; }
+.person button { display: grid; place-items: center; align-self: stretch; padding: 0; border: 1px solid var(--line); border-radius: var(--r-ctl); background: transparent; color: var(--haze); cursor: pointer; transition: color .25s, border-color .25s; }
+.person button:hover { border-color: rgba(var(--acc-hi),.6); color: var(--mist); }
+.person button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+.people + .actions { margin-top: 16px; }
 .person input[type="number"] { text-align: right; }
 .sum { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
 .sum .big { margin: 0; font-size: clamp(30px, 6vw, 48px); }
 .sheet { display: none; }
-@media (max-width: 620px) { .person { grid-template-columns: minmax(0, 1fr) 84px 40px; } .person select { grid-column: 1 / -1; grid-row: 2; } }
+@media (max-width: 620px) { .person { grid-template-columns: minmax(0, 1fr) 84px 44px; } .person select { grid-column: 1 / -1; grid-row: 2; } }
 @media print {
   main > :not(.sheet) { display: none !important; }
   .sheet { display: block; color: #000; font: 400 12pt/1.5 Georgia, serif; }
@@ -68,15 +70,15 @@
       <label>Titre du morceau<input id="title" type="text" maxlength="120" autocomplete="off"></label>
       <label>Date<input id="date" type="date"></label>
       <label>Ce qui est partagé<select id="kind">
-        <option>Droits d'auteur (composition et texte)</option>
-        <option>Revenus de l'enregistrement (master)</option>
-        <option>Droits d'auteur et master</option>
+        <option>Droits d’auteur (composition et texte)</option>
+        <option>Revenus de l’enregistrement (master)</option>
+        <option>Droits d’auteur et master</option>
       </select></label>
     </div>
     <div>
       <p class="eyebrow">Participants</p>
       <div class="people" id="people"></div>
-      <div class="actions" style="margin-top:16px">
+      <div class="actions">
         <button class="go ghost" id="add" type="button">Ajouter une personne</button>
         <button class="go ghost" id="equal" type="button">Parts égales</button>
       </div>
@@ -86,12 +88,12 @@
       <button class="go" id="pdf" type="button">Télécharger la feuille en PDF</button>
     </div>
   </div>
-  <p class="hint">Ce que tu saisis reste sur cet appareil : rien n'est envoyé.</p>
+  <p class="hint">Ce que tu saisis reste sur cet appareil : rien n’est envoyé.</p>
 
   <section class="text">
     <h2>À quoi sert cette feuille</h2>
-    <p>Elle garde une trace écrite de l'accord entre les participants, signée par tous, le jour de la session. C'est un document de travail : elle ne remplace ni un contrat, ni la déclaration du titre auprès d'une société d'auteurs (la SACEM en France), où les parts doivent être déclarées par ses propres formulaires.</p>
-    <p><strong>Droits d'auteur</strong> : ce qui revient à ceux qui ont écrit la musique et le texte. <strong>Master</strong> : ce qui revient à ceux qui ont produit et financé l'enregistrement. Les deux se partagent séparément : fais une feuille pour chacun si les parts diffèrent.</p>
+    <p>Elle garde une trace écrite de l’accord entre les participants, signée par tous, le jour de la session. C’est un document de travail : elle ne remplace ni un contrat, ni la déclaration du titre auprès d’une société d’auteurs (la SACEM en France), où les parts doivent être déclarées par ses propres formulaires.</p>
+    <p><strong>Droits d’auteur</strong> : ce qui revient à ceux qui ont écrit la musique et le texte. <strong>Master</strong> : ce qui revient à ceux qui ont produit et financé l’enregistrement. Les deux se partagent séparément : fais une feuille pour chacun si les parts diffèrent.</p>
   </section>
 
 </main>
@@ -116,7 +118,7 @@ function total() { return people.reduce((sum, p) => sum + (Number(p.share) || 0)
 function summary() {
   const sum = total(), rest = Math.round((100 - sum) * 100) / 100;
   $("total").textContent = percent(sum);
-  $("state").textContent = rest === 0 ? "Le compte est bon." : rest > 0 ? "Il reste " + percent(rest) + " à attribuer." : "Le total dépasse 100 % de " + percent(-rest) + ".";
+  $("state").textContent = rest === 0 ? "Le compte est bon" : rest > 0 ? "Il reste " + percent(rest) + " à attribuer" : "Le total dépasse 100 % de " + percent(-rest);
   $("state").className = rest === 0 ? "ok" : "warn";
   try { localStorage.setItem(KEY, JSON.stringify({ title: $("title").value, date: $("date").value, kind: $("kind").selectedIndex, people })); } catch { /* stockage indisponible */ }
 }
@@ -132,7 +134,7 @@ function draw() {
     const share = el("input", { type: "number", min: 0, max: 100, step: 0.01, value: p.share, inputMode: "decimal" });
     share.setAttribute("aria-label", "Part en pour cent");
     share.oninput = () => { p.share = parseFloat(share.value) || 0; summary(); };
-    const remove = el("button", { type: "button", textContent: "×", title: "Retirer" });
+    const remove = el("button", { type: "button", title: "Retirer", innerHTML: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>' });
     remove.setAttribute("aria-label", "Retirer ce participant");
     remove.onclick = () => { if (people.length > 1) { people.splice(i, 1); draw(); } };
     return el("div", { className: "person" }, name, role, share, remove);
@@ -142,7 +144,7 @@ function draw() {
 
 $("add").onclick = () => { people.push({ name: "", role: ROLES[ROLES.length - 1], share: 0 }); draw(); };
 $("equal").onclick = () => {
-  // Parts égales au centième ; le reste de l'arrondi va à la première personne pour que le total fasse 100.
+  // Parts égales au centième ; le reste de l’arrondi va à la première personne pour que le total fasse 100.
   const each = Math.floor(10000 / people.length) / 100;
   people.forEach((p) => { p.share = each; });
   people[0].share = Math.round((100 - each * (people.length - 1)) * 100) / 100;
@@ -150,7 +152,7 @@ $("equal").onclick = () => {
 };
 $("title").oninput = $("date").oninput = $("kind").onchange = summary;
 
-// La feuille à signer, en PDF : fabriquée ici, sur l'appareil.
+// La feuille à signer, en PDF : fabriquée ici, sur l’appareil.
 $("pdf").onclick = () => {
   const date = $("date").value ? new Date($("date").value + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "";
   const title = $("title").value.trim();
@@ -161,7 +163,7 @@ $("pdf").onclick = () => {
     .text("Date : " + (date || "……………………"), { size: 12, gap: 16 })
     .table([{ label: "Nom", width: 0.3 }, { label: "Rôle", width: 0.28 }, { label: "Part", width: 0.14, align: "right" }, { label: "Signature", width: 0.28 }],
       [...people.map((p) => [p.name, p.role, percent(Number(p.share) || 0), ""]), { bold: true, cells: ["Total", "", percent(total()), ""] }], { minHeight: 44 })
-    .text("Les signataires déclarent être d'accord sur la répartition ci-dessus. Document de travail établi entre les participants ; il ne remplace ni un contrat ni la déclaration du titre auprès d'une société d'auteurs.", { size: 9.5, grey: true })
+    .text("Les signataires déclarent être d’accord sur la répartition ci-dessus. Document de travail établi entre les participants ; il ne remplace ni un contrat ni la déclaration du titre auprès d’une société d’auteurs.", { size: 9.5, grey: true })
     .download("Partage des droits" + (title ? " - " + title : "") + ".pdf");
 };
 
