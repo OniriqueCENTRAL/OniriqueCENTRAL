@@ -73,7 +73,7 @@
       translated.add(en);
       if (fr.includes("{}")) {
         const source = "^" + fr.split("{}").map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("([\\s\\S]*?)") + "$";
-        patterns.push({ re: new RegExp(source), en, head: fr.split("{}")[0] });
+        patterns.push({ re: new RegExp(source), en, head: fr.split("{}")[0], fixed: fr.replace(/\{\d*\}/g, "").length });
       } else {
         exact.set(fr, en);
       }
@@ -95,6 +95,9 @@
     if (en === undefined) {
       for (const p of patterns) {
         if (p.head && !key.startsWith(p.head)) continue;
+        // Un modèle court (« {} sur {} ») ne doit pas attraper une longue phrase qui n'a pas sa traduction : sa partie
+        // fixe doit peser au moins un quart du texte, sinon il réécrirait un mot au milieu d'une phrase française.
+        if (key.length > 40 && p.fixed < key.length * 0.25) continue;
         const m = p.re.exec(key);
         if (m) { en = fill(p.en, m.slice(1).map((v) => translate(v))); break; }
       }
