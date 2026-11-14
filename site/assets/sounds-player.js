@@ -226,6 +226,8 @@ html.op-full-open #rocky { display: none; }
 .op-stage-lyrics.synced p.on { color: #fff; transform: scale(1.03);
   text-shadow: 0 0 calc(14px + var(--op-level, 0) * 34px) color-mix(in srgb, var(--op-glow, var(--op-accent, #e23444)) 75%, transparent); }
 html.op-stage-open, html.op-stage-open body { overflow: hidden; }
+/* La barre du site (z-index 60 pour ses menus, da.css) repasse sous les paroles en grand et le lecteur plein écran. */
+html:is(.op-stage-open, .op-full-open) body > header { z-index: auto; }
 @media (max-width: 720px) {
   .op-stage-lyrics { padding: 6vh 22px 42vh; }
   .op-stage-lyrics p { font-size: clamp(25px, 7.4vw, 34px); }
