@@ -107,9 +107,9 @@ textarea, input[type=search] { border-radius: 12px; border: 1px solid var(--line
 .bar { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-top: 1px solid var(--line); font-size: 13px; color: var(--haze); }
 .bar span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bar button { border: 0; background: none; color: var(--mist); cursor: pointer; font-size: 16px; }
-.send { display: flex; gap: 8px; align-items: flex-end; padding: 12px; border-top: 1px solid var(--line); }
-.send textarea { flex: 1; height: 44px; max-height: 140px; padding: 11px 14px; overflow-y: hidden; }
-.send .go-sm { display: none; }
+.composer { display: flex; gap: 8px; align-items: flex-end; padding: 12px; border-top: 1px solid var(--line); }
+.composer textarea { flex: 1; height: 44px; max-height: 140px; padding: 11px 14px; overflow-y: hidden; }
+.composer .go-sm { display: none; }
 .empty { padding: 24px; margin: 0; color: var(--haze); }
 .note { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border-radius: 14px; text-decoration: none; font-size: 14px; }
 .note:hover { background: rgba(255,255,255,.04); }
@@ -133,14 +133,14 @@ dialog.zoom { width: auto; max-width: 96vw; background: none; border: 0; }
   /* Le champ reste au-dessus de la bulle du menu du site (site-nav.js), fixée en bas à droite. */
   .msgs { max-height: max(260px, calc(100dvh - 475px)); min-height: 0; padding: 12px; }
   .row { max-width: 88%; }
-  .send { gap: 6px; padding: 10px; }
-  .send .ico { width: 40px; height: 40px; }
-  .send .btn { width: 40px; height: 40px; padding: 0; border-radius: 50%; }
-  .send .go { display: none; }
-  .send .go-sm { display: inline; }
+  .composer { gap: 6px; padding: 10px; }
+  .composer .ico { width: 40px; height: 40px; }
+  .composer .btn { width: 40px; height: 40px; padding: 0; border-radius: 50%; }
+  .composer .lbl { display: none; }
+  .composer .go-sm { display: inline; }
 }
 </style>
-<link rel="stylesheet" href="/assets/da.css?v=8">
+<link rel="stylesheet" href="/assets/da.css?v=9">
 <script src="/assets/accent.js?v=1"></script>
 
 <header>
@@ -164,7 +164,7 @@ dialog.zoom { width: auto; max-width: 96vw; background: none; border: 0; }
 <dialog id="dlg"></dialog>
 <input type="file" id="pick" accept="image/*" hidden>
 
-<script src="assets/sounds-player.js?v=29"></script>
+<script src="assets/sounds-player.js?v=30"></script>
 <script src="assets/hm.js?v=16"></script>
 <script>
 const $ = (id) => document.getElementById(id);
@@ -387,10 +387,10 @@ let typedAt = 0;
 function build() {
   const box = el("textarea", { id: "body", maxLength: 2000, placeholder: "Ton message…", ariaLabel: "Ton message" });
   const mic = el("button", { className: "ico", type: "button", id: "mic", ariaLabel: "Enregistrer un vocal", title: "Vocal", textContent: "🎤" });
-  const form = el("form", { className: "send" },
+  const form = el("form", { className: "composer" },
     el("button", { className: "ico", type: "button", ariaLabel: "Envoyer une photo", title: "Photo", textContent: "📷", onclick: () => $("pick").click() }),
     el("button", { className: "ico", type: "button", ariaLabel: "Partager un son du CLOUD", title: "Son ou playlist du CLOUD", textContent: "🎵", onclick: () => pickSounds().catch(fail) }),
-    box, mic, el("button", { className: "btn btn-primary", type: "submit", ariaLabel: "Envoyer" }, el("span", { className: "go", textContent: "Envoyer" }), el("span", { className: "go-sm", textContent: "➤" })));
+    box, mic, el("button", { className: "btn btn-primary", type: "submit", ariaLabel: "Envoyer" }, el("span", { className: "lbl", textContent: "Envoyer" }), el("span", { className: "go-sm", textContent: "➤" })));
   box.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && !coarse()) { e.preventDefault(); form.requestSubmit(); } });
   box.addEventListener("input", () => {
     box.style.height = "44px"; box.style.height = Math.min(140, box.scrollHeight + 2) + "px"; box.style.overflowY = box.scrollHeight > 140 ? "auto" : "hidden";

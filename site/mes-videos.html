@@ -64,14 +64,14 @@ h1 { font: 800 clamp(26px, 7vw, 38px)/1.1 var(--f-display); margin: 8px 0 6px; }
 .remind input[type="time"] { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--mist); font: 600 15px var(--f-body); }
 /* La grille des vidéos : deux colonnes sur téléphone, plus sur un grand écran. */
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
-.card { display: grid; gap: 6px; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; min-width: 0; }
+.vid { display: grid; gap: 6px; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; min-width: 0; }
 .thumb { position: relative; display: block; aspect-ratio: 9 / 16; border-radius: 14px; overflow: hidden; background: #000; border: 1px solid var(--line); }
 .thumb img, .thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
-.card:hover .thumb { border-color: var(--ember); }
+.vid:hover .thumb { border-color: var(--ember); }
 .here { position: absolute; left: 8px; top: 8px; padding: 4px 8px; border-radius: 8px; background: rgba(0,0,0,.72); font: 600 11px/1 var(--f-body); }
 .dur { position: absolute; right: 8px; bottom: 8px; padding: 3px 7px; border-radius: 8px; background: rgba(0,0,0,.7); font: 600 12px/1 var(--f-mono); }
-.card b { font: 700 14px/1.3 var(--f-body); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
-.card small { color: var(--haze); font-size: 12px; line-height: 1.3; }
+.vid b { font: 700 14px/1.3 var(--f-body); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.vid small { color: var(--haze); font-size: 12px; line-height: 1.3; }
 /* La vidéo ouverte : en grand, avec ses actions. Sur téléphone, toute la hauteur de l'écran. */
 dialog { padding: 0; border: 1px solid rgba(255,210,214,.16); border-radius: 24px; background: #150a0c; color: var(--mist); box-shadow: 0 40px 120px -30px #000, 0 0 60px -30px rgba(var(--acc),.6); max-width: calc(100vw - 24px);
   top: env(safe-area-inset-top, 0px); bottom: env(safe-area-inset-bottom, 0px); max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
@@ -102,7 +102,7 @@ dialog::backdrop { background: rgba(5,2,3,.8); backdrop-filter: blur(4px); }
 #install-help .steps li::before { counter-increment: step; content: counter(step); flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--ember); color: var(--night); font: 700 13px var(--f-body); }
 #install-help .share { display: inline-block; vertical-align: -4px; width: 18px; height: 18px; }
 </style>
-<link rel="stylesheet" href="/assets/da.css?v=8">
+<link rel="stylesheet" href="/assets/da.css?v=9">
 <script src="/assets/accent.js?v=1"></script>
 <body>
 <header>
@@ -242,7 +242,7 @@ function fetchVideo(v, onProgress) {
   return entry.promise;
 }
 const hereBadge = () => el("span", { className: "here", textContent: "✓ Sur le téléphone" });
-function markHere(id) { const thumb = document.querySelector('.card[data-id="' + id + '"] .thumb'); if (thumb && !thumb.querySelector(".here")) thumb.append(hereBadge()); }
+function markHere(id) { const thumb = document.querySelector('.vid[data-id="' + id + '"] .thumb'); if (thumb && !thumb.querySelector(".here")) thumb.append(hereBadge()); }
 
 // ——— La liste ———
 let loadedAt = 0;
@@ -274,7 +274,7 @@ const dayBadge = (v) => (v.scheduledDay ? el("span", { className: "day" + (v.sch
 async function planDay(v, day) {
   const saved = await api("PATCH", "/cut/library/" + v.id, { day: day || null });
   v.scheduledDay = saved.scheduledDay;
-  const old = document.querySelector('.card[data-id="' + v.id + '"]');
+  const old = document.querySelector('.vid[data-id="' + v.id + '"]');
   if (old) old.replaceWith(card(v, stored.has(v.id)));
 }
 /** Les vidéos sans jour prennent chacune le prochain jour libre, à partir d'aujourd'hui (les plus anciennes d'abord). */
@@ -321,7 +321,7 @@ function card(v, here) {
   const thumb = el("img", { src: v.poster, alt: "", loading: "lazy", decoding: "async" });
   // Pas d'aperçu : la vidéo elle-même montre une de ses images.
   thumb.onerror = () => thumb.replaceWith(el("video", { src: v.url + "#t=1", muted: true, playsInline: true, preload: "metadata" }));
-  const button = el("button", { type: "button", className: "card", onclick: () => openVideo(v) },
+  const button = el("button", { type: "button", className: "vid", onclick: () => openVideo(v) },
     el("span", { className: "thumb" }, thumb, here ? hereBadge() : null, el("span", { className: "dur", textContent: clock(v.duration) }), dayBadge(v)),
     el("b", { textContent: v.name }), el("small", { textContent: when(v.createdAt) + " · " + size(v.size) }));
   button.dataset.id = v.id;

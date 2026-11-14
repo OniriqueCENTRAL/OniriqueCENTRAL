@@ -1,18 +1,14 @@
 /* Pages du menu Outils : la base des pages de texte (pages.css), le fond de la boutique, et les blocs communs
    aux outils (zone de dépôt, carte de résultat, champs, boutons, tableaux de valeurs). */
-:root { --blood: rgb(var(--acc-lo)); --deep-2: #2A0A0E; --soft: #D9C6C8; --f-dream: "Grenze Gotisch", Georgia, serif;
-  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(var(--acc),.55); }
-body { background: radial-gradient(120% 50% at 50% -10%, rgba(var(--acc-lo),.75), rgba(var(--acc-lo),.4) 38%, transparent 72%) fixed, var(--night); }
 .wrap { max-width: 980px; }
 header nav { display: flex; align-items: center; gap: 10px; }
 [hidden] { display: none !important; }
 
 .hero { text-align: center; }
 .hero h1 { font-size: clamp(28px, 6vw, 52px); }
-h1 em, h2 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
 .lede { margin-inline: auto; max-width: 58ch; color: var(--haze); }
 .hint { margin: 12px 0 0; font-size: 14px; color: var(--haze); }
-.error { margin: 16px 0 0; color: #FF7A85; font-size: 15px; }
+.error { margin: 16px 0 0; color: var(--danger); font-size: 15px; }
 .error:empty { display: none; }
 
 /* Zone de dépôt d'un fichier */
@@ -37,7 +33,7 @@ h1 em, h2 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shad
 .card .eyebrow { margin-bottom: 12px; color: var(--haze); }
 .muted { color: var(--haze) !important; font-size: 14px !important; }
 .warn { color: var(--ember-text) !important; font-weight: 600; }
-.ok { color: #9BE3B0 !important; }
+.ok { color: var(--ok) !important; }
 
 /* Grandes valeurs côte à côte */
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 0; padding: 0 !important; }
@@ -48,7 +44,7 @@ h1 em, h2 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shad
 
 /* Champs et boutons */
 .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 16px; }
-.card label, .label { display: grid; gap: 7px; font: 500 11px/1.2 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
+.card label, .label { display: grid; gap: 8px; font: 500 11px/1.2 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
 .card input:not([type]), .card input[type="text"], .card input[type="number"], .card input[type="date"], .card select { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px/1.4 var(--f-body); letter-spacing: 0; text-transform: none; }
 .card select option { background: var(--deep); }
 .card input:focus, .card select:focus { outline: none; border-color: var(--ember); box-shadow: 0 0 0 4px rgba(var(--acc),.14); }
@@ -64,14 +60,13 @@ h1 em, h2 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shad
 .split { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px 24px; align-items: center; }
 /* Choix parmi quelques valeurs */
 .chips { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 999px; }
-.chips.wrap-in { border-radius: 18px; }
 .chips button { padding: 10px 14px; border: 0; border-radius: 999px; background: transparent; color: var(--haze); font: 500 12px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
 .chips button:hover { color: var(--mist); }
 .chips button[aria-pressed="true"] { background: var(--ember); color: #fff; }
 
 /* Tableau de valeurs */
 .values { width: 100%; min-width: 0; border-collapse: collapse; font-size: 15px; }
-.values th, .values td { padding: 11px 10px; border-top: 1px solid rgba(255,210,214,.1); text-align: right; font-variant-numeric: tabular-nums; }
+.values th, .values td { padding: 12px 10px; border-top: 1px solid var(--line); text-align: right; font-variant-numeric: tabular-nums; }
 .values th:first-child, .values td:first-child { padding-left: 0; text-align: left; }
 .values th:last-child, .values td:last-child { padding-right: 0; }
 .values thead th { border-top: 0; font: 500 11px/1.3 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--haze); }
@@ -87,13 +82,13 @@ details { border-top: 1px solid var(--line); }
 details:last-of-type { border-bottom: 1px solid var(--line); }
 summary { padding: 16px 0; cursor: pointer; font-weight: 600; }
 details p { color: var(--soft); }
-.cta { margin-top: 56px; padding: clamp(24px, 5vw, 44px); border: 1px solid rgba(var(--acc),.5); border-radius: 22px; background: linear-gradient(180deg, var(--deep-2), var(--deep)); text-align: center; }
+.cta { margin-top: 56px; padding: clamp(24px, 5vw, 44px); border: 1px solid rgba(var(--acc),.35); border-radius: var(--r-card); background: var(--glass), rgba(14,10,12,.55); box-shadow: var(--glass-shadow); text-align: center; }
 .cta h2 { margin-top: 0; }
 .cta p { margin-inline: auto; max-width: 52ch; color: var(--haze); }
 .cta .go { margin-top: 10px; }
 
 @media (max-width: 620px) {
-  .brand { font-size: 0; gap: 0; } header .btn { padding: 10px 12px; font-size: 13px; }
+  .brand { font-size: 0; gap: 0; }
   .split { grid-template-columns: minmax(0, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) { .drop.busy svg { animation: none; } }

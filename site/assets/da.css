@@ -14,6 +14,11 @@
   --lit-shadow: 0 0 0 1px rgba(var(--acc-hi),.55) inset, 0 6px 22px rgba(var(--acc),.35);
   --ease: cubic-bezier(.2, .8, .2, 1);
   --glow: 0 0 18px rgba(var(--acc),.45);
+  /* Verre sombre des menus et des fenêtres ; états (erreur, réussite), qui ne suivent pas l'accent ;
+     rayons : contrôles 12, bascules 10, cartes 22, fenêtres 30. */
+  --glass-deep: linear-gradient(160deg, rgba(40,26,30,.96), rgba(16,12,14,.97) 45%, rgba(20,15,17,.97));
+  --danger: #ff7a85; --ok: #9be3b0;
+  --r-seg: 10px; --r-ctl: 12px; --r-card: 22px; --r-dlg: 30px;
   --f-display: "Unbounded", "Segoe UI", system-ui, sans-serif;
   --f-body: "Hanken Grotesk", system-ui, sans-serif;
   --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
@@ -70,10 +75,10 @@ footer nav, .foot-row nav { font-size: 10.5px; }
 .nav-links .tools-menu, .nav-links .sn-social-drop { font-family: var(--f-body); font-size: 14px; letter-spacing: normal; text-transform: none; }
 .nav-links .tools-menu h3 { text-transform: uppercase; }
 header .tools-menu, header .sn-social-drop { border-radius: 22px; border-color: rgba(255,235,238,.12);
-  background: linear-gradient(160deg, rgba(40,26,30,.94), rgba(16,12,14,.96) 45%, rgba(20,15,17,.96));
+  background: var(--glass-deep);
   -webkit-backdrop-filter: blur(22px) saturate(140%); backdrop-filter: blur(22px) saturate(140%);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.4), 0 24px 60px rgba(0,0,0,.6); }
-header .tools-menu a, header .sn-social-drop a { color: #d8c6c8; }
+header .tools-menu a, header .sn-social-drop a { color: var(--label); }
 header .tools-menu a:hover, header .sn-social-drop a:hover { color: #fff; background: rgba(255,255,255,.06); box-shadow: 0 0 0 1px rgba(var(--acc-hi),.3) inset; }
 
 /* Boutons : JetBrains Mono en majuscules, rayon 12 ; le principal s'allume à l'accent, avec une lueur douce */
@@ -81,7 +86,7 @@ header .tools-menu a:hover, header .sn-social-drop a:hover { color: #fff; backgr
   border-radius: 12px; font-family: var(--f-mono); font-weight: 500; font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
   transition: transform .25s var(--ease), box-shadow .25s var(--ease), background .25s, color .25s, border-color .25s;
 }
-.btn:not(.btn-primary) { background: rgba(255,255,255,.04); color: #d8c6c8; border-color: transparent; box-shadow: 0 0 0 1px rgba(255,255,255,.10) inset; }
+.btn:not(.btn-primary) { background: rgba(255,255,255,.04); color: var(--label); border-color: transparent; box-shadow: 0 0 0 1px rgba(255,255,255,.10) inset; }
 .btn:not(.btn-primary):hover { color: #fff; background: rgba(255,255,255,.07); border-color: transparent; transform: translateY(-1px); }
 .btn-primary { background: var(--lit); color: #fff; border-color: transparent; box-shadow: var(--lit-shadow); }
 .btn-primary:hover { color: #fff; transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(var(--acc-hi),.7) inset, 0 8px 26px rgba(var(--acc),.45); }
@@ -102,7 +107,7 @@ header .tools-menu a:hover, header .sn-social-drop a:hover { color: #fff; backgr
 .go:not(.ghost):hover, button.buy:not(.ghost):not(:disabled):hover, .send:not(:disabled):hover, button.act[type="submit"]:hover {
   color: #fff; transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(var(--acc-hi),.7) inset, 0 8px 26px rgba(var(--acc),.45);
 }
-.go.ghost, button.buy.ghost, button.buy:disabled { background: rgba(255,255,255,.04); color: #d8c6c8; border: 0; box-shadow: 0 0 0 1px rgba(255,255,255,.10) inset; }
+.go.ghost, button.buy.ghost, button.buy:disabled { background: rgba(255,255,255,.04); color: var(--label); border: 0; box-shadow: 0 0 0 1px rgba(255,255,255,.10) inset; }
 .go.ghost:hover, button.buy.ghost:hover { color: #fff; background: rgba(255,255,255,.07); box-shadow: 0 0 0 1px rgba(255,255,255,.14) inset; }
 .go.ghost[aria-pressed="true"] { background: var(--lit); color: #fff; box-shadow: var(--lit-shadow); }
 .go:disabled, .send:disabled { transform: none; }
@@ -114,6 +119,17 @@ button.act, a.act { border-radius: 10px; }
   background: rgba(255,255,255,.05); box-shadow: 0 0 0 1px rgba(255,255,255,.1) inset; color: rgb(var(--acc-hi)); font: 400 17px/1 var(--f-body); letter-spacing: 0; text-transform: none;
   transition: translate .35s var(--ease), background .25s, color .25s, box-shadow .25s; }
 .sons-shortcut:hover .go, .sons-shortcut:focus-visible .go { translate: 4px 0; transform: none; color: #fff; background: var(--lit); box-shadow: var(--lit-shadow); }
+
+/* Bascules (.chips des outils, de CUT, de la marketplace) : les onglets « seg » de la charte, capitales JetBrains Mono,
+   rayon 10 ; celle qui est choisie s'allume comme le bouton principal. Pas les cartes de styles de CUT (.presets) ni les
+   suggestions de texte du compte (.chip). */
+.chips:where(:not(.presets)) { border-radius: 14px; }
+.chips:where(:not(.presets)) > button:where(:not(.chip)) { border-radius: var(--r-seg); font-family: var(--f-mono); font-weight: 500; font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+  transition: color .25s, background .25s, box-shadow .25s; }
+.chips:where(:not(.presets)) > button:where(:not(.chip))[aria-pressed="true"] { background: var(--lit); color: #fff; border-color: transparent; box-shadow: var(--lit-shadow); }
+
+/* Messages d'erreur : une seule couleur, même avec un autre accent */
+.error { color: var(--danger); }
 
 /* Verre : cartes et panneaux */
 /* (pas les cartes des fausses interfaces de plugin de l'accueil, .ui .card, dessinées à leur échelle) */
@@ -139,7 +155,7 @@ select option { background: var(--deep); color: var(--mist); }
 .drop svg { stroke: rgb(var(--acc-hi)); filter: drop-shadow(0 0 10px rgba(var(--acc),.7)); }
 
 /* Fenêtres par-dessus */
-dialog { border-radius: 30px; border-color: rgba(255,235,238,.14); background: linear-gradient(160deg, rgba(40,26,30,.96), rgba(16,12,14,.97) 45%, rgba(20,15,17,.97)); box-shadow: var(--glass-shadow), 0 30px 90px rgba(0,0,0,.6); }
+dialog { border-radius: var(--r-dlg); border-color: rgba(255,235,238,.14); background: var(--glass-deep); box-shadow: var(--glass-shadow), 0 30px 90px rgba(0,0,0,.6); }
 dialog::backdrop { background: rgba(5,4,5,.6); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 dialog[open] { animation: da-pop .45s var(--ease); }
 @keyframes da-pop { from { opacity: 0; translate: 0 14px; scale: .98; } }

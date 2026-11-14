@@ -131,11 +131,11 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-
 .st-links { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; }
 .st-links li { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: 14px; }
 .st-links .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.st-links .bar { grid-column: 2 / 4; height: 4px; border-radius: 2px; background: rgba(255,255,255,.06); overflow: hidden; }
-.st-links .bar i { display: block; height: 100%; background: var(--ember); }
+.st-links .meter { grid-column: 2 / 4; height: 4px; border-radius: 2px; background: rgba(255,255,255,.06); overflow: hidden; }
+.st-links .meter i { display: block; height: 100%; background: var(--ember); }
 .st-links b { font: 600 14px var(--f-mono); }
 </style>
-<link rel="stylesheet" href="/assets/da.css?v=8">
+<link rel="stylesheet" href="/assets/da.css?v=9">
 <script src="/assets/accent.js?v=1"></script>
 
 <header>
@@ -574,7 +574,7 @@ async function loadStats() {
       icon.style.setProperty("--icon", `url("/assets/icons/${p ? p.id : "link"}.svg")`);
       const label = Object.assign(document.createElement("span"), { className: "lbl", textContent: l.label || (p && p.name) || l.url });
       const count = Object.assign(document.createElement("b"), { textContent: n });
-      const bar = Object.assign(document.createElement("span"), { className: "bar" });
+      const bar = Object.assign(document.createElement("span"), { className: "meter" });
       const fill = document.createElement("i");
       fill.style.width = (n / most) * 100 + "%";
       bar.append(fill);
