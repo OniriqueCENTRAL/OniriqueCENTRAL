@@ -1,44 +1,44 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=b60d57e5"></script>
+<script src="assets/i18n.js?v=08504049"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=3"></script>
 <script src="/api/announce.js" async></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Volume d'un master (LUFS) avant sortie — ONIRIQUE</title>
+<title>Volume d’un master (LUFS) avant sortie — ONIRIQUE</title>
 <meta name="description" content="Dépose ton master : son volume intégré en LUFS, son pic réel et ce que Spotify, Apple Music, YouTube, Deezer, Tidal et Amazon Music en feront. Gratuit, dans ton navigateur.">
 <link rel="canonical" href="https://onirique.store/volume-lufs">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ONIRIQUE">
 <meta property="og:locale" content="fr_FR">
-<meta property="og:title" content="Volume d'un master (LUFS) avant sortie — ONIRIQUE">
+<meta property="og:title" content="Volume d’un master (LUFS) avant sortie — ONIRIQUE">
 <meta property="og:description" content="Dépose ton master : son volume intégré en LUFS, son pic réel et ce que Spotify, Apple Music, YouTube, Deezer, Tidal et Amazon Music en feront. Gratuit, dans ton navigateur.">
 <meta property="og:url" content="https://onirique.store/volume-lufs">
 <meta property="og:image" content="https://onirique.store/assets/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json" data-seo>{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Volume d'un master (LUFS) avant sortie","url":"https://onirique.store/volume-lufs","description":"Dépose ton master : son volume intégré en LUFS, son pic réel et ce que Spotify, Apple Music, YouTube, Deezer, Tidal et Amazon Music en feront. Gratuit, dans ton navigateur.","applicationCategory":"MultimediaApplication","operatingSystem":"Navigateur web","isAccessibleForFree":true,"inLanguage":"fr","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://onirique.store/"},{"@type":"ListItem","position":2,"name":"Outils gratuits","item":"https://onirique.store/outils"},{"@type":"ListItem","position":3,"name":"Volume d'un master (LUFS) avant sortie","item":"https://onirique.store/volume-lufs"}]}]}</script>
+<script type="application/ld+json" data-seo>{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Volume d’un master (LUFS) avant sortie","url":"https://onirique.store/volume-lufs","description":"Dépose ton master : son volume intégré en LUFS, son pic réel et ce que Spotify, Apple Music, YouTube, Deezer, Tidal et Amazon Music en feront. Gratuit, dans ton navigateur.","applicationCategory":"MultimediaApplication","operatingSystem":"Navigateur web","isAccessibleForFree":true,"inLanguage":"fr","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://onirique.store/"},{"@type":"ListItem","position":2,"name":"Outils gratuits","item":"https://onirique.store/outils"},{"@type":"ListItem","position":3,"name":"Volume d’un master (LUFS) avant sortie","item":"https://onirique.store/volume-lufs"}]}]}</script>
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
-<link rel="stylesheet" href="assets/pages.css?v=2">
-<link rel="stylesheet" href="assets/tools.css?v=2">
+<link rel="stylesheet" href="assets/pages.css?v=3">
+<link rel="stylesheet" href="assets/tools.css?v=3">
 <script>if (/[?&]embed=1(&|$)/.test(location.search)) document.documentElement.classList.add("embed");</script>
 <style>
 html.embed body > :not(main):not(script), html.embed main > .text, html.embed main > .cta,
 html.embed .hero > .eyebrow, html.embed .hero > h1, html.embed .hero > .lede, html.embed .hero > .hint { display: none !important; }
 html.embed main { padding-top: 12px !important; padding-bottom: 24px !important; }
 html.embed body { background: transparent; }
-.from-cloud { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 14px; }
+.from-cloud { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 16px; }
 .from-cloud[hidden] { display: none; }
-.cloud-pick { max-width: 100%; height: 46px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 15px var(--f-body); }
+.cloud-pick { max-width: 100%; height: 46px; padding: 0 16px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 15px var(--f-body); }
 </style>
 <style>
 .values td.gain b { color: var(--mist); }
 .values td small { display: block; color: var(--haze); font-size: 13px; }
 </style>
-<link rel="stylesheet" href="/assets/da.css?v=8">
+<link rel="stylesheet" href="/assets/da.css?v=9">
 <script src="/assets/accent.js?v=1"></script>
 
 <a class="skip" href="#contenu">Aller au contenu</a>
@@ -62,14 +62,14 @@ html.embed body { background: transparent; }
     </button>
     <div class="from-cloud" id="from-cloud" hidden></div>
     <input id="file" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" hidden>
-    <p class="hint">Sans compte. La mesure se fait dans ton navigateur : ton fichier n'est envoyé nulle part.</p>
+    <p class="hint">Sans compte. La mesure se fait dans ton navigateur : ton fichier n’est envoyé nulle part.</p>
     <p class="error" id="error" role="alert"></p>
   </section>
 
   <article class="card" id="result" aria-live="polite" hidden>
     <p class="head"><b id="r-file"></b><span id="r-length"></span></p>
     <div class="tiles">
-      <div class="tile"><p class="eyebrow">Volume intégré</p><div class="big"><span id="r-lufs"></span> <small>LUFS</small></div><p class="muted">Le volume moyen du titre entier, tel que l'oreille le perçoit.</p></div>
+      <div class="tile"><p class="eyebrow">Volume intégré</p><div class="big"><span id="r-lufs"></span> <small>LUFS</small></div><p class="muted">Le volume moyen du titre entier, tel que l’oreille le perçoit.</p></div>
       <div class="tile"><p class="eyebrow">Pic réel</p><div class="big"><span id="r-peak"></span> <small>dBTP</small></div><p id="r-peak-text"></p></div>
       <div class="tile"><p class="eyebrow">Dynamique</p><div class="big"><span id="r-range"></span> <small>LU</small></div><p class="muted" id="r-range-text"></p></div>
     </div>
@@ -80,27 +80,27 @@ html.embed body { background: transparent; }
         <thead><tr><th>Plateforme</th><th>Cible</th><th>Ce qui arrive à ton titre</th></tr></thead>
         <tbody id="r-rows"></tbody>
       </table></div>
-      <p class="muted" style="margin-top:12px">Cibles publiées par les plateformes ou couramment mesurées ; elles peuvent changer, et l'auditeur peut désactiver la normalisation.</p>
+      <p class="muted" style="margin-top:12px">Cibles publiées par les plateformes ou couramment mesurées ; elles peuvent changer, et l’auditeur peut désactiver la normalisation.</p>
     </div>
   </article>
 
   <section class="text">
     <h2>Lire la mesure</h2>
-    <p><strong>LUFS</strong> : l'unité de volume perçu. Plus le nombre est proche de zéro, plus le titre est fort : −8 LUFS est très fort, −14 est la cible de la plupart des plateformes, −20 est calme. Un master plus fort que la cible n'est pas refusé : il est simplement baissé à la lecture. Pousser au-delà n'apporte donc aucun volume en plus, seulement moins de dynamique.</p>
+    <p><strong>LUFS</strong> : l’unité de volume perçu. Plus le nombre est proche de zéro, plus le titre est fort : −8 LUFS est très fort, −14 est la cible de la plupart des plateformes, −20 est calme. Un master plus fort que la cible n’est pas refusé : il est simplement baissé à la lecture. Pousser au-delà n’apporte donc aucun volume en plus, seulement moins de dynamique.</p>
     <p><strong>Pic réel (dBTP)</strong> : le niveau maximal du signal une fois reconverti en son, qui peut dépasser celui des échantillons. Au-dessus de −1 dBTP, la conversion en MP3 ou en AAC faite par les plateformes peut créer de la saturation.</p>
-    <p><strong>Dynamique</strong> : l'écart entre les passages calmes et forts. Une valeur très basse signale un titre très compressé.</p>
+    <p><strong>Dynamique</strong> : l’écart entre les passages calmes et forts. Une valeur très basse signale un titre très compressé.</p>
     <h2>Questions fréquentes</h2>
     <details><summary>Faut-il viser exactement −14 LUFS ?</summary>
-      <p>Non. C'est le niveau auquel le titre sera lu, pas une note à atteindre. Beaucoup de titres actuels sortent entre −7 et −10 LUFS et sont baissés ; l'important est que le titre sonne bien une fois baissé, et que ses pics restent sous −1 dBTP.</p></details>
+      <p>Non. C’est le niveau auquel le titre sera lu, pas une note à atteindre. Beaucoup de titres actuels sortent entre −7 et −10 LUFS et sont baissés ; l’important est que le titre sonne bien une fois baissé, et que ses pics restent sous −1 dBTP.</p></details>
     <details><summary>Quel fichier déposer ?</summary>
       <p>Le master final, celui que tu envoies au distributeur, de préférence en WAV. Un MP3 donne un volume très proche, mais ses pics ne sont plus ceux du master.</p></details>
     <details><summary>Comment la mesure est-elle faite ?</summary>
-      <p>Selon la recommandation UIT-R BS.1770, celle qu'appliquent les plateformes et les outils de mastering : pondération de l'oreille, blocs de 400 millisecondes, silences écartés. Le pic réel est recherché en reconstruisant le signal quatre fois plus finement.</p></details>
+      <p>Selon la recommandation UIT-R BS.1770, celle qu’appliquent les plateformes et les outils de mastering : pondération de l’oreille, blocs de 400 millisecondes, silences écartés. Le pic réel est recherché en reconstruisant le signal quatre fois plus finement.</p></details>
   </section>
 
   <section class="cta">
     <h2>Un mix qui tient <em>une fois baissé</em></h2>
-    <p>Quand tous les titres sont au même volume, c'est la voix qui fait la différence. Les plugins Onirique s'essaient dans ton navigateur.</p>
+    <p>Quand tous les titres sont au même volume, c’est la voix qui fait la différence. Les plugins Onirique s’essaient dans ton navigateur.</p>
     <a class="go" href="boutique">Voir les plugins</a>
   </section>
 </main>
@@ -136,18 +136,18 @@ function show(file, duration, r) {
   $("r-peak-text").textContent = r.truePeak > 0 ? "Le signal sature : baisse le plafond du limiteur." : hot ? "Au-dessus de −1 dBTP : risque de saturation après conversion." : "Sous −1 dBTP : pas de risque à la conversion.";
   $("r-peak-text").className = hot ? "warn" : "ok";
   $("r-range").textContent = r.range === null ? "—" : A.decimal(r.range);
-  $("r-range-text").textContent = r.range === null ? "Titre trop court pour la mesurer." : r.range < 4 ? "Très compressé : peu d'écart entre couplets et refrains." : r.range < 9 ? "Courant pour un titre actuel." : "Large : de vrais passages calmes.";
+  $("r-range-text").textContent = r.range === null ? "Titre trop court pour la mesurer." : r.range < 4 ? "Très compressé : peu d’écart entre couplets et refrains." : r.range < 9 ? "Courant pour un titre actuel." : "Large : de vrais passages calmes.";
 
   const over = r.integrated + 14;
   $("r-verdict").textContent = (over > 0.5
-    ? "Ton master est " + A.decimal(over) + " dB plus fort que la cible la plus courante (−14 LUFS) : il sera baissé d'autant à la lecture, sans perte de qualité."
+    ? "Ton master est " + A.decimal(over) + " dB plus fort que la cible la plus courante (−14 LUFS) : il sera baissé d’autant à la lecture, sans perte de qualité."
     : over < -0.5 ? "Ton master est " + A.decimal(-over) + " dB sous la cible la plus courante (−14 LUFS) : il sonnera plus calme que les autres titres sur les plateformes qui ne remontent pas le volume."
     : "Ton master est pile à la cible la plus courante (−14 LUFS).")
-    + (hot ? " Ses pics dépassent −1 dBTP : baisse le plafond du limiteur à −1 dBTP avant d'exporter." : "");
+    + (hot ? " Ses pics dépassent −1 dBTP : baisse le plafond du limiteur à −1 dBTP avant d’exporter." : "");
 
   $("r-rows").replaceChildren(...PLATFORMS.map(([name, target, up]) => {
     const gain = target - r.integrated;
-    // Un titre trop calme n'est remonté que tant que ses pics restent sous −1 dBTP.
+    // Un titre trop calme n’est remonté que tant que ses pics restent sous −1 dBTP.
     const applied = gain <= 0 ? gain : up ? Math.max(0, Math.min(gain, -1 - r.truePeak)) : 0;
     const row = document.createElement("tr");
     const what = Math.abs(applied) < 0.05 ? (gain > 0.05 ? "Laissé tel quel" : "Inchangé") : applied < 0 ? "Baissé de " + A.decimal(-applied) + " dB" : "Remonté de " + A.decimal(applied) + " dB";

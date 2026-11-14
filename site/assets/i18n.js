@@ -58,15 +58,18 @@
   }
 
   let exact = null, patterns = null, translated = null, blocks = null;
+  const plain = (s) => s.replace(/’/g, "'");
   const prepare = () => {
     if (exact) return true;
     const dict = window.ONIRIQUE_EN;
     if (!dict) return false;
-    blocks = new Map(Object.entries(window.ONIRIQUE_EN_HTML || {}));
+    // Le dictionnaire est écrit avec l'apostrophe droite, les pages avec la typographique : on compare sans en tenir compte.
+    blocks = new Map(Object.entries(window.ONIRIQUE_EN_HTML || {}).map(([fr, en]) => [plain(fr), en]));
     exact = new Map();
     patterns = [];
     translated = new Set();
-    for (const [fr, en] of Object.entries(dict)) {
+    for (const [source, en] of Object.entries(dict)) {
+      const fr = plain(source);
       translated.add(en);
       if (fr.includes("{}")) {
         const source = "^" + fr.split("{}").map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("([\\s\\S]*?)") + "$";
@@ -86,7 +89,7 @@
   };
   function translate(text) {
     if (!prepare()) return text;
-    const key = text.replace(/\s+/g, " ").trim();
+    const key = plain(text.replace(/\s+/g, " ").trim());
     if (!key || !/[a-zà-ÿ]/i.test(key) || translated.has(key)) return text;
     let en = exact.get(key);
     if (en === undefined) {
@@ -107,7 +110,7 @@
   const BLOCK_TAGS = new Set(["H1", "H2", "H3", "H4", "H5", "H6", "P", "LI", "LABEL", "SPAN", "DIV", "TD", "TH", "SMALL", "A", "BUTTON", "DT", "DD", "FIGCAPTION", "LEGEND", "SUMMARY", "STRONG", "EM", "B"]);
   function translateBlock(el) {
     if (!blocks || !blocks.size || !BLOCK_TAGS.has(el.tagName) || !el.firstElementChild || el.childElementCount > 12) return false;
-    const en = blocks.get(el.innerHTML.replace(/\s+/g, " ").trim());
+    const en = blocks.get(plain(el.innerHTML.replace(/\s+/g, " ").trim()));
     if (en === undefined) return false;
     el.innerHTML = en;
     return true;

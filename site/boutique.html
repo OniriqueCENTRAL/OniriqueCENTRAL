@@ -1,19 +1,19 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=b60d57e5"></script>
+<script src="assets/i18n.js?v=08504049"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=3"></script>
 <script src="/api/announce.js" async></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Boutique — ONIRIQUE</title>
-<meta name="description" content="Les plugins audio Onirique : essaie l'interface de chaque plugin dans ton navigateur, puis installe-le avec Onirique Central.">
+<meta name="description" content="Les plugins audio Onirique : essaie l’interface de chaque plugin dans ton navigateur, puis installe-le avec Onirique Central.">
 <link rel="canonical" href="https://onirique.store/boutique">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ONIRIQUE">
 <meta property="og:locale" content="fr_FR">
 <meta property="og:title" content="Boutique — ONIRIQUE">
-<meta property="og:description" content="Les plugins audio Onirique : essaie l'interface de chaque plugin dans ton navigateur, puis installe-le avec Onirique Central.">
+<meta property="og:description" content="Les plugins audio Onirique : essaie l’interface de chaque plugin dans ton navigateur, puis installe-le avec Onirique Central.">
 <meta property="og:url" content="https://onirique.store/boutique">
 <meta property="og:image" content="https://onirique.store/assets/og-image.png">
 <meta property="og:image:width" content="1200">
@@ -21,18 +21,14 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
-<link rel="stylesheet" href="assets/pages.css?v=2">
+<link rel="stylesheet" href="assets/pages.css?v=3">
 <style>
 /* Boutique : la base des pages de texte, élargie, avec les cartes et la démo interactive. */
-:root { --blood: rgb(var(--acc-lo)); --deep-2: #2A0A0E; --f-dream: "Grenze Gotisch", Georgia, serif;
-  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(var(--acc),.55); }
-body { background: radial-gradient(120% 50% at 50% -10%, rgba(var(--acc-lo),.75), rgba(var(--acc-lo),.4) 38%, transparent 72%) fixed, var(--night); }
 .wrap { max-width: 1240px; }
 header nav { display: flex; align-items: center; gap: 10px; }
-h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
 .lede { color: var(--haze); max-width: 60ch; }
 
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 22px; margin-top: 34px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 24px; margin-top: 32px; }
 .card { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 22px; overflow: hidden; background: linear-gradient(180deg, var(--deep-2), var(--deep)); color: inherit; text-decoration: none; transition: transform .2s, border-color .2s; }
 .card:hover { transform: translateY(-3px); border-color: rgba(var(--acc),.6); color: inherit; }
 .card .shot { position: relative; overflow: hidden; aspect-ratio: 16 / 10; background: radial-gradient(80% 90% at 50% 0%, var(--blood), var(--night)) center / cover; border-bottom: 1px solid var(--line); display: grid; place-items: center; }
@@ -40,8 +36,8 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 .card .shot img.cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
 /* Une image choisie et cadrée par un admin se montre centrée ; une capture de l'interface, par le haut. */
 .card .shot img.cover.framed { object-position: center; }
-.card .shot img.mark { width: 42%; filter: drop-shadow(0 0 14px var(--ember)); }
-.card .body { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 20px 22px 22px; }
+.card .shot img.mark { width: 42%; }
+.card .body { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 20px 24px 24px; }
 .card h2 { margin: 0; font: 800 17px/1.2 var(--f-display); letter-spacing: .06em; }
 .card p { margin: 0; color: var(--haze); font-size: 15px; }
 .card .foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 10px; }
@@ -49,22 +45,21 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 .more { font: 500 12px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ember-text); }
 .card .creator { font: 500 11px/1 var(--f-mono); letter-spacing: .16em; color: var(--haze); }
 /* un créateur sans plugin encore : « Bientôt disponible » */
-.soon { grid-column: 1 / -1; display: grid; justify-items: center; gap: 14px; padding: clamp(50px, 9vw, 110px) 20px; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(180deg, var(--deep-2), var(--deep)); text-align: center; }
+.soon { grid-column: 1 / -1; display: grid; justify-items: center; gap: 14px; padding: clamp(50px, 9vw, 110px) 20px; border: 1px solid var(--line); border-radius: var(--r-card); background: var(--glass), rgba(14,10,12,.55); box-shadow: var(--glass-shadow); text-align: center; }
 .soon h2 { margin: 0; font: 800 clamp(28px, 5vw, 54px)/1.1 var(--f-display); letter-spacing: .04em; text-transform: uppercase; }
-.soon h2 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-transform: none; text-shadow: var(--glow); }
 .soon p { margin: 0; color: var(--haze); }
 /* Filtres de la liste : un créateur ou tous, puis le tri par prix */
 .filters { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 30px; }
 .filters + .grid { margin-top: 20px; }
-.filters .group { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 999px; }
-.filters button { padding: 10px 16px; border: 1px solid transparent; border-radius: 999px; background: transparent; color: var(--haze); font: 500 12px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+.filters .group { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 14px; }
+.filters button { padding: 10px 16px; border: 1px solid transparent; border-radius: var(--r-seg); background: transparent; color: var(--haze); font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; cursor: pointer; transition: color .25s, background .25s, box-shadow .25s; }
 .filters button:hover { color: var(--mist); }
-.filters button[aria-pressed="true"] { background: var(--ember); color: #fff; }
+.filters button[aria-pressed="true"] { background: var(--lit); color: #fff; box-shadow: var(--lit-shadow); }
 .filters .sort { display: inline-flex; align-items: center; gap: 10px; }
 .filters select { appearance: none; padding: 10px 38px 10px 16px; border: 1px solid var(--line); border-radius: 999px; color: var(--mist); font: 500 12px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; cursor: pointer;
-  background: rgba(0,0,0,.35) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23E23444' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 16px center; }
+  background: rgba(0,0,0,.35) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23a8939a' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 16px center; }
 .filters select:hover, .filters select:focus-visible { border-color: var(--ember); outline: none; }
-.filters select option { background: #140a0c; color: var(--mist); text-transform: none; }
+.filters select option { background: var(--deep); color: var(--mist); text-transform: none; }
 @media (max-width: 560px) { .filters .sort { width: 100%; } .filters .sort .label { white-space: nowrap; } .filters select { flex: 1; min-width: 0; } }
 /* Catégories : une seconde rangée, « Trier par » et une pastille par usage */
 .filters.cats { margin-top: 12px; justify-content: flex-start; }
@@ -83,54 +78,51 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 .promo button:hover { border-color: var(--ember); }
 
 .product { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); gap: 28px; align-items: start; margin-top: 26px; }
-.side { position: sticky; top: 20px; padding: 24px; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(180deg, var(--deep-2), var(--deep)); }
+.side { position: sticky; top: 20px; padding: 24px; border: 1px solid var(--line); border-radius: var(--r-card); background: var(--glass), rgba(14,10,12,.55); box-shadow: var(--glass-shadow); }
 .side .price { font-size: 44px; margin: 14px 0 6px; }
-.side ul { margin: 18px 0 22px; padding: 0; list-style: none; display: grid; gap: 9px; font-size: 15px; }
-.side li::before { content: "✦ "; color: var(--ember-text); }
+.side ul { margin: 18px 0 22px; padding: 0; list-style: none; display: grid; gap: 8px; font-size: 15px; }
+.side li::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 10px; border-radius: 50%; background: rgb(var(--acc)); vertical-align: .15em; }
 .buy { display: flex; justify-content: center; width: 100%; padding: 15px 22px; border-radius: 999px; border: 0; background: var(--mist); color: var(--night); font: 600 15px/1 var(--f-body); cursor: pointer; box-shadow: 0 10px 40px -10px rgba(var(--acc),.6); }
 .buy:hover { box-shadow: 0 0 0 6px rgba(var(--acc),.18), 0 18px 50px -12px rgba(var(--acc),.8); }
 /* Un bouton qui ne peut pas servir le montre : éteint, sans halo, et son texte dit pourquoi. */
 .buy:disabled { background: transparent; color: var(--haze); border: 1px solid var(--line); box-shadow: none; cursor: default; }
 /* À vie ou au mois : deux boutons collés, celui choisi plein */
-.formula { display: grid; grid-template-columns: 1fr 1fr; margin-top: 14px; padding: 4px; border: 1px solid var(--line); border-radius: 999px; }
-.formula button { padding: 9px 10px; border: 0; border-radius: 999px; background: none; color: var(--haze); font: 600 14px/1 var(--f-body); cursor: pointer; }
-.formula button[aria-pressed="true"] { background: var(--ember); color: #fff; }
+.formula { display: grid; grid-template-columns: 1fr 1fr; margin-top: 14px; padding: 4px; border: 1px solid var(--line); border-radius: 14px; }
+.formula button { padding: 10px; border: 0; border-radius: var(--r-seg); background: none; color: var(--haze); font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; cursor: pointer; transition: color .25s, background .25s, box-shadow .25s; }
+.formula button[aria-pressed="true"] { background: var(--lit); color: #fff; box-shadow: var(--lit-shadow); }
 .buy.ghost { margin-top: 10px; background: transparent; color: var(--mist); border: 1px solid var(--line); box-shadow: none; }
 .buy.ghost:hover { border-color: var(--ember); box-shadow: none; }
 .note { margin: 14px 0 0; font-size: 13px; color: var(--haze); }
 .back { display: inline-block; margin-top: 4px; color: var(--haze); font: 500 12px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; text-decoration: none; }
-.desc p { color: #D9C6C8; }
-.block-title { margin: 34px 0 12px; font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); }
+.desc p { color: var(--label); }
+.block-title { margin: 32px 0 12px; font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); }
 
 /* Abonnement à la carte */
 .pick { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); gap: 28px; align-items: start; margin-top: 64px; padding-top: 44px; border-top: 1px solid var(--line); }
 .pick h2 { margin: 12px 0 8px; font: 800 clamp(22px, 4vw, 30px)/1.15 var(--f-display); }
-.pick h2 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
 /* Abonnement tout inclus : une carte par formule */
 .plans { margin-top: 64px; padding-top: 44px; border-top: 1px solid var(--line); }
 .plans + .pick { margin-top: 44px; }
 .plans h2 { margin: 12px 0 8px; font: 800 clamp(22px, 4vw, 30px)/1.15 var(--f-display); }
-.plans h2 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
 .plan-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 16px; margin-top: 22px; }
-.plan { display: grid; gap: 6px; align-content: start; padding: 24px; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(180deg, var(--deep-2), var(--deep)); }
-.plan strong { font: 800 14px/1.3 var(--f-display); letter-spacing: .08em; text-transform: uppercase; }
+.plan { display: grid; gap: 6px; align-content: start; padding: 24px; border: 1px solid var(--line); border-radius: var(--r-card); background: var(--glass), rgba(14,10,12,.55); box-shadow: var(--glass-shadow); }
+.plan strong { font: 600 14px/1.3 var(--f-display); letter-spacing: .08em; text-transform: uppercase; }
 .plan .price { font-size: 38px; margin-top: 10px; }
 .plan .buy { margin-top: 16px; }
 .plan p { margin: 8px 0 0; color: var(--haze); font-size: 14px; line-height: 1.55; }
 .plan ul { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
-.plan li { padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); font: 500 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--mist); }
+.plan li { padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line); font: 500 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--mist); }
 .plan .was { font: 500 14px/1 var(--f-mono); color: var(--haze); text-decoration: line-through; }
 .plan .save { justify-self: start; padding: 5px 10px; border-radius: 999px; background: rgba(var(--acc),.18); border: 1px solid rgba(var(--acc),.6); font: 600 11px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--bone); }
 .packs { margin-top: 64px; padding-top: 44px; border-top: 1px solid var(--line); }
 .packs h2 { margin: 12px 0 8px; font: 800 clamp(22px, 4vw, 30px)/1.15 var(--f-display); }
-.packs h2 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
 .pick-list { display: grid; gap: 10px; margin-top: 22px; }
-.pick-item { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 16px; background: linear-gradient(180deg, var(--deep-2), var(--deep)); cursor: pointer; transition: border-color .2s; }
+.pick-item { display: flex; align-items: center; gap: 16px; padding: 16px; border: 1px solid var(--line); border-radius: var(--r-card); background: var(--glass), rgba(14,10,12,.55); box-shadow: var(--glass-shadow); cursor: pointer; transition: border-color .2s; }
 .pick-item:hover { border-color: rgba(var(--acc),.6); }
-.pick-item:has(input:checked) { border-color: var(--ember); background: linear-gradient(180deg, rgba(var(--acc),.2), var(--deep)); }
+.pick-item:has(input:checked) { border-color: var(--ember); background: linear-gradient(180deg, rgba(var(--acc),.2), transparent), var(--glass), rgba(14,10,12,.55); }
 .pick-item input { flex: none; width: 20px; height: 20px; accent-color: var(--ember); }
 .pick-item img { flex: none; width: 64px; height: 40px; object-fit: cover; object-position: top; border-radius: 8px; border: 1px solid var(--line); }
-.pick-item strong { display: block; font: 800 14px/1.3 var(--f-display); letter-spacing: .05em; }
+.pick-item strong { display: block; font: 600 14px/1.3 var(--f-display); letter-spacing: .05em; }
 .pick-item span { color: var(--haze); font-size: 14px; }
 @media (max-width: 900px) { .pick { grid-template-columns: minmax(0, 1fr); } }
 
@@ -147,15 +139,15 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 .demo-globals { display: grid; gap: 10px; padding: 14px 16px; border-top: 1px solid var(--line); background: var(--deep); }
 .demo-global { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .demo-global span { min-width: 9em; font: 500 11px/1.2 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
-.demo-global button { padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--mist); font: 500 12px/1 var(--f-mono); cursor: pointer; }
+.demo-global button { padding: 8px 12px; border-radius: var(--r-seg); border: 1px solid var(--line); background: transparent; color: var(--mist); font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; cursor: pointer; transition: color .25s, background .25s, box-shadow .25s, border-color .25s; }
 .demo-global button:hover { border-color: var(--ember); }
-.demo-global button[aria-pressed="true"] { background: var(--ember); border-color: var(--ember); color: #fff; }
+.demo-global button[aria-pressed="true"] { background: var(--lit); border-color: transparent; color: #fff; box-shadow: var(--lit-shadow); }
 .demo-wait { padding: 60px 20px; text-align: center; color: var(--haze); background: var(--deep); }
 @media (max-width: 620px) { .brand { font-size: 0; gap: 0; } header .btn { padding: 10px 12px; font-size: 13px; } }
 @media (max-width: 900px) { .product { grid-template-columns: minmax(0, 1fr); } .side { position: static; } }
 [hidden] { display: none !important; }
 </style>
-<link rel="stylesheet" href="/assets/da.css?v=8">
+<link rel="stylesheet" href="/assets/da.css?v=9">
 <script src="/assets/accent.js?v=1"></script>
 
 <a class="skip" href="#contenu">Aller au contenu</a>
@@ -171,7 +163,7 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
   <section id="list" hidden>
     <p class="eyebrow">Boutique</p>
     <h1>Nos <em>plugins</em></h1>
-    <p class="lede">Clique sur un plugin pour essayer son interface, bouton par bouton, directement ici. Les plugins s'installent ensuite avec l'application Onirique Central.</p>
+    <p class="lede">Clique sur un plugin pour essayer son interface, bouton par bouton, directement ici. Les plugins s’installent ensuite avec l’application Onirique Central.</p>
     <div class="filters" id="filters" hidden>
       <div class="group" id="creators" role="group" aria-label="Créateur des plugins"></div>
       <label class="sort"><span class="label">Trier par</span><select id="sort"></select></label>
@@ -186,7 +178,7 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
     <div class="plans" id="plans" hidden>
       <p class="eyebrow">Abonnement</p>
       <h2>Tout <em>inclus</em></h2>
-      <p class="lede">Tous les plugins ONIRIQUE, avec les nouveautés et les mises à jour, tant que l'abonnement est actif. Sans engagement, résiliable à tout moment. Les plugins des créateurs partenaires s'achètent à l'unité.</p>
+      <p class="lede">Tous les plugins ONIRIQUE, avec les nouveautés et les mises à jour, tant que l’abonnement est actif. Sans engagement, résiliable à tout moment. Les plugins des créateurs partenaires s’achètent à l’unité.</p>
       <div class="plan-list" id="plan-list"></div>
       <p class="note" id="plan-note" role="status"></p>
       <p class="note"><a href="cgv">Conditions de vente</a> · <a href="remboursement">Rétractation</a></p>
@@ -214,22 +206,22 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
         <div class="price" id="pick-price"></div>
         <p class="note" style="margin:0">TTC, par mois, sans engagement</p>
         <ul id="pick-summary"></ul>
-        <button class="buy" id="pick-buy" type="button">S'abonner</button>
+        <button class="buy" id="pick-buy" type="button">S’abonner</button>
         <p class="note" id="pick-note" role="status"></p>
         <p class="note"><a href="cgv">Conditions de vente</a> · <a href="remboursement">Rétractation</a></p>
       </aside>
     </div>
   </section>
 
-  <!-- Fiche d'un plugin -->
+  <!-- Fiche d’un plugin -->
   <section id="detail" hidden>
-    <a class="back" href="boutique">← Tous les plugins</a>
+    <a class="back" href="boutique">Tous les plugins</a>
     <h1 id="name"></h1>
     <p class="lede" id="tagline"></p>
     <div class="product">
       <div>
-        <div class="demo" id="demo"><div class="demo-wait">Chargement de l'interface…</div></div>
-        <p class="note">Démonstration de l'interface réelle du plugin. Aucun son n'est traité dans le navigateur.</p>
+        <div class="demo" id="demo"><div class="demo-wait">Chargement de l’interface…</div></div>
+        <p class="note">Démonstration de l’interface réelle du plugin. Aucun son n’est traité dans le navigateur.</p>
         <p class="block-title">Le plugin</p>
         <div class="desc" id="desc"></div>
       </div>
@@ -249,14 +241,14 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
           <li>Installation et mises à jour par Onirique Central</li>
         </ul>
         <div class="promo" id="promo" hidden>
-          <details id="promo-open"><summary>J'ai un code promo</summary>
+          <details id="promo-open"><summary>J’ai un code promo</summary>
             <form id="promo-form"><input id="promo-code" maxlength="24" autocomplete="off" spellcheck="false" aria-label="Code promo" placeholder="CODE"><button type="submit">Appliquer</button></form>
           </details>
           <p class="note" id="promo-note" role="status"></p>
         </div>
         <button class="buy" id="buy" type="button">Acheter</button>
         <button class="buy ghost" id="trial" type="button" hidden>Essai gratuit · 7 jours</button>
-        <p class="note" id="trial-note" hidden>7 jours d'utilisation en temps réel dans ton DAW. L'export reste remplacé par un bruit blanc tant que le plugin n'est pas acheté. Un seul essai par plugin.</p>
+        <p class="note" id="trial-note" hidden>7 jours d’utilisation en temps réel dans ton DAW. L’export reste remplacé par un bruit blanc tant que le plugin n’est pas acheté. Un seul essai par plugin.</p>
         <p class="note" id="buy-note" role="status"></p>
         <p class="note"><a href="cgv">Conditions de vente</a> · <a href="remboursement">Rétractation</a></p>
       </aside>
@@ -281,7 +273,7 @@ h1 em { font: 600 1.25em/.8 var(--f-dream); font-style: normal; text-shadow: var
 const $ = (id) => document.getElementById(id);
 const euros = (cents) => (cents === 0 ? "Gratuit" : new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: cents % 100 ? 2 : 0 }).format(cents / 100));
 // Images du serveur : la version WebP à la largeur voulue (voir /api/media?w=), en plusieurs tailles pour les écrans
-// haute définition. Une image venue d'ailleurs reste telle quelle.
+// haute définition. Une image venue d’ailleurs reste telle quelle.
 const sized = (url, w) => /^\/api\/media\/[a-f0-9]{32}\.(png|jpg|webp)$/.test(url || "") ? url + "?w=" + w : url;
 const srcsetOf = (url, widths) => sized(url, 1) === url ? "" : widths.map(w => sized(url, w) + " " + w + "w").join(", ");
 function el(tag, props = {}, ...children) {
@@ -292,7 +284,7 @@ function el(tag, props = {}, ...children) {
 
 // Les créateurs des plugins : ONIRIQUE, ou un partenaire.
 const CREATORS = { onirique: "ONIRIQUE", abrasion: "ABRASION", relic: "RELIC" };
-// L'ordre de la boutique, au choix du visiteur. « Par défaut » : l'ordre choisi par l'équipe dans le panel admin.
+// L’ordre de la boutique, au choix du visiteur. « Par défaut » : l’ordre choisi par l’équipe dans le panel admin.
 const updated = (p) => Math.max(0, ...(p.versions || []).map((v) => v.createdAt || 0));
 const SORTS = {
   none: ["Par défaut", null],
@@ -303,7 +295,7 @@ const SORTS = {
   name: ["Nom, de A à Z", (a, b) => a.name.localeCompare(b.name, "fr")],
 };
 
-// La liste de la boutique : un créateur ou tous, dans l'ordre du catalogue ou par prix.
+// La liste de la boutique : un créateur ou tous, dans l’ordre du catalogue ou par prix.
 function setupList(products, categories = []) {
   let sort = "none";
   try { sort = SORTS[localStorage.getItem("onirique.shop-sort")] ? localStorage.getItem("onirique.shop-sort") : "none"; } catch { /* stockage fermé */ }
@@ -349,10 +341,10 @@ function card(p, categories = []) {
     el("div", { className: "body" }, el("span", { className: "creator", textContent: CREATORS[p.creator] || CREATORS.onirique }),
       el("h2", { textContent: p.name }), el("p", { textContent: p.tagline }),
       tags.length ? el("div", { className: "tags" }, ...tags.map((c) => el("span", { textContent: c.label }))) : null,
-      el("div", { className: "foot" }, el("span", { className: "price", textContent: euros(p.priceCents) }), el("span", { className: "more", textContent: p.more || "Essayer →" }))));
+      el("div", { className: "foot" }, el("span", { className: "price", textContent: euros(p.priceCents) }), el("span", { className: "more", textContent: p.more || "Essayer" }))));
 }
 
-// Essai gratuit : le bouton n'apparaît que pour un plugin payant que l'on ne possède pas et qu'on n'a pas déjà essayé.
+// Essai gratuit : le bouton n’apparaît que pour un plugin payant que l’on ne possède pas et qu’on n’a pas déjà essayé.
 async function setupTrial(product) {
   if (!product.priceCents) return;
   const token = sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token");
@@ -362,16 +354,16 @@ async function setupTrial(product) {
     if (r?.ok) me = await r.json();
   }
   const owned = me && me.entitlements[product.id];
-  // Pris au mois : l'achat à vie reste ouvert ; seul « Au mois » est déjà fait.
+  // Pris au mois : l’achat à vie reste ouvert ; seul « Au mois » est déjà fait.
   const byMonth = owned && owned.via === "license" && me.licenses.some((l) => l.id === owned.licenseId && (l.bundle || "").startsWith("sub:"));
   if (byMonth) {
     monthlyBlocked = "Déjà pris au mois";
-    $("buy-note").textContent = "Tu as ce plugin au mois. Tu peux l'acheter à vie : pense ensuite à résilier ton abonnement depuis ton compte.";
+    $("buy-note").textContent = "Tu as ce plugin au mois. Tu peux l’acheter à vie : pense ensuite à résilier ton abonnement depuis ton compte.";
     return;
   }
   if (owned) monthlyBlocked = owned.via === "vip" ? "Offert avec votre rôle" : "Déjà à vous";
   if (owned) {
-    // Rien à acheter : le bouton s'éteint et dit pourquoi, au lieu de rester un « Acheter » qui ne répond pas.
+    // Rien à acheter : le bouton s’éteint et dit pourquoi, au lieu de rester un « Acheter » qui ne répond pas.
     if (owned.via === "license") {
       $("buy").disabled = true;
       $("buy").textContent = owned.type === "trial" ? "Essai en cours" : "Déjà à vous";
@@ -393,10 +385,10 @@ async function setupTrial(product) {
     try {
       const r = await fetch("/api/licenses/trial", { method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify({ productId: product.id }) });
       const data = await r.json();
-      if (!r.ok) throw new Error(data.error || "Impossible de démarrer l'essai.");
+      if (!r.ok) throw new Error(data.error || "Impossible de démarrer l’essai.");
       $("trial").hidden = true;
       $("trial-note").hidden = true;
-      $("buy-note").textContent = "Essai démarré pour 7 jours. Installe le plugin avec Onirique Central : il s'active tout seul.";
+      $("buy-note").textContent = "Essai démarré pour 7 jours. Installe le plugin avec Onirique Central : il s’active tout seul.";
     } catch (error) {
       $("buy-note").textContent = error.message;
       $("trial").disabled = false;
@@ -404,10 +396,10 @@ async function setupTrial(product) {
   };
 }
 
-// S'abonner (tout inclus ou à la carte) : le paiement s'ouvre, ou l'abonnement est accordé tout de suite en mode démo.
+// S’abonner (tout inclus ou à la carte) : le paiement s’ouvre, ou l’abonnement est accordé tout de suite en mode démo.
 async function subscribe(catalog, body, note, button) {
   if (catalog.paymentsMode === "off") {
-    note.textContent = "L'abonnement ouvre bientôt, en même temps que la vente en ligne.";
+    note.textContent = "L’abonnement ouvre bientôt, en même temps que la vente en ligne.";
     return;
   }
   const token = sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token");
@@ -419,7 +411,7 @@ async function subscribe(catalog, body, note, button) {
     if (response.status === 401) { location.href = "compte"; return; }
     if (!response.ok) throw new Error(data.error || "Abonnement impossible.");
     if (data.url) location.href = data.url;
-    else note.textContent = body.kind === "pack" ? "Les licences du pack sont sur ton compte. Installe tes plugins depuis Onirique Central." : "C'est ajouté à ton compte. Installe tes plugins depuis Onirique Central.";
+    else note.textContent = body.kind === "pack" ? "Les licences du pack sont sur ton compte. Installe tes plugins depuis Onirique Central." : "C’est ajouté à ton compte. Installe tes plugins depuis Onirique Central.";
   } catch (error) {
     note.textContent = error.message;
   }
@@ -430,7 +422,7 @@ async function subscribe(catalog, body, note, button) {
 function setupPlans(catalog) {
   if (!catalog.plans?.length) return;
   $("plan-list").replaceChildren(...catalog.plans.map((plan) => {
-    const button = el("button", { className: "buy", type: "button", textContent: "S'abonner" });
+    const button = el("button", { className: "buy", type: "button", textContent: "S’abonner" });
     button.onclick = () => subscribe(catalog, { kind: "plan", id: plan.id }, $("plan-note"), button);
     const names = (plan.productIds || []).map((id) => catalog.products.find((p) => p.id === id)?.name).filter(Boolean);
     return el("div", { className: "plan" }, el("strong", { textContent: plan.name }),
@@ -466,7 +458,7 @@ function setupPacks(catalog) {
 // Abonnement à la carte : on coche les plugins voulus, le prix suit. Le premier plugin a son prix, chaque
 // plugin ajouté un supplément. Le calcul affiché ici est refait par le serveur au moment de payer.
 function setupPick(catalog) {
-  // Les abonnements ne couvrent que les plugins ONIRIQUE : ceux des créateurs partenaires s'achètent à l'unité.
+  // Les abonnements ne couvrent que les plugins ONIRIQUE : ceux des créateurs partenaires s’achètent à l’unité.
   const paid = catalog.products.filter((p) => p.priceCents > 0 && p.creator === "onirique");
   if (!catalog.pick || !paid.length) return;
   const { baseCents, extraCents } = catalog.pick;
@@ -491,7 +483,7 @@ function setupPick(catalog) {
     $("pick-summary").replaceChildren(...(chosen.length
       ? chosen.map((b, i) => el("li", { textContent: `${b.product.name} · ${euros(i ? extraCents : baseCents)}` }))
       : [el("li", { textContent: "Coche un ou plusieurs plugins" })]));
-    $("pick-buy").textContent = chosen.length ? `S'abonner · ${euros(priceOf(chosen.length))} / mois` : "S'abonner";
+    $("pick-buy").textContent = chosen.length ? `S’abonner · ${euros(priceOf(chosen.length))} / mois` : "S’abonner";
     $("pick-buy").disabled = !chosen.length;
     $("pick-note").textContent = "";
   }
@@ -501,8 +493,8 @@ function setupPick(catalog) {
   $("pick").hidden = false;
 }
 
-// Code promo et remise de parrainage : le serveur calcule le prix pour ce compte. Le prix affiché n'engage pas : il
-// est recalculé au moment de payer. Un code peut arriver par l'adresse (…&code=NOEL20, depuis un e-mail).
+// Code promo et remise de parrainage : le serveur calcule le prix pour ce compte. Le prix affiché n’engage pas : il
+// est recalculé au moment de payer. Un code peut arriver par l’adresse (…&code=NOEL20, depuis un e-mail).
 let promo = null; // le code appliqué
 function showPrice(product, q) {
   const deal = q && q.discountCents > 0;
@@ -541,7 +533,7 @@ function setupPromo(product) {
       $("promo-note").textContent = error.message;
     }
   };
-  // Connecté : la remise de parrainage s'affiche d'elle-même, et un code venu de l'adresse est essayé tout de suite.
+  // Connecté : la remise de parrainage s’affiche d’elle-même, et un code venu de l’adresse est essayé tout de suite.
   if (token) {
     if (given) $("promo-form").requestSubmit();
     else quoteFor(product).then((q) => q.discountCents && showPrice(product, q)).catch(() => {});
@@ -562,14 +554,14 @@ function setupMonthly(product, catalog) {
     $("formula-month").ariaPressed = String(month);
     $("promo").hidden = month || !product.priceCents;
     $("price-note").textContent = month ? "TTC, par mois, sans engagement" : "TTC, paiement unique";
-    // le plugin offert ne vient qu'avec l'achat à vie
+    // le plugin offert ne vient qu’avec l’achat à vie
     if (product.gift) $("gift").hidden = $("gift-note").hidden = month;
     if (month) {
       life = [[...$("price").childNodes], lifeLabel(), $("buy").disabled];
       $("price").replaceChildren(euros(product.monthlyCents) + " / mois");
       $("deal")?.remove();
       $("buy").disabled = !!monthlyBlocked;
-      $("buy").textContent = monthlyBlocked || "S'abonner · " + euros(product.monthlyCents) + " / mois";
+      $("buy").textContent = monthlyBlocked || "S’abonner · " + euros(product.monthlyCents) + " / mois";
     } else if (life) {
       $("price").replaceChildren(...life[0]);
       $("buy").textContent = life[1];
@@ -583,7 +575,7 @@ let monthlyBlocked = ""; // pourquoi le plugin ne se prend pas au mois pour ce c
 
 async function buy(product, catalog) {
   const note = $("buy-note");
-  // Chaque créateur vend sur son propre compte : tant que le sien n'est pas branché, son plugin n'est pas encore en vente.
+  // Chaque créateur vend sur son propre compte : tant que le sien n’est pas branché, son plugin n’est pas encore en vente.
   const unsold = catalog.paymentsMode === "off" || (catalog.sellers && !catalog.sellers.includes(product.creator));
   if (unsold && product.priceCents > 0) {
     note.textContent = "La vente de ce plugin ouvre bientôt. Si tu as reçu une clé de licence, ajoute-la dans Onirique Central, onglet Licences.";
@@ -600,7 +592,7 @@ async function buy(product, catalog) {
     if (!response.ok) throw new Error(data.error || "Achat impossible.");
     if (data.url) location.href = data.url;
     else note.textContent = monthly ? "Ton abonnement est actif. Installe le plugin depuis Onirique Central ; tu peux le résilier depuis ton compte."
-      : "C'est ajouté à ton compte. Installe le plugin depuis Onirique Central.";
+      : "C’est ajouté à ton compte. Installe le plugin depuis Onirique Central.";
   } catch (error) {
     note.textContent = error.message;
   }
@@ -645,36 +637,36 @@ async function buy(product, catalog) {
   // Plugin offert : VOCALBOX offre VOCAL MINI ; sur la page de VOCAL MINI, on le dit, et ses acheteurs ont VOCALBOX à -50 %
   if (product.gift) {
     $("gift").textContent = `${product.gift.name} offert avec ton achat`;
-    $("gift-note").textContent = `Achète ${product.name} à vie : ${product.gift.name} arrive sur ton compte en même temps, offert. Si tu l'as déjà, ${product.name} est à moitié prix pour toi.`;
+    $("gift-note").textContent = `Achète ${product.name} à vie : ${product.gift.name} arrive sur ton compte en même temps, offert. Si tu l’as déjà, ${product.name} est à moitié prix pour toi.`;
     $("gift").hidden = $("gift-note").hidden = false;
   } else if (product.giftedWith?.length) {
     const w = product.giftedWith[0];
     $("gift").textContent = `Offert avec ${w.name}`;
     $("gift-note").replaceChildren(`Achète `, el("a", { href: "/boutique/" + encodeURIComponent(w.slug), textContent: w.name }),
-      ` et ${product.name} t'est offert. Tu as déjà ${product.name} ? ${w.name} est à moitié prix pour toi.`);
+      ` et ${product.name} t’est offert. Tu as déjà ${product.name} ? ${w.name} est à moitié prix pour toi.`);
     $("gift").hidden = $("gift-note").hidden = false;
   }
   setupTrial(product).then(() => { if (!$("buy").disabled) setupPromo(product); setupMonthly(product, catalog); });
   $("detail").hidden = false;
 
-  // Une interface web réelle (RAW) passe avant tout ; puis l'image choisie par un admin ; puis la démo en images.
+  // Une interface web réelle (RAW) passe avant tout ; puis l’image choisie par un admin ; puis la démo en images.
   const web = await OniriqueDemo.web(product.slug);
   if (web) {
     OniriqueDemo.mountWeb($("demo"), web, product.name);
   } else if (product.demo && !product.imageManual) {
     OniriqueDemo.mount($("demo"), product.demo).then(() => {
-      // Une interface en hauteur tient à l'écran : la démo est rétrécie jusqu'à s'y voir en entier.
+      // Une interface en hauteur tient à l’écran : la démo est rétrécie jusqu’à s’y voir en entier.
       const stage = $("demo").querySelector(".demo-stage");
       if (stage && stage.offsetWidth) $("demo").style.maxWidth = Math.round(Math.max(320, innerHeight * 0.82 * stage.offsetWidth / stage.offsetHeight)) + "px";
-    }).catch(() => { $("demo").firstChild.textContent = "L'interface n'a pas pu être chargée."; });
+    }).catch(() => { $("demo").firstChild.textContent = "L’interface n’a pas pu être chargée."; });
   } else if (product.image) {
     $("demo").replaceChildren(el("img", { className: "whole", src: sized(product.image, 1920), srcset: srcsetOf(product.image, [960, 1280, 1920]),
       sizes: "(max-width: 1120px) 100vw, 1100px", alt: "Interface du plugin " + product.name }));
   } else {
-    // Tant que VocalBox n'a pas de démo fabriquée à partir de son .vst3, celle de la page d'accueil en tient lieu.
+    // Tant que VocalBox n’a pas de démo fabriquée à partir de son .vst3, celle de la page d’accueil en tient lieu.
     $("demo").firstChild.replaceChildren(...(product.slug.includes("vocalbox")
-      ? [el("a", { href: "/#vocalbox", textContent: "Essayer l'interface de VocalBox sur la page d'accueil →" })]
-      : ["L'aperçu de ce plugin arrive bientôt."]));
+      ? [el("a", { href: "/#vocalbox", textContent: "Essayer l’interface de VocalBox sur la page d’accueil" })]
+      : ["L’aperçu de ce plugin arrive bientôt."]));
   }
 })();
 </script>

@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=b60d57e5"></script>
+<script src="assets/i18n.js?v=08504049"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=3"></script>
 <script src="/api/announce.js" async></script>
@@ -11,17 +11,7 @@
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
 <style>
-/* Mêmes tokens que compte.html. */
-:root {
-  --night: #0D0809; --blood: rgb(var(--acc-lo)); --deep: #1A080A; --deep-2: #2A0A0E; --line: rgba(255,210,214,.13);
-  --mist: #F6EEEE; --haze: #A88F92; --ember: rgb(var(--acc)); --bone: #FFECEE;
-  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(var(--acc),.55);
-  --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
-  --f-dream: "Grenze Gotisch", Georgia, serif;
-  --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
-  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
-  color-scheme: dark;
-}
+/* Les couleurs, polices et rayons viennent de da.css (chargée après). */
 * { box-sizing: border-box; }
 body {
   margin: 0; min-height: 100vh; color: var(--mist); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased;
@@ -40,19 +30,18 @@ header .wrap { display: flex; align-items: center; justify-content: space-betwee
 .between { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 main { padding-block: clamp(28px, 6vw, 56px) 120px; }
 h1 { font: 800 clamp(26px, 5vw, 38px)/1.1 var(--f-display); margin: 12px 0 8px; }
-h1 em { font: 600 1.3em/.8 var(--f-dream); font-style: normal; text-shadow: var(--glow); }
 .eyebrow { font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); display: flex; align-items: center; gap: 10px; }
-.eyebrow::before { content: ""; flex: none; width: 13px; height: 13px; background: var(--mist); clip-path: polygon(50% 0, 56% 44%, 100% 50%, 56% 56%, 50% 100%, 44% 56%, 0 50%, 44% 44%); filter: drop-shadow(0 0 4px var(--ember)); }
+.eyebrow::before { content: ""; flex: none; width: 12px; height: 12px; background: var(--mist); clip-path: polygon(50% 0, 56% 44%, 100% 50%, 56% 56%, 50% 100%, 44% 56%, 0 50%, 44% 44%); filter: drop-shadow(0 0 4px var(--ember)); }
 .muted { color: var(--haze); }
-.panel { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 18px; padding: clamp(18px, 3vw, 24px); margin-top: 16px; }
+.panel { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: var(--r-card); padding: clamp(16px, 3vw, 24px); margin-top: 16px; }
 .panel > .eyebrow { margin-bottom: 16px; }
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 18px; border-radius: 999px; border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; border-radius: var(--r-ctl); border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
 .btn-primary { background: var(--mist); color: var(--night); box-shadow: 0 10px 40px -10px rgba(var(--acc),.6); }
 .btn-ghost { background: rgba(255,255,255,.03); color: var(--mist); border-color: var(--line); }
 .btn-ghost:hover { border-color: var(--ember); }
 .btn:disabled { opacity: .5; cursor: default; }
 .small { padding: 8px 12px; font-size: 13px; }
-label { display: grid; gap: 7px; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
+label { display: grid; gap: 8px; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
 input, textarea, select { min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px var(--f-body); letter-spacing: 0; text-transform: none; min-width: 0; }
 textarea { padding: 12px 14px; resize: vertical; min-height: 84px; line-height: 1.5; }
 select { cursor: pointer; }
@@ -60,7 +49,7 @@ input[type="color"] { padding: 4px; width: 100%; cursor: pointer; }
 input[type="range"] { padding: 0; accent-color: var(--ember); }
 label.check { display: flex; align-items: center; gap: 10px; font: 400 14px/1.4 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--mist); }
 label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-color: var(--ember); }
-.error { color: #FF7A85; font-size: 14px; }
+.error { color: var(--danger); font-size: 14px; }
 .notice { color: var(--bone); font-size: 14px; }
 .error:empty, .notice:empty { display: none; }
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 16px; }
@@ -88,54 +77,54 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-
 .photo { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
 .photo img, .photo .empty { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); background: rgba(255,255,255,.04); }
 .presets { display: flex; flex-wrap: wrap; gap: 8px; }
-.presets button { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px 8px 8px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.03); color: var(--mist); font: 600 13px var(--f-body); cursor: pointer; }
+.presets button { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px 8px 8px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: rgba(255,255,255,.03); color: var(--mist); font: 600 13px var(--f-body); cursor: pointer; }
 .presets button:hover { border-color: var(--ember); }
-.presets i { width: 22px; height: 22px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); }
+.presets i { width: 24px; height: 24px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); }
 /* Les liens */
-.links { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 10px; }
-.link-row { display: grid; grid-template-columns: auto 30px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: rgba(0,0,0,.3); }
+.links { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 10px; }
+.link-row { display: grid; grid-template-columns: auto 30px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: rgba(0,0,0,.3); }
 .link-row.off { opacity: .55; }
 .link-row.dragging { opacity: .35; }
 .link-row.drop-before { box-shadow: 0 -3px 0 var(--ember); }
 .link-row.drop-after { box-shadow: 0 3px 0 var(--ember); }
-.grip { cursor: grab; color: var(--haze); padding-top: 12px; user-select: none; letter-spacing: -2px; }
+.grip { display: grid; justify-items: center; cursor: grab; color: var(--haze); padding-top: 14px; user-select: none; }
 .link-icon { width: 24px; height: 24px; margin-top: 10px; background: var(--mist); -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; }
 .link-fields { display: grid; gap: 8px; }
 .link-fields .two { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; }
 .link-tools { display: flex; flex-direction: column; gap: 6px; }
-.icon-btn { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line); background: none; color: var(--mist); cursor: pointer; font-size: 14px; }
+.icon-btn { width: 36px; height: 36px; display: grid; place-items: center; padding: 0; border-radius: var(--r-ctl); border: 1px solid var(--line); background: none; color: var(--mist); cursor: pointer; }
 .icon-btn:hover:not(:disabled) { border-color: var(--ember); }
 .icon-btn:disabled { opacity: .3; cursor: default; }
 .music-note { margin: 0; font-size: 13px; line-height: 1.45; color: var(--haze); }
 .music-note b { color: var(--bone); font-weight: 600; }
 .own-links summary { cursor: pointer; font-size: 13px; color: var(--bone); }
-.own-links .grid { margin-top: 10px; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); }
-.own-links label { gap: 5px; }
-.own-links input { min-height: 38px; font-size: 14px; }
-.bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; padding: 12px 0; background: rgba(13,8,9,.88); backdrop-filter: blur(14px); border-top: 1px solid var(--line); }
+.own-links .grid { margin-top: 12px; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); }
+.own-links label { gap: 4px; }
+.own-links input { min-height: 40px; font-size: 14px; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; padding: 12px 0; background: var(--glass-deep); backdrop-filter: blur(14px); border-top: 1px solid var(--line); }
 .bar .wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
 .state { font: 500 12px/1.3 var(--f-mono); letter-spacing: .08em; color: var(--haze); }
-.state.dirty { color: #ffb36b; }
+.state.dirty { color: rgb(var(--acc-hi)); }
 .gate { text-align: center; }
 /* Statistiques */
-.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
-.tiles div { padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: rgba(0,0,0,.3); }
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+.tiles div { padding: 16px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: rgba(0,0,0,.3); }
 .tiles b { display: block; font: 800 clamp(20px, 4vw, 28px)/1.1 var(--f-display); }
 .tiles span { font: 500 11px/1.3 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
 .chart { display: flex; align-items: flex-end; gap: 2px; height: 96px; margin-top: 16px; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
-.chart div { position: relative; flex: 1; min-width: 2px; border-radius: 3px 3px 0 0; background: rgba(255,210,214,.22); }
-.chart i { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 3px 3px 0 0; background: var(--ember); }
+.chart div { position: relative; flex: 1; min-width: 2px; border-radius: 4px 4px 0 0; background: var(--line); }
+.chart i { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 4px 4px 0 0; background: var(--ember); }
 .legend { display: flex; gap: 16px; margin-top: 8px; font: 500 11px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--haze); }
-.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 2px; vertical-align: -1px; background: rgba(255,210,214,.22); }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 2px; vertical-align: -1px; background: var(--line); }
 .legend span.c::before { background: var(--ember); }
 .st-links { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; }
 .st-links li { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: 14px; }
 .st-links .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.st-links .bar { grid-column: 2 / 4; height: 4px; border-radius: 2px; background: rgba(255,255,255,.06); overflow: hidden; }
-.st-links .bar i { display: block; height: 100%; background: var(--ember); }
+.st-links .meter { grid-column: 2 / 4; height: 4px; border-radius: 2px; background: rgba(255,255,255,.06); overflow: hidden; }
+.st-links .meter i { display: block; height: 100%; background: var(--ember); }
 .st-links b { font: 600 14px var(--f-mono); }
 </style>
-<link rel="stylesheet" href="/assets/da.css?v=8">
+<link rel="stylesheet" href="/assets/da.css?v=9">
 <script src="/assets/accent.js?v=1"></script>
 
 <header>
@@ -148,7 +137,7 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-
 <main class="wrap">
   <div class="eyebrow">Membres ONIRIQUE</div>
   <h1>Ma page de <em>liens</em></h1>
-  <p class="muted" style="max-width:68ch;margin:0">Une page à mettre dans ta bio Instagram ou TikTok : chaque lien ouvre directement l'application de la plateforme (Spotify, YouTube, Instagram…) chez la personne qui clique, et non son site. Tout se règle ici, l'aperçu suit en direct.</p>
+  <p class="muted" style="max-width:68ch;margin:0">Une page à mettre dans ta bio Instagram ou TikTok : chaque lien ouvre directement l’application de la plateforme (Spotify, YouTube, Instagram…) chez la personne qui clique, et non son site. Tout se règle ici, l’aperçu suit en direct.</p>
 
   <div class="panel gate" id="gate" hidden></div>
 
@@ -157,7 +146,7 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-
       <section class="panel">
         <div class="eyebrow">Adresse de la page</div>
         <div class="address"><span id="address-base">onirique.online/</span><input id="handle" maxlength="30" autocomplete="off" spellcheck="false" aria-label="Adresse de la page"></div>
-        <p class="muted" style="margin:10px 0 0;font-size:14px">Lettres minuscules, chiffres, point ou tiret. C'est ce lien que tu colles dans ta bio.</p>
+        <p class="muted" style="margin:10px 0 0;font-size:14px">Lettres minuscules, chiffres, point ou tiret. C’est ce lien que tu colles dans ta bio.</p>
         <div class="between" style="margin-top:12px">
           <button class="btn btn-ghost small" id="copy" type="button">Copier le lien</button>
           <a class="btn btn-ghost small" id="open" target="_blank" rel="noopener" hidden>Voir ma page</a>
@@ -199,9 +188,9 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-
 
       <section class="panel">
         <div class="eyebrow">Liens</div>
-        <p class="muted" style="margin:0 0 14px;font-size:14px">Colle le lien de ta page Spotify, de ta chaîne YouTube, de ton profil Instagram… La plateforme est reconnue toute seule. « Bouton » : un grand bouton ; « Icône » : une petite icône en haut de la page ; « Musique » : pour un titre, un album ou un artiste, le visiteur choisit sa plateforme d'écoute (Spotify, Apple Music, Deezer, YouTube Music…). Glisse une ligne pour la déplacer.</p>
+        <p class="muted" style="margin:0 0 14px;font-size:14px">Colle le lien de ta page Spotify, de ta chaîne YouTube, de ton profil Instagram… La plateforme est reconnue toute seule. « Bouton » : un grand bouton ; « Icône » : une petite icône en haut de la page ; « Musique » : pour un titre, un album ou un artiste, le visiteur choisit sa plateforme d’écoute (Spotify, Apple Music, Deezer, YouTube Music…). Glisse une ligne pour la déplacer.</p>
         <ul class="links" id="links"></ul>
-        <button class="btn btn-ghost" id="add" type="button">+ Ajouter un lien</button>
+        <button class="btn btn-ghost" id="add" type="button"><svg class="ic" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>Ajouter un lien</button>
       </section>
 
       <section class="panel">
@@ -218,9 +207,9 @@ label.check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-
         </div>
         <div id="image-fields" class="between" style="margin-top:14px">
           <button class="btn btn-ghost small" id="bg-pick" type="button">Choisir une image de fond</button>
-          <button class="btn btn-ghost small" id="bg-remove" type="button" hidden>Retirer l'image</button>
+          <button class="btn btn-ghost small" id="bg-remove" type="button" hidden>Retirer l’image</button>
           <input id="bg-file" type="file" accept="image/png,image/jpeg,image/webp" hidden aria-label="Image de fond">
-          <label style="flex:1;min-width:200px">Assombrir l'image<input id="dim" type="range" min="0" max="90" step="5"></label>
+          <label style="flex:1;min-width:200px">Assombrir l’image<input id="dim" type="range" min="0" max="90" step="5"></label>
         </div>
 
         <h3 class="eyebrow" style="margin:24px 0 12px">Texte</h3>
@@ -275,9 +264,9 @@ async function api(method, path, body, raw) {
   return data;
 }
 
-// handle : l'adresse enregistrée (null tant que la page n'a jamais été enregistrée) ; page : la page en cours d'édition.
+// handle : l’adresse enregistrée (null tant que la page n’a jamais été enregistrée) ; page : la page en cours d’édition.
 let saved = null, page = null, media = { avatar: null, background: null }, dirty = false;
-// L'adresse publique des pages de liens, devant le pseudo (donnée par le serveur : https://onirique.online).
+// L’adresse publique des pages de liens, devant le pseudo (donnée par le serveur : https://onirique.online).
 let base = "https://onirique.online";
 const host = () => base.replace(/^https?:\/\//, "");
 
@@ -330,7 +319,7 @@ for (const [id, [label]] of Object.entries(LP.FONTS)) {
   for (const select of [$("title-font"), $("font")]) select.append(new Option(label, id));
 }
 
-// Les thèmes de départ : ils remplacent l'apparence, pas le profil ni les liens.
+// Les thèmes de départ : ils remplacent l’apparence, pas le profil ni les liens.
 $("presets").replaceChildren(...Object.values(LP.PRESETS).map((preset) => {
   const button = document.createElement("button");
   button.type = "button";
@@ -370,7 +359,7 @@ function drawLinks() {
     kind.setAttribute("aria-label", "Affichage du lien");
     const on = Object.assign(document.createElement("input"), { type: "checkbox", checked: link.on, title: "Afficher ce lien" });
     on.setAttribute("aria-label", "Afficher ce lien");
-    // Lien « Musique » : les plateformes trouvées à l'enregistrement, ou ce qui se passera à l'enregistrement.
+    // Lien « Musique » : les plateformes trouvées à l’enregistrement, ou ce qui se passera à l’enregistrement.
     const note = document.createElement("p");
     note.className = "music-note";
     const showNote = () => {
@@ -385,8 +374,8 @@ function drawLinks() {
       } else if (Object.keys(custom).length) {
         note.textContent = "Écoute proposée sur tes liens : " + Object.keys(custom).map((id) => names[id]).join(", ") + ".";
       } else {
-        note.textContent = saved && !dirty ? "Ce lien n'a pas été reconnu : il s'ouvrira tel quel. Les liens reconnus : titres, albums et artistes de Spotify, Deezer et Apple Music, vidéos YouTube, sons SoundCloud."
-          : "Les autres plateformes sont cherchées à l'enregistrement de la page.";
+        note.textContent = saved && !dirty ? "Ce lien n’a pas été reconnu : il s’ouvrira tel quel. Les liens reconnus : titres, albums et artistes de Spotify, Deezer et Apple Music, vidéos YouTube, sons SoundCloud."
+          : "Les autres plateformes sont cherchées à l’enregistrement de la page.";
       }
     };
     showNote();
@@ -403,7 +392,7 @@ function drawLinks() {
     kind.onchange = () => { link.kind = kind.value; own.hidden = link.kind !== "music"; showNote(); markDirty(); };
     on.onchange = () => { link.on = on.checked; li.classList.toggle("off", !on.checked); markDirty(); };
     const tool = (text, title, run, disabled) => {
-      const b = Object.assign(document.createElement("button"), { type: "button", className: "icon-btn", textContent: text, title, disabled: !!disabled });
+      const b = Object.assign(document.createElement("button"), { type: "button", className: "icon-btn", innerHTML: text, title, disabled: !!disabled });
       b.setAttribute("aria-label", title);
       b.onclick = run;
       return b;
@@ -444,9 +433,9 @@ function drawLinks() {
     fields.append(two, url, note, own);
     const tools = document.createElement("div");
     tools.className = "link-tools";
-    tools.append(tool("↑", "Monter", () => move(i, i - 1), i === 0), tool("↓", "Descendre", () => move(i, i + 1), i === page.links.length - 1),
-      tool("✕", "Supprimer ce lien", () => { page.links.splice(i, 1); drawLinks(); markDirty(); }));
-    const grip = Object.assign(document.createElement("span"), { className: "grip", textContent: "⋮⋮", title: "Glisser pour déplacer" });
+    tools.append(tool("<svg class=\"ic\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 10l4-4 4 4\"/></svg>", "Monter", () => move(i, i - 1), i === 0), tool("<svg class=\"ic\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 6l4 4 4-4\"/></svg>", "Descendre", () => move(i, i + 1), i === page.links.length - 1),
+      tool("<svg class=\"ic\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 4l8 8M12 4l-8 8\"/></svg>", "Supprimer ce lien", () => { page.links.splice(i, 1); drawLinks(); markDirty(); }));
+    const grip = Object.assign(document.createElement("span"), { className: "grip", innerHTML: "<svg class=\"ic\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" style='stroke-width:2.5'><path d=\"M6 4h.01M10 4h.01M6 8h.01M10 8h.01M6 12h.01M10 12h.01\"/></svg>", title: "Glisser pour déplacer" });
     li.append(grip, icon, fields, tools);
     const after = (event) => event.clientY > li.getBoundingClientRect().top + li.offsetHeight / 2;
     li.ondragstart = (event) => {
@@ -508,14 +497,14 @@ function apply(data) {
   draw();
 }
 
-// Images : la page doit exister pour les recevoir ; la première fois, elle est enregistrée avant l'envoi.
+// Images : la page doit exister pour les recevoir ; la première fois, elle est enregistrée avant l’envoi.
 async function upload(kind, input) {
   const file = input.files[0];
   input.value = "";
   if (!file) return;
   $("error").textContent = "";
   if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) { $("error").textContent = "Image attendue : PNG, JPEG ou WebP."; return; }
-  // La photo de la page passe par le cadrage (dans un rond, comme elle s'affiche).
+  // La photo de la page passe par le cadrage (dans un rond, comme elle s’affiche).
   let image = file;
   if (kind === "avatar") {
     const url = URL.createObjectURL(file);
@@ -574,14 +563,14 @@ async function loadStats() {
       icon.style.setProperty("--icon", `url("/assets/icons/${p ? p.id : "link"}.svg")`);
       const label = Object.assign(document.createElement("span"), { className: "lbl", textContent: l.label || (p && p.name) || l.url });
       const count = Object.assign(document.createElement("b"), { textContent: n });
-      const bar = Object.assign(document.createElement("span"), { className: "bar" });
+      const bar = Object.assign(document.createElement("span"), { className: "meter" });
       const fill = document.createElement("i");
       fill.style.width = (n / most) * 100 + "%";
       bar.append(fill);
       li.append(icon, label, count, document.createElement("span"), bar);
       return li;
     }));
-  } catch { /* les statistiques sont un plus : la page s'édite sans elles */ }
+  } catch { /* les statistiques sont un plus : la page s’édite sans elles */ }
 }
 $("stats-days").onchange = loadStats;
 
@@ -603,7 +592,7 @@ $("copy").onclick = async () => {
     if (!saved) { dirty = true; $("state").textContent = "Pas encore en ligne : enregistre ta page"; $("state").className = "state dirty"; }
     loadStats();
   } catch (error) {
-    gate(error.status === 403 ? "<p>La page de liens fait partie de l'abonnement ONIRIQUE CLOUD et page de liens : 1,99 € par mois ou 9,99 € par an.</p><a class=\"btn btn-primary\" href=\"cloud\">Découvrir l'abonnement</a>"
+    gate(error.status === 403 ? "<p>La page de liens fait partie de l’abonnement ONIRIQUE CLOUD et page de liens : 1,99 € par mois ou 9,99 € par an.</p><a class=\"btn btn-primary\" href=\"cloud\">Découvrir l’abonnement</a>"
       : error.status === 401 ? '<p>Ta session a expiré.</p><a class="btn btn-primary" href="compte">Se reconnecter</a>' : "<p></p>");
     if (error.status !== 403 && error.status !== 401) $("gate").firstChild.textContent = error.message;
   }

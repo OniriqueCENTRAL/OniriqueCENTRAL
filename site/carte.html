@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=b60d57e5"></script>
+<script src="assets/i18n.js?v=08504049"></script>
 <script src="assets/ui.js?v=4"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — La carte des membres</title>
@@ -11,14 +11,8 @@
 <style>
 /* La carte des membres : la France, la Belgique, la Suisse et le Luxembourg dessinés en constellation sur la nuit, vus
    d'au-dessus et un peu de côté ; chaque ville où vivent des membres s'allume, un clic ouvre leurs CV numériques. */
-:root {
-  --night: #050306; --line: rgba(255,210,214,.13); --mist: #F6EEEE; --haze: #A88F92; --ember: rgb(var(--acc)); --pink: rgb(var(--acc-hi)); --rose: #ffb3bb;
-  --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
-  --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
-  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
-  --ax: 50deg; --az: -9deg; --z: 1;
-  color-scheme: dark;
-}
+/* Couleurs, polices et verre : da.css (chargée après) ; ici, seulement la caméra de la carte. */
+:root { --ax: 50deg; --az: -9deg; --z: 1; }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { margin: 0; height: 100%; overflow: hidden; background: var(--night); color: var(--mist); font: 400 15px/1.5 var(--f-body); -webkit-font-smoothing: antialiased; }
@@ -29,17 +23,16 @@ button { font: inherit; color: inherit; }
 /* Le ciel : un champ d'étoiles qui scintille, et deux halos braise très doux. */
 #sky { position: fixed; inset: 0; z-index: 0; }
 .halo { position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background: radial-gradient(60% 50% at 50% 60%, rgba(150,10,30,.22), transparent 70%), radial-gradient(40% 35% at 15% 10%, rgba(120,8,26,.25), transparent 70%),
-    radial-gradient(35% 30% at 90% 95%, rgba(255,90,110,.08), transparent 70%); }
+  background: radial-gradient(60% 50% at 50% 60%, rgba(var(--acc-lo),.28), transparent 70%), radial-gradient(40% 35% at 15% 10%, rgba(var(--acc-lo),.25), transparent 70%),
+    radial-gradient(35% 30% at 90% 95%, rgba(var(--acc),.08), transparent 70%); }
 
 header { position: fixed; top: 0; left: 0; right: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px clamp(14px, 3vw, 28px); pointer-events: none; }
 header > * { pointer-events: auto; }
 .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 800 16px/1 var(--f-display); letter-spacing: .16em; }
 .brand img { width: 40px; height: auto; margin-block: -10px; filter: drop-shadow(0 0 6px rgba(var(--acc),.8)); }
-.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; border: 1px solid var(--line); background: rgba(13,8,9,.55); backdrop-filter: blur(12px);
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: rgba(13,8,9,.55); backdrop-filter: blur(12px);
   font: 600 13px/1 var(--f-body); text-decoration: none; cursor: pointer; color: var(--mist); }
 .btn:hover { border-color: var(--ember); }
-.btn.primary { background: var(--mist); color: #0d0809; border-color: transparent; }
 
 /* La scène 3D : le plan de la carte est incliné (--ax), tourné (--az) et zoomé (--z) ; la caméra le suit en douceur. */
 #scene { position: fixed; inset: 0; z-index: 1; perspective: 1400px; /* = PERSP dans le script */ perspective-origin: 50% 40%; cursor: grab; touch-action: none; }
@@ -50,17 +43,17 @@ header > * { pointer-events: auto; }
   transform: rotateX(var(--ax)) rotateZ(var(--az)) scale(var(--z)) translate(var(--px, 0px), var(--py, 0px)); }
 @media (min-width: 861px) { #plane { left: calc(50% + 150px); top: 50%; } }
 #plane svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.coast { fill: none; stroke: rgba(255,179,187,.38); stroke-width: 1.1; stroke-linejoin: round; filter: url(#glow); stroke-dasharray: var(--len); stroke-dashoffset: var(--len);
+.coast { fill: none; stroke: rgba(var(--acc-hi),.4); stroke-width: 1.1; stroke-linejoin: round; filter: url(#glow); stroke-dasharray: var(--len); stroke-dashoffset: var(--len);
   animation: draw 3.2s cubic-bezier(.6, .1, .2, 1) forwards; }
-.coast.other { stroke: rgba(255,179,187,.2); animation-delay: .8s; }
+.coast.other { stroke: rgba(var(--acc-hi),.22); animation-delay: .8s; }
 /* Les reliefs : l'estompage de l'IGN (des ombres noires) sert de masque à un aplat rose, sans filtre de couleur (certains
    écrans teintaient alors toute la carte). Découpés à la frontière française (clip-path posé par le script). */
 #relief { position: absolute; inset: 0; opacity: 0; transition: opacity .8s; pointer-events: none; }
 #relief.on { opacity: .9; }
-#relief div { position: absolute; background: #ffb3bb; opacity: 0; transition: opacity .6s;
+#relief div { position: absolute; background: rgb(var(--acc-hi)); opacity: 0; transition: opacity .6s;
   -webkit-mask: var(--t) center / 100% 100% no-repeat; mask: var(--t) center / 100% 100% no-repeat; }
 #relief div.ok { opacity: 1; }
-#relief-credit { position: fixed; z-index: 3; left: 50%; bottom: 2px; translate: -50%; font: 500 9px var(--f-mono); color: var(--haze); letter-spacing: .08em; opacity: 0; transition: opacity .8s; pointer-events: none; }
+#relief-credit { position: fixed; z-index: 3; left: 50%; bottom: 2px; translate: -50%; font: 500 11px var(--f-mono); color: var(--haze); letter-spacing: .08em; opacity: 0; transition: opacity .8s; pointer-events: none; }
 #relief-credit.on { opacity: .8; }
 .land { fill: rgba(var(--acc),.035); opacity: 0; animation: fade 2s 1.8s forwards; }
 @keyframes draw { to { stroke-dashoffset: 0; } }
@@ -68,7 +61,7 @@ header > * { pointer-events: auto; }
 /* Fixes une fois allumées : une animation sans fin ferait repeindre tout le plan (2500 px, flou compris) à chaque image. */
 .star { fill: #ffe9ec; opacity: 0; animation: appear .6s forwards; }
 @keyframes appear { to { opacity: var(--o, .8); } }
-.web { stroke: rgba(255,142,154,.75); stroke-width: 1.2; stroke-dasharray: 4 12; filter: url(#glow); opacity: 0; }
+.web { stroke: rgba(var(--acc-hi),.75); stroke-width: 1.2; stroke-dasharray: 4 12; filter: url(#glow); opacity: 0; }
 .web.on { opacity: 1; transition: opacity 1s; }
 /* Tout près, les pointillés agrandis deviendraient de grosses taches floues : ils s'effacent. */
 #plane.close .web.on { opacity: 0; }
@@ -81,8 +74,7 @@ header > * { pointer-events: auto; }
 .pin .dot { position: absolute; left: 0; top: 0; width: var(--s, 5px); height: var(--s, 5px); margin: calc(var(--s, 5px) / -2) 0 0 calc(var(--s, 5px) / -2); border-radius: 50%;
   background: rgba(255,233,236,.35); cursor: pointer; border: 0; padding: 0; transition: scale .25s; pointer-events: auto; }
 .pin.has .dot { background: radial-gradient(circle, #fff 0 22%, var(--pink) 40%, var(--ember) 70%); box-shadow: 0 0 calc(var(--s) * 1.2) var(--ember), 0 0 calc(var(--s) * 3) rgba(var(--acc),.5); }
-.pin.has .dot::after { content: ""; position: absolute; inset: -60%; border-radius: 50%; border: 2.5px solid rgba(255,142,154,.7); animation: ping 2.6s var(--d, 0s) ease-out infinite; }
-@keyframes ping { from { transform: scale(.4); opacity: 1; } to { transform: scale(2.4); opacity: 0; } }
+.pin.has .dot::after { content: ""; position: absolute; inset: -60%; border-radius: 50%; border: 1px solid rgba(var(--acc-hi),.45); }
 .pin.on .dot { scale: 1.5; }
 .pin .dot:hover { scale: 1.25; }
 /* Les noms des villes sont posés à plat au-dessus de la carte, à la position de leur ville à l'écran (recalculée à
@@ -91,13 +83,13 @@ header > * { pointer-events: auto; }
 .tag { position: absolute; left: 0; top: 0; white-space: nowrap; opacity: 0; transition: opacity .3s; will-change: transform; }
 .tag.show { opacity: 1; }
 .tag b { display: block; text-align: center; font: 800 11px/1.1 var(--f-display); letter-spacing: .08em; text-transform: uppercase; text-shadow: 0 0 10px #000, 0 0 3px #000; }
-.tag i { display: block; text-align: center; font: 500 10px var(--f-mono); font-style: normal; color: var(--pink); letter-spacing: .1em; text-shadow: 0 0 8px #000; }
-.tag.dim b { font-size: 9px; color: var(--haze); }
+.tag i { display: block; text-align: center; font: 500 11px var(--f-mono); font-style: normal; color: var(--pink); letter-spacing: .1em; text-shadow: 0 0 8px #000; }
+.tag.dim b { color: var(--haze); }
 
 /* Les panneaux en verre (la DA Nuit & Braise). */
-.glass { background: linear-gradient(160deg, rgba(255,255,255,.075), rgba(255,255,255,.02) 40%, rgba(255,255,255,.035)), rgba(10,6,8,.62);
-  border: 1px solid rgba(255,235,238,.1); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.4), 0 18px 40px rgba(0,0,0,.45);
-  backdrop-filter: blur(22px) saturate(140%); border-radius: 22px; }
+.glass { background: var(--glass), rgba(10,6,8,.62); border: 1px solid var(--line); box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(22px) saturate(140%); border-radius: var(--r-card); }
+.ic { flex: none; }
 .eyebrow { font: 500 11px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); display: flex; align-items: center; gap: 8px; }
 .eyebrow::before { content: ""; width: 11px; height: 11px; background: var(--mist); clip-path: polygon(50% 0, 56% 44%, 100% 50%, 56% 56%, 50% 100%, 44% 56%, 0 50%, 44% 44%); filter: drop-shadow(0 0 4px var(--ember)); }
 
@@ -110,20 +102,21 @@ header > * { pointer-events: auto; }
 .count b { color: var(--mist); }
 #search { width: 100%; min-height: 42px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.45); color: var(--mist); font: 500 14px var(--f-body); }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip { border: 1px solid var(--line); background: rgba(255,255,255,.03); border-radius: 999px; padding: 6px 11px; font: 600 12px var(--f-body); cursor: pointer; }
-.chip.on { border-color: var(--ember); background: rgba(var(--acc),.22); }
+.chip { border: 1px solid var(--line); background: rgba(255,255,255,.03); border-radius: var(--r-seg); padding: 6px 12px; font: 600 12px var(--f-body); cursor: pointer; }
+.chip.on { border-color: transparent; background: var(--lit); color: #fff; box-shadow: var(--lit-shadow); }
 .toggle { display: flex; align-items: center; gap: 10px; font: 600 13px var(--f-body); cursor: pointer; }
-.toggle input { accent-color: var(--ember); width: 17px; height: 17px; }
+.toggle input { accent-color: var(--ember); width: 16px; height: 16px; }
 .top { display: grid; gap: 2px; }
 .top button { display: flex; justify-content: space-between; gap: 10px; padding: 8px 10px; border: 0; border-radius: 10px; background: none; cursor: pointer; text-align: left; font: 600 13px var(--f-body); }
 .top button:hover { background: rgba(255,255,255,.05); }
 .top button span { font: 500 12px var(--f-mono); color: var(--pink); }
 .results { display: grid; gap: 2px; }
-.results a, .results button { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 10px; text-decoration: none; border: 0; background: none; cursor: pointer; text-align: left; width: 100%; }
+.results a, .results button { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 10px; text-decoration: none; border: 0; background: none; cursor: pointer; text-align: left; width: 100%; }
 .results a:hover, .results button:hover { background: rgba(255,255,255,.05); }
-.results img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex: none; background: #2a0a0e; }
+.results img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex: none; background: var(--deep-2); }
+.results .ric { display: grid; place-items: center; width: 28px; flex: none; color: rgb(var(--acc-hi)); }
 .results small { color: var(--haze); font-size: 12px; }
-.cta { padding: 12px; border-radius: 14px; border: 1px dashed rgba(255,142,154,.45); font-size: 13px; color: var(--rose); }
+.cta { padding: 12px; border-radius: var(--r-ctl); border: 1px dashed rgba(var(--acc-hi),.45); font-size: 13px; color: rgb(var(--acc-hi)); }
 .cta a { color: var(--mist); font-weight: 700; }
 
 /* Le panneau d'une ville : ses membres, en cartes de CV. */
@@ -132,78 +125,80 @@ header > * { pointer-events: auto; }
 #city.open { transform: none; }
 #city header { position: static; padding: 0; pointer-events: auto; align-items: flex-start; }
 #city h2 { margin: 6px 0 0; font: 800 26px/1 var(--f-display); }
-#city .x { border: 1px solid var(--line); background: rgba(255,255,255,.04); width: 34px; height: 34px; border-radius: 10px; cursor: pointer; flex: none; }
-.ctabs { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: rgba(0,0,0,.3); }
-.ctabs button { flex: 1; border: 0; border-radius: 10px; padding: 8px; background: none; cursor: pointer; font: 500 10.5px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
-.ctabs button.on { color: #fff; background: linear-gradient(180deg, rgba(var(--acc),.6), rgba(122,13,28,.6)); }
+#city .x { display: grid; place-items: center; padding: 0; border: 1px solid var(--line); background: rgba(255,255,255,.04); width: 36px; height: 36px; border-radius: var(--r-ctl); cursor: pointer; flex: none; }
+.ctabs { display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: rgba(0,0,0,.35); border: 1px solid var(--line); }
+.ctabs button { flex: 1; border: 0; border-radius: var(--r-seg); padding: 8px 16px; background: none; cursor: pointer; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); transition: color .25s, background .25s, box-shadow .25s; }
+.ctabs button:hover { color: #fff; }
+.ctabs button.on { color: #fff; background: var(--lit); box-shadow: var(--lit-shadow); }
 #concerts { overflow-y: auto; display: grid; gap: 12px; align-content: start; scrollbar-width: thin; }
-.venue { padding: 12px; border-radius: 16px; border: 1px solid rgba(255,235,238,.08); background: rgba(255,255,255,.03); display: grid; gap: 8px; animation: rise .5s both; animation-delay: calc(var(--i) * 50ms); }
+.venue { padding: 12px; border-radius: var(--r-ctl); border: 1px solid rgba(255,235,238,.08); background: rgba(255,255,255,.03); display: grid; gap: 8px; animation: rise .5s both; animation-delay: calc(var(--i) * 50ms); }
 .venue > b { font: 800 13px var(--f-display); letter-spacing: .04em; text-transform: uppercase; display: flex; justify-content: space-between; gap: 8px; }
-.venue > b button { border: 0; background: none; color: var(--pink); font: 500 10px var(--f-mono); letter-spacing: .1em; cursor: pointer; }
+.venue > b button { border: 0; background: none; color: var(--pink); font: 500 11px var(--f-mono); letter-spacing: .1em; cursor: pointer; }
 .venue > small { color: var(--haze); font-size: 12px; margin-top: -4px; }
 .gig { display: grid; grid-template-columns: 54px 1fr auto; gap: 10px; align-items: center; padding: 6px; border-radius: 12px; }
 .gig:hover { background: rgba(255,255,255,.04); }
 .gig .day { display: grid; place-items: center; height: 54px; border-radius: 10px; background: rgba(var(--acc),.14); border: 1px solid rgba(var(--acc),.35); line-height: 1; }
 .gig .day b { font: 800 18px var(--f-display); }
-.gig .day i { font: 500 9px var(--f-mono); font-style: normal; letter-spacing: .12em; text-transform: uppercase; color: var(--pink); }
+.gig .day i { font: 500 11px var(--f-mono); font-style: normal; letter-spacing: .12em; text-transform: uppercase; color: var(--pink); }
 .gig span { min-width: 0; font: 600 13px/1.3 var(--f-body); }
 .gig span small { display: block; color: var(--haze); font: 500 11px var(--f-mono); }
-.gig a { padding: 8px 12px; border-radius: 999px; background: var(--mist); color: #0d0809; text-decoration: none; font: 700 12px var(--f-body); white-space: nowrap; }
-.gig a.off { background: none; color: var(--haze); border: 1px solid var(--line); }
-.credit { font: 500 10px var(--f-mono); color: var(--haze); letter-spacing: .08em; text-align: center; }
+/* Les billets : le bouton principal de la charte ; complet, le secondaire */
+.gig a { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: var(--r-ctl); background: var(--lit); color: #fff; box-shadow: var(--lit-shadow); text-decoration: none; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; white-space: nowrap; }
+.gig a.off { background: rgba(255,255,255,.04); color: var(--haze); box-shadow: 0 0 0 1px rgba(255,255,255,.10) inset; }
+.credit { font: 500 11px var(--f-mono); color: var(--haze); letter-spacing: .08em; text-align: center; }
 /* Les salles de concert de la ville ouverte : un losange qui se redresse face à la caméra. */
 .hall { position: absolute; width: 0; height: 0; transform-style: preserve-3d; }
 .hall i { position: absolute; left: -11px; top: -11px; width: 22px; height: 22px; transform: rotateZ(calc(var(--az) * -1)) rotateX(calc(var(--ax) * -1)) rotate(45deg); cursor: pointer;
-  background: rgba(255,179,187,.2); border: 2px solid var(--rose); box-shadow: 0 0 16px rgba(255,142,154,.8); animation: appear .5s both; }
-.hall.on i { background: var(--rose); }
+  background: rgba(var(--acc-hi),.2); border: 2px solid rgb(var(--acc-hi)); box-shadow: 0 0 16px rgba(var(--acc-hi),.6); animation: appear .5s both; }
+.hall.on i { background: rgb(var(--acc-hi)); }
 #members { overflow-y: auto; display: grid; gap: 10px; align-content: start; scrollbar-width: thin; padding-right: 2px; }
-.cvcard { display: grid; gap: 8px; padding: 14px; border-radius: 16px; border: 1px solid rgba(255,235,238,.08); background: rgba(255,255,255,.03); text-decoration: none;
+.cvcard { display: grid; gap: 8px; padding: 16px; border-radius: var(--r-ctl); border: 1px solid rgba(255,235,238,.08); background: rgba(255,255,255,.03); text-decoration: none;
   animation: rise .5s both cubic-bezier(.2, .8, .2, 1); animation-delay: calc(var(--i) * 50ms); transition: border-color .2s, background .2s; }
 .cvcard:hover { border-color: rgba(var(--acc),.55); background: rgba(var(--acc),.07); }
 .cvcard.me { border-color: var(--ember); }
 .cvcard .who { display: flex; align-items: center; gap: 12px; }
-.cvcard img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex: none; background: #2a0a0e; border: 2px solid var(--c, var(--ember)); }
+.cvcard img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex: none; background: var(--deep-2); border: 2px solid var(--c, var(--ember)); }
 .cvcard .name { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .cvcard b { font: 700 15px/1.3 var(--f-body); }
 .cvcard .who > div { min-width: 0; }
 .cvcard small { display: block; color: var(--haze); font: 500 11px var(--f-mono); }
-.cvcard p { margin: 0; font-size: 13px; color: #d9c6c9; }
-.cvcard .tags span { border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; font: 600 11px var(--f-body); }
-.badge { display: inline-flex; align-items: center; flex: none; font: 500 9px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; padding: 4px 8px; border-radius: 999px; color: #ffecee; border: 1px solid rgba(var(--acc),.7); background: rgba(var(--acc),.18); white-space: nowrap; }
+.cvcard p { margin: 0; font-size: 13px; color: var(--label); }
+.cvcard .tags span { border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; font: 600 11px var(--f-body); }
+.badge { display: inline-flex; align-items: center; flex: none; font: 500 11px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; padding: 4px 8px; border-radius: 999px; color: var(--mist); border: 1px solid rgba(var(--acc),.7); background: rgba(var(--acc),.18); white-space: nowrap; }
 .cvcard .links { display: flex; flex-wrap: wrap; gap: 6px; }
-.cvcard .links a { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); text-decoration: none; font: 600 12px var(--f-body); }
+.cvcard .links a { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: rgba(255,255,255,.04); text-decoration: none; font: 600 12px var(--f-body); }
 .cvcard .links a:hover, .cvcard .pls a:hover { border-color: var(--ember); }
 .cvcard .pls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.cvcard .pls a { display: grid; gap: 4px; padding: 5px; border-radius: 10px; border: 1px solid transparent; text-decoration: none; background: rgba(255,255,255,.03); }
-.cvcard .pls img, .cvcard .pls .ph { width: 100%; aspect-ratio: 1; border-radius: 7px; object-fit: cover; border: 0; background: linear-gradient(135deg, rgb(var(--acc-lo)), #2A0A0E); }
+.cvcard .pls a { display: grid; gap: 4px; padding: 4px; border-radius: var(--r-ctl); border: 1px solid transparent; text-decoration: none; background: rgba(255,255,255,.03); }
+.cvcard .pls img, .cvcard .pls .ph { width: 100%; aspect-ratio: 1; border-radius: 8px; object-fit: cover; border: 0; background: linear-gradient(135deg, rgb(var(--acc-lo)), var(--deep-2)); }
 .cvcard .pls span { font: 600 11px/1.2 var(--f-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.open { font: 500 10px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: #b9f5c9; }
+.open { justify-self: start; padding: 4px 8px; border-radius: 999px; font: 500 11px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ok); border: 1px solid color-mix(in srgb, var(--ok) 40%, transparent); background: color-mix(in srgb, var(--ok) 12%, transparent); }
 .empty { color: var(--haze); font-size: 14px; }
 
 /* « Plus loin » : la francophonie hors de la carte, en bande en bas. */
 /* La bande s'arrête avant les boutons de zoom (à droite) : rien ne se superpose. */
-#far { position: fixed; z-index: 10; left: clamp(12px, 3vw, 28px); right: calc(clamp(12px, 3vw, 28px) + 58px); bottom: 18px; width: fit-content; max-width: calc(100vw - 2 * clamp(12px, 3vw, 28px) - 58px); margin-inline: auto; display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+#far { position: fixed; z-index: 10; left: clamp(12px, 3vw, 28px); right: calc(clamp(12px, 3vw, 28px) + 58px); bottom: 16px; width: fit-content; max-width: calc(100vw - 2 * clamp(12px, 3vw, 28px) - 58px); margin-inline: auto; display: flex; align-items: center; gap: 10px; padding: 8px 12px;
   animation: rise .8s .7s both cubic-bezier(.2, .8, .2, 1); }
 #far .eyebrow { flex: none; }
 #far-list { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
-#far-list button { flex: none; border: 1px solid var(--line); background: rgba(255,255,255,.03); border-radius: 999px; padding: 6px 11px; font: 600 12px var(--f-body); cursor: pointer; white-space: nowrap; }
+#far-list button { flex: none; border: 1px solid var(--line); background: rgba(255,255,255,.03); border-radius: var(--r-ctl); padding: 6px 12px; font: 600 12px var(--f-body); cursor: pointer; white-space: nowrap; }
 #far-list button.has { border-color: rgba(var(--acc),.6); }
 #far-list button span { color: var(--pink); font: 500 11px var(--f-mono); margin-left: 4px; }
-#zoom { position: fixed; z-index: 10; right: clamp(12px, 3vw, 28px); bottom: 18px; display: grid; gap: 6px; }
-#zoom button { width: 42px; height: 42px; border-radius: 12px; cursor: pointer; font: 700 18px var(--f-body); }
+#zoom { position: fixed; z-index: 10; right: clamp(12px, 3vw, 28px); bottom: 16px; display: grid; gap: 6px; }
+#zoom button { display: grid; place-items: center; padding: 0; width: 44px; height: 44px; border-radius: var(--r-ctl); cursor: pointer; font: 500 11px var(--f-mono); letter-spacing: .06em; }
 #intro { position: fixed; z-index: 30; inset: 0; display: grid; place-items: center; pointer-events: none; font: 800 clamp(22px, 4vw, 40px)/1.1 var(--f-display); letter-spacing: .2em; text-align: center;
-  animation: intro 2.6s forwards; text-shadow: 0 0 30px rgba(var(--acc),.8); }
+  animation: intro 2.6s forwards; }
 #intro small { display: block; margin-top: 12px; font: 500 12px var(--f-mono); letter-spacing: .3em; color: var(--pink); }
 @keyframes intro { 0% { opacity: 0; transform: scale(.96); } 25%, 60% { opacity: 1; transform: none; } 100% { opacity: 0; transform: scale(1.04); visibility: hidden; } }
 
-.hint { font: 500 10.5px/1.5 var(--f-mono); color: var(--haze); letter-spacing: .04em; }
+.hint { font: 500 11px/1.5 var(--f-mono); color: var(--haze); letter-spacing: .04em; }
 .hint .touch { display: none; }
 @media (pointer: coarse) { .hint .mouse { display: none; } .hint .touch { display: inline; } }
 @media (max-width: 860px) {
   #filters { top: auto; bottom: 76px; left: 12px; right: 12px; width: auto; max-height: 34vh; padding: 14px; }
   #filters.min > :not(.head) { display: none; }
   #filters .head { cursor: pointer; }
-  #filters.min .head::after { content: "Filtres et recherche ▴"; font: 500 11px var(--f-mono); color: var(--pink); letter-spacing: .1em; }
+  #filters.min .head::after { content: "Filtres et recherche"; font: 500 11px var(--f-mono); color: var(--pink); letter-spacing: .1em; }
   body.city-open #filters, body.city-open #far { display: none; }
   #plane { top: 40%; }
   #city { left: 12px; right: 12px; top: auto; bottom: 12px; width: auto; height: 62vh; transform: translateY(calc(100% + 30px)); }
@@ -218,9 +213,9 @@ header > * { pointer-events: auto; }
 @media (pointer: coarse) {
   .coast, .web { filter: none; }
   .glass, .btn { backdrop-filter: none; }
-  .glass { background: rgba(12,7,9,.93); }
+  .glass { background: var(--glass-deep); }
   /* Des cibles assez grandes pour le doigt (44 px). */
-  .chip, #far-list button { min-height: 40px; padding: 8px 14px; font-size: 13px; }
+  .chip, #far-list button { min-height: 40px; padding: 8px 16px; font-size: 13px; }
   .top button, .results a, .results button { min-height: 44px; align-items: center; }
   #city .x { width: 44px; height: 44px; }
   .ctabs button { min-height: 40px; }
@@ -230,7 +225,7 @@ header > * { pointer-events: auto; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01s !important; animation-iteration-count: 1 !important; transition: none !important; } }
 </style>
-<link rel="stylesheet" href="/assets/da.css?v=8">
+<link rel="stylesheet" href="/assets/da.css?v=9">
 <script src="/assets/accent.js?v=1"></script>
 
 <canvas id="sky" aria-hidden="true"></canvas>
@@ -271,20 +266,25 @@ header > * { pointer-events: auto; }
 
 <aside id="city" class="glass" aria-live="polite">
   <header><div><span class="eyebrow" id="city-country"></span><h2 id="city-name"></h2><span class="count" id="city-count"></span></div>
-    <button class="x" type="button" id="city-close" aria-label="Fermer">✕</button></header>
+    <button class="x" type="button" id="city-close" aria-label="Fermer"><svg class="ic" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></header>
   <div class="ctabs" id="ctabs" hidden role="tablist"><button type="button" class="on" data-tab="members">Membres</button><button type="button" data-tab="concerts">Concerts de rap</button></div>
   <div id="members"></div>
   <div id="concerts" hidden></div>
 </aside>
 
 <nav id="far" class="glass" aria-label="Plus loin dans la francophonie"><span class="eyebrow">Plus loin</span><div id="far-list"></div></nav>
-<div id="zoom"><button class="glass" type="button" id="zoom-in" aria-label="Zoomer">+</button><button class="glass" type="button" id="zoom-out" aria-label="Dézoomer">−</button><button class="glass" type="button" id="view-flat" aria-label="Vue de dessus ou vue inclinée" title="Vue de dessus ou inclinée" style="font-size:11px;letter-spacing:.06em">3D</button><button class="glass" type="button" id="zoom-reset" aria-label="Revenir à toute la carte" title="Revenir à toute la carte" style="font-size:13px">⟲</button></div>
+<div id="zoom"><button class="glass" type="button" id="zoom-in" aria-label="Zoomer"><svg class="ic" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg></button><button class="glass" type="button" id="zoom-out" aria-label="Dézoomer"><svg class="ic" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h10"/></svg></button><button class="glass" type="button" id="view-flat" aria-label="Vue de dessus ou vue inclinée" title="Vue de dessus ou inclinée">3D</button><button class="glass" type="button" id="zoom-reset" aria-label="Revenir à toute la carte" title="Revenir à toute la carte"><svg class="ic" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a5 5 0 1 0 1.5-3.5M3 2.5v3h3"/></svg></button></div>
 
 <script>
 "use strict";
 const $ = (id) => document.getElementById(id);
 const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids.filter((k) => k != null && k !== false)); return n; };
 const NS = "http://www.w3.org/2000/svg";
+// Les icônes de l’interface : en trait, 16 px, trait 1,5, couleur du texte.
+const ICON = { pin: "M8 14.5s-4.5-4-4.5-7.5a4.5 4.5 0 0 1 9 0c0 3.5-4.5 7.5-4.5 7.5zM8 8.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z", ext: "M6 3.5h6.5V10M12.5 3.5l-9 9", link: "M6.5 9.5a3 3 0 0 0 4.2 0l2-2a3 3 0 0 0-4.2-4.2l-.8.8M9.5 6.5a3 3 0 0 0-4.2 0l-2 2a3 3 0 0 0 4.2 4.2l.8-.8" };
+const icon = (name) => { const t = document.createElement("template"); t.innerHTML = `<svg class="ic" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICON[name]}"/></svg>`; return t.content.firstChild; };
+// Les plus proches étoiles du ciel prennent le reflet clair de l’accent du compte (accent.js).
+const STAR = "rgb(" + getComputedStyle(document.documentElement).getPropertyValue("--acc-hi").trim() + ")";
 const svgEl = (tag, attrs) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; };
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 // Sur téléphone, pas de balancement : la carte immobile ne coûte plus rien, on ne recalcule que quand elle bouge.
@@ -295,7 +295,7 @@ const ROLES = { vip: "ONIRIQUE", beta: "Beta-Testeur", betaf: "Beta-Testeuse", a
 // La projection : longitude et latitude vers le plan de 1000 × 1000 (centré sur la France, corrigé de la latitude).
 const project = (lon, lat) => [500 + (lon - 2.9) * 0.687 * 88, 500 - (lat - 46.4) * 88];
 
-// Les contours : France métropolitaine et Corse, Belgique, Suisse, Luxembourg, d'après Natural Earth (1:50 m, domaine
+// Les contours : France métropolitaine et Corse, Belgique, Suisse, Luxembourg, d’après Natural Earth (1:50 m, domaine
 // public), simplifiés pour le tracé en constellation (lon, lat).
 const SHAPES = {
   suisse: [[9.52,47.52],[9.63,47.47],[9.48,47.17],[9.49,47.06],[9.85,47.01],[9.88,46.94],[10.13,46.85],[10.35,46.98],[10.41,46.96],[10.46,46.9],[10.4,46.66],[10.44,46.62],[10.43,46.55],[10.27,46.56],[10.2,46.62],[10.09,46.6],[10.04,46.48],[10.11,46.36],[10.13,46.24],[10.04,46.24],[9.94,46.36],[9.53,46.31],[9.43,46.48],[9.3,46.5],[9.26,46.48],[9.25,46.29],[9.0,46.02],[9.05,45.88],[8.95,45.83],[8.78,46.0],[8.82,46.08],[8.64,46.11],[8.46,46.25],[8.42,46.45],[8.1,46.27],[8.12,46.16],[7.99,46.02],[7.79,45.92],[7.54,45.98],[7.13,45.88],[7.06,45.9],[6.77,46.16],[6.82,46.27],[6.76,46.42],[6.43,46.43],[6.24,46.33],[6.27,46.25],[6.2,46.19],[5.97,46.15],[5.97,46.22],[6.1,46.28],[6.12,46.38],[6.06,46.43],[6.16,46.61],[6.41,46.76],[6.46,46.95],[6.67,47.03],[6.95,47.27],[7.0,47.34],[6.9,47.39],[7.05,47.49],[7.27,47.43],[7.42,47.45],[7.5,47.55],[7.62,47.59],[7.93,47.56],[8.2,47.61],[8.45,47.6],[8.57,47.65],[8.4,47.69],[8.57,47.78],[8.73,47.7],[8.83,47.7],[8.88,47.66],[9.18,47.67],[9.52,47.52]],
@@ -328,7 +328,7 @@ const cityNodes = new Map();
     g.clearRect(0, 0, w, h);
     for (const s of stars) {
       const a = reduced ? .6 : .35 + .65 * Math.abs(Math.sin(s.p + t / 1000 * s.s));
-      g.globalAlpha = a; g.fillStyle = s.z > .92 ? "#ffb3bb" : "#fff1f3";
+      g.globalAlpha = a; g.fillStyle = s.z > .92 ? STAR : "#fff1f3";
       g.beginPath(); g.arc((s.x - mx * 30 * s.z + w) % w, (s.y - my * 30 * s.z + h) % h, s.r, 0, 6.29); g.fill();
     }
   };
@@ -338,7 +338,7 @@ const cityNodes = new Map();
 //------------------------------------------------------------------------------ Les contours en constellation
 function drawShapes() {
   const lands = $("lands"), stars = $("stars");
-  // Les reliefs ne sortent pas de la France (métropole, Corse, îles) : son contour, à l'échelle du plan.
+  // Les reliefs ne sortent pas de la France (métropole, Corse, îles) : son contour, à l’échelle du plan.
   $("relief").style.clipPath = `path("${Object.entries(SHAPES).filter(([k]) => k.startsWith("france"))
     .map(([, pts]) => "M" + pts.map(([lon, lat]) => project(lon, lat).map((v) => (v * K).toFixed(1)).join(",")).join("L") + "Z").join(" ")}")`;
   for (const [name, pts] of Object.entries(SHAPES)) {
@@ -349,7 +349,7 @@ function drawShapes() {
     lands.append(path);
     const len = path.getTotalLength();
     path.style.setProperty("--len", len);
-    // Des étoiles posées le long du contour, un peu irrégulières, qui s'allument au passage du trait.
+    // Des étoiles posées le long du contour, un peu irrégulières, qui s’allument au passage du trait.
     for (let at = 0; at < len; at += 9 + Math.random() * 9) {
       const p = path.getPointAtLength(at), big = Math.random() < .12;
       const star = svgEl("circle", { cx: (p.x + (Math.random() - .5) * 2).toFixed(1), cy: (p.y + (Math.random() - .5) * 2).toFixed(1), r: big ? 2.1 : .6 + Math.random() * .9, class: "star" });
@@ -360,8 +360,8 @@ function drawShapes() {
 }
 
 //------------------------------------------------------------------------------ Les reliefs, de près
-// Les tuiles d'estompage de l'IGN (Géoplateforme, licence ouverte, France seulement) autour du centre de la vue, à la
-// finesse qui va avec le zoom. Elles sont en projection Mercator : sur une tuile, l'écart avec la carte est invisible.
+// Les tuiles d’estompage de l’IGN (Géoplateforme, licence ouverte, France seulement) autour du centre de la vue, à la
+// finesse qui va avec le zoom. Elles sont en projection Mercator : sur une tuile, l’écart avec la carte est invisible.
 const RELIEF = "https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW&STYLE=estompage_grayscale&TILEMATRIXSET=PM&FORMAT=image/png";
 const unproject = (x, y) => [(x - 500) / (0.687 * 88) + 2.9, 46.4 - (y - 500) / 88];
 const tileLon = (tx, n) => tx / n * 360 - 180, tileLat = (ty, n) => Math.atan(Math.sinh(Math.PI * (1 - 2 * ty / n))) * 180 / Math.PI;
@@ -388,18 +388,18 @@ function relief() {
     const img = el("div"), probe = new Image();
     probe.onload = () => { img.style.setProperty("--t", `url("${url}")`); img.classList.add("ok"); };
     probe.onerror = () => img.remove();
-    // Bord à bord exact (un chevauchement doublerait l'ombre et tracerait une ligne entre deux tuiles).
+    // Bord à bord exact (un chevauchement doublerait l’ombre et tracerait une ligne entre deux tuiles).
     img.style.cssText = `left:${x0 * K}px;top:${y0 * K}px;width:${(x1 - x0) * K}px;height:${(y1 - y0) * K}px`;
     probe.src = url;
     tiles.set(url, img); $("relief").append(img);
   }
-  // Les tuiles d'avant restent le temps que les nouvelles arrivent.
+  // Les tuiles d’avant restent le temps que les nouvelles arrivent.
   setTimeout(() => { if (reliefKey !== key) return; for (const [url, img] of tiles) if (!want.has(url)) { img.remove(); tiles.delete(url); } }, 1200);
 }
 
 //------------------------------------------------------------------------------ La caméra : inclinaison, rotation, zoom et déplacement, en douceur
 const cam = { ax: 50, az: -9, z: 1, px: 0, py: 0 }, goal = { ...cam, ax: 50, az: -9, z: 1 };
-const start = { ax: 12, az: -30, z: .55 }; // l'arrivée : la carte se couche et se rapproche
+const start = { ax: 12, az: -30, z: .55 }; // l’arrivée : la carte se couche et se rapproche
 Object.assign(cam, start);
 let lastView = "";
 const PERSP = 1400, halls = document.getElementsByClassName("hall"); // la perspective de #scene
@@ -411,12 +411,12 @@ function tick(t) {
   if (moved) {
     lastView = view.join();
     // La transformation posée telle quelle sur le plan : une variable héritée ferait recalculer chacune des centaines
-    // d'étoiles du tracé à chaque image ; seules les salles de concert (peu nombreuses) ont besoin des angles.
+    // d’étoiles du tracé à chaque image ; seules les salles de concert (peu nombreuses) ont besoin des angles.
     const tf = `rotateX(${view[0]}deg) rotateZ(${view[1]}deg) scale(${view[2]}) translate(${view[3]}px, ${view[4]}px)`; // scale : K fois plus grand, K fois moins zoomé
     plane.style.transform = tf;
     for (const hall of halls) { hall.style.setProperty("--ax", view[0] + "deg"); hall.style.setProperty("--az", view[1] + "deg"); }
     plane.classList.toggle("close", cam.z / fit() > 7);
-    // Où tombe chaque ville à l'écran, calculé (même perspective que #scene) au lieu de le demander à la page.
+    // Où tombe chaque ville à l’écran, calculé (même perspective que #scene) au lieu de le demander à la page.
     const m = new DOMMatrix(tf), cx = plane.offsetLeft + 1250, cy = plane.offsetTop + 1250, ox = innerWidth / 2, oy = innerHeight * .4;
     for (const node of nodes) {
       const p = m.transformPoint(new DOMPoint(node.dataset.x * K - 1250, node.dataset.y * K - 1250)), f = PERSP / (PERSP - p.z);
@@ -424,7 +424,7 @@ function tick(t) {
       node.at = `translate(${node.xy[0].toFixed(1)}px, ${node.xy[1].toFixed(1)}px)`; node.lead = node.group = null;
     }
     relief();
-    // Les villes trop proches à l'écran se regroupent sous la plus peuplée : « PARIS +2 », le total de leurs membres.
+    // Les villes trop proches à l’écran se regroupent sous la plus peuplée : « PARIS +2 », le total de leurs membres.
     const act = nodes.filter((n) => n.classList.contains("has")).sort((a, b) => b.n - a.n);
     for (const n of act) {
       if (n.lead) continue;
@@ -453,7 +453,7 @@ const K = 2.5; // le facteur de dessin du plan (voir #plane)
 const fit = () => Math.min(1.5, Math.max(.3, Math.min(innerWidth / (innerWidth > 860 ? 950 : 760), innerHeight / 680)));
 function home() { Object.assign(goal, { ax: 50, az: -9, z: fit(), px: 0, py: 0 }); }
 const ZMAX = 40; // assez près pour séparer deux villes voisines (Paris et Ivry-sur-Seine)
-// Le zoom qui écarte d'au moins 80 px à l'écran deux points distants de d (en unités du plan).
+// Le zoom qui écarte d’au moins 80 px à l’écran deux points distants de d (en unités du plan).
 const zoomToSplit = (d, min = 2.6) => Math.max(min, 80 / (Math.max(d, .5) * fit()));
 function flyTo(x, y, z = 2.4) { Object.assign(goal, { ax: 42, az: -4, z: Math.min(ZMAX, z) * fit(), px: (500 - x) * K, py: (500 - y) * K }); }
 
@@ -464,7 +464,7 @@ function flyTo(x, y, z = 2.4) { Object.assign(goal, { ax: 42, az: -4, z: Math.mi
   const zoomBy = (f) => { goal.z = Math.min(ZMAX * fit(), Math.max(.4 * fit(), goal.z * f)); };
   // Deux doigts : leur milieu, leur écart et leur angle (pincer = zoomer, tourner = tourner, glisser ensemble = incliner).
   const pair = () => { const [p, q] = [...pts.values()]; return { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2, d: Math.hypot(q.x - p.x, q.y - p.y), a: Math.atan2(q.y - p.y, q.x - p.x) }; };
-  // Clic droit maintenu : la carte tourne (gauche-droite) et s'incline (haut-bas) au lieu de glisser.
+  // Clic droit maintenu : la carte tourne (gauche-droite) et s’incline (haut-bas) au lieu de glisser.
   // Ni sur la carte, ni sur les villes (leurs points et leurs noms sont posés au-dessus, dans #labels).
   for (const layer of [scene, $("labels")]) layer.addEventListener("contextmenu", (e) => e.preventDefault());
   // Pas de sélection de texte ni de glisser-déposer du navigateur (curseur « interdit », et la carte ne suivait plus).
@@ -497,7 +497,7 @@ function flyTo(x, y, z = 2.4) { Object.assign(goal, { ax: 42, az: -4, z: Math.mi
       return;
     }
     if (spin) { goal.az += dx * .35; tilt(-dy * .25); return; }
-    // Le geste à l'écran, ramené sur le plan incliné et tourné.
+    // Le geste à l’écran, ramené sur le plan incliné et tourné.
     const a = -goal.az * Math.PI / 180, zk = goal.z / K, ux = (dx * Math.cos(a) - dy * Math.sin(a)) / zk, uy = (dx * Math.sin(a) + dy * Math.cos(a)) / zk / Math.max(.3, Math.cos(goal.ax * Math.PI / 180));
     goal.px += ux; goal.py += uy; cam.px += ux; cam.py += uy;
   });
@@ -526,8 +526,8 @@ function drawCities() {
     let node = cityNodes.get(c.id);
     if (!node) {
       const [x, y] = project(c.lon, c.lat);
-      node = el("div", { className: "city", style: `left:${x * K}px;top:${y * K}px` }); // le point d'ancrage sur le plan
-      node.pin = el("div", { className: "pin", style: `--d:${(Math.random() * 2.6).toFixed(2)}s` }, el("button", { className: "dot", type: "button", ariaLabel: c.name, onclick: () => (node.group?.length > 1 ? openGroup(node.group) : openCity(c.id)) }));
+      node = el("div", { className: "city", style: `left:${x * K}px;top:${y * K}px` }); // le point d’ancrage sur le plan
+      node.pin = el("div", { className: "pin" }, el("button", { className: "dot", type: "button", ariaLabel: c.name, onclick: () => (node.group?.length > 1 ? openGroup(node.group) : openCity(c.id)) }));
       node.tag = el("div", { className: "tag" }, el("b", { textContent: c.name }), el("i"));
       node.dataset.x = x; node.dataset.y = y;
       cityNodes.set(c.id, node); plane.append(node); $("labels").append(node.pin, node.tag);
@@ -540,8 +540,8 @@ function drawCities() {
     node.tag.classList.toggle("dim", !n);
   }
   lastView = ""; // de nouvelles villes à placer, même si la caméra ne bouge pas
-  // Le réseau : l'arbre le plus court qui relie toutes les villes actives (chaque ville rattachée à la plus proche déjà
-  // reliée) : les traits ne se croisent pas et ne se doublent pas. Ils s'arrêtent juste avant les points des villes.
+  // Le réseau : l’arbre le plus court qui relie toutes les villes actives (chaque ville rattachée à la plus proche déjà
+  // reliée) : les traits ne se croisent pas et ne se doublent pas. Ils s’arrêtent juste avant les points des villes.
   const active = DATA.cities.filter((c) => !c.far && counts.has(c.id)).map((c) => project(c.lon, c.lat));
   const webs = $("webs"), linked = active.splice(0, 1);
   webs.replaceChildren();
@@ -576,9 +576,9 @@ function card(m, i) {
         el("small", { textContent: "@" + m.handle + " · " + m.followers + " abonné" + (m.followers > 1 ? "s" : "") }))),
     m.cv.roles.length ? el("div", { className: "tags" }, ...m.cv.roles.map((r) => el("span", { textContent: r }))) : null,
     m.cv.skills ? el("p", { textContent: m.cv.skills }) : null,
-    m.cv.open ? el("span", { className: "open", textContent: "✦ Ouvert aux collaborations" }) : null,
-    el("div", { className: "links" }, el("a", { href: page, textContent: "Sa page" }), m.linkPage ? el("a", { href: m.linkPage, target: "_blank", rel: "noopener", textContent: "↗ Page de liens" }) : null));
-  // Ses playlists publiques, demandées à l'ouverture de la ville (les trois plus récentes).
+    m.cv.open ? el("span", { className: "open", textContent: "Ouvert aux collaborations" }) : null,
+    el("div", { className: "links" }, el("a", { href: page, textContent: "Sa page" }), m.linkPage ? el("a", { href: m.linkPage, target: "_blank", rel: "noopener" }, icon("link"), "Page de liens") : null));
+  // Ses playlists publiques, demandées à l’ouverture de la ville (les trois plus récentes).
   if (m.playlists) {
     const pls = el("div", { className: "pls" });
     box.insertBefore(pls, box.lastChild);
@@ -591,7 +591,7 @@ function card(m, i) {
 function openCity(id, quiet, fromHistory) {
   const c = DATA.cities.find((x) => x.id === id);
   if (!c) return;
-  // Une ville ouverte est une étape de l'historique : « Retour » (navigateur, souris, application) la referme.
+  // Une ville ouverte est une étape de l’historique : « Retour » (navigateur, souris, application) la referme.
   if (!quiet && !fromHistory && history.state?.city !== id) history[history.state?.city ? "replaceState" : "pushState"]({ city: id }, "");
   current = id;
   const list = byCity().get(id) || [];
@@ -599,7 +599,7 @@ function openCity(id, quiet, fromHistory) {
   $("city-country").textContent = c.country;
   $("city-name").textContent = c.name;
   $("city-count").textContent = list.length ? list.length + (list.length > 1 ? " membres" : " membre") : "";
-  $("members").replaceChildren(...(list.length ? list.map(card) : [el("p", { className: "empty", textContent: "Personne n'a encore choisi " + c.name + (filters.roles.size || filters.open ? " avec ces filtres." : ". Sois le premier : ajoute ta ville sur ta page de profil.") })]));
+  $("members").replaceChildren(...(list.length ? list.map(card) : [el("p", { className: "empty", textContent: "Personne n’a encore choisi " + c.name + (filters.roles.size || filters.open ? " avec ces filtres." : ". Sois le premier : ajoute ta ville sur ta page de profil.") })]));
   $("city").classList.add("open");
   document.body.classList.add("city-open");
   if (!quiet) loadConcerts(c);
@@ -637,11 +637,11 @@ async function loadConcerts(c) {
   $("concerts").replaceChildren();
   let data;
   try { data = await (await fetch("/api/concerts?city=" + encodeURIComponent(c.id))).json(); } catch { return; }
-  if (!data.enabled || current !== c.id) return; // sans clé Ticketmaster : pas d'onglet
+  if (!data.enabled || current !== c.id) return; // sans clé Ticketmaster : pas d’onglet
   $("ctabs").hidden = false;
   const count = data.venues.reduce((n, v) => n + v.events.length, 0);
   $("ctabs").querySelector('[data-tab="concerts"]').textContent = "Concerts de rap" + (count ? " · " + count : "");
-  if (!data.venues.length) { $("concerts").replaceChildren(el("p", { className: "empty", textContent: "Pas de concert de rap annoncé autour de " + c.name + " pour l'instant." })); return; }
+  if (!data.venues.length) { $("concerts").replaceChildren(el("p", { className: "empty", textContent: "Pas de concert de rap annoncé autour de " + c.name + " pour l’instant." })); return; }
   const halls = new Map();
   $("concerts").replaceChildren(...data.venues.map((v, i) => {
     const box = el("div", { className: "venue", style: `--i:${i}` },
@@ -651,7 +651,7 @@ async function loadConcerts(c) {
         const [yy, mm, dd] = e.date.split("-").map(Number);
         return el("div", { className: "gig" }, el("div", { className: "day" }, el("b", { textContent: String(dd || "?") }), el("i", { textContent: MONTHS[(mm || 1) - 1] })),
           el("span", {}, e.name, el("small", { textContent: (e.time ? e.time.replace(":", " h ") : "") + (yy && yy !== new Date().getFullYear() ? " · " + yy : "") })),
-          el("a", { href: e.url, target: "_blank", rel: "noopener", className: e.soldOut ? "off" : "", textContent: e.soldOut ? "Complet" : "Billets ↗" }));
+          el("a", { href: e.url, target: "_blank", rel: "noopener", className: e.soldOut ? "off" : "" }, e.soldOut ? "Complet" : "Billets", e.soldOut ? null : icon("ext")));
       }));
     // La salle sur la carte, si Ticketmaster donne sa position.
     if (v.lat && v.lon) {
@@ -677,19 +677,19 @@ $("search").addEventListener("input", (e) => {
   const cities = DATA.cities.filter((c) => norm(c.name).includes(q)).slice(0, 4);
   const people = DATA.members.filter((m) => norm(m.name).includes(q) || m.handle.includes(q)).slice(0, 5);
   $("results").replaceChildren(
-    ...cities.map((c) => el("button", { type: "button", onclick: () => openCity(c.id) }, el("span", { textContent: "✦" }), el("span", {}, c.name, el("small", { textContent: " · " + c.country })))),
+    ...cities.map((c) => el("button", { type: "button", onclick: () => openCity(c.id) }, el("span", { className: "ric" }, icon("pin")), el("span", {}, c.name, el("small", { textContent: " · " + c.country })))),
     ...people.map((m) => el("button", { type: "button", onclick: () => { focusHandle = m.handle; openCity(m.city); } },
       el("img", { src: m.avatar ? m.avatar + "?w=80" : "assets/favicon.png?v=2", alt: "" }), el("span", {}, m.name, el("small", { textContent: " · " + (DATA.cities.find((c) => c.id === m.city)?.name || "") })))));
   if (!cities.length && !people.length) $("results").replaceChildren(el("p", { className: "empty", style: "margin:0", textContent: "Rien trouvé." }));
 });
 
-// L'invitation à se placer sur la carte : connecté sans ville choisie, ou sans compte.
+// L’invitation à se placer sur la carte : connecté sans ville choisie, ou sans compte.
 async function drawCta() {
   if (!token) { $("cta").replaceChildren(el("div", { className: "cta" }, "Toi aussi, place-toi sur la carte : ", el("a", { href: "compte", textContent: "crée ton compte" }), " puis ta page de profil.")); $("my-page").hidden = true; return; }
   const mine = await fetch("/api/me/profile/page", { headers: { Authorization: "Bearer " + token } }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   if (mine?.handle) $("my-page").href = "profil?u=" + encodeURIComponent(mine.handle);
   if (!mine) $("cta").replaceChildren(el("div", { className: "cta" }, "Crée ta page de profil et choisis ta ville pour apparaître ici : ", el("a", { href: "profil", textContent: "ma page" }), "."));
-  else if (!mine.city) $("cta").replaceChildren(el("div", { className: "cta" }, "Tu n'es pas encore sur la carte : ", el("a", { href: "profil?u=" + encodeURIComponent(mine.handle), textContent: "ajoute ta ville" }), " dans « Modifier ma page »."));
+  else if (!mine.city) $("cta").replaceChildren(el("div", { className: "cta" }, "Tu n’es pas encore sur la carte : ", el("a", { href: "profil?u=" + encodeURIComponent(mine.handle), textContent: "ajoute ta ville" }), " dans « Modifier ma page »."));
 }
 
 (async () => {
@@ -698,14 +698,14 @@ async function drawCta() {
   $("filters").querySelector(".head").onclick = () => { if (innerWidth <= 860) $("filters").classList.toggle("min"); };
   drawShapes();
   requestAnimationFrame(tick);
-  setTimeout(() => $("intro").remove(), reduced ? 0 : 2700); // l'animation suffit, mais un onglet en arrière-plan la fige
+  setTimeout(() => $("intro").remove(), reduced ? 0 : 2700); // l’animation suffit, mais un onglet en arrière-plan la fige
   setTimeout(home, reduced ? 0 : 500);
   try { DATA = await (await fetch("/api/members/map")).json(); }
   catch { $("count").textContent = "La carte ne répond pas. Réessaie dans un instant."; return; }
   drawFilters();
   drawCities();
   drawCta();
-  // Arrivé depuis une page de profil : la carte vole jusqu'à sa ville.
+  // Arrivé depuis une page de profil : la carte vole jusqu’à sa ville.
   const who = focusHandle && DATA.members.find((m) => m.handle === focusHandle);
   if (who) setTimeout(() => openCity(who.city), reduced ? 0 : 2200);
 })();

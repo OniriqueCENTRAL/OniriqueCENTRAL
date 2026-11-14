@@ -112,6 +112,9 @@ const enDir = path.join(here, 'en');
 if (fs.existsSync(enDir)) for (const f of fs.readdirSync(enDir)) Object.assign(done, JSON.parse(fs.readFileSync(path.join(enDir, f), 'utf8')));
 const out = Object.fromEntries([...found].sort(([a], [b]) => a.localeCompare(b, 'fr')).map(([t, files]) => [t, [...files]]));
 fs.writeFileSync(path.join(here, 'strings.json'), JSON.stringify(out, null, 1));
-const missing = Object.keys(out).filter((t) => !(t in done));
+// Le moteur (site/assets/i18n.js) compare sans tenir compte de l'apostrophe (’ ou ') : on fait de même ici.
+const plain = (t) => t.replace(/’/g, "'");
+const doneKeys = new Set(Object.keys(done).map(plain));
+const missing = Object.keys(out).filter((t) => !doneKeys.has(plain(t)));
 fs.writeFileSync(path.join(here, 'missing.json'), JSON.stringify(missing, null, 1));
 console.log(`${Object.keys(out).length} textes relevés, ${Object.keys(done).length} traduits, ${missing.length} à traduire`);

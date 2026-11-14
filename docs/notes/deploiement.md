@@ -59,4 +59,6 @@
   Windows perd le droit d'exécution).
 - Le site d'un partenaire servi sous onirique.store pouvait lire la session des visiteurs : il va sur son sous-domaine
   (`onirique-abrasion-domaine`, après l'enregistrement DNS).
+- `site/pages.mjs` est en retard sur les pages légales (modifiées à la main : Downloader, Instagram, CLOUD, « Signaler »…) : le relancer effacerait ce contenu ; modifier les `.html` directement, ou le resynchroniser d'abord.
+- Les textes du site ont l'apostrophe typographique (’), le dictionnaire anglais l'apostrophe droite : `i18n.js` et `tools/i18n/extract.mjs` comparent sans en tenir compte ; garder ça si on touche au moteur.
 - `fail2ban` bloque 1 h une IP après 5 échecs SSH : en cas de blocage, attendre ou `fail2ban-client set sshd unbanip <ip>`.

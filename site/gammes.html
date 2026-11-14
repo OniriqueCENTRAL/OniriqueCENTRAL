@@ -1,47 +1,48 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=b60d57e5"></script>
+<script src="assets/i18n.js?v=08504049"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=3"></script>
 <script src="/api/announce.js" async></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Gammes et notes — ONIRIQUE</title>
-<meta name="description" content="Choisis une tonalité : les notes de la gamme à régler dans un correcteur de hauteur, ses accords, sa relative et les tonalités qui s'enchaînent bien. Gratuit.">
+<meta name="description" content="Choisis une tonalité : les notes de la gamme à régler dans un correcteur de hauteur, ses accords, sa relative et les tonalités qui s’enchaînent bien. Gratuit.">
 <link rel="canonical" href="https://onirique.store/gammes">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ONIRIQUE">
 <meta property="og:locale" content="fr_FR">
 <meta property="og:title" content="Gammes et notes — ONIRIQUE">
-<meta property="og:description" content="Choisis une tonalité : les notes de la gamme à régler dans un correcteur de hauteur, ses accords, sa relative et les tonalités qui s'enchaînent bien. Gratuit.">
+<meta property="og:description" content="Choisis une tonalité : les notes de la gamme à régler dans un correcteur de hauteur, ses accords, sa relative et les tonalités qui s’enchaînent bien. Gratuit.">
 <meta property="og:url" content="https://onirique.store/gammes">
 <meta property="og:image" content="https://onirique.store/assets/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json" data-seo>{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Gammes et notes","url":"https://onirique.store/gammes","description":"Choisis une tonalité : les notes de la gamme à régler dans un correcteur de hauteur, ses accords, sa relative et les tonalités qui s'enchaînent bien. Gratuit.","applicationCategory":"MultimediaApplication","operatingSystem":"Navigateur web","isAccessibleForFree":true,"inLanguage":"fr","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://onirique.store/"},{"@type":"ListItem","position":2,"name":"Outils gratuits","item":"https://onirique.store/outils"},{"@type":"ListItem","position":3,"name":"Gammes et notes","item":"https://onirique.store/gammes"}]}]}</script>
+<script type="application/ld+json" data-seo>{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Gammes et notes","url":"https://onirique.store/gammes","description":"Choisis une tonalité : les notes de la gamme à régler dans un correcteur de hauteur, ses accords, sa relative et les tonalités qui s’enchaînent bien. Gratuit.","applicationCategory":"MultimediaApplication","operatingSystem":"Navigateur web","isAccessibleForFree":true,"inLanguage":"fr","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://onirique.store/"},{"@type":"ListItem","position":2,"name":"Outils gratuits","item":"https://onirique.store/outils"},{"@type":"ListItem","position":3,"name":"Gammes et notes","item":"https://onirique.store/gammes"}]}]}</script>
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
-<link rel="stylesheet" href="assets/pages.css?v=2">
-<link rel="stylesheet" href="assets/tools.css?v=2">
+<link rel="stylesheet" href="assets/pages.css?v=3">
+<link rel="stylesheet" href="assets/tools.css?v=3">
 <style>
 .piano { position: relative; height: 150px; max-width: 560px; margin: 4px auto 0; user-select: none; }
-.piano .white { position: absolute; top: 0; bottom: 0; width: calc(100% / 7 - 4px); margin: 0 2px; border-radius: 0 0 8px 8px; background: #EFE4E4; }
-.piano .black { position: absolute; top: 0; height: 60%; width: 8.4%; margin-left: -4.2%; border-radius: 0 0 6px 6px; background: #1A0A0C; border: 1px solid rgba(255,210,214,.2); z-index: 1; }
+.piano .white { position: absolute; top: 0; bottom: 0; width: calc(100% / 7 - 4px); margin: 0 2px; border-radius: 0 0 var(--r-seg) var(--r-seg); background: #e8dede; }
+.piano .black { position: absolute; top: 0; height: 60%; width: 8.4%; margin-left: -4.2%; border-radius: 0 0 var(--r-seg) var(--r-seg); background: var(--deep); border: 1px solid rgba(255,210,214,.2); z-index: 1; }
 .piano .in.white { background: var(--ember); box-shadow: 0 0 22px rgba(var(--acc),.7); }
 .piano .in.black { background: var(--ember-text); border-color: var(--ember-text); box-shadow: 0 0 18px rgba(var(--acc),.8); }
-.piano span { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font: 500 11px/1 var(--f-mono); color: #5a3a3e; }
-.piano .black span { bottom: 6px; color: #b9a2a5; font-size: 9px; }
+.piano span { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font: 500 11px/1 var(--f-mono); color: var(--muted); }
+.piano .black span { bottom: 8px; color: var(--haze); }
 .piano .in span { color: #fff; }
 .piano .tonic span { font-weight: 700; text-decoration: underline; }
 .pills { display: flex; flex-wrap: wrap; gap: 8px; }
-.pill { padding: 10px 14px; border: 1px solid var(--line); border-radius: 12px; background: rgba(0,0,0,.42); font: 500 15px/1 var(--f-mono); color: var(--mist); }
-.pill small { display: block; margin-top: 6px; font: 400 11px/1 var(--f-body); color: var(--haze); }
-.pill.tonic { border-color: var(--ember); }
-a.pill { text-decoration: none; }
-a.pill:hover { border-color: var(--ember); color: var(--mist); }
+.pill { padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--r-seg); background: rgba(0,0,0,.42); font: 500 15px/1 var(--f-mono); color: var(--mist); }
+.pill small { display: block; margin-top: 8px; font: 400 11px/1 var(--f-body); color: var(--haze); }
+.pill.tonic { border-color: transparent; background: var(--lit); box-shadow: var(--lit-shadow); color: #fff; }
+.pill.tonic small { color: var(--label); }
+a.pill { text-decoration: none; transition: border-color .25s, color .25s; }
+a.pill:hover { border-color: rgba(var(--acc-hi),.55); color: #fff; }
 </style>
-<link rel="stylesheet" href="/assets/da.css?v=8">
+<link rel="stylesheet" href="/assets/da.css?v=9">
 <script src="/assets/accent.js?v=1"></script>
 
 <a class="skip" href="#contenu">Aller au contenu</a>
@@ -55,7 +56,7 @@ a.pill:hover { border-color: var(--ember); color: var(--mist); }
 <main class="wrap" id="contenu">
   <section class="hero">
     <p class="eyebrow">Outil gratuit</p>
-    <h1>Les notes d'une <em>gamme</em></h1>
+    <h1>Les notes d’une <em>gamme</em></h1>
     <p class="lede">Choisis une tonalité : tu obtiens les notes à activer dans un correcteur de hauteur, les accords qui vont avec, et les tonalités voisines pour enchaîner ou moduler.</p>
   </section>
 
@@ -80,7 +81,7 @@ a.pill:hover { border-color: var(--ember); color: var(--mist); }
     <div>
       <p class="eyebrow">Tonalités voisines</p>
       <div class="pills" id="near"></div>
-      <p class="muted" style="margin-top:12px">La relative partage exactement les mêmes notes. La dominante et la sous-dominante n'en changent qu'une : ce sont les enchaînements les plus doux, pour un mix DJ comme pour une modulation.</p>
+      <p class="muted" style="margin-top:12px">La relative partage exactement les mêmes notes. La dominante et la sous-dominante n’en changent qu’une : ce sont les enchaînements les plus doux, pour un mix DJ comme pour une modulation.</p>
     </div>
   </div>
 
@@ -118,9 +119,9 @@ const SCALES = {
   lydian: ["Lydian (lydien)", [0, 2, 4, 6, 7, 9, 11], 7],
   mixolydian: ["Mixolydian (mixolydien)", [0, 2, 4, 5, 7, 9, 10], 5],
 };
-const FLAT_MAJORS = [5, 10, 3, 8, 1]; // fa, si♭, mi♭, la♭, ré♭ majeur s'écrivent avec des bémols
+const FLAT_MAJORS = [5, 10, 3, 8, 1]; // fa, si♭, mi♭, la♭, ré♭ majeur s’écrivent avec des bémols
 const mod = (n) => ((n % 12) + 12) % 12;
-/** Code Camelot d'une tonalité majeure ou mineure. */
+/** Code Camelot d’une tonalité majeure ou mineure. */
 const camelot = (tonic, minor) => ((((minor ? tonic + 3 : tonic) * 7) % 12 + 7) % 12 + 1) + (minor ? "A" : "B");
 
 KEYS.forEach((name, i) => $("tonic").append(el("option", { value: i, textContent: name })));
@@ -169,7 +170,7 @@ function draw() {
   history.replaceState(null, "", "?key=" + tonic + "&scale=" + id);
 }
 
-// Lien direct : ?key=9&scale=minor, ou ?key=A%20minor comme l'écrit le détecteur de tonalité.
+// Lien direct : ?key=9&scale=minor, ou ?key=A%20minor comme l’écrit le détecteur de tonalité.
 const query = new URLSearchParams(location.search), given = (query.get("key") || "").trim();
 const named = given.match(/^([A-G][#b]?)\s+(major|minor)$/i);
 if (named) {

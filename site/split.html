@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=b60d57e5"></script>
+<script src="assets/i18n.js?v=08504049"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=3"></script>
 <script src="/api/announce.js" async></script>
@@ -22,27 +22,30 @@
 <script type="application/ld+json" data-seo>{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"IA SPLIT : séparer voix, instru, drums et basse","url":"https://onirique.store/split","description":"Sépare un morceau par IA (Demucs) en voix, instru, mélodie, drums et basse, en WAV. Gratuit, sans compte, dans ton navigateur : le fichier reste chez toi.","applicationCategory":"MultimediaApplication","operatingSystem":"Navigateur web","isAccessibleForFree":true,"inLanguage":"fr","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://onirique.store/"},{"@type":"ListItem","position":2,"name":"Outils gratuits","item":"https://onirique.store/outils"},{"@type":"ListItem","position":3,"name":"IA SPLIT : séparer voix, instru, drums et basse","item":"https://onirique.store/split"}]}]}</script>
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
-<link rel="stylesheet" href="assets/pages.css?v=2">
-<link rel="stylesheet" href="assets/tools.css?v=2">
+<link rel="stylesheet" href="assets/pages.css?v=3">
+<link rel="stylesheet" href="assets/tools.css?v=3">
 <style>
 .bar { height: 6px; border-radius: 999px; background: rgba(0,0,0,.42); overflow: hidden; margin-top: 12px; }
 .bar i { display: block; height: 100%; width: 0; background: var(--ember); transition: width .3s; }
 #stems { display: grid; gap: 12px; }
-.player { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; margin-bottom: 6px; }
-.player .play { width: 48px; height: 48px; border-radius: 50%; border: 0; background: var(--ember); color: #fff; cursor: pointer; font-size: 15px; }
+.player { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; margin-bottom: 8px; }
+.player .play { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; border: 0; background: var(--lit); box-shadow: var(--lit-shadow); color: #fff; cursor: pointer; }
+.player svg, .vol svg { width: 18px; height: 18px; }
 .player input { width: 100%; accent-color: var(--ember); }
 .player span { font: 500 13px/1 var(--f-mono); color: var(--haze); font-variant-numeric: tabular-nums; }
-.vol { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-.vol button { width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 50%; background: rgba(0,0,0,.42); cursor: pointer; font-size: 16px; }
+.vol { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.vol button { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 50%; background: rgba(0,0,0,.42); color: var(--label); cursor: pointer; }
+.vol button:hover { color: #fff; }
 .vol input { flex: 0 1 160px; width: 160px; min-width: 0; accent-color: var(--ember); }
 .stem { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
-.stem .pick { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 14px; background: rgba(0,0,0,.42); color: var(--mist); font: 600 16px/1.3 var(--f-body); text-align: left; cursor: pointer; }
+.stem .pick { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid var(--line); border-radius: var(--r-seg); background: rgba(0,0,0,.42); color: var(--haze); font: 500 11px/1.3 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; text-align: left; cursor: pointer; transition: color .25s, background .25s, box-shadow .25s; }
+.stem .pick:hover { color: var(--mist); }
 .stem .pick::before { content: ""; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--haze); flex: none; }
-.stem .pick[aria-pressed="true"] { border-color: var(--ember); background: rgba(var(--acc),.16); }
-.stem .pick[aria-pressed="true"]::before { background: var(--ember); border-color: var(--ember); }
-.stem .go { padding: 11px 18px; font-size: 14px; }
+.stem .pick[aria-pressed="true"] { border-color: transparent; background: var(--lit); box-shadow: var(--lit-shadow); color: #fff; }
+.stem .pick[aria-pressed="true"]::before { background: #fff; border-color: #fff; }
+.stem .go { padding: 12px 16px; }
 </style>
-<link rel="stylesheet" href="/assets/da.css?v=8">
+<link rel="stylesheet" href="/assets/da.css?v=9">
 <script src="/assets/accent.js?v=1"></script>
 
 <a class="skip" href="#contenu">Aller au contenu</a>
@@ -56,8 +59,8 @@
 <main class="wrap" id="contenu">
   <section class="hero">
     <p class="eyebrow">Outil gratuit</p>
-    <h1><em>IA SPLIT</em> : sépare ton morceau en pistes</h1>
-    <p class="lede">La voix seule pour une acapella, l'instru sans voix pour un remix, les drums ou la basse pour un sample : dépose un son, l'IA le sépare, tu écoutes et tu télécharges chaque piste en WAV.</p>
+    <h1><em>IA Split</em> : sépare ton morceau en pistes</h1>
+    <p class="lede">La voix seule pour une acapella, l’instru sans voix pour un remix, les drums ou la basse pour un sample : dépose un son, l’IA le sépare, tu écoutes et tu télécharges chaque piste en WAV.</p>
 
     <button class="drop" id="drop" type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h6"/></svg>
@@ -65,7 +68,7 @@
       <span>ou clique pour le choisir · MP3, WAV, FLAC, M4A, OGG</span>
     </button>
     <input id="file" type="file" accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" hidden>
-    <p class="hint" id="hint">Sans compte. La séparation se fait dans ton navigateur : ton fichier n'est envoyé nulle part. La première fois, l'IA se télécharge (172 Mo), puis reste sur l'appareil.</p>
+    <p class="hint" id="hint">Sans compte. La séparation se fait dans ton navigateur : ton fichier n’est envoyé nulle part. La première fois, l’IA se télécharge (172 Mo), puis reste sur l’appareil.</p>
     <p class="error" id="error" role="alert"></p>
   </section>
 
@@ -77,12 +80,12 @@
     </div>
     <div id="stems-box" hidden>
       <div class="player">
-        <button class="play" id="toggle" type="button" aria-label="Lecture">▶</button>
+        <button class="play" id="toggle" type="button" aria-label="Lecture"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg></button>
         <input type="range" id="seek" min="0" max="1" step="0.01" value="0" aria-label="Position dans le son">
         <span id="time">0:00 / 0:00</span>
       </div>
       <div class="vol">
-        <button id="mute" type="button" aria-label="Couper le son">🔊</button>
+        <button id="mute" type="button" aria-label="Couper le son"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg></button>
         <input type="range" id="volume" min="0" max="1" step="0.01" value="1" aria-label="Volume">
       </div>
       <div id="stems"></div>
@@ -94,13 +97,13 @@
     <p><strong>Voix</strong> : le chant seul, pour une acapella ou caler des paroles. <strong>Instru</strong> : tout sauf la voix (drums, basse et mélodie ensemble). <strong>Mélodie</strong> : les instruments mélodiques, sans drums ni basse. <strong>Drums</strong> et <strong>Basse</strong> : chacune seule.</p>
     <h2>Questions fréquentes</h2>
     <details><summary>Quelle IA sépare les pistes ?</summary>
-      <p>Demucs v4 (htdemucs), un modèle ouvert de Meta, parmi les meilleurs pour séparer la voix, les drums et la basse. Il tourne dans ton navigateur, sur la carte graphique quand c'est possible.</p></details>
-    <details><summary>Pourquoi c'est lent chez moi ?</summary>
-      <p>Sans carte graphique accessible au navigateur (WebGPU), l'IA tourne sur le processeur : plusieurs minutes pour un morceau. Chrome ou Edge à jour, sur ordinateur, vont le plus vite.</p></details>
+      <p>Demucs v4 (htdemucs), un modèle ouvert de Meta, parmi les meilleurs pour séparer la voix, les drums et la basse. Il tourne dans ton navigateur, sur la carte graphique quand c’est possible.</p></details>
+    <details><summary>Pourquoi c’est lent chez moi ?</summary>
+      <p>Sans carte graphique accessible au navigateur (WebGPU), l’IA tourne sur le processeur : plusieurs minutes pour un morceau. Chrome ou Edge à jour, sur ordinateur, vont le plus vite.</p></details>
     <details><summary>Les pistes sont-elles parfaites ?</summary>
-      <p>Très propres sur la plupart des morceaux, mais il peut rester un peu de reverb ou de bruit d'une piste dans une autre. Pour un vrai remix, rien ne remplace les stems d'origine du producteur.</p></details>
+      <p>Très propres sur la plupart des morceaux, mais il peut rester un peu de reverb ou de bruit d’une piste dans une autre. Pour un vrai remix, rien ne remplace les stems d’origine du producteur.</p></details>
     <details><summary>Et pour une vidéo TikTok ?</summary>
-      <p>Dans <a href="cut">ONIRIQUE CUT</a>, l'IA SPLIT met directement la piste de ton choix sous une réplique de film, avant le drop.</p></details>
+      <p>Dans <a href="cut">ONIRIQUE CUT</a>, l’IA SPLIT met directement la piste de ton choix sous une réplique de film, avant le drop.</p></details>
   </section>
 </main>
 
@@ -114,6 +117,8 @@
 <script>
 const $ = (id) => document.getElementById(id);
 const A = OniriqueAudio;
+// Icônes en trait des boutons lecture et volume.
+const icon = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
 const MAX_BYTES = 400e6, MAX_SECONDS = 900, AI_RATE = 44100; // le modèle attend du 44,1 kHz stéréo
 const NAMES = [["vocals", "Voix", "voix"], ["prod", "Instru (sans voix)", "instru"], ["melo", "Mélodie", "melodie"], ["drums", "Drums", "drums"], ["bass", "Basse", "basse"]];
 let file = null, parts = null, working = false;
@@ -121,16 +126,16 @@ let file = null, parts = null, working = false;
 /** Les pistes du son par IA (assets/demucs-worker.js), chacune en [gauche, droite] à 44,1 kHz. */
 function separate(L, R) {
   return new Promise((resolve, reject) => {
-    try { navigator.storage.persist().catch(() => {}); } catch { /* navigateur trop ancien */ } // que le navigateur garde l'IA téléchargée
+    try { navigator.storage.persist().catch(() => {}); } catch { /* navigateur trop ancien */ } // que le navigateur garde l’IA téléchargée
     const worker = new Worker("assets/demucs-worker.js?v=2", { type: "module" });
     const done = (fn, value) => { worker.terminate(); fn(value); };
     worker.onmessage = ({ data }) => {
       if (data.type === "done") done(resolve, data);
       else if (data.type === "error") done(reject, new Error(data.message));
       else if (data.phase === "load") progress("IA déjà sur cet appareil : chargement…", 0);
-      else progress(data.phase === "download" ? "Téléchargement de l'IA (172 Mo, une seule fois sur cet appareil)…" : "Séparation des pistes par IA…", data.value);
+      else progress(data.phase === "download" ? "Téléchargement de l’IA (172 Mo, une seule fois sur cet appareil)…" : "Séparation des pistes par IA…", data.value);
     };
-    worker.onerror = (event) => done(reject, new Error(event.message || "L'IA n'a pas pu démarrer dans ce navigateur."));
+    worker.onerror = (event) => done(reject, new Error(event.message || "L’IA n’a pas pu démarrer dans ce navigateur."));
     worker.postMessage({ L, R }, [L.buffer, R.buffer]);
   });
 }
@@ -158,7 +163,7 @@ function fadeOut(v) {
   g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(0, t + FADE);
   v.src.stop(t + FADE + .01);
 }
-/** Joue la piste choisie depuis from (secondes) ; ce qui jouait s'efface pendant que la nouvelle monte. */
+/** Joue la piste choisie depuis from (secondes) ; ce qui jouait s’efface pendant que la nouvelle monte. */
 function start(from) {
   if (!ctx) {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -176,7 +181,7 @@ function start(from) {
 }
 function pause() { pos = now(); fadeOut(voice); voice = null; render(); }
 function render() {
-  $("toggle").textContent = voice ? "❚❚" : "▶";
+  $("toggle").innerHTML = icon(voice ? "M8 5v14M16 5v14" : "M7 4.5v15l12-7.5z");
   $("toggle").ariaLabel = voice ? "Pause" : "Lecture";
   if (!seeking) $("seek").value = now();
   $("time").textContent = A.clock(Number($("seek").value)) + " / " + A.clock(duration());
@@ -189,7 +194,7 @@ setInterval(() => { if (voice) render(); }, 200);
 function setVolume() {
   const v = Number($("volume").value);
   if (master) master.gain.setTargetAtTime(v, ctx.currentTime, .02); // sans clic
-  $("mute").textContent = v ? "🔊" : "🔇";
+  $("mute").innerHTML = icon(v ? "M4 9v6h4l5 4V5L8 9zM16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" : "M4 9v6h4l5 4V5L8 9zM17 9l5 6M22 9l-5 6");
   $("mute").ariaLabel = v ? "Couper le son" : "Remettre le son";
 }
 $("volume").oninput = setVolume;
@@ -244,8 +249,8 @@ async function open(chosen) {
 }
 
 A.dropZone($("drop"), $("file"), open);
-// L'IA déjà sur l'appareil (cache de assets/demucs-worker.js) : rien à télécharger, on le dit.
-caches.open("onirique-demucs").then((c) => c.keys()).then((k) => { if (k.length) $("hint").textContent = "Sans compte. La séparation se fait dans ton navigateur : ton fichier n'est envoyé nulle part. L'IA est déjà installée sur cet appareil."; }).catch(() => {});
+// L’IA déjà sur l’appareil (cache de assets/demucs-worker.js) : rien à télécharger, on le dit.
+caches.open("onirique-demucs").then((c) => c.keys()).then((k) => { if (k.length) $("hint").textContent = "Sans compte. La séparation se fait dans ton navigateur : ton fichier n’est envoyé nulle part. L’IA est déjà installée sur cet appareil."; }).catch(() => {});
 A.fromLink(open, (error) => { $("error").textContent = error.message; });
 </script>
 <script src="assets/tools-menu.js?v=17"></script>

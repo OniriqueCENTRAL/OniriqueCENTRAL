@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=b60d57e5"></script>
+<script src="assets/i18n.js?v=08504049"></script>
 <script src="assets/ui.js?v=4"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Page de profil</title>
@@ -10,14 +10,7 @@
 <link rel="stylesheet" href="assets/fonts.css">
 <link rel="stylesheet" href="assets/fonts-cut.css">
 <style>
-/* Mêmes tokens que compte.html ; --ember prend la couleur choisie par le propriétaire de la page. */
-:root {
-  --night: #0D0809; --line: rgba(255,210,214,.13); --mist: #F6EEEE; --haze: #A88F92; --ember: rgb(var(--acc));
-  --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
-  --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
-  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
-  color-scheme: dark;
-}
+/* Les couleurs et polices viennent de da.css (chargée après) ; --ember prend la couleur choisie par le propriétaire de la page. */
 * { box-sizing: border-box; }
 body { margin: 0; min-height: 100vh; color: var(--mist); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased; background: var(--night); }
 body::before { content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
@@ -34,16 +27,16 @@ main { padding-block: clamp(20px, 4vw, 40px) 120px; }
 h1 { font: 800 clamp(24px, 4.5vw, 34px)/1.1 var(--f-display); margin: 0; }
 .eyebrow { font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); }
 .muted { color: var(--haze); }
-.panel { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 18px; padding: clamp(18px, 3vw, 24px); margin-top: 16px; }
+.panel { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: var(--r-card); padding: clamp(16px, 3vw, 24px); margin-top: 16px; }
 .panel > .eyebrow { display: block; margin-bottom: 14px; }
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 18px; border-radius: 999px; border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; border-radius: var(--r-ctl); border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
 .btn-primary { background: var(--mist); color: var(--night); box-shadow: 0 10px 40px -10px color-mix(in srgb, var(--ember) 70%, transparent); }
 .btn-ghost { background: rgba(255,255,255,.03); color: var(--mist); border-color: var(--line); }
 .btn-ghost:hover { border-color: var(--ember); }
-.btn.on { border-color: var(--ember); color: var(--ember); }
+.btn.btn-ghost.on { color: color-mix(in srgb, var(--ember) 55%, #fff); box-shadow: 0 0 0 1px color-mix(in srgb, var(--ember) 60%, transparent) inset; }
 .btn:disabled { opacity: .5; cursor: default; }
 .small { padding: 8px 12px; font-size: 13px; }
-label { display: grid; gap: 7px; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
+label { display: grid; gap: 8px; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
 label.check { display: flex; align-items: center; gap: 10px; text-transform: none; letter-spacing: 0; font: 500 15px var(--f-body); color: var(--mist); }
 input, textarea { min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px var(--f-body); letter-spacing: 0; text-transform: none; min-width: 0; }
 textarea { padding: 12px 14px; resize: vertical; min-height: 96px; line-height: 1.5; }
@@ -51,84 +44,86 @@ input[type="color"] { padding: 4px; width: 90px; cursor: pointer; }
 input[type="checkbox"] { min-height: 0; width: 18px; height: 18px; accent-color: var(--ember); }
 .form { display: grid; gap: 16px; }
 .notice { min-height: 1.4em; font-size: 14px; color: var(--haze); }
-.notice.err { color: #ff8a95; }
+.notice.err { color: var(--danger); }
 
-.banner { height: clamp(140px, 26vw, 230px); border-radius: 22px; border: 1px solid var(--line); background: linear-gradient(135deg, color-mix(in srgb, var(--ember) 55%, #1a080a), #1a080a) center/cover; }
+.banner { height: clamp(140px, 26vw, 230px); border-radius: 22px; border: 1px solid var(--line); background: linear-gradient(135deg, color-mix(in srgb, var(--ember) 55%, var(--deep)), var(--deep)) center/cover; }
 /* Seule la photo chevauche la bannière ; le nom, le pseudo et les boutons commencent sous elle. */
-.head { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 18px; margin: -56px 22px 0; }
-.avatar { width: 112px; height: 112px; border-radius: 50%; object-fit: cover; border: 4px solid var(--night); background: #2a0a0e; flex: none; }
+.head { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 16px; margin: -56px 24px 0; }
+.avatar { width: 112px; height: 112px; border-radius: 50%; object-fit: cover; border: 4px solid var(--night); background: var(--deep-2); flex: none; }
 .who { flex: 1; min-width: 200px; padding-top: 66px; }
 .name-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 /* Le badge de rôle, comme dans le menu du compte. */
-.role { font: 500 11px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; padding: 6px 10px; border-radius: 999px; color: #ffecee;
+.role { font: 500 11px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; padding: 6px 10px; border-radius: 999px; color: var(--mist);
   border: 1px solid color-mix(in srgb, var(--ember) 70%, transparent); background: color-mix(in srgb, var(--ember) 18%, transparent); }
-.role.small { padding: 4px 7px; font-size: 9px; vertical-align: middle; }
+.role.small { padding: 4px 8px; vertical-align: middle; }
 .who .handle { font: 500 13px var(--f-mono); color: var(--haze); }
-.counts { display: flex; gap: 18px; margin-top: 6px; font: 500 13px var(--f-mono); color: var(--haze); }
+.counts { display: flex; gap: 16px; margin-top: 6px; font: 500 13px var(--f-mono); color: var(--haze); }
 .counts b { color: var(--mist); }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 70px; }
 @media (max-width: 560px) { .who, .actions { padding-top: 0; } .who { flex-basis: 100%; } }
 .bio { white-space: pre-wrap; margin: 0; }
 .comments { display: grid; gap: 12px; margin-top: 16px; }
-.comment { display: flex; gap: 12px; padding: 12px; border-radius: 14px; background: rgba(255,255,255,.03); border: 1px solid var(--line); }
-.comment img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex: none; background: #2a0a0e; }
+.comment { display: flex; gap: 12px; padding: 12px; border-radius: var(--r-ctl); background: rgba(255,255,255,.03); border: 1px solid var(--line); }
+.comment img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex: none; background: var(--deep-2); }
 .comment .body { flex: 1; min-width: 0; }
 .comment .meta { font: 500 12px var(--f-mono); color: var(--haze); display: flex; gap: 10px; align-items: center; }
 .comment .meta a { text-decoration: none; color: var(--mist); font-weight: 700; }
 .comment p { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
-.link { border: 0; background: none; color: var(--haze); font: 500 12px var(--f-mono); cursor: pointer; padding: 0; }
-.link:hover { color: var(--ember); }
-.link.on { color: var(--ember); }
+.link { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; color: var(--haze); font: 500 12px var(--f-mono); cursor: pointer; padding: 0; }
+.link:hover, .link.on { color: color-mix(in srgb, var(--ember) 55%, #fff); }
+.link.on .ic { fill: currentColor; }
+.ic { flex: none; vertical-align: -3px; }
 .meta .grow { margin-left: auto; }
-.danger { color: #ff8a95; }
+.danger { color: var(--danger); }
 .counts button { border: 0; background: none; padding: 0; color: inherit; font: inherit; cursor: pointer; }
-.counts button:hover b { color: var(--ember); }
-.tag { font: 500 11px var(--f-mono); color: var(--haze); border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; }
+.counts button:hover b { color: color-mix(in srgb, var(--ember) 55%, #fff); }
+.tag { font: 500 11px var(--f-mono); color: var(--haze); border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; }
 .links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-.links a { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.03); text-decoration: none; font: 600 13px var(--f-body); }
+.links a { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: rgba(255,255,255,.03); text-decoration: none; font: 600 13px var(--f-body); }
 .links a:hover { border-color: var(--ember); }
 .links img { width: 18px; height: 18px; border-radius: 4px; object-fit: contain; }
-.tabs { display: flex; gap: 6px; margin-top: 22px; border-bottom: 1px solid var(--line); }
-.tabs button { border: 0; background: none; color: var(--haze); padding: 10px 14px; font: 600 14px var(--f-body); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
-.tabs button.on { color: var(--mist); border-color: var(--ember); }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; }
-.pl { display: grid; gap: 4px; padding: 8px; border-radius: 14px; text-decoration: none; background: rgba(255,255,255,.03); border: 1px solid transparent; }
+.tabs { display: flex; flex-wrap: wrap; width: fit-content; max-width: 100%; gap: 4px; padding: 4px; margin-top: 24px; border-radius: 14px; background: rgba(0,0,0,.35); border: 1px solid var(--line); }
+.tabs button { border: 0; border-radius: var(--r-seg); background: none; color: var(--haze); padding: 8px 16px; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; cursor: pointer; transition: color .25s, background .25s, box-shadow .25s; }
+.tabs button:hover { color: #fff; }
+.tabs button.on { color: #fff; background: var(--lit); box-shadow: var(--lit-shadow); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 16px; }
+.pl { display: grid; gap: 4px; padding: 8px; border-radius: 16px; text-decoration: none; background: rgba(255,255,255,.03); border: 1px solid transparent; }
 .pl:hover { border-color: var(--line); background: rgba(255,255,255,.06); }
-.pl img, .pl .ph { width: 100%; aspect-ratio: 1; border-radius: 10px; object-fit: cover; background: linear-gradient(135deg, color-mix(in srgb, var(--ember) 50%, #1a080a), #2a0a0e); }
+.pl img, .pl .ph { width: 100%; aspect-ratio: 1; border-radius: 8px; object-fit: cover; background: linear-gradient(135deg, color-mix(in srgb, var(--ember) 50%, var(--deep)), var(--deep-2)); }
 .pl b { margin-top: 4px; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pl small { font: 500 11px var(--f-mono); color: var(--haze); }
-.replies { display: grid; gap: 10px; margin-top: 10px; padding-left: 14px; border-left: 2px solid var(--line); }
+.pl small .ic { width: 12px; height: 12px; vertical-align: -1px; }
+.replies { display: grid; gap: 12px; margin-top: 12px; padding-left: 12px; border-left: 2px solid var(--line); }
 .replies .comment { padding: 8px 10px; background: none; border: 0; }
-.replies .comment img { width: 30px; height: 30px; }
+.replies .comment img { width: 32px; height: 32px; }
 .reply-form { display: flex; gap: 8px; margin-top: 10px; }
-.reply-form input { flex: 1; min-height: 38px; font-size: 14px; }
-dialog { width: min(440px, calc(100vw - 32px)); max-height: 80vh; padding: 0; border-radius: 20px; border: 1px solid var(--line); background: #150a0c; color: var(--mist); }
-dialog::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(4px); }
-dialog header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: none; backdrop-filter: none; }
-dialog ul { list-style: none; margin: 0; padding: 6px 10px 14px; overflow-y: auto; max-height: calc(80vh - 60px); }
+.reply-form input { flex: 1; min-height: 40px; font-size: 14px; }
+dialog { width: min(440px, calc(100vw - 32px)); max-height: 80vh; padding: 0; border: 1px solid var(--line); color: var(--mist); }
+dialog header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: none; backdrop-filter: none; }
+dialog ul { list-style: none; margin: 0; padding: 4px 8px 16px; overflow-y: auto; max-height: calc(80vh - 60px); }
 dialog li { display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 12px; }
 dialog li:hover { background: rgba(255,255,255,.04); }
-dialog li img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #2a0a0e; flex: none; }
+dialog li img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: var(--deep-2); flex: none; }
 dialog li span { flex: 1; min-width: 0; }
 dialog li a { text-decoration: none; font-weight: 700; }
 dialog li small { display: block; color: var(--haze); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .link-rows { display: grid; gap: 8px; }
-.cv-edit { display: grid; gap: 16px; padding: 16px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.02); }
+.cv-edit { display: grid; gap: 16px; padding: 16px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: rgba(255,255,255,.02); }
 select { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 15px var(--f-body); letter-spacing: 0; text-transform: none; }
 .place-results { display: grid; gap: 2px; margin-top: 6px; }
-.place-results button { display: flex; justify-content: space-between; gap: 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.03); color: var(--mist); font: 500 14px var(--f-body); cursor: pointer; text-align: left; }
+.place-results button { display: flex; justify-content: space-between; gap: 12px; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: rgba(255,255,255,.03); color: var(--mist); font: 500 14px var(--f-body); cursor: pointer; text-align: left; }
 .place-results button:hover { border-color: var(--ember); }
 .place-results small { color: var(--haze); }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.03); font: 600 13px var(--f-body); color: var(--mist); letter-spacing: 0; text-transform: none; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--r-seg); border: 1px solid var(--line); background: rgba(255,255,255,.03); font: 600 13px var(--f-body); color: var(--mist); letter-spacing: 0; text-transform: none; }
 .chip.pick { cursor: pointer; }
 .chip.pick input { display: none; }
 .chip.pick:has(input:checked) { border-color: var(--ember); background: color-mix(in srgb, var(--ember) 20%, transparent); }
 .cv #cv { display: grid; gap: 10px; }
-.cv-city { font: 700 16px var(--f-body); text-decoration: none; }
+.cv-city { display: inline-flex; align-items: center; gap: 8px; font: 700 16px var(--f-body); text-decoration: none; }
 .cv-city small { color: var(--haze); font-weight: 500; }
-.cv-city:hover { color: var(--ember); }
-.open-badge { justify-self: start; padding: 6px 12px; border-radius: 999px; font: 500 11px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: #b9f5c9; border: 1px solid rgba(120,230,150,.45); background: rgba(80,200,120,.12); }
+.cv-city:hover { color: color-mix(in srgb, var(--ember) 55%, #fff); }
+.open-badge { justify-self: start; padding: 6px 12px; border-radius: 999px; font: 500 11px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ok); border: 1px solid color-mix(in srgb, var(--ok) 40%, transparent); background: color-mix(in srgb, var(--ok) 12%, transparent); }
 .link-rows div { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; }
 
 /* L'habillage choisi par le propriétaire : fond (image, GIF ou vidéo) assombri, polices, blocs en verre, ordre. */
@@ -138,15 +133,15 @@ select { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px sol
 /* L'application ONIRIQUE CENTRAL cache les fonds du site (#page-bg) : celui choisi pour la page reste affiché. */
 html body #page-bg:not([hidden]) { display: block !important; }
 #view { font-family: var(--f-text, var(--f-body)); }
-#view h1, #view .tabs button, #view .pl b, #view .panel > .eyebrow { font-family: var(--f-title, var(--f-display)); }
+#view h1, #view .pl b, #view .panel > .eyebrow { font-family: var(--f-title, var(--f-display)); }
 body.glass #view .panel, body.glass #view .head, body.glass #view .tabs { position: relative; border: 1px solid rgba(255,255,255,.16); border-radius: 22px;
   background: linear-gradient(135deg, rgba(255,255,255,.12), rgba(255,255,255,.03) 45%, rgba(255,255,255,.07));
   -webkit-backdrop-filter: blur(var(--blur, 18px)) saturate(160%); backdrop-filter: blur(var(--blur, 18px)) saturate(160%);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.28), inset 0 -1px 0 rgba(255,255,255,.06), 0 24px 60px -24px rgba(0,0,0,.7); }
-body.glass #view .head { margin: -56px 0 0; padding: 0 22px 18px; }
-body.glass #view .tabs { padding: 4px; gap: 4px; }
-body.glass #view .tabs button { border-radius: 16px; border-bottom: 0; margin: 0; }
-body.glass #view .tabs button.on { background: rgba(255,255,255,.14); }
+body.glass #view .head { margin: -56px 0 0; padding: 0 24px 16px; }
+body.glass #view .tabs { padding: 4px; gap: 4px; border-radius: 14px; }
+body.glass #view .tabs button { border-radius: var(--r-seg); }
+body.glass #view .tabs button.on { background: rgba(255,255,255,.14); box-shadow: 0 0 0 1px rgba(255,255,255,.2) inset; }
 body.glass #view .avatar { border-color: rgba(255,255,255,.35); }
 body.centered #view .head { flex-direction: column; align-items: center; text-align: center; }
 body.centered #view .who, body.centered #view .actions { padding-top: 0; }
@@ -156,22 +151,23 @@ body.centered #view .name-row, body.centered #view .counts, body.centered #view 
 #view.enter > :nth-child(2) { animation-delay: .08s; } #view.enter > :nth-child(3) { animation-delay: .16s; } #view.enter > :nth-child(n+4) { animation-delay: .24s; }
 @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
 @media (prefers-reduced-motion: reduce) { #view.enter > * { animation: none; } }
-.look-edit { display: grid; gap: 14px; padding: 16px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.02); }
+.look-edit { display: grid; gap: 16px; padding: 16px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: rgba(255,255,255,.02); }
 .look-edit .row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
 .order-list { display: grid; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; }
 .order-list li { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.03); }
 .order-list li span { flex: 1; font-weight: 600; }
+.order-list .btn { padding: 8px; }
 input[type="range"] { min-height: 0; padding: 0; accent-color: var(--ember); }
 dialog.gifs { width: min(720px, calc(100vw - 24px)); max-height: 86vh; }
-.gif-body { display: grid; gap: 12px; padding: 0 16px 14px; }
+.gif-body { display: grid; gap: 12px; padding: 0 16px 16px; }
 .gif-grid { columns: 3 160px; column-gap: 8px; max-height: 60vh; overflow-y: auto; }
-.gif-grid button { display: block; width: 100%; margin: 0 0 8px; padding: 0; border: 2px solid transparent; border-radius: 10px; overflow: hidden; background: #1a0d10; cursor: pointer; break-inside: avoid; }
+.gif-grid button { display: block; width: 100%; margin: 0 0 8px; padding: 0; border: 2px solid transparent; border-radius: 10px; overflow: hidden; background: var(--deep); cursor: pointer; break-inside: avoid; }
 .gif-grid button:hover, .gif-grid button:focus-visible { border-color: var(--ember); outline: none; }
 .gif-grid img { display: block; width: 100%; height: auto; }
 .gif-grid button:disabled { opacity: .5; cursor: progress; }
 .gif-credit { margin: 0; font-size: 12px; text-align: right; }
 </style>
-<link rel="stylesheet" href="/assets/da.css?v=8">
+<link rel="stylesheet" href="/assets/da.css?v=9">
 <script src="/assets/accent.js?v=1"></script>
 
 <header>
@@ -222,7 +218,7 @@ dialog.gifs { width: min(720px, calc(100vw - 24px)); max-height: 86vh; }
   <section id="edit" hidden>
     <span class="eyebrow">Ma page de profil</span>
     <h1 id="edit-title" style="margin-top:12px">Crée ta page</h1>
-    <p class="muted">Une page publique à ton nom : les autres membres peuvent s'y abonner, y laisser un commentaire et t'écrire en privé.</p>
+    <p class="muted">Une page publique à ton nom : les autres membres peuvent s’y abonner, y laisser un commentaire et t’écrire en privé.</p>
     <form class="form panel" id="edit-form">
       <label>Adresse de la page<input id="f-handle" required maxlength="40" autocomplete="off" placeholder="ton-pseudo"></label>
       <p class="muted" id="f-handle-hint" style="margin:-8px 0 0;font-size:13px"></p>
@@ -233,16 +229,16 @@ dialog.gifs { width: min(720px, calc(100vw - 24px)); max-height: 86vh; }
         <div class="place-pick"><label>Ta ville ou ton village (sur la carte des membres)<input id="f-place" type="search" autocomplete="off" placeholder="Tape le nom de ta commune…"></label>
           <input type="hidden" id="f-city"><div class="place-results" id="f-places" role="listbox"></div>
           <p class="muted" id="f-place-now" style="margin:6px 0 0;font-size:13px"></p></div>
-        <div><label>Ce que tu fais (jusqu'à 6)</label><div class="tags" id="f-roles"></div></div>
+        <div><label>Ce que tu fais (jusqu’à 6)</label><div class="tags" id="f-roles"></div></div>
         <label>Ce que tu sais faire, ton matériel, tes styles<input id="f-skills" maxlength="300" placeholder="Trap, drill, mix voix, Neumann U87…"></label>
         <label class="check"><input id="f-open" type="checkbox"> Ouvert aux collaborations</label>
         <label class="check" id="f-showlinks-row"><input id="f-showlinks" type="checkbox"> Afficher ma page de liens sur mon profil et la carte</label>
-        <p class="muted" id="f-nolinks" style="margin:0;font-size:13px" hidden>Tu n'as pas encore de page de liens : <a href="mes-liens">crée-la</a> pour pouvoir l'afficher ici.</p>
+        <p class="muted" id="f-nolinks" style="margin:0;font-size:13px" hidden>Tu n’as pas encore de page de liens : <a href="mes-liens">crée-la</a> pour pouvoir l’afficher ici.</p>
       </div>
       <label class="check"><input id="f-comments" type="checkbox" checked> Autoriser les commentaires</label>
       <div id="banner-field" hidden>
         <label>Bannière</label>
-        <p class="muted" style="margin:6px 0 0;font-size:13px">Format large : 1600 × 460 pixels conseillés (PNG, JPEG ou WebP). Tu la recadres juste après l'avoir choisie.</p>
+        <p class="muted" style="margin:6px 0 0;font-size:13px">Format large : 1600 × 460 pixels conseillés (PNG, JPEG ou WebP). Tu la recadres juste après l’avoir choisie.</p>
         <div class="between" style="margin-top:8px"><button class="btn btn-ghost small" id="banner-pick" type="button">Choisir une image</button>
           <input id="banner-file" type="file" accept="image/png,image/jpeg,image/webp" aria-label="Bannière" hidden></div>
       </div>
@@ -262,11 +258,11 @@ dialog.gifs { width: min(720px, calc(100vw - 24px)); max-height: 86vh; }
           <label>Assombrir le fond<input id="f-dim" type="range" min="0" max="90" step="5"></label>
           <label>Flou du verre<input id="f-blur" type="range" min="0" max="40" step="2"></label>
         </div>
-        <label class="check"><input id="f-glass" type="checkbox"> Blocs en verre (effet liquid glass)</label>
+        <label class="check"><input id="f-glass" type="checkbox"> Blocs en verre</label>
         <label class="check"><input id="f-center" type="checkbox"> Nom et photo centrés</label>
         <div><label>Ordre des blocs</label><ul class="order-list" id="f-order"></ul></div>
-        <div id="f-packs-field"><label>Packs montrés dans l'onglet Packs</label>
-          <p class="muted" style="margin:6px 0 0;font-size:13px">Seuls les packs cochés s'affichent sur ta page. Un pack doit avoir un lien d'écoute ouvert pour apparaître ici.</p>
+        <div id="f-packs-field"><label>Packs montrés dans l’onglet Packs</label>
+          <p class="muted" style="margin:6px 0 0;font-size:13px">Seuls les packs cochés s’affichent sur ta page. Un pack doit avoir un lien d’écoute ouvert pour apparaître ici.</p>
           <div class="tags" id="f-packs"></div></div>
       </div>
       <div class="between"><button class="btn btn-primary" type="submit">Enregistrer</button><a class="btn btn-ghost" id="edit-cancel" href="#" hidden>Annuler</a>
@@ -287,6 +283,9 @@ const $ = (id) => document.getElementById(id);
 const TOKEN = "onirique.token";
 const token = sessionStorage.getItem(TOKEN) || localStorage.getItem(TOKEN);
 const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids.filter((k) => k != null && k !== false)); return n; };
+// Les icônes de l’interface : en trait, 16 px, trait 1,5, couleur du texte.
+const ICON = { pin: "M8 14.5s-4.5-4-4.5-7.5a4.5 4.5 0 0 1 9 0c0 3.5-4.5 7.5-4.5 7.5zM8 8.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z", link: "M6.5 9.5a3 3 0 0 0 4.2 0l2-2a3 3 0 0 0-4.2-4.2l-.8.8M9.5 6.5a3 3 0 0 0-4.2 0l-2 2a3 3 0 0 0 4.2 4.2l.8-.8", ext: "M6 3.5h6.5V10M12.5 3.5l-9 9", up: "M4 10l4-4 4 4", down: "M4 6l4 4 4-4", star: "M8 2l1.8 3.8 4.2.5-3.1 2.9.8 4.1L8 11.3l-3.7 2 .8-4.1L2 6.3l4.2-.5z", heart: "M8 13.5S2 10 2 6a3 3 0 0 1 6-1 3 3 0 0 1 6 1c0 4-6 7.5-6 7.5z" };
+const icon = (name) => { const t = document.createElement("template"); t.innerHTML = `<svg class="ic" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICON[name]}"/></svg>`; return t.content.firstChild; };
 
 async function api(method, path, body, raw) {
   const response = await fetch("/api" + path, {
@@ -313,7 +312,7 @@ const badge = (role) => (ROLES[role] ? el("span", { className: "role small", tex
 
 function show(which) { $("view").hidden = which !== "view"; $("edit").hidden = which !== "edit"; $("state").hidden = true; }
 
-// L'habillage : polices, verre, fond, alignement et ordre des blocs (bio, CV, onglets).
+// L’habillage : polices, verre, fond, alignement et ordre des blocs (bio, CV, onglets).
 const FONTS = ["Hanken Grotesk", "Unbounded", "JetBrains Mono", "Grenze Gotisch", "Anton", "Bebas Neue", "Permanent Marker", "Press Start 2P", "Silkscreen", "VT323"];
 const BLOCKS = { bio: "À propos", cv: "CV numérique", tabs: "Playlists, packs, vitrine et commentaires" };
 const fontStack = (f) => '"' + f + '", system-ui, sans-serif';
@@ -338,7 +337,7 @@ function applyLook(l) {
   for (const b of l.order) { const node = view.querySelector('[data-block="' + b + '"]'); if (node) view.append(node); }
 }
 
-// La vitrine du graphiste (covers, visuels), filigranée : l'onglet n'existe que s'il y en a (ou sur sa propre page).
+// La vitrine du graphiste (covers, visuels), filigranée : l’onglet n’existe que s’il y en a (ou sur sa propre page).
 async function drawVitrine(p) {
   const list = await fetch("/api/vitrine?u=" + encodeURIComponent(p.handle)).then((r) => (r.ok ? r.json() : [])).catch(() => []);
   $("vitrine-tab").hidden = !list.length && !p.mine;
@@ -347,8 +346,8 @@ async function drawVitrine(p) {
     el("img", { src: v.image, alt: v.title, loading: "lazy", draggable: false, oncontextmenu: (e) => e.preventDefault() }),
     el("b", { textContent: v.title }),
     el("small", { textContent: v.sold ? "Vendu" : v.price ? (v.price / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR" }) : "Sur demande" })))
-    : [el("p", { className: "muted", style: "margin:0" }, "Publie tes covers et visuels dans la ", el("a", { href: "vitrine", textContent: "Vitrine" }), " : ils s'affichent ici avec ton filigrane.")]));
-  // Un graphiste sans playlist ni pack : sa page s'ouvre sur sa vitrine.
+    : [el("p", { className: "muted", style: "margin:0" }, "Publie tes covers et visuels dans la ", el("a", { href: "vitrine", textContent: "Vitrine" }), " : ils s’affichent ici avec ton filigrane.")]));
+  // Un graphiste sans playlist ni pack : sa page s’ouvre sur sa vitrine.
   if (list.length && !p.playlists.length && !p.packs.length && document.querySelector(".tabs .on").dataset.tab === "playlists") $("vitrine-tab").click();
 }
 
@@ -368,14 +367,14 @@ function drawView() {
   $("bio").textContent = p.bio;
   $("bio-panel").hidden = !p.bio;
   const actions = [];
-  // « Carte » : la carte des membres, centrée sur sa ville s'il en a choisi une.
+  // « Carte » : la carte des membres, centrée sur sa ville s’il en a choisi une.
   actions.push(el("a", { className: "btn btn-ghost", href: "carte" + (p.city ? "?u=" + encodeURIComponent(p.handle) : ""), textContent: "Carte" }));
   if (p.mine) actions.push(el("button", { className: "btn btn-ghost", type: "button", textContent: "Modifier ma page", onclick: () => openEdit() }));
   else if (token) {
-    actions.push(el("button", { className: "btn btn-ghost" + (p.followed ? " on" : ""), type: "button", textContent: p.followed ? "Abonné" : "S'abonner",
+    actions.push(el("button", { className: "btn btn-ghost" + (p.followed ? " on" : ""), type: "button", textContent: p.followed ? "Abonné" : "S’abonner",
       onclick: async () => { try { await api(p.followed ? "DELETE" : "POST", "/profiles/" + p.handle + "/follow"); await load(); } catch (e) { say("comment-notice", e.message, true); } } }));
     if (p.canMessage) actions.push(el("a", { className: "btn btn-primary", href: "messages?u=" + encodeURIComponent(p.handle), textContent: "Message" }));
-  } else actions.push(el("a", { className: "btn btn-primary", href: "compte", textContent: "Se connecter pour s'abonner" }));
+  } else actions.push(el("a", { className: "btn btn-primary", href: "compte", textContent: "Se connecter pour s’abonner" }));
   $("actions").replaceChildren(...actions);
 
   $("comment-form").hidden = !token || (!p.commentsOpen && !p.mine);
@@ -386,19 +385,19 @@ function drawView() {
   $("c-count").textContent = total ? "· " + total : "";
   $("comments").replaceChildren(...(p.comments.length ? p.comments.map((c) => comment(c, p)) : [el("p", { className: "muted", textContent: "Pas encore de commentaire." })]));
 
-  // Le CV numérique : la ville, les métiers, ce qu'il sait faire, ouvert aux collabs.
+  // Le CV numérique : la ville, les métiers, ce qu’il sait faire, ouvert aux collabs.
   const cv = p.cv || { roles: [], skills: "", open: false };
   $("cv-panel").hidden = !(p.city || cv.roles.length || cv.skills || cv.open);
   $("cv").replaceChildren(...[
-    p.city ? el("a", { className: "cv-city", href: "carte?u=" + encodeURIComponent(p.handle), title: "Voir sur la carte" }, "✦ " + p.city.name, el("small", { textContent: " · " + p.city.country })) : null,
+    p.city ? el("a", { className: "cv-city", href: "carte?u=" + encodeURIComponent(p.handle), title: "Voir sur la carte" }, icon("pin"), p.city.name, el("small", { textContent: " · " + p.city.country })) : null,
     cv.roles.length ? el("div", { className: "tags" }, ...cv.roles.map((r) => el("span", { className: "chip", textContent: r }))) : null,
     cv.skills ? el("p", { className: "bio", textContent: cv.skills }) : null,
     cv.open ? el("span", { className: "open-badge", textContent: "Ouvert aux collaborations" }) : null].filter(Boolean));
   $("follows-me").hidden = !p.followsMe;
   $("pl-count").textContent = p.playlists.length;
-  // Chaque lien avec le petit logo de son site (la flèche reste si le site n'en a pas).
-  $("links").replaceChildren(...(p.linkPage ? [el("a", { href: p.linkPage, target: "_blank", rel: "noopener" }, el("span", { className: "arrow", textContent: "✦" }), "Page de liens")] : []), ...p.links.map((l) => {
-    const arrow = el("span", { className: "arrow", textContent: "↗" });
+  // Chaque lien avec le petit logo de son site (la flèche reste si le site n’en a pas).
+  $("links").replaceChildren(...(p.linkPage ? [el("a", { href: p.linkPage, target: "_blank", rel: "noopener" }, el("span", { className: "arrow" }, icon("link")), "Page de liens")] : []), ...p.links.map((l) => {
+    const arrow = el("span", { className: "arrow" }, icon("ext"));
     const logo = el("img", { src: "/api/link-icon?host=" + encodeURIComponent(new URL(l.url).hostname), alt: "", width: 18, height: 18, loading: "lazy",
       onload: () => arrow.remove(), onerror: (e) => e.target.remove() });
     return el("a", { href: l.url, target: "_blank", rel: "noopener nofollow" }, logo, arrow, l.label);
@@ -407,9 +406,9 @@ function drawView() {
   $("playlists").replaceChildren(...(p.playlists.length ? p.playlists.map((x) => el("a", { className: "pl", href: x.url },
     x.cover ? el("img", { src: x.cover + "?w=320", alt: "", loading: "lazy" }) : el("span", { className: "ph" }),
     el("b", { textContent: x.title }),
-    el("small", { textContent: x.tracks + " son" + (x.tracks > 1 ? "s" : "") + " · ▲ " + x.ups + (x.count ? " · ★ " + x.avg.toLocaleString("fr-FR") + " (" + x.count + ")" : "") })))
-    : [el("p", { className: "muted", style: "margin:0", textContent: p.mine ? "Tes playlists d'ONIRIQUE CLOUD qui ont un lien d'écoute ouvert apparaissent ici." : "Pas encore de playlist partagée." })]));
-  // Les packs de prods dont le lien d'écoute est ouvert ; l'onglet n'existe que s'il y en a (ou sur sa propre page).
+    el("small", {}, x.tracks + " son" + (x.tracks > 1 ? "s" : "") + " · ", icon("up"), " " + x.ups, ...(x.count ? [" · ", icon("star"), " " + x.avg.toLocaleString("fr-FR") + " (" + x.count + ")"] : []))))
+    : [el("p", { className: "muted", style: "margin:0", textContent: p.mine ? "Tes playlists d’ONIRIQUE CLOUD qui ont un lien d’écoute ouvert apparaissent ici." : "Pas encore de playlist partagée." })]));
+  // Les packs de prods dont le lien d’écoute est ouvert ; l’onglet n’existe que s’il y en a (ou sur sa propre page).
   $("packs-tab").hidden = !p.packs.length && !p.mine;
   $("pk-count").textContent = p.packs.length || "";
   $("packs").replaceChildren(...(p.packs.length ? p.packs.map((x) => el("a", { className: "pl", href: x.url },
@@ -417,21 +416,21 @@ function drawView() {
     el("b", { textContent: x.title }),
     el("small", { textContent: x.tracks + " prod" + (x.tracks > 1 ? "s" : "") })))
     : [el("p", { className: "muted", style: "margin:0", textContent: "Choisis les packs à montrer ici dans « Modifier ma page »." })]));
-  // Un beatmaker sans playlist : sa page s'ouvre sur ses packs.
+  // Un beatmaker sans playlist : sa page s’ouvre sur ses packs.
   if (p.packs.length && !p.playlists.length && document.querySelector(".tabs .on").dataset.tab === "playlists") $("packs-tab").click();
   drawVitrine(p);
   show("view");
-  // Le visiteur est accueilli : les blocs entrent une fois, à l'ouverture.
+  // Le visiteur est accueilli : les blocs entrent une fois, à l’ouverture.
   if (!drawView.done) { drawView.done = true; $("view").classList.add("enter"); }
 }
 
-// Un commentaire : son auteur, « J'aime », « Répondre » (sous un commentaire seulement), « Retirer », et ses réponses.
+// Un commentaire : son auteur, « J’aime », « Répondre » (sous un commentaire seulement), « Retirer », et ses réponses.
 function comment(c, p, reply) {
   const meta = el("div", { className: "meta" },
     c.author.handle ? el("a", { href: "profil?u=" + encodeURIComponent(c.author.handle), textContent: c.author.name }) : el("b", { textContent: c.author.name }),
     badge(c.author.role), el("span", { textContent: when(c.at) }), el("span", { className: "grow" }),
-    token && el("button", { className: "link" + (c.liked ? " on" : ""), type: "button", textContent: (c.liked ? "♥ " : "♡ ") + (c.likes || ""), title: c.liked ? "Je n'aime plus" : "J'aime",
-      onclick: async () => { try { Object.assign(c, await api("POST", "/profiles/comments/" + c.id + "/like", { like: !c.liked })); drawView(); } catch (e) { say("comment-notice", e.message, true); } } }),
+    token && el("button", { className: "link" + (c.liked ? " on" : ""), type: "button", ariaLabel: c.liked ? "Je n’aime plus" : "J’aime", title: c.liked ? "Je n’aime plus" : "J’aime",
+      onclick: async () => { try { Object.assign(c, await api("POST", "/profiles/comments/" + c.id + "/like", { like: !c.liked })); drawView(); } catch (e) { say("comment-notice", e.message, true); } } }, icon("heart"), c.likes ? String(c.likes) : null),
     !reply && token && (p.commentsOpen || p.mine) && el("button", { className: "link", type: "button", textContent: "Répondre", onclick: () => {
       const input = el("input", { maxLength: 1000, placeholder: "Ta réponse…", ariaLabel: "Ta réponse" });
       const form = el("form", { className: "reply-form" }, input, el("button", { className: "btn btn-primary small", type: "submit", textContent: "Répondre" }));
@@ -459,11 +458,11 @@ async function openFollows(side) {
   try {
     const list = await api("GET", "/profiles/" + encodeURIComponent(profile.handle) + "/follows?side=" + side);
     $("follows-list").replaceChildren(...(list.length ? list.map((x) => {
-      const btn = token && !x.me && x.handle ? el("button", { className: "btn btn-ghost small" + (x.followed ? " on" : ""), type: "button", textContent: x.followed ? "Abonné" : "S'abonner",
-        onclick: async () => { try { await api(x.followed ? "DELETE" : "POST", "/profiles/" + x.handle + "/follow"); x.followed = !x.followed; btn.textContent = x.followed ? "Abonné" : "S'abonner"; btn.classList.toggle("on", x.followed); } catch (e) { alert(e.message); } } }) : null;
+      const btn = token && !x.me && x.handle ? el("button", { className: "btn btn-ghost small" + (x.followed ? " on" : ""), type: "button", textContent: x.followed ? "Abonné" : "S’abonner",
+        onclick: async () => { try { await api(x.followed ? "DELETE" : "POST", "/profiles/" + x.handle + "/follow"); x.followed = !x.followed; btn.textContent = x.followed ? "Abonné" : "S’abonner"; btn.classList.toggle("on", x.followed); } catch (e) { alert(e.message); } } }) : null;
       return el("li", {}, el("img", { src: avatarOf(x.avatar), alt: "" }),
         el("span", {}, x.handle ? el("a", { href: "profil?u=" + encodeURIComponent(x.handle), textContent: x.name }) : el("b", { textContent: x.name }), " ", badge(x.role), el("small", { textContent: x.handle ? "@" + x.handle + (x.bio ? " · " + x.bio : "") : "Sans page de profil" })), btn);
-    }) : [el("li", { className: "muted", textContent: side === "following" ? "Aucun abonnement pour l'instant." : "Aucun abonné pour l'instant." })]));
+    }) : [el("li", { className: "muted", textContent: side === "following" ? "Aucun abonnement pour l’instant." : "Aucun abonné pour l’instant." })]));
   } catch (e) { $("follows-list").replaceChildren(el("li", { className: "muted", textContent: e.message })); }
 }
 $("followers-open").onclick = () => openFollows("followers");
@@ -500,7 +499,7 @@ function openEdit() {
   $("banner-field").hidden = $("delete").hidden = $("edit-cancel").hidden = $("look-field").hidden = !mine;
   if (mine) drawLookEdit(mine.look);
   $("f-packs").replaceChildren(...((mine && mine.packs) || []).map((x) => el("label", { className: "chip pick" }, el("input", { type: "checkbox", value: x.id, checked: x.shown }), x.title)));
-  if (mine && !(mine.packs || []).length) $("f-packs").replaceChildren(el("span", { className: "muted", style: "font-size:13px", textContent: "Aucun pack avec un lien d'écoute ouvert." }));
+  if (mine && !(mine.packs || []).length) $("f-packs").replaceChildren(el("span", { className: "muted", style: "font-size:13px", textContent: "Aucun pack avec un lien d’écoute ouvert." }));
   if (mine) $("edit-cancel").href = "profil?u=" + encodeURIComponent(mine.handle);
   document.documentElement.style.setProperty("--ember", m.color);
   show("edit");
@@ -521,8 +520,8 @@ function drawLookEdit(l) {
 function drawOrder() {
   const move = (i, d) => { [order[i], order[i + d]] = [order[i + d], order[i]]; drawOrder(); };
   $("f-order").replaceChildren(...order.map((b, i) => el("li", {}, el("span", { textContent: BLOCKS[b] }),
-    el("button", { type: "button", className: "btn btn-ghost small", textContent: "↑", ariaLabel: "Monter " + BLOCKS[b], disabled: !i, onclick: () => move(i, -1) }),
-    el("button", { type: "button", className: "btn btn-ghost small", textContent: "↓", ariaLabel: "Descendre " + BLOCKS[b], disabled: i === order.length - 1, onclick: () => move(i, 1) }))));
+    el("button", { type: "button", className: "btn btn-ghost small", ariaLabel: "Monter " + BLOCKS[b], disabled: !i, onclick: () => move(i, -1) }, icon("up")),
+    el("button", { type: "button", className: "btn btn-ghost small", ariaLabel: "Descendre " + BLOCKS[b], disabled: i === order.length - 1, onclick: () => move(i, 1) }, icon("down")))));
 }
 const lookForm = () => ({ font: $("f-font").value, title: $("f-title-font").value, glass: $("f-glass").checked, dim: Number($("f-dim").value), blur: Number($("f-blur").value),
   align: $("f-center").checked ? "center" : "left", order });
@@ -536,7 +535,7 @@ $("bg-file").onchange = async () => {
   try { const { look } = await api("PUT", "/me/profile/page/background", null, file); mine.look = look; drawLookEdit({ ...lookForm(), bg: look.bg, bgType: look.bgType }); say("edit-notice", "Fond enregistré."); }
   catch (e) { say("edit-notice", e.message, true); }
 };
-// Chercher un GIF (KLIPY, par le serveur) : les tendances d'abord, puis ce qu'on tape ; un clic le met en fond.
+// Chercher un GIF (KLIPY, par le serveur) : les tendances d’abord, puis ce qu’on tape ; un clic le met en fond.
 let gifTimer = null;
 async function searchGifs() {
   const q = $("gif-q").value.trim();
@@ -563,7 +562,7 @@ $("bg-remove").onclick = async () => {
   catch (e) { say("edit-notice", e.message, true); }
 };
 
-// L'adresse s'écrit comme on veut (« Tom Gurdian ») : la page montre tout de suite celle qu'elle aura (tom-gurdian).
+// L’adresse s’écrit comme on veut (« Tom Gurdian ») : la page montre tout de suite celle qu’elle aura (tom-gurdian).
 const toHandle = (v) => String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
   .replace(/[^a-z0-9._-]+/g, "-").replace(/-{2,}/g, "-").replace(/^[^a-z0-9]+|[-._]+$/g, "").slice(0, 30);
 const hint = () => {
@@ -573,7 +572,7 @@ const hint = () => {
 };
 $("f-handle").addEventListener("input", hint);
 // Le lieu : une recherche parmi toutes les communes de France et les villes de la francophonie (le serveur demande à
-// l'API officielle), puis un clic pour le choisir.
+// l’API officielle), puis un clic pour le choisir.
 function setPlace(c) {
   $("f-city").value = c ? c.id : "";
   $("f-place").value = "";
@@ -610,7 +609,7 @@ $("banner-file").onchange = async () => {
   // La bannière se recadre au format de la page (7 pour 2), comme la photo de profil dans Mon compte.
   const url = URL.createObjectURL(file);
   const cut = await OniriqueCropper.open(url, { aspect: 3.5, width: 1600, noKeep: true, title: "Cadrer ta bannière",
-    hint: "Fais glisser l'image pour la placer, zoome avec la molette, deux doigts ou le curseur : ce qui est dans le cadre est ce que montrera le haut de ta page." })
+    hint: "Fais glisser l’image pour la placer, zoome avec la molette, deux doigts ou le curseur : ce qui est dans le cadre est ce que montrera le haut de ta page." })
     .catch(() => null).finally(() => URL.revokeObjectURL(url));
   $("banner-file").value = "";
   if (!cut) return;

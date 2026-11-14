@@ -1,16 +1,16 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=b60d57e5"></script>
+<script src="assets/i18n.js?v=08504049"></script>
 <script src="assets/ui.js?v=4"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Marketplace</title>
-<meta name="description" content="Tout ce qui s'achète sur ONIRIQUE : pochettes d'album et visuels des graphistes, packs de prods des beatmakers.">
+<meta name="description" content="Tout ce qui s’achète sur ONIRIQUE : pochettes d’album et visuels des graphistes, packs de prods des beatmakers.">
 <link rel="canonical" href="https://onirique.store/marketplace">
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
 <link rel="stylesheet" href="assets/marketplace.css?v=3">
-<link rel="stylesheet" href="/assets/da.css?v=8">
+<link rel="stylesheet" href="/assets/da.css?v=9">
 <script src="/assets/accent.js?v=1"></script>
 <body>
 <header class="top">
@@ -22,7 +22,7 @@
 <main class="wrap">
   <span class="eyebrow">Acheter aux membres</span>
   <h1>Marketplace</h1>
-  <p class="muted" style="margin:0;max-width:640px">Pochettes d'album et visuels des graphistes, packs de prods des beatmakers : tout ce qui est en vente sur ONIRIQUE, payé par carte et livré tout de suite.</p>
+  <p class="muted" style="margin:0;max-width:640px">Pochettes d’album et visuels des graphistes, packs de prods des beatmakers : tout ce qui est en vente sur ONIRIQUE, payé par carte et livré tout de suite.</p>
 
   <div class="bar glass" role="search">
     <div class="chips" id="kinds" role="group" aria-label="Rayon">
@@ -51,7 +51,7 @@
 <script src="assets/marketplace.js?v=1"></script>
 <script>
 // La marketplace : les visuels en vente de la vitrine (copies filigranées) et les packs de prods achetables, réunis par
-// /api/marketplace. Chaque carte mène à la fiche de l'article (article.html). Rayon, recherche et tri restent dans l'adresse.
+// /api/marketplace. Chaque carte mène à la fiche de l’article (article.html). Rayon, recherche et tri restent dans l’adresse.
 const { el, card, list, KIND, noSave, priceText, sellerText } = Market;
 const $ = (id) => document.getElementById(id);
 const RAYON = { visual: "Pochettes et visuels", pack: "Packs de prods" };
@@ -68,7 +68,7 @@ function draw() {
   const query = new URLSearchParams({ ...(kind ? { type: kind } : {}), ...(q ? { q } : {}), ...(sort !== "recent" ? { tri: sort } : {}) }).toString();
   history.replaceState(null, "", "marketplace" + (query ? "?" + query : ""));
   $("state").hidden = !!items.length;
-  $("state").textContent = "Rien en vente pour l'instant.";
+  $("state").textContent = "Rien en vente pour l’instant.";
   const filtering = !!(kind || q);
   $("home").hidden = filtering || !items.length;
   $("results").hidden = !filtering;
@@ -76,7 +76,7 @@ function draw() {
     const found = sorted(items.filter((x) => (!kind || x.type === kind) && (!q || (x.title + " " + x.seller.name + " " + (x.seller.handle || "")).toLowerCase().includes(q))));
     $("results-title").textContent = q ? "Résultats" + (kind ? " · " + RAYON[kind] : "") : RAYON[kind];
     $("results-count").textContent = found.length + " article" + (found.length > 1 ? "s" : "");
-    $("grid").replaceChildren(...(found.length ? found.map(card) : [el("p", { className: "muted", textContent: q ? "Rien ne correspond à ta recherche." : "Rien dans ce rayon pour l'instant." })]));
+    $("grid").replaceChildren(...(found.length ? found.map(card) : [el("p", { className: "muted", textContent: q ? "Rien ne correspond à ta recherche." : "Rien dans ce rayon pour l’instant." })]));
     return;
   }
   // La une : le dernier article publié qui a une image.
@@ -86,9 +86,9 @@ function draw() {
     $("hero").href = top.page;
     $("hero").replaceChildren(el("span", { className: "pic" }, noSave(el("img", { src: top.image, alt: top.title }))),
       el("div", {}, el("span", { className: "eyebrow", textContent: "À la une · " + KIND[top.type] }), el("h2", { textContent: top.title }),
-        el("p", { className: "muted", style: "margin:0 0 14px", textContent: sellerText(top) }),
-        el("div", { className: "between", style: "display:flex;align-items:center;gap:14px;flex-wrap:wrap" },
-          el("span", { className: "price", style: "font-size:22px", textContent: priceText(top) }), el("span", { className: "btn btn-primary small", textContent: "Voir l'article" }))));
+        el("p", { className: "muted", style: "margin:0 0 16px", textContent: sellerText(top) }),
+        el("div", { className: "between", style: "display:flex;align-items:center;gap:16px;flex-wrap:wrap" },
+          el("span", { className: "price", style: "font-size:24px", textContent: priceText(top) }), el("span", { className: "btn btn-primary small", textContent: "Voir l’article" }))));
   }
   for (const shelf of document.querySelectorAll("[data-shelf]")) {
     const xs = sorted(items.filter((x) => x.type === shelf.dataset.shelf)).slice(0, 12);

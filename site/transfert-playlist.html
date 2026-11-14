@@ -1,53 +1,46 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=b60d57e5"></script>
+<script src="assets/i18n.js?v=08504049"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=3"></script>
 <script src="/api/announce.js" async></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Transférer une playlist Spotify, Deezer, Apple Music — ONIRIQUE</title>
-<meta name="description" content="Colle le lien d'une playlist Spotify, Deezer, Apple Music, Tidal ou YouTube Music : chaque titre est retrouvé sur la plateforme de ton choix. Gratuit, sans compte.">
+<meta name="description" content="Colle le lien d’une playlist Spotify, Deezer, Apple Music, Tidal ou YouTube Music : chaque titre est retrouvé sur la plateforme de ton choix. Gratuit, sans compte.">
 <link rel="canonical" href="https://onirique.store/transfert-playlist">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ONIRIQUE">
 <meta property="og:locale" content="fr_FR">
 <meta property="og:title" content="Transférer une playlist Spotify, Deezer, Apple Music — ONIRIQUE">
-<meta property="og:description" content="Colle le lien d'une playlist Spotify, Deezer, Apple Music, Tidal ou YouTube Music : chaque titre est retrouvé sur la plateforme de ton choix. Gratuit, sans compte.">
+<meta property="og:description" content="Colle le lien d’une playlist Spotify, Deezer, Apple Music, Tidal ou YouTube Music : chaque titre est retrouvé sur la plateforme de ton choix. Gratuit, sans compte.">
 <meta property="og:url" content="https://onirique.store/transfert-playlist">
 <meta property="og:image" content="https://onirique.store/assets/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json" data-seo>{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Transférer une playlist Spotify, Deezer, Apple Music","url":"https://onirique.store/transfert-playlist","description":"Colle le lien d'une playlist Spotify, Deezer, Apple Music, Tidal ou YouTube Music : chaque titre est retrouvé sur la plateforme de ton choix. Gratuit, sans compte.","applicationCategory":"MultimediaApplication","operatingSystem":"Navigateur web","isAccessibleForFree":true,"inLanguage":"fr","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://onirique.store/"},{"@type":"ListItem","position":2,"name":"Outils gratuits","item":"https://onirique.store/outils"},{"@type":"ListItem","position":3,"name":"Transférer une playlist Spotify, Deezer, Apple Music","item":"https://onirique.store/transfert-playlist"}]}]}</script>
+<script type="application/ld+json" data-seo>{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Transférer une playlist Spotify, Deezer, Apple Music","url":"https://onirique.store/transfert-playlist","description":"Colle le lien d’une playlist Spotify, Deezer, Apple Music, Tidal ou YouTube Music : chaque titre est retrouvé sur la plateforme de ton choix. Gratuit, sans compte.","applicationCategory":"MultimediaApplication","operatingSystem":"Navigateur web","isAccessibleForFree":true,"inLanguage":"fr","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://onirique.store/"},{"@type":"ListItem","position":2,"name":"Outils gratuits","item":"https://onirique.store/outils"},{"@type":"ListItem","position":3,"name":"Transférer une playlist Spotify, Deezer, Apple Music","item":"https://onirique.store/transfert-playlist"}]}]}</script>
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
-<link rel="stylesheet" href="assets/pages.css?v=2">
-<link rel="stylesheet" href="assets/tools.css?v=2">
+<link rel="stylesheet" href="assets/pages.css?v=3">
+<link rel="stylesheet" href="assets/tools.css?v=3">
 <style>
-.wrap { max-width: 900px; }
-.hero { text-align: center; }
 .form { display: grid; gap: 12px; margin: 30px auto 0; max-width: 680px; }
-.form input { height: 52px; padding: 0 20px; border-radius: 999px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px var(--f-body); }
-.form input:focus { outline: none; border-color: var(--ember); }
-.to { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
-.to button { padding: 10px 16px; border-radius: 999px; border: 1px solid var(--line); background: none; color: var(--haze); font: 500 13px var(--f-body); cursor: pointer; }
-.to button[aria-pressed="true"] { background: var(--ember); border-color: var(--ember); color: #fff; }
+.form input { height: 52px; padding: 0 16px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px var(--f-body); }
+.to { justify-self: center; justify-content: center; }
 .to button:disabled { opacity: .35; cursor: default; }
-.error { margin: 14px 0 0; color: #FF7A85; } .error:empty { display: none; }
-.result { margin-top: 30px; border: 1px solid var(--line); border-radius: 20px; background: var(--deep); text-align: left; }
-.result header { position: static; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid var(--line); background: none; }
+.result header { position: static; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; border-bottom: 0; background: none; }
 .result h2 { margin: 0; font-size: 20px; }
-.result ol { margin: 0; padding: 6px 20px 16px; list-style: none; counter-reset: n; }
-.result li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid rgba(255,210,214,.08); counter-increment: n; }
+.result ol { margin: 0; list-style: none; counter-reset: n; }
+.result li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); counter-increment: n; }
+.result li:first-child { border-top: 0; }
 .result li::before { content: counter(n); font: 500 12px var(--f-mono); color: var(--haze); }
 .result li b, .result li small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .result li small { color: var(--haze); font-size: 13px; }
 .result li a { font: 500 12px var(--f-mono); white-space: nowrap; }
 .result li a.search { color: var(--haze); }
-[hidden] { display: none !important; }
 </style>
-<link rel="stylesheet" href="/assets/da.css?v=8">
+<link rel="stylesheet" href="/assets/da.css?v=9">
 <script src="/assets/accent.js?v=1"></script>
 
 <a class="skip" href="#contenu">Aller au contenu</a>
@@ -61,16 +54,16 @@
 <main class="wrap" id="contenu">
   <section class="hero">
     <p class="eyebrow">Outil gratuit</p>
-    <h1>Ta playlist, <em>d'une plateforme à l'autre</em></h1>
-    <p class="lede">Colle le lien d'une playlist Spotify, Deezer, Apple Music, Tidal ou YouTube Music, choisis où tu l'emmènes : chaque titre est retrouvé là-bas.</p>
+    <h1>Ta playlist, <em>d’une plateforme à l’autre</em></h1>
+    <p class="lede">Colle le lien d’une playlist Spotify, Deezer, Apple Music, Tidal ou YouTube Music, choisis où tu l’emmènes : chaque titre est retrouvé là-bas.</p>
     <form class="form" id="form">
       <input id="url" type="url" required placeholder="Lien de la playlist" aria-label="Lien de la playlist" autocomplete="off">
-      <div class="to" id="to" role="group" aria-label="Plateforme d'arrivée"></div>
+      <div class="chips to" id="to" role="group" aria-label="Plateforme d’arrivée"></div>
       <div><button class="go" id="go" type="submit">Transférer</button></div>
     </form>
     <p class="hint">Sans compte. La playlist doit être publique. Deezer et Apple Music reçoivent le lien exact de chaque titre ; sur Spotify, Tidal et YouTube Music, le lien ouvre la recherche du titre.</p>
     <p class="error" id="error" role="alert"></p>
-    <article class="result" id="result" hidden>
+    <article class="card result" id="result" hidden>
       <header><h2 id="r-title"></h2><button class="go ghost" id="copy" type="button">Copier la liste</button></header>
       <ol id="r-list"></ol>
     </article>
@@ -78,8 +71,8 @@
 
   <section class="text">
     <h2>Comment transférer une playlist</h2>
-    <p>Ouvre ta playlist sur Spotify, Deezer, Apple Music, Tidal ou YouTube Music et copie son lien de partage. Colle-le ici, choisis la plateforme d'arrivée et lance le transfert : la liste des titres s'affiche, chacun avec son lien sur la nouvelle plateforme. Tu peux copier toute la liste d'un clic pour la garder ou l'envoyer.</p>
-    <p>Pas besoin de connecter ton compte : l'outil lit la playlist publique, sans accès à tes données. C'est aussi pratique pour envoyer une sélection à quelqu'un qui n'utilise pas la même application que toi.</p>
+    <p>Ouvre ta playlist sur Spotify, Deezer, Apple Music, Tidal ou YouTube Music et copie son lien de partage. Colle-le ici, choisis la plateforme d’arrivée et lance le transfert : la liste des titres s’affiche, chacun avec son lien sur la nouvelle plateforme. Tu peux copier toute la liste d’un clic pour la garder ou l’envoyer.</p>
+    <p>Pas besoin de connecter ton compte : l’outil lit la playlist publique, sans accès à tes données. C’est aussi pratique pour envoyer une sélection à quelqu’un qui n’utilise pas la même application que toi.</p>
   </section>
 
   <section class="text">
@@ -87,17 +80,17 @@
     <details><summary>Faut-il un compte Spotify, Deezer ou Apple Music ?</summary>
       <p>Non, ni chez nous ni sur les plateformes. La playlist doit simplement être publique pour que son contenu puisse être lu.</p></details>
     <details><summary>Pourquoi certains liens ouvrent une recherche ?</summary>
-      <p>Deezer et Apple Music reçoivent le lien exact de chaque titre. Sur Spotify, Tidal et YouTube Music, le lien ouvre la recherche du titre et de l'artiste : le bon morceau arrive en tête dans la quasi-totalité des cas.</p></details>
-    <details><summary>Un titre manque à l'arrivée, pourquoi ?</summary>
-      <p>Un morceau peut ne pas exister sur la plateforme d'arrivée, ou être grisé dans la playlist d'origine (indisponible dans ton pays, retiré par l'artiste). Il est alors laissé de côté.</p></details>
-    <details><summary>C'est gratuit ?</summary>
-      <p>Oui, sans limite et sans inscription, comme tous les <a href="outils">outils gratuits d'Onirique</a>.</p></details>
+      <p>Deezer et Apple Music reçoivent le lien exact de chaque titre. Sur Spotify, Tidal et YouTube Music, le lien ouvre la recherche du titre et de l’artiste : le bon morceau arrive en tête dans la quasi-totalité des cas.</p></details>
+    <details><summary>Un titre manque à l’arrivée, pourquoi ?</summary>
+      <p>Un morceau peut ne pas exister sur la plateforme d’arrivée, ou être grisé dans la playlist d’origine (indisponible dans ton pays, retiré par l’artiste). Il est alors laissé de côté.</p></details>
+    <details><summary>C’est gratuit ?</summary>
+      <p>Oui, sans limite et sans inscription, comme tous les <a href="outils">outils gratuits d’Onirique</a>.</p></details>
   </section>
 </main>
 
 <footer>
   <nav class="wrap" aria-label="Pages légales">
-    <a href="mentions-legales">Mentions légales</a><a href="cgv">CGV et CGU</a><a href="confidentialite">Confidentialité</a><a href="cookies">Cookies</a><a href="support">Support</a>
+    <a href="outils">Tous les outils</a><a href="mentions-legales">Mentions légales</a><a href="cgv">CGV et CGU</a><a href="confidentialite">Confidentialité</a><a href="cookies">Cookies</a><a href="support">Support</a>
   </nav>
 </footer>
 
@@ -125,7 +118,7 @@ $("form").onsubmit = async (event) => {
   try {
     const r = await fetch("/api/playlist-transfer", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: $("url").value.trim(), to }) });
     const data = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(data.error || "Le transfert n'a pas abouti. Réessaie dans un instant.");
+    if (!r.ok) throw new Error(data.error || "Le transfert n’a pas abouti. Réessaie dans un instant.");
     last = data;
     const found = data.items.filter((x) => x.exact).length;
     $("r-title").textContent = data.title + " → " + NAMES[data.to] + (data.to === "deezer" || data.to === "apple" ? " · " + found + "/" + data.items.length + " retrouvés" : "")
@@ -144,7 +137,7 @@ $("form").onsubmit = async (event) => {
   $("go").disabled = false;
   $("go").textContent = "Transférer";
 };
-// La liste en texte (« Artiste – Titre », un par ligne) : ce que les applications d'import de playlists acceptent.
+// La liste en texte (« Artiste – Titre », un par ligne) : ce que les applications d’import de playlists acceptent.
 $("copy").onclick = async () => {
   const list = last.items.map((x) => (x.artist ? x.artist + " – " : "") + x.title).join("\n");
   try { await navigator.clipboard.writeText(list); $("copy").textContent = "Liste copiée"; } catch { prompt("Copie la liste :", list); }

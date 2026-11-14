@@ -1,33 +1,33 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=b60d57e5"></script>
+<script src="assets/i18n.js?v=08504049"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=3"></script>
 <script src="/api/announce.js" async></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Convertisseur WAV, MP3, JPG et PNG — ONIRIQUE</title>
-<meta name="description" content="Convertis un audio en WAV (jusqu'à 32 bits, 96 kHz) ou en MP3 320 kbit/s, et une image en JPG, PNG ou WEBP. Gratuit, sans compte, sans envoi du fichier.">
+<meta name="description" content="Convertis un audio en WAV (jusqu’à 32 bits, 96 kHz) ou en MP3 320 kbit/s, et une image en JPG, PNG ou WEBP. Gratuit, sans compte, sans envoi du fichier.">
 <link rel="canonical" href="https://onirique.store/convertisseur">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ONIRIQUE">
 <meta property="og:locale" content="fr_FR">
 <meta property="og:title" content="Convertisseur WAV, MP3, JPG et PNG — ONIRIQUE">
-<meta property="og:description" content="Convertis un audio en WAV (jusqu'à 32 bits, 96 kHz) ou en MP3 320 kbit/s, et une image en JPG, PNG ou WEBP. Gratuit, sans compte, sans envoi du fichier.">
+<meta property="og:description" content="Convertis un audio en WAV (jusqu’à 32 bits, 96 kHz) ou en MP3 320 kbit/s, et une image en JPG, PNG ou WEBP. Gratuit, sans compte, sans envoi du fichier.">
 <meta property="og:url" content="https://onirique.store/convertisseur">
 <meta property="og:image" content="https://onirique.store/assets/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json" data-seo>{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Convertisseur WAV, MP3, JPG et PNG","url":"https://onirique.store/convertisseur","description":"Convertis un audio en WAV (jusqu'à 32 bits, 96 kHz) ou en MP3 320 kbit/s, et une image en JPG, PNG ou WEBP. Gratuit, sans compte, sans envoi du fichier.","applicationCategory":"MultimediaApplication","operatingSystem":"Navigateur web","isAccessibleForFree":true,"inLanguage":"fr","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://onirique.store/"},{"@type":"ListItem","position":2,"name":"Outils gratuits","item":"https://onirique.store/outils"},{"@type":"ListItem","position":3,"name":"Convertisseur WAV, MP3, JPG et PNG","item":"https://onirique.store/convertisseur"}]}]}</script>
+<script type="application/ld+json" data-seo>{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Convertisseur WAV, MP3, JPG et PNG","url":"https://onirique.store/convertisseur","description":"Convertis un audio en WAV (jusqu’à 32 bits, 96 kHz) ou en MP3 320 kbit/s, et une image en JPG, PNG ou WEBP. Gratuit, sans compte, sans envoi du fichier.","applicationCategory":"MultimediaApplication","operatingSystem":"Navigateur web","isAccessibleForFree":true,"inLanguage":"fr","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://onirique.store/"},{"@type":"ListItem","position":2,"name":"Outils gratuits","item":"https://onirique.store/outils"},{"@type":"ListItem","position":3,"name":"Convertisseur WAV, MP3, JPG et PNG","item":"https://onirique.store/convertisseur"}]}]}</script>
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
-<link rel="stylesheet" href="assets/pages.css?v=2">
-<link rel="stylesheet" href="assets/tools.css?v=2">
+<link rel="stylesheet" href="assets/pages.css?v=3">
+<link rel="stylesheet" href="assets/tools.css?v=3">
 <style>
 .opt { display: grid; gap: 8px; }
 </style>
-<link rel="stylesheet" href="/assets/da.css?v=8">
+<link rel="stylesheet" href="/assets/da.css?v=9">
 <script src="/assets/accent.js?v=1"></script>
 
 <a class="skip" href="#contenu">Aller au contenu</a>
@@ -50,7 +50,7 @@
       <span>ou clique pour le choisir · MP3, WAV, FLAC, M4A, OGG · JPG, PNG, WEBP, GIF</span>
     </button>
     <input id="file" type="file" accept="audio/*,image/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff" hidden>
-    <p class="hint">Sans compte. La conversion se fait dans ton navigateur : ton fichier n'est envoyé nulle part.</p>
+    <p class="hint">Sans compte. La conversion se fait dans ton navigateur : ton fichier n’est envoyé nulle part.</p>
     <p class="error" id="error" role="alert"></p>
   </section>
 
@@ -98,9 +98,9 @@
     <details><summary>Convertir un MP3 en WAV améliore-t-il le son ?</summary>
       <p>Non. Le WAV obtenu contient exactement ce que contient le MP3 : ce que la compression a retiré ne revient pas. La conversion est utile quand un logiciel ou un service exige du WAV, pas pour gagner en qualité.</p></details>
     <details><summary>Monter la fréquence ou la résolution sert-il à quelque chose ?</summary>
-      <p>Pas pour la qualité : un fichier 44,1 kHz passé en 96 kHz ne gagne aucun détail. Cela sert à mettre un fichier au format d'un projet ou d'un cahier des charges.</p></details>
-    <details><summary>Pourquoi pas de FLAC, d'AAC ou d'OGG en sortie ?</summary>
-      <p>La page lit ces formats, mais n'écrit que du WAV et du MP3, les deux que tous les logiciels et tous les services acceptent.</p></details>
+      <p>Pas pour la qualité : un fichier 44,1 kHz passé en 96 kHz ne gagne aucun détail. Cela sert à mettre un fichier au format d’un projet ou d’un cahier des charges.</p></details>
+    <details><summary>Pourquoi pas de FLAC, d’AAC ou d’OGG en sortie ?</summary>
+      <p>La page lit ces formats, mais n’écrit que du WAV et du MP3, les deux que tous les logiciels et tous les services acceptent.</p></details>
     <details><summary>Que devient la transparence en JPG ?</summary>
       <p>Le JPG ne connaît pas la transparence : les parties transparentes deviennent blanches. Pour la garder, choisis PNG ou WEBP.</p></details>
     <details><summary>Mon MP3 est décalé dans mon DAW, que faire ?</summary>
@@ -126,7 +126,7 @@ const voices = (n) => (n === 1 ? "mono" : n === 2 ? "stéréo" : n + " voies");
 /** Ce qui sera produit avec les réglages en cours. */
 function target() {
   if (format === "mp3") {
-    // Le MP3 n'existe qu'à 44,1 et 48 kHz à ces débits, et sur deux voies au plus.
+    // Le MP3 n’existe qu’à 44,1 et 48 kHz à ces débits, et sur deux voies au plus.
     return { rate: audio.sampleRate === 48000 || audio.sampleRate === 96000 ? 48000 : 44100, channels: +$("mp3-channels").value || Math.min(2, audio.numberOfChannels), kbps: +$("kbps").value };
   }
   return { rate: +$("rate").value || audio.sampleRate, channels: +$("channels").value || audio.numberOfChannels, bits: +$("bits").value };
@@ -234,7 +234,7 @@ $("img-go").onclick = async () => {
   $("error").textContent = "";
   const canvas = document.createElement("canvas"), c = canvas.getContext("2d");
   canvas.width = picture.naturalWidth; canvas.height = picture.naturalHeight;
-  if (imgFormat === "jpg") { c.fillStyle = "#fff"; c.fillRect(0, 0, canvas.width, canvas.height); } // le JPG n'a pas de transparence
+  if (imgFormat === "jpg") { c.fillStyle = "#fff"; c.fillRect(0, 0, canvas.width, canvas.height); } // le JPG n’a pas de transparence
   c.drawImage(picture, 0, 0);
   const blob = await new Promise((done) => canvas.toBlob(done, IMG[imgFormat], +$("quality").value));
   // Safari ne sait pas écrire le WEBP : il rendrait un PNG sous un faux nom.

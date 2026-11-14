@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=b60d57e5"></script>
+<script src="assets/i18n.js?v=08504049"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=3"></script>
 <script src="/api/announce.js" async></script>
@@ -22,27 +22,30 @@
 <script type="application/ld+json" data-seo>{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://onirique.store/"},{"@type":"ListItem","position":2,"name":"Support","item":"https://onirique.store/support"}]}]}</script>
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
-<link rel="stylesheet" href="assets/pages.css?v=2">
+<link rel="stylesheet" href="assets/pages.css?v=3">
 <style>
 /* Formulaire de contact, sur la base des pages de texte. */
 header nav { display: flex; align-items: center; gap: 10px; }
-form { display: grid; gap: 16px; margin-top: 26px; padding: clamp(18px, 3vw, 26px); border: 1px solid var(--line); border-radius: 18px; background: var(--deep); }
+form, .done { margin-top: 24px; padding: clamp(20px, 3vw, 24px); border: 1px solid var(--line); border-radius: var(--r-card); background: var(--glass), rgba(14,10,12,.55); box-shadow: var(--glass-shadow); }
+form { display: grid; gap: 16px; }
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-label { display: grid; gap: 7px; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
+label { display: grid; gap: 8px; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
 input, select, textarea { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px/1.4 var(--f-body); }
 textarea { min-height: 170px; resize: vertical; }
 select option { background: var(--deep); }
 .trap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
-.send { justify-self: start; padding: 14px 24px; border-radius: 999px; border: 0; background: var(--mist); color: var(--night); font: 600 15px/1 var(--f-body); cursor: pointer; box-shadow: 0 10px 40px -10px rgba(var(--acc),.6); }
+.send { justify-self: start; padding: 14px 24px; cursor: pointer; }
 .send:disabled { opacity: .5; cursor: default; }
 .info { margin: 0; font-size: 14px; color: var(--haze); }
-.error { margin: 0; color: #FF7A85; font-size: 15px; }
-.done { margin-top: 26px; padding: 22px 24px; border: 1px solid rgba(var(--acc),.5); border-radius: 18px; background: var(--deep); }
+.error { margin: 0; color: var(--danger); font-size: 15px; }
+.lede { color: var(--haze); font-size: 16px; }
+.done h2 { margin-top: 0; }
+.done p { margin: 0; }
 .error:empty { display: none; }
-@media (max-width: 620px) { .two { grid-template-columns: 1fr; } .brand { font-size: 0; gap: 0; } header .btn { padding: 10px 12px; font-size: 13px; } }
+@media (max-width: 620px) { .two { grid-template-columns: 1fr; } }
 [hidden] { display: none !important; }
 </style>
-<link rel="stylesheet" href="/assets/da.css?v=8">
+<link rel="stylesheet" href="/assets/da.css?v=9">
 <script src="/assets/accent.js?v=1"></script>
 
 <a class="skip" href="#contenu">Aller au contenu</a>
@@ -56,7 +59,7 @@ select option { background: var(--deep); }
 <main class="wrap" id="contenu">
   <p class="eyebrow">Support</p>
   <h1>Nous contacter</h1>
-  <p class="updated">Un souci d'installation, de licence, de son ou de compte ? Écrivez-nous : nous répondons par e-mail.</p>
+  <p class="lede">Un souci d’installation, de licence, de son ou de compte ? Écrivez-nous : nous répondons par e-mail.</p>
 
   <form id="form" novalidate>
     <p class="info" id="as" hidden></p>
@@ -76,14 +79,20 @@ select option { background: var(--deep); }
   </form>
 
   <div class="done" id="done" role="status" hidden>
-    <h2 style="margin-top:0">Message envoyé</h2>
-    <p style="margin:0">Merci. Nous vous répondons à <strong id="done-email"></strong> dès que possible. Pensez à regarder dans vos courriers indésirables.</p>
+    <h2>Message envoyé</h2>
+    <p>Merci. Nous vous répondons à <strong id="done-email"></strong> dès que possible. Pensez à regarder dans vos courriers indésirables.</p>
   </div>
 </main>
 
 <footer>
   <nav class="wrap" aria-label="Pages légales">
-    <a href="mentions-legales">Mentions légales</a><a href="cgv">CGV et CGU</a><a href="remboursement">Rétractation et remboursement</a><a href="confidentialite">Confidentialité</a><a href="cookies">Cookies</a>
+    <a href="mentions-legales">Mentions légales</a>
+    <a href="cgv">CGV et CGU</a>
+    <a href="remboursement">Rétractation et remboursement</a>
+    <a href="confidentialite">Confidentialité</a>
+    <a href="cookies">Cookies</a>
+    <a href="support" aria-current="page">Support</a>
+    <a href="compte">Compte</a>
   </nav>
 </footer>
 
@@ -93,7 +102,7 @@ const token = sessionStorage.getItem("onirique.token") || localStorage.getItem("
 const auth = token ? { Authorization: "Bearer " + token } : {};
 let account = null;
 
-// Connecté : l'e-mail du compte est utilisé, inutile de le redemander.
+// Connecté : l’e-mail du compte est utilisé, inutile de le redemander.
 (async () => {
   if (token) {
     const response = await fetch("/api/me", { headers: auth }).catch(() => null);

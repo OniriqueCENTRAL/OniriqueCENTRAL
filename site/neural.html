@@ -5,10 +5,10 @@
 <meta name="robots" content="noindex">
 <title>ONR Neural Learning</title>
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
-<script src="assets/i18n.js?v=b60d57e5"></script>
+<script src="assets/i18n.js?v=08504049"></script>
 <script src="assets/ui.js?v=4"></script>
 <link rel="stylesheet" href="assets/fonts.css">
-<link rel="stylesheet" href="/assets/da.css?v=8">
+<link rel="stylesheet" href="/assets/da.css?v=9">
 <script src="/assets/accent.js?v=1"></script>
 <style>
 /* ONR NEURAL LEARNING, la page des fondateurs : ce que VOCALBOX apprend, en clair. Un tableau de bord par onglets (aperçu,
@@ -16,32 +16,31 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html { background: var(--night); }
-body { margin: 0; min-height: 100vh; color: var(--mist); font: 400 14.5px/1.55 var(--f-body); -webkit-font-smoothing: antialiased;
-  background: radial-gradient(1200px 600px at 85% -10%, rgba(var(--acc-lo), .35), transparent 60%), radial-gradient(900px 500px at -10% 110%, rgba(var(--acc-lo), .22), transparent 60%), var(--night); }
+body { margin: 0; min-height: 100vh; color: var(--mist); font: 400 15px/1.55 var(--f-body); -webkit-font-smoothing: antialiased; }
 a { color: var(--ember-text); }
 button, input { font: inherit; color: inherit; }
 .wrap { max-width: 1240px; margin: 0 auto; padding: 28px 24px 80px; }
 header.top { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
 header.top h1 { font: 800 26px/1.1 var(--f-display); margin: 0; letter-spacing: .02em; }
-header.top h1 span { color: var(--ember-text); text-shadow: var(--glow); }
+header.top h1 span, #gate h1 span { color: var(--ember-text); }
 header.top p { margin: 6px 0 0; color: var(--haze); max-width: 640px; }
 .ver { font: 500 11px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; background: var(--glass); }
 
-nav.tabs { position: sticky; top: 0; z-index: 3; display: flex; gap: 6px; overflow-x: auto; padding: 10px 0; margin-bottom: 18px;
+nav.tabs { position: sticky; top: 0; z-index: 3; display: flex; gap: 8px; overflow-x: auto; padding: 10px 0; margin-bottom: 18px;
   background: linear-gradient(var(--night) 70%, transparent); scrollbar-width: none; }
-nav.tabs button { flex: none; border: 1px solid var(--line); background: var(--glass); box-shadow: var(--glass-shadow); border-radius: 999px; padding: 8px 15px;
-  font: 500 11.5px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--label); cursor: pointer; transition: background .2s var(--ease), color .2s; }
+nav.tabs button { flex: none; border: 1px solid var(--line); background: var(--glass); box-shadow: var(--glass-shadow); border-radius: var(--r-seg); padding: 8px 12px;
+  font: 500 11px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--label); cursor: pointer; transition: background .2s var(--ease), color .2s; }
 nav.tabs button:hover { color: var(--mist); }
 nav.tabs button[aria-selected="true"] { background: var(--lit); box-shadow: var(--lit-shadow); color: #fff; }
-nav.tabs .n { display: inline-block; min-width: 18px; margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: rgb(var(--acc)); color: #fff; font-size: 10.5px; }
+nav.tabs .n { display: inline-block; min-width: 18px; margin-left: 8px; padding: 2px 6px; border-radius: 999px; background: rgb(var(--acc)); color: #fff; font-size: 11px; }
 
-.card { border: 1px solid var(--line); border-radius: 18px; background: var(--glass), rgba(18,12,14,.6); box-shadow: var(--glass-shadow); padding: 18px 20px; }
+.card { border: 1px solid var(--line); border-radius: var(--r-card); background: var(--glass), rgba(18,12,14,.6); box-shadow: var(--glass-shadow); padding: 18px 20px; }
 .grid { display: grid; gap: 14px; }
 .kpis { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 .kpi b { display: block; font: 700 30px/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
-.kpi span { color: var(--haze); font-size: 12.5px; }
-.kpi small { display: block; color: var(--muted); font-size: 11.5px; margin-top: 4px; }
-h2 { font: 500 11.5px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); margin: 28px 0 12px; }
+.kpi span { color: var(--haze); font-size: 13px; }
+.kpi small { display: block; color: var(--haze); font-size: 12px; margin-top: 4px; }
+h2 { font: 500 12px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); margin: 28px 0 12px; }
 h3 { font: 700 15px var(--f-display); margin: 0 0 6px; letter-spacing: .01em; }
 p { margin: 0 0 10px; }
 .muted { color: var(--haze); }
@@ -49,27 +48,27 @@ p { margin: 0 0 10px; }
 @media (max-width: 900px) { .two { grid-template-columns: 1fr; } }
 
 ul.facts { list-style: none; margin: 0; padding: 0; }
-ul.facts li { position: relative; padding: 9px 0 9px 22px; border-bottom: 1px solid var(--line); }
+ul.facts li { position: relative; padding: 8px 0 8px 24px; border-bottom: 1px solid var(--line); }
 ul.facts li:last-child { border-bottom: 0; }
 ul.facts li::before { content: ""; position: absolute; left: 4px; top: 17px; width: 7px; height: 7px; border-radius: 50%; background: rgb(var(--acc)); box-shadow: var(--glow); }
 ul.facts b { color: #fff; font-weight: 600; }
 
 /* les barres : une seule série, braise, extrémité arrondie, valeur en texte à côté */
 .bars { display: grid; gap: 8px; }
-.bar-row { display: grid; grid-template-columns: minmax(110px, 180px) 1fr auto; gap: 12px; align-items: center; font-size: 13.5px; }
+.bar-row { display: grid; grid-template-columns: minmax(110px, 180px) 1fr auto; gap: 12px; align-items: center; font-size: 14px; }
 .bar-row .lab { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .track { height: 10px; border-radius: 0 5px 5px 0; background: rgba(255,255,255,.05); overflow: hidden; }
 .track i { display: block; height: 100%; border-radius: 0 4px 4px 0; background: linear-gradient(90deg, rgb(var(--acc-lo)), rgb(var(--acc))); min-width: 2px; }
-.bar-row .val { color: var(--label); font-variant-numeric: tabular-nums; font-size: 12.5px; }
+.bar-row .val { color: var(--label); font-variant-numeric: tabular-nums; font-size: 13px; }
 .week { display: flex; align-items: flex-end; gap: 8px; height: 140px; padding-top: 10px; }
 .week div { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; cursor: default; }
 .week div i { width: 100%; max-width: 44px; border-radius: 4px 4px 0 0; background: linear-gradient(180deg, rgb(var(--acc)), rgb(var(--acc-lo))); min-height: 2px; transition: filter .15s; }
 .week div:hover i { filter: brightness(1.3); }
-.week small { color: var(--muted); font-size: 10.5px; font-family: var(--f-mono); }
+.week small { color: var(--haze); font-size: 11px; font-family: var(--f-mono); }
 
-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-th { text-align: left; font: 500 10.5px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); padding: 10px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-td { padding: 11px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; font: 500 11px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); padding: 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
 tr.click { cursor: pointer; }
 tr.click:hover td { background: rgba(255,255,255,.03); }
 td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -78,29 +77,30 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 tr.detail td { background: rgba(0,0,0,.18); color: var(--label); font-size: 13px; }
 .scroll { overflow-x: auto; }
 
-.tag { display: inline-block; font: 500 10.5px var(--f-mono); letter-spacing: .06em; border-radius: 7px; padding: 3px 8px; margin: 0 5px 5px 0; background: rgba(var(--acc), .16); color: var(--ember-text); white-space: nowrap; }
+.tag { display: inline-block; font: 500 11px var(--f-mono); letter-spacing: .06em; border-radius: var(--r-seg); padding: 4px 8px; margin: 0 4px 4px 0; background: rgba(var(--acc), .16); color: var(--ember-text); white-space: nowrap; }
 .tag.plain { background: rgba(255,255,255,.06); color: var(--label); }
 .tag.good { background: rgba(244,236,236,.12); color: #fff; }
 .tag.bad { background: rgba(var(--acc-lo), .45); color: #ffb3bb; }
-.chain { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tag.official { background: rgba(var(--acc), .2); color: rgb(var(--acc-hi)); }
+.chain { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .chain .tag { margin: 0; }
-.chain .arrow { color: var(--muted); font-size: 12px; }
+.chain .arrow { color: var(--haze); font-size: 12px; }
 
 .prop { border: 1px solid rgba(var(--acc-hi), .35); }
-.prop .kind { font: 500 10.5px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ember-text); }
-.prop .why { color: var(--haze); font-size: 12.5px; }
+.prop .kind { font: 500 11px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ember-text); }
+.prop .why { color: var(--haze); font-size: 13px; }
 .acts { display: flex; gap: 8px; margin-top: 12px; }
-.btn { border: 1px solid var(--line); border-radius: 11px; padding: 8px 16px; cursor: pointer; background: var(--glass); font-weight: 600; }
+.btn { border: 1px solid transparent; padding: 8px 16px; cursor: pointer; }
 .btn.ok { background: var(--lit); box-shadow: var(--lit-shadow); color: #fff; }
 .btn:disabled { opacity: .5; cursor: default; }
 
 .fb { display: grid; gap: 8px; }
-.fb .q { font-style: italic; color: #fff; }
+.fb .q { color: #fff; }
 .fb .meta { display: flex; flex-wrap: wrap; gap: 4px; }
 .fb .tw { font-size: 13px; color: var(--label); }
-input.search { width: 100%; max-width: 420px; border: 1px solid var(--line); background: var(--glass); border-radius: 999px; padding: 9px 16px; outline: none; margin-bottom: 14px; }
+input.search { width: 100%; max-width: 420px; border: 1px solid var(--line); background: var(--glass); border-radius: var(--r-ctl); padding: 8px 16px; outline: none; margin-bottom: 16px; }
 input.search:focus { border-color: var(--ember-text); }
-.empty { color: var(--haze); padding: 18px; border: 1px dashed var(--line); border-radius: 14px; }
+.empty { color: var(--haze); padding: 16px; border: 1px dashed var(--line); border-radius: var(--r-ctl); }
 
 #gate { position: fixed; inset: 0; display: grid; place-items: center; text-align: center; background: rgba(9,8,10,.75); backdrop-filter: blur(6px); z-index: 9; padding: 24px; }
 #gate h1 { font: 800 24px var(--f-display); }
@@ -113,7 +113,7 @@ input.search:focus { border-color: var(--ember-text); }
 
 <div id="gate">
   <div>
-    <h1>ONR <span style="color:var(--ember-text)">Neural Learning</span></h1>
+    <h1>ONR <span>Neural Learning</span></h1>
     <p class="muted" id="gateMsg">Chargement…</p>
   </div>
 </div>
@@ -122,7 +122,7 @@ input.search:focus { border-color: var(--ember-text); }
   <header class="top">
     <div>
       <h1>ONR <span>Neural Learning</span></h1>
-      <p>Ce que VOCALBOX apprend des gens qui ont allumé l'option : leurs mix, ce qu'ils gardent, ce qu'ils retouchent, les chaînes qu'ils partagent. Anonyme, jamais de son.</p>
+      <p>Ce que VOCALBOX apprend des gens qui ont allumé l’option : leurs mix, ce qu’ils gardent, ce qu’ils retouchent, les chaînes qu’ils partagent. Anonyme, jamais de son.</p>
     </div>
     <span class="ver" id="ver"></span>
   </header>
@@ -140,7 +140,7 @@ const date = (t) => new Date(t).toLocaleDateString("fr-FR", { day: "numeric", mo
 const pct = (a, b) => (b ? Math.round((100 * a) / b) + " %" : "—");
 const num = (v, d = 1) => (Math.round(v * 10 ** d) / 10 ** d).toLocaleString("fr-FR");
 const signed = (v, d = 1) => (v > 0 ? "+" : v < 0 ? "−" : "") + num(Math.abs(v), d);
-// « de » devant une voyelle : « plus d'air », « moins d'écho » ; et le pluriel : « 1 poste », « 2 postes »
+// « de » devant une voyelle : « plus d’air », « moins d’écho » ; et le pluriel : « 1 poste », « 2 postes »
 const de = (w) => (/^[aeiouyhàâéèêëîïôûù]/i.test(w) ? "d'" : "de ") + w;
 const postes = (n) => `${n} poste${Number(n) > 1 ? "s" : ""}`;
 
@@ -150,7 +150,7 @@ const PARAM_TO_HINT = { fxReverbMix: ["reverb", 1 / 70], fxDelayMix: ["delay", 1
 const PARAMS = { fetAttack: "attaque", fetRelease: "release", fetIn: "entrée", fetOut: "sortie", laPeak: "peak", laGain: "gain", mud: "DeMud", high: "HI", air: "AIR",
   fxReverbMix: "envoi", fxReverbDecay: "durée", fxDelayMix: "envoi", fxDelayFeedback: "feedback", parallelAmount: "quantité", deessAmt: "quantité", deessFreq: "fréquence",
   nsAmount: "quantité", drive: "drive", tuneRetune: "vitesse (retune)", tuneHumanize: "humanize", dbrReduction: "réduction", dclkAmount: "quantité", drvAmount: "quantité",
-  cl1bThreshold: "seuil", cl1bGain: "gain", preampGain: "gain", gateThr: "seuil", plosive: "quantité", input: "niveau d'entrée",
+  cl1bThreshold: "seuil", cl1bGain: "gain", preampGain: "gain", gateThr: "seuil", plosive: "quantité", input: "niveau d’entrée",
   macroPresence: "PRÉSENCE", macroWarmth: "CHALEUR", macroHold: "TENUE", macroSpace: "ESPACE" };
 const paramLabel = (id) => { const m = id.match(/^peq(\d)(Gain|Freq|Q|On)$/); return PARAMS[id] || (m ? `bande ${m[1]} ${({ Gain: "gain", Freq: "fréquence", Q: "Q", On: "on" })[m[2]]}` : id); };
 const ROLES = ["LEAD", "BACKS", "ADLIBS", "DOUBLES"];
@@ -185,7 +185,7 @@ function gate(msg, login) {
 //------------------------------------------------------------------------------ Les calculs (une fois)
 let S = {};
 function moduleOfParam(f, id) {
-  // un réglage retouché → le module de la chaîne d'AUTO MIX qui le porte (exemplaire 1 : l'identifiant tel quel ; sinon _2, _3)
+  // un réglage retouché → le module de la chaîne d’AUTO MIX qui le porte (exemplaire 1 : l’identifiant tel quel ; sinon _2, _3)
   const base = id.replace(/_\d+$/, ""), inst = id === base ? 0 : Number(id.slice(base.length + 1)) - 1;
   for (const m of f.plan?.modules || []) if ((m.instance || 0) === inst && m.params && base in m.params) return { m, base, before: m.params[base] };
   return null;
@@ -255,7 +255,7 @@ function compute() {
     pending: (D.proposals || []).filter((p) => p.status === "pending") };
 }
 
-//------------------------------------------------------------------------------ L'affichage
+//------------------------------------------------------------------------------ L’affichage
 const TABS = [["apercu", "Aperçu"], ["valider", "À valider"], ["modules", "Modules"], ["artistes", "Artistes"], ["chaines", "Chaînes"], ["retours", "Retours"], ["cerveau", "Le cerveau"]];
 function render() {
   const sh = D.shipped || {};
@@ -286,12 +286,12 @@ function apercu(v) {
     kpi(pct(S.yes, rated), "de mix notés OUI", `${S.yes} OUI · ${S.no} BOF · ${fb.length - rated} sans note`),
     kpi(pct(S.kept, S.judged), "gardés tels quels", S.judged ? `${S.rebuilt} chaînes démontées sur ${S.judged}` : "arrive avec la nouvelle version"),
     kpi(D.chains.filter((c) => c.source !== "manual" && c.name && !c.hidden).length, "chaînes dans la bibliothèque", `${D.chains.filter((c) => c.source === "manual").length} construites à la main`),
-    kpi(S.pending.length, "à valider", S.pending.length ? "voir l'onglet À valider" : "rien en attente")));
+    kpi(S.pending.length, "à valider", S.pending.length ? "voir l’onglet À valider" : "rien en attente")));
 
-  // ce qu'il faut retenir, en phrases
+  // ce qu’il faut retenir, en phrases
   const facts = [];
   const topArt = S.art[0];
-  if (topArt) facts.push(el("li", {}, "L'artiste le plus demandé : ", el("b", { textContent: topArt.name }), ` (${topArt.n} mix, ${pct(topArt.yes, topArt.yes + topArt.no)} de OUI).`));
+  if (topArt) facts.push(el("li", {}, "L’artiste le plus demandé : ", el("b", { textContent: topArt.name }), ` (${topArt.n} mix, ${pct(topArt.yes, topArt.yes + topArt.no)} de OUI).`));
   const removedMost = S.mod.filter((m) => m.judged >= 5).sort((a, b) => b.removed / b.judged - a.removed / a.judged)[0];
   if (removedMost && removedMost.removed) facts.push(el("li", {}, "Le module le plus retiré après AUTO MIX : ", el("b", { textContent: removedMost.type }), ` (${pct(removedMost.removed, removedMost.judged)} des fois où il est mis).`));
   const tw = S.tweaks.find(([, t]) => t.k >= 3);
@@ -319,10 +319,10 @@ function apercu(v) {
 const KIND = { tune: "Ajuster un artiste", global: "Toutes les demandes", add: "Ajouter un artiste", voice: "Voix mesurée", model: "Modèle appris", chain: "Chaîne de la communauté", style: "Style de mixage" };
 function explain(p) {
   const sp = p.support || {}, ch = p.changes || {};
-  if (p.kind === "add") return [`Le serveur a trouvé sa fiche, et ${sp.hits} demandes l'ont cherché. Il rejoindrait le cerveau de tout le monde.`, ""];
-  if (p.kind === "voice") return [`${sp.refs} morceaux de référence de ${p.name}, glissés par ${postes(sp.installs)}, donnent sa voix mesurée (timbre, tenue, espace). Elle ne s'applique qu'aux artistes qui n'en ont pas : celles mesurées par Nov ne bougent pas.`, ch.voice?.source || ""];
-  if (p.kind === "model") return [`Un petit modèle appris sur ${sp.mixes} mix de ${postes(sp.installs)} : d'après les mesures de la voix, il corrige un peu les couleurs (±0,15 au plus), après le cerveau.`, Object.keys(ch.model?.outputs || {}).map((k) => HINTS[k] || k).join(", ")];
-  if (p.kind === "chain") return [`${sp.chains} chaînes partagées pour ${p.name}, par ${postes(sp.installs)}. AUTO MIX la proposerait après un mix de cet artiste (l'utilisateur choisit de l'essayer).`, ""];
+  if (p.kind === "add") return [`Le serveur a trouvé sa fiche, et ${sp.hits} demandes l’ont cherché. Il rejoindrait le cerveau de tout le monde.`, ""];
+  if (p.kind === "voice") return [`${sp.refs} morceaux de référence de ${p.name}, glissés par ${postes(sp.installs)}, donnent sa voix mesurée (timbre, tenue, espace). Elle ne s’applique qu’aux artistes qui n’en ont pas : celles mesurées par Nov ne bougent pas.`, ch.voice?.source || ""];
+  if (p.kind === "model") return [`Un petit modèle appris sur ${sp.mixes} mix de ${postes(sp.installs)} : d’après les mesures de la voix, il corrige un peu les couleurs (±0,15 au plus), après le cerveau.`, Object.keys(ch.model?.outputs || {}).map((k) => HINTS[k] || k).join(", ")];
+  if (p.kind === "chain") return [`${sp.chains} chaînes partagées pour ${p.name}, par ${postes(sp.installs)}. AUTO MIX la proposerait après un mix de cet artiste (l’utilisateur choisit de l’essayer).`, ""];
   if (p.kind === "style") return [ch.style?.from === "main"
       ? `${sp.chains} chaînes ${ROLES[ch.style?.role] || "LEAD"} construites à la main par ${postes(sp.installs)}, avec les mêmes modules. Donne un nom à ce style : AUTO MIX le proposera quand ce nom sera dans une demande.`
       : `${sp.chains} chaînes partagées par ${postes(sp.installs)} pour le même style (${(ch.style?.words || []).join(", ")}). AUTO MIX le proposera quand ces mots seront dans une demande.`, ""];
@@ -330,10 +330,10 @@ function explain(p) {
   const what = Object.entries(ch).map(([k, v]) => `${v > 0 ? "plus" : "moins"} ${de(HINTS[k] || k)} (${signed(v, 2)})`).join(", ");
   return [`Les utilisateurs ${p.kind === "global" ? "" : "qui demandent " + p.name + " "}corrigent souvent dans le même sens : ${what}.`,
     `${sp.mixes} mix · ${postes(sp.installs)} · ${rated ? pct(sp.yes, rated) + " de OUI" : "sans note"}` + (sp.kept ? ` · ${sp.kept} gardés tels quels` : "") + (sp.rebuilt ? ` · ${sp.rebuilt} démontés` : "")
-      + Object.entries(sp.detail || {}).map(([k, d]) => ` · ${HINTS[k] || k} : ${Math.round(d.agree * 100)} % d'accord`).join("")];
+      + Object.entries(sp.detail || {}).map(([k, d]) => ` · ${HINTS[k] || k} : ${Math.round(d.agree * 100)} % d’accord`).join("")];
 }
 async function decide(p, decision, box) {
-  // un style de mixage : son nom (obligatoire s'il vient des chaînes construites à la main)
+  // un style de mixage : son nom (obligatoire s’il vient des chaînes construites à la main)
   const nameInput = box.querySelector("input.style-name");
   const name = nameInput ? nameInput.value.trim() : "";
   if (decision === "approve" && p.kind === "style" && !name && !p.changes.style?.name) { nameInput?.focus(); box.append(el("p", { className: "why", textContent: "Donne un nom à ce style avant de le valider." })); return; }
@@ -343,7 +343,7 @@ async function decide(p, decision, box) {
   await load();
 }
 function valider(v) {
-  if (!S.pending.length) v.append(empty("Rien à valider. Une proposition n'apparaît que quand la demande est forte : assez de mix, de postes différents, et presque tous dans le même sens."));
+  if (!S.pending.length) v.append(empty("Rien à valider. Une proposition n’apparaît que quand la demande est forte : assez de mix, de postes différents, et presque tous dans le même sens."));
   for (const p of S.pending) {
     const [what, why] = explain(p);
     const box = el("div", { className: "card prop", style: "margin-bottom:12px" }, el("div", { className: "kind", textContent: KIND[p.kind] || p.kind }),
@@ -363,7 +363,7 @@ function valider(v) {
 
 //------------------------------------------------------------------------------ Modules
 function modules(v) {
-  v.append(el("p", { className: "muted", textContent: "Chaque module : combien de fois AUTO MIX l'a mis, ce que les gens en font ensuite (gardé, retiré, retouché), et combien l'ajoutent eux-mêmes. Clique une ligne pour ses réglages." }));
+  v.append(el("p", { className: "muted", textContent: "Chaque module : combien de fois AUTO MIX l’a mis, ce que les gens en font ensuite (gardé, retiré, retouché), et combien l’ajoutent eux-mêmes. Clique une ligne pour ses réglages." }));
   if (!S.mod.length) return v.append(empty("Pas encore de retours."));
   const table = el("table", {}, el("thead", {}, el("tr", {}, ["Module", "Mis par AUTO MIX", "Gardé", "Retouché", "Ajouté à la main", "Dans les chaînes partagées"].map((h) => el("th", { textContent: h })))));
   const body = el("tbody");
@@ -380,7 +380,7 @@ function modules(v) {
     const detail = el("tr", { className: "detail", hidden: true }, el("td", { colSpan: 6 },
       m.params.size ? [...m.params.entries()].sort((a, b) => b[1].n - a[1].n).map(([id, q]) =>
         el("span", { className: "tag plain", textContent: `${paramLabel(id)} : retouché ${q.n} fois${q.n ? ", en moyenne " + signed(q.sum / q.n) : ""}` }))
-        : "Aucun réglage retouché pour l'instant."));
+        : "Aucun réglage retouché pour l’instant."));
     row.onclick = () => { detail.hidden = !detail.hidden; };
     body.append(row, detail);
   }
@@ -436,7 +436,7 @@ function chaines(v) {
     kpi(library.reduce((s, c) => s + (c.uses || 0), 0), "chargements", "chaînes chargées depuis CHAÎNES"),
     kpi(manual.length, "construites à la main", "envoyées par ONR Neural Learning"),
     kpi(styles.length, "styles de mixage", "validés, reconnus par AUTO MIX")));
-  v.append(el("p", { className: "muted", style: "margin-top:14px", textContent: "La bibliothèque : les chaînes que les gens partagent avec un nom (bouton CHAÎNES du plugin). Marque officielles celles d'ONIRIQUE : elles passent en tête avec un tag braise. Les chaînes construites à la main ne sont pas publiques : elles servent à créer des styles de mixage (À valider)." }));
+  v.append(el("p", { className: "muted", style: "margin-top:14px", textContent: "La bibliothèque : les chaînes que les gens partagent avec un nom (bouton CHAÎNES du plugin). Marque officielles celles d’ONIRIQUE : elles passent en tête avec un tag braise. Les chaînes construites à la main ne sont pas publiques : elles servent à créer des styles de mixage (À valider)." }));
 
   // les filtres : bibliothèque, à la main, retirées ; et une recherche
   const filters = [["bibliotheque", "Bibliothèque"], ["officielles", "Officielles"], ["main", "Construites à la main"], ["retirees", "Retirées"]];
@@ -454,14 +454,14 @@ function chaines(v) {
     const rows = pool.filter((c) => !q || norm([c.name, c.request, ...(c.artists || []), ...(c.styles || [])].join(" ")).includes(q))
       .sort((a, b) => (b.official ? 1 : 0) - (a.official ? 1 : 0) || (b.uses || 0) - (a.uses || 0) || b.at - a.at).slice(0, 80);
     list.replaceChildren();
-    if (!rows.length) list.append(empty(chainFilter === "main" ? "Aucune chaîne construite à la main reçue pour l'instant." : "Aucune chaîne ici pour l'instant."));
+    if (!rows.length) list.append(empty(chainFilter === "main" ? "Aucune chaîne construite à la main reçue pour l’instant." : "Aucune chaîne ici pour l’instant."));
     for (const c of rows) {
       const box = el("div", { className: "card fb", style: "margin-bottom:10px" });
       box.append(
         el("div", { className: "meta" },
-          c.source === "manual" ? el("span", { className: "tag plain", textContent: "CONSTRUITE À LA MAIN" })
-            : c.official ? el("span", { className: "tag", style: "background:rgb(var(--acc));color:#fff", textContent: "★ OFFICIELLE" }) : el("span", { className: "tag plain", textContent: "UTILISATEUR" }),
-          c.hidden ? el("span", { className: "tag bad", textContent: "RETIRÉE" }) : null,
+          c.source === "manual" ? el("span", { className: "tag plain", textContent: "Construite à la main" })
+            : c.official ? el("span", { className: "tag official", textContent: "Officielle" }) : el("span", { className: "tag plain", textContent: "Utilisateur" }),
+          c.hidden ? el("span", { className: "tag bad", textContent: "Retirée" }) : null,
           (c.artists || []).map((a) => el("span", { className: "tag", textContent: a })),
           (c.styles || []).map((s) => el("span", { className: "tag plain", textContent: s })),
           el("span", { className: "tag plain", textContent: ROLES[c.role] || "LEAD" }),
@@ -471,7 +471,7 @@ function chaines(v) {
         el("div", { className: "chain" }, chainTags((c.modules || []).filter((m) => m.on !== false))));
       if (c.source !== "manual")
         box.append(el("div", { className: "acts" },
-          el("button", { className: "btn" + (c.official ? "" : " ok"), type: "button", textContent: c.official ? "Retirer le tag officiel" : "★ Marquer officielle", onclick: () => chainAction(c, "official", !c.official, box) }),
+          el("button", { className: "btn" + (c.official ? "" : " ok"), type: "button", textContent: c.official ? "Retirer le tag officiel" : "Marquer officielle", onclick: () => chainAction(c, "official", !c.official, box) }),
           el("button", { className: "btn", type: "button", textContent: c.hidden ? "Remettre dans la bibliothèque" : "Retirer de la bibliothèque", onclick: () => chainAction(c, "hide", !c.hidden, box) })));
       list.append(box);
     }
@@ -527,18 +527,18 @@ function cerveau(v) {
     kpi(model ? model.samples : "—", "modèle appris", model ? `${postes(model.installs)} · validé` : "pas encore (200 bons mix)"),
     kpi(Object.keys(chains).length, "chaînes de la communauté", "validées, par artiste"),
     kpi((sh.corrections?.styles || []).length, "styles de mixage", "validés et nommés")));
-  v.append(el("h2", { textContent: "Ce qu'il a appris (validé par les fondateurs)" }), el("div", { className: "card" },
+  v.append(el("h2", { textContent: "Ce qu’il a appris (validé par les fondateurs)" }), el("div", { className: "card" },
     (sh.learned || []).length ? el("ul", { className: "facts" }, sh.learned.map((l) => el("li", {}, el("b", { textContent: `v${sh.version}.${l.revision}` }), ` · ${l.text} · ${l.by || ""} · ${date(l.at)}`)))
       : empty("Rien encore : le cerveau en service est celui livré avec VOCALBOX.")));
   v.append(el("h2", { textContent: "Comment il apprend" }), el("div", { className: "card" }, el("ul", { className: "facts" },
-    el("li", {}, el("b", { textContent: "Les retouches et les notes. " }), "Après AUTO MIX, ce que les gens changent et leur OUI / BOF. Une correction n'est proposée que si beaucoup de mix vont dans le même sens."),
+    el("li", {}, el("b", { textContent: "Les retouches et les notes. " }), "Après AUTO MIX, ce que les gens changent et leur OUI / BOF. Une correction n’est proposée que si beaucoup de mix vont dans le même sens."),
     el("li", {}, el("b", { textContent: "Les gestes silencieux. " }), "Une chaîne gardée telle quelle compte comme un oui ; une chaîne démontée comme un non. COMPARER rend une retouche plus sûre."),
-    el("li", {}, el("b", { textContent: "Les morceaux de référence. " }), "Leurs mesures (jamais le son) donnent la voix mesurée d'un artiste qui n'en a pas encore."),
-    el("li", {}, el("b", { textContent: "Le modèle appris. " }), "Après 200 bons mix, un petit modèle corrige légèrement les couleurs d'après la voix entendue."),
+    el("li", {}, el("b", { textContent: "Les morceaux de référence. " }), "Leurs mesures (jamais le son) donnent la voix mesurée d’un artiste qui n’en a pas encore."),
+    el("li", {}, el("b", { textContent: "Le modèle appris. " }), "Après 200 bons mix, un petit modèle corrige légèrement les couleurs d’après la voix entendue."),
     el("li", {}, el("b", { textContent: "Les chaînes partagées. " }), "Avec un nom, elles rejoignent la bibliothèque (bouton CHAÎNES du plugin) ; avec assez de chaînes pour un artiste, une chaîne type est proposée par AUTO MIX."),
     el("li", {}, el("b", { textContent: "Les chaînes construites à la main. " }), "Quand beaucoup de gens montent les mêmes modules pour un même rôle, elles deviennent un style de mixage, que tu nommes en le validant."),
     el("li", {}, el("b", { textContent: "Officielles et utilisateurs. " }), "Dans la bibliothèque, les chaînes marquées officielles ici portent un tag braise et passent en tête."),
-    el("li", {}, el("b", { textContent: "Toujours sous contrôle. " }), "Rien n'entre dans le cerveau sans un « Valider » ici, et les voix mesurées par Nov ne sont jamais remplacées."))));
+    el("li", {}, el("b", { textContent: "Toujours sous contrôle. " }), "Rien n’entre dans le cerveau sans un « Valider » ici, et les voix mesurées par Nov ne sont jamais remplacées."))));
 }
 
 load();

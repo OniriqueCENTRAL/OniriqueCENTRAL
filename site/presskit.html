@@ -1,30 +1,30 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=b60d57e5"></script>
+<script src="assets/i18n.js?v=08504049"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=3"></script>
 <script src="/api/announce.js" async></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Créer son presskit d'artiste — ONIRIQUE</title>
-<meta name="description" content="Crée ton presskit d'artiste en quelques minutes et télécharge-le en PDF. Gratuit, sans compte.">
+<title>Créer son presskit d’artiste — ONIRIQUE</title>
+<meta name="description" content="Crée ton presskit d’artiste en quelques minutes et télécharge-le en PDF. Gratuit, sans compte.">
 <link rel="canonical" href="https://onirique.store/presskit">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ONIRIQUE">
 <meta property="og:locale" content="fr_FR">
-<meta property="og:title" content="Créer son presskit d'artiste — ONIRIQUE">
-<meta property="og:description" content="Crée ton presskit d'artiste en quelques minutes et télécharge-le en PDF. Gratuit, sans compte.">
+<meta property="og:title" content="Créer son presskit d’artiste — ONIRIQUE">
+<meta property="og:description" content="Crée ton presskit d’artiste en quelques minutes et télécharge-le en PDF. Gratuit, sans compte.">
 <meta property="og:url" content="https://onirique.store/presskit">
 <meta property="og:image" content="https://onirique.store/assets/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json" data-seo>{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Créer son presskit d'artiste","url":"https://onirique.store/presskit","description":"Crée ton presskit d'artiste en quelques minutes et télécharge-le en PDF. Gratuit, sans compte.","applicationCategory":"MultimediaApplication","operatingSystem":"Navigateur web","isAccessibleForFree":true,"inLanguage":"fr","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://onirique.store/"},{"@type":"ListItem","position":2,"name":"Outils gratuits","item":"https://onirique.store/outils"},{"@type":"ListItem","position":3,"name":"Créer son presskit d'artiste","item":"https://onirique.store/presskit"}]}]}</script>
+<script type="application/ld+json" data-seo>{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","name":"Créer son presskit d’artiste","url":"https://onirique.store/presskit","description":"Crée ton presskit d’artiste en quelques minutes et télécharge-le en PDF. Gratuit, sans compte.","applicationCategory":"MultimediaApplication","operatingSystem":"Navigateur web","isAccessibleForFree":true,"inLanguage":"fr","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Accueil","item":"https://onirique.store/"},{"@type":"ListItem","position":2,"name":"Outils gratuits","item":"https://onirique.store/outils"},{"@type":"ListItem","position":3,"name":"Créer son presskit d’artiste","item":"https://onirique.store/presskit"}]}]}</script>
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
-<link rel="stylesheet" href="assets/pages.css?v=2">
-<link rel="stylesheet" href="assets/tools.css?v=2">
-<link rel="stylesheet" href="assets/outils-doc.css?v=2">
+<link rel="stylesheet" href="assets/pages.css?v=3">
+<link rel="stylesheet" href="assets/tools.css?v=3">
+<link rel="stylesheet" href="assets/outils-doc.css?v=3">
 <style>
 @page { size: A4; margin: 0; }
 .pk { --a: rgb(var(--acc)); --bg: #0D0809; --fg: #F6EEEE; --soft: rgba(246,238,238,.65); --rule: rgba(246,238,238,.15); --ft: var(--f-display);
@@ -48,14 +48,15 @@
 .pk ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .pk li { break-inside: avoid; }
 .pk li small { display: block; color: var(--soft); font-size: 13px; }
-.pk blockquote { margin: 0; font-style: italic; }
+.pk blockquote { margin: 0; padding-left: 12px; border-left: 2px solid var(--a); }
 .pk-links a { text-decoration: none; overflow-wrap: anywhere; }
 .pk-links b { font-weight: 600; margin-right: 6px; }
-.pk-contact { background: var(--a); color: #fff; border-radius: 12px; padding: 18px 20px; display: grid; gap: 4px; break-inside: avoid; }
+.pk-contact { background: var(--a); color: var(--a-ink, #fff); border-radius: 12px; padding: 18px 20px; display: grid; gap: 4px; break-inside: avoid; }
 .pk-contact strong { font: 700 15px var(--ft); }
+.pk-contact a { color: inherit; }
 @media print { body:has(.pk:not(.light)) { background: #0D0809; } }
 </style>
-<link rel="stylesheet" href="/assets/da.css?v=8">
+<link rel="stylesheet" href="/assets/da.css?v=9">
 <script src="/assets/accent.js?v=1"></script>
 
 <a class="skip" href="#contenu">Aller au contenu</a>
@@ -77,7 +78,7 @@
   <form class="panel" id="form" autocomplete="off">
     <fieldset>
       <legend>Artiste</legend>
-      <label>Nom d'artiste<input name="nom" placeholder="euhZ"></label>
+      <label>Nom d’artiste<input name="nom" placeholder="euhZ"></label>
       <div class="row2">
         <label>Style<input name="genre" placeholder="Rap / Rage"></label>
         <label>Ville<input name="ville" placeholder="Paris"></label>
@@ -106,7 +107,7 @@
 
     <fieldset>
       <legend>Bio</legend>
-      <label>Ton histoire en quelques lignes<textarea name="bio" rows="6" placeholder="D'où tu viens, ton son, tes influences, ce qui arrive…"></textarea></label>
+      <label>Ton histoire en quelques lignes<textarea name="bio" rows="6" placeholder="D’où tu viens, ton son, tes influences, ce qui arrive…"></textarea></label>
     </fieldset>
 
     <fieldset>
@@ -116,7 +117,7 @@
 
     <fieldset>
       <legend>Sorties &amp; presse</legend>
-      <label>Sorties, une par ligne<textarea name="sorties" placeholder="Nom du single — 2026&#10;Nom de l'EP — 2025"></textarea></label>
+      <label>Sorties, une par ligne<textarea name="sorties" placeholder="Nom du single — 2026&#10;Nom de l’EP — 2025"></textarea></label>
       <label>Presse, dates, premières parties…<textarea name="presse" placeholder="« Une voix à part. » — Nom du média&#10;Première partie de X — La Cigale"></textarea></label>
       <p class="hint">Sépare le détail avec un tiret : « Titre — 2026 ».</p>
     </fieldset>
@@ -157,7 +158,7 @@ Voici mon presskit en pièce jointe. Je reste dispo pour en parler.</textarea></
       <button type="button" class="go ghost" id="reset">Tout effacer</button>
     </div>
     <p class="status" id="status" role="status"></p>
-    <p class="hint">Dans la fenêtre d'impression, choisis « Enregistrer au format PDF » et coche « Graphiques d'arrière-plan ».</p>
+    <p class="hint">Dans la fenêtre d’impression, choisis « Enregistrer au format PDF » et coche « Graphiques d’arrière-plan ».</p>
   </form>
 
   <div class="preview"><article class="doc pk" id="doc"></article></div>
@@ -174,7 +175,11 @@ Voici mon presskit en pièce jointe. Je reste dispo pour en parler.</textarea></
 <script>
 "use strict";
 const KEY = "onirique-presskit";
-const DEFAULTS = { theme: "dark", accent: "#E23444", police: "display", photo: "" };
+// La couleur par défaut : l’accent du compte (--acc de da.css, « r, g, b »), en hexadécimal pour le sélecteur de couleur.
+const accentHex = "#" + getComputedStyle(document.documentElement).getPropertyValue("--acc").split(",").map((v) => (+v || 0).toString(16).padStart(2, "0")).join("");
+const DEFAULTS = { theme: "dark", accent: /^#[0-9a-f]{6}$/.test(accentHex) ? accentHex : "#e5384a", police: "display", photo: "" };
+// Texte du bloc Contact : noir sur une couleur claire, blanc sur une foncée (luminance perçue).
+const inkOn = (hex) => { const n = parseInt(String(hex).slice(1), 16); return /^#[0-9a-f]{6}$/i.test(hex) && (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255 > 0.6 ? "#111" : "#fff"; };
 const FONTS = { display: "var(--f-display)", dream: "var(--f-dream)", body: "var(--f-body)" };
 const LINKS = [["spotify", "Spotify"], ["instagram", "Instagram"], ["tiktok", "TikTok"], ["youtube", "YouTube"], ["site", "Site"]];
 const { esc, lines, split } = Outils;
@@ -203,6 +208,7 @@ function render() {
   const s = state;
   doc.className = "doc pk" + (s.theme === "light" ? " light" : "");
   doc.style.setProperty("--a", s.accent || DEFAULTS.accent);
+  doc.style.setProperty("--a-ink", inkOn(s.accent || DEFAULTS.accent));
   doc.style.setProperty("--ft", FONTS[s.police] || FONTS.display);
   const tag = [s.genre, s.ville].filter(Boolean).map(esc).join(" · ");
   const links = LINKS.filter(([k]) => s[k]?.trim()).map(([k, label]) =>
@@ -215,7 +221,7 @@ function render() {
       ${s.photo ? `<img src="${esc(s.photo)}" alt="">` : ""}
       <div class="pk-title">
         ${tag ? `<p class="pk-tag">${tag}</p>` : ""}
-        <h2 class="pk-name">${esc(s.nom || "Ton nom d'artiste")}</h2>
+        <h2 class="pk-name">${esc(s.nom || "Ton nom d’artiste")}</h2>
       </div>
     </header>
     <div class="pk-body">
@@ -240,20 +246,20 @@ document.getElementById("photo").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   try { state.photo = await Outils.readImage(file, 1400); render(); }
-  catch { status.textContent = "Cette image n'a pas pu être lue. Essaie un JPG ou un PNG."; }
+  catch { status.textContent = "Cette image n’a pas pu être lue. Essaie un JPG ou un PNG."; }
   e.target.value = "";
 });
 document.getElementById("photo-off").addEventListener("click", () => { state.photo = ""; render(); });
 document.getElementById("pdf").addEventListener("click", () => window.print());
 
-// L'envoi au client : le PDF est fabriqué ici, puis part depuis la boîte mail reliée.
+// L’envoi au client : le PDF est fabriqué ici, puis part depuis la boîte mail reliée.
 const send = document.getElementById("send"), sendNote = document.getElementById("send-note");
 let mailer = null;
 Outils.mailbox(document.getElementById("mailbox"), "presskit", (m) => { mailer = m; send.disabled = !m; });
 send.addEventListener("click", async () => {
   const to = document.getElementById("send-to").value.trim();
   const subject = document.getElementById("send-subject").value.trim() || "Presskit — " + (state.nom || "artiste");
-  if (!to) return (sendNote.textContent = "Écris l'adresse e-mail du client.");
+  if (!to) return (sendNote.textContent = "Écris l’adresse e-mail du client.");
   if (!confirm(`Envoyer le presskit à ${to} depuis ${mailer.fromEmail} ?`)) return;
   send.disabled = true;
   sendNote.textContent = "Fabrication du PDF…";

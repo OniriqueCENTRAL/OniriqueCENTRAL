@@ -2,20 +2,20 @@
 <html lang="fr">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<script src="assets/i18n.js?v=b60d57e5"></script>
+<script src="assets/i18n.js?v=08504049"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=3"></script>
 <script src="/api/announce.js" async></script>
 <title>ONIRIQUE — plugins audio pour la voix et outils pour artistes</title>
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="apple-touch-icon" href="assets/favicon.png?v=2">
-<meta name="description" content="Plugins audio pour la voix (VocalBox, ENHANCER…), l'appli gratuite Onirique Central, le CLOUD des artistes et des outils gratuits : BPM, LUFS, split IA, playlists.">
+<meta name="description" content="Plugins audio pour la voix (VocalBox, ENHANCER…), l’appli gratuite ONIRIQUE CENTRAL, le CLOUD des artistes et des outils gratuits : BPM, LUFS, split IA, playlists.">
 <link rel="canonical" href="https://onirique.store/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ONIRIQUE">
 <meta property="og:locale" content="fr_FR">
 <meta property="og:title" content="ONIRIQUE — plugins audio pour la voix et outils pour artistes">
-<meta property="og:description" content="Plugins audio pour la voix (VocalBox, ENHANCER…), l'appli gratuite Onirique Central, le CLOUD des artistes et des outils gratuits : BPM, LUFS, split IA, playlists.">
+<meta property="og:description" content="Plugins audio pour la voix (VocalBox, ENHANCER…), l’appli gratuite ONIRIQUE CENTRAL, le CLOUD des artistes et des outils gratuits : BPM, LUFS, split IA, playlists.">
 <meta property="og:url" content="https://onirique.store/">
 <meta property="og:image" content="https://onirique.store/assets/og-image.png">
 <meta property="og:image:width" content="1200">
@@ -26,29 +26,18 @@
 {"@type":"Organization","@id":"https://onirique.store/#org","name":"Onirique","url":"https://onirique.store/","logo":"https://onirique.store/assets/favicon.png?v=2"},
 {"@type":"WebSite","url":"https://onirique.store/","name":"ONIRIQUE","inLanguage":"fr","publisher":{"@id":"https://onirique.store/#org"}},
 {"@type":"SoftwareApplication","name":"Onirique VocalBox","applicationCategory":"MultimediaApplication","applicationSubCategory":"Plugin audio VST3","operatingSystem":"Windows 10, Windows 11 (64 bits)","description":"Chaîne vocale complète dans un seul plugin VST3 : EQ, Resonance, 1176, LA-2A, multibande, de-esser, plosives et saturation.","publisher":{"@id":"https://onirique.store/#org"}},
-{"@type":"SoftwareApplication","name":"Onirique Central","applicationCategory":"UtilitiesApplication","operatingSystem":"Windows 10, Windows 11 (64 bits)","description":"Application gratuite qui installe les plugins Onirique, les met à jour et active les licences.","downloadUrl":"https://onirique.store/telechargement/ONIRIQUE-CENTRAL-Setup.exe","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}}
+{"@type":"SoftwareApplication","name":"ONIRIQUE CENTRAL","applicationCategory":"UtilitiesApplication","operatingSystem":"Windows 10, Windows 11 (64 bits)","description":"Application gratuite qui installe les plugins Onirique, les met à jour et active les licences.","downloadUrl":"https://onirique.store/telechargement/ONIRIQUE-CENTRAL-Setup.exe","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"publisher":{"@id":"https://onirique.store/#org"}}
 ]}
 </script>
 <link rel="preload" href="assets/fonts/Unbounded-latin.woff2?v=1" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/HankenGrotesk-latin.woff2?v=1" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/JetBrainsMono-latin.woff2?v=1" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/fonts.css?v=2">
-<link rel="stylesheet" href="assets/credits.css?v=4" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="assets/credits.css?v=4"></noscript>
+<link rel="stylesheet" href="assets/credits.css?v=5" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="assets/credits.css?v=5"></noscript>
 <style>
 /* Layout : DA du logo. Dégradé sang -> noir, sigil blanc incandescent, étoiles à 4 branches et réticules ; la tranche "papier" flotte au centre, colonnes asymétriques. */
 :root {
-  --night: #0D0809;
-  --blood: rgb(var(--acc-lo));
-  --deep: #1A080A;
-  --deep-2: #2A0A0E;
-  --line: rgba(255,210,214, .13);
-  --mist: #F6EEEE;
-  --haze: #A88F92;
-  --ember: rgb(var(--acc));
-  --ember-text: rgb(var(--acc-hi)); /* la braise, éclaircie : seule teinte d'accent assez lisible pour du petit texte (contraste 5:1 et plus) */
-  --bone: #FFECEE;
-  --glow: 0 0 6px rgba(255,255,255,.55), 0 0 22px rgba(255,190,196,.45), 0 0 48px rgba(var(--acc),.55);
   --led: #D6402B;
   /* tokens du plugin, repris de PluginEditor.h */
   --paper: #F1EFE9;
@@ -59,15 +48,8 @@
   --tick-off: #BCB8AD;
   --cream: #F6F4EE;
 
-  --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
-  --f-dream: "Grenze Gotisch", "Old English Text MT", Georgia, serif;
-  --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
-  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
-
   --gutter: clamp(16px, 4vw, 56px);
   --maxw: 1240px;
-  --ease: cubic-bezier(.2, .7, .1, 1);
-  color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
@@ -97,7 +79,7 @@ p { margin: 0; }
 /* ---------- boutons */
 .btn {
   --b: var(--mist);
-  display: inline-flex; align-items: center; gap: 12px; padding: 15px 24px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 12px; padding: 16px 24px; border-radius: 999px;
   font: 600 15px/1 var(--f-body); text-decoration: none; cursor: pointer; border: 1px solid transparent;
   transition: transform .35s var(--ease), box-shadow .35s var(--ease), background .35s;
 }
@@ -115,7 +97,7 @@ p { margin: 0; }
 /* Passage vers ABRASION : un petit « ab » à sa manière (mono, noir et blanc), qui se déplie en « abrasion » au survol. */
 .nav-left { display: flex; align-items: center; gap: 14px; }
 .to-abrasion { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 8px; border: 1px solid rgba(255,236,238,.16); border-radius: 3px;
-  background: rgba(0,0,0,.4); color: rgba(255,236,238,.45); font: 500 11px/1 var(--f-mono); letter-spacing: .1em; text-transform: lowercase; text-decoration: none;
+  background: rgba(0,0,0,.4); color: var(--haze); font: 500 11px/1 var(--f-mono); letter-spacing: .1em; text-transform: lowercase; text-decoration: none;
   transition: color .3s, border-color .3s, box-shadow .3s; }
 .to-abrasion::before { content: ""; width: 5px; height: 5px; border: 1px solid currentColor; transition: background .3s; }
 .to-abrasion b { font-weight: inherit; display: inline-block; max-width: 0; overflow: hidden; opacity: 0; white-space: nowrap; margin-left: -6px; transition: max-width .45s cubic-bezier(.2,.8,.2,1), opacity .3s; }
@@ -127,7 +109,7 @@ p { margin: 0; }
 .nav-links { display: flex; gap: 28px; font-size: 14px; color: var(--haze); }
 .nav-links a { text-decoration: none; transition: color .25s; }
 .nav-links a:hover { color: var(--mist); }
-.nav .btn { padding: 11px 18px; font-size: 14px; }
+.nav .btn { padding: 12px 16px; font-size: 14px; }
 .nav-actions { display: flex; align-items: center; gap: 10px; }
 .os-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .os-soon { cursor: not-allowed; opacity: .6; }
@@ -137,7 +119,7 @@ p { margin: 0; }
 .plugin-card { display: block; text-decoration: none; border: 1px solid var(--line); border-radius: 22px; overflow: hidden; background: linear-gradient(180deg, var(--deep-2), var(--deep)); }
 .plugin-card img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; object-position: top; border-bottom: 1px solid var(--line); }
 .plugin-card div { padding: 20px 22px 24px; }
-.plugin-card h3 { font: 800 18px/1.2 var(--f-display); letter-spacing: .06em; }
+.plugin-card h3 { font: 700 18px/1.2 var(--f-display); letter-spacing: .06em; }
 .plugin-card p { margin-top: 8px; color: var(--haze); font-size: 15px; }
 .plugin-card small { display: block; margin-top: 14px; font: 500 12px/1 var(--f-mono); letter-spacing: .08em; color: var(--haze); }
 .skip { position: absolute; left: 12px; top: -60px; z-index: 200; padding: 10px 16px; border-radius: 10px; background: var(--mist); color: var(--night); font-weight: 600; }
@@ -160,7 +142,6 @@ p { margin: 0; }
   position: relative; width: 100%; max-width: 600px; justify-self: center;
   transform: rotateX(var(--rx, 5deg)) rotateY(var(--ry, -11deg)); transition: transform .45s cubic-bezier(.2,.7,.2,1), box-shadow .45s;
   box-shadow: calc(var(--ry, -11deg) / -1deg * 2px) 34px 80px -30px #000, 0 0 70px -18px rgba(var(--acc),.6);
-  animation: shot-float 7s ease-in-out infinite; will-change: transform;
 }
 .hero-shot.live { transition: transform .12s linear, box-shadow .2s; }
 /* Le reflet suit le pointeur, comme une vitre sous une lampe. */
@@ -171,7 +152,6 @@ p { margin: 0; }
 /* Le plugin suivant arrive en glissant ; chaque partie avec un léger retard. */
 .hero-shot.swap > * { animation: shot-in .55s cubic-bezier(.2,.7,.2,1) both; }
 .hero-shot.swap > div { animation-delay: .07s; }
-@keyframes shot-float { 50% { translate: 0 -12px; } }
 @keyframes shot-in { from { opacity: 0; transform: translateX(28px) scale(.985); } }
 @media (max-width: 900px) { .hero-shot { --rx: 0deg; --ry: 0deg; } }
 .hero-shot img { height: auto; background: rgba(0,0,0,.35); }
@@ -180,7 +160,7 @@ p { margin: 0; }
 .hero-side { display: grid; gap: 28px; min-width: 0; justify-items: start; }
 .hero-side .lede { margin-top: -4px; }
 /* Raccourci vers ONIRIQUE CLOUD, montré seulement aux membres ONIRIQUE et aux fondateurs */
-.sons-shortcut { display: flex; align-items: center; gap: 14px; max-width: 100%; padding: 12px 18px 12px 12px; border-radius: 18px; border: 1px solid rgba(var(--acc),.45); background: linear-gradient(120deg, rgba(var(--acc-lo),.55), rgba(13,8,9,.6)); color: var(--mist); text-decoration: none; box-shadow: 0 0 40px -14px rgba(var(--acc),.7); transition: transform .2s, border-color .2s; }
+.sons-shortcut { display: flex; align-items: center; gap: 14px; max-width: 100%; padding: 12px 18px 12px 12px; border-radius: 22px; border: 1px solid rgba(var(--acc),.45); background: linear-gradient(120deg, rgba(var(--acc-lo),.55), rgba(13,8,9,.6)); color: var(--mist); text-decoration: none; box-shadow: 0 0 40px -14px rgba(var(--acc),.7); transition: transform .2s, border-color .2s; }
 .sons-shortcut:hover { transform: translateY(-2px); border-color: var(--ember); }
 .sons-shortcut[hidden] { display: none; }
 .sons-shortcut .sigil { flex: none; width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: var(--mist); color: var(--night); }
@@ -190,16 +170,11 @@ p { margin: 0; }
 
 /* le sigil : logo incandescent dans son réticule */
 .sigil { position: relative; aspect-ratio: 1; width: 100%; max-width: 560px; justify-self: center; display: grid; place-items: center; color: rgba(255,225,228,.38); }
-.sigil::before { content: ""; position: absolute; inset: 14%; border-radius: 50%; background: radial-gradient(closest-side, rgba(var(--acc),.55), rgba(var(--acc-lo),.25) 60%, transparent); filter: blur(30px); animation: breathe 5s ease-in-out infinite; }
-.reticle { position: absolute; inset: 0; width: 100%; height: 100%; animation: turn 60s linear infinite; }
-.sigil-img { position: relative; width: 96%; height: auto; filter: drop-shadow(0 0 10px rgba(255,255,255,.35)) drop-shadow(0 0 30px rgba(var(--acc),.7)); animation: hover 7s ease-in-out infinite, flicker 6s steps(1) infinite; }
-.spark { position: absolute; width: 22px; height: 22px; animation: twinkle 3.2s ease-in-out infinite; }
-.spark.s1 { top: 8%; right: 18%; } .spark.s2 { bottom: 14%; left: 8%; width: 14px; height: 14px; animation-delay: -1.1s; } .spark.s3 { top: 46%; right: 2%; width: 16px; height: 16px; animation-delay: -2.2s; }
-@keyframes breathe { 50% { opacity: .65; transform: scale(.92); } }
-@keyframes turn { to { transform: rotate(360deg); } }
-@keyframes hover { 50% { transform: translateY(-10px) rotate(-1deg); } }
-@keyframes flicker { 0%, 100% { opacity: 1; } 41% { opacity: .82; } 42% { opacity: 1; } 43% { opacity: .9; } 44% { opacity: 1; } }
-@keyframes twinkle { 0%, 100% { opacity: .2; transform: scale(.6) rotate(0); } 50% { opacity: 1; transform: scale(1) rotate(45deg); } }
+.sigil::before { content: ""; position: absolute; inset: 14%; border-radius: 50%; background: radial-gradient(closest-side, rgba(var(--acc),.55), rgba(var(--acc-lo),.25) 60%, transparent); filter: blur(30px); }
+.reticle { position: absolute; inset: 0; width: 100%; height: 100%; }
+.sigil-img { position: relative; width: 96%; height: auto; filter: drop-shadow(0 0 10px rgba(255,255,255,.35)) drop-shadow(0 0 30px rgba(var(--acc),.7)); }
+.spark { position: absolute; width: 22px; height: 22px; }
+.spark.s1 { top: 8%; right: 18%; } .spark.s2 { bottom: 14%; left: 8%; width: 14px; height: 14px; } .spark.s3 { top: 46%; right: 2%; width: 16px; height: 16px; }
 .cta-row { display: flex; flex-wrap: wrap; gap: 12px; }
 .facts { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip { font: 500 12px/1 var(--f-mono); letter-spacing: .04em; color: var(--haze); padding: 8px 12px; border: 1px solid var(--line); border-radius: 999px; }
@@ -233,7 +208,7 @@ section { position: relative; }
 
 /* démo d'écoute */
 .listen { background: linear-gradient(180deg, transparent, var(--deep) 18%, var(--deep) 82%, transparent); }
-.studio { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 28px; overflow: hidden; background: rgba(11,6,7,.55); box-shadow: 0 40px 100px -40px rgba(0,0,0,.9); }
+.studio { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 22px; overflow: hidden; background: rgba(11,6,7,.55); box-shadow: 0 40px 100px -40px rgba(0,0,0,.9); }
 .transport { position: absolute; left: 24px; right: 24px; bottom: 18px; display: grid; gap: 12px; }
 .vol { display: flex; align-items: center; gap: 6px; margin-left: 6px; }
 .vol input { width: 96px; }
@@ -282,7 +257,7 @@ input[type=range]::-moz-range-track { height: 4px; border-radius: 4px; backgroun
 input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--mist); margin-top: -7px; box-shadow: 0 0 0 4px rgba(var(--acc),.25); }
 input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border: 0; border-radius: 50%; background: var(--mist); box-shadow: 0 0 0 4px rgba(var(--acc),.25); }
 .ctl-row { display: flex; gap: 10px; flex-wrap: wrap; }
-.tgl { all: unset; cursor: pointer; flex: 1 1 120px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; font: 600 13px/1 var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--haze); transition: border-color .25s, color .25s; }
+.tgl { all: unset; cursor: pointer; flex: 1 1 120px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; font: 600 13px/1 var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--haze); transition: border-color .25s, color .25s; }
 .tgl::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--line); transition: background .2s, box-shadow .2s; }
 .tgl[aria-pressed="true"] { color: var(--mist); border-color: var(--ember); }
 .tgl[aria-pressed="true"]::before { background: var(--ember); box-shadow: 0 0 10px var(--ember); }
@@ -294,7 +269,7 @@ input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border: 0; bord
 .spec { padding: 34px 26px 38px 0; border-bottom: 1px solid var(--line); min-width: 0; }
 .spec + .spec { padding-left: 26px; border-left: 1px solid var(--line); }
 .spec:nth-child(4n + 1) { padding-left: 0; border-left: 0; }
-.spec b { display: block; font: 300 clamp(40px, 4.4vw, 60px)/1 var(--f-display); letter-spacing: -.03em; margin-bottom: 18px; background: linear-gradient(120deg, var(--mist), var(--ember)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.spec b { display: block; font: 300 clamp(40px, 4.4vw, 60px)/1 var(--f-display); letter-spacing: -.03em; margin-bottom: 18px; color: var(--mist); }
 .spec b small { font-size: .4em; font-weight: 500; letter-spacing: 0; margin-left: 4px; }
 .spec h3 { font: 600 15px/1.3 var(--f-body); letter-spacing: 0; margin-bottom: 6px; }
 .spec p { color: var(--haze); font-size: 14px; line-height: 1.55; }
@@ -303,7 +278,7 @@ input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border: 0; bord
 
 .sat-modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: clamp(50px, 7vw, 90px); }
 .mode { padding: 30px; border-radius: 22px; background: linear-gradient(160deg, var(--deep-2), var(--deep)); border: 1px solid var(--line); position: relative; overflow: hidden; min-width: 0; transition: transform .5s var(--ease), border-color .4s; }
-.mode:hover { transform: translateY(-6px); border-color: rgba(var(--acc),.4); }
+.mode:hover { transform: translateY(-2px); border-color: rgba(var(--acc),.4); }
 .mode canvas { width: 100%; height: 90px; display: block; margin-bottom: 22px; }
 .mode h3 { font-size: 22px; letter-spacing: .1em; margin-bottom: 4px; }
 .mode .kind { font: 400 12px/1.4 var(--f-mono); color: var(--bone); display: block; margin-bottom: 14px; }
@@ -317,16 +292,17 @@ input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border: 0; bord
 .offer { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 460px); gap: 50px clamp(30px, 6vw, 100px); align-items: center; }
 .offer h2 { font-size: clamp(40px, 6vw, 88px); }
 .offer .card {
-  position: relative; border-radius: 30px; padding: 40px; min-width: 0;
-  background: linear-gradient(var(--deep), var(--deep)) padding-box, conic-gradient(from var(--a, 0deg), var(--ember), var(--bone), transparent 40%, transparent 60%, var(--ember)) border-box;
-  border: 1px solid transparent; animation: spin 8s linear infinite; box-shadow: 0 50px 120px -40px rgba(150,10,24,.55);
+  position: relative; border-radius: 22px; padding: 40px; min-width: 0; border: 1px solid var(--line);
 }
-@property --a { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
-@keyframes spin { to { --a: 360deg; } }
+.offer h2, .faq h2, #plugins h2 { margin-top: 18px; }
+#plugins h2 { font-size: clamp(34px, 4.8vw, 68px); }
+.offer .lede { margin-top: 24px; }
+.os-req { color: var(--haze); font-size: 14px; }
+.app-icon { display: block; margin-bottom: 16px; }
 .card .tag { font: 500 12px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
 .amount { display: flex; align-items: flex-start; gap: 8px; margin: 18px 0 6px; font: 800 84px/1 var(--f-display); letter-spacing: -.04em; }
 .amount sup { font-size: 30px; margin-top: 10px; font-weight: 500; }
-.card ul { list-style: none; padding: 0; margin: 26px 0 30px; display: grid; gap: 13px; }
+.card ul { list-style: none; padding: 0; margin: 26px 0 30px; display: grid; gap: 12px; }
 .card li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; font-size: 15px; }
 .card li svg { width: 18px; height: 18px; margin-top: 3px; color: var(--ember); }
 .card .btn { width: 100%; justify-content: center; }
@@ -362,7 +338,7 @@ details code { font: 400 14px var(--f-mono); color: var(--bone); word-break: bre
 
 /* pied de page */
 footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: hidden; }
-.foot-word { font: 800 clamp(40px, 12.4vw, 172px)/.85 var(--f-display); letter-spacing: .02em; background: linear-gradient(180deg, var(--mist) 10%, var(--ember) 55%, rgba(var(--acc-lo),.1)); -webkit-background-clip: text; background-clip: text; color: transparent; white-space: nowrap; }
+.foot-word { font: 800 clamp(40px, 12.4vw, 172px)/.85 var(--f-display); letter-spacing: .02em; color: var(--mist); white-space: nowrap; }
 .foot-row { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px; margin-top: 40px; font-size: 14px; color: var(--haze); }
 .foot-row nav { display: flex; gap: 24px; flex-wrap: wrap; }
 .foot-row a { text-decoration: none; } .foot-row a:hover { color: var(--mist); }
@@ -380,7 +356,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
 @media (max-width: 1280px) { .nav-links { display: none; } }
 .nav-links { gap: 20px; align-items: center; white-space: nowrap; }
 .nav-links > * { flex: none; }
-@media (max-width: 1320px) { .nav-links { gap: 16px; font-size: 13.5px; } }
+@media (max-width: 1320px) { .nav-links { gap: 16px; } }
 .hero { padding-bottom: clamp(60px, 8vw, 110px); }
 .section-mark { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
 .product-tag { font: 500 12px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ember-text); border: 1px solid rgba(var(--acc),.4); border-radius: 99px; padding: 7px 12px; }
@@ -402,7 +378,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
 .showcase-name small { font: 500 11px/1 var(--f-mono); letter-spacing: .16em; color: var(--haze); }
 .arrow { flex: none; width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--mist); font: 500 20px/1 var(--f-body); cursor: pointer; }
 .arrow:hover { border-color: var(--ember); box-shadow: 0 0 0 6px rgba(var(--acc),.16); }
-.showcase .demo { max-width: 1180px; margin-inline: auto; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: #000; }
+.showcase .demo { max-width: 1180px; margin-inline: auto; border: 1px solid var(--line); border-radius: 22px; overflow: hidden; background: #000; }
 .demo-stage { position: relative; width: 100%; background-size: 100% 100%; background-repeat: no-repeat; touch-action: pan-y; user-select: none; }
 .demo-part { position: absolute; background-repeat: no-repeat; cursor: ns-resize; touch-action: none; border-radius: 4px; }
 .demo-part.discrete { cursor: pointer; touch-action: manipulation; }
@@ -457,7 +433,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
 .kn svg { width: 100%; height: auto; display: block; overflow: visible; }
 .kn .trk { fill: none; stroke: rgba(255,210,214,.13); stroke-width: 5.5; stroke-linecap: round; }
 .kn .arc { fill: none; stroke: var(--ember); stroke-width: 5.5; stroke-linecap: round; filter: drop-shadow(0 0 3px rgba(var(--acc),.9)); transition: stroke .2s; }
-.kn:hover .arc, .kn.drag .arc { stroke: #FF5A68; filter: drop-shadow(0 0 6px rgba(255,90,104,1)); }
+.kn:hover .arc, .kn.drag .arc { stroke: rgb(var(--acc-hi)); filter: drop-shadow(0 0 6px rgb(var(--acc-hi))); }
 .kn .ptr { stroke: var(--bone); stroke-width: 3.6; stroke-linecap: round; }
 .kn-l, .kn-v { margin-top: calc(var(--u) * var(--kg)); font: 600 calc(var(--u) * var(--kl)) / 1.15 var(--f-body); letter-spacing: .1em; white-space: nowrap; text-align: center; }
 .kn-v { display: none; font-family: var(--f-mono); font-weight: 500; letter-spacing: 0; padding: .35em .8em; border-radius: 99px; background: rgba(0,0,0,.4); border: 1px solid rgba(var(--acc),.7); color: var(--bone); font-variant-numeric: tabular-nums; }
@@ -528,7 +504,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
 .hfd:focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
 
 /* VU-mètre de réduction de gain (1176 / LA-2A) */
-.vu { position: absolute; border-radius: calc(var(--u) * 10); background: radial-gradient(120% 100% at 50% 110%, #2a1a14, #120a0b); border: 1px solid rgba(255,210,214,.12); overflow: hidden; }
+.vu { position: absolute; border-radius: calc(var(--u) * 10); background: radial-gradient(120% 100% at 50% 110%, var(--deep), #120a0b); border: 1px solid rgba(255,210,214,.12); overflow: hidden; }
 .vu svg { width: 100%; height: 100%; display: block; }
 .vu .ndl { stroke: var(--bone); stroke-width: 1.6; stroke-linecap: round; filter: drop-shadow(0 0 2px rgba(255,236,238,.6)); transition: transform .08s linear; transform-origin: 50px 66px; }
 
@@ -581,22 +557,20 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
 .hero-stage { position: relative; width: 100%; max-width: 600px; justify-self: center; perspective: 1400px; }
 .hero-stage .hero-shot { max-width: none; }
 .float-card {
-  position: absolute; z-index: 3; display: grid; gap: 7px; padding: 12px 14px; border-radius: 18px; color: var(--mist); text-decoration: none;
+  position: absolute; z-index: 3; display: grid; gap: 8px; padding: 12px 16px; border-radius: 22px; color: var(--mist); text-decoration: none;
   background: linear-gradient(160deg, rgba(255,255,255,.09), rgba(255,255,255,.02) 45%, rgba(255,255,255,.04)), rgba(14,10,12,.72);
   border: 1px solid rgba(255,235,238,.12); -webkit-backdrop-filter: blur(18px) saturate(140%); backdrop-filter: blur(18px) saturate(140%);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.4), 0 18px 40px rgba(0,0,0,.55);
-  animation: fc-float 6s ease-in-out infinite; transition: border-color .35s, box-shadow .35s, scale .35s var(--ease);
+  transition: border-color .35s, box-shadow .35s;
 }
-.float-card:hover { border-color: rgba(var(--acc-hi),.5); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 0 30px rgba(var(--acc),.3), 0 18px 40px rgba(0,0,0,.55); scale: 1.04; }
-@keyframes fc-float { 50% { translate: 0 -10px; } }
-.float-card b { font: 800 13px/1.2 var(--f-display); letter-spacing: .03em; }
-.fc-top, .fc-sub { display: flex; align-items: center; gap: 7px; font: 500 10px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
+.float-card:hover { border-color: rgba(var(--acc-hi),.5); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 0 30px rgba(var(--acc),.3), 0 18px 40px rgba(0,0,0,.55); }
+.float-card b { font: 600 13px/1.2 var(--f-display); letter-spacing: .03em; }
+.fc-top, .fc-sub { display: flex; align-items: center; gap: 8px; font: 500 11px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
 .fc-sub { letter-spacing: .08em; }
-.led { flex: none; width: 8px; height: 8px; border-radius: 50%; background: rgb(var(--acc)); box-shadow: 0 0 10px rgb(var(--acc)); animation: led 2.4s ease-in-out infinite; }
-@keyframes led { 50% { opacity: .45; box-shadow: 0 0 4px rgb(var(--acc)); } }
-.fc-cloud { left: -9%; top: 38%; width: 214px; animation-delay: -1s; }
-.fc-cut { right: -5%; top: -9%; width: 150px; animation-delay: -3s; }
-.fc-hm { right: 6%; bottom: -8%; display: flex; align-items: center; gap: 10px; padding: 9px 14px 9px 9px; border-radius: 999px; animation-delay: -4.5s; }
+.led { flex: none; width: 8px; height: 8px; border-radius: 50%; background: rgb(var(--acc)); box-shadow: 0 0 10px rgb(var(--acc)); }
+.fc-cloud { left: -9%; top: 38%; width: 214px; }
+.fc-cut { right: -5%; top: -9%; width: 150px; }
+.fc-hm { right: 6%; bottom: -8%; display: flex; align-items: center; gap: 12px; padding: 8px 16px 8px 8px; border-radius: 999px; }
 /* la forme d'onde du lien d'écoute : la partie déjà écoutée s'allume, barre après barre */
 .fc-wave { display: flex; align-items: center; gap: 3px; height: 28px; }
 .fc-wave i { flex: 1; height: var(--h, 50%); border-radius: 2px; background: rgba(255,236,238,.28); animation: fc-played 4s linear infinite; animation-delay: calc(var(--n) * .25s - 4s); }
@@ -617,7 +591,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
 .fc-faces { display: flex; }
 .fc-faces i { width: 28px; height: 28px; margin-left: -9px; border-radius: 50%; border: 2px solid #0e0a0c; background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.5), transparent 45%), linear-gradient(135deg, rgb(var(--acc-hi)), rgb(var(--acc-lo))); }
 .fc-faces i:first-child { margin-left: 0; }
-.fc-faces i:nth-child(2) { filter: hue-rotate(40deg) saturate(.7); } .fc-faces i:nth-child(3) { filter: grayscale(.6) brightness(1.2); } .fc-faces i:nth-child(4) { filter: hue-rotate(-30deg) brightness(.8); }
+.fc-faces i:nth-child(2) { filter: saturate(.7); } .fc-faces i:nth-child(3) { filter: grayscale(.6) brightness(1.2); } .fc-faces i:nth-child(4) { filter: brightness(.8); }
 .fc-hm b { display: block; margin-bottom: 4px; }
 @media (max-width: 1100px) { .fc-cloud { left: -3%; } .fc-cut { right: -1%; } }
 @media (max-width: 900px) {
@@ -625,7 +599,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
   .fc-cloud { left: -2%; top: 30%; width: 196px; } .fc-cut { right: -2%; top: -7%; } .fc-hm { right: 2%; bottom: -8%; }
 }
 @media (max-width: 560px) {
-  .float-card { padding: 9px 11px; gap: 5px; border-radius: 14px; }
+  .float-card { padding: 8px 12px; gap: 4px; }
   .fc-cloud { left: 0; top: 22%; width: 160px; } .fc-cloud .fc-sub { display: none; }
   .fc-cut { right: 0; top: -10%; width: 118px; } .fc-hm { display: none; }
 }
@@ -637,7 +611,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
 .uni-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 18px; margin-top: clamp(34px, 5vw, 60px); }
 .uni-card {
   position: relative; isolation: isolate; overflow: hidden; display: flex; flex-direction: column; gap: 12px; min-height: 290px; padding: clamp(22px, 2.4vw, 30px);
-  border-radius: 28px; color: var(--mist); text-decoration: none; grid-column: span 4;
+  border-radius: 22px; color: var(--mist); text-decoration: none; grid-column: span 4;
   background: linear-gradient(160deg, rgba(255,255,255,.075), rgba(255,255,255,.02) 40%, rgba(255,255,255,.035)), rgba(14,10,12,.55);
   border: 1px solid rgba(255,235,238,.10); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.4), 0 18px 40px rgba(0,0,0,.45);
   transition: transform .35s var(--ease), border-color .35s, box-shadow .35s;
@@ -652,8 +626,8 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
 .uni-card:hover { transform: translateY(-4px); border-color: rgba(var(--acc-hi),.35); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 0 36px rgba(var(--acc),.18), 0 22px 50px rgba(0,0,0,.55); }
 .uni-card:hover::before { opacity: 1; }
 .uni-card:hover::after { transform: translateX(70%); }
-.u-tag { display: inline-flex; align-items: center; gap: 9px; font: 500 10px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--label, #d9c6c9); }
-.uni-card h3 { font: 800 clamp(19px, 1.9vw, 25px)/1.15 var(--f-display); letter-spacing: .02em; }
+.u-tag { display: inline-flex; align-items: center; gap: 8px; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--label, #d9c6c9); }
+.uni-card h3 { font: 700 clamp(19px, 1.9vw, 25px)/1.15 var(--f-display); letter-spacing: .02em; }
 .uni-card p { max-width: 50ch; color: var(--haze); font-size: 15px; line-height: 1.55; }
 .uni-card p span { color: var(--mist); font-weight: 600; }
 .u-go { margin-top: auto; padding-top: 14px; display: inline-flex; align-items: center; gap: 10px; font: 500 11px/1.3 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: rgb(var(--acc-hi)); }
@@ -667,8 +641,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
   background: rgba(20,15,17,.95); border: 1px solid rgba(255,235,238,.12); box-shadow: 0 8px 20px rgba(0,0,0,.5); transition: translate .45s var(--ease), rotate .45s var(--ease); }
 .u-versions i:nth-child(1) { rotate: -8deg; } .u-versions i:nth-child(2) { rotate: -3deg; translate: 0 -3px; }
 .u-versions i:nth-child(3) { color: #fff; background: linear-gradient(180deg, rgba(var(--acc),.6), rgba(var(--acc-lo),.6)), #140f11; border-color: transparent;
-  box-shadow: 0 0 0 1px rgba(var(--acc-hi),.55) inset, 0 6px 22px rgba(var(--acc),.4); translate: 0 -6px; animation: v-pulse 3s ease-in-out infinite; }
-@keyframes v-pulse { 50% { box-shadow: 0 0 0 1px rgba(var(--acc-hi),.8) inset, 0 6px 30px rgba(var(--acc),.65); } }
+  box-shadow: 0 0 0 1px rgba(var(--acc-hi),.55) inset, 0 6px 22px rgba(var(--acc),.4); translate: 0 -6px; }
 .u-cloud:hover .u-versions i:nth-child(1) { rotate: -12deg; translate: -10px 2px; } .u-cloud:hover .u-versions i:nth-child(2) { rotate: -5deg; translate: -4px -4px; }
 /* CUT : la piste du son, ses temps, les coupes et la tête de lecture */
 .u-timeline { position: relative; height: 46px; margin-top: 8px; border-radius: 12px; overflow: hidden; background:
@@ -685,24 +658,20 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
 /* HM · WATCHPARTY : les mêmes barres chez tout le monde, au même moment */
 .u-eq { display: flex; align-items: flex-end; gap: 6px; height: 54px; margin-top: 6px; }
 .u-eq i { flex: 1; max-width: 14px; height: 100%; border-radius: 4px; transform-origin: bottom; background: linear-gradient(180deg, rgb(var(--acc-hi)), rgba(var(--acc-lo),.6));
-  animation: eq 1.1s ease-in-out infinite alternate; animation-delay: calc(var(--n) * -.17s); }
-@keyframes eq { from { scale: 1 .2; } to { scale: 1 1; } }
+  scale: 1 calc(.3 + var(--n) * .1); }
 .u-eq i:nth-child(1) { --n: 1; } .u-eq i:nth-child(2) { --n: 4; } .u-eq i:nth-child(3) { --n: 2; } .u-eq i:nth-child(4) { --n: 6; } .u-eq i:nth-child(5) { --n: 3; }
 .u-eq i:nth-child(6) { --n: 5; } .u-eq i:nth-child(7) { --n: 0; } .u-eq i:nth-child(8) { --n: 7; } .u-eq i:nth-child(9) { --n: 2; } .u-eq i:nth-child(10) { --n: 4; }
 /* communauté : une carte en pointillés, des villes qui s'allument */
 .u-map { position: relative; height: 70px; margin-top: 4px; border-radius: 14px; background: radial-gradient(rgba(255,236,238,.16) 1px, transparent 1.4px) 0 0 / 12px 12px; }
 .u-map i { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: rgb(var(--acc-hi)); box-shadow: 0 0 10px rgb(var(--acc)); }
-.u-map i::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 1px solid rgb(var(--acc-hi)); animation: ping 2.6s ease-out infinite; animation-delay: inherit; }
-@keyframes ping { from { scale: .6; opacity: 1; } to { scale: 3.2; opacity: 0; } }
-.u-map i:nth-child(1) { left: 12%; top: 30%; animation-delay: -.3s; } .u-map i:nth-child(2) { left: 30%; top: 62%; animation-delay: -1.4s; } .u-map i:nth-child(3) { left: 47%; top: 22%; animation-delay: -.9s; }
-.u-map i:nth-child(4) { left: 63%; top: 55%; animation-delay: -2.1s; } .u-map i:nth-child(5) { left: 79%; top: 28%; animation-delay: -1.8s; } .u-map i:nth-child(6) { left: 90%; top: 68%; animation-delay: -.6s; }
-/* CENTRAL : l'étoile du logo, qui tourne lentement dans son coin */
+.u-map i::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 1px solid rgb(var(--acc-hi)); opacity: .5; }
+.u-map i:nth-child(1) { left: 12%; top: 30%; } .u-map i:nth-child(2) { left: 30%; top: 62%; } .u-map i:nth-child(3) { left: 47%; top: 22%; }
+.u-map i:nth-child(4) { left: 63%; top: 55%; } .u-map i:nth-child(5) { left: 79%; top: 28%; } .u-map i:nth-child(6) { left: 90%; top: 68%; }
+/* CENTRAL : l'étoile du logo, dans son coin */
 .u-app { background-image: radial-gradient(60% 80% at 100% 100%, rgba(var(--acc),.22), transparent 70%), linear-gradient(160deg, rgba(255,255,255,.075), rgba(255,255,255,.02) 40%, rgba(255,255,255,.035)); }
 .u-app h3, .u-app p { max-width: 30ch; }
 .u-app .u-tag::after { content: ""; position: absolute; right: -30px; bottom: -30px; width: 190px; height: 190px; z-index: -1; opacity: .9;
-  background: #FFECEE; clip-path: polygon(50% 0, 56% 44%, 100% 50%, 56% 56%, 50% 100%, 44% 56%, 0 50%, 44% 44%); filter: drop-shadow(0 0 18px rgb(var(--acc)));
-  animation: star-turn 24s linear infinite; }
-@keyframes star-turn { to { rotate: 360deg; } }
+  background: var(--mist); clip-path: polygon(50% 0, 56% 44%, 100% 50%, 56% 56%, 50% 100%, 44% 56%, 0 50%, 44% 44%); filter: drop-shadow(0 0 18px rgb(var(--acc))); }
 @media (max-width: 1000px) {
   .uni-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .uni-card, .uni-card.u-plugins, .uni-card.u-community, .uni-card.u-cloud, .uni-card.u-app { grid-column: span 1; }
@@ -742,10 +711,10 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
 .flow-step::before { content: ""; position: absolute; left: 24px; top: 23px; width: 16px; height: 16px; border-radius: 50%; background: #120d0f; border: 2px solid rgb(var(--acc-hi));
   box-shadow: 0 0 0 5px rgba(9,8,10,.9), 0 0 16px rgba(var(--acc),.8); z-index: 3; }
 .flow-n { position: absolute; right: 20px; top: 12px; font: 800 52px/1 var(--f-display); color: transparent; -webkit-text-stroke: 1px rgba(255,236,238,.16); letter-spacing: .02em; }
-.flow-step h3 { font: 800 clamp(17px, 1.6vw, 21px)/1.2 var(--f-display); letter-spacing: .02em; }
-.flow-step p { color: var(--haze); font-size: 14.5px; line-height: 1.55; }
-.flow-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 8px; }
-.flow-links a { padding: 7px 10px; border-radius: 10px; font: 500 10px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: #d8c6c8; text-decoration: none;
+.flow-step h3 { font: 700 clamp(17px, 1.6vw, 21px)/1.2 var(--f-display); letter-spacing: .02em; }
+.flow-step p { color: var(--haze); font-size: 15px; line-height: 1.55; }
+.flow-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 8px; }
+.flow-links a { padding: 8px 12px; border-radius: 10px; font: 500 11px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--label); text-decoration: none;
   background: rgba(255,255,255,.04); box-shadow: 0 0 0 1px rgba(255,255,255,.09) inset; transition: color .2s, box-shadow .2s, background .2s; }
 .flow-links a:hover { color: #fff; background: rgba(255,255,255,.07); box-shadow: 0 0 0 1px rgba(var(--acc-hi),.5) inset; }
 /* Au défilement (navigateurs qui le savent) : le fil se remplit, chaque étape monte et son point s'allume à son tour */
@@ -769,7 +738,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
 }
 @media (prefers-reduced-motion: reduce) { .flow-steps::after, .flow-step, .flow-step::before { animation: none !important; } }
 </style>
-<link rel="stylesheet" href="/assets/da.css?v=8">
+<link rel="stylesheet" href="/assets/da.css?v=9">
 <script src="/assets/accent.js?v=1"></script>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -814,7 +783,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
         <div class="hero-side rise">
           <a class="sons-shortcut" id="sonsShortcut" href="mes-sons" hidden>
             <span class="sigil" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 1.5 13.3 10.7 22.5 12 13.3 13.3 12 22.5 10.7 13.3 1.5 12 10.7 10.7Z" fill="currentColor"/></svg></span>
-            <span><b>ONIRIQUE CLOUD</b><small>Tes projets, tes versions et tes liens d'écoute privés</small></span>
+            <span><b>ONIRIQUE CLOUD</b><small>Tes projets, tes versions et tes liens d’écoute privés</small></span>
             <span class="go" aria-hidden="true">→</span>
           </a>
           <span class="eyebrow">Le studio ONIRIQUE</span>
@@ -833,8 +802,8 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
             <img alt="" width="1100" height="688" fetchpriority="high">
             <div><h3></h3><p></p><small></small></div>
           </a>
-          <a class="float-card fc-cloud" href="cloud" aria-label="ONIRIQUE CLOUD : liens d'écoute privés">
-            <span class="fc-top"><i class="led"></i>Lien d'écoute</span>
+          <a class="float-card fc-cloud" href="cloud" aria-label="ONIRIQUE CLOUD : liens d’écoute privés">
+            <span class="fc-top"><i class="led"></i>Lien d’écoute</span>
             <b>Démo · v3 mix</b>
             <span class="fc-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
             <span class="fc-sub">12 écoutes · 2 retours</span>
@@ -858,22 +827,22 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
       <div class="uni-head reveal">
         <span class="eyebrow">Tout ONIRIQUE</span>
         <h2>Un compte, <em class="dream">tout le studio.</em></h2>
-        <p class="lede">Ce qu'il faut pour faire un son, le partager et le sortir. Chaque partie marche seule, et tout se retrouve dans l'application CENTRAL.</p>
+        <p class="lede">Ce qu’il faut pour faire un son, le partager et le sortir. Chaque partie marche seule, et tout se retrouve dans l’application CENTRAL.</p>
       </div>
       <div class="uni-grid">
         <a class="uni-card u-plugins" href="boutique">
           <span class="u-tag"><i class="led"></i>Plugins</span>
           <h3>Le son de ta voix</h3>
-          <p><span id="heroCount">15</span> plugins, de <span id="heroMin">15 €</span> à <span id="heroMax">149,99 €</span> : correction de hauteur, chaîne vocale, de-esser, doubleur. 7 jours d'essai sur chacun, payés une fois.</p>
+          <p><span id="heroCount">15</span> plugins, de <span id="heroMin">15 €</span> à <span id="heroMax">149,99 €</span> : correction de hauteur, chaîne vocale, de-esser, doubleur. 7 jours d’essai sur chacun, payés une fois.</p>
           <span class="u-potard" data-potard aria-hidden="true"></span>
           <span class="u-go">Voir la boutique</span>
         </a>
         <a class="uni-card u-cloud" href="cloud">
           <span class="u-tag"><i class="led"></i>CLOUD</span>
           <h3>Tes projets et tes écoutes</h3>
-          <p>Chaque version gardée et comparée en A/B, des liens d'écoute privés, tes collabs et les paroles synchronisées.</p>
+          <p>Chaque version gardée et comparée en A/B, des liens d’écoute privés, tes collabs et les paroles synchronisées.</p>
           <span class="u-versions" aria-hidden="true"><i>v1</i><i>v2</i><i>v3</i></span>
-          <span class="u-go">Gratuit jusqu'à 30 sons · 1,99 € par mois</span>
+          <span class="u-go">Gratuit jusqu’à 30 sons · 1,99 € par mois</span>
         </a>
         <a class="uni-card u-cut" href="cut">
           <span class="u-tag"><i class="led"></i>CUT</span>
@@ -907,7 +876,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
           <span class="u-tag"><i class="led"></i>CENTRAL</span>
           <h3>Une application pour tout</h3>
           <p>Elle installe tes plugins, garde tes licences et ouvre CLOUD et CUT, sur Windows et Mac.</p>
-          <span class="u-go">Télécharger, c'est gratuit</span>
+          <span class="u-go">Télécharger, c’est gratuit</span>
         </a>
       </div>
     </div>
@@ -916,7 +885,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
   <section class="block" id="plugins" hidden style="padding-bottom:0">
     <div class="wrap">
       <span class="eyebrow">La collection</span>
-      <h2 style="margin-top:18px;font-size:clamp(34px,4.8vw,68px)">Nos <em class="dream">plugins.</em></h2>
+      <h2>Nos <em class="dream">plugins.</em></h2>
       <div class="plugin-grid" id="pluginGrid"></div>
       <div class="plugin-more"><button class="btn btn-ghost" id="pluginMore" type="button" hidden>Voir tous les plugins</button><a class="btn btn-ghost" href="boutique">Toute la boutique</a></div>
     </div>
@@ -926,10 +895,10 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
     <div class="wrap">
       <div class="head reveal">
         <div>
-          <span class="eyebrow">L'interface</span>
+          <span class="eyebrow">L’interface</span>
           <h2>Toute ta chaîne vocale, <em class="dream">en un écran.</em></h2>
         </div>
-        <p class="lede">Voici la vraie interface de chaque plugin. Tourne les potards, clique les interrupteurs, puis passe d'un plugin à l'autre avec les flèches.</p>
+        <p class="lede">Voici la vraie interface de chaque plugin. Tourne les potards, clique les interrupteurs, puis passe d’un plugin à l’autre avec les flèches.</p>
       </div>
       <div class="showcase" id="showcase" hidden>
         <div class="showcase-bar">
@@ -937,10 +906,10 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
           <div class="showcase-name" aria-live="polite"><small id="showCreator"></small><strong id="showName"></strong><small id="showCount"></small></div>
           <button class="arrow" id="showNext" type="button" aria-label="Plugin suivant">→</button>
         </div>
-        <div class="demo" id="showDemo"><div class="demo-wait">Chargement de l'interface…</div></div>
+        <div class="demo" id="showDemo"><div class="demo-wait">Chargement de l’interface…</div></div>
         <p class="showcase-link"><a id="showLink" href="boutique">Voir la fiche du plugin →</a></p>
       </div>
-      <!-- L'ancienne maquette de VocalBox n'est plus affichée : elle reste le moteur de la démo d'écoute, plus bas. -->
+      <!-- L’ancienne maquette de VocalBox n’est plus affichée : elle reste le moteur de la démo d’écoute, plus bas. -->
       <div class="mock-scroll" hidden><div class="mock" id="vbMock"></div></div>
     </div>
   </section>
@@ -953,17 +922,17 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
           <span class="eyebrow">Fonctions</span>
           <h2 id="fnTitle">Six modules, <em class="dream">dans ton ordre.</em></h2>
         </div>
-        <p class="lede" id="fnLede">EQ, Resonance, Compression, Multiband, De-Esser et Saturation Lab ont chacun leur bouton power. Leur ordre se change à la souris dans l'en-tête, avec un fondu de 15 ms : ni clic, ni saut de volume.</p>
+        <p class="lede" id="fnLede">EQ, Resonance, Compression, Multiband, De-Esser et Saturation Lab ont chacun leur bouton power. Leur ordre se change à la souris dans l’en-tête, avec un fondu de 15 ms : ni clic, ni saut de volume.</p>
       </div>
       <!-- La description du plugin affiché dans la section Interface (remplie depuis le catalogue) -->
       <div class="fn-desc" id="fnDesc" hidden></div>
-      <!-- Le détail de VocalBox, montré quand c'est lui qui est affiché -->
+      <!-- Le détail de VocalBox, montré quand c’est lui qui est affiché -->
       <div id="fnVocalbox">
       <div class="chain nine">
         <article class="stage-card reveal"><div class="stage-num">IN</div><h3>INPUT</h3><p>Cale le niveau de ta prise avant tout traitement, avec un mètre stéréo.</p><span class="range">−24 → +24 dB</span></article>
-        <article class="stage-card reveal"><div class="stage-num">EQ</div><h3>EQ</h3><p>Un grave façon Pultec, un Mid qui retire le carton, un High/Air qui s'ouvre jusqu'à 20 kHz. Low Cut 85 Hz et Smart S en option. Plus un EQ paramétrique 6 bandes réglé directement dans l'analyseur.</p><span class="range">LOW 80/100/125 · HIGH 8K/10K/20K · 6 BANDES</span></article>
+        <article class="stage-card reveal"><div class="stage-num">EQ</div><h3>EQ</h3><p>Un grave façon Pultec, un Mid qui retire le carton, un High/Air qui s’ouvre jusqu’à 20 kHz. Low Cut 85 Hz et Smart S en option. Plus un EQ paramétrique 6 bandes réglé directement dans l’analyseur.</p><span class="range">LOW 80/100/125 · HIGH 8K/10K/20K · 6 BANDES</span></article>
         <article class="stage-card reveal"><div class="stage-num">RS</div><h3>RESONANCE</h3><p>Ne réduit que les crêtes qui dépassent du spectre, au moment où elles sonnent. Trois zones réglables en fréquence, en largeur et en sensibilité. LISTEN fait entendre ce qui est retiré.</p><span class="range">LOW · MID · HIGH · AMOUNT · LISTEN</span></article>
-        <article class="stage-card reveal"><div class="stage-num">CP</div><h3>COMPRESSION</h3><p>Un 1176 rapide, un LA-2A optique, ou les deux en série, avec des VU-mètres de réduction. Inverse l'ordre des deux en un clic.</p><span class="range">1176 · LA-2A · DUO</span></article>
+        <article class="stage-card reveal"><div class="stage-num">CP</div><h3>COMPRESSION</h3><p>Un 1176 rapide, un LA-2A optique, ou les deux en série, avec des VU-mètres de réduction. Inverse l’ordre des deux en un clic.</p><span class="range">1176 · LA-2A · DUO</span></article>
         <article class="stage-card reveal"><div class="stage-num">MB</div><h3>MULTIBAND</h3><p>Compression opto sur 4 bandes, crémeuse pour la voix. Seuil et gain par bande, écoute en solo et presets dédiés.</p><span class="range">4 BANDES · LISTEN · 8 PRESETS</span></article>
         <article class="stage-card reveal"><div class="stage-num">DS</div><h3>DE-ESSER / PLOSIVES</h3><p>De-esser dynamique deux bandes avec anticipation. PLOSIVES repère les bouffées graves des P et des B et les adoucit, sans latence.</p><span class="range">3 000 → 10 000 Hz · PLOSIVES 0 → 100 %</span></article>
         <article class="stage-card reveal"><div class="stage-num">SL</div><h3>SATURATION LAB</h3><p>Tube, Analog ou Tape pour de la densité et des harmoniques. Changer de type fait un fondu, le volume reste compensé.</p><span class="range">TUBE · ANALOG · TAPE · DRIVE 0 → 10</span></article>
@@ -972,32 +941,32 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
       </div>
 
       <div class="sat-modes">
-        <article class="mode reveal"><canvas data-curve="0" aria-hidden="true"></canvas><h3>TUBE</h3><span class="kind">Lampe asymétrique · harmonique 2</span><p>La chaleur d'un préampli à lampe. Le corps de la voix se densifie, les consonnes restent nettes.</p></article>
+        <article class="mode reveal"><canvas data-curve="0" aria-hidden="true"></canvas><h3>TUBE</h3><span class="kind">Lampe asymétrique · harmonique 2</span><p>La chaleur d’un préampli à lampe. Le corps de la voix se densifie, les consonnes restent nettes.</p></article>
         <article class="mode reveal"><canvas data-curve="1" aria-hidden="true"></canvas><h3>ANALOG</h3><span class="kind">Classe A · transformateurs</span><p>Un caractère de console vintage : graves épais, médiums qui avancent, coude très progressif.</p></article>
-        <article class="mode reveal"><canvas data-curve="2" aria-hidden="true"></canvas><h3>TAPE</h3><span class="kind">Bande magnétique · harmonique 3</span><p>Les aigus se tassent, les sibilances s'arrondissent, une compression lente colle la voix au mix.</p></article>
+        <article class="mode reveal"><canvas data-curve="2" aria-hidden="true"></canvas><h3>TAPE</h3><span class="kind">Bande magnétique · harmonique 3</span><p>Les aigus se tassent, les sibilances s’arrondissent, une compression lente colle la voix au mix.</p></article>
       </div>
 
       <div class="sub-head reveal"><h3>Sous le capot.</h3></div>
       <div class="specs reveal">
         <div class="spec"><b>6</b><h3>Modules réordonnables</h3><p>Chacun avec son bouton power. Coupé, un module fait un fondu et la latence reste fixe.</p></div>
         <div class="spec"><b>8X</b><h3>Suréchantillonnage</h3><p>Sur toute la chaîne de modules en mode MIX, réglable de OFF à 8X.</p></div>
-        <div class="spec"><b>0<small>ms</small></b><h3>En mode LIVE</h3><p>Latence nulle pour t'enregistrer à travers le plugin, sans décalage dans le casque.</p></div>
-        <div class="spec"><b>6</b><h3>Bandes paramétriques</h3><p>Cloche, shelf grave, shelf aigu, coupe-bas, coupe-haut. Filtres appariés à l'analogique jusqu'en haut du spectre.</p></div>
+        <div class="spec"><b>0<small>ms</small></b><h3>En mode LIVE</h3><p>Latence nulle pour t’enregistrer à travers le plugin, sans décalage dans le casque.</p></div>
+        <div class="spec"><b>6</b><h3>Bandes paramétriques</h3><p>Cloche, shelf grave, shelf aigu, coupe-bas, coupe-haut. Filtres appariés à l’analogique jusqu’en haut du spectre.</p></div>
         <div class="spec"><b>4</b><h3>Bandes de multibande</h3><p>Filtres Linkwitz-Riley : la somme reste plate tant que rien ne compresse.</p></div>
-        <div class="spec"><b>±12<small>dB</small></b><h3>Correction Auto Gain</h3><p>Mesure pondérée de la loudness, plafonnée à 4 dB/s : aucun pompage audible.</p></div>
-        <div class="spec"><b>15<small>ms</small></b><h3>Changement d'ordre</h3><p>Réordonner les modules fait un fondu entre l'ancien et le nouvel ordre.</p></div>
-        <div class="spec"><b>0</b><h3>Allocation en temps réel</h3><p>Toute la mémoire est préparée à l'avance. Le traitement audio ne s'interrompt jamais pour en demander.</p></div>
+        <div class="spec"><b>±12<small>dB</small></b><h3>Correction Auto Gain</h3><p>Mesure pondérée de la loudness ; la correction ne varie pas de plus de 4 dB par seconde.</p></div>
+        <div class="spec"><b>15<small>ms</small></b><h3>Changement d’ordre</h3><p>Réordonner les modules fait un fondu entre l’ancien et le nouvel ordre.</p></div>
+        <div class="spec"><b>0</b><h3>Allocation en temps réel</h3><p>Toute la mémoire est préparée à l’avance. Le traitement audio ne s’interrompt jamais pour en demander.</p></div>
       </div>
       </div>
 
       <div class="sub-head reveal"><h3>Pensé pour le mix <em class="dream">et pour la cabine.</em></h3></div>
       <div class="features">
-        <article class="feature reveal"><h4>TOUTE LA CHAÎNE VOCALE</h4><span class="kind">De la prise au mix</span><p>Justesse, channel strip, résonances, doubles, espace, saturation : chaque plugin s'occupe d'une étape de la voix, et ils se combinent dans ton projet.</p></article>
-        <article class="feature reveal"><h4>ESSAI GRATUIT</h4><span class="kind">7 jours par plugin</span><p>Chaque plugin s'essaie en temps réel dans ton DAW, sur tes propres prises. L'export reste remplacé par un bruit blanc jusqu'à l'achat.</p></article>
-        <article class="feature reveal"><h4>EN UN CLIC</h4><span class="kind">Onirique Central</span><p>L'application installe tes plugins, les met à jour et active tes licences. Aucun fichier à copier à la main.</p></article>
+        <article class="feature reveal"><h4>TOUTE LA CHAÎNE VOCALE</h4><span class="kind">De la prise au mix</span><p>Justesse, channel strip, résonances, doubles, espace, saturation : chaque plugin s’occupe d’une étape de la voix, et ils se combinent dans ton projet.</p></article>
+        <article class="feature reveal"><h4>ESSAI GRATUIT</h4><span class="kind">7 jours par plugin</span><p>Chaque plugin s’essaie en temps réel dans ton DAW, sur tes propres prises. L’export reste remplacé par un bruit blanc jusqu’à l’achat.</p></article>
+        <article class="feature reveal"><h4>EN UN CLIC</h4><span class="kind">ONIRIQUE CENTRAL</span><p>L’application installe tes plugins, les met à jour et active tes licences. Aucun fichier à copier à la main.</p></article>
         <article class="feature reveal"><h4>WINDOWS ET MAC</h4><span class="kind">VST3 · Audio Unit sur Mac</span><p>Les plugins tournent dans tout DAW compatible. La boutique indique, pour chacun, les systèmes pour lesquels il existe.</p></article>
-        <article class="feature reveal"><h4>TA LICENCE</h4><span class="kind">Un compte · deux machines</span><p>Une licence s'active sur deux machines à la fois, depuis ton compte. Une fois activé, le plugin se vérifie sans connexion.</p></article>
-        <article class="feature reveal"><h4>ESSAYE ICI D'ABORD</h4><span class="kind">Interfaces réelles dans le navigateur</span><p>L'interface de chaque plugin se manipule sur ce site, bouton par bouton, avant même de l'installer.</p></article>
+        <article class="feature reveal"><h4>TA LICENCE</h4><span class="kind">Un compte · deux machines</span><p>Une licence s’active sur deux machines à la fois, depuis ton compte. Une fois activé, le plugin se vérifie sans connexion.</p></article>
+        <article class="feature reveal"><h4>ESSAYE ICI D’ABORD</h4><span class="kind">Interfaces réelles dans le navigateur</span><p>L’interface de chaque plugin se manipule sur ce site, bouton par bouton, avant même de l’installer.</p></article>
       </div>
     </div>
   </section>
@@ -1014,15 +983,15 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
 
       <div class="studio reveal">
         <div class="scope">
-          <canvas id="scope" aria-label="Courbe d'égalisation et spectre de la démo" role="img"></canvas>
+          <canvas id="scope" aria-label="Courbe d’égalisation et spectre de la démo" role="img"></canvas>
           <div class="scope-ui">
-            <button class="play" id="play" type="button" aria-pressed="false"><i><svg viewBox="0 0 24 24" id="playIcon"><path d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg></i><span id="playLabel">Lancer l'écoute</span></button>
+            <button class="play" id="play" type="button" aria-pressed="false"><i><svg viewBox="0 0 24 24" id="playIcon"><path d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg></i><span id="playLabel">Lancer l’écoute</span></button>
             <div class="ab" role="group" aria-label="Comparer">
               <button type="button" data-ab="raw" aria-pressed="false">BRUT</button>
               <button type="button" data-ab="box" aria-pressed="true">VOCALBOX</button>
             </div>
           </div>
-          <div class="legend"><span style="--c: var(--ember)">Courbe d'EQ</span><span style="--c: var(--bone)">Spectre en sortie</span></div>
+          <div class="legend"><span style="--c: var(--ember)">Courbe d’EQ</span><span style="--c: var(--bone)">Spectre en sortie</span></div>
           <div class="transport">
             <div class="seek"><span id="tCur">0:00</span><input id="seek" type="range" min="0" max="1" step="0.001" value="0" aria-label="Position dans le morceau"><span id="tDur">0:00</span>
               <div class="vol">
@@ -1034,13 +1003,13 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
               <label class="src-file" for="file">Importer ton fichier</label>
               <input id="file" class="sr-only" type="file" accept="audio/*">
             </div>
-            <p class="src-status" id="srcStatus" aria-live="polite">Aucun fichier pour l'instant : importe le tien (MP3, WAV…) pour lancer l'écoute.</p>
+            <p class="src-status" id="srcStatus" aria-live="polite">Aucun fichier pour l’instant : importe le tien (MP3, WAV…) pour lancer l’écoute.</p>
           </div>
         </div>
         <div class="controls">
           <div class="ctl"><div class="ctl-top"><label for="r-low">Low</label><output data-out="low"></output></div><input id="r-low" type="range" data-param="low" min="0" max="1" step="0.001"><small>Du corps et de la profondeur dans le grave.</small></div>
-          <div class="ctl"><div class="ctl-top"><label for="r-mud">Mid</label><output data-out="mud"></output></div><input id="r-mud" type="range" data-param="mud" min="0" max="1" step="0.001"><small>Retire l'effet « boîte en carton » entre 300 et 430 Hz.</small></div>
-          <div class="ctl"><div class="ctl-top"><label for="r-high">High / Air</label><output data-out="high"></output></div><input id="r-high" type="range" data-param="high" min="0" max="1" step="0.001"><small>Ouvre la voix, de la présence jusqu'à l'air.</small></div>
+          <div class="ctl"><div class="ctl-top"><label for="r-mud">Mid</label><output data-out="mud"></output></div><input id="r-mud" type="range" data-param="mud" min="0" max="1" step="0.001"><small>Retire l’effet « boîte en carton » entre 300 et 430 Hz.</small></div>
+          <div class="ctl"><div class="ctl-top"><label for="r-high">High / Air</label><output data-out="high"></output></div><input id="r-high" type="range" data-param="high" min="0" max="1" step="0.001"><small>Ouvre la voix, de la présence jusqu’à l’air.</small></div>
           <div class="ctl"><div class="ctl-top"><label for="r-fetIn">1176 Input</label><output data-out="fetIn"></output></div><input id="r-fetIn" type="range" data-param="fetIn" min="0" max="1" step="0.001"><small>Plus tu pousses, plus le 1176 compresse.</small></div>
           <div class="ctl"><div class="ctl-top"><label for="r-deessAmt">De-Ess</label><output data-out="deessAmt"></output></div><input id="r-deessAmt" type="range" data-param="deessAmt" min="0" max="1" step="0.001"><small>Freine les sifflantes et les cymbales.</small></div>
           <div class="ctl"><div class="ctl-top"><label for="r-drive">Drive</label><output data-out="drive"></output></div><input id="r-drive" type="range" data-param="drive" min="0" max="1" step="0.001"><small>Densité et harmoniques, sans saut de volume.</small></div>
@@ -1051,7 +1020,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
           </div>
         </div>
       </div>
-      <p class="note">Le traitement est fait en direct dans ton navigateur avec Web Audio, pour illustrer le rôle des réglages : EQ, EQ paramétrique, 1176 / LA-2A, de-esser et saturation. Resonance, Multiband et Plosives ne sont pas simulés ici. Le plugin utilise ses propres algorithmes, bien plus fins. Un fichier importé n'est jamais envoyé sur internet.</p>
+      <p class="note">Le traitement est fait en direct dans ton navigateur avec Web Audio, pour illustrer le rôle des réglages : EQ, EQ paramétrique, 1176 / LA-2A, de-esser et saturation. Resonance, Multiband et Plosives ne sont pas simulés ici. Le plugin, lui, utilise ses propres algorithmes, différents de cette simulation. Un fichier importé n’est jamais envoyé sur internet.</p>
     </div>
   </section>
 
@@ -1060,7 +1029,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
       <div class="flow-head reveal">
         <span class="eyebrow">Le parcours</span>
         <h2>De la première prise <em class="dream">au jour de la sortie.</em></h2>
-        <p class="lede">Quatre étapes, et à chacune ce qu'ONIRIQUE te donne pour la passer.</p>
+        <p class="lede">Quatre étapes, et à chacune ce qu’ONIRIQUE te donne pour la passer.</p>
       </div>
       <ol class="flow-steps">
         <li class="flow-step">
@@ -1074,7 +1043,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
           <span class="flow-n" aria-hidden="true">02</span>
           <span class="u-tag"><i class="led"></i>Ranger</span>
           <h3>Chaque version à sa place</h3>
-          <p>Tes projets et leurs versions dans le CLOUD, comparées en A/B. Tes collabs y ajoutent leurs sons, et tu sépares la voix de l'instru en un clic.</p>
+          <p>Tes projets et leurs versions dans le CLOUD, comparées en A/B. Tes collabs y ajoutent leurs sons, et tu sépares la voix de l’instru en un clic.</p>
           <div class="flow-links"><a href="cloud">ONIRIQUE CLOUD</a><a href="split">IA SPLIT</a><a href="comparer-mix">Comparer à une référence</a></div>
         </li>
         <li class="flow-step">
@@ -1082,13 +1051,13 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
           <span class="u-tag"><i class="led"></i>Faire écouter</span>
           <h3>Un lien, et tu sais qui écoute</h3>
           <p>Un lien privé, avec mot de passe et date de fin, et les écoutes de chaque personne. Ou tout le monde au même moment, dans un HM ou une WATCHPARTY.</p>
-          <div class="flow-links"><a href="cloud">Liens d'écoute</a><a href="mes-sons">HM</a><a href="watchparty">WATCHPARTY</a></div>
+          <div class="flow-links"><a href="cloud">Liens d’écoute</a><a href="mes-sons">HM</a><a href="watchparty">WATCHPARTY</a></div>
         </li>
         <li class="flow-step">
           <span class="flow-n" aria-hidden="true">04</span>
           <span class="u-tag"><i class="led"></i>Sortir</span>
           <h3>Le clip, la page, la checklist</h3>
-          <p>Le clip 9:16 coupé sur le beat, ta page de liens pour la bio, la checklist avec ses rappels, et le volume vérifié avant d'envoyer.</p>
+          <p>Le clip 9:16 coupé sur le beat, ta page de liens pour la bio, la checklist avec ses rappels, et le volume vérifié avant d’envoyer.</p>
           <div class="flow-links"><a href="cut">CUT</a><a href="mes-liens">Page de liens</a><a href="checklist-sortie">Checklist de sortie</a><a href="volume-lufs">Volume avant sortie</a></div>
         </li>
       </ol>
@@ -1100,9 +1069,9 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
       <div class="head reveal">
         <div>
           <span class="eyebrow">Crédits</span>
-          <h2>Déjà mixé avec <em class="dream">Onirique.</em></h2>
+          <h2>Déjà mixé avec <em class="dream">ONIRIQUE.</em></h2>
         </div>
-        <p class="lede">Les titres sortis avec les plugins Onirique sur la chaîne de mix. Écoute un extrait, puis retrouve le morceau en entier sur Spotify.</p>
+        <p class="lede">Les titres sortis avec les plugins ONIRIQUE sur la chaîne de mix. Écoute un extrait, puis retrouve le morceau en entier sur Spotify.</p>
       </div>
       <div class="credit-list" id="creditList"></div>
       <div class="credits-more" id="creditMore" hidden><a href="credits"><span>Tous les crédits</span><b aria-hidden="true">+</b></a></div>
@@ -1113,26 +1082,26 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
     <div class="wrap offer">
       <div class="reveal">
         <span class="eyebrow">Téléchargement</span>
-        <h2 style="margin-top:18px">Onirique <em class="dream">Central.</em></h2>
-        <p class="lede" style="margin-top:26px">L'application qui installe tes plugins Onirique, les met à jour et active tes licences. Tu la télécharges une fois, elle s'occupe du reste.</p>
+        <h2>ONIRIQUE <em class="dream">CENTRAL.</em></h2>
+        <p class="lede">L’application qui installe tes plugins ONIRIQUE, les met à jour et active tes licences. Tu la télécharges une fois, elle s’occupe du reste.</p>
       </div>
       <div class="card reveal">
-        <span class="tag">Onirique Central</span>
+        <span class="tag">ONIRIQUE CENTRAL</span>
         <div class="amount">Gratuit</div>
-        <p style="color:var(--haze);font-size:14px">Windows 10 ou 11, 64 bits · 79 Mo</p>
+        <p class="os-req">Windows : 10 ou 11, 64 bits · 79 Mo</p>
         <ul>
           <li><svg><use href="#check"/></svg>Installation des plugins en un clic</li>
-          <li><svg><use href="#check"/></svg>Mises à jour signalées et installées depuis l'application</li>
-          <li><svg><use href="#check"/></svg>Licences activées sur ton PC, sans fichier à copier</li>
+          <li><svg><use href="#check"/></svg>Mises à jour signalées et installées depuis l’application</li>
+          <li><svg><use href="#check"/></svg>Licences activées sur ton ordinateur, sans fichier à copier</li>
           <li><svg><use href="#check"/></svg>Le même compte que sur ce site</li>
         </ul>
         <div class="os-row">
           <a class="btn btn-primary" href="telechargement/ONIRIQUE-CENTRAL-Setup.exe" download>Windows</a>
           <a class="btn btn-ghost" href="telechargement/ONIRIQUE-CENTRAL.dmg" download>Mac</a>
         </div>
-        <div class="secure">Pas encore de compte ? <a href="compte">Crée-le ici</a>, il sert aussi dans l'application.</div>
-        <div class="secure">Sous Windows, si « Windows a protégé votre ordinateur » s'affiche : Informations complémentaires, puis Exécuter quand même. L'application n'est pas encore signée, d'où cet avertissement.</div>
-        <div class="secure">Sur Mac, à la première ouverture : clic droit sur l'application, puis Ouvrir.</div>
+        <div class="secure">Pas encore de compte ? <a href="compte">Crée-le ici</a>, il sert aussi dans l’application.</div>
+        <div class="secure">Sous Windows, si « Windows a protégé votre ordinateur » s’affiche : Informations complémentaires, puis Exécuter quand même. L’application n’est pas encore signée, d’où cet avertissement.</div>
+        <div class="secure">Sur Mac, à la première ouverture : clic droit sur l’application, puis Ouvrir.</div>
       </div>
     </div>
   </section>
@@ -1141,36 +1110,36 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
     <div class="wrap offer">
       <div class="reveal">
         <span class="eyebrow">Navigateur</span>
-        <h2 style="margin-top:18px">Onirique <em class="dream">Navigateur.</em></h2>
-        <p class="lede" style="margin-top:26px">Un navigateur web aux couleurs d'ONIRIQUE, qui laisse de la place à ton DAW. Les sites s'affichent comme dans Chrome, mais les onglets que tu ne regardes pas s'endorment.</p>
+        <h2>ONIRIQUE <em class="dream">Navigateur.</em></h2>
+        <p class="lede">Un navigateur web aux couleurs d’ONIRIQUE, qui laisse de la place à ton DAW. Les sites s’affichent comme dans Chrome, mais les onglets que tu ne regardes pas s’endorment.</p>
       </div>
       <div class="card reveal">
-        <img src="assets/navigateur-256.png" alt="Logo d'ONIRIQUE Navigateur" width="72" height="72" loading="lazy" style="display:block;margin-bottom:14px">
-        <span class="tag">Onirique Navigateur</span>
+        <img src="assets/navigateur-256.png" alt="Logo d’ONIRIQUE Navigateur" width="72" height="72" loading="lazy" class="app-icon">
+        <span class="tag">ONIRIQUE Navigateur</span>
         <div class="amount">Gratuit</div>
-        <p style="color:var(--haze);font-size:14px">Windows 10 ou 11, 64 bits · 49 Mo — macOS 13 ou plus récent · 2 Mo</p>
+        <p class="os-req">Windows 10 ou 11, 64 bits · 49 Mo — macOS 13 ou plus récent · 2 Mo</p>
         <ul>
-          <li><svg><use href="#check"/></svg>Environ 20 % de mémoire en moins que Chrome sur les mêmes sites</li>
+          <li><svg><use href="#check"/></svg>Sur Windows, environ 20 % de mémoire en moins que Chrome sur les mêmes sites (mesuré sur cinq sites)</li>
           <li><svg><use href="#check"/></svg>Onglets cachés en veille après 30 secondes, libérés après 10 minutes</li>
           <li><svg><use href="#check"/></svg>VPN gratuit intégré pour les membres ONIRIQUE</li>
-          <li><svg><use href="#check"/></svg>Google et les sites en thème sombre, aux couleurs d'ONIRIQUE</li>
+          <li><svg><use href="#check"/></svg>Google et les sites en thème sombre, aux couleurs d’ONIRIQUE</li>
           <li><svg><use href="#check"/></svg>Mode Studio : ton DAW ouvert, les onglets cachés lui laissent la machine</li>
           <li><svg><use href="#check"/></svg>Bloqueur de pubs, barre latérale (CLOUD, messages, Discord), mini-lecteur</li>
           <li><svg><use href="#check"/></svg>Tu viens de Chrome, Edge, Brave ou Opera : tes favoris arrivent en un clic, ton compte Google aussi</li>
-          <li><svg><use href="#check"/></svg>Groupes d'onglets et écran divisé, deux pages côte à côte</li>
+          <li><svg><use href="#check"/></svg>Groupes d’onglets et écran divisé, deux pages côte à côte</li>
           <li><svg><use href="#check"/></svg>Extensions Chrome, barre de favoris, navigation privée, raccourcis clavier de Chrome</li>
-          <li><svg><use href="#check"/></svg>Raccourcis et dossiers sur l'accueil, historique, couleurs au choix</li>
+          <li><svg><use href="#check"/></svg>Raccourcis et dossiers sur l’accueil, historique, couleurs au choix</li>
           <li><svg><use href="#check"/></svg>Traqueurs publicitaires bloqués, mises à jour automatiques</li>
-          <li><svg><use href="#check"/></svg>Tes sites marchent comme d'habitude</li>
+          <li><svg><use href="#check"/></svg>Tes sites marchent comme d’habitude</li>
         </ul>
         <div class="os-row">
           <a class="btn btn-primary" href="telechargement/ONIRIQUE-Navigateur-Setup.exe" download>Windows</a>
           <a class="btn btn-ghost" href="telechargement/ONIRIQUE-Navigateur.dmg" download>Mac</a>
         </div>
         <div class="secure">Installation en un clic, sans droits administrateur. Il se désinstalle depuis les Paramètres de Windows.</div>
-        <div class="secure">Si « Windows a protégé votre ordinateur » s'affiche : Informations complémentaires, puis Exécuter quand même. Le navigateur n'est pas encore signé, d'où cet avertissement.</div>
-        <div class="secure">Sur Mac, à la première ouverture : clic droit sur l'application, puis Ouvrir. Le VPN y demande macOS 14 Sonoma ; la barre latérale, le mini-lecteur, les groupes d'onglets, l'écran divisé, les extensions et la barre de favoris sont pour l'instant sur Windows seulement.</div>
-        <div class="secure">Sur Windows, construit sur Chromium, le moteur libre de Chrome et d'Edge, par l'intermédiaire de Microsoft Edge WebView2, déjà présent dans Windows. Sur Mac, construit sur WebKit, le moteur de Safari, déjà présent dans macOS.</div>
+        <div class="secure">Si « Windows a protégé votre ordinateur » s’affiche : Informations complémentaires, puis Exécuter quand même. Le navigateur n’est pas encore signé, d’où cet avertissement.</div>
+        <div class="secure">Sur Mac, à la première ouverture : clic droit sur l’application, puis Ouvrir. Le VPN y demande macOS 14 Sonoma ; la barre latérale, le mini-lecteur, les groupes d’onglets, l’écran divisé, les extensions et la barre de favoris sont pour l’instant sur Windows seulement.</div>
+        <div class="secure">Sur Windows, construit sur Chromium, le moteur libre de Chrome et d’Edge, par l’intermédiaire de Microsoft Edge WebView2, déjà présent dans Windows. Sur Mac, construit sur WebKit, le moteur de Safari, déjà présent dans macOS.</div>
       </div>
     </div>
   </section>
@@ -1179,55 +1148,55 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
     <div class="wrap faq">
       <div class="reveal">
         <span class="eyebrow">Questions</span>
-        <h2 style="margin-top:18px">Avant de <em class="dream">rêver.</em></h2>
+        <h2>Avant de <em class="dream">rêver.</em></h2>
         <div class="rocky-card">
-          <img src="assets/rocky/rocky-portrait.webp?v=7" alt="ROCKY, l'assistant d'ONIRIQUE : un petit caillou à cinq pattes" width="720" height="626" loading="lazy">
+          <img src="assets/rocky/rocky-portrait.webp?v=7" alt="ROCKY, l’assistant d’ONIRIQUE : un petit caillou à cinq pattes" width="720" height="626" loading="lazy">
           <div><p><b>Pas trouvé ta réponse ?</b> ROCKY connaît tout le site et répond tout de suite.</p>
           <button class="btn btn-ghost" type="button" data-rocky-open>Demander à ROCKY</button></div>
         </div>
       </div>
       <div class="reveal faq-list">
         <h3 class="faq-group">Plugins et licences</h3>
-        <details open><summary>Avec quels logiciels les plugins ONIRIQUE fonctionnent-ils ?</summary><p>Avec tout DAW compatible VST3 sous Windows : FL Studio, Ableton Live, Reaper, Cubase, Studio One, Bitwig… Sur Mac, les plugins disponibles s'ouvrent aussi en Audio Unit dans Logic Pro et GarageBand.</p></details>
-        <details><summary>Est-ce disponible sur Mac ?</summary><p>L'application ONIRIQUE CENTRAL existe pour Mac. La plupart des plugins le sont aussi, en VST3 et Audio Unit (Intel et Apple Silicon) : dans la boutique, chaque plugin indique les systèmes pour lesquels il est disponible.</p></details>
-        <details><summary>Comment installer un plugin ?</summary><p>Avec l'application ONIRIQUE CENTRAL, gratuite : connecte-toi avec ton compte, puis installe le plugin en un clic. Elle le place au bon endroit et active sa licence toute seule. Relance ensuite le scan des plugins de ton DAW (dans FL Studio : Options → Manage plugins → Find installed plugins).</p></details>
-        <details><summary>Puis-je essayer un plugin avant de l'acheter ?</summary><p>Oui : chaque plugin payant s'essaie gratuitement pendant 7 jours, une fois par compte. Sur sa fiche de la boutique, tu peux aussi essayer son interface directement dans ton navigateur.</p></details>
-        <details><summary>Y a-t-il des plugins gratuits ?</summary><p>Oui : ONIRIQUE RISER, METERBOX et PLAYER (Windows et Mac), STREAM et BROADCAST (Windows) sont gratuits. Il suffit d'un compte pour les installer depuis ONIRIQUE CENTRAL.</p></details>
-        <details><summary>Sur combien d'ordinateurs puis-je l'utiliser ?</summary><p>Une licence s'active sur deux ordinateurs à la fois par défaut, par exemple ton PC fixe et ton portable.</p></details>
-        <details><summary>J'ai changé d'ordinateur : comment récupérer ma place ?</summary><p>Sur l'ancien ordinateur, dans la bibliothèque d'ONIRIQUE CENTRAL, choisis « Désactiver » sur le plugin : la place est rendue et tu peux l'activer sur le nouveau. Si l'ancien ordinateur n'est plus accessible, écris au support, qui libère la licence.</p></details>
-        <details><summary>Les mises à jour sont-elles comprises ?</summary><p>Oui. Quand une nouvelle version sort, ONIRIQUE CENTRAL te la propose et l'installe : ce qui change est indiqué dans l'historique des versions de chaque plugin.</p></details>
-        <details><summary>C'est quoi les plugins ABRASION et RELIC ?</summary><p>Ce sont des créateurs partenaires vendus sur la boutique ONIRIQUE (par exemple RELIC BLOOM). Leurs plugins s'achètent à l'unité : ils ne font pas partie des abonnements ONIRIQUE.</p></details>
+        <details open><summary>Avec quels logiciels les plugins ONIRIQUE fonctionnent-ils ?</summary><p>Avec tout DAW compatible VST3 sous Windows : FL Studio, Ableton Live, Reaper, Cubase, Studio One, Bitwig… Sur Mac, les plugins disponibles s’ouvrent aussi en Audio Unit dans Logic Pro et GarageBand.</p></details>
+        <details><summary>Est-ce disponible sur Mac ?</summary><p>L’application ONIRIQUE CENTRAL existe pour Mac. La plupart des plugins le sont aussi, en VST3 et Audio Unit (Intel et Apple Silicon) : dans la boutique, chaque plugin indique les systèmes pour lesquels il est disponible.</p></details>
+        <details><summary>Comment installer un plugin ?</summary><p>Avec l’application ONIRIQUE CENTRAL, gratuite : connecte-toi avec ton compte, puis installe le plugin en un clic. Elle le place au bon endroit et active sa licence toute seule. Relance ensuite le scan des plugins de ton DAW (dans FL Studio : Options → Manage plugins → Find installed plugins).</p></details>
+        <details><summary>Puis-je essayer un plugin avant de l’acheter ?</summary><p>Oui : chaque plugin payant s’essaie gratuitement pendant 7 jours, une fois par compte. Sur sa fiche de la boutique, tu peux aussi essayer son interface directement dans ton navigateur.</p></details>
+        <details><summary>Y a-t-il des plugins gratuits ?</summary><p>Oui : ONIRIQUE RISER, METERBOX et PLAYER (Windows et Mac), STREAM et BROADCAST (Windows) sont gratuits. Il suffit d’un compte pour les installer depuis ONIRIQUE CENTRAL.</p></details>
+        <details><summary>Sur combien d’ordinateurs puis-je l’utiliser ?</summary><p>Une licence s’active sur deux ordinateurs à la fois par défaut, par exemple ton PC fixe et ton portable.</p></details>
+        <details><summary>J’ai changé d’ordinateur : comment récupérer ma place ?</summary><p>Sur l’ancien ordinateur, dans la bibliothèque d’ONIRIQUE CENTRAL, choisis « Désactiver » sur le plugin : la place est rendue et tu peux l’activer sur le nouveau. Si l’ancien ordinateur n’est plus accessible, écris au support, qui libère la licence.</p></details>
+        <details><summary>Les mises à jour sont-elles comprises ?</summary><p>Oui. Quand une nouvelle version sort, ONIRIQUE CENTRAL te la propose et l’installe : ce qui change est indiqué dans l’historique des versions de chaque plugin.</p></details>
+        <details><summary>C’est quoi les plugins ABRASION et RELIC ?</summary><p>Ce sont des créateurs partenaires vendus sur la boutique ONIRIQUE (par exemple RELIC BLOOM). Leurs plugins s’achètent à l’unité : ils ne font pas partie des abonnements ONIRIQUE.</p></details>
 
         <h3 class="faq-group">Abonnements et paiement</h3>
-        <details><summary>Quels abonnements existent pour les plugins ?</summary><p>Plusieurs formules, mensuelles ou annuelles : All Access ONIRIQUE (tous les plugins ONIRIQUE), Essential (une sélection), ou l'abonnement à la carte, où tu coches les plugins voulus et le prix suit. Les prix à jour sont dans la <a href="boutique">boutique</a>. Les abonnements couvrent les plugins ONIRIQUE, pas ceux des partenaires.</p></details>
+        <details><summary>Quels abonnements existent pour les plugins ?</summary><p>Plusieurs formules, mensuelles ou annuelles : All Access ONIRIQUE (tous les plugins ONIRIQUE), Essential (une sélection), ou l’abonnement à la carte, où tu coches les plugins voulus et le prix suit. Les prix à jour sont dans la <a href="boutique">boutique</a>. Les abonnements couvrent les plugins ONIRIQUE, pas ceux des partenaires.</p></details>
         <details><summary>Comment je paie ?</summary><p>Par carte, sur une page de paiement sécurisée (Stripe). Le reçu arrive par e-mail, et la licence apparaît tout de suite dans ton compte et dans ONIRIQUE CENTRAL.</p></details>
-        <details><summary>Comment je résilie un abonnement ?</summary><p>Dans Mon compte, ou dans ONIRIQUE CENTRAL : « Résilier ». Tu gardes l'accès jusqu'à la fin de la période payée, et plus rien n'est prélevé ensuite.</p></details>
+        <details><summary>Comment je résilie un abonnement ?</summary><p>Dans Mon compte, ou dans ONIRIQUE CENTRAL : « Résilier ». Tu gardes l’accès jusqu’à la fin de la période payée, et plus rien n’est prélevé ensuite.</p></details>
         <details><summary>Puis-je être remboursé ?</summary><p>Tu as quatorze jours pour te rétracter après un achat ou un abonnement, sauf si tu as demandé à en profiter tout de suite en renonçant à ce droit lors du paiement. Écris à support@onirique.store. Tout est détaillé sur la page <a href="remboursement">Rétractation et remboursement</a>.</p></details>
-        <details><summary>Comment marche le parrainage ?</summary><p>Dans Mon compte, rubrique Parrainage, tu trouves ton lien à partager. Ton ami a une remise sur son premier plugin ONIRIQUE, et toi, tu reçois un code de réduction dès qu'il fait son premier achat.</p></details>
+        <details><summary>Comment marche le parrainage ?</summary><p>Dans Mon compte, rubrique Parrainage, tu trouves ton lien à partager. Ton ami a une remise sur son premier plugin ONIRIQUE, et toi, tu reçois un code de réduction dès qu’il fait son premier achat.</p></details>
 
-        <h3 class="faq-group">L'application ONIRIQUE CENTRAL</h3>
-        <details><summary>À quoi sert ONIRIQUE CENTRAL ?</summary><p>C'est l'application gratuite d'ONIRIQUE : elle installe tes plugins, les met à jour et active leurs licences. Tu y retrouves aussi ONIRIQUE CUT et ONIRIQUE CLOUD, déjà connectés à ton compte, et tu peux choisir sa couleur dans les Paramètres (l'engrenage en haut).</p></details>
-        <details><summary>Windows bloque l'installateur, c'est normal ?</summary><p>Windows peut afficher un avertissement SmartScreen pour une application récente. Clique sur « Informations complémentaires », puis « Exécuter quand même ». Télécharge toujours l'installateur depuis onirique.store.</p></details>
-        <details><summary>Comment mettre à jour l'application ?</summary><p>Elle se met à jour toute seule : quand une nouvelle version est prête, elle s'installe à la prochaine fermeture de l'application.</p></details>
+        <h3 class="faq-group">L’application ONIRIQUE CENTRAL</h3>
+        <details><summary>À quoi sert ONIRIQUE CENTRAL ?</summary><p>C’est l’application gratuite d’ONIRIQUE : elle installe tes plugins, les met à jour et active leurs licences. Tu y retrouves aussi ONIRIQUE CUT et ONIRIQUE CLOUD, déjà connectés à ton compte, et tu peux choisir sa couleur dans les Paramètres (l’engrenage en haut).</p></details>
+        <details><summary>Windows bloque l’installateur, c’est normal ?</summary><p>Windows peut afficher un avertissement SmartScreen pour une application récente. Clique sur « Informations complémentaires », puis « Exécuter quand même ». Télécharge toujours l’installateur depuis onirique.store.</p></details>
+        <details><summary>Comment mettre à jour l’application ?</summary><p>Elle se met à jour toute seule : quand une nouvelle version est prête, elle s’installe à la prochaine fermeture de l’application.</p></details>
 
         <h3 class="faq-group">ONIRIQUE CLOUD</h3>
-        <details><summary>C'est quoi ONIRIQUE CLOUD ?</summary><p>Ton espace pour ranger ta musique en cours : projets, versions de chaque titre, BPM, tonalité, crédits, paroles, playlists. Tu partages un son ou un projet par un lien d'écoute (avec mot de passe, date de fin ou téléchargement si tu veux), et on peut te laisser des commentaires à un moment précis du titre.</p></details>
-        <details><summary>Combien coûte ONIRIQUE CLOUD ?</summary><p>1,99 € par mois ou 9,99 € par an, sans engagement ; il est inclus pour les membres ONIRIQUE. L'abonnement comprend aussi la page de liens. Les plugins ne sont pas compris. Tout est sur la page <a href="cloud">ONIRIQUE CLOUD</a>.</p></details>
-        <details><summary>Si j'arrête mon abonnement CLOUD, je perds mes sons ?</summary><p>Non. Après la fin de la période payée, ONIRIQUE CLOUD et ta page de liens se ferment, mais tes sons restent sur ton compte : ils reviennent si tu te réabonnes.</p></details>
-        <details><summary>Comment fonctionnent les playlists, les notes et « Découvrir » ?</summary><p>Une playlist se note de 1 à 5 étoiles, et chacun peut lui donner un up par jour (à chaque son aussi). En haut du CLOUD, « Découvrir » montre le top de la semaine, les mieux notées, les nouveautés et les playlists des membres que tu suis. Une playlist privée n'y apparaît pas : seuls ceux qui ont son lien la voient.</p></details>
-        <details><summary>Puis-je ajouter des titres Spotify ?</summary><p>Oui, pour les membres ONIRIQUE, dans l'application ONIRIQUE CENTRAL : connecte ton compte Spotify, cherche un titre ou importe tes playlists, et ils se jouent dans le lecteur du CLOUD, mêlés à tes sons.</p></details>
-        <details><summary>Le bouton SCAN, c'est quoi ?</summary><p>Il cherche si une de tes prods a été sortie sur les plateformes sans toi. Si c'est un faux positif, « Ce n'est pas un vol » retire l'alerte pour de bon.</p></details>
+        <details><summary>C’est quoi ONIRIQUE CLOUD ?</summary><p>Ton espace pour ranger ta musique en cours : projets, versions de chaque titre, BPM, tonalité, crédits, paroles, playlists. Tu partages un son ou un projet par un lien d’écoute (avec mot de passe, date de fin ou téléchargement si tu veux), et on peut te laisser des commentaires à un moment précis du titre.</p></details>
+        <details><summary>Combien coûte ONIRIQUE CLOUD ?</summary><p>1,99 € par mois ou 9,99 € par an, sans engagement ; il est inclus pour les membres ONIRIQUE. L’abonnement comprend aussi la page de liens. Les plugins ne sont pas compris. Tout est sur la page <a href="cloud">ONIRIQUE CLOUD</a>.</p></details>
+        <details><summary>Si j’arrête mon abonnement CLOUD, je perds mes sons ?</summary><p>Non. Après la fin de la période payée, ONIRIQUE CLOUD et ta page de liens se ferment, mais tes sons restent sur ton compte : ils reviennent si tu te réabonnes.</p></details>
+        <details><summary>Comment fonctionnent les playlists, les notes et « Découvrir » ?</summary><p>Une playlist se note de 1 à 5 étoiles, et chacun peut lui donner un up par jour (à chaque son aussi). En haut du CLOUD, « Découvrir » montre le top de la semaine, les mieux notées, les nouveautés et les playlists des membres que tu suis. Une playlist privée n’y apparaît pas : seuls ceux qui ont son lien la voient.</p></details>
+        <details><summary>Puis-je ajouter des titres Spotify ?</summary><p>Oui, pour les membres ONIRIQUE, dans l’application ONIRIQUE CENTRAL : connecte ton compte Spotify, cherche un titre ou importe tes playlists, et ils se jouent dans le lecteur du CLOUD, mêlés à tes sons.</p></details>
+        <details><summary>Le bouton SCAN, c’est quoi ?</summary><p>Il cherche si une de tes prods a été sortie sur les plateformes sans toi. Si c’est un faux positif, « Ce n’est pas un vol » retire l’alerte pour de bon.</p></details>
 
         <h3 class="faq-group">Pages de profil et communauté</h3>
-        <details><summary>Comment créer ma page de profil ?</summary><p>Dans Mon compte, rubrique Page de profil : choisis ton adresse, ta bio, ta couleur, ta bannière et jusqu'à six liens. Tes playlists publiques y apparaissent toutes seules.</p></details>
-        <details><summary>Comment suivre quelqu'un ou lui écrire ?</summary><p>Sur sa page de profil : « S'abonner » pour suivre ses playlists dans « Découvrir », « Message » pour lui écrire en privé. Tu peux aussi commenter sa page, répondre aux commentaires et les aimer. Tes messages et ton activité sont dans <a href="messages">Messages</a>.</p></details>
+        <details><summary>Comment créer ma page de profil ?</summary><p>Dans Mon compte, rubrique Page de profil : choisis ton adresse, ta bio, ta couleur, ta bannière et jusqu’à six liens. Tes playlists publiques y apparaissent toutes seules.</p></details>
+        <details><summary>Comment suivre quelqu’un ou lui écrire ?</summary><p>Sur sa page de profil : « S’abonner » pour suivre ses playlists dans « Découvrir », « Message » pour lui écrire en privé. Tu peux aussi commenter sa page, répondre aux commentaires et les aimer. Tes messages et ton activité sont dans <a href="messages">Messages</a>.</p></details>
 
         <h3 class="faq-group">Outils et ONIRIQUE CUT</h3>
         <details><summary>Les outils gratuits demandent-ils un compte ?</summary><p>Non : BPM et tonalité, volume LUFS, IA SPLIT, convertisseur, accordeur et les autres <a href="outils">outils gratuits</a> fonctionnent dans ton navigateur. Tes fichiers restent sur ton appareil.</p></details>
-        <details><summary>C'est quoi ONIRIQUE CUT ?</summary><p>Un outil qui monte tes clips sur le beat d'un son, en vidéo verticale 9:16 pour TikTok, les Reels et les Shorts. Il est réservé aux membres ONIRIQUE et aux abonnés d'ONIRIQUE CLOUD.</p></details>
+        <details><summary>C’est quoi ONIRIQUE CUT ?</summary><p>Un outil qui monte tes clips sur le beat d’un son, en vidéo verticale 9:16 pour TikTok, les Reels et les Shorts. Il est réservé aux membres ONIRIQUE et aux abonnés d’ONIRIQUE CLOUD.</p></details>
 
         <h3 class="faq-group">Compte et aide</h3>
-        <details><summary>J'ai oublié mon mot de passe.</summary><p>Sur la page <a href="compte">Compte</a>, choisis « Mot de passe oublié » : un lien pour en choisir un nouveau arrive par e-mail. Tu peux aussi activer la double authentification dans tes paramètres.</p></details>
+        <details><summary>J’ai oublié mon mot de passe.</summary><p>Sur la page <a href="compte">Compte</a>, choisis « Mot de passe oublié » : un lien pour en choisir un nouveau arrive par e-mail. Tu peux aussi activer la double authentification dans tes paramètres.</p></details>
         <details><summary>Comment contacter ONIRIQUE ?</summary><p>Par la page <a href="support">Support</a> : la réponse arrive par e-mail. Pour une question rapide, ROCKY, la bulle en bas à droite, répond tout de suite.</p></details>
       </div>
     </div>
@@ -1241,7 +1210,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
       <span>© 2026 Onirique. Plugins audio pour la voix.</span>
       <nav aria-label="Liens légaux"><a href="outils">Outils gratuits</a><a href="mentions-legales">Mentions légales</a><a href="cgv">CGV et CGU</a><a href="remboursement">Rétractation et remboursement</a><a href="confidentialite">Confidentialité</a><a href="cookies">Cookies</a><a href="support">Contact</a></nav>
     </div>
-    <p class="legal-note">1176, LA-2A et Pultec sont des marques de leurs propriétaires respectifs. Elles sont citées uniquement pour décrire un caractère sonore. Onirique n'est affilié à aucune de ces marques, et VocalBox n'utilise aucun de leurs algorithmes ni de leur code.</p>
+    <p class="legal-note">1176, LA-2A et Pultec sont des marques de leurs propriétaires respectifs. Elles sont citées uniquement pour décrire un caractère sonore. Onirique n’est affilié à aucune de ces marques, et VocalBox n’utilise aucun de leurs algorithmes ni de leur code.</p>
   </div>
 </footer>
 
@@ -1253,6 +1222,9 @@ document.addEventListener("DOMContentLoaded", () => {
 const reduced = (matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.classList.contains("lite"));
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+// L’accent du compte (« r, g, b », da.css et accent.js), relu à chaque dessin : account.js peut le changer après le chargement.
+const accRGB = (v = "--acc") => getComputedStyle(document.documentElement).getPropertyValue(v).trim() || "229, 56, 74";
+const acc = (a = 1) => `rgba(${accRGB()},${a})`;
 
 /* ================= BOUTIQUE : prix et lien de paiement (à remplir)
    Colle ici le lien de paiement de VocalBox (Lemon Squeezy, Payhip, Gumroad, Stripe Payment Link...).
@@ -1309,7 +1281,7 @@ const defaults = () => {
   for (const id in P) s[id] = P[id].def;
   return s;
 };
-// presets d'usine (Source/PresetManager.h) : tout revient aux valeurs par défaut, puis ces réglages s'appliquent
+// presets d’usine (Source/PresetManager.h) : tout revient aux valeurs par défaut, puis ces réglages s’appliquent
 const FACTORY = [
   ["Init", {}],
   ["Clean Pop Vocal", { lowCut: 1, low: 3, mud: 4, high: 5, highFreq: 1, smartS: 1, deessAmt: 30, resoAmt: 35, compOn: 1, compMode: 2, fetIn: 6, fetAttack: 3, fetRelease: 5, laPeak: 35, drive: 2, autoGain: 1 }],
@@ -1346,7 +1318,7 @@ function setParam(id, v) {
   touched(); applyAudio(); drawCurveSoon();
 }
 
-/* ================= éléments d'interface (1 u = 1 pixel de l'interface d'origine, 1480 x 910) */
+/* ================= éléments d’interface (1 u = 1 pixel de l’interface d’origine, 1480 x 910) */
 const U = v => `calc(var(--u) * ${v})`;
 function el(parent, cls, x, y, w, h, html = "", tag = "div") {
   const e = document.createElement(tag); e.className = cls;
@@ -1456,7 +1428,7 @@ function card(ui, title, x, y, w, h, key) {
 function vu(ui, x, y, w, h) {
   const ticks = [-20, -10, -7, -5, -3, -2, -1, 0].map(dbv => {
     const a = (40 - Math.min(1, -dbv / 20) * 80) * Math.PI / 180, x1 = 50 + Math.sin(a) * 40, y1 = 66 - Math.cos(a) * 40, x2 = 50 + Math.sin(a) * 45, y2 = 66 - Math.cos(a) * 45;
-    return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${dbv > -3 ? "#E23444" : "rgba(255,236,238,.6)"}" stroke-width="1"/>`;
+    return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${dbv > -3 ? acc() : "rgba(255,236,238,.6)"}" stroke-width="1"/>`;
   }).join("");
   const e = el(ui, "vu", x, y, w, h, `<svg viewBox="0 0 100 75" aria-hidden="true">
     <path d="M${50 + Math.sin(-40 * Math.PI / 180) * 42} ${66 - Math.cos(-40 * Math.PI / 180) * 42}A42 42 0 0 1 ${50 + Math.sin(40 * Math.PI / 180) * 42} ${66 - Math.cos(40 * Math.PI / 180) * 42}" fill="none" stroke="rgba(255,236,238,.25)" stroke-width=".8"/>${ticks}
@@ -1537,7 +1509,7 @@ function buildVB() {
   G0(() => {
     seg(ui, "compMode", ["1176", "LA-2A", "DUO"], 966, 172, 480, 28, "Mode de compression");
     const ord = el(ui, "pl", 1086, 214, 240, 34, "", "button"); ord.id = "vbOrder"; ord.type = "button";
-    ord.setAttribute("aria-label", "Inverser l'ordre des deux compresseurs"); ord.style.gap = "1em"; ord.style.fontSize = U(13);
+    ord.setAttribute("aria-label", "Inverser l’ordre des deux compresseurs"); ord.style.gap = "1em"; ord.style.fontSize = U(13);
     ord.addEventListener("click", () => { S.compOrder = S.compOrder ? 0 : 1; touched(); renderAll(); });
     vb.fet = el(ui, "sub", 966, 264, 480, 205);
     el(ui, "card-t", 980, 281, null, null, "1176 <em>FET</em>").style.setProperty("--ct", 12);
@@ -1582,7 +1554,7 @@ function buildVB() {
   vb.ui = ui;
 }
 
-/* ordre de traitement : glisser-déposer dans l'en-tête */
+/* ordre de traitement : glisser-déposer dans l’en-tête */
 function renderOrder() {
   const seps = $$(".ob-sep", vb.order);
   ORDER.forEach((id, i) => {
@@ -1620,7 +1592,7 @@ function renderPresetName() {
 }
 function applyPreset(i) {
   UI.applying = true;
-  const keep = { liveMode: S.liveMode, os: S.os, bypass: S.bypass };   // le mode, le suréchantillonnage et le bypass ne font pas partie du son d'un preset
+  const keep = { liveMode: S.liveMode, os: S.os, bypass: S.bypass };   // le mode, le suréchantillonnage et le bypass ne font pas partie du son d’un preset
   Object.assign(S, defaults(), keep);
   for (const [k, v] of Object.entries(FACTORY[i][1])) S[k] = typeof S[k] === "boolean" ? !!v : v;
   UI.preset = i; UI.modified = false; UI.mbPreset = 0; ORDER = DEFAULT_ORDER.slice();
@@ -1677,7 +1649,7 @@ function renderAll() {
 /* ================= correspondance boutons -> filtres de la démo */
 const mapEQ = () => ({ deF: S.deessFreq, de: S.deessOn ? -(S.deessAmt / 100) * 14 : 0 });
 // LOW / MID / HIGH : les douze filtres du plugin, mêmes fréquences, largeurs et gains (Source/DSP/VocalEQ.h).
-// Chaque ligne : type, fréquence, Q, gain en dB. Le Q d'un passe-haut Web Audio est en dB : -3 = Butterworth.
+// Chaque ligne : type, fréquence, Q, gain en dB. Le Q d’un passe-haut Web Audio est en dB : -3 = Butterworth.
 function toneEQ(rate) {
   const on = S.eqOn, l = on ? S.low / 10 : 0, m = on ? S.mud / 10 : 0, h = on ? S.high / 10 : 0;
   const f = [80, 100, 125][S.lowFreq], hf = [8000, 10000, 20000][S.highFreq];
@@ -1692,8 +1664,8 @@ function toneEQ(rate) {
 }
 const PEQ_WEB = ["peaking", "lowshelf", "highshelf", "highpass", "lowpass"];
 function shaperCurve(type, drive) {
-  // Comme dans le plugin (Source/DSP/Sat*.h) : jusqu'à +30 dB dans l'étage, un biais propre à chaque couleur, et un
-  // niveau de référence (ici les crêtes d'un morceau, -6 dBFS) qui ressort au même niveau : le DRIVE ajoute de la densité, pas du volume.
+  // Comme dans le plugin (Source/DSP/Sat*.h) : jusqu’à +30 dB dans l’étage, un biais propre à chaque couleur, et un
+  // niveau de référence (ici les crêtes d’un morceau, -6 dBFS) qui ressort au même niveau : le DRIVE ajoute de la densité, pas du volume.
   const n = 2048, c = new Float32Array(n), d = drive / 10, k = Math.pow(10, 1.5 * d), ref = .5, mix = Math.min(1, d * 5);
   const b = type === 0 ? (.04 + .2 * d) * Math.min(1, d * 8) : type === 1 ? (.03 + .09 * d) * Math.min(1, d * 8) : .012 * d;
   const sh = type === 1 ? u => u / Math.pow(1 + Math.pow(Math.abs(u), 1.4), 1 / 1.4) : Math.tanh;
@@ -1706,7 +1678,7 @@ function shaperCurve(type, drive) {
 }
 
 /* ================= moteur audio de démonstration (chaîne VocalBox simplifiée) */
-// Une mise à jour de la page peut relancer ce script sans détruire l'ancien moteur : on coupe l'ancien.
+// Une mise à jour de la page peut relancer ce script sans détruire l’ancien moteur : on coupe l’ancien.
 try { window.__oniriqueAudio && window.__oniriqueAudio.close(); } catch {}
 let ctx = null, N = null, playing = false;
 function buildAudio() {
@@ -1733,7 +1705,7 @@ function buildAudio() {
   N.preMeter = ctx.createAnalyser(); N.preMeter.fftSize = 2048; N.in.connect(N.preMeter);
   N.postMeter = ctx.createAnalyser(); N.postMeter.fftSize = 2048; N.tapeHi.connect(N.postMeter);
   N.an = ctx.createAnalyser(); N.an.fftSize = 4096; N.an.smoothingTimeConstant = .82;
-  N.vol = g();   // volume d'écoute : après l'analyseur, n'influence ni le spectre ni le témoin OVER
+  N.vol = g();   // volume d’écoute : après l’analyseur, n’influence ni le spectre ni le témoin OVER
   N.master.connect(N.an); N.an.connect(N.vol); N.vol.connect(ctx.destination);
   applyVolume(true);
   N.agDb = 0;
@@ -1778,8 +1750,8 @@ ranges.forEach(r => {
 $$("output[data-out]").forEach(o => bind(o.dataset.out, (v, n, txt) => o.textContent = txt));
 $$("[data-tg]").forEach(b => b.addEventListener("click", () => { S[b.dataset.tg] = !S[b.dataset.tg]; touched(); renderAll(); }));
 $$("[data-ab]").forEach(b => b.addEventListener("click", () => { S.bypass = b.dataset.ab === "raw"; renderAll(); }));
-applyPreset(0);   // l'interface s'ouvre sur « Init » : tous les réglages au neutre, rien n'est modifié d'avance
-/* ================= lecture : le fichier de l'auditeur, décodé dans son navigateur (rien n'est envoyé) */
+applyPreset(0);   // l’interface s’ouvre sur « Init » : tous les réglages au neutre, rien n’est modifié d’avance
+/* ================= lecture : le fichier de l’auditeur, décodé dans son navigateur (rien n’est envoyé) */
 const player = { buf: null, node: null, startedAt: 0, offset: 0 };
 const playBtn = $("#play"), seek = $("#seek"), tCur = $("#tCur"), tDur = $("#tDur"), srcStatus = $("#srcStatus");
 const fmtT = s => isFinite(s) && s > 0 ? Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0") : "0:00";
@@ -1806,7 +1778,7 @@ function setPlaying(on) {
   playing = on;
   playBtn.classList.toggle("on", on);
   playBtn.setAttribute("aria-pressed", on);
-  $("#playLabel").textContent = on ? "Pause" : "Lancer l'écoute";
+  $("#playLabel").textContent = on ? "Pause" : "Lancer l’écoute";
   $("#playIcon").innerHTML = on ? '<path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/>' : '<path d="M7 4.5v15l13-7.5z" fill="currentColor"/>';
 }
 async function play() {
@@ -1838,7 +1810,7 @@ $("#file").addEventListener("change", async e => {
   srcStatus.textContent = "Lecture de « " + file.name + " ». Le fichier reste sur ton appareil.";
   play();
 });
-/* volume d'écoute, mémorisé dans ce navigateur */
+/* volume d’écoute, mémorisé dans ce navigateur */
 const volIn = $("#vol"), muteBtn = $("#mute");
 let volume = .8, muted = false;
 try { const v = localStorage.getItem("onirique-volume"); if (v !== null && isFinite(+v)) volume = Math.min(1, Math.max(0, +v)); } catch {}
@@ -1848,7 +1820,7 @@ function applyVolume(snap) {
   muteBtn.setAttribute("aria-pressed", muted || volume === 0);
   muteBtn.setAttribute("aria-label", muted ? "Remettre le son" : "Couper le son");
   $("#volWaves").style.opacity = shown === 0 ? 0 : shown < .5 ? .55 : 1;
-  if (ctx && N) N.vol.gain.setTargetAtTime(shown * shown, ctx.currentTime, snap ? .001 : .03);   // courbe quadratique, plus naturelle à l'oreille
+  if (ctx && N) N.vol.gain.setTargetAtTime(shown * shown, ctx.currentTime, snap ? .001 : .03);   // courbe quadratique, plus naturelle à l’oreille
 }
 volIn.addEventListener("input", () => {
   volume = +volIn.value; muted = false; applyVolume();
@@ -1870,10 +1842,10 @@ function updateTransport() {
 seek.addEventListener("input", () => { seeking = true; seek.style.setProperty("--p", seek.value * 100 + "%"); tCur.textContent = fmtT(seek.value * trackDur()); });
 seek.addEventListener("change", () => { const t = seek.value * trackDur(); if (ctx) seekTrack(t); else player.offset = t; seeking = false; });
 
-/* ================= courbe d'EQ + spectre */
+/* ================= courbe d’EQ + spectre */
 const scope = $("#scope"), sctx = scope.getContext("2d");
 const off = new OfflineAudioContext(1, 128, 44100);
-const cf = Array.from({ length: 13 }, () => off.createBiquadFilter());   // les douze filtres de l'EQ, puis le de-esser
+const cf = Array.from({ length: 13 }, () => off.createBiquadFilter());   // les douze filtres de l’EQ, puis le de-esser
 cf[12].type = "peaking"; cf[12].Q.value = 2.2;
 const NPTS = 220, fr = new Float32Array(NPTS).map((_, i) => 20 * Math.pow(1000, i / (NPTS - 1)));
 const mag = new Float32Array(NPTS), ph = new Float32Array(NPTS), sum = new Float32Array(NPTS);
@@ -1917,11 +1889,11 @@ function drawScope() {
     sctx.lineTo(W, bot); sctx.closePath(); sctx.fillStyle = grad; sctx.fill();
     sctx.strokeStyle = "rgba(255,236,238,.8)"; sctx.lineWidth = 1.2 * d; sctx.stroke();
   }
-  // courbe d'EQ
+  // courbe d’EQ
   sctx.beginPath();
   for (let i = 0; i < NPTS; i++) { const x = xOf(fr[i]), y = yOf(S.bypass ? 0 : sum[i]); i ? sctx.lineTo(x, y) : sctx.moveTo(x, y); }
-  sctx.strokeStyle = "#E23444"; sctx.lineWidth = 2.5 * d; sctx.shadowColor = "#E23444"; sctx.shadowBlur = 18 * d; sctx.stroke(); sctx.shadowBlur = 0;
-  sctx.lineTo(W, yOf(0)); sctx.lineTo(0, yOf(0)); sctx.closePath(); sctx.fillStyle = "rgba(226,52,68,.08)"; sctx.fill();
+  sctx.strokeStyle = acc(); sctx.lineWidth = 2.5 * d; sctx.shadowColor = acc(); sctx.shadowBlur = 18 * d; sctx.stroke(); sctx.shadowBlur = 0;
+  sctx.lineTo(W, yOf(0)); sctx.lineTo(0, yOf(0)); sctx.closePath(); sctx.fillStyle = acc(.08); sctx.fill();
 }
 
 /* ================= rubans du hero (la voix comme onde de rêve) */
@@ -1929,13 +1901,13 @@ const rib = $("#ribbons"), rctx = rib.getContext("2d");
 let mx = .5, my = .4, level = 0;
 addEventListener("pointermove", e => { mx = e.clientX / innerWidth; my = e.clientY / innerHeight; }, { passive: true });
 const STARS = Array.from({ length: 16 }, (_, i) => ({ x: ((i * 0.618) % 1) * .96 + .02, y: ((i * 0.377 + .1) % 1) * .55 + .03, r: 5 + (i * 7 % 11) * 1.6, sp: .6 + (i % 5) * .25, ph: i * 1.7 }));
-const COLS = [[226,52,68], [255,236,238], [246,238,238], [180,20,35], [226,52,68]];
+const COLS = ["--acc", [255,236,238], [246,238,238], "--acc-lo", "--acc"];
 function drawRibbons(time) {
   const d = sizeCanvas(rib), W = rib.width, H = rib.height;
   rctx.clearRect(0, 0, W, H); rctx.globalCompositeOperation = "lighter";
   const t = time / 1000;
   for (let r = 0; r < COLS.length; r++) {
-    const [cr, cg, cb] = COLS[r], base = H * (.36 + r * .035 + (my - .4) * .08);
+    const [cr, cg, cb] = typeof COLS[r] === "string" ? accRGB(COLS[r]).split(",").map(Number) : COLS[r], base = H * (.36 + r * .035 + (my - .4) * .08);
     rctx.beginPath();
     for (let x = 0; x <= W; x += 6 * d) {
       const u = x / W, env = Math.sin(Math.PI * u) ** 1.4;
@@ -1965,14 +1937,14 @@ function drawModes() {
     const peak = Math.max(...cv.map(Math.abs));
     x2.beginPath();
     for (let i = 0; i < cv.length; i += 8) { const x = i / (cv.length - 1) * W, y = H / 2 - cv[i] / peak * H * .44; i ? x2.lineTo(x, y) : x2.moveTo(x, y); }
-    const g = x2.createLinearGradient(0, 0, W, 0); g.addColorStop(0, "#FFECEE"); g.addColorStop(1, "#E23444");
-    x2.strokeStyle = g; x2.lineWidth = 2.5 * d; x2.shadowColor = "#E23444"; x2.shadowBlur = 12 * d; x2.stroke(); x2.shadowBlur = 0;
+    const g = x2.createLinearGradient(0, 0, W, 0); g.addColorStop(0, "#FFECEE"); g.addColorStop(1, acc());
+    x2.strokeStyle = g; x2.lineWidth = 2.5 * d; x2.shadowColor = acc(); x2.shadowBlur = 12 * d; x2.stroke(); x2.shadowBlur = 0;
   }
 }
 addEventListener("resize", drawModes);
 
 
-/* ================= écrans de l'interface */
+/* ================= écrans de l’interface */
 const visible = new Set();
 new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? visible.add(e.target) : visible.delete(e.target))).observe(vb.ui);
 const dpr = () => Math.min(devicePixelRatio || 1, 2);
@@ -1992,7 +1964,7 @@ function drawReso(t) {
   const raw = [], out = [];
   for (let i = 0; i <= 240; i++) { const x = i / 240, b = base(x), pk = peak(x); raw.push([x * W, b - pk]); out.push([x * W, b - pk * (1 - amt * zoneSens(x) * .9)]); }
   g.beginPath(); raw.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); for (let i = out.length - 1; i >= 0; i--) g.lineTo(out[i][0], out[i][1]);
-  g.closePath(); g.fillStyle = S.resoListen ? "rgba(255,236,238,.6)" : "rgba(226,52,68,.55)"; g.fill();
+  g.closePath(); g.fillStyle = S.resoListen ? "rgba(255,236,238,.6)" : acc(.55); g.fill();
   const line = (pts, col, w, blur) => { g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.strokeStyle = col; g.lineWidth = w * d; g.shadowColor = col; g.shadowBlur = blur * d; g.stroke(); g.shadowBlur = 0; };
   line(raw, "rgba(255,236,238,.25)", 1, 0);
   if (!S.resoListen) line(out, "#FFECEE", 1.6, 8);
@@ -2002,7 +1974,7 @@ function drawReso(t) {
   g.fillStyle = "rgba(255,210,214,.1)"; [.36, .66].forEach(x => g.fillRect(x * W, 8 * d, 1, H - 30 * d));
 }
 
-// ANALYZER / PARAMETRIC EQ : spectre + courbe de l'EQ (bandes LOW / MID / HIGH + 6 bandes paramétriques)
+// ANALYZER / PARAMETRIC EQ : spectre + courbe de l’EQ (bandes LOW / MID / HIGH + 6 bandes paramétriques)
 const NF = 256, FR = new Float32Array(NF).map((_, i) => 20 * Math.pow(1000, i / (NF - 1)));
 const offA = new OfflineAudioContext(1, 128, 48000);
 const AF = { tone: Array.from({ length: 12 }, () => offA.createBiquadFilter()), hp: offA.createBiquadFilter(), peq: [0, 1, 2, 3, 4, 5].map(() => offA.createBiquadFilter()) };
@@ -2033,7 +2005,7 @@ function drawAna(t) {
     const x = xOfF(f, W); g.fillStyle = "rgba(255,210,214,.07)"; g.fillRect(x, 0, 1, H); g.fillStyle = "rgba(168,143,146,.7)"; g.fillText(l, x + 3 * d, H - 4 * d);
   }
   for (const v of [-12, -6, 0, 6, 12]) { g.fillStyle = v ? "rgba(255,210,214,.06)" : "rgba(255,210,214,.18)"; g.fillRect(0, yOfG(v, H), W, 1); }
-  // spectre : réel pendant l'écoute, sinon une voix type
+  // spectre : réel pendant l’écoute, sinon une voix type
   g.beginPath(); g.moveTo(0, H);
   if (ctx && N && playing) {
     const n = N.an.frequencyBinCount; specA = specA || new Float32Array(n); N.an.getFloatFrequencyData(specA);
@@ -2042,14 +2014,14 @@ function drawAna(t) {
     for (let px = 0; px <= W; px += 3 * d) { const u = px / W; const v = .62 - .5 * Math.pow(u, 1.6) + .1 * Math.exp(-Math.pow((u - .3) / .08, 2)) + .03 * Math.sin(u * 70 + t * .002); g.lineTo(px, H - Math.max(0, v) * H); }
   }
   g.lineTo(W, H); g.closePath(); g.fillStyle = "rgba(255,236,238,.08)"; g.fill(); g.strokeStyle = "rgba(255,236,238,.35)"; g.lineWidth = d; g.stroke();
-  // courbe de l'EQ
+  // courbe de l’EQ
   g.beginPath(); for (let i = 0; i < NF; i++) { const x = xOfF(FR[i], W), y = yOfG(Math.max(-18, Math.min(18, curveA[i])), H); i ? g.lineTo(x, y) : g.moveTo(x, y); }
-  g.strokeStyle = "#E23444"; g.lineWidth = 2.2 * d; g.shadowColor = "#E23444"; g.shadowBlur = 10 * d; g.stroke(); g.shadowBlur = 0;
+  g.strokeStyle = acc(); g.lineWidth = 2.2 * d; g.shadowColor = acc(); g.shadowBlur = 10 * d; g.stroke(); g.shadowBlur = 0;
   // points des 6 bandes
   S.peq.forEach((b, i) => {
     const x = xOfF(b.f, W), y = yOfG(b.t >= 3 ? 0 : b.g, H), r = (i === UI.band ? 9 : 7) * d;
     g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2);
-    g.fillStyle = b.on ? (i === UI.band ? "#E23444" : "rgba(226,52,68,.75)") : "rgba(13,8,9,.85)"; g.fill();
+    g.fillStyle = b.on ? (i === UI.band ? acc() : acc(.75)) : "rgba(13,8,9,.85)"; g.fill();
     g.strokeStyle = b.on || i === UI.band ? "#FFECEE" : "rgba(255,236,238,.45)"; g.lineWidth = 1.2 * d; g.stroke();
     g.fillStyle = b.on ? "#fff" : "rgba(255,236,238,.7)"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(i + 1, x, y + .5 * d);
     g.textAlign = "start"; g.textBaseline = "alphabetic";
@@ -2093,12 +2065,12 @@ function drawMb(t) {
     const gr = depth * (.6 + .4 * Math.sin(t * .002 * (1 + b * .3) + b * 1.3)) * (reduced ? .7 : 1);
     const bw = Math.min(26 * d, (x1 - x0) * .4);
     g.fillStyle = "rgba(255,210,214,.1)"; g.fillRect((x0 + x1) / 2 - bw / 2, 16 * d, bw, H - 40 * d);
-    g.fillStyle = "#E23444"; g.shadowColor = "#E23444"; g.shadowBlur = 8 * d; g.fillRect((x0 + x1) / 2 - bw / 2, 16 * d, bw, (H - 40 * d) * gr); g.shadowBlur = 0;
+    g.fillStyle = acc(); g.shadowColor = acc(); g.shadowBlur = 8 * d; g.fillRect((x0 + x1) / 2 - bw / 2, 16 * d, bw, (H - 40 * d) * gr); g.shadowBlur = 0;
     g.fillStyle = solo ? "#FFECEE" : "rgba(168,143,146,.9)"; g.textAlign = "center"; g.fillText(names[b], (x0 + x1) / 2, H - 10 * d);
     const gain = S["mbGain" + (b + 1)]; if (gain) g.fillText((gain > 0 ? "+" : "") + gain.toFixed(1) + " dB", (x0 + x1) / 2, 11 * d);
   }
   g.textAlign = "start";
-  xs.forEach((x, i) => { g.fillStyle = "rgba(226,52,68,.8)"; g.fillRect(x, 0, 1.5 * d, H - 24 * d); g.fillStyle = "rgba(255,236,238,.7)"; g.fillText(fmt.hz([S.mbX1, S.mbX2, S.mbX3][i]), x + 4 * d, H - 26 * d); });
+  xs.forEach((x, i) => { g.fillStyle = acc(.8); g.fillRect(x, 0, 1.5 * d, H - 24 * d); g.fillStyle = "rgba(255,236,238,.7)"; g.fillText(fmt.hz([S.mbX1, S.mbX2, S.mbX3][i]), x + 4 * d, H - 26 * d); });
 }
 
 /* ================= boucle : mesures, OVER, Auto Gain, VU-mètres, écrans */
@@ -2137,7 +2109,7 @@ document.fonts.ready.then(redrawStatic); requestAnimationFrame(redrawStatic);
 requestAnimationFrame(frame);
 
 /* ================= crédits
-   Pour ajouter un titre : copie un bloc { ... } dans CREDITS. L'identifiant Spotify est la suite de
+   Pour ajouter un titre : copie un bloc { ... } dans CREDITS. L’identifiant Spotify est la suite de
    caractères après /track/ dans le lien de partage (avant le « ? »). */
 const CREDITS = [
   {
@@ -2152,7 +2124,7 @@ const CREDITS = [
   },
 ];
 // Images du serveur : la version WebP à la largeur voulue (voir /api/media?w=), en plusieurs tailles pour les écrans
-// haute définition. Une image venue d'ailleurs reste telle quelle.
+// haute définition. Une image venue d’ailleurs reste telle quelle.
 const sized = (url, w) => /^\/api\/media\/[a-f0-9]{32}\.(png|jpg|webp)$/.test(url || "") ? url + "?w=" + w : url;
 const srcsetOf = (url, widths) => sized(url, 1) === url ? "" : widths.map(w => sized(url, w) + " " + w + "w").join(", ");
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -2163,13 +2135,13 @@ function renderCredits(list) {
   $("#creditMore a span").textContent = "Tous les crédits (" + list.length + ")";
 }
 renderCredits(CREDITS);
-// Rappel discret, sous le menu, pour un compte dont l'adresse e-mail n'a pas encore été confirmée.
+// Rappel discret, sous le menu, pour un compte dont l’adresse e-mail n’a pas encore été confirmée.
 function confirmNotice(user, token) {
   if (!user.emailToConfirm && user.emailVerified !== false) return;
   try { if (sessionStorage.getItem("onirique.confirm-later")) return; } catch {}
   const bar = document.createElement("div");
   bar.setAttribute("role", "status");
-  bar.style.cssText = "position:fixed;left:50%;top:84px;transform:translateX(-50%);z-index:40;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px 14px;max-width:min(680px,calc(100vw - 24px));padding:10px 16px;border-radius:14px;border:1px solid rgba(226,52,68,.45);background:rgba(26,8,10,.94);color:var(--mist);font:500 14px/1.4 var(--f-body);box-shadow:0 14px 40px -18px #000";
+  bar.style.cssText = "position:fixed;left:50%;top:84px;transform:translateX(-50%);z-index:40;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px 14px;max-width:min(680px,calc(100vw - 24px));padding:10px 16px;border-radius:12px;border:1px solid rgba(var(--acc),.45);background:var(--glass-deep);color:var(--mist);font:500 14px/1.4 var(--f-body);box-shadow:0 14px 40px -18px #000";
   const text = document.createElement("span");
   text.textContent = "Pense à confirmer ton adresse e-mail (" + user.email + ").";
   const send = document.createElement("button");
@@ -2183,7 +2155,7 @@ function confirmNotice(user, token) {
     send.disabled = true;
     fetch("/api/auth/verify/resend", { method: "POST", headers: { Authorization: "Bearer " + token } })
       .then(async r => { if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error); text.textContent = "Lien envoyé à " + user.email + ". Il est valable 48 heures : pense à regarder dans les indésirables."; send.remove(); later.textContent = "Fermer"; })
-      .catch((error) => { text.textContent = error.message || "L'envoi n'a pas abouti. Réessaie dans quelques minutes."; send.disabled = false; });
+      .catch((error) => { text.textContent = error.message || "L’envoi n’a pas abouti. Réessaie dans quelques minutes."; send.disabled = false; });
   };
   bar.append(text, send, later);
   document.body.append(bar);
@@ -2191,8 +2163,8 @@ function confirmNotice(user, token) {
 
 // Déjà connecté : assets/account.js remplace « Connexion » par le menu du compte, puis annonce le compte ici.
 document.addEventListener("onirique:account", ({ detail: me }) => {
-  // À côté du compte, le bouton ne propose plus d'acheter mais de télécharger ONIRIQUE CENTRAL : il mène au choix
-  // entre Windows et Mac, plutôt que de lancer un téléchargement deviné d'après le navigateur.
+  // À côté du compte, le bouton ne propose plus d’acheter mais de télécharger ONIRIQUE CENTRAL : il mène au choix
+  // entre Windows et Mac, plutôt que de lancer un téléchargement deviné d’après le navigateur.
   const get = document.getElementById("nav-buy");
   get.textContent = "Télécharger";
   get.title = "Télécharger ONIRIQUE CENTRAL pour Windows ou Mac";
@@ -2234,11 +2206,11 @@ function heroFacts(products, shown, euros, terms) {
     at = (at + 1) % order.length;
     paint();
     shot.classList.remove("swap");
-    void shot.offsetWidth; // relance l'animation d'arrivée
+    void shot.offsetWidth; // relance l’animation d’arrivée
     shot.classList.add("swap");
   }, 4500);
 
-  // Avec une souris, la carte se tourne vers le pointeur tant qu'il est dans le haut de page, puis reprend sa pose.
+  // Avec une souris, la carte se tourne vers le pointeur tant qu’il est dans le haut de page, puis reprend sa pose.
   if (!matchMedia("(hover: hover)").matches) return;
   const hero = shot.closest(".hero"), clamp = (v, max) => Math.max(-max, Math.min(max, v));
   hero.addEventListener("pointermove", event => {
@@ -2274,7 +2246,7 @@ catalogReady.then(catalog => {
       <div><h3>${esc(p.name)}</h3><p>${esc(p.tagline)}</p><small>${esc(terms(p))} →</small></div>
     </a>`).join("");
   $("#plugins").hidden = false;
-  // Six plugins (trois sur téléphone), puis tous d'un clic.
+  // Six plugins (trois sur téléphone), puis tous d’un clic.
   const more = $("#pluginMore"), grid = $("#pluginGrid");
   if (shown.length > 3) {
     more.hidden = false;
@@ -2283,12 +2255,12 @@ catalogReady.then(catalog => {
   }
 }).catch(() => { $("#heroShot")?.remove(); });
 
-// Interface : la démo interactive de chaque plugin, la même que dans la boutique et l'application, une à la fois.
+// Interface : la démo interactive de chaque plugin, la même que dans la boutique et l’application, une à la fois.
 // La section Fonctions suit : elle décrit le plugin affiché.
 function showcase(list) {
   let at = Math.max(0, list.findIndex(p => p.slug.includes("vocalbox"))), near = false;
   const original = { title: $("#fnTitle").innerHTML, lede: $("#fnLede").textContent };
-  const loaded = new Map(); // une démo pèse plusieurs Mo : chacune n'est téléchargée qu'une fois
+  const loaded = new Map(); // une démo pèse plusieurs Mo : chacune n’est téléchargée qu’une fois
 
   async function show() {
     const p = list[at], vocalbox = p.slug.includes("vocalbox");
@@ -2307,7 +2279,7 @@ function showcase(list) {
     $("#fnDesc").innerHTML = (p.description || p.tagline).split(/\n{2,}/).map(text => `<p>${esc(text)}</p>`).join("");
     if (vocalbox) drawModes();
 
-    if (!near) return; // la démo n'est téléchargée qu'à l'approche de la section
+    if (!near) return; // la démo n’est téléchargée qu’à l’approche de la section
     const box = $("#showDemo");
     // Pendant le chargement, la boîte garde sa hauteur : la page en dessous (crédits, FAQ) ne remonte pas
     // pour redescendre ensuite, sous les yeux du visiteur ou pendant un saut vers une section.
@@ -2323,7 +2295,7 @@ function showcase(list) {
       }
       if (list[at] === p) OniriqueDemo.render(box, loaded.get(p.id)); // un autre plugin a pu être demandé entre-temps
     } catch {
-      if (list[at] === p) box.firstChild.textContent = "L'interface n'a pas pu être chargée.";
+      if (list[at] === p) box.firstChild.textContent = "L’interface n’a pas pu être chargée.";
     } finally {
       if (list[at] === p) box.style.minHeight = "";
     }
@@ -2348,7 +2320,7 @@ Promise.all([catalogReady, OniriqueDemo.web("")]).then(async ([catalog]) => {
   // une interface web réelle compte comme démo ; une image choisie par un admin passe avant la démo automatique
   const demos = products.filter((p, i) => webs[i] || (p.demo && !p.imageManual));
   if (demos.length) showcase(demos);
-  else $("#vbMock").parentElement.hidden = false; // aucune démo en ligne : la maquette de VocalBox tient lieu d'aperçu
+  else $("#vbMock").parentElement.hidden = false; // aucune démo en ligne : la maquette de VocalBox tient lieu d’aperçu
 }).catch(() => { $("#vbMock").parentElement.hidden = false; });
 
 /* ================= boutique : prix et lien de paiement (voir SHOP en haut du script) */
@@ -2356,7 +2328,7 @@ $$("[data-price]").forEach(e => e.textContent = SHOP[e.dataset.price].price + " 
 $$("[data-price-big]").forEach(e => e.innerHTML = `${SHOP[e.dataset.priceBig].price}<sup>€</sup>`);
 const toast = document.createElement("div");
 toast.setAttribute("role", "status");
-toast.style.cssText = "position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;padding:14px 20px;border-radius:14px;background:var(--deep-2);border:1px solid rgba(226,52,68,.6);color:var(--mist);font:500 14px/1.4 var(--f-body);box-shadow:0 20px 60px -10px rgba(0,0,0,.8);transition:opacity .3s;opacity:0;pointer-events:none;max-width:calc(100vw - 32px)";
+toast.style.cssText = "position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;padding:14px 20px;border-radius:12px;background:var(--glass-deep);border:1px solid rgba(var(--acc),.6);color:var(--mist);font:500 14px/1.4 var(--f-body);box-shadow:0 20px 60px -10px rgba(0,0,0,.8);transition:opacity .3s;opacity:0;pointer-events:none;max-width:calc(100vw - 32px)";
 document.body.appendChild(toast);
 let toastT = 0;
 $$("[data-buy]").forEach(a => {
@@ -2364,14 +2336,14 @@ $$("[data-buy]").forEach(a => {
   if (item.url) { a.href = item.url; a.target = "_blank"; a.rel = "noopener"; return; }
   a.addEventListener("click", e => {
     e.preventDefault();
-    toast.textContent = "Paiement bientôt disponible. Reviens très vite !";
+    toast.textContent = "Paiement bientôt disponible. Reviens très vite.";
     toast.style.opacity = 1; clearTimeout(toastT); toastT = setTimeout(() => toast.style.opacity = 0, 2600);
   });
 });
 });
 </script>
 <script>
-// Accueil, la mosaïque « Tout ONIRIQUE » : une carte ne s'anime qu'à l'écran (classe live), et sa lueur suit le pointeur.
+// Accueil, la mosaïque « Tout ONIRIQUE » : une carte ne s’anime qu’à l’écran (classe live), et sa lueur suit le pointeur.
 (() => {
   const cards = document.querySelectorAll(".uni-card");
   if (!("IntersectionObserver" in window)) { cards.forEach((c) => c.classList.add("live")); return; }
@@ -2388,7 +2360,7 @@ $$("[data-buy]").forEach(a => {
 <script src="assets/potards.js?v=1" defer></script>
 <script src="assets/tools-menu.js?v=17" defer></script>
 <script>
-// ONIRIQUE CLOUD : le raccourci n'apparaît qu'aux comptes qui y ont droit, une fois leur compte lu.
+// ONIRIQUE CLOUD : le raccourci n’apparaît qu’aux comptes qui y ont droit, une fois leur compte lu.
 document.addEventListener("onirique:account", (event) => {
   document.getElementById("sonsShortcut").hidden = !((event.detail && event.detail.rights) || []).includes("sounds");
 });
