@@ -2,7 +2,7 @@
 <html lang="fr">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<script src="assets/i18n.js?v=25e3ff48"></script>
+<script src="assets/i18n.js?v=b60d57e5"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=3"></script>
 <script src="/api/announce.js" async></script>
@@ -825,7 +825,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
             <a class="btn btn-ghost" id="heroBuy" href="boutique">Essayer un plugin</a>
           </div>
           <div class="facts">
-            <span class="chip">CLOUD gratuit : 30 sons</span><span class="chip">22 outils sans compte</span><span class="chip">Windows et Mac</span><span class="chip" id="heroFree" hidden></span>
+            <span class="chip">CLOUD gratuit : 30 sons</span><span class="chip">22 outils sans compte</span><span class="chip">Windows et Mac</span>
           </div>
         </div>
         <div class="hero-stage">
@@ -2212,8 +2212,6 @@ function heroFacts(products, shown, euros, terms) {
     $("#heroMin").textContent = euros(Math.min(...cents));
     $("#heroMax").textContent = euros(Math.max(...cents));
   }
-  const free = products.find(p => p.priceCents === 0);
-  if (free) { $("#heroFree").textContent = free.name + " : gratuit"; $("#heroFree").hidden = false; }
   if (!shown.length) return shot.remove();
   const order = [...shown].sort((a, b) => b.priceCents - a.priceCents);
   let at = 0;

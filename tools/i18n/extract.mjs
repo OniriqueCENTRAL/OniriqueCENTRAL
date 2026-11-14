@@ -15,7 +15,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.resolve(here, '..', '..');
 const list = (dir, test) => fs.readdirSync(path.join(repo, dir)).filter(test).map((f) => `${dir}/${f}`);
 const SOURCES = [
-  ...list('site', (f) => f.endsWith('.html') && f !== 'index.html'),
+  ...list('site', (f) => f.endsWith('.html')),
   ...list('site/assets', (f) => f.endsWith('.js') && !/worker|i18n/.test(f)),
   'site/pages.mjs',
   ...list('app/renderer', (f) => f.endsWith('.js') && !/i18n/.test(f)),
@@ -97,7 +97,11 @@ for (const file of SOURCES) {
   const text = fs.readFileSync(path.join(repo, file), 'utf8');
   if (file.endsWith('.html')) {
     fromHtml(text, file);
-    for (const m of text.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) if (m[1].trim()) fromJs(m[1], file);
+    // les données structurées (JSON-LD) et les tables d'import ne sont pas du code : JSON-LD se relit comme une valeur
+    for (const m of text.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
+      if (! m[2].trim() || /importmap/.test(m[1])) continue;
+      fromJs (/ld\+json/.test(m[1]) ? `(${m[2]})` : m[2], file);
+    }
   } else {
     fromJs(text, file);
   }
