@@ -10,19 +10,10 @@
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
 <style>
-/* Mêmes tokens que profil.html. */
-:root {
-  --night: #0D0809; --line: rgba(255,210,214,.13); --mist: #F6EEEE; --haze: #A88F92; --ember: rgb(var(--acc));
-  --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
-  --f-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
-  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
-  color-scheme: dark;
-}
+/* Couleurs, fond et polices : da.css. */
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-body { margin: 0; min-height: 100vh; color: var(--mist); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased; background: var(--night); }
-body::before { content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
-  background: radial-gradient(120% 60% at 50% -10%, rgba(var(--acc-lo),.8), rgba(var(--acc-lo),.4) 36%, transparent 72%); }
+body { margin: 0; min-height: 100vh; color: var(--mist); font: 400 16px/1.6 var(--f-body); -webkit-font-smoothing: antialiased; }
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 6px; }
 .wrap { width: 100%; max-width: 1180px; margin-inline: auto; padding-inline: clamp(16px, 4vw, 40px); }
@@ -36,31 +27,38 @@ h1 { font: 800 clamp(26px, 5vw, 40px)/1.1 var(--f-display); margin: 8px 0; }
 h2 { font: 700 18px var(--f-display); margin: 0 0 12px; }
 .eyebrow { font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); }
 .muted { color: var(--haze); }
-.panel { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 18px; padding: clamp(18px, 3vw, 24px); margin-top: 18px; }
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 18px; border-radius: 999px; border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
+.lede { margin: 0; max-width: 640px; }
+.fine { font-size: 13px; }
+.amount { font-size: 24px; }
+.pre { margin: 0; white-space: pre-wrap; }
+#me-noprofile p { margin: 0 0 12px; }
+#sales { margin: 8px 0 0; padding-left: 20px; font-size: 14px; }
+.panel { background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: 18px; padding: clamp(20px, 3vw, 24px); margin-top: 20px; }
+.panel .panel { margin-top: 16px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; border-radius: 999px; border: 1px solid transparent; font: 600 14px/1 var(--f-body); text-decoration: none; cursor: pointer; }
 .btn-primary { background: var(--mist); color: var(--night); }
 .btn-ghost { background: rgba(255,255,255,.03); color: var(--mist); border-color: var(--line); }
 .btn-ghost:hover { border-color: var(--ember); }
 .btn:disabled { opacity: .5; cursor: default; }
 .small { padding: 8px 12px; font-size: 13px; }
-label { display: grid; gap: 7px; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
+label { display: grid; gap: 8px; font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--haze); }
 label.check { display: flex; align-items: center; gap: 10px; text-transform: none; letter-spacing: 0; font: 500 15px var(--f-body); color: var(--mist); }
 input, textarea { min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(0,0,0,.42); color: var(--mist); font: 500 16px var(--f-body); letter-spacing: 0; text-transform: none; min-width: 0; }
 textarea { padding: 12px 14px; resize: vertical; min-height: 80px; }
 input[type="file"] { padding: 10px; }
 input[type="checkbox"] { min-height: 0; width: 18px; height: 18px; accent-color: var(--ember); }
-.form { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); align-items: end; }
+.form { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); align-items: end; }
 .form .wide { grid-column: 1 / -1; }
 .notice { min-height: 1.4em; font-size: 14px; color: var(--haze); margin: 8px 0 0; }
-.notice.err { color: #ff8a95; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 18px; }
+.notice.err { color: var(--danger); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 20px; }
 .card { display: grid; gap: 4px; padding: 8px; border-radius: 14px; background: rgba(255,255,255,.03); border: 1px solid transparent; color: inherit; text-align: left; font: inherit; cursor: pointer; }
 .card:hover { border-color: var(--line); background: rgba(255,255,255,.06); }
-.card img { width: 100%; aspect-ratio: 1; border-radius: 10px; object-fit: cover; background: #1a0d10; -webkit-user-drag: none; }
+.card img { width: 100%; aspect-ratio: 1; border-radius: 14px; object-fit: cover; background: var(--deep); -webkit-user-drag: none; }
 .card b { margin-top: 4px; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card small { font: 500 11px var(--f-mono); color: var(--haze); }
 .price { color: var(--ember); font-weight: 700; }
-.mine { display: grid; gap: 10px; margin-top: 14px; }
+.mine { display: grid; gap: 8px; margin-top: 16px; }
 .mine li { display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: 12px; padding: 8px; border: 1px solid var(--line); border-radius: 12px; list-style: none; }
 .mine img { width: 64px; height: 64px; border-radius: 8px; object-fit: cover; }
 .mine .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -71,12 +69,13 @@ input[type="checkbox"] { min-height: 0; width: 18px; height: 18px; accent-color:
 dialog { width: min(980px, calc(100vw - 24px)); max-height: 92vh; padding: 0; border-radius: 20px; border: 1px solid var(--line); background: #150a0c; color: var(--mist); }
 dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
 .detail { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
-.detail .shot { background: #0b0607; display: grid; place-items: center; }
+.detail .shot { background: var(--deep-2); display: grid; place-items: center; }
 .detail .shot img { display: block; max-width: 100%; max-height: 88vh; -webkit-user-drag: none; user-select: none; }
-.detail .info { padding: 22px; display: grid; gap: 12px; align-content: start; }
-.detail .info h2 { font-size: 22px; margin: 0; overflow-wrap: anywhere; }
+.detail .info { padding: 24px; display: grid; gap: 12px; align-content: start; }
+.detail .info h2 { font-size: 24px; margin: 0; overflow-wrap: anywhere; }
 .author { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 700; }
-.author img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: #2a0a0e; }
+.author img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: var(--deep-2); }
+.author .muted { font-weight: 500; }
 .close { position: absolute; top: 10px; right: 10px; border: 1px solid var(--line); border-radius: 999px; background: rgba(0,0,0,.6); color: var(--mist); padding: 6px 12px; cursor: pointer; }
 @media (max-width: 760px) { .detail { grid-template-columns: 1fr; } .detail .shot img { max-height: 60vh; } }
 </style>
@@ -92,14 +91,14 @@ dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
 <main class="wrap">
   <span class="eyebrow">Graphistes</span>
   <h1 id="title">Vitrine</h1>
-  <p class="muted" id="lead" style="margin:0;max-width:640px">Covers, visuels, identités : le travail des graphistes ONIRIQUE. Achète un visuel pour recevoir l'original sans filigrane, ou écris à son auteur pour une commande sur mesure.</p>
+  <p class="muted lede" id="lead">Covers, visuels, identités : le travail des graphistes ONIRIQUE. Achète un visuel pour recevoir l’original sans filigrane, ou écris à son auteur pour une commande sur mesure.</p>
 
   <div class="grid" id="grid" aria-live="polite"><p class="muted">Chargement…</p></div>
 
-  <!-- L'espace du graphiste connecté : publier, régler ses prix, son solde. -->
+  <!-- L’espace du graphiste connecté : publier, régler ses prix, son solde. -->
   <section class="panel" id="me" hidden>
     <h2>Ma vitrine</h2>
-    <div id="me-noprofile" hidden><p class="muted" style="margin:0 0 12px">Pour publier, crée d'abord ta page de profil : la vitrine s'y affiche et c'est par elle qu'on t'écrit.</p><a class="btn btn-primary small" href="profil">Créer ma page</a></div>
+    <div id="me-noprofile" hidden><p class="muted">Pour publier, crée d’abord ta page de profil : la vitrine s’y affiche et c’est par elle qu’on t’écrit.</p><a class="btn btn-primary small" href="profil">Créer ma page</a></div>
     <div id="me-tools" hidden>
       <form class="form" id="upload">
         <label class="wide">Image (PNG, JPEG ou WebP, 25 Mo au plus)<input type="file" id="u-file" accept="image/png,image/jpeg,image/webp" required></label>
@@ -107,15 +106,15 @@ dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
         <label>Prix en euros (vide : pas en vente)<input type="number" id="u-price" min="1" max="100000" step="0.01"></label>
         <label class="check"><input type="checkbox" id="u-unique"> Pièce unique (retirée après la première vente)</label>
         <label class="wide">Description<textarea id="u-desc" maxlength="1000" placeholder="Format, ce qui est livré, délais pour une version personnalisée…"></textarea></label>
-        <div class="wide between"><button class="btn btn-primary" type="submit">Publier</button><span class="muted" style="font-size:13px">Le public voit une copie réduite avec ton nom en filigrane ; l'original n'est donné qu'à l'acheteur.</span></div>
+        <div class="wide between"><button class="btn btn-primary" type="submit">Publier</button><span class="muted fine">Le public voit une copie réduite avec ton nom en filigrane ; l’original n’est donné qu’à l’acheteur.</span></div>
       </form>
       <p class="notice" id="u-notice" role="status"></p>
       <div class="mine"><ul id="my-list"></ul></div>
-      <div class="panel" style="margin-top:16px">
-        <div class="between"><div><span class="eyebrow">Solde</span><div><b id="due" style="font-size:22px">0 €</b> <span class="muted" id="due-note"></span></div></div>
+      <div class="panel">
+        <div class="between"><div><span class="eyebrow">Solde</span><div><b class="amount" id="due">0 €</b> <span class="muted" id="due-note"></span></div></div>
           <button class="btn btn-ghost small" id="payout" type="button">Demander le versement</button></div>
         <p class="notice" id="payout-notice" role="status"></p>
-        <ul class="muted" id="sales" style="margin:8px 0 0;padding-left:18px;font-size:14px"></ul>
+        <ul class="muted" id="sales"></ul>
       </div>
     </div>
   </section>
@@ -128,8 +127,8 @@ dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
 </dialog>
 
 <script>
-// La vitrine : tous les visuels publiés (ou ceux d'un graphiste, ?u=pseudo), la fiche d'un visuel (?v=id) avec l'achat
-// et le contact, et l'espace du graphiste connecté.
+// La vitrine : tous les visuels publiés (ou ceux d’un graphiste, ?u=pseudo), la fiche d’un visuel (?v=id) avec l’achat
+// et le contact, et l’espace du graphiste connecté.
 const $ = (id) => document.getElementById(id);
 const TOKEN = "onirique.token";
 const token = sessionStorage.getItem(TOKEN) || localStorage.getItem(TOKEN);
@@ -159,7 +158,7 @@ async function loadGrid() {
   if (u) { $("title").textContent = "Vitrine de @" + u; $("lead").replaceChildren("Les visuels de ", el("a", { href: "profil?u=" + encodeURIComponent(u), textContent: "@" + u }), ". ", el("a", { href: "vitrine", textContent: "Toute la vitrine" })); }
   try {
     const list = await api("GET", "/vitrine" + (u ? "?u=" + encodeURIComponent(u) : ""));
-    $("grid").replaceChildren(...(list.length ? list.map(card) : [el("p", { className: "muted", textContent: "Aucun visuel pour l'instant." })]));
+    $("grid").replaceChildren(...(list.length ? list.map(card) : [el("p", { className: "muted", textContent: "Aucun visuel pour l’instant." })]));
   } catch (e) { $("grid").replaceChildren(el("p", { className: "muted", textContent: e.message })); }
 }
 
@@ -175,15 +174,15 @@ async function openVisual(id) {
   };
   $("d-info").replaceChildren(...[
     el("h2", { textContent: v.title }),
-    el("a", { className: "author", href: "profil?u=" + encodeURIComponent(v.author.handle) }, el("img", { src: v.author.avatar ? v.author.avatar + "?w=160" : "assets/favicon.png?v=2", alt: "" }), v.author.name, el("span", { className: "muted", style: "font-weight:500", textContent: "@" + v.author.handle })),
-    v.description ? el("p", { style: "margin:0;white-space:pre-wrap", textContent: v.description }) : null,
-    el("div", { className: "price", style: "font-size:22px", textContent: priceText(v) }),
-    v.unique && !v.sold ? el("span", { className: "muted", style: "font-size:13px", textContent: "Pièce unique : retirée après la première vente." }) : null,
+    el("a", { className: "author", href: "profil?u=" + encodeURIComponent(v.author.handle) }, el("img", { src: v.author.avatar ? v.author.avatar + "?w=160" : "assets/favicon.png?v=2", alt: "" }), v.author.name, el("span", { className: "muted", textContent: "@" + v.author.handle })),
+    v.description ? el("p", { className: "pre", textContent: v.description }) : null,
+    el("div", { className: "price amount", textContent: priceText(v) }),
+    v.unique && !v.sold ? el("span", { className: "muted fine", textContent: "Pièce unique : retirée après la première vente." }) : null,
     el("div", { className: "between" },
       v.forSale ? el("button", { className: "btn btn-primary", type: "button", textContent: "Acheter " + euros(v.price), onclick: buy("/buy") }) : null,
       el("a", { className: "btn btn-ghost", href: token ? "messages?u=" + encodeURIComponent(v.author.handle) : "compte", textContent: token ? "Contacter le graphiste" : "Se connecter pour écrire" }),
-      v.simulate ? el("button", { className: "btn btn-ghost small", type: "button", textContent: "Simuler l'achat", onclick: buy("/simulate") }) : null),
-    v.forSale ? el("span", { className: "muted", style: "font-size:13px", textContent: "Paiement par carte (Stripe). L'original sans filigrane est livré tout de suite après, sur la page de ta commande et par e-mail." }) : null,
+      v.simulate ? el("button", { className: "btn btn-ghost small", type: "button", textContent: "Simuler l’achat", onclick: buy("/simulate") }) : null),
+    v.forSale ? el("span", { className: "muted fine", textContent: "Paiement par carte (Stripe). L’original sans filigrane est livré tout de suite après, sur la page de ta commande et par e-mail." }) : null,
     notice].filter(Boolean));
   if (!$("detail").open) $("detail").showModal();
 }
@@ -200,7 +199,7 @@ async function loadMine() {
     const title = el("input", { type: "text", value: v.title, maxLength: 100, "aria-label": "Titre" });
     const price = el("input", { type: "number", value: v.price ? v.price / 100 : "", min: 1, max: 100000, step: 0.01, placeholder: "Prix €", "aria-label": "Prix en euros" });
     return el("li", {}, el("img", { src: v.image, alt: "" }),
-      el("div", { className: "row" }, title, price, el("span", { className: "muted", style: "font-size:13px", textContent: v.sold ? "Vendu" : v.unique ? "Pièce unique" : "" })),
+      el("div", { className: "row" }, title, price, el("span", { className: "muted fine", textContent: v.sold ? "Vendu" : v.unique ? "Pièce unique" : "" })),
       el("div", { className: "row" },
         el("button", { className: "btn btn-ghost small", type: "button", textContent: "Enregistrer", onclick: async () => {
           try { await api("PATCH", "/me/vitrine/" + v.id, { title: title.value, price: price.value ? Math.round(Number(price.value) * 100) : 0 }); say("u-notice", "Enregistré."); loadGrid(); }
@@ -210,7 +209,7 @@ async function loadMine() {
           try { await api("DELETE", "/me/vitrine/" + v.id); loadMine(); loadGrid(); } catch (e) { say("u-notice", e.message, true); } } })));
   }));
   $("due").textContent = euros(m.balance.due);
-  $("due-note").textContent = m.balance.askedAt ? "· versement demandé le " + new Date(m.balance.askedAt).toLocaleDateString("fr-FR") : m.platform ? "" : "· la vente par carte n'est pas encore ouverte";
+  $("due-note").textContent = m.balance.askedAt ? "· versement demandé le " + new Date(m.balance.askedAt).toLocaleDateString("fr-FR") : m.platform ? "" : "· la vente par carte n’est pas encore ouverte";
   $("payout").disabled = m.balance.due <= 0;
   $("sales").replaceChildren(...m.orders.map((o) => el("li", { textContent: new Date(o.paidAt).toLocaleDateString("fr-FR") + " · « " + o.title + " » · " + euros(o.amount) + (o.buyerEmail ? " · " + o.buyerEmail : "") + (o.simulated ? " (simulation)" : "") })));
 }
@@ -227,7 +226,7 @@ $("upload").onsubmit = async (e) => {
     const q = new URLSearchParams({ title: $("u-title").value, unique: $("u-unique").checked ? "1" : "0",
       price: $("u-price").value ? String(Math.round(Number($("u-price").value) * 100)) : "0" });
     const v = await api("POST", "/me/vitrine?" + q, null, file);
-    // La description passe à part : trop longue pour l'adresse.
+    // La description passe à part : trop longue pour l’adresse.
     if ($("u-desc").value.trim()) await api("PATCH", "/me/vitrine/" + v.id, { description: $("u-desc").value });
     $("upload").reset(); say("u-notice", "Publié.");
     loadMine(); loadGrid();

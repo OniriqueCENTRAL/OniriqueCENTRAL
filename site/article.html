@@ -5,7 +5,7 @@
 <script src="assets/ui.js?v=4"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE — Marketplace</title>
-<meta name="description" content="Un article de la marketplace ONIRIQUE : pochette, visuel ou pack de prods d'un membre.">
+<meta name="description" content="Un article de la marketplace ONIRIQUE : pochette, visuel ou pack de prods d’un membre.">
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
 <link rel="stylesheet" href="assets/marketplace.css?v=3">
@@ -19,8 +19,8 @@
   </div>
 </header>
 <main class="wrap">
-  <a class="btn btn-ghost small" id="back" hidden style="margin-bottom:14px">← Retour au pack</a>
-  <nav class="crumbs" aria-label="Fil d'Ariane"><a href="marketplace">Marketplace</a><span>/</span><a id="crumb-kind" href="marketplace"></a></nav>
+  <a class="btn btn-ghost small" id="back" hidden style="margin-bottom:16px">Retour au pack</a>
+  <nav class="crumbs" aria-label="Fil d’Ariane"><a href="marketplace">Marketplace</a><span>/</span><a id="crumb-kind" href="marketplace"></a></nav>
   <p class="muted" id="state" role="status">Chargement…</p>
   <section class="item" id="item" hidden>
     <div class="shot" id="shot"></div>
@@ -31,8 +31,8 @@
 </main>
 <script src="assets/marketplace.js?v=1"></script>
 <script>
-// La fiche d'un article de la marketplace : ?v=<id> pour un visuel de la vitrine, ?p=<id> pour un pack de prods.
-// L'image à gauche (copie filigranée pour un visuel), le vendeur, le prix, les détails et l'achat à droite.
+// La fiche d’un article de la marketplace : ?v=<id> pour un visuel de la vitrine, ?p=<id> pour un pack de prods.
+// L’image à gauche (copie filigranée pour un visuel), le vendeur, le prix, les détails et l’achat à droite.
 const { el, euros, noSave, card, list } = Market;
 const $ = (id) => document.getElementById(id);
 const TOKEN = "onirique.token";
@@ -55,7 +55,7 @@ const sellerRow = (s) => {
   const inner = [el("img", { src: s.avatar ? s.avatar + "?w=160" : "assets/favicon.png?v=2", alt: "" }), el("div", {}, el("b", { textContent: s.name }), s.handle ? el("span", { textContent: "@" + s.handle }) : null)];
   return s.handle ? el("a", { className: "seller", href: "profil?u=" + encodeURIComponent(s.handle), title: "Voir sa page" }, ...inner) : el("div", { className: "seller" }, ...inner);
 };
-const contact = (s) => (s.handle ? el("a", { className: "btn btn-ghost", href: token ? "messages?u=" + encodeURIComponent(s.handle) : "compte", textContent: token ? "Contacter le vendeur" : "Se connecter pour écrire au vendeur" }) : null);
+const contact = (s) => (s.handle ? el("a", { className: "btn btn-ghost", href: token ? "messages?u=" + encodeURIComponent(s.handle) : "compte", textContent: token ? "Contacter le vendeur" : "Écrire au vendeur" }) : null);
 const details = (pairs) => el("dl", { className: "details" }, ...pairs.filter(([, v]) => v).flatMap(([k, v]) => [el("dt", { textContent: k }), el("dd", { textContent: v })]));
 
 function drawVisual(v) {
@@ -73,12 +73,12 @@ function drawVisual(v) {
     el("div", { className: "actions" },
       v.forSale ? el("button", { className: "btn btn-primary", type: "button", textContent: "Acheter " + euros(v.price), onclick: go("/buy") }) : null,
       contact(v.author),
-      v.simulate ? el("button", { className: "btn btn-ghost small", type: "button", textContent: "Simuler l'achat (fondateurs)", onclick: go("/simulate") }) : null),
+      v.simulate ? el("button", { className: "btn btn-ghost small", type: "button", textContent: "Simuler l’achat (fondateurs)", onclick: go("/simulate") }) : null),
     notice,
     v.description ? el("p", { className: "desc", textContent: v.description }) : null,
     details([["Format", v.format], ["Dimensions", v.width + " × " + v.height + " px"], ["Livraison", "Fichier original, sans filigrane"], ["Publié le", new Date(v.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })]]),
-    v.forSale ? el("p", { className: "note", textContent: "Paiement par carte (Stripe). L'original est livré tout de suite après, sur la page de ta commande et par e-mail. L'image affichée ici est une copie réduite et filigranée." })
-      : !v.sold ? el("p", { className: "note", textContent: "Pas en vente directe : écris au graphiste pour l'acheter ou pour une version sur mesure." }) : null,
+    v.forSale ? el("p", { className: "note", textContent: "Paiement par carte (Stripe). L’original est livré tout de suite après, sur la page de ta commande et par e-mail. L’image affichée ici est une copie réduite et filigranée." })
+      : !v.sold ? el("p", { className: "note", textContent: "Pas en vente directe : écris au graphiste pour l’acheter ou pour une version sur mesure." }) : null,
   ].filter(Boolean));
   return { title: v.title, seller: v.author };
 }
@@ -89,11 +89,11 @@ function drawPack(p) {
     el("h1", { textContent: p.title }),
     sellerRow(p.seller),
     el("div", { className: "big-price" }, el("small", { textContent: "dès" }), euros(p.price)),
-    el("div", { className: "actions" }, el("a", { className: "btn btn-primary", href: p.url, textContent: "Écouter et choisir une licence" }), contact(p.seller)),
+    el("div", { className: "actions" }, el("a", { className: "btn btn-primary", href: p.url, textContent: "Écouter et choisir" }), contact(p.seller)),
     details([["Prods", p.tracks + " dans le pack"], ["En vente", p.forSale + " prod" + (p.forSale > 1 ? "s" : "")], ["Licences", "MP3, WAV, stems ou exclusive, selon la prod"]]),
     el("ul", { className: "prods" }, ...p.list.map((t) => el("li", {}, el("span", { textContent: t.title }),
       el("small", { textContent: [t.bpm && t.bpm + " BPM", t.key, "dès " + euros(t.from)].filter(Boolean).join(" · ") })))),
-    el("p", { className: "note", textContent: "Chaque prod s'écoute en entier sur la page du pack ; tu choisis sa licence et tu paies par carte. Fichiers et contrat de licence sont livrés tout de suite après." }),
+    el("p", { className: "note", textContent: "Chaque prod s’écoute en entier sur la page du pack ; tu choisis sa licence et tu paies par carte. Fichiers et contrat de licence sont livrés tout de suite après." }),
   ]);
   return { title: p.title, seller: p.seller };
 }
