@@ -264,6 +264,8 @@ body.visitor :is(#project-meta .tag, #edit-toggle, #share-project, #project-more
 .fab { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 35; display: inline-flex; align-items: center; gap: 8px; padding: 16px 24px; border-radius: var(--r-ctl); border: 0; background: var(--lit), var(--night); color: #fff; font: 500 12px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; cursor: pointer; box-shadow: var(--lit-shadow), 0 16px 50px -14px rgba(0,0,0,.9); transition: box-shadow .25s; }
 .fab:hover { box-shadow: 0 0 0 1px rgba(var(--acc-hi),.7) inset, 0 16px 50px -14px rgba(0,0,0,.9); }
 body.has-player .fab { bottom: calc(88px + env(safe-area-inset-bottom)); }
+/* Téléphone : ROCKY monte encore, au-dessus du bouton « Ajouter », qui est lui-même au-dessus du lecteur. */
+@media (max-width: 480px) { html:has(.op-pill:not([hidden])) body.has-player #rocky { bottom: calc(150px + env(safe-area-inset-bottom)); } }
 .menu { position: fixed; z-index: 70; min-width: 220px; overflow-y: auto; overscroll-behavior: contain; padding: 6px; border-radius: 16px; border: 1px solid rgba(255,235,238,.16); background: var(--glass-deep); -webkit-backdrop-filter: blur(22px); backdrop-filter: blur(22px); box-shadow: var(--glass-shadow); }
 .menu button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 12px; border: 0; border-radius: 10px; background: none; color: var(--mist); font: 600 14px var(--f-body); text-align: left; cursor: pointer; }
 .menu button:hover, .menu button:focus-visible { background: rgba(255,255,255,.06); }
@@ -701,6 +703,10 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 .bell { position: relative; }
 /* Sur téléphone, « Mon compte » reste dans le menu : la cloche garde sa place dans la barre */
 @media (max-width: 520px) { header .row { flex-wrap: nowrap; } header .row .btn-ghost { display: none; } }
+/* Écran étroit (texte agrandi sur Android) : la marque se resserre pour que l'en-tête tienne, sinon la page s'élargit,
+   Chrome la dézoome et le lecteur, centré sur la page, sort de l'écran. Rien ne dépasse sur le côté. */
+@media (max-width: 360px) { header .wrap { gap: 8px; } .brand { min-width: 0; gap: 8px; font-size: 15px; letter-spacing: .1em; } .brand img { width: 36px; } }
+body { overflow-x: clip; }
 .bell[data-unread]::after { content: attr(data-unread); position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 999px; background: var(--ember); color: #fff; font: 700 11px/18px var(--f-body); text-align: center; }
 .notices { position: fixed; z-index: 70; width: min(400px, calc(100vw - 16px)); max-height: min(640px, calc(100vh - 90px)); display: flex; flex-direction: column; border-radius: var(--r-card); border: 1px solid rgba(255,235,238,.16); background: var(--glass-deep); -webkit-backdrop-filter: blur(22px); backdrop-filter: blur(22px); box-shadow: var(--glass-shadow); }
 .notices-head { display: flex; align-items: center; gap: 8px; padding: 16px 12px 8px 20px; }
@@ -936,7 +942,7 @@ body .trk .stage.prod.stolen { pointer-events: auto; cursor: pointer; }
 <dialog id="covers"></dialog>
 <dialog id="ask"><form method="dialog"><b id="ask-title"></b><input id="ask-input" maxlength="120" required autocomplete="off"><div class="row" style="justify-content:flex-end"><button class="btn btn-ghost" type="button" onclick="this.closest('dialog').close('cancel')">Annuler</button><button class="btn btn-primary" value="ok">Valider</button></div></form></dialog>
 
-<script src="assets/sounds-player.js?v=30"></script>
+<script src="assets/sounds-player.js?v=31"></script>
 <script src="assets/invites.js?v=2"></script>
 <script src="assets/hm.js?v=16"></script>
 <script src="assets/platforms.js?v=22"></script>
@@ -988,8 +994,12 @@ async function api(method, path, body) {
   window.RockyBuild?.fromApi(method, path, body); // le mini Rocky bâtisseur, dans l’application (assets/rocky-builder.js)
   return data;
 }
-// Le mini Rocky de l’application suit le réglage du compte (Paramètres de l’app) : relu à l’ouverture et à chaque retour sur CLOUD.
-const rockySetting = () => window.RockyBuild?.inApp() && token && api("GET", "/me").then((me) => { RockyBuild.on = me.user.rocky !== false; }, () => {});
+// Le compte, relu à l’ouverture et à chaque retour sur CLOUD : sa couleur (Paramètres du compte, aussi sur un téléphone qui
+// ouvre CLOUD directement) et, dans l’application, le mini Rocky (Paramètres de l’app).
+const rockySetting = () => token && api("GET", "/me").then((me) => {
+  window.OniriqueAccent?.set(me.user.accent || "");
+  if (window.RockyBuild?.inApp()) RockyBuild.on = me.user.rocky !== false;
+}, () => {});
 rockySetting();
 document.addEventListener("visibilitychange", () => { if (!document.hidden) rockySetting(); });
 // Les fichiers passent par XMLHttpRequest, qui seul donne l’avancement de l’envoi.
@@ -4658,5 +4668,5 @@ function coverSend(p, oops) {
 }
 </script>
 <script src="assets/account.js?v=18"></script>
-<script src="assets/site-nav.js?v=23"></script>
+<script src="assets/site-nav.js?v=24"></script>
 </html>

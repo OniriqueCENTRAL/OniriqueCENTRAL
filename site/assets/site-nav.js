@@ -74,7 +74,7 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .sn-social-drop { position: absolute; right: 0; top: calc(100% + 12px); z-index: 80; min-width: 210px; padding: 8px; border-radius: 16px; border: 1px solid var(--line, rgba(255,235,238,.10)); background: linear-gradient(160deg, rgba(40,26,30,.94), rgba(16,12,14,.96) 45%, rgba(20,15,17,.96)); box-shadow: 0 24px 60px -12px rgba(0,0,0,.8); }
 .sn-social-drop a { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; color: var(--mist, #f6eeee); font: 500 14px/1.2 var(--f-body, system-ui); text-decoration: none; }
 .sn-social-drop a:hover, .sn-social-drop a:focus-visible { background: rgba(var(--acc, 229,56,74),.16); outline: none; }
-.sn-foot { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 0 auto 18px; }
+.sn-foot { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 24px auto 0; }
 .sn-foot a { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line, rgba(255,235,238,.10)); color: var(--haze, #a88f92); }
 .sn-foot a:hover, .sn-foot a:focus-visible { color: var(--mist, #f6eeee); border-color: rgb(var(--acc, 229,56,74)); outline: none; }
 .sn-foot .sn-icon { width: 19px; height: 19px; }

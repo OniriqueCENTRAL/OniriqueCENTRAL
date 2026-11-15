@@ -9,7 +9,7 @@
 //   player.play(items, index)   joue une liste (un projet) à partir de ce titre ; player.enqueue(item) l'ajoute à la file
 //   item : { key, id, trackId, title, feat, subtitle, cover, url, downloadUrl, duration, peaks, comments, lyrics }
 //   OniriquePlayer.parseLyrics(text) → [{ at, text }] : les paroles au format LRC, at en secondes (null : ligne sans repère)
-//   player.setAccent(color)      la couleur de la lecture (celle de la pochette du projet), null : la braise d'ONIRIQUE
+//   player.setAccent(color)      la couleur de la lecture (celle de la pochette du projet), null : celle de la page (du compte)
 //   OniriquePlayer.peaksOf(file) → Promise<{ peaks, duration }>, calculés dans le navigateur à l'envoi
 //   OniriquePlayer.tint(url)     → Promise<{ accent, glow, deep } | null>, les couleurs tirées d'une pochette
 //   OniriquePlayer.stageLabel(s) → « Maquette », « V2 », « Final », le texte libre du membre, ou rien
@@ -153,6 +153,10 @@ dialog[open]::backdrop { animation: op-fade .22s ease-out; }
   .op-meta { width: auto; flex: 1; }
   .op-mini, .op-time, .op-hide-sm { display: none; }
 }
+/* Écran très étroit : le titre garde sa place ; précédent et la file restent dans le lecteur plein écran. */
+@media (max-width: 360px) { .op-hide-xs { display: none; } }
+/* La bulle de ROCKY passe au-dessus de la barre de lecture au lieu de cacher ses boutons. */
+html:has(.op-pill:not([hidden])) #rocky { bottom: calc(88px + env(safe-area-inset-bottom)); }
 /* Le lecteur plein écran du téléphone. */
 .op-full { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; justify-content: center; gap: 18px; overflow: hidden;
   padding: calc(52px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom)); background: var(--night); color: var(--mist, #f6eeee);
@@ -309,7 +313,9 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     const audio = media(new Audio());
     audio.preload = "metadata";
     let list = [], index = -1, upNext = [], shuffle = false, repeat = "off", loop = null;
-    let volume = 1, accent = "#E23444";
+    // Sans pochette, la couleur de la page : celle choisie sur le compte (assets/accent.js), la braise sinon.
+    const ember = () => getComputedStyle(document.documentElement).getPropertyValue("--ember").trim() || "#E23444";
+    let volume = 1, accent = ember();
     try { volume = Math.min(1, Math.max(0, Number(localStorage.getItem("onirique.volume") ?? 1))); } catch {}
     audio.volume = volume;
 
@@ -326,9 +332,9 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
     const meta = el("div", { className: "op-meta", title: "Détails" }, title, sub);
     const mini = el("canvas", { className: "op-mini", ariaLabel: "Forme d'onde : cliquer pour aller à ce moment" });
     const clock = el("span", { className: "op-time" });
-    const prev = btn("prev", "Précédent"), play = btn("play", "Lecture", "main"), next = btn("next", "Suivant");
+    const prev = btn("prev", "Précédent", "op-hide-xs"), play = btn("play", "Lecture", "main"), next = btn("next", "Suivant");
     const shuffleBtn = btn("shuffle", "Aléatoire", "op-hide-sm"), repeatBtn = btn("repeat", "Répéter", "op-hide-sm");
-    const queueBtn = btn("queue", "File d'attente"), volBtn = btn("volume", "Couper le son", "op-hide-sm");
+    const queueBtn = btn("queue", "File d'attente", "op-hide-xs"), volBtn = btn("volume", "Couper le son", "op-hide-sm");
     const vol = el("input", { className: "op-vol op-hide-sm", type: "range", min: 0, max: 1, step: 0.01, value: volume, ariaLabel: "Volume" });
     vol.style.setProperty("--p", volume * 100 + "%");
     const more = btn("expand", "Détails : commentaires, vitesse, boucle");
@@ -973,7 +979,7 @@ html.op-full-open .op-sheet, html.op-full-open .op-queue { z-index: 51; bottom: 
       enqueue(t) { upNext.push(t); if (index < 0) { list = []; insertNext(upNext.shift()); } listQueue(); },
       openDetails() { if (phone()) { openFull(); panel("comments"); } else if (sheet.hidden) toggleSheet(); },
       setAccent(color) {
-        accent = color || "#E23444";
+        accent = color || ember();
         for (const node of [pill, sheet, queue, stage]) node.style.setProperty("--op-accent", accent);
         draw();
       },
