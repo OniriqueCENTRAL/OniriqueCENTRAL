@@ -56,7 +56,7 @@ import { mountConcerts } from './concerts.js';
 import { mountDownloader } from './downloader.js';
 import { mountRocky } from './rocky.js';
 import { mountTraductions, fichesEn, translateMissing } from './traductions.js';
-import { saleOf } from './soldes.js';
+import { planSaleOf, saleOf } from './soldes.js';
 import { mountVocalBrain } from './vocalbrain.js';
 import { applyPluginFiches, applyRetouches } from './fiches.js';
 import { autoriser as autoriserVpn, jetonVpn, VPN_RELAIS } from './vpn.js';
@@ -344,7 +344,7 @@ export function createApp() {
     const user = optionalUser(req); // l'application envoie le compte connecté : un fondateur voit aussi ses plugins réservés
     res.json({
       products: all('SELECT * FROM products WHERE published = 1 ORDER BY position, created_at').filter((p) => !hiddenFrom(p, user)).map((p) => productView(p, platform)),
-      plans: all(`SELECT * FROM plans WHERE active = 1 AND kind = 'all' ORDER BY price_cents`).map(planView),
+      plans: all(`SELECT * FROM plans WHERE active = 1 AND kind = 'all' ORDER BY price_cents`).map((p) => ({ ...planView(p), sale: planSaleOf(p) })),
       packs: all('SELECT * FROM packs WHERE active = 1 ORDER BY price_cents').map(packView),
       // Abonnement à la carte : le prix du premier plugin et de chaque plugin ajouté, par mois.
       pick: pickPrices(),
@@ -708,7 +708,10 @@ export function createApp() {
     .filter((p) => !hiddenFrom(p, null)).map((p) => {
       const v = productView(p, 'win');
       return { ...v, category: CATEGORIES.find(([id]) => id === v.categories[0])?.[1] };
-    }) });
+    }),
+    // Et les formules d'abonnement, avec leurs plugins et la remise des soldes.
+    plans: () => all(`SELECT * FROM plans WHERE active = 1 AND kind = 'all' ORDER BY price_cents`).map((p) => ({ ...planView(p), sale: planSaleOf(p),
+      plugins: (parseProductIds(p.product_ids) || []).map((id) => get('SELECT name FROM products WHERE id = ?', id)?.name).filter(Boolean) })) });
   mountTraductions(app);
   try { applyPluginFiches(); applyRetouches(); } catch (e) { console.error('fiches des plugins :', e.message); }   // les fiches réécrites (une seule fois)
   mountVocalBrain(app, { wrap, requireUser });   // le cerveau de VOCALBOX (apprentissage accepté par l'utilisateur)
@@ -1075,7 +1078,7 @@ export function createApp() {
       const plan = get(`SELECT * FROM plans WHERE id = ? AND active = 1 AND kind = 'all'`, int(req.body.id, 0));
       if (!plan) throw new HttpError(404, 'Formule introuvable.');
       if (activeSubscription(req.user.id)?.valid) throw new HttpError(409, 'Vous avez déjà un abonnement en cours.');
-      return res.json(await checkout(req.user, 'plan', plan));
+      return res.json(await checkout(req.user, 'plan', { ...plan, sale: planSaleOf(plan) }));
     }
     throw new HttpError(400, 'Achat invalide.');
   }));

@@ -69,6 +69,9 @@ Comment conseiller un plugin (c'est ton métier, fais-le bien) :
 Les plugins de la boutique (la liste à jour, la seule qui compte) :
 {PLUGINS}
 
+Les abonnements (https://onirique.store/boutique#plans ; sans engagement, résiliables à tout moment) :
+{PLANS}
+
 Ce que tu sais du site :
 ${knowledge}
 
@@ -76,8 +79,17 @@ Les questions fréquentes du site (réponds d'après elles quand la question s'y
 ${faq}`;
 
 /** Le prompt de ROCKY avec la liste des plugins du moment. */
-export const rockySystem = (plugins = []) =>
-  PERSONA.replace('{PLUGINS}', () => (plugins.length ? plugins.map(pluginCard).join('\n\n') : 'Aucun plugin en ligne pour l\'instant.'));
+export const rockySystem = (plugins = [], plans = []) =>
+  PERSONA.replace('{PLUGINS}', () => (plugins.length ? plugins.map(pluginCard).join('\n\n') : 'Aucun plugin en ligne pour l\'instant.'))
+    .replace('{PLANS}', () => (plans.length ? plans.map(planLine).join('\n') : 'Aucun abonnement proposé pour l\'instant.'));
+
+/** Une formule d'abonnement pour ROCKY : prix, plugins compris, et la remise des soldes s'il y en a une. */
+function planLine(p) {
+  const per = p.interval === 'year' ? 'an' : 'mois';
+  const what = p.plugins?.length ? `comprend ${p.plugins.join(', ')}` : 'comprend tous les plugins ONIRIQUE, et chaque nouveau dès sa sortie (pas ceux des partenaires)';
+  const sale = p.sale ? ` EN PROMO ${p.sale.name.toUpperCase()} ${p.sale.until} : ${p.sale.label} ${p.sale.periodText}, soit ${euros(p.sale.priceCents)} par ${per}, puis ${euros(p.priceCents)} ; remise appliquée toute seule au paiement, sans code.` : '';
+  return `- ${p.name} : ${euros(p.priceCents)} par ${per}, ${what}.${sale}`;
+}
 
 const MAX_TURNS = 12;
 const MAX_CHARS = 1000;
@@ -97,7 +109,7 @@ export function cleanMessages(list) {
   return out.length && out.at(-1).role === 'user' ? out : null;
 }
 
-export function mountRocky(app, { wrap, plugins = () => [] }) {
+export function mountRocky(app, { wrap, plugins = () => [], plans = () => [] }) {
   app.post('/api/rocky', wrap(async (req, res) => {
     rateLimit(`rocky:${req.ip}`, 40);
     const messages = cleanMessages(req.body?.messages);
@@ -105,7 +117,9 @@ export function mountRocky(app, { wrap, plugins = () => [] }) {
     if (!iaReady()) throw new HttpError(503, 'Rocky dort pour l’instant. Reviens bientôt, ami.');
     let list = [];
     try { list = plugins(); } catch (e) { console.error('Rocky, plugins :', e.message); }
-    const reply = await askIA({ system: rockySystem(list), messages, maxTokens: 400 });
+    let offers = [];
+    try { offers = plans(); } catch (e) { console.error('Rocky, abonnements :', e.message); }
+    const reply = await askIA({ system: rockySystem(list, offers), messages, maxTokens: 400 });
     if (!reply) throw new HttpError(502, 'Rocky n’entend plus rien. Réessaie dans un moment, ami.');
     res.set('Cache-Control', 'no-store').json({ reply });
   }));

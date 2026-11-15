@@ -6,5 +6,15 @@
  "Voir les offres →": "See the deals →",
  "Les plus gros plugins ONIRIQUE à prix cassé, jusqu'au 1er décembre. La remise s'applique toute seule au paiement, sans code.": "ONIRIQUE's biggest plugins at slashed prices, until December 1. The discount applies by itself at checkout, no code needed.",
  "{} · Black Friday, jusqu'au 1er décembre": "{} · Black Friday, until December 1",
- "La remise Black Friday ({}) est plus forte que ce code : c'est elle qui s'applique.": "The Black Friday discount ({}) is bigger than this code: that's the one that applies."
+ "La remise Black Friday ({}) est plus forte que ce code : c'est elle qui s'applique.": "The Black Friday discount ({}) is bigger than this code: that's the one that applies.",
+ "Les plus gros plugins ONIRIQUE à prix cassé, et les abonnements aussi, jusqu'au 1er décembre. La remise s'applique toute seule au paiement, sans code.": "ONIRIQUE's biggest plugins at slashed prices, and the subscriptions too, until December 1. The discount applies by itself at checkout, no code needed.",
+ "{} la première année · Black Friday": "{} for the first year · Black Friday",
+ "{} les 3 premiers mois · Black Friday": "{} for the first 3 months · Black Friday",
+ "{} la première année · Black Friday, jusqu'au 1er décembre": "{} for the first year · Black Friday, until December 1",
+ "{} les 3 premiers mois · Black Friday, jusqu'au 1er décembre": "{} for the first 3 months · Black Friday, until December 1",
+ "Puis {} par an, sans engagement.": "Then {} per year, no commitment.",
+ "Puis {} par mois, sans engagement.": "Then {} per month, no commitment.",
+ "TTC, par an, la première année, puis {} par an. Offre valable jusqu'au 1er décembre.": "Incl. VAT, per year, for the first year, then {} per year. Offer valid until December 1.",
+ "TTC, par mois, les 3 premiers mois, puis {} par mois. Offre valable jusqu'au 1er décembre.": "Incl. VAT, per month, for the first 3 months, then {} per month. Offer valid until December 1.",
+ "{}, la première année": "{}, first year"
 }

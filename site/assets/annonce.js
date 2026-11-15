@@ -142,7 +142,7 @@
     const deals = make("ul", { className: "bf-deals" }, ...(p.deals || []).map((d, i) => {
       const li = make("li", {},
         make("b", { textContent: d.sale.label }),
-        make("a", { href: "/boutique/" + encodeURIComponent(d.slug), textContent: d.name }),
+        make("a", { href: d.href || "/boutique/" + encodeURIComponent(d.slug), textContent: d.name }),
         make("span", { className: "bf-price" }, make("s", { textContent: euros(d.priceCents) }), euros(d.sale.priceCents)));
       li.style.transitionDelay = `${.45 + i * .09}s`;
       return li;

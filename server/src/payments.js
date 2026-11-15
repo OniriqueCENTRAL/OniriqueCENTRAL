@@ -303,6 +303,21 @@ const discountMeta = (item) => (item.discount ? {
 } : {});
 const discountFrom = (meta = {}) => ({ promoId: Number(meta.promo_id) || null, welcome: meta.welcome === '1', discountCents: Number(meta.discount_cents) || 0 });
 
+/** Le coupon Stripe des soldes pour cette remise d'abonnement : créé une fois, puis réutilisé (son id dit tout). */
+async function saleCoupon(sale, key) {
+  const id = `soldes-${new Date(sale.endsAt).toISOString().slice(0, 10)}-${sale.percent}-${sale.months}m`;
+  try {
+    return (await stripe('GET', `/coupons/${id}`, undefined, key)).id;
+  } catch {
+    return (await stripe('POST', '/coupons', {
+      id, name: `${sale.name} ${sale.label}`, percent_off: sale.percent,
+      // Un an payé d'un coup : la remise porte sur la première facture. Au mois : sur les premiers mois.
+      ...(sale.months === 12 ? { duration: 'once' } : { duration: 'repeating', duration_in_months: sale.months }),
+      redeem_by: Math.floor(sale.endsAt / 1000),
+    }, key)).id;
+  }
+}
+
 async function stripeCheckout(user, kind, item) {
   const recurring = kind === 'plan' || kind === 'tools' || kind === 'monthly';
   // Un plugin au mois est encaissé, comme son achat, par son créateur ; les autres abonnements et les packs par ONIRIQUE.
@@ -314,7 +329,7 @@ async function stripeCheckout(user, kind, item) {
   }
   // Un client Stripe n'existe que dans le compte qui l'a créé : il n'est réutilisé que chez ONIRIQUE.
   const customer = creator === 'onirique' ? user.stripe_customer : null;
-  const session = await stripe('POST', '/checkout/sessions', {
+  const body = {
     mode: recurring ? 'subscription' : 'payment',
     customer: customer || undefined,
     customer_email: customer ? undefined : user.email,
@@ -330,7 +345,18 @@ async function stripeCheckout(user, kind, item) {
       : kind === 'tools' ? { metadata: { user_id: user.id, tools: item.interval } }
         : kind === 'monthly' ? { metadata: { user_id: user.id, monthly_product: item.id } } : undefined,
     line_items: lineItems(recurring ? 'plan' : kind, item.name, item.price_cents, item.interval),
-  }, account.key);
+  };
+  // Soldes sur un abonnement : un coupon Stripe remet le début de l'abonnement (la première année, ou les premiers mois),
+  // puis le prix normal revient tout seul. Si Stripe refuse la remise, la page de paiement s'ouvre quand même, au prix
+  // normal (c'est celui que le client voit et paie), et l'erreur est notée.
+  if (kind === 'plan' && item.sale) {
+    try {
+      return { mode: 'stripe', url: (await stripe('POST', '/checkout/sessions', { ...body, discounts: [{ coupon: await saleCoupon(item.sale, account.key) }] }, account.key)).url };
+    } catch (error) {
+      console.error("[soldes] remise d'abonnement refusée par Stripe :", error.message);
+    }
+  }
+  const session = await stripe('POST', '/checkout/sessions', body, account.key);
   return { mode: 'stripe', url: session.url };
 }
 

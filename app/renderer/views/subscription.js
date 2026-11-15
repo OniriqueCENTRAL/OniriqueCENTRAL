@@ -71,7 +71,11 @@ export function subscriptionView() {
     return h('div', { class: 'panel plan' },
       eyebrow(p.interval === 'year' ? 'Annuel' : 'Mensuel'),
       h('h2', null, p.name),
-      h('div', { class: 'amount' }, euros(p.priceCents), h('small', null, p.interval === 'year' ? ' / AN' : ' / MOIS')),
+      h('div', { class: 'amount' }, euros(p.sale ? p.sale.priceCents : p.priceCents), h('small', null, p.interval === 'year' ? ' / AN' : ' / MOIS'),
+        p.sale ? h('small', { style: { 'text-decoration': 'line-through', 'margin-left': '10px' } }, euros(p.priceCents)) : null),
+      // Soldes : la remise porte sur le début de l'abonnement, puis le prix normal revient tout seul.
+      p.sale ? h('div', null, pill(`${p.sale.label} ${p.sale.periodText} · ${p.sale.name}, ${p.sale.until}`, 'hot', true)) : null,
+      p.sale ? h('p', { class: 'muted', style: { margin: 0 } }, `Puis ${euros(p.priceCents)} par ${p.interval === 'year' ? 'an' : 'mois'}, sans engagement.`) : null,
       h('p', { class: 'muted', style: { margin: 0 } }, p.description || (p.productIds?.length
         ? 'Les plugins ci-dessous, avec toutes leurs mises à jour, tant que l\'abonnement est actif.'
         : `Les ${allOnirique.length} plugins ONIRIQUE, toutes les mises à jour, et chaque nouveau plugin ONIRIQUE dès sa sortie. Les plugins des créateurs partenaires s'achètent à l'unité.`)),

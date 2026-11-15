@@ -12,7 +12,7 @@ Object.assign(process.env, { DATA_DIR: fs.mkdtempSync(path.join(os.tmpdir(), 'on
 const { createApp } = await import('../src/app.js');
 const { run, get, setSetting } = await import('../src/db.js');
 const { outbox } = await import('../src/mail.js');
-const { SOLDES, saleOf, salePopup } = await import('../src/soldes.js');
+const { SOLDES, saleOf, planSaleOf, salePopup } = await import('../src/soldes.js');
 const { quote } = await import('../src/promos.js');
 
 const server = createApp().listen(0);
@@ -31,6 +31,7 @@ const product = (slug, name, price, creator = 'onirique') => {
 const vocalbox = product('vocalbox', 'ONIRIQUE VOCALBOX', 14999);
 const n73 = product('onirique-n73', 'ONIRIQUE N73', 8999);
 const eq = product('onirique-eq', 'ONIRIQUE EQ', 4999);
+const halo = product('onirique-halo', 'ONIRIQUE HALO', 9999);
 const partenaire = product('onirique-modbox', 'MODBOX D\'UN PARTENAIRE', 7999, 'relic');
 
 // Les prix : -30 % et -20 %, arrondis au centime ; rien hors liste, rien chez un partenaire.
@@ -66,7 +67,23 @@ const site = await call('GET', '/api/site');
 assert.equal(site.popup.id, SOLDES.id);
 assert.equal(site.popup.theme, 'black-friday');
 assert.equal(site.popup.title, "Jusqu'à -30 %");
-assert.deepEqual(site.popup.deals.map((d) => d.slug), ['vocalbox', 'onirique-n73']);
+// HALO, le dernier sorti, ouvre la liste ; puis les plus fortes remises ; l'abonnement annuel ALL ACCESS la ferme.
+const annuel = Number(run("INSERT INTO plans (name, interval, price_cents, active, kind) VALUES ('ALL ACCESS ONIRIQUE — annuel', 'year', 38499, 1, 'all')").lastInsertRowid);
+run("INSERT INTO plans (name, interval, price_cents, active, kind) VALUES ('ALL ACCESS ONIRIQUE — mensuel', 'month', 3999, 1, 'all')");
+run("INSERT INTO plans (name, interval, price_cents, active, kind) VALUES ('À LA CARTE', 'month', 999, 1, 'pick')");
+const popup = (await call('GET', '/api/site')).popup;
+assert.deepEqual(popup.deals.map((d) => d.slug), ['onirique-halo', 'vocalbox', 'onirique-n73', null]);
+assert.deepEqual([popup.deals[3].name, popup.deals[3].href, popup.deals[3].sale.priceCents], ['ALL ACCESS ONIRIQUE, la première année', '/boutique#plans', 26949]);
+
+// Les abonnements : -30 % la première année en annuel, les 3 premiers mois au mois ; pas la formule à la carte ; plus rien après la date.
+const plans = (await call('GET', '/api/catalog')).plans;
+assert.deepEqual(plans.map((p) => [p.interval, p.sale?.priceCents, p.sale?.months, p.sale?.periodText]),
+  [['month', 2799, 3, 'les 3 premiers mois'], ['year', 26949, 12, 'la première année']]);
+assert.equal(planSaleOf(get("SELECT * FROM plans WHERE kind = 'pick'")), null);
+assert.equal(planSaleOf(get('SELECT * FROM plans WHERE id = ?', annuel), SOLDES.fin + 1), null);
+// En mode démo, s'abonner pendant les soldes marche comme d'habitude.
+const done = await call('POST', '/api/checkout', { token, body: { kind: 'plan', id: annuel } }).catch((e) => e);
+assert.ok(done.granted || /vérifi|valid/i.test(String(done.message)), String(done.message || JSON.stringify(done)));
 
 console.log('  ok  soldes');
 server.close();
