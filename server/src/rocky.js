@@ -1,14 +1,18 @@
 // ROCKY, le chatbot IA du site (bulle en bas à droite, site/assets/rocky.js) : un petit ingénieur extraterrestre en pierre
-// qui parle en accords. Il répond avec Gemini (GEMINI_API_KEY, gratuit) ou Claude (ANTHROPIC_API_KEY) et connaît le site par llms.txt.
+// qui parle en accords. Il répond avec l'IA du serveur (ia.js : Gemini, sinon Claude) et connaît le site par llms.txt.
+// Les plugins, eux, viennent de la base à chaque question (plugins(), fourni par app.js) : un plugin publié par un
+// collègue est connu tout de suite, un plugin retiré n'est plus proposé. rocky-conseils.js l'aide à bien choisir.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { config } from './config.js';
 import { HttpError, rateLimit } from './auth.js';
+import { askIA, iaReady } from './ia.js';
+import { CONSEILS } from './rocky-conseils.js';
 
 const SITE_DIRS = [process.env.SITE_DIR, path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../site'), '/var/www/site'];
 const siteDir = SITE_DIRS.find((d) => d && fs.existsSync(path.join(d, 'llms.txt')));
-const knowledge = siteDir ? fs.readFileSync(path.join(siteDir, 'llms.txt'), 'utf8') : '';
+// La rubrique « Produits » de llms.txt ne cite que VOCALBOX : ROCKY a la vraie liste, tirée de la base.
+const knowledge = siteDir ? fs.readFileSync(path.join(siteDir, 'llms.txt'), 'utf8').replace(/## Produits[\s\S]*?(?=\n## )/, '') : '';
 
 /** Les questions fréquentes de la page d'accueil (section #faq), en texte : la FAQ du site est la source, ROCKY la lit. */
 export function faqText(html) {
@@ -18,6 +22,18 @@ export function faqText(html) {
 }
 const home = siteDir && ['onirique.html', 'index.html'].map((f) => path.join(siteDir, f)).find((f) => fs.existsSync(f));
 const faq = home ? faqText(fs.readFileSync(home, 'utf8')) : '';
+
+const euros = (cents) => (cents ? `${(cents / 100).toFixed(2).replace('.', ',').replace(/,00$/, '')} €` : 'gratuit');
+
+/** La fiche d'un plugin pour ROCKY : son texte de la boutique, et sa fiche conseil s'il en a une. */
+export function pluginCard(p) {
+  const c = CONSEILS[p.slug];
+  const lines = [`### ${p.name} (${p.category || 'plugin'}, ${euros(p.priceCents)}${p.priceCents ? ', essai gratuit 7 jours' : ''})`,
+    `Fiche : https://onirique.store/boutique/${encodeURIComponent(p.slug)}`, `En une phrase : ${p.tagline}`];
+  if (c) lines.push(`Sert à : ${c.pour}`, `Où le poser : ${c.ou}`, `Ne fait pas : ${c.pas}`);
+  else lines.push(`Présentation : ${String(p.description || '').replace(/\s+/g, ' ').slice(0, 700)}`);
+  return lines.join('\n');
+}
 
 const PERSONA = `Tu es ROCKY, l'assistant du site ONIRIQUE (onirique.store). Tu es un petit ingénieur extraterrestre fait de pierre,
 à cinq pattes, sans yeux : tu « entends » le monde et tu parles en accords de musique, traduits en mots. Tu adores la musique,
@@ -33,11 +49,32 @@ Tu ne parles jamais d'une personne réelle (artiste, rappeur, beatmaker, streame
 ni éloge, ni critique, ni biographie, ni actualité, même si on insiste. Ce que tu crois savoir sur eux peut être faux ou dépassé.
 Réponds simplement que tu ne parles que d'ONIRIQUE et de ses outils, puis propose de l'aide sur le site.
 
+Comment conseiller un plugin (c'est ton métier, fais-le bien) :
+1. D'abord, comprends le besoin, sans l'écrire : quelle étape (enregistrement, mix d'une piste, bus, mastering du morceau
+   fini, beatmaking, live ou stream) ? Quel son (voix, drums, basse, instru, mix entier) ? Quel problème ou quelle envie ?
+2. Ensuite, choisis dans la liste « Les plugins de la boutique » ci-dessous, et seulement là : celui dont « Sert à » et « Où le
+   poser » collent au besoin, jamais un plugin dont « Ne fait pas » dit le contraire. Le mastering, c'est le morceau entier :
+   jamais une chaîne vocale (VOCALBOX, VOCAL MINI, ENHANCER, CHANNEL STRIP) pour le mastering, un beat ou des drums.
+3. Propose un ou deux plugins, pas plus, et dis en quelques mots pourquoi celui-là, avec le lien de sa fiche. Prix exact de la
+   liste, ou « gratuit ». Un plugin gratuit qui suffit vaut mieux qu'un payant.
+4. Si la demande est trop floue pour choisir (« je veux un plugin », « un truc pour mon son »), ne recommande rien : pose une
+   seule question courte (voix, beat, mix ou master ? quel problème ?).
+5. Si aucun plugin de la liste ne fait ce qu'on demande, dis-le franchement (« ça, ONIRIQUE n'a pas encore, ami »). Tu peux
+   alors citer ce qui s'en approche vraiment, ou un outil gratuit du site s'il répond au besoin. Ne force jamais un plugin.
+6. Débutant : demande ce qu'il veut faire s'il ne l'a pas dit, puis préfère le plus simple qui fait le travail.
+
+Les plugins de la boutique (la liste à jour, la seule qui compte) :
+{PLUGINS}
+
 Ce que tu sais du site :
 ${knowledge}
 
 Les questions fréquentes du site (réponds d'après elles quand la question s'y rapporte) :
 ${faq}`;
+
+/** Le prompt de ROCKY avec la liste des plugins du moment. */
+export const rockySystem = (plugins = []) =>
+  PERSONA.replace('{PLUGINS}', () => (plugins.length ? plugins.map(pluginCard).join('\n\n') : 'Aucun plugin en ligne pour l\'instant.'));
 
 const MAX_TURNS = 12;
 const MAX_CHARS = 1000;
@@ -57,33 +94,16 @@ export function cleanMessages(list) {
   return out.length && out.at(-1).role === 'user' ? out : null;
 }
 
-export function mountRocky(app, { wrap }) {
+export function mountRocky(app, { wrap, plugins = () => [] }) {
   app.post('/api/rocky', wrap(async (req, res) => {
     rateLimit(`rocky:${req.ip}`, 40);
     const messages = cleanMessages(req.body?.messages);
     if (!messages) throw new HttpError(400, 'Écris un message à Rocky.');
-    const gemini = Boolean(config.geminiApiKey); // Gemini (offre gratuite de Google) d'abord, sinon Claude
-    if (!gemini && !config.anthropicApiKey) throw new HttpError(503, 'Rocky dort pour l’instant. Reviens bientôt, ami.');
-    const r = await fetch(gemini
-      ? `${config.geminiApi}/v1beta/models/${config.geminiModel}:generateContent`
-      : `${config.anthropicApi}/v1/messages`, {
-      method: 'POST',
-      signal: AbortSignal.timeout(30_000),
-      headers: gemini
-        ? { 'content-type': 'application/json', 'x-goog-api-key': config.geminiApiKey }
-        : { 'content-type': 'application/json', 'x-api-key': config.anthropicApiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify(gemini
-        ? { systemInstruction: { parts: [{ text: PERSONA }] }, generationConfig: { maxOutputTokens: 2048 },
-          contents: messages.map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })) }
-        : { model: config.rockyModel, max_tokens: 400, system: PERSONA, messages }),
-    }).catch(() => null);
-    const data = r && (await r.json().catch(() => null));
-    const blocks = gemini ? data?.candidates?.[0]?.content?.parts?.filter((p) => !p.thought) : data?.content?.filter((b) => b.type === 'text');
-    const reply = blocks?.map((b) => b.text || '').join('').trim();
-    if (!r?.ok || !reply) {
-      console.error('Rocky :', r?.status, data?.error?.message);
-      throw new HttpError(502, 'Rocky n’entend plus rien. Réessaie dans un moment, ami.');
-    }
+    if (!iaReady()) throw new HttpError(503, 'Rocky dort pour l’instant. Reviens bientôt, ami.');
+    let list = [];
+    try { list = plugins(); } catch (e) { console.error('Rocky, plugins :', e.message); }
+    const reply = await askIA({ system: rockySystem(list), messages, maxTokens: 400 });
+    if (!reply) throw new HttpError(502, 'Rocky n’entend plus rien. Réessaie dans un moment, ami.');
     res.set('Cache-Control', 'no-store').json({ reply });
   }));
 }

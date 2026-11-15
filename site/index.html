@@ -2,7 +2,7 @@
 <html lang="fr">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<script src="assets/i18n.js?v=36f6ca7d"></script>
+<script src="assets/i18n.js?v=992b6156"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=3"></script>
 <script src="/api/announce.js" async></script>
@@ -700,17 +700,18 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
 /* le parcours : quatre étapes reliées par un fil qui s'allume en descendant la page */
 .flow-head { display: grid; gap: 18px; max-width: 760px; }
 .flow-head h2 { font-size: clamp(32px, 4.4vw, 62px); }
-.flow-steps { --line: rgba(255,235,238,.12); position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; margin: clamp(40px, 5vw, 64px) 0 0; padding: 0; list-style: none; }
-.flow-steps::before, .flow-steps::after { content: ""; position: absolute; z-index: 2; left: 30px; right: 30px; top: 30px; height: 2px; border-radius: 2px; background: var(--line); pointer-events: none; }
+.flow-steps { --line: rgba(255,235,238,.12); position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; margin: clamp(40px, 5vw, 64px) 0 0; padding: 46px 0 0; list-style: none; }
+.flow-steps::before, .flow-steps::after { content: ""; position: absolute; z-index: 2; left: 34px; right: calc((100% - 66px) / 4 - 34px); top: 15px; height: 2px; border-radius: 2px; background: var(--line); pointer-events: none; }
 .flow-steps::after { background: linear-gradient(90deg, rgb(var(--acc-hi)), rgb(var(--acc))); box-shadow: 0 0 12px rgba(var(--acc),.8); transform-origin: left; }
-.flow-step { position: relative; display: flex; flex-direction: column; gap: 12px; padding: 76px 24px 24px; border-radius: 22px;
+.flow-step { position: relative; display: flex; flex-direction: column; gap: 12px; padding: 30px 24px 24px; border-radius: 22px;
   background: linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.015) 40%, rgba(255,255,255,.03)), rgba(14,10,12,.5);
   border: 1px solid rgba(255,235,238,.09); box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 18px 40px rgba(0,0,0,.4); transition: border-color .35s, transform .35s var(--ease); }
 .flow-step:hover { border-color: rgba(var(--acc-hi),.3); transform: translateY(-3px); }
-/* le point du fil, et le numéro en creux */
-.flow-step::before { content: ""; position: absolute; left: 24px; top: 23px; width: 16px; height: 16px; border-radius: 50%; background: #120d0f; border: 2px solid rgb(var(--acc-hi));
+.flow-step:hover::before { translate: 0 3px; } /* la carte monte, sa boule reste sur le fil */
+/* la boule de l'étape, sur le fil au-dessus de la carte, et le numéro en creux */
+.flow-step::before { content: ""; position: absolute; left: 24px; top: -40px; width: 16px; height: 16px; border-radius: 50%; background: #120d0f; border: 2px solid rgb(var(--acc-hi));
   box-shadow: 0 0 0 5px rgba(9,8,10,.9), 0 0 16px rgba(var(--acc),.8); z-index: 3; }
-.flow-n { position: absolute; right: 20px; top: 12px; font: 800 52px/1 var(--f-display); color: transparent; -webkit-text-stroke: 1px rgba(255,236,238,.16); letter-spacing: .02em; }
+.flow-n { position: absolute; right: 20px; top: 14px; font: 800 40px/1 var(--f-display); color: transparent; -webkit-text-stroke: 1px rgba(255,236,238,.16); letter-spacing: .02em; }
 .flow-step h3 { font: 700 clamp(17px, 1.6vw, 21px)/1.2 var(--f-display); letter-spacing: .02em; }
 .flow-step p { color: var(--haze); font-size: 15px; line-height: 1.55; }
 .flow-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 8px; }
@@ -727,7 +728,7 @@ footer { border-top: 1px solid var(--line); padding-block: 70px 40px; overflow: 
   @keyframes flow-dot { from { border-color: rgba(255,236,238,.25); box-shadow: 0 0 0 5px rgba(9,8,10,.9); } }
 }
 @media (max-width: 1000px) {
-  .flow-steps { grid-template-columns: minmax(0, 1fr); gap: 16px; padding-left: 34px; }
+  .flow-steps { grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 0 0 0 34px; }
   .flow-steps::before, .flow-steps::after { left: 9px; right: auto; top: 30px; bottom: 30px; width: 2px; height: auto; }
   .flow-steps::after { transform-origin: top; }
   @supports (animation-timeline: view()) { @keyframes flow-fill { from { transform: scaleY(0); } } }
@@ -2127,6 +2128,15 @@ const CREDITS = [
 // haute définition. Une image venue d’ailleurs reste telle quelle.
 const sized = (url, w) => /^\/api\/media\/[a-f0-9]{32}\.(png|jpg|webp)$/.test(url || "") ? url + "?w=" + w : url;
 const srcsetOf = (url, widths) => sized(url, 1) === url ? "" : widths.map(w => sized(url, w) + " " + w + "w").join(", ");
+// Un visuel plus large que sa carte (les panoramas de MASSIF ou WEIGHT, environ 3:1) est rogné et agrandi pour en
+// remplir la hauteur : « sizes » annonçait la largeur de la carte, le navigateur prenait une version trop petite et
+// l'image sortait floue. Une fois l'image chargée, on annonce sa vraie largeur affichée : il va chercher plus grand.
+document.addEventListener("load", (e) => {
+  const img = e.target;
+  if (img.tagName !== "IMG" || !img.srcset || !img.naturalHeight || getComputedStyle(img).objectFit !== "cover") return;
+  const shown = Math.ceil(img.clientHeight * img.naturalWidth / img.naturalHeight);
+  if (shown > img.clientWidth * 1.05 && img.sizes !== shown + "px") img.sizes = shown + "px";
+}, true);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // Les trois crédits épinglés depuis le panel (à défaut, les plus connus) ; tous sont sur la page des crédits.
 function renderCredits(list) {
@@ -2242,7 +2252,7 @@ catalogReady.then(catalog => {
   if (!shown.length) return;
   $("#pluginGrid").innerHTML = shown.map(p => `
     <a class="plugin-card" href="/boutique/${encodeURIComponent(p.slug)}">
-      <img src="${esc(sized(p.image, 960))}" srcset="${esc(srcsetOf(p.image, [480, 640, 960, 1280]))}" sizes="(max-width: 700px) 92vw, 380px" alt="Interface du plugin ${esc(p.name)}" loading="lazy">
+      <img src="${esc(sized(p.image, 960))}" srcset="${esc(srcsetOf(p.image, [480, 640, 960, 1280, 1920]))}" sizes="(max-width: 700px) 92vw, 380px" alt="Interface du plugin ${esc(p.name)}" loading="lazy">
       <div><h3>${esc(p.name)}</h3><p>${esc(p.tagline)}</p><small>${esc(terms(p))} →</small></div>
     </a>`).join("");
   $("#plugins").hidden = false;

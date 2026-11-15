@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=36f6ca7d"></script>
+<script src="assets/i18n.js?v=992b6156"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=3"></script>
 <script src="/api/announce.js" async></script>
@@ -276,6 +276,15 @@ const euros = (cents) => (cents === 0 ? "Gratuit" : new Intl.NumberFormat("fr-FR
 // haute définition. Une image venue d’ailleurs reste telle quelle.
 const sized = (url, w) => /^\/api\/media\/[a-f0-9]{32}\.(png|jpg|webp)$/.test(url || "") ? url + "?w=" + w : url;
 const srcsetOf = (url, widths) => sized(url, 1) === url ? "" : widths.map(w => sized(url, w) + " " + w + "w").join(", ");
+// Un visuel plus large que sa carte (les panoramas de MASSIF ou WEIGHT, environ 3:1) est rogné et agrandi pour en
+// remplir la hauteur : « sizes » annonçait la largeur de la carte, le navigateur prenait une version trop petite et
+// l'image sortait floue. Une fois l'image chargée, on annonce sa vraie largeur affichée : il va chercher plus grand.
+document.addEventListener("load", (e) => {
+  const img = e.target;
+  if (img.tagName !== "IMG" || !img.srcset || !img.naturalHeight || getComputedStyle(img).objectFit !== "cover") return;
+  const shown = Math.ceil(img.clientHeight * img.naturalWidth / img.naturalHeight);
+  if (shown > img.clientWidth * 1.05 && img.sizes !== shown + "px") img.sizes = shown + "px";
+}, true);
 function el(tag, props = {}, ...children) {
   const node = Object.assign(document.createElement(tag), props);
   node.append(...children.filter(Boolean));
@@ -334,7 +343,7 @@ function setupList(products, categories = []) {
 function card(p, categories = []) {
   const tags = (p.categories || []).map((id) => categories.find((c) => c.id === id)).filter(Boolean);
   const shot = el("div", { className: "shot" }, p.image
-    ? el("img", { className: p.imageManual ? "cover framed" : "cover", src: sized(p.image, 960), srcset: srcsetOf(p.image, [640, 960, 1280]),
+    ? el("img", { className: p.imageManual ? "cover framed" : "cover", src: sized(p.image, 960), srcset: srcsetOf(p.image, [640, 960, 1280, 1920]),
                   sizes: "(max-width: 700px) 92vw, 380px", alt: "Interface du plugin " + p.name, loading: "lazy" })
     : el("img", { className: "mark", src: "assets/logo.png", alt: "" }));
   return el("a", { className: "card", href: p.href || "/boutique/" + encodeURIComponent(p.slug) }, shot,

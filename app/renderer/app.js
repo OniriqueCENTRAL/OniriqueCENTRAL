@@ -36,6 +36,7 @@ let lastLoad = 0;
 export async function refresh() {
   try {
     state.data = await call('load');
+    window.OniriqueI18n?.add(state.data.catalog?.en); // les fiches traduites par le serveur
     state.offline = null;
   } catch (error) {
     state.offline = error.message;
@@ -533,6 +534,7 @@ setInterval(async () => {
     const data = await call('load');
     if (JSON.stringify(data.catalog) === JSON.stringify(state.data.catalog) && data.popup?.id === state.data.popup?.id) return;
     state.data = data;
+    window.OniriqueI18n?.add(data.catalog?.en);
     state.offline = null;
     lastLoad = Date.now();
     render();

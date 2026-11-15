@@ -33,6 +33,7 @@
       else location.replace(url.toString());
     },
     t: (text) => text,
+    add: () => {},
   };
   window.OniriqueI18n = api;
   document.documentElement.lang = lang;
@@ -40,7 +41,10 @@
 
   // Le dictionnaire, chargé tout de suite (avant que la page ne s'affiche en français).
   const version = self.match(/[?&]v=([\w]+)/);
-  if (!window.ONIRIQUE_EN) document.write(`<script src="${base}i18n-en.js?v=${version ? version[1] : 1}"><\/script>`);
+  // Puis les fiches des plugins traduites par le serveur (server/src/traductions.js) : un plugin publié par un collègue
+  // est en anglais sans repasser par tools/i18n. Sur le site seulement : l'application les reçoit avec le catalogue.
+  if (!window.ONIRIQUE_EN) document.write(`<script src="${base}i18n-en.js?v=${version ? version[1] : 1}"><\/script>`
+    + (/^https?:$/.test(location.protocol) ? `<script src="/api/i18n-fiches.js"><\/script>` : ""));
 
   // Dates et nombres : les formats français demandés par le code deviennent anglais.
   const swap = (locale) => (typeof locale === "string" && /^fr/i.test(locale) ? "en-GB" : Array.isArray(locale) ? locale.map(swap) : locale);
@@ -57,7 +61,7 @@
     Intl[name] = Wrapped;
   }
 
-  let exact = null, patterns = null, translated = null, blocks = null;
+  let exact = null, patterns = null, translated = null, blocks = null, extra = {};
   const plain = (s) => s.replace(/’/g, "'");
   const prepare = () => {
     if (exact) return true;
@@ -68,7 +72,8 @@
     exact = new Map();
     patterns = [];
     translated = new Set();
-    for (const [source, en] of Object.entries(dict)) {
+    // Les fiches traduites par le serveur passent avant : une traduction faite à la main garde la priorité.
+    for (const [source, en] of Object.entries({ ...window.ONIRIQUE_EN_FICHES, ...extra, ...dict })) {
       const fr = plain(source);
       translated.add(en);
       if (fr.includes("{}")) {
@@ -153,6 +158,15 @@
       }
     }
   }
+
+  // Des traductions qui arrivent après coup (les fiches du catalogue, dans l'application) : retenues, et la page est repassée.
+  api.add = (more) => {
+    if (!more || typeof more !== "object") return;
+    extra = { ...extra, ...more };
+    if (!exact) return;
+    for (const [fr, en] of Object.entries(more)) if (!exact.has(plain(fr))) { exact.set(plain(fr), en); translated.add(en); }
+    if (document.body) translateNode(document.body);
+  };
 
   const start = () => {
     if (!prepare()) return;

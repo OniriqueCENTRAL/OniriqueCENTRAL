@@ -55,6 +55,7 @@ import { mountCoverPacks } from './coverpacks.js';
 import { mountConcerts } from './concerts.js';
 import { mountDownloader } from './downloader.js';
 import { mountRocky } from './rocky.js';
+import { mountTraductions, fichesEn, translateMissing } from './traductions.js';
 import { mountVocalBrain } from './vocalbrain.js';
 import { applyPluginFiches } from './fiches.js';
 import { autoriser as autoriserVpn, jetonVpn, VPN_RELAIS } from './vpn.js';
@@ -346,6 +347,8 @@ export function createApp() {
       // Abonnement à la carte : le prix du premier plugin et de chaque plugin ajouté, par mois.
       pick: pickPrices(),
       categories: CATEGORIES.map(([id, label]) => ({ id, label })),
+      // Les phrases des fiches traduites par le serveur (traductions.js) : l'application anglaise les ajoute à son dictionnaire.
+      en: fichesEn(),
       // Ce qu'un ami invité gagne : affiché sur la page d'inscription quand il arrive par un lien de parrainage.
       referral: referralSettings().enabled ? { friendPercent: referralSettings().friendPercent } : null,
       paymentsMode: paymentsMode(),
@@ -698,7 +701,13 @@ export function createApp() {
   const allowed = (right) => (req, res, next) => requireUser(req, res, (error) => next(error
     || (can(req.user, right) ? undefined : new HttpError(403, "Cette fonction n'est pas ouverte à ce compte."))));
   mountDownloader(app, { optionalUser, wrap });
-  mountRocky(app, { wrap });
+  // ROCKY lit les plugins en ligne à chaque question (ceux réservés aux fondateurs restent cachés, comme au catalogue).
+  mountRocky(app, { wrap, plugins: () => all('SELECT * FROM products WHERE published = 1 ORDER BY position, created_at')
+    .filter((p) => !hiddenFrom(p, null)).map((p) => {
+      const v = productView(p, 'win');
+      return { ...v, category: CATEGORIES.find(([id]) => id === v.categories[0])?.[1] };
+    }) });
+  mountTraductions(app);
   try { applyPluginFiches(); } catch (e) { console.error('fiches des plugins :', e.message); }   // les fiches réécrites (une seule fois)
   mountVocalBrain(app, { wrap, requireUser });   // le cerveau de VOCALBOX (apprentissage accepté par l'utilisateur)
   const team = allowed('youtube');
@@ -1483,6 +1492,7 @@ export function createApp() {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(position), 0) + 1 FROM products))`, // un nouveau plugin se range à la fin
       slug, f.name, f.tagline, f.description, f.accent, f.price, f.monthly, f.published, now(), req.creator ?? f.creator, f.category, f.foundersOnly);
     res.status(201).json(productView(findProduct(lastInsertRowid)));
+    translateMissing(); // sa fiche en anglais, sans attendre le prochain passage
   });
 
   // L'ordre de la boutique et de l'application : la liste des plugins, du premier au dernier. Réservé à l'équipe.
@@ -1502,6 +1512,7 @@ export function createApp() {
     run('UPDATE products SET name = ?, tagline = ?, description = ?, accent = ?, price_cents = ?, monthly_cents = ?, published = ?, creator = ?, category = ?, founders_only = ? WHERE id = ?',
       f.name, f.tagline, f.description, f.accent, f.price, f.monthly, f.published, req.creator ?? f.creator, f.category, f.foundersOnly, product.id);
     res.json(productView(findProduct(product.id)));
+    translateMissing();
   });
 
   admin.put('/products/:id/image', wrap(async (req, res) => {
