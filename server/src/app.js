@@ -56,6 +56,7 @@ import { mountConcerts } from './concerts.js';
 import { mountDownloader } from './downloader.js';
 import { mountRocky } from './rocky.js';
 import { mountTraductions, fichesEn, translateMissing } from './traductions.js';
+import { saleOf } from './soldes.js';
 import { mountVocalBrain } from './vocalbrain.js';
 import { applyPluginFiches, applyRetouches } from './fiches.js';
 import { autoriser as autoriserVpn, jetonVpn, VPN_RELAIS } from './vpn.js';
@@ -144,6 +145,7 @@ function productView(p, platform) {
     // imageManual : l'image a été choisie par un admin. demoOff : la démo a été retirée à la main, l'application ne la refabrique pas.
     imageManual: !!p.image_manual, demoOff: !!p.demo_off,
     categories: categoryOf(p, (versions.find((v) => v.platform === wanted) || versions[0])?.filename),
+    sale: saleOf(p), // les soldes en cours (soldes.js) : prix barré sur le site, remise appliquée au paiement
     latest: versionView(versions.find((v) => v.platform === wanted)) || null,
     platforms: [...new Set(versions.map((v) => v.platform))], // les systèmes pour lesquels le plugin existe
     versions: versions.map(versionView),
@@ -1013,7 +1015,7 @@ export function createApp() {
     if (hiddenFrom(product, req.user)) throw new HttpError(404, 'Produit introuvable.');
     const q = quote(req.user, product, req.body.code);
     res.json({ priceCents: q.priceCents, finalCents: q.finalCents, discountCents: q.discountCents, label: q.label, code: q.code,
-      source: q.source, note: q.ignored });
+      source: q.source, note: q.ignored, sale: q.sale });
   });
 
   app.post('/api/checkout', requireVerified, wrap(async (req, res) => {

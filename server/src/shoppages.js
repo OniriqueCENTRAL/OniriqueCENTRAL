@@ -2,6 +2,7 @@
 // description, l'aperçu et les données produit de ce plugin, pour que chaque plugin existe dans les moteurs de recherche.
 // Et le sitemap : les pages du site plus une ligne par plugin en vente.
 import fs from 'node:fs';
+import { saleOf } from './soldes.js';
 import path from 'node:path';
 import { config } from './config.js';
 import { all, get } from './db.js';
@@ -22,7 +23,7 @@ export function productPage(p, html = readSite('boutique.html')) {
     { '@type': 'SoftwareApplication', name: p.name, url, image, description: clip(p.description || p.tagline, 500),
       applicationCategory: 'MultimediaApplication', applicationSubCategory: 'Plugin audio VST3',
       operatingSystem: mac ? 'Windows 10, Windows 11, macOS 10.15+' : 'Windows 10, Windows 11 (64 bits)',
-      offers: { '@type': 'Offer', price: ((p.price_cents || 0) / 100).toFixed(2), priceCurrency: 'EUR', availability: 'https://schema.org/InStock', url },
+      offers: { '@type': 'Offer', price: ((saleOf(p)?.priceCents ?? p.price_cents ?? 0) / 100).toFixed(2), priceCurrency: 'EUR', availability: 'https://schema.org/InStock', url },
       publisher: { '@id': `${config.siteUrl}/#org` } },
     { '@type': 'BreadcrumbList', itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Accueil', item: `${config.siteUrl}/` },

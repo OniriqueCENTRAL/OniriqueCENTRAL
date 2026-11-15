@@ -7,6 +7,7 @@ import { config } from './config.js';
 import { all, get, run, now, transaction, setting, setSetting } from './db.js';
 import { HttpError, isStaff } from './auth.js';
 import { parseProductIds } from './licensing.js';
+import { salePopup } from './soldes.js';
 
 const str = (value, max = 200) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
 const int = (value, fallback = null) => (Number.isInteger(Number(value)) && value !== '' && value !== null ? Number(value) : fallback);
@@ -27,6 +28,9 @@ export function announcementView() {
     (nouveau plugin, mise à jour…). Un plugin choisi donne son image et le lien vers sa fiche. null s'il n'y en a pas. */
 export const POPUP_KINDS = { plugin: 'NOUVEAU PLUGIN DISPONIBLE', update: 'NOUVELLE MISE À JOUR', news: 'NOUVEAUTÉ' };
 export function popupView() {
+  // Pendant les soldes, c'est leur annonce qui s'affiche (soldes.js) ; la nouveauté du panel revient ensuite.
+  const sale = salePopup();
+  if (sale) return sale;
   const p = setting('popup', null);
   if (!p?.active || (p.endsAt && p.endsAt < now())) return null;
   const product = p.slug ? get('SELECT slug, name, tagline, image, published FROM products WHERE slug = ?', p.slug) : null;

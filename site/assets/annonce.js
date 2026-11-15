@@ -68,7 +68,7 @@
   const make = (tag, props, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids.filter(Boolean)); return n; };
   const style = document.createElement("style");
   style.textContent = `
-.np-back { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 20px; background: rgba(5,3,4,.62); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); opacity: 0; transition: opacity .35s ease; }
+.np-back { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 20px; background: rgba(5,3,4,.62); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); opacity: 0; transition: opacity .35s ease; }
 .np-back.in { opacity: 1; }
 .np-card { position: relative; width: min(460px, 100%); max-height: calc(100vh - 40px); overflow: auto; border-radius: 24px; border: 1px solid rgba(255,210,214,.16); background: linear-gradient(160deg, rgba(255,255,255,.07), rgba(255,255,255,.02)), #120a0c; box-shadow: 0 30px 80px rgba(0,0,0,.6), 0 0 60px rgba(var(--acc, 229,56,74),.18); color: var(--mist, #f6eeee); text-align: center; transform: translateY(14px) scale(.98); transition: transform .45s cubic-bezier(.2,.8,.2,1); }
 .np-back.in .np-card { transform: none; }
@@ -83,6 +83,85 @@
 @media (prefers-reduced-motion: reduce) { .np-back, .np-card { transition: none; } }`;
   document.head.append(style);
 
+  // Les soldes (server/src/soldes.js) : une carte à part, animée. Des braises montent du fond, le pourcentage compte
+  // jusqu'à sa valeur et brille, un compte à rebours tourne jusqu'à la fin de l'offre, et les meilleures affaires
+  // s'affichent avec leur prix barré. Sans animation pour qui les a coupées dans son système.
+  const saleStyle = document.createElement("style");
+  saleStyle.textContent = `
+.bf-card { position: relative; width: min(480px, 100%); max-height: calc(100vh - 40px); overflow: auto; border-radius: 26px; border: 1px solid rgba(255,140,150,.35); background: radial-gradient(120% 70% at 50% 0%, rgba(var(--acc, 229,56,74),.32), transparent 60%), linear-gradient(180deg, #160809, #070405 70%); box-shadow: 0 30px 90px rgba(0,0,0,.7), 0 0 80px rgba(var(--acc, 229,56,74),.3); color: var(--mist, #f6eeee); text-align: center; transform: translateY(18px) scale(.96); transition: transform .55s cubic-bezier(.2,.9,.2,1.15); isolation: isolate; }
+.np-back.in .bf-card { transform: none; }
+.bf-embers { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: -1; border-radius: inherit; }
+.bf-embers i { position: absolute; bottom: -10px; width: var(--s); height: var(--s); border-radius: 50%; background: radial-gradient(circle, #ffd2a0, rgb(var(--acc, 229,56,74)) 60%, transparent 70%); box-shadow: 0 0 10px rgba(255,120,90,.9); opacity: 0; animation: bf-rise var(--d) linear var(--w) infinite; }
+@keyframes bf-rise { 0% { transform: translate(0, 0); opacity: 0; } 12% { opacity: .95; } 100% { transform: translate(var(--x), -560px); opacity: 0; } }
+.bf-body { padding: 30px 26px 26px; display: grid; gap: 14px; justify-items: center; }
+.bf-kicker { display: inline-flex; align-items: center; gap: 9px; padding: 8px 16px; border-radius: 999px; background: #000; border: 1px solid rgba(255,140,150,.55); font: 700 12px/1 var(--f-mono, monospace); letter-spacing: .28em; color: #fff; }
+.bf-kicker::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: rgb(var(--acc-hi, 255,142,154)); box-shadow: 0 0 10px rgb(var(--acc, 229,56,74)); animation: bf-pulse 1.2s ease-in-out infinite; }
+@keyframes bf-pulse { 50% { opacity: .25; transform: scale(.7); } }
+.bf-up { font: 600 13px/1 var(--f-mono, monospace); letter-spacing: .2em; text-transform: uppercase; color: var(--haze, #a88f92); margin-top: 4px; }
+.bf-big { margin: -6px 0 0; font: 900 clamp(68px, 19vw, 112px)/.95 var(--f-display, system-ui); letter-spacing: -.02em; background: linear-gradient(100deg, #fff 0%, #ffd9dc 35%, rgb(var(--acc-hi, 255,142,154)) 48%, #fff 52%, #ffd9dc 65%, #fff 100%); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 22px rgba(var(--acc, 229,56,74),.65)); animation: bf-shine 3.2s ease-in-out 1s infinite; }
+@keyframes bf-shine { 0% { background-position: 100% 0; } 60%, 100% { background-position: -50% 0; } }
+.bf-text { margin: 0; color: var(--haze, #a88f92); font: 500 15px/1.55 var(--f-body, system-ui); max-width: 380px; }
+.bf-clock { display: flex; gap: 8px; justify-content: center; }
+.bf-clock span { min-width: 58px; padding: 9px 6px 7px; border-radius: 12px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,210,214,.14); font: 800 22px/1 var(--f-display, system-ui); font-variant-numeric: tabular-nums; }
+.bf-clock small { display: block; margin-top: 5px; font: 500 9px/1 var(--f-mono, monospace); letter-spacing: .16em; text-transform: uppercase; color: var(--haze, #a88f92); }
+.bf-deals { width: 100%; display: grid; gap: 8px; margin: 4px 0 0; padding: 0; list-style: none; }
+.bf-deals li { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,210,214,.1); text-align: left; opacity: 0; transform: translateY(10px); transition: opacity .5s, transform .5s cubic-bezier(.2,.8,.2,1); }
+.np-back.in .bf-deals li { opacity: 1; transform: none; }
+.bf-deals a { color: inherit; text-decoration: none; font: 700 14px/1.2 var(--f-display, system-ui); letter-spacing: .02em; }
+.bf-deals b { white-space: nowrap; padding: 5px 8px; border-radius: 8px; background: linear-gradient(180deg, rgb(var(--acc, 229,56,74)), rgb(var(--acc-lo, 122,13,28))); font: 700 12px/1 var(--f-mono, monospace); color: #fff; }
+.bf-deals .bf-price { text-align: right; font: 800 15px/1.1 var(--f-display, system-ui); white-space: nowrap; }
+.bf-deals s { display: block; font: 500 11px/1.2 var(--f-body, system-ui); color: var(--haze, #a88f92); }
+.bf-card .np-cta { animation: bf-glow 2.2s ease-in-out infinite; }
+@keyframes bf-glow { 50% { box-shadow: 0 10px 40px rgba(var(--acc, 229,56,74),.7), 0 0 0 4px rgba(var(--acc, 229,56,74),.18); } }
+@media (prefers-reduced-motion: reduce) { .bf-card, .bf-deals li { transition: none; } .bf-embers, .bf-kicker::before, .bf-big, .bf-card .np-cta { animation: none !important; } .bf-embers { display: none; } }`;
+  document.head.append(saleStyle);
+  const euros = (cents) => (cents / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: cents % 100 ? 2 : 0 });
+  function saleCard(p, x, close) {
+    const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const embers = make("div", { className: "bf-embers" });
+    for (let i = 0; i < (calm ? 0 : 26); i++) {
+      const e = make("i");
+      e.style.cssText = `left:${Math.random() * 100}%;--s:${2 + Math.random() * 4}px;--d:${4 + Math.random() * 5}s;--w:${-Math.random() * 8}s;--x:${(Math.random() - .5) * 120}px`;
+      embers.append(e);
+    }
+    const top = Number((p.title.match(/(\d+)/) || [])[1]) || 0;
+    const big = make("h2", { className: "bf-big", textContent: `-${calm ? top : 0} %` });
+    big.setAttribute("aria-label", p.title);
+    // Le pourcentage compte jusqu'à sa valeur quand la carte s'ouvre.
+    if (!calm && top) setTimeout(() => { const t0 = performance.now(); const step = (t) => { const k = Math.min(1, (t - t0) / 900); big.textContent = `-${Math.round(top * (1 - (1 - k) ** 3))} %`; if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); }, 950);
+    const unit = (label) => { const n = make("span", { textContent: "00" }); n.append(make("small", { textContent: label })); return n; };
+    const parts = [unit("jours"), unit("h"), unit("min"), unit("s")];
+    const tick = () => {
+      let left = Math.max(0, Math.floor((p.endsAt - Date.now()) / 1000));
+      const values = [Math.floor(left / 86400), Math.floor(left / 3600) % 24, Math.floor(left / 60) % 60, left % 60];
+      values.forEach((v, i) => { parts[i].firstChild.nodeValue = String(v).padStart(2, "0"); });
+      if (!left) clearInterval(timer);
+    };
+    const timer = p.endsAt ? setInterval(tick, 1000) : null;
+    if (p.endsAt) tick();
+    const deals = make("ul", { className: "bf-deals" }, ...(p.deals || []).map((d, i) => {
+      const li = make("li", {},
+        make("b", { textContent: d.sale.label }),
+        make("a", { href: "/boutique/" + encodeURIComponent(d.slug), textContent: d.name }),
+        make("span", { className: "bf-price" }, make("s", { textContent: euros(d.priceCents) }), euros(d.sale.priceCents)));
+      li.style.transitionDelay = `${.45 + i * .09}s`;
+      return li;
+    }));
+    const later = make("button", { type: "button", className: "np-later", textContent: "Plus tard" });
+    later.onclick = () => { clearInterval(timer); close(); };
+    x.addEventListener("click", () => clearInterval(timer));
+    return make("div", { className: "bf-card" }, embers, x,
+      make("div", { className: "bf-body" },
+        make("span", { className: "bf-kicker", textContent: p.kicker }),
+        make("span", { className: "bf-up", textContent: "jusqu'à" }),
+        big,
+        p.text ? make("p", { className: "bf-text", textContent: p.text }) : null,
+        p.endsAt ? make("div", { className: "bf-clock", role: "timer" }, ...parts) : null,
+        deals,
+        p.link ? make("a", { className: "np-cta", href: p.link, textContent: (p.linkLabel || "Voir") + " →" }) : null,
+        later));
+  }
+
   function show(p) {
     if (done || !p || !p.id || seen(p.id) || location.pathname.startsWith("/admin")) return;
     done = true;
@@ -96,7 +175,7 @@
     const x = make("button", { type: "button", className: "np-x", textContent: "×", title: "Fermer" });
     x.setAttribute("aria-label", "Fermer");
     x.onclick = close;
-    const card = make("div", { className: "np-card" },
+    const card = p.theme === "black-friday" ? saleCard(p, x, close) : make("div", { className: "np-card" },
       x,
       p.image ? make("img", { className: "np-img", src: p.image, alt: p.title, loading: "eager" }) : null,
       make("div", { className: "np-body" },

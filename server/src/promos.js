@@ -3,6 +3,7 @@ import { config } from './config.js';
 import { all, get, run, now, setting, setSetting, transaction } from './db.js';
 import { HttpError } from './auth.js';
 import { sendMail } from './mail.js';
+import { saleOf } from './soldes.js';
 import { renderEmail } from './mailtemplate.js';
 
 //==============================================================================
@@ -146,6 +147,10 @@ function ownerOffer(user, product) {
 export function quote(user, product, code) {
   const price = product.price_cents;
   const offers = [];
+  // Les soldes en cours (soldes.js), sans code. En premier : à remise égale, ce sont elles qui gagnent et le code reste
+  // à son propriétaire pour une autre fois.
+  const sale = saleOf(product);
+  if (sale) offers.push({ off: price - sale.priceCents, promo: null, label: sale.label, source: 'sale', sale });
   if (code && normalizeCode(code)) {
     const promo = usablePromo(user, product, code);
     const off = promo.percent ? Math.round(price * promo.percent / 100) : Math.min(promo.amount_cents, price);
@@ -171,7 +176,9 @@ export function quote(user, product, code) {
     ignored: best.source === 'owner'
       ? (code ? `Votre remise d'acheteur de ${best.owner.ownsName} est plus forte que ce code : c'est elle qui s'applique.`
               : `${best.label} : vous avez ${best.owner.ownsName}, ${product.name} est à moitié prix pour vous.`)
-      : code && best.source === 'welcome' ? 'Votre remise de parrainage est plus forte que ce code : c\'est elle qui s\'applique.' : null,
+      : code && best.source === 'welcome' ? 'Votre remise de parrainage est plus forte que ce code : c\'est elle qui s\'applique.'
+      : code && best.source === 'sale' ? `La remise ${best.sale.name} (${best.label}) est plus forte que ce code : c'est elle qui s'applique.` : null,
+    sale: best.source === 'sale' ? { name: best.sale.name, until: best.sale.until, endsAt: best.sale.endsAt } : null,
   };
 }
 

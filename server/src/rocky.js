@@ -30,6 +30,8 @@ export function pluginCard(p) {
   const c = CONSEILS[p.slug];
   const lines = [`### ${p.name} (${p.category || 'plugin'}, ${euros(p.priceCents)}${p.priceCents ? ', essai gratuit 7 jours' : ''})`,
     `Fiche : https://onirique.store/boutique/${encodeURIComponent(p.slug)}`, `En une phrase : ${p.tagline}`];
+  // Les soldes en cours (soldes.js) : ROCKY donne le prix soldé, et peut en parler quand on lui demande une bonne affaire.
+  if (p.sale) lines.push(`EN PROMO ${p.sale.name.toUpperCase()} ${p.sale.until} : ${p.sale.label}, ${euros(p.sale.priceCents)} au lieu de ${euros(p.priceCents)}, remise appliquée toute seule au paiement, sans code.`);
   if (c) lines.push(`Sert à : ${c.pour}`, `Où le poser : ${c.ou}`, `Ne fait pas : ${c.pas}`);
   else lines.push(`Présentation : ${String(p.description || '').replace(/\s+/g, ' ').slice(0, 700)}`);
   return lines.join('\n');
@@ -56,7 +58,7 @@ Comment conseiller un plugin (c'est ton métier, fais-le bien) :
    poser » collent au besoin, jamais un plugin dont « Ne fait pas » dit le contraire. Le mastering, c'est le morceau entier :
    jamais une chaîne vocale (VOCALBOX, VOCAL MINI, ENHANCER, CHANNEL STRIP) pour le mastering, un beat ou des drums.
 3. Propose un ou deux plugins, pas plus, et dis en quelques mots pourquoi celui-là, avec le lien de sa fiche. Prix exact de la
-   liste, ou « gratuit ». Un plugin gratuit qui suffit vaut mieux qu'un payant.
+   liste, ou « gratuit » ; s'il est EN PROMO, donne le prix soldé et dis jusqu'à quand. Un plugin gratuit qui suffit vaut mieux qu'un payant.
 4. Si la demande est trop floue pour choisir (« je veux un plugin », « un truc pour mon son »), ne recommande rien : pose une
    seule question courte (voix, beat, mix ou master ? quel problème ?).
 5. Avant de dire qu'un besoin n'est pas couvert, relis « Sert à » de chaque plugin : une fonction peut être dans un plugin

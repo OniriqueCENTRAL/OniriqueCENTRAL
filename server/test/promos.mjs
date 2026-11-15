@@ -7,7 +7,8 @@ import path from 'node:path';
 
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'onirique-central-promos-'));
 Object.assign(process.env, { DATA_DIR: dataDir, PAYMENTS_MODE: 'demo', PORT: '0', ADMIN_EMAIL: '', ADMIN_PASSWORD: '', MAILING_INTERVAL_MS: '20',
-  SMTP_HOST: 'test', MAIL_FROM: 'support@test.local', SITE_URL: 'https://site.test', PUBLIC_URL: 'https://api.test', FOUNDER_EMAILS: '' });
+  SMTP_HOST: 'test', MAIL_FROM: 'support@test.local', SITE_URL: 'https://site.test', PUBLIC_URL: 'https://api.test', FOUNDER_EMAILS: '',
+  SOLDES: 'off' }); // les prix normaux : les soldes ont leur propre test (soldes.mjs)
 
 const { createApp } = await import('../src/app.js');
 const { run, get, db } = await import('../src/db.js');

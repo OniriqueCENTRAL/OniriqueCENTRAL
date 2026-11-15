@@ -11,16 +11,24 @@ const RETOUCHES = [
   { slug: 'vocalbox', field: 'description', from: "le nettoyage, la justesse, l'EQ", to: "le nettoyage, l'autotune, l'EQ" },
 ];
 export function applyRetouches() {
-  if (setting('retouches_textes', 0) >= 1) return;
-  for (const r of RETOUCHES) {
-    run(`UPDATE products SET ${r.field} = replace(${r.field}, ?, ?) WHERE slug = ?`, r.from, r.to, r.slug);
+  const done = setting('retouches_textes', 0);
+  if (done < 1) {
+    for (const r of RETOUCHES) {
+      run(`UPDATE products SET ${r.field} = replace(${r.field}, ?, ?) WHERE slug = ?`, r.from, r.to, r.slug);
+    }
+    // La fenêtre d'annonce d'ECLIPSE reprend la même phrase.
+    const popup = setting('popup', null);
+    if (popup?.text?.includes("Du poids, de l'air et de la densité")) {
+      setSetting('popup', { ...popup, text: popup.text.replace("Du poids, de l'air et de la densité", "De la chaleur, de l'air et de la densité") });
+    }
   }
-  // La fenêtre d'annonce d'ECLIPSE reprend la même phrase.
-  const popup = setting('popup', null);
-  if (popup?.text?.includes("Du poids, de l'air et de la densité")) {
-    setSetting('popup', { ...popup, text: popup.text.replace("Du poids, de l'air et de la densité", "De la chaleur, de l'air et de la densité") });
+  // 15/11/2026 : la fenêtre « ECLIPSE vient de sortir » est retirée (place au Black Friday, soldes.js) et ne revient pas
+  // après ; une nouvelle annonce se règle dans le panel.
+  if (done < 2) {
+    const popup = setting('popup', null);
+    if (popup?.slug === 'onirique-eclipse' && popup.active) setSetting('popup', { ...popup, active: false });
   }
-  setSetting('retouches_textes', 1);
+  if (done < 2) setSetting('retouches_textes', 2);
 }
 
 const FICHES = [

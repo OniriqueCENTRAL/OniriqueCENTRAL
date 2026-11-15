@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=2b08ff1f"></script>
+<script src="assets/i18n.js?v=eac0f5a6"></script>
 <script src="assets/ui.js?v=4"></script>
-<script src="assets/annonce.js?v=3"></script>
+<script src="assets/annonce.js?v=4"></script>
 <script src="/api/announce.js" async></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Boutique — ONIRIQUE</title>
@@ -42,6 +42,9 @@ header nav { display: flex; align-items: center; gap: 10px; }
 .card p { margin: 0; color: var(--haze); font-size: 15px; }
 .card .foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 10px; }
 .price { font: 800 20px/1 var(--f-display); }
+/* Les soldes (server/src/soldes.js) : l'ancien prix barré, et une pastille sur l'image de la carte. */
+.card .price s { font-size: .62em; color: var(--haze); font-weight: 600; margin-right: 8px; }
+.sale-badge { position: absolute; z-index: 2; top: 12px; left: 12px; padding: 7px 11px; border-radius: 999px; background: linear-gradient(180deg, rgb(var(--acc)), rgb(var(--acc-lo, 122,13,28))); color: #fff; font: 700 12px/1 var(--f-mono); letter-spacing: .08em; box-shadow: 0 6px 20px rgba(var(--acc),.5); }
 .more { font: 500 12px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ember-text); }
 .card .creator { font: 500 11px/1 var(--f-mono); letter-spacing: .16em; color: var(--haze); }
 /* un créateur sans plugin encore : « Bientôt disponible » */
@@ -346,11 +349,12 @@ function card(p, categories = []) {
     ? el("img", { className: p.imageManual ? "cover framed" : "cover", src: sized(p.image, 960), srcset: srcsetOf(p.image, [640, 960, 1280, 1920]),
                   sizes: "(max-width: 700px) 92vw, 380px", alt: "Interface du plugin " + p.name, loading: "lazy" })
     : el("img", { className: "mark", src: "assets/logo.png", alt: "" }));
+  if (p.sale) shot.prepend(el("span", { className: "sale-badge", textContent: p.sale.label + " · " + p.sale.name }));
   return el("a", { className: "card", href: p.href || "/boutique/" + encodeURIComponent(p.slug) }, shot,
     el("div", { className: "body" }, el("span", { className: "creator", textContent: CREATORS[p.creator] || CREATORS.onirique }),
       el("h2", { textContent: p.name }), el("p", { textContent: p.tagline }),
       tags.length ? el("div", { className: "tags" }, ...tags.map((c) => el("span", { textContent: c.label }))) : null,
-      el("div", { className: "foot" }, el("span", { className: "price", textContent: euros(p.priceCents) }), el("span", { className: "more", textContent: p.more || "Essayer" }))));
+      el("div", { className: "foot" }, (p.sale ? el("span", { className: "price" }, el("s", { textContent: euros(p.priceCents) }), euros(p.sale.priceCents)) : el("span", { className: "price", textContent: euros(p.priceCents) })), el("span", { className: "more", textContent: p.more || "Essayer" }))));
 }
 
 // Essai gratuit : le bouton n’apparaît que pour un plugin payant que l’on ne possède pas et qu’on n’a pas déjà essayé.
@@ -506,11 +510,16 @@ function setupPick(catalog) {
 // est recalculé au moment de payer. Un code peut arriver par l’adresse (…&code=NOEL20, depuis un e-mail).
 let promo = null; // le code appliqué
 function showPrice(product, q) {
+  // Sans compte (ou sans meilleure remise), les soldes en cours s'affichent quand même : c'est le prix payé.
+  if (!(q && q.discountCents > 0) && product.sale) {
+    q = { priceCents: product.priceCents, finalCents: product.sale.priceCents, discountCents: product.priceCents - product.sale.priceCents,
+          label: product.sale.label, source: "sale", sale: product.sale };
+  }
   const deal = q && q.discountCents > 0;
   $("price").replaceChildren(...(deal ? [el("s", { textContent: euros(q.priceCents) }), euros(q.finalCents)] : [euros(product.priceCents)]));
   const old = $("deal");
   if (old) old.remove();
-  if (deal) $("price").after(el("p", { className: "deal", id: "deal", textContent: q.source === "welcome" ? `${q.label} · cadeau de parrainage` : q.source === "owner" ? (q.note || q.label) : `${q.label} · code ${q.code}` }));
+  if (deal) $("price").after(el("p", { className: "deal", id: "deal", textContent: q.source === "sale" ? `${q.label} · ${q.sale?.name || "Black Friday"}, ${q.sale?.until || ""}` : q.source === "welcome" ? `${q.label} · cadeau de parrainage` : q.source === "owner" ? (q.note || q.label) : `${q.label} · code ${q.code}` }));
   if (!$("buy").disabled) $("buy").textContent = "Acheter · " + euros(deal ? q.finalCents : product.priceCents);
 }
 async function quoteFor(product, code) {
@@ -636,12 +645,12 @@ async function buy(product, catalog) {
   $("name").textContent = product.name;
   $("tagline").textContent = product.tagline;
   $("side-name").textContent = product.name;
-  $("price").textContent = euros(product.priceCents);
+  showPrice(product, null);
   $("version").textContent = product.latest ? "Version " + product.latest.version : "Bientôt disponible";
   if (/\.(exe|msi)$/i.test(product.latest?.filename || "")) $("kind").textContent = "Application Windows";
   if (product.platforms?.includes("mac")) $("os").textContent = "Windows 10 et 11 (64 bits), et macOS 10.15 ou plus (Intel et Apple Silicon)";
   $("desc").replaceChildren(...(product.description || product.tagline).split(/\n{2,}/).map((text) => el("p", { textContent: text })));
-  $("buy").textContent = product.priceCents ? "Acheter · " + euros(product.priceCents) : "Obtenir";
+  $("buy").textContent = product.priceCents ? "Acheter · " + euros(product.sale ? product.sale.priceCents : product.priceCents) : "Obtenir";
   $("buy").onclick = () => buy(product, catalog);
   // Plugin offert : VOCALBOX offre VOCAL MINI ; sur la page de VOCAL MINI, on le dit, et ses acheteurs ont VOCALBOX à -50 %
   if (product.gift) {
