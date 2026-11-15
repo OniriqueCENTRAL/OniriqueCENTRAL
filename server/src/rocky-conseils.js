@@ -64,7 +64,7 @@ export const CONSEILS = {
     pas: 'Pas de couleur analogique (pour ça : WEIGHT, MASSIF, N73, ECLIPSE).',
   },
   'onirique-eclipse': {
-    pour: 'EQ de mastering parallèle Mid/Side : du poids, de l\'air et de la densité sans fermer le mix. Le plugin de la boutique le plus pensé pour le mastering.',
+    pour: 'EQ de mastering parallèle Mid/Side : de la chaleur, de l\'air et de la densité sans fermer le mix. Le plugin de la boutique le plus pensé pour le mastering.',
     ou: 'Sur le master, le mix bus, un bus voix ou une instru.',
     pas: 'Pas un limiteur ni un compresseur : il ne monte pas le volume final.',
   },
