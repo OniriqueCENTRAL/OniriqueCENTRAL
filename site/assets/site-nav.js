@@ -442,5 +442,6 @@ header .sn-lang { margin-left: 8px; }
 })();
 
 // ROCKY, le chatbot IA du site (assets/rocky.js), sur toutes les pages qui ont cette navigation, sauf dans l'application
-// ONIRIQUE CENTRAL (son preload, app/main/tool-preload.js, y pose oniriqueApp).
-if (!window.oniriqueApp && !window.oniriqueDialog) document.head.append(Object.assign(document.createElement("script"), { src: "/assets/rocky.js?v=8", defer: true }));
+// ONIRIQUE CENTRAL (son preload, app/main/tool-preload.js, y pose oniriqueApp) et dans les applications web installées
+// sur l'écran d'accueil (ONIRIQUE CLOUD, mes vidéos : affichage « standalone » ; navigator.standalone sur iPhone).
+if (!window.oniriqueApp && !window.oniriqueDialog && !matchMedia("(display-mode: standalone)").matches && navigator.standalone !== true) document.head.append(Object.assign(document.createElement("script"), { src: "/assets/rocky.js?v=8", defer: true }));
