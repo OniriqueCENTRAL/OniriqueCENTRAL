@@ -1,7 +1,7 @@
 // LES FICHES DES PLUGINS (site et application) : les textes d'avant le 07/11/2026, remis à la demande de Nov (la version
 // réécrite ne lui a pas plu). Posées une seule fois (réglage plugin_fiches = 2) : une retouche faite ensuite dans l'admin
 // reste. VOCALBOX a la sienne (vocalbrain.js) ; RELIC BLOOM n'est pas touché.
-import { get, run, setting, setSetting } from './db.js';
+import { all, get, run, setting, setSetting } from './db.js';
 
 // Petites retouches de mots demandées par Nov, appliquées une seule fois (réglage retouches_textes) et seulement sur la
 // phrase visée : le reste d'une fiche retouchée dans l'admin ne bouge pas.
@@ -29,6 +29,19 @@ export function applyRetouches() {
     if (popup?.slug === 'onirique-eclipse' && popup.active) setSetting('popup', { ...popup, active: false });
   }
   if (done < 2) setSetting('retouches_textes', 2);
+  // 15/11/2026, choix de Nov : les formules ALL ACCESS (mensuelle et annuelle) avaient une liste de plugins figée, sans
+  // les sorties récentes. Sans liste, une formule couvre tout le catalogue ONIRIQUE, chaque nouveau plugin dès sa sortie.
+  // ESSENTIAL devient N73, TUNER, EQ, DOUBLEBOX, VERB (dans cet ordre), aussi pour ceux qui y sont déjà abonnés.
+  if (done < 3) {
+    run(`UPDATE plans SET product_ids = NULL WHERE kind = 'all' AND upper(replace(name, ' ', '')) LIKE '%ALLACCES%'`);
+    const ids = ['onirique-n73', 'tuner', 'onirique-eq', 'onirique-doublebox', 'onirique-verb']
+      .map((slug) => get('SELECT id FROM products WHERE slug = ?', slug)?.id).filter(Boolean);
+    for (const plan of all(`SELECT * FROM plans WHERE kind = 'all' AND upper(name) LIKE '%ESSENTIAL%'`)) {
+      if (ids.length !== 5) break;
+      run('UPDATE plans SET product_ids = ? WHERE id = ?', JSON.stringify(ids), plan.id);
+    }
+    setSetting('retouches_textes', 3);
+  }
 }
 
 const FICHES = [

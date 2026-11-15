@@ -539,7 +539,7 @@ export function createApp() {
         planId: sub.plan_id, planName: sub.plan_name, interval: sub.interval, kind: sub.plan_kind,
         // À la carte : les plugins choisis et le prix qui en découle. Sinon tout le catalogue, au prix de la formule.
         productIds: sub.productIds,
-        priceCents: sub.productIds ? pickPriceCents(sub.productIds.length) : sub.price_cents,
+        priceCents: sub.plan_kind === 'pick' && sub.productIds ? pickPriceCents(sub.productIds.length) : sub.price_cents,
         status: sub.valid ? 'active' : 'ended', currentPeriodEnd: sub.current_period_end, cancelAtPeriodEnd: !!sub.cancel_at_period_end,
       },
       licenses: licenses.map(licenseView),

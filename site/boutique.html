@@ -437,7 +437,10 @@ function setupPlans(catalog) {
   $("plan-list").replaceChildren(...catalog.plans.map((plan) => {
     const button = el("button", { className: "buy", type: "button", textContent: "S’abonner" });
     button.onclick = () => subscribe(catalog, { kind: "plan", id: plan.id }, $("plan-note"), button);
-    const names = (plan.productIds || []).map((id) => catalog.products.find((p) => p.id === id)?.name).filter(Boolean);
+    // Sans liste, la formule couvre tout le catalogue ONIRIQUE payant : la liste suit chaque nouvelle sortie.
+    const names = plan.productIds?.length
+      ? plan.productIds.map((id) => catalog.products.find((p) => p.id === id)?.name).filter(Boolean)
+      : catalog.products.filter((p) => p.creator === "onirique" && p.priceCents > 0).map((p) => p.name);
     return el("div", { className: "plan" }, el("strong", { textContent: plan.name }),
       el("div", { className: "price", textContent: euros(plan.priceCents) }),
       el("span", { className: "note", style: "margin:0", textContent: plan.interval === "year" ? "TTC, par an" : "TTC, par mois" }),

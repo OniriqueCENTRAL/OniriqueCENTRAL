@@ -64,16 +64,20 @@ export function subscriptionView() {
       async () => { await attempt(() => call('api', 'POST', '/api/subscription/cancel'), 'Abonnement résilié.'); await refresh(); }, 'danger'), 'small danger')))
     : null;
 
-  const plan = (p) => h('div', { class: 'panel plan' },
-    eyebrow(p.interval === 'year' ? 'Annuel' : 'Mensuel'),
-    h('h2', null, p.name),
-    h('div', { class: 'amount' }, euros(p.priceCents), h('small', null, p.interval === 'year' ? ' / AN' : ' / MOIS')),
-    h('p', { class: 'muted', style: { margin: 0 } }, p.description || (p.productIds?.length
-      ? 'Les plugins ci-dessous, avec toutes leurs mises à jour, tant que l\'abonnement est actif.'
-      : `Les ${catalog.products.filter((x) => x.creator === 'onirique').length} plugins ONIRIQUE, toutes les mises à jour, et chaque nouveau plugin ONIRIQUE dès sa sortie. Les plugins des créateurs partenaires s'achètent à l'unité.`)),
-    p.productIds?.length ? h('div', { class: 'row wrap', style: { gap: '6px' } },
-      p.productIds.map((id) => catalog.products.find((x) => x.id === id)).filter(Boolean).map((x) => pill(x.name.replace(/^ONIRIQUE\s+/i, '')))) : null,
-    h('div', null, button(sub ? 'Déjà abonné' : 'S\'abonner', () => buy('plan', p), 'primary', { disabled: !!sub })));
+  // Une formule sans liste couvre tout le catalogue ONIRIQUE payant : les plugins affichés suivent chaque nouvelle sortie.
+  const allOnirique = catalog.products.filter((x) => x.creator === 'onirique' && x.priceCents > 0);
+  const plan = (p) => {
+    const items = p.productIds?.length ? p.productIds.map((id) => catalog.products.find((x) => x.id === id)).filter(Boolean) : allOnirique;
+    return h('div', { class: 'panel plan' },
+      eyebrow(p.interval === 'year' ? 'Annuel' : 'Mensuel'),
+      h('h2', null, p.name),
+      h('div', { class: 'amount' }, euros(p.priceCents), h('small', null, p.interval === 'year' ? ' / AN' : ' / MOIS')),
+      h('p', { class: 'muted', style: { margin: 0 } }, p.description || (p.productIds?.length
+        ? 'Les plugins ci-dessous, avec toutes leurs mises à jour, tant que l\'abonnement est actif.'
+        : `Les ${allOnirique.length} plugins ONIRIQUE, toutes les mises à jour, et chaque nouveau plugin ONIRIQUE dès sa sortie. Les plugins des créateurs partenaires s'achètent à l'unité.`)),
+      items.length ? h('div', { class: 'row wrap', style: { gap: '6px' } }, items.map((x) => pill(x.name.replace(/^ONIRIQUE\s+/i, '')))) : null,
+      h('div', null, button(sub ? 'Déjà abonné' : 'S\'abonner', () => buy('plan', p), 'primary', { disabled: !!sub })));
+  };
 
   // Packs : un achat unique, une licence définitive pour chaque plugin du pack.
   const pack = (p) => {
