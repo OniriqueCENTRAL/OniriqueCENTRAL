@@ -3,8 +3,8 @@
 // prix est toujours recalculé par le serveur au moment de payer. Seuls les plugins ONIRIQUE payants sont concernés
 // (pas ceux des partenaires). Une fois la date passée, tout revient au prix normal sans rien toucher.
 //
-// Black Friday 2026, choisi par Nov : -30 % sur les trois plus gros plugins, -20 % sur les quatre suivants, jusqu'au
-// 1er décembre inclus (23 h 59, heure de Paris).
+// Black Friday 2026, choisi par Nov : -30 % sur les plus gros plugins (HALO compris, dès sa sortie), -20 % sur les quatre
+// suivants, jusqu'au 1er décembre inclus (23 h 59, heure de Paris).
 import { get, now } from './db.js';
 
 export const SOLDES = {
@@ -13,7 +13,7 @@ export const SOLDES = {
   fin: Date.parse('2026-12-01T23:59:59+01:00'),
   finTexte: "jusqu'au 1er décembre",
   remises: {
-    vocalbox: 30, 'onirique-eclipse': 30, based: 30,
+    vocalbox: 30, 'onirique-eclipse': 30, based: 30, 'onirique-halo': 30,
     'onirique-n73': 20, 'onirique-doublebox': 20, 'onirique-resobox': 20, 'onirique-modbox': 20,
   },
 };
