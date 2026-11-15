@@ -58,7 +58,7 @@ ${spark(1)}${spark(2)}${spark(3)}
 .acct-button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .acct-button svg { flex: none; width: 10px; height: 10px; transition: transform .25s cubic-bezier(.2,.8,.2,1); }
 .acct-button[aria-expanded="true"] svg { transform: rotate(180deg); }
-.acct-menu { position: absolute; right: 0; top: calc(100% + 10px); z-index: 80; width: min(290px, calc(100vw - 24px)); padding: 8px; border-radius: 22px; border: 1px solid rgba(255,235,238,.12); background: linear-gradient(160deg, rgba(40,26,30,.94), rgba(16,12,14,.96) 45%, rgba(20,15,17,.96)); -webkit-backdrop-filter: blur(22px) saturate(140%); backdrop-filter: blur(22px) saturate(140%); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.4), 0 24px 60px rgba(0,0,0,.6); text-align: left; transform-origin: top right; animation: acct-in .3s cubic-bezier(.2,.8,.2,1); }
+.acct-menu { position: absolute; right: 0; top: calc(100% + 10px); z-index: 80; width: min(290px, calc(100vw - 24px)); padding: 8px; border-radius: 22px; border: 1px solid rgba(255,235,238,.12); background: linear-gradient(160deg, rgba(40,26,30,.94), rgba(16,12,14,.96) 45%, rgba(20,15,17,.96)); -webkit-backdrop-filter: blur(22px) saturate(140%); backdrop-filter: blur(22px) saturate(140%); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.4), 0 24px 60px rgba(0,0,0,.6); text-align: left; max-height: calc(100vh - var(--acct-top, 80px) - 12px); overflow-y: auto; overscroll-behavior: contain; transform-origin: top right; animation: acct-in .3s cubic-bezier(.2,.8,.2,1); }
 @keyframes acct-in { from { opacity: 0; transform: translateY(-6px) scale(.97); } }
 @media (prefers-reduced-motion: reduce) { .acct-menu { animation: none; } }
 .acct-head { display: flex; align-items: center; gap: 12px; padding: 10px 10px 14px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,235,238,.08); }
@@ -77,7 +77,7 @@ ${spark(1)}${spark(2)}${spark(3)}
 .acct-menu h6 { margin: 0; padding: 8px 12px 4px; font: 500 10px/1 var(--f-mono, ui-monospace, monospace); letter-spacing: .12em; text-transform: uppercase; color: var(--haze, #a8939a); }
 .acct-menu .acct-out { color: rgb(var(--acc-hi, 255,142,154)); }
 /* Téléphone : le menu prend la largeur de l'écran sous l'en-tête, au lieu de déborder à gauche du bouton. */
-@media (max-width: 560px) { .acct-menu { position: fixed; left: 12px; right: 12px; width: auto; max-height: calc(100vh - var(--acct-top, 80px) - 12px); overflow-y: auto; overscroll-behavior: contain; top: var(--acct-top, 80px); } }
+@media (max-width: 560px) { .acct-menu { position: fixed; left: 12px; right: 12px; width: auto; top: var(--acct-top, 80px); } }
 ` });
 
   let slot = document.querySelector("[data-account]"); // l'élément d'origine, puis le bouton qui le remplace
