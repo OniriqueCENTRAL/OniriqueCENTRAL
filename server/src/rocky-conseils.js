@@ -4,7 +4,7 @@
 // de la boutique n'est plus proposé, même s'il garde sa fiche.
 export const CONSEILS = {
   vocalbox: {
-    pour: 'Mixer une voix (lead, backs, adlibs, doubles) de A à Z dans un seul plugin, en lui disant ce qu\'on veut entendre : nettoyage (débruiteur, de-click, de-breath, de-reverb, de-esser, plosives), justesse (TUNER intégré), EQ, compression, saturation, reverb et delay.',
+    pour: 'Mixer une voix (lead, backs, adlibs, doubles) de A à Z dans un seul plugin, en lui disant ce qu\'on veut entendre : nettoyage (débruiteur, de-click, de-breath, de-reverb, de-esser, plosives), justesse (TUNER intégré), EQ, compression, saturation, reverb et delay. C\'est aussi LE plugin de la boutique pour nettoyer une prise de voix : bruit de fond, souffle, clics de bouche, respirations trop fortes, pièce qui résonne.',
     ou: 'Sur chaque piste de voix.',
     pas: 'Pas pour le mastering, ni pour un beat, des drums ou un mix entier : c\'est une chaîne vocale.',
   },
