@@ -4,14 +4,14 @@
 // de la boutique n'est plus proposé, même s'il garde sa fiche.
 export const CONSEILS = {
   vocalbox: {
-    pour: 'Mixer une voix (lead, backs, adlibs, doubles) de A à Z dans un seul plugin, en lui disant ce qu\'on veut entendre : nettoyage (débruiteur, de-click, de-breath, de-reverb, de-esser, plosives), justesse (TUNER intégré), EQ, compression, saturation, reverb et delay. C\'est aussi LE plugin de la boutique pour nettoyer une prise de voix : bruit de fond, souffle, clics de bouche, respirations trop fortes, pièce qui résonne.',
+    pour: 'Mixer une voix (lead, backs, adlibs, doubles) de A à Z dans un seul plugin, en lui disant ce qu\'on veut entendre : nettoyage (débruiteur, de-click, de-breath, de-reverb, de-esser, plosives), autotune (TUNER intégré), EQ, compression, saturation, reverb et delay. C\'est aussi LE plugin de la boutique pour nettoyer une prise de voix : bruit de fond, souffle, clics de bouche, respirations trop fortes, pièce qui résonne.',
     ou: 'Sur chaque piste de voix.',
     pas: 'Pas pour le mastering, ni pour un beat, des drums ou un mix entier : c\'est une chaîne vocale.',
   },
   'onirique-vocal-mini': {
     pour: 'Une chaîne vocale simple, avec peu de réglages : compression et outils essentiels pour une voix propre vite fait. Idéal pour débuter ou aller vite.',
     ou: 'Sur une piste de voix.',
-    pas: 'Pas pour le mastering ni pour les instrus. Moins complet que VOCALBOX (pas de nettoyage avancé ni de justesse).',
+    pas: 'Pas pour le mastering ni pour les instrus. Moins complet que VOCALBOX (pas de nettoyage avancé ni d\'autotune).',
   },
   'onirique-enhancer': {
     pour: 'Faire passer une voix devant, chaude et brillante, en quelques boutons : préampli à lampe, EQ de console, niveleur, flanger, plaque de reverb.',
@@ -21,7 +21,7 @@ export const CONSEILS = {
   based: {
     pour: 'Channel strip vocal à monter soi-même : gate, tranche de console, deux de-essers, saturation, compresseurs 1176 et Fairchild, EQ, dans l\'ordre qu\'on veut. Pour qui aime régler chaque étape.',
     ou: 'Sur une piste de voix.',
-    pas: 'Pas pour le mastering, pas de correction de justesse.',
+    pas: 'Pas pour le mastering, pas d\'autotune.',
   },
   tuner: {
     pour: 'Autotune : remettre la voix sur la note, de naturel à effet robot, avec un vocodeur. Mode LIVE sans latence pour s\'enregistrer avec.',

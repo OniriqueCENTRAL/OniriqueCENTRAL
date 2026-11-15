@@ -48,7 +48,7 @@ const FICHE = {
   tagline: 'Ta voix, mixée comme sur un vrai disque.',
   description: `Tu poses ta voix, VOCALBOX s'occupe du reste.
 
-Dis-lui simplement ce que tu veux entendre : « voix de SCH », « R&B doux façon SZA », « aérée et sombre ». Ou glisse sur la sphère un morceau dont tu aimes la voix. Il écoute ta prise pendant dix secondes, puis il monte toute la chaîne pour toi : le nettoyage, la justesse, l'EQ, la compression, l'espace. Et il t'explique chacun de ses choix, comme le ferait un ingé à côté de toi.
+Dis-lui simplement ce que tu veux entendre : « voix de SCH », « R&B doux façon SZA », « aérée et sombre ». Ou glisse sur la sphère un morceau dont tu aimes la voix. Il écoute ta prise pendant dix secondes, puis il monte toute la chaîne pour toi : le nettoyage, l'autotune, l'EQ, la compression, l'espace. Et il t'explique chacun de ses choix, comme le ferait un ingé à côté de toi.
 
 Un clic de bouche, une respiration trop forte, une chambre qui résonne ? Il l'entend et le corrige, sans toucher au reste. Tu chantes un peu à côté ? L'ONIRIQUE TUNER te remet sur la note, tout en douceur, ou pousse l'effet robot si c'est ton style. Il connaît la façon de mixer la voix de plus de 50 artistes, du rap US à la nouvelle scène française.
 

@@ -57,7 +57,7 @@ import { mountDownloader } from './downloader.js';
 import { mountRocky } from './rocky.js';
 import { mountTraductions, fichesEn, translateMissing } from './traductions.js';
 import { mountVocalBrain } from './vocalbrain.js';
-import { applyPluginFiches } from './fiches.js';
+import { applyPluginFiches, applyRetouches } from './fiches.js';
 import { autoriser as autoriserVpn, jetonVpn, VPN_RELAIS } from './vpn.js';
 import { mountNavigateur } from './navigateur.js';
 import { mountShopPages } from './shoppages.js';
@@ -708,7 +708,7 @@ export function createApp() {
       return { ...v, category: CATEGORIES.find(([id]) => id === v.categories[0])?.[1] };
     }) });
   mountTraductions(app);
-  try { applyPluginFiches(); } catch (e) { console.error('fiches des plugins :', e.message); }   // les fiches réécrites (une seule fois)
+  try { applyPluginFiches(); applyRetouches(); } catch (e) { console.error('fiches des plugins :', e.message); }   // les fiches réécrites (une seule fois)
   mountVocalBrain(app, { wrap, requireUser });   // le cerveau de VOCALBOX (apprentissage accepté par l'utilisateur)
   const team = allowed('youtube');
   // Brancher sa chaîne : pour les Shorts, ou pour publier ses prods depuis ONIRIQUE CLOUD.

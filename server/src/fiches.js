@@ -1,7 +1,27 @@
 // LES FICHES DES PLUGINS (site et application) : les textes d'avant le 07/11/2026, remis à la demande de Nov (la version
 // réécrite ne lui a pas plu). Posées une seule fois (réglage plugin_fiches = 2) : une retouche faite ensuite dans l'admin
 // reste. VOCALBOX a la sienne (vocalbrain.js) ; RELIC BLOOM n'est pas touché.
-import { get, run } from './db.js';
+import { get, run, setting, setSetting } from './db.js';
+
+// Petites retouches de mots demandées par Nov, appliquées une seule fois (réglage retouches_textes) et seulement sur la
+// phrase visée : le reste d'une fiche retouchée dans l'admin ne bouge pas.
+// 15/11/2026 : ECLIPSE apporte « de la chaleur » (et non « du poids »), VOCALBOX parle d'« autotune » (et non de « justesse »).
+const RETOUCHES = [
+  { slug: 'onirique-eclipse', field: 'tagline', from: "du poids, de l'air et de la densité", to: "de la chaleur, de l'air et de la densité" },
+  { slug: 'vocalbox', field: 'description', from: "le nettoyage, la justesse, l'EQ", to: "le nettoyage, l'autotune, l'EQ" },
+];
+export function applyRetouches() {
+  if (setting('retouches_textes', 0) >= 1) return;
+  for (const r of RETOUCHES) {
+    run(`UPDATE products SET ${r.field} = replace(${r.field}, ?, ?) WHERE slug = ?`, r.from, r.to, r.slug);
+  }
+  // La fenêtre d'annonce d'ECLIPSE reprend la même phrase.
+  const popup = setting('popup', null);
+  if (popup?.text?.includes("Du poids, de l'air et de la densité")) {
+    setSetting('popup', { ...popup, text: popup.text.replace("Du poids, de l'air et de la densité", "De la chaleur, de l'air et de la densité") });
+  }
+  setSetting('retouches_textes', 1);
+}
 
 const FICHES = [
    {
