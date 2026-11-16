@@ -24,14 +24,14 @@ export const CONSEILS = {
     pas: 'Pas pour le mastering, pas d\'autotune.',
   },
   tuner: {
-    pour: 'Autotune : remettre la voix sur la note, de naturel à effet robot, avec un vocodeur. Mode LIVE sans latence pour s\'enregistrer avec.',
+    pour: 'L\'autotune d\'ONIRIQUE, le meilleur choix pour une voix : remettre sur la note une voix qui chante faux, du naturel invisible jusqu\'à l\'effet robot, avec un vocodeur. Mode LIVE sans latence pour s\'enregistrer avec. C\'est lui qu\'on conseille dès qu\'on parle de voix fausse, de justesse ou d\'autotune.',
     ou: 'Sur une piste de voix, en premier.',
     pas: 'Ne corrige pas note par note à la main (c\'est PITCHBOX).',
   },
   'onirique-pitchbox': {
     pour: 'Corriger la justesse d\'une prise note par note, à la main ou par gamme, comme un éditeur de hauteur.',
     ou: 'Sur une piste de voix seule (une note à la fois).',
-    pas: 'Pas un autotune en direct pour s\'enregistrer (c\'est TUNER). Pas pour les accords ni un mix.',
+    pas: 'Pas un autotune en direct pour s\'enregistrer (c\'est TUNER). Pour une voix qui chante faux, l\'autotune (TUNER) passe avant : PITCHBOX seulement pour retoucher à la main des notes précises. Pas pour les accords ni un mix.',
   },
   'onirique-doublebox': {
     pour: 'Épaissir une voix avec quatre doubles, comme si elle avait été rechantée, avec pitch et formant.',
