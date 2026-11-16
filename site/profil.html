@@ -105,7 +105,8 @@ input[type="checkbox"] { min-height: 0; width: 18px; height: 18px; accent-color:
 .sp-nums b { display: block; font: 800 clamp(20px, 3.5vw, 26px)/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
 .sp-nums small, .sp-sub { font: 500 11px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--haze); }
 .sp-sub { display: block; margin: 18px 0 8px; }
-.sp-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; counter-reset: sp; }
+/* minmax(0, 1fr) : un titre long se coupe (…) au lieu d'élargir la liste au-delà du bloc. */
+.sp-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; counter-reset: sp; }
 .sp-list li { display: flex; align-items: center; gap: 10px; counter-increment: sp; }
 .sp-list li::before { content: counter(sp); width: 18px; text-align: right; font: 500 12px var(--f-mono); color: var(--haze); flex: none; }
 .sp-list img { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; flex: none; }
@@ -161,11 +162,12 @@ body.glass #view .avatar { border-color: rgba(255,255,255,.35); }
 body.centered #view .head { flex-direction: column; align-items: center; text-align: center; }
 body.centered #view .who, body.centered #view .actions { padding-top: 0; }
 body.centered #view .name-row, body.centered #view .counts, body.centered #view .actions, body.centered #view .links { justify-content: center; }
-/* Assez de place à gauche de la page : les chiffres Spotify y restent, collés en haut pendant qu'on descend. */
+/* Assez de place à gauche de la page : les chiffres Spotify y passent, en entier (pas de défilement à part). */
 @media (min-width: 1540px) {
   #view { position: relative; }
-  #view .side { position: absolute; top: 0; bottom: 0; right: calc(100% + 32px); width: min(340px, calc((100vw - 840px) / 2 - 72px)); }
-  #view .side #spotify { position: sticky; top: 24px; margin-top: 0; max-height: calc(100vh - 48px); overflow-y: auto; }
+  #view .side { position: absolute; top: 0; right: calc(100% + 32px); width: min(340px, calc((100vw - 840px) / 2 - 72px)); }
+  #view .side #spotify { margin-top: 0; }
+  #view .side .sp-list .u { display: none; } /* colonne étroite : le nombre seul, l'intitulé dit ce qu'il compte */
   .sp-nums { grid-template-columns: 1fr 1fr; }
 }
 /* L'arrivée sur la page : les blocs montent l'un après l'autre. */
@@ -466,11 +468,11 @@ function drawSpotify(sp) {
     el("div", { className: "sp-nums" }, big(s.monthlyListeners, "Auditeurs mensuels"), big(s.followers, "Abonnés"), s.worldRank ? big(s.worldRank, "Rang mondial") : null),
     ...(s.topTracks.length ? [el("span", { className: "sp-sub", textContent: "Titres les plus écoutés" }),
       el("ol", { className: "sp-list" }, ...s.topTracks.map((t) => el("li", {}, t.image ? el("img", { src: t.image, alt: "", loading: "lazy" }) : null,
-        t.url ? el("a", { href: t.url, target: "_blank", rel: "noopener", textContent: t.name }) : el("span", { className: "t", textContent: t.name }),
-        el("small", { textContent: t.plays == null ? "" : nb(t.plays) + " écoutes" }))))] : []),
+        t.url ? el("a", { href: t.url, target: "_blank", rel: "noopener", title: t.name, textContent: t.name }) : el("span", { className: "t", title: t.name, textContent: t.name }),
+        el("small", {}, t.plays == null ? "" : nb(t.plays), t.plays == null ? null : el("span", { className: "u", textContent: " écoutes" })))))] : []),
     ...(s.topCities.length ? [el("span", { className: "sp-sub", textContent: "Où on l’écoute" }),
       el("ol", { className: "sp-list" }, ...s.topCities.map((c) => el("li", {}, el("span", { className: "t", textContent: c.city + (c.country ? " · " + c.country : "") }),
-        el("small", { textContent: nb(c.listeners) + " auditeurs" }))))] : []),
+        el("small", {}, nb(c.listeners), el("span", { className: "u", textContent: " auditeurs" })))))] : []),
     el("p", { className: "muted", style: "margin:14px 0 0;font-size:12px", textContent: "Chiffres publics de Spotify au " + when(s.at) + "." }));
 }
 
