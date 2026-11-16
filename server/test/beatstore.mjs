@@ -338,6 +338,10 @@ try {
     const boss = { token: (await call('POST', '/api/auth/login', { body: { email: 'fondateur@test.local', password: 'motdepasse1' } })).token };
     const dues = await call('GET', '/api/me/sounds/store/payouts', { token: boss.token });
     assert.deepEqual(dues.map((x) => [x.sellerId, x.due, !!x.askedAt]), [[beatmaker.id, 2999, true]]);
+    // L'onglet Versements de l'administration : le solde global (packs et vitrine) et le détail du vendeur.
+    await call('GET', '/api/admin/payouts', { token: beatmaker.token, expect: 403 });
+    const site = await call('GET', '/api/admin/payouts', { token: boss.token });
+    assert.deepEqual([site.prods, site.visuals, site.paidOut, site.due, site.sellers.map((x) => [x.sellerId, x.visuals])], [2999, 0, 0, 2999, [[beatmaker.id, 0]]]);
     await call('POST', '/api/me/sounds/store/payouts', { token: boss.token, body: { sellerId: beatmaker.id, amount: 5000 }, expect: 400 });
     assert.deepEqual(await call('POST', '/api/me/sounds/store/payouts', { token: boss.token, body: { sellerId: beatmaker.id } }), []);
     store = await call('GET', '/api/me/sounds/store', { token: beatmaker.token });
