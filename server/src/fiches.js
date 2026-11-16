@@ -42,7 +42,17 @@ export function applyRetouches() {
     }
     setSetting('retouches_textes', 3);
   }
+  // 16/11/2026, choix de Nov : on dit « harshness », plus « dureté » (HALO et RESOBOX).
+  if (done < 4) {
+    for (const r of HARSHNESS) run(`UPDATE products SET ${r.field} = replace(${r.field}, ?, ?) WHERE slug = ?`, r.from, r.to, r.slug);
+    setSetting('retouches_textes', 4);
+  }
 }
+const HARSHNESS = [
+  { slug: 'onirique-halo', field: 'tagline', from: 'cymbales et dureté maîtrisées', to: 'cymbales et harshness maîtrisées' },
+  { slug: 'onirique-halo', field: 'description', from: "sans la dureté", to: 'sans la harshness' },
+  { slug: 'onirique-resobox', field: 'description', from: 'sifflantes, harshness, notes', to: 'sifflantes, harshness, notes' },
+];
 
 const FICHES = [
    {
@@ -96,7 +106,7 @@ const FICHES = [
       "tagline" : "Correction de hauteur et vocodeur pour la voix."
    },
    {
-      "description" : "ResoBox repère en temps réel les résonances d'une voix, d'un instrument ou d'un mix complet — sifflantes, duretés, notes qui ressortent — et les atténue fréquence par fréquence, seulement quand elles sont là.\n\nPour lui, une résonance est un endroit du spectre qui dépasse ce qui l'entoure des deux côtés. Une pente, un plateau ou le bord d'un signal filtré ne sont pas touchés : c'est ce qui le distingue d'un compresseur multibande. Il n'agit que sur le niveau de chaque fréquence, jamais sur la phase.\n\nDEPTH règle la quantité, DETAIL l'échelle du travail (bosses larges ou sifflements précis), SOFT / HARD le caractère, ATTACK et RELEASE la vitesse, TILT penche le traitement vers le grave ou vers l'aigu.\n\nSur l'écran, une courbe de sensibilité dit où travailler plus fort et où épargner : low cut, high cut et jusqu'à huit bandes (cloche, low shelf, high shelf, plateau), chacune pouvant agir sur toute l'image stéréo, la gauche, la droite, le centre ou les côtés. Le spectre d'entrée, celui de sortie et la réduction en cours s'affichent en direct.\n\nUn switch EQ / MULTIBAND remplace cette courbe par quatre bandes aux frontières déplaçables : chacune a sa sensibilité, son makeup, sa balance, son bypass et son écoute seule.\n\nModes stéréo, mid/side et mono avec LINK et BALANCE, entrée sidechain, MIX, AUTO GAIN pour retrouver le niveau, DELTA pour n'écouter que ce qui est retiré. Trois qualités et un mode LOW LATENCY ; la latence est déclarée au DAW.\n\nNeuf presets d'usine, presets personnels, comparaison A/B, et la description de chaque contrôle en laissant la souris dessus.\n\nVST3 pour Windows ; VST3 et Audio Unit pour Mac (Intel et Apple Silicon).",
+      "description" : "ResoBox repère en temps réel les résonances d'une voix, d'un instrument ou d'un mix complet — sifflantes, harshness, notes qui ressortent — et les atténue fréquence par fréquence, seulement quand elles sont là.\n\nPour lui, une résonance est un endroit du spectre qui dépasse ce qui l'entoure des deux côtés. Une pente, un plateau ou le bord d'un signal filtré ne sont pas touchés : c'est ce qui le distingue d'un compresseur multibande. Il n'agit que sur le niveau de chaque fréquence, jamais sur la phase.\n\nDEPTH règle la quantité, DETAIL l'échelle du travail (bosses larges ou sifflements précis), SOFT / HARD le caractère, ATTACK et RELEASE la vitesse, TILT penche le traitement vers le grave ou vers l'aigu.\n\nSur l'écran, une courbe de sensibilité dit où travailler plus fort et où épargner : low cut, high cut et jusqu'à huit bandes (cloche, low shelf, high shelf, plateau), chacune pouvant agir sur toute l'image stéréo, la gauche, la droite, le centre ou les côtés. Le spectre d'entrée, celui de sortie et la réduction en cours s'affichent en direct.\n\nUn switch EQ / MULTIBAND remplace cette courbe par quatre bandes aux frontières déplaçables : chacune a sa sensibilité, son makeup, sa balance, son bypass et son écoute seule.\n\nModes stéréo, mid/side et mono avec LINK et BALANCE, entrée sidechain, MIX, AUTO GAIN pour retrouver le niveau, DELTA pour n'écouter que ce qui est retiré. Trois qualités et un mode LOW LATENCY ; la latence est déclarée au DAW.\n\nNeuf presets d'usine, presets personnels, comparaison A/B, et la description de chaque contrôle en laissant la souris dessus.\n\nVST3 pour Windows ; VST3 et Audio Unit pour Mac (Intel et Apple Silicon).",
       "slug" : "onirique-resobox",
       "tagline" : "Suppresseur de résonances dynamique : il adoucit ce qui agresse, sans toucher au reste."
    },

@@ -94,7 +94,7 @@ export const CONSEILS = {
     pas: 'Pas un limiteur.',
   },
   'onirique-resobox': {
-    pour: 'Suppresseur de résonances dynamique : il adoucit sifflantes, duretés et notes qui ressortent, seulement quand elles sont là.',
+    pour: 'Suppresseur de résonances dynamique : il adoucit sifflantes, harshness et notes qui ressortent, seulement quand elles sont là.',
     ou: 'Sur une voix, un instrument, un bus ou un mix complet (utile en mastering pour un mix agressif).',
     pas: 'Pas un débruiteur (il n\'enlève pas un souffle de fond).',
   },

@@ -871,6 +871,21 @@ app.whenReady().then(async () => {
     else shell.openPath(store.vst3Dir);
   });
   handle('license:activate', async (productId) => activateHere(await productById(productId)));
+  // Une clé entrée dans Licences : rattachée au compte, puis le plugin s'active tout de suite sur ce PC, sans passer par
+  // Mes plugins. Une clé ALL LICENCE active ceux de ses plugins déjà installés ici (les autres s'activent à l'installation).
+  handle('license:redeem', async (key) => {
+    const result = await api.request('POST', '/api/licenses/redeem', { key });
+    const { products } = await api.request('GET', '/api/catalog');
+    const me = await api.request('GET', '/api/me');
+    const installs = result.productId ? null : await installer.status(products);
+    const targets = products.filter((p) => me.entitlements[p.id] && (result.productId ? p.id === result.productId : installs[p.id]?.present));
+    const activated = [];
+    let failure = null;
+    for (const product of targets) {
+      try { await activateHere(product); activated.push(product.name); } catch (error) { failure = error.message; }
+    }
+    return { ...result, activated, failure };
+  });
   handle('license:deactivate', async (productId, machineId) => {
     const product = await productById(productId);
     const own = await installer.machineId();

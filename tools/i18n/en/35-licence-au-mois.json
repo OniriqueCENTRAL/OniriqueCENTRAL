@@ -1,0 +1,9 @@
+{
+ "{} / mois": "{} / month",
+ "Sans engagement : le plugin reste à vous tant que l'abonnement court, résiliable à tout moment. Le paiement sécurisé s'ouvre dans votre navigateur.": "No commitment: the plugin is yours as long as the subscription runs, cancel anytime. Secure payment opens in your browser.",
+ "Mode démo : aucun paiement n'est effectué, le plugin est accordé tout de suite.": "Demo mode: no payment is made, the plugin is granted right away.",
+ "Licence ajoutée : {} est activé sur ce PC.": "License added: {} is activated on this PC.",
+ "Licence ajoutée : {} sont activés sur ce PC.": "License added: {} are activated on this PC.",
+ "Licence ajoutée à votre compte, mais l'activation sur ce PC a échoué : {}": "License added to your account, but activation on this PC failed: {}",
+ "Licence ajoutée à votre compte. Les plugins s'activeront sur ce PC à leur installation.": "License added to your account. The plugins will activate on this PC when you install them."
+}

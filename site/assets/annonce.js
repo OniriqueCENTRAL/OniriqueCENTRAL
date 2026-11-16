@@ -162,8 +162,12 @@
         later));
   }
 
+  // Les soldes ne s'ouvrent pas à l'arrivée sur le site : seulement quand le visiteur entre dans la boutique (la page
+  // boutique ou la fiche d'un plugin), une fois par visiteur. Les autres nouveautés gardent l'ouverture du site.
+  const inShop = () => /^\/boutique(\.html)?(\/|$)/.test(location.pathname);
   function show(p) {
     if (done || !p || !p.id || seen(p.id) || location.pathname.startsWith("/admin")) return;
+    if (p.theme === "black-friday" && !inShop()) return;
     done = true;
     try { localStorage.setItem(SEEN, p.id); } catch { /* stockage fermé */ }
     const back = make("div", { className: "np-back" });

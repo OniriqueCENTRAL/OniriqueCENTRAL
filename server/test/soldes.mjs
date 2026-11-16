@@ -12,7 +12,7 @@ Object.assign(process.env, { DATA_DIR: fs.mkdtempSync(path.join(os.tmpdir(), 'on
 const { createApp } = await import('../src/app.js');
 const { run, get, setSetting } = await import('../src/db.js');
 const { outbox } = await import('../src/mail.js');
-const { SOLDES, saleOf, planSaleOf, salePopup } = await import('../src/soldes.js');
+const { SOLDES, saleOf, planSaleOf, salePopup, appliquerPrixApres } = await import('../src/soldes.js');
 const { quote } = await import('../src/promos.js');
 
 const server = createApp().listen(0);
@@ -32,12 +32,14 @@ const vocalbox = product('vocalbox', 'ONIRIQUE VOCALBOX', 14999);
 const n73 = product('onirique-n73', 'ONIRIQUE N73', 8999);
 const eq = product('onirique-eq', 'ONIRIQUE EQ', 4999);
 const halo = product('onirique-halo', 'ONIRIQUE HALO', 9999);
+const autre = product('onirique-inconnu', 'PLUGIN HORS LISTE', 4999);
 const partenaire = product('onirique-modbox', 'MODBOX D\'UN PARTENAIRE', 7999, 'relic');
 
-// Les prix : -30 % et -20 %, arrondis au centime ; rien hors liste, rien chez un partenaire.
+// Les prix : -30 %, -20 % et -10 % (petits prix), arrondis au centime ; rien hors liste, rien chez un partenaire.
 assert.equal(saleOf(vocalbox).priceCents, 10499);
 assert.equal(saleOf(n73).priceCents, 7199);
-assert.equal(saleOf(eq), null);
+assert.equal(saleOf(eq).priceCents, 4499);
+assert.equal(saleOf(autre), null);
 assert.equal(saleOf(partenaire), null);
 // Après la date : plus rien.
 assert.equal(saleOf(vocalbox, SOLDES.fin + 1), null);
@@ -47,7 +49,8 @@ assert.equal(salePopup(SOLDES.fin + 1), null);
 const catalog = await call('GET', '/api/catalog');
 const seen = Object.fromEntries(catalog.products.map((p) => [p.slug, p]));
 assert.deepEqual([seen.vocalbox.sale.percent, seen.vocalbox.sale.priceCents, seen.vocalbox.priceCents], [30, 10499, 14999]);
-assert.equal(seen['onirique-eq'].sale, null);
+assert.equal(seen['onirique-eq'].sale.priceCents, 4499);
+assert.equal(seen['onirique-inconnu'].sale, null);
 
 // Au paiement : la remise s'applique sans code ; un code plus fort gagne ; un code plus faible est dit moins fort.
 const { token } = await call('POST', '/api/auth/register', { body: { email: 'soldes@test.local', password: 'motdepasse1', name: 'Nov' }, expect: 201 });
@@ -59,7 +62,8 @@ assert.deepEqual([quote(user, vocalbox, 'FORT40').finalCents, quote(user, vocalb
 const faible = quote(user, vocalbox, 'FAIBLE10');
 assert.deepEqual([faible.finalCents, faible.source, faible.promoId], [10499, 'sale', null]);
 assert.match(faible.ignored, /Black Friday \(-30 %\) est plus forte que ce code/);
-assert.equal(quote(user, eq, null).finalCents, 4999);
+assert.equal(quote(user, eq, null).finalCents, 4499);
+assert.equal(quote(user, autre, null).finalCents, 4999);
 
 // La fenêtre d'annonce : pendant les soldes, la leur passe avant la nouveauté réglée dans le panel.
 setSetting('popup', { id: 'x', active: true, kind: 'plugin', slug: 'onirique-eclipse', text: 'ECLIPSE est sorti' });
@@ -84,6 +88,15 @@ assert.equal(planSaleOf(get('SELECT * FROM plans WHERE id = ?', annuel), SOLDES.
 // En mode démo, s'abonner pendant les soldes marche comme d'habitude.
 const done = await call('POST', '/api/checkout', { token, body: { kind: 'plan', id: annuel } }).catch((e) => e);
 assert.ok(done.granted || /vérifi|valid/i.test(String(done.message)), String(done.message || JSON.stringify(done)));
+
+
+// Le lendemain des soldes : VOCALBOX passe de 149,99 à 199,99 €, une seule fois ; rien avant la date.
+assert.equal(appliquerPrixApres(SOLDES.fin), 0);
+assert.equal(get("SELECT price_cents FROM products WHERE slug = 'vocalbox'").price_cents, 14999);
+assert.equal(appliquerPrixApres(SOLDES.fin + 1), 1);
+assert.equal(get("SELECT price_cents FROM products WHERE slug = 'vocalbox'").price_cents, 19999);
+run("UPDATE products SET price_cents = 14999 WHERE slug = 'vocalbox'");
+assert.equal(appliquerPrixApres(SOLDES.fin + 2), 0);
 
 console.log('  ok  soldes');
 server.close();

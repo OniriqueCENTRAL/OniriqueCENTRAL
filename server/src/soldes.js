@@ -4,8 +4,9 @@
 // (pas ceux des partenaires). Une fois la date passée, tout revient au prix normal sans rien toucher.
 //
 // Black Friday 2026, choisi par Nov : -30 % sur les plus gros plugins (HALO compris, dès sa sortie), -20 % sur les quatre
-// suivants, jusqu'au 1er décembre inclus (23 h 59, heure de Paris).
-import { get, now } from './db.js';
+// suivants, et tous les autres plugins payants en promo aussi : -15 % de 59,99 à 69,99 €, -10 % à 49,99 € (pas plus sur les
+// petits prix). Jusqu'au 1er décembre inclus (23 h 59, heure de Paris).
+import { get, now, run, setting, setSetting } from './db.js';
 import { config } from './config.js';
 
 export const SOLDES = {
@@ -16,6 +17,10 @@ export const SOLDES = {
   remises: {
     vocalbox: 30, 'onirique-eclipse': 30, based: 30, 'onirique-halo': 30,
     'onirique-n73': 20, 'onirique-doublebox': 20, 'onirique-resobox': 20, 'onirique-modbox': 20,
+    'onirique-weight': 15, 'onirique-massif': 15, 'onirique-glue': 15, 'onirique-optobox': 15, 'onirique-pitchbox': 15,
+    'onirique-enhancer': 15,
+    tuner: 10, 'onirique-eq': 10, 'onirique-verb': 10, 'onirique-echobox': 10, 'onirique-vocal-mini': 10,
+    'onirique-vocal-spacer': 10,
   },
   // Le dernier sorti passe en tête de la liste des offres.
   enTete: 'onirique-halo',
@@ -69,7 +74,21 @@ export function salePopup(at = now()) {
   const top = Math.max(...deals.map((d) => d.sale.percent));
   return {
     id: SOLDES.id, theme: 'black-friday', kicker: 'BLACK FRIDAY', title: `Jusqu'à -${top} %`,
-    text: `Les plus gros plugins ONIRIQUE à prix cassé, et les abonnements aussi, ${SOLDES.finTexte}. La remise s'applique toute seule au paiement, sans code.`,
+    text: `Tous les plugins ONIRIQUE sont en promo, jusqu'à -${top} % sur les plus gros, et les abonnements aussi, ${SOLDES.finTexte}. La remise s'applique toute seule au paiement, sans code.`,
     link: '/boutique', linkLabel: 'Voir les offres', endsAt: SOLDES.fin, deals: planDeal ? [...deals.slice(0, 3), planDeal] : deals.slice(0, 4),
   };
+}
+
+// Les prix qui changent le lendemain des soldes (choix de Nov, 16/11/2026) : VOCALBOX passe de 149,99 € à 199,99 €.
+// Pendant les soldes, le prix barré reste le plus bas des 30 derniers jours, comme la loi le demande. Une seule fois, et
+// seulement si le prix n'a pas été changé entre-temps dans l'admin. Vérifié au démarrage puis toutes les heures (index.js).
+export const PRIX_APRES = { vocalbox: { de: 14999, a: 19999 } };
+export function appliquerPrixApres(at = now()) {
+  if (at <= SOLDES.fin || setting('prix_apres_soldes', null) === SOLDES.id) return 0;
+  let changes = 0;
+  for (const [slug, { de, a }] of Object.entries(PRIX_APRES)) {
+    changes += run('UPDATE products SET price_cents = ? WHERE slug = ? AND price_cents = ?', a, slug, de).changes;
+  }
+  setSetting('prix_apres_soldes', SOLDES.id);
+  return changes;
 }

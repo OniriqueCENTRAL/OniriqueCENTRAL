@@ -1,4 +1,4 @@
-import { h, eyebrow, pill, led, button, date, attempt, confirm, LICENSE_TYPES } from '../ui.js';
+import { h, eyebrow, pill, led, button, date, attempt, confirm, toast, LICENSE_TYPES } from '../ui.js';
 import { state, call, refresh } from '../app.js';
 
 export function licensesView() {
@@ -12,7 +12,14 @@ export function licensesView() {
     onsubmit: async (event) => {
       event.preventDefault();
       if (!key.value.trim()) return;
-      if (await attempt(() => call('api', 'POST', '/api/licenses/redeem', { key: key.value }), 'Licence ajoutée à votre compte.')) await refresh();
+      const result = await attempt(() => call('license:redeem', key.value));
+      if (!result) return;
+      // La clé est sur le compte et, dans la foulée, le plugin est activé sur ce PC.
+      if (result.activated?.length) toast(`Licence ajoutée : ${result.activated.join(', ')} ${result.activated.length > 1 ? 'sont activés' : 'est activé'} sur ce PC.`);
+      else if (result.failure) toast(`Licence ajoutée à votre compte, mais l'activation sur ce PC a échoué : ${result.failure}`, true);
+      else toast('Licence ajoutée à votre compte. Les plugins s\'activeront sur ce PC à leur installation.');
+      key.value = '';
+      await refresh();
     },
   }, h('div', { class: 'grow' }, key), h('button', { class: 'btn primary', type: 'submit' }, 'Ajouter'));
 

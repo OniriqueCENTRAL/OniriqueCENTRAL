@@ -6,6 +6,7 @@ import { remindReleases, purgeTrash } from './sounds.js';
 import { sweepMedia } from './sweep.js';
 import { remindCut, publishDueReels } from './cut.js';
 import { demarrerRelais } from './vpn.js';
+import { appliquerPrixApres } from './soldes.js';
 
 // En local seulement : le public passe par nginx (sinon, joint directement, l'API croirait l'adresse IP qu'on lui annonce).
 createApp().listen(config.port, '127.0.0.1', () => {
@@ -38,3 +39,8 @@ setInterval(() => { try { remindCut(); } catch (error) { console.error('Rappel C
 const sweep = () => { try { const r = sweepMedia(); if (r.files) console.log(`Ménage de media/ : ${r.files} fichiers, ${Math.round(r.bytes / 1048576)} Mo libérés`); } catch (error) { console.error('Ménage de media/ :', error.message); } };
 setTimeout(sweep, 60_000);
 setInterval(sweep, 86400_000);
+
+// Les nouveaux prix du lendemain des soldes (soldes.js), au démarrage puis toutes les heures.
+const prixApres = () => { try { const n = appliquerPrixApres(); if (n) console.log(`Fin des soldes : ${n} prix mis à jour`); } catch (error) { console.error('Prix après les soldes :', error.message); } };
+prixApres();
+setInterval(prixApres, 3600_000);
