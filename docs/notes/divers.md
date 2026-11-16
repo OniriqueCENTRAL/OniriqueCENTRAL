@@ -16,6 +16,11 @@
 - 4 extraits de 12 s par prod ; un titre n'est retenu que s'il est reconnu sur au moins 2 extraits au même
   décalage (±3 s). Clés posées par `onirique-acrcloud`. En cas d'échec, lire l'erreur dans `sound_scans`.
 
+## Chiffres Spotify des profils (CaptAPI)
+- Ce sont des chiffres **publics** (auditeurs mensuels, abonnés, écoutes des titres du top, villes), pas ceux de
+  Spotify for Artists, qui n'a pas d'API. Réservé à l'équipe (admin, fondateurs) : chaque lecture coûte un crédit
+  CaptAPI, une par jour au plus par artiste (`server/src/spotifystats.js`). Clé posée par `onirique-captapi`.
+
 ## Application CENTRAL et navigateur
 - L'application reste sur Electron ; son coût vient de l'application elle-même, pas du moteur.
 - Navigateur : ~20 % de RAM en moins que Chrome, même CPU sur la page active. Ne pas promettre plus.

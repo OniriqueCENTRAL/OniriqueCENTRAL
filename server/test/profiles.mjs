@@ -22,9 +22,17 @@ globalThis.fetch = async (url, init) => {
     ] } }), { headers: { 'Content-Type': 'application/json' } });
   }
   if (u === 'https://static.klipy.com/g/7.mp4') return new Response(MP4);
+  if (u.startsWith('https://api.captapi.com/v1/spotify/artist?')) {
+    captapiCalls.push(u);
+    assert.equal(init?.headers?.['x-api-key'], 'cle-captapi');
+    return new Response(JSON.stringify({ success: true, data: { name: 'Nov', image: 'https://evil.test/a.jpg', monthlyListeners: 12345, followers: 678, worldRank: 0,
+      topTracks: [{ name: 'Nuit', playCount: 9000, image: 'https://i.scdn.co/image/ab', url: 'https://open.spotify.com/track/1' }, { name: 'Ailleurs', url: 'javascript:alert(1)' }],
+      topCities: [{ city: 'Lyon', country: 'FR', listeners: 321 }] } }), { headers: { 'Content-Type': 'application/json' } });
+  }
   return realFetch(url, init);
 };
-const klipyCalls = [];
+const klipyCalls = [], captapiCalls = [];
+process.env.CAPTAPI_KEY = 'cle-captapi';
 const { createApp } = await import('../src/app.js');
 const { db, get, run, now } = await import('../src/db.js');
 const { outbox } = await import('../src/mail.js');
@@ -143,6 +151,34 @@ try {
     await call('PUT', '/api/me/profile/page', { token: a.token, body: { handle: 'nov.music', city: 'lyon', cv: { roles: ['Mix'], showLinks: true } } });
     assert.match((await call('GET', '/api/profiles/nov.music')).linkPage, /\/l\/nov$/);
     assert.match((await call('GET', '/api/members/map')).members[0].linkPage, /\/l\/nov$/);
+  });
+  await step('chiffres Spotify (CaptAPI) : réservés à l’équipe, sur la page et la carte, relus une fois par jour', async () => {
+    const ARTIST = '06HL4z0CvFAxyc27GXpf02';
+    await call('PUT', '/api/me/profile/page', { token: a.token, body: { handle: 'nov.music', city: 'lyon', spotify: `https://open.spotify.com/artist/${ARTIST}` } });
+    assert.equal((await call('GET', '/api/me/profile/page', { token: a.token })).spotifyAllowed, false);
+    assert.equal((await call('GET', '/api/profiles/nov.music')).spotify, null); // pas de l'équipe : ignoré
+    run('UPDATE users SET role = ? WHERE id = ?', 'admin', a.id);
+    await call('PUT', '/api/me/profile/page', { token: a.token, body: { handle: 'nov.music', city: 'lyon', spotify: 'https://example.com/artist/x' }, expect: 400 });
+    await call('PUT', '/api/me/profile/page', { token: a.token, body: { handle: 'nov.music', city: 'lyon', spotify: `https://open.spotify.com/intl-fr/artist/${ARTIST}?si=abc` } });
+    assert.deepEqual(captapiCalls.map((u) => new URL(u).searchParams.get('url')), [`spotify:artist:${ARTIST}`]);
+    const me = await call('GET', '/api/me/profile/page', { token: a.token });
+    assert.deepEqual([me.spotifyAllowed, me.spotifyUrl], [true, `https://open.spotify.com/artist/${ARTIST}`]);
+    const s = (await call('GET', '/api/profiles/nov.music')).spotify.stats;
+    assert.deepEqual([s.name, s.monthlyListeners, s.followers, s.worldRank, s.topTracks, s.topCities],
+      ['Nov', 12345, 678, null, [{ name: 'Nuit', plays: 9000, image: 'https://i.scdn.co/image/ab', url: 'https://open.spotify.com/track/1' }, { name: 'Ailleurs', plays: null, image: null, url: null }],
+        [{ city: 'Lyon', country: 'FR', listeners: 321 }]]);
+    assert.deepEqual((await call('GET', '/api/members/map')).members[0].spotify, { monthlyListeners: 12345, followers: 678 });
+    // Le même lien ne relit pas ; des chiffres de plus d'un jour sont relus en fond.
+    await call('PUT', '/api/me/profile/page', { token: a.token, body: { handle: 'nov.music', city: 'lyon', spotify: ARTIST } });
+    assert.equal(captapiCalls.length, 1);
+    run('UPDATE spotify_artists SET fetched_at = 0 WHERE user_id = ?', a.id);
+    await call('GET', '/api/profiles/nov.music');
+    await new Promise((r) => setTimeout(r, 50));
+    assert.equal(captapiCalls.length, 2);
+    // Lien vide : les chiffres disparaissent.
+    await call('PUT', '/api/me/profile/page', { token: a.token, body: { handle: 'nov.music', city: 'lyon', spotify: '' } });
+    assert.equal((await call('GET', '/api/profiles/nov.music')).spotify, null);
+    run('UPDATE users SET role = ? WHERE id = ?', 'user', a.id);
   });
   await step('habillage : polices, verre, ordre des blocs, fond image ou vidéo vérifié à son contenu', async () => {
     assert.deepEqual((await call('GET', '/api/profiles/nov.music')).look.order, ['bio', 'cv', 'tabs']);

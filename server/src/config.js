@@ -97,6 +97,9 @@ export const config = {
   // de bouton « Chercher un GIF » sur la page de profil.
   klipyKey: env.KLIPY_API_KEY || '',
   klipyApi: (env.KLIPY_API || 'https://api.klipy.com').replace(/\/+$/, ''),
+  // CaptAPI : les chiffres Spotify d'un artiste sur sa page de profil et la carte (spotifystats.js). Clé sur captapi.com.
+  captapiKey: env.CAPTAPI_KEY || '',
+  captapiApi: (env.CAPTAPI_API || 'https://api.captapi.com').replace(/\/+$/, ''),
   spotifyAccounts: (env.SPOTIFY_ACCOUNTS || 'https://accounts.spotify.com').replace(/\/+$/, ''),
   spotifyApi: (env.SPOTIFY_API || 'https://api.spotify.com').replace(/\/+$/, ''),
   // ROCKY, le chatbot du site (rocky.js) : la clé de l'API Claude (console.anthropic.com) et le modèle.

@@ -577,7 +577,10 @@ function card(m, i) {
     m.cv.roles.length ? el("div", { className: "tags" }, ...m.cv.roles.map((r) => el("span", { textContent: r }))) : null,
     m.cv.skills ? el("p", { textContent: m.cv.skills }) : null,
     m.cv.open ? el("span", { className: "open", textContent: "Ouvert aux collaborations" }) : null,
-    el("div", { className: "links" }, el("a", { href: page, textContent: "Sa page" }), m.linkPage ? el("a", { href: m.linkPage, target: "_blank", rel: "noopener" }, icon("link"), "Page de liens") : null));
+    el("div", { className: "links" }, el("a", { href: page, textContent: "Sa page" }),
+      // Ses chiffres Spotify, en détail sur sa page.
+      m.spotify ? el("a", { href: page + "#spotify", title: "Ses stats Spotify" }, "Spotify · " + (m.spotify.monthlyListeners ?? 0).toLocaleString("fr-FR").replace(/ /g, " ") + " auditeurs/mois") : null,
+      m.linkPage ? el("a", { href: m.linkPage, target: "_blank", rel: "noopener" }, icon("link"), "Page de liens") : null));
   // Ses playlists publiques, demandées à l’ouverture de la ville (les trois plus récentes).
   if (m.playlists) {
     const pls = el("div", { className: "pls" });

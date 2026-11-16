@@ -97,6 +97,21 @@ input[type="checkbox"] { min-height: 0; width: 18px; height: 18px; accent-color:
 .replies .comment { padding: 8px 10px; background: none; border: 0; }
 .replies .comment img { width: 32px; height: 32px; }
 .reply-form { display: flex; gap: 8px; margin-top: 10px; }
+/* Les chiffres Spotify : trois grands nombres, puis les titres les plus écoutés et les villes. */
+.sp-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+.sp-head .eyebrow { margin: 0; }
+.sp-nums { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.sp-nums div { padding: 12px 14px; border-radius: var(--r-ctl); border: 1px solid var(--line); background: rgba(255,255,255,.03); }
+.sp-nums b { display: block; font: 800 clamp(20px, 3.5vw, 26px)/1.1 var(--f-display); font-variant-numeric: tabular-nums; }
+.sp-nums small, .sp-sub { font: 500 11px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--haze); }
+.sp-sub { display: block; margin: 18px 0 8px; }
+.sp-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; counter-reset: sp; }
+.sp-list li { display: flex; align-items: center; gap: 10px; counter-increment: sp; }
+.sp-list li::before { content: counter(sp); width: 18px; text-align: right; font: 500 12px var(--f-mono); color: var(--haze); flex: none; }
+.sp-list img { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; flex: none; }
+.sp-list a, .sp-list span.t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: none; }
+.sp-list a:hover { color: color-mix(in srgb, var(--ember) 55%, #fff); }
+.sp-list small { font: 500 12px var(--f-mono); color: var(--haze); font-variant-numeric: tabular-nums; flex: none; }
 .reply-form input { flex: 1; min-height: 40px; font-size: 14px; }
 dialog { width: min(440px, calc(100vw - 32px)); max-height: 80vh; padding: 0; border: 1px solid var(--line); color: var(--mist); }
 dialog header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: none; backdrop-filter: none; }
@@ -194,7 +209,8 @@ dialog.gifs { width: min(720px, calc(100vw - 24px)); max-height: 86vh; }
       </div>
       <div class="actions" id="actions"></div>
     </div>
-    <div class="block" data-block="bio"><div class="panel" id="bio-panel"><span class="eyebrow">À propos</span><p class="bio" id="bio"></p><div class="links" id="links"></div></div></div>
+    <div class="block" data-block="bio"><div class="panel" id="bio-panel"><span class="eyebrow">À propos</span><p class="bio" id="bio"></p><div class="links" id="links"></div></div>
+      <div class="panel" id="spotify" hidden></div></div>
     <div class="block" data-block="cv"><div class="panel cv" id="cv-panel" hidden><span class="eyebrow">CV numérique</span><div id="cv"></div></div></div>
     <div class="block" data-block="tabs">
     <div class="tabs" role="tablist"><button type="button" class="on" data-tab="playlists">Playlists</button><button type="button" data-tab="packs" id="packs-tab" hidden>Packs <span id="pk-count"></span></button><button type="button" data-tab="vitrine" id="vitrine-tab" hidden>Vitrine <span id="vt-count"></span></button><button type="button" data-tab="comments">Commentaires <span id="c-count"></span></button></div>
@@ -225,6 +241,8 @@ dialog.gifs { width: min(720px, calc(100vw - 24px)); max-height: 86vh; }
       <label>Bio<textarea id="f-bio" maxlength="600" placeholder="Qui tu es, ce que tu fais, tes liens…"></textarea></label>
       <label>Couleur de la page<input id="f-color" type="color" value="#e5384a"></label>
       <div><label>Liens (Instagram, Spotify, YouTube, ton site…)</label><div class="link-rows" id="f-links" style="margin-top:8px"></div></div>
+      <div id="f-spotify-row" hidden><label>Ton profil d’artiste Spotify<input id="f-spotify" maxlength="300" autocomplete="off" placeholder="https://open.spotify.com/artist/…"></label>
+        <p class="muted" style="margin:6px 0 0;font-size:13px">Tes auditeurs mensuels, abonnés et titres les plus écoutés s’affichent sur ta page et sur ta carte, mis à jour chaque jour. Laisse vide pour les retirer.</p></div>
       <div class="cv-edit">
         <div class="place-pick"><label>Ta ville ou ton village (sur la carte des membres)<input id="f-place" type="search" autocomplete="off" placeholder="Tape le nom de ta commune…"></label>
           <input type="hidden" id="f-city"><div class="place-results" id="f-places" role="listbox"></div>
@@ -419,9 +437,33 @@ function drawView() {
   // Un beatmaker sans playlist : sa page s’ouvre sur ses packs.
   if (p.packs.length && !p.playlists.length && document.querySelector(".tabs .on").dataset.tab === "playlists") $("packs-tab").click();
   drawVitrine(p);
+  drawSpotify(p.spotify);
   show("view");
+  if (location.hash === "#spotify" && p.spotify?.stats) $("spotify").scrollIntoView({ block: "start" });
   // Le visiteur est accueilli : les blocs entrent une fois, à l’ouverture.
   if (!drawView.done) { drawView.done = true; $("view").classList.add("enter"); }
+}
+
+// Ses chiffres Spotify (lus chaque jour par le serveur) : auditeurs mensuels, abonnés, rang, titres et villes.
+// L’espace fine des milliers manque à certaines polices : une espace insécable ordinaire à la place.
+const nb = (n) => (n == null ? "—" : n.toLocaleString("fr-FR").replace(/ /g, " "));
+function drawSpotify(sp) {
+  const s = sp?.stats;
+  $("spotify").hidden = !s;
+  if (!s) return;
+  const big = (n, label) => el("div", {}, el("b", { textContent: nb(n) }), el("small", { textContent: label }));
+  $("spotify").replaceChildren(
+    el("div", { className: "sp-head" }, el("span", { className: "eyebrow", textContent: "Spotify" + (s.name ? " · " + s.name : "") }),
+      el("a", { className: "link", href: sp.url, target: "_blank", rel: "noopener" }, "Ouvrir sur Spotify ", icon("ext"))),
+    el("div", { className: "sp-nums" }, big(s.monthlyListeners, "Auditeurs mensuels"), big(s.followers, "Abonnés"), s.worldRank ? big(s.worldRank, "Rang mondial") : null),
+    ...(s.topTracks.length ? [el("span", { className: "sp-sub", textContent: "Titres les plus écoutés" }),
+      el("ol", { className: "sp-list" }, ...s.topTracks.map((t) => el("li", {}, t.image ? el("img", { src: t.image, alt: "", loading: "lazy" }) : null,
+        t.url ? el("a", { href: t.url, target: "_blank", rel: "noopener", textContent: t.name }) : el("span", { className: "t", textContent: t.name }),
+        el("small", { textContent: t.plays == null ? "" : nb(t.plays) + " écoutes" }))))] : []),
+    ...(s.topCities.length ? [el("span", { className: "sp-sub", textContent: "Où on l’écoute" }),
+      el("ol", { className: "sp-list" }, ...s.topCities.map((c) => el("li", {}, el("span", { className: "t", textContent: c.city + (c.country ? " · " + c.country : "") }),
+        el("small", { textContent: nb(c.listeners) + " auditeurs" }))))] : []),
+    el("p", { className: "muted", style: "margin:14px 0 0;font-size:12px", textContent: "Chiffres publics de Spotify au " + when(s.at) + "." }));
 }
 
 // Un commentaire : son auteur, « J’aime », « Répondre » (sous un commentaire seulement), « Retirer », et ses réponses.
@@ -491,6 +533,8 @@ function openEdit() {
   $("f-skills").value = m.cv?.skills || "";
   $("f-open").checked = !!m.cv?.open;
   $("f-showlinks").checked = !!m.cv?.showLinks;
+  $("f-spotify-row").hidden = !m.spotifyAllowed;
+  $("f-spotify").value = m.spotifyUrl || "";
   $("f-showlinks-row").hidden = !m.linkPage;
   $("f-nolinks").hidden = !!m.linkPage;
   $("f-links").replaceChildren(...Array.from({ length: 6 }, (_, i) => el("div", {},
@@ -598,7 +642,8 @@ $("edit-form").addEventListener("submit", async (event) => {
   try {
     const { handle } = await api("PUT", "/me/profile/page", { handle: toHandle($("f-handle").value), bio: $("f-bio").value, color: $("f-color").value, comments: $("f-comments").checked,
       links: [...$("f-links").children].map((row) => ({ label: row.children[0].value, url: row.children[1].value })).filter((l) => l.url.trim()),
-      city: $("f-city").value, cv: { roles: [...$("f-roles").querySelectorAll("input:checked")].map((i) => i.value), skills: $("f-skills").value, open: $("f-open").checked, showLinks: $("f-showlinks").checked }, ...(mine ? { look: lookForm(), packIds: [...$("f-packs").querySelectorAll("input:checked")].map((i) => Number(i.value)) } : {}) });
+      city: $("f-city").value, cv: { roles: [...$("f-roles").querySelectorAll("input:checked")].map((i) => i.value), skills: $("f-skills").value, open: $("f-open").checked, showLinks: $("f-showlinks").checked }, ...(mine ? { look: lookForm(), packIds: [...$("f-packs").querySelectorAll("input:checked")].map((i) => Number(i.value)) } : {}),
+      ...(mine?.spotifyAllowed ? { spotify: $("f-spotify").value } : {}) });
     location.href = "profil?u=" + encodeURIComponent(handle);
   } catch (e) { say("edit-notice", e.message, true); }
 });
