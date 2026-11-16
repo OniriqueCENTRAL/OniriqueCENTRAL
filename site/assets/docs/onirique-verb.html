@@ -1,0 +1,239 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#ve-vue">Vue d’ensemble</a></li>
+  <li><a href="#ve-reseau">Le réseau</a></li>
+  <li><a href="#ve-espaces">Les six espaces</a></li>
+  <li><a href="#ve-eq">EQ IN et EQ OUT</a></li>
+  <li><a href="#ve-mix">MIX, DUCKING, CLEAN</a></li>
+  <li><a href="#ve-tempo">Tempo, STUTTER, PULSE</a></li>
+  <li><a href="#ve-reglages">Tous les réglages</a></li>
+  <li><a href="#ve-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="ve-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE VERB est une reverb algorithmique pensée pour la voix, en insert et <b>sans aucune latence</b>. Une reverb, c’est une pièce simulée : la voix est envoyée dans un réseau de lignes à retard qui se renvoient le son entre elles, perdent un peu d’énergie à chaque passage, et finissent par former une queue dense qui s’éteint doucement.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 920 330" role="img" aria-label="Schéma général de VERB : EQ IN, CLEAN, pre-delay, réflexions, diffusion, réseau de 16 lignes, EQ OUT, ducking, stutter, MIX">
+    <circle class="w" cx="28" cy="72" r="6"/><text x="28" y="50" text-anchor="middle" class="t2">VOIX</text>
+    <path class="w" d="M34 72 H90" marker-end="url(#doc-arr)"/><circle class="dot" cx="60" cy="72" r="3.5"/>
+    <rect class="b" x="90" y="50" width="110" height="44" rx="6"/><text x="145" y="69" text-anchor="middle">EQ IN</text><text x="145" y="85" text-anchor="middle" class="t2">5 bandes</text>
+    <rect class="b" x="220" y="50" width="110" height="44" rx="6"/><text x="275" y="69" text-anchor="middle">CLEAN</text><text x="275" y="85" text-anchor="middle" class="t2">sifflantes</text>
+    <rect class="b" x="350" y="50" width="120" height="44" rx="6"/><text x="410" y="69" text-anchor="middle">PRE-DELAY</text><text x="410" y="85" text-anchor="middle" class="t2">0 à 500 ms</text>
+    <rect class="b" x="490" y="50" width="130" height="44" rx="6"/><text x="555" y="69" text-anchor="middle">RÉFLEXIONS</text><text x="555" y="85" text-anchor="middle" class="t2">ROOM · HALL</text>
+    <rect class="b" x="640" y="50" width="150" height="44" rx="6"/><text x="715" y="69" text-anchor="middle">DIFFUSION</text><text x="715" y="85" text-anchor="middle" class="t2">6 passe-tout</text>
+    <path class="w" d="M200 72 H220" marker-end="url(#doc-arr)"/><path class="w" d="M330 72 H350" marker-end="url(#doc-arr)"/><path class="w" d="M470 72 H490" marker-end="url(#doc-arr)"/><path class="w" d="M620 72 H640" marker-end="url(#doc-arr)"/>
+    <path class="w" d="M790 72 H840 V130 H185 V170" marker-end="url(#doc-arr)"/>
+
+    <rect class="ba" x="90" y="170" width="190" height="50" rx="6"/><text x="185" y="191" text-anchor="middle" class="tb">RÉSEAU 16 LIGNES</text><text x="185" y="208" text-anchor="middle" class="t2">DECAY · SIZE · MOD</text>
+    <text x="185" y="158" text-anchor="middle" class="t2 ta">INFINITE : la queue tient sans fin</text>
+    <path class="wa" d="M250 220 V250 H230" marker-end="url(#doc-arra)"/><rect class="b" x="140" y="238" width="90" height="24" rx="4"/><text x="185" y="254" text-anchor="middle" class="t2">OCTAVE ↑</text><path class="wa" d="M140 250 H120 V222" marker-end="url(#doc-arra)"/>
+    <text x="185" y="278" text-anchor="middle" class="t2">SHIMMER · ONIRIQUE</text>
+    <rect class="b" x="320" y="170" width="140" height="50" rx="6"/><text x="390" y="191" text-anchor="middle">EQ OUT</text><text x="390" y="208" text-anchor="middle" class="t2">coupes · WIDTH</text>
+    <path class="w" d="M280 195 H320" marker-end="url(#doc-arr)"/>
+    <path class="w" d="M460 195 H484" marker-end="url(#doc-arr)"/>
+    <circle class="ba" cx="500" cy="195" r="16"/><text x="500" y="200" text-anchor="middle" class="tb">×</text><text x="500" y="168" text-anchor="middle" class="t2">DUCKING</text>
+    <path class="w" d="M516 195 H550" marker-end="url(#doc-arr)"/>
+    <rect class="b" x="550" y="170" width="150" height="50" rx="6"/><text x="625" y="191" text-anchor="middle">STUTTER · PULSE</text><text x="625" y="208" text-anchor="middle" class="t2">découpe au tempo</text>
+    <path class="w" d="M700 195 H742" marker-end="url(#doc-arr)"/>
+    <circle class="ba" cx="760" cy="195" r="18"/><text x="760" y="201" text-anchor="middle" class="tb">+</text><text x="760" y="166" text-anchor="middle" class="t2">MIX</text>
+    <path class="w" d="M778 195 H870"/><circle class="w" cx="876" cy="195" r="6"/><text x="876" y="225" text-anchor="middle" class="t2">SORTIE</text>
+
+    <path class="wd" d="M60 72 V305 H760 V215" marker-end="url(#doc-arr)"/><text x="300" y="322" class="t2">voix sèche (vers MIX)</text>
+    <circle class="dot" cx="500" cy="305" r="3.5"/><path class="wd" d="M500 305 V213" marker-end="url(#doc-arr)"/><text x="510" y="262" class="t2">la voix commande</text>
+  </svg>
+  </div>
+  <figcaption>Le chemin du son. En haut, ce qui prépare la voix avant la reverb. En bas, la reverb elle-même puis ce qui façonne sa queue. La voix sèche contourne tout et sert aussi à piloter le DUCKING.</figcaption>
+</figure>
+
+<h2 id="ve-reseau">Le réseau de lignes à retard</h2>
+<p>Le cœur de VERB est un <b>réseau à retards rebouclés</b> (FDN) de 16 lignes. Chaque ligne retarde le son de quelques dizaines de millisecondes (de 29,7 à 101,6 ms, multipliées par SIZE), puis le renvoie dans le réseau. Une <b>matrice de Hadamard</b> mélange à chaque tour les 16 lignes entre elles : le son se disperse, et les échos isolés deviennent une queue continue.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 900 300" role="img" aria-label="Une ligne du réseau : addition, retard modulé, passe-tout, amortissement trois bandes, matrice, retour">
+    <circle class="w" cx="36" cy="110" r="6"/><text x="36" y="88" text-anchor="middle" class="t2">entrée</text>
+    <path class="w" d="M42 110 H112" marker-end="url(#doc-arr)"/>
+    <circle class="ba" cx="130" cy="110" r="18"/><text x="130" y="116" text-anchor="middle" class="tb">+</text>
+    <path class="w" d="M148 110 H170" marker-end="url(#doc-arr)"/>
+    <rect class="ba" x="170" y="86" width="140" height="48" rx="6"/><text x="240" y="106" text-anchor="middle" class="tb">RETARD</text><text x="240" y="123" text-anchor="middle" class="t2">modulé · × SIZE</text>
+    <path class="w" d="M215 52 q6 -10 12 0 t12 0 t12 0 t12 0" /><path class="w" d="M240 58 V84" marker-end="url(#doc-arr)"/><text x="240" y="38" text-anchor="middle" class="t2">MOD RATE · DEPTH</text>
+    <path class="w" d="M310 110 H340" marker-end="url(#doc-arr)"/>
+    <rect class="b" x="340" y="86" width="110" height="48" rx="6"/><text x="395" y="106" text-anchor="middle">PASSE-TOUT</text><text x="395" y="123" text-anchor="middle" class="t2">étale le son</text>
+    <path class="w" d="M450 110 H470" marker-end="url(#doc-arr)"/>
+    <rect class="b" x="470" y="86" width="180" height="48" rx="6"/><text x="560" y="106" text-anchor="middle">AMORTISSEMENT</text><text x="560" y="123" text-anchor="middle" class="t2">graves · médiums · aigus</text>
+    <path class="w" d="M650 110 H680" marker-end="url(#doc-arr)"/>
+    <circle class="dot" cx="664" cy="110" r="3.5"/><path class="w" d="M664 110 V28 H700" marker-end="url(#doc-arr)"/><text x="708" y="32" class="t2">vers les sorties G / D</text>
+    <rect class="ba" x="680" y="70" width="140" height="150" rx="8"/><text x="750" y="140" text-anchor="middle" class="tb">HADAMARD</text><text x="750" y="158" text-anchor="middle" class="t2">16 × 16</text>
+    <path class="wd" d="M860 90 H822" marker-end="url(#doc-arr)"/><path class="wd" d="M822 190 H860" marker-end="url(#doc-arr)"/>
+    <text x="866" y="94" class="t2">15</text><text x="866" y="194" class="t2">15</text>
+    <path class="wa" d="M750 220 V262 H130 V130" marker-end="url(#doc-arra)"/>
+    <text x="440" y="282" text-anchor="middle" class="t2 ta">retour : le son repasse, un peu plus faible à chaque tour</text>
+  </svg>
+  </div>
+  <figcaption>Une des 16 lignes. Les 15 autres ont la même forme, avec d’autres longueurs : elles entrent et sortent de la même matrice (flèches pointillées).</figcaption>
+</figure>
+
+<ul>
+  <li><b>DECAY</b> (0,2 à 20 s) : le temps que met la queue à perdre 60 dB. VERB en déduit le gain de chaque tour, bande par bande (méthode de Jot) : selon l’espace, les graves s’éteignent plus tôt et les aigus à leur propre temps.</li>
+  <li><b>SIZE</b> : la longueur des lignes. Bouger SIZE fait glisser les retards comme une bande qui ralentit : aucun clic.</li>
+  <li><b>DIFFUSION</b> : à l’entrée, six filtres passe-tout courts épaississent l’attaque (la queue est dense dès les premières millisecondes, sans grain sur les consonnes). Un passe-tout dans chaque boucle étale encore chaque passage.</li>
+  <li><b>MOD RATE · MOD DEPTH</b> : chaque ligne bouge un peu, par une sinusoïde et une dérive lente au hasard. La queue vit, sans effet de chorus marqué.</li>
+  <li><b>INFINITE</b> : le réseau devient sans perte et ne reçoit plus rien. La queue présente tient indéfiniment, comme un drone.</li>
+  <li>Entrée stéréo : chaque côté entre dans la moitié du réseau. Une voix mono donne exactement le même réseau des deux côtés.</li>
+</ul>
+
+<h3>Le filtre passe-tout</h3>
+<p>Un passe-tout laisse passer toutes les fréquences au même niveau, mais retarde chacune différemment : le son est « étalé » dans le temps. Son schéma ne comporte qu’un retard, deux multiplications et deux additions :</p>
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 900 230" role="img" aria-label="Filtre passe-tout de Schroeder">
+    <circle class="w" cx="40" cy="110" r="6"/><text x="40" y="140" text-anchor="middle" class="t2">x</text>
+    <path class="w" d="M46 110 H182" marker-end="url(#doc-arr)"/>
+    <circle class="ba" cx="200" cy="110" r="18"/><text x="200" y="116" text-anchor="middle" class="tb">+</text>
+    <path class="w" d="M218 110 H340" marker-end="url(#doc-arr)"/><circle class="dot" cx="270" cy="110" r="3.5"/>
+    <rect class="ba" x="340" y="86" width="140" height="48" rx="6"/><text x="410" y="115" text-anchor="middle" class="tb">RETARD M</text>
+    <path class="w" d="M480 110 H632" marker-end="url(#doc-arr)"/><circle class="dot" cx="560" cy="110" r="3.5"/>
+    <circle class="ba" cx="650" cy="110" r="18"/><text x="650" y="116" text-anchor="middle" class="tb">+</text>
+    <path class="w" d="M668 110 H800"/><circle class="w" cx="806" cy="110" r="6"/><text x="806" y="140" text-anchor="middle" class="t2">y</text>
+    <path class="w" d="M560 110 V190 H440"/><path class="w" d="M440 178 V202 L410 190 Z"/><text x="430" y="222" text-anchor="middle" class="t2">× g</text><path class="w" d="M410 190 H200 V128" marker-end="url(#doc-arr)"/>
+    <path class="w" d="M270 110 V40 H400"/><path class="w" d="M400 28 V52 L430 40 Z"/><text x="420" y="20" text-anchor="middle" class="t2">× (−g)</text><path class="w" d="M430 40 H650 V92" marker-end="url(#doc-arr)"/>
+  </svg>
+  </div>
+  <figcaption>Ce qui sort du retard est renvoyé à l’entrée (× g) ; l’entrée est aussi envoyée directement à la sortie (× −g). Les deux chemins se compensent : le niveau ne change à aucune fréquence, seul le temps est brouillé.</figcaption>
+</figure>
+
+<h2 id="ve-espaces">Les six espaces (MODE)</h2>
+<p>Chaque mode règle autrement la taille du réseau, les réflexions précoces, le temps des graves et des aigus, la diffusion et la modulation. Changer de mode fond le niveau, les réflexions et l’octave : aucun saut.</p>
+<div class="table"><table>
+  <thead><tr><th>Mode</th><th>Taille</th><th>Caractère</th></tr></thead>
+  <tbody>
+    <tr><td>ROOM</td><td>× 0,45</td><td>Petite pièce. Réflexions précoces marquées, aigus qui s’éteignent vite : la voix reste devant.</td></tr>
+    <tr><td>PLATE I</td><td>× 0,75</td><td>Plaque brillante et dense, aigus longs. Le classique sur une voix (mode par défaut).</td></tr>
+    <tr><td>PLATE II</td><td>× 0,95</td><td>Plaque plus sombre et plus large, modulation plus présente.</td></tr>
+    <tr><td>HALL</td><td>× 1,45</td><td>Grande salle, réflexions précoces espacées, graves qui tiennent.</td></tr>
+    <tr><td>SHIMMER</td><td>× 1,25</td><td>Une octave au-dessus est réinjectée dans la queue : elle monte et scintille.</td></tr>
+    <tr><td>ONIRIQUE</td><td>× 1,70</td><td>Salle immense et sombre, modulée en profondeur, avec un voile d’octave : elle ondule et rêve.</td></tr>
+  </tbody>
+</table></div>
+<p>Les réflexions précoces (ROOM, HALL) sont les premiers rebonds sur les murs : chaque côté surtout de son côté, un peu de l’autre, pour situer la voix dans l’espace avant que la queue n’arrive.</p>
+
+<h2 id="ve-eq">EQ IN et EQ OUT</h2>
+<p>Deux égaliseurs de cinq bandes : coupe-bas, grave (plateau), médium (cloche), aigu (plateau), coupe-haut. Les bandes se règlent à la souris directement sur la courbe.</p>
+<ul>
+  <li><b>EQ IN</b> agit sur ce qui <b>entre</b> dans la reverb. Retirer les graves ici évite que la queue gronde ; à zéro, l’EQ IN ne touche à rien (une bande neutre est sautée).</li>
+  <li><b>EQ OUT</b> agit sur la <b>queue</b> qui en sort. Par défaut, coupe-bas à 150 Hz et coupe-haut à 9 kHz : une queue propre qui laisse de la place à la voix.</li>
+  <li><b>WIDTH</b> (0 à 200 %) : largeur stéréo de la queue, réglée en mid / side.</li>
+</ul>
+
+<h2 id="ve-mix">MIX, DUCKING et CLEAN</h2>
+<h3>MIX</h3>
+<p>Le MIX de VERB n’est pas un simple fondu : la voix sèche reste <b>entière jusqu’à 50 %</b>, pendant que la reverb monte. Au-delà de 50 %, la reverb est pleine et c’est la voix sèche qui s’efface. En insert sur une piste de voix, on reste donc presque toujours sous 50 %, sans jamais perdre la voix. Le cadenas garde ton dosage quand tu changes de preset.</p>
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 900 260" role="img" aria-label="Loi du MIX : voix sèche entière jusqu’à 50 %, reverb pleine dès 50 %">
+    <path class="wg" d="M80 40 H820 M80 130 H820 M450 30 V220"/>
+    <path class="w" d="M80 220 H820 M80 220 V30"/>
+    <text x="70" y="44" text-anchor="end" class="t2">100 %</text><text x="70" y="224" text-anchor="end" class="t2">0</text>
+    <text x="80" y="242" text-anchor="middle" class="t2">MIX 0 %</text><text x="450" y="242" text-anchor="middle" class="t2">50 %</text><text x="820" y="242" text-anchor="middle" class="t2">100 %</text>
+    <path d="M80 40 H450 L820 220" style="fill:none;stroke:#F6EEEE;stroke-width:2"/>
+    <path class="wa" d="M80 220 L450 40 H820"/>
+    <text x="250" y="32" text-anchor="middle">voix sèche</text>
+    <text x="250" y="150" text-anchor="middle" class="ta">reverb</text>
+  </svg>
+  </div>
+  <figcaption>Volume de la voix sèche et de la reverb selon le MIX.</figcaption>
+</figure>
+
+<h3>DUCKING</h3>
+<p>Le DUCKING baisse la reverb quand tu chantes et la rouvre entre les phrases : la voix reste claire, et la queue remplit les silences. Un suiveur d’enveloppe écoute la voix sèche (attaque 10 ms, relâchement 250 ms) ; au-dessus de −40 dBFS, la reverb descend, jusqu’à −24 dB avec DUCKING à 100 %.</p>
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 900 230" role="img" aria-label="DUCKING : la reverb descend pendant les phrases et remonte entre elles">
+    <rect class="fill" x="120" y="150" width="200" height="50" rx="4"/><rect class="fill" x="470" y="150" width="240" height="50" rx="4"/>
+    <text x="220" y="180" text-anchor="middle" class="t2">phrase</text><text x="590" y="180" text-anchor="middle" class="t2">phrase</text>
+    <path class="w" d="M60 200 H860"/>
+    <path class="wa" d="M60 50 H120 C130 50 132 110 145 110 H320 C360 110 380 50 420 50 H470 C480 50 482 110 495 110 H710 C750 110 770 50 810 50 H860"/>
+    <text x="395" y="40" text-anchor="middle" class="ta">la queue s’ouvre</text>
+    <text x="230" y="100" text-anchor="middle" class="t2">−24 dB au plus</text>
+    <text x="60" y="222" class="t2">temps →</text>
+  </svg>
+  </div>
+  <figcaption>En rouge, le niveau de la reverb ; en bas, les moments où la voix chante.</figcaption>
+</figure>
+
+<h3>CLEAN</h3>
+<p>CLEAN fait trois choses à la fois, plus ou moins fort selon son réglage : il retire les <b>sifflantes</b> avant qu’elles n’entrent dans la reverb (un « s » réverbéré siffle longtemps), creuse les <b>bas-médiums</b> de la queue (là où elle embourbe), et <b>efface l’ancienne queue</b> quand une nouvelle phrase commence.</p>
+
+<h2 id="ve-tempo">Tempo, STUTTER et PULSE</h2>
+<ul>
+  <li><b>BPM</b> : cale la longueur de la reverb (de 1 temps à 8 mesures) et le pre-delay (de 1/64 à 1/4, ternaires et pointées comprises) sur le tempo du DAW, ou sur un tempo choisi à la main.</li>
+  <li><b>PULSE</b> : la queue respire au tempo (de 1/2 à 1/8 pointée), calée sur la mesure quand le DAW joue.</li>
+  <li><b>STUTTER</b> découpe la queue au tempo, bords adoucis en 2 ms (aucun clic) :</li>
+</ul>
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 900 250" role="img" aria-label="Les trois modes de STUTTER : CHOP, REPEAT, RAMP">
+    <text x="20" y="50" class="tb">CHOP</text>
+    <g class="chop"><rect class="fill" x="120" y="30" width="22" height="30"/><rect class="fill" x="170" y="30" width="22" height="30"/><rect class="fill" x="220" y="30" width="22" height="30"/><rect class="fill" x="270" y="30" width="22" height="30"/><rect class="fill" x="320" y="30" width="22" height="30"/><rect class="fill" x="370" y="30" width="22" height="30"/><rect class="fill" x="420" y="30" width="22" height="30"/><rect class="fill" x="470" y="30" width="22" height="30"/><rect class="fill" x="520" y="30" width="22" height="30"/><rect class="fill" x="570" y="30" width="22" height="30"/><rect class="fill" x="620" y="30" width="22" height="30"/><rect class="fill" x="670" y="30" width="22" height="30"/><rect class="fill" x="720" y="30" width="22" height="30"/><rect class="fill" x="770" y="30" width="22" height="30"/></g>
+    <text x="830" y="50" class="t2">hachée net</text>
+    <text x="20" y="125" class="tb">REPEAT</text>
+    <rect class="ba" x="120" y="105" width="40" height="30"/><text x="140" y="125" text-anchor="middle" class="t2">1</text>
+    <rect class="b" x="164" y="105" width="40" height="30"/><text x="184" y="125" text-anchor="middle" class="t2">1</text>
+    <rect class="b" x="208" y="105" width="40" height="30"/><text x="228" y="125" text-anchor="middle" class="t2">1</text>
+    <rect class="b" x="252" y="105" width="40" height="30"/><text x="272" y="125" text-anchor="middle" class="t2">1</text>
+    <rect class="ba" x="300" y="105" width="40" height="30"/><text x="320" y="125" text-anchor="middle" class="t2">5</text>
+    <rect class="b" x="344" y="105" width="40" height="30"/><text x="364" y="125" text-anchor="middle" class="t2">5</text>
+    <rect class="b" x="388" y="105" width="40" height="30"/><text x="408" y="125" text-anchor="middle" class="t2">5</text>
+    <rect class="b" x="432" y="105" width="40" height="30"/><text x="452" y="125" text-anchor="middle" class="t2">5</text>
+    <rect class="ba" x="480" y="105" width="40" height="30"/><text x="500" y="125" text-anchor="middle" class="t2">9</text>
+    <rect class="b" x="524" y="105" width="40" height="30"/><text x="544" y="125" text-anchor="middle" class="t2">9</text>
+    <rect class="b" x="568" y="105" width="40" height="30"/><text x="588" y="125" text-anchor="middle" class="t2">9</text>
+    <rect class="b" x="612" y="105" width="40" height="30"/><text x="632" y="125" text-anchor="middle" class="t2">9</text>
+    <text x="680" y="118" class="t2">le 1ᵉʳ morceau de chaque groupe</text><text x="680" y="132" class="t2">de quatre est rejoué trois fois</text>
+    <text x="20" y="200" class="tb">RAMP</text>
+    <g>
+      <rect class="fill" x="120" y="180" width="60" height="30"/><rect class="fill" x="210" y="180" width="30" height="30"/><rect class="fill" x="255" y="180" width="18" height="30"/><rect class="fill" x="282" y="180" width="10" height="30"/><rect class="fill" x="297" y="180" width="6" height="30"/>
+      <rect class="fill" x="320" y="180" width="60" height="30"/><rect class="fill" x="410" y="180" width="30" height="30"/><rect class="fill" x="455" y="180" width="18" height="30"/><rect class="fill" x="482" y="180" width="10" height="30"/><rect class="fill" x="497" y="180" width="6" height="30"/>
+      <rect class="fill" x="520" y="180" width="60" height="30"/><rect class="fill" x="610" y="180" width="30" height="30"/><rect class="fill" x="655" y="180" width="18" height="30"/><rect class="fill" x="682" y="180" width="10" height="30"/><rect class="fill" x="697" y="180" width="6" height="30"/>
+    </g>
+    <text x="730" y="200" class="t2">les coupes accélèrent</text><text x="730" y="214" class="t2">à chaque temps</text>
+    <path class="wd" d="M120 232 H720"/><text x="120" y="246" class="t2">temps (au tempo du projet) →</text>
+  </svg>
+  </div>
+  <figcaption>Les parties pleines laissent passer la queue ; les vides la coupent. STUTTER MIX dose l’effet, STUTTER RATE choisit la valeur de note (1/4 à 1/32, ternaires comprises).</figcaption>
+</figure>
+
+<h2 id="ve-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <thead><tr><th>Réglage</th><th>Plage</th><th>Rôle</th></tr></thead>
+  <tbody>
+    <tr><td>MODE</td><td>6 espaces</td><td>ROOM, PLATE I, PLATE II, HALL, SHIMMER, ONIRIQUE.</td></tr>
+    <tr><td>MIX</td><td>0 à 100 %</td><td>Voix entière jusqu’à 50 %, reverb pleine dès 50 % (défaut 30 %).</td></tr>
+    <tr><td>PRE-DELAY</td><td>0 à 500 ms</td><td>Attente avant la reverb (défaut 60 ms) : la voix passe avant sa queue.</td></tr>
+    <tr><td>DECAY</td><td>0,2 à 20 s</td><td>Durée de la queue (défaut 3 s).</td></tr>
+    <tr><td>SIZE</td><td>0 à 100 %</td><td>Taille de l’espace (défaut 60 %).</td></tr>
+    <tr><td>DIFFUSION</td><td>0 à 100 %</td><td>Densité de l’attaque (défaut 80 %).</td></tr>
+    <tr><td>MOD RATE · DEPTH</td><td>0,05 à 5 Hz · 0 à 100 %</td><td>Mouvement de la queue (défaut 0,8 Hz, 30 %).</td></tr>
+    <tr><td>WIDTH</td><td>0 à 200 %</td><td>Largeur stéréo de la queue.</td></tr>
+    <tr><td>EQ IN · EQ OUT</td><td>coupes 20 Hz–20 kHz · ±12 dB</td><td>Ce qui entre dans la reverb ; la queue qui en sort.</td></tr>
+    <tr><td>DUCKING</td><td>0 à 100 %</td><td>La reverb s’efface sous la voix (jusqu’à −24 dB).</td></tr>
+    <tr><td>CLEAN</td><td>0 à 100 %</td><td>Sifflantes, bas-médiums, ancienne queue effacée.</td></tr>
+    <tr><td>PULSE · RATE</td><td>0 à 100 % · 1/2 à 1/8 D</td><td>La queue respire au tempo.</td></tr>
+    <tr><td>INFINITE</td><td>marche / arrêt</td><td>Queue figée, sans fin.</td></tr>
+    <tr><td>BPM · SOURCE</td><td>DAW ou 40 à 240</td><td>DECAY et PRE-DELAY en valeurs de notes.</td></tr>
+    <tr><td>STUTTER · RATE · MIX</td><td>OFF, CHOP, REPEAT, RAMP</td><td>Découpe de la queue au tempo.</td></tr>
+    <tr><td>OUTPUT</td><td>−24 à +12 dB</td><td>Niveau de sortie.</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="ve-conseils">Conseils</h2>
+<div class="tip"><p><b>Voix devant, reverb derrière :</b> PLATE I, MIX 15 à 25 %, PRE-DELAY 40 à 80 ms (ou 1/32 au tempo), DUCKING 40 %, CLEAN 30 %.</p></div>
+<div class="tip"><p><b>Ambiance planante :</b> ONIRIQUE ou SHIMMER, DECAY 6 à 10 s, MOD DEPTH 50 %, coupe-bas de l’EQ OUT vers 300 Hz pour garder le bas du mix propre.</p></div>
+<div class="tip"><p><b>Fin de phrase qui reste suspendue :</b> automatise INFINITE sur le dernier mot, puis coupe-le au début de la phrase suivante.</p></div>
+<div class="tip"><p><b>Effet rythmique :</b> BPM sur DAW, STUTTER en CHOP ou RAMP à 1/16, STUTTER MIX 60 %.</p></div>

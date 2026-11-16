@@ -1,0 +1,74 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#pl-vue">À quoi il sert</a></li>
+  <li><a href="#pl-sync">La synchronisation</a></li>
+  <li><a href="#pl-libre">Lecteur libre</a></li>
+  <li><a href="#pl-formats">Formats et DAW</a></li>
+</ul>
+
+<h2 id="pl-vue">À quoi il sert</h2>
+<p>PLAYER ONIRIQUE ouvre une vidéo dans une fenêtre de ton DAW, calée sur ta lecture : tu lances le projet, la vidéo part ; tu stoppes, elle s’arrête ; tu déplaces le curseur, l’image suit. Idéal pour composer sur un clip, un extrait de film ou une vidéo verticale.</p>
+<ul>
+  <li>Glisse un fichier <b>.mp4</b> ou <b>.mov</b> sur la fenêtre, ou ouvre-le avec le bouton. La fenêtre prend le format de la vidéo (16:9, 9:16, 4:3, carré…) et le garde quand tu la redimensionnes.</li>
+  <li>Les contrôles n’apparaissent qu’au survol de la souris.</li>
+  <li>Le son de ton projet traverse le plugin <b>sans aucune modification</b>.</li>
+  <li>La vidéo choisie, SYNC, le son et la taille de la fenêtre sont gardés dans le projet.</li>
+</ul>
+
+<h2 id="pl-sync">La synchronisation (SYNC)</h2>
+<p>Le plugin lit la position de lecture de ton DAW et l’envoie en permanence à la fenêtre vidéo : toutes les <b>30 ms</b> pendant la lecture, toutes les <b>500 ms</b> à l’arrêt. C’est la fenêtre qui décide comment rattraper un écart.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 920 280" role="img" aria-label="Synchronisation : le DAW, le plugin, la page vidéo et ses décisions">
+    <rect class="b" x="20" y="70" width="150" height="70" rx="8"/><text x="95" y="98" text-anchor="middle" class="tb">DAW</text><text x="95" y="116" text-anchor="middle" class="t2">lecture · curseur</text>
+    <path class="w" d="M170 105 H220" marker-end="url(#doc-arr)"/>
+    <rect class="ba" x="220" y="70" width="170" height="70" rx="8"/><text x="305" y="98" text-anchor="middle" class="tb">PLAYER</text><text x="305" y="116" text-anchor="middle" class="t2">son inchangé</text>
+    <path class="wa" d="M390 105 H460" marker-end="url(#doc-arra)"/><text x="425" y="94" text-anchor="middle" class="t2 ta">position</text>
+    <rect class="b" x="460" y="70" width="170" height="70" rx="8"/><text x="545" y="98" text-anchor="middle">FENÊTRE VIDÉO</text><text x="545" y="116" text-anchor="middle" class="t2">moteur web du système</text>
+    <path class="w" d="M630 105 H660"/>
+    <path class="w" d="M660 40 V200"/><circle class="dot" cx="660" cy="105" r="3.5"/>
+    <path class="w" d="M660 40 H690" marker-end="url(#doc-arr)"/><path class="w" d="M660 120 H690" marker-end="url(#doc-arr)"/><path class="w" d="M660 200 H690" marker-end="url(#doc-arr)"/>
+    <text x="700" y="36">arrêt</text><text x="700" y="52" class="t2">l’image s’arrête pile (&lt; 15 ms)</text>
+    <text x="700" y="116">petit écart</text><text x="700" y="132" class="t2">la vidéo accélère ou ralentit</text><text x="700" y="148" class="t2">le temps de rattraper</text>
+    <text x="700" y="196">grand écart</text><text x="700" y="212" class="t2">un seul saut, qui vise où sera</text><text x="700" y="228" class="t2">le DAW à la fin du saut</text>
+    <path class="w" d="M305 140 V190 H545 V140" style="stroke-dasharray:4 4"/><text x="425" y="208" text-anchor="middle" class="t2">commandes : SYNC, son, ouvrir, format</text>
+  </svg>
+  </div>
+  <figcaption>Le plugin ne touche pas au son : il transmet seulement la position du DAW à la fenêtre vidéo, qui choisit la façon la plus douce de la suivre.</figcaption>
+</figure>
+
+<p>Pourquoi un seul saut, et pas un saut à chaque écart ? Une vidéo lourde (téléphone, internet) met du temps à se positionner : des sauts enchaînés figent l’image. PLAYER mesure la durée d’un saut sur la vidéo, et vise directement la position que le DAW aura atteinte à la fin de ce saut.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 900 270" role="img" aria-label="Rattrapage : petite dérive corrigée par la vitesse, grand écart corrigé par un saut qui vise l’avenir">
+    <path class="w" d="M60 240 H860 M60 240 V20"/>
+    <text x="860" y="258" text-anchor="end" class="t2">temps →</text><text x="66" y="20" class="t2">position</text>
+    <path d="M60 230 L420 170" style="fill:none;stroke:#F6EEEE;stroke-width:1.8"/>
+    <path class="wa" d="M60 236 L180 218 Q260 204 300 192 L420 170"/>
+    <text x="70" y="155" class="t2 ta">petite avance du DAW : la vidéo lit un peu plus vite</text>
+    <path class="wd" d="M420 170 V110"/><text x="300" y="130" class="t2">curseur déplacé</text>
+    <path d="M420 110 L860 40" style="fill:none;stroke:#F6EEEE;stroke-width:1.8"/>
+    <path class="wa" d="M420 170 H500"/><path class="wa" d="M500 170 V100" marker-end="url(#doc-arra)"/>
+    <path class="wa" d="M500 97 L860 40"/>
+    <text x="460" y="190" text-anchor="middle" class="t2 ta">durée du saut</text><text x="520" y="140" class="t2">arrivée calée sur la position du DAW</text>
+    <text x="640" y="200" class="t2">blanc : DAW · rouge : vidéo</text>
+  </svg>
+  </div>
+  <figcaption>Mesures faites avec 8 pauses et reprises rapprochées sur une vidéo d’internet : toutes les reprises se recalent, écart en lecture de 32 à 34 ms en moyenne.</figcaption>
+</figure>
+
+<h2 id="pl-libre">Lecteur libre (SYNC éteint)</h2>
+<p>SYNC éteint, PLAYER devient un lecteur indépendant du DAW : lecture, pause, barre de position et boucle. Pratique pour revoir un passage sans toucher à ton projet.</p>
+
+<h2 id="pl-formats">Formats et DAW</h2>
+<ul>
+  <li>Le décodage passe par le moteur web du système (WebView2 sous Windows, WebKit sur Mac). H.264 + AAC (mp4 / mov) marche partout ; HEVC et ProRes dépendent des codecs installés sur la machine.</li>
+  <li><b>FL Studio</b> : mets PLAYER sur le Master. Sur une piste muette, « Smart disable » arrête le plugin et la vidéo se met en pause : désactive-le pour ce plugin si besoin.</li>
+  <li>VST3 sur Windows et Mac, Audio Unit sur Mac. Gratuit.</li>
+</ul>

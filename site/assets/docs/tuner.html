@@ -1,0 +1,280 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arr" d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#tu-vue">Vue d’ensemble</a></li>
+  <li><a href="#tu-detecte">Détection</a></li>
+  <li><a href="#tu-corrige">Correction</a></li>
+  <li><a href="#tu-psola">Transposition</a></li>
+  <li><a href="#tu-vocodeur">Vocodeur</a></li>
+  <li><a href="#tu-reglages">Tous les réglages</a></li>
+  <li><a href="#tu-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="tu-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE TUNER fait trois choses, dans cet ordre : il <b>écoute</b> la voix pour savoir quelle note elle chante, il <b>décide</b> quelle note faire entendre à la place, puis il <b>déplace</b> la voix vers cette note sans changer son timbre. Le tout se fait échantillon par échantillon, sur une seule voix à la fois (monophonique).</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 920 380" role="img" aria-label="Schéma général de TUNER : analyse, correcteur, moteur de grains, formants, vocodeur, mélange">
+    <!-- entrée -->
+    <circle class="w" cx="28" cy="170" r="6"/><text x="28" y="200" text-anchor="middle" class="t2">VOIX</text>
+    <path class="w" d="M34 170 H100" marker-end="url(#doc-arr)"/>
+    <circle class="dot" cx="64" cy="170" r="3.5"/>
+    <path class="w" d="M64 170 V60 H100" marker-end="url(#doc-arr)"/>
+    <path class="wd" d="M64 170 V352 H830 V190" marker-end="url(#doc-arr)"/>
+    <text x="300" y="370" class="t2">voix d’origine, sèche (vers MIX)</text>
+
+    <!-- rangée d’analyse -->
+    <rect class="b" x="100" y="38" width="140" height="44" rx="6"/><text x="170" y="57" text-anchor="middle">FILTRES</text><text x="170" y="73" text-anchor="middle" class="t2">passe-haut + ordre 4</text>
+    <rect class="b" x="260" y="38" width="100" height="44" rx="6"/><text x="310" y="57" text-anchor="middle">DÉCIMATION</text><text x="310" y="73" text-anchor="middle" class="t2">analyse légère</text>
+    <rect class="b" x="380" y="38" width="130" height="44" rx="6"/><text x="445" y="57" text-anchor="middle">DÉTECTEUR</text><text x="445" y="73" text-anchor="middle" class="t2">YIN par FFT</text>
+    <rect class="ba" x="530" y="38" width="190" height="44" rx="6"/><text x="625" y="57" text-anchor="middle" class="tb">CORRECTEUR</text><text x="625" y="73" text-anchor="middle" class="t2">gamme · RETUNE · FLEX</text>
+    <path class="w" d="M240 60 H260" marker-end="url(#doc-arr)"/>
+    <path class="w" d="M360 60 H380" marker-end="url(#doc-arr)"/>
+    <path class="w" d="M510 60 H530" marker-end="url(#doc-arr)"/>
+
+    <!-- consigne vers le moteur -->
+    <path class="wa" d="M580 82 V116 H350 V145" marker-end="url(#doc-arra)"/>
+    <text x="465" y="110" text-anchor="middle" class="t2 ta">période à produire</text>
+
+    <!-- rangée principale -->
+    <rect class="b" x="100" y="145" width="120" height="50" rx="6"/><text x="160" y="166" text-anchor="middle">TAMPON</text><text x="160" y="183" text-anchor="middle" class="t2">LIVE 0 · HQ retard</text>
+    <rect class="ba" x="260" y="145" width="180" height="50" rx="6"/><text x="350" y="166" text-anchor="middle" class="tb">MOTEUR PSOLA</text><text x="350" y="183" text-anchor="middle" class="t2">grains calés sur la période</text>
+    <rect class="b" x="480" y="145" width="140" height="50" rx="6"/><text x="550" y="166" text-anchor="middle">FORMANT</text><text x="550" y="183" text-anchor="middle" class="t2">THROAT</text>
+    <path class="w" d="M220 170 H260" marker-end="url(#doc-arr)"/>
+    <path class="w" d="M440 170 H480" marker-end="url(#doc-arr)"/>
+    <path class="w" d="M620 170 H629 a6 6 0 0 1 12 0 H742" marker-end="url(#doc-arr)"/>
+    <circle class="b" cx="760" cy="170" r="18"/><text x="760" y="174" text-anchor="middle" class="t2">⇄</text><text x="760" y="140" text-anchor="middle" class="t2">BLEND</text>
+    <path class="w" d="M778 170 H812" marker-end="url(#doc-arr)"/>
+    <circle class="ba" cx="830" cy="170" r="18"/><text x="830" y="175" text-anchor="middle" class="tb">+</text><text x="830" y="140" text-anchor="middle" class="t2">MIX</text>
+    <path class="w" d="M848 170 H886"/>
+    <circle class="w" cx="892" cy="170" r="6"/><text x="892" y="200" text-anchor="middle" class="t2">SORTIE</text>
+
+    <!-- notes et vocodeur -->
+    <path class="w" d="M635 82 V255" marker-end="url(#doc-arr)"/>
+    <rect class="b" x="590" y="255" width="90" height="46" rx="6"/><text x="635" y="275" text-anchor="middle">NOTES</text><text x="635" y="291" text-anchor="middle" class="t2">voix → notes</text>
+    <path class="w" d="M680 278 H700" marker-end="url(#doc-arr)"/>
+    <rect class="b" x="700" y="255" width="110" height="46" rx="6"/><text x="755" y="275" text-anchor="middle">VOCODEUR</text><text x="755" y="291" text-anchor="middle" class="t2">32 bandes</text>
+    <path class="w" d="M760 255 V190" marker-end="url(#doc-arr)"/>
+    <path class="w" d="M590 278 H520" marker-end="url(#doc-arr)"/><text x="510" y="282" text-anchor="end" class="t2">MIDI OUT</text>
+    <circle class="dot" cx="160" cy="195" r="0"/>
+    <path class="wd" d="M160 195 V325 H755 V303" marker-end="url(#doc-arr)"/>
+    <text x="300" y="319" class="t2">la voix donne son articulation au vocodeur</text>
+  </svg>
+  </div>
+  <figcaption>Le chemin du son. En haut, l’analyse ne s’entend jamais : elle ne sert qu’à mesurer. Au milieu, la voix réellement transposée. En bas, la même décision de note pilote le vocodeur et la sortie MIDI.</figcaption>
+</figure>
+
+<h3>LIVE ou HQ</h3>
+<p>Les deux modes utilisent le même moteur, mais ne placent pas les grains de la même façon :</p>
+<ul>
+  <li><b>LIVE</b> prédit où tombera la prochaine période à partir de celles déjà entendues. Il n’a besoin d’aucun échantillon d’avance : <b>aucune latence</b>, idéal pour s’enregistrer avec la voix corrigée dans le casque.</li>
+  <li><b>HQ</b> retarde la voix pour mesurer chaque période des deux côtés de chaque grain, et lisse la courbe de hauteur en voyant venir la suite. Plus précis et plus propre sur les notes rapides ; la latence est déclarée au DAW, qui la compense au mixage.</li>
+</ul>
+<p>Changer de mode ou de registre (INPUT TYPE) reconfigure tout le moteur : TUNER le fait au creux d’un fondu de sortie très court, jamais à vif.</p>
+
+<h2 id="tu-detecte">1. La détection de hauteur</h2>
+<p>Avant de mesurer, la voix passe dans une <b>voie d’analyse</b> qu’on n’entend pas : un passe-haut sous la note la plus grave possible (il retire le grondement), un passe-bas de Butterworth d’ordre 4, puis une décimation (on garde moins d’échantillons, ce qui rend la mesure plus rapide sans rien perdre d’utile).</p>
+<p>Le détecteur utilise la méthode <b>YIN</b> : il compare le signal à lui-même décalé de toutes les durées possibles, et cherche le décalage où la voix se ressemble le plus. Ce décalage, c’est la <b>période</b> (l’inverse de la fréquence). Le calcul passe par une FFT pour aller vite, et rend une période fractionnaire, donc plus fine qu’un échantillon.</p>
+<ul>
+  <li><b>INPUT TYPE</b> (Soprano, Alto / Tenor, Baritone / Bass, Instrument, Bass Inst) règle la plage de recherche : plus elle colle à la voix, moins le détecteur peut se tromper d’octave.</li>
+  <li>Une fois une note accrochée, le détecteur la <b>suit</b> : il ne la lâche pas sur une mesure douteuse, et ne change d’octave que sur une preuve qui dure plusieurs mesures.</li>
+  <li><b>TRACKING</b> règle son exigence : bas, il accepte une voix soufflée ou bruitée ; haut, il ne corrige que ce qui est clairement une note.</li>
+  <li>Ce qui est très en dessous du niveau récent de la voix (repisse du casque, queue de reverb) est laissé tel quel : ce sont des notes justes, mais trop faibles pour qu’on les corrige.</li>
+</ul>
+
+<h2 id="tu-corrige">2. La correction : quelle note faire entendre</h2>
+<p>Le correcteur choisit en continu la note de la gamme (KEY + SCALE) la plus proche de la voix, puis amène la voix dessus. La vitesse de ce trajet est <b>RETUNE SPEED</b>.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 900 300" role="img" aria-label="Courbes de hauteur : voix chantée, correction rapide et correction lente">
+    <path class="wg" d="M60 60 H840 M60 150 H840 M60 240 H840"/>
+    <text x="52" y="64" text-anchor="end" class="t2">ré</text><text x="52" y="154" text-anchor="end" class="t2">do♯</text><text x="52" y="244" text-anchor="end" class="t2">do</text>
+    <path d="M60 123 L61.6 120 L63.1 117.1 L64.7 114.3 L66.2 111.8 L67.8 109.4 L69.4 107.4 L70.9 105.8 L72.5 104.5 L74 103.7 L75.6 103.2 L77.2 103.3 L78.7 103.8 L80.3 104.7 L81.8 106 L83.4 107.7 L85 109.8 L86.5 112.2 L88.1 114.8 L89.6 117.6 L91.2 120.5 L92.8 123.5 L94.3 126.5 L95.9 129.4 L97.4 132.1 L99 134.6 L100.6 136.9 L102.1 138.9 L103.7 140.5 L105.2 141.7 L106.8 142.4 L108.4 142.8 L109.9 142.7 L111.5 142.1 L113 141.1 L114.6 139.7 L116.2 137.9 L117.7 135.8 L119.3 133.4 L120.8 130.7 L122.4 127.9 L124 125 L125.5 122 L127.1 119 L128.6 116.2 L130.2 113.5 L131.8 111 L133.3 108.7 L134.9 106.8 L136.4 105.3 L138 104.2 L139.6 103.5 L141.1 103.2 L142.7 103.4 L144.2 104 L145.8 105.1 L147.4 106.6 L148.9 108.4 L150.5 110.6 L152 113 L153.6 115.7 L155.2 118.6 L156.7 121.5 L158.3 124.5 L159.8 127.4 L161.4 130.3 L163 133 L164.5 135.4 L166.1 137.6 L167.6 139.4 L169.2 140.9 L170.8 142 L172.3 142.6 L173.9 142.8 L175.4 142.5 L177 141.8 L178.6 140.7 L180.1 139.2 L181.7 137.3 L183.2 135 L184.8 132.5 L186.4 129.8 L187.9 127 L189.5 124 L191 121 L192.6 118.1 L194.2 115.3 L195.7 112.6 L197.3 110.2 L198.8 108.1 L200.4 106.3 L202 104.9 L203.5 103.9 L205.1 103.3 L206.6 103.2 L208.2 103.6 L209.8 104.3 L211.3 105.5 L212.9 107.1 L214.4 109.1 L216 111.4 L217.6 113.9 L219.1 116.6 L220.7 119.5 L222.2 122.5 L223.8 125.5 L225.4 128.4 L226.9 131.2 L228.5 133.8 L230 136.2 L231.6 138.3 L233.2 140 L234.7 141.3 L236.3 142.2 L237.8 142.7 L239.4 142.8 L241 142.3 L242.5 141.5 L244.1 140.2 L245.6 138.6 L247.2 136.6 L248.8 134.2 L250.3 131.7 L251.9 128.9 L253.4 126 L255 123 L256.6 120 L258.1 117.1 L259.7 114.3 L261.2 111.8 L262.8 109.4 L264.4 107.4 L265.9 105.8 L267.5 104.5 L269 103.7 L270.6 103.2 L272.2 103.3 L273.7 103.8 L275.3 104.7 L276.8 106 L278.4 107.7 L280 109.8 L281.5 112.2 L283.1 114.8 L284.6 117.6 L286.2 120.5 L287.8 123.5 L289.3 126.5 L290.9 129.4 L292.4 132.1 L294 134.6 L295.6 136.9 L297.1 138.9 L298.7 140.5 L300.2 141.7 L301.8 142.4 L303.4 142.8 L304.9 142.7 L306.5 142.1 L308 141.1 L309.6 139.7 L311.2 137.9 L312.7 135.8 L314.3 133.4 L315.8 130.7 L317.4 127.9 L319 125 L320.5 122 L322.1 119 L323.6 116.2 L325.2 113.5 L326.8 111 L328.3 108.7 L329.9 106.8 L331.4 105.3 L333 104.2 L334.6 103.5 L336.1 103.2 L337.7 103.4 L339.2 104 L340.8 105.1 L342.4 106.6 L343.9 108.4 L345.5 110.6 L347 113 L348.6 115.7 L350.2 118.6 L351.7 121.5 L353.3 124.5 L354.8 127.4 L356.4 130.3 L358 133 L359.5 135.4 L361.1 137.6 L362.6 139.4 L364.2 140.9 L365.8 142 L367.3 142.6 L368.9 142.8 L370.4 142.5 L372 141.8 L373.6 140.7 L375.1 139.2 L376.7 137.3 L378.2 135 L379.8 132.5 L381.4 129.8 L382.9 127 L384.5 124 L386 121 L387.6 118.1 L389.2 115.3 L390.7 112.6 L392.3 110.2 L393.8 108.1 L395.4 106.3 L397 104.9 L398.5 103.9 L400.1 103.3 L401.6 103.2 L403.2 103.6 L404.8 104.3 L406.3 105.5 L407.9 107.1 L409.4 109.1 L411 111.4 L412.6 113.9 L414.1 116.6 L415.7 119.5 L417.2 122.5 L418.8 125.5 L420.4 128.4 L421.9 131.2 L423.5 133.8 L425 136.2 L426.6 138.3 L428.2 140 L429.7 141.3 L431.3 142.2 L432.8 142.7 L434.4 142.8 L436 142.3 L437.5 141.5 L439.1 140.2 L440.6 138.6 L442.2 136.6 L443.8 134.2 L445.3 131.7 L446.9 128.9 L448.4 126 L450 123 L451.6 119.9 L453.1 116.7 L454.7 113.5 L456.2 110.2 L457.8 107.1 L459.4 104 L460.9 101.2 L462.5 98.6 L464 96.3 L465.6 94.3 L467.2 92.7 L468.7 91.4 L470.3 90.3 L471.8 89.7 L473.4 89.3 L475 89.2 L476.5 89.3 L478.1 89.5 L479.6 89.9 L481.2 90.4 L482.8 90.9 L484.3 91.4 L485.9 91.7 L487.4 91.9 L489 91.9 L490.6 91.6 L492.1 91 L493.7 90.1 L495.2 88.7 L496.8 87 L498.4 84.9 L499.9 82.4 L501.5 79.5 L503 76.3 L504.6 72.7 L506.2 68.8 L507.7 64.6 L509.3 60.3 L510.8 55.8 L512.4 51.3 L514 46.8 L515.5 42.4 L517.1 38.1 L518.6 34.1 L520.2 30.4 L521.8 27 L523.3 24.1 L524.9 21.7 L526.4 19.9 L528 18.7 L529.6 18 L531.1 17.7 L532.7 17.9 L534.2 18.5 L535.8 19.6 L537.4 21.1 L538.9 22.9 L540.5 25.1 L542 27.5 L543.6 30.2 L545.2 33.1 L546.7 36 L548.3 39 L549.8 41.9 L551.4 44.8 L553 47.5 L554.5 49.9 L556.1 52.1 L557.6 53.9 L559.2 55.4 L560.8 56.5 L562.3 57.1 L563.9 57.3 L565.4 57 L567 56.3 L568.6 55.2 L570.1 53.7 L571.7 51.8 L573.2 49.5 L574.8 47 L576.4 44.3 L577.9 41.5 L579.5 38.5 L581 35.5 L582.6 32.6 L584.2 29.8 L585.7 27.1 L587.3 24.7 L588.8 22.6 L590.4 20.8 L592 19.4 L593.5 18.4 L595.1 17.8 L596.6 17.7 L598.2 18.1 L599.8 18.8 L601.3 20 L602.9 21.6 L604.4 23.6 L606 25.9 L607.6 28.4 L609.1 31.1 L610.7 34 L612.2 37 L613.8 40 L615.4 42.9 L616.9 45.7 L618.5 48.3 L620 50.7 L621.6 52.8 L623.2 54.5 L624.7 55.8 L626.3 56.7 L627.8 57.2 L629.4 57.3 L631 56.8 L632.5 56 L634.1 54.7 L635.6 53.1 L637.2 51.1 L638.8 48.7 L640.3 46.2 L641.9 43.4 L643.4 40.5 L645 37.5 L646.6 34.5 L648.1 31.6 L649.7 28.8 L651.2 26.3 L652.8 23.9 L654.4 21.9 L655.9 20.3 L657.5 19 L659 18.2 L660.6 17.7 L662.2 17.8 L663.7 18.3 L665.3 19.2 L666.8 20.5 L668.4 22.2 L670 24.3 L671.5 26.7 L673.1 29.3 L674.6 32.1 L676.2 35 L677.8 38 L679.3 41 L680.9 43.9 L682.4 46.6 L684 49.1 L685.6 51.4 L687.1 53.4 L688.7 55 L690.2 56.2 L691.8 56.9 L693.4 57.3 L694.9 57.2 L696.5 56.6 L698 55.6 L699.6 54.2 L701.2 52.4 L702.7 50.3 L704.3 47.9 L705.8 45.2 L707.4 42.4 L709 39.5 L710.5 36.5 L712.1 33.5 L713.6 30.7 L715.2 28 L716.8 25.5 L718.3 23.2 L719.9 21.3 L721.4 19.8 L723 18.7 L724.6 18 L726.1 17.7 L727.7 17.9 L729.2 18.5 L730.8 19.6 L732.4 21.1 L733.9 22.9 L735.5 25.1 L737 27.5 L738.6 30.2 L740.2 33.1 L741.7 36 L743.3 39 L744.8 41.9 L746.4 44.8 L748 47.5 L749.5 49.9 L751.1 52.1 L752.6 53.9 L754.2 55.4 L755.8 56.5 L757.3 57.1 L758.9 57.3 L760.4 57 L762 56.3 L763.6 55.2 L765.1 53.7 L766.7 51.8 L768.2 49.5 L769.8 47 L771.4 44.3 L772.9 41.5 L774.5 38.5 L776 35.5 L777.6 32.6 L779.2 29.8 L780.7 27.1 L782.3 24.7 L783.8 22.6 L785.4 20.8 L787 19.4 L788.5 18.4 L790.1 17.8 L791.6 17.7 L793.2 18.1 L794.8 18.8 L796.3 20 L797.9 21.6 L799.4 23.6 L801 25.9 L802.6 28.4 L804.1 31.1 L805.7 34 L807.2 37 L808.8 40 L810.4 42.9 L811.9 45.7 L813.5 48.3 L815 50.7 L816.6 52.8 L818.2 54.5 L819.7 55.8 L821.3 56.7 L822.8 57.2 L824.4 57.3 L826 56.8 L827.5 56 L829.1 54.7 L830.6 53.1 L832.2 51.1 L833.8 48.7 L835.3 46.2 L836.9 43.4 L838.4 40.5 L840 37.5" style="fill:none;stroke:#B9A2A5;stroke-width:1.5;stroke-dasharray:3 3" transform="translate(0,90)"/>
+    <path d="M60 124.1 L61.6 122.1 L63.1 120.2 L64.7 118.3 L66.2 116.7 L67.8 115.2 L69.4 114 L70.9 113.2 L72.5 112.7 L74 112.6 L75.6 112.9 L77.2 113.6 L78.7 114.7 L80.3 116.3 L81.8 118.2 L83.4 120.5 L85 123.1 L86.5 126 L88.1 129.2 L89.6 132.5 L91.2 135.9 L92.8 139.3 L94.3 142.7 L95.9 146 L97.4 149.2 L99 152.1 L100.6 154.7 L102.1 157.1 L103.7 159 L105.2 160.5 L106.8 161.6 L108.4 162.3 L109.9 162.5 L111.5 162.2 L113 161.5 L114.6 160.3 L116.2 158.8 L117.7 156.9 L119.3 154.7 L120.8 152.3 L122.4 149.7 L124 147 L125.5 144.2 L127.1 141.4 L128.6 138.7 L130.2 136.2 L131.8 133.8 L133.3 131.8 L134.9 130 L136.4 128.6 L138 127.7 L139.6 127.1 L141.1 127 L142.7 127.3 L144.2 128 L145.8 129.2 L147.4 130.8 L148.9 132.7 L150.5 135 L152 137.6 L153.6 140.4 L155.2 143.3 L156.7 146.3 L158.3 149.4 L159.8 152.4 L161.4 155.4 L163 158.1 L164.5 160.6 L166.1 162.9 L167.6 164.8 L169.2 166.3 L170.8 167.5 L172.3 168.2 L173.9 168.4 L175.4 168.2 L177 167.5 L178.6 166.5 L180.1 165 L181.7 163.1 L183.2 160.9 L184.8 158.5 L186.4 155.8 L187.9 153 L189.5 150.1 L191 147.1 L192.6 144.2 L194.2 141.4 L195.7 138.8 L197.3 136.4 L198.8 134.3 L200.4 132.6 L202 131.2 L203.5 130.2 L205.1 129.7 L206.6 129.6 L208.2 130 L209.8 130.8 L211.3 132 L212.9 133.6 L214.4 135.6 L216 137.9 L217.6 140.4 L219.1 143.2 L220.7 146.1 L222.2 149.1 L223.8 152.1 L225.4 155 L226.9 157.8 L228.5 160.5 L230 162.9 L231.6 164.9 L233.2 166.7 L234.7 168 L236.3 169 L237.8 169.5 L239.4 169.5 L241 169.1 L242.5 168.3 L244.1 167 L245.6 165.3 L247.2 163.3 L248.8 161 L250.3 158.5 L251.9 155.7 L253.4 152.8 L255 149.8 L256.6 146.9 L258.1 144 L259.7 141.2 L261.2 138.6 L262.8 136.3 L264.4 134.3 L265.9 132.6 L267.5 131.4 L269 130.5 L270.6 130.1 L272.2 130.2 L273.7 130.7 L275.3 131.6 L276.8 132.9 L278.4 134.6 L280 136.7 L281.5 139.1 L283.1 141.7 L284.6 144.5 L286.2 147.4 L287.8 150.4 L289.3 153.4 L290.9 156.3 L292.4 159 L294 161.6 L295.6 163.9 L297.1 165.8 L298.7 167.4 L300.2 168.6 L301.8 169.4 L303.4 169.7 L304.9 169.6 L306.5 169.1 L308 168.1 L309.6 166.7 L311.2 164.9 L312.7 162.8 L314.3 160.4 L315.8 157.7 L317.4 154.9 L319 152 L320.5 149 L322.1 146 L323.6 143.1 L325.2 140.4 L326.8 137.9 L328.3 135.7 L329.9 133.8 L331.4 132.3 L333 131.1 L334.6 130.4 L336.1 130.2 L337.7 130.4 L339.2 131 L340.8 132.1 L342.4 133.5 L343.9 135.4 L345.5 137.6 L347 140 L348.6 142.7 L350.2 145.5 L351.7 148.5 L353.3 151.5 L354.8 154.4 L356.4 157.3 L358 160 L359.5 162.4 L361.1 164.6 L362.6 166.4 L364.2 167.9 L365.8 169 L367.3 169.6 L368.9 169.8 L370.4 169.5 L372 168.8 L373.6 167.7 L375.1 166.2 L376.7 164.3 L378.2 162 L379.8 159.5 L381.4 156.8 L382.9 153.9 L384.5 151 L386 148 L387.6 145.1 L389.2 142.2 L390.7 139.6 L392.3 137.2 L393.8 135.1 L395.4 133.3 L397 131.9 L398.5 130.9 L400.1 130.3 L401.6 130.2 L403.2 130.5 L404.8 131.3 L406.3 132.5 L407.9 134.1 L409.4 136.1 L411 138.4 L412.6 140.9 L414.1 143.6 L415.7 146.5 L417.2 149.5 L418.8 152.5 L420.4 155.4 L421.9 158.2 L423.5 160.8 L425 163.2 L426.6 165.3 L428.2 167 L429.7 168.3 L431.3 169.2 L432.8 169.7 L434.4 169.8 L436 169.3 L437.5 168.5 L439.1 167.2 L440.6 165.6 L442.2 163.6 L443.8 161.2 L445.3 158.7 L446.9 155.9 L448.4 153 L450 150 L451.6 146.9 L453.1 143.7 L454.7 140.5 L456.2 137.3 L457.8 134.3 L459.4 131.4 L460.9 128.7 L462.5 126.3 L464 124.3 L465.6 122.6 L467.2 121.3 L468.7 120.4 L470.3 119.9 L471.8 119.7 L473.4 116.4 L475 113.6 L476.5 111.2 L478.1 109.1 L479.6 107.4 L481.2 105.9 L482.8 104.6 L484.3 103.4 L485.9 102.3 L487.4 101.2 L489 100 L490.6 98.7 L492.1 97.2 L493.7 95.5 L495.2 93.6 L496.8 91.4 L498.4 88.9 L499.9 86.2 L501.5 83.1 L503 79.8 L504.6 76.2 L506.2 72.4 L507.7 68.4 L509.3 64.4 L510.8 60.2 L512.4 56 L514 51.9 L515.5 47.9 L517.1 44.2 L518.6 40.6 L520.2 37.5 L521.8 34.7 L523.3 32.3 L524.9 30.5 L526.4 29.2 L528 28.5 L529.6 28.3 L531.1 28.5 L532.7 29.1 L534.2 30.2 L535.8 31.7 L537.4 33.6 L538.9 35.8 L540.5 38.3 L542 41.2 L543.6 44.2 L545.2 47.4 L546.7 50.6 L548.3 53.9 L549.8 57.2 L551.4 60.3 L553 63.3 L554.5 66 L556.1 68.4 L557.6 70.5 L559.2 72.2 L560.8 73.5 L562.3 74.3 L563.9 74.7 L565.4 74.7 L567 74.2 L568.6 73.2 L570.1 71.8 L571.7 70.1 L573.2 68.1 L574.8 65.7 L576.4 63.1 L577.9 60.4 L579.5 57.6 L581 54.8 L582.6 51.9 L584.2 49.2 L585.7 46.7 L587.3 44.4 L588.8 42.4 L590.4 40.7 L592 39.4 L593.5 38.5 L595.1 38.1 L596.6 38 L598.2 38.5 L599.8 39.3 L601.3 40.6 L602.9 42.3 L604.4 44.3 L606 46.6 L607.6 49.2 L609.1 52.1 L610.7 55 L612.2 58 L613.8 61.1 L615.4 64.1 L616.9 66.9 L618.5 69.6 L620 72 L621.6 74.1 L623.2 75.9 L624.7 77.3 L626.3 78.2 L627.8 78.7 L629.4 78.8 L631 78.4 L632.5 77.6 L634.1 76.4 L635.6 74.8 L637.2 72.8 L638.8 70.5 L640.3 67.9 L641.9 65.2 L643.4 62.3 L645 59.4 L646.6 56.4 L648.1 53.5 L649.7 50.8 L651.2 48.2 L652.8 45.9 L654.4 43.9 L655.9 42.3 L657.5 41 L659 40.2 L660.6 39.8 L662.2 39.9 L663.7 40.4 L665.3 41.3 L666.8 42.7 L668.4 44.4 L670 46.5 L671.5 48.9 L673.1 51.5 L674.6 54.3 L676.2 57.2 L677.8 60.2 L679.3 63.2 L680.9 66.1 L682.4 68.9 L684 71.4 L685.6 73.7 L687.1 75.7 L688.7 77.3 L690.2 78.5 L691.8 79.3 L693.4 79.6 L694.9 79.5 L696.5 78.9 L698 78 L699.6 76.6 L701.2 74.8 L702.7 72.7 L704.3 70.3 L705.8 67.6 L707.4 64.8 L709 61.9 L710.5 58.9 L712.1 55.9 L713.6 53.1 L715.2 50.4 L716.8 47.9 L718.3 45.6 L719.9 43.7 L721.4 42.2 L723 41.1 L724.6 40.4 L726.1 40.1 L727.7 40.3 L729.2 40.9 L730.8 42 L732.4 43.5 L733.9 45.3 L735.5 47.5 L737 50 L738.6 52.7 L740.2 55.5 L741.7 58.5 L743.3 61.4 L744.8 64.4 L746.4 67.2 L748 69.9 L749.5 72.4 L751.1 74.6 L752.6 76.4 L754.2 77.9 L755.8 78.9 L757.3 79.6 L758.9 79.8 L760.4 79.5 L762 78.8 L763.6 77.7 L765.1 76.1 L766.7 74.2 L768.2 72 L769.8 69.5 L771.4 66.8 L772.9 63.9 L774.5 61 L776 58 L777.6 55.1 L779.2 52.2 L780.7 49.6 L782.3 47.2 L783.8 45 L785.4 43.3 L787 41.9 L788.5 40.9 L790.1 40.3 L791.6 40.2 L793.2 40.5 L794.8 41.3 L796.3 42.5 L797.9 44.1 L799.4 46.1 L801 48.4 L802.6 50.9 L804.1 53.6 L805.7 56.5 L807.2 59.5 L808.8 62.5 L810.4 65.4 L811.9 68.2 L813.5 70.8 L815 73.2 L816.6 75.2 L818.2 77 L819.7 78.3 L821.3 79.2 L822.8 79.7 L824.4 79.8 L826 79.3 L827.5 78.5 L829.1 77.2 L830.6 75.6 L832.2 73.5 L833.8 71.2 L835.3 68.7 L836.9 65.9 L838.4 63 L840 60" style="fill:none;stroke:#F6EEEE;stroke-width:1.6" transform="translate(0,90)"/>
+    <path d="M60 150 L61.6 150 L63.1 150 L64.7 150 L66.2 150 L67.8 150 L69.4 150 L70.9 150 L72.5 150 L74 150 L75.6 150 L77.2 150 L78.7 150 L80.3 150 L81.8 150 L83.4 150 L85 150 L86.5 150 L88.1 150 L89.6 150 L91.2 150 L92.8 150 L94.3 150 L95.9 150 L97.4 150 L99 150 L100.6 150 L102.1 150 L103.7 150 L105.2 150 L106.8 150 L108.4 150 L109.9 150 L111.5 150 L113 150 L114.6 150 L116.2 150 L117.7 150 L119.3 150 L120.8 150 L122.4 150 L124 150 L125.5 150 L127.1 150 L128.6 150 L130.2 150 L131.8 150 L133.3 150 L134.9 150 L136.4 150 L138 150 L139.6 150 L141.1 150 L142.7 150 L144.2 150 L145.8 150 L147.4 150 L148.9 150 L150.5 150 L152 150 L153.6 150 L155.2 150 L156.7 150 L158.3 150 L159.8 150 L161.4 150 L163 150 L164.5 150 L166.1 150 L167.6 150 L169.2 150 L170.8 150 L172.3 150 L173.9 150 L175.4 150 L177 150 L178.6 150 L180.1 150 L181.7 150 L183.2 150 L184.8 150 L186.4 150 L187.9 150 L189.5 150 L191 150 L192.6 150 L194.2 150 L195.7 150 L197.3 150 L198.8 150 L200.4 150 L202 150 L203.5 150 L205.1 150 L206.6 150 L208.2 150 L209.8 150 L211.3 150 L212.9 150 L214.4 150 L216 150 L217.6 150 L219.1 150 L220.7 150 L222.2 150 L223.8 150 L225.4 150 L226.9 150 L228.5 150 L230 150 L231.6 150 L233.2 150 L234.7 150 L236.3 150 L237.8 150 L239.4 150 L241 150 L242.5 150 L244.1 150 L245.6 150 L247.2 150 L248.8 150 L250.3 150 L251.9 150 L253.4 150 L255 150 L256.6 150 L258.1 150 L259.7 150 L261.2 150 L262.8 150 L264.4 150 L265.9 150 L267.5 150 L269 150 L270.6 150 L272.2 150 L273.7 150 L275.3 150 L276.8 150 L278.4 150 L280 150 L281.5 150 L283.1 150 L284.6 150 L286.2 150 L287.8 150 L289.3 150 L290.9 150 L292.4 150 L294 150 L295.6 150 L297.1 150 L298.7 150 L300.2 150 L301.8 150 L303.4 150 L304.9 150 L306.5 150 L308 150 L309.6 150 L311.2 150 L312.7 150 L314.3 150 L315.8 150 L317.4 150 L319 150 L320.5 150 L322.1 150 L323.6 150 L325.2 150 L326.8 150 L328.3 150 L329.9 150 L331.4 150 L333 150 L334.6 150 L336.1 150 L337.7 150 L339.2 150 L340.8 150 L342.4 150 L343.9 150 L345.5 150 L347 150 L348.6 150 L350.2 150 L351.7 150 L353.3 150 L354.8 150 L356.4 150 L358 150 L359.5 150 L361.1 150 L362.6 150 L364.2 150 L365.8 150 L367.3 150 L368.9 150 L370.4 150 L372 150 L373.6 150 L375.1 150 L376.7 150 L378.2 150 L379.8 150 L381.4 150 L382.9 150 L384.5 150 L386 150 L387.6 150 L389.2 150 L390.7 150 L392.3 150 L393.8 150 L395.4 150 L397 150 L398.5 150 L400.1 150 L401.6 150 L403.2 150 L404.8 150 L406.3 150 L407.9 150 L409.4 150 L411 150 L412.6 150 L414.1 150 L415.7 150 L417.2 150 L418.8 150 L420.4 150 L421.9 150 L423.5 150 L425 150 L426.6 150 L428.2 150 L429.7 150 L431.3 150 L432.8 150 L434.4 150 L436 150 L437.5 150 L439.1 150 L440.6 150 L442.2 150 L443.8 150 L445.3 150 L446.9 150 L448.4 150 L450 150 L451.6 150 L453.1 150 L454.7 150 L456.2 150 L457.8 150 L459.4 150 L460.9 150 L462.5 150 L464 150 L465.6 150 L467.2 150 L468.7 150 L470.3 150 L471.8 150 L473.4 124.5 L475 106.2 L476.5 93.1 L478.1 83.7 L479.6 77 L481.2 72.2 L482.8 68.7 L484.3 66.3 L485.9 64.5 L487.4 63.2 L489 62.3 L490.6 61.6 L492.1 61.2 L493.7 60.8 L495.2 60.6 L496.8 60.4 L498.4 60.3 L499.9 60.2 L501.5 60.2 L503 60.1 L504.6 60.1 L506.2 60.1 L507.7 60 L509.3 60 L510.8 60 L512.4 60 L514 60 L515.5 60 L517.1 60 L518.6 60 L520.2 60 L521.8 60 L523.3 60 L524.9 60 L526.4 60 L528 60 L529.6 60 L531.1 60 L532.7 60 L534.2 60 L535.8 60 L537.4 60 L538.9 60 L540.5 60 L542 60 L543.6 60 L545.2 60 L546.7 60 L548.3 60 L549.8 60 L551.4 60 L553 60 L554.5 60 L556.1 60 L557.6 60 L559.2 60 L560.8 60 L562.3 60 L563.9 60 L565.4 60 L567 60 L568.6 60 L570.1 60 L571.7 60 L573.2 60 L574.8 60 L576.4 60 L577.9 60 L579.5 60 L581 60 L582.6 60 L584.2 60 L585.7 60 L587.3 60 L588.8 60 L590.4 60 L592 60 L593.5 60 L595.1 60 L596.6 60 L598.2 60 L599.8 60 L601.3 60 L602.9 60 L604.4 60 L606 60 L607.6 60 L609.1 60 L610.7 60 L612.2 60 L613.8 60 L615.4 60 L616.9 60 L618.5 60 L620 60 L621.6 60 L623.2 60 L624.7 60 L626.3 60 L627.8 60 L629.4 60 L631 60 L632.5 60 L634.1 60 L635.6 60 L637.2 60 L638.8 60 L640.3 60 L641.9 60 L643.4 60 L645 60 L646.6 60 L648.1 60 L649.7 60 L651.2 60 L652.8 60 L654.4 60 L655.9 60 L657.5 60 L659 60 L660.6 60 L662.2 60 L663.7 60 L665.3 60 L666.8 60 L668.4 60 L670 60 L671.5 60 L673.1 60 L674.6 60 L676.2 60 L677.8 60 L679.3 60 L680.9 60 L682.4 60 L684 60 L685.6 60 L687.1 60 L688.7 60 L690.2 60 L691.8 60 L693.4 60 L694.9 60 L696.5 60 L698 60 L699.6 60 L701.2 60 L702.7 60 L704.3 60 L705.8 60 L707.4 60 L709 60 L710.5 60 L712.1 60 L713.6 60 L715.2 60 L716.8 60 L718.3 60 L719.9 60 L721.4 60 L723 60 L724.6 60 L726.1 60 L727.7 60 L729.2 60 L730.8 60 L732.4 60 L733.9 60 L735.5 60 L737 60 L738.6 60 L740.2 60 L741.7 60 L743.3 60 L744.8 60 L746.4 60 L748 60 L749.5 60 L751.1 60 L752.6 60 L754.2 60 L755.8 60 L757.3 60 L758.9 60 L760.4 60 L762 60 L763.6 60 L765.1 60 L766.7 60 L768.2 60 L769.8 60 L771.4 60 L772.9 60 L774.5 60 L776 60 L777.6 60 L779.2 60 L780.7 60 L782.3 60 L783.8 60 L785.4 60 L787 60 L788.5 60 L790.1 60 L791.6 60 L793.2 60 L794.8 60 L796.3 60 L797.9 60 L799.4 60 L801 60 L802.6 60 L804.1 60 L805.7 60 L807.2 60 L808.8 60 L810.4 60 L811.9 60 L813.5 60 L815 60 L816.6 60 L818.2 60 L819.7 60 L821.3 60 L822.8 60 L824.4 60 L826 60 L827.5 60 L829.1 60 L830.6 60 L832.2 60 L833.8 60 L835.3 60 L836.9 60 L838.4 60 L840 60" class="wa" transform="translate(0,90)"/>
+    <path class="wd" d="M60 280 H840"/><text x="840" y="296" text-anchor="end" class="t2">temps →</text>
+    <rect x="600" y="14" width="10" height="2" style="fill:#B9A2A5"/><text x="616" y="19" class="t2">voix chantée</text>
+    <rect x="600" y="30" width="10" height="2" style="fill:#F6EEEE"/><text x="616" y="35" class="t2">RETUNE lent : le vibrato reste</text>
+    <rect x="600" y="46" width="10" height="3" style="fill:rgb(var(--acc))"/><text x="616" y="51" class="t2 ta">RETUNE rapide : note plate</text>
+  </svg>
+  </div>
+  <figcaption>La voix chante un peu haut, avec du vibrato, puis monte d’un demi-ton. Rapide, la correction colle à la note et aplatit tout. Lente, elle ne recentre que la note et laisse vivre le vibrato.</figcaption>
+</figure>
+
+<p>Électriquement, la correction se comporte comme un <b>filtre RC à un pôle</b> : la note visée est la tension d’entrée, la hauteur produite est la tension du condensateur. RETUNE SPEED est la constante de temps R×C. Un filtre à un pôle ne dépasse jamais sa cible : la correction n’amplifie jamais le vibrato de la voix.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 900 220" role="img" aria-label="Équivalent électrique de RETUNE SPEED : un filtre RC">
+    <circle class="w" cx="60" cy="90" r="6"/><text x="60" y="70" text-anchor="middle" class="t2">note visée</text>
+    <path class="w" d="M66 90 H170 l8 -12 l16 24 l16 -24 l16 24 l16 -24 l16 24 l8 -12 H400"/>
+    <text x="226" y="62" text-anchor="middle" class="ta">R = RETUNE SPEED</text>
+    <circle class="dot" cx="400" cy="90" r="3.5"/>
+    <path class="w" d="M400 90 V128 M376 128 H424 M376 140 H424 M400 140 V178 M384 178 H416 M390 184 H410 M396 190 H404"/>
+    <text x="436" y="138" class="t2">C</text>
+    <path class="w" d="M400 90 H520" marker-end="url(#doc-arr)"/>
+    <rect class="ba" x="520" y="66" width="160" height="48" rx="6"/><text x="600" y="86" text-anchor="middle" class="tb">HAUTEUR</text><text x="600" y="103" text-anchor="middle" class="t2">produite</text>
+    <path class="w" d="M680 90 H760"/><circle class="w" cx="766" cy="90" r="6"/>
+    <text x="80" y="200" class="t2">0 ms : la note est imposée telle quelle · HARD TUNE : sortie plate, saut net au milieu de deux notes (effet robot)</text>
+  </svg>
+  </div>
+  <figcaption>RETUNE SPEED vu comme un circuit : plus la résistance est grande, plus la hauteur met de temps à rejoindre la note.</figcaption>
+</figure>
+
+<p>Les autres réglages agissent sur ce trajet :</p>
+<ul>
+  <li><b>AMOUNT</b> : ne rattrape qu’une part de l’écart à la note (100 % = la note juste, 50 % = la moitié du chemin).</li>
+  <li><b>FLEX-TUNE</b> : ne corrige que lorsque la voix s’approche déjà de la note ; les glissés et les notes volontairement « entre deux » passent.</li>
+  <li><b>HUMANIZE</b> : allonge le temps de correction sur la partie tenue des notes longues, pour qu’elles ne sonnent pas figées.</li>
+  <li><b>SUSTAIN</b> : agit sur la partie tenue seulement. Vers la gauche, plus libre ; vers la droite, plus droite, sans changer l’arrivée sur la note.</li>
+  <li><b>NATURAL VIBRATO</b> : agrandit ou réduit le vibrato de la voix avant correction (de −12 à +12).</li>
+  <li><b>Clavier</b> : chaque note peut être retirée ou ajoutée à la gamme, ou <b>ignorée</b> (la voix qui en est le plus près passe sans correction).</li>
+  <li><b>Seuil de vibrato</b> (Wide / Narrow) : décide ce qui compte pour du vibrato plutôt que pour un vrai mouvement de la voix.</li>
+  <li><b>Transitions</b> : quand la voix quitte sa note pour une autre, la correction se fige le temps du glissé, puis reprend à l’arrivée. Le passage d’une note à l’autre garde le geste du chanteur.</li>
+</ul>
+
+<h3>Le vibrato créé</h3>
+<p>Le bouton VIBRATO ajoute un vibrato indépendant de celui du chanteur, après la correction : forme (sinus, triangle, carré, dent de scie), vitesse (RATE), amplitude en centièmes de demi-ton (DEPTH), délai avant qu’il commence (DELAY), temps de montée (ONSET) et VARIATION d’un cycle à l’autre. <b>AMPLITUDE</b> fait suivre le volume, et <b>TIMBRE</b> l’éclat (une cloche autour de 1,5 kHz), comme une vraie voix dont le vibrato fait aussi bouger le son.</p>
+
+<h2 id="tu-psola">3. La transposition par grains (PSOLA)</h2>
+<p>Pour changer la hauteur sans accélérer la voix ni la transformer en voix de dessin animé, TUNER découpe la voix en <b>grains</b> : de petits morceaux de deux périodes, centrés sur chaque cycle de la voix et adoucis par une fenêtre en cloche. Pour monter la note, il <b>rapproche</b> les grains ; pour la descendre, il les <b>écarte</b>. Chaque grain garde sa forme : le timbre reste celui du chanteur.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 900 300" role="img" aria-label="Grains synchrones à la période : voix d’entrée, fenêtres, grains rapprochés en sortie">
+    <text x="40" y="24" class="t2">ENTRÉE : une période = T</text>
+    <path d="M40 80 L42.5 68.8 L45 60.6 L47.5 55.5 L50 53.6 L52.5 54.4 L55 57.3 L57.5 61.7 L60 66.8 L62.5 71.9 L65 76.5 L67.5 80.2 L70 82.8 L72.5 84.4 L75 84.9 L77.5 84.6 L80 83.8 L82.5 82.8 L85 81.7 L87.5 80.8 L90 80.2 L92.5 80.1 L95 80.4 L97.5 81 L100 82 L102.5 83 L105 84.1 L107.5 85.1 L110 85.8 L112.5 86.3 L115 86.3 L117.5 86 L120 85.4 L122.5 84.5 L125 83.3 L127.5 82 L130 80 L132.5 68.8 L135 60.6 L137.5 55.5 L140 53.6 L142.5 54.4 L145 57.3 L147.5 61.7 L150 66.8 L152.5 71.9 L155 76.5 L157.5 80.2 L160 82.8 L162.5 84.4 L165 84.9 L167.5 84.6 L170 83.8 L172.5 82.8 L175 81.7 L177.5 80.8 L180 80.2 L182.5 80.1 L185 80.4 L187.5 81 L190 82 L192.5 83 L195 84.1 L197.5 85.1 L200 85.8 L202.5 86.3 L205 86.3 L207.5 86 L210 85.4 L212.5 84.5 L215 83.3 L217.5 82 L220 80 L222.5 68.8 L225 60.6 L227.5 55.5 L230 53.6 L232.5 54.4 L235 57.3 L237.5 61.7 L240 66.8 L242.5 71.9 L245 76.5 L247.5 80.2 L250 82.8 L252.5 84.4 L255 84.9 L257.5 84.6 L260 83.8 L262.5 82.8 L265 81.7 L267.5 80.8 L270 80.2 L272.5 80.1 L275 80.4 L277.5 81 L280 82 L282.5 83 L285 84.1 L287.5 85.1 L290 85.8 L292.5 86.3 L295 86.3 L297.5 86 L300 85.4 L302.5 84.5 L305 83.3 L307.5 82 L310 80 L312.5 68.8 L315 60.6 L317.5 55.5 L320 53.6 L322.5 54.4 L325 57.3 L327.5 61.7 L330 66.8 L332.5 71.9 L335 76.5 L337.5 80.2 L340 82.8 L342.5 84.4 L345 84.9 L347.5 84.6 L350 83.8 L352.5 82.8 L355 81.7 L357.5 80.8 L360 80.2 L362.5 80.1 L365 80.4 L367.5 81 L370 82 L372.5 83 L375 84.1 L377.5 85.1 L380 85.8 L382.5 86.3 L385 86.3 L387.5 86 L390 85.4 L392.5 84.5 L395 83.3 L397.5 82 L400 80 L402.5 68.8 L405 60.6 L407.5 55.5 L410 53.6 L412.5 54.4 L415 57.3 L417.5 61.7 L420 66.8 L422.5 71.9 L425 76.5 L427.5 80.2 L430 82.8 L432.5 84.4 L435 84.9 L437.5 84.6 L440 83.8 L442.5 82.8 L445 81.7 L447.5 80.8 L450 80.2 L452.5 80.1 L455 80.4 L457.5 81 L460 82 L462.5 83 L465 84.1 L467.5 85.1 L470 85.8 L472.5 86.3 L475 86.3 L477.5 86 L480 85.4 L482.5 84.5 L485 83.3 L487.5 82 L490 80 L492.5 68.8 L495 60.6 L497.5 55.5 L500 53.6 L502.5 54.4 L505 57.3 L507.5 61.7 L510 66.8 L512.5 71.9 L515 76.5 L517.5 80.2 L520 82.8 L522.5 84.4 L525 84.9 L527.5 84.6 L530 83.8 L532.5 82.8 L535 81.7 L537.5 80.8 L540 80.2 L542.5 80.1 L545 80.4 L547.5 81 L550 82 L552.5 83 L555 84.1 L557.5 85.1 L560 85.8 L562.5 86.3 L565 86.3 L567.5 86 L570 85.4 L572.5 84.5 L575 83.3 L577.5 82 L580 80 L582.5 68.8 L585 60.6 L587.5 55.5 L590 53.6 L592.5 54.4 L595 57.3 L597.5 61.7 L600 66.8 L602.5 71.9 L605 76.5 L607.5 80.2 L610 82.8 L612.5 84.4 L615 84.9 L617.5 84.6 L620 83.8 L622.5 82.8 L625 81.7 L627.5 80.8 L630 80.2 L632.5 80.1 L635 80.4 L637.5 81 L640 82 L642.5 83 L645 84.1 L647.5 85.1 L650 85.8 L652.5 86.3 L655 86.3 L657.5 86 L660 85.4 L662.5 84.5 L665 83.3 L667.5 82 L670 80 L672.5 68.8 L675 60.6 L677.5 55.5 L680 53.6 L682.5 54.4 L685 57.3 L687.5 61.7 L690 66.8 L692.5 71.9 L695 76.5 L697.5 80.2 L700 82.8 L702.5 84.4 L705 84.9 L707.5 84.6 L710 83.8 L712.5 82.8 L715 81.7 L717.5 80.8 L720 80.2 L722.5 80.1 L725 80.4 L727.5 81 L730 82 L732.5 83 L735 84.1 L737.5 85.1 L740 85.8 L742.5 86.3 L745 86.3 L747.5 86 L750 85.4 L752.5 84.5 L755 83.3 L757.5 82 L760 80 L762.5 68.8 L765 60.6 L767.5 55.5 L770 53.6 L772.5 54.4 L775 57.3 L777.5 61.7 L780 66.8 L782.5 71.9 L785 76.5 L787.5 80.2 L790 82.8 L792.5 84.4 L795 84.9 L797.5 84.6 L800 83.8 L802.5 82.8 L805 81.7 L807.5 80.8 L810 80.2 L812.5 80.1 L815 80.4 L817.5 81 L820 82 L822.5 83 L825 84.1 L827.5 85.1 L830 85.8 L832.5 86.3 L835 86.3 L837.5 86 L840 85.4 L842.5 84.5 L845 83.3 L847.5 82 L850 80 L852.5 68.8 L855 60.6 L857.5 55.5 L860 53.6" style="fill:none;stroke:#F6EEEE;stroke-width:1.4"/>
+    <path class="wd" d="M40 94 L43 94.1 L46 94.3 L49 94.7 L52 95.3 L55 96 L58 96.9 L61 97.9 L64 99 L67 100.2 L70 101.5 L73 102.9 L76 104.4 L79 105.9 L82 107.4 L85 109 L88 110.6 L91 112.1 L94 113.6 L97 115.1 L100 116.5 L103 117.8 L106 119 L109 120.1 L112 121.1 L115 122 L118 122.7 L121 123.3 L124 123.7 L127 123.9 L130 124"/>
+    <path class="wd" d="M40 124 L43 123.9 L46 123.7 L49 123.3 L52 122.7 L55 122 L58 121.1 L61 120.1 L64 119 L67 117.8 L70 116.5 L73 115.1 L76 113.6 L79 112.1 L82 110.6 L85 109 L88 107.4 L91 105.9 L94 104.4 L97 102.9 L100 101.5 L103 100.2 L106 99 L109 97.9 L112 96.9 L115 96 L118 95.3 L121 94.7 L124 94.3 L127 94.1 L130 94 L133 94.1 L136 94.3 L139 94.7 L142 95.3 L145 96 L148 96.9 L151 97.9 L154 99 L157 100.2 L160 101.5 L163 102.9 L166 104.4 L169 105.9 L172 107.4 L175 109 L178 110.6 L181 112.1 L184 113.6 L187 115.1 L190 116.5 L193 117.8 L196 119 L199 120.1 L202 121.1 L205 122 L208 122.7 L211 123.3 L214 123.7 L217 123.9 L220 124"/>
+    <path class="wd" d="M130 124 L133 123.9 L136 123.7 L139 123.3 L142 122.7 L145 122 L148 121.1 L151 120.1 L154 119 L157 117.8 L160 116.5 L163 115.1 L166 113.6 L169 112.1 L172 110.6 L175 109 L178 107.4 L181 105.9 L184 104.4 L187 102.9 L190 101.5 L193 100.2 L196 99 L199 97.9 L202 96.9 L205 96 L208 95.3 L211 94.7 L214 94.3 L217 94.1 L220 94 L223 94.1 L226 94.3 L229 94.7 L232 95.3 L235 96 L238 96.9 L241 97.9 L244 99 L247 100.2 L250 101.5 L253 102.9 L256 104.4 L259 105.9 L262 107.4 L265 109 L268 110.6 L271 112.1 L274 113.6 L277 115.1 L280 116.5 L283 117.8 L286 119 L289 120.1 L292 121.1 L295 122 L298 122.7 L301 123.3 L304 123.7 L307 123.9 L310 124"/>
+    <path class="wd" d="M220 124 L223 123.9 L226 123.7 L229 123.3 L232 122.7 L235 122 L238 121.1 L241 120.1 L244 119 L247 117.8 L250 116.5 L253 115.1 L256 113.6 L259 112.1 L262 110.6 L265 109 L268 107.4 L271 105.9 L274 104.4 L277 102.9 L280 101.5 L283 100.2 L286 99 L289 97.9 L292 96.9 L295 96 L298 95.3 L301 94.7 L304 94.3 L307 94.1 L310 94 L313 94.1 L316 94.3 L319 94.7 L322 95.3 L325 96 L328 96.9 L331 97.9 L334 99 L337 100.2 L340 101.5 L343 102.9 L346 104.4 L349 105.9 L352 107.4 L355 109 L358 110.6 L361 112.1 L364 113.6 L367 115.1 L370 116.5 L373 117.8 L376 119 L379 120.1 L382 121.1 L385 122 L388 122.7 L391 123.3 L394 123.7 L397 123.9 L400 124"/>
+    <path class="wd" d="M310 124 L313 123.9 L316 123.7 L319 123.3 L322 122.7 L325 122 L328 121.1 L331 120.1 L334 119 L337 117.8 L340 116.5 L343 115.1 L346 113.6 L349 112.1 L352 110.6 L355 109 L358 107.4 L361 105.9 L364 104.4 L367 102.9 L370 101.5 L373 100.2 L376 99 L379 97.9 L382 96.9 L385 96 L388 95.3 L391 94.7 L394 94.3 L397 94.1 L400 94 L403 94.1 L406 94.3 L409 94.7 L412 95.3 L415 96 L418 96.9 L421 97.9 L424 99 L427 100.2 L430 101.5 L433 102.9 L436 104.4 L439 105.9 L442 107.4 L445 109 L448 110.6 L451 112.1 L454 113.6 L457 115.1 L460 116.5 L463 117.8 L466 119 L469 120.1 L472 121.1 L475 122 L478 122.7 L481 123.3 L484 123.7 L487 123.9 L490 124"/>
+    <path class="wd" d="M400 124 L403 123.9 L406 123.7 L409 123.3 L412 122.7 L415 122 L418 121.1 L421 120.1 L424 119 L427 117.8 L430 116.5 L433 115.1 L436 113.6 L439 112.1 L442 110.6 L445 109 L448 107.4 L451 105.9 L454 104.4 L457 102.9 L460 101.5 L463 100.2 L466 99 L469 97.9 L472 96.9 L475 96 L478 95.3 L481 94.7 L484 94.3 L487 94.1 L490 94 L493 94.1 L496 94.3 L499 94.7 L502 95.3 L505 96 L508 96.9 L511 97.9 L514 99 L517 100.2 L520 101.5 L523 102.9 L526 104.4 L529 105.9 L532 107.4 L535 109 L538 110.6 L541 112.1 L544 113.6 L547 115.1 L550 116.5 L553 117.8 L556 119 L559 120.1 L562 121.1 L565 122 L568 122.7 L571 123.3 L574 123.7 L577 123.9 L580 124"/>
+    <path class="wd" d="M490 124 L493 123.9 L496 123.7 L499 123.3 L502 122.7 L505 122 L508 121.1 L511 120.1 L514 119 L517 117.8 L520 116.5 L523 115.1 L526 113.6 L529 112.1 L532 110.6 L535 109 L538 107.4 L541 105.9 L544 104.4 L547 102.9 L550 101.5 L553 100.2 L556 99 L559 97.9 L562 96.9 L565 96 L568 95.3 L571 94.7 L574 94.3 L577 94.1 L580 94 L583 94.1 L586 94.3 L589 94.7 L592 95.3 L595 96 L598 96.9 L601 97.9 L604 99 L607 100.2 L610 101.5 L613 102.9 L616 104.4 L619 105.9 L622 107.4 L625 109 L628 110.6 L631 112.1 L634 113.6 L637 115.1 L640 116.5 L643 117.8 L646 119 L649 120.1 L652 121.1 L655 122 L658 122.7 L661 123.3 L664 123.7 L667 123.9 L670 124"/>
+    <path class="wd" d="M580 124 L583 123.9 L586 123.7 L589 123.3 L592 122.7 L595 122 L598 121.1 L601 120.1 L604 119 L607 117.8 L610 116.5 L613 115.1 L616 113.6 L619 112.1 L622 110.6 L625 109 L628 107.4 L631 105.9 L634 104.4 L637 102.9 L640 101.5 L643 100.2 L646 99 L649 97.9 L652 96.9 L655 96 L658 95.3 L661 94.7 L664 94.3 L667 94.1 L670 94 L673 94.1 L676 94.3 L679 94.7 L682 95.3 L685 96 L688 96.9 L691 97.9 L694 99 L697 100.2 L700 101.5 L703 102.9 L706 104.4 L709 105.9 L712 107.4 L715 109 L718 110.6 L721 112.1 L724 113.6 L727 115.1 L730 116.5 L733 117.8 L736 119 L739 120.1 L742 121.1 L745 122 L748 122.7 L751 123.3 L754 123.7 L757 123.9 L760 124"/>
+    <path class="wd" d="M670 124 L673 123.9 L676 123.7 L679 123.3 L682 122.7 L685 122 L688 121.1 L691 120.1 L694 119 L697 117.8 L700 116.5 L703 115.1 L706 113.6 L709 112.1 L712 110.6 L715 109 L718 107.4 L721 105.9 L724 104.4 L727 102.9 L730 101.5 L733 100.2 L736 99 L739 97.9 L742 96.9 L745 96 L748 95.3 L751 94.7 L754 94.3 L757 94.1 L760 94 L763 94.1 L766 94.3 L769 94.7 L772 95.3 L775 96 L778 96.9 L781 97.9 L784 99 L787 100.2 L790 101.5 L793 102.9 L796 104.4 L799 105.9 L802 107.4 L805 109 L808 110.6 L811 112.1 L814 113.6 L817 115.1 L820 116.5 L823 117.8 L826 119 L829 120.1 L832 121.1 L835 122 L838 122.7 L841 123.3 L844 123.7 L847 123.9 L850 124"/>
+    <path class="wd" d="M760 124 L763 123.9 L766 123.7 L769 123.3 L772 122.7 L775 122 L778 121.1 L781 120.1 L784 119 L787 117.8 L790 116.5 L793 115.1 L796 113.6 L799 112.1 L802 110.6 L805 109 L808 107.4 L811 105.9 L814 104.4 L817 102.9 L820 101.5 L823 100.2 L826 99 L829 97.9 L832 96.9 L835 96 L838 95.3 L841 94.7 L844 94.3 L847 94.1 L850 94 L853 94.1 L856 94.3 L859 94.7 L862 95.3"/>
+    <path class="wa" d="M40 140 H130" marker-start="url(#doc-arra)" marker-end="url(#doc-arra)"/><text x="85" y="156" text-anchor="middle" class="t2 ta">T</text>
+    <text x="40" y="186" class="t2">SORTIE : les mêmes grains, tous les T′ &lt; T → note plus haute</text>
+    <path d="M40 229.2 L42.5 220.2 L45 213.9 L47.5 210.5 L50 209.7 L52.5 211.2 L55 214.2 L57.5 218 L60 222 L62.5 225.7 L65 228.6 L67.5 230.7 L70 232 L72.5 232.6 L75 232.7 L77.5 232.6 L80 232.5 L82.5 232.5 L85 232.7 L87.5 233.1 L90 233.7 L92.5 234.2 L95 234.7 L97.5 234.9 L100 234.8 L102.5 234.2 L105 233.2 L107.5 232 L110 230.6 L112.5 227.2 L115 218.8 L117.5 213 L120 210.1 L122.5 209.8 L125 211.7 L127.5 214.9 L130 218.8 L132.5 222.8 L135 226.3 L137.5 229.1 L140 231 L142.5 232.1 L145 232.6 L147.5 232.7 L150 232.6 L152.5 232.5 L155 232.5 L157.5 232.8 L160 233.2 L162.5 233.8 L165 234.3 L167.5 234.8 L170 234.9 L172.5 234.7 L175 234 L177.5 232.9 L180 231.7 L182.5 230.4 L185 225.3 L187.5 217.4 L190 212.2 L192.5 209.9 L195 210.1 L197.5 212.2 L200 215.6 L202.5 219.6 L205 223.5 L207.5 226.9 L210 229.6 L212.5 231.3 L215 232.3 L217.5 232.7 L220 232.7 L222.5 232.5 L225 232.5 L227.5 232.6 L230 232.9 L232.5 233.4 L235 233.9 L237.5 234.4 L240 234.8 L242.5 234.9 L245 234.6 L247.5 233.8 L250 232.7 L252.5 231.4 L255 230.1 L257.5 223.5 L260 216.1 L262.5 211.5 L265 209.7 L267.5 210.3 L270 212.8 L272.5 216.4 L275 220.4 L277.5 224.3 L280 227.5 L282.5 230 L285 231.6 L287.5 232.4 L290 232.7 L292.5 232.7 L295 232.5 L297.5 232.5 L300 232.6 L302.5 233 L305 233.5 L307.5 234 L310 234.5 L312.5 234.9 L315 234.9 L317.5 234.4 L320 233.6 L322.5 232.5 L325 231.2 L327.5 229.9 L330 221.8 L332.5 215 L335 210.9 L337.5 209.7 L340 210.7 L342.5 213.5 L345 217.2 L347.5 221.2 L350 225 L352.5 228.1 L355 230.4 L357.5 231.8 L360 232.5 L362.5 232.7 L365 232.6 L367.5 232.5 L370 232.5 L372.5 232.7 L375 233.1 L377.5 233.6 L380 234.1 L382.5 234.6 L385 234.9 L387.5 234.8 L390 234.3 L392.5 233.4 L395 232.2 L397.5 230.9 L400 229.2 L402.5 220.2 L405 213.9 L407.5 210.5 L410 209.7 L412.5 211.2 L415 214.2 L417.5 218 L420 222 L422.5 225.7 L425 228.6 L427.5 230.7 L430 232 L432.5 232.6 L435 232.7 L437.5 232.6 L440 232.5 L442.5 232.5 L445 232.7 L447.5 233.1 L450 233.7 L452.5 234.2 L455 234.7 L457.5 234.9 L460 234.8 L462.5 234.2 L465 233.2 L467.5 232 L470 230.6 L472.5 227.2 L475 218.8 L477.5 213 L480 210.1 L482.5 209.8 L485 211.7 L487.5 214.9 L490 218.8 L492.5 222.8 L495 226.3 L497.5 229.1 L500 231 L502.5 232.1 L505 232.6 L507.5 232.7 L510 232.6 L512.5 232.5 L515 232.5 L517.5 232.8 L520 233.2 L522.5 233.8 L525 234.3 L527.5 234.8 L530 234.9 L532.5 234.7 L535 234 L537.5 232.9 L540 231.7 L542.5 230.4 L545 225.3 L547.5 217.4 L550 212.2 L552.5 209.9 L555 210.1 L557.5 212.2 L560 215.6 L562.5 219.6 L565 223.5 L567.5 226.9 L570 229.6 L572.5 231.3 L575 232.3 L577.5 232.7 L580 232.7 L582.5 232.5 L585 232.5 L587.5 232.6 L590 232.9 L592.5 233.4 L595 233.9 L597.5 234.4 L600 234.8 L602.5 234.9 L605 234.6 L607.5 233.8 L610 232.7 L612.5 231.4 L615 230.1 L617.5 223.5 L620 216.1 L622.5 211.5 L625 209.7 L627.5 210.3 L630 212.8 L632.5 216.4 L635 220.4 L637.5 224.3 L640 227.5 L642.5 230 L645 231.6 L647.5 232.4 L650 232.7 L652.5 232.7 L655 232.5 L657.5 232.5 L660 232.6 L662.5 233 L665 233.5 L667.5 234 L670 234.5 L672.5 234.9 L675 234.9 L677.5 234.4 L680 233.6 L682.5 232.5 L685 231.2 L687.5 229.9 L690 221.8 L692.5 215 L695 210.9 L697.5 209.7 L700 210.7 L702.5 213.5 L705 217.2 L707.5 221.2 L710 225 L712.5 228.1 L715 230.4 L717.5 231.8 L720 232.5 L722.5 232.7 L725 232.6 L727.5 232.5 L730 232.5 L732.5 232.7 L735 233.1 L737.5 233.6 L740 234.1 L742.5 234.6 L745 234.9 L747.5 234.8 L750 234.3 L752.5 233.4 L755 232.2 L757.5 230.9 L760 229.2 L762.5 220.2 L765 213.9 L767.5 210.5 L770 209.7 L772.5 211.2 L775 214.2 L777.5 218 L780 222 L782.5 225.7 L785 228.6 L787.5 230.7 L790 232 L792.5 232.6 L795 232.7 L797.5 232.6 L800 232.5 L802.5 232.5 L805 232.7 L807.5 233.1 L810 233.7 L812.5 234.2 L815 234.7 L817.5 234.9 L820 234.8 L822.5 234.2 L825 233.2 L827.5 232 L830 230.6 L832.5 227.2 L835 218.8 L837.5 213 L840 210.1 L842.5 209.8 L845 211.7 L847.5 214.9 L850 218.8 L852.5 222.8 L855 226.3 L857.5 229.1 L860 231" style="fill:none;stroke:rgb(var(--acc));stroke-width:1.6"/>
+    <path class="wa" d="M40 285 H112" marker-start="url(#doc-arra)" marker-end="url(#doc-arra)"/><text x="125" y="289" class="t2 ta">T′</text>
+  </svg>
+  </div>
+  <figcaption>En haut, la voix et ses fenêtres (une par cycle). En bas, les grains replacés plus serrés : la fréquence monte, la forme de chaque cycle (donc le timbre) ne change pas.</figcaption>
+</figure>
+
+<ul>
+  <li>Les fenêtres se complètent exactement : la somme de deux grains voisins reste au même niveau, sans « pompage ».</li>
+  <li>Plus de grains par seconde, c’est plus d’énergie : TUNER compense pour que le volume perçu ne suive pas la transposition.</li>
+  <li><b>FORMANT</b> allumé : chaque grain garde la taille de deux périodes de la voix d’origine, quel que soit l’écart entre grains. Les résonances de la bouche (les formants) ne bougent pas : une voix montée d’une quinte ne devient pas une voix d’enfant.</li>
+  <li><b>THROAT</b> (60 à 160 %) allonge ou raccourcit la « gorge » : il déplace volontairement les formants, pour une voix plus sombre ou plus fine.</li>
+  <li><b>TRANSPOSE</b> déplace tout de −12 à +12 demi-tons ; <b>DETUNE</b> change la référence du la (affichée en Hz autour de 440).</li>
+</ul>
+
+<h2 id="tu-vocodeur">4. Le vocodeur piloté par la voix</h2>
+<p>Un vocodeur classique a besoin d’un clavier. Celui de TUNER n’en a pas besoin : les notes viennent de la voix elle-même. Le correcteur convertit la voix en notes (une nouvelle note doit se confirmer sur deux mesures, pour ne pas jouer les notes qu’on ne fait que traverser), et ces notes jouent un synthétiseur interne.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 900 420" role="img" aria-label="Vocodeur à banc de filtres : la voix découpée en bandes, une enveloppe par bande, des multiplicateurs sur les bandes du synthé, puis une somme">
+    <text x="30" y="24" class="t2">VOIX (modulateur)</text>
+    <circle class="w" cx="30" cy="50" r="6"/><path class="w" d="M36 50 H90" marker-end="url(#doc-arr)"/>
+    <path class="w" d="M70 50 V270 M70 150 H90 M70 270 H90"/><circle class="dot" cx="70" cy="50" r="3.5"/><circle class="dot" cx="70" cy="150" r="3.5"/>
+    <path class="w" d="M76 150 H90" marker-end="url(#doc-arr)"/><path class="w" d="M76 270 H90" marker-end="url(#doc-arr)"/>
+    <text x="130" y="222" text-anchor="middle" class="t2">⋮ 32 bandes</text>
+    <!-- trois rangées : bande de la voix, enveloppe, multiplicateur -->
+    <g>
+      <rect class="b" x="90" y="35" width="100" height="30" rx="5"/><text x="140" y="55" text-anchor="middle">BANDE 1</text>
+      <path class="w" d="M190 50 H215"/><path class="w" d="M215 42 V58 L229 50 Z M229 42 V58"/><path class="w" d="M229 50 H330 V74" marker-end="url(#doc-arr)"/>
+      <circle class="dot" cx="255" cy="50" r="3"/><path class="w" d="M255 50 V60 M245 60 H265 M245 66 H265 M255 66 V74 M249 74 H261"/>
+      <text x="300" y="42" text-anchor="middle" class="t2">enveloppe</text>
+      <path class="w" d="M40 90 H64 a6 6 0 0 1 12 0 H210" marker-end="url(#doc-arr)"/>
+      <rect class="b" x="210" y="76" width="70" height="28" rx="5"/><text x="245" y="95" text-anchor="middle" class="t2">B1</text>
+      <path class="w" d="M280 90 H314" marker-end="url(#doc-arr)"/>
+      <circle class="ba" cx="330" cy="90" r="16"/><text x="330" y="95" text-anchor="middle" class="tb">×</text>
+      <path class="w" d="M346 90 H420"/>
+    </g>
+    <g transform="translate(0,100)">
+      <rect class="b" x="90" y="35" width="100" height="30" rx="5"/><text x="140" y="55" text-anchor="middle">BANDE 2</text>
+      <path class="w" d="M190 50 H215"/><path class="w" d="M215 42 V58 L229 50 Z M229 42 V58"/><path class="w" d="M229 50 H330 V74" marker-end="url(#doc-arr)"/>
+      <circle class="dot" cx="255" cy="50" r="3"/><path class="w" d="M255 50 V60 M245 60 H265 M245 66 H265 M255 66 V74 M249 74 H261"/>
+      <path class="w" d="M40 90 H64 a6 6 0 0 1 12 0 H210" marker-end="url(#doc-arr)"/>
+      <rect class="b" x="210" y="76" width="70" height="28" rx="5"/><text x="245" y="95" text-anchor="middle" class="t2">B2</text>
+      <path class="w" d="M280 90 H314" marker-end="url(#doc-arr)"/>
+      <circle class="ba" cx="330" cy="90" r="16"/><text x="330" y="95" text-anchor="middle" class="tb">×</text>
+      <path class="w" d="M346 90 H420"/>
+    </g>
+    <g transform="translate(0,220)">
+      <rect class="b" x="90" y="35" width="100" height="30" rx="5"/><text x="140" y="55" text-anchor="middle">BANDE 32</text>
+      <path class="w" d="M190 50 H215"/><path class="w" d="M215 42 V58 L229 50 Z M229 42 V58"/><path class="w" d="M229 50 H330 V74" marker-end="url(#doc-arr)"/>
+      <circle class="dot" cx="255" cy="50" r="3"/><path class="w" d="M255 50 V60 M245 60 H265 M245 66 H265 M255 66 V74 M249 74 H261"/>
+      <path class="w" d="M40 90 H210" marker-end="url(#doc-arr)"/>
+      <rect class="b" x="210" y="76" width="70" height="28" rx="5"/><text x="245" y="95" text-anchor="middle" class="t2">B32</text>
+      <path class="w" d="M280 90 H314" marker-end="url(#doc-arr)"/>
+      <circle class="ba" cx="330" cy="90" r="16"/><text x="330" y="95" text-anchor="middle" class="tb">×</text>
+      <path class="w" d="M346 90 H420"/>
+    </g>
+    <!-- porteuse : le synthé, et son bus -->
+    <path class="w" d="M40 345 V90"/><circle class="dot" cx="40" cy="190" r="3"/><circle class="dot" cx="40" cy="310" r="3"/>
+    <rect class="ba" x="20" y="345" width="240" height="44" rx="6"/><text x="140" y="364" text-anchor="middle" class="tb">SYNTHÉ (porteuse)</text><text x="140" y="380" text-anchor="middle" class="t2">2 dents de scie par note</text>
+    <path class="w" d="M380 367 H260" marker-end="url(#doc-arr)"/><text x="390" y="371" class="t2">NOTES (déduites de la voix)</text>
+    <!-- somme -->
+    <path class="w" d="M420 90 V310"/><circle class="dot" cx="420" cy="190" r="3"/><circle class="dot" cx="420" cy="200" r="0"/>
+    <path class="w" d="M420 200 H452" marker-end="url(#doc-arr)"/>
+    <circle class="ba" cx="470" cy="200" r="18"/><text x="470" y="206" text-anchor="middle" class="tb">Σ</text>
+    <path class="w" d="M488 200 H540" marker-end="url(#doc-arr)"/><text x="548" y="204" class="t2">vers BLEND</text>
+    <!-- légende -->
+    <text x="590" y="70" class="t2"><tspan class="ta">1</tspan> la voix est découpée en 32 bandes</text>
+    <text x="590" y="110" class="t2"><tspan class="ta">2</tspan> une diode et un condensateur</text>
+    <text x="604" y="126" class="t2">suivent le niveau de chaque bande</text>
+    <text x="590" y="166" class="t2"><tspan class="ta">3</tspan> ce niveau règle la même bande</text>
+    <text x="604" y="182" class="t2">du synthé (multiplicateur ×)</text>
+    <text x="590" y="222" class="t2"><tspan class="ta">4</tspan> les 32 bandes sont additionnées</text>
+    <text x="590" y="262" class="t2"><tspan class="ta">5</tspan> consonne ou souffle : le synthé</text>
+    <text x="604" y="278" class="t2">passe au bruit : les mots restent clairs</text>
+  </svg>
+  </div>
+  <figcaption>Chaque bande de la voix commande, par son enveloppe (diode + condensateur), le volume de la même bande du synthé. Le synthé prend ainsi l’articulation de la voix tout en jouant exactement les notes choisies.</figcaption>
+</figure>
+<ul>
+  <li><b>VOICING</b> : ce que joue le synthé autour de la note chantée. Mono (la note seule), Octave, Fifth (quinte), Chord (accord construit dans la tonalité).</li>
+  <li><b>BLEND</b> : de la voix accordée seule (0 %) au vocodeur seul (100 %).</li>
+  <li>Sur une consonne ou un souffle, la porteuse devient du bruit : les mots restent compréhensibles.</li>
+  <li>Garde-fou de niveau : le vocodeur ne sort jamais plus fort que la voix.</li>
+  <li><b>Sortie MIDI</b> : les notes déduites sortent aussi en MIDI. Route-les vers un synthé de ton DAW pour doubler la voix avec n’importe quel instrument.</li>
+</ul>
+
+<h2 id="tu-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <thead><tr><th>Réglage</th><th>Plage</th><th>Rôle</th></tr></thead>
+  <tbody>
+    <tr><td>MODE</td><td>LIVE · HQ</td><td>Sans latence pour enregistrer, ou plus précis pour mixer.</td></tr>
+    <tr><td>INPUT TYPE</td><td>5 registres</td><td>Plage de recherche du détecteur (défaut : Alto / Tenor).</td></tr>
+    <tr><td>KEY · SCALE</td><td>12 notes · gammes</td><td>Tonalité et gamme visées ; le clavier ajoute, retire ou ignore des notes.</td></tr>
+    <tr><td>RETUNE SPEED</td><td>0 à 400 ms</td><td>Temps pour rejoindre la note (défaut 20 ms).</td></tr>
+    <tr><td>HARD TUNE</td><td>marche / arrêt</td><td>Notes plates et sauts francs : l’effet robot.</td></tr>
+    <tr><td>AMOUNT</td><td>0 à 100 %</td><td>Part de l’écart à la note rattrapée.</td></tr>
+    <tr><td>FLEX-TUNE</td><td>0 à 100 %</td><td>Ne corrige que près de la note.</td></tr>
+    <tr><td>HUMANIZE</td><td>0 à 100 %</td><td>Notes longues plus libres.</td></tr>
+    <tr><td>SUSTAIN</td><td>−100 à +100 %</td><td>Partie tenue plus libre (gauche) ou plus droite (droite).</td></tr>
+    <tr><td>NATURAL VIBRATO</td><td>−12 à +12</td><td>Réduit ou agrandit le vibrato chanté.</td></tr>
+    <tr><td>FORMANT · THROAT</td><td>marche · 60 à 160 %</td><td>Garde le timbre ; déplace la gorge.</td></tr>
+    <tr><td>TRANSPOSE</td><td>±12 demi-tons</td><td>Décale toute la voix.</td></tr>
+    <tr><td>DETUNE</td><td>±100 cents</td><td>Référence du la (autour de 440 Hz).</td></tr>
+    <tr><td>TRACKING</td><td>0 à 100 %</td><td>Exigence du détecteur (défaut 50 %).</td></tr>
+    <tr><td>VIBRATO</td><td>forme, RATE 0,5–10 Hz, DEPTH 0–100 ct…</td><td>Vibrato créé, avec DELAY, ONSET, VARIATION, AMPLITUDE et TIMBRE.</td></tr>
+    <tr><td>VOCODER · VOICING · BLEND</td><td>4 voicings · 0 à 100 %</td><td>Vocodeur piloté par la voix.</td></tr>
+    <tr><td>MIX</td><td>0 à 100 %</td><td>Voix d’origine ↔ voix traitée.</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="tu-conseils">Conseils</h2>
+<div class="tip"><p><b>Effet « autotune » marqué :</b> HARD TUNE, ou RETUNE SPEED à 0–5 ms, HUMANIZE à 0. Choisis bien la gamme : une note hors gamme saute vers la voisine.</p></div>
+<div class="tip"><p><b>Correction invisible :</b> mode HQ, RETUNE SPEED entre 40 et 80 ms, FLEX-TUNE autour de 30 %, HUMANIZE 30 à 50 %, FORMANT allumé.</p></div>
+<div class="tip"><p><b>Enregistrer avec la correction dans le casque :</b> mode LIVE (aucune latence), puis passe en HQ pour le mix.</p></div>
+<div class="tip"><p><b>La correction se trompe d’octave ou hésite :</b> règle INPUT TYPE sur ton registre, monte TRACKING, et place TUNER avant la reverb et le delay.</p></div>

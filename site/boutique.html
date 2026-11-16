@@ -22,6 +22,7 @@
 <link rel="icon" type="image/png" href="assets/favicon.png?v=2">
 <link rel="stylesheet" href="assets/fonts.css">
 <link rel="stylesheet" href="assets/pages.css?v=3">
+<link rel="stylesheet" href="/assets/plugin-doc.css?v=1">
 <style>
 /* Boutique : la base des pages de texte, élargie, avec les cartes et la démo interactive. */
 .wrap { max-width: 1240px; }
@@ -232,13 +233,19 @@ header nav { display: flex; align-items: center; gap: 10px; }
     <a class="back" href="boutique">Tous les plugins</a>
     <h1 id="name"></h1>
     <p class="lede" id="tagline"></p>
+    <div class="tabs" id="tabs" role="tablist" aria-label="Fiche du plugin" hidden>
+      <button type="button" role="tab" id="tab-plugin" aria-controls="pane-plugin" aria-selected="true">Le plugin</button><button type="button" role="tab" id="tab-doc" aria-controls="doc" aria-selected="false">Documentation</button>
+    </div>
     <div class="product">
       <div>
-        <div class="demo" id="demo"><div class="demo-wait">Chargement de l’interface…</div></div>
-        <p class="note">Démonstration de l’interface réelle du plugin. Aucun son n’est traité dans le navigateur.</p>
-        <p class="block-title">Le plugin</p>
-        <div class="desc" id="desc"></div>
-        <p class="founder" id="founder" hidden></p>
+        <div id="pane-plugin" role="tabpanel" aria-labelledby="tab-plugin">
+          <div class="demo" id="demo"><div class="demo-wait">Chargement de l’interface…</div></div>
+          <p class="note">Démonstration de l’interface réelle du plugin. Aucun son n’est traité dans le navigateur.</p>
+          <p class="block-title">Le plugin</p>
+          <div class="desc" id="desc"></div>
+          <p class="founder" id="founder" hidden></p>
+        </div>
+        <div class="doc" id="doc" role="tabpanel" aria-labelledby="tab-doc" hidden></div>
       </div>
       <aside class="side">
         <p class="eyebrow" id="side-name"></p>
@@ -371,6 +378,45 @@ function card(p, categories = []) {
 }
 
 // Essai gratuit : le bouton n’apparaît que pour un plugin payant que l’on ne possède pas et qu’on n’a pas déjà essayé.
+// Une interface en hauteur tient à l’écran : la démo est rétrécie jusqu’à s’y voir en entier (mesurée une fois visible).
+function fitDemo() {
+  const stage = $("demo").querySelector(".demo-stage");
+  if (stage && stage.offsetWidth) $("demo").style.maxWidth = Math.round(Math.max(320, innerHeight * 0.82 * stage.offsetWidth / stage.offsetHeight)) + "px";
+}
+
+// Documentation : les plugins qui en ont une (assets/docs/<slug>.html) ont un onglet de plus ; le nombre est la
+// version du fichier, à augmenter quand on le modifie. L’adresse …#documentation ouvre directement l’onglet.
+const DOCS = { "tuner": 1, "onirique-verb": 1, "onirique-enhancer": 1, "onirique-stream": 1, "player-onirique": 1 };
+function setupDoc(product) {
+  const version = DOCS[product.slug];
+  if (!version) return;
+  const show = (doc) => {
+    $("tab-plugin").setAttribute("aria-selected", String(!doc));
+    $("tab-doc").setAttribute("aria-selected", String(doc));
+    $("pane-plugin").hidden = doc;
+    $("doc").hidden = !doc;
+    $("detail").classList.toggle("doc-open", doc);
+    if (!doc) fitDemo();
+    if (doc && !$("doc").childElementCount) {
+      $("doc").replaceChildren(el("p", { className: "lede", textContent: "Chargement de la documentation…" }));
+      fetch(`/assets/docs/${product.slug}.html?v=${version}`).then((r) => r.ok ? r.text() : Promise.reject())
+        .then((html) => { $("doc").innerHTML = html; })
+        .catch(() => { $("doc").replaceChildren(el("p", { className: "lede", textContent: "La documentation n’a pas pu être chargée. Réessaie dans un instant." })); });
+    }
+  };
+  // Avec <base href="/">, un lien « #ancre » du sommaire partirait vers l’accueil : il fait défiler la page.
+  $("doc").onclick = (event) => {
+    const link = event.target.closest('a[href^="#"]');
+    if (!link) return;
+    event.preventDefault();
+    document.getElementById(link.getAttribute("href").slice(1))?.scrollIntoView({ behavior: "smooth" });
+  };
+  $("tab-plugin").onclick = () => { history.replaceState(null, "", location.pathname + location.search); show(false); };
+  $("tab-doc").onclick = () => { history.replaceState(null, "", location.pathname + location.search + "#documentation"); show(true); };
+  $("tabs").hidden = false;
+  if (location.hash === "#documentation") show(true);
+}
+
 async function setupTrial(product) {
   if (!product.priceCents) return;
   const token = sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token");
@@ -714,17 +760,14 @@ async function buy(product, catalog) {
   }
   setupTrial(product).then(() => { if (!$("buy").disabled) setupPromo(product); setupMonthly(product, catalog); });
   $("detail").hidden = false;
+  setupDoc(product);
 
   // Une interface web réelle (RAW) passe avant tout ; puis l’image choisie par un admin ; puis la démo en images.
   const web = await OniriqueDemo.web(product.slug);
   if (web) {
     OniriqueDemo.mountWeb($("demo"), web, product.name);
   } else if (product.demo && !product.imageManual) {
-    OniriqueDemo.mount($("demo"), product.demo).then(() => {
-      // Une interface en hauteur tient à l’écran : la démo est rétrécie jusqu’à s’y voir en entier.
-      const stage = $("demo").querySelector(".demo-stage");
-      if (stage && stage.offsetWidth) $("demo").style.maxWidth = Math.round(Math.max(320, innerHeight * 0.82 * stage.offsetWidth / stage.offsetHeight)) + "px";
-    }).catch(() => { $("demo").firstChild.textContent = "L’interface n’a pas pu être chargée."; });
+    OniriqueDemo.mount($("demo"), product.demo).then(fitDemo).catch(() => { $("demo").firstChild.textContent = "L’interface n’a pas pu être chargée."; });
   } else if (product.image) {
     $("demo").replaceChildren(el("img", { className: "whole", src: sized(product.image, 1920), srcset: srcsetOf(product.image, [960, 1280, 1920]),
       sizes: "(max-width: 1120px) 100vw, 1100px", alt: "Interface du plugin " + product.name }));

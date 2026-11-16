@@ -36,6 +36,12 @@
 - Vérifier par captures à l'échelle 1 et 2 ; mesurer le son avant / après plutôt que régler à l'aveugle.
 - Charte de Nov « Nuit & Braise » : `server/src/da-vocalbox.html` (pas le plugin VOCAL MINI).
 
+## Documentation (onglet de la boutique)
+- Une page par plugin dans `site/assets/docs/<slug>.html` (fragment HTML, schémas en SVG, styles dans
+  `site/assets/plugin-doc.css`). L'onglet n'apparaît que pour les slugs de `DOCS` dans `site/boutique.html` ;
+  augmenter leur numéro à chaque modification (les fichiers d'`assets/` sont gardés en cache un an avec `?v=`).
+- Liens du sommaire en `#ancre` : la fiche a un `<base href="/">`, c'est `setupDoc` qui les fait défiler.
+
 ## Pièges
 - Un plugin neuf sans licence affiche « Activation requise » et `tools/probe` ne trouve qu'une partie des
   boutons : faire la démo sur la version d'essai.
