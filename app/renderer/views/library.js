@@ -166,31 +166,35 @@ export function buy(kind, item) {
     }, 'small')), promoNote) : null;
   let lastQuote = null;
   if (promoRow) quote().then((q) => { lastQuote = q; if (q.discountCents) showQuote(q); }).catch(() => {});
-  // Comme sur le site : un plugin qui se prend aussi au mois propose « À vie » ou « Au mois » (sans engagement).
-  let monthly = false;
+  // Comme sur le site : « À vie », « Au mois » (sans engagement) ou « En 10 fois » (le plugin est à vous à la dernière mensualité).
+  let monthly = null; // null : à vie ; sinon 'monthly' ou 'lease', la formule envoyée au paiement
+  const lease = item.lease;
   const note = h('p', { class: 'muted' }, text);
-  const formula = kind === 'product' && !free && item.monthlyCents > 0 ? h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': 'Formule' },
-    [['À vie', false], ['Au mois', true]].map(([label, month]) => h('button', {
-      type: 'button', role: 'radio', class: month ? '' : 'active', 'aria-checked': String(!month),
+  const choices = [['À vie', null], item.monthlyCents > 0 && ['Au mois', 'monthly'], lease && [`En ${lease.months} fois`, 'lease']].filter(Boolean);
+  const formula = kind === 'product' && !free && choices.length > 1 ? h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': 'Formule' },
+    choices.map(([label, choice]) => h('button', {
+      type: 'button', role: 'radio', class: choice ? '' : 'active', 'aria-checked': String(!choice),
       onclick: (event) => {
-        monthly = month;
+        monthly = choice;
         for (const b of event.currentTarget.parentNode.children) {
           const on = b === event.currentTarget;
           b.classList.toggle('active', on);
           b.setAttribute('aria-checked', String(on));
         }
-        if (month) priceBox.replaceChildren(`${euros(item.monthlyCents)} / mois`);
+        if (choice === 'monthly') priceBox.replaceChildren(`${euros(item.monthlyCents)} / mois`);
+        else if (choice === 'lease') priceBox.replaceChildren(`${lease.months} × ${euros(lease.cents)}`);
         else if (lastQuote?.discountCents) showQuote(lastQuote);
         else priceBox.replaceChildren(euros(item.priceCents));
-        if (promoRow) promoRow.hidden = month;
-        note.textContent = !month ? text : mode === 'demo' ? 'Mode démo : aucun paiement n\'est effectué, le plugin est accordé tout de suite.'
-          : 'Sans engagement : le plugin reste à vous tant que l\'abonnement court, résiliable à tout moment. Le paiement sécurisé s\'ouvre dans votre navigateur.';
+        if (promoRow) promoRow.hidden = !!choice;
+        note.textContent = !choice ? text : mode === 'demo' ? 'Mode démo : aucun paiement n\'est effectué, le plugin est accordé tout de suite.'
+          : choice === 'lease' ? `${lease.months} mensualités (${euros(lease.cents * lease.months)} en tout) : le plugin s'utilise tout de suite et il est à vous pour de bon à la dernière. Arrêté avant, il s'en va à la fin du mois payé. Le paiement sécurisé s'ouvre dans votre navigateur.`
+            : 'Sans engagement : le plugin reste à vous tant que l\'abonnement court, résiliable à tout moment. Le paiement sécurisé s\'ouvre dans votre navigateur.';
       },
     }, label))) : null;
   modal(item.name, h('div', { class: 'stack' }, formula, priceBox, note, promoRow), [{
     label: free ? 'Obtenir' : mode === 'demo' ? 'Confirmer' : 'Payer',
     run: async () => {
-      const result = await attempt(() => (monthly ? call('checkout', 'monthly', item.id) : call('checkout', kind, item.id, item.productIds, promo)));
+      const result = await attempt(() => (monthly ? call('checkout', monthly, item.id) : call('checkout', kind, item.id, item.productIds, promo)));
       if (!result) return false;
       if (result.mode === 'stripe' || result.mode === 'lemon') toast('Paiement ouvert dans votre navigateur.');
       else { toast(recurring || monthly ? 'Abonnement activé.' : `${item.name} est à vous.`); await refresh(); }

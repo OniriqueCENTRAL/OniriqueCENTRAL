@@ -2739,11 +2739,11 @@
  "1 temps": [
   "site/delais.html"
  ],
- "1,99 € par mois ou 9,99 € par an, sans engagement ; il est inclus pour les membres ONIRIQUE. L’abonnement comprend aussi la page de liens. Les plugins ne sont pas compris. Tout est sur la page": [
+ "1,99 € par mois ou 19,99 € par an, sans engagement ; il est inclus pour les membres ONIRIQUE et dans les abonnements ESSENTIAL et ALL ACCESS. L’abonnement comprend aussi la page de liens. Les plugins ne sont pas compris. Tout est sur la page": [
   "site/index.html",
   "site/onirique.html"
  ],
- "1,99 € par mois, ou 9,99 € par an, soit 0,83 € par mois. Sans engagement, résiliable à tout moment.": [
+ "1,99 € par mois, ou 19,99 € par an, soit 1,67 € par mois. Sans engagement, résiliable à tout moment.": [
   "site/cloud.html"
  ],
  "1. Éditeur et vendeur": [
@@ -4445,7 +4445,7 @@
   "site/cloud.html",
   "app/renderer/views/subscription.js"
  ],
- "annuel (9,99 € par an)": [
+ "annuel (19,99 € par an)": [
   "site/cloud.html"
  ],
  "Annulé": [
@@ -7783,7 +7783,7 @@
  "CLOUD gratuit": [
   "site/cloud.html"
  ],
- "CLOUD gratuit : {} sons au plus. Passe à l'abonnement ONIRIQUE CLOUD (1,99 € par mois ou 9,99 € par an) pour des sons sans limite.": [
+ "CLOUD gratuit : {} sons au plus. Passe à l'abonnement ONIRIQUE CLOUD (1,99 € par mois ou 19,99 € par an) pour des sons sans limite.": [
   "server/src/sounds.js"
  ],
  "CLOUD gratuit : 30 sons": [
@@ -13427,7 +13427,7 @@
  "Il disparaît de cette liste. L'e-mail reçu dans la boîte de support n'est pas touché.": [
   "app/renderer/views/support-admin.js"
  ],
- "Il est inclus pour les membres ONIRIQUE et avec l’abonnement CLOUD et page de liens (1,99 € par mois ou 9,99 € par an).": [
+ "Il est inclus pour les membres ONIRIQUE et avec l’abonnement CLOUD et page de liens (1,99 € par mois ou 19,99 € par an).": [
   "site/cut.html"
  ],
  "Il est inclus pour les membres ONIRIQUE et avec l’abonnement CLOUD et page de liens.": [
@@ -14701,10 +14701,10 @@
  "La note est écrite en notation anglaise, celle des logiciels de musique (C, D, E… pour do, ré, mi…), suivie de son octave : A4 est le la à 440 Hz. L’aiguille indique l’écart en cents, c’est-à-dire en centièmes de demi-ton : dans la zone verte, à moins de 5 cents, la note est juste à l’oreille.": [
   "site/accordeur.html"
  ],
- "La page de liens demande un abonnement : 1,99 € par mois ou 9,99 € par an, sur onirique.store/cloud.": [
+ "La page de liens demande un abonnement : 1,99 € par mois ou 19,99 € par an, sur onirique.store/cloud.": [
   "server/src/linkpage.js"
  ],
- "La page de liens fait partie de l’abonnement ONIRIQUE CLOUD et page de liens : 1,99 € par mois ou 9,99 € par an.": [
+ "La page de liens fait partie de l’abonnement ONIRIQUE CLOUD et page de liens : 1,99 € par mois ou 19,99 € par an.": [
   "site/mes-liens.html"
  ],
  "La page lit ces formats, mais n’écrit que du WAV et du MP3, les deux que tous les logiciels et tous les services acceptent.": [
@@ -19307,7 +19307,7 @@
  "ONIRIQUE CLOUD · gratuit": [
   "site/assets/account.js"
  ],
- "ONIRIQUE CLOUD demande un abonnement : 1,99 € par mois ou 9,99 € par an, sur onirique.store/cloud.": [
+ "ONIRIQUE CLOUD demande un abonnement : 1,99 € par mois ou 19,99 € par an, sur onirique.store/cloud.": [
   "server/src/sounds.js"
  ],
  "ONIRIQUE CLOUD demande un abonnement.": [
@@ -19323,7 +19323,7 @@
  "ONIRIQUE CLOUD et votre page de liens sont ouverts : {}/mes-sons": [
   "server/src/payments.js"
  ],
- "ONIRIQUE CLOUD fait partie de l’abonnement ONIRIQUE CLOUD et page de liens : 1,99 € par mois ou 9,99 € par an.": [
+ "ONIRIQUE CLOUD fait partie de l’abonnement ONIRIQUE CLOUD et page de liens : 1,99 € par mois ou 19,99 € par an.": [
   "site/mes-sons.html"
  ],
  "ONIRIQUE CLOUD garde tes projets, tes versions et tes collabs, et les fait écouter par un lien. La page de liens réunit tout ce que tu fais derrière une seule adresse. Les deux, pour moins qu’un café par mois.": [
@@ -26476,7 +26476,7 @@
   "site/index.html",
   "site/onirique.html"
  ],
- "Tes projets, tes versions, tes collabs et ta page de liens : 1,99 € par mois ou 9,99 € par an.": [
+ "Tes projets, tes versions, tes collabs et ta page de liens : 1,99 € par mois ou 19,99 € par an.": [
   "site/assets/tools-menu.js"
  ],
  "Tes réglages sont gardés : le périphérique choisi revient tout seul à chaque nouveau projet.": [
@@ -26489,7 +26489,7 @@
  "Tes sons et tes liens,": [
   "site/cloud.html"
  ],
- "Tes sons, tes projets, tes collabs et ta page de liens au même endroit : ONIRIQUE CLOUD et la page de liens Onirique pour 1,99 € par mois ou 9,99 € par an.": [
+ "Tes sons, tes projets, tes collabs et ta page de liens au même endroit : ONIRIQUE CLOUD et la page de liens Onirique pour 1,99 € par mois ou 19,99 € par an.": [
   "site/cloud.html"
  ],
  "Tes titres": [
