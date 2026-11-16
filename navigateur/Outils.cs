@@ -12,7 +12,7 @@ namespace Onirique;
 // garder la connexion.
 sealed partial class Navigateur
 {
-    readonly Bouton boutonOutils = new("", "Outils ONIRIQUE");
+    readonly Bouton boutonOutils = new("", "Outils ONIRIQUE");
     CoreWebView2Environment? envSansGpu;
 
     static readonly Regex Video = new(@"^https://((www|m|music)\.)?youtube\.com/(watch\?|shorts/)|^https://youtu\.be/|^https://((www|m|vm|vt)\.)?tiktok\.com/.+",

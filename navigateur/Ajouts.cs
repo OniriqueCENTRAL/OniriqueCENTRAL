@@ -48,6 +48,7 @@ sealed partial class Navigateur
         Controls.Add(panneauLecteur);
         barre.Controls.Add(lecteur);
         barre.Controls.Add(studio);
+        Volet.Ouvert += () => panneauLecteur.Visible = false;
         lecteur.Click += (_, _) => { if (panneauLecteur.Visible) panneauLecteur.Visible = false; else MontrerLecteur(); };
         studio.Click += (_, _) => bulle.Montrer($"Mode Studio : {dawOuvert} est ouvert, les onglets cachés s'endorment tout de suite pour lui laisser la machine.");
         champ.Etoile.Click += (_, _) => BasculerFavori();

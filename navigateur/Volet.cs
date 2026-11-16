@@ -47,9 +47,13 @@ sealed class Volet : Form
     static (Control? Ancre, long Quand) dernier;
 
     /// <summary>Sous le bouton <paramref name="ancre"/>, aligné à droite ; ou, avec <paramref name="coin"/>, à ce point de l'écran (clic droit, bord d'un bouton).</summary>
+    /// <summary>Un volet s'ouvre : les autres panneaux flottants (mini-lecteur) se rangent.</summary>
+    public static event Action? Ouvert;
+
     public static void Ouvrir(Control ancre, string titre, Func<List<Ligne>> lignes, bool vivant = false, Point? coin = null)
     {
         if (coin == null && dernier.Ancre == ancre && Environment.TickCount64 - dernier.Quand < 250) return;
+        Ouvert?.Invoke();
         var v = new Volet(ancre, titre, lignes, coin);
         if (vivant) v.suivi.Start();
         v.Show(ancre.FindForm());
@@ -186,8 +190,8 @@ sealed class Volet : Form
         var g = e.Graphics;
         g.SmoothingMode = SmoothingMode.AntiAlias;
         g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-        var gauche = TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix;
-        var centre = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix;
+        var gauche = TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix | TextFormatFlags.PreserveGraphicsClipping;
+        var centre = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix | TextFormatFlags.PreserveGraphicsClipping;
 
         // En-tête : le titre, et un trait de braise dessous, comme l'onglet actif.
         TextRenderer.DrawText(g, titre, entete, new Rectangle(S(18), S(8), Width - S(36), S(34)), DA.Brume, gauche);
@@ -204,12 +208,13 @@ sealed class Volet : Form
             g.FillPath(fond, forme);
         }
         g.SetClip(new Rectangle(0, S(Tete), Width, Height - S(Tete)));
-        g.TranslateTransform(0, -defil);
         for (int i = 0; i < lignes.Count; i++)
         {
             var l = lignes[i];
+            // Décalée à la main : le texte (TextRenderer) ne suit pas les transformations de Graphics.
             var r = zones[i];
-            if (r.Bottom < defil || r.Top > defil + Height) continue;
+            r.Offset(0, -defil);
+            if (r.Bottom < S(Tete) || r.Top > Height) continue;
             if (l.Nuancier is { } nuances)
             {
                 TextRenderer.DrawText(g, l.Titre, petit, new Rectangle(r.X + S(12), r.Y, S(70), r.Height), DA.Cendre, gauche);
