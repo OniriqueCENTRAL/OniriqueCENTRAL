@@ -214,7 +214,7 @@ Sinon réponds UNIQUEMENT par un objet JSON, sans texte autour :
  "parallel":true|false, "dreamy":true|false, "tune":0..1}}
 Échelles : 0 = absent, 1 = très marqué ; comp -1 très naturel, 1 très compressé et en avant ; reverb = quantité d'espace ;
 reverbSize 0 pièce, 1 grand espace ; controlled = voix très maîtrisée (multiband) ; parallel = compression parallèle épaisse ;
-tune = l'autotune entendu sur sa voix (0 aucun, 0.3 justesse discrète, 0.7 autotune moderne marqué, 1 effet robot).
+tune = l'autotune entendu sur sa voix (0 aucun, 0.3 autotune discret, 0.7 autotune moderne marqué, 1 effet robot).
 N'inclus que les champs dont tu es raisonnablement sûr.`;
 
 /** La recherche : Gemini avec Google Search ; si la recherche web n'est pas ouverte à la clé (offre gratuite : quota nul),

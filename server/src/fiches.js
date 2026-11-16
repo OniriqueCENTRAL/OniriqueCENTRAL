@@ -47,7 +47,18 @@ export function applyRetouches() {
     for (const r of HARSHNESS) run(`UPDATE products SET ${r.field} = replace(${r.field}, ?, ?) WHERE slug = ?`, r.from, r.to, r.slug);
     setSetting('retouches_textes', 4);
   }
+  // 16/11/2026, choix de Nov : là où il s'agit du TUNER, on dit « autotune », plus « justesse » (les notes de version de
+  // VOCALBOX). PITCHBOX et l'accordeur gardent « justesse ».
+  if (done < 5) {
+    const vb = get('SELECT id FROM products WHERE slug = ?', 'vocalbox');
+    if (vb) for (const [from, to] of AUTOTUNE) run('UPDATE versions SET notes = replace(notes, ?, ?) WHERE product_id = ?', from, to, vb.id);
+    setSetting('retouches_textes', 5);
+  }
 }
+const AUTOTUNE = [
+  ['justesse naturelle ou effet robot', 'autotune naturel ou effet robot'],
+  ['AUTO MIX entend la justesse,', "AUTO MIX entend l'autotune,"],
+];
 const HARSHNESS = [
   { slug: 'onirique-halo', field: 'tagline', from: 'cymbales et dureté maîtrisées', to: 'cymbales et harshness maîtrisées' },
   { slug: 'onirique-halo', field: 'description', from: "sans la dureté", to: 'sans la harshness' },
