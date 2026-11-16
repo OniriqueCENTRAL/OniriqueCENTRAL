@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=0ec83289"></script>
+<script src="assets/i18n.js?v=862d5f66"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=6"></script>
 <script src="/api/announce.js" async></script>
@@ -94,6 +94,10 @@ header nav { display: flex; align-items: center; gap: 10px; }
 .formula { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; margin-top: 14px; padding: 4px; border: 1px solid var(--line); border-radius: 14px; }
 .formula button { padding: 10px; border: 0; border-radius: var(--r-seg); background: none; color: var(--haze); font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; cursor: pointer; transition: color .25s, background .25s, box-shadow .25s; }
 .formula button[aria-pressed="true"] { background: var(--lit); color: #fff; box-shadow: var(--lit-shadow); }
+.lease-months { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; margin-top: 8px; }
+.lease-months[hidden] { display: none; }
+.lease-months button { padding: 9px 0; border: 1px solid var(--line); border-radius: var(--r-seg); background: none; color: var(--haze); font: 500 12px/1 var(--f-mono); cursor: pointer; transition: color .25s, background .25s, border-color .25s; }
+.lease-months button[aria-pressed="true"] { background: var(--lit); border-color: transparent; color: #fff; }
 .buy.ghost { margin-top: 10px; background: transparent; color: var(--mist); border: 1px solid var(--line); box-shadow: none; }
 .buy.ghost:hover { border-color: var(--ember); box-shadow: none; }
 .note { margin: 14px 0 0; font-size: 13px; color: var(--haze); }
@@ -239,8 +243,9 @@ header nav { display: flex; align-items: center; gap: 10px; }
       <aside class="side">
         <p class="eyebrow" id="side-name"></p>
         <div class="formula" id="formula" role="group" aria-label="Formule" hidden>
-          <button type="button" id="formula-life" aria-pressed="true">À vie</button><button type="button" id="formula-month" aria-pressed="false">Au mois</button><button type="button" id="formula-lease" aria-pressed="false" hidden>En 10 fois</button>
+          <button type="button" id="formula-life" aria-pressed="true">À vie</button><button type="button" id="formula-month" aria-pressed="false">Au mois</button><button type="button" id="formula-lease" aria-pressed="false" hidden>En plusieurs fois</button>
         </div>
+        <div class="lease-months" id="lease-months" role="group" aria-label="Nombre de mensualités" hidden></div>
         <div class="price" id="price"></div>
         <p class="note" style="margin:0" id="price-note">TTC, paiement unique</p>
         <p class="deal" id="gift" hidden></p>
@@ -579,23 +584,39 @@ function setupPromo(product) {
 // À vie, au mois ou en plusieurs fois. Au mois : une licence qui se renouvelle chaque mois payé, résiliable depuis le
 // compte. En plusieurs fois : le prix (soldé s'il l'est) en mensualités, et le plugin est à toi à la dernière.
 let formula = "life";
+let leaseMonths = 0; // le nombre de mensualités choisi, en plusieurs fois
 function setupMonthly(product, catalog) {
   const lease = product.lease;
   if (!product.priceCents || (!product.monthlyCents && !lease)) return;
   $("formula").hidden = false;
   $("formula-month").hidden = !product.monthlyCents;
   $("formula-lease").hidden = !lease;
-  if (lease) $("formula-lease").textContent = "En " + lease.months + " fois";
   let life = null;
+  // En plusieurs fois : une puce par nombre de mensualités possible, la plus longue choisie d'abord.
+  const show = () => {
+    const n = leaseMonths, cents = Math.ceil(lease.totalCents / n);
+    for (const b of $("lease-months").children) b.ariaPressed = String(Number(b.dataset.n) === n);
+    $("price").replaceChildren(n + " × " + euros(cents));
+    $("price-note").textContent = "TTC, par mois pendant " + n + " mois (" + euros(cents * n) + " en tout), puis le plugin est à toi";
+    $("buy").textContent = monthlyBlocked || "Payer en " + n + " fois · " + euros(cents) + " / mois";
+  };
+  if (lease) {
+    leaseMonths = lease.months;
+    $("lease-months").replaceChildren(...Array.from({ length: lease.months - lease.minMonths + 1 }, (_, i) => {
+      const n = lease.minMonths + i, b = document.createElement("button");
+      b.type = "button"; b.dataset.n = n; b.textContent = n + "×"; b.ariaLabel = "En " + n + " fois";
+      b.onclick = () => { leaseMonths = n; show(); };
+      return b;
+    }));
+  }
   const pick = (mode) => {
     if (formula === mode) return;
     if (formula === "life") life = [[...$("price").childNodes], $("buy").textContent, $("buy").disabled];
     formula = mode;
     for (const m of ["life", "month", "lease"]) $("formula-" + m).ariaPressed = String(m === mode);
+    $("lease-months").hidden = mode !== "lease";
     $("promo").hidden = mode !== "life" || !product.priceCents;
-    $("price-note").textContent = mode === "month" ? "TTC, par mois, sans engagement"
-      : mode === "lease" ? "TTC, par mois pendant " + lease.months + " mois (" + euros(lease.cents * lease.months) + " en tout), puis le plugin est à toi"
-        : "TTC, paiement unique";
+    $("price-note").textContent = mode === "month" ? "TTC, par mois, sans engagement" : "TTC, paiement unique";
     // le plugin offert ne vient qu’avec l’achat à vie
     if (product.gift) $("gift").hidden = $("gift-note").hidden = mode !== "life";
     if (mode === "life") {
@@ -604,11 +625,11 @@ function setupMonthly(product, catalog) {
       $("buy").disabled = life[2];
       return;
     }
-    const cents = mode === "month" ? product.monthlyCents : lease.cents;
-    $("price").replaceChildren(mode === "lease" ? lease.months + " × " + euros(cents) : euros(cents) + " / mois");
     $("deal")?.remove();
     $("buy").disabled = !!monthlyBlocked;
-    $("buy").textContent = monthlyBlocked || (mode === "lease" ? "Payer en " + lease.months + " fois · " : "S’abonner · ") + euros(cents) + " / mois";
+    if (mode === "lease") return show();
+    $("price").replaceChildren(euros(product.monthlyCents) + " / mois");
+    $("buy").textContent = monthlyBlocked || "S’abonner · " + euros(product.monthlyCents) + " / mois";
   };
   for (const m of ["life", "month", "lease"]) $("formula-" + m).onclick = () => pick(m);
 }
@@ -626,7 +647,7 @@ async function buy(product, catalog) {
   if (!token) { location.href = "compte"; return; }
   $("buy").disabled = true;
   try {
-    const body = formula === "life" ? { kind: "product", id: product.id, promo } : { kind: formula === "month" ? "monthly" : "lease", id: product.id };
+    const body = formula === "life" ? { kind: "product", id: product.id, promo } : formula === "month" ? { kind: "monthly", id: product.id } : { kind: "lease", id: product.id, months: leaseMonths };
     const response = await fetch("/api/checkout", { method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await response.json();
     if (response.status === 401) { location.href = "compte"; return; }

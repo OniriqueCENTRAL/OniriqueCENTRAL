@@ -98,7 +98,15 @@ try {
     const { applyLease } = await import('../src/payments.js');
     const eve = await account('eve');
     const catalog = await call('GET', '/api/catalog');
-    assert.deepEqual(catalog.products.find((p) => p.id === tuner.id).lease, { months: 10, cents: 400, totalCents: 4000 });
+    assert.deepEqual(catalog.products.find((p) => p.id === tuner.id).lease, { minMonths: 2, months: 10, cents: 400, totalCents: 4000 });
+    // Le nombre de mensualités se choisit de 2 à 10.
+    for (const months of [1, 11, 'dix']) await call('POST', '/api/checkout', { token: eve.token, body: { kind: 'lease', id: tuner.id, months }, expect: 400 });
+    const hugo = await account('hugo');
+    assert.equal((await call('POST', '/api/checkout', { token: hugo.token, body: { kind: 'lease', id: tuner.id, months: 3 } })).granted, true);
+    const three = get(`SELECT * FROM licenses WHERE user_id = ? AND bundle LIKE 'lease:%'`, hugo.id);
+    assert.equal(three.note, 'Paiement en 3 fois · 1/3');
+    assert.equal(applyLease(hugo.id, tuner, { ref: three.bundle.slice(6), live: true, periodEnd: Date.now() + 31 * 86400_000, paid: 3, months: 3 }), true);
+    assert.equal(get('SELECT note FROM licenses WHERE id = ?', three.id).note, 'Payé en 3 fois');
     assert.equal(catalog.products.find((p) => p.id === meter.id).lease, null, 'trop petit prix : pas de paiement en plusieurs fois');
     await call('POST', '/api/checkout', { token: eve.token, body: { kind: 'lease', id: meter.id }, expect: 404 });
     assert.equal((await call('POST', '/api/checkout', { token: eve.token, body: { kind: 'lease', id: tuner.id } })).granted, true);

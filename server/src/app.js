@@ -139,10 +139,13 @@ function productVersions(productId) {
     .sort((a, b) => compareVersions(b.version, a.version) || b.created_at - a.created_at);
 }
 
-/** Le paiement en plusieurs fois d'un plugin : son prix (soldé s'il l'est) en LEASE.months mensualités ; null s'il est trop petit. */
+/**
+ * Le paiement en plusieurs fois d'un plugin : son prix (soldé s'il l'est) en minMonths à months mensualités, au choix ;
+ * null s'il est trop petit. months et cents : le plus long, que l'application 1.0.96 propose seul.
+ */
 function leaseOf(p) {
   const total = saleOf(p)?.priceCents ?? p.price_cents;
-  return total >= LEASE.minCents ? { months: LEASE.months, cents: leaseMonthlyCents(total), totalCents: total } : null;
+  return total >= LEASE.minCents ? { minMonths: LEASE.minMonths, months: LEASE.months, cents: leaseMonthlyCents(total), totalCents: total } : null;
 }
 
 /** latest est la dernière version pour le système demandé : null si le plugin n'existe pas encore pour lui. */
@@ -1057,14 +1060,17 @@ export function createApp() {
       if (right?.via === 'license' && right.type !== 'trial') throw new HttpError(409, 'Vous avez déjà ce plugin.');
       return res.json(await checkout(req.user, 'monthly', { ...product, price_cents: product.monthly_cents, interval: 'month', name: `${product.name} — abonnement mensuel` }));
     }
-    // En plusieurs fois : un abonnement de LEASE.months mois, et le plugin est à vous à la dernière mensualité.
+    // En plusieurs fois : un abonnement de 2 à 10 mois au choix (10 sans précision), et le plugin est à vous à la dernière mensualité.
     if (kind === 'lease') {
       const product = findProduct(req.body.id);
       const lease = !hiddenFrom(product, req.user) && leaseOf(product);
-      if (!lease) throw new HttpError(404, `Ce plugin ne se paie pas en ${LEASE.months} fois.`);
+      if (!lease) throw new HttpError(404, 'Ce plugin ne se paie pas en plusieurs fois.');
+      const months = req.body.months === undefined ? lease.months : int(req.body.months, 0);
+      if (!(months >= lease.minMonths && months <= lease.months)) throw new HttpError(400, `Choisissez de ${lease.minMonths} à ${lease.months} mensualités.`);
       const right = entitlement(req.user.id, product.id);
       if (right?.via === 'license' && right.type !== 'trial') throw new HttpError(409, 'Vous avez déjà ce plugin.');
-      return res.json(await checkout(req.user, 'lease', { ...product, price_cents: lease.cents, interval: 'month', name: `${product.name} — paiement en ${lease.months} fois` }));
+      return res.json(await checkout(req.user, 'lease', { ...product, price_cents: leaseMonthlyCents(lease.totalCents, months), leaseMonths: months,
+        interval: 'month', name: `${product.name} — paiement en ${months} fois` }));
     }
     // Abonnement à la carte : une liste de plugins, au prix du premier plus un supplément par plugin ajouté.
     if (kind === 'pick') {

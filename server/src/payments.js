@@ -359,7 +359,7 @@ async function stripeCheckout(user, kind, item) {
       ? { metadata: { user_id: user.id, plan_id: item.id, product_ids: item.productIds ? JSON.stringify(item.productIds) : undefined } }
       : kind === 'tools' ? { metadata: { user_id: user.id, tools: item.interval } }
         : kind === 'monthly' ? { metadata: { user_id: user.id, monthly_product: item.id } }
-          : kind === 'lease' ? { metadata: { user_id: user.id, lease_product: item.id, lease_months: LEASE.months } } : undefined,
+          : kind === 'lease' ? { metadata: { user_id: user.id, lease_product: item.id, lease_months: item.leaseMonths } } : undefined,
     line_items: lineItems(recurring ? 'plan' : kind, item.name, item.price_cents, item.interval),
   };
   // Soldes sur un abonnement : un coupon Stripe remet le début de l'abonnement (la première année, ou les premiers mois),
@@ -397,11 +397,12 @@ function applyStripeMonthly(sub, account) {
   return product;
 }
 
-// Le paiement en plusieurs fois : le prix du plugin (soldé s'il l'est) en LEASE.months mensualités. Tant qu'il n'est
-// pas soldé, la licence suit les mois payés, comme au mois ; à la dernière mensualité, elle devient définitive et
-// l'abonnement Stripe s'arrête. Arrêté avant, le plugin s'en va à la fin du mois payé, sans remboursement.
-export const LEASE = { months: 10, minCents: 3000 };
-export const leaseMonthlyCents = (totalCents) => Math.ceil(totalCents / LEASE.months);
+// Le paiement en plusieurs fois : le prix du plugin (soldé s'il l'est) en mensualités, de LEASE.minMonths à
+// LEASE.months au choix du client. Tant qu'il n'est pas soldé, la licence suit les mois payés, comme au mois ; à la
+// dernière mensualité, elle devient définitive et l'abonnement Stripe s'arrête. Arrêté avant, le plugin s'en va à la fin
+// du mois payé, sans remboursement.
+export const LEASE = { minMonths: 2, months: 10, minCents: 3000 };
+export const leaseMonthlyCents = (totalCents, months = LEASE.months) => Math.ceil(totalCents / months);
 /** Crée, prolonge ou solde la licence d'un plugin pris en plusieurs fois ; paid : les mensualités payées. Rend true quand il vient d'être soldé. */
 export function applyLease(userId, product, { ref, live, periodEnd, paid, months = LEASE.months, provider = 'stripe' }) {
   const bundle = `lease:${ref}`;
@@ -438,7 +439,7 @@ async function applyStripeLease(sub, account) {
         .catch((error) => console.error('Fin du paiement en plusieurs fois :', error.message));
     }
   }
-  return product;
+  return { ...product, leaseMonths: months };
 }
 
 function applyStripeSubscription(sub) {
@@ -503,8 +504,8 @@ export async function handleStripeEvent(event, account) {
     } else if (object.mode === 'subscription' && object.subscription && object.metadata?.kind === 'lease') {
       const product = await applyStripeLease(await stripe('GET', `/subscriptions/${object.subscription}`, undefined, account.key), account);
       if (product && event.type === 'checkout.session.completed' && recordOrder(userId, 'lease', product.id, object.amount_total ?? 0, 'stripe', object.id)) {
-        confirmOrder(userId, `${product.name} — paiement en ${LEASE.months} fois`, object.amount_total ?? 0,
-          `, puis le même montant chaque mois, ${LEASE.months} mensualités en tout : à la dernière, le plugin est à vous pour de bon (page Abonnement du site)`,
+        confirmOrder(userId, `${product.name} — paiement en ${product.leaseMonths} fois`, object.amount_total ?? 0,
+          `, puis le même montant chaque mois, ${product.leaseMonths} mensualités en tout : à la dernière, le plugin est à vous pour de bon (page Abonnement du site)`,
           stripeProvider(account), object.currency || 'eur');
       }
     } else if (object.mode === 'subscription' && object.subscription && platform && object.metadata?.kind === 'tools') {
@@ -665,7 +666,7 @@ export async function checkout(user, kind, item) {
     return { mode: 'demo', granted: true };
   }
   if (kind === 'lease' && mode === 'demo') {
-    applyLease(user.id, item, { ref: `demo_${crypto.randomBytes(8).toString('hex')}`, live: true, periodEnd: now() + PERIOD_MS.month, paid: 1, provider: 'demo' });
+    applyLease(user.id, item, { ref: `demo_${crypto.randomBytes(8).toString('hex')}`, live: true, periodEnd: now() + PERIOD_MS.month, paid: 1, months: item.leaseMonths, provider: 'demo' });
     return { mode: 'demo', granted: true };
   }
   if ((kind === 'monthly' || kind === 'lease') && mode !== 'stripe') throw new HttpError(503, 'Les achats ne sont pas encore ouverts.');
