@@ -109,6 +109,18 @@ if modprobe tcp_bbr 2>/dev/null && grep -qw bbr /proc/sys/net/ipv4/tcp_available
 fi
 sysctl -q -p "$reseau" || echo "ATTENTION : réglages réseau (TCP) non appliqués."
 
+# Les clés SSH des fondateurs (deploy/cles-fondateurs.pub) : leurs PC ont l'accès root, pour publier l'application,
+# envoyer les patch notes, déployer. Ajoutées si elles manquent, jamais retirées ici : retirer un PC, c'est l'enlever du
+# fichier et de /root/.ssh/authorized_keys. Une ligne qui n'est pas une clé publique est ignorée.
+keys=/root/.ssh/authorized_keys
+if [ -f "$work/deploy/cles-fondateurs.pub" ]; then
+  install -d -m 700 /root/.ssh
+  touch "$keys" && chmod 600 "$keys"
+  { grep -E '^ssh-(ed25519|rsa) [A-Za-z0-9+/=]+( |$)' "$work/deploy/cles-fondateurs.pub" || true; } | while read -r type body rest; do
+    grep -qF " $body" "$keys" || printf '%s %s %s\n' "$type" "$body" "$rest" >> "$keys"
+  done
+fi
+
 # Les outils du serveur qui viennent du dépôt (livraison, publication des plugins, ce script).
 for tool in "$work"/deploy/onirique-*; do install -m 755 "$tool" /usr/local/bin/; done
 install -m 644 "$work/deploy/publish-plugin.mjs" /usr/local/lib/onirique/publish-plugin.mjs
