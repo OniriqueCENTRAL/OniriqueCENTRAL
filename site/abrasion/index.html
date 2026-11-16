@@ -1,162 +1,208 @@
 <!DOCTYPE html>
-<html lang="fr" class="no-js">
+<!--
+  abrasion — page d'arrivée « très bientôt », tant que les plugins ne sont pas finis.
+  Fichier autonome : style et script sont ici (seule la police vient de Google Fonts).
+  L'ancien accueil reste à /abrasion/accueil. Pour rouvrir le site : remettre accueil.html à la place de ce fichier.
+  Réglages sur la balise <html> : data-back="2026-12-01T18:00:00+01:00" affiche un compte à rebours (vide = « très
+  bientôt ») ; data-contact="adresse" affiche une ligne de contact (vide = masquée).
+-->
+<html lang="fr" data-back="" data-contact="">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>abrasion — plugins audio</title>
-<meta name="description" content="abrasion, plugins audio pour beatmakers. RAW, le synthé à interface ASCII. Et abrasion labs pour aller plus loin : OMNIS et RAW 2.">
+<title>abrasion · très bientôt</title>
+<meta name="description" content="abrasion, plugins audio pour beatmakers : les premiers plugins arrivent très bientôt.">
+<meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#000000">
-<meta property="og:type" content="website">
-<meta property="og:title" content="abrasion — plugins audio">
-<meta property="og:description" content="Plugin’s for all. RAW, OMNIS, RAW 2.">
-<meta property="og:image" content="assets/img/raw/interface.webp">
-<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Ctext x='16' y='23' text-anchor='middle' font-family='monospace' font-weight='700' font-size='22' fill='none' stroke='%23fff' stroke-width='1'%3Ea%3C/text%3E%3Crect x='3.5' y='3.5' width='25' height='25' fill='none' stroke='%23fff' stroke-dasharray='2 2'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/site.css?v=5">
-<script src="assets/js/site.js" defer></script>
-<script src="assets/js/onirique.js" defer></script>
-<script src="/assets/account.js?v=19" defer></script>
-<script src="assets/js/viz.js" defer></script>
-<script src="assets/js/planet.js" defer></script>
-</head>
-<body class="w-abrasion" data-page="index" data-buddy="Salut. Je passe juste t’aider. Survole la carte RAW : il se met à jouer.|Le bouton abrasion / labs, en haut, te fait changer d’univers.|Clique sur le nom d’un plugin pour ouvrir sa fiche complète.|Le bouton ? en bas à droite me rappelle quand tu veux.">
-<a class="ab-skip" href="#main">Aller au contenu</a>
-<canvas class="ab-stars" aria-hidden="true"></canvas>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#000; --ink:#f2f2f2; --ink-2:#c9cdd8; --dim:#8c8f99; --mute:#55585f; --line:rgba(255,255,255,.14);
+  --glow:143,163,255; --ok:#9fe3b0; --warn:#ffd27a;
+  --mono:"Space Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Space Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --lg:linear-gradient(180deg,rgba(255,255,255,.12) 0%,rgba(255,255,255,.025) 100%);
+  --gut:clamp(16px,4vw,32px);
+}
+*,*::before,*::after{ box-sizing:border-box; }
+html,body{ margin:0; min-height:100%; background:var(--bg); }
+body{ min-height:100vh; min-height:100svh; color:var(--ink); font:400 16px/1.6 var(--sans); -webkit-font-smoothing:antialiased; overflow-x:clip;
+  display:flex; flex-direction:column; }
+::selection{ background:#fff; color:#000; }
+:focus-visible{ outline:1px solid #fff; outline-offset:3px; }
+a{ color:#fff; }
+#stars{ position:fixed; inset:0; width:100%; height:100%; z-index:0; pointer-events:none; }
+.wrap{ position:relative; z-index:1; width:100%; max-width:1180px; margin:0 auto; padding:0 var(--gut); }
 
-<header class="ab-top">
-  <div class="ab-wrap ab-top-in">
-    <a class="ab-logo" href="/abrasion/" aria-label="abrasion, accueil"><span class="ab-glass s">abrasion</span></a>
-    <nav class="ab-nav" aria-label="Plugins abrasion"><a href="/abrasion/plugins">Plugins</a><a href="/abrasion/raw">RAW</a></nav>
-    <nav class="ab-switch" data-world="abrasion" aria-label="Changer d’univers">
-      <a href="/abrasion/" data-world="abrasion" aria-current="page">abrasion</a>
-      <a href="/abrasion/labs" data-world="labs">labs</a>
-      <i class="ab-sw-thumb" aria-hidden="true"></i>
-    </nav>
-    <div class="ab-oni"><a href="/" title="Revenir sur ONIRIQUE">ONIRIQUE</a><a href="/abrasion/compte" data-account>Compte</a></div>
-    <button class="ab-menu-btn" type="button" aria-expanded="false" aria-controls="ab-menu">Menu</button>
+/* en-tête */
+.top{ position:relative; z-index:1; }
+.top .wrap{ display:flex; align-items:center; justify-content:space-between; gap:1rem; height:64px; }
+.glass{ font-family:var(--mono); font-weight:700; letter-spacing:.08em; line-height:1.08; color:transparent; background:var(--lg);
+  -webkit-background-clip:text; background-clip:text; -webkit-text-stroke:1px rgba(255,255,255,.64); filter:drop-shadow(0 0 9px rgba(255,255,255,.14)); }
+.logo{ font-size:1.5rem; -webkit-text-stroke-width:.6px; }
+.state{ display:inline-flex; align-items:center; gap:.55rem; padding:.42rem .7rem; border:1px solid var(--line); font:400 .7rem/1 var(--mono);
+  letter-spacing:.18em; text-transform:uppercase; color:var(--ink-2); white-space:nowrap; }
+.state i{ width:7px; height:7px; background:var(--warn); box-shadow:0 0 10px var(--warn); animation:blink 1.6s steps(1,end) infinite; }
+@keyframes blink{ 50%{ opacity:.15; } }
+
+/* contenu */
+main{ position:relative; z-index:1; flex:1; display:flex; align-items:center; padding:3rem 0 4rem; }
+.grid{ display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1fr); gap:clamp(2rem,5vw,4.5rem); align-items:center; }
+@media (max-width:900px){ .grid{ grid-template-columns:minmax(0,1fr); } }
+.eyebrow{ display:flex; align-items:center; gap:.8rem; margin:0 0 1.2rem; font:400 .74rem/1.4 var(--mono); letter-spacing:.22em; text-transform:uppercase; color:var(--dim); }
+.eyebrow i{ width:6px; height:6px; border:1px solid #fff; display:inline-block; }
+h1{ margin:0; font-size:clamp(2.3rem,5.2vw,4.6rem); line-height:1.02; }
+@media (max-width:900px){ h1{ font-size:clamp(2.2rem,11vw,4.6rem); } }
+.lede{ margin:1.1rem 0 0; max-width:34rem; font-size:clamp(1.04rem,1.7vw,1.22rem); color:var(--ink-2); }
+.lede b{ color:#fff; font-weight:500; }
+.facts{ margin:2rem 0 0; padding:0; list-style:none; display:grid; gap:.55rem; max-width:34rem; font:400 .84rem/1.5 var(--mono); color:var(--ink-2); }
+.facts li{ display:grid; grid-template-columns:16px 1fr; gap:.7rem; }
+.facts li::before{ content:""; width:7px; height:7px; margin-top:.5em; border:1px solid #fff; }
+.facts li.ok::before{ border-color:var(--ok); background:rgba(159,227,176,.35); }
+.back{ display:flex; flex-wrap:wrap; align-items:baseline; gap:.4rem 1rem; margin:2rem 0 0; padding:1rem 1.1rem; border:1px dashed rgba(255,255,255,.4); max-width:34rem; }
+.back .k{ font:400 .7rem/1 var(--mono); letter-spacing:.2em; text-transform:uppercase; color:var(--dim); }
+.back .v{ font:700 1.25rem/1.2 var(--mono); color:#fff; text-shadow:0 0 10px rgba(255,255,255,.45); font-variant-numeric:tabular-nums; }
+.back .s{ flex-basis:100%; font:400 .76rem/1.5 var(--mono); color:var(--dim); }
+.contact{ margin:1.2rem 0 0; font:400 .84rem/1.5 var(--mono); color:var(--dim); }
+.retry{ text-decoration:none; display:inline-flex; align-items:center; gap:.6rem; margin-top:1.6rem; min-height:44px; padding:.75rem 1.2rem; background:#fff; color:#05060a; border:0;
+  font:700 .84rem/1 var(--mono); letter-spacing:.06em; cursor:pointer;
+  clip-path:polygon(0 9px,9px 0,calc(100% - 9px) 0,100% 9px,100% calc(100% - 9px),calc(100% - 9px) 100%,9px 100%,0 calc(100% - 9px)); }
+.retry:hover{ background:#dfe6ff; } .retry:focus-visible{ outline:2px solid #fff; outline-offset:3px; }
+
+/* carte ASCII : oscilloscope « signal en pause » + journal */
+.card{ position:relative; border:1px dashed rgba(255,255,255,.72); background:rgba(0,0,0,.74); padding:clamp(1.1rem,2.6vw,1.7rem); font-family:var(--mono);
+  color:#fff; text-shadow:0 0 6px rgba(255,255,255,.4); box-shadow:0 0 30px rgba(255,255,255,.07); }
+.card .cn{ position:absolute; line-height:1; background:#000; padding:0 .15em; font-style:normal; text-shadow:0 0 8px #fff; }
+.cn.c1{ top:-.62em; left:-.42em; } .cn.c2{ top:-.62em; right:-.42em; } .cn.c3{ bottom:-.62em; left:-.42em; } .cn.c4{ bottom:-.62em; right:-.42em; }
+.card h2{ margin:0 0 .9rem; font:700 .78rem/1 var(--mono); letter-spacing:.24em; color:var(--dim); text-shadow:none; }
+#scope{ margin:0; font:400 .8rem/1.12 var(--mono); white-space:pre; overflow:hidden; }
+.log{ margin:1rem 0 0; padding:0; list-style:none; font:400 .78rem/1.65 var(--mono); color:#d6d6d6; text-shadow:none; min-height:8.4em; }
+.log li{ display:flex; gap:.5rem; white-space:nowrap; overflow:hidden; }
+.log li::before{ content:">"; color:var(--dim); }
+.log .d{ flex:1; min-width:1rem; overflow:hidden; color:#3d3d3d; }
+.log .d::before{ content:"................................................................................"; }
+.log .v{ color:#fff; } .log .v.ok{ color:var(--ok); } .log .v.run{ color:var(--warn); }
+.bar{ margin:.9rem 0 0; font:400 .78rem/1 var(--mono); white-space:pre; overflow:hidden; color:#fff; }
+@media (max-width:480px){ #scope{ font-size:.6rem; } .log{ font-size:.7rem; } }
+
+footer{ position:relative; z-index:1; padding:1.4rem 0 1.8rem; border-top:1px solid var(--line); font:400 .72rem/1.5 var(--mono); letter-spacing:.1em; color:var(--mute); }
+footer .wrap{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:.6rem 2rem; }
+
+@media (prefers-reduced-motion:reduce){ *,*::before,*::after{ animation:none !important; transition:none !important; } }
+</style>
+</head>
+<body>
+<canvas id="stars" aria-hidden="true"></canvas>
+
+<header class="top">
+  <div class="wrap">
+    <span class="glass logo" aria-label="abrasion">abrasion</span>
+    <span class="state" role="status"><i aria-hidden="true"></i>très bientôt</span>
   </div>
-  <nav class="ab-menu" id="ab-menu" aria-label="Menu" hidden>
-    <ul>
-      <li><a href="/abrasion/">abrasion <span>accueil</span></a></li>
-      <li><a href="/abrasion/raw">RAW <span>synthé</span></a></li>
-      <li><a href="/abrasion/labs">abrasion labs <span>accueil</span></a></li>
-      <li><a href="/abrasion/omnis">OMNIS <span>mastering</span></a></li>
-      <li><a href="/abrasion/raw-2">RAW 2 <span>synthé</span></a></li>
-      <li><a href="/abrasion/plugins">Tous les plugins <span>catalogue</span></a></li>
-      <li><a href="/abrasion/compte">Mon compte <span>licences</span></a></li>
-      <li><a href="/abrasion/support">Support <span>aide</span></a></li>
-      <li><a href="/">ONIRIQUE <span>retour</span></a></li>
-      <li><a href="/abrasion/cgv">CGU · CGV <span>infos</span></a></li>
-    </ul>
-  </nav>
 </header>
 
-<main id="main">
-  <!-- en-tête de page -->
-  <section class="ab-hero" data-planet aria-labelledby="h-home">
-    <canvas class="ab-pl ab-pl-back" aria-hidden="true"></canvas>
-    <canvas class="ab-pl ab-pl-gl" aria-hidden="true"></canvas>
-    <canvas class="ab-pl ab-pl-front" aria-hidden="true"></canvas>
-    <div class="ab-wrap ab-hero-grid">
-      <div>
-        <p class="ab-eyebrow"><i></i>plugins audio · <b>VST3</b></p>
-        <h1 class="ab-display ab-glass" id="h-home">abrasion</h1>
-        <p class="ab-lede mt-s"><em>Plugin’s for all.</em></p>
-        <p class="ab-lede mt-m">Des outils pour faire du son, pas pour lire des manuels. Deux ateliers : <em>abrasion</em>, là où tout a commencé, et <em>abrasion labs</em>, là où ça va plus loin.</p>
-        <div class="ab-cta">
-          <a class="ab-btn" href="/abrasion/raw">Découvrir RAW <span class="ar" aria-hidden="true">→</span></a>
-          <a class="ab-btn ghost" href="/abrasion/labs">Entrer dans abrasion labs</a>
-        </div>
+<main>
+  <div class="wrap grid">
+    <div>
+      <p class="eyebrow"><i></i>en préparation</p>
+      <h1 class="glass">signal en pause</h1>
+      <p class="lede">On finit les plugins dans l’atelier. Le site <b>abrasion</b> ouvre très bientôt.</p>
+      <ul class="facts">
+        <li>Les plugins abrasion et abrasion labs sont en cours de finition.</li>
+        <li class="ok">En attendant, tout ONIRIQUE reste ouvert sur onirique.store.</li>
+      </ul>
+      <div class="back" aria-live="polite">
+        <span class="k">ouverture</span>
+        <span class="v" id="back-v">très bientôt</span>
+        <span class="s" id="back-s">Merci de ta patience.</span>
       </div>
-      <div class="ab-planet-slot" aria-hidden="true"></div>
+      <p class="contact" id="contact" hidden></p>
+      <a class="retry" href="https://onirique.store/">Aller sur ONIRIQUE <span aria-hidden="true">→</span></a>
     </div>
-    <a class="ab-cue" href="#plugins" aria-label="Aller aux plugins">↓</a>
-  </section>
 
-  <!-- 01 · plugins -->
-  <section class="ab-sec" id="plugins" aria-labelledby="h-plugins">
-    <div class="ab-wrap">
-      <div class="ab-shead ab-rv">
-        <span class="ab-snum">01 /</span>
-        <h2 class="ab-h2" id="h-plugins">Les plugins</h2>
-        <p>Simples, directs, lisibles. Chaque réglage est à l’écran et l’interface bouge avec le son.</p>
-      </div>
-
-      <article class="ab-acard ab-rv" data-play data-tip="RAW, c’est le tout premier : deux oscillateurs, un petit automate et une interface en ASCII.">
-        <i class="ab-cn c1" aria-hidden="true">+</i><i class="ab-cn c2" aria-hidden="true">+</i><i class="ab-cn c3" aria-hidden="true">+</i><i class="ab-cn c4" aria-hidden="true">+</i>
-        <div class="ab-acard-in">
-          <div>
-            <h3><a class="nolink" href="/abrasion/raw">[ RAW ]</a></h3>
-            <p class="ver">v1 · synthé</p>
-            <p class="desc">Synthé à 2 oscillateurs, avec une interface en ASCII qui prend vie quand le son joue.</p>
-            <ul class="ab-dots">
-              <li><span>type</span><span class="d" aria-hidden="true"></span><span class="v">synthé</span></li>
-              <li><span>oscillateurs</span><span class="d" aria-hidden="true"></span><span class="v">2 wavetable</span></li>
-              <li><span>modulation</span><span class="d" aria-hidden="true"></span><span class="v">automate VIE</span></li>
-              <li><span>format</span><span class="d" aria-hidden="true"></span><span class="v">VST3</span></li>
-            </ul>
-            <div class="ab-acard-foot">
-              <span class="ab-price" data-price="raw" data-ttc>Prix à venir</span>
-              <button class="ab-btn sm" type="button" data-buy="raw">Acheter</button>
-              <a class="ab-link ascii" href="/abrasion/raw">Voir la fiche</a>
-            </div>
-          </div>
-          <div class="ab-scope" data-ascii-scope aria-hidden="true"><pre class="sc"></pre><pre class="fl"></pre></div>
-        </div>
-      </article>
-
-      <article class="ab-acard soon ab-rv mt-l">
-        <i class="ab-cn c1" aria-hidden="true">+</i><i class="ab-cn c4" aria-hidden="true">+</i>
-        <div class="ab-acard-in">
-          <div>
-            <h3>[ prochain plugin ]</h3>
-            <p class="desc m0">En préparation dans l’atelier. Il apparaîtra ici.</p>
-          </div>
-        </div>
-      </article>
-    </div>
-  </section>
-
-  <!-- 02 · esprit -->
-  <section class="ab-sec tight" aria-labelledby="h-esprit">
-    <div class="ab-wrap">
-      <div class="ab-shead ab-rv">
-        <span class="ab-snum">02 /</span>
-        <h2 class="ab-h2" id="h-esprit">L’esprit abrasion</h2>
-      </div>
-      <div class="ab-feats ascii">
-        <article class="ab-feat ab-up"><span class="k">01</span><h3>Lisible</h3><p>Tous les réglages sont à l’écran, écrits en clair. Pas de menus cachés, pas de manuel à lire avant de jouer.</p></article>
-        <article class="ab-feat ab-up"><span class="k">02</span><h3>Vivant</h3><p>L’interface réagit au son : tu vois ce que tu entends, en temps réel, jusque dans les caractères ASCII.</p></article>
-        <article class="ab-feat ab-up"><span class="k">03</span><h3>Pour tous</h3><p>Un prix juste, une licence pour toi sur deux ordinateurs, et un plugin qui continue de marcher hors ligne.</p></article>
-      </div>
-    </div>
-  </section>
-
-  <!-- passerelle vers labs -->
-  <section class="ab-sec tight" aria-label="abrasion labs">
-    <div class="ab-wrap">
-      <a class="ab-bridge ab-up" href="/abrasion/labs">
-        <span class="k">02 · l’autre atelier</span>
-        <span class="t ab-glass">abrasion labs</span>
-        <span class="ar" aria-hidden="true">→</span>
-        <p class="p">Analyse, IA, automates cellulaires. OMNIS pour le mastering, RAW 2 pour le son.</p>
-      </a>
-    </div>
-  </section>
+    <section class="card" aria-label="État de l’atelier">
+      <i class="cn c1" aria-hidden="true">+</i><i class="cn c2" aria-hidden="true">+</i><i class="cn c3" aria-hidden="true">+</i><i class="cn c4" aria-hidden="true">+</i>
+      <h2>OUT · SIGNAL</h2>
+      <pre id="scope" aria-hidden="true"></pre>
+      <ul class="log" id="log" aria-hidden="true">
+        <li><span>atelier abrasion</span><span class="d"></span><span class="v run">en travaux</span></li>
+        <li><span>abrasion labs</span><span class="d"></span><span class="v run">en travaux</span></li>
+        <li><span>onirique.store</span><span class="d"></span><span class="v ok">ouvert</span></li>
+        <li><span>ouverture du site</span><span class="d"></span><span class="v" id="log-back">très bientôt</span></li>
+      </ul>
+      <div class="bar" id="bar" aria-hidden="true"></div>
+    </section>
+  </div>
 </main>
 
-<footer class="ab-foot">
-  <div class="ab-wrap">
-    <div class="ab-foot-grid">
-      <div class="ab-foot-brand"><span class="ab-glass s">abrasion</span><p>Plugins audio pour beatmakers et producteurs. Deux ateliers : abrasion et abrasion labs.</p></div>
-      <div><h2>abrasion</h2><ul><li><a href="/abrasion/">Accueil</a></li><li><a href="/abrasion/raw">RAW</a></li></ul></div>
-      <div><h2>abrasion labs</h2><ul><li><a href="/abrasion/labs">Accueil labs</a></li><li><a href="/abrasion/omnis">OMNIS</a></li><li><a href="/abrasion/raw-2">RAW 2</a></li></ul></div>
-      <div><h2>Compte</h2><ul><li><a href="/abrasion/plugins">Tous les plugins</a></li><li><a href="/abrasion/compte">Mon compte</a></li><li><a href="/abrasion/support">Support</a></li><li><a href="/">ONIRIQUE</a></li></ul></div><div><h2>Infos</h2><ul><li><a href="/abrasion/mentions-legales">Mentions légales</a></li><li><a href="/abrasion/cgv">CGV et CGU</a></li><li><a href="/abrasion/remboursement">Rétractation et remboursement</a></li><li><a href="/abrasion/confidentialite">Confidentialité</a></li><li><a href="/abrasion/cookies">Cookies</a></li></ul></div>
-    </div>
-    <div class="ab-foot-bot"><span>© <span data-year>2026</span> abrasion. Tous droits réservés.</span><span>Prix TTC · plugins VST3</span></div>
+<footer>
+  <div class="wrap">
+    <span>© <span id="year">2026</span> abrasion · abrasion labs</span>
+    <span>plugins VST3 · plugin’s for all</span>
   </div>
 </footer>
+
+<script>
+(() => {
+"use strict";
+const RM = matchMedia("(prefers-reduced-motion: reduce)").matches, root = document.documentElement;
+const $ = id => document.getElementById(id);
+$("year").textContent = String(new Date().getFullYear());
+
+/* ---------------- réglages depuis <html data-…> */
+const backAt = root.dataset.back ? new Date(root.dataset.back) : null, validBack = backAt && !isNaN(backAt);
+const contact = (root.dataset.contact || "").trim();
+if (contact) { const c = $("contact"); c.textContent = "Une question ? " + contact; c.hidden = false; }
+
+/* ---------------- compte à rebours */
+const fmtTime = d => d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+const fmtDay = d => d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+function tick() {
+  if (!validBack) return;
+  const ms = backAt - Date.now(), today = new Date().toDateString() === backAt.toDateString();
+  $("back-s").textContent = (today ? "aujourd’hui" : fmtDay(backAt)) + " vers " + fmtTime(backAt) + ". Merci de ta patience.";
+  if (ms <= 0) { $("back-v").textContent = "d’une minute à l’autre"; $("log-back").textContent = "imminent"; return; }
+  const h = Math.floor(ms / 3.6e6), m = Math.floor(ms / 6e4) % 60, s = Math.floor(ms / 1000) % 60;
+  const txt = (h ? h + " h " : "") + String(m).padStart(h ? 2 : 1, "0") + " min " + String(s).padStart(2, "0") + " s";
+  $("back-v").textContent = "dans " + txt; $("log-back").textContent = fmtTime(backAt);
+}
+tick(); if (validBack) setInterval(tick, 1000);
+
+/* ---------------- étoiles */
+const sc = $("stars"), sx = sc.getContext("2d"); let W, H, pts = [], last = 0;
+function size() { const d = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; sc.width = W * d; sc.height = H * d; sx.setTransform(d, 0, 0, d, 0, 0);
+  pts = Array.from({ length: Math.round(W * H / 4200) }, () => ({ x: Math.random() * W, y: Math.random() * H, r: Math.random() < .9 ? .7 : 1.4, s: .4 + Math.random() * 1.8, p: Math.random() * 7 })); stars(0); }
+function stars(t) { sx.clearRect(0, 0, W, H); sx.fillStyle = "#fff"; for (const p of pts) { sx.globalAlpha = .22 + .78 * Math.abs(Math.sin(t * .001 * p.s + p.p)); sx.fillRect(p.x, p.y, p.r, p.r); } sx.globalAlpha = 1; }
+size(); addEventListener("resize", () => { clearTimeout(size.t); size.t = setTimeout(size, 150); });
+
+/* ---------------- oscilloscope ASCII : ligne plate, avec un battement de temps en temps */
+const scope = $("scope"), bar = $("bar"), COLS = 44, ROWS = 9, mid = 4;
+let ph = 0, beat = -99, lastBeat = 0;
+function scopeFrame(t) {
+  const g = Array.from({ length: ROWS }, () => Array(COLS).fill(" "));
+  if (t - lastBeat > 2600) { lastBeat = t; beat = COLS + 6; }
+  beat -= .9;
+  for (let x = 0; x < COLS; x++) {
+    const d = x - beat; let y = 0;
+    if (d > -1 && d < 7) y = [0, 1.6, -3.6, 4, -1.8, .8, 0][Math.floor(d + 1)] || 0;   // petit battement qui traverse l'écran
+    y += Math.sin(x * .7 + ph) * .18;
+    const r = Math.max(0, Math.min(ROWS - 1, Math.round(mid - y)));
+    g[r][x] = Math.abs(y) < .35 ? (x % 2 ? "~" : "-") : y > 0 ? "/" : "\\";
+    if (r !== mid && x % 2 === 0 && g[mid][x] === " ") g[mid][x] = "·";
+  }
+  scope.textContent = "+" + "·".repeat(COLS - 2) + "+\n" + g.map(r => r.join("")).join("\n") + "\n+" + "·".repeat(COLS - 2) + "+";
+  const n = 18, pos = Math.floor(t / 140) % (n * 2), k = pos < n ? pos : n * 2 - pos;   // barre de progression qui va et vient
+  bar.textContent = "WORK [" + ".".repeat(k) + "####" + ".".repeat(Math.max(0, n - k)) + "]  " + (["|", "/", "-", "\\"][Math.floor(t / 160) % 4]);
+  ph += .08;
+}
+scopeFrame(0);
+if (!RM) (function loop(t) { requestAnimationFrame(loop); if (document.hidden || t - last < 60) return; last = t; stars(t); scopeFrame(t); })(0);
+
+})();
+</script>
 </body>
 </html>
