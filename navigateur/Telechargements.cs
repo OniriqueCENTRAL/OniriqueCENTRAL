@@ -24,6 +24,15 @@ sealed partial class Navigateur
     static string FichierTelechargements => Path.Combine(Parametres.Dossier, "telechargements.json");
     DateTime derniereProgression;
 
+    /// <summary>Le dossier choisi dans les Paramètres, s'il existe encore ; sinon le dossier Téléchargements de Windows.</summary>
+    string DossierTelechargements => Reglages.DossierTelechargements is { Length: > 0 } d && Directory.Exists(d) ? d
+        : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+
+    void AppliquerDossierTelechargements()
+    {
+        foreach (var c in Vues()) try { c.Profile.DefaultDownloadFolderPath = DossierTelechargements; } catch { }
+    }
+
     void LireTelechargements()
     {
         if (telechargementsLus) return;
@@ -130,7 +139,7 @@ sealed partial class Navigateur
                 try
                 {
                     if (t != null && File.Exists(t.Chemin)) Process.Start("explorer.exe", $"/select,\"{t.Chemin}\"");
-                    else Process.Start(new ProcessStartInfo(t != null ? Path.GetDirectoryName(t.Chemin) ?? "" : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "\\Downloads") { UseShellExecute = true });
+                    else Process.Start(new ProcessStartInfo(t != null ? Path.GetDirectoryName(t.Chemin) ?? "" : DossierTelechargements) { UseShellExecute = true });
                 }
                 catch { }
                 return;

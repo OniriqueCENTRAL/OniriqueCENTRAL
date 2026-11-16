@@ -53,8 +53,7 @@ sealed partial class Navigateur
             l.Add(Trait);
             l.Add(Lien("Ouvrir le dossier Téléchargements", () =>
             {
-                var dossier = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
-                try { Process.Start(new ProcessStartInfo(dossier) { UseShellExecute = true }); } catch { }
+                try { Process.Start(new ProcessStartInfo(DossierTelechargements) { UseShellExecute = true }); } catch { }
             }));
             l.Add(Lien("Afficher plus", () => OuvrirInterne(PageTelechargements)));
             return l;

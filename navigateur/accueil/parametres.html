@@ -178,6 +178,13 @@ body.sans-animations *, body.sans-animations *::before, body.sans-animations *::
           <label class="interrupteur"><input type="checkbox" data-cle="ReprendreSession" aria-label="Reprendre là où j'en étais"><span></span></label>
         </div>
       </div>
+      <div class="carte" id="carte-dossier-dl">
+        <div class="ligne">
+          <div class="texte"><b>Dossier de téléchargement</b><small id="dossier-dl">Le dossier Téléchargements de Windows.</small></div>
+          <button class="bouton" id="dossier-dl-defaut" hidden>Par défaut</button>
+          <button class="bouton" id="dossier-dl-changer">Changer…</button>
+        </div>
+      </div>
       <div class="carte">
         <div class="ligne">
           <div class="texte"><b>Navigateur par défaut</b><small>Les liens ouverts depuis tes autres applications arrivent ici.</small></div>
@@ -447,6 +454,8 @@ document.getElementById("ext-reprendre").onclick = () => envoyer({ type: "extRep
 document.getElementById("google").onclick = () => envoyer({ type: "google" });
 document.getElementById("motsdepasse").onclick = () => envoyer({ type: "google", page: "motsdepasse" });
 document.getElementById("defaut").onclick = () => envoyer({ type: "defaut" });
+document.getElementById("dossier-dl-changer").onclick = () => envoyer({ type: "dossierDl" });
+document.getElementById("dossier-dl-defaut").onclick = () => envoyer({ type: "dossierDlDefaut" });
 document.getElementById("majs").onclick = () => envoyer({ type: "majs" });
 // Désinstaller : une confirmation ici, puis le navigateur ferme ses fenêtres et s'efface.
 const fenetreDesinstaller = document.getElementById("desinstaller-fenetre");
@@ -496,9 +505,12 @@ function afficher(m) {
     document.querySelector('[data-cle="BarreFavoris"]')?.closest(".ligne")?.setAttribute("hidden", "");
     document.querySelector('[data-cle="OngletsVerticaux"]')?.closest(".ligne")?.setAttribute("hidden", "");
     document.getElementById("defaut").textContent = "Choisir";
+    document.getElementById("carte-dossier-dl").hidden = true;
     document.getElementById("carte-google").hidden = true;
     document.querySelector('nav button[data-rubrique="extensions"]').hidden = true;
   }
+  if (m.dossierDl) document.getElementById("dossier-dl").textContent = m.dossierDl;
+  document.getElementById("dossier-dl-defaut").hidden = !m.dossierDlChoisi;
   document.getElementById("google-statut").textContent = m.google
     ? "Connecté : Gmail, YouTube, Drive et ta recherche te reconnaissent."
     : "Connecte ton compte Google : Gmail, YouTube, Drive et ta recherche te reconnaissent tout de suite.";

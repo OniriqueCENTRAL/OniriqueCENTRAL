@@ -246,59 +246,58 @@ sealed partial class Navigateur
 
     internal void MenuOnglet(Onglet o, Point ecran)
     {
-        var m = NouveauMenu();
         int i = Onglets.IndexOf(o);
-        if (Verticale) m.Items.Add(Element(o.Epingle ? "Retirer des épinglés" : "Épingler en haut", () => { o.Epingle = !o.Epingle; Redessiner(); }));
-        m.Items.Add(Element("Nouvel onglet à droite", async () => { var n = await Ouvrir(Accueil, i + 1); if (o.Groupe != null) { n.Groupe = o.Groupe; Animer(); } }));
-        m.Items.Add(new ToolStripSeparator());
-        m.Items.Add(Element("Ajouter à un nouveau groupe", () => NouveauGroupe(o)));
-        var autres = Groupes.Where(g => g != o.Groupe).ToList();
-        if (autres.Count > 0)
+        var titre = o.Titre.Length > 0 ? o.Titre : "Nouvel onglet";
+        Volet.Ouvrir(this, titre.Length > 34 ? titre[..33] + "…" : titre, () =>
         {
-            var sous = new ToolStripMenuItem("Ajouter au groupe");
-            foreach (var g in autres) sous.DropDownItems.Add(Element(NomDe(g), () => MettreDansGroupe(o, g), image: Pastille(g.Couleur)));
-            m.Items.Add(sous);
-        }
-        if (o.Groupe != null) m.Items.Add(Element("Retirer du groupe", () => { Ranger(o, null); Animer(); }));
-        m.Items.Add(new ToolStripSeparator());
-        if (o.Partenaire != null) m.Items.Add(Element("Quitter l'écran divisé", () => QuitterDivision(o)));
-        else
-        {
-            m.Items.Add(Element("Diviser l'écran avec un nouvel onglet", () => DiviserAvecNouvelOnglet(o)));
-            var voisin = i + 1 < Onglets.Count ? Onglets[i + 1] : null;
-            m.Items.Add(Element("Diviser l'écran avec l'onglet de droite", () => Diviser(o, voisin!), voisin != null && voisin.Partenaire == null));
-        }
-        m.Items.Add(new ToolStripSeparator());
-        m.Items.Add(Element("Fermer l'onglet", () => Fermer(o)));
-        m.Items.Add(Element("Fermer les autres onglets", () => { foreach (var x in Onglets.Where(x => x != o).ToList()) Fermer(x); }, Onglets.Count > 1));
-        m.Show(ecran);
+            var l = new List<Ligne>();
+            if (Verticale) l.Add(new Ligne { Titre = o.Epingle ? "Retirer des épinglés" : "Épingler en haut", Glyphe = "\uE718", Faire = () => { o.Epingle = !o.Epingle; Redessiner(); } });
+            l.Add(new Ligne { Titre = "Nouvel onglet à droite", Glyphe = "\uE710", Faire = async () => { var n = await Ouvrir(Accueil, i + 1); if (o.Groupe != null) { n.Groupe = o.Groupe; Animer(); } } });
+            l.Add(new Ligne { Titre = "Groupes", Rubrique = true });
+            l.Add(new Ligne { Titre = "Nouveau groupe", Glyphe = "\uE8F4", Faire = () => NouveauGroupe(o) });
+            foreach (var g in Groupes.Where(g => g != o.Groupe))
+                l.Add(new Ligne { Titre = NomDe(g), Sous = "Ajouter à ce groupe", Couleur = g.Couleur, Faire = () => MettreDansGroupe(o, g) });
+            if (o.Groupe != null) l.Add(new Ligne { Titre = "Retirer du groupe", Sous = NomDe(o.Groupe), Couleur = o.Groupe.Couleur, Faire = () => { Ranger(o, null); Animer(); } });
+            l.Add(new Ligne { Titre = "Écran divisé", Rubrique = true });
+            if (o.Partenaire != null) l.Add(new Ligne { Titre = "Quitter l'écran divisé", Glyphe = "\uE8A0", Faire = () => QuitterDivision(o) });
+            else
+            {
+                l.Add(new Ligne { Titre = "Avec un nouvel onglet", Glyphe = "\uE8A0", Faire = () => DiviserAvecNouvelOnglet(o) });
+                var voisin = i + 1 < Onglets.Count ? Onglets[i + 1] : null;
+                l.Add(new Ligne { Titre = "Avec l'onglet de droite", Glyphe = "\uE8A0", Actif = voisin != null && voisin.Partenaire == null, Faire = () => Diviser(o, voisin!) });
+            }
+            l.Add(new Ligne { Filet = true });
+            l.Add(new Ligne { Titre = "Fermer l'onglet", Glyphe = "\uE711", Faire = () => Fermer(o) });
+            l.Add(new Ligne { Titre = "Fermer les autres onglets", Glyphe = "\uE8BB", Actif = Onglets.Count > 1, Faire = () => { foreach (var x in Onglets.Where(x => x != o).ToList()) Fermer(x); } });
+            return l;
+        }, coin: ecran);
     }
 
     internal void MenuGroupe(Groupe gr, Point ecran)
     {
-        var m = NouveauMenu();
-        m.Items.Add(Element("Renommer le groupe", () => Renommer(gr)));
-        var couleurs = new ToolStripMenuItem("Couleur");
-        foreach (var (hex, nom) in DA.Accents)
+        Volet.Ouvrir(this, NomDe(gr), () =>
         {
-            var c = ColorTranslator.FromHtml(hex);
-            var el = Element(nom, () => { gr.Couleur = c; Redessiner(); }, image: Pastille(c));
-            el.Checked = c.ToArgb() == gr.Couleur.ToArgb();
-            couleurs.DropDownItems.Add(el);
-        }
-        m.Items.Add(couleurs);
-        m.Items.Add(Element(gr.Replie ? "Déplier" : "Replier", () => BasculerGroupe(gr)));
-        m.Items.Add(Element("Nouvel onglet dans le groupe", async () =>
-        {
-            gr.Replie = false;
-            var n = await Ouvrir(Accueil, Onglets.FindLastIndex(x => x.Groupe == gr) + 1);
-            n.Groupe = gr;
-            Animer();
-        }));
-        m.Items.Add(new ToolStripSeparator());
-        m.Items.Add(Element("Dégrouper", () => { foreach (var x in Onglets.Where(x => x.Groupe == gr)) x.Groupe = null; Animer(); }));
-        m.Items.Add(Element("Fermer le groupe", () => { foreach (var x in Onglets.Where(x => x.Groupe == gr).ToList()) Fermer(x); }));
-        m.Show(ecran);
+            var couleurs = DA.Accents.Select(a => ColorTranslator.FromHtml(a.Hex)).ToArray();
+            return new List<Ligne>
+            {
+                new() { Titre = "Couleur", Nuancier = couleurs, Choisie = Array.FindIndex(couleurs, c => c.ToArgb() == gr.Couleur.ToArgb()), Choisir = k => { gr.Couleur = couleurs[k]; Redessiner(); } },
+                new() { Titre = "Renommer le groupe", Glyphe = "\uE8AC", Faire = () => Renommer(gr) },
+                new() { Titre = gr.Replie ? "Déplier" : "Replier", Glyphe = gr.Replie ? "\uE70D" : "\uE70E", Faire = () => BasculerGroupe(gr) },
+                new()
+                {
+                    Titre = "Nouvel onglet dans le groupe", Glyphe = "\uE710", Faire = async () =>
+                    {
+                        gr.Replie = false;
+                        var n = await Ouvrir(Accueil, Onglets.FindLastIndex(x => x.Groupe == gr) + 1);
+                        n.Groupe = gr;
+                        Animer();
+                    },
+                },
+                new() { Filet = true },
+                new() { Titre = "Dégrouper", Glyphe = "\uE8C6", Faire = () => { foreach (var x in Onglets.Where(x => x.Groupe == gr)) x.Groupe = null; Animer(); } },
+                new() { Titre = "Fermer le groupe", Glyphe = "\uE711", Faire = () => { foreach (var x in Onglets.Where(x => x.Groupe == gr).ToList()) Fermer(x); } },
+            };
+        }, coin: ecran);
     }
 
     // ——— Session : les groupes et les écrans divisés reviennent avec les onglets ———

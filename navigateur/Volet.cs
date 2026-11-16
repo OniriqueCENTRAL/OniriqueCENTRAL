@@ -17,7 +17,11 @@ sealed class Ligne
     public string? GlypheAction;   // petit bouton à droite (afficher dans le dossier…)
     public Action? Action;
     public string? AideAction;
-    internal bool Cliquable => Actif && !Rubrique && !Filet && Faire != null;
+    public Color? Couleur;         // une pastille ronde de couleur (groupe d'onglets) à la place de l'icône
+    public Color[]? Nuancier;      // une rangée de couleurs à choisir ; le volet reste ouvert
+    public int Choisie = -1;
+    public Action<int>? Choisir;
+    internal bool Cliquable => Actif && !Rubrique && !Filet && (Faire != null || Choisir != null);
 }
 
 /// <summary>
@@ -42,17 +46,22 @@ sealed class Volet : Form
     /// <summary>Le dernier volet fermé et quand : recliquer sur son bouton le ferme au lieu de le rouvrir.</summary>
     static (Control? Ancre, long Quand) dernier;
 
-    public static void Ouvrir(Control ancre, string titre, Func<List<Ligne>> lignes, bool vivant = false)
+    /// <summary>Sous le bouton <paramref name="ancre"/>, aligné à droite ; ou, avec <paramref name="coin"/>, à ce point de l'écran (clic droit, bord d'un bouton).</summary>
+    public static void Ouvrir(Control ancre, string titre, Func<List<Ligne>> lignes, bool vivant = false, Point? coin = null)
     {
-        if (dernier.Ancre == ancre && Environment.TickCount64 - dernier.Quand < 250) return;
-        var v = new Volet(ancre, titre, lignes);
+        if (coin == null && dernier.Ancre == ancre && Environment.TickCount64 - dernier.Quand < 250) return;
+        var v = new Volet(ancre, titre, lignes, coin);
         if (vivant) v.suivi.Start();
         v.Show(ancre.FindForm());
     }
 
-    Volet(Control ancre, string titre, Func<List<Ligne>> source)
+    readonly Point? coin;
+    int defil, total; // défilement quand le volet est plus haut que l'écran
+
+    Volet(Control ancre, string titre, Func<List<Ligne>> source, Point? coin)
     {
         this.ancre = ancre;
+        this.coin = coin;
         this.titre = titre;
         this.source = source;
         FormBorderStyle = FormBorderStyle.None;
@@ -95,7 +104,10 @@ sealed class Volet : Form
     }
 
     int S(int v) => ancre.S(v);
-    int Hauteur(Ligne l) => l.Filet ? S(9) : l.Rubrique ? S(28) : l.Lien ? S(36) : l.Sous.Length > 0 || l.Progres != null ? S(54) : S(42);
+    int Hauteur(Ligne l) => l.Filet ? S(9) : l.Rubrique ? S(28) : l.Lien ? S(36) : l.Nuancier != null ? S(44) : l.Sous.Length > 0 || l.Progres != null ? S(54) : S(40);
+    const int Tete = 48; // hauteur de l'en-tête, qui ne défile pas
+
+    Rectangle Ecran => coin is { } c ? Screen.FromPoint(c).WorkingArea : Screen.FromControl(ancre).WorkingArea;
 
     void Recharger()
     {
@@ -103,7 +115,9 @@ sealed class Volet : Form
         zones.Clear();
         int y = S(52), largeur = S(360);
         foreach (var l in lignes) { int h = Hauteur(l); zones.Add(new Rectangle(S(6), y, largeur - S(12), h)); y += h; }
-        var taille = new Size(largeur, y + S(6));
+        total = y + S(6);
+        var taille = new Size(largeur, Math.Min(total, Ecran.Height - S(16)));
+        defil = Math.Clamp(defil, 0, total - taille.Height);
         if (!IsHandleCreated) Placer(taille);
         else if (Size != taille) { Size = taille; Placer(taille); }
         if (survol >= lignes.Count) survol = -1;
@@ -113,10 +127,17 @@ sealed class Volet : Form
     void Placer(Size taille)
     {
         Size = taille;
-        var coin = ancre.PointToScreen(new Point(ancre.Width, ancre.Height));
-        var ecran = Screen.FromControl(ancre).WorkingArea;
-        int x = Math.Clamp(coin.X - taille.Width + S(4), ecran.Left + S(4), Math.Max(ecran.Left, ecran.Right - taille.Width - S(4)));
-        arriveeY = Math.Min(coin.Y + S(6), Math.Max(ecran.Top, ecran.Bottom - taille.Height - S(4)));
+        var ecran = Ecran;
+        int x, y;
+        if (coin is { } c) { x = c.X; y = c.Y; }
+        else
+        {
+            var bas = ancre.PointToScreen(new Point(ancre.Width, ancre.Height));
+            x = bas.X - taille.Width + S(4);
+            y = bas.Y + S(6);
+        }
+        x = Math.Clamp(x, ecran.Left + S(4), Math.Max(ecran.Left, ecran.Right - taille.Width - S(4)));
+        arriveeY = Math.Clamp(y, ecran.Top + S(4), Math.Max(ecran.Top, ecran.Bottom - taille.Height - S(4)));
         departY = arriveeY - S(8);
         Location = new Point(x, anime.Enabled || Opacity < 1 ? departY : arriveeY);
     }
@@ -173,10 +194,38 @@ sealed class Volet : Form
         using (var braise = new SolidBrush(DA.Braise)) g.FillRectangle(braise, S(18), S(42), S(22), S(2));
         using (var filet = new Pen(DA.Filet)) g.DrawLine(filet, S(44), S(43), Width - S(18), S(43));
 
+        if (total > Height)
+        {
+            // La barre de défilement : un trait fin à droite.
+            int haut = Height - S(Tete) - S(8), pouce = Math.Max(S(24), haut * Height / total);
+            int py = S(Tete) + S(4) + (haut - pouce) * defil / Math.Max(1, total - Height);
+            using var fond = new SolidBrush(DA.Filet);
+            using var forme = Arrondi(new RectangleF(Width - S(5), py, S(3), pouce), S(1));
+            g.FillPath(fond, forme);
+        }
+        g.SetClip(new Rectangle(0, S(Tete), Width, Height - S(Tete)));
+        g.TranslateTransform(0, -defil);
         for (int i = 0; i < lignes.Count; i++)
         {
             var l = lignes[i];
             var r = zones[i];
+            if (r.Bottom < defil || r.Top > defil + Height) continue;
+            if (l.Nuancier is { } nuances)
+            {
+                TextRenderer.DrawText(g, l.Titre, petit, new Rectangle(r.X + S(12), r.Y, S(70), r.Height), DA.Cendre, gauche);
+                for (int k = 0; k < nuances.Length; k++)
+                {
+                    var z = ZoneNuance(r, k);
+                    if (k == l.Choisie || (i == survol && k == nuanceSurvol))
+                    {
+                        using var anneau = new Pen(k == l.Choisie ? DA.Brume : DA.Cendre, S(2));
+                        g.DrawEllipse(anneau, Rectangle.Inflate(z, S(3), S(3)));
+                    }
+                    using var pinceau = new SolidBrush(nuances[k]);
+                    g.FillEllipse(pinceau, z);
+                }
+                continue;
+            }
             if (l.Filet) { using var p = new Pen(DA.Filet); g.DrawLine(p, r.X + S(12), r.Y + r.Height / 2, r.Right - S(12), r.Y + r.Height / 2); continue; }
             if (l.Rubrique)
             {
@@ -197,8 +246,15 @@ sealed class Volet : Form
                 TextRenderer.DrawText(g, "", icones, new Rectangle(r.Right - S(36), r.Y, S(24), r.Height), chaud ? DA.BraiseClaire : DA.Cendre, centre);
                 continue;
             }
+            if (l.Couleur is { } teinte)
+            {
+                int t = S(34), d = S(14);
+                using var pinceau = new SolidBrush(teinte);
+                g.FillEllipse(pinceau, x + (t - d) / 2, r.Y + (r.Height - d) / 2, d, d);
+                x += t + S(12);
+            }
             // La pastille : l'extension du fichier ou une icône, sur un dégradé de braise (éteinte si la ligne l'est).
-            if (l.Badge != null || l.Glyphe != null)
+            else if (l.Badge != null || l.Glyphe != null)
             {
                 int t = S(34);
                 var p = new Rectangle(x, r.Y + (r.Height - t) / 2, t, t);
@@ -259,15 +315,33 @@ sealed class Volet : Form
         }
     }
 
+    int nuanceSurvol = -1;
+    Rectangle ZoneNuance(Rectangle r, int k) { int d = S(20); return new Rectangle(r.X + S(84) + k * S(26), r.Y + (r.Height - d) / 2, d, d); }
+
+    /// <summary>Le point de la souris dans la liste (qui défile), ou null dans l'en-tête.</summary>
+    Point? DansListe(Point p) => p.Y < S(Tete) ? null : new Point(p.X, p.Y + defil);
+
     protected override void OnMouseMove(MouseEventArgs e)
     {
         base.OnMouseMove(e);
-        int i = zones.FindIndex(z => z.Contains(e.Location));
-        bool action = i >= 0 && lignes[i].Action != null && ZoneAction(zones[i]).Contains(e.Location);
-        if (i == survol && action == surAction) return;
+        var p = DansListe(e.Location);
+        int i = p is { } q ? zones.FindIndex(z => z.Contains(q)) : -1;
+        bool action = i >= 0 && lignes[i].Action != null && ZoneAction(zones[i]).Contains(p!.Value);
+        int nuance = i >= 0 && lignes[i].Nuancier is { } n ? Enumerable.Range(0, n.Length).FirstOrDefault(k => ZoneNuance(zones[i], k).Contains(p!.Value), -1) : -1;
+        if (i == survol && action == surAction && nuance == nuanceSurvol) return;
         survol = i;
         surAction = action;
-        Cursor = i >= 0 && (lignes[i].Cliquable || action) ? Cursors.Hand : Cursors.Default;
+        nuanceSurvol = nuance;
+        Cursor = i >= 0 && (lignes[i].Nuancier != null ? nuance >= 0 : lignes[i].Cliquable || action) ? Cursors.Hand : Cursors.Default;
+        Invalidate();
+    }
+
+    protected override void OnMouseWheel(MouseEventArgs e)
+    {
+        base.OnMouseWheel(e);
+        if (total <= Height) return;
+        defil = Math.Clamp(defil - e.Delta / 120 * S(48), 0, total - Height);
+        OnMouseMove(new MouseEventArgs(MouseButtons.None, 0, e.X, e.Y, 0));
         Invalidate();
     }
 
@@ -276,20 +350,35 @@ sealed class Volet : Form
     protected override void OnMouseUp(MouseEventArgs e)
     {
         base.OnMouseUp(e);
-        if (e.Button != MouseButtons.Left) return;
-        int i = zones.FindIndex(z => z.Contains(e.Location));
+        if (e.Button != MouseButtons.Left || DansListe(e.Location) is not { } p) return;
+        int i = zones.FindIndex(z => z.Contains(p));
         if (i < 0) return;
-        if (lignes[i].Action != null && ZoneAction(zones[i]).Contains(e.Location)) { lignes[i].Action!(); Fermer(); return; }
+        if (lignes[i].Action != null && ZoneAction(zones[i]).Contains(p)) { lignes[i].Action!(); Fermer(); return; }
+        if (lignes[i].Nuancier is { } n)
+        {
+            int k = Enumerable.Range(0, n.Length).FirstOrDefault(k => ZoneNuance(zones[i], k).Contains(p), -1);
+            if (k >= 0 && lignes[i].Choisir is { } choisir) { choisir(k); Recharger(); }
+            return;
+        }
         Choisir(i);
     }
 
     void Choisir(int i)
     {
         var l = lignes[i];
-        if (!l.Cliquable) return;
-        l.Faire!();
+        if (!l.Cliquable || l.Faire == null) return;
+        l.Faire();
         if (l.Interrupteur != null) Recharger(); // un interrupteur se voit basculer, le volet reste
         else Fermer();
+    }
+
+    /// <summary>Au clavier, la ligne choisie reste visible.</summary>
+    void Montrer(int i)
+    {
+        var r = zones[i];
+        if (r.Top - S(Tete) < defil) defil = r.Top - S(Tete) - S(4);
+        else if (r.Bottom > defil + Height - S(6)) defil = r.Bottom - Height + S(6);
+        defil = Math.Clamp(defil, 0, Math.Max(0, total - Height));
     }
 
     protected override bool ProcessCmdKey(ref Message msg, Keys touches)
@@ -303,7 +392,7 @@ sealed class Volet : Form
                 for (int k = 1; k <= n; k++)
                 {
                     int j = ((survol < 0 ? (sens > 0 ? -1 : 0) : survol) + sens * k + n * 2) % n;
-                    if (lignes[j].Cliquable) { survol = j; surAction = false; Invalidate(); break; }
+                    if (lignes[j].Cliquable && lignes[j].Faire != null) { survol = j; surAction = false; Montrer(j); Invalidate(); break; }
                 }
                 return true;
             case Keys.Enter:

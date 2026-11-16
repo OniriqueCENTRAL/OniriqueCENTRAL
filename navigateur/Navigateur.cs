@@ -406,6 +406,7 @@ sealed partial class Navigateur : Form
         // Le relais du VPN demande son jeton (407) : seul Vpn.Repondre le donne, et seulement à lui.
         c.BasicAuthenticationRequested += Vpn.Repondre;
         // Comme un navigateur ordinaire : les mots de passe et les formulaires sont retenus (et proposés à la saisie).
+        try { c.Profile.DefaultDownloadFolderPath = DossierTelechargements; } catch { }
         c.Settings.IsPasswordAutosaveEnabled = true;
         c.Settings.IsGeneralAutofillEnabled = true;
         c.Profile.PreferredTrackingPreventionLevel = Reglages.Traqueurs switch
@@ -693,6 +694,20 @@ sealed partial class Navigateur : Form
                 await MajExtensions();
                 _ = LireAvatar();
                 break;
+            case "dossierDl":
+                using (var choix = new FolderBrowserDialog { Description = "Dossier de téléchargement", UseDescriptionForTitle = true, InitialDirectory = DossierTelechargements, ShowNewFolderButton = true })
+                {
+                    if (choix.ShowDialog(this) != DialogResult.OK) return;
+                    Reglages.DossierTelechargements = choix.SelectedPath;
+                }
+                Reglages.Enregistrer();
+                AppliquerDossierTelechargements();
+                break;
+            case "dossierDlDefaut":
+                Reglages.DossierTelechargements = null;
+                Reglages.Enregistrer();
+                AppliquerDossierTelechargements();
+                break;
             case "defaut":
                 Process.Start(new ProcessStartInfo("ms-settings:defaultapps?registeredAppUser=" + Uri.EscapeDataString(Installation.Nom)) { UseShellExecute = true });
                 return;
@@ -714,6 +729,8 @@ sealed partial class Navigateur : Form
             ["reglages"] = valeurs,
             ["vpn"] = vpnEtat,
             ["version"] = Installation.Version,
+            ["dossierDl"] = DossierTelechargements,
+            ["dossierDlChoisi"] = Reglages.DossierTelechargements != null,
             ["installe"] = Installation.EstInstallee,
             ["majPrete"] = majPrete,
             ["raccourcis"] = raccourcis,

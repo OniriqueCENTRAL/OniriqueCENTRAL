@@ -42,6 +42,7 @@ sealed class Parametres
     public bool ModeStudio { get; set; } = true;
     public bool Bloqueur { get; set; } = true;
     public List<string> PubsPermises { get; set; } = new();
+    public string? DossierTelechargements { get; set; } // null : le dossier Téléchargements de Windows
     public List<string> OutilsLateraux { get; set; } = new(); // outils ONIRIQUE gardés dans la barre latérale (OutilsLateraux.cs)   // sites où le bloqueur est coupé (youtube.com…)
     public int PlafondMemoire { get; set; }      // Mo, 0 : aucun
     public int PlafondCpu { get; set; }          // %, 0 : aucun

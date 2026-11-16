@@ -67,27 +67,29 @@ sealed partial class Navigateur
 
     void MenuOutilsLateraux()
     {
-        var m = NouveauMenu();
-        m.Items.Add(Element("Coche les outils à garder dans la barre latérale", () => { }, false));
-        foreach (var groupe in OutilsOnirique.GroupBy(t => t.Groupe))
+        var bord = boutonOutilsLateraux.PointToScreen(new Point(boutonOutilsLateraux.Width + this.S(8), 0));
+        Volet.Ouvrir(boutonOutilsLateraux, "Outils de la barre latérale", () =>
         {
-            var sous = new ToolStripMenuItem(groupe.Key);
-            foreach (var t in groupe)
+            var l = new List<Ligne>();
+            foreach (var groupe in OutilsOnirique.GroupBy(t => t.Groupe))
             {
-                var el = new ToolStripMenuItem(t.Nom) { Checked = Reglages.OutilsLateraux.Contains(t.Id) };
-                el.Click += (_, _) =>
-                {
-                    if (!Reglages.OutilsLateraux.Remove(t.Id)) Reglages.OutilsLateraux.Add(t.Id);
-                    Reglages.Enregistrer();
-                    if (panneauOuvert == "outil:" + t.Id) BasculerPanneau(null);
-                    RangerOutilsLateraux();
-                };
-                sous.DropDownItems.Add(el);
+                l.Add(new Ligne { Titre = groupe.Key, Rubrique = true });
+                foreach (var t in groupe)
+                    l.Add(new Ligne
+                    {
+                        Titre = t.Nom, Glyphe = t.Glyphe, Interrupteur = Reglages.OutilsLateraux.Contains(t.Id),
+                        Faire = () =>
+                        {
+                            if (!Reglages.OutilsLateraux.Remove(t.Id)) Reglages.OutilsLateraux.Add(t.Id);
+                            Reglages.Enregistrer();
+                            if (panneauOuvert == "outil:" + t.Id) BasculerPanneau(null);
+                            RangerOutilsLateraux();
+                        },
+                    });
             }
-            m.Items.Add(sous);
-        }
-        m.Items.Add(new ToolStripSeparator());
-        m.Items.Add(Element("Afficher plus", () => _ = Ouvrir("https://onirique.store/outils")));
-        m.Show(boutonOutilsLateraux, new Point(boutonOutilsLateraux.Width, 0));
+            l.Add(new Ligne { Filet = true });
+            l.Add(new Ligne { Titre = "Afficher plus", Lien = true, Faire = () => _ = Ouvrir("https://onirique.store/outils") });
+            return l;
+        }, coin: bord);
     }
 }
