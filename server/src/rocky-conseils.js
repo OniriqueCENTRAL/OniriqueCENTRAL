@@ -29,7 +29,7 @@ export const CONSEILS = {
     pas: 'Ne corrige pas note par note à la main (c\'est PITCHBOX).',
   },
   'onirique-pitchbox': {
-    pour: 'Corriger la justesse d\'une prise note par note, à la main ou par gamme, comme un éditeur de hauteur.',
+    pour: 'Corriger la justesse d\'une prise note par note, à la main ou par gamme, comme dans Melodyne : la voix est découpée en notes qu\'on voit, qu\'on déplace et qu\'on recale une par une. C\'est lui qu\'on conseille quand quelqu\'un parle de Melodyne ou veut retoucher sa voix à la main.',
     ou: 'Sur une piste de voix seule (une note à la fois).',
     pas: 'Pas un autotune en direct pour s\'enregistrer (c\'est TUNER). Pour une voix qui chante faux, l\'autotune (TUNER) passe avant : PITCHBOX seulement pour retoucher à la main des notes précises. Pas pour les accords ni un mix.',
   },
