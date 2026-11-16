@@ -64,6 +64,11 @@ button.btn:disabled { opacity: .5; cursor: default; }
   </section>
 
   <section id="in" hidden>
+    <div id="preview-box" hidden>
+      <h2>Aperçu (fondateurs)</h2>
+      <p class="muted">Ce que voit un abonné : une formule fictive, rien n’est enregistré et les boutons n’envoient rien.</p>
+      <div id="preview"></div>
+    </div>
     <h2>Plugins</h2>
     <div id="plugins"></div>
     <div class="actions"><button class="btn" type="button" id="portal">Paiement et factures</button></div>
@@ -201,6 +206,17 @@ async function load() {
                 "Résilier ONIRIQUE CLOUD ? Tu gardes l’accès jusqu’au " + date(t.periodEnd) + ".")])
       : (() => { const c = card("ONIRIQUE CLOUD", "Gratuit", false, ["Tu utilises la version gratuite. Plus de place et la page de liens avec l’abonnement."], []);
           const row = el("div", "actions"); const a = el("a", "btn main", "Voir l’offre"); a.href = "cloud"; row.append(a); c.append(row); return c; })());
+
+  // Un fondateur sans aucun abonnement voit en plus la carte d'un abonné, pour juger la page. Rien n'est appelé.
+  const preview = me.user.role === "founder" && !sub && !t?.active && !monthly.length;
+  $("preview-box").hidden = !preview;
+  if (preview) {
+    const p = catalog.plans.find((x) => !x.productIds?.length) || catalog.plans[0] || { name: "ALL ACCESS ONIRIQUE — MENSUEL", priceCents: 3999, interval: "month" };
+    const fake = (label, className) => { const b = el("button", "btn " + className, label); b.type = "button"; b.onclick = () => say("Aperçu : rien n’est envoyé."); return b; };
+    $("preview").replaceChildren(card(p.name, "Actif", true,
+      ["Tous les plugins ONIRIQUE, mises à jour et nouveautés comprises.", "Prochaine échéance le " + date(Date.now() + 30 * 86400000) + " : " + euros(p.priceCents) + " par " + per(p.interval) + "."],
+      [fake("Résilier", "danger"), fake("Reprendre l’abonnement", ""), fake("Passer à une autre formule", "main"), fake("Paiement et factures", "")]));
+  }
 }
 
 $("portal").onclick = async () => {
