@@ -390,14 +390,14 @@ button.act.danger:hover { border-color: #ff7a85; background: rgba(255,122,133,.1
 
     <!-- Réservé aux fondateurs : l'argent encaissé par ONIRIQUE pour les vendeurs, et les versements à faire -->
     <section class="tab" id="tab-payouts" data-label="Versements" hidden>
-    <div class="tiles" id="payouts-tiles"></div>
+    <div class="tiles" id="payouts-tiles"><div class="tile"><b>…</b><span>Solde à verser</span></div></div>
     <p class="notice payouts-asked" id="payouts-notice" role="status" hidden></p>
     <div class="bar"><h2>Soldes des vendeurs</h2><button class="act" id="payouts-reload" type="button">Actualiser</button></div>
     <p class="sub">Chaque vendeur à qui ONIRIQUE doit de l'argent : ses ventes de packs de prods et de visuels (vitrine) encaissées par ONIRIQUE, ce qui lui a déjà été versé et ce qui reste dû. Une demande de versement s'affiche ici en tête. Fais le virement, puis « Versement fait » : le vendeur reçoit un e-mail.</p>
     <p class="error" id="payouts-error" role="alert"></p>
     <div class="table"><table>
       <thead><tr><th>Vendeur</th><th>Packs de prods</th><th>Vitrine</th><th>Déjà versé</th><th>Dû</th><th>Demande</th><th><span class="sub">Actions</span></th></tr></thead>
-      <tbody id="payouts"></tbody>
+      <tbody id="payouts"><tr><td colspan="7" class="sub">Chargement des soldes…</td></tr></tbody>
     </table></div>
     </section>
 
