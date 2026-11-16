@@ -239,7 +239,7 @@ if (data) OniriqueLinkPage.render(document.getElementById("page"), data.page, da
 
 /** Les routes : la page publique (et son image), l'éditeur et les statistiques réservés aux fondateurs. */
 export function mountLinkPages(app, { requireUser, receiveImage, removeMedia, wrap }) {
-  const founderOnly = (req) => { if (!can(req.user, 'links')) throw new HttpError(403, 'La page de liens demande un abonnement : 1,99 € par mois ou 9,99 € par an, sur onirique.store/cloud.'); };
+  const founderOnly = (req) => { if (!can(req.user, 'links')) throw new HttpError(403, 'La page de liens demande un abonnement : 1,99 € par mois ou 19,99 € par an, sur onirique.store/cloud.'); };
   const own = (userId) => get('SELECT * FROM link_pages WHERE user_id = ?', userId);
 
   // La page publique elle-même. Une visite par personne et par demi-heure, sans les robots (aperçus des messageries).

@@ -30,7 +30,9 @@
 - Pièges : sans le droit de créer des liens symboliques, electron-builder échoue en extrayant `winCodeSign` ; extraire
   l'archive à la main dans `%LOCALAPPDATA%\electron-builder\Cache\winCodeSign\winCodeSign-2.6.0` (les deux erreurs
   `darwin/*.dylib` sont sans effet sous Windows). Le raccourci `python` du Microsoft Store passe avant le vrai : mettre
-  le dossier de Python en tête du PATH dans `~/.bashrc`.
+  le dossier de Python en tête du PATH dans `~/.bashrc`. Dans une copie de travail temporaire, `npm ci` peut laisser
+  `app/node_modules/electron/dist` vide (« rename electron.exe » à la construction, numéro de version perdu) : y copier
+  celui de la copie principale avant `release-app.sh`.
 - Après chaque version : rappeler de soumettre l'installateur sur `https://www.microsoft.com/wdsi/filesubmission`
   (« Software developer », fichier bloqué à tort par SmartScreen). L'application n'est pas signée par Microsoft.
 - Mises à jour signées : `release-app.sh` et `release-navigateur.sh` appellent `onirique-signer` sur le VPS (clé

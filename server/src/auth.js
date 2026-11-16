@@ -111,9 +111,12 @@ export function rolesWith(right) {
   const roles = base.includes('vip') ? [...base, ...BETA] : base;
   return right === 'plugins' ? roles : [...roles, 'founder'];
 }
-// Les droits que l'abonnement aux outils ouvre à n'importe quel compte, en plus des rôles qui les ont.
+// Les droits que l'abonnement aux outils ouvre à n'importe quel compte, en plus des rôles qui les ont. ESSENTIAL et
+// ALL ACCESS (formules de genre « all ») les comprennent aussi ; pas la formule à la carte.
 export const TOOL_RIGHTS = ['sounds', 'links'];
-const TOOLS_ACTIVE = `SELECT 1 FROM tool_subscriptions ts WHERE ts.status = 'active' AND ts.current_period_end > CAST(strftime('%s', 'now') AS INTEGER) * 1000`;
+const TOOLS_ACTIVE = `SELECT 1 FROM (SELECT user_id, status, current_period_end FROM tool_subscriptions
+  UNION ALL SELECT s.user_id, s.status, s.current_period_end FROM subscriptions s JOIN plans p ON p.id = s.plan_id AND p.kind = 'all') ts
+  WHERE ts.status = 'active' AND ts.current_period_end > CAST(strftime('%s', 'now') AS INTEGER) * 1000`;
 export const toolsActive = (userId) => !!get(`${TOOLS_ACTIVE} AND ts.user_id = ?`, userId);
 export const can = (user, right) => !!user && (rolesWith(right).includes(user.role) || (TOOL_RIGHTS.includes(right) && toolsActive(user.id)));
 /** can() en SQL, pour le compte dont le rôle et l'identifiant sont dans ces colonnes. */

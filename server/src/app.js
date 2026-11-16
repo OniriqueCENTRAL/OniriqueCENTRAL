@@ -23,7 +23,7 @@ import {
 } from './licensing.js';
 import {
   cancelSubscription, cancelToolsSubscription, cancelMonthly, resumeSubscription, changeSubscription, billingPortal, TOOLS, toolsSubscription, setToolsSubscription, checkout, connectStripe, disconnectStripe, handleLemonEvent, handleStripeEvent, paymentsMode, sellers,
-  stripeAccount, stripeAccountView, verifyLemonSignature, verifyStripeSignature, GIFTS, giftOf,
+  stripeAccount, stripeAccountView, verifyLemonSignature, verifyStripeSignature, GIFTS, giftOf, LEASE, leaseMonthlyCents,
 } from './payments.js';
 import {
   attachReferrer, normalizeCode, referralSettings, promoFields, promoView, quote, referralStats, referralView, saveReferralSettings,
@@ -120,6 +120,12 @@ function versionLicensed(v) {
   return licenseChecks.get(key);
 }
 
+/** Un fondateur tel que l'affichent les crédits : pseudo d'ingé (sinon nom, jamais l'e-mail), Instagram, photo. */
+const personView = (u) => ({
+  id: u.id, name: u.engineer_name || u.name || 'ONIRIQUE',
+  instagram: u.instagram || null, avatar: u.engineer_avatar ? `/api/media/${u.engineer_avatar}` : null,
+});
+
 const versionView = (v) => v && ({
   id: v.id, version: v.version, notes: v.notes, filename: v.filename, size: v.size, sha256: v.sha256, createdAt: v.created_at,
   platform: v.platform, formats: versionFormats(v),
@@ -133,6 +139,12 @@ function productVersions(productId) {
     .sort((a, b) => compareVersions(b.version, a.version) || b.created_at - a.created_at);
 }
 
+/** Le paiement en plusieurs fois d'un plugin : son prix (soldé s'il l'est) en LEASE.months mensualités ; null s'il est trop petit. */
+function leaseOf(p) {
+  const total = saleOf(p)?.priceCents ?? p.price_cents;
+  return total >= LEASE.minCents ? { months: LEASE.months, cents: leaseMonthlyCents(total), totalCents: total } : null;
+}
+
 /** latest est la dernière version pour le système demandé : null si le plugin n'existe pas encore pour lui. */
 function productView(p, platform) {
   const versions = productVersions(p.id);
@@ -140,12 +152,15 @@ function productView(p, platform) {
   return {
     id: p.id, slug: p.slug, name: p.name, tagline: p.tagline, description: p.description, accent: p.accent, createdAt: p.created_at,
     creator: p.creator, // "onirique" ou un partenaire ("abrasion", "relic")
+    // le fondateur à l'origine du plugin (db.js), ou null
+    founder: (() => { const u = p.founder_id && get('SELECT id, engineer_name, name, instagram, engineer_avatar FROM users WHERE id = ?', p.founder_id); return u ? personView(u) : null; })(),
     priceCents: p.price_cents, monthlyCents: p.monthly_cents || 0, image: p.image ? `/api/media/${p.image}` : null, published: !!p.published, foundersOnly: !!p.founders_only,
     demo: p.demo ? `/api/media/${p.demo}` : null,
     // imageManual : l'image a été choisie par un admin. demoOff : la démo a été retirée à la main, l'application ne la refabrique pas.
     imageManual: !!p.image_manual, demoOff: !!p.demo_off,
     categories: categoryOf(p, (versions.find((v) => v.platform === wanted) || versions[0])?.filename),
     sale: saleOf(p), // les soldes en cours (soldes.js) : prix barré sur le site, remise appliquée au paiement
+    lease: leaseOf(p), // le paiement en plusieurs fois, ou null
     latest: versionView(versions.find((v) => v.platform === wanted)) || null,
     platforms: [...new Set(versions.map((v) => v.platform))], // les systèmes pour lesquels le plugin existe
     versions: versions.map(versionView),
@@ -390,11 +405,7 @@ export function createApp() {
     const engineerIds = (c) => parseProductIds(c.engineer_ids) || (c.engineer_id ? [c.engineer_id] : []);
     const wanted = [...new Set(rows.flatMap(engineerIds))];
     const people = new Map(wanted.length ? all(`SELECT id, engineer_name, name, instagram, engineer_avatar FROM users WHERE id IN (${wanted.map(() => '?').join(',')})`, ...wanted)
-      .map((u) => [u.id, {
-        // Le pseudo d'ingé ; à défaut, le nom affiché (jamais l'adresse e-mail).
-        id: u.id, name: u.engineer_name || u.name || 'ONIRIQUE',
-        instagram: u.instagram || null, avatar: u.engineer_avatar ? `/api/media/${u.engineer_avatar}` : null,
-      }]) : []);
+      .map((u) => [u.id, personView(u)]) : []);
     return rows.map((c) => {
       const engineers = engineerIds(c).map((id) => people.get(id)).filter(Boolean); // un compte supprimé disparaît de la liste
       const plugins = (parseProductIds(c.product_ids) || (c.product_id ? [c.product_id] : []))
@@ -1046,6 +1057,15 @@ export function createApp() {
       if (right?.via === 'license' && right.type !== 'trial') throw new HttpError(409, 'Vous avez déjà ce plugin.');
       return res.json(await checkout(req.user, 'monthly', { ...product, price_cents: product.monthly_cents, interval: 'month', name: `${product.name} — abonnement mensuel` }));
     }
+    // En plusieurs fois : un abonnement de LEASE.months mois, et le plugin est à vous à la dernière mensualité.
+    if (kind === 'lease') {
+      const product = findProduct(req.body.id);
+      const lease = !hiddenFrom(product, req.user) && leaseOf(product);
+      if (!lease) throw new HttpError(404, `Ce plugin ne se paie pas en ${LEASE.months} fois.`);
+      const right = entitlement(req.user.id, product.id);
+      if (right?.via === 'license' && right.type !== 'trial') throw new HttpError(409, 'Vous avez déjà ce plugin.');
+      return res.json(await checkout(req.user, 'lease', { ...product, price_cents: lease.cents, interval: 'month', name: `${product.name} — paiement en ${lease.months} fois` }));
+    }
     // Abonnement à la carte : une liste de plugins, au prix du premier plus un supplément par plugin ajouté.
     if (kind === 'pick') {
       const ids = [...new Set((Array.isArray(req.body.productIds) ? req.body.productIds : []).map((id) => int(id, 0)))];
@@ -1429,10 +1449,27 @@ export function createApp() {
   admin.get('/support', (_req, res) => {
     res.json({
       mailbox: config.supportEmail,
-      messages: all(`SELECT id, user_id AS userId, email, name, subject, message, context, created_at AS createdAt
+      messages: all(`SELECT id, user_id AS userId, email, name, subject, message, context, created_at AS createdAt, replied_at AS repliedAt
                      FROM support_messages ORDER BY created_at DESC LIMIT 200`),
     });
   });
+
+  // Réponse écrite dans le panel : part de l'adresse d'ONIRIQUE, avec le message d'origine cité en dessous.
+  admin.post('/support/:id/reply', wrap(async (req, res) => {
+    const m = get('SELECT * FROM support_messages WHERE id = ?', int(req.params.id, 0));
+    if (!m) throw new HttpError(404, 'Message introuvable.');
+    if (!mailEnabled) throw new HttpError(503, "Aucun serveur de messagerie n'est relié au serveur.");
+    const text = str(req.body.text, 20_000);
+    if (!text) throw new HttpError(400, 'Écrivez une réponse.');
+    const quoted = m.message.split('\n').map((line) => `> ${line}`).join('\n');
+    await mailbox.send(req.user, {
+      to: m.email,
+      subject: /^re\s*:/i.test(m.subject) ? m.subject : `Re : ${m.subject}`,
+      text: `${text}\n\n—\nVotre message du ${new Date(m.created_at).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' })} :\n${quoted}`,
+    });
+    run('UPDATE support_messages SET replied_at = ? WHERE id = ?', now(), m.id);
+    res.json({ ok: true });
+  }));
 
   admin.delete('/support/:id', (req, res) => {
     const { changes } = run('DELETE FROM support_messages WHERE id = ?', int(req.params.id, 0));

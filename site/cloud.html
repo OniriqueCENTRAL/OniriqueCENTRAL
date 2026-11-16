@@ -1,19 +1,19 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=4742a1e5"></script>
+<script src="assets/i18n.js?v=0ec83289"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=6"></script>
 <script src="/api/announce.js" async></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ONIRIQUE CLOUD : sons, projets et page de liens d’artiste</title>
-<meta name="description" content="Tes sons, tes projets, tes collabs et ta page de liens au même endroit : ONIRIQUE CLOUD et la page de liens Onirique pour 1,99 € par mois ou 9,99 € par an.">
+<meta name="description" content="Tes sons, tes projets, tes collabs et ta page de liens au même endroit : ONIRIQUE CLOUD et la page de liens Onirique pour 1,99 € par mois ou 19,99 € par an.">
 <link rel="canonical" href="https://onirique.store/cloud">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ONIRIQUE">
 <meta property="og:locale" content="fr_FR">
 <meta property="og:title" content="ONIRIQUE CLOUD : sons, projets et page de liens d’artiste">
-<meta property="og:description" content="Tes sons, tes projets, tes collabs et ta page de liens au même endroit : ONIRIQUE CLOUD et la page de liens Onirique pour 1,99 € par mois ou 9,99 € par an.">
+<meta property="og:description" content="Tes sons, tes projets, tes collabs et ta page de liens au même endroit : ONIRIQUE CLOUD et la page de liens Onirique pour 1,99 € par mois ou 19,99 € par an.">
 <meta property="og:url" content="https://onirique.store/cloud">
 <meta property="og:image" content="https://onirique.store/assets/og-image.png">
 <meta property="og:image:width" content="1200">
@@ -92,8 +92,8 @@
       <div class="offer best">
         <span class="tag">−58 %</span>
         <strong>Annuel</strong>
-        <div class="price">9,99 € <small>/ an</small></div>
-        <div class="note">Soit 0,83 € par mois</div>
+        <div class="price">19,99 € <small>/ an</small></div>
+        <div class="note">Soit 1,67 € par mois</div>
         <button class="go" type="button" data-interval="year">S’abonner à l’année</button>
       </div>
     </div>
@@ -131,7 +131,7 @@
       <div><strong>Fini les liens perdus</strong><span>Plus de sons éparpillés entre mails, Drive et messages : chaque version a sa place, et le bon lien part en un clic.</span></div>
       <div><strong>Tu sais qui écoute</strong><span>Qui a ouvert ton lien, jusqu’où il a écouté, ce qu’il a téléchargé : tu relances au bon moment.</span></div>
       <div><strong>Pensé pour la musique</strong><span>Versions, BPM, clé, crédits, répartition, paroles : tout ce qu’un dossier partagé ne sait pas faire.</span></div>
-      <div><strong>Le prix d’un café</strong><span>1,99 € par mois, ou 9,99 € par an, soit 0,83 € par mois. Sans engagement, résiliable à tout moment.</span></div>
+      <div><strong>Le prix d’un café</strong><span>1,99 € par mois, ou 19,99 € par an, soit 1,67 € par mois. Sans engagement, résiliable à tout moment.</span></div>
     </div>
   </section>
 
@@ -189,7 +189,7 @@
         cancel.disabled = true;
         try { await api("POST", "/tools/cancel"); draw(); } catch (error) { cancel.disabled = false; msg(error.message); }
       };
-      const formula = sub.interval === "year" ? "annuel (9,99 € par an)" : "mensuel (1,99 € par mois)";
+      const formula = sub.interval === "year" ? "annuel (19,99 € par an)" : "mensuel (1,99 € par mois)";
       return status("<p>Ton abonnement " + formula + " est en cours. " + (sub.cancelAtPeriodEnd
         ? "Il est résilié : l’accès reste ouvert jusqu’au <b>" + day(sub.periodEnd) + "</b>, sans nouveau prélèvement."
         : "Prochain renouvellement le <b>" + day(sub.periodEnd) + "</b>.") + "</p>",

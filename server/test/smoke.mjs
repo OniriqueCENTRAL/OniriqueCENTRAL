@@ -479,6 +479,13 @@ try {
     const inbox = await call('GET', '/api/admin/support', { token: admin });
     assert.equal(inbox.mailbox, 'support@test.local');
     assert.deepEqual(inbox.messages.map((m) => m.email).sort(), ['visiteur@test.local', 'voix@test.local']);
+    const muet = inbox.messages.find((m) => m.subject === 'Plugin muet');
+    await call('POST', `/api/admin/support/${muet.id}/reply`, { token: user, body: { text: 'Bonjour' }, expect: 403 });
+    await call('POST', `/api/admin/support/${muet.id}/reply`, { token: admin, body: { text: '' }, expect: 400 });
+    await call('POST', `/api/admin/support/${muet.id}/reply`, { token: admin, body: { text: 'Bonjour, réinstallez le plugin.' } });
+    assert.deepEqual([outbox.at(-1).to, outbox.at(-1).subject], [['voix@test.local'], 'Re : Plugin muet']);
+    assert.match(outbox.at(-1).text, /réinstallez le plugin\.[\s\S]*> Le plugin ne sort aucun son\./);
+    assert.ok((await call('GET', '/api/admin/support', { token: admin })).messages.find((m) => m.id === muet.id).repliedAt);
     await call('DELETE', `/api/admin/support/${inbox.messages[0].id}`, { token: admin });
     assert.equal((await call('GET', '/api/admin/support', { token: admin })).messages.length, 1);
   });

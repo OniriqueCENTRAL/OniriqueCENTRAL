@@ -363,6 +363,20 @@ if (!hasColumn('products', 'category')) {
   };
   for (const [slug, category] of Object.entries(known)) db.prepare('UPDATE products SET category = ? WHERE slug = ?').run(category, slug);
 }
+// Le fondateur à l'origine d'un plugin ONIRIQUE, affiché sur sa fiche : l'auteur du premier commit de son dépôt.
+// Comptes : 1 EZKQ (git « ONIRIQUE »), 2 Nov, 5 MadaraKD (git « tomgurdian »). Partenaires et SESSION : personne.
+if (!hasColumn('products', 'founder_id')) {
+  db.exec('ALTER TABLE products ADD COLUMN founder_id INTEGER');
+  const origin = {
+    1: ['tuner', 'onirique-verb', 'onirique-enhancer', 'player-onirique', 'onirique-stream'],
+    2: ['based', 'vocalbox', 'onirique-broadcast', 'onirique-eq', 'onirique-riser', 'onirique-the-choir', 'onirique-vocal-spacer',
+      'onirique-vocal-mini', 'onirique-n73', 'onirique-eclipse', 'onirique-halo'],
+    5: ['onirique-pitchbox', 'onirique-resobox', 'onirique-doublebox', 'onirique-modbox', 'onirique-meterbox', 'onirique-echobox',
+      'onirique-weight', 'onirique-massif', 'onirique-glue', 'onirique-optobox', 'brumebox', 'onirique-punch'],
+  };
+  const set = db.prepare(`UPDATE products SET founder_id = ? WHERE slug = ? AND EXISTS (SELECT 1 FROM users WHERE id = ? AND role = 'founder')`);
+  for (const [id, slugs] of Object.entries(origin)) for (const slug of slugs) set.run(Number(id), slug, Number(id));
+}
 if (!db.prepare(`SELECT 1 FROM settings WHERE key = 'categories_single'`).get()) {
   rangeCategories();
   db.prepare(`INSERT INTO settings (key, value) VALUES ('categories_single', 'true')`).run();
@@ -529,6 +543,8 @@ if (!hasColumn('social_accounts', 'alt_id')) db.exec(`ALTER TABLE social_account
 if (!hasColumn('social_automations', 'post_at')) db.exec('ALTER TABLE social_automations ADD COLUMN post_at INTEGER');
 // TikTok retiré : son like ne sert plus, ni ses comptes et automations.
 if (hasColumn('social_automations', 'like_comment')) db.exec('ALTER TABLE social_automations DROP COLUMN like_comment');
+// Date de la dernière réponse envoyée depuis le panel support.
+if (!hasColumn('support_messages', 'replied_at')) db.exec('ALTER TABLE support_messages ADD COLUMN replied_at INTEGER');
 db.exec(`DELETE FROM social_automations WHERE platform = 'tiktok'; DELETE FROM social_accounts WHERE platform = 'tiktok';`);
 
 export const now = () => Date.now();
