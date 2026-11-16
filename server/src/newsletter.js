@@ -8,6 +8,7 @@ import { mailEnabled, sendMail } from './mail.js';
 import { escapeHtml, renderEmail } from './mailtemplate.js';
 import { realOpen } from './packsend.js';
 import { entitlement } from './licensing.js';
+import { saleOf } from './soldes.js';
 
 //==============================================================================
 //  Les e-mails d'ONIRIQUE aux inscrits : consentement, désinscription, envois depuis le panel admin
@@ -89,6 +90,7 @@ const AUDIENCES = {
 const recipients = (audience) => all(`SELECT u.id, u.email, u.name FROM users u WHERE u.email_verified != 0 AND (${AUDIENCES[audience].where}) ORDER BY u.id`);
 
 //------------------------------------------------------------------------------ Le contenu
+const IMAGE_LINE = /^!\[([^\]]*)\]\((\S+)\)$/; // « ![légende](adresse) » seul sur sa ligne
 const str = (value, max) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
 
 /** Le message composé dans le panel, vérifié. */
@@ -104,6 +106,10 @@ function composition(body) {
   if (!c.text && !c.productIds.length) throw new HttpError(400, 'Écrivez le message, ou ajoutez au moins un plugin.');
   if (c.buttonUrl && !/^https:\/\//.test(c.buttonUrl)) throw new HttpError(400, 'Le lien du bouton doit commencer par https://.');
   if (c.image && !/^(https:\/\/|\/api\/media\/)/.test(c.image)) throw new HttpError(400, 'L\'image doit être une adresse https:// ou une image de la boutique.');
+  for (const line of c.text.split('\n')) {
+    const image = line.trim().match(IMAGE_LINE);
+    if (image && !/^(https:\/\/|\/api\/media\/|\/assets\/)/.test(image[2])) throw new HttpError(400, `L'image « ${image[1]} » doit être une adresse https:// ou une image du site.`);
+  }
   if (c.buttonLabel && !c.buttonUrl) throw new HttpError(400, 'Le bouton a besoin d\'un lien.');
   return c;
 }
@@ -116,13 +122,19 @@ function personal(c, user, service) {
   const fill = (text) => text.replace(/\{prenom\}/gi, name).replace(/ ,/g, ',').replace(/\s{2,}/g, (m) => (m.includes('\n') ? m : ' '));
   const blocks = [];
   if (c.image) blocks.push({ image: c.image, alt: c.title || c.subject, url: c.buttonUrl || undefined });
+  // Les plugins choisis, avec leur prix soldé (et l'ancien barré) pendant les soldes.
+  const products = () => c.productIds.map((id) => get('SELECT * FROM products WHERE id = ? AND published = 1 AND founders_only = 0', id)).filter(Boolean)
+    .map((p) => ({ product: { slug: p.slug, name: p.name, tagline: p.tagline, priceCents: saleOf(p)?.priceCents ?? p.price_cents,
+      wasCents: saleOf(p) ? p.price_cents : null, image: p.image ? `/api/media/${p.image}` : null, creatorLabel: CREATOR_LABELS[p.creator] } }));
+  // Dans le texte : « ![légende](adresse) » seul sur sa ligne met une image à cet endroit, « [plugins] » les plugins choisis.
+  let placed = false;
   for (const chunk of fill(c.text).split(/\n{2,}/).filter((t) => t.trim())) {
-    blocks.push(/^#\s+/.test(chunk) ? { heading: chunk.replace(/^#\s+/, '') } : { text: chunk.trim() });
+    const image = chunk.trim().match(IMAGE_LINE);
+    if (image) blocks.push({ image: image[2], alt: image[1] });
+    else if (chunk.trim() === '[plugins]') { blocks.push(...products()); placed = true; }
+    else blocks.push(/^#\s+/.test(chunk) ? { heading: chunk.replace(/^#\s+/, '') } : { text: chunk.trim() });
   }
-  for (const id of c.productIds) {
-    const p = get('SELECT * FROM products WHERE id = ? AND published = 1 AND founders_only = 0', id);
-    if (p) blocks.push({ product: { slug: p.slug, name: p.name, tagline: p.tagline, priceCents: p.price_cents, image: p.image ? `/api/media/${p.image}` : null, creatorLabel: CREATOR_LABELS[p.creator] } });
-  }
+  if (!placed) blocks.push(...products());
   if (c.promoCode) blocks.push({ code: c.promoCode, caption: 'Code promo', detail: c.promoText || 'À entrer au moment d\'acheter, sur le site ou dans ONIRIQUE CENTRAL.' });
   if (c.buttonUrl) blocks.push({ button: { label: c.buttonLabel || 'Découvrir', url: c.buttonUrl } });
   const footer = service
@@ -130,7 +142,8 @@ function personal(c, user, service) {
     : [user ? `Vous recevez ce message parce que vous êtes inscrit chez ONIRIQUE. <a href="${unsubscribeUrl(user.id)}" style="color:#c9b3b6">Se désinscrire</a>`
       : 'Aperçu : le lien de désinscription de chaque destinataire s\'affiche ici.'];
   const html = renderEmail({ preheader: c.preheader, eyebrow: c.eyebrow, title: fill(c.title), blocks, footer });
-  const text = [fill(c.title), fill(c.text), c.promoCode ? `Code promo : ${c.promoCode}${c.promoText ? ' — ' + c.promoText : ''}` : '',
+  const plain = fill(c.text).split(/\n{2,}/).filter((chunk) => !IMAGE_LINE.test(chunk.trim()) && chunk.trim() !== '[plugins]').join('\n\n');
+  const text = [fill(c.title), plain, c.promoCode ? `Code promo : ${c.promoCode}${c.promoText ? ' — ' + c.promoText : ''}` : '',
     c.buttonUrl ? `${c.buttonLabel || 'Découvrir'} : ${c.buttonUrl}` : '',
     service ? '' : user ? `Se désinscrire : ${unsubscribeUrl(user.id)}` : ''].filter(Boolean).join('\n\n');
   return { subject: fill(c.subject), html, text };

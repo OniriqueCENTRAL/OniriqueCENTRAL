@@ -246,6 +246,12 @@ try {
     const content = { subject: 'Nouveau : {prenom}, découvre METER', title: 'Salut {prenom}', text: 'Il est **sorti**.', productIds: [meter.id], promoCode: 'NOEL20', buttonLabel: 'Voir', buttonUrl: 'https://site.test/boutique' };
     const preview = await call('POST', '/api/admin/mailings/preview', { token: admin.token, body: content });
     assert.ok(preview.html.includes('METER') && preview.html.includes('NOEL20'));
+    // Une image et les plugins placés au milieu du texte ; le texte brut ne garde ni l'une ni les autres.
+    const placed = await call('POST', '/api/admin/mailings/preview', { token: admin.token,
+      body: { ...content, text: 'Avant.\n\n[plugins]\n\n![Le visuel](/assets/mail/carte-onirique.jpg)\n\nAprès.' } });
+    assert.ok(placed.html.indexOf('METER') < placed.html.indexOf('carte-onirique.jpg') && placed.html.indexOf('carte-onirique.jpg') < placed.html.indexOf('Après.'));
+    assert.ok(placed.html.includes('alt="Le visuel"') && !placed.text.includes('[plugins]') && !placed.text.includes('!['));
+    await call('POST', '/api/admin/mailings/preview', { token: admin.token, body: { ...content, text: '![x](http://pas-sur.test/a.jpg)' }, expect: 400 });
     await call('POST', '/api/admin/mailings', { token: admin.token, body: { ...content, audience: 'all' }, expect: 400 });
     await call('POST', '/api/admin/mailings', { token: admin.token, body: { ...content, audience: 'newsletter' }, expect: 201 });
     for (let i = 0; i < 50 && !outbox.some((m) => m.subject === 'Nouveau : bob, découvre METER'); i++) await sleep(20);

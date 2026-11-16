@@ -62,7 +62,7 @@ ${p.image ? `<tr><td><a href="${url}"><img src="${safeUrl(absolute(p.image))}" a
 <div style="font:800 20px/1.3 ${DISPLAY};color:${C.mist};padding-top:8px">${escapeHtml(p.name)}</div>
 ${p.tagline ? `<div style="font:400 15px/1.55 ${FONT};color:${C.haze};padding-top:6px">${escapeHtml(p.tagline)}</div>` : ''}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:16px"><tr>
-<td style="font:800 22px/1 ${DISPLAY};color:${C.mist}">${p.priceCents ? euros(p.priceCents) : 'Gratuit'}</td>
+<td style="font:800 22px/1 ${DISPLAY};color:${C.mist}">${p.wasCents ? `<span style="font:500 15px/1 ${FONT};color:${C.haze};text-decoration:line-through">${euros(p.wasCents)}</span>&nbsp; ` : ''}${p.priceCents ? euros(p.priceCents) : 'Gratuit'}</td>
 <td align="right"><a href="${url}" style="display:inline-block;padding:12px 20px;border-radius:999px;background:${C.ember};font:700 14px/1 ${FONT};color:#ffffff;text-decoration:none">Découvrir →</a></td>
 </tr></table></td></tr></table>`, 18);
   }
