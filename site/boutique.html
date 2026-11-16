@@ -91,7 +91,7 @@ header nav { display: flex; align-items: center; gap: 10px; }
 /* Un bouton qui ne peut pas servir le montre : éteint, sans halo, et son texte dit pourquoi. */
 .buy:disabled { background: transparent; color: var(--haze); border: 1px solid var(--line); box-shadow: none; cursor: default; }
 /* À vie ou au mois : deux boutons collés, celui choisi plein */
-.formula { display: grid; grid-template-columns: 1fr 1fr; margin-top: 14px; padding: 4px; border: 1px solid var(--line); border-radius: 14px; }
+.formula { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; margin-top: 14px; padding: 4px; border: 1px solid var(--line); border-radius: 14px; }
 .formula button { padding: 10px; border: 0; border-radius: var(--r-seg); background: none; color: var(--haze); font: 500 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; cursor: pointer; transition: color .25s, background .25s, box-shadow .25s; }
 .formula button[aria-pressed="true"] { background: var(--lit); color: #fff; box-shadow: var(--lit-shadow); }
 .buy.ghost { margin-top: 10px; background: transparent; color: var(--mist); border: 1px solid var(--line); box-shadow: none; }
@@ -235,7 +235,7 @@ header nav { display: flex; align-items: center; gap: 10px; }
       <aside class="side">
         <p class="eyebrow" id="side-name"></p>
         <div class="formula" id="formula" role="group" aria-label="Formule" hidden>
-          <button type="button" id="formula-life" aria-pressed="true">À vie</button><button type="button" id="formula-month" aria-pressed="false">Au mois</button>
+          <button type="button" id="formula-life" aria-pressed="true">À vie</button><button type="button" id="formula-month" aria-pressed="false">Au mois</button><button type="button" id="formula-lease" aria-pressed="false" hidden>En 10 fois</button>
         </div>
         <div class="price" id="price"></div>
         <p class="note" style="margin:0" id="price-note">TTC, paiement unique</p>
@@ -572,36 +572,41 @@ function setupPromo(product) {
   }
 }
 
-// À vie ou au mois : le plugin au mois donne une licence qui se renouvelle chaque mois payé, résiliable depuis le compte.
-let monthly = false;
+// À vie, au mois ou en plusieurs fois. Au mois : une licence qui se renouvelle chaque mois payé, résiliable depuis le
+// compte. En plusieurs fois : le prix (soldé s'il l'est) en mensualités, et le plugin est à toi à la dernière.
+let formula = "life";
 function setupMonthly(product, catalog) {
-  if (!product.monthlyCents || !product.priceCents) return;
+  const lease = product.lease;
+  if (!product.priceCents || (!product.monthlyCents && !lease)) return;
   $("formula").hidden = false;
-  const lifeLabel = () => $("buy").textContent;
+  $("formula-month").hidden = !product.monthlyCents;
+  $("formula-lease").hidden = !lease;
+  if (lease) $("formula-lease").textContent = "En " + lease.months + " fois";
   let life = null;
-  const pick = (month) => {
-    if (monthly === month) return;
-    monthly = month;
-    $("formula-life").ariaPressed = String(!month);
-    $("formula-month").ariaPressed = String(month);
-    $("promo").hidden = month || !product.priceCents;
-    $("price-note").textContent = month ? "TTC, par mois, sans engagement" : "TTC, paiement unique";
+  const pick = (mode) => {
+    if (formula === mode) return;
+    if (formula === "life") life = [[...$("price").childNodes], $("buy").textContent, $("buy").disabled];
+    formula = mode;
+    for (const m of ["life", "month", "lease"]) $("formula-" + m).ariaPressed = String(m === mode);
+    $("promo").hidden = mode !== "life" || !product.priceCents;
+    $("price-note").textContent = mode === "month" ? "TTC, par mois, sans engagement"
+      : mode === "lease" ? "TTC, par mois pendant " + lease.months + " mois (" + euros(lease.cents * lease.months) + " en tout), puis le plugin est à toi"
+        : "TTC, paiement unique";
     // le plugin offert ne vient qu’avec l’achat à vie
-    if (product.gift) $("gift").hidden = $("gift-note").hidden = month;
-    if (month) {
-      life = [[...$("price").childNodes], lifeLabel(), $("buy").disabled];
-      $("price").replaceChildren(euros(product.monthlyCents) + " / mois");
-      $("deal")?.remove();
-      $("buy").disabled = !!monthlyBlocked;
-      $("buy").textContent = monthlyBlocked || "S’abonner · " + euros(product.monthlyCents) + " / mois";
-    } else if (life) {
+    if (product.gift) $("gift").hidden = $("gift-note").hidden = mode !== "life";
+    if (mode === "life") {
       $("price").replaceChildren(...life[0]);
       $("buy").textContent = life[1];
       $("buy").disabled = life[2];
+      return;
     }
+    const cents = mode === "month" ? product.monthlyCents : lease.cents;
+    $("price").replaceChildren(mode === "lease" ? lease.months + " × " + euros(cents) : euros(cents) + " / mois");
+    $("deal")?.remove();
+    $("buy").disabled = !!monthlyBlocked;
+    $("buy").textContent = monthlyBlocked || (mode === "lease" ? "Payer en " + lease.months + " fois · " : "S’abonner · ") + euros(cents) + " / mois";
   };
-  $("formula-life").onclick = () => pick(false);
-  $("formula-month").onclick = () => pick(true);
+  for (const m of ["life", "month", "lease"]) $("formula-" + m).onclick = () => pick(m);
 }
 let monthlyBlocked = ""; // pourquoi le plugin ne se prend pas au mois pour ce compte (déjà à lui)
 
@@ -617,13 +622,13 @@ async function buy(product, catalog) {
   if (!token) { location.href = "compte"; return; }
   $("buy").disabled = true;
   try {
-    const body = monthly ? { kind: "monthly", id: product.id } : { kind: "product", id: product.id, promo };
+    const body = formula === "life" ? { kind: "product", id: product.id, promo } : { kind: formula === "month" ? "monthly" : "lease", id: product.id };
     const response = await fetch("/api/checkout", { method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await response.json();
     if (response.status === 401) { location.href = "compte"; return; }
     if (!response.ok) throw new Error(data.error || "Achat impossible.");
     if (data.url) location.href = data.url;
-    else note.textContent = monthly ? "Ton abonnement est actif. Installe le plugin depuis Onirique Central ; tu peux le résilier depuis ton compte."
+    else note.textContent = formula !== "life" ?"Ton abonnement est actif. Installe le plugin depuis Onirique Central ; tu peux le résilier depuis ton compte."
       : "C’est ajouté à ton compte. Installe le plugin depuis Onirique Central.";
   } catch (error) {
     note.textContent = error.message;

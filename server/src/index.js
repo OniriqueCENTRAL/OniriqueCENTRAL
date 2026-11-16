@@ -7,6 +7,7 @@ import { sweepMedia } from './sweep.js';
 import { remindCut, publishDueReels } from './cut.js';
 import { demarrerRelais } from './vpn.js';
 import { appliquerPrixApres } from './soldes.js';
+import { syncStripeHooks } from './payments.js';
 
 // En local seulement : le public passe par nginx (sinon, joint directement, l'API croirait l'adresse IP qu'on lui annonce).
 createApp().listen(config.port, '127.0.0.1', () => {
@@ -44,3 +45,6 @@ setInterval(sweep, 86400_000);
 const prixApres = () => { try { const n = appliquerPrixApres(); if (n) console.log(`Fin des soldes : ${n} prix mis à jour`); } catch (error) { console.error('Prix après les soldes :', error.message); } };
 prixApres();
 setInterval(prixApres, 3600_000);
+
+// Les webhooks Stripe déjà branchés reçoivent aussi les événements ajoutés depuis (les mensualités du paiement en plusieurs fois).
+syncStripeHooks().catch((error) => console.error('Webhooks Stripe :', error.message));

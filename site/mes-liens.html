@@ -592,7 +592,7 @@ $("copy").onclick = async () => {
     if (!saved) { dirty = true; $("state").textContent = "Pas encore en ligne : enregistre ta page"; $("state").className = "state dirty"; }
     loadStats();
   } catch (error) {
-    gate(error.status === 403 ? "<p>La page de liens fait partie de l’abonnement ONIRIQUE CLOUD et page de liens : 1,99 € par mois ou 9,99 € par an.</p><a class=\"btn btn-primary\" href=\"cloud\">Découvrir l’abonnement</a>"
+    gate(error.status === 403 ? "<p>La page de liens fait partie de l’abonnement ONIRIQUE CLOUD et page de liens : 1,99 € par mois ou 19,99 € par an.</p><a class=\"btn btn-primary\" href=\"cloud\">Découvrir l’abonnement</a>"
       : error.status === 401 ? '<p>Ta session a expiré.</p><a class="btn btn-primary" href="compte">Se reconnecter</a>' : "<p></p>");
     if (error.status !== 403 && error.status !== 401) $("gate").firstChild.textContent = error.message;
   }

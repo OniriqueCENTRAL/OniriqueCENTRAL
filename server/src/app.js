@@ -23,7 +23,7 @@ import {
 } from './licensing.js';
 import {
   cancelSubscription, cancelToolsSubscription, cancelMonthly, resumeSubscription, changeSubscription, billingPortal, TOOLS, toolsSubscription, setToolsSubscription, checkout, connectStripe, disconnectStripe, handleLemonEvent, handleStripeEvent, paymentsMode, sellers,
-  stripeAccount, stripeAccountView, verifyLemonSignature, verifyStripeSignature, GIFTS, giftOf,
+  stripeAccount, stripeAccountView, verifyLemonSignature, verifyStripeSignature, GIFTS, giftOf, LEASE, leaseMonthlyCents,
 } from './payments.js';
 import {
   attachReferrer, normalizeCode, referralSettings, promoFields, promoView, quote, referralStats, referralView, saveReferralSettings,
@@ -133,6 +133,12 @@ function productVersions(productId) {
     .sort((a, b) => compareVersions(b.version, a.version) || b.created_at - a.created_at);
 }
 
+/** Le paiement en plusieurs fois d'un plugin : son prix (soldé s'il l'est) en LEASE.months mensualités ; null s'il est trop petit. */
+function leaseOf(p) {
+  const total = saleOf(p)?.priceCents ?? p.price_cents;
+  return total >= LEASE.minCents ? { months: LEASE.months, cents: leaseMonthlyCents(total), totalCents: total } : null;
+}
+
 /** latest est la dernière version pour le système demandé : null si le plugin n'existe pas encore pour lui. */
 function productView(p, platform) {
   const versions = productVersions(p.id);
@@ -146,6 +152,7 @@ function productView(p, platform) {
     imageManual: !!p.image_manual, demoOff: !!p.demo_off,
     categories: categoryOf(p, (versions.find((v) => v.platform === wanted) || versions[0])?.filename),
     sale: saleOf(p), // les soldes en cours (soldes.js) : prix barré sur le site, remise appliquée au paiement
+    lease: leaseOf(p), // le paiement en plusieurs fois, ou null
     latest: versionView(versions.find((v) => v.platform === wanted)) || null,
     platforms: [...new Set(versions.map((v) => v.platform))], // les systèmes pour lesquels le plugin existe
     versions: versions.map(versionView),
@@ -1045,6 +1052,15 @@ export function createApp() {
       const right = entitlement(req.user.id, product.id);
       if (right?.via === 'license' && right.type !== 'trial') throw new HttpError(409, 'Vous avez déjà ce plugin.');
       return res.json(await checkout(req.user, 'monthly', { ...product, price_cents: product.monthly_cents, interval: 'month', name: `${product.name} — abonnement mensuel` }));
+    }
+    // En plusieurs fois : un abonnement de LEASE.months mois, et le plugin est à vous à la dernière mensualité.
+    if (kind === 'lease') {
+      const product = findProduct(req.body.id);
+      const lease = !hiddenFrom(product, req.user) && leaseOf(product);
+      if (!lease) throw new HttpError(404, `Ce plugin ne se paie pas en ${LEASE.months} fois.`);
+      const right = entitlement(req.user.id, product.id);
+      if (right?.via === 'license' && right.type !== 'trial') throw new HttpError(409, 'Vous avez déjà ce plugin.');
+      return res.json(await checkout(req.user, 'lease', { ...product, price_cents: lease.cents, interval: 'month', name: `${product.name} — paiement en ${lease.months} fois` }));
     }
     // Abonnement à la carte : une liste de plugins, au prix du premier plus un supplément par plugin ajouté.
     if (kind === 'pick') {

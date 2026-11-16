@@ -89,7 +89,7 @@ try {
     const fan = await account('abonne');
     await call('GET', '/api/me/links', { token: fan.token, expect: 403 });
     let tools = await call('GET', '/api/tools', { token: fan.token });
-    assert.deepEqual([tools.prices, tools.subscription, tools.included], [{ month: 199, year: 999 }, null, false]);
+    assert.deepEqual([tools.prices, tools.subscription, tools.included], [{ month: 199, year: 1999 }, null, false]);
     assert.equal((await call('GET', '/api/tools', { token: member.token })).included, true);
     await call('POST', '/api/tools/checkout', { body: { interval: 'year' }, expect: 401 });
     assert.equal((await call('POST', '/api/tools/checkout', { token: fan.token, body: { interval: 'year' } })).granted, true);

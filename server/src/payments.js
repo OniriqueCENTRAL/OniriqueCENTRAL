@@ -10,7 +10,7 @@ import { afterPurchase, rewardSponsor } from './promos.js';
 
 const PERIOD_MS = { month: 31 * 86400_000, year: 366 * 86400_000 };
 /** L'abonnement aux outils : ONIRIQUE CLOUD et la page de liens, encaissé par le compte ONIRIQUE. */
-export const TOOLS = { name: 'ONIRIQUE CLOUD et page de liens', prices: { month: 199, year: 999 } };
+export const TOOLS = { name: 'ONIRIQUE CLOUD et page de liens', prices: { month: 199, year: 1999 } };
 
 //==============================================================================
 //  Ce qu'un paiement réussi accorde (commun au mode démo et à Stripe)
@@ -158,7 +158,22 @@ export function toolsSubscription(userId) {
 //==============================================================================
 const STRIPE_VERSION = '2025-03-31.basil'; // la première version qui connaît Managed Payments
 const STRIPE_EVENTS = ['checkout.session.completed', 'checkout.session.async_payment_succeeded', 'charge.refunded', 'charge.dispute.closed',
-  'customer.subscription.created', 'customer.subscription.updated', 'customer.subscription.deleted'];
+  'customer.subscription.created', 'customer.subscription.updated', 'customer.subscription.deleted', 'invoice.paid'];
+
+/** Met les webhooks déjà branchés à jour de STRIPE_EVENTS (au démarrage), sans changer leur secret. */
+export async function syncStripeHooks() {
+  const creators = [...new Set(['onirique', ...get(`SELECT GROUP_CONCAT(creator) AS c FROM stripe_accounts`).c?.split(',') ?? []])];
+  for (const creator of creators) {
+    const account = stripeAccount(creator);
+    if (!account) continue;
+    const url = `${config.publicUrl}/api/stripe/webhook/${creator}`;
+    for (const hook of (await stripe('GET', '/webhook_endpoints?limit=100', undefined, account.key)).data) {
+      if (hook.url === url && STRIPE_EVENTS.some((e) => !hook.enabled_events.includes(e))) {
+        await stripe('POST', `/webhook_endpoints/${hook.id}`, { enabled_events: STRIPE_EVENTS }, account.key);
+      }
+    }
+  }
+}
 
 // Les clés sont chiffrées dans la base avec une clé gardée à part (dossier keys/) : une copie de la base seule ne les livre pas.
 const sealPath = path.join(config.keysDir, 'secrets.key');
@@ -319,13 +334,13 @@ async function saleCoupon(sale, key) {
 }
 
 async function stripeCheckout(user, kind, item) {
-  const recurring = kind === 'plan' || kind === 'tools' || kind === 'monthly';
-  // Un plugin au mois est encaissé, comme son achat, par son créateur ; les autres abonnements et les packs par ONIRIQUE.
-  const creator = kind === 'monthly' || kind === 'product' ? item.creator : 'onirique';
+  const recurring = kind === 'plan' || kind === 'tools' || kind === 'monthly' || kind === 'lease';
+  // Un plugin au mois ou en plusieurs fois est encaissé, comme son achat, par son créateur ; les autres abonnements et les packs par ONIRIQUE.
+  const creator = kind === 'monthly' || kind === 'lease' || kind === 'product' ? item.creator : 'onirique';
   const account = stripeAccount(creator);
   // Compte en mode essai : rien n'est encaissé, donc seuls l'équipe et le partenaire concerné peuvent commander, pour essayer.
   if (!account || (account.test && !isStaff(user) && user.role !== creator)) {
-    throw new HttpError(503, recurring && kind !== 'monthly' ? 'Les abonnements ne sont pas encore ouverts.' : 'Ce plugin n\'est pas encore en vente.');
+    throw new HttpError(503, recurring && kind !== 'monthly' && kind !== 'lease' ?'Les abonnements ne sont pas encore ouverts.' : 'Ce plugin n\'est pas encore en vente.');
   }
   // Un client Stripe n'existe que dans le compte qui l'a créé : il n'est réutilisé que chez ONIRIQUE.
   const customer = creator === 'onirique' ? user.stripe_customer : null;
@@ -343,7 +358,8 @@ async function stripeCheckout(user, kind, item) {
     subscription_data: kind === 'plan'
       ? { metadata: { user_id: user.id, plan_id: item.id, product_ids: item.productIds ? JSON.stringify(item.productIds) : undefined } }
       : kind === 'tools' ? { metadata: { user_id: user.id, tools: item.interval } }
-        : kind === 'monthly' ? { metadata: { user_id: user.id, monthly_product: item.id } } : undefined,
+        : kind === 'monthly' ? { metadata: { user_id: user.id, monthly_product: item.id } }
+          : kind === 'lease' ? { metadata: { user_id: user.id, lease_product: item.id, lease_months: LEASE.months } } : undefined,
     line_items: lineItems(recurring ? 'plan' : kind, item.name, item.price_cents, item.interval),
   };
   // Soldes sur un abonnement : un coupon Stripe remet le début de l'abonnement (la première année, ou les premiers mois),
@@ -378,6 +394,50 @@ function applyStripeMonthly(sub, account) {
   const product = get('SELECT * FROM products WHERE id = ? AND creator = ?', Number(sub.metadata?.monthly_product), account.creator);
   if (!userId || !product) return null;
   applyMonthly(userId, product, { ref: sub.id, live: ['active', 'trialing', 'past_due'].includes(sub.status), periodEnd: stripePeriodEnd(sub) });
+  return product;
+}
+
+// Le paiement en plusieurs fois : le prix du plugin (soldé s'il l'est) en LEASE.months mensualités. Tant qu'il n'est
+// pas soldé, la licence suit les mois payés, comme au mois ; à la dernière mensualité, elle devient définitive et
+// l'abonnement Stripe s'arrête. Arrêté avant, le plugin s'en va à la fin du mois payé, sans remboursement.
+export const LEASE = { months: 10, minCents: 3000 };
+export const leaseMonthlyCents = (totalCents) => Math.ceil(totalCents / LEASE.months);
+/** Crée, prolonge ou solde la licence d'un plugin pris en plusieurs fois ; paid : les mensualités payées. Rend true quand il vient d'être soldé. */
+export function applyLease(userId, product, { ref, live, periodEnd, paid, months = LEASE.months, provider = 'stripe' }) {
+  const bundle = `lease:${ref}`;
+  const license = get('SELECT * FROM licenses WHERE user_id = ? AND bundle = ?', userId, bundle);
+  if (license?.type === 'perpetual') return false;
+  if (paid >= months) {
+    if (license) run(`UPDATE licenses SET type = 'perpetual', expires_at = NULL, note = ? WHERE id = ?`, `Payé en ${months} fois`, license.id);
+    else createLicense({ productId: product.id, userId, source: provider, note: `Payé en ${months} fois`, bundle });
+    return true;
+  }
+  const expiresAt = live ? periodEnd + MONTHLY_GRACE : Math.min(now(), periodEnd + MONTHLY_GRACE);
+  const note = `Paiement en ${months} fois · ${paid}/${months}${license?.note?.includes('résilié') ? ' · résilié' : ''}`;
+  if (license) run('UPDATE licenses SET expires_at = ?, note = ? WHERE id = ?', expiresAt, note, license.id);
+  else if (live) createLicense({ productId: product.id, userId, type: 'timed', expiresAt, source: provider, note, bundle });
+  return false;
+}
+async function applyStripeLease(sub, account) {
+  const userId = Number(sub.metadata?.user_id);
+  const product = get('SELECT * FROM products WHERE id = ? AND creator = ?', Number(sub.metadata?.lease_product), account.creator);
+  if (!userId || !product) return null;
+  const months = Number(sub.metadata.lease_months) || LEASE.months;
+  // Les mensualités payées, comptées chez Stripe : la seule source sûre, quel que soit l'ordre d'arrivée des événements.
+  const invoices = await stripe('GET', `/invoices?subscription=${encodeURIComponent(sub.id)}&status=paid&limit=100`, undefined, account.key);
+  const paid = invoices.data.filter((invoice) => invoice.amount_paid > 0).length;
+  const live = ['active', 'trialing', 'past_due'].includes(sub.status);
+  if (applyLease(userId, product, { ref: sub.id, live, periodEnd: stripePeriodEnd(sub), paid, months })) {
+    if (sub.status !== 'canceled') await stripe('DELETE', `/subscriptions/${sub.id}`, undefined, account.key)
+      .catch((error) => console.error('Fin du paiement en plusieurs fois :', error.message));
+    const user = get('SELECT email, name FROM users WHERE id = ?', userId);
+    if (user) {
+      sendMail(user.email, `${product.name} est à vous — ONIRIQUE`,
+        `Bonjour${user.name ? ' ' + user.name : ''},\n\nVotre dernière mensualité est payée : ${product.name} est à vous, avec une licence définitive. `
+        + `Plus aucun prélèvement.\n\nApplication et compte : ${config.siteUrl}\n\nONIRIQUE`, undefined, { eyebrow: 'Commande' })
+        .catch((error) => console.error('Fin du paiement en plusieurs fois :', error.message));
+    }
+  }
   return product;
 }
 
@@ -440,6 +500,13 @@ export async function handleStripeEvent(event, account) {
         confirmOrder(userId, `${product.name} — abonnement mensuel`, object.amount_total ?? 0,
           `, puis le même montant chaque mois jusqu'à résiliation (page Compte du site)`, stripeProvider(account), object.currency || 'eur');
       }
+    } else if (object.mode === 'subscription' && object.subscription && object.metadata?.kind === 'lease') {
+      const product = await applyStripeLease(await stripe('GET', `/subscriptions/${object.subscription}`, undefined, account.key), account);
+      if (product && event.type === 'checkout.session.completed' && recordOrder(userId, 'lease', product.id, object.amount_total ?? 0, 'stripe', object.id)) {
+        confirmOrder(userId, `${product.name} — paiement en ${LEASE.months} fois`, object.amount_total ?? 0,
+          `, puis le même montant chaque mois, ${LEASE.months} mensualités en tout : à la dernière, le plugin est à vous pour de bon (page Abonnement du site)`,
+          stripeProvider(account), object.currency || 'eur');
+      }
     } else if (object.mode === 'subscription' && object.subscription && platform && object.metadata?.kind === 'tools') {
       const sub = await stripe('GET', `/subscriptions/${object.subscription}`, undefined, account.key);
       applyStripeSubscription(sub);
@@ -471,6 +538,13 @@ export async function handleStripeEvent(event, account) {
         && get('SELECT id FROM products WHERE id = ? AND creator = ?', productId, account.creator)) revokePurchase(userId, productId, 'stripe');
   } else if (event.type.startsWith('customer.subscription.') && object.metadata?.monthly_product) {
     applyStripeMonthly(object, account);
+  } else if (event.type.startsWith('customer.subscription.') && object.metadata?.lease_product) {
+    await applyStripeLease(object, account);
+  } else if (event.type === 'invoice.paid') {
+    // Une mensualité payée : seul le paiement en plusieurs fois s'en sert (le compte des mois payés).
+    const details = object.parent?.subscription_details ?? object.subscription_details;
+    const subId = details?.subscription ?? object.subscription;
+    if (subId && details?.metadata?.lease_product) await applyStripeLease(await stripe('GET', `/subscriptions/${subId}`, undefined, account.key), account);
   } else if (event.type.startsWith('customer.subscription.') && platform) {
     applyStripeSubscription(object);
   }
@@ -590,7 +664,11 @@ export async function checkout(user, kind, item) {
     applyMonthly(user.id, item, { ref: `demo_${crypto.randomBytes(8).toString('hex')}`, live: true, periodEnd: now() + PERIOD_MS.month, provider: 'demo' });
     return { mode: 'demo', granted: true };
   }
-  if (kind === 'monthly' && mode !== 'stripe') throw new HttpError(503, 'Les achats ne sont pas encore ouverts.');
+  if (kind === 'lease' && mode === 'demo') {
+    applyLease(user.id, item, { ref: `demo_${crypto.randomBytes(8).toString('hex')}`, live: true, periodEnd: now() + PERIOD_MS.month, paid: 1, provider: 'demo' });
+    return { mode: 'demo', granted: true };
+  }
+  if ((kind === 'monthly' || kind === 'lease') && mode !== 'stripe') throw new HttpError(503, 'Les achats ne sont pas encore ouverts.');
   if (kind === 'tools' && mode === 'demo') {
     setToolsSubscription(user.id, { interval: item.interval, status: 'active', periodEnd: now() + PERIOD_MS[item.interval] });
     return { mode: 'demo', granted: true };
@@ -682,13 +760,13 @@ export async function billingPortal(user) {
 /** Résilie un plugin au mois (sa licence) : plus de prélèvement, la licence va jusqu'au bout du mois payé. */
 export async function cancelMonthly(userId, licenseId) {
   const license = get(`SELECT l.*, p.creator FROM licenses l JOIN products p ON p.id = l.product_id
-    WHERE l.id = ? AND l.user_id = ? AND l.bundle LIKE 'sub:%'`, licenseId, userId);
+    WHERE l.id = ? AND l.user_id = ? AND (l.bundle LIKE 'sub:%' OR (l.bundle LIKE 'lease:%' AND l.type = 'timed'))`, licenseId, userId);
   if (!license) throw new HttpError(404, 'Abonnement introuvable.');
   if (license.note.includes('résilié')) return;
-  const ref = license.bundle.slice(4), account = stripeAccount(license.creator);
+  const ref = license.bundle.slice(license.bundle.indexOf(':') + 1), account = stripeAccount(license.creator);
   if (!ref.startsWith('demo_')) {
     if (!account) throw new HttpError(503, 'La résiliation est momentanément impossible : écrivez au support.');
     await stripe('POST', `/subscriptions/${ref}`, { cancel_at_period_end: true }, account.key);
   }
-  run(`UPDATE licenses SET note = 'Abonnement mensuel · résilié' WHERE id = ?`, license.id);
+  run(`UPDATE licenses SET note = ? WHERE id = ?`, license.bundle.startsWith('lease:') ? `${license.note} · résilié` : 'Abonnement mensuel · résilié', license.id);
 }

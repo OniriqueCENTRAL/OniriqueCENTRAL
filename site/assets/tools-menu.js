@@ -4,7 +4,7 @@
 // comptes qui ne l'ont pas : chaque liste marque ces liens data-right, montrés quand le compte est connu.
 window.OniriqueTools = [
   ["Abonnement", [
-    ["ONIRIQUE CLOUD et page de liens", "cloud", "Tes projets, tes versions, tes collabs et ta page de liens : 1,99 € par mois ou 9,99 € par an."],
+    ["ONIRIQUE CLOUD et page de liens", "cloud", "Tes projets, tes versions, tes collabs et ta page de liens : 1,99 € par mois ou 19,99 € par an."],
     ["ONIRIQUE CUT", "cut", "Tes clips montés sur le beat de ton son, en vidéo 9:16 pour TikTok. Inclus pour les membres et avec CLOUD."],
   ]],
   ["Analyser", [

@@ -803,7 +803,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   purgeTrash();
   sweepSounds();
   const member = (req, _res, next) => (can(req.user, 'sounds') ? next()
-    : next(new HttpError(403, 'ONIRIQUE CLOUD demande un abonnement : 1,99 € par mois ou 9,99 € par an, sur onirique.store/cloud.')));
+    : next(new HttpError(403, 'ONIRIQUE CLOUD demande un abonnement : 1,99 € par mois ou 19,99 € par an, sur onirique.store/cloud.')));
   // CLOUD gratuit : tout compte connecté y entre, avec FREE_TRACKS sons au plus ; le reste (liens d'écoute, packs, mails,
   // collaborateurs, fiche artiste, fond, ZIP, projets enregistrés) demande l'abonnement (pro).
   const me = [requireUser];
@@ -814,7 +814,7 @@ export function mountSounds(app, { requireUser, receiveFile, receiveImage, remov
   function freeRoom(ownerId, n = 1) {
     const owner = get('SELECT id, role FROM users WHERE id = ?', ownerId);
     if (!owner || can(owner, 'sounds') || ownTracks(ownerId) + n <= FREE_TRACKS) return;
-    throw new HttpError(402, `CLOUD gratuit : ${FREE_TRACKS} sons au plus. Passe à l'abonnement ONIRIQUE CLOUD (1,99 € par mois ou 9,99 € par an) pour des sons sans limite.`);
+    throw new HttpError(402, `CLOUD gratuit : ${FREE_TRACKS} sons au plus. Passe à l'abonnement ONIRIQUE CLOUD (1,99 € par mois ou 19,99 € par an) pour des sons sans limite.`);
   }
 
   const project = (req, pid) => {

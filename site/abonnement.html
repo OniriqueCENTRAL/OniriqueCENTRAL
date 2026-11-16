@@ -74,7 +74,7 @@ button.btn:disabled { opacity: .5; cursor: default; }
     <div class="actions"><button class="btn" type="button" id="portal">Paiement et factures</button></div>
     <h2 id="plans-title">Formules</h2>
     <div class="plans" id="plans"></div>
-    <div id="monthly-box" hidden><h2>Plugins au mois</h2><div id="monthly"></div></div>
+    <div id="monthly-box" hidden><h2>Plugins au mois et en plusieurs fois</h2><div id="monthly"></div></div>
     <h2>ONIRIQUE CLOUD</h2>
     <div id="tools"></div>
   </section>
@@ -182,9 +182,18 @@ async function load() {
   $("plans-title").hidden = !catalog.plans.length;
 
   // Les plugins pris au mois, chacun à part.
-  const monthly = me.licenses.filter((l) => (l.bundle || "").startsWith("sub:") && l.status === "active" && l.expiresAt > Date.now());
+  const monthly = me.licenses.filter((l) => /^(sub|lease):/.test(l.bundle || "") && l.type === "timed" && l.status === "active" && l.expiresAt > Date.now());
   $("monthly-box").hidden = !monthly.length;
   $("monthly").replaceChildren(...monthly.map((l) => {
+    // En plusieurs fois : la note dit où en sont les mensualités (« Paiement en 10 fois · 4/10 »).
+    if (l.bundle.startsWith("lease:")) {
+      const [paid, months] = (l.note.match(/(\d+)\/(\d+)/) || [0, 0, 0]).slice(1).map(Number);
+      const stopped = l.note.includes("résilié");
+      return card(l.productName, stopped ? "Se termine" : "En " + months + " fois", !stopped,
+        [stopped ? "Arrêté : utilisable jusqu’au " + date(l.expiresAt) + ", puis le plugin s’en va." : paid + " mensualités payées sur " + months + ". À la dernière, le plugin est à toi pour de bon."],
+        [!stopped && action("Arrêter", "danger", async () => { await api("POST", "/api/licenses/" + l.id + "/cancel"); return "Paiement de " + l.productName + " arrêté."; },
+          "Arrêter de payer " + l.productName + " ? Les mensualités déjà payées ne sont pas remboursées et le plugin s’en va à la fin du mois payé.")]);
+    }
     const cancelled = l.note.includes("résilié");
     // La licence court trois jours de plus que le mois payé, le temps que le paiement suivant passe.
     return card(l.productName, cancelled ? "Se termine" : "Au mois", !cancelled,

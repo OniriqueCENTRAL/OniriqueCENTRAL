@@ -94,6 +94,55 @@ try {
     await call('PATCH', `/api/admin/products/${meter.id}`, { token: admin.token, body: { monthlyCents: 0 } });
   });
 
+  await step('en 10 fois : licence au mois tant que ce n\'est pas payé, définitive à la dixième mensualité', async () => {
+    const { applyLease } = await import('../src/payments.js');
+    const eve = await account('eve');
+    const catalog = await call('GET', '/api/catalog');
+    assert.deepEqual(catalog.products.find((p) => p.id === tuner.id).lease, { months: 10, cents: 400, totalCents: 4000 });
+    assert.equal(catalog.products.find((p) => p.id === meter.id).lease, null, 'trop petit prix : pas de paiement en plusieurs fois');
+    await call('POST', '/api/checkout', { token: eve.token, body: { kind: 'lease', id: meter.id }, expect: 404 });
+    assert.equal((await call('POST', '/api/checkout', { token: eve.token, body: { kind: 'lease', id: tuner.id } })).granted, true);
+    const license = get(`SELECT * FROM licenses WHERE user_id = ? AND bundle LIKE 'lease:%'`, eve.id);
+    assert.deepEqual([license.type, license.note], ['timed', 'Paiement en 10 fois · 1/10']);
+    await call('POST', '/api/checkout', { token: eve.token, body: { kind: 'lease', id: tuner.id }, expect: 409 });
+    const ref = license.bundle.slice(6), periodEnd = Date.now() + 31 * 86400_000;
+    // Le même événement reçu deux fois ne compte pas deux mensualités : c'est Stripe qui donne le compte.
+    assert.equal(applyLease(eve.id, tuner, { ref, live: true, periodEnd, paid: 9 }), false);
+    assert.equal(applyLease(eve.id, tuner, { ref, live: true, periodEnd, paid: 9 }), false);
+    assert.equal(get('SELECT note FROM licenses WHERE id = ?', license.id).note, 'Paiement en 10 fois · 9/10');
+    assert.equal(applyLease(eve.id, tuner, { ref, live: true, periodEnd, paid: 10 }), true);
+    let done = get('SELECT * FROM licenses WHERE id = ?', license.id);
+    assert.deepEqual([done.type, done.expires_at, done.note], ['perpetual', null, 'Payé en 10 fois']);
+    // L'abonnement qui s'arrête ensuite ne reprend rien.
+    assert.equal(applyLease(eve.id, tuner, { ref, live: false, periodEnd, paid: 10 }), false);
+    assert.equal(get('SELECT type FROM licenses WHERE id = ?', license.id).type, 'perpetual');
+    // Arrêté en route : la licence s'arrête avec le mois payé.
+    const frank = await account('frank');
+    await call('POST', '/api/checkout', { token: frank.token, body: { kind: 'lease', id: tuner.id } });
+    const stopped = get(`SELECT * FROM licenses WHERE user_id = ? AND bundle LIKE 'lease:%'`, frank.id);
+    await call('POST', `/api/licenses/${stopped.id}/cancel`, { token: frank.token });
+    assert.equal(get('SELECT note FROM licenses WHERE id = ?', stopped.id).note, 'Paiement en 10 fois · 1/10 · résilié');
+    applyLease(frank.id, tuner, { ref: stopped.bundle.slice(6), live: false, periodEnd: Date.now() - 86400_000, paid: 1 });
+    done = get('SELECT * FROM licenses WHERE id = ?', stopped.id);
+    assert.ok(done.type === 'timed' && done.expires_at <= Date.now() + 3 * 86400_000);
+  });
+
+  await step('ESSENTIAL et ALL ACCESS comprennent ONIRIQUE CLOUD, pas la formule à la carte', async () => {
+    const { can } = await import('../src/auth.js');
+    const { setSubscription } = await import('../src/payments.js');
+    const gina = await account('gina');
+    const user = get('SELECT * FROM users WHERE id = ?', gina.id);
+    assert.equal(can(user, 'sounds'), false);
+    const pick = run(`INSERT INTO plans (name, interval, price_cents, kind) VALUES ('À LA CARTE', 'month', 999, 'pick')`).lastInsertRowid;
+    setSubscription(gina.id, pick, { status: 'active', periodEnd: Date.now() + 86400_000 });
+    assert.equal(can(user, 'sounds'), false);
+    const all = run(`INSERT INTO plans (name, interval, price_cents, kind) VALUES ('ALL ACCESS', 'month', 2999, 'all')`).lastInsertRowid;
+    setSubscription(gina.id, all, { status: 'active', periodEnd: Date.now() + 86400_000 });
+    assert.equal(can(user, 'sounds') && can(user, 'links'), true);
+    setSubscription(gina.id, all, { status: 'ended', periodEnd: Date.now() - 1 });
+    assert.equal(can(user, 'sounds'), false);
+  });
+
   await step('code promo : créé par un admin, vérifié, appliqué au paiement, une fois par compte', async () => {
     await call('POST', '/api/admin/promos', { token: admin.token, body: { code: 'noel20', percent: 20 }, expect: 201 });
     await call('POST', '/api/admin/promos', { token: admin.token, body: { code: 'NOEL20', percent: 10 }, expect: 409 });
