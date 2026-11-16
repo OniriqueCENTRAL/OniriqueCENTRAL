@@ -1,0 +1,79 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#ek-vue">Vue d’ensemble</a></li>
+  <li><a href="#ek-echo">ECHO</a></li>
+  <li><a href="#ek-character">CHARACTER</a></li>
+  <li><a href="#ek-colour">COLOUR et EQ</a></li>
+  <li><a href="#ek-ecran">L’écran</a></li>
+  <li><a href="#ek-reglages">Tous les réglages</a></li>
+  <li><a href="#ek-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="ek-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE ECHOBOX est un <b>delay créatif qui voyage, d’un seul bouton, du numérique le plus pur à la bande la plus usée</b> : d’un côté des répétitions exactes, nettes, avec un pitch shifter dans l’esprit des delays numériques de studio des années 80 ; de l’autre l’écho à bande chaud, à une tête ou multi-têtes. Entrée mono ou stéréo, sortie stéréo, aucune latence.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 1316 200" role="img" aria-label="Chemin du son d’ECHOBOX : EQ IN, ligne d’écho à trois têtes avec réinjection, couleur, Space, EQ OUT, mélange"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">ENTRÉE</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="161" height="46" rx="6"/><text x="150.5" y="59" text-anchor="middle">EQ IN</text><text x="150.5" y="75" text-anchor="middle" class="t2">ce qui entre</text><rect class="ba" x="261" y="40" width="161" height="46" rx="6"/><text x="341.5" y="59" text-anchor="middle" class="tb">TÊTES 1 · 2 · 3</text><text x="341.5" y="75" text-anchor="middle" class="t2">TIME · FEEDBACK</text><path class="w" d="M231 63 H261" marker-end="url(#doc-arr)"/><rect class="b" x="452" y="40" width="161" height="46" rx="6"/><text x="532.5" y="59" text-anchor="middle">CHARACTER</text><text x="532.5" y="75" text-anchor="middle" class="t2">DIG ↔ TAPE</text><path class="w" d="M422 63 H452" marker-end="url(#doc-arr)"/><rect class="b" x="643" y="40" width="161" height="46" rx="6"/><text x="723.5" y="59" text-anchor="middle">COLOUR</text><text x="723.5" y="75" text-anchor="middle" class="t2">TONE · PITCH · WOBBLE</text><path class="w" d="M613 63 H643" marker-end="url(#doc-arr)"/><rect class="b" x="834" y="40" width="161" height="46" rx="6"/><text x="914.5" y="59" text-anchor="middle">SPACE</text><text x="914.5" y="75" text-anchor="middle" class="t2">réverbe</text><path class="w" d="M804 63 H834" marker-end="url(#doc-arr)"/><rect class="b" x="1025" y="40" width="161" height="46" rx="6"/><text x="1105.5" y="59" text-anchor="middle">EQ OUT</text><text x="1105.5" y="75" text-anchor="middle" class="t2">les répétitions</text><path class="w" d="M995 63 H1025" marker-end="url(#doc-arr)"/><path class="w" d="M1186 63 H1214" marker-end="url(#doc-arr)"/><circle class="ba" cx="1232" cy="63" r="18"/><text x="1232" y="69" text-anchor="middle" class="tb">+</text><text x="1232" y="37" text-anchor="middle" class="t2">MIX</text><circle class="dot" cx="52" cy="63" r="3.5"/><path class="wd" d="M52 63 V178 H1232 V81" marker-end="url(#doc-arr)"/><text x="80" y="172" class="t2">le son d’origine</text><path class="w" d="M1250 63 H1290"/><circle class="w" cx="1296" cy="63" r="6"/><text x="1296" y="91" text-anchor="middle" class="t2">SORTIE</text></svg>
+  </div>
+  <figcaption>Le son direct n’est jamais touché : l’EQ IN règle ce qui entre dans l’écho, l’EQ OUT les répétitions qui en sortent. MIX dose les deux.</figcaption>
+</figure>
+
+<h2 id="ek-echo">1. ECHO</h2>
+<ul>
+  <li><b>TIME</b> : le temps de la tête 1, de 20 ms à 2 s ; avec <b>SYNC</b>, une valeur de note (1/32 à 1/1, pointées, triolets).</li>
+  <li><b>HEADS 1 2 3</b> : les têtes de lecture, à une, deux et trois fois le temps, combinables.</li>
+  <li><b>FEEDBACK</b> : 0 à 110 %. Au-delà de 100, l’écho s’emballe et chante seul.</li>
+  <li><b>MIX</b> : sec seul (0) à échos seuls (100), les deux à plein au milieu. <b>DELAY OUT</b> : le niveau des échos seuls, de −30 à +6 dB.</li>
+  <li><b>FREEZE</b> : fige la bande et la fait tourner en boucle, sans perte.</li>
+</ul>
+
+<h2 id="ek-character">2. CHARACTER, du numérique à la bande</h2>
+<p>Le bouton se lit en deux moitiés :</p>
+<ul>
+  <li><b>0 → 50 (numérique)</b> : tout à gauche, chaque répétition est la copie exacte du son, sans filtre ni saturation. En allant vers le milieu, un filtre très doux arrondit à peine les répétitions. Le temps change presque instantanément.</li>
+  <li><b>50 → 100 (bande)</b> : la tête d’enregistrement sature de plus en plus, chaque répétition perd des aigus (jusqu’à 2,6 kHz) et des graves, un léger souffle s’installe, le temps glisse en faisant plier la hauteur quand on le tourne, et le SPACE prend le son d’un ressort.</li>
+</ul>
+
+<h2 id="ek-colour">3. COLOUR et EQ</h2>
+<ul>
+  <li><b>TONE</b> : des répétitions de plus en plus sombres, ou plus brillantes et fines.</li>
+  <li><b>PITCH</b> : chaque répétition monte ou descend de −12 à +12 demi-tons, en cascade.</li>
+  <li><b>WOBBLE</b> : pleurage et scintillement côté bande, modulation régulière côté numérique.</li>
+  <li><b>PING-PONG</b> : les répétitions passent d’un côté à l’autre.</li>
+  <li><b>SPACE</b> : la réverbe où tombent les échos, en ressort côté bande.</li>
+  <li><b>EQ IN / OUT</b> : coupe-bas, grave, médium, aigu, coupe-haut, avec le spectre en direct. On tire les points à la souris, double-clic pour revenir à zéro.</li>
+</ul>
+
+<h2 id="ek-ecran">4. L’écran</h2>
+<ul>
+  <li><b>À gauche, la machine</b> : une puce mémoire côté numérique, deux bobines qui tournent à la vitesse de la bande côté analogique, les trois têtes allumées quand elles lisent.</li>
+  <li><b>À droite, les répétitions</b> qu’un son va produire : une marque par écho, à sa place dans le temps et aussi haute qu’il revient fort ; la gauche au-dessus de l’axe, la droite en dessous. Avec PITCH, un escalier indique la hauteur de chaque écho.</li>
+</ul>
+
+<h2 id="ek-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>TIME · SYNC</td><td>20 ms – 2 s · notes</td><td>Le temps de l’écho.</td></tr>
+  <tr><td>HEADS 1 2 3</td><td>combinables</td><td>Les têtes de lecture.</td></tr>
+  <tr><td>FEEDBACK</td><td>0 – 110 %</td><td>Le nombre de répétitions.</td></tr>
+  <tr><td>MIX</td><td>0 – 100</td><td>Sec et échos.</td></tr>
+  <tr><td>DELAY OUT</td><td>−30 à +6 dB</td><td>Le niveau des échos seuls.</td></tr>
+  <tr><td>FREEZE</td><td>marche / arrêt</td><td>La bande figée en boucle.</td></tr>
+  <tr><td>CHARACTER</td><td>DIG ↔ TAPE</td><td>Numérique pur à bande usée.</td></tr>
+  <tr><td>TONE</td><td>±</td><td>Des répétitions sombres ou brillantes.</td></tr>
+  <tr><td>PITCH</td><td>±12 demi-tons</td><td>Chaque répétition monte ou descend.</td></tr>
+  <tr><td>WOBBLE</td><td>0 – 100 %</td><td>Pleurage ou modulation.</td></tr>
+  <tr><td>PING-PONG</td><td>marche / arrêt</td><td>D’un côté à l’autre.</td></tr>
+  <tr><td>SPACE</td><td>0 – 100 %</td><td>La réverbe des échos.</td></tr>
+  <tr><td>EQ IN · EQ OUT</td><td>5 bandes</td><td>Ce qui entre, ce qui sort.</td></tr>
+</table></div>
+
+<h2 id="ek-conseils">Conseils</h2>
+<div class="tip"><p><b>Un écho de voix à l’ancienne</b> : CHARACTER vers 75, SYNC 1/4 pointé, FEEDBACK 35 %, un peu de WOBBLE et de SPACE.</p></div>
+<div class="tip"><p><b>Un effet de montée</b> : PITCH +12, FEEDBACK 80 % : chaque répétition monte d’une octave.</p></div>
+<div class="tip"><p><b>Des échos qui ne salissent pas la voix</b> : EQ IN avec un coupe-bas à 300 Hz et un coupe-haut à 6 kHz.</p></div>

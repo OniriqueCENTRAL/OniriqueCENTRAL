@@ -1,0 +1,61 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#eq-vue">Vue d’ensemble</a></li>
+  <li><a href="#eq-modes">Les trois traitements</a></li>
+  <li><a href="#eq-bandes">Les bandes</a></li>
+  <li><a href="#eq-reglages">Tous les réglages</a></li>
+  <li><a href="#eq-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="eq-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE EQ est un <b>égaliseur paramétrique 8 bandes</b>, le même que celui de VOCALBOX (algorithme, analyseur, bandes, écoute), en plugin à part. Il a trois façons de traiter le son, au choix dans le menu en haut, chacune avec ses avantages.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 688 160" role="img" aria-label="Chemin du son de l’EQ : 8 bandes, bandes dynamiques, OUTPUT"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">ENTRÉE</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="112" height="46" rx="6"/><text x="126" y="68" text-anchor="middle">INPUT</text><rect class="ba" x="212" y="40" width="112" height="46" rx="6"/><text x="268" y="59" text-anchor="middle" class="tb">8 BANDES</text><text x="268" y="75" text-anchor="middle" class="t2">IIR ou FIR</text><path class="w" d="M182 63 H212" marker-end="url(#doc-arr)"/><rect class="b" x="354" y="40" width="112" height="46" rx="6"/><text x="410" y="59" text-anchor="middle">DYNAMIQUES</text><text x="410" y="75" text-anchor="middle" class="t2">bandes DYN</text><path class="w" d="M324 63 H354" marker-end="url(#doc-arr)"/><rect class="b" x="496" y="40" width="112" height="46" rx="6"/><text x="552" y="68" text-anchor="middle">OUTPUT</text><path class="w" d="M466 63 H496" marker-end="url(#doc-arr)"/><path class="w" d="M608 63 H648"/><circle class="w" cx="654" cy="63" r="6"/><text x="654" y="91" text-anchor="middle" class="t2">SORTIE</text></svg>
+  </div>
+  <figcaption>Les bandes fixes passent par le traitement choisi (IIR ou FIR) ; les bandes dynamiques, dont le gain bouge à chaque instant, restent en IIR après.</figcaption>
+</figure>
+
+<h2 id="eq-modes">1. Les trois traitements</h2>
+<div class="table"><table>
+  <tr><th>Mode</th><th>Latence</th><th>Ce qu’il fait</th></tr>
+  <tr><td>Zero Latency</td><td>aucune</td><td>Filtres IIR « appariés à l’analogique », en double précision : la forme des courbes reste juste jusque dans l’extrême aigu.</td></tr>
+  <tr><td>Natural Phase</td><td>aucune</td><td>Un FIR à phase minimale calculé à partir de la réponse analogique exacte : l’amplitude analogique jusqu’en haut, la phase d’un égaliseur analogique.</td></tr>
+  <tr><td>Linear Phase</td><td>341 ms à 48 kHz</td><td>Un FIR à phase nulle : aucun déphasage. Pour le mastering ; la latence est compensée par le DAW.</td></tr>
+</table></div>
+<p>Chaque réglage fabrique un nouveau filtre sur un fil à part, appliqué en fondu de 50 ms : pas de clic quand on tourne un bouton.</p>
+
+<h2 id="eq-bandes">2. Les bandes</h2>
+<p>Huit bandes, chacune avec son type :</p>
+<ul>
+  <li><b>Bell</b> (cloche), <b>Low shelf</b> et <b>High shelf</b> (étagères), <b>Notch</b> (coupe étroite).</li>
+  <li><b>Low cut</b> et <b>High cut</b> : 12, 24, 36 ou 48 dB par octave.</li>
+  <li><b>DYN</b> : la bande devient dynamique, avec son seuil. Elle n’agit que quand le son dépasse le seuil dans sa zone.</li>
+</ul>
+<p>On règle une bande avec la <b>bulle</b> au-dessus de son point (marche, fréquence, Q / gain, pente, écoute, retirer) ou avec le <b>panneau flottant</b> sous l’analyseur (type, pente, FREQ / GAIN / Q, bande précédente / suivante, DYN et seuil).</p>
+<p><b>Écoute</b> : maintenir le point d’une bande (ou le casque) fait entendre seulement cette bande.</p>
+
+<h2 id="eq-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>Traitement</td><td>Zero Latency · Natural Phase · Linear Phase</td><td>Le type de filtres.</td></tr>
+  <tr><td>TYPE</td><td>bell, shelf, notch, cut</td><td>La forme de chaque bande.</td></tr>
+  <tr><td>FREQ</td><td>20 Hz – 20 kHz</td><td>La fréquence de la bande.</td></tr>
+  <tr><td>GAIN</td><td>en dB</td><td>Monter ou baisser.</td></tr>
+  <tr><td>Q</td><td>largeur</td><td>La largeur de la cloche ou du notch.</td></tr>
+  <tr><td>PENTE</td><td>12 – 48 dB/oct</td><td>Pour les low cut et high cut.</td></tr>
+  <tr><td>DYN · seuil</td><td>par bande</td><td>La bande devient dynamique.</td></tr>
+  <tr><td>Écoute</td><td>casque</td><td>Entendre une bande seule.</td></tr>
+  <tr><td>OUTPUT</td><td>en dB</td><td>Le niveau de sortie.</td></tr>
+  <tr><td>BYPASS</td><td>marche / arrêt</td><td>Le son direct, aligné sur la latence.</td></tr>
+</table></div>
+
+<h2 id="eq-conseils">Conseils</h2>
+<div class="tip"><p><b>Retirer une résonance</b> : une bande Bell étroite, poussée fort, que tu promènes en écoute solo jusqu’à trouver la note qui sonne ; puis baisse-la.</p></div>
+<div class="tip"><p><b>Calmer des sifflantes sans tout éteindre</b> : une bande DYN vers 6 – 8 kHz, gain négatif : elle n’agit que sur les S.</p></div>
+<div class="tip"><p><b>Mastering</b> : Linear Phase évite tout déphasage entre les bandes ; garde Zero Latency pendant l’enregistrement.</p></div>

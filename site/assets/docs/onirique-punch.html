@@ -1,0 +1,68 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#pu-vue">Vue d’ensemble</a></li>
+  <li><a href="#pu-bandes">Les bandes</a></li>
+  <li><a href="#pu-attaque">ATTACK et SUSTAIN</a></li>
+  <li><a href="#pu-image">Image et sortie</a></li>
+  <li><a href="#pu-reglages">Tous les réglages</a></li>
+  <li><a href="#pu-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="pu-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE PUNCH est un <b>modeleur de transitoires multibande</b>. Il sépare l’attaque d’un son de son corps, et règle l’une et l’autre à part : plus de claquement, moins de queue, ou l’inverse. Le son peut être coupé en une, deux ou trois bandes, chacune avec ses propres réglages.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 1022 200" role="img" aria-label="Chemin du son de PUNCH : gain d’entrée, séparation en bandes, attaque et sustain par bande, recombinaison, image, mix, sortie"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">ENTRÉE</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="112" height="46" rx="6"/><text x="126" y="68" text-anchor="middle">IN</text><rect class="b" x="212" y="40" width="112" height="46" rx="6"/><text x="268" y="59" text-anchor="middle">BANDES</text><text x="268" y="75" text-anchor="middle" class="t2">1, 2 ou 3</text><path class="w" d="M182 63 H212" marker-end="url(#doc-arr)"/><rect class="ba" x="354" y="40" width="112" height="46" rx="6"/><text x="410" y="59" text-anchor="middle" class="tb">ATTACK</text><text x="410" y="75" text-anchor="middle" class="t2">par bande</text><path class="w" d="M324 63 H354" marker-end="url(#doc-arr)"/><rect class="ba" x="496" y="40" width="112" height="46" rx="6"/><text x="552" y="59" text-anchor="middle" class="tb">SUSTAIN</text><text x="552" y="75" text-anchor="middle" class="t2">par bande</text><path class="w" d="M466 63 H496" marker-end="url(#doc-arr)"/><rect class="b" x="638" y="40" width="112" height="46" rx="6"/><text x="694" y="59" text-anchor="middle">IMAGE</text><text x="694" y="75" text-anchor="middle" class="t2">PAN · WIDTH</text><path class="w" d="M608 63 H638" marker-end="url(#doc-arr)"/><rect class="b" x="780" y="40" width="112" height="46" rx="6"/><text x="836" y="68" text-anchor="middle">OUT</text><path class="w" d="M750 63 H780" marker-end="url(#doc-arr)"/><path class="w" d="M892 63 H920" marker-end="url(#doc-arr)"/><circle class="ba" cx="938" cy="63" r="18"/><text x="938" y="69" text-anchor="middle" class="tb">+</text><text x="938" y="37" text-anchor="middle" class="t2">MIX</text><circle class="dot" cx="52" cy="63" r="3.5"/><path class="wd" d="M52 63 V178 H938 V81" marker-end="url(#doc-arr)"/><text x="80" y="172" class="t2">le son d’origine</text><path class="w" d="M956 63 H996"/><circle class="w" cx="1002" cy="63" r="6"/><text x="1002" y="91" text-anchor="middle" class="t2">SORTIE</text></svg>
+  </div>
+  <figcaption>Le son est séparé en bandes par des filtres Linkwitz-Riley, qui se recombinent sans trou ni bosse. Dans chaque bande, l’attaque et le corps sont réglés à part.</figcaption>
+</figure>
+
+<h2 id="pu-bandes">1. Les bandes</h2>
+<ul>
+  <li><b>BANDS</b> : 1, 2 ou 3 bandes. Les fréquences de séparation se règlent (150 Hz et 2,5 kHz au départ ; avec deux bandes, seule la première sert).</li>
+  <li>Chaque bande a son <b>ON</b> et son <b>SOLO</b>, pour l’entendre seule.</li>
+  <li>L’écran montre, pour chaque bande, son niveau et le gain appliqué dans le temps.</li>
+</ul>
+
+<h2 id="pu-attaque">2. ATTACK et SUSTAIN</h2>
+<p>Dans chaque bande, deux enveloppes distinguent l’<b>attaque</b> (ce qui monte vite) du <b>corps</b> (ce qui tient), et la <b>queue</b> du corps.</p>
+<ul>
+  <li><b>ATTACK</b> (−100 à +100 %) : pousse ou adoucit l’attaque.</li>
+  <li><b>SUSTAIN</b> (−100 à +100 %) : allonge ou raccourcit le corps et la queue.</li>
+  <li><b>MODE</b> : SHARP, MEDIUM ou SMOOTH, la vitesse de détection.</li>
+</ul>
+<div class="tip"><p>Comme la détection suit les variations, le traitement agit de la même façon quel que soit le niveau du son.</p></div>
+
+<h2 id="pu-image">3. Image et sortie</h2>
+<ul>
+  <li><b>PAN</b> et <b>WIDTH</b> (−100 à +100) : la place et la largeur de l’image.</li>
+  <li><b>MONO</b>, <b>PHASE</b> (inverse la polarité), <b>SWAP</b> (échange gauche et droite), <b>LINK</b> (détection commune aux deux canaux).</li>
+  <li><b>MIX</b> : le son traité et le son d’origine. <b>IN</b> et <b>OUT</b> : les niveaux.</li>
+  <li><b>DELTA</b> : n’écouter que ce que PUNCH ajoute ou retire.</li>
+</ul>
+
+<h2 id="pu-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>BANDS</td><td>1 · 2 · 3</td><td>Le nombre de bandes.</td></tr>
+  <tr><td>Séparations</td><td>en Hz</td><td>Où les bandes se séparent.</td></tr>
+  <tr><td>ATTACK</td><td>−100 à +100 %</td><td>L’attaque, par bande.</td></tr>
+  <tr><td>SUSTAIN</td><td>−100 à +100 %</td><td>Le corps et la queue, par bande.</td></tr>
+  <tr><td>MODE</td><td>SHARP · MEDIUM · SMOOTH</td><td>La vitesse de détection, par bande.</td></tr>
+  <tr><td>ON · SOLO</td><td>par bande</td><td>Couper ou écouter une bande.</td></tr>
+  <tr><td>PAN · WIDTH</td><td>−100 à +100</td><td>L’image stéréo.</td></tr>
+  <tr><td>MONO · PHASE · SWAP · LINK</td><td>interrupteurs</td><td>Utilitaires stéréo.</td></tr>
+  <tr><td>MIX</td><td>0 – 100 %</td><td>Traité et d’origine.</td></tr>
+  <tr><td>IN · OUT</td><td>en dB</td><td>Les niveaux.</td></tr>
+  <tr><td>DELTA</td><td>écoute</td><td>Ce qui est ajouté ou retiré.</td></tr>
+</table></div>
+
+<h2 id="pu-conseils">Conseils</h2>
+<div class="tip"><p><b>Un kick qui tape plus</b> : 3 bandes, ATTACK +40 % dans la bande haute (le claquement), SUSTAIN −20 % dans la bande basse pour resserrer.</p></div>
+<div class="tip"><p><b>Une batterie trop roomy</b> : SUSTAIN négatif sur toutes les bandes, MODE MEDIUM.</p></div>
+<div class="tip"><p><b>Une voix plus présente</b> : 1 bande, ATTACK +20 %, MIX vers 60 %.</p></div>

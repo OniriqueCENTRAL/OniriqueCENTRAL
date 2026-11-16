@@ -1,0 +1,68 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#gl-vue">Vue d’ensemble</a></li>
+  <li><a href="#gl-colle">Pourquoi ça colle</a></li>
+  <li><a href="#gl-temps">Les temps et le ratio</a></li>
+  <li><a href="#gl-couleur">Couleur et parallèle</a></li>
+  <li><a href="#gl-reglages">Tous les réglages</a></li>
+  <li><a href="#gl-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="gl-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE GLUE est un <b>compresseur de bus stéréo</b> dans l’esprit du compresseur de la section centrale des consoles G des années 80 : la même façade, les mêmes réglages aux mêmes places, et la même façon de <b>« coller » un mix</b>. Propre au niveau normal, un peu crémeux quand on le pousse.</p>
+<p>La façade est une photographie (chaque pièce modélisée en 3D) ; le VU s’éclaire en rouge tant que le compresseur est en service. Le traitement se fait au double de la fréquence d’échantillonnage, la latence est annoncée au DAW.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 1112 200" role="img" aria-label="Chemin du son de GLUE : détecteur sur la somme, filtre de sidechain, VCA unique, étage de sortie, MIX, fondu"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">ENTRÉE</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="127" height="46" rx="6"/><text x="133.5" y="59" text-anchor="middle">SC FILTER</text><text x="133.5" y="75" text-anchor="middle" class="t2">OFF – 500 Hz</text><rect class="b" x="227" y="40" width="127" height="46" rx="6"/><text x="290.5" y="59" text-anchor="middle">DÉTECTEUR</text><text x="290.5" y="75" text-anchor="middle" class="t2">somme L + R</text><path class="w" d="M197 63 H227" marker-end="url(#doc-arr)"/><rect class="ba" x="384" y="40" width="127" height="46" rx="6"/><text x="447.5" y="59" text-anchor="middle" class="tb">VCA</text><text x="447.5" y="75" text-anchor="middle" class="t2">un pour les deux</text><path class="w" d="M354 63 H384" marker-end="url(#doc-arr)"/><rect class="b" x="541" y="40" width="127" height="46" rx="6"/><text x="604.5" y="59" text-anchor="middle">MAKE-UP</text><text x="604.5" y="75" text-anchor="middle" class="t2">0 – 15 dB</text><path class="w" d="M511 63 H541" marker-end="url(#doc-arr)"/><rect class="b" x="698" y="40" width="127" height="46" rx="6"/><text x="761.5" y="59" text-anchor="middle">HR</text><text x="761.5" y="75" text-anchor="middle" class="t2">marge de sortie</text><path class="w" d="M668 63 H698" marker-end="url(#doc-arr)"/><rect class="b" x="855" y="40" width="127" height="46" rx="6"/><text x="918.5" y="59" text-anchor="middle">AUTO FADE</text><text x="918.5" y="75" text-anchor="middle" class="t2">1 – 60 s</text><path class="w" d="M825 63 H855" marker-end="url(#doc-arr)"/><path class="w" d="M982 63 H1010" marker-end="url(#doc-arr)"/><circle class="ba" cx="1028" cy="63" r="18"/><text x="1028" y="69" text-anchor="middle" class="tb">+</text><text x="1028" y="37" text-anchor="middle" class="t2">MIX</text><circle class="dot" cx="52" cy="63" r="3.5"/><path class="wd" d="M52 63 V178 H1028 V81" marker-end="url(#doc-arr)"/><text x="80" y="172" class="t2">le son d’origine</text><path class="w" d="M1046 63 H1086"/><circle class="w" cx="1092" cy="63" r="6"/><text x="1092" y="91" text-anchor="middle" class="t2">SORTIE</text></svg>
+  </div>
+  <figcaption>Un seul VCA traite la gauche et la droite, commandé par un détecteur qui écoute leur somme : l’image stéréo ne bouge jamais. MIX mélange le son compressé et le son d’origine.</figcaption>
+</figure>
+
+<h2 id="gl-colle">1. Pourquoi ça colle</h2>
+<ul>
+  <li><b>Un seul VCA pour les deux côtés</b>, et un détecteur qui écoute leur somme, comme sur la console : la compression respire avec tout le mix, et l’image ne bouge pas.</li>
+  <li><b>Le release AUTO</b> relâche vite après un coup isolé et lentement quand la compression dure. C’est ce réglage qui fait coller les éléments ensemble.</li>
+  <li><b>Le genou</b> est plus doux à 2:1 et plus franc à 10:1.</li>
+</ul>
+
+<h2 id="gl-temps">2. Les temps et le ratio</h2>
+<ul>
+  <li><b>ATTACK</b> : 0,1 / 0,3 / 1 / 3 / 10 / 30 ms. Plus lente, elle laisse passer le claquement des transitoires.</li>
+  <li><b>RELEASE</b> : 0,1 / 0,3 / 0,6 / 1,2 s, ou <b>AUTO</b>.</li>
+  <li><b>RATIO</b> : 2, 4 ou 10 pour 1.</li>
+  <li><b>THRESHOLD</b> : −15 à +15 dB, 0 correspondant à −14 dBFS.</li>
+</ul>
+
+<h2 id="gl-couleur">3. Sidechain, couleur et parallèle</h2>
+<ul>
+  <li><b>SC FILTER</b> : un passe-haut à 12 dB par octave sur ce que le compresseur entend, de OFF à 500 Hz. La basse ne fait plus pomper le mix.</li>
+  <li><b>HR</b> (headroom) : la marge de l’étage de sortie, de 4 à 24 dB (20 par défaut). Haut, c’est propre ; plus bas, les crêtes s’arrondissent, avec des harmoniques 2 et 3 mêlées.</li>
+  <li><b>MIX</b> : 0 à 100 % de son compressé, pour la compression parallèle.</li>
+  <li><b>AUTO FADE</b> : appuyé, le son descend au silence en <b>RATE</b> secondes (1 à 60) ; relâché, il remonte. Le fondu de fin de morceau de la console.</li>
+  <li><b>IN</b> : éteint, le signal tel qu’il est entré, au bit près.</li>
+</ul>
+
+<h2 id="gl-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>THRESHOLD</td><td>−15 à +15 dB</td><td>0 correspond à −14 dBFS.</td></tr>
+  <tr><td>MAKE-UP</td><td>0 – +15 dB</td><td>Le gain après compression.</td></tr>
+  <tr><td>ATTACK</td><td>0,1 – 30 ms</td><td>Six crans.</td></tr>
+  <tr><td>RELEASE</td><td>0,1 – 1,2 s · AUTO</td><td>AUTO s’adapte à la musique.</td></tr>
+  <tr><td>RATIO</td><td>2 · 4 · 10</td><td>Genou plus doux à 2:1.</td></tr>
+  <tr><td>SC FILTER</td><td>OFF – 500 Hz</td><td>Passe-haut sur le détecteur.</td></tr>
+  <tr><td>HR</td><td>4 – 24 dB</td><td>La marge avant que la sortie arrondisse.</td></tr>
+  <tr><td>MIX</td><td>0 – 100 %</td><td>Compression parallèle.</td></tr>
+  <tr><td>RATE · AUTO FADE</td><td>1 – 60 s</td><td>Le fondu de la console.</td></tr>
+  <tr><td>IN</td><td>marche / arrêt</td><td>Le compresseur en service.</td></tr>
+</table></div>
+
+<h2 id="gl-conseils">Conseils</h2>
+<div class="tip"><p><b>Coller un mix</b> : RATIO 2, ATTACK 10 ou 30 ms, RELEASE AUTO, 1 à 3 dB de réduction sur le VU. Les transitoires passent, le mix se tient.</p></div>
+<div class="tip"><p><b>Une batterie qui cogne</b> : RATIO 4 ou 10, ATTACK 3 ms, RELEASE 0,1 s, SC FILTER à 100 Hz, puis MIX vers 50 %.</p></div>
+<div class="tip"><p><b>Un peu de crème</b> : baisse HR vers 10 dB sur un bus déjà fort : les crêtes s’arrondissent sans écraser.</p></div>

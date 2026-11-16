@@ -1,0 +1,81 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#vb-vue">Vue d’ensemble</a></li>
+  <li><a href="#vb-chaine">La chaîne</a></li>
+  <li><a href="#vb-modules">Les modules</a></li>
+  <li><a href="#vb-automix">AUTO MIX</a></li>
+  <li><a href="#vb-qualite">Qualité</a></li>
+  <li><a href="#vb-reglages">Tous les réglages</a></li>
+  <li><a href="#vb-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="vb-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE VOCALBOX est une <b>chaîne vocale modulaire</b> : tu construis ta chaîne avec les modules dont ta voix a besoin (nettoyage, autotune, égalisation, compression, effets), dans l’ordre que tu veux. Jusqu’à 16 emplacements, et jusqu’à trois exemplaires d’un même module.</p>
+<p>Et si tu ne veux pas tout régler à la main, <b>AUTO MIX</b> écoute ta voix et construit la chaîne pour toi.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 884 270" role="img" aria-label="Une chaîne VOCALBOX typique : nettoyage, autotune, égalisation, compression, de-esser, effets"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">VOIX</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="161" height="46" rx="6"/><text x="150.5" y="68" text-anchor="middle">IN</text><rect class="b" x="261" y="40" width="161" height="46" rx="6"/><text x="341.5" y="59" text-anchor="middle">NETTOYAGE</text><text x="341.5" y="75" text-anchor="middle" class="t2">gate, noise, plosives</text><path class="w" d="M231 63 H261" marker-end="url(#doc-arr)"/><rect class="b" x="452" y="40" width="161" height="46" rx="6"/><text x="532.5" y="59" text-anchor="middle">TUNER</text><text x="532.5" y="75" text-anchor="middle" class="t2">justesse</text><path class="w" d="M422 63 H452" marker-end="url(#doc-arr)"/><rect class="b" x="643" y="40" width="161" height="46" rx="6"/><text x="723.5" y="59" text-anchor="middle">EQ</text><text x="723.5" y="75" text-anchor="middle" class="t2">paramétrique</text><path class="w" d="M613 63 H643" marker-end="url(#doc-arr)"/><rect class="ba" x="70" y="150" width="161" height="46" rx="6"/><text x="150.5" y="169" text-anchor="middle" class="tb">1176</text><text x="150.5" y="185" text-anchor="middle" class="t2">puis LA-2A</text><path class="w" d="M723.5 86 V118 H150.5 V150" marker-end="url(#doc-arr)"/><rect class="b" x="261" y="150" width="161" height="46" rx="6"/><text x="341.5" y="178" text-anchor="middle">DE-ESSER</text><path class="w" d="M231 173 H261" marker-end="url(#doc-arr)"/><rect class="b" x="452" y="150" width="161" height="46" rx="6"/><text x="532.5" y="169" text-anchor="middle">EFFETS</text><text x="532.5" y="185" text-anchor="middle" class="t2">delay, reverb</text><path class="w" d="M422 173 H452" marker-end="url(#doc-arr)"/><rect class="b" x="643" y="150" width="161" height="46" rx="6"/><text x="723.5" y="169" text-anchor="middle">OUT</text><text x="723.5" y="185" text-anchor="middle" class="t2">AUTO GAIN</text><path class="w" d="M613 173 H643" marker-end="url(#doc-arr)"/><path class="w" d="M804 173 H844"/><circle class="w" cx="850" cy="173" r="6"/><text x="850" y="201" text-anchor="middle" class="t2">SORTIE</text></svg>
+  </div>
+  <figcaption>Un exemple : chaque carré de la chaîne est un module, qu’on glisse pour changer l’ordre. Le delay et la reverb sont des envois : la voix reste entière.</figcaption>
+</figure>
+
+<h2 id="vb-chaine">1. Construire la chaîne</h2>
+<ul>
+  <li>Le <b>+</b> ouvre la liste des modules, rangés par famille. Un clic ajoute le module à la fin de la chaîne.</li>
+  <li><b>Glisser</b> un carré change l’ordre (en fondu, sans clic). Chaque carré a son bouton marche et se retire d’un geste.</li>
+  <li>Un clic sur un carré ouvre son écran, sur toute la place.</li>
+  <li><b>CHAÎNES</b> enregistre et rappelle des chaînes complètes ; <b>COMPARER</b> passe d’un réglage à l’autre pour juger.</li>
+  <li><b>MODE SIMPLE</b> : chaque module ne montre que ses deux ou trois réglages essentiels.</li>
+</ul>
+
+<h2 id="vb-modules">2. Les modules</h2>
+<div class="table"><table>
+  <tr><th>Famille</th><th>Modules</th></tr>
+  <tr><td>NETTOYAGE</td><td>NOISE GATE (bruit entre les phrases), NOISE SUPPRESSOR (souffle, ventilation, pièce), PLOSIVES (P et B), RESONANCE (résonances qui sifflent ou bourdonnent), DE-ESSER (S et CH), DE-CLICK (clics de bouche), DE-BREATH (respirations baissées, pas coupées), DE-REVERB (la pièce retirée de la voix)</td></tr>
+  <tr><td>TON</td><td>TUNER (justesse naturelle ou effet robot), PARAMETRIC EQ (8 bandes, mode dynamique), EQ ANALOG (couleur de console), SATURATION LAB (tube, analog, tape, transformer), PREAMP N73 (grain de console)</td></tr>
+  <tr><td>DYNAMIQUE</td><td>1176 (FET, versions BLACK et BLUE), LA-2A (optique, doux), CL1B (optique à lampe), MULTIBAND (quatre bandes optiques), PARALLEL (1176 écrasé remis dans la voix)</td></tr>
+  <tr><td>EFFETS</td><td>DOUBLER, CHORUS, FLANGER, PHONE, PITCHER (hauteur, formants, robot), CREATIVE FX, DELAY (tempo, ping-pong, ducking), REVERB (room, plates, hall, shimmer)</td></tr>
+</table></div>
+<p>Les compresseurs ont leur façade de rack, avec VU-mètre et bande de réduction en direct. Le 1176 existe en deux versions : <b>BLACK</b> (propre et serré) et <b>BLUE</b> (plus coloré, médiums en avant).</p>
+
+<h2 id="vb-automix">3. AUTO MIX</h2>
+<p><b>AUTO MIX</b> écoute ta prise (et une référence si tu en donnes une), puis construit la chaîne et ses réglages : l’égalisation à partir des écarts entre ta voix et la cible, la compression selon la dynamique, le de-esser selon les sifflantes, l’espace selon la référence.</p>
+<ul>
+  <li>Tu peux lui parler en mots : « plus chaud », « plus en avant », « un peu de reverb »…</li>
+  <li>Quatre <b>macros</b> affinent le résultat : <b>PRESENCE</b>, <b>WARMTH</b>, <b>HOLD</b> (la tenue de la compression) et <b>SPACE</b>.</li>
+  <li>Le <b>rôle</b> de la voix (LEAD, BACKS, ADLIBS, DOUBLES) et sa place dans le panoramique s’adaptent ; plusieurs VOCALBOX dans un projet se voient entre elles.</li>
+  <li><b>ONR Neural Learning</b> : VOCALBOX retient tes habitudes (ce que tu retouches après un AUTO MIX) et les propose ensuite. <b>MON PROFIL</b> montre ce qu’il a retenu.</li>
+</ul>
+
+<h2 id="vb-qualite">4. Qualité, entrée et sortie</h2>
+<ul>
+  <li><b>Suréchantillonnage</b> OFF, 2x, 4x ou 8x : les modules de ton, de dynamique et de saturation tournent plus vite que l’échantillonnage, pour des aigus propres.</li>
+  <li><b>IN</b> et <b>OUT</b> avec leurs mètres, et <b>AUTO GAIN</b> : le volume reste constant, quels que soient les réglages.</li>
+  <li><b>IN</b> (en haut) : le plugin en circuit ; <b>A / B</b>, <b>COPY / PASTE</b> et les presets dans la barre du haut.</li>
+</ul>
+
+<h2 id="vb-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>+ (modules)</td><td>16 emplacements</td><td>Ajouter un module à la chaîne.</td></tr>
+  <tr><td>Ordre</td><td>glisser</td><td>La place de chaque module.</td></tr>
+  <tr><td>Marche · retirer</td><td>par module</td><td>Couper ou enlever un module.</td></tr>
+  <tr><td>MODE SIMPLE</td><td>marche / arrêt</td><td>Seulement les réglages essentiels.</td></tr>
+  <tr><td>COMPARER</td><td>bouton</td><td>Passer d’un réglage à l’autre.</td></tr>
+  <tr><td>CHAÎNES</td><td>menu</td><td>Enregistrer et rappeler une chaîne.</td></tr>
+  <tr><td>AUTO MIX</td><td>page</td><td>La chaîne construite pour ta voix.</td></tr>
+  <tr><td>PRESENCE · WARMTH · HOLD · SPACE</td><td>−100 à +100</td><td>Les macros.</td></tr>
+  <tr><td>Rôle</td><td>LEAD · BACKS · ADLIBS · DOUBLES</td><td>La place de la voix dans le morceau.</td></tr>
+  <tr><td>Suréchantillonnage</td><td>OFF · 2x · 4x · 8x</td><td>La qualité de la chaîne.</td></tr>
+  <tr><td>IN · OUT · AUTO GAIN</td><td>en dB</td><td>Les niveaux.</td></tr>
+</table></div>
+
+<h2 id="vb-conseils">Conseils</h2>
+<div class="tip"><p><b>Le plus rapide</b> : AUTO MIX sur ta prise, puis ajuste avec les macros. Garde ce qui te plaît, VOCALBOX retient tes retouches.</p></div>
+<div class="tip"><p><b>Une chaîne classique de voix rap</b> : NOISE GATE, TUNER, PARAMETRIC EQ, 1176, LA-2A, DE-ESSER, puis DELAY et REVERB en petite quantité.</p></div>
+<div class="tip"><p>Le nettoyage marche mieux en début de chaîne, avant la compression qui ferait ressortir le bruit.</p></div>

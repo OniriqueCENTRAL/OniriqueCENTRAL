@@ -1,0 +1,77 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#op-vue">Vue d’ensemble</a></li>
+  <li><a href="#op-cellule">La cellule optique</a></li>
+  <li><a href="#op-temps">Les temps</a></li>
+  <li><a href="#op-generations">MK I et MK II</a></li>
+  <li><a href="#op-couleur">Couleur et sidechain</a></li>
+  <li><a href="#op-reglages">Tous les réglages</a></li>
+  <li><a href="#op-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="op-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE OPTOBOX est un <b>compresseur optique à lampe</b> dans l’esprit du grand classique danois des années 80, avec son unité de mixage en dessous. La façade est celle de la machine, peinte dans le rouge de la gamme, et le VU est éclairé par une LED légèrement bleue. Un inverseur passe de la génération d’origine (<b>vintage mk I</b>) à la génération actuelle (<b>modern mk II</b>).</p>
+<p>Aucune latence. Entrée mono ou stéréo, sortie stéréo, entrée sidechain stéréo. 0 VU = −18 dBFS, comme le calibrage de la machine : le seuil se lit à partir de là.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 1025 200" role="img" aria-label="Chemin du son d’OPTOBOX : low cut du détecteur, cellule optique, lampe et transformateurs, sortie, parallèle"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">ENTRÉE</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="141" height="46" rx="6"/><text x="140.5" y="59" text-anchor="middle">LOW CUT</text><text x="140.5" y="75" text-anchor="middle" class="t2">détecteur</text><rect class="b" x="241" y="40" width="141" height="46" rx="6"/><text x="311.5" y="59" text-anchor="middle">DÉTECTEUR</text><text x="311.5" y="75" text-anchor="middle" class="t2">THRESHOLD · RATIO</text><path class="w" d="M211 63 H241" marker-end="url(#doc-arr)"/><rect class="ba" x="412" y="40" width="141" height="46" rx="6"/><text x="482.5" y="59" text-anchor="middle" class="tb">CELLULE</text><text x="482.5" y="75" text-anchor="middle" class="t2">optique</text><path class="w" d="M382 63 H412" marker-end="url(#doc-arr)"/><rect class="b" x="583" y="40" width="141" height="46" rx="6"/><text x="653.5" y="59" text-anchor="middle">LAMPE</text><text x="653.5" y="75" text-anchor="middle" class="t2">et transformateurs</text><path class="w" d="M553 63 H583" marker-end="url(#doc-arr)"/><rect class="b" x="754" y="40" width="141" height="46" rx="6"/><text x="824.5" y="59" text-anchor="middle">OUTPUT</text><text x="824.5" y="75" text-anchor="middle" class="t2">off – +30 dB</text><path class="w" d="M724 63 H754" marker-end="url(#doc-arr)"/><path class="w" d="M895 63 H923" marker-end="url(#doc-arr)"/><circle class="ba" cx="941" cy="63" r="18"/><text x="941" y="69" text-anchor="middle" class="tb">+</text><text x="941" y="37" text-anchor="middle" class="t2">PARALLEL</text><circle class="dot" cx="52" cy="63" r="3.5"/><path class="wd" d="M52 63 V178 H941 V81" marker-end="url(#doc-arr)"/><text x="80" y="172" class="t2">le son d’origine</text><path class="w" d="M959 63 H999"/><circle class="w" cx="1005" cy="63" r="6"/><text x="1005" y="91" text-anchor="middle" class="t2">SORTIE</text></svg>
+  </div>
+  <figcaption>Le détecteur éclaire la cellule optique, qui baisse le gain avec un léger retard et revient en deux temps. La lampe et les transformateurs donnent la couleur. PARALLEL mélange le son compressé et le son d’origine.</figcaption>
+</figure>
+
+<h2 id="op-cellule">1. La cellule optique</h2>
+<p>Le niveau redressé charge les condensateurs d’attaque et de release ; le seuil et le ratio s’appliquent ensuite, avec un genou très doux : un niveau tenu au seuil est baissé d’<b>1 dB exactement</b>.</p>
+<p>La cellule suit la lumière avec un léger retard et revient en deux temps : <b>la plus grande part vite, le reste lentement</b>. Plus elle a été éclairée fort et longtemps, plus le retour lent pèse : elle a de la mémoire. C’est elle qui rend le mode <b>fixed</b> dépendant du programme.</p>
+
+<h2 id="op-temps">2. Les temps</h2>
+<ul>
+  <li><b>manual</b> : ATTACK (0,5 à 300 ms) et RELEASE (0,05 à 10 s) aux boutons.</li>
+  <li><b>fixed</b> : 1 ms et 50 ms, la cellule fait le reste.</li>
+  <li><b>fix./man.</b> : deux réseaux à la fois. Un pic plus court que l’attaque est pris par le réseau rapide et relâché vite ; un passage plus long est tenu comme en manual.</li>
+</ul>
+
+<h2 id="op-generations">3. MK I et MK II</h2>
+<div class="table"><table>
+  <tr><th>Caractère</th><th>vintage mk I</th><th>modern mk II</th></tr>
+  <tr><td>Genou</td><td>14 dB</td><td>9 dB</td></tr>
+  <tr><td>Retard de la cellule</td><td>2 ms</td><td>0,4 ms</td></tr>
+  <tr><td>Retour rapide / lent</td><td>70 ms / 3,5 s</td><td>40 ms / 1,5 s</td></tr>
+  <tr><td>Lampe à 0 VU (H2)</td><td>−59 dB</td><td>−69 dB</td></tr>
+  <tr><td>Réponse 20 Hz / 20 kHz</td><td>−0,9 / −0,9 dB</td><td>−0,1 / −0,2 dB</td></tr>
+</table></div>
+<p>MK I est plus lent, plus doux et plus coloré ; MK II plus rapide et plus transparent.</p>
+
+<h2 id="op-couleur">4. La lampe, la sidechain et le parallèle</h2>
+<ul>
+  <li><b>La lampe et les transformateurs</b> : harmonique 2 de la lampe, harmonique 3 quand on la pousse, saturation des graves dans le fer quand ils sont forts, légère bosse dans le bas et haut adouci. Tout ce qui distord tourne à double fréquence d’échantillonnage.</li>
+  <li><b>SIDECHAIN BUS SELECT</b> : int. (le compresseur écoute ce qu’il traite) ou ext. (l’entrée sidechain du DAW).</li>
+  <li><b>SIDECHAIN LOW CUT</b> : off, 80 Hz ou 220 Hz, sur le détecteur seulement.</li>
+  <li><b>PARALLEL COMP.</b> : du son d’origine au son compressé ; le son d’origine prend les mêmes filtres pour rester en phase.</li>
+  <li><b>METER</b> : le VU montre l’entrée, la réduction (GR) ou la sortie.</li>
+</ul>
+
+<h2 id="op-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>THRESHOLD</td><td>off (+20) à −40 dB</td><td>Le niveau où la compression atteint 1 dB, sous 0 VU.</td></tr>
+  <tr><td>RATIO</td><td>2:1 – 10:1</td><td>La force de la compression.</td></tr>
+  <tr><td>ATTACK</td><td>0,5 – 300 ms</td><td>En manual et fix./man.</td></tr>
+  <tr><td>RELEASE</td><td>0,05 – 10 s</td><td>En manual et fix./man.</td></tr>
+  <tr><td>ATTACK/RELEASE SELECT</td><td>fixed · fix./man. · manual</td><td>Le mode des temps.</td></tr>
+  <tr><td>OUTPUT VOLUME</td><td>off – +30 dB</td><td>Le gain après compression, par l’étage à lampe.</td></tr>
+  <tr><td>GENERATION</td><td>mk I · mk II</td><td>Vintage ou moderne.</td></tr>
+  <tr><td>SIDECHAIN BUS</td><td>int. · ext.</td><td>Ce que le détecteur écoute.</td></tr>
+  <tr><td>SIDECHAIN LOW CUT</td><td>off · 80 · 220 Hz</td><td>Sur le détecteur seulement.</td></tr>
+  <tr><td>PARALLEL COMP.</td><td>dry → wet</td><td>Compression parallèle.</td></tr>
+  <tr><td>METER</td><td>input · GR · output</td><td>Ce que montre le VU.</td></tr>
+</table></div>
+
+<h2 id="op-conseils">Conseils</h2>
+<div class="tip"><p><b>Une voix tenue en douceur</b> : mk I, fixed, RATIO 3:1, seuil pour 3 à 5 dB de GR. La cellule suit la phrase sans jamais pomper.</p></div>
+<div class="tip"><p><b>Une basse égale</b> : mk II, fix./man., LOW CUT à 80 Hz pour que le grave ne fasse pas tout le travail.</p></div>
+<div class="tip"><p>Les 15 presets d’usine partent des réglages conseillés par le manuel de la machine, avec un seuil placé pour une source à 0 VU.</p></div>

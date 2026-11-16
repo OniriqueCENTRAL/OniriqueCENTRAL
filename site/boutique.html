@@ -386,7 +386,11 @@ function fitDemo() {
 
 // Documentation : les plugins qui en ont une (assets/docs/<slug>.html) ont un onglet de plus ; le nombre est la
 // version du fichier, à augmenter quand on le modifie. L’adresse …#documentation ouvre directement l’onglet.
-const DOCS = { "tuner": 1, "onirique-verb": 1, "onirique-enhancer": 1, "onirique-stream": 1, "player-onirique": 1 };
+const DOCS = { "tuner": 1, "onirique-verb": 1, "onirique-enhancer": 1, "onirique-stream": 1, "player-onirique": 1,
+  "onirique-halo": 1, "onirique-eclipse": 1, "vocalbox": 1, "onirique-vocal-mini": 1, "onirique-weight": 1, "onirique-massif": 1,
+  "onirique-n73": 1, "onirique-glue": 1, "onirique-optobox": 1, "onirique-riser": 1, "onirique-eq": 1, "onirique-vocal-spacer": 1,
+  "onirique-resobox": 1, "onirique-doublebox": 1, "onirique-modbox": 1, "based": 1, "onirique-pitchbox": 1, "onirique-echobox": 1,
+  "onirique-meterbox": 1, "onirique-broadcast": 1, "brumebox": 1, "onirique-punch": 1 };
 function setupDoc(product) {
   const version = DOCS[product.slug];
   if (!version) return;

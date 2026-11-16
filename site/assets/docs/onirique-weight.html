@@ -1,0 +1,64 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#we-vue">Vue d’ensemble</a></li>
+  <li><a href="#we-bas">Le grave</a></li>
+  <li><a href="#we-haut">L’aigu</a></li>
+  <li><a href="#we-leviers">Leviers</a></li>
+  <li><a href="#we-reglages">Tous les réglages</a></li>
+  <li><a href="#we-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="we-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE WEIGHT est un <b>égaliseur de programme à lampes</b> dans l’esprit de celui des années 50 (EQP-1A) : la même façade, les mêmes réglages aux mêmes places, et son fameux <b>tour du bas</b>. Il ajoute deux caractères : <b>un bas qui pèse</b>, <b>un haut qui respire</b>.</p>
+<p>La façade est une photographie : chaque pièce est modélisée en 3D, et un potard qu’on tourne garde ses reflets en place, comme sur l’appareil. Le traitement se fait au double de la fréquence d’échantillonnage (4 échantillons de latence à 48 kHz, annoncés au DAW).</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 830 160" role="img" aria-label="Chemin du son de WEIGHT : section grave, lampes, section aiguë, levier EQ"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">ENTRÉE</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="ba" x="70" y="40" width="112" height="46" rx="6"/><text x="126" y="59" text-anchor="middle" class="tb">LOW BOOST</text><text x="126" y="75" text-anchor="middle" class="t2">et ATTEN</text><rect class="b" x="212" y="40" width="112" height="46" rx="6"/><text x="268" y="59" text-anchor="middle">LAMPES</text><text x="268" y="75" text-anchor="middle" class="t2">poids du bas</text><path class="w" d="M182 63 H212" marker-end="url(#doc-arr)"/><rect class="ba" x="354" y="40" width="112" height="46" rx="6"/><text x="410" y="59" text-anchor="middle" class="tb">HIGH BOOST</text><text x="410" y="75" text-anchor="middle" class="t2">cloche + air</text><path class="w" d="M324 63 H354" marker-end="url(#doc-arr)"/><rect class="b" x="496" y="40" width="112" height="46" rx="6"/><text x="552" y="59" text-anchor="middle">HIGH ATTEN</text><text x="552" y="75" text-anchor="middle" class="t2">étagère douce</text><path class="w" d="M466 63 H496" marker-end="url(#doc-arr)"/><rect class="b" x="638" y="40" width="112" height="46" rx="6"/><text x="694" y="59" text-anchor="middle">EQ / POWER</text><text x="694" y="75" text-anchor="middle" class="t2">leviers</text><path class="w" d="M608 63 H638" marker-end="url(#doc-arr)"/><path class="w" d="M750 63 H790"/><circle class="w" cx="796" cy="63" r="6"/><text x="796" y="91" text-anchor="middle" class="t2">SORTIE</text></svg>
+  </div>
+  <figcaption>Le grave passe par les lampes, qui l’épaississent quand il monte. Les aigus ne passent pas par elles et restent propres.</figcaption>
+</figure>
+
+<h2 id="we-bas">1. LOW FREQUENCY : un bas qui pèse</h2>
+<ul>
+  <li><b>BOOST</b> relève le bas jusqu’à <b>+13,5 dB</b> autour de 20, 30, 60 ou 100 Hz (<b>CPS</b>). Plus il monte, plus les lampes épaississent la basse de leurs harmoniques (surtout la deuxième), qui la font entendre même sur de petites enceintes.</li>
+  <li><b>ATTEN</b> retire du bas, jusqu’à <b>−17,5 dB</b>, en pente plus douce et centrée plus haut.</li>
+</ul>
+<p><b>Le tour du bas</b> : BOOST et ATTEN ensemble. Le sub monte, et le bas-médium boueux se creuse juste au-dessus. À 60 Hz, BOOST à 10 et ATTEN à 10 donnent environ +4,7 dB à 30 Hz et −4,8 dB vers 200 Hz ; à 5 et 3, +3 dB et −1,8 dB.</p>
+
+<h2 id="we-haut">2. HIGH FREQUENCY : un haut qui respire</h2>
+<ul>
+  <li><b>BOOST</b> jusqu’à <b>+18 dB</b> à 3, 4, 5, 8, 10, 12 ou 16 kHz (<b>KCS</b>) : une cloche (85 %) prolongée par une étagère très large au-dessus (45 %), à la manière des bandes d’air des égaliseurs de mastering. Le haut s’ouvre et reste léger au lieu de durcir.</li>
+  <li><b>BANDWIDTH</b> : la largeur de la cloche, de SHARP à BROAD. Elle se resserre quand on pousse.</li>
+  <li><b>ATTEN</b> : adoucit le haut d’une étagère en pente douce, jusqu’à <b>−16 dB</b>, à 5, 10 ou 20 kHz (<b>ATTEN SEL</b>).</li>
+</ul>
+
+<h2 id="we-leviers">3. Les leviers et l’affichage</h2>
+<ul>
+  <li><b>EQ</b> : en bas, les courbes sont à plat mais la couleur des lampes reste.</li>
+  <li><b>POWER</b> (OFF / ON) : éteint l’appareil, et la lampe bleue avec lui. Le signal passe tel qu’il est entré.</li>
+  <li>Survoler ou tourner un réglage affiche sa valeur exacte en dB juste à côté ; un double-clic le remet à zéro.</li>
+</ul>
+
+<h2 id="we-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>LOW BOOST</td><td>0 – +13,5 dB</td><td>Relève le grave, et le poids des lampes avec.</td></tr>
+  <tr><td>LOW ATTEN</td><td>0 – −17,5 dB</td><td>Retire du grave, en pente plus douce.</td></tr>
+  <tr><td>CPS</td><td>20 · 30 · 60 · 100 Hz</td><td>La fréquence du grave, la même pour les deux.</td></tr>
+  <tr><td>HIGH BOOST</td><td>0 – +18 dB</td><td>La cloche et l’air au-dessus.</td></tr>
+  <tr><td>BANDWIDTH</td><td>SHARP → BROAD</td><td>La largeur de la cloche aiguë.</td></tr>
+  <tr><td>KCS</td><td>3 – 16 kHz</td><td>La fréquence du HIGH BOOST.</td></tr>
+  <tr><td>HIGH ATTEN</td><td>0 – −16 dB</td><td>Une étagère douce dans l’aigu.</td></tr>
+  <tr><td>ATTEN SEL</td><td>5 · 10 · 20 kHz</td><td>La fréquence du HIGH ATTEN.</td></tr>
+  <tr><td>EQ</td><td>IN / OUT</td><td>Courbes à plat, couleur gardée.</td></tr>
+  <tr><td>POWER</td><td>ON / OFF</td><td>L’appareil éteint, le son d’origine.</td></tr>
+</table></div>
+
+<h2 id="we-conseils">Conseils</h2>
+<div class="tip"><p><b>Le tour du bas sur un kick ou une 808</b> : CPS 60, BOOST à 5, ATTEN à 3. Le sub prend du poids et le bas-médium se dégage.</p></div>
+<div class="tip"><p><b>De l’air sur une voix</b> : KCS 12 ou 16, BANDWIDTH vers BROAD, quelques crans de BOOST. Si la voix devient sifflante, un peu de HIGH ATTEN à 20 kHz l’adoucit.</p></div>

@@ -1,0 +1,82 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#db-vue">Vue d’ensemble</a></li>
+  <li><a href="#db-scene">La scène</a></li>
+  <li><a href="#db-voix">Une voix</a></li>
+  <li><a href="#db-pitch">Pitch et drift</a></li>
+  <li><a href="#db-manip">MANIPULATE</a></li>
+  <li><a href="#db-reglages">Tous les réglages</a></li>
+  <li><a href="#db-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="db-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE DOUBLEBOX est un <b>doubleur à cinq voix</b> : la voix elle-même au centre, deux doubles de chaque côté. Chaque voix a sa place, son retard, son désaccord et son niveau ; un pitch et un formant communs se donnent aux voix qu’on veut, et une colonne MANIPULATE transforme le timbre. Entrée mono ou stéréo, sortie stéréo, 28 ms de latence déclarée au DAW.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 1188 160" role="img" aria-label="Chemin du son de DOUBLEBOX : la voix, suivie de sa période, cinq voix (LL, L, C, R, RR), pitch et formant, manipulations, EQ, mélange"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">VOIX</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="148" height="46" rx="6"/><text x="144" y="59" text-anchor="middle">SUIVI</text><text x="144" y="75" text-anchor="middle" class="t2">période de la voix</text><rect class="ba" x="248" y="40" width="148" height="46" rx="6"/><text x="322" y="59" text-anchor="middle" class="tb">5 VOIX</text><text x="322" y="75" text-anchor="middle" class="t2">LL · L · C · R · RR</text><path class="w" d="M218 63 H248" marker-end="url(#doc-arr)"/><rect class="b" x="426" y="40" width="148" height="46" rx="6"/><text x="500" y="59" text-anchor="middle">PITCH</text><text x="500" y="75" text-anchor="middle" class="t2">et FORMANT</text><path class="w" d="M396 63 H426" marker-end="url(#doc-arr)"/><rect class="b" x="604" y="40" width="148" height="46" rx="6"/><text x="678" y="59" text-anchor="middle">MANIPULATE</text><text x="678" y="75" text-anchor="middle" class="t2">timbre, mélodie</text><path class="w" d="M574 63 H604" marker-end="url(#doc-arr)"/><rect class="b" x="782" y="40" width="148" height="46" rx="6"/><text x="856" y="59" text-anchor="middle">EQ</text><text x="856" y="75" text-anchor="middle" class="t2">ALL · DOUBLES</text><path class="w" d="M752 63 H782" marker-end="url(#doc-arr)"/><rect class="b" x="960" y="40" width="148" height="46" rx="6"/><text x="1034" y="68" text-anchor="middle">WIDTH · OUT</text><path class="w" d="M930 63 H960" marker-end="url(#doc-arr)"/><path class="w" d="M1108 63 H1148"/><circle class="w" cx="1154" cy="63" r="6"/><text x="1154" y="91" text-anchor="middle" class="t2">SORTIE</text></svg>
+  </div>
+  <figcaption>Chaque voix est une copie retardée et désaccordée de la voix d’origine, placée dans la stéréo. Le pitch, le formant et les manipulations ne touchent que les voix choisies.</figcaption>
+</figure>
+
+<h2 id="db-scene">1. La scène</h2>
+<p>Cinq points : <b>LL</b>, <b>L</b>, <b>C</b> (la voix elle-même), <b>R</b>, <b>RR</b>. De gauche à droite, la place dans la stéréo ; de bas en haut, le niveau (−36 à +6 dB).</p>
+<ul>
+  <li><b>glisser</b> un point : pan et niveau à la fois ; <b>molette</b> : désaccord, un cent par cran (Maj : un dixième) ;</li>
+  <li><b>double-clic</b> : coupe la voix ; <b>clic droit</b> : la remet au départ ;</li>
+  <li><b>sélection multiple</b> (Ctrl, Maj, ou un cadre) : tout agit sur toute la sélection.</li>
+</ul>
+
+<h2 id="db-voix">2. Le panneau d’une voix</h2>
+<ul>
+  <li><b>DELAY</b> (0 à 100 ms), <b>DETUNE</b> (±50 cents), <b>LEVEL</b>, <b>PAN</b>.</li>
+  <li><b>PITCH / FORMANT</b> : lui donner le pitch et le formant de la colonne.</li>
+  <li><b>MANIPULATE</b> : lui appliquer la colonne de droite (un losange rouge s’affiche à côté de son nom).</li>
+</ul>
+<p>Une voix seulement désaccordée est lue un peu plus vite ou plus lentement, comme une bande : rien n’est découpé, le souffle et les consonnes ressortent comme ils sont entrés.</p>
+
+<h2 id="db-pitch">3. Pitch, formant, drift et EQ</h2>
+<ul>
+  <li><b>PITCH</b> et <b>FORMANT</b> (±12 demi-tons chacun), indépendants : le pitch déplace la hauteur en gardant la voyelle, le formant déplace la voyelle en gardant la hauteur. <b>APPLY TO</b> choisit les voix qui les reçoivent.</li>
+  <li><b>DRIFT</b> : les doubles dérivent en hauteur (jusqu’à ±14 cents) et en temps (±3 ms), chacun à son rythme, comme une seconde prise. <b>RATE</b> : la vitesse de la dérive. Le centre ne dérive jamais.</li>
+  <li><b>EQ</b> : deux plateaux, grave et aigu (±12 dB). <b>ALL</b> traite tout, <b>DOUBLES</b> seulement les doubles.</li>
+</ul>
+
+<h2 id="db-manip">4. MANIPULATE</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>HARMONICS</td><td>−1 à +1</td><td>Fait glisser les harmoniques vers l’aigu ou le grave, sans changer la note. SNAP : par harmoniques entières.</td></tr>
+  <tr><td>FM</td><td>0 – 100 %</td><td>Du grain, puis un côté robot, sans changer la note.</td></tr>
+  <tr><td>ALTERNATOR</td><td>0 – 100 %</td><td>Un cycle sur deux baissé puis retourné ; à fond, l’octave du dessous.</td></tr>
+  <tr><td>RATIO</td><td>−1 à 2</td><td>Ce qui reste de la mélodie : 1 la suit, 0 tient une note, au-delà elle est exagérée, en négatif inversée.</td></tr>
+  <tr><td>OCTAVE</td><td>−2 à +2</td><td>Octaves entières, voyelles gardées.</td></tr>
+  <tr><td>GLIDE</td><td>0 – 500 ms</td><td>Le temps pour rejoindre une nouvelle note.</td></tr>
+  <tr><td>SMEAR</td><td>0 – 100 %</td><td>Les attaques et les consonnes se fondent en nappe.</td></tr>
+  <tr><td>STEREO</td><td>0 – 100 %</td><td>Un cycle à gauche, le suivant à droite.</td></tr>
+  <tr><td>DETUNE</td><td>0 – 50 cents</td><td>Désaccord en plus, vers le bas à gauche, le haut à droite.</td></tr>
+  <tr><td>DRY / WET</td><td>0 – 100 %</td><td>Entre les voix telles qu’elles arrivent et manipulées.</td></tr>
+</table></div>
+
+<h2 id="db-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>Voix LL · L · C · R · RR</td><td>marche, pan, niveau</td><td>La scène.</td></tr>
+  <tr><td>DELAY</td><td>0 – 100 ms</td><td>Le retard d’une voix.</td></tr>
+  <tr><td>DETUNE</td><td>±50 cents</td><td>Le désaccord d’une voix.</td></tr>
+  <tr><td>PITCH · FORMANT</td><td>±12 demi-tons</td><td>Pour les voix choisies (APPLY TO).</td></tr>
+  <tr><td>DRIFT · RATE</td><td>0 – 100 %</td><td>La dérive des doubles.</td></tr>
+  <tr><td>EQ</td><td>±12 dB, ALL · DOUBLES</td><td>Deux plateaux.</td></tr>
+  <tr><td>MANIPULATE</td><td>voir le tableau</td><td>Le timbre et la mélodie.</td></tr>
+  <tr><td>DOUBLES</td><td>en dB</td><td>Le niveau des quatre doubles ensemble.</td></tr>
+  <tr><td>WIDTH</td><td>0 – 100 %</td><td>0 % = mono.</td></tr>
+  <tr><td>OUT</td><td>en dB</td><td>Le niveau de sortie.</td></tr>
+</table></div>
+
+<h2 id="db-conseils">Conseils</h2>
+<div class="tip"><p><b>Un doublage naturel</b> : L et R à ±12 cents, 15 à 25 ms de retard, DRIFT vers 30 %. Le centre reste la voix intacte.</p></div>
+<div class="tip"><p><b>Des voix d’ambiance</b> : PITCH +12 sur LL et RR seulement, niveau bas, SMEAR un peu monté.</p></div>
+<div class="tip"><p>Les presets sont triés par type (DOUBLER, PITCH, FORMANT, MANIPULATE, ROBOT) dans le navigateur.</p></div>

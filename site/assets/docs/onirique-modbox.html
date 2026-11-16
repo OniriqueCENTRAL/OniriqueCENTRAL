@@ -1,0 +1,82 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#mo-vue">Vue d’ensemble</a></li>
+  <li><a href="#mo-circuit">CIRCUIT</a></li>
+  <li><a href="#mo-density">DENSITY</a></li>
+  <li><a href="#mo-modulation">Modulation et intensité</a></li>
+  <li><a href="#mo-texture">TEXTURE et sortie</a></li>
+  <li><a href="#mo-reglages">Tous les réglages</a></li>
+  <li><a href="#mo-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="mo-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE MODBOX est une <b>modulation à ligne à retard</b> : flanger, chorus BBD, dimension. Une seule ligne, de une à huit voix, qui va du <b>numérique chirurgical</b> au <b>circuit analogique lofi</b>, et de l’effet imperceptible au mur de son. Entrée mono ou stéréo, sortie stéréo, aucune latence.</p>
+<p>L’écran montre en haut ce que l’effet fait au spectre à cet instant, en bas le retard de chaque voix.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 1196 200" role="img" aria-label="Chemin du son de MODBOX : séparation du grave, drive, ligne à retard numérique ou BBD, voix modulées, texture, mix"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">ENTRÉE</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="141" height="46" rx="6"/><text x="140.5" y="59" text-anchor="middle">BASS KEEP</text><text x="140.5" y="75" text-anchor="middle" class="t2">crossover</text><rect class="b" x="241" y="40" width="141" height="46" rx="6"/><text x="311.5" y="68" text-anchor="middle">DRIVE</text><path class="w" d="M211 63 H241" marker-end="url(#doc-arr)"/><rect class="ba" x="412" y="40" width="141" height="46" rx="6"/><text x="482.5" y="59" text-anchor="middle" class="tb">LIGNE</text><text x="482.5" y="75" text-anchor="middle" class="t2">sinc ↔ BBD</text><path class="w" d="M382 63 H412" marker-end="url(#doc-arr)"/><rect class="b" x="583" y="40" width="141" height="46" rx="6"/><text x="653.5" y="59" text-anchor="middle">VOIX</text><text x="653.5" y="75" text-anchor="middle" class="t2">1 à 8, LFO</text><path class="w" d="M553 63 H583" marker-end="url(#doc-arr)"/><rect class="b" x="754" y="40" width="141" height="46" rx="6"/><text x="824.5" y="59" text-anchor="middle">TEXTURE</text><text x="824.5" y="75" text-anchor="middle" class="t2">crush · distortion</text><path class="w" d="M724 63 H754" marker-end="url(#doc-arr)"/><rect class="b" x="925" y="40" width="141" height="46" rx="6"/><text x="995.5" y="68" text-anchor="middle">AUTO GAIN · OUT</text><path class="w" d="M895 63 H925" marker-end="url(#doc-arr)"/><path class="w" d="M1066 63 H1094" marker-end="url(#doc-arr)"/><circle class="ba" cx="1112" cy="63" r="18"/><text x="1112" y="69" text-anchor="middle" class="tb">+</text><text x="1112" y="37" text-anchor="middle" class="t2">MIX</text><circle class="dot" cx="52" cy="63" r="3.5"/><path class="wd" d="M52 63 V178 H1112 V81" marker-end="url(#doc-arr)"/><text x="80" y="172" class="t2">le son d’origine</text><path class="w" d="M1130 63 H1170"/><circle class="w" cx="1176" cy="63" r="6"/><text x="1176" y="91" text-anchor="middle" class="t2">SORTIE</text></svg>
+  </div>
+  <figcaption>Sous BASS KEEP, le grave contourne l’effet. La ligne est lue par une à huit voix modulées ; le feedback reboucle dans la ligne. MIX mélange l’effet et le son direct, à puissance constante.</figcaption>
+</figure>
+
+<h2 id="mo-circuit">1. CIRCUIT : du numérique à l’analogique</h2>
+<ul>
+  <li><b>CIRCUIT</b> : à 0, une ligne à retard parfaite (lecture par sinc fenêtré), sans bruit, réponse plate. À 100, un circuit BBD. Entre les deux, un mélange continu.</li>
+  <li><b>DRIVE</b> : saturation douce de ce qui entre dans la ligne, feedback compris.</li>
+  <li><b>DRIFT</b> : dérive de l’horloge propre à chaque voix, lente (wow) et rapide (flutter).</li>
+  <li><b>NOISE</b> : du souffle.</li>
+</ul>
+<p>DRIVE, DRIFT, NOISE et STAGES ne comptent qu’à mesure que CIRCUIT monte ; à 0, ils sont dessinés en retrait.</p>
+
+<h2 id="mo-density">2. DENSITY : du fin au gras</h2>
+<ul>
+  <li><b>VOICES</b> : de 1 à 8 voix sur la ligne, leurs LFO répartis sur le cycle (2 voix en opposition, comme une Dimension).</li>
+  <li><b>SPREAD</b> : l’écart entre les retards des voix.</li>
+  <li><b>STAGES</b> : les étages du BBD, 256 à 4096. Son filtre passe-bas se ferme quand le retard s’allonge, et plus tôt avec moins d’étages.</li>
+  <li><b>BASS KEEP</b> : sous cette fréquence, le son contourne l’effet (Linkwitz-Riley, 24 dB/oct).</li>
+</ul>
+
+<h2 id="mo-modulation">3. Modulation et intensité</h2>
+<ul>
+  <li><b>RATE / DEPTH</b> : vitesse et amplitude du balayage. <b>STEREO</b> : avance du LFO droit sur le gauche, de 0° (mono) à 180°. <b>RATE 2 / LFO 2</b> : un second LFO. <b>SHAPE</b> : sinus ou triangle.</li>
+  <li><b>DELAY</b> : le retard au centre du balayage, de 0,3 à 50 ms.</li>
+  <li><b>FEEDBACK</b> : de −100 % (phase inversée : creusé, liquide) à +100 % (métallique, tranchant). <b>CROSS</b> : la part du feedback qui change de côté.</li>
+  <li><b>MIX</b> : de l’entrée seule à l’effet seul.</li>
+</ul>
+
+<h2 id="mo-texture">4. TEXTURE et sortie</h2>
+<ul>
+  <li><b>CRUSH</b> : de 16 à 3 bits. <b>DOWNSAMPLE</b> : de 40 kHz à 300 Hz, avec son repliement. <b>DISTORTION</b> : saturation franche, jusqu’à 36 dB. Appliqués aux voix, hors de la boucle de feedback : le son direct reste propre.</li>
+  <li><b>AUTO GAIN</b> : ramène la sortie au niveau de l’entrée (jusqu’à ±12 dB). <b>OUT</b> : le niveau final.</li>
+</ul>
+<p>Le type d’un preset se lit dans ses réglages : <b>Vibrato</b> si MIX ≥ 95 % et feedback faible, sinon <b>Flanger</b> sous 8 ms de retard et <b>Chorus</b> au-delà, plus <b>Bit Crusher</b> et <b>Distortion</b>.</p>
+
+<h2 id="mo-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>CIRCUIT</td><td>0 – 100 %</td><td>Numérique ou BBD.</td></tr>
+  <tr><td>DRIVE · DRIFT · NOISE</td><td>0 – 100 %</td><td>La couleur du circuit.</td></tr>
+  <tr><td>VOICES</td><td>1 – 8</td><td>Le nombre de voix.</td></tr>
+  <tr><td>SPREAD</td><td>0 – 100 %</td><td>L’écart entre les voix.</td></tr>
+  <tr><td>STAGES</td><td>256 – 4096</td><td>Les étages du BBD.</td></tr>
+  <tr><td>BASS KEEP</td><td>Off – en Hz</td><td>Le grave hors de l’effet.</td></tr>
+  <tr><td>RATE · DEPTH</td><td>Hz · %</td><td>Le balayage.</td></tr>
+  <tr><td>STEREO</td><td>0 – 180°</td><td>L’écart des LFO.</td></tr>
+  <tr><td>RATE 2 · LFO 2</td><td>Hz · %</td><td>Le second LFO.</td></tr>
+  <tr><td>SHAPE</td><td>sinus · triangle</td><td>La forme du LFO.</td></tr>
+  <tr><td>DELAY</td><td>0,3 – 50 ms</td><td>Le retard central.</td></tr>
+  <tr><td>FEEDBACK · CROSS</td><td>±100 % · %</td><td>La réinjection.</td></tr>
+  <tr><td>CRUSH · DOWNSAMPLE · DISTORTION</td><td>0 – 100 %</td><td>La texture.</td></tr>
+  <tr><td>MIX</td><td>0 – 100 %</td><td>Effet et son direct.</td></tr>
+  <tr><td>AUTO GAIN · OUT</td><td>marche · dB</td><td>Le niveau de sortie.</td></tr>
+</table></div>
+
+<h2 id="mo-conseils">Conseils</h2>
+<div class="tip"><p><b>Un chorus de synthé vintage</b> : CIRCUIT 100, VOICES 2, STEREO 180°, DELAY vers 7 ms, RATE lent.</p></div>
+<div class="tip"><p><b>Un flanger qui décolle</b> : DELAY 1 à 3 ms, FEEDBACK +70 %, DEPTH haut, RATE très lent.</p></div>
+<div class="tip"><p>Sur une basse ou un kick, monte BASS KEEP : le grave reste net et centré.</p></div>

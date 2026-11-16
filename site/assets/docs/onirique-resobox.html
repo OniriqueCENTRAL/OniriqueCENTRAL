@@ -1,0 +1,88 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#rb-vue">Vue d’ensemble</a></li>
+  <li><a href="#rb-agir">Comment il agit</a></li>
+  <li><a href="#rb-ecran">L’écran</a></li>
+  <li><a href="#rb-multi">Le mode MULTIBAND</a></li>
+  <li><a href="#rb-pied">Le résultat</a></li>
+  <li><a href="#rb-qualite">Qualité et latence</a></li>
+  <li><a href="#rb-reglages">Tous les réglages</a></li>
+  <li><a href="#rb-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="rb-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE RESOBOX est un <b>suppresseur de résonances dynamique</b>. Il repère en temps réel ce qui dépasse du spectre d’une voix, d’un instrument ou d’un mix (sifflantes, harshness, notes qui ressortent) et le ramène vers ce qui l’entoure, <b>fréquence par fréquence, sans toucher à la phase</b>, seulement quand c’est là.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 1070 200" role="img" aria-label="Chemin du son de RESOBOX : analyse du spectre, détection, coupes fréquence par fréquence, MIX, AUTO GAIN, OUT"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">ENTRÉE</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="120" height="46" rx="6"/><text x="130" y="59" text-anchor="middle">ANALYSE</text><text x="130" y="75" text-anchor="middle" class="t2">spectre</text><rect class="b" x="220" y="40" width="120" height="46" rx="6"/><text x="280" y="59" text-anchor="middle">DÉTECTION</text><text x="280" y="75" text-anchor="middle" class="t2">DETAIL · TILT</text><path class="w" d="M190 63 H220" marker-end="url(#doc-arr)"/><rect class="b" x="370" y="40" width="120" height="46" rx="6"/><text x="430" y="59" text-anchor="middle">SENSIBILITÉ</text><text x="430" y="75" text-anchor="middle" class="t2">EQ ou MULTIBAND</text><path class="w" d="M340 63 H370" marker-end="url(#doc-arr)"/><rect class="ba" x="520" y="40" width="120" height="46" rx="6"/><text x="580" y="59" text-anchor="middle" class="tb">COUPES</text><text x="580" y="75" text-anchor="middle" class="t2">DEPTH · ATT/REL</text><path class="w" d="M490 63 H520" marker-end="url(#doc-arr)"/><rect class="b" x="670" y="40" width="120" height="46" rx="6"/><text x="730" y="68" text-anchor="middle">AUTO GAIN</text><path class="w" d="M640 63 H670" marker-end="url(#doc-arr)"/><rect class="b" x="820" y="40" width="120" height="46" rx="6"/><text x="880" y="68" text-anchor="middle">OUT</text><path class="w" d="M790 63 H820" marker-end="url(#doc-arr)"/><path class="w" d="M940 63 H968" marker-end="url(#doc-arr)"/><circle class="ba" cx="986" cy="63" r="18"/><text x="986" y="69" text-anchor="middle" class="tb">+</text><text x="986" y="37" text-anchor="middle" class="t2">MIX</text><circle class="dot" cx="52" cy="63" r="3.5"/><path class="wd" d="M52 63 V178 H986 V81" marker-end="url(#doc-arr)"/><text x="80" y="172" class="t2">le son d’origine</text><path class="w" d="M1004 63 H1044"/><circle class="w" cx="1050" cy="63" r="6"/><text x="1050" y="91" text-anchor="middle" class="t2">SORTIE</text></svg>
+  </div>
+  <figcaption>Le spectre est lu en continu ; ce qui dépasse de son voisinage est baissé, plus ou moins selon la courbe de sensibilité. MIX dose le traitement.</figcaption>
+</figure>
+
+<h2 id="rb-agir">1. Comment il agit</h2>
+<ul>
+  <li><b>DEPTH</b> : la quantité. À 0, le plugin rend l’entrée à l’identique.</li>
+  <li><b>DETAIL</b> : l’échelle à laquelle le spectre est lu. Bas (un tiers d’octave), il trouve les bosses larges et répond par des coupes larges ; haut (1/24 d’octave), il trouve les sifflements isolés et répond par des encoches.</li>
+  <li><b>TILT</b> : penche toute la sensibilité vers l’aigu (+) ou le grave (−), autour de 1 kHz.</li>
+  <li><b>SOFT / HARD</b> : soft arrondit l’entrée en action ; hard coupe net et deux fois plus fort.</li>
+  <li><b>ATTACK / RELEASE</b> : la vitesse à laquelle une coupe s’installe et se relâche.</li>
+</ul>
+
+<h2 id="rb-ecran">2. L’écran et la sensibilité</h2>
+<ul>
+  <li>Le corps gris est le spectre à l’entrée, le trait clair la sortie. La nappe rouge qui pend du haut est la réduction en cours.</li>
+  <li>La <b>courbe blanche</b> est la sensibilité : au-dessus de 0, le plugin travaille plus fort à cet endroit ; en dessous, il épargne.</li>
+  <li>Au départ : low cut, high cut et trois cloches. <b>Double-clic</b> dans le vide ajoute une cloche (huit au plus) ; <b>glisser</b> règle fréquence et sensibilité, la <b>molette</b> le Q, le <b>clic droit</b> remet à zéro.</li>
+  <li>La sélection ouvre l’<b>îlot</b> : marche, forme (bell, low shelf, high shelf, plateau), FREQ, GAIN, Q, et la place de la bande dans l’image : <b>STEREO, LEFT, RIGHT, MID ou SIDE</b>.</li>
+</ul>
+
+<h2 id="rb-multi">3. Le mode MULTIBAND</h2>
+<p>Le spectre est coupé en <b>quatre bandes</b> (low, low mid, high mid, high), séparées à 150 Hz, 1 kHz et 5 kHz au départ. On glisse les lignes pour déplacer les frontières, on glisse dans une bande pour sa sensibilité (±12 dB). L’îlot d’une bande donne son écoute seule, son <b>MAKEUP</b> (0 à +12 dB) et son <b>BAL</b>.</p>
+<p>Chaque mode garde ses réglages pendant qu’on est dans l’autre.</p>
+
+<h2 id="rb-pied">4. Le résultat</h2>
+<ul>
+  <li><b>MIX</b>, <b>OUT</b>.</li>
+  <li><b>AUTO GAIN</b> : rend le niveau que les coupes ont enlevé (jamais plus de 12 dB).</li>
+  <li><b>STEREO / MID-SIDE / MONO</b>, <b>LINK</b> (à 100 %, les deux canaux reçoivent la coupe la plus profonde) et <b>BAL</b> (épargne un côté).</li>
+  <li><b>SIDECHAIN</b> : la détection se fait sur l’entrée latérale.</li>
+  <li><b>DELTA</b> : n’écouter que ce qui est retiré.</li>
+</ul>
+
+<h2 id="rb-qualite">5. Qualité et latence</h2>
+<div class="table"><table>
+  <tr><th>Qualité</th><th>Trame</th><th>Latence à 48 kHz</th></tr>
+  <tr><td>LOW LATENCY</td><td>1024</td><td>21 ms</td></tr>
+  <tr><td>Normal</td><td>2048</td><td>43 ms</td></tr>
+  <tr><td>High</td><td>4096</td><td>85 ms</td></tr>
+  <tr><td>Ultra</td><td>8192</td><td>171 ms</td></tr>
+</table></div>
+<p>La détection lit toujours la même longueur de signal : ce qui est trouvé, et de combien c’est baissé, est le même dans tous les modes. La qualité change la finesse avec laquelle une coupe est appliquée. La latence est déclarée au DAW.</p>
+
+<h2 id="rb-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>DEPTH</td><td>0 – 100 %</td><td>La quantité de traitement.</td></tr>
+  <tr><td>DETAIL</td><td>1/3 – 1/24 d’octave</td><td>Coupes larges ou encoches.</td></tr>
+  <tr><td>TILT</td><td>±</td><td>La sensibilité vers l’aigu ou le grave.</td></tr>
+  <tr><td>SOFT · HARD</td><td>mode</td><td>Douceur de l’entrée en action.</td></tr>
+  <tr><td>ATTACK · RELEASE</td><td>temps</td><td>Vitesse des coupes.</td></tr>
+  <tr><td>EQ · MULTIBAND</td><td>mode</td><td>Courbe à points ou quatre bandes.</td></tr>
+  <tr><td>MIX · OUT</td><td>% · dB</td><td>Dosage et niveau.</td></tr>
+  <tr><td>AUTO GAIN</td><td>marche / arrêt</td><td>Rend le niveau retiré.</td></tr>
+  <tr><td>STEREO · MID-SIDE · MONO</td><td>mode</td><td>Le traitement stéréo.</td></tr>
+  <tr><td>LINK · BAL</td><td>% · ±</td><td>Liaison et équilibre des canaux.</td></tr>
+  <tr><td>SIDECHAIN</td><td>marche / arrêt</td><td>Détection sur l’entrée latérale.</td></tr>
+  <tr><td>QUALITY · LOW LATENCY</td><td>trame</td><td>Finesse et latence.</td></tr>
+  <tr><td>DELTA · BYPASS</td><td>écoute</td><td>Ce qui est retiré, ou le son d’origine.</td></tr>
+</table></div>
+
+<h2 id="rb-conseils">Conseils</h2>
+<div class="tip"><p><b>Une voix dure</b> : DETAIL au milieu, DEPTH vers 40 %, une cloche de sensibilité vers 3 kHz. Écoute en DELTA : tu ne dois entendre que la dureté.</p></div>
+<div class="tip"><p><b>Des sifflantes</b> : monte DETAIL, ATTACK rapide, sensibilité en plateau au-dessus de 5 kHz.</p></div>
+<div class="tip"><p><b>Un mix</b> : MID-SIDE, et place une cloche sur SIDE pour calmer les côtés sans toucher au centre.</p></div>

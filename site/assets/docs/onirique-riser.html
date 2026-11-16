@@ -1,0 +1,73 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#ri-vue">Vue d’ensemble</a></li>
+  <li><a href="#ri-capture">La capture</a></li>
+  <li><a href="#ri-montee">La montée</a></li>
+  <li><a href="#ri-effets">Effets et EDIT</a></li>
+  <li><a href="#ri-reglages">Tous les réglages</a></li>
+  <li><a href="#ri-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="ri-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE RISER fait des <b>montées de reverb inversée</b> (« reverse reverb ») pour la voix, en un geste. Posé sur la piste de voix, il capture la voix tout seul quand tu lances la lecture du DAW ; à l’arrêt, la montée est prête. Tu attrapes la forme d’onde et tu la glisses dans le DAW, sur la mesure indiquée : <b>elle finit exactement là où la voix commence</b>.</p>
+<p>Gratuit, sans licence.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 804 270" role="img" aria-label="Fabrication de la montée : capture, phrase, nettoyage des S, retournement, reverb, retournement, couleurs, normalisation"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">VOIX</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="141" height="46" rx="6"/><text x="140.5" y="59" text-anchor="middle">CAPTURE</text><text x="140.5" y="75" text-anchor="middle" class="t2">pendant la lecture</text><rect class="b" x="241" y="40" width="141" height="46" rx="6"/><text x="311.5" y="59" text-anchor="middle">PHRASE</text><text x="311.5" y="75" text-anchor="middle" class="t2">SOURCE</text><path class="w" d="M211 63 H241" marker-end="url(#doc-arr)"/><rect class="b" x="412" y="40" width="141" height="46" rx="6"/><text x="482.5" y="59" text-anchor="middle">S-CLEAN</text><text x="482.5" y="75" text-anchor="middle" class="t2">sifflantes</text><path class="w" d="M382 63 H412" marker-end="url(#doc-arr)"/><rect class="b" x="583" y="40" width="141" height="46" rx="6"/><text x="653.5" y="68" text-anchor="middle">RETOURNÉ</text><path class="w" d="M553 63 H583" marker-end="url(#doc-arr)"/><rect class="ba" x="70" y="150" width="141" height="46" rx="6"/><text x="140.5" y="169" text-anchor="middle" class="tb">REVERB</text><text x="140.5" y="185" text-anchor="middle" class="t2">SPACE · SIZE</text><path class="w" d="M653.5 86 V118 H140.5 V150" marker-end="url(#doc-arr)"/><rect class="b" x="241" y="150" width="141" height="46" rx="6"/><text x="311.5" y="178" text-anchor="middle">RETOURNÉ</text><path class="w" d="M211 173 H241" marker-end="url(#doc-arr)"/><rect class="b" x="412" y="150" width="141" height="46" rx="6"/><text x="482.5" y="169" text-anchor="middle">EFFETS</text><text x="482.5" y="185" text-anchor="middle" class="t2">PHONE, CHORUS…</text><path class="w" d="M382 173 H412" marker-end="url(#doc-arr)"/><rect class="b" x="583" y="150" width="141" height="46" rx="6"/><text x="653.5" y="169" text-anchor="middle">FICHIER</text><text x="653.5" y="185" text-anchor="middle" class="t2">calé sur un temps</text><path class="w" d="M553 173 H583" marker-end="url(#doc-arr)"/><path class="w" d="M724 173 H764"/><circle class="w" cx="770" cy="173" r="6"/><text x="770" y="201" text-anchor="middle" class="t2">DAW</text></svg>
+  </div>
+  <figcaption>La voix est retournée, passée dans la reverb, puis remise à l’endroit : la queue de la reverb devient une montée qui arrive sur la voix.</figcaption>
+</figure>
+
+<h2 id="ri-capture">1. La capture</h2>
+<ul>
+  <li>Pendant la lecture, RISER écoute en permanence les 2 dernières secondes. Dès que le son dépasse −45 dBFS, la prise commence (ces 2 secondes comprises), avec sa place sur la ligne de temps du DAW, jusqu’à 32 s.</li>
+  <li>L’arrêt de la lecture ou un saut (boucle, clic sur la règle) termine la prise. Une lecture sans voix ne remplace pas la prise d’avant.</li>
+  <li><b>INPUT OPEN / CLOSED</b> : fermé, plus rien n’est capturé et la prise reste telle quelle. Pratique pour ne pas ré-enregistrer ta lead sans le vouloir.</li>
+</ul>
+
+<h2 id="ri-montee">2. La montée</h2>
+<ul>
+  <li><b>REVERSE</b> (le grand bouton) : la durée de la montée, 1 temps, 2 temps, 1 mesure, 2 mesures ou 4 mesures, au tempo du DAW.</li>
+  <li><b>Vue FX</b> : la montée finie, à glisser dans le DAW. La courbe de pré-fondu passe dessus : tirer son point vers le bas fait partir la montée plus discrète et arriver plus tard.</li>
+  <li><b>Vue RAW</b> : toute la prise. Deux poignées choisissent la partie (la syllabe) qui crée la montée ; elle finit là où cette partie commence.</li>
+  <li><b>LISTEN / LOOP</b> : écouter la montée (ou la partie choisie), DAW à l’arrêt.</li>
+  <li><b>IN SYNC</b> : RISER joue lui-même la montée au bon moment pendant la lecture, sans glisser de fichier.</li>
+</ul>
+<p>Le fichier glissé est un WAV 24 bits stéréo, nommé avec la mesure et le temps où le poser.</p>
+
+<h2 id="ri-effets">3. Les effets et EDIT</h2>
+<p>En un clic : <b>PHONE</b>, <b>CHORUS</b>, <b>TREMOLO</b>, <b>SWEEP</b>, <b>WIDE</b>. Un clic sur le nom d’un effet ouvre son menu (MIX et DRIVE, DEPTH, TIMING, START ou WIDTH).</p>
+<p><b>EDIT</b> ouvre les réglages de fond :</p>
+<ul>
+  <li><b>SPACE</b> : ROOM, PLATE, DARK, HALL ou SHIMMER.</li>
+  <li><b>SOURCE</b> : la durée de voix prise au début de la phrase.</li>
+  <li><b>SIZE</b> : la taille de la reverb.</li>
+  <li><b>CURVE</b> : la forme du pré-fondu.</li>
+  <li><b>GAIN</b> : le niveau de la montée (normalisée à −1 dBFS avant).</li>
+  <li><b>S-CLEAN</b> : retire les sifflantes avant la reverb, pour une montée sans « sss ».</li>
+</ul>
+
+<h2 id="ri-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>REVERSE</td><td>1 temps – 4 mesures</td><td>La durée de la montée, au tempo.</td></tr>
+  <tr><td>FX · RAW</td><td>vue</td><td>La montée finie, ou la prise entière.</td></tr>
+  <tr><td>LISTEN · LOOP</td><td>écoute</td><td>Écouter, DAW à l’arrêt.</td></tr>
+  <tr><td>INPUT</td><td>OPEN · CLOSED</td><td>Capturer ou garder la prise.</td></tr>
+  <tr><td>PHONE · CHORUS · TREMOLO · SWEEP · WIDE</td><td>en un clic</td><td>Les couleurs de la montée.</td></tr>
+  <tr><td>SPACE</td><td>ROOM · PLATE · DARK · HALL · SHIMMER</td><td>Le type de reverb.</td></tr>
+  <tr><td>SOURCE · SIZE · CURVE</td><td>EDIT</td><td>La partie de voix, la taille, le pré-fondu.</td></tr>
+  <tr><td>GAIN</td><td>EDIT</td><td>Le niveau de la montée.</td></tr>
+  <tr><td>S-CLEAN</td><td>marche / arrêt</td><td>Les sifflantes retirées.</td></tr>
+  <tr><td>IN SYNC</td><td>marche / arrêt</td><td>Joué par le plugin, sans fichier.</td></tr>
+</table></div>
+
+<h2 id="ri-conseils">Conseils</h2>
+<div class="tip"><p><b>Le plus rapide</b> : lance la lecture une fois sur ta phrase, arrête, choisis 1 mesure, glisse la montée dans le DAW à la mesure affichée.</p></div>
+<div class="tip"><p><b>Une montée plus ample</b> : SPACE HALL ou SHIMMER, SIZE haut, et WIDE.</p></div>
+<div class="tip"><p>Si la montée est posée sur la même piste que la voix, passe INPUT en CLOSED pour ne pas la recapturer.</p></div>

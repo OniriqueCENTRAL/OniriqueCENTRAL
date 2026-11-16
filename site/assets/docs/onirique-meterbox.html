@@ -1,0 +1,89 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#me-vue">Vue d’ensemble</a></li>
+  <li><a href="#me-quand">Normes</a></li>
+  <li><a href="#me-loudness">Loudness</a></li>
+  <li><a href="#me-history">History et Waveform</a></li>
+  <li><a href="#me-spectre">Spectrum</a></li>
+  <li><a href="#me-phase">Phase</a></li>
+  <li><a href="#me-reglages">Tous les réglages</a></li>
+  <li><a href="#me-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="me-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE METERBOX est le <b>compteur à poser en fin de master</b> : le loudness aux normes, vu dans le temps et pas seulement en chiffres ; le spectre, tenu contre la forme qu’a un titre fini ; et la phase, sur un goniomètre.</p>
+<p><b>Le son n’est pas touché</b> : ce qui sort est ce qui est entré, au bit près, sans latence.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 1062 160" role="img" aria-label="Ce que mesure METERBOX : loudness, true peak, historique, spectre, forme d’onde, phase"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">MASTER</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="ba" x="70" y="40" width="127" height="46" rx="6"/><text x="133.5" y="59" text-anchor="middle" class="tb">LOUDNESS</text><text x="133.5" y="75" text-anchor="middle" class="t2">BS.1770 · R 128</text><rect class="b" x="227" y="40" width="127" height="46" rx="6"/><text x="290.5" y="59" text-anchor="middle">TRUE PEAK</text><text x="290.5" y="75" text-anchor="middle" class="t2">× 4</text><path class="w" d="M197 63 H227" marker-end="url(#doc-arr)"/><rect class="b" x="384" y="40" width="127" height="46" rx="6"/><text x="447.5" y="59" text-anchor="middle">HISTORY</text><text x="447.5" y="75" text-anchor="middle" class="t2">jusqu’à 1 h</text><path class="w" d="M354 63 H384" marker-end="url(#doc-arr)"/><rect class="b" x="541" y="40" width="127" height="46" rx="6"/><text x="604.5" y="59" text-anchor="middle">SPECTRUM</text><text x="604.5" y="75" text-anchor="middle" class="t2">contre une cible</text><path class="w" d="M511 63 H541" marker-end="url(#doc-arr)"/><rect class="b" x="698" y="40" width="127" height="46" rx="6"/><text x="761.5" y="68" text-anchor="middle">WAVEFORM</text><path class="w" d="M668 63 H698" marker-end="url(#doc-arr)"/><rect class="b" x="855" y="40" width="127" height="46" rx="6"/><text x="918.5" y="59" text-anchor="middle">PHASE</text><text x="918.5" y="75" text-anchor="middle" class="t2">goniomètre</text><path class="w" d="M825 63 H855" marker-end="url(#doc-arr)"/><path class="w" d="M982 63 H1022"/><circle class="w" cx="1028" cy="63" r="6"/><text x="1028" y="91" text-anchor="middle" class="t2">INTACT</text></svg>
+  </div>
+  <figcaption>Toutes les mesures lisent le même signal, qui ressort tel quel.</figcaption>
+</figure>
+
+<h2 id="me-quand">1. Quand il mesure, et contre quoi</h2>
+<ul>
+  <li><b>SYNC</b> : la mesure suit le transport, repart de zéro quand la lecture démarre et se fige à l’arrêt. <b>PAUSE</b> fige l’intégré, la plage, les maxima et l’historique. <b>RESET</b> remet tout à zéro.</li>
+  <li><b>Norme</b> : règle la cible et le plafond d’un coup.</li>
+</ul>
+<div class="table"><table>
+  <tr><th>Norme</th><th>Cible</th><th>Pour</th></tr>
+  <tr><td>Streaming</td><td>−14 LUFS</td><td>Spotify, YouTube, Tidal, Amazon Music</td></tr>
+  <tr><td>Apple Music</td><td>−16 LUFS</td><td>Apple Music</td></tr>
+  <tr><td>Loud master</td><td>−9 LUFS</td><td>Un master fort</td></tr>
+  <tr><td>EBU R 128</td><td>−23 LUFS</td><td>Diffusion européenne</td></tr>
+  <tr><td>ATSC A/85</td><td>−24 LUFS</td><td>Diffusion américaine</td></tr>
+</table></div>
+<p><b>TARGET</b> (−36 à −6 LUFS) et <b>TP MAX</b> (−9 à 0 dBTP) se règlent aussi à la main (Custom).</p>
+
+<h2 id="me-loudness">2. Loudness</h2>
+<ul>
+  <li><b>Integrated</b>, en grand : le loudness de tout ce qui a été joué depuis la remise à zéro, et son écart à la cible.</li>
+  <li><b>Les barres</b> : le true peak de chaque côté, le momentané (0,4 s), le court terme (3 s) et l’intégré. Les traits blancs sont le plafond et la cible.</li>
+  <li><b>Range</b> : la plage de loudness (LRA).</li>
+  <li><b>True Peak</b> : la crête la plus haute entre les échantillons (signal reconstruit à quatre fois sa fréquence). OVER quand elle passe le plafond.</li>
+  <li><b>PLR / PSR</b> : la crête moins le loudness. Plus ils sont petits, plus le master est écrasé.</li>
+</ul>
+
+<h2 id="me-history">3. History et Waveform</h2>
+<ul>
+  <li><b>History</b> : le loudness dans le temps (momentané en fond, court terme en rouge, intégré en blanc, cible en pointillés), sur 30 s, 2 min, 10 min ou tout. À droite, le temps passé à chaque niveau.</li>
+  <li><b>Waveform</b> : la forme d’onde de tout ce qui a été mesuré, en colonne, avec les crêtes en rouge et le RMS en clair, et en dessous les chiffres de crête, de RMS et de facteur de crête.</li>
+</ul>
+
+<h2 id="me-spectre">4. Spectrum</h2>
+<p>Le spectre par tiers d’octave, de 20 Hz à 20 kHz : un bruit rose y est une ligne plate.</p>
+<ul>
+  <li><b>Live</b> (rempli) et <b>Average</b> (en blanc, sur 3 s, 10 s ou tout).</li>
+  <li><b>Target</b> : la forme attendue d’un titre fini. La moyenne passe au rouge là où elle en sort. Cibles : <b>Modern</b>, <b>Urban</b> (rap, trap, bass music), <b>Rock</b>, <b>Acoustic</b> et <b>Reference</b>.</li>
+  <li><b>Capture</b> : joue un titre de référence, laisse la moyenne se poser, puis capture : elle devient la cible Reference, enregistrée avec le projet.</li>
+</ul>
+<p>En bas, l’écart résumé en quatre zones : Low, Low-Mid, High-Mid, High.</p>
+
+<h2 id="me-phase">5. Phase</h2>
+<ul>
+  <li><b>Goniomètre</b> : ce qui est identique des deux côtés monte au milieu ; ce qui est en opposition de phase s’étale à l’horizontale.</li>
+  <li><b>Correlation</b> : de −1 (les côtés s’annulent en mono) à +1 (mono).</li>
+  <li><b>Balance</b> : le côté le plus fort. <b>Width</b> : la part du son sur les côtés.</li>
+</ul>
+
+<h2 id="me-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>SYNC · PAUSE · RESET</td><td>en-tête</td><td>Quand il mesure.</td></tr>
+  <tr><td>Norme</td><td>Streaming, Apple, Loud, R 128, A/85</td><td>Cible et plafond d’un coup.</td></tr>
+  <tr><td>TARGET</td><td>−36 à −6 LUFS</td><td>Le loudness visé.</td></tr>
+  <tr><td>TP MAX</td><td>−9 à 0 dBTP</td><td>Le plafond de true peak.</td></tr>
+  <tr><td>History</td><td>30 s · 2 min · 10 min · tout</td><td>La durée affichée.</td></tr>
+  <tr><td>Average</td><td>3 s · 10 s · tout</td><td>La moyenne du spectre.</td></tr>
+  <tr><td>Target (spectre)</td><td>Modern, Urban, Rock, Acoustic, Reference</td><td>La forme attendue.</td></tr>
+  <tr><td>Capture</td><td>bouton</td><td>La moyenne devient la cible Reference.</td></tr>
+</table></div>
+
+<h2 id="me-conseils">Conseils</h2>
+<div class="tip"><p><b>Avant d’envoyer sur les plateformes</b> : norme Streaming, joue le titre en entier avec SYNC, et vérifie que l’Integrated est proche de −14 et que True Peak ne passe pas −1 dBTP.</p></div>
+<div class="tip"><p><b>Comparer à une référence</b> : joue le titre que tu vises, Average sur All, Capture, puis joue ton mix : les zones rouges montrent où il s’écarte.</p></div>

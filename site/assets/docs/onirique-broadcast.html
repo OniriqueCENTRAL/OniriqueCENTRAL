@@ -1,0 +1,80 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#br-vue">Vue d’ensemble</a></li>
+  <li><a href="#br-micro">Le micro virtuel</a></li>
+  <li><a href="#br-modules">Les modules</a></li>
+  <li><a href="#br-appli">L’application</a></li>
+  <li><a href="#br-reglages">Tous les réglages</a></li>
+  <li><a href="#br-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="br-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE BROADCAST est une <b>application Windows</b> qui fait passer ton micro dans une chaîne d’effets en temps réel, puis l’envoie vers un <b>micro virtuel</b> utilisable dans Discord, OBS, les jeux et toute application qui accepte un microphone. Ta voix sort traitée comme en studio, partout.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 1224 160" role="img" aria-label="Chemin du son de BROADCAST : micro, gain, echo guard, modules dans l’ordre choisi, sortie, limiteur, micro virtuel"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">VOIX</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="154" height="46" rx="6"/><text x="147" y="68" text-anchor="middle">MICRO</text><rect class="b" x="254" y="40" width="154" height="46" rx="6"/><text x="331" y="68" text-anchor="middle">GAIN</text><path class="w" d="M224 63 H254" marker-end="url(#doc-arr)"/><rect class="b" x="438" y="40" width="154" height="46" rx="6"/><text x="515" y="59" text-anchor="middle">ECHO GUARD</text><text x="515" y="75" text-anchor="middle" class="t2">fuite du casque</text><path class="w" d="M408 63 H438" marker-end="url(#doc-arr)"/><rect class="ba" x="622" y="40" width="154" height="46" rx="6"/><text x="699" y="59" text-anchor="middle" class="tb">MODULES</text><text x="699" y="75" text-anchor="middle" class="t2">ordre libre</text><path class="w" d="M592 63 H622" marker-end="url(#doc-arr)"/><rect class="b" x="806" y="40" width="154" height="46" rx="6"/><text x="883" y="68" text-anchor="middle">OUTPUT</text><path class="w" d="M776 63 H806" marker-end="url(#doc-arr)"/><rect class="b" x="990" y="40" width="154" height="46" rx="6"/><text x="1067" y="59" text-anchor="middle">LIMITER</text><text x="1067" y="75" text-anchor="middle" class="t2">jamais de saturation</text><path class="w" d="M960 63 H990" marker-end="url(#doc-arr)"/><path class="w" d="M1144 63 H1184"/><circle class="w" cx="1190" cy="63" r="6"/><text x="1190" y="91" text-anchor="middle" class="t2">MICRO VIRTUEL</text></svg>
+  </div>
+  <figcaption>Les modules (GATE, EQ, 1176, MULTIBAND, DE-ESSER / PLOSIVES, SATURATION) se placent dans l’ordre que tu veux en glissant leurs pastilles. Un casque peut écouter le résultat en parallèle.</figcaption>
+</figure>
+
+<h2 id="br-micro">1. Le micro virtuel</h2>
+<p>Windows ne permet pas à une application seule de créer un périphérique audio : BROADCAST s’appuie sur un <b>câble audio virtuel</b>, détecté automatiquement. VB-CABLE (gratuit) est recommandé ; VoiceMeeter, Virtual Audio Cable ou Hi-Fi Cable sont aussi reconnus.</p>
+<ol>
+  <li>Si aucun câble n’est installé, <b>INSTALL VB-CABLE (FREE)</b> s’occupe de tout : téléchargement du pack officiel, vérification de sa signature, installation, réglage en 48 kHz.</li>
+  <li>Dans AUDIO ROUTING, la sortie <b>VIRTUAL MICROPHONE</b> est réglée sur <code>CABLE Input</code>.</li>
+  <li>Dans Discord, OBS ou le jeu, choisis comme micro <b>CABLE Output</b> (le nom exact est affiché, bouton COPY).</li>
+</ol>
+<ul>
+  <li><b>RENAME</b> renomme le micro virtuel tel qu’il apparaît dans les applications.</li>
+  <li><b>SET 48 KHZ</b> : Discord travaille en 48 kHz ; si le câble n’y est pas, l’application le propose.</li>
+  <li><b>Partage d’écran Discord</b> : la sortie vers le câble est ouverte en mode exclusif, aucune capture du son du PC ne peut reprendre ta voix en écho.</li>
+</ul>
+
+<h2 id="br-modules">2. Les modules</h2>
+<div class="table"><table>
+  <tr><th>Module</th><th>Ce qu’il fait</th></tr>
+  <tr><td>ECHO GUARD</td><td>Écoute ce que joue le PC, mesure la fuite du casque ou des haut-parleurs dans le micro, et la retient tant que personne ne parle. Discord ne reçoit plus d’écho.</td></tr>
+  <tr><td>NOISE GATE</td><td>Ultra transparent, avec anticipation, HOLD, RANGE et <b>LEARN</b>, qui mesure le bruit de la pièce et place le seuil.</td></tr>
+  <tr><td>PARAMETRIC EQ</td><td>6 bandes, réglées dans l’analyseur en direct.</td></tr>
+  <tr><td>1176</td><td>Le compresseur FET de VOCALBOX, avec VU-mètre et MIX pour la compression parallèle.</td></tr>
+  <tr><td>MULTIBAND</td><td>4 bandes optiques, écran interactif, écoute par bande.</td></tr>
+  <tr><td>DE-ESSER / PLOSIVES</td><td>Les S et les P, sans latence.</td></tr>
+  <tr><td>SATURATION</td><td>TUBE, ANALOG ou TAPE, niveau compensé.</td></tr>
+  <tr><td>LIMITER</td><td>En fin de chaîne : le micro virtuel ne sature jamais.</td></tr>
+</table></div>
+<p>Chaque module a son bouton marche (fondu sans clic). <b>MUTE</b> donne un silence propre aux applications, <b>BYPASS</b> envoie le micro brut, le témoin <b>ON AIR</b> montre que la voix part.</p>
+
+<h2 id="br-appli">3. L’application</h2>
+<ul>
+  <li>Moteur audio <b>SHARED / LOW LAT / EXCLUSIVE</b>, tampon AUTO ou fixe.</li>
+  <li>Les horloges du micro, du câble et du casque ne sont jamais identiques : chaque sortie passe par un pont qui rattrape la dérive. Latence constante, aucun craquement dans le temps.</li>
+  <li>Un périphérique débranché ou un réveil de veille : réouverture automatique.</li>
+  <li>Fermer la fenêtre laisse le micro virtuel actif dans la zone de notification (MUTE, BYPASS, écoute, Quitter depuis l’icône) ; démarrage avec Windows en option.</li>
+  <li>Presets d’usine calibrés à environ −16 dBFS en sortie : Streamer Clean, Podcast Warm, Radio Broadcast, Gaming Comms, Deep Voice, Natural Light.</li>
+</ul>
+
+<h2 id="br-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>VIRTUAL MICROPHONE</td><td>câble détecté</td><td>Où part la voix traitée.</td></tr>
+  <tr><td>RENAME · SOUND · SET 48 KHZ</td><td>boutons</td><td>Le nom du micro, le panneau Son, la fréquence.</td></tr>
+  <tr><td>ECHO GUARD</td><td>marche</td><td>La fuite du casque retenue.</td></tr>
+  <tr><td>NOISE GATE</td><td>seuil, HOLD, RANGE, LEARN</td><td>Le bruit de la pièce.</td></tr>
+  <tr><td>PARAMETRIC EQ</td><td>6 bandes</td><td>L’égalisation.</td></tr>
+  <tr><td>1176</td><td>ratios 4 – ALL, MIX</td><td>La compression.</td></tr>
+  <tr><td>MULTIBAND</td><td>4 bandes</td><td>La dynamique par bande.</td></tr>
+  <tr><td>DE-ESSER / PLOSIVES</td><td>marche + réglages</td><td>Les S et les P.</td></tr>
+  <tr><td>SATURATION</td><td>TUBE · ANALOG · TAPE</td><td>Le grain.</td></tr>
+  <tr><td>GAIN · OUTPUT</td><td>en dB</td><td>Niveaux d’entrée et de sortie.</td></tr>
+  <tr><td>MUTE · BYPASS</td><td>en-tête</td><td>Silence propre, ou micro brut.</td></tr>
+  <tr><td>AUDIO ENGINE</td><td>SHARED · LOW LAT · EXCLUSIVE</td><td>Le mode du moteur audio.</td></tr>
+</table></div>
+
+<h2 id="br-conseils">Conseils</h2>
+<div class="tip"><p><b>Premier lancement</b> : INSTALL VB-CABLE, puis choisis « CABLE Output » comme micro dans Discord, et garde la suppression de bruit de Discord activée.</p></div>
+<div class="tip"><p><b>Une pièce bruyante</b> : LEARN dans le NOISE GATE, en silence pendant quelques secondes.</p></div>

@@ -1,0 +1,151 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#ha-vue">Vue d’ensemble</a></li>
+  <li><a href="#ha-bande">La bande et ses drapeaux</a></li>
+  <li><a href="#ha-limiteur">Le limiteur</a></li>
+  <li><a href="#ha-stereo">Stéréo et sidechain</a></li>
+  <li><a href="#ha-paralimit">PARALIMIT</a></li>
+  <li><a href="#ha-modes">Modes et latence</a></li>
+  <li><a href="#ha-ecoute">Écoute</a></li>
+  <li><a href="#ha-reglages">Tous les réglages</a></li>
+  <li><a href="#ha-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="ha-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE HALO est un <b>limiteur d’aigus</b>. Il ne traite qu’une bande de fréquences, celle que tu choisis avec deux drapeaux sur l’analyseur, et laisse tout le reste du son tel qu’il est entré. Les sifflantes, les charleys, les cymbales ou le haut d’un mix qui pique sont tenus sans éteindre la brillance.</p>
+<p>Le son est séparé en deux : la bande, qui passe par le limiteur, et le reste, qui passe sans traitement. Les deux sont recombinés de façon exacte : <b>au repos, HALO rend le son à l’identique</b>, à l’échantillon près en LINEAR.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 920 300" role="img" aria-label="Chemin du son de HALO : séparation, limiteur sur la bande, recombinaison, PARALIMIT en parallèle">
+    <circle class="w" cx="28" cy="110" r="6"/><text x="28" y="88" text-anchor="middle" class="t2">ENTRÉE</text>
+    <rect class="b" x="60" y="88" width="90" height="44" rx="6"/><text x="105" y="107" text-anchor="middle">INPUT</text><text x="105" y="123" text-anchor="middle" class="t2">±18 dB</text>
+    <path class="w" d="M34 110 H60" marker-end="url(#doc-arr)"/>
+    <rect class="ba" x="180" y="70" width="140" height="80" rx="8"/><text x="250" y="102" text-anchor="middle" class="tb">SÉPARATION</text><text x="250" y="120" text-anchor="middle" class="t2">drapeau bas · haut</text>
+    <path class="w" d="M150 110 H180" marker-end="url(#doc-arr)"/>
+    <path class="wa" d="M320 90 H380" marker-end="url(#doc-arra)"/><text x="350" y="80" text-anchor="middle" class="t2 ta">la bande</text>
+    <rect class="ba" x="380" y="66" width="150" height="48" rx="6"/><text x="455" y="86" text-anchor="middle" class="tb">LIMITEUR</text><text x="455" y="102" text-anchor="middle" class="t2">seuil · TRIM</text>
+    <path class="w" d="M320 132 H600" /><text x="455" y="150" text-anchor="middle" class="t2">le reste, sans traitement</text>
+    <path class="wa" d="M530 90 H584" marker-end="url(#doc-arra)"/>
+    <circle class="ba" cx="602" cy="110" r="18"/><text x="602" y="116" text-anchor="middle" class="tb">+</text>
+    <path class="w" d="M600 132 V128"/>
+    <rect class="b" x="650" y="88" width="90" height="44" rx="6"/><text x="695" y="107" text-anchor="middle">MIX</text><text x="695" y="123" text-anchor="middle" class="t2">0 – 100 %</text>
+    <path class="w" d="M620 110 H650" marker-end="url(#doc-arr)"/>
+    <circle class="ba" cx="790" cy="110" r="18"/><text x="790" y="116" text-anchor="middle" class="tb">+</text>
+    <path class="w" d="M740 110 H772" marker-end="url(#doc-arr)"/>
+    <rect class="b" x="822" y="88" width="76" height="44" rx="6"/><text x="860" y="107" text-anchor="middle">OUTPUT</text><text x="860" y="123" text-anchor="middle" class="t2">MATCH</text>
+    <path class="w" d="M808 110 H822" marker-end="url(#doc-arr)"/>
+
+    <circle class="dot" cx="165" cy="110" r="3.5"/><path class="wd" d="M165 110 V230 H230" marker-end="url(#doc-arr)"/>
+    <rect class="b" x="230" y="208" width="160" height="44" rx="6"/><text x="310" y="227" text-anchor="middle">BANDE PARALIMIT</text><text x="310" y="243" text-anchor="middle" class="t2">ses propres drapeaux</text>
+    <rect class="ba" x="420" y="208" width="170" height="44" rx="6"/><text x="505" y="227" text-anchor="middle" class="tb">LIMITE FORT</text><text x="505" y="243" text-anchor="middle" class="t2">M · S · L/R, rattrapage</text>
+    <path class="w" d="M390 230 H420" marker-end="url(#doc-arr)"/>
+    <rect class="b" x="620" y="208" width="120" height="44" rx="6"/><text x="680" y="227" text-anchor="middle">AMOUNT</text><text x="680" y="243" text-anchor="middle" class="t2">−∞ à +12 dB</text>
+    <path class="w" d="M590 230 H620" marker-end="url(#doc-arr)"/>
+    <path class="wa" d="M740 230 H790 V128" marker-end="url(#doc-arra)"/>
+    <text x="310" y="280" text-anchor="middle" class="t2">PARALIMIT, ajouté en parallèle</text>
+  </svg>
+  </div>
+  <figcaption>La bande choisie passe par le limiteur et retrouve le reste du son, qui n’a pas été touché. PARALIMIT ajoute en parallèle une deuxième bande, fortement limitée, ramenée à son niveau.</figcaption>
+</figure>
+
+<h2 id="ha-bande">1. La bande et ses drapeaux</h2>
+<p>Deux drapeaux, <b>bas</b> et <b>haut</b>, se tirent sur l’analyseur entre <b>50 Hz et 20 kHz</b>. Ils restent toujours séparés d’au moins une demi-octave. La zone traitée s’allume en rouge sur l’analyseur, exactement entre eux.</p>
+<p>La bande prend trois formes :</p>
+<ul>
+  <li><b>SPLIT</b> : tout ce qui est au-dessus du drapeau bas (le drapeau haut tout en haut). Une coupure à 24 dB par octave.</li>
+  <li><b>DEFINED</b> : seulement ce qui est entre les deux drapeaux, 24 dB par octave de chaque côté.</li>
+  <li><b>FULL HF</b> : une pente douce de 12 dB par octave au-dessus du drapeau bas. Elle tient tout le haut du spectre de façon plus naturelle, sans frontière marquée.</li>
+</ul>
+<p>Tirer le drapeau haut sous 19,5 kHz passe en DEFINED ; le remonter tout en haut revient en SPLIT.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 900 260" role="img" aria-label="Formes de bande : SPLIT, DEFINED et FULL HF">
+    <path class="wg" d="M60 40 V210 M60 210 H860"/>
+    <text x="60" y="232" class="t2">50 Hz</text><text x="300" y="232" class="t2">1 kHz</text><text x="560" y="232" class="t2">5 kHz</text><text x="820" y="232" class="t2">20 kHz</text>
+    <path class="zone" d="M430 40 V210 M700 40 V210"/>
+    <text x="430" y="32" text-anchor="middle" class="t2 ta">drapeau bas</text><text x="700" y="32" text-anchor="middle" class="t2 ta">drapeau haut</text>
+    <path class="w" d="M60 200 C 330 200, 380 200, 410 140 C 430 90, 440 70, 470 70 H860"/>
+    <text x="830" y="62" text-anchor="end" class="t2">SPLIT</text>
+    <path class="wa" d="M60 200 C 330 200, 380 200, 410 140 C 430 90, 440 80, 470 80 H660 C 690 80, 700 100, 720 150 C 740 200, 760 200, 860 200"/>
+    <text x="565" y="98" text-anchor="middle" class="t2 ta">DEFINED</text>
+    <path class="wd" d="M60 205 C 250 205, 360 190, 430 150 C 520 105, 640 90, 860 88"/>
+    <text x="300" y="185" class="t2">FULL HF (12 dB/oct)</text>
+  </svg>
+  </div>
+  <figcaption>La part du son que le limiteur voit et traite, selon la forme choisie. L’analyseur dessine exactement cette courbe : elle est calculée par la même fonction que le traitement.</figcaption>
+</figure>
+
+<h2 id="ha-limiteur">2. Le limiteur</h2>
+<p>La bande est limitée <b>échantillon par échantillon</b> : quand elle dépasse le seuil, elle est ramenée dessous. Le seuil se règle sur le grand fader, de 0 à −40 dB, avec deux seuils séparés en stéréo (voir plus bas).</p>
+<p><b>Pas de temps en millisecondes à régler.</b> La réaction s’accélère d’elle-même avec la réduction : un léger dépassement est traité en douceur, une sifflante violente est rattrapée tout de suite. Deux sélecteurs indépendants choisissent le caractère :</p>
+<ul>
+  <li><b>ATTACK</b> SLOW ou FAST : la vitesse à laquelle la réduction arrive.</li>
+  <li><b>RELEASE</b> SLOW ou FAST : la vitesse à laquelle elle repart.</li>
+</ul>
+<p>La détection regarde un court instant en avance (en LINEAR et DYNAMIC) : le gain est déjà baissé quand la crête arrive.</p>
+<p><b>TRIM</b> (±6 dB) monte ou baisse la bande <b>sans changer la quantité de limitation</b> : le seuil règle la dynamique, TRIM l’équilibre tonal.</p>
+
+<h2 id="ha-stereo">3. Stéréo et sidechain</h2>
+<ul>
+  <li><b>L/R ou M/S</b> : en L/R, un seuil pour la gauche, un pour la droite ; en M/S, un pour le centre (MID), un pour les côtés (SIDE). Les deux seuils peuvent être liés. En M/S, tu peux calmer les sifflantes au centre sans éteindre l’air sur les côtés.</li>
+  <li><b>LINK</b> (0 – 100 %) : à 100 %, les deux canaux reçoivent la même réduction, l’image ne bouge pas ; à 0 %, chacun est limité à part.</li>
+  <li><b>EXT</b> (sidechain) : une autre piste branchée sur l’entrée externe commande la détection de MAIN, de PARALIMIT, ou des deux. La voix peut ainsi creuser les aigus d’une instru seulement quand elle chante.</li>
+</ul>
+
+<h2 id="ha-paralimit">4. PARALIMIT</h2>
+<p>PARALIMIT est une <b>deuxième bande, en parallèle</b>, avec ses propres drapeaux. Elle est fortement limitée, puis son niveau est rattrapé automatiquement (jusqu’à +24 dB) et elle est <b>ajoutée</b> au son. Résultat : de la présence et de l’air, denses et réguliers, sans dureté.</p>
+<ul>
+  <li><b>AMOUNT</b> (−∞ à +12 dB) : la quantité ajoutée.</li>
+  <li><b>Seuil</b> (0 à −60 dB) et <b>TRIM</b> (±6 dB), comme pour MAIN.</li>
+  <li><b>Canal</b> : M (le centre), S (les côtés) ou L/R. La limitation se fait toujours sur la vraie stéréo, avant d’extraire le centre ou les côtés : l’image ne bouge pas.</li>
+  <li>Un clic dans la zone PARALIMIT de l’analyseur la met en service.</li>
+</ul>
+
+<h2 id="ha-modes">5. Modes de traitement et latence</h2>
+<div class="table"><table>
+  <tr><th>Mode</th><th>Latence à 48 kHz</th><th>Pour quoi</th></tr>
+  <tr><td>LINEAR</td><td>≈ 89 ms</td><td>Séparation à phase linéaire : aucune coloration de phase, nul exact au repos. Le mastering.</td></tr>
+  <tr><td>DYNAMIC</td><td>1,5 à 2,9 ms</td><td>Séparation IIR et légère anticipation : les transitoires sont attrapées. Le mixage.</td></tr>
+  <tr><td>LIVE</td><td>0 à 9 échantillons</td><td>Sans anticipation, latence quasi nulle : enregistrer ou jouer à travers.</td></tr>
+</table></div>
+<p>La latence n’est pas annoncée au hasard : <b>HALO la mesure lui-même</b> sur la chaîne en service, et la donne à ton DAW, qui garde tout calé. Le menu ⚙ affiche le tableau des latences mesurées.</p>
+<p><b>OS</b> (1x à 8x) suréchantillonne le limiteur pendant l’écoute ; <b>RENDER</b> choisit un autre facteur pour l’export.</p>
+
+<h2 id="ha-ecoute">6. Écoute</h2>
+<ul>
+  <li><b>S</b> sous les drapeaux : met toute la bande sélectionnée en solo. Clic droit : solo seulement tant que tu maintiens.</li>
+  <li><b>DELTA</b> : n’entend que ce que HALO retire.</li>
+  <li><b>MATCH</b> : compense le volume, pour comparer à niveau égal.</li>
+  <li><b>Référence</b> (menu ⚙) : une courbe d’équilibre tonal derrière l’analyseur (bruit rose, mix moderne, voix, ou une courbe que tu captures).</li>
+</ul>
+
+<h2 id="ha-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>Drapeaux MAIN</td><td>50 Hz – 20 kHz</td><td>Les limites de la bande traitée.</td></tr>
+  <tr><td>BAND</td><td>SPLIT · DEFINED · FULL HF</td><td>La forme de la bande.</td></tr>
+  <tr><td>Seuils</td><td>0 à −40 dB</td><td>L/M et R/S, liables.</td></tr>
+  <tr><td>TRIM</td><td>±6 dB</td><td>Le niveau de la bande, à part de la limitation.</td></tr>
+  <tr><td>ATTACK · RELEASE</td><td>SLOW · FAST</td><td>Le caractère de la réaction.</td></tr>
+  <tr><td>Stéréo · LINK</td><td>L/R · M/S, 0 – 100 %</td><td>Le traitement stéréo.</td></tr>
+  <tr><td>MIX</td><td>0 – 100 %</td><td>La part du son limité.</td></tr>
+  <tr><td>PARALIMIT</td><td>drapeaux, seuil 0 à −60 dB</td><td>La bande parallèle.</td></tr>
+  <tr><td>AMOUNT</td><td>−∞ à +12 dB</td><td>Ce que PARALIMIT ajoute.</td></tr>
+  <tr><td>Canal PARALIMIT</td><td>M · S · L/R</td><td>Où PARALIMIT est pris.</td></tr>
+  <tr><td>EXT</td><td>MAIN · PARALIMIT</td><td>La sidechain externe commande la détection.</td></tr>
+  <tr><td>IN · OUT</td><td>±18 dB</td><td>Niveaux d’entrée et de sortie.</td></tr>
+  <tr><td>MODE</td><td>LINEAR · DYNAMIC · LIVE</td><td>La chaîne de traitement.</td></tr>
+  <tr><td>OS · RENDER</td><td>1x – 8x</td><td>Suréchantillonnage à l’écoute et à l’export.</td></tr>
+  <tr><td>DELTA · MATCH</td><td>marche / arrêt</td><td>Écoute de la différence, compensation de volume.</td></tr>
+</table></div>
+
+<h2 id="ha-conseils">Conseils</h2>
+<div class="tip"><p><b>Sifflantes d’une voix</b> : DEFINED entre 5 et 10 kHz, ATTACK FAST, RELEASE SLOW, puis baisse le seuil en écoutant en solo (S) jusqu’à ce que les S se posent. Repasse en écoute normale pour juger.</p></div>
+<div class="tip"><p><b>Haut d’un mix trop dur</b> : FULL HF à partir de 3 ou 4 kHz, en LINEAR, 1 à 2 dB de réduction suffisent. PARALIMIT sur S, un peu d’AMOUNT, rend l’air des côtés sans le durcir.</p></div>
+<div class="tip"><p><b>Pour comparer honnêtement</b>, active MATCH : un son plus fort paraît toujours meilleur.</p></div>

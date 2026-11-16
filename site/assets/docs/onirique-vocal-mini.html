@@ -1,0 +1,76 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#vm-vue">Vue d’ensemble</a></li>
+  <li><a href="#vm-modes">LIVE et MIX</a></li>
+  <li><a href="#vm-clean">CLEAN et COMP</a></li>
+  <li><a href="#vm-eq">EQ et PARAMETRIC</a></li>
+  <li><a href="#vm-fx">FX, DELAY et REVERB</a></li>
+  <li><a href="#vm-reglages">Tous les réglages</a></li>
+  <li><a href="#vm-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="vm-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE VOCAL MINI est une <b>chaîne de voix complète en une seule page</b> : nettoyage, égalisation, compression, de-esser, effets, delay et reverb. Chaque bouton fait une chose, et la fait bien. <b>Moins de réglages, plus de mix.</b></p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 912 380" role="img" aria-label="Chemin du son de VOCAL MINI : entrée, nettoyage, corps, compression, multibande, EQ paramétrique, aigus, de-esser, effets, delay et reverb, sortie"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">VOIX</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="168" height="46" rx="6"/><text x="154" y="59" text-anchor="middle">IN</text><text x="154" y="75" text-anchor="middle" class="t2">AUTO INPUT</text><rect class="b" x="268" y="40" width="168" height="46" rx="6"/><text x="352" y="59" text-anchor="middle">CLEAN</text><text x="352" y="75" text-anchor="middle" class="t2">PLOSIVE · NOISE · GATE</text><path class="w" d="M238 63 H268" marker-end="url(#doc-arr)"/><rect class="b" x="466" y="40" width="168" height="46" rx="6"/><text x="550" y="59" text-anchor="middle">LOW CUT</text><text x="550" y="75" text-anchor="middle" class="t2">LOW · MID</text><path class="w" d="M436 63 H466" marker-end="url(#doc-arr)"/><rect class="ba" x="664" y="40" width="168" height="46" rx="6"/><text x="748" y="59" text-anchor="middle" class="tb">COMP</text><text x="748" y="75" text-anchor="middle" class="t2">niveleur + crêtes</text><path class="w" d="M634 63 H664" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="150" width="168" height="46" rx="6"/><text x="154" y="178" text-anchor="middle">MULTIBAND</text><path class="w" d="M748 86 V118 H154 V150" marker-end="url(#doc-arr)"/><rect class="b" x="268" y="150" width="168" height="46" rx="6"/><text x="352" y="169" text-anchor="middle">PARAMETRIC</text><text x="352" y="185" text-anchor="middle" class="t2">8 bandes</text><path class="w" d="M238 173 H268" marker-end="url(#doc-arr)"/><rect class="b" x="466" y="150" width="168" height="46" rx="6"/><text x="550" y="169" text-anchor="middle">DRIVE</text><text x="550" y="185" text-anchor="middle" class="t2">HI · AIR</text><path class="w" d="M436 173 H466" marker-end="url(#doc-arr)"/><rect class="b" x="664" y="150" width="168" height="46" rx="6"/><text x="748" y="178" text-anchor="middle">DE-ESS</text><path class="w" d="M634 173 H664" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="260" width="168" height="46" rx="6"/><text x="154" y="279" text-anchor="middle">PHONE</text><text x="154" y="295" text-anchor="middle" class="t2">DOUBLER · CHORUS</text><path class="w" d="M748 196 V228 H154 V260" marker-end="url(#doc-arr)"/><rect class="ba" x="268" y="260" width="168" height="46" rx="6"/><text x="352" y="279" text-anchor="middle" class="tb">DELAY · REVERB</text><text x="352" y="295" text-anchor="middle" class="t2">en envoi</text><path class="w" d="M238 283 H268" marker-end="url(#doc-arr)"/><rect class="b" x="466" y="260" width="168" height="46" rx="6"/><text x="550" y="279" text-anchor="middle">OUT</text><text x="550" y="295" text-anchor="middle" class="t2">garde-fou</text><path class="w" d="M436 283 H466" marker-end="url(#doc-arr)"/><path class="w" d="M634 283 H674"/><circle class="w" cx="680" cy="283" r="6"/><text x="680" y="311" text-anchor="middle" class="t2">SORTIE</text></svg>
+  </div>
+  <figcaption>Le nettoyage d’abord, tant que le bruit est simple à reconnaître ; le corps de la voix avant la compression ; les aigus et le de-esser après. Le delay et la reverb sont des envois : la voix reste entière.</figcaption>
+</figure>
+
+<h2 id="vm-modes">1. LIVE et MIX</h2>
+<ul>
+  <li><b>LIVE</b> (par défaut) : latence nulle, pour enregistrer en s’écoutant.</li>
+  <li><b>MIX</b> : la qualité maximale une fois l’enregistrement fini. Le cœur est suréchantillonné, le de-esser, le de-plosive et le gate anticipent, le noise suppressor travaille fréquence par fréquence. Environ 27 ms de latence, compensée par le DAW.</li>
+</ul>
+
+<h2 id="vm-clean">2. CLEAN et COMP</h2>
+<ul>
+  <li><b>PLOSIVE</b> : retire les P et les B. <b>NOISE</b> : le souffle et la pièce. <b>GATE</b> (THRESH, RANGE, RELEASE) : le bruit entre les phrases ; il agit avant les effets et ne coupe jamais une queue de reverb.</li>
+  <li><b>COMP</b> : un seul bouton pour un niveleur doux (façon LA-2A), puis un compresseur de crêtes (façon 1176), puis une garde. Mètres LEVEL et PEAK, et AUTO GAIN.</li>
+  <li><b>MULTIBAND</b> : la quantité, et le panneau <b>BANDS</b> pour régler chaque bande (THRESHOLD, RATIO, ATTACK, RELEASE, KNEE, GAIN).</li>
+</ul>
+
+<h2 id="vm-eq">3. EQ et PARAMETRIC</h2>
+<ul>
+  <li><b>LOW, MID, HI, AIR</b> : bipolaires, avec des courbes pensées pour la voix. <b>LOW CUT</b> à 90 Hz.</li>
+  <li><b>PARAMETRIC</b> ouvre l’EQ 8 bandes en grand : BELL, LOW SHELF, HIGH SHELF (±18 dB), LOW CUT et HIGH CUT (12 à 48 dB/oct), NOTCH, et un mode <b>DYNAMIQUE</b> par bande.</li>
+  <li>L’écran montre la voix qui entre et qui sort, la courbe du paramétrique (rouge), celle des boutons (rose, avec une poignée à tirer) et la courbe totale (blanc).</li>
+  <li>À la souris : tirer un point (fréquence et gain), molette pour le Q, double-clic pour allumer ou couper, double-clic dans le vide pour une nouvelle bande, tenir un point pour l’écouter seule.</li>
+</ul>
+
+<h2 id="vm-fx">4. FX, DELAY et REVERB</h2>
+<ul>
+  <li><b>DE-ESS</b> : la fréquence est trouvée toute seule, CH français compris.</li>
+  <li><b>DRIVE</b>, <b>PHONE</b>, <b>DOUBLER</b>, <b>CHORUS</b>.</li>
+  <li><b>DELAY</b> : envoi, FEED, FILTER, TIME (au tempo), PING-PONG.</li>
+  <li><b>REVERB</b> : ROOM, PLATE 1, PLATE 2, HALL ou SHIMMER, avec MIX, DECAY, PRE-DELAY et <b>CLEAN</b> (garde la voix nette dans la queue). Le panneau ouvre SIZE, DIFFUSION, MOD RATE, MOD DEPTH, LOW CUT, HIGH CUT, WIDTH, DUCKING et PULSE (au tempo).</li>
+</ul>
+
+<h2 id="vm-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>LIVE · MIX</td><td>mode</td><td>Latence nulle ou qualité maximale.</td></tr>
+  <tr><td>IN · AUTO INPUT</td><td>en dB</td><td>Le niveau d’entrée, réglé tout seul vers la zone BEST.</td></tr>
+  <tr><td>PLOSIVE · NOISE · GATE</td><td>marche + réglage</td><td>Le nettoyage.</td></tr>
+  <tr><td>COMP · AUTO GAIN</td><td>0 – 100 %</td><td>La compression en un bouton.</td></tr>
+  <tr><td>MULTIBAND · BANDS</td><td>quantité, 4 bandes</td><td>La dynamique par bande.</td></tr>
+  <tr><td>LOW · MID · HI · AIR</td><td>±</td><td>L’EQ pensé pour la voix.</td></tr>
+  <tr><td>LOW CUT</td><td>90 Hz</td><td>Coupe-bas.</td></tr>
+  <tr><td>PARAMETRIC</td><td>8 bandes</td><td>L’EQ en grand, avec mode dynamique.</td></tr>
+  <tr><td>DE-ESS · DRIVE</td><td>0 – 100 %</td><td>Sifflantes et grain.</td></tr>
+  <tr><td>PHONE · DOUBLER · CHORUS</td><td>0 – 100 %</td><td>Les couleurs.</td></tr>
+  <tr><td>DELAY</td><td>envoi, FEED, FILTER, TIME, PING-PONG</td><td>L’écho, en auxiliaire.</td></tr>
+  <tr><td>REVERB</td><td>5 modes + panneau</td><td>L’espace, en auxiliaire.</td></tr>
+  <tr><td>OUT</td><td>en dB</td><td>Avec un garde-fou au-dessus de −1 dBFS.</td></tr>
+</table></div>
+
+<h2 id="vm-conseils">Conseils</h2>
+<div class="tip"><p><b>Enregistrer</b> en LIVE pour s’écouter sans latence, puis passer en MIX pour le rendu final.</p></div>
+<div class="tip"><p><b>Une voix rap moderne</b> : COMP haut, AIR monté, DE-ESS, un peu de DOUBLER, PLATE 1 en petite quantité.</p></div>
+<div class="tip"><p>Les 21 presets d’usine sont un bon point de départ : ils n’utilisent pas le PARAMETRIC, qui reste libre pour tes retouches.</p></div>

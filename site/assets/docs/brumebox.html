@@ -1,0 +1,69 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#sh-vue">Vue d’ensemble</a></li>
+  <li><a href="#sh-agir">Couper ou pousser</a></li>
+  <li><a href="#sh-ecran">L’écran</a></li>
+  <li><a href="#sh-avance">Avancé</a></li>
+  <li><a href="#sh-reglages">Tous les réglages</a></li>
+  <li><a href="#sh-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="sh-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE SHAPER est un <b>processeur de transitoires spectral</b> : il ne coupe ou ne pousse que les fréquences qui composent les transitoires, et laisse le reste intact. Chaque fréquence est comparée à sa propre moyenne récente, en dB : <b>la détection ne dépend pas du niveau d’entrée</b>.</p>
+<p>Concrètement : adoucir le claquement d’une caisse claire sans toucher à son corps, ou au contraire faire ressortir l’attaque d’une guitare, seulement dans les fréquences où elle se trouve.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 1060 200" role="img" aria-label="Chemin du son de SHAPER : analyse du spectre, détection des transitoires par fréquence, courbe de sensibilité, coupe ou poussée, mix"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">ENTRÉE</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="148" height="46" rx="6"/><text x="144" y="59" text-anchor="middle">ANALYSE</text><text x="144" y="75" text-anchor="middle" class="t2">WINDOW · RESOLUTION</text><rect class="b" x="248" y="40" width="148" height="46" rx="6"/><text x="322" y="59" text-anchor="middle">DÉTECTION</text><text x="322" y="75" text-anchor="middle" class="t2">par fréquence</text><path class="w" d="M218 63 H248" marker-end="url(#doc-arr)"/><rect class="b" x="426" y="40" width="148" height="46" rx="6"/><text x="500" y="59" text-anchor="middle">SENSIBILITÉ</text><text x="500" y="75" text-anchor="middle" class="t2">5 points</text><path class="w" d="M396 63 H426" marker-end="url(#doc-arr)"/><rect class="ba" x="604" y="40" width="148" height="46" rx="6"/><text x="678" y="59" text-anchor="middle" class="tb">CUT / BOOST</text><text x="678" y="75" text-anchor="middle" class="t2">DEPTH · DECAY</text><path class="w" d="M574 63 H604" marker-end="url(#doc-arr)"/><rect class="b" x="782" y="40" width="148" height="46" rx="6"/><text x="856" y="68" text-anchor="middle">TRIM</text><path class="w" d="M752 63 H782" marker-end="url(#doc-arr)"/><path class="w" d="M930 63 H958" marker-end="url(#doc-arr)"/><circle class="ba" cx="976" cy="63" r="18"/><text x="976" y="69" text-anchor="middle" class="tb">+</text><text x="976" y="37" text-anchor="middle" class="t2">MIX</text><circle class="dot" cx="52" cy="63" r="3.5"/><path class="wd" d="M52 63 V178 H976 V81" marker-end="url(#doc-arr)"/><text x="80" y="172" class="t2">le son d’origine</text><path class="w" d="M994 63 H1034"/><circle class="w" cx="1040" cy="63" r="6"/><text x="1040" y="91" text-anchor="middle" class="t2">SORTIE</text></svg>
+  </div>
+  <figcaption>Les transitoires sont détectées fréquence par fréquence, puis coupées (CUT) ou poussées (BOOST). MIX dose le traitement.</figcaption>
+</figure>
+
+<h2 id="sh-agir">1. Couper ou pousser</h2>
+<ul>
+  <li><b>CUT / BOOST</b> : couper ou pousser les transitoires. <b>DEPTH</b> : la quantité (jusqu’à −30 dB en CUT, +15 dB en BOOST).</li>
+  <li><b>SENSITIVITY</b> : plus haut, plus de transitoires sont détectées.</li>
+  <li><b>SHARPNESS</b> : la largeur de chaque coupe ou poussée, de 2 octaves à 1/30 d’octave.</li>
+  <li><b>DECAY</b> : le temps de retour, de 4 ms à environ 1,4 s. <b>DECAY LF/HF</b> : sous 5, les graves reviennent plus lentement ; au-dessus, les aigus.</li>
+</ul>
+
+<h2 id="sh-ecran">2. L’écran et la sensibilité</h2>
+<p>Le spectre qui entre ; en rouge ce qui est coupé (en violet ce qui est poussé) ; la courbe de sensibilité et ses cinq points : <b>coupe-bas</b>, <b>trois bandes</b> (low shelf, parametric, high shelf ou tilt, ±18 dB) et <b>coupe-haut</b> de la détection.</p>
+<ul>
+  <li>Un point se glisse ; Ctrl en glissant (ou la molette) règle sa largeur ; <b>Alt</b> en glissant le fait écouter ; double-clic l’éteint.</li>
+  <li>Un clic l’ouvre dans son panneau : forme (ou pente), FREQ, SENS, Q, LISTEN.</li>
+</ul>
+
+<h2 id="sh-avance">3. Stéréo, sortie et réglages avancés</h2>
+<ul>
+  <li><b>STEREO</b> : Left/Right ou Mid/Side, <b>LINK</b> (détection commune à 100 %, deux mono à 0 %) et <b>BALANCE</b> (la part de traitement de chaque canal).</li>
+  <li><b>OUTPUT</b> : <b>MIX</b> et <b>TRIM</b> (±12 dB sur le signal traité seulement).</li>
+  <li><b>RESOLUTION</b> (Normal, High), <b>OVERSAMPLE</b> (1x, 2x, 4x), <b>WINDOW</b> (Short, Medium, Long), <b>PHASE</b> (Linear, Minimum).</li>
+  <li><b>DELTA</b> : n’écouter que ce qui est retiré ou ajouté.</li>
+</ul>
+<p>Latence à 48 kHz : 1024 échantillons en fenêtre Short, 2048 en Medium, 4096 en Long ; l’oversample l’allonge. Elle est annoncée au DAW.</p>
+
+<h2 id="sh-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>CUT · BOOST</td><td>mode</td><td>Couper ou pousser les transitoires.</td></tr>
+  <tr><td>DEPTH</td><td>0 – 10</td><td>Jusqu’à −30 dB ou +15 dB.</td></tr>
+  <tr><td>SENSITIVITY</td><td>0 – 10</td><td>Combien de transitoires sont détectées.</td></tr>
+  <tr><td>SHARPNESS</td><td>0 – 10</td><td>De 2 octaves à 1/30 d’octave.</td></tr>
+  <tr><td>DECAY</td><td>0 – 10</td><td>De 4 ms à 1,4 s.</td></tr>
+  <tr><td>DECAY LF/HF</td><td>0 – 10</td><td>Graves ou aigus plus longs.</td></tr>
+  <tr><td>Points de sensibilité</td><td>20 Hz – 20 kHz, ±18 dB</td><td>Coupe-bas, trois bandes, coupe-haut de la détection.</td></tr>
+  <tr><td>STEREO</td><td>L/R · M/S, LINK, BALANCE</td><td>Le traitement stéréo.</td></tr>
+  <tr><td>MIX · TRIM</td><td>0 – 100 % · ±12 dB</td><td>Dosage et niveau du signal traité.</td></tr>
+  <tr><td>RESOLUTION · OVERSAMPLE · WINDOW · PHASE</td><td>avancé</td><td>Précision et latence.</td></tr>
+  <tr><td>DELTA · BYPASS</td><td>écoute</td><td>La différence, ou le son d’origine.</td></tr>
+</table></div>
+
+<h2 id="sh-conseils">Conseils</h2>
+<div class="tip"><p><b>Une caisse claire qui claque trop</b> : CUT, DEPTH 4, une bande de sensibilité vers 4 kHz. Le corps reste, seul le claquement s’adoucit.</p></div>
+<div class="tip"><p><b>Plus d’attaque sur une guitare acoustique</b> : BOOST, SHARPNESS haut, DECAY court.</p></div>
+<div class="tip"><p>28 presets d’usine, par catégorie : batterie, voix, basse, guitare, synthés, image, master.</p></div>

@@ -1,0 +1,87 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#ma-vue">Vue d’ensemble</a></li>
+  <li><a href="#ma-bas">Bandes 1 et 2</a></li>
+  <li><a href="#ma-haut">Bandes 3 et 4</a></li>
+  <li><a href="#ma-bande">Une bande</a></li>
+  <li><a href="#ma-canal">Canaux et LINK</a></li>
+  <li><a href="#ma-reglages">Tous les réglages</a></li>
+  <li><a href="#ma-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="ma-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE MASSIF est un <b>égaliseur passif stéréo à lampes</b> dans l’esprit du grand égaliseur de mastering à façade de rack : deux canaux de quatre bandes, des filtres et un gain de sortie, peints en rouge. La façade est une photographie : chaque pièce est modélisée en 3D et chaque position de chaque réglage a sa photo.</p>
+<p>Le traitement se fait au double de la fréquence d’échantillonnage, pour des aigus fidèles jusqu’en haut du spectre (quelques échantillons de latence, compensés par le DAW).</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 984 160" role="img" aria-label="Chemin du son de MASSIF : filtres, bandes 1 et 2 passives, lampes et fer, bandes 3 et 4 hybrides, gain de sortie"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">ENTRÉE</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="114" height="46" rx="6"/><text x="127" y="59" text-anchor="middle">HIGH PASS</text><text x="127" y="75" text-anchor="middle" class="t2">18 dB/oct</text><rect class="ba" x="214" y="40" width="114" height="46" rx="6"/><text x="271" y="59" text-anchor="middle" class="tb">BANDES 1 · 2</text><text x="271" y="75" text-anchor="middle" class="t2">réseau passif</text><path class="w" d="M184 63 H214" marker-end="url(#doc-arr)"/><rect class="b" x="358" y="40" width="114" height="46" rx="6"/><text x="415" y="59" text-anchor="middle">LAMPES</text><text x="415" y="75" text-anchor="middle" class="t2">et fer</text><path class="w" d="M328 63 H358" marker-end="url(#doc-arr)"/><rect class="ba" x="502" y="40" width="114" height="46" rx="6"/><text x="559" y="59" text-anchor="middle" class="tb">BANDES 3 · 4</text><text x="559" y="75" text-anchor="middle" class="t2">hybride</text><path class="w" d="M472 63 H502" marker-end="url(#doc-arr)"/><rect class="b" x="646" y="40" width="114" height="46" rx="6"/><text x="703" y="59" text-anchor="middle">LOW PASS</text><text x="703" y="75" text-anchor="middle" class="t2">24 dB/oct</text><path class="w" d="M616 63 H646" marker-end="url(#doc-arr)"/><rect class="b" x="790" y="40" width="114" height="46" rx="6"/><text x="847" y="59" text-anchor="middle">GAIN</text><text x="847" y="75" text-anchor="middle" class="t2">−6 à +4 dB</text><path class="w" d="M760 63 H790" marker-end="url(#doc-arr)"/><path class="w" d="M904 63 H944"/><circle class="w" cx="950" cy="63" r="6"/><text x="950" y="91" text-anchor="middle" class="t2">SORTIE</text></svg>
+  </div>
+  <figcaption>Le chemin d’un canal. Les graves passent par le réseau passif, les lampes et le fer ; les aigus seulement par un étage discret très propre.</figcaption>
+</figure>
+
+<h2 id="ma-bas">1. Les graves et le bas-médium (bandes 1 et 2)</h2>
+<p>Le réseau passif de l’original, tel quel :</p>
+<ul>
+  <li>des <b>cloches</b> qui vont de très larges à étroites, et <b>se resserrent quand on pousse</b> ;</li>
+  <li>des <b>coupes</b> un peu plus étroites que les boosts ;</li>
+  <li>des <b>étagères qui résonnent</b> quand on ferme la bande passante : une bosse avant la fréquence, un creux juste après ;</li>
+  <li>des bandes qui <b>se chargent l’une l’autre</b> : deux bandes poussées côte à côte donnent moins que leur somme, et le bas reste rond même quand on insiste.</li>
+</ul>
+<p>Derrière, les <b>lampes</b>, et le <b>fer</b> du transformateur qui épaissit la basse quand elle est forte.</p>
+
+<h2 id="ma-haut">2. Les aigus et le haut-médium (bandes 3 et 4)</h2>
+<p>Un hybride. Chaque bande est pour moitié ce même réseau passif, pour moitié une <b>bande en classe A discrète</b> : sa largeur reste stable quel que soit le gain, et son étagère ne résonne jamais. Le haut s’ouvre avec la douceur du passif et la précision du discret, <b>sans durcir</b>.</p>
+<p>Les aigus ne passent pas par les lampes, seulement par un étage discret très propre.</p>
+
+<h2 id="ma-bande">3. Une bande, réglage par réglage</h2>
+<ul>
+  <li><b>GAIN</b> : de 0 à 20 dB, vers le haut ou vers le bas selon le levier.</li>
+  <li><b>Levier BOOST / OUT / CUT</b> : dans la fenêtre, BOOST s’allume en vert et CUT en rouge, comme sur l’appareil. Un clic sur le mot allumé remet la bande en OUT.</li>
+  <li><b>BANDWIDTH</b> : de très large à étroite ; en étagère, il règle sa résonance.</li>
+  <li><b>FREQUENCY</b> : onze positions par bande.</li>
+  <li><b>SHELF / BELL</b> : étagère (grave pour les bandes 1 et 2, aiguë pour 3 et 4) ou cloche.</li>
+</ul>
+<div class="table"><table>
+  <tr><th>Bande</th><th>Fréquences</th><th>Rôle</th></tr>
+  <tr><td>1</td><td>22 Hz – 1 kHz</td><td>Le grave, le poids.</td></tr>
+  <tr><td>2</td><td>82 Hz – 3,9 kHz</td><td>Le bas-médium, le corps.</td></tr>
+  <tr><td>3</td><td>220 Hz – 10 kHz</td><td>Le haut-médium, la présence.</td></tr>
+  <tr><td>4</td><td>560 Hz – 27 kHz</td><td>L’aigu, l’air.</td></tr>
+</table></div>
+
+<h2 id="ma-canal">4. Par canal, et au milieu</h2>
+<ul>
+  <li><b>IN</b> : le voyant bleu. Éteint, bandes et filtres sont à plat, mais les lampes restent.</li>
+  <li><b>HIGH PASS</b> : OFF, 22, 39, 68, 120 ou 220 Hz, 18 dB par octave.</li>
+  <li><b>LOW PASS</b> : OFF, 18, 12, 9, 7,5 ou 6 kHz, 24 dB par octave.</li>
+  <li><b>GAIN</b> de sortie : −6 à +4 dB.</li>
+  <li><b>LINK</b> (au milieu) : tourner un réglage tourne son jumeau de l’autre côté ; en l’enclenchant, la droite prend les réglages de la gauche.</li>
+  <li><b>POWER</b> : éteint, le signal tel qu’il est entré.</li>
+</ul>
+<p>Survoler ou tourner un réglage affiche sa valeur juste à côté de lui ; un double-clic le remet à sa valeur de départ.</p>
+
+<h2 id="ma-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>GAIN (bande)</td><td>0 – 20 dB</td><td>Vers le haut ou le bas selon BOOST / OUT / CUT.</td></tr>
+  <tr><td>BANDWIDTH</td><td>large → étroite</td><td>La largeur de la cloche, ou la résonance de l’étagère.</td></tr>
+  <tr><td>FREQUENCY</td><td>11 positions</td><td>22 Hz – 1 kHz, 82 Hz – 3,9 kHz, 220 Hz – 10 kHz, 560 Hz – 27 kHz.</td></tr>
+  <tr><td>BOOST · OUT · CUT</td><td>levier</td><td>Le sens de la bande.</td></tr>
+  <tr><td>SHELF · BELL</td><td>levier</td><td>Étagère ou cloche.</td></tr>
+  <tr><td>IN</td><td>voyant</td><td>Le canal en service.</td></tr>
+  <tr><td>HIGH PASS</td><td>OFF, 22 – 220 Hz</td><td>18 dB par octave.</td></tr>
+  <tr><td>LOW PASS</td><td>OFF, 18 – 6 kHz</td><td>24 dB par octave.</td></tr>
+  <tr><td>GAIN (sortie)</td><td>−6 à +4 dB</td><td>Le niveau de sortie du canal.</td></tr>
+  <tr><td>LINK</td><td>levier</td><td>Les deux canaux tournent ensemble.</td></tr>
+  <tr><td>POWER</td><td>marche / arrêt</td><td>L’appareil éteint, le son d’origine.</td></tr>
+</table></div>
+
+<h2 id="ma-conseils">Conseils</h2>
+<div class="tip"><p><b>Du poids sans boue</b> : bande 1 en BOOST, en étagère vers 60 Hz, et bande 2 en CUT, assez large, vers 250 Hz. Les bandes se chargent l’une l’autre : le bas reste rond.</p></div>
+<div class="tip"><p><b>De l’air sur un mix</b> : bande 4 en étagère vers 16 ou 20 kHz, quelques crans de BOOST. Elle ne passe pas par les lampes et reste propre.</p></div>
+<div class="tip"><p><b>Stéréo différente</b> : coupe LINK pour traiter la gauche et la droite à part, par exemple sur une prise de batterie stéréo.</p></div>

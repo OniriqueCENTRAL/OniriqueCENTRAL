@@ -1,0 +1,83 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#vs-vue">Vue d’ensemble</a></li>
+  <li><a href="#vs-space">SPACE</a></li>
+  <li><a href="#vs-pocket">VOCAL POCKET</a></li>
+  <li><a href="#vs-restore">RESTORE</a></li>
+  <li><a href="#vs-sidechain">Brancher la voix</a></li>
+  <li><a href="#vs-reglages">Tous les réglages</a></li>
+  <li><a href="#vs-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="vs-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE VOCAL SPACER <b>adapte un instrumental terminé pour laisser de la place à la voix</b>. On le pose sur la prod, on envoie la voix sur son entrée sidechain, et il creuse dans l’instru exactement là où la voix a besoin de place, seulement quand elle chante. Aucune latence.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 984 160" role="img" aria-label="Chemin du son de VOCAL SPACER : INPUT, SPACE, VOCAL POCKET, RESTORE, AUTO GAIN, OUTPUT"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">ENTRÉE</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="114" height="46" rx="6"/><text x="127" y="68" text-anchor="middle">INPUT</text><rect class="b" x="214" y="40" width="114" height="46" rx="6"/><text x="271" y="59" text-anchor="middle">SPACE</text><text x="271" y="75" text-anchor="middle" class="t2">Mid / Side</text><path class="w" d="M184 63 H214" marker-end="url(#doc-arr)"/><rect class="ba" x="358" y="40" width="114" height="46" rx="6"/><text x="415" y="59" text-anchor="middle" class="tb">VOCAL POCKET</text><text x="415" y="75" text-anchor="middle" class="t2">EQ 20 bandes</text><path class="w" d="M328 63 H358" marker-end="url(#doc-arr)"/><rect class="b" x="502" y="40" width="114" height="46" rx="6"/><text x="559" y="59" text-anchor="middle">RESTORE</text><text x="559" y="75" text-anchor="middle" class="t2">kick · médium</text><path class="w" d="M472 63 H502" marker-end="url(#doc-arr)"/><rect class="b" x="646" y="40" width="114" height="46" rx="6"/><text x="703" y="68" text-anchor="middle">AUTO GAIN</text><path class="w" d="M616 63 H646" marker-end="url(#doc-arr)"/><rect class="b" x="790" y="40" width="114" height="46" rx="6"/><text x="847" y="68" text-anchor="middle">OUTPUT</text><path class="w" d="M760 63 H790" marker-end="url(#doc-arr)"/><path class="w" d="M904 63 H944"/><circle class="w" cx="950" cy="63" r="6"/><text x="950" y="91" text-anchor="middle" class="t2">SORTIE</text></svg>
+  </div>
+  <figcaption>L’instrumental passe par trois modules, chacun avec son bouton marche. La voix, sur la sidechain, commande VOCAL POCKET.</figcaption>
+</figure>
+
+<h2 id="vs-space">1. SPACE</h2>
+<p>Le module de l’image stéréo, en Mid / Side :</p>
+<ul>
+  <li><b>WIDTH</b> (0 – 200 %) : la largeur stéréo, 100 % = neutre.</li>
+  <li><b>LOW FOCUS</b> : ramène les graves (sous 160 Hz environ) au centre, en mono. Le bas est plus solide et laisse le centre net.</li>
+  <li><b>SIDE DETAIL</b> : de la brillance sur les côtés seulement (étagère jusqu’à +6 dB dès 3 kHz).</li>
+</ul>
+
+<h2 id="vs-pocket">2. VOCAL POCKET</h2>
+<p>Un égaliseur dynamique de <b>20 bandes</b>, de 100 Hz à 12 kHz, piloté par la voix. Une bande n’est creusée que si <b>la voix y est présente</b> et que <b>l’instrumental la masque</b>, et seulement pendant que la voix joue.</p>
+<ul>
+  <li><b>SIDECHAIN / STATIC</b> : sans sidechain, STATIC creuse une poche fixe en forme de spectre vocal moyen (corps vers 330 Hz, présence vers 2,5 kHz).</li>
+  <li><b>MID / STEREO</b> : creuser seulement le centre (par défaut) ou toute l’image.</li>
+  <li><b>FAST / NORMAL / SMOOTH</b> : la vitesse de la poche (ouverture 15 / 30 / 60 ms, maintien entre les syllabes 120 / 250 / 450 ms, fermeture 250 / 500 / 900 ms). Elle suit les phrases, pas les syllabes ni la batterie : pas de pompage.</li>
+  <li><b>DEPTH</b> (0 à −12 dB), <b>SENSITIVITY</b>, <b>RANGE LO / HI</b> (aussi à la souris dans l’afficheur).</li>
+  <li><b>LISTEN</b> : n’écouter que ce que la poche retire.</li>
+</ul>
+<p>L’afficheur montre le spectre de l’instru avant et après, la voix (en rose) et la courbe exacte de la poche.</p>
+
+<h2 id="vs-restore">3. RESTORE</h2>
+<ul>
+  <li><b>KICK FOCUS</b> : renforce uniquement les attaques du kick (62 Hz et le claquement vers 3,2 kHz), jusqu’à +7 dB.</li>
+  <li><b>MID ENERGY</b> : une compression parallèle de 400 Hz à 3,5 kHz, qui redonne de l’énergie au médium. Au centre, elle recule quand la poche travaille.</li>
+</ul>
+
+<h2 id="vs-sidechain">4. Brancher la voix</h2>
+<p>Insère le plugin sur la piste (ou le bus) de l’instrumental, puis envoie la piste voix vers son entrée sidechain :</p>
+<ul>
+  <li><b>FL Studio</b> : route la piste voix vers l’insert du plugin, puis choisis l’entrée dans « Processing ».</li>
+  <li><b>Ableton</b> : menu « Sidechain » du plugin.</li>
+  <li><b>Reaper</b> : canaux 3 / 4.</li>
+  <li><b>Cubase / Studio One</b> : bouton sidechain du plugin.</li>
+</ul>
+<p>Sans sidechain, passe VOCAL POCKET en STATIC.</p>
+
+<h2 id="vs-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>WIDTH</td><td>0 – 200 %</td><td>La largeur stéréo.</td></tr>
+  <tr><td>LOW FOCUS</td><td>0 – 100 %</td><td>Les graves au centre.</td></tr>
+  <tr><td>SIDE DETAIL</td><td>0 – +6 dB</td><td>Brillance sur les côtés.</td></tr>
+  <tr><td>SIDECHAIN · STATIC</td><td>mode</td><td>Poche pilotée par la voix, ou fixe.</td></tr>
+  <tr><td>MID · STEREO</td><td>mode</td><td>Où la poche creuse.</td></tr>
+  <tr><td>FAST · NORMAL · SMOOTH</td><td>vitesse</td><td>La réactivité de la poche.</td></tr>
+  <tr><td>DEPTH</td><td>0 à −12 dB</td><td>La profondeur de la poche.</td></tr>
+  <tr><td>SENSITIVITY</td><td>0 – 100 %</td><td>À partir de quand la voix creuse.</td></tr>
+  <tr><td>RANGE LO · HI</td><td>100 Hz – 12 kHz</td><td>La zone où la poche agit.</td></tr>
+  <tr><td>LISTEN</td><td>marche / arrêt</td><td>Entendre ce qui est retiré.</td></tr>
+  <tr><td>KICK FOCUS</td><td>0 – +7 dB</td><td>Les attaques du kick.</td></tr>
+  <tr><td>MID ENERGY</td><td>0 – 100 %</td><td>Compression parallèle du médium.</td></tr>
+  <tr><td>INPUT · OUTPUT</td><td>±24 dB</td><td>Niveaux, avec mètres crête.</td></tr>
+  <tr><td>AUTO GAIN</td><td>marche / arrêt</td><td>Volume constant ; ignore la poche.</td></tr>
+</table></div>
+
+<h2 id="vs-conseils">Conseils</h2>
+<div class="tip"><p><b>Le réglage de départ</b> : SIDECHAIN, MID, NORMAL, DEPTH −6 dB. Écoute en LISTEN pour entendre ce qui part, puis ajuste la DEPTH à l’oreille.</p></div>
+<div class="tip"><p><b>Un instru très chargé</b> : LOW FOCUS pour dégager le centre, un peu de KICK FOCUS pour que le kick reste devant.</p></div>
+<div class="tip"><p>AUTO GAIN ignore la poche : la prod ne remonte jamais quand la voix entre.</p></div>

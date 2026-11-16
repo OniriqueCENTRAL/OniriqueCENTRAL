@@ -1,0 +1,131 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#ec-vue">Vue d’ensemble</a></li>
+  <li><a href="#ec-parallele">L’égalisation parallèle</a></li>
+  <li><a href="#ec-bandes">Les bandes</a></li>
+  <li><a href="#ec-ms">Mid / Side et OFFSET</a></li>
+  <li><a href="#ec-couleur">Couleur analogique</a></li>
+  <li><a href="#ec-ecoute">Écoute et image</a></li>
+  <li><a href="#ec-reglages">Tous les réglages</a></li>
+  <li><a href="#ec-conseils">Conseils</a></li>
+</ul>
+
+<h2 id="ec-vue">Vue d’ensemble</h2>
+<p>ONIRIQUE ECLIPSE est un <b>égaliseur de mastering parallèle en Mid / Side</b>. On le pose sur le bus du mix, un bus voix ou une instru, pour que tout sonne plus grand : de la chaleur dans le bas, de l’air en haut, de la densité au milieu.</p>
+<p>Le son est d’abord séparé en <b>centre (Mid)</b> et <b>côtés (Side)</b>. Chacun passe par le même réseau de bandes, puis tout est recombiné en gauche / droite. Le traitement se fait au double de la fréquence d’échantillonnage, pour des aigus fidèles jusqu’en haut du spectre.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 920 280" role="img" aria-label="Chemin du son d’ECLIPSE : entrée, encodage M/S, suréchantillonnage, réseaux Mid et Side, décodage, sortie">
+    <circle class="w" cx="28" cy="140" r="6"/><text x="28" y="118" text-anchor="middle" class="t2">L / R</text>
+    <rect class="b" x="56" y="118" width="90" height="44" rx="6"/><text x="101" y="137" text-anchor="middle">INPUT</text><text x="101" y="153" text-anchor="middle" class="t2">XFORMER</text>
+    <path class="w" d="M34 140 H56" marker-end="url(#doc-arr)"/>
+    <rect class="b" x="170" y="118" width="80" height="44" rx="6"/><text x="210" y="145" text-anchor="middle">L/R → M/S</text>
+    <path class="w" d="M146 140 H170" marker-end="url(#doc-arr)"/>
+    <rect class="ba" x="280" y="40" width="370" height="200" rx="10"/><text x="465" y="30" text-anchor="middle" class="t2 ta">× 2 plus vite que l’échantillonnage</text>
+    <rect class="b" x="300" y="62" width="330" height="56" rx="6"/><text x="465" y="84" text-anchor="middle" class="tb">MID</text><text x="465" y="102" text-anchor="middle" class="t2">HPF · LOW · MID · CONTOUR · HIGH · LPF</text>
+    <rect class="b" x="300" y="162" width="330" height="56" rx="6"/><text x="465" y="184" text-anchor="middle" class="tb">SIDE</text><text x="465" y="202" text-anchor="middle" class="t2">mêmes bandes + OFFSET · WIDTH</text>
+    <path class="w" d="M250 140 H265 V90 H300 M265 140 V190 H300" marker-end="url(#doc-arr)"/>
+    <path class="w" d="M630 90 H668 V140 M630 190 H668 V140 H690" marker-end="url(#doc-arr)"/>
+    <rect class="b" x="690" y="118" width="80" height="44" rx="6"/><text x="730" y="145" text-anchor="middle">M/S → L/R</text>
+    <rect class="b" x="790" y="118" width="100" height="44" rx="6"/><text x="840" y="137" text-anchor="middle">OUTPUT</text><text x="840" y="153" text-anchor="middle" class="t2">AUTO GAIN</text>
+    <path class="w" d="M770 140 H790" marker-end="url(#doc-arr)"/>
+  </svg>
+  </div>
+  <figcaption>Le centre et les côtés passent chacun par le même réseau de bandes. L’OFFSET décale les réglages d’un des deux.</figcaption>
+</figure>
+
+<h2 id="ec-parallele">1. L’égalisation parallèle</h2>
+<p>Sur un égaliseur classique, les bandes s’enchaînent : chaque filtre traite la sortie du précédent. Dans ECLIPSE, <b>toutes les bandes reçoivent le même signal</b> et ne rendent qu’un écart, qui est ajouté au son d’origine. C’est le principe des égaliseurs passifs de mastering.</p>
+<ul>
+  <li>Quand tu pousses plusieurs bandes, elles <b>se mélangent au lieu de s’empiler</b> : le mix reste ouvert même avec des réglages francs.</li>
+  <li>Une bande au neutre ne rend rien du tout. <b>Toutes au neutre, ECLIPSE rend exactement le son d’origine</b>, sans rotation de phase.</li>
+  <li>La courbe affichée est calculée par la même fonction que le traitement : ce que tu vois est ce que tu entends.</li>
+</ul>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 900 230" role="img" aria-label="Principe parallèle : le même signal vers chaque bande, les écarts additionnés au son d’origine">
+    <circle class="w" cx="30" cy="115" r="6"/><text x="30" y="95" text-anchor="middle" class="t2">x</text>
+    <path class="w" d="M36 115 H110"/><circle class="dot" cx="110" cy="115" r="3.5"/>
+    <path class="w" d="M110 115 V40 H180 M110 115 V90 H180 M110 115 V140 H180 M110 115 V190 H180" marker-end="url(#doc-arr)"/>
+    <rect class="b" x="180" y="24" width="150" height="32" rx="5"/><text x="255" y="45" text-anchor="middle">LOW (écart)</text>
+    <rect class="b" x="180" y="74" width="150" height="32" rx="5"/><text x="255" y="95" text-anchor="middle">MID (écart)</text>
+    <rect class="b" x="180" y="124" width="150" height="32" rx="5"/><text x="255" y="145" text-anchor="middle">CONTOUR (écart)</text>
+    <rect class="b" x="180" y="174" width="150" height="32" rx="5"/><text x="255" y="195" text-anchor="middle">HIGH (écart)</text>
+    <path class="w" d="M330 40 H500 V97 M330 90 H500 M330 140 H500 V133 M330 190 H500 V133" />
+    <circle class="ba" cx="520" cy="115" r="20"/><text x="520" y="121" text-anchor="middle" class="tb">Σ</text>
+    <path class="w" d="M500 97 L506 103 M500 133 L506 127"/>
+    <path class="wd" d="M110 115 V214 H700 V135"/><text x="300" y="228" class="t2">le son d’origine, x</text>
+    <path class="w" d="M540 115 H682" marker-end="url(#doc-arr)"/>
+    <circle class="ba" cx="700" cy="115" r="18"/><text x="700" y="121" text-anchor="middle" class="tb">+</text>
+    <path class="w" d="M718 115 H840"/><circle class="w" cx="846" cy="115" r="6"/><text x="846" y="98" text-anchor="middle" class="t2">y = x + Σ</text>
+  </svg>
+  </div>
+  <figcaption>Chaque bande ne rend que ce qu’elle ajoute ou retire. Les écarts sont additionnés au son d’origine.</figcaption>
+</figure>
+
+<h2 id="ec-bandes">2. Les bandes</h2>
+<h3>LOW</h3>
+<p>Un plateau grave de <b>20 à 400 Hz</b>, avec un <b>BOOST</b> et un <b>ATTEN</b> séparés (0 à 12 dB chacun) sur la même fréquence. Leurs deux courbes n’ont pas la même forme : poussés ensemble, le grave monte et le bas-médium juste au-dessus se creuse, le fameux « tour » des égaliseurs passifs. <b>BANDWIDTH</b> règle la largeur.</p>
+<h3>MID</h3>
+<p>Une cloche de <b>150 Hz à 8 kHz</b>, ±12 dB, avec son <b>BANDWIDTH</b> (Q). Deux petites cloches de signe opposé, de part et d’autre, l’accompagnent proportionnellement : la bande sonne comme un circuit analogique, pas comme une cloche mathématique.</p>
+<h3>CONTOUR</h3>
+<p>Il redessine les médiums d’un seul geste, de <b>200 Hz à 6 kHz</b>, ±10 dB. En positif, il creuse le centre et relève les deux flancs (au tiers et au triple de la fréquence) ; en négatif, l’inverse. <b>BANDWIDTH</b> écarte les flancs, de 1 à 2,3 octaves. Parfait pour enlever le côté « carton » d’un mix sans le vider.</p>
+<h3>HIGH</h3>
+<p>Un plateau aigu de <b>1,5 à 24 kHz</b>, symétrique du LOW : <b>BOOST</b> et <b>ATTEN</b> séparés, <b>BANDWIDTH</b>.</p>
+<h3>HPF et LPF</h3>
+<p>Ce ne sont pas des coupe-bas qui tournent la phase, mais des <b>plateaux de −24 dB</b> à 12 dB par octave, sans résonance : le bas inutile ou le haut agressif sont baissés en douceur. HPF de 10 à 400 Hz, LPF de 3 à 30 kHz.</p>
+
+<h2 id="ec-ms">3. Mid / Side et OFFSET</h2>
+<p>Une seule série de réglages commande le centre et les côtés. Avec <b>M/S LINK</b>, les deux sont identiques. Sans le lien, l’<b>OFFSET</b> de chaque bande (±12 dB, ±10 pour le CONTOUR) décale le réglage :</p>
+<ul>
+  <li><b>SIDE</b> : l’offset s’applique aux côtés. Ajoute de l’air sur les côtés, ou garde ton 808 au centre.</li>
+  <li><b>MID</b> : l’offset s’applique au centre.</li>
+  <li><b>SPLIT</b> : la moitié de l’offset sur le centre, l’autre moitié à l’inverse sur les côtés.</li>
+</ul>
+
+<h2 id="ec-couleur">4. Couleur analogique</h2>
+<ul>
+  <li><b>ANALOG</b> et <b>DRIVE</b> (character) : plus une bande pousse, plus elle colore, chacune à sa façon. ANALOG coupé, le réseau reste parfaitement propre.</li>
+  <li><b>XFORMER</b> (0 – 100 %) : les transformateurs d’entrée et de sortie. Ils épaississent et saturent surtout le grave, quand on les pousse.</li>
+</ul>
+
+<h2 id="ec-ecoute">5. Écoute et image</h2>
+<ul>
+  <li><b>SOLO M / SOLO S</b> : écoute le centre ou les côtés seuls.</li>
+  <li><b>DELTA</b> : n’entend que ce qu’ECLIPSE ajoute ou retire.</li>
+  <li><b>MONO</b> : contrôle la compatibilité mono.</li>
+  <li><b>WIDTH</b> (0 – 200 %) : la largeur de l’image, sur les côtés.</li>
+  <li><b>AUTO GAIN</b> : compense le volume (pondération K) pour juger l’égalisation à niveau égal.</li>
+</ul>
+
+<h2 id="ec-reglages">Tous les réglages</h2>
+<div class="table"><table>
+  <tr><th>Réglage</th><th>Plage</th><th>Ce qu’il fait</th></tr>
+  <tr><td>LOW FREQ</td><td>20 – 400 Hz</td><td>La fréquence du plateau grave.</td></tr>
+  <tr><td>LOW BOOST · ATTEN</td><td>0 – 12 dB</td><td>Monter et baisser le grave, ensemble si on veut.</td></tr>
+  <tr><td>MID</td><td>±12 dB, 150 Hz – 8 kHz</td><td>La cloche des médiums.</td></tr>
+  <tr><td>CONTOUR</td><td>±10 dB, 200 Hz – 6 kHz</td><td>Creuse le centre et relève les flancs, ou l’inverse.</td></tr>
+  <tr><td>HIGH FREQ</td><td>1,5 – 24 kHz</td><td>La fréquence du plateau aigu.</td></tr>
+  <tr><td>HIGH BOOST · ATTEN</td><td>0 – 12 dB</td><td>Monter et baisser l’aigu.</td></tr>
+  <tr><td>BANDWIDTH</td><td>par bande</td><td>La largeur de LOW, MID, CONTOUR et HIGH.</td></tr>
+  <tr><td>HPF · LPF</td><td>10 – 400 Hz · 3 – 30 kHz</td><td>Plateaux de −24 dB, sans résonance.</td></tr>
+  <tr><td>M/S LINK</td><td>LINKED · OFFSET</td><td>Centre et côtés identiques, ou décalés.</td></tr>
+  <tr><td>OFFSET TO</td><td>SIDE · MID · SPLIT</td><td>Où va l’offset.</td></tr>
+  <tr><td>OFFSET</td><td>±12 dB par bande</td><td>Le décalage de chaque bande.</td></tr>
+  <tr><td>ANALOG · DRIVE</td><td>marche · 0 – 100 %</td><td>La couleur des bandes.</td></tr>
+  <tr><td>XFORMER</td><td>0 – 100 %</td><td>Les transformateurs d’entrée et de sortie.</td></tr>
+  <tr><td>WIDTH</td><td>0 – 200 %</td><td>La largeur stéréo.</td></tr>
+  <tr><td>SOLO · DELTA · MONO</td><td>écoute</td><td>Contrôles d’écoute.</td></tr>
+  <tr><td>INPUT · OUTPUT</td><td>±18 dB</td><td>Niveaux, AUTO GAIN en option.</td></tr>
+</table></div>
+
+<h2 id="ec-conseils">Conseils</h2>
+<div class="tip"><p><b>Le tour du bas</b> : LOW à 60 Hz, BOOST à 4 et ATTEN à 2. Le sub prend du poids, le bas-médium boueux se creuse juste au-dessus.</p></div>
+<div class="tip"><p><b>Un mix plus grand</b> : HIGH BOOST à 12 kHz, puis OFFSET SIDE positif sur HIGH et négatif sur LOW. L’air s’ouvre sur les côtés, le grave reste au centre.</p></div>
+<div class="tip"><p><b>Juge à niveau égal</b> avec AUTO GAIN, et vérifie en MONO de temps en temps.</p></div>
