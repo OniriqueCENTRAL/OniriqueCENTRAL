@@ -3,20 +3,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import http from 'node:http';
-
-// L'API des communes simulée : une commune (Ornans, 25434) et la recherche.
-const ORNANS = { nom: 'Ornans', code: '25434', centre: { type: 'Point', coordinates: [6.14, 47.1] }, departement: { code: '25', nom: 'Doubs' } };
-const geo = http.createServer((req, res) => {
-  res.setHeader('Content-Type', 'application/json');
-  if (req.url.startsWith('/communes/25434')) return res.end(JSON.stringify(ORNANS));
-  if (req.url.startsWith('/communes?')) return res.end(JSON.stringify([ORNANS, { ...ORNANS, nom: 'Lyon', code: '69123' }]));
-  res.statusCode = 404; res.end('{}');
-}).listen(0);
 
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'onirique-central-profiles-'));
 Object.assign(process.env, { DATA_DIR: dataDir, PAYMENTS_MODE: 'demo', PORT: '0', ADMIN_EMAIL: '', ADMIN_PASSWORD: '', SMTP_HOST: 'test',
-  MAIL_FROM: 'support@test.local', SITE_URL: 'https://site.test', PUBLIC_URL: 'https://site.test', FOUNDER_EMAILS: '', GEO_API: `http://127.0.0.1:${geo.address().port}` });
+  MAIL_FROM: 'support@test.local', SITE_URL: 'https://site.test', PUBLIC_URL: 'https://site.test', FOUNDER_EMAILS: '' });
 // KLIPY simulé (recherche de GIF) : la recherche, et le fichier d'un GIF sur son hôte de fichiers.
 process.env.KLIPY_API_KEY = 'cle-klipy';
 process.env.KLIPY_API = 'https://api.klipy.com';
@@ -123,15 +113,21 @@ try {
     // Seuls les lieux où quelqu'un est recensé : Lyon, pas Montréal.
     assert.deepEqual(map.cities.map((c) => c.id), ['lyon']);
     assert.ok(map.roles.includes('Ingé son'));
-    // Une commune (village) : vérifiée auprès de l'API, gardée avec son nom et sa position ; une commune inventée est refusée.
+    // Une commune (village) : prise dans la liste de toutes les communes de France, gardée avec son nom et sa position ; une commune inventée est refusée.
     await call('PUT', '/api/me/profile/page', { token: b.token, body: { handle: 'lou', city: 'fr-25434' } });
-    assert.deepEqual((await call('GET', '/api/profiles/lou')).city, { id: 'fr-25434', name: 'Ornans', country: 'France', lon: 6.14, lat: 47.1, far: false, detail: 'Doubs (25)' });
+    assert.deepEqual((await call('GET', '/api/profiles/lou')).city, { id: 'fr-25434', name: 'Ornans', country: 'France', lon: 6.1534, lat: 47.1, far: false, detail: 'Doubs (25)' });
     assert.deepEqual((await call('GET', '/api/members/map')).cities.map((c) => c.id).sort(), ['fr-25434', 'lyon']);
     await call('PUT', '/api/me/profile/page', { token: b.token, body: { handle: 'lou', city: 'fr-99999' } });
     assert.equal((await call('GET', '/api/profiles/lou')).city, null);
     // La recherche : la ville de la liste d'abord, la commune homonyme n'est pas proposée deux fois.
-    assert.deepEqual((await call('GET', '/api/places?q=ly')).map((c) => c.id), ['lyon', 'fr-25434']);
-    // La Belgique : toutes ses localités, sans appel à l'API française ; Liège n'est proposée qu'une fois.
+    const ly = (await call('GET', '/api/places?q=ly')).map((c) => c.id);
+    assert.equal(ly[0], 'lyon');
+    assert.ok(!ly.includes('fr-69123'));
+    // Sans accent ni tiret, avec « st » ; et un nom contenu (« seyne » → La Seyne-sur-Mer).
+    assert.equal((await call('GET', '/api/places?q=frejus'))[0].name, 'Fréjus');
+    assert.equal((await call('GET', '/api/places?q=st%20raphael'))[0].name, 'Saint-Raphaël');
+    assert.ok((await call('GET', '/api/places?q=seyne')).some((c) => c.name === 'La Seyne-sur-Mer'));
+    // La Belgique : toutes ses localités ; Liège n'est proposée qu'une fois.
     const wavre = (await call('GET', '/api/places?q=wavre')).map((c) => c.id);
     assert.equal(wavre[0], 'be-1300-23'); // le nom exact passe devant les communes de France
     assert.ok(wavre.includes('be-5580-1374'));
@@ -212,7 +208,6 @@ try {
   console.log(`\n${passed} étapes réussies.`);
 } finally {
   server.close();
-  geo.close();
   db.close();
   try { fs.rmSync(dataDir, { recursive: true, force: true }); } catch {}
 }

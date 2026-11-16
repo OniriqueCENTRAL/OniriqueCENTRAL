@@ -46,37 +46,38 @@ export const CITY = new Map(CITIES.map((c) => [c.id, c]));
 export const CV_ROLES = ['Artiste', 'Chanteur·se', 'Rappeur·se', 'Beatmaker', 'Compositeur·rice', 'Ingé son', 'Mix', 'Master', 'Musicien·ne',
   'DJ', 'Topliner', 'Graphiste', 'Clippeur·se', 'Photographe', 'Monteur·se', 'Manager', 'Label', 'Studio'];
 
-// Toutes les communes de France (villes et villages), d'après l'API officielle geo.api.gouv.fr : leur identifiant est
-// « fr-<code INSEE> ». La liste ci-dessus garde la Belgique, la Suisse, le Luxembourg et la francophonie.
-const fold = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-const commune = (c) => {
-  const [lon, lat] = c.centre?.coordinates || [];
-  if (!Number.isFinite(lon) || !Number.isFinite(lat)) return null;
-  const overseas = String(c.code).startsWith('97');
-  return { id: `fr-${c.code}`, name: c.nom, country: overseas ? c.departement?.nom || 'Outre-mer' : 'France', lon, lat, far: overseas,
-    detail: c.departement ? `${c.departement.nom} (${c.departement.code})` : '' };
-};
+// « Saint-Raphaël », « st raphael » et « saint raphael » se rejoignent.
+const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[-'’]/g, ' ')
+  .replace(/\s+/g, ' ').trim().replace(/^st(e?) /, 'saint$1 ');
+// Toutes les communes de France (villes et villages), d'après l'API officielle geo.api.gouv.fr, copiées dans france.json
+// (l'API répond parfois en plus de 6 s depuis le VPS, et la recherche revenait vide). Les plus peuplées d'abord.
+// Leur identifiant est « fr-<code INSEE> ». [code INSEE, nom, longitude, latitude, code département, population]
+const FR_DATA = JSON.parse(readFileSync(new URL('./france.json', import.meta.url), 'utf8'));
+const FR = FR_DATA.communes.map(([code, name, lon, lat, dep]) => {
+  const overseas = code.startsWith('97'), depName = FR_DATA.deps[dep] || '';
+  return { id: `fr-${code}`, name, country: overseas ? depName || 'Outre-mer' : 'France', lon, lat, far: overseas, detail: depName ? `${depName} (${dep})` : '', key: fold(name) };
+});
+const FR_BY_ID = new Map(FR.map((c) => [c.id, c]));
+const place = ({ key, ...c }) => c;
 // Toutes les localités de Belgique (une par nom, avec son code postal), d'après zipcode-belgium (jief, GitHub) :
 // leur identifiant est « be-<code postal>-<rang> ». [code postal, nom, longitude, latitude]
 const BE = JSON.parse(readFileSync(new URL('./belgique.json', import.meta.url), 'utf8'))
   .map(([zip, name, lon, lat], i) => ({ id: `be-${zip}-${i}`, name, country: 'Belgique', lon, lat, far: false, detail: `Belgique (${zip})` }));
 const BE_BY_ID = new Map(BE.map((c) => [c.id, c]));
 
-/** Une commune par son identifiant « fr-<INSEE> », vérifiée auprès de l'API officielle (ou « be-… », dans la liste belge) ; null si elle n'existe pas. */
-export async function communeById(id, geoApi) {
-  if (String(id).startsWith('be-')) return BE_BY_ID.get(id) || null;
-  const code = /^fr-([0-9][0-9AB][0-9]{3})$/.exec(String(id || ''))?.[1];
-  if (!code) return null;
-  const r = await fetch(`${geoApi}/communes/${code}?fields=nom,code,centre,departement`, { signal: AbortSignal.timeout(6000) }).catch(() => null);
-  return r?.ok ? commune(await r.json()) : null;
+/** Une commune par son identifiant « fr-<INSEE> » ou « be-… » ; null si elle n'existe pas. */
+export function communeById(id) {
+  const c = FR_BY_ID.get(String(id)) || BE_BY_ID.get(String(id));
+  return c ? place(c) : null;
 }
 /** La recherche d'un lieu : les villes de la liste qui correspondent, puis les communes de France (les plus peuplées d'abord). */
-export async function searchPlaces(q, geoApi) {
+export function searchPlaces(q) {
   const needle = fold(q);
   if (needle.length < 2) return [];
   const listed = CITIES.filter((c) => fold(c.name).startsWith(needle)).slice(0, 5);
-  const r = await fetch(`${geoApi}/communes?nom=${encodeURIComponent(q)}&fields=nom,code,centre,departement&boost=population&limit=10`, { signal: AbortSignal.timeout(6000) }).catch(() => null);
-  const found = r?.ok ? (await r.json()).map(commune).filter(Boolean) : [];
+  // D'abord les noms qui commencent par ce qu'on tape, puis ceux qui le contiennent (« seyne » → La Seyne-sur-Mer).
+  const starts = FR.filter((c) => c.key.startsWith(needle)).slice(0, 10);
+  const found = (starts.length < 10 ? [...starts, ...FR.filter((c) => !c.key.startsWith(needle) && c.key.includes(' ' + needle)).slice(0, 10 - starts.length)] : starts).map(place);
   const belgian = BE.filter((c) => fold(c.name).startsWith(needle)).slice(0, 10);
   // Une grande ville déjà dans la liste (Paris, Liège…) n'est pas proposée deux fois.
   const known = new Set(listed.filter((c) => c.country === 'France' || c.country === 'Belgique').map((c) => c.country + fold(c.name)));

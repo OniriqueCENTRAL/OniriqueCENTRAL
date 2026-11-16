@@ -181,7 +181,7 @@ export function mountProfiles(app, { requireUser, receiveImage, receiveFile, rem
     // Le lieu : une ville de la liste, une localité de Belgique ou une commune de France vérifiée auprès de l'API officielle (gardée si elle ne change pas).
     const wanted = String(req.body?.city || '');
     const before = get('SELECT city, place FROM user_profiles WHERE user_id = ?', req.user.id);
-    const place = CITY.get(wanted) || (before?.city === wanted && before.place ? JSON.parse(before.place) : await communeById(wanted, config.geoApi));
+    const place = CITY.get(wanted) || (before?.city === wanted && before.place ? JSON.parse(before.place) : communeById(wanted));
     const city = place ? wanted : '';
     const roles = Array.isArray(req.body?.cv?.roles) ? [...new Set(req.body.cv.roles.filter((r) => CV_ROLES.includes(r)))].slice(0, 6) : [];
     const cv = JSON.stringify({ roles, skills: clean(req.body?.cv?.skills, 300), open: !!req.body?.cv?.open, showLinks: !!req.body?.cv?.showLinks });
@@ -390,7 +390,7 @@ export function mountProfiles(app, { requireUser, receiveImage, receiveFile, rem
   // Chercher son lieu (page de profil) : les villes de la liste et toutes les communes de France.
   app.get('/api/places', wrap(async (req, res) => {
     rateLimit(`places:${req.ip}`, 300, 3600_000);
-    res.set('Cache-Control', 'public, max-age=3600').json(await searchPlaces(String(req.query.q || '').slice(0, 60), config.geoApi));
+    res.set('Cache-Control', 'public, max-age=3600').json(searchPlaces(String(req.query.q || '').slice(0, 60)));
   }));
 
   // Le petit logo d'un site, pour les boutons de liens des pages : demandé une fois par le serveur (le visiteur ne
