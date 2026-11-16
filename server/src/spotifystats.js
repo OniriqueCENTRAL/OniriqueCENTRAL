@@ -1,7 +1,7 @@
 // Les chiffres Spotify d'un artiste (auditeurs mensuels, abonnés, titres les plus écoutés, villes), montrés sur sa page
 // de profil et sur la carte des membres. Spotify ne donne pas ces chiffres aux applications : ils sont lus chez CaptAPI
 // (clé CAPTAPI_KEY, posée sur le VPS par onirique-captapi), qui facture chaque lecture. Pour borner la facture : réservé
-// à l'équipe (isStaff), et une lecture par jour au plus par artiste ; entre deux, la base garde la dernière.
+// aux fondateurs, et une lecture par jour au plus par artiste ; entre deux, la base garde la dernière.
 import { db, get, run, now } from './db.js';
 import { HttpError } from './auth.js';
 import { config } from './config.js';
@@ -14,6 +14,8 @@ db.exec(`CREATE TABLE IF NOT EXISTS spotify_artists (
 )`);
 
 const DAY = 24 * 3600_000;
+/** Seuls les fondateurs lient leur profil d'artiste, et seuls les leurs s'affichent (un ancien fondateur n'est plus relu). */
+export const spotifyAllowed = (user) => user?.role === 'founder';
 const ID = /^[A-Za-z0-9]{22}$/;
 /** L'identifiant d'un artiste, lu dans son lien (open.spotify.com/…/artist/…), son URI ou l'identifiant seul ; '' si rien de tel. */
 export function artistIdOf(value) {
@@ -71,7 +73,7 @@ export function spotifyOf(userId) {
   return { url: `https://open.spotify.com/artist/${row.artist_id}`, stats };
 }
 
-/** Lier (ou délier, lien vide) le profil d'artiste Spotify d'un membre de l'équipe ; un nouvel artiste est lu tout de suite. */
+/** Lier (ou délier, lien vide) le profil d'artiste Spotify d'un fondateur ; un nouvel artiste est lu tout de suite. */
 export async function setSpotifyArtist(userId, value) {
   if (!String(value || '').trim()) { run('DELETE FROM spotify_artists WHERE user_id = ?', userId); return; }
   const id = artistIdOf(value);

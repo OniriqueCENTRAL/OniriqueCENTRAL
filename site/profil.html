@@ -111,7 +111,7 @@ input[type="checkbox"] { min-height: 0; width: 18px; height: 18px; accent-color:
 .sp-list img { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; flex: none; }
 .sp-list a, .sp-list span.t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: none; }
 .sp-list a:hover { color: color-mix(in srgb, var(--ember) 55%, #fff); }
-.sp-list small { font: 500 12px var(--f-mono); color: var(--haze); font-variant-numeric: tabular-nums; flex: none; }
+.sp-list small { font: 500 12px var(--f-mono); color: color-mix(in srgb, var(--mist) 72%, transparent); font-variant-numeric: tabular-nums; flex: none; }
 .reply-form input { flex: 1; min-height: 40px; font-size: 14px; }
 dialog { width: min(440px, calc(100vw - 32px)); max-height: 80vh; padding: 0; border: 1px solid var(--line); color: var(--mist); }
 dialog header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: none; backdrop-filter: none; }
@@ -161,6 +161,13 @@ body.glass #view .avatar { border-color: rgba(255,255,255,.35); }
 body.centered #view .head { flex-direction: column; align-items: center; text-align: center; }
 body.centered #view .who, body.centered #view .actions { padding-top: 0; }
 body.centered #view .name-row, body.centered #view .counts, body.centered #view .actions, body.centered #view .links { justify-content: center; }
+/* Assez de place à gauche de la page : les chiffres Spotify y restent, collés en haut pendant qu'on descend. */
+@media (min-width: 1540px) {
+  #view { position: relative; }
+  #view .side { position: absolute; top: 0; bottom: 0; right: calc(100% + 32px); width: min(340px, calc((100vw - 840px) / 2 - 72px)); }
+  #view .side #spotify { position: sticky; top: 24px; margin-top: 0; max-height: calc(100vh - 48px); overflow-y: auto; }
+  .sp-nums { grid-template-columns: 1fr 1fr; }
+}
 /* L'arrivée sur la page : les blocs montent l'un après l'autre. */
 #view.enter > * { animation: rise .6s cubic-bezier(.2,.7,.2,1) both; }
 #view.enter > :nth-child(2) { animation-delay: .08s; } #view.enter > :nth-child(3) { animation-delay: .16s; } #view.enter > :nth-child(n+4) { animation-delay: .24s; }
@@ -209,8 +216,9 @@ dialog.gifs { width: min(720px, calc(100vw - 24px)); max-height: 86vh; }
       </div>
       <div class="actions" id="actions"></div>
     </div>
-    <div class="block" data-block="bio"><div class="panel" id="bio-panel"><span class="eyebrow">À propos</span><p class="bio" id="bio"></p><div class="links" id="links"></div></div>
-      <div class="panel" id="spotify" hidden></div></div>
+    <!-- Les chiffres Spotify (fondateurs) : sous l’en-tête, ou dans une colonne à gauche sur un grand écran. -->
+    <aside class="side"><div class="panel" id="spotify" hidden></div></aside>
+    <div class="block" data-block="bio"><div class="panel" id="bio-panel"><span class="eyebrow">À propos</span><p class="bio" id="bio"></p><div class="links" id="links"></div></div></div>
     <div class="block" data-block="cv"><div class="panel cv" id="cv-panel" hidden><span class="eyebrow">CV numérique</span><div id="cv"></div></div></div>
     <div class="block" data-block="tabs">
     <div class="tabs" role="tablist"><button type="button" class="on" data-tab="playlists">Playlists</button><button type="button" data-tab="packs" id="packs-tab" hidden>Packs <span id="pk-count"></span></button><button type="button" data-tab="vitrine" id="vitrine-tab" hidden>Vitrine <span id="vt-count"></span></button><button type="button" data-tab="comments">Commentaires <span id="c-count"></span></button></div>

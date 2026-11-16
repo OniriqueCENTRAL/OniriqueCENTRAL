@@ -18,7 +18,7 @@
 
 ## Chiffres Spotify des profils (CaptAPI)
 - Ce sont des chiffres **publics** (auditeurs mensuels, abonnés, écoutes des titres du top, villes), pas ceux de
-  Spotify for Artists, qui n'a pas d'API. Réservé à l'équipe (admin, fondateurs) : chaque lecture coûte un crédit
+  Spotify for Artists, qui n'a pas d'API. Réservé aux fondateurs (rôle `founder`) : chaque lecture coûte un crédit
   CaptAPI, une par jour au plus par artiste (`server/src/spotifystats.js`). Clé posée par `onirique-captapi`.
 
 ## Application CENTRAL et navigateur

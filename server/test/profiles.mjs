@@ -152,12 +152,14 @@ try {
     assert.match((await call('GET', '/api/profiles/nov.music')).linkPage, /\/l\/nov$/);
     assert.match((await call('GET', '/api/members/map')).members[0].linkPage, /\/l\/nov$/);
   });
-  await step('chiffres Spotify (CaptAPI) : réservés à l’équipe, sur la page et la carte, relus une fois par jour', async () => {
+  await step('chiffres Spotify (CaptAPI) : réservés aux fondateurs, sur la page et la carte, relus une fois par jour', async () => {
     const ARTIST = '06HL4z0CvFAxyc27GXpf02';
     await call('PUT', '/api/me/profile/page', { token: a.token, body: { handle: 'nov.music', city: 'lyon', spotify: `https://open.spotify.com/artist/${ARTIST}` } });
     assert.equal((await call('GET', '/api/me/profile/page', { token: a.token })).spotifyAllowed, false);
-    assert.equal((await call('GET', '/api/profiles/nov.music')).spotify, null); // pas de l'équipe : ignoré
+    assert.equal((await call('GET', '/api/profiles/nov.music')).spotify, null); // pas fondateur : ignoré
     run('UPDATE users SET role = ? WHERE id = ?', 'admin', a.id);
+    assert.equal((await call('GET', '/api/me/profile/page', { token: a.token })).spotifyAllowed, false); // un admin non plus
+    run('UPDATE users SET role = ? WHERE id = ?', 'founder', a.id);
     await call('PUT', '/api/me/profile/page', { token: a.token, body: { handle: 'nov.music', city: 'lyon', spotify: 'https://example.com/artist/x' }, expect: 400 });
     await call('PUT', '/api/me/profile/page', { token: a.token, body: { handle: 'nov.music', city: 'lyon', spotify: `https://open.spotify.com/intl-fr/artist/${ARTIST}?si=abc` } });
     assert.deepEqual(captapiCalls.map((u) => new URL(u).searchParams.get('url')), [`spotify:artist:${ARTIST}`]);
@@ -168,6 +170,10 @@ try {
       ['Nov', 12345, 678, null, [{ name: 'Nuit', plays: 9000, image: 'https://i.scdn.co/image/ab', url: 'https://open.spotify.com/track/1' }, { name: 'Ailleurs', plays: null, image: null, url: null }],
         [{ city: 'Lyon', country: 'FR', listeners: 321 }]]);
     assert.deepEqual((await call('GET', '/api/members/map')).members[0].spotify, { monthlyListeners: 12345, followers: 678 });
+    // Plus fondateur : ses chiffres ne s'affichent plus.
+    run('UPDATE users SET role = ? WHERE id = ?', 'admin', a.id);
+    assert.equal((await call('GET', '/api/profiles/nov.music')).spotify, null);
+    run('UPDATE users SET role = ? WHERE id = ?', 'founder', a.id);
     // Le même lien ne relit pas ; des chiffres de plus d'un jour sont relus en fond.
     await call('PUT', '/api/me/profile/page', { token: a.token, body: { handle: 'nov.music', city: 'lyon', spotify: ARTIST } });
     assert.equal(captapiCalls.length, 1);

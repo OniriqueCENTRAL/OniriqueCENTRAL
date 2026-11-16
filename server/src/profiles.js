@@ -2,8 +2,8 @@
 // nom d'adresse, une bio, une couleur et une bannière ; on s'y abonne (follow), on y laisse un commentaire, et on
 // écrit en privé à son auteur (messages.html). Un compte sans page de profil ne reçoit pas de message.
 import { db, get, all, run, now, transaction } from './db.js';
-import { HttpError, rateLimit, optionalUser, isStaff } from './auth.js';
-import { spotifyOf, setSpotifyArtist } from './spotifystats.js';
+import { HttpError, rateLimit, optionalUser } from './auth.js';
+import { spotifyOf, setSpotifyArtist, spotifyAllowed } from './spotifystats.js';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -168,8 +168,8 @@ export function mountProfiles(app, { requireUser, receiveImage, receiveFile, rem
   app.get('/api/me/profile/page', requireUser, (req, res) => {
     const p = get('SELECT * FROM user_profiles WHERE user_id = ?', req.user.id);
     res.set('Cache-Control', 'no-store').json(p ? { handle: p.handle, bio: p.bio, color: p.color, banner: media(p.banner), comments: !!p.comments, links: linksOf(p.links), city: p.city || '', place: placeOf(p), cv: cvOf(p.cv), look: lookOf(p.look), gifSearch: !!config.klipyKey, linkPage: p ? linkPageOf(req.user.id) : null,
-      // Ses chiffres Spotify : seule l'équipe peut lier son profil d'artiste (chaque lecture est facturée).
-      spotifyAllowed: isStaff(req.user), spotifyUrl: spotifyOf(req.user.id)?.url || '',
+      // Ses chiffres Spotify : seuls les fondateurs lient leur profil d'artiste (chaque lecture est facturée).
+      spotifyAllowed: spotifyAllowed(req.user), spotifyUrl: spotifyOf(req.user.id)?.url || '',
       // Ses packs qui ont un lien d'écoute ouvert, et ceux qu'il a choisi de montrer.
       packs: publicPlaylists(req.user.id, { kind: 'pack', where: 'p.user_id = ?', params: [req.user.id], limit: 60 }).map((x) => ({ id: x.id, title: x.title, shown: !!get('SELECT on_profile FROM sound_projects WHERE id = ?', x.id).on_profile })) } : null);
   });
@@ -205,7 +205,7 @@ export function mountProfiles(app, { requireUser, receiveImage, receiveFile, rem
         for (const id of ids) run(`UPDATE sound_projects SET on_profile = 1 WHERE id = ? AND user_id = ? AND kind = 'pack'`, id, req.user.id);
       });
     }
-    if (typeof req.body?.spotify === 'string' && isStaff(req.user)) await setSpotifyArtist(req.user.id, req.body.spotify);
+    if (typeof req.body?.spotify === 'string' && spotifyAllowed(req.user)) await setSpotifyArtist(req.user.id, req.body.spotify);
     mapCache = null;
     res.json({ handle });
   }));
@@ -303,7 +303,7 @@ export function mountProfiles(app, { requireUser, receiveImage, receiveFile, rem
       handle: p.handle, name: p.name || 'Membre', avatar: media(p.avatar), bio: p.bio, color: p.color, banner: media(p.banner), commentsOpen: !!p.comments,
       links: linksOf(p.links), since: p.created_at, role: p.role || null, city: placeOf(p), cv: cvOf(p.cv), look: lookOf(p.look),
       linkPage: cvOf(p.cv).showLinks ? linkPageOf(p.user_id) : null,
-      spotify: spotifyOf(p.user_id),
+      spotify: spotifyAllowed(p) ? spotifyOf(p.user_id) : null,
       playlists: publicPlaylists(viewer?.id, { where: 'p.user_id = ?', params: [p.user_id], limit: 60 }),
       packs: publicPlaylists(viewer?.id, { kind: 'pack', where: 'p.user_id = ? AND p.on_profile = 1', params: [p.user_id], limit: 60 }),
       followers: count('SELECT COUNT(*) AS n FROM user_follows WHERE followed_id = ?', p.user_id),
@@ -384,7 +384,7 @@ export function mountProfiles(app, { requireUser, receiveImage, receiveFile, rem
       if (lists.get(x.ownerHandle).length < 3) lists.get(x.ownerHandle).push({ title: x.title, cover: x.cover, tracks: x.tracks, url: x.url });
     }
     const list = members.map((m) => {
-      const cv = cvOf(m.cv), s = spotifyOf(m.user_id)?.stats;
+      const cv = cvOf(m.cv), s = spotifyAllowed(m) ? spotifyOf(m.user_id)?.stats : null;
       return { spotify: s ? { monthlyListeners: s.monthlyListeners, followers: s.followers } : null, handle: m.handle, name: m.name || 'Membre', avatar: media(m.avatar), role: m.role, color: m.color, city: m.city, cv: { roles: cv.roles, skills: cv.skills, open: cv.open },
         followers: m.followers, playlists: lists.get(m.handle) || [], linkPage: cv.showLinks && m.link_handle ? `${config.linksUrl}/${m.link_handle}` : null };
     });
