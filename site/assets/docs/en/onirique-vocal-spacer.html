@@ -1,0 +1,83 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#vs-vue">Overview</a></li>
+  <li><a href="#vs-space">SPACE</a></li>
+  <li><a href="#vs-pocket">VOCAL POCKET</a></li>
+  <li><a href="#vs-restore">RESTORE</a></li>
+  <li><a href="#vs-sidechain">Connecting the vocal</a></li>
+  <li><a href="#vs-reglages">All the controls</a></li>
+  <li><a href="#vs-conseils">Tips</a></li>
+</ul>
+
+<h2 id="vs-vue">Overview</h2>
+<p>ONIRIQUE VOCAL SPACER <b>adapts a finished instrumental to make room for the vocal</b>. Put it on the beat, send the vocal to its sidechain input, and it carves into the instrumental exactly where the vocal needs space, only while it sings. No latency.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 981 160" role="img" aria-label="VOCAL SPACER signal path: INPUT, SPACE, VOCAL POCKET, RESTORE, AUTO GAIN, OUTPUT"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">INPUT</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="114" height="46" rx="6"/><text x="127" y="68" text-anchor="middle">INPUT</text><rect class="b" x="214" y="40" width="114" height="46" rx="6"/><text x="271" y="59" text-anchor="middle">SPACE</text><text x="271" y="75" text-anchor="middle" class="t2">Mid / Side</text><path class="w" d="M184 63 H214" marker-end="url(#doc-arr)"/><rect class="ba" x="358" y="40" width="114" height="46" rx="6"/><text x="415" y="59" text-anchor="middle" class="tb">VOCAL POCKET</text><text x="415" y="75" text-anchor="middle" class="t2">20-band EQ</text><path class="w" d="M328 63 H358" marker-end="url(#doc-arr)"/><rect class="b" x="502" y="40" width="114" height="46" rx="6"/><text x="559" y="59" text-anchor="middle">RESTORE</text><text x="559" y="75" text-anchor="middle" class="t2">kick · mids</text><path class="w" d="M472 63 H502" marker-end="url(#doc-arr)"/><rect class="b" x="646" y="40" width="114" height="46" rx="6"/><text x="703" y="68" text-anchor="middle">AUTO GAIN</text><path class="w" d="M616 63 H646" marker-end="url(#doc-arr)"/><rect class="b" x="790" y="40" width="114" height="46" rx="6"/><text x="847" y="68" text-anchor="middle">OUTPUT</text><path class="w" d="M760 63 H790" marker-end="url(#doc-arr)"/><path class="w" d="M904 63 H944"/><circle class="w" cx="950" cy="63" r="6"/><text x="950" y="91" text-anchor="middle" class="t2">OUTPUT</text></svg>
+  </div>
+  <figcaption>The instrumental goes through three modules, each with its own power button. The vocal, on the sidechain, drives VOCAL POCKET.</figcaption>
+</figure>
+
+<h2 id="vs-space">1. SPACE</h2>
+<p>The stereo image module, in Mid / Side:</p>
+<ul>
+  <li><b>WIDTH</b> (0 – 200 %): stereo width, 100 % = neutral.</li>
+  <li><b>LOW FOCUS</b>: brings the lows (below about 160 Hz) to the centre, in mono. The low end is more solid and leaves the centre clean.</li>
+  <li><b>SIDE DETAIL</b>: brightness on the sides only (shelf up to +6 dB from 3 kHz).</li>
+</ul>
+
+<h2 id="vs-pocket">2. VOCAL POCKET</h2>
+<p>A <b>20-band</b> dynamic equalizer, from 100 Hz to 12 kHz, driven by the vocal. A band is only carved if <b>the vocal is present there</b> and <b>the instrumental masks it</b>, and only while the vocal plays.</p>
+<ul>
+  <li><b>SIDECHAIN / STATIC</b>: without sidechain, STATIC carves a fixed pocket shaped like an average vocal spectrum (body around 330 Hz, presence around 2.5 kHz).</li>
+  <li><b>MID / STEREO</b>: carve only the centre (default) or the whole image.</li>
+  <li><b>FAST / NORMAL / SMOOTH</b>: pocket speed (opening 15 / 30 / 60 ms, hold between syllables 120 / 250 / 450 ms, closing 250 / 500 / 900 ms). It follows phrases, not syllables or drums: no pumping.</li>
+  <li><b>DEPTH</b> (0 to −12 dB), <b>SENSITIVITY</b>, <b>RANGE LO / HI</b> (also with the mouse in the display).</li>
+  <li><b>LISTEN</b>: hear only what the pocket removes.</li>
+</ul>
+<p>The display shows the beat’s spectrum before and after, the vocal (in pink) and the exact pocket curve.</p>
+
+<h2 id="vs-restore">3. RESTORE</h2>
+<ul>
+  <li><b>KICK FOCUS</b>: boosts only the kick’s attacks (62 Hz and the click around 3.2 kHz), up to +7 dB.</li>
+  <li><b>MID ENERGY</b>: parallel compression from 400 Hz to 3.5 kHz, bringing energy back to the mids. In the centre, it steps back while the pocket works.</li>
+</ul>
+
+<h2 id="vs-sidechain">4. Connecting the vocal</h2>
+<p>Insert the plugin on the instrumental track (or bus), then send the vocal track to its sidechain input:</p>
+<ul>
+  <li><b>FL Studio</b>: route the vocal track to the plugin’s insert, then pick the input in “Processing”.</li>
+  <li><b>Ableton</b>: the plugin’s “Sidechain” menu.</li>
+  <li><b>Reaper</b>: channels 3 / 4.</li>
+  <li><b>Cubase / Studio One</b>: the plugin’s sidechain button.</li>
+</ul>
+<p>Without sidechain, set VOCAL POCKET to STATIC.</p>
+
+<h2 id="vs-reglages">All the controls</h2>
+<div class="table"><table>
+  <tr><th>Control</th><th>Range</th><th>What it does</th></tr>
+  <tr><td>WIDTH</td><td>0 – 200 %</td><td>Stereo width.</td></tr>
+  <tr><td>LOW FOCUS</td><td>0 – 100 %</td><td>Lows to the centre.</td></tr>
+  <tr><td>SIDE DETAIL</td><td>0 – +6 dB</td><td>Brightness on the sides.</td></tr>
+  <tr><td>SIDECHAIN · STATIC</td><td>mode</td><td>Pocket driven by the vocal, or fixed.</td></tr>
+  <tr><td>MID · STEREO</td><td>mode</td><td>Where the pocket carves.</td></tr>
+  <tr><td>FAST · NORMAL · SMOOTH</td><td>speed</td><td>How fast the pocket reacts.</td></tr>
+  <tr><td>DEPTH</td><td>0 to −12 dB</td><td>Pocket depth.</td></tr>
+  <tr><td>SENSITIVITY</td><td>0 – 100 %</td><td>When the vocal starts carving.</td></tr>
+  <tr><td>RANGE LO · HI</td><td>100 Hz – 12 kHz</td><td>Where the pocket acts.</td></tr>
+  <tr><td>LISTEN</td><td>on / off</td><td>Hear what is removed.</td></tr>
+  <tr><td>KICK FOCUS</td><td>0 – +7 dB</td><td>The kick’s attacks.</td></tr>
+  <tr><td>MID ENERGY</td><td>0 – 100 %</td><td>Parallel compression of the mids.</td></tr>
+  <tr><td>INPUT · OUTPUT</td><td>±24 dB</td><td>Levels, with peak meters.</td></tr>
+  <tr><td>AUTO GAIN</td><td>on / off</td><td>Constant loudness; ignores the pocket.</td></tr>
+</table></div>
+
+<h2 id="vs-conseils">Tips</h2>
+<div class="tip"><p><b>A starting point</b>: SIDECHAIN, MID, NORMAL, DEPTH −6 dB. Listen in LISTEN to hear what goes, then set DEPTH by ear.</p></div>
+<div class="tip"><p><b>A busy beat</b>: LOW FOCUS to clear the centre, a bit of KICK FOCUS so the kick stays up front.</p></div>
+<div class="tip"><p>AUTO GAIN ignores the pocket: the beat never jumps back up when the vocal comes in.</p></div>

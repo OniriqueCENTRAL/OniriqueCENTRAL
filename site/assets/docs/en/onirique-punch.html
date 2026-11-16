@@ -1,0 +1,68 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#pu-vue">Overview</a></li>
+  <li><a href="#pu-bandes">The bands</a></li>
+  <li><a href="#pu-attaque">ATTACK and SUSTAIN</a></li>
+  <li><a href="#pu-image">Image and output</a></li>
+  <li><a href="#pu-reglages">All the controls</a></li>
+  <li><a href="#pu-conseils">Tips</a></li>
+</ul>
+
+<h2 id="pu-vue">Overview</h2>
+<p>ONIRIQUE PUNCH is a <b>multiband transient shaper</b>. It separates a sound’s attack from its body, and sets each one on its own: more snap, less tail, or the opposite. The sound can be split into one, two or three bands, each with its own settings.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 1033 200" role="img" aria-label="PUNCH signal path: input gain, band split, attack and sustain per band, recombination, image, mix, output"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">INPUT</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="112" height="46" rx="6"/><text x="126" y="68" text-anchor="middle">IN</text><rect class="b" x="212" y="40" width="112" height="46" rx="6"/><text x="268" y="59" text-anchor="middle">BANDS</text><text x="268" y="75" text-anchor="middle" class="t2">1, 2 or 3</text><path class="w" d="M182 63 H212" marker-end="url(#doc-arr)"/><rect class="ba" x="354" y="40" width="112" height="46" rx="6"/><text x="410" y="59" text-anchor="middle" class="tb">ATTACK</text><text x="410" y="75" text-anchor="middle" class="t2">per band</text><path class="w" d="M324 63 H354" marker-end="url(#doc-arr)"/><rect class="ba" x="496" y="40" width="112" height="46" rx="6"/><text x="552" y="59" text-anchor="middle" class="tb">SUSTAIN</text><text x="552" y="75" text-anchor="middle" class="t2">per band</text><path class="w" d="M466 63 H496" marker-end="url(#doc-arr)"/><rect class="b" x="638" y="40" width="112" height="46" rx="6"/><text x="694" y="59" text-anchor="middle">IMAGE</text><text x="694" y="75" text-anchor="middle" class="t2">PAN · WIDTH</text><path class="w" d="M608 63 H638" marker-end="url(#doc-arr)"/><rect class="b" x="780" y="40" width="112" height="46" rx="6"/><text x="836" y="68" text-anchor="middle">OUT</text><path class="w" d="M750 63 H780" marker-end="url(#doc-arr)"/><path class="w" d="M892 63 H920" marker-end="url(#doc-arr)"/><circle class="ba" cx="938" cy="63" r="18"/><text x="938" y="69" text-anchor="middle" class="tb">+</text><text x="938" y="37" text-anchor="middle" class="t2">MIX</text><circle class="dot" cx="52" cy="63" r="3.5"/><path class="wd" d="M52 63 V178 H938 V81" marker-end="url(#doc-arr)"/><text x="80" y="172" class="t2">the original sound</text><path class="w" d="M956 63 H996"/><circle class="w" cx="1002" cy="63" r="6"/><text x="1002" y="91" text-anchor="middle" class="t2">OUTPUT</text></svg>
+  </div>
+  <figcaption>The sound is split into bands by Linkwitz-Riley filters, which recombine with no dip or bump. In each band, attack and body are set separately.</figcaption>
+</figure>
+
+<h2 id="pu-bandes">1. The bands</h2>
+<ul>
+  <li><b>BANDS</b>: 1, 2 or 3 bands. The crossover frequencies are adjustable (150 Hz and 2.5 kHz to start; with two bands, only the first is used).</li>
+  <li>Each band has its <b>ON</b> and <b>SOLO</b>, to hear it alone.</li>
+  <li>The display shows, for each band, its level and the gain applied over time.</li>
+</ul>
+
+<h2 id="pu-attaque">2. ATTACK and SUSTAIN</h2>
+<p>In each band, two envelopes tell the <b>attack</b> (what rises fast) from the <b>body</b> (what holds), and the <b>tail</b> from the body.</p>
+<ul>
+  <li><b>ATTACK</b> (−100 to +100 %): boosts or softens the attack.</li>
+  <li><b>SUSTAIN</b> (−100 to +100 %): lengthens or shortens the body and tail.</li>
+  <li><b>MODE</b>: SHARP, MEDIUM or SMOOTH, the detection speed.</li>
+</ul>
+<div class="tip"><p>Because detection follows changes rather than levels, the processing acts the same way whatever the sound’s level.</p></div>
+
+<h2 id="pu-image">3. Image and output</h2>
+<ul>
+  <li><b>PAN</b> and <b>WIDTH</b> (−100 to +100): the image’s position and width.</li>
+  <li><b>MONO</b>, <b>PHASE</b> (flips polarity), <b>SWAP</b> (swaps left and right), <b>LINK</b> (detection shared by both channels).</li>
+  <li><b>MIX</b>: processed and original sound. <b>IN</b> and <b>OUT</b>: levels.</li>
+  <li><b>DELTA</b>: hear only what PUNCH adds or removes.</li>
+</ul>
+
+<h2 id="pu-reglages">All the controls</h2>
+<div class="table"><table>
+  <tr><th>Control</th><th>Range</th><th>What it does</th></tr>
+  <tr><td>BANDS</td><td>1 · 2 · 3</td><td>Number of bands.</td></tr>
+  <tr><td>Crossovers</td><td>in Hz</td><td>Where the bands split.</td></tr>
+  <tr><td>ATTACK</td><td>−100 to +100 %</td><td>The attack, per band.</td></tr>
+  <tr><td>SUSTAIN</td><td>−100 to +100 %</td><td>Body and tail, per band.</td></tr>
+  <tr><td>MODE</td><td>SHARP · MEDIUM · SMOOTH</td><td>Detection speed, per band.</td></tr>
+  <tr><td>ON · SOLO</td><td>per band</td><td>Mute or solo a band.</td></tr>
+  <tr><td>PAN · WIDTH</td><td>−100 to +100</td><td>Stereo image.</td></tr>
+  <tr><td>MONO · PHASE · SWAP · LINK</td><td>switches</td><td>Stereo utilities.</td></tr>
+  <tr><td>MIX</td><td>0 – 100 %</td><td>Processed and original.</td></tr>
+  <tr><td>IN · OUT</td><td>in dB</td><td>Levels.</td></tr>
+  <tr><td>DELTA</td><td>listening</td><td>What is added or removed.</td></tr>
+</table></div>
+
+<h2 id="pu-conseils">Tips</h2>
+<div class="tip"><p><b>A kick that hits harder</b>: 3 bands, ATTACK +40 % in the high band (the click), SUSTAIN −20 % in the low band to tighten it.</p></div>
+<div class="tip"><p><b>Drums with too much room</b>: negative SUSTAIN on all bands, MEDIUM mode.</p></div>
+<div class="tip"><p><b>A more present vocal</b>: 1 band, ATTACK +20 %, MIX around 60 %.</p></div>

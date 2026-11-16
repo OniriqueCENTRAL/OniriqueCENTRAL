@@ -1,0 +1,69 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#sh-vue">Overview</a></li>
+  <li><a href="#sh-agir">Cut or boost</a></li>
+  <li><a href="#sh-ecran">The display</a></li>
+  <li><a href="#sh-avance">Advanced</a></li>
+  <li><a href="#sh-reglages">All the controls</a></li>
+  <li><a href="#sh-conseils">Tips</a></li>
+</ul>
+
+<h2 id="sh-vue">Overview</h2>
+<p>ONIRIQUE SHAPER is a <b>spectral transient processor</b>: it only cuts or boosts the frequencies that make up the transients, and leaves everything else untouched. Each frequency is compared with its own recent average, in dB: <b>detection doesn’t depend on the input level</b>.</p>
+<p>In practice: soften a snare’s crack without touching its body, or bring out a guitar’s attack, only in the frequencies where it lives.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 1071 200" role="img" aria-label="SHAPER signal path: spectrum analysis, per-frequency transient detection, sensitivity curve, cut or boost, mix"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">INPUT</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="148" height="46" rx="6"/><text x="144" y="59" text-anchor="middle">ANALYSIS</text><text x="144" y="75" text-anchor="middle" class="t2">WINDOW · RESOLUTION</text><rect class="b" x="248" y="40" width="148" height="46" rx="6"/><text x="322" y="59" text-anchor="middle">DETECTION</text><text x="322" y="75" text-anchor="middle" class="t2">per frequency</text><path class="w" d="M218 63 H248" marker-end="url(#doc-arr)"/><rect class="b" x="426" y="40" width="148" height="46" rx="6"/><text x="500" y="59" text-anchor="middle">SENSITIVITY</text><text x="500" y="75" text-anchor="middle" class="t2">5 points</text><path class="w" d="M396 63 H426" marker-end="url(#doc-arr)"/><rect class="ba" x="604" y="40" width="148" height="46" rx="6"/><text x="678" y="59" text-anchor="middle" class="tb">CUT / BOOST</text><text x="678" y="75" text-anchor="middle" class="t2">DEPTH · DECAY</text><path class="w" d="M574 63 H604" marker-end="url(#doc-arr)"/><rect class="b" x="782" y="40" width="148" height="46" rx="6"/><text x="856" y="68" text-anchor="middle">TRIM</text><path class="w" d="M752 63 H782" marker-end="url(#doc-arr)"/><path class="w" d="M930 63 H958" marker-end="url(#doc-arr)"/><circle class="ba" cx="976" cy="63" r="18"/><text x="976" y="69" text-anchor="middle" class="tb">+</text><text x="976" y="37" text-anchor="middle" class="t2">MIX</text><circle class="dot" cx="52" cy="63" r="3.5"/><path class="wd" d="M52 63 V178 H976 V81" marker-end="url(#doc-arr)"/><text x="80" y="172" class="t2">the original sound</text><path class="w" d="M994 63 H1034"/><circle class="w" cx="1040" cy="63" r="6"/><text x="1040" y="91" text-anchor="middle" class="t2">OUTPUT</text></svg>
+  </div>
+  <figcaption>Transients are detected frequency by frequency, then cut (CUT) or boosted (BOOST). MIX sets the amount.</figcaption>
+</figure>
+
+<h2 id="sh-agir">1. Cut or boost</h2>
+<ul>
+  <li><b>CUT / BOOST</b>: cut or boost the transients. <b>DEPTH</b>: the amount (down to −30 dB in CUT, up to +15 dB in BOOST).</li>
+  <li><b>SENSITIVITY</b>: higher, more transients are detected.</li>
+  <li><b>SHARPNESS</b>: the width of each cut or boost, from 2 octaves to 1/30 octave.</li>
+  <li><b>DECAY</b>: recovery time, from 4 ms to about 1.4 s. <b>DECAY LF/HF</b>: below 5, lows recover more slowly; above, highs.</li>
+</ul>
+
+<h2 id="sh-ecran">2. Display and sensitivity</h2>
+<p>The incoming spectrum; in red what is cut (in purple what is boosted); the sensitivity curve and its five points: detection <b>low cut</b>, <b>three bands</b> (low shelf, parametric, high shelf or tilt, ±18 dB) and <b>high cut</b>.</p>
+<ul>
+  <li>A point is dragged; Ctrl while dragging (or the wheel) sets its width; <b>Alt</b> while dragging makes you hear it; double-click turns it off.</li>
+  <li>A click opens it in its panel: shape (or slope), FREQ, SENS, Q, LISTEN.</li>
+</ul>
+
+<h2 id="sh-avance">3. Stereo, output and advanced settings</h2>
+<ul>
+  <li><b>STEREO</b>: Left/Right or Mid/Side, <b>LINK</b> (shared detection at 100 %, two mono at 0 %) and <b>BALANCE</b> (how much each channel is processed).</li>
+  <li><b>OUTPUT</b>: <b>MIX</b> and <b>TRIM</b> (±12 dB on the processed signal only).</li>
+  <li><b>RESOLUTION</b> (Normal, High), <b>OVERSAMPLE</b> (1x, 2x, 4x), <b>WINDOW</b> (Short, Medium, Long), <b>PHASE</b> (Linear, Minimum).</li>
+  <li><b>DELTA</b>: hear only what is removed or added.</li>
+</ul>
+<p>Latency at 48 kHz: 1024 samples with the Short window, 2048 Medium, 4096 Long; oversampling makes it longer. It is reported to the DAW.</p>
+
+<h2 id="sh-reglages">All the controls</h2>
+<div class="table"><table>
+  <tr><th>Control</th><th>Range</th><th>What it does</th></tr>
+  <tr><td>CUT · BOOST</td><td>mode</td><td>Cut or boost the transients.</td></tr>
+  <tr><td>DEPTH</td><td>0 – 10</td><td>Down to −30 dB or up to +15 dB.</td></tr>
+  <tr><td>SENSITIVITY</td><td>0 – 10</td><td>How many transients are detected.</td></tr>
+  <tr><td>SHARPNESS</td><td>0 – 10</td><td>From 2 octaves to 1/30 octave.</td></tr>
+  <tr><td>DECAY</td><td>0 – 10</td><td>From 4 ms to 1.4 s.</td></tr>
+  <tr><td>DECAY LF/HF</td><td>0 – 10</td><td>Longer lows or highs.</td></tr>
+  <tr><td>Sensitivity points</td><td>20 Hz – 20 kHz, ±18 dB</td><td>Detection low cut, three bands, high cut.</td></tr>
+  <tr><td>STEREO</td><td>L/R · M/S, LINK, BALANCE</td><td>Stereo processing.</td></tr>
+  <tr><td>MIX · TRIM</td><td>0 – 100 % · ±12 dB</td><td>Amount and processed level.</td></tr>
+  <tr><td>RESOLUTION · OVERSAMPLE · WINDOW · PHASE</td><td>advanced</td><td>Precision and latency.</td></tr>
+  <tr><td>DELTA · BYPASS</td><td>listening</td><td>The difference, or the original.</td></tr>
+</table></div>
+
+<h2 id="sh-conseils">Tips</h2>
+<div class="tip"><p><b>A snare that cracks too much</b>: CUT, DEPTH 4, a sensitivity band around 4 kHz. The body stays, only the crack softens.</p></div>
+<div class="tip"><p><b>More attack on an acoustic guitar</b>: BOOST, high SHARPNESS, short DECAY.</p></div>
+<div class="tip"><p>28 factory presets, by category: drums, vocals, bass, guitar, synths, imaging, master.</p></div>

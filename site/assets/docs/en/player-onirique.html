@@ -1,0 +1,74 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#pl-vue">What it’s for</a></li>
+  <li><a href="#pl-sync">Sync</a></li>
+  <li><a href="#pl-libre">Free player</a></li>
+  <li><a href="#pl-formats">Formats and DAWs</a></li>
+</ul>
+
+<h2 id="pl-vue">What it’s for</h2>
+<p>PLAYER ONIRIQUE opens a video in a window of your DAW, locked to your playback: you start the project, the video starts; you stop, it stops; you move the cursor, the picture follows. Ideal for composing to a music video, a film clip or a vertical video.</p>
+<ul>
+  <li>Drag an <b>.mp4</b> or <b>.mov</b> file onto the window, or open it with the button. The window takes the video’s format (16:9, 9:16, 4:3, square…) and keeps it when you resize it.</li>
+  <li>The controls only appear when the mouse hovers.</li>
+  <li>Your project’s sound passes through the plugin <b>with no change at all</b>.</li>
+  <li>The chosen video, SYNC, sound and window size are saved in the project.</li>
+</ul>
+
+<h2 id="pl-sync">Sync (SYNC)</h2>
+<p>The plugin reads your DAW’s playback position and sends it continuously to the video window: every <b>30 ms</b> during playback, every <b>500 ms</b> when stopped. The window decides how to catch up a gap.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 920 280" role="img" aria-label="Sync: the DAW, the plugin, the video page and its decisions">
+    <rect class="b" x="20" y="70" width="150" height="70" rx="8"/><text x="95" y="98" text-anchor="middle" class="tb">DAW</text><text x="95" y="116" text-anchor="middle" class="t2">playback · cursor</text>
+    <path class="w" d="M170 105 H220" marker-end="url(#doc-arr)"/>
+    <rect class="ba" x="220" y="70" width="170" height="70" rx="8"/><text x="305" y="98" text-anchor="middle" class="tb">PLAYER</text><text x="305" y="116" text-anchor="middle" class="t2">sound unchanged</text>
+    <path class="wa" d="M390 105 H460" marker-end="url(#doc-arra)"/><text x="425" y="94" text-anchor="middle" class="t2 ta">position</text>
+    <rect class="b" x="460" y="70" width="170" height="70" rx="8"/><text x="545" y="98" text-anchor="middle">VIDEO WINDOW</text><text x="545" y="116" text-anchor="middle" class="t2">system web engine</text>
+    <path class="w" d="M630 105 H660"/>
+    <path class="w" d="M660 40 V200"/><circle class="dot" cx="660" cy="105" r="3.5"/>
+    <path class="w" d="M660 40 H690" marker-end="url(#doc-arr)"/><path class="w" d="M660 120 H690" marker-end="url(#doc-arr)"/><path class="w" d="M660 200 H690" marker-end="url(#doc-arr)"/>
+    <text x="700" y="36">stop</text><text x="700" y="52" class="t2">the picture stops dead (&lt; 15 ms)</text>
+    <text x="700" y="116">small gap</text><text x="700" y="132" class="t2">the video speeds up or slows down</text><text x="700" y="148" class="t2">long enough to catch up</text>
+    <text x="700" y="196">large gap</text><text x="700" y="212" class="t2">a single jump, aimed at where</text><text x="700" y="228" class="t2">the DAW will be when it lands</text>
+    <path class="w" d="M305 140 V190 H545 V140" style="stroke-dasharray:4 4"/><text x="425" y="208" text-anchor="middle" class="t2">controls: SYNC, sound, open, format</text>
+  </svg>
+  </div>
+  <figcaption>The plugin doesn’t touch the sound: it only passes the DAW’s position to the video window, which picks the smoothest way to follow it.</figcaption>
+</figure>
+
+<p>Why a single jump, and not a jump at every gap? A heavy video (phone, internet) takes time to seek: chained jumps freeze the picture. PLAYER measures how long a jump takes on the video, and aims straight at the position the DAW will have reached when that jump ends.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 900 270" role="img" aria-label="Catching up: small drift corrected by speed, large gap corrected by a jump aimed ahead">
+    <path class="w" d="M60 240 H860 M60 240 V20"/>
+    <text x="860" y="258" text-anchor="end" class="t2">time →</text><text x="66" y="20" class="t2">position</text>
+    <path d="M60 230 L420 170" style="fill:none;stroke:#F6EEEE;stroke-width:1.8"/>
+    <path class="wa" d="M60 236 L180 218 Q260 204 300 192 L420 170"/>
+    <text x="70" y="155" class="t2 ta">DAW slightly ahead: the video plays a little faster</text>
+    <path class="wd" d="M420 170 V110"/><text x="300" y="130" class="t2">cursor moved</text>
+    <path d="M420 110 L860 40" style="fill:none;stroke:#F6EEEE;stroke-width:1.8"/>
+    <path class="wa" d="M420 170 H500"/><path class="wa" d="M500 170 V100" marker-end="url(#doc-arra)"/>
+    <path class="wa" d="M500 97 L860 40"/>
+    <text x="460" y="190" text-anchor="middle" class="t2 ta">jump time</text><text x="520" y="140" class="t2">lands on the DAW’s position</text>
+    <text x="640" y="200" class="t2">white: DAW · red: video</text>
+  </svg>
+  </div>
+  <figcaption>Measured with 8 quick pauses and restarts on a video from the internet: every restart locks back in, with an average playback gap of 32 to 34 ms.</figcaption>
+</figure>
+
+<h2 id="pl-libre">Free player (SYNC off)</h2>
+<p>With SYNC off, PLAYER becomes a player independent of the DAW: play, pause, position bar and loop. Handy for reviewing a passage without touching your project.</p>
+
+<h2 id="pl-formats">Formats and DAWs</h2>
+<ul>
+  <li>Decoding goes through the system’s web engine (WebView2 on Windows, WebKit on Mac). H.264 + AAC (mp4 / mov) works everywhere; HEVC and ProRes depend on the codecs installed on the machine.</li>
+  <li><b>FL Studio</b> : put PLAYER on the Master. On a silent track, “Smart disable” stops the plugin and the video pauses: turn it off for this plugin if needed.</li>
+  <li>VST3 on Windows and Mac, Audio Unit on Mac. Free.</li>
+</ul>

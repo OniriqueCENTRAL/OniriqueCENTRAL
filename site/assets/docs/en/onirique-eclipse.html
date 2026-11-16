@@ -1,0 +1,131 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#ec-vue">Overview</a></li>
+  <li><a href="#ec-parallele">Parallel equalization</a></li>
+  <li><a href="#ec-bandes">The bands</a></li>
+  <li><a href="#ec-ms">Mid / Side and OFFSET</a></li>
+  <li><a href="#ec-couleur">Analog colour</a></li>
+  <li><a href="#ec-ecoute">Listening and image</a></li>
+  <li><a href="#ec-reglages">All settings</a></li>
+  <li><a href="#ec-conseils">Tips</a></li>
+</ul>
+
+<h2 id="ec-vue">Overview</h2>
+<p>ONIRIQUE ECLIPSE is a <b>parallel Mid / Side mastering equalizer</b>. Put it on the mix bus, a vocal bus or a beat, to make everything sound bigger: warmth in the lows, air up top, density in the middle.</p>
+<p>The sound is first split into <b>centre (Mid)</b> and <b>sides (Side)</b>. Each goes through the same band network, then everything is recombined into left / right. Processing runs at twice the sample rate, for faithful highs right up to the top of the spectrum.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 920 280" role="img" aria-label="ECLIPSE signal path: input, M/S encoding, oversampling, Mid and Side networks, decoding, output">
+    <circle class="w" cx="28" cy="140" r="6"/><text x="28" y="118" text-anchor="middle" class="t2">L / R</text>
+    <rect class="b" x="56" y="118" width="90" height="44" rx="6"/><text x="101" y="137" text-anchor="middle">INPUT</text><text x="101" y="153" text-anchor="middle" class="t2">XFORMER</text>
+    <path class="w" d="M34 140 H56" marker-end="url(#doc-arr)"/>
+    <rect class="b" x="170" y="118" width="80" height="44" rx="6"/><text x="210" y="145" text-anchor="middle">L/R → M/S</text>
+    <path class="w" d="M146 140 H170" marker-end="url(#doc-arr)"/>
+    <rect class="ba" x="280" y="40" width="370" height="200" rx="10"/><text x="465" y="30" text-anchor="middle" class="t2 ta">× 2 the sample rate</text>
+    <rect class="b" x="300" y="62" width="330" height="56" rx="6"/><text x="465" y="84" text-anchor="middle" class="tb">MID</text><text x="465" y="102" text-anchor="middle" class="t2">HPF · LOW · MID · CONTOUR · HIGH · LPF</text>
+    <rect class="b" x="300" y="162" width="330" height="56" rx="6"/><text x="465" y="184" text-anchor="middle" class="tb">SIDE</text><text x="465" y="202" text-anchor="middle" class="t2">same bands + OFFSET · WIDTH</text>
+    <path class="w" d="M250 140 H265 V90 H300 M265 140 V190 H300" marker-end="url(#doc-arr)"/>
+    <path class="w" d="M630 90 H668 V140 M630 190 H668 V140 H690" marker-end="url(#doc-arr)"/>
+    <rect class="b" x="690" y="118" width="80" height="44" rx="6"/><text x="730" y="145" text-anchor="middle">M/S → L/R</text>
+    <rect class="b" x="790" y="118" width="100" height="44" rx="6"/><text x="840" y="137" text-anchor="middle">OUTPUT</text><text x="840" y="153" text-anchor="middle" class="t2">AUTO GAIN</text>
+    <path class="w" d="M770 140 H790" marker-end="url(#doc-arr)"/>
+  </svg>
+  </div>
+  <figcaption>The centre and the sides each go through the same band network. OFFSET shifts the settings of one of the two.</figcaption>
+</figure>
+
+<h2 id="ec-parallele">1. Parallel equalization</h2>
+<p>On a classic equalizer, the bands are chained: each filter processes the previous one’s output. In ECLIPSE, <b>every band receives the same signal</b> and only returns a difference, which is added to the original sound. It’s the principle of passive mastering equalizers.</p>
+<ul>
+  <li>When you push several bands, they <b>blend instead of stacking up</b> : the mix stays open even with bold settings.</li>
+  <li>A band at neutral returns nothing at all. <b>All at neutral, ECLIPSE returns exactly the original sound</b>, with no phase rotation.</li>
+  <li>The displayed curve is computed by the same function as the processing: what you see is what you hear.</li>
+</ul>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 900 230" role="img" aria-label="Parallel principle: the same signal to each band, the differences added to the original sound">
+    <circle class="w" cx="30" cy="115" r="6"/><text x="30" y="95" text-anchor="middle" class="t2">x</text>
+    <path class="w" d="M36 115 H110"/><circle class="dot" cx="110" cy="115" r="3.5"/>
+    <path class="w" d="M110 115 V40 H180 M110 115 V90 H180 M110 115 V140 H180 M110 115 V190 H180" marker-end="url(#doc-arr)"/>
+    <rect class="b" x="180" y="24" width="150" height="32" rx="5"/><text x="255" y="45" text-anchor="middle">LOW (difference)</text>
+    <rect class="b" x="180" y="74" width="150" height="32" rx="5"/><text x="255" y="95" text-anchor="middle">MID (difference)</text>
+    <rect class="b" x="180" y="124" width="150" height="32" rx="5"/><text x="255" y="145" text-anchor="middle">CONTOUR (difference)</text>
+    <rect class="b" x="180" y="174" width="150" height="32" rx="5"/><text x="255" y="195" text-anchor="middle">HIGH (difference)</text>
+    <path class="w" d="M330 40 H500 V97 M330 90 H500 M330 140 H500 V133 M330 190 H500 V133" />
+    <circle class="ba" cx="520" cy="115" r="20"/><text x="520" y="121" text-anchor="middle" class="tb">Σ</text>
+    <path class="w" d="M500 97 L506 103 M500 133 L506 127"/>
+    <path class="wd" d="M110 115 V214 H700 V135"/><text x="300" y="228" class="t2">the original sound, x</text>
+    <path class="w" d="M540 115 H682" marker-end="url(#doc-arr)"/>
+    <circle class="ba" cx="700" cy="115" r="18"/><text x="700" y="121" text-anchor="middle" class="tb">+</text>
+    <path class="w" d="M718 115 H840"/><circle class="w" cx="846" cy="115" r="6"/><text x="846" y="98" text-anchor="middle" class="t2">y = x + Σ</text>
+  </svg>
+  </div>
+  <figcaption>Each band only returns what it adds or removes. The differences are added to the original sound.</figcaption>
+</figure>
+
+<h2 id="ec-bandes">2. The bands</h2>
+<h3>LOW</h3>
+<p>A low shelf from <b>20 to 400 Hz</b>, with separate <b>BOOST</b> and <b>ATTEN</b> controls (0 to 12 dB each) on the same frequency. Their two curves don’t have the same shape: pushed together, the lows rise and the low-mids just above dip, the famous trick of passive equalizers. <b>BANDWIDTH</b> sets the width.</p>
+<h3>MID</h3>
+<p>A bell from <b>150 Hz to 8 kHz</b>, ±12 dB, with its <b>BANDWIDTH</b> (Q). Two small bells of opposite sign, on either side, follow it proportionally: the band sounds like an analog circuit, not a mathematical bell.</p>
+<h3>CONTOUR</h3>
+<p>It reshapes the mids in one move, from <b>200 Hz to 6 kHz</b>, ±10 dB. Positive, it dips the centre and lifts both flanks (at a third and at three times the frequency); negative, the opposite. <b>BANDWIDTH</b> spreads the flanks, from 1 to 2.3 octaves. Perfect for removing the “cardboard” side of a mix without hollowing it out.</p>
+<h3>HIGH</h3>
+<p>A high shelf from <b>1.5 to 24 kHz</b>, mirroring LOW: separate <b>BOOST</b> and <b>ATTEN</b> controls, <b>BANDWIDTH</b>.</p>
+<h3>HPF and LPF</h3>
+<p>These aren’t phase-rotating low cuts, but <b>−24 dB shelves</b> at 12 dB per octave, with no resonance: useless lows or harsh highs are lowered gently. HPF from 10 to 400 Hz, LPF from 3 to 30 kHz.</p>
+
+<h2 id="ec-ms">3. Mid / Side and OFFSET</h2>
+<p>A single set of controls drives the centre and the sides. With <b>M/S LINK</b>, the two are identical. Without the link, each band’s<b>OFFSET</b> (±12 dB, ±10 for CONTOUR) shifts the setting:</p>
+<ul>
+  <li><b>SIDE</b> : the offset applies to the sides. Add air on the sides, or keep your 808 in the centre.</li>
+  <li><b>MID</b> : the offset applies to the centre.</li>
+  <li><b>SPLIT</b> : half the offset on the centre, the other half reversed on the sides.</li>
+</ul>
+
+<h2 id="ec-couleur">4. Analog colour</h2>
+<ul>
+  <li><b>ANALOG</b> and <b>DRIVE</b> (character): the more a band pushes, the more it colours, each in its own way. With ANALOG off, the network stays perfectly clean.</li>
+  <li><b>XFORMER</b> (0 – 100 %): the input and output transformers. They thicken and saturate mostly the lows, when pushed.</li>
+</ul>
+
+<h2 id="ec-ecoute">5. Listening and image</h2>
+<ul>
+  <li><b>SOLO M / SOLO S</b> : listen to the centre or the sides alone.</li>
+  <li><b>DELTA</b> : hear only what ECLIPSE adds or removes.</li>
+  <li><b>MONO</b> : checks mono compatibility.</li>
+  <li><b>WIDTH</b> (0 – 200 %): the image width, on the sides.</li>
+  <li><b>AUTO GAIN</b> : compensates the volume (K-weighting) to judge the equalization at equal level.</li>
+</ul>
+
+<h2 id="ec-reglages">All settings</h2>
+<div class="table"><table>
+  <tr><th>Setting</th><th>Range</th><th>What it does</th></tr>
+  <tr><td>LOW FREQ</td><td>20 – 400 Hz</td><td>The low shelf frequency.</td></tr>
+  <tr><td>LOW BOOST · ATTEN</td><td>0 – 12 dB</td><td>Raise and lower the lows, together if you like.</td></tr>
+  <tr><td>MID</td><td>±12 dB, 150 Hz – 8 kHz</td><td>The mid bell.</td></tr>
+  <tr><td>CONTOUR</td><td>±10 dB, 200 Hz – 6 kHz</td><td>Dips the centre and lifts the flanks, or the opposite.</td></tr>
+  <tr><td>HIGH FREQ</td><td>1.5 – 24 kHz</td><td>The high shelf frequency.</td></tr>
+  <tr><td>HIGH BOOST · ATTEN</td><td>0 – 12 dB</td><td>Raise and lower the highs.</td></tr>
+  <tr><td>BANDWIDTH</td><td>per band</td><td>The width of LOW, MID, CONTOUR and HIGH.</td></tr>
+  <tr><td>HPF · LPF</td><td>10 – 400 Hz · 3 – 30 kHz</td><td>−24 dB shelves, no resonance.</td></tr>
+  <tr><td>M/S LINK</td><td>LINKED · OFFSET</td><td>Centre and sides identical, or shifted.</td></tr>
+  <tr><td>OFFSET TO</td><td>SIDE · MID · SPLIT</td><td>Where the offset goes.</td></tr>
+  <tr><td>OFFSET</td><td>±12 dB per band</td><td>Each band’s shift.</td></tr>
+  <tr><td>ANALOG · DRIVE</td><td>on · 0 – 100 %</td><td>The colour of the bands.</td></tr>
+  <tr><td>XFORMER</td><td>0 – 100 %</td><td>The input and output transformers.</td></tr>
+  <tr><td>WIDTH</td><td>0 – 200 %</td><td>Stereo width.</td></tr>
+  <tr><td>SOLO · DELTA · MONO</td><td>listening</td><td>Listening controls.</td></tr>
+  <tr><td>INPUT · OUTPUT</td><td>±18 dB</td><td>Levels, optional AUTO GAIN.</td></tr>
+</table></div>
+
+<h2 id="ec-conseils">Tips</h2>
+<div class="tip"><p><b>The low-end trick</b> : LOW at 60 Hz, BOOST at 4 and ATTEN at 2. The sub gains weight, the muddy low-mids dip just above.</p></div>
+<div class="tip"><p><b>A bigger mix</b> : HIGH BOOST at 12 kHz, then positive SIDE OFFSET on HIGH and negative on LOW. The air opens up on the sides, the lows stay in the centre.</p></div>
+<div class="tip"><p><b>Judge at equal level</b> with AUTO GAIN, and check in MONO from time to time.</p></div>

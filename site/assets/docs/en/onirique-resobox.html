@@ -1,0 +1,88 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#rb-vue">Overview</a></li>
+  <li><a href="#rb-agir">How it acts</a></li>
+  <li><a href="#rb-ecran">The display</a></li>
+  <li><a href="#rb-multi">MULTIBAND mode</a></li>
+  <li><a href="#rb-pied">The result</a></li>
+  <li><a href="#rb-qualite">Quality and latency</a></li>
+  <li><a href="#rb-reglages">All the controls</a></li>
+  <li><a href="#rb-conseils">Tips</a></li>
+</ul>
+
+<h2 id="rb-vue">Overview</h2>
+<p>ONIRIQUE RESOBOX is a <b>dynamic resonance suppressor</b>. It spots in real time what sticks out of the spectrum of a voice, an instrument or a mix (sibilance, harshness, notes that ring out) and brings it back in line with what surrounds it, <b>frequency by frequency, without touching the phase</b>, only when it’s there.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 1081 200" role="img" aria-label="RESOBOX signal path: spectrum analysis, detection, per-frequency cuts, MIX, AUTO GAIN, OUT"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">INPUT</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="120" height="46" rx="6"/><text x="130" y="59" text-anchor="middle">ANALYSIS</text><text x="130" y="75" text-anchor="middle" class="t2">spectrum</text><rect class="b" x="220" y="40" width="120" height="46" rx="6"/><text x="280" y="59" text-anchor="middle">DETECTION</text><text x="280" y="75" text-anchor="middle" class="t2">DETAIL · TILT</text><path class="w" d="M190 63 H220" marker-end="url(#doc-arr)"/><rect class="b" x="370" y="40" width="120" height="46" rx="6"/><text x="430" y="59" text-anchor="middle">SENSITIVITY</text><text x="430" y="75" text-anchor="middle" class="t2">EQ or MULTIBAND</text><path class="w" d="M340 63 H370" marker-end="url(#doc-arr)"/><rect class="ba" x="520" y="40" width="120" height="46" rx="6"/><text x="580" y="59" text-anchor="middle" class="tb">CUTS</text><text x="580" y="75" text-anchor="middle" class="t2">DEPTH · ATT/REL</text><path class="w" d="M490 63 H520" marker-end="url(#doc-arr)"/><rect class="b" x="670" y="40" width="120" height="46" rx="6"/><text x="730" y="68" text-anchor="middle">AUTO GAIN</text><path class="w" d="M640 63 H670" marker-end="url(#doc-arr)"/><rect class="b" x="820" y="40" width="120" height="46" rx="6"/><text x="880" y="68" text-anchor="middle">OUT</text><path class="w" d="M790 63 H820" marker-end="url(#doc-arr)"/><path class="w" d="M940 63 H968" marker-end="url(#doc-arr)"/><circle class="ba" cx="986" cy="63" r="18"/><text x="986" y="69" text-anchor="middle" class="tb">+</text><text x="986" y="37" text-anchor="middle" class="t2">MIX</text><circle class="dot" cx="52" cy="63" r="3.5"/><path class="wd" d="M52 63 V178 H986 V81" marker-end="url(#doc-arr)"/><text x="80" y="172" class="t2">the original sound</text><path class="w" d="M1004 63 H1044"/><circle class="w" cx="1050" cy="63" r="6"/><text x="1050" y="91" text-anchor="middle" class="t2">OUTPUT</text></svg>
+  </div>
+  <figcaption>The spectrum is read continuously; what sticks out of its neighbourhood is lowered, more or less depending on the sensitivity curve. MIX sets the amount.</figcaption>
+</figure>
+
+<h2 id="rb-agir">1. How it acts</h2>
+<ul>
+  <li><b>DEPTH</b>: the amount. At 0, the plugin returns the input unchanged.</li>
+  <li><b>DETAIL</b>: the scale at which the spectrum is read. Low (a third of an octave), it finds broad bumps and answers with wide cuts; high (1/24 octave), it finds isolated whistles and answers with notches.</li>
+  <li><b>TILT</b>: tilts the whole sensitivity towards the highs (+) or the lows (−), around 1 kHz.</li>
+  <li><b>SOFT / HARD</b>: soft rounds the onset; hard cuts sharply and twice as hard.</li>
+  <li><b>ATTACK / RELEASE</b>: how fast a cut settles in and lets go.</li>
+</ul>
+
+<h2 id="rb-ecran">2. Display and sensitivity</h2>
+<ul>
+  <li>The grey body is the input spectrum, the light line the output. The red curtain hanging from the top is the current reduction.</li>
+  <li>The <b>white curve</b> is the sensitivity: above 0, the plugin works harder there; below, it spares.</li>
+  <li>At start: low cut, high cut and three bells. <b>Double-click</b> in empty space adds a bell (eight max); <b>drag</b> sets frequency and sensitivity, the <b>wheel</b> the Q, <b>right-click</b> resets.</li>
+  <li>The selection opens the <b>island</b>: on/off, shape (bell, low shelf, high shelf, plateau), FREQ, GAIN, Q, and the band’s place in the image: <b>STEREO, LEFT, RIGHT, MID or SIDE</b>.</li>
+</ul>
+
+<h2 id="rb-multi">3. MULTIBAND mode</h2>
+<p>The spectrum is split into <b>four bands</b> (low, low mid, high mid, high), split at 150 Hz, 1 kHz and 5 kHz to start. Drag the lines to move the boundaries, drag inside a band for its sensitivity (±12 dB). A band’s island gives its solo listen, its <b>MAKEUP</b> (0 to +12 dB) and its <b>BAL</b>.</p>
+<p>Each mode keeps its settings while you’re in the other.</p>
+
+<h2 id="rb-pied">4. The result</h2>
+<ul>
+  <li><b>MIX</b>, <b>OUT</b>.</li>
+  <li><b>AUTO GAIN</b>: gives back the level the cuts removed (never more than 12 dB).</li>
+  <li><b>STEREO / MID-SIDE / MONO</b>, <b>LINK</b> (at 100 %, both channels get the deeper cut) and <b>BAL</b> (spares one side).</li>
+  <li><b>SIDECHAIN</b>: detection runs on the side input.</li>
+  <li><b>DELTA</b>: hear only what is removed.</li>
+</ul>
+
+<h2 id="rb-qualite">5. Quality and latency</h2>
+<div class="table"><table>
+  <tr><th>Quality</th><th>Frame</th><th>Latency at 48 kHz</th></tr>
+  <tr><td>LOW LATENCY</td><td>1024</td><td>21 ms</td></tr>
+  <tr><td>Normal</td><td>2048</td><td>43 ms</td></tr>
+  <tr><td>High</td><td>4096</td><td>85 ms</td></tr>
+  <tr><td>Ultra</td><td>8192</td><td>171 ms</td></tr>
+</table></div>
+<p>Detection always reads the same length of signal: what is found, and how much it’s lowered, is the same in every mode. Quality changes how finely a cut is applied. Latency is reported to the DAW.</p>
+
+<h2 id="rb-reglages">All the controls</h2>
+<div class="table"><table>
+  <tr><th>Control</th><th>Range</th><th>What it does</th></tr>
+  <tr><td>DEPTH</td><td>0 – 100 %</td><td>The amount of processing.</td></tr>
+  <tr><td>DETAIL</td><td>1/3 – 1/24 octave</td><td>Wide cuts or notches.</td></tr>
+  <tr><td>TILT</td><td>±</td><td>Sensitivity towards highs or lows.</td></tr>
+  <tr><td>SOFT · HARD</td><td>mode</td><td>How gently it kicks in.</td></tr>
+  <tr><td>ATTACK · RELEASE</td><td>times</td><td>Speed of the cuts.</td></tr>
+  <tr><td>EQ · MULTIBAND</td><td>mode</td><td>Point curve or four bands.</td></tr>
+  <tr><td>MIX · OUT</td><td>% · dB</td><td>Amount and level.</td></tr>
+  <tr><td>AUTO GAIN</td><td>on / off</td><td>Gives back the removed level.</td></tr>
+  <tr><td>STEREO · MID-SIDE · MONO</td><td>mode</td><td>Stereo processing.</td></tr>
+  <tr><td>LINK · BAL</td><td>% · ±</td><td>Channel link and balance.</td></tr>
+  <tr><td>SIDECHAIN</td><td>on / off</td><td>Detection on the side input.</td></tr>
+  <tr><td>QUALITY · LOW LATENCY</td><td>frame</td><td>Precision and latency.</td></tr>
+  <tr><td>DELTA · BYPASS</td><td>listening</td><td>What is removed, or the original.</td></tr>
+</table></div>
+
+<h2 id="rb-conseils">Tips</h2>
+<div class="tip"><p><b>A harsh vocal</b>: DETAIL in the middle, DEPTH around 40 %, a sensitivity bell around 3 kHz. Listen in DELTA: you should hear only the harshness.</p></div>
+<div class="tip"><p><b>Sibilance</b>: raise DETAIL, fast ATTACK, a sensitivity plateau above 5 kHz.</p></div>
+<div class="tip"><p><b>A mix</b>: MID-SIDE, and put a bell on SIDE to calm the sides without touching the centre.</p></div>

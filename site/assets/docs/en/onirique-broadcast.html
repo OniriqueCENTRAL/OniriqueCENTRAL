@@ -1,0 +1,80 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#br-vue">Overview</a></li>
+  <li><a href="#br-micro">The virtual microphone</a></li>
+  <li><a href="#br-modules">The modules</a></li>
+  <li><a href="#br-appli">The application</a></li>
+  <li><a href="#br-reglages">All the controls</a></li>
+  <li><a href="#br-conseils">Tips</a></li>
+</ul>
+
+<h2 id="br-vue">Overview</h2>
+<p>ONIRIQUE BROADCAST is a <b>Windows application</b> that runs your mic through a real-time effects chain, then sends it to a <b>virtual microphone</b> you can use in Discord, OBS, games and any app that accepts a microphone. Your voice comes out processed like in a studio, everywhere.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 998 160" role="img" aria-label="BROADCAST signal path: mic, gain, echo guard, modules in the chosen order, output, limiter, virtual mic"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">VOICE</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="114" height="46" rx="6"/><text x="127" y="68" text-anchor="middle">MIC</text><rect class="b" x="214" y="40" width="114" height="46" rx="6"/><text x="271" y="68" text-anchor="middle">GAIN</text><path class="w" d="M184 63 H214" marker-end="url(#doc-arr)"/><rect class="b" x="358" y="40" width="114" height="46" rx="6"/><text x="415" y="59" text-anchor="middle">ECHO GUARD</text><text x="415" y="75" text-anchor="middle" class="t2">headphone leak</text><path class="w" d="M328 63 H358" marker-end="url(#doc-arr)"/><rect class="ba" x="502" y="40" width="114" height="46" rx="6"/><text x="559" y="59" text-anchor="middle" class="tb">MODULES</text><text x="559" y="75" text-anchor="middle" class="t2">free order</text><path class="w" d="M472 63 H502" marker-end="url(#doc-arr)"/><rect class="b" x="646" y="40" width="114" height="46" rx="6"/><text x="703" y="68" text-anchor="middle">OUTPUT</text><path class="w" d="M616 63 H646" marker-end="url(#doc-arr)"/><rect class="b" x="790" y="40" width="114" height="46" rx="6"/><text x="847" y="59" text-anchor="middle">LIMITER</text><text x="847" y="75" text-anchor="middle" class="t2">never clips</text><path class="w" d="M760 63 H790" marker-end="url(#doc-arr)"/><path class="w" d="M904 63 H944"/><circle class="w" cx="950" cy="63" r="6"/><text x="950" y="91" text-anchor="middle" class="t2">VIRTUAL MIC</text></svg>
+  </div>
+  <figcaption>The modules (GATE, EQ, 1176, MULTIBAND, DE-ESSER / PLOSIVES, SATURATION) go in whatever order you like by dragging their tabs. Headphones can monitor the result in parallel.</figcaption>
+</figure>
+
+<h2 id="br-micro">1. The virtual microphone</h2>
+<p>Windows doesn’t let an app create an audio device on its own: BROADCAST relies on a <b>virtual audio cable</b>, detected automatically. VB-CABLE (free) is recommended; VoiceMeeter, Virtual Audio Cable or Hi-Fi Cable are recognised too.</p>
+<ol>
+  <li>If no cable is installed, <b>INSTALL VB-CABLE (FREE)</b> does everything: download of the official pack, signature check, install, 48 kHz setup.</li>
+  <li>In AUDIO ROUTING, the <b>VIRTUAL MICROPHONE</b> output is set to <code>CABLE Input</code>.</li>
+  <li>In Discord, OBS or the game, choose <b>CABLE Output</b> as the mic (the exact name is shown, COPY button).</li>
+</ol>
+<ul>
+  <li><b>RENAME</b> renames the virtual mic as it appears in apps.</li>
+  <li><b>SET 48 KHZ</b>: Discord runs at 48 kHz; if the cable isn’t, the app offers to fix it.</li>
+  <li><b>Discord screen sharing</b>: the output to the cable is opened in exclusive mode, so no PC audio capture can pick your voice back up as an echo.</li>
+</ul>
+
+<h2 id="br-modules">2. The modules</h2>
+<div class="table"><table>
+  <tr><th>Module</th><th>What it does</th></tr>
+  <tr><td>ECHO GUARD</td><td>Listens to what the PC plays, measures the headphone or speaker leak into the mic, and holds it back while nobody speaks. Discord no longer gets an echo.</td></tr>
+  <tr><td>NOISE GATE</td><td>Ultra transparent, with look-ahead, HOLD, RANGE and <b>LEARN</b>, which measures the room noise and sets the threshold.</td></tr>
+  <tr><td>PARAMETRIC EQ</td><td>6 bands, set in the live analyzer.</td></tr>
+  <tr><td>1176</td><td>VOCALBOX’s FET compressor, with VU meter and MIX for parallel compression.</td></tr>
+  <tr><td>MULTIBAND</td><td>4 optical bands, interactive display, per-band listening.</td></tr>
+  <tr><td>DE-ESSER / PLOSIVES</td><td>S’s and P’s, with no latency.</td></tr>
+  <tr><td>SATURATION</td><td>TUBE, ANALOG or TAPE, level compensated.</td></tr>
+  <tr><td>LIMITER</td><td>At the end of the chain: the virtual mic never clips.</td></tr>
+</table></div>
+<p>Each module has its power button (click-free fade). <b>MUTE</b> gives apps a clean silence, <b>BYPASS</b> sends the raw mic, the <b>ON AIR</b> light shows your voice is going out.</p>
+
+<h2 id="br-appli">3. The application</h2>
+<ul>
+  <li>Audio engine in <b>SHARED / LOW LAT / EXCLUSIVE</b> mode, AUTO or fixed buffer.</li>
+  <li>The clocks of the mic, the cable and the headphones are never identical: each output goes through a bridge that absorbs the drift. Constant latency, no crackles over time.</li>
+  <li>A device unplugged or a wake from sleep: reopened automatically.</li>
+  <li>Closing the window keeps the virtual mic running in the notification area (MUTE, BYPASS, monitoring, Quit from the icon); start with Windows as an option.</li>
+  <li>Factory presets calibrated to about −16 dBFS out: Streamer Clean, Podcast Warm, Radio Broadcast, Gaming Comms, Deep Voice, Natural Light.</li>
+</ul>
+
+<h2 id="br-reglages">All the controls</h2>
+<div class="table"><table>
+  <tr><th>Control</th><th>Range</th><th>What it does</th></tr>
+  <tr><td>VIRTUAL MICROPHONE</td><td>detected cable</td><td>Where the processed voice goes.</td></tr>
+  <tr><td>RENAME · SOUND · SET 48 KHZ</td><td>buttons</td><td>Mic name, Sound panel, sample rate.</td></tr>
+  <tr><td>ECHO GUARD</td><td>on</td><td>Headphone leak held back.</td></tr>
+  <tr><td>NOISE GATE</td><td>threshold, HOLD, RANGE, LEARN</td><td>Room noise.</td></tr>
+  <tr><td>PARAMETRIC EQ</td><td>6 bands</td><td>Equalization.</td></tr>
+  <tr><td>1176</td><td>ratios 4 – ALL, MIX</td><td>Compression.</td></tr>
+  <tr><td>MULTIBAND</td><td>4 bands</td><td>Dynamics per band.</td></tr>
+  <tr><td>DE-ESSER / PLOSIVES</td><td>on + settings</td><td>S’s and P’s.</td></tr>
+  <tr><td>SATURATION</td><td>TUBE · ANALOG · TAPE</td><td>Grit.</td></tr>
+  <tr><td>GAIN · OUTPUT</td><td>in dB</td><td>Input and output levels.</td></tr>
+  <tr><td>MUTE · BYPASS</td><td>header</td><td>Clean silence, or raw mic.</td></tr>
+  <tr><td>AUDIO ENGINE</td><td>SHARED · LOW LAT · EXCLUSIVE</td><td>The audio engine mode.</td></tr>
+</table></div>
+
+<h2 id="br-conseils">Tips</h2>
+<div class="tip"><p><b>First launch</b>: INSTALL VB-CABLE, then choose “CABLE Output” as the mic in Discord, and keep Discord’s noise suppression on.</p></div>
+<div class="tip"><p><b>A noisy room</b>: LEARN in the NOISE GATE, in silence for a few seconds.</p></div>

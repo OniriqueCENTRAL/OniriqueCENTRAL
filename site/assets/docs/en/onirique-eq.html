@@ -1,0 +1,61 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#eq-vue">Overview</a></li>
+  <li><a href="#eq-modes">The three processing modes</a></li>
+  <li><a href="#eq-bandes">The bands</a></li>
+  <li><a href="#eq-reglages">All the controls</a></li>
+  <li><a href="#eq-conseils">Tips</a></li>
+</ul>
+
+<h2 id="eq-vue">Overview</h2>
+<p>ONIRIQUE EQ is an <b>8-band parametric equalizer</b>, the same as VOCALBOX’s (algorithm, analyzer, bands, listening), as a separate plugin. It has three ways of processing, chosen in the menu at the top, each with its own advantages.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 685 160" role="img" aria-label="EQ signal path: 8 bands, dynamic bands, OUTPUT"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">INPUT</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="112" height="46" rx="6"/><text x="126" y="68" text-anchor="middle">INPUT</text><rect class="ba" x="212" y="40" width="112" height="46" rx="6"/><text x="268" y="59" text-anchor="middle" class="tb">8 BANDS</text><text x="268" y="75" text-anchor="middle" class="t2">IIR or FIR</text><path class="w" d="M182 63 H212" marker-end="url(#doc-arr)"/><rect class="b" x="354" y="40" width="112" height="46" rx="6"/><text x="410" y="59" text-anchor="middle">DYNAMIC</text><text x="410" y="75" text-anchor="middle" class="t2">DYN bands</text><path class="w" d="M324 63 H354" marker-end="url(#doc-arr)"/><rect class="b" x="496" y="40" width="112" height="46" rx="6"/><text x="552" y="68" text-anchor="middle">OUTPUT</text><path class="w" d="M466 63 H496" marker-end="url(#doc-arr)"/><path class="w" d="M608 63 H648"/><circle class="w" cx="654" cy="63" r="6"/><text x="654" y="91" text-anchor="middle" class="t2">OUTPUT</text></svg>
+  </div>
+  <figcaption>Static bands go through the chosen processing (IIR or FIR); dynamic bands, whose gain moves constantly, stay IIR and come after.</figcaption>
+</figure>
+
+<h2 id="eq-modes">1. The three processing modes</h2>
+<div class="table"><table>
+  <tr><th>Mode</th><th>Latency</th><th>What it does</th></tr>
+  <tr><td>Zero Latency</td><td>none</td><td>“Analog-matched” IIR filters in double precision: curve shapes stay accurate right into the extreme highs.</td></tr>
+  <tr><td>Natural Phase</td><td>none</td><td>A minimum-phase FIR computed from the exact analogue response: analogue amplitude all the way up, the phase of an analogue equalizer.</td></tr>
+  <tr><td>Linear Phase</td><td>341 ms at 48 kHz</td><td>A zero-phase FIR: no phase shift at all. For mastering; the latency is compensated by the DAW.</td></tr>
+</table></div>
+<p>Each change builds a new filter on a separate thread, applied with a 50 ms crossfade: no clicks when you turn a knob.</p>
+
+<h2 id="eq-bandes">2. The bands</h2>
+<p>Eight bands, each with its own type:</p>
+<ul>
+  <li><b>Bell</b>, <b>Low shelf</b> and <b>High shelf</b>, <b>Notch</b> (narrow cut).</li>
+  <li><b>Low cut</b> and <b>High cut</b>: 12, 24, 36 or 48 dB per octave.</li>
+  <li><b>DYN</b>: the band becomes dynamic, with its threshold. It only acts when the sound in its range goes over the threshold.</li>
+</ul>
+<p>A band is set with the <b>bubble</b> above its point (on/off, frequency, Q / gain, slope, listen, remove) or with the <b>floating panel</b> under the analyzer (type, slope, FREQ / GAIN / Q, previous / next band, DYN and threshold).</p>
+<p><b>Listen</b>: holding a band’s point (or the headphones) plays just that band.</p>
+
+<h2 id="eq-reglages">All the controls</h2>
+<div class="table"><table>
+  <tr><th>Control</th><th>Range</th><th>What it does</th></tr>
+  <tr><td>Processing</td><td>Zero Latency · Natural Phase · Linear Phase</td><td>The filter type.</td></tr>
+  <tr><td>TYPE</td><td>bell, shelf, notch, cut</td><td>Each band’s shape.</td></tr>
+  <tr><td>FREQ</td><td>20 Hz – 20 kHz</td><td>The band frequency.</td></tr>
+  <tr><td>GAIN</td><td>in dB</td><td>Boost or cut.</td></tr>
+  <tr><td>Q</td><td>width</td><td>The width of the bell or notch.</td></tr>
+  <tr><td>SLOPE</td><td>12 – 48 dB/oct</td><td>For low cut and high cut.</td></tr>
+  <tr><td>DYN · threshold</td><td>per band</td><td>The band becomes dynamic.</td></tr>
+  <tr><td>Listen</td><td>headphones</td><td>Hear one band alone.</td></tr>
+  <tr><td>OUTPUT</td><td>in dB</td><td>The output level.</td></tr>
+  <tr><td>BYPASS</td><td>on / off</td><td>The direct sound, aligned with the latency.</td></tr>
+</table></div>
+
+<h2 id="eq-conseils">Tips</h2>
+<div class="tip"><p><b>Removing a resonance</b>: a narrow Bell band, boosted hard, swept in solo listen until you find the note that rings; then cut it.</p></div>
+<div class="tip"><p><b>Taming sibilance without dulling everything</b>: a DYN band around 6 – 8 kHz with negative gain: it only acts on the S’s.</p></div>
+<div class="tip"><p><b>Mastering</b>: Linear Phase avoids any phase shift between bands; keep Zero Latency while recording.</p></div>

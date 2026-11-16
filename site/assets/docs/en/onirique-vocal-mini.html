@@ -1,0 +1,76 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#vm-vue">Overview</a></li>
+  <li><a href="#vm-modes">LIVE and MIX</a></li>
+  <li><a href="#vm-clean">CLEAN and COMP</a></li>
+  <li><a href="#vm-eq">EQ and PARAMETRIC</a></li>
+  <li><a href="#vm-fx">FX, DELAY and REVERB</a></li>
+  <li><a href="#vm-reglages">All the controls</a></li>
+  <li><a href="#vm-conseils">Tips</a></li>
+</ul>
+
+<h2 id="vm-vue">Overview</h2>
+<p>ONIRIQUE VOCAL MINI is a <b>complete vocal chain on a single page</b>: cleaning, equalization, compression, de-esser, effects, delay and reverb. Each knob does one thing, and does it well. <b>Fewer settings, more mixing.</b></p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 909 380" role="img" aria-label="VOCAL MINI signal path: input, cleaning, body, compression, multiband, parametric EQ, highs, de-esser, effects, delay and reverb, output"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">VOCAL</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="168" height="46" rx="6"/><text x="154" y="59" text-anchor="middle">IN</text><text x="154" y="75" text-anchor="middle" class="t2">AUTO INPUT</text><rect class="b" x="268" y="40" width="168" height="46" rx="6"/><text x="352" y="59" text-anchor="middle">CLEAN</text><text x="352" y="75" text-anchor="middle" class="t2">PLOSIVE · NOISE · GATE</text><path class="w" d="M238 63 H268" marker-end="url(#doc-arr)"/><rect class="b" x="466" y="40" width="168" height="46" rx="6"/><text x="550" y="59" text-anchor="middle">LOW CUT</text><text x="550" y="75" text-anchor="middle" class="t2">LOW · MID</text><path class="w" d="M436 63 H466" marker-end="url(#doc-arr)"/><rect class="ba" x="664" y="40" width="168" height="46" rx="6"/><text x="748" y="59" text-anchor="middle" class="tb">COMP</text><text x="748" y="75" text-anchor="middle" class="t2">leveler + peaks</text><path class="w" d="M634 63 H664" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="150" width="168" height="46" rx="6"/><text x="154" y="178" text-anchor="middle">MULTIBAND</text><path class="w" d="M748 86 V118 H154 V150" marker-end="url(#doc-arr)"/><rect class="b" x="268" y="150" width="168" height="46" rx="6"/><text x="352" y="169" text-anchor="middle">PARAMETRIC</text><text x="352" y="185" text-anchor="middle" class="t2">8 bands</text><path class="w" d="M238 173 H268" marker-end="url(#doc-arr)"/><rect class="b" x="466" y="150" width="168" height="46" rx="6"/><text x="550" y="169" text-anchor="middle">DRIVE</text><text x="550" y="185" text-anchor="middle" class="t2">HI · AIR</text><path class="w" d="M436 173 H466" marker-end="url(#doc-arr)"/><rect class="b" x="664" y="150" width="168" height="46" rx="6"/><text x="748" y="178" text-anchor="middle">DE-ESS</text><path class="w" d="M634 173 H664" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="260" width="168" height="46" rx="6"/><text x="154" y="279" text-anchor="middle">PHONE</text><text x="154" y="295" text-anchor="middle" class="t2">DOUBLER · CHORUS</text><path class="w" d="M748 196 V228 H154 V260" marker-end="url(#doc-arr)"/><rect class="ba" x="268" y="260" width="168" height="46" rx="6"/><text x="352" y="279" text-anchor="middle" class="tb">DELAY · REVERB</text><text x="352" y="295" text-anchor="middle" class="t2">as sends</text><path class="w" d="M238 283 H268" marker-end="url(#doc-arr)"/><rect class="b" x="466" y="260" width="168" height="46" rx="6"/><text x="550" y="279" text-anchor="middle">OUT</text><text x="550" y="295" text-anchor="middle" class="t2">safety</text><path class="w" d="M436 283 H466" marker-end="url(#doc-arr)"/><path class="w" d="M634 283 H674"/><circle class="w" cx="680" cy="283" r="6"/><text x="680" y="311" text-anchor="middle" class="t2">OUTPUT</text></svg>
+  </div>
+  <figcaption>Cleaning first, while noise is easy to recognise; the body of the voice before compression; highs and de-esser after. Delay and reverb are sends: the vocal stays whole.</figcaption>
+</figure>
+
+<h2 id="vm-modes">1. LIVE and MIX</h2>
+<ul>
+  <li><b>LIVE</b> (default): zero latency, to record while listening.</li>
+  <li><b>MIX</b>: maximum quality once recording is done. The core is oversampled, the de-esser, de-plosive and gate look ahead, the noise suppressor works frequency by frequency. About 27 ms of latency, compensated by the DAW.</li>
+</ul>
+
+<h2 id="vm-clean">2. CLEAN and COMP</h2>
+<ul>
+  <li><b>PLOSIVE</b>: removes P’s and B’s. <b>NOISE</b>: hiss and room. <b>GATE</b> (THRESH, RANGE, RELEASE): noise between phrases; it acts before the effects and never cuts a reverb tail.</li>
+  <li><b>COMP</b>: one knob for a soft leveler (LA-2A style), then a peak compressor (1176 style), then a safety stage. LEVEL and PEAK meters, and AUTO GAIN.</li>
+  <li><b>MULTIBAND</b>: the amount, and the <b>BANDS</b> panel to set each band (THRESHOLD, RATIO, ATTACK, RELEASE, KNEE, GAIN).</li>
+</ul>
+
+<h2 id="vm-eq">3. EQ and PARAMETRIC</h2>
+<ul>
+  <li><b>LOW, MID, HI, AIR</b>: bipolar, with curves designed for vocals. <b>LOW CUT</b> at 90 Hz.</li>
+  <li><b>PARAMETRIC</b> opens the 8-band EQ full size: BELL, LOW SHELF, HIGH SHELF (±18 dB), LOW CUT and HIGH CUT (12 to 48 dB/oct), NOTCH, and a <b>DYNAMIC</b> mode per band.</li>
+  <li>The display shows the vocal coming in and going out, the parametric curve (red), the knobs’ curve (pink, with a handle to drag) and the total curve (white).</li>
+  <li>With the mouse: drag a point (frequency and gain), wheel for Q, double-click to toggle, double-click in empty space for a new band, hold a point to hear it alone.</li>
+</ul>
+
+<h2 id="vm-fx">4. FX, DELAY and REVERB</h2>
+<ul>
+  <li><b>DE-ESS</b>: finds the frequency on its own, French CH included.</li>
+  <li><b>DRIVE</b>, <b>PHONE</b>, <b>DOUBLER</b>, <b>CHORUS</b>.</li>
+  <li><b>DELAY</b>: send, FEED, FILTER, TIME (at tempo), PING-PONG.</li>
+  <li><b>REVERB</b>: ROOM, PLATE 1, PLATE 2, HALL or SHIMMER, with MIX, DECAY, PRE-DELAY and <b>CLEAN</b> (keeps the vocal clear in the tail). The panel opens SIZE, DIFFUSION, MOD RATE, MOD DEPTH, LOW CUT, HIGH CUT, WIDTH, DUCKING and PULSE (at tempo).</li>
+</ul>
+
+<h2 id="vm-reglages">All the controls</h2>
+<div class="table"><table>
+  <tr><th>Control</th><th>Range</th><th>What it does</th></tr>
+  <tr><td>LIVE · MIX</td><td>mode</td><td>Zero latency or maximum quality.</td></tr>
+  <tr><td>IN · AUTO INPUT</td><td>in dB</td><td>Input level, set automatically to the BEST zone.</td></tr>
+  <tr><td>PLOSIVE · NOISE · GATE</td><td>on + setting</td><td>Cleaning.</td></tr>
+  <tr><td>COMP · AUTO GAIN</td><td>0 – 100 %</td><td>Compression in one knob.</td></tr>
+  <tr><td>MULTIBAND · BANDS</td><td>amount, 4 bands</td><td>Dynamics per band.</td></tr>
+  <tr><td>LOW · MID · HI · AIR</td><td>±</td><td>EQ designed for vocals.</td></tr>
+  <tr><td>LOW CUT</td><td>90 Hz</td><td>Low cut.</td></tr>
+  <tr><td>PARAMETRIC</td><td>8 bands</td><td>The EQ full size, with dynamic mode.</td></tr>
+  <tr><td>DE-ESS · DRIVE</td><td>0 – 100 %</td><td>Sibilance and grit.</td></tr>
+  <tr><td>PHONE · DOUBLER · CHORUS</td><td>0 – 100 %</td><td>Colours.</td></tr>
+  <tr><td>DELAY</td><td>send, FEED, FILTER, TIME, PING-PONG</td><td>Echo, as an auxiliary.</td></tr>
+  <tr><td>REVERB</td><td>5 modes + panel</td><td>Space, as an auxiliary.</td></tr>
+  <tr><td>OUT</td><td>in dB</td><td>With a safety above −1 dBFS.</td></tr>
+</table></div>
+
+<h2 id="vm-conseils">Tips</h2>
+<div class="tip"><p><b>Record</b> in LIVE to hear yourself with no latency, then switch to MIX for the final render.</p></div>
+<div class="tip"><p><b>A modern rap vocal</b>: COMP high, AIR up, DE-ESS, a bit of DOUBLER, a little PLATE 1.</p></div>
+<div class="tip"><p>The 21 factory presets are a good starting point: they don’t use the PARAMETRIC, which stays free for your touches.</p></div>

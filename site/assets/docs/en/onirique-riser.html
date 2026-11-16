@@ -1,0 +1,73 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#ri-vue">Overview</a></li>
+  <li><a href="#ri-capture">Capture</a></li>
+  <li><a href="#ri-montee">The riser</a></li>
+  <li><a href="#ri-effets">Effects and EDIT</a></li>
+  <li><a href="#ri-reglages">All the controls</a></li>
+  <li><a href="#ri-conseils">Tips</a></li>
+</ul>
+
+<h2 id="ri-vue">Overview</h2>
+<p>ONIRIQUE RISER makes <b>reverse reverb risers</b> for the vocal, in one move. On the vocal track, it captures the vocal on its own when you start playback in the DAW; when you stop, the riser is ready. Grab the waveform and drag it into the DAW at the bar shown: <b>it ends exactly where the vocal starts</b>.</p>
+<p>Free, no licence.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 707 270" role="img" aria-label="Making the riser: capture, phrase, sibilance cleaning, reversed, reverb, reversed back, colours, normalisation"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">VOCAL</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="120" height="46" rx="6"/><text x="130" y="59" text-anchor="middle">CAPTURE</text><text x="130" y="75" text-anchor="middle" class="t2">during playback</text><rect class="b" x="220" y="40" width="120" height="46" rx="6"/><text x="280" y="59" text-anchor="middle">PHRASE</text><text x="280" y="75" text-anchor="middle" class="t2">SOURCE</text><path class="w" d="M190 63 H220" marker-end="url(#doc-arr)"/><rect class="b" x="370" y="40" width="120" height="46" rx="6"/><text x="430" y="59" text-anchor="middle">S-CLEAN</text><text x="430" y="75" text-anchor="middle" class="t2">sibilance</text><path class="w" d="M340 63 H370" marker-end="url(#doc-arr)"/><rect class="b" x="520" y="40" width="120" height="46" rx="6"/><text x="580" y="68" text-anchor="middle">REVERSED</text><path class="w" d="M490 63 H520" marker-end="url(#doc-arr)"/><rect class="ba" x="70" y="150" width="120" height="46" rx="6"/><text x="130" y="169" text-anchor="middle" class="tb">REVERB</text><text x="130" y="185" text-anchor="middle" class="t2">SPACE · SIZE</text><path class="w" d="M580 86 V118 H130 V150" marker-end="url(#doc-arr)"/><rect class="b" x="220" y="150" width="120" height="46" rx="6"/><text x="280" y="178" text-anchor="middle">REVERSED</text><path class="w" d="M190 173 H220" marker-end="url(#doc-arr)"/><rect class="b" x="370" y="150" width="120" height="46" rx="6"/><text x="430" y="169" text-anchor="middle">EFFECTS</text><text x="430" y="185" text-anchor="middle" class="t2">PHONE, CHORUS…</text><path class="w" d="M340 173 H370" marker-end="url(#doc-arr)"/><rect class="b" x="520" y="150" width="120" height="46" rx="6"/><text x="580" y="169" text-anchor="middle">FILE</text><text x="580" y="185" text-anchor="middle" class="t2">on a beat</text><path class="w" d="M490 173 H520" marker-end="url(#doc-arr)"/><path class="w" d="M640 173 H680"/><circle class="w" cx="686" cy="173" r="6"/><text x="686" y="201" text-anchor="middle" class="t2">DAW</text></svg>
+  </div>
+  <figcaption>The vocal is reversed, sent through the reverb, then flipped back: the reverb tail becomes a riser that lands on the vocal.</figcaption>
+</figure>
+
+<h2 id="ri-capture">1. Capture</h2>
+<ul>
+  <li>During playback, RISER constantly listens to the last 2 seconds. As soon as the sound goes above −45 dBFS, the take starts (those 2 seconds included), with its place on the DAW timeline, up to 32 s.</li>
+  <li>Stopping playback or a jump (loop, click on the ruler) ends the take. Playback without vocal doesn’t replace the previous take.</li>
+  <li><b>INPUT OPEN / CLOSED</b>: closed, nothing is captured and the take stays as is. Handy so you don’t re-record your lead by accident.</li>
+</ul>
+
+<h2 id="ri-montee">2. The riser</h2>
+<ul>
+  <li><b>REVERSE</b> (the big button): the riser length, 1 beat, 2 beats, 1 bar, 2 bars or 4 bars, at the DAW tempo.</li>
+  <li><b>FX view</b>: the finished riser, ready to drag into the DAW. The pre-fade curve sits on it: pulling its point down makes the riser start quieter and arrive later.</li>
+  <li><b>RAW view</b>: the whole take. Two handles choose the part (the syllable) that creates the riser; it ends where that part begins.</li>
+  <li><b>LISTEN / LOOP</b>: hear the riser (or the chosen part), with the DAW stopped.</li>
+  <li><b>IN SYNC</b>: RISER plays the riser itself at the right moment during playback, no file to drag.</li>
+</ul>
+<p>The dragged file is a 24-bit stereo WAV, named with the bar and beat where it goes.</p>
+
+<h2 id="ri-effets">3. Effects and EDIT</h2>
+<p>In one click: <b>PHONE</b>, <b>CHORUS</b>, <b>TREMOLO</b>, <b>SWEEP</b>, <b>WIDE</b>. Clicking an effect’s name opens its menu (MIX and DRIVE, DEPTH, TIMING, START or WIDTH).</p>
+<p><b>EDIT</b> opens the deeper settings:</p>
+<ul>
+  <li><b>SPACE</b>: ROOM, PLATE, DARK, HALL or SHIMMER.</li>
+  <li><b>SOURCE</b>: how much of the vocal is taken at the start of the phrase.</li>
+  <li><b>SIZE</b>: the reverb size.</li>
+  <li><b>CURVE</b>: the pre-fade shape.</li>
+  <li><b>GAIN</b>: the riser level (normalised to −1 dBFS before).</li>
+  <li><b>S-CLEAN</b>: removes sibilance before the reverb, for a riser without “sss”.</li>
+</ul>
+
+<h2 id="ri-reglages">All the controls</h2>
+<div class="table"><table>
+  <tr><th>Control</th><th>Range</th><th>What it does</th></tr>
+  <tr><td>REVERSE</td><td>1 beat – 4 bars</td><td>The riser length, at tempo.</td></tr>
+  <tr><td>FX · RAW</td><td>view</td><td>The finished riser, or the whole take.</td></tr>
+  <tr><td>LISTEN · LOOP</td><td>listening</td><td>Listen with the DAW stopped.</td></tr>
+  <tr><td>INPUT</td><td>OPEN · CLOSED</td><td>Capture or keep the take.</td></tr>
+  <tr><td>PHONE · CHORUS · TREMOLO · SWEEP · WIDE</td><td>one click</td><td>The riser’s colours.</td></tr>
+  <tr><td>SPACE</td><td>ROOM · PLATE · DARK · HALL · SHIMMER</td><td>Reverb type.</td></tr>
+  <tr><td>SOURCE · SIZE · CURVE</td><td>EDIT</td><td>Vocal portion, size, pre-fade.</td></tr>
+  <tr><td>GAIN</td><td>EDIT</td><td>The riser level.</td></tr>
+  <tr><td>S-CLEAN</td><td>on / off</td><td>Sibilance removed.</td></tr>
+  <tr><td>IN SYNC</td><td>on / off</td><td>Played by the plugin, no file.</td></tr>
+</table></div>
+
+<h2 id="ri-conseils">Tips</h2>
+<div class="tip"><p><b>The fastest way</b>: play your phrase once, stop, choose 1 bar, drag the riser into the DAW at the bar shown.</p></div>
+<div class="tip"><p><b>A bigger riser</b>: SPACE HALL or SHIMMER, SIZE up, and WIDE.</p></div>
+<div class="tip"><p>If the riser sits on the same track as the vocal, set INPUT to CLOSED so it doesn’t get recaptured.</p></div>

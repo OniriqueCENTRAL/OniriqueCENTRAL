@@ -1,0 +1,64 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#we-vue">Overview</a></li>
+  <li><a href="#we-bas">The lows</a></li>
+  <li><a href="#we-haut">The highs</a></li>
+  <li><a href="#we-leviers">Levers</a></li>
+  <li><a href="#we-reglages">All the controls</a></li>
+  <li><a href="#we-conseils">Tips</a></li>
+</ul>
+
+<h2 id="we-vue">Overview</h2>
+<p>ONIRIQUE WEIGHT is a <b>tube program equalizer</b> in the spirit of the 50s classic (EQP-1A): the same front, the same controls in the same places, and its famous <b>low-end trick</b>. It adds two characters: <b>a low end with weight</b>, <b>a top end that breathes</b>.</p>
+<p>The front is a photograph: every part is modelled in 3D, and a knob you turn keeps its reflections in place, like on the unit. Processing runs at twice the sample rate (4 samples of latency at 48 kHz, reported to the DAW).</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 837 160" role="img" aria-label="WEIGHT signal path: low section, tubes, high section, EQ lever"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">INPUT</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="ba" x="70" y="40" width="114" height="46" rx="6"/><text x="127" y="59" text-anchor="middle" class="tb">LOW BOOST</text><text x="127" y="75" text-anchor="middle" class="t2">and ATTEN</text><rect class="b" x="214" y="40" width="114" height="46" rx="6"/><text x="271" y="59" text-anchor="middle">TUBES</text><text x="271" y="75" text-anchor="middle" class="t2">low-end weight</text><path class="w" d="M184 63 H214" marker-end="url(#doc-arr)"/><rect class="ba" x="358" y="40" width="114" height="46" rx="6"/><text x="415" y="59" text-anchor="middle" class="tb">HIGH BOOST</text><text x="415" y="75" text-anchor="middle" class="t2">bell + air</text><path class="w" d="M328 63 H358" marker-end="url(#doc-arr)"/><rect class="b" x="502" y="40" width="114" height="46" rx="6"/><text x="559" y="59" text-anchor="middle">HIGH ATTEN</text><text x="559" y="75" text-anchor="middle" class="t2">gentle shelf</text><path class="w" d="M472 63 H502" marker-end="url(#doc-arr)"/><rect class="b" x="646" y="40" width="114" height="46" rx="6"/><text x="703" y="59" text-anchor="middle">EQ / POWER</text><text x="703" y="75" text-anchor="middle" class="t2">levers</text><path class="w" d="M616 63 H646" marker-end="url(#doc-arr)"/><path class="w" d="M760 63 H800"/><circle class="w" cx="806" cy="63" r="6"/><text x="806" y="91" text-anchor="middle" class="t2">OUTPUT</text></svg>
+  </div>
+  <figcaption>The lows go through the tubes, which thicken them as they rise. The highs don’t go through them and stay clean.</figcaption>
+</figure>
+
+<h2 id="we-bas">1. LOW FREQUENCY: a low end with weight</h2>
+<ul>
+  <li><b>BOOST</b> lifts the lows by up to <b>+13.5 dB</b> around 20, 30, 60 or 100 Hz (<b>CPS</b>). The higher it goes, the more the tubes thicken the bass with their harmonics (mostly the second), which make it audible even on small speakers.</li>
+  <li><b>ATTEN</b> removes lows, down to <b>−17.5 dB</b>, with a gentler slope centred higher.</li>
+</ul>
+<p><b>The low-end trick</b>: BOOST and ATTEN together. The sub rises, and the muddy low-mids just above it dip. At 60 Hz, BOOST at 10 and ATTEN at 10 give about +4.7 dB at 30 Hz and −4.8 dB around 200 Hz; at 5 and 3, +3 dB and −1.8 dB.</p>
+
+<h2 id="we-haut">2. HIGH FREQUENCY: a top end that breathes</h2>
+<ul>
+  <li><b>BOOST</b> up to <b>+18 dB</b> at 3, 4, 5, 8, 10, 12 or 16 kHz (<b>KCS</b>): a bell (85 %) extended by a very wide shelf above it (45 %), like the air bands of mastering equalizers. The top opens and stays light instead of hardening.</li>
+  <li><b>BANDWIDTH</b>: the bell width, from SHARP to BROAD. It tightens as you boost.</li>
+  <li><b>ATTEN</b>: softens the top with a gentle shelf, down to <b>−16 dB</b>, at 5, 10 or 20 kHz (<b>ATTEN SEL</b>).</li>
+</ul>
+
+<h2 id="we-leviers">3. Levers and readouts</h2>
+<ul>
+  <li><b>EQ</b>: down, the curves are flat but the tube colour stays.</li>
+  <li><b>POWER</b> (OFF / ON): turns the unit off, blue light included. The signal passes as it came in.</li>
+  <li>Hovering or turning a control shows its exact value in dB right next to it; a double-click resets it.</li>
+</ul>
+
+<h2 id="we-reglages">All the controls</h2>
+<div class="table"><table>
+  <tr><th>Control</th><th>Range</th><th>What it does</th></tr>
+  <tr><td>LOW BOOST</td><td>0 – +13.5 dB</td><td>Lifts the lows, and the tube weight with them.</td></tr>
+  <tr><td>LOW ATTEN</td><td>0 – −17.5 dB</td><td>Removes lows, with a gentler slope.</td></tr>
+  <tr><td>CPS</td><td>20 · 30 · 60 · 100 Hz</td><td>The low frequency, shared by both.</td></tr>
+  <tr><td>HIGH BOOST</td><td>0 – +18 dB</td><td>The bell and the air above.</td></tr>
+  <tr><td>BANDWIDTH</td><td>SHARP → BROAD</td><td>The width of the high bell.</td></tr>
+  <tr><td>KCS</td><td>3 – 16 kHz</td><td>The HIGH BOOST frequency.</td></tr>
+  <tr><td>HIGH ATTEN</td><td>0 – −16 dB</td><td>A gentle shelf in the highs.</td></tr>
+  <tr><td>ATTEN SEL</td><td>5 · 10 · 20 kHz</td><td>The HIGH ATTEN frequency.</td></tr>
+  <tr><td>EQ</td><td>IN / OUT</td><td>Flat curves, colour kept.</td></tr>
+  <tr><td>POWER</td><td>ON / OFF</td><td>The unit off, the original sound.</td></tr>
+</table></div>
+
+<h2 id="we-conseils">Tips</h2>
+<div class="tip"><p><b>The low-end trick on a kick or an 808</b>: CPS 60, BOOST at 5, ATTEN at 3. The sub gains weight and the low-mids clear up.</p></div>
+<div class="tip"><p><b>Air on a vocal</b>: KCS 12 or 16, BANDWIDTH towards BROAD, a few notches of BOOST. If the vocal gets sibilant, a bit of HIGH ATTEN at 20 kHz softens it.</p></div>

@@ -1,0 +1,82 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#mo-vue">Overview</a></li>
+  <li><a href="#mo-circuit">CIRCUIT</a></li>
+  <li><a href="#mo-density">DENSITY</a></li>
+  <li><a href="#mo-modulation">Modulation and intensity</a></li>
+  <li><a href="#mo-texture">TEXTURE and output</a></li>
+  <li><a href="#mo-reglages">All the controls</a></li>
+  <li><a href="#mo-conseils">Tips</a></li>
+</ul>
+
+<h2 id="mo-vue">Overview</h2>
+<p>ONIRIQUE MODBOX is a <b>delay-line modulation</b> effect: flanger, BBD chorus, dimension. A single line, with one to eight voices, going from <b>surgical digital</b> to <b>lo-fi analogue circuit</b>, and from barely-there to a wall of sound. Mono or stereo input, stereo output, no latency.</p>
+<p>The display shows at the top what the effect does to the spectrum right now, at the bottom each voice’s delay.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 1207 200" role="img" aria-label="MODBOX signal path: low split, drive, digital or BBD delay line, modulated voices, texture, mix"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">INPUT</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="141" height="46" rx="6"/><text x="140.5" y="59" text-anchor="middle">BASS KEEP</text><text x="140.5" y="75" text-anchor="middle" class="t2">crossover</text><rect class="b" x="241" y="40" width="141" height="46" rx="6"/><text x="311.5" y="68" text-anchor="middle">DRIVE</text><path class="w" d="M211 63 H241" marker-end="url(#doc-arr)"/><rect class="ba" x="412" y="40" width="141" height="46" rx="6"/><text x="482.5" y="59" text-anchor="middle" class="tb">LINE</text><text x="482.5" y="75" text-anchor="middle" class="t2">sinc ↔ BBD</text><path class="w" d="M382 63 H412" marker-end="url(#doc-arr)"/><rect class="b" x="583" y="40" width="141" height="46" rx="6"/><text x="653.5" y="59" text-anchor="middle">VOICES</text><text x="653.5" y="75" text-anchor="middle" class="t2">1 to 8, LFO</text><path class="w" d="M553 63 H583" marker-end="url(#doc-arr)"/><rect class="b" x="754" y="40" width="141" height="46" rx="6"/><text x="824.5" y="59" text-anchor="middle">TEXTURE</text><text x="824.5" y="75" text-anchor="middle" class="t2">crush · distortion</text><path class="w" d="M724 63 H754" marker-end="url(#doc-arr)"/><rect class="b" x="925" y="40" width="141" height="46" rx="6"/><text x="995.5" y="68" text-anchor="middle">AUTO GAIN · OUT</text><path class="w" d="M895 63 H925" marker-end="url(#doc-arr)"/><path class="w" d="M1066 63 H1094" marker-end="url(#doc-arr)"/><circle class="ba" cx="1112" cy="63" r="18"/><text x="1112" y="69" text-anchor="middle" class="tb">+</text><text x="1112" y="37" text-anchor="middle" class="t2">MIX</text><circle class="dot" cx="52" cy="63" r="3.5"/><path class="wd" d="M52 63 V178 H1112 V81" marker-end="url(#doc-arr)"/><text x="80" y="172" class="t2">the original sound</text><path class="w" d="M1130 63 H1170"/><circle class="w" cx="1176" cy="63" r="6"/><text x="1176" y="91" text-anchor="middle" class="t2">OUTPUT</text></svg>
+  </div>
+  <figcaption>Below BASS KEEP, the lows bypass the effect. The line is read by one to eight modulated voices; feedback loops back into the line. MIX blends effect and direct sound at constant power.</figcaption>
+</figure>
+
+<h2 id="mo-circuit">1. CIRCUIT: from digital to analogue</h2>
+<ul>
+  <li><b>CIRCUIT</b>: at 0, a perfect delay line (windowed-sinc reading), no noise, flat response. At 100, a BBD circuit. In between, a continuous blend.</li>
+  <li><b>DRIVE</b>: soft saturation of what enters the line, feedback included.</li>
+  <li><b>DRIFT</b>: clock drift specific to each voice, slow (wow) and fast (flutter).</li>
+  <li><b>NOISE</b>: hiss.</li>
+</ul>
+<p>DRIVE, DRIFT, NOISE and STAGES only count as CIRCUIT rises; at 0, they’re drawn dimmed.</p>
+
+<h2 id="mo-density">2. DENSITY: from thin to fat</h2>
+<ul>
+  <li><b>VOICES</b>: 1 to 8 voices on the line, their LFOs spread over the cycle (2 voices in opposition, like a Dimension).</li>
+  <li><b>SPREAD</b>: the gap between voice delays.</li>
+  <li><b>STAGES</b>: BBD stages, 256 to 4096. Its low-pass filter closes as the delay gets longer, and earlier with fewer stages.</li>
+  <li><b>BASS KEEP</b>: below this frequency, the sound bypasses the effect (Linkwitz-Riley, 24 dB/oct).</li>
+</ul>
+
+<h2 id="mo-modulation">3. Modulation and intensity</h2>
+<ul>
+  <li><b>RATE / DEPTH</b>: sweep speed and amount. <b>STEREO</b>: right LFO ahead of the left, from 0° (mono) to 180°. <b>RATE 2 / LFO 2</b>: a second LFO. <b>SHAPE</b>: sine or triangle.</li>
+  <li><b>DELAY</b>: the delay at the centre of the sweep, 0.3 to 50 ms.</li>
+  <li><b>FEEDBACK</b>: from −100 % (phase inverted: hollow, liquid) to +100 % (metallic, sharp). <b>CROSS</b>: how much feedback switches sides.</li>
+  <li><b>MIX</b>: from input only to effect only.</li>
+</ul>
+
+<h2 id="mo-texture">4. TEXTURE and output</h2>
+<ul>
+  <li><b>CRUSH</b>: 16 down to 3 bits. <b>DOWNSAMPLE</b>: 40 kHz down to 300 Hz, with its aliasing. <b>DISTORTION</b>: hard saturation, up to 36 dB. Applied to the voices, outside the feedback loop: the direct sound stays clean.</li>
+  <li><b>AUTO GAIN</b>: brings the output back to the input level (up to ±12 dB). <b>OUT</b>: final level.</li>
+</ul>
+<p>A preset’s type is read from its settings: <b>Vibrato</b> if MIX ≥ 95 % and low feedback, otherwise <b>Flanger</b> under 8 ms of delay and <b>Chorus</b> above, plus <b>Bit Crusher</b> and <b>Distortion</b>.</p>
+
+<h2 id="mo-reglages">All the controls</h2>
+<div class="table"><table>
+  <tr><th>Control</th><th>Range</th><th>What it does</th></tr>
+  <tr><td>CIRCUIT</td><td>0 – 100 %</td><td>Digital or BBD.</td></tr>
+  <tr><td>DRIVE · DRIFT · NOISE</td><td>0 – 100 %</td><td>Circuit colour.</td></tr>
+  <tr><td>VOICES</td><td>1 – 8</td><td>Number of voices.</td></tr>
+  <tr><td>SPREAD</td><td>0 – 100 %</td><td>Gap between voices.</td></tr>
+  <tr><td>STAGES</td><td>256 – 4096</td><td>BBD stages.</td></tr>
+  <tr><td>BASS KEEP</td><td>Off – in Hz</td><td>Lows outside the effect.</td></tr>
+  <tr><td>RATE · DEPTH</td><td>Hz · %</td><td>The sweep.</td></tr>
+  <tr><td>STEREO</td><td>0 – 180°</td><td>LFO offset.</td></tr>
+  <tr><td>RATE 2 · LFO 2</td><td>Hz · %</td><td>The second LFO.</td></tr>
+  <tr><td>SHAPE</td><td>sine · triangle</td><td>LFO shape.</td></tr>
+  <tr><td>DELAY</td><td>0.3 – 50 ms</td><td>Centre delay.</td></tr>
+  <tr><td>FEEDBACK · CROSS</td><td>±100 % · %</td><td>Regeneration.</td></tr>
+  <tr><td>CRUSH · DOWNSAMPLE · DISTORTION</td><td>0 – 100 %</td><td>Texture.</td></tr>
+  <tr><td>MIX</td><td>0 – 100 %</td><td>Effect and direct sound.</td></tr>
+  <tr><td>AUTO GAIN · OUT</td><td>on · dB</td><td>Output level.</td></tr>
+</table></div>
+
+<h2 id="mo-conseils">Tips</h2>
+<div class="tip"><p><b>A vintage synth chorus</b>: CIRCUIT 100, VOICES 2, STEREO 180°, DELAY around 7 ms, slow RATE.</p></div>
+<div class="tip"><p><b>A flanger that takes off</b>: DELAY 1 to 3 ms, FEEDBACK +70 %, high DEPTH, very slow RATE.</p></div>
+<div class="tip"><p>On a bass or a kick, raise BASS KEEP: the lows stay tight and centred.</p></div>

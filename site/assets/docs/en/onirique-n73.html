@@ -1,0 +1,82 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#n7-vue">Overview</a></li>
+  <li><a href="#n7-entree">Input and gain</a></li>
+  <li><a href="#n7-eq">The equalizer</a></li>
+  <li><a href="#n7-sortie">Fader and output</a></li>
+  <li><a href="#n7-roue">Modern settings</a></li>
+  <li><a href="#n7-reglages">All the controls</a></li>
+  <li><a href="#n7-conseils">Tips</a></li>
+</ul>
+
+<h2 id="n7-vue">Overview</h2>
+<p>ONIRIQUE N73 is a <b>preamp-equalizer</b> in the spirit of the British console module from the 70s (the 1073): mic or line input, stepped gain, three-band equalizer and high-pass filter. Its console grain comes from the circuit itself: the transformers, the amplifier stages and the EQ networks are simulated from the original schematics.</p>
+<p>The pots act on the real resistors of the networks: that’s why the shape of the curves changes with the setting, just like on the unit.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 745 270" role="img" aria-label="N73 signal path: input transformer, gain, amplifier, equalizer, high-pass, fader, output stage"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">INPUT</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="127" height="46" rx="6"/><text x="133.5" y="59" text-anchor="middle">INPUT</text><text x="133.5" y="75" text-anchor="middle" class="t2">MIC · LINE · PAD</text><rect class="ba" x="227" y="40" width="127" height="46" rx="6"/><text x="290.5" y="59" text-anchor="middle" class="tb">GAIN</text><text x="290.5" y="75" text-anchor="middle" class="t2">22 steps</text><path class="w" d="M197 63 H227" marker-end="url(#doc-arr)"/><rect class="b" x="384" y="40" width="127" height="46" rx="6"/><text x="447.5" y="59" text-anchor="middle">AMPLIFIER</text><text x="447.5" y="75" text-anchor="middle" class="t2">class A</text><path class="w" d="M354 63 H384" marker-end="url(#doc-arr)"/><rect class="ba" x="541" y="40" width="127" height="46" rx="6"/><text x="604.5" y="59" text-anchor="middle" class="tb">EQ</text><text x="604.5" y="75" text-anchor="middle" class="t2">HIGH · MID · LOW</text><path class="w" d="M511 63 H541" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="150" width="127" height="46" rx="6"/><text x="133.5" y="169" text-anchor="middle">HIGH PASS</text><text x="133.5" y="185" text-anchor="middle" class="t2">50 – 300 Hz</text><path class="w" d="M604.5 86 V118 H133.5 V150" marker-end="url(#doc-arr)"/><rect class="b" x="227" y="150" width="127" height="46" rx="6"/><text x="290.5" y="169" text-anchor="middle">FADER</text><text x="290.5" y="185" text-anchor="middle" class="t2">−∞ to +10 dB</text><path class="w" d="M197 173 H227" marker-end="url(#doc-arr)"/><rect class="b" x="384" y="150" width="127" height="46" rx="6"/><text x="447.5" y="169" text-anchor="middle">OUTPUT STAGE</text><text x="447.5" y="185" text-anchor="middle" class="t2">transformer</text><path class="w" d="M354 173 H384" marker-end="url(#doc-arr)"/><rect class="b" x="541" y="150" width="127" height="46" rx="6"/><text x="604.5" y="169" text-anchor="middle">OUTPUT</text><text x="604.5" y="185" text-anchor="middle" class="t2">−24 to +12 dB</text><path class="w" d="M511 173 H541" marker-end="url(#doc-arr)"/><path class="w" d="M668 173 H708"/><circle class="w" cx="714" cy="173" r="6"/><text x="714" y="201" text-anchor="middle" class="t2">OUTPUT</text></svg>
+  </div>
+  <figcaption>The module’s path, in schematic order. Gain and fader set the grain (the saturation); OUTPUT only sets the level.</figcaption>
+</figure>
+
+<h2 id="n7-entree">1. Input and gain</h2>
+<ul>
+  <li><b>MIC</b> and <b>LINE</b> are two ranges of the same knob. Clicking MIC or LINE switches input and recalls that input’s last position.</li>
+  <li><b>MIC</b>: from −20 to −80, through the input transformer. The higher the gain, the thicker the lows and harmonics get.</li>
+  <li><b>MIC Z</b>: the impedance the mic sees, LO (300 Ω) or HI (1.2 kΩ). It slightly changes the lows and the presence.</li>
+  <li><b>PAD</b>: −20 dB before the mic input.</li>
+  <li><b>OFF</b>: processing stops and the sound passes as is.</li>
+</ul>
+
+<h2 id="n7-eq">2. The equalizer</h2>
+<div class="table"><table>
+  <tr><th>Band</th><th>Settings</th><th>Shape</th></tr>
+  <tr><td>HIGH</td><td>±16 dB, 12 kHz</td><td>High shelf.</td></tr>
+  <tr><td>MID</td><td>±18 dB, OFF · 0.36 · 0.7 · 1.6 · 3.2 · 4.8 · 7.2 kHz</td><td>Presence bell.</td></tr>
+  <tr><td>LOW</td><td>±16 dB, OFF · 35 · 60 · 110 · 220 Hz</td><td>Low shelf.</td></tr>
+  <tr><td>HIGH PASS</td><td>OFF · 50 · 80 · 160 · 300 Hz</td><td>Passive inductor high-pass.</td></tr>
+</table></div>
+<p><b>EQL</b> puts the equalizer in or out. Even flat, the network keeps its slight signature (±0.4 dB), like the module.</p>
+
+<h2 id="n7-sortie">3. Fader and output</h2>
+<ul>
+  <li><b>FADER</b>: the console fader, before the output amplifier, from −∞ to +10 dB (unity at 0). Above 0 dB it pushes the output amp and its transformer: that’s where the grain rises.</li>
+  <li><b>OUTPUT</b>: the final volume, −24 to +12 dB, clean, no effect on saturation.</li>
+  <li><b>PHASE</b>: flips the polarity.</li>
+  <li><b>POWER</b>: off, the original sound.</li>
+</ul>
+
+<h2 id="n7-roue">4. Modern settings</h2>
+<ul>
+  <li><b>CAL</b>: the analogue level matching 0 dBFS, from +18 to +26 dBu (+26 by default). The lower it is, the harder your signal hits the module.</li>
+  <li><b>LEVEL MATCH</b>: compensates the volume, to judge grain and EQ at equal loudness.</li>
+  <li><b>QUALITY</b>: Normal or High (higher internal rate, more faithful in the extreme highs).</li>
+</ul>
+
+<h2 id="n7-reglages">All the controls</h2>
+<div class="table"><table>
+  <tr><th>Control</th><th>Range</th><th>What it does</th></tr>
+  <tr><td>GAIN</td><td>LINE · MIC, 22 steps</td><td>The input gain, and the grain with it.</td></tr>
+  <tr><td>MIC Z</td><td>LO 300 · HI 1200</td><td>Mic input impedance.</td></tr>
+  <tr><td>PAD</td><td>0 · −20 dB</td><td>Mic input attenuator.</td></tr>
+  <tr><td>HIGH</td><td>±16 dB</td><td>Shelf at 12 kHz.</td></tr>
+  <tr><td>MID FREQ · MID</td><td>0.36 – 7.2 kHz, ±18 dB</td><td>The presence.</td></tr>
+  <tr><td>LOW FREQ · LOW</td><td>35 – 220 Hz, ±16 dB</td><td>The lows.</td></tr>
+  <tr><td>HIGH PASS</td><td>OFF · 50 – 300 Hz</td><td>Low cut.</td></tr>
+  <tr><td>EQL</td><td>IN · OUT</td><td>The equalizer in circuit.</td></tr>
+  <tr><td>PHASE</td><td>0 · 180</td><td>Flips the polarity.</td></tr>
+  <tr><td>FADER</td><td>−∞ to +10 dB</td><td>Before the output amplifier.</td></tr>
+  <tr><td>OUTPUT</td><td>−24 to +12 dB</td><td>The final level.</td></tr>
+  <tr><td>CAL</td><td>+18 – +26 dBu</td><td>Digital / analogue alignment.</td></tr>
+  <tr><td>LEVEL MATCH · QUALITY</td><td>ON · Normal / High</td><td>Comparison and processing quality.</td></tr>
+</table></div>
+
+<h2 id="n7-conseils">Tips</h2>
+<div class="tip"><p><b>Console grain on a vocal</b>: MIC input, raise the GAIN until you hear the lows thicken, then bring the level back with OUTPUT. Turn on LEVEL MATCH to compare honestly.</p></div>
+<div class="tip"><p><b>Classic presence</b>: MID at 3.2 or 4.8 kHz, +3 to +5 dB, HIGH +2 dB, HIGH PASS at 80 Hz.</p></div>
+<div class="tip"><p><b>More saturation</b>: lower CAL towards +18 dBu, or push the FADER above 0.</p></div>

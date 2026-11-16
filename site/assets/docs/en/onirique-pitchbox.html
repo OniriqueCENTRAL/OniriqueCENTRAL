@@ -1,0 +1,76 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#pb-vue">Overview</a></li>
+  <li><a href="#pb-prise">The take</a></li>
+  <li><a href="#pb-notes">The notes</a></li>
+  <li><a href="#pb-global">Global settings</a></li>
+  <li><a href="#pb-reglages">All the controls</a></li>
+  <li><a href="#pb-conseils">Tips</a></li>
+</ul>
+
+<h2 id="pb-vue">Overview</h2>
+<p>ONIRIQUE PITCHBOX is a <b>note-by-note pitch editor for vocals</b>. The plugin gets the whole take, analyses it note by note, and resynthesises it at playback while keeping the formants. A note you move in the editor is heard right away, without reanalysis.</p>
+<p>The grey curve is what was sung, the ember curve what will come out. The ghost outline behind a note shows where it came from.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 867 160" role="img" aria-label="How PITCHBOX works: the take, the analysis, the notes, the scale and edits, the resynthesis"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">VOCAL</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="120" height="46" rx="6"/><text x="130" y="59" text-anchor="middle">TAKE</text><text x="130" y="75" text-anchor="middle" class="t2">ARA or TRANSFER</text><rect class="b" x="220" y="40" width="120" height="46" rx="6"/><text x="280" y="59" text-anchor="middle">ANALYSIS</text><text x="280" y="75" text-anchor="middle" class="t2">pitch, notes</text><path class="w" d="M190 63 H220" marker-end="url(#doc-arr)"/><rect class="b" x="370" y="40" width="120" height="46" rx="6"/><text x="430" y="59" text-anchor="middle">SCALE</text><text x="430" y="75" text-anchor="middle" class="t2">DETECT KEY</text><path class="w" d="M340 63 H370" marker-end="url(#doc-arr)"/><rect class="ba" x="520" y="40" width="120" height="46" rx="6"/><text x="580" y="59" text-anchor="middle" class="tb">EDITS</text><text x="580" y="75" text-anchor="middle" class="t2">note by note</text><path class="w" d="M490 63 H520" marker-end="url(#doc-arr)"/><rect class="b" x="670" y="40" width="120" height="46" rx="6"/><text x="730" y="59" text-anchor="middle">RESYNTHESIS</text><text x="730" y="75" text-anchor="middle" class="t2">formants kept</text><path class="w" d="M640 63 H670" marker-end="url(#doc-arr)"/><path class="w" d="M790 63 H830"/><circle class="w" cx="836" cy="63" r="6"/><text x="836" y="91" text-anchor="middle" class="t2">OUTPUT</text></svg>
+  </div>
+  <figcaption>The analysis describes what was sung and never changes; the edits describe what you want instead. That’s why a moved note is heard right away.</figcaption>
+</figure>
+
+<h2 id="pb-prise">1. Giving the take to the plugin</h2>
+<p><b>With ARA</b> (Studio One, Logic Pro, Cubase / Nuendo, REAPER, Cakewalk, Mixcraft): insert PITCHBOX as an ARA extension on the track, it gets the take on its own.</p>
+<p><b>Without ARA</b> (FL Studio, Ableton Live…), use <b>TRANSFER mode</b>, inserted as an effect on the vocal track:</p>
+<ol>
+  <li>click <b>TRANSFER</b> (the plugin is armed);</li>
+  <li>play the passage to correct;</li>
+  <li>stop playback (or click <b>STOP</b>): the passage is analysed.</li>
+</ol>
+<p>Faster: <b>drop the vocal file onto the window</b> (WAV, AIFF, FLAC, OGG, MP3), then play one second of the clip: the plugin finds where it sits. From then on, it plays its corrected copy every time the playhead crosses that passage. The take is saved in the project with the edits.</p>
+<div class="tip"><p>One take per instance. If the clip is moved later, redo the transfer.</p></div>
+
+<h2 id="pb-notes">2. Editing notes</h2>
+<ul>
+  <li><b>Drag a note</b> vertically: snap it to the scale. Alt: free placement.</li>
+  <li><b>Hold the click</b> on a note: hear it held, corrected (transport stopped, TRANSFER mode).</li>
+  <li><b>Double-click</b>: exclude the note from correction, for a deliberate bend.</li>
+  <li><b>MODULATION</b>: on selected notes, how much sung movement stays inside the note (vibrato, attack, drift). 0 flattens, 1 leaves it as sung.</li>
+  <li><b>Multiple selection</b>: Ctrl or Shift + click, or a box drawn in empty space.</li>
+  <li><b>UNDO / REDO / RESET</b>: RESET clears manual edits and keeps the global settings.</li>
+</ul>
+<p>Navigation: the wheel scrolls up and down, Shift + wheel moves through the take, Ctrl + wheel zooms in time, Alt + wheel in pitch.</p>
+
+<h2 id="pb-global">3. Global settings</h2>
+<ul>
+  <li><b>AMOUNT</b>: correction strength on notes you haven’t touched by hand.</li>
+  <li><b>SPEED</b>: the transition time at the start and end of a note. 0 gives the hard, audible snap; 40 to 80 ms sounds like a singer finding the note.</li>
+  <li><b>FORMANT</b>: shifts the spectral envelope (the vowel) independently from pitch.</li>
+  <li><b>DETECT KEY</b>: sets the scale to the key found in the take.</li>
+  <li><b>EXPORT MIDI</b>: the notes as they’ll sound, in a .mid file.</li>
+</ul>
+<p>Correction puts notes in place without crushing the vibrato: it stays as sung, unless you lower MODULATION.</p>
+
+<h2 id="pb-reglages">All the controls</h2>
+<div class="table"><table>
+  <tr><th>Control</th><th>Range</th><th>What it does</th></tr>
+  <tr><td>Note (drag)</td><td>on scale · Alt free</td><td>A note’s pitch.</td></tr>
+  <tr><td>Double-click</td><td>note</td><td>Exclude from correction.</td></tr>
+  <tr><td>MODULATION</td><td>0 – 1</td><td>Movement kept inside the note.</td></tr>
+  <tr><td>AMOUNT</td><td>0 – 100 %</td><td>Automatic correction strength.</td></tr>
+  <tr><td>SPEED</td><td>0 – in ms</td><td>Transition between notes.</td></tr>
+  <tr><td>FORMANT</td><td>in semitones</td><td>The vowel, apart from the pitch.</td></tr>
+  <tr><td>DETECT KEY</td><td>button</td><td>The scale found in the take.</td></tr>
+  <tr><td>TRANSFER · STOP</td><td>buttons</td><td>Give the take without ARA.</td></tr>
+  <tr><td>Play · loop</td><td>TRANSFER mode</td><td>Replay the corrected take, DAW stopped.</td></tr>
+  <tr><td>EXPORT MIDI</td><td>button</td><td>The notes as a .mid file.</td></tr>
+  <tr><td>UNDO · REDO · RESET</td><td>buttons</td><td>Undo, redo, start over.</td></tr>
+</table></div>
+
+<h2 id="pb-conseils">Tips</h2>
+<div class="tip"><p><b>A natural correction</b>: DETECT KEY, AMOUNT around 70 %, SPEED 50 ms, then fix by hand the two or three notes that need it.</p></div>
+<div class="tip"><p><b>Keeping an expressive bend</b>: double-click the note to exclude it from correction.</p></div>

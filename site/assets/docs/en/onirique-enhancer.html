@@ -1,0 +1,224 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#en-vue">Overview</a></li>
+  <li><a href="#en-lampe">The tube preamp</a></li>
+  <li><a href="#en-eq">The console EQ</a></li>
+  <li><a href="#en-niveleur">The leveler</a></li>
+  <li><a href="#en-effets">Flanger and reverb</a></li>
+  <li><a href="#en-sortie">Limiter and MIX</a></li>
+  <li><a href="#en-reglages">All settings</a></li>
+  <li><a href="#en-conseils">Tips</a></li>
+</ul>
+
+<h2 id="en-vue">Overview</h2>
+<p>ONIRIQUE ENHANCER is a <b>complete studio chain for vocals</b>, wired in the order you’d patch it for real: a tube preamp, a console equalizer, a leveler, a flanger, a reverb plate and a limiter. A few knobs are enough: the vocal comes forward, warm and bright.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 920 300" role="img" aria-label="ENHANCER chain: input, oversampled tube, EQ, leveler, flanger, reverb, output, limiter, MIX">
+    <circle class="w" cx="28" cy="80" r="6"/><text x="28" y="58" text-anchor="middle" class="t2">VOCAL</text>
+    <path class="w" d="M34 80 H90" marker-end="url(#doc-arr)"/><circle class="dot" cx="60" cy="80" r="3.5"/>
+    <rect class="b" x="90" y="58" width="100" height="44" rx="6"/><text x="140" y="77" text-anchor="middle">INPUT</text><text x="140" y="93" text-anchor="middle" class="t2">LEVEL</text>
+    <rect class="b" x="210" y="58" width="100" height="44" rx="6"/><text x="260" y="77" text-anchor="middle">BASS / AIR</text><text x="260" y="93" text-anchor="middle" class="t2">tilt</text>
+    <rect class="ba" x="330" y="40" width="230" height="80" rx="8"/>
+    <text x="445" y="34" text-anchor="middle" class="t2 ta">× 4 the sample rate</text>
+    <rect class="b" x="342" y="58" width="56" height="44" rx="5"/><text x="370" y="85" text-anchor="middle" class="t2">↑ × 4</text>
+    <rect class="b" x="410" y="58" width="80" height="44" rx="5"/><text x="450" y="77" text-anchor="middle" class="tb">TUBE</text><text x="450" y="93" text-anchor="middle" class="t2">DRIVE · TUBE</text>
+    <rect class="b" x="500" y="58" width="50" height="44" rx="5"/><text x="525" y="85" text-anchor="middle" class="t2">↓ × 4</text>
+    <rect class="b" x="580" y="58" width="130" height="44" rx="6"/><text x="645" y="77" text-anchor="middle">CONSOLE EQ</text><text x="645" y="93" text-anchor="middle" class="t2">4 bands</text>
+    <path class="w" d="M190 80 H210" marker-end="url(#doc-arr)"/><path class="w" d="M310 80 H342" marker-end="url(#doc-arr)"/><path class="w" d="M398 80 H410" marker-end="url(#doc-arr)"/><path class="w" d="M490 80 H500" marker-end="url(#doc-arr)"/><path class="w" d="M550 80 H580" marker-end="url(#doc-arr)"/>
+    <path class="w" d="M710 80 H760 V140 H140 V170" marker-end="url(#doc-arr)"/>
+
+    <rect class="b" x="90" y="170" width="110" height="44" rx="6"/><text x="145" y="189" text-anchor="middle">LEVELER</text><text x="145" y="205" text-anchor="middle" class="t2">soft 3:1</text>
+    <rect class="b" x="220" y="170" width="110" height="44" rx="6"/><text x="275" y="189" text-anchor="middle">FLANGER</text><text x="275" y="205" text-anchor="middle" class="t2">slow stereo</text>
+    <circle class="ba" cx="420" cy="192" r="16"/><text x="420" y="197" text-anchor="middle" class="tb">+</text>
+    <circle class="dot" cx="350" cy="192" r="3.5"/><path class="w" d="M350 192 V251 H370" marker-end="url(#doc-arr)"/>
+    <rect class="b" x="370" y="236" width="90" height="30" rx="5"/><text x="415" y="255" text-anchor="middle" class="t2">PLATE</text>
+    <path class="w" d="M420 236 V210" marker-end="url(#doc-arr)"/>
+    <rect class="b" x="460" y="170" width="100" height="44" rx="6"/><text x="510" y="189" text-anchor="middle">OUTPUT</text><text x="510" y="205" text-anchor="middle" class="t2">LEVEL</text>
+    <rect class="ba" x="580" y="170" width="120" height="44" rx="6"/><text x="640" y="189" text-anchor="middle" class="tb">LIMITER</text><text x="640" y="205" text-anchor="middle" class="t2">−0.5 dBFS</text>
+    <path class="w" d="M200 192 H220" marker-end="url(#doc-arr)"/><path class="w" d="M330 192 H404" marker-end="url(#doc-arr)"/><path class="w" d="M436 192 H460" marker-end="url(#doc-arr)"/><path class="w" d="M560 192 H580" marker-end="url(#doc-arr)"/>
+    <path class="w" d="M700 192 H742" marker-end="url(#doc-arr)"/>
+    <circle class="ba" cx="760" cy="192" r="18"/><text x="760" y="198" text-anchor="middle" class="tb">+</text><text x="760" y="164" text-anchor="middle" class="t2">MIX</text>
+    <path class="w" d="M778 192 H870"/><circle class="w" cx="876" cy="192" r="6"/><text x="876" y="222" text-anchor="middle" class="t2">OUTPUT</text>
+    <path class="wd" d="M60 80 V285 H560"/><rect class="b" x="560" y="268" width="150" height="34" rx="5"/><text x="635" y="290" text-anchor="middle" class="t2">delay = latency</text>
+    <path class="wd" d="M710 285 H760 V212" marker-end="url(#doc-arr)"/><text x="300" y="280" class="t2">original vocal</text>
+  </svg>
+  </div>
+  <figcaption>The signal path, in studio order. The original vocal is delayed by exactly the processing latency: at MIX 50 %, the two vocals stay perfectly in phase.</figcaption>
+</figure>
+
+<h2 id="en-lampe">1. The tube preamp (TUBE PREAMP)</h2>
+<p>The first stage emulates a triode preamp. Here’s its electrical equivalent: the vocal arrives on the <b>grid</b>, the tube amplifies it towards the <b>plate</b>, and the <b>bias point</b> setting (cathode side) decides whether the tube saturates symmetrically or not.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 900 330" role="img" aria-label="Electrical equivalent of the tube stage: common-cathode triode">
+    <!-- rail B+ -->
+    <path class="w" d="M380 30 H560"/><text x="570" y="34" class="t2">B+ (high voltage)</text>
+    <!-- entrée et condensateur de liaison -->
+    <circle class="w" cx="40" cy="170" r="6"/><text x="40" y="200" text-anchor="middle" class="t2">VOCAL</text>
+    <path class="w" d="M46 170 H128 M128 156 V184 M138 156 V184 M138 170 H212"/>
+    <text x="133" y="148" text-anchor="middle" class="t2">C</text>
+    <circle class="dot" cx="212" cy="170" r="3.5"/>
+    <!-- résistance de grille vers la masse -->
+    <path class="w" d="M212 170 V196 l-10 6 l20 12 l-20 12 l20 12 l-10 6 V270 M200 270 H224 M205 276 H219 M210 282 H214"/>
+    <text x="232" y="232" class="t2">Rg</text>
+    <!-- vers la grille -->
+    <path class="w" d="M212 170 H382"/>
+    <text x="300" y="160" text-anchor="middle" class="ta">INPUT DRIVE</text>
+    <text x="300" y="186" text-anchor="middle" class="t2">up to +24 dB</text>
+    <!-- la triode -->
+    <circle class="ba" cx="420" cy="170" r="40"/>
+    <path class="w" d="M400 140 H440"/>
+    <path class="w" d="M398 170 H404 M408 170 H414 M418 170 H424 M428 170 H434 M438 170 H442" style="stroke:#F6EEEE"/>
+    <path class="w" d="M404 194 V188 H436"/>
+    <path class="w" d="M410 205 l10 -8 l10 8" style="stroke:rgb(var(--acc))"/>
+    <text x="474" y="148" class="t2">plate</text><text x="474" y="174" class="t2">grid</text><text x="474" y="200" class="t2">cathode</text>
+    <!-- plaque : résistance vers B+, sortie -->
+    <path class="w" d="M420 140 V100 l-10 -6 l20 -12 l-10 -6 V30"/>
+    <text x="436" y="78" class="t2">Rp</text>
+    <circle class="dot" cx="420" cy="110" r="3.5"/>
+    <path class="w" d="M420 110 H640 M640 96 V124 M650 96 V124 M650 110 H760" />
+    <circle class="w" cx="766" cy="110" r="6"/><text x="766" y="94" text-anchor="middle" class="t2">to the EQ</text>
+    <text x="645" y="88" text-anchor="middle" class="t2">C</text>
+    <!-- cathode : résistance et condensateur vers la masse -->
+    <path class="w" d="M404 194 V232 H520"/><circle class="dot" cx="470" cy="232" r="3.5"/>
+    <path class="w" d="M470 232 V244 l-10 6 l20 12 l-10 6 V300 M458 300 H482 M463 306 H477 M468 312 H472"/>
+    <text x="440" y="270" text-anchor="end" class="t2">Rk</text>
+    <path class="w" d="M520 232 V262 M506 262 H534 M506 272 H534 M520 272 V300 M508 300 H532 M513 306 H527 M518 312 H522"/>
+    <text x="544" y="270" class="t2">Ck</text>
+    <text x="640" y="250" class="ta">TUBE</text>
+    <text x="640" y="268" class="t2">moves the bias point:</text>
+    <text x="640" y="284" class="t2">saturation becomes asymmetric</text>
+    <text x="640" y="300" class="t2">(even harmonics = warmth)</text>
+  </svg>
+  </div>
+  <figcaption>Electrical equivalent of a common-cathode triode stage. The plugin doesn’t simulate each component: it reproduces this stage’s behaviour (gain, compression, asymmetry).</figcaption>
+</figure>
+
+<p>What matters is the tube’s <b>transfer curve</b> : the relation between what goes in and what comes out. A straight line changes nothing in the sound; a curve that rounds off squashes the peaks and creates harmonics.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 900 300" role="img" aria-label="Transfer curves: straight line, symmetric saturation, the tube’s asymmetric saturation">
+    <path class="wg" d="M60 40 H360 M60 260 H360 M210 30 V270"/>
+    <path class="w" d="M60 150 H360"/>
+    <path d="M145 293 L275 7" class="wd"/>
+    <path d="M60 259.5 L62.5 259.4 L65 259.3 L67.5 259.3 L70 259.2 L72.5 259.1 L75 259 L77.5 258.9 L80 258.8 L82.5 258.7 L85 258.5 L87.5 258.4 L90 258.2 L92.5 258 L95 257.8 L97.5 257.6 L100 257.3 L102.5 257.1 L105 256.7 L107.5 256.4 L110 256 L112.5 255.6 L115 255.2 L117.5 254.7 L120 254.1 L122.5 253.6 L125 252.9 L127.5 252.2 L130 251.4 L132.5 250.5 L135 249.6 L137.5 248.5 L140 247.4 L142.5 246.1 L145 244.8 L147.5 243.3 L150 241.7 L152.5 240 L155 238.1 L157.5 236 L160 233.8 L162.5 231.4 L165 228.8 L167.5 226 L170 223 L172.5 219.9 L175 216.5 L177.5 212.9 L180 209.1 L182.5 205.1 L185 200.8 L187.5 196.4 L190 191.8 L192.5 187 L195 182 L197.5 176.9 L200 171.7 L202.5 166.4 L205 161 L207.5 155.5 L210 150 L212.5 144.5 L215 139 L217.5 133.6 L220 128.3 L222.5 123.1 L225 118 L227.5 113 L230 108.2 L232.5 103.6 L235 99.2 L237.5 94.9 L240 90.9 L242.5 87.1 L245 83.5 L247.5 80.1 L250 77 L252.5 74 L255 71.2 L257.5 68.6 L260 66.2 L262.5 64 L265 61.9 L267.5 60 L270 58.3 L272.5 56.7 L275 55.2 L277.5 53.9 L280 52.6 L282.5 51.5 L285 50.4 L287.5 49.5 L290 48.6 L292.5 47.8 L295 47.1 L297.5 46.4 L300 45.9 L302.5 45.3 L305 44.8 L307.5 44.4 L310 44 L312.5 43.6 L315 43.3 L317.5 42.9 L320 42.7 L322.5 42.4 L325 42.2 L327.5 42 L330 41.8 L332.5 41.6 L335 41.5 L337.5 41.3 L340 41.2 L342.5 41.1 L345 41 L347.5 40.9 L350 40.8 L352.5 40.7 L355 40.7 L357.5 40.6 L360 40.5" style="fill:none;stroke:#F6EEEE;stroke-width:1.6"/>
+    <path d="M60 229.2 L62.5 229.2 L65 229.2 L67.5 229.2 L70 229.2 L72.5 229.2 L75 229.2 L77.5 229.2 L80 229.1 L82.5 229.1 L85 229.1 L87.5 229.1 L90 229.1 L92.5 229.1 L95 229.1 L97.5 229 L100 229 L102.5 229 L105 229 L107.5 228.9 L110 228.9 L112.5 228.8 L115 228.7 L117.5 228.7 L120 228.6 L122.5 228.5 L125 228.4 L127.5 228.2 L130 228.1 L132.5 227.9 L135 227.7 L137.5 227.4 L140 227.1 L142.5 226.8 L145 226.4 L147.5 225.9 L150 225.4 L152.5 224.7 L155 224 L157.5 223.2 L160 222.2 L162.5 221.1 L165 219.9 L167.5 218.4 L170 216.8 L172.5 214.9 L175 212.8 L177.5 210.4 L180 207.6 L182.5 204.6 L185 201.2 L187.5 197.5 L190 193.4 L192.5 189 L195 184.2 L197.5 179.1 L200 173.7 L202.5 168 L205 162.1 L207.5 156.1 L210 150 L212.5 144 L215 137.9 L217.5 132 L220 126.2 L222.5 120.5 L225 115 L227.5 109.6 L230 104.5 L232.5 99.6 L235 94.9 L237.5 90.5 L240 86.4 L242.5 82.5 L245 78.8 L247.5 75.4 L250 72.3 L252.5 69.4 L255 66.7 L257.5 64.2 L260 61.9 L262.5 59.9 L265 58 L267.5 56.2 L270 54.7 L272.5 53.2 L275 51.9 L277.5 50.7 L280 49.7 L282.5 48.7 L285 47.8 L287.5 47 L290 46.3 L292.5 45.7 L295 45.1 L297.5 44.6 L300 44.1 L302.5 43.7 L305 43.3 L307.5 43 L310 42.7 L312.5 42.4 L315 42.1 L317.5 41.9 L320 41.7 L322.5 41.5 L325 41.4 L327.5 41.2 L330 41.1 L332.5 41 L335 40.9 L337.5 40.8 L340 40.7 L342.5 40.6 L345 40.6 L347.5 40.5 L350 40.5 L352.5 40.4 L355 40.4 L357.5 40.3 L360 40.3" class="wa"/>
+    <text x="364" y="154" class="t2">input →</text><text x="214" y="26" class="t2">output</text>
+    <text x="420" y="70" class="t2">dotted: no saturation</text>
+    <text x="420" y="100">white: symmetric saturation</text>
+    <text x="420" y="118" class="t2">both halves of the wave squash the same way:</text>
+    <text x="420" y="134" class="t2">odd harmonics, harder sound</text>
+    <text x="420" y="170" class="ta">red: the tube (TUBE up)</text>
+    <text x="420" y="188" class="t2">the bottom of the wave squashes earlier than the top:</text>
+    <text x="420" y="204" class="t2">even harmonics, warm, round sound</text>
+  </svg>
+  </div>
+  <figcaption>The higher INPUT DRIVE, the further the vocal goes along the curve (towards the edges). The higher TUBE, the more asymmetric the curve.</figcaption>
+</figure>
+
+<ul>
+  <li><b>INPUT DRIVE</b> pushes the vocal into the tube, up to +24 dB. The volume is <b>made up</b> : a vocal at −20 dBFS RMS keeps its level within 0.3 dB, from 0 to 100 %. The vocal gets denser, peaks are held and details come up, like in a real tube that compresses.</li>
+  <li><b>TUBE</b> (TUBE DISTORTION) gives the character: more and more asymmetry, so more even harmonics.</li>
+  <li><b>BASS / AIR</b> tilts the sound <b>before</b> the tube (two opposite shelves, below 250 Hz and above 3.5 kHz, up to 5 dB): it chooses what the tube colours, the body or the air.</li>
+  <li><b>No unwanted artifacts</b> : saturation creates harmonics above 20 kHz, which fold back into the audible highs (aliasing). So the tube is computed four times faster than the sample rate, and through its <b>antiderivative</b> (antiderivative anti-aliasing): even pushed all the way, harmonics stay harmonics.</li>
+  <li>Behind the interface’s glass, the two tubes’ filaments light up when they’re working.</li>
+</ul>
+
+<h2 id="en-eq">2. The console EQ (CONSOLE EQ)</h2>
+<p>Four fixed-frequency bands, chosen for vocals. As on an analog console, <b>the more a band is pushed, the narrower it gets</b> (its width follows its gain): a small setting stays broad and musical, a big setting stays precise.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 900 250" role="img" aria-label="Console EQ response: default setting and pushed setting">
+    <path class="wg" d="M60 36 H840 M60 78 H840 M60 162 H840 M60 204 H840"/>
+    <path class="w" d="M60 120 H840"/>
+    <path class="wg" d="M241.7 30 V210 M501.7 30 V210 M761.7 30 V210"/>
+    <text x="52" y="40" text-anchor="end" class="t2">+12</text><text x="52" y="124" text-anchor="end" class="t2">0 dB</text><text x="52" y="208" text-anchor="end" class="t2">−12</text>
+    <text x="241.7" y="228" text-anchor="middle" class="t2">100 Hz</text><text x="501.7" y="228" text-anchor="middle" class="t2">1 kHz</text><text x="761.7" y="228" text-anchor="middle" class="t2">10 kHz</text>
+    <path d="M60 120.1 L62.6 120.1 L65.2 120.1 L67.8 120.1 L70.4 120.1 L73 120.1 L75.6 120.1 L78.2 120.1 L80.8 120.1 L83.4 120.1 L86 120.1 L88.6 120.1 L91.2 120.1 L93.8 120.1 L96.4 120.1 L99 120.1 L101.6 120.1 L104.2 120.2 L106.8 120.2 L109.4 120.2 L112 120.2 L114.6 120.2 L117.2 120.2 L119.8 120.2 L122.4 120.2 L125 120.2 L127.6 120.2 L130.2 120.3 L132.8 120.3 L135.4 120.3 L138 120.3 L140.6 120.3 L143.2 120.3 L145.8 120.3 L148.4 120.3 L151 120.4 L153.6 120.4 L156.2 120.4 L158.8 120.4 L161.4 120.4 L164 120.5 L166.6 120.5 L169.2 120.5 L171.8 120.5 L174.4 120.6 L177 120.6 L179.6 120.6 L182.2 120.6 L184.8 120.7 L187.4 120.7 L190 120.7 L192.6 120.8 L195.2 120.8 L197.8 120.9 L200.4 120.9 L203 120.9 L205.6 121 L208.2 121 L210.8 121.1 L213.4 121.1 L216 121.2 L218.6 121.3 L221.2 121.3 L223.8 121.4 L226.4 121.5 L229 121.5 L231.6 121.6 L234.2 121.7 L236.8 121.8 L239.4 121.9 L242 122 L244.6 122.1 L247.2 122.2 L249.8 122.3 L252.4 122.4 L255 122.6 L257.6 122.7 L260.2 122.8 L262.8 123 L265.4 123.1 L268 123.3 L270.6 123.5 L273.2 123.7 L275.8 123.9 L278.4 124.1 L281 124.3 L283.6 124.6 L286.2 124.8 L288.8 125.1 L291.4 125.4 L294 125.7 L296.6 126 L299.2 126.4 L301.8 126.7 L304.4 127.1 L307 127.5 L309.6 127.9 L312.2 128.4 L314.8 128.9 L317.4 129.4 L320 129.9 L322.6 130.5 L325.2 131 L327.8 131.6 L330.4 132.3 L333 132.9 L335.6 133.6 L338.2 134.3 L340.8 135 L343.4 135.7 L346 136.3 L348.6 137 L351.2 137.7 L353.8 138.3 L356.4 138.9 L359 139.4 L361.6 139.9 L364.2 140.3 L366.8 140.5 L369.4 140.7 L372 140.8 L374.6 140.8 L377.2 140.7 L379.8 140.5 L382.4 140.1 L385 139.7 L387.6 139.2 L390.2 138.7 L392.8 138.1 L395.4 137.4 L398 136.8 L400.6 136.1 L403.2 135.3 L405.8 134.6 L408.4 133.9 L411 133.2 L413.6 132.5 L416.2 131.9 L418.8 131.2 L421.4 130.6 L424 130 L426.6 129.4 L429.2 128.9 L431.8 128.4 L434.4 127.9 L437 127.4 L439.6 126.9 L442.2 126.5 L444.8 126.1 L447.4 125.7 L450 125.3 L452.6 125 L455.2 124.7 L457.8 124.3 L460.4 124 L463 123.7 L465.6 123.5 L468.2 123.2 L470.8 122.9 L473.4 122.7 L476 122.4 L478.6 122.2 L481.2 122 L483.8 121.8 L486.4 121.6 L489 121.4 L491.6 121.2 L494.2 121 L496.8 120.8 L499.4 120.6 L502 120.4 L504.6 120.2 L507.2 120.1 L509.8 119.9 L512.4 119.7 L515 119.5 L517.6 119.3 L520.2 119.2 L522.8 119 L525.4 118.8 L528 118.6 L530.6 118.4 L533.2 118.2 L535.8 118 L538.4 117.8 L541 117.6 L543.6 117.4 L546.2 117.2 L548.8 117 L551.4 116.8 L554 116.5 L556.6 116.3 L559.2 116.1 L561.8 115.8 L564.4 115.6 L567 115.3 L569.6 115.1 L572.2 114.8 L574.8 114.5 L577.4 114.3 L580 114 L582.6 113.7 L585.2 113.4 L587.8 113.1 L590.4 112.8 L593 112.5 L595.6 112.3 L598.2 112 L600.8 111.7 L603.4 111.4 L606 111.2 L608.6 110.9 L611.2 110.7 L613.8 110.5 L616.4 110.3 L619 110.1 L621.6 110 L624.2 109.8 L626.8 109.7 L629.4 109.7 L632 109.6 L634.6 109.6 L637.2 109.6 L639.8 109.7 L642.4 109.8 L645 109.9 L647.6 110 L650.2 110.1 L652.8 110.3 L655.4 110.5 L658 110.7 L660.6 110.9 L663.2 111.2 L665.8 111.4 L668.4 111.7 L671 111.9 L673.6 112.2 L676.2 112.4 L678.8 112.7 L681.4 112.9 L684 113.2 L686.6 113.4 L689.2 113.7 L691.8 113.9 L694.4 114.1 L697 114.3 L699.6 114.5 L702.2 114.7 L704.8 114.8 L707.4 115 L710 115.1 L712.6 115.2 L715.2 115.3 L717.8 115.4 L720.4 115.5 L723 115.5 L725.6 115.6 L728.2 115.6 L730.8 115.5 L733.4 115.5 L736 115.4 L738.6 115.4 L741.2 115.2 L743.8 115.1 L746.4 114.9 L749 114.7 L751.6 114.5 L754.2 114.2 L756.8 113.9 L759.4 113.5 L762 113.1 L764.6 112.7 L767.2 112.2 L769.8 111.7 L772.4 111.1 L775 110.6 L777.6 109.9 L780.2 109.3 L782.8 108.6 L785.4 107.9 L788 107.2 L790.6 106.5 L793.2 105.8 L795.8 105.1 L798.4 104.4 L801 103.8 L803.6 103.1 L806.2 102.6 L808.8 102 L811.4 101.5 L814 101.1 L816.6 100.7 L819.2 100.4 L821.8 100.1 L824.4 99.8 L827 99.6 L829.6 99.5 L832.2 99.3 L834.8 99.2 L837.4 99.1 L840 99.1" style="fill:none;stroke:#F6EEEE;stroke-width:1.8"/>
+    <path d="M60 92.2 L62.6 92.2 L65.2 92.2 L67.8 92.2 L70.4 92.2 L73 92.2 L75.6 92.2 L78.2 92.2 L80.8 92.3 L83.4 92.3 L86 92.3 L88.6 92.3 L91.2 92.3 L93.8 92.3 L96.4 92.4 L99 92.4 L101.6 92.4 L104.2 92.4 L106.8 92.5 L109.4 92.5 L112 92.5 L114.6 92.6 L117.2 92.6 L119.8 92.6 L122.4 92.7 L125 92.7 L127.6 92.8 L130.2 92.8 L132.8 92.9 L135.4 92.9 L138 93 L140.6 93.1 L143.2 93.2 L145.8 93.2 L148.4 93.3 L151 93.4 L153.6 93.5 L156.2 93.6 L158.8 93.8 L161.4 93.9 L164 94 L166.6 94.2 L169.2 94.3 L171.8 94.5 L174.4 94.7 L177 94.9 L179.6 95.1 L182.2 95.3 L184.8 95.6 L187.4 95.8 L190 96.1 L192.6 96.4 L195.2 96.7 L197.8 97.1 L200.4 97.4 L203 97.8 L205.6 98.2 L208.2 98.7 L210.8 99.1 L213.4 99.6 L216 100.1 L218.6 100.7 L221.2 101.2 L223.8 101.8 L226.4 102.4 L229 103.1 L231.6 103.7 L234.2 104.4 L236.8 105.1 L239.4 105.9 L242 106.6 L244.6 107.4 L247.2 108.2 L249.8 109 L252.4 109.8 L255 110.6 L257.6 111.5 L260.2 112.3 L262.8 113.2 L265.4 114 L268 114.9 L270.6 115.8 L273.2 116.6 L275.8 117.5 L278.4 118.4 L281 119.3 L283.6 120.2 L286.2 121 L288.8 121.9 L291.4 122.9 L294 123.8 L296.6 124.7 L299.2 125.6 L301.8 126.6 L304.4 127.6 L307 128.6 L309.6 129.7 L312.2 130.7 L314.8 131.8 L317.4 133 L320 134.2 L322.6 135.4 L325.2 136.7 L327.8 138.1 L330.4 139.5 L333 140.9 L335.6 142.5 L338.2 144 L340.8 145.6 L343.4 147.3 L346 149 L348.6 150.6 L351.2 152.3 L353.8 153.9 L356.4 155.5 L359 156.9 L361.6 158.2 L364.2 159.3 L366.8 160.2 L369.4 160.8 L372 161.1 L374.6 161.1 L377.2 160.8 L379.8 160.2 L382.4 159.3 L385 158.2 L387.6 156.9 L390.2 155.5 L392.8 154 L395.4 152.4 L398 150.8 L400.6 149.2 L403.2 147.6 L405.8 146 L408.4 144.5 L411 143 L413.6 141.6 L416.2 140.3 L418.8 139 L421.4 137.8 L424 136.7 L426.6 135.6 L429.2 134.6 L431.8 133.6 L434.4 132.7 L437 131.8 L439.6 131 L442.2 130.2 L444.8 129.5 L447.4 128.8 L450 128.1 L452.6 127.5 L455.2 126.9 L457.8 126.4 L460.4 125.8 L463 125.3 L465.6 124.8 L468.2 124.3 L470.8 123.9 L473.4 123.4 L476 123 L478.6 122.6 L481.2 122.2 L483.8 121.8 L486.4 121.4 L489 121 L491.6 120.6 L494.2 120.2 L496.8 119.8 L499.4 119.5 L502 119.1 L504.6 118.7 L507.2 118.3 L509.8 117.9 L512.4 117.5 L515 117.1 L517.6 116.7 L520.2 116.3 L522.8 115.9 L525.4 115.5 L528 115 L530.6 114.6 L533.2 114.1 L535.8 113.6 L538.4 113.1 L541 112.5 L543.6 112 L546.2 111.4 L548.8 110.8 L551.4 110.2 L554 109.5 L556.6 108.8 L559.2 108.1 L561.8 107.3 L564.4 106.5 L567 105.7 L569.6 104.8 L572.2 103.8 L574.8 102.9 L577.4 101.9 L580 100.8 L582.6 99.7 L585.2 98.5 L587.8 97.3 L590.4 96 L593 94.7 L595.6 93.4 L598.2 92 L600.8 90.6 L603.4 89.2 L606 87.8 L608.6 86.4 L611.2 85 L613.8 83.7 L616.4 82.5 L619 81.3 L621.6 80.3 L624.2 79.5 L626.8 78.8 L629.4 78.4 L632 78.1 L634.6 78.1 L637.2 78.3 L639.8 78.8 L642.4 79.4 L645 80.2 L647.6 81.2 L650.2 82.3 L652.8 83.6 L655.4 84.9 L658 86.2 L660.6 87.6 L663.2 89 L665.8 90.4 L668.4 91.7 L671 93 L673.6 94.3 L676.2 95.6 L678.8 96.7 L681.4 97.9 L684 98.9 L686.6 99.9 L689.2 100.9 L691.8 101.8 L694.4 102.6 L697 103.4 L699.6 104.1 L702.2 104.7 L704.8 105.3 L707.4 105.8 L710 106.3 L712.6 106.7 L715.2 107 L717.8 107.3 L720.4 107.5 L723 107.7 L725.6 107.8 L728.2 107.8 L730.8 107.8 L733.4 107.7 L736 107.5 L738.6 107.3 L741.2 107 L743.8 106.6 L746.4 106.1 L749 105.5 L751.6 104.8 L754.2 104.1 L756.8 103.2 L759.4 102.3 L762 101.3 L764.6 100.1 L767.2 98.9 L769.8 97.6 L772.4 96.2 L775 94.7 L777.6 93.1 L780.2 91.5 L782.8 89.8 L785.4 88 L788 86.3 L790.6 84.5 L793.2 82.7 L795.8 80.9 L798.4 79.1 L801 77.4 L803.6 75.8 L806.2 74.2 L808.8 72.7 L811.4 71.4 L814 70.2 L816.6 69.1 L819.2 68.1 L821.8 67.2 L824.4 66.5 L827 65.9 L829.6 65.4 L832.2 65 L834.8 64.7 L837.4 64.5 L840 64.3" class="wa"/>
+    <text x="252.5" y="22" text-anchor="middle" class="t2">BASS 110</text>
+    <text x="373.1" y="22" text-anchor="middle" class="t2">DE-MUD 320</text>
+    <text x="633.1" y="22" text-anchor="middle" class="t2">TREBLE 3.2 k</text>
+    <text x="782.3" y="22" text-anchor="middle" class="t2">AIR 12 k</text>
+    <text x="70" y="246" class="t2">white: default setting · </text><text x="300" y="246" class="t2 ta">red: BASS +4, DE-MUD 60 %, TREBLE +6, AIR +8</text>
+  </svg>
+  </div>
+  <figcaption>Response computed with the plugin’s filter formulas, at 48 kHz.</figcaption>
+</figure>
+<ul>
+  <li><b>BASS</b> (shelf at 110 Hz, ±12 dB): the body of the vocal.</li>
+  <li><b>DE-MUD</b> (dip at 320 Hz, down to −10 dB): removes what muddies a vocal, the “cardboard”.</li>
+  <li><b>TREBLE</b> (bell at 3.2 kHz, ±12 dB): presence, intelligibility.</li>
+  <li><b>AIR</b> (shelf at 12 kHz, −6 to +12 dB): breath, brightness.</li>
+</ul>
+
+<h2 id="en-niveleur">3. The leveler</h2>
+<p>A very gentle compressor holds the vocal upfront, with no pumping: 3:1 ratio, 8 dB knee, threshold at −18 dBFS RMS, level measured over 5 ms, smoothed gain (3 ms attack, 100 ms release). <b>INPUT LEVEL</b> sets how hard it works: the louder the vocal comes in, the more it holds it.</p>
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 900 310" role="img" aria-label="Leveler curve: 3:1 with an 8 dB knee at −18 dB">
+    <path class="wg" d="M144 40 V280 M228 40 V280 M312 40 V280 M60 220 H396 M60 160 H396 M60 100 H396"/>
+    <path class="w" d="M60 280 H396 M60 280 V40"/>
+    <path d="M60 280 L396 40" class="wd"/>
+    <path d="M60 280 L63.5 277.5 L67 275 L70.5 272.5 L74 270 L77.5 267.5 L81 265 L84.5 262.5 L88 260 L91.5 257.5 L95 255 L98.5 252.5 L102 250 L105.5 247.5 L109 245 L112.5 242.5 L116 240 L119.5 237.5 L123 235 L126.5 232.5 L130 230 L133.5 227.5 L137 225 L140.5 222.5 L144 220 L147.5 217.5 L151 215 L154.5 212.5 L158 210 L161.5 207.5 L165 205 L168.5 202.5 L172 200 L175.5 197.5 L179 195 L182.5 192.5 L186 190 L189.5 187.5 L193 185 L196.5 182.5 L200 180 L203.5 177.5 L207 175 L210.5 172.5 L214 170 L217.5 167.5 L221 165 L224.5 162.5 L228 160 L231.5 157.5 L235 155 L238.5 152.5 L242 150 L245.5 147.6 L249 145.2 L252.5 143 L256 140.8 L259.5 138.8 L263 136.9 L266.5 135.1 L270 133.3 L273.5 131.7 L277 130.2 L280.5 128.8 L284 127.5 L287.5 126.3 L291 125.2 L294.5 124.2 L298 123.3 L301.5 122.5 L305 121.7 L308.5 120.8 L312 120 L315.5 119.2 L319 118.3 L322.5 117.5 L326 116.7 L329.5 115.8 L333 115 L336.5 114.2 L340 113.3 L343.5 112.5 L347 111.7 L350.5 110.8 L354 110 L357.5 109.2 L361 108.3 L364.5 107.5 L368 106.7 L371.5 105.8 L375 105 L378.5 104.2 L382 103.3 L385.5 102.5 L389 101.7 L392.5 100.8 L396 100" class="wa"/>
+    <path class="wd" d="M270 40 V280"/><text x="270" y="298" text-anchor="middle" class="t2 ta">−18 dB</text>
+    <text x="60" y="298" text-anchor="middle" class="t2">−48</text><text x="396" y="298" text-anchor="middle" class="t2">0 dB</text>
+    <text x="228" y="30" text-anchor="middle" class="t2">output ↑ · input →</text>
+    <text x="450" y="80">Below the threshold, nothing changes.</text>
+    <text x="450" y="110" class="t2">In the knee (8 dB around the threshold), compression</text>
+    <text x="450" y="126" class="t2">comes in gently: you don’t hear it kick in.</text>
+    <text x="450" y="160" class="t2">Above: 3 dB more at the input</text>
+    <text x="450" y="176" class="t2">gives only 1 dB more at the output.</text>
+    <text x="450" y="216" class="ta">VU meter: GR = what the leveler removes,</text>
+    <text x="450" y="232" class="ta">OUT = output level.</text>
+  </svg>
+  </div>
+  <figcaption>Dotted, no compression; in red, the leveler.</figcaption>
+</figure>
+
+<h2 id="en-effets">4. Flanger and reverb</h2>
+<ul>
+  <li><b>FLANGER</b> : a slow stereo flanger (0.22 Hz), from a shimmer to a sweep. The vocal is blended with a copy of itself delayed by a few milliseconds, a delay that varies slowly: the comb filter’s notches move and open the vocal in stereo. The volume is held.</li>
+  <li><b>REVERB</b> : ONIRIQUE VERB’s plate, tuned for vocals: low cut, sibilance removed before the reverb, and it ducks when you sing. It’s <b>added</b> to the vocal, which stays whole.</li>
+</ul>
+
+<h2 id="en-sortie">5. Limiter and MIX</h2>
+<ul>
+  <li><b>OUTPUT LEVEL</b> (−24 to +12 dB), then a <b>look-ahead limiter</b> : it sees each peak coming 1.5 ms ahead and lowers the gain just in time. The output never goes over −0.5 dBFS.</li>
+  <li><b>MIX</b> blends the original vocal and the processed vocal. The original vocal is delayed by exactly the latency reported to the DAW (oversampling and limiter look-ahead, 2.75 ms). The filters are linear-phase and the delay lands exactly on the sample: at 50 %, <b>no comb filtering</b>, even in the highs. MIX 0 and BYPASS give back the exact original vocal.</li>
+</ul>
+<div class="tip"><p>Why it matters: two copies of a vocal offset by a fraction of a millisecond cancel each other at certain frequencies (comb effect, a “hollow”, metallic sound). ENHANCER aligns the two vocals to the sample so MIX never colours the sound.</p></div>
+
+<h2 id="en-reglages">All settings</h2>
+<div class="table"><table>
+  <thead><tr><th>Setting</th><th>Range</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>INPUT LEVEL</td><td>−12 to +12 dB</td><td>What goes in: pushes the tube and the leveler.</td></tr>
+    <tr><td>INPUT DRIVE</td><td>0 to 100 %</td><td>Drive into the tube, volume made up (default 25 %).</td></tr>
+    <tr><td>TUBE</td><td>0 to 100 %</td><td>Asymmetry, even harmonics (default 35 %).</td></tr>
+    <tr><td>BASS / AIR</td><td>BASS 100 to AIR 100</td><td>What the tube colours.</td></tr>
+    <tr><td>BASS</td><td>−12 to +12 dB</td><td>Shelf at 110 Hz.</td></tr>
+    <tr><td>DE-MUD</td><td>0 to 100 %</td><td>Dip at 320 Hz, down to −10 dB (default 30 %).</td></tr>
+    <tr><td>TREBLE</td><td>−12 to +12 dB</td><td>Bell at 3.2 kHz (default +1.5 dB).</td></tr>
+    <tr><td>AIR</td><td>−6 to +12 dB</td><td>Shelf at 12 kHz (default +3 dB).</td></tr>
+    <tr><td>FLANGER</td><td>0 to 100 %</td><td>Stereo opening.</td></tr>
+    <tr><td>REVERB</td><td>0 to 100 %</td><td>Plate added (default 15 %).</td></tr>
+    <tr><td>OUTPUT LEVEL</td><td>−24 to +12 dB</td><td>Level before the limiter.</td></tr>
+    <tr><td>MIX</td><td>0 to 100 %</td><td>Original vocal ↔ processed vocal, no comb.</td></tr>
+  </tbody>
+</table></div>
+<p>A double-click resets a knob to its default value; Shift while dragging for fine adjustment.</p>
+
+<h2 id="en-conseils">Tips</h2>
+<div class="tip"><p><b>Rap vocal upfront:</b> INPUT DRIVE 40 %, TUBE 30 %, DE-MUD 40 %, TREBLE +3, AIR +4, REVERB 10 %.</p></div>
+<div class="tip"><p><b>Soft, warm vocal:</b> BASS / AIR towards BASS 30, TUBE 60 %, AIR +2, FLANGER 15 % to open it up without doubling it.</p></div>
+<div class="tip"><p><b>The GR meter moves a lot:</b> lower INPUT LEVEL; it’s made to remove a few dB, not to squash.</p></div>

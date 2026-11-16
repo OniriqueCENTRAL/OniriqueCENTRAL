@@ -1,0 +1,68 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#gl-vue">Overview</a></li>
+  <li><a href="#gl-colle">Why it glues</a></li>
+  <li><a href="#gl-temps">Times and ratio</a></li>
+  <li><a href="#gl-couleur">Colour and parallel</a></li>
+  <li><a href="#gl-reglages">All the controls</a></li>
+  <li><a href="#gl-conseils">Tips</a></li>
+</ul>
+
+<h2 id="gl-vue">Overview</h2>
+<p>ONIRIQUE GLUE is a <b>stereo bus compressor</b> in the spirit of the centre-section compressor of 80s G-series consoles: the same front, the same controls in the same places, and the same way of <b>“gluing” a mix</b>. Clean at normal levels, a little creamy when you push it.</p>
+<p>The front is a photograph (every part modelled in 3D); the VU lights up red while the compressor is in circuit. Processing runs at twice the sample rate, latency is reported to the DAW.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 1081 200" role="img" aria-label="GLUE signal path: detector on the sum, sidechain filter, single VCA, output stage, MIX, fade"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">INPUT</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="120" height="46" rx="6"/><text x="130" y="59" text-anchor="middle">SC FILTER</text><text x="130" y="75" text-anchor="middle" class="t2">OFF – 500 Hz</text><rect class="b" x="220" y="40" width="120" height="46" rx="6"/><text x="280" y="59" text-anchor="middle">DETECTOR</text><text x="280" y="75" text-anchor="middle" class="t2">sum L + R</text><path class="w" d="M190 63 H220" marker-end="url(#doc-arr)"/><rect class="ba" x="370" y="40" width="120" height="46" rx="6"/><text x="430" y="59" text-anchor="middle" class="tb">VCA</text><text x="430" y="75" text-anchor="middle" class="t2">one for both</text><path class="w" d="M340 63 H370" marker-end="url(#doc-arr)"/><rect class="b" x="520" y="40" width="120" height="46" rx="6"/><text x="580" y="59" text-anchor="middle">MAKE-UP</text><text x="580" y="75" text-anchor="middle" class="t2">0 – 15 dB</text><path class="w" d="M490 63 H520" marker-end="url(#doc-arr)"/><rect class="b" x="670" y="40" width="120" height="46" rx="6"/><text x="730" y="59" text-anchor="middle">HR</text><text x="730" y="75" text-anchor="middle" class="t2">output headroom</text><path class="w" d="M640 63 H670" marker-end="url(#doc-arr)"/><rect class="b" x="820" y="40" width="120" height="46" rx="6"/><text x="880" y="59" text-anchor="middle">AUTO FADE</text><text x="880" y="75" text-anchor="middle" class="t2">1 – 60 s</text><path class="w" d="M790 63 H820" marker-end="url(#doc-arr)"/><path class="w" d="M940 63 H968" marker-end="url(#doc-arr)"/><circle class="ba" cx="986" cy="63" r="18"/><text x="986" y="69" text-anchor="middle" class="tb">+</text><text x="986" y="37" text-anchor="middle" class="t2">MIX</text><circle class="dot" cx="52" cy="63" r="3.5"/><path class="wd" d="M52 63 V178 H986 V81" marker-end="url(#doc-arr)"/><text x="80" y="172" class="t2">the original sound</text><path class="w" d="M1004 63 H1044"/><circle class="w" cx="1050" cy="63" r="6"/><text x="1050" y="91" text-anchor="middle" class="t2">OUTPUT</text></svg>
+  </div>
+  <figcaption>A single VCA processes left and right, driven by a detector that listens to their sum: the stereo image never moves. MIX blends the compressed sound and the original.</figcaption>
+</figure>
+
+<h2 id="gl-colle">1. Why it glues</h2>
+<ul>
+  <li><b>One VCA for both sides</b>, and a detector that listens to their sum, like on the console: the compression breathes with the whole mix, and the image doesn’t move.</li>
+  <li><b>AUTO release</b> lets go fast after an isolated hit and slowly when compression lasts. That’s the setting that glues elements together.</li>
+  <li><b>The knee</b> is softer at 2:1 and firmer at 10:1.</li>
+</ul>
+
+<h2 id="gl-temps">2. Times and ratio</h2>
+<ul>
+  <li><b>ATTACK</b>: 0.1 / 0.3 / 1 / 3 / 10 / 30 ms. Slower lets the transients’ snap through.</li>
+  <li><b>RELEASE</b>: 0.1 / 0.3 / 0.6 / 1.2 s, or <b>AUTO</b>.</li>
+  <li><b>RATIO</b>: 2, 4 or 10 to 1.</li>
+  <li><b>THRESHOLD</b>: −15 to +15 dB, 0 being −14 dBFS.</li>
+</ul>
+
+<h2 id="gl-couleur">3. Sidechain, colour and parallel</h2>
+<ul>
+  <li><b>SC FILTER</b>: a 12 dB per octave high-pass on what the compressor hears, from OFF to 500 Hz. The bass no longer pumps the mix.</li>
+  <li><b>HR</b> (headroom): the output stage’s margin, from 4 to 24 dB (20 by default). High, it’s clean; lower, the peaks round off with blended 2nd and 3rd harmonics.</li>
+  <li><b>MIX</b>: 0 to 100 % compressed sound, for parallel compression.</li>
+  <li><b>AUTO FADE</b>: pressed, the sound fades to silence over <b>RATE</b> seconds (1 to 60); released, it comes back. The console’s end-of-song fade.</li>
+  <li><b>IN</b>: off, the signal exactly as it came in, bit for bit.</li>
+</ul>
+
+<h2 id="gl-reglages">All the controls</h2>
+<div class="table"><table>
+  <tr><th>Control</th><th>Range</th><th>What it does</th></tr>
+  <tr><td>THRESHOLD</td><td>−15 to +15 dB</td><td>0 equals −14 dBFS.</td></tr>
+  <tr><td>MAKE-UP</td><td>0 – +15 dB</td><td>The gain after compression.</td></tr>
+  <tr><td>ATTACK</td><td>0.1 – 30 ms</td><td>Six steps.</td></tr>
+  <tr><td>RELEASE</td><td>0.1 – 1.2 s · AUTO</td><td>AUTO adapts to the music.</td></tr>
+  <tr><td>RATIO</td><td>2 · 4 · 10</td><td>Softer knee at 2:1.</td></tr>
+  <tr><td>SC FILTER</td><td>OFF – 500 Hz</td><td>High-pass on the detector.</td></tr>
+  <tr><td>HR</td><td>4 – 24 dB</td><td>Margin before the output rounds off.</td></tr>
+  <tr><td>MIX</td><td>0 – 100 %</td><td>Parallel compression.</td></tr>
+  <tr><td>RATE · AUTO FADE</td><td>1 – 60 s</td><td>The console fade.</td></tr>
+  <tr><td>IN</td><td>on / off</td><td>The compressor in circuit.</td></tr>
+</table></div>
+
+<h2 id="gl-conseils">Tips</h2>
+<div class="tip"><p><b>Gluing a mix</b>: RATIO 2, ATTACK 10 or 30 ms, RELEASE AUTO, 1 to 3 dB of reduction on the VU. The transients pass, the mix holds together.</p></div>
+<div class="tip"><p><b>Drums that hit</b>: RATIO 4 or 10, ATTACK 3 ms, RELEASE 0.1 s, SC FILTER at 100 Hz, then MIX around 50 %.</p></div>
+<div class="tip"><p><b>A bit of cream</b>: lower HR towards 10 dB on an already loud bus: the peaks round off without squashing.</p></div>

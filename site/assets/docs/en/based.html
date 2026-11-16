@@ -1,0 +1,66 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#cs-vue">Overview</a></li>
+  <li><a href="#cs-modules">The modules</a></li>
+  <li><a href="#cs-ordre">The order</a></li>
+  <li><a href="#cs-presets">Presets</a></li>
+  <li><a href="#cs-reglages">All the controls</a></li>
+  <li><a href="#cs-conseils">Tips</a></li>
+</ul>
+
+<h2 id="cs-vue">Overview</h2>
+<p>ONIRIQUE CHANNEL STRIP is a <b>complete vocal console strip</b>: noise gate, console channel (EQ and compressor), two de-essers, saturation, 1176, vari-mu tube compressor and parametric EQ, in one plugin. <b>The processing order can be fully rearranged</b>, without clicks, and every module has its own power button.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 685 270" role="img" aria-label="CHANNEL STRIP default chain: gate, console channel, de-esser, saturation, 1176, vari-mu, EQ, de-esser"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">VOCAL</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="112" height="46" rx="6"/><text x="126" y="68" text-anchor="middle">NOISE GATE</text><rect class="ba" x="212" y="40" width="112" height="46" rx="6"/><text x="268" y="59" text-anchor="middle" class="tb">CONSOLE</text><text x="268" y="75" text-anchor="middle" class="t2">EQ + COMP</text><path class="w" d="M182 63 H212" marker-end="url(#doc-arr)"/><rect class="b" x="354" y="40" width="112" height="46" rx="6"/><text x="410" y="68" text-anchor="middle">DE-ESSER 1</text><path class="w" d="M324 63 H354" marker-end="url(#doc-arr)"/><rect class="b" x="496" y="40" width="112" height="46" rx="6"/><text x="552" y="59" text-anchor="middle">SATURATION</text><text x="552" y="75" text-anchor="middle" class="t2">up to 8×</text><path class="w" d="M466 63 H496" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="150" width="112" height="46" rx="6"/><text x="126" y="169" text-anchor="middle">1176</text><text x="126" y="185" text-anchor="middle" class="t2">FET</text><path class="w" d="M552 86 V118 H126 V150" marker-end="url(#doc-arr)"/><rect class="b" x="212" y="150" width="112" height="46" rx="6"/><text x="268" y="169" text-anchor="middle">VARI-MU</text><text x="268" y="185" text-anchor="middle" class="t2">tube</text><path class="w" d="M182 173 H212" marker-end="url(#doc-arr)"/><rect class="b" x="354" y="150" width="112" height="46" rx="6"/><text x="410" y="169" text-anchor="middle">EQ</text><text x="410" y="185" text-anchor="middle" class="t2">8 bands</text><path class="w" d="M324 173 H354" marker-end="url(#doc-arr)"/><rect class="b" x="496" y="150" width="112" height="46" rx="6"/><text x="552" y="178" text-anchor="middle">DE-ESSER 2</text><path class="w" d="M466 173 H496" marker-end="url(#doc-arr)"/><path class="w" d="M608 173 H648"/><circle class="w" cx="654" cy="173" r="6"/><text x="654" y="201" text-anchor="middle" class="t2">OUTPUT</text></svg>
+  </div>
+  <figcaption>The default chain. The second de-esser, at the end, catches sibilance brought back up by saturation and EQ. The order changes freely with each module’s badge.</figcaption>
+</figure>
+
+<h2 id="cs-modules">1. The modules</h2>
+<div class="table"><table>
+  <tr><th>Module</th><th>Controls</th><th>Character</th></tr>
+  <tr><td>NOISE GATE</td><td>THRESHOLD, ATTACK, RELEASE</td><td>Cuts hiss and background noise without chopping word endings: a hold keeps the gate open, hysteresis stops it chattering.</td></tr>
+  <tr><td>CONSOLE</td><td>INPUT, HPF, 4-band EQ (LF, LMF, HMF, HF), COMPRESSOR, OUTPUT</td><td>A present vocal, clean mids, precise highs, sharp attack.</td></tr>
+  <tr><td>DE-ESSER 1 · 2</td><td>FREQUENCY, THRESHOLD, RANGE, ATTACK, RELEASE, MIX, LISTEN</td><td>A main band for the S’s, a companion band for CH, T and Z: musical reduction, no lisp.</td></tr>
+  <tr><td>SATURATION</td><td>IN, DRIVE, TYPE (Tape, Tube, Transformer), TONE, MIX, OUT</td><td>Warmth, harmonic density, colour that rises with level, light natural compression.</td></tr>
+  <tr><td>1176</td><td>INPUT, THRESHOLD, RATIO (4 to 20), ATTACK, RELEASE, OUTPUT, MIX, AUTO GAIN</td><td>Near-instant attack and release, punch, density.</td></tr>
+  <tr><td>VARI-MU</td><td>INPUT, THRESHOLD, ATTACK, RELEASE, RATIO, OUTPUT, MIX</td><td>Slow, soft, thick: the “glue” effect, with tube saturation that follows the reduction.</td></tr>
+  <tr><td>EQ</td><td>8 bands: Bell, Low / High Shelf, Low / High Cut, Notch</td><td>Clean and precise, with a spectrum analyzer.</td></tr>
+</table></div>
+
+<h2 id="cs-ordre">2. Order and bypass</h2>
+<ul>
+  <li>Each module has an <b>order badge</b>: change it, and the real chain shows under the title.</li>
+  <li>An order change or a bypass is done with a <b>crossfade</b>: never a click.</li>
+  <li>A bypassed module isn’t computed at all, and a veil passes over its card.</li>
+  <li><b>LISTEN</b> on each de-esser: hear only what it removes.</li>
+</ul>
+
+<h2 id="cs-presets">3. Presets and oversampling</h2>
+<p>9 factory presets: Default, Clean Vocal, Rap Vocal, Aggressive Vocal, Warm Vocal, Lead Vocal, Adlib, Dark Vocal, Airy Vocal. A preset first resets everything, then applies its settings: you always get the same sound back.</p>
+<p>Saturation can be oversampled up to 8× to stay clean in the highs; latency is reported to the DAW.</p>
+
+<h2 id="cs-reglages">All the controls</h2>
+<div class="table"><table>
+  <tr><th>Control</th><th>Range</th><th>What it does</th></tr>
+  <tr><td>NOISE GATE</td><td>THRESHOLD, ATTACK, RELEASE</td><td>Noise between phrases.</td></tr>
+  <tr><td>CONSOLE · HPF</td><td>in Hz</td><td>The channel’s low cut.</td></tr>
+  <tr><td>CONSOLE · EQ</td><td>LF, LMF, HMF, HF</td><td>Four bands, frequency, gain, Q.</td></tr>
+  <tr><td>CONSOLE · COMPRESSOR</td><td>THRESHOLD, RATIO, ATTACK, RELEASE, MAKEUP</td><td>The channel compressor.</td></tr>
+  <tr><td>DE-ESSER</td><td>FREQUENCY, THRESHOLD, RANGE, MIX</td><td>Sibilance, twice.</td></tr>
+  <tr><td>SATURATION</td><td>IN, DRIVE, TYPE, TONE, MIX, OUT</td><td>Tape, Tube or Transformer.</td></tr>
+  <tr><td>1176</td><td>INPUT, THRESHOLD, RATIO, ATTACK, RELEASE, OUTPUT, MIX</td><td>Fast FET compressor.</td></tr>
+  <tr><td>VARI-MU</td><td>INPUT, THRESHOLD, ATTACK, RELEASE, RATIO, OUTPUT, MIX</td><td>Slow tube compressor.</td></tr>
+  <tr><td>EQ</td><td>8 bands</td><td>Final equalization.</td></tr>
+  <tr><td>Order · bypass</td><td>per module</td><td>Each module’s place and power.</td></tr>
+</table></div>
+
+<h2 id="cs-conseils">Tips</h2>
+<div class="tip"><p><b>Start from a preset</b> (Rap Vocal, Lead Vocal…), then turn off the modules the vocal doesn’t need: every bypass is click-free.</p></div>
+<div class="tip"><p><b>1176 then VARI-MU</b>: the 1176 catches the peaks, the vari-mu thickens and glues. Two moderate reductions beat one heavy one.</p></div>

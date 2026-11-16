@@ -1,0 +1,82 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#db-vue">Overview</a></li>
+  <li><a href="#db-scene">The stage</a></li>
+  <li><a href="#db-voix">One voice</a></li>
+  <li><a href="#db-pitch">Pitch and drift</a></li>
+  <li><a href="#db-manip">MANIPULATE</a></li>
+  <li><a href="#db-reglages">All the controls</a></li>
+  <li><a href="#db-conseils">Tips</a></li>
+</ul>
+
+<h2 id="db-vue">Overview</h2>
+<p>ONIRIQUE DOUBLEBOX is a <b>five-voice doubler</b>: the voice itself in the centre, two doubles on each side. Each voice has its place, delay, detune and level; a shared pitch and formant go to whichever voices you choose, and a MANIPULATE column transforms the timbre. Mono or stereo input, stereo output, 28 ms latency reported to the DAW.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 1185 160" role="img" aria-label="DOUBLEBOX signal path: the voice, its period tracked, five voices (LL, L, C, R, RR), pitch and formant, manipulations, EQ, mix"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">VOCAL</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="148" height="46" rx="6"/><text x="144" y="59" text-anchor="middle">TRACKING</text><text x="144" y="75" text-anchor="middle" class="t2">voice period</text><rect class="ba" x="248" y="40" width="148" height="46" rx="6"/><text x="322" y="59" text-anchor="middle" class="tb">5 VOICES</text><text x="322" y="75" text-anchor="middle" class="t2">LL · L · C · R · RR</text><path class="w" d="M218 63 H248" marker-end="url(#doc-arr)"/><rect class="b" x="426" y="40" width="148" height="46" rx="6"/><text x="500" y="59" text-anchor="middle">PITCH</text><text x="500" y="75" text-anchor="middle" class="t2">and FORMANT</text><path class="w" d="M396 63 H426" marker-end="url(#doc-arr)"/><rect class="b" x="604" y="40" width="148" height="46" rx="6"/><text x="678" y="59" text-anchor="middle">MANIPULATE</text><text x="678" y="75" text-anchor="middle" class="t2">timbre, melody</text><path class="w" d="M574 63 H604" marker-end="url(#doc-arr)"/><rect class="b" x="782" y="40" width="148" height="46" rx="6"/><text x="856" y="59" text-anchor="middle">EQ</text><text x="856" y="75" text-anchor="middle" class="t2">ALL · DOUBLES</text><path class="w" d="M752 63 H782" marker-end="url(#doc-arr)"/><rect class="b" x="960" y="40" width="148" height="46" rx="6"/><text x="1034" y="68" text-anchor="middle">WIDTH · OUT</text><path class="w" d="M930 63 H960" marker-end="url(#doc-arr)"/><path class="w" d="M1108 63 H1148"/><circle class="w" cx="1154" cy="63" r="6"/><text x="1154" y="91" text-anchor="middle" class="t2">OUTPUT</text></svg>
+  </div>
+  <figcaption>Each voice is a delayed, detuned copy of the original voice, placed in the stereo field. Pitch, formant and manipulations only affect the chosen voices.</figcaption>
+</figure>
+
+<h2 id="db-scene">1. The stage</h2>
+<p>Five points: <b>LL</b>, <b>L</b>, <b>C</b> (the voice itself), <b>R</b>, <b>RR</b>. Left to right, the stereo position; bottom to top, the level (−36 to +6 dB).</p>
+<ul>
+  <li><b>drag</b> a point: pan and level at once; <b>wheel</b>: detune, one cent per step (Shift: a tenth);</li>
+  <li><b>double-click</b>: mutes the voice; <b>right-click</b>: resets it;</li>
+  <li><b>multiple selection</b> (Ctrl, Shift, or a box): everything acts on the whole selection.</li>
+</ul>
+
+<h2 id="db-voix">2. The voice panel</h2>
+<ul>
+  <li><b>DELAY</b> (0 to 100 ms), <b>DETUNE</b> (±50 cents), <b>LEVEL</b>, <b>PAN</b>.</li>
+  <li><b>PITCH / FORMANT</b>: give it the column’s pitch and formant.</li>
+  <li><b>MANIPULATE</b>: apply the right-hand column to it (a red diamond appears next to its name).</li>
+</ul>
+<p>A voice that’s only detuned is read slightly faster or slower, like tape: nothing is chopped, breath and consonants come out as they went in.</p>
+
+<h2 id="db-pitch">3. Pitch, formant, drift and EQ</h2>
+<ul>
+  <li><b>PITCH</b> and <b>FORMANT</b> (±12 semitones each), independent: pitch moves the note while keeping the vowel, formant moves the vowel while keeping the note. <b>APPLY TO</b> picks the voices that get them.</li>
+  <li><b>DRIFT</b>: the doubles drift in pitch (up to ±14 cents) and time (±3 ms), each at its own pace, like a second take. <b>RATE</b>: drift speed. The centre never drifts.</li>
+  <li><b>EQ</b>: two shelves, low and high (±12 dB). <b>ALL</b> processes everything, <b>DOUBLES</b> only the doubles.</li>
+</ul>
+
+<h2 id="db-manip">4. MANIPULATE</h2>
+<div class="table"><table>
+  <tr><th>Control</th><th>Range</th><th>What it does</th></tr>
+  <tr><td>HARMONICS</td><td>−1 to +1</td><td>Shifts the harmonics up or down without changing the note. SNAP: whole harmonics only.</td></tr>
+  <tr><td>FM</td><td>0 – 100 %</td><td>Grit, then a robotic edge, without changing the note.</td></tr>
+  <tr><td>ALTERNATOR</td><td>0 – 100 %</td><td>Every other cycle lowered then flipped; fully up, the octave below.</td></tr>
+  <tr><td>RATIO</td><td>−1 to 2</td><td>How much melody remains: 1 follows it, 0 holds one note, beyond exaggerates, negative inverts.</td></tr>
+  <tr><td>OCTAVE</td><td>−2 to +2</td><td>Whole octaves, vowels kept.</td></tr>
+  <tr><td>GLIDE</td><td>0 – 500 ms</td><td>Time to reach a new note.</td></tr>
+  <tr><td>SMEAR</td><td>0 – 100 %</td><td>Attacks and consonants melt into a pad.</td></tr>
+  <tr><td>STEREO</td><td>0 – 100 %</td><td>One cycle left, the next right.</td></tr>
+  <tr><td>DETUNE</td><td>0 – 50 cents</td><td>Extra detune, down on the left, up on the right.</td></tr>
+  <tr><td>DRY / WET</td><td>0 – 100 %</td><td>Between the voices as they come and manipulated.</td></tr>
+</table></div>
+
+<h2 id="db-reglages">All the controls</h2>
+<div class="table"><table>
+  <tr><th>Control</th><th>Range</th><th>What it does</th></tr>
+  <tr><td>Voices LL · L · C · R · RR</td><td>on, pan, level</td><td>The stage.</td></tr>
+  <tr><td>DELAY</td><td>0 – 100 ms</td><td>A voice’s delay.</td></tr>
+  <tr><td>DETUNE</td><td>±50 cents</td><td>A voice’s detune.</td></tr>
+  <tr><td>PITCH · FORMANT</td><td>±12 semitones</td><td>For the chosen voices (APPLY TO).</td></tr>
+  <tr><td>DRIFT · RATE</td><td>0 – 100 %</td><td>The doubles’ drift.</td></tr>
+  <tr><td>EQ</td><td>±12 dB, ALL · DOUBLES</td><td>Two shelves.</td></tr>
+  <tr><td>MANIPULATE</td><td>see the table</td><td>Timbre and melody.</td></tr>
+  <tr><td>DOUBLES</td><td>in dB</td><td>The level of the four doubles together.</td></tr>
+  <tr><td>WIDTH</td><td>0 – 100 %</td><td>0 % = mono.</td></tr>
+  <tr><td>OUT</td><td>in dB</td><td>Output level.</td></tr>
+</table></div>
+
+<h2 id="db-conseils">Tips</h2>
+<div class="tip"><p><b>A natural double</b>: L and R at ±12 cents, 15 to 25 ms of delay, DRIFT around 30 %. The centre stays the untouched voice.</p></div>
+<div class="tip"><p><b>Ambient voices</b>: PITCH +12 on LL and RR only, low level, a bit of SMEAR.</p></div>
+<div class="tip"><p>Presets are sorted by type (DOUBLER, PITCH, FORMANT, MANIPULATE, ROBOT) in the browser.</p></div>

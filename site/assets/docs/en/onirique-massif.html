@@ -1,0 +1,87 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#ma-vue">Overview</a></li>
+  <li><a href="#ma-bas">Bands 1 and 2</a></li>
+  <li><a href="#ma-haut">Bands 3 and 4</a></li>
+  <li><a href="#ma-bande">One band</a></li>
+  <li><a href="#ma-canal">Channels and LINK</a></li>
+  <li><a href="#ma-reglages">All the controls</a></li>
+  <li><a href="#ma-conseils">Tips</a></li>
+</ul>
+
+<h2 id="ma-vue">Overview</h2>
+<p>ONIRIQUE MASSIF is a <b>stereo passive tube equalizer</b> in the spirit of the big mastering passive EQ in a rack front: two channels of four bands, filters and an output gain, painted red. The front is a photograph: every part is modelled in 3D, and every position of every control has its own picture.</p>
+<p>Processing runs at twice the sample rate, for faithful highs right up to the top of the spectrum (a few samples of latency, compensated by the DAW).</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 1017 160" role="img" aria-label="MASSIF signal path: filters, passive bands 1 and 2, tubes and iron, hybrid bands 3 and 4, output gain"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">INPUT</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="120" height="46" rx="6"/><text x="130" y="59" text-anchor="middle">HIGH PASS</text><text x="130" y="75" text-anchor="middle" class="t2">18 dB/oct</text><rect class="ba" x="220" y="40" width="120" height="46" rx="6"/><text x="280" y="59" text-anchor="middle" class="tb">BANDS 1 · 2</text><text x="280" y="75" text-anchor="middle" class="t2">passive network</text><path class="w" d="M190 63 H220" marker-end="url(#doc-arr)"/><rect class="b" x="370" y="40" width="120" height="46" rx="6"/><text x="430" y="59" text-anchor="middle">TUBES</text><text x="430" y="75" text-anchor="middle" class="t2">and iron</text><path class="w" d="M340 63 H370" marker-end="url(#doc-arr)"/><rect class="ba" x="520" y="40" width="120" height="46" rx="6"/><text x="580" y="59" text-anchor="middle" class="tb">BANDS 3 · 4</text><text x="580" y="75" text-anchor="middle" class="t2">hybrid</text><path class="w" d="M490 63 H520" marker-end="url(#doc-arr)"/><rect class="b" x="670" y="40" width="120" height="46" rx="6"/><text x="730" y="59" text-anchor="middle">LOW PASS</text><text x="730" y="75" text-anchor="middle" class="t2">24 dB/oct</text><path class="w" d="M640 63 H670" marker-end="url(#doc-arr)"/><rect class="b" x="820" y="40" width="120" height="46" rx="6"/><text x="880" y="59" text-anchor="middle">GAIN</text><text x="880" y="75" text-anchor="middle" class="t2">−6 to +4 dB</text><path class="w" d="M790 63 H820" marker-end="url(#doc-arr)"/><path class="w" d="M940 63 H980"/><circle class="w" cx="986" cy="63" r="6"/><text x="986" y="91" text-anchor="middle" class="t2">OUTPUT</text></svg>
+  </div>
+  <figcaption>One channel’s path. The lows go through the passive network, the tubes and the iron; the highs only through a very clean discrete stage.</figcaption>
+</figure>
+
+<h2 id="ma-bas">1. Lows and low-mids (bands 1 and 2)</h2>
+<p>The original passive network, as is:</p>
+<ul>
+  <li><b>bells</b> going from very wide to narrow, that <b>tighten as you boost</b>;</li>
+  <li><b>cuts</b> slightly narrower than the boosts;</li>
+  <li><b>shelves that resonate</b> when you close the bandwidth: a bump before the frequency, a dip right after;</li>
+  <li>bands that <b>load each other</b>: two bands pushed side by side give less than their sum, and the low end stays round even when you insist.</li>
+</ul>
+<p>Behind them, the <b>tubes</b>, and the transformer <b>iron</b> that thickens the bass when it gets loud.</p>
+
+<h2 id="ma-haut">2. Highs and high-mids (bands 3 and 4)</h2>
+<p>A hybrid. Each band is half that same passive network, half a <b>discrete class A band</b>: its width stays steady whatever the gain, and its shelf never resonates. The top opens with the softness of passive and the precision of discrete, <b>without getting harsh</b>.</p>
+<p>The highs don’t go through the tubes, only through a very clean discrete stage.</p>
+
+<h2 id="ma-bande">3. One band, control by control</h2>
+<ul>
+  <li><b>GAIN</b>: 0 to 20 dB, up or down depending on the lever.</li>
+  <li><b>BOOST / OUT / CUT lever</b>: in the window, BOOST lights up green and CUT red, like on the unit. Clicking the lit word puts the band back to OUT.</li>
+  <li><b>BANDWIDTH</b>: from very wide to narrow; on a shelf, it sets the resonance.</li>
+  <li><b>FREQUENCY</b>: eleven positions per band.</li>
+  <li><b>SHELF / BELL</b>: shelf (low for bands 1 and 2, high for 3 and 4) or bell.</li>
+</ul>
+<div class="table"><table>
+  <tr><th>Band</th><th>Frequencies</th><th>Role</th></tr>
+  <tr><td>1</td><td>22 Hz – 1 kHz</td><td>The lows, the weight.</td></tr>
+  <tr><td>2</td><td>82 Hz – 3.9 kHz</td><td>The low-mids, the body.</td></tr>
+  <tr><td>3</td><td>220 Hz – 10 kHz</td><td>The high-mids, the presence.</td></tr>
+  <tr><td>4</td><td>560 Hz – 27 kHz</td><td>The highs, the air.</td></tr>
+</table></div>
+
+<h2 id="ma-canal">4. Per channel, and in the middle</h2>
+<ul>
+  <li><b>IN</b>: the blue light. Off, bands and filters are flat, but the tubes stay.</li>
+  <li><b>HIGH PASS</b>: OFF, 22, 39, 68, 120 or 220 Hz, 18 dB per octave.</li>
+  <li><b>LOW PASS</b>: OFF, 18, 12, 9, 7.5 or 6 kHz, 24 dB per octave.</li>
+  <li>Output <b>GAIN</b>: −6 to +4 dB.</li>
+  <li><b>LINK</b> (in the middle): turning a control turns its twin on the other side; when engaged, the right side takes the left side’s settings.</li>
+  <li><b>POWER</b>: off, the signal as it came in.</li>
+</ul>
+<p>Hovering or turning a control shows its value right next to it; a double-click resets it.</p>
+
+<h2 id="ma-reglages">All the controls</h2>
+<div class="table"><table>
+  <tr><th>Control</th><th>Range</th><th>What it does</th></tr>
+  <tr><td>GAIN (band)</td><td>0 – 20 dB</td><td>Up or down depending on BOOST / OUT / CUT.</td></tr>
+  <tr><td>BANDWIDTH</td><td>wide → narrow</td><td>The bell width, or the shelf resonance.</td></tr>
+  <tr><td>FREQUENCY</td><td>11 positions</td><td>22 Hz – 1 kHz, 82 Hz – 3.9 kHz, 220 Hz – 10 kHz, 560 Hz – 27 kHz.</td></tr>
+  <tr><td>BOOST · OUT · CUT</td><td>lever</td><td>The band’s direction.</td></tr>
+  <tr><td>SHELF · BELL</td><td>lever</td><td>Shelf or bell.</td></tr>
+  <tr><td>IN</td><td>light</td><td>The channel in circuit.</td></tr>
+  <tr><td>HIGH PASS</td><td>OFF, 22 – 220 Hz</td><td>18 dB per octave.</td></tr>
+  <tr><td>LOW PASS</td><td>OFF, 18 – 6 kHz</td><td>24 dB per octave.</td></tr>
+  <tr><td>GAIN (output)</td><td>−6 to +4 dB</td><td>The channel’s output level.</td></tr>
+  <tr><td>LINK</td><td>lever</td><td>Both channels turn together.</td></tr>
+  <tr><td>POWER</td><td>on / off</td><td>The unit off, the original sound.</td></tr>
+</table></div>
+
+<h2 id="ma-conseils">Tips</h2>
+<div class="tip"><p><b>Weight without mud</b>: band 1 on BOOST, as a shelf around 60 Hz, and band 2 on CUT, fairly wide, around 250 Hz. The bands load each other: the low end stays round.</p></div>
+<div class="tip"><p><b>Air on a mix</b>: band 4 as a shelf around 16 or 20 kHz, a few notches of BOOST. It doesn’t go through the tubes and stays clean.</p></div>
+<div class="tip"><p><b>Different stereo sides</b>: turn LINK off to process left and right separately, for example on a stereo drum recording.</p></div>

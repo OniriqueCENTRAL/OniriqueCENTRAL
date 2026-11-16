@@ -1,0 +1,121 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#st-vue">What it’s for</a></li>
+  <li><a href="#st-install">Setup</a></li>
+  <li><a href="#st-pont">The clock bridge</a></li>
+  <li><a href="#st-echo">ECHO GUARD</a></li>
+  <li><a href="#st-faq">FAQ</a></li>
+</ul>
+
+<h2 id="st-vue">What it’s for</h2>
+<p>When your DAW runs on your sound card’s<b>ASIO</b> driver, Windows no longer hears anything it plays: so Discord can’t share your session’s sound. ONIRIQUE STREAM makes a copy of your master’s sound and sends it to a Windows device (the virtual cable <b>VB-CABLE</b>), while your DAW stays on ASIO, with no change to what you hear.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 920 300" role="img" aria-label="STREAM routing: the DAW’s sound stays on ASIO, a copy goes to VB-CABLE then Discord">
+    <rect class="b" x="20" y="60" width="130" height="60" rx="8"/><text x="85" y="86" text-anchor="middle" class="tb">DAW</text><text x="85" y="104" text-anchor="middle" class="t2">master</text>
+    <path class="w" d="M150 90 H200" marker-end="url(#doc-arr)"/>
+    <rect class="ba" x="200" y="60" width="150" height="60" rx="8"/><text x="275" y="86" text-anchor="middle" class="tb">STREAM</text><text x="275" y="104" text-anchor="middle" class="t2">last</text>
+    <path class="w" d="M350 90 H560" marker-end="url(#doc-arr)"/><text x="455" y="80" text-anchor="middle" class="t2">sound unchanged, zero latency</text>
+    <rect class="b" x="560" y="60" width="160" height="60" rx="8"/><text x="640" y="86" text-anchor="middle">SOUND CARD</text><text x="640" y="104" text-anchor="middle" class="t2">ASIO · your headphones</text>
+    <circle class="dot" cx="380" cy="90" r="3.5"/>
+    <path class="wa" d="M380 90 V200 H420" marker-end="url(#doc-arra)"/>
+    <rect class="b" x="420" y="176" width="90" height="48" rx="6"/><text x="465" y="197" text-anchor="middle">LEVEL</text><text x="465" y="213" text-anchor="middle" class="t2">+ signature</text>
+    <path class="wa" d="M510 200 H540" marker-end="url(#doc-arra)"/>
+    <rect class="b" x="540" y="176" width="140" height="48" rx="6"/><text x="610" y="197" text-anchor="middle">BRIDGE</text><text x="610" y="213" text-anchor="middle" class="t2">between clocks</text>
+    <path class="wa" d="M680 200 H710" marker-end="url(#doc-arra)"/>
+    <rect class="b" x="710" y="176" width="190" height="48" rx="6"/><text x="805" y="197" text-anchor="middle">CABLE Input</text><text x="805" y="213" text-anchor="middle" class="t2">WASAPI · VB-CABLE</text>
+    <path class="wa" d="M805 224 V262" marker-end="url(#doc-arra)"/>
+    <text x="900" y="282" text-anchor="end" class="ta">Discord: DAW window, sound on</text>
+    <text x="20" y="270" class="t2">The sound played into the cable doesn’t come out in your headphones:</text>
+    <text x="20" y="286" class="t2">your friends hear your session, you hear nothing twice.</text>
+  </svg>
+  </div>
+  <figcaption>In white, the usual sound path, which STREAM doesn’t touch. In red, the copy sent to Discord.</figcaption>
+</figure>
+
+<h2 id="st-install">Setup and use</h2>
+<ol>
+  <li>Put STREAM <b>last on the master</b>.</li>
+  <li><b>OUTPUT DEVICE</b> : “CABLE Input (VB-Audio Virtual Cable)”, picked automatically if it’s installed. No cable? <b>INSTALL VB-CABLE</b> downloads the official pack, checks VB-Audio’s signature, installs it with Windows’ permission and selects it.</li>
+  <li>In Discord, share the <b>DAW window</b> with sound on. Discord takes the sound of the DAW process, so the one STREAM sends.</li>
+</ol>
+<ul>
+  <li>Another device (speakers…) works too, but you’ll hear it on top of ASIO: the status shows it.</li>
+  <li>Your settings are saved in the project and on this PC: a new STREAM picks up the last device, the buffer, START / STOP and ECHO GUARD. An unplugged device is reopened automatically when it comes back.</li>
+  <li>Only one instance sends at a time (no doubled sound if STREAM is on two tracks), and nothing is sent during an export.</li>
+</ul>
+
+<h2 id="st-pont">The clock bridge</h2>
+<p>Your sound card and the virtual cable each have <b>their own clock</b>. Even set to the same rate, they never tick at exactly the same pace: a few samples of difference per second are enough for a buffer to end up overflowing (click) or running dry (dropout). The bridge handles this like a tank whose level is watched.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 900 300" role="img" aria-label="Clock bridge: FIFO tank, resampler and regulator">
+    <text x="60" y="40" class="t2">card clock (ASIO)</text>
+    <path class="w" d="M60 90 H230" marker-end="url(#doc-arr)"/><text x="140" y="80" text-anchor="middle">the DAW pushes</text>
+    <!-- réservoir -->
+    <path class="w" d="M240 50 V220 H400 V50"/>
+    <rect class="fill" x="242" y="120" width="156" height="98"/>
+    <path class="wd" d="M232 140 H410"/><text x="418" y="144" class="t2 ta">target level</text>
+    <text x="320" y="190" text-anchor="middle">FIFO</text><text x="320" y="206" text-anchor="middle" class="t2">lock-free</text>
+    <path class="w" d="M400 200 H480" marker-end="url(#doc-arr)"/>
+    <rect class="ba" x="480" y="172" width="190" height="56" rx="6"/><text x="575" y="195" text-anchor="middle" class="tb">RESAMPLER</text><text x="575" y="213" text-anchor="middle" class="t2">32-point sinc · 512 phases</text>
+    <path class="w" d="M670 200 H760" marker-end="url(#doc-arr)"/><text x="770" y="196" class="t2">the cable pulls</text><text x="770" y="212" class="t2">at its own pace</text>
+    <!-- régulateur -->
+    <rect class="b" x="480" y="60" width="190" height="56" rx="6"/><text x="575" y="83" text-anchor="middle">PI REGULATOR</text><text x="575" y="101" text-anchor="middle" class="t2">average level − target level</text>
+    <path class="wd" d="M400 120 H440 V88 H480" marker-end="url(#doc-arr)"/><text x="436" y="76" text-anchor="middle" class="t2">measures</text>
+    <path class="wa" d="M575 116 V172" marker-end="url(#doc-arra)"/><text x="585" y="148" class="t2 ta">corrects the ratio</text>
+    <text x="60" y="262" class="t2">Too full: the resampler reads a little faster. Too empty: a little slower.</text>
+    <text x="60" y="280" class="t2">The correction stays at a few hundred ppm at most: inaudible, and latency stays constant.</text>
+  </svg>
+  </div>
+  <figcaption>The DAW fills the tank at its pace, the cable empties it at its own. A regulator keeps the level constant by adjusting the playback speed very finely.</figcaption>
+</figure>
+<ul>
+  <li>The regulator starts fast (locked in a few seconds) then gradually slows down: the correction becomes almost still, with no audible modulation.</li>
+  <li>Different rates (DAW at 44.1 kHz, cable at 48 kHz): the base ratio handles it, and the filter cuts below the new limit to avoid any aliasing.</li>
+  <li>Empty tank (transport stopped, output started before the DAW): fade to silence, then restarts on its own.</li>
+  <li>The margin adapts: if the reserve stays large for 10 s, latency drops a little; each dropout raises it back.</li>
+</ul>
+
+<h2 id="st-echo">ECHO GUARD</h2>
+<p>If the stream’s sound comes back into your DAW (an input recording the cable, “Stereo Mix”…), it goes through STREAM again, back into the cable, back again… and the echo spirals into <b>feedback</b>. ECHO GUARD cuts the stream before that happens. Your DAW’s sound is never touched.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 900 290" role="img" aria-label="ECHO GUARD: an inaudible signature is added to the stream, and the plugin input is compared with it">
+    <rect class="b" x="30" y="40" width="160" height="50" rx="6"/><text x="110" y="61" text-anchor="middle">NOISE</text><text x="110" y="78" text-anchor="middle" class="t2">random</text>
+    <path class="w" d="M190 65 H230" marker-end="url(#doc-arr)"/>
+    <rect class="b" x="230" y="40" width="170" height="50" rx="6"/><text x="315" y="61" text-anchor="middle">HIGH-PASS</text><text x="315" y="78" text-anchor="middle" class="t2">16 kHz · 4th order</text>
+    <path class="w" d="M400 65 H520" marker-end="url(#doc-arr)"/><text x="460" y="55" text-anchor="middle" class="t2">−54 dBFS</text>
+    <circle class="ba" cx="538" cy="65" r="18"/><text x="538" y="71" text-anchor="middle" class="tb">+</text>
+    <path class="w" d="M600 130 H538 V83" marker-end="url(#doc-arr)"/><text x="610" y="134" class="t2">master sound</text>
+    <path class="wa" d="M556 65 H700" marker-end="url(#doc-arra)"/><text x="710" y="69" class="ta">stream (cable)</text>
+    <circle class="dot" cx="430" cy="65" r="3.5"/><path class="wd" d="M430 65 V200 H470" marker-end="url(#doc-arr)"/><text x="440" y="165" class="t2">signature sent</text>
+    <rect class="ba" x="470" y="176" width="200" height="56" rx="6"/><text x="570" y="199" text-anchor="middle" class="tb">CORRELATION</text><text x="570" y="217" text-anchor="middle" class="t2">integrated over ~1 s</text>
+    <text x="30" y="250" class="t2">plugin input</text>
+    <rect class="b" x="160" y="226" width="170" height="44" rx="6"/><text x="245" y="246" text-anchor="middle">HIGH-PASS</text><text x="245" y="262" text-anchor="middle" class="t2">same filter</text>
+    <path class="w" d="M130 248 H160" marker-end="url(#doc-arr)"/>
+    <path class="w" d="M330 248 H420 V220 H470" marker-end="url(#doc-arr)"/>
+    <path class="wa" d="M670 204 H720" marker-end="url(#doc-arra)"/>
+    <text x="730" y="196" class="ta">same delay</text><text x="730" y="212" class="ta">3 times in a row</text><text x="730" y="232" class="t2">→ stream cut</text>
+  </svg>
+  </div>
+  <figcaption>STREAM marks its own sound with an inaudible signature (above 16 kHz, never in your DAW’s sound), then looks for that signature in what comes into the plugin.</figcaption>
+</figure>
+<ul>
+  <li>Each millisecond of the input is brought to the same power before the comparison: a loud cymbal doesn’t drown the signature, and quiet moments count fully.</li>
+  <li>A real loop keeps the same delay from one measurement to the next; chance doesn’t. A loop confirmed three times at the same delay cuts the stream.</li>
+  <li>Repeating music (loops, choruses) can’t trigger the guard: only the signature counts.</li>
+  <li><b>RE-ARM</b> restarts the stream once the loop is removed.</li>
+</ul>
+
+<h2 id="st-faq">FAQ</h2>
+<div class="tip"><p><b>My friends hear nothing:</b> check that you’re sharing the <b>DAW window</b> (not the whole screen) with sound on, and that STREAM is on START with CABLE Input selected.</p></div>
+<div class="tip"><p><b>The stream cut out on its own:</b> that’s ECHO GUARD. Look for a track or an input recording the cable or “Stereo Mix”, remove it, then RE-ARM.</p></div>
+<div class="tip"><p><b>I hear myself twice:</b> the selected output isn’t the cable but a device you’re listening to. Switch back to CABLE Input.</p></div>

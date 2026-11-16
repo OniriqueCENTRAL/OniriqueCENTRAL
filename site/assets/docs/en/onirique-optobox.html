@@ -1,0 +1,77 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <marker id="doc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:#B9A2A5"/></marker>
+  <marker id="doc-arra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:rgb(var(--acc))"/></marker>
+</defs></svg>
+
+<ul class="toc">
+  <li><a href="#op-vue">Overview</a></li>
+  <li><a href="#op-cellule">The optical cell</a></li>
+  <li><a href="#op-temps">Times</a></li>
+  <li><a href="#op-generations">MK I and MK II</a></li>
+  <li><a href="#op-couleur">Colour and sidechain</a></li>
+  <li><a href="#op-reglages">All the controls</a></li>
+  <li><a href="#op-conseils">Tips</a></li>
+</ul>
+
+<h2 id="op-vue">Overview</h2>
+<p>ONIRIQUE OPTOBOX is an <b>optical tube compressor</b> in the spirit of the great Danish classic from the 80s, with its mixing unit underneath. The front is the machine’s, painted in the range’s red, and the VU is lit by a slightly blue LED. A switch goes from the original generation (<b>vintage mk I</b>) to the current one (<b>modern mk II</b>).</p>
+<p>No latency. Mono or stereo input, stereo output, stereo sidechain input. 0 VU = −18 dBFS, like the machine’s calibration: the threshold reads from there.</p>
+
+<figure>
+  <div class="sch-frame">
+  <svg class="sch" viewBox="0 0 1001 200" role="img" aria-label="OPTOBOX signal path: detector low cut, optical cell, tube and transformers, output, parallel"><circle class="w" cx="28" cy="63" r="6"/><text x="28" y="45" text-anchor="middle" class="t2">INPUT</text><path class="w" d="M34 63 H70" marker-end="url(#doc-arr)"/><rect class="b" x="70" y="40" width="134" height="46" rx="6"/><text x="137" y="59" text-anchor="middle">LOW CUT</text><text x="137" y="75" text-anchor="middle" class="t2">detector</text><rect class="b" x="234" y="40" width="134" height="46" rx="6"/><text x="301" y="59" text-anchor="middle">DETECTOR</text><text x="301" y="75" text-anchor="middle" class="t2">THRESHOLD · RATIO</text><path class="w" d="M204 63 H234" marker-end="url(#doc-arr)"/><rect class="ba" x="398" y="40" width="134" height="46" rx="6"/><text x="465" y="59" text-anchor="middle" class="tb">CELL</text><text x="465" y="75" text-anchor="middle" class="t2">optical</text><path class="w" d="M368 63 H398" marker-end="url(#doc-arr)"/><rect class="b" x="562" y="40" width="134" height="46" rx="6"/><text x="629" y="59" text-anchor="middle">TUBE</text><text x="629" y="75" text-anchor="middle" class="t2">and transformers</text><path class="w" d="M532 63 H562" marker-end="url(#doc-arr)"/><rect class="b" x="726" y="40" width="134" height="46" rx="6"/><text x="793" y="59" text-anchor="middle">OUTPUT</text><text x="793" y="75" text-anchor="middle" class="t2">off – +30 dB</text><path class="w" d="M696 63 H726" marker-end="url(#doc-arr)"/><path class="w" d="M860 63 H888" marker-end="url(#doc-arr)"/><circle class="ba" cx="906" cy="63" r="18"/><text x="906" y="69" text-anchor="middle" class="tb">+</text><text x="906" y="37" text-anchor="middle" class="t2">PARALLEL</text><circle class="dot" cx="52" cy="63" r="3.5"/><path class="wd" d="M52 63 V178 H906 V81" marker-end="url(#doc-arr)"/><text x="80" y="172" class="t2">the original sound</text><path class="w" d="M924 63 H964"/><circle class="w" cx="970" cy="63" r="6"/><text x="970" y="91" text-anchor="middle" class="t2">OUTPUT</text></svg>
+  </div>
+  <figcaption>The detector lights the optical cell, which lowers the gain with a slight delay and recovers in two stages. The tube and transformers bring the colour. PARALLEL blends compressed and original sound.</figcaption>
+</figure>
+
+<h2 id="op-cellule">1. The optical cell</h2>
+<p>The rectified level charges the attack and release capacitors; threshold and ratio apply after that, with a very soft knee: a level held at the threshold is lowered by <b>exactly 1 dB</b>.</p>
+<p>The cell follows the light with a slight delay and recovers in two stages: <b>most of it fast, the rest slowly</b>. The harder and longer it has been lit, the more the slow recovery weighs: it has a memory. That’s what makes the <b>fixed</b> mode program-dependent.</p>
+
+<h2 id="op-temps">2. Times</h2>
+<ul>
+  <li><b>manual</b>: ATTACK (0.5 to 300 ms) and RELEASE (0.05 to 10 s) on the knobs.</li>
+  <li><b>fixed</b>: 1 ms and 50 ms, the cell does the rest.</li>
+  <li><b>fix./man.</b>: two networks at once. A peak shorter than the attack is caught by the fast network and released quickly; a longer passage is held as in manual.</li>
+</ul>
+
+<h2 id="op-generations">3. MK I and MK II</h2>
+<div class="table"><table>
+  <tr><th>Character</th><th>vintage mk I</th><th>modern mk II</th></tr>
+  <tr><td>Knee</td><td>14 dB</td><td>9 dB</td></tr>
+  <tr><td>Cell delay</td><td>2 ms</td><td>0.4 ms</td></tr>
+  <tr><td>Fast / slow recovery</td><td>70 ms / 3.5 s</td><td>40 ms / 1.5 s</td></tr>
+  <tr><td>Tube at 0 VU (H2)</td><td>−59 dB</td><td>−69 dB</td></tr>
+  <tr><td>Response 20 Hz / 20 kHz</td><td>−0.9 / −0.9 dB</td><td>−0.1 / −0.2 dB</td></tr>
+</table></div>
+<p>MK I is slower, softer and more coloured; MK II faster and more transparent.</p>
+
+<h2 id="op-couleur">4. Tube, sidechain and parallel</h2>
+<ul>
+  <li><b>Tube and transformers</b>: 2nd harmonic from the tube, 3rd when pushed, low-end saturation in the iron when it’s loud, a slight low bump and softened top. Everything that distorts runs at twice the sample rate.</li>
+  <li><b>SIDECHAIN BUS SELECT</b>: int. (the compressor listens to what it processes) or ext. (the DAW’s sidechain input).</li>
+  <li><b>SIDECHAIN LOW CUT</b>: off, 80 Hz or 220 Hz, on the detector only.</li>
+  <li><b>PARALLEL COMP.</b>: from the original sound to the compressed sound; the original goes through the same filters to stay in phase.</li>
+  <li><b>METER</b>: the VU shows input, reduction (GR) or output.</li>
+</ul>
+
+<h2 id="op-reglages">All the controls</h2>
+<div class="table"><table>
+  <tr><th>Control</th><th>Range</th><th>What it does</th></tr>
+  <tr><td>THRESHOLD</td><td>off (+20) to −40 dB</td><td>Where compression reaches 1 dB, below 0 VU.</td></tr>
+  <tr><td>RATIO</td><td>2:1 – 10:1</td><td>How hard it compresses.</td></tr>
+  <tr><td>ATTACK</td><td>0.5 – 300 ms</td><td>In manual and fix./man.</td></tr>
+  <tr><td>RELEASE</td><td>0.05 – 10 s</td><td>In manual and fix./man.</td></tr>
+  <tr><td>ATTACK/RELEASE SELECT</td><td>fixed · fix./man. · manual</td><td>The timing mode.</td></tr>
+  <tr><td>OUTPUT VOLUME</td><td>off – +30 dB</td><td>Gain after compression, through the tube stage.</td></tr>
+  <tr><td>GENERATION</td><td>mk I · mk II</td><td>Vintage or modern.</td></tr>
+  <tr><td>SIDECHAIN BUS</td><td>int. · ext.</td><td>What the detector listens to.</td></tr>
+  <tr><td>SIDECHAIN LOW CUT</td><td>off · 80 · 220 Hz</td><td>On the detector only.</td></tr>
+  <tr><td>PARALLEL COMP.</td><td>dry → wet</td><td>Parallel compression.</td></tr>
+  <tr><td>METER</td><td>input · GR · output</td><td>What the VU shows.</td></tr>
+</table></div>
+
+<h2 id="op-conseils">Tips</h2>
+<div class="tip"><p><b>A smoothly held vocal</b>: mk I, fixed, RATIO 3:1, threshold for 3 to 5 dB of GR. The cell follows the phrase without ever pumping.</p></div>
+<div class="tip"><p><b>An even bass</b>: mk II, fix./man., LOW CUT at 80 Hz so the lows don’t do all the work.</p></div>
+<div class="tip"><p>The 15 factory presets start from the settings recommended by the machine’s manual, with a threshold placed for a source at 0 VU.</p></div>

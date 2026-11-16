@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<script src="assets/i18n.js?v=862d5f66"></script>
+<script src="assets/i18n.js?v=2cd9bc9c"></script>
 <script src="assets/ui.js?v=4"></script>
 <script src="assets/annonce.js?v=6"></script>
 <script src="/api/announce.js" async></script>
@@ -387,10 +387,10 @@ function fitDemo() {
 // Documentation : les plugins qui en ont une (assets/docs/<slug>.html) ont un onglet de plus ; le nombre est la
 // version du fichier, à augmenter quand on le modifie. L’adresse …#documentation ouvre directement l’onglet.
 const DOCS = { "tuner": 1, "onirique-verb": 1, "onirique-enhancer": 1, "onirique-stream": 1, "player-onirique": 1,
-  "onirique-halo": 1, "onirique-eclipse": 1, "vocalbox": 1, "onirique-vocal-mini": 1, "onirique-weight": 1, "onirique-massif": 1,
-  "onirique-n73": 1, "onirique-glue": 1, "onirique-optobox": 1, "onirique-riser": 1, "onirique-eq": 1, "onirique-vocal-spacer": 1,
-  "onirique-resobox": 1, "onirique-doublebox": 1, "onirique-modbox": 1, "based": 1, "onirique-pitchbox": 1, "onirique-echobox": 1,
-  "onirique-meterbox": 1, "onirique-broadcast": 1, "brumebox": 1, "onirique-punch": 1 };
+  "onirique-halo": 2, "onirique-eclipse": 2, "vocalbox": 2, "onirique-vocal-mini": 2, "onirique-weight": 2, "onirique-massif": 2,
+  "onirique-n73": 2, "onirique-glue": 2, "onirique-optobox": 2, "onirique-riser": 2, "onirique-eq": 2, "onirique-vocal-spacer": 2,
+  "onirique-resobox": 2, "onirique-doublebox": 2, "onirique-modbox": 2, "based": 2, "onirique-pitchbox": 2, "onirique-echobox": 2,
+  "onirique-meterbox": 2, "onirique-broadcast": 2, "brumebox": 2, "onirique-punch": 2 };
 function setupDoc(product) {
   const version = DOCS[product.slug];
   if (!version) return;
@@ -403,7 +403,10 @@ function setupDoc(product) {
     if (!doc) fitDemo();
     if (doc && !$("doc").childElementCount) {
       $("doc").replaceChildren(el("p", { className: "lede", textContent: "Chargement de la documentation…" }));
-      fetch(`/assets/docs/${product.slug}.html?v=${version}`).then((r) => r.ok ? r.text() : Promise.reject())
+      // En anglais, la version traduite (assets/docs/en/<slug>.html) ; si elle manque, la française.
+      const get = (path) => fetch(path).then((r) => r.ok ? r.text() : Promise.reject());
+      const fr = `/assets/docs/${product.slug}.html?v=${version}`;
+      (window.OniriqueI18n?.lang === "en" ? get(`/assets/docs/en/${product.slug}.html?v=${version}`).catch(() => get(fr)) : get(fr))
         .then((html) => { $("doc").innerHTML = html; })
         .catch(() => { $("doc").replaceChildren(el("p", { className: "lede", textContent: "La documentation n’a pas pu être chargée. Réessaie dans un instant." })); });
     }
