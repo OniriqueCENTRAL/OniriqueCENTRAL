@@ -96,7 +96,7 @@ sealed partial class Navigateur
         fermerPanneau.Click += (_, _) => BasculerPanneau(null);
         ouvrirEnOnglet.Click += (_, _) =>
         {
-            if (panneauOuvert != null && vuesDePanneau.TryGetValue(panneauOuvert, out var v)) _ = Ouvrir(v.CoreWebView2?.Source ?? Services.First(s => s.Id == panneauOuvert).Url);
+            if (panneauOuvert != null && vuesDePanneau.TryGetValue(panneauOuvert, out var v)) _ = Ouvrir(v.CoreWebView2?.Source ?? Panneaux().First(s => s.Id == panneauOuvert).Url);
             BasculerPanneau(null);
         };
         foreach (var s in Services)
@@ -106,6 +106,7 @@ sealed partial class Navigateur
             boutonsDePanneau.Add(b);
             laterale.Controls.Add(b);
         }
+        InitOutilsLateraux();
         Controls.Add(panneau);
         Controls.Add(laterale);
         Controls.Add(favoris);
@@ -133,7 +134,7 @@ sealed partial class Navigateur
         teteDePanneau.Height = this.S(38);
         titreDePanneau.Font = new Font("Segoe UI Variable Text", this.S(13), FontStyle.Bold, GraphicsUnit.Pixel);
         var icones = new Font("Segoe Fluent Icons", this.S(14), GraphicsUnit.Pixel);
-        foreach (var b in boutonsDePanneau.Append(ouvrirEnOnglet).Append(fermerPanneau)) b.Font = icones;
+        foreach (var b in boutonsDePanneau.Append(ouvrirEnOnglet).Append(fermerPanneau).Append(boutonOutilsLateraux)) b.Font = icones;
         champ.Etoile.Font = new Font("Segoe Fluent Icons", this.S(13), GraphicsUnit.Pixel);
         suggestions.Font = Font;
         panneauLecteur.Font = new Font("Segoe UI Variable Text", this.S(13), GraphicsUnit.Pixel);
@@ -143,6 +144,7 @@ sealed partial class Navigateur
     {
         int y = this.S(10);
         foreach (var b in boutonsDePanneau) { b.SetBounds(this.S(6), y, this.S(36), this.S(36)); y += this.S(42); }
+        boutonOutilsLateraux.SetBounds(this.S(6), y, this.S(36), this.S(36));
         int h = this.S(30), haut = (teteDePanneau.Height - h) / 2;
         fermerPanneau.SetBounds(teteDePanneau.Width - this.S(40), haut, this.S(32), h);
         ouvrirEnOnglet.SetBounds(teteDePanneau.Width - this.S(74), haut, this.S(32), h);
@@ -166,7 +168,7 @@ sealed partial class Navigateur
         }
         c.WebResourceRequested += (_, e) =>
         {
-            if (!Reglages.Bloqueur) return;
+            if (!BloqueurSur(c.Source)) return;
             e.Response = c.Environment.CreateWebResourceResponse(null, 403, "Blocked", "");
             pubsBloquees++;
         };
@@ -483,7 +485,7 @@ sealed partial class Navigateur
         foreach (var b in boutonsDePanneau) b.Temoin = (string?)b.Tag == id;
         Animer();
         if (id == null) return;
-        var service = Services.First(s => s.Id == id);
+        if (Panneaux().FirstOrDefault(s => s.Id == id) is not { Id: not null } service) { panneauOuvert = null; return; }
         titreDePanneau.Text = service.Nom;
         if (!vuesDePanneau.TryGetValue(id, out var vue))
         {

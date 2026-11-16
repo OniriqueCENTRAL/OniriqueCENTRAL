@@ -11,6 +11,7 @@ sealed class BarreFavoris : Control
 {
     readonly Navigateur nav;
     readonly List<(JsonObject Element, Rectangle Zone)> places = new();
+    readonly ToolTip infobulle = new();
     Rectangle suite;
     List<JsonObject> debordes = new();
     int survol = -1;
@@ -127,11 +128,12 @@ sealed class BarreFavoris : Control
         if (i == survol) return;
         survol = i;
         Cursor = i == -1 ? Cursors.Default : Cursors.Hand;
-        if (i >= 0) new ToolTip().SetToolTip(this, EstDossier(places[i].Element) ? Nom(places[i].Element) : Url(places[i].Element));
+        // Une seule bulle, remplacée à chaque favori : une bulle neuve par survol restait affichée et s'empilait.
+        infobulle.SetToolTip(this, i >= 0 ? (EstDossier(places[i].Element) ? Nom(places[i].Element) : Url(places[i].Element)) : null);
         Invalidate();
     }
 
-    protected override void OnMouseLeave(EventArgs e) { survol = -1; Invalidate(); base.OnMouseLeave(e); }
+    protected override void OnMouseLeave(EventArgs e) { survol = -1; infobulle.SetToolTip(this, null); Invalidate(); base.OnMouseLeave(e); }
 
     protected override void OnMouseUp(MouseEventArgs e)
     {

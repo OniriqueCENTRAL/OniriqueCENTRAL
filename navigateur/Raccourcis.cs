@@ -46,16 +46,7 @@ sealed partial class Navigateur
     {
         if (Prive || o.Url.Length == 0) return;
         var adresse = EstInterne(o.Url) ? Accueil : o.Url;
-        GetWindowThreadProcessId(GetAncestor(WindowFromPoint(ecran), 2 /* GA_ROOT */), out int pid);
-        if (pid != 0 && pid != Environment.ProcessId)
-        {
-            try
-            {
-                using var p = Process.GetProcessById(pid);
-                if (p.ProcessName == Process.GetCurrentProcess().ProcessName && Instance.Envoyer(pid, adresse)) { Fermer(o); return; }
-            }
-            catch { }
-        }
+        if (FenetreOniriqueSous(ecran) is var pid and not 0 && Instance.Envoyer(pid, adresse)) { Fermer(o); return; }
         if (Onglets.Count < 2) return; // le seul onglet d'une fenêtre : c'est la fenêtre qu'on déplace
         NouvelleFenetre(false, adresse, new Point(ecran.X - this.S(120), ecran.Y - this.S(16)));
         Fermer(o);

@@ -106,15 +106,28 @@ sealed partial class Navigateur
     /// Range un onglet glissé (avec l'autre moitié de son écran divisé) à ce rang parmi les autres onglets. Posé entre deux
     /// onglets d'un même groupe, il y entre ; posé au bord de son groupe, il y reste ; ailleurs, il en sort.
     /// </summary>
-    internal void Deplacer(Onglet o, int rang)
+    internal void Deplacer(Onglet o, int rang) => Deplacer(o, rang, null, false);
+
+    /// <summary>
+    /// Déplace un onglet (et sa moitié d'écran divisé). Avec <paramref name="impose"/>, il entre dans
+    /// <paramref name="cible"/> (ou sort de tout groupe si elle est nulle) : c'est le glisser de la barre d'onglets
+    /// qui le décide, d'après l'endroit où se trouve l'onglet.
+    /// </summary>
+    internal void Deplacer(Onglet o, int rang, Groupe? cible, bool impose)
     {
         var bloc = Onglets.Where(x => x == o || x == o.Partenaire).ToList();
         var reste = Onglets.Except(bloc).ToList();
         rang = Math.Clamp(rang, 0, reste.Count);
+        if (impose && cible != null && reste.FindIndex(x => x.Groupe == cible) is var a and >= 0)
+            rang = Math.Clamp(rang, a, reste.FindLastIndex(x => x.Groupe == cible) + 1); // ses onglets restent côte à côte
+        // Glissé au milieu d'un groupe replié : il passe derrière lui au lieu d'y disparaître.
+        if (impose && rang > 0 && rang < reste.Count && reste[rang - 1].Groupe is { Replie: true } replie && reste[rang].Groupe == replie && cible != replie)
+            rang = reste.FindLastIndex(x => x.Groupe == replie) + 1;
         var gauche = rang > 0 ? reste[rang - 1] : null;
         var droite = rang < reste.Count ? reste[rang] : null;
-        var gr = gauche?.Groupe != null && gauche.Groupe == droite?.Groupe ? gauche.Groupe
-            : o.Groupe != null && (gauche?.Groupe == o.Groupe || droite?.Groupe == o.Groupe) ? o.Groupe : null;
+        var entre = gauche?.Groupe != null && gauche.Groupe == droite?.Groupe ? gauche.Groupe : null; // au milieu d'un groupe : on y est forcément
+        var gr = impose ? cible ?? entre
+            : entre ?? (o.Groupe != null && (gauche?.Groupe == o.Groupe || droite?.Groupe == o.Groupe) ? o.Groupe : null);
         reste.InsertRange(rang, bloc);
         if (reste.SequenceEqual(Onglets) && bloc.All(x => x.Groupe == gr)) return;
         Onglets.Clear();

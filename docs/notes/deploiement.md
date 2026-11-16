@@ -58,6 +58,9 @@
 
 ## Pièges
 - Un `backdrop-filter` sur l'en-tête en fait un calque à part : sans `z-index`, les titres animés de la page passent devant ses menus (réglé dans `da.css`). Changer `da.css` impose de monter son `?v=` dans toutes les pages (cache d'un an).
+- Navigateur sans barre de titre : dans `WM_NCCALCSIZE`, tester `IsZoomed` et pas `WindowState` (pas encore à jour
+  pendant l'agrandissement) ; une fenêtre agrandie déplacée garde sa mauvaise place, d'où le recalage dans `WM_WINDOWPOSCHANGING`.
+- Une bulle d'aide (`ToolTip`) créée à chaque survol reste affichée : en garder une seule par contrôle.
 - Essais du navigateur : toujours avec `ONIRIQUE_NAVIGATEUR_DOSSIER` vers un dossier temporaire ; ne jamais copier
   ni restaurer le `parametres.json` d'un utilisateur (une restauration a déjà écrasé ses réglages).
 - Les clics simulés n'atteignent pas WebView2 : passer par `--remote-debugging-port` et `Runtime.evaluate`.

@@ -13,7 +13,7 @@ sealed partial class Navigateur
     sealed class Telechargement
     {
         public int Id;
-        public string Nom = "", Chemin = "", Url = "", Etat = "encours";
+        public string Nom = "", Chemin = "", Url = "", Etat = "encours", Groupe = "";
         public long Recu, Total, Debut;
         public CoreWebView2DownloadOperation? Operation;
     }
@@ -36,6 +36,7 @@ sealed partial class Navigateur
                 {
                     Id = prochainTelechargement++, Nom = (string?)n!["nom"] ?? "", Chemin = (string?)n["chemin"] ?? "", Url = (string?)n["url"] ?? "",
                     Etat = (string?)n["etat"] ?? "fini", Recu = (long?)n["recu"] ?? 0, Total = (long?)n["total"] ?? 0, Debut = (long?)n["debut"] ?? 0,
+                    Groupe = (string?)n["groupe"] ?? "",
                 });
         }
         catch { }
@@ -48,7 +49,7 @@ sealed partial class Navigateur
         {
             var liste = new JsonArray();
             foreach (var t in telechargements.Where(t => t.Etat != "encours" && t.Etat != "pause").TakeLast(300))
-                liste.Add(new JsonObject { ["nom"] = t.Nom, ["chemin"] = t.Chemin, ["url"] = t.Url, ["etat"] = t.Etat, ["recu"] = t.Recu, ["total"] = t.Total, ["debut"] = t.Debut });
+                liste.Add(new JsonObject { ["nom"] = t.Nom, ["chemin"] = t.Chemin, ["url"] = t.Url, ["etat"] = t.Etat, ["recu"] = t.Recu, ["total"] = t.Total, ["debut"] = t.Debut, ["groupe"] = t.Groupe });
             Directory.CreateDirectory(Parametres.Dossier);
             File.WriteAllText(FichierTelechargements, liste.ToJsonString());
         }
@@ -99,7 +100,7 @@ sealed partial class Navigateur
         foreach (var t in Enumerable.Reverse(telechargements))
             liste.Add(new JsonObject
             {
-                ["id"] = t.Id, ["nom"] = t.Nom, ["url"] = t.Url, ["etat"] = t.Etat, ["recu"] = t.Recu, ["total"] = t.Total, ["debut"] = t.Debut,
+                ["id"] = t.Id, ["nom"] = t.Nom, ["url"] = t.Url, ["etat"] = t.Etat, ["recu"] = t.Recu, ["total"] = t.Total, ["debut"] = t.Debut, ["groupe"] = t.Groupe,
                 ["existe"] = t.Etat == "fini" && File.Exists(t.Chemin),
             });
         return new JsonObject { ["type"] = "telechargements", ["liste"] = liste };
@@ -136,6 +137,11 @@ sealed partial class Navigateur
             case "dlAnnuler": t?.Operation?.Cancel(); return;
             case "dlPause": t?.Operation?.Pause(); if (t?.Operation != null) { t.Etat = "pause"; EnvoyerTelechargements(); } return;
             case "dlReprendre": if (t?.Operation?.CanResume == true) { t.Operation.Resume(); t.Etat = "encours"; EnvoyerTelechargements(); } return;
+            case "dlGroupe":
+                // Ranger dans un groupe (texte libre, 40 caractères) ; vide : hors groupe.
+                if (t != null) { t.Groupe = ((string?)m["groupe"] ?? "").Trim() is var g && g.Length > 40 ? g[..40] : g; SauverTelechargements(); }
+                EnvoyerTelechargements();
+                return;
             case "dlRetirer":
                 if (t != null && t.Operation == null) { telechargements.Remove(t); SauverTelechargements(); }
                 EnvoyerTelechargements();

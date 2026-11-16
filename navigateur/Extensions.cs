@@ -168,7 +168,7 @@ sealed partial class Navigateur
             m.Items.Add(el);
         }
         m.Items.Add(new ToolStripSeparator());
-        m.Items.Add(Element("Ajouter et gérer les extensions…", () => OuvrirInterne(PageParametres + "#extensions")));
+        m.Items.Add(Element("Afficher plus", () => OuvrirInterne(PageParametres + "#extensions")));
         m.Items.Add(Element("Chrome Web Store", () => _ = Ouvrir("https://chromewebstore.google.com/", Actif == null ? -1 : Onglets.IndexOf(Actif) + 1)));
         m.Show(boutonExtensions, new Point(0, boutonExtensions.Height));
     }

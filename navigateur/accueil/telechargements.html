@@ -51,6 +51,14 @@ button.nom:hover { color: rgb(var(--acc-hi)); }
 .barre.attente i { width: 30% !important; animation: va 1.2s ease-in-out infinite alternate; }
 .actions { display: flex; gap: 6px; }
 .actions .bouton { padding: 8px 10px; font-size: 11px; }
+.outils { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+.puce { border: 1px solid var(--line); background: transparent; color: var(--label); padding: 6px 12px; border-radius: 999px; font: 600 12px "Hanken Grotesk", sans-serif; cursor: pointer; transition: border-color .2s, background .2s; }
+.puce:hover { border-color: rgba(var(--acc-hi), .5); }
+.puce[aria-pressed="true"] { background: rgba(var(--acc), .22); border-color: rgba(var(--acc-hi), .6); color: var(--bone); }
+.puce small { color: var(--haze); margin-left: 4px; }
+.outils .espace { flex: 1; }
+select, .groupe-nom { height: 32px; border: 1px solid var(--line); border-radius: 8px; background: #0b090a; color: var(--bone); font: 12px "Hanken Grotesk", sans-serif; padding: 0 8px; max-width: 160px; }
+select:focus-visible, .puce:focus-visible, .groupe-nom:focus { outline: 2px solid rgb(var(--acc-hi)); outline-offset: 2px; }
 .vide { margin-top: 60px; text-align: center; color: var(--haze); }
 @keyframes entree { from { opacity: 0; transform: translateY(8px); } }
 @keyframes va { from { margin-left: 0; } to { margin-left: 70%; } }
@@ -61,8 +69,16 @@ button.nom:hover { color: rgb(var(--acc-hi)); }
 <div class="cadre">
   <div class="tete">
     <h1>Téléchargements</h1>
+    <input id="q" type="search" placeholder="Rechercher un fichier" aria-label="Rechercher un téléchargement">
     <button class="bouton" id="dossier">Ouvrir le dossier</button>
     <button class="bouton" id="vider">Vider la liste</button>
+  </div>
+  <div class="outils">
+    <div id="groupes" style="display:flex;gap:8px;flex-wrap:wrap" role="group" aria-label="Groupes"></div>
+    <span class="espace"></span>
+    <label><span class="info" style="display:inline">Trier </span><select id="tri" aria-label="Trier les téléchargements">
+      <option value="recent">Plus récents</option><option value="ancien">Plus anciens</option><option value="nom">Nom</option>
+      <option value="taille">Taille</option><option value="type">Type de fichier</option></select></label>
   </div>
   <div class="liste" id="liste" aria-live="polite"></div>
 </div>
@@ -73,9 +89,42 @@ const hote = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } 
 const quand = (t) => new Date(t).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids.filter(Boolean)); return n; };
 const bouton = (texte, type, id) => el("button", { className: "bouton", textContent: texte, onclick: () => onirique.envoyer({ type, id }) });
-let vitesses = {};
+let vitesses = {}, tous = [], filtre = null;
+const q = document.getElementById("q"), tri = document.getElementById("tri"), zoneGroupes = document.getElementById("groupes");
+try { tri.value = localStorage.getItem("dl-tri") || "recent"; } catch {}
+const extDe = (n) => (n.includes(".") ? n.split(".").pop() : "").toLowerCase();
+const ranger = (id, groupe) => onirique.envoyer({ type: "dlGroupe", id, groupe });
+// Le choix du groupe d'un fichier : les groupes existants, ou un nouveau tapé sur place.
+function choixGroupe(d, groupes) {
+  const s = el("select", { "aria-label": "Groupe de " + d.nom, title: "Ranger dans un groupe" },
+    el("option", { value: "", textContent: "Sans groupe" }), ...groupes.map((g) => el("option", { value: g, textContent: g })),
+    el("option", { value: "\u0000", textContent: "Nouveau groupe…" }));
+  s.value = d.groupe || "";
+  s.onchange = () => {
+    if (s.value !== "\u0000") { ranger(d.id, s.value); return; }
+    const champ = el("input", { className: "groupe-nom", placeholder: "Nom du groupe", maxLength: 40, "aria-label": "Nom du nouveau groupe" });
+    champ.onkeydown = (e) => { if (e.key === "Enter" && champ.value.trim()) { ranger(d.id, champ.value.trim()); champ.blur(); } if (e.key === "Escape") champ.blur(); };
+    champ.onblur = () => setTimeout(() => afficher(tous), 0);
+    s.replaceWith(champ); champ.focus();
+  };
+  s.onblur = () => setTimeout(() => afficher(tous), 0);
+  return s;
+}
 function afficher(dls) {
-  if (!dls.length) { liste.replaceChildren(el("p", { className: "vide", textContent: "Aucun téléchargement pour l'instant." })); return; }
+  tous = dls;
+  // Pendant qu'on choisit un groupe, la liste ne se redessine pas sous la souris.
+  if (liste.contains(document.activeElement) && document.activeElement.matches("select, input")) return;
+  const groupes = [...new Set(dls.map((d) => d.groupe).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
+  if (filtre && filtre !== "\u0000" && !groupes.includes(filtre)) filtre = null;
+  const puce = (texte, valeur, n) => el("button", { className: "puce", "aria-pressed": String(filtre === valeur), onclick: () => { filtre = valeur; afficher(tous); } }, texte, el("small", { textContent: n }));
+  zoneGroupes.replaceChildren(...(groupes.length ? [puce("Tous", null, dls.length), ...groupes.map((g) => puce(g, g, dls.filter((d) => d.groupe === g).length)),
+    puce("Sans groupe", "\u0000", dls.filter((d) => !d.groupe).length)] : []));
+  const mot = q.value.trim().toLowerCase();
+  dls = dls.filter((d) => (filtre === null || (filtre === "\u0000" ? !d.groupe : d.groupe === filtre)) && (!mot || (d.nom + " " + d.url + " " + (d.groupe || "")).toLowerCase().includes(mot)));
+  const ordre = { recent: (a, b) => b.debut - a.debut, ancien: (a, b) => a.debut - b.debut, nom: (a, b) => a.nom.localeCompare(b.nom, "fr"),
+    taille: (a, b) => (b.total || b.recu) - (a.total || a.recu), type: (a, b) => extDe(a.nom).localeCompare(extDe(b.nom)) || b.debut - a.debut }[tri.value];
+  dls = [...dls].sort(ordre);
+  if (!dls.length) { liste.replaceChildren(el("p", { className: "vide", textContent: tous.length ? "Aucun téléchargement ici." : "Aucun téléchargement pour l'instant." })); return; }
   liste.replaceChildren(...dls.map((d) => {
     const enCours = d.etat === "encours" || d.etat === "pause";
     const ext = (d.nom.split(".").pop() || "").slice(0, 4);
@@ -90,7 +139,7 @@ function afficher(dls) {
     const nom = d.etat === "fini" && d.existe ? el("button", { className: "nom", textContent: d.nom, title: "Ouvrir " + d.nom, onclick: () => onirique.envoyer({ type: "dlOuvrir", id: d.id }) }) : el("span", { className: "nom", textContent: d.nom });
     const barre = enCours ? el("div", { className: "barre" + (d.total ? "" : " attente") }, el("i", { style: "width:" + (d.total ? Math.round(d.recu / d.total * 100) : 0) + "%" })) : null;
     const actions = enCours ? [d.etat === "pause" ? bouton("Reprendre", "dlReprendre", d.id) : bouton("Pause", "dlPause", d.id), bouton("Annuler", "dlAnnuler", d.id)]
-      : [d.existe ? bouton("Afficher", "dlDossier", d.id) : null, bouton("×", "dlRetirer", d.id)];
+      : [choixGroupe(d, groupes), d.existe ? bouton("Afficher", "dlDossier", d.id) : null, bouton("×", "dlRetirer", d.id)];
     actions.at(-1)?.setAttribute("aria-label", enCours ? "Annuler " + d.nom : "Retirer " + d.nom + " de la liste");
     return el("div", { className: "dl" + (d.etat === "fini" && !d.existe || d.etat === "annule" || d.etat === "interrompu" ? " efface" : "") },
       el("span", { className: "ext", textContent: ext }), el("div", { style: "min-width:0" }, nom, el("span", { className: "info", textContent: info.filter(Boolean).join(" · ") }), barre),
@@ -98,6 +147,8 @@ function afficher(dls) {
   }));
 }
 document.getElementById("dossier").onclick = () => onirique.envoyer({ type: "dlDossier", id: 0 });
+q.oninput = () => afficher(tous);
+tri.onchange = () => { try { localStorage.setItem("dl-tri", tri.value); } catch {} afficher(tous); };
 document.getElementById("vider").onclick = () => onirique.envoyer({ type: "dlVider" });
 onirique.surMessage((m) => { if (m?.type === "telechargements") afficher(m.liste); });
 onirique.envoyer({ type: "lire" });

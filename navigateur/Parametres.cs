@@ -41,6 +41,8 @@ sealed class Parametres
     public bool Agrandie { get; set; }
     public bool ModeStudio { get; set; } = true;
     public bool Bloqueur { get; set; } = true;
+    public List<string> PubsPermises { get; set; } = new();
+    public List<string> OutilsLateraux { get; set; } = new(); // outils ONIRIQUE gardés dans la barre latérale (OutilsLateraux.cs)   // sites où le bloqueur est coupé (youtube.com…)
     public int PlafondMemoire { get; set; }      // Mo, 0 : aucun
     public int PlafondCpu { get; set; }          // %, 0 : aucun
     public bool BarreLaterale { get; set; } = true;

@@ -166,7 +166,7 @@ sealed partial class Navigateur : Form
 
         bandeau = new Bandeau(this) { Dock = DockStyle.Top };
         bulle = new Bulle(this);
-        barre.Controls.AddRange(new Control[] { retour, avance, recharger, champ, vpn, boutonOutils, boutonPip, boutonExtensions, historique, boutonTelechargements, reglages, memoire });
+        barre.Controls.AddRange(new Control[] { retour, avance, recharger, champ, vpn, boutonOutils, boutonPip, boutonExtensions, boutonBloqueur, historique, boutonTelechargements, reglages, memoire });
         barre.Paint += (_, e) => { using var p = new Pen(DA.Filet); e.Graphics.DrawLine(p, 0, barre.Height - 1, barre.Width, barre.Height - 1); };
         barre.Resize += (_, _) => Disposer();
         contenu.Controls.Add(bulle);
@@ -185,10 +185,11 @@ sealed partial class Navigateur : Form
             if (Actif?.Vue?.CoreWebView2 is not { } c) return;
             if (Actif.Charge) c.Stop(); else c.Reload();
         };
-        vpn.Click += async (_, _) => await BasculerVpn(vpnEtat == "eteint");
+        vpn.Click += (_, _) => MenuVpn();
+        boutonBloqueur.Click += (_, _) => MenuBloqueur();
         reglages.Click += (_, _) => OuvrirInterne(PageParametres);
         historique.Click += (_, _) => OuvrirInterne(PageHistorique);
-        boutonTelechargements.Click += (_, _) => OuvrirInterne(PageTelechargements);
+        boutonTelechargements.Click += (_, _) => MenuTelechargements();
         boutonExtensions.Click += (_, _) => MenuExtensions();
         boutonPip.Click += (_, _) => _ = BasculerPip(Actif?.Vue?.CoreWebView2);
         boutonOutils.Click += (_, _) => MenuOutils();
@@ -228,6 +229,10 @@ sealed partial class Navigateur : Form
     [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr h, IntPtr apres, int x, int y, int l, int ht, uint options);
     [DllImport("user32.dll")] static extern int GetSystemMetricsForDpi(int indice, uint dpi);
     [StructLayout(LayoutKind.Sequential)] struct Cadre { public int G, H, D, B; }
+    [StructLayout(LayoutKind.Sequential)] struct PositionFenetre { public IntPtr Fenetre, Apres; public int X, Y, L, H; public uint Options; }
+    [DllImport("user32.dll")] static extern bool IsZoomed(IntPtr h);
+    [DllImport("user32.dll")] static extern bool IsIconic(IntPtr h);
+    int EpaisseurCadre() => GetSystemMetricsForDpi(33, (uint)DeviceDpi) + GetSystemMetricsForDpi(92, (uint)DeviceDpi);
 
     // Comme Chrome : pas de barre de titre. Le cadre de Windows reste (bords, ombre, ancrage), seule la légende part ;
     // la fenêtre se déplace par l'espace vide de la barre d'onglets et s'agrandit d'un double-clic dessus.
@@ -239,11 +244,28 @@ sealed partial class Navigateur : Form
             base.WndProc(ref m);
             var apres = Marshal.PtrToStructure<Cadre>(m.LParam);
             // Agrandie, la fenêtre déborde de l'écran de l'épaisseur de son cadre : le haut est rentré d'autant.
-            apres.H = avant.H + (WindowState == FormWindowState.Maximized
-                ? GetSystemMetricsForDpi(33, (uint)DeviceDpi) + GetSystemMetricsForDpi(92, (uint)DeviceDpi) : 0);
+            // IsZoomed et pas WindowState : pendant l'agrandissement, WindowState n'est pas encore à jour.
+            apres.H = avant.H + (IsZoomed(Handle) ? EpaisseurCadre() : 0);
             Marshal.StructureToPtr(apres, m.LParam, false);
             m.Result = IntPtr.Zero;
             return;
+        }
+        if (m.Msg == 0x0046 && FormBorderStyle != FormBorderStyle.None && IsZoomed(Handle) && !IsIconic(Handle)) // WM_WINDOWPOSCHANGING
+        {
+            // Windows retient parfois une mauvaise place d'agrandissement (fenêtre décalée vers le bas, plus haute que
+            // l'écran) : agrandie, la fenêtre couvre toujours exactement l'espace de travail de son écran.
+            var pos = Marshal.PtrToStructure<PositionFenetre>(m.LParam);
+            if ((pos.Options & 0x0003) != 0x0003) // ni SWP_NOSIZE ni SWP_NOMOVE à la fois
+            {
+                var actuel = Bounds;
+                var vise = new Rectangle((pos.Options & 0x0002) != 0 ? actuel.X : pos.X, (pos.Options & 0x0002) != 0 ? actuel.Y : pos.Y,
+                    (pos.Options & 0x0001) != 0 ? actuel.Width : pos.L, (pos.Options & 0x0001) != 0 ? actuel.Height : pos.H);
+                var zone = Screen.FromPoint(new Point(vise.X + vise.Width / 2, vise.Y + vise.Height / 2)).WorkingArea;
+                int b = EpaisseurCadre();
+                (pos.X, pos.Y, pos.L, pos.H) = (zone.X - b, zone.Y - b, zone.Width + 2 * b, zone.Height + 2 * b);
+                pos.Options &= ~0x0003u;
+                Marshal.StructureToPtr(pos, m.LParam, false);
+            }
         }
         if (m.Msg == 0x0084) // WM_NCHITTEST
         {
@@ -336,7 +358,7 @@ sealed partial class Navigateur : Form
         champ.Saisie.Font = new Font("Segoe UI Variable Text", this.S(14), GraphicsUnit.Pixel);
         bandeau.Icones = new Font("Segoe Fluent Icons", this.S(10), GraphicsUnit.Pixel);
         var icones = new Font("Segoe Fluent Icons", this.S(14), GraphicsUnit.Pixel);
-        foreach (var b in new[] { retour, avance, recharger, vpn, boutonOutils, boutonPip, historique, boutonTelechargements, reglages, lecteur, studio, boutonExtensions }) b.Font = icones;
+        foreach (var b in new[] { retour, avance, recharger, vpn, boutonOutils, boutonPip, historique, boutonTelechargements, reglages, lecteur, studio, boutonExtensions, boutonBloqueur }) b.Font = icones;
         EchelleAjouts();
         memoire.Font = new Font("Cascadia Mono", this.S(11), GraphicsUnit.Pixel);
         bulle.Font = new Font("Segoe UI Variable Text", this.S(13), GraphicsUnit.Pixel);
@@ -350,7 +372,7 @@ sealed partial class Navigateur : Form
         foreach (var b in new Control[] { retour, avance, recharger }) { b.SetBounds(x, y, this.S(36), h); x += pas; }
         int droite = barre.Width - this.S(10);
         if (memoire.Visible) { int m = this.S(76); droite -= m; memoire.SetBounds(droite, y, m, h); droite -= this.S(4); }
-        foreach (var b in new Control[] { reglages, historique, boutonTelechargements, boutonExtensions, boutonPip, boutonOutils, vpn, lecteur, studio }) { if (!b.Visible) continue; droite -= this.S(36); b.SetBounds(droite, y, this.S(36), h); droite -= this.S(2); }
+        foreach (var b in new Control[] { reglages, historique, boutonTelechargements, boutonExtensions, boutonBloqueur, boutonPip, boutonOutils, vpn, lecteur, studio }) { if (!b.Visible) continue; droite -= this.S(36); b.SetBounds(droite, y, this.S(36), h); droite -= this.S(2); }
         champ.SetBounds(x + this.S(6), y, Math.Max(0, droite - x - this.S(14)), h);
         bulle.Placer();
         PlacerAjouts();
@@ -416,6 +438,7 @@ sealed partial class Navigateur : Form
         if (o.Vue != v) return;
 
         var c = v.CoreWebView2;
+        BrancherRaccourcis(v);
         // En écran divisé, cliquer dans une moitié en fait l'onglet actif (barre d'adresse, témoin).
         v.GotFocus += (_, _) => { if (o != Actif && o == Actif?.Partenaire) { Actif = o; Afficher(); Animer(); contenu.Invalidate(); } };
         AppliquerProfil(c);
@@ -468,6 +491,7 @@ sealed partial class Navigateur : Form
             var report = e.GetDeferral();
             try
             {
+                if (await OuvrirSurgissante(o, e)) return;
                 var n = await Ouvrir(null, Onglets.IndexOf(o) + 1);
                 if (o.Groupe != null) { n.Groupe = o.Groupe; Animer(); }
                 if (n.Vue?.CoreWebView2 is { } nc) e.NewWindow = nc;
@@ -559,6 +583,7 @@ sealed partial class Navigateur : Form
     {
         var o = Actif;
         var c = o?.Vue?.CoreWebView2;
+        MontrerBloqueur();
         retour.Actif = c?.CanGoBack == true;
         avance.Actif = c?.CanGoForward == true;
         recharger.Glyphe = o?.Charge == true ? "" : "";
@@ -962,7 +987,22 @@ sealed partial class Navigateur : Form
 
     void PleinEcran(bool oui) { pleinEcranPage = oui; RegarderPleinEcran(); }
 
-    protected override bool ProcessCmdKey(ref Message msg, Keys touches)
+    protected override bool ProcessCmdKey(ref Message msg, Keys touches) => Raccourci(touches) || base.ProcessCmdKey(ref msg, touches);
+
+    // Une même touche peut arriver deux fois (par la page puis par la fenêtre) : la seconde est ignorée.
+    Keys dernierRaccourci;
+    long dernierRaccourciA;
+
+    bool Raccourci(Keys touches)
+    {
+        if (touches == dernierRaccourci && Environment.TickCount64 - dernierRaccourciA < 10) return true;
+        if (!RaccourciFenetre(touches)) return false;
+        dernierRaccourci = touches;
+        dernierRaccourciA = Environment.TickCount64;
+        return true;
+    }
+
+    bool RaccourciFenetre(Keys touches)
     {
         if (RaccourciChrome(touches)) return true;
         var c = Actif?.Vue?.CoreWebView2;
@@ -986,7 +1026,19 @@ sealed partial class Navigateur : Form
             case Keys.Control | Keys.H: OuvrirInterne(PageHistorique); return true;
             case Keys.Alt | Keys.P: _ = BasculerPip(c); return true;
         }
-        return base.ProcessCmdKey(ref msg, touches);
+        return false;
+    }
+
+    // Quand la page a le clavier, ses touches ne passent pas par la fenêtre : Ctrl+H, Ctrl+J… sont pris ici,
+    // avant le moteur. Le reste (Ctrl+F, Ctrl+P, zoom…) lui est laissé.
+    void BrancherRaccourcis(WebView2 v)
+    {
+        if (typeof(WebView2).GetField("_coreWebView2Controller", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.GetValue(v) is not CoreWebView2Controller controleur) { Program.Noter(new InvalidOperationException("Raccourcis : contrôleur WebView2 introuvable")); return; }
+        controleur.AcceleratorKeyPressed += (_, e) =>
+        {
+            if (e.Handled || e.KeyEventKind is not (CoreWebView2KeyEventKind.KeyDown or CoreWebView2KeyEventKind.SystemKeyDown)) return;
+            if (Raccourci((Keys)e.VirtualKey | ModifierKeys)) e.Handled = true;
+        };
     }
 }
 
@@ -1438,10 +1490,14 @@ sealed class Bandeau : Control
         if (tire != null && (glisse || Math.Abs(e.X - departX) > this.S(6)))
         {
             glisse = true;
+            // Loin de la barre : il sort. L'aperçu suit la souris et dit ce qui se passera au lâcher.
+            if (Dehors(e.Location)) { nav.MontrerFantome(tire, PointToScreen(e.Location)); Invalidate(); return; }
+            nav.MontrerFantome(tire, null);
             tire.X = Math.Clamp(e.X - prise, 0, Math.Max(0, Width - 3 * this.S(46) - tire.W));
             float centre = tire.X + tire.W / 2;
             int rang = nav.Onglets.Count(o => o != tire && o != tire.Partenaire && o.X + o.W / 2 < centre);
-            nav.Deplacer(tire, rang);
+            // Sur la pastille d'un groupe ou parmi ses onglets, il y entre ; ailleurs, il en sort.
+            nav.Deplacer(tire, rang, GroupeVise(centre), impose: true);
             Invalidate();
             return;
         }
@@ -1451,6 +1507,22 @@ sealed class Bandeau : Control
         bool croix = i >= 0 && Croix(Zone(i)).Contains(e.Location);
         if (i != survol || croix != surCroix) { survol = i; surCroix = croix; Invalidate(); }
         base.OnMouseMove(e);
+    }
+
+    bool Dehors(Point p) => p.Y < -this.S(40) || p.Y > Height + this.S(50) || p.X < -this.S(40) || p.X > Width + this.S(40);
+
+    /// <summary>Le groupe dont la pastille ou les onglets (hors celui qu'on tire) couvrent ce point de la barre.</summary>
+    Groupe? GroupeVise(float x)
+    {
+        foreach (var gr in Groupes)
+        {
+            if (gr.X < 0 || gr.Replie) continue; // un groupe replié n'avale pas l'onglet qu'on tire
+            float fin = gr.X + gr.W;
+            foreach (var o in nav.Onglets)
+                if (o.Groupe == gr && o != tire && o != tire?.Partenaire && Montre(o)) fin = Math.Max(fin, o.X + o.W);
+            if (x >= gr.X && x <= fin) return gr;
+        }
+        return null;
     }
 
     protected override void OnMouseLeave(EventArgs e)
@@ -1498,9 +1570,9 @@ sealed class Bandeau : Control
         glisse = false;
         if (finDeGlisse)
         {
+            if (detache != null) nav.MontrerFantome(detache, null);
             // Lâché nettement au-dessus ou en dessous de la barre d'onglets (ou hors de la fenêtre) : l'onglet sort.
-            if (detache != null && (e.Y < -this.S(40) || e.Y > Height + this.S(50) || e.X < -this.S(40) || e.X > Width + this.S(40)))
-                nav.Detacher(detache, PointToScreen(e.Location));
+            if (detache != null && Dehors(e.Location)) nav.Detacher(detache, PointToScreen(e.Location));
             nav.Animer();
             return;
         }

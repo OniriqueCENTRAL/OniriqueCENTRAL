@@ -38,7 +38,7 @@ static class Program
         // Déjà ouvert : le lien part dans la fenêtre existante, rien d'autre ne se lance.
         if (!secondaire && Instance.Transmettre(adresses)) return;
         var nav = new Navigateur(adresses) { Prive = args.Contains("--prive"), Secondaire = secondaire };
-        Instance.Ecouter(nav, principale: !secondaire);
+        Instance.Ecouter(nav, principale: !nav.Prive);
         // Un onglet détaché ouvre sa fenêtre là où on l'a lâché.
         if (args.FirstOrDefault(a => a.StartsWith("--position=")) is { } pos && pos[11..].Split(',') is [var px, var py]
             && int.TryParse(px, out var x) && int.TryParse(py, out var y))

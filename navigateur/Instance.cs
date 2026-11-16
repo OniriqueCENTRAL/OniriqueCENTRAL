@@ -48,7 +48,11 @@ static class Instance
         catch { return false; }
     }
 
-    /// <summary>Chaque fenêtre écoute les onglets qu'on lui lâche ; la principale, aussi les lancements suivants.</summary>
+    /// <summary>
+    /// Chaque fenêtre écoute les onglets qu'on lui lâche. Les lancements suivants (un lien ouvert ailleurs) vont à une
+    /// seule fenêtre non privée à la fois : si elle se ferme, une autre reprend le canal, et le lien ne relance pas
+    /// un second navigateur.
+    /// </summary>
     public static void Ecouter(Navigateur nav, bool principale)
     {
         Ecouter(nav, TubeDe(Environment.ProcessId));
