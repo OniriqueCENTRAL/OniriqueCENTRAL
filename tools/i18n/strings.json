@@ -5461,7 +5461,6 @@
   "site/cut.html",
   "site/downloader.html",
   "site/ecoute.html",
-  "site/empire.html",
   "site/envoi.html",
   "site/index.html",
   "site/mes-liens.html",
@@ -6909,9 +6908,6 @@
  "Cette page est mise à jour lorsque les traitements changent. La date de dernière mise à jour figure en haut de page.": [
   "site/confidentialite.html",
   "site/pages.mjs"
- ],
- "Cette page est privée.": [
-  "site/empire.html"
  ],
  "Cette page est réservée aux administrateurs.": [
   "site/admin.html"
@@ -8570,9 +8566,6 @@
  ],
  "Connecte-toi avec ton compte ONIRIQUE pour ouvrir ou rejoindre une WATCHPARTY :": [
   "site/watchparty.html"
- ],
- "Connecte-toi d'abord :": [
-  "site/empire.html"
  ],
  "Connecte-toi d'abord à ton compte.": [
   "site/mes-liens.html",
@@ -14335,9 +14328,6 @@
  "L'écran montre en direct ce que l'effet fait au spectre, côté gauche et côté droit, et le retard de chaque voix.": [
   "server/src/fiches.js"
  ],
- "L'empire anto ment": [
-  "site/assets/account.js"
- ],
  "L'encodage en MP3 a échoué.": [
   "site/assets/audio-kit.js"
  ],
@@ -18005,9 +17995,6 @@
  "Moment du morceau à écouter": [
   "site/cut.html"
  ],
- "mon compte": [
-  "site/empire.html"
- ],
  "Mon compte": [
   "site/admin.html",
   "site/article.html",
@@ -19180,9 +19167,6 @@
   "site/profil.html",
   "site/watchparty.html"
  ],
- "ONIRIQUE — Accès réservé": [
-  "site/empire.html"
- ],
  "ONIRIQUE — Administration": [
   "site/admin.html"
  ],
@@ -20085,7 +20069,6 @@
   "server/src/sounds.js"
  ],
  "Page réservée.": [
-  "site/empire.html",
   "server/src/app.js"
  ],
  "page Support": [
@@ -23590,9 +23573,6 @@
  ],
  "Retour à": [
   "site/mes-sons.html"
- ],
- "Retour à l'accueil": [
-  "site/empire.html"
  ],
  "Retour à la marketplace": [
   "site/article.html"
@@ -27961,7 +27941,6 @@
   "site/onirique.html"
  ],
  "Un instant…": [
-  "site/empire.html",
   "site/assets/site-nav.js"
  ],
  "Un lien": [

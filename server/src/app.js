@@ -277,11 +277,6 @@ async function receiveFile(req, directory, maxBytes) {
   return { storedAs, size, sha256: hash.digest('hex') };
 }
 
-// Les invités de l'empire anto ment, par l'adresse de leur page de profil (onirique.store/u/…), unique sur le site.
-// shortcut: l'accès suit l'adresse ; si l'invitée la change, une autre personne pourrait la reprendre : passer à l'id du compte si la liste grandit.
-const empireGuests = () => setting('empire_guests', ['usermorgane']); // donnés par un fondateur depuis la page
-const empireAllowed = (user) => user.role === 'founder' || empireGuests().includes(get('SELECT handle FROM user_profiles WHERE user_id = ?', user.id)?.handle);
-
 export function createApp() {
   const app = express();
   app.disable('x-powered-by');
@@ -563,30 +558,7 @@ export function createApp() {
       trialsUsed: all(`SELECT DISTINCT product_id AS id FROM licenses WHERE user_id = ? AND source = 'trial'`, req.user.id).map((r) => r.id),
       referral: referralView(req.user),
       rights: rightsOf(req.user), // ce que ce compte peut ouvrir : ONIRIQUE CLOUD, page de liens, profil d'ingé…
-      empire: empireAllowed(req.user), // le lien « L'empire anto ment » du menu du compte
     });
-  });
-
-  // L'empire anto ment (menu du compte, page /empire) : la carte privée des fondateurs et de leurs invités, hors du site public.
-  app.get('/api/empire', requireUser, (req, res, next) => {
-    if (!empireAllowed(req.user)) return next(new HttpError(403, 'Page réservée.'));
-    res.set('Cache-Control', 'no-store');
-    res.sendFile(fileURLToPath(new URL('empire.html', import.meta.url)));
-  });
-
-  // Les accès à l'empire : un fondateur les donne ou les retire depuis la page, par l'adresse de profil (onirique.store/profil?u=…).
-  const requireFounder = (req, _res, next) => next(req.user.role === 'founder' ? undefined : new HttpError(403, 'Réservé aux fondateurs.'));
-  app.get('/api/empire/guests', requireUser, requireFounder, (_req, res) => res.json({ guests: empireGuests() }));
-  app.post('/api/empire/guests', requireUser, requireFounder, (req, res) => {
-    const raw = String(req.body?.handle || '').trim().toLowerCase(); // pseudo, @pseudo ou lien onirique.store/profil?u=pseudo
-    const handle = (raw.match(/[?&]u=([^&#]+)/)?.[1] || raw.replace(/\/+$/, '').split('/').pop()).replace(/^@/, '');
-    if (!get('SELECT 1 FROM user_profiles WHERE handle = ?', handle)) throw new HttpError(404, `Aucune page de profil à l'adresse « ${handle} ».`);
-    setSetting('empire_guests', [...new Set([...empireGuests(), handle])]);
-    res.json({ guests: empireGuests() });
-  });
-  app.delete('/api/empire/guests/:handle', requireUser, requireFounder, (req, res) => {
-    setSetting('empire_guests', empireGuests().filter((h) => h !== req.params.handle));
-    res.json({ guests: empireGuests() });
   });
 
   // Parrainage choisi après l'inscription : avant le premier achat, dans les 30 jours.
