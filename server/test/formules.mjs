@@ -49,4 +49,17 @@ run('UPDATE plans SET product_ids = ? WHERE id = ?', JSON.stringify([ids.vocalbo
 applyRetouches();
 assert.equal(get('SELECT product_ids FROM plans WHERE id = ?', allYear).product_ids, JSON.stringify([ids.vocalbox]));
 assert.equal(all('SELECT * FROM plans').length, 3);
+
+// Page /abonnement (démo) : reprendre après une résiliation, passer d'ESSENTIAL à ALL ACCESS annuel.
+const { cancelSubscription, resumeSubscription, changeSubscription } = await import('../src/payments.js');
+const cancelled = () => get('SELECT cancel_at_period_end AS c FROM subscriptions WHERE user_id = ?', ancien).c;
+await cancelSubscription(ancien);
+assert.equal(cancelled(), 1);
+await resumeSubscription(ancien);
+assert.equal(cancelled(), 0);
+const annuel = get('SELECT * FROM plans WHERE id = ?', allYear);
+await changeSubscription(ancien, annuel);
+assert.equal(activeSubscription(ancien).plan_id, allYear);
+await assert.rejects(changeSubscription(ancien, annuel), /déjà/);
+await assert.rejects(resumeSubscription(user('sans@test.local')), /Aucun abonnement/);
 console.log('formules : ok');

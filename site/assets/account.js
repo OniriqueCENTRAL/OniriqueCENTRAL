@@ -129,7 +129,7 @@ ${spark(1)}${spark(2)}${spark(3)}
         const rights = me.rights || [];
         const group = (title, items) => { const list = items.filter(Boolean); return list.length ? [el("hr"), el("h6", { textContent: title }), ...list] : []; };
         return [
-          ...group("Mon compte", [item("Mon compte", "compte"), item("Paramètres", "compte#parametres"), item("Mes licences", "compte#licences"), item("Parrainage", "compte#parrainage")]),
+          ...group("Mon compte", [item("Mon compte", "compte"), item("Paramètres", "compte#parametres"), item("Abonnement", "abonnement"), item("Mes licences", "compte#licences"), item("Parrainage", "compte#parrainage")]),
           ...group("Communauté", [messagesItem, profileItem, item("Carte des membres", "carte"),
             me.empire ? item("L'empire anto ment", "empire") : null, // fondateurs et invités : la page vient de l'API (server/src/empire.html)
             item("Tierlist", "tierlist"), // ouverte à tout compte connecté (server/src/tierlist.js)

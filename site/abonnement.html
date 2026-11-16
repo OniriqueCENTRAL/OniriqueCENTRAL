@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<script src="assets/i18n.js?v=4742a1e5"></script>
+<script src="assets/ui.js?v=4"></script>
+<script src="assets/annonce.js?v=6"></script>
+<script src="/api/announce.js" async></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Abonnement — ONIRIQUE</title>
+<meta name="description" content="Ton abonnement ONIRIQUE : formule, prochaine échéance, résiliation, changement de formule, paiement et factures.">
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://onirique.store/abonnement">
+<link rel="icon" type="image/png" href="assets/favicon.png?v=2">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/pages.css?v=3">
+<style>
+/* Page abonnement, sur la base des pages de texte : une carte par abonnement, puis les formules. */
+header nav { display: flex; align-items: center; gap: 10px; }
+.lede { color: var(--haze); font-size: 16px; }
+.card { margin-top: 16px; padding: clamp(18px, 3vw, 24px); border: 1px solid var(--line); border-radius: var(--r-card); background: var(--glass), rgba(14,10,12,.55); box-shadow: var(--glass-shadow); }
+.card h3 { margin: 6px 0 4px; font: 700 clamp(16px, 2.4vw, 19px)/1.3 var(--f-display); }
+.card p { margin: 4px 0 0; }
+.card.current { border-color: rgba(var(--acc), .55); }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.muted { color: var(--haze); font-size: 15px; }
+.pill { display: inline-block; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line); font: 500 11px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--haze); }
+.pill.on { border-color: rgba(var(--acc), .6); color: var(--ember-text); }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+button.btn, a.btn { cursor: pointer; background: transparent; font: 600 14px/1 var(--f-body); }
+button.btn:disabled { opacity: .5; cursor: default; }
+.btn.main { background: var(--ember); border-color: var(--ember); color: #fff; }
+.btn.main:hover { color: #fff; filter: brightness(1.1); }
+.btn.danger:hover { border-color: var(--danger, #e5384a); color: var(--danger, #ff8e9a); }
+.plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.plans .card { display: flex; flex-direction: column; }
+.plans .actions { margin-top: auto; padding-top: 16px; }
+.price { margin-top: 8px; font: 800 26px/1.1 var(--f-display); }
+.price small { font: 500 12px var(--f-mono); color: var(--haze); letter-spacing: .1em; }
+.price s { margin-left: 8px; font: 500 14px var(--f-body); color: var(--haze); }
+.notice { margin-top: 16px; }
+.notice:empty { display: none; }
+.notice.bad { color: var(--danger, #ff8e9a); }
+[hidden] { display: none !important; }
+</style>
+<link rel="stylesheet" href="/assets/da.css?v=9">
+<script src="/assets/accent.js?v=1"></script>
+
+<a class="skip" href="#contenu">Aller au contenu</a>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/"><img src="assets/logo-small.png" alt="Logo Onirique" width="160" height="145">ONIRIQUE</a>
+    <nav aria-label="Navigation"><a class="btn" href="boutique">Boutique</a><a class="btn" href="outils" data-tools>Outils</a><a class="btn" href="compte" data-account>Compte</a></nav>
+  </div>
+</header>
+
+<main class="wrap" id="contenu">
+  <p class="eyebrow">Mon compte</p>
+  <h1>Abonnement</h1>
+  <p class="lede">Ta formule, ta prochaine échéance, et tout ce qui va avec : résilier, reprendre, changer de formule, ta carte et tes factures.</p>
+  <p class="notice" id="notice" role="status"></p>
+
+  <section id="out" hidden>
+    <div class="card"><p>Connecte-toi pour voir ton abonnement.</p><div class="actions"><a class="btn main" href="compte">Se connecter</a></div></div>
+  </section>
+
+  <section id="in" hidden>
+    <h2>Plugins</h2>
+    <div id="plugins"></div>
+    <div class="actions"><button class="btn" type="button" id="portal">Paiement et factures</button></div>
+    <h2 id="plans-title">Formules</h2>
+    <div class="plans" id="plans"></div>
+    <div id="monthly-box" hidden><h2>Plugins au mois</h2><div id="monthly"></div></div>
+    <h2>ONIRIQUE CLOUD</h2>
+    <div id="tools"></div>
+  </section>
+</main>
+
+<footer>
+  <nav class="wrap" aria-label="Pages légales">
+    <a href="mentions-legales">Mentions légales</a>
+    <a href="cgv">CGV et CGU</a>
+    <a href="remboursement">Rétractation et remboursement</a>
+    <a href="confidentialite">Confidentialité</a>
+    <a href="cookies">Cookies</a>
+    <a href="support">Support</a>
+    <a href="compte">Compte</a>
+  </nav>
+</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const token = sessionStorage.getItem("onirique.token") || localStorage.getItem("onirique.token");
+const euros = (cents) => (cents / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
+const date = (ms) => new Date(ms).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+const per = (interval) => (interval === "year" ? "an" : "mois");
+const el = (tag, className, text) => { const e = document.createElement(tag); if (className) e.className = className; if (text != null) e.textContent = text; return e; };
+const say = (text, bad) => { $("notice").textContent = text; $("notice").className = "notice" + (bad ? " bad" : ""); };
+
+async function api(method, path, body) {
+  const response = await fetch(path, { method, headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+  const data = await response.json().catch(() => ({}));
+  if (response.status === 401) { location.href = "compte"; throw new Error("Connecte-toi d’abord."); }
+  if (!response.ok) throw new Error(data.error || "Action impossible. Réessaie dans un instant.");
+  return data;
+}
+
+// Un bouton qui appelle l'API : désactivé pendant l'appel, l'erreur s'affiche en haut, la page se redessine ensuite.
+function action(label, className, run, question) {
+  const b = el("button", "btn " + className, label);
+  b.type = "button";
+  b.onclick = async () => {
+    if (question && !confirm(question)) return;
+    b.disabled = true;
+    try { const done = await run(); if (done) say(done); await load(); }
+    catch (error) { say(error.message === "Failed to fetch" ? "Serveur injoignable. Réessaie dans un instant." : error.message, true); b.disabled = false; }
+  };
+  return b;
+}
+
+function card(title, pillText, on, lines, buttons) {
+  const box = el("div", "card" + (on ? " current" : ""));
+  const top = el("div", "top");
+  top.append(el("h3", "", title), el("span", "pill" + (on ? " on" : ""), pillText));
+  box.append(top, ...lines.filter(Boolean).map((line) => el("p", "muted", line)));
+  if (buttons.filter(Boolean).length) { const row = el("div", "actions"); row.append(...buttons.filter(Boolean)); box.append(row); }
+  return box;
+}
+
+async function load() {
+  if (!token) { $("out").hidden = false; return; }
+  let me, catalog, tools;
+  try {
+    [me, catalog, tools] = await Promise.all([api("GET", "/api/me"), fetch("/api/catalog").then((r) => r.json()), fetch("/api/tools", { headers: { Authorization: "Bearer " + token } }).then((r) => r.json())]);
+  } catch (error) { say(error.message, true); return; }
+  $("in").hidden = false;
+  const sub = me.subscription?.status === "active" ? me.subscription : null;
+  const names = (ids) => ids.map((id) => catalog.products.find((p) => p.id === id)?.name).filter(Boolean).join(", ");
+
+  // L'abonnement aux plugins.
+  $("plugins").replaceChildren(sub
+    ? card(sub.planName, sub.cancelAtPeriodEnd ? "Se termine" : "Actif", true, [
+        sub.productIds ? "Plugins inclus : " + (names(sub.productIds) || sub.productIds.length + " plugin(s)") + "." : "Tous les plugins ONIRIQUE, mises à jour et nouveautés comprises.",
+        sub.cancelAtPeriodEnd ? "Résilié : tu gardes l’accès jusqu’au " + date(sub.currentPeriodEnd) + ", puis plus aucun prélèvement."
+          : "Prochaine échéance le " + date(sub.currentPeriodEnd) + " : " + euros(sub.priceCents) + " par " + per(sub.interval) + "."],
+      [sub.cancelAtPeriodEnd
+        ? action("Reprendre l’abonnement", "main", async () => { await api("POST", "/api/subscription/resume"); return "Abonnement repris : il sera reconduit le " + date(sub.currentPeriodEnd) + "."; })
+        : action("Résilier", "danger", async () => { await api("POST", "/api/subscription/cancel"); return "Abonnement résilié. Tu gardes l’accès jusqu’au " + date(sub.currentPeriodEnd) + "."; },
+            "Résilier l’abonnement ? Tu gardes l’accès jusqu’au " + date(sub.currentPeriodEnd) + ". Ensuite, seuls les plugins achetés à l’unité restent utilisables.")])
+    : card("Aucun abonnement", "Inactif", false, ["Choisis une formule ci-dessous : tous les plugins ONIRIQUE, résiliable à tout moment. Les plugins achetés à l’unité te restent acquis."], []));
+
+  // Les formules : s'abonner, ou passer de la sienne à une autre.
+  $("plans-title").textContent = sub ? "Changer de formule" : "Formules";
+  $("plans").replaceChildren(...catalog.plans.map((p) => {
+    const mine = sub && sub.planId === p.id;
+    const box = el("div", "card" + (mine ? " current" : ""));
+    const price = el("div", "price", euros(p.sale && !sub ? p.sale.priceCents : p.priceCents));
+    price.append(el("small", "", " / " + per(p.interval).toUpperCase()));
+    if (p.sale && !sub) price.append(el("s", "", euros(p.priceCents)));
+    box.append(el("p", "eyebrow", p.interval === "year" ? "Annuel" : "Mensuel"), el("h3", "", p.name), price);
+    if (p.sale && !sub) box.append(el("p", "muted", p.sale.label + " " + p.sale.periodText + " (" + p.sale.name + ", " + p.sale.until + "), puis " + euros(p.priceCents) + " par " + per(p.interval) + "."));
+    if (p.description) box.append(el("p", "muted", p.description));
+    const row = el("div", "actions");
+    if (mine) { const b = el("button", "btn", "Ta formule"); b.disabled = true; row.append(b); }
+    else if (sub) {
+      row.append(action("Passer à cette formule", "main", async () => { await api("POST", "/api/subscription/change", { id: p.id }); return "C’est fait : ta formule est maintenant " + p.name + "."; },
+        "Passer à " + p.name + " (" + euros(p.priceCents) + " par " + per(p.interval) + ") ? La différence est facturée tout de suite, au prorata du temps qui reste, au prix normal (sans la remise des soldes)."));
+    } else {
+      row.append(action("S’abonner", "main", async () => {
+        const data = await api("POST", "/api/checkout", { kind: "plan", id: p.id });
+        if (data.url) { location.href = data.url; return; }
+        return "Ton abonnement " + p.name + " est actif.";
+      }));
+    }
+    box.append(row);
+    return box;
+  }));
+  $("plans-title").hidden = !catalog.plans.length;
+
+  // Les plugins pris au mois, chacun à part.
+  const monthly = me.licenses.filter((l) => (l.bundle || "").startsWith("sub:") && l.status === "active" && l.expiresAt > Date.now());
+  $("monthly-box").hidden = !monthly.length;
+  $("monthly").replaceChildren(...monthly.map((l) => {
+    const cancelled = l.note.includes("résilié");
+    // La licence court trois jours de plus que le mois payé, le temps que le paiement suivant passe.
+    return card(l.productName, cancelled ? "Se termine" : "Au mois", !cancelled,
+      [cancelled ? "Résilié : utilisable jusqu’au " + date(l.expiresAt) + "." : "Renouvelé le " + date(l.expiresAt - 3 * 86400000) + "."],
+      [!cancelled && action("Résilier", "danger", async () => { await api("POST", "/api/licenses/" + l.id + "/cancel"); return l.productName + " est résilié."; },
+        "Résilier l’abonnement à " + l.productName + " ? Plus de prélèvement ; le plugin reste utilisable jusqu’à la fin du mois payé.")]);
+  }));
+
+  // L'abonnement aux outils (ONIRIQUE CLOUD, page de liens).
+  const t = tools.subscription;
+  $("tools").replaceChildren(tools.included
+    ? card("ONIRIQUE CLOUD", "Inclus", true, ["Inclus avec ton rôle ONIRIQUE : rien à payer."], [])
+    : t?.active
+      ? card("ONIRIQUE CLOUD " + (t.interval === "year" ? "annuel" : "mensuel"), t.cancelAtPeriodEnd ? "Se termine" : "Actif", true,
+          [t.cancelAtPeriodEnd ? "Résilié : tu gardes l’accès jusqu’au " + date(t.periodEnd) + "." : "Prochaine échéance le " + date(t.periodEnd) + "."],
+          [t.cancelAtPeriodEnd
+            ? action("Reprendre", "main", async () => { await api("POST", "/api/subscription/resume", { tools: true }); return "Abonnement ONIRIQUE CLOUD repris."; })
+            : action("Résilier", "danger", async () => { await api("POST", "/api/tools/cancel"); return "Abonnement ONIRIQUE CLOUD résilié."; },
+                "Résilier ONIRIQUE CLOUD ? Tu gardes l’accès jusqu’au " + date(t.periodEnd) + ".")])
+      : (() => { const c = card("ONIRIQUE CLOUD", "Gratuit", false, ["Tu utilises la version gratuite. Plus de place et la page de liens avec l’abonnement."], []);
+          const row = el("div", "actions"); const a = el("a", "btn main", "Voir l’offre"); a.href = "cloud"; row.append(a); c.append(row); return c; })());
+}
+
+$("portal").onclick = async () => {
+  $("portal").disabled = true;
+  try { location.href = (await api("POST", "/api/billing-portal")).url; }
+  catch (error) { say(error.message, true); $("portal").disabled = false; }
+};
+load();
+</script>
+<script src="assets/tools-menu.js?v=17"></script>
+<script src="assets/account.js?v=19"></script>
+<script src="assets/site-nav.js?v=25"></script>
+</html>

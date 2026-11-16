@@ -22,7 +22,7 @@ import {
   publicKeyPem, publicKeyRaw, userActivations,
 } from './licensing.js';
 import {
-  cancelSubscription, cancelToolsSubscription, cancelMonthly, TOOLS, toolsSubscription, setToolsSubscription, checkout, connectStripe, disconnectStripe, handleLemonEvent, handleStripeEvent, paymentsMode, sellers,
+  cancelSubscription, cancelToolsSubscription, cancelMonthly, resumeSubscription, changeSubscription, billingPortal, TOOLS, toolsSubscription, setToolsSubscription, checkout, connectStripe, disconnectStripe, handleLemonEvent, handleStripeEvent, paymentsMode, sellers,
   stripeAccount, stripeAccountView, verifyLemonSignature, verifyStripeSignature, GIFTS, giftOf,
 } from './payments.js';
 import {
@@ -1111,6 +1111,18 @@ export function createApp() {
     await cancelSubscription(req.user.id);
     res.json({ ok: true });
   }));
+  // Page /abonnement : reprendre un abonnement résilié (tools : celui des outils), changer de formule, carte et factures.
+  app.post('/api/subscription/resume', requireUser, wrap(async (req, res) => {
+    await resumeSubscription(req.user.id, req.body?.tools === true);
+    res.json({ ok: true });
+  }));
+  app.post('/api/subscription/change', requireVerified, wrap(async (req, res) => {
+    const plan = get(`SELECT * FROM plans WHERE id = ? AND active = 1 AND kind = 'all'`, int(req.body?.id, 0));
+    if (!plan) throw new HttpError(404, 'Formule introuvable.');
+    await changeSubscription(req.user.id, plan);
+    res.json({ ok: true });
+  }));
+  app.post('/api/billing-portal', requireUser, wrap(async (req, res) => res.json({ url: await billingPortal(req.user) })));
 
   // Installer un plugin, même gratuit, demande une adresse validée (comme l'essai et l'achat).
   app.get('/api/download/:versionId', requireVerified, (req, res, next) => {
