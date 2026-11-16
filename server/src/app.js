@@ -120,6 +120,12 @@ function versionLicensed(v) {
   return licenseChecks.get(key);
 }
 
+/** Un fondateur tel que l'affichent les crédits : pseudo d'ingé (sinon nom, jamais l'e-mail), Instagram, photo. */
+const personView = (u) => ({
+  id: u.id, name: u.engineer_name || u.name || 'ONIRIQUE',
+  instagram: u.instagram || null, avatar: u.engineer_avatar ? `/api/media/${u.engineer_avatar}` : null,
+});
+
 const versionView = (v) => v && ({
   id: v.id, version: v.version, notes: v.notes, filename: v.filename, size: v.size, sha256: v.sha256, createdAt: v.created_at,
   platform: v.platform, formats: versionFormats(v),
@@ -146,6 +152,8 @@ function productView(p, platform) {
   return {
     id: p.id, slug: p.slug, name: p.name, tagline: p.tagline, description: p.description, accent: p.accent, createdAt: p.created_at,
     creator: p.creator, // "onirique" ou un partenaire ("abrasion", "relic")
+    // le fondateur à l'origine du plugin (db.js), ou null
+    founder: (() => { const u = p.founder_id && get('SELECT id, engineer_name, name, instagram, engineer_avatar FROM users WHERE id = ?', p.founder_id); return u ? personView(u) : null; })(),
     priceCents: p.price_cents, monthlyCents: p.monthly_cents || 0, image: p.image ? `/api/media/${p.image}` : null, published: !!p.published, foundersOnly: !!p.founders_only,
     demo: p.demo ? `/api/media/${p.demo}` : null,
     // imageManual : l'image a été choisie par un admin. demoOff : la démo a été retirée à la main, l'application ne la refabrique pas.
@@ -397,11 +405,7 @@ export function createApp() {
     const engineerIds = (c) => parseProductIds(c.engineer_ids) || (c.engineer_id ? [c.engineer_id] : []);
     const wanted = [...new Set(rows.flatMap(engineerIds))];
     const people = new Map(wanted.length ? all(`SELECT id, engineer_name, name, instagram, engineer_avatar FROM users WHERE id IN (${wanted.map(() => '?').join(',')})`, ...wanted)
-      .map((u) => [u.id, {
-        // Le pseudo d'ingé ; à défaut, le nom affiché (jamais l'adresse e-mail).
-        id: u.id, name: u.engineer_name || u.name || 'ONIRIQUE',
-        instagram: u.instagram || null, avatar: u.engineer_avatar ? `/api/media/${u.engineer_avatar}` : null,
-      }]) : []);
+      .map((u) => [u.id, personView(u)]) : []);
     return rows.map((c) => {
       const engineers = engineerIds(c).map((id) => people.get(id)).filter(Boolean); // un compte supprimé disparaît de la liste
       const plugins = (parseProductIds(c.product_ids) || (c.product_id ? [c.product_id] : []))

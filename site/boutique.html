@@ -99,6 +99,9 @@ header nav { display: flex; align-items: center; gap: 10px; }
 .note { margin: 14px 0 0; font-size: 13px; color: var(--haze); }
 .back { display: inline-block; margin-top: 4px; color: var(--haze); font: 500 12px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; text-decoration: none; }
 .desc p { color: var(--label); }
+.founder { margin: 14px 0 0; font-size: 13px; color: var(--haze); }
+.founder a { color: var(--mist); font-weight: 600; text-decoration: none; }
+.founder a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .block-title { margin: 32px 0 12px; font: 500 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--haze); }
 
 /* Abonnement à la carte */
@@ -231,6 +234,7 @@ header nav { display: flex; align-items: center; gap: 10px; }
         <p class="note">Démonstration de l’interface réelle du plugin. Aucun son n’est traité dans le navigateur.</p>
         <p class="block-title">Le plugin</p>
         <div class="desc" id="desc"></div>
+        <p class="founder" id="founder" hidden></p>
       </div>
       <aside class="side">
         <p class="eyebrow" id="side-name"></p>
@@ -669,6 +673,10 @@ async function buy(product, catalog) {
   if (/\.(exe|msi)$/i.test(product.latest?.filename || "")) $("kind").textContent = "Application Windows";
   if (product.platforms?.includes("mac")) $("os").textContent = "Windows 10 et 11 (64 bits), et macOS 10.15 ou plus (Intel et Apple Silicon)";
   $("desc").replaceChildren(...(product.description || product.tagline).split(/\n{2,}/).map((text) => el("p", { textContent: text })));
+  // Le fondateur à l'origine du plugin ; son nom mène à son Instagram, comme dans les crédits.
+  const founder = product.founder;
+  $("founder").hidden = !founder;
+  if (founder) $("founder").replaceChildren("Créé par ", founder.instagram ? el("a", { href: founder.instagram, target: "_blank", rel: "noopener", textContent: founder.name }) : el("b", { textContent: founder.name }));
   $("buy").textContent = product.priceCents ? "Acheter · " + euros(product.sale ? product.sale.priceCents : product.priceCents) : "Obtenir";
   $("buy").onclick = () => buy(product, catalog);
   // Plugin offert : VOCALBOX offre VOCAL MINI ; sur la page de VOCAL MINI, on le dit, et ses acheteurs ont VOCALBOX à -50 %

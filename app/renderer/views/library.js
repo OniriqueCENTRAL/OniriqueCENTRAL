@@ -367,7 +367,10 @@ export function detailView(id) {
         // Une image choisie par un admin passe avant la démo fabriquée automatiquement.
         product.image && product.imageManual ? wholeImage(product) : product.demo ? demoView(product) : cover(product, null),
         h('div', { class: 'panel', style: { 'margin-top': '16px' } }, eyebrow('Le plugin'),
-          h('div', { class: 'desc' }, (product.description || product.tagline).split(/\n{2,}/).map((text) => h('p', null, text)))),
+          h('div', { class: 'desc' }, (product.description || product.tagline).split(/\n{2,}/).map((text) => h('p', null, text))),
+          // Le fondateur à l'origine du plugin ; son nom mène à son Instagram, comme dans les crédits.
+          product.founder ? h('p', { class: 'muted', style: { 'margin-top': '12px', 'font-size': '12px' } }, 'Créé par ',
+            product.founder.instagram ? h('a', { href: product.founder.instagram, target: '_blank' }, product.founder.name) : h('b', null, product.founder.name)) : null),
         product.versions.length ? h('div', { class: 'panel' },
           h('div', { class: 'row between', style: { 'margin-bottom': '14px' } }, eyebrow('Historique des versions'),
             // Un historique par système : les notes d'une même version ne sont pas répétées pour Windows et pour Mac.
