@@ -1,0 +1,4 @@
+# Les clés SSH publiques des PC des fondateurs : accès root au serveur, posé à chaque mise en ligne (deploy/onirique-deploy).
+# Une clé par ligne, telle que dans ~/.ssh/id_ed25519.pub, suivie du nom du PC. Retirer un PC : enlever sa ligne ici ET
+# dans /root/.ssh/authorized_keys sur le serveur. Rien de secret ici : ce sont des clés publiques.
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINi4eGkIe5XvO6nG6GSgmeZaeSWk4OKSFFpXPVbk3mo7 PC-de-Nov

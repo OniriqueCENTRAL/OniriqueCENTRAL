@@ -25,6 +25,12 @@
 ## Application Windows (Electron, `app/`)
 - `bash deploy/release-app.sh` (copie propre et à jour exigée ; pousse lui-même le commit « Application X »).
   Les applications installées se mettent à jour seules.
+- Le PC qui publie a besoin de l'accès root SSH (sa clé dans `deploy/cles-fondateurs.pub`, posée à la mise en ligne
+  suivante) et de Python avec `castlabs-evs` connecté (signature VMP, `app/build/vmp-sign.js`).
+- Pièges : sans le droit de créer des liens symboliques, electron-builder échoue en extrayant `winCodeSign` ; extraire
+  l'archive à la main dans `%LOCALAPPDATA%\electron-builder\Cache\winCodeSign\winCodeSign-2.6.0` (les deux erreurs
+  `darwin/*.dylib` sont sans effet sous Windows). Le raccourci `python` du Microsoft Store passe avant le vrai : mettre
+  le dossier de Python en tête du PATH dans `~/.bashrc`.
 - Après chaque version : rappeler de soumettre l'installateur sur `https://www.microsoft.com/wdsi/filesubmission`
   (« Software developer », fichier bloqué à tort par SmartScreen). L'application n'est pas signée par Microsoft.
 - Mises à jour signées : `release-app.sh` et `release-navigateur.sh` appellent `onirique-signer` sur le VPS (clé
